@@ -10,6 +10,7 @@ import { PNG } from 'pngjs';
 import { verifyPageControls } from '../continuous/controls-test.mjs';
 import { verifyAudioBrowser } from '../music/audio-browser-test.mjs';
 import { verifyMusicBrowser } from '../music/player-browser-test.mjs';
+import { verifyConverterBrowser } from '../converter/browser-test.mjs';
 import { verifyPiano } from '../music/piano-test.mjs';
 import { verifyLazyPages } from '../continuous/lazy-test.mjs';
 import { verifySheetZoom } from '../sheet/zoom-test.mjs';
@@ -19,7 +20,7 @@ const outputRoot = path.join(root, '_build/visual-diff');
 mkdirSync(outputRoot, { recursive: true });
 const output = mkdtempSync(path.join(outputRoot, 'run-'));
 const executable = path.join(root, 'node_modules/.bin/vlmkit');
-const allowed = ['/compat/visual/', '/compat/interactive/', '/compat/sheet/', '/compat/continuous/', '/compat/music/', '/node_modules/@bdfkit/', '/_build/js/debug/build/browser/'];
+const allowed = ['/compat/visual/', '/compat/interactive/', '/compat/sheet/', '/compat/continuous/', '/compat/music/', '/compat/converter/', '/node_modules/@bdfkit/', '/_build/js/debug/build/browser/', '/_build/js/debug/build/converter_worker/'];
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.bdf': 'application/octet-stream' };
 
 function run(args) {
@@ -428,6 +429,7 @@ try {
     await verifyPiano(browser,base);
     await verifyAudioBrowser(browser,base);
     await verifyMusicBrowser(browser,base);
+    await verifyConverterBrowser(browser,base);
     for(const name of ['baseline','moon']){const page=await browser.newPage();await page.goto(`http://127.0.0.1:${server.address().port}/compat/music/piano-${name}.html`,{waitUntil:'networkidle'});assert.equal(await page.evaluate(()=>window.bdfStatus),'ready',`piano ${name}: ${await page.evaluate(()=>window.bdfError)}`);assert.ok(await page.locator('canvas[aria-label^="Piano roll with"]').count());await page.close()}
     const sheetBase=`http://127.0.0.1:${server.address().port}/compat/sheet/`;
     const cellFixtures={};

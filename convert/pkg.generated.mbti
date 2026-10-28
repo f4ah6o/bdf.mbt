@@ -41,6 +41,7 @@ pub(all) struct ConvertOptions {
   password : String
   fonts : String
   pages : String
+  params : Map[String, String]
 }
 pub fn ConvertOptions::new() -> Self
 

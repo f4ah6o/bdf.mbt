@@ -20,7 +20,7 @@ This currently supports fixed/flow, scroll and sheet BDF documents whose BOBJ pa
 the implemented drawing subset. It does not try to convert
 PDF/Office documents. The asynchronous entry point loads image and embedded font
 parts before drawing and retains them for the lifetime of the mounted view. It supports raster images, SVG,
-and image patterns. A complete port needs Worker transport and additional viewer features.
+and image patterns. A complete port needs the rendering Worker and additional viewer features.
 
 Asynchronous page mounts use an `IntersectionObserver` with a 600-pixel
 margin to load and draw nearby pages. They release a page's Canvas backing
@@ -126,6 +126,34 @@ creates an independent player. Options include `context`, `volume`,
 `lookahead`, and `interval`, as in the upstream player. Playback currently uses
 a snapshot of the sequence at construction; later changes to the supplied or
 exposed sequence object are not reflected yet.
+
+## Converter Worker
+
+The converter client can run an existing compatible Go or TinyGo converter Wasm
+module in a dedicated Worker. Build with `moon build --target js` and serve the
+generated `converter_worker/converter_worker.js` alongside the matching
+compiler's `wasm_exec.js` and the converter Wasm file. The `runtime` query
+parameter identifies the JavaScript runtime relative to the Worker URL:
+
+```js
+const workerUrl = new URL('/converter_worker.js', location.href);
+workerUrl.searchParams.set('runtime', '/wasm_exec.js');
+const converter = bdf_create_converter(workerUrl.href, '/converter.wasm');
+const formats = await converter.ready;
+const result = await converter.convert(inputBytes, { name: 'report.pdf' });
+const opened = await converter.open(inputBytes, { name: 'report.pdf' });
+if (opened.stream) {
+  const firstPage = await converter.page(opened.stream, 0);
+  const complete = await converter.finish(opened.stream);
+  await converter.close(opened.stream);
+}
+converter.terminate();
+```
+
+`bdf_converter_client(worker, wasmUrl)` accepts an existing Worker instead.
+The runtime JavaScript must match the compiler used for the Wasm module. The
+worker transport does not include the converter engines; these must be supplied
+separately until they are ported to MoonBit.
 
 ```js
 const bandsDrawn = await render_bdf_continuous_region_async(host, bytes, x, y, width, height, scale);

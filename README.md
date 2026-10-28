@@ -5,11 +5,11 @@ MoonBit implementation of the BDF v1 wire-format reader and the browser-facing `
 - Targets: `js` and `wasm-gc`.
 - `core`: checked BDF header, single and split documents (identity and deflate-raw), BOBJ resource tables, MIDI sequences, cue indexes, and a bounded binary reader.
 - `render`: backend-neutral, checked display-list decoder for a currently supported subset of Canvas 2D opcodes, including paths, gradient paints, and drawing effects. It also extracts ordered text runs, semantic structure, figure bounds and link rectangles, serializes table-cell selections, and calculates music and audio cue positions.
-- `convert`: the worker-client request/response lifecycle and stream command model. Converter runtime itself (TinyGo) is **not** ported.
+- `convert`: the worker-client request/response lifecycle and stream command model. The browser adapter connects these to a Worker and a separately supplied compatible Wasm runtime; the converter engines themselves are **not** ported.
 - `viewer`: document/view selection state and page placement in single, spread, and continuous modes, including RTL spreads and scroll strips.
 - `browser` (JS only): Canvas 2D adapter that draws fixed/flow pages, scroll strips, continuous body regions, and sheet viewports, including password- and P-256-protected documents, into a DOM host, including paths, gradients, child objects, transparency groups, masks, asynchronously loaded images and fonts, and optional selectable text layers.
 
-This is an **incremental port**, not a feature-equivalent replacement for the upstream npm packages. In particular, a full DOM viewer, wasm-gc cryptography, some interactive sheet features, browser Worker transport and PDF/Office/CAD decoders are not yet implemented. Unsupported drawing opcodes fail explicitly instead of silently rendering incorrectly.
+This is an **incremental port**, not a feature-equivalent replacement for the upstream npm packages. In particular, a full DOM viewer, wasm-gc cryptography, some interactive sheet features, the rendering Worker and PDF/Office/CAD decoders are not yet implemented. Unsupported drawing opcodes fail explicitly instead of silently rendering incorrectly.
 
 Upstream implementation: https://github.com/shibukawa/bdf (MIT). Wire specification: https://github.com/shibukawa/bdf/blob/main/docs/spec.md .
 
@@ -54,11 +54,15 @@ must supply those fields; parsed documents use `None`, `"ltr"`, `None`, and
 load MIDI bytes and cues; their `audio` methods load recorded audio and cues.
 The audio MIME type is restricted to `audio/*`. Page views with a MIDI sequence can switch to a piano roll using `bdf_set_music_mode_async`. The browser adapter plays MIDI with Web Audio and embedded recordings with an audio element, and maps playback positions to cues. MIDI parsing, channel state and timeline calculations work on both targets.
 
+`ConvertOptions` includes a `params` map for format-specific options. Code
+constructing this public record directly must provide the map; use
+`ConvertOptions::new()` for an empty one.
+
 ## Port backlog
 
 1. Complete the opset 1 Canvas command decoder and browser Canvas renderer, and safe resource loading.
 2. Cryptography support on non-JavaScript hosts.
-3. Browser Worker converter runtime transport, streaming page conversion and viewer openFile.
+3. MoonBit converter engines and viewer openFile integration for streaming page conversion.
 4. DOM/OffscreenCanvas viewer, lazy page rendering, sheet support, search, accessibility and music playback.
 5. Replace or separately port TinyGo converter engines for the desired document formats.
 

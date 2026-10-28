@@ -16,11 +16,12 @@ pub(all) struct ConvertOptions {
   password : String
   fonts : String
   pages : String
+  params : Map[String, String]
 }
 
 ///|
 pub fn ConvertOptions::new() -> ConvertOptions {
-  { format: "", name: "", password: "", fonts: "", pages: "" }
+  { format: "", name: "", password: "", fonts: "", pages: "", params: {} }
 }
 
 ///|

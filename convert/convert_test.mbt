@@ -24,3 +24,10 @@ test "converter termination invalidates pending work" {
   }
   assert_eq(rejected, true)
 }
+
+///|
+test "format-specific parameters are retained with a request" {
+  let options = { ..ConvertOptions::new(), params: { "play": "false" }, }
+  let request = Client::new().request(Convert, options)
+  assert_eq(request.options.params.get("play"), Some("false"))
+}
