@@ -35,6 +35,24 @@ func main() {
 	page2.FillColor(0xffffffff).FillRect(0, 0, 640, 160).FillColor(0x16283fff).Font(pf, 18).Mark(bdf.MarkParagraph, "").FillText("Second page", 30, 50, 100)
 	ph, _ := d.AddObject(page2)
 	view.AddPage(640, 160, bdf.Layer{Role: bdf.RoleBody, Obj: ph})
+	// An optional indexed variant exercises both single and split readers.
+	if len(os.Args) > 2 {
+		index, err := d.BuildTextIndex(view)
+		if err != nil {
+			panic(err)
+		}
+		runs, err := bdf.DecodeTextIndex(d.Part(index).Data)
+		if err != nil {
+			panic(err)
+		}
+		// A deliberately different index proves that readers use the part,
+		// rather than silently rebuilding it from the objects.
+		runs[0].Text = "Index only text"
+		view.TextIndex = d.AddPart(bdf.PartIndex, bdf.EncodeTextIndex(runs)).String()
+		if err := d.WriteSplit(os.Args[2]); err != nil {
+			panic(err)
+		}
+	}
 	file, err := os.Create(os.Args[1])
 	if err != nil {
 		panic(err)

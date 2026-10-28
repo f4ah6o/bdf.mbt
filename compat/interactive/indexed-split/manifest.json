@@ -1,0 +1,83 @@
+{
+ "bdf": 1,
+ "opset": 1,
+ "unit": "pt",
+ "meta": {
+  "generator": "bdf-go/0.1"
+ },
+ "views": [
+  {
+   "id": "p",
+   "kind": "fixed",
+   "textIndex": "e8aae24b630f4720974630dad21d6915",
+   "pages": [
+    {
+     "w": 640,
+     "h": 400,
+     "layers": [
+      {
+       "role": "body",
+       "obj": "ec88560b015c9ecc3f27cd5dab217bcc"
+      },
+      {
+       "role": "annotation",
+       "obj": "4e02d6b6412022c5ba71940c5d35cb7a"
+      }
+     ]
+    },
+    {
+     "w": 640,
+     "h": 160,
+     "layers": [
+      {
+       "role": "body",
+       "obj": "88bb0b8dc5a8f96b9c9fcc09f2ba09b1"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "parts": [
+  {
+   "h": "ec88560b015c9ecc3f27cd5dab217bcc",
+   "t": "obj",
+   "enc": "deflate-raw",
+   "len": 401,
+   "size": 545,
+   "off": 0
+  },
+  {
+   "h": "4e02d6b6412022c5ba71940c5d35cb7a",
+   "t": "obj",
+   "enc": "identity",
+   "len": 146,
+   "size": 146,
+   "off": 0
+  },
+  {
+   "h": "88bb0b8dc5a8f96b9c9fcc09f2ba09b1",
+   "t": "obj",
+   "enc": "identity",
+   "len": 109,
+   "size": 109,
+   "off": 0
+  },
+  {
+   "h": "48a64e13358042d8cbb456eda6dc3b0f",
+   "t": "idx",
+   "enc": "identity",
+   "len": 209,
+   "size": 209,
+   "off": 0
+  },
+  {
+   "h": "e8aae24b630f4720974630dad21d6915",
+   "t": "idx",
+   "enc": "identity",
+   "len": 208,
+   "size": 208,
+   "off": 0
+  }
+ ]
+}

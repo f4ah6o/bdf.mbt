@@ -6,9 +6,15 @@ import {
 }
 
 // Values
+pub fn bdf_clear_find(BrowserHost) -> Unit
+
 pub fn bdf_clipboard_html(BrowserClipboard) -> String
 
 pub fn bdf_clipboard_text(BrowserClipboard) -> String
+
+pub fn bdf_find(BrowserHost, String, Int32) -> BrowserFindResult
+
+pub fn bdf_open_find(BrowserHost) -> Unit
 
 pub fn bdf_selection_cells(BrowserHost) -> BrowserClipboard?
 
@@ -51,6 +57,9 @@ pub suberror BrowserError {
 // Types and methods
 #external
 pub type BrowserClipboard
+
+#external
+pub type BrowserFindResult
 
 type BrowserHost
 

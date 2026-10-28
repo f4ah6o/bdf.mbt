@@ -256,6 +256,55 @@ try {
       assert.deepEqual(selection,{box:true,table:true},`${name}: selected cell highlight missing`);
       await page.close();
     }
+    const findSnapshots=[];
+    for (const name of ['find-baseline','find-moon']) {
+      const page=await browser.newPage({viewport:{width:1280,height:720}}),errors=[];
+      page.on('pageerror',error=>errors.push(String(error)));
+      await page.goto(`${interactiveBase}${name}.html`,{waitUntil:'networkidle'});
+      await page.waitForFunction(()=>window.bdfStatus==='ready'||window.bdfStatus==='error');
+      assert.equal(await page.evaluate(()=>window.bdfStatus),'ready',`${name}: ${await page.evaluate(()=>window.bdfError)}`);
+      const actual=await page.evaluate(async()=>{
+        const result=[],events=[],host=document.querySelector('#host');
+        const onfind=event=>events.push(event.detail);host.addEventListener('findchange',onfind);
+        for(const [q,step] of [['page',0],['page',1],['page',-1],['absent',0],['',0],['hello world',0]]){
+          const r=await window.findAction(q,step);result.push({query:r.query,index:r.index,total:r.total,more:r.more,detail:r.detail,rects:r.rects.map(({hit,page,x,y,w,h})=>({hit,page,x,y,w,h}))});
+        }
+        host.removeEventListener('findchange',onfind);
+        return {result,events};
+      });
+      findSnapshots.push(actual);
+      const input=page.getByRole('searchbox',{name:'Find in document'});
+      const apple=await page.evaluate(()=>/mac|iphone|ipad|ipod/i.test(navigator.userAgentData?.platform||navigator.platform||navigator.userAgent||''));
+      await page.getByRole('button',{name:'Previous match'}).focus();
+      await page.keyboard.press('Shift+Tab');
+      const keyboardFocus=await input.evaluate(el=>({focused:document.activeElement===el,outline:getComputedStyle(el).outlineStyle}));
+      assert.equal(keyboardFocus.focused,true,`${name}: search field is not keyboard reachable`);
+      assert.notEqual(keyboardFocus.outline,'none',`${name}: search field has no keyboard focus indicator`);
+      await input.fill('page');await page.waitForFunction(()=>document.querySelector('[role=status]')?.textContent.startsWith('1 / 2'));
+      await input.press('Enter');await page.waitForFunction(()=>document.querySelector('[role=status]')?.textContent.startsWith('2 / 2'));
+      await input.press('Shift+Enter');await page.waitForFunction(()=>document.querySelector('[role=status]')?.textContent.startsWith('1 / 2'));
+      await page.getByRole('button',{name:'Next match'}).click();await page.waitForFunction(()=>document.querySelector('[role=status]')?.textContent.startsWith('2 / 2'));
+      await page.getByRole('button',{name:'Previous match'}).click();await page.waitForFunction(()=>document.querySelector('[role=status]')?.textContent.startsWith('1 / 2'));
+      await page.keyboard.press('F3');await page.waitForFunction(()=>document.querySelector('[role=status]')?.textContent.startsWith('2 / 2'));
+      await input.press(apple?'Meta+g':'Control+g');await page.waitForFunction(()=>document.querySelector('[role=status]')?.textContent.startsWith('1 / 2'));
+      await input.press(apple?'Meta+Shift+g':'Control+Shift+g');await page.waitForFunction(()=>document.querySelector('[role=status]')?.textContent.startsWith('2 / 2'));
+      const browserShortcut=await input.evaluate((el,apple)=>el.dispatchEvent(new KeyboardEvent('keydown',{key:'f',code:'KeyF',ctrlKey:!apple,metaKey:apple,bubbles:true,cancelable:true})),apple);
+      assert.equal(browserShortcut,true,`${name}: browser find was intercepted inside the search field`);
+      await input.evaluate(el=>{el.value='missing';el.dispatchEvent(new InputEvent('input',{bubbles:true,isComposing:true}));});
+      await page.waitForTimeout(200);
+      assert.match(await page.getByRole('status').innerText(),/^2 \/ 2/,`${name}: searched during composition`);
+      await input.evaluate(el=>el.dispatchEvent(new CompositionEvent('compositionend',{bubbles:true})));
+      await page.waitForFunction(()=>document.querySelector('[role=status]')?.textContent==='No matches');
+      await input.press('Escape');assert.equal(await page.getByRole('search').count(),0,`${name}: search bar remained visible`);
+      assert.equal(await page.evaluate(()=>document.activeElement?.id),'host',`${name}: closing search lost viewer focus`);
+      await page.keyboard.press(apple?'Meta+f':'Control+f');assert.equal(await page.getByRole('search').count(),1,`${name}: shortcut did not reopen search`);
+      assert.equal(await input.inputValue(),'missing',`${name}: reopening lost query`);
+      await page.getByRole('button',{name:'Close'}).click();assert.equal(await page.getByRole('search').count(),0,`${name}: close button did not hide search`);
+      assert.equal(await page.evaluate(()=>document.activeElement?.id),'host',`${name}: close button lost viewer focus`);
+      assert.deepEqual(errors,[],`${name}: browser errors`);
+      await page.close();
+    }
+    assert.deepEqual(findSnapshots[1],findSnapshots[0],'find results, locations and navigation match upstream');
     const resourcePage = await browser.newPage();
     await resourcePage.goto(`${interactiveBase}moon.html`, {waitUntil:'networkidle'});
     await resourcePage.waitForFunction(() => window.bdfStatus === 'ready');
@@ -290,11 +339,12 @@ try {
         const texts=spans.map(s=>s.textContent);
         const syntheticWidth=spans.find(s=>s.textContent==='AAA').getBoundingClientRect().width;
         const retained=[...document.fonts].filter(f=>f.family.startsWith('bdf-')).length;
+        const found=bdf.bdf_find(host,'AAA',0);
         if (i%2===0) { bdf.unmount_bdf(host); host.remove(); }
         else { host.remove(); await new Promise(resolve=>setTimeout(resolve,0)); }
         const released=[...document.fonts].filter(f=>f.family.startsWith('bdf-')).length;
-        const handlersReleased=!host[Symbol.for('f4ah6o.bdf.copy')];
-        results.push({pages,texts,syntheticWidth,retained,released,handlersReleased,empty:host.childElementCount===0,resetSize:host.style.minWidth===''&&host.style.minHeight===''});
+        const handlersReleased=!host[Symbol.for('f4ah6o.bdf.copy')]&&!host[Symbol.for('f4ah6o.bdf.find')];
+        results.push({pages,texts,syntheticWidth,retained,released,handlersReleased,found:found.total,empty:host.childElementCount===0,resetSize:host.style.minWidth===''&&host.style.minHeight===''});
       }
       const detached=document.createElement('div');
       await bdf.mount_bdf_interactive_async(detached,await bytes('fixture.bdf'),'single');
@@ -307,12 +357,13 @@ try {
       const detachedTracking=!!detached.querySelector('[data-bdf-end][data-bdf-selecting]');
       document.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerType:'mouse'}));
       detached.remove();await new Promise(resolve=>setTimeout(resolve,0));
-      const detachedReleased=!detached[Symbol.for('f4ah6o.bdf.copy')]&&[...document.fonts].filter(f=>f.family.startsWith('bdf-')).length===initial;
+      const detachedReleased=!detached[Symbol.for('f4ah6o.bdf.copy')]&&!detached[Symbol.for('f4ah6o.bdf.find')]&&[...document.fonts].filter(f=>f.family.startsWith('bdf-')).length===initial;
       const first=document.createElement('div'),second=document.createElement('div');
       document.body.append(first,second);
       const single=await bytes('fixture.bdf');
       await bdf.mount_bdf_interactive_async(first,single,'single');
       await bdf.mount_bdf_interactive_async(second,single,'single');
+      const isolated=bdf.bdf_find(first,'AAA',0).total===1&&bdf.bdf_find(second,'absent',0).total===0;
       let failedMount=false;
       try { await bdf.mount_bdf_interactive_split_async(first,await bytes('split-fixture/manifest.json'),async()=>{throw new Error('failed')},'single'); }
       catch { failedMount=first.querySelectorAll('[data-bdf-ordinal]').length===2&&[...document.fonts].filter(f=>f.family.startsWith('bdf-')).length===initial+2; }
@@ -326,9 +377,47 @@ try {
       document.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerType:'mouse'}));
       bdf.unmount_bdf(second);second.remove();
       const otherReleased=[...document.fonts].filter(f=>f.family.startsWith('bdf-')).length===initial;
-      return {initial,results,detachedTracking,detachedReleased,retainedOther,otherTracking,otherReleased,failedMount};
+      const indexed=await (await fetch('./indexed.bdf')).arrayBuffer();
+      const indexedManifest=await (await fetch('./indexed-split/manifest.json')).arrayBuffer();
+      const metadata=JSON.parse(new TextDecoder().decode(indexedManifest));
+      const requests=[];
+      const indexedLoader=async(hash,limit)=>{requests.push(hash);const part=new Uint8Array(await (await fetch(`./indexed-split/parts/${hash}`)).arrayBuffer());if(part.length>limit)throw new Error('part exceeds limit');return part};
+      const indexedHost=document.createElement('div');document.body.appendChild(indexedHost);
+      await bdf.mount_bdf_interactive_async(indexedHost,new Uint8Array(indexed),'single');
+      const indexedSingle=bdf.bdf_find(indexedHost,'index only text',0).total;
+      const indexedDoesNotRebuild=bdf.bdf_find(indexedHost,'document example',0).total===0;
+      const defaultStep=bdf.bdf_find(indexedHost,'page',0).index===0&&bdf.bdf_find(indexedHost,'page').index===1;
+      bdf.bdf_open_find(indexedHost);
+      const openedAfterSearch=indexedHost.querySelector('[role=status]').textContent.startsWith('2 / 2');
+      await bdf.mount_bdf_interactive_split_async(indexedHost,new Uint8Array(indexedManifest),indexedLoader,'single');
+      const indexedSplit=bdf.bdf_find(indexedHost,'index only text',0).total;
+      const indexRequests=requests.filter(hash=>hash===metadata.views[0].textIndex).length;
+      const failingIndex=async(hash,limit)=>{if(hash===metadata.views[0].textIndex)throw new Error('index unavailable');return indexedLoader(hash,limit)};
+      await bdf.mount_bdf_interactive_split_async(indexedHost,new Uint8Array(indexedManifest),failingIndex,'single');
+      let deferredFailure=false;
+      try{bdf.bdf_find(indexedHost,'world',0)}catch{deferredFailure=indexedHost.querySelectorAll('[data-bdf-ordinal]').length>0}
+      bdf.unmount_bdf(indexedHost);indexedHost.remove();
+      const scrollHost=document.createElement('div');scrollHost.style.maxHeight='100px';document.body.appendChild(scrollHost);
+      await bdf.mount_bdf_interactive_async(scrollHost,new Uint8Array(indexed),'single');
+      scrollHost.style.minHeight='0';scrollHost.style.height='100px';scrollHost.style.minWidth='0';scrollHost.style.width='200px';
+      scrollHost.scrollTop=416;
+      const startsAtReadingPage=bdf.bdf_find(scrollHost,'page',0).index===1;
+      bdf.bdf_open_find(scrollHost);scrollHost.scrollLeft=120;scrollHost.dispatchEvent(new Event('scroll'));
+      const anchored=Math.abs(scrollHost.querySelector('[role=search]').getBoundingClientRect().top-scrollHost.getBoundingClientRect().top-8)<1;
+      const anchoredHorizontal=Math.abs(scrollHost.getBoundingClientRect().right-scrollHost.querySelector('[role=search]').getBoundingClientRect().right-24)<1;
+      bdf.unmount_bdf(scrollHost);scrollHost.remove();
+      return {initial,results,detachedTracking,detachedReleased,retainedOther,otherTracking,otherReleased,failedMount,isolated,indexedSingle,indexedSplit,indexRequests,deferredFailure,indexedDoesNotRebuild,defaultStep,startsAtReadingPage,anchored,anchoredHorizontal,openedAfterSearch};
     });
     assert.equal(resourceResult.failedMount,true,'failed preparation preserves existing document and fonts');
+    assert.equal(resourceResult.isolated,true,'search is isolated by host');
+    assert.deepEqual([resourceResult.indexedSingle,resourceResult.indexedSplit,resourceResult.indexRequests],[1,1,1],'stored text index is loaded for single and split documents');
+    assert.equal(resourceResult.deferredFailure,true,'an unavailable index fails search without preventing rendering');
+    assert.equal(resourceResult.indexedDoesNotRebuild,true,'stored index takes precedence over extracted text');
+    assert.equal(resourceResult.defaultStep,true,'omitted search step advances to the next match');
+    assert.equal(resourceResult.openedAfterSearch,true,'opening the bar displays an existing programmatic search');
+    assert.equal(resourceResult.startsAtReadingPage,true,'new searches start at the page being read');
+    assert.equal(resourceResult.anchored,true,'search bar remains at the top of the scrollport');
+    assert.equal(resourceResult.anchoredHorizontal,true,'search bar remains at the right edge during horizontal scrolling');
     assert.equal(resourceResult.retainedOther,true,'removing one host preserves another host font');
     assert.equal(resourceResult.otherTracking,true,'remaining host tracks selection');
     assert.equal(resourceResult.otherReleased,true,'remaining host font is released');
@@ -341,6 +430,7 @@ try {
       assert.equal(result.retained, resourceResult.initial + 1, 'embedded font retained for selectable text');
       assert.equal(result.released, resourceResult.initial, 'embedded font released');
       assert.equal(result.handlersReleased, true, 'selection handlers released');
+      assert.equal(result.found,1,'interactive mount searches embedded text');
       if (i % 2 === 0) { assert.equal(result.empty, true, 'unmount clears host'); assert.equal(result.resetSize, true, 'unmount resets host dimensions'); }
     }
     await resourcePage.close();
@@ -381,6 +471,21 @@ try {
     assert.ok(ratio<=0.0005,`${result.viewport}: selected cell visual difference exceeds 0.05%`);
   }
   await run(['diff','agent',selectedReportPath,'--no-history']);
+  const findOutput=path.join(output,'find');mkdirSync(findOutput);
+  await run(['diff','html','--url',`${interactiveBase}find-baseline.html`,'--current-url',`${interactiveBase}find-moon.html`,'--output-dir',findOutput,'--no-paint-tree']);
+  const findReportPath=path.join(findOutput,'diff-report.json');
+  const findReport=JSON.parse(readFileSync(findReportPath,'utf8'));
+  for(const result of findReport.results){
+    const before=PNG.sync.read(readFileSync(path.join(findOutput,`compat_interactive_find-baseline-${result.viewport}.png`)));
+    const after=PNG.sync.read(readFileSync(path.join(findOutput,`compat_interactive_find-moon-${result.viewport}.png`)));
+    let changed=0;for(let i=0;i<before.data.length;i+=4)if(before.data[i]!==after.data[i]||before.data[i+1]!==after.data[i+1]||before.data[i+2]!==after.data[i+2]||before.data[i+3]!==after.data[i+3])changed++;
+    const ratio=changed/(Math.min(before.width,640)*Math.min(before.height,576));
+    console.log(`find ${result.viewport}: ${changed} pixels changed (${(ratio*100).toFixed(4)}%)`);
+    assert.ok(ratio<=0.0005,`${result.viewport}: find visual difference exceeds 0.05%`);
+  }
+  await run(['diff','agent',findReportPath,'--no-history']);
+  await run(['scan','handlers',`${interactiveBase}find-moon.html`,'--no-ledger']);
+  await run(['check','interactions',`${interactiveBase}find-moon.html`,'--reference',`${interactiveBase}find-baseline.html`,'--handlers','--no-ledger']);
   await run(['scan','handlers',`${interactiveBase}moon.html`,'--no-ledger']);
   await run(['check','interactions',`${interactiveBase}moon.html`,'--reference',`${interactiveBase}baseline.html`,'--handlers','--no-ledger']);
   for (const variant of ['moon', 'split', 'encrypted-password', 'encrypted-split', 'encrypted-ecdh', 'encrypted-ecdh-split']) {

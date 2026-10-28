@@ -24,6 +24,7 @@ extern "js" fn clear_host(host : BrowserHost) -> Unit =
   #|  }
   #|  const fonts=host[Symbol.for('f4ah6o.bdf.fonts')]; if(fonts){fonts.release();delete host[Symbol.for('f4ah6o.bdf.fonts')];}
   #|  const copy=host[Symbol.for('f4ah6o.bdf.copy')]; if(copy){copy.dispose();delete host[Symbol.for('f4ah6o.bdf.copy')];}
+  #|  const find=host[Symbol.for('f4ah6o.bdf.find')]; if(find){find.dispose();delete host[Symbol.for('f4ah6o.bdf.find')];}
   #|  host.replaceChildren();
   #|  host.style.position = "relative";
   #|  host.style.overflow = "auto";
@@ -588,6 +589,8 @@ fn mount_document(
   }
   let placements = viewer.placements(view)
   clear_host(host)
+  let search_runs : Array[Array[Array[@render.TextRun]]] = []
+  let fallback_index : Array[@core.IndexRun] = []
   let mut max_x = 0.0
   let mut max_y = 0.0
   for p in placements {
@@ -602,13 +605,28 @@ fn mount_document(
     let data = if interactive { Some(new_text_layer_data()) } else { None }
     let mut node_base = 0
     let mut run_base = 0
-    for layer in view.pages[p.index].layers {
+    let page_runs : Array[Array[@render.TextRun]] = []
+    for layer_index, layer in view.pages[p.index].layers {
       let object = @core.decode_object_resources(doc.part(layer.object))
       let paths = resolve_paths(doc, object.paths)
       if data is Some(text_data) {
         let content = @render.extract_text(object, hash => {
           Some(@core.decode_object_resources(doc.part(hash)))
         })
+        page_runs.push(content.runs)
+        for ordinal, run in content.runs {
+          fallback_index.push({
+            a: p.index,
+            b: layer_index,
+            ordinal: run.ordinal,
+            separator: if ordinal == 0 {
+              2
+            } else {
+              run.separator
+            },
+            text: run.text,
+          })
+        }
         append_text_content(text_data, content, node_base, run_base)
         node_base += content.nodes.length()
         run_base += content.runs.length()
@@ -626,6 +644,7 @@ fn mount_document(
       )
     }
     if data is Some(text_data) {
+      search_runs.push(page_runs)
       render_text_layer(
         host,
         text_data,
@@ -639,6 +658,15 @@ fn mount_document(
   }
   if interactive {
     install_copy_handler(host)
+    install_document_find(
+      host,
+      doc,
+      view,
+      placements,
+      search_runs,
+      fallback_index,
+      viewer.zoom,
+    )
     if resources is Some(r) {
       retain_host_fonts(host, r)
     }

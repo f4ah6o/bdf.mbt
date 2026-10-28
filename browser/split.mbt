@@ -147,6 +147,13 @@ async fn mount_split(
     raise Unsupported("more than 256 pages")
   }
   let seen : Map[String, Bool] = Map([])
+  if interactive && view.text_index is Some(hash) {
+    // Search is optional: an unavailable index must not prevent rendering.
+    // The attempted lookup is reported if a search is subsequently requested.
+    prefetch_part(split, cache, loader, hash) catch {
+      _ => ()
+    }
+  }
   for page in view.pages {
     for layer in page.layers {
       prefetch_split_object(split, cache, loader, layer.object, seen, 0)
