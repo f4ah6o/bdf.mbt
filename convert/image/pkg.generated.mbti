@@ -10,6 +10,8 @@ pub suberror ImageError {
 }
 
 // Types and methods
+type ExifFields
+
 pub(all) struct ImageResult {
   bdf : Bytes
   format : String

@@ -21,4 +21,4 @@ for (const expected of fixtures) {
   const object = doc.manifest.views[0].pages[0].layers[0].obj;
   assert.deepEqual(Buffer.from(await doc.part(object)), Buffer.from(expected.object, 'base64'));
 }
-console.log('Image conversion compatibility: BMP and ICO match upstream pages, original bytes and BOBJ.');
+console.log('Image conversion compatibility: BMP, ICO and JPEG match upstream pages, original bytes and BOBJ.');

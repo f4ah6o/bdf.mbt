@@ -150,7 +150,7 @@ exposed sequence object are not reflected yet.
 
 ## Converter Worker
 
-The MoonBit converter can run BMP and ICO conversion without a Go runtime.
+The MoonBit converter can run BMP, ICO and JPEG conversion without a Go runtime.
 Build with `moon build --target js` and serve the generated
 `native_converter_worker/native_converter_worker.js`:
 
@@ -162,8 +162,9 @@ converter.terminate();
 ```
 
 `open()` returns the complete document with `pages: 0` for these formats.
-The native Worker currently supports only BMP and ICO, and rejects the `fonts`
-option. `bdf_converter_client`
+The native Worker currently supports BMP, ICO and JPEG without descriptive
+metadata, and rejects the `fonts` option. JPEG images carrying EXIF, XMP or
+IPTC descriptive metadata are rejected until that metadata is ported. `bdf_converter_client`
 can also wrap its Worker; pass an empty Wasm URL. Other image formats and the
 other conversion engines remain to be ported.
 

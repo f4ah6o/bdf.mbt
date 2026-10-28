@@ -54,6 +54,9 @@ fn ico_header(data : Bytes) -> Bool {
 
 ///|
 fn read_picture(data : Bytes) -> Picture raise {
+  if data.length() >= 3 && data[:3] == b"\xff\xd8\xff"[:] {
+    return read_jpeg(data)
+  }
   if bmp_header(data) {
     if data.length() < 26 {
       raise ImageFailure("image: BMP: the image is truncated")
@@ -95,5 +98,5 @@ fn read_picture(data : Bytes) -> Picture raise {
     }
     return { format: "ico", width, height, }
   }
-  raise ImageFailure("image: input is not a supported BMP or ICO image")
+  raise ImageFailure("image: input is not a supported BMP, ICO or JPEG image")
 }

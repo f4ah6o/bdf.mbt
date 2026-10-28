@@ -25,9 +25,9 @@ export async function verifyNativeConverter(browser, base) {
           : bdf_create_native_converter('/_build/js/debug/build/native_converter_worker/native_converter_worker.js');
         try {
           const formats = await client.ready;
-          if (!formats.some(f => f.name === 'image' && f.extensions.includes('.bmp') && f.extensions.includes('.ico'))) throw new Error(`${kind}: missing image formats ${JSON.stringify(formats)}`);
+          if (!formats.some(f => f.name === 'image' && f.extensions.includes('.bmp') && f.extensions.includes('.ico') && f.extensions.includes('.jpg'))) throw new Error(`${kind}: missing image formats ${JSON.stringify(formats)}`);
           const converted = [];
-          for (const fixture of fixtures.slice(0, 2)) {
+          for (const fixture of [fixtures[0], fixtures[1], fixtures[4], fixtures[5]]) {
             const input = toBytes(fixture.input);
             const wrapped = new Uint8Array(input.length + 6); wrapped.set(input, 3);
             const source = wrapped.subarray(3, 3 + input.length);

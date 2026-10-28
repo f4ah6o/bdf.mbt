@@ -5,7 +5,7 @@ MoonBit implementation of the BDF v1 wire-format reader and the browser-facing `
 - Targets: `js` and `wasm-gc`.
 - `core`: checked BDF header, single and split documents (identity and deflate-raw), single-file document writing, BOBJ resource tables, MIDI sequences, cue indexes, and a bounded binary reader.
 - `render`: backend-neutral, checked display-list decoder for a currently supported subset of Canvas 2D opcodes, including paths, gradient paints, and drawing effects. It also extracts ordered text runs, semantic structure, figure bounds and link rectangles, serializes table-cell selections, and calculates music and audio cue positions.
-- `convert`: the worker-client request/response lifecycle and stream command model. The browser adapter connects these to a Worker and a separately supplied compatible Wasm runtime; the native image converter currently supports BMP and ICO; other converter engines are **not** ported.
+- `convert`: the worker-client request/response lifecycle and stream command model. The browser adapter connects these to a Worker and a separately supplied compatible Wasm runtime; the native image converter currently supports BMP, ICO and JPEG without descriptive metadata; other converter engines are **not** ported.
 - `viewer`: document/view selection state and page placement in single, spread, and continuous modes, including RTL spreads and scroll strips.
 - `browser` (JS only): Canvas 2D adapter that draws fixed/flow pages, scroll strips, continuous body regions, and sheet viewports, including password- and P-256-protected documents, into a DOM host, including paths, gradients, child objects, transparency groups, masks, asynchronously loaded images and fonts, and optional selectable text layers.
 
@@ -46,7 +46,7 @@ let cues = @core.decode_cues(cue_bytes)
 let cursor = @render.cursor_at_tick(cues, 480.0)
 ```
 
-The `convert/image` package converts BMP and ICO images on both targets, preserving the input bytes and matching upstream page geometry and figure alternative text. Its other image formats are not yet implemented. `bdf_create_native_converter` exposes the supported formats through a browser Worker without a Go runtime.
+The `convert/image` package converts BMP, ICO and JPEG images without descriptive metadata on both targets, preserving the input bytes and matching upstream page geometry and figure alternative text. JPEG EXIF orientation is applied; descriptive EXIF, XMP and IPTC metadata are not yet supported. Other image formats are not yet implemented. `bdf_create_native_converter` exposes the supported formats through a browser Worker without a Go runtime.
 
 `DocumentWriter` accepts manifest-format JSON for metadata, views and tables, and writes an unencrypted single-file document with content-addressed, deduplicated parts. It chooses identity or raw DEFLATE storage using the upstream defaults. It does not yet generate object drawing commands or encrypted and split output.
 

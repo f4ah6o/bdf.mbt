@@ -15,8 +15,8 @@ pub(all) struct ImageResult {
 }
 
 ///|
-/// Convert a BMP or ICO to a single-page BDF. Other image formats are not yet
-/// implemented. The optional title overrides the document title, while the
+/// Convert a BMP, ICO or JPEG to a single-page BDF. JPEG descriptive metadata
+/// and other image formats are not yet implemented. The optional title overrides the document title, while the
 /// file name supplies alternative text when there is no title.
 pub fn convert(
   data : Bytes,
@@ -62,7 +62,11 @@ pub fn convert(
     view["title"] = Json::string(title)
   }
   writer.add_view(Json::object(view))
-  let format_name = if picture.format == "bmp" { "BMP" } else { "ICO" }
+  let format_name = match picture.format {
+    "bmp" => "BMP"
+    "ico" => "ICO"
+    _ => "JPEG"
+  }
   let summary = "1 page (\{picture.width} × \{picture.height} px, \{format_name})"
   {
     bdf: writer.write_single(),
