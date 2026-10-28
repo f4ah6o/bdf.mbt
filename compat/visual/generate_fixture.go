@@ -1,7 +1,7 @@
 //go:build ignore
 
 // Generate fixture.bdf with shibukawa/bdf v0.2.1 (commit 4f9af52).
-// Run this file in a checkout of that module: go run <path>/generate_fixture.go <output> <synthetic.ttf>.
+// Run this file in a checkout of that module: go run <path>/generate_fixture.go <output> <synthetic.ttf> <split-dir>.
 package main
 
 import (
@@ -40,7 +40,8 @@ func main() {
 	font := o.AddFont(bdf.SystemFont("sans-serif", 700, bdf.StyleNormal))
 	embedded := o.AddFont(bdf.EmbeddedFont(embeddedHash, 400, bdf.StyleNormal))
 	grad := o.AddPaint(bdf.LinearGradient(30, 70, 590, 70, bdf.Stop{Offset: 0, Color: 0x2060c0ff}, bdf.Stop{Offset: 1, Color: 0x6ed6f0ff}))
-	path := o.AddPath((&bdf.Path{}).MoveTo(65, 180).LineTo(170, 115).QuadTo(215, 160, 170, 220).LineTo(65, 220).Close())
+	pathHash := d.AddPaths([]*bdf.Path{(&bdf.Path{}).MoveTo(65, 180).LineTo(170, 115).QuadTo(215, 160, 170, 220).LineTo(65, 220).Close()})
+	path := o.AddExtPath(pathHash, 0)
 	imgRef := o.AddImage(ih)
 	svgRef := o.AddImage(svg)
 	pattern := bdf.Pattern(imgRef, bdf.RepeatBoth)
@@ -83,6 +84,10 @@ func main() {
 	}
 	defer out.Close()
 	if err = d.WriteSingle(out); err != nil {
+		panic(err)
+	}
+	d.AddImage([]byte("unused split fixture part"))
+	if err = d.WriteSplit(os.Args[3]); err != nil {
 		panic(err)
 	}
 }

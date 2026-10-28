@@ -12,6 +12,8 @@ pub fn mount_bdf_async(BrowserHost, Bytes, String) -> @js_async.Promise[Int32]
 
 pub fn mount_bdf_js(BrowserHost, Bytes, String) -> Int32
 
+pub fn mount_bdf_split_async(BrowserHost, Bytes, SplitPartLoader, String) -> @js_async.Promise[Int32]
+
 // Errors
 pub suberror BrowserError {
   Unsupported(String)
@@ -20,6 +22,9 @@ pub suberror BrowserError {
 
 // Types and methods
 type BrowserHost
+
+#external
+pub type SplitPartLoader
 
 // Type aliases
 

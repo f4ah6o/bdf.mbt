@@ -55,7 +55,7 @@ try {
   // A visual diff is not evidence if both pages failed or were still blank.
   const browser = await chromium.launch({ headless: true });
   try {
-    for (const name of ['baseline', 'moon']) {
+    for (const name of ['baseline', 'moon', 'split']) {
       const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
       const errors = [];
       page.on('pageerror', error => errors.push(String(error)));
@@ -65,18 +65,40 @@ try {
       assert.equal(result.status, 'ready', `${name}: ${result.error ?? errors.join('; ')}`);
       assert.equal(result.canvases, 1, `${name}: expected a rendered canvas`);
       assert.deepEqual(errors, [], `${name}: browser errors`);
+      if (name === 'split') {
+        const failures = await page.evaluate(async () => {
+          const { mount_bdf_split_async } = await import('/_build/js/debug/build/browser/browser.js');
+          const manifest = new Uint8Array(await (await fetch('./split-fixture/manifest.json')).arrayBuffer());
+          const attempts = [
+            async (_hash, limit) => new Uint8Array(limit + 1),
+            async (_hash, limit) => new Uint8Array(limit - 1),
+            async () => { throw new Error('loader failed'); },
+            async () => 'not bytes',
+          ];
+          return Promise.all(attempts.map(async loader => {
+            const host = document.createElement('div');
+            host.textContent = 'unchanged';
+            try { await mount_bdf_split_async(host, manifest, loader, 'single'); return false; }
+            catch { return host.textContent === 'unchanged' && host.childElementCount === 0; }
+          }));
+        });
+        assert.deepEqual(failures, [true, true, true, true], 'split loader failure handling');
+      }
       await page.close();
     }
   } finally {
     await browser.close();
   }
-  await run(['diff', 'html', '--url', `${base}baseline.html`, '--current-url', `${base}moon.html`, '--output-dir', output, '--no-paint-tree']);
-  const reportPath = path.join(output, 'diff-report.json');
+  for (const variant of ['moon', 'split']) {
+  const variantOutput = path.join(output, variant);
+  mkdirSync(variantOutput);
+  await run(['diff', 'html', '--url', `${base}baseline.html`, '--current-url', `${base}${variant}.html`, '--output-dir', variantOutput, '--no-paint-tree']);
+  const reportPath = path.join(variantOutput, 'diff-report.json');
   const report = JSON.parse(readFileSync(reportPath, 'utf8'));
   assert.equal(report.results.length, 3, 'expected three vlmkit viewports');
   for (const result of report.results) {
-    const baseline = PNG.sync.read(readFileSync(path.join(output, `compat_visual_baseline-${result.viewport}.png`)));
-    const current = PNG.sync.read(readFileSync(path.join(output, `compat_visual_moon-${result.viewport}.png`)));
+    const baseline = PNG.sync.read(readFileSync(path.join(variantOutput, `compat_visual_baseline-${result.viewport}.png`)));
+    const current = PNG.sync.read(readFileSync(path.join(variantOutput, `compat_visual_${variant}-${result.viewport}.png`)));
     assert.equal(baseline.width, current.width);
     assert.equal(baseline.height, current.height);
     const sample = (80 * baseline.width + 40) * 4;
@@ -109,11 +131,12 @@ try {
     // Normalize to the visible document area, not the surrounding white viewport.
     const visibleArea = Math.min(baseline.width, 640) * Math.min(baseline.height, 600);
     const ratio = changed / visibleArea;
-    console.log(`${result.viewport}: ${changed} pixels changed (${(ratio * 100).toFixed(4)}%)`);
+    console.log(`${variant} ${result.viewport}: ${changed} pixels changed (${(ratio * 100).toFixed(4)}%)`);
     assert.ok(ratio <= 0.0005, `${result.viewport}: visual difference exceeds 0.05%`);
   }
   assert.ok(report.domEquivalence.every(item => item.result.ok), 'DOM equivalence warnings');
   await run(['diff', 'agent', reportPath, '--no-history']);
+  }
 } finally {
   await new Promise(resolve => server.close(resolve));
 }

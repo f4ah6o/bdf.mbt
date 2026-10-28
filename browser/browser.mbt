@@ -326,7 +326,7 @@ fn paint_path(
 
 ///|
 fn resolve_paths(
-  doc : @core.Document,
+  doc : BrowserDocument,
   entries : Array[@core.PathEntry],
 ) -> Array[@core.Path] raise {
   let paths = []
@@ -352,7 +352,7 @@ priv struct UseLimits {
 ///|
 fn paint_child(
   ctx : CanvasContext,
-  document : @core.Document,
+  document : BrowserDocument,
   hash : String,
   x : Double,
   y : Double,
@@ -405,7 +405,7 @@ fn paint_commands(
   fonts~ : Array[@core.Font] = [],
   images~ : Array[String] = [],
   resources? : BrowserResources,
-  document? : @core.Document,
+  document? : BrowserDocument,
   depth~ : Int32 = 0,
   repeated~ : Bool = false,
   limits? : UseLimits,
@@ -542,7 +542,7 @@ pub fn mount_bdf(
   data : Bytes,
   layout : String,
 ) -> Int32 raise {
-  mount_document(host, @core.open_single(data), layout)
+  mount_document(host, single_document(@core.open_single(data)), layout)
 }
 
 ///|
@@ -561,7 +561,7 @@ pub fn mount_bdf_js(host : BrowserHost, data : Bytes, layout : String) -> Int32 
 ///|
 fn mount_document(
   host : BrowserHost,
-  doc : @core.Document,
+  doc : BrowserDocument,
   layout : String,
   resources? : BrowserResources,
 ) -> Int32 raise {

@@ -1,6 +1,6 @@
 ///|
 async fn prepare_image(
-  doc : @core.Document,
+  doc : BrowserDocument,
   resources : BrowserResources,
   hash : String,
 ) -> Unit {
@@ -11,7 +11,7 @@ async fn prepare_image(
 
 ///|
 async fn prepare_object(
-  doc : @core.Document,
+  doc : BrowserDocument,
   resources : BrowserResources,
   hash : String,
   seen : Map[String, Bool],
@@ -79,7 +79,7 @@ pub fn mount_bdf_async(
   layout : String,
 ) -> @js_async.Promise[Int32] {
   @js_async.Promise::from_async(() => {
-    let doc = @core.open_single(data)
+    let doc = single_document(@core.open_single(data))
     if doc.manifest.views.length() == 0 {
       raise BadFormat("document has no view")
     }

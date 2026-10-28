@@ -38,12 +38,12 @@ let viewer = @viewer.Viewer::new()
 viewer.set_layout(@viewer.Spread)
 ```
 
-The `core` package exposes `open_split` with a lazy host-provided loader for split documents. The loader is responsible for enforcing its supplied stored-size limit while reading. The `browser` package exposes `mount_bdf_async` for supported single-file documents, and `mount_bdf` for documents that need no image or embedded font loading. See [browser usage](docs/browser.md).
+The `core` package exposes `open_split` with a lazy host-provided loader for split documents. The loader is responsible for enforcing its supplied stored-size limit while reading. The `browser` package exposes `mount_bdf_async` for single-file documents, `mount_bdf_split_async` for split documents with an asynchronous part loader, and `mount_bdf` for documents that need no image or embedded font loading. See [browser usage](docs/browser.md).
 
 ## Port backlog
 
 1. Complete the opset 1 Canvas command decoder and browser Canvas renderer, and safe resource loading.
-2. Host adapters for split documents and Web Crypto.
+2. Web Crypto and encrypted document support.
 3. Browser Worker converter runtime transport, streaming page conversion and viewer openFile.
 4. DOM/OffscreenCanvas viewer, lazy page rendering, sheet support, search, accessibility and music playback.
 5. Replace or separately port TinyGo converter engines for the desired document formats.
