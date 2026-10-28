@@ -180,8 +180,10 @@ async fn render_page_worker(
   let canvas = render_canvas(page.width * scale, page.height * scale)
   let context = render_canvas_context(canvas, scale)
   let browser = doc.browser_document()
-  for _ in 0..<8 {
-    render_canvas_clear(canvas)
+  for pass in 0..<2 {
+    if pass == 0 {
+      render_canvas_clear(canvas)
+    }
     let result = invoke_render(() => {
       try {
         render_page_draw(context, browser, page, resources, request)
@@ -224,8 +226,10 @@ async fn render_continuous_worker(
   let canvas = render_canvas(viewport.width * scale, viewport.height * scale)
   let context = render_canvas_context(canvas, scale)
   let browser = doc.browser_document()
-  for _ in 0..<8 {
-    render_canvas_clear(canvas)
+  for pass in 0..<2 {
+    if pass == 0 {
+      render_canvas_clear(canvas)
+    }
     let result = invoke_render(() => {
       try {
         draw_continuous_region(
@@ -276,8 +280,10 @@ async fn render_sheet_worker(
   let scale = render_request_scale(request)
   let canvas = render_canvas(viewport.width * scale, viewport.height * scale)
   let context = render_canvas_context(canvas, scale)
-  for _ in 0..<8 {
-    render_canvas_clear(canvas)
+  for pass in 0..<2 {
+    if pass == 0 {
+      render_canvas_clear(canvas)
+    }
     let result = invoke_render(() => {
       try {
         draw_sheet_region(

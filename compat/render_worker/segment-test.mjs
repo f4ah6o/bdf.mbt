@@ -112,6 +112,12 @@ export async function verifySegmentWorker(browser, visualBase) {
         for(let j=0;j<x.data.length;j+=4)if(x.data[j]!==y.data[j]||x.data[j+1]!==y.data[j+1]||x.data[j+2]!==y.data[j+2]||x.data[j+3]!==y.data[j+3])changed++;
         assert.ok(changed/(x.width*x.height)<=0.0005,name+': segment bitmap '+n+' differs: '+changed+'/'+(x.width*x.height));
       }
+      if(plainA && plainB) for(let n=0;n<imagesA.length;n++) {
+        const x=PNG.sync.read(Buffer.from(imagesA[n].split(',')[1],'base64')),y=PNG.sync.read(Buffer.from(imagesB[n].split(',')[1],'base64'));
+        assert.deepEqual([y.width,y.height],[x.width,x.height]);let changed=0;
+        for(let j=0;j<x.data.length;j+=4)if(x.data[j]!==y.data[j]||x.data[j+1]!==y.data[j+1]||x.data[j+2]!==y.data[j+2]||x.data[j+3]!==y.data[j+3])changed++;
+        assert.ok(changed/(x.width*x.height)<=0.0005,'upstream vs MoonBit segment bitmap '+n+': '+changed+' pixels differ');
+      }
       if(a.mode==='normal') for(const item of [a,b]) {
         const log=requests.get(item.id); assert.ok(log.length>=3,item.id+': missing segment requests');
         assert.equal(log[0].page,0);assert.deepEqual(log[0].have,[]);
@@ -149,6 +155,11 @@ export async function verifySegmentWorker(browser, visualBase) {
       const log=requests.get(item.kind+'-continuous');
       assert.equal(log.filter(r=>r.page>=3&&r.page<6).length,1,item.kind+': continuous segment coalescing');
     }
+    const before=PNG.sync.read(Buffer.from(continuous[0].segmented.split(',')[1],'base64'));
+    const after=PNG.sync.read(Buffer.from(continuous[1].segmented.split(',')[1],'base64'));
+    assert.deepEqual([after.width,after.height],[before.width,before.height]);
+    let changed=0;for(let i=0;i<before.data.length;i+=4)if(before.data[i]!==after.data[i]||before.data[i+1]!==after.data[i+1]||before.data[i+2]!==after.data[i+2]||before.data[i+3]!==after.data[i+3])changed++;
+    assert.ok(changed/(before.width*before.height)<=0.0005,'upstream vs MoonBit continuous segment: '+changed+' pixels differ');
     const selected = await page.evaluate(async port => {
       const {BdfWorkerClient}=await import('/node_modules/@bdfkit/render/dist/client.js');
       const moon=await import('/_build/js/debug/build/browser/browser.js');
