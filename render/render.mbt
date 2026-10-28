@@ -49,6 +49,8 @@ pub(all) enum Command {
     Double
   )
   Smoothing(Bool, Int32)
+  Use(String)
+  UseAt(String, Double, Double)
   Link(Double, Double, Double, Double, String)
   Mark(Int32, String)
   Ext(Bytes)
@@ -77,6 +79,15 @@ fn read_image(r : @core.Reader, images : Array[String]) -> String raise {
     raise InvalidReference("image index out of range")
   }
   images[index]
+}
+
+///|
+fn read_object(r : @core.Reader, objects : Array[String]) -> String raise {
+  let index = r.varuint()
+  if index >= objects.length() {
+    raise InvalidReference("object index out of range")
+  }
+  objects[index]
 }
 
 ///|
@@ -171,6 +182,9 @@ pub fn compile_object(object : @core.ObjectPart) -> Array[Command] raise {
           ),
         )
       0x42 => commands.push(Smoothing(r.u8() != 0, r.u8()))
+      0x50 => commands.push(Use(read_object(r, object.objects)))
+      0x51 =>
+        commands.push(UseAt(read_object(r, object.objects), r.f32(), r.f32()))
       0x70 =>
         commands.push(
           Link(r.f32(), r.f32(), r.f32(), r.f32(), read_text(r, object.strings)),

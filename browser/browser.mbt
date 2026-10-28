@@ -418,14 +418,74 @@ fn resolve_paths(
 }
 
 ///|
+priv struct UseLimits {
+  seen : Map[String, Bool]
+  mut reused : Int32
+  maximum : Int32
+}
+
+///|
+fn paint_child(
+  ctx : CanvasContext,
+  document : @core.Document,
+  hash : String,
+  x : Double,
+  y : Double,
+  depth : Int32,
+  repeated : Bool,
+  limits : UseLimits,
+) -> Unit raise {
+  if depth >= 64 {
+    raise BadFormat("objects draw objects too deep")
+  }
+  let again = limits.seen.contains(hash)
+  limits.seen[hash] = true
+  let child = @core.decode_object_resources(document.part(hash))
+  let paths = resolve_paths(document, child.paths)
+  let commands = @render.compile_object(child.object)
+  save(ctx)
+  if x != 0.0 || y != 0.0 {
+    translate(ctx, x, y)
+  }
+  paint_commands(
+    ctx,
+    commands,
+    paths~,
+    paints=child.paints,
+    fonts=child.fonts,
+    document~,
+    depth=depth + 1,
+    repeated=repeated || again,
+    limits~,
+  ) catch {
+    error => {
+      restore(ctx)
+      raise error
+    }
+  }
+  restore(ctx)
+}
+
+///|
 fn paint_commands(
   ctx : CanvasContext,
   commands : Array[@render.Command],
   paths~ : Array[@core.Path] = [],
   paints~ : Array[@core.Paint] = [],
   fonts~ : Array[@core.Font] = [],
+  document? : @core.Document,
+  depth~ : Int32 = 0,
+  repeated~ : Bool = false,
+  limits? : UseLimits,
 ) -> Unit raise {
+  let state = limits.unwrap_or({ seen: {}, reused: 0, maximum: 134217728, })
   for cmd in commands {
+    if repeated {
+      if state.reused >= state.maximum {
+        raise BadFormat("objects are drawn too many times")
+      }
+      state.reused += 1
+    }
     match cmd {
       @render.Save => save(ctx)
       @render.Restore => restore(ctx)
@@ -469,6 +529,17 @@ fn paint_commands(
         draw_text(ctx, text, x, y, advance, true)
       @render.Smoothing(enabled, quality) =>
         set_smoothing(ctx, enabled, quality)
+      @render.Use(hash) =>
+        match document {
+          Some(doc) =>
+            paint_child(ctx, doc, hash, 0.0, 0.0, depth, repeated, state)
+          None => raise Unsupported("child object requires a document")
+        }
+      @render.UseAt(hash, x, y) =>
+        match document {
+          Some(doc) => paint_child(ctx, doc, hash, x, y, depth, repeated, state)
+          None => raise Unsupported("child object requires a document")
+        }
       @render.Ext(_) | @render.Link(_, _, _, _, _) | @render.Mark(_, _) => ()
       @render.Image(_, _, _, _, _)
       | @render.ImageSub(_, _, _, _, _, _, _, _, _) =>
@@ -516,6 +587,7 @@ pub fn mount_bdf(
     if p.y + p.height > max_y {
       max_y = p.y + p.height
     }
+    let limits : UseLimits = { seen: {}, reused: 0, maximum: 134217728, }
     for layer in view.pages[p.index].layers {
       let object = @core.decode_object_resources(doc.part(layer.object))
       let paths = resolve_paths(doc, object.paths)
@@ -525,6 +597,8 @@ pub fn mount_bdf(
         paths~,
         paints=object.paints,
         fonts=object.fonts,
+        document=doc,
+        limits~,
       )
     }
   }

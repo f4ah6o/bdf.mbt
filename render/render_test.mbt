@@ -145,3 +145,35 @@ test "paint instructions decode resource indices" {
   guard commands[0] is FillPaint(0) else { fail("fill paint") }
   guard commands[1] is StrokePaint(129) else { fail("stroke paint") }
 }
+
+///|
+test "child object instructions resolve and validate references" {
+  let object : @core.ObjectPart = {
+    bbox: (0.0, 0.0, 0.0, 0.0),
+    strings: [],
+    images: [],
+    objects: ["0123456789abcdef0123456789abcdef"],
+    ops: b"\x50\x00\x51\x00\x00\x00\xa0\x40\x00\x00\xc0\x40",
+  }
+  let commands = @render.compile_object(object)
+  guard commands[0] is Use("0123456789abcdef0123456789abcdef") else {
+    fail("use")
+  }
+  guard commands[1] is UseAt("0123456789abcdef0123456789abcdef", 5.0, 6.0) else {
+    fail("use at")
+  }
+  let bad : @core.ObjectPart = {
+    bbox: (0.0, 0.0, 0.0, 0.0),
+    strings: [],
+    images: [],
+    objects: [],
+    ops: b"\x50\x00",
+  }
+  let rejected = try {
+    ignore(@render.compile_object(bad))
+    false
+  } catch {
+    _ => true
+  }
+  assert_true(rejected)
+}

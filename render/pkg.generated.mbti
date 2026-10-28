@@ -51,6 +51,8 @@ pub(all) enum Command {
   Image(String, Double, Double, Double, Double)
   ImageSub(String, Double, Double, Double, Double, Double, Double, Double, Double)
   Smoothing(Bool, Int32)
+  Use(String)
+  UseAt(String, Double, Double)
   Link(Double, Double, Double, Double, String)
   Mark(Int32, String)
   Ext(Bytes)

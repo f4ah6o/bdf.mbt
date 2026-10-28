@@ -7,7 +7,7 @@ MoonBit implementation of the BDF v1 wire-format reader and the browser-facing `
 - `render`: backend-neutral, checked display-list decoder for a currently supported subset of Canvas 2D opcodes, including paths, gradient paints, and drawing effects.
 - `convert`: the worker-client request/response lifecycle and stream command model. Converter runtime itself (TinyGo) is **not** ported.
 - `viewer`: document/view selection state and page placement in single, spread, and continuous modes.
-- `browser` (JS only): Canvas 2D adapter that draws a subset of uncompressed fixed/flow BDF pages into a DOM host, including inline and external paths, gradients, and system fonts.
+- `browser` (JS only): Canvas 2D adapter that draws a subset of uncompressed fixed/flow BDF pages into a DOM host, including inline and external paths, gradients, system fonts, and child objects.
 
 This is an **incremental port**, not a feature-equivalent replacement for the upstream npm packages. In particular, a full DOM viewer, decompression, crypto, full opset 1 (image patterns, masks, text selection, sheet tiles, music), browser Worker transport and PDF/Office/CAD decoders are not yet implemented. Unsupported drawing opcodes and protected/compressed inputs fail explicitly instead of silently rendering incorrectly.
 
@@ -41,7 +41,7 @@ The `browser` package exposes `mount_bdf` for supported documents. See [browser 
 
 ## Port backlog
 
-1. Complete the opset 1 Canvas command decoder and browser Canvas renderer, including image patterns, safe resource loading and recursive object limits.
+1. Complete the opset 1 Canvas command decoder and browser Canvas renderer, including image patterns and safe resource loading.
 2. Host adapters for split documents, bounded deflate-raw decompression and Web Crypto.
 3. Browser Worker converter runtime transport, streaming page conversion and viewer openFile.
 4. DOM/OffscreenCanvas viewer, lazy page rendering, sheet support, search, accessibility and music playback.
