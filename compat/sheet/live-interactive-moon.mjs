@@ -1,0 +1,2 @@
+import {mount_bdf_interactive_async} from '/_build/js/debug/build/browser/browser.js';
+try{const bytes=new Uint8Array(await(await fetch('./fixture.bdf')).arrayBuffer());await mount_bdf_interactive_async(document.querySelector('#host'),bytes,'single');window.bdfStatus='ready'}catch(error){window.bdfStatus='error';window.bdfError=String(error?.stack??error);console.error(error)}

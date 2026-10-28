@@ -8,9 +8,10 @@ extern "js" fn start_live_sheet(
   draw : (CanvasContext, Double, Double, Double, Double, Double) -> @js_async.Promise[
     Unit,
   ],
+  publish : (BrowserHost, Double, Double, Double, Double) -> Unit,
   release : () -> Unit,
 ) -> @js_async.Promise[Int32] =
-  #|(host,sheetWidth,sheetHeight,draw,release) => new Promise((resolve,reject) => {
+  #|(host,sheetWidth,sheetHeight,draw,publish,release) => new Promise((resolve,reject) => {
   #| const doc=host.ownerDocument,win=doc.defaultView,key=Symbol.for('f4ah6o.bdf.sheet');let disposed=false,running=false,first=true,released=false,frame=0,revision=0,mutation,resize;
   #| const oldWidth=host.style.width,oldHeight=host.style.height;let defaultWidth=false,defaultHeight=false;
   #| const releaseOnce=()=>{if(!released){released=true;release()}};
@@ -19,14 +20,14 @@ extern "js" fn start_live_sheet(
   #|  if(!host.clientWidth&&!host.style.width){host.style.width='640px';defaultWidth=true}if(!host.clientHeight&&!host.style.height){host.style.height='400px';defaultHeight=true}
   #|  const spacer=doc.createElement('div');spacer.style.cssText='position:relative';const canvas=doc.createElement('canvas');canvas.style.cssText='position:sticky;left:0;top:0;display:block';canvas.setAttribute('aria-label','BDF sheet');canvas.dataset.bdfSheet='';spacer.append(canvas);host.append(spacer);
   #|  const dimensions=()=>{const width=host.clientWidth||parseFloat(host.style.width)||640,height=host.clientHeight||parseFloat(host.style.height)||400;spacer.style.width=Math.max(width,sheetWidth)+'px';spacer.style.height=Math.max(height,sheetHeight)+'px';return{width,height}};
-  #|  const onerror=error=>{if(first){first=false;record.dispose();if(host[key]===record)delete host[key];host.replaceChildren();reject(error)}else if(host.dispatchEvent(new win.CustomEvent('error',{detail:error,cancelable:true})))console.error('bdf sheet:',error)};
+  #|  const onerror=error=>{if(first){first=false;record.dispose();if(host[key]===record)delete host[key];const copyKey=Symbol.for('f4ah6o.bdf.copy');host[copyKey]?.dispose();delete host[copyKey];host.replaceChildren();reject(error)}else if(host.dispatchEvent(new win.CustomEvent('error',{detail:error,cancelable:true})))console.error('bdf sheet:',error)};
   #|  const schedule=()=>{if(disposed)return;revision++;if(!running&&!frame)frame=win.requestAnimationFrame(paint)};
-  #|  const paint=async()=>{frame=0;if(disposed||running)return;running=true;const current=revision;try{const {width,height}=dimensions(),dpr=win.devicePixelRatio||1,w=Math.ceil(width*dpr),h=Math.ceil(height*dpr),x=host.scrollLeft,y=host.scrollTop;if(!Number.isFinite(w)||!Number.isFinite(h)||w<=0||h<=0||w>8192||h>8192||w*h>16777216)throw new RangeError('sheet bitmap exceeds browser limits');const scratch=doc.createElement('canvas');scratch.width=w;scratch.height=h;const ctx=scratch.getContext('2d');if(!ctx)throw new Error('Canvas 2D context unavailable');ctx.scale(dpr,dpr);await draw(ctx,x,y,width,height,dpr);if(!disposed&&current===revision){canvas.width=w;canvas.height=h;canvas.style.width=width+'px';canvas.style.height=height+'px';const target=canvas.getContext('2d');if(!target)throw new Error('Canvas 2D context unavailable');target.drawImage(scratch,0,0);canvas.dataset.bdfSheetViewport=JSON.stringify([x,y,width,height]);canvas.dataset.bdfSheetFrame=String(current);if(first){first=false;resolve(1)}}}catch(error){if(!disposed)onerror(error)}finally{running=false;if(disposed)releaseOnce();else if(current!==revision&&!frame)frame=win.requestAnimationFrame(paint)}};
+  #|  const paint=async()=>{frame=0;if(disposed||running)return;running=true;const current=revision;try{const {width,height}=dimensions(),dpr=win.devicePixelRatio||1,w=Math.ceil(width*dpr),h=Math.ceil(height*dpr),x=host.scrollLeft,y=host.scrollTop;if(!Number.isFinite(w)||!Number.isFinite(h)||w<=0||h<=0||w>8192||h>8192||w*h>16777216)throw new RangeError('sheet bitmap exceeds browser limits');const scratch=doc.createElement('canvas');scratch.width=w;scratch.height=h;const ctx=scratch.getContext('2d');if(!ctx)throw new Error('Canvas 2D context unavailable');ctx.scale(dpr,dpr);await draw(ctx,x,y,width,height,dpr);if(!disposed&&current===revision){publish(spacer,x,y,width,height);canvas.width=w;canvas.height=h;canvas.style.width=width+'px';canvas.style.height=height+'px';const target=canvas.getContext('2d');if(!target)throw new Error('Canvas 2D context unavailable');target.drawImage(scratch,0,0);canvas.dataset.bdfSheetViewport=JSON.stringify([x,y,width,height]);canvas.dataset.bdfSheetFrame=String(current);if(first){first=false;resolve(1)}}}catch(error){if(!disposed)onerror(error)}finally{running=false;if(disposed)releaseOnce();else if(current!==revision&&!frame)frame=win.requestAnimationFrame(paint)}};
   #|  const record=host[key]={dispose(){if(disposed)return;disposed=true;mutation?.disconnect();resize?.disconnect();host.removeEventListener('scroll',schedule);if(frame)win.cancelAnimationFrame(frame);frame=0;restoreSize();if(first){first=false;reject(new Error('sheet mount cancelled'))}if(!running)releaseOnce()}};
   #|  host.addEventListener('scroll',schedule);if(typeof ResizeObserver==='function'){resize=new ResizeObserver(schedule);resize.observe(host)}
   #|  if(typeof MutationObserver==='function'){const watch=(weak,k,owner,connected)=>{const ob=new MutationObserver(()=>{const h=weak.deref();if(!h){ob.disconnect();return}if(h.isConnected)connected=true;else if(connected){h[k]?.dispose();delete h[k]}});ob.observe(owner,{childList:true,subtree:true});return ob};const weak=typeof WeakRef==='function'?new WeakRef(host):{deref:()=>host};mutation=watch(weak,key,doc,host.isConnected)}
   #|  schedule();
-  #| } catch(error){first=false;host[key]?.dispose();delete host[key];restoreSize();releaseOnce();reject(error)}
+  #| } catch(error){first=false;host[key]?.dispose();delete host[key];const copyKey=Symbol.for('f4ah6o.bdf.copy');host[copyKey]?.dispose();delete host[copyKey];restoreSize();releaseOnce();reject(error)}
   #|})
 
 ///|
@@ -42,6 +43,14 @@ extern "js" fn sheet_initial_scale(host : BrowserHost) -> Double =
   #|(host) => host.ownerDocument.defaultView.devicePixelRatio||1
 
 ///|
+extern "js" fn order_sheet_layer(
+  container : BrowserHost,
+  x : Int32,
+  y : Int32,
+) -> Unit =
+  #|(container,x,y) => {const layer=container.lastElementChild;layer.dataset.bdfSheetTile=`${x},${y}`;for(const other of container.querySelectorAll(':scope > [data-bdf-sheet-tile]')){if(other===layer)continue;const [ox,oy]=other.dataset.bdfSheetTile.split(',').map(Number);if(oy>y||(oy===y&&ox>x)){container.insertBefore(layer,other);break}}}
+
+///|
 async fn mount_live_sheet(
   host : BrowserHost,
   document : BrowserDocument,
@@ -49,6 +58,7 @@ async fn mount_live_sheet(
   tiles : Array[@core.Tile],
   resources : BrowserResources,
   prepare : (Array[@core.Tile]) -> @js_async.Promise[Unit],
+  interactive~ : Bool = false,
 ) -> Int32 {
   let mut handed_off = false
   defer (if !handed_off { dispose_resources(resources) })
@@ -69,6 +79,11 @@ async fn mount_live_sheet(
   clear_host(host)
   reset_host_size(host)
   let (width, height) = @render.sheet_size(view)
+  let rendered : Map[String, Bool] = Map([])
+  let text_data : Map[String, TextLayerData] = Map([])
+  if interactive {
+    install_copy_handler(host)
+  }
   let pending = start_live_sheet(
     host,
     width,
@@ -78,10 +93,50 @@ async fn mount_live_sheet(
         let viewport = sheet_viewport(x, y, w, h, scale)
         let visible = visible_sheet_tiles(view, tiles, viewport)
         prepare(visible).wait()
+        if interactive {
+          for tile in visible {
+            let key = tile.x.to_string() + "," + tile.y.to_string()
+            if text_data.get(key) is Some(_) {
+              continue
+            }
+            let object = @core.decode_object_resources(
+              document.part(tile.object),
+            )
+            let content = @render.extract_text(object, hash => {
+              Some(@core.decode_object_resources(document.part(hash)))
+            })
+            let data = new_text_layer_data()
+            append_text_content(data, content, 0, 0, tile_size=view.tile_size)
+            text_data[key] = data
+          }
+        }
         draw_sheet_region(
           ctx, document, view, visible, viewport, scale, resources,
         )
       })
+    },
+    (container, x, y, w, h) => {
+      if interactive {
+        let viewport : @render.SheetViewport = { x, y, width: w, height: h, }
+        for tile in visible_sheet_tiles(view, tiles, viewport) {
+          let key = tile.x.to_string() + "," + tile.y.to_string()
+          if rendered.get(key) is Some(_) {
+            continue
+          }
+          let data = text_data[key]
+          render_text_layer(
+            container,
+            data,
+            tile.x.to_double() * view.tile_size,
+            tile.y.to_double() * view.tile_size,
+            view.tile_size,
+            view.tile_size,
+            1.0,
+          )
+          order_sheet_layer(container, tile.x, tile.y)
+          rendered[key] = true
+        }
+      }
     },
     () => dispose_resources(resources),
   )

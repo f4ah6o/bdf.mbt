@@ -6,6 +6,10 @@ tile boundaries. The comparison renders the same view with upstream
 `PageRenderer.renderSheet` and the MoonBit single and split viewport APIs.
 It also compares scrolling sheet mounts, including HiDPI, resizing, tile
 fetching, cancellation, overlapping mounts and resource cleanup.
+Interactive mounts also exercise text selection across visible tiles,
+clipboard output, pointer targeting and retention while scrolling, in single,
+split and password-encrypted files. Sheet search and rectangular cell
+selection are not implemented yet.
 
 From an upstream checkout, regenerate it with:
 

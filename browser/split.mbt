@@ -141,9 +141,6 @@ async fn mount_split(
   }
   let view = split.manifest.views[0]
   if view.kind == "sheet" {
-    if interactive {
-      raise Unsupported("interactive sheet text is not implemented")
-    }
     if view.tiles.is_empty() && view.tiles_ref is Some(hash) {
       prefetch_part(split, cache, loader, hash)
     }
@@ -153,18 +150,26 @@ async fn mount_split(
     }
     let tiles = sheet_tile_table(document, view)
     let resources = new_resources()
-    return mount_live_sheet(host, document, view, tiles, resources, visible => {
-      @js_async.Promise::from_async(() => {
-        let fetched : Map[String, Bool] = Map([])
-        for tile in visible {
-          prefetch_split_object(split, cache, loader, tile.object, fetched, 0)
-        }
-        let prepared : Map[String, Bool] = Map([])
-        for tile in visible {
-          prepare_object(document, resources, tile.object, prepared, 0)
-        }
-      })
-    })
+    return mount_live_sheet(
+      host,
+      document,
+      view,
+      tiles,
+      resources,
+      visible => {
+        @js_async.Promise::from_async(() => {
+          let fetched : Map[String, Bool] = Map([])
+          for tile in visible {
+            prefetch_split_object(split, cache, loader, tile.object, fetched, 0)
+          }
+          let prepared : Map[String, Bool] = Map([])
+          for tile in visible {
+            prepare_object(document, resources, tile.object, prepared, 0)
+          }
+        })
+      },
+      interactive~,
+    )
   }
   if view.kind != "fixed" && view.kind != "flow" {
     raise Unsupported("browser supports fixed/flow pages only")

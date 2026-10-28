@@ -26,9 +26,10 @@ For a sheet, the asynchronous mount uses the host's width and height as its
 viewport, fetching visible tiles as it scrolls. Give the host dimensions in CSS;
 when they are absent, it defaults to 640 by 400 pixels. It returns `1` for the
 sheet view. `unmount_bdf` releases images, fonts, observers and pending work.
-Interactive text, selection, search and frozen panes for sheets are still
-being ported; the interactive entry points currently reject sheets. The
-synchronous `mount_bdf` entry point supports fixed/flow pages only.
+The interactive entry points add selectable text and safe links for loaded
+tiles, retaining visited text layers while scrolling. Search, rectangular
+sheet-cell selection and frozen panes are still being ported. The synchronous
+`mount_bdf` entry point supports fixed/flow pages only.
 
 To draw a single sheet region instead of a scrolling view, use the single or
 split viewport entry point. Coordinates and dimensions are document units;
@@ -118,7 +119,7 @@ spanning cells of the same table expands to include intersecting merged cells;
 copy and cut provide both TSV and an HTML table. A selection within a single
 cell stays a text selection. Oversized cell ranges fall back to text for copy
 and cut; `bdf_selection_cells` rejects them.
-The search field handles Command/Ctrl+F, Command/Ctrl+G, F3, Enter,
+For fixed/flow views, the search field handles Command/Ctrl+F, Command/Ctrl+G, F3, Enter,
 Shift+Enter, and Escape while the host has focus. It waits for IME composition
 to finish before searching and marks matches using the loaded font metrics.
 `bdf_find` accepts step `0` for the current match, `1` for next, and `-1` for

@@ -257,6 +257,54 @@ try {
       await page.close();
     }
     const sheetBase=`http://127.0.0.1:${server.address().port}/compat/sheet/`;
+    const sheetInteractive=await browser.newPage({viewport:{width:1280,height:720}});
+    await sheetInteractive.goto(`${sheetBase}live-moon.html`,{waitUntil:'networkidle'});
+    const sheetText=await sheetInteractive.evaluate(async()=>{
+      const bdf=await import('/_build/js/debug/build/browser/browser.js');
+      const bytes=async file=>new Uint8Array(await (await fetch(file)).arrayBuffer());
+      const single=await bytes('fixture.bdf'),manifest=await bytes('split/manifest.json');
+      const encrypted=await bytes('encrypted.bdf'),lockedManifest=await bytes('encrypted-split/manifest.json');
+      const results=[];
+      for(const [kind,mount] of [
+        ['single',host=>bdf.mount_bdf_interactive_async(host,single,'single')],
+        ['split',host=>bdf.mount_bdf_interactive_split_async(host,manifest,hash=>bytes(`split/parts/${hash}`),'single')],
+        ['encrypted',host=>bdf.mount_bdf_interactive_encrypted_async(host,encrypted,'pass','single')],
+        ['encrypted-split',host=>bdf.mount_bdf_interactive_encrypted_split_async(host,lockedManifest,hash=>bytes(`encrypted-split/parts/${hash}`),'pass','single')],
+      ]) {
+        const host=document.createElement('div');host.style.cssText='position:relative;overflow:auto;width:400px;height:300px';document.body.append(host);
+        await mount(host);
+        const tile=(x,y)=>host.querySelector(`[data-bdf-sheet-tile="${x},${y}"]`);
+        const first=tile(0,0)?.querySelector('span'),second=tile(1,0)?.querySelector('span');
+        const range=document.createRange();range.setStart(first.firstChild,0);range.setEnd(second.firstChild,second.textContent.length);
+        getSelection().removeAllRanges();getSelection().addRange(range);
+        const text=bdf.bdf_selection_text(host);
+        const copy=new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:new DataTransfer()});host.dispatchEvent(copy);
+        const r=first.getBoundingClientRect(),point=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+        const before=Number(host.querySelector('canvas').dataset.bdfSheetFrame);host.scrollLeft=248;host.scrollTop=204;host.dispatchEvent(new Event('scroll'));
+        await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('interactive sheet scroll timeout')),5000);const check=()=>{if(Number(host.querySelector('canvas').dataset.bdfSheetFrame)>before){clearTimeout(timeout);resolve()}else requestAnimationFrame(check)};check()});
+        results.push({kind,text,copied:copy.clipboardData.getData('text/plain'),prevented:copy.defaultPrevented,point:point===first,retained:bdf.bdf_selection_text(host),newTile:!!tile(2,1)});
+        getSelection().removeAllRanges();bdf.unmount_bdf(host);host.remove();
+      }
+      const host=document.createElement('div');host.style.cssText='position:relative;overflow:auto;width:400px;height:300px';document.body.append(host);
+      const getContext=HTMLCanvasElement.prototype.getContext;
+      try {
+        HTMLCanvasElement.prototype.getContext=()=>null;
+        let rejected=false;try{await bdf.mount_bdf_interactive_async(host,single,'single')}catch{rejected=true}
+        results.push({kind:'failure-cleanup',rejected,copyReleased:!host[Symbol.for('f4ah6o.bdf.copy')],empty:!host.childElementCount});
+      } finally {HTMLCanvasElement.prototype.getContext=getContext;bdf.unmount_bdf(host);host.remove()}
+      return results;
+    });
+    const failureCleanup=sheetText.pop();
+    assert.deepEqual(failureCleanup,{kind:'failure-cleanup',rejected:true,copyReleased:true,empty:true},'failed interactive sheet releases its copy handler');
+    for(const result of sheetText){
+      assert.equal(result.text,'Tile 0,0\nTile 1,0',`${result.kind}: selection across sheet tiles`);
+      assert.equal(result.copied,result.text,`${result.kind}: sheet clipboard`);
+      assert.equal(result.prevented,true,`${result.kind}: clipboard event handled`);
+      assert.equal(result.point,true,`${result.kind}: text layer receives pointer events`);
+      assert.equal(result.retained,result.text,`${result.kind}: selection survives scrolling`);
+      assert.equal(result.newTile,true,`${result.kind}: scrolling loads another text tile`);
+    }
+    await sheetInteractive.close();
     const sheetPages={};
     for(const name of ['baseline','moon','split']){
       const page=await browser.newPage({viewport:{width:1280,height:720}}),errors=[];
@@ -613,7 +661,7 @@ try {
   }
   await run(['scan','scroll',`${sheetBase}live-moon.html`,'--no-ledger']);
   await run(['check','scroll',`${sheetBase}live-moon.html`,'--no-ledger']);
-  for(const name of ['moon','split']){
+  for(const name of ['moon','split','interactive-moon']){
     const target=path.join(output,`sheet-live-${name}`);mkdirSync(target);
     await run(['diff','html','--url',`${sheetBase}live-baseline.html`,'--current-url',`${sheetBase}live-${name}.html`,'--output-dir',target,'--no-paint-tree']);
     const reportPath=path.join(target,'diff-report.json'),report=JSON.parse(readFileSync(reportPath,'utf8'));

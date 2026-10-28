@@ -105,19 +105,24 @@ async fn mount_single(
   }
   let view = doc.manifest.views[0]
   if view.kind == "sheet" {
-    if interactive {
-      raise Unsupported("interactive sheet text is not implemented")
-    }
     let tiles = sheet_tile_table(doc, view)
     let resources = new_resources()
-    return mount_live_sheet(host, doc, view, tiles, resources, visible => {
-      @js_async.Promise::from_async(() => {
-        let seen : Map[String, Bool] = Map([])
-        for tile in visible {
-          prepare_object(doc, resources, tile.object, seen, 0)
-        }
-      })
-    })
+    return mount_live_sheet(
+      host,
+      doc,
+      view,
+      tiles,
+      resources,
+      visible => {
+        @js_async.Promise::from_async(() => {
+          let seen : Map[String, Bool] = Map([])
+          for tile in visible {
+            prepare_object(doc, resources, tile.object, seen, 0)
+          }
+        })
+      },
+      interactive~,
+    )
   }
   if view.kind != "fixed" && view.kind != "flow" {
     raise Unsupported("browser supports fixed/flow pages only")

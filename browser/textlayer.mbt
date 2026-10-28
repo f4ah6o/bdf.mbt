@@ -93,6 +93,7 @@ fn append_text_content(
   content : @render.TextContent,
   node_base : Int32,
   run_base : Int32,
+  tile_size~ : Double = 0.0,
 ) -> Unit {
   for node_index, node in content.nodes {
     let (has_bounds, x, y, w, h) = match node.bounds {
@@ -138,6 +139,10 @@ fn append_text_content(
     }
   }
   for run in content.runs {
+    if tile_size > 0.0 &&
+      !(run.x >= 0.0 && run.x < tile_size && run.y >= 0.0 && run.y < tile_size) {
+      continue
+    }
     let (has_font, family, weight, style) = match run.font {
       None => (false, "sans-serif", 400, 0)
       Some(font) => {
@@ -182,6 +187,21 @@ fn append_text_content(
     )
   }
   for link in content.links {
+    let mut after = link.after
+    if tile_size > 0.0 {
+      after = -1
+      for index, run in content.runs {
+        if index > link.after {
+          break
+        }
+        if run.x >= 0.0 &&
+          run.x < tile_size &&
+          run.y >= 0.0 &&
+          run.y < tile_size {
+          after += 1
+        }
+      }
+    }
     add_text_link(
       data,
       link.x,
@@ -189,7 +209,7 @@ fn append_text_content(
       link.width,
       link.height,
       link.url,
-      link.after + run_base,
+      after + run_base,
       if link.node < 0 {
         -1
       } else {
@@ -248,7 +268,7 @@ extern "js" fn render_text_layer(
 extern "js" fn install_copy_handler(host : BrowserHost) -> Unit =
   #|(host) => {
   #|  const key=Symbol.for('f4ah6o.bdf.copy');if(host[key])return;
-  #|  const selected=()=>{const sel=host.ownerDocument.getSelection();if(!sel||sel.isCollapsed)return '';let output='';for(let i=0;i<sel.rangeCount;i++){const range=sel.getRangeAt(i);let text='',prev=null;for(const span of host.querySelectorAll('[data-bdf-ordinal]')){const child=span.firstChild;if(!child||!range.intersectsNode(span))continue;const value=child.textContent??'';let start=0,end=value.length;if(range.comparePoint(child,0)<0&&range.startContainer===child)start=range.startOffset;if(range.comparePoint(child,value.length)>0&&range.endContainer===child)end=range.endOffset;if(end<=start)continue;const page=span.closest('[data-bdf-layer]'),sep=Number(span.getAttribute('data-bdf-sep'));if(prev!==null)text+=prev!==page?'\n\n':sep===2?'\n':sep===1?' ':'';text+=value.slice(start,end);prev=page}if(text)output+=(output?'\n':'')+text}return output};
+  #|  const selected=()=>{const sel=host.ownerDocument.getSelection();if(!sel||sel.isCollapsed)return '';let output='';for(let i=0;i<sel.rangeCount;i++){const range=sel.getRangeAt(i);let text='',prev=null;for(const span of host.querySelectorAll('[data-bdf-ordinal]')){const child=span.firstChild;if(!child||!range.intersectsNode(span))continue;const value=child.textContent??'';let start=0,end=value.length;if(range.comparePoint(child,0)<0&&range.startContainer===child)start=range.startOffset;if(range.comparePoint(child,value.length)>0&&range.endContainer===child)end=range.endOffset;if(end<=start)continue;const page=span.closest('[data-bdf-layer]'),sep=Number(span.getAttribute('data-bdf-sep'));if(prev!==null)text+=prev!==page?(prev.hasAttribute('data-bdf-sheet-tile')&&page.hasAttribute('data-bdf-sheet-tile')?'\n':'\n\n'):sep===2?'\n':sep===1?' ':'';text+=value.slice(start,end);prev=page}if(text)output+=(output?'\n':'')+text}return output};
   #|  const doc=host.ownerDocument,win=doc.defaultView;let down=false,end=null,cellSelection=null;
   #|  const cellKey=Symbol.for('f4ah6o.bdf.cell'),tableKey=Symbol.for('f4ah6o.bdf.table');
   #|  const around=n=>{const found=new Map();let cell;for(let el=n?.nodeType===1?n:n?.parentElement;el;el=el.parentElement){cell=el[cellKey]??cell;if(el[tableKey]){if(cell)found.set(el,cell);cell=undefined}if(el.hasAttribute('data-bdf-layer'))break}return found};
