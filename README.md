@@ -16,6 +16,7 @@ Upstream implementation: https://github.com/shibukawa/bdf (MIT). Wire specificat
 ## Verify
 
 ```sh
+moon update
 moon check --target js
 moon test --target js
 moon build --target js

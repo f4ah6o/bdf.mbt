@@ -14,6 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: hustcer/setup-moonbit@v1
+      - run: moon update
       - run: moon version --all
       - run: moon check --target ${{ matrix.target }}
       - run: moon test --target ${{ matrix.target }}
