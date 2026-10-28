@@ -1,8 +1,0 @@
-{
-  "name": "f4ah6o/bdf",
-  "version": "0.1.0",
-  "readme": "README.md",
-  "repository": "https://github.com/f4ah6o/bdf.mbt",
-  "preferred-target": "js",
-  "supported-targets": "+js+wasm-gc"
-}

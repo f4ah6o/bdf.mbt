@@ -1,0 +1,4 @@
+import {
+  "f4ah6o/bdf/core",
+}
+supported_targets = "+js+wasm-gc"

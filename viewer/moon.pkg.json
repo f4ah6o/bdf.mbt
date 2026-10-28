@@ -1,4 +1,0 @@
-{
-  "import": [{"path": "f4ah6o/bdf/core", "alias": "core"}],
-  "supported-targets": "+js+wasm-gc"
-}
