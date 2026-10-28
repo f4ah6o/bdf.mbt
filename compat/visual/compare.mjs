@@ -11,6 +11,7 @@ import { verifyPageControls } from '../continuous/controls-test.mjs';
 import { verifyAudioBrowser } from '../music/audio-browser-test.mjs';
 import { verifyMusicBrowser } from '../music/player-browser-test.mjs';
 import { verifyConverterBrowser } from '../converter/browser-test.mjs';
+import { verifyRenderWorker } from '../render_worker/browser-test.mjs';
 import { verifyPiano } from '../music/piano-test.mjs';
 import { verifyLazyPages } from '../continuous/lazy-test.mjs';
 import { verifySheetZoom } from '../sheet/zoom-test.mjs';
@@ -20,7 +21,7 @@ const outputRoot = path.join(root, '_build/visual-diff');
 mkdirSync(outputRoot, { recursive: true });
 const output = mkdtempSync(path.join(outputRoot, 'run-'));
 const executable = path.join(root, 'node_modules/.bin/vlmkit');
-const allowed = ['/compat/visual/', '/compat/interactive/', '/compat/sheet/', '/compat/continuous/', '/compat/music/', '/compat/converter/', '/node_modules/@bdfkit/', '/_build/js/debug/build/browser/', '/_build/js/debug/build/converter_worker/'];
+const allowed = ['/compat/visual/', '/compat/interactive/', '/compat/sheet/', '/compat/continuous/', '/compat/music/', '/compat/converter/', '/compat/render_worker/', '/node_modules/@bdfkit/', '/_build/js/debug/build/browser/', '/_build/js/debug/build/converter_worker/', '/_build/js/debug/build/render_worker/'];
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.bdf': 'application/octet-stream' };
 
 function run(args) {
@@ -430,6 +431,18 @@ try {
     await verifyAudioBrowser(browser,base);
     await verifyMusicBrowser(browser,base);
     await verifyConverterBrowser(browser,base);
+    await verifyRenderWorker(browser,base);
+  const workerBase = new URL('../render_worker/', base).href;
+  for (const name of ['baseline', 'moon']) {
+    const page = await browser.newPage();
+    await page.goto(`${workerBase}${name}.html`, { waitUntil: 'networkidle' });
+    await page.waitForFunction(() => window.bdfStatus === 'ready' || window.bdfStatus === 'error');
+    const result = await page.evaluate(() => ({ status: window.bdfStatus, error: window.bdfError, canvases: document.querySelectorAll('canvas').length }));
+    assert.equal(result.status, 'ready', `${name} Worker: ${result.error}`);
+    assert.equal(result.canvases, 1, `${name} Worker: missing canvas`);
+    await page.close();
+  }
+
     for(const name of ['baseline','moon']){const page=await browser.newPage();await page.goto(`http://127.0.0.1:${server.address().port}/compat/music/piano-${name}.html`,{waitUntil:'networkidle'});assert.equal(await page.evaluate(()=>window.bdfStatus),'ready',`piano ${name}: ${await page.evaluate(()=>window.bdfError)}`);assert.ok(await page.locator('canvas[aria-label^="Piano roll with"]').count());await page.close()}
     const sheetBase=`http://127.0.0.1:${server.address().port}/compat/sheet/`;
     const cellFixtures={};
@@ -1135,6 +1148,19 @@ try {
     assert.ok(ratio <= 0.0005, `${result.viewport}: interactive visual difference exceeds 0.05%`);
   }
   await run(['diff','agent',interactiveReportPath,'--no-history']);
+  const workerBase = new URL('../render_worker/', base).href;
+  const workerOutput = path.join(output, 'render-worker'); mkdirSync(workerOutput);
+  await run(['diff', 'html', '--url', `${workerBase}baseline.html`, '--current-url', `${workerBase}moon.html`, '--output-dir', workerOutput, '--no-paint-tree']);
+  const workerReport = JSON.parse(readFileSync(path.join(workerOutput, 'diff-report.json'), 'utf8'));
+  assert.equal(workerReport.results.length, 3, 'expected three Worker viewports');
+  for (const result of workerReport.results) {
+    const before = PNG.sync.read(readFileSync(path.join(workerOutput, `compat_render_worker_baseline-${result.viewport}.png`)));
+    const after = PNG.sync.read(readFileSync(path.join(workerOutput, `compat_render_worker_moon-${result.viewport}.png`)));
+    assert.equal(before.width, after.width); assert.equal(before.height, after.height);
+    let changed = 0;
+    for (let i = 0; i < before.data.length; i += 4) if (before.data[i] !== after.data[i] || before.data[i+1] !== after.data[i+1] || before.data[i+2] !== after.data[i+2] || before.data[i+3] !== after.data[i+3]) changed++;
+    assert.ok(changed / (Math.min(before.width, 640) * Math.min(before.height, 600)) <= 0.0005, `${result.viewport}: Worker visual difference exceeds 0.05%`);
+  }
   const selectedOutput=path.join(output,'selected-cells');mkdirSync(selectedOutput);
   await run(['diff','html','--url',`${interactiveBase}selected-baseline.html`,'--current-url',`${interactiveBase}selected-moon.html`,'--output-dir',selectedOutput,'--no-paint-tree']);
   const selectedReportPath=path.join(selectedOutput,'diff-report.json');

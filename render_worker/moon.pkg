@@ -1,0 +1,7 @@
+import {
+  "f4ah6o/bdf/browser",
+}
+
+supported_targets = "js"
+
+pkgtype(kind: "executable")

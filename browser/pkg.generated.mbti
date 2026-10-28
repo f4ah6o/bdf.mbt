@@ -20,17 +20,23 @@ pub fn bdf_converter_client(BrowserConverterWorker, String) -> BrowserConverter
 
 pub fn bdf_create_converter(String, String) -> BrowserConverter
 
+pub fn bdf_create_render_worker(String) -> BrowserRenderClient
+
 pub fn bdf_find(BrowserHost, String, Int32) -> BrowserFindResult
 
 pub fn bdf_find_async(BrowserHost, String, Int32) -> @js_async.Promise[BrowserFindResult]
 
 pub fn bdf_install_converter_worker() -> Unit
 
+pub fn bdf_install_render_worker() -> Unit
+
 pub fn bdf_music_player(BrowserMidiInput, BrowserAudioCues, BrowserMusicOptions) -> BrowserMusicPlayer
 
 pub fn bdf_music_player_for_view_async(BrowserHost, BrowserMusicOptions) -> @js_async.Promise[BrowserMusicPlayer]
 
 pub fn bdf_open_find(BrowserHost) -> Unit
+
+pub fn bdf_render_worker_client(BrowserRenderWorker) -> BrowserRenderClient
 
 pub fn bdf_scroll_to_page(BrowserHost, Int32) -> Unit
 
@@ -127,6 +133,12 @@ pub type BrowserMusicOptions
 
 #external
 pub type BrowserMusicPlayer
+
+#external
+pub type BrowserRenderClient
+
+#external
+pub type BrowserRenderWorker
 
 #external
 pub type CryptoCredential
