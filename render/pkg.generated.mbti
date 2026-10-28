@@ -7,11 +7,15 @@ import {
 }
 
 // Values
+pub fn apply_channel_event(ChannelState, @core.MidiMessage) -> Bool
+
 pub fn build_page_text_index(@core.View, (String) -> @core.ObjectResources? raise) -> Array[@core.IndexRun] raise
 
 pub fn build_sheet_text_index(Array[@core.Tile], Double, (String) -> @core.ObjectResources? raise) -> Array[@core.IndexRun] raise
 
 pub fn cell_clipboard(Array[CellText], CellRange, trim? : Bool, skip_row? : (Int32) -> Bool, skip_col? : (Int32) -> Bool) -> CellClipboard raise
+
+pub fn channel_states(Array[@core.MidiEvent], Int32) -> Array[ChannelState]
 
 pub fn compile_object(@core.ObjectPart) -> Array[Command] raise
 
@@ -27,6 +31,8 @@ pub fn decode_commands(Bytes) -> Array[Command] raise
 
 pub fn extract_text(@core.ObjectResources, (String) -> @core.ObjectResources? raise, matrix? : (Double, Double, Double, Double, Double, Double)) -> TextContent raise
 
+pub fn initial_channel() -> ChannelState
+
 pub fn join_text(Array[TextRun]) -> String
 
 pub fn line_at_time(@core.Cues, Double) -> MusicCursor?
@@ -40,6 +46,10 @@ pub fn midi_event_at(Array[@core.MidiEvent], Double) -> Int32
 pub fn page_text_index(@core.View, (String) -> Bytes raise, (String) -> @core.ObjectResources? raise) -> Array[@core.IndexRun] raise
 
 pub fn parse_cell_ref(String) -> CellRef?
+
+pub fn patch_of(Int32) -> SynthPatch
+
+pub fn pulse_duty(Int32) -> Double
 
 pub fn run_rect(TextRun, Int32, Int32, (@core.Font, Double, String) -> Double) -> TextRect?
 
@@ -98,6 +108,16 @@ pub(all) struct CellText {
   cols : Int32
   text : String
   scope : String?
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ChannelState {
+  mut program : Int32
+  mut volume : Int32
+  mut expression : Int32
+  mut pan : Int32
+  mut duty : Int32
+  mut sustain : Bool
+  mut bend : Int32
 } derive(Eq, @debug.Debug)
 
 pub(all) enum Command {
@@ -184,6 +204,16 @@ pub(all) struct SheetViewport {
   y : Double
   width : Double
   height : Double
+} derive(Eq, @debug.Debug)
+
+pub(all) struct SynthPatch {
+  wave : String
+  gain : Double
+  attack : Double
+  decay : Double
+  sustain : Double
+  release : Double
+  filter : (Double, Double)?
 } derive(Eq, @debug.Debug)
 
 pub(all) struct TextContent {

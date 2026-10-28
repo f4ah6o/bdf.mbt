@@ -16,3 +16,8 @@ viewport widths.
 and cue behavior with the upstream player. `audio-browser-test.mjs` mounts
 single and split recordings on page and sheet views, plays a synthetic WAV in
 Chromium, and verifies lazy loading and resource cleanup.
+
+`player-test.mjs` compares the MIDI transport, controller state, timing,
+metronome, all 128 instrument programs, drum sounds and voice limit with the
+upstream player. `player-browser-test.mjs` compares synthesized Web Audio
+samples and tests playback and resource cleanup in page and sheet views.

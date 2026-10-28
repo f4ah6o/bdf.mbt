@@ -9,6 +9,7 @@ import { chromium } from 'playwright';
 import { PNG } from 'pngjs';
 import { verifyPageControls } from '../continuous/controls-test.mjs';
 import { verifyAudioBrowser } from '../music/audio-browser-test.mjs';
+import { verifyMusicBrowser } from '../music/player-browser-test.mjs';
 import { verifyPiano } from '../music/piano-test.mjs';
 import { verifyLazyPages } from '../continuous/lazy-test.mjs';
 import { verifySheetZoom } from '../sheet/zoom-test.mjs';
@@ -426,6 +427,7 @@ try {
     await verifyLazyPages(browser,continuousBase);
     await verifyPiano(browser,base);
     await verifyAudioBrowser(browser,base);
+    await verifyMusicBrowser(browser,base);
     for(const name of ['baseline','moon']){const page=await browser.newPage();await page.goto(`http://127.0.0.1:${server.address().port}/compat/music/piano-${name}.html`,{waitUntil:'networkidle'});assert.equal(await page.evaluate(()=>window.bdfStatus),'ready',`piano ${name}: ${await page.evaluate(()=>window.bdfError)}`);assert.ok(await page.locator('canvas[aria-label^="Piano roll with"]').count());await page.close()}
     const sheetBase=`http://127.0.0.1:${server.address().port}/compat/sheet/`;
     const cellFixtures={};

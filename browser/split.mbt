@@ -175,6 +175,7 @@ async fn mount_split(
   layout : String,
   interactive : Bool,
 ) -> Int32 {
+  let loader = shared_split_loader(loader)
   let cache : Map[String, Bytes] = Map([])
   let split = @core.open_split(manifest, fn(hash, _) {
     match cache.get(hash) {
@@ -187,6 +188,7 @@ async fn mount_split(
   }
   let view = split.manifest.views[0]
   let audio_loader = split_audio_loader(split, cache, loader, view)
+  let midi_loader = split_midi_loader(split, cache, loader, view)
   if view.kind == "sheet" {
     if view.tiles.is_empty() && view.tiles_ref is Some(hash) {
       prefetch_part(split, cache, loader, hash)
@@ -252,6 +254,7 @@ async fn mount_split(
       },
       interactive~,
       audio_loader?,
+      midi_loader?,
     )
   }
   if view.kind != "fixed" && view.kind != "flow" && view.kind != "scroll" {
@@ -374,6 +377,7 @@ async fn mount_split(
               page_loader=load,
               music_loader?,
               audio_loader?,
+              midi_loader?,
             )
           None =>
             mount_document(
@@ -384,6 +388,7 @@ async fn mount_split(
               interactive~,
               music_loader?,
               audio_loader?,
+              midi_loader?,
             )
         },
       ) catch {
@@ -437,6 +442,44 @@ fn split_audio_loader(
             media_type,
             audio_cues_from_core(cues),
             element,
+          )
+        }).wait()
+      })
+    })
+  } else {
+    None
+  }
+}
+
+///|
+// Concurrent consumers share a pending request for the same stored part.
+extern "js" fn shared_split_loader(loader : SplitPartLoader) -> SplitPartLoader =
+  #|(loader) => {const pending=new Map();return (hash,limit)=>{let job=pending.get(hash);if(!job){job=Promise.resolve().then(()=>loader(hash,limit)).then(value=>{pending.delete(hash);return value},error=>{pending.delete(hash);throw error});pending.set(hash,job)}return job}}
+
+///|
+fn split_midi_loader(
+  split : @core.SplitDocument,
+  cache : Map[String, Bytes],
+  loader : SplitPartLoader,
+  view : @core.View,
+) -> ((BrowserMusicOptions) -> @js_async.Promise[BrowserMusicPlayer])? {
+  if view.play is Some(play) && play.seq is Some(hash) {
+    Some(options => {
+      @js_async.Promise::from_async(() => {
+        prefetch_part(split, cache, loader, hash)
+        let cues = match play.cues {
+          Some(cue_hash) => {
+            prefetch_part(split, cache, loader, cue_hash)
+            Some(@core.decode_cues(split.part(cue_hash)))
+          }
+          None => None
+        }
+        let bytes = split.part(hash)
+        invoke_midi_create(() => {
+          bdf_music_player(
+            midi_input_from_bytes(bytes),
+            audio_cues_from_core(cues),
+            options,
           )
         }).wait()
       })

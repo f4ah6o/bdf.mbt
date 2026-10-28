@@ -100,7 +100,32 @@ are loaded on demand. Unmounting or replacing the host disposes its players;
 an absent recording returns `null`. For independent data, use
 `bdf_audio_player(bytesOrBlob, mediaType, cuesOrNull, elementOrNull)` and
 dispose the returned player when finished. The cue object uses the upstream
-`{ systems, cues }` format. MIDI synthesis and playback are not yet implemented.
+`{ systems, cues }` format.
+
+For a MIDI view, prepare a player and start it from a user gesture:
+
+```js
+const music = await bdf_music_player_for_view_async(host, null);
+if (music) {
+  music.onUpdate = () => console.log(music.state, music.position);
+  playButton.addEventListener('click', () => music.play());
+  pauseButton.addEventListener('click', () => music.pause());
+  music.setSpeedPercent(125);
+  music.setMetronome(true);
+  // music.cursorAt(music.position) locates the cursor in the score.
+  // music.timeAt(system, x) finds the nearest playback time at that position.
+}
+```
+
+The player synthesizes General MIDI instruments and drums with Web Audio,
+including pitch bend, channel controls, sustain, tempo changes and the
+metronome. It loads split MIDI and cue parts on demand, and closes its audio
+context when disposed or when the host is unmounted. An absent MIDI sequence
+returns `null`. `bdf_music_player(bytesOrSequence, cuesOrNull, optionsOrNull)`
+creates an independent player. Options include `context`, `volume`,
+`lookahead`, and `interval`, as in the upstream player. Playback currently uses
+a snapshot of the sequence at construction; later changes to the supplied or
+exposed sequence object are not reflected yet.
 
 ```js
 const bandsDrawn = await render_bdf_continuous_region_async(host, bytes, x, y, width, height, scale);
