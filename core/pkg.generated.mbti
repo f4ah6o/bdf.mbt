@@ -4,6 +4,10 @@ package "f4ah6o/bdf/core"
 // Values
 pub fn decode_object(Bytes) -> ObjectPart raise
 
+pub fn decode_object_with_paths(Bytes) -> ObjectWithPaths raise
+
+pub fn decode_path_collection(Bytes) -> Array[Path] raise
+
 pub fn open_single(Bytes) -> Document raise
 
 pub fn parse_header(Bytes) -> Header raise
@@ -52,6 +56,11 @@ pub(all) struct ObjectPart {
   ops : Bytes
 }
 
+pub(all) struct ObjectWithPaths {
+  object : ObjectPart
+  paths : Array[PathEntry]
+}
+
 pub(all) struct Page {
   width : Double
   height : Double
@@ -65,6 +74,16 @@ pub(all) struct Part {
   offset : Int32
   length : Int32
   size : Int32
+}
+
+pub(all) struct Path {
+  verbs : Bytes
+  coordinates : Array[Double]
+}
+
+pub(all) enum PathEntry {
+  Inline(Path)
+  External(String, Int32)
 }
 
 pub(all) struct Reader {

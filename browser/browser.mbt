@@ -255,9 +255,90 @@ extern "js" fn set_smoothing(
   #|}
 
 ///|
+extern "js" fn draw_path(
+  ctx : CanvasContext,
+  verbs : Bytes,
+  coordinates : FixedArray[Double],
+  operation : Int32,
+  rule : Int32,
+  x : Double,
+  y : Double,
+) -> Unit =
+  #|(ctx, verbs, coordinates, operation, rule, x, y) => {
+  #|  const path = new Path2D(); let i = 0;
+  #|  for (const v of verbs) {
+  #|    switch (v) {
+  #|      case 0: path.moveTo(coordinates[i++], coordinates[i++]); break;
+  #|      case 1: path.lineTo(coordinates[i++], coordinates[i++]); break;
+  #|      case 2: path.quadraticCurveTo(...coordinates.slice(i, i += 4)); break;
+  #|      case 3: path.bezierCurveTo(...coordinates.slice(i, i += 6)); break;
+  #|      case 4: path.closePath(); break;
+  #|      case 5: path.rect(...coordinates.slice(i, i += 4)); break;
+  #|      case 6: path.ellipse(...coordinates.slice(i, i + 7), coordinates[i + 7] !== 0); i += 8; break;
+  #|      case 7: path.arcTo(...coordinates.slice(i, i += 5)); break;
+  #|      case 8: path.roundRect(...coordinates.slice(i, i += 5)); break;
+  #|    }
+  #|  }
+  #|  const fillRule = rule === 1 ? "evenodd" : "nonzero";
+  #|  if (operation === 0) ctx.clip(path, fillRule);
+  #|  else if (operation === 1) ctx.fill(path, fillRule);
+  #|  else if (operation === 2) ctx.stroke(path);
+  #|  else { ctx.save(); ctx.translate(x, y); ctx.fill(path, fillRule); ctx.restore(); }
+  #|}
+
+///|
+fn path_at(paths : Array[@core.Path], index : Int32) -> @core.Path raise {
+  if index < 0 || index >= paths.length() {
+    raise BadFormat("path reference out of range")
+  }
+  paths[index]
+}
+
+///|
+fn paint_path(
+  ctx : CanvasContext,
+  paths : Array[@core.Path],
+  index : Int32,
+  operation : Int32,
+  rule : Int32,
+  x : Double,
+  y : Double,
+) -> Unit raise {
+  let path = path_at(paths, index)
+  draw_path(
+    ctx,
+    path.verbs,
+    FixedArray::from_array(path.coordinates),
+    operation,
+    rule,
+    x,
+    y,
+  )
+}
+
+///|
+fn resolve_paths(
+  doc : @core.Document,
+  entries : Array[@core.PathEntry],
+) -> Array[@core.Path] raise {
+  let paths = []
+  for entry in entries {
+    match entry {
+      @core.Inline(path) => paths.push(path)
+      @core.External(hash, index) => {
+        let collection = @core.decode_path_collection(doc.part(hash))
+        paths.push(path_at(collection, index))
+      }
+    }
+  }
+  paths
+}
+
+///|
 fn paint_commands(
   ctx : CanvasContext,
   commands : Array[@render.Command],
+  paths~ : Array[@core.Path] = [],
 ) -> Unit raise {
   for cmd in commands {
     match cmd {
@@ -266,6 +347,8 @@ fn paint_commands(
       @render.Transform(a, b, c, d, e, f) => transform(ctx, a, b, c, d, e, f)
       @render.Translate(x, y) => translate(ctx, x, y)
       @render.Scale(x, y) => scale(ctx, x, y)
+      @render.ClipPath(index, rule) =>
+        paint_path(ctx, paths, index, 0, rule, 0.0, 0.0)
       @render.ClipRect(x, y, w, h) => clip_rect(ctx, x, y, w, h)
       @render.FillColor(color) => set_color(ctx, color, false)
       @render.StrokeColor(color) => set_color(ctx, color, true)
@@ -283,6 +366,15 @@ fn paint_commands(
         set_text_style(ctx, a, b, d, spacing)
       @render.FillRect(x, y, w, h) => fill_rect(ctx, x, y, w, h)
       @render.StrokeRect(x, y, w, h) => stroke_rect(ctx, x, y, w, h)
+      @render.FillPath(index, rule) =>
+        paint_path(ctx, paths, index, 1, rule, 0.0, 0.0)
+      @render.StrokePath(index) => paint_path(ctx, paths, index, 2, 0, 0.0, 0.0)
+      @render.FillPathAt(index, rule, x, y) =>
+        paint_path(ctx, paths, index, 3, rule, x, y)
+      @render.FillPathRun(rule, glyphs) =>
+        for glyph in glyphs {
+          paint_path(ctx, paths, glyph.path, 3, rule, glyph.x, glyph.y)
+        }
       @render.ClearRect(x, y, w, h) => clear_rect(ctx, x, y, w, h)
       @render.FillText(text, x, y, advance) =>
         draw_text(ctx, text, x, y, advance, false)
@@ -338,8 +430,9 @@ pub fn mount_bdf(
       max_y = p.y + p.height
     }
     for layer in view.pages[p.index].layers {
-      let object = @core.decode_object(doc.part(layer.object))
-      paint_commands(ctx, @render.compile_object(object))
+      let object = @core.decode_object_with_paths(doc.part(layer.object))
+      let paths = resolve_paths(doc, object.paths)
+      paint_commands(ctx, @render.compile_object(object.object), paths~)
     }
   }
   resize_host(host, max_x, max_y)

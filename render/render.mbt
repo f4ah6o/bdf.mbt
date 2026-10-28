@@ -1,10 +1,19 @@
 ///|
+/// One positioned path in a FILL_PATH_RUN instruction.
+pub(all) struct PathPlacement {
+  path : Int32
+  x : Double
+  y : Double
+} derive(Debug)
+
+///|
 pub(all) enum Command {
   Save
   Restore
   Transform(Double, Double, Double, Double, Double, Double)
   Translate(Double, Double)
   Scale(Double, Double)
+  ClipPath(Int32, Int32)
   ClipRect(Double, Double, Double, Double)
   FillColor(Int32)
   StrokeColor(Int32)
@@ -18,6 +27,10 @@ pub(all) enum Command {
   TextStyle(Int32, Int32, Int32, Double)
   FillRect(Double, Double, Double, Double)
   StrokeRect(Double, Double, Double, Double)
+  FillPath(Int32, Int32)
+  StrokePath(Int32)
+  FillPathAt(Int32, Int32, Double, Double)
+  FillPathRun(Int32, Array[PathPlacement])
   ClearRect(Double, Double, Double, Double)
   FillText(String, Double, Double, Double)
   StrokeText(String, Double, Double, Double)
@@ -81,6 +94,7 @@ pub fn compile_object(object : @core.ObjectPart) -> Array[Command] raise {
         )
       0x04 => commands.push(Translate(r.f32(), r.f32()))
       0x05 => commands.push(Scale(r.f32(), r.f32()))
+      0x06 => commands.push(ClipPath(r.varuint(), r.u8()))
       0x07 => commands.push(ClipRect(r.f32(), r.f32(), r.f32(), r.f32()))
       0x10 => commands.push(FillColor(r.u32()))
       0x12 => commands.push(StrokeColor(r.u32()))
@@ -104,6 +118,21 @@ pub fn compile_object(object : @core.ObjectPart) -> Array[Command] raise {
       0x1b => commands.push(TextStyle(r.u8(), r.u8(), r.u8(), r.f32()))
       0x20 => commands.push(FillRect(r.f32(), r.f32(), r.f32(), r.f32()))
       0x21 => commands.push(StrokeRect(r.f32(), r.f32(), r.f32(), r.f32()))
+      0x22 => commands.push(FillPath(r.varuint(), r.u8()))
+      0x23 => commands.push(StrokePath(r.varuint()))
+      0x24 => commands.push(FillPathAt(r.varuint(), r.u8(), r.f32(), r.f32()))
+      0x25 => {
+        let rule = r.u8()
+        let count = r.varuint()
+        if count > r.remaining() / 9 {
+          raise InvalidOperands("path run count out of range")
+        }
+        let glyphs : Array[PathPlacement] = []
+        for _ in 0..<count {
+          glyphs.push({ path: r.varuint(), x: r.f32(), y: r.f32(), })
+        }
+        commands.push(FillPathRun(rule, glyphs))
+      }
       0x26 => commands.push(ClearRect(r.f32(), r.f32(), r.f32(), r.f32()))
       0x30 =>
         commands.push(

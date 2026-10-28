@@ -25,6 +25,7 @@ pub(all) enum Command {
   Transform(Double, Double, Double, Double, Double, Double)
   Translate(Double, Double)
   Scale(Double, Double)
+  ClipPath(Int32, Int32)
   ClipRect(Double, Double, Double, Double)
   FillColor(Int32)
   StrokeColor(Int32)
@@ -38,6 +39,10 @@ pub(all) enum Command {
   TextStyle(Int32, Int32, Int32, Double)
   FillRect(Double, Double, Double, Double)
   StrokeRect(Double, Double, Double, Double)
+  FillPath(Int32, Int32)
+  StrokePath(Int32)
+  FillPathAt(Int32, Int32, Double, Double)
+  FillPathRun(Int32, Array[PathPlacement])
   ClearRect(Double, Double, Double, Double)
   FillText(String, Double, Double, Double)
   StrokeText(String, Double, Double, Double)
@@ -47,6 +52,12 @@ pub(all) enum Command {
   Link(Double, Double, Double, Double, String)
   Mark(Int32, String)
   Ext(Bytes)
+} derive(@debug.Debug)
+
+pub(all) struct PathPlacement {
+  path : Int32
+  x : Double
+  y : Double
 } derive(@debug.Debug)
 
 // Type aliases

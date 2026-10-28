@@ -93,3 +93,41 @@ test "dash rejects truncated segment data" {
   }
   assert_true(rejected)
 }
+
+///|
+test "decode path drawing instructions" {
+  let object : @core.ObjectPart = {
+    bbox: (0.0, 0.0, 0.0, 0.0),
+    strings: [],
+    images: [],
+    objects: [],
+    ops: b"\x06\x00\x01\x22\x00\x00\x23\x00\x24\x00\x01\x00\x00\x80\x3f\x00\x00\x00\x40\x25\x01\x01\x00\x00\x00\x40\x40\x00\x00\x80\x40",
+  }
+  let cmds = @render.compile_object(object)
+  assert_eq(cmds.length(), 5)
+  guard cmds[0] is ClipPath(0, 1) else { fail("clip") }
+  guard cmds[1] is FillPath(0, 0) else { fail("fill") }
+  guard cmds[2] is StrokePath(0) else { fail("stroke") }
+  guard cmds[3] is FillPathAt(0, 1, 1.0, 2.0) else { fail("fill at") }
+  guard cmds[4] is FillPathRun(1, glyphs) else { fail("run") }
+  assert_eq(glyphs.length(), 1)
+  assert_eq((glyphs[0].path, glyphs[0].x, glyphs[0].y), (0, 3.0, 4.0))
+}
+
+///|
+test "path run rejects truncated placements" {
+  let object : @core.ObjectPart = {
+    bbox: (0.0, 0.0, 0.0, 0.0),
+    strings: [],
+    images: [],
+    objects: [],
+    ops: b"\x25\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+  }
+  let rejected = try {
+    ignore(@render.compile_object(object))
+    false
+  } catch {
+    _ => true
+  }
+  assert_true(rejected)
+}

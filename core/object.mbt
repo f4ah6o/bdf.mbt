@@ -8,29 +8,15 @@ pub(all) struct ObjectPart {
 }
 
 ///|
-fn skip_path(reader : Reader) -> Unit raise {
-  let count = reader.varuint()
-  if count > reader.remaining() {
-    raise BadFormat("path verb count out of range")
-  }
-  let verbs = reader.take(count)
-  let mut coords = 0
-  let sizes = [2, 2, 4, 6, 0, 4, 8, 5, 5]
-  for b in verbs {
-    let verb = b.to_int()
-    if verb >= sizes.length() {
-      raise BadFormat("unknown path verb")
-    }
-    coords += sizes[verb]
-  }
-  if coords > reader.remaining() / 4 {
-    raise BadFormat("path coordinates out of range")
-  }
-  reader.skip(coords * 4)
+/// Object data together with the path resources needed by drawing commands.
+pub(all) struct ObjectWithPaths {
+  object : ObjectPart
+  paths : Array[PathEntry]
 }
 
 ///|
-pub fn decode_object(data : Bytes) -> ObjectPart raise {
+/// Decode an object and its path references.
+pub fn decode_object_with_paths(data : Bytes) -> ObjectWithPaths raise {
   let r = Reader::new(data)
   if r.take(4) != b"BOBJ" || r.u16() != 1 || r.u16() != 0 {
     raise BadFormat("unsupported object header")
@@ -48,12 +34,12 @@ pub fn decode_object(data : Bytes) -> ObjectPart raise {
   if path_count > r.remaining() {
     raise BadFormat("path count out of range")
   }
+  let paths : Array[PathEntry] = []
   for _ in 0..<path_count {
-    if r.u8() == 0 {
-      skip_path(r)
-    } else {
-      r.skip(16)
-      ignore(r.varuint())
+    match r.u8() {
+      0 => paths.push(Inline(read_path(r)))
+      1 => paths.push(External(r.hash(), r.varuint()))
+      _ => raise BadFormat("unknown path entry kind")
     }
   }
   let paint_count = r.varuint()
@@ -112,5 +98,11 @@ pub fn decode_object(data : Bytes) -> ObjectPart raise {
   if r.remaining() != 0 {
     raise BadFormat("trailing object bytes")
   }
-  { bbox, strings, images, objects, ops }
+  { object: { bbox, strings, images, objects, ops, }, paths, }
+}
+
+///|
+/// Decode an object without returning its path resources.
+pub fn decode_object(data : Bytes) -> ObjectPart raise {
+  decode_object_with_paths(data).object
 }

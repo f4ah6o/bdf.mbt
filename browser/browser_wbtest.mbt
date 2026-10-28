@@ -35,3 +35,35 @@ test "canvas effects and text advance" {
   paint_commands(ctx, [@render.Filter("url(https://example.com)")])
   assert_true(filter_is_none(ctx))
 }
+
+///|
+extern "js" fn fake_path_context() -> CanvasContext =
+  #|() => {
+  #|  globalThis.Path2D = class { constructor() { this.ops = []; } moveTo(...v) { this.ops.push(["move", ...v]); } lineTo(...v) { this.ops.push(["line", ...v]); } };
+  #|  return { calls: [], clip(p,r) { this.calls.push(["clip",p.ops,r]); }, fill(p,r) { this.calls.push(["fill",p.ops,r]); }, stroke(p) { this.calls.push(["stroke",p.ops]); }, save() { this.calls.push(["save"]); }, restore() { this.calls.push(["restore"]); }, translate(x,y) { this.calls.push(["translate",x,y]); } };
+  #|}
+
+///|
+extern "js" fn path_test_result(ctx : CanvasContext) -> Bool =
+  #|(ctx) => JSON.stringify(ctx.calls) === JSON.stringify([["clip",[["move",1,2],["line",3,4]],"evenodd"],["save"],["translate",5,6],["fill",[["move",1,2],["line",3,4]],"nonzero"],["restore"]])
+
+///|
+test "canvas draws path commands and rejects bad references" {
+  let ctx = fake_path_context()
+  let paths : Array[@core.Path] = [
+    { verbs: b"\x00\x01", coordinates: [1.0, 2.0, 3.0, 4.0], },
+  ]
+  paint_commands(
+    ctx,
+    [@render.ClipPath(0, 1), @render.FillPathAt(0, 0, 5.0, 6.0)],
+    paths~,
+  )
+  assert_true(path_test_result(ctx))
+  let rejected = try {
+    paint_commands(ctx, [@render.FillPath(1, 0)], paths~)
+    false
+  } catch {
+    _ => true
+  }
+  assert_true(rejected)
+}
