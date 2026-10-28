@@ -1,8 +1,16 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "f4ah6o/bdf/browser"
 
+import {
+  "moonbitlang/async/js_async",
+}
+
 // Values
 pub fn mount_bdf(BrowserHost, Bytes, String) -> Int32 raise
+
+pub fn mount_bdf_async(BrowserHost, Bytes, String) -> @js_async.Promise[Int32]
+
+pub fn mount_bdf_js(BrowserHost, Bytes, String) -> Int32
 
 // Errors
 pub suberror BrowserError {

@@ -295,81 +295,6 @@ extern "js" fn draw_path(
   #|}
 
 ///|
-#external
-priv type CanvasGradient
-
-///|
-extern "js" fn make_gradient(
-  ctx : CanvasContext,
-  kind : Int32,
-  coordinates : FixedArray[Double],
-) -> CanvasGradient =
-  #|(ctx, kind, c) => kind === 0 ? ctx.createLinearGradient(...c) : kind === 1 ? ctx.createRadialGradient(...c) : ctx.createConicGradient(...c)
-
-///|
-extern "js" fn add_stop(
-  gradient : CanvasGradient,
-  offset : Double,
-  color : Int32,
-) -> Unit =
-  #|(g, offset, color) => {
-  #|  const n = color >>> 0;
-  #|  g.addColorStop(Math.min(1, Math.max(0, offset)), `rgba(${n >>> 24},${(n >>> 16) & 255},${(n >>> 8) & 255},${(n & 255) / 255})`);
-  #|}
-
-///|
-extern "js" fn apply_gradient(
-  ctx : CanvasContext,
-  gradient : CanvasGradient,
-  stroke : Bool,
-) -> Unit =
-  #|(ctx, g, stroke) => { if (stroke) ctx.strokeStyle = g; else ctx.fillStyle = g; }
-
-///|
-fn paint_style(
-  ctx : CanvasContext,
-  paints : Array[@core.Paint],
-  index : Int32,
-  stroke : Bool,
-) -> Unit raise {
-  if index < 0 || index >= paints.length() {
-    raise BadFormat("paint reference out of range")
-  }
-  match paints[index] {
-    @core.Gradient(kind, coordinates, stops) => {
-      let gradient = make_gradient(
-        ctx,
-        kind,
-        FixedArray::from_array(coordinates),
-      )
-      for stop in stops {
-        add_stop(gradient, stop.offset, stop.color)
-      }
-      apply_gradient(ctx, gradient, stroke)
-    }
-    @core.Pattern(_, _, _) =>
-      raise Unsupported("image patterns require image loading")
-  }
-}
-
-///|
-fn apply_font(
-  ctx : CanvasContext,
-  fonts : Array[@core.Font],
-  index : Int32,
-  size : Double,
-) -> Unit raise {
-  if index < 0 || index >= fonts.length() {
-    raise BadFormat("font reference out of range")
-  }
-  let font = fonts[index]
-  if font.hash is Some(_) {
-    raise Unsupported("embedded fonts require font loading")
-  }
-  set_font(ctx, size, font.family, font.weight, font.style)
-}
-
-///|
 fn path_at(paths : Array[@core.Path], index : Int32) -> @core.Path raise {
   if index < 0 || index >= paths.length() {
     raise BadFormat("path reference out of range")
@@ -434,6 +359,7 @@ fn paint_child(
   depth : Int32,
   repeated : Bool,
   limits : UseLimits,
+  resources : BrowserResources?,
 ) -> Unit raise {
   if depth >= 64 {
     raise BadFormat("objects draw objects too deep")
@@ -453,6 +379,8 @@ fn paint_child(
     paths~,
     paints=child.paints,
     fonts=child.fonts,
+    images=child.object.images,
+    resources?,
     document~,
     depth=depth + 1,
     repeated=repeated || again,
@@ -473,6 +401,8 @@ fn paint_commands(
   paths~ : Array[@core.Path] = [],
   paints~ : Array[@core.Paint] = [],
   fonts~ : Array[@core.Font] = [],
+  images~ : Array[String] = [],
+  resources? : BrowserResources,
   document? : @core.Document,
   depth~ : Int32 = 0,
   repeated~ : Bool = false,
@@ -496,9 +426,11 @@ fn paint_commands(
         paint_path(ctx, paths, index, 0, rule, 0.0, 0.0)
       @render.ClipRect(x, y, w, h) => clip_rect(ctx, x, y, w, h)
       @render.FillColor(color) => set_color(ctx, color, false)
-      @render.FillPaint(index) => paint_style(ctx, paints, index, false)
+      @render.FillPaint(index) =>
+        paint_style(ctx, paints, index, false, images, resources)
       @render.StrokeColor(color) => set_color(ctx, color, true)
-      @render.StrokePaint(index) => paint_style(ctx, paints, index, true)
+      @render.StrokePaint(index) =>
+        paint_style(ctx, paints, index, true, images, resources)
       @render.Line(width, cap, join, miter) =>
         set_line(ctx, width, cap, join, miter)
       @render.Dash(segments, offset) =>
@@ -508,7 +440,8 @@ fn paint_commands(
       @render.Shadow(color, blur, dx, dy) =>
         set_shadow(ctx, color, blur, dx, dy)
       @render.Filter(css) => set_filter(ctx, css)
-      @render.Font(index, size) => apply_font(ctx, fonts, index, size)
+      @render.Font(index, size) =>
+        apply_font(ctx, fonts, index, size, resources)
       @render.TextStyle(a, b, d, spacing) =>
         set_text_style(ctx, a, b, d, spacing)
       @render.FillRect(x, y, w, h) => fill_rect(ctx, x, y, w, h)
@@ -532,18 +465,38 @@ fn paint_commands(
       @render.Use(hash) =>
         match document {
           Some(doc) =>
-            paint_child(ctx, doc, hash, 0.0, 0.0, depth, repeated, state)
+            paint_child(
+              ctx, doc, hash, 0.0, 0.0, depth, repeated, state, resources,
+            )
           None => raise Unsupported("child object requires a document")
         }
       @render.UseAt(hash, x, y) =>
         match document {
-          Some(doc) => paint_child(ctx, doc, hash, x, y, depth, repeated, state)
+          Some(doc) =>
+            paint_child(ctx, doc, hash, x, y, depth, repeated, state, resources)
           None => raise Unsupported("child object requires a document")
         }
       @render.Ext(_) | @render.Link(_, _, _, _, _) | @render.Mark(_, _) => ()
-      @render.Image(_, _, _, _, _)
-      | @render.ImageSub(_, _, _, _, _, _, _, _, _) =>
-        raise Unsupported("image resources are not supported by browser MVP")
+      @render.Image(hash, x, y, w, h) =>
+        match resources {
+          Some(r) => {
+            if !has_image(r, hash) {
+              raise BadFormat("image resource not prepared")
+            }
+            render_image(ctx, r, hash, 0.0, 0.0, 0.0, 0.0, x, y, w, h, false)
+          }
+          None => raise Unsupported("images require asynchronous loading")
+        }
+      @render.ImageSub(hash, sx, sy, sw, sh, dx, dy, dw, dh) =>
+        match resources {
+          Some(r) => {
+            if !has_image(r, hash) {
+              raise BadFormat("image resource not prepared")
+            }
+            render_image(ctx, r, hash, sx, sy, sw, sh, dx, dy, dw, dh, true)
+          }
+          None => raise Unsupported("images require asynchronous loading")
+        }
     }
   }
 }
@@ -552,13 +505,34 @@ fn paint_commands(
 /// Mount an unencrypted, identity-encoded BDF fixed/flow view into an HTML
 /// element using MoonBit's parsed objects and display lists. Returns pages.
 /// Images, compressed parts, sheets, and unsupported ops fail explicitly.
-#export_name("mount_bdf")
 pub fn mount_bdf(
   host : BrowserHost,
   data : Bytes,
   layout : String,
 ) -> Int32 raise {
-  let doc = @core.open_single(data)
+  mount_document(host, @core.open_single(data), layout)
+}
+
+///|
+extern "js" fn throw_browser_error(message : String) -> Int32 =
+  #|(message) => { throw new Error(message); }
+
+///|
+/// JavaScript entry point: return the page count or throw on failure.
+#export_name("mount_bdf")
+pub fn mount_bdf_js(host : BrowserHost, data : Bytes, layout : String) -> Int32 {
+  mount_bdf(host, data, layout) catch {
+    error => throw_browser_error(error.to_string())
+  }
+}
+
+///|
+fn mount_document(
+  host : BrowserHost,
+  doc : @core.Document,
+  layout : String,
+  resources? : BrowserResources,
+) -> Int32 raise {
   if doc.manifest.views.length() == 0 {
     raise BadFormat("document has no view")
   }
@@ -597,6 +571,8 @@ pub fn mount_bdf(
         paths~,
         paints=object.paints,
         fonts=object.fonts,
+        images=object.object.images,
+        resources?,
         document=doc,
         limits~,
       )

@@ -5,4 +5,5 @@ supported_targets = "+js+wasm-gc"
 
 import {
   "gaato/deflate@0.1.0",
+  "moonbitlang/async@0.22.5",
 }

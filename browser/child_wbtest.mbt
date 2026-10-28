@@ -32,7 +32,7 @@ test "mount draws child objects with isolated state" {
   let ctx = fake_context()
   let limits : UseLimits = { seen: {}, reused: 0, maximum: 1, }
   let deep = try {
-    paint_child(ctx, doc, "missing", 0.0, 0.0, 64, false, limits)
+    paint_child(ctx, doc, "missing", 0.0, 0.0, 64, false, limits, None)
     false
   } catch {
     _ => true
@@ -62,6 +62,7 @@ test "mount draws child objects with isolated state" {
       0,
       true,
       no_reuse,
+      None,
     )
     false
   } catch {
@@ -100,7 +101,7 @@ test "cyclic object references stop at the depth limit and unwind" {
   }
   let limits : UseLimits = { seen: {}, reused: 0, maximum: 134217728, }
   let rejected = try {
-    paint_child(ctx, doc, hash, 0.0, 0.0, 0, false, limits)
+    paint_child(ctx, doc, hash, 0.0, 0.0, 0, false, limits, None)
     false
   } catch {
     _ => true
