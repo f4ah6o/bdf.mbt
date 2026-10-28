@@ -8,7 +8,8 @@ pub(all) struct Header {
 }
 
 ///|
-pub fn parse_header(data : Bytes) -> Header raise {
+/// Parse the fixed header without requiring the manifest bytes to be present.
+pub fn parse_header_prefix(data : Bytes) -> Header raise {
   let r = Reader::new(data)
   if r.take(4) != b"bdf\x00" {
     raise BadFormat("bad magic")
@@ -35,12 +36,21 @@ pub fn parse_header(data : Bytes) -> Header raise {
   if manifest_length > 268435456 {
     raise BadFormat("manifest exceeds 256 MiB")
   }
-  if manifest_offset < 32 ||
-    manifest_offset > data.length() ||
-    manifest_length > data.length() - manifest_offset {
+  if manifest_offset < 32 {
     raise BadFormat("manifest outside BDF file")
   }
   { version, flags, manifest_offset, manifest_length, manifest_encoding, }
+}
+
+///|
+/// Parse a header and ensure its manifest lies within the supplied file.
+pub fn parse_header(data : Bytes) -> Header raise {
+  let header = parse_header_prefix(data)
+  if header.manifest_offset > data.length() ||
+    header.manifest_length > data.length() - header.manifest_offset {
+    raise BadFormat("manifest outside BDF file")
+  }
+  header
 }
 
 ///|

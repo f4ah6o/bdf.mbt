@@ -263,6 +263,9 @@ async fn RenderWorkerState::open_source(
   if kind != "buffer" && kind != "single" && kind != "split" {
     return render_error("bdf: unsupported source " + kind, "")
   }
+  if render_source_range(source) {
+    return self.open_range(request, replace, source)
+  }
   let bytes = if kind == "buffer" {
     render_source_buffer(source)
   } else {

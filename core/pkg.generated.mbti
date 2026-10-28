@@ -40,6 +40,8 @@ pub fn parse_encrypted_manifest(String) -> EncryptedManifest raise
 
 pub fn parse_header(Bytes) -> Header raise
 
+pub fn parse_header_prefix(Bytes) -> Header raise
+
 pub fn parse_manifest(String) -> Manifest raise
 
 pub fn parse_smf(Bytes) -> MidiSequence raise
