@@ -159,14 +159,17 @@ extern "js" fn observe_page_width(
   host : BrowserHost,
   initial : Double,
   update : (Double) -> Unit,
+  zoom : (Double) -> Unit,
+  layout : (String) -> Unit,
+  release : () -> Unit,
 ) -> Unit =
-  #|(host,initial,update) => {
+  #|(host,initial,update,zoom,layout,release) => {
   #|  const doc=host.ownerDocument,win=doc?.defaultView;
-  #|  if(!win?.ResizeObserver)return;
-  #|  const key=Symbol.for('f4ah6o.bdf.pageLayout');let width=initial,removed=false,observer,mutation;
-  #|  const state={start(){if(removed||observer)return;observer=new win.ResizeObserver(()=>{if(removed)return;const next=host.clientWidth||0;if(next!==width){width=next;update(next)}});observer.observe(host)},dispose(){removed=true;observer?.disconnect();mutation?.disconnect()}};
+  #|  const key=Symbol.for('f4ah6o.bdf.pageLayout');let width=initial,removed=false,observer,mutation,released=false;
+  #|  const releaseOnce=()=>{if(!released){released=true;release()}};
+  #|  const state={zoom,layout,start(){if(removed||observer||!win?.ResizeObserver)return;observer=new win.ResizeObserver(()=>{if(removed)return;const next=host.clientWidth||0;if(next!==width){width=next;update(next)}});observer.observe(host)},dispose(){if(removed)return;removed=true;observer?.disconnect();mutation?.disconnect();releaseOnce()}};
   #|  host[key]=state;
-  #|  if(win.MutationObserver){const watch=(weak,k,owner,connected)=>{const ob=new win.MutationObserver(()=>{const h=weak.deref();if(!h){ob.disconnect();return}if(h.isConnected){connected=true;h[k]?.start()}else if(connected){h[k]?.dispose();delete h[k]}});ob.observe(owner,{childList:true,subtree:true});return ob};const weak=typeof WeakRef==='function'?new WeakRef(host):{deref:()=>host};mutation=watch(weak,key,doc,host.isConnected)}
+  #|  if(win?.MutationObserver){const watch=(weak,k,owner,connected,dispose)=>{const ob=new win.MutationObserver(()=>{const h=weak.deref();if(!h){ob.disconnect();dispose();return}if(h.isConnected){connected=true;h[k]?.start()}else if(connected){h[k]?.dispose();delete h[k]}});ob.observe(owner,{childList:true,subtree:true});return ob};const weak=typeof WeakRef==='function'?new WeakRef(host):{deref:()=>host};mutation=watch(weak,key,doc,host.isConnected,releaseOnce)}
   #|  if(host.isConnected||!mutation)state.start();
   #|}
 
@@ -802,17 +805,8 @@ fn mount_document(
   if interactive {
     install_copy_handler(host)
     install_document_find(
-      host,
-      doc,
-      view,
-      placements,
-      search_runs,
-      fallback_index,
-      viewer.zoom,
+      host, doc, view, placements, search_runs, fallback_index, viewer,
     )
-    if resources is Some(r) {
-      retain_host_fonts(host, r)
-    }
   }
   resize_page_surface(
     surface,
@@ -821,20 +815,39 @@ fn mount_document(
     } else {
       viewport_width
     },
-    max_y,
+    page_surface_height(view, viewer, max_y),
   )
-  observe_page_width(host, viewport_width, width => {
-    let next = viewer.placements_in(view, width)
-    let mut right = width
-    for i, p in next {
-      placements[i] = p
-      move_page_children(surface, p.index, p.x, p.y)
-      if p.x + p.width > right {
-        right = p.x + p.width
+  observe_page_width(
+    host,
+    viewport_width,
+    width => update_page_layout(host, surface, view, viewer, placements, width),
+    zoom => {
+      redraw_page_zoom(
+        host, surface, doc, view, viewer, placements, resources, zoom,
+      ) catch {
+        error => throw_page_control_error(error.to_string())
       }
-    }
-    resize_page_surface(surface, right, max_y)
-    refresh_page_find(host)
-  })
+    },
+    layout => {
+      viewer.set_layout(
+        if layout == "spread" {
+          @viewer.Spread
+        } else if layout == "continuous" {
+          @viewer.Continuous
+        } else {
+          @viewer.Single
+        },
+      )
+      update_page_layout(
+        host,
+        surface,
+        view,
+        viewer,
+        placements,
+        page_viewport_width(host),
+      )
+    },
+    () => if resources is Some(r) { dispose_resources(r) },
+  )
   placements.length()
 }

@@ -276,7 +276,8 @@ async fn mount_split(
     load: fn(hash) { split.part(hash) },
   }
   let resources = new_resources()
-  defer dispose_resources(resources)
+  let mut handed_off = false
+  defer (if !handed_off { dispose_resources(resources) })
   let prepared : Map[String, Bool] = Map([])
   for page in view.pages {
     for layer in page.layers {
@@ -289,7 +290,10 @@ async fn mount_split(
     }
   }).wait()
   match result {
-    Ok(pages) => pages
+    Ok(pages) => {
+      handed_off = true
+      pages
+    }
     Err(error) => raise error
   }
 }

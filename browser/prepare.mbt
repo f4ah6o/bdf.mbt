@@ -174,7 +174,8 @@ async fn mount_single(
     raise Unsupported("more than 256 pages")
   }
   let resources = new_resources()
-  defer dispose_resources(resources)
+  let mut handed_off = false
+  defer (if !handed_off { dispose_resources(resources) })
   let seen : Map[String, Bool] = Map([])
   for page in view.pages {
     for layer in page.layers {
@@ -187,7 +188,10 @@ async fn mount_single(
     }
   }).wait()
   match result {
-    Ok(pages) => pages
+    Ok(pages) => {
+      handed_off = true
+      pages
+    }
     Err(error) => raise error
   }
 }

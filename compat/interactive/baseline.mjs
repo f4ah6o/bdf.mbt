@@ -5,7 +5,7 @@ try {
   const doc = await BdfDocument.open(new BufferSource(bytes));
   const host = document.querySelector('#host');
   const pages = doc.manifest.views[0].pages;
-  const surface = document.createElement('div');surface.dataset.bdfPages='';surface.style.cssText=`position:relative;background:#e8e8e8;width:${Math.max(host.clientWidth,...pages.map(p=>p.w))}px;height:${pages.reduce((n,p)=>n+p.h,0)+Math.max(0,pages.length-1)*16}px`;host.append(surface);
+  const surface = document.createElement('div');surface.dataset.bdfPages='';surface.style.cssText=`position:relative;background:#e8e8e8;width:${Math.max(host.clientWidth,...pages.map(p=>p.w))}px;height:${pages.reduce((n,p)=>n+p.h,0)+pages.length*16}px`;host.append(surface);
   const resources = new ResourceCache(doc, document.fonts), hold = resources.hold();
   const renderer = new CanvasRenderer(resources);
   const sheet = document.createElement('style');sheet.textContent=TEXT_LAYER_CSS;document.head.appendChild(sheet);

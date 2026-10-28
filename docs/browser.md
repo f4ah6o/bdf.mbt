@@ -19,7 +19,7 @@ const pageCount = await mount_bdf_async(document.querySelector("#preview"), byte
 This currently supports fixed/flow, scroll and sheet BDF documents whose BOBJ parts use
 the implemented drawing subset. It does not try to convert
 PDF/Office documents. The asynchronous entry point loads image and embedded font
-parts before drawing and releases them afterward. It supports raster images, SVG,
+parts before drawing and retains them for the lifetime of the mounted view. It supports raster images, SVG,
 and image patterns. A complete port needs Worker transport and additional viewer features.
 
 For a sheet, the asynchronous mount uses the host's width and height as its
@@ -38,6 +38,22 @@ the upstream viewer. A constrained host remains a scrollable viewport while
 the page surface holds the full document extent. To render the cropped body
 rectangles and configured gap of a flow view, use the continuous-region
 renderer below.
+
+For a mounted fixed, flow or scroll view, the page controls change the
+rendered pages without reloading the document:
+
+```js
+bdf_set_zoom(host, 1.5);           // finite values greater than 0 and at most 8
+bdf_set_layout(host, 'spread');    // 'single', 'spread', or 'continuous'
+bdf_scroll_to_page(host, 2);      // zero-based; an invalid index is ignored
+```
+
+Zoom redraws from the original objects at the current device pixel ratio and
+keeps the active text selection and search results aligned. Raster images and
+fonts remain loaded until the host is unmounted, remounted, or removed from
+the document. Page bitmaps are limited to 8192 pixels per side and 16,777,216
+pixels in total; a zoom that exceeds these limits fails without changing the
+current view. These controls do not yet support sheet or music views.
 
 ```js
 const bandsDrawn = await render_bdf_continuous_region_async(host, bytes, x, y, width, height, scale);

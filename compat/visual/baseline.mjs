@@ -8,7 +8,7 @@ try {
   const host = document.querySelector('#host');
   const surface = document.createElement('div');
   surface.dataset.bdfPages = '';
-  Object.assign(surface.style, {position:'relative', width:`${Math.max(host.clientWidth,page.w)}px`, height:`${page.h}px`, background:'#e8e8e8'});
+  Object.assign(surface.style, {position:'relative', width:`${Math.max(host.clientWidth,page.w)}px`, height:`${page.h+16}px`, background:'#e8e8e8'});
   host.appendChild(surface);
   const canvas = document.createElement('canvas');
   canvas.width = page.w;

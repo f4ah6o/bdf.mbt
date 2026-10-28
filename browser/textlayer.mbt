@@ -360,20 +360,6 @@ extern "js" fn clipboard_html_js(value : BrowserClipboard) -> String =
   #|(value) => value.html
 
 ///|
-// Interactive spans need embedded fonts after painting. The host owns those
-// faces until it is remounted, unmounted, or removed from the document.
-extern "js" fn retain_host_fonts(
-  host : BrowserHost,
-  resources : BrowserResources,
-) -> Unit =
-  #|(host,r) => {
-  #| const faces=[...r.fonts.values()];r.fonts.clear();if(!faces.length)return;
-  #| const doc=host.ownerDocument,ref=typeof WeakRef==='function'?new WeakRef(host):{deref:()=>host},key=Symbol.for('f4ah6o.bdf.fonts');
-  #| const register=(weak,owner,k,held,connected)=>{let observer;const record={release(){observer?.disconnect();for(const face of held)owner.fonts.delete(face);held.length=0}};if(typeof MutationObserver==='function'){observer=new MutationObserver(()=>{const h=weak.deref();if(!h){record.release();return}if(h.isConnected)connected=true;else if(connected){record.release();if(h[k]===record)delete h[k]}});observer.observe(owner,{childList:true,subtree:true})}return record};
-  #| host[key]=register(ref,doc,key,faces,host.isConnected);
-  #|}
-
-///|
 /// Remove a mounted document and release its retained browser resources.
 #export_name("unmount_bdf")
 pub fn unmount_bdf(host : BrowserHost) -> Unit {

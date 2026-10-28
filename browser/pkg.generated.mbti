@@ -18,11 +18,17 @@ pub fn bdf_find_async(BrowserHost, String, Int32) -> @js_async.Promise[BrowserFi
 
 pub fn bdf_open_find(BrowserHost) -> Unit
 
+pub fn bdf_scroll_to_page(BrowserHost, Int32) -> Unit
+
 pub fn bdf_selection_cells(BrowserHost) -> BrowserClipboard?
 
 pub fn bdf_selection_cells_async(BrowserHost) -> @js_async.Promise[BrowserClipboard?]
 
 pub fn bdf_selection_text(BrowserHost) -> String
+
+pub fn bdf_set_layout(BrowserHost, String) -> Unit
+
+pub fn bdf_set_zoom(BrowserHost, Double) -> Unit
 
 pub fn key_pair_credential(BrowserKeyPair) -> CryptoCredential
 

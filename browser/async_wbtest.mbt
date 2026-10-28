@@ -41,7 +41,7 @@ extern "js" fn resource_fixture_host(fail_font : Bool) -> BrowserHost =
 extern "js" fn resource_fixture_result(host : BrowserHost) -> Bool =
   #|(h) => {
   #|  const s=h.stats, font='normal 400 12px "bdf-f985e73e9161ad584c62703a54ffbb05"';
-  #|  return s.images===1 && s.closed===1 && s.fontsAdded===1 && s.fontsDeleted===1 && h.children.length===1 &&
+  #|  return s.images===1 && s.closed===0 && s.fontsAdded===1 && s.fontsDeleted===0 && h.children.length===1 &&
   #|    JSON.stringify(s.calls)===JSON.stringify([["rect",0,0,60,30],"save",["pattern","repeat-x"],["rect",0,0,10,10],["image",10,0,10,10],["text","A",4,20,font],"save",["translate",25,0],["image",1,2,3,4],["image",0,0,1,1,5,6,7,8],"restore","restore"]);
   #|}
 
@@ -68,6 +68,8 @@ async test "asynchronous mount loads and releases shared resources" {
   let host = resource_fixture_host(false)
   assert_eq(mount_bdf_async(host, data, "single").wait(), 1)
   assert_true(resource_fixture_result(host))
+  unmount_bdf(host)
+  assert_true(resource_draw_failure_result(host))
   let failing_host = resource_fixture_host(true)
   let failed = try {
     ignore(mount_bdf_async(failing_host, data, "single").wait())

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { stripVTControlCharacters } from 'node:util';
 import { chromium } from 'playwright';
 import { PNG } from 'pngjs';
+import { verifyPageControls } from '../continuous/controls-test.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const outputRoot = path.join(root, '_build/visual-diff');
@@ -417,6 +418,7 @@ try {
     assert.deepEqual([resized.before.canvas,resized.before.text,resized.after.canvas,resized.after.text],[150,150,50,50],'canvas and selectable text recenter together');
     assert.equal(resized.after.hit-resized.before.hit,-100,'search highlights follow the centered page');assert.equal(resized.before.scrollTop,resized.after.scrollTop,'resizing does not scroll to a match');assert.equal(resized.events,2,'resizing does not emit a search event');await resizing.close();
     assert.equal(resized.attachedLeft,150,'a document mounted while detached centers when attached');assert.equal(resized.disposed,true,'the layout observer is disposed when its host is removed');
+    await verifyPageControls(browser,continuousBase,interactiveBase,base);
     const sheetBase=`http://127.0.0.1:${server.address().port}/compat/sheet/`;
     const cellFixtures={};
     for(const name of ['cells-baseline','cells-moon']){
@@ -1008,7 +1010,7 @@ try {
   const interactiveBase = `http://127.0.0.1:${server.address().port}/compat/interactive/`;
   const sheetBase = `http://127.0.0.1:${server.address().port}/compat/sheet/`;
   const continuousBase = `http://127.0.0.1:${server.address().port}/compat/continuous/`;
-  for(const [kind,name,width,height] of [['region','moon',200,200],['region','split',200,200],['region','encrypted',200,200],['region','encrypted-split',200,200],['viewer','moon',200,200],['spread','moon',376,120]]){
+  for(const [kind,name,width,height] of [['region','moon',200,200],['region','split',200,200],['region','encrypted',200,200],['region','encrypted-split',200,200],['viewer','moon',200,200],['spread','moon',376,120],['zoom','moon',376,120]]){
     const target=path.join(output,`continuous-${kind}-${name}`);mkdirSync(target);
     await run(['diff','html','--url',`${continuousBase}${kind}-baseline.html`,'--current-url',`${continuousBase}${kind}-${name}.html`,'--output-dir',target,'--no-paint-tree']);
     const reportPath=path.join(target,'diff-report.json'),report=JSON.parse(readFileSync(reportPath,'utf8'));

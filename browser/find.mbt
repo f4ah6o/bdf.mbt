@@ -76,7 +76,7 @@ fn install_document_find(
   placements : Array[@viewer.Placement],
   runs : Array[Array[Array[@render.TextRun]]],
   fallback : Array[@core.IndexRun],
-  zoom : Double,
+  viewer : @viewer.Viewer,
 ) -> Unit {
   let measure = find_measure_context(host)
   let mut searchable : @core.TextSearch? = None
@@ -87,6 +87,7 @@ fn install_document_find(
   install_find_dom(
     host,
     (query, step) => {
+      let zoom = viewer.zoom
       try {
         if !find_nonblank(query) {
           last_query = ""
