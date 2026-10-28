@@ -18,7 +18,7 @@ pub fn parse_header(data : Bytes) -> Header raise {
     raise BadFormat("unsupported BDF version")
   }
   let flags = r.u16()
-  if (flags & ~1) != 0 {
+  if (flags & 0xfffe) != 0 {
     raise BadFormat("unsupported header flags")
   }
   let manifest_offset = r.u64_size()

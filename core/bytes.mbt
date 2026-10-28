@@ -112,13 +112,14 @@ pub fn Reader::string(self : Reader) -> String raise {
 
 ///|
 pub fn Reader::hash(self : Reader) -> String raise {
-  let alphabet = "0123456789abcdef"
   let bytes = self.take(16)
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   for b in bytes {
     let n = b.to_int()
-    out.write_char(alphabet[(n >> 4) & 15])
-    out.write_char(alphabet[n & 15])
+    let high = (n >> 4) & 15
+    let low = n & 15
+    out.write_char((if high < 10 { high + 48 } else { high + 87 }).unsafe_to_char())
+    out.write_char((if low < 10 { low + 48 } else { low + 87 }).unsafe_to_char())
   }
   out.to_string()
 }
@@ -131,7 +132,7 @@ pub fn valid_hash(hash : String) -> Bool {
   }
   for b in bytes {
     let c = b.to_int()
-    if !(c >= 48 && c <= 57 || c >= 97 && c <= 102) {
+    if !((c >= 48 && c <= 57) || (c >= 97 && c <= 102)) {
       return false
     }
   }

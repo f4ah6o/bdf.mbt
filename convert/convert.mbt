@@ -7,7 +7,7 @@ pub(all) enum Action {
   Page(Int, Int)
   Finish(Int)
   Close(Int)
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 pub(all) struct ConvertOptions {
@@ -35,7 +35,7 @@ pub(all) enum PendingStatus {
   Waiting
   Completed
   Failed(String)
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 pub(all) struct Client {

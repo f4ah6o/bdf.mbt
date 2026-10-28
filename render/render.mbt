@@ -21,7 +21,7 @@ pub(all) enum Command {
   ImageSub(String, Double, Double, Double, Double, Double, Double, Double, Double)
   Smoothing(Bool, Int)
   Ext(Bytes)
-} derive(Show)
+} derive(Debug)
 
 ///|
 pub suberror RenderError {

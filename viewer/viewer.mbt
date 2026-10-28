@@ -3,7 +3,7 @@ pub(all) enum Layout {
   Single
   Spread
   Continuous
-} derive(Show, Eq)
+} derive(Debug, Eq)
 
 ///|
 pub(all) struct Placement {
