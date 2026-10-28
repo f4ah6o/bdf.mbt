@@ -108,3 +108,24 @@ test "cyclic object references stop at the depth limit and unwind" {
   }
   assert_true(rejected && cycle_restored(ctx))
 }
+
+///|
+test "groups and masks share a nesting limit" {
+  let state : CanvasState = { ctx: fake_context(), groups: [], masks: [], }
+  for _ in 0..<64 {
+    state.groups.push(null_group())
+  }
+  let group_rejected = try {
+    state.start_group(1.0, 0, 0.0, 0.0, 1.0, 1.0)
+    false
+  } catch {
+    _ => true
+  }
+  let mask_rejected = try {
+    state.start_mask(0, 0, b"")
+    false
+  } catch {
+    _ => true
+  }
+  assert_true(group_rejected && mask_rejected)
+}

@@ -91,12 +91,23 @@ try {
       }
       assert.ok(fontPixels > 200, 'embedded font was not rendered');
     }
+    if (baseline.height > 510) {
+      const group = (430 * baseline.width + 40) * 4;
+      const alphaMask = (430 * baseline.width + 230) * 4;
+      assert.ok(baseline.data[group] > 200 && baseline.data[group + 1] < 180, 'transparency group was not rendered');
+      assert.ok(baseline.data[alphaMask + 1] > baseline.data[alphaMask] && baseline.data[alphaMask] < 200, 'alpha mask was not rendered');
+      if (baseline.width > 520) {
+        const luminosityMask = (430 * baseline.width + 400) * 4;
+        const transparentMask = (430 * baseline.width + 480) * 4;
+        assert.ok(baseline.data[luminosityMask + 1] < 220 && baseline.data[transparentMask + 1] > 245, 'luminosity mask and transfer function were not rendered');
+      }
+    }
     let changed = 0;
     for (let i = 0; i < baseline.data.length; i += 4) {
       if (baseline.data[i] !== current.data[i] || baseline.data[i + 1] !== current.data[i + 1] || baseline.data[i + 2] !== current.data[i + 2] || baseline.data[i + 3] !== current.data[i + 3]) changed++;
     }
     // Normalize to the visible document area, not the surrounding white viewport.
-    const visibleArea = Math.min(baseline.width, 640) * Math.min(baseline.height, 400);
+    const visibleArea = Math.min(baseline.width, 640) * Math.min(baseline.height, 600);
     const ratio = changed / visibleArea;
     console.log(`${result.viewport}: ${changed} pixels changed (${(ratio * 100).toFixed(4)}%)`);
     assert.ok(ratio <= 0.0005, `${result.viewport}: visual difference exceeds 0.05%`);

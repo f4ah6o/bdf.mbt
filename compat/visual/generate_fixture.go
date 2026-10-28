@@ -36,7 +36,7 @@ func main() {
 	circle := child.AddPath((&bdf.Path{}).Circle(30, 30, 25))
 	child.FillColor(0x32a96eff).FillPath(circle, bdf.NonZero).StrokeColor(0x195838ff).Line(3, 0, 0, 10).StrokePath(circle)
 	childHash, box := d.AddObject(child)
-	o := bdf.NewObject().SetBBox(0, 0, 640, 400)
+	o := bdf.NewObject().SetBBox(0, 0, 640, 600)
 	font := o.AddFont(bdf.SystemFont("sans-serif", 700, bdf.StyleNormal))
 	embedded := o.AddFont(bdf.EmbeddedFont(embeddedHash, 400, bdf.StyleNormal))
 	grad := o.AddPaint(bdf.LinearGradient(30, 70, 590, 70, bdf.Stop{Offset: 0, Color: 0x2060c0ff}, bdf.Stop{Offset: 1, Color: 0x6ed6f0ff}))
@@ -47,7 +47,7 @@ func main() {
 	pattern.Matrix = [6]float32{8, 0, 0, 8, 0, 0}
 	pat := o.AddPaint(pattern)
 	childRef := o.AddObject(childHash, box)
-	o.FillColor(0xffffffff).FillRect(0, 0, 640, 400)
+	o.FillColor(0xffffffff).FillRect(0, 0, 640, 600)
 	o.FillPaint(grad).FillRect(30, 70, 560, 36)
 	o.FillColor(0x152538ff).Font(font, 28).TextStyle(bdf.AlignLeft, bdf.BaselineAlphabetic, bdf.DirLTR, 0).FillText("BDF visual parity", 30, 52, 0)
 	o.FillColor(0xf07832ff).FillPath(path, bdf.NonZero)
@@ -59,8 +59,24 @@ func main() {
 	o.UseAt(childRef, 65, 270).UseAt(childRef, 150, 270)
 	o.FillColor(0x3b2058ff).Font(embedded, 40).FillText("AAA", 385, 385, 0)
 	o.Save().Translate(320, 300).Scale(1.4, 0.8).FillColor(0x185aaaff).FillRect(0, 0, 95, 45).Restore()
+	// Group alpha is applied after overlapping shapes and child objects are drawn.
+	o.GroupBegin(0.5, bdf.BlendSourceOver, 30, 420, 150, 90)
+	o.FillColor(0xe83030ff).FillRect(30, 420, 90, 80).FillColor(0x3050e0ff).FillRect(80, 440, 100, 70)
+	o.UseAt(childRef, 105, 435).GroupEnd()
+	// Exercise both alpha and luminosity masks, including a transfer function.
+	o.GroupBegin(1, bdf.BlendSourceOver, 220, 420, 120, 90).FillColor(0x009a74ff).FillRect(220, 420, 120, 90)
+	o.MaskBegin(bdf.MaskAlpha, 0, nil).FillColor(0xffffff80).FillRect(220, 420, 80, 90).MaskEnd().GroupEnd()
+	inv := make([]byte, 256)
+	for i := range inv {
+		inv[i] = byte(255 - i)
+	}
+	o.GroupBegin(1, bdf.BlendMultiply, 380, 420, 140, 90).FillColor(0xef5d20ff).FillRect(380, 420, 140, 90)
+	o.MaskBegin(bdf.MaskLuminosity, 0x000000ff, inv).FillColor(0x808080ff).FillRect(380, 420, 70, 90).FillColor(0xffffffff).FillRect(450, 420, 70, 90).MaskEnd().GroupEnd()
+	// Nested groups under a transform check offscreen coordinate handling.
+	o.Save().Translate(80, 530).GroupBegin(0.8, bdf.BlendSourceOver, 0, 0, 100, 55)
+	o.FillColor(0xc42aaaff).FillRect(0, 0, 100, 55).GroupBegin(0.5, bdf.BlendScreen, 20, 10, 55, 35).FillColor(0x30d050ff).FillRect(20, 10, 55, 35).GroupEnd().GroupEnd().Restore()
 	hash, _ := d.AddObject(o)
-	d.NewView("p", bdf.ViewFixed, "").AddPage(640, 400, bdf.Layer{Role: bdf.RoleBody, Obj: hash})
+	d.NewView("p", bdf.ViewFixed, "").AddPage(640, 600, bdf.Layer{Role: bdf.RoleBody, Obj: hash})
 	out, err := os.Create(os.Args[1])
 	if err != nil {
 		panic(err)

@@ -53,6 +53,10 @@ pub(all) enum Command {
   Smoothing(Bool, Int32)
   Use(String)
   UseAt(String, Double, Double)
+  GroupBegin(Double, Int32, Double, Double, Double, Double)
+  GroupEnd
+  MaskBegin(Int32, Int32, Bytes)
+  MaskEnd
   Link(Double, Double, Double, Double, String)
   Mark(Int32, String)
   Ext(Bytes)

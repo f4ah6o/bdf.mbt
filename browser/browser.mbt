@@ -360,6 +360,7 @@ fn paint_child(
   repeated : Bool,
   limits : UseLimits,
   resources : BrowserResources?,
+  canvas_state? : CanvasState,
 ) -> Unit raise {
   if depth >= 64 {
     raise BadFormat("objects draw objects too deep")
@@ -385,6 +386,7 @@ fn paint_child(
     depth=depth + 1,
     repeated=repeated || again,
     limits~,
+    canvas_state?,
   ) catch {
     error => {
       restore(ctx)
@@ -407,9 +409,13 @@ fn paint_commands(
   depth~ : Int32 = 0,
   repeated~ : Bool = false,
   limits? : UseLimits,
+  canvas_state? : CanvasState,
 ) -> Unit raise {
+  let canvas = canvas_state.unwrap_or({ ctx, groups: [], masks: [], })
+  defer (if canvas_state is None { canvas.finish() })
   let state = limits.unwrap_or({ seen: {}, reused: 0, maximum: 134217728, })
   for cmd in commands {
+    let ctx = canvas.ctx
     if repeated {
       if state.reused >= state.maximum {
         raise BadFormat("objects are drawn too many times")
@@ -466,16 +472,42 @@ fn paint_commands(
         match document {
           Some(doc) =>
             paint_child(
-              ctx, doc, hash, 0.0, 0.0, depth, repeated, state, resources,
+              ctx,
+              doc,
+              hash,
+              0.0,
+              0.0,
+              depth,
+              repeated,
+              state,
+              resources,
+              canvas_state=canvas,
             )
           None => raise Unsupported("child object requires a document")
         }
       @render.UseAt(hash, x, y) =>
         match document {
           Some(doc) =>
-            paint_child(ctx, doc, hash, x, y, depth, repeated, state, resources)
+            paint_child(
+              ctx,
+              doc,
+              hash,
+              x,
+              y,
+              depth,
+              repeated,
+              state,
+              resources,
+              canvas_state=canvas,
+            )
           None => raise Unsupported("child object requires a document")
         }
+      @render.GroupBegin(a, b, x, y, w, h) =>
+        canvas.start_group(a, b, x, y, w, h)
+      @render.GroupEnd => canvas.end_group()
+      @render.MaskBegin(kind, backdrop, transfer) =>
+        canvas.start_mask(kind, backdrop, transfer)
+      @render.MaskEnd => canvas.end_mask()
       @render.Ext(_) | @render.Link(_, _, _, _, _) | @render.Mark(_, _) => ()
       @render.Image(hash, x, y, w, h) =>
         match resources {
@@ -502,9 +534,9 @@ fn paint_commands(
 }
 
 ///|
-/// Mount an unencrypted, identity-encoded BDF fixed/flow view into an HTML
-/// element using MoonBit's parsed objects and display lists. Returns pages.
-/// Images, compressed parts, sheets, and unsupported ops fail explicitly.
+/// Mount an unencrypted BDF fixed/flow view into an HTML element using
+/// MoonBit's parsed objects and display lists. Returns the page count.
+/// Images and embedded fonts require the asynchronous entry point.
 pub fn mount_bdf(
   host : BrowserHost,
   data : Bytes,

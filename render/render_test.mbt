@@ -177,3 +177,42 @@ test "child object instructions resolve and validate references" {
   }
   assert_true(rejected)
 }
+
+///|
+test "transparency groups and masks decode their parameters" {
+  let object : @core.ObjectPart = {
+    bbox: (0.0, 0.0, 0.0, 0.0),
+    strings: [],
+    images: [],
+    objects: [],
+    ops: b"\x52\x00\x00\x00\x3f\x01\x00\x00\x80\x3f\x00\x00\x00\x40\x00\x00\x40\x40\x00\x00\x80\x40\x54\x01\x04\x03\x02\x01\x03\x00\x80\xff\x55\x53",
+  }
+  let commands = @render.compile_object(object)
+  assert_eq(commands.length(), 4)
+  guard commands[0] is GroupBegin(0.5, 1, 1.0, 2.0, 3.0, 4.0) else {
+    fail("group")
+  }
+  guard commands[1] is MaskBegin(1, backdrop, transfer) else { fail("mask") }
+  assert_eq(backdrop, 0x01020304)
+  assert_eq(transfer, b"\x00\x80\xff")
+  guard commands[2] is MaskEnd else { fail("mask end") }
+  guard commands[3] is GroupEnd else { fail("group end") }
+}
+
+///|
+test "mask rejects truncated transfer data" {
+  let object : @core.ObjectPart = {
+    bbox: (0.0, 0.0, 0.0, 0.0),
+    strings: [],
+    images: [],
+    objects: [],
+    ops: b"\x54\x01\x00\x00\x00\x00\x03\x00\x80",
+  }
+  let rejected = try {
+    ignore(@render.compile_object(object))
+    false
+  } catch {
+    _ => true
+  }
+  assert_true(rejected)
+}

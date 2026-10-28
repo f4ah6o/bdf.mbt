@@ -51,6 +51,10 @@ pub(all) enum Command {
   Smoothing(Bool, Int32)
   Use(String)
   UseAt(String, Double, Double)
+  GroupBegin(Double, Int32, Double, Double, Double, Double)
+  GroupEnd
+  MaskBegin(Int32, Int32, Bytes)
+  MaskEnd
   Link(Double, Double, Double, Double, String)
   Mark(Int32, String)
   Ext(Bytes)
@@ -185,6 +189,17 @@ pub fn compile_object(object : @core.ObjectPart) -> Array[Command] raise {
       0x50 => commands.push(Use(read_object(r, object.objects)))
       0x51 =>
         commands.push(UseAt(read_object(r, object.objects), r.f32(), r.f32()))
+      0x52 =>
+        commands.push(
+          GroupBegin(r.f32(), r.u8(), r.f32(), r.f32(), r.f32(), r.f32()),
+        )
+      0x53 => commands.push(GroupEnd)
+      0x54 => {
+        let kind = r.u8()
+        let backdrop = r.u32()
+        commands.push(MaskBegin(kind, backdrop, r.take(r.varuint())))
+      }
+      0x55 => commands.push(MaskEnd)
       0x70 =>
         commands.push(
           Link(r.f32(), r.f32(), r.f32(), r.f32(), read_text(r, object.strings)),
