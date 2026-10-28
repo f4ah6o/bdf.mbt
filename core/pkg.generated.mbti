@@ -4,6 +4,8 @@ package "f4ah6o/bdf/core"
 // Values
 pub fn decode_object(Bytes) -> ObjectPart raise
 
+pub fn decode_object_resources(Bytes) -> ObjectResources raise
+
 pub fn decode_object_with_paths(Bytes) -> ObjectWithPaths raise
 
 pub fn decode_path_collection(Bytes) -> Array[Path] raise
@@ -23,12 +25,24 @@ pub suberror BdfError {
 }
 
 // Types and methods
+pub(all) struct ColorStop {
+  offset : Double
+  color : Int32
+}
+
 pub(all) struct Document {
   manifest : Manifest
   header : Header
   data : Bytes
 }
 pub fn Document::part(Self, String) -> Bytes raise
+
+pub(all) struct Font {
+  hash : String?
+  family : String
+  weight : Int32
+  style : Int32
+}
 
 pub(all) struct Header {
   version : Int32
@@ -56,6 +70,13 @@ pub(all) struct ObjectPart {
   ops : Bytes
 }
 
+pub(all) struct ObjectResources {
+  object : ObjectPart
+  paths : Array[PathEntry]
+  paints : Array[Paint]
+  fonts : Array[Font]
+}
+
 pub(all) struct ObjectWithPaths {
   object : ObjectPart
   paths : Array[PathEntry]
@@ -65,6 +86,11 @@ pub(all) struct Page {
   width : Double
   height : Double
   layers : Array[Layer]
+}
+
+pub(all) enum Paint {
+  Gradient(Int32, Array[Double], Array[ColorStop])
+  Pattern(Int32, Int32, Array[Double])
 }
 
 pub(all) struct Part {

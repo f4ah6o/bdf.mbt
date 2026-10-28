@@ -15,8 +15,17 @@ pub(all) struct ObjectWithPaths {
 }
 
 ///|
-/// Decode an object and its path references.
-pub fn decode_object_with_paths(data : Bytes) -> ObjectWithPaths raise {
+/// The resources carried by a BDF object.
+pub(all) struct ObjectResources {
+  object : ObjectPart
+  paths : Array[PathEntry]
+  paints : Array[Paint]
+  fonts : Array[Font]
+}
+
+///|
+/// Decode an object and its resource tables.
+pub fn decode_object_resources(data : Bytes) -> ObjectResources raise {
   let r = Reader::new(data)
   if r.take(4) != b"BOBJ" || r.u16() != 1 || r.u16() != 0 {
     raise BadFormat("unsupported object header")
@@ -46,37 +55,17 @@ pub fn decode_object_with_paths(data : Bytes) -> ObjectWithPaths raise {
   if paint_count > r.remaining() {
     raise BadFormat("paint count out of range")
   }
+  let paints : Array[Paint] = []
   for _ in 0..<paint_count {
-    let kind = r.u8()
-    if kind == 3 {
-      ignore(r.varuint())
-      r.skip(1 + 6 * 4)
-    } else {
-      if kind > 2 {
-        raise BadFormat("unknown paint kind")
-      }
-      let coord_count = if kind == 0 { 4 } else if kind == 1 { 6 } else { 3 }
-      r.skip(coord_count * 4)
-      let stops = r.varuint()
-      if stops > r.remaining() / 8 {
-        raise BadFormat("paint stops out of range")
-      }
-      r.skip(stops * 8)
-    }
+    paints.push(read_paint(r))
   }
   let font_count = r.varuint()
   if font_count > r.remaining() {
     raise BadFormat("font count out of range")
   }
+  let fonts : Array[Font] = []
   for _ in 0..<font_count {
-    let kind = r.u8()
-    if kind == 0 {
-      r.skip(16)
-    } else if kind != 1 {
-      raise BadFormat("unknown font kind")
-    }
-    ignore(r.string())
-    r.skip(3)
+    fonts.push(read_font(r))
   }
   let images : Array[String] = []
   let image_count = r.varuint()
@@ -98,7 +87,14 @@ pub fn decode_object_with_paths(data : Bytes) -> ObjectWithPaths raise {
   if r.remaining() != 0 {
     raise BadFormat("trailing object bytes")
   }
-  { object: { bbox, strings, images, objects, ops, }, paths, }
+  { object: { bbox, strings, images, objects, ops, }, paths, paints, fonts, }
+}
+
+///|
+/// Decode an object and its path references.
+pub fn decode_object_with_paths(data : Bytes) -> ObjectWithPaths raise {
+  let decoded = decode_object_resources(data)
+  { object: decoded.object, paths: decoded.paths, }
 }
 
 ///|

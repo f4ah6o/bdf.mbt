@@ -131,3 +131,17 @@ test "path run rejects truncated placements" {
   }
   assert_true(rejected)
 }
+
+///|
+test "paint instructions decode resource indices" {
+  let object : @core.ObjectPart = {
+    bbox: (0.0, 0.0, 0.0, 0.0),
+    strings: [],
+    images: [],
+    objects: [],
+    ops: b"\x11\x00\x13\x81\x01",
+  }
+  let commands = @render.compile_object(object)
+  guard commands[0] is FillPaint(0) else { fail("fill paint") }
+  guard commands[1] is StrokePaint(129) else { fail("stroke paint") }
+}

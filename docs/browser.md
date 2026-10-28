@@ -17,5 +17,5 @@ const pageCount = mount_bdf(document.querySelector("#preview"), bytes, "spread")
 
 This intentionally supports only identity, unencrypted, fixed/flow BDF documents
 whose BOBJ parts use the implemented drawing subset. It does not try to convert
-PDF/Office documents, decode images, load fonts, or decompress BDF parts.
+PDF/Office documents, decode images, load embedded fonts, or decompress BDF parts.
 A complete port needs Worker, decompression and cryptography host services.

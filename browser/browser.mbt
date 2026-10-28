@@ -177,8 +177,16 @@ extern "js" fn set_alpha(ctx : CanvasContext, alpha : Double) -> Unit =
   #|(ctx,a) => { ctx.globalAlpha = a; }
 
 ///|
-extern "js" fn set_font(ctx : CanvasContext, size : Double) -> Unit =
-  #|(ctx,size) => { ctx.font = size + "px sans-serif"; }
+extern "js" fn set_font(
+  ctx : CanvasContext,
+  size : Double,
+  family : String,
+  weight : Int32,
+  style : Int32,
+) -> Unit =
+  #|(ctx,size,family,weight,style) => {
+  #|  ctx.font = `${["normal", "italic", "oblique"][style] ?? "normal"} ${weight || 400} ${size}px ${family || "sans-serif"}`;
+  #|}
 
 ///|
 extern "js" fn set_text_style(
@@ -287,6 +295,81 @@ extern "js" fn draw_path(
   #|}
 
 ///|
+#external
+priv type CanvasGradient
+
+///|
+extern "js" fn make_gradient(
+  ctx : CanvasContext,
+  kind : Int32,
+  coordinates : FixedArray[Double],
+) -> CanvasGradient =
+  #|(ctx, kind, c) => kind === 0 ? ctx.createLinearGradient(...c) : kind === 1 ? ctx.createRadialGradient(...c) : ctx.createConicGradient(...c)
+
+///|
+extern "js" fn add_stop(
+  gradient : CanvasGradient,
+  offset : Double,
+  color : Int32,
+) -> Unit =
+  #|(g, offset, color) => {
+  #|  const n = color >>> 0;
+  #|  g.addColorStop(Math.min(1, Math.max(0, offset)), `rgba(${n >>> 24},${(n >>> 16) & 255},${(n >>> 8) & 255},${(n & 255) / 255})`);
+  #|}
+
+///|
+extern "js" fn apply_gradient(
+  ctx : CanvasContext,
+  gradient : CanvasGradient,
+  stroke : Bool,
+) -> Unit =
+  #|(ctx, g, stroke) => { if (stroke) ctx.strokeStyle = g; else ctx.fillStyle = g; }
+
+///|
+fn paint_style(
+  ctx : CanvasContext,
+  paints : Array[@core.Paint],
+  index : Int32,
+  stroke : Bool,
+) -> Unit raise {
+  if index < 0 || index >= paints.length() {
+    raise BadFormat("paint reference out of range")
+  }
+  match paints[index] {
+    @core.Gradient(kind, coordinates, stops) => {
+      let gradient = make_gradient(
+        ctx,
+        kind,
+        FixedArray::from_array(coordinates),
+      )
+      for stop in stops {
+        add_stop(gradient, stop.offset, stop.color)
+      }
+      apply_gradient(ctx, gradient, stroke)
+    }
+    @core.Pattern(_, _, _) =>
+      raise Unsupported("image patterns require image loading")
+  }
+}
+
+///|
+fn apply_font(
+  ctx : CanvasContext,
+  fonts : Array[@core.Font],
+  index : Int32,
+  size : Double,
+) -> Unit raise {
+  if index < 0 || index >= fonts.length() {
+    raise BadFormat("font reference out of range")
+  }
+  let font = fonts[index]
+  if font.hash is Some(_) {
+    raise Unsupported("embedded fonts require font loading")
+  }
+  set_font(ctx, size, font.family, font.weight, font.style)
+}
+
+///|
 fn path_at(paths : Array[@core.Path], index : Int32) -> @core.Path raise {
   if index < 0 || index >= paths.length() {
     raise BadFormat("path reference out of range")
@@ -339,6 +422,8 @@ fn paint_commands(
   ctx : CanvasContext,
   commands : Array[@render.Command],
   paths~ : Array[@core.Path] = [],
+  paints~ : Array[@core.Paint] = [],
+  fonts~ : Array[@core.Font] = [],
 ) -> Unit raise {
   for cmd in commands {
     match cmd {
@@ -351,7 +436,9 @@ fn paint_commands(
         paint_path(ctx, paths, index, 0, rule, 0.0, 0.0)
       @render.ClipRect(x, y, w, h) => clip_rect(ctx, x, y, w, h)
       @render.FillColor(color) => set_color(ctx, color, false)
+      @render.FillPaint(index) => paint_style(ctx, paints, index, false)
       @render.StrokeColor(color) => set_color(ctx, color, true)
+      @render.StrokePaint(index) => paint_style(ctx, paints, index, true)
       @render.Line(width, cap, join, miter) =>
         set_line(ctx, width, cap, join, miter)
       @render.Dash(segments, offset) =>
@@ -361,7 +448,7 @@ fn paint_commands(
       @render.Shadow(color, blur, dx, dy) =>
         set_shadow(ctx, color, blur, dx, dy)
       @render.Filter(css) => set_filter(ctx, css)
-      @render.Font(_, size) => set_font(ctx, size)
+      @render.Font(index, size) => apply_font(ctx, fonts, index, size)
       @render.TextStyle(a, b, d, spacing) =>
         set_text_style(ctx, a, b, d, spacing)
       @render.FillRect(x, y, w, h) => fill_rect(ctx, x, y, w, h)
@@ -430,9 +517,15 @@ pub fn mount_bdf(
       max_y = p.y + p.height
     }
     for layer in view.pages[p.index].layers {
-      let object = @core.decode_object_with_paths(doc.part(layer.object))
+      let object = @core.decode_object_resources(doc.part(layer.object))
       let paths = resolve_paths(doc, object.paths)
-      paint_commands(ctx, @render.compile_object(object.object), paths~)
+      paint_commands(
+        ctx,
+        @render.compile_object(object.object),
+        paths~,
+        paints=object.paints,
+        fonts=object.fonts,
+      )
     }
   }
   resize_host(host, max_x, max_y)
