@@ -2,6 +2,8 @@
 pub suberror BrowserError {
   Unsupported(String)
   BadFormat(String)
+  WrongPassword
+  WrongKey
 }
 
 ///|

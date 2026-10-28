@@ -2,6 +2,8 @@
 package "f4ah6o/bdf/core"
 
 // Values
+pub fn decode_encoded(Bytes, String, Int32) -> Bytes raise
+
 pub fn decode_object(Bytes) -> ObjectPart raise
 
 pub fn decode_object_resources(Bytes) -> ObjectResources raise
@@ -10,13 +12,19 @@ pub fn decode_object_with_paths(Bytes) -> ObjectWithPaths raise
 
 pub fn decode_path_collection(Bytes) -> Array[Path] raise
 
+pub fn open_encrypted_single(Bytes) -> EncryptedSingle raise
+
 pub fn open_single(Bytes) -> Document raise
 
 pub fn open_split(Bytes, (String, Int32) -> Bytes raise) -> SplitDocument raise
 
+pub fn parse_encrypted_manifest(String) -> EncryptedManifest raise
+
 pub fn parse_header(Bytes) -> Header raise
 
 pub fn parse_manifest(String) -> Manifest raise
+
+pub fn sealed_references(String, Manifest) -> Map[String, String] raise
 
 pub fn valid_hash(String) -> Bool
 
@@ -39,6 +47,20 @@ pub(all) struct Document {
 }
 pub fn Document::part(Self, String) -> Bytes raise
 
+pub(all) struct EncryptedManifest {
+  outer : Manifest
+  cipher : String
+  keys : Array[KeySlot]
+  manifest_hash : String
+  manifest_encoding : String
+}
+
+pub(all) struct EncryptedSingle {
+  metadata : EncryptedManifest
+  document : Document
+}
+pub fn EncryptedSingle::stored_part(Self, String) -> Bytes raise
+
 pub(all) struct Font {
   hash : String?
   family : String
@@ -52,6 +74,12 @@ pub(all) struct Header {
   manifest_offset : Int32
   manifest_length : Int32
   manifest_encoding : Int32
+}
+
+pub(all) enum KeySlot {
+  Password(String, Int32, String, String)
+  Ecdh(String, String, String, String)
+  Other
 }
 
 pub(all) struct Layer {

@@ -1,7 +1,7 @@
 # Browser MVP
 
 The `browser` package compiles to a JS-target foreign library exporting
-`mount_bdf_async`, `mount_bdf_split_async` and `mount_bdf`. It draws a BDF document into Canvas elements without the original
+`mount_bdf_async`, `mount_bdf_split_async`, the encrypted-document entry points, and `mount_bdf`. It draws a BDF document into Canvas elements without the original
 TypeScript renderer. The BDF parser, command decoder and page positions are MoonBit.
 
 ```sh
@@ -10,17 +10,17 @@ moon build --target js
 ```
 
 ```js
-// import { mount_bdf_async, mount_bdf } from "<compiled browser JS module>";
+// import { mount_bdf_async, mount_bdf_split_async, mount_bdf_encrypted_async, mount_bdf_encrypted_split_async, mount_bdf } from "<compiled browser JS module>";
 const bytes = new Uint8Array(await (await fetch("/sample.bdf")).arrayBuffer());
 const pageCount = await mount_bdf_async(document.querySelector("#preview"), bytes, "spread");
 // mount_bdf is synchronous and supports documents without images or embedded fonts.
 ```
 
-This intentionally supports only unencrypted, fixed/flow BDF documents
+This currently supports fixed/flow BDF documents
 whose BOBJ parts use the implemented drawing subset. It does not try to convert
 PDF/Office documents. The asynchronous entry point loads image and embedded font
 parts before drawing and releases them afterward. It supports raster images, SVG,
-and image patterns. A complete port needs Worker and cryptography host services.
+and image patterns. A complete port needs Worker transport and additional viewer features.
 
 
 For a split document, supply the UTF-8 manifest bytes and a loader that
@@ -53,3 +53,24 @@ const pages = await mount_bdf_split_async(host, manifest, async (hash, limit) =>
   return bytes;
 }, 'single');
 ```
+
+
+Encrypted single-file documents can be mounted in a secure browser context
+using a password or a Web Crypto P-256 `CryptoKeyPair`:
+
+```js
+await mount_bdf_encrypted_async(host, bytes, password, 'single');
+// Alternatively: await mount_bdf_encrypted_async(host, bytes, keyPair, 'single');
+```
+
+For split documents, use the same bounded part loader described above:
+
+```js
+await mount_bdf_encrypted_split_async(host, manifest, loadPart, password, 'single');
+```
+
+The browser derives the wrapping key with PBKDF2 or ECDH/HKDF and opens the
+content key and authenticated parts with Web Crypto. Wrong credentials,
+invalid key slots, and altered ciphertext cause the promise to reject. The
+password is normalized using NFKC. These entry points require Web Crypto, which
+browsers expose in secure contexts such as HTTPS and localhost.

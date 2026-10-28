@@ -3,6 +3,7 @@ import {
   "f4ah6o/bdf/render",
   "f4ah6o/bdf/viewer",
   "moonbitlang/async/js_async",
+  "moonbitlang/core/encoding/utf8",
 }
 
 import {

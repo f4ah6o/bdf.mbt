@@ -119,6 +119,14 @@ fn sized_number(object : Json, key : String) -> Double raise {
 
 ///|
 pub fn parse_manifest(input : String) -> Manifest raise {
+  parse_manifest_internal(input, false)
+}
+
+///|
+fn parse_manifest_internal(
+  input : String,
+  allow_encryption : Bool,
+) -> Manifest raise {
   let root = @json.parse(input) catch {
     _ => raise BadFormat("invalid manifest JSON")
   }
@@ -138,7 +146,7 @@ pub fn parse_manifest(input : String) -> Manifest raise {
   if root is { "encryption": encryption, .. } {
     match encryption {
       Null => ()
-      _ => raise Unsupported("encrypted manifest")
+      _ => if !allow_encryption { raise Unsupported("encrypted manifest") }
     }
   }
   let parts : Array[Part] = []

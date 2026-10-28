@@ -6,22 +6,38 @@ import {
 }
 
 // Values
+pub fn key_pair_credential(BrowserKeyPair) -> CryptoCredential
+
 pub fn mount_bdf(BrowserHost, Bytes, String) -> Int32 raise
 
 pub fn mount_bdf_async(BrowserHost, Bytes, String) -> @js_async.Promise[Int32]
+
+pub fn mount_bdf_encrypted_async(BrowserHost, Bytes, CryptoCredential, String) -> @js_async.Promise[Int32]
+
+pub fn mount_bdf_encrypted_split_async(BrowserHost, Bytes, SplitPartLoader, CryptoCredential, String) -> @js_async.Promise[Int32]
 
 pub fn mount_bdf_js(BrowserHost, Bytes, String) -> Int32
 
 pub fn mount_bdf_split_async(BrowserHost, Bytes, SplitPartLoader, String) -> @js_async.Promise[Int32]
 
+pub fn password_credential(String) -> CryptoCredential
+
 // Errors
 pub suberror BrowserError {
   Unsupported(String)
   BadFormat(String)
+  WrongPassword
+  WrongKey
 }
 
 // Types and methods
 type BrowserHost
+
+#external
+pub type BrowserKeyPair
+
+#external
+pub type CryptoCredential
 
 #external
 pub type SplitPartLoader

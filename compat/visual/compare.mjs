@@ -55,7 +55,7 @@ try {
   // A visual diff is not evidence if both pages failed or were still blank.
   const browser = await chromium.launch({ headless: true });
   try {
-    for (const name of ['baseline', 'moon', 'split']) {
+    for (const name of ['baseline', 'moon', 'split', 'encrypted-password', 'encrypted-split', 'encrypted-ecdh', 'encrypted-ecdh-split']) {
       const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
       const errors = [];
       page.on('pageerror', error => errors.push(String(error)));
@@ -84,12 +84,57 @@ try {
         });
         assert.deepEqual(failures, [true, true, true, true], 'split loader failure handling');
       }
+      if (name === 'encrypted-password') {
+        const failures = await page.evaluate(async () => {
+          const { mount_bdf_encrypted_async, mount_bdf_encrypted_split_async } = await import('/_build/js/debug/build/browser/browser.js');
+          const dir = './encrypted-fixture/';
+          const bytes = async file => new Uint8Array(await (await fetch(`${dir}${file}`)).arrayBuffer());
+          const single = await bytes('password.bdf');
+          const manifestBytes = await bytes('password-split/manifest.json');
+          const metadata = JSON.parse(new TextDecoder().decode(manifestBytes));
+          const manifestHash = metadata.encryption.manifest.part;
+          const firstPart = metadata.parts.find(part => part.h !== manifestHash).h;
+          const loader = async hash => bytes(`password-split/parts/${hash}`);
+          const corrupt = hashToCorrupt => async hash => {
+            const part = await loader(hash);
+            if (hash === hashToCorrupt) part[15] ^= 1;
+            return part;
+          };
+          const tamperedSingle = single.slice();
+          const view = new DataView(tamperedSingle.buffer);
+          const start = Number(view.getBigUint64(8, true) + view.getBigUint64(16, true));
+          tamperedSingle[start + 15] ^= 1;
+          const hostile = structuredClone(metadata);
+          hostile.encryption.keys[0].iter = 10000001;
+          let loaded = false;
+          const hostileLoader = async hash => { loaded = true; return loader(hash); };
+          const wrongPair = await crypto.subtle.generateKey({name:'ECDH', namedCurve:'P-256'}, true, ['deriveKey']);
+          const ecdh = await bytes('ecdh.bdf');
+          const cases = [
+            host => mount_bdf_encrypted_async(host, single, 'wrong', 'single'),
+            host => mount_bdf_encrypted_async(host, tamperedSingle, 'pass', 'single'),
+            host => mount_bdf_encrypted_async(host, ecdh, wrongPair, 'single'),
+            host => mount_bdf_encrypted_split_async(host, manifestBytes, corrupt(manifestHash), 'pass', 'single'),
+            host => mount_bdf_encrypted_split_async(host, manifestBytes, corrupt(firstPart), 'pass', 'single'),
+            host => mount_bdf_encrypted_split_async(host, new TextEncoder().encode(JSON.stringify(hostile)), hostileLoader, 'pass', 'single'),
+          ];
+          const results = [];
+          for (const test of cases) {
+            const host = document.createElement('div'); host.textContent = 'unchanged';
+            try { await test(host); results.push(false); }
+            catch { results.push(host.textContent === 'unchanged' && host.childElementCount === 0); }
+          }
+          return { results, loaded };
+        });
+        assert.deepEqual(failures.results, [true, true, true, true, true, true], 'encrypted failure handling');
+        assert.equal(failures.loaded, false, 'invalid key slot fetched data');
+      }
       await page.close();
     }
   } finally {
     await browser.close();
   }
-  for (const variant of ['moon', 'split']) {
+  for (const variant of ['moon', 'split', 'encrypted-password', 'encrypted-split', 'encrypted-ecdh', 'encrypted-ecdh-split']) {
   const variantOutput = path.join(output, variant);
   mkdirSync(variantOutput);
   await run(['diff', 'html', '--url', `${base}baseline.html`, '--current-url', `${base}${variant}.html`, '--output-dir', variantOutput, '--no-paint-tree']);

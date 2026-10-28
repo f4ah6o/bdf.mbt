@@ -1,15 +1,19 @@
 //go:build ignore
 
 // Generate fixture.bdf with shibukawa/bdf v0.2.1 (commit 4f9af52).
-// Run this file in a checkout of that module: go run <path>/generate_fixture.go <output> <synthetic.ttf> <split-dir>.
+// Run this file in a checkout of that module: go run <path>/generate_fixture.go <output> <synthetic.ttf> <split-dir> <encrypted-dir>.
 package main
 
 import (
 	"bytes"
+	"crypto/ecdh"
+	"encoding/base64"
+	"encoding/json"
 	"image"
 	"image/color"
 	"image/png"
 	"os"
+	"path/filepath"
 
 	bdf "github.com/shibukawa/bdf"
 )
@@ -89,5 +93,57 @@ func main() {
 	d.AddImage([]byte("unused split fixture part"))
 	if err = d.WriteSplit(os.Args[3]); err != nil {
 		panic(err)
+	}
+	if len(os.Args) > 4 {
+		dir := os.Args[4]
+		if err = os.MkdirAll(dir, 0755); err != nil {
+			panic(err)
+		}
+		lock, err := bdf.NewPasswordLock("ｐａｓｓ", 1000)
+		if err != nil {
+			panic(err)
+		}
+		d.Lock = lock
+		passwordFile, err := os.Create(filepath.Join(dir, "password.bdf"))
+		if err != nil {
+			panic(err)
+		}
+		if err = d.WriteSingle(passwordFile); err != nil {
+			panic(err)
+		}
+		passwordFile.Close()
+		if err = d.WriteSplit(filepath.Join(dir, "password-split")); err != nil {
+			panic(err)
+		}
+		seed := make([]byte, 32)
+		seed[31] = 42
+		private, err := ecdh.P256().NewPrivateKey(seed)
+		if err != nil {
+			panic(err)
+		}
+		d.Lock, err = bdf.NewECDHLock(private.PublicKey())
+		if err != nil {
+			panic(err)
+		}
+		ecdhFile, err := os.Create(filepath.Join(dir, "ecdh.bdf"))
+		if err != nil {
+			panic(err)
+		}
+		if err = d.WriteSingle(ecdhFile); err != nil {
+			panic(err)
+		}
+		ecdhFile.Close()
+		if err = d.WriteSplit(filepath.Join(dir, "ecdh-split")); err != nil {
+			panic(err)
+		}
+		pub := private.PublicKey().Bytes()
+		b64 := base64.RawURLEncoding.EncodeToString
+		jwk, err := json.Marshal(map[string]any{"kty": "EC", "crv": "P-256", "x": b64(pub[1:33]), "y": b64(pub[33:65]), "d": b64(seed), "ext": true})
+		if err != nil {
+			panic(err)
+		}
+		if err = os.WriteFile(filepath.Join(dir, "test-private.jwk"), jwk, 0644); err != nil {
+			panic(err)
+		}
 	}
 }

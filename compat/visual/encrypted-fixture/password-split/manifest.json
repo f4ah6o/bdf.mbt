@@ -1,0 +1,85 @@
+{
+ "bdf": 1,
+ "encryption": {
+  "cipher": "A256GCM",
+  "keys": [
+   {
+    "type": "password",
+    "kdf": "PBKDF2-SHA256",
+    "iter": 1000,
+    "salt": "4WRHGglD/akSAhwlRnYImQ==",
+    "key": "KCnnCcFttg39qof6X65XHjOuwgcC386o4DaQjiwSCDxyUcw3Z/0P6A=="
+   }
+  ],
+  "manifest": {
+   "part": "acf408f8e581912577353ef195e38d71",
+   "enc": "deflate-raw"
+  }
+ },
+ "parts": [
+  {
+   "h": "acf408f8e581912577353ef195e38d71",
+   "t": "sealed",
+   "enc": "identity",
+   "len": 587,
+   "size": 587,
+   "off": 0
+  },
+  {
+   "h": "b2d69cb80ffe4af951374c5315ec31f4",
+   "t": "sealed",
+   "enc": "identity",
+   "len": 422,
+   "size": 422,
+   "off": 0
+  },
+  {
+   "h": "e933b734bdd31c7a5e706e220268aceb",
+   "t": "sealed",
+   "enc": "identity",
+   "len": 112,
+   "size": 112,
+   "off": 0
+  },
+  {
+   "h": "37033195d6b33eb33fea6fac3b9bf046",
+   "t": "sealed",
+   "enc": "identity",
+   "len": 206,
+   "size": 206,
+   "off": 0
+  },
+  {
+   "h": "cec7109e4669ab142e43d4d40955432c",
+   "t": "sealed",
+   "enc": "identity",
+   "len": 120,
+   "size": 120,
+   "off": 0
+  },
+  {
+   "h": "71444c6583a192259859f5b52200af61",
+   "t": "sealed",
+   "enc": "identity",
+   "len": 75,
+   "size": 75,
+   "off": 0
+  },
+  {
+   "h": "ca073549b6950d19dbbd7955538411d4",
+   "t": "sealed",
+   "enc": "identity",
+   "len": 892,
+   "size": 892,
+   "off": 0
+  },
+  {
+   "h": "3859cc3bb9395c0048bb368f62f8e5e1",
+   "t": "sealed",
+   "enc": "identity",
+   "len": 53,
+   "size": 53,
+   "off": 0
+  }
+ ]
+}
