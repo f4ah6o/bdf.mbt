@@ -39,6 +39,11 @@ const parentHash = '00000000000000000000000000000000';
 const manifest = {bdf:1,parts:[{h:parentHash,t:'obj',len:parentBytes.length,size:parentBytes.length},{h:hash,t:'obj',len:childBytes.length,size:childBytes.length}],views:[{id:'v',kind:'fixed',pages:[{w:100,h:100,layers:[{role:'body',obj:parentHash},{role:'annotation',obj:hash}]},{w:100,h:100,layers:[{role:'body',obj:hash}]}]}]};
 const doc = await BdfDocument.open({manifest:async()=>manifest,stored:async entry=>entry.h===parentHash ? parentBytes : childBytes});
 assert.deepEqual(await doc.textIndex(manifest.views[0]), fallbackIndex);
+const sheetManifest = {...manifest,views:[{id:'s',kind:'sheet',tile:50,tiles:{'2,0':hash,'0,1':parentHash,'1,0':parentHash}}]};
+const sheetDoc = await BdfDocument.open({manifest:async()=>sheetManifest,stored:async entry=>entry.h===parentHash ? parentBytes : childBytes});
+const sheetIndex = await sheetDoc.textIndex(sheetManifest.views[0]);
+assert.deepEqual(sheetIndex.map(r=>r.text), ['Hello','World','second','wrapped','outlined','orphan','child','Hello','World','second','wrapped','outlined','orphan']);
+assert.deepEqual(sheetIndex.map(r=>[r.a,r.b,r.ordinal,r.sep]), [[1,0,0,2],[1,0,1,1],[1,0,2,1],[1,0,3,0],[1,0,4,1],[1,0,7,1],[2,0,0,2],[0,1,0,2],[0,1,1,1],[0,1,2,1],[0,1,3,0],[0,1,4,1],[0,1,7,1]]);
 assert.deepEqual(fallbackIndex.slice(-2), [
   {a:0,b:1,ordinal:0,sep:2,text:'child'},
   {a:1,b:0,ordinal:0,sep:2,text:'child'},

@@ -9,6 +9,8 @@ import {
 // Values
 pub fn build_page_text_index(@core.View, (String) -> @core.ObjectResources? raise) -> Array[@core.IndexRun] raise
 
+pub fn build_sheet_text_index(Array[@core.Tile], Double, (String) -> @core.ObjectResources? raise) -> Array[@core.IndexRun] raise
+
 pub fn cell_clipboard(Array[CellText], CellRange, trim? : Bool, skip_row? : (Int32) -> Bool, skip_col? : (Int32) -> Bool) -> CellClipboard raise
 
 pub fn compile_object(@core.ObjectPart) -> Array[Command] raise
@@ -30,6 +32,8 @@ pub fn run_rect(TextRun, Int32, Int32, (@core.Font, Double, String) -> Double) -
 pub fn table_cells(TextContent, table? : Int32) -> Array[CellText]
 
 pub fn text_has_extent(TextRun) -> Bool
+
+pub fn view_text_index(@core.View, (String) -> Bytes raise, (String) -> @core.ObjectResources? raise) -> Array[@core.IndexRun] raise
 
 // Errors
 pub suberror RenderError {

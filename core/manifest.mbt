@@ -22,12 +22,23 @@ pub(all) struct Page {
 }
 
 ///|
+/// A sheet tile's coordinates and referenced object.
+pub(all) struct Tile {
+  x : Int32
+  y : Int32
+  object : String
+} derive(Eq, Debug)
+
+///|
 pub(all) struct View {
   id : String
   kind : String
   title : String
   text_index : String?
   pages : Array[Page]
+  tile_size : Double
+  tiles : Array[Tile]
+  tiles_ref : String?
 }
 
 ///|
@@ -116,6 +127,71 @@ fn sized_number(object : Json, key : String) -> Double raise {
     raise BadFormat("page dimension out of range")
   }
   value
+}
+
+///|
+fn parse_tile_coordinate(text : StringView) -> Int32 raise {
+  if text.length() == 0 {
+    raise BadFormat("invalid tile coordinate")
+  }
+  for c in text {
+    if !c.is_ascii_digit() {
+      raise BadFormat("invalid tile coordinate")
+    }
+  }
+  @string.parse_int(text) catch {
+    _ => raise BadFormat("tile coordinate out of range")
+  }
+}
+
+///|
+fn parse_tiles(view : Json) -> Array[Tile] raise {
+  let tiles : Array[Tile] = []
+  if view is Object(fields) {
+    match fields.get("tiles") {
+      None | Some(Null) => ()
+      Some(Object(entries)) =>
+        for key, value in entries {
+          let coords = key.split(",").to_array()
+          if coords.length() != 2 {
+            raise BadFormat("invalid tile key")
+          }
+          let x = parse_tile_coordinate(coords[0])
+          let y = parse_tile_coordinate(coords[1])
+          let object = match value {
+            String(hash) if valid_hash(hash) => hash
+            _ => raise BadFormat("invalid tile object hash")
+          }
+          tiles.push({ x, y, object, })
+        }
+      _ => raise BadFormat("invalid tiles")
+    }
+  }
+  tiles.sort_by((a, b) => {
+    if a.y == b.y {
+      a.x.compare(b.x)
+    } else {
+      a.y.compare(b.y)
+    }
+  })
+  tiles
+}
+
+///|
+fn parse_tile_size(view : Json) -> Double raise {
+  if view is Object(fields) {
+    match fields.get("tile") {
+      None | Some(Null) => return 2048.0
+      Some(Number(value, ..)) => {
+        if value.is_nan() || value > 16777216.0 || (value > 0.0 && value < 1.0) {
+          raise BadFormat("tile size out of range")
+        }
+        return if value <= 0.0 { 2048.0 } else { value }
+      }
+      _ => raise BadFormat("invalid tile size")
+    }
+  }
+  2048.0
 }
 
 ///|
@@ -215,12 +291,21 @@ fn parse_manifest_internal(
       "" => None
       hash => Some(hash)
     }
+    let tile_size = if kind == "sheet" { parse_tile_size(view) } else { 2048.0 }
+    let tiles = if kind == "sheet" { parse_tiles(view) } else { [] }
+    let tiles_ref = match optional_string(view, "tilesRef", "") {
+      "" => None
+      hash => Some(hash)
+    }
     views.push({
       id,
       kind,
       title: optional_string(view, "title", ""),
       text_index,
       pages,
+      tile_size,
+      tiles,
+      tiles_ref,
     })
   }
   { parts, views, }

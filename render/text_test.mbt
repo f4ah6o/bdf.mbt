@@ -72,6 +72,9 @@ test "extract text and links in upstream reading order" {
     kind: "fixed",
     title: "",
     text_index: None,
+    tile_size: 2048.0,
+    tiles: [],
+    tiles_ref: None,
     pages: [
       {
         width: 100.0,
@@ -135,6 +138,75 @@ test "extract text and links in upstream reading order" {
     fn(hash) { if hash == "parent" { Some(parent) } else { Some(child) } },
   )
   assert_eq(fallback_index, index)
+  let sheet = {
+    ..view,
+    kind: "sheet",
+    pages: [],
+    tile_size: 50.0,
+    tiles: [
+      { x: 0, y: 1, object: "parent", },
+      { x: 2, y: 0, object: "child", },
+      { x: 1, y: 0, object: "parent", },
+    ],
+  }
+  let sheet_index = @render.view_text_index(
+    sheet,
+    fn(_) { fail("inline tiles need no part") },
+    fn(hash) { if hash == "parent" { Some(parent) } else { Some(child) } },
+  )
+  assert_eq(sheet_index.map(fn(r) { r.text }), [
+    "Hello", "World", "second", "wrapped", "outlined", "orphan", "child", "Hello",
+    "World", "second", "wrapped", "outlined", "orphan",
+  ])
+  assert_eq(sheet_index.map(fn(r) { (r.a, r.b, r.ordinal, r.separator) }), [
+    (1, 0, 0, 2),
+    (1, 0, 1, 1),
+    (1, 0, 2, 1),
+    (1, 0, 3, 0),
+    (1, 0, 4, 1),
+    (1, 0, 7, 1),
+    (2, 0, 0, 2),
+    (0, 1, 0, 2),
+    (0, 1, 1, 1),
+    (0, 1, 2, 1),
+    (0, 1, 3, 0),
+    (0, 1, 4, 1),
+    (0, 1, 7, 1),
+  ])
+  let edge = @render.build_sheet_text_index(
+    [{ x: 0, y: 0, object: "child", }],
+    5.0,
+    fn(_) { Some(child) },
+  )
+  assert_eq(edge.length(), 0) // the right edge is excluded
+  let edge_y = @render.build_sheet_text_index(
+    [{ x: 0, y: 0, object: "child", }],
+    7.0,
+    fn(_) { Some(child) },
+  )
+  assert_eq(edge_y.length(), 0) // the bottom edge is excluded
+  let inside = @render.build_sheet_text_index(
+    [{ x: 0, y: 0, object: "child", }],
+    8.0,
+    fn(_) { Some(child) },
+  )
+  assert_eq(inside.length(), 1)
+  let reference = { ..sheet, tiles: [], tiles_ref: Some("tile-index"), }
+  let referenced = @render.page_text_index(
+    reference,
+    fn(hash) {
+      assert_eq(hash, "tile-index")
+      b"\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\xcd\xf7\xbc\x4b\xf9\x40\xda\xfe\xf4\xe2\x34\x30\xdc\x1f\xdf\xc7\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    },
+    fn(hash) {
+      if hash == "00000000000000000000000000000000" {
+        Some(parent)
+      } else {
+        Some(child)
+      }
+    },
+  )
+  assert_eq(referenced, sheet_index)
   let transformed = @render.extract_text(
     parent,
     fn(hash) {

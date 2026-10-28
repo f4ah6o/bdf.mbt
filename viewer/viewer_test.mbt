@@ -5,6 +5,9 @@ test "spread places two pages side by side" {
     kind: "fixed",
     title: "",
     text_index: None,
+    tile_size: 2048.0,
+    tiles: [],
+    tiles_ref: None,
     pages: [
       { width: 100.0, height: 200.0, layers: [], },
       { width: 80.0, height: 100.0, layers: [], },

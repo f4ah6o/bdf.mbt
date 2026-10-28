@@ -57,7 +57,7 @@ pub fn normalize_query(
   query : String,
   case_sensitive~ : Bool = false,
 ) -> String {
-  fold_search(@normalization.nfkc(query), case_sensitive)
+  fold_search(search_nfkc(query), case_sensitive)
 }
 
 ///|
