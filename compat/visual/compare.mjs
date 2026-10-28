@@ -8,6 +8,7 @@ import { stripVTControlCharacters } from 'node:util';
 import { chromium } from 'playwright';
 import { PNG } from 'pngjs';
 import { verifyPageControls } from '../continuous/controls-test.mjs';
+import { verifyPiano } from '../music/piano-test.mjs';
 import { verifyLazyPages } from '../continuous/lazy-test.mjs';
 import { verifySheetZoom } from '../sheet/zoom-test.mjs';
 
@@ -16,7 +17,7 @@ const outputRoot = path.join(root, '_build/visual-diff');
 mkdirSync(outputRoot, { recursive: true });
 const output = mkdtempSync(path.join(outputRoot, 'run-'));
 const executable = path.join(root, 'node_modules/.bin/vlmkit');
-const allowed = ['/compat/visual/', '/compat/interactive/', '/compat/sheet/', '/compat/continuous/', '/node_modules/@bdfkit/', '/_build/js/debug/build/browser/'];
+const allowed = ['/compat/visual/', '/compat/interactive/', '/compat/sheet/', '/compat/continuous/', '/compat/music/', '/node_modules/@bdfkit/', '/_build/js/debug/build/browser/'];
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.bdf': 'application/octet-stream' };
 
 function run(args) {
@@ -422,6 +423,8 @@ try {
     assert.equal(resized.attachedLeft,150,'a document mounted while detached centers when attached');assert.equal(resized.disposed,true,'the layout observer is disposed when its host is removed');
     await verifyPageControls(browser,continuousBase,interactiveBase,base);
     await verifyLazyPages(browser,continuousBase);
+    await verifyPiano(browser,base);
+    for(const name of ['baseline','moon']){const page=await browser.newPage();await page.goto(`http://127.0.0.1:${server.address().port}/compat/music/piano-${name}.html`,{waitUntil:'networkidle'});assert.equal(await page.evaluate(()=>window.bdfStatus),'ready',`piano ${name}: ${await page.evaluate(()=>window.bdfError)}`);assert.ok(await page.locator('canvas[aria-label^="Piano roll with"]').count());await page.close()}
     const sheetBase=`http://127.0.0.1:${server.address().port}/compat/sheet/`;
     const cellFixtures={};
     for(const name of ['cells-baseline','cells-moon']){
@@ -1025,6 +1028,18 @@ try {
       let changed=0;for(let i=0;i<reference.data.length;i+=4)if(reference.data[i]!==actual.data[i]||reference.data[i+1]!==actual.data[i+1]||reference.data[i+2]!==actual.data[i+2]||reference.data[i+3]!==actual.data[i+3])changed++;
       console.log(`continuous ${kind}-${name} ${result.viewport}: ${changed} pixels changed (${(changed/area*100).toFixed(4)}%)`);
       assert.ok(changed/area<=0.0005,`${kind}-${name} ${result.viewport}: continuous visual difference exceeds 0.05%`);
+    }
+    await run(['diff','agent',reportPath,'--no-history']);
+  }
+  {
+    const musicBase=`http://127.0.0.1:${server.address().port}/compat/music/`,target=path.join(output,'piano');mkdirSync(target);
+    await run(['diff','html','--url',`${musicBase}piano-baseline.html`,'--current-url',`${musicBase}piano-moon.html`,'--output-dir',target,'--no-paint-tree']);
+    const reportPath=path.join(target,'diff-report.json'),report=JSON.parse(readFileSync(reportPath,'utf8'));
+    assert.equal(report.results.length,3,'expected three piano viewports');
+    for(const result of report.results){
+      const a=PNG.sync.read(readFileSync(path.join(target,`compat_music_piano-baseline-${result.viewport}.png`))),b=PNG.sync.read(readFileSync(path.join(target,`compat_music_piano-moon-${result.viewport}.png`)));
+      let changed=0;for(let i=0;i<a.data.length;i+=4)if(a.data[i]!==b.data[i]||a.data[i+1]!==b.data[i+1]||a.data[i+2]!==b.data[i+2]||a.data[i+3]!==b.data[i+3])changed++;
+      assert.ok(changed/(a.width*Math.min(a.height,400))<=0.0005,`${result.viewport}: piano visual difference exceeds 0.05%`);
     }
     await run(['diff','agent',reportPath,'--no-history']);
   }

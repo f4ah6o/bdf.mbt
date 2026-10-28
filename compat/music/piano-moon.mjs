@@ -1,0 +1,2 @@
+import {mount_bdf_async,bdf_set_music_mode_async} from '/_build/js/debug/build/browser/browser.js';
+try{const bytes=new Uint8Array(await(await fetch('./fixtures/ode-mml.bdf')).arrayBuffer()),host=document.querySelector('#host');await mount_bdf_async(host,bytes,'single');await bdf_set_music_mode_async(host,'piano-roll');host.scrollTop=700;window.bdfStatus='ready'}catch(error){window.bdfStatus='error';window.bdfError=String(error);console.error(error)}

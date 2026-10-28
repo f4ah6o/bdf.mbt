@@ -705,6 +705,7 @@ fn mount_document(
   resources? : BrowserResources,
   interactive~ : Bool = false,
   page_loader? : (Int32) -> @js_async.Promise[Unit],
+  music_loader? : () -> @js_async.Promise[Bytes],
 ) -> Int32 raise {
   if doc.manifest.views.length() == 0 {
     raise BadFormat("document has no view")
@@ -889,6 +890,12 @@ fn mount_document(
         })
       }),
     )
+  }
+  if view.play is Some(play) && play.seq is Some(hash) {
+    let load = music_loader.unwrap_or(() => {
+      @js_async.Promise::from_async(() => doc.part(hash))
+    })
+    install_music_mode(host, surface, load)
   }
   placements.length()
 }

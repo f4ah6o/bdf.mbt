@@ -65,7 +65,17 @@ the document. Page bitmaps are limited to 8192 pixels per side and 16,777,216
 pixels in total; a zoom that exceeds these limits for a visible page fails
 without changing the current view. Newly visible oversized pages report an
 `error` event. Page zoom rendering is asynchronous. Layout choice and page navigation apply to page views; a sheet
-keeps its layout. Music views are not yet supported.
+keeps its layout. A page view with MIDI can switch between its score and a
+piano roll:
+
+```js
+await bdf_set_music_mode_async(host, 'piano-roll');
+await bdf_set_music_mode_async(host, 'score');
+```
+
+The piano roll follows zoom, has no searchable text, and loads split MIDI parts
+on demand. Views without a MIDI sequence remain in their current display. Audio
+synthesis and playback are not yet implemented.
 
 ```js
 const bandsDrawn = await render_bdf_continuous_region_async(host, bytes, x, y, width, height, scale);

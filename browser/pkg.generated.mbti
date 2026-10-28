@@ -28,6 +28,8 @@ pub fn bdf_selection_text(BrowserHost) -> String
 
 pub fn bdf_set_layout(BrowserHost, String) -> Unit
 
+pub fn bdf_set_music_mode_async(BrowserHost, String) -> @js_async.Promise[Unit]
+
 pub fn bdf_set_zoom(BrowserHost, Double) -> Unit
 
 pub fn key_pair_credential(BrowserKeyPair) -> CryptoCredential

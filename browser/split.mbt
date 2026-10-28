@@ -346,6 +346,16 @@ async fn mount_split(
   } else {
     None
   }
+  let music_loader = if view.play is Some(play) && play.seq is Some(hash) {
+    Some(() => {
+      @js_async.Promise::from_async(() => {
+        prefetch_part(split, cache, loader, hash)
+        split.part(hash)
+      })
+    })
+  } else {
+    None
+  }
   let result = invoke_render(() => {
     if !current_sheet_request(host, request) {
       Err(BadFormat("page mount superseded"))
@@ -360,8 +370,17 @@ async fn mount_split(
               resources~,
               interactive~,
               page_loader=load,
+              music_loader?,
             )
-          None => mount_document(host, doc, layout, resources~, interactive~)
+          None =>
+            mount_document(
+              host,
+              doc,
+              layout,
+              resources~,
+              interactive~,
+              music_loader?,
+            )
         },
       ) catch {
         error => Err(error)

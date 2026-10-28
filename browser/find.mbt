@@ -89,7 +89,7 @@ fn install_document_find(
     (query, step) => {
       let zoom = viewer.zoom
       try {
-        if !find_nonblank(query) {
+        if !find_nonblank(query) || piano_active(host) {
           last_query = ""
           hits = []
           selected = -1

@@ -9,7 +9,7 @@ MoonBit implementation of the BDF v1 wire-format reader and the browser-facing `
 - `viewer`: document/view selection state and page placement in single, spread, and continuous modes, including RTL spreads and scroll strips.
 - `browser` (JS only): Canvas 2D adapter that draws fixed/flow pages, scroll strips, continuous body regions, and sheet viewports, including password- and P-256-protected documents, into a DOM host, including paths, gradients, child objects, transparency groups, masks, asynchronously loaded images and fonts, and optional selectable text layers.
 
-This is an **incremental port**, not a feature-equivalent replacement for the upstream npm packages. In particular, a full DOM viewer, wasm-gc cryptography, interactive sheet features and music, browser Worker transport and PDF/Office/CAD decoders are not yet implemented. Unsupported drawing opcodes fail explicitly instead of silently rendering incorrectly.
+This is an **incremental port**, not a feature-equivalent replacement for the upstream npm packages. In particular, a full DOM viewer, wasm-gc cryptography, some interactive sheet features and music playback, browser Worker transport and PDF/Office/CAD decoders are not yet implemented. Unsupported drawing opcodes fail explicitly instead of silently rendering incorrectly.
 
 Upstream implementation: https://github.com/shibukawa/bdf (MIT). Wire specification: https://github.com/shibukawa/bdf/blob/main/docs/spec.md .
 
@@ -52,7 +52,7 @@ Tile coordinates are currently limited to signed 32-bit values.
 must supply those fields; parsed documents use `None`, `"ltr"`, `None`, and
 `None` respectively when absent. `Document::play` and `SplitDocument::play`
 load MIDI bytes and cues; their `audio` methods load recorded audio and cues.
-The audio MIME type is restricted to `audio/*`. MIDI parsing and timeline
+The audio MIME type is restricted to `audio/*`. Page views with a MIDI sequence can switch to a piano roll using `bdf_set_music_mode_async`. MIDI parsing and timeline
 calculations work on both targets; audio synthesis and playback are not yet
 implemented.
 
