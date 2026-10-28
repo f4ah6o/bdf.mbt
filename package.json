@@ -1,0 +1,17 @@
+{
+  "name": "bdf-mbt-compatibility-tests",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@bdfkit/core": "0.2.1",
+    "@bdfkit/render": "0.2.1",
+    "@mizchi/actrun": "0.32.0",
+    "@mizchi/vlmkit": "0.23.2",
+    "playwright": "1.64.1",
+    "pngjs": "7.0.0"
+  },
+  "scripts": {
+    "test:visual": "moon build --target js && node compat/visual/compare.mjs",
+    "test:ci-local": "actrun workflow run .github/workflows/ci.yml --tmp --include-dirty --skip-action actions/checkout@v4 --skip-action hustcer/setup-moonbit@v1 --no-nix"
+  }
+}

@@ -47,6 +47,26 @@ The `core` package exposes `open_split` with a lazy host-provided loader for spl
 4. DOM/OffscreenCanvas viewer, lazy page rendering, sheet support, search, accessibility and music playback.
 5. Replace or separately port TinyGo converter engines for the desired document formats.
 
+## Compatibility checks
+
+The visual test compares the same BDF fixture with the upstream `@bdfkit/render`
+and this library in Chromium at three viewport widths. It verifies that both
+pages finish rendering and that their captured pixels differ by at most 0.05%
+of the visible document area. This fixture covers the supported drawing operations; it is not a complete
+compatibility test of all upstream features.
+
+```sh
+npm ci
+npx playwright install chromium
+npm run test:visual
+npm run test:ci-local
+```
+
+The last command uses `actrun` to execute the MoonBit workflow in a temporary
+workspace. It skips checkout and MoonBit setup and uses the locally installed
+`moon`; the GitHub Actions setup steps and hosted Linux environment are not
+validated by that local run. See [visual fixtures](compat/visual/README.md).
+
 ## License
 
 MIT; see [LICENSE](LICENSE). The raw DEFLATE implementation is supplied by [gaato/deflate](https://github.com/gaato/codecs.mbt), licensed under Apache-2.0; browser Promise integration uses Apache-2.0 licensed [moonbitlang/async](https://github.com/moonbitlang/async).
