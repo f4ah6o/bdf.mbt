@@ -271,6 +271,21 @@ try {
     assert.deepEqual(cellFixtures['cells-moon'].clipboard,cellFixtures['cells-baseline'].clipboard,'sheet merged cells and hidden rows/columns match upstream clipboard');
     assert.deepEqual(cellFixtures['cells-moon'].roles,cellFixtures['cells-baseline'].roles,'sheet cell accessibility roles match upstream');
     assert.deepEqual(cellFixtures['cells-moon'].box,cellFixtures['cells-baseline'].box,'sheet cell selection box matches upstream');
+    const dragPage=await browser.newPage({viewport:{width:1280,height:720}});
+    await dragPage.goto(`${sheetBase}cells-moon.html`,{waitUntil:'networkidle'});
+    await dragPage.waitForFunction(()=>window.bdfStatus==='ready'||window.bdfStatus==='error');
+    assert.equal(await dragPage.evaluate(()=>window.bdfStatus),'ready','sheet cell drag fixture is ready');
+    const dragBoxes=await dragPage.evaluate(()=>{getSelection().removeAllRanges();document.dispatchEvent(new Event('selectionchange'));return ['Header','End'].map(text=>{const el=[...document.querySelectorAll('[data-bdf-ordinal]')].find(s=>s.textContent===text),r=el.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height}})});
+    await dragPage.mouse.move(dragBoxes[0].x+2,dragBoxes[0].y+dragBoxes[0].h/2);await dragPage.mouse.down();
+    await dragPage.mouse.move(dragBoxes[1].x+dragBoxes[1].w-2,dragBoxes[1].y+dragBoxes[1].h/2,{steps:20});await dragPage.mouse.up();
+    const draggedCells=await dragPage.evaluate(async()=>{const bdf=await import('/_build/js/debug/build/browser/browser.js');return bdf.bdf_selection_cells_async(document.querySelector('#host'))});
+    assert.deepEqual(draggedCells,cellFixtures['cells-baseline'].clipboard,'dragging across sheet tiles selects the matching cell rectangle');
+    await dragPage.evaluate(()=>{getSelection().removeAllRanges();document.dispatchEvent(new Event('selectionchange'))});
+    await dragPage.mouse.move(dragBoxes[1].x+dragBoxes[1].w-2,dragBoxes[1].y+dragBoxes[1].h/2);await dragPage.mouse.down();
+    await dragPage.mouse.move(dragBoxes[0].x+2,dragBoxes[0].y+dragBoxes[0].h/2,{steps:20});await dragPage.mouse.up();
+    const reverseDragged=await dragPage.evaluate(async()=>{const bdf=await import('/_build/js/debug/build/browser/browser.js');return bdf.bdf_selection_cells_async(document.querySelector('#host'))});
+    assert.deepEqual(reverseDragged,cellFixtures['cells-baseline'].clipboard,'reverse dragging selects the same sheet cell rectangle');
+    await dragPage.close();
     const cellsPage=await browser.newPage({viewport:{width:1280,height:720}});
     await cellsPage.goto(`${sheetBase}live-moon.html`,{waitUntil:'networkidle'});
     const sheetCells=await cellsPage.evaluate(async()=>{
