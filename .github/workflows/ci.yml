@@ -1,0 +1,20 @@
+name: moonbit
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [js, wasm-gc]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hustcer/setup-moonbit@v1
+      - run: moon version --all
+      - run: moon check --target ${{ matrix.target }}
+      - run: moon test --target ${{ matrix.target }}
+      - run: moon build --target ${{ matrix.target }}
