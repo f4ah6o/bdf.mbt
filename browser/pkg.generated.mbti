@@ -6,6 +6,10 @@ import {
 }
 
 // Values
+pub fn bdf_audio_player(Bytes, String, BrowserAudioCues, BrowserAudioElement) -> BrowserAudioPlayer
+
+pub fn bdf_audio_player_for_view_async(BrowserHost, BrowserAudioElement) -> @js_async.Promise[BrowserAudioPlayer]
+
 pub fn bdf_clear_find(BrowserHost) -> Unit
 
 pub fn bdf_clipboard_html(BrowserClipboard) -> String
@@ -79,6 +83,15 @@ pub suberror BrowserError {
 }
 
 // Types and methods
+#external
+pub type BrowserAudioCues
+
+#external
+pub type BrowserAudioElement
+
+#external
+pub type BrowserAudioPlayer
+
 #external
 pub type BrowserClipboard
 

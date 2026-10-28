@@ -8,6 +8,8 @@ import {
 // Values
 pub const MAX_MIDI_EVENTS : Int32 = 1048576
 
+pub fn audio_media_type(String) -> String
+
 pub fn decode_cues(Bytes) -> Cues raise
 
 pub fn decode_encoded(Bytes, String, Int32) -> Bytes raise

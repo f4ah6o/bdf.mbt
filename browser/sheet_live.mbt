@@ -97,6 +97,7 @@ async fn mount_live_sheet(
   load_index : () -> @js_async.Promise[Unit],
   prepare_search : (Array[@core.Tile]) -> @js_async.Promise[Unit],
   interactive~ : Bool = false,
+  audio_loader? : (BrowserAudioElement) -> @js_async.Promise[BrowserAudioPlayer],
 ) -> Int32 {
   let mut handed_off = false
   defer (if !handed_off { dispose_resources(resources) })
@@ -294,6 +295,9 @@ async fn mount_live_sheet(
         }
       },
     )
+  }
+  if current_sheet_record(host, record) {
+    install_view_audio(host, document, view, audio_loader?)
   }
   result
 }

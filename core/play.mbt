@@ -14,7 +14,8 @@ pub(all) struct AudioData {
 }
 
 ///|
-fn audio_media_type(value : String) -> String {
+/// Accept audio MIME types without parameters or unsafe characters.
+pub fn audio_media_type(value : String) -> String {
   let bytes = @utf8.encode(value)
   if bytes.length() <= 6 ||
     bytes[0] != b'a' ||

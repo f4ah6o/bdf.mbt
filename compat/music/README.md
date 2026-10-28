@@ -11,3 +11,8 @@ truncated and malformed MIDI inputs against `@bdfkit/core` and
 zoom behavior with the upstream viewer, and checks lazy split loading and
 stale asynchronous renders. The visual workflow also uses vlmkit at three
 viewport widths.
+
+`audio-test.mjs` compares recording playback controls, events, errors, speed,
+and cue behavior with the upstream player. `audio-browser-test.mjs` mounts
+single and split recordings on page and sheet views, plays a synthetic WAV in
+Chromium, and verifies lazy loading and resource cleanup.

@@ -74,8 +74,33 @@ await bdf_set_music_mode_async(host, 'score');
 ```
 
 The piano roll follows zoom, has no searchable text, and loads split MIDI parts
-on demand. Views without a MIDI sequence remain in their current display. Audio
-synthesis and playback are not yet implemented.
+on demand. Views without a MIDI sequence remain in their current display.
+
+Views containing a recording can create a player after mounting. Pass an
+existing audio element to show its native controls, or `null` to create one:
+
+```js
+const player = await bdf_audio_player_for_view_async(host, null);
+if (player) {
+  player.onUpdate = () => console.log(player.state, player.position);
+  playButton.addEventListener('click', () => player.play());
+  pauseButton.addEventListener('click', () => player.pause());
+  // player.seek(10) seeks in seconds.
+  // player.cursorAt(player.position) returns the current cue line.
+  // player.timeAt(0) returns the nearest occurrence of system 0.
+}
+```
+
+Create the player before the click, then call `play()` in the user gesture;
+browsers may block playback started outside one.
+
+The player also exposes `duration`, `playing`, `speedPercent`,
+`setSpeedPercent`, `stop`, `onEnd`, and `onError`. Split recordings and cues
+are loaded on demand. Unmounting or replacing the host disposes its players;
+an absent recording returns `null`. For independent data, use
+`bdf_audio_player(bytesOrBlob, mediaType, cuesOrNull, elementOrNull)` and
+dispose the returned player when finished. The cue object uses the upstream
+`{ systems, cues }` format. MIDI synthesis and playback are not yet implemented.
 
 ```js
 const bandsDrawn = await render_bdf_continuous_region_async(host, bytes, x, y, width, height, scale);

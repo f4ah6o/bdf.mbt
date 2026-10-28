@@ -186,6 +186,7 @@ async fn mount_split(
     raise BadFormat("document has no view")
   }
   let view = split.manifest.views[0]
+  let audio_loader = split_audio_loader(split, cache, loader, view)
   if view.kind == "sheet" {
     if view.tiles.is_empty() && view.tiles_ref is Some(hash) {
       prefetch_part(split, cache, loader, hash)
@@ -250,6 +251,7 @@ async fn mount_split(
         })
       },
       interactive~,
+      audio_loader?,
     )
   }
   if view.kind != "fixed" && view.kind != "flow" && view.kind != "scroll" {
@@ -371,6 +373,7 @@ async fn mount_split(
               interactive~,
               page_loader=load,
               music_loader?,
+              audio_loader?,
             )
           None =>
             mount_document(
@@ -380,6 +383,7 @@ async fn mount_split(
               resources~,
               interactive~,
               music_loader?,
+              audio_loader?,
             )
         },
       ) catch {
@@ -404,5 +408,40 @@ async fn mount_split(
       pages
     }
     Err(error) => raise error
+  }
+}
+
+///|
+fn split_audio_loader(
+  split : @core.SplitDocument,
+  cache : Map[String, Bytes],
+  loader : SplitPartLoader,
+  view : @core.View,
+) -> ((BrowserAudioElement) -> @js_async.Promise[BrowserAudioPlayer])? {
+  if view.play is Some(play) && play.audio is Some(hash) {
+    Some(element => {
+      @js_async.Promise::from_async(() => {
+        prefetch_part(split, cache, loader, hash)
+        let cues = match play.cues {
+          Some(cue_hash) => {
+            prefetch_part(split, cache, loader, cue_hash)
+            Some(@core.decode_cues(split.part(cue_hash)))
+          }
+          None => None
+        }
+        let bytes = split.part(hash)
+        let media_type = @core.audio_media_type(play.media_type)
+        invoke_audio_create(() => {
+          make_audio_player(
+            bytes,
+            media_type,
+            audio_cues_from_core(cues),
+            element,
+          )
+        }).wait()
+      })
+    })
+  } else {
+    None
   }
 }

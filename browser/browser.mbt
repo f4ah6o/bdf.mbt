@@ -706,6 +706,7 @@ fn mount_document(
   interactive~ : Bool = false,
   page_loader? : (Int32) -> @js_async.Promise[Unit],
   music_loader? : () -> @js_async.Promise[Bytes],
+  audio_loader? : (BrowserAudioElement) -> @js_async.Promise[BrowserAudioPlayer],
 ) -> Int32 raise {
   if doc.manifest.views.length() == 0 {
     raise BadFormat("document has no view")
@@ -897,5 +898,6 @@ fn mount_document(
     })
     install_music_mode(host, surface, load)
   }
+  install_view_audio(host, doc, view, audio_loader?)
   placements.length()
 }
