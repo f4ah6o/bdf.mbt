@@ -130,7 +130,7 @@ async fn render_locate_worker(
   } else {
     []
   }
-  let resources = new_resources()
+  let resources = doc.resources()
   defer dispose_resources(resources)
   let runs : Map[String, Array[@render.TextRun]] = {}
   let measure = render_measure_context()

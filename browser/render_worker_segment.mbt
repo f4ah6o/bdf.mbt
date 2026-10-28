@@ -341,6 +341,6 @@ async fn RenderWorkerState::open_segments(
   }
   loader.took(doc, s)
   doc.segments = Some(loader)
-  self.open = Some(doc)
+  self.install(doc)
   render_success(render_json_value(doc.raw))
 }

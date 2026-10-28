@@ -107,6 +107,7 @@ priv struct RenderDocument {
   sources : Array[RenderDocumentSource]
   raw : Bytes
   mut segments : RenderSegmentLoader?
+  mut cache : WorkerResourceCache?
 }
 
 ///|
@@ -196,6 +197,7 @@ fn new_render_single(data : Bytes) -> RenderDocument raise {
     sources: [render_single_source(doc)],
     raw: render_manifest_bytes(data),
     segments: None,
+    cache: None,
   }
 }
 
@@ -210,6 +212,7 @@ fn new_render_split(
     sources: [source],
     raw: manifest,
     segments: None,
+    cache: None,
   }
 }
 
@@ -223,6 +226,7 @@ priv struct RenderLocked {
 priv struct RenderWorkerState {
   mut open : RenderDocument?
   mut locked : RenderLocked?
+  mut settings : WorkerResourceOptions
 }
 
 ///|
@@ -251,7 +255,7 @@ async fn RenderWorkerState::unlock(
     error => return render_error(error.to_string(), "")
   }
   self.locked = None
-  self.open = Some(document)
+  self.install(document)
   render_success(render_json_value(document.raw))
 }
 
@@ -264,9 +268,15 @@ async fn RenderWorkerState::open_source(
   let source = render_request_source(request)
   let kind = render_source_kind(source)
   if !replace {
-    if self.open is Some(old) && old.segments is Some(segments) {
-      segment_abort(segments.network)
+    if self.open is Some(old) {
+      if old.segments is Some(segments) {
+        segment_abort(segments.network)
+      }
+      if old.cache is Some(cache) {
+        worker_cache_retire(cache)
+      }
     }
+    self.settings = worker_request_options(request)
     self.open = None
     self.locked = None
   }
@@ -309,7 +319,7 @@ async fn RenderWorkerState::open_source(
     let doc = new_render_split(bytes, loader) catch {
       error => return render_error(error.to_string(), "")
     }
-    self.open = Some(doc)
+    self.install(doc)
     return render_success(render_json_value(doc.raw))
   }
   let header = @core.parse_header(bytes) catch {
@@ -333,6 +343,6 @@ async fn RenderWorkerState::open_source(
   let doc = new_render_single(bytes) catch {
     error => return render_error(error.to_string(), "")
   }
-  self.open = Some(doc)
+  self.install(doc)
   render_success(render_json_value(doc.raw))
 }

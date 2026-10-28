@@ -417,7 +417,7 @@ async fn render_page_content_worker(
     Some(page) => page
     None => raise BadFormat("bdf: no page " + index.to_string())
   }
-  let resources = new_resources()
+  let resources = doc.resources()
   defer dispose_resources(resources)
   render_prepare_text(doc, resources, page.layers)
   render_content_value(
@@ -446,7 +446,7 @@ async fn render_continuous_content_worker(
     height: render_request_rect(request, "h"),
   }
   let bands = @render.continuous_bands(view, viewport)
-  let resources = new_resources()
+  let resources = doc.resources()
   defer dispose_resources(resources)
   let measure = render_measure_context()
   let output = render_empty_content()
@@ -499,7 +499,7 @@ async fn render_sheet_content_worker(
     }
   }
   let visible = @render.sheet_tiles_in(tiles, ranges)
-  let resources = new_resources()
+  let resources = doc.resources()
   defer dispose_resources(resources)
   let output = render_empty_content()
   let measure = render_measure_context()

@@ -172,7 +172,7 @@ async fn render_page_worker(
     Some(page) => page
     None => raise BadFormat("bdf: no page " + index.to_string())
   }
-  let resources = new_resources()
+  let resources = doc.resources()
   worker_resource_rasterizer(resources)
   defer dispose_resources(resources)
   render_prepare_layers(doc, resources, page.layers)
@@ -216,7 +216,7 @@ async fn render_continuous_worker(
     height: render_request_rect(request, "h"),
   }
   let bands = @render.continuous_bands(view, viewport)
-  let resources = new_resources()
+  let resources = doc.resources()
   worker_resource_rasterizer(resources)
   defer dispose_resources(resources)
   for band in bands {
@@ -269,7 +269,7 @@ async fn render_sheet_worker(
     height: render_request_rect(request, "h"),
   }
   let tiles = visible_sheet_tiles(view, table, viewport)
-  let resources = new_resources()
+  let resources = doc.resources()
   worker_resource_rasterizer(resources)
   defer dispose_resources(resources)
   for tile in tiles {

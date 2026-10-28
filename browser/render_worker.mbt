@@ -21,8 +21,13 @@ async fn RenderWorkerState::dispatch(
     "replace" => return self.open_source(request, true)
     "unlock" => return self.unlock(request)
     "close" => {
-      if self.open is Some(old) && old.segments is Some(segments) {
-        segment_abort(segments.network)
+      if self.open is Some(old) {
+        if old.segments is Some(segments) {
+          segment_abort(segments.network)
+        }
+        if old.cache is Some(cache) {
+          worker_cache_retire(cache)
+        }
       }
       self.open = None
       self.locked = None
@@ -33,6 +38,10 @@ async fn RenderWorkerState::dispatch(
   guard self.open is Some(document) else {
     return render_error("bdf: no document open", "")
   }
+  if document.cache is Some(cache) {
+    worker_cache_enter(cache)
+  }
+  defer (if document.cache is Some(cache) { worker_cache_leave(cache) })
   let view = document.view(render_request_view(request)) catch {
     error => return render_error(error.to_string(), "")
   }
@@ -117,7 +126,11 @@ async fn RenderWorkerState::dispatch(
 /// Install the BDF rendering protocol in a dedicated Worker.
 #export_name("bdf_install_render_worker")
 pub fn bdf_install_render_worker() -> Unit {
-  let state : RenderWorkerState = { open: None, locked: None, }
+  let state : RenderWorkerState = {
+    open: None,
+    locked: None,
+    settings: worker_default_options(),
+  }
   render_worker_transport(request => {
     @js_async.Promise::from_async(() => {
       state.dispatch(request) catch {

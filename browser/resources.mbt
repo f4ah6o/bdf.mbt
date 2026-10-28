@@ -51,24 +51,39 @@ extern "js" fn load_image(
   #|      const n=d.getUint16(at+2); if(n<2) break; at+=2+n;
   #|    }
   #|  }
-  #|  if (size && size[0]*size[1] > 2**28) { r.images.set(hash,null); return; }
   #|  const utf16 = b[0]===0xff&&b[1]===0xfe ? "utf-16le" : b[0]===0xfe&&b[1]===0xff ? "utf-16be" : "utf-8";
   #|  const svg = new TextDecoder(utf16).decode(b.subarray(0,512)).replace(/^\ufeff/,"").trimStart().startsWith("<");
+  #|  const cache=r.worker;
+  #|  if(!svg&&cache){
+  #|    if(cache.refused.has(hash)){r.images.set(hash,null);return}
+  #|    let bmp=cache.images.get(hash);const stated=bmp?[bmp.width,bmp.height]:size;
+  #|    if(stated&&stated[0]*stated[1]>cache.maxPixels){cache.refused.add(hash);r.images.set(hash,null);console.warn(`bdf: image ${hash} of ${stated[0]} × ${stated[1]} pixels is not drawn`);return}
+  #|    const held=r.hold.images.has(hash);r.hold.images.add(hash);
+  #|    // A string survives the MoonBit async boundary without an extra Error prefix.
+  #|    const pin=dimensions=>{r.hold.bytes+=dimensions[0]*dimensions[1]*4;if(r.hold.bytes>cache.holdLimit)throw `bdf: the images of a render take more than ${cache.holdLimit} bytes`};
+  #|    if(!held&&stated)pin(stated);
+  #|    if(bmp){cache.images.delete(hash);cache.images.set(hash,bmp);r.images.set(hash,bmp);return}
+  #|    let pending=cache.decoding.get(hash);
+  #|    if(!pending){pending=createImageBitmap(new Blob([b])).then(image=>{if(cache.disposed){image.close();return}if(image.width*image.height>cache.maxPixels){cache.refused.add(hash);console.warn(`bdf: image ${hash} of ${image.width} × ${image.height} pixels is not drawn`);image.close();return}cache.images.set(hash,image);cache.bytes+=image.width*image.height*4;cache.trim()}).finally(()=>cache.decoding.delete(hash));cache.decoding.set(hash,pending)}
+  #|    await pending;bmp=cache.images.get(hash);if(!held&&!stated&&bmp)pin([bmp.width,bmp.height]);r.images.set(hash,bmp??null);return;
+  #|  }
+  #|  if (!svg && size && size[0]*size[1] > 2**28) { r.images.set(hash,null); return; }
   #|  let image;
   #|  if (svg) {
+  #|    if(cache?.vectors.has(hash)){r.images.set(hash,cache.vectors.get(hash));return}
   #|    const head=new TextDecoder(utf16).decode(b.subarray(0,65536)),tag=/<(?:[\w.-]+:)?svg\b[^<>]*>/.exec(head)?.[0]??'';
   #|    const attr=name=>{const m=new RegExp(`\\s${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`).exec(tag);return m?m[1]??m[2]:undefined};
   #|    const units={'':1,px:1,pt:96/72,pc:16,in:96,cm:96/2.54,mm:96/25.4,q:96/101.6,em:16,ex:8};
   #|    const length=s=>{const m=/^\s*([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*([A-Za-z%]*)\s*$/.exec(s??'');const n=m?Number(m[1])*(units[m[2].toLowerCase()]??NaN):NaN;return n>0?n:undefined};
   #|    let width=length(attr('width')),height=length(attr('height'));const vb=(attr('viewBox')??'').split(/[\s,]+/).filter(Boolean).map(Number),vw=vb.length===4&&vb[2]>0&&vb[3]>0?vb[2]:0,vh=vw?vb[3]:0;
   #|    if(width===undefined||height===undefined){if(width!==undefined&&vw)height=width*vh/vw;else if(height!==undefined&&vw)width=height*vw/vh;else if(vw)[width,height]=[vw,vh];width??=300;height??=150}
-  #|    if(r.svgRaster){image={vector:true,worker:true,hash,data:b.slice(),width,height,rasters:[],failed:new Set()};}
+  #|    if(r.svgRaster){image={vector:true,worker:true,hash,data:b.slice(),width,height,rasters:[],failed:new Set(),pending:new Map(),disposed:false};if(cache)cache.vectors.set(hash,image);}
   #|    else {const url=URL.createObjectURL(new Blob([b],{type:"image/svg+xml"}));try{image=new Image();image.src=url;await image.decode()}finally{URL.revokeObjectURL(url)}image={vector:true,image,width,height,rasters:[]};}
   #|  } else {
   #|    image=await createImageBitmap(new Blob([b]));
   #|    if (image.width*image.height > 2**28) { image.close(); image=null; }
   #|  }
-  #|  if (image) {
+  #|  if (image && !cache) {
   #|    const width=image.width || image.naturalWidth || 0, height=image.height || image.naturalHeight || 0;
   #|    const bytes=width*height*4;
   #|    if (r.decodedBytes + bytes > 4 * 1024 * 1024 * 1024) {
@@ -87,15 +102,17 @@ extern "js" fn load_font(
   bytes : Bytes,
 ) -> @js_async.Promise[Unit] =
   #|async (r, hash, bytes) => {
-  #|  const face = new FontFace("bdf-"+hash, bytes);
-  #|  await face.load();
-  #|  (globalThis.document?.fonts??globalThis.fonts)?.add(face);
-  #|  r.fonts.set(hash, face);
+  #|  const cache=r.worker;
+  #|  if(cache?.fonts.has(hash))return;
+  #|  const load=async()=>{const face=new FontFace("bdf-"+hash,bytes);await face.load();if(cache?.disposed)return;(globalThis.document?.fonts??globalThis.fonts)?.add(face);r.fonts.set(hash,face)};
+  #|  if(!cache){await load();return}
+  #|  let pending=cache.fontLoading.get(hash);if(!pending){pending=load().finally(()=>cache.fontLoading.delete(hash));cache.fontLoading.set(hash,pending)}await pending;
   #|}
 
 ///|
 extern "js" fn dispose_resources(resources : BrowserResources) -> Unit =
   #|(r) => {
+  #|  if(r.worker){r.worker.holds.delete(r.hold);r.worker.trim();r.images.clear();return}
   #|  for (const image of r.images.values()) if(image?.vector){for(const raster of image.rasters){if(typeof raster.canvas.close==='function')raster.canvas.close();else raster.canvas.width=raster.canvas.height=0}image.rasters.length=0}else if (image && typeof image.close === "function") image.close();
   #|  for (const face of r.fonts.values()) (globalThis.document?.fonts??globalThis.fonts)?.delete(face);
   #|  r.images.clear(); r.fonts.clear();
@@ -152,4 +169,4 @@ extern "js" fn worker_resource_rasterizer(resources : BrowserResources) -> Unit 
 extern "js" fn settle_worker_rasters(
   resources : BrowserResources,
 ) -> @js_async.Promise[Bool] =
-  #|async (r) => {const jobs=[...r.misses.values()];r.misses.clear();const results=await Promise.all(jobs.map(async({vec,k})=>{try{const w=Math.max(1,Math.round(vec.width*k)),h=Math.max(1,Math.round(vec.height*k)),canvas=await r.svgRaster(vec.hash,vec.data,w,h);vec.rasters.push({k,canvas});while(vec.rasters.length>4)vec.rasters.shift().canvas.close();return true}catch(e){vec.failed.add(k);console.warn(`bdf: SVG image ${vec.hash}: ${e?.message??e}`);return false}}));return results.some(Boolean)}
+  #|async (r) => {const jobs=[...r.misses.values()];r.misses.clear();const results=await Promise.all(jobs.map(async({vec,k})=>{if(vec.rasters.some(x=>x.k===k))return true;let pending=vec.pending.get(k);if(!pending){pending=(async()=>{try{const w=Math.max(1,Math.round(vec.width*k)),h=Math.max(1,Math.round(vec.height*k)),canvas=await r.svgRaster(vec.hash,vec.data,w,h);if(vec.disposed){canvas.close();return false}vec.rasters.push({k,canvas});while(vec.rasters.length>4)vec.rasters.shift().canvas.close();return true}catch(e){vec.failed.add(k);console.warn(`bdf: SVG image ${vec.hash}: ${e?.message??e}`);return false}finally{vec.pending.delete(k)}})();vec.pending.set(k,pending)}return pending}));return results.some(Boolean)}

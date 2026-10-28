@@ -14,6 +14,7 @@ import { verifyConverterBrowser } from '../converter/browser-test.mjs';
 import { verifyRenderWorker } from '../render_worker/browser-test.mjs';
 import { verifyRangeWorker } from '../render_worker/range-test.mjs';
 import { verifySegmentWorker } from '../render_worker/segment-test.mjs';
+import { verifyWorkerResources } from '../render_worker/resource-test.mjs';
 import { verifyPiano } from '../music/piano-test.mjs';
 import { verifyLazyPages } from '../continuous/lazy-test.mjs';
 import { verifySheetZoom } from '../sheet/zoom-test.mjs';
@@ -436,6 +437,7 @@ try {
     await verifyRenderWorker(browser,base);
     await verifyRangeWorker(browser,base);
     await verifySegmentWorker(browser,base);
+    await verifyWorkerResources(browser,base);
   const workerBase = new URL('../render_worker/', base).href;
   for (const name of ['baseline', 'moon']) {
     const page = await browser.newPage();

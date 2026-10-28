@@ -108,6 +108,6 @@ async fn RenderWorkerState::open_range(
   let doc = new_render_split(raw, render_range_loader(range, header, manifest)) catch {
     error => return render_error(error.to_string(), "")
   }
-  self.open = Some(doc)
+  self.install(doc)
   render_success(render_json_value(doc.raw))
 }
