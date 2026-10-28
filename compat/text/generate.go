@@ -54,7 +54,17 @@ func main() {
 	structured.Mark(bdf.MarkHeading, "0x2").FillText("hex", 0, 0, 0)
 	structured.Mark(bdf.MarkHeading, "2e0").FillText("exp", 0, 0, 0)
 	structured.Mark(bdf.MarkHeading, "7").FillText("invalid", 0, 0, 0)
+
+	cells := bdf.NewObject()
+	cells.Mark(bdf.MarkTable, "").Mark(bdf.MarkCell, "A1").FillText("a", 0, 0, 5).Mark(bdf.MarkLine, "").FillText("b", 0, 10, 5).Mark(bdf.MarkParagraph, "").FillText("c", 0, 20, 5)
+	cells.Mark(bdf.MarkCell, "A1").FillText("duplicate", 0, 30, 20)
+	cells.Mark(bdf.MarkCell, "B1").Mark(bdf.MarkCell, "C1").FillText("outer", 30, 30, 20)
+	cells.Mark(bdf.MarkTable, "").Mark(bdf.MarkCell, "A1").FillText("inner", 30, 40, 20).Mark(bdf.MarkEnd, "").Mark(bdf.MarkEnd, "")
+	cells.Mark(bdf.MarkCell, "D4").FillText("sheet", 0, 60, 25)
 	if err := os.MkdirAll(dir, 0755); err != nil {
+		panic(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "cells.bobj"), cells.Encode(), 0644); err != nil {
 		panic(err)
 	}
 	if err := os.WriteFile(filepath.Join(dir, "structure.bobj"), structured.Encode(), 0644); err != nil {

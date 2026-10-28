@@ -7,6 +7,8 @@ import {
 }
 
 // Values
+pub fn cell_clipboard(Array[CellText], CellRange, trim? : Bool, skip_row? : (Int32) -> Bool, skip_col? : (Int32) -> Bool) -> CellClipboard raise
+
 pub fn compile_object(@core.ObjectPart) -> Array[Command] raise
 
 pub fn decode_commands(Bytes) -> Array[Command] raise
@@ -17,6 +19,8 @@ pub fn join_text(Array[TextRun]) -> String
 
 pub fn parse_cell_ref(String) -> CellRef?
 
+pub fn table_cells(TextContent, table? : Int32) -> Array[CellText]
+
 // Errors
 pub suberror RenderError {
   UnsupportedOpcode(Int32)
@@ -25,11 +29,32 @@ pub suberror RenderError {
 }
 
 // Types and methods
+pub(all) struct CellClipboard {
+  text : String
+  html : String
+} derive(Eq, @debug.Debug)
+
+pub(all) struct CellRange {
+  row0 : Int32
+  col0 : Int32
+  row1 : Int32
+  col1 : Int32
+} derive(Eq, @debug.Debug)
+
 pub(all) struct CellRef {
   row : Int32
   col : Int32
   rows : Int32
   cols : Int32
+  scope : String?
+} derive(Eq, @debug.Debug)
+
+pub(all) struct CellText {
+  row : Int32
+  col : Int32
+  rows : Int32
+  cols : Int32
+  text : String
   scope : String?
 } derive(Eq, @debug.Debug)
 

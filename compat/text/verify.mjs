@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { decodeObject, extractContent, parseCellRef } from '@bdfkit/core';
+import { tableCells, cellClipboard } from '@bdfkit/render';
 
 const dir = new URL('.', import.meta.url);
 const parentBytes = readFileSync(new URL('parent.bobj', dir));
@@ -59,3 +60,32 @@ console.log('Upstream semantic structure matches the MoonBit fixture expectation
 
 assert.deepEqual(parseCellRef('\ufeffZ10:A1\tcol\n'), {row:9,col:25,rows:1,cols:1,scope:'col'});
 assert.equal(parseCellRef('A1\u0085'), undefined);
+
+assert.deepEqual(tableCells(structure,9), [
+  {row:0,col:0,rows:1,cols:1,text:'head',scope:'col'},
+  {row:0,col:1,rows:1,cols:2,text:'wide'},
+]);
+assert.deepEqual(tableCells(structure), [{row:11,col:1,rows:1,cols:1,text:'セル'}]);
+const cells=[{row:0,col:0,rows:1,cols:1,text:'head',scope:'col'},{row:0,col:1,rows:1,cols:2,text:'"wide"\n&<>'},{row:1,col:0,rows:2,cols:1,text:'a\tb'},{row:1,col:1,rows:1,cols:1,text:'42'}];
+const clip=cellClipboard(cells,{row0:0,col0:0,row1:2,col1:2});
+assert.equal(clip.text,'head\t"""wide""\n&<>"\t\n"a\tb"\t42\t\n\t\t');
+assert.equal(clip.html,'<meta charset="utf-8"><table><tr><th scope="col">head</th><td colspan="2">&quot;wide&quot;<br style="mso-data-placement:same-cell">&amp;&lt;&gt;</td></tr><tr><td rowspan="2">a\tb</td><td>42</td><td></td></tr><tr><td></td><td></td></tr></table>');
+const trimmed=cellClipboard(cells,{row0:0,col0:0,row1:4,col1:4},{trim:true});
+assert.equal(trimmed.html,'<meta charset="utf-8"><table><tr><th scope="col">head</th><td>&quot;wide&quot;<br style="mso-data-placement:same-cell">&amp;&lt;&gt;</td></tr><tr><td>a\tb</td><td>42</td></tr></table>');
+const hidden=cellClipboard(cells,{row0:0,col0:0,row1:2,col1:2},{skipRow:r=>r===1,skipCol:c=>c===1});
+assert.equal(hidden.html,'<meta charset="utf-8"><table><tr><th scope="col">head</th><td>&quot;wide&quot;<br style="mso-data-placement:same-cell">&amp;&lt;&gt;</td></tr><tr><td>a\tb</td><td></td></tr></table>');
+console.log('Upstream table cell collection and clipboard match the MoonBit fixture expectations.');
+
+const cellsBytes=readFileSync(new URL('cells.bobj',dir));
+const cellsSource=readFileSync(new URL('../../render/cells_extract_test.mbt',dir),'utf8');
+const embeddedCells=cellsSource.match(/let object = @core\.decode_object_resources\(\s*b"([^"]+)"\s*,?\s*\)/);
+assert.ok(embeddedCells,'missing embedded cells fixture');
+assert.deepEqual(Buffer.from([...embeddedCells[1].matchAll(/\\x([0-9a-f]{2})/g)].map(m=>parseInt(m[1],16))),cellsBytes);
+const nested=extractContent(decodeObject(cellsBytes),()=>undefined);
+assert.deepEqual(tableCells(nested,0),[
+ {row:0,col:0,rows:1,cols:1,text:'a b\nc duplicate'},
+ {row:0,col:1,rows:1,cols:1,text:''},
+ {row:0,col:2,rows:1,cols:1,text:'outer\ninner'},
+]);
+assert.deepEqual(tableCells(nested,9),[{row:0,col:0,rows:1,cols:1,text:'inner'}]);
+assert.deepEqual(tableCells(nested),[{row:3,col:3,rows:1,cols:1,text:'sheet'}]);

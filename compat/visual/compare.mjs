@@ -142,13 +142,39 @@ try {
       const snapshot = await page.evaluate(() => {
         if (window.bdfStatus !== 'ready') throw new Error(window.bdfError);
         const host=document.querySelector('#host'), spans=[...host.querySelectorAll('[data-bdf-ordinal]')];
-        const roles=[...host.querySelectorAll('[role]')].map(el=>({role:el.getAttribute('role'),level:el.getAttribute('aria-level'),row:el.getAttribute('aria-rowindex'),col:el.getAttribute('aria-colindex'),label:el.getAttribute('aria-label')}));
+        const roles=[...host.querySelectorAll('[role]')].map(el=>({role:el.getAttribute('role'),level:el.getAttribute('aria-level'),row:el.getAttribute('aria-rowindex'),col:el.getAttribute('aria-colindex'),colspan:el.getAttribute('aria-colspan'),label:el.getAttribute('aria-label')}));
         const anchors=[...host.querySelectorAll('a')].map(a=>({href:a.getAttribute('href'),page:a.getAttribute('data-bdf-page'),text:a.textContent}));
         const geometry=spans.map(span=>{const r=span.getBoundingClientRect();return [r.x,r.y,r.width,r.height]});
         const range=document.createRange();range.setStart(spans[1].firstChild,1);range.setEnd(spans[3].firstChild,6);
         const selection=getSelection();selection.removeAllRanges();selection.addRange(range);
         const selected=window.readSelection();const multiRange=document.createRange();multiRange.setStart(spans[1].firstChild,1);multiRange.setEnd(spans.at(-1).firstChild,spans.at(-1).textContent.length);selection.removeAllRanges();selection.addRange(multiRange);const crossPage=window.readSelection();selection.removeAllRanges();selection.addRange(range);const clipboard=new DataTransfer();const event=new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:clipboard});host.dispatchEvent(event);const cutData=new DataTransfer();const cutEvent=new ClipboardEvent('cut',{bubbles:true,cancelable:true,clipboardData:cutData});host.dispatchEvent(cutEvent);
-        return {texts:spans.map(s=>s.textContent),seps:spans.map(s=>s.getAttribute('data-bdf-sep')),ordinals:spans.map(s=>s.getAttribute('data-bdf-ordinal')),roles,anchors,geometry,selected,crossPage,copied:clipboard.getData('text/plain'),prevented:event.defaultPrevented,cut:cutData.getData('text/plain'),cutPrevented:cutEvent.defaultPrevented};
+        const header=spans.find(s=>s.textContent==='Header'), value=spans.find(s=>s.textContent==='42');
+        const cellRange=document.createRange();cellRange.setStart(header.firstChild,1);cellRange.setEnd(value.firstChild,1);selection.removeAllRanges();selection.addRange(cellRange);document.dispatchEvent(new Event('selectionchange'));
+        const box=host.querySelector('[data-bdf-cellbox]'),rect=box?.getBoundingClientRect();
+        const tableData=new DataTransfer(),tableCopy=new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:tableData});host.dispatchEvent(tableCopy);const tableCutData=new DataTransfer(),tableCut=new ClipboardEvent('cut',{bubbles:true,cancelable:true,clipboardData:tableCutData});host.dispatchEvent(tableCut);
+        const cellResult={active:!!host.querySelector('[role=table][data-bdf-cells]'),box:rect?[rect.x,rect.y,rect.width,rect.height]:null,plain:tableData.getData('text/plain'),html:tableData.getData('text/html'),prevented:tableCopy.defaultPrevented,cut:tableCutData.getData('text/plain'),cutHtml:tableCutData.getData('text/html'),cutPrevented:tableCut.defaultPrevented,api:window.readCells()};
+        selection.setBaseAndExtent(value.firstChild,1,header.firstChild,1);document.dispatchEvent(new Event('selectionchange'));
+        const reverseData=new DataTransfer(),reverseCopy=new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:reverseData});host.dispatchEvent(reverseCopy);
+        const reverseCell={active:!!host.querySelector('[data-bdf-cellbox]'),plain:reverseData.getData('text/plain'),html:reverseData.getData('text/html')};
+        const outsideRange=document.createRange();outsideRange.setStart(header.firstChild,0);outsideRange.setEnd(spans.at(-1).firstChild,3);selection.removeAllRanges();selection.addRange(outsideRange);document.dispatchEvent(new Event('selectionchange'));
+        const outsideData=new DataTransfer(),outsideCopy=new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:outsideData});host.dispatchEvent(outsideCopy);
+        const outsideCell={active:!!host.querySelector('[data-bdf-cellbox]'),plain:outsideData.getData('text/plain'),html:outsideData.getData('text/html')};
+        const annoX=spans.find(s=>s.textContent==='Anno X'),annoY=spans.find(s=>s.textContent==='Anno Y');
+        const annotationRange=document.createRange();annotationRange.setStart(annoX.firstChild,0);annotationRange.setEnd(annoY.firstChild,annoY.textContent.length);selection.removeAllRanges();selection.addRange(annotationRange);document.dispatchEvent(new Event('selectionchange'));
+        const annotationData=new DataTransfer(),annotationCopy=new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:annotationData});host.dispatchEvent(annotationCopy);
+        const annotationCells={active:!!host.querySelector('[data-bdf-cellbox]'),plain:annotationData.getData('text/plain'),html:annotationData.getData('text/html')};
+        const differentTables=document.createRange();differentTables.setStart(value.firstChild,0);differentTables.setEnd(annoY.firstChild,2);selection.removeAllRanges();selection.addRange(differentTables);document.dispatchEvent(new Event('selectionchange'));
+        const mixedData=new DataTransfer(),mixedCopy=new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:mixedData});host.dispatchEvent(mixedCopy);
+        const mixedTables={active:!!host.querySelector('[data-bdf-cellbox]'),plain:mixedData.getData('text/plain'),html:mixedData.getData('text/html')};
+        const singleCell=document.createRange();singleCell.setStart(header.firstChild,1);singleCell.setEnd(header.firstChild,4);selection.removeAllRanges();selection.addRange(singleCell);document.dispatchEvent(new Event('selectionchange'));
+        const singleData=new DataTransfer(),singleCopy=new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:singleData});host.dispatchEvent(singleCopy);
+        const singleCellResult={active:!!host.querySelector('[data-bdf-cellbox]'),plain:singleData.getData('text/plain'),html:singleData.getData('text/html'),noCells:window.readCells()==null};
+        const farLeft=spans.find(s=>s.textContent==='Far left'),farRight=spans.find(s=>s.textContent==='Far right');
+        const huge=document.createRange();huge.setStart(farLeft.firstChild,0);huge.setEnd(farRight.firstChild,farRight.textContent.length);selection.removeAllRanges();selection.addRange(huge);document.dispatchEvent(new Event('selectionchange'));
+        let hugeRejected=false;try{window.readCells()}catch{hugeRejected=true}
+        const hugeData=new DataTransfer(),hugeCopy=new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:hugeData});host.dispatchEvent(hugeCopy);
+        const hugeResult={rejected:hugeRejected,plain:hugeData.getData('text/plain'),html:hugeData.getData('text/html'),prevented:hugeCopy.defaultPrevented};
+        return {texts:spans.map(s=>s.textContent),seps:spans.map(s=>s.getAttribute('data-bdf-sep')),ordinals:spans.map(s=>s.getAttribute('data-bdf-ordinal')),roles,anchors,geometry,selected,crossPage,copied:clipboard.getData('text/plain'),prevented:event.defaultPrevented,cut:cutData.getData('text/plain'),cutPrevented:cutEvent.defaultPrevented,cellResult,reverseCell,outsideCell,singleCellResult,hugeResult,annotationCells,mixedTables};
       });
       assert.deepEqual(errors, [], `${name}: browser errors`);
       assert.equal(snapshot.selected, 'ello world Second');
@@ -157,6 +183,23 @@ try {
       assert.equal(snapshot.prevented, true);
       assert.equal(snapshot.cut, snapshot.selected);
       assert.equal(snapshot.cutPrevented, true);
+      assert.equal(snapshot.cellResult.active,true);
+      assert.equal(snapshot.cellResult.plain,'Header\tValue\t\nPrice\t42\t');
+      assert.equal(snapshot.cellResult.prevented,true);
+      assert.equal(snapshot.cellResult.cut,snapshot.cellResult.plain);
+      assert.equal(snapshot.cellResult.cutHtml,snapshot.cellResult.html);
+      assert.equal(snapshot.cellResult.cutPrevented,true);
+      assert.deepEqual(snapshot.reverseCell,{active:true,plain:snapshot.cellResult.plain,html:snapshot.cellResult.html});
+      assert.equal(snapshot.outsideCell.active,false);
+      assert.equal(snapshot.outsideCell.html,'');
+      assert.ok(snapshot.outsideCell.plain.endsWith('\n\nSec'));
+      assert.deepEqual(snapshot.singleCellResult,{active:false,plain:'ead',html:'',noCells:true});
+      assert.deepEqual(snapshot.cellResult.api,{text:snapshot.cellResult.plain,html:snapshot.cellResult.html});
+      assert.deepEqual(snapshot.hugeResult,{rejected:true,plain:'Far left\nFar right',html:'',prevented:true});
+      assert.equal(snapshot.annotationCells.active,true);
+      assert.equal(snapshot.annotationCells.plain,'Anno X\tAnno Y');
+      assert.equal(snapshot.mixedTables.active,false);
+      assert.equal(snapshot.mixedTables.html,'');
       assert.equal(snapshot.anchors.length, 1, 'unsafe link must not be rendered');
       assert.equal(snapshot.anchors[0].page, '1');
       await page.evaluate(() => getSelection().removeAllRanges());
@@ -202,6 +245,15 @@ try {
       await page.keyboard.press('Enter');
       assert.equal(await page.evaluate(() => location.hash), '#page=1');
       snapshots.push(snapshot);
+      await page.close();
+    }
+    for (const name of ['selected-baseline','selected-moon']) {
+      const page=await browser.newPage({viewport:{width:1280,height:720}});
+      await page.goto(`${interactiveBase}${name}.html`,{waitUntil:'networkidle'});
+      await page.waitForFunction(() => window.bdfStatus==='ready'||window.bdfStatus==='error');
+      assert.equal(await page.evaluate(() => window.bdfStatus),'ready',`${name}: selected fixture failed`);
+      const selection=await page.evaluate(() => ({box:!!document.querySelector('[data-bdf-cellbox]'),table:!!document.querySelector('[role=table][data-bdf-cells]')}));
+      assert.deepEqual(selection,{box:true,table:true},`${name}: selected cell highlight missing`);
       await page.close();
     }
     const resourcePage = await browser.newPage();
@@ -293,7 +345,9 @@ try {
     }
     await resourcePage.close();
     const [expected, actual] = snapshots;
-    for (const key of ['texts','seps','ordinals','roles','anchors','selected','crossPage','copied','prevented','cut','cutPrevented','dragged','draggedBack']) assert.deepEqual(actual[key], expected[key], `interactive ${key}`);
+    for (const key of ['texts','seps','ordinals','roles','anchors','selected','crossPage','copied','prevented','cut','cutPrevented','dragged','draggedBack','singleCellResult','reverseCell','outsideCell','hugeResult','annotationCells','mixedTables']) assert.deepEqual(actual[key], expected[key], `interactive ${key}`);
+    for (const key of ['active','plain','html','prevented','cut','cutHtml','cutPrevented','api']) assert.deepEqual(actual.cellResult[key],expected.cellResult[key], `cell ${key}`);
+    for (let i=0;i<4;i++) assert.ok(Math.abs(actual.cellResult.box[i]-expected.cellResult.box[i])<1, `cell box ${i}`);
     for (let i=0;i<expected.geometry.length;i++) for (let j=0;j<4;j++) assert.ok(Math.abs(actual.geometry[i][j]-expected.geometry[i][j]) < 1, `interactive span ${i} geometry ${j}`);
   } finally {
     await browser.close();
@@ -314,6 +368,19 @@ try {
     assert.ok(ratio <= 0.0005, `${result.viewport}: interactive visual difference exceeds 0.05%`);
   }
   await run(['diff','agent',interactiveReportPath,'--no-history']);
+  const selectedOutput=path.join(output,'selected-cells');mkdirSync(selectedOutput);
+  await run(['diff','html','--url',`${interactiveBase}selected-baseline.html`,'--current-url',`${interactiveBase}selected-moon.html`,'--output-dir',selectedOutput,'--no-paint-tree']);
+  const selectedReportPath=path.join(selectedOutput,'diff-report.json');
+  const selectedReport=JSON.parse(readFileSync(selectedReportPath,'utf8'));
+  for (const result of selectedReport.results) {
+    const before=PNG.sync.read(readFileSync(path.join(selectedOutput,`compat_interactive_selected-baseline-${result.viewport}.png`)));
+    const after=PNG.sync.read(readFileSync(path.join(selectedOutput,`compat_interactive_selected-moon-${result.viewport}.png`)));
+    let changed=0;for(let i=0;i<before.data.length;i+=4)if(before.data[i]!==after.data[i]||before.data[i+1]!==after.data[i+1]||before.data[i+2]!==after.data[i+2]||before.data[i+3]!==after.data[i+3])changed++;
+    const ratio=changed/(Math.min(before.width,640)*Math.min(before.height,576));
+    console.log(`selected cells ${result.viewport}: ${changed} pixels changed (${(ratio*100).toFixed(4)}%)`);
+    assert.ok(ratio<=0.0005,`${result.viewport}: selected cell visual difference exceeds 0.05%`);
+  }
+  await run(['diff','agent',selectedReportPath,'--no-history']);
   await run(['scan','handlers',`${interactiveBase}moon.html`,'--no-ledger']);
   await run(['check','interactions',`${interactiveBase}moon.html`,'--reference',`${interactiveBase}baseline.html`,'--handlers','--no-ledger']);
   for (const variant of ['moon', 'split', 'encrypted-password', 'encrypted-split', 'encrypted-ecdh', 'encrypted-ecdh-split']) {

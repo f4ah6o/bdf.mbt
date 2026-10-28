@@ -1,5 +1,5 @@
 import { BdfDocument, BufferSource, extractContent } from '@bdfkit/core';
-import { CanvasRenderer, ResourceCache, buildTextLayer, installCopyHandler, selectionText, TEXT_LAYER_CSS, concat } from '@bdfkit/render';
+import { CanvasRenderer, ResourceCache, buildTextLayer, installCopyHandler, selectionText, selectionCells, TEXT_LAYER_CSS, concat } from '@bdfkit/render';
 try {
   const bytes = new Uint8Array(await (await fetch('./fixture.bdf')).arrayBuffer());
   const doc = await BdfDocument.open(new BufferSource(bytes));
@@ -24,5 +24,12 @@ try {
   }
   host.style.minHeight=(top-16)+'px';installCopyHandler(host);
   window.readSelection = () => selectionText(document.getSelection(),host);
-  resources.release(hold);resources.dispose();window.bdfStatus='ready';
+  window.readCells = () => selectionCells(document.getSelection(),host);
+  resources.release(hold);resources.dispose();if (location.pathname.includes('selected-')) {
+    const spans=[...host.querySelectorAll('[data-bdf-ordinal]')];
+    const first=spans.find(s=>s.textContent==='Header'), last=spans.find(s=>s.textContent==='42');
+    const range=document.createRange();range.setStart(first.firstChild,1);range.setEnd(last.firstChild,1);
+    getSelection().removeAllRanges();getSelection().addRange(range);document.dispatchEvent(new Event('selectionchange'));
+  }
+  window.bdfStatus='ready';
 } catch (error) { window.bdfStatus='error';window.bdfError=String(error?.stack??error);console.error(error); }

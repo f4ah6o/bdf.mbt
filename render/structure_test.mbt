@@ -88,6 +88,14 @@ test "extract structure, links and figure bounds" {
     Some({ x: 11.0, y: 12.0, width: 13.0, height: 14.0, }),
   )
   assert_eq(content.nodes[31].bounds, content.nodes[30].bounds)
+  let table = @render.table_cells(content, table=9)
+  assert_eq(table, [
+    { row: 0, col: 0, rows: 1, cols: 1, text: "head", scope: Some("col"), },
+    { row: 0, col: 1, rows: 1, cols: 2, text: "wide", scope: None, },
+  ])
+  assert_eq(@render.table_cells(content), [
+    { row: 11, col: 1, rows: 1, cols: 1, text: "セル", scope: None, },
+  ])
   assert_eq((content.links[0].after, content.links[0].node), (3, 8))
 }
 

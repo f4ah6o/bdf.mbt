@@ -7,8 +7,7 @@ figure, an internal link, and an unsafe URL that must not become a link.
 
 The visual test compares the upstream renderer and text layer with the MoonBit
 interactive mount using `vlmkit`; Playwright checks semantic roles, run
-positions, keyboard activation, partial and cross-page selection, clipboard
-serialization, and font cleanup. Split and encrypted interactive mounts are
+positions, keyboard activation, partial and cross-page selection, merged-cell selection, oversized-range fallback, TSV/HTML clipboard serialization, and font cleanup. Selected-cell screenshots are compared against upstream in three viewports. Split and encrypted interactive mounts are
 also exercised using the visual fixtures.
 
 To regenerate from the upstream checkout:

@@ -6,6 +6,12 @@ import {
 }
 
 // Values
+pub fn bdf_clipboard_html(BrowserClipboard) -> String
+
+pub fn bdf_clipboard_text(BrowserClipboard) -> String
+
+pub fn bdf_selection_cells(BrowserHost) -> BrowserClipboard?
+
 pub fn bdf_selection_text(BrowserHost) -> String
 
 pub fn key_pair_credential(BrowserKeyPair) -> CryptoCredential
@@ -43,6 +49,9 @@ pub suberror BrowserError {
 }
 
 // Types and methods
+#external
+pub type BrowserClipboard
+
 type BrowserHost
 
 #external

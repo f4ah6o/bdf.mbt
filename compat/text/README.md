@@ -3,7 +3,7 @@
 `parent.bobj` and `child.bobj` were generated with `generate.go` using
 [shibukawa/bdf v0.2.1](https://github.com/shibukawa/bdf/tree/v0.2.1).
 They cover reading order, separators, transforms, language, alternative text,
-child objects, links, text inside masks, semantic nodes, A1 cell references, clipped and nested figure bounds. `verify.mjs` checks the same
+child objects, links, text inside masks, semantic nodes, A1 cell references, clipped and nested figure bounds, nested and duplicate cells, and TSV/HTML clipboard serialization. `verify.mjs` checks the same
 expectations against the published `@bdfkit/core` extractor. The MoonBit tests
 embed the generated object bytes so they can also run on wasm-gc.
 

@@ -85,12 +85,17 @@ await mount_bdf_interactive_async(host, bytes, 'single');
 // mount_bdf_interactive_encrypted_async(host, bytes, passwordOrKeyPair, layout)
 // mount_bdf_interactive_encrypted_split_async(host, manifest, loadPart, passwordOrKeyPair, layout)
 const selectedText = bdf_selection_text(host);
+const selectedCells = bdf_selection_cells(host); // undefined unless the selection spans table cells
+// selectedCells, when present, has text (TSV) and html properties.
 unmount_bdf(host);
 ```
 
 The text layer includes headings, lists, tables, figures, language attributes,
 and links restricted to HTTP, HTTPS, mailto and BDF internal fragments. Copy
-and cut serialize the selected text using the document's run separators.
+and cut serialize selected text using the document's run separators. A selection
+spanning cells of the same table expands to include intersecting merged cells;
+copy and cut provide both TSV and an HTML table. A selection within a single
+cell stays a text selection. Oversized cell ranges fall back to text for copy
+and cut; `bdf_selection_cells` rejects them.
 Embedded fonts remain loaded until the host is unmounted, remounted, or removed
-from the document. Table-cell range copying and viewer navigation between views
-are not yet implemented.
+from the document. Viewer navigation between views is not yet implemented.
