@@ -27,8 +27,9 @@ viewport, fetching visible tiles as it scrolls. Give the host dimensions in CSS;
 when they are absent, it defaults to 640 by 400 pixels. It returns `1` for the
 sheet view. `unmount_bdf` releases images, fonts, observers and pending work.
 The interactive entry points add selectable text and safe links for loaded
-tiles, retaining visited text layers while scrolling. Rectangular sheet-cell
-selection and frozen panes are still being ported. The synchronous
+tiles, retaining visited text layers while scrolling. Each tile currently has
+its own accessible table; a single combined accessibility tree and frozen
+panes are still being ported. The synchronous
 `mount_bdf` entry point supports fixed/flow pages only.
 
 To draw a single sheet region instead of a scrolling view, use the single or
@@ -104,7 +105,7 @@ await mount_bdf_interactive_async(host, bytes, 'single');
 // mount_bdf_interactive_encrypted_async(host, bytes, passwordOrKeyPair, layout)
 // mount_bdf_interactive_encrypted_split_async(host, manifest, loadPart, passwordOrKeyPair, layout)
 const selectedText = bdf_selection_text(host);
-const selectedCells = bdf_selection_cells(host); // undefined unless the selection spans table cells
+const selectedCells = await bdf_selection_cells_async(host); // absent unless the selection spans cells
 // selectedCells, when present, has text (TSV) and html properties.
 const found = await bdf_find_async(host, 'example', 0); // { query, index, total, more, detail, rects }
 bdf_open_find(host); // show the search field
@@ -118,7 +119,13 @@ and cut serialize selected text using the document's run separators. A selection
 spanning cells of the same table expands to include intersecting merged cells;
 copy and cut provide both TSV and an HTML table. A selection within a single
 cell stays a text selection. Oversized cell ranges fall back to text for copy
-and cut; `bdf_selection_cells` rejects them.
+and cut; the cell-selection APIs reject them. Sheet selections expand across
+merged cells and omit hidden rows and columns. To avoid incomplete copies, a
+selection may load the text of unvisited tiles. `bdf_selection_cells_async`
+waits for this data; `bdf_selection_cells` throws while it is still loading.
+Copying during that interval uses the browser's asynchronous ClipboardItem
+API; if it is unavailable, an `error` event asks the user to copy again after
+loading.
 The search field handles Command/Ctrl+F, Command/Ctrl+G, F3, Enter,
 Shift+Enter, and Escape while the host has focus. It waits for IME composition
 to finish before searching and marks matches using the loaded font metrics.

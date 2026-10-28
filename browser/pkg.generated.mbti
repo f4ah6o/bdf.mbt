@@ -20,6 +20,8 @@ pub fn bdf_open_find(BrowserHost) -> Unit
 
 pub fn bdf_selection_cells(BrowserHost) -> BrowserClipboard?
 
+pub fn bdf_selection_cells_async(BrowserHost) -> @js_async.Promise[BrowserClipboard?]
+
 pub fn bdf_selection_text(BrowserHost) -> String
 
 pub fn key_pair_credential(BrowserKeyPair) -> CryptoCredential

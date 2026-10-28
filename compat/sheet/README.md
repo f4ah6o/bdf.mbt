@@ -8,8 +8,8 @@ It also compares scrolling sheet mounts, including HiDPI, resizing, tile
 fetching, cancellation, overlapping mounts and resource cleanup.
 Interactive mounts also exercise text selection across visible tiles,
 clipboard output, pointer targeting and retention while scrolling, in single,
-split and password-encrypted files. Sheet search is tested against upstream
-search and display; rectangular cell selection is not implemented yet.
+split and password-encrypted files. Sheet search and rectangular cell selection
+are tested against upstream search, clipboard serialization and display.
 The search comparison puts both inputs on their own compositing layers to avoid
 Chromium blending their glyphs with the colored canvas in Linux screenshots.
 
@@ -17,4 +17,5 @@ From an upstream checkout, regenerate it with:
 
 ```sh
 go run /absolute/path/to/bdf.mbt/compat/sheet/generate.go /absolute/path/to/bdf.mbt/compat/sheet/fixture.bdf /absolute/path/to/bdf.mbt/compat/sheet/split /absolute/path/to/bdf.mbt/compat/visual/synthetic.ttf /absolute/path/to/bdf.mbt/compat/sheet/encrypted.bdf /absolute/path/to/bdf.mbt/compat/sheet/encrypted-split
+go run /absolute/path/to/bdf.mbt/compat/sheet/cells-generate.go /absolute/path/to/bdf.mbt/compat/sheet/cells.bdf /absolute/path/to/bdf.mbt/compat/sheet/cells-split /absolute/path/to/bdf.mbt/compat/sheet/cells-encrypted.bdf /absolute/path/to/bdf.mbt/compat/sheet/cells-encrypted-split
 ```

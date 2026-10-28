@@ -1,0 +1,99 @@
+{
+ "bdf": 1,
+ "opset": 1,
+ "unit": "pt",
+ "meta": {
+  "generator": "bdf-go/0.1"
+ },
+ "views": [
+  {
+   "id": "cells",
+   "kind": "sheet",
+   "title": "Cells",
+   "tile": 256,
+   "cols": [
+    [
+     2,
+     72
+    ],
+    [
+     1,
+     0
+    ],
+    [
+     7,
+     72
+    ]
+   ],
+   "rows": [
+    [
+     2,
+     36
+    ],
+    [
+     1,
+     0
+    ],
+    [
+     12,
+     36
+    ]
+   ],
+   "freeze": {
+    "cols": 1,
+    "rows": 1
+   },
+   "gridlines": true,
+   "tiles": {
+    "0,0": "553236866c3e9f20a778d63ea58abcaf",
+    "0,1": "affb36f2aa41ae2847dcf9fd4ffab1e4",
+    "1,0": "6ab7a454cff896ab3a5f366c6bf7d2dd",
+    "1,1": "8d6155c32bc62a6aa55137e67b730726",
+    "2,0": "5f1dbe24174e40a24c2ea54a88fead0d",
+    "2,1": "8d6155c32bc62a6aa55137e67b730726"
+   }
+  }
+ ],
+ "parts": [
+  {
+   "h": "553236866c3e9f20a778d63ea58abcaf",
+   "t": "obj",
+   "enc": "identity",
+   "len": 254,
+   "size": 254,
+   "off": 0
+  },
+  {
+   "h": "6ab7a454cff896ab3a5f366c6bf7d2dd",
+   "t": "obj",
+   "enc": "identity",
+   "len": 166,
+   "size": 166,
+   "off": 0
+  },
+  {
+   "h": "5f1dbe24174e40a24c2ea54a88fead0d",
+   "t": "obj",
+   "enc": "identity",
+   "len": 81,
+   "size": 81,
+   "off": 0
+  },
+  {
+   "h": "affb36f2aa41ae2847dcf9fd4ffab1e4",
+   "t": "obj",
+   "enc": "identity",
+   "len": 84,
+   "size": 84,
+   "off": 0
+  },
+  {
+   "h": "8d6155c32bc62a6aa55137e67b730726",
+   "t": "obj",
+   "enc": "identity",
+   "len": 57,
+   "size": 57,
+   "off": 0
+  }
+ ]
+}

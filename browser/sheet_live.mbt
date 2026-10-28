@@ -23,7 +23,7 @@ extern "js" fn start_live_sheet(
   #|  const onerror=error=>{if(first){first=false;record.dispose();if(host[key]===record)delete host[key];const copyKey=Symbol.for('f4ah6o.bdf.copy');host[copyKey]?.dispose();delete host[copyKey];host.replaceChildren();reject(error)}else if(host.dispatchEvent(new win.CustomEvent('error',{detail:error,cancelable:true})))console.error('bdf sheet:',error)};
   #|  const schedule=()=>{if(disposed)return;revision++;if(!running&&!frame)frame=win.requestAnimationFrame(paint)};
   #|  const paint=async()=>{frame=0;if(disposed||running)return;running=true;const current=revision;try{const {width,height}=dimensions(),dpr=win.devicePixelRatio||1,w=Math.ceil(width*dpr),h=Math.ceil(height*dpr),x=host.scrollLeft,y=host.scrollTop;if(!Number.isFinite(w)||!Number.isFinite(h)||w<=0||h<=0||w>8192||h>8192||w*h>16777216)throw new RangeError('sheet bitmap exceeds browser limits');const scratch=doc.createElement('canvas');scratch.width=w;scratch.height=h;const ctx=scratch.getContext('2d');if(!ctx)throw new Error('Canvas 2D context unavailable');ctx.scale(dpr,dpr);await draw(ctx,x,y,width,height,dpr);if(!disposed&&current===revision){publish(spacer,x,y,width,height);canvas.width=w;canvas.height=h;canvas.style.width=width+'px';canvas.style.height=height+'px';const target=canvas.getContext('2d');if(!target)throw new Error('Canvas 2D context unavailable');target.drawImage(scratch,0,0);canvas.dataset.bdfSheetViewport=JSON.stringify([x,y,width,height]);canvas.dataset.bdfSheetFrame=String(current);if(first){first=false;resolve(1)}}}catch(error){if(!disposed)onerror(error)}finally{running=false;if(disposed)releaseOnce();else if(current!==revision&&!frame)frame=win.requestAnimationFrame(paint)}};
-  #|  const record=host[key]={dispose(){if(disposed)return;disposed=true;mutation?.disconnect();resize?.disconnect();host.removeEventListener('scroll',schedule);if(frame)win.cancelAnimationFrame(frame);frame=0;restoreSize();if(first){first=false;reject(new Error('sheet mount cancelled'))}if(!running)releaseOnce()}};
+  #|  const record=host[key]={spacer,dispose(){if(disposed)return;disposed=true;mutation?.disconnect();resize?.disconnect();host.removeEventListener('scroll',schedule);if(frame)win.cancelAnimationFrame(frame);frame=0;restoreSize();if(first){first=false;reject(new Error('sheet mount cancelled'))}if(!running)releaseOnce()}};
   #|  host.addEventListener('scroll',schedule);if(typeof ResizeObserver==='function'){resize=new ResizeObserver(schedule);resize.observe(host)}
   #|  if(typeof MutationObserver==='function'){const watch=(weak,k,owner,connected)=>{const ob=new MutationObserver(()=>{const h=weak.deref();if(!h){ob.disconnect();return}if(h.isConnected)connected=true;else if(connected){h[k]?.dispose();delete h[k]}});ob.observe(owner,{childList:true,subtree:true});return ob};const weak=typeof WeakRef==='function'?new WeakRef(host):{deref:()=>host};mutation=watch(weak,key,doc,host.isConnected)}
   #|  schedule();
@@ -123,6 +123,10 @@ async fn mount_live_sheet(
   let (width, height) = @render.sheet_size(view)
   let rendered : Map[String, Bool] = Map([])
   let text_data : Map[String, TextLayerData] = Map([])
+  let cell_data = sheet_cell_data(view, tiles)
+  let row_axis = sheet_axis(view.rows)
+  let col_axis = sheet_axis(view.cols)
+  let mut cell_layer_initialized = false
   let mut search_tasks = 0
   let mut released = false
   if interactive {
@@ -149,8 +153,19 @@ async fn mount_live_sheet(
             let content = @render.extract_text(object, hash => {
               Some(@core.decode_object_resources(document.part(hash)))
             })
+            sheet_remember_cells(cell_data, tile, content)
             let data = new_text_layer_data()
-            append_text_content(data, content, 0, 0, tile_size=view.tile_size)
+            add_text_node(
+              data, "table", -1, 0, -1, -1, 1, 1, "", "", false, 0.0, 0.0, 0.0, 0.0,
+            )
+            append_text_content(
+              data,
+              content,
+              1,
+              0,
+              tile_size=view.tile_size,
+              sheet_root=true,
+            )
             text_data[key] = data
           }
         }
@@ -161,7 +176,70 @@ async fn mount_live_sheet(
     },
     (container, x, y, w, h) => {
       if interactive {
+        if !cell_layer_initialized {
+          initialize_sheet_cells(
+            container,
+            row_axis.length(),
+            col_axis.length(),
+            view.frozen_rows,
+            view.frozen_cols,
+            () => sheet_cells_ready(cell_data),
+            () => {
+              clear_sheet_cell_metadata(container)
+              for part in cell_data.cells.values() {
+                for cell in part {
+                  if cell.rows > 1 || cell.cols > 1 {
+                    add_sheet_cell_metadata(
+                      container,
+                      cell.row,
+                      cell.col,
+                      cell.rows,
+                      cell.cols,
+                    )
+                  }
+                }
+              }
+            },
+            () => {
+              @js_async.Promise::from_async(() => {
+                for tile in cell_data.tiles {
+                  if !cell_data.cells.contains(sheet_tile_key(tile.x, tile.y)) {
+                    if !sheet_container_is_current(host, container) {
+                      raise BadFormat("sheet selection cancelled")
+                    }
+                    load_text([tile]).wait()
+                    if !sheet_container_is_current(host, container) {
+                      raise BadFormat("sheet selection cancelled")
+                    }
+                    let object = @core.decode_object_resources(
+                      document.part(tile.object),
+                    )
+                    let content = @render.extract_text(object, hash => {
+                      Some(@core.decode_object_resources(document.part(hash)))
+                    })
+                    sheet_remember_cells(cell_data, tile, content)
+                  }
+                }
+              })
+            },
+            (r0, c0, r1, c1) => {
+              try {
+                let value = @render.cell_clipboard(
+                  sheet_all_cells(cell_data),
+                  { row0: r0, col0: c0, row1: r1, col1: c1, },
+                  skip_row=row => row_axis.is_hidden(row),
+                  skip_col=col => col_axis.is_hidden(col),
+                )
+                clipboard_value(value.text, value.html)
+              } catch {
+                _ => empty_clipboard()
+              }
+            },
+          )
+          cell_layer_initialized = true
+        }
         let viewport : @render.SheetViewport = { x, y, width: w, height: h, }
+        let mut added_layer = false
         for tile in visible_sheet_tiles(view, tiles, viewport) {
           let key = tile.x.to_string() + "," + tile.y.to_string()
           if rendered.get(key) is Some(_) {
@@ -179,6 +257,10 @@ async fn mount_live_sheet(
           )
           order_sheet_layer(container, tile.x, tile.y)
           rendered[key] = true
+          added_layer = true
+        }
+        if added_layer {
+          refresh_sheet_selection(host)
         }
       }
     },

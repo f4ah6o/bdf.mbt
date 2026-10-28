@@ -257,6 +257,103 @@ try {
       await page.close();
     }
     const sheetBase=`http://127.0.0.1:${server.address().port}/compat/sheet/`;
+    const cellFixtures={};
+    for(const name of ['cells-baseline','cells-moon']){
+      const page=await browser.newPage({viewport:{width:1280,height:720}}),errors=[];
+      page.on('pageerror',error=>errors.push(String(error)));
+      await page.goto(`${sheetBase}${name}.html`,{waitUntil:'networkidle'});
+      await page.waitForFunction(()=>window.bdfStatus==='ready'||window.bdfStatus==='error');
+      assert.equal(await page.evaluate(()=>window.bdfStatus),'ready',`${name}: ${await page.evaluate(()=>window.bdfError)}`);
+      assert.deepEqual(errors,[],`${name}: sheet cell fixture errors`);
+      cellFixtures[name]=await page.evaluate(()=>({clipboard:window.referenceClipboard??window.selectedCells,large:window.referenceFor?.({row0:0,col0:0,row1:4,col1:6}),chain:window.referenceFor?.({row0:0,col0:0,row1:5,col1:2}),box:[...document.querySelectorAll('[data-bdf-cellbox]')].map(el=>{const r=el.getBoundingClientRect();return[r.x,r.y,r.width,r.height]}),roles:[...document.querySelectorAll('[role=cell],[role=columnheader],[role=rowheader]')].map(el=>[el.textContent,el.getAttribute('role')]).sort()}));
+      await page.close();
+    }
+    assert.deepEqual(cellFixtures['cells-moon'].clipboard,cellFixtures['cells-baseline'].clipboard,'sheet merged cells and hidden rows/columns match upstream clipboard');
+    assert.deepEqual(cellFixtures['cells-moon'].roles,cellFixtures['cells-baseline'].roles,'sheet cell accessibility roles match upstream');
+    assert.deepEqual(cellFixtures['cells-moon'].box,cellFixtures['cells-baseline'].box,'sheet cell selection box matches upstream');
+    const cellsPage=await browser.newPage({viewport:{width:1280,height:720}});
+    await cellsPage.goto(`${sheetBase}live-moon.html`,{waitUntil:'networkidle'});
+    const sheetCells=await cellsPage.evaluate(async()=>{
+      const bdf=await import('/_build/js/debug/build/browser/browser.js'),read=async file=>new Uint8Array(await(await fetch(file)).arrayBuffer());
+      const waitFor=(promise,label)=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error(label)),5000);promise.then(value=>{clearTimeout(timer);resolve(value)},error=>{clearTimeout(timer);reject(error)})});
+      const single=await read('cells.bdf'),manifest=await read('cells-split/manifest.json'),encrypted=await read('cells-encrypted.bdf'),locked=await read('cells-encrypted-split/manifest.json'),results=[];
+      for(const [kind,mount] of [
+        ['single',host=>bdf.mount_bdf_interactive_async(host,single,'single')],
+        ['split',host=>bdf.mount_bdf_interactive_split_async(host,manifest,h=>read(`cells-split/parts/${h}`),'single')],
+        ['encrypted',host=>bdf.mount_bdf_interactive_encrypted_async(host,encrypted,'pass','single')],
+        ['encrypted-split',host=>bdf.mount_bdf_interactive_encrypted_split_async(host,locked,h=>read(`cells-encrypted-split/parts/${h}`),'pass','single')],
+      ]){
+        const host=document.createElement('div');host.style.cssText='position:relative;overflow:auto;width:400px;height:300px';document.body.append(host);await mount(host);
+        const spans=[...host.querySelectorAll('[data-bdf-ordinal]')],first=spans.find(s=>s.textContent==='Header'),last=spans.find(s=>s.textContent==='End');
+        const one=document.createRange();one.setStart(first.firstChild,0);one.setEnd(first.firstChild,3);getSelection().removeAllRanges();getSelection().addRange(one);document.dispatchEvent(new Event('selectionchange'));
+        const same=bdf.bdf_selection_cells(host)==null&&(await bdf.bdf_selection_cells_async(host))==null;
+        const range=document.createRange();range.setStart(first.firstChild,0);range.setEnd(last.firstChild,last.textContent.length);getSelection().removeAllRanges();getSelection().addRange(range);document.dispatchEvent(new Event('selectionchange'));
+        const value=await bdf.bdf_selection_cells_async(host),sync=bdf.bdf_selection_cells(host),copy=new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:new DataTransfer()}),cut=new ClipboardEvent('cut',{bubbles:true,cancelable:true,clipboardData:new DataTransfer()});host.dispatchEvent(copy);host.dispatchEvent(cut);
+        const beforeBox=host.querySelector('[data-bdf-cellbox]').getBoundingClientRect().width,canvas=host.querySelector('canvas'),frame=Number(canvas.dataset.bdfSheetFrame);host.scrollLeft=248;host.dispatchEvent(new Event('scroll'));
+        await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('selected cells scroll timeout')),5000);const check=()=>{if(Number(canvas.dataset.bdfSheetFrame)>frame){clearTimeout(timeout);resolve()}else requestAnimationFrame(check)};check()});
+        const afterBox=host.querySelector('[data-bdf-cellbox]').getBoundingClientRect().width;
+        const wide=spans.find(s=>s.textContent==='Wide'),chainRange=document.createRange();chainRange.setStart(first.firstChild,0);chainRange.setEnd(wide.firstChild,wide.textContent.length);getSelection().removeAllRanges();getSelection().addRange(chainRange);document.dispatchEvent(new Event('selectionchange'));const chain=await bdf.bdf_selection_cells_async(host);
+        results.push({kind,same,value,sync,chain,boxExpanded:afterBox>beforeBox,copy:{text:copy.clipboardData.getData('text/plain'),html:copy.clipboardData.getData('text/html'),handled:copy.defaultPrevented},cut:{text:cut.clipboardData.getData('text/plain'),html:cut.clipboardData.getData('text/html'),handled:cut.defaultPrevented}});
+        getSelection().removeAllRanges();bdf.unmount_bdf(host);host.remove();
+      }
+      const metadata=JSON.parse(new TextDecoder().decode(manifest)),middle=metadata.views[0].tiles['1,0'];let block=false,release,started;
+      const gate=new Promise(resolve=>release=resolve),fetchStarted=new Promise(resolve=>started=resolve),loader=async hash=>{if(block&&hash===middle){started();await gate}return read(`cells-split/parts/${hash}`)};
+      const host=document.createElement('div');host.style.cssText='position:relative;overflow:auto;width:100px;height:120px';document.body.append(host);await bdf.mount_bdf_interactive_split_async(host,manifest,loader,'single');
+      const first=[...host.querySelectorAll('[data-bdf-ordinal]')].find(s=>s.textContent==='Header'),canvas=host.querySelector('canvas'),frame=Number(canvas.dataset.bdfSheetFrame);host.scrollLeft=512;host.dispatchEvent(new Event('scroll'));
+      await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('cells scroll timeout')),5000);const check=()=>{if(Number(canvas.dataset.bdfSheetFrame)>frame){clearTimeout(timeout);resolve()}else requestAnimationFrame(check)};check()});
+      const last=[...host.querySelectorAll('[data-bdf-ordinal]')].find(s=>s.textContent==='Far');block=true;
+      const range=document.createRange();range.setStart(first.firstChild,0);range.setEnd(last.firstChild,last.textContent.length);getSelection().removeAllRanges();getSelection().addRange(range);document.dispatchEvent(new Event('selectionchange'));await waitFor(fetchStarted,'sheet cells did not request the missing tile');
+      let pending=false;try{bdf.bdf_selection_cells(host)}catch{pending=true}
+      const originalClipboard=Object.getOwnPropertyDescriptor(navigator,'clipboard'),originalItem=window.ClipboardItem;let written;
+      window.ClipboardItem=class {constructor(types){this.types=types}};
+      Object.defineProperty(navigator,'clipboard',{configurable:true,value:{write(items){written=Promise.all([items[0].types['text/plain'],items[0].types['text/html']]).then(async([plain,html])=>({text:await plain.text(),html:await html.text()}));return written.then(()=>{})}}});
+      const copy=new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:new DataTransfer()}),asyncValue=bdf.bdf_selection_cells_async(host);host.dispatchEvent(copy);release();
+      const large=await asyncValue,delayedCopy=await written;
+      if(originalClipboard)Object.defineProperty(navigator,'clipboard',originalClipboard);else delete navigator.clipboard;window.ClipboardItem=originalItem;
+      const delayed={pending,handled:copy.defaultPrevented,large,delayedCopy};getSelection().removeAllRanges();bdf.unmount_bdf(host);host.remove();
+      let unblock,begin;const wait=new Promise(resolve=>unblock=resolve),startedAgain=new Promise(resolve=>begin=resolve);let pause=false;
+      const fallbackLoader=async hash=>{if(pause&&hash===middle){begin();await wait}return read(`cells-split/parts/${hash}`)};
+      const fallback=document.createElement('div');fallback.style.cssText='position:relative;overflow:auto;width:100px;height:120px';document.body.append(fallback);await bdf.mount_bdf_interactive_split_async(fallback,manifest,fallbackLoader,'single');
+      const start=[...fallback.querySelectorAll('[data-bdf-ordinal]')].find(s=>s.textContent==='Header'),fallbackCanvas=fallback.querySelector('canvas'),before=Number(fallbackCanvas.dataset.bdfSheetFrame);fallback.scrollLeft=512;fallback.dispatchEvent(new Event('scroll'));
+      await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('fallback cells scroll timeout')),5000);const check=()=>{if(Number(fallbackCanvas.dataset.bdfSheetFrame)>before){clearTimeout(timeout);resolve()}else requestAnimationFrame(check)};check()});
+      const finish=[...fallback.querySelectorAll('[data-bdf-ordinal]')].find(s=>s.textContent==='Far');pause=true;
+      const selection=document.createRange();selection.setStart(start.firstChild,0);selection.setEnd(finish.firstChild,finish.textContent.length);getSelection().removeAllRanges();getSelection().addRange(selection);
+      const errors=[];fallback.addEventListener('error',event=>{errors.push(String(event.detail));event.preventDefault()});
+      const oldClipboard=Object.getOwnPropertyDescriptor(navigator,'clipboard'),oldItem=window.ClipboardItem;Object.defineProperty(navigator,'clipboard',{configurable:true,value:undefined});window.ClipboardItem=undefined;
+      const early=new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:new DataTransfer()});fallback.dispatchEvent(early);await waitFor(startedAgain,'sheet fallback did not start loading');unblock();const loaded=await bdf.bdf_selection_cells_async(fallback);
+      const retry=new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:new DataTransfer()});fallback.dispatchEvent(retry);
+      if(oldClipboard)Object.defineProperty(navigator,'clipboard',oldClipboard);else delete navigator.clipboard;window.ClipboardItem=oldItem;
+      const fallbackResult={prevented:early.defaultPrevented,empty:early.clipboardData.getData('text/plain')==='',error:errors.some(error=>error.includes('copy again')),loaded,retry:{text:retry.clipboardData.getData('text/plain'),html:retry.clipboardData.getData('text/html'),handled:retry.defaultPrevented}};
+      getSelection().removeAllRanges();bdf.unmount_bdf(fallback);fallback.remove();
+      let resume,startedUnmount;const stopped=new Promise(resolve=>resume=resolve),waiting=new Promise(resolve=>startedUnmount=resolve);let hold=false;const unmountRequests=[];
+      const unmountLoader=async hash=>{unmountRequests.push(hash);if(hold&&hash===middle){startedUnmount();await stopped}return read(`cells-split/parts/${hash}`)};
+      const detached=document.createElement('div');detached.style.cssText='position:relative;overflow:auto;width:100px;height:120px';document.body.append(detached);await bdf.mount_bdf_interactive_split_async(detached,manifest,unmountLoader,'single');
+      const anchor=[...detached.querySelectorAll('[data-bdf-ordinal]')].find(s=>s.textContent==='Header'),detachedCanvas=detached.querySelector('canvas'),oldFrame=Number(detachedCanvas.dataset.bdfSheetFrame);detached.scrollLeft=512;detached.dispatchEvent(new Event('scroll'));
+      await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('unmount cells scroll timeout')),5000);const check=()=>{if(Number(detachedCanvas.dataset.bdfSheetFrame)>oldFrame){clearTimeout(timeout);resolve()}else requestAnimationFrame(check)};check()});
+      const end=[...detached.querySelectorAll('[data-bdf-ordinal]')].find(s=>s.textContent==='Far');hold=true;unmountRequests.length=0;
+      const pendingRange=document.createRange();pendingRange.setStart(anchor.firstChild,0);pendingRange.setEnd(end.firstChild,end.textContent.length);getSelection().removeAllRanges();getSelection().addRange(pendingRange);document.dispatchEvent(new Event('selectionchange'));const pendingCells=bdf.bdf_selection_cells_async(detached).then(()=>false,()=>true);await waitFor(waiting,'sheet unmount test did not start loading');
+      let lateErrors=0;detached.addEventListener('error',event=>{lateErrors++;event.preventDefault()});bdf.unmount_bdf(detached);resume();const cancelled=await pendingCells;await new Promise(resolve=>setTimeout(resolve,0));
+      const unmountResult={cancelled,lateErrors,empty:!detached.childElementCount,loads:unmountRequests.length};detached.remove();
+      return {results,delayed,fallbackResult,unmountResult};
+    });
+    for(const result of sheetCells.results){
+      assert.equal(result.same,true,`${result.kind}: selecting within one sheet cell remains text selection`);
+      assert.deepEqual(result.value,cellFixtures['cells-baseline'].clipboard,`${result.kind}: selected sheet clipboard matches upstream`);
+      assert.deepEqual(result.sync,result.value,`${result.kind}: synchronous clipboard after loading`);
+      assert.deepEqual(result.chain,cellFixtures['cells-baseline'].chain,`${result.kind}: intersecting merged cells expand the selection transitively`);
+      assert.equal(result.boxExpanded,true,`${result.kind}: sheet selection highlight updates as tiles appear`);
+      assert.deepEqual(result.copy,{...result.value,handled:true},`${result.kind}: sheet copy`);
+      assert.deepEqual(result.cut,{...result.value,handled:true},`${result.kind}: sheet cut`);
+    }
+    assert.equal(sheetCells.delayed.pending,true,'incomplete sheet cell data is not returned synchronously');
+    assert.equal(sheetCells.delayed.handled,true,'copy waits for missing sheet tiles');
+    assert.deepEqual(sheetCells.delayed.large,cellFixtures['cells-baseline'].large,'selection across unvisited tiles includes all cells');
+    assert.deepEqual(sheetCells.delayed.delayedCopy,sheetCells.delayed.large,'deferred native clipboard contains the complete range');
+    assert.ok(sheetCells.fallbackResult.prevented&&sheetCells.fallbackResult.empty&&sheetCells.fallbackResult.error,'unsupported asynchronous clipboard does not copy an incomplete range');
+    assert.deepEqual(sheetCells.fallbackResult.loaded,cellFixtures['cells-baseline'].large,'fallback loads the complete selection');
+    assert.deepEqual(sheetCells.fallbackResult.retry,{...sheetCells.fallbackResult.loaded,handled:true},'copy succeeds after asynchronous loading in browsers without ClipboardItem');
+    assert.deepEqual(sheetCells.unmountResult,{cancelled:true,lateErrors:0,empty:true,loads:1},'unmount cancels pending sheet-cell loading without fetching more tiles');
+    await cellsPage.close();
     const sheetInteractive=await browser.newPage({viewport:{width:1280,height:720}});
     await sheetInteractive.goto(`${sheetBase}live-moon.html`,{waitUntil:'networkidle'});
     const sheetText=await sheetInteractive.evaluate(async()=>{
@@ -760,6 +857,20 @@ try {
   await run(['diff','agent',sheetFindReport,'--no-history']);
   await run(['scan','handlers',`${sheetBase}find-moon.html`,'--no-ledger']);
   await run(['check','interactions',`${sheetBase}find-moon.html`,'--reference',`${sheetBase}find-baseline.html`,'--handlers','--no-ledger']);
+  const sheetCellOutput=path.join(output,'sheet-cells');mkdirSync(sheetCellOutput);
+  await run(['diff','html','--url',`${sheetBase}cells-baseline.html`,'--current-url',`${sheetBase}cells-moon.html`,'--output-dir',sheetCellOutput,'--no-paint-tree']);
+  const sheetCellReport=path.join(sheetCellOutput,'diff-report.json'),sheetCell=JSON.parse(readFileSync(sheetCellReport,'utf8'));
+  for(const result of sheetCell.results){
+    const reference=PNG.sync.read(readFileSync(path.join(sheetCellOutput,`compat_sheet_cells-baseline-${result.viewport}.png`)));
+    const actual=PNG.sync.read(readFileSync(path.join(sheetCellOutput,`compat_sheet_cells-moon-${result.viewport}.png`)));
+    let changed=0;for(let i=0;i<reference.data.length;i+=4)if(reference.data[i]!==actual.data[i]||reference.data[i+1]!==actual.data[i+1]||reference.data[i+2]!==actual.data[i+2]||reference.data[i+3]!==actual.data[i+3])changed++;
+    const ratio=changed/(Math.min(reference.width,400)*Math.min(reference.height,300));
+    console.log(`sheet cells ${result.viewport}: ${changed} pixels changed (${(ratio*100).toFixed(4)}%)`);
+    assert.ok(ratio<=0.0005,`${result.viewport}: sheet cell selection visual difference exceeds 0.05%`);
+  }
+  await run(['diff','agent',sheetCellReport,'--no-history']);
+  await run(['scan','handlers',`${sheetBase}cells-moon.html`,'--no-ledger']);
+  await run(['check','interactions',`${sheetBase}cells-moon.html`,'--reference',`${sheetBase}cells-baseline.html`,'--handlers','--no-ledger']);
   for(const name of ['moon','split','interactive-moon']){
     const target=path.join(output,`sheet-live-${name}`);mkdirSync(target);
     await run(['diff','html','--url',`${sheetBase}live-baseline.html`,'--current-url',`${sheetBase}live-${name}.html`,'--output-dir',target,'--no-paint-tree']);
