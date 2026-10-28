@@ -1,4 +1,10 @@
 ///|
+pub suberror BrowserError {
+  Unsupported(String)
+  BadFormat(String)
+}
+
+///|
 /// The DOM and Canvas are deliberately limited to a JS-only host adapter.
 /// BDF parsing, display-list validation, and page placement stay in MoonBit.
 #external
@@ -6,7 +12,7 @@ type BrowserHost
 
 ///|
 #external
-type CanvasContext
+priv type CanvasContext
 
 ///|
 extern "js" fn clear_host(host : BrowserHost) -> Unit =
@@ -164,7 +170,7 @@ fn paint_commands(ctx : CanvasContext, commands : Array[@render.Command]) -> Uni
       @render.Smoothing(enabled,quality) => set_smoothing(ctx,enabled,quality)
       @render.Ext(_) => ()
       @render.Image(_,_,_,_,_) | @render.ImageSub(_,_,_,_,_,_,_,_,_) =>
-        raise @core.Unsupported("image resources are not supported by browser MVP")
+        raise Unsupported("image resources are not supported by browser MVP")
     }
   }
 }
@@ -177,14 +183,14 @@ fn paint_commands(ctx : CanvasContext, commands : Array[@render.Command]) -> Uni
 pub fn mount_bdf(host : BrowserHost, data : Bytes, layout : String) -> Int raise {
   let doc = @core.open_single(data)
   if doc.manifest.views.length() == 0 {
-    raise @core.BadFormat("document has no view")
+    raise BadFormat("document has no view")
   }
   let view = doc.manifest.views[0]
   if view.kind != "fixed" && view.kind != "flow" {
-    raise @core.Unsupported("browser MVP supports fixed/flow pages only")
+    raise Unsupported("browser MVP supports fixed/flow pages only")
   }
   if view.pages.length() > 256 {
-    raise @core.Unsupported("more than 256 pages")
+    raise Unsupported("more than 256 pages")
   }
   let viewer = @viewer.Viewer::new()
   if layout == "spread" {
