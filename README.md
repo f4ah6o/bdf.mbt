@@ -3,8 +3,8 @@
 MoonBit implementation of the BDF v1 wire-format reader and the browser-facing `@bdfkit/render`, `@bdfkit/convert`, and `@bdfkit/viewer` control layers.
 
 - Targets: `js` and `wasm-gc`.
-- `core`: checked BDF header, single and split documents (identity and deflate-raw), BOBJ resource tables, bounded binary reader.
-- `render`: backend-neutral, checked display-list decoder for a currently supported subset of Canvas 2D opcodes, including paths, gradient paints, and drawing effects. It also extracts ordered text runs, semantic structure, figure bounds and link rectangles, and serializes table-cell selections.
+- `core`: checked BDF header, single and split documents (identity and deflate-raw), BOBJ resource tables, MIDI sequences, cue indexes, and a bounded binary reader.
+- `render`: backend-neutral, checked display-list decoder for a currently supported subset of Canvas 2D opcodes, including paths, gradient paints, and drawing effects. It also extracts ordered text runs, semantic structure, figure bounds and link rectangles, serializes table-cell selections, and calculates music and audio cue positions.
 - `convert`: the worker-client request/response lifecycle and stream command model. Converter runtime itself (TinyGo) is **not** ported.
 - `viewer`: document/view selection state and page placement in single, spread, and continuous modes, including RTL spreads and scroll strips.
 - `browser` (JS only): Canvas 2D adapter that draws fixed/flow pages, scroll strips, continuous body regions, and sheet viewports, including password- and P-256-protected documents, into a DOM host, including paths, gradients, child objects, transparency groups, masks, asynchronously loaded images and fonts, and optional selectable text layers.
@@ -36,6 +36,10 @@ let client = @convert.Client::new()
 let request = client.request(@convert.Convert, @convert.ConvertOptions::new())
 let viewer = @viewer.Viewer::new()
 viewer.set_layout(@viewer.Spread)
+let sequence = @core.parse_smf(midi_bytes)
+let seconds = @core.tick_to_seconds(sequence, 480.0)
+let cues = @core.decode_cues(cue_bytes)
+let cursor = @render.cursor_at_tick(cues, 480.0)
 ```
 
 The `core` package exposes `open_split` with a lazy host-provided loader for split documents. The loader is responsible for enforcing its supplied stored-size limit while reading. `decode_text_index` reads BTXT parts, and `render.view_text_index` loads a stored index or reconstructs one for paginated views and sheets, including external tile indexes. `TextSearch` finds normalized matches and maps them to UTF-16 offsets in the original runs; `render.locate_text_hit` measures their highlight rectangles. The `browser` package exposes `mount_bdf_async` for single-file documents, `mount_bdf_split_async` for split documents with an asynchronous part loader, and `mount_bdf` for documents that need no image or embedded font loading. The `mount_bdf_interactive_*` variants add an accessible text and link layer and search for pages and sheets. Call `unmount_bdf` to release retained resources. See [browser usage](docs/browser.md).
@@ -44,8 +48,13 @@ Search normalization uses Unicode 16.0 data. An upstream JavaScript runtime usin
 Tile coordinates are currently limited to signed 32-bit values.
 
 `Page` now includes `body`, and `View` includes `direction` and
-`continuous_gap`. Code constructing these public records directly must supply
-those fields; parsed documents use `None`, `"ltr"`, and `None` when absent.
+`continuous_gap` and `play`. Code constructing these public records directly
+must supply those fields; parsed documents use `None`, `"ltr"`, `None`, and
+`None` respectively when absent. `Document::play` and `SplitDocument::play`
+load MIDI bytes and cues; their `audio` methods load recorded audio and cues.
+The audio MIME type is restricted to `audio/*`. MIDI parsing and timeline
+calculations work on both targets; audio synthesis and playback are not yet
+implemented.
 
 ## Port backlog
 

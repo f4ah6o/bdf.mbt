@@ -1,0 +1,21 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/compat/music"
+
+// Values
+pub fn inspect_cue_position(Bytes, Double, UInt32, Double, Double) -> String
+
+pub fn inspect_cues(Bytes) -> String
+
+pub fn inspect_document_music(Bytes) -> String
+
+pub fn inspect_smf(Bytes) -> String
+
+pub fn inspect_times(Bytes, Double, Double) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

@@ -82,6 +82,7 @@ test "extract text and links in upstream reading order" {
     frozen_cols: 0,
     frozen_rows: 0,
     gridlines: false,
+    play: None,
     pages: [
       {
         width: 100.0,

@@ -6,6 +6,10 @@ import {
 }
 
 // Values
+pub const MAX_MIDI_EVENTS : Int32 = 1048576
+
+pub fn decode_cues(Bytes) -> Cues raise
+
 pub fn decode_encoded(Bytes, String, Int32) -> Bytes raise
 
 pub fn decode_object(Bytes) -> ObjectPart raise
@@ -36,7 +40,13 @@ pub fn parse_header(Bytes) -> Header raise
 
 pub fn parse_manifest(String) -> Manifest raise
 
+pub fn parse_smf(Bytes) -> MidiSequence raise
+
 pub fn sealed_references(String, Manifest) -> Map[String, String] raise
+
+pub fn seconds_to_tick(MidiSequence, Double) -> Double
+
+pub fn tick_to_seconds(MidiSequence, Double) -> Double
 
 pub fn valid_hash(String) -> Bool
 
@@ -47,17 +57,44 @@ pub suberror BdfError {
 }
 
 // Types and methods
+pub(all) struct AudioData {
+  data : Bytes
+  media_type : String
+  cues : Cues?
+}
+
 pub(all) struct ColorStop {
   offset : Double
   color : Int32
 }
+
+pub(all) struct Cue {
+  tick : UInt32
+  system : UInt32
+  x : Double
+} derive(Eq, @debug.Debug)
+
+pub(all) struct CueSystem {
+  page : UInt32
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Cues {
+  systems : Array[CueSystem]
+  cues : Array[Cue]
+} derive(Eq, @debug.Debug)
 
 pub(all) struct Document {
   manifest : Manifest
   header : Header
   data : Bytes
 }
+pub fn Document::audio(Self, View) -> AudioData? raise
 pub fn Document::part(Self, String) -> Bytes raise
+pub fn Document::play(Self, View) -> MusicData? raise
 
 pub(all) struct EncryptedManifest {
   outer : Manifest
@@ -121,6 +158,39 @@ pub(all) struct Manifest {
   views : Array[View]
 }
 
+pub(all) struct MidiEvent {
+  tick : Double
+  time : Double
+  track : Int32
+  mut message : MidiMessage
+} derive(Eq, @debug.Debug)
+
+pub(all) enum MidiMessage {
+  Note(channel~ : Int32, key~ : Int32, velocity~ : Int32, duration~ : Double, end_tick~ : Double)
+  Program(channel~ : Int32, program~ : Int32)
+  Control(channel~ : Int32, controller~ : Int32, value~ : Int32)
+  Bend(channel~ : Int32, value~ : Int32)
+  Tempo(Int32)
+  TimeSignature(numerator~ : Int32, denominator~ : Int32)
+  KeySignature(key~ : Int32, minor~ : Bool)
+} derive(Eq, @debug.Debug)
+
+pub(all) struct MidiSequence {
+  format : Int32
+  division : Double
+  smpte : Bool
+  tracks : Int32
+  events : Array[MidiEvent]
+  tempos : Array[TempoPoint]
+  ticks : Double
+  duration : Double
+} derive(Eq, @debug.Debug)
+
+pub(all) struct MusicData {
+  seq : Bytes
+  cues : Cues?
+}
+
 pub(all) struct ObjectPart {
   bbox : (Double, Double, Double, Double)
   strings : Array[String]
@@ -179,6 +249,13 @@ pub(all) enum PathEntry {
   External(String, Int32)
 }
 
+pub(all) struct Play {
+  seq : String?
+  audio : String?
+  media_type : String
+  cues : String?
+} derive(Eq, @debug.Debug)
+
 pub(all) struct Reader {
   data : Bytes
   mut pos : Int32
@@ -211,8 +288,16 @@ pub struct SplitDocument {
   manifest : Manifest
   // private fields
 }
+pub fn SplitDocument::audio(Self, View) -> AudioData? raise
 pub fn SplitDocument::part(Self, String) -> Bytes raise
+pub fn SplitDocument::play(Self, View) -> MusicData? raise
 pub fn SplitDocument::stored_part(Self, String) -> Bytes raise
+
+pub(all) struct TempoPoint {
+  tick : Double
+  time : Double
+  tempo : Int32
+} derive(Eq, @debug.Debug)
 
 pub struct TextSearch {
   runs : Array[IndexRun]
@@ -249,6 +334,7 @@ pub(all) struct View {
   frozen_cols : Int32
   frozen_rows : Int32
   gridlines : Bool
+  play : Play?
 }
 
 // Type aliases

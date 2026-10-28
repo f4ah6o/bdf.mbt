@@ -15,6 +15,7 @@ test "spread places two pages side by side" {
     frozen_cols: 0,
     frozen_rows: 0,
     gridlines: false,
+    play: None,
     pages: [
       { width: 100.0, height: 200.0, body: None, layers: [], },
       { width: 80.0, height: 100.0, body: None, layers: [], },

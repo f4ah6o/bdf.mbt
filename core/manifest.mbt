@@ -47,6 +47,15 @@ pub(all) struct SheetRun {
 } derive(Eq, Debug)
 
 ///|
+/// References to a view's MIDI sequence or audio recording and optional cues.
+pub(all) struct Play {
+  seq : String?
+  audio : String?
+  media_type : String
+  cues : String?
+} derive(Eq, Debug)
+
+///|
 pub(all) struct View {
   id : String
   kind : String
@@ -63,6 +72,7 @@ pub(all) struct View {
   frozen_cols : Int32
   frozen_rows : Int32
   gridlines : Bool
+  play : Play?
 }
 
 ///|
@@ -314,6 +324,42 @@ fn parse_gridlines(view : Json) -> Bool raise {
 }
 
 ///|
+fn parse_play(view : Json) -> Play? {
+  if view is Object(fields) {
+    match fields.get("play") {
+      None | Some(Null) => None
+      Some(Object(play)) => {
+        let value = Json::object(play)
+        let seq = optional_string(value, "seq", "")
+        let audio = optional_string(value, "audio", "")
+        let cues = optional_string(value, "cues", "")
+        Some({
+          seq: if seq == "" {
+            None
+          } else {
+            Some(seq)
+          },
+          audio: if audio == "" {
+            None
+          } else {
+            Some(audio)
+          },
+          media_type: optional_string(value, "type", ""),
+          cues: if cues == "" {
+            None
+          } else {
+            Some(cues)
+          },
+        })
+      }
+      _ => None
+    }
+  } else {
+    None
+  }
+}
+
+///|
 pub fn parse_manifest(input : String) -> Manifest raise {
   parse_manifest_internal(input, false)
 }
@@ -438,6 +484,7 @@ fn parse_manifest_internal(
       frozen_cols,
       frozen_rows,
       gridlines,
+      play: parse_play(view),
     })
   }
   { parts, views, }

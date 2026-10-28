@@ -21,13 +21,21 @@ pub fn continuous_body(@core.Page) -> @core.PageRect
 
 pub fn continuous_layout(@core.View) -> ContinuousLayout
 
+pub fn cursor_at_tick(@core.Cues, Double) -> MusicCursor?
+
 pub fn decode_commands(Bytes) -> Array[Command] raise
 
 pub fn extract_text(@core.ObjectResources, (String) -> @core.ObjectResources? raise, matrix? : (Double, Double, Double, Double, Double, Double)) -> TextContent raise
 
 pub fn join_text(Array[TextRun]) -> String
 
+pub fn line_at_time(@core.Cues, Double) -> MusicCursor?
+
 pub fn locate_text_hit(@core.SearchHit, (Int32, Int32, Int32) -> TextRun?, (@core.Font, Double, String) -> Double, tile_size? : Double) -> Array[HitRect]
+
+pub fn midi_due(Array[@core.MidiEvent], Int32, Double) -> Int32
+
+pub fn midi_event_at(Array[@core.MidiEvent], Double) -> Int32
 
 pub fn page_text_index(@core.View, (String) -> Bytes raise, (String) -> @core.ObjectResources? raise) -> Array[@core.IndexRun] raise
 
@@ -43,9 +51,15 @@ pub fn sheet_tile_range(SheetViewport, Double) -> TileRange
 
 pub fn sheet_tiles_in(Array[@core.Tile], Array[TileRange]) -> Array[@core.Tile]
 
+pub fn sounding_ends(Array[@core.MidiEvent], end? : Double) -> Array[Double]
+
 pub fn table_cells(TextContent, table? : Int32) -> Array[CellText]
 
 pub fn text_has_extent(TextRun) -> Bool
+
+pub fn tick_at(@core.Cues, UInt32, Double, near? : Double) -> Double?
+
+pub fn time_of_line(@core.Cues, UInt32, near? : Double) -> Double?
 
 pub fn view_text_index(@core.View, (String) -> Bytes raise, (String) -> @core.ObjectResources? raise) -> Array[@core.IndexRun] raise
 
@@ -148,6 +162,15 @@ pub(all) struct HitRect {
   y : Double
   width : Double
   height : Double
+} derive(Eq, @debug.Debug)
+
+pub(all) struct MusicCursor {
+  page : UInt32
+  system : UInt32
+  x : Double
+  y : Double
+  height : Double
+  width : Double?
 } derive(Eq, @debug.Debug)
 
 pub(all) struct PathPlacement {
