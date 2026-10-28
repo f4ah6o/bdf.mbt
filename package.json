@@ -11,7 +11,8 @@
     "pngjs": "7.0.0"
   },
   "scripts": {
-    "test:visual": "moon build --target js && node compat/visual/compare.mjs",
-    "test:ci-local": "actrun workflow run .github/workflows/ci.yml --tmp --include-dirty --skip-action actions/checkout@v4 --skip-action hustcer/setup-moonbit@v1 --no-nix"
+    "test:visual": "npm run test:text-compat && moon build --target js && node compat/visual/compare.mjs",
+    "test:ci-local": "actrun workflow run .github/workflows/ci.yml --tmp --include-dirty --skip-action actions/checkout@v4 --skip-action hustcer/setup-moonbit@v1 --no-nix",
+    "test:text-compat": "node compat/text/verify.mjs"
   }
 }

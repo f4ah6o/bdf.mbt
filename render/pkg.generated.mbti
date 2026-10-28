@@ -11,6 +11,10 @@ pub fn compile_object(@core.ObjectPart) -> Array[Command] raise
 
 pub fn decode_commands(Bytes) -> Array[Command] raise
 
+pub fn extract_text(@core.ObjectResources, (String) -> @core.ObjectResources? raise, matrix? : (Double, Double, Double, Double, Double, Double)) -> TextContent raise
+
+pub fn join_text(Array[TextRun]) -> String
+
 // Errors
 pub suberror RenderError {
   UnsupportedOpcode(Int32)
@@ -68,6 +72,36 @@ pub(all) struct PathPlacement {
   y : Double
 } derive(@debug.Debug)
 
+pub(all) struct TextContent {
+  runs : Array[TextRun]
+  links : Array[TextLink]
+}
+
+pub(all) struct TextLink {
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+  url : String
+  after : Int32
+}
+
+pub(all) struct TextRun {
+  text : String
+  x : Double
+  y : Double
+  advance : Double
+  size : Double
+  font : @core.Font?
+  align : Int32
+  matrix : (Double, Double, Double, Double, Double, Double)
+  separator : Int32
+  ordinal : Int32
+  alt_text : Bool
+  lang : String
+}
+
 // Type aliases
+pub type Matrix = (Double, Double, Double, Double, Double, Double)
 
 // Traits
