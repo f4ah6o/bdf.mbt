@@ -332,8 +332,12 @@ try {
       await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('unmount cells scroll timeout')),5000);const check=()=>{if(Number(detachedCanvas.dataset.bdfSheetFrame)>oldFrame){clearTimeout(timeout);resolve()}else requestAnimationFrame(check)};check()});
       const end=[...detached.querySelectorAll('[data-bdf-ordinal]')].find(s=>s.textContent==='Far');hold=true;unmountRequests.length=0;
       const pendingRange=document.createRange();pendingRange.setStart(anchor.firstChild,0);pendingRange.setEnd(end.firstChild,end.textContent.length);getSelection().removeAllRanges();getSelection().addRange(pendingRange);document.dispatchEvent(new Event('selectionchange'));const pendingCells=bdf.bdf_selection_cells_async(detached).then(()=>false,()=>true);await waitFor(waiting,'sheet unmount test did not start loading');
-      let lateErrors=0;detached.addEventListener('error',event=>{lateErrors++;event.preventDefault()});bdf.unmount_bdf(detached);resume();const cancelled=await pendingCells;await new Promise(resolve=>setTimeout(resolve,0));
-      const unmountResult={cancelled,lateErrors,empty:!detached.childElementCount,loads:unmountRequests.length};detached.remove();
+      let lateErrors=0,unhandled=0;detached.addEventListener('error',event=>{lateErrors++;event.preventDefault()});const onUnhandled=event=>{unhandled++;event.preventDefault()};window.addEventListener('unhandledrejection',onUnhandled);
+      const priorClipboard=Object.getOwnPropertyDescriptor(navigator,'clipboard'),priorItem=window.ClipboardItem;Object.defineProperty(navigator,'clipboard',{configurable:true,value:{write:async()=>{}}});window.ClipboardItem=class {constructor(){throw new TypeError('unsupported ClipboardItem')}};
+      const refused=new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:new DataTransfer()});detached.dispatchEvent(refused);const constructorErrors=lateErrors;lateErrors=0;
+      bdf.unmount_bdf(detached);resume();const cancelled=await pendingCells;await new Promise(resolve=>setTimeout(resolve,0));
+      if(priorClipboard)Object.defineProperty(navigator,'clipboard',priorClipboard);else delete navigator.clipboard;window.ClipboardItem=priorItem;window.removeEventListener('unhandledrejection',onUnhandled);
+      const unmountResult={cancelled,lateErrors,unhandled,constructorErrors,refused:refused.defaultPrevented,empty:!detached.childElementCount,loads:unmountRequests.length};detached.remove();
       return {results,delayed,fallbackResult,unmountResult};
     });
     for(const result of sheetCells.results){
@@ -352,7 +356,7 @@ try {
     assert.ok(sheetCells.fallbackResult.prevented&&sheetCells.fallbackResult.empty&&sheetCells.fallbackResult.error,'unsupported asynchronous clipboard does not copy an incomplete range');
     assert.deepEqual(sheetCells.fallbackResult.loaded,cellFixtures['cells-baseline'].large,'fallback loads the complete selection');
     assert.deepEqual(sheetCells.fallbackResult.retry,{...sheetCells.fallbackResult.loaded,handled:true},'copy succeeds after asynchronous loading in browsers without ClipboardItem');
-    assert.deepEqual(sheetCells.unmountResult,{cancelled:true,lateErrors:0,empty:true,loads:1},'unmount cancels pending sheet-cell loading without fetching more tiles');
+    assert.deepEqual(sheetCells.unmountResult,{cancelled:true,lateErrors:0,unhandled:0,constructorErrors:1,refused:true,empty:true,loads:1},'clipboard rejection and unmount cancel pending cell loading cleanly');
     await cellsPage.close();
     const sheetInteractive=await browser.newPage({viewport:{width:1280,height:720}});
     await sheetInteractive.goto(`${sheetBase}live-moon.html`,{waitUntil:'networkidle'});
