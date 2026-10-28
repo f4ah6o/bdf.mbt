@@ -22,6 +22,8 @@ extern "js" fn clear_host(host : BrowserHost) -> Unit =
   #|  if (!host || typeof host.replaceChildren !== "function") {
   #|    throw new TypeError("host must be an HTMLElement");
   #|  }
+  #|  const fonts=host[Symbol.for('f4ah6o.bdf.fonts')]; if(fonts){fonts.release();delete host[Symbol.for('f4ah6o.bdf.fonts')];}
+  #|  const copy=host[Symbol.for('f4ah6o.bdf.copy')]; if(copy){copy.dispose();delete host[Symbol.for('f4ah6o.bdf.copy')];}
   #|  host.replaceChildren();
   #|  host.style.position = "relative";
   #|  host.style.overflow = "auto";
@@ -566,6 +568,7 @@ fn mount_document(
   doc : BrowserDocument,
   layout : String,
   resources? : BrowserResources,
+  interactive~ : Bool = false,
 ) -> Int32 raise {
   if doc.manifest.views.length() == 0 {
     raise BadFormat("document has no view")
@@ -596,9 +599,20 @@ fn mount_document(
       max_y = p.y + p.height
     }
     let limits : UseLimits = { seen: {}, reused: 0, maximum: 134217728, }
+    let data = if interactive { Some(new_text_layer_data()) } else { None }
+    let mut node_base = 0
+    let mut run_base = 0
     for layer in view.pages[p.index].layers {
       let object = @core.decode_object_resources(doc.part(layer.object))
       let paths = resolve_paths(doc, object.paths)
+      if data is Some(text_data) {
+        let content = @render.extract_text(object, hash => {
+          Some(@core.decode_object_resources(doc.part(hash)))
+        })
+        append_text_content(text_data, content, node_base, run_base)
+        node_base += content.nodes.length()
+        run_base += content.runs.length()
+      }
       paint_commands(
         ctx,
         @render.compile_object(object.object),
@@ -610,6 +624,23 @@ fn mount_document(
         document=doc,
         limits~,
       )
+    }
+    if data is Some(text_data) {
+      render_text_layer(
+        host,
+        text_data,
+        p.x,
+        p.y,
+        p.width,
+        p.height,
+        viewer.zoom,
+      )
+    }
+  }
+  if interactive {
+    install_copy_handler(host)
+    if resources is Some(r) {
+      retain_host_fonts(host, r)
     }
   }
   resize_host(host, max_x, max_y)

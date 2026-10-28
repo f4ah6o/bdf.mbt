@@ -78,34 +78,53 @@ pub fn mount_bdf_async(
   data : Bytes,
   layout : String,
 ) -> @js_async.Promise[Int32] {
-  @js_async.Promise::from_async(() => {
-    let doc = single_document(@core.open_single(data))
-    if doc.manifest.views.length() == 0 {
-      raise BadFormat("document has no view")
+  @js_async.Promise::from_async(() => mount_single(host, data, layout, false))
+}
+
+///|
+/// Mount a single document with selectable, accessible text and links.
+#export_name("mount_bdf_interactive_async")
+pub fn mount_bdf_interactive_async(
+  host : BrowserHost,
+  data : Bytes,
+  layout : String,
+) -> @js_async.Promise[Int32] {
+  @js_async.Promise::from_async(() => mount_single(host, data, layout, true))
+}
+
+///|
+async fn mount_single(
+  host : BrowserHost,
+  data : Bytes,
+  layout : String,
+  interactive : Bool,
+) -> Int32 {
+  let doc = single_document(@core.open_single(data))
+  if doc.manifest.views.length() == 0 {
+    raise BadFormat("document has no view")
+  }
+  let view = doc.manifest.views[0]
+  if view.kind != "fixed" && view.kind != "flow" {
+    raise Unsupported("browser supports fixed/flow pages only")
+  }
+  if view.pages.length() > 256 {
+    raise Unsupported("more than 256 pages")
+  }
+  let resources = new_resources()
+  defer dispose_resources(resources)
+  let seen : Map[String, Bool] = Map([])
+  for page in view.pages {
+    for layer in page.layers {
+      prepare_object(doc, resources, layer.object, seen, 0)
     }
-    let view = doc.manifest.views[0]
-    if view.kind != "fixed" && view.kind != "flow" {
-      raise Unsupported("browser supports fixed/flow pages only")
+  }
+  let result = invoke_render(() => {
+    Ok(mount_document(host, doc, layout, resources~, interactive~)) catch {
+      error => Err(error)
     }
-    if view.pages.length() > 256 {
-      raise Unsupported("more than 256 pages")
-    }
-    let resources = new_resources()
-    defer dispose_resources(resources)
-    let seen : Map[String, Bool] = Map([])
-    for page in view.pages {
-      for layer in page.layers {
-        prepare_object(doc, resources, layer.object, seen, 0)
-      }
-    }
-    let result = invoke_render(() => {
-      Ok(mount_document(host, doc, layout, resources~)) catch {
-        error => Err(error)
-      }
-    }).wait()
-    match result {
-      Ok(pages) => pages
-      Err(error) => raise error
-    }
-  })
+  }).wait()
+  match result {
+    Ok(pages) => pages
+    Err(error) => raise error
+  }
 }

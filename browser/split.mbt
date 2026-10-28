@@ -103,49 +103,74 @@ pub fn mount_bdf_split_async(
   layout : String,
 ) -> @js_async.Promise[Int32] {
   @js_async.Promise::from_async(() => {
-    let cache : Map[String, Bytes] = Map([])
-    let split = @core.open_split(manifest, fn(hash, _) {
-      match cache.get(hash) {
-        Some(data) => data
-        None => raise BadFormat("split part not loaded")
-      }
-    })
-    if split.manifest.views.length() == 0 {
-      raise BadFormat("document has no view")
-    }
-    let view = split.manifest.views[0]
-    if view.kind != "fixed" && view.kind != "flow" {
-      raise Unsupported("browser supports fixed/flow pages only")
-    }
-    if view.pages.length() > 256 {
-      raise Unsupported("more than 256 pages")
-    }
-    let seen : Map[String, Bool] = Map([])
-    for page in view.pages {
-      for layer in page.layers {
-        prefetch_split_object(split, cache, loader, layer.object, seen, 0)
-      }
-    }
-    let doc : BrowserDocument = {
-      manifest: split.manifest,
-      load: fn(hash) { split.part(hash) },
-    }
-    let resources = new_resources()
-    defer dispose_resources(resources)
-    let prepared : Map[String, Bool] = Map([])
-    for page in view.pages {
-      for layer in page.layers {
-        prepare_object(doc, resources, layer.object, prepared, 0)
-      }
-    }
-    let result = invoke_render(() => {
-      Ok(mount_document(host, doc, layout, resources~)) catch {
-        error => Err(error)
-      }
-    }).wait()
-    match result {
-      Ok(pages) => pages
-      Err(error) => raise error
+    mount_split(host, manifest, loader, layout, false)
+  })
+}
+
+///|
+/// Mount a split document with selectable, accessible text and links.
+#export_name("mount_bdf_interactive_split_async")
+pub fn mount_bdf_interactive_split_async(
+  host : BrowserHost,
+  manifest : Bytes,
+  loader : SplitPartLoader,
+  layout : String,
+) -> @js_async.Promise[Int32] {
+  @js_async.Promise::from_async(() => {
+    mount_split(host, manifest, loader, layout, true)
+  })
+}
+
+///|
+async fn mount_split(
+  host : BrowserHost,
+  manifest : Bytes,
+  loader : SplitPartLoader,
+  layout : String,
+  interactive : Bool,
+) -> Int32 {
+  let cache : Map[String, Bytes] = Map([])
+  let split = @core.open_split(manifest, fn(hash, _) {
+    match cache.get(hash) {
+      Some(data) => data
+      None => raise BadFormat("split part not loaded")
     }
   })
+  if split.manifest.views.length() == 0 {
+    raise BadFormat("document has no view")
+  }
+  let view = split.manifest.views[0]
+  if view.kind != "fixed" && view.kind != "flow" {
+    raise Unsupported("browser supports fixed/flow pages only")
+  }
+  if view.pages.length() > 256 {
+    raise Unsupported("more than 256 pages")
+  }
+  let seen : Map[String, Bool] = Map([])
+  for page in view.pages {
+    for layer in page.layers {
+      prefetch_split_object(split, cache, loader, layer.object, seen, 0)
+    }
+  }
+  let doc : BrowserDocument = {
+    manifest: split.manifest,
+    load: fn(hash) { split.part(hash) },
+  }
+  let resources = new_resources()
+  defer dispose_resources(resources)
+  let prepared : Map[String, Bool] = Map([])
+  for page in view.pages {
+    for layer in page.layers {
+      prepare_object(doc, resources, layer.object, prepared, 0)
+    }
+  }
+  let result = invoke_render(() => {
+    Ok(mount_document(host, doc, layout, resources~, interactive~)) catch {
+      error => Err(error)
+    }
+  }).wait()
+  match result {
+    Ok(pages) => pages
+    Err(error) => raise error
+  }
 }

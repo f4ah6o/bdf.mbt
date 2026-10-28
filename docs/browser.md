@@ -32,7 +32,7 @@ by the selected view are requested, at most once each.
 
 ```js
 const manifest = new Uint8Array(await (await fetch('/split/manifest.json')).arrayBuffer());
-const pages = await mount_bdf_split_async(host, manifest, async (hash, limit) => {
+const loadPart = async (hash, limit) => {
   const response = await fetch(`/split/parts/${hash}`);
   if (!response.ok || !response.body) throw new Error('part request failed');
   const reader = response.body.getReader();
@@ -51,7 +51,8 @@ const pages = await mount_bdf_split_async(host, manifest, async (hash, limit) =>
   let offset = 0;
   for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
   return bytes;
-}, 'single');
+};
+const pages = await mount_bdf_split_async(host, manifest, loadPart, 'single');
 ```
 
 
@@ -74,3 +75,22 @@ content key and authenticated parts with Web Crypto. Wrong credentials,
 invalid key slots, and altered ciphertext cause the promise to reject. The
 password is normalized using NFKC. These entry points require Web Crypto, which
 browsers expose in secure contexts such as HTTPS and localhost.
+
+
+Selectable text and safe links are available through the interactive variants (import these functions from the same compiled module):
+
+```js
+await mount_bdf_interactive_async(host, bytes, 'single');
+// mount_bdf_interactive_split_async(host, manifest, loadPart, layout)
+// mount_bdf_interactive_encrypted_async(host, bytes, passwordOrKeyPair, layout)
+// mount_bdf_interactive_encrypted_split_async(host, manifest, loadPart, passwordOrKeyPair, layout)
+const selectedText = bdf_selection_text(host);
+unmount_bdf(host);
+```
+
+The text layer includes headings, lists, tables, figures, language attributes,
+and links restricted to HTTP, HTTPS, mailto and BDF internal fragments. Copy
+and cut serialize the selected text using the document's run separators.
+Embedded fonts remain loaded until the host is unmounted, remounted, or removed
+from the document. Table-cell range copying and viewer navigation between views
+are not yet implemented.

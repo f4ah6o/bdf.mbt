@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn bdf_selection_text(BrowserHost) -> String
+
 pub fn key_pair_credential(BrowserKeyPair) -> CryptoCredential
 
 pub fn mount_bdf(BrowserHost, Bytes, String) -> Int32 raise
@@ -16,11 +18,21 @@ pub fn mount_bdf_encrypted_async(BrowserHost, Bytes, CryptoCredential, String) -
 
 pub fn mount_bdf_encrypted_split_async(BrowserHost, Bytes, SplitPartLoader, CryptoCredential, String) -> @js_async.Promise[Int32]
 
+pub fn mount_bdf_interactive_async(BrowserHost, Bytes, String) -> @js_async.Promise[Int32]
+
+pub fn mount_bdf_interactive_encrypted_async(BrowserHost, Bytes, CryptoCredential, String) -> @js_async.Promise[Int32]
+
+pub fn mount_bdf_interactive_encrypted_split_async(BrowserHost, Bytes, SplitPartLoader, CryptoCredential, String) -> @js_async.Promise[Int32]
+
+pub fn mount_bdf_interactive_split_async(BrowserHost, Bytes, SplitPartLoader, String) -> @js_async.Promise[Int32]
+
 pub fn mount_bdf_js(BrowserHost, Bytes, String) -> Int32
 
 pub fn mount_bdf_split_async(BrowserHost, Bytes, SplitPartLoader, String) -> @js_async.Promise[Int32]
 
 pub fn password_credential(String) -> CryptoCredential
+
+pub fn unmount_bdf(BrowserHost) -> Unit
 
 // Errors
 pub suberror BrowserError {

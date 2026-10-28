@@ -4,12 +4,12 @@ MoonBit implementation of the BDF v1 wire-format reader and the browser-facing `
 
 - Targets: `js` and `wasm-gc`.
 - `core`: checked BDF header, single and split documents (identity and deflate-raw), BOBJ resource tables, bounded binary reader.
-- `render`: backend-neutral, checked display-list decoder for a currently supported subset of Canvas 2D opcodes, including paths, gradient paints, and drawing effects. It also extracts ordered text runs, semantic structure, figure bounds and link rectangles; selection UI is still pending.
+- `render`: backend-neutral, checked display-list decoder for a currently supported subset of Canvas 2D opcodes, including paths, gradient paints, and drawing effects. It also extracts ordered text runs, semantic structure, figure bounds and link rectangles.
 - `convert`: the worker-client request/response lifecycle and stream command model. Converter runtime itself (TinyGo) is **not** ported.
 - `viewer`: document/view selection state and page placement in single, spread, and continuous modes.
-- `browser` (JS only): Canvas 2D adapter that draws a subset of fixed/flow BDF pages, including password- and P-256-protected documents, into a DOM host, including paths, gradients, child objects, transparency groups, masks, and asynchronously loaded images and fonts.
+- `browser` (JS only): Canvas 2D adapter that draws a subset of fixed/flow BDF pages, including password- and P-256-protected documents, into a DOM host, including paths, gradients, child objects, transparency groups, masks, asynchronously loaded images and fonts, and an optional selectable text layer.
 
-This is an **incremental port**, not a feature-equivalent replacement for the upstream npm packages. In particular, a full DOM viewer, wasm-gc cryptography, full opset 1 (text selection, sheet tiles, music), browser Worker transport and PDF/Office/CAD decoders are not yet implemented. Unsupported drawing opcodes fail explicitly instead of silently rendering incorrectly.
+This is an **incremental port**, not a feature-equivalent replacement for the upstream npm packages. In particular, a full DOM viewer, wasm-gc cryptography, full viewer features (sheet tiles, table-cell selection, music), browser Worker transport and PDF/Office/CAD decoders are not yet implemented. Unsupported drawing opcodes fail explicitly instead of silently rendering incorrectly.
 
 Upstream implementation: https://github.com/shibukawa/bdf (MIT). Wire specification: https://github.com/shibukawa/bdf/blob/main/docs/spec.md .
 
@@ -38,7 +38,7 @@ let viewer = @viewer.Viewer::new()
 viewer.set_layout(@viewer.Spread)
 ```
 
-The `core` package exposes `open_split` with a lazy host-provided loader for split documents. The loader is responsible for enforcing its supplied stored-size limit while reading. The `browser` package exposes `mount_bdf_async` for single-file documents, `mount_bdf_split_async` for split documents with an asynchronous part loader, and `mount_bdf` for documents that need no image or embedded font loading. See [browser usage](docs/browser.md).
+The `core` package exposes `open_split` with a lazy host-provided loader for split documents. The loader is responsible for enforcing its supplied stored-size limit while reading. The `browser` package exposes `mount_bdf_async` for single-file documents, `mount_bdf_split_async` for split documents with an asynchronous part loader, and `mount_bdf` for documents that need no image or embedded font loading. The `mount_bdf_interactive_*` variants add an accessible text and link layer; call `unmount_bdf` to release its retained fonts. See [browser usage](docs/browser.md).
 
 ## Port backlog
 

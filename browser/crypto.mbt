@@ -27,7 +27,9 @@ pub fn key_pair_credential(pair : BrowserKeyPair) -> CryptoCredential {
 }
 
 ///|
-extern "js" fn key_pair_credential_js(pair : BrowserKeyPair) -> CryptoCredential =
+extern "js" fn key_pair_credential_js(
+  pair : BrowserKeyPair,
+) -> CryptoCredential =
   #|(pair) => pair
 
 ///|
@@ -165,6 +167,7 @@ async fn mount_encrypted(
   loader : SplitPartLoader,
   credential : CryptoCredential,
   layout : String,
+  interactive : Bool,
 ) -> Int32 {
   let key = unlock_content_key(metadata, credential)
   let encrypted_manifest = load_sealed(metadata, loader, metadata.manifest_hash)
@@ -192,7 +195,7 @@ async fn mount_encrypted(
       bytes
     })
   })
-  mount_bdf_split_async(host, manifest, inner_loader, layout).wait()
+  mount_split(host, manifest, inner_loader, layout, interactive)
 }
 
 ///|
@@ -209,7 +212,7 @@ pub fn mount_bdf_encrypted_async(
     let loader = make_split_loader(fn(hash, _) {
       @js_async.Promise::from_async(() => single.stored_part(hash))
     })
-    mount_encrypted(host, single.metadata, loader, credential, layout)
+    mount_encrypted(host, single.metadata, loader, credential, layout, false)
   })
 }
 
@@ -236,6 +239,53 @@ pub fn mount_bdf_encrypted_split_async(
       loader,
       credential,
       layout,
+      false,
+    )
+  })
+}
+
+///|
+/// Mount a protected single document with selectable text and links.
+#export_name("mount_bdf_interactive_encrypted_async")
+pub fn mount_bdf_interactive_encrypted_async(
+  host : BrowserHost,
+  data : Bytes,
+  credential : CryptoCredential,
+  layout : String,
+) -> @js_async.Promise[Int32] {
+  @js_async.Promise::from_async(() => {
+    let single = @core.open_encrypted_single(data)
+    let loader = make_split_loader(fn(hash, _) {
+      @js_async.Promise::from_async(() => single.stored_part(hash))
+    })
+    mount_encrypted(host, single.metadata, loader, credential, layout, true)
+  })
+}
+
+///|
+/// Mount a protected split document with selectable text and links.
+#export_name("mount_bdf_interactive_encrypted_split_async")
+pub fn mount_bdf_interactive_encrypted_split_async(
+  host : BrowserHost,
+  manifest : Bytes,
+  loader : SplitPartLoader,
+  credential : CryptoCredential,
+  layout : String,
+) -> @js_async.Promise[Int32] {
+  @js_async.Promise::from_async(() => {
+    if manifest.length() > 268435456 {
+      raise BadFormat("manifest exceeds 256 MiB")
+    }
+    let text = @utf8.decode(manifest) catch {
+      _ => raise BadFormat("invalid UTF-8 manifest")
+    }
+    mount_encrypted(
+      host,
+      @core.parse_encrypted_manifest(text),
+      loader,
+      credential,
+      layout,
+      true,
     )
   })
 }

@@ -13,7 +13,7 @@ const outputRoot = path.join(root, '_build/visual-diff');
 mkdirSync(outputRoot, { recursive: true });
 const output = mkdtempSync(path.join(outputRoot, 'run-'));
 const executable = path.join(root, 'node_modules/.bin/vlmkit');
-const allowed = ['/compat/visual/', '/node_modules/@bdfkit/', '/_build/js/debug/build/browser/'];
+const allowed = ['/compat/visual/', '/compat/interactive/', '/node_modules/@bdfkit/', '/_build/js/debug/build/browser/'];
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.bdf': 'application/octet-stream' };
 
 function run(args) {
@@ -131,9 +131,191 @@ try {
       }
       await page.close();
     }
+    const interactiveBase = `http://127.0.0.1:${server.address().port}/compat/interactive/`;
+    const snapshots = [];
+    for (const name of ['baseline', 'moon']) {
+      const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+      const errors = [];
+      page.on('pageerror', error => errors.push(String(error)));
+      await page.goto(`${interactiveBase}${name}.html`, {waitUntil:'networkidle'});
+      await page.waitForFunction(() => window.bdfStatus === 'ready' || window.bdfStatus === 'error');
+      const snapshot = await page.evaluate(() => {
+        if (window.bdfStatus !== 'ready') throw new Error(window.bdfError);
+        const host=document.querySelector('#host'), spans=[...host.querySelectorAll('[data-bdf-ordinal]')];
+        const roles=[...host.querySelectorAll('[role]')].map(el=>({role:el.getAttribute('role'),level:el.getAttribute('aria-level'),row:el.getAttribute('aria-rowindex'),col:el.getAttribute('aria-colindex'),label:el.getAttribute('aria-label')}));
+        const anchors=[...host.querySelectorAll('a')].map(a=>({href:a.getAttribute('href'),page:a.getAttribute('data-bdf-page'),text:a.textContent}));
+        const geometry=spans.map(span=>{const r=span.getBoundingClientRect();return [r.x,r.y,r.width,r.height]});
+        const range=document.createRange();range.setStart(spans[1].firstChild,1);range.setEnd(spans[3].firstChild,6);
+        const selection=getSelection();selection.removeAllRanges();selection.addRange(range);
+        const selected=window.readSelection();const multiRange=document.createRange();multiRange.setStart(spans[1].firstChild,1);multiRange.setEnd(spans.at(-1).firstChild,spans.at(-1).textContent.length);selection.removeAllRanges();selection.addRange(multiRange);const crossPage=window.readSelection();selection.removeAllRanges();selection.addRange(range);const clipboard=new DataTransfer();const event=new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:clipboard});host.dispatchEvent(event);const cutData=new DataTransfer();const cutEvent=new ClipboardEvent('cut',{bubbles:true,cancelable:true,clipboardData:cutData});host.dispatchEvent(cutEvent);
+        return {texts:spans.map(s=>s.textContent),seps:spans.map(s=>s.getAttribute('data-bdf-sep')),ordinals:spans.map(s=>s.getAttribute('data-bdf-ordinal')),roles,anchors,geometry,selected,crossPage,copied:clipboard.getData('text/plain'),prevented:event.defaultPrevented,cut:cutData.getData('text/plain'),cutPrevented:cutEvent.defaultPrevented};
+      });
+      assert.deepEqual(errors, [], `${name}: browser errors`);
+      assert.equal(snapshot.selected, 'ello world Second');
+      assert.ok(snapshot.crossPage.endsWith('\n\nSecond page'), 'cross-page selection separator');
+      assert.equal(snapshot.copied, snapshot.selected);
+      assert.equal(snapshot.prevented, true);
+      assert.equal(snapshot.cut, snapshot.selected);
+      assert.equal(snapshot.cutPrevented, true);
+      assert.equal(snapshot.anchors.length, 1, 'unsafe link must not be rendered');
+      assert.equal(snapshot.anchors[0].page, '1');
+      await page.evaluate(() => getSelection().removeAllRanges());
+      const [tx,ty,tw,th] = snapshot.geometry[1];
+      await page.mouse.move(tx+2,ty+th/2);
+      await page.mouse.down();
+      const tracking = await page.evaluate(() => ({
+        active: document.querySelector('[data-bdf-layer]')?.hasAttribute('data-bdf-selecting'),
+        cover: !!document.querySelector('[data-bdf-end][data-bdf-selecting]'),
+      }));
+      assert.deepEqual(tracking, {active:true,cover:true}, 'drag selection cover activates');
+      await page.mouse.move(tx+tw-2,ty+th/2,{steps:8});
+      await page.mouse.move(300,115,{steps:8});
+      const dragged = await page.evaluate(() => window.readSelection());
+      assert.ok(dragged.length > 0, 'drag retains selected text');
+      await page.mouse.up();
+      assert.equal(await page.evaluate(() => !!document.querySelector('[data-bdf-end][data-bdf-selecting]')), false, 'drag cover clears on release');
+      snapshot.dragged=dragged;
+      await page.evaluate(() => getSelection().removeAllRanges());
+      const [bx,by,bw,bh] = snapshot.geometry[2];
+      await page.mouse.move(bx+bw-2,by+bh/2);
+      await page.mouse.down();
+      await page.mouse.move(tx+2,ty+th/2,{steps:10});
+      snapshot.draggedBack=await page.evaluate(() => window.readSelection());
+      assert.ok(snapshot.draggedBack.length > 0, 'backward drag selects text');
+      await page.mouse.up();
+      assert.equal(await page.evaluate(() => !!document.querySelector('[data-bdf-end][data-bdf-selecting]')), false);
+      await page.evaluate(() => getSelection().removeAllRanges());
+      const outsideTracking = await page.evaluate(() => {
+        const spans=[...document.querySelectorAll('[data-bdf-ordinal]')];
+        document.body.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:0,pointerType:'mouse'}));
+        const range=document.createRange();range.setStart(spans[1].firstChild,0);range.setEnd(spans[2].firstChild,3);
+        getSelection().removeAllRanges();getSelection().addRange(range);
+        document.dispatchEvent(new Event('selectionchange'));
+        const active=!!document.querySelector('[data-bdf-end][data-bdf-selecting]');
+        document.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerType:'mouse'}));
+        return active;
+      });
+      assert.equal(outsideTracking,true,'drag beginning outside host is tracked');
+      await page.evaluate(() => getSelection().removeAllRanges());
+      await page.keyboard.press('Tab');
+      assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-bdf-page')), '1');
+      await page.keyboard.press('Enter');
+      assert.equal(await page.evaluate(() => location.hash), '#page=1');
+      snapshots.push(snapshot);
+      await page.close();
+    }
+    const resourcePage = await browser.newPage();
+    await resourcePage.goto(`${interactiveBase}moon.html`, {waitUntil:'networkidle'});
+    await resourcePage.waitForFunction(() => window.bdfStatus === 'ready');
+    const resourceResult = await resourcePage.evaluate(async () => {
+      const bdf = await import('/_build/js/debug/build/browser/browser.js');
+      const visual = '../visual/';
+      const bytes = async path => new Uint8Array(await (await fetch(`${visual}${path}`)).arrayBuffer());
+      const partLoader = prefix => async (hash, maximum) => {
+        const part = await bytes(`${prefix}/parts/${hash}`);
+        if (part.length > maximum) throw new Error('part exceeds limit');
+        return part;
+      };
+      const jwk = await (await fetch(`${visual}encrypted-fixture/test-private.jwk`)).json();
+      const privateKey = await crypto.subtle.importKey('jwk',jwk,{name:'ECDH',namedCurve:'P-256'},false,['deriveKey']);
+      const {d,...pub} = jwk;
+      const publicKey = await crypto.subtle.importKey('jwk',pub,{name:'ECDH',namedCurve:'P-256'},true,[]);
+      const pair = {publicKey,privateKey};
+      const cases = [
+        host => bytes('fixture.bdf').then(data=>bdf.mount_bdf_interactive_async(host,data,'single')),
+        host => bytes('split-fixture/manifest.json').then(manifest=>bdf.mount_bdf_interactive_split_async(host,manifest,partLoader('split-fixture'),'single')),
+        host => bytes('encrypted-fixture/password.bdf').then(data=>bdf.mount_bdf_interactive_encrypted_async(host,data,'pass','single')),
+        host => bytes('encrypted-fixture/password-split/manifest.json').then(manifest=>bdf.mount_bdf_interactive_encrypted_split_async(host,manifest,partLoader('encrypted-fixture/password-split'),'pass','single')),
+        host => bytes('encrypted-fixture/ecdh.bdf').then(data=>bdf.mount_bdf_interactive_encrypted_async(host,data,pair,'single')),
+        host => bytes('encrypted-fixture/ecdh-split/manifest.json').then(manifest=>bdf.mount_bdf_interactive_encrypted_split_async(host,manifest,partLoader('encrypted-fixture/ecdh-split'),pair,'single')),
+      ];
+      const initial=[...document.fonts].filter(f=>f.family.startsWith('bdf-')).length;
+      const results=[];
+      for (const [i, mount] of cases.entries()) {
+        const host=document.createElement('div');document.body.appendChild(host);
+        const pages=await mount(host);
+        const spans=[...host.querySelectorAll('[data-bdf-ordinal]')];
+        const texts=spans.map(s=>s.textContent);
+        const syntheticWidth=spans.find(s=>s.textContent==='AAA').getBoundingClientRect().width;
+        const retained=[...document.fonts].filter(f=>f.family.startsWith('bdf-')).length;
+        if (i%2===0) { bdf.unmount_bdf(host); host.remove(); }
+        else { host.remove(); await new Promise(resolve=>setTimeout(resolve,0)); }
+        const released=[...document.fonts].filter(f=>f.family.startsWith('bdf-')).length;
+        const handlersReleased=!host[Symbol.for('f4ah6o.bdf.copy')];
+        results.push({pages,texts,syntheticWidth,retained,released,handlersReleased,empty:host.childElementCount===0,resetSize:host.style.minWidth===''&&host.style.minHeight===''});
+      }
+      const detached=document.createElement('div');
+      await bdf.mount_bdf_interactive_async(detached,await bytes('fixture.bdf'),'single');
+      document.body.appendChild(detached);
+      await new Promise(resolve=>setTimeout(resolve,0));
+      const detachedSpans=detached.querySelectorAll('[data-bdf-ordinal]');
+      document.body.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:0,pointerType:'mouse'}));
+      const range=document.createRange();range.setStart(detachedSpans[0].firstChild,0);range.setEnd(detachedSpans[0].firstChild,3);
+      getSelection().removeAllRanges();getSelection().addRange(range);document.dispatchEvent(new Event('selectionchange'));
+      const detachedTracking=!!detached.querySelector('[data-bdf-end][data-bdf-selecting]');
+      document.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerType:'mouse'}));
+      detached.remove();await new Promise(resolve=>setTimeout(resolve,0));
+      const detachedReleased=!detached[Symbol.for('f4ah6o.bdf.copy')]&&[...document.fonts].filter(f=>f.family.startsWith('bdf-')).length===initial;
+      const first=document.createElement('div'),second=document.createElement('div');
+      document.body.append(first,second);
+      const single=await bytes('fixture.bdf');
+      await bdf.mount_bdf_interactive_async(first,single,'single');
+      await bdf.mount_bdf_interactive_async(second,single,'single');
+      let failedMount=false;
+      try { await bdf.mount_bdf_interactive_split_async(first,await bytes('split-fixture/manifest.json'),async()=>{throw new Error('failed')},'single'); }
+      catch { failedMount=first.querySelectorAll('[data-bdf-ordinal]').length===2&&[...document.fonts].filter(f=>f.family.startsWith('bdf-')).length===initial+2; }
+      first.remove();await new Promise(resolve=>setTimeout(resolve,0));
+      const retainedOther=[...document.fonts].filter(f=>f.family.startsWith('bdf-')).length===initial+1;
+      const otherSpan=second.querySelector('[data-bdf-ordinal]');
+      document.body.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:0,pointerType:'mouse'}));
+      const otherRange=document.createRange();otherRange.setStart(otherSpan.firstChild,0);otherRange.setEnd(otherSpan.firstChild,3);
+      getSelection().removeAllRanges();getSelection().addRange(otherRange);document.dispatchEvent(new Event('selectionchange'));
+      const otherTracking=!!second.querySelector('[data-bdf-end][data-bdf-selecting]');
+      document.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerType:'mouse'}));
+      bdf.unmount_bdf(second);second.remove();
+      const otherReleased=[...document.fonts].filter(f=>f.family.startsWith('bdf-')).length===initial;
+      return {initial,results,detachedTracking,detachedReleased,retainedOther,otherTracking,otherReleased,failedMount};
+    });
+    assert.equal(resourceResult.failedMount,true,'failed preparation preserves existing document and fonts');
+    assert.equal(resourceResult.retainedOther,true,'removing one host preserves another host font');
+    assert.equal(resourceResult.otherTracking,true,'remaining host tracks selection');
+    assert.equal(resourceResult.otherReleased,true,'remaining host font is released');
+    assert.equal(resourceResult.detachedTracking,true,'detached host activates after insertion');
+    assert.equal(resourceResult.detachedReleased,true,'detached host resources are released after removal');
+    for (const [i, result] of resourceResult.results.entries()) {
+      assert.equal(result.pages, 1);
+      assert.deepEqual(result.texts, ['BDF visual parity', 'AAA']);
+      assert.ok(Math.abs(result.syntheticWidth-84) < 1, 'embedded font metrics are used for selectable text');
+      assert.equal(result.retained, resourceResult.initial + 1, 'embedded font retained for selectable text');
+      assert.equal(result.released, resourceResult.initial, 'embedded font released');
+      assert.equal(result.handlersReleased, true, 'selection handlers released');
+      if (i % 2 === 0) { assert.equal(result.empty, true, 'unmount clears host'); assert.equal(result.resetSize, true, 'unmount resets host dimensions'); }
+    }
+    await resourcePage.close();
+    const [expected, actual] = snapshots;
+    for (const key of ['texts','seps','ordinals','roles','anchors','selected','crossPage','copied','prevented','cut','cutPrevented','dragged','draggedBack']) assert.deepEqual(actual[key], expected[key], `interactive ${key}`);
+    for (let i=0;i<expected.geometry.length;i++) for (let j=0;j<4;j++) assert.ok(Math.abs(actual.geometry[i][j]-expected.geometry[i][j]) < 1, `interactive span ${i} geometry ${j}`);
   } finally {
     await browser.close();
   }
+  const interactiveBase = `http://127.0.0.1:${server.address().port}/compat/interactive/`;
+  const interactiveOutput = path.join(output, 'interactive');
+  mkdirSync(interactiveOutput);
+  await run(['diff','html','--url',`${interactiveBase}baseline.html`,'--current-url',`${interactiveBase}moon.html`,'--output-dir',interactiveOutput,'--no-paint-tree']);
+  const interactiveReportPath = path.join(interactiveOutput, 'diff-report.json');
+  const interactiveReport = JSON.parse(readFileSync(interactiveReportPath, 'utf8'));
+  for (const result of interactiveReport.results) {
+    const before = PNG.sync.read(readFileSync(path.join(interactiveOutput, `compat_interactive_baseline-${result.viewport}.png`)));
+    const after = PNG.sync.read(readFileSync(path.join(interactiveOutput, `compat_interactive_moon-${result.viewport}.png`)));
+    let changed=0;
+    for (let i=0;i<before.data.length;i+=4) if (before.data[i]!==after.data[i]||before.data[i+1]!==after.data[i+1]||before.data[i+2]!==after.data[i+2]||before.data[i+3]!==after.data[i+3]) changed++;
+    const ratio=changed/(Math.min(before.width,640)*Math.min(before.height,400));
+    console.log(`interactive ${result.viewport}: ${changed} pixels changed (${(ratio*100).toFixed(4)}%)`);
+    assert.ok(ratio <= 0.0005, `${result.viewport}: interactive visual difference exceeds 0.05%`);
+  }
+  await run(['diff','agent',interactiveReportPath,'--no-history']);
+  await run(['scan','handlers',`${interactiveBase}moon.html`,'--no-ledger']);
+  await run(['check','interactions',`${interactiveBase}moon.html`,'--reference',`${interactiveBase}baseline.html`,'--handlers','--no-ledger']);
   for (const variant of ['moon', 'split', 'encrypted-password', 'encrypted-split', 'encrypted-ecdh', 'encrypted-ecdh-split']) {
   const variantOutput = path.join(output, variant);
   mkdirSync(variantOutput);
