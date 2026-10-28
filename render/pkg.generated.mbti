@@ -1,0 +1,54 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/render"
+
+import {
+  "f4ah6o/bdf/core",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn compile_object(@core.ObjectPart) -> Array[Command] raise
+
+pub fn decode_commands(Bytes) -> Array[Command] raise
+
+// Errors
+pub suberror RenderError {
+  UnsupportedOpcode(Int32)
+  InvalidReference(String)
+  InvalidOperands(String)
+}
+
+// Types and methods
+pub(all) enum Command {
+  Save
+  Restore
+  Transform(Double, Double, Double, Double, Double, Double)
+  Translate(Double, Double)
+  Scale(Double, Double)
+  ClipRect(Double, Double, Double, Double)
+  FillColor(Int32)
+  StrokeColor(Int32)
+  Line(Double, Int32, Int32, Double)
+  Dash(Array[Double], Double)
+  Alpha(Double)
+  Blend(Int32)
+  Shadow(Int32, Double, Double, Double)
+  Filter(String)
+  Font(Int32, Double)
+  TextStyle(Int32, Int32, Int32, Double)
+  FillRect(Double, Double, Double, Double)
+  StrokeRect(Double, Double, Double, Double)
+  ClearRect(Double, Double, Double, Double)
+  FillText(String, Double, Double, Double)
+  StrokeText(String, Double, Double, Double)
+  Image(String, Double, Double, Double, Double)
+  ImageSub(String, Double, Double, Double, Double, Double, Double, Double, Double)
+  Smoothing(Bool, Int32)
+  Link(Double, Double, Double, Double, String)
+  Mark(Int32, String)
+  Ext(Bytes)
+} derive(@debug.Debug)
+
+// Type aliases
+
+// Traits

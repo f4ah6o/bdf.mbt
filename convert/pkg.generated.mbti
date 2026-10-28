@@ -1,0 +1,61 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+pub suberror ConvertError {
+  Terminated
+  UnknownRequest
+  InvalidInput(String)
+}
+
+// Types and methods
+pub(all) enum Action {
+  Convert
+  Open
+  Page(Int32, Int32)
+  Finish(Int32)
+  Close(Int32)
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Client {
+  mut next_id : Int32
+  mut terminated : Bool
+  pending : Map[Int32, PendingStatus]
+}
+pub fn Client::forget(Self, Int32) -> Unit
+pub fn Client::new() -> Self
+pub fn Client::reply(Self, Int32, Bool, String) -> Unit raise
+pub fn Client::request(Self, Action, ConvertOptions) -> Request raise
+pub fn Client::status(Self, Int32) -> PendingStatus?
+pub fn Client::terminate(Self) -> Unit
+
+pub(all) struct ConvertOptions {
+  format : String
+  name : String
+  password : String
+  fonts : String
+  pages : String
+}
+pub fn ConvertOptions::new() -> Self
+
+pub(all) enum PendingStatus {
+  Waiting
+  Completed
+  Failed(String)
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Request {
+  id : Int32
+  action : Action
+  options : ConvertOptions
+}
+
+// Type aliases
+
+// Traits

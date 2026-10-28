@@ -1,0 +1,48 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/viewer"
+
+import {
+  "f4ah6o/bdf/core",
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+pub suberror ViewerError {
+  InvalidZoom
+  NoSuchPage
+  NoSuchView
+}
+
+// Types and methods
+pub(all) enum Layout {
+  Single
+  Spread
+  Continuous
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Placement {
+  index : Int32
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+}
+
+pub(all) struct Viewer {
+  mut layout : Layout
+  mut zoom : Double
+  mut page : Int32
+  mut view_id : String
+}
+pub fn Viewer::new() -> Self
+pub fn Viewer::placements(Self, @core.View) -> Array[Placement]
+pub fn Viewer::scroll_to_page(Self, @core.View, Int32) -> Placement raise
+pub fn Viewer::set_layout(Self, Layout) -> Unit
+pub fn Viewer::set_view(Self, @core.Manifest, String) -> Unit raise
+pub fn Viewer::set_zoom(Self, Double) -> Unit raise
+
+// Type aliases
+
+// Traits

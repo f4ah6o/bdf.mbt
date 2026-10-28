@@ -55,7 +55,11 @@ extern "js" fn make_canvas(
   #|}
 
 ///|
-extern "js" fn resize_host(host : BrowserHost, width : Double, height : Double) -> Unit =
+extern "js" fn resize_host(
+  host : BrowserHost,
+  width : Double,
+  height : Double,
+) -> Unit =
   #|(host, w, h) => {
   #|  host.style.minWidth = Math.ceil(w) + "px";
   #|  host.style.minHeight = Math.ceil(h) + "px";
@@ -70,7 +74,15 @@ extern "js" fn restore(ctx : CanvasContext) -> Unit =
   #|(ctx) => ctx.restore()
 
 ///|
-extern "js" fn transform(ctx : CanvasContext, a : Double, b : Double, c : Double, d : Double, e : Double, f : Double) -> Unit =
+extern "js" fn transform(
+  ctx : CanvasContext,
+  a : Double,
+  b : Double,
+  c : Double,
+  d : Double,
+  e : Double,
+  f : Double,
+) -> Unit =
   #|(ctx,a,b,c,d,e,f) => ctx.transform(a,b,c,d,e,f)
 
 ///|
@@ -82,11 +94,21 @@ extern "js" fn scale(ctx : CanvasContext, x : Double, y : Double) -> Unit =
   #|(ctx,x,y) => ctx.scale(x,y)
 
 ///|
-extern "js" fn clip_rect(ctx : CanvasContext, x : Double, y : Double, w : Double, h : Double) -> Unit =
+extern "js" fn clip_rect(
+  ctx : CanvasContext,
+  x : Double,
+  y : Double,
+  w : Double,
+  h : Double,
+) -> Unit =
   #|(ctx,x,y,w,h) => { ctx.beginPath(); ctx.rect(x,y,w,h); ctx.clip(); }
 
 ///|
-extern "js" fn set_color(ctx : CanvasContext, rgba : Int, stroke : Bool) -> Unit =
+extern "js" fn set_color(
+  ctx : CanvasContext,
+  rgba : Int32,
+  stroke : Bool,
+) -> Unit =
   #|(ctx,rgba,stroke) => {
   #|  const n = rgba >>> 0;
   #|  const r = (n >>> 24) & 255, g = (n >>> 16) & 255, b = (n >>> 8) & 255;
@@ -96,12 +118,58 @@ extern "js" fn set_color(ctx : CanvasContext, rgba : Int, stroke : Bool) -> Unit
   #|}
 
 ///|
-extern "js" fn set_line(ctx : CanvasContext, width : Double, cap : Int, join : Int, miter : Double) -> Unit =
+extern "js" fn set_line(
+  ctx : CanvasContext,
+  width : Double,
+  cap : Int32,
+  join : Int32,
+  miter : Double,
+) -> Unit =
   #|(ctx,w,cap,join,miter) => {
   #|  ctx.lineWidth = w;
   #|  ctx.lineCap = ["butt","round","square"][cap] ?? "butt";
   #|  ctx.lineJoin = ["miter","round","bevel"][join] ?? "miter";
   #|  ctx.miterLimit = miter;
+  #|}
+
+///|
+extern "js" fn set_dash(
+  ctx : CanvasContext,
+  segments : FixedArray[Double],
+  offset : Double,
+) -> Unit =
+  #|(ctx, segments, offset) => { ctx.setLineDash(segments); ctx.lineDashOffset = offset; }
+
+///|
+extern "js" fn set_blend(ctx : CanvasContext, mode : Int32) -> Unit =
+  #|(ctx, mode) => {
+  #|  const names = ["source-over", "multiply", "screen", "overlay", "darken", "lighten", "color-dodge", "color-burn", "hard-light", "soft-light", "difference", "exclusion", "hue", "saturation", "color", "luminosity", "destination-over", "destination-in", "destination-out", "source-in", "source-out", "source-atop", "destination-atop", "xor", "copy", "lighter"];
+  #|  ctx.globalCompositeOperation = names[mode] ?? "source-over";
+  #|}
+
+///|
+extern "js" fn set_shadow(
+  ctx : CanvasContext,
+  rgba : Int32,
+  blur : Double,
+  dx : Double,
+  dy : Double,
+) -> Unit =
+  #|(ctx, rgba, blur, dx, dy) => {
+  #|  const n = rgba >>> 0, m = ctx.getTransform();
+  #|  const scale = Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) || 1;
+  #|  ctx.shadowColor = `rgba(${n >>> 24},${(n >>> 16) & 255},${(n >>> 8) & 255},${(n & 255) / 255})`;
+  #|  ctx.shadowBlur = blur * scale;
+  #|  ctx.shadowOffsetX = dx * scale;
+  #|  ctx.shadowOffsetY = dy * scale;
+  #|}
+
+///|
+extern "js" fn set_filter(ctx : CanvasContext, css : String) -> Unit =
+  #|(ctx, css) => {
+  #|  const allowed = new Set(["blur", "brightness", "contrast", "drop-shadow", "grayscale", "hue-rotate", "invert", "opacity", "saturate", "sepia", "rgb", "rgba", "hsl", "hsla", "hwb", "lab", "lch", "oklab", "oklch", "color"]);
+  #|  if (!/^[a-zA-Z0-9\s.,%#()+\/-]*$/.test(css) || [...css.matchAll(/([a-zA-Z-]*)\(/g)].some(m => !allowed.has(m[1].toLowerCase()))) css = "none";
+  #|  if ("filter" in ctx) ctx.filter = css;
   #|}
 
 ///|
@@ -113,63 +181,118 @@ extern "js" fn set_font(ctx : CanvasContext, size : Double) -> Unit =
   #|(ctx,size) => { ctx.font = size + "px sans-serif"; }
 
 ///|
-extern "js" fn set_text_style(ctx : CanvasContext, align : Int, baseline : Int, direction : Int) -> Unit =
-  #|(ctx,a,b,d) => {
+extern "js" fn set_text_style(
+  ctx : CanvasContext,
+  align : Int32,
+  baseline : Int32,
+  direction : Int32,
+  spacing : Double,
+) -> Unit =
+  #|(ctx,a,b,d,spacing) => {
   #|  ctx.textAlign = ["left","right","center","start","end"][a] ?? "left";
   #|  ctx.textBaseline = ["alphabetic","top","middle","bottom","hanging","ideographic"][b] ?? "alphabetic";
   #|  ctx.direction = ["inherit","ltr","rtl"][d] ?? "inherit";
+  #|  if ("letterSpacing" in ctx) ctx.letterSpacing = spacing + "px";
   #|}
 
 ///|
-extern "js" fn fill_rect(ctx : CanvasContext, x : Double, y : Double, w : Double, h : Double) -> Unit =
+extern "js" fn fill_rect(
+  ctx : CanvasContext,
+  x : Double,
+  y : Double,
+  w : Double,
+  h : Double,
+) -> Unit =
   #|(ctx,x,y,w,h) => ctx.fillRect(x,y,w,h)
 
 ///|
-extern "js" fn stroke_rect(ctx : CanvasContext, x : Double, y : Double, w : Double, h : Double) -> Unit =
+extern "js" fn stroke_rect(
+  ctx : CanvasContext,
+  x : Double,
+  y : Double,
+  w : Double,
+  h : Double,
+) -> Unit =
   #|(ctx,x,y,w,h) => ctx.strokeRect(x,y,w,h)
 
 ///|
-extern "js" fn clear_rect(ctx : CanvasContext, x : Double, y : Double, w : Double, h : Double) -> Unit =
+extern "js" fn clear_rect(
+  ctx : CanvasContext,
+  x : Double,
+  y : Double,
+  w : Double,
+  h : Double,
+) -> Unit =
   #|(ctx,x,y,w,h) => ctx.clearRect(x,y,w,h)
 
 ///|
-extern "js" fn draw_text(ctx : CanvasContext, text : String, x : Double, y : Double, advance : Double, stroke : Bool) -> Unit =
+extern "js" fn draw_text(
+  ctx : CanvasContext,
+  text : String,
+  x : Double,
+  y : Double,
+  advance : Double,
+  stroke : Bool,
+) -> Unit =
   #|(ctx,t,x,y,w,stroke) => {
-  #|  if (stroke) { if (w > 0) ctx.strokeText(t,x,y,w); else ctx.strokeText(t,x,y); }
-  #|  else { if (w > 0) ctx.fillText(t,x,y,w); else ctx.fillText(t,x,y); }
+  #|  const measured = w > 0 ? ctx.measureText(t).width : 0;
+  #|  if (measured > 0 && Math.abs(measured - w) / w > 0.005) {
+  #|    ctx.save(); ctx.translate(x, y); ctx.scale(w / measured, 1);
+  #|    if (stroke) ctx.strokeText(t, 0, 0); else ctx.fillText(t, 0, 0);
+  #|    ctx.restore();
+  #|  } else if (stroke) ctx.strokeText(t, x, y); else ctx.fillText(t, x, y);
   #|}
 
 ///|
-extern "js" fn set_smoothing(ctx : CanvasContext, enabled : Bool, quality : Int) -> Unit =
+extern "js" fn set_smoothing(
+  ctx : CanvasContext,
+  enabled : Bool,
+  quality : Int32,
+) -> Unit =
   #|(ctx,on,q) => {
   #|  ctx.imageSmoothingEnabled = on;
   #|  ctx.imageSmoothingQuality = ["low","medium","high"][q] ?? "low";
   #|}
 
 ///|
-fn paint_commands(ctx : CanvasContext, commands : Array[@render.Command]) -> Unit raise {
+fn paint_commands(
+  ctx : CanvasContext,
+  commands : Array[@render.Command],
+) -> Unit raise {
   for cmd in commands {
     match cmd {
       @render.Save => save(ctx)
       @render.Restore => restore(ctx)
-      @render.Transform(a,b,c,d,e,f) => transform(ctx,a,b,c,d,e,f)
-      @render.Translate(x,y) => translate(ctx,x,y)
-      @render.Scale(x,y) => scale(ctx,x,y)
-      @render.ClipRect(x,y,w,h) => clip_rect(ctx,x,y,w,h)
-      @render.FillColor(color) => set_color(ctx,color,false)
-      @render.StrokeColor(color) => set_color(ctx,color,true)
-      @render.Line(width,cap,join,miter) => set_line(ctx,width,cap,join,miter)
-      @render.Alpha(value) => set_alpha(ctx,value)
-      @render.Font(_,size) => set_font(ctx,size)
-      @render.TextStyle(a,b,d,_) => set_text_style(ctx,a,b,d)
-      @render.FillRect(x,y,w,h) => fill_rect(ctx,x,y,w,h)
-      @render.StrokeRect(x,y,w,h) => stroke_rect(ctx,x,y,w,h)
-      @render.ClearRect(x,y,w,h) => clear_rect(ctx,x,y,w,h)
-      @render.FillText(text,x,y,advance) => draw_text(ctx,text,x,y,advance,false)
-      @render.StrokeText(text,x,y,advance) => draw_text(ctx,text,x,y,advance,true)
-      @render.Smoothing(enabled,quality) => set_smoothing(ctx,enabled,quality)
-      @render.Ext(_) => ()
-      @render.Image(_,_,_,_,_) | @render.ImageSub(_,_,_,_,_,_,_,_,_) =>
+      @render.Transform(a, b, c, d, e, f) => transform(ctx, a, b, c, d, e, f)
+      @render.Translate(x, y) => translate(ctx, x, y)
+      @render.Scale(x, y) => scale(ctx, x, y)
+      @render.ClipRect(x, y, w, h) => clip_rect(ctx, x, y, w, h)
+      @render.FillColor(color) => set_color(ctx, color, false)
+      @render.StrokeColor(color) => set_color(ctx, color, true)
+      @render.Line(width, cap, join, miter) =>
+        set_line(ctx, width, cap, join, miter)
+      @render.Dash(segments, offset) =>
+        set_dash(ctx, FixedArray::from_array(segments), offset)
+      @render.Alpha(value) => set_alpha(ctx, value)
+      @render.Blend(mode) => set_blend(ctx, mode)
+      @render.Shadow(color, blur, dx, dy) =>
+        set_shadow(ctx, color, blur, dx, dy)
+      @render.Filter(css) => set_filter(ctx, css)
+      @render.Font(_, size) => set_font(ctx, size)
+      @render.TextStyle(a, b, d, spacing) =>
+        set_text_style(ctx, a, b, d, spacing)
+      @render.FillRect(x, y, w, h) => fill_rect(ctx, x, y, w, h)
+      @render.StrokeRect(x, y, w, h) => stroke_rect(ctx, x, y, w, h)
+      @render.ClearRect(x, y, w, h) => clear_rect(ctx, x, y, w, h)
+      @render.FillText(text, x, y, advance) =>
+        draw_text(ctx, text, x, y, advance, false)
+      @render.StrokeText(text, x, y, advance) =>
+        draw_text(ctx, text, x, y, advance, true)
+      @render.Smoothing(enabled, quality) =>
+        set_smoothing(ctx, enabled, quality)
+      @render.Ext(_) | @render.Link(_, _, _, _, _) | @render.Mark(_, _) => ()
+      @render.Image(_, _, _, _, _)
+      | @render.ImageSub(_, _, _, _, _, _, _, _, _) =>
         raise Unsupported("image resources are not supported by browser MVP")
     }
   }
@@ -180,7 +303,11 @@ fn paint_commands(ctx : CanvasContext, commands : Array[@render.Command]) -> Uni
 /// element using MoonBit's parsed objects and display lists. Returns pages.
 /// Images, compressed parts, sheets, and unsupported ops fail explicitly.
 #export_name("mount_bdf")
-pub fn mount_bdf(host : BrowserHost, data : Bytes, layout : String) -> Int raise {
+pub fn mount_bdf(
+  host : BrowserHost,
+  data : Bytes,
+  layout : String,
+) -> Int32 raise {
   let doc = @core.open_single(data)
   if doc.manifest.views.length() == 0 {
     raise BadFormat("document has no view")
@@ -203,9 +330,13 @@ pub fn mount_bdf(host : BrowserHost, data : Bytes, layout : String) -> Int raise
   let mut max_x = 0.0
   let mut max_y = 0.0
   for p in placements {
-    let ctx = make_canvas(host,p.x,p.y,p.width,p.height,viewer.zoom)
-    if p.x + p.width > max_x { max_x = p.x + p.width }
-    if p.y + p.height > max_y { max_y = p.y + p.height }
+    let ctx = make_canvas(host, p.x, p.y, p.width, p.height, viewer.zoom)
+    if p.x + p.width > max_x {
+      max_x = p.x + p.width
+    }
+    if p.y + p.height > max_y {
+      max_y = p.y + p.height
+    }
     for layer in view.pages[p.index].layers {
       let object = @core.decode_object(doc.part(layer.object))
       paint_commands(ctx, @render.compile_object(object))

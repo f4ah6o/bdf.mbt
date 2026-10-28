@@ -1,0 +1,96 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/core"
+
+// Values
+pub fn decode_object(Bytes) -> ObjectPart raise
+
+pub fn open_single(Bytes) -> Document raise
+
+pub fn parse_header(Bytes) -> Header raise
+
+pub fn parse_manifest(String) -> Manifest raise
+
+pub fn valid_hash(String) -> Bool
+
+// Errors
+pub suberror BdfError {
+  BadFormat(String)
+  Unsupported(String)
+}
+
+// Types and methods
+pub(all) struct Document {
+  manifest : Manifest
+  header : Header
+  data : Bytes
+}
+pub fn Document::part(Self, String) -> Bytes raise
+
+pub(all) struct Header {
+  version : Int32
+  flags : Int32
+  manifest_offset : Int32
+  manifest_length : Int32
+  manifest_encoding : Int32
+}
+
+pub(all) struct Layer {
+  role : String
+  object : String
+}
+
+pub(all) struct Manifest {
+  parts : Array[Part]
+  views : Array[View]
+}
+
+pub(all) struct ObjectPart {
+  bbox : (Double, Double, Double, Double)
+  strings : Array[String]
+  images : Array[String]
+  objects : Array[String]
+  ops : Bytes
+}
+
+pub(all) struct Page {
+  width : Double
+  height : Double
+  layers : Array[Layer]
+}
+
+pub(all) struct Part {
+  hash : String
+  kind : String
+  encoding : String
+  offset : Int32
+  length : Int32
+  size : Int32
+}
+
+pub(all) struct Reader {
+  data : Bytes
+  mut pos : Int32
+}
+pub fn Reader::f32(Self) -> Double raise
+pub fn Reader::hash(Self) -> String raise
+pub fn Reader::new(Bytes) -> Self
+pub fn Reader::remaining(Self) -> Int32
+pub fn Reader::skip(Self, Int32) -> Unit raise
+pub fn Reader::string(Self) -> String raise
+pub fn Reader::take(Self, Int32) -> Bytes raise
+pub fn Reader::u16(Self) -> Int32 raise
+pub fn Reader::u32(Self) -> Int32 raise
+pub fn Reader::u64_size(Self) -> Int32 raise
+pub fn Reader::u8(Self) -> Int32 raise
+pub fn Reader::varuint(Self) -> Int32 raise
+
+pub(all) struct View {
+  id : String
+  kind : String
+  title : String
+  pages : Array[Page]
+}
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,18 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/browser"
+
+// Values
+pub fn mount_bdf(BrowserHost, Bytes, String) -> Int32 raise
+
+// Errors
+pub suberror BrowserError {
+  Unsupported(String)
+  BadFormat(String)
+}
+
+// Types and methods
+type BrowserHost
+
+// Type aliases
+
+// Traits

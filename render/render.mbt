@@ -6,27 +6,44 @@ pub(all) enum Command {
   Translate(Double, Double)
   Scale(Double, Double)
   ClipRect(Double, Double, Double, Double)
-  FillColor(Int)
-  StrokeColor(Int)
-  Line(Double, Int, Int, Double)
+  FillColor(Int32)
+  StrokeColor(Int32)
+  Line(Double, Int32, Int32, Double)
+  Dash(Array[Double], Double)
   Alpha(Double)
-  Font(Int, Double)
-  TextStyle(Int, Int, Int, Double)
+  Blend(Int32)
+  Shadow(Int32, Double, Double, Double)
+  Filter(String)
+  Font(Int32, Double)
+  TextStyle(Int32, Int32, Int32, Double)
   FillRect(Double, Double, Double, Double)
   StrokeRect(Double, Double, Double, Double)
   ClearRect(Double, Double, Double, Double)
   FillText(String, Double, Double, Double)
   StrokeText(String, Double, Double, Double)
   Image(String, Double, Double, Double, Double)
-  ImageSub(String, Double, Double, Double, Double, Double, Double, Double, Double)
-  Smoothing(Bool, Int)
+  ImageSub(
+    String,
+    Double,
+    Double,
+    Double,
+    Double,
+    Double,
+    Double,
+    Double,
+    Double
+  )
+  Smoothing(Bool, Int32)
+  Link(Double, Double, Double, Double, String)
+  Mark(Int32, String)
   Ext(Bytes)
 } derive(Debug)
 
 ///|
 pub suberror RenderError {
-  UnsupportedOpcode(Int)
+  UnsupportedOpcode(Int32)
   InvalidReference(String)
+  InvalidOperands(String)
 }
 
 ///|
@@ -58,24 +75,74 @@ pub fn compile_object(object : @core.ObjectPart) -> Array[Command] raise {
     match opcode {
       0x01 => commands.push(Save)
       0x02 => commands.push(Restore)
-      0x03 => commands.push(Transform(r.f32(), r.f32(), r.f32(), r.f32(), r.f32(), r.f32()))
+      0x03 =>
+        commands.push(
+          Transform(r.f32(), r.f32(), r.f32(), r.f32(), r.f32(), r.f32()),
+        )
       0x04 => commands.push(Translate(r.f32(), r.f32()))
       0x05 => commands.push(Scale(r.f32(), r.f32()))
       0x07 => commands.push(ClipRect(r.f32(), r.f32(), r.f32(), r.f32()))
       0x10 => commands.push(FillColor(r.u32()))
       0x12 => commands.push(StrokeColor(r.u32()))
       0x14 => commands.push(Line(r.f32(), r.u8(), r.u8(), r.f32()))
+      0x15 => {
+        let count = r.varuint()
+        if r.remaining() < 4 || count > (r.remaining() - 4) / 4 {
+          raise InvalidOperands("dash count out of range")
+        }
+        let segments : Array[Double] = []
+        for _ in 0..<count {
+          segments.push(r.f32())
+        }
+        commands.push(Dash(segments, r.f32()))
+      }
       0x16 => commands.push(Alpha(r.f32()))
+      0x17 => commands.push(Blend(r.u8()))
+      0x18 => commands.push(Shadow(r.u32(), r.f32(), r.f32(), r.f32()))
+      0x19 => commands.push(Filter(read_text(r, object.strings)))
       0x1a => commands.push(Font(r.varuint(), r.f32()))
       0x1b => commands.push(TextStyle(r.u8(), r.u8(), r.u8(), r.f32()))
       0x20 => commands.push(FillRect(r.f32(), r.f32(), r.f32(), r.f32()))
       0x21 => commands.push(StrokeRect(r.f32(), r.f32(), r.f32(), r.f32()))
       0x26 => commands.push(ClearRect(r.f32(), r.f32(), r.f32(), r.f32()))
-      0x30 => commands.push(FillText(read_text(r, object.strings), r.f32(), r.f32(), r.f32()))
-      0x31 => commands.push(StrokeText(read_text(r, object.strings), r.f32(), r.f32(), r.f32()))
-      0x40 => commands.push(Image(read_image(r, object.images), r.f32(), r.f32(), r.f32(), r.f32()))
-      0x41 => commands.push(ImageSub(read_image(r, object.images), r.f32(), r.f32(), r.f32(), r.f32(), r.f32(), r.f32(), r.f32(), r.f32()))
+      0x30 =>
+        commands.push(
+          FillText(read_text(r, object.strings), r.f32(), r.f32(), r.f32()),
+        )
+      0x31 =>
+        commands.push(
+          StrokeText(read_text(r, object.strings), r.f32(), r.f32(), r.f32()),
+        )
+      0x40 =>
+        commands.push(
+          Image(
+            read_image(r, object.images),
+            r.f32(),
+            r.f32(),
+            r.f32(),
+            r.f32(),
+          ),
+        )
+      0x41 =>
+        commands.push(
+          ImageSub(
+            read_image(r, object.images),
+            r.f32(),
+            r.f32(),
+            r.f32(),
+            r.f32(),
+            r.f32(),
+            r.f32(),
+            r.f32(),
+            r.f32(),
+          ),
+        )
       0x42 => commands.push(Smoothing(r.u8() != 0, r.u8()))
+      0x70 =>
+        commands.push(
+          Link(r.f32(), r.f32(), r.f32(), r.f32(), read_text(r, object.strings)),
+        )
+      0x71 => commands.push(Mark(r.u8(), read_text(r, object.strings)))
       0xff => commands.push(Ext(r.take(r.u32())))
       _ => raise UnsupportedOpcode(opcode)
     }
