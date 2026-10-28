@@ -20,6 +20,8 @@ pub fn decode_text_index(Bytes) -> Array[IndexRun] raise
 
 pub fn index_plain_text(Array[IndexRun]) -> String
 
+pub fn normalize_query(String, case_sensitive? : Bool) -> String
+
 pub fn open_encrypted_single(Bytes) -> EncryptedSingle raise
 
 pub fn open_single(Bytes) -> Document raise
@@ -83,6 +85,15 @@ pub(all) struct Header {
   manifest_length : Int32
   manifest_encoding : Int32
 }
+
+pub(all) struct HitSegment {
+  run : Int32
+  a : Int32
+  b : Int32
+  ordinal : Int32
+  start : Int32
+  mut end : Int32
+} derive(Eq, @debug.Debug)
 
 pub(all) struct IndexRun {
   a : Int32
@@ -175,12 +186,31 @@ pub fn Reader::u64_size(Self) -> Int32 raise
 pub fn Reader::u8(Self) -> Int32 raise
 pub fn Reader::varuint(Self) -> Int32 raise
 
+pub(all) struct SearchHit {
+  segments : Array[HitSegment]
+  text : String
+  context : String
+} derive(Eq, @debug.Debug)
+
 pub struct SplitDocument {
   manifest : Manifest
   // private fields
 }
 pub fn SplitDocument::part(Self, String) -> Bytes raise
 pub fn SplitDocument::stored_part(Self, String) -> Bytes raise
+
+pub struct TextSearch {
+  runs : Array[IndexRun]
+  case_sensitive : Bool
+  normalized : String
+  plain : String
+  run_of : Array[Int32]
+  start_of : Array[Int32]
+  end_of : Array[Int32]
+}
+pub fn TextSearch::new(Array[IndexRun], case_sensitive? : Bool) -> Self
+pub fn TextSearch::search(Self, String, limit? : Int32, context? : Int32) -> Array[SearchHit]
+pub fn TextSearch::text(Self) -> String
 
 pub(all) struct View {
   id : String

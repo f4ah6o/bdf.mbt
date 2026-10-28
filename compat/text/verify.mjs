@@ -1,9 +1,15 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { BdfDocument, decodeObject, decodeTextIndex, extractContent, parseCellRef } from '@bdfkit/core';
-import { tableCells, cellClipboard } from '@bdfkit/render';
+import { tableCells, cellClipboard, hasExtent, runRect } from '@bdfkit/render';
 
 const dir = new URL('.', import.meta.url);
+const sampleRun = {text:'Hello world',x:30,y:50,advance:110,size:20,font:{kind:0,family:'serif',weight:400,style:0},align:0,matrix:[1,0,0,1,0,0],altText:false};
+const measure = (_,text) => text.length * 5;
+assert.deepEqual(runRect(sampleRun,1,5,measure), {x:40,y:34,w:40,h:20});
+assert.deepEqual(runRect({...sampleRun,align:2,matrix:[0,1,-1,0,5,6]},1,5,measure), {x:26,y:5,w:20,h:40});
+assert.deepEqual(runRect({...sampleRun,align:1,advance:0},1,5,measure), {x:-20,y:34,w:20,h:20});
+assert.equal(hasExtent({...sampleRun,altText:true,advance:0}), false);
 const indexBytes = Buffer.from('42545854010003000100020548656c6c6f0001010106e4b896e7958c02000302046e657874', 'hex');
 const indexSource = readFileSync(new URL('../../core/text_index_test.mbt', dir), 'utf8');
 const indexLiteral = indexSource.match(/b"(BTXT[^\"]+)"/);

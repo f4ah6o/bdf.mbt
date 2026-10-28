@@ -3,6 +3,8 @@ import {
   "moonbitlang/core/encoding/utf8",
   "gaato/deflate",
   "moonbitlang/core/buffer",
+  "moonbit-community/normalization",
+  "moonbit-community/ucd" @unicode,
 }
 
 supported_targets = "+js+wasm-gc"
