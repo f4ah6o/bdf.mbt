@@ -30,6 +30,11 @@ export async function verifyPageControls(browser, continuousBase, interactiveBas
       snapshots[name].scroll=await page.evaluate(name=>name==='baseline'?window.viewer.stage.scrollTop:document.querySelector('#host').scrollTop,name);
       await page.evaluate(async name=>{const host=document.querySelector('#host');if(name==='baseline')window.viewer.scrollToPage(2);else(await import('/_build/js/debug/build/browser/browser.js')).bdf_scroll_to_page(host,2)},name);
       snapshots[name].lastScroll=await page.evaluate(name=>name==='baseline'?window.viewer.stage.scrollTop:document.querySelector('#host').scrollTop,name);
+      await page.evaluate(async name=>{const host=document.querySelector('#host');if(name==='baseline')window.viewer.setZoom(1.25);else(await import('/_build/js/debug/build/browser/browser.js')).bdf_set_zoom(host,1.25)},name);
+      snapshots[name].zoomScroll=await page.evaluate(name=>name==='baseline'?window.viewer.stage.scrollTop:document.querySelector('#host').scrollTop,name);
+      await page.evaluate(async name=>{const host=document.querySelector('#host');if(name==='baseline')window.viewer.scrollToPage(1);else(await import('/_build/js/debug/build/browser/browser.js')).bdf_scroll_to_page(host,1)},name);
+      await page.evaluate(async name=>{const host=document.querySelector('#host');if(name==='baseline')window.viewer.setLayout('spread');else(await import('/_build/js/debug/build/browser/browser.js')).bdf_set_layout(host,'spread')},name);
+      snapshots[name].layoutScroll=await page.evaluate(name=>name==='baseline'?window.viewer.stage.scrollTop:document.querySelector('#host').scrollTop,name);
       await page.close();
     }
     for(let i=0;i<scenarios.length;i++)for(let j=0;j<3;j++){
@@ -40,6 +45,8 @@ export async function verifyPageControls(browser, continuousBase, interactiveBas
     }
     assert.equal(snapshots.moon.scroll,snapshots.baseline.scroll,`DPR ${dpr}: scroll to page`);
     assert.equal(snapshots.moon.lastScroll,snapshots.baseline.lastScroll,`DPR ${dpr}: scroll to the final page`);
+    assert.equal(snapshots.moon.zoomScroll,snapshots.baseline.zoomScroll,`DPR ${dpr}: zoom after scrolling`);
+    assert.equal(snapshots.moon.layoutScroll,snapshots.baseline.layoutScroll,`DPR ${dpr}: layout after scrolling`);
   }
 
   const interactive=await browser.newPage({viewport:{width:1280,height:720}});

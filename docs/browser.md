@@ -39,8 +39,8 @@ the page surface holds the full document extent. To render the cropped body
 rectangles and configured gap of a flow view, use the continuous-region
 renderer below.
 
-For a mounted fixed, flow or scroll view, the page controls change the
-rendered pages without reloading the document:
+For a mounted fixed, flow, scroll or sheet view, the controls change the
+rendering without reloading the document:
 
 ```js
 bdf_set_zoom(host, 1.5);           // finite values greater than 0 and at most 8
@@ -49,11 +49,14 @@ bdf_scroll_to_page(host, 2);      // zero-based; an invalid index is ignored
 ```
 
 Zoom redraws from the original objects at the current device pixel ratio and
-keeps the active text selection and search results aligned. Raster images and
+keeps the active text selection and search results aligned. A sheet redraws
+the visible tiles asynchronously and returns to its origin on zoom or layout
+changes, as the upstream viewer does. Raster images and
 fonts remain loaded until the host is unmounted, remounted, or removed from
 the document. Page bitmaps are limited to 8192 pixels per side and 16,777,216
 pixels in total; a zoom that exceeds these limits fails without changing the
-current view. These controls do not yet support sheet or music views.
+current view. Layout choice and page navigation apply to page views; a sheet
+keeps its layout. Music views are not yet supported.
 
 ```js
 const bandsDrawn = await render_bdf_continuous_region_async(host, bytes, x, y, width, height, scale);

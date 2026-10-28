@@ -165,7 +165,7 @@ extern "js" fn sheet_container_is_current(
   host : BrowserHost,
   container : BrowserHost,
 ) -> Bool =
-  #|(host,container) => host[Symbol.for('f4ah6o.bdf.sheet')]?.spacer===container
+  #|(host,container) => host[Symbol.for('f4ah6o.bdf.sheet')]?.content===container
 
 ///|
 extern "js" fn refresh_sheet_selection(host : BrowserHost) -> Unit =

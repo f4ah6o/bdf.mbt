@@ -12,6 +12,10 @@ split and password-encrypted files. Sheet search and rectangular cell selection
 are tested against upstream search, clipboard serialization and display.
 The search comparison puts both inputs on their own compositing layers to avoid
 Chromium blending their glyphs with the colored canvas in Linux screenshots.
+The zoom fixtures compare the upstream `Viewer` against the MoonBit live
+sheet at several zooms and device pixel ratios, including scrolling before a
+zoom change. They also check selectable text, search, clipped tile extents and
+superseded asynchronous drawing and search requests.
 
 From an upstream checkout, regenerate it with:
 

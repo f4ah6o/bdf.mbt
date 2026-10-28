@@ -8,6 +8,7 @@ import { stripVTControlCharacters } from 'node:util';
 import { chromium } from 'playwright';
 import { PNG } from 'pngjs';
 import { verifyPageControls } from '../continuous/controls-test.mjs';
+import { verifySheetZoom } from '../sheet/zoom-test.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const outputRoot = path.join(root, '_build/visual-diff');
@@ -659,6 +660,7 @@ try {
     assert.ok(!indexedSheet.firstLoads.includes(indexedSheet.font)&&!indexedSheet.firstLoads.includes(indexedSheet.image),'building a fallback index does not load unrelated fonts or images');
     assert.ok(indexedSheet.fontHit===1&&indexedSheet.fontLoads.includes(indexedSheet.font)&&!indexedSheet.fontLoads.includes(indexedSheet.image),'locating a hit loads its font without loading its image');
     await sheetInteractive.close();
+    await verifySheetZoom(browser,sheetBase);
     for(const name of ['find-baseline','find-moon']){
       const page=await browser.newPage({viewport:{width:1280,height:720}}),errors=[];
       page.on('pageerror',error=>errors.push(String(error)));
@@ -1026,6 +1028,17 @@ try {
   }
   await run(['scan','scroll',`${continuousBase}viewer-moon.html`,'--no-ledger']);
   await run(['check','scroll',`${continuousBase}viewer-moon.html`,'--no-ledger']);
+  {
+    const target=path.join(output,'sheet-zoom');mkdirSync(target);
+    await run(['diff','html','--url',`${sheetBase}zoom-baseline.html`,'--current-url',`${sheetBase}zoom-moon.html`,'--output-dir',target,'--no-paint-tree']);
+    const reportPath=path.join(target,'diff-report.json'),report=JSON.parse(readFileSync(reportPath,'utf8'));
+    for(const result of report.results){
+      const reference=PNG.sync.read(readFileSync(path.join(target,`compat_sheet_zoom-baseline-${result.viewport}.png`))),actual=PNG.sync.read(readFileSync(path.join(target,`compat_sheet_zoom-moon-${result.viewport}.png`)));
+      let changed=0;for(let i=0;i<reference.data.length;i+=4)if(reference.data[i]!==actual.data[i]||reference.data[i+1]!==actual.data[i+1]||reference.data[i+2]!==actual.data[i+2]||reference.data[i+3]!==actual.data[i+3])changed++;
+      const area=Math.min(reference.width,400)*Math.min(reference.height,300);console.log(`sheet zoom ${result.viewport}: ${changed} pixels changed (${(changed/area*100).toFixed(4)}%)`);assert.ok(changed/area<=0.0005,`${result.viewport}: sheet zoom visual difference exceeds 0.05%`);
+    }
+    await run(['diff','agent',reportPath,'--no-history']);
+  }
   for(const name of ['moon','split']){
     const target=path.join(output,`sheet-${name}`);mkdirSync(target);
     await run(['diff','html','--url',`${sheetBase}baseline.html`,'--current-url',`${sheetBase}${name}.html`,'--output-dir',target,'--no-paint-tree']);

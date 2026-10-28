@@ -116,10 +116,10 @@ extern "js" fn throw_page_control_error(message : String) -> Unit =
 
 ///|
 extern "js" fn set_page_zoom(host : BrowserHost, zoom : Double) -> Unit =
-  #|(host,zoom) => {if(!Number.isFinite(zoom)||zoom<=0||zoom>8)throw new RangeError('zoom must be in (0, 8]');const state=host[Symbol.for('f4ah6o.bdf.pageLayout')];if(!state)throw new Error('BDF page view is not mounted');state.zoom(zoom)}
+  #|(host,zoom) => {if(!Number.isFinite(zoom)||zoom<=0||zoom>8)throw new RangeError('zoom must be in (0, 8]');const page=host[Symbol.for('f4ah6o.bdf.pageLayout')],sheet=host[Symbol.for('f4ah6o.bdf.sheet')];if(page)page.zoom(zoom);else if(sheet)sheet.setZoom(zoom);else throw new Error('BDF view is not mounted')}
 
 ///|
-/// Set a mounted fixed, flow, or scroll page view's zoom in the range (0, 8].
+/// Set a mounted page or sheet view's zoom in the range (0, 8].
 #export_name("bdf_set_zoom")
 pub fn bdf_set_zoom(host : BrowserHost, zoom : Double) -> Unit {
   set_page_zoom(host, zoom)
@@ -127,7 +127,7 @@ pub fn bdf_set_zoom(host : BrowserHost, zoom : Double) -> Unit {
 
 ///|
 extern "js" fn set_page_layout(host : BrowserHost, layout : String) -> Unit =
-  #|(host,layout) => {const state=host[Symbol.for('f4ah6o.bdf.pageLayout')];if(!state)throw new Error('BDF page view is not mounted');state.layout(layout)}
+  #|(host,layout) => {const page=host[Symbol.for('f4ah6o.bdf.pageLayout')],sheet=host[Symbol.for('f4ah6o.bdf.sheet')];if(page)page.layout(layout);else if(sheet)sheet.setLayout();else throw new Error('BDF view is not mounted')}
 
 ///|
 /// Change the mounted page layout to single, spread, or continuous.

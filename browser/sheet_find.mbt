@@ -5,7 +5,11 @@ extern "js" fn sheet_tile_is_visible(
   y : Int32,
   size : Double,
 ) -> Bool =
-  #|(host,x,y,size) => x*size < host.scrollLeft+host.clientWidth && (x+1)*size > host.scrollLeft && y*size < host.scrollTop+host.clientHeight && (y+1)*size > host.scrollTop
+  #|(host,x,y,size) => {const z=host[Symbol.for('f4ah6o.bdf.sheet')]?.zoom??1;size*=z;return x*size < host.scrollLeft+host.clientWidth && (x+1)*size > host.scrollLeft && y*size < host.scrollTop+host.clientHeight && (y+1)*size > host.scrollTop}
+
+///|
+extern "js" fn sheet_current_zoom(host : BrowserHost) -> Double =
+  #|(host) => host[Symbol.for('f4ah6o.bdf.sheet')]?.zoom??1
 
 ///|
 fn sheet_tile_key(x : Int32, y : Int32) -> String {
@@ -140,6 +144,7 @@ fn install_sheet_find(
           ""
         }
         let result = find_result(query, selected, hits.length(), more, detail)
+        let zoom = sheet_current_zoom(host)
         for i, hit in hits {
           let rects = @render.locate_text_hit(
             hit,
@@ -167,10 +172,10 @@ fn install_sheet_find(
               result,
               i,
               rect.a,
-              rect.x,
-              rect.y,
-              rect.width,
-              rect.height,
+              rect.x * zoom,
+              rect.y * zoom,
+              rect.width * zoom,
+              rect.height * zoom,
             )
           }
         }
