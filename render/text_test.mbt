@@ -75,6 +75,11 @@ test "extract text and links in upstream reading order" {
     tile_size: 2048.0,
     tiles: [],
     tiles_ref: None,
+    cols: [],
+    rows: [],
+    frozen_cols: 0,
+    frozen_rows: 0,
+    gridlines: false,
     pages: [
       {
         width: 100.0,

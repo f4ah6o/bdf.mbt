@@ -30,6 +30,13 @@ pub(all) struct Tile {
 } derive(Eq, Debug)
 
 ///|
+/// A run of rows or columns with the same size; zero size means hidden.
+pub(all) struct SheetRun {
+  count : Int32
+  size : Double
+} derive(Eq, Debug)
+
+///|
 pub(all) struct View {
   id : String
   kind : String
@@ -39,6 +46,11 @@ pub(all) struct View {
   tile_size : Double
   tiles : Array[Tile]
   tiles_ref : String?
+  cols : Array[SheetRun]
+  rows : Array[SheetRun]
+  frozen_cols : Int32
+  frozen_rows : Int32
+  gridlines : Bool
 }
 
 ///|
@@ -195,6 +207,68 @@ fn parse_tile_size(view : Json) -> Double raise {
 }
 
 ///|
+fn parse_sheet_runs(view : Json, key : String) -> Array[SheetRun] raise {
+  let result : Array[SheetRun] = []
+  let mut total = 0
+  for item in optional_array(view, key) {
+    let pair = match item {
+      Array(values) if values.length() == 2 => values
+      _ => raise BadFormat("invalid sheet run")
+    }
+    let count = match pair[0] {
+      Number(value, ..) => checked_size(value, key)
+      _ => raise BadFormat("invalid sheet run count")
+    }
+    if count > 16777216 - total {
+      raise BadFormat("too many sheet entries")
+    }
+    let size = match pair[1] {
+      Number(value, ..) => value
+      _ => raise BadFormat("invalid sheet run size")
+    }
+    if size.is_nan() ||
+      size < 0.0 ||
+      size > 16777216.0 ||
+      (size > 0.0 && size < 0.015625) {
+      raise BadFormat("sheet run size out of range")
+    }
+    result.push({ count, size, })
+    total += count
+  }
+  result
+}
+
+///|
+fn parse_sheet_freeze(view : Json, key : String) -> Int32 raise {
+  if view is Object(fields) {
+    match fields.get("freeze") {
+      None | Some(Null) => return 0
+      Some(Object(frozen)) =>
+        match frozen.get(key) {
+          None | Some(Null) => return 0
+          Some(Number(value, ..)) => return checked_size(value, key)
+          _ => raise BadFormat("invalid frozen pane count")
+        }
+      _ => raise BadFormat("invalid frozen panes")
+    }
+  }
+  0
+}
+
+///|
+fn parse_gridlines(view : Json) -> Bool raise {
+  if view is Object(fields) {
+    match fields.get("gridlines") {
+      None | Some(Null) => return false
+      Some(True) => return true
+      Some(False) => return false
+      _ => raise BadFormat("invalid gridlines")
+    }
+  }
+  false
+}
+
+///|
 pub fn parse_manifest(input : String) -> Manifest raise {
   parse_manifest_internal(input, false)
 }
@@ -297,6 +371,11 @@ fn parse_manifest_internal(
       "" => None
       hash => Some(hash)
     }
+    let cols = parse_sheet_runs(view, "cols")
+    let rows = parse_sheet_runs(view, "rows")
+    let frozen_cols = parse_sheet_freeze(view, "cols")
+    let frozen_rows = parse_sheet_freeze(view, "rows")
+    let gridlines = parse_gridlines(view)
     views.push({
       id,
       kind,
@@ -306,6 +385,11 @@ fn parse_manifest_internal(
       tile_size,
       tiles,
       tiles_ref,
+      cols,
+      rows,
+      frozen_cols,
+      frozen_rows,
+      gridlines,
     })
   }
   { parts, views, }

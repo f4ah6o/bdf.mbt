@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { BdfDocument, decodeObject, decodeTextIndex, extractContent, parseCellRef } from '@bdfkit/core';
-import { tableCells, cellClipboard, hasExtent, runRect } from '@bdfkit/render';
+import { tableCells, cellClipboard, hasExtent, runRect, PageRenderer } from '@bdfkit/render';
 
 const dir = new URL('.', import.meta.url);
+const grid=[];const gridContext={save(){},restore(){},beginPath(){},stroke(){},moveTo(x,y){grid.push([x,y])},lineTo(x,y){grid.at(-1).push(x,y)}};
+Object.create(PageRenderer.prototype).drawGridlines(gridContext,{cols:[[1100,0.1]],rows:[[1,1]]},{x:100,y:0,w:2,h:1},1);
+assert.equal(grid.filter(([x0,,x1])=>x0===x1).length,20);
 const sampleRun = {text:'Hello world',x:30,y:50,advance:110,size:20,font:{kind:0,family:'serif',weight:400,style:0},align:0,matrix:[1,0,0,1,0,0],altText:false};
 const measure = (_,text) => text.length * 5;
 assert.deepEqual(runRect(sampleRun,1,5,measure), {x:40,y:34,w:40,h:20});

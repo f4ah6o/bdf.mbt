@@ -16,11 +16,29 @@ const pageCount = await mount_bdf_async(document.querySelector("#preview"), byte
 // mount_bdf is synchronous and supports documents without images or embedded fonts.
 ```
 
-This currently supports fixed/flow BDF documents
-whose BOBJ parts use the implemented drawing subset. It does not try to convert
+This currently supports fixed/flow and sheet BDF documents whose BOBJ parts use
+the implemented drawing subset. It does not try to convert
 PDF/Office documents. The asynchronous entry point loads image and embedded font
 parts before drawing and releases them afterward. It supports raster images, SVG,
 and image patterns. A complete port needs Worker transport and additional viewer features.
+
+For a sheet, the asynchronous mount uses the host's width and height as its
+viewport, fetching visible tiles as it scrolls. Give the host dimensions in CSS;
+when they are absent, it defaults to 640 by 400 pixels. It returns `1` for the
+sheet view. `unmount_bdf` releases images, fonts, observers and pending work.
+Interactive text, selection, search and frozen panes for sheets are still
+being ported; the interactive entry points currently reject sheets. The
+synchronous `mount_bdf` entry point supports fixed/flow pages only.
+
+To draw a single sheet region instead of a scrolling view, use the single or
+split viewport entry point. Coordinates and dimensions are document units;
+`scale` is device pixels per unit. The returned number is the count of visible
+tiles drawn.
+
+```js
+const tilesDrawn = await render_bdf_sheet_region_async(host, bytes, x, y, width, height, scale);
+// For split BDF: await render_bdf_sheet_region_split_async(host, manifest, loadPart, x, y, width, height, scale);
+```
 
 
 For a split document, supply the UTF-8 manifest bytes and a loader that

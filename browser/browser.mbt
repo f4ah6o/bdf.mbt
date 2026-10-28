@@ -22,9 +22,11 @@ extern "js" fn clear_host(host : BrowserHost) -> Unit =
   #|  if (!host || typeof host.replaceChildren !== "function") {
   #|    throw new TypeError("host must be an HTMLElement");
   #|  }
+  #|  delete host[Symbol.for('f4ah6o.bdf.sheetPending')];
   #|  const fonts=host[Symbol.for('f4ah6o.bdf.fonts')]; if(fonts){fonts.release();delete host[Symbol.for('f4ah6o.bdf.fonts')];}
   #|  const copy=host[Symbol.for('f4ah6o.bdf.copy')]; if(copy){copy.dispose();delete host[Symbol.for('f4ah6o.bdf.copy')];}
   #|  const find=host[Symbol.for('f4ah6o.bdf.find')]; if(find){find.dispose();delete host[Symbol.for('f4ah6o.bdf.find')];}
+  #|  const sheet=host[Symbol.for('f4ah6o.bdf.sheet')]; if(sheet){sheet.dispose();delete host[Symbol.for('f4ah6o.bdf.sheet')];}
   #|  host.replaceChildren();
   #|  host.style.position = "relative";
   #|  host.style.overflow = "auto";

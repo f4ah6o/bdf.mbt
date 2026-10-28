@@ -13,7 +13,7 @@ const outputRoot = path.join(root, '_build/visual-diff');
 mkdirSync(outputRoot, { recursive: true });
 const output = mkdtempSync(path.join(outputRoot, 'run-'));
 const executable = path.join(root, 'node_modules/.bin/vlmkit');
-const allowed = ['/compat/visual/', '/compat/interactive/', '/node_modules/@bdfkit/', '/_build/js/debug/build/browser/'];
+const allowed = ['/compat/visual/', '/compat/interactive/', '/compat/sheet/', '/node_modules/@bdfkit/', '/_build/js/debug/build/browser/'];
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.bdf': 'application/octet-stream' };
 
 function run(args) {
@@ -256,6 +256,159 @@ try {
       assert.deepEqual(selection,{box:true,table:true},`${name}: selected cell highlight missing`);
       await page.close();
     }
+    const sheetBase=`http://127.0.0.1:${server.address().port}/compat/sheet/`;
+    const sheetPages={};
+    for(const name of ['baseline','moon','split']){
+      const page=await browser.newPage({viewport:{width:1280,height:720}}),errors=[];
+      page.on('pageerror',error=>errors.push(String(error)));
+      await page.goto(`${sheetBase}${name}.html`,{waitUntil:'networkidle'});
+      await page.waitForFunction(()=>window.bdfStatus==='ready'||window.bdfStatus==='error');
+      assert.equal(await page.evaluate(()=>window.bdfStatus),'ready',`${name}: ${await page.evaluate(()=>window.bdfError)}`);
+      assert.deepEqual(errors,[],`${name}: sheet browser errors`);sheetPages[name]=page;
+    }
+    const scenarios=[[0,0,400,300,1],[320,32,260,200,1.25],[256,256,256,192,1],[0,0,200,200,1],[1200,900,200,100,1]];
+    for(const args of scenarios){
+      const rendered={};
+      for(const [name,page] of Object.entries(sheetPages))rendered[name]=await page.evaluate(async args=>{const count=await window.renderRegion(...args);return{count,png:document.querySelector('canvas').toDataURL(),requests:window.requests??[]}},args);
+      const reference=PNG.sync.read(Buffer.from(rendered.baseline.png.split(',')[1],'base64'));
+      for(const name of ['moon','split']){
+        assert.equal(rendered[name].count,rendered.baseline.count,`${name}: visible sheet tile count`);
+        const actual=PNG.sync.read(Buffer.from(rendered[name].png.split(',')[1],'base64'));
+        assert.deepEqual([actual.width,actual.height],[reference.width,reference.height],`${name}: sheet canvas size`);
+        let changed=0;for(let i=0;i<reference.data.length;i+=4)if(reference.data[i]!==actual.data[i]||reference.data[i+1]!==actual.data[i+1]||reference.data[i+2]!==actual.data[i+2]||reference.data[i+3]!==actual.data[i+3])changed++;
+        assert.ok(changed/(reference.width*reference.height)<=0.0005,`${name}: sheet region ${args} differs in ${changed} pixels`);
+      }
+      if(args[0]===0&&args[2]===200)assert.equal(rendered.split.requests.length,1,'split sheet loads only its visible tile');
+      if(args[0]===1200)assert.equal(rendered.split.requests.length,0,'empty sheet region loads no tiles');
+    }
+    const invalidSheet=await sheetPages.moon.evaluate(async()=>{const old=document.querySelector('canvas');let failed=0;for(const args of [[0,0,0,100,1],[0,0,100,100,0],[0,0,9000,1,1],[NaN,0,100,100,1]]){try{await window.renderRegion(...args)}catch{if(document.querySelector('canvas')===old)failed++}}return failed});
+    assert.equal(invalidSheet,4,'invalid sheet regions reject without replacing the previous rendering');
+    for(const page of Object.values(sheetPages))await page.close();
+    const liveSheets={};
+    for(const name of ['baseline','moon','split']){
+      const page=await browser.newPage({viewport:{width:1280,height:720}}),errors=[];
+      page.on('pageerror',error=>errors.push(String(error)));
+      await page.goto(`${sheetBase}live-${name}.html`,{waitUntil:'networkidle'});
+      await page.waitForFunction(()=>window.bdfStatus==='ready'||window.bdfStatus==='error');
+      assert.equal(await page.evaluate(()=>window.bdfStatus),'ready',`live ${name}: ${await page.evaluate(()=>window.bdfError)}`);
+      assert.deepEqual(errors,[],`live ${name}: browser errors`);liveSheets[name]=page;
+    }
+    const initialRequests=await liveSheets.split.evaluate(()=>({requests:window.requests,tiles:window.metadata.views[0].tiles}));
+    assert.ok(!initialRequests.requests.includes(initialRequests.tiles['2,0']),'offscreen sheet tiles are not fetched on mount');
+    assert.equal(new Set(initialRequests.requests).size,initialRequests.requests.length,'visible parts are not fetched twice');
+    let sheetInitial;
+    for(const change of [{x:0,y:0},{x:200,y:132},{width:300,height:200}]){
+      const frames={};
+      for(const [name,page] of Object.entries(liveSheets)){
+        await page.evaluate(change=>{const h=document.querySelector('#host');if(change.width){h.style.width=change.width+'px';h.style.height=change.height+'px'}else h.scrollTo(change.x,change.y)},change);
+        await page.waitForFunction(()=>{const h=document.querySelector('#host'),c=h.querySelector('canvas');return c?.dataset.bdfSheetViewport===JSON.stringify([h.scrollLeft,h.scrollTop,h.clientWidth,h.clientHeight])});
+        const sticky=await page.evaluate(()=>{const h=document.querySelector('#host').getBoundingClientRect(),c=document.querySelector('#host canvas').getBoundingClientRect();return{x:c.left-h.left,y:c.top-h.top}});
+        assert.ok(Math.abs(sticky.x)<1&&Math.abs(sticky.y)<1,`live ${name}: sheet canvas moved out of the viewport`);
+        frames[name]=await page.evaluate(()=>document.querySelector('#host canvas').toDataURL());
+      }
+      const reference=PNG.sync.read(Buffer.from(frames.baseline.split(',')[1],'base64'));
+      if(change.x===0)sheetInitial=frames.baseline;
+      for(const name of ['moon','split']){
+        const actual=PNG.sync.read(Buffer.from(frames[name].split(',')[1],'base64'));
+        assert.deepEqual([actual.width,actual.height],[reference.width,reference.height],`live ${name}: canvas size`);
+        let changed=0;for(let i=0;i<reference.data.length;i+=4)if(reference.data[i]!==actual.data[i]||reference.data[i+1]!==actual.data[i+1]||reference.data[i+2]!==actual.data[i+2]||reference.data[i+3]!==actual.data[i+3])changed++;
+        assert.ok(changed/(reference.width*reference.height)<=0.0005,`live ${name}: viewport ${JSON.stringify(change)} differs in ${changed} pixels`);
+      }
+    }
+    const lazyRequests=await liveSheets.split.evaluate(()=>({requests:window.requests,tiles:window.metadata.views[0].tiles}));
+    assert.ok(lazyRequests.requests.includes(lazyRequests.tiles['2,0']),'scrolling fetches newly visible tiles');
+    assert.equal(new Set(lazyRequests.requests).size,lazyRequests.requests.length,'scrolling reuses previously loaded parts');
+    const sheetLifecycle=await liveSheets.split.evaluate(async()=>{
+      const bdf=await import('/_build/js/debug/build/browser/browser.js'),manifest=new Uint8Array(await(await fetch('./split/manifest.json')).arrayBuffer());
+      const load=async hash=>new Uint8Array(await(await fetch(`./split/parts/${hash}`)).arrayBuffer());
+      const old=document.createElement('div');old.textContent='existing';old.style.cssText='width:400px;height:300px';document.body.append(old);
+      let preserved=false;try{await bdf.mount_bdf_split_async(old,manifest,async()=>{throw new Error('failed')},'single')}catch{preserved=old.textContent==='existing'&&!old[Symbol.for('f4ah6o.bdf.sheet')]}
+      const cancelled=document.createElement('div');cancelled.style.cssText='width:400px;height:300px';document.body.append(cancelled);
+      let start,release;const started=new Promise(r=>start=r),gate=new Promise(r=>release=r);
+      const pending=bdf.mount_bdf_split_async(cancelled,manifest,async hash=>{start();await gate;return load(hash)},'single');
+      await started;bdf.unmount_bdf(cancelled);release();let rejected=false;try{await pending}catch{rejected=true}
+      const cancelledClean=rejected&&cancelled.childElementCount===0&&!cancelled[Symbol.for('f4ah6o.bdf.sheet')];
+      const concurrent=document.createElement('div');concurrent.style.cssText='width:400px;height:300px';document.body.append(concurrent);
+      let slowStart,slowRelease;const slowStarted=new Promise(r=>slowStart=r),slowGate=new Promise(r=>slowRelease=r);
+      const slow=bdf.mount_bdf_split_async(concurrent,manifest,async hash=>{slowStart();await slowGate;return load(hash)},'single');
+      await slowStarted;await bdf.mount_bdf_split_async(concurrent,manifest,load,'single');const current=concurrent.querySelector('canvas');slowRelease();let oldRejected=false;try{await slow}catch{oldRejected=true}
+      const newerSurvives=oldRejected&&concurrent.querySelector('canvas')===current&&!!concurrent[Symbol.for('f4ah6o.bdf.sheet')];
+      const countFonts=()=>[...document.fonts].filter(face=>face.family.startsWith('bdf-')).length;
+      const beforeFonts=countFonts(),originalClose=ImageBitmap.prototype.close;let closed=0;
+      ImageBitmap.prototype.close=function(){closed++;return originalClose.call(this)};
+      const resourceHost=document.createElement('div');resourceHost.style.cssText='width:400px;height:300px';document.body.append(resourceHost);
+      let resourceLifetime=false;
+      try{
+        await bdf.mount_bdf_split_async(resourceHost,manifest,load,'single');const retained=countFonts()===beforeFonts+1;
+        bdf.unmount_bdf(resourceHost);
+        await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('sheet resources not released')),5000);const check=()=>{if(countFonts()===beforeFonts&&closed>0){clearTimeout(timeout);resolve()}else requestAnimationFrame(check)};check()});
+        resourceLifetime=retained&&countFonts()===beforeFonts&&closed>0;
+      }finally{ImageBitmap.prototype.close=originalClose;resourceHost.remove()}
+      const scrolling=document.createElement('div');scrolling.style.cssText='width:400px;height:300px';document.body.append(scrolling);
+      let blockedStart,blockedRelease;const blocked=new Promise(r=>blockedStart=r),blockedGate=new Promise(r=>blockedRelease=r),delayedHash=window.metadata.views[0].tiles['2,0'];
+      await bdf.mount_bdf_split_async(scrolling,manifest,async hash=>{if(hash===delayedHash){blockedStart();await blockedGate}return load(hash)},'single');
+      const canvas=scrolling.querySelector('canvas'),updates=[];const observer=new MutationObserver(()=>updates.push(canvas.dataset.bdfSheetViewport));observer.observe(canvas,{attributes:true,attributeFilter:['data-bdf-sheet-viewport']});
+      scrolling.scrollLeft=200;await blocked;const before=Number(canvas.dataset.bdfSheetFrame);scrolling.scrollLeft=0;
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));blockedRelease();
+      await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('sheet did not redraw')),5000);const check=()=>{if(Number(canvas.dataset.bdfSheetFrame)>before&&canvas.dataset.bdfSheetViewport===JSON.stringify([0,0,400,300])){clearTimeout(timeout);resolve()}else requestAnimationFrame(check)};check()});
+      const staleDiscarded=updates.every(value=>JSON.parse(value)[0]===0);observer.disconnect();bdf.unmount_bdf(scrolling);
+      bdf.unmount_bdf(concurrent);old.remove();cancelled.remove();concurrent.remove();scrolling.remove();
+      return{preserved,cancelledClean,newerSurvives,staleDiscarded,resourceLifetime};
+    });
+    assert.deepEqual(sheetLifecycle,{preserved:true,cancelledClean:true,newerSurvives:true,staleDiscarded:true,resourceLifetime:true},'sheet failures, cancellation, scrolling and resource lifetime');
+    const externalTileIndex=await liveSheets.split.evaluate(async()=>{
+      const bdf=await import('/_build/js/debug/build/browser/browser.js'),metadata=structuredClone(window.metadata),view=metadata.views[0],indexHash='00000000000000000000000000000000';
+      const entries=Object.entries(view.tiles).map(([key,hash])=>{const [x,y]=key.split(',').map(Number);return{x,y,hash}}).sort((a,b)=>a.y-b.y||a.x-b.x);
+      const bytes=new Uint8Array(entries.length*24),data=new DataView(bytes.buffer);
+      for(const [i,e] of entries.entries()){data.setUint32(i*24,e.x,true);data.setUint32(i*24+4,e.y,true);for(let j=0;j<16;j++)bytes[i*24+8+j]=parseInt(e.hash.slice(j*2,j*2+2),16)}
+      delete view.tiles;view.tilesRef=indexHash;metadata.parts.push({h:indexHash,t:'idx',enc:'identity',len:bytes.length,size:bytes.length});
+      const manifest=new TextEncoder().encode(JSON.stringify(metadata)),requests=[];
+      const loader=async hash=>{requests.push(hash);return hash===indexHash?bytes:new Uint8Array(await(await fetch(`./split/parts/${hash}`)).arrayBuffer())};
+      const host=document.createElement('div');host.style.cssText='width:400px;height:300px';document.body.append(host);
+      const count=await bdf.render_bdf_sheet_region_split_async(host,manifest,loader,0,0,200,200,1);
+      const regionLoads=requests.slice();requests.length=0;
+      const mounted=await bdf.mount_bdf_split_async(host,manifest,loader,'single');
+      const mountLoads=requests.slice(),rendered=!!host.querySelector('[data-bdf-sheet-frame]');bdf.unmount_bdf(host);host.remove();
+      return{count,mounted,rendered,regionLoads,mountLoads,indexHash,first:entries[0].hash};
+    });
+    assert.equal(externalTileIndex.count,1,'external tile index selects the visible tile');
+    assert.deepEqual(externalTileIndex.regionLoads,[externalTileIndex.indexHash,externalTileIndex.first],'external tile index does not load offscreen tiles');
+    assert.equal(externalTileIndex.mounted,1,'sheet viewer opens an external tile index');
+    assert.equal(externalTileIndex.rendered,true,'sheet viewer draws an external tile index');
+    assert.equal(externalTileIndex.mountLoads.filter(hash=>hash===externalTileIndex.indexHash).length,1,'external tile index fetched once');
+    const encryptedSheet=await liveSheets.moon.evaluate(async()=>{
+      const bdf=await import('/_build/js/debug/build/browser/browser.js'),fetchBytes=async url=>new Uint8Array(await(await fetch(url)).arrayBuffer());
+      const single=await fetchBytes('./encrypted.bdf'),manifest=await fetchBytes('./encrypted-split/manifest.json');
+      const loader=async(hash,limit)=>{const bytes=await fetchBytes(`./encrypted-split/parts/${hash}`);if(bytes.length>limit)throw new Error('too large');return bytes};
+      const host=document.createElement('div');host.style.cssText='width:400px;height:300px';document.body.append(host);
+      await bdf.mount_bdf_encrypted_async(host,single,'pass','single');const one=host.querySelector('canvas').toDataURL();
+      await bdf.mount_bdf_encrypted_split_async(host,manifest,loader,'pass','single');const split=host.querySelector('canvas').toDataURL();
+      const existing=host.querySelector('canvas');let wrong=false;try{await bdf.mount_bdf_encrypted_async(host,single,'wrong','single')}catch{wrong=host.querySelector('canvas')===existing}
+      bdf.unmount_bdf(host);host.remove();return{one,split,wrong};
+    });
+    const plain=PNG.sync.read(Buffer.from(sheetInitial.split(',')[1],'base64'));
+    for(const [name,value] of [['single',encryptedSheet.one],['split',encryptedSheet.split]]){
+      const actual=PNG.sync.read(Buffer.from(value.split(',')[1],'base64'));let changed=0;
+      for(let i=0;i<plain.data.length;i+=4)if(plain.data[i]!==actual.data[i]||plain.data[i+1]!==actual.data[i+1]||plain.data[i+2]!==actual.data[i+2]||plain.data[i+3]!==actual.data[i+3])changed++;
+      assert.ok(changed/(plain.width*plain.height)<=0.0005,`encrypted ${name} sheet differs in ${changed} pixels`);
+    }
+    assert.equal(encryptedSheet.wrong,true,'wrong sheet credentials preserve the mounted document');
+    for(const page of Object.values(liveSheets))await page.close();
+    const hiDPI={};
+    for(const name of ['baseline','moon','split']){
+      const page=await browser.newPage({viewport:{width:1280,height:720},deviceScaleFactor:2});
+      await page.goto(`${sheetBase}live-${name}.html`,{waitUntil:'networkidle'});
+      await page.waitForFunction(()=>window.bdfStatus==='ready'||window.bdfStatus==='error');
+      assert.equal(await page.evaluate(()=>window.bdfStatus),'ready',`HiDPI ${name}: sheet render failed`);
+      hiDPI[name]=await page.evaluate(()=>document.querySelector('canvas').toDataURL());await page.close();
+    }
+    const hdReference=PNG.sync.read(Buffer.from(hiDPI.baseline.split(',')[1],'base64'));
+    for(const name of ['moon','split']){
+      const actual=PNG.sync.read(Buffer.from(hiDPI[name].split(',')[1],'base64'));
+      assert.deepEqual([actual.width,actual.height],[800,600],`HiDPI ${name}: canvas dimensions`);
+      let changed=0;for(let i=0;i<hdReference.data.length;i+=4)if(hdReference.data[i]!==actual.data[i]||hdReference.data[i+1]!==actual.data[i+1]||hdReference.data[i+2]!==actual.data[i+2]||hdReference.data[i+3]!==actual.data[i+3])changed++;
+      assert.ok(changed/(800*600)<=0.0005,`HiDPI ${name}: sheet differs in ${changed} pixels`);
+    }
     const findSnapshots=[];
     for (const name of ['find-baseline','find-moon']) {
       const page=await browser.newPage({viewport:{width:1280,height:720}}),errors=[];
@@ -443,6 +596,37 @@ try {
     await browser.close();
   }
   const interactiveBase = `http://127.0.0.1:${server.address().port}/compat/interactive/`;
+  const sheetBase = `http://127.0.0.1:${server.address().port}/compat/sheet/`;
+  for(const name of ['moon','split']){
+    const target=path.join(output,`sheet-${name}`);mkdirSync(target);
+    await run(['diff','html','--url',`${sheetBase}baseline.html`,'--current-url',`${sheetBase}${name}.html`,'--output-dir',target,'--no-paint-tree']);
+    const reportPath=path.join(target,'diff-report.json'),report=JSON.parse(readFileSync(reportPath,'utf8'));
+    for(const result of report.results){
+      const reference=PNG.sync.read(readFileSync(path.join(target,`compat_sheet_baseline-${result.viewport}.png`)));
+      const actual=PNG.sync.read(readFileSync(path.join(target,`compat_sheet_${name}-${result.viewport}.png`)));
+      let changed=0;for(let i=0;i<reference.data.length;i+=4)if(reference.data[i]!==actual.data[i]||reference.data[i+1]!==actual.data[i+1]||reference.data[i+2]!==actual.data[i+2]||reference.data[i+3]!==actual.data[i+3])changed++;
+      const ratio=changed/(Math.min(reference.width,400)*Math.min(reference.height,300));
+      console.log(`sheet ${name} ${result.viewport}: ${changed} pixels changed (${(ratio*100).toFixed(4)}%)`);
+      assert.ok(ratio<=0.0005,`${name} ${result.viewport}: sheet visual difference exceeds 0.05%`);
+    }
+    await run(['diff','agent',reportPath,'--no-history']);
+  }
+  await run(['scan','scroll',`${sheetBase}live-moon.html`,'--no-ledger']);
+  await run(['check','scroll',`${sheetBase}live-moon.html`,'--no-ledger']);
+  for(const name of ['moon','split']){
+    const target=path.join(output,`sheet-live-${name}`);mkdirSync(target);
+    await run(['diff','html','--url',`${sheetBase}live-baseline.html`,'--current-url',`${sheetBase}live-${name}.html`,'--output-dir',target,'--no-paint-tree']);
+    const reportPath=path.join(target,'diff-report.json'),report=JSON.parse(readFileSync(reportPath,'utf8'));
+    for(const result of report.results){
+      const reference=PNG.sync.read(readFileSync(path.join(target,`compat_sheet_live-baseline-${result.viewport}.png`)));
+      const actual=PNG.sync.read(readFileSync(path.join(target,`compat_sheet_live-${name}-${result.viewport}.png`)));
+      let changed=0;for(let i=0;i<reference.data.length;i+=4)if(reference.data[i]!==actual.data[i]||reference.data[i+1]!==actual.data[i+1]||reference.data[i+2]!==actual.data[i+2]||reference.data[i+3]!==actual.data[i+3])changed++;
+      const ratio=changed/(Math.min(reference.width,400)*Math.min(reference.height,300));
+      console.log(`live sheet ${name} ${result.viewport}: ${changed} pixels changed (${(ratio*100).toFixed(4)}%)`);
+      assert.ok(ratio<=0.0005,`${name} ${result.viewport}: live sheet visual difference exceeds 0.05%`);
+    }
+    await run(['diff','agent',reportPath,'--no-history']);
+  }
   const interactiveOutput = path.join(output, 'interactive');
   mkdirSync(interactiveOutput);
   await run(['diff','html','--url',`${interactiveBase}baseline.html`,'--current-url',`${interactiveBase}moon.html`,'--output-dir',interactiveOutput,'--no-paint-tree']);

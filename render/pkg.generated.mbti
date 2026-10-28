@@ -29,6 +29,14 @@ pub fn parse_cell_ref(String) -> CellRef?
 
 pub fn run_rect(TextRun, Int32, Int32, (@core.Font, Double, String) -> Double) -> TextRect?
 
+pub fn sheet_grid_lines(@core.View, SheetViewport, Double, (Double, Double, Double, Double) -> Unit) -> Unit raise
+
+pub fn sheet_size(@core.View) -> (Double, Double)
+
+pub fn sheet_tile_range(SheetViewport, Double) -> TileRange
+
+pub fn sheet_tiles_in(Array[@core.Tile], Array[TileRange]) -> Array[@core.Tile]
+
 pub fn table_cells(TextContent, table? : Int32) -> Array[CellText]
 
 pub fn text_has_extent(TextRun) -> Bool
@@ -130,6 +138,13 @@ pub(all) struct PathPlacement {
   y : Double
 } derive(@debug.Debug)
 
+pub(all) struct SheetViewport {
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+} derive(Eq, @debug.Debug)
+
 pub(all) struct TextContent {
   runs : Array[TextRun]
   links : Array[TextLink]
@@ -185,6 +200,13 @@ pub(all) struct TextRun {
   lang : String
   node : Int32
 }
+
+pub(all) struct TileRange {
+  x0 : Double
+  y0 : Double
+  x1 : Double
+  y1 : Double
+} derive(Eq, @debug.Debug)
 
 // Type aliases
 pub type Matrix = (Double, Double, Double, Double, Double, Double)

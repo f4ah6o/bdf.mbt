@@ -1,0 +1,123 @@
+{
+ "bdf": 1,
+ "opset": 1,
+ "unit": "pt",
+ "meta": {
+  "generator": "bdf-go/0.1"
+ },
+ "views": [
+  {
+   "id": "sheet",
+   "kind": "sheet",
+   "title": "Sheet",
+   "tile": 256,
+   "cols": [
+    [
+     2,
+     72
+    ],
+    [
+     5,
+     0
+    ],
+    [
+     7,
+     72
+    ]
+   ],
+   "rows": [
+    [
+     2,
+     36
+    ],
+    [
+     3,
+     0
+    ],
+    [
+     12,
+     36
+    ]
+   ],
+   "freeze": {
+    "cols": 1,
+    "rows": 1
+   },
+   "gridlines": true,
+   "tiles": {
+    "0,0": "ddbc9deb146b58e61f0b83f9ebe0c010",
+    "0,1": "8a497dd494aec0f6fd3582f4667fb3d2",
+    "1,0": "cdea3b1e8822355c9a546478813cb7ac",
+    "1,1": "299222524734cae067a8b3141d95a5df",
+    "2,0": "76f0f61188259e32b443785939dfaaa9",
+    "2,1": "e1b7c20157c04bb458d7bfea1849e16d"
+   }
+  }
+ ],
+ "parts": [
+  {
+   "h": "7dd06c2dc54adc9d192785ecd2eec944",
+   "t": "font",
+   "enc": "deflate-raw",
+   "len": 394,
+   "size": 656,
+   "off": 0
+  },
+  {
+   "h": "ddbc9deb146b58e61f0b83f9ebe0c010",
+   "t": "obj",
+   "enc": "identity",
+   "len": 130,
+   "size": 130,
+   "off": 0
+  },
+  {
+   "h": "a44c23945fdbceb76ba3db4cadb69411",
+   "t": "img",
+   "enc": "identity",
+   "len": 84,
+   "size": 84,
+   "off": 0
+  },
+  {
+   "h": "cdea3b1e8822355c9a546478813cb7ac",
+   "t": "obj",
+   "enc": "identity",
+   "len": 209,
+   "size": 209,
+   "off": 0
+  },
+  {
+   "h": "76f0f61188259e32b443785939dfaaa9",
+   "t": "obj",
+   "enc": "identity",
+   "len": 130,
+   "size": 130,
+   "off": 0
+  },
+  {
+   "h": "8a497dd494aec0f6fd3582f4667fb3d2",
+   "t": "obj",
+   "enc": "identity",
+   "len": 130,
+   "size": 130,
+   "off": 0
+  },
+  {
+   "h": "299222524734cae067a8b3141d95a5df",
+   "t": "obj",
+   "enc": "identity",
+   "len": 130,
+   "size": 130,
+   "off": 0
+  },
+  {
+   "h": "e1b7c20157c04bb458d7bfea1849e16d",
+   "t": "obj",
+   "enc": "identity",
+   "len": 130,
+   "size": 130,
+   "off": 0
+  }
+ ]
+}

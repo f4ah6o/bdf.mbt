@@ -8,6 +8,11 @@ test "spread places two pages side by side" {
     tile_size: 2048.0,
     tiles: [],
     tiles_ref: None,
+    cols: [],
+    rows: [],
+    frozen_cols: 0,
+    frozen_rows: 0,
+    gridlines: false,
     pages: [
       { width: 100.0, height: 200.0, layers: [], },
       { width: 80.0, height: 100.0, layers: [], },

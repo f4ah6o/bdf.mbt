@@ -194,6 +194,11 @@ pub(all) struct SearchHit {
   context : String
 } derive(Eq, @debug.Debug)
 
+pub(all) struct SheetRun {
+  count : Int32
+  size : Double
+} derive(Eq, @debug.Debug)
+
 pub struct SplitDocument {
   manifest : Manifest
   // private fields
@@ -229,6 +234,11 @@ pub(all) struct View {
   tile_size : Double
   tiles : Array[Tile]
   tiles_ref : String?
+  cols : Array[SheetRun]
+  rows : Array[SheetRun]
+  frozen_cols : Int32
+  frozen_rows : Int32
+  gridlines : Bool
 }
 
 // Type aliases
