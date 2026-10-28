@@ -7,7 +7,7 @@ pub(all) enum Layout {
 
 ///|
 pub(all) struct Placement {
-  index : Int
+  index : Int32
   x : Double
   y : Double
   width : Double
@@ -18,7 +18,7 @@ pub(all) struct Placement {
 pub(all) struct Viewer {
   mut layout : Layout
   mut zoom : Double
-  mut page : Int
+  mut page : Int32
   mut view_id : String
 }
 
@@ -31,7 +31,7 @@ pub suberror ViewerError {
 
 ///|
 pub fn Viewer::new() -> Viewer {
-  { layout: Single, zoom: 1.0, page: 0, view_id: "" }
+  { layout: Single, zoom: 1.0, page: 0, view_id: "", }
 }
 
 ///|
@@ -41,14 +41,18 @@ pub fn Viewer::set_layout(self : Viewer, value : Layout) -> Unit {
 
 ///|
 pub fn Viewer::set_zoom(self : Viewer, value : Double) -> Unit raise {
-  if value.is_nan() || value < 0.1 || value > 8.0 {
+  if value.is_nan() || value <= 0.0 || value > 8.0 {
     raise InvalidZoom
   }
   self.zoom = value
 }
 
 ///|
-pub fn Viewer::set_view(self : Viewer, document : @core.Manifest, id : String) -> Unit raise {
+pub fn Viewer::set_view(
+  self : Viewer,
+  document : @core.Manifest,
+  id : String,
+) -> Unit raise {
   for v in document.views {
     if v.id == id {
       self.view_id = id
@@ -60,7 +64,11 @@ pub fn Viewer::set_view(self : Viewer, document : @core.Manifest, id : String) -
 }
 
 ///|
-pub fn Viewer::scroll_to_page(self : Viewer, view : @core.View, index : Int) -> Placement raise {
+pub fn Viewer::scroll_to_page(
+  self : Viewer,
+  view : @core.View,
+  index : Int32,
+) -> Placement raise {
   let pages = self.placements(view)
   if index < 0 || index >= pages.length() {
     raise NoSuchPage
@@ -75,32 +83,44 @@ pub fn Viewer::scroll_to_page(self : Viewer, view : @core.View, index : Int) -> 
 pub fn Viewer::placements(self : Viewer, view : @core.View) -> Array[Placement] {
   let result : Array[Placement] = []
   let mut y = 0.0
-  let gap = 16.0
+  let gap = if view.kind == "scroll" || self.layout == Continuous {
+    0.0
+  } else {
+    16.0
+  }
   let zoom = self.zoom
   let pages = view.pages
-  match self.layout {
-    Single | Continuous => {
+  match (if view.kind == "scroll" { Single } else { self.layout }) {
+    Single | Continuous =>
       for index, page in pages {
         let width = page.width * zoom
         let height = page.height * zoom
-        result.push({ index, x: 0.0, y, width, height })
+        result.push({ index, x: 0.0, y, width, height, })
         y += height + gap
       }
-    }
     Spread => {
       let mut index = 0
       while index < pages.length() {
         let page = pages[index]
         let width = page.width * zoom
         let height = page.height * zoom
-        result.push({ index, x: 0.0, y, width, height })
+        let first_x = if view.direction == "rtl" && index + 1 < pages.length() {
+          pages[index + 1].width * zoom + gap
+        } else {
+          0.0
+        }
+        result.push({ index, x: first_x, y, width, height, })
         let mut row_height = height
         if index + 1 < pages.length() {
           let next = pages[index + 1]
           let next_height = next.height * zoom
           result.push({
             index: index + 1,
-            x: width + gap,
+            x: if view.direction == "rtl" {
+              0.0
+            } else {
+              width + gap
+            },
             y,
             width: next.width * zoom,
             height: next_height,

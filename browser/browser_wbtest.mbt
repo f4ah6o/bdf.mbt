@@ -149,13 +149,14 @@ extern "js" fn fixture_host() -> BrowserHost =
   #|  const g = (kind, args) => ({kind, args, stops: [], addColorStop(o,c) { this.stops.push([o,c]); }});
   #|  const ctx = {
   #|    scale(x,y) { this.scaled = [x,y]; },
+  #|    save() {}, restore() {},
   #|    createLinearGradient(...args) { return g("linear",args); },
   #|    createRadialGradient(...args) { return g("radial",args); },
   #|    createConicGradient(...args) { return g("conic",args); },
   #|    fillRect(...args) { this.rect = args; }
   #|  };
   #|  const canvas = {style: {}, setAttribute() {}, getContext() { return ctx; }};
-  #|  globalThis.document = {createElement() { return canvas; }};
+  #|  globalThis.document = {createElement(tag) { return tag==='div'?{style:{},dataset:{},appendChild(){}}:canvas; }};
   #|  return {style: {}, ctx, replaceChildren() { this.children = []; }, appendChild(child) { this.children.push(child); }};
   #|}
 

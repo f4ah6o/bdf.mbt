@@ -6,6 +6,10 @@ try {
   const doc = await BdfDocument.open(new BufferSource(bytes));
   const page = doc.manifest.views[0].pages[0];
   const host = document.querySelector('#host');
+  const surface = document.createElement('div');
+  surface.dataset.bdfPages = '';
+  Object.assign(surface.style, {position:'relative', width:`${page.w}px`, height:`${page.h}px`, background:'#e8e8e8'});
+  host.appendChild(surface);
   const canvas = document.createElement('canvas');
   canvas.width = page.w;
   canvas.height = page.h;
@@ -13,7 +17,7 @@ try {
   canvas.style.left = '0px';
   canvas.style.top = '0px';
   canvas.setAttribute('aria-label', 'BDF page');
-  host.appendChild(canvas);
+  surface.appendChild(canvas);
   const resources = new ResourceCache(doc, document.fonts);
   const hold = resources.hold();
   const renderer = new CanvasRenderer(resources);

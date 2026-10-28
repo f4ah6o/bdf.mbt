@@ -48,6 +48,14 @@ pub fn mount_bdf_split_async(BrowserHost, Bytes, SplitPartLoader, String) -> @js
 
 pub fn password_credential(String) -> CryptoCredential
 
+pub fn render_bdf_continuous_region_async(BrowserHost, Bytes, Double, Double, Double, Double, Double) -> @js_async.Promise[Int32]
+
+pub fn render_bdf_continuous_region_encrypted_async(BrowserHost, Bytes, CryptoCredential, Double, Double, Double, Double, Double) -> @js_async.Promise[Int32]
+
+pub fn render_bdf_continuous_region_encrypted_split_async(BrowserHost, Bytes, SplitPartLoader, CryptoCredential, Double, Double, Double, Double, Double) -> @js_async.Promise[Int32]
+
+pub fn render_bdf_continuous_region_split_async(BrowserHost, Bytes, SplitPartLoader, Double, Double, Double, Double, Double) -> @js_async.Promise[Int32]
+
 pub fn render_bdf_sheet_region_async(BrowserHost, Bytes, Double, Double, Double, Double, Double) -> @js_async.Promise[Int32]
 
 pub fn render_bdf_sheet_region_split_async(BrowserHost, Bytes, SplitPartLoader, Double, Double, Double, Double, Double) -> @js_async.Promise[Int32]

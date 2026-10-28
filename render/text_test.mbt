@@ -71,6 +71,8 @@ test "extract text and links in upstream reading order" {
     id: "v",
     kind: "fixed",
     title: "",
+    direction: "ltr",
+    continuous_gap: None,
     text_index: None,
     tile_size: 2048.0,
     tiles: [],
@@ -84,6 +86,7 @@ test "extract text and links in upstream reading order" {
       {
         width: 100.0,
         height: 100.0,
+        body: None,
         layers: [
           { role: "body", object: "parent", },
           { role: "annotation", object: "child", },
@@ -92,6 +95,7 @@ test "extract text and links in upstream reading order" {
       {
         width: 100.0,
         height: 100.0,
+        body: None,
         layers: [{ role: "body", object: "child", }],
       },
     ],

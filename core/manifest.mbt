@@ -18,8 +18,18 @@ pub(all) struct Layer {
 pub(all) struct Page {
   width : Double
   height : Double
+  body : PageRect?
   layers : Array[Layer]
 }
+
+///|
+/// A page's body rectangle, in page coordinates.
+pub(all) struct PageRect {
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+} derive(Eq, Debug)
 
 ///|
 /// A sheet tile's coordinates and referenced object.
@@ -41,6 +51,8 @@ pub(all) struct View {
   id : String
   kind : String
   title : String
+  direction : String
+  continuous_gap : Double?
   text_index : String?
   pages : Array[Page]
   tile_size : Double
@@ -139,6 +151,39 @@ fn sized_number(object : Json, key : String) -> Double raise {
     raise BadFormat("page dimension out of range")
   }
   value
+}
+
+///|
+fn signed_page_number(object : Json, key : String) -> Double raise {
+  let value = required_number(object, key)
+  if value.is_nan() || value.is_inf() || value.abs() > 16777216.0 {
+    raise BadFormat("page coordinate out of range")
+  }
+  value
+}
+
+///|
+fn page_body(page : Json) -> PageRect? raise {
+  guard page is Object(fields) else { raise BadFormat("expected page object") }
+  match fields.get("body") {
+    None => None
+    Some(body) =>
+      Some({
+        x: signed_page_number(body, "x"),
+        y: signed_page_number(body, "y"),
+        width: sized_number(body, "w"),
+        height: sized_number(body, "h"),
+      })
+  }
+}
+
+///|
+fn view_continuous_gap(view : Json) -> Double? raise {
+  guard view is Object(fields) else { raise BadFormat("expected view object") }
+  match fields.get("continuous") {
+    None => None
+    Some(continuous) => Some(signed_page_number(continuous, "gap"))
+  }
 }
 
 ///|
@@ -358,6 +403,7 @@ fn parse_manifest_internal(
       pages.push({
         width: sized_number(page, "w"),
         height: sized_number(page, "h"),
+        body: page_body(page),
         layers,
       })
     }
@@ -380,6 +426,8 @@ fn parse_manifest_internal(
       id,
       kind,
       title: optional_string(view, "title", ""),
+      direction: optional_string(view, "direction", "ltr"),
+      continuous_gap: view_continuous_gap(view),
       text_index,
       pages,
       tile_size,

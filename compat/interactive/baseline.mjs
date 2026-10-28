@@ -5,6 +5,7 @@ try {
   const doc = await BdfDocument.open(new BufferSource(bytes));
   const host = document.querySelector('#host');
   const pages = doc.manifest.views[0].pages;
+  const surface = document.createElement('div');surface.dataset.bdfPages='';surface.style.cssText=`position:relative;background:#e8e8e8;width:${Math.max(...pages.map(p=>p.w))}px;height:${pages.reduce((n,p)=>n+p.h,0)+Math.max(0,pages.length-1)*16}px`;host.append(surface);
   const resources = new ResourceCache(doc, document.fonts), hold = resources.hold();
   const renderer = new CanvasRenderer(resources);
   const sheet = document.createElement('style');sheet.textContent=TEXT_LAYER_CSS;document.head.appendChild(sheet);
@@ -13,14 +14,14 @@ try {
     const canvas = document.createElement('canvas');
     canvas.width=page.w;canvas.height=page.h;
     Object.assign(canvas.style,{position:'absolute',left:'0px',top:top+'px'});
-    canvas.setAttribute('aria-label','BDF page');host.appendChild(canvas);
+    canvas.setAttribute('aria-label','BDF page');surface.appendChild(canvas);
     const objects = [];
     for (const item of page.layers) objects.push(await resources.prepare(item.obj, hold));
     for (const object of objects) renderer.draw(canvas.getContext('2d'),object);
     const content = concat(objects.map(object => extractContent(object, hash => resources.object(hash))));
     const layer = buildTextLayer(content, 1);
     Object.assign(layer.style,{left:'0px',top:top+'px',width:page.w+'px',height:page.h+'px'});
-    host.appendChild(layer);top+=page.h+16;
+    surface.appendChild(layer);top+=page.h+16;
   }
   host.style.minHeight=(top-16)+'px';installCopyHandler(host);
   window.readSelection = () => selectionText(document.getSelection(),host);

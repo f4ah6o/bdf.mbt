@@ -15,6 +15,12 @@ pub fn cell_clipboard(Array[CellText], CellRange, trim? : Bool, skip_row? : (Int
 
 pub fn compile_object(@core.ObjectPart) -> Array[Command] raise
 
+pub fn continuous_bands(@core.View, TextRect) -> Array[ContinuousBand]
+
+pub fn continuous_body(@core.Page) -> @core.PageRect
+
+pub fn continuous_layout(@core.View) -> ContinuousLayout
+
 pub fn decode_commands(Bytes) -> Array[Command] raise
 
 pub fn extract_text(@core.ObjectResources, (String) -> @core.ObjectResources? raise, matrix? : (Double, Double, Double, Double, Double, Double)) -> TextContent raise
@@ -121,6 +127,18 @@ pub(all) enum Command {
   Link(Double, Double, Double, Double, String)
   Mark(Int32, String)
   Ext(Bytes)
+} derive(@debug.Debug)
+
+pub(all) struct ContinuousBand {
+  index : Int32
+  offset : Double
+  body : @core.PageRect
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ContinuousLayout {
+  offsets : Array[Double]
+  width : Double
+  height : Double
 } derive(@debug.Debug)
 
 pub(all) struct HitRect {

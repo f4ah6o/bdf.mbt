@@ -13,7 +13,7 @@ const outputRoot = path.join(root, '_build/visual-diff');
 mkdirSync(outputRoot, { recursive: true });
 const output = mkdtempSync(path.join(outputRoot, 'run-'));
 const executable = path.join(root, 'node_modules/.bin/vlmkit');
-const allowed = ['/compat/visual/', '/compat/interactive/', '/compat/sheet/', '/node_modules/@bdfkit/', '/_build/js/debug/build/browser/'];
+const allowed = ['/compat/visual/', '/compat/interactive/', '/compat/sheet/', '/compat/continuous/', '/node_modules/@bdfkit/', '/_build/js/debug/build/browser/'];
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.bdf': 'application/octet-stream' };
 
 function run(args) {
@@ -256,6 +256,103 @@ try {
       assert.deepEqual(selection,{box:true,table:true},`${name}: selected cell highlight missing`);
       await page.close();
     }
+    const continuousBase=`http://127.0.0.1:${server.address().port}/compat/continuous/`;
+    const regions={};
+    for(const name of ['baseline','moon','split','encrypted','encrypted-split']){
+      const page=await browser.newPage({viewport:{width:1280,height:720}}),errors=[];page.on('pageerror',error=>errors.push(String(error)));
+      await page.goto(`${continuousBase}region-${name}.html`,{waitUntil:'networkidle'});await page.waitForFunction(()=>window.bdfStatus==='ready'||window.bdfStatus==='error');
+      assert.equal(await page.evaluate(()=>window.bdfStatus),'ready',`${name}: ${await page.evaluate(()=>window.bdfError)}`);assert.deepEqual(errors,[],`${name}: continuous fixture errors`);regions[name]=page;
+    }
+    const continuousLayout=await regions.baseline.evaluate(()=>window.referenceLayout);
+    assert.deepEqual(continuousLayout,{offsets:[0,92.5,165],width:200,height:285},'upstream flow-body layout');
+    for(const args of [[0,0,200,200,1],[10,35,160,120,1.25],[0,80,200,12,1],[190,0,80,200,1],[-5,-5,200,120,2],[0,165,200,20,1],[0,400,200,20,1]]){
+      const result={};for(const [name,page] of Object.entries(regions))result[name]=await page.evaluate(async args=>({count:await window.renderRegion(...args),png:document.querySelector('canvas').toDataURL(),requests:window.requests??[]}),args);
+      const expected=PNG.sync.read(Buffer.from(result.baseline.png.split(',')[1],'base64'));
+      for(const name of ['moon','split','encrypted','encrypted-split']){
+        assert.equal(result[name].count,result.baseline.count,`${name}: visible continuous bands`);
+        const actual=PNG.sync.read(Buffer.from(result[name].png.split(',')[1],'base64'));assert.deepEqual([actual.width,actual.height],[expected.width,expected.height]);
+        let changed=0;for(let i=0;i<expected.data.length;i+=4)if(expected.data[i]!==actual.data[i]||expected.data[i+1]!==actual.data[i+1]||expected.data[i+2]!==actual.data[i+2]||expected.data[i+3]!==actual.data[i+3])changed++;
+        assert.ok(changed/(expected.width*expected.height)<=0.0005,`${name}: continuous region ${args} differs by ${changed} pixels`);
+      }
+      if(args[1]===80)assert.equal(result.split.requests.length,0,'a viewport in the gap does not load parts');
+      if(args[1]===165)assert.equal(result.split.requests.length,3,'a continuous viewport loads only its visible page layers');
+    }
+    for(const gap of [-10,-150]){
+      const result={};for(const name of ['baseline','split'])result[name]=await regions[name].evaluate(async gap=>{window.setGap(gap);return{count:await window.renderRegion(0,-20,200,180,1),png:document.querySelector('canvas').toDataURL()}},gap);
+      assert.equal(result.split.count,result.baseline.count,`continuous gap ${gap}: intersecting bands`);
+      const reference=PNG.sync.read(Buffer.from(result.baseline.png.split(',')[1],'base64')),actual=PNG.sync.read(Buffer.from(result.split.png.split(',')[1],'base64'));
+      let changed=0;for(let i=0;i<reference.data.length;i+=4)if(reference.data[i]!==actual.data[i]||reference.data[i+1]!==actual.data[i+1]||reference.data[i+2]!==actual.data[i+2]||reference.data[i+3]!==actual.data[i+3])changed++;
+      assert.ok(changed/(reference.width*reference.height)<=0.0005,`continuous gap ${gap}: overlapping bands differ by ${changed} pixels`);
+    }
+    const invalidContinuous=await regions.moon.evaluate(async()=>{const old=document.querySelector('canvas');let rejected=0;for(const args of [[0,0,0,100,1],[0,0,100,100,0],[NaN,0,100,100,1],[0,0,9000,1,1]])try{await window.renderRegion(...args)}catch{if(document.querySelector('canvas')===old)rejected++}return rejected});
+    assert.equal(invalidContinuous,4,'invalid continuous viewports preserve the current rendering');
+    const invalidCredentials=await regions.encrypted.evaluate(async()=>{const {render_bdf_continuous_region_encrypted_async}=await import('/_build/js/debug/build/browser/browser.js'),data=new Uint8Array(await(await fetch('./flow-encrypted.bdf')).arrayBuffer()),host=document.querySelector('#host'),old=host.querySelector('canvas');try{await render_bdf_continuous_region_encrypted_async(host,data,'wrong',0,0,100,100,1);return false}catch{return host.querySelector('canvas')===old}});
+    assert.equal(invalidCredentials,true,'wrong credentials preserve the existing continuous region');
+    const encryptedEcdh=await regions.baseline.evaluate(async()=>{
+      const {BdfDocument,BufferSource}=await import('@bdfkit/core'),{PageRenderer}=await import('@bdfkit/render'),bdf=await import('/_build/js/debug/build/browser/browser.js');
+      const read=async file=>new Uint8Array(await(await fetch(`../visual/${file}`)).arrayBuffer()),jwk=await(await fetch('../visual/encrypted-fixture/test-private.jwk')).json();
+      const privateKey=await crypto.subtle.importKey('jwk',jwk,{name:'ECDH',namedCurve:'P-256'},false,['deriveKey']),{d,...publicJwk}=jwk,publicKey=await crypto.subtle.importKey('jwk',publicJwk,{name:'ECDH',namedCurve:'P-256'},true,[]),pair={publicKey,privateKey};
+      const doc=await BdfDocument.open(new BufferSource(await read('fixture.bdf'))),reference=document.createElement('canvas');reference.width=200;reference.height=150;
+      await new PageRenderer(doc).renderContinuous(reference.getContext('2d'),doc.manifest.views[0],{x:20,y:30,w:200,h:150},{scale:1});
+      const host=document.createElement('div');document.body.append(host);const single=await read('encrypted-fixture/ecdh.bdf'),manifest=await read('encrypted-fixture/ecdh-split/manifest.json'),loader=hash=>read(`encrypted-fixture/ecdh-split/parts/${hash}`);
+      const one=await bdf.render_bdf_continuous_region_encrypted_async(host,single,pair,20,30,200,150,1),onePng=host.querySelector('canvas').toDataURL();
+      const two=await bdf.render_bdf_continuous_region_encrypted_split_async(host,manifest,loader,pair,20,30,200,150,1),twoPng=host.querySelector('canvas').toDataURL();bdf.unmount_bdf(host);host.remove();
+      return {one,two,onePng,twoPng,reference:reference.toDataURL()};
+    });
+    assert.deepEqual([encryptedEcdh.one,encryptedEcdh.two],[1,1],'P-256 encrypted continuous regions render one band');
+    const ecdhReference=PNG.sync.read(Buffer.from(encryptedEcdh.reference.split(',')[1],'base64'));
+    for(const name of ['onePng','twoPng']){const actual=PNG.sync.read(Buffer.from(encryptedEcdh[name].split(',')[1],'base64'));let changed=0;for(let i=0;i<ecdhReference.data.length;i+=4)if(ecdhReference.data[i]!==actual.data[i]||ecdhReference.data[i+1]!==actual.data[i+1]||ecdhReference.data[i+2]!==actual.data[i+2]||ecdhReference.data[i+3]!==actual.data[i+3])changed++;assert.ok(changed/(200*150)<=0.0005,`${name}: P-256 continuous pixels differ by ${changed}`)}
+    const sheetReset=await regions.baseline.evaluate(async()=>{
+      const {BdfDocument}=await import('@bdfkit/core'),{PageRenderer}=await import('@bdfkit/render'),bdf=await import('/_build/js/debug/build/browser/browser.js'),read=async path=>new Uint8Array(await(await fetch(path)).arrayBuffer());
+      const metadata=JSON.parse(new TextDecoder().decode(await read('./flow-split/manifest.json'))),hash=metadata.views[0].pages[0].layers.at(-1).obj;
+      metadata.views=[{id:'sheet',kind:'sheet',tile:256,cols:[[2,80]],rows:[[1,100]],tiles:{'0,0':hash}}];
+      const loader=hash=>read(`./flow-split/parts/${hash}`),doc=await BdfDocument.open({manifest:async()=>metadata,stored:part=>loader(part.h)}),reference=document.createElement('canvas');reference.width=160;reference.height=100;
+      await new PageRenderer(doc).renderSheet(reference.getContext('2d'),doc.manifest.views[0],{x:0,y:0,w:160,h:100},{scale:1});
+      const host=document.createElement('div');document.body.append(host);const count=await bdf.render_bdf_sheet_region_split_async(host,new TextEncoder().encode(JSON.stringify(metadata)),loader,0,0,160,100,1),canvas=host.querySelector('canvas'),pixel=[...canvas.getContext('2d').getImageData(110,50,1,1).data],actual=canvas.toDataURL();bdf.unmount_bdf(host);host.remove();
+      return {count,pixel,actual,reference:reference.toDataURL()};
+    });
+    assert.deepEqual([sheetReset.count,sheetReset.pixel],[1,[0,0,0,255]],'sheet objects start with the default black fill');
+    const sheetResetReference=PNG.sync.read(Buffer.from(sheetReset.reference.split(',')[1],'base64')),sheetResetActual=PNG.sync.read(Buffer.from(sheetReset.actual.split(',')[1],'base64'));
+    assert.deepEqual(sheetResetActual.data,sheetResetReference.data,'sheet default drawing state matches upstream');
+    for(const page of Object.values(regions))await page.close();
+    const scrollPages={};
+    for(const name of ['baseline','moon']){
+      const page=await browser.newPage({viewport:{width:1280,height:720}}),errors=[];page.on('pageerror',error=>errors.push(String(error)));
+      await page.goto(`${continuousBase}viewer-${name}.html`,{waitUntil:'networkidle'});await page.waitForFunction(()=>window.bdfStatus==='ready'||window.bdfStatus==='error');
+      assert.equal(await page.evaluate(()=>window.bdfStatus),'ready',`${name}: ${await page.evaluate(()=>window.bdfError)}`);assert.deepEqual(errors,[],`${name}: scroll fixture errors`);
+      scrollPages[name]=await page.evaluate(()=>[...document.querySelectorAll('#host canvas')].map(c=>{const r=c.getBoundingClientRect();return{x:r.x,y:r.y,w:r.width,h:r.height}}));await page.close();
+    }
+    assert.deepEqual(scrollPages.moon,scrollPages.baseline,'scroll strips use the same page positions as the upstream viewer');
+    const spreadPages={};
+    for(const name of ['baseline','moon']){
+      const page=await browser.newPage({viewport:{width:1280,height:720}}),errors=[];page.on('pageerror',error=>errors.push(String(error)));
+      await page.goto(`${continuousBase}spread-${name}.html`,{waitUntil:'networkidle'});await page.waitForFunction(()=>window.bdfStatus==='ready'||window.bdfStatus==='error');
+      assert.equal(await page.evaluate(()=>window.bdfStatus),'ready',`${name}: ${await page.evaluate(()=>window.bdfError)}`);assert.deepEqual(errors,[],`${name}: RTL spread fixture errors`);
+      spreadPages[name]=await page.evaluate(()=>[...document.querySelectorAll('#host canvas')].slice(0,2).map(c=>{const r=c.getBoundingClientRect();return{x:r.x,y:r.y,w:r.width,h:r.height}}));await page.close();
+    }
+    assert.deepEqual(spreadPages.moon,spreadPages.baseline,'RTL spread positions match the upstream viewer');
+    const scrollPage=await browser.newPage({viewport:{width:1280,height:720}});await scrollPage.goto(`${continuousBase}viewer-moon.html`,{waitUntil:'networkidle'});
+    const scrollModes=await scrollPage.evaluate(async()=>{
+      const bdf=await import('/_build/js/debug/build/browser/browser.js'),read=async file=>new Uint8Array(await(await fetch(file)).arrayBuffer());
+      const single=await read('scroll.bdf'),manifest=await read('scroll-split/manifest.json'),encrypted=await read('scroll-encrypted.bdf'),locked=await read('scroll-encrypted-split/manifest.json'),results=[];
+      for(const [kind,mount] of [
+        ['single',(h,layout)=>bdf.mount_bdf_interactive_async(h,single,layout)],
+        ['split',(h,layout)=>bdf.mount_bdf_interactive_split_async(h,manifest,hash=>read(`scroll-split/parts/${hash}`),layout)],
+        ['encrypted',(h,layout)=>bdf.mount_bdf_interactive_encrypted_async(h,encrypted,'pass',layout)],
+        ['encrypted-split',(h,layout)=>bdf.mount_bdf_interactive_encrypted_split_async(h,locked,hash=>read(`scroll-encrypted-split/parts/${hash}`),'pass',layout)],
+      ])for(const layout of ['single','spread','continuous']){
+        const host=document.createElement('div');host.style.cssText='position:relative;width:200px;height:100px;overflow:auto';document.body.append(host);const count=await mount(host,layout),found=await bdf.bdf_find_async(host,'Strip',0);
+        const last=await bdf.bdf_find_async(host,'Strip 3',0);
+        results.push({kind,layout,count,positions:[...host.querySelectorAll('canvas')].map(c=>parseFloat(c.style.top)),total:found.total,detail:found.detail,scrollable:host.clientHeight===100&&host.scrollHeight>=300,revealed:last.total===1&&host.scrollTop>0});bdf.unmount_bdf(host);host.remove();
+      }
+      const sync=document.createElement('div');document.body.append(sync);const count=bdf.mount_bdf(sync,single,'spread'),positions=[...sync.querySelectorAll('canvas')].map(c=>parseFloat(c.style.top));bdf.unmount_bdf(sync);sync.remove();
+      const metadata=JSON.parse(new TextDecoder().decode(manifest));metadata.views[0].pages[0].layers=[];
+      const blank=document.createElement('div');document.body.append(blank);await bdf.mount_bdf_split_async(blank,new TextEncoder().encode(JSON.stringify(metadata)),hash=>read(`scroll-split/parts/${hash}`),'single');
+      const background=[...blank.querySelector('canvas').getContext('2d').getImageData(0,0,1,1).data];bdf.unmount_bdf(blank);blank.remove();return {results,count,positions,background};
+    });
+    for(const result of scrollModes.results){assert.equal(result.count,3,`${result.kind}/${result.layout}: strip count`);assert.deepEqual(result.positions,[0,80,180],`${result.kind}/${result.layout}: strips have no gaps`);assert.equal(result.total,3,`${result.kind}/${result.layout}: strips are searchable`);assert.ok(!result.detail.startsWith('page '),`${result.kind}/${result.layout}: scroll search has no page label`);assert.ok(result.scrollable&&result.revealed,`${result.kind}/${result.layout}: constrained host scrolls to the last strip`)}
+    assert.deepEqual([scrollModes.count,scrollModes.positions],[3,[0,80,180]],'synchronous scroll mount');
+    assert.deepEqual(scrollModes.background,[255,255,255,255],'empty scroll strips receive the upstream white page background');await scrollPage.close();
     const sheetBase=`http://127.0.0.1:${server.address().port}/compat/sheet/`;
     const cellFixtures={};
     for(const name of ['cells-baseline','cells-moon']){
@@ -846,6 +943,23 @@ try {
   }
   const interactiveBase = `http://127.0.0.1:${server.address().port}/compat/interactive/`;
   const sheetBase = `http://127.0.0.1:${server.address().port}/compat/sheet/`;
+  const continuousBase = `http://127.0.0.1:${server.address().port}/compat/continuous/`;
+  for(const [kind,name,width,height] of [['region','moon',200,200],['region','split',200,200],['region','encrypted',200,200],['region','encrypted-split',200,200],['viewer','moon',200,200],['spread','moon',376,120]]){
+    const target=path.join(output,`continuous-${kind}-${name}`);mkdirSync(target);
+    await run(['diff','html','--url',`${continuousBase}${kind}-baseline.html`,'--current-url',`${continuousBase}${kind}-${name}.html`,'--output-dir',target,'--no-paint-tree']);
+    const reportPath=path.join(target,'diff-report.json'),report=JSON.parse(readFileSync(reportPath,'utf8'));
+    for(const result of report.results){
+      const reference=PNG.sync.read(readFileSync(path.join(target,`compat_continuous_${kind}-baseline-${result.viewport}.png`)));
+      const actual=PNG.sync.read(readFileSync(path.join(target,`compat_continuous_${kind}-${name}-${result.viewport}.png`)));
+      const area=Math.min(reference.width,width)*Math.min(reference.height,height);
+      let changed=0;for(let i=0;i<reference.data.length;i+=4)if(reference.data[i]!==actual.data[i]||reference.data[i+1]!==actual.data[i+1]||reference.data[i+2]!==actual.data[i+2]||reference.data[i+3]!==actual.data[i+3])changed++;
+      console.log(`continuous ${kind}-${name} ${result.viewport}: ${changed} pixels changed (${(changed/area*100).toFixed(4)}%)`);
+      assert.ok(changed/area<=0.0005,`${kind}-${name} ${result.viewport}: continuous visual difference exceeds 0.05%`);
+    }
+    await run(['diff','agent',reportPath,'--no-history']);
+  }
+  await run(['scan','scroll',`${continuousBase}viewer-moon.html`,'--no-ledger']);
+  await run(['check','scroll',`${continuousBase}viewer-moon.html`,'--no-ledger']);
   for(const name of ['moon','split']){
     const target=path.join(output,`sheet-${name}`);mkdirSync(target);
     await run(['diff','html','--url',`${sheetBase}baseline.html`,'--current-url',`${sheetBase}${name}.html`,'--output-dir',target,'--no-paint-tree']);

@@ -5,9 +5,10 @@ extern "js" fn compressed_fixture_host() -> BrowserHost =
   #|    replaceChildren() { this.children = []; },
   #|    appendChild(child) { this.children.push(child); }
   #|  };
-  #|  globalThis.document = { createElement() {
+  #|  globalThis.document = { createElement(tag) {
+  #|    if(tag==='div')return {style:{},dataset:{},children:[],appendChild(child){this.children.push(child)}};
   #|    return {style:{}, setAttribute(){}, getContext() { return {
-  #|      scale() {}, fillRect() { host.rects++; }
+  #|      scale() {}, save(){}, restore(){}, fillRect() { host.rects++; }
   #|    }; }};
   #|  }};
   #|  return host;
@@ -15,7 +16,7 @@ extern "js" fn compressed_fixture_host() -> BrowserHost =
 
 ///|
 extern "js" fn compressed_fixture_rendered(host : BrowserHost) -> Bool =
-  #|(host) => host.children.length === 12 && host.rects === 2400
+  #|(host) => host.children.length === 1 && host.children[0].children.length === 12 && host.rects === 2412
 
 ///|
 // shibukawa/bdf 4f9af52 default-compressed manifest and object.

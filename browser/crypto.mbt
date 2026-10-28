@@ -161,14 +161,11 @@ async fn load_sealed(
 }
 
 ///|
-async fn mount_encrypted(
-  host : BrowserHost,
+async fn encrypted_document_parts(
   metadata : @core.EncryptedManifest,
   loader : SplitPartLoader,
   credential : CryptoCredential,
-  layout : String,
-  interactive : Bool,
-) -> Int32 {
+) -> (Bytes, SplitPartLoader) {
   let key = unlock_content_key(metadata, credential)
   let encrypted_manifest = load_sealed(metadata, loader, metadata.manifest_hash)
   let compressed = decrypt_sealed(key, encrypted_manifest, "manifest").wait()
@@ -195,6 +192,21 @@ async fn mount_encrypted(
       bytes
     })
   })
+  (manifest, inner_loader)
+}
+
+///|
+async fn mount_encrypted(
+  host : BrowserHost,
+  metadata : @core.EncryptedManifest,
+  loader : SplitPartLoader,
+  credential : CryptoCredential,
+  layout : String,
+  interactive : Bool,
+) -> Int32 {
+  let (manifest, inner_loader) = encrypted_document_parts(
+    metadata, loader, credential,
+  )
   mount_split(host, manifest, inner_loader, layout, interactive)
 }
 

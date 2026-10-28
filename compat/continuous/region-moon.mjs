@@ -1,0 +1,2 @@
+import {render_bdf_continuous_region_async} from '/_build/js/debug/build/browser/browser.js';
+try{const bytes=new Uint8Array(await(await fetch('./flow.bdf')).arrayBuffer()),host=document.querySelector('#host');window.renderRegion=(...args)=>render_bdf_continuous_region_async(host,bytes,...args);await window.renderRegion(0,0,200,200,1);window.bdfStatus='ready'}catch(error){window.bdfStatus='error';window.bdfError=String(error?.stack??error);console.error(error)}

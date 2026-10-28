@@ -252,8 +252,8 @@ async fn mount_split(
       interactive~,
     )
   }
-  if view.kind != "fixed" && view.kind != "flow" {
-    raise Unsupported("browser supports fixed/flow pages only")
+  if view.kind != "fixed" && view.kind != "flow" && view.kind != "scroll" {
+    raise Unsupported("browser supports fixed/flow/scroll pages only")
   }
   if view.pages.length() > 256 {
     raise Unsupported("more than 256 pages")

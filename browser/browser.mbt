@@ -73,6 +73,20 @@ extern "js" fn resize_host(
   #|}
 
 ///|
+// The content owns its extent; a caller-supplied host height remains a
+// viewport instead of being enlarged to fit every page.
+extern "js" fn make_page_surface(host : BrowserHost) -> BrowserHost =
+  #|(host) => {const surface=(host.ownerDocument??document).createElement('div');surface.style.position='relative';surface.style.background='#e8e8e8';surface.dataset.bdfPages='';host.appendChild(surface);return surface}
+
+///|
+extern "js" fn resize_page_surface(
+  surface : BrowserHost,
+  width : Double,
+  height : Double,
+) -> Unit =
+  #|(surface,w,h) => {surface.style.width=Math.ceil(w)+'px';surface.style.height=Math.ceil(h)+'px'}
+
+///|
 extern "js" fn save(ctx : CanvasContext) -> Unit =
   #|(ctx) => ctx.save()
 
@@ -357,6 +371,37 @@ priv struct UseLimits {
 }
 
 ///|
+// Each top-level object starts with the Canvas 2D defaults while preserving
+// the page or viewport transform and clip established by the caller.
+extern "js" fn reset_object_state(ctx : CanvasContext) -> Unit =
+  #|(ctx) => {ctx.fillStyle='#000000';ctx.strokeStyle='#000000';ctx.lineWidth=1;ctx.lineCap='butt';ctx.lineJoin='miter';ctx.miterLimit=10;if(typeof ctx.setLineDash==='function')ctx.setLineDash([]);ctx.lineDashOffset=0;ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.shadowColor='rgba(0,0,0,0)';ctx.shadowBlur=0;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;ctx.font='10px sans-serif';ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.direction='inherit';if('letterSpacing'in ctx)ctx.letterSpacing='0px';if('filter'in ctx)ctx.filter='none';ctx.imageSmoothingEnabled=true}
+
+///|
+fn paint_root_object(
+  ctx : CanvasContext,
+  document : BrowserDocument,
+  object : @core.ObjectResources,
+  resources : BrowserResources?,
+  limits : UseLimits,
+) -> Unit raise {
+  let paths = resolve_paths(document, object.paths)
+  save(ctx)
+  defer restore(ctx)
+  reset_object_state(ctx)
+  paint_commands(
+    ctx,
+    @render.compile_object(object.object),
+    paths~,
+    paints=object.paints,
+    fonts=object.fonts,
+    images=object.object.images,
+    resources?,
+    document~,
+    limits~,
+  )
+}
+
+///|
 fn paint_child(
   ctx : CanvasContext,
   document : BrowserDocument,
@@ -577,8 +622,8 @@ fn mount_document(
     raise BadFormat("document has no view")
   }
   let view = doc.manifest.views[0]
-  if view.kind != "fixed" && view.kind != "flow" {
-    raise Unsupported("browser MVP supports fixed/flow pages only")
+  if view.kind != "fixed" && view.kind != "flow" && view.kind != "scroll" {
+    raise Unsupported("browser supports fixed/flow/scroll pages only")
   }
   if view.pages.length() > 256 {
     raise Unsupported("more than 256 pages")
@@ -591,12 +636,22 @@ fn mount_document(
   }
   let placements = viewer.placements(view)
   clear_host(host)
+  reset_host_size(host)
+  let surface = make_page_surface(host)
   let search_runs : Array[Array[Array[@render.TextRun]]] = []
   let fallback_index : Array[@core.IndexRun] = []
   let mut max_x = 0.0
   let mut max_y = 0.0
   for p in placements {
-    let ctx = make_canvas(host, p.x, p.y, p.width, p.height, viewer.zoom)
+    let ctx = make_canvas(surface, p.x, p.y, p.width, p.height, viewer.zoom)
+    set_color(ctx, -1, false)
+    fill_rect(
+      ctx,
+      0.0,
+      0.0,
+      view.pages[p.index].width,
+      view.pages[p.index].height,
+    )
     if p.x + p.width > max_x {
       max_x = p.x + p.width
     }
@@ -610,7 +665,6 @@ fn mount_document(
     let page_runs : Array[Array[@render.TextRun]] = []
     for layer_index, layer in view.pages[p.index].layers {
       let object = @core.decode_object_resources(doc.part(layer.object))
-      let paths = resolve_paths(doc, object.paths)
       if data is Some(text_data) {
         let content = @render.extract_text(object, hash => {
           Some(@core.decode_object_resources(doc.part(hash)))
@@ -633,22 +687,12 @@ fn mount_document(
         node_base += content.nodes.length()
         run_base += content.runs.length()
       }
-      paint_commands(
-        ctx,
-        @render.compile_object(object.object),
-        paths~,
-        paints=object.paints,
-        fonts=object.fonts,
-        images=object.object.images,
-        resources?,
-        document=doc,
-        limits~,
-      )
+      paint_root_object(ctx, doc, object, resources, limits)
     }
     if data is Some(text_data) {
       search_runs.push(page_runs)
       render_text_layer(
-        host,
+        surface,
         text_data,
         p.x,
         p.y,
@@ -673,6 +717,6 @@ fn mount_document(
       retain_host_fonts(host, r)
     }
   }
-  resize_host(host, max_x, max_y)
+  resize_page_surface(surface, max_x, max_y)
   placements.length()
 }

@@ -144,8 +144,16 @@ pub(all) struct ObjectWithPaths {
 pub(all) struct Page {
   width : Double
   height : Double
+  body : PageRect?
   layers : Array[Layer]
 }
+
+pub(all) struct PageRect {
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+} derive(Eq, @debug.Debug)
 
 pub(all) enum Paint {
   Gradient(Int32, Array[Double], Array[ColorStop])
@@ -229,6 +237,8 @@ pub(all) struct View {
   id : String
   kind : String
   title : String
+  direction : String
+  continuous_gap : Double?
   text_index : String?
   pages : Array[Page]
   tile_size : Double

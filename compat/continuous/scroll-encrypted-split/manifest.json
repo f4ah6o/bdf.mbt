@@ -1,0 +1,61 @@
+{
+ "bdf": 1,
+ "encryption": {
+  "cipher": "A256GCM",
+  "keys": [
+   {
+    "type": "password",
+    "kdf": "PBKDF2-SHA256",
+    "iter": 1000,
+    "salt": "XM1mnqY4heU8dL/Psbs6Ww==",
+    "key": "vonFFu3iD43Oxb9cHvg75v0A043R+3CLecc4vJeJxNmXGr3+GFMFfw=="
+   }
+  ],
+  "manifest": {
+   "part": "3de8a7c28f017f142289721c478dcce3",
+   "enc": "deflate-raw"
+  }
+ },
+ "parts": [
+  {
+   "h": "3de8a7c28f017f142289721c478dcce3",
+   "t": "sealed",
+   "enc": "identity",
+   "len": 449,
+   "size": 449,
+   "off": 0
+  },
+  {
+   "h": "18037ecd8704ec532679ca4a4be49e6f",
+   "t": "sealed",
+   "enc": "identity",
+   "len": 143,
+   "size": 143,
+   "off": 0
+  },
+  {
+   "h": "483c3b6a74bd80cce3e273e1a063484c",
+   "t": "sealed",
+   "enc": "identity",
+   "len": 76,
+   "size": 76,
+   "off": 0
+  },
+  {
+   "h": "2ee8ec69909b4db18d880aa11275b41a",
+   "t": "sealed",
+   "enc": "identity",
+   "len": 129,
+   "size": 129,
+   "off": 0
+  },
+  {
+   "h": "133f66ff8dab03f4c9425bb5e325f0cc",
+   "t": "sealed",
+   "enc": "identity",
+   "len": 129,
+   "size": 129,
+   "off": 0
+  }
+ ]
+}

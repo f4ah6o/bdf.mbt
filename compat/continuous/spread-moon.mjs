@@ -1,0 +1,2 @@
+import {mount_bdf_split_async} from '/_build/js/debug/build/browser/browser.js';
+try{const bytes=async path=>new Uint8Array(await(await fetch(path)).arrayBuffer()),manifest=JSON.parse(new TextDecoder().decode(await bytes('./flow-split/manifest.json')));manifest.views[0].pages[1].w=160;await mount_bdf_split_async(document.querySelector('#host'),new TextEncoder().encode(JSON.stringify(manifest)),hash=>bytes(`./flow-split/parts/${hash}`),'spread');window.bdfStatus='ready'}catch(error){window.bdfStatus='error';window.bdfError=String(error?.stack??error);console.error(error)}

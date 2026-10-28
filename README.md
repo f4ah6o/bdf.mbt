@@ -6,8 +6,8 @@ MoonBit implementation of the BDF v1 wire-format reader and the browser-facing `
 - `core`: checked BDF header, single and split documents (identity and deflate-raw), BOBJ resource tables, bounded binary reader.
 - `render`: backend-neutral, checked display-list decoder for a currently supported subset of Canvas 2D opcodes, including paths, gradient paints, and drawing effects. It also extracts ordered text runs, semantic structure, figure bounds and link rectangles, and serializes table-cell selections.
 - `convert`: the worker-client request/response lifecycle and stream command model. Converter runtime itself (TinyGo) is **not** ported.
-- `viewer`: document/view selection state and page placement in single, spread, and continuous modes.
-- `browser` (JS only): Canvas 2D adapter that draws fixed/flow pages and sheet viewports, including password- and P-256-protected documents, into a DOM host, including paths, gradients, child objects, transparency groups, masks, asynchronously loaded images and fonts, and optional selectable text layers.
+- `viewer`: document/view selection state and page placement in single, spread, and continuous modes, including RTL spreads and scroll strips.
+- `browser` (JS only): Canvas 2D adapter that draws fixed/flow pages, scroll strips, continuous body regions, and sheet viewports, including password- and P-256-protected documents, into a DOM host, including paths, gradients, child objects, transparency groups, masks, asynchronously loaded images and fonts, and optional selectable text layers.
 
 This is an **incremental port**, not a feature-equivalent replacement for the upstream npm packages. In particular, a full DOM viewer, wasm-gc cryptography, interactive sheet features and music, browser Worker transport and PDF/Office/CAD decoders are not yet implemented. Unsupported drawing opcodes fail explicitly instead of silently rendering incorrectly.
 
@@ -42,6 +42,10 @@ The `core` package exposes `open_split` with a lazy host-provided loader for spl
 
 Search normalization uses Unicode 16.0 data. An upstream JavaScript runtime using a different Unicode version can differ for characters whose mappings changed between versions.
 Tile coordinates are currently limited to signed 32-bit values.
+
+`Page` now includes `body`, and `View` includes `direction` and
+`continuous_gap`. Code constructing these public records directly must supply
+those fields; parsed documents use `None`, `"ltr"`, and `None` when absent.
 
 ## Port backlog
 

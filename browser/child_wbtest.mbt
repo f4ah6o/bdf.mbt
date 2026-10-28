@@ -8,13 +8,13 @@ extern "js" fn child_fixture_host() -> BrowserHost =
   #|    fillRect(...args) { this.calls.push(["rect",...args]); }
   #|  };
   #|  const canvas = {style:{},setAttribute(){},getContext(){return ctx;}};
-  #|  globalThis.document = {createElement() {return canvas;}};
+  #|  globalThis.document = {createElement(tag) {return tag==='div'?{style:{},dataset:{},appendChild(){}}:canvas;}};
   #|  return {ctx,style:{},replaceChildren(){},appendChild(){}};
   #|}
 
 ///|
 extern "js" fn child_fixture_result(host : BrowserHost) -> Bool =
-  #|(host) => JSON.stringify(host.ctx.calls) === JSON.stringify([["save"],["rect",1,2,3,4],["restore"],["save"],["translate",5,6],["rect",1,2,3,4],["restore"]])
+  #|(host) => JSON.stringify(host.ctx.calls) === JSON.stringify([["rect",0,0,20,20],["save"],["save"],["rect",1,2,3,4],["restore"],["save"],["translate",5,6],["rect",1,2,3,4],["restore"],["restore"]])
 
 ///|
 extern "js" fn child_restored(ctx : CanvasContext) -> Bool =

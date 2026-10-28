@@ -16,7 +16,7 @@ const pageCount = await mount_bdf_async(document.querySelector("#preview"), byte
 // mount_bdf is synchronous and supports documents without images or embedded fonts.
 ```
 
-This currently supports fixed/flow and sheet BDF documents whose BOBJ parts use
+This currently supports fixed/flow, scroll and sheet BDF documents whose BOBJ parts use
 the implemented drawing subset. It does not try to convert
 PDF/Office documents. The asynchronous entry point loads image and embedded font
 parts before drawing and releases them afterward. It supports raster images, SVG,
@@ -29,8 +29,27 @@ sheet view. `unmount_bdf` releases images, fonts, observers and pending work.
 The interactive entry points add selectable text and safe links for loaded
 tiles, retaining visited text layers while scrolling. Each tile currently has
 its own accessible table; a single combined accessibility tree and frozen
-panes are still being ported. The synchronous
-`mount_bdf` entry point supports fixed/flow pages only.
+panes are still being ported. The synchronous `mount_bdf` entry point supports
+fixed/flow pages and scroll strips without asynchronous resources.
+
+Scroll strips are stacked without gaps regardless of the requested page layout.
+For fixed and flow views, `continuous` mounts full pages without gaps, matching
+the upstream viewer. A constrained host remains a scrollable viewport while
+the page surface holds the full document extent. To render the cropped body
+rectangles and configured gap of a flow view, use the continuous-region
+renderer below.
+
+```js
+const bandsDrawn = await render_bdf_continuous_region_async(host, bytes, x, y, width, height, scale);
+// For split BDF: await render_bdf_continuous_region_split_async(host, manifest, loadPart, x, y, width, height, scale);
+// For encrypted BDF: await render_bdf_continuous_region_encrypted_async(host, bytes, credential, x, y, width, height, scale);
+// For encrypted split BDF: await render_bdf_continuous_region_encrypted_split_async(host, manifest, loadPart, credential, x, y, width, height, scale);
+```
+
+The region uses page-body coordinates, draws body and annotation layers, and
+returns the count of intersecting page bodies. Gaps and areas outside the
+bodies are transparent. The asynchronous split renderer loads only intersecting
+pages, including when the document is encrypted.
 
 To draw a single sheet region instead of a scrolling view, use the single or
 split viewport entry point. Coordinates and dimensions are document units;

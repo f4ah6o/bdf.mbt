@@ -1,0 +1,85 @@
+{
+ "bdf": 1,
+ "opset": 1,
+ "unit": "pt",
+ "meta": {
+  "generator": "bdf-go/0.1"
+ },
+ "views": [
+  {
+   "id": "scroll",
+   "kind": "scroll",
+   "title": "Scroll",
+   "pages": [
+    {
+     "w": 200,
+     "h": 80,
+     "layers": [
+      {
+       "role": "body",
+       "obj": "79e62af2b0a11a3a56b2f4016d35f5ba"
+      },
+      {
+       "role": "annotation",
+       "obj": "4c3821ff9a119f409333615c3464fa65"
+      }
+     ]
+    },
+    {
+     "w": 200,
+     "h": 100,
+     "layers": [
+      {
+       "role": "body",
+       "obj": "4430d022655310369a7b31bce3b32e2d"
+      }
+     ]
+    },
+    {
+     "w": 200,
+     "h": 120,
+     "layers": [
+      {
+       "role": "body",
+       "obj": "d8a5204ce8b5f558689e524aa13275d4"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "parts": [
+  {
+   "h": "79e62af2b0a11a3a56b2f4016d35f5ba",
+   "t": "obj",
+   "enc": "identity",
+   "len": 115,
+   "size": 115,
+   "off": 0
+  },
+  {
+   "h": "4c3821ff9a119f409333615c3464fa65",
+   "t": "obj",
+   "enc": "identity",
+   "len": 48,
+   "size": 48,
+   "off": 0
+  },
+  {
+   "h": "4430d022655310369a7b31bce3b32e2d",
+   "t": "obj",
+   "enc": "identity",
+   "len": 101,
+   "size": 101,
+   "off": 0
+  },
+  {
+   "h": "d8a5204ce8b5f558689e524aa13275d4",
+   "t": "obj",
+   "enc": "identity",
+   "len": 101,
+   "size": 101,
+   "off": 0
+  }
+ ]
+}

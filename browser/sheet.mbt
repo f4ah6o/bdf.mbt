@@ -126,7 +126,6 @@ fn draw_sheet_region(
   let limits : UseLimits = { seen: {}, reused: 0, maximum: 134217728, }
   for tile in tiles {
     let object = @core.decode_object_resources(document.part(tile.object))
-    let paths = resolve_paths(document, object.paths)
     save(ctx)
     translate(
       ctx,
@@ -134,17 +133,7 @@ fn draw_sheet_region(
       tile.y.to_double() * view.tile_size,
     )
     clip_rect(ctx, 0.0, 0.0, view.tile_size, view.tile_size)
-    paint_commands(
-      ctx,
-      @render.compile_object(object.object),
-      paths~,
-      paints=object.paints,
-      fonts=object.fonts,
-      images=object.object.images,
-      resources~,
-      document~,
-      limits~,
-    )
+    paint_root_object(ctx, document, object, Some(resources), limits)
     restore(ctx)
   }
 }

@@ -142,9 +142,11 @@ fn install_document_find(
           }
           let detail = if selected >= 0 {
             let hit = hits[selected]
-            "page " +
-            (hit.segments[0].a + 1).to_string() +
-            ": " +
+            (if view.kind == "scroll" {
+              ""
+            } else {
+              "page " + (hit.segments[0].a + 1).to_string() + ": "
+            }) +
             hit.context.replace_all(old=" ⏎ ", new=" ")
           } else {
             ""
