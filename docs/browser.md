@@ -15,7 +15,7 @@ const bytes = new Uint8Array(await (await fetch("/sample.bdf")).arrayBuffer());
 const pageCount = mount_bdf(document.querySelector("#preview"), bytes, "spread");
 ```
 
-This intentionally supports only identity, unencrypted, fixed/flow BDF documents
+This intentionally supports only unencrypted, fixed/flow BDF documents
 whose BOBJ parts use the implemented drawing subset. It does not try to convert
-PDF/Office documents, decode images, load embedded fonts, or decompress BDF parts.
-A complete port needs Worker, decompression and cryptography host services.
+PDF/Office documents, decode images, or load embedded fonts.
+A complete port needs Worker and cryptography host services.
