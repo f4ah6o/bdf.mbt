@@ -22,6 +22,8 @@ pub fn bdf_create_converter(String, String) -> BrowserConverter
 
 pub fn bdf_create_render_worker(String) -> BrowserRenderClient
 
+pub fn bdf_create_viewer(BrowserHost, BrowserViewerOptions) -> BrowserViewer
+
 pub fn bdf_find(BrowserHost, String, Int32) -> BrowserFindResult
 
 pub fn bdf_find_async(BrowserHost, String, Int32) -> @js_async.Promise[BrowserFindResult]
@@ -90,6 +92,8 @@ pub fn render_bdf_sheet_region_split_async(BrowserHost, Bytes, SplitPartLoader, 
 
 pub fn unmount_bdf(BrowserHost) -> Unit
 
+pub fn viewer_class(BrowserHost, BrowserViewerOptions) -> BrowserViewer
+
 // Errors
 pub suberror BrowserError {
   Unsupported(String)
@@ -139,6 +143,12 @@ pub type BrowserRenderClient
 
 #external
 pub type BrowserRenderWorker
+
+#external
+pub type BrowserViewer
+
+#external
+pub type BrowserViewerOptions
 
 #external
 pub type CryptoCredential

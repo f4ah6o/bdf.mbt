@@ -15,6 +15,12 @@ import { verifyRenderWorker } from '../render_worker/browser-test.mjs';
 import { verifyRangeWorker } from '../render_worker/range-test.mjs';
 import { verifySegmentWorker } from '../render_worker/segment-test.mjs';
 import { verifyWorkerResources } from '../render_worker/resource-test.mjs';
+import { verifyViewerApi } from '../continuous/viewer-api-test.mjs';
+import { verifyViewerFile } from '../continuous/viewer-file-test.mjs';
+import { verifyViewerFind } from '../continuous/viewer-find-test.mjs';
+import { verifyViewerSheet } from '../sheet/viewer-api-test.mjs';
+import { verifyViewerErrors } from '../continuous/viewer-error-test.mjs';
+import { verifyViewerMusic } from '../continuous/viewer-music-test.mjs';
 import { verifyPiano } from '../music/piano-test.mjs';
 import { verifyLazyPages } from '../continuous/lazy-test.mjs';
 import { verifySheetZoom } from '../sheet/zoom-test.mjs';
@@ -438,6 +444,25 @@ try {
     await verifyRangeWorker(browser,base);
     await verifySegmentWorker(browser,base);
     await verifyWorkerResources(browser,base);
+    await verifyViewerApi(browser,base);
+    await verifyViewerFile(browser,base);
+    await verifyViewerFind(browser,base);
+    await verifyViewerSheet(browser,base);
+    await verifyViewerErrors(browser,base);
+    await verifyViewerMusic(browser,base);
+    for (const name of ['baseline','moon']) {
+      const page=await browser.newPage();
+      await page.goto(`${continuousBase}viewer-worker-${name}.html`,{waitUntil:'networkidle'});
+      await page.waitForFunction(()=>window.bdfStatus==='ready'||window.bdfStatus==='error');
+      const state=await page.evaluate(()=>({status:window.bdfStatus,error:window.bdfError,canvases:document.querySelectorAll('canvas[data-loaded="ready"]').length}));
+      assert.equal(state.status,'ready',name+' Worker viewer: '+state.error);assert.ok(state.canvases>0,name+' Worker viewer has no rendered pages');await page.close();
+    }
+    for (const name of ['baseline','moon']) {
+      const page=await browser.newPage();await page.goto(`${continuousBase}viewer-find-${name}.html`,{waitUntil:'networkidle'});
+      await page.waitForFunction(()=>window.bdfStatus==='ready'||window.bdfStatus==='error');
+      const state=await page.evaluate(()=>({status:window.bdfStatus,error:window.bdfError,marks:document.querySelectorAll('[data-bdf-hits] div').length}));
+      assert.equal(state.status,'ready',name+' viewer find: '+state.error);assert.ok(state.marks>=3,name+' viewer find has no marks');await page.close();
+    }
   const workerBase = new URL('../render_worker/', base).href;
   for (const name of ['baseline', 'moon']) {
     const page = await browser.newPage();
@@ -1042,6 +1067,37 @@ try {
   const interactiveBase = `http://127.0.0.1:${server.address().port}/compat/interactive/`;
   const sheetBase = `http://127.0.0.1:${server.address().port}/compat/sheet/`;
   const continuousBase = `http://127.0.0.1:${server.address().port}/compat/continuous/`;
+  const viewerWorkerOutput=path.join(output,'viewer-worker');mkdirSync(viewerWorkerOutput);
+  await run(['diff','html','--url',`${continuousBase}viewer-worker-baseline.html`,'--current-url',`${continuousBase}viewer-worker-moon.html`,'--output-dir',viewerWorkerOutput,'--no-paint-tree']);
+  const viewerWorkerReport=JSON.parse(readFileSync(path.join(viewerWorkerOutput,'diff-report.json'),'utf8'));
+  assert.equal(viewerWorkerReport.results.length,3,'expected three Worker viewer viewports');
+  for(const result of viewerWorkerReport.results){
+    const before=PNG.sync.read(readFileSync(path.join(viewerWorkerOutput,`compat_continuous_viewer-worker-baseline-${result.viewport}.png`)));
+    const after=PNG.sync.read(readFileSync(path.join(viewerWorkerOutput,`compat_continuous_viewer-worker-moon-${result.viewport}.png`)));
+    assert.deepEqual([before.width,before.height],[after.width,after.height]);let changed=0;
+    for(let i=0;i<before.data.length;i+=4)if(before.data[i]!==after.data[i]||before.data[i+1]!==after.data[i+1]||before.data[i+2]!==after.data[i+2]||before.data[i+3]!==after.data[i+3])changed++;
+    assert.ok(changed/(before.width*Math.min(320,before.height))<=0.0005,result.viewport+': Worker viewer differs by '+changed+' pixels');
+  }
+  await run(['diff','agent',path.join(viewerWorkerOutput,'diff-report.json'),'--no-history']);
+  await run(['scan','scroll',`${continuousBase}viewer-worker-moon.html`,'--no-ledger']);
+  await run(['check','scroll',`${continuousBase}viewer-worker-moon.html`,'--no-ledger']);
+  await run(['check','breakpoints',`${continuousBase}viewer-worker-moon.html`,'--no-ledger']);
+  await run(['check','animation',`${continuousBase}viewer-worker-moon.html`,'--no-ledger']);
+  await run(['check','motion',`${continuousBase}viewer-worker-moon.html`,'--no-ledger']);
+  await run(['check','interactions',`${continuousBase}viewer-worker-moon.html`,'--reference',`${continuousBase}viewer-worker-baseline.html`,'--handlers','--no-ledger']);
+  const viewerFindOutput=path.join(output,'viewer-find');mkdirSync(viewerFindOutput);
+  await run(['diff','html','--url',`${continuousBase}viewer-find-baseline.html`,'--current-url',`${continuousBase}viewer-find-moon.html`,'--output-dir',viewerFindOutput,'--no-paint-tree']);
+  const viewerFindReport=JSON.parse(readFileSync(path.join(viewerFindOutput,'diff-report.json'),'utf8'));
+  assert.equal(viewerFindReport.results.length,3,'expected three viewer find viewports');
+  for(const result of viewerFindReport.results){
+    const before=PNG.sync.read(readFileSync(path.join(viewerFindOutput,`compat_continuous_viewer-find-baseline-${result.viewport}.png`)));
+    const after=PNG.sync.read(readFileSync(path.join(viewerFindOutput,`compat_continuous_viewer-find-moon-${result.viewport}.png`)));
+    assert.deepEqual([before.width,before.height],[after.width,after.height]);let changed=0;
+    for(let i=0;i<before.data.length;i+=4)if(before.data[i]!==after.data[i]||before.data[i+1]!==after.data[i+1]||before.data[i+2]!==after.data[i+2]||before.data[i+3]!==after.data[i+3])changed++;
+    assert.ok(changed/(before.width*Math.min(320,before.height))<=0.0005,result.viewport+': viewer find differs by '+changed+' pixels');
+  }
+  await run(['diff','agent',path.join(viewerFindOutput,'diff-report.json'),'--no-history']);
+  await run(['check','interactions',`${continuousBase}viewer-find-moon.html`,'--reference',`${continuousBase}viewer-find-baseline.html`,'--handlers','--no-ledger']);
   for(const [kind,name,width,height] of [['region','moon',200,200],['region','split',200,200],['region','encrypted',200,200],['region','encrypted-split',200,200],['viewer','moon',200,200],['spread','moon',376,120],['zoom','moon',376,120]]){
     const target=path.join(output,`continuous-${kind}-${name}`);mkdirSync(target);
     await run(['diff','html','--url',`${continuousBase}${kind}-baseline.html`,'--current-url',`${continuousBase}${kind}-${name}.html`,'--output-dir',target,'--no-paint-tree']);

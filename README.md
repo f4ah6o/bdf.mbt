@@ -89,6 +89,10 @@ validated by that local run. See [visual fixtures](compat/visual/README.md).
 
 Build the JavaScript target with `moon build --target js` and serve the generated `render_worker/render_worker.js` alongside `browser/browser.js`. Create a client with `bdf_create_render_worker(workerUrl)`, or wrap an existing Worker with `bdf_render_worker_client(worker)`. The client follows the upstream rendering Worker request API, including transferred buffers and main-thread SVG rasterization. Buffer, single URL and split URL sources are supported. Single URLs can use HTTP Range requests to load parts lazily, falling back to one whole-file download if the server ignores Range. Segmented sources use request-specific P-256 keys and fetch pages on demand. Worker open options control the image cache budget, the maximum image size, and the decoded-image limit for each render.
 
+### Worker-backed viewer
+
+`new Viewer(host, options)` (or `bdf_create_viewer(host, options)`) creates a browser viewer backed by the rendering Worker. It supports page and sheet display, layout and zoom controls, lightbox mode, search, and streaming conversion through a supplied converter. Pass `options.renderer` to use an existing client, or `options.workerUrl` to choose the Worker module. See [browser usage](docs/browser.md). The viewer port is still being validated against the full upstream behavior and API.
+
 
 ## License
 

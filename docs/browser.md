@@ -20,7 +20,28 @@ This currently supports fixed/flow, scroll and sheet BDF documents whose BOBJ pa
 the implemented drawing subset. It does not try to convert
 PDF/Office documents. The asynchronous entry point loads image and embedded font
 parts before drawing and retains them for the lifetime of the mounted view. It supports raster images, SVG,
-and image patterns. A complete port needs the rendering Worker and additional viewer features.
+and image patterns. A Worker-backed viewer is available as described below; additional viewer features remain in progress.
+
+## Worker-backed viewer
+
+```js
+const viewer = bdf_create_viewer(document.querySelector('#preview'), {
+  workerUrl: '/render_worker.js',
+  layout: 'single',
+});
+await viewer.open({ kind: 'single', url: '/sample.bdf', range: true });
+viewer.setLayout('spread');
+viewer.setZoom(1.5);
+await viewer.find('text');
+viewer.destroy();
+```
+
+The returned object provides `stage`, `surface`, `renderer`, document and view
+getters, and emits `documentchange`, `viewchange`, `findchange`, and conversion
+events. Supply an existing `renderer` to retain ownership of that client. A
+converter with `open`, `page`, `finish`, and `close` methods can be passed to
+`openFile` for incremental conversion. The viewer implementation is still
+being checked against the complete upstream API and edge cases.
 
 Asynchronous page mounts use an `IntersectionObserver` with a 600-pixel
 margin to load and draw nearby pages. They release a page's Canvas backing
