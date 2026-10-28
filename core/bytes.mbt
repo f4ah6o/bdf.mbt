@@ -105,7 +105,7 @@ pub fn Reader::take(self : Reader, size : Int) -> Bytes raise {
 ///|
 pub fn Reader::string(self : Reader) -> String raise {
   let size = self.varuint()
-  @utf8.decode(self.take(size)) catch {
+  @utf8.decode(self.take(size), ignore_bom=true) catch {
     _ => raise BadFormat("invalid UTF-8 string")
   }
 }
