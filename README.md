@@ -3,7 +3,7 @@
 MoonBit implementation of the BDF v1 wire-format reader and the browser-facing `@bdfkit/render`, `@bdfkit/convert`, and `@bdfkit/viewer` control layers.
 
 - Targets: `js` and `wasm-gc`.
-- `core`: checked BDF header, single and split documents (identity and deflate-raw), BOBJ resource tables, MIDI sequences, cue indexes, and a bounded binary reader.
+- `core`: checked BDF header, single and split documents (identity and deflate-raw), single-file document writing, BOBJ resource tables, MIDI sequences, cue indexes, and a bounded binary reader.
 - `render`: backend-neutral, checked display-list decoder for a currently supported subset of Canvas 2D opcodes, including paths, gradient paints, and drawing effects. It also extracts ordered text runs, semantic structure, figure bounds and link rectangles, serializes table-cell selections, and calculates music and audio cue positions.
 - `convert`: the worker-client request/response lifecycle and stream command model. The browser adapter connects these to a Worker and a separately supplied compatible Wasm runtime; the converter engines themselves are **not** ported.
 - `viewer`: document/view selection state and page placement in single, spread, and continuous modes, including RTL spreads and scroll strips.
@@ -28,8 +28,11 @@ moon build --target wasm-gc
 ## API examples
 
 ```moonbit
-let header = @core.parse_header(bdf_bytes)
-let document = @core.open_single(bdf_bytes) // unencrypted BDF
+let writer = @core.DocumentWriter::new()
+let part_hash = writer.add_part("img", image_bytes)
+let new_bdf_bytes = writer.write_single()
+let header = @core.parse_header(existing_bdf_bytes)
+let document = @core.open_single(existing_bdf_bytes) // unencrypted BDF
 let object = @core.decode_object(document.part(hash))
 let commands = @render.compile_object(object) // Canvas command list
 let client = @convert.Client::new()
@@ -41,6 +44,8 @@ let seconds = @core.tick_to_seconds(sequence, 480.0)
 let cues = @core.decode_cues(cue_bytes)
 let cursor = @render.cursor_at_tick(cues, 480.0)
 ```
+
+`DocumentWriter` accepts manifest-format JSON for metadata, views and tables, and writes an unencrypted single-file document with content-addressed, deduplicated parts. It chooses identity or raw DEFLATE storage using the upstream defaults. It does not yet generate object drawing commands or encrypted and split output.
 
 The `core` package exposes `open_split` with a lazy host-provided loader for split documents. The loader is responsible for enforcing its supplied stored-size limit while reading. `decode_text_index` reads BTXT parts, and `render.view_text_index` loads a stored index or reconstructs one for paginated views and sheets, including external tile indexes. `TextSearch` finds normalized matches and maps them to UTF-16 offsets in the original runs; `render.locate_text_hit` measures their highlight rectangles. The `browser` package exposes `mount_bdf_async` for single-file documents, `mount_bdf_split_async` for split documents with an asynchronous part loader, and `mount_bdf` for documents that need no image or embedded font loading. The `mount_bdf_interactive_*` variants add an accessible text and link layer and search for pages and sheets. Call `unmount_bdf` to release retained resources. See [browser usage](docs/browser.md).
 
@@ -96,4 +101,4 @@ Build the JavaScript target with `moon build --target js` and serve the generate
 
 ## License
 
-MIT; see [LICENSE](LICENSE). The raw DEFLATE implementation is supplied by [gaato/deflate](https://github.com/gaato/codecs.mbt), licensed under Apache-2.0; browser Promise integration uses Apache-2.0 licensed [moonbitlang/async](https://github.com/moonbitlang/async).
+MIT; see [LICENSE](LICENSE). The raw DEFLATE implementation and the adapted SHA-256 implementation are supplied by [gaato/deflate](https://github.com/gaato/codecs.mbt), licensed under [Apache-2.0](licenses/Apache-2.0.txt); browser Promise integration uses Apache-2.0 licensed [moonbitlang/async](https://github.com/moonbitlang/async).

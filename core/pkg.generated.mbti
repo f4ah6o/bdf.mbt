@@ -102,6 +102,18 @@ pub fn Document::audio(Self, View) -> AudioData? raise
 pub fn Document::part(Self, String) -> Bytes raise
 pub fn Document::play(Self, View) -> MusicData? raise
 
+pub struct DocumentWriter {
+  parts : Array[WriterPart]
+  views : Array[Json]
+  tables : Array[Json]
+  meta : Json
+}
+pub fn DocumentWriter::add_part(Self, String, Bytes) -> String raise
+pub fn DocumentWriter::add_table(Self, Json) -> Unit
+pub fn DocumentWriter::add_view(Self, Json) -> Unit
+pub fn DocumentWriter::new(meta? : Json) -> Self
+pub fn DocumentWriter::write_single(Self) -> Bytes raise
+
 pub(all) struct EncryptedManifest {
   outer : Manifest
   cipher : String
@@ -348,6 +360,8 @@ pub(all) struct View {
   gridlines : Bool
   play : Play?
 }
+
+type WriterPart
 
 // Type aliases
 
