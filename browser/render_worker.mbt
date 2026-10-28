@@ -21,6 +21,9 @@ async fn RenderWorkerState::dispatch(
     "replace" => return self.open_source(request, true)
     "unlock" => return self.unlock(request)
     "close" => {
+      if self.open is Some(old) && old.segments is Some(segments) {
+        segment_abort(segments.network)
+      }
       self.open = None
       self.locked = None
       return render_success(render_null())
@@ -32,6 +35,35 @@ async fn RenderWorkerState::dispatch(
   }
   let view = document.view(render_request_view(request)) catch {
     error => return render_error(error.to_string(), "")
+  }
+  if document.segments is Some(segments) {
+    match kind {
+      "page" | "text" | "content" =>
+        segments.ensure(document, view.id, render_request_page(request))
+      "continuous" | "continuousText" | "continuousContent" => {
+        let rect : @render.TextRect = {
+          x: render_request_rect(request, "x"),
+          y: render_request_rect(request, "y"),
+          width: render_request_rect(request, "w"),
+          height: render_request_rect(request, "h"),
+        }
+        let pages : Array[Int32] = []
+        for band in @render.continuous_bands(view, rect) {
+          pages.push(band.index)
+        }
+        segments.ensure_pages(document, view.id, pages)
+      }
+      "locate" => {
+        let pages : Array[Int32] = []
+        for i in 0..<render_hit_count(request) {
+          for j in 0..<render_segment_count(request, i) {
+            pages.push(render_segment_field(request, i, j, "a"))
+          }
+        }
+        segments.ensure_pages(document, view.id, pages)
+      }
+      _ => ()
+    }
   }
   match kind {
     "addPage" => {
@@ -87,6 +119,21 @@ async fn RenderWorkerState::dispatch(
 pub fn bdf_install_render_worker() -> Unit {
   let state : RenderWorkerState = { open: None, locked: None, }
   render_worker_transport(request => {
-    @js_async.Promise::from_async(() => state.dispatch(request))
+    @js_async.Promise::from_async(() => {
+      state.dispatch(request) catch {
+        SegmentHttp(status) =>
+          render_error(
+            "bdf: the segment request was answered with " + status.to_string(),
+            if status == 429 {
+              "rate-limited"
+            } else if status == 401 || status == 403 {
+              "not-allowed"
+            } else {
+              ""
+            },
+          )
+        error => raise error
+      }
+    })
   })
 }

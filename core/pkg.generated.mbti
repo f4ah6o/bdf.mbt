@@ -44,6 +44,8 @@ pub fn parse_header_prefix(Bytes) -> Header raise
 
 pub fn parse_manifest(String) -> Manifest raise
 
+pub fn parse_segment(String) -> Segment? raise
+
 pub fn parse_smf(Bytes) -> MidiSequence raise
 
 pub fn sealed_references(String, Manifest) -> Map[String, String] raise
@@ -281,6 +283,12 @@ pub(all) struct SearchHit {
   segments : Array[HitSegment]
   text : String
   context : String
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Segment {
+  view : String
+  from : Int32
+  to : Int32
 } derive(Eq, @debug.Debug)
 
 pub(all) struct SheetRun {

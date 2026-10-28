@@ -9,7 +9,7 @@ MoonBit implementation of the BDF v1 wire-format reader and the browser-facing `
 - `viewer`: document/view selection state and page placement in single, spread, and continuous modes, including RTL spreads and scroll strips.
 - `browser` (JS only): Canvas 2D adapter that draws fixed/flow pages, scroll strips, continuous body regions, and sheet viewports, including password- and P-256-protected documents, into a DOM host, including paths, gradients, child objects, transparency groups, masks, asynchronously loaded images and fonts, and optional selectable text layers.
 
-This is an **incremental port**, not a feature-equivalent replacement for the upstream npm packages. In particular, a full DOM viewer, wasm-gc cryptography, some interactive sheet features, segmented Worker loading and PDF/Office/CAD decoders are not yet implemented. Unsupported drawing opcodes fail explicitly instead of silently rendering incorrectly.
+This is an **incremental port**, not a feature-equivalent replacement for the upstream npm packages. In particular, a full DOM viewer, wasm-gc cryptography, some interactive sheet features and PDF/Office/CAD decoders are not yet implemented. Unsupported drawing opcodes fail explicitly instead of silently rendering incorrectly.
 
 Upstream implementation: https://github.com/shibukawa/bdf (MIT). Wire specification: https://github.com/shibukawa/bdf/blob/main/docs/spec.md .
 
@@ -87,7 +87,7 @@ validated by that local run. See [visual fixtures](compat/visual/README.md).
 
 ### Rendering Worker
 
-Build the JavaScript target with `moon build --target js` and serve the generated `render_worker/render_worker.js` alongside `browser/browser.js`. Create a client with `bdf_create_render_worker(workerUrl)`, or wrap an existing Worker with `bdf_render_worker_client(worker)`. The client follows the upstream rendering Worker request API, including transferred buffers and main-thread SVG rasterization. Buffer, single URL and split URL sources are supported. Single URLs can use HTTP Range requests to load parts lazily, falling back to one whole-file download if the server ignores Range. Segmented sources are not implemented. Worker resource-cache budgets are not yet implemented.
+Build the JavaScript target with `moon build --target js` and serve the generated `render_worker/render_worker.js` alongside `browser/browser.js`. Create a client with `bdf_create_render_worker(workerUrl)`, or wrap an existing Worker with `bdf_render_worker_client(worker)`. The client follows the upstream rendering Worker request API, including transferred buffers and main-thread SVG rasterization. Buffer, single URL and split URL sources are supported. Single URLs can use HTTP Range requests to load parts lazily, falling back to one whole-file download if the server ignores Range. Segmented sources use request-specific P-256 keys and fetch pages on demand. Worker resource-cache budgets are not yet implemented.
 
 
 ## License

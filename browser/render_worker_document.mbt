@@ -106,6 +106,7 @@ priv struct RenderDocument {
   manifest : @core.Manifest
   sources : Array[RenderDocumentSource]
   raw : Bytes
+  mut segments : RenderSegmentLoader?
 }
 
 ///|
@@ -194,6 +195,7 @@ fn new_render_single(data : Bytes) -> RenderDocument raise {
     manifest: doc.manifest,
     sources: [render_single_source(doc)],
     raw: render_manifest_bytes(data),
+    segments: None,
   }
 }
 
@@ -203,7 +205,12 @@ fn new_render_split(
   loader : SplitPartLoader,
 ) -> RenderDocument raise {
   let source = render_split_source(manifest, loader)
-  { manifest: source.manifest, sources: [source], raw: manifest, }
+  {
+    manifest: source.manifest,
+    sources: [source],
+    raw: manifest,
+    segments: None,
+  }
 }
 
 ///|
@@ -257,8 +264,19 @@ async fn RenderWorkerState::open_source(
   let source = render_request_source(request)
   let kind = render_source_kind(source)
   if !replace {
+    if self.open is Some(old) && old.segments is Some(segments) {
+      segment_abort(segments.network)
+    }
     self.open = None
     self.locked = None
+  }
+  if kind == "segments" {
+    if replace {
+      return render_error(
+        "bdf: a document of segments is opened, not replaced", "",
+      )
+    }
+    return self.open_segments(source)
   }
   if kind != "buffer" && kind != "single" && kind != "split" {
     return render_error("bdf: unsupported source " + kind, "")
