@@ -1,0 +1,17 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/compat/image"
+
+// Values
+pub fn accepts(Bytes) -> Bool
+
+pub fn convert_fixture(Bytes, String, String) -> Bytes
+
+pub fn convert_summary(Bytes, String, String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

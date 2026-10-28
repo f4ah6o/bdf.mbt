@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/image"
+
+// Values
+pub fn convert(Bytes, title? : String, name? : String) -> ImageResult raise
+
+// Errors
+pub suberror ImageError {
+  ImageFailure(String)
+}
+
+// Types and methods
+pub(all) struct ImageResult {
+  bdf : Bytes
+  format : String
+  width : Double
+  height : Double
+  summary : String
+  warnings : Array[String]
+}
+
+type Picture
+
+// Type aliases
+
+// Traits
