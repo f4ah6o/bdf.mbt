@@ -1,0 +1,7 @@
+import {
+  "f4ah6o/bdf/core",
+  "f4ah6o/bdf/render",
+  "f4ah6o/bdf/viewer",
+}
+supported_targets = "js"
+pkgtype(kind: "foreign_library")
