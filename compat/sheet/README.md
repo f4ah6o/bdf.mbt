@@ -10,6 +10,8 @@ Interactive mounts also exercise text selection across visible tiles,
 clipboard output, pointer targeting and retention while scrolling, in single,
 split and password-encrypted files. Sheet search is tested against upstream
 search and display; rectangular cell selection is not implemented yet.
+The search comparison puts both inputs on their own compositing layers to avoid
+Chromium blending their glyphs with the colored canvas in Linux screenshots.
 
 From an upstream checkout, regenerate it with:
 
