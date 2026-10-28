@@ -8,6 +8,7 @@ import { stripVTControlCharacters } from 'node:util';
 import { chromium } from 'playwright';
 import { PNG } from 'pngjs';
 import { verifyPageControls } from '../continuous/controls-test.mjs';
+import { verifyLazyPages } from '../continuous/lazy-test.mjs';
 import { verifySheetZoom } from '../sheet/zoom-test.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -420,6 +421,7 @@ try {
     assert.equal(resized.after.hit-resized.before.hit,-100,'search highlights follow the centered page');assert.equal(resized.before.scrollTop,resized.after.scrollTop,'resizing does not scroll to a match');assert.equal(resized.events,2,'resizing does not emit a search event');await resizing.close();
     assert.equal(resized.attachedLeft,150,'a document mounted while detached centers when attached');assert.equal(resized.disposed,true,'the layout observer is disposed when its host is removed');
     await verifyPageControls(browser,continuousBase,interactiveBase,base);
+    await verifyLazyPages(browser,continuousBase);
     const sheetBase=`http://127.0.0.1:${server.address().port}/compat/sheet/`;
     const cellFixtures={};
     for(const name of ['cells-baseline','cells-moon']){

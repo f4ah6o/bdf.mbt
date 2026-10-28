@@ -16,6 +16,9 @@ fixtures at three viewport widths and scans the scroll container.
 `svg.bdf` exercises a viewBox-only SVG drawn as a full image, a cropped
 source rectangle and a transformed repeating pattern. The controls test
 compares all three against upstream across zooms and device pixel ratios.
+The lazy-page test covers 300 pages, selective split-part loading, eviction,
+search into an unrendered page, zoom, and cancellation or replacement while
+parts are loading.
 
 From an upstream checkout, regenerate with absolute paths:
 

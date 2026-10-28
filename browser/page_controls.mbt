@@ -53,6 +53,7 @@ fn update_page_layout(
   for i, p in next {
     placements[i] = p
     move_page_children(surface, p.index, p.x, p.y)
+    resize_page_canvas(surface, p.index, p.width, p.height)
     scale_page_text(surface, p.index, viewer.zoom)
     if p.x + p.width > right {
       right = p.x + p.width

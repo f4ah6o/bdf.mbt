@@ -167,7 +167,7 @@ extern "js" fn observe_page_width(
   #|  const doc=host.ownerDocument,win=doc?.defaultView;
   #|  const key=Symbol.for('f4ah6o.bdf.pageLayout');let width=initial,removed=false,observer,mutation,released=false;
   #|  const releaseOnce=()=>{if(!released){released=true;release()}};
-  #|  const state={zoom,layout,start(){if(removed||observer||!win?.ResizeObserver)return;observer=new win.ResizeObserver(()=>{if(removed)return;const next=host.clientWidth||0;if(next!==width){width=next;update(next)}});observer.observe(host)},dispose(){if(removed)return;removed=true;observer?.disconnect();mutation?.disconnect();releaseOnce()}};
+  #|  const state={zoom,layout,start(){if(removed)return;if(!observer&&win?.ResizeObserver){observer=new win.ResizeObserver(()=>{if(removed)return;const next=host.clientWidth||0;if(next!==width){width=next;update(next)}});observer.observe(host)}state.lazy?.start()},dispose(){if(removed)return;removed=true;observer?.disconnect();mutation?.disconnect();if(state.lazy)state.lazy.dispose(releaseOnce);else releaseOnce()}};
   #|  host[key]=state;
   #|  if(win?.MutationObserver){const watch=(weak,k,owner,connected,dispose)=>{const ob=new win.MutationObserver(()=>{const h=weak.deref();if(!h){ob.disconnect();dispose();return}if(h.isConnected){connected=true;h[k]?.start()}else if(connected){h[k]?.dispose();delete h[k]}});ob.observe(owner,{childList:true,subtree:true});return ob};const weak=typeof WeakRef==='function'?new WeakRef(host):{deref:()=>host};mutation=watch(weak,key,doc,host.isConnected,releaseOnce)}
   #|  if(host.isConnected||!mutation)state.start();
@@ -704,6 +704,7 @@ fn mount_document(
   layout : String,
   resources? : BrowserResources,
   interactive~ : Bool = false,
+  page_loader? : (Int32) -> @js_async.Promise[Unit],
 ) -> Int32 raise {
   if doc.manifest.views.length() == 0 {
     raise BadFormat("document has no view")
@@ -712,7 +713,7 @@ fn mount_document(
   if view.kind != "fixed" && view.kind != "flow" && view.kind != "scroll" {
     raise Unsupported("browser supports fixed/flow/scroll pages only")
   }
-  if view.pages.length() > 256 {
+  if page_loader is None && view.pages.length() > 256 {
     raise Unsupported("more than 256 pages")
   }
   let viewer = @viewer.Viewer::new()
@@ -722,7 +723,9 @@ fn mount_document(
     viewer.set_layout(@viewer.Continuous)
   }
   for p in viewer.placements(view) {
-    validate_page_bitmap(host, p.width, p.height)
+    if page_loader is None || p.index == 0 {
+      validate_page_bitmap(host, p.width, p.height)
+    }
   }
   clear_host(host)
   reset_host_size(host)
@@ -734,23 +737,23 @@ fn mount_document(
   let mut max_x = 0.0
   let mut max_y = 0.0
   for p in placements {
-    let ctx = make_page_canvas(
-      surface,
-      p.x,
-      p.y,
-      p.width,
-      p.height,
-      viewer.zoom,
-    )
+    let ctx = if page_loader is Some(_) {
+      make_page_placeholder(surface, p.x, p.y, p.width, p.height)
+      None
+    } else {
+      Some(make_page_canvas(surface, p.x, p.y, p.width, p.height, viewer.zoom))
+    }
     tag_page_child(surface, p.index)
-    set_color(ctx, -1, false)
-    fill_rect(
-      ctx,
-      0.0,
-      0.0,
-      view.pages[p.index].width,
-      view.pages[p.index].height,
-    )
+    if ctx is Some(c) {
+      set_color(c, -1, false)
+      fill_rect(
+        c,
+        0.0,
+        0.0,
+        view.pages[p.index].width,
+        view.pages[p.index].height,
+      )
+    }
     if p.x + p.width > max_x {
       max_x = p.x + p.width
     }
@@ -763,8 +766,8 @@ fn mount_document(
     let mut run_base = 0
     let page_runs : Array[Array[@render.TextRun]] = []
     for layer_index, layer in view.pages[p.index].layers {
-      let object = @core.decode_object_resources(doc.part(layer.object))
       if data is Some(text_data) {
+        let object = @core.decode_object_resources(doc.part(layer.object))
         let content = @render.extract_text(object, hash => {
           Some(@core.decode_object_resources(doc.part(hash)))
         })
@@ -786,7 +789,10 @@ fn mount_document(
         node_base += content.nodes.length()
         run_base += content.runs.length()
       }
-      paint_root_object(ctx, doc, object, resources, limits)
+      if ctx is Some(c) {
+        let object = @core.decode_object_resources(doc.part(layer.object))
+        paint_root_object(c, doc, object, resources, limits)
+      }
     }
     if data is Some(text_data) {
       search_runs.push(page_runs)
@@ -822,10 +828,24 @@ fn mount_document(
     viewport_width,
     width => update_page_layout(host, surface, view, viewer, placements, width),
     zoom => {
-      redraw_page_zoom(
-        host, surface, doc, view, viewer, placements, resources, zoom,
-      ) catch {
-        error => throw_page_control_error(error.to_string())
+      if page_loader is Some(_) {
+        validate_lazy_zoom(host, zoom)
+        viewer.zoom = zoom
+        update_page_layout(
+          host,
+          surface,
+          view,
+          viewer,
+          placements,
+          page_viewport_width(host),
+        )
+        invalidate_lazy_pages(host, zoom)
+      } else {
+        redraw_page_zoom(
+          host, surface, doc, view, viewer, placements, resources, zoom,
+        ) catch {
+          error => throw_page_control_error(error.to_string())
+        }
       }
     },
     layout => {
@@ -849,5 +869,26 @@ fn mount_document(
     },
     () => if resources is Some(r) { dispose_resources(r) },
   )
+  if page_loader is Some(load) {
+    ignore(
+      start_lazy_pages(host, surface, (index, ctx) => {
+        @js_async.Promise::from_async(() => {
+          load(index).wait()
+          let result = invoke_render(() => {
+            try {
+              paint_lazy_page(ctx, doc, view, index, resources)
+              Ok(0)
+            } catch {
+              error => Err(error)
+            }
+          }).wait()
+          match result {
+            Ok(_) => ()
+            Err(error) => raise error
+          }
+        })
+      }),
+    )
+  }
   placements.length()
 }

@@ -22,6 +22,14 @@ PDF/Office documents. The asynchronous entry point loads image and embedded font
 parts before drawing and retains them for the lifetime of the mounted view. It supports raster images, SVG,
 and image patterns. A complete port needs Worker transport and additional viewer features.
 
+Asynchronous page mounts use an `IntersectionObserver` with a 600-pixel
+margin to load and draw nearby pages. They release a page's Canvas backing
+store when it leaves that region and redraw it when it returns. Split
+documents fetch image, path and other drawing resources on demand. Interactive
+mounts currently preload text objects and fonts for synchronous search and
+selection. Without `IntersectionObserver`, mounts fall back to eager drawing
+and a 256-page limit; the synchronous `mount_bdf` also uses eager drawing.
+
 For a sheet, the asynchronous mount uses the host's width and height as its
 viewport, fetching visible tiles as it scrolls. Give the host dimensions in CSS;
 when they are absent, it defaults to 640 by 400 pixels. It returns `1` for the
@@ -54,8 +62,9 @@ the visible tiles asynchronously and returns to its origin on zoom or layout
 changes, as the upstream viewer does. Raster images and
 fonts remain loaded until the host is unmounted, remounted, or removed from
 the document. Page bitmaps are limited to 8192 pixels per side and 16,777,216
-pixels in total; a zoom that exceeds these limits fails without changing the
-current view. Layout choice and page navigation apply to page views; a sheet
+pixels in total; a zoom that exceeds these limits for a visible page fails
+without changing the current view. Newly visible oversized pages report an
+`error` event. Page zoom rendering is asynchronous. Layout choice and page navigation apply to page views; a sheet
 keeps its layout. Music views are not yet supported.
 
 ```js

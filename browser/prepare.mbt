@@ -170,26 +170,88 @@ async fn mount_single(
   if view.kind != "fixed" && view.kind != "flow" && view.kind != "scroll" {
     raise Unsupported("browser supports fixed/flow/scroll pages only")
   }
-  if view.pages.length() > 256 {
+  let use_lazy = supports_lazy_pages(host)
+  if !use_lazy && view.pages.length() > 256 {
     raise Unsupported("more than 256 pages")
   }
+  let request = begin_sheet_request(host)
+  defer end_sheet_request(host, request)
   let resources = new_resources()
   let mut handed_off = false
   defer (if !handed_off { dispose_resources(resources) })
   let seen : Map[String, Bool] = Map([])
-  for page in view.pages {
-    for layer in page.layers {
-      prepare_object(doc, resources, layer.object, seen, 0)
+  if use_lazy {
+    if interactive {
+      for page in view.pages {
+        for layer in page.layers {
+          prepare_search_object(doc, resources, layer.object, seen, 0)
+        }
+      }
+    }
+    if view.pages.get(0) is Some(page) {
+      let first : Map[String, Bool] = Map([])
+      for layer in page.layers {
+        prepare_object(doc, resources, layer.object, first, 0)
+      }
+    }
+  } else {
+    for page in view.pages {
+      for layer in page.layers {
+        prepare_object(doc, resources, layer.object, seen, 0)
+      }
     }
   }
+  if !current_sheet_request(host, request) {
+    raise BadFormat("page mount superseded")
+  }
+  let loader = if use_lazy {
+    Some(index => {
+      @js_async.Promise::from_async(() => {
+        let prepared : Map[String, Bool] = Map([])
+        for layer in view.pages[index].layers {
+          prepare_object(doc, resources, layer.object, prepared, 0)
+        }
+      })
+    })
+  } else {
+    None
+  }
   let result = invoke_render(() => {
-    Ok(mount_document(host, doc, layout, resources~, interactive~)) catch {
-      error => Err(error)
+    if !current_sheet_request(host, request) {
+      Err(BadFormat("page mount superseded"))
+    } else {
+      Ok(
+        match loader {
+          Some(load) =>
+            mount_document(
+              host,
+              doc,
+              layout,
+              resources~,
+              interactive~,
+              page_loader=load,
+            )
+          None => mount_document(host, doc, layout, resources~, interactive~)
+        },
+      ) catch {
+        error => Err(error)
+      }
     }
   }).wait()
   match result {
     Ok(pages) => {
       handed_off = true
+      if use_lazy {
+        let record = page_record(host)
+        ignore(wait_lazy_pages(host).wait()) catch {
+          error => {
+            if current_page_record(host, record) {
+              clear_host(host)
+            }
+            raise error
+          }
+        }
+      }
       pages
     }
     Err(error) => raise error
