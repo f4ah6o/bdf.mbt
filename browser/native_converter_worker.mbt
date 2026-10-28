@@ -11,7 +11,7 @@ extern "js" fn native_converter_option(
 
 ///|
 extern "js" fn native_converter_formats(request : ConverterRequest) -> Unit =
-  #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'image',description:'Image stored as it is: BMP, ICO or JPEG without descriptive metadata',extensions:['.bmp','.ico','.jpg','.jpeg','.jpe','.jfif']}]})
+  #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'image',description:'Image stored as it is: BMP, ICO or JPEG',extensions:['.bmp','.ico','.jpg','.jpeg','.jpe','.jfif']}]})
 
 ///|
 extern "js" fn native_converter_result(
@@ -110,7 +110,7 @@ extern "js" fn install_native_converter_listener(
   #|(dispatch) => {self.onmessage=event=>{const request=event.data;try{dispatch(request)}catch(e){const id=request?.type==='init'?0:Number(request?.id);self.postMessage({id,ok:false,error:e?.message??String(e),code:e?.code})}}}
 
 ///|
-/// Install the MoonBit converter Worker. Currently supports BMP, ICO and JPEG without descriptive metadata.
+/// Install the MoonBit converter Worker. Currently supports BMP, ICO and JPEG.
 #export_name("bdf_install_native_converter_worker")
 pub fn bdf_install_native_converter_worker() -> Unit {
   let state : NativeConverterState = { ready: false, }

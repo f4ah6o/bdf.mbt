@@ -11,4 +11,5 @@ import {
   "moonbitlang/async@0.22.5",
   "moonbit-community/normalization@0.5.2",
   "moonbit-community/ucd@0.5.2",
+  "Milky2018/xml@0.6.1",
 }

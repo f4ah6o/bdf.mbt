@@ -16,7 +16,7 @@ test "JPEG rejects metadata that has not yet been ported" {
     ignore(convert(xmp))
     false
   } catch {
-    ImageFailure(message) => message.contains("XMP metadata")
+    ImageFailure(message) => message.contains("XMP")
     _ => false
   }
   assert_true(rejected)

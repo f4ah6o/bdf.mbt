@@ -3,6 +3,7 @@ struct Picture {
   format : String
   width : Int64
   height : Int64
+  dc : Map[String, Array[String]]
 }
 
 ///|
@@ -71,7 +72,7 @@ fn read_picture(data : Bytes) -> Picture raise {
     if width <= 0 || height <= 0 {
       raise ImageFailure("image: BMP: the BMP image has no size")
     }
-    return { format: "bmp", width, height, }
+    return { format: "bmp", width, height, dc: Map([]), }
   }
   if ico_header(data) {
     let count = u16(data, 4)
@@ -96,7 +97,7 @@ fn read_picture(data : Bytes) -> Picture raise {
         best_bits = bits
       }
     }
-    return { format: "ico", width, height, }
+    return { format: "ico", width, height, dc: Map([]), }
   }
   raise ImageFailure("image: input is not a supported BMP, ICO or JPEG image")
 }

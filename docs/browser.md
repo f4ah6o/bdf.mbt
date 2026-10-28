@@ -162,9 +162,9 @@ converter.terminate();
 ```
 
 `open()` returns the complete document with `pages: 0` for these formats.
-The native Worker currently supports BMP, ICO and JPEG without descriptive
-metadata, and rejects the `fonts` option. JPEG images carrying EXIF, XMP or
-IPTC descriptive metadata are rejected until that metadata is ported. `bdf_converter_client`
+The native Worker currently supports BMP, ICO and JPEG, and rejects the `fonts`
+option. JPEG EXIF, IPTC and well-formed UTF-8 or BOM-marked UTF-16 XMP metadata are
+supported. Malformed XMP and other character encodings are not yet supported. `bdf_converter_client`
 can also wrap its Worker; pass an empty Wasm URL. Other image formats and the
 other conversion engines remain to be ported.
 

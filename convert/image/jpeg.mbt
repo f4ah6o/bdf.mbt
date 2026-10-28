@@ -4,23 +4,15 @@ fn jpeg_u16(data : Bytes, offset : Int32) -> Int32 {
 }
 
 ///|
-// Do not silently discard metadata while its full interpretation is being
-// ported. Orientation-only EXIF can already be handled exactly.
-fn exif_has_unported_metadata(fields : ExifFields) -> Bool {
-  for
-    tag in [
-      0x010e, 0x0132, 0x013b, 0x8298, 0x9c9b, 0x9c9c, 0x9c9d, 0x9c9e, 0x9c9f,
-    ] {
-    if fields.primary.get(tag) is Some(_) {
-      return true
+fn metadata_merge(
+  target : Map[String, Array[String]],
+  source : Map[String, Array[String]],
+) -> Unit {
+  for key, values in source {
+    if target.get(key) is None {
+      target[key] = values
     }
   }
-  for tag in [0x9003, 0x9004, 0x9010, 0x9011, 0x9012, 0x9286] {
-    if fields.exif.get(tag) is Some(_) {
-      return true
-    }
-  }
-  false
 }
 
 ///|
@@ -29,6 +21,9 @@ fn read_jpeg(data : Bytes) -> Picture raise {
   let mut height = 0L
   let mut orientation = 0
   let mut offset = 2
+  let packets : Array[Bytes] = []
+  let exif_blocks : Array[ExifFields] = []
+  let mut iptc : Bytes? = None
   while offset <= data.length() - 4 {
     if data[offset] != 0xff {
       break
@@ -58,9 +53,7 @@ fn read_jpeg(data : Bytes) -> Picture raise {
       segment[:6] == b"Exif\x00\x00"[:] {
       match exif_fields(segment) {
         Some(fields) => {
-          if exif_has_unported_metadata(fields) {
-            raise ImageFailure("image: JPEG EXIF metadata is not yet supported")
-          }
+          exif_blocks.push(fields)
           if orientation == 0 {
             orientation = fields.orientation
           }
@@ -70,11 +63,12 @@ fn read_jpeg(data : Bytes) -> Picture raise {
     } else if marker == 0xe1 &&
       segment.length() >= 29 &&
       segment[:29] == b"http://ns.adobe.com/xap/1.0/\x00"[:] {
-      raise ImageFailure("image: JPEG XMP metadata is not yet supported")
+      packets.push(segment[29:].to_bytes())
     } else if marker == 0xed &&
       segment.length() >= 14 &&
-      segment[:14] == b"Photoshop 3.0\x00"[:] {
-      raise ImageFailure("image: JPEG IPTC metadata is not yet supported")
+      segment[:14] == b"Photoshop 3.0\x00"[:] &&
+      iptc is None {
+      iptc = photoshop_iptc(segment[14:].to_bytes())
     } else if marker >= 0xc0 &&
       marker <= 0xcf &&
       marker != 0xc4 &&
@@ -89,9 +83,38 @@ fn read_jpeg(data : Bytes) -> Picture raise {
   if width == 0 || height == 0 {
     raise ImageFailure("image: JPEG: the JPEG image has no frame header")
   }
+  let dc : Map[String, Array[String]] = Map([])
+  for packet in packets {
+    let utf16 = packet.length() >= 2 &&
+      (
+        (packet[0] == 0xff && packet[1] == 0xfe) ||
+        (packet[0] == 0xfe && packet[1] == 0xff)
+      )
+    let text = if utf16 {
+      "\u{feff}" +
+      metadata_utf16_raw(packet[2:].to_bytes(), packet[0] == 0xff, false)
+    } else {
+      @utf8.decode(packet, ignore_bom=true) catch {
+        _ => raise ImageFailure("image: JPEG XMP encoding is not yet supported")
+      }
+    }
+    let (root, complete) = xmp_tree_checked(text, utf16~)
+    if !complete {
+      raise ImageFailure("image: malformed JPEG XMP is not yet supported")
+    }
+    if root is Some(node) {
+      metadata_merge(dc, xmp_metadata(node))
+    }
+  }
+  for fields in exif_blocks {
+    metadata_merge(dc, exif_metadata(fields))
+  }
+  if iptc is Some(block) {
+    metadata_merge(dc, iptc_metadata(block))
+  }
   if orientation >= 5 {
-    { format: "jpeg", width: height, height: width, }
+    { format: "jpeg", width: height, height: width, dc, }
   } else {
-    { format: "jpeg", width, height, }
+    { format: "jpeg", width, height, dc, }
   }
 }

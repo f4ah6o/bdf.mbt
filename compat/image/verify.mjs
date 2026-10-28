@@ -13,7 +13,7 @@ for (const expected of fixtures) {
   }
   const doc = await BdfDocument.open(new BufferSource(convert_fixture(input, expected.name, expected.title)));
   assert.equal(doc.manifest.meta.source, expected.format);
-  assert.equal(doc.manifest.meta.dc?.title ?? "", expected.title);
+  assert.deepEqual(doc.manifest.meta.dc ?? {}, expected.dc);
   assert.equal(doc.manifest.views[0].pages[0].w, expected.width * 0.75);
   assert.equal(doc.manifest.views[0].pages[0].h, expected.height * 0.75);
   assert.equal(doc.manifest.parts[0].h, expected.imageHash);

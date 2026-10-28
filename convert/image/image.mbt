@@ -15,8 +15,8 @@ pub(all) struct ImageResult {
 }
 
 ///|
-/// Convert a BMP, ICO or JPEG to a single-page BDF. JPEG descriptive metadata
-/// and other image formats are not yet implemented. The optional title overrides the document title, while the
+/// Convert a BMP, ICO or JPEG to a single-page BDF. JPEG supports EXIF, IPTC
+/// and well-formed UTF-8 or BOM-marked UTF-16 XMP metadata; other image formats are not yet implemented. The optional title overrides the document title, while the
 /// file name supplies alternative text when there is no title.
 pub fn convert(
   data : Bytes,
@@ -27,19 +27,41 @@ pub fn convert(
     raise ImageFailure("image: the file is larger than 1073741824 bytes")
   }
   let picture = read_picture(data)
-  let dc : Map[String, Json] = {}
+  let fields = picture.dc
   if title != "" {
-    dc["title"] = Json::string(title)
+    fields["title"] = [title]
+  }
+  let dc : Map[String, Json] = Map([])
+  for key, values in fields {
+    if values.length() == 1 {
+      dc[key] = Json::string(values[0])
+    } else if values.length() > 1 {
+      dc[key] = Json::array(values.map(value => Json::string(value)))
+    }
   }
   let meta : Map[String, Json] = { "source": Json::string(picture.format) }
-  if title != "" {
+  if dc.length() > 0 {
     meta["dc"] = Json::object(dc)
   }
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
   let image_hash = writer.add_part("img", data)
   let width = Float::from_double(picture.width.to_double() * 0.75)
   let height = Float::from_double(picture.height.to_double() * 0.75)
-  let alt = if title != "" { title } else { name }
+  let document_title = match fields.get("title") {
+    Some(values) if values.length() > 0 => values[0]
+    _ => ""
+  }
+  let description = match fields.get("description") {
+    Some(values) if values.length() > 0 => values[0]
+    _ => ""
+  }
+  let alt = if description != "" {
+    description
+  } else if document_title != "" {
+    document_title
+  } else {
+    name
+  }
   let object_hash = writer.add_part(
     "obj",
     image_object(image_hash, width, height, alt),
@@ -58,8 +80,8 @@ pub fn convert(
     "kind": Json::string("fixed"),
     "pages": Json::array([page]),
   }
-  if title != "" {
-    view["title"] = Json::string(title)
+  if document_title != "" {
+    view["title"] = Json::string(document_title)
   }
   writer.add_view(Json::object(view))
   let format_name = match picture.format {

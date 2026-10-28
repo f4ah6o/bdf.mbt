@@ -2,6 +2,7 @@ import {
   "f4ah6o/bdf/core",
   "moonbitlang/core/buffer",
   "moonbitlang/core/encoding/utf8",
+  "Milky2018/xml",
 }
 
 supported_targets = "+js+wasm-gc"
