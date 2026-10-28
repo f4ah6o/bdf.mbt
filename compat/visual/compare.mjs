@@ -323,14 +323,61 @@ try {
       scrollPages[name]=await page.evaluate(()=>[...document.querySelectorAll('#host canvas')].map(c=>{const r=c.getBoundingClientRect();return{x:r.x,y:r.y,w:r.width,h:r.height}}));await page.close();
     }
     assert.deepEqual(scrollPages.moon,scrollPages.baseline,'scroll strips use the same page positions as the upstream viewer');
-    const spreadPages={};
+    for(const dpr of [1.5,2]){
+      const pages={};
+      for(const name of ['baseline','moon']){
+        const page=await browser.newPage({viewport:{width:1280,height:720},deviceScaleFactor:dpr});
+        await page.goto(`${continuousBase}viewer-${name}.html`,{waitUntil:'networkidle'});
+        await page.waitForFunction(()=>window.bdfStatus==='ready'||window.bdfStatus==='error');
+        assert.equal(await page.evaluate(()=>window.bdfStatus),'ready',`HiDPI ${name}: ${await page.evaluate(()=>window.bdfError)}`);
+        pages[name]=await page.evaluate(()=>[...document.querySelectorAll('#host canvas')].map(c=>{const r=c.getBoundingClientRect();return{width:c.width,height:c.height,cssWidth:r.width,cssHeight:r.height,image:c.toDataURL()}}));
+        if(name==='moon'){
+          const mounted=await page.evaluate(async()=>{
+            const bdf=await import('/_build/js/debug/build/browser/browser.js'),read=async file=>new Uint8Array(await(await fetch(file)).arrayBuffer());
+            const single=await read('scroll.bdf'),manifest=await read('scroll-split/manifest.json'),encrypted=await read('scroll-encrypted.bdf'),locked=await read('scroll-encrypted-split/manifest.json'),results=[];
+            for(const mount of [
+              h=>bdf.mount_bdf_interactive_async(h,single,'single'),
+              h=>bdf.mount_bdf_interactive_split_async(h,manifest,hash=>read(`scroll-split/parts/${hash}`),'single'),
+              h=>bdf.mount_bdf_interactive_encrypted_async(h,encrypted,'pass','single'),
+              h=>bdf.mount_bdf_interactive_encrypted_split_async(h,locked,hash=>read(`scroll-encrypted-split/parts/${hash}`),'pass','single'),
+            ]){
+              const host=document.createElement('div');host.style.width='200px';document.body.append(host);await mount(host);
+              const canvas=host.querySelector('canvas'),layer=host.querySelector('[data-bdf-layer]'),find=await bdf.bdf_find_async(host,'Strip',0);
+              results.push({bitmap:[canvas.width,canvas.height],canvas:[canvas.offsetWidth,canvas.offsetHeight],layer:[layer.offsetWidth,layer.offsetHeight],hits:find.total});
+              bdf.unmount_bdf(host);host.remove();
+            }
+            const host=document.createElement('div');document.body.append(host);await bdf.render_bdf_continuous_region_async(host,single,0,0,100,50,1);
+            const canvas=host.querySelector('canvas'),region=[canvas.width,canvas.height];bdf.unmount_bdf(host);host.remove();
+            const oversized=JSON.parse(new TextDecoder().decode(manifest));oversized.views[0].pages[0].w=6000;
+            const original=document.createElement('div');original.textContent='existing document';document.body.append(original);let preserved=false;
+            try{await bdf.mount_bdf_split_async(original,new TextEncoder().encode(JSON.stringify(oversized)),hash=>read(`scroll-split/parts/${hash}`),'single')}catch{preserved=original.textContent==='existing document'}
+            original.remove();return {results,region,preserved};
+          });
+          for(const result of mounted.results){assert.deepEqual(result.bitmap,[200*dpr,80*dpr],`HiDPI ${dpr}: interactive backing store`);assert.deepEqual(result.canvas,result.layer,`HiDPI ${dpr}: text layer uses CSS pixels`);assert.equal(result.hits,3,`HiDPI ${dpr}: interactive search`)}
+          assert.deepEqual(mounted.region,[100,50],`HiDPI ${dpr}: explicit region scale remains independent of screen density`);
+          assert.equal(mounted.preserved,true,`HiDPI ${dpr}: rejected backing store leaves the existing host intact`);
+        }
+        await page.close();
+      }
+      for(let i=0;i<pages.baseline.length;i++){
+        const reference=pages.baseline[i],actual=pages.moon[i];
+        assert.deepEqual([actual.width,actual.height,actual.cssWidth,actual.cssHeight],[reference.width,reference.height,reference.cssWidth,reference.cssHeight],`HiDPI ${dpr}: strip ${i} geometry`);
+        const expected=PNG.sync.read(Buffer.from(reference.image.split(',')[1],'base64')),result=PNG.sync.read(Buffer.from(actual.image.split(',')[1],'base64'));
+        let changed=0;for(let j=0;j<expected.data.length;j+=4)if(expected.data[j]!==result.data[j]||expected.data[j+1]!==result.data[j+1]||expected.data[j+2]!==result.data[j+2]||expected.data[j+3]!==result.data[j+3])changed++;
+        assert.ok(changed/(expected.width*expected.height)<=0.0005,`HiDPI ${dpr}: strip ${i} differs in ${changed} pixels`);
+      }
+    }
+    const spreadPages={},responsiveSpread={};
     for(const name of ['baseline','moon']){
       const page=await browser.newPage({viewport:{width:1280,height:720}}),errors=[];page.on('pageerror',error=>errors.push(String(error)));
       await page.goto(`${continuousBase}spread-${name}.html`,{waitUntil:'networkidle'});await page.waitForFunction(()=>window.bdfStatus==='ready'||window.bdfStatus==='error');
       assert.equal(await page.evaluate(()=>window.bdfStatus),'ready',`${name}: ${await page.evaluate(()=>window.bdfError)}`);assert.deepEqual(errors,[],`${name}: RTL spread fixture errors`);
-      spreadPages[name]=await page.evaluate(()=>[...document.querySelectorAll('#host canvas')].slice(0,2).map(c=>{const r=c.getBoundingClientRect();return{x:r.x,y:r.y,w:r.width,h:r.height}}));await page.close();
+      spreadPages[name]=await page.evaluate(()=>[...document.querySelectorAll('#host canvas')].slice(0,2).map(c=>{const r=c.getBoundingClientRect();return{x:r.x,y:r.y,w:r.width,h:r.height}}));
+      responsiveSpread[name]=await page.evaluate(async()=>{const host=document.querySelector('#host'),result=[];for(const width of [600,300,376,220]){host.style.width=width+'px';await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const origin=host.getBoundingClientRect();result.push([...host.querySelectorAll('canvas')].map(c=>{const r=c.getBoundingClientRect();return [r.x-origin.x,r.y-origin.y,r.width,r.height]}))}return result});
+      await page.close();
     }
     assert.deepEqual(spreadPages.moon,spreadPages.baseline,'RTL spread positions match the upstream viewer');
+    assert.deepEqual(responsiveSpread.moon,responsiveSpread.baseline,'all RTL spread rows follow upstream when the viewport is resized');
     const scrollPage=await browser.newPage({viewport:{width:1280,height:720}});await scrollPage.goto(`${continuousBase}viewer-moon.html`,{waitUntil:'networkidle'});
     const scrollModes=await scrollPage.evaluate(async()=>{
       const bdf=await import('/_build/js/debug/build/browser/browser.js'),read=async file=>new Uint8Array(await(await fetch(file)).arrayBuffer());
@@ -353,6 +400,23 @@ try {
     for(const result of scrollModes.results){assert.equal(result.count,3,`${result.kind}/${result.layout}: strip count`);assert.deepEqual(result.positions,[0,80,180],`${result.kind}/${result.layout}: strips have no gaps`);assert.equal(result.total,3,`${result.kind}/${result.layout}: strips are searchable`);assert.ok(!result.detail.startsWith('page '),`${result.kind}/${result.layout}: scroll search has no page label`);assert.ok(result.scrollable&&result.revealed,`${result.kind}/${result.layout}: constrained host scrolls to the last strip`)}
     assert.deepEqual([scrollModes.count,scrollModes.positions],[3,[0,80,180]],'synchronous scroll mount');
     assert.deepEqual(scrollModes.background,[255,255,255,255],'empty scroll strips receive the upstream white page background');await scrollPage.close();
+    const resizing=await browser.newPage({viewport:{width:1280,height:720}});await resizing.goto(`${continuousBase}viewer-moon.html`,{waitUntil:'networkidle'});
+    const resized=await resizing.evaluate(async()=>{
+      const bdf=await import('/_build/js/debug/build/browser/browser.js'),bytes=new Uint8Array(await(await fetch('./scroll.bdf')).arrayBuffer()),host=document.createElement('div');
+      host.style.cssText='width:500px;height:200px;overflow:auto';document.body.append(host);await bdf.mount_bdf_interactive_async(host,bytes,'single');
+      let events=0;host.addEventListener('findchange',()=>events++);const found=await bdf.bdf_find_async(host,'Strip',0);
+      const snapshot=()=>({canvas:parseFloat(host.querySelector('canvas').style.left),text:parseFloat(host.querySelector('[data-bdf-layer]').style.left),hit:parseFloat(host.querySelector('[data-bdf-hit]').style.left),scrollTop:host.scrollTop});
+      const before=snapshot();host.style.width='300px';await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const after=snapshot(),again=await bdf.bdf_find_async(host,'Strip',0);
+      bdf.unmount_bdf(host);host.remove();
+      const detached=document.createElement('div');detached.style.cssText='width:500px;height:200px';await bdf.mount_bdf_async(detached,bytes,'single');
+      document.body.append(detached);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const attachedLeft=parseFloat(detached.querySelector('canvas').style.left);
+      detached.remove();await new Promise(resolve=>setTimeout(resolve,0));const disposed=!detached[Symbol.for('f4ah6o.bdf.pageLayout')];bdf.unmount_bdf(detached);
+      return {before,after,events,found:found.total,again:again.total,index:again.index,attachedLeft,disposed};
+    });
+    assert.equal(resized.found,3,'responsive search found all strips');assert.equal(resized.again,3,'responsive search retains matches');assert.equal(resized.index,0,'responsive search retains selection');
+    assert.deepEqual([resized.before.canvas,resized.before.text,resized.after.canvas,resized.after.text],[150,150,50,50],'canvas and selectable text recenter together');
+    assert.equal(resized.after.hit-resized.before.hit,-100,'search highlights follow the centered page');assert.equal(resized.before.scrollTop,resized.after.scrollTop,'resizing does not scroll to a match');assert.equal(resized.events,2,'resizing does not emit a search event');await resizing.close();
+    assert.equal(resized.attachedLeft,150,'a document mounted while detached centers when attached');assert.equal(resized.disposed,true,'the layout observer is disposed when its host is removed');
     const sheetBase=`http://127.0.0.1:${server.address().port}/compat/sheet/`;
     const cellFixtures={};
     for(const name of ['cells-baseline','cells-moon']){
@@ -1075,26 +1139,27 @@ try {
     const current = PNG.sync.read(readFileSync(path.join(variantOutput, `compat_visual_${variant}-${result.viewport}.png`)));
     assert.equal(baseline.width, current.width);
     assert.equal(baseline.height, current.height);
-    const sample = (80 * baseline.width + 40) * 4;
+    const pageLeft = Math.max(0, (baseline.width - 640) / 2);
+    const sample = (80 * baseline.width + pageLeft + 40) * 4;
     assert.ok(baseline.data[sample + 2] > 100 && baseline.data[sample] < 100 && baseline.data[sample + 3] === 255, 'baseline capture is blank or incomplete');
     if (baseline.width > 540) {
-      const svg = (280 * baseline.width + 510) * 4;
+      const svg = (280 * baseline.width + pageLeft + 510) * 4;
       assert.ok(baseline.data[svg] > 200 && baseline.data[svg + 1] > 150 && baseline.data[svg + 2] < 140, 'SVG was not rendered');
       let fontPixels = 0;
-      for (let y = 340; y < 390; y++) for (let x = 385; x < 480; x++) {
+      for (let y = 340; y < 390; y++) for (let x = pageLeft + 385; x < pageLeft + 480; x++) {
         const i = (y * baseline.width + x) * 4;
         if (baseline.data[i] < 100 && baseline.data[i + 1] < 100 && baseline.data[i + 2] < 120) fontPixels++;
       }
       assert.ok(fontPixels > 200, 'embedded font was not rendered');
     }
     if (baseline.height > 510) {
-      const group = (430 * baseline.width + 40) * 4;
-      const alphaMask = (430 * baseline.width + 230) * 4;
+      const group = (430 * baseline.width + pageLeft + 40) * 4;
+      const alphaMask = (430 * baseline.width + pageLeft + 230) * 4;
       assert.ok(baseline.data[group] > 200 && baseline.data[group + 1] < 180, 'transparency group was not rendered');
       assert.ok(baseline.data[alphaMask + 1] > baseline.data[alphaMask] && baseline.data[alphaMask] < 200, 'alpha mask was not rendered');
       if (baseline.width > 520) {
-        const luminosityMask = (430 * baseline.width + 400) * 4;
-        const transparentMask = (430 * baseline.width + 480) * 4;
+        const luminosityMask = (430 * baseline.width + pageLeft + 400) * 4;
+        const transparentMask = (430 * baseline.width + pageLeft + 480) * 4;
         assert.ok(baseline.data[luminosityMask + 1] < 220 && baseline.data[transparentMask + 1] > 245, 'luminosity mask and transfer function were not rendered');
       }
     }

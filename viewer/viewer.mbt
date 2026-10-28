@@ -81,6 +81,17 @@ pub fn Viewer::scroll_to_page(
 /// Produce device-independent page positions. A browser host owns scrolling,
 /// lazy rasterization, observers, and actual Canvas allocation.
 pub fn Viewer::placements(self : Viewer, view : @core.View) -> Array[Placement] {
+  self.placements_in(view, 0.0)
+}
+
+///|
+/// Place each row in a viewport, centering it when it is narrower than the
+/// viewport. Rows wider than the viewport start at the scrolling origin.
+pub fn Viewer::placements_in(
+  self : Viewer,
+  view : @core.View,
+  viewport_width : Double,
+) -> Array[Placement] {
   let result : Array[Placement] = []
   let mut y = 0.0
   let gap = if view.kind == "scroll" || self.layout == Continuous {
@@ -95,7 +106,12 @@ pub fn Viewer::placements(self : Viewer, view : @core.View) -> Array[Placement] 
       for index, page in pages {
         let width = page.width * zoom
         let height = page.height * zoom
-        result.push({ index, x: 0.0, y, width, height, })
+        let x = if viewport_width > width {
+          (viewport_width - width) / 2.0
+        } else {
+          0.0
+        }
+        result.push({ index, x, y, width, height, })
         y += height + gap
       }
     Spread => {
@@ -104,10 +120,21 @@ pub fn Viewer::placements(self : Viewer, view : @core.View) -> Array[Placement] 
         let page = pages[index]
         let width = page.width * zoom
         let height = page.height * zoom
-        let first_x = if view.direction == "rtl" && index + 1 < pages.length() {
-          pages[index + 1].width * zoom + gap
+        let has_next = index + 1 < pages.length()
+        let row_width = if has_next {
+          width + gap + pages[index + 1].width * zoom
+        } else {
+          width
+        }
+        let left = if viewport_width > row_width {
+          (viewport_width - row_width) / 2.0
         } else {
           0.0
+        }
+        let first_x = if view.direction == "rtl" && has_next {
+          left + pages[index + 1].width * zoom + gap
+        } else {
+          left
         }
         result.push({ index, x: first_x, y, width, height, })
         let mut row_height = height
@@ -117,9 +144,9 @@ pub fn Viewer::placements(self : Viewer, view : @core.View) -> Array[Placement] 
           result.push({
             index: index + 1,
             x: if view.direction == "rtl" {
-              0.0
+              left
             } else {
-              width + gap
+              left + width + gap
             },
             y,
             width: next.width * zoom,

@@ -26,6 +26,7 @@ extern "js" fn clear_host(host : BrowserHost) -> Unit =
   #|  const fonts=host[Symbol.for('f4ah6o.bdf.fonts')]; if(fonts){fonts.release();delete host[Symbol.for('f4ah6o.bdf.fonts')];}
   #|  const copy=host[Symbol.for('f4ah6o.bdf.copy')]; if(copy){copy.dispose();delete host[Symbol.for('f4ah6o.bdf.copy')];}
   #|  const find=host[Symbol.for('f4ah6o.bdf.find')]; if(find){find.dispose();delete host[Symbol.for('f4ah6o.bdf.find')];}
+  #|  const layout=host[Symbol.for('f4ah6o.bdf.pageLayout')]; if(layout){layout.dispose();delete host[Symbol.for('f4ah6o.bdf.pageLayout')];}
   #|  const sheet=host[Symbol.for('f4ah6o.bdf.sheet')]; if(sheet){sheet.dispose();delete host[Symbol.for('f4ah6o.bdf.sheet')];}
   #|  host.replaceChildren();
   #|  host.style.position = "relative";
@@ -62,6 +63,52 @@ extern "js" fn make_canvas(
   #|}
 
 ///|
+// Viewer pages use device pixels for their backing store while their DOM
+// geometry remains in CSS pixels. Explicit region renderers use make_canvas
+// because their scale already specifies the requested output resolution.
+extern "js" fn validate_page_bitmap(
+  host : BrowserHost,
+  width : Double,
+  height : Double,
+) -> Unit =
+  #|(host,width,height) => {
+  #|  const dpr = host.ownerDocument?.defaultView?.devicePixelRatio || 1;
+  #|  const w = Math.ceil(width * dpr), h = Math.ceil(height * dpr);
+  #|  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0 ||
+  #|      w > 8192 || h > 8192 || w * h > 16777216) {
+  #|    throw new RangeError("page bitmap exceeds browser limits");
+  #|  }
+  #|}
+
+///|
+extern "js" fn make_page_canvas(
+  host : BrowserHost,
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+  z : Double,
+) -> CanvasContext =
+  #|(host, x, y, width, height, z) => {
+  #|  const doc = host.ownerDocument ?? document;
+  #|  const dpr = doc.defaultView?.devicePixelRatio || 1;
+  #|  const w = Math.ceil(width * dpr), h = Math.ceil(height * dpr);
+  #|  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0 ||
+  #|      w > 8192 || h > 8192 || w * h > 16777216) {
+  #|    throw new RangeError("page bitmap exceeds browser limits");
+  #|  }
+  #|  const canvas = doc.createElement("canvas");
+  #|  canvas.width = w; canvas.height = h;
+  #|  Object.assign(canvas.style, {position:"absolute", left:x+"px", top:y+"px", width:width+"px", height:height+"px"});
+  #|  canvas.setAttribute("aria-label", "BDF page");
+  #|  host.appendChild(canvas);
+  #|  const ctx = canvas.getContext("2d");
+  #|  if (!ctx) throw new Error("Canvas 2D context unavailable");
+  #|  ctx.scale(z * dpr, z * dpr);
+  #|  return ctx;
+  #|}
+
+///|
 extern "js" fn resize_host(
   host : BrowserHost,
   width : Double,
@@ -85,6 +132,43 @@ extern "js" fn resize_page_surface(
   height : Double,
 ) -> Unit =
   #|(surface,w,h) => {surface.style.width=Math.ceil(w)+'px';surface.style.height=Math.ceil(h)+'px'}
+
+///|
+extern "js" fn page_viewport_width(host : BrowserHost) -> Double =
+  #|(host) => host.clientWidth || 0
+
+///|
+extern "js" fn tag_page_child(surface : BrowserHost, index : Int32) -> Unit =
+  #|(surface,index) => {if(surface.lastElementChild)surface.lastElementChild.dataset.bdfPageIndex=String(index)}
+
+///|
+extern "js" fn move_page_children(
+  surface : BrowserHost,
+  index : Int32,
+  x : Double,
+  y : Double,
+) -> Unit =
+  #|(surface,index,x,y) => {for(const el of surface.querySelectorAll(`[data-bdf-page-index="${index}"]`)){el.style.left=x+'px';el.style.top=y+'px'}}
+
+///|
+extern "js" fn refresh_page_find(host : BrowserHost) -> Unit =
+  #|(host) => host[Symbol.for('f4ah6o.bdf.find')]?.refresh()
+
+///|
+extern "js" fn observe_page_width(
+  host : BrowserHost,
+  initial : Double,
+  update : (Double) -> Unit,
+) -> Unit =
+  #|(host,initial,update) => {
+  #|  const doc=host.ownerDocument,win=doc?.defaultView;
+  #|  if(!win?.ResizeObserver)return;
+  #|  const key=Symbol.for('f4ah6o.bdf.pageLayout');let width=initial,removed=false,observer,mutation;
+  #|  const state={start(){if(removed||observer)return;observer=new win.ResizeObserver(()=>{if(removed)return;const next=host.clientWidth||0;if(next!==width){width=next;update(next)}});observer.observe(host)},dispose(){removed=true;observer?.disconnect();mutation?.disconnect()}};
+  #|  host[key]=state;
+  #|  if(win.MutationObserver){const watch=(weak,k,owner,connected)=>{const ob=new win.MutationObserver(()=>{const h=weak.deref();if(!h){ob.disconnect();return}if(h.isConnected){connected=true;h[k]?.start()}else if(connected){h[k]?.dispose();delete h[k]}});ob.observe(owner,{childList:true,subtree:true});return ob};const weak=typeof WeakRef==='function'?new WeakRef(host):{deref:()=>host};mutation=watch(weak,key,doc,host.isConnected)}
+  #|  if(host.isConnected||!mutation)state.start();
+  #|}
 
 ///|
 extern "js" fn save(ctx : CanvasContext) -> Unit =
@@ -634,16 +718,28 @@ fn mount_document(
   } else if layout == "continuous" {
     viewer.set_layout(@viewer.Continuous)
   }
-  let placements = viewer.placements(view)
+  for p in viewer.placements(view) {
+    validate_page_bitmap(host, p.width, p.height)
+  }
   clear_host(host)
   reset_host_size(host)
   let surface = make_page_surface(host)
+  let viewport_width = page_viewport_width(host)
+  let placements = viewer.placements_in(view, viewport_width)
   let search_runs : Array[Array[Array[@render.TextRun]]] = []
   let fallback_index : Array[@core.IndexRun] = []
   let mut max_x = 0.0
   let mut max_y = 0.0
   for p in placements {
-    let ctx = make_canvas(surface, p.x, p.y, p.width, p.height, viewer.zoom)
+    let ctx = make_page_canvas(
+      surface,
+      p.x,
+      p.y,
+      p.width,
+      p.height,
+      viewer.zoom,
+    )
+    tag_page_child(surface, p.index)
     set_color(ctx, -1, false)
     fill_rect(
       ctx,
@@ -700,6 +796,7 @@ fn mount_document(
         p.height,
         viewer.zoom,
       )
+      tag_page_child(surface, p.index)
     }
   }
   if interactive {
@@ -717,6 +814,27 @@ fn mount_document(
       retain_host_fonts(host, r)
     }
   }
-  resize_page_surface(surface, max_x, max_y)
+  resize_page_surface(
+    surface,
+    if max_x > viewport_width {
+      max_x
+    } else {
+      viewport_width
+    },
+    max_y,
+  )
+  observe_page_width(host, viewport_width, width => {
+    let next = viewer.placements_in(view, width)
+    let mut right = width
+    for i, p in next {
+      placements[i] = p
+      move_page_children(surface, p.index, p.x, p.y)
+      if p.x + p.width > right {
+        right = p.x + p.width
+      }
+    }
+    resize_page_surface(surface, right, max_y)
+    refresh_page_find(host)
+  })
   placements.length()
 }

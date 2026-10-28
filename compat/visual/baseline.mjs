@@ -8,13 +8,13 @@ try {
   const host = document.querySelector('#host');
   const surface = document.createElement('div');
   surface.dataset.bdfPages = '';
-  Object.assign(surface.style, {position:'relative', width:`${page.w}px`, height:`${page.h}px`, background:'#e8e8e8'});
+  Object.assign(surface.style, {position:'relative', width:`${Math.max(host.clientWidth,page.w)}px`, height:`${page.h}px`, background:'#e8e8e8'});
   host.appendChild(surface);
   const canvas = document.createElement('canvas');
   canvas.width = page.w;
   canvas.height = page.h;
   canvas.style.position = 'absolute';
-  canvas.style.left = '0px';
+  canvas.style.left = `${Math.max(0,(host.clientWidth-page.w)/2)}px`;
   canvas.style.top = '0px';
   canvas.setAttribute('aria-label', 'BDF page');
   surface.appendChild(canvas);

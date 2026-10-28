@@ -38,6 +38,7 @@ pub(all) struct Viewer {
 }
 pub fn Viewer::new() -> Self
 pub fn Viewer::placements(Self, @core.View) -> Array[Placement]
+pub fn Viewer::placements_in(Self, @core.View, Double) -> Array[Placement]
 pub fn Viewer::scroll_to_page(Self, @core.View, Int32) -> Placement raise
 pub fn Viewer::set_layout(Self, Layout) -> Unit
 pub fn Viewer::set_view(Self, @core.Manifest, String) -> Unit raise

@@ -73,10 +73,15 @@ test "RTL spread reverses page positions and continuous mode has no gap" {
     (0.0, 0.0),
     (0.0, 96.0),
   ])
+  assert_eq(viewer.placements_in(view, 300.0).map(p => p.x), [
+    143.0, 57.0, 105.0,
+  ])
+  assert_eq(viewer.placements_in(view, 150.0).map(p => p.x), [86.0, 0.0, 30.0])
   viewer.set_layout(@viewer.Continuous)
   assert_eq(viewer.placements(view).map(p => (p.x, p.y)), [
     (0.0, 0.0),
     (0.0, 80.0),
     (0.0, 140.0),
   ])
+  assert_eq(viewer.placements_in(view, 200.0).map(p => p.x), [50.0, 65.0, 55.0])
 }
