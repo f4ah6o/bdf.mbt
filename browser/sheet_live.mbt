@@ -51,6 +51,40 @@ extern "js" fn order_sheet_layer(
   #|(container,x,y) => {const layer=container.lastElementChild;layer.dataset.bdfSheetTile=`${x},${y}`;for(const other of container.querySelectorAll(':scope > [data-bdf-sheet-tile]')){if(other===layer)continue;const [ox,oy]=other.dataset.bdfSheetTile.split(',').map(Number);if(oy>y||(oy===y&&ox>x)){container.insertBefore(layer,other);break}}}
 
 ///|
+#external
+priv type SheetPreparation
+
+///|
+extern "js" fn sheet_preparation(
+  paint : (Array[@core.Tile]) -> @js_async.Promise[Unit],
+  text : (Array[@core.Tile]) -> @js_async.Promise[Unit],
+) -> SheetPreparation =
+  #|(paint,text) => {let pending=Promise.resolve();return {run(tiles,isText){const result=pending.then(()=>isText?text(tiles):paint(tiles));pending=result.catch(()=>{});return result}}}
+
+///|
+extern "js" fn prepare_sheet_tiles(
+  preparation : SheetPreparation,
+  tiles : Array[@core.Tile],
+  text : Bool,
+) -> @js_async.Promise[Unit] =
+  #|(preparation,tiles,text) => preparation.run(tiles,text)
+
+///|
+#external
+priv type SheetRecord
+
+///|
+extern "js" fn sheet_record(host : BrowserHost) -> SheetRecord =
+  #|(host) => host[Symbol.for('f4ah6o.bdf.sheet')]
+
+///|
+extern "js" fn current_sheet_record(
+  host : BrowserHost,
+  record : SheetRecord,
+) -> Bool =
+  #|(host,record) => host[Symbol.for('f4ah6o.bdf.sheet')]===record
+
+///|
 async fn mount_live_sheet(
   host : BrowserHost,
   document : BrowserDocument,
@@ -58,10 +92,14 @@ async fn mount_live_sheet(
   tiles : Array[@core.Tile],
   resources : BrowserResources,
   prepare : (Array[@core.Tile]) -> @js_async.Promise[Unit],
+  load_text : (Array[@core.Tile]) -> @js_async.Promise[Unit],
+  load_index : () -> @js_async.Promise[Unit],
+  prepare_search : (Array[@core.Tile]) -> @js_async.Promise[Unit],
   interactive~ : Bool = false,
 ) -> Int32 {
   let mut handed_off = false
   defer (if !handed_off { dispose_resources(resources) })
+  let preparation = sheet_preparation(prepare, prepare_search)
   let request = begin_sheet_request(host)
   defer end_sheet_request(host, request)
   // Prepare the first viewport before replacing an existing mounted document.
@@ -72,7 +110,11 @@ async fn mount_live_sheet(
     sheet_initial_height(host),
     sheet_initial_scale(host),
   )
-  prepare(visible_sheet_tiles(view, tiles, initial)).wait()
+  prepare_sheet_tiles(
+    preparation,
+    visible_sheet_tiles(view, tiles, initial),
+    false,
+  ).wait()
   if !current_sheet_request(host, request) {
     raise BadFormat("sheet mount superseded")
   }
@@ -81,6 +123,8 @@ async fn mount_live_sheet(
   let (width, height) = @render.sheet_size(view)
   let rendered : Map[String, Bool] = Map([])
   let text_data : Map[String, TextLayerData] = Map([])
+  let mut search_tasks = 0
+  let mut released = false
   if interactive {
     install_copy_handler(host)
   }
@@ -92,7 +136,7 @@ async fn mount_live_sheet(
       @js_async.Promise::from_async(() => {
         let viewport = sheet_viewport(x, y, w, h, scale)
         let visible = visible_sheet_tiles(view, tiles, viewport)
-        prepare(visible).wait()
+        prepare_sheet_tiles(preparation, visible, false).wait()
         if interactive {
           for tile in visible {
             let key = tile.x.to_string() + "," + tile.y.to_string()
@@ -138,8 +182,34 @@ async fn mount_live_sheet(
         }
       }
     },
-    () => dispose_resources(resources),
+    () => {
+      released = true
+      if search_tasks == 0 {
+        dispose_resources(resources)
+      }
+    },
   )
+  let record = sheet_record(host)
   handed_off = true
-  pending.wait()
+  let result = pending.wait()
+  if interactive && current_sheet_record(host, record) {
+    install_sheet_find(
+      host,
+      document,
+      view,
+      tiles,
+      load_text,
+      load_index,
+      selected => prepare_sheet_tiles(preparation, selected, true),
+      () => current_sheet_record(host, record),
+      () => search_tasks += 1,
+      () => {
+        search_tasks -= 1
+        if released && search_tasks == 0 {
+          dispose_resources(resources)
+        }
+      },
+    )
+  }
+  result
 }

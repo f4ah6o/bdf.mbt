@@ -264,6 +264,10 @@ try {
       const bytes=async file=>new Uint8Array(await (await fetch(file)).arrayBuffer());
       const single=await bytes('fixture.bdf'),manifest=await bytes('split/manifest.json');
       const encrypted=await bytes('encrypted.bdf'),lockedManifest=await bytes('encrypted-split/manifest.json');
+      const {BdfDocument,BufferSource,TextSearch}=await import('/node_modules/@bdfkit/core/dist/index.js');
+      const upstream=await BdfDocument.open(new BufferSource(single));
+      const upstreamSearch=new TextSearch(await upstream.textIndex(upstream.manifest.views[0]));
+      const expectedTileHits=upstreamSearch.search('Tile').length,expectedDistantHits=upstreamSearch.search('Tile 2,1').length;
       const results=[];
       for(const [kind,mount] of [
         ['single',host=>bdf.mount_bdf_interactive_async(host,single,'single')],
@@ -282,7 +286,18 @@ try {
         const r=first.getBoundingClientRect(),point=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
         const before=Number(host.querySelector('canvas').dataset.bdfSheetFrame);host.scrollLeft=248;host.scrollTop=204;host.dispatchEvent(new Event('scroll'));
         await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('interactive sheet scroll timeout')),5000);const check=()=>{if(Number(host.querySelector('canvas').dataset.bdfSheetFrame)>before){clearTimeout(timeout);resolve()}else requestAnimationFrame(check)};check()});
-        results.push({kind,text,copied:copy.clipboardData.getData('text/plain'),prevented:copy.defaultPrevented,point:point===first,retained:bdf.bdf_selection_text(host),newTile:!!tile(2,1)});
+        const retained=bdf.bdf_selection_text(host);
+        const found=await bdf.bdf_find_async(host,'Tile',0),next=await bdf.bdf_find_async(host,'Tile',1),previous=await bdf.bdf_find_async(host,'Tile',-1);
+        bdf.bdf_open_find(host);host.querySelector('input').value='Tile';host.querySelector('[aria-label="Next match"]').click();
+        await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('sheet next button timeout')),5000);const check=()=>{if(host.querySelector('[role=status]')?.textContent.startsWith('2 / 6')){clearTimeout(timeout);resolve()}else requestAnimationFrame(check)};check()});
+        host.querySelector('[aria-label="Previous match"]').click();
+        await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('sheet previous button timeout')),5000);const check=()=>{if(host.querySelector('[role=status]')?.textContent.startsWith('1 / 6')){clearTimeout(timeout);resolve()}else requestAnimationFrame(check)};check()});
+        const distant=await bdf.bdf_find_async(host,'Tile 2,1',1),empty=await bdf.bdf_find_async(host,'missing',0);
+        bdf.bdf_open_find(host);const input=host.querySelector('[role=search] input');input.value='Tile 2,1';input.dispatchEvent(new Event('input',{bubbles:true}));
+        await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('sheet search bar timeout')),5000);const check=()=>{if(host.querySelector('[role=status]')?.textContent.startsWith('1 / 1')){clearTimeout(timeout);resolve()}else requestAnimationFrame(check)};check()});
+        const status=host.querySelector('[role=status]').textContent,marked=host.querySelectorAll('[data-bdf-hit]').length;
+        bdf.bdf_clear_find(host);
+        results.push({kind,text,copied:copy.clipboardData.getData('text/plain'),prevented:copy.defaultPrevented,point:point===first,retained,newTile:!!tile(2,1),found:[found.index,found.total,expectedTileHits],next:next.index,previous:previous.index,distant:[distant.index,distant.total,expectedDistantHits,distant.rects.length],empty:empty.total,status,marked,cleared:!host.querySelector('[data-bdf-hits]')});
         getSelection().removeAllRanges();bdf.unmount_bdf(host);host.remove();
       }
       const host=document.createElement('div');host.style.cssText='position:relative;overflow:auto;width:400px;height:300px';document.body.append(host);
@@ -303,8 +318,78 @@ try {
       assert.equal(result.point,true,`${result.kind}: text layer receives pointer events`);
       assert.equal(result.retained,result.text,`${result.kind}: selection survives scrolling`);
       assert.equal(result.newTile,true,`${result.kind}: scrolling loads another text tile`);
+      assert.deepEqual(result.found,[0,6,6],`${result.kind}: sheet index matches upstream`);
+      assert.deepEqual([result.next,result.previous],[1,0],`${result.kind}: search navigation`);
+      assert.deepEqual(result.distant,[0,1,1,1],`${result.kind}: locate an offscreen hit`);
+      assert.equal(result.empty,0,`${result.kind}: absent text has no matches`);
+      assert.ok(result.status.startsWith('1 / 1')&&result.marked>0&&result.cleared,`${result.kind}: search bar, highlights and clear`);
     }
+    const indexedSheet=await sheetInteractive.evaluate(async()=>{
+      const bdf=await import('/_build/js/debug/build/browser/browser.js');
+      const read=async file=>new Uint8Array(await (await fetch(file)).arrayBuffer());
+      const metadata=JSON.parse(new TextDecoder().decode(await read('split/manifest.json'))),hash='11111111111111111111111111111111';
+      const a=new TextEncoder().encode('Tile 2,0'),b=new TextEncoder().encode('Tile 2,1');
+      const index=new Uint8Array([66,84,88,84,1,0,2,2,0,0,2,a.length,...a,2,1,0,2,b.length,...b]);
+      metadata.views[0].textIndex=hash;metadata.parts.push({h:hash,t:'idx',enc:'identity',len:index.length,size:index.length,off:0});
+      const encoded=new TextEncoder().encode(JSON.stringify(metadata)),requests=[];
+      let unblock;const gate=new Promise(resolve=>unblock=resolve);let blocked=false;
+      const loader=async part=>{requests.push(part);if(part===hash){if(blocked)await gate;return index}return read(`split/parts/${part}`)};
+      const host=document.createElement('div');host.style.cssText='position:relative;overflow:auto;width:400px;height:300px';document.body.append(host);
+      await bdf.mount_bdf_interactive_split_async(host,encoded,loader,'single');
+      requests.length=0;const noHit=await bdf.bdf_find_async(host,'absent',0);
+      const noHitLoads=requests.slice();requests.length=0;
+      const found=await bdf.bdf_find_async(host,'Tile 2,1',0),hitLoads=requests.slice();
+      bdf.unmount_bdf(host);host.remove();
+      const raced=document.createElement('div');raced.style.cssText='position:relative;overflow:auto;width:400px;height:300px';document.body.append(raced);
+      await bdf.mount_bdf_interactive_split_async(raced,encoded,loader,'single');blocked=true;
+      const changes=[];raced.addEventListener('findchange',event=>changes.push(event.detail.query));
+      const old=bdf.bdf_find_async(raced,'Tile 2,0',0),latest=bdf.bdf_find_async(raced,'Tile 2,1',0);
+      unblock();await Promise.all([old,latest]);
+      const lastQuery=changes.at(-1),oldPublished=changes.includes('Tile 2,0');
+      bdf.unmount_bdf(raced);raced.remove();
+      const fontCount=()=>[...document.fonts].filter(face=>face.family.startsWith('bdf-')).length,initialFonts=fontCount();
+      const detached=document.createElement('div');detached.style.cssText='position:relative;overflow:auto;width:400px;height:300px';document.body.append(detached);
+      let release,started;const paused=new Promise(resolve=>release=resolve),startedFetch=new Promise(resolve=>started=resolve),detachedRequests=[];
+      const slowLoader=async part=>{detachedRequests.push(part);if(part===hash){started();await paused;return index}return read(`split/parts/${part}`)};
+      await bdf.mount_bdf_interactive_split_async(detached,encoded,slowLoader,'single');detachedRequests.length=0;
+      const pending=bdf.bdf_find_async(detached,'Tile 2,1',0);await startedFetch;bdf.unmount_bdf(detached);release();await pending;
+      const detachedClean=fontCount()===initialFonts&&!detached.childElementCount&&!detached[Symbol.for('f4ah6o.bdf.find')]&&!detachedRequests.includes(metadata.views[0].tiles['2,1']);detached.remove();
+      const retry=document.createElement('div');retry.style.cssText='position:relative;overflow:auto;width:200px;height:200px';document.body.append(retry);let failIndex=true;
+      const retryLoader=async part=>{if(part===hash){if(failIndex)throw new Error('index unavailable');return index}return read(`split/parts/${part}`)};
+      await bdf.mount_bdf_interactive_split_async(retry,encoded,retryLoader,'single');let failed=false;
+      try{await bdf.bdf_find_async(retry,'Tile 2,1',0)}catch{failed=!!retry.querySelector('[data-bdf-sheet-frame]')}
+      failIndex=false;const retried=await bdf.bdf_find_async(retry,'Tile 2,1',0);bdf.unmount_bdf(retry);retry.remove();
+      const bare=structuredClone(metadata);delete bare.views[0].textIndex;bare.parts=bare.parts.filter(part=>part.h!==hash);
+      const fallback=document.createElement('div');fallback.style.cssText='position:relative;overflow:auto;width:200px;height:200px';document.body.append(fallback);
+      const fallbackRequests=[],fallbackLoader=async part=>{fallbackRequests.push(part);return read(`split/parts/${part}`)};
+      await bdf.mount_bdf_interactive_split_async(fallback,new TextEncoder().encode(JSON.stringify(bare)),fallbackLoader,'single');fallbackRequests.length=0;
+      const fallbackHit=await bdf.bdf_find_async(fallback,'Tile 0,0',0),firstLoads=fallbackRequests.slice();fallbackRequests.length=0;
+      const fontHit=await bdf.bdf_find_async(fallback,'Tile 1,0',0),fontLoads=fallbackRequests.slice();bdf.unmount_bdf(fallback);fallback.remove();
+      return {noHit:noHit.total,noHitLoads,hit:found.total,rects:found.rects.length,hitLoads,hash,target:metadata.views[0].tiles['2,1'],other:metadata.views[0].tiles['2,0'],lastQuery,oldPublished,detachedClean,failed,retried:retried.total,fallbackHit:fallbackHit.total,fontHit:fontHit.total,firstLoads,fontLoads,font:metadata.parts.find(part=>part.t==='font').h,image:metadata.parts.find(part=>part.t==='img').h};
+    });
+    assert.equal(indexedSheet.noHit,0,'stored sheet index is used');
+    assert.deepEqual(indexedSheet.noHitLoads,[indexedSheet.hash],'a stored index search does not load tiles when there is no hit');
+    assert.equal(indexedSheet.hit,1,'stored index finds an offscreen tile');
+    assert.equal(indexedSheet.rects,1,'offscreen indexed hit is located');
+    assert.ok(indexedSheet.hitLoads.includes(indexedSheet.target)&&!indexedSheet.hitLoads.includes(indexedSheet.other),'only the selected offscreen tile is loaded for hit measurement');
+    assert.equal(indexedSheet.lastQuery,'Tile 2,1','latest overlapping sheet query wins');
+    assert.equal(indexedSheet.oldPublished,false,'superseded sheet search is not published');
+    assert.equal(indexedSheet.detachedClean,true,'unmount cancels pending sheet search before loading or retaining resources');
+    assert.ok(indexedSheet.failed&&indexedSheet.retried===1,'failed index reads leave the sheet mounted and can be retried');
+    assert.equal(indexedSheet.fallbackHit,1,'fallback sheet index searches tile text');
+    assert.ok(!indexedSheet.firstLoads.includes(indexedSheet.font)&&!indexedSheet.firstLoads.includes(indexedSheet.image),'building a fallback index does not load unrelated fonts or images');
+    assert.ok(indexedSheet.fontHit===1&&indexedSheet.fontLoads.includes(indexedSheet.font)&&!indexedSheet.fontLoads.includes(indexedSheet.image),'locating a hit loads its font without loading its image');
     await sheetInteractive.close();
+    for(const name of ['find-baseline','find-moon']){
+      const page=await browser.newPage({viewport:{width:1280,height:720}}),errors=[];
+      page.on('pageerror',error=>errors.push(String(error)));
+      await page.goto(`${sheetBase}${name}.html`,{waitUntil:'networkidle'});
+      await page.waitForFunction(()=>window.bdfStatus==='ready'||window.bdfStatus==='error');
+      assert.equal(await page.evaluate(()=>window.bdfStatus),'ready',`${name}: ${await page.evaluate(()=>window.bdfError)}`);
+      assert.deepEqual(errors,[],`${name}: search fixture browser errors`);
+      assert.ok(await page.locator('[data-bdf-hit]').count()>=1,`${name}: selected match is marked`);
+      await page.close();
+    }
     const sheetPages={};
     for(const name of ['baseline','moon','split']){
       const page=await browser.newPage({viewport:{width:1280,height:720}}),errors=[];
@@ -661,6 +746,20 @@ try {
   }
   await run(['scan','scroll',`${sheetBase}live-moon.html`,'--no-ledger']);
   await run(['check','scroll',`${sheetBase}live-moon.html`,'--no-ledger']);
+  const sheetFindOutput=path.join(output,'sheet-find');mkdirSync(sheetFindOutput);
+  await run(['diff','html','--url',`${sheetBase}find-baseline.html`,'--current-url',`${sheetBase}find-moon.html`,'--output-dir',sheetFindOutput,'--no-paint-tree']);
+  const sheetFindReport=path.join(sheetFindOutput,'diff-report.json'),sheetFind=JSON.parse(readFileSync(sheetFindReport,'utf8'));
+  for(const result of sheetFind.results){
+    const reference=PNG.sync.read(readFileSync(path.join(sheetFindOutput,`compat_sheet_find-baseline-${result.viewport}.png`)));
+    const actual=PNG.sync.read(readFileSync(path.join(sheetFindOutput,`compat_sheet_find-moon-${result.viewport}.png`)));
+    let changed=0;for(let i=0;i<reference.data.length;i+=4)if(reference.data[i]!==actual.data[i]||reference.data[i+1]!==actual.data[i+1]||reference.data[i+2]!==actual.data[i+2]||reference.data[i+3]!==actual.data[i+3])changed++;
+    const ratio=changed/(Math.min(reference.width,400)*Math.min(reference.height,300));
+    console.log(`sheet find ${result.viewport}: ${changed} pixels changed (${(ratio*100).toFixed(4)}%)`);
+    assert.ok(ratio<=0.0005,`${result.viewport}: sheet search visual difference exceeds 0.05%`);
+  }
+  await run(['diff','agent',sheetFindReport,'--no-history']);
+  await run(['scan','handlers',`${sheetBase}find-moon.html`,'--no-ledger']);
+  await run(['check','interactions',`${sheetBase}find-moon.html`,'--reference',`${sheetBase}find-baseline.html`,'--handlers','--no-ledger']);
   for(const name of ['moon','split','interactive-moon']){
     const target=path.join(output,`sheet-live-${name}`);mkdirSync(target);
     await run(['diff','html','--url',`${sheetBase}live-baseline.html`,'--current-url',`${sheetBase}live-${name}.html`,'--output-dir',target,'--no-paint-tree']);

@@ -8,8 +8,8 @@ It also compares scrolling sheet mounts, including HiDPI, resizing, tile
 fetching, cancellation, overlapping mounts and resource cleanup.
 Interactive mounts also exercise text selection across visible tiles,
 clipboard output, pointer targeting and retention while scrolling, in single,
-split and password-encrypted files. Sheet search and rectangular cell
-selection are not implemented yet.
+split and password-encrypted files. Sheet search is tested against upstream
+search and display; rectangular cell selection is not implemented yet.
 
 From an upstream checkout, regenerate it with:
 

@@ -14,6 +14,8 @@ pub fn bdf_clipboard_text(BrowserClipboard) -> String
 
 pub fn bdf_find(BrowserHost, String, Int32) -> BrowserFindResult
 
+pub fn bdf_find_async(BrowserHost, String, Int32) -> @js_async.Promise[BrowserFindResult]
+
 pub fn bdf_open_find(BrowserHost) -> Unit
 
 pub fn bdf_selection_cells(BrowserHost) -> BrowserClipboard?

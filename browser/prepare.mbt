@@ -61,6 +61,39 @@ async fn prepare_object(
 }
 
 ///|
+async fn prepare_search_object(
+  doc : BrowserDocument,
+  resources : BrowserResources,
+  hash : String,
+  seen : Map[String, Bool],
+  depth : Int32,
+) -> Unit {
+  if depth > 64 {
+    raise BadFormat("objects draw objects too deep")
+  }
+  if seen.contains(hash) {
+    return
+  }
+  seen[hash] = true
+  let object = @core.decode_object_resources(doc.part(hash))
+  for command in @render.compile_object(object.object) {
+    match command {
+      @render.Font(index, _) => {
+        if index < 0 || index >= object.fonts.length() {
+          raise BadFormat("font reference out of range")
+        }
+        if object.fonts[index].hash is Some(font) && !has_font(resources, font) {
+          load_font(resources, font, doc.part(font)).wait()
+        }
+      }
+      @render.Use(child) | @render.UseAt(child, _, _) =>
+        prepare_search_object(doc, resources, child, seen, depth + 1)
+      _ => ()
+    }
+  }
+}
+
+///|
 // JS Canvas methods can throw independently of MoonBit checked errors.
 // The promise boundary translates those exceptions into async errors so the
 // resource cleanup defer runs for either kind of failure.
@@ -118,6 +151,16 @@ async fn mount_single(
           let seen : Map[String, Bool] = Map([])
           for tile in visible {
             prepare_object(doc, resources, tile.object, seen, 0)
+          }
+        })
+      },
+      _ => @js_async.Promise::from_async(() => ()),
+      () => @js_async.Promise::from_async(() => ()),
+      selected => {
+        @js_async.Promise::from_async(() => {
+          let seen : Map[String, Bool] = Map([])
+          for tile in selected {
+            prepare_search_object(doc, resources, tile.object, seen, 0)
           }
         })
       },

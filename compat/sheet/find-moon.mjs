@@ -1,0 +1,2 @@
+import {mount_bdf_interactive_async,bdf_find_async,bdf_open_find} from '/_build/js/debug/build/browser/browser.js';
+try{const host=document.querySelector('#host'),bytes=new Uint8Array(await(await fetch('./fixture.bdf')).arrayBuffer());await mount_bdf_interactive_async(host,bytes,'single');bdf_open_find(host);host.querySelector('input').value='Tile';await bdf_find_async(host,'Tile',0);host.focus({preventScroll:true});window.bdfStatus='ready'}catch(error){window.bdfStatus='error';window.bdfError=String(error?.stack??error);console.error(error)}

@@ -93,6 +93,52 @@ async fn prefetch_split_object(
 }
 
 ///|
+// Search extraction needs child objects, but does not need image, path or font
+// parts until a hit is actually measured or painted.
+async fn prefetch_split_text(
+  split : @core.SplitDocument,
+  cache : Map[String, Bytes],
+  loader : SplitPartLoader,
+  hash : String,
+  seen : Map[String, Bool],
+  depth : Int32,
+  fonts~ : Bool = false,
+) -> Unit {
+  if depth > 64 {
+    raise BadFormat("objects draw objects too deep")
+  }
+  if seen.contains(hash) {
+    return
+  }
+  seen[hash] = true
+  prefetch_part(split, cache, loader, hash)
+  let object = @core.decode_object_resources(split.part(hash))
+  for command in @render.compile_object(object.object) {
+    match command {
+      @render.Use(child) | @render.UseAt(child, _, _) =>
+        prefetch_split_text(
+          split,
+          cache,
+          loader,
+          child,
+          seen,
+          depth + 1,
+          fonts~,
+        )
+      @render.Font(index, _) if fonts => {
+        if index < 0 || index >= object.fonts.length() {
+          raise BadFormat("font reference out of range")
+        }
+        if object.fonts[index].hash is Some(font) {
+          prefetch_part(split, cache, loader, font)
+        }
+      }
+      _ => ()
+    }
+  }
+}
+
+///|
 /// Mount an unencrypted split document, loading only referenced parts through
 /// an asynchronous JavaScript loader. Resolves to the number of pages.
 #export_name("mount_bdf_split_async")
@@ -165,6 +211,41 @@ async fn mount_split(
           let prepared : Map[String, Bool] = Map([])
           for tile in visible {
             prepare_object(document, resources, tile.object, prepared, 0)
+          }
+        })
+      },
+      selected => {
+        @js_async.Promise::from_async(() => {
+          let seen : Map[String, Bool] = Map([])
+          for tile in selected {
+            prefetch_split_text(split, cache, loader, tile.object, seen, 0)
+          }
+        })
+      },
+      () => {
+        @js_async.Promise::from_async(() => {
+          if view.text_index is Some(hash) {
+            prefetch_part(split, cache, loader, hash)
+          }
+        })
+      },
+      selected => {
+        @js_async.Promise::from_async(() => {
+          let fetched : Map[String, Bool] = Map([])
+          for tile in selected {
+            prefetch_split_text(
+              split,
+              cache,
+              loader,
+              tile.object,
+              fetched,
+              0,
+              fonts=true,
+            )
+          }
+          let prepared : Map[String, Bool] = Map([])
+          for tile in selected {
+            prepare_search_object(document, resources, tile.object, prepared, 0)
           }
         })
       },

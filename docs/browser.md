@@ -27,8 +27,8 @@ viewport, fetching visible tiles as it scrolls. Give the host dimensions in CSS;
 when they are absent, it defaults to 640 by 400 pixels. It returns `1` for the
 sheet view. `unmount_bdf` releases images, fonts, observers and pending work.
 The interactive entry points add selectable text and safe links for loaded
-tiles, retaining visited text layers while scrolling. Search, rectangular
-sheet-cell selection and frozen panes are still being ported. The synchronous
+tiles, retaining visited text layers while scrolling. Rectangular sheet-cell
+selection and frozen panes are still being ported. The synchronous
 `mount_bdf` entry point supports fixed/flow pages only.
 
 To draw a single sheet region instead of a scrolling view, use the single or
@@ -106,7 +106,7 @@ await mount_bdf_interactive_async(host, bytes, 'single');
 const selectedText = bdf_selection_text(host);
 const selectedCells = bdf_selection_cells(host); // undefined unless the selection spans table cells
 // selectedCells, when present, has text (TSV) and html properties.
-const found = bdf_find(host, 'example', 0); // { query, index, total, more, detail, rects }
+const found = await bdf_find_async(host, 'example', 0); // { query, index, total, more, detail, rects }
 bdf_open_find(host); // show the search field
 bdf_clear_find(host); // clear highlights and close the field
 unmount_bdf(host);
@@ -119,12 +119,15 @@ spanning cells of the same table expands to include intersecting merged cells;
 copy and cut provide both TSV and an HTML table. A selection within a single
 cell stays a text selection. Oversized cell ranges fall back to text for copy
 and cut; `bdf_selection_cells` rejects them.
-For fixed/flow views, the search field handles Command/Ctrl+F, Command/Ctrl+G, F3, Enter,
+The search field handles Command/Ctrl+F, Command/Ctrl+G, F3, Enter,
 Shift+Enter, and Escape while the host has focus. It waits for IME composition
 to finish before searching and marks matches using the loaded font metrics.
-`bdf_find` accepts step `0` for the current match, `1` for next, and `-1` for
+`bdf_find_async` accepts step `0` for the current match, `1` for next, and `-1` for
 previous; the result's index is zero-based and `more` indicates a 1,000-hit
-limit. An interactive split mount attempts to prefetch its stored text index;
-if that fails, rendering remains available and search reports the error.
+limit. An interactive split page mount attempts to prefetch its stored text index;
+if that fails, rendering remains available and search reports the error. Sheet
+search loads a stored index on demand, or rebuilds one from tile text when it
+is absent; it loads fonts only for hits being located. The synchronous
+`bdf_find` API remains available for fixed/flow views.
 Embedded fonts remain loaded until the host is unmounted, remounted, or removed
 from the document. Viewer navigation between views is not yet implemented.
