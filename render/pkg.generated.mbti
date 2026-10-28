@@ -15,6 +15,8 @@ pub fn extract_text(@core.ObjectResources, (String) -> @core.ObjectResources? ra
 
 pub fn join_text(Array[TextRun]) -> String
 
+pub fn parse_cell_ref(String) -> CellRef?
+
 // Errors
 pub suberror RenderError {
   UnsupportedOpcode(Int32)
@@ -23,6 +25,14 @@ pub suberror RenderError {
 }
 
 // Types and methods
+pub(all) struct CellRef {
+  row : Int32
+  col : Int32
+  rows : Int32
+  cols : Int32
+  scope : String?
+} derive(Eq, @debug.Debug)
+
 pub(all) enum Command {
   Save
   Restore
@@ -75,6 +85,7 @@ pub(all) struct PathPlacement {
 pub(all) struct TextContent {
   runs : Array[TextRun]
   links : Array[TextLink]
+  nodes : Array[TextNode]
 }
 
 pub(all) struct TextLink {
@@ -84,7 +95,32 @@ pub(all) struct TextLink {
   height : Double
   url : String
   after : Int32
+  node : Int32
 }
+
+pub(all) struct TextNode {
+  kind : String
+  parent : Int32
+  level : Int32?
+  row : Int32?
+  col : Int32?
+  rows : Int32?
+  cols : Int32?
+  scope : String?
+  alt : String?
+  bounds : TextRect?
+  data : String?
+  code : Bool
+  quote : Int32
+  list : String?
+}
+
+pub(all) struct TextRect {
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+} derive(Eq, @debug.Debug)
 
 pub(all) struct TextRun {
   text : String
@@ -99,6 +135,7 @@ pub(all) struct TextRun {
   ordinal : Int32
   alt_text : Bool
   lang : String
+  node : Int32
 }
 
 // Type aliases

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { decodeObject, extractContent } from '@bdfkit/core';
+import { decodeObject, extractContent, parseCellRef } from '@bdfkit/core';
 
 const dir = new URL('.', import.meta.url);
 const parentBytes = readFileSync(new URL('parent.bobj', dir));
@@ -28,3 +28,34 @@ const transformed = extractContent(parent, h => h === hash ? child : undefined, 
 assert.deepEqual([transformed.runs[5].x, transformed.runs[5].y], [214, 326]);
 assert.deepEqual([transformed.links[0].x, transformed.links[0].y, transformed.links[0].w, transformed.links[0].h], [32, 98, 8, 9]);
 console.log('Upstream text extraction matches the MoonBit fixture expectations.');
+
+const structureBytes = readFileSync(new URL('structure.bobj', dir));
+const structureSource = readFileSync(new URL('../../render/structure_test.mbt', dir), 'utf8');
+const embeddedStructure = structureSource.match(/let structure = @core\.decode_object_resources\(\s*b"([^"]+)"\s*,?\s*\)/);
+assert.ok(embeddedStructure, 'missing embedded structure fixture');
+assert.deepEqual(Buffer.from([...embeddedStructure[1].matchAll(/\\x([0-9a-f]{2})/g)].map(m => parseInt(m[1], 16))), structureBytes);
+const structure = extractContent(decodeObject(structureBytes), h => h === hash ? child : undefined);
+assert.deepEqual(structure.nodes.map(n => n.kind), ['heading','list','item','paragraph','list','item','paragraph','item','paragraph','table','caption','cell','paragraph','cell','paragraph','paragraph','figure','paragraph','cell','paragraph','paragraph','list','item','paragraph','figure','figure','paragraph','figure','figure','figure','figure','figure','heading','heading','heading']);
+assert.deepEqual(structure.nodes.map(n => n.parent), [-1,-1,1,2,2,4,5,1,7,-1,9,9,11,9,13,-1,-1,16,-1,-1,-1,-1,21,22,-1,-1,25,-1,-1,-1,-1,30,-1,-1,-1]);
+assert.deepEqual(structure.runs.map(r => r.node), [0,3,6,8,10,12,14,15,17,18,19,20,23,26,32,33,34]);
+assert.equal(structure.nodes[0].level, 2);
+assert.deepEqual([structure.nodes[32].level,structure.nodes[33].level,structure.nodes[34].level], [2,2,undefined]);
+assert.deepEqual([structure.nodes[11].row,structure.nodes[11].col,structure.nodes[11].scope], [0,0,'col']);
+assert.deepEqual([structure.nodes[13].row,structure.nodes[13].col,structure.nodes[13].rows,structure.nodes[13].cols], [0,1,1,2]);
+assert.deepEqual([structure.nodes[18].row,structure.nodes[18].col], [11,1]);
+assert.deepEqual([structure.nodes[19].quote,structure.nodes[20].code,structure.nodes[20].quote], [1,true,2]);
+assert.deepEqual([structure.nodes[21].list,structure.nodes[21].quote], ['ordered',1]);
+assert.deepEqual([structure.nodes[16].alt,structure.nodes[16].data], ['chart','chart-1']);
+assert.deepEqual(structure.nodes[16].bounds, {x:0,y:160,w:30,h:62});
+assert.deepEqual(structure.nodes[24].bounds, {x:15,y:302,w:10,h:10});
+assert.deepEqual(structure.nodes[25].bounds, {x:52,y:292,w:20,h:21});
+assert.deepEqual(structure.nodes[27].bounds, {x:33,y:44,w:0,h:0});
+assert.deepEqual(structure.nodes[28].bounds, {x:200,y:100,w:10,h:10});
+assert.deepEqual(structure.nodes[29].bounds, {x:0,y:0,w:0,h:0});
+assert.deepEqual(structure.nodes[30].bounds, {x:11,y:12,w:13,h:14});
+assert.deepEqual(structure.nodes[31].bounds, structure.nodes[30].bounds);
+assert.deepEqual([structure.links[0].after,structure.links[0].node], [3,8]);
+console.log('Upstream semantic structure matches the MoonBit fixture expectations.');
+
+assert.deepEqual(parseCellRef('\ufeffZ10:A1\tcol\n'), {row:9,col:25,rows:1,cols:1,scope:'col'});
+assert.equal(parseCellRef('A1\u0085'), undefined);

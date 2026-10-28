@@ -18,6 +18,7 @@ pub(all) struct TextRun {
   ordinal : Int32
   alt_text : Bool
   lang : String
+  node : Int32
 }
 
 ///|
@@ -29,6 +30,7 @@ pub(all) struct TextLink {
   height : Double
   url : String
   after : Int32
+  node : Int32
 }
 
 ///|
@@ -36,6 +38,7 @@ pub(all) struct TextLink {
 pub(all) struct TextContent {
   runs : Array[TextRun]
   links : Array[TextLink]
+  nodes : Array[TextNode]
 }
 
 ///|
@@ -44,12 +47,19 @@ priv struct TextState {
   font : @core.Font?
   size : Double
   align : Int32
+  clip : TextRect?
 }
 
 ///|
 priv struct TextCollector {
   runs : Array[TextRun]
   links : Array[TextLink]
+  nodes : Array[TextNode]
+  open : Array[Int32]
+  figures : Array[Int32]
+  origins : Map[Int32, TextRect]
+  mut leaf : Int32
+  mut reserved : TextNode?
   seen : Map[String, Bool]
   mut reused : Int32
   mut pending : Int32
@@ -124,7 +134,26 @@ fn TextCollector::emit(
     ordinal: self.runs.length(),
     alt_text: alt,
     lang: self.lang,
+    node: self.leaf_node(),
   })
+  if self.figures.length() > 0 {
+    let width = if advance > 0.0 {
+      advance
+    } else {
+      st.size * text.length().to_double() * 0.5
+    }
+    let anchor = if st.align == 1 {
+      -width
+    } else if st.align == 2 {
+      -width / 2.0
+    } else {
+      0.0
+    }
+    self.grow(
+      text_box(st.matrix, x + anchor, y - st.size * 0.8, width, st.size),
+      st.clip,
+    )
+  }
   self.pending = 0
   self.has_mark = false
 }
@@ -187,6 +216,11 @@ fn TextCollector::link(
     height: bottom - top,
     url,
     after: self.runs.length() - 1,
+    node: if self.leaf >= 0 {
+      self.leaf
+    } else {
+      self.top()
+    },
   })
 }
 
@@ -198,8 +232,9 @@ fn collect_object(
   matrix : Matrix,
   depth : Int32,
   repeated : Bool,
+  clip : TextRect?,
 ) -> Unit raise {
-  let mut st : TextState = { matrix, font: None, size: 10.0, align: 0, }
+  let mut st : TextState = { matrix, font: None, size: 10.0, align: 0, clip, }
   let stack : Array[TextState] = []
   let mut masking = 0
   for command in compile_object(object.object) {
@@ -229,6 +264,39 @@ fn collect_object(
           size,
         }
       TextStyle(align, _, _, _) => st = { ..st, align, }
+      ClipRect(x, y, w, h) => {
+        let clipped = intersect_box(text_box(st.matrix, x, y, w, h), st.clip)
+        st = {
+          ..st,
+          clip: Some(
+            clipped.unwrap_or({ x: 0.0, y: 0.0, width: 0.0, height: 0.0, }),
+          ),
+        }
+      }
+      ClipPath(index, _) =>
+        if path_box(object.paths, index) is Some(b) {
+          let clipped = intersect_box(
+            text_box(st.matrix, b.x, b.y, b.width, b.height),
+            st.clip,
+          )
+          st = {
+            ..st,
+            clip: Some(
+              clipped.unwrap_or({ x: 0.0, y: 0.0, width: 0.0, height: 0.0, }),
+            ),
+          }
+        }
+      FillRect(x, y, w, h) | StrokeRect(x, y, w, h) | Image(_, x, y, w, h) if masking ==
+        0 =>
+        if collector.figures.length() > 0 {
+          collector.grow(text_box(st.matrix, x, y, w, h), st.clip)
+        }
+      ImageSub(_, _, _, _, _, x, y, w, h) if masking == 0 =>
+        if collector.figures.length() > 0 {
+          collector.grow(text_box(st.matrix, x, y, w, h), st.clip)
+        }
+      FillPath(index, _) | StrokePath(index) if masking == 0 =>
+        collector.grow_path(object.paths, index, 0.0, 0.0, st)
       MaskBegin(_, _, _) => {
         stack.push(st)
         masking += 1
@@ -249,6 +317,7 @@ fn collect_object(
           0 | 2 | 3 | 6 | 7 | 8 | 9 | 10 | 11 => {
             collector.flush_alt(st)
             collector.mark(2)
+            collector.structure(kind, payload, st)
           }
           4 => {
             collector.flush_alt(st)
@@ -259,6 +328,7 @@ fn collect_object(
             collector.mark(0)
           }
           12 => collector.lang = payload
+          14 => collector.set_data(payload)
           _ => ()
         }
       Link(x, y, w, h, url) if masking == 0 =>
@@ -268,9 +338,14 @@ fn collect_object(
         if !collector.take_alt(x, y, advance, st) {
           collector.emit(text, x, y, advance, st, false)
         }
-      FillPathAt(_, _, x, y) if masking == 0 =>
+      FillPathAt(index, _, x, y) if masking == 0 => {
+        collector.grow_path(object.paths, index, x, y, st)
         ignore(collector.take_alt(x, y, 0.0, st))
+      }
       FillPathRun(_, glyphs) if masking == 0 => {
+        for glyph in glyphs {
+          collector.grow_path(object.paths, glyph.path, glyph.x, glyph.y, st)
+        }
         let (x, y) = if glyphs.length() > 0 {
           (glyphs[0].x, glyphs[0].y)
         } else {
@@ -293,6 +368,10 @@ fn collect_object(
             Some(c) => c.object.bbox
             None => (0.0, 0.0, 0.0, 0.0)
           }
+          if child is Some(c) && collector.figures.length() > 0 {
+            let (cx, cy, cw, ch) = c.object.bbox
+            collector.grow(text_box(st.matrix, cx + x, cy + y, cw, ch), st.clip)
+          }
           ignore(collector.take_alt(x + bx, y, bw, st))
         } else if child is Some(c) {
           if depth >= 64 {
@@ -305,6 +384,7 @@ fn collect_object(
             mul(st.matrix, (1.0, 0.0, 0.0, 1.0, x, y)),
             depth + 1,
             repeated || again,
+            st.clip,
           )
         }
       }
@@ -315,7 +395,7 @@ fn collect_object(
 
 ///|
 /// Extract runs and links, traversing child objects with a host resolver.
-/// Semantic node hierarchy and figure bounds are not yet included.
+/// Returns semantic nodes, their runs, and links.
 pub fn extract_text(
   object : @core.ObjectResources,
   resolve : (String) -> @core.ObjectResources? raise,
@@ -324,6 +404,12 @@ pub fn extract_text(
   let collector : TextCollector = {
     runs: [],
     links: [],
+    nodes: [],
+    open: [],
+    figures: [],
+    origins: {},
+    leaf: -1,
+    reserved: None,
     seen: {},
     reused: 0,
     pending: 0,
@@ -331,9 +417,12 @@ pub fn extract_text(
     alt: None,
     lang: "",
   }
-  collect_object(collector, object, resolve, matrix, 0, false)
-  collector.flush_alt({ matrix, font: None, size: 10.0, align: 0, })
-  { runs: collector.runs, links: collector.links, }
+  collect_object(collector, object, resolve, matrix, 0, false, None)
+  collector.flush_alt({ matrix, font: None, size: 10.0, align: 0, clip: None, })
+  while collector.open.length() > 0 {
+    collector.close_top()
+  }
+  { runs: collector.runs, links: collector.links, nodes: collector.nodes, }
 }
 
 ///|
