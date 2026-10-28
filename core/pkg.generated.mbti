@@ -12,6 +12,8 @@ pub fn decode_path_collection(Bytes) -> Array[Path] raise
 
 pub fn open_single(Bytes) -> Document raise
 
+pub fn open_split(Bytes, (String, Int32) -> Bytes raise) -> SplitDocument raise
+
 pub fn parse_header(Bytes) -> Header raise
 
 pub fn parse_manifest(String) -> Manifest raise
@@ -128,6 +130,13 @@ pub fn Reader::u32(Self) -> Int32 raise
 pub fn Reader::u64_size(Self) -> Int32 raise
 pub fn Reader::u8(Self) -> Int32 raise
 pub fn Reader::varuint(Self) -> Int32 raise
+
+pub struct SplitDocument {
+  manifest : Manifest
+  // private fields
+}
+pub fn SplitDocument::part(Self, String) -> Bytes raise
+pub fn SplitDocument::stored_part(Self, String) -> Bytes raise
 
 pub(all) struct View {
   id : String

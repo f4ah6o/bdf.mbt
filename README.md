@@ -3,7 +3,7 @@
 MoonBit implementation of the BDF v1 wire-format reader and the browser-facing `@bdfkit/render`, `@bdfkit/convert`, and `@bdfkit/viewer` control layers.
 
 - Targets: `js` and `wasm-gc`.
-- `core`: checked BDF header, single-file manifest (identity and deflate-raw), BOBJ resource table, bounded binary reader.
+- `core`: checked BDF header, single and split documents (identity and deflate-raw), BOBJ resource tables, bounded binary reader.
 - `render`: backend-neutral, checked display-list decoder for a currently supported subset of Canvas 2D opcodes, including paths, gradient paints, and drawing effects.
 - `convert`: the worker-client request/response lifecycle and stream command model. Converter runtime itself (TinyGo) is **not** ported.
 - `viewer`: document/view selection state and page placement in single, spread, and continuous modes.
@@ -37,7 +37,7 @@ let viewer = @viewer.Viewer::new()
 viewer.set_layout(@viewer.Spread)
 ```
 
-The `browser` package exposes `mount_bdf` for supported documents. See [browser usage](docs/browser.md).
+The `core` package exposes `open_split` with a lazy host-provided loader for split documents. The loader is responsible for enforcing its supplied stored-size limit while reading. The `browser` package exposes `mount_bdf` for supported single-file documents. See [browser usage](docs/browser.md).
 
 ## Port backlog
 

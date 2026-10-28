@@ -90,14 +90,7 @@ pub fn Document::part(self : Document, hash : String) -> Bytes raise {
       let off = start + part.offset
       let r = Reader::new(self.data)
       r.skip(off)
-      let stored = r.take(part.length)
-      if part.encoding == "identity" {
-        return stored
-      } else if part.encoding == "deflate-raw" {
-        return inflate_bounded(stored, part.size)
-      } else {
-        raise BadFormat("unknown part encoding")
-      }
+      return decode_stored_part(part, r.take(part.length))
     }
   }
   raise BadFormat("unknown part")
