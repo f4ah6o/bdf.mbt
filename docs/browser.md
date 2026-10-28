@@ -150,7 +150,24 @@ exposed sequence object are not reflected yet.
 
 ## Converter Worker
 
-The converter client can run an existing compatible Go or TinyGo converter Wasm
+The MoonBit converter can run BMP and ICO conversion without a Go runtime.
+Build with `moon build --target js` and serve the generated
+`native_converter_worker/native_converter_worker.js`:
+
+```js
+const converter = bdf_create_native_converter('/native_converter_worker.js');
+const formats = await converter.ready;
+const result = await converter.convert(inputBytes, { name: 'picture.bmp' });
+converter.terminate();
+```
+
+`open()` returns the complete document with `pages: 0` for these formats.
+The native Worker currently supports only BMP and ICO, and rejects the `fonts`
+option. `bdf_converter_client`
+can also wrap its Worker; pass an empty Wasm URL. Other image formats and the
+other conversion engines remain to be ported.
+
+The converter client can also run an existing compatible Go or TinyGo converter Wasm
 module in a dedicated Worker. Build with `moon build --target js` and serve the
 generated `converter_worker/converter_worker.js` alongside the matching
 compiler's `wasm_exec.js` and the converter Wasm file. The `runtime` query
@@ -173,8 +190,7 @@ converter.terminate();
 
 `bdf_converter_client(worker, wasmUrl)` accepts an existing Worker instead.
 The runtime JavaScript must match the compiler used for the Wasm module. The
-worker transport does not include the converter engines; these must be supplied
-separately until they are ported to MoonBit.
+Go/TinyGo Worker transport requires a separately supplied converter module.
 
 ```js
 const bandsDrawn = await render_bdf_continuous_region_async(host, bytes, x, y, width, height, scale);

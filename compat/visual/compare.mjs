@@ -11,6 +11,7 @@ import { verifyPageControls } from '../continuous/controls-test.mjs';
 import { verifyAudioBrowser } from '../music/audio-browser-test.mjs';
 import { verifyMusicBrowser } from '../music/player-browser-test.mjs';
 import { verifyConverterBrowser } from '../converter/browser-test.mjs';
+import { verifyNativeConverter } from '../converter/native-test.mjs';
 import { verifyRenderWorker } from '../render_worker/browser-test.mjs';
 import { verifyRangeWorker } from '../render_worker/range-test.mjs';
 import { verifySegmentWorker } from '../render_worker/segment-test.mjs';
@@ -30,7 +31,7 @@ const outputRoot = path.join(root, '_build/visual-diff');
 mkdirSync(outputRoot, { recursive: true });
 const output = mkdtempSync(path.join(outputRoot, 'run-'));
 const executable = path.join(root, 'node_modules/.bin/vlmkit');
-const allowed = ['/compat/visual/', '/compat/interactive/', '/compat/sheet/', '/compat/continuous/', '/compat/music/', '/compat/converter/', '/compat/render_worker/', '/node_modules/@bdfkit/', '/_build/js/debug/build/browser/', '/_build/js/debug/build/converter_worker/', '/_build/js/debug/build/render_worker/'];
+const allowed = ['/compat/visual/', '/compat/interactive/', '/compat/sheet/', '/compat/continuous/', '/compat/music/', '/compat/converter/', '/compat/image/', '/compat/render_worker/', '/node_modules/@bdfkit/', '/_build/js/debug/build/browser/', '/_build/js/debug/build/converter_worker/', '/_build/js/debug/build/native_converter_worker/', '/_build/js/debug/build/render_worker/'];
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.bdf': 'application/octet-stream' };
 
 function run(args) {
@@ -440,6 +441,7 @@ try {
     await verifyAudioBrowser(browser,base);
     await verifyMusicBrowser(browser,base);
     await verifyConverterBrowser(browser,base);
+    await verifyNativeConverter(browser,base);
     await verifyRenderWorker(browser,base);
     await verifyRangeWorker(browser,base);
     await verifySegmentWorker(browser,base);

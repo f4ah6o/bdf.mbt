@@ -46,7 +46,7 @@ let cues = @core.decode_cues(cue_bytes)
 let cursor = @render.cursor_at_tick(cues, 480.0)
 ```
 
-The `convert/image` package converts BMP and ICO images on both targets, preserving the input bytes and matching upstream page geometry and figure alternative text. Its other image formats and the browser Worker integration are not yet implemented.
+The `convert/image` package converts BMP and ICO images on both targets, preserving the input bytes and matching upstream page geometry and figure alternative text. Its other image formats are not yet implemented. `bdf_create_native_converter` exposes the supported formats through a browser Worker without a Go runtime.
 
 `DocumentWriter` accepts manifest-format JSON for metadata, views and tables, and writes an unencrypted single-file document with content-addressed, deduplicated parts. It chooses identity or raw DEFLATE storage using the upstream defaults. It does not yet generate object drawing commands or encrypted and split output.
 

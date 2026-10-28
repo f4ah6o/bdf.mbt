@@ -20,6 +20,8 @@ pub fn bdf_converter_client(BrowserConverterWorker, String) -> BrowserConverter
 
 pub fn bdf_create_converter(String, String) -> BrowserConverter
 
+pub fn bdf_create_native_converter(String) -> BrowserConverter
+
 pub fn bdf_create_render_worker(String) -> BrowserRenderClient
 
 pub fn bdf_create_viewer(BrowserHost, BrowserViewerOptions) -> BrowserViewer
@@ -29,6 +31,8 @@ pub fn bdf_find(BrowserHost, String, Int32) -> BrowserFindResult
 pub fn bdf_find_async(BrowserHost, String, Int32) -> @js_async.Promise[BrowserFindResult]
 
 pub fn bdf_install_converter_worker() -> Unit
+
+pub fn bdf_install_native_converter_worker() -> Unit
 
 pub fn bdf_install_render_worker() -> Unit
 
