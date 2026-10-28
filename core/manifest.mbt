@@ -26,6 +26,7 @@ pub(all) struct View {
   id : String
   kind : String
   title : String
+  text_index : String?
   pages : Array[Page]
 }
 
@@ -210,7 +211,17 @@ fn parse_manifest_internal(
         layers,
       })
     }
-    views.push({ id, kind, title: optional_string(view, "title", ""), pages, })
+    let text_index = match optional_string(view, "textIndex", "") {
+      "" => None
+      hash => Some(hash)
+    }
+    views.push({
+      id,
+      kind,
+      title: optional_string(view, "title", ""),
+      text_index,
+      pages,
+    })
   }
   { parts, views, }
 }

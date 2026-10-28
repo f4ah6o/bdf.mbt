@@ -1,9 +1,20 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { decodeObject, extractContent, parseCellRef } from '@bdfkit/core';
+import { BdfDocument, decodeObject, decodeTextIndex, extractContent, parseCellRef } from '@bdfkit/core';
 import { tableCells, cellClipboard } from '@bdfkit/render';
 
 const dir = new URL('.', import.meta.url);
+const indexBytes = Buffer.from('42545854010003000100020548656c6c6f0001010106e4b896e7958c02000302046e657874', 'hex');
+const indexSource = readFileSync(new URL('../../core/text_index_test.mbt', dir), 'utf8');
+const indexLiteral = indexSource.match(/b"(BTXT[^\"]+)"/);
+assert.ok(indexLiteral, 'missing embedded BTXT fixture');
+const embeddedIndex = Buffer.from(indexLiteral[1].replace(/\\x([0-9a-f]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16))), 'latin1');
+assert.deepEqual(embeddedIndex, indexBytes);
+assert.deepEqual(decodeTextIndex(indexBytes), [
+  {a:0,b:1,ordinal:0,sep:2,text:'Hello'},
+  {a:0,b:1,ordinal:1,sep:1,text:'世界'},
+  {a:2,b:0,ordinal:3,sep:2,text:'next'},
+]);
 const parentBytes = readFileSync(new URL('parent.bobj', dir));
 const childBytes = readFileSync(new URL('child.bobj', dir));
 const testSource = readFileSync(new URL('../../render/text_test.mbt', dir), 'utf8');
@@ -17,6 +28,15 @@ const parent = decodeObject(parentBytes);
 const child = decodeObject(childBytes);
 const hash = readFileSync(new URL('child.hash', dir), 'utf8');
 const { runs, links } = extractContent(parent, h => h === hash ? child : undefined);
+const fallbackIndex = [[0,0,runs], [0,1,extractContent(child).runs], [1,0,extractContent(child).runs]].flatMap(([a,b,rs]) => rs.map((r,i) => ({a,b,ordinal:r.ordinal,sep:i === 0 ? 2 : r.sep,text:r.text})));
+const parentHash = '00000000000000000000000000000000';
+const manifest = {bdf:1,parts:[{h:parentHash,t:'obj',len:parentBytes.length,size:parentBytes.length},{h:hash,t:'obj',len:childBytes.length,size:childBytes.length}],views:[{id:'v',kind:'fixed',pages:[{w:100,h:100,layers:[{role:'body',obj:parentHash},{role:'annotation',obj:hash}]},{w:100,h:100,layers:[{role:'body',obj:hash}]}]}]};
+const doc = await BdfDocument.open({manifest:async()=>manifest,stored:async entry=>entry.h===parentHash ? parentBytes : childBytes});
+assert.deepEqual(await doc.textIndex(manifest.views[0]), fallbackIndex);
+assert.deepEqual(fallbackIndex.slice(-2), [
+  {a:0,b:1,ordinal:0,sep:2,text:'child'},
+  {a:1,b:0,ordinal:0,sep:2,text:'child'},
+]);
 assert.deepEqual(runs.map(r => r.text), ['Hello', 'World', 'second', 'wrapped', 'outlined', 'child', 'drawn by a child', 'orphan']);
 assert.deepEqual(runs.map(r => r.sep), [2, 1, 1, 0, 1, 1, 1, 1]);
 assert.deepEqual(runs.map(r => r.ordinal), [0, 1, 2, 3, 4, 5, 6, 7]);

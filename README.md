@@ -38,7 +38,7 @@ let viewer = @viewer.Viewer::new()
 viewer.set_layout(@viewer.Spread)
 ```
 
-The `core` package exposes `open_split` with a lazy host-provided loader for split documents. The loader is responsible for enforcing its supplied stored-size limit while reading. The `browser` package exposes `mount_bdf_async` for single-file documents, `mount_bdf_split_async` for split documents with an asynchronous part loader, and `mount_bdf` for documents that need no image or embedded font loading. The `mount_bdf_interactive_*` variants add an accessible text and link layer; call `unmount_bdf` to release its retained fonts. See [browser usage](docs/browser.md).
+The `core` package exposes `open_split` with a lazy host-provided loader for split documents. The loader is responsible for enforcing its supplied stored-size limit while reading. `decode_text_index` reads BTXT parts, and `render.page_text_index` loads a stored index or reconstructs one for paginated views. Search matching and reconstruction for sheet tiles are not implemented yet. The `browser` package exposes `mount_bdf_async` for single-file documents, `mount_bdf_split_async` for split documents with an asynchronous part loader, and `mount_bdf` for documents that need no image or embedded font loading. The `mount_bdf_interactive_*` variants add an accessible text and link layer; call `unmount_bdf` to release its retained fonts. See [browser usage](docs/browser.md).
 
 ## Port backlog
 

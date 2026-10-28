@@ -67,6 +67,74 @@ test "extract text and links in upstream reading order" {
     @render.join_text(content.runs),
     "Hello World secondwrapped outlined child drawn by a child orphan",
   )
+  let view : @core.View = {
+    id: "v",
+    kind: "fixed",
+    title: "",
+    text_index: None,
+    pages: [
+      {
+        width: 100.0,
+        height: 100.0,
+        layers: [
+          { role: "body", object: "parent", },
+          { role: "annotation", object: "child", },
+        ],
+      },
+      {
+        width: 100.0,
+        height: 100.0,
+        layers: [{ role: "body", object: "child", }],
+      },
+    ],
+  }
+  let index = @render.build_page_text_index(view, fn(hash) {
+    if hash == "parent" {
+      Some(parent)
+    } else if hash == "child" || hash == "cdf7bc4bf940dafef4e23430dc1fdfc7" {
+      Some(child)
+    } else {
+      None
+    }
+  })
+  assert_eq(index.length(), 10)
+  assert_eq(index[0].separator, 2)
+  assert_eq(
+    (index[8].a, index[8].b, index[8].ordinal, index[8].separator),
+    (0, 1, 0, 2),
+  )
+  assert_eq(
+    (index[9].a, index[9].b, index[9].ordinal, index[9].separator),
+    (1, 0, 0, 2),
+  )
+  assert_eq(
+    @core.index_plain_text(index),
+    "Hello World secondwrapped outlined child drawn by a child orphan\nchild\nchild",
+  )
+  let indexed_view = { ..view, text_index: Some("index"), }
+  let stored_index = @render.page_text_index(
+    indexed_view,
+    fn(hash) {
+      assert_eq(hash, "index")
+      b"BTXT\x01\x00\x01\x01\x02\x03\x02\x03abc"
+    },
+    fn(_) { fail("stored index must not extract objects") },
+  )
+  assert_eq(
+    (
+      stored_index[0].a,
+      stored_index[0].b,
+      stored_index[0].ordinal,
+      stored_index[0].text,
+    ),
+    (1, 2, 3, "abc"),
+  )
+  let fallback_index = @render.page_text_index(
+    view,
+    fn(_) { fail("fallback must not read an index part") },
+    fn(hash) { if hash == "parent" { Some(parent) } else { Some(child) } },
+  )
+  assert_eq(fallback_index, index)
   let transformed = @render.extract_text(
     parent,
     fn(hash) {

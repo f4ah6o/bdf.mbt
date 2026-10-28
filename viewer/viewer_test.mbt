@@ -4,10 +4,11 @@ test "spread places two pages side by side" {
     id: "slides",
     kind: "fixed",
     title: "",
+    text_index: None,
     pages: [
-      { width: 100.0, height: 200.0, layers: [] },
-      { width: 80.0, height: 100.0, layers: [] },
-      { width: 50.0, height: 100.0, layers: [] },
+      { width: 100.0, height: 200.0, layers: [], },
+      { width: 80.0, height: 100.0, layers: [], },
+      { width: 50.0, height: 100.0, layers: [], },
     ],
   }
   let viewer = Viewer::new()
@@ -23,9 +24,7 @@ test "spread places two pages side by side" {
 test "zoom reject zero and NaN" {
   let viewer = Viewer::new()
   let mut rejected = false
-  try {
-    viewer.set_zoom(0.0)
-  } catch {
+  viewer.set_zoom(0.0) catch {
     _ => rejected = true
   }
   assert_eq(rejected, true)

@@ -7,6 +7,8 @@ import {
 }
 
 // Values
+pub fn build_page_text_index(@core.View, (String) -> @core.ObjectResources? raise) -> Array[@core.IndexRun] raise
+
 pub fn cell_clipboard(Array[CellText], CellRange, trim? : Bool, skip_row? : (Int32) -> Bool, skip_col? : (Int32) -> Bool) -> CellClipboard raise
 
 pub fn compile_object(@core.ObjectPart) -> Array[Command] raise
@@ -16,6 +18,8 @@ pub fn decode_commands(Bytes) -> Array[Command] raise
 pub fn extract_text(@core.ObjectResources, (String) -> @core.ObjectResources? raise, matrix? : (Double, Double, Double, Double, Double, Double)) -> TextContent raise
 
 pub fn join_text(Array[TextRun]) -> String
+
+pub fn page_text_index(@core.View, (String) -> Bytes raise, (String) -> @core.ObjectResources? raise) -> Array[@core.IndexRun] raise
 
 pub fn parse_cell_ref(String) -> CellRef?
 

@@ -1,6 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "f4ah6o/bdf/core"
 
+import {
+  "moonbitlang/core/debug",
+}
+
 // Values
 pub fn decode_encoded(Bytes, String, Int32) -> Bytes raise
 
@@ -11,6 +15,10 @@ pub fn decode_object_resources(Bytes) -> ObjectResources raise
 pub fn decode_object_with_paths(Bytes) -> ObjectWithPaths raise
 
 pub fn decode_path_collection(Bytes) -> Array[Path] raise
+
+pub fn decode_text_index(Bytes) -> Array[IndexRun] raise
+
+pub fn index_plain_text(Array[IndexRun]) -> String
 
 pub fn open_encrypted_single(Bytes) -> EncryptedSingle raise
 
@@ -75,6 +83,14 @@ pub(all) struct Header {
   manifest_length : Int32
   manifest_encoding : Int32
 }
+
+pub(all) struct IndexRun {
+  a : Int32
+  b : Int32
+  ordinal : Int32
+  separator : Int32
+  text : String
+} derive(Eq, @debug.Debug)
 
 pub(all) enum KeySlot {
   Password(String, Int32, String, String)
@@ -170,6 +186,7 @@ pub(all) struct View {
   id : String
   kind : String
   title : String
+  text_index : String?
   pages : Array[Page]
 }
 
