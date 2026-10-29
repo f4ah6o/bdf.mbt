@@ -14,6 +14,8 @@ pub fn xlsx_reference(String, Int32) -> String
 
 pub fn xlsx_strings(Bytes) -> String
 
+pub fn xlsx_styles(Bytes) -> String
+
 pub fn xlsx_workbook(Bytes) -> String
 
 // Errors

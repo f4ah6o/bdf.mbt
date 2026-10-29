@@ -26,6 +26,16 @@ pub suberror XlsxInputError {
 }
 
 // Types and methods
+pub(all) struct XlsxAlignment {
+  horizontal : String
+  vertical : String
+  wrap : Bool
+  shrink : Bool
+  indent : Int32
+  rotation : Int32
+  justify_last : Bool
+}
+
 pub(all) struct XlsxCell {
   column : Int32
   style : Int32
@@ -34,12 +44,40 @@ pub(all) struct XlsxCell {
   text : String
 }
 
+pub(all) struct XlsxCellFormat {
+  number_format : Int32
+  font : Int32
+  fill : Int32
+  border : Int32
+  alignment : XlsxAlignment
+}
+
+pub(all) struct XlsxColor {
+  kind : Int32
+  rgb : UInt32
+  index : Int32
+  tint : Double
+}
+
 pub(all) struct XlsxColumn {
   first : Int32
   last : Int32
   width : Double
   hidden : Bool
   style : Int32
+}
+
+pub(all) struct XlsxFont {
+  mut name : String
+  mut size : Double
+  mut bold : Bool
+  mut italic : Bool
+  mut underline : String
+  mut strike : Bool
+  mut color : XlsxColor
+  mut vertical : String
+  mut scheme : String
+  mut family : Int32
 }
 
 pub(all) struct XlsxRange {
@@ -87,6 +125,12 @@ pub(all) struct XlsxSheetRef {
   index : Int32
 }
 
+pub(all) struct XlsxStyles {
+  fonts : Array[XlsxFont]
+  number_formats : Map[Int32, String]
+  cell_formats : Array[XlsxCellFormat]
+}
+
 pub(all) struct XlsxWorkbook {
   package : @ooxml.OoxmlPackage
   part : String
@@ -98,6 +142,7 @@ pub(all) struct XlsxWorkbook {
 pub fn XlsxWorkbook::read_sheet_cells(Self, String) -> XlsxSheetCells raise
 pub fn XlsxWorkbook::read_sheet_geometry(Self, String) -> XlsxSheetGeometry raise
 pub fn XlsxWorkbook::shared_strings(Self) -> Array[String]
+pub fn XlsxWorkbook::styles(Self) -> XlsxStyles
 
 // Type aliases
 

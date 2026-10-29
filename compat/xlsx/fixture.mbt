@@ -162,3 +162,62 @@ pub fn xlsx_geometry(data : Bytes, part : String) -> String {
     _ => "null"
   }
 }
+
+///|
+#export_name("xlsx_styles")
+pub fn xlsx_styles(data : Bytes) -> String {
+  try {
+    let workbook = @xlsx.read_xlsx_workbook(data)
+    let styles = workbook.styles()
+    let fonts = styles.fonts.map(fn(f) {
+      let color = f.color
+      Json::array([
+        Json::string(f.name),
+        Json::number(f.size),
+        Json::boolean(f.bold),
+        Json::boolean(f.italic),
+        Json::string(f.underline),
+        Json::boolean(f.strike),
+        Json::number(color.kind.to_double()),
+        Json::number(((color.rgb >> 16) & 255U).to_double() / 255.0),
+        Json::number(((color.rgb >> 8) & 255U).to_double() / 255.0),
+        Json::number((color.rgb & 255U).to_double() / 255.0),
+        Json::number(color.index.to_double()),
+        Json::number(color.tint),
+        Json::string(f.vertical),
+        Json::string(f.scheme),
+        Json::number(f.family.to_double()),
+      ])
+    })
+    let ids : Array[Int32] = []
+    for id, _ in styles.number_formats {
+      ids.push(id)
+    }
+    ids.sort()
+    let formats = ids.map(id => {
+      Json::array([
+        Json::number(id.to_double()),
+        Json::string(styles.number_formats[id]),
+      ])
+    })
+    let xfs = styles.cell_formats.map(fn(x) {
+      let a = x.alignment
+      Json::array([
+        Json::number(x.number_format.to_double()),
+        Json::number(x.font.to_double()),
+        Json::number(x.fill.to_double()),
+        Json::number(x.border.to_double()),
+        Json::string(a.horizontal),
+        Json::string(a.vertical),
+        Json::boolean(a.wrap),
+        Json::boolean(a.shrink),
+        Json::number(a.indent.to_double()),
+        Json::number(a.rotation.to_double()),
+        Json::boolean(a.justify_last),
+      ])
+    })
+    Json::array([Json::array(fonts), Json::array(formats), Json::array(xfs)]).stringify()
+  } catch {
+    _ => "null"
+  }
+}
