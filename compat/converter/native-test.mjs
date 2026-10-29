@@ -26,6 +26,19 @@ export async function verifyNativeConverter(browser, base) {
         try {
           const formats = await client.ready;
           if (!formats.some(f => f.name === 'image' && ['.bmp', '.ico', '.jpg', '.png', '.gif', '.webp', '.avif', '.svg'].every(ext => f.extensions.includes(ext)))) throw new Error(`${kind}: missing image formats ${JSON.stringify(formats)}`);
+          const imageFormat = formats.find(f => f.name === 'image');
+          if (imageFormat.description !== 'Image stored as it is: PNG, JPEG, GIF, WebP, AVIF, BMP, ICO or SVG' || JSON.stringify(imageFormat.extensions) !== JSON.stringify(['.png', '.apng', '.jpg', '.jpeg', '.jpe', '.jfif', '.gif', '.webp', '.avif', '.bmp', '.ico', '.svg'])) throw new Error(`${kind}: image format descriptor differs from upstream`);
+          for (const [method, pages, expected] of [
+            ['convert', '0', 'convert: pages: bad page "0" in "0": pages are numbered from 1'],
+            ['open', '1-x', 'open: pages: bad page "x" in "1-x": pages are numbered from 1'],
+            ['convert', '5-3', 'convert: pages: bad page range "5-3": it ends before it starts'],
+            ['open', '2--3', 'open: pages: bad page "-3" in "2--3": pages are numbered from 1'],
+          ]) {
+            let message;
+            try { await client[method](toBytes(fixtures[0].input), { pages }); } catch (error) { message = error.message; }
+            if (message !== expected) throw new Error(`${kind}: incorrect page selection error: ${message}`);
+          }
+          await client.convert(toBytes(fixtures[0].input), { pages: ' 3 , 1-1 , -3, 7-, - ' });
           const converted = [];
           for (const fixture of [fixtures[0], fixtures[1], fixtures[4], fixtures[5], fixtures[6], fixtures[7], fixtures[9], fixtures[10], fixtures[11], fixtures[12], fixtures[13], fixtures[14], fixtures.find(f => f.name === 'anim.gif'), fixtures.find(f => f.name === 'xmp.gif'), fixtures.find(f => f.name === 'scene.webp'), fixtures.find(f => f.name === 'rotated.avif'), ...fixtures.filter(f => f.format === 'svg'), ...fixtures.filter(f => f.name.startsWith('synthetic-') && (f.format === 'webp' || f.format === 'avif'))]) {
             const input = toBytes(fixture.input);
