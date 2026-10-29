@@ -21,6 +21,8 @@ pub fn load(Bytes) -> FontFile raise
 
 pub fn metadata_languages(Bytes) -> (String, String)
 
+pub fn parse_example_limit(String) -> Int32 raise
+
 pub fn parse_specimen_names(Bytes) -> SpecimenNames
 
 pub fn parse_variations(Bytes, SpecimenNames) -> Variations

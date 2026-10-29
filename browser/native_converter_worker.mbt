@@ -22,7 +22,7 @@ extern "js" fn native_unsupported_named_format(name : String) -> Bool =
 
 ///|
 extern "js" fn native_converter_formats(request : ConverterRequest) -> Unit =
-  #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'csv',description:'CSV or TSV (comma-, tab-, semicolon- or bar-separated values)',extensions:['.csv','.tsv','.tab']},{name:'image',description:'Image stored as it is: PNG, JPEG, GIF, WebP, AVIF, BMP, ICO or SVG',extensions:['.png','.apng','.jpg','.jpeg','.jpe','.jfif','.gif','.webp','.avif','.bmp','.ico','.svg']}]})
+  #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'csv',description:'CSV or TSV (comma-, tab-, semicolon- or bar-separated values)',extensions:['.csv','.tsv','.tab']},{name:'font',description:'Font file (TrueType, OpenType, WOFF)',extensions:['.ttf','.otf','.ttc','.otc','.woff','.woff2']},{name:'image',description:'Image stored as it is: PNG, JPEG, GIF, WebP, AVIF, BMP, ICO or SVG',extensions:['.png','.apng','.jpg','.jpeg','.jpe','.jfif','.gif','.webp','.avif','.bmp','.ico','.svg']}]})
 
 ///|
 extern "js" fn native_converter_result(
@@ -118,7 +118,7 @@ async fn NativeConverterState::dispatch(
     Some(db)
   }
   let format = native_converter_option(request, "format")
-  if format != "" && format != "image" && format != "csv" {
+  if format != "" && format != "image" && format != "csv" && format != "font" {
     native_converter_error(request, "unknown format \"" + format + "\"", "")
     return
   }
@@ -128,12 +128,22 @@ async fn NativeConverterState::dispatch(
     native_convert_csv(request, data, name, kind == "open", database)
     return
   }
+  if format == "font" || (format == "" && @font.detect(data)) {
+    native_convert_font(request, data, kind == "open", database)
+    return
+  }
   let result = @image.convert(data, name~) catch {
     @image.ImageFailure(message) => {
       if format == "" &&
         message ==
         "image: input is not a supported BMP, ICO, JPEG, PNG, GIF, WebP, AVIF or SVG image" {
         let lower = name.to_lower()
+        let font_named = lower.has_suffix(".ttf") ||
+          lower.has_suffix(".otf") ||
+          lower.has_suffix(".ttc") ||
+          lower.has_suffix(".otc") ||
+          lower.has_suffix(".woff") ||
+          lower.has_suffix(".woff2")
         let csv_named = lower.has_suffix(".csv") ||
           lower.has_suffix(".tsv") ||
           lower.has_suffix(".tab")
@@ -144,6 +154,10 @@ async fn NativeConverterState::dispatch(
         }].to_owned()
         let strong_other = @hpgl.detect(head) ||
           @utf8.decode_lossy(head).contains("%PDF-")
+        if font_named && !strong_other {
+          native_convert_font(request, data, kind == "open", database)
+          return
+        }
         let csv_detected = if csv_named ||
           native_unsupported_named_format(name) ||
           strong_other {
@@ -254,13 +268,64 @@ fn native_convert_csv(
 }
 
 ///|
+fn native_convert_font(
+  request : ConverterRequest,
+  data : Bytes,
+  opened : Bool,
+  database : @fontdb.Database?,
+) -> Unit {
+  let example_limit = @font.parse_example_limit(
+    native_converter_param(request, "examples"),
+  ) catch {
+    @font.InvalidFontInput(message) => {
+      native_converter_error(request, message, "")
+      return
+    }
+    error => {
+      native_converter_error(request, error.to_string(), "")
+      return
+    }
+  }
+  let options = @font.SpecimenOptions::new()
+  let options : @font.SpecimenOptions = {
+    selection: native_converter_param(request, "font"),
+    title: options.title,
+    text: native_converter_param(request, "text"),
+    examples: example_limit,
+    system_fonts: options.system_fonts,
+    no_subset: options.no_subset,
+    ignore_restrictions: options.ignore_restrictions,
+    no_text_index: options.no_text_index,
+  }
+  let db = database.unwrap_or(@fontdb.Database::new())
+  let result = @font.convert(data, db, options~) catch {
+    @font.InvalidFontInput(message) => {
+      native_converter_error(request, message, "")
+      return
+    }
+    error => {
+      native_converter_error(request, error.to_string(), "")
+      return
+    }
+  }
+  native_converter_result(
+    request,
+    result.bdf,
+    "font",
+    result.summary,
+    result.warnings,
+    opened,
+  )
+}
+
+///|
 extern "js" fn install_native_converter_listener(
   dispatch : (ConverterRequest) -> @js_async.Promise[Unit],
 ) -> Unit =
   #|(dispatch) => {self.onmessage=event=>{const request=event.data;Promise.resolve().then(()=>dispatch(request)).catch(e=>{const id=request?.type==='init'?0:Number(request?.id);self.postMessage({id,ok:false,error:e?.message??String(e),code:e?.code})})}}
 
 ///|
-/// Install the MoonBit converter Worker for native image and CSV formats.
+/// Install the MoonBit converter Worker for native image, CSV and font formats.
 #export_name("bdf_install_native_converter_worker")
 pub fn bdf_install_native_converter_worker() -> Unit {
   let state : NativeConverterState = { ready: false, }

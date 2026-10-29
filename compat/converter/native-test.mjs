@@ -10,7 +10,13 @@ export async function verifyNativeConverter(browser, base) {
       const { BdfDocument, BufferSource } = await import('@bdfkit/core');
       const fixtures = await (await fetch('/compat/image/upstream.json')).json();
       const csvFixtures = await (await fetch('/compat/csv/conversion.json')).json();
+      const specimenPacked = await (await fetch('/compat/specimen/convert.json.gz')).arrayBuffer();
+      const unzip = async data => new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+      const specimen = JSON.parse(new TextDecoder().decode(await unzip(specimenPacked)));
+      const fontCase = specimen.cases.find(c => c.name === 'stix.ttf' && !c.system && !c.uiFont && !c.noIndex && !c.noSubset);
+      const fontBytes = await unzip(Uint8Array.from(atob(specimen.files['stix.ttf']), c => c.charCodeAt(0)));
       const toBytes = encoded => Uint8Array.from(atob(encoded), c => c.charCodeAt(0));
+      const stable = value => Array.isArray(value) ? value.map(stable) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(k => [k, stable(value[k])])) : value;
       {
         const worker = new Worker('/_build/js/debug/build/native_converter_worker/native_converter_worker.js', { type: 'module' });
         const reply = new Promise(resolve => worker.onmessage = event => resolve(event.data));
@@ -27,6 +33,25 @@ export async function verifyNativeConverter(browser, base) {
         try {
           const formats = await client.ready;
           if (!formats.some(f => f.name === 'image' && ['.bmp', '.ico', '.jpg', '.png', '.gif', '.webp', '.avif', '.svg'].every(ext => f.extensions.includes(ext)))) throw new Error(`${kind}: missing image formats ${JSON.stringify(formats)}`);
+          const fontFormat = formats.find(f => f.name === 'font');
+          if (fontFormat?.description !== 'Font file (TrueType, OpenType, WOFF)' || JSON.stringify(fontFormat.extensions) !== JSON.stringify(['.ttf','.otf','.ttc','.otc','.woff','.woff2'])) throw new Error(kind + ': missing font format');
+          for (const options of [{params:{examples:'5'}}, {format:'font', name:'anything.csv', params:{examples:'5'}}]) {
+            const converted = await client.convert(fontBytes, options);
+            if (converted.format !== 'font' || converted.summary !== fontCase.summary || JSON.stringify(converted.warnings) !== JSON.stringify(fontCase.warnings)) throw new Error(kind + ': font report differs from upstream');
+            const fontDoc = await BdfDocument.open(new BufferSource(converted.bdf));
+            if (JSON.stringify(stable(fontDoc.manifest.views)) !== JSON.stringify(stable(fontCase.views))) throw new Error(kind + ': font views differ from upstream');
+            for (const part of fontCase.parts) {
+              const actual = new Uint8Array(await fontDoc.part(part.hash));
+              const expected = Uint8Array.from(atob(part.data), c => c.charCodeAt(0));
+              if (actual.length !== expected.length || actual.some((v, i) => v !== expected[i])) throw new Error(kind + ': font part differs from upstream: ' + part.hash);
+            }
+          }
+          const openedFont = await client.open(fontBytes, {name:'font.ttf', params:{examples:'5'}});
+          if (openedFont.format !== 'font' || openedFont.pages !== 0 || openedFont.stream !== undefined) throw new Error(kind + ': font open did not return a complete document');
+          for (const [value, expected] of [['bad','font: parameter examples: \"bad\" is not a number or all'], ['-1','font: parameter examples: \"-1\" is not a number or all']]) {
+            let error; try { await client.convert(fontBytes, {format:'font', params:{examples:value}}); } catch (e) { error = e.message; }
+            if (error !== expected) throw new Error(kind + ': wrong font parameter error ' + error);
+          }
           const csvFormat = formats.find(f => f.name === 'csv');
           if (csvFormat?.description !== 'CSV or TSV (comma-, tab-, semicolon- or bar-separated values)' || JSON.stringify(csvFormat.extensions) !== JSON.stringify(['.csv', '.tsv', '.tab'])) throw new Error(kind + ': missing CSV format');
           const imageFormat = formats.find(f => f.name === 'image');

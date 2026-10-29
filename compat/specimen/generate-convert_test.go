@@ -28,10 +28,10 @@ func TestCodexFontConvert(t *testing.T) {
 	}
 	cases := []any{}
 	for _, name := range []string{"stix.ttf", "stix.otf", "features.ttf", "restricted.ttf", "variable.ttf", "bold.ttc", "color.ttf"} {
-		for mode := 0; mode < 4; mode++ {
-			system := mode%2 == 0
+		for mode := 0; mode < 5; mode++ {
+			system := mode == 0 || mode == 2
 			noIndex := mode == 0
-			uiFont := mode%3 != 0
+			uiFont := mode%3 != 0 && mode != 4
 			selection := ""
 			title := ""
 			if name == "bold.ttc" && mode == 3 {

@@ -259,3 +259,36 @@ pub fn convert(
   )
   { bdf: writer.write_single(), summary: summary.join(", "), warnings, }
 }
+
+///|
+/// Parse the upstream examples parameter: empty selects 200, "all" selects
+/// unlimited examples, and nonnegative integers set the display limit.
+pub fn parse_example_limit(value : String) -> Int32 raise {
+  if value == "" {
+    return 200
+  }
+  if value == "all" {
+    return 0
+  }
+  let chars : Array[Char] = [ for c in value => c ]
+  let first = if chars.length() > 0 && (chars[0] == '+' || chars[0] == '-') {
+    1
+  } else {
+    0
+  }
+  let mut valid = first < chars.length()
+  for i in first..<chars.length() {
+    if chars[i] < '0' || chars[i] > '9' {
+      valid = false
+    }
+  }
+  if valid {
+    let number = @string.parse_int64(value) catch { _ => -1L }
+    if number >= 0L {
+      return Int64::min(number, 2147483647L).to_int()
+    }
+  }
+  raise InvalidFontInput(
+    "font: parameter examples: " + font_quote(value) + " is not a number or all",
+  )
+}
