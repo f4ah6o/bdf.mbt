@@ -14,6 +14,8 @@ pub fn estimate(FixedArray[Double], Int32) -> String
 
 pub fn glyph(String) -> String
 
+pub fn paginate(FixedArray[Double], Double, Double, Double) -> String
+
 pub fn positions(Int32, Int32, Int32, Int32, FixedArray[Int32], FixedArray[Int32]) -> String
 
 pub fn quantize(FixedArray[Int32], FixedArray[Int32]) -> String

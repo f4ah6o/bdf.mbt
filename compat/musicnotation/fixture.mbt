@@ -651,3 +651,44 @@ pub fn drawing(
     "skylines": Json::array(sky),
   }).stringify()
 }
+
+///|
+#export_name("paginate")
+pub fn paginate(
+  raw : FixedArray[Double],
+  page_height : Double,
+  staff_space : Double,
+  title_height : Double,
+) -> String {
+  let systems : Array[@music.MusicSystemExtent] = []
+  let mut i = 0
+  while i < raw.length() {
+    let page_break = raw[i] != 0.0
+    let count = raw[i + 1].to_int()
+    i += 2
+    let staves : Array[@music.MusicStaffExtent] = []
+    for _ in 0..<count {
+      staves.push({
+        part: raw[i].to_int(),
+        above: raw[i + 1],
+        below: raw[i + 2],
+      })
+      i += 3
+    }
+    systems.push({ staves, page_break, })
+  }
+  let positions = @music.paginate_systems(
+    systems, page_height, staff_space, title_height,
+  )
+  Json::array(
+    positions.map(p => {
+      Json::array([
+        Json::array(p.staff_y.map(v => Json::number(v))),
+        Json::number(p.above),
+        Json::number(p.below),
+        Json::number(p.top),
+        Json::number(p.page.to_double()),
+      ])
+    }),
+  ).stringify()
+}

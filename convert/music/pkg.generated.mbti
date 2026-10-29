@@ -56,6 +56,8 @@ pub fn notate(Performance, time_override? : TimeSig?, key_override? : KeySig?) -
 
 pub fn note_ticks(Int32, Int32) -> Int64
 
+pub fn paginate_systems(Array[MusicSystemExtent], Double, Double, Double) -> Array[MusicSystemPlacement]
+
 pub fn percussion_durations(Array[QuantizedNote], Array[BeatGrid]) -> Array[QuantizedNote]
 
 pub fn place_accidentals(EngravingClef, Array[EngravingNote], Array[Int32?]) -> Array[PlacedAccidental]
@@ -211,12 +213,31 @@ pub(all) struct MusicSlot {
   minimum : Double
 }
 
+pub(all) struct MusicStaffExtent {
+  part : Int32
+  above : Double
+  below : Double
+}
+
 pub(all) struct MusicSystem {
   first : Int32
   last : Int32
   header : Double
   width : Double
   columns : Array[PositionedColumn]
+}
+
+pub(all) struct MusicSystemExtent {
+  staves : Array[MusicStaffExtent]
+  page_break : Bool
+}
+
+pub(all) struct MusicSystemPlacement {
+  staff_y : Array[Double]
+  above : Double
+  below : Double
+  mut top : Double
+  page : Int32
 }
 
 pub(all) struct MusicTextMetrics {
