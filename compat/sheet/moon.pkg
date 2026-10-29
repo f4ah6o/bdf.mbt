@@ -1,0 +1,9 @@
+import {
+  "f4ah6o/bdf/convert/sheet",
+  "f4ah6o/bdf/convert/csv",
+  "moonbitlang/core/encoding/utf8",
+}
+
+supported_targets = "js"
+
+pkgtype(kind: "foreign_library")

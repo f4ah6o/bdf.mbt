@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/sheet"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn fallback_advance(Char, Bool) -> Double
+
+pub fn fit_columns(Array[Array[Cell]], header_rows? : Int32, subheader? : Bool, filter_buttons? : Bool, mdw? : Double, advance? : (Char, Bool) -> Double) -> Array[Float] raise
+
+// Errors
+pub suberror SheetError {
+  InvalidArgument(String)
+} derive(@debug.Debug)
+
+// Types and methods
+pub(all) struct Cell {
+  text : String
+  number : Bool
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits

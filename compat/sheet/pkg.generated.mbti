@@ -1,0 +1,13 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/compat/sheet"
+
+// Values
+pub fn column_fixture(Int32) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

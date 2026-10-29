@@ -13,6 +13,8 @@ pub fn detect_dialect(String, cut? : Bool, delimiter? : Byte, quote? : Int32) ->
 
 pub fn encode_table(Table) -> Bytes raise
 
+pub fn fit_grid_columns(Grid, filter_buttons? : Bool, mdw? : Double, advance? : (Char, Bool) -> Double) -> Array[Float] raise
+
 pub fn guess_language(String, String) -> String
 
 pub fn has_header(Array[Array[String]]) -> Bool

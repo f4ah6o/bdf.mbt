@@ -6,6 +6,7 @@ import {
   "LL728/moon_encoding" @encoding,
   "f4ah6o/bdf/encoding/parquet",
   "f4ah6o/bdf/core",
+  "f4ah6o/bdf/convert/sheet",
 }
 
 supported_targets = "+js+wasm-gc"

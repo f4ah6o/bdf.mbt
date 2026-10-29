@@ -23,3 +23,15 @@ From an upstream checkout, regenerate it with:
 go run /absolute/path/to/bdf.mbt/compat/sheet/generate.go /absolute/path/to/bdf.mbt/compat/sheet/fixture.bdf /absolute/path/to/bdf.mbt/compat/sheet/split /absolute/path/to/bdf.mbt/compat/visual/synthetic.ttf /absolute/path/to/bdf.mbt/compat/sheet/encrypted.bdf /absolute/path/to/bdf.mbt/compat/sheet/encrypted-split
 go run /absolute/path/to/bdf.mbt/compat/sheet/cells-generate.go /absolute/path/to/bdf.mbt/compat/sheet/cells.bdf /absolute/path/to/bdf.mbt/compat/sheet/cells-split /absolute/path/to/bdf.mbt/compat/sheet/cells-encrypted.bdf /absolute/path/to/bdf.mbt/compat/sheet/cells-encrypted-split
 ```
+
+Column width fixtures use the upstream sheet and CSV converters at commit
+`4f9af52dca60be1eb0daade39f7dc41d6a1fe431` with system fonts disabled. They
+cover headers, numeric alignment, long values, East Asian characters, line
+breaks and table filter buttons. From that upstream checkout, regenerate them
+and compare the result with:
+
+```sh
+go run /path/to/bdf.mbt/compat/sheet/generate-grid.go > /path/to/bdf.mbt/compat/sheet/upstream.json
+moon build --target js
+npm run test:sheet-compat
+```
