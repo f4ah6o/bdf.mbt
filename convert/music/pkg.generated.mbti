@@ -57,7 +57,7 @@ pub fn layout_basic_staff(NotatedScore, PreparedScore, MusicSystem, Int32) -> Ba
 
 pub fn layout_midi_score(NotatedScore, MusicPageOptions, (String, Double, Bool) -> MusicTextMetrics) -> MusicScoreLayout?
 
-pub fn midi_score_cues(NotatedScore, MusicScoreLayout, Int32) -> (@core.Cues, Bool)
+pub fn midi_score_cues(NotatedScore, MusicScoreLayout, Int32, keep? : Array[Bool]?) -> (@core.Cues, Bool)
 
 pub fn music_bracket_width(Array[MusicPartSpan]) -> Double
 
@@ -292,6 +292,7 @@ pub(all) struct MusicRenderOptions {
 pub(all) struct MusicRenderedPages {
   layout : MusicScoreLayout
   objects : Array[String]
+  page_data : Array[Bytes]
   glyph_paths : String?
   embedded_fonts : Int32
   warnings : Array[String]

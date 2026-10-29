@@ -3,9 +3,12 @@ package "f4ah6o/bdf/convert/midi"
 
 import {
   "f4ah6o/bdf/convert/music",
+  "f4ah6o/bdf/font/db",
 }
 
 // Values
+pub fn convert_score(Bytes, @db.Database, options? : MidiScoreOptions) -> MidiScoreResult raise
+
 pub fn credits(MidiRawFile) -> MidiCredits
 
 pub fn detect(Bytes) -> Bool
@@ -156,6 +159,32 @@ pub(all) struct MidiRawTrack {
   body : Bytes
   scan : MidiTrackScan
   notes : MidiTrackNotes
+}
+
+pub(all) struct MidiScoreOptions {
+  page : @music.MusicPageOptions
+  pages : Array[Int32]?
+  time : @music.TimeSig?
+  key : @music.KeySig?
+  no_play : Bool
+  no_text_index : Bool
+  system_fonts : Bool
+  no_subset : Bool
+  ignore_restrictions : Bool
+  no_woff2 : Bool
+}
+pub fn MidiScoreOptions::new() -> Self
+
+pub(all) struct MidiScoreResult {
+  bdf : Bytes
+  warnings : Array[String]
+  pages : Int32
+  systems : Int32
+  measures : Int32
+  parts : Int32
+  staves : Int32
+  notes : Int32
+  embedded_fonts : Int32
 }
 
 pub struct MidiTextDecoder {

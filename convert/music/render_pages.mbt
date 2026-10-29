@@ -14,6 +14,7 @@ pub(all) struct MusicRenderOptions {
 pub(all) struct MusicRenderedPages {
   layout : MusicScoreLayout
   objects : Array[String]
+  page_data : Array[Bytes]
   glyph_paths : String?
   embedded_fonts : Int32
   warnings : Array[String]
@@ -40,8 +41,27 @@ pub fn render_midi_pages(
     raise InvalidMusicScore("music: the score has no notes")
   }
   let mut count = 0
+  let mut event_count = 0L
   for part in score.parts {
     count += Int32::max(part.clefs.length(), 1)
+    for measure in part.measures {
+      event_count += measure.events.length().to_int64()
+    }
+  }
+  if count > 4096 {
+    raise InvalidMusicScore("music: the score has more than 4096 staves")
+  }
+  if count.to_int64() * score.timeline.measures.length().to_int64() > 1000000L {
+    raise InvalidMusicScore(
+      "music: the score has more than 1000000 measures on its staves (" +
+      count.to_string() +
+      " staves of " +
+      score.timeline.measures.length().to_string() +
+      " measures)",
+    )
+  }
+  if event_count > 2000000L {
+    raise InvalidMusicScore("music: the score has more than 2000000 notes")
   }
   let height = if options.page.width <= 0.0 || options.page.height <= 0.0 {
     841.8898
@@ -116,6 +136,7 @@ pub fn render_midi_pages(
     )
   }
   let objects : Array[String] = []
+  let page_data : Array[Bytes] = []
   for pi in 0..<pages {
     let object = @core.ObjectBuilder::new()
     object.set_bbox(
@@ -237,7 +258,9 @@ pub fn render_midi_pages(
         1,
       )
     }
-    objects.push(document.add_part("obj", object.encode()))
+    let data = object.encode()
+    page_data.push(data)
+    objects.push(document.add_part("obj", data))
   }
   let warnings = fonts.warnings.copy()
   match texter.missing_warning() {
@@ -247,6 +270,7 @@ pub fn render_midi_pages(
   {
     layout,
     objects,
+    page_data,
     glyph_paths: glyph_hash,
     embedded_fonts: fonts.hashes.length(),
     warnings,

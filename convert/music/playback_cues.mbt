@@ -5,6 +5,7 @@ pub fn midi_score_cues(
   score : NotatedScore,
   layout : MusicScoreLayout,
   division : Int32,
+  keep~ : Array[Bool]? = None,
 ) -> (@core.Cues, Bool) {
   let sp = layout.staff_space
   let margin = 14.0 * (72.0 / 25.4)
@@ -12,12 +13,34 @@ pub fn midi_score_cues(
   let systems : Array[@core.CueSystem] = []
   let cues : Array[@core.Cue] = []
   let mut truncated = false
-  for si, system in layout.systems {
+  let page_index : Array[Int32] = []
+  let mut next_page = 0
+  let page_count = if layout.systems.is_empty() {
+    0
+  } else {
+    layout.systems[layout.systems.length() - 1].placement.page + 1
+  }
+  for pi in 0..<page_count {
+    let selected = match keep {
+      Some(pages) => pi < pages.length() && pages[pi]
+      None => true
+    }
+    page_index.push(if selected { next_page } else { -1 })
+    if selected {
+      next_page += 1
+    }
+  }
+  for system in layout.systems {
     let p = system.placement
+    let page = page_index[p.page]
+    if page < 0 {
+      continue
+    }
+    let si = systems.length()
     let ox = music_mul_add(system.left, sp, margin)
     let oy = p.top
     systems.push({
-      page: p.page.to_uint(),
+      page: page.to_uint(),
       x: Float::from_double(ox).to_double(),
       y: Float::from_double(oy - sp).to_double(),
       width: Float::from_double(system.system.width * sp).to_double(),

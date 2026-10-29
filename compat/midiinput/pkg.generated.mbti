@@ -14,6 +14,8 @@ pub fn header(Bytes, Int32) -> String
 
 pub fn lyrics(Bytes) -> String
 
+pub fn midi_document(Bytes, Double, Double, Double, String, Bool, Bool, Bool) -> String
+
 pub fn performance(Bytes) -> String
 
 pub fn prepare_score(Bytes) -> String
