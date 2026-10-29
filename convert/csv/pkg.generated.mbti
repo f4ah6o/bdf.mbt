@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn looks_numeric(String) -> Bool
+
 pub fn read_records(String, Dialect) -> Records raise
 
 // Errors
