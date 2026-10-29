@@ -8,6 +8,8 @@ pub fn drum(Int32) -> String
 
 pub fn estimate(FixedArray[Double], Int32) -> String
 
+pub fn glyph(String) -> String
+
 pub fn quantize(FixedArray[Int32], FixedArray[Int32]) -> String
 
 pub fn spell(Int32, Int32, Bool, Int32) -> String

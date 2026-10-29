@@ -16,6 +16,8 @@ pub fn estimate_key(Array[Double], Int32) -> KeySig
 
 pub fn key_of(Int32, Bool, Int32) -> KeySig
 
+pub fn music_glyph(String) -> MusicGlyph?
+
 pub fn notate(Performance, time_override? : TimeSig?, key_override? : KeySig?) -> NotatedScore
 
 pub fn note_ticks(Int32, Int32) -> Int64
@@ -66,6 +68,16 @@ pub(all) struct MeasureSpan {
   mut key : KeySig?
   mut effective_key : KeySig
   tempo : Array[TempoMark]
+}
+
+pub(all) struct MusicGlyph {
+  name : String
+  codepoint : Int32
+  advance : Double
+  bbox : (Double, Double, Double, Double)
+  anchors : Map[String, (Double, Double)]
+  verbs : Bytes
+  coordinates : Array[Double]
 }
 
 pub(all) struct NotatedPart {

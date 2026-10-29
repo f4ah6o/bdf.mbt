@@ -130,4 +130,6 @@ Build the JavaScript target with `moon build --target js` and serve the generate
 
 MIT; see [LICENSE](LICENSE). This port adapts code and fixtures from [shibukawa/bdf](https://github.com/shibukawa/bdf), licensed under [MIT](licenses/Shibukawa-bdf.txt). The raw DEFLATE implementation and the adapted SHA-256 implementation are supplied by [gaato/deflate](https://github.com/gaato/codecs.mbt), licensed under [Apache-2.0](licenses/Apache-2.0.txt); XMP parsing uses Apache-2.0 licensed [Milky2018/xml](https://github.com/moonbit-community/xml-mbt); browser Promise integration uses Apache-2.0 licensed [moonbitlang/async](https://github.com/moonbitlang/async). CSV decoding uses Apache-2.0 licensed [LL728/moon_encoding](https://github.com/LL728/moon_encoding), whose character tables incorporate [WHATWG Encoding data](licenses/WHATWG-Encoding.txt), and adapts algorithms from [golang.org/x/text](licenses/Go-x-text.txt). MIDI lyric handling uses Unicode tables from the [Go standard library](licenses/Go-x-text.txt).
 
+Music symbols use Bravura, distributed under the [SIL Open Font License](licenses/Bravura-OFL.txt).
+
 Font test fixtures include STIX Two Text, distributed under the [SIL Open Font License](compat/font/fixtures/OFL.txt); see [font fixture notes](compat/font/README.md).

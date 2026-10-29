@@ -435,3 +435,34 @@ pub fn staff_events(
     }),
   ).stringify()
 }
+
+///|
+#export_name("glyph")
+pub fn glyph(name : String) -> String {
+  match @music.music_glyph(name) {
+    None => Json::null().stringify()
+    Some(g) => {
+      let (x0, y0, x1, y1) = g.bbox
+      let anchors : Map[String, Json] = Map([])
+      for (key, (x, y)) in g.anchors {
+        anchors[key] = Json::array([Json::number(x), Json::number(y)])
+      }
+      Json::object({
+        "name": Json::string(g.name),
+        "codepoint": Json::number(g.codepoint.to_double()),
+        "advance": Json::number(g.advance),
+        "bbox": Json::array([
+          Json::number(x0),
+          Json::number(y0),
+          Json::number(x1),
+          Json::number(y1),
+        ]),
+        "anchors": Json::object(anchors),
+        "verbs": Json::array(
+          g.verbs.to_array().map(v => Json::number(v.to_double())),
+        ),
+        "coordinates": Json::array(g.coordinates.map(v => Json::number(v))),
+      }).stringify()
+    }
+  }
+}

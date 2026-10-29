@@ -1,6 +1,6 @@
 # Music notation compatibility fixtures
 
-These fixtures compare musical meter, key estimation, pitch spelling measure timelines, note quantization, clef selection, percussion mapping, note-value division, voice assignment and staff events with
+These fixtures compare musical meter, key estimation, pitch spelling measure timelines, note quantization, clef selection, percussion mapping, note-value division, voice assignment, staff events and Bravura glyphs with
 shibukawa/bdf commit `4f9af52dca60be1eb0daade39f7dc41d6a1fe431`.
 They exercise all key signatures, negative and positive pitch numbers,
 spelling hints and deterministic duration histograms.
@@ -21,3 +21,9 @@ fixtures use `generate_staff_test.go` and `TestCodexMusicStaff`. Note-value
 fixtures use `generate_values_test.go` and `TestCodexMusicValues`. Voice
 fixtures use `generate_voices_test.go` and `TestCodexMusicVoices`. Staff event
 fixtures use `generate_events_test.go` and `TestCodexMusicEvents`.
+
+Generate `convert/music/smufl_data.mbt` and `smufl_names.json` by copying
+`generate_smufl_test.go` to the upstream `converter/internal/music/smufl`
+package and running `TestCodexSMuFL`, then format the MoonBit package. The
+`generate_glyph_test.go` fixture uses `TestCodexMusicGlyphs` in the upstream
+`converter/internal/music` package and reads `smufl_names.json`.
