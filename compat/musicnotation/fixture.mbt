@@ -190,3 +190,43 @@ pub fn quantize(
     ),
   }).stringify()
 }
+
+///|
+#export_name("staff")
+pub fn staff(
+  keys : FixedArray[Int32],
+  channel : Int32,
+  program : Int32,
+) -> String {
+  let notes : Array[@music.QuantizedNote] = []
+  for key in keys {
+    notes.push({ on: 0L, off: 960L, key, velocity: 100, spelling: 0, })
+  }
+  match @music.plan_staff(notes, channel, program) {
+    None => Json::null().stringify()
+    Some(plan) =>
+      Json::object({
+        "percussion": Json::boolean(plan.percussion),
+        "clefs": Json::array(
+          plan.clefs.map(c => {
+            Json::array([
+              Json::number(c.sign.to_double()),
+              Json::number(c.octave.to_double()),
+            ])
+          }),
+        ),
+      }).stringify()
+  }
+}
+
+///|
+#export_name("drum")
+pub fn drum(key : Int32) -> String {
+  let d = @music.drum_of(key)
+  Json::array([
+    Json::number(d.pitch.step.to_double()),
+    Json::number(d.pitch.octave.to_double()),
+    Json::number(d.head.to_double()),
+    Json::number(d.voice.to_double()),
+  ]).stringify()
+}

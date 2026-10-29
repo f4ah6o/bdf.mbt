@@ -6,9 +6,15 @@ pub fn beat_grids(Array[MeasureSpan], Array[Int64]) -> Array[BeatGrid]
 
 pub fn build_timeline(Int64, Array[TimeChange], Array[KeyChange], Array[TempoChange], Array[Double], Int32, time_override? : TimeSig?, key_override? : KeySig?) -> ScoreTimeline
 
+pub fn drum_of(Int32) -> DrumNotation
+
 pub fn estimate_key(Array[Double], Int32) -> KeySig
 
 pub fn key_of(Int32, Bool, Int32) -> KeySig
+
+pub fn percussion_durations(Array[QuantizedNote], Array[BeatGrid]) -> Array[QuantizedNote]
+
+pub fn plan_staff(Array[QuantizedNote], Int32, Int32) -> StaffPlan?
 
 pub fn quantize_notes(Array[MeasureSpan], Array[NotationNote]) -> Array[QuantizedNote]
 
@@ -25,6 +31,12 @@ pub(all) struct BeatGrid {
   triplet : Bool
 }
 pub fn BeatGrid::snap(Self, Int64) -> Int64
+
+pub(all) struct DrumNotation {
+  pitch : Pitch
+  head : Int32
+  voice : Int32
+}
 
 pub(all) struct KeyChange {
   tick : Int64
@@ -44,6 +56,11 @@ pub(all) struct MeasureSpan {
   mut key : KeySig?
   mut effective_key : KeySig
   tempo : Array[TempoMark]
+}
+
+pub(all) struct NotationClef {
+  sign : Int32
+  octave : Int32
 }
 
 pub(all) struct NotationNote {
@@ -72,6 +89,12 @@ pub(all) struct ScoreTimeline {
   measures : Array[MeasureSpan]
   warnings : Array[String]
 }
+
+pub(all) struct StaffPlan {
+  clefs : Array[NotationClef]
+  percussion : Bool
+}
+pub fn StaffPlan::staff_for(Self, Int32) -> Int32
 
 pub(all) struct TempoChange {
   tick : Int64
