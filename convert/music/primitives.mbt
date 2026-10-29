@@ -23,6 +23,9 @@ pub(all) struct MusicPrimitive {
   text : String
   align : Int32
   mark : Int32
+  text_size : Double
+  text_bold : Bool
+  text_italic : Bool
 }
 
 ///|
@@ -96,6 +99,9 @@ fn primitive(
     text,
     align,
     mark,
+    text_size: 0.0,
+    text_bold: false,
+    text_italic: false,
   }
 }
 
@@ -150,6 +156,9 @@ pub fn MusicDrawing::spanning_glyph(
         text: "",
         align: 0,
         mark: 0,
+        text_size: 0.0,
+        text_bold: false,
+        text_italic: false,
       })
   }
 }
@@ -228,13 +237,33 @@ pub fn MusicDrawing::text(
   width : Double,
   ascent : Double,
   descent : Double,
+  size~ : Double = 0.0,
+  bold~ : Bool = false,
+  italic~ : Bool = false,
 ) -> Unit {
   if text == "" {
     return
   }
-  self.primitives.push(
-    primitive(4, "", x, y, 0.0, 0.0, 0.0, 0.0, 0.0, None, text, align, 0),
-  )
+  self.primitives.push({
+    kind: 4,
+    glyph: "",
+    x,
+    y,
+    w: 0.0,
+    h: 0.0,
+    scale: 0.0,
+    scale_x: 1.0,
+    scale_y: 1.0,
+    width: 0.0,
+    dash: 0.0,
+    outline: None,
+    text,
+    align,
+    mark: 0,
+    text_size: size,
+    text_bold: bold,
+    text_italic: italic,
+  })
   let x0 = x - width * align.to_double() / 2.0
   self.box(x0, y - ascent, x0 + width, y + descent)
 }

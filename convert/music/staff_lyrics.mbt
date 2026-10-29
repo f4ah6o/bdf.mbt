@@ -63,6 +63,7 @@ pub fn draw_staff_lyrics(
       line.metrics.width,
       line.metrics.ascent,
       line.metrics.descent,
+      size=2.2,
     )
   }
   let hy = y - 0.3 * 2.2

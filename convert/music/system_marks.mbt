@@ -60,6 +60,8 @@ pub fn draw_system_marks(
       metrics.width,
       metrics.ascent,
       metrics.descent,
+      size=1.6,
+      italic=true,
     )
   }
   for mi in system.first..<=system.last {
@@ -98,6 +100,7 @@ pub fn draw_system_marks(
         metrics.width,
         metrics.ascent,
         metrics.descent,
+        size=2.4,
       )
     }
   }

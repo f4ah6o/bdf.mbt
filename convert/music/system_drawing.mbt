@@ -96,6 +96,7 @@ pub fn draw_spanning_system(
           metric.width,
           metric.ascent,
           metric.descent,
+          size=2.2,
         )
       }
     }

@@ -18,3 +18,13 @@ test "tie curve is a closed cubic outline" {
   assert_eq(x1, 4.0)
   assert_true(y0 < 0.0 && y1 > 0.0)
 }
+
+///|
+test "text primitives retain their font style for BDF output" {
+  let drawing = MusicDrawing::new()
+  drawing.text("12", 0.0, 0.0, 0, 1.0, 1.0, 0.2, size=1.6, italic=true)
+  let item = drawing.primitives()[0]
+  inspect(item.text_size, content="1.6")
+  assert_true(item.text_italic)
+  assert_false(item.text_bold)
+}

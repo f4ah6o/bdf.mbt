@@ -192,7 +192,7 @@ pub fn MusicDrawing::primitives(Self) -> Array[MusicPrimitive]
 pub fn MusicDrawing::rect(Self, Double, Double, Double, Double) -> Unit
 pub fn MusicDrawing::skyline(Self, Double, Double, Double, Bool) -> Double
 pub fn MusicDrawing::spanning_glyph(Self, String, Double, Double, Double, Double) -> Unit
-pub fn MusicDrawing::text(Self, String, Double, Double, Int32, Double, Double, Double) -> Unit
+pub fn MusicDrawing::text(Self, String, Double, Double, Int32, Double, Double, Double, size? : Double, bold? : Bool, italic? : Bool) -> Unit
 
 pub(all) struct MusicGlyph {
   name : String
@@ -239,6 +239,9 @@ pub(all) struct MusicPrimitive {
   text : String
   align : Int32
   mark : Int32
+  text_size : Double
+  text_bold : Bool
+  text_italic : Bool
 }
 
 pub(all) struct MusicScoreLayout {
