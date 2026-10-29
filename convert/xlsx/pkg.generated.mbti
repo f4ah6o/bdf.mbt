@@ -22,6 +22,8 @@ pub fn xlsx_default_palette() -> Array[UInt32]
 
 pub fn xlsx_format_general(Double, Int32) -> String
 
+pub fn xlsx_format_numeric(XlsxFormatSection, Double) -> (Array[XlsxFormatPiece], Bool)
+
 pub fn xlsx_iso_serial(String, Bool) -> Double?
 
 pub fn xlsx_parse_number_format(String, Array[UInt32]) -> Array[XlsxFormatSection]
@@ -92,6 +94,11 @@ pub(all) struct XlsxFont {
   mut vertical : String
   mut scheme : String
   mut family : Int32
+}
+
+pub(all) struct XlsxFormatPiece {
+  kind : Int32
+  text : String
 }
 
 pub(all) struct XlsxFormatSection {

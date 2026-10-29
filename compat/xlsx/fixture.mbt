@@ -311,3 +311,24 @@ pub fn xlsx_format_layouts(code : String) -> String {
     }),
   ).stringify()
 }
+
+///|
+#export_name("xlsx_numeric")
+pub fn xlsx_numeric(code : String, value : Double) -> String {
+  let sections = @xlsx.xlsx_parse_number_format(
+    code,
+    @xlsx.xlsx_default_palette(),
+  )
+  let (pieces, general) = @xlsx.xlsx_format_numeric(sections[0], value)
+  Json::array([
+    Json::array(
+      pieces.map(fn(piece) {
+        Json::array([
+          Json::number(piece.kind.to_double()),
+          Json::string(piece.text),
+        ])
+      }),
+    ),
+    Json::boolean(general),
+  ]).stringify()
+}

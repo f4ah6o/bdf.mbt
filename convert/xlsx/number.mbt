@@ -207,3 +207,52 @@ fn xlsx_format_general_inner(
   }
   sign + xlsx_trim_decimal(mantissa) + exponent_text
 }
+
+///|
+// Go's portable math.Log polynomial, derived from FreeBSD msun/e_log.c:
+// Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+// Developed at SunPro, a Sun Microsystems, Inc. business.
+// Permission to use, copy, modify, and distribute this software is freely
+// granted, provided that this notice is preserved.
+fn xlsx_go_log10(value : Double) -> Double {
+  if value == 0.0 || value.is_nan() || value.is_inf() || value < 0.0 {
+    return @math.log10(value)
+  }
+  let normalized = if value < 2.2250738585072014e-308 {
+    value * 4503599627370496.0
+  } else {
+    value
+  }
+  let correction = if value < 2.2250738585072014e-308 { -52 } else { 0 }
+  let bits = normalized.reinterpret_as_uint64()
+  let mut power = correction + ((bits >> 52) & 0x7ffUL).to_int() - 1023 + 1
+  let mut fraction = ((bits & 0x800fffffffffffffUL) | (1022UL << 52)).reinterpret_as_double()
+  if fraction < 0.7071067811865475244 {
+    fraction *= 2.0
+    power -= 1
+  }
+  let f = fraction - 1.0
+  let k = power.to_double()
+  let s = f / (2.0 + f)
+  let s2 = s * s
+  let s4 = s2 * s2
+  let t1 = s2 *
+    (
+      0.6666666666666735130 +
+      s4 *
+      (
+        0.2857142874366239149 +
+        s4 * (0.1818357216161805012 + s4 * 0.1479819860511658591)
+      )
+    )
+  let t2 = s4 *
+    (
+      0.3999999999940941908 +
+      s4 * (0.2222219843214978396 + s4 * 0.1531383769920937332)
+    )
+  let r = t1 + t2
+  let hfsq = 0.5 * f * f
+  let log = k * 0.693147180369123816490 -
+    (hfsq - (s * (hfsq + r) + k * 1.90821492927058770002e-10) - f)
+  log * 0.43429448190325182765
+}
