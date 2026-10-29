@@ -4,6 +4,10 @@ package "f4ah6o/bdf/compat/sheet"
 // Values
 pub fn column_fixture(Int32) -> String
 
+pub fn drawing_summary(Int32) -> String
+
+pub fn drawing_tile(Int32, Int32) -> Bytes
+
 pub fn geometry_fixture(Int32) -> String
 
 pub fn line_break_fixture(Int32, Int32) -> Bool

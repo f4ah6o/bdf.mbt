@@ -2,10 +2,13 @@
 package "f4ah6o/bdf/convert/sheet"
 
 import {
+  "f4ah6o/bdf/core",
   "moonbitlang/core/debug",
 }
 
 // Values
+pub fn draw_grid_no_fonts(Array[Array[Cell]], header_rows? : Int32, subheader? : Bool, language? : String) -> DrawnGrid raise
+
 pub fn fallback_advance(Char, Bool) -> Double
 
 pub fn fallback_line_metrics(Char, Bool) -> (Double, Double)
@@ -20,6 +23,8 @@ pub fn line_break_allowed(Char, Char) -> Bool
 
 pub fn line_break_joins(Char, Char) -> Bool
 
+pub fn store_grid(@core.DocumentWriter, DrawnGrid, id? : String, title? : String, text_index? : Bool) -> Unit raise
+
 pub fn wrap_text(String, Double, bold? : Bool, advance? : (Char, Bool) -> Double) -> Array[WrappedLine]
 
 // Errors
@@ -33,11 +38,23 @@ pub(all) struct Cell {
   number : Bool
 } derive(Eq, @debug.Debug)
 
+pub(all) struct DrawnGrid {
+  geometry : GridGeometry
+  tiles : Array[GridTile]
+}
+
 pub(all) struct GridGeometry {
   columns : Array[Run]
   rows : Array[Run]
   frozen_rows : Int32
 } derive(Eq, @debug.Debug)
+
+pub(all) struct GridTile {
+  x : Int32
+  y : Int32
+  object : Bytes
+  drawn : Bool
+}
 
 pub(all) struct Run {
   count : Int32

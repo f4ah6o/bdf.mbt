@@ -34,6 +34,7 @@ and compare the result with:
 go run /path/to/bdf.mbt/compat/sheet/generate-grid.go > /path/to/bdf.mbt/compat/sheet/upstream.json
 go run /path/to/bdf.mbt/compat/sheet/generate-heights.go > /path/to/bdf.mbt/compat/sheet/heights.json
 go run /path/to/bdf.mbt/compat/sheet/generate-geometry.go > /path/to/bdf.mbt/compat/sheet/geometry.json
+go run /path/to/bdf.mbt/compat/sheet/generate-draw.go > /path/to/bdf.mbt/compat/sheet/drawing.json
 moon build --target js
 npm run test:sheet-compat
 ```

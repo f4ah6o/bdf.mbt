@@ -38,6 +38,29 @@ pub fn decode_text_index(data : Bytes) -> Array[IndexRun] raise {
 }
 
 ///|
+/// Encode the text index runs of a BDF view.
+pub fn encode_text_index(runs : Array[IndexRun]) -> Bytes raise {
+  let out = @buffer.Buffer()
+  out.write_bytes(b"BTXT\x01\x00")
+  out.write_leb128(runs.length().reinterpret_as_uint())
+  for run in runs {
+    if run.a < 0 ||
+      run.b < 0 ||
+      run.ordinal < 0 ||
+      run.separator < 0 ||
+      run.separator > 255 {
+      raise BadFormat("invalid text index run")
+    }
+    out.write_leb128(run.a.reinterpret_as_uint())
+    out.write_leb128(run.b.reinterpret_as_uint())
+    out.write_leb128(run.ordinal.reinterpret_as_uint())
+    out.write_byte(run.separator.to_byte())
+    object_write_string(out, run.text)
+  }
+  out.to_bytes()
+}
+
+///|
 /// Join index runs in reading order, preserving their spaces and breaks.
 pub fn index_plain_text(runs : Array[IndexRun]) -> String {
   let text = StringBuilder()

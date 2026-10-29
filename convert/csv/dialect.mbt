@@ -35,6 +35,16 @@ pub fn detect_dialect(
   } else {
     input
   }
+  csv_sniff(sample, sample_cut, delimiter, quote)
+}
+
+///|
+fn csv_sniff(
+  sample : Bytes,
+  sample_cut : Bool,
+  delimiter : Byte,
+  quote : Int32,
+) -> DialectGuess {
   let delimiters = if delimiter == 0 {
     [b',', b'\t', b';', b'|']
   } else {

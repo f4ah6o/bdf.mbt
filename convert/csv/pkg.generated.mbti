@@ -8,7 +8,11 @@ import {
 }
 
 // Values
+pub fn convert_no_fonts(Bytes, name? : String, title? : String, charset? : String, delimiter? : Byte, quote? : Int32, header? : Header, data_mode? : DataMode, no_text_index? : Bool) -> NoFontResult raise
+
 pub fn decode_text(Bytes, charset? : String) -> DecodedText raise
+
+pub fn detect(Bytes) -> Bool raise
 
 pub fn detect_dialect(String, cut? : Bool, delimiter? : Byte, quote? : Int32) -> DialectGuess raise
 
@@ -30,11 +34,17 @@ pub fn looks_numeric(String) -> Bool
 
 pub fn parse(Bytes, charset? : String, delimiter? : Byte, quote? : Int32, header? : Header) -> ParseResult raise
 
+pub fn parse_params(Map[String, String]) -> Params raise
+
 pub fn prepare_grid(ParseResult) -> Grid
 
 pub fn read_records(String, Dialect) -> Records raise
 
+pub fn sheet_name(String) -> String
+
 pub fn store_table(@core.DocumentWriter, Table, title? : String, view? : String, mode? : DataMode) -> String? raise
+
+pub fn summary(ParseResult) -> String
 
 pub fn table_value_type(String) -> ColumnType
 
@@ -96,6 +106,21 @@ pub(all) enum Header {
   HeaderYes
   HeaderNo
 } derive(Eq, @debug.Debug)
+
+pub(all) struct NoFontResult {
+  bdf : Bytes
+  parsed : ParseResult
+  warnings : Array[String]
+}
+
+pub(all) struct Params {
+  charset : String
+  delimiter : Byte
+  quote : Int32
+  header : Header
+  data_mode : DataMode
+  table_style : String
+}
 
 pub(all) struct ParseResult {
   rows : Array[Array[String]]

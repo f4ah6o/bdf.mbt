@@ -16,6 +16,11 @@ go run /path/to/bdf.mbt/compat/csv/generate.go > /path/to/bdf.mbt/compat/csv/ups
 go run /path/to/bdf.mbt/compat/csv/generate-pairs.go > /path/to/bdf.mbt/compat/csv/pairs.json
 cp /path/to/bdf.mbt/compat/csv/generate-table_test.go converter/csv/
 BDF_CSV_TABLE_FIXTURE=/path/to/bdf.mbt/compat/csv/table.json go test ./converter/csv -run '^TestGenerateTableFixture$' -count=1
+go run /path/to/bdf.mbt/compat/csv/generate-convert.go > /path/to/bdf.mbt/compat/csv/conversion.json
+cp /path/to/bdf.mbt/compat/csv/generate-detect_test.go converter/csv/
+BDF_CSV_DETECT_FIXTURE=/path/to/bdf.mbt/compat/csv/detect.json go test ./converter/csv -run '^TestCodexGenerateDetection$' -count=1
 ```
 
 After `moon build --target js`, run `npm run test:csv-compat` in this module.
+`npm run test:csv-visual` compares the rendered upstream and MoonBit documents
+with vlmkit and checks the reference is not blank.

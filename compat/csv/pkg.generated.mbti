@@ -2,7 +2,15 @@
 package "f4ah6o/bdf/compat/csv"
 
 // Values
+pub fn convert_fixture(Bytes, String, String, String, Int32, Int32, Int32, String, Bool) -> Bytes
+
+pub fn convert_summary(Bytes, String, String, String, Int32, Int32, Int32, String, Bool) -> String
+
 pub fn decode_only(Bytes, String) -> String
+
+pub fn detect_fixture(Bytes) -> Bool
+
+pub fn plotter_fixture(Bytes) -> Bool
 
 pub fn read_fixture(Bytes, String) -> String
 

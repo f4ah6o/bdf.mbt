@@ -61,3 +61,95 @@ pub fn table_fixture(value : String) -> String {
   }
   Json::object({ "kind": Json::string(kind), "value": Json::string(actual) }).stringify()
 }
+
+///|
+fn conversion(
+  data : Bytes,
+  name : String,
+  title : String,
+  charset : String,
+  delimiter : Int32,
+  quote : Int32,
+  header : Int32,
+  mode : String,
+  no_text_index : Bool,
+) -> @csv.NoFontResult {
+  let header : @csv.Header = match header {
+    1 => HeaderYes
+    2 => HeaderNo
+    _ => HeaderAuto
+  }
+  let data_mode : @csv.DataMode = match mode {
+    "none" => DataNone
+    "all" => DataAll
+    _ => DataDefault
+  }
+  try! @csv.convert_no_fonts(
+    data,
+    name~,
+    title~,
+    charset~,
+    delimiter=delimiter.to_byte(),
+    quote~,
+    header~,
+    data_mode~,
+    no_text_index~,
+  )
+}
+
+///|
+#export_name("convert_fixture")
+pub fn convert_fixture(
+  data : Bytes,
+  name : String,
+  title : String,
+  charset : String,
+  delimiter : Int32,
+  quote : Int32,
+  header : Int32,
+  mode : String,
+  no_text_index : Bool,
+) -> Bytes {
+  conversion(
+    data, name, title, charset, delimiter, quote, header, mode, no_text_index,
+  ).bdf
+}
+
+///|
+#export_name("convert_summary")
+pub fn convert_summary(
+  data : Bytes,
+  name : String,
+  title : String,
+  charset : String,
+  delimiter : Int32,
+  quote : Int32,
+  header : Int32,
+  mode : String,
+  no_text_index : Bool,
+) -> String {
+  let result = conversion(
+    data, name, title, charset, delimiter, quote, header, mode, no_text_index,
+  )
+  Json::object({
+    "charset": Json::string(result.parsed.charset),
+    "bom": Json::boolean(result.parsed.bom),
+    "header": Json::boolean(result.parsed.header),
+    "rows": Json::number(result.parsed.rows.length().to_double()),
+    "columns": Json::number(result.parsed.columns.to_double()),
+    "summary": Json::string(@csv.summary(result.parsed)),
+    "warnings": Json::array(result.warnings.map(Json::string)),
+  }).stringify()
+}
+
+///|
+#export_name("detect_fixture")
+pub fn detect_fixture(data : Bytes) -> Bool {
+  try! @csv.detect(data)
+}
+
+///|
+#export_name("plotter_fixture")
+pub fn plotter_fixture(data : Bytes) -> Bool {
+  @hpgl.detect(data)
+}

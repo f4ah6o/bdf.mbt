@@ -1,5 +1,7 @@
 import {
   "moonbit-community/ucd",
+  "f4ah6o/bdf/core",
+  "f4ah6o/bdf/render",
 }
 
 supported_targets = "+js+wasm-gc"

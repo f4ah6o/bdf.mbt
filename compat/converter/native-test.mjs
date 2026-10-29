@@ -9,6 +9,7 @@ export async function verifyNativeConverter(browser, base) {
       const { Converter } = await import('/node_modules/@bdfkit/convert/dist/index.js');
       const { BdfDocument, BufferSource } = await import('@bdfkit/core');
       const fixtures = await (await fetch('/compat/image/upstream.json')).json();
+      const csvFixtures = await (await fetch('/compat/csv/conversion.json')).json();
       const toBytes = encoded => Uint8Array.from(atob(encoded), c => c.charCodeAt(0));
       {
         const worker = new Worker('/_build/js/debug/build/native_converter_worker/native_converter_worker.js', { type: 'module' });
@@ -26,6 +27,8 @@ export async function verifyNativeConverter(browser, base) {
         try {
           const formats = await client.ready;
           if (!formats.some(f => f.name === 'image' && ['.bmp', '.ico', '.jpg', '.png', '.gif', '.webp', '.avif', '.svg'].every(ext => f.extensions.includes(ext)))) throw new Error(`${kind}: missing image formats ${JSON.stringify(formats)}`);
+          const csvFormat = formats.find(f => f.name === 'csv');
+          if (csvFormat?.description !== 'CSV or TSV (comma-, tab-, semicolon- or bar-separated values)' || JSON.stringify(csvFormat.extensions) !== JSON.stringify(['.csv', '.tsv', '.tab'])) throw new Error(kind + ': missing CSV format');
           const imageFormat = formats.find(f => f.name === 'image');
           if (imageFormat.description !== 'Image stored as it is: PNG, JPEG, GIF, WebP, AVIF, BMP, ICO or SVG' || JSON.stringify(imageFormat.extensions) !== JSON.stringify(['.png', '.apng', '.jpg', '.jpeg', '.jpe', '.jfif', '.gif', '.webp', '.avif', '.bmp', '.ico', '.svg'])) throw new Error(`${kind}: image format descriptor differs from upstream`);
           for (const [method, pages, expected] of [
@@ -83,7 +86,66 @@ export async function verifyNativeConverter(browser, base) {
           let missing;
           try { await client.page(123, 0); } catch (e) { missing = { name: e.name, message: e.message }; }
           if (closed !== null || missing?.name !== 'ConvertError' || missing.message !== 'no conversion 123') throw new Error('invalid stream lifecycle');
-          result.push({ converted, closed, missing });
+          const csvOutcomes = [];
+          const sorted = value => Array.isArray(value) ? value.map(sorted) : value && typeof value === 'object'
+            ? Object.fromEntries(Object.keys(value).sort().map(key => [key, sorted(value[key])])) : value;
+          for (const sample of csvFixtures.filter(f => !f.input.NoTextIndex && f.input.Name && !f.input.Title).slice(0, 4)) {
+            const input = sample.input, params = {};
+            if (input.Delimiter) params.delimiter = String.fromCharCode(input.Delimiter);
+            if (input.Quote === -1) params.quote = 'none';
+            else if (input.Quote) params.quote = String.fromCharCode(input.Quote);
+            if (input.Header === 1) params.header = 'true';
+            if (input.Header === 2) params.header = 'false';
+            if (input.Mode) params.data = input.Mode;
+            if (input.Charset) params.charset = input.Charset;
+            const expected = await BdfDocument.open(new BufferSource(toBytes(sample.bdf)));
+            for (const method of ['convert', 'open']) {
+              const output = await client[method](toBytes(input.Data), { format: 'csv', name: input.Name + '.csv', params });
+              const doc = await BdfDocument.open(new BufferSource(output.bdf));
+              for (const field of ['views', 'tables', 'meta']) {
+                if (JSON.stringify(sorted(doc.manifest[field] ?? [])) !== JSON.stringify(sorted(expected.manifest[field] ?? []))) throw new Error(kind + ': CSV ' + field + ' differs');
+              }
+              if (output.summary !== sample.summary || JSON.stringify(output.warnings) !== JSON.stringify(sample.warnings) || output.format !== 'csv') throw new Error(kind + ': CSV result differs');
+              if (method === 'open' && output.pages !== 0) throw new Error(kind + ': CSV open should return a whole document');
+              for (const part of doc.manifest.parts) {
+                const other = expected.manifest.parts.find(p => p.h === part.h);
+                if (!other || other.t !== part.t) throw new Error(kind + ': CSV part differs');
+              }
+              csvOutcomes.push({ summary: output.summary, warnings: output.warnings, views: doc.manifest.views });
+            }
+            const named = await client.convert(toBytes(input.Data), { name: input.Name + '.csv', params });
+            if (named.format !== 'csv' || named.summary !== sample.summary) throw new Error(kind + ': CSV extension detection differs');
+          }
+          for (const [params, expected] of [
+            [{ header: 'maybe' }, 'csv: parameter header: "maybe" is not true, false or auto'],
+            [{ quote: 'bad' }, 'csv: parameter quote: "bad" is not double, single or none'],
+            [{ data: 'bad' }, 'csv: parameter data: "bad" is not none, all or default'],
+            [{ table: 'Medium2' }, 'native CSV converter does not yet support table styles'],
+          ]) {
+            let error;
+            try { await client.convert(new TextEncoder().encode('a,b\n1,2'), { format: 'csv', params }); } catch (e) { error = e.message; }
+            if (error !== expected) throw new Error(kind + ': CSV parameter error ' + error);
+          }
+          const guessed = await client.convert(new TextEncoder().encode('name,value\nAlice,1\nBob,2\n'));
+          if (guessed.format !== 'csv' || !guessed.summary.includes('header row')) throw new Error(kind + ': CSV content detection failed');
+          const boolOptions = await client.convert(new TextEncoder().encode('a,b\n1,2'), { format: 'csv', params: { header: true, data: 'none' } });
+          const boolDoc = await BdfDocument.open(new BufferSource(boolOptions.bdf));
+          if (boolDoc.manifest.tables?.length || boolDoc.manifest.views[0].freeze?.rows !== 1) throw new Error(kind + ': CSV boolean option failed');
+          let plotterError;
+          try { await client.convert(new TextEncoder().encode('IN;SP1;PA0,0;PD100,200;')); } catch (e) { plotterError = e.code; }
+          if (plotterError !== 'unknown-format') throw new Error(kind + ': plotter data was mistaken for CSV');
+          for (const [input, name] of [
+            ['IN;SP1;PA0,0;PD100,200;', 'plot.csv'],
+            ['%PDF-1.7\nname,value\nA,1\n', 'document.csv'],
+            ['name,value\nA,1\nB,2\n', 'score.mml'],
+          ]) {
+            let code;
+            try { await client.convert(new TextEncoder().encode(input), { name }); } catch (e) { code = e.code; }
+            if (code !== 'unknown-format') throw new Error(kind + ': unsupported format was mistaken for CSV');
+          }
+          const imageNamedCsv = await client.convert(toBytes(fixtures[0].input), { name: 'picture.csv' });
+          if (imageNamedCsv.format !== fixtures[0].format) throw new Error(kind + ': image signature must precede the CSV filename');
+          result.push({ converted, closed, missing, csvOutcomes });
         } finally { client.terminate(); }
       }
       for (const fixture of [fixtures[0], fixtures[6], fixtures[10], fixtures[12], fixtures[14], fixtures.find(f => f.name === 'anim.gif'), fixtures.find(f => f.name === 'scene.webp'), fixtures.find(f => f.name === 'rotated.avif'), fixtures.find(f => f.name === 'drawing.svg'), fixtures.find(f => f.name === 'units.svg')]) {

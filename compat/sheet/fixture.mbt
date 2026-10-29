@@ -178,6 +178,108 @@ fn geometry_json(geometry : @sheet.GridGeometry) -> String {
 }
 
 ///|
+fn drawing_fixture(which : Int32) -> @sheet.DrawnGrid {
+  let rows : Array[Array[@sheet.Cell]] = match which {
+    0 => []
+    1 => [[cell("hello")]]
+    2 =>
+      [[cell("name"), cell("value")], [cell("Alice"), cell("12", number=true)]]
+    3 => [[cell("a\nb"), cell("  ")]]
+    4 =>
+      [
+        [cell("日本語ABC 漢字"), cell("123", number=true)],
+        [cell("漢字"), cell("カナ 한글")],
+      ]
+    5 => [[cell("long text ".repeat(200)), cell(""), cell("stop")]]
+    6 => {
+      let rows : Array[Array[@sheet.Cell]] = []
+      for _ in 0..<160 {
+        rows.push([cell("row"), cell("7", number=true)])
+      }
+      rows
+    }
+    7 => [[cell("   ")]]
+    8 => {
+      let row : Array[@sheet.Cell] = []
+      for _ in 0..<65 {
+        row.push(cell("xx"))
+      }
+      [row]
+    }
+    9 => [[cell("a\n".repeat(40))], [cell("next")]]
+    10 =>
+      [[cell("\u{feff}Hello"), cell("\t  x  ")], [cell("\u{1}"), cell("done")]]
+    11 => [[cell("Header")], [cell("Subheader")], [cell("Value")]]
+    12 => [[cell("漢字"), cell("English")], [cell("かな"), cell("한글")]]
+    _ => {
+      let i = which - 13
+      let texts = [
+        "English \t text", "カナ abc 漢字", "한글 ab", "漢字", "abc\n def",
+        "  ", "", "abc-def xyz",
+      ]
+      let rows : Array[Array[@sheet.Cell]] = []
+      for r in 0..<3 {
+        let row : Array[@sheet.Cell] = []
+        for col in 0..<3 {
+          let mut text = texts[(i * 3 + r * 5 + col * 7) % texts.length()]
+          if (i + r + col) % 11 == 0 {
+            text += "xy".repeat(300)
+          }
+          row.push(cell(text, number=(i + r + col) % 4 == 0))
+        }
+        rows.push(row)
+      }
+      rows
+    }
+  }
+  let header = if which >= 1 && which <= 4 {
+    1
+  } else if which == 11 {
+    2
+  } else if which >= 13 {
+    (which - 13) % 3
+  } else {
+    0
+  }
+  let language = if which == 4 {
+    "ja"
+  } else if which == 12 {
+    "zh-TW"
+  } else if which >= 13 {
+    ["", "ja", "ko", "zh-CN", "zh-TW"][(which - 13) % 5]
+  } else {
+    ""
+  }
+  try! @sheet.draw_grid_no_fonts(
+    rows,
+    header_rows=header,
+    language~,
+    subheader=which == 11,
+  )
+}
+
+///|
+#export_name("drawing_summary")
+pub fn drawing_summary(which : Int32) -> String {
+  let grid = drawing_fixture(which)
+  Json::array(
+    grid.tiles.map(tile => {
+      Json::object({
+        "x": Json::number(tile.x.to_double()),
+        "y": Json::number(tile.y.to_double()),
+        "drawn": Json::boolean(tile.drawn),
+      })
+    }),
+  ).stringify()
+}
+
+///|
+#export_name("drawing_tile")
+pub fn drawing_tile(which : Int32, tile : Int32) -> Bytes {
+  drawing_fixture(which).tiles[tile].object
+}
+
+///|
 #export_name("line_break_fixture")
 pub fn line_break_fixture(mode : Int32, code : Int32) -> Bool {
   let character = code.unsafe_to_char()

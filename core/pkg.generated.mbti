@@ -31,6 +31,8 @@ pub fn encode_object_resources(ObjectResources) -> Bytes raise
 
 pub fn encode_path_collection(Array[Path]) -> Bytes raise
 
+pub fn encode_text_index(Array[IndexRun]) -> Bytes raise
+
 pub fn index_plain_text(Array[IndexRun]) -> String
 
 pub fn normalize_query(String, case_sensitive? : Bool) -> String
