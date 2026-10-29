@@ -66,6 +66,8 @@ async function openBytes(name, input) {
       warnings = result.warnings ?? [];
     }
     const manifest = await viewer.open({ kind: 'buffer', buffer: bytes.slice().buffer });
+    viewer.stage.scrollTop = 0;
+    viewer.stage.scrollLeft = 0;
     $('#document-name').textContent = name;
     $('#document-meta').textContent = summary;
     $('#search').value = '';
@@ -110,9 +112,9 @@ file.addEventListener('change', async () => {
 });
 $('#sample').addEventListener('click', () => openSample('./samples/upstream-demo.bdf', 'upstream-demo.bdf'));
 $('#csv-sample').addEventListener('click', () => openSample('./samples/people.csv', 'people.csv'));
-view.addEventListener('change', () => { viewer.setView(view.value); currentPage = 0; updatePage(); });
-$('#layout').addEventListener('change', event => { viewer.setLayout(event.target.value); currentPage = 0; updatePage(); });
-$('#zoom').addEventListener('change', event => viewer.setZoom(Number(event.target.value)));
+view.addEventListener('change', () => { viewer.setView(view.value); viewer.stage.scrollTop = 0; viewer.stage.scrollLeft = 0; currentPage = 0; updatePage(); });
+$('#layout').addEventListener('change', event => { viewer.setLayout(event.target.value); viewer.scrollToPage(currentPage); updatePage(); });
+$('#zoom').addEventListener('change', event => { viewer.setZoom(Number(event.target.value)); viewer.scrollToPage(currentPage); });
 $('#previous').addEventListener('click', () => { currentPage--; updatePage(); viewer.scrollToPage(currentPage); });
 $('#next').addEventListener('click', () => { currentPage++; updatePage(); viewer.scrollToPage(currentPage); });
 $('#search-form').addEventListener('submit', async event => {

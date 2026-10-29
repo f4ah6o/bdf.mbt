@@ -40,17 +40,24 @@ try {
     await page.waitForFunction(n => document.querySelector(`[data-bdf-page="${n}"] canvas`)?.dataset.loaded === 'ready', i, { timeout: 15000 });
     assert.equal(await page.locator('#status').evaluate(el => el.classList.contains('error')), false, `page ${i + 1}`);
   }
+  await page.waitForFunction(() => document.querySelector('#page-number').textContent === '20 / 20', null, { timeout: 15000 });
+  await page.locator('#layout').selectOption('spread');
+  await page.waitForFunction(() => Number(document.querySelector('#page-number').textContent.split(' / ')[0]) >= 19, null, { timeout: 15000 });
+  await page.locator('#layout').selectOption('single');
   await page.locator('#search').fill('BDF');
   await page.locator('#search-form button').click();
   await page.waitForFunction(() => /\d+ \/ \d+/.test(document.querySelector('#search-status').textContent), null, { timeout: 15000 });
+  await page.locator('[data-bdf-page="0"]').scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => document.querySelector('#page-number').textContent === '1 / 20', null, { timeout: 15000 });
   await page.locator('#zoom').selectOption('0.75');
   await page.locator('#layout').selectOption('spread');
+  await page.locator('#layout').selectOption('single');
   await page.locator('#next').focus();
   await page.keyboard.press('Enter');
-  assert.equal(await page.locator('#page-number').textContent(), '2 / 20');
+  await page.waitForFunction(() => document.querySelector('#page-number').textContent === '2 / 20', null, { timeout: 15000 });
   await page.locator('#previous').focus();
   await page.keyboard.press('Enter');
-  assert.equal(await page.locator('#page-number').textContent(), '1 / 20');
+  await page.waitForFunction(() => document.querySelector('#page-number').textContent === '1 / 20', null, { timeout: 15000 });
   const downloaded = page.waitForEvent('download');
   await page.locator('#download').click();
   assert.equal((await downloaded).suggestedFilename(), 'upstream-demo.bdf');
