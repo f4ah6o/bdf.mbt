@@ -1,6 +1,6 @@
 # Music notation compatibility fixtures
 
-These fixtures compare musical meter, key estimation, pitch spelling measure timelines, note quantization, clef selection, percussion mapping, note-value division, voice assignment, staff events, Bravura glyphs, staff positions and score preparation with
+These fixtures compare musical meter, key estimation, pitch spelling measure timelines, note quantization, clef selection, percussion mapping, note-value division, voice assignment, staff events, Bravura glyphs, staff positions, score preparation and measure spacing with
 shibukawa/bdf commit `4f9af52dca60be1eb0daade39f7dc41d6a1fe431`.
 They exercise all key signatures, negative and positive pitch numbers,
 spelling hints and deterministic duration histograms.
@@ -34,3 +34,8 @@ Prepared score fixtures use `generate_prepare_test.go` and
 `TestCodexMusicPrepare`. The generator reconstructs upstream score objects
 from `compat/midiinput/score.json`; the verifier parses the corresponding MIDI
 files through this port before comparing the prepared score.
+
+Measure column fixtures use `generate_columns_test.go` and
+`TestCodexMusicColumns`, alongside the upstream copy of
+`generate_prepare_test.go`. The fixtures include the upstream font-measured
+lyric widths supplied to the MoonBit layout function.

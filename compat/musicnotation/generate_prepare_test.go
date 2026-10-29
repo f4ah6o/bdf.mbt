@@ -32,6 +32,46 @@ func codexDecode[T any](raw json.RawMessage) T {
 	}
 	return x
 }
+func codexScoreFromFixture(sample codexFixture) *Score {
+	s := &Score{}
+	for _, v := range sample.Want.Measures {
+		m := &Measure{Length: codexDecode[int](v[0])}
+		if string(v[1]) != "null" {
+			x := codexDecode[[]any](v[1])
+			m.Time = &TimeSig{Beats: int(x[0].(float64)), BeatType: int(x[1].(float64)), Symbol: x[2].(string)}
+		}
+		s.Measures = append(s.Measures, m)
+	}
+	for _, p := range sample.Want.Parts {
+		part := &Part{Name: p.Name, Staves: len(p.Clefs), Percussion: p.Percussion}
+		for mi, m := range p.Measures {
+			pm := &PartMeasure{}
+			if string(m[0]) != "null" {
+				x := codexDecode[[]any](m[0])
+				pm.Key = &KeySig{Fifths: int(x[0].(float64)), Minor: x[1].(bool)}
+			}
+			if mi == 0 {
+				for st, c := range p.Clefs {
+					pm.Clefs = append(pm.Clefs, ClefChange{Staff: st, Clef: Clef{Sign: ClefSign(c[0]), Octave: c[1]}})
+				}
+			}
+			for _, ev := range codexDecode[[][]json.RawMessage](m[1]) {
+				e := &Event{Offset: codexDecode[int](ev[0]), Duration: codexDecode[int](ev[1]), Staff: codexDecode[int](ev[2]), Voice: codexDecode[int](ev[3]), Type: NoteType(codexDecode[int](ev[4])), Dots: codexDecode[int](ev[5]), Rest: codexDecode[bool](ev[6]), MeasureRest: codexDecode[bool](ev[7])}
+				for _, nn := range codexDecode[[][]json.RawMessage](ev[9]) {
+					e.Notes = append(e.Notes, &Note{Pitch: Pitch{Step: codexDecode[int](nn[0]), Alter: codexDecode[int](nn[1]), Octave: codexDecode[int](nn[2])}, Head: Notehead(codexDecode[int](nn[3])), TieStart: codexDecode[bool](nn[4]), TieStop: codexDecode[bool](nn[5])})
+				}
+				if string(ev[10]) != "null" {
+					item := codexDecode[[]any](ev[10])
+					e.Lyrics = []*LyricSyllable{{Text: item[0].(string), Syllabic: Syllabic(int(item[1].(float64)))}}
+				}
+				pm.Events = append(pm.Events, e)
+			}
+			part.Measures = append(part.Measures, pm)
+		}
+		s.Parts = append(s.Parts, part)
+	}
+	return s
+}
 func TestCodexMusicPrepare(t *testing.T) {
 	root := os.Getenv("BDF_FIXTURE_ROOT")
 	if root == "" {
@@ -47,39 +87,7 @@ func TestCodexMusicPrepare(t *testing.T) {
 	}
 	output := []any{}
 	for _, sample := range prior {
-		s := &Score{}
-		for _, v := range sample.Want.Measures {
-			m := &Measure{Length: codexDecode[int](v[0])}
-			if string(v[1]) != "null" {
-				x := codexDecode[[]any](v[1])
-				m.Time = &TimeSig{Beats: int(x[0].(float64)), BeatType: int(x[1].(float64)), Symbol: x[2].(string)}
-			}
-			s.Measures = append(s.Measures, m)
-		}
-		for _, p := range sample.Want.Parts {
-			part := &Part{Name: p.Name, Staves: len(p.Clefs), Percussion: p.Percussion}
-			for mi, m := range p.Measures {
-				pm := &PartMeasure{}
-				if string(m[0]) != "null" {
-					x := codexDecode[[]any](m[0])
-					pm.Key = &KeySig{Fifths: int(x[0].(float64)), Minor: x[1].(bool)}
-				}
-				if mi == 0 {
-					for st, c := range p.Clefs {
-						pm.Clefs = append(pm.Clefs, ClefChange{Staff: st, Clef: Clef{Sign: ClefSign(c[0]), Octave: c[1]}})
-					}
-				}
-				for _, ev := range codexDecode[[][]json.RawMessage](m[1]) {
-					e := &Event{Offset: codexDecode[int](ev[0]), Duration: codexDecode[int](ev[1]), Staff: codexDecode[int](ev[2]), Voice: codexDecode[int](ev[3]), Type: NoteType(codexDecode[int](ev[4])), Dots: codexDecode[int](ev[5]), Rest: codexDecode[bool](ev[6]), MeasureRest: codexDecode[bool](ev[7])}
-					for _, nn := range codexDecode[[][]json.RawMessage](ev[9]) {
-						e.Notes = append(e.Notes, &Note{Pitch: Pitch{Step: codexDecode[int](nn[0]), Alter: codexDecode[int](nn[1]), Octave: codexDecode[int](nn[2])}, Head: Notehead(codexDecode[int](nn[3])), TieStart: codexDecode[bool](nn[4]), TieStop: codexDecode[bool](nn[5])})
-					}
-					pm.Events = append(pm.Events, e)
-				}
-				part.Measures = append(part.Measures, pm)
-			}
-			s.Parts = append(s.Parts, part)
-		}
+		s := codexScoreFromFixture(sample)
 		e := &engraver{s: s}
 		e.prepare()
 		staves := [][2]int{}

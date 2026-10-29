@@ -22,6 +22,8 @@ pub fn scan_track(Bytes, Int32) -> String
 
 pub fn score(Bytes) -> String
 
+pub fn score_columns(Bytes, FixedArray[String], FixedArray[Double]) -> String
+
 pub fn track_meta(Bytes) -> String
 
 pub fn track_notes(Bytes, Int32) -> String
