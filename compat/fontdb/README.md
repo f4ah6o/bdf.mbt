@@ -35,3 +35,10 @@ To regenerate the ordering fixture, copy `generate-order.go` without its build
 tag into `converter/codex-fontorder/main.go` in the upstream checkout, then run
 `go run ./converter/codex-fontorder /path/to/bdf.mbt > /path/to/bdf.mbt/compat/fontdb/order.json`.
 The original `upstream.json` must already exist.
+
+`compressed.json` covers WOFF2 embedding for the same multi-font CSV cases.
+To regenerate it, copy `generate-compressed.go` without its build tag to
+upstream `converter/codex-fontdb-oracle/main.go`, then run the command above
+with stdout redirected to `compat/fontdb/compressed.json`. After a JS build,
+`npm run test:csv-font-compressed` checks both multi- and single-font conversion;
+`npm run test:csv-font-compressed-visual` compares rendered pages with vlmkit.

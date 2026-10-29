@@ -171,6 +171,7 @@ fn csv_result(
 ) -> @csv.NoFontResult raise {
   let kind = scenario % 7
   @csv.convert_with_font(
+    no_woff2=true,
     data,
     font,
     font_index=index,
@@ -305,4 +306,54 @@ pub fn cff_outline(font : @sfnt.CffOutlines, glyph : Int32) -> String {
     "commands": Json::array(paths),
     "bounds": bounds,
   }).stringify()
+}
+
+///|
+fn csv_compressed_result(
+  data : Bytes,
+  font : Bytes,
+  scenario : Int32,
+  index : Int32,
+) -> @csv.NoFontResult raise {
+  let kind = scenario % 7
+  @csv.convert_with_font(
+    data,
+    font,
+    font_index=index,
+    no_subset=scenario < 7,
+    name="People",
+    title="Report",
+    header=if kind == 3 { HeaderNo } else { HeaderYes },
+    data_mode=if kind == 3 { DataNone } else { DataDefault },
+    table_style=if kind == 2 { "Medium2" } else { "" },
+    quote=if kind == 4 { -1 } else { 0 },
+    system_fonts=kind == 5,
+    ignore_embedding_restrictions=kind == 6,
+  )
+}
+
+///|
+#export_name("csv_compressed_document")
+pub fn csv_compressed_document(
+  data : Bytes,
+  font : Bytes,
+  scenario : Int32,
+  index : Int32,
+) -> Bytes {
+  (try! csv_compressed_result(data, font, scenario, index)).bdf
+}
+
+///|
+#export_name("csv_compressed_warnings")
+pub fn csv_compressed_warnings(
+  data : Bytes,
+  font : Bytes,
+  scenario : Int32,
+  index : Int32,
+) -> String {
+  Json::array(
+    (try! csv_compressed_result(data, font, scenario, index)).warnings.map(
+      Json::string,
+    ),
+  ).stringify()
 }

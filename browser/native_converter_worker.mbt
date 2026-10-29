@@ -233,6 +233,7 @@ fn native_convert_csv(
           header=options.header,
           data_mode=options.data_mode,
           table_style=options.table_style,
+          no_woff2=true,
         )
       None =>
         @csv.convert_no_fonts(

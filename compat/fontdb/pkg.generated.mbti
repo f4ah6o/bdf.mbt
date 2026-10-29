@@ -8,6 +8,10 @@ import {
 // Values
 pub fn add_file(@db.Database, String, Bytes) -> Int32
 
+pub fn csv_compressed_document(@db.Database, Bytes, Int32, Int32) -> Bytes
+
+pub fn csv_compressed_warnings(@db.Database, Bytes, Int32, Int32) -> String
+
 pub fn csv_document(@db.Database, Bytes, Int32, Int32) -> Bytes
 
 pub fn csv_warnings(@db.Database, Bytes, Int32, Int32) -> String

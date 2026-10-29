@@ -103,6 +103,7 @@ fn csv_result(
   mode : Int32,
 ) -> @csv.NoFontResult raise {
   @csv.convert_with_fonts(
+    no_woff2=true,
     data,
     db,
     no_subset=mode == 0,
@@ -137,5 +138,50 @@ pub fn csv_warnings(
     (try! csv_result(db, data, scenario, mode)).warnings.map(w => {
       Json::string(w)
     }),
+  ).stringify()
+}
+
+///|
+fn csv_compressed_result(
+  db : @fontdb.Database,
+  data : Bytes,
+  scenario : Int32,
+  mode : Int32,
+) -> @csv.NoFontResult raise {
+  @csv.convert_with_fonts(
+    data,
+    db,
+    no_subset=mode == 0,
+    system_fonts=mode == 2,
+    header=HeaderYes,
+    name="People",
+    title="Report",
+    table_style=if scenario == 3 { "Medium2" } else { "" },
+  )
+}
+
+///|
+#export_name("csv_compressed_document")
+pub fn csv_compressed_document(
+  db : @fontdb.Database,
+  data : Bytes,
+  scenario : Int32,
+  mode : Int32,
+) -> Bytes {
+  (try! csv_compressed_result(db, data, scenario, mode)).bdf
+}
+
+///|
+#export_name("csv_compressed_warnings")
+pub fn csv_compressed_warnings(
+  db : @fontdb.Database,
+  data : Bytes,
+  scenario : Int32,
+  mode : Int32,
+) -> String {
+  Json::array(
+    (try! csv_compressed_result(db, data, scenario, mode)).warnings.map(
+      Json::string,
+    ),
   ).stringify()
 }

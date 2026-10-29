@@ -37,6 +37,7 @@ pub fn convert_no_fonts(
     no_subset=false,
     ignore_embedding_restrictions=false,
     system_fonts=false,
+    no_woff2=true,
   )
 }
 
@@ -45,7 +46,7 @@ pub fn convert_no_fonts(
 /// TrueType and CFF glyph outlines are subsetted when supported and allowed;
 /// `no_subset` embeds
 /// the full font. `font_index` selects a face within a TTC collection.
-/// Automatic font selection and WOFF2 are not yet supported.
+/// Automatic font selection is not supported by this single-font entry point.
 /// Set `system_fonts` to use font names without embedding.
 pub fn convert_with_font(
   data : Bytes,
@@ -63,6 +64,7 @@ pub fn convert_with_font(
   table_style~ : String = "",
   ignore_embedding_restrictions~ : Bool = false,
   system_fonts~ : Bool = false,
+  no_woff2~ : Bool = false,
 ) -> NoFontResult raise {
   convert_grid(
     data,
@@ -80,6 +82,7 @@ pub fn convert_with_font(
     no_subset~,
     ignore_embedding_restrictions~,
     system_fonts~,
+    no_woff2~,
   )
 }
 
@@ -103,6 +106,7 @@ pub fn convert_with_fonts(
   table_style~ : String = "",
   ignore_embedding_restrictions~ : Bool = false,
   system_fonts~ : Bool = false,
+  no_woff2~ : Bool = false,
 ) -> NoFontResult raise {
   convert_grid(
     data,
@@ -120,6 +124,7 @@ pub fn convert_with_fonts(
     no_subset~,
     ignore_embedding_restrictions~,
     system_fonts~,
+    no_woff2~,
     database=Some(database),
   )
 }
@@ -141,6 +146,7 @@ fn convert_grid(
   no_subset~ : Bool,
   ignore_embedding_restrictions~ : Bool,
   system_fonts~ : Bool,
+  no_woff2~ : Bool,
   database~ : @fontdb.Database? = None,
 ) -> NoFontResult raise {
   let parsed = parse(data, charset~, delimiter~, quote~, header~)
@@ -209,7 +215,10 @@ fn convert_grid(
           }
           match program {
             Some(program) =>
-              hashes[used.face] = writer.add_part("font", program)
+              hashes[used.face] = writer.add_part(
+                "font",
+                csv_encode_font(program, no_woff2, font_warnings),
+              )
             None => ()
           }
         }
@@ -247,8 +256,15 @@ fn convert_grid(
           )
         _ => (None, None)
       }
+      let encode_warnings : Array[String] = []
       let hash = match program {
-        Some(bytes) => Some(writer.add_part("font", bytes))
+        Some(bytes) =>
+          Some(
+            writer.add_part(
+              "font",
+              csv_encode_font(bytes, no_woff2, encode_warnings),
+            ),
+          )
         None => None
       }
       let drawn = match hash {
@@ -263,11 +279,11 @@ fn convert_grid(
           )
         None => system_grid
       }
-      let font_warnings = match font_warning {
-        Some(warning) => [warning]
-        None => []
+      match font_warning {
+        Some(warning) => encode_warnings.push(warning)
+        None => ()
       }
-      (drawn, usage.missing, font_warnings, true)
+      (drawn, usage.missing, encode_warnings, true)
     }
     _ =>
       (

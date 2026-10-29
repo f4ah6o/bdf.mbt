@@ -12,6 +12,10 @@ pub fn canvas_program(@sfnt.Font) -> Bytes
 
 pub fn cff_outline(@sfnt.CffOutlines, Int32) -> String
 
+pub fn csv_compressed_document(Bytes, Bytes, Int32, Int32) -> Bytes
+
+pub fn csv_compressed_warnings(Bytes, Bytes, Int32, Int32) -> String
+
 pub fn csv_document(Bytes, Bytes, Int32, Int32) -> Bytes
 
 pub fn csv_warnings(Bytes, Bytes, Int32, Int32) -> String
