@@ -14,6 +14,8 @@ pub fn fit_columns(Array[Array[Cell]], header_rows? : Int32, subheader? : Bool, 
 
 pub fn fit_rows(Array[Array[Cell]], Array[Float], header_rows? : Int32, subheader? : Bool, mdw? : Double, advance? : (Char, Bool) -> Double, metrics? : (Char, Bool) -> (Double, Double), default_line_height? : Double, style_line_height? : ((Bool) -> Double)?) -> Array[Float] raise
 
+pub fn grid_geometry(Array[Array[Cell]], header_rows? : Int32, subheader? : Bool, filter_buttons? : Bool, mdw? : Double, advance? : (Char, Bool) -> Double, metrics? : (Char, Bool) -> (Double, Double), default_line_height? : Double, style_line_height? : ((Bool) -> Double)?) -> GridGeometry raise
+
 pub fn line_break_allowed(Char, Char) -> Bool
 
 pub fn line_break_joins(Char, Char) -> Bool
@@ -29,6 +31,17 @@ pub suberror SheetError {
 pub(all) struct Cell {
   text : String
   number : Bool
+} derive(Eq, @debug.Debug)
+
+pub(all) struct GridGeometry {
+  columns : Array[Run]
+  rows : Array[Run]
+  frozen_rows : Int32
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Run {
+  count : Int32
+  size : Float
 } derive(Eq, @debug.Debug)
 
 pub(all) struct WrappedLine {

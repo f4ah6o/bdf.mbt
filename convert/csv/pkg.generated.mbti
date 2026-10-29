@@ -2,6 +2,7 @@
 package "f4ah6o/bdf/convert/csv"
 
 import {
+  "f4ah6o/bdf/convert/sheet",
   "f4ah6o/bdf/core",
   "moonbitlang/core/debug",
 }
@@ -16,6 +17,8 @@ pub fn encode_table(Table) -> Bytes raise
 pub fn fit_grid_columns(Grid, filter_buttons? : Bool, mdw? : Double, advance? : (Char, Bool) -> Double) -> Array[Float] raise
 
 pub fn fit_grid_rows(Grid, Array[Float], mdw? : Double, advance? : (Char, Bool) -> Double, metrics? : (Char, Bool) -> (Double, Double), default_line_height? : Double, style_line_height? : ((Bool) -> Double)?) -> Array[Float] raise
+
+pub fn grid_geometry(Grid, filter_buttons? : Bool, mdw? : Double, advance? : (Char, Bool) -> Double, metrics? : (Char, Bool) -> (Double, Double), default_line_height? : Double, style_line_height? : ((Bool) -> Double)?) -> @sheet.GridGeometry raise
 
 pub fn guess_language(String, String) -> String
 

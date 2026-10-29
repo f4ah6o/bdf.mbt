@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { column_fixture, wrap_fixture, row_fixture, line_break_fixture } from '../../_build/js/debug/build/compat/sheet/sheet.js';
+import { column_fixture, wrap_fixture, row_fixture, line_break_fixture, geometry_fixture } from '../../_build/js/debug/build/compat/sheet/sheet.js';
 
 const fixtures = JSON.parse(await readFile(new URL('./upstream.json', import.meta.url)));
 for (const [index, widths] of fixtures.entries()) {
@@ -15,6 +15,10 @@ const heights = JSON.parse(await readFile(new URL('./heights.json', import.meta.
 for (const [index, expected] of heights.entries()) {
   assert.deepEqual(JSON.parse(row_fixture(index)), expected, 'sheet rows ' + index);
 }
+const geometries = JSON.parse(await readFile(new URL('./geometry.json', import.meta.url)));
+for (const [index, expected] of geometries.entries()) {
+  assert.deepEqual(JSON.parse(geometry_fixture(index)), expected, 'sheet geometry ' + index);
+}
 const expectedDigests = (await readFile(new URL('./break-sha256.txt', import.meta.url), 'utf8')).trim().split('\n');
 for (let mode = 0; mode < expectedDigests.length; mode++) {
   const breaks = Buffer.alloc(0x110000);
@@ -22,4 +26,4 @@ for (let mode = 0; mode < expectedDigests.length; mode++) {
   const digest = createHash('sha256').update(breaks).digest('hex');
   assert.equal(digest, expectedDigests[mode], 'Unicode break mode ' + mode);
 }
-console.log('Sheet widths, row heights and line wrapping match upstream fixtures.');
+console.log('Sheet geometry, row heights and line wrapping match upstream fixtures.');

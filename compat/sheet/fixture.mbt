@@ -98,6 +98,86 @@ pub fn row_fixture(which : Int32) -> String {
 }
 
 ///|
+#export_name("geometry_fixture")
+pub fn geometry_fixture(which : Int32) -> String {
+  if which == 46 {
+    let parsed = try! @csv.parse(
+      @utf8.encode(
+        "name,amount,note\nAnn,1,abc\nBob,2.5,\"very long\nnote here\"\n",
+      ),
+      header=HeaderYes,
+    )
+    return geometry_json(try! @csv.grid_geometry(@csv.prepare_grid(parsed)))
+  }
+  let rows : Array[Array[@sheet.Cell]] = match which {
+    0 => []
+    1 =>
+      [[cell("name"), cell("value")], [cell("Alice"), cell("12", number=true)]]
+    2 => [[cell("long text ".repeat(200))]]
+    3 => [[cell("long text ".repeat(200)), cell(""), cell("stop")]]
+    4 => {
+      let rows : Array[Array[@sheet.Cell]] = [[cell("head")]]
+      for _ in 1..<40 {
+        rows.push([])
+      }
+      rows
+    }
+    5 =>
+      [
+        [cell("a\nb\nc"), cell("123456".repeat(50), number=true)],
+        [cell("last")],
+      ]
+    _ => {
+      let i = which - 6
+      let rows : Array[Array[@sheet.Cell]] = []
+      for r in 0..<3 {
+        let row : Array[@sheet.Cell] = []
+        for col in 0..<3 {
+          let n = (i * 37 + r * 53 + col * 97) % 1100
+          let mut text = "x".repeat(n)
+          if (i + r + col) % 5 == 0 {
+            text += "\nend"
+          }
+          row.push(cell(text, number=(i + r + col) % 3 == 0))
+        }
+        rows.push(row)
+      }
+      rows
+    }
+  }
+  let header = if which == 1 {
+    1
+  } else if which == 4 {
+    32
+  } else if which >= 6 {
+    (which - 6) % 3
+  } else {
+    0
+  }
+  let geometry = try! @sheet.grid_geometry(rows, header_rows=header)
+  geometry_json(geometry)
+}
+
+///|
+fn geometry_json(geometry : @sheet.GridGeometry) -> String {
+  let runs = (items : Array[@sheet.Run]) => {
+    Json::array(
+      items.map(run => {
+        Json::array([
+          Json::number(run.count.to_double()),
+          Json::number(run.size.to_double()),
+        ])
+      }),
+    )
+  }
+  Json::object({
+    "cols": runs(geometry.columns),
+    "rows": runs(geometry.rows),
+    "frozen": Json::number(geometry.frozen_rows.to_double()),
+  }).stringify()
+}
+
+///|
 #export_name("line_break_fixture")
 pub fn line_break_fixture(mode : Int32, code : Int32) -> Bool {
   let character = code.unsafe_to_char()
