@@ -1,6 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "f4ah6o/bdf/font/sfnt"
 
+import {
+  "moonbitlang/core/debug",
+}
+
 // Values
 pub fn decode_woff(Bytes) -> Bytes raise
 
@@ -39,6 +43,7 @@ pub fn Font::glyph(Self, Int32) -> Int32?
 pub fn Font::glyph_names(Self) -> Array[String]
 pub fn Font::glyph_program(Self) -> Bytes raise
 pub fn Font::mapped_program(Self, Array[Int32]) -> Bytes raise
+pub fn Font::outline_truetype(Self, Int32) -> (Bool, Array[OutlineCommand])
 pub fn Font::specimen_pruned(Self, Array[Int32], Int64) -> Bytes? raise
 pub fn Font::specimen_pruned_truetype(Self, Array[Int32], Int64) -> Bytes? raise
 pub fn Font::specimen_reachable(Self, String) -> Array[Int32]
@@ -62,6 +67,16 @@ pub(all) struct Metrics {
   embeddable : Bool
   subsettable : Bool
 }
+
+pub(all) enum OutlineCommand {
+  Move(Double, Double)
+  Line(Double, Double)
+  Quad(Double, Double, Double, Double)
+  Cubic(Double, Double, Double, Double, Double, Double)
+  Close
+} derive(Eq, @debug.Debug)
+
+type OutlineMatrix
 
 // Type aliases
 

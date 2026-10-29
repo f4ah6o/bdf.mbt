@@ -224,3 +224,24 @@ pub fn subset_program(font : @sfnt.Font, text : String) -> Bytes {
   let codepoints : Array[Int32] = [ for ch in text => ch.to_int() ]
   (try! font.subset_program(codepoints)).unwrap()
 }
+
+///|
+#export_name("truetype_outline")
+pub fn truetype_outline(font : @sfnt.Font, glyph : Int32) -> String {
+  let (ok, commands) = font.outline_truetype(glyph)
+  let paths = commands.map(command => {
+    let (kind, values) = match command {
+      @sfnt.Move(x, y) => ("M", [x, y])
+      @sfnt.Line(x, y) => ("L", [x, y])
+      @sfnt.Quad(a, b, c, d) => ("Q", [a, b, c, d])
+      @sfnt.Cubic(a, b, c, d, e, f) => ("C", [a, b, c, d, e, f])
+      @sfnt.Close => ("Z", [])
+    }
+    let row = [Json::string(kind)]
+    for value in values {
+      row.push(Json::number(value))
+    }
+    Json::array(row)
+  })
+  Json::object({ "ok": Json::boolean(ok), "commands": Json::array(paths) }).stringify()
+}

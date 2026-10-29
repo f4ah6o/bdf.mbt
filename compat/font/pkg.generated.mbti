@@ -26,6 +26,8 @@ pub fn metrics(@sfnt.Font) -> String
 
 pub fn subset_program(@sfnt.Font, String) -> Bytes
 
+pub fn truetype_outline(@sfnt.Font, Int32) -> String
+
 // Errors
 
 // Types and methods

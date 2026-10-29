@@ -25,3 +25,11 @@ to the corresponding JSON file. Use the pinned upstream revision above.
 `node compat/font/visual-compare.mjs` renders nine upstream and MoonBit CSV
 documents with actual embedded TTF/OTF and TTC faces and compares the screenshots
 using vlmkit at three viewport sizes.
+
+`outlines.json.gz` compares TrueType outline commands with upstream, including
+real fonts and collections, composite transforms, recursive components and
+mutated or truncated glyph data. Run `npm run test:font-outline` and
+`npm run test:font-outline-visual` after a JS build. The latter renders 72
+outlines and compares them with vlmkit. To regenerate, copy
+`generate-outline_test.go` without its build tag into upstream `internal/sfnt`
+and run `BDF_FIXTURE_ROOT=/path/to/bdf.mbt go test ./internal/sfnt -run '^TestCodexOutlines$'`.
