@@ -5,12 +5,23 @@ import { createServer } from 'node:http';
 import path from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { PNG } from 'pngjs';
-import { load_font, truetype_outline } from '../../_build/js/debug/build/compat/font/font.js';
+import { load_font, truetype_outline, load_cff_outlines, cff_outline } from '../../_build/js/debug/build/compat/font/font.js';
 
 const root = process.cwd();
 const fixtures = JSON.parse(gunzipSync(readFileSync('compat/font/outlines.json.gz')));
 const fonts = fixtures.filter(f => ['stix.ttf', 'variable.ttf', 'color.ttf'].includes(f.name));
 const paths = { baseline: [], moon: [] };
+const cffFixtures = JSON.parse(gunzipSync(readFileSync('compat/font/cff-outlines.json.gz')));
+const cffFixture = cffFixtures.find(f => f.name === 'stix.otf');
+const cff = load_cff_outlines(load_font(gunzipSync(Buffer.from(cffFixture.input, 'base64')), 0));
+const cffChosen = cffFixture.cases.filter(c => c.ok && c.commands.length >= 4).slice(0, 24);
+assert.equal(cffChosen.length, 24);
+for (const c of cffChosen) {
+  paths.baseline.push(c.commands);
+  const result = JSON.parse(cff_outline(cff, c.glyph));
+  assert.equal(result.ok, true);
+  paths.moon.push(result.commands);
+}
 for (const fixture of fonts) {
   const font = load_font(gunzipSync(Buffer.from(fixture.input, 'base64')), fixture.index);
   const chosen = fixture.cases.filter(c => c.ok && c.commands.length >= 4).slice(0, 24);
@@ -28,7 +39,7 @@ function page(items) {
     const x = (i % 8) * 110 + 12, y = Math.floor(i / 8) * 110 + 88;
     return `<path transform="translate(${x} ${y}) scale(.08 -.08)" d="${d}"/>`;
   }).join('');
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Outline comparison</title><style>html,body{margin:0;background:white}svg{display:block;width:880px;height:990px}</style></head><body><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 990">${shapes}</svg></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Outline comparison</title><style>html,body{margin:0;background:white}svg{display:block;width:880px;height:1320px}</style></head><body><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 1320">${shapes}</svg></body></html>`;
 }
 const pages = { '/baseline.html': page(paths.baseline), '/moon.html': page(paths.moon) };
 const server = createServer((request, response) => {

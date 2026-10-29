@@ -29,7 +29,14 @@ using vlmkit at three viewport sizes.
 `outlines.json.gz` compares TrueType outline commands and glyph bounds with upstream, including
 real fonts and collections, composite transforms, recursive components and
 mutated or truncated glyph data. Run `npm run test:font-outline` and
-`npm run test:font-outline-visual` after a JS build. The latter renders 72
-outlines and compares them with vlmkit. To regenerate, copy
+`npm run test:font-outline-visual` after a JS build. The latter renders 96
+TrueType and CFF outlines and compares them with vlmkit. To regenerate, copy
 `generate-outline_test.go` without its build tag into upstream `internal/sfnt`
 and run `BDF_FIXTURE_ROOT=/path/to/bdf.mbt go test ./internal/sfnt -run '^TestCodexOutlines$'`.
+
+`cff-outlines.json.gz` checks CFF drawing commands from real, CID, mutated and
+synthetic charstrings, including local/global subroutines and drawing operators.
+Run `npm run test:cff-outline` after a JS build. To regenerate, copy
+`generate-cff-outline_test.go` and `generate-outline_test.go` without their
+build tags into upstream `internal/sfnt` and run `TestCodexCFFOutlines` with
+`BDF_FIXTURE_ROOT` set.

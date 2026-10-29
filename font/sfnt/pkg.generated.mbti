@@ -18,6 +18,13 @@ pub suberror FontError {
 }
 
 // Types and methods
+pub struct CffOutlines {
+  // private fields
+}
+pub fn CffOutlines::outline(Self, Int32) -> (Bool, Array[OutlineCommand])
+
+type CffRun
+
 pub(all) struct FaceInfo {
   family : String
   style : String
@@ -38,6 +45,7 @@ pub fn Font::bounds_truetype(Self, Int32) -> (Double, Double, Double, Double)?
 pub fn Font::byte_length(Self) -> Int32
 pub fn Font::can_subset(Self, ignore_restrictions? : Bool) -> Bool
 pub fn Font::canvas_program(Self) -> Bytes raise
+pub fn Font::cff_outlines(Self) -> CffOutlines?
 pub fn Font::characters(Self) -> Array[Int32]
 pub fn Font::family_names(Self) -> Array[String]
 pub fn Font::glyph(Self, Int32) -> Int32?

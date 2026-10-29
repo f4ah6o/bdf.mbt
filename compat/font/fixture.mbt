@@ -259,3 +259,36 @@ pub fn truetype_outline(font : @sfnt.Font, glyph : Int32) -> String {
     "bounds": bounds,
   }).stringify()
 }
+
+///|
+#export_name("has_cff_outlines")
+pub fn has_cff_outlines(font : @sfnt.Font) -> Bool {
+  font.cff_outlines() is Some(_)
+}
+
+///|
+#export_name("load_cff_outlines")
+pub fn load_cff_outlines(font : @sfnt.Font) -> @sfnt.CffOutlines {
+  font.cff_outlines().unwrap()
+}
+
+///|
+#export_name("cff_outline")
+pub fn cff_outline(font : @sfnt.CffOutlines, glyph : Int32) -> String {
+  let (ok, commands) = font.outline(glyph)
+  let paths = commands.map(command => {
+    let (kind, values) = match command {
+      @sfnt.Move(x, y) => ("M", [x, y])
+      @sfnt.Line(x, y) => ("L", [x, y])
+      @sfnt.Quad(a, b, c, d) => ("Q", [a, b, c, d])
+      @sfnt.Cubic(a, b, c, d, e, f) => ("C", [a, b, c, d, e, f])
+      @sfnt.Close => ("Z", [])
+    }
+    let row = [Json::string(kind)]
+    for value in values {
+      row.push(Json::number(value))
+    }
+    Json::array(row)
+  })
+  Json::object({ "ok": Json::boolean(ok), "commands": Json::array(paths) }).stringify()
+}

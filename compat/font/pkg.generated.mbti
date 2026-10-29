@@ -10,6 +10,8 @@ pub fn advance(@sfnt.Font, Int32) -> Int32
 
 pub fn canvas_program(@sfnt.Font) -> Bytes
 
+pub fn cff_outline(@sfnt.CffOutlines, Int32) -> String
+
 pub fn csv_document(Bytes, Bytes, Int32, Int32) -> Bytes
 
 pub fn csv_warnings(Bytes, Bytes, Int32, Int32) -> String
@@ -19,6 +21,10 @@ pub fn drawing_tile(@sfnt.Font, Int32, String, Int32) -> Bytes
 pub fn geometry(@sfnt.Font, Int32) -> String
 
 pub fn glyph(@sfnt.Font, Int32) -> Int32
+
+pub fn has_cff_outlines(@sfnt.Font) -> Bool
+
+pub fn load_cff_outlines(@sfnt.Font) -> @sfnt.CffOutlines
 
 pub fn load_font(Bytes, Int32) -> @sfnt.Font
 
