@@ -208,7 +208,11 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
   }
   if (index == 0 && font.size != 11.0) ||
     (font.scheme != "" && font.scheme != "minor" && font.scheme != "major") ||
-    font.vertical != "" ||
+    (
+      font.vertical != "" &&
+      font.vertical != "superscript" &&
+      font.vertical != "subscript"
+    ) ||
     (
       a.horizontal != "general" &&
       a.horizontal != "center" &&
@@ -233,8 +237,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// Convert worksheets using estimated font metrics without embedding fonts.
 /// Supports sheet views with numeric, plain string, boolean and error cells,
 /// number formats, named and themed fonts, font colors, bold, italic, underlined
-/// and struck text, horizontal alignment, top or center vertical alignment,
-/// solid fills, line borders, merged cells and wrapping.
+/// and struck text, superscript and subscript, horizontal alignment, top or
+/// center vertical alignment, solid fills, line borders, merged cells and wrapping.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// complex features are rejected.
 pub fn convert_plain_no_fonts(
@@ -407,6 +411,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let bolds : Map[Int32, Map[Int32, Bool]] = Map([])
   let italics : Map[Int32, Map[Int32, Bool]] = Map([])
   let decorations : Map[Int32, Map[Int32, @sheet.GridTextDecoration]] = Map([])
+  let scripts : Map[Int32, Map[Int32, String]] = Map([])
   let fills : Map[Int32, Map[Int32, @sheet.GridSolidFill]] = Map([])
   let sizes : Map[Int32, Map[Int32, Double]] = Map([])
   let wraps : Map[Int32, Map[Int32, Bool]] = Map([])
@@ -456,6 +461,11 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       }
       let font_size = styles.fonts[font_index].size
       let font = styles.fonts[font_index]
+      let drawn_size = if font.vertical == "" {
+        font_size
+      } else {
+        font_size * (2.0 / 3.0)
+      }
       let themed_latin = if font.scheme == "minor" {
         theme.resolve("+mn-lt", locale.script)
       } else if font.scheme == "major" {
@@ -668,7 +678,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           }
           let mut width = 0.0
           for c in text {
-            width += @sheet.sized_fallback_advance(c, false, font_size)
+            width += @sheet.sized_fallback_advance(c, false, drawn_size)
           }
           if cell.column >= 0 &&
             cell.column < widths.length() &&
@@ -676,11 +686,11 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             width > cell_width - 3.75 + 0.01 {
             let available = Double::max(cell_width - 3.75, 0.0)
             text = if formatted.general {
-              xlsx_fit_plain_number(cell.number, available, font_size)
+              xlsx_fit_plain_number(cell.number, available, drawn_size)
             } else {
               "#".repeat(
                 (available /
-                @sheet.sized_fallback_advance('#', false, font_size)).to_int(),
+                @sheet.sized_fallback_advance('#', false, drawn_size)).to_int(),
               )
             }
           }
@@ -744,6 +754,17 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             underline: font.underline,
             strike: font.strike,
           }
+        }
+        if font.vertical != "" {
+          let columns = match scripts.get(row.index) {
+            Some(columns) => columns
+            None => {
+              let columns : Map[Int32, String] = Map([])
+              scripts[row.index] = columns
+              columns
+            }
+          }
+          columns[cell.column] = font.vertical
         }
         if vertical != "bottom" {
           let columns = match verticals.get(row.index) {
@@ -816,6 +837,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     font_families~,
     italics~,
     decorations~,
+    scripts~,
   )
   (drawn, geo, parsed.missing_formula_values)
 }
@@ -1051,8 +1073,13 @@ fn xlsx_plain_fitted_rows(
             0.0
           }
           let bold = styles.fonts[font_index].bold
+          let drawn_size = if styles.fonts[font_index].vertical == "" {
+            size
+          } else {
+            size * (2.0 / 3.0)
+          }
           let advance = (c : Char, b : Bool) => {
-            @sheet.sized_fallback_advance(c, b, size)
+            @sheet.sized_fallback_advance(c, b, drawn_size)
           }
           let lines = @sheet.wrap_text(text, width, bold~, advance~)
           let mut text_height = 0.0

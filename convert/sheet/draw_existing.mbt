@@ -104,6 +104,7 @@ pub fn draw_sized_grid_no_fonts(
   font_families~ : Map[Int32, Map[Int32, String]] = Map([]),
   italics~ : Map[Int32, Map[Int32, Bool]] = Map([]),
   decorations~ : Map[Int32, Map[Int32, GridTextDecoration]] = Map([]),
+  scripts~ : Map[Int32, Map[Int32, String]] = Map([]),
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -273,6 +274,11 @@ pub fn draw_sized_grid_no_fonts(
         Some(columns) => columns.get(column).unwrap_or(11.0)
         None => 11.0
       }
+      let script = match scripts.get(i) {
+        Some(columns) => columns.get(column).unwrap_or("")
+        None => ""
+      }
+      let draw_size = if script == "" { size } else { size * (2.0 / 3.0) }
       let italic = match italics.get(i) {
         Some(columns) => columns.get(column).unwrap_or(false)
         None => false
@@ -301,7 +307,7 @@ pub fn draw_sized_grid_no_fonts(
         None => family
       }
       let advance = (character : Char, is_bold : Bool) => {
-        sized_fallback_advance(character, is_bold, size)
+        sized_fallback_advance(character, is_bold, draw_size)
       }
       let metrics = (_ : Char, _ : Bool) => (0.9 * size, 0.25 * size)
       let wrap = match wraps.get(i) {
@@ -410,6 +416,24 @@ pub fn draw_sized_grid_no_fonts(
       let layout = sized_grid_vertical_layout(
         horizontal, y, height, vertical, size,
       )
+      let shift = if script == "superscript" {
+        size * 0.33
+      } else if script == "subscript" {
+        -size * 0.15
+      } else {
+        0.0
+      }
+      let layout = if shift == 0.0 {
+        layout
+      } else {
+        {
+          ..layout,
+          lines: layout.lines.map(line => {
+            ..line,
+            baseline: line.baseline - shift,
+          }),
+        }
+      }
       if layout.x1 > col_positions[visible_columns] {
         let target = layout.x1 - 0.01
         let mut lo = 0
@@ -442,7 +466,7 @@ pub fn draw_sized_grid_no_fonts(
           None,
           None,
           Map([]),
-          size~,
+          size=draw_size,
           east_asian~,
           italic~,
           underline=decoration.underline,

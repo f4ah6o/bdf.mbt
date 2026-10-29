@@ -26,7 +26,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 8000; i++ {
+	for i := 0; i < 8200; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -167,6 +167,14 @@ func TestCodexXLSXRender(t *testing.T) {
 						decoration := []string{"", `<u/>`, `<u val="double"/>`, `<strike/>`, `<u/><strike/>`}[(i+font)%5]
 						font++
 						return decoration + `</font>`
+					})
+				}
+				if i >= 8000 {
+					font := 0
+					st = regexp.MustCompile(`</font>`).ReplaceAllStringFunc(st, func(string) string {
+						vert := []string{"superscript", "subscript", "baseline"}[(i+font)%3]
+						font++
+						return fmt.Sprintf(`<vertAlign val="%s"/></font>`, vert)
 					})
 				}
 			}
