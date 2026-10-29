@@ -158,8 +158,8 @@ fn read_png(data : Bytes) -> Picture raise {
   }
   metadata_merge(dc, native)
   if orientation >= 5 {
-    { format: "png", width: height, height: width, dc, animated, }
+    { format: "png", width: height, height: width, dc, animated, warnings: [], }
   } else {
-    { format: "png", width, height, dc, animated, }
+    { format: "png", width, height, dc, animated, warnings: [], }
   }
 }

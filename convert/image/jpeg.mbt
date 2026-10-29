@@ -94,8 +94,15 @@ fn read_jpeg(data : Bytes) -> Picture raise {
     metadata_merge(dc, iptc_metadata(block))
   }
   if orientation >= 5 {
-    { format: "jpeg", width: height, height: width, dc, animated: false, }
+    {
+      format: "jpeg",
+      width: height,
+      height: width,
+      dc,
+      animated: false,
+      warnings: [],
+    }
   } else {
-    { format: "jpeg", width, height, dc, animated: false, }
+    { format: "jpeg", width, height, dc, animated: false, warnings: [], }
   }
 }

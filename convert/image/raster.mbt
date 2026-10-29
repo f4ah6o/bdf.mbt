@@ -5,6 +5,7 @@ struct Picture {
   height : Int64
   dc : Map[String, Array[String]]
   animated : Bool
+  warnings : Array[String]
 }
 
 ///|
@@ -56,6 +57,9 @@ fn ico_header(data : Bytes) -> Bool {
 
 ///|
 fn read_picture(data : Bytes) -> Picture raise {
+  if data.length() >= 12 && data[:4] == b"RIFF"[:] && data[8:12] == b"WEBP"[:] {
+    return read_webp(data)
+  }
   if data.length() >= 6 &&
     (data[:6] == b"GIF87a"[:] || data[:6] == b"GIF89a"[:]) {
     return read_gif(data)
@@ -80,7 +84,14 @@ fn read_picture(data : Bytes) -> Picture raise {
     if width <= 0 || height <= 0 {
       raise ImageFailure("image: BMP: the BMP image has no size")
     }
-    return { format: "bmp", width, height, dc: Map([]), animated: false, }
+    return {
+      format: "bmp",
+      width,
+      height,
+      dc: Map([]),
+      animated: false,
+      warnings: [],
+    }
   }
   if ico_header(data) {
     let count = u16(data, 4)
@@ -105,9 +116,16 @@ fn read_picture(data : Bytes) -> Picture raise {
         best_bits = bits
       }
     }
-    return { format: "ico", width, height, dc: Map([]), animated: false, }
+    return {
+      format: "ico",
+      width,
+      height,
+      dc: Map([]),
+      animated: false,
+      warnings: [],
+    }
   }
   raise ImageFailure(
-    "image: input is not a supported BMP, ICO, JPEG, PNG or GIF image",
+    "image: input is not a supported BMP, ICO, JPEG, PNG, GIF or WebP image",
   )
 }

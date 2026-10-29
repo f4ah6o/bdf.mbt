@@ -125,7 +125,46 @@ func pngFixture() []byte {
 	return append(out, data[33:]...)
 }
 
+func webpChunk(out *bytes.Buffer, kind string, data []byte) {
+	out.WriteString(kind)
+	if err := binary.Write(out, binary.LittleEndian, uint32(len(data))); err != nil {
+		panic(err)
+	}
+	out.Write(data)
+	if len(data)%2 != 0 {
+		out.WriteByte(0)
+	}
+}
+
+func webpFixture(kind string) []byte {
+	var body bytes.Buffer
+	body.WriteString("WEBP")
+	switch kind {
+	case "lossy":
+		webpChunk(&body, "VP8 ", []byte{0, 0, 0, 0x9d, 1, 0x2a, 7, 0, 5, 0})
+	case "lossless":
+		webpChunk(&body, "VP8L", []byte{0x2f, 6, 0, 1, 0})
+	case "animated":
+		webpChunk(&body, "VP8X", []byte{0, 0, 0, 0, 6, 0, 0, 4, 0, 0})
+		webpChunk(&body, "EXIF", []byte("II\x2a\x00\x08\x00\x00\x00\x01\x00\x12\x01\x03\x00\x01\x00\x00\x00\x06\x00\x00\x00\x00\x00\x00\x00"))
+		webpChunk(&body, "ANMF", nil)
+		webpChunk(&body, "ANMF", nil)
+	}
+	var out bytes.Buffer
+	out.WriteString("RIFF")
+	if err := binary.Write(&out, binary.LittleEndian, uint32(body.Len())); err != nil {
+		panic(err)
+	}
+	out.Write(body.Bytes())
+	return out.Bytes()
+}
+
 func main() {
+	webps := map[string]string{
+		"synthetic-lossy.webp":    "lossy",
+		"synthetic-lossless.webp": "lossless",
+		"synthetic-animated.webp": "animated",
+	}
 	dates := map[string]string{
 		"date-rfc1123z.png": "Tue, 01 Sep 2026 10:20:30 +0900",
 		"date-rfc1123.png":  "Tue, 01 Sep 2026 10:20:30 UTC",
@@ -166,9 +205,15 @@ func main() {
 		{"date-zone.png", "date-zone.png", "", 0},
 		{"anim.gif", "anim.gif", "", 0},
 		{"xmp.gif", "xmp.gif", "", 0},
+		{"scene.webp", "scene.webp", "", 0},
+		{"synthetic-lossy.webp", "synthetic-lossy.webp", "", 0},
+		{"synthetic-lossless.webp", "synthetic-lossless.webp", "", 0},
+		{"synthetic-animated.webp", "synthetic-animated.webp", "", 0},
 	} {
 		var data []byte
-		if date, ok := dates[tc.file]; ok {
+		if kind, ok := webps[tc.file]; ok {
+			data = webpFixture(kind)
+		} else if date, ok := dates[tc.file]; ok {
 			original := pngFixture()
 			data = append([]byte{}, original[:33]...)
 			data = append(data, pngChunk("tEXt", append([]byte("Creation Time\x00"), []byte(date)...))...)
