@@ -5,6 +5,7 @@ import {
   "moonbit-community/ucd",
   "LL728/moon_encoding" @encoding,
   "f4ah6o/bdf/encoding/parquet",
+  "f4ah6o/bdf/core",
 }
 
 supported_targets = "+js+wasm-gc"

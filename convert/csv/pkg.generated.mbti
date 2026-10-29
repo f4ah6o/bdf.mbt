@@ -2,6 +2,7 @@
 package "f4ah6o/bdf/convert/csv"
 
 import {
+  "f4ah6o/bdf/core",
   "moonbitlang/core/debug",
 }
 
@@ -26,6 +27,8 @@ pub fn prepare_grid(ParseResult) -> Grid
 
 pub fn read_records(String, Dialect) -> Records raise
 
+pub fn store_table(@core.DocumentWriter, Table, title? : String, view? : String, mode? : DataMode) -> String? raise
+
 pub fn table_value_type(String) -> ColumnType
 
 pub fn values_table(ParseResult) -> Table?
@@ -43,6 +46,12 @@ pub(all) enum ColumnType {
   BooleanColumn
   DateColumn
   DateTimeColumn
+} derive(Eq, @debug.Debug)
+
+pub(all) enum DataMode {
+  DataDefault
+  DataAll
+  DataNone
 } derive(Eq, @debug.Debug)
 
 pub(all) struct DecodedText {

@@ -70,3 +70,24 @@ pub fn encode_large_fixture(large : String) -> Bytes {
     rows: [[StringValue(large)], [StringValue("preserved")]],
   })
 }
+
+///|
+#export_name("document_fixture")
+pub fn document_fixture(include : Bool) -> Bytes {
+  let csv = try! @csv.parse(
+    @utf8.encode("name,amount,day\nAlice,1,2024-01-01\nBob,2.5,2024-01-02\n"),
+    header=HeaderYes,
+  )
+  let writer = @core.DocumentWriter::new()
+  let mode : @csv.DataMode = if include { DataDefault } else { DataNone }
+  ignore(
+    try! @csv.store_table(
+      writer,
+      @csv.values_table(csv).unwrap(),
+      title="Names",
+      view="sheet1",
+      mode~,
+    ),
+  )
+  try! writer.write_single()
+}
