@@ -405,3 +405,32 @@ pub fn xlsx_formatted_text(code : String, value : String) -> String {
   )
   xlsx_formatted_json(@xlsx.xlsx_format_text(sections, value))
 }
+
+///|
+#export_name("xlsx_display")
+pub fn xlsx_display(data : Bytes, part : String, locale : String) -> String {
+  try {
+    let workbook = @xlsx.read_xlsx_workbook(data)
+    let styles = workbook.styles()
+    let sheet = workbook.read_sheet_cells(part)
+    let rows = sheet.rows.map(fn(row) {
+      Json::array(
+        row.cells.map(fn(cell) {
+          match styles.format_cell(cell, workbook.date1904, locale) {
+            None => Json::null()
+            Some(result) =>
+              @json.parse(xlsx_formatted_json(result)) catch {
+                _ => Json::null()
+              }
+          }
+        }),
+      )
+    })
+    Json::array([
+      Json::array(styles.palette.map(x => Json::number(x.to_double()))),
+      Json::array(rows),
+    ]).stringify()
+  } catch {
+    _ => "null"
+  }
+}

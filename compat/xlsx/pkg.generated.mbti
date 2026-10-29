@@ -8,6 +8,8 @@ pub fn xlsx_cells(Bytes, String) -> String
 
 pub fn xlsx_date_format(String, Double, Bool) -> String
 
+pub fn xlsx_display(Bytes, String, String) -> String
+
 pub fn xlsx_format_layouts(String) -> String
 
 pub fn xlsx_format_sections(String) -> String

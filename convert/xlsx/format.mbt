@@ -129,3 +129,52 @@ pub fn xlsx_format_text(
   }
   { pieces, color: section.color, general: false, number: false, }
 }
+
+///|
+/// Format a stored cell using its cell style; blank cells have no contents.
+pub fn XlsxStyles::format_cell(
+  self : XlsxStyles,
+  cell : XlsxCell,
+  date1904 : Bool,
+  locale : String,
+) -> XlsxFormatted? {
+  if cell.kind == 0 {
+    return None
+  }
+  if cell.kind == 3 {
+    return Some({
+      pieces: [
+        { kind: 0, text: if cell.number != 0.0 { "TRUE" } else { "FALSE" }, },
+      ],
+      color: None,
+      general: false,
+      number: false,
+    })
+  }
+  if cell.kind == 4 {
+    return Some({
+      pieces: [{ kind: 0, text: cell.text, }],
+      color: None,
+      general: false,
+      number: false,
+    })
+  }
+  let index = if cell.style < 0 || cell.style >= self.cell_formats.length() {
+    0
+  } else {
+    cell.style
+  }
+  let format = if self.cell_formats.length() == 0 {
+    "General"
+  } else {
+    self.number_format(self.cell_formats[index].number_format, locale)
+  }
+  let sections = xlsx_parse_number_format(format, self.palette)
+  if cell.kind == 1 {
+    Some(xlsx_format_number(sections, cell.number, date1904))
+  } else if cell.kind == 2 {
+    Some(xlsx_format_text(sections, cell.text))
+  } else {
+    None
+  }
+}

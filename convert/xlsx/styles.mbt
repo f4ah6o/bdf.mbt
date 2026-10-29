@@ -50,6 +50,7 @@ pub(all) struct XlsxStyles {
   fonts : Array[XlsxFont]
   number_formats : Map[Int32, String]
   cell_formats : Array[XlsxCellFormat]
+  palette : Array[UInt32]
 }
 
 ///|
@@ -199,6 +200,7 @@ fn xlsx_styles_default() -> XlsxStyles {
   {
     fonts: [font],
     number_formats: Map([]),
+    palette: xlsx_default_palette(),
     cell_formats: [
       {
         number_format: 0,
@@ -223,6 +225,10 @@ fn xlsx_parse_styles(data : Bytes) -> XlsxStyles raise {
   let base_formats : Array[XlsxFormatBuilder] = []
   let cell_formats : Array[XlsxFormatBuilder] = []
   let seen : Map[String, Bool] = Map([])
+  let palette = xlsx_default_palette()
+  let mut colors_depth = -1
+  let mut indexed_depth = -1
+  let mut palette_index = 0
   let mut depth = 0
   let mut block = ""
   let mut block_depth = -1
@@ -235,7 +241,27 @@ fn xlsx_parse_styles(data : Bytes) -> XlsxStyles raise {
     match event.kind {
       Start(element) | Empty(element) => {
         let name = element.name.local_name
-        if depth == 1 &&
+        if depth == 1 && name == "colors" && !seen.contains("colors") {
+          seen["colors"] = true
+          if event.kind is Start(_) {
+            colors_depth = depth + 1
+          }
+        } else if depth == colors_depth &&
+          name == "indexedColors" &&
+          !seen.contains("indexedColors") {
+          seen["indexedColors"] = true
+          if event.kind is Start(_) {
+            indexed_depth = depth + 1
+          }
+        } else if depth == indexed_depth && name == "rgbColor" {
+          if palette_index < palette.length() {
+            let color = xlsx_color(element)
+            if color.kind == 1 {
+              palette[palette_index] = color.rgb
+            }
+          }
+          palette_index += 1
+        } else if depth == 1 &&
           ["numFmts", "fonts", "cellStyleXfs", "cellXfs"].contains(name) &&
           !seen.contains(name) {
           seen[name] = true
@@ -292,6 +318,12 @@ fn xlsx_parse_styles(data : Bytes) -> XlsxStyles raise {
       }
       End(_) => {
         depth -= 1
+        if depth + 1 == colors_depth {
+          colors_depth = -1
+        }
+        if depth + 1 == indexed_depth {
+          indexed_depth = -1
+        }
         if depth + 1 == font_depth {
           font_depth = -1
           current_font = None
@@ -352,7 +384,7 @@ fn xlsx_parse_styles(data : Bytes) -> XlsxStyles raise {
       alignment: xlsx_default_alignment(),
     })
   }
-  { fonts, number_formats: formats, cell_formats: result, }
+  { fonts, number_formats: formats, cell_formats: result, palette, }
 }
 
 ///|

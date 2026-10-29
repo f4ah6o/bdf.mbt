@@ -196,7 +196,9 @@ pub(all) struct XlsxStyles {
   fonts : Array[XlsxFont]
   number_formats : Map[Int32, String]
   cell_formats : Array[XlsxCellFormat]
+  palette : Array[UInt32]
 }
+pub fn XlsxStyles::format_cell(Self, XlsxCell, Bool, String) -> XlsxFormatted?
 pub fn XlsxStyles::number_format(Self, Int32, String) -> String
 
 pub(all) struct XlsxWorkbook {
