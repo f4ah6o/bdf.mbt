@@ -46,6 +46,8 @@ Conditional interval cases use `generate_conditional_between_test.go` and
 `TestCodexConditionalBetween`.
 Conditional formula prefix cases use `generate_conditional_equals_test.go` and
 `TestCodexConditionalEquals`.
+Conditional absolute-reference cases use `generate_conditional_absolute_test.go`
+and `TestCodexConditionalAbsolute`.
 Conditional font cases matching blank cells use `generate_conditional_blank_test.go`
 and `TestCodexConditionalBlank`.
 Blank-cell paint cases use `generate_conditional_paint_blank_test.go` and

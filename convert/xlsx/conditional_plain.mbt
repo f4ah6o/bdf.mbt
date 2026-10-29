@@ -115,21 +115,31 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
           } else {
             text
           }
-          for c in text {
-            if !((c >= '0' && c <= '9') ||
-              c == '.' ||
-              c == '+' ||
-              c == '-' ||
-              c == 'e' ||
-              c == 'E') {
-              xlsx_reject_conditional()
+          let value = if text.has_prefix("$") {
+            match xlsx_absolute_conditional_value(text, rows) {
+              Some(value) => value
+              None => {
+                xlsx_reject_conditional()
+                0.0
+              }
             }
-          }
-          let value = @string.parse_double(text) catch {
-            _ =>
-              raise InvalidXlsxInput(
-                "xlsx: plain conversion does not support conditional formatting",
-              )
+          } else {
+            for c in text {
+              if !((c >= '0' && c <= '9') ||
+                c == '.' ||
+                c == '+' ||
+                c == '-' ||
+                c == 'e' ||
+                c == 'E') {
+                xlsx_reject_conditional()
+              }
+            }
+            @string.parse_double(text) catch {
+              _ =>
+                raise InvalidXlsxInput(
+                  "xlsx: plain conversion does not support conditional formatting",
+                )
+            }
           }
           if value.is_nan() || value.is_inf() {
             xlsx_reject_conditional()
@@ -254,6 +264,58 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
     rows
   }
   xlsx_apply_conditional_style(rows, styles, matched, style)
+}
+
+///|
+fn xlsx_absolute_conditional_value(
+  text : String,
+  rows : Array[XlsxRow],
+) -> Double? {
+  let data = @utf8.encode(text)
+  if data.length() < 4 || data[0] != b'$' {
+    return None
+  }
+  let mut i = 1
+  while i < data.length() &&
+        (
+          (data[i] >= b'A' && data[i] <= b'Z') ||
+          (data[i] >= b'a' && data[i] <= b'z')
+        ) {
+    i += 1
+  }
+  if i == 1 || i >= data.length() || data[i] != b'$' {
+    return None
+  }
+  i += 1
+  let start = i
+  while i < data.length() && data[i] >= b'0' && data[i] <= b'9' {
+    i += 1
+  }
+  if i == start || i != data.length() {
+    return None
+  }
+  let (column, row, valid) = xlsx_parse_ref(text)
+  if !valid {
+    return None
+  }
+  for candidate in rows {
+    if candidate.index != row {
+      continue
+    }
+    for cell in candidate.cells {
+      if cell.column == column {
+        if cell.kind == 0 {
+          return Some(0.0)
+        }
+        if cell.kind == 1 {
+          return Some(cell.number)
+        }
+        return None
+      }
+    }
+    return Some(0.0)
+  }
+  Some(0.0)
 }
 
 ///|
