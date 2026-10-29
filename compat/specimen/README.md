@@ -152,3 +152,7 @@ run `TestCodexSpecimenPagePaint` with the same fixture root.
 To regenerate glyph-grid page cases, copy `generate-glyph-view_test.go` without
 its build tag into upstream `converter/font` alongside `generate_test.go` and
 run `TestCodexGlyphView` with the same fixture root.
+
+To regenerate character-chart glyph-cell cases, copy `generate-chart-cell_test.go`
+without its build tag into upstream `converter/font` alongside `generate_test.go`
+and run `TestCodexChartCells` with the same fixture root.

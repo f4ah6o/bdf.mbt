@@ -233,6 +233,7 @@ pub fn SpecimenOutlines::path(Self, Int32) -> @core.Path?
 pub struct SpecimenPagePainter {
   // private fields
 }
+pub fn SpecimenPagePainter::cell_glyph(Self, Int32, Double, Double, Double, Double, String) -> Bool raise
 pub fn SpecimenPagePainter::clip_rect(Self, Double, Double, Double, Double) -> Unit
 pub fn SpecimenPagePainter::encode(Self) -> Bytes raise
 pub fn SpecimenPagePainter::glyph_run(Self, Array[Int32], Array[Double], Double, Double, Double, String) -> Bool raise

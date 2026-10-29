@@ -10,6 +10,8 @@ import {
 // Values
 pub fn automatic_pruned(Bytes, Int32, String) -> Bytes
 
+pub fn begin_chart_cells(Bytes, Int32, String, Bool, Double) -> @font.SpecimenPagePainter
+
 pub fn begin_specimen_page(PageBatchFixture, Int32) -> @font.SpecimenPagePainter
 
 pub fn coverage(Bytes, Int32) -> String
@@ -28,6 +30,12 @@ pub fn glyph_painter_object(GlyphPainterFixture) -> Bytes
 
 pub fn glyph_program(Bytes, Int32) -> Bytes
 
+pub fn glyph_view_count(GlyphViewFixture) -> Int32
+
+pub fn glyph_view_height(GlyphViewFixture, Int32) -> Double
+
+pub fn glyph_view_object(GlyphViewFixture, Int32) -> Bytes
+
 pub fn info_tables(Bytes, Bytes, Bytes, Bytes, Bytes, Bytes, Bytes) -> String
 
 pub fn kerning_description(Bytes, Int32) -> String
@@ -39,6 +47,8 @@ pub fn new_texter() -> TexterFixture
 pub fn overview(Bytes, Int32, Bool) -> String
 
 pub fn page_batch_layout(PageBatchFixture) -> String
+
+pub fn paint_chart_cell(@font.SpecimenPagePainter, Int32, Double, Double, Double, Double, String) -> Unit
 
 pub fn paint_embedded_glyphs(GlyphPainterFixture, Array[Int32], Array[Double], Double, Double, Double, String) -> Unit
 
@@ -76,6 +86,8 @@ pub fn reachable(Bytes, Int32, String) -> Array[Int32]
 
 pub fn record_ui_text(TexterFixture, String, Double, Bool) -> Unit
 
+pub fn render_glyph_view(Bytes, Int32, Bytes, Bool, Bool, String) -> GlyphViewFixture
+
 pub fn sample_plan(Bytes, Int32, String) -> String
 
 pub fn sample_program(Bytes, Int32) -> Bytes
@@ -106,6 +118,10 @@ pub fn variations(Bytes, Bytes) -> String
 pub struct GlyphPainterFixture {
   object : @core.ObjectBuilder
   painter : @font.GlyphPainter
+}
+
+pub struct GlyphViewFixture {
+  pages : Array[@font.SpecimenRenderedPage]
 }
 
 pub struct PageBatchFixture {

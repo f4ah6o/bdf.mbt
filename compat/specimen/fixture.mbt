@@ -1048,3 +1048,53 @@ pub fn glyph_view_height(f : GlyphViewFixture, index : Int32) -> Double {
 pub fn glyph_view_object(f : GlyphViewFixture, index : Int32) -> Bytes {
   f.pages[index].object
 }
+
+///|
+#export_name("begin_chart_cells")
+pub fn begin_chart_cells(
+  data : Bytes,
+  index : Int32,
+  hash : String,
+  outlined : Bool,
+  height : Double,
+) -> @font.SpecimenPagePainter {
+  let file = try! @font.load(data)
+  for face in file.faces() {
+    if face.index == index {
+      let db = @db.Database::new()
+      let texter = @font.SpecimenTexter::new(db)
+      let fonts : @font.SpecimenUIFonts = { hashes: Map::new(), warnings: [], }
+      let glyph : @core.Font? = if outlined {
+        None
+      } else {
+        Some({ hash: Some(hash), family: "", weight: 400, style: 0, })
+      }
+      let programs : @font.SpecimenFacePrograms = {
+        face_index: face.index,
+        glyph_font: glyph,
+        sample_font: None,
+        sample: face.sample_plan(""),
+        outlined,
+      }
+      let scroll = @font.ScrollLayout::new().finish()
+      return try! @font.SpecimenPagePainter::new(
+        face, programs, texter, fonts, scroll, height,
+      )
+    }
+  }
+  abort("missing font face")
+}
+
+///|
+#export_name("paint_chart_cell")
+pub fn paint_chart_cell(
+  page : @font.SpecimenPagePainter,
+  glyph : Int32,
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+  alt : String,
+) -> Unit {
+  ignore(try! page.cell_glyph(glyph, x, y, width, height, alt))
+}

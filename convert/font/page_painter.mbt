@@ -164,3 +164,47 @@ pub fn SpecimenPagePainter::restore(self : SpecimenPagePainter) -> Unit {
   self.object.restore()
   self.glyphs.reset_state()
 }
+
+///|
+/// Draw a glyph centered within a character-chart cell, shrinking its ink
+/// where necessary to fit and preserving the supplied alternative text.
+pub fn SpecimenPagePainter::cell_glyph(
+  self : SpecimenPagePainter,
+  glyph : Int32,
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+  alt : String,
+) -> Bool raise {
+  let face = self.glyphs.face
+  let (asc, desc) = specimen_vertical(face)
+  let mut size = height * 0.62 / (asc + desc)
+  let mut base = y + (height - (asc + desc) * size) / 2.0 + asc * size
+  let mut origin = x + width / 2.0 - face.font.advance(glyph) * size / 2.0
+  match self.glyphs.outlines.outlines.bounds(glyph) {
+    Some((x0, y0, x1, y1)) => {
+      let upem = face.font.metrics.units_per_em.to_double()
+      let left = x0 / upem
+      let right = x1 / upem
+      let bottom = y0 / upem
+      let top = y1 / upem
+      let fw = width * 0.9 / Double::max(right - left, 0.001)
+      let fh = height * 0.92 / Double::max(top - bottom, 0.001)
+      if fw < size || fh < size {
+        size = Double::min(fw, fh)
+        base = y + height / 2.0 + (top + bottom) / 2.0 * size
+      } else {
+        let ink_top = base - top * size
+        let ink_bottom = base - bottom * size
+        if ink_top < y + 1.0 || ink_bottom > y + height - 1.0 {
+          base += Double::max(y + 1.0 - ink_top, 0.0) -
+            Double::max(ink_bottom - (y + height - 1.0), 0.0)
+        }
+      }
+      origin = x + width / 2.0 - (left + right) / 2.0 * size
+    }
+    None => ()
+  }
+  self.glyph_run([glyph], [0.0], origin, base, size, alt)
+}
