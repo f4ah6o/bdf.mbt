@@ -18,3 +18,11 @@ test "solid fill ignores a row index beyond the sheet extent" {
   )
   assert_eq(result.tiles.length(), 0)
 }
+
+///|
+test "link tile counts do not overflow for large sheets" {
+  assert_eq(
+    grid_link_tile_count(0.0, 0.0, 22528000.0, 430080000.0),
+    2310000000L,
+  )
+}

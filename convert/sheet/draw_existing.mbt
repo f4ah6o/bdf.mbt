@@ -58,6 +58,16 @@ pub(all) struct GridMergeRegion {
 }
 
 ///|
+/// A hyperlink over an inclusive cell range.
+pub(all) struct GridLink {
+  row_start : Int32
+  row_end : Int32
+  column_start : Int32
+  column_end : Int32
+  target : String
+}
+
+///|
 priv struct GridFillRect {
   x0 : Double
   x1 : Double
@@ -108,6 +118,7 @@ pub fn draw_sized_grid_no_fonts(
   shrink_scales~ : Map[Int32, Map[Int32, Double]] = Map([]),
   indents~ : Map[Int32, Map[Int32, Double]] = Map([]),
   center_across~ : Map[Int32, Map[Int32, Bool]] = Map([]),
+  links~ : Array[GridLink] = [],
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -517,6 +528,41 @@ pub fn draw_sized_grid_no_fonts(
     rows, borders, border_colors, diagonals, spans, region_rows, merge_regions, col_positions,
     row_positions, visible_columns,
   )
+  let mut link_room = 16384
+  for link in links {
+    if link.row_start < 0 ||
+      link.column_start < 0 ||
+      link.row_start >= count ||
+      link.column_start >= visible_columns {
+      continue
+    }
+    let last_row = Int32::min(link.row_end, count - 1)
+    let last_column = Int32::min(link.column_end, visible_columns - 1)
+    if last_row < link.row_start || last_column < link.column_start {
+      continue
+    }
+    let x0 = col_positions[link.column_start]
+    let x1 = col_positions[last_column + 1]
+    let y0 = row_positions[link.row_start]
+    let y1 = row_positions[last_row + 1]
+    if x0 >= x1 || y0 >= y1 {
+      continue
+    }
+    let tile_count = grid_link_tile_count(x0, y0, x1, y1)
+    if tile_count - 1L > link_room.to_int64() {
+      raise InvalidArgument("sheet: links exceed the supported tile budget")
+    }
+    link_room -= (tile_count - 1L).to_int()
+    for tile in context.in_bounds(x0, y0, x1, y1) {
+      tile.object.link(
+        Float::from_double(x0 - tile.x.to_double() * 2048.0),
+        Float::from_double(y0 - tile.y.to_double() * 2048.0),
+        Float::from_double(x1 - x0),
+        Float::from_double(y1 - y0),
+        link.target,
+      )
+    }
+  }
   let tiles = context.tiles.map(fn(tile) {
     { x: tile.x, y: tile.y, object: tile.object.encode(), drawn: tile.drawn, }
   })
@@ -544,6 +590,17 @@ pub fn draw_sized_grid_no_fonts(
     },
     tiles,
   }
+}
+
+///|
+fn grid_link_tile_count(
+  x0 : Double,
+  y0 : Double,
+  x1 : Double,
+  y1 : Double,
+) -> Int64 {
+  ((x1 / 2048.0).ceil().to_int() - (x0 / 2048.0).to_int()).to_int64() *
+  ((y1 / 2048.0).ceil().to_int() - (y0 / 2048.0).to_int()).to_int64()
 }
 
 ///|

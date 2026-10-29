@@ -20,7 +20,7 @@ borders (including diagonals and multiple colors at one weight), named and
 themed fonts and default font sizes, italic and decorated text, superscripts
 and subscripts, merged rectangles, center-across-selection, wrapped, indented
 and shrink-to-fit text, fixed and automatic row heights, hidden rows and
-columns, single unformatted text runs, row and column styles including solid backgrounds and borders, and
+columns, single unformatted text runs, links, row and column styles including solid backgrounds and borders, and
 uncached formula warnings. Patterned base fills and complex base borders have
 separate rejection cases. The rendering
 cases are split into indexed chunks so individual fixture files stay small.
@@ -30,6 +30,7 @@ The base-fill and base-border cases are regenerated separately using
 `generate_base_fill_test.go` / `TestCodexBaseFill` and
 `generate_base_border_test.go` / `TestCodexBaseBorder`.
 Single-run cases use `generate_plain_run_test.go` and `TestCodexPlainRun`.
+Link cases use `generate_links_test.go` and `TestCodexLinks`.
 To regenerate fixtures, copy `generate_workbook_test.go` without its build tag
 into upstream `converter/xlsx` and run `TestCodexXLSXWorkbook` with
 `BDF_FIXTURE_ROOT` set to this repository.

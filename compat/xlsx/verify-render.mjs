@@ -33,6 +33,16 @@ for (const [j, c] of baseBorders.entries()) await verifyCase(c, `base border ${j
 const plainRuns = JSON.parse(await readFile(new URL('./plain-run.json', import.meta.url)));
 assert.equal(plainRuns.length, 120, 'plain rich-text run fixture count');
 for (const [j, c] of plainRuns.entries()) await verifyCase(c, `plain run ${j}`);
+const links = JSON.parse(await readFile(new URL('./links.json', import.meta.url)));
+assert.equal(links.length, 200, 'hyperlink fixture count');
+for (const [j, c] of links.entries()) await verifyCase(c, `hyperlink ${j}`);
+const unsupportedLinks = JSON.parse(await readFile(new URL('./links-unsupported.json', import.meta.url)));
+assert.equal(unsupportedLinks.length, 3, 'unsupported hyperlink fixture count');
+for (const [j, encoded] of unsupportedLinks.entries()) {
+  const input = Buffer.from(encoded, 'base64');
+  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported links must be rejected');
+  assert.match(xlsx_render_error(input, 'none', true), j < 2 ? /unsupported hyperlink URL/ : /links exceed the supported tile budget/);
+}
 const unsupportedRuns = JSON.parse(await readFile(new URL('./plain-run-unsupported.json', import.meta.url)));
 assert.equal(unsupportedRuns.length, 8, 'unsupported rich-text run fixture count');
 for (const encoded of unsupportedRuns) {
@@ -59,4 +69,4 @@ for (const encoded of unsupportedBase) {
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|complex borders)/);
 }
-console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, and ${plainRuns.length} plain runs match upstream.`);
+console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, and ${links.length} links match upstream.`);

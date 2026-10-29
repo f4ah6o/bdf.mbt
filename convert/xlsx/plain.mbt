@@ -10,7 +10,7 @@ pub(all) struct XlsxPlainResult {
 fn XlsxWorkbook::xlsx_check_plain_sheet(
   self : XlsxWorkbook,
   part : String,
-) -> Unit raise {
+) -> Array[@sheet.GridLink] raise {
   let data = self.package.read(part) catch {
     @ooxml.InvalidOoxml(message) => raise InvalidXlsxInput(message)
   }
@@ -27,6 +27,9 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut run_depth = -1
   let mut run_count = 0
   let mut run_texts = 0
+  let mut link_depth = -1
+  let links : Array[@sheet.GridLink] = []
+  let relationships = self.package.relationships(part)
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -36,7 +39,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           if ![
               "sheetData", "dimension", "sheetViews", "cols", "sheetFormatPr", "sheetPr",
               "pageMargins", "pageSetup", "printOptions", "headerFooter", "rowBreaks",
-              "colBreaks", "mergeCells",
+              "colBreaks", "mergeCells", "hyperlinks",
             ].contains(name) {
             raise InvalidXlsxInput(
               "xlsx: plain conversion does not support worksheet feature " +
@@ -46,6 +49,11 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           if name == "sheetData" && event.kind is Start(_) {
             sheet_data_depth = depth + 1
           }
+          if name == "hyperlinks" && event.kind is Start(_) {
+            link_depth = depth + 1
+          }
+        } else if depth == link_depth && name == "hyperlink" {
+          xlsx_add_plain_links(links, relationships, element)
         } else if depth == sheet_data_depth &&
           name == "row" &&
           event.kind is Start(_) {
@@ -113,6 +121,9 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           }
           run_depth = -1
         }
+        if depth + 1 == link_depth {
+          link_depth = -1
+        }
         if depth + 1 == inline_depth {
           inline_depth = -1
         }
@@ -136,6 +147,114 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           raise InvalidXlsxInput("xlsx: unexpected EOF")
         }
       _ => ()
+    }
+  }
+  links
+}
+
+///|
+fn xlsx_add_plain_links(
+  links : Array[@sheet.GridLink],
+  relationships : Array[@ooxml.OoxmlRelationship],
+  element : @xml.NamespaceElement,
+) -> Unit raise {
+  let id = xlsx_rel_id(element, "id")
+  if id == "" {
+    return
+  }
+  let mut target = ""
+  let mut external = false
+  for rel in relationships {
+    if rel.id == id {
+      target = rel.target
+      external = rel.external
+      break
+    }
+  }
+  if !external {
+    return
+  }
+  if !target.has_prefix("http:") &&
+    !target.has_prefix("https:") &&
+    !target.has_prefix("mailto:") {
+    return
+  }
+  if (target.has_prefix("http:") && !target.has_prefix("http://")) ||
+    (target.has_prefix("https:") && !target.has_prefix("https://")) {
+    raise InvalidXlsxInput("xlsx: unsupported hyperlink URL")
+  }
+  let location = xlsx_attr(element, "location", "")
+  if location != "" {
+    target = target + "#" + location
+  }
+  for b in @utf8.encode(target) {
+    let n = b.to_int()
+    if n < 33 ||
+      n > 126 ||
+      b == b'%' ||
+      b == b'[' ||
+      b == b']' ||
+      b == b'\\' ||
+      b == b'"' ||
+      b == b'<' ||
+      b == b'>' ||
+      b == b'`' ||
+      b == b'{' ||
+      b == b'}' ||
+      b == b'^' ||
+      b == b'|' {
+      raise InvalidXlsxInput("xlsx: unsupported hyperlink URL")
+    }
+  }
+  // Keep the HTTP authority to a simple host and optional numeric port.
+  // Other forms are rejected until URL parsing matches Go's url.Parse.
+  if target.has_prefix("http://") || target.has_prefix("https://") {
+    let bytes = @utf8.encode(target)
+    let mut i = if target.has_prefix("http://") { 7 } else { 8 }
+    let mut port = false
+    while i < bytes.length() {
+      let b = bytes[i]
+      if b == b'/' || b == b'?' || b == b'#' {
+        break
+      }
+      if b == b':' && !port {
+        port = true
+      } else if port {
+        if b < b'0' || b > b'9' {
+          raise InvalidXlsxInput("xlsx: unsupported hyperlink URL")
+        }
+      } else if !((b >= b'a' && b <= b'z') ||
+        (b >= b'A' && b <= b'Z') ||
+        (b >= b'0' && b <= b'9') ||
+        b == b'.' ||
+        b == b'-') {
+        raise InvalidXlsxInput("xlsx: unsupported hyperlink URL")
+      }
+      i += 1
+    }
+  }
+  let buffer = StringBuilder()
+  for ch in xlsx_attr(element, "ref", "") {
+    if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
+      buffer.write_char(' ')
+    } else {
+      buffer.write_char(ch)
+    }
+  }
+  for item in buffer.to_string().split(" ") {
+    if item == "" {
+      continue
+    }
+    if xlsx_parse_range(item.to_owned()) is Some(range) &&
+      range.row_start < 1048576L &&
+      range.column_start < 16384 {
+      links.push({
+        row_start: range.row_start.to_int(),
+        row_end: Int64::min(range.row_end, 1048575L).to_int(),
+        column_start: range.column_start,
+        column_end: Int32::min(range.column_end, 16383),
+        target,
+      })
     }
   }
 }
@@ -308,7 +427,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// patterned row and column fills, complex borders and other features are
 /// rejected. Views with base fills are limited to 1,000,000 cells, and views
-/// with base borders to 200,000 cells.
+/// with base borders to 200,000 cells. External links support simple ASCII
+/// HTTP(S) and mailto URLs without percent escapes; other URL forms are rejected.
 pub fn convert_plain_no_fonts(
   data : Bytes,
   data_mode~ : String = "",
@@ -427,7 +547,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   doc_language : String,
   theme_colors : Map[Int32, XlsxRgb],
 ) -> (@sheet.DrawnGrid, XlsxSheetGeometry, Int32) raise {
-  workbook.xlsx_check_plain_sheet(ref.part)
+  let links = workbook.xlsx_check_plain_sheet(ref.part)
   let parsed = workbook.read_sheet_cells(ref.part)
   let rows = parsed.sorted_rows()
   let geo = workbook.read_sheet_geometry(ref.part)
@@ -1028,7 +1148,11 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     shrink_scales~,
     indents~,
     center_across~,
-  )
+    links~,
+  ) catch {
+    @sheet.InvalidArgument(message) => raise InvalidXlsxInput(message)
+    error => raise error
+  }
   (drawn, geo, parsed.missing_formula_values)
 }
 
