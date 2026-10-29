@@ -30,7 +30,7 @@ pub fn musicxml_integer(String) -> (Int64, Bool)
 
 pub fn musicxml_is_score_text(String) -> Bool
 
-pub fn musicxml_pitch_note(MusicXmlNode, transpose? : Int32) -> MusicXmlPitchNote?
+pub fn musicxml_pitch_note(MusicXmlNode, transpose? : Int32, instruments? : Array[MusicXmlInstrument]) -> MusicXmlPitchNote?
 
 pub fn musicxml_read_tree(Bytes) -> MusicXmlNode raise MusicXmlInputError
 
@@ -104,6 +104,7 @@ pub(all) struct MusicXmlPartHeader {
 pub(all) struct MusicXmlPitchNote {
   pitch : @music.Pitch
   sounding_key : Int32
+  pitched : Bool
   accidental : Int32
   cautionary : Bool
   head : Int32

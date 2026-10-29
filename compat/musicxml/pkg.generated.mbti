@@ -18,6 +18,8 @@ pub fn musicxml_text(Bytes) -> String
 
 pub fn musicxml_tree(Bytes) -> String
 
+pub fn musicxml_unpitched_note(Bytes, String) -> String
+
 pub fn musicxml_values(String) -> String
 
 // Errors
