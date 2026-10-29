@@ -2,6 +2,8 @@
 package "f4ah6o/bdf/compat/midiinput"
 
 // Values
+pub fn decode_text(Bytes) -> String
+
 pub fn detect(Bytes) -> Bool
 
 pub fn header(Bytes, Int32) -> String

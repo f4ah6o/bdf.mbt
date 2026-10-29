@@ -198,3 +198,28 @@ pub fn track_meta(data : Bytes) -> String {
       Json::object({ "error": Json::string(message) }).stringify()
   }
 }
+
+///|
+#export_name("decode_text")
+pub fn decode_text(data : Bytes) -> String {
+  try {
+    let file = @midi.read_file(data)
+    let decoder = @midi.MidiTextDecoder::new(file)
+    let texts : Array[Json] = []
+    let names : Array[Json] = []
+    for track in file.tracks {
+      for field in track.notes.texts {
+        texts.push(Json::string(decoder.text(field.data)))
+        names.push(Json::string(decoder.name(field.data)))
+      }
+    }
+    Json::object({
+      "shiftJis": Json::boolean(decoder.uses_shift_jis()),
+      "texts": Json::array(texts),
+      "names": Json::array(names),
+    }).stringify()
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}

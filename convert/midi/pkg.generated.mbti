@@ -92,6 +92,14 @@ pub(all) struct MidiRawTrack {
   notes : MidiTrackNotes
 }
 
+pub struct MidiTextDecoder {
+  shift_jis : Bool
+}
+pub fn MidiTextDecoder::name(Self, Bytes) -> String
+pub fn MidiTextDecoder::new(MidiRawFile) -> Self
+pub fn MidiTextDecoder::text(Self, Bytes) -> String
+pub fn MidiTextDecoder::uses_shift_jis(Self) -> Bool
+
 pub(all) struct MidiTrackNotes {
   notes : Array[MidiRawNote]
   controls : Array[MidiRawControl]
