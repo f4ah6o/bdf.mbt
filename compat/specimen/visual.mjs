@@ -1,4 +1,4 @@
-import { glyph_program } from '/_build/js/debug/build/compat/specimen/specimen.js';
+import { glyph_program, automatic_pruned } from '/_build/js/debug/build/compat/specimen/specimen.js';
 
 try {
   const unzip = async bytes => new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
@@ -19,6 +19,20 @@ try {
     for (let glyph = 1; glyph <= 30; glyph++) {
       ctx.fillText(String.fromCodePoint(0xf0000 + glyph), 27 + ((glyph - 1) % 15) * 35, 53 + Math.floor((glyph - 1) / 15) * 47);
     }
+  }
+  for (const [index, sample] of samples.entries()) {
+    const prune = sample.pruned.find(item => item.visual);
+    if (!prune) continue;
+    const program = document.body.dataset.converter === 'moon'
+      ? automatic_pruned(await unzip(base64(sample.input)), sample.index, prune.text)
+      : await unzip(base64(prune.visual));
+    const face = new FontFace('sample-' + index, program);
+    await face.load(); document.fonts.add(face);
+    const canvas = document.createElement('canvas');
+    canvas.width = 560; canvas.height = 145; document.querySelector('#host').append(canvas);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#222'; ctx.font = '12px sans-serif'; ctx.fillText(sample.name + ' shaped sample', 8, 14);
+    ctx.font = '48px "sample-' + index + '"'; ctx.fillText('ffi fi f', 12, 80);
   }
   window.bdfStatus = 'ready';
 } catch (error) {

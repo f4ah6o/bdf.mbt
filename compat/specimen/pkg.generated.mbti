@@ -2,9 +2,13 @@
 package "f4ah6o/bdf/compat/specimen"
 
 // Values
+pub fn automatic_pruned(Bytes, Int32, String) -> Bytes
+
 pub fn glyph_program(Bytes, Int32) -> Bytes
 
 pub fn pruned_program(Bytes, Int32, Array[Int32]) -> Bytes
+
+pub fn reachable(Bytes, Int32, String) -> Array[Int32]
 
 pub fn sample_program(Bytes, Int32) -> Bytes
 

@@ -109,11 +109,7 @@ fn Font::specimen_tables(
 /// the face's standalone SFNT size; return None when upstream would omit a
 /// large whole font or large color bitmap tables. The caller checks licensing.
 pub fn Font::specimen_whole_sample(self : Font, size : Int64) -> Bytes? raise {
-  let mut bitmap_size = 0L
-  for tag in ["sbix", "CBDT", "SVG "] {
-    bitmap_size += sfnt_table(self.source, self.tables, tag).length().to_int64()
-  }
-  if bitmap_size > 1048576L || size > 4194304L {
+  if self.specimen_large_bitmap() || size > 4194304L {
     return None
   }
   Some(
@@ -181,11 +177,7 @@ pub fn Font::specimen_pruned_truetype(
   glyphs : Array[Int32],
   size : Int64,
 ) -> Bytes? raise {
-  let mut bitmap_size = 0L
-  for tag in ["sbix", "CBDT", "SVG "] {
-    bitmap_size += sfnt_table(self.source, self.tables, tag).length().to_int64()
-  }
-  if bitmap_size > 1048576L {
+  if self.specimen_large_bitmap() {
     return None
   }
   let whole = self.tables.contains("morx") ||
@@ -293,4 +285,58 @@ fn Font::prune_specimen_glyf(
   tables["glyf"] = outlines
   tables["loca"] = loca
   tables["head"] = head
+}
+
+///|
+/// Compute the glyphs reachable from text through GSUB substitutions. Like
+/// upstream, this includes the dotted circle, space and hyphen and ignores
+/// substitution context. Invalid GSUB tables contribute no substitutions.
+pub fn Font::specimen_reachable(self : Font, text : String) -> Array[Int32] {
+  let roots : Array[Int32] = [0]
+  for character in text + "◌ -" {
+    match self.glyph(character.to_int()) {
+      Some(glyph) if glyph < self.metrics.glyph_count => roots.push(glyph)
+      _ => ()
+    }
+  }
+  let data = sfnt_table(self.source, self.tables, "GSUB")
+  match @otlayout.parse_gsub(data) {
+    Some(gsub) => gsub.reachable(roots)
+    None => {
+      let unique : Map[Int32, Bool] = Map([])
+      for glyph in roots {
+        unique[glyph] = true
+      }
+      let result = unique.keys().collect()
+      result.sort()
+      result
+    }
+  }
+}
+
+///|
+fn Font::specimen_large_bitmap(self : Font) -> Bool {
+  let mut size = 0L
+  for tag in ["sbix", "CBDT", "SVG "] {
+    size += sfnt_table(self.source, self.tables, tag).length().to_int64()
+  }
+  size > 1048576L
+}
+
+///|
+/// Build a TrueType specimen sample for text using its GSUB closure. Size and
+/// bitmap checks happen before parsing substitutions, as in upstream.
+pub fn Font::specimen_sample_truetype(
+  self : Font,
+  text : String,
+  size : Int64,
+) -> Bytes? raise {
+  if self.specimen_large_bitmap() ||
+    self.tables.contains("morx") ||
+    self.tables.contains("mort") ||
+    self.tables.contains("Silf") ||
+    !self.tables.contains("glyf") {
+    return self.specimen_pruned_truetype([], size)
+  }
+  self.specimen_pruned_truetype(self.specimen_reachable(text), size)
 }

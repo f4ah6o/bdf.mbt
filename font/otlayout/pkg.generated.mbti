@@ -1,0 +1,18 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/font/otlayout"
+
+// Values
+pub fn parse_gsub(BytesView) -> Gsub?
+
+// Errors
+
+// Types and methods
+pub struct Gsub {
+  // private fields
+}
+pub fn Gsub::reachable(Self, Array[Int32]) -> Array[Int32]
+pub fn Gsub::truncated(Self) -> Bool
+
+// Type aliases
+
+// Traits

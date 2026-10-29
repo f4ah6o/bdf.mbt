@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { gunzipSync } from 'node:zlib';
-import { glyph_program, sample_program, pruned_program } from '../../_build/js/debug/build/compat/specimen/specimen.js';
+import { glyph_program, sample_program, pruned_program, reachable, automatic_pruned } from '../../_build/js/debug/build/compat/specimen/specimen.js';
 
 const samples = JSON.parse(gunzipSync(await readFile(new URL('./upstream.json.gz', import.meta.url))));
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -17,7 +17,12 @@ for (const sample of samples) {
   assert.equal(actualSample.length, sample.sampleSize, sample.name + ' sample size');
   assert.equal(hash(actualSample), sample.sampleHash, sample.name + ' whole sample');
   for (const prune of sample.pruned) {
+    const actualReach = reachable(input, sample.index, prune.text);
+    assert.deepEqual(actualReach, prune.keep, sample.name + ' reachable glyphs ' + JSON.stringify(prune.text));
+    if (prune.visual) assert.equal(hash(gunzipSync(Buffer.from(prune.visual, 'base64'))), prune.hash, sample.name + ' pruned visual baseline');
     const actualPruned = Buffer.from(pruned_program(input, sample.index, prune.keep));
+    const automatic = Buffer.from(automatic_pruned(input, sample.index, prune.text));
+    assert.equal(hash(automatic), prune.hash, sample.name + ' automatic sample ' + JSON.stringify(prune.text));
     assert.equal(actualPruned.length > 0, prune.ok, sample.name + ' pruned sample availability');
     assert.equal(actualPruned.length, prune.size, sample.name + ' pruned sample size');
     assert.equal(hash(actualPruned), prune.hash, sample.name + ' pruned sample ' + JSON.stringify(prune.text));

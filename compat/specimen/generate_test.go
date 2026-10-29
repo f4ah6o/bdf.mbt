@@ -78,7 +78,11 @@ func TestCodexGlyphPrograms(t *testing.T) {
 						}
 						sort.Ints(keep)
 						out, ok := sampleProgram(fc, text, true)
-						pruned = append(pruned, map[string]any{"text": text, "keep": keep, "hash": digest(out), "size": len(out), "ok": ok})
+						entry := map[string]any{"text": text, "keep": keep, "hash": digest(out), "size": len(out), "ok": ok}
+						if text == "ffi" && (name == "stix.ttf" || name == "features.ttf") {
+							entry["visual"] = packFixture(out)
+						}
+						pruned = append(pruned, entry)
 					}
 				}
 				record := map[string]any{"name": name, "index": index, "input": packFixture(data), "outputHash": digest(out), "outputSize": len(out), "sampleHash": digest(sample), "sampleSize": len(sample), "sampleOK": ok, "pruned": pruned}

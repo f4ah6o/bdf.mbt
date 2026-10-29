@@ -4,6 +4,7 @@ import {
   "gaato/deflate/zlib",
   "moonbit-community/ucd",
   "f4ah6o/bdf/font/cff",
+  "f4ah6o/bdf/font/otlayout",
 }
 
 supported_targets = "+js+wasm-gc"

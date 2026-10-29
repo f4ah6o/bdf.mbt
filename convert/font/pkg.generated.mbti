@@ -22,6 +22,7 @@ pub struct FileFace {
   size : Int64
 }
 pub fn FileFace::sample_pruned_truetype(Self, Array[Int32]) -> Bytes? raise
+pub fn FileFace::sample_truetype(Self, String) -> Bytes? raise
 pub fn FileFace::sample_whole_program(Self) -> Bytes? raise
 
 pub struct FontFile {

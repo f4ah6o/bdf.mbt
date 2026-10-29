@@ -37,3 +37,27 @@ pub fn pruned_program(
   }
   abort("missing font face")
 }
+
+///|
+#export_name("reachable")
+pub fn reachable(data : Bytes, index : Int32, text : String) -> Array[Int32] {
+  let file = try! @font.load(data)
+  for face in file.faces() {
+    if face.index == index {
+      return face.font.specimen_reachable(text)
+    }
+  }
+  abort("missing font face")
+}
+
+///|
+#export_name("automatic_pruned")
+pub fn automatic_pruned(data : Bytes, index : Int32, text : String) -> Bytes {
+  let file = try! @font.load(data)
+  for face in file.faces() {
+    if face.index == index {
+      return (try! face.sample_truetype(text)).unwrap_or(b"")
+    }
+  }
+  abort("missing font face")
+}
