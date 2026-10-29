@@ -201,7 +201,6 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
     font.italic ||
     font.underline != "" ||
     font.strike ||
-    font.color.kind == 2 ||
     (font.scheme != "" && font.scheme != "minor") ||
     font.vertical != "" ||
     a.horizontal != "general" ||
@@ -244,6 +243,7 @@ pub fn convert_plain_no_fonts(
     )
   }
   let styles = workbook.styles()
+  let theme_colors = workbook.xlsx_plain_theme_colors()
   xlsx_check_plain_style(styles, 0)
   workbook.xlsx_check_plain_strings()
   let dc : Map[String, Json] = Map([])
@@ -290,7 +290,7 @@ pub fn convert_plain_no_fonts(
     let number = index + 1
     let id = "sheet" + number.to_string()
     let (drawn, geo) = workbook.xlsx_draw_plain_sheet(
-      ref, styles, locale, doc_language,
+      ref, styles, locale, doc_language, theme_colors,
     )
     let (next, table_warnings) = workbook.store_sheet_tables(
       writer,
@@ -333,6 +333,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   styles : XlsxStyles,
   locale : XlsxLocale,
   doc_language : String,
+  theme_colors : Map[Int32, XlsxRgb],
 ) -> (@sheet.DrawnGrid, XlsxSheetGeometry) raise {
   workbook.xlsx_check_plain_sheet(ref.part)
   let parsed = workbook.read_sheet_cells(ref.part)
@@ -475,7 +476,11 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               match color_cache.get(cell.style) {
                 Some(cached) => cached
                 None => {
-                  let color = xlsx_plain_font_color(styles, cell.style)
+                  let color = xlsx_plain_font_color(
+                    styles,
+                    cell.style,
+                    theme_colors,
+                  )
                   color_cache[cell.style] = color
                   color
                 }
@@ -516,7 +521,11 @@ fn xlsx_fit_plain_number(value : Double, available : Double) -> String {
 }
 
 ///|
-fn xlsx_plain_font_color(styles : XlsxStyles, style : Int32) -> UInt32 {
+fn xlsx_plain_font_color(
+  styles : XlsxStyles,
+  style : Int32,
+  theme : Map[Int32, XlsxRgb],
+) -> UInt32 raise {
   let index = if style < 0 || style >= styles.cell_formats.length() {
     0
   } else {
@@ -529,5 +538,14 @@ fn xlsx_plain_font_color(styles : XlsxStyles, style : Int32) -> UInt32 {
     raw_font
   }
   let black : XlsxRgb = { red: 0.0, green: 0.0, blue: 0.0, }
-  styles.resolve_color(styles.fonts[font_index].color, black, Map([])).rgba()
+  let color = styles.fonts[font_index].color
+  if color.kind == 2 &&
+    color.index >= 0 &&
+    color.index < 12 &&
+    !theme.contains(color.index) {
+    raise InvalidXlsxInput(
+      "xlsx: plain conversion does not support this theme color",
+    )
+  }
+  styles.resolve_color(color, black, theme).rgba()
 }

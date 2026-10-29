@@ -23,7 +23,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 2150; i++ {
+	for i := 0; i < 2350; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -63,15 +63,35 @@ func TestCodexXLSXRender(t *testing.T) {
 		if i >= 1450 {
 			rels += `<Relationship Id="rStyles" Type="x/styles" Target="styles.xml"/>`
 		}
+		if i >= 2250 {
+			rels += `<Relationship Id="rTheme" Type="x/theme" Target="theme/theme1.xml"/>`
+		}
 		rels += `</Relationships>`
 		add("xl/_rels/workbook.xml.rels", rels)
+		if i >= 2250 {
+			th := `<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:themeElements><a:clrScheme>`
+			for j, name := range []string{"lt1", "dk1", "lt2", "dk2", "accent1", "accent2", "accent3", "accent4", "accent5", "accent6", "hlink", "folHlink"} {
+				value := r.Intn(1 << 24)
+				if j%2 == 0 {
+					th += fmt.Sprintf(`<a:%s><a:srgbClr val="%06X"/></a:%s>`, name, value, name)
+				} else {
+					th += fmt.Sprintf(`<a:%s><a:sysClr val="window" lastClr="%06X"/></a:%s>`, name, value, name)
+				}
+			}
+			th += `</a:clrScheme></a:themeElements></a:theme>`
+			add("xl/theme/theme1.xml", th)
+		}
 		if i >= 1450 {
 			st := `<styleSheet>`
 			if i >= 1850 {
 				st += `<numFmts><numFmt numFmtId="164" formatCode="0.00;[Red](0.00)"/><numFmt numFmtId="165" formatCode="[Color10]0.00"/><numFmt numFmtId="166" formatCode="[Blue]0%"/></numFmts>`
 			}
 			if i >= 2000 {
-				st += `<fonts><font><name val="Calibri"/><sz val="11"/><color rgb="FF445566"/></font><font><name val="Calibri"/><sz val="11"/><color indexed="10"/></font><font><name val="Calibri"/><sz val="11"/><color rgb="FFD396A7" tint="0.1"/></font><font><name val="Calibri"/><sz val="11"/><color auto="1"/></font></fonts>`
+				st += `<fonts><font><name val="Calibri"/><sz val="11"/><color rgb="FF445566"/></font><font><name val="Calibri"/><sz val="11"/><color indexed="10"/></font><font><name val="Calibri"/><sz val="11"/><color rgb="FFD396A7" tint="0.1"/></font><font><name val="Calibri"/><sz val="11"/><color auto="1"/></font>`
+				if i >= 2150 {
+					st += fmt.Sprintf(`<font><name val="Calibri"/><sz val="11"/><color theme="%d" tint="%g"/></font>`, r.Intn(14), []float64{0, 0.1, -0.25, 0.5}[r.Intn(4)])
+				}
+				st += `</fonts>`
 			}
 			st += `<cellXfs><xf numFmtId="0"/>`
 			ids := []int{1, 2, 3, 4, 9, 10, 11, 14, 20, 22, 46, 49}
@@ -81,7 +101,11 @@ func TestCodexXLSXRender(t *testing.T) {
 			for _, id := range ids {
 				font := 0
 				if i >= 2000 {
-					font = r.Intn(4)
+					if i >= 2150 {
+						font = r.Intn(5)
+					} else {
+						font = r.Intn(4)
+					}
 				}
 				st += fmt.Sprintf(`<xf numFmtId="%d" fontId="%d"/>`, id, font)
 			}
