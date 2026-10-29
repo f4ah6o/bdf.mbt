@@ -24,7 +24,7 @@ pub(all) struct GridSolidFill {
 }
 
 ///|
-/// Black border weights on the four sides of a cell.
+/// Border weights on the four sides of a cell.
 pub(all) struct GridCellBorder {
   top : Int32
   bottom : Int32
@@ -70,7 +70,29 @@ pub fn draw_sized_grid_no_fonts(
   fills~ : Map[Int32, Map[Int32, GridSolidFill]] = Map([]),
   sizes~ : Map[Int32, Map[Int32, Double]] = Map([]),
   borders~ : Map[Int32, Map[Int32, GridCellBorder]] = Map([]),
+  spans~ : Map[Int32, Map[Int32, Int32]] = Map([]),
+  border_colors~ : Map[Int32, Map[Int32, Array[UInt32]]] = Map([]),
 ) -> DrawnGrid raise {
+  let mut span_room = 4194304L
+  for row, columns in spans {
+    if row < 0 || row >= 1048576 {
+      raise InvalidArgument("merged row is outside the sheet")
+    }
+    let starts : Array[Int32] = [ for start, _ in columns => start ]
+    starts.sort()
+    let mut previous_end = -1
+    for start in starts {
+      let end = columns[start]
+      if start < 0 || end >= 16384 || end < start || start <= previous_end {
+        raise InvalidArgument("invalid or overlapping merged columns")
+      }
+      span_room -= (end - start + 1).to_int64()
+      if span_room < 0L {
+        raise InvalidArgument("too many merged cells")
+      }
+      previous_end = end
+    }
+  }
   let col_positions = grid_positions(all_columns)
   if col_positions.length() != 16385 {
     raise InvalidArgument("expected sizes for 16384 columns")
@@ -120,6 +142,17 @@ pub fn draw_sized_grid_no_fonts(
       centered[entry.column] = entry.center
       visibility[entry.column] = entry.visible
     }
+    let row_spans = spans.get(i).unwrap_or(Map([]))
+    for start, end in row_spans {
+      while row.length() <= end {
+        row.push({ text: "", number: false, })
+      }
+      for column in start..<=end {
+        if row[column].text == "" {
+          row[column] = { text: "\u0000", number: false, }
+        }
+      }
+    }
     let y = row_positions[i]
     let height = row_positions[i + 1] - y
     if height <= 0.0 {
@@ -129,8 +162,21 @@ pub fn draw_sized_grid_no_fonts(
       if column >= 16384 {
         break
       }
-      if !visibility.get(column).unwrap_or(false) ||
-        col_positions[column + 1] <= col_positions[column] {
+      let mut last = column
+      let mut hidden_by_span = false
+      for start, end in row_spans {
+        if column >= start && column <= end {
+          if column == start {
+            last = end
+          } else {
+            hidden_by_span = true
+          }
+          break
+        }
+      }
+      if hidden_by_span ||
+        !visibility.get(column).unwrap_or(false) ||
+        col_positions[last + 1] <= col_positions[column] {
         continue
       }
       let cell = render_cells[column]
@@ -149,27 +195,35 @@ pub fn draw_sized_grid_no_fonts(
       let text = sized_grid_text(cell.text)
       let display : Cell = { text, number: cell.number, }
       let initial = grid_cell_layout(
-        row, display, column, col_positions, y, height, bold, language, advance,
+        row,
+        display,
+        column,
+        col_positions,
+        y,
+        height,
+        bold,
+        language,
+        advance,
         metrics,
+        end_column=last,
       )
       let horizontal : DrawCell = if centered.get(column).unwrap_or(false) {
         let lines = initial.lines.map(fn(line) {
           {
             text: line.text,
             x: col_positions[column] +
-            (col_positions[column + 1] - col_positions[column] - line.width) /
-            2.0,
+            (col_positions[last + 1] - col_positions[column] - line.width) / 2.0,
             baseline: line.baseline,
             width: line.width,
             cjk_wrap: line.cjk_wrap,
           }
         })
         let mut x0 = col_positions[column]
-        let mut x1 = col_positions[column + 1]
+        let mut x1 = col_positions[last + 1]
         let text0 = lines[0].x
         let text1 = lines[0].x + lines[0].width
         if text0 < x0 || text1 > x1 {
-          let mut next = column + 1
+          let mut next = last + 1
           while next < 16384 && x1 < text1 {
             if next < row.length() && row[next].text != "" {
               break
@@ -195,7 +249,7 @@ pub fn draw_sized_grid_no_fonts(
           ty1 > y + height + 0.01
         if !clipped {
           x0 = Double::min(text0, col_positions[column])
-          x1 = Double::max(text1, col_positions[column + 1])
+          x1 = Double::max(text1, col_positions[last + 1])
         }
         {
           x0,
@@ -215,8 +269,8 @@ pub fn draw_sized_grid_no_fonts(
         None => "general"
       }
       let horizontal = sized_grid_horizontal_layout(
-        horizontal, horizontal_kind, row, display, column, col_positions, y, height,
-        size,
+        horizontal, horizontal_kind, row, display, column, last, col_positions, y,
+        height, size,
       )
       let vertical = match verticals.get(i) {
         Some(columns) => columns.get(column).unwrap_or("bottom")
@@ -239,7 +293,12 @@ pub fn draw_sized_grid_no_fonts(
         }
         text_columns = Int32::max(text_columns, Int32::min(lo, 16383) + 1)
       }
-      let reference = cell_reference(i, column, false)
+      let reference = cell_reference(i, column, false) +
+        (if row_spans.contains(column) {
+          ":" + cell_reference(i, last, false)
+        } else {
+          ""
+        })
       for tile in context.in_bounds(layout.x0, layout.y0, layout.x1, layout.y1) {
         tile.emit_cell(
           layout,
@@ -258,7 +317,7 @@ pub fn draw_sized_grid_no_fonts(
     }
   }
   context.sized_grid_borders(
-    rows, borders, col_positions, row_positions, visible_columns,
+    rows, borders, border_colors, col_positions, row_positions, visible_columns,
   )
   let tiles = context.tiles.map(fn(tile) {
     { x: tile.x, y: tile.y, object: tile.object.encode(), drawn: tile.drawn, }
@@ -294,6 +353,7 @@ fn GridDrawContext::sized_grid_borders(
   self : GridDrawContext,
   rows : Array[SizedGridRow],
   borders : Map[Int32, Map[Int32, GridCellBorder]],
+  border_colors : Map[Int32, Map[Int32, Array[UInt32]]],
   columns : Array[Double],
   row_positions : Array[Double],
   visible_columns : Int32,
@@ -321,21 +381,26 @@ fn GridDrawContext::sized_grid_borders(
           continue
         }
         let border = values[column]
+        let colors = match border_colors.get(index) {
+          Some(row_colors) => row_colors.get(column).unwrap_or([])
+          None => []
+        }
+        let color = fn(i : Int32) { colors.get(i).unwrap_or(0x000000ffU) }
         put_grid_edge(horizontal, index, column, {
           weight: border.top,
-          color: 0x000000ffU,
+          color: color(0),
         })
         put_grid_edge(horizontal, index + 1, column, {
           weight: border.bottom,
-          color: 0x000000ffU,
+          color: color(1),
         })
         put_grid_edge(vertical, index, column, {
           weight: border.left,
-          color: 0x000000ffU,
+          color: color(2),
         })
         put_grid_edge(vertical, index, column + 1, {
           weight: border.right,
-          color: 0x000000ffU,
+          color: color(3),
         })
       }
     }
@@ -443,6 +508,7 @@ fn sized_grid_horizontal_layout(
   row : Array[Cell],
   cell : Cell,
   column : Int32,
+  last : Int32,
   positions : Array[Double],
   y : Double,
   height : Double,
@@ -452,7 +518,7 @@ fn sized_grid_horizontal_layout(
     return layout
   }
   let left = positions[column]
-  let right = positions[column + 1]
+  let right = positions[last + 1]
   let lines = layout.lines.map(line => {
     ..line,
     x: if alignment == "left" {
@@ -480,7 +546,7 @@ fn sized_grid_horizontal_layout(
         previous -= 1
       }
     } else {
-      let mut next = column + 1
+      let mut next = last + 1
       while next < 16384 && x1 < tx1 {
         if next < row.length() && row[next].text != "" {
           break

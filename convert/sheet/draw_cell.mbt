@@ -60,9 +60,11 @@ fn grid_cell_layout(
   language : String,
   advance : (Char, Bool) -> Double,
   metrics : (Char, Bool) -> (Double, Double),
+  end_column~ : Int32 = -1,
 ) -> DrawCell {
   let x = col_positions[column]
-  let width = col_positions[column + 1] - x
+  let last = if end_column >= column { end_column } else { column }
+  let width = col_positions[last + 1] - x
   let wraps = cell.text.contains("\n") || cell.text.contains("\r")
   let available = Double::max(width - 3.75, 0.0)
   let mut lines = wrap_text(
@@ -122,7 +124,7 @@ fn grid_cell_layout(
   let mut x0 = x
   let mut x1 = x + width
   if !wraps && !cell.number && (tx0 < x0 || tx1 > x1) {
-    let mut next = column + 1
+    let mut next = last + 1
     while next < 16384 && x1 < tx1 {
       if next < row.length() && row[next].text != "" {
         break

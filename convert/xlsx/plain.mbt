@@ -33,7 +33,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           if ![
               "sheetData", "dimension", "sheetViews", "cols", "sheetFormatPr", "sheetPr",
               "pageMargins", "pageSetup", "printOptions", "headerFooter", "rowBreaks",
-              "colBreaks",
+              "colBreaks", "mergeCells",
             ].contains(name) {
             raise InvalidXlsxInput(
               "xlsx: plain conversion does not support worksheet feature " +
@@ -242,8 +242,9 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// Convert worksheets using estimated font metrics without embedding fonts.
 /// Supports sheet views with numeric, plain string, boolean and error cells,
 /// number formats, font colors, bold text, horizontal alignment, top or center
-/// vertical alignment, solid fills and basic black borders on individual cells;
-/// complex features are rejected.
+/// vertical alignment, solid fills, basic borders and horizontal merged cells.
+/// Border colors are limited to one per line weight, and merged cells may not
+/// have fills or borders; complex features are rejected.
 pub fn convert_plain_no_fonts(
   data : Bytes,
   data_mode~ : String = "",
@@ -372,11 +373,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let parsed = workbook.read_sheet_cells(ref.part)
   let rows = parsed.sorted_rows()
   let geo = workbook.read_sheet_geometry(ref.part)
-  if !geo.merges.is_empty() {
-    raise InvalidXlsxInput(
-      "xlsx: plain conversion does not support merged cells",
-    )
-  }
+  let spans = xlsx_plain_spans(geo.merges)
   for column in geo.columns {
     if column.style > 0 {
       raise InvalidXlsxInput(
@@ -401,7 +398,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     count: run.count,
     size: run.size,
   })
-  let fitted = xlsx_plain_fitted_rows(rows, styles, geo)
+  let fitted = xlsx_plain_fitted_rows(rows, styles, geo, spans)
   let heights : Array[@sheet.Run] = xlsx_row_runs(
     rows, geo, row_count, 12.65, fitted,
   ).map(run => { count: run.count, size: run.size, })
@@ -417,10 +414,12 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let fills : Map[Int32, Map[Int32, @sheet.GridSolidFill]] = Map([])
   let sizes : Map[Int32, Map[Int32, Double]] = Map([])
   let borders : Map[Int32, Map[Int32, @sheet.GridCellBorder]] = Map([])
+  let border_colors : Map[Int32, Map[Int32, Array[UInt32]]] = Map([])
+  let border_colors_by_weight : Map[Int32, XlsxRgb] = Map([])
   let checked_styles : Map[Int32, Bool] = Map([])
   let format_cache : Map[Int32, Array[XlsxFormatSection]] = Map([])
   let color_cache : Map[Int32, UInt32] = Map([])
-  let border_cache : Map[Int32, @sheet.GridCellBorder] = Map([])
+  let border_cache : Map[Int32, (@sheet.GridCellBorder, Array[XlsxRgb])] = Map([])
   for row in rows {
     if row.style >= 0 {
       raise InvalidXlsxInput(
@@ -455,7 +454,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         font_id
       }
       let font_size = styles.fonts[font_index].size
-      let border = match border_cache.get(format_index) {
+      let span = xlsx_plain_span_at(spans, row.index, cell.column)
+      let (border, colors) = match border_cache.get(format_index) {
         Some(border) => border
         None => {
           let border = xlsx_plain_border(styles, format_index, theme_colors)
@@ -467,6 +467,24 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         border.bottom != 0 ||
         border.left != 0 ||
         border.right != 0 {
+        let weights = [border.top, border.bottom, border.left, border.right]
+        for i, weight in weights {
+          if weight == 0 {
+            continue
+          }
+          let color = colors[i]
+          if border_colors_by_weight.get(weight) is Some(previous) {
+            if previous.red != color.red ||
+              previous.green != color.green ||
+              previous.blue != color.blue {
+              raise InvalidXlsxInput(
+                "xlsx: plain conversion supports one border color per line weight",
+              )
+            }
+          } else {
+            border_colors_by_weight[weight] = color
+          }
+        }
         let columns = match borders.get(row.index) {
           Some(columns) => columns
           None => {
@@ -476,11 +494,25 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           }
         }
         columns[cell.column] = border
+        let row_colors = match border_colors.get(row.index) {
+          Some(row_colors) => row_colors
+          None => {
+            let row_colors : Map[Int32, Array[UInt32]] = Map([])
+            border_colors[row.index] = row_colors
+            row_colors
+          }
+        }
+        row_colors[cell.column] = colors.map(color => color.rgba())
       }
       let fill_index = styles.cell_formats[format_index].fill
       if fill_index >= 0 && fill_index < styles.fills.length() {
         let fill = styles.fills[fill_index]
         if fill.pattern == "solid" {
+          if span is Some(_) {
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion does not support fills on merged cells",
+            )
+          }
           let columns = match fills.get(row.index) {
             Some(columns) => columns
             None => {
@@ -497,6 +529,17 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             .rgba(),
           }
         }
+      }
+      if span is Some(_) &&
+        (
+          border.top != 0 ||
+          border.bottom != 0 ||
+          border.left != 0 ||
+          border.right != 0
+        ) {
+        raise InvalidXlsxInput(
+          "xlsx: plain conversion does not support borders on merged cells",
+        )
       }
       let formatted = if cell.kind == 1 {
         Some(
@@ -534,15 +577,27 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         }
         let mut text = formatted.text()
         if cell.kind == 1 {
+          let mut cell_width = if cell.column >= 0 &&
+            cell.column < widths.length() {
+            widths[cell.column]
+          } else {
+            0.0
+          }
+          if span is Some((start, end)) && cell.column == start {
+            cell_width = 0.0
+            for column in start..<=end {
+              cell_width += widths[column]
+            }
+          }
           let mut width = 0.0
           for c in text {
             width += @sheet.sized_fallback_advance(c, false, font_size)
           }
           if cell.column >= 0 &&
             cell.column < widths.length() &&
-            widths[cell.column] > 0.0 &&
-            width > widths[cell.column] - 3.75 + 0.01 {
-            let available = Double::max(widths[cell.column] - 3.75, 0.0)
+            cell_width > 0.0 &&
+            width > cell_width - 3.75 + 0.01 {
+            let available = Double::max(cell_width - 3.75, 0.0)
             text = if formatted.general {
               xlsx_fit_plain_number(cell.number, available, font_size)
             } else {
@@ -639,6 +694,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     fills~,
     sizes~,
     borders~,
+    spans~,
+    border_colors~,
   )
   (drawn, geo, parsed.missing_formula_values)
 }
@@ -648,18 +705,28 @@ fn xlsx_plain_border(
   styles : XlsxStyles,
   format : Int32,
   theme : Map[Int32, XlsxRgb],
-) -> @sheet.GridCellBorder raise {
+) -> (@sheet.GridCellBorder, Array[XlsxRgb]) raise {
   let id = styles.cell_formats[format].border
   if id < 0 || id >= styles.borders.length() {
-    return { top: 0, bottom: 0, left: 0, right: 0, }
+    let black : XlsxRgb = { red: 0.0, green: 0.0, blue: 0.0, }
+    return (
+      { top: 0, bottom: 0, left: 0, right: 0, },
+      [black, black, black, black],
+    )
   }
   let border = styles.borders[id]
-  {
-    top: xlsx_plain_border_side(styles, border.top, theme),
-    bottom: xlsx_plain_border_side(styles, border.bottom, theme),
-    left: xlsx_plain_border_side(styles, border.left, theme),
-    right: xlsx_plain_border_side(styles, border.right, theme),
-  }
+  let (top, top_color) = xlsx_plain_border_side(styles, border.top, theme)
+  let (bottom, bottom_color) = xlsx_plain_border_side(
+    styles,
+    border.bottom,
+    theme,
+  )
+  let (left, left_color) = xlsx_plain_border_side(styles, border.left, theme)
+  let (right, right_color) = xlsx_plain_border_side(styles, border.right, theme)
+  (
+    { top, bottom, left, right, },
+    [top_color, bottom_color, left_color, right_color],
+  )
 }
 
 ///|
@@ -667,7 +734,7 @@ fn xlsx_plain_border_side(
   styles : XlsxStyles,
   side : XlsxBorderSide,
   theme : Map[Int32, XlsxRgb],
-) -> Int32 raise {
+) -> (Int32, XlsxRgb) raise {
   let weight = match side.style {
     "" => 0
     "thin" => 6
@@ -680,15 +747,66 @@ fn xlsx_plain_border_side(
       )
   }
   let black : XlsxRgb = { red: 0.0, green: 0.0, blue: 0.0, }
-  if weight != 0 {
-    let color = styles.resolve_color(side.color, black, theme)
-    if color.red != 0.0 || color.green != 0.0 || color.blue != 0.0 {
+  (weight, styles.resolve_color(side.color, black, theme))
+}
+
+///|
+fn xlsx_plain_spans(
+  ranges : Array[XlsxRange],
+) -> Map[Int32, Map[Int32, Int32]] raise {
+  let spans : Map[Int32, Map[Int32, Int32]] = Map([])
+  let mut room = 4194304L
+  for range in ranges {
+    if range.row_start != range.row_end ||
+      range.row_start < 0L ||
+      range.row_start >= 1048576L ||
+      range.column_start < 0 ||
+      range.column_end >= 16384 ||
+      range.column_start > range.column_end {
       raise InvalidXlsxInput(
-        "xlsx: plain conversion supports only black borders",
+        "xlsx: plain conversion supports only horizontal merged cells",
       )
     }
+    let length = (range.column_end - range.column_start + 1).to_int64()
+    if length > room {
+      raise InvalidXlsxInput("xlsx: too many merged cells for plain conversion")
+    }
+    room -= length
+    let row = range.row_start.to_int()
+    let columns = match spans.get(row) {
+      Some(columns) => columns
+      None => {
+        let columns : Map[Int32, Int32] = Map([])
+        spans[row] = columns
+        columns
+      }
+    }
+    for start, end in columns {
+      if range.column_start <= end && range.column_end >= start {
+        raise InvalidXlsxInput(
+          "xlsx: plain conversion does not support overlapping merges",
+        )
+      }
+    }
+    columns[range.column_start] = range.column_end
   }
-  weight
+  spans
+}
+
+///|
+fn xlsx_plain_span_at(
+  spans : Map[Int32, Map[Int32, Int32]],
+  row : Int32,
+  column : Int32,
+) -> (Int32, Int32)? {
+  if spans.get(row) is Some(columns) {
+    for start, end in columns {
+      if column >= start && column <= end {
+        return Some((start, end))
+      }
+    }
+  }
+  None
 }
 
 ///|
@@ -696,6 +814,7 @@ fn xlsx_plain_fitted_rows(
   rows : Array[XlsxRow],
   styles : XlsxStyles,
   geometry : XlsxSheetGeometry,
+  spans : Map[Int32, Map[Int32, Int32]],
 ) -> Map[Int32, Double] {
   let result : Map[Int32, Double] = Map([])
   for row in rows {
@@ -705,7 +824,8 @@ fn xlsx_plain_fitted_rows(
     let mut best = 0.0
     for cell in row.cells {
       if cell.kind == 0 ||
-        (cell.kind == 1 && cell.number == 0.0 && !geometry.show_zero) {
+        (cell.kind == 1 && cell.number == 0.0 && !geometry.show_zero) ||
+        xlsx_plain_span_at(spans, row.index, cell.column) is Some(_) {
         continue
       }
       let format_index = if cell.style < 0 ||
