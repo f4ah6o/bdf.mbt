@@ -1805,3 +1805,112 @@ pub fn score_tab_cues(
     err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
   }
 }
+
+///|
+#export_name("midi_document_tab")
+pub fn midi_document_tab(
+  data : Bytes,
+  width : Double,
+  height : Double,
+  sp : Double,
+  title : String,
+  no_text : Bool,
+  no_play : Bool,
+  select : Bool,
+) -> String {
+  try {
+    let result = @midi.convert(data, @db.Database::new(), options={
+      page: { width, height, staff_space: sp, title, },
+      pages: if select {
+        Some([1, 3, 2, 99])
+      } else {
+        None
+      },
+      time: None,
+      key: None,
+      no_play,
+      no_text_index: no_text,
+      system_fonts: true,
+      no_subset: false,
+      ignore_restrictions: false,
+      no_woff2: true,
+    })
+    let bytes : Array[Json] = []
+    for b in result.bdf {
+      bytes.push(Json::number(b.to_int().to_double()))
+    }
+    Json::array([
+      Json::array(bytes),
+      Json::array(result.warnings.map(v => Json::string(v))),
+      Json::array(
+        [
+          result.pages,
+          result.systems,
+          result.measures,
+          result.parts,
+          result.staves,
+          result.notes,
+          result.embedded_fonts,
+        ].map(v => Json::number(v.to_double())),
+      ),
+    ]).stringify()
+  } catch {
+    err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
+  }
+}
+
+///|
+#export_name("midi_document_tab_fonts")
+pub fn midi_document_tab_fonts(
+  data : Bytes,
+  font_data : Bytes,
+  width : Double,
+  height : Double,
+  sp : Double,
+  title : String,
+  no_text : Bool,
+  no_play : Bool,
+  select : Bool,
+) -> String {
+  try {
+    let db = @db.Database::new()
+    ignore(db.add_file("stix.ttf", font_data))
+    let result = @midi.convert(data, db, options={
+      page: { width, height, staff_space: sp, title, },
+      pages: if select {
+        Some([1, 3, 2, 99])
+      } else {
+        None
+      },
+      time: None,
+      key: None,
+      no_play,
+      no_text_index: no_text,
+      system_fonts: false,
+      no_subset: false,
+      ignore_restrictions: false,
+      no_woff2: true,
+    })
+    let bytes : Array[Json] = []
+    for b in result.bdf {
+      bytes.push(Json::number(b.to_int().to_double()))
+    }
+    Json::array([
+      Json::array(bytes),
+      Json::array(result.warnings.map(v => Json::string(v))),
+      Json::array(
+        [
+          result.pages,
+          result.systems,
+          result.measures,
+          result.parts,
+          result.staves,
+          result.notes,
+          result.embedded_fonts,
+        ].map(v => Json::number(v.to_double())),
+      ),
+    ]).stringify()
+  } catch {
+    err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
+  }
+}

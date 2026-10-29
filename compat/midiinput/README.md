@@ -6,7 +6,7 @@ track metadata, text decoding, playback-file repair, and the performance
 model, lyric assignment and score notation with shibukawa/bdf commit
 `4f9af52dca60be1eb0daade39f7dc41d6a1fe431`. They include damaged RIFF
 chunks, duplicate metadata, SMPTE divisions, truncated headers and random
-inputs. The score can be engraved into a BDF document with playback and a text index; guitar TAB views are not yet implemented.
+inputs. The score and estimated guitar TAB views can be engraved into a BDF document with playback and a text index.
 
 Run `moon build compat/midiinput --target js` and `npm run test:midi-input`.
 To regenerate, copy `generate_test.go` without its first two lines to
@@ -42,3 +42,5 @@ Regenerated MIDI playback fixtures use `generate_smf_test.go` and `TestCodexGene
 Score-view document fixtures use `generate_document_test.go` and `TestCodexMidiDocument`. These compare source metadata, page objects, sequence and cue parts, text indexes, warnings, and result counts with guitar TAB disabled.
 
 The visual fixture uses `generate_visual_test.go` and `TestCodexMidiVisual`. Run `npm run test:midi-visual` after building the JavaScript target to compare the Go and MoonBit score views with vlmkit.
+
+The complete score and TAB document oracles use `generate_document_tab_test.go` and `generate_document_tab_fonts_test.go`, with and without an embedded font. The visual fixture includes both score and TAB views.

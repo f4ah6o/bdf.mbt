@@ -30,7 +30,7 @@ pub fn MidiScoreOptions::new() -> MidiScoreOptions {
 }
 
 ///|
-/// A BDF score view and nonfatal warnings. Guitar TAB views are not included.
+/// A MIDI conversion result and nonfatal warnings.
 pub(all) struct MidiScoreResult {
   bdf : Bytes
   warnings : Array[String]
@@ -50,6 +50,62 @@ pub fn convert_score(
   data : Bytes,
   db : @db.Database,
   options~ : MidiScoreOptions = MidiScoreOptions::new(),
+) -> MidiScoreResult raise {
+  convert_midi(data, db, options, false)
+}
+
+///|
+/// Convert a MIDI file into a score with the upstream guitar TAB views.
+pub fn convert(
+  data : Bytes,
+  db : @db.Database,
+  options~ : MidiScoreOptions = MidiScoreOptions::new(),
+  guitar_tab~ : Bool = true,
+) -> MidiScoreResult raise {
+  convert_midi(data, db, options, guitar_tab)
+}
+
+///|
+priv struct PendingMidiTab {
+  rendered : @music.MusicRenderedTab
+  view : Map[String, Json]
+  selected : Array[Int32]
+  keep : Array[Bool]
+}
+
+///|
+fn midi_text_index(
+  doc : @core.DocumentWriter,
+  data : Array[Bytes],
+  selected : Array[Int32],
+) -> String raise {
+  let runs : Array[@core.IndexRun] = []
+  for page_index, source in selected {
+    let obj = @core.decode_object_resources(data[source])
+    let text = @render.extract_text(obj, _ => None)
+    for i, run in text.runs {
+      runs.push({
+        a: page_index,
+        b: 0,
+        ordinal: run.ordinal,
+        separator: if i == 0 {
+          2
+        } else {
+          run.separator
+        },
+        text: run.text,
+      })
+    }
+  }
+  doc.add_part("idx", @core.encode_text_index(runs))
+}
+
+///|
+fn convert_midi(
+  data : Bytes,
+  db : @db.Database,
+  options : MidiScoreOptions,
+  guitar_tab : Bool,
 ) -> MidiScoreResult raise {
   if data.length() > 67108864 {
     raise InvalidMidiInput("midi: the file is larger than 67108864 bytes")
@@ -93,14 +149,20 @@ pub fn convert_score(
     meta["dc"] = Json::object(dc)
   }
   let doc = @core.DocumentWriter::new(meta=Json::object(meta))
-  let rendered = @music.render_midi_pages(score, db, doc, {
-    page: options.page,
-    system_fonts: options.system_fonts,
-    no_subset: options.no_subset,
-    ignore_restrictions: options.ignore_restrictions,
-    no_woff2: options.no_woff2,
-    document_language: "",
-  })
+  let rendered = @music.render_midi_pages(
+    score,
+    db,
+    doc,
+    {
+      page: options.page,
+      system_fonts: options.system_fonts,
+      no_subset: options.no_subset,
+      ignore_restrictions: options.ignore_restrictions,
+      no_woff2: options.no_woff2,
+      document_language: "",
+    },
+    guitar_tab~,
+  )
   let warnings = performance.warnings.copy()
   for warning in score.timeline.warnings {
     warnings.push(warning)
@@ -162,14 +224,67 @@ pub fn convert_score(
   if title != "" {
     view["title"] = Json::string(title)
   }
+  let tabs : Array[PendingMidiTab] = []
+  for tab in rendered.tabs {
+    let tab_selected : Array[Int32] = []
+    let tab_keep : Array[Bool] = []
+    for _ in tab.objects {
+      tab_keep.push(false)
+    }
+    match options.pages {
+      None =>
+        for i in 0..<tab.objects.length() {
+          tab_selected.push(i)
+          tab_keep[i] = true
+        }
+      Some(pages) =>
+        for n in pages {
+          if n >= 1 && n <= tab.objects.length() {
+            tab_selected.push(n - 1)
+            tab_keep[n - 1] = true
+          }
+        }
+    }
+    let tab_pages : Array[Json] = []
+    for index in tab_selected {
+      let page = tab.view.pages[index]
+      let w = Float::from_double(page.width)
+      let h = Float::from_double(page.height)
+      tab_pages.push(
+        Json::object({
+          "w": Json::number(w.to_double(), repr=w.to_string()),
+          "h": Json::number(h.to_double(), repr=h.to_string()),
+          "layers": Json::array([
+            Json::object({
+              "role": Json::string("body"),
+              "obj": Json::string(tab.objects[index]),
+            }),
+          ]),
+        }),
+      )
+    }
+    let tab_view : Map[String, Json] = {
+      "id": Json::string(tab.view.id),
+      "kind": Json::string("fixed"),
+      "title": Json::string(tab.view.title),
+    }
+    if !tab_pages.is_empty() {
+      tab_view["pages"] = Json::array(tab_pages)
+    }
+    tabs.push({
+      rendered: tab,
+      view: tab_view,
+      selected: tab_selected,
+      keep: tab_keep,
+    })
+  }
   if !options.no_play {
     let sequence = match file.smf {
       Some(bytes) => bytes
       None => performance_smf(performance)
     }
-    let play : Map[String, Json] = {
-      "seq": Json::string(doc.add_part("seq", sequence)),
-    }
+    let sequence_hash = doc.add_part("seq", sequence)
+    let play : Map[String, Json] = { "seq": Json::string(sequence_hash) }
     let (cues, truncated) = @music.midi_score_cues(
       score,
       rendered.layout,
@@ -185,31 +300,44 @@ pub fn convert_score(
       play["cues"] = Json::string(doc.add_part("idx", @core.encode_cues(cues)))
     }
     view["play"] = Json::object(play)
+    for tab in tabs {
+      let tab_play : Map[String, Json] = { "seq": Json::string(sequence_hash) }
+      let (cues, truncated) = @music.guitar_tab_cues(
+        score,
+        tab.rendered.view,
+        performance.division,
+        keep=Some(tab.keep),
+      )
+      if truncated {
+        warnings.push(
+          "the music has more than 4000000 cues; the rest are left out",
+        )
+      }
+      if !cues.systems.is_empty() {
+        tab_play["cues"] = Json::string(
+          doc.add_part("idx", @core.encode_cues(cues)),
+        )
+      }
+      tab.view["play"] = Json::object(tab_play)
+    }
   }
   if !options.no_text_index {
-    let runs : Array[@core.IndexRun] = []
-    for page_index, source in selected {
-      let obj = @core.decode_object_resources(rendered.page_data[source])
-      let text = @render.extract_text(obj, _ => None)
-      for i, run in text.runs {
-        runs.push({
-          a: page_index,
-          b: 0,
-          ordinal: run.ordinal,
-          separator: if i == 0 {
-            2
-          } else {
-            run.separator
-          },
-          text: run.text,
-        })
-      }
-    }
     view["textIndex"] = Json::string(
-      doc.add_part("idx", @core.encode_text_index(runs)),
+      midi_text_index(doc, rendered.page_data, selected),
     )
+    for tab in tabs {
+      let data : Array[Bytes] = [
+        for page in tab.rendered.view.pages => page.object
+      ]
+      tab.view["textIndex"] = Json::string(
+        midi_text_index(doc, data, tab.selected),
+      )
+    }
   }
   doc.add_view(Json::object(view))
+  for tab in tabs {
+    doc.add_view(Json::object(tab.view))
+  }
   let mut staves = 0
   let mut notes = 0
   for part in score.parts {

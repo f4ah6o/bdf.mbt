@@ -10,11 +10,28 @@ pub(all) struct MusicRenderOptions {
 }
 
 ///|
+/// A rendered TAB view and its page object references.
+pub(all) struct MusicRenderedTab {
+  view : GuitarTabView
+  objects : Array[String]
+}
+
+///|
+priv struct MusicTabPlan {
+  part : Int32
+  preset : GuitarPreset
+  prepared : GuitarScoreOnsets
+  fingering : GuitarFingering
+  preview : GuitarTabView
+}
+
+///|
 /// Rendered page object references and the shared path collection.
 pub(all) struct MusicRenderedPages {
   layout : MusicScoreLayout
   objects : Array[String]
   page_data : Array[Bytes]
+  tabs : Array[MusicRenderedTab]
   glyph_paths : String?
   embedded_fonts : Int32
   warnings : Array[String]
@@ -33,6 +50,7 @@ pub fn render_midi_pages(
   db : @db.Database,
   document : @core.DocumentWriter,
   options : MusicRenderOptions,
+  guitar_tab~ : Bool = false,
 ) -> MusicRenderedPages raise {
   if score.error != "" {
     raise InvalidMusicScore(score.error)
@@ -124,6 +142,71 @@ pub fn render_midi_pages(
   }
   for pi in 1..<pages {
     ignore(texter.line((pi + 1).to_string(), 2.0 * sp, false, false))
+  }
+  let tab_warnings : Array[String] = []
+  let tab_plans : Array[MusicTabPlan] = []
+  if guitar_tab {
+    let mut selected_parts = 0
+    let empty_fonts : MusicTextFonts = { hashes: Map([]), warnings: [], }
+    for pi, part in score.parts {
+      if part.percussion {
+        continue
+      }
+      let prepared = guitar_score_onsets(score, pi)
+      if prepared.onsets.is_empty() {
+        continue
+      }
+      let mut notes = 0
+      for onset in prepared.onsets {
+        notes += onset.notes.length()
+      }
+      if notes > 20000 {
+        tab_warnings.push(
+          "guitar TAB for " + part.name + " is omitted: more than 20000 notes",
+        )
+        continue
+      }
+      if selected_parts >= 4 {
+        tab_warnings.push(
+          "guitar TAB shows the first 4 pitched parts; later parts are omitted",
+        )
+        break
+      }
+      selected_parts += 1
+      let name = if part.name == "" {
+        "Part " + (pi + 1).to_string()
+      } else {
+        part.name
+      }
+      for preset in guitar_presets() {
+        let fingering = choose_guitar_fingering(prepared.onsets, preset)
+        if preset.id == "low" && fingering.omitted > 0 {
+          tab_warnings.push(
+            "guitar TAB for " +
+            name +
+            " leaves " +
+            fingering.omitted.to_string() +
+            " notes without a playable six-string position",
+          )
+        }
+        match
+          render_guitar_tab(
+            score,
+            layout,
+            pi,
+            preset,
+            texter,
+            empty_fonts,
+            document_language=options.document_language,
+            prepared=Some(prepared),
+            fingering=Some(fingering),
+          ) {
+          None => ()
+          Some(preview) =>
+            tab_plans.push({ part: pi, preset, prepared, fingering, preview, })
+        }
+      }
+    }
   }
   let fonts = if options.system_fonts {
     { hashes: Map([]), warnings: [], }
@@ -262,7 +345,33 @@ pub fn render_midi_pages(
     page_data.push(data)
     objects.push(document.add_part("obj", data))
   }
-  let warnings = fonts.warnings.copy()
+  let tabs : Array[MusicRenderedTab] = []
+  for plan in tab_plans {
+    let view = if options.system_fonts {
+      plan.preview
+    } else {
+      render_guitar_tab(
+        score,
+        layout,
+        plan.part,
+        plan.preset,
+        texter,
+        fonts,
+        document_language=options.document_language,
+        prepared=Some(plan.prepared),
+        fingering=Some(plan.fingering),
+      ).unwrap()
+    }
+    let refs : Array[String] = []
+    for page in view.pages {
+      refs.push(document.add_part("obj", page.object))
+    }
+    tabs.push({ view, objects: refs, })
+  }
+  let warnings = tab_warnings.copy()
+  for warning in fonts.warnings {
+    warnings.push(warning)
+  }
   match texter.missing_warning() {
     Some(warning) => warnings.push(warning)
     None => ()
@@ -271,6 +380,7 @@ pub fn render_midi_pages(
     layout,
     objects,
     page_data,
+    tabs,
     glyph_paths: glyph_hash,
     embedded_fonts: fonts.hashes.length(),
     warnings,

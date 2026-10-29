@@ -130,10 +130,18 @@ pub fn render_guitar_tab(
   texter : MusicTexter,
   fonts : MusicTextFonts,
   document_language~ : String = "",
+  prepared~ : GuitarScoreOnsets? = None,
+  fingering~ : GuitarFingering? = None,
 ) -> GuitarTabView? raise {
   let part = score.parts[part_index]
-  let input = guitar_score_onsets(score, part_index)
-  let fingering = choose_guitar_fingering(input.onsets, preset)
+  let input = match prepared {
+    Some(value) => value
+    None => guitar_score_onsets(score, part_index)
+  }
+  let fingering = match fingering {
+    Some(value) => value
+    None => choose_guitar_fingering(input.onsets, preset)
+  }
   if fingering.positions.is_empty() {
     return None
   }

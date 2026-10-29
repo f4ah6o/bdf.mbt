@@ -98,9 +98,9 @@ pub fn prepare_score(NotatedScore) -> PreparedScore
 
 pub fn quantize_notes(Array[MeasureSpan], Array[NotationNote]) -> Array[QuantizedNote]
 
-pub fn render_guitar_tab(NotatedScore, MusicScoreLayout, Int32, GuitarPreset, MusicTexter, MusicTextFonts, document_language? : String) -> GuitarTabView? raise
+pub fn render_guitar_tab(NotatedScore, MusicScoreLayout, Int32, GuitarPreset, MusicTexter, MusicTextFonts, document_language? : String, prepared? : GuitarScoreOnsets?, fingering? : GuitarFingering?) -> GuitarTabView? raise
 
-pub fn render_midi_pages(NotatedScore, @db.Database, @core.DocumentWriter, MusicRenderOptions) -> MusicRenderedPages raise
+pub fn render_midi_pages(NotatedScore, @db.Database, @core.DocumentWriter, MusicRenderOptions, guitar_tab? : Bool) -> MusicRenderedPages raise
 
 pub fn resolve_accidentals(KeySig, Array[EngravingEvent]) -> Array[Array[Int32?]]
 
@@ -379,9 +379,15 @@ pub(all) struct MusicRenderedPages {
   layout : MusicScoreLayout
   objects : Array[String]
   page_data : Array[Bytes]
+  tabs : Array[MusicRenderedTab]
   glyph_paths : String?
   embedded_fonts : Int32
   warnings : Array[String]
+}
+
+pub(all) struct MusicRenderedTab {
+  view : GuitarTabView
+  objects : Array[String]
 }
 
 pub(all) struct MusicScoreLayout {

@@ -7,6 +7,8 @@ import {
 }
 
 // Values
+pub fn convert(Bytes, @db.Database, options? : MidiScoreOptions, guitar_tab? : Bool) -> MidiScoreResult raise
+
 pub fn convert_score(Bytes, @db.Database, options? : MidiScoreOptions) -> MidiScoreResult raise
 
 pub fn credits(MidiRawFile) -> MidiCredits
