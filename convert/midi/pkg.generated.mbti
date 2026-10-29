@@ -4,6 +4,8 @@ package "f4ah6o/bdf/convert/midi"
 // Values
 pub fn detect(Bytes) -> Bool
 
+pub fn read_file(Bytes) -> MidiRawFile raise MidiInputError
+
 pub fn read_header(Bytes) -> MidiHeader raise MidiInputError
 
 pub fn read_varlen(Bytes) -> (Int32, Int32)
@@ -45,12 +47,26 @@ pub(all) struct MidiRawControl {
   value : Int32
 }
 
+pub(all) struct MidiRawFile {
+  input : MidiInput
+  header : MidiHeader
+  tracks : Array[MidiRawTrack]
+  smf : Bytes?
+  warnings : Array[String]
+}
+
 pub(all) struct MidiRawNote {
   channel : Int32
   key : Int32
   velocity : Int32
   on : Int64
   off : Int64
+}
+
+pub(all) struct MidiRawTrack {
+  body : Bytes
+  scan : MidiTrackScan
+  notes : MidiTrackNotes
 }
 
 pub(all) struct MidiTrackNotes {

@@ -119,3 +119,26 @@ pub fn track_notes(data : Bytes, max_tick : Int32) -> String {
       Json::object({ "error": Json::string(message) }).stringify()
   }
 }
+
+///|
+#export_name("read_file")
+pub fn read_file(data : Bytes) -> String {
+  try {
+    let file = @midi.read_file(data)
+    let smf = match file.smf {
+      Some(bytes) =>
+        Json::array(bytes.to_array().map(b => Json::number(b.to_double())))
+      None => Json::null()
+    }
+    Json::object({
+      "error": Json::string(""),
+      "format": Json::number(file.header.format.to_double()),
+      "tracks": Json::number(file.tracks.length().to_double()),
+      "smf": smf,
+      "warnings": Json::array(file.warnings.map(Json::string)),
+    }).stringify()
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}
