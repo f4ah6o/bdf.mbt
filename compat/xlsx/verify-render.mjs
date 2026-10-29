@@ -14,4 +14,6 @@ for (const [i, c] of cases.entries()) {
 }
 const styled = JSON.parse(await readFile(new URL('./table-values.json', import.meta.url))).at(-1);
 assert.equal(xlsx_render_basic(Buffer.from(styled.input, 'base64'), 'none', true).length, 0, 'unsupported styled workbook must be rejected');
+const rich = JSON.parse(await readFile(new URL('./cells.json', import.meta.url)))[7];
+assert.equal(xlsx_render_basic(Buffer.from(rich.input, 'base64'), 'none', true).length, 0, 'unsupported rich strings must be rejected');
 console.log(`${cases.length} basic XLSX renderings match upstream.`);

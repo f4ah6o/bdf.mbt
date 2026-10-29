@@ -1,5 +1,15 @@
 ///|
-fn DrawTile::set_language(self : DrawTile, lang : String) -> Unit {
+fn DrawTile::set_language(self : DrawTile, raw : String) -> Unit {
+  let candidate = raw.trim().to_string()
+  let lower = candidate.to_lower()
+  let doc = self.document_language.to_lower()
+  let lang = if lower == "x-none" ||
+    lower == doc ||
+    (lower != "" && !lower.contains("-") && doc.has_prefix(lower + "-")) {
+    ""
+  } else {
+    candidate
+  }
   if self.lang != lang {
     self.object.mark(12, lang)
     self.lang = lang

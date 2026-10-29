@@ -22,6 +22,8 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut depth = 0
   let mut sheet_data_depth = -1
   let mut row_depth = -1
+  let mut cell_depth = -1
+  let mut inline_depth = -1
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -47,11 +49,24 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           row_depth = depth + 1
         } else if depth == row_depth && name == "c" {
           let kind = xlsx_attr(element, "t", "")
-          if kind != "" && kind != "n" && kind != "str" {
+          if kind != "" &&
+            kind != "n" &&
+            kind != "str" &&
+            kind != "s" &&
+            kind != "inlineStr" {
             raise InvalidXlsxInput(
               "xlsx: plain conversion supports only numeric and plain string cells",
             )
           }
+          if event.kind is Start(_) {
+            cell_depth = depth + 1
+          }
+        } else if depth == cell_depth && name == "is" && event.kind is Start(_) {
+          inline_depth = depth + 1
+        } else if depth == inline_depth && name == "r" {
+          raise InvalidXlsxInput(
+            "xlsx: plain conversion does not support rich text",
+          )
         }
         if event.kind is Start(_) {
           depth += 1
@@ -61,11 +76,70 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
       }
       End(_) => {
         depth -= 1
+        if depth + 1 == inline_depth {
+          inline_depth = -1
+        }
+        if depth + 1 == cell_depth {
+          cell_depth = -1
+        }
         if depth + 1 == row_depth {
           row_depth = -1
         }
         if depth + 1 == sheet_data_depth {
           sheet_data_depth = -1
+        }
+        if depth == 0 {
+          break
+        }
+      }
+      Eof =>
+        if depth == 0 {
+          break
+        } else {
+          raise InvalidXlsxInput("xlsx: unexpected EOF")
+        }
+      _ => ()
+    }
+  }
+}
+
+///|
+fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
+  let rel = match
+    self.package.relationship_of_type(self.part, "/sharedStrings") {
+    Some(r) => r
+    None => return
+  }
+  let data = self.package.read(rel.target) catch { _ => return }
+  let text = @utf8.decode_lossy(data[:], ignore_bom=true)
+  if text.contains("<!ENTITY") {
+    raise InvalidXlsxInput("xlsx: the part declares entities")
+  }
+  let reader = @xml.NamespaceReader::from_string(text)
+  let mut depth = 0
+  let mut string_depth = -1
+  while true {
+    let event = reader.read_event()
+    match event.kind {
+      Start(element) | Empty(element) => {
+        let name = element.name.local_name
+        if depth == 1 && name == "si" && event.kind is Start(_) {
+          string_depth = depth + 1
+        } else if depth == string_depth && name == "r" {
+          raise InvalidXlsxInput(
+            "xlsx: plain conversion does not support rich text",
+          )
+        }
+        if event.kind is Start(_) {
+          depth += 1
+        } else if depth == 0 {
+          break
+        }
+      }
+      End(_) => {
+        depth -= 1
+        if depth + 1 == string_depth {
+          string_depth = -1
         }
         if depth == 0 {
           break
@@ -167,18 +241,6 @@ pub fn convert_plain_no_fonts(
   }
   let view_id = "sheet" + sheet_number.to_string()
   let metadata = workbook.package.core_properties()
-  if !metadata.title.is_empty() ||
-    !metadata.creator.is_empty() ||
-    !metadata.subject.is_empty() ||
-    !metadata.description.is_empty() ||
-    !metadata.identifier.is_empty() ||
-    !metadata.language.is_empty() ||
-    !metadata.created.is_empty() ||
-    !metadata.modified.is_empty() {
-    raise InvalidXlsxInput(
-      "xlsx: plain conversion does not support document metadata",
-    )
-  }
   let locale = workbook.locale()
   let theme = workbook.package.theme_fonts(workbook.part)
   if theme.resolve("+mn-lt", "") != "Calibri" {
@@ -189,6 +251,7 @@ pub fn convert_plain_no_fonts(
   let styles = workbook.styles()
   xlsx_check_plain_style(styles, locale.number_locale)
   workbook.xlsx_check_plain_sheet(ref.part)
+  workbook.xlsx_check_plain_strings()
   let parsed = workbook.read_sheet_cells(ref.part)
   if parsed.missing_formula_values > 0 {
     raise InvalidXlsxInput(
@@ -267,18 +330,40 @@ pub fn convert_plain_no_fonts(
     }
     cells.push({ index: row.index, cells: entries, })
   }
+  let doc_language = metadata.language.get(0).unwrap_or("")
   let drawn = @sheet.draw_sized_grid_no_fonts(
     cells,
     geometry,
     default_width,
     locale.language,
+    doc_language,
   )
-  let writer = @core.DocumentWriter::new(
-    meta=Json::object({
-      "source": Json::string("xlsx"),
-      "generator": Json::string("bdf-go/0.1"),
-    }),
-  )
+  let dc : Map[String, Json] = Map([])
+  for
+    (key, values) in [
+      ("title", metadata.title),
+      ("creator", metadata.creator),
+      ("subject", metadata.subject),
+      ("description", metadata.description),
+      ("identifier", metadata.identifier),
+      ("language", metadata.language),
+      ("created", metadata.created),
+      ("modified", metadata.modified),
+    ] {
+    if values.length() == 1 {
+      dc[key] = Json::string(values[0])
+    } else if values.length() > 1 {
+      dc[key] = Json::array(values.map(Json::string))
+    }
+  }
+  let meta : Map[String, Json] = {
+    "source": Json::string("xlsx"),
+    "generator": Json::string("bdf-go/0.1"),
+  }
+  if !dc.is_empty() {
+    meta["dc"] = Json::object(dc)
+  }
+  let writer = @core.DocumentWriter::new(meta=Json::object(meta))
   let mode = if data_mode == "default" { "" } else { data_mode }
   let (_, table_warnings) = workbook.store_sheet_tables(
     writer,

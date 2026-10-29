@@ -283,6 +283,7 @@ fn draw_grid(
     indexes: Map([]),
     width: col_positions[16384],
     height: row_positions[row_count],
+    document_language: "",
   }
   if style is Some(style) && table_rows > 0 {
     context.paint_table_fills(

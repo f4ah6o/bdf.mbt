@@ -19,6 +19,7 @@ pub fn draw_sized_grid_no_fonts(
   geometry : GridGeometry,
   default_column_width : Double,
   language : String,
+  document_language : String,
 ) -> DrawnGrid raise {
   let col_positions = grid_positions(geometry.columns)
   while col_positions.length() <= 16384 {
@@ -33,8 +34,9 @@ pub fn draw_sized_grid_no_fonts(
     indexes: Map([]),
     width: col_positions[16384],
     height: row_positions[count],
+    document_language,
   }
-  let family = grid_family(language)
+  let family = grid_family("")
   let visible_columns = grid_positions(geometry.columns).length() - 1
   let mut text_columns = 0
   for sparse in rows {

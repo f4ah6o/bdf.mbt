@@ -46,6 +46,7 @@ priv struct DrawTile {
   mut has_color : Bool
   mut current_color : UInt32
   mut lang : String
+  document_language : String
   mut drawn : Bool
 }
 
@@ -55,6 +56,7 @@ priv struct GridDrawContext {
   indexes : Map[String, Int32]
   width : Double
   height : Double
+  document_language : String
 }
 
 ///|
@@ -68,7 +70,7 @@ fn GridDrawContext::tile(
     Some(index) => index
     None => {
       let index = self.tiles.length()
-      self.tiles.push(DrawTile::new(x, y))
+      self.tiles.push(DrawTile::new(x, y, self.document_language))
       self.indexes[key] = index
       index
     }
@@ -100,7 +102,7 @@ fn GridDrawContext::in_bounds(
 }
 
 ///|
-fn DrawTile::new(x : Int32, y : Int32) -> DrawTile {
+fn DrawTile::new(x : Int32, y : Int32, document_language : String) -> DrawTile {
   let object = @core.ObjectBuilder::new()
   object.set_bbox(0.0F, 0.0F, 2048.0F, 2048.0F)
   {
@@ -113,6 +115,7 @@ fn DrawTile::new(x : Int32, y : Int32) -> DrawTile {
     has_color: false,
     current_color: 0U,
     lang: "",
+    document_language,
     drawn: false,
   }
 }

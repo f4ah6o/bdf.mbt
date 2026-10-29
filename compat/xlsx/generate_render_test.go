@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"html"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -22,7 +23,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 300; i++ {
+	for i := 0; i < 600; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -34,8 +35,28 @@ func TestCodexXLSXRender(t *testing.T) {
 				t.Fatal(e)
 			}
 		}
+		if i >= 450 {
+			add("_rels/.rels", `<Relationships><Relationship Id="r1" Type="x/core-properties" Target="docProps/core.xml"/></Relationships>`)
+			lang := []string{"", "en-US", "ja-JP", "zh-CN", "ko-KR"}[r.Intn(5)]
+			props := fmt.Sprintf(`<coreProperties><title>Test %d</title><creator>A</creator><creator>B</creator><keywords>one;two</keywords><language>%s</language><created>2024-01-01</created></coreProperties>`, i, lang)
+			add("docProps/core.xml", props)
+		}
 		add("xl/workbook.xml", `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet1" r:id="r1"/></sheets></workbook>`)
-		add("xl/_rels/workbook.xml.rels", `<Relationships><Relationship Id="r1" Type="x/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`)
+		rels := `<Relationships><Relationship Id="r1" Type="x/worksheet" Target="worksheets/sheet1.xml"/>`
+		if i >= 300 {
+			rels += `<Relationship Id="r2" Type="x/sharedStrings" Target="sharedStrings.xml"/>`
+		}
+		rels += `</Relationships>`
+		add("xl/_rels/workbook.xml.rels", rels)
+		shared := []string{"Alpha", "日本語", "First_x000A_Second", "long shared string that extends across cells", "🙂 emoji"}
+		if i >= 300 {
+			ss := `<sst>`
+			for _, t := range shared {
+				ss += `<si><t>` + html.EscapeString(t) + `</t></si>`
+			}
+			ss += `</sst>`
+			add("xl/sharedStrings.xml", ss)
+		}
 		sheet := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
 		if i >= 150 {
 			sheet += fmt.Sprintf(`<sheetFormatPr defaultColWidth="%g" defaultRowHeight="%g" zeroHeight="%d"/>`, []float64{0, 8, 12, 20}[r.Intn(4)], []float64{0, 12, 15, 24}[r.Intn(4)], r.Intn(5)/4)
@@ -59,7 +80,15 @@ func TestCodexXLSXRender(t *testing.T) {
 					if i >= 50 {
 						texts = append(texts, "Longer text that exceeds one cell", strings.Repeat("wide", 40), "日本語", "line1\nline2", "🙂 emoji")
 					}
-					sheet += fmt.Sprintf(`<c r="%s%d" t="str"><v>%s</v></c>`, col, y+1, texts[r.Intn(len(texts))])
+					t := texts[r.Intn(len(texts))]
+					switch {
+					case i >= 300 && r.Intn(2) == 0:
+						sheet += fmt.Sprintf(`<c r="%s%d" t="s"><v>%d</v></c>`, col, y+1, r.Intn(len(shared)))
+					case i >= 300:
+						sheet += fmt.Sprintf(`<c r="%s%d" t="inlineStr"><is><t>%s</t></is></c>`, col, y+1, html.EscapeString(t))
+					default:
+						sheet += fmt.Sprintf(`<c r="%s%d" t="str"><v>%s</v></c>`, col, y+1, html.EscapeString(t))
+					}
 				} else {
 					sheet += fmt.Sprintf(`<c r="%s%d"><v>%d</v></c>`, col, y+1, r.Intn(10000))
 				}
