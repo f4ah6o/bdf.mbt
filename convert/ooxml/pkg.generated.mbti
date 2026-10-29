@@ -1,0 +1,39 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/ooxml"
+
+import {
+  "f4ah6o/bdf/encoding/zip",
+}
+
+// Values
+pub fn open_ooxml(Bytes) -> OoxmlPackage raise OoxmlError
+
+pub fn resolve_ooxml_part(String, String) -> String
+
+// Errors
+pub suberror OoxmlError {
+  InvalidOoxml(String)
+}
+
+// Types and methods
+pub struct OoxmlPackage {
+  archive : @zip.ZipArchive
+  files : Map[String, @zip.ZipEntry]
+}
+pub fn OoxmlPackage::has(Self, String) -> Bool
+pub fn OoxmlPackage::part_size(Self, String) -> Int32?
+pub fn OoxmlPackage::read(Self, String) -> Bytes raise OoxmlError
+pub fn OoxmlPackage::relationship_of_type(Self, String, String) -> OoxmlRelationship?
+pub fn OoxmlPackage::relationships(Self, String) -> Array[OoxmlRelationship]
+pub fn OoxmlPackage::target(Self, String, String) -> OoxmlRelationship?
+
+pub(all) struct OoxmlRelationship {
+  id : String
+  kind : String
+  target : String
+  external : Bool
+}
+
+// Type aliases
+
+// Traits

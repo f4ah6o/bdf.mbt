@@ -1,0 +1,8 @@
+import {
+  "f4ah6o/bdf/convert/ooxml",
+  "f4ah6o/bdf/convert/xlsx",
+}
+
+supported_targets = "js"
+
+pkgtype(kind: "foreign_library")

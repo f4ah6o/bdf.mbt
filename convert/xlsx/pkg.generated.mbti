@@ -1,0 +1,13 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/xlsx"
+
+// Values
+pub fn detect_xlsx(Bytes, Bytes) -> Bool
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
