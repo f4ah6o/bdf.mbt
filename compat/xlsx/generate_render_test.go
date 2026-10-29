@@ -26,7 +26,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 6500; i++ {
+	for i := 0; i < 6600; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -133,7 +133,7 @@ func TestCodexXLSXRender(t *testing.T) {
 			if i >= 4500 {
 				st += `<borders><border/>`
 				lines := []string{"thin", "medium", "double", "thick"}
-				if i >= 6300 {
+				if i >= 6300 && i < 6500 {
 					for j := range lines {
 						lines[j] = []string{"thin", "medium", "dotted", "double"}[(i-6300)/50]
 					}
@@ -187,7 +187,11 @@ func TestCodexXLSXRender(t *testing.T) {
 				}
 				if i >= 5400 {
 					for j := 1; j <= 4; j++ {
-						st += fmt.Sprintf(`<xf fontId="%d" fillId="1" borderId="%d" numFmtId="%d"><alignment horizontal="%s" vertical="%s"/></xf>`, 6+j%2, j, []int{0, 2, 14, 164}[i%4], []string{"general", "left", "right", "center"}[(i/4)%4], []string{"bottom", "top", "center"}[(i/16)%3])
+						wrap := ""
+						if i >= 6500 {
+							wrap = ` wrapText="1"`
+						}
+						st += fmt.Sprintf(`<xf fontId="%d" fillId="1" borderId="%d" numFmtId="%d"><alignment horizontal="%s" vertical="%s"%s/></xf>`, 6+j%2, j, []int{0, 2, 14, 164}[i%4], []string{"general", "left", "right", "center"}[(i/4)%4], []string{"bottom", "top", "center"}[(i/16)%3], wrap)
 					}
 				} else if i >= 5000 {
 					for j := 0; j < 2; j++ {
@@ -277,6 +281,9 @@ func TestCodexXLSXRender(t *testing.T) {
 				if r.Intn(5) == 0 {
 					attrs += ` hidden="1"`
 				}
+			}
+			if i >= 6500 {
+				attrs = fmt.Sprintf(` ht="%d" customHeight="1"`, 15+r.Intn(60))
 			}
 			sheet += fmt.Sprintf(`<row r="%d"%s>`, y+1, attrs)
 			for x := 0; x < r.Intn(4)+1; x++ {
@@ -467,6 +474,19 @@ func TestCodexXLSXRender(t *testing.T) {
 		t.Fatal(e)
 	}
 	out = append(out, map[string]any{"input": printed, "bdf": printBDF.Bytes(), "warnings": printResult.Warnings, "mode": "none", "no_index": true})
+	fixed, e := os.ReadFile(filepath.Join("testdata", "form-fixed.xlsx"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	fixedResult, e := Convert(bytes.NewReader(fixed), int64(len(fixed)), &Options{NoSystemFonts: true, SystemFonts: true, NoTextIndex: true, Data: "none"})
+	if e != nil {
+		t.Fatal(e)
+	}
+	var fixedBDF bytes.Buffer
+	if e = fixedResult.Doc.WriteSingle(&fixedBDF); e != nil {
+		t.Fatal(e)
+	}
+	out = append(out, map[string]any{"input": fixed, "bdf": fixedBDF.Bytes(), "warnings": fixedResult.Warnings, "mode": "none", "no_index": true})
 	data, e := json.Marshal(out)
 	if e != nil {
 		t.Fatal(e)

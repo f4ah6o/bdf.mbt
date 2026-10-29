@@ -83,6 +83,7 @@ pub fn draw_sized_grid_no_fonts(
   border_colors~ : Map[Int32, Map[Int32, Array[UInt32]]] = Map([]),
   merge_regions~ : Array[GridMergeRegion] = [],
   east_asian_fonts~ : Map[Int32, Map[Int32, String]] = Map([]),
+  wraps~ : Map[Int32, Map[Int32, Bool]] = Map([]),
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -265,7 +266,11 @@ pub fn draw_sized_grid_no_fonts(
         sized_fallback_advance(character, is_bold, size)
       }
       let metrics = (_ : Char, _ : Bool) => (0.9 * size, 0.25 * size)
-      let text = sized_grid_text(cell.text)
+      let wrap = match wraps.get(i) {
+        Some(columns) => columns.get(column).unwrap_or(false)
+        None => false
+      }
+      let text = sized_grid_text(cell.text, wrap)
       let display : Cell = { text, number: cell.number, }
       let initial = grid_cell_layout(
         row,
@@ -280,6 +285,7 @@ pub fn draw_sized_grid_no_fonts(
         metrics,
         end_column=last,
         allow_overflow=last_row == i,
+        force_wrap=wrap,
       )
       let horizontal : DrawCell = if centered.get(column).unwrap_or(false) {
         let lines = initial.lines.map(fn(line) {
@@ -294,9 +300,13 @@ pub fn draw_sized_grid_no_fonts(
         })
         let mut x0 = col_positions[column]
         let mut x1 = col_positions[last + 1]
-        let text0 = lines[0].x
-        let text1 = lines[0].x + lines[0].width
-        if last_row == i && (text0 < x0 || text1 > x1) {
+        let mut text0 = 1.0e300
+        let mut text1 = -1.0e300
+        for line in lines {
+          text0 = Double::min(text0, line.x)
+          text1 = Double::max(text1, line.x + line.width)
+        }
+        if last_row == i && !wrap && (text0 < x0 || text1 > x1) {
           let mut next = last + 1
           while next < 16384 && x1 < text1 {
             if next < row.length() && row[next].text != "" {
@@ -353,7 +363,7 @@ pub fn draw_sized_grid_no_fonts(
         y,
         height,
         size,
-        last_row == i,
+        last_row == i && !wrap,
       )
       let vertical = match verticals.get(i) {
         Some(columns) => columns.get(column).unwrap_or("bottom")
@@ -809,11 +819,14 @@ fn sized_grid_vertical_layout(
 }
 
 ///|
-fn sized_grid_text(text : String) -> String {
+fn sized_grid_text(text : String, allow_break : Bool) -> String {
   let output = StringBuilder()
   let mut shown = 0
   for c in text {
     if c == '\n' {
+      if allow_break {
+        output.write_char(c)
+      }
       shown += 1
     } else {
       let char = if c == '\t' { ' ' } else { c }

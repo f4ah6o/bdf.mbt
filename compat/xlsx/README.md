@@ -13,10 +13,11 @@ After building the JavaScript target, run `node compat/xlsx/verify-workbook.mjs`
 `node compat/xlsx/verify-styles.mjs`, `node compat/xlsx/verify-general.mjs`, `node compat/xlsx/verify-builtin.mjs`, `node compat/xlsx/verify-sections.mjs`, `node compat/xlsx/verify-formats.mjs`, `node compat/xlsx/verify-numeric.mjs`, `node compat/xlsx/verify-date-format.mjs`, `node compat/xlsx/verify-formatted.mjs`, `node compat/xlsx/verify-display.mjs`, `node compat/xlsx/verify-layout.mjs`, `node compat/xlsx/verify-paint.mjs`, `node compat/xlsx/verify-color.mjs`, `node compat/xlsx/verify-locale.mjs`, `node compat/xlsx/verify-table-values.mjs`, `node compat/xlsx/verify-list-tables.mjs`, `node compat/xlsx/verify-store-sheet.mjs`, and `node compat/xlsx/verify-render.mjs`.
 `npm run test:xlsx-compat` runs the complete XLSX and OOXML fixture suite; it is
 also included in `npm run test:visual` after the JavaScript build.
-The rendering fixtures include the upstream `form-pages.xlsx` and `print.xlsx`
+The rendering fixtures include the upstream `form-pages.xlsx`, `print.xlsx`,
+and `form-fixed.xlsx`
 workbooks, along with generated cases for solid fills, colored and dashed
-borders (including multiple colors at one weight), merged rectangles, hidden
-rows and columns, and uncached formula warnings.
+borders (including multiple colors at one weight), merged rectangles, wrapped
+text, hidden rows and columns, and uncached formula warnings.
 Copy `generate_render_test.go` without its build tag into upstream
 `converter/xlsx` and run `TestCodexXLSXRender` to regenerate them.
 To regenerate fixtures, copy `generate_workbook_test.go` without its build tag

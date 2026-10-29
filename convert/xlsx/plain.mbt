@@ -224,7 +224,6 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
       a.horizontal != "right"
     ) ||
     (a.vertical != "bottom" && a.vertical != "top" && a.vertical != "center") ||
-    a.wrap ||
     a.shrink ||
     a.indent != 0 ||
     a.rotation != 0 ||
@@ -242,7 +241,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// Convert worksheets using estimated font metrics without embedding fonts.
 /// Supports sheet views with numeric, plain string, boolean and error cells,
 /// number formats, font colors, bold text, horizontal alignment, top or center
-/// vertical alignment, solid fills, line borders and merged cells. Border
+/// vertical alignment, solid fills, line borders, merged cells and wrapping
+/// on fixed-height rows or merged cells. Border
 /// Multiple colors per line weight must use exact 8-bit RGB components;
 /// complex features are rejected.
 pub fn convert_plain_no_fonts(
@@ -413,6 +413,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let bolds : Map[Int32, Map[Int32, Bool]] = Map([])
   let fills : Map[Int32, Map[Int32, @sheet.GridSolidFill]] = Map([])
   let sizes : Map[Int32, Map[Int32, Double]] = Map([])
+  let wraps : Map[Int32, Map[Int32, Bool]] = Map([])
   let east_asian_fonts : Map[Int32, Map[Int32, String]] = Map([])
   let minor_east_asian = workbook.package
     .theme_fonts(workbook.part)
@@ -475,6 +476,12 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         row.index,
         cell.column,
       )
+      let wrap = styles.cell_formats[format_index].alignment.wrap
+      if wrap && row.height < 0.0 && span is None && cell.kind != 0 {
+        raise InvalidXlsxInput(
+          "xlsx: wrapped cells on automatic-height rows are not supported",
+        )
+      }
       let (border, colors) = match border_cache.get(format_index) {
         Some(border) => border
         None => {
@@ -611,7 +618,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           }
         }
         let mut text = formatted.text()
-        if cell.kind == 1 {
+        if cell.kind == 1 && !wrap {
           let mut cell_width = if cell.column >= 0 &&
             cell.column < widths.length() {
             widths[cell.column]
@@ -645,6 +652,17 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         }
         let vertical = styles.cell_formats[format_index].alignment.vertical
         let horizontal = styles.cell_formats[format_index].alignment.horizontal
+        if wrap {
+          let columns = match wraps.get(row.index) {
+            Some(columns) => columns
+            None => {
+              let columns : Map[Int32, Bool] = Map([])
+              wraps[row.index] = columns
+              columns
+            }
+          }
+          columns[cell.column] = true
+        }
         if font_size != 11.0 {
           let columns = match sizes.get(row.index) {
             Some(columns) => columns
@@ -733,6 +751,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     border_colors~,
     merge_regions~,
     east_asian_fonts~,
+    wraps~,
   )
   (drawn, geo, parsed.missing_formula_values)
 }
