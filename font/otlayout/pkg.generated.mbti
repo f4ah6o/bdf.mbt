@@ -2,6 +2,14 @@
 package "f4ah6o/bdf/font/otlayout"
 
 // Values
+pub fn feature_default(String) -> Int32
+
+pub fn feature_name(String) -> String
+
+pub fn language_name(String) -> String
+
+pub fn lookup_type_name(Int32, gpos? : Bool) -> String
+
 pub fn parse_gdef(BytesView) -> Gdef?
 
 pub fn parse_gpos(BytesView) -> Gpos?
@@ -9,6 +17,8 @@ pub fn parse_gpos(BytesView) -> Gpos?
 pub fn parse_gsub(BytesView) -> Gsub?
 
 pub fn parse_layout(BytesView, gpos? : Bool) -> Layout?
+
+pub fn script_name(String) -> String
 
 // Errors
 

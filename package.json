@@ -14,7 +14,7 @@
     "pngjs": "7.0.0"
   },
   "scripts": {
-    "test:visual": "npm run test:text-compat && moon build --target js && node compat/writer/verify.mjs && node compat/writer/verify-sealing.mjs && npm run test:object-compat && node compat/image/verify.mjs && npm run test:csv-compat && npm run test:csv-visual && npm run test:cff-compat && npm run test:woff-compat && npm run test:font-input && npm run test:gsub && npm run test:layout && npm run test:gdef && npm run test:gpos && npm run test:specimen && npm run test:specimen-plan && npm run test:specimen-names && npm run test:specimen-coverage && npm run test:specimen-metadata && npm run test:specimen-glyphs && npm run test:specimen-variations && npm run test:specimen-info && npm run test:specimen-overview && npm run test:specimen-features && npm run test:specimen-visual && npm run test:font-compat && npm run test:fontdb-compat && npm run test:fontdb-visual && npm run test:font-visual && npm run test:sheet-compat && npm run test:parquet-compat && npm run test:music-compat && node compat/converter/client-test.mjs && npm run test:native-fonts && node compat/visual/compare.mjs",
+    "test:visual": "npm run test:text-compat && moon build --target js && node compat/writer/verify.mjs && node compat/writer/verify-sealing.mjs && npm run test:object-compat && node compat/image/verify.mjs && npm run test:csv-compat && npm run test:csv-visual && npm run test:cff-compat && npm run test:woff-compat && npm run test:font-input && npm run test:gsub && npm run test:opentype-names && npm run test:layout && npm run test:gdef && npm run test:gpos && npm run test:specimen && npm run test:specimen-plan && npm run test:specimen-names && npm run test:specimen-coverage && npm run test:specimen-metadata && npm run test:specimen-glyphs && npm run test:specimen-variations && npm run test:specimen-info && npm run test:specimen-overview && npm run test:specimen-features && npm run test:specimen-visual && npm run test:font-compat && npm run test:fontdb-compat && npm run test:fontdb-visual && npm run test:font-visual && npm run test:sheet-compat && npm run test:parquet-compat && npm run test:music-compat && node compat/converter/client-test.mjs && npm run test:native-fonts && node compat/visual/compare.mjs",
     "test:object-compat": "node compat/object/verify.mjs",
     "test:csv-visual": "node compat/csv/visual-compare.mjs",
     "test:sheet-compat": "node compat/sheet/generate-style-source.mjs --check && node compat/sheet/generate-style-test.mjs --check && node compat/sheet/verify.mjs && node compat/sheet/verify-styled.mjs",
@@ -34,6 +34,7 @@
     "test:specimen": "node compat/specimen/verify.mjs",
     "test:specimen-visual": "node compat/specimen/visual-compare.mjs",
     "test:gsub": "node compat/gsub/verify.mjs",
+    "test:opentype-names": "node compat/gsub/verify-names.mjs",
     "test:specimen-plan": "node compat/specimen/verify-plan.mjs",
     "test:specimen-names": "node compat/specimen/verify-glyphnames.mjs",
     "test:specimen-coverage": "node compat/specimen/verify-coverage.mjs",

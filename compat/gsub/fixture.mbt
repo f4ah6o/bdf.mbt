@@ -135,3 +135,20 @@ pub fn inspect_gpos_pairs(data : Bytes, queries : Array[Int32]) -> String {
     }
   }
 }
+
+///|
+#export_name("tag_names")
+pub fn tag_names(tag : String) -> String {
+  Json::object({
+    "feature": Json::string(@otlayout.feature_name(tag)),
+    "default": Json::number(@otlayout.feature_default(tag).to_double()),
+    "script": Json::string(@otlayout.script_name(tag)),
+    "language": Json::string(@otlayout.language_name(tag)),
+  }).stringify()
+}
+
+///|
+#export_name("type_name")
+pub fn type_name(typ : Int32, gpos : Bool) -> String {
+  @otlayout.lookup_type_name(typ, gpos~)
+}

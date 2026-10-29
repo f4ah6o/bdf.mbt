@@ -35,3 +35,11 @@ tables and the shared lookup work budget. Run `npm run test:gpos` after a JS
 build. To regenerate, copy `generate-gpos_test.go` without its build tag into
 upstream `internal/otlayout` with `generate_test.go`, and run
 `TestCodexGPOSPairs` with the same fixture root.
+
+`names.json` verifies all registered feature, script and language names,
+numbered feature ranges, feature defaults, and GSUB/GPOS lookup type names.
+Run `npm run test:opentype-names` after a JS build. To regenerate, copy
+`generate-names_test.go` without its build tag into upstream `internal/otlayout`
+and run `TestCodexTagNames` with the same fixture root. Generate the MoonBit
+tables with `python3 compat/gsub/generate-names.py /path/to/upstream/internal/otlayout/names.go`
+and format them using `moon fmt font/otlayout`.

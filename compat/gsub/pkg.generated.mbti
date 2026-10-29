@@ -10,6 +10,10 @@ pub fn inspect_gsub(Bytes, Array[Int32]) -> String
 
 pub fn layout_metadata(Bytes, Bool) -> String
 
+pub fn tag_names(String) -> String
+
+pub fn type_name(Int32, Bool) -> String
+
 // Errors
 
 // Types and methods
