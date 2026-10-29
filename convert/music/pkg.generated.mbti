@@ -6,6 +6,8 @@ pub fn arrange_staff_note(MusicDrawing, PreparedStaffMeasure, ScoreEvent, Array[
 
 pub fn assign_voices(Array[VoiceNote], Array[MeasureSpan], Array[BeatGrid], Bool) -> Array[Array[VoiceChord]]
 
+pub fn beam_groups(TimeSig, PreparedStaffMeasure, Array[ScoreEvent]) -> Array[MusicBeamGroup]
+
 pub fn beat_grids(Array[MeasureSpan], Array[Int64]) -> Array[BeatGrid]
 
 pub fn break_systems(NotatedScore, PreparedScore, Array[MusicColumn], Double, Double) -> Array[MusicSystem]
@@ -17,6 +19,8 @@ pub fn build_timeline(Int64, Array[TimeChange], Array[KeyChange], Array[TempoCha
 pub fn cancelled_accidentals(KeySig, KeySig) -> Int32
 
 pub fn divide_values(Int64, Int64, Int64, Int64, Bool, Bool) -> Array[NotationValue]
+
+pub fn draw_beam(MusicDrawing, Array[ScoreEvent], Array[NoteLayout], Array[Int32], Bool, Double) -> Unit
 
 pub fn draw_isolated_stem(MusicDrawing, NoteLayout, Double) -> Unit
 
@@ -120,6 +124,11 @@ pub(all) struct MeasureSpan {
   mut key : KeySig?
   mut effective_key : KeySig
   tempo : Array[TempoMark]
+}
+
+pub(all) struct MusicBeamGroup {
+  indices : Array[Int32]
+  up : Bool
 }
 
 pub(all) struct MusicColumn {
@@ -257,7 +266,7 @@ pub(all) struct NoteLayout {
   stem : Bool
   stem_x : Double
   stem_y0 : Double
-  stem_y1 : Double
+  mut stem_y1 : Double
   top : Double
   bottom : Double
   right : Double

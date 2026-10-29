@@ -1,6 +1,6 @@
 # Music notation compatibility fixtures
 
-These fixtures compare musical meter, key estimation, pitch spelling measure timelines, note quantization, clef selection, percussion mapping, note-value division, voice assignment, staff events, Bravura glyphs, staff positions, score preparation, measure spacing, system layout, drawing primitives, staff headers, rests and isolated note layouts with
+These fixtures compare musical meter, key estimation, pitch spelling measure timelines, note quantization, clef selection, percussion mapping, note-value division, voice assignment, staff events, Bravura glyphs, staff positions, score preparation, measure spacing, system layout, drawing primitives, staff headers, rests, isolated note layouts and beams with
 shibukawa/bdf commit `4f9af52dca60be1eb0daade39f7dc41d6a1fe431`.
 They exercise all key signatures, negative and positive pitch numbers,
 spelling hints and deterministic duration histograms.
@@ -55,3 +55,6 @@ Rest layout fixtures use `generate_rests_test.go` and
 
 Isolated note layout fixtures use `generate_notes_test.go` and
 `TestCodexMusicNotes` alongside `generate_prepare_test.go`.
+
+Beam layout fixtures use `generate_beams_test.go` and
+`TestCodexMusicBeams` alongside `generate_prepare_test.go`.

@@ -14,7 +14,7 @@ pub(all) struct NoteLayout {
   stem : Bool
   stem_x : Double
   stem_y0 : Double
-  stem_y1 : Double
+  mut stem_y1 : Double
   top : Double
   bottom : Double
   right : Double

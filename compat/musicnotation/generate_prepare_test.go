@@ -44,7 +44,13 @@ func codexScoreFromFixture(sample codexFixture) *Score {
 	}
 	for _, p := range sample.Want.Parts {
 		part := &Part{Name: p.Name, Staves: len(p.Clefs), Percussion: p.Percussion}
+		activeTime := TimeSig{Beats: 4, BeatType: 4}
 		for mi, m := range p.Measures {
+			if s.Measures[mi].Time != nil {
+				activeTime = *s.Measures[mi].Time
+			}
+			beat, _ := activeTime.beat()
+			tuplets := map[[3]int]*Tuplet{}
 			pm := &PartMeasure{}
 			if string(m[0]) != "null" {
 				x := codexDecode[[]any](m[0])
@@ -57,6 +63,13 @@ func codexScoreFromFixture(sample codexFixture) *Score {
 			}
 			for _, ev := range codexDecode[[][]json.RawMessage](m[1]) {
 				e := &Event{Offset: codexDecode[int](ev[0]), Duration: codexDecode[int](ev[1]), Staff: codexDecode[int](ev[2]), Voice: codexDecode[int](ev[3]), Type: NoteType(codexDecode[int](ev[4])), Dots: codexDecode[int](ev[5]), Rest: codexDecode[bool](ev[6]), MeasureRest: codexDecode[bool](ev[7])}
+				if codexDecode[bool](ev[8]) {
+					id := [3]int{e.Staff, e.Voice, e.Offset / max(beat, 1)}
+					if tuplets[id] == nil {
+						tuplets[id] = &Tuplet{Actual: 3, Normal: 2, ShowNumber: true}
+					}
+					e.Tuplet = tuplets[id]
+				}
 				for _, nn := range codexDecode[[][]json.RawMessage](ev[9]) {
 					e.Notes = append(e.Notes, &Note{Pitch: Pitch{Step: codexDecode[int](nn[0]), Alter: codexDecode[int](nn[1]), Octave: codexDecode[int](nn[2])}, Head: Notehead(codexDecode[int](nn[3])), TieStart: codexDecode[bool](nn[4]), TieStop: codexDecode[bool](nn[5])})
 				}

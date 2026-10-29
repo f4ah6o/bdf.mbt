@@ -853,3 +853,119 @@ pub fn score_notes(
       Json::object({ "error": Json::string(message) }).stringify()
   }
 }
+
+///|
+#export_name("score_beams")
+pub fn score_beams(
+  data : Bytes,
+  texts : FixedArray[String],
+  widths : FixedArray[Double],
+  width : Double,
+  indent : Double,
+) -> String {
+  try {
+    let score = @midi.notate_file(@midi.read_file(data))
+    let prepared = @music.prepare_score(score)
+    let map : Map[String, Double] = Map([])
+    for i in 0..<texts.length() {
+      map[texts[i]] = widths[i]
+    }
+    let columns = @music.build_columns(score, prepared, text => {
+      map.get(text).unwrap_or(0.0)
+    })
+    let systems = @music.break_systems(score, prepared, columns, width, indent)
+    let out : Array[Json] = []
+    for sys in systems {
+      for staff in 0..<prepared.staves.length() {
+        for mi in sys.first..<=sys.last {
+          let col = sys.columns[mi - sys.first]
+          let sm = prepared.measures[mi][staff]
+          let voices : Array[Int32] = []
+          for event in sm.events {
+            if !event.rest && !voices.contains(event.voice) {
+              voices.push(event.voice)
+            }
+          }
+          for voice in voices {
+            let events : Array[@music.ScoreEvent] = []
+            let original : Array[Int32] = []
+            for i, event in sm.events {
+              if !event.rest && event.voice == voice {
+                events.push(event)
+                original.push(i)
+              }
+            }
+            let groups = @music.beam_groups(prepared.times[mi], sm, events)
+            for group in groups {
+              let d = @music.MusicDrawing::new()
+              let selected : Array[@music.ScoreEvent] = []
+              let layouts : Array[@music.NoteLayout] = []
+              let local : Array[Int32] = []
+              for idx in group.indices {
+                let event = events[idx]
+                let mut x = 0.0
+                for slot in col.slots {
+                  if slot.slot.offset == event.offset {
+                    x = col.x + slot.x
+                    break
+                  }
+                }
+                layouts.push(
+                  @music.arrange_staff_note(
+                    d,
+                    sm,
+                    event,
+                    sm.accidentals[original[idx]],
+                    x,
+                    1.0,
+                    beam_direction=Some(group.up),
+                    beamed=true,
+                  ),
+                )
+                local.push(selected.length())
+                selected.push(event)
+              }
+              @music.draw_beam(d, selected, layouts, local, group.up, 1.0)
+              let prims = d
+                .primitives()
+                .map(p => {
+                  let outline = match p.outline {
+                    Some(o) =>
+                      Json::array(o.coordinates.map(v => Json::number(v)))
+                    None => Json::null()
+                  }
+                  Json::array([
+                    Json::number(p.kind.to_double()),
+                    Json::string(p.glyph),
+                    Json::number(p.x),
+                    Json::number(p.y),
+                    Json::number(p.w),
+                    Json::number(p.h),
+                    Json::number(p.scale),
+                    outline,
+                  ])
+                })
+              out.push(
+                Json::array([
+                  Json::number(mi.to_double()),
+                  Json::number(staff.to_double()),
+                  Json::number(voice.to_double()),
+                  Json::array(
+                    group.indices.map(i => Json::number(i.to_double())),
+                  ),
+                  Json::boolean(group.up),
+                  Json::array(layouts.map(l => Json::number(l.stem_y1))),
+                  Json::array(prims),
+                ]),
+              )
+            }
+          }
+        }
+      }
+    }
+    Json::array(out).stringify()
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}
