@@ -168,7 +168,12 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
   }
   let format = styles.cell_formats[index]
   let a = format.alignment
-  let font = styles.fonts[0]
+  let font_index = if format.font < 0 || format.font >= styles.fonts.length() {
+    0
+  } else {
+    format.font
+  }
+  let font = styles.fonts[font_index]
   let nondefault_fill = format.fill >= 0 &&
     format.fill < styles.fills.length() &&
     (
@@ -190,14 +195,13 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
   } else {
     false
   }
-  if format.font != 0 ||
-    font.name != "Calibri" ||
+  if font.name != "Calibri" ||
     font.size != 11.0 ||
     font.bold ||
     font.italic ||
     font.underline != "" ||
     font.strike ||
-    font.color.kind != 0 ||
+    font.color.kind == 2 ||
     (font.scheme != "" && font.scheme != "minor") ||
     font.vertical != "" ||
     a.horizontal != "general" ||
@@ -382,6 +386,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   }
   let cells : Array[@sheet.SizedGridRow] = []
   let checked_styles : Map[Int32, Bool] = Map([])
+  let format_cache : Map[Int32, Array[XlsxFormatSection]] = Map([])
+  let color_cache : Map[Int32, UInt32] = Map([])
   for row in rows {
     if row.style >= 0 {
       raise InvalidXlsxInput(
@@ -403,8 +409,33 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         xlsx_check_plain_style(styles, cell.style)
         checked_styles[cell.style] = true
       }
-      if styles.format_cell(cell, workbook.date1904, locale.number_locale)
-        is Some(formatted) {
+      let formatted = if cell.kind == 1 {
+        Some(
+          xlsx_format_number(
+            styles.cached_number_sections(
+              cell.style,
+              locale.number_locale,
+              format_cache,
+            ),
+            cell.number,
+            workbook.date1904,
+          ),
+        )
+      } else if cell.kind == 2 {
+        Some(
+          xlsx_format_text(
+            styles.cached_number_sections(
+              cell.style,
+              locale.number_locale,
+              format_cache,
+            ),
+            cell.text,
+          ),
+        )
+      } else {
+        styles.format_cell(cell, workbook.date1904, locale.number_locale)
+      }
+      if formatted is Some(formatted) {
         for piece in formatted.pieces {
           if piece.kind != 0 {
             raise InvalidXlsxInput(
@@ -440,7 +471,15 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           occupied: cell.kind != 0 && !(cell.kind == 2 && cell.text == ""),
           color: match formatted.color {
             Some(rgb) => (rgb << 8) | 255U
-            None => 0x000000ffU
+            None =>
+              match color_cache.get(cell.style) {
+                Some(cached) => cached
+                None => {
+                  let color = xlsx_plain_font_color(styles, cell.style)
+                  color_cache[cell.style] = color
+                  color
+                }
+              }
           },
         })
       }
@@ -474,4 +513,21 @@ fn xlsx_fit_plain_number(value : Double, available : Double) -> String {
   }
   let n = (available / Double::max(@sheet.fallback_advance('#', false), 0.01)).to_int()
   "#".repeat(n)
+}
+
+///|
+fn xlsx_plain_font_color(styles : XlsxStyles, style : Int32) -> UInt32 {
+  let index = if style < 0 || style >= styles.cell_formats.length() {
+    0
+  } else {
+    style
+  }
+  let raw_font = styles.cell_formats[index].font
+  let font_index = if raw_font < 0 || raw_font >= styles.fonts.length() {
+    0
+  } else {
+    raw_font
+  }
+  let black : XlsxRgb = { red: 0.0, green: 0.0, blue: 0.0, }
+  styles.resolve_color(styles.fonts[font_index].color, black, Map([])).rgba()
 }

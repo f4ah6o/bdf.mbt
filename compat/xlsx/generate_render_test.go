@@ -23,7 +23,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 2000; i++ {
+	for i := 0; i < 2150; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -70,13 +70,20 @@ func TestCodexXLSXRender(t *testing.T) {
 			if i >= 1850 {
 				st += `<numFmts><numFmt numFmtId="164" formatCode="0.00;[Red](0.00)"/><numFmt numFmtId="165" formatCode="[Color10]0.00"/><numFmt numFmtId="166" formatCode="[Blue]0%"/></numFmts>`
 			}
+			if i >= 2000 {
+				st += `<fonts><font><name val="Calibri"/><sz val="11"/><color rgb="FF445566"/></font><font><name val="Calibri"/><sz val="11"/><color indexed="10"/></font><font><name val="Calibri"/><sz val="11"/><color rgb="FFD396A7" tint="0.1"/></font><font><name val="Calibri"/><sz val="11"/><color auto="1"/></font></fonts>`
+			}
 			st += `<cellXfs><xf numFmtId="0"/>`
 			ids := []int{1, 2, 3, 4, 9, 10, 11, 14, 20, 22, 46, 49}
 			if i >= 1850 {
 				ids = append(ids, 164, 165, 166)
 			}
 			for _, id := range ids {
-				st += fmt.Sprintf(`<xf numFmtId="%d"/>`, id)
+				font := 0
+				if i >= 2000 {
+					font = r.Intn(4)
+				}
+				st += fmt.Sprintf(`<xf numFmtId="%d" fontId="%d"/>`, id, font)
 			}
 			st += `</cellXfs>`
 			if i >= 1850 {
