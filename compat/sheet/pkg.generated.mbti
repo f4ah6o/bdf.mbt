@@ -4,6 +4,12 @@ package "f4ah6o/bdf/compat/sheet"
 // Values
 pub fn column_fixture(Int32) -> String
 
+pub fn line_break_fixture(Int32, Int32) -> Bool
+
+pub fn row_fixture(Int32) -> String
+
+pub fn wrap_fixture(String, Double) -> String
+
 // Errors
 
 // Types and methods

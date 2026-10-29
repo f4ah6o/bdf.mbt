@@ -48,3 +48,63 @@ pub fn column_fixture(which : Int32) -> String {
   )
   Json::array(widths.map(value => Json::number(value.to_double()))).stringify()
 }
+
+///|
+#export_name("wrap_fixture")
+pub fn wrap_fixture(text : String, width : Double) -> String {
+  let lines = @sheet.wrap_text(text, width, advance=(_, _) => 1.0)
+  Json::array(
+    lines.map(line => {
+      Json::object({
+        "Text": Json::string(line.text),
+        "Width": Json::number(line.width),
+        "Explicit": Json::boolean(line.explicit),
+        "Wrapped": Json::boolean(line.wrapped),
+        "CJK": Json::boolean(line.cjk_wrap),
+      })
+    }),
+  ).stringify()
+}
+
+///|
+#export_name("row_fixture")
+pub fn row_fixture(which : Int32) -> String {
+  let rows : Array[Array[@sheet.Cell]] = match which {
+    0 =>
+      [
+        [cell("a"), cell("b")],
+        [cell("one\ntwo"), cell("x")],
+        [cell("ordinary")],
+      ]
+    1 =>
+      [
+        [cell("header\nlabel")],
+        [cell("wide words ".repeat(30) + "\nlast")],
+        [cell("after")],
+      ]
+    2 =>
+      [
+        [cell("1\n" + "234567890".repeat(30), number=true)],
+        [cell("日本語、漢字\n１２３")],
+        [cell("")],
+        [],
+      ]
+    _ => [[cell("a\n".repeat(40))], [cell("one\r\ntwo\rthree")]]
+  }
+  let header = if which < 2 { 1 } else { 0 }
+  let columns = try! @sheet.fit_columns(rows, header_rows=header)
+  let heights = try! @sheet.fit_rows(rows, columns, header_rows=header)
+  Json::array(heights.map(value => Json::number(value.to_double()))).stringify()
+}
+
+///|
+#export_name("line_break_fixture")
+pub fn line_break_fixture(mode : Int32, code : Int32) -> Bool {
+  let character = code.unsafe_to_char()
+  match mode {
+    0 => @sheet.line_break_allowed('-', character)
+    1 => @sheet.line_break_allowed('x', character)
+    2 => @sheet.line_break_allowed(character, 'x')
+    _ => @sheet.line_break_joins('x', character)
+  }
+}

@@ -32,6 +32,15 @@ and compare the result with:
 
 ```sh
 go run /path/to/bdf.mbt/compat/sheet/generate-grid.go > /path/to/bdf.mbt/compat/sheet/upstream.json
+go run /path/to/bdf.mbt/compat/sheet/generate-heights.go > /path/to/bdf.mbt/compat/sheet/heights.json
 moon build --target js
 npm run test:sheet-compat
+```
+
+For line wrapping, copy `generate-wrap_test.go` into the upstream
+`converter/xlsx` directory and regenerate the 510-case fixture and the
+exhaustive Unicode break digests with:
+
+```sh
+BDF_SHEET_WRAP_FIXTURE=/path/to/bdf.mbt/compat/sheet/wrap.json BDF_SHEET_BREAK_FIXTURE=/path/to/bdf.mbt/compat/sheet/break-sha256.txt go test ./converter/xlsx -run '^TestCodexGenerateWrap$' -count=1
 ```

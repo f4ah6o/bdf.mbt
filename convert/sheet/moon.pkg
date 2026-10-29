@@ -1,1 +1,5 @@
+import {
+  "moonbit-community/ucd",
+}
+
 supported_targets = "+js+wasm-gc"
