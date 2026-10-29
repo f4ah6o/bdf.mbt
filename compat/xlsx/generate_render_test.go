@@ -26,7 +26,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 6300; i++ {
+	for i := 0; i < 6500; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -133,7 +133,11 @@ func TestCodexXLSXRender(t *testing.T) {
 			if i >= 4500 {
 				st += `<borders><border/>`
 				lines := []string{"thin", "medium", "double", "thick"}
-				if i >= 6100 {
+				if i >= 6300 {
+					for j := range lines {
+						lines[j] = []string{"thin", "medium", "dotted", "double"}[(i-6300)/50]
+					}
+				} else if i >= 6100 {
 					all := []string{"hair", "dotted", "dashDotDot", "dashDot", "dashed", "mediumDashDotDot", "slantDashDot", "mediumDashDot", "mediumDashed", "thin", "medium", "double", "thick"}
 					for j := range lines {
 						lines[j] = all[((i-6100)/10+j)%len(all)]

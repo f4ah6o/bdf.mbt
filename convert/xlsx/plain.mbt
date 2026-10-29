@@ -243,7 +243,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// Supports sheet views with numeric, plain string, boolean and error cells,
 /// number formats, font colors, bold text, horizontal alignment, top or center
 /// vertical alignment, solid fills, line borders and merged cells. Border
-/// colors are limited to one per line weight; complex features are rejected.
+/// Multiple colors per line weight must use exact 8-bit RGB components;
+/// complex features are rejected.
 pub fn convert_plain_no_fonts(
   data : Bytes,
   data_mode~ : String = "",
@@ -493,11 +494,17 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           }
           let color = colors[i]
           if border_colors_by_weight.get(weight) is Some(previous) {
-            if previous.red != color.red ||
-              previous.green != color.green ||
-              previous.blue != color.blue {
+            if (
+                previous.red != color.red ||
+                previous.green != color.green ||
+                previous.blue != color.blue
+              ) &&
+              (
+                !xlsx_plain_byte_color(previous) ||
+                !xlsx_plain_byte_color(color)
+              ) {
               raise InvalidXlsxInput(
-                "xlsx: plain conversion supports one border color per line weight",
+                "xlsx: mixed border colors require 8-bit RGB components",
               )
             }
           } else {
@@ -728,6 +735,17 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     east_asian_fonts~,
   )
   (drawn, geo, parsed.missing_formula_values)
+}
+
+///|
+fn xlsx_plain_byte_color(color : XlsxRgb) -> Bool {
+  for value in [color.red, color.green, color.blue] {
+    let scaled = value * 255.0
+    if (scaled - scaled.round()).abs() > 1.0e-9 {
+      return false
+    }
+  }
+  true
 }
 
 ///|

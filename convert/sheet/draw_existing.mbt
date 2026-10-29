@@ -401,7 +401,8 @@ pub fn draw_sized_grid_no_fonts(
     }
   }
   context.sized_grid_borders(
-    rows, borders, border_colors, spans, col_positions, row_positions, visible_columns,
+    rows, borders, border_colors, spans, region_rows, merge_regions, col_positions,
+    row_positions, visible_columns,
   )
   let tiles = context.tiles.map(fn(tile) {
     { x: tile.x, y: tile.y, object: tile.object.encode(), drawn: tile.drawn, }
@@ -439,6 +440,8 @@ fn GridDrawContext::sized_grid_borders(
   borders : Map[Int32, Map[Int32, GridCellBorder]],
   border_colors : Map[Int32, Map[Int32, Array[UInt32]]],
   spans : Map[Int32, Map[Int32, Int32]],
+  region_rows : Map[Int32, Map[Int32, GridMergeRegion]],
+  merge_regions : Array[GridMergeRegion],
   columns : Array[Double],
   row_positions : Array[Double],
   visible_columns : Int32,
@@ -460,11 +463,13 @@ fn GridDrawContext::sized_grid_borders(
         if column < 0 || column >= visible_columns {
           continue
         }
-        let merged = grid_span_contains(spans, index, column)
-        if !merged &&
+        if grid_region_contains(region_rows, index, column) ||
           (
-            row_positions[index] >= row_positions[index + 1] ||
-            columns[column] >= columns[column + 1]
+            !grid_span_contains(spans, index, column) &&
+            (
+              row_positions[index] >= row_positions[index + 1] ||
+              columns[column] >= columns[column + 1]
+            )
           ) {
           continue
         }
@@ -473,27 +478,57 @@ fn GridDrawContext::sized_grid_borders(
           Some(row_colors) => row_colors.get(column).unwrap_or([])
           None => []
         }
-        let color = fn(i : Int32) { colors.get(i).unwrap_or(0x000000ffU) }
-        put_grid_edge(horizontal, index, column, {
-          weight: border.top,
-          color: color(0),
-        })
-        put_grid_edge(horizontal, index + 1, column, {
-          weight: border.bottom,
-          color: color(1),
-        })
-        put_grid_edge(vertical, index, column, {
-          weight: border.left,
-          color: color(2),
-        })
-        put_grid_edge(vertical, index, column + 1, {
-          weight: border.right,
-          color: color(3),
-        })
+        put_sized_borders(horizontal, vertical, index, column, border, colors)
+      }
+    }
+  }
+  for region in merge_regions {
+    for row in region.row_start..<=region.row_end {
+      if row >= row_positions.length() - 1 {
+        break
+      }
+      if borders.get(row) is Some(values) {
+        for column in region.column_start..<=region.column_end {
+          if column >= visible_columns {
+            break
+          }
+          if values.get(column) is Some(border) {
+            let colors = match border_colors.get(row) {
+              Some(row_colors) => row_colors.get(column).unwrap_or([])
+              None => []
+            }
+            put_sized_borders(horizontal, vertical, row, column, border, colors)
+          }
+        }
       }
     }
   }
   self.draw_grid_edges(horizontal, vertical, columns, row_positions)
+}
+
+///|
+fn put_sized_borders(
+  horizontal : Map[String, GridEdge],
+  vertical : Map[String, GridEdge],
+  row : Int32,
+  column : Int32,
+  border : GridCellBorder,
+  colors : Array[UInt32],
+) -> Unit {
+  let color = fn(i : Int32) { colors.get(i).unwrap_or(0x000000ffU) }
+  put_grid_edge(horizontal, row, column, {
+    weight: border.top,
+    color: color(0),
+  })
+  put_grid_edge(horizontal, row + 1, column, {
+    weight: border.bottom,
+    color: color(1),
+  })
+  put_grid_edge(vertical, row, column, { weight: border.left, color: color(2), })
+  put_grid_edge(vertical, row, column + 1, {
+    weight: border.right,
+    color: color(3),
+  })
 }
 
 ///|
