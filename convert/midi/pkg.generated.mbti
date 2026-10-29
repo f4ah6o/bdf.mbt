@@ -20,6 +20,8 @@ pub fn notate_file(MidiRawFile, time_override? : @music.TimeSig?, key_override? 
 
 pub fn performance(MidiRawFile) -> MidiPerformance
 
+pub fn performance_seconds(MidiPerformance) -> Double
+
 pub fn performance_smf(MidiPerformance) -> Bytes
 
 pub fn program_name(Int32) -> String
@@ -188,7 +190,9 @@ pub(all) struct MidiScoreResult {
   staves : Int32
   notes : Int32
   embedded_fonts : Int32
+  seconds : Double
 }
+pub fn MidiScoreResult::summary(Self) -> String
 
 pub struct MidiTextDecoder {
   shift_jis : Bool

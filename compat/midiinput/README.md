@@ -46,3 +46,5 @@ The visual fixture uses `generate_visual_test.go` and `TestCodexMidiVisual`. Run
 The complete score and TAB document oracles use `generate_document_tab_test.go` and `generate_document_tab_fonts_test.go`, with and without an embedded font. The visual fixture includes both score and TAB views.
 
 Notation and page-range document fixtures use `generate_options_test.go` and `TestCodexMidiOptions` in upstream `converter/midi`.
+
+The native Worker fixtures use `generate_worker_test.go` and `TestCodexMidiWorker`. They cover format detection, explicit conversion, page ranges, music parameters, summaries, warnings, and upstream-reader compatibility.

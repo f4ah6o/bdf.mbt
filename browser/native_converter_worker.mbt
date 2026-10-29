@@ -22,7 +22,7 @@ extern "js" fn native_unsupported_named_format(name : String) -> Bool =
 
 ///|
 extern "js" fn native_converter_formats(request : ConverterRequest) -> Unit =
-  #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'csv',description:'CSV or TSV (comma-, tab-, semicolon- or bar-separated values)',extensions:['.csv','.tsv','.tab']},{name:'font',description:'Font file (TrueType, OpenType, WOFF)',extensions:['.ttf','.otf','.ttc','.otc','.woff','.woff2']},{name:'image',description:'Image stored as it is: PNG, JPEG, GIF, WebP, AVIF, BMP, ICO or SVG',extensions:['.png','.apng','.jpg','.jpeg','.jpe','.jfif','.gif','.webp','.avif','.bmp','.ico','.svg']}]})
+  #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'csv',description:'CSV or TSV (comma-, tab-, semicolon- or bar-separated values)',extensions:['.csv','.tsv','.tab']},{name:'font',description:'Font file (TrueType, OpenType, WOFF)',extensions:['.ttf','.otf','.ttc','.otc','.woff','.woff2']},{name:'midi',description:'Standard MIDI File',extensions:['.mid','.midi','.smf','.kar','.rmi']},{name:'image',description:'Image stored as it is: PNG, JPEG, GIF, WebP, AVIF, BMP, ICO or SVG',extensions:['.png','.apng','.jpg','.jpeg','.jpe','.jfif','.gif','.webp','.avif','.bmp','.ico','.svg']}]})
 
 ///|
 extern "js" fn native_converter_result(
@@ -118,12 +118,20 @@ async fn NativeConverterState::dispatch(
     Some(db)
   }
   let format = native_converter_option(request, "format")
-  if format != "" && format != "image" && format != "csv" && format != "font" {
+  if format != "" &&
+    format != "image" &&
+    format != "csv" &&
+    format != "font" &&
+    format != "midi" {
     native_converter_error(request, "unknown format \"" + format + "\"", "")
     return
   }
   let name = native_converter_option(request, "name")
   let data = native_converter_data(request)
+  if format == "midi" || (format == "" && @midi.detect(data)) {
+    native_convert_midi(request, data, kind == "open", database)
+    return
+  }
   if format == "csv" {
     native_convert_csv(request, data, name, kind == "open", database)
     return
@@ -144,6 +152,11 @@ async fn NativeConverterState::dispatch(
           lower.has_suffix(".otc") ||
           lower.has_suffix(".woff") ||
           lower.has_suffix(".woff2")
+        let midi_named = lower.has_suffix(".mid") ||
+          lower.has_suffix(".midi") ||
+          lower.has_suffix(".smf") ||
+          lower.has_suffix(".kar") ||
+          lower.has_suffix(".rmi")
         let csv_named = lower.has_suffix(".csv") ||
           lower.has_suffix(".tsv") ||
           lower.has_suffix(".tab")
@@ -154,6 +167,10 @@ async fn NativeConverterState::dispatch(
         }].to_owned()
         let strong_other = @hpgl.detect(head) ||
           @utf8.decode_lossy(head).contains("%PDF-")
+        if midi_named && !strong_other {
+          native_convert_midi(request, data, kind == "open", database)
+          return
+        }
         if font_named && !strong_other {
           native_convert_font(request, data, kind == "open", database)
           return
@@ -321,13 +338,103 @@ fn native_convert_font(
 }
 
 ///|
+fn native_convert_midi(
+  request : ConverterRequest,
+  data : Bytes,
+  opened : Bool,
+  database : @fontdb.Database?,
+) -> Unit {
+  let tab = @music.parse_music_tab(native_converter_param(request, "tab")) catch {
+    @music.InvalidMusicParameter(message) => {
+      native_converter_error(request, message, "")
+      return
+    }
+  }
+  let time_value = native_converter_param(request, "time")
+  let time = if time_value == "" {
+    None
+  } else {
+    Some(@music.parse_music_time(time_value)) catch {
+      @music.InvalidMusicParameter(message) => {
+        native_converter_error(request, message, "")
+        return
+      }
+    }
+  }
+  let key_value = native_converter_param(request, "key")
+  let key = if key_value == "" {
+    None
+  } else {
+    Some(@music.parse_music_key(key_value)) catch {
+      @music.InvalidMusicParameter(message) => {
+        native_converter_error(request, message, "")
+        return
+      }
+    }
+  }
+  let pages = @convert.parse_pages(native_converter_option(request, "pages")) catch {
+    @convert.InvalidInput(message) => {
+      native_converter_error(request, "convert: pages: " + message, "")
+      return
+    }
+    error => {
+      native_converter_error(
+        request,
+        "convert: pages: " + error.to_string(),
+        "",
+      )
+      return
+    }
+  }
+  let result = @midi.convert(
+    data,
+    database.unwrap_or(@fontdb.Database::new()),
+    options={
+      page: { width: 0.0, height: 0.0, staff_space: 0.0, title: "", },
+      pages: None,
+      time,
+      key,
+      no_play: false,
+      no_text_index: false,
+      system_fonts: false,
+      no_subset: false,
+      ignore_restrictions: false,
+      no_woff2: true,
+    },
+    guitar_tab=tab,
+    page_ranges=pages,
+  ) catch {
+    @midi.InvalidMidiInput(message) => {
+      native_converter_error(request, message, "")
+      return
+    }
+    @music.InvalidMusicScore(message) => {
+      native_converter_error(request, message, "")
+      return
+    }
+    error => {
+      native_converter_error(request, error.to_string(), "")
+      return
+    }
+  }
+  native_converter_result(
+    request,
+    result.bdf,
+    "midi",
+    result.summary(),
+    result.warnings,
+    opened,
+  )
+}
+
+///|
 extern "js" fn install_native_converter_listener(
   dispatch : (ConverterRequest) -> @js_async.Promise[Unit],
 ) -> Unit =
   #|(dispatch) => {self.onmessage=event=>{const request=event.data;Promise.resolve().then(()=>dispatch(request)).catch(e=>{const id=request?.type==='init'?0:Number(request?.id);self.postMessage({id,ok:false,error:e?.message??String(e),code:e?.code})})}}
 
 ///|
-/// Install the MoonBit converter Worker for native image, CSV and font formats.
+/// Install the MoonBit converter Worker for native image, CSV, font and MIDI formats.
 #export_name("bdf_install_native_converter_worker")
 pub fn bdf_install_native_converter_worker() -> Unit {
   let state : NativeConverterState = { ready: false, }

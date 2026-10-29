@@ -24,7 +24,7 @@ func TestCodexMidiDocument(t *testing.T) {
   res,err:=music.Build(score,o);if err!=nil {continue}
   parts:=[]any{};for _,part:=range res.Doc.Parts(){parts=append(parts,[]any{part.Type,part.Hash.String()})}
   warnings:=append(p.Warnings,res.Warnings...);if warnings==nil {warnings=[]string{}}
-  out=append(out,map[string]any{"input":s.Input,"width":o.PageWidth,"height":o.PageHeight,"sp":o.StaffSpace,"title":o.Title,"noText":o.NoTextIndex,"noPlay":o.NoPlay,"select":o.Pages!=nil,"want":map[string]any{"meta":res.Doc.Meta,"views":res.Doc.Views,"parts":parts,"warnings":warnings,"counts":[]int{res.Pages,res.Systems,res.Measures,res.Parts,res.Staves,res.Notes,res.EmbeddedFonts}}})
+  out=append(out,map[string]any{"input":s.Input,"width":o.PageWidth,"height":o.PageHeight,"sp":o.StaffSpace,"title":o.Title,"noText":o.NoTextIndex,"noPlay":o.NoPlay,"select":o.Pages!=nil,"want":map[string]any{"meta":res.Doc.Meta,"views":res.Doc.Views,"parts":parts,"warnings":warnings,"summary":res.Summary(),"seconds":res.Seconds,"counts":[]int{res.Pages,res.Systems,res.Measures,res.Parts,res.Staves,res.Notes,res.EmbeddedFonts}}})
  }
  b,err:=json.Marshal(out);if err!=nil {t.Fatal(err)};var buf bytes.Buffer;z:=gzip.NewWriter(&buf);if _,err=z.Write(b);err!=nil {t.Fatal(err)};if err=z.Close();err!=nil {t.Fatal(err)};if err=os.WriteFile(filepath.Join(root,"compat/midiinput/document.json.gz"),buf.Bytes(),0644);err!=nil {t.Fatal(err)}
 }

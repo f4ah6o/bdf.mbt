@@ -41,6 +41,7 @@ pub(all) struct MidiScoreResult {
   staves : Int32
   notes : Int32
   embedded_fonts : Int32
+  seconds : Double
 }
 
 ///|
@@ -380,5 +381,10 @@ fn convert_midi(
     staves,
     notes,
     embedded_fonts: rendered.embedded_fonts,
+    seconds: if options.no_play {
+      0.0
+    } else {
+      performance_seconds(performance)
+    },
   }
 }

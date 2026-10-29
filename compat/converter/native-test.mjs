@@ -13,6 +13,7 @@ export async function verifyNativeConverter(browser, base) {
       const specimenPacked = await (await fetch('/compat/specimen/convert.json.gz')).arrayBuffer();
       const unzip = async data => new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
       const specimen = JSON.parse(new TextDecoder().decode(await unzip(specimenPacked)));
+      const midiCases = JSON.parse(new TextDecoder().decode(await unzip(await (await fetch('/compat/midiinput/worker.json.gz')).arrayBuffer())));
       const fontCase = specimen.cases.find(c => c.name === 'stix.ttf' && !c.system && !c.uiFont && !c.noIndex && !c.noSubset);
       const fontBytes = await unzip(Uint8Array.from(atob(specimen.files['stix.ttf']), c => c.charCodeAt(0)));
       const toBytes = encoded => Uint8Array.from(atob(encoded), c => c.charCodeAt(0));
@@ -33,6 +34,37 @@ export async function verifyNativeConverter(browser, base) {
         try {
           const formats = await client.ready;
           if (!formats.some(f => f.name === 'image' && ['.bmp', '.ico', '.jpg', '.png', '.gif', '.webp', '.avif', '.svg'].every(ext => f.extensions.includes(ext)))) throw new Error(`${kind}: missing image formats ${JSON.stringify(formats)}`);
+          const midiFormat = formats.find(f => f.name === 'midi');
+          if (midiFormat?.description !== 'Standard MIDI File' || JSON.stringify(midiFormat.extensions) !== JSON.stringify(['.mid','.midi','.smf','.kar','.rmi'])) throw new Error(kind + ': missing MIDI format');
+          for (const sample of midiCases) {
+            const params = {};
+            if (sample.time) params.time = sample.time;
+            if (sample.key) params.key = sample.key;
+            if (sample.tab) params.tab = sample.tab;
+            const opts = {name: sample.name, pages: sample.pages, params};
+            const expected = await BdfDocument.open(new BufferSource(toBytes(sample.bdf)));
+            for (const [method, format] of [['convert', 'midi'], ['open', '']]) {
+              const result = await client[method](toBytes(sample.input), {...opts, format});
+              const actual = await BdfDocument.open(new BufferSource(result.bdf));
+              if (result.format !== 'midi' || result.summary !== sample.summary || JSON.stringify(result.warnings) !== JSON.stringify(sample.warnings)) throw new Error(kind + ': MIDI report differs for ' + sample.name + ': ' + JSON.stringify({summary:result.summary, expected:sample.summary,warnings:result.warnings}));
+              if (method === 'open' && (result.pages !== 0 || result.stream !== undefined)) throw new Error(kind + ': MIDI open did not return a complete document');
+              for (const field of ['meta','views']) if (JSON.stringify(stable(actual.manifest[field] ?? [])) !== JSON.stringify(stable(expected.manifest[field] ?? []))) throw new Error(kind + ': MIDI ' + field + ' differs for ' + sample.name);
+              const parts = actual.manifest.parts.map(p => [p.t,p.h]);
+              const expectedParts = expected.manifest.parts.map(p => [p.t,p.h]);
+              if (JSON.stringify(parts) !== JSON.stringify(expectedParts)) throw new Error(kind + ': MIDI parts differ for ' + sample.name);
+            }
+          }
+          for (const [params, expected] of [
+            [{tab:'maybe'}, 'parameter tab: "maybe" is not a boolean'],
+            [{time:'bad'}, 'parameter time: "bad" is not a time signature such as 3/4'],
+            [{key:'bad'}, 'parameter key: "bad" is not a key such as G, Bb or F#m'],
+          ]) {
+            let error; try { await client.convert(toBytes(midiCases[0].input), {format:'midi',params}); } catch (e) { error = e.message; }
+            if (error !== expected) throw new Error(kind + ': MIDI parameter error ' + error);
+          }
+          let namedMidiError;
+          try { await client.convert(new TextEncoder().encode('not midi'), {name:'bad.mid'}); } catch (e) { namedMidiError = e.message; }
+          if (namedMidiError !== 'midi: not a Standard MIDI File') throw new Error(kind + ': MIDI extension detection failed: ' + namedMidiError);
           const fontFormat = formats.find(f => f.name === 'font');
           if (fontFormat?.description !== 'Font file (TrueType, OpenType, WOFF)' || JSON.stringify(fontFormat.extensions) !== JSON.stringify(['.ttf','.otf','.ttc','.otc','.woff','.woff2'])) throw new Error(kind + ': missing font format');
           for (const options of [{params:{examples:'5'}}, {format:'font', name:'anything.csv', params:{examples:'5'}}]) {

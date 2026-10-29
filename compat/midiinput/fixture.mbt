@@ -1565,6 +1565,8 @@ pub fn midi_document(
           result.embedded_fonts,
         ].map(v => Json::number(v.to_double())),
       ),
+      Json::string(result.summary()),
+      Json::number(result.seconds),
     ]).stringify()
   } catch {
     err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
