@@ -59,8 +59,7 @@ fn grid_cell_layout(
   bold : Bool,
   language : String,
   advance : (Char, Bool) -> Double,
-  ascent : Double,
-  descent : Double,
+  metrics : (Char, Bool) -> (Double, Double),
 ) -> DrawCell {
   let x = col_positions[column]
   let width = col_positions[column + 1] - x
@@ -83,12 +82,31 @@ fn grid_cell_layout(
     lines = wrap_text("#".repeat(count), 1.0e300, bold~, advance~)
   }
   let (lang, lang_known) = grid_cell_language(lines, language)
-  let total = (ascent + descent) * lines.length().to_double()
-  let mut baseline = y + height - 0.75 - total + ascent
+  let line_metrics : Array[(Double, Double)] = []
+  let mut total = 0.0
+  for line in lines {
+    let mut ascent = 0.0
+    let mut descent = 0.0
+    for character in line.text {
+      let (a, d) = metrics(character, bold)
+      ascent = Double::max(ascent, a)
+      descent = Double::max(descent, d)
+    }
+    if ascent == 0.0 && descent == 0.0 {
+      let (a, d) = metrics('x', bold)
+      ascent = a
+      descent = d
+    }
+    line_metrics.push((ascent, descent))
+    total += ascent + descent
+  }
+  let mut top = y + height - 0.75 - total
   let out : Array[DrawLine] = []
   let mut tx0 = 1.0e300
   let mut tx1 = -1.0e300
-  for line in lines {
+  for i, line in lines {
+    let (ascent, descent) = line_metrics[i]
+    let baseline = top + ascent
     let lx = if cell.number { x + width - 2.25 - line.width } else { x + 1.5 }
     tx0 = Double::min(tx0, lx)
     tx1 = Double::max(tx1, lx + line.width)
@@ -99,7 +117,7 @@ fn grid_cell_layout(
       width: line.width,
       cjk_wrap: line.cjk_wrap,
     })
-    baseline += ascent + descent
+    top += ascent + descent
   }
   let mut x0 = x
   let mut x1 = x + width
@@ -113,8 +131,10 @@ fn grid_cell_layout(
       next += 1
     }
   }
-  let ty0 = out[0].baseline - ascent
-  let ty1 = out[out.length() - 1].baseline + descent
+  let (first_ascent, _) = line_metrics[0]
+  let (_, last_descent) = line_metrics[line_metrics.length() - 1]
+  let ty0 = out[0].baseline - first_ascent
+  let ty1 = out[out.length() - 1].baseline + last_descent
   let clip = tx0 < x0 - 0.01 ||
     tx1 > x1 + 0.01 ||
     ty0 < y - 0.01 ||

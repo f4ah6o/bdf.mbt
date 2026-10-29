@@ -1,13 +1,12 @@
 ///|
 fn csv_embed_font(
   font : @sfnt.Font,
-  bytes : Bytes,
+  size : Int32,
   codepoints : Array[Int32],
   no_subset : Bool,
   ignore_restrictions : Bool,
 ) -> (Bytes?, String?) raise {
   let limit = 2 * 1024 * 1024
-  let size = bytes.length()
   let family = font.info.family
   if !no_subset && !font.can_subset(ignore_restrictions~) && size > limit {
     return (

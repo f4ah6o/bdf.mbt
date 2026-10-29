@@ -3,12 +3,17 @@ package "f4ah6o/bdf/convert/sheet"
 
 import {
   "f4ah6o/bdf/core",
+  "f4ah6o/bdf/font/db",
   "f4ah6o/bdf/font/sfnt",
   "moonbitlang/core/debug",
 }
 
 // Values
 pub fn draw_grid_no_fonts(Array[Array[Cell]], header_rows? : Int32, subheader? : Bool, language? : String, table_style? : String) -> DrawnGrid raise
+
+pub fn draw_grid_with_database(Array[Array[Cell]], @db.Database, Map[Int32, String], header_rows? : Int32, subheader? : Bool, language? : String, table_style? : String) -> DrawnGrid raise
+
+pub fn draw_grid_with_database_usage(Array[Array[Cell]], @db.Database, header_rows? : Int32, subheader? : Bool, language? : String, table_style? : String) -> (DrawnGrid, FontSetUsage) raise
 
 pub fn draw_grid_with_font(Array[Array[Cell]], @sfnt.Font, hash? : String?, header_rows? : Int32, subheader? : Bool, language? : String, table_style? : String) -> DrawnGrid raise
 
@@ -50,6 +55,16 @@ pub(all) struct Cell {
 pub(all) struct DrawnGrid {
   geometry : GridGeometry
   tiles : Array[GridTile]
+}
+
+pub(all) struct FaceUsage {
+  face : Int32
+  codepoints : Array[Int32]
+}
+
+pub(all) struct FontSetUsage {
+  faces : Array[FaceUsage]
+  missing : Array[Int32]
 }
 
 pub(all) struct FontUsage {

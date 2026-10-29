@@ -103,6 +103,57 @@ priv struct GridFontUsage {
 }
 
 ///|
+/// Draw using a database and collect the glyphs needed for font embedding.
+pub fn draw_grid_with_database_usage(
+  rows : Array[Array[Cell]],
+  db : @fontdb.Database,
+  header_rows~ : Int32 = 0,
+  subheader~ : Bool = false,
+  language~ : String = "",
+  table_style~ : String = "",
+) -> (DrawnGrid, FontSetUsage) raise {
+  let fonts = GridFontSet::new(db, language)
+  let drawn = draw_grid(
+    rows,
+    header_rows~,
+    subheader~,
+    language~,
+    table_style~,
+    font=None,
+    hash=None,
+    usage=None,
+    fontset=Some(fonts),
+  )
+  (drawn, fonts.usage())
+}
+
+///|
+/// Draw with a database and hashes for previously embedded faces.
+pub fn draw_grid_with_database(
+  rows : Array[Array[Cell]],
+  db : @fontdb.Database,
+  hashes : Map[Int32, String],
+  header_rows~ : Int32 = 0,
+  subheader~ : Bool = false,
+  language~ : String = "",
+  table_style~ : String = "",
+) -> DrawnGrid raise {
+  let fonts = GridFontSet::new(db, language)
+  draw_grid(
+    rows,
+    header_rows~,
+    subheader~,
+    language~,
+    table_style~,
+    font=None,
+    hash=None,
+    usage=None,
+    fontset=Some(fonts),
+    hashes~,
+  )
+}
+
+///|
 fn draw_grid(
   rows : Array[Array[Cell]],
   header_rows~ : Int32,
@@ -112,30 +163,36 @@ fn draw_grid(
   font~ : @sfnt.Font?,
   hash~ : String?,
   usage~ : GridFontUsage?,
+  fontset~ : GridFontSet? = None,
+  hashes~ : Map[Int32, String] = Map([]),
 ) -> DrawnGrid raise {
   let advance = (character : Char, bold : Bool) => {
-    match font {
-      Some(face) => {
-        match usage {
-          Some(usage) =>
-            match face.glyph(character.to_int()) {
-              Some(_) => {
-                usage.used = true
-                usage.codepoints[character.to_int()] = true
-              }
-              None =>
-                if !character.is_whitespace() &&
-                  character.to_int() >= 0x20 &&
-                  character.to_int() != 0x200b &&
-                  character.to_int() != 0xfeff {
-                  usage.missing[character.to_int()] = true
+    if fontset is Some(fonts) {
+      fonts.advance(character, bold)
+    } else {
+      match font {
+        Some(face) => {
+          match usage {
+            Some(usage) =>
+              match face.glyph(character.to_int()) {
+                Some(_) => {
+                  usage.used = true
+                  usage.codepoints[character.to_int()] = true
                 }
-            }
-          None => ()
+                None =>
+                  if !character.is_whitespace() &&
+                    character.to_int() >= 0x20 &&
+                    character.to_int() != 0x200b &&
+                    character.to_int() != 0xfeff {
+                    usage.missing[character.to_int()] = true
+                  }
+              }
+            None => ()
+          }
+          font_advance(face, character)
         }
-        font_advance(face, character)
+        None => fallback_advance(character, bold)
       }
-      None => fallback_advance(character, bold)
     }
   }
   if font is Some(_) {
@@ -143,14 +200,33 @@ fn draw_grid(
       ignore(advance(digit.unsafe_to_char(), false))
     }
   }
-  let (ascent, descent, mdw) = match font {
-    Some(face) =>
-      (
-        face.metrics.ascent * 11.0,
-        face.metrics.descent * 11.0,
-        font_mdw(face, language),
-      )
-    None => (0.9 * 11.0, 0.25 * 11.0, 7.0)
+  let (ascent, descent, mdw) = if fontset is Some(fonts) {
+    let (ascent, descent) = fonts.metrics('x', false)
+    (ascent, descent, fonts.mdw(language))
+  } else {
+    match font {
+      Some(face) =>
+        (
+          face.metrics.ascent * 11.0,
+          face.metrics.descent * 11.0,
+          font_mdw(face, language),
+        )
+      None => (0.9 * 11.0, 0.25 * 11.0, 7.0)
+    }
+  }
+  let metrics = (character : Char, bold : Bool) => {
+    match fontset {
+      Some(fonts) => fonts.metrics(character, bold)
+      None => (ascent, descent)
+    }
+  }
+  let style_height : ((Bool) -> Double)? = match fontset {
+    Some(fonts) =>
+      Some(bold => {
+        let (a, d) = fonts.metrics('x', bold)
+        a + d
+      })
+    None => None
   }
   let style = if table_style == "" {
     None
@@ -188,8 +264,9 @@ fn draw_grid(
     table_rows~,
     mdw~,
     advance~,
-    metrics=(_, _) => (ascent, descent),
+    metrics~,
     default_line_height=ascent + descent,
+    style_line_height=style_height,
   )
   let col_positions = grid_positions(geometry.columns)
   while col_positions.length() <= 16384 {
@@ -254,8 +331,7 @@ fn draw_grid(
         (base_bold, base_color)
       }
       let layout = grid_cell_layout(
-        row, cell, column, col_positions, y, height, bold, language, advance, ascent,
-        descent,
+        row, cell, column, col_positions, y, height, bold, language, advance, metrics,
       )
       let ref = cell_reference(
         row_index,
@@ -263,7 +339,9 @@ fn draw_grid(
         row_index < geometry.frozen_rows,
       )
       for tile in context.in_bounds(layout.x0, layout.y0, layout.x1, layout.y1) {
-        tile.emit_cell(layout, ref, family, bold, color, advance, font, hash)
+        tile.emit_cell(
+          layout, ref, family, bold, color, advance, font, hash, fontset, hashes,
+        )
       }
     }
   }

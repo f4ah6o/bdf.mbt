@@ -3,6 +3,7 @@ import {
   "f4ah6o/bdf/core",
   "f4ah6o/bdf/render",
   "f4ah6o/bdf/font/sfnt",
+  "f4ah6o/bdf/font/db" @fontdb,
 }
 
 supported_targets = "+js+wasm-gc"

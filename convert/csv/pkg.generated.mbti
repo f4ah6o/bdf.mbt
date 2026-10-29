@@ -4,6 +4,7 @@ package "f4ah6o/bdf/convert/csv"
 import {
   "f4ah6o/bdf/convert/sheet",
   "f4ah6o/bdf/core",
+  "f4ah6o/bdf/font/db",
   "moonbitlang/core/debug",
 }
 
@@ -11,6 +12,8 @@ import {
 pub fn convert_no_fonts(Bytes, name? : String, title? : String, charset? : String, delimiter? : Byte, quote? : Int32, header? : Header, data_mode? : DataMode, no_text_index? : Bool, table_style? : String) -> NoFontResult raise
 
 pub fn convert_with_font(Bytes, Bytes, font_index? : Int32, no_subset? : Bool, name? : String, title? : String, charset? : String, delimiter? : Byte, quote? : Int32, header? : Header, data_mode? : DataMode, no_text_index? : Bool, table_style? : String, ignore_embedding_restrictions? : Bool, system_fonts? : Bool) -> NoFontResult raise
+
+pub fn convert_with_fonts(Bytes, @db.Database, no_subset? : Bool, name? : String, title? : String, charset? : String, delimiter? : Byte, quote? : Int32, header? : Header, data_mode? : DataMode, no_text_index? : Bool, table_style? : String, ignore_embedding_restrictions? : Bool, system_fonts? : Bool) -> NoFontResult raise
 
 pub fn decode_text(Bytes, charset? : String) -> DecodedText raise
 

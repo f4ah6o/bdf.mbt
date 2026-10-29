@@ -130,3 +130,55 @@ fn read_face_info(
     has_math: tables.contains("MATH"),
   }
 }
+
+///|
+/// Family names (legacy and typographic) in all available languages.
+pub fn Font::family_names(self : Font) -> Array[String] {
+  let names = sfnt_table(self.source, self.tables, "name")
+  let result : Array[String] = []
+  let mut has_legacy = false
+  if names.length() < 6 || names.length() > 1048576 {
+    return result
+  }
+  let count = u16(names, 2)
+  let string_offset = u16(names, 4)
+  for i in 0..<count {
+    let rec = 6 + i * 12
+    if rec > names.length() - 12 {
+      break
+    }
+    let platform = u16(names, rec)
+    let encoding = u16(names, rec + 2)
+    let id = u16(names, rec + 6)
+    if id != 1 && id != 16 {
+      continue
+    }
+    let size = u16(names, rec + 8)
+    let start = string_offset + u16(names, rec + 10)
+    if start > names.length() || size > names.length() - start {
+      continue
+    }
+    let raw = names[start:start + size]
+    let name = if (
+        platform == 3 && (encoding == 0 || encoding == 1 || encoding == 10)
+      ) ||
+      platform == 0 {
+      trim_name(decode_name_utf16(raw))
+    } else if platform == 1 && encoding == 0 {
+      trim_name(@utf8.decode_lossy(raw))
+    } else {
+      continue
+    }
+    if name != "" {
+      result.push(name)
+      if id == 1 {
+        has_legacy = true
+      }
+    }
+  }
+  if has_legacy {
+    result
+  } else {
+    []
+  }
+}

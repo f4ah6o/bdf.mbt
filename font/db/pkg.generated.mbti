@@ -1,0 +1,55 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/font/db"
+
+import {
+  "f4ah6o/bdf/font/sfnt",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn classify(String) -> String
+
+pub fn is_cjk(Int32) -> Bool
+
+pub fn normalize(String) -> String
+
+// Errors
+
+// Types and methods
+pub(all) struct Choice {
+  resolved : Resolved
+  requested : String
+  bold : Bool
+  italic : Bool
+} derive(Eq, @debug.Debug)
+
+pub struct Database {
+  // private fields
+}
+pub fn Database::add(Self, String, Int32, @sfnt.Font) -> Unit
+pub fn Database::add_file(Self, String, Bytes) -> Int32
+pub fn Database::face(Self, Int32) -> Face?
+pub fn Database::face_for(Self, String, String, Int32, bold? : Bool, italic? : Bool) -> Choice
+pub fn Database::faces(Self) -> Array[Face]
+pub fn Database::fallbacks(Self, String, bold? : Bool, italic? : Bool) -> Array[Resolved]
+pub fn Database::new() -> Self
+pub fn Database::resolve(Self, String, bold? : Bool, italic? : Bool, cjk? : Bool) -> Resolved
+pub fn Database::resolve_math(Self, String) -> Int32?
+
+pub struct Face {
+  path : String
+  index : Int32
+  font : @sfnt.Font
+}
+
+pub(all) struct Resolved {
+  face : Int32?
+  synth_bold : Bool
+  synth_italic : Bool
+  exact : Bool
+  generic : String
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits

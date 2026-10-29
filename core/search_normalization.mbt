@@ -96,3 +96,9 @@ fn search_compose(first : Char, second : Char) -> Char? {
   }
   @ucd.lookup_composition(first, second)
 }
+
+///|
+/// Normalize Unicode text using NFKC, including long combining sequences.
+pub fn normalize_nfkc(input : String) -> String {
+  search_nfkc(input)
+}

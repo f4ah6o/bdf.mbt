@@ -135,3 +135,9 @@ pub fn parse(data : Bytes, index~ : Int32 = 0) -> Font raise {
   let info = read_face_info(data, tables)
   { metrics, info, cmap, advances, source: data, tables, }
 }
+
+///|
+/// Size of the source font file in bytes, including any collection container.
+pub fn Font::byte_length(self : Font) -> Int32 {
+  self.source.length()
+}

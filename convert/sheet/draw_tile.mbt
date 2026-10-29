@@ -42,7 +42,7 @@ fn DrawTile::set_font(
       None => family
     }
   }
-  let request_key = if bold { 700 } else { 400 }
+  let request_key = if bold { "single:700" } else { "single:400" }
   let index = match self.fonts.get(request_key) {
     Some(index) => index
     None => {
@@ -156,6 +156,8 @@ fn DrawTile::emit_cell(
   advance : (Char, Bool) -> Double,
   face : @sfnt.Font?,
   hash : String?,
+  fontset : GridFontSet?,
+  hashes : Map[Int32, String],
 ) -> Unit raise {
   self.object.mark(2, ref)
   if layout.lang_known {
@@ -180,7 +182,11 @@ fn DrawTile::emit_cell(
     if i > 0 {
       self.object.mark(if line.cjk_wrap { 5 } else { 1 }, "")
     }
-    self.emit_line(line, family, bold, color, advance, face, hash)
+    match fontset {
+      Some(fonts) =>
+        self.emit_database_line(line, bold, color, advance, fonts, hashes)
+      None => self.emit_line(line, family, bold, color, advance, face, hash)
+    }
   }
   if layout.clip {
     self.object.restore()

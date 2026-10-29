@@ -35,6 +35,8 @@ pub fn encode_text_index(Array[IndexRun]) -> Bytes raise
 
 pub fn index_plain_text(Array[IndexRun]) -> String
 
+pub fn normalize_nfkc(String) -> String
+
 pub fn normalize_query(String, case_sensitive? : Bool) -> String
 
 pub fn open_encrypted_single(Bytes) -> EncryptedSingle raise

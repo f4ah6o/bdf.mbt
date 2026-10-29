@@ -1,0 +1,33 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/compat/fontdb"
+
+import {
+  "f4ah6o/bdf/font/db",
+}
+
+// Values
+pub fn add_file(@db.Database, String, Bytes) -> Int32
+
+pub fn csv_document(@db.Database, Bytes, Int32, Int32) -> Bytes
+
+pub fn csv_warnings(@db.Database, Bytes, Int32, Int32) -> String
+
+pub fn face_for(@db.Database, String, String, Int32, Bool) -> String
+
+pub fn fallbacks(@db.Database, String, Bool, Bool) -> String
+
+pub fn new_database() -> @db.Database
+
+pub fn normalize(String) -> String
+
+pub fn resolve(@db.Database, String, Bool, Bool, Bool) -> String
+
+pub fn resolve_math(@db.Database, String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

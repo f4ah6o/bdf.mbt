@@ -40,7 +40,7 @@ priv struct DrawTile {
   x : Int32
   y : Int32
   object : @core.ObjectBuilder
-  fonts : Map[Int32, Int32]
+  fonts : Map[String, Int32]
   mut has_font : Bool
   mut current_font : Int32
   mut has_color : Bool

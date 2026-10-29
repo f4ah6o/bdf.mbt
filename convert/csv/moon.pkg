@@ -7,6 +7,7 @@ import {
   "f4ah6o/bdf/encoding/parquet",
   "f4ah6o/bdf/core",
   "f4ah6o/bdf/font/sfnt",
+  "f4ah6o/bdf/font/db" @fontdb,
   "f4ah6o/bdf/convert/sheet",
   "f4ah6o/bdf/convert/hpgl",
 }

@@ -6,8 +6,8 @@ MoonBit implementation of the BDF v1 wire-format reader and the browser-facing `
 - `core`: checked BDF header, single and split documents (identity and deflate-raw), document writing and encryption assembly, BOBJ resource tables, MIDI sequences, cue indexes, and a bounded binary reader.
 - `render`: backend-neutral, checked display-list decoder for a currently supported subset of Canvas 2D opcodes, including paths, gradient paints, and drawing effects. It also extracts ordered text runs, semantic structure, figure bounds and link rectangles, serializes table-cell selections, and calculates music and audio cue positions.
 - `convert`: the worker-client request/response lifecycle and stream command model. The browser adapter connects these to a Worker and a separately supplied compatible Wasm runtime; the native converter supports CSV and the BMP, ICO, JPEG, PNG, GIF, WebP, AVIF and SVG image formats. Other converter engines are **not** ported.
-- `convert/csv`: CSV decoding, detection and conversion to BDF sheets, including built-in table styles, text indexes and typed Parquet tables. The explicit single-font conversion supports indexed TTC faces and subsets TrueType and supported CFF outlines where permitted. Font discovery remains to be ported.
-- `font/sfnt`: TrueType, OpenType and TTC face metadata, Unicode glyph maps and horizontal metrics. `convert/sheet` can calculate grid geometry with an explicitly supplied face; automatic font selection and WOFF/WOFF2 remain to be ported.
+- `convert/csv`: CSV decoding, detection and conversion to BDF sheets, including built-in table styles, text indexes and typed Parquet tables. The converter accepts an explicitly supplied font or an in-memory font database, selecting fallback faces per character and subsetting TrueType and supported CFF outlines where permitted. Host filesystem and system font discovery remain to be ported.
+- `font/sfnt`: TrueType, OpenType and TTC face metadata, Unicode glyph maps and horizontal metrics. `font/db` resolves supplied font families, styles and per-character fallbacks; `convert/sheet` can draw using those faces. WOFF/WOFF2 remain to be ported.
 - `viewer`: document/view selection state and page placement in single, spread, and continuous modes, including RTL spreads and scroll strips.
 - `browser` (JS only): Canvas 2D adapter that draws fixed/flow pages, scroll strips, continuous body regions, and sheet viewports, including password- and P-256-protected documents, into a DOM host, including paths, gradients, child objects, transparency groups, masks, asynchronously loaded images and fonts, and optional selectable text layers.
 
@@ -39,6 +39,10 @@ let document = @core.open_single(existing_bdf_bytes) // unencrypted BDF
 let object = @core.decode_object(document.part(hash))
 let commands = @render.compile_object(object) // Canvas command list
 let image = @image.convert(image_bytes, name="picture.bmp") // @f4ah6o/bdf/convert/image
+let fonts = @fontdb.Database::new() // @f4ah6o/bdf/font/db
+fonts.add_file("regular.ttf", regular_font_bytes)
+fonts.add_file("bold.ttf", bold_font_bytes)
+let sheet = @csv.convert_with_fonts(csv_bytes, fonts) // @f4ah6o/bdf/convert/csv
 let client = @convert.Client::new()
 let request = client.request(@convert.Convert, @convert.ConvertOptions::new())
 let selected = @convert.page_numbers(@convert.parse_pages("1-3,5,8-"), 10)

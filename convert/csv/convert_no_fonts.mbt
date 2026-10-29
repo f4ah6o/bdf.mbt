@@ -84,6 +84,47 @@ pub fn convert_with_font(
 }
 
 ///|
+/// Convert CSV with fonts supplied through an in-memory database. Each
+/// character uses the upstream family and glyph fallback order. The host adds
+/// font files to the database and can request system-font references instead
+/// of embedding.
+pub fn convert_with_fonts(
+  data : Bytes,
+  database : @fontdb.Database,
+  no_subset~ : Bool = false,
+  name~ : String = "",
+  title~ : String = "",
+  charset~ : String = "",
+  delimiter~ : Byte = 0,
+  quote~ : Int32 = 0,
+  header~ : Header = HeaderAuto,
+  data_mode~ : DataMode = DataDefault,
+  no_text_index~ : Bool = false,
+  table_style~ : String = "",
+  ignore_embedding_restrictions~ : Bool = false,
+  system_fonts~ : Bool = false,
+) -> NoFontResult raise {
+  convert_grid(
+    data,
+    name~,
+    title~,
+    charset~,
+    delimiter~,
+    quote~,
+    header~,
+    data_mode~,
+    no_text_index~,
+    table_style~,
+    font_data=None,
+    font_index=0,
+    no_subset~,
+    ignore_embedding_restrictions~,
+    system_fonts~,
+    database=Some(database),
+  )
+}
+
+///|
 fn convert_grid(
   data : Bytes,
   name~ : String,
@@ -100,6 +141,7 @@ fn convert_grid(
   no_subset~ : Bool,
   ignore_embedding_restrictions~ : Bool,
   system_fonts~ : Bool,
+  database~ : @fontdb.Database? = None,
 ) -> NoFontResult raise {
   let parsed = parse(data, charset~, delimiter~, quote~, header~)
   if table_style != "" && !@sheet.is_builtin_table_style(table_style) {
@@ -129,8 +171,64 @@ fn convert_grid(
     meta["dc"] = Json::object({ "title": Json::string(title) })
   }
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
-  let (drawn, usage, font_warning) = match face {
-    Some(font) => {
+  let (drawn, missing, font_warnings, has_fonts) = match (database, face) {
+    (Some(db), _) if db.faces().length() > 0 => {
+      let (system_grid, usage) = @sheet.draw_grid_with_database_usage(
+        cells,
+        db,
+        header_rows=grid.header_rows,
+        language~,
+        table_style~,
+      )
+      let ordered = usage.faces.copy()
+      ordered.sort_by((a, b) => {
+        let left = db.face(a.face).unwrap()
+        let right = db.face(b.face).unwrap()
+        let path_order = left.path.compare(right.path)
+        if path_order == 0 {
+          left.index.compare(right.index)
+        } else {
+          path_order
+        }
+      })
+      let hashes : Map[Int32, String] = Map([])
+      let font_warnings : Array[String] = []
+      if !system_fonts {
+        for used in ordered {
+          let font = db.face(used.face).unwrap().font
+          let (program, warning) = csv_embed_font(
+            font,
+            font.byte_length(),
+            used.codepoints,
+            no_subset,
+            ignore_embedding_restrictions,
+          )
+          match warning {
+            Some(warning) => font_warnings.push(warning)
+            None => ()
+          }
+          match program {
+            Some(program) =>
+              hashes[used.face] = writer.add_part("font", program)
+            None => ()
+          }
+        }
+      }
+      let drawn = if hashes.length() == 0 {
+        system_grid
+      } else {
+        @sheet.draw_grid_with_database(
+          cells,
+          db,
+          hashes,
+          header_rows=grid.header_rows,
+          language~,
+          table_style~,
+        )
+      }
+      (drawn, usage.missing, font_warnings, true)
+    }
+    (_, Some(font)) => {
       let (system_grid, usage) = @sheet.draw_grid_with_font_usage(
         cells,
         font,
@@ -142,7 +240,7 @@ fn convert_grid(
         Some(bytes) if usage.used && !system_fonts =>
           csv_embed_font(
             font,
-            bytes,
+            bytes.length(),
             usage.codepoints,
             no_subset,
             ignore_embedding_restrictions,
@@ -165,9 +263,13 @@ fn convert_grid(
           )
         None => system_grid
       }
-      (drawn, Some(usage), font_warning)
+      let font_warnings = match font_warning {
+        Some(warning) => [warning]
+        None => []
+      }
+      (drawn, usage.missing, font_warnings, true)
     }
-    None =>
+    _ =>
       (
         @sheet.draw_grid_no_fonts(
           cells,
@@ -175,8 +277,9 @@ fn convert_grid(
           language~,
           table_style~,
         ),
-        None,
-        None,
+        [],
+        [],
+        false,
       )
   }
   @sheet.store_grid(
@@ -197,22 +300,18 @@ fn convert_grid(
       None => ()
     }
   }
-  match (face, usage) {
-    (None, _) =>
-      warnings.push(
-        "no fonts found; text is laid out with estimated metrics and not embedded",
-      )
-    (Some(_), Some(usage)) => {
-      match font_warning {
-        Some(warning) => warnings.push(warning)
-        None => ()
-      }
-      match csv_missing_warning(usage.missing) {
-        Some(warning) => warnings.push(warning)
-        None => ()
-      }
+  if !has_fonts && !system_fonts {
+    warnings.push(
+      "no fonts found; text is laid out with estimated metrics and not embedded",
+    )
+  } else {
+    for warning in font_warnings {
+      warnings.push(warning)
     }
-    _ => ()
+    match csv_missing_warning(missing) {
+      Some(warning) => warnings.push(warning)
+      None => ()
+    }
   }
   let mut warned_cols = false
   for i, row in grid.rows {
