@@ -48,6 +48,8 @@ pub fn xlsx_select_format_section(Array[XlsxFormatSection], Double) -> (Int32, B
 
 pub fn xlsx_split_format_sections(String) -> Array[String]
 
+pub fn xlsx_tint_color(XlsxRgb, Double) -> XlsxRgb
+
 // Errors
 pub suberror XlsxInputError {
   InvalidXlsxInput(String)
@@ -199,6 +201,13 @@ pub(all) struct XlsxRange {
   column_end : Int32
 }
 
+pub(all) struct XlsxRgb {
+  red : Double
+  green : Double
+  blue : Double
+}
+pub fn XlsxRgb::rgba(Self) -> UInt32
+
 pub(all) struct XlsxRow {
   index : Int32
   height : Double
@@ -252,6 +261,7 @@ pub(all) struct XlsxStyles {
 }
 pub fn XlsxStyles::format_cell(Self, XlsxCell, Bool, String) -> XlsxFormatted?
 pub fn XlsxStyles::number_format(Self, Int32, String) -> String
+pub fn XlsxStyles::resolve_color(Self, XlsxColor, XlsxRgb, Map[Int32, XlsxRgb]) -> XlsxRgb
 
 pub(all) struct XlsxWorkbook {
   package : @ooxml.OoxmlPackage

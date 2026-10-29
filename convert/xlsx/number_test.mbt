@@ -42,3 +42,13 @@ test "date formats preserve Excel's leap day and elapsed seconds" {
     "令和1年5月2日",
   )
 }
+
+///|
+test "tinted colors round like the Go implementation" {
+  let base : XlsxRgb = {
+    red: 211.0 / 255.0,
+    green: 150.0 / 255.0,
+    blue: 167.0 / 255.0,
+  }
+  assert_eq(xlsx_tint_color(base, 0.1).rgba(), 0xd7a1b0ffU)
+}

@@ -548,3 +548,42 @@ pub fn xlsx_paint(data : Bytes) -> String {
     _ => "null"
   }
 }
+
+///|
+#export_name("xlsx_color")
+pub fn xlsx_color(
+  kind : Int32,
+  rgb : UInt32,
+  index : Int32,
+  tint : Double,
+) -> String {
+  let styles : @xlsx.XlsxStyles = {
+    fonts: [],
+    number_formats: Map([]),
+    cell_formats: [],
+    palette: @xlsx.xlsx_default_palette(),
+    fills: [],
+    borders: [],
+  }
+  let theme : Map[Int32, @xlsx.XlsxRgb] = Map([])
+  for i in 0..<12 {
+    if i != 3 {
+      theme[i] = {
+        red: i.to_double() / 12.0,
+        green: 0.5,
+        blue: 1.0 - i.to_double() / 12.0,
+      }
+    }
+  }
+  let resolved = styles.resolve_color(
+    { kind, rgb, index, tint, },
+    { red: 0.1, green: 0.2, blue: 0.3, },
+    theme,
+  )
+  Json::array([
+    Json::number(resolved.red),
+    Json::number(resolved.green),
+    Json::number(resolved.blue),
+    Json::number(resolved.rgba().to_double()),
+  ]).stringify()
+}
