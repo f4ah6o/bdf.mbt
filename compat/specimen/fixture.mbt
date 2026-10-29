@@ -983,3 +983,68 @@ pub fn paint_page_band(
 pub fn specimen_page_object(page : @font.SpecimenPagePainter) -> Bytes {
   try! page.encode()
 }
+
+///|
+pub struct GlyphViewFixture {
+  pages : Array[@font.SpecimenRenderedPage]
+}
+
+///|
+#export_name("render_glyph_view")
+pub fn render_glyph_view(
+  data : Bytes,
+  index : Int32,
+  ui_font : Bytes,
+  system : Bool,
+  outlined : Bool,
+  glyph_hash : String,
+) -> GlyphViewFixture {
+  let file = try! @font.load(data)
+  for face in file.faces() {
+    if face.index == index {
+      let db = @db.Database::new()
+      if ui_font.length() > 0 {
+        ignore(db.add_file("stix.ttf", ui_font))
+      }
+      let texter = @font.SpecimenTexter::new(db)
+      let view = face.glyph_view(texter)
+      let ui_fonts : @font.SpecimenUIFonts = if system {
+        { hashes: Map::new(), warnings: [], }
+      } else {
+        try! texter.embed(@core.DocumentWriter::new())
+      }
+      let glyph : @core.Font? = if outlined {
+        None
+      } else {
+        Some({ hash: Some(glyph_hash), family: "", weight: 400, style: 0, })
+      }
+      let programs : @font.SpecimenFacePrograms = {
+        face_index: face.index,
+        glyph_font: glyph,
+        sample_font: None,
+        sample: face.sample_plan(""),
+        outlined,
+      }
+      return { pages: try! view.render(programs, ui_fonts), }
+    }
+  }
+  abort("missing font face")
+}
+
+///|
+#export_name("glyph_view_count")
+pub fn glyph_view_count(f : GlyphViewFixture) -> Int32 {
+  f.pages.length()
+}
+
+///|
+#export_name("glyph_view_height")
+pub fn glyph_view_height(f : GlyphViewFixture, index : Int32) -> Double {
+  specimen_float(f.pages[index].height)
+}
+
+///|
+#export_name("glyph_view_object")
+pub fn glyph_view_object(f : GlyphViewFixture, index : Int32) -> Bytes {
+  f.pages[index].object
+}

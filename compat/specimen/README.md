@@ -148,3 +148,7 @@ build tag into upstream `converter/font` alongside `generate_test.go` and run
 To regenerate page painting cases, copy `generate-page-paint_test.go` without
 its build tag into upstream `converter/font` alongside `generate_test.go` and
 run `TestCodexSpecimenPagePaint` with the same fixture root.
+
+To regenerate glyph-grid page cases, copy `generate-glyph-view_test.go` without
+its build tag into upstream `converter/font` alongside `generate_test.go` and
+run `TestCodexGlyphView` with the same fixture root.
