@@ -1,0 +1,40 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/midi"
+
+// Values
+pub fn detect(Bytes) -> Bool
+
+pub fn read_header(Bytes) -> MidiHeader raise MidiInputError
+
+pub fn read_varlen(Bytes) -> (Int32, Int32)
+
+pub fn unwrap_rmid(Bytes) -> MidiInput raise MidiInputError
+
+// Errors
+pub suberror MidiInputError {
+  InvalidMidiInput(String)
+}
+
+// Types and methods
+pub(all) struct MidiHeader {
+  format : Int32
+  tracks : Int32
+  division : Int32
+  header_length : Int64
+  smpte : Bool
+  timing_numerator : Int64
+  timing_denominator : Int64
+  max_tick : Int64
+  warnings : Array[String]
+}
+pub fn MidiHeader::ppq(Self, Int64) -> Int64
+
+pub(all) struct MidiInput {
+  smf : Bytes
+  title : Bytes
+  copyright : Bytes
+}
+
+// Type aliases
+
+// Traits

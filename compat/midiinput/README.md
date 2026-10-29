@@ -1,0 +1,15 @@
+# MIDI input compatibility fixtures
+
+These fixtures compare detection, RIFF RMID extraction, SMF header timing and
+variable-length quantities with shibukawa/bdf commit
+`4f9af52dca60be1eb0daade39f7dc41d6a1fe431`. They include damaged RIFF
+chunks, duplicate metadata, SMPTE divisions, truncated headers and random
+inputs. These primitives do not yet implement MIDI-to-BDF notation.
+
+Run `moon build compat/midiinput --target js` and `npm run test:midi-input`.
+To regenerate, copy `generate_test.go` without its first two lines to
+`converter/midi/codex_input_test.go` in the upstream checkout, then run:
+
+```sh
+BDF_FIXTURE_ROOT=/path/to/bdf.mbt go test ./converter/midi -run '^TestCodexMidiInput$' -count=1
+```
