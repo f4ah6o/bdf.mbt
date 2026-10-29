@@ -20,6 +20,8 @@ pub fn cancelled_accidentals(KeySig, KeySig) -> Int32
 
 pub fn divide_values(Int64, Int64, Int64, Int64, Bool, Bool) -> Array[NotationValue]
 
+pub fn draw_barline(MusicDrawing, Int32, Double, Double, Double, Array[Double], Bool) -> Unit
+
 pub fn draw_beam(MusicDrawing, Array[ScoreEvent], Array[NoteLayout], Array[Int32], Bool, Double) -> Unit
 
 pub fn draw_isolated_stem(MusicDrawing, NoteLayout, Double) -> Unit

@@ -692,3 +692,38 @@ pub fn paginate(
     }),
   ).stringify()
 }
+
+///|
+#export_name("barline")
+pub fn barline(
+  kind : Int32,
+  x : Double,
+  top : Double,
+  bottom : Double,
+  tops : FixedArray[Double],
+  left : Bool,
+) -> String {
+  let drawing = @music.MusicDrawing::new()
+  let staff_tops : Array[Double] = []
+  for y in tops {
+    staff_tops.push(y)
+  }
+  @music.draw_barline(drawing, kind, x, top, bottom, staff_tops, left)
+  Json::array(
+    drawing
+    .primitives()
+    .map(p => {
+      Json::array([
+        Json::number(p.kind.to_double()),
+        Json::string(p.glyph),
+        Json::number(p.x),
+        Json::number(p.y),
+        Json::number(p.w),
+        Json::number(p.h),
+        Json::number(p.scale),
+        Json::number(p.width),
+        Json::number(p.dash),
+      ])
+    }),
+  ).stringify()
+}

@@ -2,6 +2,8 @@
 package "f4ah6o/bdf/compat/musicnotation"
 
 // Values
+pub fn barline(Int32, Double, Double, Double, FixedArray[Double], Bool) -> String
+
 pub fn curve(FixedArray[Double]) -> String
 
 pub fn divide_values(Int32, Int32, Int32, Int32, Bool, Bool) -> String
