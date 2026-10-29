@@ -4,6 +4,8 @@ package "f4ah6o/bdf/compat/musicnotation"
 // Values
 pub fn estimate(FixedArray[Double], Int32) -> String
 
+pub fn quantize(FixedArray[Int32], FixedArray[Int32]) -> String
+
 pub fn spell(Int32, Int32, Bool, Int32) -> String
 
 pub fn time(Int32, Int32) -> String

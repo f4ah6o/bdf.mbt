@@ -127,3 +127,66 @@ pub fn timeline(
     "warnings": Json::array(timeline.warnings.map(Json::string)),
   }).stringify()
 }
+
+///|
+#export_name("quantize")
+pub fn quantize(
+  raw_measures : FixedArray[Int32],
+  raw_notes : FixedArray[Int32],
+) -> String {
+  let measures : Array[@music.MeasureSpan] = []
+  for i in 0..<(raw_measures.length() / 4) {
+    measures.push({
+      start: raw_measures[4 * i].to_int64(),
+      length: raw_measures[4 * i + 1].to_int64(),
+      time: {
+        beats: raw_measures[4 * i + 2],
+        beat_type: raw_measures[4 * i + 3],
+        symbol: "",
+      },
+      show_time: false,
+      key: None,
+      effective_key: { fifths: 0, minor: false, },
+      tempo: [],
+    })
+  }
+  let notes : Array[@music.NotationNote] = []
+  let onsets : Array[Int64] = []
+  for i in 0..<(raw_notes.length() / 5) {
+    let tick = raw_notes[5 * i].to_int64()
+    notes.push({
+      tick,
+      duration: raw_notes[5 * i + 1].to_int64(),
+      key: raw_notes[5 * i + 2],
+      velocity: raw_notes[5 * i + 3],
+      spelling: raw_notes[5 * i + 4],
+    })
+    onsets.push(tick)
+  }
+  let beats = @music.beat_grids(measures, onsets)
+  let quantized = @music.quantize_notes(measures, notes)
+  Json::object({
+    "beats": Json::array(
+      beats.map(b => {
+        Json::array([
+          Json::number(b.start.to_double()),
+          Json::number(b.length.to_double()),
+          Json::boolean(b.compound),
+          Json::number(b.grid.to_double()),
+          Json::boolean(b.triplet),
+        ])
+      }),
+    ),
+    "notes": Json::array(
+      quantized.map(n => {
+        Json::array([
+          Json::number(n.on.to_double()),
+          Json::number(n.off.to_double()),
+          Json::number(n.key.to_double()),
+          Json::number(n.velocity.to_double()),
+          Json::number(n.spelling.to_double()),
+        ])
+      }),
+    ),
+  }).stringify()
+}
