@@ -33,7 +33,9 @@ pub struct Gpos {
   // private fields
 }
 pub fn Gpos::context(Self, Int32) -> LookupContext?
+pub fn Gpos::each_single(Self, Int32, (Int32, PositionValue) -> Bool) -> Unit
 pub fn Gpos::pair_count(Self, Int32) -> Int64
+pub fn Gpos::pair_value(Self, Int32, Int32, Int32) -> (PositionValue, PositionValue)?
 pub fn Gpos::truncated(Self) -> Bool
 
 pub struct Gsub {
@@ -80,6 +82,13 @@ pub(all) struct LayoutScript {
 pub(all) struct LookupContext {
   rules : Int32
   nested : Array[Int32]
+}
+
+pub(all) struct PositionValue {
+  x_placement : Int32
+  y_placement : Int32
+  x_advance : Int32
+  y_advance : Int32
 }
 
 pub(all) struct Substitution {

@@ -1,7 +1,13 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "f4ah6o/bdf/compat/gsub"
 
+import {
+  "f4ah6o/bdf/font/otlayout",
+}
+
 // Values
+pub fn gpos_truncated(@otlayout.Gpos) -> Bool
+
 pub fn inspect_gdef(Bytes) -> String
 
 pub fn inspect_gpos_pairs(Bytes, Array[Int32]) -> String
@@ -13,6 +19,12 @@ pub fn layout_metadata(Bytes, Bool) -> String
 pub fn list_substitutions(Bytes, Int32, Int32) -> String
 
 pub fn lookup_contexts(Bytes, Bool) -> String
+
+pub fn open_gpos(Bytes) -> @otlayout.Gpos
+
+pub fn position_pair(@otlayout.Gpos, Int32, Int32, Int32) -> String
+
+pub fn position_singles(@otlayout.Gpos, Int32) -> String
 
 pub fn tag_names(String) -> String
 

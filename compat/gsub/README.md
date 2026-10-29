@@ -56,3 +56,10 @@ references, malformed inputs and shared work-budget behavior. Generate
 tag into upstream `internal/otlayout` alongside `generate_test.go` and run
 `TestCodexLookupContexts` with the same fixture root. Run `npm run test:layout`
 after a JS build.
+
+`position-values.json.gz` compares single-glyph adjustments, pair queries,
+subtable precedence, missing records, zero-sized values and shared work budgets.
+Generate `context.json.gz` first, then copy `generate-position-values_test.go`
+without its build tag into upstream `internal/otlayout` alongside
+`generate_test.go` and run `TestCodexPositionValues` with the same fixture root.
+Run `npm run test:gpos` after a JS build.

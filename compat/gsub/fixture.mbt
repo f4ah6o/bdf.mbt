@@ -210,3 +210,61 @@ pub fn lookup_contexts(data : Bytes, gpos : Bool) -> String {
     "truncated": Json::boolean(truncated),
   }).stringify()
 }
+
+///|
+fn position_json(value : @otlayout.PositionValue) -> Json {
+  Json::object({
+    "xPlacement": Json::number(value.x_placement.to_double()),
+    "yPlacement": Json::number(value.y_placement.to_double()),
+    "xAdvance": Json::number(value.x_advance.to_double()),
+    "yAdvance": Json::number(value.y_advance.to_double()),
+  })
+}
+
+///|
+#export_name("open_gpos")
+pub fn open_gpos(data : Bytes) -> @otlayout.Gpos {
+  @otlayout.parse_gpos(data[:]).unwrap()
+}
+
+///|
+#export_name("position_singles")
+pub fn position_singles(table : @otlayout.Gpos, index : Int32) -> String {
+  let values : Array[Json] = []
+  table.each_single(index, (glyph, value) => {
+    values.push(
+      Json::object({
+        "glyph": Json::number(glyph.to_double()),
+        "value": position_json(value),
+      }),
+    )
+    values.length() < 100
+  })
+  Json::array(values).stringify()
+}
+
+///|
+#export_name("position_pair")
+pub fn position_pair(
+  table : @otlayout.Gpos,
+  index : Int32,
+  first : Int32,
+  second : Int32,
+) -> String {
+  let (v1, v2) = match table.pair_value(index, first, second) {
+    Some((a, b)) => (position_json(a), position_json(b))
+    None => (Json::null(), Json::null())
+  }
+  Json::object({
+    "first": Json::number(first.to_double()),
+    "second": Json::number(second.to_double()),
+    "v1": v1,
+    "v2": v2,
+  }).stringify()
+}
+
+///|
+#export_name("gpos_truncated")
+pub fn gpos_truncated(table : @otlayout.Gpos) -> Bool {
+  table.truncated()
+}
