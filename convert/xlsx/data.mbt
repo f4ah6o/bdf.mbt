@@ -142,11 +142,10 @@ pub fn XlsxStyles::values_table(
     range.column_start.to_int64() +
     1L
   if row_count < 1L ||
-    row_count > 1048576L ||
+    row_count > 67108864L ||
     col_count < 1L ||
     col_count > 16384L ||
     row_count * col_count > 67108864L ||
-    range.row_start < 0L ||
     range.column_start < 0 {
     raise InvalidXlsxInput("xlsx: invalid table range")
   }

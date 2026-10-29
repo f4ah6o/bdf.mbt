@@ -7,6 +7,7 @@ import {
   "moonbitlang/core/string",
   "moonbitlang/core/bigint",
   "moonbitlang/core/math",
+  "moonbit-community/ucd",
 }
 
 supported_targets = "+js+wasm-gc"

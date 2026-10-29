@@ -709,3 +709,48 @@ pub fn xlsx_list_tables(data : Bytes, part : String) -> String {
     _ => "null"
   }
 }
+
+///|
+#export_name("xlsx_store_sheet")
+pub fn xlsx_store_sheet(
+  data : Bytes,
+  part : String,
+  locale : String,
+  mode : String,
+) -> Bytes {
+  try {
+    let workbook = @xlsx.read_xlsx_workbook(data)
+    let writer = @core.DocumentWriter::new()
+    ignore(
+      workbook.store_sheet_tables(
+        writer, part, "sheet \"日\"", 2, "v1", mode, 3, locale,
+      ),
+    )
+    writer.write_single()
+  } catch {
+    _ => b""
+  }
+}
+
+///|
+#export_name("xlsx_store_sheet_summary")
+pub fn xlsx_store_sheet_summary(
+  data : Bytes,
+  part : String,
+  locale : String,
+  mode : String,
+) -> String {
+  try {
+    let workbook = @xlsx.read_xlsx_workbook(data)
+    let writer = @core.DocumentWriter::new()
+    let (counter, warnings) = workbook.store_sheet_tables(
+      writer, part, "sheet \"日\"", 2, "v1", mode, 3, locale,
+    )
+    Json::array([
+      Json::number(counter.to_double()),
+      Json::array(warnings.map(Json::string)),
+    ]).stringify()
+  } catch {
+    _ => "null"
+  }
+}

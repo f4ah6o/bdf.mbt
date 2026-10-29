@@ -297,6 +297,7 @@ pub fn XlsxWorkbook::read_sheet_cells(Self, String) -> XlsxSheetCells raise
 pub fn XlsxWorkbook::read_sheet_geometry(Self, String) -> XlsxSheetGeometry raise
 pub fn XlsxWorkbook::read_sheet_tables(Self, String) -> Array[XlsxListTable] raise
 pub fn XlsxWorkbook::shared_strings(Self) -> Array[String]
+pub fn XlsxWorkbook::store_sheet_tables(Self, @core.DocumentWriter, String, String, Int32, String, String, Int32, String) -> (Int32, Array[String]) raise
 pub fn XlsxWorkbook::styles(Self) -> XlsxStyles
 
 // Type aliases

@@ -64,7 +64,7 @@ func TestCodexXLSXListTables(t *testing.T) {
 			rels += fmt.Sprintf(`<Relationship Id="r%d" Type="x/table" Target="../tables/table%d.xml"/>`, j, j)
 			if r.Intn(7) != 0 {
 				name := names[r.Intn(len(names))]
-				table := fmt.Sprintf(`<table ref="%s" displayName="%s" name="fallback" headerRowCount="%d" totalsRowCount="%d"><tableColumns>`, refs[r.Intn(len(refs))], name, r.Intn(3), r.Intn(3))
+				table := fmt.Sprintf(`<table ref="%s" displayName="%s" name="fallback" headerRowCount="%d" totalsRowCount="%d"><tableColumns>`, refs[r.Intn(len(refs))], name, r.Intn(4)-1, r.Intn(4)-1)
 				for k := 0; k < r.Intn(6); k++ {
 					table += fmt.Sprintf(`<tableColumn name="%s"/>`, names[r.Intn(len(names))])
 				}

@@ -44,6 +44,10 @@ pub fn xlsx_reference(String, Int32) -> String
 
 pub fn xlsx_select_format(String, Double) -> String
 
+pub fn xlsx_store_sheet(Bytes, String, String, String) -> Bytes
+
+pub fn xlsx_store_sheet_summary(Bytes, String, String, String) -> String
+
 pub fn xlsx_strings(Bytes) -> String
 
 pub fn xlsx_styles(Bytes) -> String
