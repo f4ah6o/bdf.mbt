@@ -10,6 +10,8 @@ import {
 // Values
 pub fn automatic_pruned(Bytes, Int32, String) -> Bytes
 
+pub fn begin_specimen_page(PageBatchFixture, Int32) -> @font.SpecimenPagePainter
+
 pub fn coverage(Bytes, Int32) -> String
 
 pub fn document_plan(Bytes, String, String) -> String
@@ -36,9 +38,13 @@ pub fn new_texter() -> TexterFixture
 
 pub fn overview(Bytes, Int32, Bool) -> String
 
+pub fn page_batch_layout(PageBatchFixture) -> String
+
 pub fn paint_embedded_glyphs(GlyphPainterFixture, Array[Int32], Array[Double], Double, Double, Double, String) -> Unit
 
 pub fn paint_glyphs(PainterFixture, Array[Int32], Array[Double], Double, Double, Double, String) -> Unit
+
+pub fn paint_page_band(PageBatchFixture, @font.SpecimenPagePainter, Double, String, Bool, UInt32, String, Double) -> Unit
 
 pub fn paint_sample(GlyphPainterFixture, String, Double, Double, Double, Bool, String) -> Unit
 
@@ -53,6 +59,8 @@ pub fn painter_object(PainterFixture) -> Bytes
 pub fn prepare_glyph_painter(Bytes, Int32) -> GlyphPainterFixture
 
 pub fn prepare_outlines(Bytes, Int32) -> @font.SpecimenOutlines
+
+pub fn prepare_page_batch(Bytes, String, String, UIFontFixture, Array[Double], Array[Double], Array[Bool], Array[String]) -> PageBatchFixture
 
 pub fn prepare_painter(Bytes, Int32) -> PainterFixture
 
@@ -76,6 +84,8 @@ pub fn scroll_plan(Array[Int32], Array[Double], Array[String]) -> String
 
 pub fn specimen_names(Bytes) -> String
 
+pub fn specimen_page_object(@font.SpecimenPagePainter) -> Bytes
+
 pub fn specimen_path(@font.SpecimenOutlines, Int32) -> Bytes
 
 pub fn texter_add_font(TexterFixture, String, Bytes) -> Unit
@@ -96,6 +106,14 @@ pub fn variations(Bytes, Bytes) -> String
 pub struct GlyphPainterFixture {
   object : @core.ObjectBuilder
   painter : @font.GlyphPainter
+}
+
+pub struct PageBatchFixture {
+  face : @font.FileFace
+  programs : @font.SpecimenFacePrograms
+  texter : @font.SpecimenTexter
+  fonts : @font.SpecimenUIFonts
+  plan : @font.ScrollPlan
 }
 
 pub struct PainterFixture {

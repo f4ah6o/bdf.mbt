@@ -222,6 +222,21 @@ pub struct SpecimenOutlines {
 pub fn SpecimenOutlines::bounds(Self, Int32) -> (Double, Double, Double, Double)?
 pub fn SpecimenOutlines::path(Self, Int32) -> @core.Path?
 
+pub struct SpecimenPagePainter {
+  // private fields
+}
+pub fn SpecimenPagePainter::clip_rect(Self, Double, Double, Double, Double) -> Unit
+pub fn SpecimenPagePainter::encode(Self) -> Bytes raise
+pub fn SpecimenPagePainter::glyph_run(Self, Array[Int32], Array[Double], Double, Double, Double, String) -> Bool raise
+pub fn SpecimenPagePainter::label(Self, SpecimenTextLine, Double, Double, UInt32, Int32) -> Double raise
+pub fn SpecimenPagePainter::link_to(Self, Double, Double, Double, Double, String) -> Unit
+pub fn SpecimenPagePainter::mark(Self, Byte, String) -> Unit
+pub fn SpecimenPagePainter::new(FileFace, SpecimenFacePrograms, SpecimenTexter, SpecimenUIFonts, ScrollPlan, Double, doc_language? : String) -> Self raise
+pub fn SpecimenPagePainter::rect(Self, Double, Double, Double, Double, UInt32) -> Unit
+pub fn SpecimenPagePainter::restore(Self) -> Unit
+pub fn SpecimenPagePainter::sample(Self, String, Double, Double, Double, Bool, String) -> Bool raise
+pub fn SpecimenPagePainter::save(Self) -> Unit
+
 pub(all) struct SpecimenPrograms {
   faces : Array[SpecimenFacePrograms]
   warnings : Array[String]

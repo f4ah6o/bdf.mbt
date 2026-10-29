@@ -855,3 +855,131 @@ pub fn paint_ui_glyphs(f : UIPainterFixture, advance : Double) -> Unit {
 pub fn ui_painter_object(f : UIPainterFixture) -> Bytes {
   try! f.object.encode()
 }
+
+///|
+pub struct PageBatchFixture {
+  face : @font.FileFace
+  programs : @font.SpecimenFacePrograms
+  texter : @font.SpecimenTexter
+  fonts : @font.SpecimenUIFonts
+  plan : @font.ScrollPlan
+}
+
+///|
+#export_name("prepare_page_batch")
+pub fn prepare_page_batch(
+  data : Bytes,
+  glyph_hash : String,
+  sample_hash : String,
+  fonts : UIFontFixture,
+  heights : Array[Double],
+  spaces : Array[Double],
+  keep : Array[Bool],
+  anchors : Array[String],
+) -> PageBatchFixture {
+  let face = (try! @font.load(data)).faces()[0]
+  let glyph : @core.Font = {
+    hash: Some(glyph_hash),
+    family: "",
+    weight: 400,
+    style: 0,
+  }
+  let sample : @core.Font = {
+    hash: Some(sample_hash),
+    family: "",
+    weight: 400,
+    style: 0,
+  }
+  let programs : @font.SpecimenFacePrograms = {
+    face_index: face.index,
+    glyph_font: Some(glyph),
+    sample_font: Some(sample),
+    sample: face.sample_plan(""),
+    outlined: false,
+  }
+  let scroll = @font.ScrollLayout::new()
+  for i in 0..<heights.length() {
+    scroll.space(spaces[i])
+    if anchors[i] != "" {
+      scroll.anchor(anchors[i])
+    }
+    scroll.add(heights[i], keep=keep[i])
+  }
+  {
+    face,
+    programs,
+    texter: fonts.texter.texter,
+    fonts: fonts.fonts,
+    plan: scroll.finish(),
+  }
+}
+
+///|
+#export_name("page_batch_layout")
+pub fn page_batch_layout(f : PageBatchFixture) -> String {
+  Json::array(
+    f.plan.strips.map(strip => {
+      Json::object({
+        "height": Json::number(specimen_float(strip.height)),
+        "bands": Json::array(
+          strip.bands.map(pair => {
+            Json::array([Json::number(pair.0.to_double()), Json::number(pair.1)])
+          }),
+        ),
+      })
+    }),
+  ).stringify()
+}
+
+///|
+fn specimen_float(n : Double) -> Double {
+  Float::from_double(n).to_double()
+}
+
+///|
+#export_name("begin_specimen_page")
+pub fn begin_specimen_page(
+  f : PageBatchFixture,
+  index : Int32,
+) -> @font.SpecimenPagePainter {
+  try! @font.SpecimenPagePainter::new(
+    f.face,
+    f.programs,
+    f.texter,
+    f.fonts,
+    f.plan,
+    f.plan.strips[index].height,
+  )
+}
+
+///|
+#export_name("paint_page_band")
+pub fn paint_page_band(
+  f : PageBatchFixture,
+  page : @font.SpecimenPagePainter,
+  y : Double,
+  text : String,
+  bold : Bool,
+  color : UInt32,
+  target : String,
+  advance : Double,
+) -> Unit {
+  page.rect(36.0, y + 2.0, 200.0, 4.0, color)
+  page.mark(0, "")
+  let line = f.texter.line(text, 11.0, bold)
+  ignore(try! page.label(line, 36.0, y + 18.0, color, 0))
+  page.link_to(36.0, y, 30.0, 20.0, target)
+  page.save()
+  page.clip_rect(36.0, y, 300.0, 30.0)
+  ignore(try! page.sample("Aあ", 40.0, y + 24.0, 12.0, false, "ja"))
+  page.restore()
+  ignore(
+    try! page.glyph_run([1, 2], [0.0, advance], 360.0, y + 25.0, 13.0, "alt"),
+  )
+}
+
+///|
+#export_name("specimen_page_object")
+pub fn specimen_page_object(page : @font.SpecimenPagePainter) -> Bytes {
+  try! page.encode()
+}

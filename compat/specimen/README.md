@@ -32,6 +32,7 @@ upstream conversions. `texter.json.gz` checks font selection, text runs,
 widths, fitting, wrapping and measured-font usage. `ui-fonts.json.gz` checks
 font embedding and system-font records, including license restrictions.
 `ui-paint.json.gz` verifies text, sample and glyph drawing in the same object.
+`page-paint.json.gz` checks complete scroll page objects and anchor links.
 
 After `moon build --target js`, run `npm run test:specimen` and
 `npm run test:specimen-plan`, `npm run test:specimen-names`,
@@ -43,7 +44,7 @@ After `moon build --target js`, run `npm run test:specimen` and
 `npm run test:specimen-glyph-paint`, `npm run test:specimen-sample-paint`,
 `npm run test:specimen-programs`, `npm run test:specimen-document-plan`,
 `npm run test:specimen-texter`, `npm run test:specimen-ui-fonts`,
-`npm run test:specimen-ui-paint`, and
+`npm run test:specimen-ui-paint`, `npm run test:specimen-page-paint`, and
 `npm run test:specimen-visual`. To regenerate, copy `generate_test.go` without
 its first `//go:build ignore` line into the upstream checkout at
 `converter/font/codex_specimen_test.go`, then run:
@@ -143,3 +144,7 @@ run `TestCodexSpecimenUIFonts` with the same fixture root.
 To regenerate UI painting cases, copy `generate-ui-paint_test.go` without its
 build tag into upstream `converter/font` alongside `generate_test.go` and run
 `TestCodexSpecimenUIPaint` with the same fixture root.
+
+To regenerate page painting cases, copy `generate-page-paint_test.go` without
+its build tag into upstream `converter/font` alongside `generate_test.go` and
+run `TestCodexSpecimenPagePaint` with the same fixture root.
