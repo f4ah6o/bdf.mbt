@@ -8,7 +8,25 @@ pub fn detect_mml(Bytes) -> Bool
 
 pub fn detect_mml_dialect(String) -> String
 
+pub fn mml_break_at(Bytes, Byte) -> Int32
+
+pub fn mml_closing(Bytes, Int32, Byte, Byte) -> Int32
+
+pub fn mml_closing_slash(Bytes, Int32) -> Int32
+
+pub fn mml_decimal(Bytes, Int32) -> (Double, Bool, Int32)
+
+pub fn mml_dots(Bytes, Int32, Int32) -> (Int32, Int32)
+
+pub fn mml_length_arg(Bytes, Int32, Int32) -> (Int32, Bool, Int32)
+
 pub fn mml_like(String) -> (Bool, Int32, Int32)
+
+pub fn mml_number(Bytes, Int32) -> (Int32, Bool, Int32)
+
+pub fn mml_signed(Bytes, Int32) -> (Int32, Bool, Int32)
+
+pub fn mml_skip_args(Bytes, Int32) -> Int32
 
 pub fn split_mml_source(String, String) -> MmlSource
 

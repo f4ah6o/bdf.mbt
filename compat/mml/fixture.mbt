@@ -41,3 +41,36 @@ pub fn mml_source(text : String, dialect : String) -> String {
     Json::string(@mml.strip_mml_comments(text, true)),
   ]).stringify()
 }
+
+///|
+#export_name("mml_scan")
+pub fn mml_scan(text : String) -> String {
+  let b = @utf8.encode(text)
+  let (n, nok, ni) = @mml.mml_number(b, 0)
+  let (sg, sok, si) = @mml.mml_signed(b, 0)
+  let (dec, dok, di) = @mml.mml_decimal(b, 0)
+  let (len, lok, li) = @mml.mml_length_arg(b, 0, 384)
+  let (dot, dit) = @mml.mml_dots(b, 0, 960)
+  Json::array([
+    Json::number(n.to_double()),
+    Json::boolean(nok),
+    Json::number(ni.to_double()),
+    Json::number(sg.to_double()),
+    Json::boolean(sok),
+    Json::number(si.to_double()),
+    Json::number(dec),
+    Json::boolean(dok),
+    Json::number(di.to_double()),
+    Json::number(len.to_double()),
+    Json::boolean(lok),
+    Json::number(li.to_double()),
+    Json::number(dot.to_double()),
+    Json::number(dit.to_double()),
+    Json::number(@mml.mml_skip_args(b, 0).to_double()),
+    Json::number(@mml.mml_closing(b, 0, b'[', b']').to_double()),
+    Json::number(@mml.mml_closing(b, 0, b'{', b'}').to_double()),
+    Json::number(@mml.mml_closing_slash(b, 0).to_double()),
+    Json::number(@mml.mml_break_at(b, b'[').to_double()),
+    Json::number(@mml.mml_break_at(b, b'/').to_double()),
+  ]).stringify()
+}

@@ -6,6 +6,8 @@ pub fn mml_decode(Bytes) -> String
 
 pub fn mml_detection(String) -> String
 
+pub fn mml_scan(String) -> String
+
 pub fn mml_source(String, String) -> String
 
 // Errors
