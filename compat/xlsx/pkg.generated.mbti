@@ -28,6 +28,8 @@ pub fn xlsx_iso_date(String, Bool) -> String
 
 pub fn xlsx_layout(Bytes, String, Double, Double) -> String
 
+pub fn xlsx_locale(Bytes) -> String
+
 pub fn xlsx_numeric(String, Double) -> String
 
 pub fn xlsx_paint(Bytes) -> String

@@ -587,3 +587,29 @@ pub fn xlsx_color(
     Json::number(resolved.rgba().to_double()),
   ]).stringify()
 }
+
+///|
+#export_name("xlsx_locale")
+pub fn xlsx_locale(data : Bytes) -> String {
+  try {
+    let workbook = @xlsx.read_xlsx_workbook(data)
+    let p = workbook.package.core_properties()
+    let locale = workbook.locale()
+    let arr = (values : Array[String]) => Json::array(values.map(Json::string))
+    Json::array([
+      arr(p.title),
+      arr(p.creator),
+      arr(p.subject),
+      arr(p.description),
+      arr(p.identifier),
+      arr(p.language),
+      arr(p.created),
+      arr(p.modified),
+      Json::string(locale.script),
+      Json::string(locale.language),
+      Json::string(locale.number_locale),
+    ]).stringify()
+  } catch {
+    _ => "null"
+  }
+}

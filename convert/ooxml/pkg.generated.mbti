@@ -16,6 +16,17 @@ pub suberror OoxmlError {
 }
 
 // Types and methods
+pub(all) struct OoxmlCoreProperties {
+  title : Array[String]
+  creator : Array[String]
+  subject : Array[String]
+  description : Array[String]
+  identifier : Array[String]
+  language : Array[String]
+  created : Array[String]
+  modified : Array[String]
+}
+
 pub(all) struct OoxmlFontScheme {
   mut latin : String
   mut east_asian : String
@@ -29,6 +40,7 @@ pub struct OoxmlPackage {
   rels : Map[String, Array[OoxmlRelationship]]
   targets : Map[String, Map[String, OoxmlRelationship]]
 }
+pub fn OoxmlPackage::core_properties(Self) -> OoxmlCoreProperties
 pub fn OoxmlPackage::has(Self, String) -> Bool
 pub fn OoxmlPackage::part_size(Self, String) -> Int32?
 pub fn OoxmlPackage::read(Self, String) -> Bytes raise OoxmlError

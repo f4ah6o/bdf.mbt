@@ -178,6 +178,12 @@ pub(all) struct XlsxGradientStop {
   mut color : XlsxColor
 }
 
+pub(all) struct XlsxLocale {
+  script : String
+  language : String
+  number_locale : String
+}
+
 pub(all) struct XlsxNumberLayout {
   mut integer : String
   mut fraction_digits : String
@@ -271,6 +277,7 @@ pub(all) struct XlsxWorkbook {
   warnings : Array[String]
   mut cached_shared_strings : Array[String]?
 }
+pub fn XlsxWorkbook::locale(Self) -> XlsxLocale
 pub fn XlsxWorkbook::read_sheet_cells(Self, String) -> XlsxSheetCells raise
 pub fn XlsxWorkbook::read_sheet_geometry(Self, String) -> XlsxSheetGeometry raise
 pub fn XlsxWorkbook::shared_strings(Self) -> Array[String]
