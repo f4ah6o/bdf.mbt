@@ -179,15 +179,17 @@ func avifSequence() []byte {
 
 func main() {
 	svgs := map[string]string{
-		"units.svg":           `<svg xmlns="http://www.w3.org/2000/svg" width="1cm" height="1in"><title>Units</title></svg>`,
-		"fraction.svg":        `<svg xmlns="http://www.w3.org/2000/svg" width="0.1" height="0.3"><title>Small</title></svg>`,
-		"large.svg":           `<svg xmlns="http://www.w3.org/2000/svg" width="1e23" height="1"/>`,
-		"ratio.svg":           `<svg xmlns="http://www.w3.org/2000/svg" width="1.25in" viewBox="0 0 4 3"><desc>A landscape</desc></svg>`,
-		"default.svg":         `<svg xmlns="http://www.w3.org/2000/svg"/>`,
-		"no-namespace.svg":    `<svg width="1em" height="2ex"><title>Hi <tspan>there</tspan> !</title></svg>`,
-		"truncated-root.svg":  `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="12">`,
-		"truncated-child.svg": `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="12"><title>Title</title><desc>Some text`,
-		"truncated-tag.svg":   `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="12"><title>Title</title><rect`,
+		"units.svg":            `<svg xmlns="http://www.w3.org/2000/svg" width="1cm" height="1in"><title>Units</title></svg>`,
+		"fraction.svg":         `<svg xmlns="http://www.w3.org/2000/svg" width="0.1" height="0.3"><title>Small</title></svg>`,
+		"large.svg":            `<svg xmlns="http://www.w3.org/2000/svg" width="1e23" height="1"/>`,
+		"ratio.svg":            `<svg xmlns="http://www.w3.org/2000/svg" width="1.25in" viewBox="0 0 4 3"><desc>A landscape</desc></svg>`,
+		"default.svg":          `<svg xmlns="http://www.w3.org/2000/svg"/>`,
+		"no-namespace.svg":     `<svg width="1em" height="2ex"><title>Hi <tspan>there</tspan> !</title></svg>`,
+		"truncated-root.svg":   `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="12">`,
+		"truncated-child.svg":  `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="12"><title>Title</title><desc>Some text`,
+		"truncated-tag.svg":    `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="12"><title>Title</title><rect`,
+		"bad-entity.svg":       `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="12"><title>Hello &unknown; world</title><desc><![CDATA[&unknown;]]></desc></svg>`,
+		"entity-attribute.svg": `<svg xmlns="http://www.w3.org/2000/svg" width="&unknown;"><title>😀 &unknown;</title></svg>`,
 	}
 	webps := map[string]string{
 		"synthetic-lossy.webp":    "lossy",
@@ -246,6 +248,8 @@ func main() {
 		{"truncated-root.svg", "truncated-root.svg", "", 0},
 		{"truncated-child.svg", "truncated-child.svg", "", 0},
 		{"truncated-tag.svg", "truncated-tag.svg", "", 0},
+		{"bad-entity.svg", "bad-entity.svg", "", 0},
+		{"entity-attribute.svg", "entity-attribute.svg", "", 0},
 		{"synthetic-sequence.avif", "synthetic-sequence.avif", "", 0},
 		{"synthetic-lossy.webp", "synthetic-lossy.webp", "", 0},
 		{"synthetic-lossless.webp", "synthetic-lossless.webp", "", 0},

@@ -31,7 +31,25 @@ fn svg_candidate(data : Bytes) -> Bool {
   }
   let reader = @xml.NamespaceReader::from_string(text)
   while true {
-    let event = reader.read_event() catch { _ => return false }
+    let event = reader.read_event() catch {
+      @xml.At(error=@xml.InvalidEntity(_), ..) => {
+        guard svg_repair_entities(text) is Some(repaired) && repaired != text else {
+          return false
+        }
+        let retry = @xml.NamespaceReader::from_string(repaired)
+        while true {
+          let next = retry.read_event() catch { _ => return false }
+          match next.kind {
+            Start(element) | Empty(element) =>
+              return element.name.local_name == "svg"
+            Eof => return false
+            _ => ()
+          }
+        }
+        return false
+      }
+      _ => return false
+    }
     match event.kind {
       Start(element) | Empty(element) => return element.name.local_name == "svg"
       Eof => return false
@@ -48,6 +66,59 @@ fn svg_all_text(node : XmpNode, output : StringBuilder) -> Unit {
     output.write_char(' ')
     svg_all_text(child, output)
   }
+}
+
+///|
+// Upstream leaves undefined named entities as literal text. Escape only the
+// reference at the parser's error location; comments and CDATA are untouched.
+// Bound the number of reparses and the total input scanned.
+fn svg_repair_entities(original : String) -> String? {
+  if !original.contains("&") {
+    return Some(original)
+  }
+  let mut text = original
+  let mut attempts = 0
+  let mut scanned = 0L
+  while true {
+    let reader = @xml.NamespaceReader::from_string(text)
+    let mut reference : String? = None
+    let mut end = 0
+    while true {
+      let event = reader.read_event() catch {
+        @xml.At(error=@xml.InvalidEntity(message), span~) => {
+          let prefix = "undefined entity reference: "
+          if message.has_prefix(prefix) {
+            reference = Some(message[prefix.length():].to_owned())
+            end = span.end.offset
+          }
+          break
+        }
+        _ => break
+      }
+      if event.kind is Eof {
+        break
+      }
+    }
+    guard reference is Some(reference) else { return Some(text) }
+    attempts += 1
+    scanned += text.length().to_int64()
+    if attempts > 32 || scanned > 67108864L {
+      return None
+    }
+    let start = end - reference.length()
+    if start < 0 ||
+      end > text.length() ||
+      text[start:end].to_owned() != reference ||
+      !reference.has_prefix("&") {
+      return None
+    }
+    let output = StringBuilder()
+    output.write_string(text[:start].to_owned())
+    output.write_string("&amp;")
+    output.write_string(text[start + 1:].to_owned())
+    text = output.to_string()
+  }
+  Some(text)
 }
 
 ///|
@@ -120,8 +191,11 @@ fn svg_is_truncated(text : String) -> Bool {
 
 ///|
 fn read_svg(data : Bytes) -> Picture raise {
-  guard svg_decode(data, false) is Some((text, utf16)) else {
+  guard svg_decode(data, false) is Some((original, utf16)) else {
     raise ImageFailure("image: SVG encoding is not yet supported")
+  }
+  guard svg_repair_entities(original) is Some(text) else {
+    raise ImageFailure("image: SVG entity recovery limit exceeded")
   }
   let (root, complete) = xmp_tree_checked(
     text,

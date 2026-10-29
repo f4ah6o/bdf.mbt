@@ -28,12 +28,22 @@ test "SVG trailing content is distinguished from malformed SVG" {
     old="/>",
     new="><title>&unknown;</title></svg>",
   )
-  let rejected = try {
-    ignore(convert(@utf8.encode(unknown_entity)))
-    false
-  } catch {
-    ImageFailure(message) => message.contains("malformed SVG")
-    _ => false
+  let recovered = convert(@utf8.encode(unknown_entity))
+  assert_eq(recovered.format, "svg")
+}
+
+///|
+test "SVG entity recovery leaves CDATA intact and is bounded" {
+  let text = "<svg><title>&unknown;<![CDATA[&unknown;]]></title></svg>"
+  let repaired = svg_repair_entities(text).unwrap()
+  assert_eq(
+    repaired, "<svg><title>&amp;unknown;<![CDATA[&unknown;]]></title></svg>",
+  )
+  let long = StringBuilder()
+  long.write_string("<svg><title>")
+  for _ in 0..<33 {
+    long.write_string("&unknown;")
   }
-  assert_true(rejected)
+  long.write_string("</title></svg>")
+  assert_eq(svg_repair_entities(long.to_string()), None)
 }
