@@ -7,7 +7,7 @@ MoonBit implementation of the BDF v1 wire-format reader and the browser-facing `
 - `render`: backend-neutral, checked display-list decoder for a currently supported subset of Canvas 2D opcodes, including paths, gradient paints, and drawing effects. It also extracts ordered text runs, semantic structure, figure bounds and link rectangles, serializes table-cell selections, and calculates music and audio cue positions.
 - `convert`: the worker-client request/response lifecycle and stream command model. The browser adapter connects these to a Worker and a separately supplied compatible Wasm runtime; the native converter supports CSV and the BMP, ICO, JPEG, PNG, GIF, WebP, AVIF and SVG image formats. Other converter engines are **not** ported.
 - `convert/csv`: CSV decoding, detection and conversion to BDF sheets, including built-in table styles, text indexes and typed Parquet tables. The converter accepts an explicitly supplied font or an in-memory font database, selecting fallback faces per character and subsetting TrueType and supported CFF outlines where permitted. Host filesystem and system font discovery remain to be ported.
-- `font/sfnt`: TrueType, OpenType and TTC face metadata, Unicode glyph maps and horizontal metrics. `font/db` resolves supplied font families, styles and per-character fallbacks; `convert/sheet` can draw using those faces. WOFF/WOFF2 remain to be ported.
+- `font/sfnt`: TrueType, OpenType and TTC face metadata, Unicode glyph maps and horizontal metrics, and WOFF 1.0 decoding. `font/db` resolves supplied font families, styles and per-character fallbacks; `convert/sheet` can draw using those faces. WOFF2 remains to be ported.
 - `viewer`: document/view selection state and page placement in single, spread, and continuous modes, including RTL spreads and scroll strips.
 - `browser` (JS only): Canvas 2D adapter that draws fixed/flow pages, scroll strips, continuous body regions, and sheet viewports, including password- and P-256-protected documents, into a DOM host, including paths, gradients, child objects, transparency groups, masks, asynchronously loaded images and fonts, and optional selectable text layers.
 
@@ -39,6 +39,7 @@ let document = @core.open_single(existing_bdf_bytes) // unencrypted BDF
 let object = @core.decode_object(document.part(hash))
 let commands = @render.compile_object(object) // Canvas command list
 let image = @image.convert(image_bytes, name="picture.bmp") // @f4ah6o/bdf/convert/image
+let sfnt_bytes = @sfnt.decode_woff(woff_bytes) // @f4ah6o/bdf/font/sfnt
 let fonts = @fontdb.Database::new() // @f4ah6o/bdf/font/db
 fonts.add_file("regular.ttf", regular_font_bytes)
 fonts.add_file("bold.ttf", bold_font_bytes)

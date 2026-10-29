@@ -1,5 +1,8 @@
 import {
   "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/buffer",
+  "gaato/deflate/zlib",
+  "moonbit-community/ucd",
   "f4ah6o/bdf/font/cff",
 }
 

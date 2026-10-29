@@ -2,6 +2,8 @@
 package "f4ah6o/bdf/font/sfnt"
 
 // Values
+pub fn decode_woff(Bytes) -> Bytes raise
+
 pub fn face_count(Bytes) -> Int32
 
 pub fn parse(Bytes, index? : Int32) -> Font raise

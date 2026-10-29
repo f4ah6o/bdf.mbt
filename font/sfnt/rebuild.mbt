@@ -172,19 +172,24 @@ fn rebuild_program(
   if !tables.contains("maxp") || tables["maxp"].length() == 0 {
     tables["maxp"] = default_maxp(glyph_count, font.metrics.is_cff)
   }
+  build_tables(tables, font.metrics.is_cff)
+}
+
+///|
+fn build_tables(
+  tables : Map[String, Array[Byte]],
+  is_cff : Bool,
+) -> Bytes raise {
   let tags = tables.keys().collect()
   tags.sort()
   let count = tags.length()
-  if count > 4095 {
-    raise InvalidFont("too many SFNT tables")
-  }
   let mut selector = 0
   while 1 << (selector + 1) <= count {
     selector += 1
   }
   let search = (1 << selector) * 16
   let out = Bytes::make(12 + 16 * count, 0).to_array()
-  put32(out, 0, if font.metrics.is_cff { 0x4f54544fU } else { 0x00010000U })
+  put32(out, 0, if is_cff { 0x4f54544fU } else { 0x00010000U })
   put16(out, 4, count)
   put16(out, 6, search)
   put16(out, 8, selector)
