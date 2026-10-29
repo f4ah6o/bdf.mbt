@@ -1,6 +1,6 @@
 # Music notation compatibility fixtures
 
-These fixtures compare musical meter, key estimation, pitch spelling measure timelines, note quantization, clef selection, percussion mapping, note-value division, voice assignment, staff events, Bravura glyphs, staff positions, score preparation, measure spacing, system layout and drawing primitives with
+These fixtures compare musical meter, key estimation, pitch spelling measure timelines, note quantization, clef selection, percussion mapping, note-value division, voice assignment, staff events, Bravura glyphs, staff positions, score preparation, measure spacing, system layout, drawing primitives and staff headers with
 shibukawa/bdf commit `4f9af52dca60be1eb0daade39f7dc41d6a1fe431`.
 They exercise all key signatures, negative and positive pitch numbers,
 spelling hints and deterministic duration histograms.
@@ -46,3 +46,6 @@ System layout fixtures use `generate_systems_test.go` and
 
 Primitive and skyline fixtures use `generate_primitives_test.go` and
 `TestCodexMusicPrimitives`.
+
+Staff header fixtures use `generate_headers_test.go` and
+`TestCodexMusicHeaders` alongside `generate_prepare_test.go`.

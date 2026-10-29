@@ -50,6 +50,10 @@ pub fn resolve_accidentals(KeySig, Array[EngravingEvent]) -> Array[Array[Int32?]
 
 pub fn spell(Int32, KeySig, Int32) -> Pitch
 
+pub fn staff_header(NotatedScore, PreparedScore, MusicSystem, Int32) -> MusicDrawing
+
+pub fn staff_measure_header(MusicDrawing, NotatedScore, PreparedScore, MusicSystem, Int32, Int32) -> Unit
+
 pub fn staff_position(EngravingClef, Pitch) -> Int32
 
 pub fn write_staff_events(Array[VoiceNote], Array[MeasureSpan], Array[BeatGrid], Array[NotationLyric], Int32, Bool) -> Array[Array[ScoreEvent]]

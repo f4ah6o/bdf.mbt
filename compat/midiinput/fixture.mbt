@@ -612,3 +612,61 @@ pub fn score_systems(
       Json::object({ "error": Json::string(message) }).stringify()
   }
 }
+
+///|
+#export_name("score_headers")
+pub fn score_headers(
+  data : Bytes,
+  texts : FixedArray[String],
+  widths : FixedArray[Double],
+  width : Double,
+  indent : Double,
+) -> String {
+  try {
+    let score = @midi.notate_file(@midi.read_file(data))
+    let prepared = @music.prepare_score(score)
+    let map : Map[String, Double] = Map([])
+    for i in 0..<texts.length() {
+      map[texts[i]] = widths[i]
+    }
+    let columns = @music.build_columns(score, prepared, text => {
+      map.get(text).unwrap_or(0.0)
+    })
+    let systems = @music.break_systems(score, prepared, columns, width, indent)
+    let out : Array[Json] = []
+    for sys in systems {
+      let staves : Array[Json] = []
+      for i in 0..<prepared.staves.length() {
+        let drawing = @music.staff_header(score, prepared, sys, i)
+        for m in sys.first..<=sys.last {
+          @music.staff_measure_header(drawing, score, prepared, sys, i, m)
+        }
+        let p = drawing
+          .primitives()
+          .map(v => {
+            Json::array([
+              Json::number(v.kind.to_double()),
+              Json::string(v.glyph),
+              Json::number(v.x),
+              Json::number(v.y),
+              Json::number(v.w),
+              Json::number(v.h),
+              Json::number(v.scale),
+            ])
+          })
+        staves.push(
+          Json::object({
+            "primitives": Json::array(p),
+            "above": Json::number(drawing.skyline(-1.0e9, 1.0e9, 0.0, true)),
+            "below": Json::number(drawing.skyline(-1.0e9, 1.0e9, 4.0, false)),
+          }),
+        )
+      }
+      out.push(Json::array(staves))
+    }
+    Json::array(out).stringify()
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}

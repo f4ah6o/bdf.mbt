@@ -24,6 +24,8 @@ pub fn score(Bytes) -> String
 
 pub fn score_columns(Bytes, FixedArray[String], FixedArray[Double]) -> String
 
+pub fn score_headers(Bytes, FixedArray[String], FixedArray[Double], Double, Double) -> String
+
 pub fn score_systems(Bytes, FixedArray[String], FixedArray[Double], Double, Double) -> String
 
 pub fn track_meta(Bytes) -> String
