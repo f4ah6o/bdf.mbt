@@ -30,10 +30,16 @@ try {
   await page.waitForSelector('[data-bdf-page="0"] canvas[data-loaded="ready"]', { timeout: 30000 });
   assert.equal(await page.locator('#page-number').textContent(), '1 / 20');
   await page.waitForFunction(() => !document.querySelector('#open-file').disabled, null, { timeout: 30000 });
-  await page.locator('#open-file').focus();
-  const chooser = page.waitForEvent('filechooser');
-  await page.keyboard.press('Enter');
-  await chooser;
+  // Headless platforms do not consistently report native file chooser events.
+  // Check that keyboard activation invokes the input; uploads are exercised below.
+  await page.evaluate(() => {
+    const input = document.querySelector('#file');
+    window.originalFileClick = input.click;
+    input.click = () => { window.pickerTriggered = true; };
+  });
+  await page.locator('#open-file').press('Enter');
+  await page.waitForFunction(() => window.pickerTriggered === true, null, { timeout: 5000 });
+  await page.evaluate(() => { document.querySelector('#file').click = window.originalFileClick; });
   assert.equal(await page.locator('[data-bdf-page]').count(), 20);
   for (let i = 0; i < 20; i++) {
     await page.locator(`[data-bdf-page="${i}"]`).scrollIntoViewIfNeeded();
@@ -52,11 +58,9 @@ try {
   await page.locator('#zoom').selectOption('0.75');
   await page.locator('#layout').selectOption('spread');
   await page.locator('#layout').selectOption('single');
-  await page.locator('#next').focus();
-  await page.keyboard.press('Enter');
+  await page.locator('#next').press('Enter');
   await page.waitForFunction(() => document.querySelector('#page-number').textContent === '2 / 20', null, { timeout: 15000 });
-  await page.locator('#previous').focus();
-  await page.keyboard.press('Enter');
+  await page.locator('#previous').press('Enter');
   await page.waitForFunction(() => document.querySelector('#page-number').textContent === '1 / 20', null, { timeout: 15000 });
   const downloaded = page.waitForEvent('download');
   await page.locator('#download').click();
@@ -71,8 +75,7 @@ try {
   await page.locator('#file').setInputFiles({ name: 'unsupported.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7\n') });
   await page.waitForFunction(() => document.querySelector('#status').classList.contains('error'), null, { timeout: 15000 });
   assert.match(await page.locator('#status').textContent(), /unsupported\.pdf/);
-  await page.locator('#sample').focus();
-  await page.keyboard.press('Enter');
+  await page.locator('#sample').press('Enter');
   await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'upstream-demo.bdf' && !document.querySelector('#status').classList.contains('error'), null, { timeout: 30000 });
   assert.deepEqual(errors, []);
   await page.close();
