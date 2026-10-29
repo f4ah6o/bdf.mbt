@@ -115,6 +115,33 @@ pub(all) struct ScriptCount {
   count : Int32
 }
 
+pub(all) struct ScrollBand {
+  y : Double
+  height : Double
+  keep : Bool
+}
+
+pub struct ScrollLayout {
+  // private fields
+}
+pub fn ScrollLayout::add(Self, Double, keep? : Bool) -> Unit
+pub fn ScrollLayout::anchor(Self, String) -> Unit
+pub fn ScrollLayout::finish(Self) -> ScrollPlan
+pub fn ScrollLayout::new() -> Self
+pub fn ScrollLayout::space(Self, Double) -> Unit
+
+pub struct ScrollPlan {
+  strips : Array[ScrollStrip]
+  // private fields
+}
+pub fn ScrollPlan::anchor_page(Self, String) -> Int32?
+
+pub(all) struct ScrollStrip {
+  start : Double
+  height : Double
+  bands : Array[(Int32, Double)]
+}
+
 pub(all) struct SpecimenGlyph {
   name : String
   characters : Array[Int32]

@@ -28,6 +28,8 @@ pub fn sample_plan(Bytes, Int32, String) -> String
 
 pub fn sample_program(Bytes, Int32) -> Bytes
 
+pub fn scroll_plan(Array[Int32], Array[Double], Array[String]) -> String
+
 pub fn specimen_names(Bytes) -> String
 
 pub fn variations(Bytes, Bytes) -> String

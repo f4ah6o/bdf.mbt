@@ -326,3 +326,55 @@ pub fn features(data : Bytes, index : Int32) -> String {
   }
   abort("missing font face")
 }
+
+///|
+#export_name("scroll_plan")
+pub fn scroll_plan(
+  kinds : Array[Int32],
+  values : Array[Double],
+  names : Array[String],
+) -> String {
+  let layout = @font.ScrollLayout::new()
+  let anchors : Map[String, Bool] = Map([])
+  for i in 0..<kinds.length() {
+    match kinds[i] {
+      0 => layout.add(values[i])
+      1 => layout.add(values[i], keep=true)
+      2 => layout.space(values[i])
+      3 => {
+        layout.anchor(names[i])
+        anchors[names[i]] = true
+      }
+      _ => ()
+    }
+  }
+  let plan = layout.finish()
+  let pages : Array[Json] = []
+  let rows : Array[Json] = []
+  for i, page in plan.strips {
+    pages.push(Json::number(Float::from_double(page.height).to_double()))
+    for (index, y) in page.bands {
+      rows.push(
+        Json::object({
+          "index": Json::number(index.to_double()),
+          "page": Json::number((i + 1).to_double()),
+          "y": Json::number(y),
+        }),
+      )
+    }
+  }
+  let resolved : Map[String, Json] = Map([])
+  if rows.length() > 0 {
+    for name in anchors.keys() {
+      match plan.anchor_page(name) {
+        Some(page) => resolved[name] = Json::number(page.to_double())
+        None => ()
+      }
+    }
+  }
+  Json::object({
+    "pages": Json::array(pages),
+    "rows": Json::array(rows),
+    "anchors": Json::object(resolved),
+  }).stringify()
+}
