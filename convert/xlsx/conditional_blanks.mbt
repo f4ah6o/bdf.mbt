@@ -24,6 +24,8 @@ fn xlsx_materialize_conditional_blanks(
   for row in rows {
     by_row[row.index] = row
   }
+  let present_rows : Array[Int32] = [ for row in rows => row.index ]
+  present_rows.sort()
   let wanted : Map[Int32, Map[Int32, Bool]] = Map([])
   for range in ranges {
     let first_row = Int64::max(range.row_start, 0L)
@@ -33,7 +35,22 @@ fn xlsx_materialize_conditional_blanks(
     if first_row > last_row || first_col > last_col {
       continue
     }
-    for r in first_row.to_int()..<=last_row.to_int() {
+    let mut r = first_row.to_int()
+    let mut low = 0
+    let mut high = present_rows.length()
+    while low < high {
+      let middle = low + (high - low) / 2
+      if present_rows[middle] <= r {
+        low = middle + 1
+      } else {
+        high = middle
+      }
+    }
+    let mut next_row = low
+    while r <= last_row.to_int() {
+      while next_row < present_rows.length() && present_rows[next_row] <= r {
+        next_row += 1
+      }
       let columns = match wanted.get(r) {
         Some(columns) => columns
         None => {
@@ -44,6 +61,14 @@ fn xlsx_materialize_conditional_blanks(
       }
       for c in first_col..<=last_col {
         columns[c] = true
+      }
+      if range.row_end - range.row_start > 1000L && !by_row.contains(r) {
+        if next_row >= present_rows.length() {
+          break
+        }
+        r = present_rows[next_row]
+      } else {
+        r += 1
       }
     }
   }

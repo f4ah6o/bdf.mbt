@@ -450,7 +450,7 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// patterned row and column fills, complex borders and other features are
 /// rejected. Supported numeric conditional rules may apply a differential font,
 /// solid fill and border or be inactive. For blank-cell fills or borders,
-/// ranges are limited to 200,000 cells and 1,001 rows. Other conditional
+/// ranges are limited to 200,000 cells. Other conditional
 /// formats are rejected.
 /// Views with base fills are limited to 1,000,000 cells, and views
 /// with base borders to 200,000 cells. External links support simple ASCII

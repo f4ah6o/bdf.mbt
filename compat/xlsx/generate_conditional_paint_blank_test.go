@@ -182,7 +182,40 @@ func TestCodexConditionalPaintBlank(t *testing.T) {
 		if err := z.Close(); err != nil {
 			t.Fatal(err)
 		}
-		unsupported = append(unsupported, b.Bytes())
+		if ref == "A1:A1002" {
+			convert(b.Bytes())
+		} else {
+			unsupported = append(unsupported, b.Bytes())
+		}
+	}
+	for i := 0; i < 4; i++ {
+		var b bytes.Buffer
+		z := zip.NewWriter(&b)
+		add := func(n, s string) {
+			f, err := z.Create(n)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err = f.Write([]byte(s)); err != nil {
+				t.Fatal(err)
+			}
+		}
+		add("xl/workbook.xml", `<workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet" r:id="r1"/></sheets></workbook>`)
+		add("xl/_rels/workbook.xml.rels", `<Relationships><Relationship Id="r1" Type="x/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="r2" Type="x/styles" Target="styles.xml"/></Relationships>`)
+		dxf := `<fill><patternFill patternType="solid"><fgColor rgb="FF112233"/></patternFill></fill>`
+		if i%2 == 1 {
+			dxf = `<border><bottom style="thin"/></border>`
+		}
+		add("xl/styles.xml", `<styleSheet><dxfs><dxf>`+dxf+`</dxf></dxfs></styleSheet>`)
+		hidden := ""
+		if i >= 2 {
+			hidden = ` hidden="1"`
+		}
+		add("xl/worksheets/sheet1.xml", fmt.Sprintf(`<worksheet><sheetData><row r="1"><c r="A1"><v>1</v></c></row><row r="50"/><row r="51"%s/><row r="600"><c r="A600"><v>2</v></c></row><row r="1002"><c r="A1002"><v>1</v></c></row></sheetData><conditionalFormatting sqref="A1:B1002"><cfRule type="cellIs" operator="greaterThanOrEqual" dxfId="0"><formula>0</formula></cfRule></conditionalFormatting></worksheet>`, hidden))
+		if err := z.Close(); err != nil {
+			t.Fatal(err)
+		}
+		convert(b.Bytes())
 	}
 	for name, v := range map[string]any{"conditional-paint-blank.json": out, "conditional-paint-blank-unsupported.json": unsupported} {
 		data, e := json.Marshal(v)

@@ -58,10 +58,10 @@ const conditionalBlank = JSON.parse(await readFile(new URL('./conditional-blank.
 assert.equal(conditionalBlank.length, 161, 'conditional blank-cell fixture count');
 for (const [j, c] of conditionalBlank.entries()) await verifyCase(c, `conditional blank cell ${j}`);
 const conditionalPaintBlank = JSON.parse(await readFile(new URL('./conditional-paint-blank.json', import.meta.url)));
-assert.equal(conditionalPaintBlank.length, 161, 'conditional blank-cell paint fixture count');
+assert.equal(conditionalPaintBlank.length, 166, 'conditional blank-cell paint fixture count');
 for (const [j, c] of conditionalPaintBlank.entries()) await verifyCase(c, `conditional blank-cell paint ${j}`);
 const unsupportedConditionalPaintBlank = JSON.parse(await readFile(new URL('./conditional-paint-blank-unsupported.json', import.meta.url)));
-assert.equal(unsupportedConditionalPaintBlank.length, 10, 'unsupported conditional blank-cell paint fixture count');
+assert.equal(unsupportedConditionalPaintBlank.length, 9, 'unsupported conditional blank-cell paint fixture count');
 for (const encoded of unsupportedConditionalPaintBlank) {
   const input = Buffer.from(encoded, 'base64');
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional blank-cell paints must be rejected');

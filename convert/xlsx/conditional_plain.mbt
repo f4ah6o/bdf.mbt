@@ -222,13 +222,6 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
     if 4194304L - room > 200000L {
       xlsx_reject_conditional()
     }
-    // Upstream skips runs of absent rows in ranges taller than 1001 rows.
-    // Reject those ranges until that traversal is reproduced here.
-    for range in ranges {
-      if range.row_end - range.row_start > 1000L {
-        xlsx_reject_conditional()
-      }
-    }
     xlsx_materialize_conditional_blanks(
       rows,
       geometry,
