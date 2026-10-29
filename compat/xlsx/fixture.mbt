@@ -35,3 +35,14 @@ pub fn xlsx_reference(text : String, column : Int32) -> String {
     Json::string(@xlsx.xlsx_decode_string(text)),
   ]).stringify()
 }
+
+///|
+#export_name("xlsx_strings")
+pub fn xlsx_strings(data : Bytes) -> String {
+  try {
+    let workbook = @xlsx.read_xlsx_workbook(data)
+    Json::array(workbook.shared_strings().map(s => Json::string(s))).stringify()
+  } catch {
+    _ => "null"
+  }
+}

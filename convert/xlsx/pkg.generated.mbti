@@ -37,6 +37,7 @@ pub(all) struct XlsxWorkbook {
   sheets : Array[XlsxSheetRef]
   warnings : Array[String]
 }
+pub fn XlsxWorkbook::shared_strings(Self) -> Array[String]
 
 // Type aliases
 
