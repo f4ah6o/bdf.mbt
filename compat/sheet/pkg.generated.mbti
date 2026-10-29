@@ -14,6 +14,10 @@ pub fn line_break_fixture(Int32, Int32) -> Bool
 
 pub fn row_fixture(Int32) -> String
 
+pub fn styled_summary(String, Int32) -> String
+
+pub fn styled_tile(String, Int32, Int32) -> Bytes
+
 pub fn wrap_fixture(String, Double) -> String
 
 // Errors

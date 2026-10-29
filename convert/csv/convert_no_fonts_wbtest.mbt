@@ -55,3 +55,27 @@ test "CSV content detection excludes binary and plotter files" {
   assert_true(!detect(b"name,value\nAlice,\x001\n"))
   assert_true(detect(b"\xff\xfeA\x00,\x00B\x00\n\x001\x00,\x002\x00\n\x00"))
 }
+
+///|
+test "CSV table styles accept aliases and reject unknown names" {
+  let bytes = @utf8.encode("Name,Amount\nAlice,1\n")
+  let regular = convert_no_fonts(
+    bytes,
+    header=HeaderYes,
+    table_style="TableStyleMedium2",
+  )
+  let short_name = convert_no_fonts(
+    bytes,
+    header=HeaderYes,
+    table_style="medium2",
+  )
+  assert_eq(regular.bdf, short_name.bdf)
+  let error = Ok(convert_no_fonts(bytes, table_style="invalid")) catch {
+    e => Err(e)
+  }
+  match error {
+    Err(InvalidDialect(message)) =>
+      assert_eq(message, "csv: unknown table style \"invalid\"")
+    _ => fail("expected an unknown table style error")
+  }
+}

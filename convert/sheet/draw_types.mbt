@@ -50,6 +50,56 @@ priv struct DrawTile {
 }
 
 ///|
+priv struct GridDrawContext {
+  tiles : Array[DrawTile]
+  indexes : Map[String, Int32]
+  width : Double
+  height : Double
+}
+
+///|
+fn GridDrawContext::tile(
+  self : GridDrawContext,
+  x : Int32,
+  y : Int32,
+) -> DrawTile {
+  let key = "\{x},\{y}"
+  let index = match self.indexes.get(key) {
+    Some(index) => index
+    None => {
+      let index = self.tiles.length()
+      self.tiles.push(DrawTile::new(x, y))
+      self.indexes[key] = index
+      index
+    }
+  }
+  self.tiles[index]
+}
+
+///|
+fn GridDrawContext::in_bounds(
+  self : GridDrawContext,
+  x0 : Double,
+  y0 : Double,
+  x1 : Double,
+  y1 : Double,
+) -> Array[DrawTile] {
+  let x0 = Double::max(x0, 0.0)
+  let y0 = Double::max(y0, 0.0)
+  let x1 = Double::min(x1, self.width)
+  let y1 = Double::min(y1, self.height)
+  let result : Array[DrawTile] = []
+  if x0 < x1 && y0 < y1 {
+    for y in (y0 / 2048.0).to_int()..<(y1 / 2048.0).ceil().to_int() {
+      for x in (x0 / 2048.0).to_int()..<(x1 / 2048.0).ceil().to_int() {
+        result.push(self.tile(x, y))
+      }
+    }
+  }
+  result
+}
+
+///|
 fn DrawTile::new(x : Int32, y : Int32) -> DrawTile {
   let object = @core.ObjectBuilder::new()
   object.set_bbox(0.0F, 0.0F, 2048.0F, 2048.0F)

@@ -280,6 +280,82 @@ pub fn drawing_tile(which : Int32, tile : Int32) -> Bytes {
 }
 
 ///|
+fn styled_fixture(style : String, which : Int32) -> @sheet.DrawnGrid {
+  let rows : Array[Array[@sheet.Cell]] = match which {
+    0 =>
+      [
+        [cell("Name"), cell("Total"), cell("Note")],
+        [cell("Alice"), cell("12", number=true), cell("")],
+        [cell("Bob"), cell("3", number=true), cell("one\ntwo")],
+        [cell(""), cell(""), cell("")],
+      ]
+    1 =>
+      [
+        [cell("漢字"), cell("A")],
+        [cell("かな"), cell("1", number=true)],
+        [cell("B"), cell("2", number=true)],
+      ]
+    2 =>
+      [
+        [cell("Header"), cell("Value")],
+        [cell("Sub"), cell("")],
+        [cell("First"), cell("7", number=true)],
+        [cell("Second"), cell("8", number=true)],
+      ]
+    3 => {
+      let rows : Array[Array[@sheet.Cell]] = []
+      for r in 0..<140 {
+        let row : Array[@sheet.Cell] = []
+        for col in 0..<45 {
+          row.push(cell(if (r + col) % 7 == 0 { "" } else { "x" }))
+        }
+        rows.push(row)
+      }
+      rows
+    }
+    4 => {
+      let rows : Array[Array[@sheet.Cell]] = [[cell("only")]]
+      for _ in 1..<45 {
+        rows.push([])
+      }
+      rows
+    }
+    _ => [[cell("")]]
+  }
+  try! @sheet.draw_grid_no_fonts(
+    rows,
+    table_style=style,
+    header_rows=if which == 1 { 0 } else if which == 2 { 2 } else { 1 },
+    subheader=which == 2,
+    language=if which == 1 { "ja" } else { "" },
+  )
+}
+
+///|
+#export_name("styled_summary")
+pub fn styled_summary(style : String, which : Int32) -> String {
+  let grid = styled_fixture(style, which)
+  Json::object({
+    "geometry": Json::string(geometry_json(grid.geometry)),
+    "tiles": Json::array(
+      grid.tiles.map(tile => {
+        Json::object({
+          "x": Json::number(tile.x.to_double()),
+          "y": Json::number(tile.y.to_double()),
+          "drawn": Json::boolean(tile.drawn),
+        })
+      }),
+    ),
+  }).stringify()
+}
+
+///|
+#export_name("styled_tile")
+pub fn styled_tile(style : String, which : Int32, tile : Int32) -> Bytes {
+  styled_fixture(style, which).tiles[tile].object
+}
+
+///|
 #export_name("line_break_fixture")
 pub fn line_break_fixture(mode : Int32, code : Int32) -> Bool {
   let character = code.unsafe_to_char()

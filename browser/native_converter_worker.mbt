@@ -186,12 +186,6 @@ fn native_convert_csv(
       return
     }
   }
-  if options.table_style != "" {
-    native_converter_error(
-      request, "native CSV converter does not yet support table styles", "",
-    )
-    return
-  }
   let name = if file_name == "" { "" } else { @csv.sheet_name(file_name) }
   let result = @csv.convert_no_fonts(
     data,
@@ -201,6 +195,7 @@ fn native_convert_csv(
     quote=options.quote,
     header=options.header,
     data_mode=options.data_mode,
+    table_style=options.table_style,
   ) catch {
     @csv.InvalidDialect(message) => {
       native_converter_error(request, message, "")

@@ -7,9 +7,8 @@ pub(all) struct NoFontResult {
 }
 
 ///|
-/// Convert CSV to an unstyled BDF sheet using the upstream converter's
-/// no-font fallback. This explicit mode does not yet support discovering or
-/// embedding fonts or formatting as an Excel table.
+/// Convert CSV to a BDF sheet using the upstream converter's
+/// no-font fallback. This explicit mode does not yet discover or embed fonts.
 pub fn convert_no_fonts(
   data : Bytes,
   name~ : String = "",
@@ -20,8 +19,14 @@ pub fn convert_no_fonts(
   header~ : Header = HeaderAuto,
   data_mode~ : DataMode = DataDefault,
   no_text_index~ : Bool = false,
+  table_style~ : String = "",
 ) -> NoFontResult raise {
   let parsed = parse(data, charset~, delimiter~, quote~, header~)
+  if table_style != "" && !@sheet.is_builtin_table_style(table_style) {
+    raise InvalidDialect(
+      "csv: unknown table style " + csv_go_quote(table_style, '"'),
+    )
+  }
   let decoded = decode_text(data, charset~)
   let language = guess_language(decoded.text, decoded.charset)
   let grid = prepare_grid(parsed)
@@ -29,6 +34,7 @@ pub fn convert_no_fonts(
     sheet_cells(grid),
     header_rows=grid.header_rows,
     language~,
+    table_style~,
   )
   let meta : Map[String, Json] = {
     "source": Json::string("csv"),

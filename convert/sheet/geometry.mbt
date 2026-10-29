@@ -31,6 +31,7 @@ pub fn grid_geometry(
   header_rows~ : Int32 = 0,
   subheader~ : Bool = false,
   filter_buttons~ : Bool = false,
+  table_rows~ : Int32 = 0,
   mdw~ : Double = 7.0,
   advance~ : (Char, Bool) -> Double = fallback_advance,
   metrics~ : (Char, Bool) -> (Double, Double) = fallback_line_metrics,
@@ -79,6 +80,9 @@ pub fn grid_geometry(
       }
     }
     records += 1
+  }
+  if last_col >= 0 && table_rows > 0 {
+    last_row = Int32::max(last_row, Int32::min(table_rows, 1048576) - 1)
   }
   let frozen = if header_rows < 0 {
     0

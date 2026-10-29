@@ -73,6 +73,7 @@ fn conversion(
   header : Int32,
   mode : String,
   no_text_index : Bool,
+  table_style : String,
 ) -> @csv.NoFontResult {
   let header : @csv.Header = match header {
     1 => HeaderYes
@@ -94,6 +95,7 @@ fn conversion(
     header~,
     data_mode~,
     no_text_index~,
+    table_style~,
   )
 }
 
@@ -109,9 +111,10 @@ pub fn convert_fixture(
   header : Int32,
   mode : String,
   no_text_index : Bool,
+  table_style : String,
 ) -> Bytes {
   conversion(
-    data, name, title, charset, delimiter, quote, header, mode, no_text_index,
+    data, name, title, charset, delimiter, quote, header, mode, no_text_index, table_style,
   ).bdf
 }
 
@@ -127,9 +130,10 @@ pub fn convert_summary(
   header : Int32,
   mode : String,
   no_text_index : Bool,
+  table_style : String,
 ) -> String {
   let result = conversion(
-    data, name, title, charset, delimiter, quote, header, mode, no_text_index,
+    data, name, title, charset, delimiter, quote, header, mode, no_text_index, table_style,
   )
   Json::object({
     "charset": Json::string(result.parsed.charset),

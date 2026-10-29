@@ -15,12 +15,12 @@ import (
 )
 
 type input struct {
-	Data                 []byte
-	Name, Title, Charset string
-	Delimiter, Quote     rune
-	Header               csv.Header
-	Mode                 string
-	NoTextIndex          bool
+	Data                             []byte
+	Name, Title, Charset, TableStyle string
+	Delimiter, Quote                 rune
+	Header                           csv.Header
+	Mode                             string
+	NoTextIndex                      bool
 }
 
 func main() {
@@ -67,6 +67,18 @@ func main() {
 		}
 		inputs = append(inputs, input{Data: data.Bytes(), Name: "Sample", Header: csv.HeaderYes, Mode: mode})
 	}
+	for _, set := range []struct {
+		name  string
+		count int
+	}{{"Light", 21}, {"Medium", 28}, {"Dark", 11}} {
+		for i := 1; i <= set.count; i++ {
+			header := csv.HeaderYes
+			if i%2 == 0 {
+				header = csv.HeaderNo
+			}
+			inputs = append(inputs, input{Data: []byte("name,amount,note\nAlice,1,hello\nBob,2,\"one\ntwo\"\n"), Name: "Styled", Header: header, TableStyle: set.name + strconv.Itoa(i)})
+		}
+	}
 	for i := range inputs {
 		inputs[i].NoTextIndex = true
 	}
@@ -76,7 +88,7 @@ func main() {
 	}
 	result := []any{}
 	for _, in := range inputs {
-		opts := &csv.Options{Name: in.Name, Title: in.Title, Charset: in.Charset, Delimiter: in.Delimiter, Quote: in.Quote, Header: in.Header, Data: in.Mode, NoSystemFonts: true, NoTextIndex: in.NoTextIndex}
+		opts := &csv.Options{Name: in.Name, Title: in.Title, Charset: in.Charset, Delimiter: in.Delimiter, Quote: in.Quote, Header: in.Header, Data: in.Mode, TableStyle: in.TableStyle, NoSystemFonts: true, NoTextIndex: in.NoTextIndex}
 		converted, err := csv.Convert(bytes.NewReader(in.Data), int64(len(in.Data)), opts)
 		if err != nil {
 			panic(err)
@@ -85,7 +97,7 @@ func main() {
 		if err := converted.Doc.WriteSingle(&b); err != nil {
 			panic(err)
 		}
-		params := map[string]string{"charset": in.Charset, "data": in.Mode}
+		params := map[string]string{"charset": in.Charset, "data": in.Mode, "table": in.TableStyle}
 		if in.Delimiter != 0 {
 			params["delimiter"] = string(in.Delimiter)
 		}

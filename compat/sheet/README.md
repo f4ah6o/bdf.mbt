@@ -35,9 +35,19 @@ go run /path/to/bdf.mbt/compat/sheet/generate-grid.go > /path/to/bdf.mbt/compat/
 go run /path/to/bdf.mbt/compat/sheet/generate-heights.go > /path/to/bdf.mbt/compat/sheet/heights.json
 go run /path/to/bdf.mbt/compat/sheet/generate-geometry.go > /path/to/bdf.mbt/compat/sheet/geometry.json
 go run /path/to/bdf.mbt/compat/sheet/generate-draw.go > /path/to/bdf.mbt/compat/sheet/drawing.json
+cp /path/to/bdf.mbt/compat/sheet/generate-styles_test.go converter/xlsx/
+BDF_SHEET_STYLES=/path/to/bdf.mbt/compat/sheet/table-styles.json BDF_SHEET_STYLE_CELLS=/path/to/bdf.mbt/compat/sheet/style-cells.json go test ./converter/xlsx -run '^TestGenerateGridStyle' -count=1
+go run /path/to/bdf.mbt/compat/sheet/generate-styled.go /path/to/bdf.mbt/compat/sheet/table-styles.json > /path/to/bdf.mbt/compat/sheet/styled.json
+node /path/to/bdf.mbt/compat/sheet/generate-style-source.mjs
+node /path/to/bdf.mbt/compat/sheet/generate-style-test.mjs
 moon build --target js
 npm run test:sheet-compat
 ```
+
+The style fixtures cover all 60 built-in table styles, including header and
+stripe precedence, borders, filter buttons, empty rows and tile boundaries.
+The upstream style data is derived from the ECMA-376 SpreadsheetML
+`presetTableStyles.xml`; see its `tools/gen-tablestyles.py` for provenance.
 
 For line wrapping, copy `generate-wrap_test.go` into the upstream
 `converter/xlsx` directory and regenerate the 510-case fixture and the

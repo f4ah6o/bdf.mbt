@@ -8,7 +8,7 @@ import {
 }
 
 // Values
-pub fn convert_no_fonts(Bytes, name? : String, title? : String, charset? : String, delimiter? : Byte, quote? : Int32, header? : Header, data_mode? : DataMode, no_text_index? : Bool) -> NoFontResult raise
+pub fn convert_no_fonts(Bytes, name? : String, title? : String, charset? : String, delimiter? : Byte, quote? : Int32, header? : Header, data_mode? : DataMode, no_text_index? : Bool, table_style? : String) -> NoFontResult raise
 
 pub fn decode_text(Bytes, charset? : String) -> DecodedText raise
 

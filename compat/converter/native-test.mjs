@@ -89,7 +89,9 @@ export async function verifyNativeConverter(browser, base) {
           const csvOutcomes = [];
           const sorted = value => Array.isArray(value) ? value.map(sorted) : value && typeof value === 'object'
             ? Object.fromEntries(Object.keys(value).sort().map(key => [key, sorted(value[key])])) : value;
-          for (const sample of csvFixtures.filter(f => !f.input.NoTextIndex && f.input.Name && !f.input.Title).slice(0, 4)) {
+          const selectedCsv = csvFixtures.filter(f => !f.input.NoTextIndex && f.input.Name && !f.input.Title && !f.input.TableStyle).slice(0, 4);
+          for (const style of ['Light1', 'Medium2', 'Dark9']) selectedCsv.push(csvFixtures.find(f => !f.input.NoTextIndex && f.input.TableStyle === style));
+          for (const sample of selectedCsv) {
             const input = sample.input, params = {};
             if (input.Delimiter) params.delimiter = String.fromCharCode(input.Delimiter);
             if (input.Quote === -1) params.quote = 'none';
@@ -98,6 +100,7 @@ export async function verifyNativeConverter(browser, base) {
             if (input.Header === 2) params.header = 'false';
             if (input.Mode) params.data = input.Mode;
             if (input.Charset) params.charset = input.Charset;
+            if (input.TableStyle) params.table = input.TableStyle;
             const expected = await BdfDocument.open(new BufferSource(toBytes(sample.bdf)));
             for (const method of ['convert', 'open']) {
               const output = await client[method](toBytes(input.Data), { format: 'csv', name: input.Name + '.csv', params });
@@ -120,7 +123,7 @@ export async function verifyNativeConverter(browser, base) {
             [{ header: 'maybe' }, 'csv: parameter header: "maybe" is not true, false or auto'],
             [{ quote: 'bad' }, 'csv: parameter quote: "bad" is not double, single or none'],
             [{ data: 'bad' }, 'csv: parameter data: "bad" is not none, all or default'],
-            [{ table: 'Medium2' }, 'native CSV converter does not yet support table styles'],
+            [{ table: 'NoSuchStyle' }, 'csv: unknown table style "NoSuchStyle"'],
           ]) {
             let error;
             try { await client.convert(new TextEncoder().encode('a,b\n1,2'), { format: 'csv', params }); } catch (e) { error = e.message; }

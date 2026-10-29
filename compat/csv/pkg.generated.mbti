@@ -2,9 +2,9 @@
 package "f4ah6o/bdf/compat/csv"
 
 // Values
-pub fn convert_fixture(Bytes, String, String, String, Int32, Int32, Int32, String, Bool) -> Bytes
+pub fn convert_fixture(Bytes, String, String, String, Int32, Int32, Int32, String, Bool, String) -> Bytes
 
-pub fn convert_summary(Bytes, String, String, String, Int32, Int32, Int32, String, Bool) -> String
+pub fn convert_summary(Bytes, String, String, String, Int32, Int32, Int32, String, Bool, String) -> String
 
 pub fn decode_only(Bytes, String) -> String
 

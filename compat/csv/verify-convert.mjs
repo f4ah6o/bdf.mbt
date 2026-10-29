@@ -7,7 +7,7 @@ const cases = JSON.parse(await readFile(new URL('./conversion.json', import.meta
 for (const [index, sample] of cases.entries()) {
   const input = sample.input;
   const args = [Buffer.from(input.Data, 'base64'), input.Name, input.Title, input.Charset,
-    input.Delimiter, input.Quote, input.Header, input.Mode, input.NoTextIndex];
+    input.Delimiter, input.Quote, input.Header, input.Mode, input.NoTextIndex, input.TableStyle];
   const actual = await BdfDocument.open(new BufferSource(convert_fixture(...args)));
   const expected = await BdfDocument.open(new BufferSource(Buffer.from(sample.bdf, 'base64')));
   const summary = JSON.parse(convert_summary(...args));

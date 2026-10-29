@@ -7,7 +7,7 @@ import {
 }
 
 // Values
-pub fn draw_grid_no_fonts(Array[Array[Cell]], header_rows? : Int32, subheader? : Bool, language? : String) -> DrawnGrid raise
+pub fn draw_grid_no_fonts(Array[Array[Cell]], header_rows? : Int32, subheader? : Bool, language? : String, table_style? : String) -> DrawnGrid raise
 
 pub fn fallback_advance(Char, Bool) -> Double
 
@@ -17,7 +17,9 @@ pub fn fit_columns(Array[Array[Cell]], header_rows? : Int32, subheader? : Bool, 
 
 pub fn fit_rows(Array[Array[Cell]], Array[Float], header_rows? : Int32, subheader? : Bool, mdw? : Double, advance? : (Char, Bool) -> Double, metrics? : (Char, Bool) -> (Double, Double), default_line_height? : Double, style_line_height? : ((Bool) -> Double)?) -> Array[Float] raise
 
-pub fn grid_geometry(Array[Array[Cell]], header_rows? : Int32, subheader? : Bool, filter_buttons? : Bool, mdw? : Double, advance? : (Char, Bool) -> Double, metrics? : (Char, Bool) -> (Double, Double), default_line_height? : Double, style_line_height? : ((Bool) -> Double)?) -> GridGeometry raise
+pub fn grid_geometry(Array[Array[Cell]], header_rows? : Int32, subheader? : Bool, filter_buttons? : Bool, table_rows? : Int32, mdw? : Double, advance? : (Char, Bool) -> Double, metrics? : (Char, Bool) -> (Double, Double), default_line_height? : Double, style_line_height? : ((Bool) -> Double)?) -> GridGeometry raise
+
+pub fn is_builtin_table_style(String) -> Bool
 
 pub fn line_break_allowed(Char, Char) -> Bool
 

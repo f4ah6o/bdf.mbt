@@ -5,11 +5,12 @@ import { convert_fixture } from '/_build/js/debug/build/compat/csv/csv.js';
 try {
   const cases = await (await fetch('./conversion.json')).json();
   const bytes = value => Uint8Array.from(atob(value), character => character.charCodeAt(0));
-  for (const index of [1, 3, 4, 8]) {
-    const sample = cases[index], input = sample.input;
+  const selected = [cases[1], ...['Light1', 'Medium2', 'Dark9'].map(style => cases.find(sample => sample.input.TableStyle === style))];
+  for (const sample of selected) {
+    const input = sample.input;
     const actual = document.body.dataset.converter === 'moon'
       ? convert_fixture(bytes(input.Data), input.Name, input.Title, input.Charset,
-        input.Delimiter, input.Quote, input.Header, input.Mode, input.NoTextIndex)
+        input.Delimiter, input.Quote, input.Header, input.Mode, input.NoTextIndex, input.TableStyle)
       : bytes(sample.bdf);
     const doc = await BdfDocument.open(new BufferSource(actual));
     const canvas = document.createElement('canvas');
