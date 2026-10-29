@@ -1456,3 +1456,47 @@ pub fn render_pages_fonts(
     err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
   }
 }
+
+///|
+#export_name("score_cues")
+pub fn score_cues(
+  data : Bytes,
+  width : Double,
+  height : Double,
+  sp : Double,
+  title : String,
+  division : Int32,
+) -> String {
+  try {
+    let original = @midi.notate_file(@midi.read_file(data))
+    let score : @music.NotatedScore = {
+      title: "",
+      subtitle: "",
+      composer: "",
+      lyricist: "",
+      arranger: "",
+      copyright: "",
+      timeline: original.timeline,
+      parts: original.parts,
+      error: original.error,
+    }
+    let doc = @core.DocumentWriter::new()
+    let out = @music.render_midi_pages(score, @db.Database::new(), doc, {
+      page: { width, height, staff_space: sp, title, },
+      system_fonts: true,
+      no_subset: false,
+      ignore_restrictions: false,
+      no_woff2: true,
+      document_language: "",
+    })
+    let (cues, _) = @music.midi_score_cues(score, out.layout, division)
+    let bytes = @core.encode_cues(cues)
+    let result : Array[Json] = []
+    for byte in bytes {
+      result.push(Json::number(byte.to_int().to_double()))
+    }
+    Json::array(result).stringify()
+  } catch {
+    err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
+  }
+}

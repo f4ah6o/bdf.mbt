@@ -27,6 +27,8 @@ pub fn decode_text_index(Bytes) -> Array[IndexRun] raise
 
 pub fn decode_tile_index(Bytes) -> Array[Tile] raise
 
+pub fn encode_cues(Cues) -> Bytes
+
 pub fn encode_object_resources(ObjectResources) -> Bytes raise
 
 pub fn encode_path_collection(Array[Path]) -> Bytes raise

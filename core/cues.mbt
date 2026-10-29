@@ -97,3 +97,27 @@ pub fn decode_cues(data : Bytes) -> Cues raise {
   }
   { systems, cues, }
 }
+
+///|
+/// Encode a cue index, preserving the upstream unsigned tick delta behavior.
+pub fn encode_cues(cues : Cues) -> Bytes {
+  let out = @buffer.Buffer()
+  out.write_bytes(b"BCUE\x01\x00")
+  out.write_leb128(cues.systems.length().reinterpret_as_uint())
+  for system in cues.systems {
+    out.write_leb128(system.page)
+    out.write_float_le(Float::from_double(system.x))
+    out.write_float_le(Float::from_double(system.y))
+    out.write_float_le(Float::from_double(system.width))
+    out.write_float_le(Float::from_double(system.height))
+  }
+  out.write_leb128(cues.cues.length().reinterpret_as_uint())
+  let mut previous : UInt32 = 0U
+  for cue in cues.cues {
+    out.write_leb128(cue.tick - previous)
+    previous = cue.tick
+    out.write_leb128(cue.system)
+    out.write_float_le(Float::from_double(cue.x))
+  }
+  out.to_bytes()
+}
