@@ -10,7 +10,7 @@ pub(all) struct XlsxPlainResult {
 fn XlsxWorkbook::xlsx_check_plain_sheet(
   self : XlsxWorkbook,
   part : String,
-) -> Array[@sheet.GridLink] raise {
+) -> (Array[@sheet.GridLink], Bool) raise {
   let data = self.package.read(part) catch {
     @ooxml.InvalidOoxml(message) => raise InvalidXlsxInput(message)
   }
@@ -28,6 +28,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut run_count = 0
   let mut run_texts = 0
   let mut link_depth = -1
+  let mut has_conditional = false
   let links : Array[@sheet.GridLink] = []
   let relationships = self.package.relationships(part)
   while true {
@@ -39,7 +40,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           if ![
               "sheetData", "dimension", "sheetViews", "cols", "sheetFormatPr", "sheetPr",
               "pageMargins", "pageSetup", "printOptions", "headerFooter", "rowBreaks",
-              "colBreaks", "mergeCells", "hyperlinks",
+              "colBreaks", "mergeCells", "hyperlinks", "conditionalFormatting",
             ].contains(name) {
             raise InvalidXlsxInput(
               "xlsx: plain conversion does not support worksheet feature " +
@@ -51,6 +52,9 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           }
           if name == "hyperlinks" && event.kind is Start(_) {
             link_depth = depth + 1
+          }
+          if name == "conditionalFormatting" {
+            has_conditional = true
           }
         } else if depth == link_depth && name == "hyperlink" {
           xlsx_add_plain_links(links, relationships, element)
@@ -149,7 +153,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
       _ => ()
     }
   }
-  links
+  (links, has_conditional)
 }
 
 ///|
@@ -426,7 +430,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// shrink-to-fit, indentation and center-across-selection.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// patterned row and column fills, complex borders and other features are
-/// rejected. Views with base fills are limited to 1,000,000 cells, and views
+/// rejected. Conditional formats are accepted only when provably inactive.
+/// Views with base fills are limited to 1,000,000 cells, and views
 /// with base borders to 200,000 cells. External links support simple ASCII
 /// HTTP(S) and mailto URLs without percent escapes; other URL forms are rejected.
 pub fn convert_plain_no_fonts(
@@ -547,7 +552,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   doc_language : String,
   theme_colors : Map[Int32, XlsxRgb],
 ) -> (@sheet.DrawnGrid, XlsxSheetGeometry, Int32) raise {
-  let links = workbook.xlsx_check_plain_sheet(ref.part)
+  let (links, has_conditional) = workbook.xlsx_check_plain_sheet(ref.part)
   let parsed = workbook.read_sheet_cells(ref.part)
   let rows = parsed.sorted_rows()
   let geo = workbook.read_sheet_geometry(ref.part)
@@ -585,6 +590,14 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     }
   }
   let (row_count, col_count) = xlsx_initial_extent(parsed, geo, [])
+  if has_conditional {
+    workbook.xlsx_check_inactive_conditionals(
+      ref.part,
+      rows,
+      row_count,
+      col_count,
+    )
+  }
   let visible_cols = xlsx_column_runs(geo, col_count, 7.0)
   let all_cols = xlsx_column_runs(geo, 16384, 7.0)
   let widths : Array[Double] = []

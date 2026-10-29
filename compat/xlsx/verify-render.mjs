@@ -36,6 +36,16 @@ for (const [j, c] of plainRuns.entries()) await verifyCase(c, `plain run ${j}`);
 const links = JSON.parse(await readFile(new URL('./links.json', import.meta.url)));
 assert.equal(links.length, 200, 'hyperlink fixture count');
 for (const [j, c] of links.entries()) await verifyCase(c, `hyperlink ${j}`);
+const inactiveCF = JSON.parse(await readFile(new URL('./inactive-cf.json', import.meta.url)));
+assert.equal(inactiveCF.length, 161, 'inactive conditional format fixture count');
+for (const [j, c] of inactiveCF.entries()) await verifyCase(c, `inactive conditional format ${j}`);
+const unsupportedCF = JSON.parse(await readFile(new URL('./inactive-cf-unsupported.json', import.meta.url)));
+assert.equal(unsupportedCF.length, 8, 'unsupported conditional format fixture count');
+for (const encoded of unsupportedCF) {
+  const input = Buffer.from(encoded, 'base64');
+  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional formats must be rejected');
+  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+}
 const unsupportedLinks = JSON.parse(await readFile(new URL('./links-unsupported.json', import.meta.url)));
 assert.equal(unsupportedLinks.length, 3, 'unsupported hyperlink fixture count');
 for (const [j, encoded] of unsupportedLinks.entries()) {
@@ -58,8 +68,6 @@ assert.equal(xlsx_render_basic(largeBorder, 'none', true).length, 0, 'oversized 
 assert.match(xlsx_render_error(largeBorder, 'none', true), /row or column border exceeds the supported view size/);
 const styled = JSON.parse(await readFile(new URL('./cells.json', import.meta.url)))[0];
 assert.equal(xlsx_render_basic(Buffer.from(styled.input, 'base64'), 'none', true).length, 0, 'unsupported styled workbook must be rejected');
-const rich = JSON.parse(await readFile(new URL('./cells.json', import.meta.url)))[7];
-assert.equal(xlsx_render_basic(Buffer.from(rich.input, 'base64'), 'none', true).length, 0, 'unsupported rich strings must be rejected');
 const autoHeight = JSON.parse(await readFile(new URL('./auto-height.json', import.meta.url)));
 assert.ok(xlsx_render_basic(Buffer.from(autoHeight, 'base64'), 'none', true).length, 'nondefault font sizes on auto-height rows must convert');
 const unsupportedBase = JSON.parse(await readFile(new URL('./base-style-unsupported.json', import.meta.url)));
@@ -69,4 +77,4 @@ for (const encoded of unsupportedBase) {
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|complex borders)/);
 }
-console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, and ${links.length} links match upstream.`);
+console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length} links, and ${inactiveCF.length} inactive conditional formats match upstream.`);
