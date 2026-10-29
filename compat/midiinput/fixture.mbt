@@ -670,3 +670,186 @@ pub fn score_headers(
       Json::object({ "error": Json::string(message) }).stringify()
   }
 }
+
+///|
+#export_name("score_rests")
+pub fn score_rests(
+  data : Bytes,
+  texts : FixedArray[String],
+  widths : FixedArray[Double],
+  width : Double,
+  indent : Double,
+) -> String {
+  try {
+    let score = @midi.notate_file(@midi.read_file(data))
+    let prepared = @music.prepare_score(score)
+    let map : Map[String, Double] = Map([])
+    for i in 0..<texts.length() {
+      map[texts[i]] = widths[i]
+    }
+    let columns = @music.build_columns(score, prepared, text => {
+      map.get(text).unwrap_or(0.0)
+    })
+    let systems = @music.break_systems(score, prepared, columns, width, indent)
+    let out : Array[Json] = []
+    for sys in systems {
+      for staff in 0..<prepared.staves.length() {
+        for mi in sys.first..<=sys.last {
+          let col = sys.columns[mi - sys.first]
+          for event in prepared.measures[mi][staff].events {
+            if !event.rest {
+              continue
+            }
+            for slot in col.slots {
+              if slot.slot.offset != event.offset {
+                continue
+              }
+              let d = @music.MusicDrawing::new()
+              let l = @music.draw_staff_rest(
+                d,
+                score,
+                prepared,
+                sys,
+                staff,
+                mi,
+                event,
+                col.x + slot.x,
+              )
+              let prims = d
+                .primitives()
+                .map(p => {
+                  Json::array([
+                    Json::number(p.kind.to_double()),
+                    Json::string(p.glyph),
+                    Json::number(p.x),
+                    Json::number(p.y),
+                    Json::number(p.w),
+                    Json::number(p.h),
+                    Json::number(p.scale),
+                  ])
+                })
+              out.push(
+                Json::array([
+                  Json::number(mi.to_double()),
+                  Json::number(staff.to_double()),
+                  Json::number(event.offset.to_double()),
+                  Json::array([
+                    Json::number(l.x),
+                    Json::number(l.right),
+                    Json::number(l.top),
+                    Json::number(l.bottom),
+                  ]),
+                  Json::array(prims),
+                ]),
+              )
+              break
+            }
+          }
+        }
+      }
+    }
+    Json::array(out).stringify()
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}
+
+///|
+#export_name("score_notes")
+pub fn score_notes(
+  data : Bytes,
+  texts : FixedArray[String],
+  widths : FixedArray[Double],
+  width : Double,
+  indent : Double,
+) -> String {
+  try {
+    let score = @midi.notate_file(@midi.read_file(data))
+    let prepared = @music.prepare_score(score)
+    let map : Map[String, Double] = Map([])
+    for i in 0..<texts.length() {
+      map[texts[i]] = widths[i]
+    }
+    let columns = @music.build_columns(score, prepared, text => {
+      map.get(text).unwrap_or(0.0)
+    })
+    let systems = @music.break_systems(score, prepared, columns, width, indent)
+    let out : Array[Json] = []
+    for sys in systems {
+      for staff in 0..<prepared.staves.length() {
+        for mi in sys.first..<=sys.last {
+          let col = sys.columns[mi - sys.first]
+          let sm = prepared.measures[mi][staff]
+          for i, event in sm.events {
+            if event.rest {
+              continue
+            }
+            for slot in col.slots {
+              if slot.slot.offset != event.offset {
+                continue
+              }
+              let d = @music.MusicDrawing::new()
+              let l = @music.arrange_staff_note(
+                d,
+                sm,
+                event,
+                sm.accidentals[i],
+                col.x + slot.x,
+                1.0,
+              )
+              @music.draw_isolated_stem(d, l, 1.0)
+              let heads = l.heads.map(h => {
+                Json::array([
+                  Json::number(h.note.to_double()),
+                  Json::number(h.position.to_double()),
+                  Json::number(h.x),
+                  Json::string(h.glyph),
+                ])
+              })
+              let layout = Json::array([
+                Json::boolean(l.up),
+                Json::boolean(l.stem),
+                Json::number(l.stem_x),
+                Json::number(l.stem_y0),
+                Json::number(l.stem_y1),
+                Json::number(l.top),
+                Json::number(l.bottom),
+                Json::number(l.right),
+                Json::number(l.flags.to_double()),
+                Json::array(heads),
+              ])
+              let prims = d
+                .primitives()
+                .map(p => {
+                  Json::array([
+                    Json::number(p.kind.to_double()),
+                    Json::string(p.glyph),
+                    Json::number(p.x),
+                    Json::number(p.y),
+                    Json::number(p.w),
+                    Json::number(p.h),
+                    Json::number(p.scale),
+                  ])
+                })
+              out.push(
+                Json::array([
+                  Json::number(mi.to_double()),
+                  Json::number(staff.to_double()),
+                  Json::number(event.offset.to_double()),
+                  layout,
+                  Json::array(prims),
+                ]),
+              )
+              break
+            }
+          }
+        }
+      }
+    }
+    Json::array(out).stringify()
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}

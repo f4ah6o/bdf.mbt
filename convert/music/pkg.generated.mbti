@@ -2,6 +2,8 @@
 package "f4ah6o/bdf/convert/music"
 
 // Values
+pub fn arrange_staff_note(MusicDrawing, PreparedStaffMeasure, ScoreEvent, Array[Int32?], Double, Double, beam_direction? : Bool?, beamed? : Bool) -> NoteLayout
+
 pub fn assign_voices(Array[VoiceNote], Array[MeasureSpan], Array[BeatGrid], Bool) -> Array[Array[VoiceChord]]
 
 pub fn beat_grids(Array[MeasureSpan], Array[Int64]) -> Array[BeatGrid]
@@ -15,6 +17,10 @@ pub fn build_timeline(Int64, Array[TimeChange], Array[KeyChange], Array[TempoCha
 pub fn cancelled_accidentals(KeySig, KeySig) -> Int32
 
 pub fn divide_values(Int64, Int64, Int64, Int64, Bool, Bool) -> Array[NotationValue]
+
+pub fn draw_isolated_stem(MusicDrawing, NoteLayout, Double) -> Unit
+
+pub fn draw_staff_rest(MusicDrawing, NotatedScore, PreparedScore, MusicSystem, Int32, Int32, ScoreEvent, Double) -> RestLayout
 
 pub fn drum_of(Int32) -> DrumNotation
 
@@ -238,6 +244,26 @@ pub(all) struct NotationValue {
   dots : Int32
 }
 
+pub(all) struct NoteHeadLayout {
+  note : Int32
+  position : Int32
+  glyph : String
+  mut x : Double
+}
+
+pub(all) struct NoteLayout {
+  heads : Array[NoteHeadLayout]
+  up : Bool
+  stem : Bool
+  stem_x : Double
+  stem_y0 : Double
+  stem_y1 : Double
+  top : Double
+  bottom : Double
+  right : Double
+  flags : Int32
+}
+
 pub(all) struct Performance {
   title : String
   subtitle : String
@@ -312,6 +338,13 @@ pub(all) struct QuantizedNote {
   key : Int32
   velocity : Int32
   spelling : Int32
+}
+
+pub(all) struct RestLayout {
+  x : Double
+  right : Double
+  top : Double
+  bottom : Double
 }
 
 pub(all) struct ScoreEvent {
