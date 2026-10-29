@@ -86,6 +86,8 @@ pub fn reachable(Bytes, Int32, String) -> Array[Int32]
 
 pub fn record_ui_text(TexterFixture, String, Double, Bool) -> Unit
 
+pub fn render_character_view(Bytes, Int32, Bytes, Bool, Bool, String) -> GlyphViewFixture
+
 pub fn render_glyph_view(Bytes, Int32, Bytes, Bool, Bool, String) -> GlyphViewFixture
 
 pub fn sample_plan(Bytes, Int32, String) -> String

@@ -36,6 +36,8 @@ pub(all) struct BlockCoverage {
   mapped : Int32
 }
 
+type CharacterBand
+
 pub(all) struct FeatureGroup {
   table : String
   tag : String
@@ -54,6 +56,7 @@ pub struct FileFace {
   font : @sfnt.Font
   size : Int64
 }
+pub fn FileFace::character_view(Self, SpecimenTexter) -> SpecimenCharacterView
 pub fn FileFace::coverage(Self) -> Array[BlockCoverage]
 pub fn FileFace::feature_groups(Self) -> Array[FeatureGroup]
 pub fn FileFace::glyph_definitions(Self) -> @otlayout.Gdef?
@@ -164,6 +167,11 @@ pub(all) struct ScrollStrip {
   height : Double
   bands : Array[(Int32, Double)]
 }
+
+pub struct SpecimenCharacterView {
+  // private fields
+}
+pub fn SpecimenCharacterView::render(Self, SpecimenFacePrograms, SpecimenUIFonts) -> Array[SpecimenRenderedPage] raise
 
 pub(all) struct SpecimenDocumentPlan {
   metadata : SpecimenMetadata
