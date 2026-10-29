@@ -85,6 +85,7 @@ func TestCodexSamplePlans(t *testing.T) {
 	add("fold-hans", makeFont(chars(latin)+chars(simp), "zh-Hanſ"))
 	add("fallback", makeFont("\u0301 ☃♥⚽AB١⭐♜", ""))
 	add("empty", makeFont("", ""))
+	add("unicode-17-fallback", makeFont("\U0001e6c0\U000323b0", ""))
 	add("fallback-48", makeFont("!#$%&()*+,-./0123456789:;<=>?@[\\]^_`{|}~☃♥♣♦⚽♜♞♟♠♬☂☄★♆♇☯☮✈✉✎✏✒✓✔✕✖✗✘✙✚✛✜✝✞", ""))
 	encoded, err := json.Marshal(results)
 	if err != nil {

@@ -139,11 +139,7 @@ pub fn FileFace::sample_plan(self : FileFace, text : String) -> SamplePlan {
     let chars : Array[Char] = []
     for code in self.font.characters() {
       guard code.to_char() is Some(c) else { continue }
-      let category = @ucd.general_category(c)
-      if category.group() != @ucd.C &&
-        category.group() != @ucd.Z &&
-        category != @ucd.Mn &&
-        !c.is_whitespace() {
+      if specimen_graphic(code) {
         chars.push(c)
       }
       if chars.length() == 48 {

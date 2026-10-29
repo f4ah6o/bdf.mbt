@@ -103,3 +103,27 @@ pub fn glyph_names(data : Bytes, index : Int32) -> String {
   }
   abort("missing font face")
 }
+
+///|
+#export_name("coverage")
+pub fn coverage(data : Bytes, index : Int32) -> String {
+  let file = try! @font.load(data)
+  for face in file.faces() {
+    if face.index == index {
+      return Json::array(
+        face
+        .coverage()
+        .map(entry => {
+          Json::object({
+            "first": Json::number(entry.block.first.to_double()),
+            "last": Json::number(entry.block.last.to_double()),
+            "name": Json::string(entry.block.name),
+            "assigned": Json::number(entry.block.assigned.to_double()),
+            "mapped": Json::number(entry.mapped.to_double()),
+          })
+        }),
+      ).stringify()
+    }
+  }
+  abort("missing font face")
+}

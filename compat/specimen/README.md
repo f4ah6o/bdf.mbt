@@ -9,9 +9,11 @@ compared with upstream; representative glyph programs are also rendered and
 compared with vlmkit. `plan.json.gz` additionally compares sample language,
 waterfall and fallback selection across real and synthetic fonts.
 `glyphnames.json.gz` covers post, CFF and CID glyph names and malformed data.
+`coverage.json.gz` checks Unicode 17 block coverage and assigned counts.
 
 After `moon build --target js`, run `npm run test:specimen` and
-`npm run test:specimen-plan`, `npm run test:specimen-names`, and
+`npm run test:specimen-plan`, `npm run test:specimen-names`,
+`npm run test:specimen-coverage`, and
 `npm run test:specimen-visual`. To regenerate, copy `generate_test.go` without
 its first `//go:build ignore` line into the upstream checkout at
 `converter/font/codex_specimen_test.go`, then run:
@@ -30,3 +32,9 @@ build tag into the upstream `converter/font` package and run
 To regenerate glyph-name cases, copy `generate-glyphnames_test.go` without its
 build tag into the upstream `converter/font` package, then run
 `go test ./converter/font -run '^TestCodexGlyphNames$'` with the same fixture root.
+
+To regenerate Unicode data and coverage cases, copy `generate-unicode_test.go`
+and `generate-coverage_test.go` without their build tags into upstream
+`converter/font`, along with `generate_test.go`, and run the tests
+`TestCodexUnicodeTables` and `TestCodexCoverage` with the same fixture root.
+Use Go with Unicode 17.0.0; the generator checks the version.

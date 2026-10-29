@@ -16,11 +16,17 @@ pub suberror FontInputError {
 }
 
 // Types and methods
+pub(all) struct BlockCoverage {
+  block : UnicodeBlock
+  mapped : Int32
+}
+
 pub struct FileFace {
   index : Int32
   font : @sfnt.Font
   size : Int64
 }
+pub fn FileFace::coverage(Self) -> Array[BlockCoverage]
 pub fn FileFace::sample_plan(Self, String) -> SamplePlan
 pub fn FileFace::sample_program(Self, String) -> Bytes? raise
 pub fn FileFace::sample_pruned(Self, Array[Int32]) -> Bytes? raise
@@ -56,6 +62,13 @@ pub(all) struct SampleScript {
   specimen : String
   charset : Array[String]
   rtl : Bool
+}
+
+pub(all) struct UnicodeBlock {
+  first : Int32
+  last : Int32
+  name : String
+  assigned : Int32
 }
 
 // Type aliases
