@@ -5,7 +5,7 @@ and chart sheet references, visibility, ordering and unsupported-sheet warnings
 against upstream. `verify-reference.mjs` checks cell references, column names
 and Excel string escapes; `verify-strings.mjs` covers shared strings; `verify-cells.mjs` checks worksheet
 rows and cells; `verify-date.mjs` checks ISO date serials;
-`verify-geometry.mjs` and `verify-range.mjs` check worksheet layout; `verify-styles.mjs` checks fonts and cell formats; `verify-general.mjs` checks General number formatting; `verify-builtin.mjs` and `verify-sections.mjs` check built-in formats and section splitting; `verify-formats.mjs` checks format tokens, conditions, colors and section selection. The General fixture excludes inputs on which the upstream formatter recurses indefinitely. The cases include seven real workbooks and generated packages.
+`verify-geometry.mjs` and `verify-range.mjs` check worksheet layout; `verify-styles.mjs` checks fonts and cell formats; `verify-general.mjs` checks General number formatting; `verify-builtin.mjs` and `verify-sections.mjs` check built-in formats and section splitting; `verify-formats.mjs` checks format tokens, conditions, colors, section selection and numeric layout. The General fixture excludes inputs on which the upstream formatter recurses indefinitely. The cases include seven real workbooks and generated packages.
 
 After building the JavaScript target, run `node compat/xlsx/verify-workbook.mjs` `node compat/xlsx/verify-reference.mjs`, `node compat/xlsx/verify-strings.mjs`,
 `node compat/xlsx/verify-cells.mjs`, `node compat/xlsx/verify-date.mjs`,

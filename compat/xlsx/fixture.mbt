@@ -282,3 +282,32 @@ pub fn xlsx_select_format(code : String, value : Double) -> String {
   let (index, unsigned) = @xlsx.xlsx_select_format_section(sections, value)
   Json::array([Json::number(index.to_double()), Json::boolean(unsigned)]).stringify()
 }
+
+///|
+#export_name("xlsx_format_layouts")
+pub fn xlsx_format_layouts(code : String) -> String {
+  let sections = @xlsx.xlsx_parse_number_format(
+    code,
+    @xlsx.xlsx_default_palette(),
+  )
+  Json::array(
+    sections.map(fn(section) {
+      let layout = @xlsx.xlsx_analyze_number_format(section)
+      Json::array([
+        Json::string(layout.integer),
+        Json::string(layout.fraction_digits),
+        Json::boolean(layout.point),
+        Json::boolean(layout.thousands),
+        Json::number(layout.scale.to_double()),
+        Json::number(layout.percent.to_double()),
+        Json::string(layout.exponent),
+        Json::string(layout.exponent_digits),
+        Json::string(layout.numerator),
+        Json::string(layout.denominator),
+        Json::number(layout.fixed_denominator.to_double()),
+        Json::boolean(layout.fraction),
+        Json::boolean(layout.general),
+      ])
+    }),
+  ).stringify()
+}

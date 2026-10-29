@@ -10,6 +10,8 @@ pub fn detect_xlsx(Bytes, Bytes) -> Bool
 
 pub fn read_xlsx_workbook(Bytes) -> XlsxWorkbook raise XlsxInputError
 
+pub fn xlsx_analyze_number_format(XlsxFormatSection) -> XlsxNumberLayout
+
 pub fn xlsx_builtin_format(Int32, String) -> String
 
 pub fn xlsx_col_name(Int32) -> String
@@ -106,6 +108,22 @@ pub(all) struct XlsxFormatSection {
 pub(all) struct XlsxFormatToken {
   kind : Int32
   text : String
+}
+
+pub(all) struct XlsxNumberLayout {
+  mut integer : String
+  mut fraction_digits : String
+  mut point : Bool
+  mut thousands : Bool
+  mut scale : Int32
+  mut percent : Int32
+  mut exponent : String
+  mut exponent_digits : String
+  mut numerator : String
+  mut denominator : String
+  mut fixed_denominator : Int64
+  mut fraction : Bool
+  mut general : Bool
 }
 
 pub(all) struct XlsxRange {
