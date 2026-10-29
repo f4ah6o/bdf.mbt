@@ -3,6 +3,7 @@ package "f4ah6o/bdf/compat/specimen"
 
 import {
   "f4ah6o/bdf/convert/font",
+  "f4ah6o/bdf/core",
 }
 
 // Values
@@ -24,7 +25,13 @@ pub fn kerning_description(Bytes, Int32) -> String
 
 pub fn overview(Bytes, Int32, Bool) -> String
 
+pub fn paint_glyphs(PainterFixture, Array[Int32], Array[Double], Double, Double, Double, String) -> Unit
+
+pub fn painter_object(PainterFixture) -> Bytes
+
 pub fn prepare_outlines(Bytes, Int32) -> @font.SpecimenOutlines
+
+pub fn prepare_painter(Bytes, Int32) -> PainterFixture
 
 pub fn pruned_program(Bytes, Int32, Array[Int32]) -> Bytes
 
@@ -45,6 +52,10 @@ pub fn variations(Bytes, Bytes) -> String
 // Errors
 
 // Types and methods
+pub struct PainterFixture {
+  object : @core.ObjectBuilder
+  painter : @font.OutlinePainter
+}
 
 // Type aliases
 

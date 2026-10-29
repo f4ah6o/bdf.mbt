@@ -57,6 +57,7 @@ pub fn FileFace::coverage(Self) -> Array[BlockCoverage]
 pub fn FileFace::feature_groups(Self) -> Array[FeatureGroup]
 pub fn FileFace::glyph_definitions(Self) -> @otlayout.Gdef?
 pub fn FileFace::kerning(Self) -> String
+pub fn FileFace::outline_painter(Self, @core.ObjectBuilder) -> OutlinePainter
 pub fn FileFace::outlines(Self) -> SpecimenOutlines
 pub fn FileFace::sample_plan(Self, String) -> SamplePlan
 pub fn FileFace::sample_program(Self, String) -> Bytes? raise
@@ -79,6 +80,12 @@ pub struct FontFile {
 pub fn FontFile::faces(Self) -> Array[FileFace]
 pub fn FontFile::overview(Self, FileFace, outlines? : Bool) -> Array[OverviewSection]
 pub fn FontFile::select(Self, String) -> (Array[FileFace], Array[String]) raise
+
+pub struct OutlinePainter {
+  // private fields
+}
+pub fn OutlinePainter::draw(Self, Array[Int32], Array[Double], Double, Double, Double, String) -> Bool raise
+pub fn OutlinePainter::reset_fill(Self) -> Unit
 
 pub(all) struct OverviewRow {
   label : String

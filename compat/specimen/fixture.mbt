@@ -399,3 +399,43 @@ pub fn specimen_path(outlines : @font.SpecimenOutlines, glyph : Int32) -> Bytes 
     Some(path) => try! @core.encode_path_collection([path])
   }
 }
+
+///|
+pub struct PainterFixture {
+  object : @core.ObjectBuilder
+  painter : @font.OutlinePainter
+}
+
+///|
+#export_name("prepare_painter")
+pub fn prepare_painter(data : Bytes, index : Int32) -> PainterFixture {
+  let file = try! @font.load(data)
+  for face in file.faces() {
+    if face.index == index {
+      let object = @core.ObjectBuilder::new()
+      object.set_bbox(0.0F, 0.0F, 720.0F, 1024.0F)
+      return { object, painter: face.outline_painter(object), }
+    }
+  }
+  abort("missing font face")
+}
+
+///|
+#export_name("paint_glyphs")
+pub fn paint_glyphs(
+  f : PainterFixture,
+  glyphs : Array[Int32],
+  offsets : Array[Double],
+  x : Double,
+  y : Double,
+  size : Double,
+  alt : String,
+) -> Unit {
+  ignore(try! f.painter.draw(glyphs, offsets, x, y, size, alt))
+}
+
+///|
+#export_name("painter_object")
+pub fn painter_object(f : PainterFixture) -> Bytes {
+  try! f.object.encode()
+}
