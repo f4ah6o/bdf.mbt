@@ -23,7 +23,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 1450; i++ {
+	for i := 0; i < 1600; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -60,8 +60,19 @@ func TestCodexXLSXRender(t *testing.T) {
 		if i >= 300 {
 			rels += `<Relationship Id="rShared" Type="x/sharedStrings" Target="sharedStrings.xml"/>`
 		}
+		if i >= 1450 {
+			rels += `<Relationship Id="rStyles" Type="x/styles" Target="styles.xml"/>`
+		}
 		rels += `</Relationships>`
 		add("xl/_rels/workbook.xml.rels", rels)
+		if i >= 1450 {
+			st := `<styleSheet><cellXfs><xf numFmtId="0"/>`
+			for _, id := range []int{1, 2, 3, 4, 9, 10, 11, 14, 20, 22, 46, 49} {
+				st += fmt.Sprintf(`<xf numFmtId="%d"/>`, id)
+			}
+			st += `</cellXfs></styleSheet>`
+			add("xl/styles.xml", st)
+		}
 		shared := []string{"Alpha", "日本語", "First_x000A_Second", "long shared string that extends across cells", "🙂 emoji"}
 		if i >= 300 {
 			ss := `<sst>`
@@ -134,7 +145,11 @@ func TestCodexXLSXRender(t *testing.T) {
 				} else {
 					if i >= 1200 {
 						v := []string{"123456789", "-123456789", "0.123456789012345", "0.000000000012345", "123456789012345", "-0.987654321", "0"}[r.Intn(7)]
-						sheet += fmt.Sprintf(`<c r="%s%d"><v>%s</v></c>`, col, y+1, v)
+						if i >= 1450 {
+							sheet += fmt.Sprintf(`<c r="%s%d" s="%d"><v>%s</v></c>`, col, y+1, 1+r.Intn(12), v)
+						} else {
+							sheet += fmt.Sprintf(`<c r="%s%d"><v>%s</v></c>`, col, y+1, v)
+						}
 					} else {
 						v := r.Intn(10000)
 						if i >= 1050 && r.Intn(3) == 0 {

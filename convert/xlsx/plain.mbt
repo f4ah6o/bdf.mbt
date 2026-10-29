@@ -55,7 +55,8 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
             kind != "s" &&
             kind != "inlineStr" &&
             kind != "b" &&
-            kind != "e" {
+            kind != "e" &&
+            kind != "d" {
             raise InvalidXlsxInput(
               "xlsx: plain conversion supports only numeric, plain string, boolean and error cells",
             )
@@ -159,8 +160,13 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
 }
 
 ///|
-fn xlsx_check_plain_style(styles : XlsxStyles, locale : String) -> Unit raise {
-  let format = styles.cell_formats[0]
+fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
+  let index = if style < 0 || style >= styles.cell_formats.length() {
+    0
+  } else {
+    style
+  }
+  let format = styles.cell_formats[index]
   let a = format.alignment
   let font = styles.fonts[0]
   let nondefault_fill = format.fill >= 0 &&
@@ -194,8 +200,6 @@ fn xlsx_check_plain_style(styles : XlsxStyles, locale : String) -> Unit raise {
     font.color.kind != 0 ||
     (font.scheme != "" && font.scheme != "minor") ||
     font.vertical != "" ||
-    format.number_format != 0 ||
-    styles.number_format(0, locale) != "General" ||
     a.horizontal != "general" ||
     a.vertical != "bottom" ||
     a.wrap ||
@@ -236,7 +240,7 @@ pub fn convert_plain_no_fonts(
     )
   }
   let styles = workbook.styles()
-  xlsx_check_plain_style(styles, locale.number_locale)
+  xlsx_check_plain_style(styles, 0)
   workbook.xlsx_check_plain_strings()
   let dc : Map[String, Json] = Map([])
   for
@@ -377,6 +381,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     frozen_rows: Int32::min(geo.frozen_rows, row_count),
   }
   let cells : Array[@sheet.SizedGridRow] = []
+  let checked_styles : Map[Int32, Bool] = Map([])
   for row in rows {
     if row.style >= 0 {
       raise InvalidXlsxInput(
@@ -385,20 +390,33 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     }
     let entries : Array[@sheet.SizedGridCell] = []
     for cell in row.cells {
-      if cell.style != 0 ||
-        (
-          cell.kind != 0 &&
-          cell.kind != 1 &&
-          cell.kind != 2 &&
-          cell.kind != 3 &&
-          cell.kind != 4
-        ) {
+      if cell.kind != 0 &&
+        cell.kind != 1 &&
+        cell.kind != 2 &&
+        cell.kind != 3 &&
+        cell.kind != 4 {
         raise InvalidXlsxInput(
           "xlsx: plain conversion does not support this cell",
         )
       }
+      if !checked_styles.contains(cell.style) {
+        xlsx_check_plain_style(styles, cell.style)
+        checked_styles[cell.style] = true
+      }
       if styles.format_cell(cell, workbook.date1904, locale.number_locale)
         is Some(formatted) {
+        if formatted.color is Some(_) {
+          raise InvalidXlsxInput(
+            "xlsx: plain conversion does not support format colors",
+          )
+        }
+        for piece in formatted.pieces {
+          if piece.kind != 0 {
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion does not support format gaps or fills",
+            )
+          }
+        }
         let mut text = formatted.text()
         if cell.kind == 1 || cell.kind == 3 || cell.kind == 4 {
           let mut width = 0.0
@@ -414,10 +432,14 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
                 "xlsx: plain conversion does not support narrow boolean or error cells",
               )
             }
-            text = xlsx_fit_plain_number(
-              cell.number,
-              Double::max(widths[cell.column] - 3.75, 0.0),
-            )
+            let available = Double::max(widths[cell.column] - 3.75, 0.0)
+            text = if formatted.general {
+              xlsx_fit_plain_number(cell.number, available)
+            } else {
+              "#".repeat(
+                (available / @sheet.fallback_advance('#', false)).to_int(),
+              )
+            }
             if text == "" {
               raise InvalidXlsxInput(
                 "xlsx: plain conversion does not support cells narrower than a digit",
