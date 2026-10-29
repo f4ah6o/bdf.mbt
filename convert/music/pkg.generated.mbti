@@ -36,6 +36,8 @@ pub fn key_of(Int32, Bool, Int32) -> KeySig
 
 pub fn key_positions(EngravingClef, KeySig) -> Array[Int32]
 
+pub fn layout_basic_staff(NotatedScore, PreparedScore, MusicSystem, Int32) -> BasicStaffLayout
+
 pub fn music_curve(Double, Double, Double, Double, Double, Double, Double) -> MusicOutline
 
 pub fn music_glyph(String) -> MusicGlyph?
@@ -71,6 +73,11 @@ pub fn write_staff_events(Array[VoiceNote], Array[MeasureSpan], Array[BeatGrid],
 // Errors
 
 // Types and methods
+pub(all) struct BasicStaffLayout {
+  drawing : MusicDrawing
+  events : Array[StaffPlacedEvent]
+}
+
 pub(all) struct BeatGrid {
   start : Int64
   length : Int64
@@ -391,6 +398,16 @@ pub struct SkylineSegment {
   x0 : Double
   x1 : Double
   y : Double
+}
+
+pub(all) struct StaffPlacedEvent {
+  measure : Int32
+  staff_event : Int32
+  event : ScoreEvent
+  x : Double
+  mut note_layout : NoteLayout?
+  rest_layout : RestLayout?
+  mut beam : Int32?
 }
 
 pub(all) struct StaffPlan {

@@ -22,6 +22,8 @@ pub fn scan_track(Bytes, Int32) -> String
 
 pub fn score(Bytes) -> String
 
+pub fn score_basic_staff(Bytes, FixedArray[String], FixedArray[Double], Double, Double) -> String
+
 pub fn score_beams(Bytes, FixedArray[String], FixedArray[Double], Double, Double) -> String
 
 pub fn score_columns(Bytes, FixedArray[String], FixedArray[Double]) -> String
