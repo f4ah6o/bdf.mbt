@@ -1,6 +1,6 @@
 ///|
-// A single numeric rule can apply a supported differential font. Other
-// matching rules are rejected until their styles and priority can be drawn.
+// One supported rule can apply a differential font, fill, or border.
+// Multiple matching rules are rejected until priority can be drawn.
 fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   self : XlsxWorkbook,
   part : String,
@@ -36,6 +36,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   let mut dxf_id = -1
   let mut operator = ""
   let mut rule_type = ""
+  let mut rule_text = ""
   let mut blank_matches = false
   let mut any_blank_matches = false
   let matched : Map[Int32, Map[Int32, Bool]] = Map([])
@@ -81,7 +82,8 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
           if rule_count != 1 ||
             ![
               "cellIs", "containsBlanks", "notContainsBlanks", "containsErrors",
-              "notContainsErrors",
+              "notContainsErrors", "containsText", "notContainsText", "beginsWith",
+              "endsWith",
             ].contains(rule_type) ||
             (
               rule_type == "cellIs" &&
@@ -92,6 +94,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             ) {
             xlsx_reject_conditional()
           }
+          rule_text = xlsx_go_lower(xlsx_attr(element, "text", ""))
           rule_depth = depth + 1
           dxf_id = xlsx_attr_int(element, "dxfId", -1)
           operator = xlsx_attr(element, "operator", "equal")
@@ -218,7 +221,9 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
               0.0, threshold, threshold_end, operator,
             )
           } else {
-            rule_type == "containsBlanks" || rule_type == "notContainsErrors"
+            rule_type == "containsBlanks" ||
+            rule_type == "notContainsErrors" ||
+            xlsx_conditional_text_matches(rule_type, "", rule_text)
           }
           any_blank_matches = blank_matches || any_blank_matches
           rule_depth = -1
@@ -272,6 +277,23 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
                     "notContainsBlanks" => !blank
                     "containsErrors" => cell.kind == 4
                     "notContainsErrors" => cell.kind != 4
+                    "containsText"
+                    | "notContainsText"
+                    | "beginsWith"
+                    | "endsWith" => {
+                      let value = if cell.kind == 1 {
+                        xlsx_format_general(cell.number, 15)
+                      } else if cell.kind == 3 {
+                        if cell.number != 0.0 {
+                          "TRUE"
+                        } else {
+                          "FALSE"
+                        }
+                      } else {
+                        cell.text
+                      }
+                      xlsx_conditional_text_matches(rule_type, value, rule_text)
+                    }
                     _ => false
                   }
                 } else if cell.kind == 1 {

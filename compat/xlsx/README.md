@@ -61,6 +61,9 @@ Negated blank and boolean references use `generate_conditional_negative_blank_te
 and `TestCodexConditionalNegativeBlank`.
 Blank and error predicates use `generate_conditional_predicates_test.go`
 and `TestCodexConditionalPredicates`.
+Text predicates use `generate_conditional_text_test.go` and
+`TestCodexConditionalText`. Go Unicode lowercase mappings are regenerated
+with `generate_lowercase_test.go` and `TestCodexXLSXLowercaseTable`.
 Conditional font cases matching blank cells use `generate_conditional_blank_test.go`
 and `TestCodexConditionalBlank`.
 Blank-cell paint cases use `generate_conditional_paint_blank_test.go` and
