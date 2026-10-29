@@ -122,11 +122,21 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
               (data[0] >= b'A' && data[0] <= b'Z') ||
               (data[0] >= b'a' && data[0] <= b'z')
             )
-          let single = ranges.length() == 1 &&
-            ranges[0].row_start == ranges[0].row_end &&
-            ranges[0].column_start == ranges[0].column_end
+          let mut fixed_row = true
+          let mut fixed_column = true
+          for range in ranges {
+            fixed_row = fixed_row &&
+              range.row_start == ranges[0].row_start &&
+              range.row_end == ranges[0].row_start
+            fixed_column = fixed_column &&
+              range.column_start == ranges[0].column_start &&
+              range.column_end == ranges[0].column_start
+          }
           let value = if reference {
-            match xlsx_conditional_reference_value(text, rows, single) {
+            match
+              xlsx_conditional_reference_value(
+                text, rows, fixed_row, fixed_column,
+              ) {
               Some(value) => value
               None => {
                 xlsx_reject_conditional()
@@ -280,7 +290,8 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
 fn xlsx_conditional_reference_value(
   text : String,
   rows : Array[XlsxRow],
-  allow_relative : Bool,
+  fixed_row : Bool,
+  fixed_column : Bool,
 ) -> Double? {
   let data = @utf8.encode(text)
   if data.length() < 2 {
@@ -303,7 +314,7 @@ fn xlsx_conditional_reference_value(
   if row_absolute {
     i += 1
   }
-  if !allow_relative && (!col_absolute || !row_absolute) {
+  if (!col_absolute && !fixed_column) || (!row_absolute && !fixed_row) {
     return None
   }
   let start = i
