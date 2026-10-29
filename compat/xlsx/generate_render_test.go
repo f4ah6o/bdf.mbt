@@ -26,7 +26,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 6800; i++ {
+	for i := 0; i < 7200; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -150,6 +150,16 @@ func TestCodexXLSXRender(t *testing.T) {
 					} else {
 						st += fmt.Sprintf(`<border><left style="%s"><color rgb="00000000"/></left><right style="%s"/><top style="%s"/><bottom style="%s"/></border>`, line, line, line, line)
 					}
+				}
+				if i >= 6800 {
+					up, down, line := "1", "1", "thin"
+					if i >= 6900 {
+						up = []string{"1", "0", "1"}[i%3]
+						down = []string{"0", "1", "1"}[i%3]
+						line = []string{"hair", "dotted", "dashDotDot", "dashDot", "dashed", "thin", "mediumDashDotDot", "slantDashDot", "mediumDashDot", "mediumDashed", "medium", "double", "thick"}[(i-6900)/3%13]
+					}
+					st = strings.ReplaceAll(st, `<border><left`, fmt.Sprintf(`<border diagonalUp="%s" diagonalDown="%s"><left`, up, down))
+					st = strings.ReplaceAll(st, `</border>`, fmt.Sprintf(`<diagonal style="%s"><color rgb="00000000"/></diagonal></border>`, line))
 				}
 				st += `</borders>`
 			}

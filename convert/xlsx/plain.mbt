@@ -202,11 +202,7 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
   let complex_border = if format.border >= 0 &&
     format.border < styles.borders.length() {
     let b = styles.borders[format.border]
-    b.diagonal.style != "" ||
-    b.vertical.style != "" ||
-    b.horizontal.style != "" ||
-    b.diagonal_up ||
-    b.diagonal_down
+    b.vertical.style != "" || b.horizontal.style != ""
   } else {
     false
   }
@@ -426,6 +422,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     .theme_fonts(workbook.part)
     .resolve("+mn-ea", locale.script)
   let borders : Map[Int32, Map[Int32, @sheet.GridCellBorder]] = Map([])
+  let diagonals : Map[Int32, Map[Int32, @sheet.GridCellDiagonal]] = Map([])
   let border_colors : Map[Int32, Map[Int32, Array[UInt32]]] = Map([])
   let border_colors_by_weight : Map[Int32, XlsxRgb] = Map([])
   let checked_styles : Map[Int32, Bool] = Map([])
@@ -492,6 +489,34 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           border
         }
       }
+      let border_id = styles.cell_formats[format_index].border
+      if border_id >= 0 && border_id < styles.borders.length() {
+        let source_border = styles.borders[border_id]
+        if source_border.diagonal_up || source_border.diagonal_down {
+          let (weight, color) = xlsx_plain_border_side(
+            styles,
+            source_border.diagonal,
+            theme_colors,
+          )
+          if weight != 0 {
+            xlsx_check_border_color(border_colors_by_weight, weight, color)
+            let columns = match diagonals.get(row.index) {
+              Some(columns) => columns
+              None => {
+                let columns : Map[Int32, @sheet.GridCellDiagonal] = Map([])
+                diagonals[row.index] = columns
+                columns
+              }
+            }
+            columns[cell.column] = {
+              weight,
+              color: color.rgba(),
+              up: source_border.diagonal_up,
+              down: source_border.diagonal_down,
+            }
+          }
+        }
+      }
       if border.top != 0 ||
         border.bottom != 0 ||
         border.left != 0 ||
@@ -501,24 +526,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           if weight == 0 {
             continue
           }
-          let color = colors[i]
-          if border_colors_by_weight.get(weight) is Some(previous) {
-            if (
-                previous.red != color.red ||
-                previous.green != color.green ||
-                previous.blue != color.blue
-              ) &&
-              (
-                !xlsx_plain_byte_color(previous) ||
-                !xlsx_plain_byte_color(color)
-              ) {
-              raise InvalidXlsxInput(
-                "xlsx: mixed border colors require 8-bit RGB components",
-              )
-            }
-          } else {
-            border_colors_by_weight[weight] = color
-          }
+          xlsx_check_border_color(border_colors_by_weight, weight, colors[i])
         }
         let columns = match borders.get(row.index) {
           Some(columns) => columns
@@ -754,8 +762,31 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     merge_regions~,
     east_asian_fonts~,
     wraps~,
+    diagonals~,
   )
   (drawn, geo, parsed.missing_formula_values)
+}
+
+///|
+fn xlsx_check_border_color(
+  colors : Map[Int32, XlsxRgb],
+  weight : Int32,
+  color : XlsxRgb,
+) -> Unit raise {
+  if colors.get(weight) is Some(previous) {
+    if (
+        previous.red != color.red ||
+        previous.green != color.green ||
+        previous.blue != color.blue
+      ) &&
+      (!xlsx_plain_byte_color(previous) || !xlsx_plain_byte_color(color)) {
+      raise InvalidXlsxInput(
+        "xlsx: mixed border colors require 8-bit RGB components",
+      )
+    }
+  } else {
+    colors[weight] = color
+  }
 }
 
 ///|
@@ -975,6 +1006,7 @@ fn xlsx_plain_fitted_rows(
           for _ in lines {
             text_height += 0.9 * size + 0.25 * size
           }
+          text_height = text_height + 1.5 - 1.5
           best = Double::max(best, text_height)
         }
       } else if (0.9 + 0.25) * size > (0.9 + 0.25) * 11.0 + 0.01 {

@@ -33,6 +33,15 @@ pub(all) struct GridCellBorder {
 }
 
 ///|
+/// Diagonal border style and directions for a cell or merged rectangle.
+pub(all) struct GridCellDiagonal {
+  weight : Int32
+  color : UInt32
+  up : Bool
+  down : Bool
+}
+
+///|
 /// An inclusive merged rectangle in a sized grid.
 pub(all) struct GridMergeRegion {
   row_start : Int32
@@ -84,6 +93,7 @@ pub fn draw_sized_grid_no_fonts(
   merge_regions~ : Array[GridMergeRegion] = [],
   east_asian_fonts~ : Map[Int32, Map[Int32, String]] = Map([]),
   wraps~ : Map[Int32, Map[Int32, Bool]] = Map([]),
+  diagonals~ : Map[Int32, Map[Int32, GridCellDiagonal]] = Map([]),
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -411,7 +421,7 @@ pub fn draw_sized_grid_no_fonts(
     }
   }
   context.sized_grid_borders(
-    rows, borders, border_colors, spans, region_rows, merge_regions, col_positions,
+    rows, borders, border_colors, diagonals, spans, region_rows, merge_regions, col_positions,
     row_positions, visible_columns,
   )
   let tiles = context.tiles.map(fn(tile) {
@@ -449,6 +459,7 @@ fn GridDrawContext::sized_grid_borders(
   rows : Array[SizedGridRow],
   borders : Map[Int32, Map[Int32, GridCellBorder]],
   border_colors : Map[Int32, Map[Int32, Array[UInt32]]],
+  diagonals : Map[Int32, Map[Int32, GridCellDiagonal]],
   spans : Map[Int32, Map[Int32, Int32]],
   region_rows : Map[Int32, Map[Int32, GridMergeRegion]],
   merge_regions : Array[GridMergeRegion],
@@ -458,6 +469,7 @@ fn GridDrawContext::sized_grid_borders(
 ) -> Unit raise {
   let horizontal : Map[String, GridEdge] = Map([])
   let vertical : Map[String, GridEdge] = Map([])
+  let diagonal_segments : Array[GridDiagonalSegment] = []
   for row in rows {
     let index = row.index
     if index < 0 {
@@ -465,6 +477,26 @@ fn GridDrawContext::sized_grid_borders(
     }
     if index >= row_positions.length() - 1 {
       break
+    }
+    if diagonals.get(index) is Some(values) &&
+      row_positions[index] < row_positions[index + 1] {
+      let keys : Array[Int32] = [ for column, _ in values => column ]
+      keys.sort()
+      for column in keys {
+        if column >= 0 &&
+          column < visible_columns &&
+          columns[column] < columns[column + 1] &&
+          !grid_region_contains(region_rows, index, column) {
+          add_sized_diagonal(
+            diagonal_segments,
+            values[column],
+            columns[column],
+            row_positions[index],
+            columns[column + 1],
+            row_positions[index + 1],
+          )
+        }
+      }
     }
     if borders.get(index) is Some(values) {
       let keys : Array[Int32] = [ for column, _ in values => column ]
@@ -512,8 +544,49 @@ fn GridDrawContext::sized_grid_borders(
         }
       }
     }
+    if region.row_end < row_positions.length() - 1 &&
+      region.column_end < visible_columns {
+      if diagonals.get(region.row_start) is Some(values) &&
+        values.get(region.column_start) is Some(diagonal) {
+        add_sized_diagonal(
+          diagonal_segments,
+          diagonal,
+          columns[region.column_start],
+          row_positions[region.row_start],
+          columns[region.column_end + 1],
+          row_positions[region.row_end + 1],
+        )
+      }
+    }
   }
-  self.draw_grid_edges(horizontal, vertical, columns, row_positions)
+  self.draw_grid_edges(
+    horizontal,
+    vertical,
+    columns,
+    row_positions,
+    diagonals=diagonal_segments,
+  )
+}
+
+///|
+fn add_sized_diagonal(
+  segments : Array[GridDiagonalSegment],
+  diagonal : GridCellDiagonal,
+  x0 : Double,
+  y0 : Double,
+  x1 : Double,
+  y1 : Double,
+) -> Unit {
+  let border : GridStyleBorder = {
+    weight: diagonal.weight,
+    color: diagonal.color,
+  }
+  if diagonal.down {
+    segments.push({ border, segment: { x0, y0, x1, y1, }, })
+  }
+  if diagonal.up {
+    segments.push({ border, segment: { x0, y0: y1, x1, y1: y0, }, })
+  }
 }
 
 ///|

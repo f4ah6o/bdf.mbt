@@ -14,6 +14,12 @@ priv struct GridSegment {
 }
 
 ///|
+priv struct GridDiagonalSegment {
+  border : GridStyleBorder
+  segment : GridSegment
+}
+
+///|
 priv struct GridEdgeGroup {
   border : GridStyleBorder
   segments : Array[GridSegment]
@@ -91,6 +97,7 @@ fn GridDrawContext::draw_grid_edges(
   vertical : Map[String, GridEdge],
   columns : Array[Double],
   rows : Array[Double],
+  diagonals~ : Array[GridDiagonalSegment] = [],
 ) -> Unit raise {
   let hs : Array[GridEdge] = [ for _, edge in horizontal => edge ]
   hs.sort_by((a, b) => {
@@ -152,6 +159,9 @@ fn GridDrawContext::draw_grid_edges(
       })
     }
     i = j
+  }
+  for diagonal in diagonals {
+    add_grid_segment(groups, diagonal.border, diagonal.segment)
   }
   groups.sort_by((a, b) => {
     if a.border.weight == b.border.weight {
