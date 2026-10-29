@@ -29,7 +29,8 @@ glyph fallback with and without embedded fonts. `programs.json.gz` checks
 license-based embedding, sample programs, collection sharing and resource counts.
 `document-plan.json.gz` compares document metadata and view names with full
 upstream conversions. `texter.json.gz` checks font selection, text runs,
-widths, fitting, wrapping and measured-font usage.
+widths, fitting, wrapping and measured-font usage. `ui-fonts.json.gz` checks
+font embedding and system-font records, including license restrictions.
 
 After `moon build --target js`, run `npm run test:specimen` and
 `npm run test:specimen-plan`, `npm run test:specimen-names`,
@@ -40,7 +41,7 @@ After `moon build --target js`, run `npm run test:specimen` and
 `npm run test:specimen-path`, `npm run test:specimen-paint`,
 `npm run test:specimen-glyph-paint`, `npm run test:specimen-sample-paint`,
 `npm run test:specimen-programs`, `npm run test:specimen-document-plan`,
-`npm run test:specimen-texter`, and
+`npm run test:specimen-texter`, `npm run test:specimen-ui-fonts`, and
 `npm run test:specimen-visual`. To regenerate, copy `generate_test.go` without
 its first `//go:build ignore` line into the upstream checkout at
 `converter/font/codex_specimen_test.go`, then run:
@@ -132,3 +133,7 @@ and copy `generate-fontset-helper.go` without its build tag into upstream
 `converter/internal/fontset` as a temporary Go source. Run
 `TestCodexSpecimenTexter` with the same fixture root, then remove the helper
 from the upstream checkout.
+
+To regenerate UI font cases, copy `generate-ui-fonts_test.go` without its
+build tag into upstream `converter/font` alongside `generate_test.go`, then
+run `TestCodexSpecimenUIFonts` with the same fixture root.

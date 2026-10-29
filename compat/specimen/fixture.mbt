@@ -709,3 +709,71 @@ pub fn texter_usage(f : TexterFixture) -> String {
     "missing": Json::array(missing.map(c => Json::number(c.to_double()))),
   }).stringify()
 }
+
+///|
+pub struct UIFontFixture {
+  texter : TexterFixture
+  fonts : @font.SpecimenUIFonts
+}
+
+///|
+#export_name("finish_ui_fonts")
+pub fn finish_ui_fonts(
+  f : TexterFixture,
+  system : Bool,
+  no_subset : Bool,
+  ignore_restrictions : Bool,
+) -> UIFontFixture {
+  let doc = @core.DocumentWriter::new()
+  let fonts : @font.SpecimenUIFonts = if system {
+    { hashes: Map([]), warnings: [], }
+  } else {
+    try! f.texter.embed(doc, no_subset~, ignore_restrictions~)
+  }
+  { texter: f, fonts, }
+}
+
+///|
+#export_name("ui_font_summary")
+pub fn ui_font_summary(f : UIFontFixture) -> String {
+  Json::object({
+    "parts": Json::number(f.fonts.hashes.length().to_double()),
+    "warnings": Json::array(f.fonts.warnings.map(Json::string)),
+  }).stringify()
+}
+
+///|
+#export_name("ui_font_records")
+pub fn ui_font_records(
+  f : UIFontFixture,
+  text : String,
+  size : Double,
+  bold : Bool,
+) -> String {
+  let line = f.texter.texter.line(text, size, bold)
+  Json::array(
+    line.runs.map(r => {
+      let font = f.texter.texter.font_record(r.choice, f.fonts)
+      Json::object({
+        "hash": match font.hash {
+          Some(hash) => Json::string(hash)
+          None => Json::null()
+        },
+        "family": Json::string(font.family),
+        "weight": Json::number(font.weight.to_double()),
+        "style": Json::number(font.style.to_double()),
+      })
+    }),
+  ).stringify()
+}
+
+///|
+#export_name("record_ui_text")
+pub fn record_ui_text(
+  f : TexterFixture,
+  text : String,
+  size : Double,
+  bold : Bool,
+) -> Unit {
+  ignore(f.texter.line(text, size, bold))
+}

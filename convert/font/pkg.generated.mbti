@@ -246,11 +246,18 @@ pub(all) struct SpecimenTextRun {
 pub struct SpecimenTexter {
   // private fields
 }
+pub fn SpecimenTexter::embed(Self, @core.DocumentWriter, no_subset? : Bool, ignore_restrictions? : Bool) -> SpecimenUIFonts raise
 pub fn SpecimenTexter::fit(Self, String, Double, Bool, Double) -> String
+pub fn SpecimenTexter::font_record(Self, @db.Choice, SpecimenUIFonts) -> @core.Font
 pub fn SpecimenTexter::line(Self, String, Double, Bool) -> SpecimenTextLine
 pub fn SpecimenTexter::new(@db.Database) -> Self
 pub fn SpecimenTexter::usage(Self) -> (Array[SpecimenFaceUsage], Array[Int32])
 pub fn SpecimenTexter::wrap(Self, String, Double, Bool, Double) -> Array[String]
+
+pub(all) struct SpecimenUIFonts {
+  hashes : Map[Int32, String]
+  warnings : Array[String]
+}
 
 pub(all) struct SpecimenView {
   id : String

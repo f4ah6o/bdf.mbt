@@ -25,6 +25,7 @@ pub struct SpecimenTexter {
   priv mut cache_faces : Int32
   priv used : Map[Int32, Map[Int32, Bool]]
   priv missing : Map[Int32, Bool]
+  priv embedded : Map[Int32, String]
 }
 
 ///|
@@ -36,6 +37,7 @@ pub fn SpecimenTexter::new(db : @db.Database) -> SpecimenTexter {
     cache_faces: db.face_count(),
     used: Map([]),
     missing: Map([]),
+    embedded: Map([]),
   }
 }
 

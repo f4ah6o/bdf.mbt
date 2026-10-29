@@ -16,6 +16,8 @@ pub fn document_plan(Bytes, String, String) -> String
 
 pub fn features(Bytes, Int32) -> String
 
+pub fn finish_ui_fonts(TexterFixture, Bool, Bool, Bool) -> UIFontFixture
+
 pub fn glyph_details(Bytes, Int32) -> String
 
 pub fn glyph_names(Bytes, Int32) -> String
@@ -56,6 +58,8 @@ pub fn pruned_program(Bytes, Int32, Array[Int32]) -> Bytes
 
 pub fn reachable(Bytes, Int32, String) -> Array[Int32]
 
+pub fn record_ui_text(TexterFixture, String, Double, Bool) -> Unit
+
 pub fn sample_plan(Bytes, Int32, String) -> String
 
 pub fn sample_program(Bytes, Int32) -> Bytes
@@ -69,6 +73,10 @@ pub fn specimen_path(@font.SpecimenOutlines, Int32) -> Bytes
 pub fn texter_add_font(TexterFixture, String, Bytes) -> Unit
 
 pub fn texter_usage(TexterFixture) -> String
+
+pub fn ui_font_records(UIFontFixture, String, Double, Bool) -> String
+
+pub fn ui_font_summary(UIFontFixture) -> String
 
 pub fn variations(Bytes, Bytes) -> String
 
@@ -88,6 +96,11 @@ pub struct PainterFixture {
 pub struct TexterFixture {
   db : @db.Database
   texter : @font.SpecimenTexter
+}
+
+pub struct UIFontFixture {
+  texter : TexterFixture
+  fonts : @font.SpecimenUIFonts
 }
 
 // Type aliases

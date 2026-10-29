@@ -13,6 +13,8 @@ pub fn is_cjk(Int32) -> Bool
 
 pub fn normalize(String) -> String
 
+pub fn prepare_font_program(@sfnt.Font, Int32, Array[Int32], Bool, Bool) -> (Bytes?, String?) raise
+
 // Errors
 
 // Types and methods
