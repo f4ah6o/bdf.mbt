@@ -32,12 +32,14 @@ pub(all) struct Gdef {
 pub struct Gpos {
   // private fields
 }
+pub fn Gpos::context(Self, Int32) -> LookupContext?
 pub fn Gpos::pair_count(Self, Int32) -> Int64
 pub fn Gpos::truncated(Self) -> Bool
 
 pub struct Gsub {
   // private fields
 }
+pub fn Gsub::context(Self, Int32) -> LookupContext?
 pub fn Gsub::each_substitution(Self, Int32, (Substitution) -> Bool) -> Unit
 pub fn Gsub::reachable(Self, Array[Int32]) -> Array[Int32]
 pub fn Gsub::truncated(Self) -> Bool
@@ -73,6 +75,11 @@ pub(all) struct LayoutScript {
   tag : String
   default_language : LanguageSystem?
   languages : Array[LanguageSystem]
+}
+
+pub(all) struct LookupContext {
+  rules : Int32
+  nested : Array[Int32]
 }
 
 pub(all) struct Substitution {

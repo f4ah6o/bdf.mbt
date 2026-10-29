@@ -49,3 +49,10 @@ handling, early callback termination and the shared work budget. Regenerate
 `upstream.json.gz` first, then copy `generate-substitutions_test.go` without its
 build tag into upstream `internal/otlayout` and run `TestCodexSubstitutions`
 with the same fixture root. It is checked by `npm run test:gsub`.
+
+`context.json.gz` compares GSUB and GPOS contextual lookup rule counts, nested
+references, malformed inputs and shared work-budget behavior. Generate
+`layout.json.gz` first, then copy `generate-context_test.go` without its build
+tag into upstream `internal/otlayout` alongside `generate_test.go` and run
+`TestCodexLookupContexts` with the same fixture root. Run `npm run test:layout`
+after a JS build.

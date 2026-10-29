@@ -61,7 +61,7 @@
     "test:specimen-glyph-view": "node compat/specimen/verify-glyph-view.mjs",
     "test:specimen-chart-cell": "node compat/specimen/verify-chart-cell.mjs",
     "test:specimen-character-view": "node compat/specimen/verify-character-view.mjs",
-    "test:layout": "node compat/gsub/verify-layout.mjs",
+    "test:layout": "node compat/gsub/verify-layout.mjs && node compat/gsub/verify-context.mjs",
     "test:gdef": "node compat/gsub/verify-gdef.mjs",
     "build:demo": "moon build --target js --release && node demo/build.mjs",
     "test:demo": "node demo/test.mjs",

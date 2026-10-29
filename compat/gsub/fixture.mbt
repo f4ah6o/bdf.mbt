@@ -174,3 +174,39 @@ pub fn list_substitutions(data : Bytes, index : Int32, limit : Int32) -> String 
     "truncated": Json::boolean(table.truncated()),
   }).stringify()
 }
+
+///|
+fn context_json(context : @otlayout.LookupContext?) -> Json {
+  match context {
+    Some(c) =>
+      Json::object({
+        "rules": Json::number(c.rules.to_double()),
+        "nested": Json::array(c.nested.map(n => Json::number(n.to_double()))),
+      })
+    None => Json::null()
+  }
+}
+
+///|
+#export_name("lookup_contexts")
+pub fn lookup_contexts(data : Bytes, gpos : Bool) -> String {
+  let count = @otlayout.parse_layout(data[:], gpos~).unwrap().lookups.length()
+  let result : Array[Json] = []
+  let truncated = if gpos {
+    let table = @otlayout.parse_gpos(data[:]).unwrap()
+    for i in -1..<=count {
+      result.push(context_json(table.context(i)))
+    }
+    table.truncated()
+  } else {
+    let table = @otlayout.parse_gsub(data[:]).unwrap()
+    for i in -1..<=count {
+      result.push(context_json(table.context(i)))
+    }
+    table.truncated()
+  }
+  Json::object({
+    "contexts": Json::array(result),
+    "truncated": Json::boolean(truncated),
+  }).stringify()
+}

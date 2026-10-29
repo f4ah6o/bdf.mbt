@@ -12,6 +12,8 @@ pub fn layout_metadata(Bytes, Bool) -> String
 
 pub fn list_substitutions(Bytes, Int32, Int32) -> String
 
+pub fn lookup_contexts(Bytes, Bool) -> String
+
 pub fn tag_names(String) -> String
 
 pub fn type_name(Int32, Bool) -> String
