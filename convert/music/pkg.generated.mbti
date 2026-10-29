@@ -50,6 +50,8 @@ pub fn key_positions(EngravingClef, KeySig) -> Array[Int32]
 
 pub fn layout_basic_staff(NotatedScore, PreparedScore, MusicSystem, Int32) -> BasicStaffLayout
 
+pub fn layout_midi_score(NotatedScore, MusicPageOptions, (String, Double, Bool) -> MusicTextMetrics) -> MusicScoreLayout?
+
 pub fn music_bracket_width(Array[MusicPartSpan]) -> Double
 
 pub fn music_curve(Double, Double, Double, Double, Double, Double, Double) -> MusicOutline
@@ -139,6 +141,14 @@ pub(all) struct KeySig {
   minor : Bool
 }
 
+pub(all) struct LaidOutMusicSystem {
+  system : MusicSystem
+  placement : MusicSystemPlacement
+  left : Double
+  staves : Array[BasicStaffLayout]
+  spanning : MusicDrawing
+}
+
 pub(all) struct MeasureSpan {
   start : Int64
   length : Int64
@@ -200,6 +210,13 @@ pub(all) struct MusicOutline {
 }
 pub fn MusicOutline::bounds(Self) -> (Double, Double, Double, Double)
 
+pub(all) struct MusicPageOptions {
+  width : Double
+  height : Double
+  staff_space : Double
+  title : String
+}
+
 pub(all) struct MusicPartSpan {
   name : String
   abbreviation : String
@@ -222,6 +239,15 @@ pub(all) struct MusicPrimitive {
   text : String
   align : Int32
   mark : Int32
+}
+
+pub(all) struct MusicScoreLayout {
+  width : Double
+  height : Double
+  staff_space : Double
+  title : String
+  title_height : Double
+  systems : Array[LaidOutMusicSystem]
 }
 
 pub(all) struct MusicSlot {

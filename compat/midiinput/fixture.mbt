@@ -1285,3 +1285,88 @@ pub fn score_system_marks(
       Json::object({ "error": Json::string(message) }).stringify()
   }
 }
+
+///|
+#export_name("score_layout")
+pub fn score_layout(
+  data : Bytes,
+  width : Double,
+  height : Double,
+  staff_space : Double,
+  title : String,
+  metric_names : FixedArray[String],
+  raw_metrics : FixedArray[Double],
+) -> String {
+  try {
+    let original = @midi.notate_file(@midi.read_file(data))
+    // The Go fixture reconstructs the score's notes, but not its metadata.
+    let score : @music.NotatedScore = {
+      title: "",
+      subtitle: "",
+      composer: "",
+      lyricist: "",
+      arranger: "",
+      copyright: "",
+      timeline: original.timeline,
+      parts: original.parts,
+      error: original.error,
+    }
+    let metrics : Map[String, @music.MusicTextMetrics] = Map([])
+    for i in 0..<metric_names.length() {
+      metrics[metric_names[i]] = {
+        width: raw_metrics[i * 3],
+        ascent: raw_metrics[i * 3 + 1],
+        descent: raw_metrics[i * 3 + 2],
+      }
+    }
+    match
+      @music.layout_midi_score(score, { width, height, staff_space, title, }, (
+        text,
+        size,
+        italic,
+      ) => {
+        let key = (if italic { "i|" } else { "n|" }) +
+          size.to_string() +
+          "|" +
+          text
+        metrics.get(key).unwrap_or({ width: 0.0, ascent: 0.0, descent: 0.0, })
+      }) {
+      None => Json::null().stringify()
+      Some(layout) => {
+        let systems = layout.systems.map(sys => {
+          let extents = sys.staves.map(staff => {
+            Json::array([
+              Json::number(staff.drawing.skyline(-1.0e9, 1.0e9, 0.0, true)),
+              Json::number(staff.drawing.skyline(-1.0e9, 1.0e9, 4.0, false)),
+            ])
+          })
+          let p = sys.placement
+          Json::array([
+            Json::number(sys.system.first.to_double()),
+            Json::number(sys.system.last.to_double()),
+            Json::number(sys.system.header),
+            Json::number(sys.system.width),
+            Json::number(sys.left),
+            Json::array(p.staff_y.map(v => Json::number(v))),
+            Json::number(p.above),
+            Json::number(p.below),
+            Json::number(p.top),
+            Json::number(p.page.to_double()),
+            Json::array(extents),
+          ])
+        })
+        Json::array([
+          Json::number(layout.width),
+          Json::number(layout.height),
+          Json::number(layout.staff_space),
+          Json::string(layout.title),
+          Json::number(layout.title_height),
+          Json::array(systems),
+        ]).stringify()
+      }
+    }
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}
