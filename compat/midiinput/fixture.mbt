@@ -142,3 +142,59 @@ pub fn read_file(data : Bytes) -> String {
       Json::object({ "error": Json::string(message) }).stringify()
   }
 }
+
+///|
+#export_name("track_meta")
+pub fn track_meta(data : Bytes) -> String {
+  let reader = @midi.MidiTrackReader::new()
+  try {
+    let result = reader.read(@midi.scan_track(data, 1000000L), 0)
+    let names = result.channel_names.map(bytes => {
+      Json::array(bytes.to_array().map(b => Json::number(b.to_double())))
+    })
+    let texts = result.texts.map(item => {
+      Json::array([
+        Json::number(item.tick.to_double()),
+        Json::number(item.kind.to_double()),
+        Json::array(item.data.to_array().map(b => Json::number(b.to_double()))),
+      ])
+    })
+    let tempos = result.tempos.map(item => {
+      Json::array([Json::number(item.tick.to_double()), Json::number(item.bpm)])
+    })
+    let times = result.times.map(item => {
+      Json::array([
+        Json::number(item.tick.to_double()),
+        Json::number(item.beats.to_double()),
+        Json::number(item.beat_type.to_double()),
+      ])
+    })
+    let keys = result.keys.map(item => {
+      Json::array([
+        Json::number(item.tick.to_double()),
+        Json::number(item.fifths.to_double()),
+        Json::boolean(item.minor),
+      ])
+    })
+    Json::object({
+      "name": Json::array(
+        result.name.to_array().map(b => Json::number(b.to_double())),
+      ),
+      "instrument": Json::array(
+        result.instrument.to_array().map(b => Json::number(b.to_double())),
+      ),
+      "copyright": Json::array(
+        result.copyright.to_array().map(b => Json::number(b.to_double())),
+      ),
+      "channels": Json::array(names),
+      "texts": Json::array(texts),
+      "tempos": Json::array(tempos),
+      "times": Json::array(times),
+      "keys": Json::array(keys),
+      "warnings": Json::array(reader.warnings().map(Json::string)),
+    }).stringify()
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}

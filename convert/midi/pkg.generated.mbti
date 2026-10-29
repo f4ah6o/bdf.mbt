@@ -55,12 +55,35 @@ pub(all) struct MidiRawFile {
   warnings : Array[String]
 }
 
+pub(all) struct MidiRawKey {
+  tick : Int64
+  fifths : Int32
+  minor : Bool
+}
+
 pub(all) struct MidiRawNote {
   channel : Int32
   key : Int32
   velocity : Int32
   on : Int64
   off : Int64
+}
+
+pub(all) struct MidiRawTempo {
+  tick : Int64
+  bpm : Double
+}
+
+pub(all) struct MidiRawText {
+  tick : Int64
+  kind : Int32
+  data : Bytes
+}
+
+pub(all) struct MidiRawTime {
+  tick : Int64
+  beats : Int32
+  beat_type : Int32
 }
 
 pub(all) struct MidiRawTrack {
@@ -72,6 +95,14 @@ pub(all) struct MidiRawTrack {
 pub(all) struct MidiTrackNotes {
   notes : Array[MidiRawNote]
   controls : Array[MidiRawControl]
+  name : Bytes
+  instrument : Bytes
+  copyright : Bytes
+  channel_names : Array[Bytes]
+  texts : Array[MidiRawText]
+  tempos : Array[MidiRawTempo]
+  times : Array[MidiRawTime]
+  keys : Array[MidiRawKey]
 }
 
 pub struct MidiTrackReader {

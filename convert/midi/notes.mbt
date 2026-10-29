@@ -20,9 +20,44 @@ pub(all) struct MidiRawControl {
 }
 
 ///|
+pub(all) struct MidiRawText {
+  tick : Int64
+  kind : Int32
+  data : Bytes
+}
+
+///|
+pub(all) struct MidiRawTempo {
+  tick : Int64
+  bpm : Double
+}
+
+///|
+pub(all) struct MidiRawTime {
+  tick : Int64
+  beats : Int32
+  beat_type : Int32
+}
+
+///|
+pub(all) struct MidiRawKey {
+  tick : Int64
+  fifths : Int32
+  minor : Bool
+}
+
+///|
 pub(all) struct MidiTrackNotes {
   notes : Array[MidiRawNote]
   controls : Array[MidiRawControl]
+  name : Bytes
+  instrument : Bytes
+  copyright : Bytes
+  channel_names : Array[Bytes]
+  texts : Array[MidiRawText]
+  tempos : Array[MidiRawTempo]
+  times : Array[MidiRawTime]
+  keys : Array[MidiRawKey]
 }
 
 ///|
@@ -134,6 +169,15 @@ pub fn MidiTrackReader::read(
   let notes : Array[MidiRawNote] = []
   let controls : Array[MidiRawControl] = []
   let pending : Map[Int32, PendingMidiQueue] = Map([])
+  let mut name = b""
+  let mut instrument = b""
+  let mut copyright = b""
+  let channel_names : Array[Bytes] = Array::make(16, b"")
+  let texts : Array[MidiRawText] = []
+  let tempos : Array[MidiRawTempo] = []
+  let times : Array[MidiRawTime] = []
+  let keys : Array[MidiRawKey] = []
+  let mut prefix = -1
   for event in track.events {
     let status = event.status
     if status < 0xf0 {
@@ -147,6 +191,7 @@ pub fn MidiTrackReader::read(
         d1 = d1 & 0x7f
         d2 = d2 & 0x7f
       }
+      prefix = -1
       let channel = status & 15
       let typ = status & 0xf0
       if typ == 0x90 && d2 > 0 {
@@ -202,9 +247,52 @@ pub fn MidiTrackReader::read(
         }
       }
       let d = event.data
-      if kind == 0x58 &&
-        (d.length() < 2 || d[0].to_int() == 0 || d[1].to_int() > 6) {
-        self.warn("time", "invalid time signatures are ignored")
+      if kind == 0x01 || kind == 0x05 {
+        texts.push({ tick: event.tick, kind, data: d, })
+      } else if kind == 0x02 {
+        if copyright.length() == 0 {
+          copyright = d
+        }
+      } else if kind == 0x03 || kind == 0x04 {
+        if prefix >= 0 {
+          if channel_names[prefix].length() == 0 {
+            channel_names[prefix] = d
+          }
+        } else if kind == 0x03 && name.length() == 0 {
+          name = d
+        } else if kind == 0x04 && instrument.length() == 0 {
+          instrument = d
+        }
+      } else if kind == 0x20 {
+        if d.length() >= 1 {
+          prefix = d[0].to_int() & 15
+        }
+      } else if kind == 0x51 {
+        if d.length() >= 3 {
+          let micros = (d[0].to_int() << 16) |
+            (d[1].to_int() << 8) |
+            d[2].to_int()
+          if micros > 0 {
+            let bpm = 60000000.0 / micros.to_double()
+            let rounded = bpm.round()
+            let exact = if (60000000.0 / rounded).round() == micros.to_double() {
+              rounded
+            } else {
+              bpm
+            }
+            tempos.push({ tick: event.tick, bpm: exact, })
+          }
+        }
+      } else if kind == 0x58 {
+        if d.length() < 2 || d[0].to_int() == 0 || d[1].to_int() > 6 {
+          self.warn("time", "invalid time signatures are ignored")
+        } else {
+          times.push({
+            tick: event.tick,
+            beats: d[0].to_int(),
+            beat_type: 1 << d[1].to_int(),
+          })
+        }
       } else if kind == 0x59 {
         if d.length() < 2 {
           self.warn("key", "invalid key signatures are ignored")
@@ -213,6 +301,8 @@ pub fn MidiTrackReader::read(
           let fifths = if raw >= 128 { raw - 256 } else { raw }
           if fifths < -7 || fifths > 7 || d[1].to_int() > 1 {
             self.warn("key", "invalid key signatures are ignored")
+          } else {
+            keys.push({ tick: event.tick, fifths, minor: d[1].to_int() == 1, })
           }
         }
       }
@@ -247,5 +337,16 @@ pub fn MidiTrackReader::read(
       }
     }
   }
-  { notes, controls, }
+  {
+    notes,
+    controls,
+    name,
+    instrument,
+    copyright,
+    channel_names,
+    texts,
+    tempos,
+    times,
+    keys,
+  }
 }

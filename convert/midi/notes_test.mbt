@@ -30,3 +30,21 @@ test "track reader shares warning state across tracks" {
     "notes without a note-off end with their track",
   ])
 }
+
+///|
+test "metadata preserves channel prefixes and timing changes" {
+  let body = b"\x00\xff\x03\x04Song\x00\xff\x20\x01\x02\x00\xff\x03\x04Lead\x00\xff\x51\x03\x07\xa1\x20\x00\xff\x58\x02\x03\x02\x00\xff\x59\x02\xfe\x01\x00\xc2\x01\x00\xff\x04\x05Piano\x00\xff\x05\x02la\x00\xff\x2f\x00"
+  let result = @midi.MidiTrackReader::new().read(
+    @midi.scan_track(body, 1000L),
+    0,
+  )
+  assert_eq(result.name, b"Song")
+  assert_eq(result.channel_names[2], b"Lead")
+  assert_eq(result.instrument, b"Piano")
+  assert_eq(result.tempos[0].bpm, 120.0)
+  assert_eq(result.times[0].beats, 3)
+  assert_eq(result.times[0].beat_type, 4)
+  assert_eq(result.keys[0].fifths, -2)
+  assert_true(result.keys[0].minor)
+  assert_eq(result.texts[0].data, b"la")
+}
