@@ -174,3 +174,34 @@ pub fn musicxml_notation(
     _ => "null"
   }
 }
+
+///|
+#export_name("musicxml_pitch_note")
+pub fn musicxml_pitch_note(data : Bytes, transpose : Int32) -> String {
+  try {
+    let node = @musicxml.musicxml_read_tree(data)
+    match @musicxml.musicxml_pitch_note(node, transpose~) {
+      None => "null"
+      Some(n) =>
+        Json::array([
+          Json::number(n.pitch.step.to_double()),
+          Json::number(n.pitch.alter.to_double()),
+          Json::number(n.pitch.octave.to_double()),
+          Json::number(n.sounding_key.to_double()),
+          Json::number(n.accidental.to_double()),
+          Json::boolean(n.cautionary),
+          Json::number(n.head.to_double()),
+          Json::boolean(n.tie_start),
+          Json::boolean(n.tie_stop),
+          Json::boolean(n.sound_tie_start),
+          Json::boolean(n.sound_tie_stop),
+          Json::number(n.tab_string.to_double()),
+          Json::number(n.tab_fret.to_double()),
+          Json::boolean(n.has_alteration),
+          Json::boolean(n.has_accidental),
+        ]).stringify()
+    }
+  } catch {
+    _ => "null"
+  }
+}

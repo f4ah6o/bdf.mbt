@@ -30,6 +30,8 @@ pub fn musicxml_integer(String) -> (Int64, Bool)
 
 pub fn musicxml_is_score_text(String) -> Bool
 
+pub fn musicxml_pitch_note(MusicXmlNode, transpose? : Int32) -> MusicXmlPitchNote?
+
 pub fn musicxml_read_tree(Bytes) -> MusicXmlNode raise MusicXmlInputError
 
 pub fn musicxml_tick_of(Double) -> Int32
@@ -97,6 +99,22 @@ pub(all) struct MusicXmlPartHeader {
   abbreviation : String
   track_name : String
   instruments : Array[MusicXmlInstrument]
+}
+
+pub(all) struct MusicXmlPitchNote {
+  pitch : @music.Pitch
+  sounding_key : Int32
+  accidental : Int32
+  cautionary : Bool
+  head : Int32
+  tie_start : Bool
+  tie_stop : Bool
+  sound_tie_start : Bool
+  sound_tie_stop : Bool
+  tab_string : Int32
+  tab_fret : Int32
+  has_alteration : Bool
+  has_accidental : Bool
 }
 
 // Type aliases
