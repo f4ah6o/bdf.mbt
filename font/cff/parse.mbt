@@ -134,3 +134,24 @@ fn parse_cff(data : Bytes) -> CffData raise {
     is_cid,
   }
 }
+
+///|
+/// Return glyph names from a CFF charset, including CID names.
+pub fn glyph_names(data : Bytes) -> Array[String] raise {
+  let font = parse_cff(data)
+  let (strings, _) = read_index(font.strings[:], 0)
+  [
+    for sid in font.charset => {
+      if font.is_cid {
+        "cid" + sid.to_string()
+      } else if sid >= 0 && sid < standard_strings.length() {
+        standard_strings[sid]
+      } else if sid >= standard_strings.length() &&
+        sid - standard_strings.length() < strings.length() {
+        @utf8.decode_lossy(strings[sid - standard_strings.length()][:])
+      } else {
+        ""
+      }
+    }
+  ]
+}

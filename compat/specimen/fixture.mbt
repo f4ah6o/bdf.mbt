@@ -89,3 +89,17 @@ pub fn sample_plan(data : Bytes, index : Int32, text : String) -> String {
   }
   abort("missing font face")
 }
+
+///|
+#export_name("glyph_names")
+pub fn glyph_names(data : Bytes, index : Int32) -> String {
+  let file = try! @font.load(data)
+  for face in file.faces() {
+    if face.index == index {
+      return Json::array(
+        face.font.glyph_names().map(name => Json::string(name)),
+      ).stringify()
+    }
+  }
+  abort("missing font face")
+}
