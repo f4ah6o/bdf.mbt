@@ -2,7 +2,7 @@
 
 These fixtures record glyph programs and whole and pruned sample programs from
 shibukawa/bdf at commit `4f9af52dca60be1eb0daade39f7dc41d6a1fe431`. TrueType,
-CFF, TTC, WOFF, color, variable and malformed bitmap-strike cases are included.
+CFF, TTC, WOFF, color, variable, malformed bitmap-strike and CFF fallback cases are included.
 The pruned cases compare the automatically computed GSUB reachability set with
 upstream and also test the explicit-glyph API. Program sizes and SHA-256 hashes are
 compared with upstream; representative glyph programs are also rendered and

@@ -46,6 +46,21 @@ fn fd_bytes(
 /// Subset a CFF program, preserving glyph 0 and the components of accents.
 /// Returns original glyph IDs in the new order; invalid programs raise CffError.
 pub fn subset(data : Bytes, glyphs : Array[Int32]) -> Subset raise {
+  subset_impl(data, glyphs, false)
+}
+
+///|
+/// Remove unused CFF glyph outlines while preserving every original glyph ID.
+pub fn prune(data : Bytes, glyphs : Array[Int32]) -> Bytes raise {
+  subset_impl(data, glyphs, true).data
+}
+
+///|
+fn subset_impl(
+  data : Bytes,
+  glyphs : Array[Int32],
+  keep_numbers : Bool,
+) -> Subset raise {
   let parsed = parse_cff(data)
   let mut top = parsed.top
   let cs_offset = cff_value(top, 17, 0, data.length())
@@ -150,12 +165,18 @@ pub fn subset(data : Bytes, glyphs : Array[Int32]) -> Subset raise {
   let kept_chars : Array[Bytes] = []
   let charset : Array[Byte] = [0]
   for gid in 0..<charstrings.length() {
-    if kept.contains(gid) {
+    if kept.contains(gid) || keep_numbers {
       if order.length() > 0 {
         emit16(charset, parsed.charset[gid])
       }
       order.push(gid)
-      kept_chars.push(charstrings[gid])
+      kept_chars.push(
+        if kept.contains(gid) {
+          charstrings[gid]
+        } else {
+          b"\x0e"
+        },
+      )
     }
   }
   let fdselect : Array[Byte] = []

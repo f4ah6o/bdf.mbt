@@ -25,3 +25,19 @@ pub fn FileFace::sample_truetype(
 ) -> Bytes? raise {
   self.font.specimen_sample_truetype(text, self.size)
 }
+
+///|
+/// Build a specimen sample for text, following GSUB substitutions and
+/// retaining original TrueType or CFF glyph IDs. The caller checks licensing.
+pub fn FileFace::sample_program(self : FileFace, text : String) -> Bytes? raise {
+  self.font.specimen_sample(text, self.size)
+}
+
+///|
+/// Build a specimen sample from an explicitly supplied reachable glyph set.
+pub fn FileFace::sample_pruned(
+  self : FileFace,
+  glyphs : Array[Int32],
+) -> Bytes? raise {
+  self.font.specimen_pruned(glyphs, self.size)
+}

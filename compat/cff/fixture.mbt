@@ -69,3 +69,9 @@ pub fn sfnt_program(data : Bytes, text : String) -> Bytes {
     None => try! font.mapped_program(codes)
   }
 }
+
+///|
+#export_name("raw_prune")
+pub fn raw_prune(data : Bytes, glyphs : Array[Int32]) -> Bytes {
+  try! @engine.prune(data, glyphs)
+}

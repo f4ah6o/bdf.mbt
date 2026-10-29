@@ -2,6 +2,8 @@
 package "f4ah6o/bdf/font/cff"
 
 // Values
+pub fn prune(Bytes, Array[Int32]) -> Bytes raise
+
 pub fn subset(Bytes, Array[Int32]) -> Subset raise
 
 // Errors

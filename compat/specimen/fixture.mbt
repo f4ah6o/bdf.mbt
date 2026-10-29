@@ -32,7 +32,7 @@ pub fn pruned_program(
   let file = try! @font.load(data)
   for face in file.faces() {
     if face.index == index {
-      return (try! face.sample_pruned_truetype(glyphs)).unwrap_or(b"")
+      return (try! face.sample_pruned(glyphs)).unwrap_or(b"")
     }
   }
   abort("missing font face")
@@ -56,7 +56,7 @@ pub fn automatic_pruned(data : Bytes, index : Int32, text : String) -> Bytes {
   let file = try! @font.load(data)
   for face in file.faces() {
     if face.index == index {
-      return (try! face.sample_truetype(text)).unwrap_or(b"")
+      return (try! face.sample_program(text)).unwrap_or(b"")
     }
   }
   abort("missing font face")

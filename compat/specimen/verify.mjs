@@ -28,4 +28,4 @@ for (const sample of samples) {
     assert.equal(hash(actualPruned), prune.hash, sample.name + ' pruned sample ' + JSON.stringify(prune.text));
   }
 }
-console.log(`${samples.length} glyph, whole-sample and pruned TrueType programs match upstream byte for byte.`);
+console.log(`${samples.length} glyph, whole-sample and pruned TrueType and CFF programs match upstream byte for byte.`);

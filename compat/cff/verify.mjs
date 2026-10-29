@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { gunzipSync } from 'node:zlib';
 import { BdfDocument, BufferSource } from '@bdfkit/core';
 import { csv_document, csv_warnings } from '../../_build/js/debug/build/compat/font/font.js';
-import { cff_program, cff_order, raw_program, raw_order, sfnt_program, sfnt_supported } from '../../_build/js/debug/build/compat/cff/cff.js';
+import { cff_program, cff_order, raw_program, raw_order, sfnt_program, sfnt_supported, raw_prune } from '../../_build/js/debug/build/compat/cff/cff.js';
 
 const cases = JSON.parse(await readFile(new URL('./upstream.json', import.meta.url)));
 for (const [index, sample] of cases.entries()) {
@@ -58,3 +59,23 @@ for (const part of converted.manifest.parts) {
   assert.deepEqual(Buffer.from(await converted.part(part.h)), Buffer.from(await baseline.part(part.h)), 'large CFF part ' + part.t);
 }
 console.log('Large unsubsettable CFF falls back with the upstream warning.');
+
+const prunes = JSON.parse(await readFile(new URL('./prune.json', import.meta.url)));
+const realFont = await readFile(new URL('../font/fixtures/stix.otf', import.meta.url));
+let realCff;
+for (let i = 0; i < realFont.readUInt16BE(4); i++) {
+  const rec = 12 + i * 16;
+  if (realFont.toString('ascii', rec, rec + 4) === 'CFF ') {
+    const offset = realFont.readUInt32BE(rec + 8), length = realFont.readUInt32BE(rec + 12);
+    realCff = realFont.subarray(offset, offset + length);
+  }
+}
+for (const sample of prunes) {
+  const input = sample.source === 'real' ? realCff : Buffer.from(synthetic.find(item => item.name === sample.name).data, 'base64');
+  if (sample.error) { assert.throws(() => raw_prune(input, sample.glyphs), sample.name); continue; }
+  const actual = Buffer.from(raw_prune(input, sample.glyphs));
+  assert.equal(actual.length, sample.size, sample.name + ' retained glyph count size');
+  assert.equal(createHash('sha256').update(actual).digest('hex'), sample.hash, sample.name + ' retained glyph numbers');
+  if (sample.program) assert.deepEqual(actual, Buffer.from(sample.program, 'base64'));
+}
+console.log(`${prunes.length} CFF pruning cases preserve upstream glyph numbering and bytes.`);

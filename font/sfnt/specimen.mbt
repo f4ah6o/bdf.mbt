@@ -177,6 +177,24 @@ pub fn Font::specimen_pruned_truetype(
   glyphs : Array[Int32],
   size : Int64,
 ) -> Bytes? raise {
+  let whole = self.tables.contains("morx") ||
+    self.tables.contains("mort") ||
+    self.tables.contains("Silf")
+  if !whole && !self.tables.contains("glyf") {
+    return None
+  }
+  self.specimen_pruned(glyphs, size)
+}
+
+///|
+/// Build a sample font from reachable glyphs, preserving their IDs and
+/// shaping tables. Unsupported outlines fall back to the whole font within
+/// upstream's size limit. The caller checks embedding permissions.
+pub fn Font::specimen_pruned(
+  self : Font,
+  glyphs : Array[Int32],
+  size : Int64,
+) -> Bytes? raise {
   if self.specimen_large_bitmap() {
     return None
   }
@@ -186,14 +204,29 @@ pub fn Font::specimen_pruned_truetype(
   if whole && size > 4194304L {
     return None
   }
-  if !whole && !self.tables.contains("glyf") {
-    return None
+  let has_glyf = self.tables.contains("glyf")
+  let has_cff = self.tables.contains("CFF ")
+  let mut pruned_cff : Bytes? = None
+  if !whole && !has_glyf {
+    if has_cff && self.metrics.is_cff {
+      let raw = sfnt_table(self.source, self.tables, "CFF ").to_owned()
+      pruned_cff = Some(@cff.prune(raw, glyphs)) catch { _ => None }
+    }
+    if pruned_cff is None && size > 4194304L {
+      return None
+    }
   }
   let tables = self.specimen_tables(drop_layout=false)
   if whole {
     return Some(build_tables(tables, self.metrics.is_cff))
   }
-  self.prune_specimen_glyf(tables, glyphs)
+  if has_glyf {
+    self.prune_specimen_glyf(tables, glyphs)
+  }
+  match pruned_cff {
+    Some(bytes) => tables["CFF "] = bytes.to_array()
+    None => ()
+  }
   Some(build_tables(tables, self.metrics.is_cff))
 }
 
@@ -339,4 +372,22 @@ pub fn Font::specimen_sample_truetype(
     return self.specimen_pruned_truetype([], size)
   }
   self.specimen_pruned_truetype(self.specimen_reachable(text), size)
+}
+
+///|
+/// Build a specimen sample for text using its GSUB substitution closure.
+/// Size and bitmap checks precede shaping. The caller checks embedding rights.
+pub fn Font::specimen_sample(
+  self : Font,
+  text : String,
+  size : Int64,
+) -> Bytes? raise {
+  if self.specimen_large_bitmap() ||
+    self.tables.contains("morx") ||
+    self.tables.contains("mort") ||
+    self.tables.contains("Silf") ||
+    (!self.tables.contains("glyf") && !self.tables.contains("CFF ")) {
+    return self.specimen_pruned([], size)
+  }
+  self.specimen_pruned(self.specimen_reachable(text), size)
 }

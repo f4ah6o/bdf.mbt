@@ -68,7 +68,7 @@ func TestCodexGlyphPrograms(t *testing.T) {
 				out := glyphProgram(fc)
 				sample, ok := sampleProgram(fc, "", false)
 				pruned := []any{}
-				if fc.f.Tables["glyf"] != nil {
+				if fc.f.Tables["glyf"] != nil || fc.f.Tables["CFF "] != nil || name == "cff2-only" {
 					fc.prepare()
 					for _, text := range []string{"", "Hello", "ffi", "漢字", "ABC ◌ -"} {
 						reached := fc.reach(text)
@@ -79,7 +79,7 @@ func TestCodexGlyphPrograms(t *testing.T) {
 						sort.Ints(keep)
 						out, ok := sampleProgram(fc, text, true)
 						entry := map[string]any{"text": text, "keep": keep, "hash": digest(out), "size": len(out), "ok": ok}
-						if text == "ffi" && (name == "stix.ttf" || name == "features.ttf") {
+						if text == "ffi" && (name == "stix.ttf" || name == "stix.otf" || name == "features.ttf") {
 							entry["visual"] = packFixture(out)
 						}
 						pruned = append(pruned, entry)
@@ -115,6 +115,23 @@ func TestCodexGlyphPrograms(t *testing.T) {
 	cff = append([]byte(nil), cff...)
 	binary.BigEndian.PutUint32(cff, 0x00010000)
 	add("cff-truetype-flavor", cff, 0)
+	originalCFF, e := os.ReadFile(filepath.Join(root, "compat/font/fixtures/stix.otf"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	cffFace, e := sfnt.Parse(originalCFF)
+	if e != nil {
+		t.Fatal(e)
+	}
+	badCFFTables := map[string][]byte{}
+	for k, v := range cffFace.Tables {
+		badCFFTables[k] = v
+	}
+	badCFFTables["CFF "] = []byte{1, 0, 4, 1, 0}
+	badCFF := sfnt.Build(badCFFTables, true)
+	add("bad-cff-fallback", badCFF, 0)
+	add("bad-cff-oversized", append(append([]byte(nil), badCFF...), make([]byte, 4<<20)...), 0)
+	add("cff2-only", sfnt.Build(map[string][]byte{"maxp": {0, 1, 0, 0, 0, 1}, "CFF2": {1, 2, 3, 4}}, true), 0)
 	fontdata, e := os.ReadFile(filepath.Join(root, "compat/font/fixtures/stix.ttf"))
 	if e != nil {
 		t.Fatal(e)
