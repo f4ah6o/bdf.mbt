@@ -16,9 +16,10 @@ pub(all) struct ImageResult {
 }
 
 ///|
-/// Convert a BMP, ICO, JPEG, PNG, GIF, WebP or AVIF to a single-page BDF. JPEG,
-/// PNG, WebP and AVIF support EXIF and XMP metadata, GIF supports XMP, and JPEG also supports
-/// IPTC. Some XMP encodings and PNG Creation Time timezone abbreviations are
+/// Convert a BMP, ICO, JPEG, PNG, GIF, WebP, AVIF or SVG to a single-page BDF.
+/// JPEG, PNG, WebP and AVIF support EXIF and XMP metadata, GIF supports XMP,
+/// and JPEG also supports IPTC. Malformed SVG, some XML character encodings,
+/// and PNG Creation Time timezone abbreviations are
 /// not yet supported. The optional
 /// title overrides the document title, while the
 /// file name supplies alternative text when there is no title.
@@ -49,8 +50,8 @@ pub fn convert(
   }
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
   let image_hash = writer.add_part("img", data)
-  let width = Float::from_double(picture.width.to_double() * 0.75)
-  let height = Float::from_double(picture.height.to_double() * 0.75)
+  let width = Float::from_double(picture.width * 0.75)
+  let height = Float::from_double(picture.height * 0.75)
   let document_title = match fields.get("title") {
     Some(values) if values.length() > 0 => values[0]
     _ => ""
@@ -68,15 +69,15 @@ pub fn convert(
   }
   let object_hash = writer.add_part(
     "obj",
-    image_object(image_hash, width, height, alt),
+    image_object(image_hash, width, height, alt, picture.format != "svg"),
   )
   let layer = Json::object({
     "role": Json::string("body"),
     "obj": Json::string(object_hash),
   })
   let page = Json::object({
-    "w": Json::number(width.to_double()),
-    "h": Json::number(height.to_double()),
+    "w": Json::number(width.to_double(), repr=width.to_string()),
+    "h": Json::number(height.to_double(), repr=height.to_string()),
     "layers": Json::array([layer]),
   })
   let view : Map[String, Json] = {
@@ -95,10 +96,11 @@ pub fn convert(
     "gif" => "GIF"
     "webp" => "WebP"
     "avif" => "AVIF"
+    "svg" => "SVG"
     _ => "PNG"
   }
   let suffix = if picture.animated { ", animated" } else { "" }
-  let summary = "1 page (\{picture.width} × \{picture.height} px, \{format_name}\{suffix})"
+  let summary = "1 page (\{image_px(picture.width)} × \{image_px(picture.height)} px, \{format_name}\{suffix})"
   let warnings = [ for warning in picture.warnings => warning ]
   if picture.animated {
     warnings.push("animated image: the first frame is drawn")
@@ -106,10 +108,15 @@ pub fn convert(
   {
     bdf: writer.write_single(),
     format: picture.format,
-    width: picture.width.to_double(),
-    height: picture.height.to_double(),
+    width: picture.width,
+    height: picture.height,
     animated: picture.animated,
     summary,
     warnings,
   }
+}
+
+///|
+fn image_px(value : Double) -> String {
+  ((value * 100.0).round() / 100.0).to_string()
 }

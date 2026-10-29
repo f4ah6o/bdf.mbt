@@ -96,13 +96,20 @@ fn read_jpeg(data : Bytes) -> Picture raise {
   if orientation >= 5 {
     {
       format: "jpeg",
-      width: height,
-      height: width,
+      width: height.to_double(),
+      height: width.to_double(),
       dc,
       animated: false,
       warnings: [],
     }
   } else {
-    { format: "jpeg", width, height, dc, animated: false, warnings: [], }
+    {
+      format: "jpeg",
+      width: width.to_double(),
+      height: height.to_double(),
+      dc,
+      animated: false,
+      warnings: [],
+    }
   }
 }

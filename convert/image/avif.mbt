@@ -250,8 +250,8 @@ fn read_avif(data : Bytes) -> Picture raise {
   }
   {
     format: "avif",
-    width: picture.width,
-    height: picture.height,
+    width: picture.width.to_double(),
+    height: picture.height.to_double(),
     dc,
     animated,
     warnings: [],

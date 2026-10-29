@@ -162,12 +162,11 @@ converter.terminate();
 ```
 
 `open()` returns the complete document with `pages: 0` for these formats.
-The native Worker currently supports BMP, ICO, JPEG, PNG, GIF, WebP and AVIF, and rejects
+The native Worker currently supports BMP, ICO, JPEG, PNG, GIF, WebP, AVIF and SVG, and rejects
 the `fonts` option. JPEG, PNG, WebP and AVIF support EXIF and XMP metadata, GIF supports
-XMP, and JPEG also supports IPTC. Malformed XMP, other character encodings and PNG Creation Time timezone
+XMP, SVG supports RDF metadata, and JPEG also supports IPTC. Malformed SVG or XMP, other XML character encodings and PNG Creation Time timezone
 abbreviations are not yet supported. `bdf_converter_client`
-can also wrap its Worker; pass an empty Wasm URL. Other image formats and the
-other conversion engines remain to be ported.
+can also wrap its Worker; pass an empty Wasm URL. Other conversion engines remain to be ported.
 
 The converter client can also run an existing compatible Go or TinyGo converter Wasm
 module in a dedicated Worker. Build with `moon build --target js` and serve the

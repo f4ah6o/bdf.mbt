@@ -106,5 +106,12 @@ fn read_gif(data : Bytes) -> Picture raise {
     xmp_add(native, "description", [comment])
     metadata_merge(dc, native)
   }
-  { format: "gif", width, height, dc, animated: frames > 1, warnings: [], }
+  {
+    format: "gif",
+    width: width.to_double(),
+    height: height.to_double(),
+    dc,
+    animated: frames > 1,
+    warnings: [],
+  }
 }

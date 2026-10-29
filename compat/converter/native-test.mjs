@@ -25,9 +25,9 @@ export async function verifyNativeConverter(browser, base) {
           : bdf_create_native_converter('/_build/js/debug/build/native_converter_worker/native_converter_worker.js');
         try {
           const formats = await client.ready;
-          if (!formats.some(f => f.name === 'image' && f.extensions.includes('.bmp') && f.extensions.includes('.ico') && f.extensions.includes('.jpg') && f.extensions.includes('.png') && f.extensions.includes('.gif') && f.extensions.includes('.webp') && f.extensions.includes('.avif'))) throw new Error(`${kind}: missing image formats ${JSON.stringify(formats)}`);
+          if (!formats.some(f => f.name === 'image' && ['.bmp', '.ico', '.jpg', '.png', '.gif', '.webp', '.avif', '.svg'].every(ext => f.extensions.includes(ext)))) throw new Error(`${kind}: missing image formats ${JSON.stringify(formats)}`);
           const converted = [];
-          for (const fixture of [fixtures[0], fixtures[1], fixtures[4], fixtures[5], fixtures[6], fixtures[7], fixtures[9], fixtures[10], fixtures[11], fixtures[12], fixtures[13], fixtures[14], fixtures.find(f => f.name === 'anim.gif'), fixtures.find(f => f.name === 'xmp.gif'), fixtures.find(f => f.name === 'scene.webp'), fixtures.find(f => f.name === 'rotated.avif'), ...fixtures.filter(f => f.name.startsWith('synthetic-') && (f.format === 'webp' || f.format === 'avif'))]) {
+          for (const fixture of [fixtures[0], fixtures[1], fixtures[4], fixtures[5], fixtures[6], fixtures[7], fixtures[9], fixtures[10], fixtures[11], fixtures[12], fixtures[13], fixtures[14], fixtures.find(f => f.name === 'anim.gif'), fixtures.find(f => f.name === 'xmp.gif'), fixtures.find(f => f.name === 'scene.webp'), fixtures.find(f => f.name === 'rotated.avif'), ...fixtures.filter(f => f.format === 'svg'), ...fixtures.filter(f => f.name.startsWith('synthetic-') && (f.format === 'webp' || f.format === 'avif'))]) {
             const input = toBytes(fixture.input);
             const wrapped = new Uint8Array(input.length + 6); wrapped.set(input, 3);
             const source = wrapped.subarray(3, 3 + input.length);
@@ -65,14 +65,14 @@ export async function verifyNativeConverter(browser, base) {
           result.push({ converted, closed, missing });
         } finally { client.terminate(); }
       }
-      for (const fixture of [fixtures[0], fixtures[6], fixtures[10], fixtures[12], fixtures[14], fixtures.find(f => f.name === 'anim.gif'), fixtures.find(f => f.name === 'scene.webp'), fixtures.find(f => f.name === 'rotated.avif')]) {
+      for (const fixture of [fixtures[0], fixtures[6], fixtures[10], fixtures[12], fixtures[14], fixtures.find(f => f.name === 'anim.gif'), fixtures.find(f => f.name === 'scene.webp'), fixtures.find(f => f.name === 'rotated.avif'), fixtures.find(f => f.name === 'drawing.svg'), fixtures.find(f => f.name === 'units.svg')]) {
         const { bdf_create_viewer } = await import('/_build/js/debug/build/browser/browser.js');
         const client = bdf_create_native_converter('/_build/js/debug/build/native_converter_worker/native_converter_worker.js');
         const host = document.createElement('div'); host.style.cssText = 'width:200px;height:200px'; document.body.append(host);
         const viewer = bdf_create_viewer(host, { workerUrl: '/_build/js/debug/build/render_worker/render_worker.js', find: false });
         try {
           const manifest = await viewer.openFile(client, toBytes(fixture.input), { name: fixture.name });
-          if (manifest.views[0].pages[0].w !== fixture.width * 0.75) throw new Error('viewer opened the wrong page');
+          if (manifest.views[0].pages[0].w !== fixture.pageW) throw new Error('viewer opened the wrong page');
           const start = performance.now();
           while (!host.querySelector('canvas[data-loaded="ready"]')) {
             if (performance.now() - start > 7000) throw new Error('viewer did not render native conversion');

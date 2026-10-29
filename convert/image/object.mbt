@@ -24,6 +24,7 @@ fn image_object(
   width : Float,
   height : Float,
   alt : String,
+  smooth : Bool,
 ) -> Bytes {
   let original = @utf8.encode(alt)
   // The upstream object's string table strips leading Unicode BOMs.
@@ -36,7 +37,11 @@ fn image_object(
   }
   let text = original[start:]
   let ops = @buffer.Buffer()
-  ops.write_bytes(b"\x71\x0a\x00\x42\x01\x02\x40\x00")
+  ops.write_bytes(b"\x71\x0a\x00")
+  if smooth {
+    ops.write_bytes(b"\x42\x01\x02")
+  }
+  ops.write_bytes(b"\x40\x00")
   ops.write_float_le(0.0F)
   ops.write_float_le(0.0F)
   ops.write_float_le(width)

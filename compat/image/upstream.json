@@ -68,7 +68,9 @@
     },
     "dc": {},
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 9,
+    "pageH": 6
   },
   {
     "name": "icon.ico",
@@ -179,7 +181,9 @@
     },
     "dc": {},
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 24,
+    "pageH": 24
   },
   {
     "name": "写真.bmp",
@@ -252,7 +256,9 @@
       "title": "絵の題名"
     },
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 9,
+    "pageH": 6
   },
   {
     "name": "",
@@ -363,7 +369,9 @@
     },
     "dc": {},
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 24,
+    "pageH": 24
   },
   {
     "name": "plain.jpg",
@@ -436,7 +444,9 @@
     },
     "dc": {},
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 5.25,
+    "pageH": 3.75
   },
   {
     "name": "rotated.jpg",
@@ -510,7 +520,9 @@
     },
     "dc": {},
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 3.75,
+    "pageH": 5.25
   },
   {
     "name": "photo.jpg",
@@ -632,7 +644,9 @@
       "modified": "2026-09-02T08:00:00"
     },
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 36,
+    "pageH": 48
   },
   {
     "name": "iptc.jpg",
@@ -716,7 +730,9 @@
       "created": "2026-08-31T18:45:00+09:00"
     },
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 6,
+    "pageH": 6
   },
   {
     "name": "renamed.jpg",
@@ -838,7 +854,9 @@
       "modified": "2026-09-02T08:00:00"
     },
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 36,
+    "pageH": 48
   },
   {
     "name": "xmp.jpg",
@@ -924,7 +942,9 @@
       "created": "2026-09-01T12:00:00Z"
     },
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 5.25,
+    "pageH": 3.75
   },
   {
     "name": "utf16le.jpg",
@@ -1014,7 +1034,9 @@
       "created": "2026-09-01T12:00:00Z"
     },
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 5.25,
+    "pageH": 3.75
   },
   {
     "name": "utf16be.jpg",
@@ -1104,7 +1126,9 @@
       "created": "2026-09-01T12:00:00Z"
     },
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 5.25,
+    "pageH": 3.75
   },
   {
     "name": "tags.png",
@@ -1182,7 +1206,9 @@
       "created": "2026-09-01T10:20:30+09:00"
     },
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 24,
+    "pageH": 18
   },
   {
     "name": "anim.png",
@@ -1262,7 +1288,9 @@
     "animated": true,
     "warnings": [
       "animated image: the first frame is drawn"
-    ]
+    ],
+    "pageW": 24,
+    "pageH": 18
   },
   {
     "name": "metadata.png",
@@ -1339,7 +1367,9 @@
       "modified": "2026-09-02T08:00:00Z"
     },
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 3.75,
+    "pageH": 5.25
   },
   {
     "name": "date-rfc1123z.png",
@@ -1418,7 +1448,9 @@
       "modified": "2026-09-02T08:00:00Z"
     },
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 3.75,
+    "pageH": 5.25
   },
   {
     "name": "date-rfc1123.png",
@@ -1497,7 +1529,9 @@
       "modified": "2026-09-02T08:00:00Z"
     },
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 3.75,
+    "pageH": 5.25
   },
   {
     "name": "date-rfc822z.png",
@@ -1576,7 +1610,9 @@
       "modified": "2026-09-02T08:00:00Z"
     },
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 3.75,
+    "pageH": 5.25
   },
   {
     "name": "date-rfc822.png",
@@ -1655,7 +1691,9 @@
       "modified": "2026-09-02T08:00:00Z"
     },
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 3.75,
+    "pageH": 5.25
   },
   {
     "name": "date-rfc850.png",
@@ -1734,7 +1772,9 @@
       "modified": "2026-09-02T08:00:00Z"
     },
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 3.75,
+    "pageH": 5.25
   },
   {
     "name": "date-ansic.png",
@@ -1813,7 +1853,9 @@
       "modified": "2026-09-02T08:00:00Z"
     },
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 3.75,
+    "pageH": 5.25
   },
   {
     "name": "date-short.png",
@@ -1892,7 +1934,9 @@
       "modified": "2026-09-02T08:00:00Z"
     },
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 3.75,
+    "pageH": 5.25
   },
   {
     "name": "date-zone.png",
@@ -1971,7 +2015,9 @@
       "modified": "2026-09-02T08:00:00Z"
     },
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 3.75,
+    "pageH": 5.25
   },
   {
     "name": "anim.gif",
@@ -2045,7 +2091,9 @@
     "animated": true,
     "warnings": [
       "animated image: the first frame is drawn"
-    ]
+    ],
+    "pageW": 12,
+    "pageH": 12
   },
   {
     "name": "xmp.gif",
@@ -2122,7 +2170,9 @@
     "animated": true,
     "warnings": [
       "animated image: the first frame is drawn"
-    ]
+    ],
+    "pageW": 12,
+    "pageH": 12
   },
   {
     "name": "scene.webp",
@@ -2222,7 +2272,9 @@
     "animated": false,
     "warnings": [
       "the EXIF orientation of the WebP image is not applied: browsers draw WebP images as they are stored"
-    ]
+    ],
+    "pageW": 48,
+    "pageH": 36
   },
   {
     "name": "rotated.avif",
@@ -2304,7 +2356,457 @@
       "created": "2026-09-03T12:00:00Z"
     },
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 36,
+    "pageH": 48
+  },
+  {
+    "name": "drawing.svg",
+    "title": "",
+    "input": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPCEtLSBTaGFwZXMgd2hvc2UgZWRnZXMgc2hvdyB3aGV0aGVyIGFuIFNWRyBpbWFnZSBpcyBkcmF3biBzaGFycGx5IHdoZW4gem9vbWVkIC0tPgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIgogICAgIHhtbG5zOmNjPSJodHRwOi8vY3JlYXRpdmVjb21tb25zLm9yZy9ucyMiIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIKICAgICB3aWR0aD0iMzIwIiBoZWlnaHQ9IjI0MCIgdmlld0JveD0iMCAwIDgwIDYwIiB4bWw6bGFuZz0iZW4iPgogIDx0aXRsZT5TaGFwZXM8L3RpdGxlPgogIDxkZXNjPkEgZ3JhZGllbnQgY2FyZCB3aXRoIGEgY2lyY2xlLCBhIHN0YXIgYW5kIGhhaXJsaW5lczwvZGVzYz4KICA8bWV0YWRhdGE+CiAgICA8cmRmOlJERj4KICAgICAgPGNjOldvcmsgcmRmOmFib3V0PSIiPgogICAgICAgIDxkYzp0aXRsZT5TaGFwZXMgYW5kIGhhaXJsaW5lczwvZGM6dGl0bGU+CiAgICAgICAgPGRjOmNyZWF0b3I+PGNjOkFnZW50PjxkYzp0aXRsZT5IYW5ha28gU2F0bzwvZGM6dGl0bGU+PC9jYzpBZ2VudD48L2RjOmNyZWF0b3I+CiAgICAgICAgPGRjOnN1YmplY3Q+PHJkZjpCYWc+PHJkZjpsaT50ZXN0PC9yZGY6bGk+PHJkZjpsaT52ZWN0b3I8L3JkZjpsaT48L3JkZjpCYWc+PC9kYzpzdWJqZWN0PgogICAgICAgIDxkYzpkYXRlPjIwMjYtMDktMjY8L2RjOmRhdGU+CiAgICAgICAgPGRjOnJpZ2h0cz48Y2M6QWdlbnQ+PGRjOnRpdGxlPkNDMDwvZGM6dGl0bGU+PC9jYzpBZ2VudD48L2RjOnJpZ2h0cz4KICAgICAgPC9jYzpXb3JrPgogICAgPC9yZGY6UkRGPgogIDwvbWV0YWRhdGE+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImNhcmQiIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMWU4OGU1Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzQzYTA0NyIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3QgeD0iMiIgeT0iMiIgd2lkdGg9Ijc2IiBoZWlnaHQ9IjU2IiByeD0iNSIgZmlsbD0idXJsKCNjYXJkKSIvPgogIDxjaXJjbGUgY3g9IjIyIiBjeT0iMzAiIHI9IjEzIiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuODUiLz4KICA8cGF0aCBkPSJNNTggMTIgTDYyLjcgMjUuNSBMNzcgMjUuOCBMNjUuNiAzNC40IEw2OS44IDQ4LjIgTDU4IDQwIEw0Ni4yIDQ4LjIgTDUwLjQgMzQuNCBMMzkgMjUuOCBMNTMuMyAyNS41IFoiCiAgICAgICAgZmlsbD0iI2ZkZDgzNSIgc3Ryb2tlPSIjNmQ0YzQxIiBzdHJva2Utd2lkdGg9IjAuNiIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxnIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIwLjE1Ij4KICAgIDxwYXRoIGQ9Ik02IDU0IEg3NCBNNiA1NiBINzQiLz4KICAgIDxwYXRoIGQ9Ik0yMiAxNyBWNDMgTTkgMzAgSDM1Ii8+CiAgPC9nPgo8L3N2Zz4K",
+    "format": "svg",
+    "width": 320,
+    "height": 240,
+    "summary": "1 page (320 × 240 px, SVG)",
+    "object": "Qk9CSgEAAAAAAAAAAAAAAAAAcEMAADRDAjNBIGdyYWRpZW50IGNhcmQgd2l0aCBhIGNpcmNsZSwgYSBzdGFyIGFuZCBoYWlybGluZXMAAAAAARkQGXC2hJh1A6Ig172gq+EAGHEKAEAAAAAAAAAAAAAAAHBDAAA0Q3ELAQ==",
+    "imageHash": "19101970b684987503a220d7bda0abe1",
+    "prefixes": {
+      "0": false,
+      "1": false,
+      "10": false,
+      "1016": true,
+      "11": false,
+      "1143": true,
+      "12": false,
+      "127": false,
+      "1270": true,
+      "13": false,
+      "1397": true,
+      "14": false,
+      "15": false,
+      "1524": true,
+      "1568": true,
+      "1569": true,
+      "16": false,
+      "17": false,
+      "18": false,
+      "19": false,
+      "2": false,
+      "20": false,
+      "21": false,
+      "22": false,
+      "23": false,
+      "24": false,
+      "25": false,
+      "254": false,
+      "26": false,
+      "27": false,
+      "28": false,
+      "29": false,
+      "3": false,
+      "30": false,
+      "31": false,
+      "32": false,
+      "33": false,
+      "34": false,
+      "35": false,
+      "36": false,
+      "37": false,
+      "38": false,
+      "381": true,
+      "39": false,
+      "4": false,
+      "40": false,
+      "41": false,
+      "42": false,
+      "43": false,
+      "44": false,
+      "45": false,
+      "46": false,
+      "47": false,
+      "48": false,
+      "49": false,
+      "5": false,
+      "50": false,
+      "508": true,
+      "6": false,
+      "635": true,
+      "7": false,
+      "762": true,
+      "8": false,
+      "889": true,
+      "9": false
+    },
+    "dc": {
+      "title": "Shapes and hairlines",
+      "creator": "Hanako Sato",
+      "subject": [
+        "test",
+        "vector"
+      ],
+      "description": "A gradient card with a circle, a star and hairlines",
+      "date": "2026-09-26",
+      "language": "en",
+      "rights": "CC0"
+    },
+    "animated": false,
+    "warnings": [],
+    "pageW": 240,
+    "pageH": 180
+  },
+  {
+    "name": "units.svg",
+    "title": "",
+    "input": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxY20iIGhlaWdodD0iMWluIj48dGl0bGU+VW5pdHM8L3RpdGxlPjwvc3ZnPg==",
+    "format": "svg",
+    "width": 37.79527559055118,
+    "height": 96,
+    "summary": "1 page (37.8 × 96 px, SVG)",
+    "object": "Qk9CSgEAAAAAAAAAAAAAAIvF4kEAAJBCAgVVbml0cwAAAAAB0c3fQ0ecfh0wWvfGjWke8QAYcQoAQAAAAAAAAAAAAIvF4kEAAJBCcQsB",
+    "imageHash": "d1cddf43479c7e1d305af7c68d691ef1",
+    "prefixes": {
+      "0": false,
+      "1": false,
+      "10": false,
+      "11": false,
+      "12": false,
+      "13": false,
+      "14": false,
+      "15": false,
+      "16": false,
+      "17": false,
+      "18": false,
+      "19": false,
+      "2": false,
+      "20": false,
+      "21": false,
+      "22": false,
+      "23": false,
+      "24": false,
+      "25": false,
+      "26": false,
+      "27": false,
+      "28": false,
+      "29": false,
+      "3": false,
+      "30": false,
+      "31": false,
+      "32": false,
+      "33": false,
+      "34": false,
+      "35": false,
+      "36": false,
+      "37": false,
+      "38": false,
+      "39": false,
+      "4": false,
+      "40": false,
+      "41": false,
+      "42": false,
+      "43": false,
+      "44": false,
+      "45": false,
+      "46": false,
+      "47": false,
+      "48": false,
+      "49": false,
+      "5": false,
+      "50": false,
+      "6": false,
+      "7": false,
+      "8": false,
+      "9": false,
+      "90": true,
+      "91": true
+    },
+    "dc": {
+      "title": "Units"
+    },
+    "animated": false,
+    "warnings": [],
+    "pageW": 28.346457,
+    "pageH": 72
+  },
+  {
+    "name": "fraction.svg",
+    "title": "",
+    "input": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIwLjEiIGhlaWdodD0iMC4zIj48dGl0bGU+U21hbGw8L3RpdGxlPjwvc3ZnPg==",
+    "format": "svg",
+    "width": 0.1,
+    "height": 0.3,
+    "summary": "1 page (0.1 × 0.3 px, SVG)",
+    "object": "Qk9CSgEAAAAAAAAAAAAAAJqZmT1mZmY+AgVTbWFsbAAAAAABNFq6RPW9MonvfZD7wr82egAYcQoAQAAAAAAAAAAAAJqZmT1mZmY+cQsB",
+    "imageHash": "345aba44f5bd3289ef7d90fbc2bf367a",
+    "prefixes": {
+      "0": false,
+      "1": false,
+      "10": false,
+      "11": false,
+      "12": false,
+      "13": false,
+      "14": false,
+      "15": false,
+      "16": false,
+      "17": false,
+      "18": false,
+      "19": false,
+      "2": false,
+      "20": false,
+      "21": false,
+      "22": false,
+      "23": false,
+      "24": false,
+      "25": false,
+      "26": false,
+      "27": false,
+      "28": false,
+      "29": false,
+      "3": false,
+      "30": false,
+      "31": false,
+      "32": false,
+      "33": false,
+      "34": false,
+      "35": false,
+      "36": false,
+      "37": false,
+      "38": false,
+      "39": false,
+      "4": false,
+      "40": false,
+      "41": false,
+      "42": false,
+      "43": false,
+      "44": false,
+      "45": false,
+      "46": false,
+      "47": false,
+      "48": false,
+      "49": false,
+      "5": false,
+      "50": false,
+      "6": false,
+      "7": false,
+      "8": false,
+      "9": false,
+      "90": true,
+      "91": true
+    },
+    "dc": {
+      "title": "Small"
+    },
+    "animated": false,
+    "warnings": [],
+    "pageW": 0.075,
+    "pageH": 0.225
+  },
+  {
+    "name": "ratio.svg",
+    "title": "",
+    "input": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxLjI1aW4iIHZpZXdCb3g9IjAgMCA0IDMiPjxkZXNjPkEgbGFuZHNjYXBlPC9kZXNjPjwvc3ZnPg==",
+    "format": "svg",
+    "width": 120,
+    "height": 90,
+    "summary": "1 page (120 × 90 px, SVG)",
+    "object": "Qk9CSgEAAAAAAAAAAAAAAAAAtEIAAIdCAgtBIGxhbmRzY2FwZQAAAAABLaLC3evlGnXamGDYk8/UwAAYcQoAQAAAAAAAAAAAAAAAtEIAAIdCcQsB",
+    "imageHash": "2da2c2ddebe51a75da9860d893cfd4c0",
+    "prefixes": {
+      "0": false,
+      "1": false,
+      "10": false,
+      "102": true,
+      "103": true,
+      "11": false,
+      "12": false,
+      "13": false,
+      "14": false,
+      "15": false,
+      "16": false,
+      "17": false,
+      "18": false,
+      "19": false,
+      "2": false,
+      "20": false,
+      "21": false,
+      "22": false,
+      "23": false,
+      "24": false,
+      "25": false,
+      "26": false,
+      "27": false,
+      "28": false,
+      "29": false,
+      "3": false,
+      "30": false,
+      "31": false,
+      "32": false,
+      "33": false,
+      "34": false,
+      "35": false,
+      "36": false,
+      "37": false,
+      "38": false,
+      "39": false,
+      "4": false,
+      "40": false,
+      "41": false,
+      "42": false,
+      "43": false,
+      "44": false,
+      "45": false,
+      "46": false,
+      "47": false,
+      "48": false,
+      "49": false,
+      "5": false,
+      "50": false,
+      "6": false,
+      "7": false,
+      "8": false,
+      "9": false
+    },
+    "dc": {
+      "description": "A landscape"
+    },
+    "animated": false,
+    "warnings": [],
+    "pageW": 90,
+    "pageH": 67.5
+  },
+  {
+    "name": "default.svg",
+    "title": "",
+    "input": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciLz4=",
+    "format": "svg",
+    "width": 300,
+    "height": 150,
+    "summary": "1 page (300 × 150 px, SVG)",
+    "object": "Qk9CSgEAAAAAAAAAAAAAAAAAYUMAAOFCAgtkZWZhdWx0LnN2ZwAAAAABkA++k0JJrRIABL0krfZqrQAYcQoAQAAAAAAAAAAAAAAAYUMAAOFCcQsB",
+    "imageHash": "900fbe934249ad120004bd24adf66aad",
+    "prefixes": {
+      "0": false,
+      "1": false,
+      "10": false,
+      "11": false,
+      "12": false,
+      "13": false,
+      "14": false,
+      "15": false,
+      "16": false,
+      "17": false,
+      "18": false,
+      "19": false,
+      "2": false,
+      "20": false,
+      "21": false,
+      "22": false,
+      "23": false,
+      "24": false,
+      "25": false,
+      "26": false,
+      "27": false,
+      "28": false,
+      "29": false,
+      "3": false,
+      "30": false,
+      "31": false,
+      "32": false,
+      "33": false,
+      "34": false,
+      "35": false,
+      "36": false,
+      "37": false,
+      "38": false,
+      "39": false,
+      "4": false,
+      "40": false,
+      "41": true,
+      "5": false,
+      "6": false,
+      "7": false,
+      "8": false,
+      "9": false
+    },
+    "dc": {},
+    "animated": false,
+    "warnings": [],
+    "pageW": 225,
+    "pageH": 112.5
+  },
+  {
+    "name": "no-namespace.svg",
+    "title": "",
+    "input": "PHN2ZyB3aWR0aD0iMWVtIiBoZWlnaHQ9IjJleCI+PHRpdGxlPkhpIDx0c3Bhbj50aGVyZTwvdHNwYW4+ICE8L3RpdGxlPjwvc3ZnPg==",
+    "format": "svg",
+    "width": 16,
+    "height": 16,
+    "summary": "1 page (16 × 16 px, SVG)",
+    "object": "Qk9CSgEAAAAAAAAAAAAAAAAAQEEAAEBBAgpIaSAhIHRoZXJlAAAAAAEaqMs8IDvzssLwMBqVyDZKABhxCgBAAAAAAAAAAAAAAABAQQAAQEFxCwE=",
+    "imageHash": "1aa8cb3c203bf3b2c2f0301a95c8364a",
+    "prefixes": {
+      "0": false,
+      "1": false,
+      "10": false,
+      "11": false,
+      "12": false,
+      "13": false,
+      "14": false,
+      "15": false,
+      "16": false,
+      "17": false,
+      "18": false,
+      "19": false,
+      "2": false,
+      "20": false,
+      "21": false,
+      "22": false,
+      "23": false,
+      "24": false,
+      "25": false,
+      "26": false,
+      "27": false,
+      "28": false,
+      "29": false,
+      "3": false,
+      "30": true,
+      "31": true,
+      "32": true,
+      "33": true,
+      "34": true,
+      "35": true,
+      "36": true,
+      "37": true,
+      "38": true,
+      "39": true,
+      "4": false,
+      "40": true,
+      "41": true,
+      "42": true,
+      "43": true,
+      "44": true,
+      "45": true,
+      "46": true,
+      "47": true,
+      "48": true,
+      "49": true,
+      "5": false,
+      "50": true,
+      "6": false,
+      "7": false,
+      "75": true,
+      "76": true,
+      "8": false,
+      "9": false
+    },
+    "dc": {
+      "title": "Hi ! there"
+    },
+    "animated": false,
+    "warnings": [
+      "the root svg element is not in the SVG namespace (xmlns=\"http://www.w3.org/2000/svg\"): browsers do not draw it"
+    ],
+    "pageW": 12,
+    "pageH": 12
   },
   {
     "name": "synthetic-sequence.avif",
@@ -2375,7 +2877,9 @@
     "animated": true,
     "warnings": [
       "animated image: the first frame is drawn"
-    ]
+    ],
+    "pageW": 48,
+    "pageH": 36
   },
   {
     "name": "synthetic-lossy.webp",
@@ -2422,7 +2926,9 @@
     },
     "dc": {},
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 5.25,
+    "pageH": 3.75
   },
   {
     "name": "synthetic-lossless.webp",
@@ -2465,7 +2971,9 @@
     },
     "dc": {},
     "animated": false,
-    "warnings": []
+    "warnings": [],
+    "pageW": 5.25,
+    "pageH": 3.75
   },
   {
     "name": "synthetic-animated.webp",
@@ -2537,6 +3045,8 @@
     "warnings": [
       "the EXIF orientation of the WebP image is not applied: browsers draw WebP images as they are stored",
       "animated image: the first frame is drawn"
-    ]
+    ],
+    "pageW": 5.25,
+    "pageH": 3.75
   }
 ]

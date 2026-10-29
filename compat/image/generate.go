@@ -34,6 +34,8 @@ type fixture struct {
 	DC        any          `json:"dc"`
 	Animated  bool         `json:"animated"`
 	Warnings  []string     `json:"warnings"`
+	PageW     float32      `json:"pageW"`
+	PageH     float32      `json:"pageH"`
 }
 
 func jpegFixture(kind int) []byte {
@@ -176,6 +178,13 @@ func avifSequence() []byte {
 }
 
 func main() {
+	svgs := map[string]string{
+		"units.svg":        `<svg xmlns="http://www.w3.org/2000/svg" width="1cm" height="1in"><title>Units</title></svg>`,
+		"fraction.svg":     `<svg xmlns="http://www.w3.org/2000/svg" width="0.1" height="0.3"><title>Small</title></svg>`,
+		"ratio.svg":        `<svg xmlns="http://www.w3.org/2000/svg" width="1.25in" viewBox="0 0 4 3"><desc>A landscape</desc></svg>`,
+		"default.svg":      `<svg xmlns="http://www.w3.org/2000/svg"/>`,
+		"no-namespace.svg": `<svg width="1em" height="2ex"><title>Hi <tspan>there</tspan> !</title></svg>`,
+	}
 	webps := map[string]string{
 		"synthetic-lossy.webp":    "lossy",
 		"synthetic-lossless.webp": "lossless",
@@ -223,13 +232,21 @@ func main() {
 		{"xmp.gif", "xmp.gif", "", 0},
 		{"scene.webp", "scene.webp", "", 0},
 		{"rotated.avif", "rotated.avif", "", 0},
+		{"drawing.svg", "drawing.svg", "", 0},
+		{"units.svg", "units.svg", "", 0},
+		{"fraction.svg", "fraction.svg", "", 0},
+		{"ratio.svg", "ratio.svg", "", 0},
+		{"default.svg", "default.svg", "", 0},
+		{"no-namespace.svg", "no-namespace.svg", "", 0},
 		{"synthetic-sequence.avif", "synthetic-sequence.avif", "", 0},
 		{"synthetic-lossy.webp", "synthetic-lossy.webp", "", 0},
 		{"synthetic-lossless.webp", "synthetic-lossless.webp", "", 0},
 		{"synthetic-animated.webp", "synthetic-animated.webp", "", 0},
 	} {
 		var data []byte
-		if tc.file == "synthetic-sequence.avif" {
+		if svg, ok := svgs[tc.file]; ok {
+			data = []byte(svg)
+		} else if tc.file == "synthetic-sequence.avif" {
 			data = avifSequence()
 		} else if kind, ok := webps[tc.file]; ok {
 			data = webpFixture(kind)
@@ -285,7 +302,7 @@ func main() {
 			_, err := image.Convert(bytes.NewReader(data[:n]), int64(n), nil)
 			prefixes[n] = err == nil
 		}
-		out = append(out, fixture{tc.name, tc.title, base64.StdEncoding.EncodeToString(data), result.Format, result.Width, result.Height, result.Summary(), base64.StdEncoding.EncodeToString(object.Data), result.Doc.Parts()[0].Hash.String(), prefixes, result.Doc.Meta.DC, result.Animated, append([]string{}, result.Warnings...)})
+		out = append(out, fixture{tc.name, tc.title, base64.StdEncoding.EncodeToString(data), result.Format, result.Width, result.Height, result.Summary(), base64.StdEncoding.EncodeToString(object.Data), result.Doc.Parts()[0].Hash.String(), prefixes, result.Doc.Meta.DC, result.Animated, append([]string{}, result.Warnings...), page.W, page.H})
 	}
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")

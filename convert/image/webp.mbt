@@ -79,5 +79,12 @@ fn read_webp(data : Bytes) -> Picture raise {
       "the EXIF orientation of the WebP image is not applied: browsers draw WebP images as they are stored",
     )
   }
-  { format: "webp", width, height, dc, animated: frames > 1, warnings, }
+  {
+    format: "webp",
+    width: width.to_double(),
+    height: height.to_double(),
+    dc,
+    animated: frames > 1,
+    warnings,
+  }
 }

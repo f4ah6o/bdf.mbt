@@ -2,6 +2,7 @@ import {
   "f4ah6o/bdf/core",
   "moonbitlang/core/buffer",
   "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/string",
   "Milky2018/xml",
   "gaato/deflate/zlib",
 }

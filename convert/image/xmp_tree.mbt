@@ -36,15 +36,23 @@ fn xmp_node(element : @xml.NamespaceElement) -> XmpNode {
 ///|
 // Read what is available before a syntax error, as the upstream XMP reader
 // does. Children beyond 512 levels are skipped while their siblings survive.
-fn xmp_tree_checked(input : String, utf16~ : Bool = false) -> (XmpNode?, Bool) {
+fn xmp_tree_checked(
+  input : String,
+  utf16~ : Bool = false,
+  entire~ : Bool = false,
+) -> (XmpNode?, Bool) {
   let reader = @xml.NamespaceReader::from_string(input)
   let stack : Array[XmpNode] = []
   let mut root : XmpNode? = None
   let mut skipped = 0
+  let mut closed = false
   while true {
     let event = reader.read_event() catch { _ => return (root, false) }
     match event.kind {
       Start(element) => {
+        if closed {
+          return (root, false)
+        }
         if skipped > 0 {
           skipped += 1
           continue
@@ -62,6 +70,9 @@ fn xmp_tree_checked(input : String, utf16~ : Bool = false) -> (XmpNode?, Bool) {
         }
       }
       Empty(element) => {
+        if closed {
+          return (root, false)
+        }
         if skipped > 0 {
           continue
         }
@@ -69,7 +80,11 @@ fn xmp_tree_checked(input : String, utf16~ : Bool = false) -> (XmpNode?, Bool) {
         if stack.length() > 0 && stack.length() <= 512 {
           stack[stack.length() - 1].children.push(node)
         } else if stack.length() == 0 {
-          return (Some(node), true)
+          root = Some(node)
+          if !entire {
+            return (root, true)
+          }
+          closed = true
         }
       }
       End(_) => {
@@ -79,12 +94,17 @@ fn xmp_tree_checked(input : String, utf16~ : Bool = false) -> (XmpNode?, Bool) {
         }
         ignore(stack.pop())
         if stack.length() == 0 {
-          return (root, true)
+          if !entire {
+            return (root, true)
+          }
+          closed = true
         }
       }
       Text(value) | CData(value) =>
         if skipped == 0 && stack.length() > 0 {
           stack[stack.length() - 1].text.write_string(value)
+        } else if closed && xmp_trim_space(value) != "" {
+          return (root, false)
         }
       Decl(encoding~, ..) =>
         match encoding {
@@ -102,7 +122,7 @@ fn xmp_tree_checked(input : String, utf16~ : Bool = false) -> (XmpNode?, Bool) {
       _ => ()
     }
   }
-  (root, true)
+  (root, if entire { closed } else { true })
 }
 
 ///|

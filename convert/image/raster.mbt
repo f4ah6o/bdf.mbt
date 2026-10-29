@@ -1,8 +1,8 @@
 ///|
 struct Picture {
   format : String
-  width : Int64
-  height : Int64
+  width : Double
+  height : Double
   dc : Map[String, Array[String]]
   animated : Bool
   warnings : Array[String]
@@ -89,8 +89,8 @@ fn read_picture(data : Bytes) -> Picture raise {
     }
     return {
       format: "bmp",
-      width,
-      height,
+      width: width.to_double(),
+      height: height.to_double(),
       dc: Map([]),
       animated: false,
       warnings: [],
@@ -121,14 +121,17 @@ fn read_picture(data : Bytes) -> Picture raise {
     }
     return {
       format: "ico",
-      width,
-      height,
+      width: width.to_double(),
+      height: height.to_double(),
       dc: Map([]),
       animated: false,
       warnings: [],
     }
   }
+  if svg_candidate(data) {
+    return read_svg(data)
+  }
   raise ImageFailure(
-    "image: input is not a supported BMP, ICO, JPEG, PNG, GIF, WebP or AVIF image",
+    "image: input is not a supported BMP, ICO, JPEG, PNG, GIF, WebP, AVIF or SVG image",
   )
 }
