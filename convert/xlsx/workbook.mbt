@@ -16,6 +16,7 @@ pub(all) struct XlsxWorkbook {
   date1904 : Bool
   sheets : Array[XlsxSheetRef]
   warnings : Array[String]
+  mut cached_shared_strings : Array[String]?
 }
 
 ///|
@@ -179,5 +180,12 @@ pub fn read_xlsx_workbook(data : Bytes) -> XlsxWorkbook raise XlsxInputError {
       _ => ()
     }
   }
-  { package: pkg, part, date1904, sheets, warnings, }
+  {
+    package: pkg,
+    part,
+    date1904,
+    sheets,
+    warnings,
+    cached_shared_strings: None,
+  }
 }

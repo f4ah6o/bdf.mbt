@@ -56,6 +56,21 @@ fn xlsx_rich_text(reader : @xml.NamespaceReader) -> String raise {
 /// Load the workbook's shared strings as displayed text.
 /// A missing or invalid string table is treated as empty, as in upstream.
 pub fn XlsxWorkbook::shared_strings(self : XlsxWorkbook) -> Array[String] {
+  self.load_shared_strings().copy()
+}
+
+///|
+fn XlsxWorkbook::load_shared_strings(self : XlsxWorkbook) -> Array[String] {
+  if self.cached_shared_strings is Some(strings) {
+    return strings
+  }
+  let strings = self.parse_shared_strings()
+  self.cached_shared_strings = Some(strings)
+  strings
+}
+
+///|
+fn XlsxWorkbook::parse_shared_strings(self : XlsxWorkbook) -> Array[String] {
   let rel = match
     self.package.relationship_of_type(self.part, "/sharedStrings") {
     Some(rel) => rel

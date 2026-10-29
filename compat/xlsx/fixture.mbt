@@ -46,3 +46,49 @@ pub fn xlsx_strings(data : Bytes) -> String {
     _ => "null"
   }
 }
+
+///|
+#export_name("xlsx_iso_date")
+pub fn xlsx_iso_date(value : String, date1904 : Bool) -> String {
+  match @xlsx.xlsx_iso_serial(value, date1904) {
+    None => Json::array([Json::number(0.0), Json::boolean(false)]).stringify()
+    Some(v) => Json::array([Json::number(v), Json::boolean(true)]).stringify()
+  }
+}
+
+///|
+fn xlsx_row_json(row : @xlsx.XlsxRow) -> Json {
+  let cells = row.cells.map(fn(c) {
+    Json::array([
+      Json::number(c.column.to_double()),
+      Json::number(c.style.to_double()),
+      Json::number(c.kind.to_double()),
+      Json::number(c.number),
+      Json::string(c.text),
+    ])
+  })
+  Json::array([
+    Json::number(row.index.to_double()),
+    Json::number(row.height),
+    Json::boolean(row.custom_height),
+    Json::boolean(row.hidden),
+    Json::number(row.style.to_double()),
+    Json::array(cells),
+  ])
+}
+
+///|
+#export_name("xlsx_cells")
+pub fn xlsx_cells(data : Bytes, part : String) -> String {
+  try {
+    let workbook = @xlsx.read_xlsx_workbook(data)
+    let sheet = workbook.read_sheet_cells(part)
+    Json::array([
+      Json::array(sheet.rows.map(xlsx_row_json)),
+      Json::number(sheet.missing_formula_values.to_double()),
+      Json::array(sheet.sorted_rows().map(xlsx_row_json)),
+    ]).stringify()
+  } catch {
+    _ => "null"
+  }
+}
