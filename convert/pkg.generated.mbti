@@ -6,6 +6,11 @@ import {
 }
 
 // Values
+pub fn format_pages(Array[PageSpan]?) -> String
+
+pub fn page_numbers(Array[PageSpan]?, Int64) -> Array[Int64]?
+
+pub fn parse_pages(String) -> Array[PageSpan]? raise
 
 // Errors
 pub suberror ConvertError {
@@ -44,6 +49,11 @@ pub(all) struct ConvertOptions {
   params : Map[String, String]
 }
 pub fn ConvertOptions::new() -> Self
+
+pub(all) struct PageSpan {
+  from : Int64
+  to : Int64
+} derive(Eq, @debug.Debug)
 
 pub(all) enum PendingStatus {
   Waiting

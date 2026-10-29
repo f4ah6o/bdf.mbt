@@ -1,1 +1,7 @@
+import {
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/string",
+  "moonbit-community/ucd",
+}
+
 supported_targets = "+js+wasm-gc"

@@ -38,6 +38,7 @@ let commands = @render.compile_object(object) // Canvas command list
 let image = @image.convert(image_bytes, name="picture.bmp") // @f4ah6o/bdf/convert/image
 let client = @convert.Client::new()
 let request = client.request(@convert.Convert, @convert.ConvertOptions::new())
+let selected = @convert.page_numbers(@convert.parse_pages("1-3,5,8-"), 10)
 let viewer = @viewer.Viewer::new()
 viewer.set_layout(@viewer.Spread)
 let sequence = @core.parse_smf(midi_bytes)

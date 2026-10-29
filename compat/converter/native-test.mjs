@@ -33,6 +33,8 @@ export async function verifyNativeConverter(browser, base) {
             ['open', '1-x', 'open: pages: bad page "x" in "1-x": pages are numbered from 1'],
             ['convert', '5-3', 'convert: pages: bad page range "5-3": it ends before it starts'],
             ['open', '2--3', 'open: pages: bad page "-3" in "2--3": pages are numbered from 1'],
+            ['convert', '\x07', 'convert: pages: bad page "\\a" in "\\a": pages are numbered from 1'],
+            ['convert', '\u200b', 'convert: pages: bad page "\\u200b" in "\\u200b": pages are numbered from 1'],
           ]) {
             let message;
             try { await client[method](toBytes(fixtures[0].input), { pages }); } catch (error) { message = error.message; }
