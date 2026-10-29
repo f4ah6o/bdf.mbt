@@ -58,6 +58,7 @@ pub fn draw_grid_with_font(
 /// Glyph coverage collected while measuring and drawing a grid.
 pub(all) struct FontUsage {
   used : Bool
+  codepoints : Array[Int32]
   missing : Array[Int32]
 }
 
@@ -72,7 +73,11 @@ pub fn draw_grid_with_font_usage(
   language~ : String = "",
   table_style~ : String = "",
 ) -> (DrawnGrid, FontUsage) raise {
-  let usage : GridFontUsage = { used: false, missing: Map([]), }
+  let usage : GridFontUsage = {
+    used: false,
+    codepoints: Map([]),
+    missing: Map([]),
+  }
   let drawn = draw_grid(
     rows,
     header_rows~,
@@ -85,12 +90,15 @@ pub fn draw_grid_with_font_usage(
   )
   let missing = usage.missing.keys().collect()
   missing.sort()
-  (drawn, { used: usage.used, missing, })
+  let codepoints = usage.codepoints.keys().collect()
+  codepoints.sort()
+  (drawn, { used: usage.used, codepoints, missing, })
 }
 
 ///|
 priv struct GridFontUsage {
   mut used : Bool
+  codepoints : Map[Int32, Bool]
   missing : Map[Int32, Bool]
 }
 
@@ -111,7 +119,10 @@ fn draw_grid(
         match usage {
           Some(usage) =>
             match face.glyph(character.to_int()) {
-              Some(_) => usage.used = true
+              Some(_) => {
+                usage.used = true
+                usage.codepoints[character.to_int()] = true
+              }
               None =>
                 if !character.is_whitespace() &&
                   character.to_int() >= 0x20 &&

@@ -169,18 +169,20 @@ fn csv_result(
   scenario : Int32,
   index : Int32,
 ) -> @csv.NoFontResult raise {
+  let kind = scenario % 7
   @csv.convert_with_font(
     data,
     font,
     font_index=index,
+    no_subset=scenario < 7,
     name="People",
     title="Report",
-    header=if scenario == 3 { HeaderNo } else { HeaderYes },
-    data_mode=if scenario == 3 { DataNone } else { DataDefault },
-    table_style=if scenario == 2 { "Medium2" } else { "" },
-    quote=if scenario == 4 { -1 } else { 0 },
-    system_fonts=scenario == 5,
-    ignore_embedding_restrictions=scenario == 6,
+    header=if kind == 3 { HeaderNo } else { HeaderYes },
+    data_mode=if kind == 3 { DataNone } else { DataDefault },
+    table_style=if kind == 2 { "Medium2" } else { "" },
+    quote=if kind == 4 { -1 } else { 0 },
+    system_fonts=kind == 5,
+    ignore_embedding_restrictions=kind == 6,
   )
 }
 
@@ -214,4 +216,11 @@ pub fn csv_warnings(
 #export_name("canvas_program")
 pub fn canvas_program(font : @sfnt.Font) -> Bytes {
   try! font.canvas_program()
+}
+
+///|
+#export_name("subset_program")
+pub fn subset_program(font : @sfnt.Font, text : String) -> Bytes {
+  let codepoints : Array[Int32] = [ for ch in text => ch.to_int() ]
+  (try! font.subset_program(codepoints)).unwrap()
 }

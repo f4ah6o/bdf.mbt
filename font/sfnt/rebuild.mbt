@@ -90,40 +90,61 @@ fn canvas_os2(font : Font) -> Array[Byte] {
 /// tables are reconstructed while retaining licensing notices. The caller is
 /// responsible for checking `metrics.embeddable` before storing the result.
 pub fn Font::canvas_program(self : Font) -> Bytes raise {
+  rebuild_program(
+    self,
+    Map([]),
+    self.cmap,
+    self.metrics.glyph_count,
+    self.advances,
+  )
+}
+
+///|
+fn rebuild_program(
+  font : Font,
+  replacements : Map[String, Array[Byte]],
+  cmap : Map[Int32, Int32],
+  glyph_count : Int32,
+  advances : Array[Int32],
+) -> Bytes raise {
   let keep = [
     "glyf", "loca", "head", "hhea", "hmtx", "maxp", "cvt ", "fpgm", "prep", "CFF ",
     "gasp", "cmap", "name", "post",
   ]
   let tables : Map[String, Array[Byte]] = Map([])
   for tag in keep {
-    if self.metrics.is_cff && (tag == "glyf" || tag == "loca") {
+    if font.metrics.is_cff && (tag == "glyf" || tag == "loca") {
       continue
     }
-    if self.tables.contains(tag) {
-      tables[tag] = sfnt_table(self.source, self.tables, tag)
-        .to_owned()
-        .to_array()
+    match replacements.get(tag) {
+      Some(bytes) => tables[tag] = bytes.copy()
+      None =>
+        if font.tables.contains(tag) {
+          tables[tag] = sfnt_table(font.source, font.tables, tag)
+            .to_owned()
+            .to_array()
+        }
     }
   }
-  tables["cmap"] = build_cmap(self.cmap)
-  tables["name"] = build_names(self)
-  tables["OS/2"] = canvas_os2(self)
+  tables["cmap"] = build_cmap(cmap)
+  tables["name"] = build_names(font)
+  tables["OS/2"] = canvas_os2(font)
   let post = Bytes::make(32, 0).to_array()
   put32(post, 0, 0x00030000U)
   tables["post"] = post
   if !tables.contains("head") || tables["head"].length() == 0 {
-    tables["head"] = default_head(self.metrics.units_per_em)
+    tables["head"] = default_head(font.metrics.units_per_em)
   } else {
     match tables.get("head") {
       Some(head) if head.length() >= 54 => {
-        let style = (if self.info.weight >= 600 { 1 } else { 0 }) |
-          (if self.info.italic { 2 } else { 0 })
+        let style = (if font.info.weight >= 600 { 1 } else { 0 }) |
+          (if font.info.italic { 2 } else { 0 })
         put16(head, 44, style)
       }
       _ => ()
     }
   }
-  let (ascent, descent) = rebuild_ascent_descent(self)
+  let (ascent, descent) = rebuild_ascent_descent(font)
   if !tables.contains("hhea") ||
     tables["hhea"].length() == 0 ||
     !tables.contains("hmtx") ||
@@ -131,13 +152,13 @@ pub fn Font::canvas_program(self : Font) -> Bytes raise {
     tables["hhea"] = default_hhea(
       ascent,
       descent,
-      self.metrics.units_per_em,
-      self.metrics.glyph_count,
+      font.metrics.units_per_em,
+      glyph_count,
     )
-    tables["hmtx"] = default_hmtx(self)
+    tables["hmtx"] = default_hmtx(font, glyph_count, advances)
   }
   if !tables.contains("maxp") || tables["maxp"].length() == 0 {
-    tables["maxp"] = default_maxp(self.metrics.glyph_count, self.metrics.is_cff)
+    tables["maxp"] = default_maxp(glyph_count, font.metrics.is_cff)
   }
   let tags = tables.keys().collect()
   tags.sort()
@@ -151,7 +172,7 @@ pub fn Font::canvas_program(self : Font) -> Bytes raise {
   }
   let search = (1 << selector) * 16
   let out = Bytes::make(12 + 16 * count, 0).to_array()
-  put32(out, 0, if self.metrics.is_cff { 0x4f54544fU } else { 0x00010000U })
+  put32(out, 0, if font.metrics.is_cff { 0x4f54544fU } else { 0x00010000U })
   put16(out, 4, count)
   put16(out, 6, search)
   put16(out, 8, selector)

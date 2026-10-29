@@ -24,6 +24,8 @@ pub fn load_font(Bytes, Int32) -> @sfnt.Font
 
 pub fn metrics(@sfnt.Font) -> String
 
+pub fn subset_program(@sfnt.Font, String) -> Bytes
+
 // Errors
 
 // Types and methods

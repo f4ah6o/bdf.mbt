@@ -34,6 +34,7 @@ pub fn convert_no_fonts(
     table_style~,
     font_data=None,
     font_index=0,
+    no_subset=false,
     ignore_embedding_restrictions=false,
     system_fonts=false,
   )
@@ -41,14 +42,15 @@ pub fn convert_no_fonts(
 
 ///|
 /// Convert CSV using one explicitly supplied TrueType or OpenType font.
-/// The complete glyph outlines are embedded when the license permits it and
-/// glyphs are used. `font_index` selects a face within a TTC collection.
-/// Automatic font selection, subsetting and WOFF2 are not yet supported.
+/// TrueType glyph outlines are subsetted when allowed; `no_subset` embeds
+/// the full font. `font_index` selects a face within a TTC collection.
+/// Automatic font selection, CFF subsetting and WOFF2 are not yet supported.
 /// Set `system_fonts` to use font names without embedding.
 pub fn convert_with_font(
   data : Bytes,
   font_data : Bytes,
   font_index~ : Int32 = 0,
+  no_subset~ : Bool = false,
   name~ : String = "",
   title~ : String = "",
   charset~ : String = "",
@@ -74,6 +76,7 @@ pub fn convert_with_font(
     table_style~,
     font_data=Some(font_data),
     font_index~,
+    no_subset~,
     ignore_embedding_restrictions~,
     system_fonts~,
   )
@@ -93,6 +96,7 @@ fn convert_grid(
   table_style~ : String,
   font_data~ : Bytes?,
   font_index~ : Int32,
+  no_subset~ : Bool,
   ignore_embedding_restrictions~ : Bool,
   system_fonts~ : Bool,
 ) -> NoFontResult raise {
@@ -136,8 +140,19 @@ fn convert_grid(
       let hash = match font_data {
         Some(_) if usage.used &&
           !system_fonts &&
-          (font.metrics.embeddable || ignore_embedding_restrictions) =>
-          Some(writer.add_part("font", font.canvas_program()))
+          (font.metrics.embeddable || ignore_embedding_restrictions) => {
+          let program = if no_subset {
+            font.canvas_program()
+          } else if font.metrics.subsettable || ignore_embedding_restrictions {
+            match font.subset_program(usage.codepoints) {
+              Some(subset) => subset
+              None => font.mapped_program(usage.codepoints)
+            }
+          } else {
+            font.mapped_program(usage.codepoints)
+          }
+          Some(writer.add_part("font", program))
+        }
         _ => None
       }
       let drawn = match hash {

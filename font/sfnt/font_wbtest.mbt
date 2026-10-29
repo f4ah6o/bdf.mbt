@@ -134,3 +134,12 @@ test "cmap rebuilding matches upstream for BMP and supplementary groups" {
   let decoded = parse_cmap(actual[:])
   assert_eq(decoded, mapping)
 }
+
+///|
+test "composite glyph components are bounded and preserve record offsets" {
+  let data : Bytes = b"\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x21\x00\x02\x00\x00\x00\x00\x00\x00\x00\x63\x00\x00"
+  let components = glyph_components(data[:])
+  assert_eq(components, [(12, 2), (20, 99)])
+  assert_eq(glyph_components(data[:12]), [])
+  assert_eq(glyph_components(b"\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"[:]), [])
+}

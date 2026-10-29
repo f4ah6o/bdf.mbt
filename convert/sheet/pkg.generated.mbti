@@ -54,6 +54,7 @@ pub(all) struct DrawnGrid {
 
 pub(all) struct FontUsage {
   used : Bool
+  codepoints : Array[Int32]
   missing : Array[Int32]
 }
 

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { BdfDocument, BufferSource } from '@bdfkit/core';
-import { load_font, glyph, advance, metrics, geometry, drawing_tile, csv_document, csv_warnings, canvas_program } from '../../_build/js/debug/build/compat/font/font.js';
+import { load_font, glyph, advance, metrics, geometry, drawing_tile, csv_document, csv_warnings, canvas_program, subset_program } from '../../_build/js/debug/build/compat/font/font.js';
 
 const fixtures = JSON.parse(await readFile(new URL('./upstream.json', import.meta.url)));
 for (const expected of fixtures) {
@@ -67,6 +67,23 @@ for (const [index, sample] of defaultFonts.entries()) {
 }
 console.log(`${defaultFonts.length} fonts with missing or truncated tables rebuild identically to upstream.`);
 
+const subsets = JSON.parse(await readFile(new URL('./subset.json', import.meta.url)));
+for (const [index, sample] of subsets.entries()) {
+  const input = await readFile(new URL('../../' + sample.file, import.meta.url));
+  const original = load_font(input, sample.index);
+  const actual = Buffer.from(subset_program(original, sample.text));
+  assert.equal(createHash('sha256').update(actual).digest('hex'), sample.sha256, `subset font ${index} hash`);
+  assert.deepEqual(actual, Buffer.from(sample.program, 'base64'), `subset font ${index} bytes`);
+}
+console.log(`${subsets.length} TrueType subset programs match upstream byte for byte.`);
+
+const subsetEdges = JSON.parse(await readFile(new URL('./subset-edge.json', import.meta.url)));
+for (const [index, sample] of subsetEdges.entries()) {
+  const actual = Buffer.from(subset_program(load_font(Buffer.from(sample.data, 'base64'), 0), sample.text));
+  assert.deepEqual(actual, Buffer.from(sample.program, 'base64'), `composite and long loca subset ${index}`);
+}
+console.log(`${subsetEdges.length} cyclic, damaged-loca, missing-metrics and long-loca subsets match upstream.`);
+
 const geometries = JSON.parse(await readFile(new URL('./geometry.json', import.meta.url)));
 for (const sample of geometries) {
   const data = await readFile(new URL('../../' + sample.file, import.meta.url));
@@ -90,9 +107,15 @@ console.log(`${drawings.length} single-font grid drawings match upstream object 
 const conversions = JSON.parse(await readFile(new URL('./csv.json', import.meta.url)));
 for (const sample of conversions) {
   const font = await readFile(new URL('../../' + sample.file, import.meta.url));
+  if (sample.noSubsetLicense) {
+    for (let i = 0; i < font.readUInt16BE(4); i++) {
+      const rec = 12 + i * 16;
+      if (font.toString('ascii', rec, rec + 4) === 'OS/2') font.writeUInt16BE(0x100, font.readUInt32BE(rec + 8) + 8);
+    }
+  }
   const input = Buffer.from(sample.input);
   const doc = await BdfDocument.open(new BufferSource(csv_document(input, font, sample.scenario, sample.index ?? 0)));
-  const label = `${sample.file}:${sample.index ?? 0}:${sample.scenario}`;
+  const label = `${sample.file}:${sample.index ?? 0}:${sample.scenario}:${sample.noSubsetLicense ? "no-subset" : "normal"}`;
   assert.deepEqual(JSON.parse(csv_warnings(input, font, sample.scenario, sample.index ?? 0)), sample.warnings ?? [], label + ' warnings');
   const embedded = doc.manifest.parts.find(part => part.t === 'font');
   assert.equal(embedded?.h ?? '', sample.fontHash, label + ' font hash');
@@ -116,12 +139,15 @@ for (const sample of conversions) {
     assert.deepEqual(tableHashes, sample.fontTables, label + ' font tables');
     const original = load_font(font, sample.index ?? 0), rebuilt = load_font(program, 0);
     const originalMetrics = JSON.parse(metrics(original)), rebuiltMetrics = JSON.parse(metrics(rebuilt));
-    assert.equal(rebuiltMetrics.count, originalMetrics.count, label + ' glyph count');
+    if (sample.scenario < 7) assert.equal(rebuiltMetrics.count, originalMetrics.count, label + ' glyph count');
+    else assert.ok(rebuiltMetrics.count <= originalMetrics.count, label + ' subset glyph count');
     assert.equal(rebuiltMetrics.upem, originalMetrics.upem, label + ' units per em');
     assert.equal(rebuiltMetrics.family, originalMetrics.family, label + ' font family');
     for (const ch of sample.input) {
       const code = ch.codePointAt(0);
-      assert.equal(glyph(rebuilt, code), glyph(original, code), label + ' glyph ' + code);
+      const before = glyph(original, code), after = glyph(rebuilt, code);
+      if (sample.scenario < 7) assert.equal(after, before, label + ' glyph ' + code);
+      else if (after !== 0) assert.equal(advance(rebuilt, after), advance(original, before), label + ' advance ' + code);
     }
   }
   assert.deepEqual(doc.manifest.views, sample.views, label + ' views');
@@ -136,3 +162,21 @@ for (const sample of conversions) {
   }
 }
 console.log(`${conversions.length} CSV conversions match upstream layout, objects, indexes, tables and warnings including embedded font hashes.`);
+
+// CFF subsetting is not yet implemented. Preserve whole CFF outlines while
+// restricting the cmap, and confirm the resulting document remains usable.
+const cff = conversions.find(sample => sample.file.endsWith('/stix.otf') && sample.scenario === 0);
+const cffSource = await readFile(new URL('../../' + cff.file, import.meta.url));
+const cffDoc = await BdfDocument.open(new BufferSource(csv_document(Buffer.from(cff.input), cffSource, 7, 0)));
+const cffPart = cffDoc.manifest.parts.find(part => part.t === 'font');
+assert.ok(cffPart, 'CFF font is embedded');
+const cffProgram = load_font(Buffer.from(await cffDoc.part(cffPart.h)), 0);
+assert.equal(JSON.parse(metrics(cffProgram)).count, JSON.parse(metrics(load_font(cffSource, 0))).count, 'CFF retains all outlines');
+assert.equal(glyph(cffProgram, 'Z'.codePointAt(0)), 0, 'unused CFF character is not mapped');
+assert.notEqual(glyph(cffProgram, 'A'.codePointAt(0)), 0, 'used CFF character is mapped');
+const cffObject = cffDoc.manifest.parts.find(part => part.t === 'obj');
+const cffObjectBytes = Buffer.from(await cffDoc.part(cffObject.h));
+const oldHash = Buffer.from(cffPart.h, 'hex'), newHash = Buffer.from(cff.fontHash, 'hex');
+for (let pos = cffObjectBytes.indexOf(oldHash); pos >= 0; pos = cffObjectBytes.indexOf(oldHash, pos + oldHash.length)) newHash.copy(cffObjectBytes, pos);
+assert.deepEqual(cffObjectBytes, Buffer.from(cff.parts.find(part => part.type === 'obj').data, 'base64'), 'CFF fallback drawing');
+console.log('CFF fallback retains outlines and draws the measured characters.');

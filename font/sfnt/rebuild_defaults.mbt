@@ -32,11 +32,15 @@ fn default_hhea(
 }
 
 ///|
-fn default_hmtx(font : Font) -> Array[Byte] {
+fn default_hmtx(
+  font : Font,
+  count : Int32,
+  advances : Array[Int32],
+) -> Array[Byte] {
   let result : Array[Byte] = []
-  for glyph in 0..<font.metrics.glyph_count {
-    let advance = if glyph < font.advances.length() {
-      font.advances[glyph]
+  for glyph in 0..<count {
+    let advance = if glyph < advances.length() {
+      advances[glyph]
     } else {
       font.metrics.units_per_em / 2
     }
