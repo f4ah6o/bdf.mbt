@@ -40,6 +40,9 @@ func codexScoreFromFixture(sample codexFixture) *Score {
 			x := codexDecode[[]any](v[1])
 			m.Time = &TimeSig{Beats: int(x[0].(float64)), BeatType: int(x[1].(float64)), Symbol: x[2].(string)}
 		}
+		for _, t := range codexDecode[[][]json.RawMessage](v[2]) {
+			m.Tempo = append(m.Tempo, TempoMark{Offset: codexDecode[int](t[0]), Beat: Quarter, Dots: codexDecode[int](t[1]), PerMinute: codexDecode[float64](t[2])})
+		}
 		s.Measures = append(s.Measures, m)
 	}
 	for _, p := range sample.Want.Parts {
