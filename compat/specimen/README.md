@@ -27,6 +27,8 @@ embedded glyph runs, non-contiguous positions and outline fallback.
 `sample-paint.json.gz` checks sample text shaping, language tags, RTL and
 glyph fallback with and without embedded fonts. `programs.json.gz` checks
 license-based embedding, sample programs, collection sharing and resource counts.
+`document-plan.json.gz` compares document metadata and view names with full
+upstream conversions.
 
 After `moon build --target js`, run `npm run test:specimen` and
 `npm run test:specimen-plan`, `npm run test:specimen-names`,
@@ -36,7 +38,7 @@ After `moon build --target js`, run `npm run test:specimen` and
 `npm run test:specimen-features`, `npm run test:specimen-scroll`,
 `npm run test:specimen-path`, `npm run test:specimen-paint`,
 `npm run test:specimen-glyph-paint`, `npm run test:specimen-sample-paint`,
-`npm run test:specimen-programs`, and
+`npm run test:specimen-programs`, `npm run test:specimen-document-plan`, and
 `npm run test:specimen-visual`. To regenerate, copy `generate_test.go` without
 its first `//go:build ignore` line into the upstream checkout at
 `converter/font/codex_specimen_test.go`, then run:
@@ -117,3 +119,7 @@ and running `TestCodexSimpleFold` with Go Unicode 17, then format with `moon fmt
 To regenerate embedding cases, copy `generate-programs_test.go` without its
 build tag into upstream `converter/font` alongside `generate_test.go` and run
 `TestCodexSpecimenPrograms` with the same fixture root.
+
+To regenerate document-plan cases, copy `generate-document-plan_test.go`
+without its build tag into upstream `converter/font` alongside `generate_test.go`
+and run `TestCodexDocumentPlan` with the same fixture root.

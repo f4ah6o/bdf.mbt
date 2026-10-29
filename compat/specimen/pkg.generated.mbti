@@ -11,6 +11,8 @@ pub fn automatic_pruned(Bytes, Int32, String) -> Bytes
 
 pub fn coverage(Bytes, Int32) -> String
 
+pub fn document_plan(Bytes, String, String) -> String
+
 pub fn features(Bytes, Int32) -> String
 
 pub fn glyph_details(Bytes, Int32) -> String

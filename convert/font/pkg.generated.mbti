@@ -78,6 +78,7 @@ pub struct FontFile {
   size : Int32
   // private fields
 }
+pub fn FontFile::document_plan(Self, String, String) -> SpecimenDocumentPlan raise
 pub fn FontFile::faces(Self) -> Array[FileFace]
 pub fn FontFile::overview(Self, FileFace, outlines? : Bool) -> Array[OverviewSection]
 pub fn FontFile::prepare_programs(Self, @core.DocumentWriter, String, String, ignore_restrictions? : Bool) -> SpecimenPrograms raise
@@ -160,6 +161,12 @@ pub(all) struct ScrollStrip {
   bands : Array[(Int32, Double)]
 }
 
+pub(all) struct SpecimenDocumentPlan {
+  metadata : SpecimenMetadata
+  views : Array[SpecimenView]
+  warnings : Array[String]
+}
+
 pub(all) struct SpecimenFacePrograms {
   face_index : Int32
   glyph_font : @core.Font?
@@ -173,6 +180,17 @@ pub(all) struct SpecimenGlyph {
   characters : Array[Int32]
   label : String
   alternative : String
+}
+
+pub(all) struct SpecimenMetadata {
+  source : String
+  type_name : String
+  title : String
+  creator : String
+  rights : String
+  description : String
+  created : String
+  modified : String
 }
 
 pub(all) struct SpecimenName {
@@ -203,6 +221,12 @@ pub(all) struct SpecimenPrograms {
   warnings : Array[String]
   font_parts : Int32
   outlined : Int32
+}
+
+pub(all) struct SpecimenView {
+  id : String
+  title : String
+  face_index : Int32
 }
 
 pub(all) struct UnicodeBlock {

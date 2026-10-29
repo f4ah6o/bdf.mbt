@@ -589,3 +589,35 @@ pub fn prepare_programs(
     "outlined": Json::number(result.outlined.to_double()),
   }).stringify()
 }
+
+///|
+#export_name("document_plan")
+pub fn document_plan(
+  data : Bytes,
+  selection : String,
+  title : String,
+) -> String {
+  let file = try! @font.load(data)
+  let plan = try! file.document_plan(selection, title)
+  let meta = plan.metadata
+  Json::object({
+    "metadata": Json::object({
+      "source": Json::string(meta.source),
+      "type": Json::string(meta.type_name),
+      "title": Json::string(meta.title),
+      "creator": Json::string(meta.creator),
+      "rights": Json::string(meta.rights),
+      "description": Json::string(meta.description),
+      "created": Json::string(meta.created),
+      "modified": Json::string(meta.modified),
+    }),
+    "views": Json::array(
+      plan.views.map(v => {
+        Json::object({
+          "id": Json::string(v.id),
+          "title": Json::string(v.title),
+        })
+      }),
+    ),
+  }).stringify()
+}
