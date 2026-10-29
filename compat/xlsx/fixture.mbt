@@ -657,3 +657,55 @@ pub fn xlsx_used(data : Bytes, part : String) -> String {
     _ => "null"
   }
 }
+
+///|
+#export_name("xlsx_table_document")
+pub fn xlsx_table_document(
+  data : Bytes,
+  part : String,
+  locale : String,
+  names_json : String,
+) -> Bytes {
+  try {
+    let workbook = @xlsx.read_xlsx_workbook(data)
+    let rows = workbook.read_sheet_cells(part).sorted_rows()
+    let range = @xlsx.xlsx_used_range(rows).unwrap()
+    let names = @json.parse(names_json)
+      .as_array()
+      .unwrap()
+      .map(fn(value) { value.as_string().unwrap() })
+    let table = workbook
+      .styles()
+      .values_table(rows, range, names, workbook.date1904, locale)
+    let writer = @core.DocumentWriter::new()
+    @xlsx.xlsx_store_values_table(writer, table, "sheet1", "Example", "sheet1")
+    writer.write_single()
+  } catch {
+    _ => b""
+  }
+}
+
+///|
+#export_name("xlsx_list_tables")
+pub fn xlsx_list_tables(data : Bytes, part : String) -> String {
+  try {
+    let tables = @xlsx.read_xlsx_workbook(data).read_sheet_tables(part)
+    Json::array(
+      tables.map(fn(table) {
+        let r = table.range
+        Json::array([
+          Json::number(r.row_start.to_double()),
+          Json::number(r.column_start.to_double()),
+          Json::number(r.row_end.to_double()),
+          Json::number(r.column_end.to_double()),
+          Json::string(table.name),
+          Json::array(table.columns.map(Json::string)),
+          Json::number(table.header_rows.to_double()),
+          Json::number(table.totals_rows.to_double()),
+        ])
+      }),
+    ).stringify()
+  } catch {
+    _ => "null"
+  }
+}

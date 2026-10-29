@@ -3,6 +3,7 @@ package "f4ah6o/bdf/convert/xlsx"
 
 import {
   "f4ah6o/bdf/convert/ooxml",
+  "f4ah6o/bdf/core",
   "f4ah6o/bdf/encoding/parquet",
 }
 
@@ -48,6 +49,8 @@ pub fn xlsx_row_runs(Array[XlsxRow], XlsxSheetGeometry, Int32, Double, Map[Int32
 pub fn xlsx_select_format_section(Array[XlsxFormatSection], Double) -> (Int32, Bool)
 
 pub fn xlsx_split_format_sections(String) -> Array[String]
+
+pub fn xlsx_store_values_table(@core.DocumentWriter, @parquet.Table, String, String, String) -> Unit raise
 
 pub fn xlsx_tint_color(XlsxRgb, Double) -> XlsxRgb
 
@@ -181,6 +184,14 @@ pub(all) struct XlsxGradientStop {
   mut color : XlsxColor
 }
 
+pub(all) struct XlsxListTable {
+  range : XlsxRange
+  name : String
+  columns : Array[String]
+  header_rows : Int32
+  totals_rows : Int32
+}
+
 pub(all) struct XlsxLocale {
   script : String
   language : String
@@ -284,6 +295,7 @@ pub(all) struct XlsxWorkbook {
 pub fn XlsxWorkbook::locale(Self) -> XlsxLocale
 pub fn XlsxWorkbook::read_sheet_cells(Self, String) -> XlsxSheetCells raise
 pub fn XlsxWorkbook::read_sheet_geometry(Self, String) -> XlsxSheetGeometry raise
+pub fn XlsxWorkbook::read_sheet_tables(Self, String) -> Array[XlsxListTable] raise
 pub fn XlsxWorkbook::shared_strings(Self) -> Array[String]
 pub fn XlsxWorkbook::styles(Self) -> XlsxStyles
 

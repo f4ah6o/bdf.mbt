@@ -96,7 +96,8 @@ func TestCodexXLSXValuesTable(t *testing.T) {
 		if e != nil {
 			t.Fatal(e)
 		}
-		out = append(out, map[string]any{"input": s.Input, "part": s.Part, "locale": s.Locale, "names": names, "range": []int{ref.r0, ref.c0, ref.r1, ref.c1}, "parquet": enc})
+		c.storeRange(ws, ref, "sheet1", "Example", names, "sheet1", "all")
+		out = append(out, map[string]any{"input": s.Input, "part": s.Part, "locale": s.Locale, "names": names, "range": []int{ref.r0, ref.c0, ref.r1, ref.c1}, "parquet": enc, "manifest": c.doc.Tables})
 	}
 	b, e = json.Marshal(out)
 	if e != nil {

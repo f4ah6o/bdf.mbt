@@ -28,6 +28,8 @@ pub fn xlsx_iso_date(String, Bool) -> String
 
 pub fn xlsx_layout(Bytes, String, Double, Double) -> String
 
+pub fn xlsx_list_tables(Bytes, String) -> String
+
 pub fn xlsx_locale(Bytes) -> String
 
 pub fn xlsx_numeric(String, Double) -> String
@@ -45,6 +47,8 @@ pub fn xlsx_select_format(String, Double) -> String
 pub fn xlsx_strings(Bytes) -> String
 
 pub fn xlsx_styles(Bytes) -> String
+
+pub fn xlsx_table_document(Bytes, String, String, String) -> Bytes
 
 pub fn xlsx_table_values(Bytes, String, String, String) -> Bytes
 
