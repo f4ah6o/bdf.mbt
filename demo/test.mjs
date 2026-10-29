@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { createReadStream } from 'node:fs';
-import { stat } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
+import { gunzipSync } from 'node:zlib';
+import { BdfDocument, BufferSource } from '@bdfkit/core';
 import { createServer } from 'node:http';
 import { resolve, extname } from 'node:path';
 import { chromium } from 'playwright';
@@ -77,11 +79,48 @@ try {
   assert.match(await page.locator('#status').textContent(), /unsupported\.pdf/);
   await page.locator('#sample').press('Enter');
   await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'upstream-demo.bdf' && !document.querySelector('#status').classList.contains('error'), null, { timeout: 30000 });
-  for (const [kind, name] of [['csv', 'people.csv'], ['image', 'illustration.svg'], ['bdf', 'upstream-demo.bdf']]) {
+  for (const [kind, name] of [['csv', 'people.csv'], ['image', 'illustration.svg'], ['bdf', 'upstream-demo.bdf'], ['font', 'stix.ttf']]) {
     await page.locator(`[data-sample="${kind}"]`).click();
     await page.waitForFunction(n => document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled, name, { timeout: 30000 });
     assert.equal(await page.locator('#status').evaluate(el => el.classList.contains('error')), false, `${kind} sample`);
   }
+  const fontViews = await page.locator('#view option').evaluateAll(options => options.map(option => option.value));
+  assert.deepEqual(fontViews, ['overview', 'characters', 'glyphs', 'features']);
+  await page.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(c => c.width > 0 && c.height > 0), null, { timeout: 30000 });
+  await page.locator('#view').selectOption('glyphs');
+  await page.waitForFunction(() => document.querySelectorAll('#preview [data-bdf-page]').length === 7, null, { timeout: 30000 });
+  await page.locator('#view').selectOption('overview');
+  await page.waitForFunction(() => document.querySelectorAll('#preview [data-bdf-page]').length === 2, null, { timeout: 30000 });
+  await page.locator('#search').fill('STIX');
+  await page.locator('#search-form button').click();
+  await page.waitForFunction(() => /\d+ \/ \d+/.test(document.querySelector('#search-status').textContent), null, { timeout: 30000 });
+  const fontDownload = page.waitForEvent('download');
+  await page.locator('#download').click();
+  const saved = await fontDownload;
+  assert.equal(saved.suggestedFilename(), 'stix.bdf');
+  const savedBytes = await readFile(await saved.path());
+  const savedDoc = await BdfDocument.open(new BufferSource(savedBytes));
+  assert.deepEqual(savedDoc.manifest.views.map(view => view.id), fontViews);
+  const fixture = JSON.parse(gunzipSync(await readFile(resolve(import.meta.dirname, '../compat/specimen/convert.json.gz'))));
+  const woff2 = gunzipSync(Buffer.from(fixture.files['stix-ttf.woff2'], 'base64'));
+  await page.locator('#file').setInputFiles({ name: 'stix.woff2', mimeType: 'font/woff2', buffer: woff2 });
+  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'stix.woff2' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  assert.equal(await page.locator('#status').evaluate(el => el.classList.contains('error')), false, 'WOFF2 input');
+  assert.deepEqual(await page.locator('#view option').evaluateAll(options => options.map(option => option.value)), fontViews);
+  await page.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(c => c.width > 0 && c.height > 0), null, { timeout: 30000 });
+  await page.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => {
+    const ctx = canvas.getContext('2d');
+    if (!ctx || !canvas.width || !canvas.height) return false;
+    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let dark = 0;
+    for (let i = 0; i < pixels.length; i += 4) {
+      if (pixels[i + 3] > 0 && pixels[i] < 160 && pixels[i + 1] < 160 && pixels[i + 2] < 160 && ++dark > 100) return true;
+    }
+    return false;
+  }), null, { timeout: 30000 });
+  await page.locator('#search').fill('STIX');
+  await page.locator('#search-form button').click();
+  await page.waitForFunction(() => /\d+ \/ \d+/.test(document.querySelector('#search-status').textContent), null, { timeout: 30000 });
   for (const card of await page.locator('.format-card').all()) {
     assert.equal(await card.locator('img').evaluate(img => img.complete && img.naturalWidth > 1), true, 'card preview');
     const href = await card.getByRole('link', { name: '形式の説明' }).getAttribute('href');
@@ -106,7 +145,7 @@ try {
   await mobile.waitForSelector('[data-bdf-page="0"] canvas[data-loaded="ready"]', { timeout: 30000 });
   assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'mobile page overflow');
   await mobile.close();
-  console.log('Demo: all 20 upstream pages, search, navigation, download, CSV, SVG, errors and mobile subpath passed.');
+  console.log('Demo: all 20 upstream pages, search, navigation, download, CSV, SVG, font TTF/WOFF2, views, search, saving, errors and mobile subpath passed.');
 } finally {
   await browser.close();
   await new Promise(resolvePromise => server.close(resolvePromise));

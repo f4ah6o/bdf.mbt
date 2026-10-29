@@ -11,12 +11,15 @@ go run ./cmd/bdf generate -q site/demo/demo.pdf upstream-demo.bdf
 The checked-in sample has SHA-256
 `e1cab46517eb3f0b1a4f2aeb4a5d0037e99161c4a1b77017f0c0903439608deb`.
 The PDF is converted ahead of time: the MoonBit port does not yet convert PDF
-or Office files. Rendering and CSV and image conversion in the demo use the
+or Office files. Rendering and CSV, image, and font specimen conversion in the demo use the
 MoonBit JavaScript target, without a Go or WebAssembly runtime. Files chosen
 by the user are handled in the browser. The sample contains Liberation fonts
 ([OFL](licenses/Liberation.txt)), IPA Gothic ([IPA Font License](licenses/IPA.txt)),
 and WenQuanYi Zen Hei ([GPLv2](licenses/WenQuanYi.txt), with the font embedding
 exception and copyright notice in its [README](licenses/WenQuanYi-README.txt)).
+The STIX Two Text sample is from the existing `compat/font/fixtures/stix.ttf`
+fixture; copyright and SIL Open Font License 1.1 terms are included in
+[STIX-OFL.txt](licenses/STIX-OFL.txt). The demo tests TTF and WOFF2 input.
 The upstream project and demo source are distributed under the
 [MIT license](licenses/BDF-MIT.txt).
 
@@ -32,7 +35,8 @@ python3 -m http.server --directory _build/pages 8000
 ```
 
 The test serves the site under `/bdf.mbt/`, exercises all sample pages,
-search, navigation, downloading, CSV and SVG conversion, unsupported files,
+search, navigation, downloading, CSV and SVG conversion, TTF and WOFF2 font
+specimens, view selection and saving, unsupported files,
 and mobile layout. It requires Playwright Chromium. Run the `vlmkit` gates
 against the served URL for markup and accessibility checks.
 
