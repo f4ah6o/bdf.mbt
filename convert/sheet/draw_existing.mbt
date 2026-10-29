@@ -17,6 +17,22 @@ pub(all) struct SizedGridRow {
 }
 
 ///|
+/// A solid fill and the key used to combine adjacent equal fills.
+pub(all) struct GridSolidFill {
+  key : String
+  color : UInt32
+}
+
+///|
+priv struct GridFillRect {
+  x0 : Double
+  x1 : Double
+  y0 : Double
+  y1 : Double
+  fill : GridSolidFill
+}
+
+///|
 /// Draw unstyled cells in an already-sized sheet with fallback font metrics.
 pub fn draw_sized_grid_no_fonts(
   rows : Array[SizedGridRow],
@@ -27,6 +43,7 @@ pub fn draw_sized_grid_no_fonts(
   verticals~ : Map[Int32, Map[Int32, String]] = Map([]),
   horizontals~ : Map[Int32, Map[Int32, String]] = Map([]),
   bolds~ : Map[Int32, Map[Int32, Bool]] = Map([]),
+  fills~ : Map[Int32, Map[Int32, GridSolidFill]] = Map([]),
 ) -> DrawnGrid raise {
   let col_positions = grid_positions(all_columns)
   if col_positions.length() != 16385 {
@@ -43,6 +60,9 @@ pub fn draw_sized_grid_no_fonts(
   }
   let family = grid_family("")
   let visible_columns = grid_positions(geometry.columns).length() - 1
+  context.sized_grid_fills(
+    rows, fills, col_positions, row_positions, visible_columns,
+  )
   let mut text_columns = 0
   for sparse in rows {
     let i = sparse.index
@@ -225,6 +245,99 @@ pub fn draw_sized_grid_no_fonts(
       frozen_rows: geometry.frozen_rows,
     },
     tiles,
+  }
+}
+
+///|
+fn GridDrawContext::sized_fill_rect(
+  self : GridDrawContext,
+  fill : GridFillRect,
+) -> Unit {
+  for tile in self.in_bounds(fill.x0, fill.y0, fill.x1, fill.y1) {
+    tile.fill_color(fill.fill.color)
+    tile.rectangle(fill.x0, fill.y0, fill.x1 - fill.x0, fill.y1 - fill.y0)
+  }
+}
+
+///|
+fn GridDrawContext::sized_grid_fills(
+  self : GridDrawContext,
+  rows : Array[SizedGridRow],
+  fills : Map[Int32, Map[Int32, GridSolidFill]],
+  columns : Array[Double],
+  row_positions : Array[Double],
+  visible_columns : Int32,
+) -> Unit {
+  let mut previous : Array[GridFillRect] = []
+  for row in rows {
+    let index = row.index
+    if index < 0 {
+      continue
+    }
+    if index >= row_positions.length() - 1 {
+      break
+    }
+    let y0 = row_positions[index]
+    let y1 = row_positions[index + 1]
+    if y0 >= y1 {
+      continue
+    }
+    if !previous.is_empty() && previous[0].y1 < y0 {
+      for rect in previous {
+        self.sized_fill_rect(rect)
+      }
+      previous = []
+    }
+    let current : Array[GridFillRect] = []
+    if fills.get(index) is Some(values) {
+      let keys : Array[Int32] = [ for column, _ in values => column ]
+      keys.sort()
+      for column in keys {
+        if column < 0 || column >= visible_columns {
+          continue
+        }
+        let x0 = columns[column]
+        let x1 = columns[column + 1]
+        if x0 >= x1 {
+          continue
+        }
+        let fill = values[column]
+        if !current.is_empty() {
+          let last = current[current.length() - 1]
+          if last.fill.key == fill.key && last.x1 == x0 {
+            current[current.length() - 1] = { ..last, x1, }
+            continue
+          }
+        }
+        current.push({ x0, x1, y0, y1, fill, })
+      }
+    }
+    let next : Array[GridFillRect] = []
+    let mut j = 0
+    for rect in current {
+      while j < previous.length() && previous[j].x0 < rect.x0 {
+        self.sized_fill_rect(previous[j])
+        j += 1
+      }
+      if j < previous.length() &&
+        previous[j].x0 == rect.x0 &&
+        previous[j].x1 == rect.x1 &&
+        previous[j].fill.key == rect.fill.key &&
+        previous[j].y1 == rect.y0 {
+        next.push({ ..rect, y0: previous[j].y0, })
+        j += 1
+      } else {
+        next.push(rect)
+      }
+    }
+    while j < previous.length() {
+      self.sized_fill_rect(previous[j])
+      j += 1
+    }
+    previous = next
+  }
+  for rect in previous {
+    self.sized_fill_rect(rect)
   }
 }
 

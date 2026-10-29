@@ -180,6 +180,10 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
       styles.fills[format.fill].pattern != "" ||
       styles.fills[format.fill].gradient is Some(_)
     )
+  let solid_fill = format.fill >= 0 &&
+    format.fill < styles.fills.length() &&
+    styles.fills[format.fill].pattern == "solid" &&
+    styles.fills[format.fill].gradient is None
   let nondefault_border = if format.border >= 0 &&
     format.border < styles.borders.length() {
     let b = styles.borders[format.border]
@@ -214,7 +218,7 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
     a.indent != 0 ||
     a.rotation != 0 ||
     a.justify_last ||
-    nondefault_fill ||
+    (nondefault_fill && (index == 0 || !solid_fill)) ||
     nondefault_border {
     raise InvalidXlsxInput(
       "xlsx: plain conversion does not support styled cells",
@@ -225,8 +229,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 ///|
 /// Convert worksheets using estimated font metrics without embedding fonts.
 /// Supports sheet views with numeric, plain string, boolean and error cells,
-/// number formats, font colors, bold text, horizontal alignment and top or
-/// center vertical alignment; complex features are rejected.
+/// number formats, font colors, bold text, horizontal alignment, top or center
+/// vertical alignment and solid fills on individual cells; complex features are rejected.
 pub fn convert_plain_no_fonts(
   data : Bytes,
   data_mode~ : String = "",
@@ -394,6 +398,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let verticals : Map[Int32, Map[Int32, String]] = Map([])
   let horizontals : Map[Int32, Map[Int32, String]] = Map([])
   let bolds : Map[Int32, Map[Int32, Bool]] = Map([])
+  let fills : Map[Int32, Map[Int32, @sheet.GridSolidFill]] = Map([])
   let checked_styles : Map[Int32, Bool] = Map([])
   let format_cache : Map[Int32, Array[XlsxFormatSection]] = Map([])
   let color_cache : Map[Int32, UInt32] = Map([])
@@ -417,6 +422,33 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       if !checked_styles.contains(cell.style) {
         xlsx_check_plain_style(styles, cell.style)
         checked_styles[cell.style] = true
+      }
+      let format_index = if cell.style < 0 ||
+        cell.style >= styles.cell_formats.length() {
+        0
+      } else {
+        cell.style
+      }
+      let fill_index = styles.cell_formats[format_index].fill
+      if fill_index >= 0 && fill_index < styles.fills.length() {
+        let fill = styles.fills[fill_index]
+        if fill.pattern == "solid" {
+          let columns = match fills.get(row.index) {
+            Some(columns) => columns
+            None => {
+              let columns : Map[Int32, @sheet.GridSolidFill] = Map([])
+              fills[row.index] = columns
+              columns
+            }
+          }
+          let black : XlsxRgb = { red: 0.0, green: 0.0, blue: 0.0, }
+          columns[cell.column] = {
+            key: xlsx_solid_fill_key(fill),
+            color: styles
+            .resolve_color(fill.foreground, black, theme_colors)
+            .rgba(),
+          }
+        }
       }
       let formatted = if cell.kind == 1 {
         Some(
@@ -471,12 +503,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               )
             }
           }
-        }
-        let format_index = if cell.style < 0 ||
-          cell.style >= styles.cell_formats.length() {
-          0
-        } else {
-          cell.style
         }
         let vertical = styles.cell_formats[format_index].alignment.vertical
         let horizontal = styles.cell_formats[format_index].alignment.horizontal
@@ -556,8 +582,30 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     verticals~,
     horizontals~,
     bolds~,
+    fills~,
   )
   (drawn, geo)
+}
+
+///|
+fn xlsx_solid_fill_key(fill : XlsxFill) -> String {
+  let fg = fill.foreground
+  let bg = fill.background
+  fg.kind.to_string() +
+  ":" +
+  fg.rgb.to_string() +
+  ":" +
+  fg.index.to_string() +
+  ":" +
+  fg.tint.to_string() +
+  ":" +
+  bg.kind.to_string() +
+  ":" +
+  bg.rgb.to_string() +
+  ":" +
+  bg.index.to_string() +
+  ":" +
+  bg.tint.to_string()
 }
 
 ///|

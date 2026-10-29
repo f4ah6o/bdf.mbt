@@ -24,7 +24,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 3300; i++ {
+	for i := 0; i < 3600; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -101,6 +101,9 @@ func TestCodexXLSXRender(t *testing.T) {
 				}
 				st += `</fonts>`
 			}
+			if i >= 3300 {
+				st += `<fills><fill/><fill><patternFill patternType="solid"><fgColor rgb="FF112233"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor indexed="10"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FF112233"/><bgColor rgb="FF556677"/></patternFill></fill></fills>`
+			}
 			st += `<cellXfs>`
 			if i >= 3150 {
 				st += fmt.Sprintf(`<xf numFmtId="0" fontId="5"><alignment horizontal="%s" vertical="%s"/></xf>`, []string{"general", "left", "right", "center"}[i%4], []string{"bottom", "top", "center"}[(i/4)%3])
@@ -133,7 +136,9 @@ func TestCodexXLSXRender(t *testing.T) {
 				if i >= 2400 && i < 2450 {
 					format = []int{2, 14, 164}[i%3]
 				}
-				if i >= 3000 {
+				if i >= 3300 {
+					st += `<xf fontId="5" fillId="1"/><xf fontId="5" fillId="2"/><xf fontId="5" fillId="3"/>`
+				} else if i >= 3000 {
 					format = []int{0, 2, 14, 164}[i%4]
 					st += fmt.Sprintf(`<xf numFmtId="%d" fontId="5"><alignment horizontal="%s" vertical="%s"/></xf>`, format, []string{"general", "left", "right", "center"}[i%4], []string{"bottom", "top", "center"}[(i/4)%3])
 				} else if i >= 2850 {
@@ -262,12 +267,22 @@ func TestCodexXLSXRender(t *testing.T) {
 			sheet += `</row>`
 		}
 		sheet += `</sheetData></worksheet>`
+		if i >= 3300 {
+			sheet = strings.Replace(sheet, `</row>`, `<c r="E1"/><c r="F1"/></row>`, 1)
+		}
 		if i >= 2350 {
 			style := 16
-			if (i >= 2450 && i < 2600) || (i >= 2700 && i < 2850) || i >= 3150 {
+			if (i >= 2450 && i < 2600) || (i >= 2700 && i < 2850) || (i >= 3150 && i < 3300) {
 				style = 0
 			}
-			sheet = regexp.MustCompile(`<c r="([^"]+)"(?: s="[0-9]+")?`).ReplaceAllString(sheet, fmt.Sprintf(`<c r="$1" s="%d"`, style))
+			cellRE := regexp.MustCompile(`<c r="([^"]+)"(?: s="[0-9]+")?`)
+			if i >= 3300 {
+				sheet = cellRE.ReplaceAllStringFunc(sheet, func(match string) string {
+					return fmt.Sprintf(`<c r="%s" s="%d"`, cellRE.FindStringSubmatch(match)[1], 16+r.Intn(3))
+				})
+			} else {
+				sheet = cellRE.ReplaceAllString(sheet, fmt.Sprintf(`<c r="$1" s="%d"`, style))
+			}
 		}
 		add("xl/worksheets/sheet1.xml", sheet)
 		for j := 2; j <= count; j++ {
