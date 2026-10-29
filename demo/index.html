@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>BDF viewer · MoonBit</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">B</span><div><strong>BDF viewer</strong><span>MoonBit demo</span></div></div>
+    <p class="privacy">ファイルはブラウザ内で処理されます</p>
+    <a class="source-link" href="https://github.com/f4ah6o/bdf.mbt">GitHub <span aria-hidden="true">↗</span></a>
+  </header>
+  <main>
+    <section class="intro" aria-labelledby="intro-title">
+      <div><p class="eyebrow">BROWSER DOCUMENT FORMAT</p><h1 id="intro-title">ドキュメントを、ブラウザで。</h1><p class="description">BDF の表示、検索、CSV・画像の変換を試せます。ファイルをドロップするか、サンプルを開いてください。</p></div>
+      <div class="intro-actions"><button id="open-file" class="button primary" type="button">ファイルを開く</button><input id="file" hidden type="file" accept=".bdf,.csv,.tsv,.tab,.bmp,.ico,.jpg,.jpeg,.png,.gif,.webp,.avif,.svg"><button id="sample" class="button secondary" type="button">サンプルを開く</button></div>
+    </section>
+    <section class="viewer-card" aria-label="ドキュメントビューア">
+      <div class="viewer-top"><div><span class="live-dot" aria-hidden="true"></span><strong id="document-name">デモ文書</strong><span id="document-meta" class="document-meta"></span></div><a id="download" class="download" download="document.bdf" hidden>BDF を保存 ↓</a></div>
+      <div class="toolbar" aria-label="表示と検索">
+        <label>ビュー <select id="view" aria-label="ビュー" disabled><option>読み込み中</option></select></label>
+        <label>表示 <select id="layout" aria-label="表示方法"><option value="single">ページ</option><option value="spread">見開き</option><option value="continuous">連続</option></select></label>
+        <label>倍率 <select id="zoom" aria-label="倍率"><option value="0.5">50%</option><option value="0.75">75%</option><option value="1" selected>100%</option><option value="1.25">125%</option><option value="1.5">150%</option><option value="2">200%</option></select></label>
+        <div class="page-nav" role="group" aria-label="ページ移動"><button id="previous" type="button" aria-label="前のページ">‹</button><span id="page-number" aria-live="polite">–</span><button id="next" type="button" aria-label="次のページ">›</button></div>
+        <form id="search-form" role="search"><label for="search">検索</label><input id="search" type="search" placeholder="文書内を検索"><button type="submit">検索</button><span id="search-status" aria-live="polite"></span></form>
+      </div>
+      <div id="preview" class="preview" aria-label="文書のプレビュー"></div>
+      <div class="viewer-footer"><p id="status" role="status" aria-live="polite">サンプルを読み込んでいます…</p><button id="csv-sample" type="button" class="text-button">CSV サンプルを試す →</button></div>
+    </section>
+    <section class="about" aria-labelledby="about-title"><div><h2 id="about-title">対応しているファイル</h2><p>BDF、CSV / TSV、PNG、JPEG、GIF、WebP、AVIF、SVG、BMP、ICO を開けます。PDF や Office などの変換は移植中です。</p></div><div><h2>このデモについて</h2><p>表示と変換は MoonBit の JavaScript 版で動きます。サンプル文書は <a href="https://github.com/shibukawa/bdf">shibukawa/bdf</a> のデモ PDF から生成しています（<a href="./licenses/BDF-MIT.txt">MIT ライセンス</a>）。埋め込みフォント: <a href="./licenses/Liberation.txt">Liberation</a>、<a href="./licenses/IPA.txt">IPA</a>、<a href="./licenses/WenQuanYi-README.txt">WenQuanYi</a>。</p></div></section>
+  </main>
+  <footer class="page-footer"><span>BDF viewer · MoonBit port</span><a href="https://github.com/f4ah6o/bdf.mbt">ソースコードを見る ↗</a></footer>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

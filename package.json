@@ -42,6 +42,8 @@
     "test:specimen-variations": "node compat/specimen/verify-variations.mjs",
     "test:specimen-info": "node compat/specimen/verify-info.mjs",
     "test:layout": "node compat/gsub/verify-layout.mjs",
-    "test:gdef": "node compat/gsub/verify-gdef.mjs"
+    "test:gdef": "node compat/gsub/verify-gdef.mjs",
+    "build:demo": "moon build --target js --release && node demo/build.mjs",
+    "test:demo": "node demo/test.mjs"
   }
 }

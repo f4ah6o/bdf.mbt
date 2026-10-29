@@ -88,6 +88,13 @@ constructing this public record directly must provide the map; use
 4. DOM/OffscreenCanvas viewer, lazy page rendering, sheet support, search, accessibility and music playback.
 5. Replace or separately port TinyGo converter engines for the desired document formats.
 
+## Browser demo
+
+The [browser demo](https://f4ah6o.github.io/bdf.mbt/) ([source](demo/README.md)) displays the upstream 20-page sample
+and supports local BDF, CSV and image files using the MoonBit JavaScript build.
+The repository's Pages publishing source must be configured before the
+`Demo pages` workflow can publish it.
+
 ## Compatibility checks
 
 The visual test compares the same BDF fixture with the upstream `@bdfkit/render`

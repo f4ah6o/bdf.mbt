@@ -1,0 +1,86 @@
+name: Demo pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: read
+
+concurrency:
+  group: demo-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      pages_ready: ${{ steps.pages.outputs.ready }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: hustcer/setup-moonbit@v1
+      - run: moon update
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Build the JavaScript demo
+        id: build_demo
+        run: npm run build:demo
+      - name: Test the demo
+        id: smoke_test
+        run: npm run test:demo
+      - name: Validate demo UI with vlmkit
+        id: ui_gates
+        run: |
+          python3 -m http.server --directory _build/pages 8771 --bind 127.0.0.1 >/dev/null 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          sleep 1
+          url=http://127.0.0.1:8771/
+          ./node_modules/.bin/vlmkit check integrity "$url" --no-ledger
+          ./node_modules/.bin/vlmkit check copy "$url" --manifest demo/copy.txt --no-ledger
+          ./node_modules/.bin/vlmkit scan scroll "$url" --no-ledger
+          ./node_modules/.bin/vlmkit scan handlers "$url" --no-ledger
+          ./node_modules/.bin/vlmkit check interactions "$url" --no-ledger
+          ./node_modules/.bin/vlmkit check breakpoints "$url" --sweep --no-ledger
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _build/pages
+      - name: Check whether Pages is configured for Actions
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if source=$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.build_type // ""' 2>"$RUNNER_TEMP/pages-check.err"); then
+            :
+          else
+            case "$(cat "$RUNNER_TEMP/pages-check.err")" in
+              *"(HTTP 404)"*) source='' ;;
+              *) cat "$RUNNER_TEMP/pages-check.err" >&2; exit 1 ;;
+            esac
+          fi
+          if [ "$source" = workflow ]; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            echo 'Pages deployment skipped: configure Settings > Pages > Source as GitHub Actions, then run this workflow again.'
+          fi
+
+  deploy:
+    needs: build
+    if: needs.build.outputs.pages_ready == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      # No environment is created or configured by this workflow.
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
