@@ -24,7 +24,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 3000; i++ {
+	for i := 0; i < 3300; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -92,10 +92,19 @@ func TestCodexXLSXRender(t *testing.T) {
 				if i >= 2150 {
 					st += fmt.Sprintf(`<font><name val="Calibri"/><sz val="11"/><color theme="%d" tint="%g"/></font>`, r.Intn(14), []float64{0, 0.1, -0.25, 0.5}[r.Intn(4)])
 				}
+				if i >= 3000 {
+					if i%2 == 0 {
+						st += `<font><name val="Calibri"/><sz val="11"/><b/></font>`
+					} else {
+						st += `<font><b/></font>`
+					}
+				}
 				st += `</fonts>`
 			}
 			st += `<cellXfs>`
-			if i >= 2700 && i < 2850 {
+			if i >= 3150 {
+				st += fmt.Sprintf(`<xf numFmtId="0" fontId="5"><alignment horizontal="%s" vertical="%s"/></xf>`, []string{"general", "left", "right", "center"}[i%4], []string{"bottom", "top", "center"}[(i/4)%3])
+			} else if i >= 2700 && i < 2850 {
 				st += fmt.Sprintf(`<xf numFmtId="0"><alignment horizontal="%s" vertical="%s"/></xf>`, []string{"left", "right"}[i%2], []string{"bottom", "top", "center"}[(i/2)%3])
 			} else if i >= 2500 && i < 2600 {
 				st += fmt.Sprintf(`<xf numFmtId="0"><alignment horizontal="%s" vertical="%s"/></xf>`, []string{"general", "center"}[i%2], []string{"top", "center"}[(i/2)%2])
@@ -124,7 +133,10 @@ func TestCodexXLSXRender(t *testing.T) {
 				if i >= 2400 && i < 2450 {
 					format = []int{2, 14, 164}[i%3]
 				}
-				if i >= 2850 {
+				if i >= 3000 {
+					format = []int{0, 2, 14, 164}[i%4]
+					st += fmt.Sprintf(`<xf numFmtId="%d" fontId="5"><alignment horizontal="%s" vertical="%s"/></xf>`, format, []string{"general", "left", "right", "center"}[i%4], []string{"bottom", "top", "center"}[(i/4)%3])
+				} else if i >= 2850 {
 					format = []int{0, 2, 14, 164}[i%4]
 					st += fmt.Sprintf(`<xf numFmtId="%d"><alignment horizontal="%s" vertical="%s"/></xf>`, format, []string{"left", "right"}[i%2], []string{"bottom", "top", "center"}[(i/2)%3])
 				} else if i >= 2600 {
@@ -252,7 +264,7 @@ func TestCodexXLSXRender(t *testing.T) {
 		sheet += `</sheetData></worksheet>`
 		if i >= 2350 {
 			style := 16
-			if (i >= 2450 && i < 2600) || (i >= 2700 && i < 2850) {
+			if (i >= 2450 && i < 2600) || (i >= 2700 && i < 2850) || i >= 3150 {
 				style = 0
 			}
 			sheet = regexp.MustCompile(`<c r="([^"]+)"(?: s="[0-9]+")?`).ReplaceAllString(sheet, fmt.Sprintf(`<c r="$1" s="%d"`, style))

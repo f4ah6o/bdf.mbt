@@ -26,6 +26,7 @@ pub fn draw_sized_grid_no_fonts(
   document_language : String,
   verticals~ : Map[Int32, Map[Int32, String]] = Map([]),
   horizontals~ : Map[Int32, Map[Int32, String]] = Map([]),
+  bolds~ : Map[Int32, Map[Int32, Bool]] = Map([]),
 ) -> DrawnGrid raise {
   let col_positions = grid_positions(all_columns)
   if col_positions.length() != 16385 {
@@ -87,10 +88,14 @@ pub fn draw_sized_grid_no_fonts(
         continue
       }
       let cell = render_cells[column]
+      let bold = match bolds.get(i) {
+        Some(columns) => columns.get(column).unwrap_or(false)
+        None => false
+      }
       let text = sized_grid_text(cell.text)
       let display : Cell = { text, number: cell.number, }
       let initial = grid_cell_layout(
-        row, display, column, col_positions, y, height, false, language, fallback_advance,
+        row, display, column, col_positions, y, height, bold, language, fallback_advance,
         fallback_line_metrics,
       )
       let horizontal : DrawCell = if centered.get(column).unwrap_or(false) {
@@ -183,7 +188,7 @@ pub fn draw_sized_grid_no_fonts(
           layout,
           reference,
           family,
-          false,
+          bold,
           colors.get(column).unwrap_or(0x000000ffU),
           fallback_advance,
           None,
