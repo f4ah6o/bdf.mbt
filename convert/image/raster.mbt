@@ -57,6 +57,9 @@ fn ico_header(data : Bytes) -> Bool {
 
 ///|
 fn read_picture(data : Bytes) -> Picture raise {
+  if is_avif(data) {
+    return read_avif(data)
+  }
   if data.length() >= 12 && data[:4] == b"RIFF"[:] && data[8:12] == b"WEBP"[:] {
     return read_webp(data)
   }
@@ -126,6 +129,6 @@ fn read_picture(data : Bytes) -> Picture raise {
     }
   }
   raise ImageFailure(
-    "image: input is not a supported BMP, ICO, JPEG, PNG, GIF or WebP image",
+    "image: input is not a supported BMP, ICO, JPEG, PNG, GIF, WebP or AVIF image",
   )
 }

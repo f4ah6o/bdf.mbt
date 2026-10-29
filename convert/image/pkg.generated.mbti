@@ -10,6 +10,10 @@ pub suberror ImageError {
 }
 
 // Types and methods
+type AvifItem
+
+type AvifMetadata
+
 type ExifFields
 
 pub(all) struct ImageResult {
@@ -23,6 +27,10 @@ pub(all) struct ImageResult {
 }
 
 type IptcDataset
+
+type IsoBox
+
+type IsoReader
 
 type Picture
 

@@ -150,7 +150,7 @@ exposed sequence object are not reflected yet.
 
 ## Converter Worker
 
-The MoonBit converter can run BMP, ICO, JPEG, PNG, GIF and WebP conversion without a Go runtime.
+The MoonBit converter can run BMP, ICO, JPEG, PNG, GIF, WebP and AVIF conversion without a Go runtime.
 Build with `moon build --target js` and serve the generated
 `native_converter_worker/native_converter_worker.js`:
 
@@ -162,8 +162,8 @@ converter.terminate();
 ```
 
 `open()` returns the complete document with `pages: 0` for these formats.
-The native Worker currently supports BMP, ICO, JPEG, PNG, GIF and WebP, and rejects
-the `fonts` option. JPEG, PNG and WebP support EXIF and XMP metadata, GIF supports
+The native Worker currently supports BMP, ICO, JPEG, PNG, GIF, WebP and AVIF, and rejects
+the `fonts` option. JPEG, PNG, WebP and AVIF support EXIF and XMP metadata, GIF supports
 XMP, and JPEG also supports IPTC. Malformed XMP, other character encodings and PNG Creation Time timezone
 abbreviations are not yet supported. `bdf_converter_client`
 can also wrap its Worker; pass an empty Wasm URL. Other image formats and the

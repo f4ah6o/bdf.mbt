@@ -16,8 +16,8 @@ pub(all) struct ImageResult {
 }
 
 ///|
-/// Convert a BMP, ICO, JPEG, PNG, GIF or WebP to a single-page BDF. JPEG, PNG
-/// and WebP support EXIF and XMP metadata, GIF supports XMP, and JPEG also supports
+/// Convert a BMP, ICO, JPEG, PNG, GIF, WebP or AVIF to a single-page BDF. JPEG,
+/// PNG, WebP and AVIF support EXIF and XMP metadata, GIF supports XMP, and JPEG also supports
 /// IPTC. Some XMP encodings and PNG Creation Time timezone abbreviations are
 /// not yet supported. The optional
 /// title overrides the document title, while the
@@ -94,6 +94,7 @@ pub fn convert(
     "jpeg" => "JPEG"
     "gif" => "GIF"
     "webp" => "WebP"
+    "avif" => "AVIF"
     _ => "PNG"
   }
   let suffix = if picture.animated { ", animated" } else { "" }

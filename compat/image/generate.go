@@ -159,6 +159,22 @@ func webpFixture(kind string) []byte {
 	return out.Bytes()
 }
 
+func isoBox(kind string, data []byte) []byte {
+	out := make([]byte, 8+len(data))
+	binary.BigEndian.PutUint32(out[:4], uint32(len(out)))
+	copy(out[4:8], kind)
+	copy(out[8:], data)
+	return out
+}
+
+func avifSequence() []byte {
+	tkhd := make([]byte, 84)
+	binary.BigEndian.PutUint32(tkhd[76:], 64<<16)
+	binary.BigEndian.PutUint32(tkhd[80:], 48<<16)
+	out := isoBox("ftyp", []byte("avis\x00\x00\x00\x00avis"))
+	return append(out, isoBox("moov", isoBox("trak", isoBox("tkhd", tkhd)))...)
+}
+
 func main() {
 	webps := map[string]string{
 		"synthetic-lossy.webp":    "lossy",
@@ -206,12 +222,16 @@ func main() {
 		{"anim.gif", "anim.gif", "", 0},
 		{"xmp.gif", "xmp.gif", "", 0},
 		{"scene.webp", "scene.webp", "", 0},
+		{"rotated.avif", "rotated.avif", "", 0},
+		{"synthetic-sequence.avif", "synthetic-sequence.avif", "", 0},
 		{"synthetic-lossy.webp", "synthetic-lossy.webp", "", 0},
 		{"synthetic-lossless.webp", "synthetic-lossless.webp", "", 0},
 		{"synthetic-animated.webp", "synthetic-animated.webp", "", 0},
 	} {
 		var data []byte
-		if kind, ok := webps[tc.file]; ok {
+		if tc.file == "synthetic-sequence.avif" {
+			data = avifSequence()
+		} else if kind, ok := webps[tc.file]; ok {
 			data = webpFixture(kind)
 		} else if date, ok := dates[tc.file]; ok {
 			original := pngFixture()
