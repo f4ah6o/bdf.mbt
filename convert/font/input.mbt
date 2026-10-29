@@ -100,10 +100,12 @@ pub fn load(data : Bytes) -> FontFile raise {
   } else {
     ""
   }
-  if container == "WOFF2" {
-    raise InvalidFontInput(woff2_input_error(data))
-  }
-  let decoded = if container == "WOFF" {
+  let decoded = if container == "WOFF2" {
+    @woff2.decode(data) catch {
+      @woff2.Woff2Failure(message) => raise InvalidFontInput("font: " + message)
+      error => raise InvalidFontInput("font: " + error.to_string())
+    }
+  } else if container == "WOFF" {
     @sfnt.decode_woff(data) catch {
       @sfnt.InvalidFont(message) => raise InvalidFontInput("font: " + message)
       error => raise InvalidFontInput("font: " + error.to_string())

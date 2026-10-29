@@ -1,0 +1,21 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/compat/woff2"
+
+// Values
+pub fn decode_bytes(DecodeResult) -> Bytes
+
+pub fn decode_valid(DecodeResult) -> Bool
+
+pub fn decode_woff2(Bytes) -> DecodeResult
+
+// Errors
+
+// Types and methods
+pub struct DecodeResult {
+  valid : Bool
+  data : Bytes
+}
+
+// Type aliases
+
+// Traits

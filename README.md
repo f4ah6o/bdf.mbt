@@ -6,9 +6,9 @@ MoonBit implementation of the BDF v1 wire-format reader and the browser-facing `
 - `core`: checked BDF header, single and split documents (identity and deflate-raw), document writing and encryption assembly, BOBJ resource tables, MIDI sequences, cue indexes, and a bounded binary reader.
 - `render`: backend-neutral, checked display-list decoder for a currently supported subset of Canvas 2D opcodes, including paths, gradient paints, and drawing effects. It also extracts ordered text runs, semantic structure, figure bounds and link rectangles, serializes table-cell selections, and calculates music and audio cue positions.
 - `convert`: the worker-client request/response lifecycle and stream command model. The browser adapter connects these to a Worker and a separately supplied compatible Wasm runtime; the native converter supports CSV, font specimens, and the BMP, ICO, JPEG, PNG, GIF, WebP, AVIF and SVG image formats. Other converter engines are **not** ported.
-- `convert/font`: SFNT/TTC and WOFF font specimen conversion to BDF, including overview, character charts, glyph grids, OpenType feature examples, collection face selection and text indexes. Embedded programs are stored as SFNT; WOFF2 remains to be ported.
+- `convert/font`: SFNT/TTC, WOFF and WOFF2 font specimen conversion to BDF, including overview, character charts, glyph grids, OpenType feature examples, collection face selection and text indexes. Embedded programs are stored as SFNT; WOFF2 encoding remains to be ported.
 - `convert/csv`: CSV decoding, detection and conversion to BDF sheets, including built-in table styles, text indexes and typed Parquet tables. The converter accepts an explicitly supplied font or an in-memory font database, selecting fallback faces per character and subsetting TrueType and supported CFF outlines where permitted. Host filesystem and system font discovery remain to be ported.
-- `font/sfnt`: TrueType, OpenType and TTC face metadata, Unicode glyph maps and horizontal metrics, WOFF 1.0 decoding, and glyph and sample font programs for font specimens. TrueType and CFF specimen pruning compute the GSUB substitution closure, or accepts an explicitly supplied one. `font/db` resolves supplied font families, styles and per-character fallbacks; `convert/sheet` can draw using those faces. WOFF2 remains to be ported.
+- `font/sfnt`: TrueType, OpenType and TTC face metadata, Unicode glyph maps and horizontal metrics, WOFF 1.0 decoding, and glyph and sample font programs for font specimens. TrueType and CFF specimen pruning compute the GSUB substitution closure, or accepts an explicitly supplied one. `font/db` resolves supplied font families, styles and per-character fallbacks; `convert/sheet` can draw using those faces. WOFF2 input is decoded by `font/woff2`; WOFF2 encoding remains to be ported.
 - `viewer`: document/view selection state and page placement in single, spread, and continuous modes, including RTL spreads and scroll strips.
 - `browser` (JS only): Canvas 2D adapter that draws fixed/flow pages, scroll strips, continuous body regions, and sheet viewports, including password- and P-256-protected documents, into a DOM host, including paths, gradients, child objects, transparency groups, masks, asynchronously loaded images and fonts, and optional selectable text layers.
 
@@ -41,6 +41,7 @@ let object = @core.decode_object(document.part(hash))
 let commands = @render.compile_object(object) // Canvas command list
 let image = @image.convert(image_bytes, name="picture.bmp") // @f4ah6o/bdf/convert/image
 let sfnt_bytes = @sfnt.decode_woff(woff_bytes) // @f4ah6o/bdf/font/sfnt
+let sfnt2_bytes = @woff2.decode(woff2_bytes) // @f4ah6o/bdf/font/woff2
 let font_file = @font.load(font_bytes) // @f4ah6o/bdf/convert/font
 let (faces, font_warnings) = font_file.select("all")
 let specimen = @font.convert(font_bytes, @fontdb.Database::new())

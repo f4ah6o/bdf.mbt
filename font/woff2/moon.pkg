@@ -1,0 +1,7 @@
+import {
+  "gaato/brotli",
+  "gaato/codec",
+  "moonbitlang/core/encoding/utf8",
+}
+
+supported_targets = "+js+wasm-gc"

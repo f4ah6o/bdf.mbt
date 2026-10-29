@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/shibukawa/bdf/font/woff2"
 	"github.com/shibukawa/bdf/internal/sfnt"
 )
 
@@ -74,6 +75,16 @@ func TestCodexFontInput(t *testing.T) {
 			name  string
 			bytes []byte
 		}{name, b})
+		if name == "stix.ttf" || name == "stix.otf" {
+			w, err := woff2.Encode(b)
+			if err != nil {
+				t.Fatal(err)
+			}
+			data = append(data, struct {
+				name  string
+				bytes []byte
+			}{name + "-woff2", w})
+		}
 	}
 	for _, w := range woffs {
 		if w.Name == "stix.ttf-compressed" {

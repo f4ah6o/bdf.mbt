@@ -1,0 +1,7 @@
+import {
+  "f4ah6o/bdf/font/woff2",
+}
+
+supported_targets = "js"
+
+pkgtype(kind: "foreign_library")

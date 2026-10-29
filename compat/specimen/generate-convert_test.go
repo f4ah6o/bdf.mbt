@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	conv "github.com/shibukawa/bdf/converter"
+	"github.com/shibukawa/bdf/font/woff2"
 	"os"
 	"path/filepath"
 	"testing"
@@ -26,8 +27,15 @@ func TestCodexFontConvert(t *testing.T) {
 		}
 		files[name] = data
 	}
+	for _, item := range []struct{ source, target string }{{"stix.ttf", "stix-ttf.woff2"}, {"stix.otf", "stix-cff.woff2"}} {
+		data, err := woff2.Encode(files[item.source])
+		if err != nil {
+			t.Fatal(err)
+		}
+		files[item.target] = data
+	}
 	cases := []any{}
-	for _, name := range []string{"stix.ttf", "stix.otf", "features.ttf", "restricted.ttf", "variable.ttf", "bold.ttc", "color.ttf"} {
+	for _, name := range []string{"stix.ttf", "stix.otf", "features.ttf", "restricted.ttf", "variable.ttf", "bold.ttc", "color.ttf", "stix-ttf.woff2", "stix-cff.woff2"} {
 		for mode := 0; mode < 5; mode++ {
 			system := mode == 0 || mode == 2
 			noIndex := mode == 0

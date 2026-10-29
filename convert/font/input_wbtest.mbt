@@ -33,7 +33,7 @@ test "load and select a font face" {
 }
 
 ///|
-test "WOFF2 validates its directory before reporting missing Brotli" {
+test "WOFF2 validates its directory and Brotli stream" {
   let short = b"wOF2"
   let short_error = try {
     ignore(load(short))
@@ -59,7 +59,5 @@ test "WOFF2 validates its directory before reporting missing Brotli" {
     InvalidFontInput(message) => message
     _ => "unexpected error"
   }
-  assert_eq(
-    error, "font: WOFF2 fonts cannot be read in this build (it has no Brotli decoder)",
-  )
+  assert_eq(error, "font: brotli: truncated input")
 }
