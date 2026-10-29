@@ -160,12 +160,23 @@ fn GridDrawContext::draw_grid_edges(
       a.border.weight.compare(b.border.weight)
     }
   })
+  let dashed_tiles : Map[String, Bool] = Map([])
   for group in groups {
     let weight = group.border.weight
     let width = match weight {
-      11 => 1.5
+      1 => 0.5
+      7 | 8 | 9 | 10 | 11 => 1.5
       13 => 2.25
       _ => 0.75
+    }
+    let dash : Array[Float] = match weight {
+      1 | 2 => [0.75F, 0.75F]
+      3 | 7 => [6.75F, 2.25F, 2.25F, 2.25F, 2.25F, 2.25F]
+      4 | 9 => [6.75F, 2.25F, 2.25F, 2.25F]
+      5 => [2.25F, 0.75F]
+      8 => [7.5F, 0.75F, 3.0F, 0.75F]
+      10 => [6.75F, 2.25F]
+      _ => []
     }
     let strokes : Array[GridStroke] = []
     for segment in group.segments {
@@ -213,7 +224,24 @@ fn GridDrawContext::draw_grid_edges(
       }
     }
     for stroke in strokes {
-      stroke.tile.object.line(Float::from_double(width), 2, 0, 10.0F)
+      let key = "\{stroke.tile.x},\{stroke.tile.y}"
+      stroke.tile.object.line(
+        Float::from_double(width),
+        if dash.is_empty() {
+          2
+        } else {
+          0
+        },
+        0,
+        10.0F,
+      )
+      if !dash.is_empty() {
+        stroke.tile.object.dash(dash, 0.0F)
+        dashed_tiles[key] = true
+      } else if dashed_tiles.get(key).unwrap_or(false) {
+        stroke.tile.object.dash([], 0.0F)
+        dashed_tiles[key] = false
+      }
       stroke.tile.object.stroke_color(group.border.color)
       let path : @core.Path = {
         verbs: Bytes::from_array(stroke.verbs),
@@ -222,6 +250,12 @@ fn GridDrawContext::draw_grid_edges(
       let index = stroke.tile.object.add_path(@core.Inline(path))
       stroke.tile.object.stroke_path(index)
       stroke.tile.drawn = true
+    }
+  }
+  for tile in self.tiles {
+    let key = "\{tile.x},\{tile.y}"
+    if dashed_tiles.get(key).unwrap_or(false) {
+      tile.object.dash([], 0.0F)
     }
   }
 }

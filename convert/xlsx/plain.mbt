@@ -242,7 +242,7 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// Convert worksheets using estimated font metrics without embedding fonts.
 /// Supports sheet views with numeric, plain string, boolean and error cells,
 /// number formats, font colors, bold text, horizontal alignment, top or center
-/// vertical alignment, solid fills, basic borders and merged cells. Border
+/// vertical alignment, solid fills, line borders and merged cells. Border
 /// colors are limited to one per line weight; complex features are rejected.
 pub fn convert_plain_no_fonts(
   data : Bytes,
@@ -767,7 +767,16 @@ fn xlsx_plain_border_side(
 ) -> (Int32, XlsxRgb) raise {
   let weight = match side.style {
     "" => 0
+    "hair" => 1
+    "dotted" => 2
+    "dashDotDot" => 3
+    "dashDot" => 4
+    "dashed" => 5
     "thin" => 6
+    "mediumDashDotDot" => 7
+    "slantDashDot" => 8
+    "mediumDashDot" => 9
+    "mediumDashed" => 10
     "medium" => 11
     "double" => 12
     "thick" => 13

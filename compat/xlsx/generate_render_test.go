@@ -26,7 +26,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 6100; i++ {
+	for i := 0; i < 6300; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -132,7 +132,14 @@ func TestCodexXLSXRender(t *testing.T) {
 			}
 			if i >= 4500 {
 				st += `<borders><border/>`
-				for j, line := range []string{"thin", "medium", "double", "thick"} {
+				lines := []string{"thin", "medium", "double", "thick"}
+				if i >= 6100 {
+					all := []string{"hair", "dotted", "dashDotDot", "dashDot", "dashed", "mediumDashDotDot", "slantDashDot", "mediumDashDot", "mediumDashed", "thin", "medium", "double", "thick"}
+					for j := range lines {
+						lines[j] = all[((i-6100)/10+j)%len(all)]
+					}
+				}
+				for j, line := range lines {
 					if i >= 5400 {
 						color := []string{"00000000", "001F4E79", "00559A17", "00CB1256"}[j]
 						st += fmt.Sprintf(`<border><left style="%s"><color rgb="%s"/></left><right style="%s"><color rgb="%s"/></right><top style="%s"><color rgb="%s"/></top><bottom style="%s"><color rgb="%s"/></bottom></border>`, line, color, line, color, line, color, line, color)

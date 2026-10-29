@@ -14,8 +14,9 @@ After building the JavaScript target, run `node compat/xlsx/verify-workbook.mjs`
 `npm run test:xlsx-compat` runs the complete XLSX and OOXML fixture suite; it is
 also included in `npm run test:visual` after the JavaScript build.
 The rendering fixtures include the upstream `form-pages.xlsx` and `print.xlsx`
-workbooks, along with generated cases for solid fills, colored borders, merged
-rectangles, hidden rows and columns, and uncached formula warnings.
+workbooks, along with generated cases for solid fills, colored and dashed
+borders, merged rectangles, hidden rows and columns, and uncached formula
+warnings.
 Copy `generate_render_test.go` without its build tag into upstream
 `converter/xlsx` and run `TestCodexXLSXRender` to regenerate them.
 To regenerate fixtures, copy `generate_workbook_test.go` without its build tag
