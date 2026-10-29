@@ -4,12 +4,15 @@ package main
 
 import (
 	"bytes"
+	"compress/zlib"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
+	"hash/crc32"
 	stdimage "image"
 	"image/color"
 	"image/jpeg"
+	"image/png"
 	"os"
 	"path/filepath"
 	"unicode/utf16"
@@ -29,6 +32,8 @@ type fixture struct {
 	ImageHash string       `json:"imageHash"`
 	Prefixes  map[int]bool `json:"prefixes"`
 	DC        any          `json:"dc"`
+	Animated  bool         `json:"animated"`
+	Warnings  []string     `json:"warnings"`
 }
 
 func jpegFixture(kind int) []byte {
@@ -75,7 +80,62 @@ func jpegFixture(kind int) []byte {
 	return append(output, data[2:]...)
 }
 
+func pngChunk(kind string, data []byte) []byte {
+	out := make([]byte, 12+len(data))
+	binary.BigEndian.PutUint32(out[:4], uint32(len(data)))
+	copy(out[4:8], kind)
+	copy(out[8:], data)
+	binary.BigEndian.PutUint32(out[8+len(data):], crc32.ChecksumIEEE(out[4:8+len(data)]))
+	return out
+}
+
+func pngCompressed(value string) []byte {
+	var out bytes.Buffer
+	writer := zlib.NewWriter(&out)
+	if _, err := writer.Write([]byte(value)); err != nil {
+		panic(err)
+	}
+	if err := writer.Close(); err != nil {
+		panic(err)
+	}
+	return out.Bytes()
+}
+
+func pngFixture() []byte {
+	picture := stdimage.NewNRGBA(stdimage.Rect(0, 0, 7, 5))
+	for y := 0; y < 5; y++ {
+		for x := 0; x < 7; x++ {
+			picture.Set(x, y, color.NRGBA{uint8(x * 30), uint8(y * 40), 80, 255})
+		}
+	}
+	var encoded bytes.Buffer
+	if err := png.Encode(&encoded, picture); err != nil {
+		panic(err)
+	}
+	data := encoded.Bytes()
+	out := append([]byte{}, data[:33]...)
+	out = append(out, pngChunk("tEXt", []byte("Title\x00Native title"))...)
+	out = append(out, pngChunk("zTXt", append([]byte("Author\x00\x00"), pngCompressed("Ann")...))...)
+	out = append(out, pngChunk("iTXt", append([]byte("Description\x00\x01\x00\x00\x00"), pngCompressed("圧縮された説明")...))...)
+	exif := []byte("II\x2a\x00\x08\x00\x00\x00\x01\x00\x12\x01\x03\x00\x01\x00\x00\x00\x06\x00\x00\x00\x00\x00\x00\x00")
+	out = append(out, pngChunk("eXIf", exif)...)
+	packet := `<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>XMP title</dc:title></rdf:Description></rdf:RDF>`
+	out = append(out, pngChunk("iTXt", append([]byte("XML:com.adobe.xmp\x00\x00\x00\x00\x00"), []byte(packet)...))...)
+	out = append(out, pngChunk("tIME", []byte{0x07, 0xea, 9, 2, 8, 0, 0})...)
+	return append(out, data[33:]...)
+}
+
 func main() {
+	dates := map[string]string{
+		"date-rfc1123z.png": "Tue, 01 Sep 2026 10:20:30 +0900",
+		"date-rfc1123.png":  "Tue, 01 Sep 2026 10:20:30 UTC",
+		"date-rfc822z.png":  "01 Sep 26 10:20 +0900",
+		"date-rfc822.png":   "01 Sep 26 10:20 UTC",
+		"date-rfc850.png":   "Sunday, 06-Nov-94 08:49:37 GMT",
+		"date-ansic.png":    "Tue Sep  1 10:20:30 2026",
+		"date-short.png":    "1 Sep 2026 10:20:30 +0900",
+		"date-zone.png":     "Tue, 1 Sep 2026 10:20:30 +0960",
+	}
 	var out []fixture
 	for _, tc := range []struct {
 		file, name, title string
@@ -93,16 +153,44 @@ func main() {
 		{"", "xmp.jpg", "", 3},
 		{"", "utf16le.jpg", "", 4},
 		{"", "utf16be.jpg", "", 5},
+		{"tags.png", "tags.png", "", 0},
+		{"anim.png", "anim.png", "", 0},
+		{"metadata.png", "metadata.png", "", 0},
+		{"date-rfc1123z.png", "date-rfc1123z.png", "", 0},
+		{"date-rfc1123.png", "date-rfc1123.png", "", 0},
+		{"date-rfc822z.png", "date-rfc822z.png", "", 0},
+		{"date-rfc822.png", "date-rfc822.png", "", 0},
+		{"date-rfc850.png", "date-rfc850.png", "", 0},
+		{"date-ansic.png", "date-ansic.png", "", 0},
+		{"date-short.png", "date-short.png", "", 0},
+		{"date-zone.png", "date-zone.png", "", 0},
 	} {
 		var data []byte
-		if tc.jpeg != 0 {
+		if date, ok := dates[tc.file]; ok {
+			original := pngFixture()
+			data = append([]byte{}, original[:33]...)
+			data = append(data, pngChunk("tEXt", append([]byte("Creation Time\x00"), []byte(date)...))...)
+			data = append(data, original[33:]...)
+		} else if tc.file == "metadata.png" {
+			data = pngFixture()
+		} else if tc.jpeg != 0 {
 			data = jpegFixture(tc.jpeg)
 		} else {
 			var err error
-			data, err = os.ReadFile(filepath.Join("converter/image/testdata", tc.file))
+			file := tc.file
+			if file == "anim.png" {
+				file = "tags.png"
+			}
+			data, err = os.ReadFile(filepath.Join("converter/image/testdata", file))
 			if err != nil {
 				panic(err)
 			}
+		}
+		if tc.file == "anim.png" {
+			chunk := []byte{0, 0, 0, 8, 'a', 'c', 'T', 'L', 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0}
+			combined := append([]byte{}, data[:33]...)
+			combined = append(combined, chunk...)
+			data = append(combined, data[33:]...)
 		}
 		result, err := image.Convert(bytes.NewReader(data), int64(len(data)), &image.Options{Title: tc.title, FileName: tc.name})
 		if err != nil {
@@ -118,7 +206,7 @@ func main() {
 			_, err := image.Convert(bytes.NewReader(data[:n]), int64(n), nil)
 			prefixes[n] = err == nil
 		}
-		out = append(out, fixture{tc.name, tc.title, base64.StdEncoding.EncodeToString(data), result.Format, result.Width, result.Height, result.Summary(), base64.StdEncoding.EncodeToString(object.Data), result.Doc.Parts()[0].Hash.String(), prefixes, result.Doc.Meta.DC})
+		out = append(out, fixture{tc.name, tc.title, base64.StdEncoding.EncodeToString(data), result.Format, result.Width, result.Height, result.Summary(), base64.StdEncoding.EncodeToString(object.Data), result.Doc.Parts()[0].Hash.String(), prefixes, result.Doc.Meta.DC, result.Animated, append([]string{}, result.Warnings...)})
 	}
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")

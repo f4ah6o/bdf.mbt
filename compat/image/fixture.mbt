@@ -11,6 +11,18 @@ pub fn convert_summary(data : Bytes, name : String, title : String) -> String {
 }
 
 ///|
+#export_name("convert_animated")
+pub fn convert_animated(data : Bytes) -> Bool {
+  (try! @image.convert(data)).animated
+}
+
+///|
+#export_name("convert_warnings")
+pub fn convert_warnings(data : Bytes) -> Array[String] {
+  (try! @image.convert(data)).warnings
+}
+
+///|
 #export_name("accepts")
 pub fn accepts(data : Bytes) -> Bool {
   try {

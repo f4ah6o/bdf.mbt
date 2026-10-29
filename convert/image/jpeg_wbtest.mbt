@@ -11,7 +11,7 @@ test "JPEG dimensions and EXIF orientation" {
 
 ///|
 test "JPEG rejects metadata that has not yet been ported" {
-  let xmp = b"\xff\xd8\xff\xe1\x00\x1fhttp://ns.adobe.com/xap/1.0/\x00\xff\xc0\x00\x07\x08\x00\x05\x00\x07"
+  let xmp = b"\xff\xd8\xff\xe1\x00\x20http://ns.adobe.com/xap/1.0/\x00<\xff\xc0\x00\x07\x08\x00\x05\x00\x07"
   let rejected = try {
     ignore(convert(xmp))
     false

@@ -4,6 +4,7 @@ struct Picture {
   width : Int64
   height : Int64
   dc : Map[String, Array[String]]
+  animated : Bool
 }
 
 ///|
@@ -55,6 +56,9 @@ fn ico_header(data : Bytes) -> Bool {
 
 ///|
 fn read_picture(data : Bytes) -> Picture raise {
+  if data.length() >= 8 && data[:8] == b"\x89PNG\r\n\x1a\n"[:] {
+    return read_png(data)
+  }
   if data.length() >= 3 && data[:3] == b"\xff\xd8\xff"[:] {
     return read_jpeg(data)
   }
@@ -72,7 +76,7 @@ fn read_picture(data : Bytes) -> Picture raise {
     if width <= 0 || height <= 0 {
       raise ImageFailure("image: BMP: the BMP image has no size")
     }
-    return { format: "bmp", width, height, dc: Map([]), }
+    return { format: "bmp", width, height, dc: Map([]), animated: false, }
   }
   if ico_header(data) {
     let count = u16(data, 4)
@@ -97,7 +101,9 @@ fn read_picture(data : Bytes) -> Picture raise {
         best_bits = bits
       }
     }
-    return { format: "ico", width, height, dc: Map([]), }
+    return { format: "ico", width, height, dc: Map([]), animated: false, }
   }
-  raise ImageFailure("image: input is not a supported BMP, ICO or JPEG image")
+  raise ImageFailure(
+    "image: input is not a supported BMP, ICO, JPEG or PNG image",
+  )
 }

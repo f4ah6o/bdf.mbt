@@ -3,6 +3,7 @@ import {
   "moonbitlang/core/buffer",
   "moonbitlang/core/encoding/utf8",
   "Milky2018/xml",
+  "gaato/deflate/zlib",
 }
 
 supported_targets = "+js+wasm-gc"

@@ -85,26 +85,7 @@ fn read_jpeg(data : Bytes) -> Picture raise {
   }
   let dc : Map[String, Array[String]] = Map([])
   for packet in packets {
-    let utf16 = packet.length() >= 2 &&
-      (
-        (packet[0] == 0xff && packet[1] == 0xfe) ||
-        (packet[0] == 0xfe && packet[1] == 0xff)
-      )
-    let text = if utf16 {
-      "\u{feff}" +
-      metadata_utf16_raw(packet[2:].to_bytes(), packet[0] == 0xff, false)
-    } else {
-      @utf8.decode(packet, ignore_bom=true) catch {
-        _ => raise ImageFailure("image: JPEG XMP encoding is not yet supported")
-      }
-    }
-    let (root, complete) = xmp_tree_checked(text, utf16~)
-    if !complete {
-      raise ImageFailure("image: malformed JPEG XMP is not yet supported")
-    }
-    if root is Some(node) {
-      metadata_merge(dc, xmp_metadata(node))
-    }
+    metadata_merge(dc, metadata_xmp(packet))
   }
   for fields in exif_blocks {
     metadata_merge(dc, exif_metadata(fields))
@@ -113,8 +94,8 @@ fn read_jpeg(data : Bytes) -> Picture raise {
     metadata_merge(dc, iptc_metadata(block))
   }
   if orientation >= 5 {
-    { format: "jpeg", width: height, height: width, dc, }
+    { format: "jpeg", width: height, height: width, dc, animated: false, }
   } else {
-    { format: "jpeg", width, height, dc, }
+    { format: "jpeg", width, height, dc, animated: false, }
   }
 }

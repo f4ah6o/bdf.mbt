@@ -10,13 +10,16 @@ pub(all) struct ImageResult {
   format : String
   width : Double
   height : Double
+  animated : Bool
   summary : String
   warnings : Array[String]
 }
 
 ///|
-/// Convert a BMP, ICO or JPEG to a single-page BDF. JPEG supports EXIF, IPTC
-/// and well-formed UTF-8 or BOM-marked UTF-16 XMP metadata; other image formats are not yet implemented. The optional title overrides the document title, while the
+/// Convert a BMP, ICO, JPEG or PNG to a single-page BDF. JPEG and PNG support
+/// EXIF and XMP metadata; JPEG also supports IPTC. Some XMP encodings and PNG
+/// Creation Time timezone abbreviations are not yet supported. The optional
+/// title overrides the document title, while the
 /// file name supplies alternative text when there is no title.
 pub fn convert(
   data : Bytes,
@@ -87,15 +90,22 @@ pub fn convert(
   let format_name = match picture.format {
     "bmp" => "BMP"
     "ico" => "ICO"
-    _ => "JPEG"
+    "jpeg" => "JPEG"
+    _ => "PNG"
   }
-  let summary = "1 page (\{picture.width} × \{picture.height} px, \{format_name})"
+  let suffix = if picture.animated { ", animated" } else { "" }
+  let summary = "1 page (\{picture.width} × \{picture.height} px, \{format_name}\{suffix})"
   {
     bdf: writer.write_single(),
     format: picture.format,
     width: picture.width.to_double(),
     height: picture.height.to_double(),
+    animated: picture.animated,
     summary,
-    warnings: [],
+    warnings: if picture.animated {
+      ["animated image: the first frame is drawn"]
+    } else {
+      []
+    },
   }
 }

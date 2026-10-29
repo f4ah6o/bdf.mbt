@@ -25,9 +25,9 @@ export async function verifyNativeConverter(browser, base) {
           : bdf_create_native_converter('/_build/js/debug/build/native_converter_worker/native_converter_worker.js');
         try {
           const formats = await client.ready;
-          if (!formats.some(f => f.name === 'image' && f.extensions.includes('.bmp') && f.extensions.includes('.ico') && f.extensions.includes('.jpg'))) throw new Error(`${kind}: missing image formats ${JSON.stringify(formats)}`);
+          if (!formats.some(f => f.name === 'image' && f.extensions.includes('.bmp') && f.extensions.includes('.ico') && f.extensions.includes('.jpg') && f.extensions.includes('.png'))) throw new Error(`${kind}: missing image formats ${JSON.stringify(formats)}`);
           const converted = [];
-          for (const fixture of [fixtures[0], fixtures[1], fixtures[4], fixtures[5], fixtures[6], fixtures[7], fixtures[9], fixtures[10], fixtures[11]]) {
+          for (const fixture of [fixtures[0], fixtures[1], fixtures[4], fixtures[5], fixtures[6], fixtures[7], fixtures[9], fixtures[10], fixtures[11], fixtures[12], fixtures[13], fixtures[14]]) {
             const input = toBytes(fixture.input);
             const wrapped = new Uint8Array(input.length + 6); wrapped.set(input, 3);
             const source = wrapped.subarray(3, 3 + input.length);
@@ -42,6 +42,7 @@ export async function verifyNativeConverter(browser, base) {
             const object = await doc.part(view.pages[0].layers[0].obj);
             const media = await doc.part(doc.manifest.parts[0].h);
             const expectedObject = toBytes(fixture.object);
+            if (JSON.stringify(output.warnings) !== JSON.stringify(fixture.warnings)) throw new Error(`${kind}: warnings differ for ${fixture.name}`);
             if (output.format !== fixture.format || output.summary !== fixture.summary ||
                 opened.pages !== 0 || opened.stream !== undefined ||
                 doc.manifest.parts[0].h !== fixture.imageHash ||
@@ -64,7 +65,7 @@ export async function verifyNativeConverter(browser, base) {
           result.push({ converted, closed, missing });
         } finally { client.terminate(); }
       }
-      for (const fixture of [fixtures[0], fixtures[6], fixtures[10]]) {
+      for (const fixture of [fixtures[0], fixtures[6], fixtures[10], fixtures[12], fixtures[14]]) {
         const { bdf_create_viewer } = await import('/_build/js/debug/build/browser/browser.js');
         const client = bdf_create_native_converter('/_build/js/debug/build/native_converter_worker/native_converter_worker.js');
         const host = document.createElement('div'); host.style.cssText = 'width:200px;height:200px'; document.body.append(host);

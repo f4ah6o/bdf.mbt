@@ -4,9 +4,13 @@ package "f4ah6o/bdf/compat/image"
 // Values
 pub fn accepts(Bytes) -> Bool
 
+pub fn convert_animated(Bytes) -> Bool
+
 pub fn convert_fixture(Bytes, String, String) -> Bytes
 
 pub fn convert_summary(Bytes, String, String) -> String
+
+pub fn convert_warnings(Bytes) -> Array[String]
 
 // Errors
 

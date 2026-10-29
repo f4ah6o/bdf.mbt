@@ -11,7 +11,7 @@ extern "js" fn native_converter_option(
 
 ///|
 extern "js" fn native_converter_formats(request : ConverterRequest) -> Unit =
-  #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'image',description:'Image stored as it is: BMP, ICO or JPEG',extensions:['.bmp','.ico','.jpg','.jpeg','.jpe','.jfif']}]})
+  #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'image',description:'Image stored as it is: BMP, ICO, JPEG or PNG',extensions:['.bmp','.ico','.jpg','.jpeg','.jpe','.jfif','.png','.apng']}]})
 
 ///|
 extern "js" fn native_converter_result(
@@ -19,9 +19,10 @@ extern "js" fn native_converter_result(
   data : Bytes,
   format : String,
   summary : String,
+  warnings : Array[String],
   opened : Bool,
 ) -> Unit =
-  #|(request,bdf,format,summary,opened) => {const result={bdf,format,summary,warnings:[],protected:false};if(opened)result.pages=0;self.postMessage({id:Number(request.id),ok:true,result},[bdf.buffer])}
+  #|(request,bdf,format,summary,warnings,opened) => {const result={bdf,format,summary,warnings,protected:false};if(opened)result.pages=0;self.postMessage({id:Number(request.id),ok:true,result},[bdf.buffer])}
 
 ///|
 extern "js" fn native_converter_error(
@@ -81,7 +82,7 @@ fn NativeConverterState::dispatch(
   let result = @image.convert(native_converter_data(request), name~) catch {
     @image.ImageFailure(message) => {
       let code = if format == "" &&
-        message == "image: input is not a supported BMP, ICO or JPEG image" {
+        message == "image: input is not a supported BMP, ICO, JPEG or PNG image" {
         "unknown-format"
       } else {
         ""
@@ -99,6 +100,7 @@ fn NativeConverterState::dispatch(
     result.bdf,
     result.format,
     result.summary,
+    result.warnings,
     kind == "open",
   )
 }
@@ -110,7 +112,7 @@ extern "js" fn install_native_converter_listener(
   #|(dispatch) => {self.onmessage=event=>{const request=event.data;try{dispatch(request)}catch(e){const id=request?.type==='init'?0:Number(request?.id);self.postMessage({id,ok:false,error:e?.message??String(e),code:e?.code})}}}
 
 ///|
-/// Install the MoonBit converter Worker. Currently supports BMP, ICO and JPEG.
+/// Install the MoonBit converter Worker. Currently supports BMP, ICO, JPEG and PNG.
 #export_name("bdf_install_native_converter_worker")
 pub fn bdf_install_native_converter_worker() -> Unit {
   let state : NativeConverterState = { ready: false, }
