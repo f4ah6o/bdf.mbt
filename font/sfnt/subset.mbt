@@ -50,15 +50,17 @@ fn subset_glyph_data(font : Font, glyph : Int32) -> BytesView {
 }
 
 ///|
-/// Rebuild a TrueType font using only the requested characters and their
-/// composite glyph dependencies. Returns None for unsupported outlines.
+/// Rebuild a TrueType or CFF font using only the requested characters and
+/// their composite glyph dependencies. Returns None for unsupported outlines.
 /// The caller must check embedding and subsetting permissions first.
 pub fn Font::subset_program(
   self : Font,
   codepoints : Array[Int32],
 ) -> Bytes? raise {
-  if self.metrics.is_cff ||
-    !self.tables.contains("glyf") ||
+  if self.metrics.is_cff {
+    return subset_cff_program(self, codepoints)
+  }
+  if !self.tables.contains("glyf") ||
     !self.tables.contains("loca") ||
     sfnt_table(self.source, self.tables, "head").length() < 54 ||
     self.metrics.glyph_count == 0 {
@@ -167,7 +169,9 @@ pub fn Font::subset_program(
     "hhea": hhea,
     "maxp": maxp,
   }
-  Some(rebuild_program(self, tables, mapped, order.length(), advances))
+  Some(
+    rebuild_program(self, tables, mapped, order.length(), advances, [], false),
+  )
 }
 
 ///|
@@ -189,5 +193,21 @@ pub fn Font::mapped_program(
     mapping,
     self.metrics.glyph_count,
     self.advances,
+    [],
+    false,
   )
+}
+
+///|
+/// Whether the font has an outline table that may be subset under its license.
+pub fn Font::can_subset(
+  self : Font,
+  ignore_restrictions~ : Bool = false,
+) -> Bool {
+  (self.metrics.subsettable || ignore_restrictions) &&
+  (if self.metrics.is_cff {
+    self.tables.contains("CFF ")
+  } else {
+    self.tables.contains("glyf")
+  })
 }

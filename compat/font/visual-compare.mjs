@@ -40,7 +40,7 @@ try {
       await page.waitForFunction(() => window.bdfStatus === 'ready' || window.bdfStatus === 'error');
       const result = await page.evaluate(() => ({ status: window.bdfStatus, error: window.bdfError, count: document.querySelectorAll('canvas').length }));
       assert.equal(result.status, 'ready', result.error);
-      assert.equal(result.count, 8);
+      assert.equal(result.count, 9);
       await page.close();
     }
   } finally { await browser.close(); }

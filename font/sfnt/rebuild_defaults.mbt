@@ -36,6 +36,7 @@ fn default_hmtx(
   font : Font,
   count : Int32,
   advances : Array[Int32],
+  bearings : Array[Int32],
 ) -> Array[Byte] {
   let result : Array[Byte] = []
   for glyph in 0..<count {
@@ -45,7 +46,7 @@ fn default_hmtx(
       font.metrics.units_per_em / 2
     }
     push16(result, advance)
-    push16(result, 0)
+    push16(result, if glyph < bearings.length() { bearings[glyph] } else { 0 })
   }
   result
 }

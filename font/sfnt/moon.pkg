@@ -1,5 +1,6 @@
 import {
   "moonbitlang/core/encoding/utf8",
+  "f4ah6o/bdf/font/cff",
 }
 
 supported_targets = "+js+wasm-gc"

@@ -96,6 +96,8 @@ pub fn Font::canvas_program(self : Font) -> Bytes raise {
     self.cmap,
     self.metrics.glyph_count,
     self.advances,
+    [],
+    false,
   )
 }
 
@@ -106,6 +108,8 @@ fn rebuild_program(
   cmap : Map[Int32, Int32],
   glyph_count : Int32,
   advances : Array[Int32],
+  bearings : Array[Int32],
+  cff_subset : Bool,
 ) -> Bytes raise {
   let keep = [
     "glyf", "loca", "head", "hhea", "hmtx", "maxp", "cvt ", "fpgm", "prep", "CFF ",
@@ -113,6 +117,14 @@ fn rebuild_program(
   ]
   let tables : Map[String, Array[Byte]] = Map([])
   for tag in keep {
+    if cff_subset && tag != "head" && tag != "CFF " {
+      continue
+    }
+    if cff_subset &&
+      tag == "head" &&
+      sfnt_table(font.source, font.tables, "head").length() < 54 {
+      continue
+    }
     if font.metrics.is_cff && (tag == "glyf" || tag == "loca") {
       continue
     }
@@ -155,7 +167,7 @@ fn rebuild_program(
       font.metrics.units_per_em,
       glyph_count,
     )
-    tables["hmtx"] = default_hmtx(font, glyph_count, advances)
+    tables["hmtx"] = default_hmtx(font, glyph_count, advances, bearings)
   }
   if !tables.contains("maxp") || tables["maxp"].length() == 0 {
     tables["maxp"] = default_maxp(glyph_count, font.metrics.is_cff)

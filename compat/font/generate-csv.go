@@ -24,12 +24,13 @@ func main() {
 		path            string
 		index           int
 		noSubsetLicense bool
+		oversized       bool
 	}
 	specs := []spec{}
 	for _, path := range paths {
-		specs = append(specs, spec{path, 0, false})
+		specs = append(specs, spec{path, 0, false, false})
 	}
-	specs = append(specs, spec{"compat/font/fixtures/bold.ttc", 0, false}, spec{"compat/font/fixtures/bold.ttc", 1, false}, spec{"compat/font/fixtures/stix.ttf", 0, true})
+	specs = append(specs, spec{"compat/font/fixtures/bold.ttc", 0, false, false}, spec{"compat/font/fixtures/bold.ttc", 1, false, false}, spec{"compat/font/fixtures/stix.ttf", 0, true, false}, spec{"compat/font/fixtures/stix.ttf", 0, true, true}, spec{"compat/font/fixtures/restricted.ttf", 0, false, true})
 	for _, item := range specs {
 		path := item.path
 		data, err := os.ReadFile(filepath.Join(root, path))
@@ -50,6 +51,9 @@ func main() {
 			}
 			binary.BigEndian.PutUint16(parsed.Tables["OS/2"][8:], 0x100)
 		}
+		if item.oversized {
+			data = append(data, make([]byte, 2*1024*1024)...)
+		}
 		dir, err := os.MkdirTemp("", "bdf-csv-font-")
 		if err != nil {
 			panic(err)
@@ -58,9 +62,6 @@ func main() {
 			panic(err)
 		}
 		for scenario := 0; scenario < 14; scenario++ {
-			if scenario >= 7 && filepath.Ext(path) == ".otf" {
-				continue
-			}
 			kind := scenario % 7
 			input := inputs[kind]
 			opt := &csv.Options{FontDirs: []string{dir}, NoSystemFonts: true, NoSubset: scenario < 7, NoWOFF2: true, Header: csv.HeaderYes, Name: "People", Title: "Report"}
@@ -108,8 +109,8 @@ func main() {
 					parts = append(parts, map[string]any{"hash": p.Hash.String(), "type": p.Type, "data": p.Data})
 				}
 			}
-			entry := map[string]any{"file": path, "index": item.index, "noSubsetLicense": item.noSubsetLicense, "scenario": scenario, "input": input, "views": res.Doc.Views, "tables": res.Doc.Tables, "warnings": res.Warnings, "fontHash": fontHash, "fontTables": fontTables, "parts": parts}
-			if !item.noSubsetLicense && (((path == "compat/font/fixtures/stix.ttf" || path == "compat/font/fixtures/stix.otf") && (scenario == 0 || scenario == 2)) || (path == "compat/font/fixtures/bold.ttc" && scenario == 0) || (path == "compat/font/fixtures/stix.ttf" && scenario == 7) || (path == "compat/font/fixtures/bold.ttc" && item.index == 1 && scenario == 7)) {
+			entry := map[string]any{"file": path, "index": item.index, "noSubsetLicense": item.noSubsetLicense, "oversized": item.oversized, "scenario": scenario, "input": input, "views": res.Doc.Views, "tables": res.Doc.Tables, "warnings": res.Warnings, "fontHash": fontHash, "fontTables": fontTables, "parts": parts}
+			if !item.noSubsetLicense && !item.oversized && (((path == "compat/font/fixtures/stix.ttf" || path == "compat/font/fixtures/stix.otf") && (scenario == 0 || scenario == 2)) || (path == "compat/font/fixtures/bold.ttc" && scenario == 0) || (path == "compat/font/fixtures/stix.ttf" && scenario == 7) || (path == "compat/font/fixtures/stix.otf" && scenario == 7) || (path == "compat/font/fixtures/bold.ttc" && item.index == 1 && scenario == 7)) {
 				var encoded bytes.Buffer
 				if err := res.Doc.WriteSingle(&encoded); err != nil {
 					panic(err)

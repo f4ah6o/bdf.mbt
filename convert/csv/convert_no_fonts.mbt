@@ -42,9 +42,10 @@ pub fn convert_no_fonts(
 
 ///|
 /// Convert CSV using one explicitly supplied TrueType or OpenType font.
-/// TrueType glyph outlines are subsetted when allowed; `no_subset` embeds
+/// TrueType and CFF glyph outlines are subsetted when supported and allowed;
+/// `no_subset` embeds
 /// the full font. `font_index` selects a face within a TTC collection.
-/// Automatic font selection, CFF subsetting and WOFF2 are not yet supported.
+/// Automatic font selection and WOFF2 are not yet supported.
 /// Set `system_fonts` to use font names without embedding.
 pub fn convert_with_font(
   data : Bytes,
@@ -128,7 +129,7 @@ fn convert_grid(
     meta["dc"] = Json::object({ "title": Json::string(title) })
   }
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
-  let (drawn, usage) = match face {
+  let (drawn, usage, font_warning) = match face {
     Some(font) => {
       let (system_grid, usage) = @sheet.draw_grid_with_font_usage(
         cells,
@@ -137,23 +138,20 @@ fn convert_grid(
         language~,
         table_style~,
       )
-      let hash = match font_data {
-        Some(_) if usage.used &&
-          !system_fonts &&
-          (font.metrics.embeddable || ignore_embedding_restrictions) => {
-          let program = if no_subset {
-            font.canvas_program()
-          } else if font.metrics.subsettable || ignore_embedding_restrictions {
-            match font.subset_program(usage.codepoints) {
-              Some(subset) => subset
-              None => font.mapped_program(usage.codepoints)
-            }
-          } else {
-            font.mapped_program(usage.codepoints)
-          }
-          Some(writer.add_part("font", program))
-        }
-        _ => None
+      let (program, font_warning) = match font_data {
+        Some(bytes) if usage.used && !system_fonts =>
+          csv_embed_font(
+            font,
+            bytes,
+            usage.codepoints,
+            no_subset,
+            ignore_embedding_restrictions,
+          )
+        _ => (None, None)
+      }
+      let hash = match program {
+        Some(bytes) => Some(writer.add_part("font", bytes))
+        None => None
       }
       let drawn = match hash {
         Some(_) =>
@@ -167,7 +165,7 @@ fn convert_grid(
           )
         None => system_grid
       }
-      (drawn, Some(usage))
+      (drawn, Some(usage), font_warning)
     }
     None =>
       (
@@ -177,6 +175,7 @@ fn convert_grid(
           language~,
           table_style~,
         ),
+        None,
         None,
       )
   }
@@ -203,16 +202,10 @@ fn convert_grid(
       warnings.push(
         "no fonts found; text is laid out with estimated metrics and not embedded",
       )
-    (Some(font), Some(usage)) => {
-      if usage.used &&
-        !system_fonts &&
-        !font.metrics.embeddable &&
-        !ignore_embedding_restrictions {
-        warnings.push(
-          "font " +
-          font.info.family +
-          " is not embedded: its license does not allow embedding",
-        )
+    (Some(_), Some(usage)) => {
+      match font_warning {
+        Some(warning) => warnings.push(warning)
+        None => ()
       }
       match csv_missing_warning(usage.missing) {
         Some(warning) => warnings.push(warning)

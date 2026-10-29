@@ -14,7 +14,7 @@ checks real TrueType subsets, and `subset-edge.json` checks composite cycles,
 missing metrics, malformed and long `loca` offsets.
 `geometry.json` and `drawing.json` record grid dimensions and drawing objects for each
 font and language scenario. `csv.json` covers full CSV documents with whole-font
-embedding, TrueType subsetting and individually selected TTC faces, and includes upstream BDFs for the visual comparison. `npm run test:font-compat` checks them against the
+embedding, TrueType and CFF subsetting and individually selected TTC faces, and includes upstream BDFs for the visual comparison. `npm run test:font-compat` checks them against the
 MoonBit implementation after `moon build --target js`.
 
 To regenerate the JSON files, copy each Go generator into a directory under
@@ -22,6 +22,6 @@ an upstream checkout (its imports use upstream internal packages) and run it
 with the absolute path to this repository as its argument. Redirect the output
 to the corresponding JSON file. Use the pinned upstream revision above.
 
-`node compat/font/visual-compare.mjs` renders eight upstream and MoonBit CSV
+`node compat/font/visual-compare.mjs` renders nine upstream and MoonBit CSV
 documents with actual embedded TTF/OTF and TTC faces and compares the screenshots
 using vlmkit at three viewport sizes.

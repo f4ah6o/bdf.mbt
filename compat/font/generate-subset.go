@@ -20,7 +20,7 @@ func main() {
 		file  string
 		index int
 	}{
-		{"compat/visual/synthetic.ttf", 0}, {"compat/font/fixtures/stix.ttf", 0}, {"compat/font/fixtures/bold.ttc", 0}, {"compat/font/fixtures/bold.ttc", 1}, {"compat/font/fixtures/features.ttf", 0}, {"compat/font/fixtures/restricted.ttf", 0}, {"compat/font/fixtures/variable.ttf", 0}, {"compat/font/fixtures/color.ttf", 0},
+		{"compat/visual/synthetic.ttf", 0}, {"compat/font/fixtures/stix.ttf", 0}, {"compat/font/fixtures/stix.otf", 0}, {"compat/font/fixtures/bold.ttc", 0}, {"compat/font/fixtures/bold.ttc", 1}, {"compat/font/fixtures/features.ttf", 0}, {"compat/font/fixtures/restricted.ttf", 0}, {"compat/font/fixtures/variable.ttf", 0}, {"compat/font/fixtures/color.ttf", 0},
 	}
 	texts := []string{"", "A", "Name Amount Alice 123.45\néÀçÅ ñ é", "漢字😀𝄞", strings.Repeat("ABCDEFG abcdefg 0123456789", 200)}
 	out := []any{}

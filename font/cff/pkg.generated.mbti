@@ -1,0 +1,21 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/font/cff"
+
+// Values
+pub fn subset(Bytes, Array[Int32]) -> Subset raise
+
+// Errors
+pub suberror CffError {
+  InvalidCff(String)
+  TooLong
+}
+
+// Types and methods
+pub(all) struct Subset {
+  data : Bytes
+  order : Array[Int32]
+}
+
+// Type aliases
+
+// Traits
