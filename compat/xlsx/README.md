@@ -52,6 +52,9 @@ Single-cell relative-reference cases use `generate_conditional_single_ref_test.g
 and `TestCodexConditionalSingleRef`.
 Axis-aligned relative-reference cases use `generate_conditional_axis_ref_test.go`
 and `TestCodexConditionalAxisRef`.
+Moving relative-reference cases use `generate_conditional_moving_ref_test.go`
+and `TestCodexConditionalMovingRef`; bounded ranges, blank paints, multiple
+ranges, and sparse rows are covered.
 Conditional font cases matching blank cells use `generate_conditional_blank_test.go`
 and `TestCodexConditionalBlank`.
 Blank-cell paint cases use `generate_conditional_paint_blank_test.go` and

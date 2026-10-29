@@ -25,6 +25,11 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   let mut formula = StringBuilder()
   let mut threshold = 0.0
   let mut threshold_end = 0.0
+  let mut reference1 = ""
+  let mut reference2 = ""
+  let mut moving_reference = false
+  let mut any_moving_reference = false
+  let blank_positions : Map[Int32, Map[Int32, Bool]] = Map([])
   let mut ranges : Array[XlsxRange] = []
   let mut room = 4194304L
   let mut conditional_count = 0
@@ -83,6 +88,9 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
           dxf_id = xlsx_attr_int(element, "dxfId", -1)
           operator = xlsx_attr(element, "operator", "equal")
           formula_count = 0
+          reference1 = ""
+          reference2 = ""
+          moving_reference = false
         } else if depth == rule_depth {
           if name != "formula" || event.kind is Empty(_) {
             xlsx_reject_conditional()
@@ -133,10 +141,19 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
               range.column_end == ranges[0].column_start
           }
           let value = if reference {
-            match
-              xlsx_conditional_reference_value(
-                text, rows, fixed_row, fixed_column,
-              ) {
+            let fixed = xlsx_conditional_reference_value(
+              text, rows, fixed_row, fixed_column,
+            )
+            if fixed is None {
+              moving_reference = true
+              any_moving_reference = true
+            }
+            if formula_count == 1 {
+              reference1 = text
+            } else {
+              reference2 = text
+            }
+            match xlsx_conditional_reference_value(text, rows, true, true) {
               Some(value) => value
               None => {
                 xlsx_reject_conditional()
@@ -180,15 +197,26 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
           if formula_count != expected {
             xlsx_reject_conditional()
           }
-          blank_matches = xlsx_plain_conditional_matches(
-            0.0, threshold, threshold_end, operator,
-          )
+          blank_matches = !moving_reference &&
+            xlsx_plain_conditional_matches(
+              0.0, threshold, threshold_end, operator,
+            )
           any_blank_matches = blank_matches || any_blank_matches
           rule_depth = -1
         }
         if depth + 1 == conditional_depth {
           if rule_count != 1 {
             xlsx_reject_conditional()
+          }
+          if moving_reference {
+            if conditional_count != 1 {
+              xlsx_reject_conditional()
+            }
+            xlsx_match_moving_conditionals(
+              rows, ranges, row_count, col_count, reference1, reference2, threshold,
+              threshold_end, operator, matched, blank_positions,
+            )
+            any_blank_matches = !blank_positions.is_empty()
           }
           for range in ranges {
             let last_row = Int64::min(range.row_end, (row_count - 1).to_int64())
@@ -199,6 +227,9 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
               if room < 0L {
                 xlsx_reject_conditional()
               }
+            }
+            if moving_reference {
+              continue
             }
             for row in rows {
               if row.index.to_int64() < range.row_start ||
@@ -259,6 +290,9 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
       _ => ()
     }
   }
+  if any_moving_reference && conditional_count != 1 {
+    xlsx_reject_conditional()
+  }
   if matched.is_empty() && !any_blank_matches {
     return rows
   }
@@ -279,6 +313,11 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
       row_count,
       col_count,
       matched,
+      if moving_reference {
+        Some(blank_positions)
+      } else {
+        None
+      },
     )
   } else {
     rows
@@ -324,10 +363,33 @@ fn xlsx_conditional_reference_value(
   if i == start || i != data.length() {
     return None
   }
+  xlsx_conditional_shifted_reference(text, rows, 0, 0)
+}
+
+///|
+fn xlsx_conditional_shifted_reference(
+  text : String,
+  rows : Array[XlsxRow],
+  row_offset : Int32,
+  column_offset : Int32,
+) -> Double? {
+  let data = @utf8.encode(text)
+  let col_absolute = data[0] == b'$'
+  let mut i = if col_absolute { 1 } else { 0 }
+  while i < data.length() &&
+        (
+          (data[i] >= b'A' && data[i] <= b'Z') ||
+          (data[i] >= b'a' && data[i] <= b'z')
+        ) {
+    i += 1
+  }
+  let row_absolute = i < data.length() && data[i] == b'$'
   let (column, row, valid) = xlsx_parse_ref(text)
   if !valid {
     return None
   }
+  let row = row + (if row_absolute { 0 } else { row_offset })
+  let column = column + (if col_absolute { 0 } else { column_offset })
   for candidate in rows {
     if candidate.index != row {
       continue

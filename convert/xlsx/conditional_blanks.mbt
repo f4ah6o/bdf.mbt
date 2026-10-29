@@ -9,6 +9,7 @@ fn xlsx_materialize_conditional_blanks(
   row_count : Int32,
   col_count : Int32,
   matched : Map[Int32, Map[Int32, Bool]],
+  allowed : Map[Int32, Map[Int32, Bool]]?,
 ) -> Array[XlsxRow] {
   let column_styles = Array::make(col_count, -1)
   for column in geometry.columns {
@@ -60,6 +61,15 @@ fn xlsx_materialize_conditional_blanks(
         }
       }
       for c in first_col..<=last_col {
+        if allowed is Some(allowed) {
+          if allowed.get(r) is Some(allowed_columns) {
+            if !allowed_columns.contains(c) {
+              continue
+            }
+          } else {
+            continue
+          }
+        }
         columns[c] = true
       }
       if range.row_end - range.row_start > 1000L && !by_row.contains(r) {

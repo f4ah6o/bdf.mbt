@@ -124,7 +124,7 @@ func TestCodexConditionalAbsolute(t *testing.T) {
 		op, low, high, number := ops[(i/20)%len(ops)], lows[k], highs[k], values[k]
 		rule := fmt.Sprintf(`<conditionalFormatting sqref="A1:E3"><cfRule type="cellIs" operator="%s" dxfId="0"><formula> = $F$1 </formula><formula>$G$1</formula></cfRule></conditionalFormatting>`, op)
 		if i >= 160 && i < 166 {
-			bad := []string{"$F1", "F$1", "F1", "$A$0", "A1+1", "$A$1"}
+			bad := []string{"XFE1", "A1048577", "$F$$1", "$A$0", "A1+1", "$A$1"}
 			rule = `<conditionalFormatting sqref="A1:E3"><cfRule type="cellIs" operator="between" dxfId="0"><formula>` + bad[i-160] + `</formula><formula>$G$1</formula></cfRule></conditionalFormatting>`
 		}
 		if i == 166 {
