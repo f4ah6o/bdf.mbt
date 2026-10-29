@@ -188,3 +188,12 @@ its build tag into upstream `converter/font` alongside `generate_test.go` and
 running `TestCodexFontConvert` with the same fixture root. Run
 `npm run test:font-convert` and `npm run test:font-convert-visual` after a JS
 build; the latter compares rendered upstream and MoonBit documents with vlmkit.
+
+`compressed-convert.json.gz` compares WOFF2-embedded conversion metadata, page
+layouts, text indexes and rendered pages. Generate it by copying
+`generate-compressed-convert_test.go` without its build tag into upstream
+`converter/font` alongside `generate_test.go` and running
+`TestCodexCompressedFontConvert` with the same fixture root. After a JS build,
+run `npm run test:font-convert-compressed` and
+`npm run test:font-convert-compressed-visual`. The latter uses vlmkit; the
+MoonBit and Go Brotli streams have different bytes but render the same content.

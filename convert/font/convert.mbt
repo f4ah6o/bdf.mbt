@@ -1,5 +1,5 @@
 ///|
-/// Options for font specimen conversion. Font programs are stored as SFNT.
+/// Options for font specimen conversion.
 pub(all) struct SpecimenOptions {
   selection : String
   title : String
@@ -9,6 +9,7 @@ pub(all) struct SpecimenOptions {
   no_subset : Bool
   ignore_restrictions : Bool
   no_text_index : Bool
+  no_woff2 : Bool
 }
 
 ///|
@@ -22,6 +23,7 @@ pub fn SpecimenOptions::new() -> SpecimenOptions {
     no_subset: false,
     ignore_restrictions: false,
     no_text_index: false,
+    no_woff2: false,
   }
 }
 
@@ -57,7 +59,7 @@ priv struct RenderedSpecimen {
 
 ///|
 /// Convert a font or collection into BDF scroll views. Font discovery is
-/// host-controlled through `database`; font programs are stored as SFNT.
+/// host-controlled through `database`; embedded fonts use WOFF2 by default.
 pub fn convert(
   data : Bytes,
   database : @db.Database,
@@ -91,6 +93,7 @@ pub fn convert(
     options.selection,
     options.text,
     ignore_restrictions=options.ignore_restrictions,
+    no_woff2=options.no_woff2,
   )
   let texter = SpecimenTexter::new(database)
   let pending : Array[PendingSpecimen] = []
@@ -145,6 +148,7 @@ pub fn convert(
       writer,
       no_subset=options.no_subset,
       ignore_restrictions=options.ignore_restrictions,
+      no_woff2=options.no_woff2,
     )
   }
   let rendered : Array[RenderedSpecimen] = []

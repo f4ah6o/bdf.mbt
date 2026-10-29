@@ -18,12 +18,13 @@ fn specimen_path_order(a : String, b : String) -> Int32 {
 }
 
 ///|
-/// Embed the UI faces measured so far. Programs use SFNT rather than WOFF2.
+/// Embed the UI faces measured so far, optionally encoding them as WOFF2.
 pub fn SpecimenTexter::embed(
   self : SpecimenTexter,
   document : @core.DocumentWriter,
   no_subset~ : Bool = false,
   ignore_restrictions~ : Bool = false,
+  no_woff2~ : Bool = true,
 ) -> SpecimenUIFonts raise {
   let (used, _) = self.usage()
   used.sort_by((a, b) => {
@@ -51,7 +52,10 @@ pub fn SpecimenTexter::embed(
       None => ()
     }
     match program {
-      Some(data) => self.embedded[usage.face] = document.add_part("font", data)
+      Some(data) =>
+        self.embedded[usage.face] = specimen_add_font(
+          document, data, no_woff2, warnings,
+        )
       None => ()
     }
   }

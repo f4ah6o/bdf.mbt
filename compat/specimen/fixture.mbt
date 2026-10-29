@@ -1372,6 +1372,7 @@ pub fn convert_specimen(
     no_subset,
     ignore_restrictions,
     no_text_index: no_index,
+    no_woff2: true,
   }
   try! @font.convert(data, db, options~)
 }
@@ -1389,4 +1390,35 @@ pub fn converted_specimen_report(result : @font.SpecimenResult) -> String {
     "summary": Json::string(result.summary),
     "warnings": Json::array(result.warnings.map(Json::string)),
   }).stringify()
+}
+
+///|
+#export_name("convert_specimen_compressed")
+pub fn convert_specimen_compressed(
+  data : Bytes,
+  ui_font : Bytes,
+  selection : String,
+  title : String,
+  text : String,
+  system : Bool,
+  no_index : Bool,
+  no_subset : Bool,
+  ignore_restrictions : Bool,
+) -> @font.SpecimenResult {
+  let db = @db.Database::new()
+  if ui_font.length() > 0 {
+    ignore(db.add_file("stix.ttf", ui_font))
+  }
+  let options : @font.SpecimenOptions = {
+    selection,
+    title,
+    text,
+    examples: 5,
+    system_fonts: system,
+    no_subset,
+    ignore_restrictions,
+    no_text_index: no_index,
+    no_woff2: false,
+  }
+  try! @font.convert(data, db, options~)
 }

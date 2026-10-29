@@ -296,6 +296,7 @@ fn native_convert_font(
     no_subset: options.no_subset,
     ignore_restrictions: options.ignore_restrictions,
     no_text_index: options.no_text_index,
+    no_woff2: true,
   }
   let db = database.unwrap_or(@fontdb.Database::new())
   let result = @font.convert(data, db, options~) catch {

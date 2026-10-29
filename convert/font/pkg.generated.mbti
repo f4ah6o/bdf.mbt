@@ -117,7 +117,7 @@ pub fn FontFile::document_plan(Self, String, String) -> SpecimenDocumentPlan rai
 pub fn FontFile::faces(Self) -> Array[FileFace]
 pub fn FontFile::overview(Self, FileFace, outlines? : Bool) -> Array[OverviewSection]
 pub fn FontFile::overview_view(Self, FileFace, SpecimenTexter, SamplePlan, Bool) -> SpecimenOverviewView
-pub fn FontFile::prepare_programs(Self, @core.DocumentWriter, String, String, ignore_restrictions? : Bool) -> SpecimenPrograms raise
+pub fn FontFile::prepare_programs(Self, @core.DocumentWriter, String, String, ignore_restrictions? : Bool, no_woff2? : Bool) -> SpecimenPrograms raise
 pub fn FontFile::select(Self, String) -> (Array[FileFace], Array[String]) raise
 
 type GlyphCellPlan
@@ -284,6 +284,7 @@ pub(all) struct SpecimenOptions {
   no_subset : Bool
   ignore_restrictions : Bool
   no_text_index : Bool
+  no_woff2 : Bool
 }
 pub fn SpecimenOptions::new() -> Self
 
@@ -349,7 +350,7 @@ pub(all) struct SpecimenTextRun {
 pub struct SpecimenTexter {
   // private fields
 }
-pub fn SpecimenTexter::embed(Self, @core.DocumentWriter, no_subset? : Bool, ignore_restrictions? : Bool) -> SpecimenUIFonts raise
+pub fn SpecimenTexter::embed(Self, @core.DocumentWriter, no_subset? : Bool, ignore_restrictions? : Bool, no_woff2? : Bool) -> SpecimenUIFonts raise
 pub fn SpecimenTexter::fit(Self, String, Double, Bool, Double) -> String
 pub fn SpecimenTexter::font_record(Self, @db.Choice, SpecimenUIFonts) -> @core.Font
 pub fn SpecimenTexter::line(Self, String, Double, Bool) -> SpecimenTextLine

@@ -16,6 +16,8 @@ pub fn begin_specimen_page(PageBatchFixture, Int32) -> @font.SpecimenPagePainter
 
 pub fn convert_specimen(Bytes, Bytes, String, String, String, Bool, Bool, Bool, Bool) -> @font.SpecimenResult
 
+pub fn convert_specimen_compressed(Bytes, Bytes, String, String, String, Bool, Bool, Bool, Bool) -> @font.SpecimenResult
+
 pub fn converted_specimen_bytes(@font.SpecimenResult) -> Bytes
 
 pub fn converted_specimen_report(@font.SpecimenResult) -> String

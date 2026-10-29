@@ -20,13 +20,14 @@ pub(all) struct SpecimenPrograms {
 ///|
 /// Prepare specimen glyph and sample fonts and store them in a document. The
 /// collection selection and license policy follow upstream. Programs are
-/// stored as SFNT; WOFF2 encoding is not yet available in this port.
+/// stored as SFNT by default; WOFF2 can be enabled for embedded fonts.
 pub fn FontFile::prepare_programs(
   self : FontFile,
   document : @core.DocumentWriter,
   selection : String,
   text : String,
   ignore_restrictions~ : Bool = false,
+  no_woff2~ : Bool = true,
 ) -> SpecimenPrograms raise {
   let (faces, warnings) = self.select(selection)
   let glyph_fonts : Map[String, @core.Font] = Map([])
@@ -55,7 +56,7 @@ pub fn FontFile::prepare_programs(
       Some(font) => font
       None => {
         let data = face.font.glyph_program()
-        let hash = document.add_part("font", data)
+        let hash = specimen_add_font(document, data, no_woff2, warnings)
         font_parts += 1
         let font : @core.Font = {
           hash: Some(hash),
@@ -74,7 +75,7 @@ pub fn FontFile::prepare_programs(
     }
     let sample_font : @core.Font? = match program {
       Some(data) => {
-        let hash = document.add_part("font", data)
+        let hash = specimen_add_font(document, data, no_woff2, warnings)
         font_parts += 1
         Some({ hash: Some(hash), family: "", weight: 400, style: 0, })
       }
@@ -89,4 +90,30 @@ pub fn FontFile::prepare_programs(
     })
   }
   { faces: result, warnings, font_parts, outlined, }
+}
+
+///|
+fn specimen_add_font(
+  document : @core.DocumentWriter,
+  data : Bytes,
+  no_woff2 : Bool,
+  warnings : Array[String],
+) -> String raise {
+  let program = if no_woff2 {
+    data
+  } else {
+    @woff2.encode(data) catch {
+      @woff2.Woff2Failure(message) => {
+        if message != "woff2: the font compresses more than decoders accept" {
+          warnings.push("font: not stored as WOFF2: " + message)
+        }
+        data
+      }
+      error => {
+        warnings.push("font: not stored as WOFF2: " + error.to_string())
+        data
+      }
+    }
+  }
+  document.add_part("font", program)
 }
