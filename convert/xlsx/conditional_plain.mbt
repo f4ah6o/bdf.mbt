@@ -124,11 +124,16 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             text
           }
           let data = @utf8.encode(text)
-          let reference = data.length() > 0 &&
+          let reference_start = if data.length() > 0 && data[0] == b'-' {
+            1
+          } else {
+            0
+          }
+          let reference = data.length() > reference_start &&
             (
-              data[0] == b'$' ||
-              (data[0] >= b'A' && data[0] <= b'Z') ||
-              (data[0] >= b'a' && data[0] <= b'z')
+              data[reference_start] == b'$' ||
+              (data[reference_start] >= b'A' && data[reference_start] <= b'Z') ||
+              (data[reference_start] >= b'a' && data[reference_start] <= b'z')
             )
           let mut fixed_row = true
           let mut fixed_column = true
@@ -332,6 +337,8 @@ fn xlsx_conditional_reference_value(
   fixed_row : Bool,
   fixed_column : Bool,
 ) -> Double? {
+  let original = text
+  let text = if text.has_prefix("-") { text[1:].to_owned() } else { text }
   let data = @utf8.encode(text)
   if data.length() < 2 {
     return None
@@ -363,7 +370,7 @@ fn xlsx_conditional_reference_value(
   if i == start || i != data.length() {
     return None
   }
-  xlsx_conditional_shifted_reference(text, rows, 0, 0)
+  xlsx_conditional_shifted_reference(original, rows, 0, 0)
 }
 
 ///|
@@ -373,7 +380,12 @@ fn xlsx_conditional_shifted_reference(
   row_offset : Int32,
   column_offset : Int32,
 ) -> Double? {
+  let negative = text.has_prefix("-")
+  let text = if negative { text[1:].to_owned() } else { text }
   let data = @utf8.encode(text)
+  if data.is_empty() {
+    return None
+  }
   let col_absolute = data[0] == b'$'
   let mut i = if col_absolute { 1 } else { 0 }
   while i < data.length() &&
@@ -397,17 +409,21 @@ fn xlsx_conditional_shifted_reference(
     for cell in candidate.cells {
       if cell.column == column {
         if cell.kind == 0 {
-          return Some(0.0)
+          return if negative { None } else { Some(0.0) }
         }
         if cell.kind == 1 {
-          return Some(cell.number)
+          return Some(if negative { -cell.number } else { cell.number })
         }
         return None
       }
     }
-    return Some(0.0)
+    return if negative { None } else { Some(0.0) }
   }
-  Some(0.0)
+  if negative {
+    None
+  } else {
+    Some(0.0)
+  }
 }
 
 ///|
