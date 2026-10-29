@@ -1,6 +1,6 @@
 # Music notation compatibility fixtures
 
-These fixtures compare musical meter, key estimation and pitch spelling with
+These fixtures compare musical meter, key estimation, pitch spelling and measure timelines with
 shibukawa/bdf commit `4f9af52dca60be1eb0daade39f7dc41d6a1fe431`.
 They exercise all key signatures, negative and positive pitch numbers,
 spelling hints and deterministic duration histograms.
@@ -13,3 +13,6 @@ upstream checkout, then run:
 ```sh
 BDF_FIXTURE_ROOT=/path/to/bdf.mbt go test ./converter/internal/music -run '^TestCodexMusicKeys$' -count=1
 ```
+
+Timeline fixtures use `generate_timeline_test.go` and
+`TestCodexMusicTimeline` in the same way.

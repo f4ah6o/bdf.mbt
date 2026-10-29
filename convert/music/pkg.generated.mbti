@@ -2,6 +2,8 @@
 package "f4ah6o/bdf/convert/music"
 
 // Values
+pub fn build_timeline(Int64, Array[TimeChange], Array[KeyChange], Array[TempoChange], Array[Double], Int32, time_override? : TimeSig?, key_override? : KeySig?) -> ScoreTimeline
+
 pub fn estimate_key(Array[Double], Int32) -> KeySig
 
 pub fn key_of(Int32, Bool, Int32) -> KeySig
@@ -11,15 +13,51 @@ pub fn spell(Int32, KeySig, Int32) -> Pitch
 // Errors
 
 // Types and methods
+pub(all) struct KeyChange {
+  tick : Int64
+  key : KeySig
+}
+
 pub(all) struct KeySig {
   fifths : Int32
   minor : Bool
+}
+
+pub(all) struct MeasureSpan {
+  start : Int64
+  length : Int64
+  time : TimeSig
+  show_time : Bool
+  mut key : KeySig?
+  mut effective_key : KeySig
+  tempo : Array[TempoMark]
 }
 
 pub(all) struct Pitch {
   step : Int32
   alter : Int32
   octave : Int32
+}
+
+pub(all) struct ScoreTimeline {
+  measures : Array[MeasureSpan]
+  warnings : Array[String]
+}
+
+pub(all) struct TempoChange {
+  tick : Int64
+  bpm : Double
+}
+
+pub(all) struct TempoMark {
+  offset : Int64
+  dots : Int32
+  per_minute : Double
+}
+
+pub(all) struct TimeChange {
+  tick : Int64
+  time : TimeSig
 }
 
 pub(all) struct TimeSig {
