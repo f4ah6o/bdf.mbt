@@ -2,6 +2,8 @@
 package "f4ah6o/bdf/convert/musicxml"
 
 // Values
+pub fn detect_musicxml(Bytes, Bytes) -> Bool
+
 pub fn detect_musicxml_text(Bytes) -> Bool
 
 pub fn musicxml_declared_encoding(Bytes) -> String
@@ -14,7 +16,12 @@ pub fn musicxml_to_utf8(Bytes) -> (Bytes, String)
 
 pub fn musicxml_utf16_order(Bytes) -> (Bool, Bool)
 
+pub fn read_musicxml_input(Bytes) -> Bytes raise MusicXmlInputError
+
 // Errors
+pub suberror MusicXmlInputError {
+  InvalidMusicXmlInput(String)
+}
 
 // Types and methods
 

@@ -15,6 +15,7 @@ pub(all) struct ZipArchive {
   entries : Array[ZipEntry]
 }
 pub fn ZipArchive::read(Self, ZipEntry, Int32) -> Bytes raise ZipError
+pub fn ZipArchive::read_prefix(Self, ZipEntry, Int32) -> Bytes raise ZipError
 
 pub(all) struct ZipEntry {
   name : String

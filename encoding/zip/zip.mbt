@@ -271,3 +271,75 @@ pub fn ZipArchive::read(
   }
   result
 }
+
+///|
+/// Read up to `limit` uncompressed bytes without consuming the rest of an entry.
+/// The prefix can be returned even when the remainder or checksum is invalid.
+pub fn ZipArchive::read_prefix(
+  self : ZipArchive,
+  entry : ZipEntry,
+  limit : Int32,
+) -> Bytes raise ZipError {
+  if limit < 0 {
+    raise InvalidZip("zip: entry exceeds limit")
+  }
+  let data = self.data
+  let pos = entry.offset
+  if pos < 0 || pos > data.length() - 30 || zip_u32(data, pos) != 0x04034b50U {
+    raise InvalidZip("zip: not a valid zip file")
+  }
+  if entry.name.has_suffix("/") {
+    if entry.size != 0 {
+      raise InvalidZip("zip: not a valid zip file")
+    }
+    return b""
+  }
+  let start64 = pos.to_int64() +
+    30L +
+    zip_u16(data, pos + 26).to_int64() +
+    zip_u16(data, pos + 28).to_int64()
+  if start64 < 0L || start64 > data.length().to_int64() {
+    raise InvalidZip("zip: not a valid zip file")
+  }
+  let start = start64.to_int()
+  let available = Int32::min(entry.compressed_size, data.length() - start)
+  if limit == 0 {
+    return b""
+  }
+  match entry.method {
+    0 => data[start:start + Int32::min(available, limit)].to_owned()
+    8 => {
+      let decoder = @deflate.Decoder(until=EndOfMember)
+      let chunk : FixedArray[Byte] = FixedArray::make(
+        Int32::min(limit, 16384),
+        0,
+      )
+      let output = @buffer.Buffer()
+      let mut cursor = start
+      let end = start + available
+      while output.length() < limit {
+        let remaining = limit - output.length()
+        let target = if remaining < chunk.length() {
+          FixedArray::make(remaining, b'\x00')
+        } else {
+          chunk
+        }
+        let state = decoder.step_into(data[cursor:end], target, end=true) catch {
+          _ => return output.to_bytes()
+        }
+        let used = decoder.last_consumed()
+        let written = decoder.last_produced()
+        output.write_bytes(Bytes::from_array(target[:written]))
+        cursor += used
+        if output.length() == limit {
+          return output.to_bytes()
+        }
+        if state is Done || (used == 0 && written == 0) {
+          return output.to_bytes()
+        }
+      }
+      output.to_bytes()
+    }
+    _ => raise InvalidZip("zip: unsupported compression algorithm")
+  }
+}
