@@ -38,8 +38,9 @@ against the served URL for markup and accessibility checks.
 
 The `Demo pages` workflow builds and tests the site on pushes to `main` and
 on manual runs. It deploys only if the repository's Pages source is already
-set to **GitHub Actions**. It does not change repository settings or create an
-environment. If Pages is disabled, an administrator can choose **Settings →
+set to **GitHub Actions** and the `github-pages` environment already exists.
+It uses that environment and its protection rules without changing repository
+settings or creating an environment. If Pages is disabled, an administrator can choose **Settings →
 Pages → Build and deployment → Source → GitHub Actions**, then run the workflow
 again from the Actions tab. GitHub reports the resulting site URL in the
 workflow's deployment step. The expected default project URL is

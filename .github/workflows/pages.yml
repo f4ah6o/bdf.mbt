@@ -5,6 +5,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
   pages: read
 
@@ -64,23 +65,33 @@ jobs:
               *) cat "$RUNNER_TEMP/pages-check.err" >&2; exit 1 ;;
             esac
           fi
-          if [ "$source" = workflow ]; then
-            echo 'ready=true' >> "$GITHUB_OUTPUT"
-          else
+          if [ "$source" != workflow ]; then
             echo 'ready=false' >> "$GITHUB_OUTPUT"
             echo 'Pages deployment skipped: configure Settings > Pages > Source as GitHub Actions, then run this workflow again.'
+          elif gh api "repos/${GITHUB_REPOSITORY}/environments/github-pages" >/dev/null 2>"$RUNNER_TEMP/environment-check.err"; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          else
+            case "$(cat "$RUNNER_TEMP/environment-check.err")" in
+              *"(HTTP 404)"*)
+                echo 'ready=false' >> "$GITHUB_OUTPUT"
+                echo 'Pages deployment skipped: the github-pages environment does not exist.'
+                ;;
+              *) cat "$RUNNER_TEMP/environment-check.err" >&2; exit 1 ;;
+            esac
           fi
 
   deploy:
     needs: build
     if: needs.build.outputs.pages_ready == 'true'
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     permissions:
       contents: read
       pages: write
       id-token: write
     steps:
-      # No environment is created or configured by this workflow.
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
