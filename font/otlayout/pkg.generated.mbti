@@ -4,6 +4,8 @@ package "f4ah6o/bdf/font/otlayout"
 // Values
 pub fn parse_gsub(BytesView) -> Gsub?
 
+pub fn parse_layout(BytesView, gpos? : Bool) -> Layout?
+
 // Errors
 
 // Types and methods
@@ -12,6 +14,39 @@ pub struct Gsub {
 }
 pub fn Gsub::reachable(Self, Array[Int32]) -> Array[Int32]
 pub fn Gsub::truncated(Self) -> Bool
+
+pub(all) struct LanguageSystem {
+  tag : String
+  required : Int32
+  features : Array[Int32]
+}
+
+pub(all) struct Layout {
+  scripts : Array[LayoutScript]
+  features : Array[LayoutFeature]
+  lookups : Array[LayoutLookup]
+  feature_variations : Int32
+}
+pub fn Layout::script_features(Self) -> Array[Array[String]]
+
+pub(all) struct LayoutFeature {
+  tag : String
+  lookups : Array[Int32]
+  ui_name : Int32
+  characters : Array[Int32]
+}
+
+pub(all) struct LayoutLookup {
+  typ : Int32
+  flag : Int32
+  mark_set : Int32
+}
+
+pub(all) struct LayoutScript {
+  tag : String
+  default_language : LanguageSystem?
+  languages : Array[LanguageSystem]
+}
 
 // Type aliases
 

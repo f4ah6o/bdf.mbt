@@ -4,6 +4,8 @@ package "f4ah6o/bdf/compat/gsub"
 // Values
 pub fn inspect_gsub(Bytes, Array[Int32]) -> String
 
+pub fn layout_metadata(Bytes, Bool) -> String
+
 // Errors
 
 // Types and methods
