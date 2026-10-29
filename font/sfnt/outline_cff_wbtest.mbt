@@ -17,3 +17,16 @@ test "CFF charstrings draw through global subroutines and close contours" {
   assert_eq(partial.length(), 0)
   assert_false(font.outline(2).0)
 }
+
+///|
+test "CFF cubic bounds include the curve extrema" {
+  let curve = b"\x8b\x8b\x15\x8b\xef\xef\x8b\x8b\x27\x08\x0e"
+  let font : CffOutlines = {
+    charstrings: [curve[:]],
+    global: [],
+    local: [[]],
+    fd_select: None,
+  }
+  assert_eq(font.bounds(0), Some((0.0, 0.0, 100.0, 75.0)))
+  assert_eq(font.bounds(1), None)
+}

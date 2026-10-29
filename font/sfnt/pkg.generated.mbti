@@ -21,6 +21,7 @@ pub suberror FontError {
 pub struct CffOutlines {
   // private fields
 }
+pub fn CffOutlines::bounds(Self, Int32) -> (Double, Double, Double, Double)?
 pub fn CffOutlines::outline(Self, Int32) -> (Bool, Array[OutlineCommand])
 
 type CffRun

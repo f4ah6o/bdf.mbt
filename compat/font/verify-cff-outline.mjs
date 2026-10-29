@@ -11,8 +11,14 @@ for (const {name, input, valid, cases} of fonts) {
   const cff = load_cff_outlines(font);
   for (const {glyph, ...expected} of cases) {
     const actual = JSON.parse(cff_outline(cff, glyph));
-    assert.deepEqual(actual, expected, `${name}, glyph ${glyph}`);
+    assert.equal(actual.ok, expected.ok, `${name}, glyph ${glyph} validity`);
+    assert.deepEqual(actual.commands, expected.commands, `${name}, glyph ${glyph} commands`);
+    if (expected.bounds === null) assert.equal(actual.bounds, null, `${name}, glyph ${glyph} bounds`);
+    else {
+      assert.ok(Array.isArray(actual.bounds), `${name}, glyph ${glyph} bounds missing`);
+      for (let i = 0; i < 4; i++) assert.ok(Math.abs(actual.bounds[i] - expected.bounds[i]) <= 1e-10 * Math.max(1, Math.abs(expected.bounds[i])), `${name}, glyph ${glyph}, bound ${i}`);
+    }
     total++;
   }
 }
-console.log(`${total} CFF outlines from ${fonts.length} fonts match upstream.`);
+console.log(`${total} CFF outlines and bounds from ${fonts.length} fonts match upstream.`);

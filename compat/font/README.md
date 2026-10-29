@@ -34,7 +34,7 @@ TrueType and CFF outlines and compares them with vlmkit. To regenerate, copy
 `generate-outline_test.go` without its build tag into upstream `internal/sfnt`
 and run `BDF_FIXTURE_ROOT=/path/to/bdf.mbt go test ./internal/sfnt -run '^TestCodexOutlines$'`.
 
-`cff-outlines.json.gz` checks CFF drawing commands from real, CID, mutated and
+`cff-outlines.json.gz` checks CFF drawing commands and curve bounds from real, CID, mutated and
 synthetic charstrings, including local/global subroutines and drawing operators.
 Run `npm run test:cff-outline` after a JS build. To regenerate, copy
 `generate-cff-outline_test.go` and `generate-outline_test.go` without their
