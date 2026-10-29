@@ -55,6 +55,30 @@ func TestCodexUnicodeTables(t *testing.T) {
 			start = -1
 		}
 	}
+	b.WriteString("]\n\n///|\n// Graphic non-space code points for positioning examples.\nlet specimen_position_graphic_ranges : Array[(Int32, Int32)] = [\n")
+	start = -1
+	for r := 0; r <= unicode.MaxRune+1; r++ {
+		yes := r <= unicode.MaxRune && unicode.IsGraphic(rune(r)) && !unicode.IsSpace(rune(r))
+		if yes && start < 0 {
+			start = r
+		}
+		if !yes && start >= 0 {
+			fmt.Fprintf(&b, "  (0x%x, 0x%x),\n", start, r-1)
+			start = -1
+		}
+	}
+	b.WriteString("]\n\n///|\n// Unicode letter ranges for positioning example ranking.\nlet specimen_letter_ranges : Array[(Int32, Int32)] = [\n")
+	start = -1
+	for r := 0; r <= unicode.MaxRune+1; r++ {
+		yes := r <= unicode.MaxRune && unicode.IsLetter(rune(r))
+		if yes && start < 0 {
+			start = r
+		}
+		if !yes && start >= 0 {
+			fmt.Fprintf(&b, "  (0x%x, 0x%x),\n", start, r-1)
+			start = -1
+		}
+	}
 	b.WriteString("]\n\n///|\n// Unicode script ranges from Go's Unicode 17 tables.\nlet specimen_script_ranges : Array[(Int32, Int32, String)] = [\n")
 	scripts := make([]string, unicode.MaxRune+1)
 	for name, table := range unicode.Scripts {

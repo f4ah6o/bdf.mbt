@@ -220,6 +220,7 @@ pub(all) struct SpecimenFaceUsage {
 pub struct SpecimenFeaturePlanner {
   // private fields
 }
+pub fn SpecimenFeaturePlanner::gpos_examples(Self, FeatureGroup, Int32, SamplePlan) -> FeatureExamples
 pub fn SpecimenFeaturePlanner::gsub_examples(Self, FeatureGroup, Int32) -> FeatureExamples
 
 pub(all) struct SpecimenGlyph {

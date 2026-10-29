@@ -36,6 +36,8 @@ pub fn glyph_view_height(GlyphViewFixture, Int32) -> Double
 
 pub fn glyph_view_object(GlyphViewFixture, Int32) -> Bytes
 
+pub fn gpos_feature_examples(FeaturePlannerFixture, Int32, Int32) -> String
+
 pub fn gsub_feature_examples(FeaturePlannerFixture, Int32, Int32) -> String
 
 pub fn info_tables(Bytes, Bytes, Bytes, Bytes, Bytes, Bytes, Bytes) -> String
@@ -124,6 +126,7 @@ pub fn variations(Bytes, Bytes) -> String
 pub struct FeaturePlannerFixture {
   planner : @font.SpecimenFeaturePlanner
   groups : Array[@font.FeatureGroup]
+  sample : @font.SamplePlan
 }
 
 pub struct GlyphPainterFixture {

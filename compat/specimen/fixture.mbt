@@ -1145,6 +1145,7 @@ pub fn render_character_view(
 pub struct FeaturePlannerFixture {
   planner : @font.SpecimenFeaturePlanner
   groups : Array[@font.FeatureGroup]
+  sample : @font.SamplePlan
 }
 
 ///|
@@ -1156,7 +1157,11 @@ pub fn new_feature_planner(
   let file = try! @font.load(data)
   for face in file.faces() {
     if face.index == index {
-      return { planner: face.feature_planner(), groups: face.feature_groups(), }
+      return {
+        planner: face.feature_planner(),
+        groups: face.feature_groups(),
+        sample: face.sample_plan(""),
+      }
     }
   }
   abort("missing font face")
@@ -1179,6 +1184,36 @@ pub fn gsub_feature_examples(
   limit : Int32,
 ) -> String {
   let examples = f.planner.gsub_examples(f.groups[index], limit)
+  Json::object({
+    "group": Json::number(index.to_double()),
+    "total": Json::number(examples.total.to_double()),
+    "items": Json::array(
+      examples.items.map(it => {
+        Json::object({
+          "before": Json::array(it.before.map(placed_json)),
+          "after": Json::array(it.after.map(placed_json)),
+          "beforeWidth": Json::number(it.before_width),
+          "afterWidth": Json::number(it.after_width),
+          "alternatives": Json::boolean(it.alternatives),
+          "boxes": Json::boolean(it.boxes),
+          "beforeAdvance": Json::number(it.before_advance),
+          "afterAdvance": Json::number(it.after_advance),
+          "offset": Json::number(it.offset),
+          "note": Json::string(it.note),
+        })
+      }),
+    ),
+  }).stringify()
+}
+
+///|
+#export_name("gpos_feature_examples")
+pub fn gpos_feature_examples(
+  f : FeaturePlannerFixture,
+  index : Int32,
+  limit : Int32,
+) -> String {
+  let examples = f.planner.gpos_examples(f.groups[index], limit, f.sample)
   Json::object({
     "group": Json::number(index.to_double()),
     "total": Json::number(examples.total.to_double()),
