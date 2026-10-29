@@ -18,6 +18,10 @@ pub fn prepare_score(Bytes) -> String
 
 pub fn read_file(Bytes) -> String
 
+pub fn render_pages(Bytes, Double, Double, Double, String) -> String
+
+pub fn render_pages_fonts(Bytes, String, Bytes, Double, Double, Double, String) -> String
+
 pub fn scan_track(Bytes, Int32) -> String
 
 pub fn score(Bytes) -> String

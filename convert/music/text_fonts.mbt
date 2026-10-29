@@ -175,3 +175,40 @@ pub fn MusicTexter::font_record(
     }
   }
 }
+
+///|
+/// Warning for characters that no available face can draw, if any.
+pub fn MusicTexter::missing_warning(self : MusicTexter) -> String? {
+  let codes = self.missing_codepoints()
+  if codes.is_empty() {
+    return None
+  }
+  let digits = [
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+  ]
+  let out = StringBuilder()
+  out.write_string("no available font has glyphs for:")
+  for i, code in codes {
+    if i == 20 {
+      out.write_string(" … (" + (codes.length() - 20).to_string() + " more)")
+      break
+    }
+    out.write_char(' ')
+    out.write_char(code.unsafe_to_char())
+    out.write_string(" U+")
+    let reversed : Array[Char] = []
+    let mut n = code
+    while n > 0 {
+      reversed.push(digits[n % 16])
+      n /= 16
+    }
+    while reversed.length() < 4 {
+      reversed.push('0')
+    }
+    for j = reversed.length() - 1; j >= 0; j = j - 1 {
+      out.write_char(reversed[j])
+    }
+  }
+  out.write_string("; viewers draw them with their own fonts")
+  Some(out.to_string())
+}

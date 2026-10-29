@@ -1370,3 +1370,89 @@ pub fn score_layout(
       Json::object({ "error": Json::string(message) }).stringify()
   }
 }
+
+///|
+#export_name("render_pages")
+pub fn render_pages(
+  data : Bytes,
+  width : Double,
+  height : Double,
+  sp : Double,
+  title : String,
+) -> String {
+  try {
+    let original = @midi.notate_file(@midi.read_file(data))
+    let score : @music.NotatedScore = {
+      title: "",
+      subtitle: "",
+      composer: "",
+      lyricist: "",
+      arranger: "",
+      copyright: "",
+      timeline: original.timeline,
+      parts: original.parts,
+      error: original.error,
+    }
+    let doc = @core.DocumentWriter::new()
+    let out = @music.render_midi_pages(score, @db.Database::new(), doc, {
+      page: { width, height, staff_space: sp, title, },
+      system_fonts: true,
+      no_subset: false,
+      ignore_restrictions: false,
+      no_woff2: true,
+      document_language: "",
+    })
+    Json::array([
+      Json::string(out.glyph_paths.unwrap_or("")),
+      Json::array(out.objects.map(v => Json::string(v))),
+    ]).stringify()
+  } catch {
+    err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
+  }
+}
+
+///|
+#export_name("render_pages_fonts")
+pub fn render_pages_fonts(
+  data : Bytes,
+  font_name : String,
+  font_data : Bytes,
+  width : Double,
+  height : Double,
+  sp : Double,
+  title : String,
+) -> String {
+  try {
+    let original = @midi.notate_file(@midi.read_file(data))
+    let score : @music.NotatedScore = {
+      title: "",
+      subtitle: "",
+      composer: "",
+      lyricist: "",
+      arranger: "",
+      copyright: "",
+      timeline: original.timeline,
+      parts: original.parts,
+      error: original.error,
+    }
+    let doc = @core.DocumentWriter::new()
+    let db = @db.Database::new()
+    ignore(db.add_file(font_name, font_data))
+    let out = @music.render_midi_pages(score, db, doc, {
+      page: { width, height, staff_space: sp, title, },
+      system_fonts: false,
+      no_subset: false,
+      ignore_restrictions: false,
+      no_woff2: true,
+      document_language: "",
+    })
+    Json::array([
+      Json::string(out.glyph_paths.unwrap_or("")),
+      Json::array(out.objects.map(v => Json::string(v))),
+      Json::number(out.embedded_fonts.to_double()),
+      Json::array(out.warnings.map(v => Json::string(v))),
+    ]).stringify()
+  } catch {
+    err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
+  }
+}

@@ -83,6 +83,8 @@ pub fn prepare_score(NotatedScore) -> PreparedScore
 
 pub fn quantize_notes(Array[MeasureSpan], Array[NotationNote]) -> Array[QuantizedNote]
 
+pub fn render_midi_pages(NotatedScore, @db.Database, @core.DocumentWriter, MusicRenderOptions) -> MusicRenderedPages raise
+
 pub fn resolve_accidentals(KeySig, Array[EngravingEvent]) -> Array[Array[Int32?]]
 
 pub fn spell(Int32, KeySig, Int32) -> Pitch
@@ -98,6 +100,10 @@ pub fn write_staff_events(Array[VoiceNote], Array[MeasureSpan], Array[BeatGrid],
 // Errors
 pub suberror MusicPaintError {
   MissingMusicGlyph(String)
+}
+
+pub suberror MusicRenderError {
+  InvalidMusicScore(String)
 }
 
 // Types and methods
@@ -272,6 +278,23 @@ pub(all) struct MusicPrimitive {
   text_italic : Bool
 }
 
+pub(all) struct MusicRenderOptions {
+  page : MusicPageOptions
+  system_fonts : Bool
+  no_subset : Bool
+  ignore_restrictions : Bool
+  no_woff2 : Bool
+  document_language : String
+}
+
+pub(all) struct MusicRenderedPages {
+  layout : MusicScoreLayout
+  objects : Array[String]
+  glyph_paths : String?
+  embedded_fonts : Int32
+  warnings : Array[String]
+}
+
 pub(all) struct MusicScoreLayout {
   width : Double
   height : Double
@@ -368,6 +391,7 @@ pub fn MusicTexter::embed(Self, @core.DocumentWriter, no_subset? : Bool, ignore_
 pub fn MusicTexter::font_record(Self, @db.Choice, MusicTextFonts) -> @core.Font
 pub fn MusicTexter::line(Self, String, Double, Bool, Bool) -> MusicTextLine
 pub fn MusicTexter::missing_codepoints(Self) -> Array[Int32]
+pub fn MusicTexter::missing_warning(Self) -> String?
 pub fn MusicTexter::new(@db.Database) -> Self
 pub fn MusicTexter::used_codepoints(Self) -> Array[(Int32, Array[Int32])]
 
