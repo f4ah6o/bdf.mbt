@@ -23,7 +23,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 600; i++ {
+	for i := 0; i < 750; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -41,10 +41,24 @@ func TestCodexXLSXRender(t *testing.T) {
 			props := fmt.Sprintf(`<coreProperties><title>Test %d</title><creator>A</creator><creator>B</creator><keywords>one;two</keywords><language>%s</language><created>2024-01-01</created></coreProperties>`, i, lang)
 			add("docProps/core.xml", props)
 		}
-		add("xl/workbook.xml", `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet1" r:id="r1"/></sheets></workbook>`)
-		rels := `<Relationships><Relationship Id="r1" Type="x/worksheet" Target="worksheets/sheet1.xml"/>`
+		count := 1
+		if i >= 600 {
+			count = 2 + r.Intn(3)
+		}
+		wb := `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>`
+		rels := `<Relationships>`
+		for j := 1; j <= count; j++ {
+			state := ""
+			if i >= 600 && j < count && r.Intn(4) == 0 {
+				state = ` state="hidden"`
+			}
+			wb += fmt.Sprintf(`<sheet name="Sheet%d" r:id="r%d"%s/>`, j, j, state)
+			rels += fmt.Sprintf(`<Relationship Id="r%d" Type="x/worksheet" Target="worksheets/sheet%d.xml"/>`, j, j)
+		}
+		wb += `</sheets></workbook>`
+		add("xl/workbook.xml", wb)
 		if i >= 300 {
-			rels += `<Relationship Id="r2" Type="x/sharedStrings" Target="sharedStrings.xml"/>`
+			rels += `<Relationship Id="rShared" Type="x/sharedStrings" Target="sharedStrings.xml"/>`
 		}
 		rels += `</Relationships>`
 		add("xl/_rels/workbook.xml.rels", rels)
@@ -97,6 +111,10 @@ func TestCodexXLSXRender(t *testing.T) {
 		}
 		sheet += `</sheetData></worksheet>`
 		add("xl/worksheets/sheet1.xml", sheet)
+		for j := 2; j <= count; j++ {
+			extra := fmt.Sprintf(`<row r="%d"><c r="A%d" t="str"><v>Sheet %d</v></c></row>`, 5+j, 5+j, j)
+			add(fmt.Sprintf("xl/worksheets/sheet%d.xml", j), strings.Replace(sheet, "</sheetData>", extra+"</sheetData>", 1))
+		}
 		if e := z.Close(); e != nil {
 			t.Fatal(e)
 		}

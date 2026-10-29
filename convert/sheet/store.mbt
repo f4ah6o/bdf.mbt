@@ -14,6 +14,18 @@ pub fn store_grid(
       tiles["\{tile.x},\{tile.y}"] = Json::string(hash)
     }
   }
+  store_grid_view(writer, grid, tiles, id, title, text_index)
+}
+
+///|
+fn store_grid_view(
+  writer : @core.DocumentWriter,
+  grid : DrawnGrid,
+  tiles : Map[String, Json],
+  id : String,
+  title : String,
+  text_index : Bool,
+) -> Unit raise {
   let as_json = (runs : Array[Run]) => {
     Json::array(
       runs.map(run => {
@@ -78,4 +90,43 @@ pub fn store_grid(
     view["textIndex"] = Json::string(hash)
   }
   writer.add_view(Json::object(view))
+}
+
+///|
+/// One named sheet view to be stored in a BDF document.
+pub(all) struct NamedGrid {
+  id : String
+  title : String
+  grid : DrawnGrid
+}
+
+///|
+/// Store all sheet objects before their text indexes, matching XLSX output order.
+pub fn store_grids(
+  writer : @core.DocumentWriter,
+  grids : Array[NamedGrid],
+  text_index : Bool,
+) -> Unit raise {
+  let tile_maps : Array[Map[String, Json]] = []
+  for named in grids {
+    let tiles : Map[String, Json] = Map([])
+    for tile in named.grid.tiles {
+      let hash = writer.add_part("obj", tile.object)
+      if tile.drawn {
+        tiles["\{tile.x},\{tile.y}"] = Json::string(hash)
+      }
+    }
+    tile_maps.push(tiles)
+  }
+  for i in 0..<grids.length() {
+    let named = grids[i]
+    store_grid_view(
+      writer,
+      named.grid,
+      tile_maps[i],
+      named.id,
+      named.title,
+      text_index,
+    )
+  }
 }

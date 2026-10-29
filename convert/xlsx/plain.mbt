@@ -210,7 +210,7 @@ fn xlsx_check_plain_style(styles : XlsxStyles, locale : String) -> Unit raise {
 }
 
 ///|
-/// Convert a single unstyled worksheet using estimated font metrics.
+/// Convert unstyled worksheets using estimated font metrics.
 /// Supports sheet views with numeric and plain string cells only; complex
 /// features are rejected. This entry point does not embed fonts.
 pub fn convert_plain_no_fonts(
@@ -225,21 +225,6 @@ pub fn convert_plain_no_fonts(
     raise InvalidXlsxInput("xlsx: invalid data mode")
   }
   let workbook = read_xlsx_workbook(data)
-  let visible = workbook.sheets.filter(s => !s.hidden)
-  if visible.length() != 1 || visible[0].chart {
-    raise InvalidXlsxInput(
-      "xlsx: plain conversion requires one visible worksheet",
-    )
-  }
-  let ref = visible[0]
-  let mut sheet_number = 1
-  for s in workbook.sheets {
-    if !s.hidden {
-      break
-    }
-    sheet_number += 1
-  }
-  let view_id = "sheet" + sheet_number.to_string()
   let metadata = workbook.package.core_properties()
   let locale = workbook.locale()
   let theme = workbook.package.theme_fonts(workbook.part)
@@ -250,8 +235,81 @@ pub fn convert_plain_no_fonts(
   }
   let styles = workbook.styles()
   xlsx_check_plain_style(styles, locale.number_locale)
-  workbook.xlsx_check_plain_sheet(ref.part)
   workbook.xlsx_check_plain_strings()
+  let dc : Map[String, Json] = Map([])
+  for
+    (key, values) in [
+      ("title", metadata.title),
+      ("creator", metadata.creator),
+      ("subject", metadata.subject),
+      ("description", metadata.description),
+      ("identifier", metadata.identifier),
+      ("language", metadata.language),
+      ("created", metadata.created),
+      ("modified", metadata.modified),
+    ] {
+    if values.length() == 1 {
+      dc[key] = Json::string(values[0])
+    } else if values.length() > 1 {
+      dc[key] = Json::array(values.map(Json::string))
+    }
+  }
+  let meta : Map[String, Json] = {
+    "source": Json::string("xlsx"),
+    "generator": Json::string("bdf-go/0.1"),
+  }
+  if !dc.is_empty() {
+    meta["dc"] = Json::object(dc)
+  }
+  let writer = @core.DocumentWriter::new(meta=Json::object(meta))
+  let mode = if data_mode == "default" { "" } else { data_mode }
+  let warnings = workbook.warnings.copy()
+  let grids : Array[@sheet.NamedGrid] = []
+  let mut counter = 0
+  let doc_language = metadata.language.get(0).unwrap_or("")
+  for index, ref in workbook.sheets {
+    if ref.hidden {
+      continue
+    }
+    if ref.chart {
+      raise InvalidXlsxInput(
+        "xlsx: plain conversion does not support chart sheets",
+      )
+    }
+    let number = index + 1
+    let id = "sheet" + number.to_string()
+    let drawn = workbook.xlsx_draw_plain_sheet(
+      ref, styles, locale, doc_language,
+    )
+    let (next, table_warnings) = workbook.store_sheet_tables(
+      writer,
+      ref.part,
+      ref.name,
+      number,
+      id,
+      mode,
+      counter,
+      locale.number_locale,
+    )
+    counter = next
+    for warning in table_warnings {
+      warnings.push(warning)
+    }
+    grids.push({ id, title: ref.name, grid: drawn, })
+  }
+  @sheet.store_grids(writer, grids, !no_text_index)
+  { bdf: writer.write_single(), warnings, sheets: grids.length(), }
+}
+
+///|
+fn XlsxWorkbook::xlsx_draw_plain_sheet(
+  workbook : XlsxWorkbook,
+  ref : XlsxSheetRef,
+  styles : XlsxStyles,
+  locale : XlsxLocale,
+  doc_language : String,
+) -> @sheet.DrawnGrid raise {
+  workbook.xlsx_check_plain_sheet(ref.part)
   let parsed = workbook.read_sheet_cells(ref.part)
   if parsed.missing_formula_values > 0 {
     raise InvalidXlsxInput(
@@ -330,61 +388,11 @@ pub fn convert_plain_no_fonts(
     }
     cells.push({ index: row.index, cells: entries, })
   }
-  let doc_language = metadata.language.get(0).unwrap_or("")
-  let drawn = @sheet.draw_sized_grid_no_fonts(
+  @sheet.draw_sized_grid_no_fonts(
     cells,
     geometry,
     default_width,
     locale.language,
     doc_language,
   )
-  let dc : Map[String, Json] = Map([])
-  for
-    (key, values) in [
-      ("title", metadata.title),
-      ("creator", metadata.creator),
-      ("subject", metadata.subject),
-      ("description", metadata.description),
-      ("identifier", metadata.identifier),
-      ("language", metadata.language),
-      ("created", metadata.created),
-      ("modified", metadata.modified),
-    ] {
-    if values.length() == 1 {
-      dc[key] = Json::string(values[0])
-    } else if values.length() > 1 {
-      dc[key] = Json::array(values.map(Json::string))
-    }
-  }
-  let meta : Map[String, Json] = {
-    "source": Json::string("xlsx"),
-    "generator": Json::string("bdf-go/0.1"),
-  }
-  if !dc.is_empty() {
-    meta["dc"] = Json::object(dc)
-  }
-  let writer = @core.DocumentWriter::new(meta=Json::object(meta))
-  let mode = if data_mode == "default" { "" } else { data_mode }
-  let (_, table_warnings) = workbook.store_sheet_tables(
-    writer,
-    ref.part,
-    ref.name,
-    sheet_number,
-    view_id,
-    mode,
-    0,
-    locale.number_locale,
-  )
-  let warnings = workbook.warnings.copy()
-  for warning in table_warnings {
-    warnings.push(warning)
-  }
-  @sheet.store_grid(
-    writer,
-    drawn,
-    id=view_id,
-    title=ref.name,
-    text_index=!no_text_index,
-  )
-  { bdf: writer.write_single(), warnings, sheets: 1, }
 }

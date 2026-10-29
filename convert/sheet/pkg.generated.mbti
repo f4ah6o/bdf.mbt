@@ -41,6 +41,8 @@ pub fn line_break_joins(Char, Char) -> Bool
 
 pub fn store_grid(@core.DocumentWriter, DrawnGrid, id? : String, title? : String, text_index? : Bool) -> Unit raise
 
+pub fn store_grids(@core.DocumentWriter, Array[NamedGrid], Bool) -> Unit raise
+
 pub fn wrap_text(String, Double, bold? : Bool, advance? : (Char, Bool) -> Double) -> Array[WrappedLine]
 
 // Errors
@@ -86,6 +88,12 @@ pub(all) struct GridTile {
   y : Int32
   object : Bytes
   drawn : Bool
+}
+
+pub(all) struct NamedGrid {
+  id : String
+  title : String
+  grid : DrawnGrid
 }
 
 pub(all) struct Run {
