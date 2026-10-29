@@ -40,7 +40,7 @@ export async function verifyNativeConverter(browser, base) {
           }
           await client.convert(toBytes(fixtures[0].input), { pages: ' 3 , 1-1 , -3, 7-, - ' });
           const converted = [];
-          for (const fixture of [fixtures[0], fixtures[1], fixtures[4], fixtures[5], fixtures[6], fixtures[7], fixtures[9], fixtures[10], fixtures[11], fixtures[12], fixtures[13], fixtures[14], fixtures.find(f => f.name === 'anim.gif'), fixtures.find(f => f.name === 'xmp.gif'), fixtures.find(f => f.name === 'scene.webp'), fixtures.find(f => f.name === 'rotated.avif'), ...fixtures.filter(f => f.format === 'svg'), ...fixtures.filter(f => f.name.startsWith('synthetic-') && (f.format === 'webp' || f.format === 'avif'))]) {
+          for (const fixture of [fixtures[0], fixtures[1], fixtures[4], fixtures[5], fixtures[6], fixtures[7], fixtures[9], fixtures[10], fixtures[11], fixtures[12], fixtures[13], fixtures[14], fixtures.find(f => f.name === 'anim.gif'), fixtures.find(f => f.name === 'xmp.gif'), fixtures.find(f => f.name === 'scene.webp'), fixtures.find(f => f.name === 'rotated.avif'), ...fixtures.filter(f => f.format === 'svg' && f.pageW <= 2 ** 24 && f.pageH <= 2 ** 24), ...fixtures.filter(f => f.name.startsWith('synthetic-') && (f.format === 'webp' || f.format === 'avif'))]) {
             const input = toBytes(fixture.input);
             const wrapped = new Uint8Array(input.length + 6); wrapped.set(input, 3);
             const source = wrapped.subarray(3, 3 + input.length);
@@ -68,6 +68,12 @@ export async function verifyNativeConverter(browser, base) {
               page: [view.pages[0].w, view.pages[0].h], openedPage: [doc2.manifest.views[0].pages[0].w, doc2.manifest.views[0].pages[0].h],
               media: [...media], object: [...object], inputIntact: source.every((v, i) => v === input[i]) });
           }
+          const oversized = fixtures.find(f => f.name === 'large.svg');
+          const large = await client.convert(toBytes(oversized.input), { name: oversized.name });
+          if (large.summary !== oversized.summary) throw new Error(`${kind}: large SVG summary differs from upstream`);
+          let oversizedError;
+          try { await BdfDocument.open(new BufferSource(large.bdf)); } catch (error) { oversizedError = error.message; }
+          if (!/page width.*out of range/.test(oversizedError ?? '')) throw new Error(`${kind}: oversized page should be refused by upstream reader`);
           let unknown;
           try { await client.convert(new Uint8Array([1, 2, 3])); } catch (e) { unknown = { name: e.name, code: e.code }; }
           if (unknown?.name !== 'ConvertError' || unknown.code !== 'unknown-format') throw new Error('unsupported format must fail');

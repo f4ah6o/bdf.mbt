@@ -7,6 +7,8 @@ test "SVG dimensions support CSS units and viewBox aspect ratio" {
   assert_eq(svg_length("50%"), 0.0)
   assert_eq(svg_dimensions("1.25in", "", "0 0 4 3"), (120.0, 90.0))
   assert_eq(svg_dimensions("", "", ""), (300.0, 150.0))
+  assert_eq(image_px(1.0e23), "100000000000000000000000")
+  assert_eq(image_px(1.2345678901234568e30), "1234567890123456800000000000000")
 }
 
 ///|

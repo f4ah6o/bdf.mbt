@@ -118,5 +118,51 @@ pub fn convert(
 
 ///|
 fn image_px(value : Double) -> String {
-  ((value * 100.0).round() / 100.0).to_string()
+  let text = ((value * 100.0).round() / 100.0).to_string()
+  let bytes = @utf8.encode(text)
+  let mut exponent_at = -1
+  for i in 0..<bytes.length() {
+    if bytes[i] == b'e' || bytes[i] == b'E' {
+      exponent_at = i
+      break
+    }
+  }
+  if exponent_at < 0 {
+    return text
+  }
+  let exponent_text = @utf8.decode(bytes[exponent_at + 1:]) catch {
+    _ => return text
+  }
+  let exponent = @string.parse_int(exponent_text) catch { _ => return text }
+  let digits = @buffer.Buffer()
+  let mut decimal_at = exponent_at
+  for i in 0..<exponent_at {
+    if bytes[i] == b'.' {
+      decimal_at = i
+    } else {
+      digits.write_byte(bytes[i])
+    }
+  }
+  let data = digits.to_bytes()
+  decimal_at += exponent
+  let result = @buffer.Buffer()
+  if decimal_at <= 0 {
+    result.write_bytes(b"0.")
+    for _ in 0..<-decimal_at {
+      result.write_byte(b'0')
+    }
+    result.write_bytes(data)
+  } else if decimal_at >= data.length() {
+    result.write_bytes(data)
+    for _ in 0..<(decimal_at - data.length()) {
+      result.write_byte(b'0')
+    }
+  } else {
+    result.write_bytes(data[:decimal_at])
+    result.write_byte(b'.')
+    result.write_bytes(data[decimal_at:])
+  }
+  @utf8.decode(result.to_bytes()) catch {
+    _ => text
+  }
 }

@@ -181,6 +181,7 @@ func main() {
 	svgs := map[string]string{
 		"units.svg":           `<svg xmlns="http://www.w3.org/2000/svg" width="1cm" height="1in"><title>Units</title></svg>`,
 		"fraction.svg":        `<svg xmlns="http://www.w3.org/2000/svg" width="0.1" height="0.3"><title>Small</title></svg>`,
+		"large.svg":           `<svg xmlns="http://www.w3.org/2000/svg" width="1e23" height="1"/>`,
 		"ratio.svg":           `<svg xmlns="http://www.w3.org/2000/svg" width="1.25in" viewBox="0 0 4 3"><desc>A landscape</desc></svg>`,
 		"default.svg":         `<svg xmlns="http://www.w3.org/2000/svg"/>`,
 		"no-namespace.svg":    `<svg width="1em" height="2ex"><title>Hi <tspan>there</tspan> !</title></svg>`,
@@ -238,6 +239,7 @@ func main() {
 		{"drawing.svg", "drawing.svg", "", 0},
 		{"units.svg", "units.svg", "", 0},
 		{"fraction.svg", "fraction.svg", "", 0},
+		{"large.svg", "large.svg", "", 0},
 		{"ratio.svg", "ratio.svg", "", 0},
 		{"default.svg", "default.svg", "", 0},
 		{"no-namespace.svg", "no-namespace.svg", "", 0},
