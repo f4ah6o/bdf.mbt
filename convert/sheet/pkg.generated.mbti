@@ -19,7 +19,7 @@ pub fn draw_grid_with_font(Array[Array[Cell]], @sfnt.Font, hash? : String?, head
 
 pub fn draw_grid_with_font_usage(Array[Array[Cell]], @sfnt.Font, header_rows? : Int32, subheader? : Bool, language? : String, table_style? : String) -> (DrawnGrid, FontUsage) raise
 
-pub fn draw_sized_grid_no_fonts(Array[SizedGridRow], GridGeometry, Double, String, String) -> DrawnGrid raise
+pub fn draw_sized_grid_no_fonts(Array[SizedGridRow], GridGeometry, Array[Run], String, String) -> DrawnGrid raise
 
 pub fn fallback_advance(Char, Bool) -> Double
 
@@ -104,6 +104,7 @@ pub(all) struct Run {
 pub(all) struct SizedGridCell {
   column : Int32
   cell : Cell
+  center : Bool
 }
 
 pub(all) struct SizedGridRow {

@@ -23,7 +23,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 750; i++ {
+	for i := 0; i < 1050; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -75,6 +75,15 @@ func TestCodexXLSXRender(t *testing.T) {
 		if i >= 150 {
 			sheet += fmt.Sprintf(`<sheetFormatPr defaultColWidth="%g" defaultRowHeight="%g" zeroHeight="%d"/>`, []float64{0, 8, 12, 20}[r.Intn(4)], []float64{0, 12, 15, 24}[r.Intn(4)], r.Intn(5)/4)
 		}
+		if i >= 900 {
+			sheet += `<cols>`
+			for j := 0; j < 4; j++ {
+				a := 1 + r.Intn(5)
+				b := a + r.Intn(4)
+				sheet += fmt.Sprintf(`<col min="%d" max="%d" width="%d" hidden="%d"/>`, a, b, 12+r.Intn(18), r.Intn(6)/5)
+			}
+			sheet += `</cols>`
+		}
 		sheet += `<sheetData>`
 		for y := 0; y < r.Intn(4)+1; y++ {
 			attrs := ""
@@ -89,6 +98,14 @@ func TestCodexXLSXRender(t *testing.T) {
 			sheet += fmt.Sprintf(`<row r="%d"%s>`, y+1, attrs)
 			for x := 0; x < r.Intn(4)+1; x++ {
 				col := colName(x)
+				if i >= 750 && r.Intn(3) == 0 {
+					if r.Intn(2) == 0 {
+						sheet += fmt.Sprintf(`<c r="%s%d" t="b"><v>%d</v></c>`, col, y+1, r.Intn(2))
+					} else {
+						sheet += fmt.Sprintf(`<c r="%s%d" t="e"><v>%s</v></c>`, col, y+1, []string{"#N/A", "#REF!"}[r.Intn(2)])
+					}
+					continue
+				}
 				if r.Intn(2) == 0 {
 					texts := []string{"Hello", "abc", "hi there", "A"}
 					if i >= 50 {

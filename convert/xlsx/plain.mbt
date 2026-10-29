@@ -31,7 +31,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
         let name = element.name.local_name
         if depth == 1 {
           if ![
-              "sheetData", "dimension", "sheetViews", "sheetFormatPr", "sheetPr",
+              "sheetData", "dimension", "sheetViews", "cols", "sheetFormatPr", "sheetPr",
               "pageMargins", "pageSetup", "printOptions", "headerFooter", "rowBreaks",
               "colBreaks",
             ].contains(name) {
@@ -53,9 +53,11 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
             kind != "n" &&
             kind != "str" &&
             kind != "s" &&
-            kind != "inlineStr" {
+            kind != "inlineStr" &&
+            kind != "b" &&
+            kind != "e" {
             raise InvalidXlsxInput(
-              "xlsx: plain conversion supports only numeric and plain string cells",
+              "xlsx: plain conversion supports only numeric, plain string, boolean and error cells",
             )
           }
           if event.kind is Start(_) {
@@ -211,7 +213,7 @@ fn xlsx_check_plain_style(styles : XlsxStyles, locale : String) -> Unit raise {
 
 ///|
 /// Convert unstyled worksheets using estimated font metrics.
-/// Supports sheet views with numeric and plain string cells only; complex
+/// Supports sheet views with numeric, plain string, boolean and error cells only; complex
 /// features are rejected. This entry point does not embed fonts.
 pub fn convert_plain_no_fonts(
   data : Bytes,
@@ -318,8 +320,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   }
   let rows = parsed.sorted_rows()
   let geo = workbook.read_sheet_geometry(ref.part)
-  if !geo.columns.is_empty() ||
-    !geo.merges.is_empty() ||
+  if !geo.merges.is_empty() ||
     geo.frozen_rows != 0 ||
     geo.frozen_columns != 0 ||
     !geo.show_grid ||
@@ -329,14 +330,27 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       "xlsx: plain conversion does not support worksheet layout features",
     )
   }
-  let (row_count, col_count) = xlsx_initial_extent(parsed, geo, [])
-  let all_cols = xlsx_column_runs(geo, col_count, 7.0)
-  let default_width = if all_cols.is_empty() {
-    48.0
-  } else {
-    all_cols[0].size.to_double()
+  for column in geo.columns {
+    if column.style > 0 {
+      raise InvalidXlsxInput(
+        "xlsx: plain conversion does not support column styles",
+      )
+    }
   }
-  let columns : Array[@sheet.Run] = all_cols.map(run => {
+  let (row_count, col_count) = xlsx_initial_extent(parsed, geo, [])
+  let visible_cols = xlsx_column_runs(geo, col_count, 7.0)
+  let all_cols = xlsx_column_runs(geo, 16384, 7.0)
+  let widths : Array[Double] = []
+  for run in all_cols {
+    for _ in 0..<run.count {
+      widths.push(run.size.to_double())
+    }
+  }
+  let columns : Array[@sheet.Run] = visible_cols.map(run => {
+    count: run.count,
+    size: run.size,
+  })
+  let all_columns : Array[@sheet.Run] = all_cols.map(run => {
     count: run.count,
     size: run.size,
   })
@@ -361,7 +375,14 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     }
     let entries : Array[@sheet.SizedGridCell] = []
     for cell in row.cells {
-      if cell.style != 0 || (cell.kind != 0 && cell.kind != 1 && cell.kind != 2) {
+      if cell.style != 0 ||
+        (
+          cell.kind != 0 &&
+          cell.kind != 1 &&
+          cell.kind != 2 &&
+          cell.kind != 3 &&
+          cell.kind != 4
+        ) {
         raise InvalidXlsxInput(
           "xlsx: plain conversion does not support this cell",
         )
@@ -369,12 +390,15 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       if styles.format_cell(cell, workbook.date1904, locale.number_locale)
         is Some(formatted) {
         let text = formatted.text()
-        if cell.kind == 1 {
+        if cell.kind == 1 || cell.kind == 3 || cell.kind == 4 {
           let mut width = 0.0
           for c in text {
             width += @sheet.fallback_advance(c, false)
           }
-          if width > default_width - 3.75 + 0.01 {
+          if cell.column >= 0 &&
+            cell.column < widths.length() &&
+            widths[cell.column] > 0.0 &&
+            width > widths[cell.column] - 3.75 + 0.01 {
             raise InvalidXlsxInput(
               "xlsx: plain conversion does not support narrow numeric cells",
             )
@@ -383,6 +407,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         entries.push({
           column: cell.column,
           cell: { text, number: cell.kind == 1, },
+          center: cell.kind == 3 || cell.kind == 4,
         })
       }
     }
@@ -391,7 +416,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   @sheet.draw_sized_grid_no_fonts(
     cells,
     geometry,
-    default_width,
+    all_columns,
     locale.language,
     doc_language,
   )

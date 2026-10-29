@@ -3,6 +3,7 @@
 pub(all) struct SizedGridCell {
   column : Int32
   cell : Cell
+  center : Bool
 }
 
 ///|
@@ -17,15 +18,13 @@ pub(all) struct SizedGridRow {
 pub fn draw_sized_grid_no_fonts(
   rows : Array[SizedGridRow],
   geometry : GridGeometry,
-  default_column_width : Double,
+  all_columns : Array[Run],
   language : String,
   document_language : String,
 ) -> DrawnGrid raise {
-  let col_positions = grid_positions(geometry.columns)
-  while col_positions.length() <= 16384 {
-    col_positions.push(
-      col_positions[col_positions.length() - 1] + default_column_width,
-    )
+  let col_positions = grid_positions(all_columns)
+  if col_positions.length() != 16385 {
+    raise InvalidArgument("expected sizes for 16384 columns")
   }
   let row_positions = grid_positions(geometry.rows)
   let count = row_positions.length() - 1
@@ -48,6 +47,7 @@ pub fn draw_sized_grid_no_fonts(
       continue
     }
     let row : Array[Cell] = []
+    let centered : Map[Int32, Bool] = Map([])
     for entry in sparse.cells {
       if entry.column < 0 || entry.column >= 16384 {
         continue
@@ -56,6 +56,7 @@ pub fn draw_sized_grid_no_fonts(
         row.push({ text: "", number: false, })
       }
       row[entry.column] = entry.cell
+      centered[entry.column] = entry.center
     }
     let y = row_positions[i]
     let height = row_positions[i + 1] - y
@@ -71,10 +72,35 @@ pub fn draw_sized_grid_no_fonts(
       }
       let text = cell.text.replace(old="\n", new="").replace(old="\r", new="")
       let display : Cell = { text, number: cell.number, }
-      let layout = grid_cell_layout(
+      let initial = grid_cell_layout(
         row, display, column, col_positions, y, height, false, language, fallback_advance,
         fallback_line_metrics,
       )
+      let layout : DrawCell = if centered.get(column).unwrap_or(false) {
+        let lines = initial.lines.map(fn(line) {
+          {
+            text: line.text,
+            x: col_positions[column] +
+            (col_positions[column + 1] - col_positions[column] - line.width) /
+            2.0,
+            baseline: line.baseline,
+            width: line.width,
+            cjk_wrap: line.cjk_wrap,
+          }
+        })
+        {
+          x0: col_positions[column],
+          x1: col_positions[column + 1],
+          y0: initial.y0,
+          y1: initial.y1,
+          clip: initial.clip,
+          lang: initial.lang,
+          lang_known: initial.lang_known,
+          lines,
+        }
+      } else {
+        initial
+      }
       if layout.x1 > col_positions[visible_columns] {
         let target = layout.x1 - 0.01
         let mut lo = 0
@@ -109,19 +135,20 @@ pub fn draw_sized_grid_no_fonts(
   let tiles = context.tiles.map(fn(tile) {
     { x: tile.x, y: tile.y, object: tile.object.encode(), drawn: tile.drawn, }
   })
-  let columns = geometry.columns.copy()
-  let extended = Int32::min(
-      16384,
-      Int32::max(visible_columns, text_columns + 2),
-    ) -
-    visible_columns
-  if extended > 0 {
-    let size = Float::from_double(default_column_width)
-    let last = columns.length() - 1
-    if last >= 0 && columns[last].size == size {
-      columns[last] = { count: columns[last].count + extended, size, }
-    } else {
-      columns.push({ count: extended, size, })
+  let final_count = Int32::min(
+    16384,
+    Int32::max(visible_columns, text_columns + 2),
+  )
+  let columns : Array[Run] = []
+  let mut remaining = final_count
+  for run in all_columns {
+    let count = Int32::min(remaining, run.count)
+    if count > 0 {
+      columns.push({ count, size: run.size, })
+      remaining -= count
+    }
+    if remaining <= 0 {
+      break
     }
   }
   {
