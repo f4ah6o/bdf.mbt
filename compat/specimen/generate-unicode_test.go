@@ -43,6 +43,36 @@ func TestCodexUnicodeTables(t *testing.T) {
 			start = -1
 		}
 	}
+	b.WriteString("]\n\n///|\n// Unicode script ranges from Go's Unicode 17 tables.\nlet specimen_script_ranges : Array[(Int32, Int32, String)] = [\n")
+	scripts := make([]string, unicode.MaxRune+1)
+	for name, table := range unicode.Scripts {
+		set := func(cp int) {
+			if scripts[cp] != "" && scripts[cp] != name {
+				t.Fatalf("overlapping scripts at %x", cp)
+			}
+			scripts[cp] = name
+		}
+		for _, r := range table.R16 {
+			for cp := int(r.Lo); cp <= int(r.Hi); cp += int(r.Stride) {
+				set(cp)
+			}
+		}
+		for _, r := range table.R32 {
+			for cp := int(r.Lo); cp <= int(r.Hi); cp += int(r.Stride) {
+				set(cp)
+			}
+		}
+	}
+	for first := 0; first < len(scripts); {
+		last := first
+		for last+1 < len(scripts) && scripts[last+1] == scripts[first] {
+			last++
+		}
+		if scripts[first] != "" {
+			fmt.Fprintf(&b, "  (0x%x, 0x%x, %q),\n", first, last, scripts[first])
+		}
+		first = last + 1
+	}
 	b.WriteString("]\n")
 	if err := os.WriteFile(filepath.Join(root, "convert/font/unicode_generated.mbt"), []byte(b.String()), 0644); err != nil {
 		t.Fatal(err)

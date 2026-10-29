@@ -158,3 +158,38 @@ pub fn specimen_names(data : Bytes) -> String {
     "full": Json::string(names.full()),
   }).stringify()
 }
+
+///|
+#export_name("glyph_details")
+pub fn glyph_details(data : Bytes, index : Int32) -> String {
+  let file = try! @font.load(data)
+  for face in file.faces() {
+    if face.index == index {
+      let glyphs = face
+        .specimen_glyphs()
+        .map(g => {
+          Json::object({
+            "name": Json::string(g.name),
+            "characters": Json::array(
+              g.characters.map(c => Json::number(c.to_double())),
+            ),
+            "label": Json::string(g.label),
+            "alternative": Json::string(g.alternative),
+          })
+        })
+      let counts = face
+        .script_counts()
+        .map(c => {
+          Json::object({
+            "name": Json::string(c.name),
+            "count": Json::number(c.count.to_double()),
+          })
+        })
+      return Json::object({
+        "glyphs": Json::array(glyphs),
+        "counts": Json::array(counts),
+      }).stringify()
+    }
+  }
+  abort("missing font face")
+}

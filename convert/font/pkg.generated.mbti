@@ -35,6 +35,8 @@ pub fn FileFace::sample_pruned(Self, Array[Int32]) -> Bytes? raise
 pub fn FileFace::sample_pruned_truetype(Self, Array[Int32]) -> Bytes? raise
 pub fn FileFace::sample_truetype(Self, String) -> Bytes? raise
 pub fn FileFace::sample_whole_program(Self) -> Bytes? raise
+pub fn FileFace::script_counts(Self) -> Array[ScriptCount]
+pub fn FileFace::specimen_glyphs(Self) -> Array[SpecimenGlyph]
 pub fn FileFace::specimen_names(Self) -> SpecimenNames
 
 pub struct FontFile {
@@ -65,6 +67,18 @@ pub(all) struct SampleScript {
   specimen : String
   charset : Array[String]
   rtl : Bool
+}
+
+pub(all) struct ScriptCount {
+  name : String
+  count : Int32
+}
+
+pub(all) struct SpecimenGlyph {
+  name : String
+  characters : Array[Int32]
+  label : String
+  alternative : String
 }
 
 pub(all) struct SpecimenName {
