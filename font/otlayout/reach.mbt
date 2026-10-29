@@ -39,7 +39,7 @@ pub fn Gsub::reachable(self : Gsub, roots : Array[Int32]) -> Array[Int32] {
   self.list_substitutions((input, output) => {
     if input.length() == 0 {
       add_output(output)
-      return
+      return true
     }
     let id = waiting.length()
     for glyph in input {
@@ -54,6 +54,7 @@ pub fn Gsub::reachable(self : Gsub, roots : Array[Int32]) -> Array[Int32] {
       list.push(id)
     }
     waiting.push({ missing: input.length(), output, })
+    true
   })
   while added.length() > 0 {
     let glyph = added.pop().unwrap()

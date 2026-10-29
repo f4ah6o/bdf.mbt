@@ -38,6 +38,7 @@ pub fn Gpos::truncated(Self) -> Bool
 pub struct Gsub {
   // private fields
 }
+pub fn Gsub::each_substitution(Self, Int32, (Substitution) -> Bool) -> Unit
 pub fn Gsub::reachable(Self, Array[Int32]) -> Array[Int32]
 pub fn Gsub::truncated(Self) -> Bool
 
@@ -72,6 +73,11 @@ pub(all) struct LayoutScript {
   tag : String
   default_language : LanguageSystem?
   languages : Array[LanguageSystem]
+}
+
+pub(all) struct Substitution {
+  input : Array[Int32]
+  output : Array[Int32]
 }
 
 // Type aliases

@@ -43,3 +43,9 @@ Run `npm run test:opentype-names` after a JS build. To regenerate, copy
 and run `TestCodexTagNames` with the same fixture root. Generate the MoonBit
 tables with `python3 compat/gsub/generate-names.py /path/to/upstream/internal/otlayout/names.go`
 and format them using `moon fmt font/otlayout`.
+
+`substitutions.json.gz` checks individual lookup enumeration, duplicate
+handling, early callback termination and the shared work budget. Regenerate
+`upstream.json.gz` first, then copy `generate-substitutions_test.go` without its
+build tag into upstream `internal/otlayout` and run `TestCodexSubstitutions`
+with the same fixture root. It is checked by `npm run test:gsub`.

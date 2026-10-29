@@ -23,15 +23,19 @@ fn input_key(input : Array[Int32]) -> String {
 ///|
 fn Gsub::list_substitutions(
   self : Gsub,
-  emit : (Array[Int32], Outputs) -> Unit,
+  emit : (Array[Int32], Outputs) -> Bool,
+  only~ : Int32 = -1,
 ) -> Unit {
-  for lookup in self.lookups {
+  for index, lookup in self.lookups {
+    if only >= 0 && only != index {
+      continue
+    }
     let seen : Map[String, Bool] = Map([])
-    let add = (input : Array[Int32], output : Outputs) => {
+    let add : (Array[Int32], Outputs) -> Bool = (input, output) => {
       if lookup.typ != 8 {
         let key = input_key(input)
         if seen.contains(key) {
-          return
+          return true
         }
         seen[key] = true
       }
@@ -58,13 +62,17 @@ fn Gsub::list_substitutions(
               let raw = u16(data, 4)
               let delta = if raw >= 32768 { raw - 65536 } else { raw }
               for glyph in cov {
-                add([glyph], One((glyph + delta) & 65535))
+                if !add([glyph], One((glyph + delta) & 65535)) {
+                  return
+                }
               }
             }
             2 => {
               let n = count(data, u16(data, 4), 6, 2)
               for i in 0..<Int32::min(n, cov.length()) {
-                add([cov[i]], One(u16(data, 6 + i * 2)))
+                if !add([cov[i]], One(u16(data, 6 + i * 2))) {
+                  return
+                }
               }
             }
             _ => ()
@@ -73,7 +81,7 @@ fn Gsub::list_substitutions(
           let n = count(data, u16(data, 4), 6, 2)
           for i in 0..<Int32::min(n, cov.length()) {
             match at(data, u16(data, 6 + i * 2)) {
-              Some(seq) => add([cov[i]], Many(seq))
+              Some(seq) => if !add([cov[i]], Many(seq)) { return }
               None => ()
             }
           }
@@ -94,7 +102,9 @@ fn Gsub::list_substitutions(
               for k in 0..<components {
                 input.push(u16(lig, 4 + k * 2))
               }
-              add(input, One(u16(lig, 0)))
+              if !add(input, One(u16(lig, 0))) {
+                return
+              }
             }
           }
         }
@@ -104,7 +114,9 @@ fn Gsub::list_substitutions(
           p += 2 + u16(data, p) * 2
           let n = count(data, u16(data, p), p + 2, 2)
           for i in 0..<Int32::min(n, cov.length()) {
-            add([cov[i]], One(u16(data, p + 2 + i * 2)))
+            if !add([cov[i]], One(u16(data, p + 2 + i * 2))) {
+              return
+            }
           }
         }
         _ => ()
@@ -114,4 +126,39 @@ fn Gsub::list_substitutions(
       }
     }
   }
+}
+
+///|
+/// A substitution in lookup order, with all input and output glyph IDs.
+pub(all) struct Substitution {
+  input : Array[Int32]
+  output : Array[Int32]
+}
+
+///|
+/// Visit substitutions in one lookup. Return false from the callback to stop.
+/// Work consumes the shared table budget, matching the upstream parser.
+pub fn Gsub::each_substitution(
+  self : Gsub,
+  index : Int32,
+  visit : (Substitution) -> Bool,
+) -> Unit {
+  if index < 0 || index >= self.lookups.length() {
+    return
+  }
+  self.list_substitutions(
+    (input, output) => {
+      let glyphs = match output {
+        One(glyph) => [glyph]
+        Many(data) => {
+          let n = count(data, u16(data, 0), 2, 2)
+          [
+            for i in 0..<n => u16(data, 2 + i * 2)
+          ]
+        }
+      }
+      visit({ input, output: glyphs, })
+    },
+    only=index,
+  )
 }

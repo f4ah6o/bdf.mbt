@@ -36,7 +36,7 @@
     "test:font-input": "node compat/fontinput/verify.mjs",
     "test:specimen": "node compat/specimen/verify.mjs",
     "test:specimen-visual": "node compat/specimen/visual-compare.mjs",
-    "test:gsub": "node compat/gsub/verify.mjs",
+    "test:gsub": "node compat/gsub/verify.mjs && node compat/gsub/verify-substitutions.mjs",
     "test:opentype-names": "node compat/gsub/verify-names.mjs",
     "test:specimen-plan": "node compat/specimen/verify-plan.mjs",
     "test:specimen-names": "node compat/specimen/verify-glyphnames.mjs",

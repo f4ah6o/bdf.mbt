@@ -152,3 +152,25 @@ pub fn tag_names(tag : String) -> String {
 pub fn type_name(typ : Int32, gpos : Bool) -> String {
   @otlayout.lookup_type_name(typ, gpos~)
 }
+
+///|
+#export_name("list_substitutions")
+pub fn list_substitutions(data : Bytes, index : Int32, limit : Int32) -> String {
+  let table = @otlayout.parse_gsub(data[:]).unwrap()
+  let items : Array[Json] = []
+  table.each_substitution(index, subst => {
+    items.push(
+      Json::object({
+        "input": Json::array(subst.input.map(g => Json::number(g.to_double()))),
+        "output": Json::array(
+          subst.output.map(g => Json::number(g.to_double())),
+        ),
+      }),
+    )
+    items.length() < limit
+  })
+  Json::object({
+    "items": Json::array(items),
+    "truncated": Json::boolean(table.truncated()),
+  }).stringify()
+}
