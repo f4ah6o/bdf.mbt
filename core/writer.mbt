@@ -6,8 +6,8 @@ struct WriterPart {
 }
 
 ///|
-/// Builds an unencrypted, single-file BDF document. Views and metadata use
-/// the BDF manifest's JSON representation so every view kind can be written.
+/// Builds an unencrypted BDF document. Views and metadata use the BDF
+/// manifest's JSON representation so every view kind can be written.
 pub struct DocumentWriter {
   parts : Array[WriterPart]
   views : Array[Json]
@@ -99,21 +99,37 @@ fn writer_should_compress(part : WriterPart) -> Bool {
 }
 
 ///|
+fn writer_encode_part(part : WriterPart) -> (Bytes, String) {
+  if writer_should_compress(part) {
+    let compressed = @deflate.compress(part.data)
+    if compressed.length() < part.data.length() {
+      return (compressed, "deflate-raw")
+    }
+  }
+  (part.data, "identity")
+}
+
+///|
+fn DocumentWriter::manifest(self : DocumentWriter, entries : Array[Json]) -> Json {
+  Json::object({
+    "bdf": Json::number(1.0),
+    "opset": Json::number(1.0),
+    "unit": Json::string("pt"),
+    "meta": self.meta,
+    "views": Json::array(self.views),
+    "tables": Json::array(self.tables),
+    "parts": Json::array(entries),
+  })
+}
+
+///|
 /// Encode the accumulated document using identity or raw DEFLATE parts.
 pub fn DocumentWriter::write_single(self : DocumentWriter) -> Bytes raise {
   let entries : Array[Json] = []
   let stored : Array[Bytes] = []
   let mut offset = 0
   for part in self.parts {
-    let mut encoded = part.data
-    let mut encoding = "identity"
-    if writer_should_compress(part) {
-      let compressed = @deflate.compress(part.data)
-      if compressed.length() < encoded.length() {
-        encoded = compressed
-        encoding = "deflate-raw"
-      }
-    }
+    let (encoded, encoding) = writer_encode_part(part)
     if encoded.length() > 2147483647 - offset {
       raise BadFormat("document too large")
     }
@@ -130,15 +146,7 @@ pub fn DocumentWriter::write_single(self : DocumentWriter) -> Bytes raise {
     stored.push(encoded)
     offset += encoded.length()
   }
-  let manifest = Json::object({
-    "bdf": Json::number(1.0),
-    "opset": Json::number(1.0),
-    "unit": Json::string("pt"),
-    "meta": self.meta,
-    "views": Json::array(self.views),
-    "tables": Json::array(self.tables),
-    "parts": Json::array(entries),
-  })
+  let manifest = self.manifest(entries)
   let plain = @utf8.encode(manifest.stringify())
   if plain.length() > 268435456 {
     raise BadFormat("manifest exceeds 256 MiB")

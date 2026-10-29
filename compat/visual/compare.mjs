@@ -31,7 +31,7 @@ const outputRoot = path.join(root, '_build/visual-diff');
 mkdirSync(outputRoot, { recursive: true });
 const output = mkdtempSync(path.join(outputRoot, 'run-'));
 const executable = path.join(root, 'node_modules/.bin/vlmkit');
-const allowed = ['/compat/visual/', '/compat/interactive/', '/compat/sheet/', '/compat/continuous/', '/compat/music/', '/compat/converter/', '/compat/image/', '/compat/csv/', '/compat/render_worker/', '/node_modules/@bdfkit/', '/_build/js/debug/build/browser/', '/_build/js/debug/build/converter_worker/', '/_build/js/debug/build/native_converter_worker/', '/_build/js/debug/build/render_worker/'];
+const allowed = ['/compat/visual/', '/compat/interactive/', '/compat/sheet/', '/compat/continuous/', '/compat/music/', '/compat/converter/', '/compat/image/', '/compat/csv/', '/compat/render_worker/', '/node_modules/@bdfkit/', '/_build/js/debug/build/browser/', '/_build/js/debug/build/compat/writer/', '/_build/js/debug/build/converter_worker/', '/_build/js/debug/build/native_converter_worker/', '/_build/js/debug/build/render_worker/'];
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.bdf': 'application/octet-stream' };
 
 function run(args) {
@@ -73,7 +73,7 @@ try {
   // A visual diff is not evidence if both pages failed or were still blank.
   const browser = await chromium.launch({ headless: true });
   try {
-    for (const name of ['baseline', 'moon', 'split', 'encrypted-password', 'encrypted-split', 'encrypted-ecdh', 'encrypted-ecdh-split']) {
+    for (const name of ['baseline', 'moon', 'split', 'split-produced', 'encrypted-password', 'encrypted-split', 'encrypted-produced', 'encrypted-ecdh', 'encrypted-ecdh-split']) {
       const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
       const errors = [];
       page.on('pageerror', error => errors.push(String(error)));
@@ -1255,7 +1255,7 @@ try {
   await run(['check','interactions',`${interactiveBase}find-moon.html`,'--reference',`${interactiveBase}find-baseline.html`,'--handlers','--no-ledger']);
   await run(['scan','handlers',`${interactiveBase}moon.html`,'--no-ledger']);
   await run(['check','interactions',`${interactiveBase}moon.html`,'--reference',`${interactiveBase}baseline.html`,'--handlers','--no-ledger']);
-  for (const variant of ['moon', 'split', 'encrypted-password', 'encrypted-split', 'encrypted-ecdh', 'encrypted-ecdh-split']) {
+  for (const variant of ['moon', 'split', 'split-produced', 'encrypted-password', 'encrypted-split', 'encrypted-produced', 'encrypted-ecdh', 'encrypted-ecdh-split']) {
   const variantOutput = path.join(output, variant);
   mkdirSync(variantOutput);
   await run(['diff', 'html', '--url', `${base}baseline.html`, '--current-url', `${base}${variant}.html`, '--output-dir', variantOutput, '--no-paint-tree']);

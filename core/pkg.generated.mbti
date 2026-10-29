@@ -59,6 +59,10 @@ pub fn sealed_references(String, Manifest) -> Map[String, String] raise
 
 pub fn seconds_to_tick(MidiSequence, Double) -> Double
 
+pub fn single_to_split(Bytes) -> SplitOutput raise
+
+pub fn split_to_single(Bytes, (String, Int32) -> Bytes raise) -> Bytes raise
+
 pub fn tick_to_seconds(MidiSequence, Double) -> Double
 
 pub fn valid_hash(String) -> Bool
@@ -120,6 +124,7 @@ pub fn DocumentWriter::add_table(Self, Json) -> Unit
 pub fn DocumentWriter::add_view(Self, Json) -> Unit
 pub fn DocumentWriter::new(meta? : Json) -> Self
 pub fn DocumentWriter::write_single(Self) -> Bytes raise
+pub fn DocumentWriter::write_split(Self) -> SplitOutput raise
 
 pub(all) struct EncryptedManifest {
   outer : Manifest
@@ -396,6 +401,16 @@ pub fn SplitDocument::audio(Self, View) -> AudioData? raise
 pub fn SplitDocument::part(Self, String) -> Bytes raise
 pub fn SplitDocument::play(Self, View) -> MusicData? raise
 pub fn SplitDocument::stored_part(Self, String) -> Bytes raise
+
+pub(all) struct SplitOutput {
+  manifest : Bytes
+  parts : Array[SplitPart]
+}
+
+pub(all) struct SplitPart {
+  hash : String
+  data : Bytes
+}
 
 pub(all) struct Table {
   id : String

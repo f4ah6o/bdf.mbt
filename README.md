@@ -32,6 +32,7 @@ moon build --target wasm-gc
 let writer = @core.DocumentWriter::new()
 let part_hash = writer.add_part("img", image_bytes)
 let new_bdf_bytes = writer.write_single()
+let split = writer.write_split() // save manifest and each part under parts/<hash>
 let header = @core.parse_header(existing_bdf_bytes)
 let document = @core.open_single(existing_bdf_bytes) // unencrypted BDF
 let object = @core.decode_object(document.part(hash))
@@ -50,7 +51,7 @@ let cursor = @render.cursor_at_tick(cues, 480.0)
 
 The `convert/image` package converts BMP, ICO, JPEG, PNG, GIF, WebP, AVIF and SVG images on both targets, preserving the input bytes and matching upstream page geometry and figure alternative text. JPEG and PNG EXIF orientation and metadata, JPEG IPTC, AVIF rotation, SVG metadata, and UTF-8 or BOM-marked UTF-16 XMP are supported. WebP EXIF orientation is reported but not applied, matching browsers. Some malformed SVG and XMP, other XML encodings, and PNG Creation Time timezone abbreviations are not yet supported. `bdf_create_native_converter` exposes the supported formats through a browser Worker without a Go runtime.
 
-`DocumentWriter` accepts manifest-format JSON for metadata, views and tables, and writes an unencrypted single-file document with content-addressed, deduplicated parts. It chooses identity or raw DEFLATE storage using the upstream defaults. `ObjectBuilder` generates drawing commands and resource tables. Encrypted and split output are not yet implemented.
+`DocumentWriter` accepts manifest-format JSON for metadata, views and tables, and writes an unencrypted single-file or split document with content-addressed, deduplicated parts. It chooses identity or raw DEFLATE storage using the upstream defaults. `single_to_split` and `split_to_single` copy stored parts between container forms and validate their hashes, including for encrypted documents without requiring a key. New encrypted output is not yet implemented. `ObjectBuilder` generates drawing commands and resource tables.
 
 The native converter Worker supports CSV and TSV with the same no-system-font fallback used by the upstream browser build, including the 60 built-in Excel table styles. Font URLs are not yet supported; specifying one returns an error. Format selection supports explicit `csv`, registered filename extensions, and content detection.
 

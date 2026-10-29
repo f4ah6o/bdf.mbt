@@ -6,6 +6,16 @@ pub fn fixture() -> Bytes
 
 pub fn fixture_for_part(Bytes) -> Bytes
 
+pub fn join_split(Bytes, Array[Bytes]) -> Bytes
+
+pub fn split_manifest(Bytes) -> Bytes
+
+pub fn split_part(Bytes, Int32) -> Bytes
+
+pub fn writer_split_manifest() -> Bytes
+
+pub fn writer_split_part(Int32) -> Bytes
+
 // Errors
 
 // Types and methods
