@@ -24,6 +24,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   let mut formula_count = 0
   let mut formula = StringBuilder()
   let mut threshold = 0.0
+  let mut threshold_end = 0.0
   let mut ranges : Array[XlsxRange] = []
   let mut room = 4194304L
   let mut conditional_count = 0
@@ -74,7 +75,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             xlsx_attr(element, "type", "") != "cellIs" ||
             ![
               "greaterThan", "greaterThanOrEqual", "lessThan", "lessThanOrEqual",
-              "equal", "notEqual",
+              "equal", "notEqual", "between", "notBetween",
             ].contains(xlsx_attr(element, "operator", "equal")) {
             xlsx_reject_conditional()
           }
@@ -87,7 +88,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             xlsx_reject_conditional()
           }
           formula_count += 1
-          if formula_count != 1 {
+          if formula_count > 2 {
             xlsx_reject_conditional()
           }
           formula = StringBuilder()
@@ -119,25 +120,35 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
               xlsx_reject_conditional()
             }
           }
-          threshold = @string.parse_double(text) catch {
+          let value = @string.parse_double(text) catch {
             _ =>
               raise InvalidXlsxInput(
                 "xlsx: plain conversion does not support conditional formatting",
               )
           }
-          if threshold.is_nan() || threshold.is_inf() {
+          if value.is_nan() || value.is_inf() {
             xlsx_reject_conditional()
           }
-          blank_matches = xlsx_plain_conditional_matches(
-            0.0, threshold, operator,
-          )
-          any_blank_matches = blank_matches || any_blank_matches
+          if formula_count == 1 {
+            threshold = value
+          } else {
+            threshold_end = value
+          }
           formula_depth = -1
         }
         if depth + 1 == rule_depth {
-          if formula_count != 1 {
+          let expected = if operator == "between" || operator == "notBetween" {
+            2
+          } else {
+            1
+          }
+          if formula_count != expected {
             xlsx_reject_conditional()
           }
+          blank_matches = xlsx_plain_conditional_matches(
+            0.0, threshold, threshold_end, operator,
+          )
+          any_blank_matches = blank_matches || any_blank_matches
           rule_depth = -1
         }
         if depth + 1 == conditional_depth {
@@ -173,10 +184,13 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
                   xlsx_plain_conditional_matches(
                     cell.number,
                     threshold,
+                    threshold_end,
                     operator,
                   )
                 } else if cell.kind == 2 || cell.kind == 3 || cell.kind == 4 {
-                  xlsx_plain_conditional_matches(1.0, 0.0, operator)
+                  [
+                    "greaterThan", "greaterThanOrEqual", "notEqual", "notBetween",
+                  ].contains(operator)
                 } else {
                   xlsx_reject_conditional()
                   false
@@ -241,6 +255,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
 fn xlsx_plain_conditional_matches(
   value : Double,
   threshold : Double,
+  threshold_end : Double,
   operator : String,
 ) -> Bool {
   match operator {
@@ -250,6 +265,12 @@ fn xlsx_plain_conditional_matches(
     "lessThanOrEqual" => value <= threshold
     "equal" => value == threshold
     "notEqual" => value != threshold
+    "between" =>
+      value >= Double::min(threshold, threshold_end) &&
+      value <= Double::max(threshold, threshold_end)
+    "notBetween" =>
+      value < Double::min(threshold, threshold_end) ||
+      value > Double::max(threshold, threshold_end)
     _ => false
   }
 }

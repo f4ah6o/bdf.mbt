@@ -42,6 +42,8 @@ Conditional-border cases use `generate_conditional_border_test.go` and
 `TestCodexConditionalBorder`.
 Conditional comparison cases use `generate_conditional_ops_test.go` and
 `TestCodexConditionalOps`.
+Conditional interval cases use `generate_conditional_between_test.go` and
+`TestCodexConditionalBetween`.
 Conditional font cases matching blank cells use `generate_conditional_blank_test.go`
 and `TestCodexConditionalBlank`.
 Blank-cell paint cases use `generate_conditional_paint_blank_test.go` and
