@@ -221,7 +221,6 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
     ) ||
     (a.vertical != "bottom" && a.vertical != "top" && a.vertical != "center") ||
     a.rotation != 0 ||
-    a.justify_last ||
     (nondefault_fill && (index == 0 || !solid_fill)) ||
     (index == 0 && nondefault_border) ||
     complex_border {
