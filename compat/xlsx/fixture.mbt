@@ -754,3 +754,15 @@ pub fn xlsx_store_sheet_summary(
     _ => "null"
   }
 }
+
+///|
+#export_name("xlsx_render_basic")
+pub fn xlsx_render_basic(
+  data : Bytes,
+  mode : String,
+  no_text_index : Bool,
+) -> Bytes {
+  @xlsx.convert_plain_no_fonts(data, data_mode=mode, no_text_index~).bdf catch {
+    _ => b""
+  }
+}

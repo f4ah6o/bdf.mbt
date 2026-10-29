@@ -1,0 +1,93 @@
+//go:build ignore
+
+// Copy into upstream converter/xlsx and run TestCodexXLSXRender.
+package xlsx
+
+import (
+	"archive/zip"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"math/rand"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+func TestCodexXLSXRender(t *testing.T) {
+	root := os.Getenv("BDF_FIXTURE_ROOT")
+	if root == "" {
+		t.Fatal("BDF_FIXTURE_ROOT required")
+	}
+	r := rand.New(rand.NewSource(63156))
+	out := []any{}
+	for i := 0; i < 300; i++ {
+		var b bytes.Buffer
+		z := zip.NewWriter(&b)
+		add := func(n, s string) {
+			f, e := z.Create(n)
+			if e != nil {
+				t.Fatal(e)
+			}
+			if _, e = f.Write([]byte(s)); e != nil {
+				t.Fatal(e)
+			}
+		}
+		add("xl/workbook.xml", `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet1" r:id="r1"/></sheets></workbook>`)
+		add("xl/_rels/workbook.xml.rels", `<Relationships><Relationship Id="r1" Type="x/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`)
+		sheet := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
+		if i >= 150 {
+			sheet += fmt.Sprintf(`<sheetFormatPr defaultColWidth="%g" defaultRowHeight="%g" zeroHeight="%d"/>`, []float64{0, 8, 12, 20}[r.Intn(4)], []float64{0, 12, 15, 24}[r.Intn(4)], r.Intn(5)/4)
+		}
+		sheet += `<sheetData>`
+		for y := 0; y < r.Intn(4)+1; y++ {
+			attrs := ""
+			if i >= 150 {
+				if r.Intn(3) == 0 {
+					attrs = fmt.Sprintf(` ht="%d" customHeight="1"`, 5+r.Intn(40))
+				}
+				if r.Intn(5) == 0 {
+					attrs += ` hidden="1"`
+				}
+			}
+			sheet += fmt.Sprintf(`<row r="%d"%s>`, y+1, attrs)
+			for x := 0; x < r.Intn(4)+1; x++ {
+				col := colName(x)
+				if r.Intn(2) == 0 {
+					texts := []string{"Hello", "abc", "hi there", "A"}
+					if i >= 50 {
+						texts = append(texts, "Longer text that exceeds one cell", strings.Repeat("wide", 40), "日本語", "line1\nline2", "🙂 emoji")
+					}
+					sheet += fmt.Sprintf(`<c r="%s%d" t="str"><v>%s</v></c>`, col, y+1, texts[r.Intn(len(texts))])
+				} else {
+					sheet += fmt.Sprintf(`<c r="%s%d"><v>%d</v></c>`, col, y+1, r.Intn(10000))
+				}
+			}
+			sheet += `</row>`
+		}
+		sheet += `</sheetData></worksheet>`
+		add("xl/worksheets/sheet1.xml", sheet)
+		if e := z.Close(); e != nil {
+			t.Fatal(e)
+		}
+		mode := []string{"none", "", "all"}[i%3]
+		noIndex := i%2 == 0
+		result, e := Convert(bytes.NewReader(b.Bytes()), int64(b.Len()), &Options{NoSystemFonts: true, SystemFonts: true, NoTextIndex: noIndex, Data: mode})
+		if e != nil {
+			t.Fatal(e)
+		}
+		var file bytes.Buffer
+		if e = result.Doc.WriteSingle(&file); e != nil {
+			t.Fatal(e)
+		}
+		out = append(out, map[string]any{"input": b.Bytes(), "bdf": file.Bytes(), "warnings": result.Warnings, "mode": mode, "no_index": noIndex})
+	}
+	data, e := json.Marshal(out)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if e = os.WriteFile(filepath.Join(root, "compat/xlsx/render.json"), data, 0644); e != nil {
+		t.Fatal(e)
+	}
+}

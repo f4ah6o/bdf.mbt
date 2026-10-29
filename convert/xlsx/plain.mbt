@@ -1,0 +1,305 @@
+///|
+/// Result of converting the explicitly limited plain-sheet subset of XLSX.
+pub(all) struct XlsxPlainResult {
+  bdf : Bytes
+  warnings : Array[String]
+  sheets : Int32
+}
+
+///|
+fn XlsxWorkbook::xlsx_check_plain_sheet(
+  self : XlsxWorkbook,
+  part : String,
+) -> Unit raise {
+  let data = self.package.read(part) catch {
+    @ooxml.InvalidOoxml(message) => raise InvalidXlsxInput(message)
+  }
+  let text = @utf8.decode_lossy(data[:], ignore_bom=true)
+  if text.contains("<!ENTITY") {
+    raise InvalidXlsxInput("xlsx: the part declares entities")
+  }
+  let reader = @xml.NamespaceReader::from_string(text)
+  let mut depth = 0
+  let mut sheet_data_depth = -1
+  let mut row_depth = -1
+  while true {
+    let event = reader.read_event()
+    match event.kind {
+      Start(element) | Empty(element) => {
+        let name = element.name.local_name
+        if depth == 1 {
+          if ![
+              "sheetData", "dimension", "sheetViews", "sheetFormatPr", "sheetPr",
+              "pageMargins", "pageSetup", "printOptions", "headerFooter", "rowBreaks",
+              "colBreaks",
+            ].contains(name) {
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion does not support worksheet feature " +
+              name,
+            )
+          }
+          if name == "sheetData" && event.kind is Start(_) {
+            sheet_data_depth = depth + 1
+          }
+        } else if depth == sheet_data_depth &&
+          name == "row" &&
+          event.kind is Start(_) {
+          row_depth = depth + 1
+        } else if depth == row_depth && name == "c" {
+          let kind = xlsx_attr(element, "t", "")
+          if kind != "" && kind != "n" && kind != "str" {
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion supports only numeric and plain string cells",
+            )
+          }
+        }
+        if event.kind is Start(_) {
+          depth += 1
+        } else if depth == 0 {
+          break
+        }
+      }
+      End(_) => {
+        depth -= 1
+        if depth + 1 == row_depth {
+          row_depth = -1
+        }
+        if depth + 1 == sheet_data_depth {
+          sheet_data_depth = -1
+        }
+        if depth == 0 {
+          break
+        }
+      }
+      Eof =>
+        if depth == 0 {
+          break
+        } else {
+          raise InvalidXlsxInput("xlsx: unexpected EOF")
+        }
+      _ => ()
+    }
+  }
+}
+
+///|
+fn xlsx_check_plain_style(styles : XlsxStyles, locale : String) -> Unit raise {
+  let format = styles.cell_formats[0]
+  let a = format.alignment
+  let font = styles.fonts[0]
+  let nondefault_fill = format.fill >= 0 &&
+    format.fill < styles.fills.length() &&
+    (
+      styles.fills[format.fill].pattern != "" ||
+      styles.fills[format.fill].gradient is Some(_)
+    )
+  let nondefault_border = if format.border >= 0 &&
+    format.border < styles.borders.length() {
+    let b = styles.borders[format.border]
+    b.left.style != "" ||
+    b.right.style != "" ||
+    b.top.style != "" ||
+    b.bottom.style != "" ||
+    b.diagonal.style != "" ||
+    b.vertical.style != "" ||
+    b.horizontal.style != "" ||
+    b.diagonal_up ||
+    b.diagonal_down
+  } else {
+    false
+  }
+  if format.font != 0 ||
+    font.name != "Calibri" ||
+    font.size != 11.0 ||
+    font.bold ||
+    font.italic ||
+    font.underline != "" ||
+    font.strike ||
+    font.color.kind != 0 ||
+    (font.scheme != "" && font.scheme != "minor") ||
+    font.vertical != "" ||
+    format.number_format != 0 ||
+    styles.number_format(0, locale) != "General" ||
+    a.horizontal != "general" ||
+    a.vertical != "bottom" ||
+    a.wrap ||
+    a.shrink ||
+    a.indent != 0 ||
+    a.rotation != 0 ||
+    a.justify_last ||
+    nondefault_fill ||
+    nondefault_border {
+    raise InvalidXlsxInput(
+      "xlsx: plain conversion does not support styled cells",
+    )
+  }
+}
+
+///|
+/// Convert a single unstyled worksheet using estimated font metrics.
+/// Supports sheet views with numeric and plain string cells only; complex
+/// features are rejected. This entry point does not embed fonts.
+pub fn convert_plain_no_fonts(
+  data : Bytes,
+  data_mode~ : String = "",
+  no_text_index~ : Bool = false,
+) -> XlsxPlainResult raise {
+  if data_mode != "" &&
+    data_mode != "default" &&
+    data_mode != "all" &&
+    data_mode != "none" {
+    raise InvalidXlsxInput("xlsx: invalid data mode")
+  }
+  let workbook = read_xlsx_workbook(data)
+  let visible = workbook.sheets.filter(s => !s.hidden)
+  if visible.length() != 1 || visible[0].chart {
+    raise InvalidXlsxInput(
+      "xlsx: plain conversion requires one visible worksheet",
+    )
+  }
+  let ref = visible[0]
+  let mut sheet_number = 1
+  for s in workbook.sheets {
+    if !s.hidden {
+      break
+    }
+    sheet_number += 1
+  }
+  let view_id = "sheet" + sheet_number.to_string()
+  let metadata = workbook.package.core_properties()
+  if !metadata.title.is_empty() ||
+    !metadata.creator.is_empty() ||
+    !metadata.subject.is_empty() ||
+    !metadata.description.is_empty() ||
+    !metadata.identifier.is_empty() ||
+    !metadata.language.is_empty() ||
+    !metadata.created.is_empty() ||
+    !metadata.modified.is_empty() {
+    raise InvalidXlsxInput(
+      "xlsx: plain conversion does not support document metadata",
+    )
+  }
+  let locale = workbook.locale()
+  let theme = workbook.package.theme_fonts(workbook.part)
+  if theme.resolve("+mn-lt", "") != "Calibri" {
+    raise InvalidXlsxInput(
+      "xlsx: plain conversion does not support themed fonts",
+    )
+  }
+  let styles = workbook.styles()
+  xlsx_check_plain_style(styles, locale.number_locale)
+  workbook.xlsx_check_plain_sheet(ref.part)
+  let parsed = workbook.read_sheet_cells(ref.part)
+  if parsed.missing_formula_values > 0 {
+    raise InvalidXlsxInput(
+      "xlsx: plain conversion requires cached formula values",
+    )
+  }
+  let rows = parsed.sorted_rows()
+  let geo = workbook.read_sheet_geometry(ref.part)
+  if !geo.columns.is_empty() ||
+    !geo.merges.is_empty() ||
+    geo.frozen_rows != 0 ||
+    geo.frozen_columns != 0 ||
+    !geo.show_grid ||
+    !geo.show_zero ||
+    geo.right_to_left {
+    raise InvalidXlsxInput(
+      "xlsx: plain conversion does not support worksheet layout features",
+    )
+  }
+  let (row_count, col_count) = xlsx_initial_extent(parsed, geo, [])
+  let all_cols = xlsx_column_runs(geo, col_count, 7.0)
+  let default_width = if all_cols.is_empty() {
+    48.0
+  } else {
+    all_cols[0].size.to_double()
+  }
+  let columns : Array[@sheet.Run] = all_cols.map(run => {
+    count: run.count,
+    size: run.size,
+  })
+  let heights : Array[@sheet.Run] = xlsx_row_runs(
+    rows,
+    geo,
+    row_count,
+    12.65,
+    Map([]),
+  ).map(run => { count: run.count, size: run.size, })
+  let geometry : @sheet.GridGeometry = {
+    columns,
+    rows: heights,
+    frozen_rows: 0,
+  }
+  let cells : Array[@sheet.SizedGridRow] = []
+  for row in rows {
+    if row.style >= 0 {
+      raise InvalidXlsxInput(
+        "xlsx: plain conversion does not support row styles",
+      )
+    }
+    let entries : Array[@sheet.SizedGridCell] = []
+    for cell in row.cells {
+      if cell.style != 0 || (cell.kind != 0 && cell.kind != 1 && cell.kind != 2) {
+        raise InvalidXlsxInput(
+          "xlsx: plain conversion does not support this cell",
+        )
+      }
+      if styles.format_cell(cell, workbook.date1904, locale.number_locale)
+        is Some(formatted) {
+        let text = formatted.text()
+        if cell.kind == 1 {
+          let mut width = 0.0
+          for c in text {
+            width += @sheet.fallback_advance(c, false)
+          }
+          if width > default_width - 3.75 + 0.01 {
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion does not support narrow numeric cells",
+            )
+          }
+        }
+        entries.push({
+          column: cell.column,
+          cell: { text, number: cell.kind == 1, },
+        })
+      }
+    }
+    cells.push({ index: row.index, cells: entries, })
+  }
+  let drawn = @sheet.draw_sized_grid_no_fonts(
+    cells,
+    geometry,
+    default_width,
+    locale.language,
+  )
+  let writer = @core.DocumentWriter::new(
+    meta=Json::object({
+      "source": Json::string("xlsx"),
+      "generator": Json::string("bdf-go/0.1"),
+    }),
+  )
+  let mode = if data_mode == "default" { "" } else { data_mode }
+  let (_, table_warnings) = workbook.store_sheet_tables(
+    writer,
+    ref.part,
+    ref.name,
+    sheet_number,
+    view_id,
+    mode,
+    0,
+    locale.number_locale,
+  )
+  let warnings = workbook.warnings.copy()
+  for warning in table_warnings {
+    warnings.push(warning)
+  }
+  @sheet.store_grid(
+    writer,
+    drawn,
+    id=view_id,
+    title=ref.name,
+    text_index=!no_text_index,
+  )
+  { bdf: writer.write_single(), warnings, sheets: 1, }
+}
