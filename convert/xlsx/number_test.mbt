@@ -23,3 +23,22 @@ test "general formatting guards recursive rounding" {
   )
   assert_eq(xlsx_format_general(1.2345678901234567, 11), "1.23456789")
 }
+
+///|
+test "date formats preserve Excel's leap day and elapsed seconds" {
+  let leap = xlsx_parse_number_format("yyyy-mm-dd", xlsx_default_palette())
+  assert_eq(xlsx_format_number(leap, 60.0, false).text(), "1900-02-29")
+  let elapsed = xlsx_parse_number_format("[ss]", xlsx_default_palette())
+  assert_eq(
+    xlsx_format_number(elapsed, 2958465.0, false).text(),
+    "255611376000",
+  )
+  let era = xlsx_parse_number_format(
+    "[$-411]ggge\"年\"m\"月\"d\"日\"",
+    xlsx_default_palette(),
+  )
+  assert_eq(
+    xlsx_format_number(era, 43587.0, false).text(),
+    "令和1年5月2日",
+  )
+}

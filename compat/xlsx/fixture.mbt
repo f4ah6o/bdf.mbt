@@ -332,3 +332,76 @@ pub fn xlsx_numeric(code : String, value : Double) -> String {
     Json::boolean(general),
   ]).stringify()
 }
+
+///|
+#export_name("xlsx_date_format")
+pub fn xlsx_date_format(
+  code : String,
+  value : Double,
+  date1904 : Bool,
+) -> String {
+  let sections = @xlsx.xlsx_parse_number_format(
+    code,
+    @xlsx.xlsx_default_palette(),
+  )
+  let pieces = @xlsx.xlsx_format_date(sections[0], value, date1904)
+  Json::array([
+    match pieces {
+      Some(pieces) =>
+        Json::array(
+          pieces.map(fn(piece) {
+            Json::array([
+              Json::number(piece.kind.to_double()),
+              Json::string(piece.text),
+            ])
+          }),
+        )
+      None => Json::array([])
+    },
+    Json::boolean(pieces is Some(_)),
+  ]).stringify()
+}
+
+///|
+fn xlsx_formatted_json(result : @xlsx.XlsxFormatted) -> String {
+  Json::array([
+    Json::array(
+      result.pieces.map(fn(piece) {
+        Json::array([
+          Json::number(piece.kind.to_double()),
+          Json::string(piece.text),
+        ])
+      }),
+    ),
+    match result.color {
+      Some(c) => Json::number(c.to_double())
+      None => Json::null()
+    },
+    Json::boolean(result.general),
+    Json::boolean(result.number),
+  ]).stringify()
+}
+
+///|
+#export_name("xlsx_formatted_number")
+pub fn xlsx_formatted_number(
+  code : String,
+  value : Double,
+  date1904 : Bool,
+) -> String {
+  let sections = @xlsx.xlsx_parse_number_format(
+    code,
+    @xlsx.xlsx_default_palette(),
+  )
+  xlsx_formatted_json(@xlsx.xlsx_format_number(sections, value, date1904))
+}
+
+///|
+#export_name("xlsx_formatted_text")
+pub fn xlsx_formatted_text(code : String, value : String) -> String {
+  let sections = @xlsx.xlsx_parse_number_format(
+    code,
+    @xlsx.xlsx_default_palette(),
+  )
+  xlsx_formatted_json(@xlsx.xlsx_format_text(sections, value))
+}

@@ -20,9 +20,15 @@ pub fn xlsx_decode_string(String) -> String
 
 pub fn xlsx_default_palette() -> Array[UInt32]
 
+pub fn xlsx_format_date(XlsxFormatSection, Double, Bool) -> Array[XlsxFormatPiece]?
+
 pub fn xlsx_format_general(Double, Int32) -> String
 
+pub fn xlsx_format_number(Array[XlsxFormatSection], Double, Bool) -> XlsxFormatted
+
 pub fn xlsx_format_numeric(XlsxFormatSection, Double) -> (Array[XlsxFormatPiece], Bool)
+
+pub fn xlsx_format_text(Array[XlsxFormatSection], String) -> XlsxFormatted
 
 pub fn xlsx_iso_serial(String, Bool) -> Double?
 
@@ -116,6 +122,14 @@ pub(all) struct XlsxFormatToken {
   kind : Int32
   text : String
 }
+
+pub(all) struct XlsxFormatted {
+  pieces : Array[XlsxFormatPiece]
+  color : UInt32?
+  general : Bool
+  number : Bool
+}
+pub fn XlsxFormatted::text(Self) -> String
 
 pub(all) struct XlsxNumberLayout {
   mut integer : String
