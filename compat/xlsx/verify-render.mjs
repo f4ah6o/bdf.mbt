@@ -48,6 +48,26 @@ for (const [j, c] of activeCF.entries()) await verifyCase(c, `conditional font $
 const conditionalFill = JSON.parse(await readFile(new URL('./conditional-fill.json', import.meta.url)));
 assert.equal(conditionalFill.length, 161, 'conditional fill fixture count');
 for (const [j, c] of conditionalFill.entries()) await verifyCase(c, `conditional fill ${j}`);
+const conditionalBorder = JSON.parse(await readFile(new URL('./conditional-border.json', import.meta.url)));
+assert.equal(conditionalBorder.length, 161, 'conditional border fixture count');
+for (const [j, c] of conditionalBorder.entries()) await verifyCase(c, `conditional border ${j}`);
+const conditionalOps = JSON.parse(await readFile(new URL('./conditional-ops.json', import.meta.url)));
+assert.equal(conditionalOps.length, 161, 'conditional comparison fixture count');
+for (const [j, c] of conditionalOps.entries()) await verifyCase(c, `conditional comparison ${j}`);
+const unsupportedConditionalOps = JSON.parse(await readFile(new URL('./conditional-ops-unsupported.json', import.meta.url)));
+assert.equal(unsupportedConditionalOps.length, 8, 'unsupported conditional comparison fixture count');
+for (const encoded of unsupportedConditionalOps) {
+  const input = Buffer.from(encoded, 'base64');
+  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'conditional formats applying to blank cells must be rejected');
+  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+}
+const unsupportedConditionalBorder = JSON.parse(await readFile(new URL('./conditional-border-unsupported.json', import.meta.url)));
+assert.equal(unsupportedConditionalBorder.length, 8, 'unsupported conditional border fixture count');
+for (const encoded of unsupportedConditionalBorder) {
+  const input = Buffer.from(encoded, 'base64');
+  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional borders must be rejected');
+  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+}
 const unsupportedConditionalFill = JSON.parse(await readFile(new URL('./conditional-fill-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalFill.length, 8, 'unsupported conditional fill fixture count');
 for (const encoded of unsupportedConditionalFill) {
@@ -100,4 +120,4 @@ for (const encoded of unsupportedBase) {
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|complex borders)/);
 }
-console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length} conditional formats match upstream.`);
+console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length} conditional formats match upstream.`);

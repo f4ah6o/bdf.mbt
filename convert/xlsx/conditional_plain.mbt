@@ -27,7 +27,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   let mut room = 4194304L
   let mut conditional_count = 0
   let mut dxf_id = -1
-  let mut inclusive = false
+  let mut operator = ""
   let matched : Map[Int32, Map[Int32, Bool]] = Map([])
   while true {
     let event = reader.read_event()
@@ -69,15 +69,15 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
           rule_count += 1
           if rule_count != 1 ||
             xlsx_attr(element, "type", "") != "cellIs" ||
-            !["greaterThan", "greaterThanOrEqual"].contains(
-              xlsx_attr(element, "operator", "equal"),
-            ) {
+            ![
+              "greaterThan", "greaterThanOrEqual", "lessThan", "lessThanOrEqual",
+              "equal", "notEqual",
+            ].contains(xlsx_attr(element, "operator", "equal")) {
             xlsx_reject_conditional()
           }
           rule_depth = depth + 1
           dxf_id = xlsx_attr_int(element, "dxfId", -1)
-          inclusive = xlsx_attr(element, "operator", "equal") ==
-            "greaterThanOrEqual"
+          operator = xlsx_attr(element, "operator", "equal")
           formula_count = 0
         } else if depth == rule_depth {
           if name != "formula" || event.kind is Empty(_) {
@@ -122,7 +122,9 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
                 "xlsx: plain conversion does not support conditional formatting",
               )
           }
-          if threshold.is_nan() || threshold.is_inf() || threshold <= 0.0 {
+          if threshold.is_nan() ||
+            threshold.is_inf() ||
+            xlsx_plain_conditional_matches(0.0, threshold, operator) {
             xlsx_reject_conditional()
           }
           formula_depth = -1
@@ -162,8 +164,11 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
                 if cell.kind != 1 || cell.number.is_nan() {
                   xlsx_reject_conditional()
                 }
-                if cell.number > threshold ||
-                  (inclusive && cell.number == threshold) {
+                if xlsx_plain_conditional_matches(
+                    cell.number,
+                    threshold,
+                    operator,
+                  ) {
                   let columns = match matched.get(row.index) {
                     Some(columns) => columns
                     None => {
@@ -198,8 +203,25 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   if conditional_count != 1 || dxf_id < 0 {
     xlsx_reject_conditional()
   }
-  let font = self.xlsx_conditional_font(dxf_id)
-  xlsx_apply_conditional_font(rows, styles, matched, font)
+  let font = self.xlsx_conditional_style(dxf_id)
+  xlsx_apply_conditional_style(rows, styles, matched, font)
+}
+
+///|
+fn xlsx_plain_conditional_matches(
+  value : Double,
+  threshold : Double,
+  operator : String,
+) -> Bool {
+  match operator {
+    "greaterThan" => value > threshold
+    "greaterThanOrEqual" => value >= threshold
+    "lessThan" => value < threshold
+    "lessThanOrEqual" => value <= threshold
+    "equal" => value == threshold
+    "notEqual" => value != threshold
+    _ => false
+  }
 }
 
 ///|

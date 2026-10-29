@@ -1,18 +1,19 @@
 ///|
-priv struct XlsxConditionalFont {
+priv struct XlsxConditionalStyle {
   mut bold : Bool?
   mut italic : Bool?
   mut strike : Bool?
   mut underline : String?
   mut color : XlsxColor?
   mut fill : XlsxFill?
+  mut border : XlsxBorder?
 }
 
 ///|
-fn XlsxWorkbook::xlsx_conditional_font(
+fn XlsxWorkbook::xlsx_conditional_style(
   self : XlsxWorkbook,
   wanted : Int32,
-) -> XlsxConditionalFont raise {
+) -> XlsxConditionalStyle raise {
   let part = match self.package.relationship_of_type(self.part, "/styles") {
     Some(rel) => rel.target
     None =>
@@ -31,13 +32,14 @@ fn XlsxWorkbook::xlsx_conditional_font(
     raise InvalidXlsxInput("xlsx: the part declares entities")
   }
   let reader = @xml.NamespaceReader::from_string(text)
-  let result : XlsxConditionalFont = {
+  let result : XlsxConditionalStyle = {
     bold: None,
     italic: None,
     strike: None,
     underline: None,
     color: None,
     fill: None,
+    border: None,
   }
   let mut depth = 0
   let mut dxfs_depth = -1
@@ -46,6 +48,7 @@ fn XlsxWorkbook::xlsx_conditional_font(
   let mut index = 0
   let mut found_font = false
   let mut found_fill = false
+  let mut found_border = false
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -91,6 +94,15 @@ fn XlsxWorkbook::xlsx_conditional_font(
             }
             result.fill = if fill.pattern == "" { None } else { Some(fill) }
             continue
+          } else if name == "border" {
+            if found_border {
+              xlsx_reject_conditional()
+            }
+            found_border = true
+            result.border = Some(
+              xlsx_read_border(reader, element, event.kind is Empty(_)),
+            )
+            continue
           } else {
             xlsx_reject_conditional()
           }
@@ -128,7 +140,7 @@ fn XlsxWorkbook::xlsx_conditional_font(
           font_depth = -1
         }
         if depth + 1 == dxf_depth {
-          if !found_font && !found_fill {
+          if !found_font && !found_fill && !found_border {
             xlsx_reject_conditional()
           }
           return result
@@ -156,7 +168,7 @@ fn XlsxWorkbook::xlsx_conditional_font(
 
 ///|
 // Invalid source style indices mean style zero even after synthetic formats are
-// appended for conditional fonts.
+// appended for conditional styles.
 fn xlsx_normalize_conditional_styles(
   rows : Array[XlsxRow],
   format_count : Int32,
@@ -174,11 +186,11 @@ fn xlsx_normalize_conditional_styles(
 }
 
 ///|
-fn xlsx_apply_conditional_font(
+fn xlsx_apply_conditional_style(
   rows : Array[XlsxRow],
   styles : XlsxStyles,
   matched : Map[Int32, Map[Int32, Bool]],
-  diff : XlsxConditionalFont,
+  diff : XlsxConditionalStyle,
 ) -> Array[XlsxRow] {
   let new_formats : Map[Int32, Int32] = Map([])
   let conditional_fill = match diff.fill {
@@ -229,11 +241,58 @@ fn xlsx_apply_conditional_font(
           }
           let new_font = styles.fonts.length()
           styles.fonts.push(font)
+          let border = match diff.border {
+            Some(diff_border) => {
+              let base = if format.border >= 0 &&
+                format.border < styles.borders.length() {
+                styles.borders[format.border]
+              } else {
+                {
+                  left: xlsx_empty_side(),
+                  right: xlsx_empty_side(),
+                  top: xlsx_empty_side(),
+                  bottom: xlsx_empty_side(),
+                  diagonal: xlsx_empty_side(),
+                  diagonal_up: false,
+                  diagonal_down: false,
+                  vertical: xlsx_empty_side(),
+                  horizontal: xlsx_empty_side(),
+                }
+              }
+              let index = styles.borders.length()
+              styles.borders.push({
+                ..base,
+                left: if diff_border.left.style != "" {
+                  diff_border.left
+                } else {
+                  base.left
+                },
+                right: if diff_border.right.style != "" {
+                  diff_border.right
+                } else {
+                  base.right
+                },
+                top: if diff_border.top.style != "" {
+                  diff_border.top
+                } else {
+                  base.top
+                },
+                bottom: if diff_border.bottom.style != "" {
+                  diff_border.bottom
+                } else {
+                  base.bottom
+                },
+              })
+              index
+            }
+            None => format.border
+          }
           let index = styles.cell_formats.length()
           styles.cell_formats.push({
             ..format,
             font: new_font,
             fill: conditional_fill.unwrap_or(format.fill),
+            border,
           })
           new_formats[old_index] = index
           index

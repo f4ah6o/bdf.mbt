@@ -448,8 +448,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// shrink-to-fit, indentation and center-across-selection.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// patterned row and column fills, complex borders and other features are
-/// rejected. Supported numeric conditional rules may apply a differential font
-/// and solid fill or be inactive; other conditional formats are rejected.
+/// rejected. Supported numeric conditional rules may apply a differential font,
+/// solid fill and border or be inactive; other conditional formats are rejected.
 /// Views with base fills are limited to 1,000,000 cells, and views
 /// with base borders to 200,000 cells. External links support simple ASCII
 /// HTTP(S) and mailto URLs with simple ASCII authorities; other URL forms are
@@ -578,6 +578,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       ..input_styles,
       fonts: input_styles.fonts.copy(),
       fills: input_styles.fills.copy(),
+      borders: input_styles.borders.copy(),
       cell_formats: input_styles.cell_formats.map(format => {
         ..format,
         font: if format.font < 0 || format.font >= input_styles.fonts.length() {
@@ -589,6 +590,12 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           -1
         } else {
           format.fill
+        },
+        border: if format.border < 0 ||
+          format.border >= input_styles.borders.length() {
+          -1
+        } else {
+          format.border
         },
       }),
     }

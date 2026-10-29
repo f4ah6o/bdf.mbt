@@ -100,7 +100,7 @@ func TestCodexConditionalFill(t *testing.T) {
 			case 0:
 				dxf = `<fill><patternFill patternType="darkGray"><fgColor rgb="FFFF0000"/></patternFill></fill>`
 			case 1:
-				dxf = `<border><bottom style="thin"/></border>`
+				dxf = `<border/><border/>`
 			case 2:
 				dxf = `<numFmt formatCode="0.00"/>`
 			case 3:
