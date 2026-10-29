@@ -4,6 +4,7 @@ package "f4ah6o/bdf/convert/music"
 import {
   "f4ah6o/bdf/core",
   "f4ah6o/bdf/font/db",
+  "moonbitlang/core/debug",
 }
 
 // Values
@@ -46,6 +47,12 @@ pub fn draw_system_marks(BasicStaffLayout, NotatedScore, PreparedScore, MusicSys
 pub fn drum_of(Int32) -> DrumNotation
 
 pub fn estimate_key(Array[Double], Int32) -> KeySig
+
+pub fn guitar_candidates(GuitarNote, Bool) -> Array[GuitarCandidate]
+
+pub fn guitar_presets() -> Array[GuitarPreset]
+
+pub fn guitar_shapes(Array[GuitarNote], GuitarPreset, Bool) -> Array[GuitarShape]
 
 pub fn key_alters(KeySig) -> Array[Int32]
 
@@ -147,6 +154,40 @@ pub(all) struct EngravingNote {
   accidental : Int32
   cautionary : Bool
   tie_stop : Bool
+}
+
+pub(all) struct GuitarCandidate {
+  position : GuitarPosition
+  penalty : Double
+}
+
+pub(all) struct GuitarNote {
+  id : Int32
+  pitch : Int32
+  end : Int64
+  authored : GuitarPosition?
+}
+
+pub(all) struct GuitarPosition {
+  string : Int32
+  fret : Int32
+} derive(Eq, @debug.Debug)
+
+pub(all) struct GuitarPreset {
+  id : String
+  name : String
+  explanation : String
+  low : Double
+  shift : Double
+  open : Double
+  high : Double
+  span_limit : Int32
+}
+
+pub(all) struct GuitarShape {
+  positions : Array[GuitarPosition]
+  cost : Double
+  base : Int32
 }
 
 pub(all) struct KeyChange {

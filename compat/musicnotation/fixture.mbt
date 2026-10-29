@@ -1019,3 +1019,56 @@ pub fn paint_text(
     err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
   }
 }
+
+///|
+#export_name("guitar_shapes")
+pub fn guitar_shapes(
+  raw : FixedArray[Int32],
+  preset : Int32,
+  relaxed : Bool,
+) -> String {
+  let notes : Array[@music.GuitarNote] = []
+  for i in 0..<(raw.length() / 4) {
+    let k = i * 4
+    notes.push({
+      id: i,
+      pitch: raw[k],
+      end: 123L,
+      authored: if raw[k + 1] != 0 {
+        Some({ string: raw[k + 2], fret: raw[k + 3], })
+      } else {
+        None
+      },
+    })
+  }
+  let candidates = notes.map(note => {
+    Json::array(
+      @music.guitar_candidates(note, relaxed).map(c => {
+        Json::array([
+          Json::number(c.position.string.to_double()),
+          Json::number(c.position.fret.to_double()),
+          Json::number(c.penalty),
+        ])
+      }),
+    )
+  })
+  let shapes = @music.guitar_shapes(
+    notes,
+    @music.guitar_presets()[preset],
+    relaxed,
+  ).map(s => {
+    Json::array([
+      Json::array(
+        s.positions.map(p => {
+          Json::array([
+            Json::number(p.string.to_double()),
+            Json::number(p.fret.to_double()),
+          ])
+        }),
+      ),
+      Json::number(s.cost),
+      Json::number(s.base.to_double()),
+    ])
+  })
+  Json::array([Json::array(candidates), Json::array(shapes)]).stringify()
+}

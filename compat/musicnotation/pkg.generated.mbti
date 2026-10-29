@@ -16,6 +16,8 @@ pub fn estimate(FixedArray[Double], Int32) -> String
 
 pub fn glyph(String) -> String
 
+pub fn guitar_shapes(FixedArray[Int32], Int32, Bool) -> String
+
 pub fn music_text(String, Bytes, String, Double, Bool, Bool) -> String
 
 pub fn music_text_fonts(String, Bytes, Int32) -> String
