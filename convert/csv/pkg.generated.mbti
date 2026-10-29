@@ -1,0 +1,32 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/csv"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn read_records(String, Dialect) -> Records raise
+
+// Errors
+pub suberror CsvError {
+  InvalidDialect(String)
+}
+
+// Types and methods
+pub(all) struct Dialect {
+  delimiter : Byte
+  quote : Byte
+  escape : Byte
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Records {
+  rows : Array[Array[String]]
+  bad_quotes : Int32
+  quoted_fields : Int32
+  unfinished_quote : Bool
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
