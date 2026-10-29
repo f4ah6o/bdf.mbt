@@ -24,6 +24,9 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut row_depth = -1
   let mut cell_depth = -1
   let mut inline_depth = -1
+  let mut run_depth = -1
+  let mut run_count = 0
+  let mut run_texts = 0
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -66,10 +69,33 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           }
         } else if depth == cell_depth && name == "is" && event.kind is Start(_) {
           inline_depth = depth + 1
+          run_count = 0
         } else if depth == inline_depth && name == "r" {
+          run_count += 1
+          if run_count > 1 {
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion does not support rich text",
+            )
+          }
+          run_texts = 0
+          if event.kind is Start(_) {
+            run_depth = depth + 1
+          } else {
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion does not support rich text",
+            )
+          }
+        } else if depth == run_depth && name == "rPr" {
           raise InvalidXlsxInput(
             "xlsx: plain conversion does not support rich text",
           )
+        } else if depth == run_depth && name == "t" {
+          run_texts += 1
+          if run_texts > 1 {
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion does not support rich text",
+            )
+          }
         }
         if event.kind is Start(_) {
           depth += 1
@@ -79,6 +105,14 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
       }
       End(_) => {
         depth -= 1
+        if depth + 1 == run_depth {
+          if run_texts == 0 {
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion does not support rich text",
+            )
+          }
+          run_depth = -1
+        }
         if depth + 1 == inline_depth {
           inline_depth = -1
         }
@@ -121,6 +155,9 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
   let reader = @xml.NamespaceReader::from_string(text)
   let mut depth = 0
   let mut string_depth = -1
+  let mut run_depth = -1
+  let mut run_count = 0
+  let mut run_texts = 0
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -128,10 +165,33 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
         let name = element.name.local_name
         if depth == 1 && name == "si" && event.kind is Start(_) {
           string_depth = depth + 1
+          run_count = 0
         } else if depth == string_depth && name == "r" {
+          run_count += 1
+          if run_count > 1 {
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion does not support rich text",
+            )
+          }
+          run_texts = 0
+          if event.kind is Start(_) {
+            run_depth = depth + 1
+          } else {
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion does not support rich text",
+            )
+          }
+        } else if depth == run_depth && name == "rPr" {
           raise InvalidXlsxInput(
             "xlsx: plain conversion does not support rich text",
           )
+        } else if depth == run_depth && name == "t" {
+          run_texts += 1
+          if run_texts > 1 {
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion does not support rich text",
+            )
+          }
         }
         if event.kind is Start(_) {
           depth += 1
@@ -141,6 +201,14 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
       }
       End(_) => {
         depth -= 1
+        if depth + 1 == run_depth {
+          if run_texts == 0 {
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion does not support rich text",
+            )
+          }
+          run_depth = -1
+        }
         if depth + 1 == string_depth {
           string_depth = -1
         }

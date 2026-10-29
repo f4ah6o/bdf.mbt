@@ -30,6 +30,16 @@ for (const [j, c] of baseFills.entries()) await verifyCase(c, `base fill ${j}`);
 const baseBorders = JSON.parse(await readFile(new URL('./base-border.json', import.meta.url)));
 assert.equal(baseBorders.length, 240, 'row and column border fixture count');
 for (const [j, c] of baseBorders.entries()) await verifyCase(c, `base border ${j}`);
+const plainRuns = JSON.parse(await readFile(new URL('./plain-run.json', import.meta.url)));
+assert.equal(plainRuns.length, 120, 'plain rich-text run fixture count');
+for (const [j, c] of plainRuns.entries()) await verifyCase(c, `plain run ${j}`);
+const unsupportedRuns = JSON.parse(await readFile(new URL('./plain-run-unsupported.json', import.meta.url)));
+assert.equal(unsupportedRuns.length, 8, 'unsupported rich-text run fixture count');
+for (const encoded of unsupportedRuns) {
+  const input = Buffer.from(encoded, 'base64');
+  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported rich-text runs must be rejected');
+  assert.match(xlsx_render_error(input, 'none', true), /rich text/);
+}
 const largeFill = Buffer.from(JSON.parse(await readFile(new URL('./base-fill-too-large.json', import.meta.url))), 'base64');
 assert.equal(xlsx_render_basic(largeFill, 'none', true).length, 0, 'oversized base fills must be rejected');
 assert.match(xlsx_render_error(largeFill, 'none', true), /row or column fill exceeds the supported view size/);
@@ -49,4 +59,4 @@ for (const encoded of unsupportedBase) {
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|complex borders)/);
 }
-console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, and ${baseBorders.length} base borders match upstream.`);
+console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, and ${plainRuns.length} plain runs match upstream.`);
