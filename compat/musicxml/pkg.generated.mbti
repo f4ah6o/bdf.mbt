@@ -8,6 +8,8 @@ pub fn musicxml_header(Bytes) -> String
 
 pub fn musicxml_mxl(Bytes) -> String
 
+pub fn musicxml_notation(Bytes, Int32, String, Int32) -> String
+
 pub fn musicxml_numbers(Int32, String) -> String
 
 pub fn musicxml_text(Bytes) -> String

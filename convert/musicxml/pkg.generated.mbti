@@ -1,10 +1,18 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "f4ah6o/bdf/convert/musicxml"
 
+import {
+  "f4ah6o/bdf/convert/music",
+}
+
 // Values
 pub fn detect_musicxml(Bytes, Bytes) -> Bool
 
 pub fn detect_musicxml_text(Bytes) -> Bool
+
+pub fn musicxml_accidental(String, Int32) -> Int32
+
+pub fn musicxml_clef(MusicXmlNode) -> @music.EngravingClef
 
 pub fn musicxml_declared_encoding(Bytes) -> String
 
@@ -16,6 +24,8 @@ pub fn musicxml_head_text(Bytes) -> String
 
 pub fn musicxml_header(MusicXmlNode) -> MusicXmlHeader
 
+pub fn musicxml_infer_type(Int32) -> (Int32, Int32)
+
 pub fn musicxml_integer(String) -> (Int64, Bool)
 
 pub fn musicxml_is_score_text(String) -> Bool
@@ -23,6 +33,8 @@ pub fn musicxml_is_score_text(String) -> Bool
 pub fn musicxml_read_tree(Bytes) -> MusicXmlNode raise MusicXmlInputError
 
 pub fn musicxml_tick_of(Double) -> Int32
+
+pub fn musicxml_time_sig(MusicXmlNode) -> @music.TimeSig?
 
 pub fn musicxml_to_utf8(Bytes) -> (Bytes, String)
 

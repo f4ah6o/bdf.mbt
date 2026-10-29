@@ -135,3 +135,42 @@ pub fn musicxml_header(data : Bytes) -> String {
     _ => "null"
   }
 }
+
+///|
+#export_name("musicxml_notation")
+pub fn musicxml_notation(
+  data : Bytes,
+  ticks : Int32,
+  accidental : String,
+  alter : Int32,
+) -> String {
+  try {
+    let root = @musicxml.musicxml_read_tree(data)
+    let time = match @musicxml.musicxml_time_sig(root.child("time").unwrap()) {
+      None => Json::null()
+      Some(t) =>
+        Json::array([
+          Json::number(t.beats.to_double()),
+          Json::number(t.beat_type.to_double()),
+          Json::string(t.symbol),
+        ])
+    }
+    let clef = @musicxml.musicxml_clef(root.child("clef").unwrap())
+    let (kind, dots) = @musicxml.musicxml_infer_type(ticks)
+    Json::array([
+      time,
+      Json::array([
+        Json::number(clef.sign.to_double()),
+        Json::number(clef.line.to_double()),
+        Json::number(clef.octave.to_double()),
+      ]),
+      Json::array([
+        Json::number(kind.to_double()),
+        Json::number(dots.to_double()),
+      ]),
+      Json::number(@musicxml.musicxml_accidental(accidental, alter).to_double()),
+    ]).stringify()
+  } catch {
+    _ => "null"
+  }
+}
