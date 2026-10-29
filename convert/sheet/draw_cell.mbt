@@ -61,6 +61,7 @@ fn grid_cell_layout(
   advance : (Char, Bool) -> Double,
   metrics : (Char, Bool) -> (Double, Double),
   end_column~ : Int32 = -1,
+  overflow_end~ : Int32 = -1,
   allow_overflow~ : Bool = true,
   force_wrap~ : Bool = false,
   indent~ : Double = 0.0,
@@ -131,7 +132,8 @@ fn grid_cell_layout(
   let mut x0 = x
   let mut x1 = x + width
   if allow_overflow && !wraps && !cell.number && (tx0 < x0 || tx1 > x1) {
-    let mut next = last + 1
+    let mut next = (if overflow_end >= column { overflow_end } else { last }) +
+      1
     while next < 16384 && x1 < tx1 {
       if next < row.length() && row[next].text != "" {
         break

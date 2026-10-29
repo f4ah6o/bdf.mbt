@@ -26,7 +26,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 9000; i++ {
+	for i := 0; i < 9400; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -461,7 +461,9 @@ func TestCodexXLSXRender(t *testing.T) {
 		if i >= 4800 {
 			sheet = strings.Replace(sheet, `</row>`, `<c r="G1" s="16"><f>1+2</f></c><c r="H1" s="17" t="str"><f>"x"</f><v/></c><c r="I1" s="18"><f>3+4</f><v>7</v></c></row>`, 1)
 		}
-		if i >= 5700 && i < 8600 {
+		if i >= 9200 {
+			sheet = strings.Replace(sheet, `</worksheet>`, `<mergeCells count="2"><mergeCell ref="A1:C1"/><mergeCell ref="E2:F2"/></mergeCells></worksheet>`, 1)
+		} else if (i >= 5700 && i < 8600) || i >= 9000 {
 			sheet = strings.Replace(sheet, `</worksheet>`, `<mergeCells count="2"><mergeCell ref="A1:C2"/><mergeCell ref="E3:F4"/></mergeCells></worksheet>`, 1)
 		} else if i >= 5000 && i < 5400 {
 			sheet = strings.Replace(sheet, `</worksheet>`, `<mergeCells count="2"><mergeCell ref="A1:C1"/><mergeCell ref="E2:F2"/></mergeCells></worksheet>`, 1)

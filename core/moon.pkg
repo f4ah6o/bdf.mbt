@@ -4,6 +4,7 @@ import {
   "gaato/deflate",
   "moonbitlang/core/buffer",
   "moonbitlang/core/string",
+  "moonbitlang/core/bigint",
   "moonbit-community/normalization",
   "moonbit-community/ucd" @unicode,
   "moonbit-community/ucd/data" @ucd,

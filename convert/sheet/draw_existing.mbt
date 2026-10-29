@@ -256,24 +256,29 @@ pub fn draw_sized_grid_no_fonts(
           break
         }
       }
-      if !hidden_by_span && !row_spans.contains(column) {
-        if center_across.get(i) is Some(columns) && columns.contains(column) {
-          if col_positions[column + 1] <= col_positions[column] {
-            hidden_by_span = true
-          } else {
-            while last + 1 < visible_columns &&
-                  columns.get(last + 1) == Some(true) {
-              last += 1
-            }
-          }
-        }
-      }
+      let reference_last = last
       if hidden_by_span ||
         !visibility.get(column).unwrap_or(false) ||
-        col_positions[last + 1] <= col_positions[column] ||
+        col_positions[reference_last + 1] <= col_positions[column] ||
         last_row >= count ||
         row_positions[last_row + 1] <= y {
         continue
+      }
+      let mut overflow_last = reference_last
+      if center_across.get(i) is Some(columns) && columns.contains(column) {
+        overflow_last = if row_spans.contains(column) {
+          reference_last
+        } else {
+          column
+        }
+        let mut selection_last = column
+        while selection_last + 1 < visible_columns &&
+              columns.get(selection_last + 1) == Some(true) {
+          selection_last += 1
+        }
+        if selection_last > column {
+          last = selection_last
+        }
       }
       let height = if last_row == i {
         height
@@ -358,6 +363,7 @@ pub fn draw_sized_grid_no_fonts(
         advance,
         metrics,
         end_column=last,
+        overflow_end=overflow_last,
         allow_overflow=last_row == i,
         force_wrap=wrap,
         indent~,
@@ -382,7 +388,7 @@ pub fn draw_sized_grid_no_fonts(
           text1 = Double::max(text1, line.x + line.width)
         }
         if last_row == i && !wrap && (text0 < x0 || text1 > x1) {
-          let mut next = last + 1
+          let mut next = overflow_last + 1
           while next < 16384 && x1 < text1 {
             if next < row.length() && row[next].text != "" {
               break
@@ -482,7 +488,7 @@ pub fn draw_sized_grid_no_fonts(
       }
       let reference = cell_reference(i, column, false) +
         (if row_spans.contains(column) {
-          ":" + cell_reference(last_row, last, false)
+          ":" + cell_reference(last_row, reference_last, false)
         } else {
           ""
         })

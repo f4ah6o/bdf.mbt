@@ -238,8 +238,7 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// number formats, named and themed fonts, font colors, bold, italic, underlined
 /// and struck text, superscript and subscript, horizontal alignment, top or
 /// center vertical alignment, solid fills, line borders, merged cells, wrapping,
-/// shrink-to-fit and indentation. Center-across-selection is supported outside
-/// merged cells.
+/// shrink-to-fit, indentation and center-across-selection.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// complex features are rejected.
 pub fn convert_plain_no_fonts(
@@ -376,11 +375,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       }
       let alignment = styles.cell_formats[index].alignment
       if alignment.horizontal == "centerContinuous" {
-        if xlsx_plain_span_at(spans, row.index, cell.column) is Some(_) {
-          raise InvalidXlsxInput(
-            "xlsx: center across with merges is not supported",
-          )
-        }
         let columns = match center_across.get(row.index) {
           Some(columns) => columns
           None => {
@@ -721,9 +715,11 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               cell.column,
               col_count,
             )
-            cell_width = 0.0
-            for column in cell.column..<=last {
-              cell_width += widths[column]
+            if last > cell.column {
+              cell_width = 0.0
+              for column in cell.column..<=last {
+                cell_width += widths[column]
+              }
             }
           }
           let scale = xlsx_plain_shrink_scale(
@@ -764,9 +760,11 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               cell.column,
               col_count,
             )
-            cell_width = 0.0
-            for column in cell.column..<=last {
-              cell_width += widths[column]
+            if last > cell.column {
+              cell_width = 0.0
+              for column in cell.column..<=last {
+                cell_width += widths[column]
+              }
             }
           }
           let mut width = 0.0

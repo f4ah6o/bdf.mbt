@@ -120,14 +120,14 @@ fn DrawTile::text_run(
   let ly = y - self.y.to_double() * 2048.0
   let thickness = Double::max(0.05 * size, 0.75)
   if underline != "" {
-    let uy = ly + 0.1 * size
     self.object.fill_rect(
       Float::from_double(lx),
-      Float::from_double(uy),
+      grid_fused_float(0.1, size, ly),
       Float::from_double(width),
       Float::from_double(thickness),
     )
     if underline.has_prefix("double") {
+      let uy = @core.fused_multiply_add(0.1, size, ly)
       self.object.fill_rect(
         Float::from_double(lx),
         Float::from_double(uy + 2.0 * thickness),
@@ -139,12 +139,29 @@ fn DrawTile::text_run(
   if strike {
     self.object.fill_rect(
       Float::from_double(lx),
-      Float::from_double(ly - 0.3 * size),
+      grid_fused_float(-0.3, size, ly),
       Float::from_double(width),
       Float::from_double(thickness),
     )
   }
   self.drawn = true
+}
+
+///|
+// Most results round identically to Float without an exact multiply-add. Use
+// the exact operation near a Float rounding boundary or cancellation.
+fn grid_fused_float(a : Double, b : Double, c : Double) -> Float {
+  let product = a * b
+  let sum = product + c
+  let rounded = Float::from_double(sum)
+  let value = rounded.to_double()
+  let margin = value.abs() / 33554432.0 - (sum - value).abs()
+  let error = (product.abs() + c.abs()) * 1.0e-15
+  if margin > error {
+    rounded
+  } else {
+    Float::from_double(@core.fused_multiply_add(a, b, c))
+  }
 }
 
 ///|

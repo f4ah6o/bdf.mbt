@@ -35,6 +35,8 @@ pub fn encode_path_collection(Array[Path]) -> Bytes raise
 
 pub fn encode_text_index(Array[IndexRun]) -> Bytes raise
 
+pub fn fused_multiply_add(Double, Double, Double) -> Double
+
 pub fn index_plain_text(Array[IndexRun]) -> String
 
 pub fn normalize_nfkc(String) -> String
