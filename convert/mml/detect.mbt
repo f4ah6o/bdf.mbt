@@ -148,9 +148,9 @@ fn mml_track_line(text : String) -> Bool {
 }
 
 ///|
-fn mml_mabinogi_at(text : String) -> Int32 {
+fn mml_mabinogi_at(text : String, start~ : Int32 = 0) -> Int32 {
   let data = @utf8.encode(text)
-  let mut i = 0
+  let mut i = start
   while i + 4 <= data.length() {
     let is_match = (data[i].to_int() | 32) == 109 &&
       (data[i + 1].to_int() | 32) == 109 &&

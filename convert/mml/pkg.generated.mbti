@@ -10,9 +10,30 @@ pub fn detect_mml_dialect(String) -> String
 
 pub fn mml_like(String) -> (Bool, Int32, Int32)
 
+pub fn split_mml_source(String, String) -> MmlSource
+
+pub fn strip_mml_comments(String, Bool) -> String
+
 // Errors
 
 // Types and methods
+pub(all) struct MmlSource {
+  mut title : String
+  mut composer : String
+  mut arranger : String
+  mut lyricist : String
+  mut copyright : String
+  mut reverse : Bool
+  tracks : Array[MmlTrackSource]
+  warnings : Array[String]
+  seen : Map[String, Bool]
+}
+
+pub(all) struct MmlTrackSource {
+  name : String
+  text : String
+  kind : Int32
+}
 
 // Type aliases
 
