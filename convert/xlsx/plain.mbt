@@ -220,7 +220,6 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
       a.horizontal != "right"
     ) ||
     (a.vertical != "bottom" && a.vertical != "top" && a.vertical != "center") ||
-    a.indent != 0 ||
     a.rotation != 0 ||
     a.justify_last ||
     (nondefault_fill && (index == 0 || !solid_fill)) ||
@@ -238,7 +237,7 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// number formats, named and themed fonts, font colors, bold, italic, underlined
 /// and struck text, superscript and subscript, horizontal alignment, top or
 /// center vertical alignment, solid fills, line borders, merged cells, wrapping
-/// and shrink-to-fit.
+/// shrink-to-fit and indentation.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// complex features are rejected.
 pub fn convert_plain_no_fonts(
@@ -413,6 +412,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let decorations : Map[Int32, Map[Int32, @sheet.GridTextDecoration]] = Map([])
   let scripts : Map[Int32, Map[Int32, String]] = Map([])
   let shrink_scales : Map[Int32, Map[Int32, Double]] = Map([])
+  let indents : Map[Int32, Map[Int32, Double]] = Map([])
   let fills : Map[Int32, Map[Int32, @sheet.GridSolidFill]] = Map([])
   let sizes : Map[Int32, Map[Int32, Double]] = Map([])
   let wraps : Map[Int32, Map[Int32, Bool]] = Map([])
@@ -517,6 +517,10 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         cell.column,
       )
       let wrap = styles.cell_formats[format_index].alignment.wrap
+      let indent = xlsx_plain_indent(
+        styles.cell_formats[format_index].alignment,
+        cell.kind,
+      )
       let (border, colors) = match border_cache.get(format_index) {
         Some(border) => border
         None => {
@@ -681,7 +685,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           }
           let scale = xlsx_plain_shrink_scale(
             text,
-            Double::max(cell_width - 3.75, 0.0),
+            Double::max(cell_width - 3.75 - indent, 0.0),
             drawn_size,
           )
           if scale != 1.0 {
@@ -716,8 +720,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           if cell.column >= 0 &&
             cell.column < widths.length() &&
             cell_width > 0.0 &&
-            width > cell_width - 3.75 + 0.01 {
-            let available = Double::max(cell_width - 3.75, 0.0)
+            width > cell_width - 3.75 - indent + 0.01 {
+            let available = Double::max(cell_width - 3.75 - indent, 0.0)
             text = if formatted.general {
               xlsx_fit_plain_number(cell.number, available, drawn_size)
             } else {
@@ -730,6 +734,17 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         }
         let vertical = styles.cell_formats[format_index].alignment.vertical
         let horizontal = styles.cell_formats[format_index].alignment.horizontal
+        if indent != 0.0 {
+          let columns = match indents.get(row.index) {
+            Some(columns) => columns
+            None => {
+              let columns : Map[Int32, Double] = Map([])
+              indents[row.index] = columns
+              columns
+            }
+          }
+          columns[cell.column] = indent
+        }
         if wrap {
           let columns = match wraps.get(row.index) {
             Some(columns) => columns
@@ -872,6 +887,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     decorations~,
     scripts~,
     shrink_scales~,
+    indents~,
   )
   (drawn, geo, parsed.missing_formula_values)
 }
@@ -1098,11 +1114,15 @@ fn xlsx_plain_fitted_rows(
         font_id
       }
       let size = styles.fonts[font_index].size
+      let indent = xlsx_plain_indent(
+        styles.cell_formats[format_index].alignment,
+        cell.kind,
+      )
       if styles.cell_formats[format_index].alignment.wrap {
         if styles.format_cell(cell, date1904, locale) is Some(formatted) {
           let text = xlsx_plain_wrap_text(formatted.text())
           let width = if cell.column >= 0 && cell.column < widths.length() {
-            Double::max(widths[cell.column] - 3.75, 0.0)
+            Double::max(widths[cell.column] - 3.75 - indent, 0.0)
           } else {
             0.0
           }
@@ -1128,7 +1148,7 @@ fn xlsx_plain_fitted_rows(
         if styles.cell_formats[format_index].alignment.shrink && cell.kind != 1 {
           if styles.format_cell(cell, date1904, locale) is Some(formatted) {
             let width = if cell.column >= 0 && cell.column < widths.length() {
-              Double::max(widths[cell.column] - 3.75, 0.0)
+              Double::max(widths[cell.column] - 3.75 - indent, 0.0)
             } else {
               0.0
             }
@@ -1154,6 +1174,21 @@ fn xlsx_plain_fitted_rows(
     }
   }
   result
+}
+
+///|
+fn xlsx_plain_indent(alignment : XlsxAlignment, kind : Int32) -> Double {
+  let horizontal = alignment.horizontal
+  if alignment.indent > 0 &&
+    (
+      horizontal == "left" ||
+      horizontal == "right" ||
+      (horizontal == "general" && (kind == 1 || kind == 2))
+    ) {
+    alignment.indent.to_double() * 7.5
+  } else {
+    0.0
+  }
 }
 
 ///|

@@ -106,6 +106,7 @@ pub fn draw_sized_grid_no_fonts(
   decorations~ : Map[Int32, Map[Int32, GridTextDecoration]] = Map([]),
   scripts~ : Map[Int32, Map[Int32, String]] = Map([]),
   shrink_scales~ : Map[Int32, Map[Int32, Double]] = Map([]),
+  indents~ : Map[Int32, Map[Int32, Double]] = Map([]),
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -279,6 +280,10 @@ pub fn draw_sized_grid_no_fonts(
         Some(columns) => columns.get(column).unwrap_or(1.0)
         None => 1.0
       }
+      let indent = match indents.get(i) {
+        Some(columns) => columns.get(column).unwrap_or(0.0)
+        None => 0.0
+      }
       let size = original_size * scale
       let line_size = if scale == 0.0 { original_size } else { size }
       let script = match scripts.get(i) {
@@ -342,6 +347,7 @@ pub fn draw_sized_grid_no_fonts(
         end_column=last,
         allow_overflow=last_row == i,
         force_wrap=wrap,
+        indent~,
       )
       let horizontal : DrawCell = if centered.get(column).unwrap_or(false) {
         let lines = initial.lines.map(fn(line) {
@@ -420,6 +426,7 @@ pub fn draw_sized_grid_no_fonts(
         height,
         line_size,
         last_row == i && !wrap,
+        indent,
       )
       let vertical = match verticals.get(i) {
         Some(columns) => columns.get(column).unwrap_or("bottom")
@@ -841,6 +848,7 @@ fn sized_grid_horizontal_layout(
   height : Double,
   size : Double,
   allow_overflow : Bool,
+  indent : Double,
 ) -> DrawCell {
   if alignment != "left" && alignment != "right" {
     return layout
@@ -850,9 +858,9 @@ fn sized_grid_horizontal_layout(
   let lines = layout.lines.map(line => {
     ..line,
     x: if alignment == "left" {
-      left + 1.5
+      left + 1.5 + indent
     } else {
-      right - 2.25 - line.width
+      right - 2.25 - indent - line.width
     },
   })
   let mut tx0 = 1.0e300
