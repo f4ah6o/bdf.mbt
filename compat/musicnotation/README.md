@@ -1,6 +1,6 @@
 # Music notation compatibility fixtures
 
-These fixtures compare musical meter, key estimation, pitch spelling measure timelines, note quantization, clef selection, percussion mapping, note-value division, voice assignment, staff events, Bravura glyphs, staff positions, score preparation, measure spacing, system layout, drawing primitives, staff headers, rests, isolated note layouts, beams, basic staff drawings, ties and tuplets with
+These fixtures compare musical meter, key estimation, pitch spelling measure timelines, note quantization, clef selection, percussion mapping, note-value division, voice assignment, staff events, Bravura glyphs, staff positions, score preparation, measure spacing, system layout, drawing primitives, staff headers, rests, isolated note layouts, beams, basic staff drawings, ties, tuplets and lyrics with
 shibukawa/bdf commit `4f9af52dca60be1eb0daade39f7dc41d6a1fe431`.
 They exercise all key signatures, negative and positive pitch numbers,
 spelling hints and deterministic duration histograms.
@@ -64,3 +64,6 @@ Basic staff drawing fixtures use `generate_basic_staff_test.go` and
 
 Tie and tuplet fixtures use `generate_staff_marks_test.go` and
 `TestCodexMusicStaffMarks` alongside `generate_prepare_test.go`.
+
+Lyric drawing fixtures use `generate_staff_lyrics_test.go` and
+`TestCodexMusicStaffLyrics` alongside `generate_prepare_test.go`.

@@ -24,6 +24,8 @@ pub fn draw_beam(MusicDrawing, Array[ScoreEvent], Array[NoteLayout], Array[Int32
 
 pub fn draw_isolated_stem(MusicDrawing, NoteLayout, Double) -> Unit
 
+pub fn draw_staff_lyrics(BasicStaffLayout, (String) -> MusicTextMetrics) -> Unit
+
 pub fn draw_staff_rest(MusicDrawing, NotatedScore, PreparedScore, MusicSystem, Int32, Int32, ScoreEvent, Double) -> RestLayout
 
 pub fn draw_staff_ties(BasicStaffLayout, PreparedScore, MusicSystem, Int32) -> Unit
@@ -213,6 +215,12 @@ pub(all) struct MusicSystem {
   header : Double
   width : Double
   columns : Array[PositionedColumn]
+}
+
+pub(all) struct MusicTextMetrics {
+  width : Double
+  ascent : Double
+  descent : Double
 }
 
 pub(all) struct NotatedPart {

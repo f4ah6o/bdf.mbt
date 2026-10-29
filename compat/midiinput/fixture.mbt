@@ -1095,3 +1095,84 @@ pub fn score_staff_marks(
       Json::object({ "error": Json::string(message) }).stringify()
   }
 }
+
+///|
+#export_name("score_staff_lyrics")
+pub fn score_staff_lyrics(
+  data : Bytes,
+  texts : FixedArray[String],
+  widths : FixedArray[Double],
+  metrics : FixedArray[Double],
+  width : Double,
+  indent : Double,
+) -> String {
+  try {
+    let score = @midi.notate_file(@midi.read_file(data))
+    let prepared = @music.prepare_score(score)
+    let map : Map[String, Double] = Map([])
+    let metric_map : Map[String, @music.MusicTextMetrics] = Map([])
+    for i in 0..<texts.length() {
+      map[texts[i]] = widths[i]
+      metric_map[texts[i]] = {
+        width: metrics[i * 3],
+        ascent: metrics[i * 3 + 1],
+        descent: metrics[i * 3 + 2],
+      }
+    }
+    let columns = @music.build_columns(score, prepared, text => {
+      map.get(text).unwrap_or(0.0)
+    })
+    let systems = @music.break_systems(score, prepared, columns, width, indent)
+    let out : Array[Json] = []
+    for sys in systems {
+      let staves : Array[Json] = []
+      for staff in 0..<prepared.staves.length() {
+        let layout = @music.layout_basic_staff(score, prepared, sys, staff)
+        @music.draw_staff_ties(layout, prepared, sys, staff)
+        @music.draw_staff_tuplets(layout, prepared, staff)
+        @music.draw_staff_lyrics(layout, text => {
+          metric_map
+          .get(text)
+          .unwrap_or({ width: 0.0, ascent: 0.0, descent: 0.0, })
+        })
+        let d = layout.drawing
+        let prims = d
+          .primitives()
+          .map(p => {
+            let outline = match p.outline {
+              Some(o) => Json::array(o.coordinates.map(v => Json::number(v)))
+              None => Json::null()
+            }
+            Json::array([
+              Json::number(p.kind.to_double()),
+              Json::string(p.glyph),
+              Json::number(p.x),
+              Json::number(p.y),
+              Json::number(p.w),
+              Json::number(p.h),
+              Json::number(p.scale),
+              Json::number(p.width),
+              Json::number(p.dash),
+              outline,
+              Json::string(if p.kind == 4 { p.text } else { "" }),
+              Json::number(p.align.to_double()),
+              Json::number(p.mark.to_double()),
+              Json::string(if p.kind == 5 { p.text } else { "" }),
+            ])
+          })
+        staves.push(
+          Json::object({
+            "primitives": Json::array(prims),
+            "above": Json::number(d.skyline(-1.0e9, 1.0e9, 0.0, true)),
+            "below": Json::number(d.skyline(-1.0e9, 1.0e9, 4.0, false)),
+          }),
+        )
+      }
+      out.push(Json::array(staves))
+    }
+    Json::array(out).stringify()
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}
