@@ -28,6 +28,8 @@ pub fn xlsx_layout(Bytes, String, Double, Double) -> String
 
 pub fn xlsx_numeric(String, Double) -> String
 
+pub fn xlsx_paint(Bytes) -> String
+
 pub fn xlsx_parse_format(String) -> String
 
 pub fn xlsx_range(String) -> String

@@ -51,6 +51,8 @@ pub(all) struct XlsxStyles {
   number_formats : Map[Int32, String]
   cell_formats : Array[XlsxCellFormat]
   palette : Array[UInt32]
+  fills : Array[XlsxFill]
+  borders : Array[XlsxBorder]
 }
 
 ///|
@@ -201,6 +203,8 @@ fn xlsx_styles_default() -> XlsxStyles {
     fonts: [font],
     number_formats: Map([]),
     palette: xlsx_default_palette(),
+    fills: [],
+    borders: [],
     cell_formats: [
       {
         number_format: 0,
@@ -384,7 +388,15 @@ fn xlsx_parse_styles(data : Bytes) -> XlsxStyles raise {
       alignment: xlsx_default_alignment(),
     })
   }
-  { fonts, number_formats: formats, cell_formats: result, palette, }
+  let (fills, borders) = xlsx_read_paint_styles(data)
+  {
+    fonts,
+    number_formats: formats,
+    cell_formats: result,
+    palette,
+    fills,
+    borders,
+  }
 }
 
 ///|

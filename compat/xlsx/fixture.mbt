@@ -481,3 +481,70 @@ pub fn xlsx_layout(
     _ => "null"
   }
 }
+
+///|
+fn xlsx_paint_color(c : @xlsx.XlsxColor) -> Json {
+  Json::array([
+    Json::number(c.kind.to_double()),
+    Json::number(c.rgb.to_double()),
+    Json::number(c.index.to_double()),
+    Json::number(c.tint),
+  ])
+}
+
+///|
+fn xlsx_paint_side(s : @xlsx.XlsxBorderSide) -> Json {
+  Json::array([Json::string(s.style), xlsx_paint_color(s.color)])
+}
+
+///|
+#export_name("xlsx_paint")
+pub fn xlsx_paint(data : Bytes) -> String {
+  try {
+    let styles = @xlsx.read_xlsx_workbook(data).styles()
+    let fills = styles.fills.map(fn(f) {
+      let gradient = match f.gradient {
+        None => Json::null()
+        Some(g) =>
+          Json::array([
+            Json::boolean(g.path),
+            Json::number(g.degree),
+            Json::number(g.left),
+            Json::number(g.right),
+            Json::number(g.top),
+            Json::number(g.bottom),
+            Json::array(
+              g.stops.map(fn(s) {
+                Json::array([
+                  Json::number(s.position),
+                  xlsx_paint_color(s.color),
+                ])
+              }),
+            ),
+          ])
+      }
+      Json::array([
+        Json::string(f.pattern),
+        xlsx_paint_color(f.foreground),
+        xlsx_paint_color(f.background),
+        gradient,
+      ])
+    })
+    let borders = styles.borders.map(fn(b) {
+      Json::array([
+        xlsx_paint_side(b.left),
+        xlsx_paint_side(b.right),
+        xlsx_paint_side(b.top),
+        xlsx_paint_side(b.bottom),
+        xlsx_paint_side(b.diagonal),
+        Json::boolean(b.diagonal_up),
+        Json::boolean(b.diagonal_down),
+        xlsx_paint_side(b.vertical),
+        xlsx_paint_side(b.horizontal),
+      ])
+    })
+    Json::array([Json::array(fills), Json::array(borders)]).stringify()
+  } catch {
+    _ => "null"
+  }
+}

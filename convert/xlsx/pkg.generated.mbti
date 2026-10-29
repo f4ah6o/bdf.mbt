@@ -64,6 +64,23 @@ pub(all) struct XlsxAlignment {
   justify_last : Bool
 }
 
+pub(all) struct XlsxBorder {
+  left : XlsxBorderSide
+  right : XlsxBorderSide
+  top : XlsxBorderSide
+  bottom : XlsxBorderSide
+  diagonal : XlsxBorderSide
+  diagonal_up : Bool
+  diagonal_down : Bool
+  vertical : XlsxBorderSide
+  horizontal : XlsxBorderSide
+}
+
+pub(all) struct XlsxBorderSide {
+  style : String
+  mut color : XlsxColor
+}
+
 pub(all) struct XlsxCell {
   column : Int32
   style : Int32
@@ -93,6 +110,13 @@ pub(all) struct XlsxColumn {
   width : Double
   hidden : Bool
   style : Int32
+}
+
+pub(all) struct XlsxFill {
+  mut pattern : String
+  mut foreground : XlsxColor
+  mut background : XlsxColor
+  mut gradient : XlsxGradient?
 }
 
 pub(all) struct XlsxFont {
@@ -136,6 +160,21 @@ pub(all) struct XlsxFormatted {
   number : Bool
 }
 pub fn XlsxFormatted::text(Self) -> String
+
+pub(all) struct XlsxGradient {
+  path : Bool
+  degree : Double
+  left : Double
+  right : Double
+  top : Double
+  bottom : Double
+  stops : Array[XlsxGradientStop]
+}
+
+pub(all) struct XlsxGradientStop {
+  position : Double
+  mut color : XlsxColor
+}
 
 pub(all) struct XlsxNumberLayout {
   mut integer : String
@@ -208,6 +247,8 @@ pub(all) struct XlsxStyles {
   number_formats : Map[Int32, String]
   cell_formats : Array[XlsxCellFormat]
   palette : Array[UInt32]
+  fills : Array[XlsxFill]
+  borders : Array[XlsxBorder]
 }
 pub fn XlsxStyles::format_cell(Self, XlsxCell, Bool, String) -> XlsxFormatted?
 pub fn XlsxStyles::number_format(Self, Int32, String) -> String
