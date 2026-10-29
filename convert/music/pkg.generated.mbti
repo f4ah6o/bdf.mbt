@@ -26,6 +26,8 @@ pub fn draw_beam(MusicDrawing, Array[ScoreEvent], Array[NoteLayout], Array[Int32
 
 pub fn draw_isolated_stem(MusicDrawing, NoteLayout, Double) -> Unit
 
+pub fn draw_spanning_system(Array[MusicPartSpan], Array[MusicBarSpan], Bool, (String) -> MusicTextMetrics) -> MusicDrawing
+
 pub fn draw_staff_lyrics(BasicStaffLayout, (String) -> MusicTextMetrics) -> Unit
 
 pub fn draw_staff_rest(MusicDrawing, NotatedScore, PreparedScore, MusicSystem, Int32, Int32, ScoreEvent, Double) -> RestLayout
@@ -47,6 +49,8 @@ pub fn key_of(Int32, Bool, Int32) -> KeySig
 pub fn key_positions(EngravingClef, KeySig) -> Array[Int32]
 
 pub fn layout_basic_staff(NotatedScore, PreparedScore, MusicSystem, Int32) -> BasicStaffLayout
+
+pub fn music_bracket_width(Array[MusicPartSpan]) -> Double
 
 pub fn music_curve(Double, Double, Double, Double, Double, Double, Double) -> MusicOutline
 
@@ -145,6 +149,13 @@ pub(all) struct MeasureSpan {
   tempo : Array[TempoMark]
 }
 
+pub(all) struct MusicBarSpan {
+  x : Double
+  width : Double
+  left : Int32
+  right : Int32
+}
+
 pub(all) struct MusicBeamGroup {
   indices : Array[Int32]
   up : Bool
@@ -170,6 +181,7 @@ pub fn MusicDrawing::new() -> Self
 pub fn MusicDrawing::primitives(Self) -> Array[MusicPrimitive]
 pub fn MusicDrawing::rect(Self, Double, Double, Double, Double) -> Unit
 pub fn MusicDrawing::skyline(Self, Double, Double, Double, Bool) -> Double
+pub fn MusicDrawing::spanning_glyph(Self, String, Double, Double, Double, Double) -> Unit
 pub fn MusicDrawing::text(Self, String, Double, Double, Int32, Double, Double, Double) -> Unit
 
 pub(all) struct MusicGlyph {
@@ -188,6 +200,12 @@ pub(all) struct MusicOutline {
 }
 pub fn MusicOutline::bounds(Self) -> (Double, Double, Double, Double)
 
+pub(all) struct MusicPartSpan {
+  name : String
+  abbreviation : String
+  staff_tops : Array[Double]
+}
+
 pub(all) struct MusicPrimitive {
   kind : Int32
   glyph : String
@@ -196,6 +214,8 @@ pub(all) struct MusicPrimitive {
   w : Double
   h : Double
   scale : Double
+  scale_x : Double
+  scale_y : Double
   width : Double
   dash : Double
   outline : MusicOutline?

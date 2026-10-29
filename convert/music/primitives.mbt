@@ -15,6 +15,8 @@ pub(all) struct MusicPrimitive {
   w : Double
   h : Double
   scale : Double
+  scale_x : Double
+  scale_y : Double
   width : Double
   dash : Double
   outline : MusicOutline?
@@ -78,7 +80,23 @@ fn primitive(
   align : Int32,
   mark : Int32,
 ) -> MusicPrimitive {
-  { kind, glyph, x, y, w, h, scale, width, dash, outline, text, align, mark, }
+  {
+    kind,
+    glyph,
+    x,
+    y,
+    w,
+    h,
+    scale,
+    scale_x: 1.0,
+    scale_y: 1.0,
+    width,
+    dash,
+    outline,
+    text,
+    align,
+    mark,
+  }
 }
 
 ///|
@@ -99,6 +117,40 @@ pub fn MusicDrawing::glyph(
       let (x0, y0, x1, y1) = glyph.bbox
       self.box(x + x0 * scale, y + y0 * scale, x + x1 * scale, y + y1 * scale)
     }
+  }
+}
+
+///|
+/// Add a non-uniformly scaled glyph, such as the brace spanning staves.
+/// Upstream does not include these spanning glyphs in staff skylines.
+pub fn MusicDrawing::spanning_glyph(
+  self : MusicDrawing,
+  name : String,
+  x : Double,
+  y : Double,
+  scale_x : Double,
+  scale_y : Double,
+) -> Unit {
+  match music_glyph(name) {
+    None => ()
+    Some(_) =>
+      self.primitives.push({
+        kind: 0,
+        glyph: name,
+        x,
+        y,
+        w: 0.0,
+        h: 0.0,
+        scale: 1.0,
+        scale_x,
+        scale_y,
+        width: 0.0,
+        dash: 0.0,
+        outline: None,
+        text: "",
+        align: 0,
+        mark: 0,
+      })
   }
 }
 

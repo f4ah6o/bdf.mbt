@@ -727,3 +727,77 @@ pub fn barline(
     }),
   ).stringify()
 }
+
+///|
+#export_name("spanning")
+pub fn spanning(
+  raw_parts : FixedArray[Double],
+  names : FixedArray[String],
+  raw_metrics : FixedArray[Double],
+  raw_bars : FixedArray[Double],
+  first : Bool,
+) -> String {
+  let parts : Array[@music.MusicPartSpan] = []
+  let metrics : Map[String, @music.MusicTextMetrics] = Map([])
+  let mut i = 0
+  let mut pi = 0
+  while i < raw_parts.length() {
+    let count = raw_parts[i].to_int()
+    i += 1
+    let tops : Array[Double] = []
+    for _ in 0..<count {
+      tops.push(raw_parts[i])
+      i += 1
+    }
+    let name = names[pi * 2]
+    let abbreviation = names[pi * 2 + 1]
+    let label = if first { name } else { abbreviation }
+    metrics[label] = {
+      width: raw_metrics[pi * 3],
+      ascent: raw_metrics[pi * 3 + 1],
+      descent: raw_metrics[pi * 3 + 2],
+    }
+    parts.push({ name, abbreviation, staff_tops: tops, })
+    pi += 1
+  }
+  let bars : Array[@music.MusicBarSpan] = []
+  for bi in 0..<(raw_bars.length() / 4) {
+    let right = raw_bars[bi * 4 + 3].to_int()
+    bars.push({
+      x: raw_bars[bi * 4],
+      width: raw_bars[bi * 4 + 1],
+      left: raw_bars[bi * 4 + 2].to_int(),
+      right: if bi == raw_bars.length() / 4 - 1 && right == 0 {
+        3
+      } else {
+        right
+      },
+    })
+  }
+  let drawing = @music.draw_spanning_system(parts, bars, first, name => {
+    metrics[name]
+  })
+  Json::array(
+    drawing
+    .primitives()
+    .map(p => {
+      Json::array([
+        Json::number(p.kind.to_double()),
+        Json::string(p.glyph),
+        Json::number(p.x),
+        Json::number(p.y),
+        Json::number(p.w),
+        Json::number(p.h),
+        Json::number(p.scale),
+        Json::number(if p.kind == 0 { p.scale_x } else { 0.0 }),
+        Json::number(if p.kind == 0 { p.scale_y } else { 0.0 }),
+        Json::number(p.width),
+        Json::number(p.dash),
+        Json::string(if p.kind == 4 { p.text } else { "" }),
+        Json::number(p.align.to_double()),
+        Json::number(p.mark.to_double()),
+        Json::string(if p.kind == 5 { p.text } else { "" }),
+      ])
+    }),
+  ).stringify()
+}

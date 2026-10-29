@@ -22,6 +22,8 @@ pub fn positions(Int32, Int32, Int32, Int32, FixedArray[Int32], FixedArray[Int32
 
 pub fn quantize(FixedArray[Int32], FixedArray[Int32]) -> String
 
+pub fn spanning(FixedArray[Double], FixedArray[String], FixedArray[Double], FixedArray[Double], Bool) -> String
+
 pub fn spell(Int32, Int32, Bool, Int32) -> String
 
 pub fn staff(FixedArray[Int32], Int32, Int32) -> String
