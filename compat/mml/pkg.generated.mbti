@@ -1,0 +1,15 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/compat/mml"
+
+// Values
+pub fn mml_decode(Bytes) -> String
+
+pub fn mml_detection(String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
