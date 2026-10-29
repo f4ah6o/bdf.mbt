@@ -1,13 +1,14 @@
 ///|
-// Accept only conditional formats that are provably inactive. Matching and
-// unsupported rules remain rejected until their differential styles can draw.
-fn XlsxWorkbook::xlsx_check_inactive_conditionals(
+// A single numeric rule can apply a supported differential font. Other
+// matching rules are rejected until their styles and priority can be drawn.
+fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   self : XlsxWorkbook,
   part : String,
   rows : Array[XlsxRow],
+  styles : XlsxStyles,
   row_count : Int32,
   col_count : Int32,
-) -> Unit raise {
+) -> Array[XlsxRow] raise {
   let bytes = self.package.read(part) catch {
     @ooxml.InvalidOoxml(message) => raise InvalidXlsxInput(message)
   }
@@ -24,6 +25,10 @@ fn XlsxWorkbook::xlsx_check_inactive_conditionals(
   let mut threshold = 0.0
   let mut ranges : Array[XlsxRange] = []
   let mut room = 4194304L
+  let mut conditional_count = 0
+  let mut dxf_id = -1
+  let mut inclusive = false
+  let matched : Map[Int32, Map[Int32, Bool]] = Map([])
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -34,6 +39,7 @@ fn XlsxWorkbook::xlsx_check_inactive_conditionals(
             xlsx_reject_conditional()
           }
           conditional_depth = depth + 1
+          conditional_count += 1
           rule_count = 0
           ranges = []
           let text = StringBuilder()
@@ -69,6 +75,9 @@ fn XlsxWorkbook::xlsx_check_inactive_conditionals(
             xlsx_reject_conditional()
           }
           rule_depth = depth + 1
+          dxf_id = xlsx_attr_int(element, "dxfId", -1)
+          inclusive = xlsx_attr(element, "operator", "equal") ==
+            "greaterThanOrEqual"
           formula_count = 0
         } else if depth == rule_depth {
           if name != "formula" || event.kind is Empty(_) {
@@ -150,10 +159,20 @@ fn XlsxWorkbook::xlsx_check_inactive_conditionals(
                 if cell.kind == 0 {
                   continue
                 }
-                if cell.kind != 1 ||
-                  cell.number.is_nan() ||
-                  cell.number >= threshold {
+                if cell.kind != 1 || cell.number.is_nan() {
                   xlsx_reject_conditional()
+                }
+                if cell.number > threshold ||
+                  (inclusive && cell.number == threshold) {
+                  let columns = match matched.get(row.index) {
+                    Some(columns) => columns
+                    None => {
+                      let columns : Map[Int32, Bool] = Map([])
+                      matched[row.index] = columns
+                      columns
+                    }
+                  }
+                  columns[cell.column] = true
                 }
               }
             }
@@ -173,6 +192,14 @@ fn XlsxWorkbook::xlsx_check_inactive_conditionals(
       _ => ()
     }
   }
+  if matched.is_empty() {
+    return rows
+  }
+  if conditional_count != 1 || dxf_id < 0 {
+    xlsx_reject_conditional()
+  }
+  let font = self.xlsx_conditional_font(dxf_id)
+  xlsx_apply_conditional_font(rows, styles, matched, font)
 }
 
 ///|

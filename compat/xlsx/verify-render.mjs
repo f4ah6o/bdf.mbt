@@ -42,6 +42,16 @@ for (const [j, c] of percentLinks.entries()) await verifyCase(c, `percent-encode
 const inactiveCF = JSON.parse(await readFile(new URL('./inactive-cf.json', import.meta.url)));
 assert.equal(inactiveCF.length, 161, 'inactive conditional format fixture count');
 for (const [j, c] of inactiveCF.entries()) await verifyCase(c, `inactive conditional format ${j}`);
+const activeCF = JSON.parse(await readFile(new URL('./active-cf.json', import.meta.url)));
+assert.equal(activeCF.length, 161, 'conditional font fixture count');
+for (const [j, c] of activeCF.entries()) await verifyCase(c, `conditional font ${j}`);
+const unsupportedActiveCF = JSON.parse(await readFile(new URL('./active-cf-unsupported.json', import.meta.url)));
+assert.equal(unsupportedActiveCF.length, 8, 'unsupported conditional font fixture count');
+for (const encoded of unsupportedActiveCF) {
+  const input = Buffer.from(encoded, 'base64');
+  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional styles must be rejected');
+  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+}
 const unsupportedCF = JSON.parse(await readFile(new URL('./inactive-cf-unsupported.json', import.meta.url)));
 assert.equal(unsupportedCF.length, 8, 'unsupported conditional format fixture count');
 for (const encoded of unsupportedCF) {
@@ -80,4 +90,4 @@ for (const encoded of unsupportedBase) {
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|complex borders)/);
 }
-console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length} inactive conditional formats match upstream.`);
+console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length} conditional formats match upstream.`);

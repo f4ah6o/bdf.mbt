@@ -20,7 +20,7 @@ borders (including diagonals and multiple colors at one weight), named and
 themed fonts and default font sizes, italic and decorated text, superscripts
 and subscripts, merged rectangles, center-across-selection, wrapped, indented
 and shrink-to-fit text, fixed and automatic row heights, hidden rows and
-columns, single unformatted text runs, links, inactive conditional formats,
+columns, single unformatted text runs, links, conditional font formats,
 row and column styles including solid backgrounds and borders, and
 uncached formula warnings. Patterned base fills and complex base borders have
 separate rejection cases. The rendering
@@ -35,6 +35,7 @@ Link cases use `generate_links_test.go` / `TestCodexLinks` and
 `generate_percent_links_test.go` / `TestCodexPercentLinks`.
 Inactive conditional-format cases use `generate_inactive_cf_test.go` and
 `TestCodexInactiveCF`.
+Conditional-font cases use `generate_active_cf_test.go` and `TestCodexActiveCF`.
 To regenerate fixtures, copy `generate_workbook_test.go` without its build tag
 into upstream `converter/xlsx` and run `TestCodexXLSXWorkbook` with
 `BDF_FIXTURE_ROOT` set to this repository.

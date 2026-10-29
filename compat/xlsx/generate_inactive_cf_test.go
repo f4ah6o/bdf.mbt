@@ -60,9 +60,10 @@ func TestCodexInactiveCF(t *testing.T) {
 		if i >= 160 {
 			switch i - 160 {
 			case 0:
-				cell = `<c r="A1"><v>10</v></c>`
+				rule = `<cfRule type="expression"><formula>TRUE</formula></cfRule>`
 			case 1:
 				cell = `<c r="A1"><v>11</v></c>`
+				rule = `<cfRule type="cellIs" operator="greaterThan"><formula>10</formula></cfRule>`
 			case 2:
 				cell = `<c r="A1" t="str"><v>x</v></c>`
 			case 3:

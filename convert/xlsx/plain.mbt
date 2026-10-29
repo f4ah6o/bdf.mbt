@@ -448,7 +448,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// shrink-to-fit, indentation and center-across-selection.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// patterned row and column fills, complex borders and other features are
-/// rejected. Conditional formats are accepted only when provably inactive.
+/// rejected. Supported numeric conditional rules may apply a differential font
+/// or be inactive; other conditional formats are rejected.
 /// Views with base fills are limited to 1,000,000 cells, and views
 /// with base borders to 200,000 cells. External links support simple ASCII
 /// HTTP(S) and mailto URLs with simple ASCII authorities; other URL forms are
@@ -566,14 +567,29 @@ pub fn convert_plain_no_fonts(
 fn XlsxWorkbook::xlsx_draw_plain_sheet(
   workbook : XlsxWorkbook,
   ref : XlsxSheetRef,
-  styles : XlsxStyles,
+  input_styles : XlsxStyles,
   locale : XlsxLocale,
   doc_language : String,
   theme_colors : Map[Int32, XlsxRgb],
 ) -> (@sheet.DrawnGrid, XlsxSheetGeometry, Int32) raise {
   let (links, has_conditional) = workbook.xlsx_check_plain_sheet(ref.part)
+  let styles = if has_conditional {
+    {
+      ..input_styles,
+      fonts: input_styles.fonts.copy(),
+      cell_formats: input_styles.cell_formats.map(format => {
+        if format.font < 0 || format.font >= input_styles.fonts.length() {
+          { ..format, font: 0, }
+        } else {
+          format
+        }
+      }),
+    }
+  } else {
+    input_styles
+  }
   let parsed = workbook.read_sheet_cells(ref.part)
-  let rows = parsed.sorted_rows()
+  let mut rows = parsed.sorted_rows()
   let geo = workbook.read_sheet_geometry(ref.part)
   let (spans, region_rows, merge_regions) = xlsx_plain_spans(geo.merges)
   let center_across : Map[Int32, Map[Int32, Bool]] = Map([])
@@ -610,9 +626,14 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   }
   let (row_count, col_count) = xlsx_initial_extent(parsed, geo, [])
   if has_conditional {
-    workbook.xlsx_check_inactive_conditionals(
+    rows = xlsx_normalize_conditional_styles(rows, styles.cell_formats.length())
+  }
+  let layout_rows = rows
+  if has_conditional {
+    rows = workbook.xlsx_apply_plain_conditionals(
       ref.part,
       rows,
+      styles,
       row_count,
       col_count,
     )
@@ -635,7 +656,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   })
   let default_size = styles.fonts[0].size
   let fitted = xlsx_plain_fitted_rows(
-    rows,
+    layout_rows,
     styles,
     geo,
     spans,
