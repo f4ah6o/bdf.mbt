@@ -108,6 +108,7 @@ pub(all) struct SizedGridCell {
   cell : Cell
   center : Bool
   visible : Bool
+  occupied : Bool
 }
 
 pub(all) struct SizedGridRow {

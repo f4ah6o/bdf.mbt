@@ -418,7 +418,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           }
         }
         let mut text = formatted.text()
-        if cell.kind == 1 || cell.kind == 3 || cell.kind == 4 {
+        if cell.kind == 1 {
           let mut width = 0.0
           for c in text {
             width += @sheet.fallback_advance(c, false)
@@ -427,22 +427,12 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             cell.column < widths.length() &&
             widths[cell.column] > 0.0 &&
             width > widths[cell.column] - 3.75 + 0.01 {
-            if cell.kind != 1 {
-              raise InvalidXlsxInput(
-                "xlsx: plain conversion does not support narrow boolean or error cells",
-              )
-            }
             let available = Double::max(widths[cell.column] - 3.75, 0.0)
             text = if formatted.general {
               xlsx_fit_plain_number(cell.number, available)
             } else {
               "#".repeat(
                 (available / @sheet.fallback_advance('#', false)).to_int(),
-              )
-            }
-            if text == "" {
-              raise InvalidXlsxInput(
-                "xlsx: plain conversion does not support cells narrower than a digit",
               )
             }
           }
@@ -452,6 +442,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           cell: { text, number: cell.kind == 1, },
           center: cell.kind == 3 || cell.kind == 4,
           visible: !(cell.kind == 1 && cell.number == 0.0 && !geo.show_zero),
+          occupied: cell.kind != 0 && !(cell.kind == 2 && cell.text == ""),
         })
       }
     }

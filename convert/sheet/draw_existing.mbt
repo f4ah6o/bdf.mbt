@@ -5,6 +5,7 @@ pub(all) struct SizedGridCell {
   cell : Cell
   center : Bool
   visible : Bool
+  occupied : Bool
 }
 
 ///|
@@ -48,6 +49,7 @@ pub fn draw_sized_grid_no_fonts(
       continue
     }
     let row : Array[Cell] = []
+    let render_cells : Map[Int32, Cell] = Map([])
     let centered : Map[Int32, Bool] = Map([])
     let visibility : Map[Int32, Bool] = Map([])
     for entry in sparse.cells {
@@ -57,7 +59,12 @@ pub fn draw_sized_grid_no_fonts(
       while row.length() <= entry.column {
         row.push({ text: "", number: false, })
       }
-      row[entry.column] = entry.cell
+      row[entry.column] = if entry.occupied && entry.cell.text == "" {
+        { text: "\u0000", number: entry.cell.number, }
+      } else {
+        entry.cell
+      }
+      render_cells[entry.column] = entry.cell
       centered[entry.column] = entry.center
       visibility[entry.column] = entry.visible
     }
@@ -66,15 +73,15 @@ pub fn draw_sized_grid_no_fonts(
     if height <= 0.0 {
       continue
     }
-    for column, cell in row {
+    for column, _ in row {
       if column >= 16384 {
         break
       }
-      if cell.text == "" ||
-        !visibility.get(column).unwrap_or(true) ||
+      if !visibility.get(column).unwrap_or(false) ||
         col_positions[column + 1] <= col_positions[column] {
         continue
       }
+      let cell = render_cells[column]
       let text = sized_grid_text(cell.text)
       let display : Cell = { text, number: cell.number, }
       let initial = grid_cell_layout(
@@ -93,12 +100,45 @@ pub fn draw_sized_grid_no_fonts(
             cjk_wrap: line.cjk_wrap,
           }
         })
+        let mut x0 = col_positions[column]
+        let mut x1 = col_positions[column + 1]
+        let text0 = lines[0].x
+        let text1 = lines[0].x + lines[0].width
+        if text0 < x0 || text1 > x1 {
+          let mut next = column + 1
+          while next < 16384 && x1 < text1 {
+            if next < row.length() && row[next].text != "" {
+              break
+            }
+            x1 = col_positions[next + 1]
+            next += 1
+          }
+          let mut previous = column - 1
+          while previous >= 0 && x0 > text0 {
+            if previous < row.length() && row[previous].text != "" {
+              break
+            }
+            x0 = col_positions[previous]
+            previous -= 1
+          }
+        }
+        let (ascent, descent) = fallback_line_metrics('x', false)
+        let ty0 = lines[0].baseline - ascent
+        let ty1 = lines[lines.length() - 1].baseline + descent
+        let clipped = text0 < x0 - 0.01 ||
+          text1 > x1 + 0.01 ||
+          ty0 < y - 0.01 ||
+          ty1 > y + height + 0.01
+        if !clipped {
+          x0 = Double::min(text0, col_positions[column])
+          x1 = Double::max(text1, col_positions[column + 1])
+        }
         {
-          x0: col_positions[column],
-          x1: col_positions[column + 1],
+          x0,
+          x1,
           y0: initial.y0,
           y1: initial.y1,
-          clip: initial.clip,
+          clip: clipped,
           lang: initial.lang,
           lang_known: initial.lang_known,
           lines,
