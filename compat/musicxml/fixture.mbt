@@ -248,3 +248,95 @@ pub fn musicxml_unpitched_note(
     _ => "null"
   }
 }
+
+///|
+#export_name("musicxml_measure")
+pub fn musicxml_measure(
+  data : Bytes,
+  div : Double,
+  beats : Int32,
+  beat_type : Int32,
+  transpose : Int32,
+) -> String {
+  try {
+    let root = @musicxml.musicxml_read_tree(data)
+    let part = @musicxml.MusicXmlPartState::new()
+    part.divisions = div
+    part.time = { beats, beat_type, symbol: "", }
+    part.transpose = transpose
+    let state = @musicxml.MusicXmlMeasureState::new(part)
+    for n in root.children {
+      if n.name == "note" {
+        state.add_note(n)
+      } else if n.name == "forward" || n.name == "backup" {
+        let duration = match n.child("duration") {
+          Some(value) => value.text
+          None => ""
+        }
+        state.move(duration, n.name == "forward")
+      }
+    }
+    let events = state
+      .events()
+      .map(fn(ev) {
+        let notes = ev.notes.map(fn(n) {
+          Json::array([
+            Json::number(n.pitch.step.to_double()),
+            Json::number(n.pitch.alter.to_double()),
+            Json::number(n.pitch.octave.to_double()),
+            Json::number(
+              (if n.pitched { n.sounding_key } else { -1 }).to_double(),
+            ),
+            Json::number(n.accidental.to_double()),
+            Json::boolean(n.tie_start),
+            Json::boolean(n.tie_stop),
+          ])
+        })
+        Json::array([
+          Json::number(ev.offset.to_double()),
+          Json::number(ev.duration.to_double()),
+          Json::number(ev.staff.to_double()),
+          Json::number(ev.voice.to_double()),
+          Json::number(ev.kind.to_double()),
+          Json::number(ev.dots.to_double()),
+          Json::boolean(ev.grace),
+          Json::boolean(ev.slash),
+          Json::boolean(ev.cue),
+          Json::boolean(ev.hidden),
+          Json::number(ev.stem.to_double()),
+          Json::boolean(ev.rest),
+          Json::boolean(ev.measure_rest),
+          Json::array(ev.beams.map(v => Json::number(v.to_double()))),
+          Json::array(notes),
+        ])
+      })
+    let played = state
+      .played()
+      .map(fn(n) {
+        Json::array([
+          Json::number(n.offset.to_double()),
+          Json::number(n.duration.to_double()),
+          Json::number(n.key.to_double()),
+          Json::number(n.staff.to_double()),
+          Json::number(n.voice.to_double()),
+          Json::boolean(n.grace),
+          Json::number(n.velocity.to_double()),
+          Json::boolean(n.tie_start),
+          Json::boolean(n.tie_stop),
+        ])
+      })
+    Json::array([
+      Json::number(state.position()),
+      Json::number(state.end()),
+      Json::number(part.staves.to_double()),
+      Json::boolean(part.has_beams),
+      Json::boolean(part.has_alteration),
+      Json::boolean(part.has_accidental),
+      Json::boolean(part.unpitched),
+      Json::array(events),
+      Json::array(played),
+    ]).stringify()
+  } catch {
+    _ => "null"
+  }
+}

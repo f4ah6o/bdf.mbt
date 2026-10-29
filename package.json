@@ -84,7 +84,7 @@
     "test:mml-visual": "node compat/mml/visual-compare.mjs",
     "test:mml-document": "node compat/mml/verify-document.mjs",
     "test:zip-input": "node compat/zip/verify.mjs",
-    "test:musicxml-input": "node compat/musicxml/verify-detect.mjs && node compat/musicxml/verify-text.mjs && node compat/musicxml/verify-mxl.mjs && node compat/musicxml/verify-values.mjs && node compat/musicxml/verify-numbers.mjs && node compat/musicxml/verify-tree.mjs && node compat/musicxml/verify-header.mjs && node compat/musicxml/verify-notation.mjs && node compat/musicxml/verify-note.mjs && node compat/musicxml/verify-unpitched.mjs",
+    "test:musicxml-input": "node compat/musicxml/verify-detect.mjs && node compat/musicxml/verify-text.mjs && node compat/musicxml/verify-mxl.mjs && node compat/musicxml/verify-values.mjs && node compat/musicxml/verify-numbers.mjs && node compat/musicxml/verify-tree.mjs && node compat/musicxml/verify-header.mjs && node compat/musicxml/verify-notation.mjs && node compat/musicxml/verify-note.mjs && node compat/musicxml/verify-unpitched.mjs && node compat/musicxml/verify-measure.mjs",
     "test:mml-input": "node compat/mml/verify-detect.mjs && node compat/mml/verify-decode.mjs && node compat/mml/verify-source.mjs && node compat/mml/verify-scan.mjs && node compat/mml/verify-play.mjs"
   }
 }

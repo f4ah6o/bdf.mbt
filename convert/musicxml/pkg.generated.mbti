@@ -55,6 +55,24 @@ pub(all) struct MusicXmlAttribute {
   value : String
 }
 
+pub(all) struct MusicXmlEvent {
+  offset : Int32
+  duration : Int32
+  staff : Int32
+  voice : Int32
+  kind : Int32
+  dots : Int32
+  grace : Bool
+  slash : Bool
+  cue : Bool
+  hidden : Bool
+  stem : Int32
+  rest : Bool
+  measure_rest : Bool
+  beams : Array[Int32]
+  notes : Array[MusicXmlPitchNote]
+}
+
 pub(all) struct MusicXmlHeader {
   title : String
   subtitle : String
@@ -74,6 +92,23 @@ pub(all) struct MusicXmlInstrument {
   volume : Int32
   pan : Int32
 }
+
+pub struct MusicXmlMeasureState {
+  part : MusicXmlPartState
+  mut position : Double
+  mut end : Double
+  events : Array[MusicXmlEvent]
+  played : Array[MusicXmlPlayedNote]
+  mut last : Int32
+  mut last_start : Double
+}
+pub fn MusicXmlMeasureState::add_note(Self, MusicXmlNode) -> Unit
+pub fn MusicXmlMeasureState::end(Self) -> Double
+pub fn MusicXmlMeasureState::events(Self) -> Array[MusicXmlEvent]
+pub fn MusicXmlMeasureState::move(Self, String, Bool) -> Unit
+pub fn MusicXmlMeasureState::new(MusicXmlPartState) -> Self
+pub fn MusicXmlMeasureState::played(Self) -> Array[MusicXmlPlayedNote]
+pub fn MusicXmlMeasureState::position(Self) -> Double
 
 pub(all) struct MusicXmlNode {
   name : String
@@ -101,6 +136,20 @@ pub(all) struct MusicXmlPartHeader {
   instruments : Array[MusicXmlInstrument]
 }
 
+pub(all) struct MusicXmlPartState {
+  mut divisions : Double
+  mut time : @music.TimeSig
+  mut transpose : Int32
+  mut staves : Int32
+  voices : MusicXmlNumbers
+  instruments : Array[MusicXmlInstrument]
+  mut has_beams : Bool
+  mut has_alteration : Bool
+  mut has_accidental : Bool
+  mut unpitched : Bool
+}
+pub fn MusicXmlPartState::new(instruments? : Array[MusicXmlInstrument]) -> Self
+
 pub(all) struct MusicXmlPitchNote {
   pitch : @music.Pitch
   sounding_key : Int32
@@ -116,6 +165,18 @@ pub(all) struct MusicXmlPitchNote {
   tab_fret : Int32
   has_alteration : Bool
   has_accidental : Bool
+}
+
+pub(all) struct MusicXmlPlayedNote {
+  offset : Int32
+  duration : Int32
+  key : Int32
+  staff : Int32
+  voice : Int32
+  grace : Bool
+  velocity : Int32
+  tie_start : Bool
+  tie_stop : Bool
 }
 
 // Type aliases

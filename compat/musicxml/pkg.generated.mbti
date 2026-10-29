@@ -6,6 +6,8 @@ pub fn musicxml_detect_text(Bytes) -> String
 
 pub fn musicxml_header(Bytes) -> String
 
+pub fn musicxml_measure(Bytes, Double, Int32, Int32, Int32) -> String
+
 pub fn musicxml_mxl(Bytes) -> String
 
 pub fn musicxml_notation(Bytes, Int32, String, Int32) -> String
