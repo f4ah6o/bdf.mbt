@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn gpos_attachments(@otlayout.Gpos, Int32) -> String
+
 pub fn gpos_truncated(@otlayout.Gpos) -> Bool
 
 pub fn inspect_gdef(Bytes) -> String

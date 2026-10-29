@@ -268,3 +268,59 @@ pub fn position_pair(
 pub fn gpos_truncated(table : @otlayout.Gpos) -> Bool {
   table.truncated()
 }
+
+///|
+fn anchor_json(anchor : @otlayout.Anchor) -> Json {
+  Json::object({
+    "x": Json::number(anchor.x.to_double()),
+    "y": Json::number(anchor.y.to_double()),
+  })
+}
+
+///|
+#export_name("gpos_attachments")
+pub fn gpos_attachments(table : @otlayout.Gpos, index : Int32) -> String {
+  let (marks, bases) = table.mark_counts(index)
+  let attachments = table
+    .attachments(index)
+    .map(item => {
+      let marks = item.marks.keys().collect()
+      marks.sort()
+      let bases = item.bases.keys().collect()
+      bases.sort()
+      Json::object({
+        "marks": Json::array(
+          marks.map(g => {
+            let mark = item.marks[g]
+            Json::object({
+              "glyph": Json::number(g.to_double()),
+              "class": Json::number(mark.class.to_double()),
+              "anchor": anchor_json(mark.anchor),
+            })
+          }),
+        ),
+        "bases": Json::array(
+          bases.map(g => {
+            Json::object({
+              "glyph": Json::number(g.to_double()),
+              "anchors": Json::array(
+                item.bases[g].map(a => {
+                  match a {
+                    Some(a) => anchor_json(a)
+                    None => Json::null()
+                  }
+                }),
+              ),
+            })
+          }),
+        ),
+      })
+    })
+  Json::object({
+    "counts": Json::array([
+      Json::number(marks.to_double()),
+      Json::number(bases.to_double()),
+    ]),
+    "attachments": Json::array(attachments),
+  }).stringify()
+}

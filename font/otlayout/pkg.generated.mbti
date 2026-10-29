@@ -23,6 +23,16 @@ pub fn script_name(String) -> String
 // Errors
 
 // Types and methods
+pub(all) struct Anchor {
+  x : Int32
+  y : Int32
+}
+
+pub(all) struct Attachment {
+  marks : Map[Int32, MarkAnchor]
+  bases : Map[Int32, Array[Anchor?]]
+}
+
 pub(all) struct Gdef {
   classes : Map[Int32, Int32]
   mark_attach : Map[Int32, Int32]
@@ -32,8 +42,10 @@ pub(all) struct Gdef {
 pub struct Gpos {
   // private fields
 }
+pub fn Gpos::attachments(Self, Int32) -> Array[Attachment]
 pub fn Gpos::context(Self, Int32) -> LookupContext?
 pub fn Gpos::each_single(Self, Int32, (Int32, PositionValue) -> Bool) -> Unit
+pub fn Gpos::mark_counts(Self, Int32) -> (Int32, Int32)
 pub fn Gpos::pair_count(Self, Int32) -> Int64
 pub fn Gpos::pair_value(Self, Int32, Int32, Int32) -> (PositionValue, PositionValue)?
 pub fn Gpos::truncated(Self) -> Bool
@@ -82,6 +94,11 @@ pub(all) struct LayoutScript {
 pub(all) struct LookupContext {
   rules : Int32
   nested : Array[Int32]
+}
+
+pub(all) struct MarkAnchor {
+  class : Int32
+  anchor : Anchor
 }
 
 pub(all) struct PositionValue {

@@ -63,3 +63,10 @@ Generate `context.json.gz` first, then copy `generate-position-values_test.go`
 without its build tag into upstream `internal/otlayout` alongside
 `generate_test.go` and run `TestCodexPositionValues` with the same fixture root.
 Run `npm run test:gpos` after a JS build.
+
+`attachments.json.gz` checks mark and base coverage counts, signed anchors,
+missing anchors, duplicate subtables, malformed inputs and shared work budgets.
+Generate `context.json.gz` first, then copy `generate-attachments_test.go` without
+its build tag into upstream `internal/otlayout` alongside `generate_test.go` and
+run `TestCodexAttachments` with the same fixture root. Run `npm run test:gpos`
+after a JS build.
