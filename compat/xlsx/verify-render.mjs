@@ -17,6 +17,6 @@ const styled = JSON.parse(await readFile(new URL('./cells.json', import.meta.url
 assert.equal(xlsx_render_basic(Buffer.from(styled.input, 'base64'), 'none', true).length, 0, 'unsupported styled workbook must be rejected');
 const rich = JSON.parse(await readFile(new URL('./cells.json', import.meta.url)))[7];
 assert.equal(xlsx_render_basic(Buffer.from(rich.input, 'base64'), 'none', true).length, 0, 'unsupported rich strings must be rejected');
-const autoHeight = JSON.parse(await readFile(new URL('./auto-height-unsupported.json', import.meta.url)));
-assert.equal(xlsx_render_basic(Buffer.from(autoHeight, 'base64'), 'none', true).length, 0, 'nondefault font sizes on auto-height rows must be rejected');
+const autoHeight = JSON.parse(await readFile(new URL('./auto-height.json', import.meta.url)));
+assert.ok(xlsx_render_basic(Buffer.from(autoHeight, 'base64'), 'none', true).length, 'nondefault font sizes on auto-height rows must convert');
 console.log(`${cases.length} basic XLSX renderings match upstream.`);

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"math"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -25,7 +26,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 3900; i++ {
+	for i := 0; i < 4500; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -102,13 +103,26 @@ func TestCodexXLSXRender(t *testing.T) {
 				}
 				if i >= 3600 {
 					size := []float64{7, 9, 12.5, 14, 18, 32}[i%6]
-					if i >= 3750 {
+					if i >= 4200 {
+						size = (float64(5+i%35) + 0.05) * 0.75 / 1.15
+						if i%3 == 0 {
+							size = math.Nextafter(size, math.Inf(-1))
+						}
+						if i%3 == 1 {
+							size = math.Nextafter(size, math.Inf(1))
+						}
+					}
+					if i >= 3750 && i < 3900 {
 						size = 14
 					}
 					bold := []string{"", "<b/>"}[(i/6)%2]
 					st += fmt.Sprintf(`<font><name val="Calibri"/><sz val="%g"/>%s</font>`, size, bold)
 					if i >= 3750 {
-						st += fmt.Sprintf(`<font><name val="Calibri"/><sz val="14.0000001"/>%s</font>`, bold)
+						other := 14.0000001
+						if i >= 4200 {
+							other = 11
+						}
+						st += fmt.Sprintf(`<font><name val="Calibri"/><sz val="%g"/>%s</font>`, other, bold)
 					}
 				}
 				st += `</fonts>`
@@ -216,7 +230,11 @@ func TestCodexXLSXRender(t *testing.T) {
 		for y := 0; y < r.Intn(4)+1; y++ {
 			attrs := ""
 			if i >= 150 {
-				if i >= 3600 {
+				if i >= 3900 {
+					if r.Intn(2) == 0 {
+						attrs = fmt.Sprintf(` ht="%d" customHeight="1"`, 5+r.Intn(70))
+					}
+				} else if i >= 3600 {
 					attrs = fmt.Sprintf(` ht="%d" customHeight="1"`, 5+r.Intn(70))
 				} else if r.Intn(3) == 0 {
 					attrs = fmt.Sprintf(` ht="%d" customHeight="1"`, 5+r.Intn(40))
@@ -316,7 +334,7 @@ func TestCodexXLSXRender(t *testing.T) {
 			t.Fatal(e)
 		}
 		if i == 3600 {
-			// The limited converter must reject nondefault sizes on auto-height rows.
+			// Keep a real package with nondefault sizes on auto-height rows.
 			reader, e := zip.NewReader(bytes.NewReader(b.Bytes()), int64(b.Len()))
 			if e != nil {
 				t.Fatal(e)
@@ -351,7 +369,7 @@ func TestCodexXLSXRender(t *testing.T) {
 			if e != nil {
 				t.Fatal(e)
 			}
-			if e = os.WriteFile(filepath.Join(root, "compat/xlsx/auto-height-unsupported.json"), data, 0644); e != nil {
+			if e = os.WriteFile(filepath.Join(root, "compat/xlsx/auto-height.json"), data, 0644); e != nil {
 				t.Fatal(e)
 			}
 		}

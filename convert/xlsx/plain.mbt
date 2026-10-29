@@ -230,8 +230,7 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// Convert worksheets using estimated font metrics without embedding fonts.
 /// Supports sheet views with numeric, plain string, boolean and error cells,
 /// number formats, font colors, bold text, horizontal alignment, top or center
-/// vertical alignment and solid fills on individual cells. Nondefault font sizes
-/// require explicit row heights; complex features are rejected.
+/// vertical alignment and solid fills on individual cells; complex features are rejected.
 pub fn convert_plain_no_fonts(
   data : Bytes,
   data_mode~ : String = "",
@@ -383,12 +382,9 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     count: run.count,
     size: run.size,
   })
+  let fitted = xlsx_plain_fitted_rows(rows, styles, geo)
   let heights : Array[@sheet.Run] = xlsx_row_runs(
-    rows,
-    geo,
-    row_count,
-    12.65,
-    Map([]),
+    rows, geo, row_count, 12.65, fitted,
   ).map(run => { count: run.count, size: run.size, })
   let geometry : @sheet.GridGeometry = {
     columns,
@@ -438,11 +434,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         font_id
       }
       let font_size = styles.fonts[font_index].size
-      if font_size != 11.0 && cell.kind != 0 && row.height < 0.0 {
-        raise InvalidXlsxInput(
-          "xlsx: plain conversion requires explicit row heights for nondefault font sizes",
-        )
-      }
       let fill_index = styles.cell_formats[format_index].fill
       if fill_index >= 0 && fill_index < styles.fills.length() {
         let fill = styles.fills[fill_index]
@@ -606,6 +597,48 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     sizes~,
   )
   (drawn, geo)
+}
+
+///|
+fn xlsx_plain_fitted_rows(
+  rows : Array[XlsxRow],
+  styles : XlsxStyles,
+  geometry : XlsxSheetGeometry,
+) -> Map[Int32, Double] {
+  let result : Map[Int32, Double] = Map([])
+  for row in rows {
+    if row.hidden || row.height >= 0.0 {
+      continue
+    }
+    let mut best = 0.0
+    for cell in row.cells {
+      if cell.kind == 0 ||
+        (cell.kind == 1 && cell.number == 0.0 && !geometry.show_zero) {
+        continue
+      }
+      let format_index = if cell.style < 0 ||
+        cell.style >= styles.cell_formats.length() {
+        0
+      } else {
+        cell.style
+      }
+      let font_id = styles.cell_formats[format_index].font
+      let font_index = if font_id < 0 || font_id >= styles.fonts.length() {
+        0
+      } else {
+        font_id
+      }
+      let size = styles.fonts[font_index].size
+      if (0.9 + 0.25) * size > (0.9 + 0.25) * 11.0 + 0.01 {
+        let text_height = 0.9 * size + 0.25 * size + 1.5 - 1.5
+        best = Double::max(best, text_height)
+      }
+    }
+    if best > 0.0 {
+      result[row.index] = ((best / 0.75 - 0.05).ceil() + 2.0) * 0.75
+    }
+  }
+  result
 }
 
 ///|
