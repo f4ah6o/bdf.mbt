@@ -136,3 +136,68 @@ pub fn mml_play(
     Json::string(result.error),
   ]).stringify()
 }
+
+///|
+#export_name("mml_document")
+pub fn mml_document(
+  data : Bytes,
+  dialect : String,
+  octave : Int32,
+  program : Int32,
+  width : Double,
+  height : Double,
+  sp : Double,
+  title : String,
+  no_text : Bool,
+  no_play : Bool,
+  select : Bool,
+  tab : Bool,
+) -> String {
+  try {
+    let result = @mml.convert(
+      data,
+      @db.Database::new(),
+      dialect~,
+      octave~,
+      program~,
+      guitar_tab=tab,
+      options={
+        page: { width, height, staff_space: sp, title, },
+        pages: if select {
+          Some([1, 3, 2, 99])
+        } else {
+          None
+        },
+        time: None,
+        key: None,
+        no_play,
+        no_text_index: no_text,
+        system_fonts: true,
+        no_subset: false,
+        ignore_restrictions: false,
+        no_woff2: true,
+      },
+    )
+    Json::array([
+      Json::array(
+        [
+          for b in result.bdf => Json::number(b.to_int().to_double())
+        ],
+      ),
+      Json::array(result.warnings.map(v => Json::string(v))),
+      Json::array(
+        [
+          result.pages,
+          result.systems,
+          result.measures,
+          result.parts,
+          result.staves,
+          result.notes,
+          result.embedded_fonts,
+        ].map(v => Json::number(v.to_double())),
+      ),
+    ]).stringify()
+  } catch {
+    err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
+  }
+}

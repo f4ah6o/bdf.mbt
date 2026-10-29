@@ -1,7 +1,15 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "f4ah6o/bdf/convert/mml"
 
+import {
+  "f4ah6o/bdf/convert",
+  "f4ah6o/bdf/convert/midi",
+  "f4ah6o/bdf/font/db",
+}
+
 // Values
+pub fn convert(Bytes, @db.Database, options? : @midi.MidiScoreOptions, dialect? : String, octave? : Int32, program? : Int32, guitar_tab? : Bool, page_ranges? : Array[@convert.PageSpan]?) -> @midi.MidiScoreResult raise
+
 pub fn decode_mml(Bytes) -> String
 
 pub fn detect_mml(Bytes) -> Bool
@@ -35,6 +43,9 @@ pub fn split_mml_source(String, String) -> MmlSource
 pub fn strip_mml_comments(String, Bool) -> String
 
 // Errors
+pub suberror MmlInputError {
+  InvalidMmlInput(String)
+}
 
 // Types and methods
 pub(all) struct MmlControl {

@@ -120,6 +120,30 @@ fn convert_midi(
     time_override=options.time,
     key_override=options.key,
   )
+  render_music_performance(
+    score,
+    performance,
+    db,
+    options,
+    "midi",
+    sequence=file.smf,
+    guitar_tab~,
+    page_ranges~,
+  )
+}
+
+///|
+/// Write a score and its performed music as a BDF document.
+pub fn render_music_performance(
+  score : @music.NotatedScore,
+  performance : MidiPerformance,
+  db : @db.Database,
+  options : MidiScoreOptions,
+  source : String,
+  sequence~ : Bytes? = None,
+  guitar_tab~ : Bool = true,
+  page_ranges~ : Array[@convert.PageSpan]? = None,
+) -> MidiScoreResult raise {
   let title = if options.page.title == "" {
     score.title
   } else {
@@ -147,7 +171,7 @@ fn convert_midi(
   if score.copyright != "" {
     dc["rights"] = Json::string(score.copyright)
   }
-  let meta : Map[String, Json] = { "source": Json::string("midi") }
+  let meta : Map[String, Json] = { "source": Json::string(source) }
   if !dc.is_empty() {
     meta["dc"] = Json::object(dc)
   }
@@ -302,7 +326,7 @@ fn convert_midi(
     })
   }
   if !options.no_play {
-    let sequence = match file.smf {
+    let sequence = match sequence {
       Some(bytes) => bytes
       None => performance_smf(performance)
     }

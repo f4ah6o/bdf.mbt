@@ -32,6 +32,8 @@ pub fn read_header(Bytes) -> MidiHeader raise MidiInputError
 
 pub fn read_varlen(Bytes) -> (Int32, Int32)
 
+pub fn render_music_performance(@music.NotatedScore, MidiPerformance, @db.Database, MidiScoreOptions, String, sequence? : Bytes?, guitar_tab? : Bool, page_ranges? : Array[@convert.PageSpan]?) -> MidiScoreResult raise
+
 pub fn scan_track(Bytes, Int64) -> MidiTrackScan
 
 pub fn track_name(MidiRawFile, Int32, Int32, Bool, Int32) -> String

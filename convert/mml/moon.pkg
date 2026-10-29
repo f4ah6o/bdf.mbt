@@ -1,5 +1,9 @@
 import {
   "f4ah6o/bdf/convert/csv",
+  "f4ah6o/bdf/convert",
+  "f4ah6o/bdf/convert/music",
+  "f4ah6o/bdf/convert/midi",
+  "f4ah6o/bdf/font/db",
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/string",
 }

@@ -1,9 +1,11 @@
-# MML input compatibility fixtures
+# MML compatibility fixtures
 
-The fixtures compare MML detection, dialect classification, syntax recognition,
-and text decoding against upstream `converter/mml`.
+These fixtures compare detection, text decoding, preprocessing, command
+scanning, playback, and complete score and TAB documents against upstream
+`converter/mml` and `converter/internal/music`.
 
-After building the JavaScript target, run `npm run test:mml-input`. To regenerate
-fixtures, copy `generate_detect_test.go` and `generate_decode_test.go` without
-their build tags into upstream `converter/mml`, then run `TestCodexMMLDetect`
-and `TestCodexMMLDecode` with `BDF_FIXTURE_ROOT` set to this repository.
+After building the JavaScript target, run `npm run test:mml-input` and
+`npm run test:mml-document`, and `npm run test:mml-visual`. To regenerate fixtures, copy each
+`generate_*_test.go` without its build tag into upstream `converter/mml` and
+run the corresponding `TestCodexMML*` test with `BDF_FIXTURE_ROOT` set to this
+repository. Generate the playback fixtures before the document fixtures.
