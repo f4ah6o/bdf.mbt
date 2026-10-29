@@ -18,7 +18,7 @@ waterfall and fallback selection across real and synthetic fonts.
 `overview.json.gz` compares the ordered overview sections and table sizes, including
 WOFF, collections, boundary values, and mutated font tables.
 `features.json.gz` verifies grouped OpenType features, their lookups, script
-users, UI names and characters against upstream.
+users, UI names, characters and displayed descriptions against upstream.
 
 After `moon build --target js`, run `npm run test:specimen` and
 `npm run test:specimen-plan`, `npm run test:specimen-names`,

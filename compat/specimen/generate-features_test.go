@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/shibukawa/bdf/internal/otlayout"
 	"github.com/shibukawa/bdf/internal/sfnt"
 )
 
@@ -30,7 +31,11 @@ func TestCodexFeatureGroups(t *testing.T) {
 			fc.prepare()
 			groups := []any{}
 			for _, g := range fc.featureGroups() {
-				groups = append(groups, map[string]any{"table": g.table, "tag": g.tag, "lookups": append([]int{}, g.lookups...), "scripts": append([]string{}, g.scripts...), "uiName": g.uiName, "characters": append([]rune{}, g.chars...)})
+				displayName := g.uiName
+				if displayName == "" {
+					displayName = otlayout.FeatureName(g.tag)
+				}
+				groups = append(groups, map[string]any{"table": g.table, "tag": g.tag, "lookups": append([]int{}, g.lookups...), "scripts": append([]string{}, g.scripts...), "uiName": g.uiName, "displayName": displayName, "scriptList": scriptList(g.scripts), "scriptTags": scriptTags(g.scripts), "defaultNote": defaultNote(g.tag), "characters": append([]rune{}, g.chars...)})
 			}
 			results = append(results, map[string]any{"name": name, "input": packFixture(data), "index": fc.index, "groups": groups})
 		}

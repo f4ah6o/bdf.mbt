@@ -71,3 +71,87 @@ pub fn FileFace::feature_groups(self : FileFace) -> Array[FeatureGroup] {
   }
   groups
 }
+
+///|
+fn feature_split_user(user : String) -> (String, String) {
+  let script = StringBuilder()
+  let language = StringBuilder()
+  let mut found = false
+  for c in user {
+    if c == '/' && !found {
+      found = true
+    } else if found {
+      language.write_char(c)
+    } else {
+      script.write_char(c)
+    }
+  }
+  (font_trim(script.to_string()), language.to_string())
+}
+
+///|
+/// Compact feature users in their original order, as in the specimen detail.
+pub fn FeatureGroup::script_list(self : FeatureGroup) -> String {
+  let order : Array[String] = []
+  let langs : Map[String, Array[String]] = Map([])
+  for user in self.scripts {
+    let (script, language) = feature_split_user(user)
+    if !langs.contains(script) {
+      order.push(script)
+      langs[script] = []
+    }
+    langs[script].push(
+      if language == "" {
+        "default"
+      } else {
+        font_trim(language)
+      },
+    )
+  }
+  let out : Array[String] = []
+  for script in order {
+    let languages = langs[script]
+    if languages.length() == 1 && languages[0] == "default" {
+      out.push(script)
+    } else {
+      out.push(script + " (" + languages.join(", ") + ")")
+    }
+  }
+  out.join(", ")
+}
+
+///|
+/// Unique script tags without their language systems, in first-seen order.
+pub fn FeatureGroup::script_tags(self : FeatureGroup) -> String {
+  let out : Array[String] = []
+  let seen : Map[String, Bool] = Map([])
+  for user in self.scripts {
+    let (script, _) = feature_split_user(user)
+    if !seen.contains(script) {
+      seen[script] = true
+      out.push(script)
+    }
+  }
+  out.join(" ")
+}
+
+///|
+/// Name used by the feature summary, preferring a font-provided UI name.
+pub fn FeatureGroup::display_name(self : FeatureGroup) -> String {
+  if self.ui_name != "" {
+    self.ui_name
+  } else {
+    @otlayout.feature_name(self.tag)
+  }
+}
+
+///|
+/// Explain whether the feature is applied automatically by text shapers.
+pub fn FeatureGroup::default_note(self : FeatureGroup) -> String {
+  match @otlayout.feature_default(self.tag) {
+    1 => "on by default"
+    2 => "applied by the script's shaper"
+    3 => "in vertical text"
+    _ => ""
+  }
+}

@@ -312,6 +312,10 @@ pub fn features(data : Bytes, index : Int32) -> String {
             ),
             "scripts": Json::array(g.scripts.map(Json::string)),
             "uiName": Json::string(g.ui_name),
+            "displayName": Json::string(g.display_name()),
+            "scriptList": Json::string(g.script_list()),
+            "scriptTags": Json::string(g.script_tags()),
+            "defaultNote": Json::string(g.default_note()),
             "characters": Json::array(
               g.characters.map(x => Json::number(x.to_double())),
             ),

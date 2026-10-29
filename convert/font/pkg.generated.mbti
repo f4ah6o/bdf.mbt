@@ -42,6 +42,10 @@ pub(all) struct FeatureGroup {
   mut ui_name : String
   characters : Array[Int32]
 }
+pub fn FeatureGroup::default_note(Self) -> String
+pub fn FeatureGroup::display_name(Self) -> String
+pub fn FeatureGroup::script_list(Self) -> String
+pub fn FeatureGroup::script_tags(Self) -> String
 
 pub struct FileFace {
   index : Int32
