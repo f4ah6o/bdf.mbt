@@ -14,7 +14,8 @@
     "pngjs": "7.0.0"
   },
   "scripts": {
-    "test:visual": "npm run test:text-compat && moon build --target js && node compat/writer/verify.mjs && node compat/image/verify.mjs && npm run test:music-compat && node compat/converter/client-test.mjs && node compat/visual/compare.mjs",
+    "test:visual": "npm run test:text-compat && moon build --target js && node compat/writer/verify.mjs && node compat/image/verify.mjs && npm run test:csv-compat && npm run test:music-compat && node compat/converter/client-test.mjs && node compat/visual/compare.mjs",
+    "test:csv-compat": "node compat/csv/verify.mjs && node compat/csv/verify-pairs.mjs",
     "test:ci-local": "actrun workflow run .github/workflows/ci.yml --tmp --include-dirty --skip-action actions/checkout@v4 --skip-action hustcer/setup-moonbit@v1 --no-nix",
     "test:text-compat": "node compat/text/verify.mjs && node compat/search/generate.mjs --check",
     "test:music-compat": "node compat/music/verify.mjs && node compat/music/audio-test.mjs && node compat/music/player-test.mjs"

@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn decode_text(Bytes, charset? : String) -> DecodedText raise
+
 pub fn detect_dialect(String, cut? : Bool, delimiter? : Byte, quote? : Int32) -> DialectGuess raise
 
 pub fn has_header(Array[Array[String]]) -> Bool
@@ -13,6 +15,8 @@ pub fn has_header(Array[Array[String]]) -> Bool
 pub fn looks_date_time(String) -> Bool
 
 pub fn looks_numeric(String) -> Bool
+
+pub fn parse(Bytes, charset? : String, delimiter? : Byte, quote? : Int32, header? : Header) -> ParseResult raise
 
 pub fn read_records(String, Dialect) -> Records raise
 
@@ -22,6 +26,12 @@ pub suberror CsvError {
 }
 
 // Types and methods
+pub(all) struct DecodedText {
+  text : String
+  charset : String
+  bom : Bool
+} derive(Eq, @debug.Debug)
+
 pub(all) struct Dialect {
   delimiter : Byte
   quote : Byte
@@ -34,6 +44,22 @@ pub(all) struct DialectGuess {
   fields : Int32
   score : Double
   numbers : Int32
+} derive(Eq, @debug.Debug)
+
+pub(all) enum Header {
+  HeaderAuto
+  HeaderYes
+  HeaderNo
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ParseResult {
+  rows : Array[Array[String]]
+  columns : Int32
+  charset : String
+  bom : Bool
+  dialect : Dialect
+  header : Bool
+  warnings : Array[String]
 } derive(Eq, @debug.Debug)
 
 pub(all) struct Records {

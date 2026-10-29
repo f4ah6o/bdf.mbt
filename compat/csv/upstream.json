@@ -1,0 +1,5003 @@
+[
+  {
+    "name": "ascii",
+    "input": "YSxiCjEsMgo=",
+    "label": "",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "a,b\n1,2\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "a",
+        "b"
+      ],
+      [
+        "1",
+        "2"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "utf8",
+    "input": "5ZCN5YmNLOiqrOaYjgrlsbHnlLAs44Gy44KJ44GM44Gq44Go44Kr44K/44Kr44OK44Gu5paH56ug44Gn44GZ44CCCuS9kOiXpCzmvKLlrZfjgaDjgZEK",
+    "label": "",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "名前,説明\n山田,ひらがなとカタカナの文章です。\n佐藤,漢字だけ\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "名前",
+        "説明"
+      ],
+      [
+        "山田",
+        "ひらがなとカタカナの文章です。"
+      ],
+      [
+        "佐藤",
+        "漢字だけ"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "utf8-bom",
+    "input": "77u/5ZCN5YmNLOiqrOaYjgrlsbHnlLAs44Gy44KJ44GM44Gq44Go44Kr44K/44Kr44OK44Gu5paH56ug44Gn44GZ44CCCuS9kOiXpCzmvKLlrZfjgaDjgZEK",
+    "label": "cp932",
+    "charset": "UTF-8",
+    "bom": true,
+    "text": "名前,説明\n山田,ひらがなとカタカナの文章です。\n佐藤,漢字だけ\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "名前",
+        "説明"
+      ],
+      [
+        "山田",
+        "ひらがなとカタカナの文章です。"
+      ],
+      [
+        "佐藤",
+        "漢字だけ"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "utf16le-bom",
+    "input": "//4NVE1SLACsig5mCgBxXDB1LAByMIkwTDBqMGgwqzC/MKswyjBuMIdl4HpnMFkwAjAKAFBP5IUsACJvV1tgMFEwCgA=",
+    "label": "",
+    "charset": "UTF-16LE",
+    "bom": true,
+    "text": "名前,説明\n山田,ひらがなとカタカナの文章です。\n佐藤,漢字だけ\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "名前",
+        "説明"
+      ],
+      [
+        "山田",
+        "ひらがなとカタカナの文章です。"
+      ],
+      [
+        "佐藤",
+        "漢字だけ"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "utf16be-bom",
+    "input": "/v9UDVJNACyKrGYOAApccXUwACwwcjCJMEwwajBoMKswvzCrMMowbmWHeuAwZzBZMAIACk9QheQALG8iW1cwYDBRAAo=",
+    "label": "",
+    "charset": "UTF-16BE",
+    "bom": true,
+    "text": "名前,説明\n山田,ひらがなとカタカナの文章です。\n佐藤,漢字だけ\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "名前",
+        "説明"
+      ],
+      [
+        "山田",
+        "ひらがなとカタカナの文章です。"
+      ],
+      [
+        "佐藤",
+        "漢字だけ"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "utf32le-bom",
+    "input": "//4AAGEAAAAsAAAAYgAAAA==",
+    "label": "",
+    "charset": "UTF-32LE",
+    "bom": true,
+    "text": "a,b",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "utf32be-bom",
+    "input": "AAD+/wAAAGEAAAAsAAAAYg==",
+    "label": "",
+    "charset": "UTF-32BE",
+    "bom": true,
+    "text": "a,b",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "utf16le",
+    "input": "DVRNUiwArIoOZgoAcVwwdSwAcjCJMEwwajBoMKswvzCrMMowbjCHZeB6ZzBZMAIwCgBQT+SFLAAib1dbYDBRMAoA",
+    "label": "",
+    "charset": "UTF-16LE",
+    "bom": false,
+    "text": "名前,説明\n山田,ひらがなとカタカナの文章です。\n佐藤,漢字だけ\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "名前",
+        "説明"
+      ],
+      [
+        "山田",
+        "ひらがなとカタカナの文章です。"
+      ],
+      [
+        "佐藤",
+        "漢字だけ"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "utf16be",
+    "input": "AE4AYQBtAGUAOwBDAGkAdAB5ADsATgBvAHQAZQAKAE0A/ABsAGwAZQByADsASwD2AGwAbgA7AFMAdAByAGEA3wBlAAoAUgBlAG4A6QBlADsAQgBlAHMAYQBuAOcAbwBuADsgHABuAGEA7wB2AGUgHQAgAGMAYQBmAOkAICATACAAbwBrAAo=",
+    "label": "",
+    "charset": "UTF-16BE",
+    "bom": false,
+    "text": "Name;City;Note\nMüller;Köln;Straße\nRenée;Besançon;“naïve” café – ok\n",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "Name",
+        "City",
+        "Note"
+      ],
+      [
+        "Müller",
+        "Köln",
+        "Straße"
+      ],
+      [
+        "Renée",
+        "Besançon",
+        "“naïve” café – ok"
+      ]
+    ],
+    "header": true,
+    "columns": 3,
+    "warnings": []
+  },
+  {
+    "name": "sjis",
+    "input": "lryRTyyQ4Ja+Co5Sk2MsgtCC54KqgsiCxoNKg16DSoNpgsyVto/NgsWCt4FCCo2yk6Esir+OmoK+gq8K",
+    "label": "",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "名前,説明\n山田,ひらがなとカタカナの文章です。\n佐藤,漢字だけ\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "名前",
+        "説明"
+      ],
+      [
+        "山田",
+        "ひらがなとカタカナの文章です。"
+      ],
+      [
+        "佐藤",
+        "漢字だけ"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "sjis-kanji",
+    "input": "joGWvCyPWo+KCo5Sk2ORvphZLJOMi56Tc5DnkeOTY4vmCo2yk6GJ1I5xLJHljeOVe5HljeOOcwo=",
+    "label": "",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "氏名,住所\n山田太郎,東京都千代田区\n佐藤花子,大阪府大阪市\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "氏名",
+        "住所"
+      ],
+      [
+        "山田太郎",
+        "東京都千代田区"
+      ],
+      [
+        "佐藤花子",
+        "大阪府大阪市"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "sjis-named",
+    "input": "lryRTyyQ4Ja+Co5Sk2MsgtCC54KqgsiCxoNKg16DSoNpgsyVto/NgsWCt4FCCo2yk6Esir+OmoK+gq8K",
+    "label": "cp932",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "名前,説明\n山田,ひらがなとカタカナの文章です。\n佐藤,漢字だけ\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "名前",
+        "説明"
+      ],
+      [
+        "山田",
+        "ひらがなとカタカナの文章です。"
+      ],
+      [
+        "佐藤",
+        "漢字だけ"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "euc-jp",
+    "input": "zL7BsCzA4szACruzxcQspNKk6aSspMqkyKWrpb+lq6XKpM7KuL7PpMekuaGjCrq0xqMstMG7+qTApLEK",
+    "label": "",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "名前,説明\n山田,ひらがなとカタカナの文章です。\n佐藤,漢字だけ\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "名前",
+        "説明"
+      ],
+      [
+        "山田",
+        "ひらがなとカタカナの文章です。"
+      ],
+      [
+        "佐藤",
+        "漢字だけ"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "euc-jp-kanji",
+    "input": "u+HMviy9u73qCruzxcTCwM+6LMXstf7F1MDpwuXFxLboCrq0xqOy1rvSLMLnuuXJ3MLnuuW71Ao=",
+    "label": "",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "氏名,住所\n山田太郎,東京都千代田区\n佐藤花子,大阪府大阪市\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "氏名",
+        "住所"
+      ],
+      [
+        "山田太郎",
+        "東京都千代田区"
+      ],
+      [
+        "佐藤花子",
+        "大阪府大阪市"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "iso-2022-jp",
+    "input": "GyRCTD5BMBsoQiwbJEJAYkxAGyhCChskQjszRUQbKEIsGyRCJFIkaSQsJEokSCUrJT8lKyVKJE5KOD5PJEckOSEjGyhCChskQjo0RiMbKEIsGyRCNEE7eiRAJDEbKEIK",
+    "label": "",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "名前,説明\n山田,ひらがなとカタカナの文章です。\n佐藤,漢字だけ\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "名前",
+        "説明"
+      ],
+      [
+        "山田",
+        "ひらがなとカタカナの文章です。"
+      ],
+      [
+        "佐藤",
+        "漢字だけ"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "windows-1252",
+    "input": "TmFtZTtDaXR5O05vdGUKTfxsbGVyO0v2bG47U3RyYd9lClJlbullO0Jlc2Fu529uO5NuYe92ZZQgY2Fm6SCWIG9rCg==",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "Name;City;Note\nMüller;Köln;Straße\nRenée;Besançon;“naïve” café – ok\n",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "Name",
+        "City",
+        "Note"
+      ],
+      [
+        "Müller",
+        "Köln",
+        "Straße"
+      ],
+      [
+        "Renée",
+        "Besançon",
+        "“naïve” café – ok"
+      ]
+    ],
+    "header": true,
+    "columns": 3,
+    "warnings": []
+  },
+  {
+    "name": "windows-1252-named",
+    "input": "TmFtZTtDaXR5O05vdGUKTfxsbGVyO0v2bG47U3RyYd9lClJlbullO0Jlc2Fu529uO5NuYe92ZZQgY2Fm6SCWIG9rCg==",
+    "label": "latin1",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "Name;City;Note\nMüller;Köln;Straße\nRenée;Besançon;“naïve” café – ok\n",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "Name",
+        "City",
+        "Note"
+      ],
+      [
+        "Müller",
+        "Köln",
+        "Straße"
+      ],
+      [
+        "Renée",
+        "Besançon",
+        "“naïve” café – ok"
+      ]
+    ],
+    "header": true,
+    "columns": 3,
+    "warnings": []
+  },
+  {
+    "name": "utf8-stray",
+    "input": "5ZCN5YmNLOiqrOaYjgrlkI3liY0s6Kqs5piOCuWQjeWJjSzoqqzmmI4K5ZCN5YmNLOiqrOaYjgrlkI3liY0s6Kqs5piOCmNhZukK",
+    "label": "",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "名前,説明\n名前,説明\n名前,説明\n名前,説明\n名前,説明\ncaf�\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "名前",
+        "説明"
+      ],
+      [
+        "名前",
+        "説明"
+      ],
+      [
+        "名前",
+        "説明"
+      ],
+      [
+        "名前",
+        "説明"
+      ],
+      [
+        "名前",
+        "説明"
+      ],
+      [
+        "caf�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "utf8-two-stray",
+    "input": "5ZCN5YmNLOiqrOaYjgrlkI3liY0s6Kqs5piOCuWQjeWJjSzoqqzmmI4K5ZCN5YmNLOiqrOaYjgrlkI3liY0s6Kqs5piOCmNhZun/Cg==",
+    "label": "",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "蜷榊燕,隱ｬ譏�\n蜷榊燕,隱ｬ譏�\n蜷榊燕,隱ｬ譏�\n蜷榊燕,隱ｬ譏�\n蜷榊燕,隱ｬ譏�\ncaf�\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "蜷榊燕",
+        "隱ｬ譏�"
+      ],
+      [
+        "蜷榊燕",
+        "隱ｬ譏�"
+      ],
+      [
+        "蜷榊燕",
+        "隱ｬ譏�"
+      ],
+      [
+        "蜷榊燕",
+        "隱ｬ譏�"
+      ],
+      [
+        "蜷榊燕",
+        "隱ｬ譏�"
+      ],
+      [
+        "caf�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "windows-undefined",
+    "input": "eCyBjY+QnQo=",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "x,�����\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "x",
+        "�����"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "basic.csv",
+    "input": "77u/SUQsUHJvZHVjdCxDYXRlZ29yeSxQcmljZSxRdWFudGl0eSxEaXNjb3VudCxSZWxlYXNlZCxDb2RlLE5vdGUNCjEsTm90ZWJvb2ssU3RhdGlvbmVyeSwkNC41MCwxMjAwLDUlLDIwMjQtMDEtMTUsMDAxMiwiUGxhaW4sIEE1Ig0KMixGb3VudGFpbiBwZW4sU3RhdGlvbmVyeSwkMTI5LjAwLDM1LDAlLDIwMjMtMTEtMDIsMDEwNywiTmliIHNpemVzICIiRiIiIGFuZCAiIk0iIiINCjMsRGVzayBsYW1wLExpZ2h0aW5nLCIkMSwyNDkuOTkiLDgsKDEwJSksMjAyNC8zLzEsMTAwMywiVHdvIGxpbmVzOg0Kd2FybSBhbmQgY29vbCINCjQsU3RhcGxlcixPZmZpY2UsJDE4LjI1LC0zLCwxLzUvMjAyNCwwMDIwLFJldHVybmVkOiB0aGUgY291bnQgaXMgbmVnYXRpdmUNCjUsUGFwZXIgY2xpcHMgKGJveCBvZiAxMDApLE9mZmljZSwkMS4xMCwiMTIsNTAwIiwxNSUsMjAyNC0wMi0yOSwwMDIxLA0KNixNb25pdG9yIGFybSxPZmZpY2UsJDg5LjAwLDQyLCwyMDI0LTA0LTAxIDA5OjMwLDIwMDEsQSBsb25nIG5vdGUgdGhhdCBydW5zIG9uIHBhc3QgdGhlIGVkZ2Ugb2YgaXRzIGNvbHVtbiBpbnRvIHRoZSBlbXB0eSBjZWxscyB0byB0aGUgcmlnaHQgb2YgaXQNCjcsV2hpdGVib2FyZCxPZmZpY2UsJDIzMC4wMCw2LDIwJSwsMjAwMixTZWUgaHR0cHM6Ly9leGFtcGxlLmNvbS93aGl0ZWJvYXJkDQo4LExhYmVsIHByaW50ZXIsT2ZmaWNlLCQ3NS40MCwxLjVlMywsMjAyNC0wNS0yMFQxNDowNTowMFosMjAwMyxzYWxlc0BleGFtcGxlLmNvbQ0KOSxDYWJsZSB0aWVzLCwkMy45OSw3MDAsLCwwOTk5LCJRdW90ZWQgZmllbGQsIHdpdGggIiJxdW90ZXMiIiwgY29tbWFzIGFuZCBhIGxpbmUNCmJyZWFrIg0KMTAsQ2hhaXIsRnVybml0dXJlLCQzNDkuMDAsMTQsMTIuNSUsMjAyNC0wNi0zMCwzMDAxLFRSVUUNCg==",
+    "label": "",
+    "charset": "UTF-8",
+    "bom": true,
+    "text": "ID,Product,Category,Price,Quantity,Discount,Released,Code,Note\r\n1,Notebook,Stationery,$4.50,1200,5%,2024-01-15,0012,\"Plain, A5\"\r\n2,Fountain pen,Stationery,$129.00,35,0%,2023-11-02,0107,\"Nib sizes \"\"F\"\" and \"\"M\"\"\"\r\n3,Desk lamp,Lighting,\"$1,249.99\",8,(10%),2024/3/1,1003,\"Two lines:\r\nwarm and cool\"\r\n4,Stapler,Office,$18.25,-3,,1/5/2024,0020,Returned: the count is negative\r\n5,Paper clips (box of 100),Office,$1.10,\"12,500\",15%,2024-02-29,0021,\r\n6,Monitor arm,Office,$89.00,42,,2024-04-01 09:30,2001,A long note that runs on past the edge of its column into the empty cells to the right of it\r\n7,Whiteboard,Office,$230.00,6,20%,,2002,See https://example.com/whiteboard\r\n8,Label printer,Office,$75.40,1.5e3,,2024-05-20T14:05:00Z,2003,sales@example.com\r\n9,Cable ties,,$3.99,700,,,0999,\"Quoted field, with \"\"quotes\"\", commas and a line\r\nbreak\"\r\n10,Chair,Furniture,$349.00,14,12.5%,2024-06-30,3001,TRUE\r\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "ID",
+        "Product",
+        "Category",
+        "Price",
+        "Quantity",
+        "Discount",
+        "Released",
+        "Code",
+        "Note"
+      ],
+      [
+        "1",
+        "Notebook",
+        "Stationery",
+        "$4.50",
+        "1200",
+        "5%",
+        "2024-01-15",
+        "0012",
+        "Plain, A5"
+      ],
+      [
+        "2",
+        "Fountain pen",
+        "Stationery",
+        "$129.00",
+        "35",
+        "0%",
+        "2023-11-02",
+        "0107",
+        "Nib sizes \"F\" and \"M\""
+      ],
+      [
+        "3",
+        "Desk lamp",
+        "Lighting",
+        "$1,249.99",
+        "8",
+        "(10%)",
+        "2024/3/1",
+        "1003",
+        "Two lines:\r\nwarm and cool"
+      ],
+      [
+        "4",
+        "Stapler",
+        "Office",
+        "$18.25",
+        "-3",
+        "",
+        "1/5/2024",
+        "0020",
+        "Returned: the count is negative"
+      ],
+      [
+        "5",
+        "Paper clips (box of 100)",
+        "Office",
+        "$1.10",
+        "12,500",
+        "15%",
+        "2024-02-29",
+        "0021",
+        ""
+      ],
+      [
+        "6",
+        "Monitor arm",
+        "Office",
+        "$89.00",
+        "42",
+        "",
+        "2024-04-01 09:30",
+        "2001",
+        "A long note that runs on past the edge of its column into the empty cells to the right of it"
+      ],
+      [
+        "7",
+        "Whiteboard",
+        "Office",
+        "$230.00",
+        "6",
+        "20%",
+        "",
+        "2002",
+        "See https://example.com/whiteboard"
+      ],
+      [
+        "8",
+        "Label printer",
+        "Office",
+        "$75.40",
+        "1.5e3",
+        "",
+        "2024-05-20T14:05:00Z",
+        "2003",
+        "sales@example.com"
+      ],
+      [
+        "9",
+        "Cable ties",
+        "",
+        "$3.99",
+        "700",
+        "",
+        "",
+        "0999",
+        "Quoted field, with \"quotes\", commas and a line\r\nbreak"
+      ],
+      [
+        "10",
+        "Chair",
+        "Furniture",
+        "$349.00",
+        "14",
+        "12.5%",
+        "2024-06-30",
+        "3001",
+        "TRUE"
+      ]
+    ],
+    "header": true,
+    "columns": 9,
+    "warnings": []
+  },
+  {
+    "name": "japanese.tsv",
+    "input": "jYCW2gmVto6akJQJk/oJg16DQ4OACZDglr4KlnuVtgkxLDIwMAkyMDI0LzEvMgk5OjAwCY9jj5GCq4LMlbaPzQqQfZVcCTM1CVI2LjEuMgkxMjozMAmQfYLGlVyCzJDglr4KiXCM6gktOC41CTIwMjQtMDEtMDUJCUVuZ2xpc2gggsaT+pZ7jOqCzI2sjd0KifyNcwkwMDEyCTIwMjQvMS85CTE4OjQ1OjEwCSKI6o1zltoKk/GNc5baIgqL85SSCQkJCQqQlI6aCYJQglGCUgkyMDI0LzIvMQk3OjA1CYNKg16DSoNpgUGC0ILngqqCyIFCCg==",
+    "label": "",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "項目\t文字数\t日\tタイム\t説明\n本文\t1,200\t2024/1/2\t9:00\t縦書きの文章\n図表\t35\tR6.1.2\t12:30\t図と表の説明\n英語\t-8.5\t2024-01-05\t\tEnglish と日本語の混在\n改行\t0012\t2024/1/9\t18:45:10\t\"一行目\n二行目\"\n空白\t\t\t\t\n数字\t１２３\t2024/2/1\t7:05\tカタカナ、ひらがな。\n",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "項目",
+        "文字数",
+        "日",
+        "タイム",
+        "説明"
+      ],
+      [
+        "本文",
+        "1,200",
+        "2024/1/2",
+        "9:00",
+        "縦書きの文章"
+      ],
+      [
+        "図表",
+        "35",
+        "R6.1.2",
+        "12:30",
+        "図と表の説明"
+      ],
+      [
+        "英語",
+        "-8.5",
+        "2024-01-05",
+        "",
+        "English と日本語の混在"
+      ],
+      [
+        "改行",
+        "0012",
+        "2024/1/9",
+        "18:45:10",
+        "一行目\n二行目"
+      ],
+      [
+        "空白",
+        "",
+        "",
+        "",
+        ""
+      ],
+      [
+        "数字",
+        "１２３",
+        "2024/2/1",
+        "7:05",
+        "カタカナ、ひらがな。"
+      ]
+    ],
+    "header": true,
+    "columns": 5,
+    "warnings": []
+  },
+  {
+    "name": "gbk-named",
+    "input": "0NXD+yyzx8rQCtXFyP0ssbG+qQrA7svELMnPuqMK",
+    "label": "cp936",
+    "charset": "GBK",
+    "bom": false,
+    "text": "姓名,城市\n张三,北京\n李四,上海\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "姓名",
+        "城市"
+      ],
+      [
+        "张三",
+        "北京"
+      ],
+      [
+        "李四",
+        "上海"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "gb18030-named",
+    "input": "0NXD+yyzx8rQCtXFyP0ssbG+qQrA7svELMnPuqMKlDn8Ngo=",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "姓名,城市\n张三,北京\n李四,上海\n😀\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "姓名",
+        "城市"
+      ],
+      [
+        "张三",
+        "北京"
+      ],
+      [
+        "李四",
+        "上海"
+      ],
+      [
+        "😀"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "big5-named",
+    "input": "qW2mVyyrsKWrCrOvpf2lzSy7T6VfCg==",
+    "label": "cp950",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "姓名,城市\n陳先生,臺北\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "姓名",
+        "城市"
+      ],
+      [
+        "陳先生",
+        "臺北"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "euc-kr-named",
+    "input": "wMy4pyy1tb3DCrHow7a89iy8rb/vCg==",
+    "label": "cp949",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "이름,도시\n김철수,서울\n",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "이름",
+        "도시"
+      ],
+      [
+        "김철수",
+        "서울"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-000",
+    "input": "IC0ApzatIuYyaH/V3nAhQethObdRx2sFcEoYtaSmZv8h3lBMssOYJ1C7",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": " -\u0000§6­\"æ2hÕÞp!Aëa9·QÇk\u0005pJ\u0018µ¤¦fÿ!ÞPL²Ã˜'P»",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        " -\u0000§6­\"æ2hÕÞp!Aëa9·QÇk\u0005pJ\u0018µ¤¦fÿ!ÞPL²Ã˜'P»"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-001",
+    "input": "P7kQm+CIZs5sEUlq3kZtrG0=",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "?�\u0010�f�l\u0011Ij�Fm�m",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "?�\u0010�f�l\u0011Ij�Fm�m"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-002",
+    "input": "auzYBF5vHV36y957/uk5X7ClIjk=",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "j�\u0004^o\u001d]撝ﾞ{��9_ｰ･\"9",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "j�\u0004^o\u001d]撝ﾞ{��9_ｰ･\"9"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-003",
+    "input": "W7RDus3eU0QP/UYNacG5ZdZtl90PnsX9kb6UnsY1l/vzT85doFW875T4y4n7rA==",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "[�C才�SD\u000f�F\ri噌e�m��\u000f�統�����5�贒O�]�U種���琦",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "[�C才�SD\u000f�F"
+      ],
+      [
+        "i噌e�m��\u000f�統�����5�贒O�]�U種���琦"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-004",
+    "input": "t32uvF3pGN166iWrBmHBvWf2iyc5vqgi3nQXog==",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "�}��]�\u0018�z�%�\u0006a��g��'9��\"�t\u0017�",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "�}��]�\u0018�z�%�\u0006a��g��'9��\"�t\u0017�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-005",
+    "input": "qlzUYi552iOilhaWVqTxWAEl2CA4460=",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "ª\\Ôb.yÚ#¢–\u0016–V¤ñX\u0001%Ø 8ã­",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "ª\\Ôb.yÚ#¢–\u0016–V¤ñX\u0001%Ø 8ã­"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-006",
+    "input": "17qTpbM/3svjuQN9IV849BS28NibeJnh/jySlbCsdC+ulw==",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "缀摜�?匏愎\u0003}!_8�\u0014娥貨x欋�\u003c挄艾t/畻",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "缀摜�?匏愎\u0003}!_8�\u0014娥貨x欋�\u003c挄艾t/畻"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-007",
+    "input": "Aibsm8dXjvcvucFfo9L+ZcdwxK8DwCxcNyprYqvvPvsnkO9QlxCZNIBGh0Yzfz1aElPSDGmDuBn+XA8yxhQV",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "\u0002\u0026�ば𤦧/嘗_␒𤦷ら蠕\u0003�,\\7*kb恬\u003e�'琜P�\u0010�4�F䵷3=Z\u0012S�\fi�\u0019𠰺\u000f2�\u0014\u0015",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u0002\u0026�ば𤦧/嘗_␒𤦷ら蠕\u0003�",
+        "\\7*kb恬\u003e�'琜P�\u0010�4�F䵷3=Z\u0012S�\fi�\u0019𠰺\u000f2�\u0014\u0015"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-008",
+    "input": "WC+/1C8Vvpi2/i29h8EqyHTVab9FeZ0kwS/82ApctqhDA5fyWGO/Fp8E6+Irs6lLz6MIkNwMXgW8VXHTzXfnbTJDyOxQJsEEYA==",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "X/왔/\u0015풕랗-퐞�*�t�i풢y�$�/荒\n\\땍C\u0003쀲Xc�\u0016�\u0004淫+낑K句\b먟\f^\u0005펁q答w�m2C흠P\u0026�\u0004`",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "X/왔/\u0015풕랗-퐞�*�t�i풢y�$�/荒"
+      ],
+      [
+        "\\땍C\u0003쀲Xc�\u0016�\u0004淫+낑K句\b먟\f^\u0005펁q答w�m2C흠P\u0026�\u0004`"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-009",
+    "input": "NpufCjIcvkVH8jyH4W7U9sWEHr+KbcHGpg==",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "6洘\n2\u001c綞G�\u003c囜n增艅\u001e繆m疗�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "6洘"
+      ],
+      [
+        "2\u001c綞G�\u003c囜n增艅\u001e繆m疗�"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-010",
+    "input": "VTbGvqBDNDchxceGwW+F+xtUfHXnuI9pPlDvS3WBVecI7exBuaXwm5V86aisQn8G4SO2rCII3MQw54GgxdVHmLIEBLHBa1QLOg==",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "U6Æ¾ C47!ÅÇ†Áo…û\u001bT|uç¸�i\u003ePïKu�Uç\bíìA¹¥ð›•|é¨¬B\u0006á#¶¬\"\bÜÄ0ç� ÅÕG˜²\u0004\u0004±ÁkT\u000b:",
+    "delimiter": 124,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "U6Æ¾ C47!ÅÇ†Áo…û\u001bT",
+        "uç¸�i\u003ePïKu�Uç\bíìA¹¥ð›•",
+        "é¨¬B\u0006á#¶¬\"\bÜÄ0ç� ÅÕG˜²\u0004\u0004±ÁkT\u000b:"
+      ]
+    ],
+    "header": false,
+    "columns": 3,
+    "warnings": []
+  },
+  {
+    "name": "random-011",
+    "input": "BpFDKJny2DpjfPqYE2ZOw3prY8v9QHbKzrCER8w8KGl3wu+jE4fVXPFujVkiYR3JHw==",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "\u0006�C(�:c|�\u0013fN�zkc�@v�ΰ�G�\u003c(iw�\u0013�\\�n�Y\"a\u001d�\u001f",
+    "delimiter": 124,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "\u0006�C(�:c",
+        "�\u0013fN�zkc�@v�ΰ�G�\u003c(iw�\u0013�\\�n�Y\"a\u001d�\u001f"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-012",
+    "input": "lC3Jq1c4bwQ6hiT/jMZxSJG25T7LMpkLfI3qHg==",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "�-ﾉｫW8o\u0004:�$�姑qH存�\u003eﾋ2�\u000b|碕\u001e",
+    "delimiter": 124,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�-ﾉｫW8o\u0004:�$�姑qH存�\u003eﾋ2�\u000b",
+        "碕\u001e"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-013",
+    "input": "pf7GpBcHGlt7CLyBDyZzcgjjOg2CblN48WZ0wXSLvo9OY9G78JSLbmW++MMI3GGUDcJu36YPRWc=",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "�討\u0017\u0007\u001a[{\b��\u000f\u0026sr\b�:\r�nSx�ft�t���Nc兒���ne蒸�\b�a�\r�n潸\u000fEg",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�討\u0017\u0007\u001a[{\b��\u000f\u0026sr\b�:"
+      ],
+      [
+        "�nSx�ft�t���Nc兒���ne蒸�\b�a�"
+      ],
+      [
+        "�n潸\u000fEg"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-014",
+    "input": "qDk79yH89nx8WFlyCm9dq+h+dwRZqHG7ASCf8Qv9Hpv2rvNjGqsDwzZJ2yK9",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "�9;�!��||XYr\no]��~w\u0004Y�q�\u0001 ��\u000b�\u001e����c\u001a�\u0003�6I�\"�",
+    "delimiter": 124,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "�9;�!��",
+        "",
+        "XYr"
+      ],
+      [
+        "o]��~w\u0004Y�q�\u0001 ��\u000b�\u001e����c\u001a�\u0003�6I�\"�"
+      ]
+    ],
+    "header": false,
+    "columns": 3,
+    "warnings": []
+  },
+  {
+    "name": "random-015",
+    "input": "bCq3zBgKNjFtUDo=",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "l*·Ì\u0018\n61mP:",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "l*·Ì\u0018"
+      ],
+      [
+        "61mP:"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-016",
+    "input": "z7IOZa5ypaWsZWdAgw==",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "喜\u000ee畆ゥ琫g@�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "喜\u000ee畆ゥ琫g@�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-017",
+    "input": "AI72JQjXKTb80/6o2EtqWMfUYr4OFi7+18eCOLN1E8yCyCGBe5/gnkhDv7JImtbfWOxMTjy5+crBwKt6Fln2f5Z/4Uq8+rTAtyj+CczZ",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "\u0000𦬊%\b�)6无𡦈陯jXヘb�\u000e\u0016.𣊬�8逝\u0013��!�颴賍C臻H𠵯綆閿N\u003c廖岏屨z\u0016Y��嘒獎替�(�\t枘",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u0000𦬊%\b�)6无𡦈陯jXヘb�\u000e\u0016.𣊬�8逝\u0013��!�颴賍C臻H𠵯綆閿N\u003c廖岏屨z\u0016Y��嘒獎替�(�",
+        "枘"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-018",
+    "input": "xnkxCQr5QHrtQMxBRJYcKU3pSNHA",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "�y1\t\n�@z�@�AD�\u001c)M�H記",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�y1",
+        ""
+      ],
+      [
+        "�@z�@�AD�\u001c)M�H記"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-019",
+    "input": "H1XSG3jHji+ceQnYlo+GCmUHl9O68XNB",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "\u001fU�\u001bx菐/測\t貣弳\ne\u0007椨厚sA",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u001fU�\u001bx菐/測",
+        "貣弳"
+      ],
+      [
+        "e\u0007椨厚sA"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-020",
+    "input": "1vAk8CFAXCoQmopi2T59eEv+pyXj6fMKIwIAH8QArwnuFerruUM=",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "Öð$ð!@\\*\u0010šŠbÙ\u003e}xKþ§%ãéó\n#\u0002\u0000\u001fÄ\u0000¯\tî\u0015êë¹C",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "Öð$ð!@\\*\u0010šŠbÙ\u003e}xKþ§%ãéó"
+      ],
+      [
+        "#\u0002\u0000\u001fÄ\u0000¯",
+        "î\u0015êë¹C"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-021",
+    "input": "FOKbG/GT4mf6190bGy12Fe6yL8KJ",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "\u0014�\u001b�g�\u001b\u001b-v\u0015�/",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u0014�\u001b�g�\u001b\u001b-v\u0015�/"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-022",
+    "input": "UeFSxI9TxkMWCw==",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "Q甞ﾄ輯ﾆC\u0016\u000b",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "Q甞ﾄ輯ﾆC\u0016\u000b"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-023",
+    "input": "VYI5JPrCIu1AjneADFiM0DuCkw==",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "U�9$暲\"�@�w�\fX��;��",
+    "delimiter": 59,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "U�9$暲\"�@�w�\fX��",
+        "��"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-024",
+    "input": "dGK4ARLX8QTk65ftEpRG+toFEvtEFNH/inJ1Sky3XhN3z5t0VCSYcnKlKe88LA==",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "tb�\u0001\u0012��\u0004����\u0012�F��\u0005\u0012�D\u0014���ruJL�^\u0013w��tT$�rr�)�\u003c,",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "tb�\u0001\u0012��\u0004����\u0012�F��\u0005\u0012�D\u0014���ruJL�^\u0013w��tT$�rr�)�\u003c",
+        ""
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-025",
+    "input": "sCHk+yukFDWvKg7MXn6dh0JmyDnNF1LMrDXvg4SwfiE7E/Y3uTwW4LYcki+7TVqit5yboO7tnfirzGqI7XYuazlIJCdK",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "°!äû+¤\u00145¯*\u000eÌ^~�‡BfÈ9Í\u0017RÌ¬5ïƒ„°~!;\u0013ö7¹\u003c\u0016à¶\u001c’/»MZ¢·œ› îí�ø«Ìjˆív.k9H$'J",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "°!äû+¤\u00145¯*\u000eÌ^~�‡BfÈ9Í\u0017RÌ¬5ïƒ„°~!",
+        "\u0013ö7¹\u003c\u0016à¶\u001c’/»MZ¢·œ› îí�ø«Ìjˆív.k9H$'J"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-026",
+    "input": "R7Tau7coJ5IPJ0lsO3lhvicjdAioAd1g85cU+SHAIbK1NS7zTYGfZDE=",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "G蹿环('�\u000f'Il;ya�'#t\b�\u0001輅髼\u0014�!�!驳5.驧仧d1",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "G蹿环('�\u000f'Il",
+        "ya�'#t\b�\u0001輅髼\u0014�!�!驳5.驧仧d1"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-027",
+    "input": "yTGd8D24ia/Ih9y91PAC1ScdBpglNPubj/YeFxduSCbPKu40Sis6NjqrSX8oj606Nfq0BmPq2DlcAIELPKdQF41/FA==",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "�1嗱=�紙𪷿諂�\u0002�'\u001d\u0006�%4�贒\u001e\u0017\u0017nH\u0026�*�4J+:6:侵(号:5剗\u0006c縋9\\\u0000�\u000b\u003c判\u0017�\u0014",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�1嗱=�紙𪷿諂�\u0002�'\u001d\u0006�%4�贒\u001e\u0017\u0017nH\u0026�*�4J+:6:侵(号:5剗\u0006c縋9\\\u0000�\u000b\u003c判\u0017�\u0014"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-028",
+    "input": "0b6DpRFEbm2mC1qPloYa/beZgzi3EMuzj8zDGWbX6JAAH+H+laWssZjjajM6kjRW3mF73z2BXFoMLMqKXFkDnmALpm1USBt0n0xDqfA=",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "耭깷\u0011Dnm�\u000bZ룚�\u001a熏셾8�\u0010糠뤝�\u0019f羸�\u0000\u001f愁븼П섅j3:�4V�a{�=�\\Z\f,�\\Y\u0003�`\u000b쫗TH\u001bt욷C⑽",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "耭깷\u0011Dnm�\u000bZ룚�\u001a熏셾8�\u0010糠뤝�\u0019f羸�\u0000\u001f愁븼П섅j3:�4V�a{�=�\\Z\f",
+        "�\\Y\u0003�`\u000b쫗TH\u001bt욷C⑽"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-029",
+    "input": "tT/tC3518fHvRp+upzMO",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "�?�\u000b~u耨颋煯�3\u000e",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�?�\u000b~u耨颋煯�3\u000e"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-030",
+    "input": "gCie97y7b39lvZwGqwx1zJEtvRN5MF3gmWBaviuzSV2IOvxFQwQqUW+KluA=",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "€(ž÷¼»oe½œ\u0006«\fuÌ‘-½\u0013y0]à™`Z¾+³I]ˆ:üEC\u0004*QoŠ–à",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "€(ž÷¼»oe½œ\u0006«\fuÌ‘-½\u0013y0]à™`Z¾+³I]ˆ:üEC\u0004*QoŠ–à"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-031",
+    "input": "+XXWkRetrBhbNWw=",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "�u֑\u0017�\u0018[5l",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�u֑\u0017�\u0018[5l"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-032",
+    "input": "oT4VYrYHGlA1IBcpgmhWyA5rKNz9Ars62lmauLZCkmeFZix7BQ5gttPuRxWLK9J+/bC1yQ==",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "｡\u003e\u0015bｶ\u0007\u001aP5 \u0017)ＩVﾈ\u000ek(ﾜ�\u0002ｻ:ﾚY垪ｶB暖�,{\u0005\u000e`ｶﾓ珣\u0015�+ﾒ~�ｰｵﾉ",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "｡\u003e\u0015bｶ\u0007\u001aP5 \u0017)ＩVﾈ\u000ek(ﾜ�\u0002ｻ:ﾚY垪ｶB暖�",
+        "{\u0005\u000e`ｶﾓ珣\u0015�+ﾒ~�ｰｵﾉ"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-033",
+    "input": "vGhJTcrxMJYL86Y7b3RsE3aiL3EKiQjboAaiwxuYpYUu3NWAT5ceWcXM7IBvIQ==",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "�hIM包0�\u000b鵙;otl\u0013v�/q\n�\b��\u0006�\u001b���.榠�O�\u001eY徒��o!",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�hIM包0�\u000b鵙",
+        "otl\u0013v�/q"
+      ],
+      [
+        "�\b��\u0006�\u001b���.榠�O�\u001eY徒��o!"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-034",
+    "input": "B58lf7RzxrnrGUw6p4/Z5g4xB9/fJi6Mg8cVA9QsPu9fiNc=",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "\u0007�%�s���\u0019L:����\u000e1\u0007��\u0026.���\u0015\u0003�,\u003e�_��",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u0007�%�s���\u0019L:����\u000e1\u0007��\u0026.���\u0015\u0003�",
+        "\u003e�_��"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-035",
+    "input": "UZRcRnT5N7F6PjYQCneryZvtGcjf7yH5iRi+kqFx5WRbfC8GSxM+",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "Q”\\Ftù7±z\u003e6\u0010\nw«É›í\u0019Èßï!ù‰\u0018¾’¡qåd[|/\u0006K\u0013\u003e",
+    "delimiter": 124,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "Q”\\Ftù7±z\u003e6\u0010"
+      ],
+      [
+        "w«É›í\u0019Èßï!ù‰\u0018¾’¡qåd[",
+        "/\u0006K\u0013\u003e"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-036",
+    "input": "g8eF06tN+jkr9PyNSzvbf8sF/a6I50r8XqV+NOZ9Y4Emw1eBLyDBlOsYB/B3sNeAwt+VG8aweHXjwrbhQVtmzhOqM2ntkfRes1SlYw==",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "兦呌玀�9+酎岾;��\u0005�堢J黕�4鎪c�\u0026肳�/ 翑�\u0018\u0007饂白€逻�\u001b瓢xu懵夺A[f�\u0013�3i響鬪砊�",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "兦呌玀�9+酎岾",
+        "��\u0005�堢J黕�4鎪c�\u0026肳�/ 翑�\u0018\u0007饂白€逻�\u001b瓢xu懵夺A[f�\u0013�3i響鬪砊�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-037",
+    "input": "cwAHvx6/JWwDbK7Rw5EpL/yGoFtXF74vGTNaBA==",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "s\u0000\u0007�\u001e�%l\u0003l書�)/�惽W\u0017�/\u00193Z\u0004",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "s\u0000\u0007�\u001e�%l\u0003l書�)/�惽W\u0017�/\u00193Z\u0004"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-038",
+    "input": "sQvk+f5PQ0Dc0LOmfR1ybyUpFKsvawAeJVB8jw5gUUlOD1wFDaiG0lykpXc=",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "�\u000b扼�OC@輔낌}\u001dro%)\u0014�/k\u0000\u001e%P|�\u000e`QIN\u000f\\\u0005\r쮩�\\ㄵw",
+    "delimiter": 124,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�\u000b扼�OC@輔낌}\u001dro%)\u0014�/k\u0000\u001e%P",
+        "�\u000e`QIN\u000f\\\u0005"
+      ],
+      [
+        "쮩�\\ㄵw"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-039",
+    "input": "u6MOPdhZTzXn/tHzcvo=",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "唬\u000e=豗O5琬洋r�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "唬\u000e=豗O5琬洋r�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-040",
+    "input": "ZdzgbJYhkP/lrXa8KC6LZMvZ/USKwKhWQimn0aR/r8cE3vHH1iGeeMy8PCce1gjjl6uf5eqfb2HZIAijkXU0fYEQFczcwDvXKak=",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "eÜàl–!�ÿå­v¼(.‹dËÙýDŠÀ¨VB)§Ñ¤¯Ç\u0004ÞñÇÖ!žxÌ¼\u003c'\u001eÖ\bã—«ŸåêŸoaÙ \b£‘u4}�\u0010\u0015ÌÜÀ;×)©",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "eÜàl–!�ÿå­v¼(.‹dËÙýDŠÀ¨VB)§Ñ¤¯Ç\u0004ÞñÇÖ!žxÌ¼\u003c'\u001eÖ\bã—«ŸåêŸoaÙ \b£‘u4}�\u0010\u0015ÌÜÀ",
+        "×)©"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-041",
+    "input": "k84VC5pz1joGtULbq8wROm4+//GcnKpTspMDu9RW7E+Fkh9wOhtEW49z2oa4DqM184v64X8p",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "�\u0015\u000b�s�:\u0006�B۫�\u0011:n\u003e�񜜪S�\u0003�V�O�\u001fp:\u001bD[�sچ�\u000e�5�)",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�\u0015\u000b�s�:\u0006�B۫�\u0011:n\u003e�񜜪S�\u0003�V�O�\u001fp:\u001bD[�sچ�\u000e�5�)"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-042",
+    "input": "PF+lVMM2CtjyNq3zM6aqA41TkW+9qMvxriD96xv8vL2DfwHc+nJGf8a7hlTYZZkq79Enx0kNGoTv7Yrq8kpVLxqjsbj7yBx40RlCHqwZ2w==",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "\u003c_･Tﾃ6\nﾘ�6ｭ�3ｦｪ\u0003拘双ｽｨﾋ� ��\u001b�ｽ�\u0001ﾜ侔Fﾆｻ�ﾘe�*�'ﾇI\r\u001a�孖�JU/\u001a｣ｱｸ鉙\u001cxﾑ\u0019B\u001eｬ\u0019ﾛ",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u003c_･Tﾃ6"
+      ],
+      [
+        "ﾘ�6ｭ�3ｦｪ\u0003拘双ｽｨﾋ� ��\u001b�ｽ�\u0001ﾜ侔Fﾆｻ�ﾘe�*�'ﾇI"
+      ],
+      [
+        "\u001a�孖�JU/\u001a｣ｱｸ鉙\u001cxﾑ\u0019B\u001eｬ\u0019ﾛ"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-043",
+    "input": "Tu81mypPEEvVwwza8KuE/n25DPh5Ac2eOZiRm1pkUPMHKd4MamLR6g==",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "N�5�*O\u0010K嫦\f晟���}�\f�y\u0001��9���ZdP�\u0007)�\fjb刳",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "N�5�*O\u0010K嫦\f晟���}�\f�y\u0001��9���ZdP�\u0007)�\fjb刳"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-044",
+    "input": "SNzeFV9UKmowKA==",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "H��\u0015_T*j0(",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "H��\u0015_T*j0("
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-045",
+    "input": "4Lmf5LfqR+K/VTh6848h5GqOsslnFrcEmFsjMeS4WKjcJEGl5/ox0JsHA9EqLp1urb3umA==",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "à¹Ÿä·êGâ¿U8zó�!äjŽ²Ég\u0016·\u0004˜[#1ä¸X¨Ü$A¥çú1Ð›\u0007\u0003Ñ*.�n­½î˜",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "à¹Ÿä·êGâ¿U8zó�!äjŽ²Ég\u0016·\u0004˜[#1ä¸X¨Ü$A¥çú1Ð›\u0007\u0003Ñ*.�n­½î˜"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-046",
+    "input": "rzDD2QzPpm51io2cVqi4yJuMHUq401N/tBkHaybzpHWAIgpk1Q==",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "�0觅\f夕nu妽淰ǜ葲�\u001dJ赣S�\u0019\u0007k\u0026螭u€\"\nd�",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "�0觅\f夕nu妽淰ǜ葲�\u001dJ赣S�\u0019\u0007k\u0026螭u€\""
+      ],
+      [
+        "d�"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-047",
+    "input": "bz8uSEsMWSM5OWr+mfI6gc4NJDqNiQ==",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "o?.HK\fY#99j��:�\r$:�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "o?.HK\fY#99j��:�"
+      ],
+      [
+        "$:�"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-048",
+    "input": "Tp6V5GUHrLxRNGrY//qXRiaqd6vEd+BW7+DO",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "N옎�e\u0007ЪQ4j��F\u0026챮ツw�V檉�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "N옎�e\u0007ЪQ4j��F\u0026챮ツw�V檉�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-049",
+    "input": "7Hc1FMGJhgL8FsqY",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "靪5\u0014翂�\u0002�\u0016蕵",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "靪5\u0014翂�\u0002�\u0016蕵"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-050",
+    "input": "h2IufNLEQUz4n3mTIsK0Q2ojggh7sG+DiMlQ",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "‡b.|ÒÄALøŸy“\"Â´Cj#‚\b{°oƒˆÉP",
+    "delimiter": 124,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "‡b.",
+        "ÒÄALøŸy“\"Â´Cj#‚\b{°oƒˆÉP"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-051",
+    "input": "FNmbIXju3ch3vTzuyySBDJ3pQGWdbYTikxcyrysno783OzutQUtBf2HWhHBeGzFi8kucKC/UFGFxMzJq8VnTKSxx2v4bJrK93ZBcTg==",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "\u0014ٛ!x�w�\u003c�$�\f�@e�m�\u00172�+'�7;;�AKAaքp^\u001b1b�K�(/�\u0014aq32j�Y�),q�\u001b\u0026�ݐ\\N",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u0014ٛ!x�w�\u003c�$�\f�@e�m�\u00172�+'�7",
+        "",
+        "�AKAaքp^\u001b1b�K�(/�\u0014aq32j�Y�),q�\u001b\u0026�ݐ\\N"
+      ]
+    ],
+    "header": false,
+    "columns": 3,
+    "warnings": []
+  },
+  {
+    "name": "random-052",
+    "input": "cA0PMNsTF0LzLMfw9Vs+H7t3+2uoC5zDBEAZjJE4",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "p\r\u000f0ﾛ\u0013\u0017B�,ﾇ�[\u003e\u001fｻw瑢ｨ\u000b愿\u0004@\u0019倦8",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "p"
+      ],
+      [
+        "\u000f0ﾛ\u0013\u0017B�",
+        "ﾇ�[\u003e\u001fｻw瑢ｨ\u000b愿\u0004@\u0019倦8"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-053",
+    "input": "1NQa16cvOoLMPyCTYXvYvi2DRKgidOWGt6l/iIbPwDGtWCkeCm3c5MaqVao80mNYR1K3zu8=",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "墺\u001a廡/:��? �a{愍-�D�\"t��粂��論1�X)\u001e\nm樞鐙U�\u003c�cXGR稽�",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "墺\u001a廡/:��? �a{愍-�D�\"t��粂��論1�X)\u001e"
+      ],
+      [
+        "m樞鐙U�\u003c�cXGR稽�"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-054",
+    "input": "8SpY7LUblshaclKqZCTr1GhF4CGTr3ZgSGYxICebhJIKKXP+LTHWCDxozwk=",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "�*X�����ZrR�d$��hE�!��v`Hf1 '���\n)s�-1�\b\u003ch�\t",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�*X�����ZrR�d$��hE�!��v`Hf1 '���"
+      ],
+      [
+        ")s�-1�\b\u003ch�",
+        ""
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-055",
+    "input": "W4Kkuj7KTOd8CesSL0z79hwETK/VgEZ9p2zjXhXDjf/Zex8=",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "[‚¤º\u003eÊLç|\të\u0012/Lûö\u001c\u0004L¯Õ€F}§lã^\u0015Ã�ÿÙ{\u001f",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "[‚¤º\u003eÊLç|",
+        "ë\u0012/Lûö\u001c\u0004L¯Õ€F}§lã^\u0015Ã�ÿÙ{\u001f"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-056",
+    "input": "pi6ITADbBmk4j9HXS3poWwXvsOuaPbgmRexF+e6tcVDD6Vhb1ABZqGQs5MnFIUoYrS1jG4k1",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "�.圠\u0000�\u0006i8徰譑zh[\u0005锇霘=�\u0026E霦�璹P瞄X[�\u0000Y╠,渖�!J\u0018�-c\u001b�5",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�.圠\u0000�\u0006i8徰譑zh[\u0005锇霘=�\u0026E霦�璹P瞄X[�\u0000Y╠",
+        "渖�!J\u0018�-c\u001b�5"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-057",
+    "input": "AGHZmLI/27ep2OcZdB6HvUxoJ5Su",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "\u0000a��?蛪拂�\u0019t\u001e遆Lh'睸",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u0000a��?蛪拂�\u0019t\u001e遆Lh'睸"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-058",
+    "input": "wu4Gd6j0yCU/kpfyhZ2xbgRqi2kngvEn7e/GMwkms7xW/+wdQrBP1TefAE9nCN5Xh7h/ycWycr2KKlhm3tLWobA/Fw7tlMt1U/gcvNU=",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "찌\u0006w⑭�%?뮉�씝n\u0004j땓'귪'獐�3\t\u0026낵V��\u001dB캯�7�\u0000Og\b�W눡�쾟퐡*Xf射煉�?\u0017\u000e��uS�\u001c손",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "찌\u0006w⑭�%?뮉�씝n\u0004j땓'귪'獐�3",
+        "\u0026낵V��\u001dB캯�7�\u0000Og\b�W눡�쾟퐡*Xf射煉�?\u0017\u000e��uS�\u001c손"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-059",
+    "input": "1+P3ESy+avGyiueRQahn8VMpImIiNRqI0WLZTn1n2uKqgIXmmVMQQeLnCFyy7FxWnzmnffGhOxbW",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "足�\u0011,緅癫婄慉╣馭)\"b\"5\u001a堁b貼}g阝獉呮橲\u0010A忡\b\\察\\V�9�瘛;\u0016�",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "足�\u0011",
+        "緅癫婄慉╣馭)\"b\"5\u001a堁b貼}g阝獉呮橲\u0010A忡\b\\察\\V�9�瘛;\u0016�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-060",
+    "input": "kK46bzsXmSKOeGCrmHmXPshM5+h/1F3MiBFZGbd6",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "�®:o;\u0017™\"Žx`«˜y—\u003eÈLçèÔ]Ìˆ\u0011Y\u0019·z",
+    "delimiter": 59,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "�®:o",
+        "\u0017™\"Žx`«˜y—\u003eÈLçèÔ]Ìˆ\u0011Y\u0019·z"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-061",
+    "input": "Dl+9sxVlQkQilUy4uGHheTavphnr79JDHdFnUeEzazbMcGdNIjCk98kDpqDcljq8duPHS9v1ClZ/Hw==",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "\u000e_�\u0015eBD\"�L�a�y6�\u0019�C\u001d�gQ�3k6�pgM\"0�\u0003�ܖ:�v�K�\nV\u001f",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "\u000e_�\u0015eBD\"�L�a�y6�\u0019�C\u001d�gQ�3k6�pgM\"0�\u0003�ܖ:�v�K�"
+      ],
+      [
+        "V\u001f"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-062",
+    "input": "SX8SQy/2qk9Ss87Q4vmooig4IBkSto6wpmT1ClqPhBbzTyaZqkOqwyoamk8ZEtfhMcgsMf07Xm6Ma44VQprnclcTQB+PdVw5",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "I\u0012C/�ORｳﾎﾐ糴ｨ｢(8 \u0019\u0012ｶ鴫ｦd�\nZ巡\u0016�\u0026飭Cｪﾃ*\u001a唹\u0019\u0012ﾗ�1ﾈ,1�;^n渓�\u0015B夂rW\u0013@\u001f瞬\\9",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "I\u0012C/�ORｳﾎﾐ糴ｨ｢(8 \u0019\u0012ｶ鴫ｦd�"
+      ],
+      [
+        "Z巡\u0016�\u0026飭Cｪﾃ*\u001a唹\u0019\u0012ﾗ�1ﾈ",
+        "1�;^n渓�\u0015B夂rW\u0013@\u001f瞬\\9"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-063",
+    "input": "c2aYScOl8Zxm3G2/ahdMeeJKAQ==",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "sf�I奪��f�m�j\u0017Ly�J\u0001",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "sf�I奪��f�m�j\u0017Ly�J\u0001"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-064",
+    "input": "/htOBOKENELP+VRuHrFBGgG7jRND4p9BDeaUbj7CcMe1MohiUEiiVhiVjHUx8c9SPxqo3C6L",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "��N\u0004��4B��Tn\u001e�A\u001a\u0001��\u0013C��A\r��n\u003e�p��2�bPH�V\u0018��u1��R?\u001a��.�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "��N\u0004��4B��Tn\u001e�A\u001a\u0001��\u0013C��A"
+      ],
+      [
+        "��n\u003e�p��2�bPH�V\u0018��u1��R?\u001a��.�"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-065",
+    "input": "PZx8Moh3qxvidcfSkbGi8zznXSLNEhWIWYKKOJ6RtDswHKgB6C+rGum5Ywfge4frSibJNOdAG7rUp+x8Enm+vsSsuyVFP91+7BmrxcM=",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "=œ|2ˆw«\u001bâuÇÒ‘±¢ó\u003cç]\"Í\u0012\u0015ˆY‚Š8ž‘´;0\u001c¨\u0001è/«\u001aé¹c\u0007à{‡ëJ\u0026É4ç@\u001bºÔ§ì|\u0012y¾¾Ä¬»%E?Ý~ì\u0019«ÅÃ",
+    "delimiter": 124,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "=œ",
+        "2ˆw«\u001bâuÇÒ‘±¢ó\u003cç]\"Í\u0012\u0015ˆY‚Š8ž‘´;0\u001c¨\u0001è/«\u001aé¹c\u0007à{‡ëJ\u0026É4ç@\u001bºÔ§ì",
+        "\u0012y¾¾Ä¬»%E?Ý~ì\u0019«ÅÃ"
+      ]
+    ],
+    "header": false,
+    "columns": 3,
+    "warnings": []
+  },
+  {
+    "name": "random-066",
+    "input": "ZFnsyWqmBnoKTkQNQZku148=",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "dY焐j�\u0006z\nND\rA�.讖",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "dY焐j�\u0006z"
+      ],
+      [
+        "ND"
+      ],
+      [
+        "A�.讖"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-067",
+    "input": "5w1BYphogBFagJ6c0g3+",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "�\rAb峂�\u0011Z���\r�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�"
+      ],
+      [
+        "Ab峂�\u0011Z���"
+      ],
+      [
+        "�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-068",
+    "input": "JVxlPTxhmYmezR9NYA2QN3AFmKRjeJXcGHtLHZ6Buya990KuZd3VidNjaPmVED+swsMP",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "%\\e=\u003ca솄왤\u001fM`\r�7p\u0005삤cx뺒\u0018{K\u001d엨�\u0026쏴B췦不됒ch�\u0010?��\u000f",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "%\\e=\u003ca솄왤\u001fM`"
+      ],
+      [
+        "�7p\u0005삤cx뺒\u0018{K\u001d엨�\u0026쏴B췦不됒ch�\u0010?��\u000f"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-069",
+    "input": "sc1BX9fRGn6kRqcSvU3FgOsOM7ZLk2c/",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "蓖A_籽\u001a~��\u0012組艀�\u000e3禟揼?",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "蓖A_籽\u001a~��\u0012組艀�\u000e3禟揼?"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-070",
+    "input": "6orUui86K7kPC0Dcd2DELhyo7ZNtPm6IBDa2cvI2sZJpprtvYPbwD62HdGq2apK/EZLaGORr4FmRFchbDfFp",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "êŠÔº/:+¹\u000f\u000b@Üw`Ä.\u001c¨í“m\u003enˆ\u00046¶rò6±’i¦»o`öð\u000f­‡tj¶j’¿\u0011’Ú\u0018äkàY‘\u0015È[\rñi",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "êŠÔº/:+¹\u000f\u000b@Üw`Ä.\u001c¨í“m\u003enˆ\u00046¶rò6±’i¦»o`öð\u000f­‡tj¶j’¿\u0011’Ú\u0018äkàY‘\u0015È["
+      ],
+      [
+        "ñi"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-071",
+    "input": "Yyd45mbTKrXkp1Gq68ygAGiZU6tnbWaa039fbi6tUTV7lwLeZhaYel8Qxsmle4FzO3Rp44w6yOsPSXI3mlNpjg4=",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "c'x�f�*�Q�̠\u0000h�S�gmf�_n.�Q5{�\u0002�f\u0016�z_\u0010�ɥ{�s;ti�:�\u000fIr7�Si�\u000e",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "c'x�f�*�Q�̠\u0000h�S�gmf�_n.�Q5{�\u0002�f\u0016�z_\u0010�ɥ{�s",
+        "ti�:�\u000fIr7�Si�\u000e"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-072",
+    "input": "hAJZ/RaldXjVpFgKJv0ezeG6eEqCyXUdVF5fC25TjOB9QTYsuuCSHxfZjrt6ym5CACU=",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "�\u0002Y�\u0016･uxﾕ､X\n\u0026�\u001eﾍ蘯xJにu\u001dT^_\u000bnS呉}A6,ｺ熬\u001f\u0017ﾙ悉zﾊnB\u0000%",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�\u0002Y�\u0016･uxﾕ､X"
+      ],
+      [
+        "\u0026�\u001eﾍ蘯xJにu\u001dT^_\u000bnS呉}A6",
+        "ｺ熬\u001f\u0017ﾙ悉zﾊnB\u0000%"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-073",
+    "input": "SwZYz0f1Tjhd/6o/R0D0rMajJoXmmWYOpSYb5H5mTubbiu6FN+mL/ltKv+JV/qhXOMPYvw==",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "K\u0006X�G�N8]��?G@�藤\u0026���f\u000e�\u0026\u001b�~fN聘���7���[J垂U�W8蜘�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "K\u0006X�G�N8]��?G@�藤\u0026���f\u000e�\u0026\u001b�~fN聘���7���[J垂U�W8蜘�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-074",
+    "input": "zQ4cSWafiq6XQXBDDKmK48fB96g3mN0iWGETHKHqiw==",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "�\u000e\u001cIf����ApC\f�������7��\"Xa\u0013\u001c���",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "�\u000e\u001cIf����ApC\f�������7��\"Xa\u0013\u001c���"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-075",
+    "input": "Q3LeOmCetGvsAwDkRHn+MsXo3G+ZLj/TjS3XQNDSJN3QBw5d/vpMGcuATctAh1PjMdWOoVLoCJXJkWUHgZ1zAnnWVvf06mG6hc6pIg==",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "CrÞ:`ž´kì\u0003\u0000äDyþ2ÅèÜo™.?Ó�-×@ÐÒ$ÝÐ\u0007\u000e]þúL\u0019Ë€MË@‡Sã1ÕŽ¡Rè\b•É‘e\u0007��s\u0002yÖV÷ôêaº…Î©\"",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "CrÞ:`ž´kì\u0003\u0000äDyþ2ÅèÜo™.?Ó�-×@ÐÒ$ÝÐ\u0007\u000e]þúL\u0019Ë€MË@‡Sã1ÕŽ¡Rè\b•É‘e\u0007��s\u0002yÖV÷ôêaº…Î©\""
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-076",
+    "input": "IGxWOOG2xoFe4N8ITt23zrYHz4yRL+2Rl8tGc/UvadVmh5wFw+hF00jbrb6FVWSUxsYM36leqTnkxA4=",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": " lV8岫苼^噙\bN莘味\u0007蠈�/響椝Fs�/i說嚋\u0005描E親郗緟Ud斊�\f擤^�9淠\u000e",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        " lV8岫苼^噙\bN莘味\u0007蠈�/響椝Fs�/i說嚋\u0005描E親郗緟Ud斊�\f擤^�9淠\u000e"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-077",
+    "input": "2K4ot995qbE29jFKUMGcnvKiaameR6Y6EVtnhnn1XcgjJn3dPZR9min5DAOCpznDqcogG0HyTwb17xNOoLGYAa9/u+g=",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "堮(猷y店6�1JP�𣃚█�G�:\u0011[g�騬�#\u0026}�=𤦎�)�\f\u0003�9矇� \u001bA櫑\u0006耰\u0013N𥼚�\u0001�餉",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "堮(猷y店6�1JP�𣃚█�G�:\u0011[g�騬�#\u0026}�=𤦎�)�\f\u0003�9矇� \u001bA櫑\u0006耰\u0013N𥼚�\u0001�餉"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-078",
+    "input": "6sFhVoXMGnq3G71bq7aUpAEKDQsNiw3sYYETEwg=",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "阮aV끢\u001az�\u001b�[ザ뵥\u0001\n\r\u000b\r�\r�a�\u0013\u0013\b",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "阮aV끢\u001az�\u001b�[ザ뵥\u0001"
+      ],
+      [],
+      [
+        "\u000b"
+      ],
+      [
+        "�"
+      ],
+      [
+        "�a�\u0013\u0013\b"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-079",
+    "input": "9bhq8hCwOv5OJ+8HdQ+qM2GBwSSGWGa0YApMluN4+Es=",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "醺j�\u0010�:﨨'�\u0007u\u000f�3a伭$哫f碻\nL栥x鳮",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "醺j�\u0010�:﨨'�\u0007u\u000f�3a伭$哫f碻"
+      ],
+      [
+        "L栥x鳮"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-080",
+    "input": "DbWY+mfLLb3AasNJvRAPHkVAB8pEZ0LZJQgVhDStUz7h8LHwzfFgPN8zX8E9o+ZGGQOSTzfv41ywrrkhpElGV08UA/yna/s=",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "\rµ˜úgË-½ÀjÃI½\u0010\u000f\u001eE@\u0007ÊDgBÙ%\b\u0015„4­S\u003eáð±ðÍñ`\u003cß3_Á=£æF\u0019\u0003’O7ïã\\°®¹!¤IFWO\u0014\u0003ü§kû",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [],
+      [
+        "µ˜úgË-½ÀjÃI½\u0010\u000f\u001eE@\u0007ÊDgBÙ%\b\u0015„4­S\u003eáð±ðÍñ`\u003cß3_Á=£æF\u0019\u0003’O7ïã\\°®¹!¤IFWO\u0014\u0003ü§kû"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-081",
+    "input": "Lpgizf+sjZdU3lrSK38OaDAaKL+NC+SGswlX",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": ".�\"�T�Z�+\u000eh0\u001a(�\u000b䆳\tW",
+    "delimiter": 9,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        ".�\"�T�Z�+\u000eh0\u001a(�\u000b䆳",
+        "W"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-082",
+    "input": "GGiAKcW2EKQTCdrGFuqNfC9s7NzABg0Wc1raBFGpERO1m8dvE5q8Nx53QQ==",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "\u0018h)ﾅｶ\u0010､\u0013\tﾚﾆ\u0016鼾|/l�ﾀ\u0006\r\u0016sZﾚ\u0004Qｩ\u0011\u0013ｵ嵒o\u0013埔7\u001ewA",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u0018h)ﾅｶ\u0010､\u0013",
+        "ﾚﾆ\u0016鼾|/l�ﾀ\u0006"
+      ],
+      [
+        "\u0016sZﾚ\u0004Qｩ\u0011\u0013ｵ嵒o\u0013埔7\u001ewA"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-083",
+    "input": "0bRiiwX5N0tLTDdWhXNruUDdSeeW2YeEDOAVOcs=",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "儡b�\u0005�7KKL7V�sk�@�I�����\f�\u00159�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "儡b�\u0005�7KKL7V�sk�@�I�����\f�\u00159�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-084",
+    "input": "d4zOoaUNjqN7zJ2epgufNjI9mmb4iZjiNat8l9VGoRKQk4Blzqs+wdN7+fcAOm8UdiM=",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "w����\r��{����\u000b�62=�f����5�|��F�\u0012���e��\u003e��{��\u0000:o\u0014v#",
+    "delimiter": 124,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "w����"
+      ],
+      [
+        "��{����\u000b�62=�f����5�",
+        "��F�\u0012���e��\u003e��{��\u0000:o\u0014v#"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-085",
+    "input": "EQKbFtb5qNgjevkVPPPrTE+xJGCkSgyOD80z6I89JYECS/U5os8eRzLLG94o5h2YZUib3W8qv3ZzYm89RBQSaTUah4M=",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "\u0011\u0002›\u0016Öù¨Ø#zù\u0015\u003cóëLO±$`¤J\fŽ\u000fÍ3è�=%�\u0002Kõ9¢Ï\u001eG2Ë\u001bÞ(æ\u001d˜eH›Ýo*¿vsbo=D\u0014\u0012i5\u001a‡ƒ",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u0011\u0002›\u0016Öù¨Ø#zù\u0015\u003cóëLO±$`¤J\fŽ\u000fÍ3è�=%�\u0002Kõ9¢Ï\u001eG2Ë\u001bÞ(æ\u001d˜eH›Ýo*¿vsbo=D\u0014\u0012i5\u001a‡ƒ"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-086",
+    "input": "saUvJbMD6WJD7rk2piw/gmqaEQcMkVtw7Ppb3F/qPFLdb2SbQDm4SA==",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "饱/%�\u0003閎C罟6�,?俲�\u0011\u0007\f慬p禚[躝�\u003cR輔d汙9窰",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "饱/%�\u0003閎C罟6�",
+        "?俲�\u0011\u0007\f慬p禚[躝�\u003cR輔d汙9窰"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-087",
+    "input": "lpnA7WWHm443+ecELbzHyrv+FYYkch3YAIwal/0cnMfc0YALAPOiS4h8MWFCFqN506IFFx5QzHKbUG6jIyYaSufWx1fOepjJG0AZ",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "�燴e��7╤\u0004-暮妡�\u0015�$r\u001d�\u0000�\u001a䓟\u001c𡘊嗀�\u000b\u0000鞷Kǖ1aB\u0016ㄊ荎\u0005\u0017\u001eP弣𢏺n�#\u0026\u001aJ誸ば峘琞\u001b@\u0019",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�燴e��7╤\u0004-暮妡�\u0015�$r\u001d�\u0000�\u001a䓟\u001c𡘊嗀�\u000b\u0000鞷Kǖ1aB\u0016ㄊ荎\u0005\u0017\u001eP弣𢏺n�#\u0026\u001aJ誸ば峘琞\u001b@\u0019"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-088",
+    "input": "nyKi5KDCXAJx9Ws4DhrmhQD5Ax6FUniIsekFA6/T0J6nHFobcxxWuzi5+oLMsexsTMpTzzxFI7gVHZu1OGO2",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "�\"㏘졖\\\u0002q�k8\u000e\u001a�\u0000�\u0003\u001e꿘x댇�\u0005\u0003���\u001cZ\u001bs\u001cV�8벌궻깆lL�S�\u003cE#�\u0015\u001d쎎8c�",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "�\"㏘졖\\\u0002q�k8\u000e\u001a�\u0000�\u0003\u001e꿘x댇�\u0005\u0003���\u001cZ\u001bs\u001cV�8벌궻깆lL�S�\u003cE#�\u0015\u001d쎎8c�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-089",
+    "input": "Yl7u4nZ7T5AO/VAewOI=",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "b^钼v{O�\u000e齈\u001e棱",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "b^钼v{O�\u000e齈\u001e棱"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-090",
+    "input": "8DJRL2545I0KmriWYRv9HAmgEwdkd3Y2acyGMRMpVXCeKyPgwwG7/sq6UR7HRyhr9rnPn2oMzMDvoThu7kWtkIozrm/+EuwK",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "ð2Q/nxä�\nš¸–a\u001bý\u001c\t \u0013\u0007dwv6iÌ†1\u0013)Upž+#àÃ\u0001»þÊºQ\u001eÇG(kö¹ÏŸj\fÌÀï¡8nîE­�Š3®oþ\u0012ì\n",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "ð2Q/nxä�"
+      ],
+      [
+        "š¸–a\u001bý\u001c",
+        " \u0013\u0007dwv6iÌ†1\u0013)Upž+#àÃ\u0001»þÊºQ\u001eÇG(kö¹ÏŸj\fÌÀï¡8nîE­�Š3®oþ\u0012ì"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-091",
+    "input": "gYKJ/m08+YT2eS1rxRka",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "�m\u003c�y-k�\u0019\u001a",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�m\u003c�y-k�\u0019\u001a"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-092",
+    "input": "t/KHIlI21wALtILiQ9AcYopUPsGKU8Vh84IARkALkmKpfzjR1YNETu1jWWspVnGczjEU0xc=",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "ｷ�\"R6ﾗ\u0000\u000bｴやCﾐ\u001cb概\u003eﾁ慨ﾅa�\u0000F@\u000b鍛ｩ8ﾑﾕゥN兤Yk)Vq慚1\u0014ﾓ\u0017",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "ｷ�\"R6ﾗ\u0000\u000bｴやCﾐ\u001cb概\u003eﾁ慨ﾅa�\u0000F@\u000b鍛ｩ8ﾑﾕゥN兤Yk)Vq慚1\u0014ﾓ\u0017"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-093",
+    "input": "PujFcpRrG+Jrk33m8ovu6Uwsfn4E54Q94H5R0RKl1wYCPWeUTdSrNQ+qihnig1yZUxu1xAMO",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "\u003e菘r�k\u001b�k�}胙�鉗L,~~\u0004��=�~Q�\u0012プ\u0006\u0002=g�M圸5\u000f��\u0019��\\�S\u001b議\u0003\u000e",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u003e菘r�k\u001b�k�}胙�鉗L",
+        "~~\u0004��=�~Q�\u0012プ\u0006\u0002=g�M圸5\u000f��\u0019��\\�S\u001b議\u0003\u000e"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-094",
+    "input": "qCn/aOcosVTelOLHUr7KlnF6",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "�)�h�(�T����R���qz",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�)�h�(�T����R���qz"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-095",
+    "input": "DxzOg0iD98KCrd6jSp9hWlD7EtH820GnGbnA",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "\u000f\u001cÎƒHƒ÷Â‚­Þ£JŸaZPû\u0012ÑüÛA§\u0019¹À",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u000f\u001cÎƒHƒ÷Â‚­Þ£JŸaZPû\u0012ÑüÛA§\u0019¹À"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-096",
+    "input": "NbcNgvrZJozG+Vv0AqGTSihfSqM=",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "5�\r傶�\u0026屍鵞�\u0002�J(_J�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "5�"
+      ],
+      [
+        "傶�\u0026屍鵞�\u0002�J(_J�"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-097",
+    "input": "8dBOYcecOqstc6IJuK5fDUIpeoFkBx/T/j/hUUIoQkhXV4xQbvrcfl0nTIztYj0DRpCQv4GVAWGuJWCXSwLabYY5pA==",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "鵓Na�:�-s�\t葬_\rB)z�\u0007\u001f酐?嗺B(BHWW釶n厫~]'L龲b=\u0003F���\u0001a�%`𠼝\u0002猒�9�",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "鵓Na�:�-s�",
+        "葬_"
+      ],
+      [
+        "B)z�\u0007\u001f酐?嗺B(BHWW釶n厫~]'L龲b=\u0003F���\u0001a�%`𠼝\u0002猒�9�"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-098",
+    "input": "+hr/aQMtvqUrwA==",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "�\u001a�i\u0003-쑤+�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�\u001a�i\u0003-쑤+�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-099",
+    "input": "bnzjcX9FMtJayVJTjfJU5DNbGSNR0m+BQolUCVdginLIsw==",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "n|鉸E2襔蒖S嶒T�3[\u0019#Q襬丅塗\tW`妑瘸",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "n|鉸E2襔蒖S嶒T�3[\u0019#Q襬丅塗",
+        "W`妑瘸"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-100",
+    "input": "d7SkVtAC/L6Wk84Eqy5oBmShAH/dT474tgkMSGqfpAhGOgnmKwjsl3v03fVY0rpirjJP1W4Rggi6gpw0wxPQqzuG6IdMpw==",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "w´¤VÐ\u0002ü¾–“Î\u0004«.h\u0006d¡\u0000ÝOŽø¶\t\fHjŸ¤\bF:\tæ+\bì—{ôÝõXÒºb®2OÕn\u0011‚\bº‚œ4Ã\u0013Ð«;†è‡L§",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "w´¤VÐ\u0002ü¾–“Î\u0004«.h\u0006d¡\u0000ÝOŽø¶",
+        "\fHjŸ¤\bF:",
+        "æ+\bì—{ôÝõXÒºb®2OÕn\u0011‚\bº‚œ4Ã\u0013Ð«;†è‡L§"
+      ]
+    ],
+    "header": false,
+    "columns": 3,
+    "warnings": []
+  },
+  {
+    "name": "random-101",
+    "input": "dAOJ2SzjRf8tQsuISTCap56pcm+xkUlMsqowYD9IgqV8Lu/Scz1j8WazMPnlsg==",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "t\u0003�,�E�-BˈI0�ro�IL�0`?H�|.�s=c�f�0�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "t\u0003�",
+        "�E�-BˈI0�ro�IL�0`?H�|.�s=c�f�0�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-102",
+    "input": "7y/4+DFpU3XnqjIB+GfGKvwzdV68oDOw6VPyovtgciTgbeoYvCx3yLcFJ6lmEYAhFQlD+K4LNhoMHz3CeCwE",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "�/�1iSu遯2\u0001�ﾆ*�3u^ｼ�3ｰ餞�玽r$瀘�\u0018ｼ,wﾈｷ\u0005'ｩf\u0011!\u0015\tC�\u000b6\u001a\f\u001f=ﾂx,\u0004",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�/�1iSu遯2\u0001�ﾆ*�3u^ｼ�3ｰ餞�玽r$瀘�\u0018ｼ",
+        "wﾈｷ\u0005'ｩf\u0011!\u0015\tC�\u000b6\u001a\f\u001f=ﾂx",
+        "\u0004"
+      ]
+    ],
+    "header": false,
+    "columns": 3,
+    "warnings": []
+  },
+  {
+    "name": "random-103",
+    "input": "7wHh6nHFZhbyckiuSNHEn/XsqsmLIqoEDo7Bwi8+goZjIoRSfejc3Yg6Cb9siA==",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "�\u0001瘧q�f\u0016�rH�H冂����\"�\u0004\u000eﾁ�/\u003e��c\"�R}蒂��:\t�l�",
+    "delimiter": 9,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "�\u0001瘧q�f\u0016�rH�H冂����\"�\u0004\u000eﾁ�/\u003e��c\"�R}蒂��:",
+        "�l�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-104",
+    "input": "cLShknligZVcjy25uXJNz8ymyFADcLjxzTtGFbA9tcGwdj9L6Rl++QroahlT/eeZ+dFqir0dEtAaHuraZu59zIs5ra3B+x4whODhdnQ=",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "p���yb��\\�-��rM����P\u0003p���;F\u0015�=���v?K�\u0019~�\n�j\u0019S�����j��\u001d\u0012�\u001a\u001e��f�}��9����\u001e0���vt",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "p���yb��\\�-��rM����P\u0003p���",
+        "F\u0015�=���v?K�\u0019~�"
+      ],
+      [
+        "�j\u0019S�����j��\u001d\u0012�\u001a\u001e��f�}��9����\u001e0���vt"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-105",
+    "input": "Y9Pi6wTwN/9qX0NSdJwjyQY5MYyYe6EAhDH2e4Ei0sAhFX4Jj60GLz183VL/ugQFiPyavpBAizAXh+FbZU0/m4JVw7AG0EdzDwc=",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "cÓâë\u0004ð7ÿj_CRtœ#É\u000691Œ˜{¡\u0000„1ö{�\"ÒÀ!\u0015~\t�­\u0006/=|ÝRÿº\u0004\u0005ˆüš¾�@‹0\u0017‡á[eM?›‚UÃ°\u0006ÐGs\u000f\u0007",
+    "delimiter": 9,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "cÓâë\u0004ð7ÿj_CRtœ#É\u000691Œ˜{¡\u0000„1ö{�\"ÒÀ!\u0015~",
+        "�­\u0006/=|ÝRÿº\u0004\u0005ˆüš¾�@‹0\u0017‡á[eM?›‚UÃ°\u0006ÐGs\u000f\u0007"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-106",
+    "input": "yaFmAxDtT+hkK7JQP/Q=",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "伞f\u0003\u0010鞳鑔+睵?�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "伞f\u0003\u0010鞳鑔+睵?�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-107",
+    "input": "Rs20HQ/cYleBheWUVpg=",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "F芫\u001d\u000f鈁W��V�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "F芫\u001d\u000f鈁W��V�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-108",
+    "input": "NullV7rN6fOOKA3Y0lyen2ezf1OSOJgun+Kbvopxd/q0UfcfZ3VMAjA=",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "6�eW뵨稶�(\r罔\\옝g�S�8�.잂쎗둸w駭Q�\u001fguL\u00020",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "6�eW뵨稶�("
+      ],
+      [
+        "罔\\옝g�S�8�.잂쎗둸w駭Q�\u001fguL\u00020"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-109",
+    "input": "92tarRNJG4uZXeInXrJSWMvYjTSNHOZRDYQcsddsdO9HVppFnP0HrjR0UQkZyZGIHBY2OAVfeDk5kUR06LjogZGUw1nLCbZsYPPobNZF",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "鱧Z�\u0013I\u001b嫏]�'^睷X素�4�\u001c鍽\r�\u001c弊lt颎V欵滮\u0007�4tQ\t\u0019蓱�\u001c\u001668\u0005_x99慏t韪鑱憯肶�\t秎`箬l諩",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "鱧Z�\u0013I\u001b嫏]�'^睷X素�4�\u001c鍽"
+      ],
+      [
+        "�\u001c弊lt颎V欵滮\u0007�4tQ",
+        "\u0019蓱�\u001c\u001668\u0005_x99慏t韪鑱憯肶�",
+        "秎`箬l諩"
+      ]
+    ],
+    "header": true,
+    "columns": 3,
+    "warnings": []
+  },
+  {
+    "name": "random-110",
+    "input": "bXJHUBf4idMbhw==",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "mrGP\u0017ø‰Ó\u001b‡",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "mrGP\u0017ø‰Ó\u001b‡"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-111",
+    "input": "S9OxtT/TPuFZtkIJUqf9G180Whiem+NOeLOQZxvHPut4bMAv6Dk=",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "Kӱ�?�\u003e�Y�B\tR�\u001b_4Z\u0018�Nx�g\u001b�\u003e�xl�/�9",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "Kӱ�?�\u003e�Y�B",
+        "R�\u001b_4Z\u0018�Nx�g\u001b�\u003e�xl�/�9"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-112",
+    "input": "AwtbL06VND8gmg7pdwkjH+EMXA==",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "\u0003\u000b[/N�4? �\u000e駢\t#\u001f�\f\\",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u0003\u000b[/N�4? �\u000e駢",
+        "#\u001f�\f\\"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-113",
+    "input": "KS/SHmLcfYoFdRMAslZe10ysBIA/EQvEQrKjPozDO07wDZwcxw0Vr1BnKUu94jbv",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": ")/�\u001eb�}�\u0005u\u0013\u0000�V^�L�\u0004�?\u0011\u000b�B横\u003e��;N�\r�\u001c�\r\u0015�Pg)K盾6�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        ")/�\u001eb�}�\u0005u\u0013\u0000�V^�L�\u0004�?\u0011\u000b�B横\u003e��;N�"
+      ],
+      [
+        "�\u001c�"
+      ],
+      [
+        "\u0015�Pg)K盾6�"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-114",
+    "input": "JtYRM+a8XuO6gv/cXxAr9qtzcyU63spKePkmxSAHwzAtKDLfyHjs/5DSM59M+li76Xic9V2kg/jhXvFT7c4L3yHZzTGGM7As3JIlVQ==",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "\u0026�\u00113��^�����_\u0010+��ss%:��Jx�\u0026� \u0007�0-(2��x����3�L�X��x��]����^�S��\u000b�!��1�3�,��%U",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u0026�\u00113��^�����_\u0010+��ss%:��Jx�\u0026� \u0007�0-(2��x����3�L�X��x��]����^�S��\u000b�!��1�3�",
+        "��%U"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-115",
+    "input": "y3edavjyChU+Pd4/0Uek9FW7Kl1X1asd1hlGfPM894tu3pVPwEKKh4wV9JgoZtDZd45b",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "Ëw�jøò\n\u0015\u003e=Þ?ÑG¤ôU»*]WÕ«\u001dÖ\u0019F|ó\u003c÷‹nÞ•OÀBŠ‡Œ\u0015ô˜(fÐÙwŽ[",
+    "delimiter": 124,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "Ëw�jøò"
+      ],
+      [
+        "\u0015\u003e=Þ?ÑG¤ôU»*]WÕ«\u001dÖ\u0019F",
+        "ó\u003c÷‹nÞ•OÀBŠ‡Œ\u0015ô˜(fÐÙwŽ["
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-116",
+    "input": "g4iyOIepKzGs/MmGOPW2yO6DQLESQajvsAkge7c0N4qFQwDQnaER3254hRS9GdRLYAPfN/+g01M0vA==",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "儓�8嚛+1�蓡8醵阮傽�\u0012A��\t {�47妳C\u0000袧�\u0011遪x�\u0014�\u0019訩`\u0003�7�犛S4�",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "儓�8嚛+1�蓡8醵阮傽�\u0012A��",
+        " {�47妳C\u0000袧�\u0011遪x�\u0014�\u0019訩`\u0003�7�犛S4�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-117",
+    "input": "2LkyWsanJaaSuJk=",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "媢2Z⑦%��",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "媢2Z⑦%��"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-118",
+    "input": "Hri++VO9a63M7K7fSXEa2Fk++vT8IxVMVA==",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "\u001e맘�S퐆�怡�Iq\u001a�Y\u003e浹�#\u0015LT",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u001e맘�S퐆�怡�Iq\u001a�Y\u003e浹�#\u0015LT"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-119",
+    "input": "/pzqBHLTBX1yXPwfbiKDbeVKStxWjyoQr0OFPoRZanXAOFrD5vcQEVqIYJFFI2plSXd82jnUBNguN7rzmw==",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "䴗�\u0004r�\u0005}r\\�\u001fn\"僲錔J躒�*\u0010疌�\u003e刌ju�8Z面�\u0010\u0011Z坄慐#jeIw|�9�\u0004�.7后�",
+    "delimiter": 124,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "䴗�\u0004r�\u0005}r\\�\u001fn\"僲錔J躒�*\u0010疌�\u003e刌ju�8Z面�\u0010\u0011Z坄慐#jeIw",
+        "�9�\u0004�.7后�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-120",
+    "input": "38UygnaxImjLarF6Zjeqm9VlbtD7l+9pGSBv//eHjosoBwos8YgrsAJz+0EJ",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "ßÅ2‚v±\"hËj±zf7ª›ÕenÐû—ïi\u0019 oÿ÷‡Ž‹(\u0007\n,ñˆ+°\u0002sûA\t",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "ßÅ2‚v±\"hËj±zf7ª›ÕenÐû—ïi\u0019 oÿ÷‡Ž‹(\u0007"
+      ],
+      [
+        "",
+        "ñˆ+°\u0002sûA\t"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-121",
+    "input": "84TqdPslBgXJdih4ajJJ8wFRKbxX4Frt4Kij0OPnFx2qTotIQbqBnR2rVmYQG6JAEhuI/x8dizJMP+G+lYgWGXnCQ20YI1Cqx/mo3UDR",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "�t�%\u0006\u0005�v(xj2I�\u0001Q)�W�Z�ਣ�\u0017\u001d�N�HA�\u001d�Vf\u0010\u001b�@\u0012\u001b�\u001f\u001d�2L?ᾕ�\u0016\u0019y�Cm\u0018#P�@�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�t�%\u0006\u0005�v(xj2I�\u0001Q)�W�Z�ਣ�\u0017\u001d�N�HA�\u001d�Vf\u0010\u001b�@\u0012\u001b�\u001f\u001d�2L?ᾕ�\u0016\u0019y�Cm\u0018#P�@�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-122",
+    "input": "3Ui1LaM8yyfoxGbt6mSbe/Am6sNAUFuq9jJkQgnWtJnTUkWJ",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "ﾝHｵ-｣\u003cﾋ'霪f渼d學�\u0026�@P[ｪ�2dB\tﾖｴ簒RE�",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "ﾝHｵ-｣\u003cﾋ'霪f渼d學�\u0026�@P[ｪ�2dB",
+        "ﾖｴ簒RE�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-123",
+    "input": "QLT6Weyr5NG+bnlKHkhjsvWF/+1Ba8qp5xPZVumWmSsBloswVutPOnH1YIClVyc7Gzdy0vhlQik+y6HNWCWyvaVmKjCV+GBics4=",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "@旗Y讖簪�nyJ\u001eHc壊���Ak仏�\u0013�V���+\u0001��0V�O:q�`��W';\u001b7r咢eB)\u003e法�X%化�f*0��`br�",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "@旗Y讖簪�nyJ\u001eHc壊���Ak仏�\u0013�V���+\u0001��0V�O:q�`��W'",
+        "\u001b7r咢eB)\u003e法�X%化�f*0��`br�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-124",
+    "input": "SFKnF4MZGVmFYFCC5/pl6cpOOLi1Gnw8o8J0Ld5nXeb2ij75jRZwb3kBenkQyUO1Qe1ZW74=",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "HR�\u0017�\u0019\u0019Y�`P���e��N8��\u001a|\u003c��t-�g]���\u003e��\u0016poy\u0001zy\u0010�C�A�Y[�",
+    "delimiter": 124,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "HR�\u0017�\u0019\u0019Y�`P���e��N8��\u001a",
+        "\u003c��t-�g]���\u003e��\u0016poy\u0001zy\u0010�C�A�Y[�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-125",
+    "input": "xG45vqbFnZtEfIPj3fJf8aSIHAMLhYAr69Kh6GtiOgKBqg57RTTIohvLbRWO",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "Än9¾¦Å�›D|ƒãÝò_ñ¤ˆ\u001c\u0003\u000b…€+ëÒ¡èkb:\u0002�ª\u000e{E4È¢\u001bËm\u0015Ž",
+    "delimiter": 124,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "Än9¾¦Å�›D",
+        "ƒãÝò_ñ¤ˆ\u001c\u0003\u000b…€+ëÒ¡èkb:\u0002�ª\u000e{E4È¢\u001bËm\u0015Ž"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-126",
+    "input": "y4KraUcF5mBDcGofc9qj5nABQ6bNvl0P5Q==",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "藗玦G\u0005鎌Cpj\u001fs冢鎝\u0001Cν綸\u000f�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "藗玦G\u0005鎌Cpj\u001fs冢鎝\u0001Cν綸\u000f�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-127",
+    "input": "RndEruHG9MqsUp9cneWydt3XBgP3Ttk7Gwo1oaTT13lEIKvYhTN4OPLXfyHQ88lj94w80rUHTWGIaAaZ6QqndYztol+0+7AmU+V+NfZu",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "FwD桑ぎ坌R髿嘥率楈\u0006\u0003蠨�;\u001b\n5﹞衿yD 建�3x8藦!唒丱�\u003c珛\u0007Maá\u0006䠷\n吟龲嗧湃�\u0026S憉5霵",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "FwD桑ぎ坌R髿嘥率楈\u0006\u0003蠨�;\u001b"
+      ],
+      [
+        "5﹞衿yD 建�3x8藦!唒丱�\u003c珛\u0007Maá\u0006䠷"
+      ],
+      [
+        "吟龲嗧湃�\u0026S憉5霵"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-128",
+    "input": "VvLILLaHBd4Zs2bVw7MM8nNWMOx2SS+6pEoQ",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "V塵,텊\u0005�\u0019쿯拉�\f�sV0�vI/벡J\u0010",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "V塵",
+        "텊\u0005�\u0019쿯拉�\f�sV0�vI/벡J\u0010"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-129",
+    "input": "msOZaoMmqJmKTl2oGSx48QSDcrmYYAe+TblYavMM/etqYjImVTQ=",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "毭檍�\u0026�奛]�\u0019,x�\u0004價箻`\u0007綧筙j�\f�jb2\u0026U4",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "毭檍�\u0026�奛]�\u0019",
+        "x�\u0004價箻`\u0007綧筙j�\f�jb2\u0026U4"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-130",
+    "input": "EOrhgkQNkk1QCCO4ix1ghq6wnpCWoQANYjWtYwcbIo7hrMtAcF+oJnDNrf2HUpGfwEpleJzBYe1ODcccJniQ0hKuKpCK",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "\u0010êá‚D\r’MP\b#¸‹\u001d`†®°ž�–¡\u0000\rb5­c\u0007\u001b\"Žá¬Ë@p_¨\u0026pÍ­ý‡R‘ŸÀJexœÁaíN\rÇ\u001c\u0026x�Ò\u0012®*�Š",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "\u0010êá‚D"
+      ],
+      [
+        "’MP\b#¸‹\u001d`†®°ž�–¡\u0000"
+      ],
+      [
+        "b5­c\u0007\u001b\"Žá¬Ë@p_¨\u0026pÍ­ý‡R‘ŸÀJexœÁaíN"
+      ],
+      [
+        "Ç\u001c\u0026x�Ò\u0012®*�Š"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-131",
+    "input": "6OiPGfXqbTf/5TpINYDSYde/9Cr17J44d3PL0jRPFzmDurnSA2gpJCE=",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "�\u0019�m7�:H5�a׿�*�8ws�4O\u00179�\u0003h)$!",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�\u0019�m7�:H5�a׿�*�8ws�4O\u00179�\u0003h)$!"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-132",
+    "input": "znYWQZgZuY3qUVBB",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "ﾎv\u0016A�\u0019ｹ碕QPA",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "ﾎv\u0016A�\u0019ｹ碕QPA"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-133",
+    "input": "qRTVHa/NsSmlI3yeRGqCeV/pisMWmY8OaQ==",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "�\u0014�\u001d��)�#|�Dj�y_���\u0016��\u000ei",
+    "delimiter": 124,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�\u0014�\u001d��)�#",
+        "�Dj�y_���\u0016��\u000ei"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-134",
+    "input": "mhTGZJwnzw4BDNj0yZ2wCoB1qvfPGegMOuZpvmdlufV3F2Y79AQsJfPLPHmU6NlE8iq80dtV1w==",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "�\u0014�d�'�\u000e\u0001\f�����\n�u���\u0019�\f:�i�ge��w\u0017f;�\u0004,%��\u003cy���D�*���U�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�\u0014�d�'�\u000e\u0001\f�����"
+      ],
+      [
+        "�u���\u0019�\f:�i�ge��w\u0017f;�\u0004",
+        "%��\u003cy���D�*���U�"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-135",
+    "input": "IsoWlc7ESaOfbM1W7dN7xosghbo8",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "\"Ê\u0016•ÎÄI£ŸlÍVíÓ{Æ‹ …º\u003c",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "\"Ê\u0016•ÎÄI£ŸlÍVíÓ{Æ‹ …º\u003c"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-136",
+    "input": "l4HyWrLiLi0HfsRD1270+hW7r5tz1E6rlBbaS6wXEscbJy8AWVk=",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "梺騔测.-\u0007~腃譶酊\u0015化泂訬珨\u0016贙�\u0017\u0012�\u001b'/\u0000YY",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "梺騔测.-\u0007~腃譶酊\u0015化泂訬珨\u0016贙�\u0017\u0012�\u001b'/\u0000YY"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-137",
+    "input": "b0XTkJI65OyUQHtpU0BYXbTXqROazYyNlVZuTrNwSqYT17kEllrp4PQLoQriNO4Cr3ww7PS1GEZgy7YSWUt3CYA3XLJKaQ==",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "oE��:僶銉{iS@X]棚�\u0013𠱓�虅nN逍J�\u0013袡\u0004𩗗歖�\u000b�\n�4�\u0002砝0檖�\u0018F`侀\u0012YKw\t�7\\淤i",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "oE��:僶銉{iS@X]棚�\u0013𠱓�虅nN逍J�\u0013袡\u0004𩗗歖�\u000b�"
+      ],
+      [
+        "�4�\u0002砝0檖�\u0018F`侀\u0012YKw",
+        "�7\\淤i"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-138",
+    "input": "O5TqzBDdscEKW31+yPnD/1xb5PgdOD4D9FpFcLI1097eDi0kKOVXjV4FWigbE6AgzisDQngzAHNzR3bIcEPl9pF9uJlm",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": ";붽�\u0010膚�\n[}~힌�\\[厄\u001d8\u003e\u0003�ZEp�5大�\u000e-$(�W�^\u0005Z(\u001b\u0013� �+\u0003Bx3\u0000ssGv�pC業�}툢f",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "",
+        "붽�\u0010膚�"
+      ],
+      [
+        "[}~힌�\\[厄\u001d8\u003e\u0003�ZEp�5大�\u000e-$(�W�^\u0005Z(\u001b\u0013� �+\u0003Bx3\u0000ssGv�pC業�}툢f"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-139",
+    "input": "8TtKTSj5swg4yyQhq9e4zhT7QS1yuYxo15LUXGT7OA==",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "�;JM(�\b8�$!�肝\u0014鸄-r箤h讙診d�8",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�",
+        "JM(�\b8�$!�肝\u0014鸄-r箤h讙診d�8"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-140",
+    "input": "MGMGSF3eFpMlCY3/7T0FL9MCz3YwmXvrpnXkchfNuKzoou2lQ86POBLLv8BW43f8+wk84t/pJf4wUnnUv6zuBQKp",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "0c\u0006H]Þ\u0016“%\t�ÿí=\u0005/Ó\u0002Ïv0™{ë¦uär\u0017Í¸¬è¢í¥CÎ�8\u0012Ë¿ÀVãwüû\t\u003câßé%þ0RyÔ¿¬î\u0005\u0002©",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "0c\u0006H]Þ\u0016“%",
+        "�ÿí=\u0005/Ó\u0002Ïv0™{ë¦uär\u0017Í¸¬è¢í¥CÎ�8\u0012Ë¿ÀVãwüû",
+        "\u003câßé%þ0RyÔ¿¬î\u0005\u0002©"
+      ]
+    ],
+    "header": false,
+    "columns": 3,
+    "warnings": []
+  },
+  {
+    "name": "random-141",
+    "input": "mfYT5CeyupuvXiCnjtI=",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "�\u0013�'�^ �",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�\u0013�'�^ �"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-142",
+    "input": "zacdLW2z41xoFQkgVyT/R9y7nfKYqI+yyiAFHKnnAQIRACDprliZrM6EDA==",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "ﾍｧ\u001d-mｳ綵h\u0015\t W$�Gﾜｻ暈乖彰ﾊ \u0005\u001cｩ�\u0001\u0002\u0011\u0000 魄X勳ﾎ�\f",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "ﾍｧ\u001d-mｳ綵h\u0015",
+        " W$�Gﾜｻ暈乖彰ﾊ \u0005\u001cｩ�\u0001\u0002\u0011\u0000 魄X勳ﾎ�\f"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-143",
+    "input": "gqOQADskRAASOIVYVoHwSq01+WOnLcActNBGzzvXe3zstfTRVY7Se1xbSnoKnimhGLt4Qd9l4si6VD5uW9xT80D06iZnnuD0",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "���\u0000;$D\u0000\u00128�XV��J�5�c�-�\u001c莞F�;�{|豕�Uﾒ{\\[Jz\n�)�\u0018�xA�e眸�T\u003en[�S�@�\u0026g�瑣",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "���\u0000",
+        "$D\u0000\u00128�XV��J�5�c�-�\u001c莞F�",
+        "�{|豕�Uﾒ{\\[Jz"
+      ],
+      [
+        "�)�\u0018�xA�e眸�T\u003en[�S�@�\u0026g�瑣"
+      ]
+    ],
+    "header": true,
+    "columns": 3,
+    "warnings": []
+  },
+  {
+    "name": "random-144",
+    "input": "A9SLV9k/On3eGT4ohszh+nAdTRrDOQXP5w/dLNh52P72F2mVBIjUB5KDDQFNAKVyMofIlNm/qIIyl541Lst04kZH3lqg",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "\u0003��W�?:}�\u0019\u003e(����p\u001dM\u001a�9\u0005��\u000f�,�y���\u0017i�\u0004��\u0007��\r\u0001M\u0000�r2�������2��5.�t�FG�Z�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u0003��W�?:}�\u0019\u003e(����p\u001dM\u001a�9\u0005��\u000f�",
+        "�y���\u0017i�\u0004��\u0007��"
+      ],
+      [
+        "\u0001M\u0000�r2�������2��5.�t�FG�Z�"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-145",
+    "input": "j/aw8WwAqAcYcimZGNqESmaj3oeXP/JxfLtj0Jlf12eO8HbrXpsxno+6j5cWy+0=",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "�ö°ñl\u0000¨\u0007\u0018r)™\u0018Ú„Jf£Þ‡—?òq|»cÐ™_×gŽðvë^›1ž�º�—\u0016Ëí",
+    "delimiter": 124,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�ö°ñl\u0000¨\u0007\u0018r)™\u0018Ú„Jf£Þ‡—?òq",
+        "»cÐ™_×gŽðvë^›1ž�º�—\u0016Ëí"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-146",
+    "input": "zHSQEi8Rlujn3jKTn3pUs2J33BqVoyVBDta8No9BzH2bMcf0nKoOOAuiCT7lvh7CoyonTQOWaYKeJQ==",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "蘴�\u0012/\u0011栬甾2摕zT砨w�\u001a暎%A\u000e旨6廇蘿�1囚湭\u000e8\u000b�\t\u003e寰\u001e拢*'M\u0003杋倿%",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "蘴�\u0012/\u0011栬甾2摕zT砨w�\u001a暎%A\u000e旨6廇蘿�1囚湭\u000e8\u000b�",
+        "\u003e寰\u001e拢*'M\u0003杋倿%"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-147",
+    "input": "3zI8Vb6kINeRgKKDHLWvG31BdhcpyKEdLi/EQ25OtUWEuGqrKUl8MizyE0r+CjIeGr1Zo4DAMJ4zEYWURO+y5RznlJemGp3TnALoELQ=",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "�2\u003cU黎 ���\u001c粟\u001b}Av\u0017)龰\u001d./饅nN湲�j�)I|2,�\u0013J�\n2\u001e\u001a磐��0�3\u0011�D鼤�\u001c�𠲸\u001a奵�\u0002�\u0010�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�2\u003cU黎 ���\u001c粟\u001b}Av\u0017)龰\u001d./饅nN湲�j�)I|2",
+        "�\u0013J�"
+      ],
+      [
+        "2\u001e\u001a磐��0�3\u0011�D鼤�\u001c�𠲸\u001a奵�\u0002�\u0010�"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-148",
+    "input": "HRj3jBy6CAqdqolgS/Hg61b9QRlzqnYiwulnNMu7rq9H/Q/eDQV2MQkyBQ==",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "\u001d\u0018�\u001c�\b\n씕�`K焌�V�A\u0019s챭\"쮸g4講�G�\u000f�\r\u0005v1\t2\u0005",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "\u001d\u0018�\u001c�\b"
+      ],
+      [
+        "씕�`K焌�V�A\u0019s챭\"쮸g4講�G�\u000f�"
+      ],
+      [
+        "\u0005v1\t2\u0005"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-149",
+    "input": "zFzmKm4Z12lVv+yPbHzhQrHNBHrp8At5yFeFdnHh6l8MnxcbDTYkOx0nl/GcwCr4+N4CaFgstD+kEAn1te/1nkGIy12/bv4=",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "蘚�*n\u0019譱U快弆|酈蓖\u0004z轲\u000by萕卾q彡_\f�\u0017\u001b\r6$;\u001d'楍溊*��\u0002hX,�?�\u0010\t醯秕濧埶]縩�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "蘚�*n\u0019譱U快弆|酈蓖\u0004z轲\u000by萕卾q彡_\f�\u0017\u001b"
+      ],
+      [
+        "6$;\u001d'楍溊*��\u0002hX",
+        "�?�\u0010\t醯秕濧埶]縩�"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-150",
+    "input": "yD2HrBbHO9qMZfMrjBKIdpajHQrc9sMmomo2Sf0=",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "È=‡¬\u0016Ç;ÚŒeó+Œ\u0012ˆv–£\u001d\nÜöÃ\u0026¢j6Iý",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "È=‡¬\u0016Ç",
+        "ÚŒeó+Œ\u0012ˆv–£\u001d"
+      ],
+      [
+        "ÜöÃ\u0026¢j6Iý"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-151",
+    "input": "RG3ruqNR3qK4trj7az6/lCaC9R8QP12HpBDhihbsk6jkldlyHCVCn+zjXHk1zY0zx9vvksEVSXSjyzuIiVAVmg==",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "Dm뺣Qޢ�k\u003e�\u0026�\u001f\u0010?]�\u0010�\u0016쓨�r\u001c%B�\\y5͍3�\u0015It�;�P\u0015�",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "Dm뺣Qޢ�k\u003e�\u0026�\u001f\u0010?]�\u0010�\u0016쓨�r\u001c%B�\\y5͍3�\u0015It�",
+        "�P\u0015�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-152",
+    "input": "QGHUqXu3aTmb/Q==",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "@aﾔｩ{ｷi9�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "@aﾔｩ{ｷi9�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-153",
+    "input": "X4Dm/mQV2XuJYzIwiYtwfY1WnwkXyObH0a7Uqh/U3zs=",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "_�腋d\u0015�{�c20��p}�V�\t\u0017比廃��\u001f壥;",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "_�腋d\u0015�{�c20��p}�V�",
+        "\u0017比廃��\u001f壥;"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-154",
+    "input": "MZ+2S07OM9bFya2BacM9i6jvuEjyZYPppjaGBjQDwExXFFVDT/hg0dY/ZOftYsmIulm0OXV2C0U7BOC5OcXXchY2QfTYaPd3",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "1��KN�3�����i�=����H�e���6�\u00064\u0003�LW\u0014UCO�`��?d��b���Y�9uv\u000bE;\u0004��9��r\u00166A��h�w",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "1��KN�3�����i�=����H�e���6�\u00064\u0003�LW\u0014UCO�`��?d��b���Y�9uv\u000bE",
+        "\u0004��9��r\u00166A��h�w"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-155",
+    "input": "dh5HkX/UugA/o8XjSp68Fo8M51LOiGXAy/Ia8WaD+/YhjVK1SYSmxAA11WElwl9qUkLI9iX4K0MX+MFQKq/aQ/g=",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "v\u001eG‘Ôº\u0000?£ÅãJž¼\u0016�\fçRÎˆeÀËò\u001añfƒûö!�RµI„¦Ä\u00005Õa%Â_jRBÈö%ø+C\u0017øÁP*¯ÚCø",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "v\u001eG‘Ôº\u0000?£ÅãJž¼\u0016�\fçRÎˆeÀËò\u001añfƒûö!�RµI„¦Ä\u00005Õa%Â_jRBÈö%ø+C\u0017øÁP*¯ÚCø"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-156",
+    "input": "1IakJzgPKCaS3mPE1/4XqAHf6VyJcFhSFyWW7PHXGHmHyPE=",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "詥�'8\u000f(\u0026掁c淖�\u0017�\u0001唛\\塸XR\u0017%栰褡\u0018y嚾�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "詥�'8\u000f(\u0026掁c淖�\u0017�\u0001唛\\塸XR\u0017%栰褡\u0018y嚾�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-157",
+    "input": "mftcHzW1XBePGY0t6u6iUDFEv6mPT6r3m3ZrBpTAvA5N9oZMt3wBJm+Om9+JujxuTliiCdSfn9pseSmj/MMYHhJA1Dw=",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "鉫\\\u001f5琵\u0017�\u0019�-膰㎜1D罹𣗎金爁k\u0006𥖁�\u000eM�L會\u0001\u0026o���\u003cnNX�\t��ly)��\u0018\u001e\u0012@�\u003c",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "鉫\\\u001f5琵\u0017�\u0019�-膰㎜1D罹𣗎金爁k\u0006𥖁�\u000eM�L會\u0001\u0026o���\u003cnNX�",
+        "��ly)��\u0018\u001e\u0012@�\u003c"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-158",
+    "input": "iXZ7PQED3s+/OHzfA3PNNiotI+FrLadI9kTwuhPVGM1k3/iMpQ==",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "뎧{=\u0001\u0003娑�8|�\u0003s�6*-#�k-쬓�D齊\u0013�\u0018�d棲뙠",
+    "delimiter": 124,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "뎧{=\u0001\u0003娑�8",
+        "�\u0003s�6*-#�k-쬓�D齊\u0013�\u0018�d棲뙠"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-159",
+    "input": "SuSa2n0LubY2SAWyf67GMATDzxQ3Mg7h+ztMG03CuPs=",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "J錃趠\u000b苟6H\u0005��0\u0004孟\u001472\u000e猁;L\u001bM赂�",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "J錃趠\u000b苟6H\u0005��0\u0004孟\u001472\u000e猁",
+        "L\u001bM赂�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-160",
+    "input": "ufjZ0A36qC8zgcbZ8m1r+gMg6SlCO+4S2Xp420QhgdimCqgabDr6aN3bmYw=",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "¹øÙÐ\rú¨/3�ÆÙòmkú\u0003 é)B;î\u0012ÙzxÛD!�Ø¦\n¨\u001al:úhÝÛ™Œ",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "¹øÙÐ"
+      ],
+      [
+        "ú¨/3�ÆÙòmkú\u0003 é)B;î\u0012ÙzxÛD!�Ø¦"
+      ],
+      [
+        "¨\u001al:úhÝÛ™Œ"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-161",
+    "input": "wwojsS/3Oj5SfGdthZ2GDMRd20688cMZMWVv",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "�\n#�/�:\u003eR|gm�\f�]�N�\u00191eo",
+    "delimiter": 124,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�"
+      ],
+      [
+        "#�/�:\u003eR",
+        "gm�\f�]�N�\u00191eo"
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-162",
+    "input": "q6C0TP3lJt444q2dYyHhF7fhQrGHSMC64ZbgG4wJ0Y835OQcdlEp3ozEG0hWQJtHjd7c4vb8dEntVF8pxQ==",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "ｫ�ｴL��\u0026ﾞ8箝拂!�\u0017ｷ瓧ｱ⑨ﾀｺ癘�\u001b�\tﾑ�7蒿\u001cvQ)ﾞ呼\u001bHV@姆材ﾜ鬻�I侊_)ﾅ",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "ｫ�ｴL��\u0026ﾞ8箝拂!�\u0017ｷ瓧ｱ⑨ﾀｺ癘�\u001b�",
+        "ﾑ�7蒿\u001cvQ)ﾞ呼\u001bHV@姆材ﾜ鬻�I侊_)ﾅ"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-163",
+    "input": "lfUxqJje7XkEo0uEv3OEfOc4B5E8jLD2wY+aAwlzLHJpAWfmZ4OwU6N8wL4FDPXwplhs4MjOrPSrUXo=",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "��1��滔y\u0004�K��s�|�8\u0007�\u003c�咽���\u0003\ts,ri\u0001g�g��S�|西\u0005\f��Xl猗略�Qz",
+    "delimiter": 124,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "��1��滔y\u0004�K��s�",
+        "�8\u0007�\u003c�咽���\u0003\ts,ri\u0001g�g��S�",
+        "西\u0005\f��Xl猗略�Qz"
+      ]
+    ],
+    "header": false,
+    "columns": 3,
+    "warnings": []
+  },
+  {
+    "name": "random-164",
+    "input": "kXHomJya1YCo0/k=",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "�q���������",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�q���������"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-165",
+    "input": "YtPLKpr7HZRHYjGNbQYTKF5OfnUGWXCOLIwHwvh+Y4W/aY6UmEVCxYeqZJJRyo7HdrQ5ZlX9Eh2OxpGV8FDqD1WCyN1A91Bfow==",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "bÓË*šû\u001d”Gb1�m\u0006\u0013(^N~u\u0006YpŽ,Œ\u0007Âø~c…¿iŽ”˜EBÅ‡ªd’QÊŽÇv´9fUý\u0012\u001dŽÆ‘•ðPê\u000fU‚ÈÝ@÷P_£",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "bÓË*šû\u001d”Gb1�m\u0006\u0013(^N~u\u0006YpŽ",
+        "Œ\u0007Âø~c…¿iŽ”˜EBÅ‡ªd’QÊŽÇv´9fUý\u0012\u001dŽÆ‘•ðPê\u000fU‚ÈÝ@÷P_£"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-166",
+    "input": "t8F0ZdaxULXVXB69EZUYxKGR9HnriS0fb3CdFqpHyN2bmiZ0AH4WbCLFJVoC/aSYiGD6ZmFsSP89sHaBnb9mP6pFQJTuQSRu0w==",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "妨te直P嫡\\\u001e�\u0011�\u0018摹戶y雺-\u001fop�\u0016狦容洑\u0026t\u0000~\u0016l\"�%Z\u0002�槇`鷉alH�=皏仢縡?狤@旑A$n�",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "妨te直P嫡\\\u001e�\u0011�\u0018摹戶y雺-\u001fop�\u0016狦容洑\u0026t\u0000~\u0016l\"�%Z\u0002�槇`鷉alH�=皏仢縡?狤@旑A$n�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-167",
+    "input": "dW4q9DtIy/OEDQlSIuh3I8brAfUXv8wM6I2ok6nQYYtuZwqnMrZU3yIQ54oy3YkDv8mzr8No",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "un*�;H坲�\r\tR\"鋍#ぅ\u0001�\u0017覦\f��房a𡃉g\n�2貿�\"\u0010�2�\u0003褫陳懷",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "un*�;H坲�"
+      ],
+      [
+        "\tR\"鋍#ぅ\u0001�\u0017覦\f��房a𡃉g"
+      ],
+      [
+        "�2貿�\"\u0010�2�\u0003褫陳懷"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-168",
+    "input": "WzD4yB0Gkoxe8m9Ra7ykS+gE4xBfR5gPIvixTeJcEaQXKR6lqaZfDzpNs7k29fn59A==",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "[0廢\u001d\u0006뭽^�oQk샴K�\u0004�\u0010_G�\u000f\"澎M�\\\u0011�\u0017)\u001eⅸ�_\u000f:M낱6蟲嫦",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "[0廢\u001d\u0006뭽^�oQk샴K�\u0004�\u0010_G�\u000f\"澎M�\\\u0011�\u0017)\u001eⅸ�_\u000f:M낱6蟲嫦"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-169",
+    "input": "uEvCXj0HcBXJOeifsj1HMOfnomnVohWAXHX2qNDhCK2Rd9asuHx0YrL4jVA=",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "窴耝=\u0007p\u0015�9锜�=G0珑�闸\u0015€\\u雳嗅\b瓚w脂竱tb缠峆",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "窴耝=\u0007p\u0015�9锜�=G0珑�闸\u0015€\\u雳嗅\b瓚w脂竱tb缠峆"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-170",
+    "input": "ghXkmPiOU15I33J9lvFX2mJP400QG9Q=",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "‚\u0015ä˜øŽS^Hßr}–ñWÚbOãM\u0010\u001bÔ",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "‚\u0015ä˜øŽS^Hßr}–ñWÚbOãM\u0010\u001bÔ"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-171",
+    "input": "XwwZHBjJBN5MxlxVJ5ZguHLQ9l4/LIkIRtu55Hzc5/UFD20LzoKT887+",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "_\f\u0019\u001c\u0018�\u0004�L�\\U'�`�r�^?,�\bF۹�|�\u0005\u000fm\u000b΂�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "_\f\u0019\u001c\u0018�\u0004�L�\\U'�`�r�^?",
+        "�\bF۹�|�\u0005\u000fm\u000b΂�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-172",
+    "input": "tn2+A3icO7FxUdKrV2SiE7WMW8O+04smqNyT",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "ｶ}ｾ\u0003x�;ｱqQﾒｫWd｢\u0013ｵ啓ﾃｾﾓ�\u0026ｨﾜ�",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "ｶ}ｾ\u0003x�",
+        "ｱqQﾒｫWd｢\u0013ｵ啓ﾃｾﾓ�\u0026ｨﾜ�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-173",
+    "input": "tc6hfKZvrRAjADwQ16eKLa6KZgPZErU5R+WtC7HmZf81YBWdwWP7eAL2eeVCDeos",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "砧�|�o�\u0010#\u0000\u003c\u0010廡�-��f\u0003�\u0012�9G絖\u000b掩e�5`\u0015��c�x\u0002�y�B\r�,",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "砧�|�o�\u0010#\u0000\u003c\u0010廡�-��f\u0003�\u0012�9G絖\u000b掩e�5`\u0015��c�x\u0002�y�B"
+      ],
+      [
+        "�",
+        ""
+      ]
+    ],
+    "header": true,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-174",
+    "input": "y+Ib18ZVPgMvNFIiL7AGMYBhthd5KNEXRfo3mUov+bG8kdV114oEv4cNNSVbgzY6noZ2kJHVs5A+blRUiLy2LhP947W+oh8QN1LLi/U=",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "�����U\u003e\u0003/4R\"/�\u00061�a�\u0017y(�\u0017E�7�J/�����u��\u0004��\r5%[�6:��v�����\u003enTT���.\u0013�����\u001f\u00107R���",
+    "delimiter": 44,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "�����U\u003e\u0003/4R\"/�\u00061�a�\u0017y(�\u0017E�7�J/�����u��\u0004��"
+      ],
+      [
+        "5%[�6:��v�����\u003enTT���.\u0013�����\u001f\u00107R���"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-175",
+    "input": "d2RlctYkvRhzMA==",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "wderÖ$½\u0018s0",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "wderÖ$½\u0018s0"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-176",
+    "input": "tK+1BnNt6GW/1fgAHGNMmcvUAXXXX8y7b06ZLSibNIyG4pxJZ0tImWxWn2gLDO11J+3ZFq3yfubqR5Kh",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "疮�\u0006sm鑕空�\u0000\u001ccL櫵�\u0001u譥袒oN�-(�4寙鉁IgKH檒V焗\u000b\f韚'碣\u0016�~骊G挕",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "疮�\u0006sm鑕空�\u0000\u001ccL櫵�\u0001u譥袒oN�-(�4寙鉁IgKH檒V焗\u000b\f韚'碣\u0016�~骊G挕"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-177",
+    "input": "v6F+sLk+p1lxqyO+IO7J+tjziKGIhRQnHAvjjLSB1RSIijC0uE6BCU3XtQhIX0jitq+3dG3L",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "縑~偎\u003e即q�#� 醟矦���\u0014'\u001c\u000b���\u0014�0晴N�\tM袢\bH_H漍窈tm�",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "縑~偎\u003e即q�#� 醟矦���\u0014'\u001c\u000b���\u0014�0晴N�",
+        "M袢\bH_H漍窈tm�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-178",
+    "input": "mD/wVJFuzJrIwOU72q+oj303odyzwbEPdQjqAQk4LVhYHYo=",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "�?�T몁�횬�;彌쮲}7●냇�\u000fu\b�\u0001\t8-XX\u001d�",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�?�T몁�횬�;彌쮲}7●냇�\u000fu\b�\u0001",
+        "8-XX\u001d�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-179",
+    "input": "gJ95Y4cjqWQNu3+L0QrN0qq5Wcab5Nn25YmaPY+dgcO4Qt7CTn1hDFD3WK8NAudh",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "€焬c�#ヾ\r�嬔\n鸵�Y茮滟鲥墯=彎伱窧蘼N}a\fP鱔�\r\u0002鏰",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "€焬c�#ヾ"
+      ],
+      [
+        "�嬔"
+      ],
+      [
+        "鸵�Y茮滟鲥墯=彎伱窧蘼N}a\fP鱔�"
+      ],
+      [
+        "\u0002鏰"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-180",
+    "input": "RJaje6BYv22dT5vfb1mZYb7bQ0k6xJLoSFu2hhJlr9+syoPKWL0afiBv5AoHM3M3edPIfx5jtB/DkbI4",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "D–£{ X¿m�O›ßoY™a¾ÛCI:Ä’èH[¶†\u0012e¯ß¬ÊƒÊX½\u001a~ oä\n\u00073s7yÓÈ\u001ec´\u001fÃ‘²8",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "D–£{ X¿m�O›ßoY™a¾ÛCI:Ä’èH[¶†\u0012e¯ß¬ÊƒÊX½\u001a~ oä"
+      ],
+      [
+        "\u00073s7yÓÈ\u001ec´\u001fÃ‘²8"
+      ]
+    ],
+    "header": true,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-181",
+    "input": "eGer4IWFQna1JYdX",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "xg�Bv�%�W",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "xg�Bv�%�W"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-182",
+    "input": "SgWuX1K4/bxG0DeVWRluJQ==",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "J\u0005ｮ_Rｸ�ｼFﾐ7漂\u0019n%",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "J\u0005ｮ_Rｸ�ｼFﾐ7漂\u0019n%"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-183",
+    "input": "rih7p4HXAgB/rCml14wejRHx4IQmg0QWxDtKLqbG",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "�({���\u0002\u0000�)プ�\u001e�\u0011騾�\u0026�D\u0016�;J.ζ",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�({���\u0002\u0000�)プ�\u001e�\u0011騾�\u0026�D\u0016�",
+        "J.ζ"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-184",
+    "input": "ub0EQLKBQSxLKz6AjXfX",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "��\u0004@��A,K+\u003e��w�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "��\u0004@��A",
+        "K+\u003e��w�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-185",
+    "input": "M7qyrMSXfD7u/w/u6VemXlQ=",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "3º²¬Ä—|\u003eîÿ\u000fîéW¦^T",
+    "delimiter": 124,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "3º²¬Ä—",
+        "\u003eîÿ\u000fîéW¦^T"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-186",
+    "input": "Yeu3A+mD2repwSpdcGWpKLUAkYIQ4BmiogNuFRQeaQOxBXXnHIBhKEKu+5YV9sbZ3jMo3w==",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "a敕\u0003閮诜┝*]pe�(�\u0000憘\u0010�\u0019ⅱ\u0003n\u0015\u0014\u001ei\u0003�\u0005u�\u001c€a(B��\u0015銎俎3(�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "a敕\u0003閮诜┝*]pe�(�\u0000憘\u0010�\u0019ⅱ\u0003n\u0015\u0014\u001ei\u0003�\u0005u�\u001c€a(B��\u0015銎俎3(�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-187",
+    "input": "hlJfUgbhYDQSy8dFbsCNc4wexiXB+BRc5LFRNnBlcS5LiXma9HpwmGY=",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "�_R\u0006墇4\u0012侞En�s�\u001e�%霞\u0014\\銆Q6peq.K视𡍵zp侰",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�_R\u0006墇4\u0012侞En�s�\u001e�%霞\u0014\\銆Q6peq.K视𡍵zp侰"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-188",
+    "input": "O9yTk4xbUWuDKfWJSbSRAX8/k164ZvbF5bSX0iZh1WjGcaFIoB6+Zufsc0yw",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": ";�뱦[Qk�)�I킅\u0001?�^퇰緇若쀒\u0026a�h�q좭�\u001e푙傲sL�",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "",
+        "�뱦[Qk�)�I킅\u0001?�^퇰緇若쀒\u0026a�h�q좭�\u001e푙傲sL�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-189",
+    "input": "HhdCqsdlPfkFoIn567sukpsFIqQJyhHHPQ7ZhKiYcKKqRyR4FpLxxCFd0o+S7788P4BtsqoeGlyPjsQTRakUOOaMcKEnOw==",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "\u001e\u0017B�e=�\u0005爥��.挍\u0005\"�\t�\u0011�=\u000e賱�pⅹG$x\u0016採�!]覐掞�\u003c?€m勃\u001e\u001a\\弾�\u0013E�\u00148鎸p�';",
+    "delimiter": 9,
+    "quote": 0,
+    "escape": 0,
+    "rows": [
+      [
+        "\u001e\u0017B�e=�\u0005爥��.挍\u0005\"�",
+        "�\u0011�=\u000e賱�pⅹG$x\u0016採�!]覐掞�\u003c?€m勃\u001e\u001a\\弾�\u0013E�\u00148鎸p�';"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-190",
+    "input": "XL2+VtXla3dzTJO5n4LwrBSgvNAp/9MaEQhyT6DpKhsBLhMuG3O2HvJEGuxORr/DddwFkNiaWzzOgLowZg==",
+    "label": "",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "\\½¾VÕåkwsL“¹Ÿ‚ð¬\u0014 ¼Ð)ÿÓ\u001a\u0011\brO é*\u001b\u0001.\u0013.\u001bs¶\u001eòD\u001aìNF¿ÃuÜ\u0005�Øš[\u003cÎ€º0f",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\\½¾VÕåkwsL“¹Ÿ‚ð¬\u0014 ¼Ð)ÿÓ\u001a\u0011\brO é*\u001b\u0001.\u0013.\u001bs¶\u001eòD\u001aìNF¿ÃuÜ\u0005�Øš[\u003cÎ€º0f"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-191",
+    "input": "P+ObD7gj5mmNC9amfuzcddE=",
+    "label": "utf-8",
+    "charset": "UTF-8",
+    "bom": false,
+    "text": "?�\u000f�#�i�\u000b֦~�u�",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "?�\u000f�#�i�\u000b֦~�u�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-192",
+    "input": "gLvHXsR2gVm46UKTizhuC4ZYSgjO8p6YQQYBZGwJ0mfK3JHSgyZ9THporRF2IZFwcbnXX5F5irfhRZIvcwIwCYn32eFL/+4SHb0=",
+    "label": "shift_jis",
+    "charset": "Shift_JIS",
+    "bom": false,
+    "text": "ｻﾇ^ﾄv〆ｸ顳搭8n\u000b�J\bﾎ�連\u0006\u0001dl\tﾒgﾊﾜ待�\u0026}Lzhｭ\u0011v!叢qｹﾗ_惣換瓲�/s\u00020\t悔ﾙ甃��\u0012\u001dｽ",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "ｻﾇ^ﾄv〆ｸ顳搭8n\u000b�J\bﾎ�連\u0006\u0001dl",
+        "ﾒgﾊﾜ待�\u0026}Lzhｭ\u0011v!叢qｹﾗ_惣換瓲�/s\u00020",
+        "悔ﾙ甃��\u0012\u001dｽ"
+      ]
+    ],
+    "header": false,
+    "columns": 3,
+    "warnings": []
+  },
+  {
+    "name": "random-193",
+    "input": "HvM9VviPBGc1UQ==",
+    "label": "euc-jp",
+    "charset": "EUC-JP",
+    "bom": false,
+    "text": "\u001e�=V��\u0004g5Q",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u001e�=V��\u0004g5Q"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-194",
+    "input": "VfnZ/rnJY04jpqAy1pJCvzk=",
+    "label": "iso-2022-jp",
+    "charset": "ISO-2022-JP",
+    "bom": false,
+    "text": "U�����cN#��2��B�9",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "U�����cN#��2��B�9"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-195",
+    "input": "WMZIxuwrbUB/hPpctloezIYJTWFjoTcPQp6tUl2Cw04jnY8evbER39uptPAj/yzPRhzWo8yaqRmOcEaPKw==",
+    "label": "windows-1252",
+    "charset": "WINDOWS-1252",
+    "bom": false,
+    "text": "XÆHÆì+m@„ú\\¶Z\u001eÌ†\tMac¡7\u000fBž­R]‚ÃN#��\u001e½±\u0011ßÛ©´ð#ÿ,ÏF\u001cÖ£Ìš©\u0019ŽpF�+",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "XÆHÆì+m@„ú\\¶Z\u001eÌ†\tMac¡7\u000fBž­R]‚ÃN#��\u001e½±\u0011ßÛ©´ð#ÿ",
+        "ÏF\u001cÖ£Ìš©\u0019ŽpF�+"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-196",
+    "input": "D+vRbecuzNBpqPE5RO2YoXJLUta3r14p76ASffSyL3ljlt/nE3HnfmDP5M1ZG+7JLxbuggVqzaP8ijOB/DuAiw==",
+    "label": "gbk",
+    "charset": "GBK",
+    "bom": false,
+    "text": "\u000f胙m�.绦i�9D順�KR址痎)餇\u0012}舨/yc栠�\u0013q鐍`箱蚘\u001b钌/\u0016顐\u0005j停鼕3侟;€�",
+    "delimiter": 59,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u000f胙m�.绦i�9D順�KR址痎)餇\u0012}舨/yc栠�\u0013q鐍`箱蚘\u001b钌/\u0016顐\u0005j停鼕3侟",
+        "€�"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-197",
+    "input": "imrls4Wwq5OktFBXK55NXVxBQ/4Q3MIT3jjA0t/C/wdcJUPKLhXZMe58",
+    "label": "big5",
+    "charset": "BIG5",
+    "bom": false,
+    "text": "骲撜��仍PW+揾]\\AC�\u0010僉\u0013�8檠葺�\u0007\\%C�.\u0015�1觲",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "骲撜��仍PW+揾]\\AC�\u0010僉\u0013�8檠葺�\u0007\\%C�.\u0015�1觲"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  },
+  {
+    "name": "random-198",
+    "input": "PDwF8qqT9bhVIGetxZczuZmtDGFG6VHxqp+3LjJrlr+MgRgU/rKdfQnifRwe9/cyN9WY3uyFc/dW+rU=",
+    "label": "euc-kr",
+    "charset": "EUC-KR",
+    "bom": false,
+    "text": "\u003c\u003c\u0005智볯퇥 g��3튃�\faF�Q罪윿.2k뼼똻\u0018\u0014��}\t�}\u001c\u001e判27�舍꿺�V骸",
+    "delimiter": 9,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "\u003c\u003c\u0005智볯퇥 g��3튃�\faF�Q罪윿.2k뼼똻\u0018\u0014��}",
+        "�}\u001c\u001e判27�舍꿺�V骸"
+      ]
+    ],
+    "header": false,
+    "columns": 2,
+    "warnings": []
+  },
+  {
+    "name": "random-199",
+    "input": "q6/K9OVPMphQx3vQpAdHVu46cwIQ4wjky/3RKdcN",
+    "label": "gb18030",
+    "charset": "GB18030",
+    "bom": false,
+    "text": "�属錙2楶莧肖\u0007GV�:s\u0002\u0010�\b渌�)�\r",
+    "delimiter": 44,
+    "quote": 34,
+    "escape": 0,
+    "rows": [
+      [
+        "�属錙2楶莧肖\u0007GV�:s\u0002\u0010�\b渌�)�"
+      ]
+    ],
+    "header": false,
+    "columns": 1,
+    "warnings": []
+  }
+]

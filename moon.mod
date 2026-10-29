@@ -12,4 +12,5 @@ import {
   "moonbit-community/normalization@0.5.2",
   "moonbit-community/ucd@0.5.2",
   "Milky2018/xml@0.6.1",
+  "LL728/moon_encoding@0.2.0",
 }

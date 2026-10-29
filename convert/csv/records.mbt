@@ -52,6 +52,11 @@ pub fn read_records(text : String, dialect : Dialect) -> Records raise {
       "quote and escape must be ASCII characters, and quote cannot be CR or LF",
     )
   }
+  csv_read_text(text, dialect)
+}
+
+///|
+fn csv_read_text(text : String, dialect : Dialect) -> Records {
   let reader : Reader = {
     text: @utf8.encode(text),
     dialect,

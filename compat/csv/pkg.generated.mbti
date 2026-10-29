@@ -1,0 +1,15 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/compat/csv"
+
+// Values
+pub fn decode_only(Bytes, String) -> String
+
+pub fn read_fixture(Bytes, String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
