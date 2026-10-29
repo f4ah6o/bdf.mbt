@@ -75,7 +75,7 @@ pub fn draw_sized_grid_no_fonts(
         col_positions[column + 1] <= col_positions[column] {
         continue
       }
-      let text = cell.text.replace(old="\n", new="").replace(old="\r", new="")
+      let text = sized_grid_text(cell.text)
       let display : Cell = { text, number: cell.number, }
       let initial = grid_cell_layout(
         row, display, column, col_positions, y, height, false, language, fallback_advance,
@@ -164,4 +164,26 @@ pub fn draw_sized_grid_no_fonts(
     },
     tiles,
   }
+}
+
+///|
+fn sized_grid_text(text : String) -> String {
+  let output = StringBuilder()
+  let mut shown = 0
+  for c in text {
+    if c == '\n' {
+      shown += 1
+    } else {
+      let char = if c == '\t' { ' ' } else { c }
+      if char.to_int() < 0x20 {
+        continue
+      }
+      output.write_char(char)
+      shown += 1
+    }
+    if shown >= 1024 {
+      break
+    }
+  }
+  output.to_string()
 }

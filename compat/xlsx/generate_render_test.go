@@ -23,7 +23,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 1200; i++ {
+	for i := 0; i < 1450; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -83,7 +83,12 @@ func TestCodexXLSXRender(t *testing.T) {
 			for j := 0; j < 4; j++ {
 				a := 1 + r.Intn(5)
 				b := a + r.Intn(4)
-				sheet += fmt.Sprintf(`<col min="%d" max="%d" width="%d" hidden="%d"/>`, a, b, 12+r.Intn(18), r.Intn(6)/5)
+				sheet += fmt.Sprintf(`<col min="%d" max="%d" width="%d" hidden="%d"/>`, a, b, func() int {
+					if i >= 1200 {
+						return 2 + r.Intn(14)
+					}
+					return 12 + r.Intn(18)
+				}(), r.Intn(6)/5)
 			}
 			sheet += `</cols>`
 		}
@@ -101,7 +106,7 @@ func TestCodexXLSXRender(t *testing.T) {
 			sheet += fmt.Sprintf(`<row r="%d"%s>`, y+1, attrs)
 			for x := 0; x < r.Intn(4)+1; x++ {
 				col := colName(x)
-				if i >= 750 && r.Intn(3) == 0 {
+				if i >= 750 && i < 1200 && r.Intn(3) == 0 {
 					if r.Intn(2) == 0 {
 						sheet += fmt.Sprintf(`<c r="%s%d" t="b"><v>%d</v></c>`, col, y+1, r.Intn(2))
 					} else {
@@ -114,6 +119,9 @@ func TestCodexXLSXRender(t *testing.T) {
 					if i >= 50 {
 						texts = append(texts, "Longer text that exceeds one cell", strings.Repeat("wide", 40), "日本語", "line1\nline2", "🙂 emoji")
 					}
+					if i >= 1350 {
+						texts = append(texts, strings.Repeat("a\n", 600)+"end", "tab\ttext", "A\rB")
+					}
 					t := texts[r.Intn(len(texts))]
 					switch {
 					case i >= 300 && r.Intn(2) == 0:
@@ -124,11 +132,16 @@ func TestCodexXLSXRender(t *testing.T) {
 						sheet += fmt.Sprintf(`<c r="%s%d" t="str"><v>%s</v></c>`, col, y+1, html.EscapeString(t))
 					}
 				} else {
-					v := r.Intn(10000)
-					if i >= 1050 && r.Intn(3) == 0 {
-						v = 0
+					if i >= 1200 {
+						v := []string{"123456789", "-123456789", "0.123456789012345", "0.000000000012345", "123456789012345", "-0.987654321", "0"}[r.Intn(7)]
+						sheet += fmt.Sprintf(`<c r="%s%d"><v>%s</v></c>`, col, y+1, v)
+					} else {
+						v := r.Intn(10000)
+						if i >= 1050 && r.Intn(3) == 0 {
+							v = 0
+						}
+						sheet += fmt.Sprintf(`<c r="%s%d"><v>%d</v></c>`, col, y+1, v)
 					}
-					sheet += fmt.Sprintf(`<c r="%s%d"><v>%d</v></c>`, col, y+1, v)
 				}
 			}
 			sheet += `</row>`

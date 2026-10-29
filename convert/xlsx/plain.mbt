@@ -399,7 +399,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       }
       if styles.format_cell(cell, workbook.date1904, locale.number_locale)
         is Some(formatted) {
-        let text = formatted.text()
+        let mut text = formatted.text()
         if cell.kind == 1 || cell.kind == 3 || cell.kind == 4 {
           let mut width = 0.0
           for c in text {
@@ -409,9 +409,20 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             cell.column < widths.length() &&
             widths[cell.column] > 0.0 &&
             width > widths[cell.column] - 3.75 + 0.01 {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support narrow numeric cells",
+            if cell.kind != 1 {
+              raise InvalidXlsxInput(
+                "xlsx: plain conversion does not support narrow boolean or error cells",
+              )
+            }
+            text = xlsx_fit_plain_number(
+              cell.number,
+              Double::max(widths[cell.column] - 3.75, 0.0),
             )
+            if text == "" {
+              raise InvalidXlsxInput(
+                "xlsx: plain conversion does not support cells narrower than a digit",
+              )
+            }
           }
         }
         entries.push({
@@ -432,4 +443,23 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     doc_language,
   )
   (drawn, geo)
+}
+
+///|
+fn xlsx_fit_plain_number(value : Double, available : Double) -> String {
+  for n = 10; n >= 1; n = n - 1 {
+    let candidate = xlsx_format_general(value, n)
+    if candidate == "" {
+      continue
+    }
+    let mut width = 0.0
+    for c in candidate {
+      width += @sheet.fallback_advance(c, false)
+    }
+    if width <= available + 0.01 {
+      return candidate
+    }
+  }
+  let n = (available / Double::max(@sheet.fallback_advance('#', false), 0.01)).to_int()
+  "#".repeat(n)
 }
