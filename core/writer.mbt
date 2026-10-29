@@ -111,11 +111,20 @@ fn writer_encode_part(part : WriterPart) -> (Bytes, String) {
 
 ///|
 fn DocumentWriter::manifest(self : DocumentWriter, entries : Array[Json]) -> Json {
+  let meta = if self.meta is Object(fields) {
+    let copy : Map[String, Json] = Map([])
+    for key, value in fields { copy[key] = value }
+    match copy.get("generator") {
+      None | Some(String("")) | Some(Null) => copy["generator"] = Json::string("bdf-go/0.1")
+      _ => ()
+    }
+    Json::object(copy)
+  } else { self.meta }
   Json::object({
     "bdf": Json::number(1.0),
     "opset": Json::number(1.0),
     "unit": Json::string("pt"),
-    "meta": self.meta,
+    "meta": meta,
     "views": Json::array(self.views),
     "tables": Json::array(self.tables),
     "parts": Json::array(entries),

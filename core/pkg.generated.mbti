@@ -55,6 +55,8 @@ pub fn parse_segment(String) -> Segment? raise
 
 pub fn parse_smf(Bytes) -> MidiSequence raise
 
+pub fn prepare_sealing(Bytes) -> SealingPlan raise
+
 pub fn sealed_references(String, Manifest) -> Map[String, String] raise
 
 pub fn seconds_to_tick(MidiSequence, Double) -> Double
@@ -375,6 +377,19 @@ pub fn Reader::u32(Self) -> Int32 raise
 pub fn Reader::u64_size(Self) -> Int32 raise
 pub fn Reader::u8(Self) -> Int32 raise
 pub fn Reader::varuint(Self) -> Int32 raise
+
+pub(all) struct SealingManifest {
+  data : Bytes
+  encoding : String
+}
+
+pub struct SealingPlan {
+  manifest : Bytes
+  parts : Array[SplitPart]
+}
+pub fn SealingPlan::finish(Self, Array[Bytes], SealingManifest, Bytes, Array[Json]) -> SplitOutput raise
+pub fn SealingPlan::inner_manifest(Self, Array[Bytes]) -> SealingManifest raise
+pub fn SealingPlan::parts(Self) -> Array[SplitPart]
 
 pub(all) struct SearchHit {
   segments : Array[HitSegment]

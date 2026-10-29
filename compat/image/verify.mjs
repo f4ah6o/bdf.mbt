@@ -25,6 +25,7 @@ for (const expected of fixtures) {
     await BdfDocument.open(source);
   }
   assert.equal(manifest.meta.source, expected.format);
+  assert.equal(manifest.meta.generator, 'bdf-go/0.1');
   assert.deepEqual(manifest.meta.dc ?? {}, expected.dc);
   assert.equal(manifest.views[0].pages[0].w, expected.pageW);
   assert.equal(manifest.views[0].pages[0].h, expected.pageH);

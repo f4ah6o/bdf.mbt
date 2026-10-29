@@ -80,6 +80,19 @@ test "single-file writer compresses large manifests" {
 }
 
 ///|
+test "writer sets the upstream default generator without mutating metadata" {
+  let fields : Map[String, Json] = { "source": Json::string("test") }
+  let writer = DocumentWriter::new(meta=Json::object(fields))
+  let split = writer.write_split()
+  let parsed = @json.parse(@utf8.decode_lossy(split.manifest))
+  assert_eq(required_string(field(parsed, "meta"), "generator"), "bdf-go/0.1")
+  assert_false(fields.contains("generator"))
+  let custom = DocumentWriter::new(meta=Json::object({ "generator": Json::string("custom/2") }))
+  let manifest = @json.parse(@utf8.decode_lossy(custom.write_split().manifest))
+  assert_eq(required_string(field(manifest, "meta"), "generator"), "custom/2")
+}
+
+///|
 test "writer preserves already compressed media but compresses plain image and font data" {
   let writer = DocumentWriter::new()
   let png = Bytes::from_array(

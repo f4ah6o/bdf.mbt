@@ -10,6 +10,7 @@ const header = parseHeader(bytes);
 assert.equal(header.manifestEnc, 'deflate-raw');
 const doc = await BdfDocument.open(new BufferSource(bytes));
 assert.equal(doc.manifest.meta.source, 'test');
+assert.equal(doc.manifest.meta.generator, 'bdf-go/0.1');
 assert.equal(doc.manifest.views.length, 30);
 assert.equal(doc.manifest.views[29].id, 'view29');
 assert.equal(doc.manifest.parts.length, 2);

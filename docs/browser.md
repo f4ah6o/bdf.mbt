@@ -16,6 +16,17 @@ const pageCount = await mount_bdf_async(document.querySelector("#preview"), byte
 // mount_bdf is synchronous and supports documents without images or embedded fonts.
 ```
 
+Encrypt an unencrypted single-file document with Web Crypto in a secure
+browser context. A zero iteration count selects the upstream default of
+600,000 PBKDF2 iterations. For P-256, pass the recipient's uncompressed
+65-byte raw public key.
+
+```js
+const protectedBytes = await encrypt_bdf_password(bytes, password, 0);
+const publicKeyBytes = new Uint8Array(await crypto.subtle.exportKey('raw', recipientPublicKey));
+const recipientBytes = await encrypt_bdf_ecdh(bytes, publicKeyBytes);
+```
+
 This currently supports fixed/flow, scroll and sheet BDF documents whose BOBJ parts use
 the implemented drawing subset. It does not try to convert
 PDF/Office documents. The asynchronous entry point loads image and embedded font

@@ -5,6 +5,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/ecdh"
 	"fmt"
 	"os"
 
@@ -35,12 +36,32 @@ func main() {
 		panic(err)
 	}
 	if reader.Encrypted() {
-		// The compatibility fixture uses the public test password "pass".
-		if err := reader.Unlock("pass"); err != nil {
-			panic(err)
-		}
-		if err := copy.Unlock("pass"); err != nil {
-			panic(err)
+		if len(os.Args) > 2 && os.Args[2] == "ecdh" {
+			// The committed public test fixture's P-256 private scalar is 42.
+			raw := make([]byte, 32)
+			raw[31] = 42
+			key, err := ecdh.P256().NewPrivateKey(raw)
+			if err != nil {
+				panic(err)
+			}
+			if err := reader.UnlockECDH(key); err != nil {
+				panic(err)
+			}
+			if err := copy.UnlockECDH(key); err != nil {
+				panic(err)
+			}
+		} else {
+			// The compatibility fixture uses the public test password "pass".
+			password := "pass"
+			if len(os.Args) > 2 && os.Args[2] == "unicode" {
+				password = "ABC"
+			}
+			if err := reader.Unlock(password); err != nil {
+				panic(err)
+			}
+			if err := copy.Unlock(password); err != nil {
+				panic(err)
+			}
 		}
 	}
 	for _, part := range reader.Manifest.Parts {

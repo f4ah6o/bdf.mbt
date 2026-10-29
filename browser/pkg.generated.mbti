@@ -58,6 +58,10 @@ pub fn bdf_set_music_mode_async(BrowserHost, String) -> @js_async.Promise[Unit]
 
 pub fn bdf_set_zoom(BrowserHost, Double) -> Unit
 
+pub fn encrypt_bdf_ecdh(Bytes, Bytes) -> @js_async.Promise[Bytes]
+
+pub fn encrypt_bdf_password(Bytes, String, Int32) -> @js_async.Promise[Bytes]
+
 pub fn key_pair_credential(BrowserKeyPair) -> CryptoCredential
 
 pub fn mount_bdf(BrowserHost, Bytes, String) -> Int32 raise

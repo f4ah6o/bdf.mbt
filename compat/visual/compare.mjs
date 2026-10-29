@@ -73,7 +73,7 @@ try {
   // A visual diff is not evidence if both pages failed or were still blank.
   const browser = await chromium.launch({ headless: true });
   try {
-    for (const name of ['baseline', 'moon', 'split', 'split-produced', 'encrypted-password', 'encrypted-split', 'encrypted-produced', 'encrypted-ecdh', 'encrypted-ecdh-split']) {
+    for (const name of ['baseline', 'moon', 'split', 'split-produced', 'encrypted-password', 'encrypted-split', 'encrypted-produced', 'encrypted-ecdh', 'encrypted-ecdh-split', 'seal-password', 'seal-ecdh']) {
       const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
       const errors = [];
       page.on('pageerror', error => errors.push(String(error)));
@@ -1255,7 +1255,7 @@ try {
   await run(['check','interactions',`${interactiveBase}find-moon.html`,'--reference',`${interactiveBase}find-baseline.html`,'--handlers','--no-ledger']);
   await run(['scan','handlers',`${interactiveBase}moon.html`,'--no-ledger']);
   await run(['check','interactions',`${interactiveBase}moon.html`,'--reference',`${interactiveBase}baseline.html`,'--handlers','--no-ledger']);
-  for (const variant of ['moon', 'split', 'split-produced', 'encrypted-password', 'encrypted-split', 'encrypted-produced', 'encrypted-ecdh', 'encrypted-ecdh-split']) {
+  for (const variant of ['moon', 'split', 'split-produced', 'encrypted-password', 'encrypted-split', 'encrypted-produced', 'encrypted-ecdh', 'encrypted-ecdh-split', 'seal-password', 'seal-ecdh']) {
   const variantOutput = path.join(output, variant);
   mkdirSync(variantOutput);
   await run(['diff', 'html', '--url', `${base}baseline.html`, '--current-url', `${base}${variant}.html`, '--output-dir', variantOutput, '--no-paint-tree']);
