@@ -12,6 +12,8 @@ pub fn glyph_names(Bytes, Int32) -> String
 
 pub fn glyph_program(Bytes, Int32) -> Bytes
 
+pub fn info_tables(Bytes, Bytes, Bytes, Bytes, Bytes, Bytes, Bytes) -> String
+
 pub fn pruned_program(Bytes, Int32, Array[Int32]) -> Bytes
 
 pub fn reachable(Bytes, Int32, String) -> Array[Int32]

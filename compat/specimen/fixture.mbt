@@ -222,3 +222,30 @@ pub fn variations(data : Bytes, raw_names : Bytes) -> String {
     ),
   }).stringify()
 }
+
+///|
+#export_name("info_tables")
+pub fn info_tables(
+  cmap : Bytes,
+  meta : Bytes,
+  colr : Bytes,
+  cpal : Bytes,
+  sbix : Bytes,
+  cblc : Bytes,
+  svg : Bytes,
+) -> String {
+  let (count, more) = @font.variation_sequences(cmap)
+  let (design, supported) = @font.metadata_languages(meta)
+  Json::object({
+    "count": Json::number(count.to_double()),
+    "more": Json::boolean(more),
+    "design": Json::string(design),
+    "supported": Json::string(supported),
+    "color": Json::string(@font.color_formats(colr, cpal, sbix, cblc, svg)),
+    "palettes": Json::array(
+      @font.color_palettes(cpal).map(p => {
+        Json::array(p.map(c => Json::number(c.to_double())))
+      }),
+    ),
+  }).stringify()
+}

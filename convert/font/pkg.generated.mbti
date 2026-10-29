@@ -6,13 +6,21 @@ import {
 }
 
 // Values
+pub fn color_formats(Bytes, Bytes, Bytes, Bytes, Bytes) -> String
+
+pub fn color_palettes(Bytes) -> Array[Array[UInt32]]
+
 pub fn detect(Bytes) -> Bool
 
 pub fn load(Bytes) -> FontFile raise
 
+pub fn metadata_languages(Bytes) -> (String, String)
+
 pub fn parse_specimen_names(Bytes) -> SpecimenNames
 
 pub fn parse_variations(Bytes, SpecimenNames) -> Variations
+
+pub fn variation_sequences(Bytes) -> (Int64, Bool)
 
 // Errors
 pub suberror FontInputError {

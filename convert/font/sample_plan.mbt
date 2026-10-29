@@ -40,35 +40,7 @@ fn FileFace::sample_has(self : FileFace, text : String) -> Bool {
 
 ///|
 fn FileFace::design_languages(self : FileFace) -> String {
-  guard self.font.table("meta") is Some(table) else { return "" }
-  if table.length() < 16 || be32(table[:], 0) != 1U {
-    return ""
-  }
-  let count = be32(table[:], 12)
-  let available = (table.length() - 16) / 12
-  let n = if count > available.reinterpret_as_uint() {
-    available
-  } else {
-    count.reinterpret_as_int()
-  }
-  let mut design = ""
-  for i in 0..<n {
-    let p = 16 + 12 * i
-    if table[p:p + 4] != b"dlng"[:] {
-      continue
-    }
-    let offset = be32(table[:], p + 4)
-    let len = be32(table[:], p + 8)
-    if offset > table.length().reinterpret_as_uint() ||
-      len > table.length().reinterpret_as_uint() - offset {
-      continue
-    }
-    let start = offset.reinterpret_as_int()
-    design = @utf8.decode_lossy(table[start:start + len.reinterpret_as_int()]).replace(
-      old=",",
-      new=", ",
-    )
-  }
+  let (design, _) = metadata_languages(self.font.table("meta").unwrap_or(b""))
   design
 }
 

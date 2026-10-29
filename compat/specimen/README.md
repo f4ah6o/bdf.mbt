@@ -13,11 +13,13 @@ waterfall and fallback selection across real and synthetic fonts.
 `names.json.gz` compares decoded multilingual names and selection priorities.
 `glyphs.json.gz` compares glyph mappings, labels, alternatives, and Unicode scripts.
 `variations.json.gz` covers real, truncated and mutated fvar tables.
+`info.json.gz` checks language, variation-sequence and color metadata.
 
 After `moon build --target js`, run `npm run test:specimen` and
 `npm run test:specimen-plan`, `npm run test:specimen-names`,
 `npm run test:specimen-coverage`, `npm run test:specimen-metadata`,
-`npm run test:specimen-glyphs`, `npm run test:specimen-variations`, and
+`npm run test:specimen-glyphs`, `npm run test:specimen-variations`,
+`npm run test:specimen-info`, and
 `npm run test:specimen-visual`. To regenerate, copy `generate_test.go` without
 its first `//go:build ignore` line into the upstream checkout at
 `converter/font/codex_specimen_test.go`, then run:
@@ -54,3 +56,7 @@ and run `TestCodexGlyphs` with the same fixture root and Unicode 17 Go toolchain
 To regenerate variation cases, copy `generate-variations_test.go` without its
 build tag into upstream `converter/font`, along with `generate_test.go`, and run
 `TestCodexVariations` with the same fixture root.
+
+To regenerate the table-information cases, copy `generate-info_test.go` without
+its build tag into upstream `converter/font`, along with `generate_test.go`, and
+run `TestCodexInfoTables` with the same fixture root.
