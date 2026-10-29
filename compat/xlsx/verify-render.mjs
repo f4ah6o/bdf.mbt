@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { BdfDocument, BufferSource } from '@bdfkit/core';
-import { xlsx_render_basic } from '../../_build/js/debug/build/compat/xlsx/xlsx.js';
+import { xlsx_render_basic, xlsx_render_warnings } from '../../_build/js/debug/build/compat/xlsx/xlsx.js';
 const cases = JSON.parse(await readFile(new URL('./render.json', import.meta.url)));
 for (const [i, c] of cases.entries()) {
   const expected = await BdfDocument.open(new BufferSource(Buffer.from(c.bdf, 'base64')));
   const actual = await BdfDocument.open(new BufferSource(xlsx_render_basic(Buffer.from(c.input, 'base64'), c.mode, c.no_index)));
+  assert.deepEqual(JSON.parse(xlsx_render_warnings(Buffer.from(c.input, 'base64'), c.mode, c.no_index)), c.warnings ?? [], `XLSX warnings ${i}`);
   assert.deepEqual(actual.manifest.meta, expected.manifest.meta, `XLSX metadata ${i}`);
   assert.deepEqual(actual.manifest.views, expected.manifest.views, `XLSX view ${i}`);
   assert.deepEqual(actual.manifest.tables ?? [], expected.manifest.tables ?? [], `XLSX tables ${i}`);

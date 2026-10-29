@@ -94,6 +94,8 @@ pub(all) struct NamedGrid {
   id : String
   title : String
   grid : DrawnGrid
+  gridlines : Bool
+  frozen_columns : Int32
 }
 
 pub(all) struct Run {
@@ -105,6 +107,7 @@ pub(all) struct SizedGridCell {
   column : Int32
   cell : Cell
   center : Bool
+  visible : Bool
 }
 
 pub(all) struct SizedGridRow {

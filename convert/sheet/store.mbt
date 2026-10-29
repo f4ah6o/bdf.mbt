@@ -14,7 +14,7 @@ pub fn store_grid(
       tiles["\{tile.x},\{tile.y}"] = Json::string(hash)
     }
   }
-  store_grid_view(writer, grid, tiles, id, title, text_index)
+  store_grid_view(writer, grid, tiles, id, title, text_index, true, 0)
 }
 
 ///|
@@ -25,6 +25,8 @@ fn store_grid_view(
   id : String,
   title : String,
   text_index : Bool,
+  gridlines : Bool,
+  frozen_columns : Int32,
 ) -> Unit raise {
   let as_json = (runs : Array[Run]) => {
     Json::array(
@@ -42,15 +44,22 @@ fn store_grid_view(
     "tile": Json::number(2048.0),
     "cols": as_json(grid.geometry.columns),
     "rows": as_json(grid.geometry.rows),
-    "gridlines": Json::boolean(true),
+  }
+  if gridlines {
+    view["gridlines"] = Json::boolean(true)
   }
   if title != "" {
     view["title"] = Json::string(title)
   }
-  if grid.geometry.frozen_rows > 0 {
-    view["freeze"] = Json::object({
-      "rows": Json::number(grid.geometry.frozen_rows.to_double()),
-    })
+  if grid.geometry.frozen_rows > 0 || frozen_columns > 0 {
+    let freeze : Map[String, Json] = Map([])
+    if grid.geometry.frozen_rows != 0 {
+      freeze["rows"] = Json::number(grid.geometry.frozen_rows.to_double())
+    }
+    if frozen_columns != 0 {
+      freeze["cols"] = Json::number(frozen_columns.to_double())
+    }
+    view["freeze"] = Json::object(freeze)
   }
   if tiles.length() > 0 {
     view["tiles"] = Json::object(tiles)
@@ -98,6 +107,8 @@ pub(all) struct NamedGrid {
   id : String
   title : String
   grid : DrawnGrid
+  gridlines : Bool
+  frozen_columns : Int32
 }
 
 ///|
@@ -127,6 +138,8 @@ pub fn store_grids(
       named.id,
       named.title,
       text_index,
+      named.gridlines,
+      named.frozen_columns,
     )
   }
 }

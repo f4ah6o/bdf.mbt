@@ -766,3 +766,19 @@ pub fn xlsx_render_basic(
     _ => b""
   }
 }
+
+///|
+#export_name("xlsx_render_warnings")
+pub fn xlsx_render_warnings(
+  data : Bytes,
+  mode : String,
+  no_text_index : Bool,
+) -> String {
+  Json::array(
+    @xlsx.convert_plain_no_fonts(data, data_mode=mode, no_text_index~).warnings.map(
+      Json::string,
+    ),
+  ).stringify() catch {
+    _ => "null"
+  }
+}

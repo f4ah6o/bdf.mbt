@@ -268,6 +268,7 @@ pub fn convert_plain_no_fonts(
   let warnings = workbook.warnings.copy()
   let grids : Array[@sheet.NamedGrid] = []
   let mut counter = 0
+  let mut warned_rtl = false
   let doc_language = metadata.language.get(0).unwrap_or("")
   for index, ref in workbook.sheets {
     if ref.hidden {
@@ -280,7 +281,7 @@ pub fn convert_plain_no_fonts(
     }
     let number = index + 1
     let id = "sheet" + number.to_string()
-    let drawn = workbook.xlsx_draw_plain_sheet(
+    let (drawn, geo) = workbook.xlsx_draw_plain_sheet(
       ref, styles, locale, doc_language,
     )
     let (next, table_warnings) = workbook.store_sheet_tables(
@@ -297,7 +298,21 @@ pub fn convert_plain_no_fonts(
     for warning in table_warnings {
       warnings.push(warning)
     }
-    grids.push({ id, title: ref.name, grid: drawn, })
+    if geo.right_to_left && !warned_rtl {
+      warnings.push(
+        "sheet " +
+        xlsx_go_quote(ref.name, '"') +
+        ": right-to-left sheets are drawn left to right",
+      )
+      warned_rtl = true
+    }
+    grids.push({
+      id,
+      title: ref.name,
+      grid: drawn,
+      gridlines: geo.show_grid,
+      frozen_columns: Int32::min(geo.frozen_columns, 16384),
+    })
   }
   @sheet.store_grids(writer, grids, !no_text_index)
   { bdf: writer.write_single(), warnings, sheets: grids.length(), }
@@ -310,7 +325,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   styles : XlsxStyles,
   locale : XlsxLocale,
   doc_language : String,
-) -> @sheet.DrawnGrid raise {
+) -> (@sheet.DrawnGrid, XlsxSheetGeometry) raise {
   workbook.xlsx_check_plain_sheet(ref.part)
   let parsed = workbook.read_sheet_cells(ref.part)
   if parsed.missing_formula_values > 0 {
@@ -320,14 +335,9 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   }
   let rows = parsed.sorted_rows()
   let geo = workbook.read_sheet_geometry(ref.part)
-  if !geo.merges.is_empty() ||
-    geo.frozen_rows != 0 ||
-    geo.frozen_columns != 0 ||
-    !geo.show_grid ||
-    !geo.show_zero ||
-    geo.right_to_left {
+  if !geo.merges.is_empty() {
     raise InvalidXlsxInput(
-      "xlsx: plain conversion does not support worksheet layout features",
+      "xlsx: plain conversion does not support merged cells",
     )
   }
   for column in geo.columns {
@@ -364,7 +374,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let geometry : @sheet.GridGeometry = {
     columns,
     rows: heights,
-    frozen_rows: 0,
+    frozen_rows: Int32::min(geo.frozen_rows, row_count),
   }
   let cells : Array[@sheet.SizedGridRow] = []
   for row in rows {
@@ -408,16 +418,18 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           column: cell.column,
           cell: { text, number: cell.kind == 1, },
           center: cell.kind == 3 || cell.kind == 4,
+          visible: !(cell.kind == 1 && cell.number == 0.0 && !geo.show_zero),
         })
       }
     }
     cells.push({ index: row.index, cells: entries, })
   }
-  @sheet.draw_sized_grid_no_fonts(
+  let drawn = @sheet.draw_sized_grid_no_fonts(
     cells,
     geometry,
     all_columns,
     locale.language,
     doc_language,
   )
+  (drawn, geo)
 }

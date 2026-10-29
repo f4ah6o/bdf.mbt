@@ -4,6 +4,7 @@ pub(all) struct SizedGridCell {
   column : Int32
   cell : Cell
   center : Bool
+  visible : Bool
 }
 
 ///|
@@ -48,6 +49,7 @@ pub fn draw_sized_grid_no_fonts(
     }
     let row : Array[Cell] = []
     let centered : Map[Int32, Bool] = Map([])
+    let visibility : Map[Int32, Bool] = Map([])
     for entry in sparse.cells {
       if entry.column < 0 || entry.column >= 16384 {
         continue
@@ -57,6 +59,7 @@ pub fn draw_sized_grid_no_fonts(
       }
       row[entry.column] = entry.cell
       centered[entry.column] = entry.center
+      visibility[entry.column] = entry.visible
     }
     let y = row_positions[i]
     let height = row_positions[i + 1] - y
@@ -67,7 +70,9 @@ pub fn draw_sized_grid_no_fonts(
       if column >= 16384 {
         break
       }
-      if cell.text == "" || col_positions[column + 1] <= col_positions[column] {
+      if cell.text == "" ||
+        !visibility.get(column).unwrap_or(true) ||
+        col_positions[column + 1] <= col_positions[column] {
         continue
       }
       let text = cell.text.replace(old="\n", new="").replace(old="\r", new="")

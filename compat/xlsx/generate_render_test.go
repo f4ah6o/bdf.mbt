@@ -23,7 +23,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 1050; i++ {
+	for i := 0; i < 1200; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -72,6 +72,9 @@ func TestCodexXLSXRender(t *testing.T) {
 			add("xl/sharedStrings.xml", ss)
 		}
 		sheet := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
+		if i >= 1050 {
+			sheet += fmt.Sprintf(`<sheetViews><sheetView showGridLines="%d" showZeros="%d" rightToLeft="%d"><pane state="frozen" xSplit="%d" ySplit="%d"/></sheetView></sheetViews>`, r.Intn(2), r.Intn(2), r.Intn(5)/4, r.Intn(6), r.Intn(6))
+		}
 		if i >= 150 {
 			sheet += fmt.Sprintf(`<sheetFormatPr defaultColWidth="%g" defaultRowHeight="%g" zeroHeight="%d"/>`, []float64{0, 8, 12, 20}[r.Intn(4)], []float64{0, 12, 15, 24}[r.Intn(4)], r.Intn(5)/4)
 		}
@@ -121,7 +124,11 @@ func TestCodexXLSXRender(t *testing.T) {
 						sheet += fmt.Sprintf(`<c r="%s%d" t="str"><v>%s</v></c>`, col, y+1, html.EscapeString(t))
 					}
 				} else {
-					sheet += fmt.Sprintf(`<c r="%s%d"><v>%d</v></c>`, col, y+1, r.Intn(10000))
+					v := r.Intn(10000)
+					if i >= 1050 && r.Intn(3) == 0 {
+						v = 0
+					}
+					sheet += fmt.Sprintf(`<c r="%s%d"><v>%d</v></c>`, col, y+1, v)
 				}
 			}
 			sheet += `</row>`
