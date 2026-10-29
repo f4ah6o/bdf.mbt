@@ -24,7 +24,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 2700; i++ {
+	for i := 0; i < 3000; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -95,7 +95,9 @@ func TestCodexXLSXRender(t *testing.T) {
 				st += `</fonts>`
 			}
 			st += `<cellXfs>`
-			if i >= 2500 && i < 2600 {
+			if i >= 2700 && i < 2850 {
+				st += fmt.Sprintf(`<xf numFmtId="0"><alignment horizontal="%s" vertical="%s"/></xf>`, []string{"left", "right"}[i%2], []string{"bottom", "top", "center"}[(i/2)%3])
+			} else if i >= 2500 && i < 2600 {
 				st += fmt.Sprintf(`<xf numFmtId="0"><alignment horizontal="%s" vertical="%s"/></xf>`, []string{"general", "center"}[i%2], []string{"top", "center"}[(i/2)%2])
 			} else if i >= 2450 && i < 2500 {
 				st += `<xf numFmtId="0"><alignment horizontal="center"/></xf>`
@@ -122,7 +124,10 @@ func TestCodexXLSXRender(t *testing.T) {
 				if i >= 2400 && i < 2450 {
 					format = []int{2, 14, 164}[i%3]
 				}
-				if i >= 2600 {
+				if i >= 2850 {
+					format = []int{0, 2, 14, 164}[i%4]
+					st += fmt.Sprintf(`<xf numFmtId="%d"><alignment horizontal="%s" vertical="%s"/></xf>`, format, []string{"left", "right"}[i%2], []string{"bottom", "top", "center"}[(i/2)%3])
+				} else if i >= 2600 {
 					format = []int{0, 2, 14, 164}[i%4]
 					st += fmt.Sprintf(`<xf numFmtId="%d"><alignment horizontal="%s" vertical="%s"/></xf>`, format, []string{"general", "center"}[i%2], []string{"top", "center"}[(i/2)%2])
 				} else {
@@ -247,7 +252,7 @@ func TestCodexXLSXRender(t *testing.T) {
 		sheet += `</sheetData></worksheet>`
 		if i >= 2350 {
 			style := 16
-			if i >= 2450 && i < 2600 {
+			if (i >= 2450 && i < 2600) || (i >= 2700 && i < 2850) {
 				style = 0
 			}
 			sheet = regexp.MustCompile(`<c r="([^"]+)"(?: s="[0-9]+")?`).ReplaceAllString(sheet, fmt.Sprintf(`<c r="$1" s="%d"`, style))

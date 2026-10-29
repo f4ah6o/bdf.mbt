@@ -25,6 +25,7 @@ pub fn draw_sized_grid_no_fonts(
   language : String,
   document_language : String,
   verticals~ : Map[Int32, Map[Int32, String]] = Map([]),
+  horizontals~ : Map[Int32, Map[Int32, String]] = Map([]),
 ) -> DrawnGrid raise {
   let col_positions = grid_positions(all_columns)
   if col_positions.length() != 16385 {
@@ -150,6 +151,13 @@ pub fn draw_sized_grid_no_fonts(
       } else {
         initial
       }
+      let horizontal_kind = match horizontals.get(i) {
+        Some(columns) => columns.get(column).unwrap_or("general")
+        None => "general"
+      }
+      let horizontal = sized_grid_horizontal_layout(
+        horizontal, horizontal_kind, row, display, column, col_positions, y, height,
+      )
       let vertical = match verticals.get(i) {
         Some(columns) => columns.get(column).unwrap_or("bottom")
         None => "bottom"
@@ -213,6 +221,73 @@ pub fn draw_sized_grid_no_fonts(
     },
     tiles,
   }
+}
+
+///|
+fn sized_grid_horizontal_layout(
+  layout : DrawCell,
+  alignment : String,
+  row : Array[Cell],
+  cell : Cell,
+  column : Int32,
+  positions : Array[Double],
+  y : Double,
+  height : Double,
+) -> DrawCell {
+  if alignment != "left" && alignment != "right" {
+    return layout
+  }
+  let left = positions[column]
+  let right = positions[column + 1]
+  let lines = layout.lines.map(line => {
+    ..line,
+    x: if alignment == "left" {
+      left + 1.5
+    } else {
+      right - 2.25 - line.width
+    },
+  })
+  let mut tx0 = 1.0e300
+  let mut tx1 = -1.0e300
+  for line in lines {
+    tx0 = Double::min(tx0, line.x)
+    tx1 = Double::max(tx1, line.x + line.width)
+  }
+  let mut x0 = left
+  let mut x1 = right
+  if !cell.number && !cell.text.contains("\n") && !cell.text.contains("\r") {
+    if alignment == "right" {
+      let mut previous = column - 1
+      while previous >= 0 && x0 > tx0 {
+        if previous < row.length() && row[previous].text != "" {
+          break
+        }
+        x0 = positions[previous]
+        previous -= 1
+      }
+    } else {
+      let mut next = column + 1
+      while next < 16384 && x1 < tx1 {
+        if next < row.length() && row[next].text != "" {
+          break
+        }
+        x1 = positions[next + 1]
+        next += 1
+      }
+    }
+  }
+  let (ascent, descent) = fallback_line_metrics('x', false)
+  let ty0 = lines[0].baseline - ascent
+  let ty1 = lines[lines.length() - 1].baseline + descent
+  let clip = tx0 < x0 - 0.01 ||
+    tx1 > x1 + 0.01 ||
+    ty0 < y - 0.01 ||
+    ty1 > y + height + 0.01
+  if !clip {
+    x0 = Double::min(tx0, left)
+    x1 = Double::max(tx1, right)
+  }
+  { ..layout, x0, x1, clip, lines, }
 }
 
 ///|

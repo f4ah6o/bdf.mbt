@@ -203,7 +203,12 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
     font.strike ||
     (font.scheme != "" && font.scheme != "minor") ||
     font.vertical != "" ||
-    (a.horizontal != "general" && a.horizontal != "center") ||
+    (
+      a.horizontal != "general" &&
+      a.horizontal != "center" &&
+      a.horizontal != "left" &&
+      a.horizontal != "right"
+    ) ||
     (a.vertical != "bottom" && a.vertical != "top" && a.vertical != "center") ||
     a.wrap ||
     a.shrink ||
@@ -221,8 +226,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 ///|
 /// Convert worksheets using estimated font metrics without embedding fonts.
 /// Supports sheet views with numeric, plain string, boolean and error cells,
-/// number formats, font colors, centered horizontal alignment and top or center
-/// vertical alignment; complex features are rejected.
+/// number formats, font colors, horizontal alignment and top or center vertical
+/// alignment; complex features are rejected.
 pub fn convert_plain_no_fonts(
   data : Bytes,
   data_mode~ : String = "",
@@ -388,6 +393,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   }
   let cells : Array[@sheet.SizedGridRow] = []
   let verticals : Map[Int32, Map[Int32, String]] = Map([])
+  let horizontals : Map[Int32, Map[Int32, String]] = Map([])
   let checked_styles : Map[Int32, Bool] = Map([])
   let format_cache : Map[Int32, Array[XlsxFormatSection]] = Map([])
   let color_cache : Map[Int32, UInt32] = Map([])
@@ -473,6 +479,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           cell.style
         }
         let vertical = styles.cell_formats[format_index].alignment.vertical
+        let horizontal = styles.cell_formats[format_index].alignment.horizontal
         if vertical != "bottom" {
           let columns = match verticals.get(row.index) {
             Some(columns) => columns
@@ -484,13 +491,22 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           }
           columns[cell.column] = vertical
         }
+        if horizontal == "left" || horizontal == "right" {
+          let columns = match horizontals.get(row.index) {
+            Some(columns) => columns
+            None => {
+              let columns : Map[Int32, String] = Map([])
+              horizontals[row.index] = columns
+              columns
+            }
+          }
+          columns[cell.column] = horizontal
+        }
         entries.push({
           column: cell.column,
           cell: { text, number: cell.kind == 1, },
-          center: styles.cell_formats[format_index].alignment.horizontal ==
-          "center" ||
-          cell.kind == 3 ||
-          cell.kind == 4,
+          center: horizontal == "center" ||
+          (horizontal == "general" && (cell.kind == 3 || cell.kind == 4)),
           visible: !(cell.kind == 1 && cell.number == 0.0 && !geo.show_zero),
           occupied: cell.kind != 0 && !(cell.kind == 2 && cell.text == ""),
           color: match formatted.color {
@@ -521,6 +537,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     locale.language,
     doc_language,
     verticals~,
+    horizontals~,
   )
   (drawn, geo)
 }
