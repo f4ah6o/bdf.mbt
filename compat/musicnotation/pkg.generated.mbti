@@ -24,6 +24,8 @@ pub fn paginate(FixedArray[Double], Double, Double, Double) -> String
 
 pub fn paint_graphics(FixedArray[Double], Double, Double, Double) -> String
 
+pub fn paint_text(String, Bytes, String, FixedArray[String], FixedArray[Double]) -> String
+
 pub fn positions(Int32, Int32, Int32, Int32, FixedArray[Int32], FixedArray[Int32]) -> String
 
 pub fn quantize(FixedArray[Int32], FixedArray[Int32]) -> String

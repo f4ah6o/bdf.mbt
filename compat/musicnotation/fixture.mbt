@@ -976,3 +976,46 @@ pub fn music_text_fonts(
     err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
   }
 }
+
+///|
+#export_name("paint_text")
+pub fn paint_text(
+  font_name : String,
+  data : Bytes,
+  language : String,
+  texts : FixedArray[String],
+  values : FixedArray[Double],
+) -> String {
+  try {
+    let db = @db.Database::new()
+    if font_name != "" {
+      ignore(db.add_file(font_name, data))
+    }
+    let texter = @music.MusicTexter::new(db)
+    let object = @core.ObjectBuilder::new()
+    object.set_bbox(0.0F, 0.0F, 400.0F, 400.0F)
+    let painter = @music.MusicTextPainter::new(
+      object,
+      texter,
+      { hashes: Map([]), warnings: [], },
+      document_language=language,
+    )
+    for i, text in texts {
+      let k = i * 6
+      let line = texter.line(
+        text,
+        values[k],
+        values[k + 4] != 0.0,
+        values[k + 5] != 0.0,
+      )
+      painter.draw(line, values[k + 1], values[k + 2], values[k + 3].to_int())
+    }
+    let result : Array[Json] = []
+    for byte in object.encode() {
+      result.push(Json::number(byte.to_int().to_double()))
+    }
+    Json::array(result).stringify()
+  } catch {
+    err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
+  }
+}

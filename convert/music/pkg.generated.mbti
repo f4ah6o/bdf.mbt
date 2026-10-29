@@ -338,6 +338,19 @@ pub(all) struct MusicTextMetrics {
   descent : Double
 }
 
+pub struct MusicTextPainter {
+  object : @core.ObjectBuilder
+  texter : MusicTexter
+  fonts : MusicTextFonts
+  document_language : String
+  refs : Map[String, Int32]
+  mut language : String
+  mut current : @db.Choice?
+  mut size : Double
+}
+pub fn MusicTextPainter::draw(Self, MusicTextLine, Double, Double, Int32) -> Unit raise
+pub fn MusicTextPainter::new(@core.ObjectBuilder, MusicTexter, MusicTextFonts, document_language? : String) -> Self
+
 pub(all) struct MusicTextRun {
   choice : @db.Choice
   text : String
