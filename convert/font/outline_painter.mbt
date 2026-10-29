@@ -30,6 +30,14 @@ pub fn OutlinePainter::reset_fill(self : OutlinePainter) -> Unit {
 }
 
 ///|
+fn OutlinePainter::ensure_fill(self : OutlinePainter) -> Unit {
+  if !self.fill_set {
+    self.object.fill_color(0x1f1f1fffU)
+    self.fill_set = true
+  }
+}
+
+///|
 /// Draw glyphs at the supplied em offsets, with optional accessible replacement
 /// text. Returns whether at least one outline was drawn.
 pub fn OutlinePainter::draw(
@@ -47,10 +55,7 @@ pub fn OutlinePainter::draw(
   if glyphs.length() == 0 {
     return false
   }
-  if !self.fill_set {
-    self.object.fill_color(0x1f1f1fffU)
-    self.fill_set = true
-  }
+  self.ensure_fill()
   let run : Array[@core.ObjectGlyph] = []
   for i, glyph in glyphs {
     let ref = match self.paths.get(glyph) {

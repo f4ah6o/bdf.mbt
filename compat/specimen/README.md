@@ -22,7 +22,8 @@ users, UI names, characters and displayed descriptions against upstream.
 `scroll.json.gz` checks page cuts, row positions, kept headings and anchors.
 `paths.json.gz` compares encoded BDF paths for TrueType and CFF glyphs.
 `paint.json.gz` compares complete outlined-glyph drawing objects, including
-path caching, transforms and alternative text.
+path caching, transforms and alternative text. `glyph-paint.json.gz` checks
+embedded glyph runs, non-contiguous positions and outline fallback.
 
 After `moon build --target js`, run `npm run test:specimen` and
 `npm run test:specimen-plan`, `npm run test:specimen-names`,
@@ -30,7 +31,8 @@ After `moon build --target js`, run `npm run test:specimen` and
 `npm run test:specimen-glyphs`, `npm run test:specimen-variations`,
 `npm run test:specimen-info`, `npm run test:specimen-overview`,
 `npm run test:specimen-features`, `npm run test:specimen-scroll`,
-`npm run test:specimen-path`, `npm run test:specimen-paint`, and
+`npm run test:specimen-path`, `npm run test:specimen-paint`,
+`npm run test:specimen-glyph-paint`, and
 `npm run test:specimen-visual`. To regenerate, copy `generate_test.go` without
 its first `//go:build ignore` line into the upstream checkout at
 `converter/font/codex_specimen_test.go`, then run:
@@ -96,3 +98,8 @@ and run `TestCodexSpecimenPaths` with the same fixture root.
 To regenerate outline-painting cases, copy `generate-paint_test.go` without
 its build tag into upstream `converter/font` alongside `generate_test.go` and
 run `TestCodexOutlinePainting` with the same fixture root.
+
+To regenerate embedded-glyph painting cases, copy `generate-glyph-paint_test.go`
+without its build tag into upstream `converter/font` alongside
+`generate_test.go` and `generate-paint_test.go`, then run
+`TestCodexGlyphPainting` with the same fixture root.

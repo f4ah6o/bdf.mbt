@@ -439,3 +439,55 @@ pub fn paint_glyphs(
 pub fn painter_object(f : PainterFixture) -> Bytes {
   try! f.object.encode()
 }
+
+///|
+pub struct GlyphPainterFixture {
+  object : @core.ObjectBuilder
+  painter : @font.GlyphPainter
+}
+
+///|
+#export_name("prepare_glyph_painter")
+pub fn prepare_glyph_painter(
+  data : Bytes,
+  index : Int32,
+) -> GlyphPainterFixture {
+  let file = try! @font.load(data)
+  for face in file.faces() {
+    if face.index == index {
+      let object = @core.ObjectBuilder::new()
+      object.set_bbox(0.0F, 0.0F, 720.0F, 1024.0F)
+      let embedded : @core.Font = {
+        hash: Some("00000000000000000000000000000000"),
+        family: "",
+        weight: 400,
+        style: 0,
+      }
+      return {
+        object,
+        painter: face.glyph_painter(object, embedded=Some(embedded)),
+      }
+    }
+  }
+  abort("missing font face")
+}
+
+///|
+#export_name("paint_embedded_glyphs")
+pub fn paint_embedded_glyphs(
+  f : GlyphPainterFixture,
+  glyphs : Array[Int32],
+  offsets : Array[Double],
+  x : Double,
+  y : Double,
+  size : Double,
+  alt : String,
+) -> Unit {
+  ignore(try! f.painter.draw(glyphs, offsets, x, y, size, alt))
+}
+
+///|
+#export_name("glyph_painter_object")
+pub fn glyph_painter_object(f : GlyphPainterFixture) -> Bytes {
+  try! f.object.encode()
+}
