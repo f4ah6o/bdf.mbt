@@ -22,3 +22,16 @@ pub fn xlsx_workbook(data : Bytes) -> String {
     _ => "null"
   }
 }
+
+///|
+#export_name("xlsx_reference")
+pub fn xlsx_reference(text : String, column : Int32) -> String {
+  let (col, row, ok) = @xlsx.xlsx_parse_ref(text)
+  Json::array([
+    Json::number(col.to_double()),
+    Json::number(row.to_double()),
+    Json::boolean(ok),
+    Json::string(@xlsx.xlsx_col_name(column)),
+    Json::string(@xlsx.xlsx_decode_string(text)),
+  ]).stringify()
+}

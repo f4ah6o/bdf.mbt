@@ -2,6 +2,8 @@
 package "f4ah6o/bdf/compat/xlsx"
 
 // Values
+pub fn xlsx_reference(String, Int32) -> String
+
 pub fn xlsx_workbook(Bytes) -> String
 
 // Errors
