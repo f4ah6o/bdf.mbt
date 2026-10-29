@@ -14,7 +14,7 @@
     "pngjs": "7.0.0"
   },
   "scripts": {
-    "test:visual": "npm run test:text-compat && moon build --target js && node compat/writer/verify.mjs && node compat/writer/verify-sealing.mjs && npm run test:object-compat && node compat/image/verify.mjs && npm run test:csv-compat && npm run test:csv-visual && npm run test:sheet-compat && npm run test:parquet-compat && npm run test:music-compat && node compat/converter/client-test.mjs && node compat/visual/compare.mjs",
+    "test:visual": "npm run test:text-compat && moon build --target js && node compat/writer/verify.mjs && node compat/writer/verify-sealing.mjs && npm run test:object-compat && node compat/image/verify.mjs && npm run test:csv-compat && npm run test:csv-visual && npm run test:font-compat && npm run test:sheet-compat && npm run test:parquet-compat && npm run test:music-compat && node compat/converter/client-test.mjs && node compat/visual/compare.mjs",
     "test:object-compat": "node compat/object/verify.mjs",
     "test:csv-visual": "node compat/csv/visual-compare.mjs",
     "test:sheet-compat": "node compat/sheet/generate-style-source.mjs --check && node compat/sheet/generate-style-test.mjs --check && node compat/sheet/verify.mjs && node compat/sheet/verify-styled.mjs",
@@ -22,6 +22,7 @@
     "test:csv-compat": "node compat/csv/verify.mjs && node compat/csv/verify-pairs.mjs && node compat/csv/verify-table.mjs && node compat/csv/verify-detect.mjs && node compat/csv/verify-convert.mjs",
     "test:ci-local": "actrun workflow run .github/workflows/ci.yml --tmp --include-dirty --skip-action actions/checkout@v4 --skip-action hustcer/setup-moonbit@v1 --no-nix",
     "test:text-compat": "node compat/text/verify.mjs && node compat/search/generate.mjs --check",
-    "test:music-compat": "node compat/music/verify.mjs && node compat/music/audio-test.mjs && node compat/music/player-test.mjs"
+    "test:music-compat": "node compat/music/verify.mjs && node compat/music/audio-test.mjs && node compat/music/player-test.mjs",
+    "test:font-compat": "node compat/font/verify.mjs"
   }
 }

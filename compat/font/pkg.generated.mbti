@@ -1,0 +1,25 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/compat/font"
+
+import {
+  "f4ah6o/bdf/font/sfnt",
+}
+
+// Values
+pub fn advance(@sfnt.Font, Int32) -> Int32
+
+pub fn geometry(@sfnt.Font, Int32) -> String
+
+pub fn glyph(@sfnt.Font, Int32) -> Int32
+
+pub fn load_font(Bytes, Int32) -> @sfnt.Font
+
+pub fn metrics(@sfnt.Font) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

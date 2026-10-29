@@ -3,6 +3,7 @@ package "f4ah6o/bdf/convert/sheet"
 
 import {
   "f4ah6o/bdf/core",
+  "f4ah6o/bdf/font/sfnt",
   "moonbitlang/core/debug",
 }
 
@@ -18,6 +19,8 @@ pub fn fit_columns(Array[Array[Cell]], header_rows? : Int32, subheader? : Bool, 
 pub fn fit_rows(Array[Array[Cell]], Array[Float], header_rows? : Int32, subheader? : Bool, mdw? : Double, advance? : (Char, Bool) -> Double, metrics? : (Char, Bool) -> (Double, Double), default_line_height? : Double, style_line_height? : ((Bool) -> Double)?) -> Array[Float] raise
 
 pub fn grid_geometry(Array[Array[Cell]], header_rows? : Int32, subheader? : Bool, filter_buttons? : Bool, table_rows? : Int32, mdw? : Double, advance? : (Char, Bool) -> Double, metrics? : (Char, Bool) -> (Double, Double), default_line_height? : Double, style_line_height? : ((Bool) -> Double)?) -> GridGeometry raise
+
+pub fn grid_geometry_with_font(Array[Array[Cell]], @sfnt.Font, header_rows? : Int32, subheader? : Bool, filter_buttons? : Bool, table_rows? : Int32, language? : String) -> GridGeometry raise
 
 pub fn is_builtin_table_style(String) -> Bool
 
