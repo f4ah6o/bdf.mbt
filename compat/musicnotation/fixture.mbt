@@ -925,3 +925,54 @@ pub fn music_text(
     Json::array(runs),
   ]).stringify()
 }
+
+///|
+#export_name("music_text_fonts")
+pub fn music_text_fonts(
+  font_name : String,
+  data : Bytes,
+  flags : Int32,
+) -> String {
+  try {
+    let db = @db.Database::new()
+    if font_name != "" {
+      ignore(db.add_file(font_name, data))
+    }
+    let texter = @music.MusicTexter::new(db)
+    let choices : Array[@db.Choice] = []
+    for i, text in ["A song", "♩= 100", "Hello 世界", "Ω𝄞", ""] {
+      let line = texter.line(text, 12.0, i == 1, i % 2 == 0)
+      for run in line.runs {
+        choices.push(run.choice)
+      }
+    }
+    let doc = @core.DocumentWriter::new()
+    let fonts = texter.embed(
+      doc,
+      no_woff2=true,
+      no_subset=(flags & 1) != 0,
+      ignore_restrictions=(flags & 2) != 0,
+    )
+    let hashes : Array[String] = []
+    for _, hash in fonts.hashes {
+      hashes.push(hash)
+    }
+    hashes.sort()
+    let records = choices.map(choice => {
+      let f = texter.font_record(choice, fonts)
+      Json::array([
+        Json::string(f.hash.unwrap_or("")),
+        Json::string(f.family),
+        Json::number(f.weight.to_double()),
+        Json::number(f.style.to_double()),
+      ])
+    })
+    Json::array([
+      Json::array(hashes.map(v => Json::string(v))),
+      Json::array(fonts.warnings.map(v => Json::string(v))),
+      Json::array(records),
+    ]).stringify()
+  } catch {
+    err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
+  }
+}

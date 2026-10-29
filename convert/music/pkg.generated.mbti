@@ -319,6 +319,11 @@ pub(all) struct MusicSystemPlacement {
   page : Int32
 }
 
+pub(all) struct MusicTextFonts {
+  hashes : Map[Int32, String]
+  warnings : Array[String]
+}
+
 pub(all) struct MusicTextLine {
   runs : Array[MusicTextRun]
   width : Double
@@ -346,6 +351,8 @@ pub struct MusicTexter {
   used : Map[Int32, Map[Int32, Bool]]
   missing : Map[Int32, Bool]
 }
+pub fn MusicTexter::embed(Self, @core.DocumentWriter, no_subset? : Bool, ignore_restrictions? : Bool, no_woff2? : Bool) -> MusicTextFonts raise
+pub fn MusicTexter::font_record(Self, @db.Choice, MusicTextFonts) -> @core.Font
 pub fn MusicTexter::line(Self, String, Double, Bool, Bool) -> MusicTextLine
 pub fn MusicTexter::missing_codepoints(Self) -> Array[Int32]
 pub fn MusicTexter::new(@db.Database) -> Self
