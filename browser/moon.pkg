@@ -3,6 +3,7 @@ import {
   "f4ah6o/bdf/convert",
   "f4ah6o/bdf/convert/image",
   "f4ah6o/bdf/convert/csv",
+  "f4ah6o/bdf/font/db" @fontdb,
   "f4ah6o/bdf/convert/hpgl",
   "f4ah6o/bdf/render",
   "f4ah6o/bdf/viewer",

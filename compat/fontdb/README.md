@@ -22,3 +22,10 @@ go run ./converter/codex-fontdb-oracle/main.go /path/to/bdf.mbt > /path/to/bdf.m
 The Go file must reside under `converter` to access upstream internal packages.
 Regenerate the resolution tables with `python3 compat/fontdb/generate-rules.py
 <upstream-checkout> font/db/rules_generated.mbt`, then run `moon fmt`.
+
+`npm run test:native-fonts` also exercises the native browser Worker with an
+HTTP font directory. To compare the Worker directly with the upstream Wasm
+converter, build upstream with `GOOS=js GOARCH=wasm go build -tags
+'bdf_noconv officeonly' -o /path/to/upstream.wasm ./cmd/bdfwasm`, then set
+`BDF_UPSTREAM_WASM` to that file and `BDF_GO_EXEC` to the matching Go toolchain's
+`lib/wasm/wasm_exec.js` before running the test.

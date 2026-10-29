@@ -49,7 +49,7 @@ priv struct NativeConverterState {
 }
 
 ///|
-fn NativeConverterState::dispatch(
+async fn NativeConverterState::dispatch(
   self : NativeConverterState,
   request : ConverterRequest,
 ) -> Unit {
@@ -93,21 +93,39 @@ fn NativeConverterState::dispatch(
       return
     }
   }
+  let url = native_converter_option(request, "fonts")
+  let database = if url == "" {
+    None
+  } else {
+    let directory = native_font_directory(url).wait()
+    if !native_font_directory_ok(directory) {
+      native_converter_error(
+        request,
+        native_font_directory_error(directory),
+        "",
+      )
+      return
+    }
+    let db = @fontdb.Database::new()
+    for index in 0..<native_font_directory_count(directory) {
+      ignore(
+        db.add_file(
+          native_font_directory_name(directory, index),
+          native_font_directory_bytes(directory, index),
+        ),
+      )
+    }
+    Some(db)
+  }
   let format = native_converter_option(request, "format")
   if format != "" && format != "image" && format != "csv" {
     native_converter_error(request, "unknown format \"" + format + "\"", "")
     return
   }
-  if native_converter_option(request, "fonts") != "" {
-    native_converter_error(
-      request, "native converter does not yet support font URLs", "",
-    )
-    return
-  }
   let name = native_converter_option(request, "name")
   let data = native_converter_data(request)
   if format == "csv" {
-    native_convert_csv(request, data, name, kind == "open")
+    native_convert_csv(request, data, name, kind == "open", database)
     return
   }
   let result = @image.convert(data, name~) catch {
@@ -136,7 +154,7 @@ fn NativeConverterState::dispatch(
           }
         }
         if !strong_other && (csv_named || csv_detected) {
-          native_convert_csv(request, data, name, kind == "open")
+          native_convert_csv(request, data, name, kind == "open", database)
           return
         }
       }
@@ -171,6 +189,7 @@ fn native_convert_csv(
   data : Bytes,
   file_name : String,
   opened : Bool,
+  database : @fontdb.Database?,
 ) -> Unit {
   let params : Map[String, String] = Map([])
   for key in ["charset", "delimiter", "quote", "header", "data", "table"] {
@@ -187,16 +206,34 @@ fn native_convert_csv(
     }
   }
   let name = if file_name == "" { "" } else { @csv.sheet_name(file_name) }
-  let result = @csv.convert_no_fonts(
-    data,
-    name~,
-    charset=options.charset,
-    delimiter=options.delimiter,
-    quote=options.quote,
-    header=options.header,
-    data_mode=options.data_mode,
-    table_style=options.table_style,
-  ) catch {
+  let convert = () => {
+    match database {
+      Some(db) =>
+        @csv.convert_with_fonts(
+          data,
+          db,
+          name~,
+          charset=options.charset,
+          delimiter=options.delimiter,
+          quote=options.quote,
+          header=options.header,
+          data_mode=options.data_mode,
+          table_style=options.table_style,
+        )
+      None =>
+        @csv.convert_no_fonts(
+          data,
+          name~,
+          charset=options.charset,
+          delimiter=options.delimiter,
+          quote=options.quote,
+          header=options.header,
+          data_mode=options.data_mode,
+          table_style=options.table_style,
+        )
+    }
+  }
+  let result = convert() catch {
     @csv.InvalidDialect(message) => {
       native_converter_error(request, message, "")
       return
@@ -218,16 +255,18 @@ fn native_convert_csv(
 
 ///|
 extern "js" fn install_native_converter_listener(
-  dispatch : (ConverterRequest) -> Unit,
+  dispatch : (ConverterRequest) -> @js_async.Promise[Unit],
 ) -> Unit =
-  #|(dispatch) => {self.onmessage=event=>{const request=event.data;try{dispatch(request)}catch(e){const id=request?.type==='init'?0:Number(request?.id);self.postMessage({id,ok:false,error:e?.message??String(e),code:e?.code})}}}
+  #|(dispatch) => {self.onmessage=event=>{const request=event.data;Promise.resolve().then(()=>dispatch(request)).catch(e=>{const id=request?.type==='init'?0:Number(request?.id);self.postMessage({id,ok:false,error:e?.message??String(e),code:e?.code})})}}
 
 ///|
 /// Install the MoonBit converter Worker for native image and CSV formats.
 #export_name("bdf_install_native_converter_worker")
 pub fn bdf_install_native_converter_worker() -> Unit {
   let state : NativeConverterState = { ready: false, }
-  install_native_converter_listener(request => state.dispatch(request))
+  install_native_converter_listener(request => {
+    @js_async.Promise::from_async(() => state.dispatch(request))
+  })
 }
 
 ///|
