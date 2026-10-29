@@ -10,6 +10,10 @@ import {
 // Values
 pub fn draw_grid_no_fonts(Array[Array[Cell]], header_rows? : Int32, subheader? : Bool, language? : String, table_style? : String) -> DrawnGrid raise
 
+pub fn draw_grid_with_font(Array[Array[Cell]], @sfnt.Font, hash? : String?, header_rows? : Int32, subheader? : Bool, language? : String, table_style? : String) -> DrawnGrid raise
+
+pub fn draw_grid_with_font_usage(Array[Array[Cell]], @sfnt.Font, header_rows? : Int32, subheader? : Bool, language? : String, table_style? : String) -> (DrawnGrid, FontUsage) raise
+
 pub fn fallback_advance(Char, Bool) -> Double
 
 pub fn fallback_line_metrics(Char, Bool) -> (Double, Double)
@@ -46,6 +50,11 @@ pub(all) struct Cell {
 pub(all) struct DrawnGrid {
   geometry : GridGeometry
   tiles : Array[GridTile]
+}
+
+pub(all) struct FontUsage {
+  used : Bool
+  missing : Array[Int32]
 }
 
 pub(all) struct GridGeometry {

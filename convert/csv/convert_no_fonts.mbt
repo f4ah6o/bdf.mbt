@@ -1,5 +1,5 @@
 ///|
-/// The result of converting CSV to a BDF sheet with fallback font metrics.
+/// The result of converting CSV to a BDF sheet.
 pub(all) struct NoFontResult {
   bdf : Bytes
   parsed : ParseResult
@@ -21,6 +21,76 @@ pub fn convert_no_fonts(
   no_text_index~ : Bool = false,
   table_style~ : String = "",
 ) -> NoFontResult raise {
+  convert_grid(
+    data,
+    name~,
+    title~,
+    charset~,
+    delimiter~,
+    quote~,
+    header~,
+    data_mode~,
+    no_text_index~,
+    table_style~,
+    font_data=None,
+    ignore_embedding_restrictions=false,
+    system_fonts=false,
+  )
+}
+
+///|
+/// Convert CSV using one explicitly supplied TrueType or OpenType font.
+/// The complete glyph outlines are embedded when the license permits it and
+/// glyphs are used. Font selection, subsetting, WOFF2 and TTC extraction are
+/// not yet supported. Set `system_fonts` to use font names without embedding.
+pub fn convert_with_font(
+  data : Bytes,
+  font_data : Bytes,
+  name~ : String = "",
+  title~ : String = "",
+  charset~ : String = "",
+  delimiter~ : Byte = 0,
+  quote~ : Int32 = 0,
+  header~ : Header = HeaderAuto,
+  data_mode~ : DataMode = DataDefault,
+  no_text_index~ : Bool = false,
+  table_style~ : String = "",
+  ignore_embedding_restrictions~ : Bool = false,
+  system_fonts~ : Bool = false,
+) -> NoFontResult raise {
+  convert_grid(
+    data,
+    name~,
+    title~,
+    charset~,
+    delimiter~,
+    quote~,
+    header~,
+    data_mode~,
+    no_text_index~,
+    table_style~,
+    font_data=Some(font_data),
+    ignore_embedding_restrictions~,
+    system_fonts~,
+  )
+}
+
+///|
+fn convert_grid(
+  data : Bytes,
+  name~ : String,
+  title~ : String,
+  charset~ : String,
+  delimiter~ : Byte,
+  quote~ : Int32,
+  header~ : Header,
+  data_mode~ : DataMode,
+  no_text_index~ : Bool,
+  table_style~ : String,
+  font_data~ : Bytes?,
+  ignore_embedding_restrictions~ : Bool,
+  system_fonts~ : Bool,
+) -> NoFontResult raise {
   let parsed = parse(data, charset~, delimiter~, quote~, header~)
   if table_style != "" && !@sheet.is_builtin_table_style(table_style) {
     raise InvalidDialect(
@@ -30,12 +100,22 @@ pub fn convert_no_fonts(
   let decoded = decode_text(data, charset~)
   let language = guess_language(decoded.text, decoded.charset)
   let grid = prepare_grid(parsed)
-  let drawn = @sheet.draw_grid_no_fonts(
-    sheet_cells(grid),
-    header_rows=grid.header_rows,
-    language~,
-    table_style~,
-  )
+  let cells = sheet_cells(grid)
+  let face = match font_data {
+    Some(bytes) => {
+      if bytes.has_prefix(b"ttcf") {
+        raise InvalidDialect(
+          "TTC font collections are not supported for embedding",
+        )
+      }
+      let face = @sfnt.parse(bytes)
+      if face.info.family == "" || face.metrics.glyph_count == 0 {
+        raise InvalidDialect("font has no usable glyph data or family name")
+      }
+      Some(face)
+    }
+    None => None
+  }
   let meta : Map[String, Json] = {
     "source": Json::string("csv"),
     "generator": Json::string("bdf-go/0.1"),
@@ -44,6 +124,47 @@ pub fn convert_no_fonts(
     meta["dc"] = Json::object({ "title": Json::string(title) })
   }
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
+  let (drawn, usage) = match face {
+    Some(font) => {
+      let (system_grid, usage) = @sheet.draw_grid_with_font_usage(
+        cells,
+        font,
+        header_rows=grid.header_rows,
+        language~,
+        table_style~,
+      )
+      let hash = match font_data {
+        Some(_) if usage.used &&
+          !system_fonts &&
+          (font.metrics.embeddable || ignore_embedding_restrictions) =>
+          Some(writer.add_part("font", font.canvas_program()))
+        _ => None
+      }
+      let drawn = match hash {
+        Some(_) =>
+          @sheet.draw_grid_with_font(
+            cells,
+            font,
+            hash~,
+            header_rows=grid.header_rows,
+            language~,
+            table_style~,
+          )
+        None => system_grid
+      }
+      (drawn, Some(usage))
+    }
+    None =>
+      (
+        @sheet.draw_grid_no_fonts(
+          cells,
+          header_rows=grid.header_rows,
+          language~,
+          table_style~,
+        ),
+        None,
+      )
+  }
   @sheet.store_grid(
     writer,
     drawn,
@@ -62,9 +183,29 @@ pub fn convert_no_fonts(
       None => ()
     }
   }
-  warnings.push(
-    "no fonts found; text is laid out with estimated metrics and not embedded",
-  )
+  match (face, usage) {
+    (None, _) =>
+      warnings.push(
+        "no fonts found; text is laid out with estimated metrics and not embedded",
+      )
+    (Some(font), Some(usage)) => {
+      if usage.used &&
+        !system_fonts &&
+        !font.metrics.embeddable &&
+        !ignore_embedding_restrictions {
+        warnings.push(
+          "font " +
+          font.info.family +
+          " is not embedded: its license does not allow embedding",
+        )
+      }
+      match csv_missing_warning(usage.missing) {
+        Some(warning) => warnings.push(warning)
+        None => ()
+      }
+    }
+    _ => ()
+  }
   let mut warned_cols = false
   for i, row in grid.rows {
     if i >= 1048576 {

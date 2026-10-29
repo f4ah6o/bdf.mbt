@@ -1,6 +1,7 @@
 import {
   "f4ah6o/bdf/font/sfnt",
   "f4ah6o/bdf/convert/sheet",
+  "f4ah6o/bdf/convert/csv",
 }
 
 supported_targets = "js"

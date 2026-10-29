@@ -12,25 +12,9 @@ pub fn grid_geometry_with_font(
   language~ : String = "",
 ) -> GridGeometry raise {
   let advance = (character : Char, _bold : Bool) => {
-    match font.glyph(character.to_int()) {
-      Some(glyph) => font.advance(glyph) * 11.0
-      None => fallback_advance(character, false)
-    }
+    font_advance(font, character)
   }
-  let mut widest = 0.0
-  for digit in 48..<=57 {
-    widest = Double::max(widest, advance(digit.unsafe_to_char(), false) / 11.0)
-  }
-  let mdw = if widest == 0.0 {
-    7.0
-  } else {
-    let ppem = if grid_script(language) == 0 {
-      11.0 * 96.0 / 72.0
-    } else {
-      15.0
-    }
-    Double::max(1.0, (widest * ppem).round())
-  }
+  let mdw = font_mdw(font, language)
   let ascent = font.metrics.ascent * 11.0
   let descent = font.metrics.descent * 11.0
   grid_geometry(
@@ -44,4 +28,33 @@ pub fn grid_geometry_with_font(
     metrics=(_, _) => (ascent, descent),
     default_line_height=ascent + descent,
   )
+}
+
+///|
+fn font_advance(font : @sfnt.Font, character : Char) -> Double {
+  match font.glyph(character.to_int()) {
+    Some(glyph) => font.advance(glyph) * 11.0
+    None => fallback_advance(character, false)
+  }
+}
+
+///|
+fn font_mdw(font : @sfnt.Font, language : String) -> Double {
+  let mut widest = 0.0
+  for digit in 48..<=57 {
+    widest = Double::max(
+      widest,
+      font_advance(font, digit.unsafe_to_char()) / 11.0,
+    )
+  }
+  if widest == 0.0 {
+    7.0
+  } else {
+    let ppem = if grid_script(language) == 0 {
+      11.0 * 96.0 / 72.0
+    } else {
+      15.0
+    }
+    Double::max(1.0, (widest * ppem).round())
+  }
 }

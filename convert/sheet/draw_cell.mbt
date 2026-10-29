@@ -36,10 +36,14 @@ fn grid_visible_text(text : String) -> String {
 }
 
 ///|
-fn grid_total_width(text : String, bold : Bool) -> Double {
+fn grid_total_width(
+  text : String,
+  bold : Bool,
+  advance : (Char, Bool) -> Double,
+) -> Double {
   let mut width = 0.0
   for character in text {
-    width += fallback_advance(character, bold)
+    width += advance(character, bold)
   }
   width
 }
@@ -54,6 +58,9 @@ fn grid_cell_layout(
   height : Double,
   bold : Bool,
   language : String,
+  advance : (Char, Bool) -> Double,
+  ascent : Double,
+  descent : Double,
 ) -> DrawCell {
   let x = col_positions[column]
   let width = col_positions[column + 1] - x
@@ -67,16 +74,15 @@ fn grid_cell_layout(
       1.0e300
     },
     bold~,
+    advance~,
   )
   if !wraps &&
     cell.number &&
-    grid_total_width(lines[0].text, bold) > available + 0.01 {
-    let count = (available / (0.55 * 11.0)).to_int()
-    lines = wrap_text("#".repeat(count), 1.0e300, bold~)
+    grid_total_width(lines[0].text, bold, advance) > available + 0.01 {
+    let count = (available / Double::max(advance('#', bold), 0.01)).to_int()
+    lines = wrap_text("#".repeat(count), 1.0e300, bold~, advance~)
   }
   let (lang, lang_known) = grid_cell_language(lines, language)
-  let ascent = 0.9 * 11.0
-  let descent = 0.25 * 11.0
   let total = (ascent + descent) * lines.length().to_double()
   let mut baseline = y + height - 0.75 - total + ascent
   let out : Array[DrawLine] = []

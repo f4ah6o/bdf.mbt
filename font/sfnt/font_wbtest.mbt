@@ -74,3 +74,47 @@ test "format 12 maps supplementary code points" {
   assert_eq(map[0x1f602], 11)
   assert_eq(map.get(0x1f603), None)
 }
+
+///|
+test "whole canvas font has corrected checksum and synthesized metrics" {
+  let source = Bytes::make(90, 0).to_array()
+  put16(source, 18, 1000)
+  put16(source, 58, 800)
+  put16(source, 60, -200)
+  let data = Bytes::from_array(source)
+  let face : Font = {
+    metrics: {
+      units_per_em: 1000,
+      glyph_count: 0,
+      is_cff: false,
+      ascent: 0.8,
+      descent: 0.2,
+      underline_position: -0.1,
+      underline_thickness: 0.05,
+      cap_height: 0.7,
+      embeddable: true,
+      subsettable: true,
+    },
+    info: {
+      family: "Test",
+      style: "Regular",
+      weight: 400,
+      italic: false,
+      monospace: false,
+      has_math: false,
+    },
+    cmap: Map([]),
+    advances: [],
+    source: data,
+    tables: { "head": (0, 54), "hhea": (54, 36) },
+  }
+  let result = face.canvas_program()
+  assert_eq(checksum(result.to_array()), 0xb1b0afbaU)
+  let decoded = parse(result)
+  assert_eq(decoded.metrics.units_per_em, 1000)
+  assert_eq(decoded.metrics.ascent, 0.8)
+  assert_eq(decoded.metrics.descent, 0.2)
+  assert_eq(u32(sfnt_table(result, decoded.tables, "post"), 0), 0x00030000U)
+  assert_eq(u16(sfnt_table(result, decoded.tables, "OS/2"), 8), 4)
+  assert_eq(data, Bytes::from_array(source))
+}

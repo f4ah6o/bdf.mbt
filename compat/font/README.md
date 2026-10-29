@@ -8,11 +8,16 @@ licensed under the [SIL Open Font License](fixtures/OFL.txt). The separate
 
 `upstream.json` records face metadata, metrics, and hashes of every Unicode
 mapping and horizontal advance. `synthetic.json` covers constructed and
-malformed cmap subtables. `geometry.json` records grid dimensions for each
-font and language scenario. `npm run test:font-compat` checks them against the
+malformed cmap subtables. `geometry.json` and `drawing.json` record grid dimensions and drawing objects for each
+font and language scenario. `csv.json` covers full CSV documents with whole-font
+embedding, and includes upstream BDFs for the visual comparison. `npm run test:font-compat` checks them against the
 MoonBit implementation after `moon build --target js`.
 
 To regenerate the JSON files, copy each Go generator into a directory under
 an upstream checkout (its imports use upstream internal packages) and run it
 with the absolute path to this repository as its argument. Redirect the output
 to the corresponding JSON file. Use the pinned upstream revision above.
+
+`node compat/font/visual-compare.mjs` renders four upstream and MoonBit CSV
+documents with actual embedded TTF/OTF fonts and compares the screenshots
+using vlmkit at three viewport sizes.

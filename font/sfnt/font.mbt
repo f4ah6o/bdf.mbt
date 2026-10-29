@@ -20,6 +20,8 @@ pub struct Font {
   info : FaceInfo
   priv cmap : Map[Int32, Int32]
   priv advances : Array[Int32]
+  priv source : Bytes
+  priv tables : Map[String, (Int32, Int32)]
 }
 
 ///|
@@ -131,5 +133,5 @@ pub fn parse(data : Bytes, index~ : Int32 = 0) -> Font raise {
   )
   let cmap = parse_cmap(sfnt_table(data, tables, "cmap"))
   let info = read_face_info(data, tables)
-  { metrics, info, cmap, advances, }
+  { metrics, info, cmap, advances, source: data, tables, }
 }

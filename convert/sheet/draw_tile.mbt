@@ -11,12 +11,41 @@ fn DrawTile::set_font(
   self : DrawTile,
   family : String,
   bold : Bool,
+  face : @sfnt.Font?,
+  hash : String?,
 ) -> Unit raise {
-  let weight = if bold { 700 } else { 400 }
+  let weight = if bold &&
+    (hash is None || (face is Some(f) && f.info.weight < 600)) {
+    700
+  } else {
+    400
+  }
+  let generic = if family.contains("serif") && !family.contains("sans-serif") {
+    "serif"
+  } else {
+    "sans-serif"
+  }
+  let family = if hash is Some(_) {
+    generic
+  } else {
+    match face {
+      Some(font) => {
+        let separator = family.length() - generic.length()
+        let prefix = family.unsafe_substring(start=0, end=separator)
+        let name = font.info.family
+        if name == "" || prefix == css_quote(name) + ", " {
+          family
+        } else {
+          prefix + css_quote(name) + ", " + generic
+        }
+      }
+      None => family
+    }
+  }
   let index = match self.fonts.get(weight) {
     Some(index) => index
     None => {
-      let index = self.object.add_font({ hash: None, family, weight, style: 0, })
+      let index = self.object.add_font({ hash, family, weight, style: 0, })
       self.fonts[weight] = index
       index
     }
@@ -47,8 +76,10 @@ fn DrawTile::text_run(
   family : String,
   bold : Bool,
   color : UInt32,
+  face : @sfnt.Font?,
+  hash : String?,
 ) -> Unit raise {
-  self.set_font(family, bold)
+  self.set_font(family, bold, face, hash)
   self.fill_color(color)
   self.object.fill_text(
     text,
@@ -66,6 +97,9 @@ fn DrawTile::emit_line(
   family : String,
   bold : Bool,
   color : UInt32,
+  advance : (Char, Bool) -> Double,
+  face : @sfnt.Font?,
+  hash : String?,
 ) -> Unit raise {
   let mut chars = StringBuilder()
   let mut has_chars = false
@@ -83,6 +117,8 @@ fn DrawTile::emit_line(
         family,
         bold,
         color,
+        face,
+        hash,
       )
       run_x += run_width
       chars = StringBuilder()
@@ -91,7 +127,7 @@ fn DrawTile::emit_line(
     has_chars = true
     cjk = next_cjk
     chars.write_char(character)
-    run_width += fallback_advance(character, bold)
+    run_width += advance(character, bold)
   }
   if has_chars {
     self.text_run(
@@ -102,6 +138,8 @@ fn DrawTile::emit_line(
       family,
       bold,
       color,
+      face,
+      hash,
     )
   }
 }
@@ -114,6 +152,9 @@ fn DrawTile::emit_cell(
   family : String,
   bold : Bool,
   color : UInt32,
+  advance : (Char, Bool) -> Double,
+  face : @sfnt.Font?,
+  hash : String?,
 ) -> Unit raise {
   self.object.mark(2, ref)
   if layout.lang_known {
@@ -138,7 +179,7 @@ fn DrawTile::emit_cell(
     if i > 0 {
       self.object.mark(if line.cjk_wrap { 5 } else { 1 }, "")
     }
-    self.emit_line(line, family, bold, color)
+    self.emit_line(line, family, bold, color, advance, face, hash)
   }
   if layout.clip {
     self.object.restore()
@@ -147,4 +188,18 @@ fn DrawTile::emit_cell(
     self.has_color = was_has_color
     self.current_color = was_color
   }
+}
+
+///|
+fn css_quote(value : String) -> String {
+  let result = StringBuilder()
+  result.write_char('"')
+  for character in value {
+    if character == '"' || character == '\\' {
+      result.write_char('\\')
+    }
+    result.write_char(character)
+  }
+  result.write_char('"')
+  result.to_string()
 }

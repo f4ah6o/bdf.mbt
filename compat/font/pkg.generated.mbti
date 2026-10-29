@@ -8,6 +8,12 @@ import {
 // Values
 pub fn advance(@sfnt.Font, Int32) -> Int32
 
+pub fn csv_document(Bytes, Bytes, Int32) -> Bytes
+
+pub fn csv_warnings(Bytes, Bytes, Int32) -> String
+
+pub fn drawing_tile(@sfnt.Font, Int32, String, Int32) -> Bytes
+
 pub fn geometry(@sfnt.Font, Int32) -> String
 
 pub fn glyph(@sfnt.Font, Int32) -> Int32
