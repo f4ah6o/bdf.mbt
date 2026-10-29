@@ -24,7 +24,7 @@ test "opens upstream compressed manifest and object" {
     size: entry.size - 1,
   }
   let limited : @core.Document = {
-    manifest: { parts: [smaller], views: [], },
+    manifest: { parts: [smaller], views: [], tables: [], },
     header: doc.header,
     data,
   }

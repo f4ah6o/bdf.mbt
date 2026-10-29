@@ -79,6 +79,7 @@ pub(all) struct View {
 pub(all) struct Manifest {
   parts : Array[Part]
   views : Array[View]
+  tables : Array[Table]
 }
 
 ///|
@@ -487,5 +488,6 @@ fn parse_manifest_internal(
       play: parse_play(view),
     })
   }
-  { parts, views, }
+  let tables = parse_tables(root)
+  { parts, views, tables, }
 }

@@ -89,7 +89,7 @@ test "cyclic object references stop at the depth limit and unwind" {
     size: data.length(),
   }
   let raw : @core.Document = {
-    manifest: { parts: [part], views: [], },
+    manifest: { parts: [part], views: [], tables: [], },
     header: {
       version: 1,
       flags: 0,
