@@ -25,9 +25,9 @@ export async function verifyNativeConverter(browser, base) {
           : bdf_create_native_converter('/_build/js/debug/build/native_converter_worker/native_converter_worker.js');
         try {
           const formats = await client.ready;
-          if (!formats.some(f => f.name === 'image' && f.extensions.includes('.bmp') && f.extensions.includes('.ico') && f.extensions.includes('.jpg') && f.extensions.includes('.png'))) throw new Error(`${kind}: missing image formats ${JSON.stringify(formats)}`);
+          if (!formats.some(f => f.name === 'image' && f.extensions.includes('.bmp') && f.extensions.includes('.ico') && f.extensions.includes('.jpg') && f.extensions.includes('.png') && f.extensions.includes('.gif'))) throw new Error(`${kind}: missing image formats ${JSON.stringify(formats)}`);
           const converted = [];
-          for (const fixture of [fixtures[0], fixtures[1], fixtures[4], fixtures[5], fixtures[6], fixtures[7], fixtures[9], fixtures[10], fixtures[11], fixtures[12], fixtures[13], fixtures[14]]) {
+          for (const fixture of [fixtures[0], fixtures[1], fixtures[4], fixtures[5], fixtures[6], fixtures[7], fixtures[9], fixtures[10], fixtures[11], fixtures[12], fixtures[13], fixtures[14], fixtures.find(f => f.name === 'anim.gif'), fixtures.find(f => f.name === 'xmp.gif')]) {
             const input = toBytes(fixture.input);
             const wrapped = new Uint8Array(input.length + 6); wrapped.set(input, 3);
             const source = wrapped.subarray(3, 3 + input.length);
@@ -65,7 +65,7 @@ export async function verifyNativeConverter(browser, base) {
           result.push({ converted, closed, missing });
         } finally { client.terminate(); }
       }
-      for (const fixture of [fixtures[0], fixtures[6], fixtures[10], fixtures[12], fixtures[14]]) {
+      for (const fixture of [fixtures[0], fixtures[6], fixtures[10], fixtures[12], fixtures[14], fixtures.find(f => f.name === 'anim.gif')]) {
         const { bdf_create_viewer } = await import('/_build/js/debug/build/browser/browser.js');
         const client = bdf_create_native_converter('/_build/js/debug/build/native_converter_worker/native_converter_worker.js');
         const host = document.createElement('div'); host.style.cssText = 'width:200px;height:200px'; document.body.append(host);

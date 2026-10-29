@@ -56,6 +56,10 @@ fn ico_header(data : Bytes) -> Bool {
 
 ///|
 fn read_picture(data : Bytes) -> Picture raise {
+  if data.length() >= 6 &&
+    (data[:6] == b"GIF87a"[:] || data[:6] == b"GIF89a"[:]) {
+    return read_gif(data)
+  }
   if data.length() >= 8 && data[:8] == b"\x89PNG\r\n\x1a\n"[:] {
     return read_png(data)
   }
@@ -104,6 +108,6 @@ fn read_picture(data : Bytes) -> Picture raise {
     return { format: "ico", width, height, dc: Map([]), animated: false, }
   }
   raise ImageFailure(
-    "image: input is not a supported BMP, ICO, JPEG or PNG image",
+    "image: input is not a supported BMP, ICO, JPEG, PNG or GIF image",
   )
 }

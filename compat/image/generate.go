@@ -164,6 +164,8 @@ func main() {
 		{"date-ansic.png", "date-ansic.png", "", 0},
 		{"date-short.png", "date-short.png", "", 0},
 		{"date-zone.png", "date-zone.png", "", 0},
+		{"anim.gif", "anim.gif", "", 0},
+		{"xmp.gif", "xmp.gif", "", 0},
 	} {
 		var data []byte
 		if date, ok := dates[tc.file]; ok {
@@ -181,6 +183,9 @@ func main() {
 			if file == "anim.png" {
 				file = "tags.png"
 			}
+			if file == "xmp.gif" {
+				file = "anim.gif"
+			}
 			data, err = os.ReadFile(filepath.Join("converter/image/testdata", file))
 			if err != nil {
 				panic(err)
@@ -191,6 +196,15 @@ func main() {
 			combined := append([]byte{}, data[:33]...)
 			combined = append(combined, chunk...)
 			data = append(combined, data[33:]...)
+		}
+		if tc.file == "xmp.gif" {
+			packet := `<?xpacket begin=""?><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>GIF title</dc:title><dc:description>XMP description</dc:description></rdf:Description></rdf:RDF><?xpacket end="w"?>`
+			extension := append([]byte{0x21, 0xff, 0x0b}, []byte("XMP DataXMP")...)
+			extension = append(extension, []byte(packet)...)
+			extension = append(extension, 0)
+			result := append([]byte{}, data[:len(data)-1]...)
+			result = append(result, extension...)
+			data = append(result, data[len(data)-1:]...)
 		}
 		result, err := image.Convert(bytes.NewReader(data), int64(len(data)), &image.Options{Title: tc.title, FileName: tc.name})
 		if err != nil {
