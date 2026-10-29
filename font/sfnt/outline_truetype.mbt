@@ -357,3 +357,50 @@ pub fn Font::outline_truetype(
   )
   (ok, out)
 }
+
+///|
+/// TrueType glyph bounds in font units from the glyf header. Empty or unreadable
+/// glyphs return None; this does not decode CFF charstrings.
+pub fn Font::bounds_truetype(
+  self : Font,
+  glyph : Int32,
+) -> (Double, Double, Double, Double)? {
+  if self.metrics.is_cff ||
+    glyph < 0 ||
+    glyph >= self.metrics.glyph_count ||
+    !self.tables.contains("glyf") ||
+    !self.tables.contains("loca") {
+    return None
+  }
+  let glyf = sfnt_table(self.source, self.tables, "glyf")
+  let loca = sfnt_table(self.source, self.tables, "loca")
+  let head = sfnt_table(self.source, self.tables, "head")
+  if head.length() < 54 {
+    return None
+  }
+  let long = u16(head, 50) != 0
+  let unit = if long { 4 } else { 2 }
+  let p = glyph * unit
+  let start = if long {
+    u32(loca, p).to_int64()
+  } else {
+    u16(loca, p).to_int64() * 2L
+  }
+  let end = if long {
+    u32(loca, p + unit).to_int64()
+  } else {
+    u16(loca, p + unit).to_int64() * 2L
+  }
+  if end - start < 10L || end > glyf.length().to_int64() {
+    return None
+  }
+  let pos = start.to_int()
+  Some(
+    (
+      s16(glyf, pos + 2).to_double(),
+      s16(glyf, pos + 4).to_double(),
+      s16(glyf, pos + 6).to_double(),
+      s16(glyf, pos + 8).to_double(),
+    ),
+  )
+}

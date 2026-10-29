@@ -243,5 +243,19 @@ pub fn truetype_outline(font : @sfnt.Font, glyph : Int32) -> String {
     }
     Json::array(row)
   })
-  Json::object({ "ok": Json::boolean(ok), "commands": Json::array(paths) }).stringify()
+  let bounds = match font.bounds_truetype(glyph) {
+    None => Json::null()
+    Some((a, b, c, d)) =>
+      Json::array([
+        Json::number(a),
+        Json::number(b),
+        Json::number(c),
+        Json::number(d),
+      ])
+  }
+  Json::object({
+    "ok": Json::boolean(ok),
+    "commands": Json::array(paths),
+    "bounds": bounds,
+  }).stringify()
 }

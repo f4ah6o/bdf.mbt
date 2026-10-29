@@ -55,7 +55,11 @@ func TestCodexOutlines(t *testing.T) {
 		for _, g := range glyphs {
 			p := &codexOutlinePen{cmds: [][]any{}}
 			ok := o.Outline(uint16(g), p)
-			cases = append(cases, map[string]any{"glyph": g, "ok": ok, "commands": p.cmds})
+			var bounds any
+			if b, present := o.Bounds(uint16(g)); present {
+				bounds = []float64{b.XMin, b.YMin, b.XMax, b.YMax}
+			}
+			cases = append(cases, map[string]any{"glyph": g, "ok": ok, "commands": p.cmds, "bounds": bounds})
 		}
 		results = append(results, map[string]any{"name": name, "input": codexOutlinePack(raw), "index": index, "cases": cases})
 	}

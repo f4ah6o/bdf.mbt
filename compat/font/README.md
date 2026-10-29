@@ -26,7 +26,7 @@ to the corresponding JSON file. Use the pinned upstream revision above.
 documents with actual embedded TTF/OTF and TTC faces and compares the screenshots
 using vlmkit at three viewport sizes.
 
-`outlines.json.gz` compares TrueType outline commands with upstream, including
+`outlines.json.gz` compares TrueType outline commands and glyph bounds with upstream, including
 real fonts and collections, composite transforms, recursive components and
 mutated or truncated glyph data. Run `npm run test:font-outline` and
 `npm run test:font-outline-visual` after a JS build. The latter renders 72

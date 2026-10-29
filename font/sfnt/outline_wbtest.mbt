@@ -18,6 +18,8 @@ test "TrueType outlines decode implied points and stop recursive composites" {
     Quad(10.0, 10.0, 5.0, 5.0),
     Close,
   ])
+  assert_eq(font.bounds_truetype(0), Some((0.0, 0.0, 10.0, 10.0)))
+  assert_eq(font.bounds_truetype(2), None)
   assert_false(font.outline_truetype(1).0)
   assert_true(font.outline_truetype(2).0)
   assert_false(font.outline_truetype(3).0)
