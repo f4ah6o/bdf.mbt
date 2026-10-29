@@ -75,6 +75,16 @@ for (const [j, c] of conditionalMovingRef.entries()) await verifyCase(c, `moving
 const conditionalNegativeRef = JSON.parse(await readFile(new URL('./conditional-negative-ref.json', import.meta.url)));
 assert.equal(conditionalNegativeRef.length, 161, 'negative conditional reference fixture count');
 for (const [j, c] of conditionalNegativeRef.entries()) await verifyCase(c, `negative conditional reference ${j}`);
+const conditionalNegativeBlank = JSON.parse(await readFile(new URL('./conditional-negative-blank.json', import.meta.url)));
+assert.equal(conditionalNegativeBlank.length, 161, 'negative blank and boolean reference fixture count');
+for (const [j, c] of conditionalNegativeBlank.entries()) await verifyCase(c, `negative blank and boolean reference ${j}`);
+const unsupportedConditionalNegativeBlank = JSON.parse(await readFile(new URL('./conditional-negative-blank-unsupported.json', import.meta.url)));
+assert.equal(unsupportedConditionalNegativeBlank.length, 9, 'unsupported negative blank reference fixture count');
+for (const encoded of unsupportedConditionalNegativeBlank) {
+  const input = Buffer.from(encoded, 'base64');
+  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional references must be rejected');
+  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+}
 const unsupportedConditionalNegativeRef = JSON.parse(await readFile(new URL('./conditional-negative-ref-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalNegativeRef.length, 8, 'unsupported negative conditional reference fixture count');
 for (const encoded of unsupportedConditionalNegativeRef) {
@@ -210,4 +220,4 @@ for (const encoded of unsupportedBase) {
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|complex borders)/);
 }
-console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length + conditionalBetween.length + conditionalEquals.length + conditionalAbsolute.length + conditionalSingleRef.length + conditionalAxisRef.length + conditionalMovingRef.length + conditionalNegativeRef.length + conditionalBlank.length + conditionalPaintBlank.length} conditional formats match upstream.`);
+console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length + conditionalBetween.length + conditionalEquals.length + conditionalAbsolute.length + conditionalSingleRef.length + conditionalAxisRef.length + conditionalMovingRef.length + conditionalNegativeRef.length + conditionalNegativeBlank.length + conditionalBlank.length + conditionalPaintBlank.length} conditional formats match upstream.`);

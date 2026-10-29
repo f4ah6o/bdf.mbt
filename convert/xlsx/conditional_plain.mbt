@@ -402,6 +402,11 @@ fn xlsx_conditional_shifted_reference(
   }
   let row = row + (if row_absolute { 0 } else { row_offset })
   let column = column + (if col_absolute { 0 } else { column_offset })
+  // The formula evaluator used for negation rejects references outside the
+  // worksheet, while a plain reference is handled directly as a blank.
+  if negative && (row < 0 || row >= 1048576 || column < 0 || column >= 16384) {
+    return None
+  }
   for candidate in rows {
     if candidate.index != row {
       continue
@@ -409,21 +414,20 @@ fn xlsx_conditional_shifted_reference(
     for cell in candidate.cells {
       if cell.column == column {
         if cell.kind == 0 {
-          return if negative { None } else { Some(0.0) }
+          return Some(0.0)
         }
         if cell.kind == 1 {
           return Some(if negative { -cell.number } else { cell.number })
         }
+        if negative && cell.kind == 3 {
+          return Some(-cell.number)
+        }
         return None
       }
     }
-    return if negative { None } else { Some(0.0) }
+    return Some(0.0)
   }
-  if negative {
-    None
-  } else {
-    Some(0.0)
-  }
+  Some(0.0)
 }
 
 ///|
