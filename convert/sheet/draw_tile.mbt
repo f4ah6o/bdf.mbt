@@ -23,6 +23,7 @@ fn DrawTile::set_font(
   bold : Bool,
   face : @sfnt.Font?,
   hash : String?,
+  size~ : Double = 11.0,
 ) -> Unit raise {
   let weight = if bold &&
     (hash is None || (face is Some(f) && f.info.weight < 600)) {
@@ -61,9 +62,10 @@ fn DrawTile::set_font(
       index
     }
   }
-  if !self.has_font || self.current_font != index {
-    self.object.font(index, 11.0F)
+  if !self.has_font || self.current_font != index || self.current_size != size {
+    self.object.font(index, Float::from_double(size))
     self.current_font = index
+    self.current_size = size
     self.has_font = true
   }
 }
@@ -89,8 +91,9 @@ fn DrawTile::text_run(
   color : UInt32,
   face : @sfnt.Font?,
   hash : String?,
+  size~ : Double = 11.0,
 ) -> Unit raise {
-  self.set_font(family, bold, face, hash)
+  self.set_font(family, bold, face, hash, size~)
   self.fill_color(color)
   self.object.fill_text(
     text,
@@ -111,6 +114,7 @@ fn DrawTile::emit_line(
   advance : (Char, Bool) -> Double,
   face : @sfnt.Font?,
   hash : String?,
+  size~ : Double = 11.0,
 ) -> Unit raise {
   let mut chars = StringBuilder()
   let mut has_chars = false
@@ -130,6 +134,7 @@ fn DrawTile::emit_line(
         color,
         face,
         hash,
+        size~,
       )
       run_x += run_width
       chars = StringBuilder()
@@ -151,6 +156,7 @@ fn DrawTile::emit_line(
       color,
       face,
       hash,
+      size~,
     )
   }
 }
@@ -168,6 +174,7 @@ fn DrawTile::emit_cell(
   hash : String?,
   fontset : GridFontSet?,
   hashes : Map[Int32, String],
+  size~ : Double = 11.0,
 ) -> Unit raise {
   self.object.mark(2, ref)
   if layout.lang_known {
@@ -177,6 +184,7 @@ fn DrawTile::emit_cell(
   }
   let was_has_font = self.has_font
   let was_font = self.current_font
+  let was_size = self.current_size
   let was_has_color = self.has_color
   let was_color = self.current_color
   if layout.clip {
@@ -195,13 +203,15 @@ fn DrawTile::emit_cell(
     match fontset {
       Some(fonts) =>
         self.emit_database_line(line, bold, color, advance, fonts, hashes)
-      None => self.emit_line(line, family, bold, color, advance, face, hash)
+      None =>
+        self.emit_line(line, family, bold, color, advance, face, hash, size~)
     }
   }
   if layout.clip {
     self.object.restore()
     self.has_font = was_has_font
     self.current_font = was_font
+    self.current_size = was_size
     self.has_color = was_has_color
     self.current_color = was_color
   }

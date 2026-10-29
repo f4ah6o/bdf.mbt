@@ -43,6 +43,7 @@ priv struct DrawTile {
   fonts : Map[String, Int32]
   mut has_font : Bool
   mut current_font : Int32
+  mut current_size : Double
   mut has_color : Bool
   mut current_color : UInt32
   mut lang : String
@@ -112,6 +113,7 @@ fn DrawTile::new(x : Int32, y : Int32, document_language : String) -> DrawTile {
     fonts: Map([]),
     has_font: false,
     current_font: 0,
+    current_size: 0.0,
     has_color: false,
     current_color: 0U,
     lang: "",

@@ -33,6 +33,21 @@ priv struct GridFillRect {
 }
 
 ///|
+/// Measure a character using the upstream fallback metrics at the given size.
+pub fn sized_fallback_advance(
+  character : Char,
+  bold : Bool,
+  size : Double,
+) -> Double {
+  let base = fallback_advance(character, bold)
+  if size == 11.0 {
+    base
+  } else {
+    base / 11.0 * size
+  }
+}
+
+///|
 /// Draw unstyled cells in an already-sized sheet with fallback font metrics.
 pub fn draw_sized_grid_no_fonts(
   rows : Array[SizedGridRow],
@@ -44,6 +59,7 @@ pub fn draw_sized_grid_no_fonts(
   horizontals~ : Map[Int32, Map[Int32, String]] = Map([]),
   bolds~ : Map[Int32, Map[Int32, Bool]] = Map([]),
   fills~ : Map[Int32, Map[Int32, GridSolidFill]] = Map([]),
+  sizes~ : Map[Int32, Map[Int32, Double]] = Map([]),
 ) -> DrawnGrid raise {
   let col_positions = grid_positions(all_columns)
   if col_positions.length() != 16385 {
@@ -112,11 +128,19 @@ pub fn draw_sized_grid_no_fonts(
         Some(columns) => columns.get(column).unwrap_or(false)
         None => false
       }
+      let size = match sizes.get(i) {
+        Some(columns) => columns.get(column).unwrap_or(11.0)
+        None => 11.0
+      }
+      let advance = (character : Char, is_bold : Bool) => {
+        sized_fallback_advance(character, is_bold, size)
+      }
+      let metrics = (_ : Char, _ : Bool) => (0.9 * size, 0.25 * size)
       let text = sized_grid_text(cell.text)
       let display : Cell = { text, number: cell.number, }
       let initial = grid_cell_layout(
-        row, display, column, col_positions, y, height, bold, language, fallback_advance,
-        fallback_line_metrics,
+        row, display, column, col_positions, y, height, bold, language, advance,
+        metrics,
       )
       let horizontal : DrawCell = if centered.get(column).unwrap_or(false) {
         let lines = initial.lines.map(fn(line) {
@@ -152,7 +176,7 @@ pub fn draw_sized_grid_no_fonts(
             previous -= 1
           }
         }
-        let (ascent, descent) = fallback_line_metrics('x', false)
+        let (ascent, descent) = metrics('x', bold)
         let ty0 = lines[0].baseline - ascent
         let ty1 = lines[lines.length() - 1].baseline + descent
         let clipped = text0 < x0 - 0.01 ||
@@ -182,12 +206,15 @@ pub fn draw_sized_grid_no_fonts(
       }
       let horizontal = sized_grid_horizontal_layout(
         horizontal, horizontal_kind, row, display, column, col_positions, y, height,
+        size,
       )
       let vertical = match verticals.get(i) {
         Some(columns) => columns.get(column).unwrap_or("bottom")
         None => "bottom"
       }
-      let layout = sized_grid_vertical_layout(horizontal, y, height, vertical)
+      let layout = sized_grid_vertical_layout(
+        horizontal, y, height, vertical, size,
+      )
       if layout.x1 > col_positions[visible_columns] {
         let target = layout.x1 - 0.01
         let mut lo = 0
@@ -210,11 +237,12 @@ pub fn draw_sized_grid_no_fonts(
           family,
           bold,
           colors.get(column).unwrap_or(0x000000ffU),
-          fallback_advance,
+          advance,
           None,
           None,
           None,
           Map([]),
+          size~,
         )
       }
     }
@@ -351,6 +379,7 @@ fn sized_grid_horizontal_layout(
   positions : Array[Double],
   y : Double,
   height : Double,
+  size : Double,
 ) -> DrawCell {
   if alignment != "left" && alignment != "right" {
     return layout
@@ -394,7 +423,7 @@ fn sized_grid_horizontal_layout(
       }
     }
   }
-  let (ascent, descent) = fallback_line_metrics('x', false)
+  let (ascent, descent) = (0.9 * size, 0.25 * size)
   let ty0 = lines[0].baseline - ascent
   let ty1 = lines[lines.length() - 1].baseline + descent
   let clip = tx0 < x0 - 0.01 ||
@@ -414,6 +443,7 @@ fn sized_grid_vertical_layout(
   y : Double,
   height : Double,
   vertical : String,
+  size : Double,
 ) -> DrawCell {
   if vertical != "top" && vertical != "center" {
     return layout
@@ -424,12 +454,13 @@ fn sized_grid_vertical_layout(
     let mut ascent = 0.0
     let mut descent = 0.0
     for character in line.text {
-      let (a, d) = fallback_line_metrics(character, false)
+      let _ = character
+      let (a, d) = (0.9 * size, 0.25 * size)
       ascent = Double::max(ascent, a)
       descent = Double::max(descent, d)
     }
     if ascent == 0.0 && descent == 0.0 {
-      let (a, d) = fallback_line_metrics('x', false)
+      let (a, d) = (0.9 * size, 0.25 * size)
       ascent = a
       descent = d
     }

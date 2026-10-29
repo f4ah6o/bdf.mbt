@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"io"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -24,7 +25,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 3600; i++ {
+	for i := 0; i < 3900; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -99,6 +100,17 @@ func TestCodexXLSXRender(t *testing.T) {
 						st += `<font><b/></font>`
 					}
 				}
+				if i >= 3600 {
+					size := []float64{7, 9, 12.5, 14, 18, 32}[i%6]
+					if i >= 3750 {
+						size = 14
+					}
+					bold := []string{"", "<b/>"}[(i/6)%2]
+					st += fmt.Sprintf(`<font><name val="Calibri"/><sz val="%g"/>%s</font>`, size, bold)
+					if i >= 3750 {
+						st += fmt.Sprintf(`<font><name val="Calibri"/><sz val="14.0000001"/>%s</font>`, bold)
+					}
+				}
 				st += `</fonts>`
 			}
 			if i >= 3300 {
@@ -136,7 +148,12 @@ func TestCodexXLSXRender(t *testing.T) {
 				if i >= 2400 && i < 2450 {
 					format = []int{2, 14, 164}[i%3]
 				}
-				if i >= 3300 {
+				if i >= 3600 {
+					st += fmt.Sprintf(`<xf fontId="6" fillId="1" numFmtId="%d"><alignment horizontal="%s" vertical="%s"/></xf>`, []int{0, 2, 14, 164}[i%4], []string{"general", "left", "right", "center"}[(i/4)%4], []string{"bottom", "top", "center"}[(i/16)%3])
+					if i >= 3750 {
+						st += fmt.Sprintf(`<xf fontId="7" fillId="1" numFmtId="%d"><alignment horizontal="%s" vertical="%s"/></xf>`, []int{0, 2, 14, 164}[i%4], []string{"general", "left", "right", "center"}[(i/4)%4], []string{"bottom", "top", "center"}[(i/16)%3])
+					}
+				} else if i >= 3300 {
 					st += `<xf fontId="5" fillId="1"/><xf fontId="5" fillId="2"/><xf fontId="5" fillId="3"/>`
 				} else if i >= 3000 {
 					format = []int{0, 2, 14, 164}[i%4]
@@ -199,7 +216,9 @@ func TestCodexXLSXRender(t *testing.T) {
 		for y := 0; y < r.Intn(4)+1; y++ {
 			attrs := ""
 			if i >= 150 {
-				if r.Intn(3) == 0 {
+				if i >= 3600 {
+					attrs = fmt.Sprintf(` ht="%d" customHeight="1"`, 5+r.Intn(70))
+				} else if r.Intn(3) == 0 {
 					attrs = fmt.Sprintf(` ht="%d" customHeight="1"`, 5+r.Intn(40))
 				}
 				if r.Intn(5) == 0 {
@@ -276,7 +295,11 @@ func TestCodexXLSXRender(t *testing.T) {
 				style = 0
 			}
 			cellRE := regexp.MustCompile(`<c r="([^"]+)"(?: s="[0-9]+")?`)
-			if i >= 3300 {
+			if i >= 3750 {
+				sheet = cellRE.ReplaceAllStringFunc(sheet, func(match string) string {
+					return fmt.Sprintf(`<c r="%s" s="%d"`, cellRE.FindStringSubmatch(match)[1], 16+r.Intn(2))
+				})
+			} else if i >= 3300 && i < 3600 {
 				sheet = cellRE.ReplaceAllStringFunc(sheet, func(match string) string {
 					return fmt.Sprintf(`<c r="%s" s="%d"`, cellRE.FindStringSubmatch(match)[1], 16+r.Intn(3))
 				})
@@ -291,6 +314,46 @@ func TestCodexXLSXRender(t *testing.T) {
 		}
 		if e := z.Close(); e != nil {
 			t.Fatal(e)
+		}
+		if i == 3600 {
+			// The limited converter must reject nondefault sizes on auto-height rows.
+			reader, e := zip.NewReader(bytes.NewReader(b.Bytes()), int64(b.Len()))
+			if e != nil {
+				t.Fatal(e)
+			}
+			var rejected bytes.Buffer
+			writer := zip.NewWriter(&rejected)
+			for _, file := range reader.File {
+				input, e := file.Open()
+				if e != nil {
+					t.Fatal(e)
+				}
+				data, e := io.ReadAll(input)
+				input.Close()
+				if e != nil {
+					t.Fatal(e)
+				}
+				if strings.HasPrefix(file.Name, "xl/worksheets/sheet") && strings.HasSuffix(file.Name, ".xml") {
+					data = regexp.MustCompile(` ht="[^"]*" customHeight="1"`).ReplaceAll(data, nil)
+				}
+				output, e := writer.Create(file.Name)
+				if e != nil {
+					t.Fatal(e)
+				}
+				if _, e = output.Write(data); e != nil {
+					t.Fatal(e)
+				}
+			}
+			if e = writer.Close(); e != nil {
+				t.Fatal(e)
+			}
+			data, e := json.Marshal(rejected.Bytes())
+			if e != nil {
+				t.Fatal(e)
+			}
+			if e = os.WriteFile(filepath.Join(root, "compat/xlsx/auto-height-unsupported.json"), data, 0644); e != nil {
+				t.Fatal(e)
+			}
 		}
 		mode := []string{"none", "", "all"}[i%3]
 		noIndex := i%2 == 0

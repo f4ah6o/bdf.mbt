@@ -19,7 +19,7 @@ pub fn draw_grid_with_font(Array[Array[Cell]], @sfnt.Font, hash? : String?, head
 
 pub fn draw_grid_with_font_usage(Array[Array[Cell]], @sfnt.Font, header_rows? : Int32, subheader? : Bool, language? : String, table_style? : String) -> (DrawnGrid, FontUsage) raise
 
-pub fn draw_sized_grid_no_fonts(Array[SizedGridRow], GridGeometry, Array[Run], String, String, verticals? : Map[Int32, Map[Int32, String]], horizontals? : Map[Int32, Map[Int32, String]], bolds? : Map[Int32, Map[Int32, Bool]], fills? : Map[Int32, Map[Int32, GridSolidFill]]) -> DrawnGrid raise
+pub fn draw_sized_grid_no_fonts(Array[SizedGridRow], GridGeometry, Array[Run], String, String, verticals? : Map[Int32, Map[Int32, String]], horizontals? : Map[Int32, Map[Int32, String]], bolds? : Map[Int32, Map[Int32, Bool]], fills? : Map[Int32, Map[Int32, GridSolidFill]], sizes? : Map[Int32, Map[Int32, Double]]) -> DrawnGrid raise
 
 pub fn fallback_advance(Char, Bool) -> Double
 
@@ -38,6 +38,8 @@ pub fn is_builtin_table_style(String) -> Bool
 pub fn line_break_allowed(Char, Char) -> Bool
 
 pub fn line_break_joins(Char, Char) -> Bool
+
+pub fn sized_fallback_advance(Char, Bool, Double) -> Double
 
 pub fn store_grid(@core.DocumentWriter, DrawnGrid, id? : String, title? : String, text_index? : Bool) -> Unit raise
 

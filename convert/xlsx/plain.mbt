@@ -200,7 +200,7 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
     false
   }
   if font.name != "Calibri" ||
-    font.size != 11.0 ||
+    (index == 0 && font.size != 11.0) ||
     font.italic ||
     font.underline != "" ||
     font.strike ||
@@ -230,7 +230,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// Convert worksheets using estimated font metrics without embedding fonts.
 /// Supports sheet views with numeric, plain string, boolean and error cells,
 /// number formats, font colors, bold text, horizontal alignment, top or center
-/// vertical alignment and solid fills on individual cells; complex features are rejected.
+/// vertical alignment and solid fills on individual cells. Nondefault font sizes
+/// require explicit row heights; complex features are rejected.
 pub fn convert_plain_no_fonts(
   data : Bytes,
   data_mode~ : String = "",
@@ -399,6 +400,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let horizontals : Map[Int32, Map[Int32, String]] = Map([])
   let bolds : Map[Int32, Map[Int32, Bool]] = Map([])
   let fills : Map[Int32, Map[Int32, @sheet.GridSolidFill]] = Map([])
+  let sizes : Map[Int32, Map[Int32, Double]] = Map([])
   let checked_styles : Map[Int32, Bool] = Map([])
   let format_cache : Map[Int32, Array[XlsxFormatSection]] = Map([])
   let color_cache : Map[Int32, UInt32] = Map([])
@@ -428,6 +430,18 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         0
       } else {
         cell.style
+      }
+      let font_id = styles.cell_formats[format_index].font
+      let font_index = if font_id < 0 || font_id >= styles.fonts.length() {
+        0
+      } else {
+        font_id
+      }
+      let font_size = styles.fonts[font_index].size
+      if font_size != 11.0 && cell.kind != 0 && row.height < 0.0 {
+        raise InvalidXlsxInput(
+          "xlsx: plain conversion requires explicit row heights for nondefault font sizes",
+        )
       }
       let fill_index = styles.cell_formats[format_index].fill
       if fill_index >= 0 && fill_index < styles.fills.length() {
@@ -488,7 +502,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         if cell.kind == 1 {
           let mut width = 0.0
           for c in text {
-            width += @sheet.fallback_advance(c, false)
+            width += @sheet.sized_fallback_advance(c, false, font_size)
           }
           if cell.column >= 0 &&
             cell.column < widths.length() &&
@@ -496,21 +510,27 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             width > widths[cell.column] - 3.75 + 0.01 {
             let available = Double::max(widths[cell.column] - 3.75, 0.0)
             text = if formatted.general {
-              xlsx_fit_plain_number(cell.number, available)
+              xlsx_fit_plain_number(cell.number, available, font_size)
             } else {
               "#".repeat(
-                (available / @sheet.fallback_advance('#', false)).to_int(),
+                (available /
+                @sheet.sized_fallback_advance('#', false, font_size)).to_int(),
               )
             }
           }
         }
         let vertical = styles.cell_formats[format_index].alignment.vertical
         let horizontal = styles.cell_formats[format_index].alignment.horizontal
-        let font_id = styles.cell_formats[format_index].font
-        let font_index = if font_id < 0 || font_id >= styles.fonts.length() {
-          0
-        } else {
-          font_id
+        if font_size != 11.0 {
+          let columns = match sizes.get(row.index) {
+            Some(columns) => columns
+            None => {
+              let columns : Map[Int32, Double] = Map([])
+              sizes[row.index] = columns
+              columns
+            }
+          }
+          columns[cell.column] = font_size
         }
         if styles.fonts[font_index].bold {
           let columns = match bolds.get(row.index) {
@@ -583,6 +603,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     horizontals~,
     bolds~,
     fills~,
+    sizes~,
   )
   (drawn, geo)
 }
@@ -609,7 +630,11 @@ fn xlsx_solid_fill_key(fill : XlsxFill) -> String {
 }
 
 ///|
-fn xlsx_fit_plain_number(value : Double, available : Double) -> String {
+fn xlsx_fit_plain_number(
+  value : Double,
+  available : Double,
+  size : Double,
+) -> String {
   for n = 10; n >= 1; n = n - 1 {
     let candidate = xlsx_format_general(value, n)
     if candidate == "" {
@@ -617,13 +642,14 @@ fn xlsx_fit_plain_number(value : Double, available : Double) -> String {
     }
     let mut width = 0.0
     for c in candidate {
-      width += @sheet.fallback_advance(c, false)
+      width += @sheet.sized_fallback_advance(c, false, size)
     }
     if width <= available + 0.01 {
       return candidate
     }
   }
-  let n = (available / Double::max(@sheet.fallback_advance('#', false), 0.01)).to_int()
+  let n = (available /
+  Double::max(@sheet.sized_fallback_advance('#', false, size), 0.01)).to_int()
   "#".repeat(n)
 }
 

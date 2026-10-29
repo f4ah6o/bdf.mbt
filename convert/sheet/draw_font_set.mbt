@@ -60,9 +60,10 @@ fn DrawTile::database_text_run(
       index
     }
   }
-  if !self.has_font || self.current_font != index {
+  if !self.has_font || self.current_font != index || self.current_size != 11.0 {
     self.object.font(index, 11.0F)
     self.current_font = index
+    self.current_size = 11.0
     self.has_font = true
   }
   self.fill_color(color)
