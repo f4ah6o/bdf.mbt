@@ -24,6 +24,8 @@ pub fn build_timeline(Int64, Array[TimeChange], Array[KeyChange], Array[TempoCha
 
 pub fn cancelled_accidentals(KeySig, KeySig) -> Int32
 
+pub fn choose_guitar_fingering(Array[GuitarOnset], GuitarPreset) -> GuitarFingering
+
 pub fn divide_values(Int64, Int64, Int64, Int64, Bool, Bool) -> Array[NotationValue]
 
 pub fn draw_barline(MusicDrawing, Int32, Double, Double, Double, Array[Double], Bool) -> Unit
@@ -51,6 +53,8 @@ pub fn estimate_key(Array[Double], Int32) -> KeySig
 pub fn guitar_candidates(GuitarNote, Bool) -> Array[GuitarCandidate]
 
 pub fn guitar_presets() -> Array[GuitarPreset]
+
+pub fn guitar_score_onsets(NotatedScore, Int32) -> GuitarScoreOnsets
 
 pub fn guitar_shapes(Array[GuitarNote], GuitarPreset, Bool) -> Array[GuitarShape]
 
@@ -161,11 +165,21 @@ pub(all) struct GuitarCandidate {
   penalty : Double
 }
 
+pub(all) struct GuitarFingering {
+  positions : Map[Int32, GuitarPosition]
+  omitted : Int32
+}
+
 pub(all) struct GuitarNote {
   id : Int32
   pitch : Int32
   end : Int64
   authored : GuitarPosition?
+}
+
+pub(all) struct GuitarOnset {
+  tick : Int64
+  notes : Array[GuitarNote]
 }
 
 pub(all) struct GuitarPosition {
@@ -182,6 +196,11 @@ pub(all) struct GuitarPreset {
   open : Double
   high : Double
   span_limit : Int32
+}
+
+pub(all) struct GuitarScoreOnsets {
+  onsets : Array[GuitarOnset]
+  note_ids : Array[Array[Array[Int32]]]
 }
 
 pub(all) struct GuitarShape {

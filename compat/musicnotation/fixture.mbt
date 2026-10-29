@@ -1072,3 +1072,51 @@ pub fn guitar_shapes(
   })
   Json::array([Json::array(candidates), Json::array(shapes)]).stringify()
 }
+
+///|
+#export_name("guitar_fingering")
+pub fn guitar_fingering(raw : FixedArray[Int32], preset : Int32) -> String {
+  let onsets : Array[@music.GuitarOnset] = []
+  let mut i = 0
+  let mut id = 0
+  while i < raw.length() {
+    let tick = raw[i].to_int64()
+    let count = raw[i + 1]
+    i += 2
+    let notes : Array[@music.GuitarNote] = []
+    for _ in 0..<count {
+      notes.push({
+        id,
+        pitch: raw[i],
+        end: raw[i + 1].to_int64(),
+        authored: if raw[i + 2] != 0 {
+          Some({ string: raw[i + 3], fret: raw[i + 4], })
+        } else {
+          None
+        },
+      })
+      id += 1
+      i += 5
+    }
+    onsets.push({ tick, notes, })
+  }
+  let result = @music.choose_guitar_fingering(
+    onsets,
+    @music.guitar_presets()[preset],
+  )
+  let positions : Array[Json] = []
+  for n in 0..<id {
+    match result.positions.get(n) {
+      Some(pos) =>
+        positions.push(
+          Json::array([
+            Json::number(n.to_double()),
+            Json::number(pos.string.to_double()),
+            Json::number(pos.fret.to_double()),
+          ]),
+        )
+      None => ()
+    }
+  }
+  Json::array([Json::array(positions), Json::number(result.omitted.to_double())]).stringify()
+}

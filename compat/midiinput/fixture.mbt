@@ -1570,3 +1570,52 @@ pub fn midi_document(
     err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
   }
 }
+
+///|
+#export_name("score_guitar")
+pub fn score_guitar(data : Bytes) -> String {
+  try {
+    let score = @midi.notate_file(@midi.read_file(data))
+    let parts : Array[Json] = []
+    for pi in 0..<score.parts.length() {
+      let input = @music.guitar_score_onsets(score, pi)
+      let mut count = 0
+      let grouped = input.onsets.map(onset => {
+        let notes = onset.notes.map(note => {
+          count += 1
+          Json::array([
+            Json::number(note.id.to_double()),
+            Json::number(note.pitch.to_double()),
+            Json::number(note.end.to_double()),
+          ])
+        })
+        Json::array([Json::number(onset.tick.to_double()), Json::array(notes)])
+      })
+      let presets = @music.guitar_presets().map(preset => {
+        let result = @music.choose_guitar_fingering(input.onsets, preset)
+        let values : Array[Json] = []
+        for id in 0..<count {
+          values.push(
+            match result.positions.get(id) {
+              Some(position) =>
+                Json::array([
+                  Json::number(position.string.to_double()),
+                  Json::number(position.fret.to_double()),
+                ])
+              None => Json::null()
+            },
+          )
+        }
+        Json::array([
+          Json::array(values),
+          Json::number(result.omitted.to_double()),
+        ])
+      })
+      parts.push(Json::array([Json::array(grouped), Json::array(presets)]))
+    }
+    Json::array(parts).stringify()
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}
