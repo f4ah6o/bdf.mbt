@@ -26,7 +26,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 7400; i++ {
+	for i := 0; i < 7600; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -81,7 +81,14 @@ func TestCodexXLSXRender(t *testing.T) {
 					th += fmt.Sprintf(`<a:%s><a:sysClr val="window" lastClr="%06X"/></a:%s>`, name, value, name)
 				}
 			}
-			th += `</a:clrScheme></a:themeElements></a:theme>`
+			th += `</a:clrScheme>`
+			if i >= 7400 {
+				ea := []string{"", "Noto Sans CJK"}[i%2]
+				major := []string{"Times New Roman", ""}[(i/2)%2]
+				minor := []string{"Arial", ""}[(i/4)%2]
+				th += fmt.Sprintf(`<a:fontScheme name="Test"><a:majorFont><a:latin typeface="%s"/><a:ea typeface="%s"/><a:font script="Jpan" typeface="MS Mincho"/><a:font script="Hans" typeface="SimSun"/><a:font script="Hant" typeface="PMingLiU"/><a:font script="Hang" typeface="Batang"/></a:majorFont><a:minorFont><a:latin typeface="%s"/><a:ea typeface="%s"/><a:font script="Jpan" typeface="MS PGothic"/><a:font script="Hans" typeface="Microsoft YaHei"/><a:font script="Hant" typeface="Microsoft JhengHei"/><a:font script="Hang" typeface="Malgun Gothic"/></a:minorFont></a:fontScheme>`, major, ea, minor, ea)
+			}
+			th += `</a:themeElements></a:theme>`
 			add("xl/theme/theme1.xml", th)
 		}
 		if i >= 1450 {
@@ -133,6 +140,14 @@ func TestCodexXLSXRender(t *testing.T) {
 						name := names[((i-7200)/4+font)%len(names)]
 						font++
 						return fmt.Sprintf(`<name val="%s"/>`, name)
+					})
+				}
+				if i >= 7400 {
+					font := 0
+					st = regexp.MustCompile(`</font>`).ReplaceAllStringFunc(st, func(string) string {
+						scheme := []string{"major", "minor", "none"}[(i+font)%3]
+						font++
+						return fmt.Sprintf(`<scheme val="%s"/></font>`, scheme)
 					})
 				}
 			}

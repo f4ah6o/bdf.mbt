@@ -210,7 +210,7 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
     font.italic ||
     font.underline != "" ||
     font.strike ||
-    (font.scheme != "" && font.scheme != "minor") ||
+    (font.scheme != "" && font.scheme != "minor" && font.scheme != "major") ||
     font.vertical != "" ||
     (
       a.horizontal != "general" &&
@@ -235,8 +235,9 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 ///|
 /// Convert worksheets using estimated font metrics without embedding fonts.
 /// Supports sheet views with numeric, plain string, boolean and error cells,
-/// number formats, named fonts, font colors, bold text, horizontal alignment, top or center
-/// vertical alignment, solid fills, line borders, merged cells and wrapping.
+/// number formats, named and themed fonts, font colors, bold text, horizontal
+/// alignment, top or center vertical alignment, solid fills, line borders,
+/// merged cells and wrapping.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// complex features are rejected.
 pub fn convert_plain_no_fonts(
@@ -253,12 +254,6 @@ pub fn convert_plain_no_fonts(
   let workbook = read_xlsx_workbook(data)
   let metadata = workbook.package.core_properties()
   let locale = workbook.locale()
-  let theme = workbook.package.theme_fonts(workbook.part)
-  if theme.resolve("+mn-lt", "") != "Calibri" {
-    raise InvalidXlsxInput(
-      "xlsx: plain conversion does not support themed fonts",
-    )
-  }
   let styles = workbook.styles()
   let theme_colors = workbook.xlsx_plain_theme_colors()
   xlsx_check_plain_style(styles, 0)
@@ -418,9 +413,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let wraps : Map[Int32, Map[Int32, Bool]] = Map([])
   let font_families : Map[Int32, Map[Int32, String]] = Map([])
   let east_asian_fonts : Map[Int32, Map[Int32, String]] = Map([])
-  let minor_east_asian = workbook.package
-    .theme_fonts(workbook.part)
-    .resolve("+mn-ea", locale.script)
+  let theme = workbook.package.theme_fonts(workbook.part)
   let borders : Map[Int32, Map[Int32, @sheet.GridCellBorder]] = Map([])
   let diagonals : Map[Int32, Map[Int32, @sheet.GridCellDiagonal]] = Map([])
   let border_colors : Map[Int32, Map[Int32, Array[UInt32]]] = Map([])
@@ -464,10 +457,19 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       }
       let font_size = styles.fonts[font_index].size
       let font = styles.fonts[font_index]
-      let font_name = if font.scheme == "minor" || font.name == "" {
-        "Calibri"
+      let themed_latin = if font.scheme == "minor" {
+        theme.resolve("+mn-lt", locale.script)
+      } else if font.scheme == "major" {
+        theme.resolve("+mj-lt", locale.script)
       } else {
+        ""
+      }
+      let font_name = if themed_latin != "" {
+        themed_latin
+      } else if font.name != "" {
         font.name
+      } else {
+        "Calibri"
       }
       if font_name != "Calibri" {
         let columns = match font_families.get(row.index) {
@@ -480,7 +482,14 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         }
         columns[cell.column] = font_name
       }
-      if styles.fonts[font_index].scheme == "minor" && minor_east_asian != "" {
+      let east_asian = if font.scheme == "minor" {
+        theme.resolve("+mn-ea", locale.script)
+      } else if font.scheme == "major" {
+        theme.resolve("+mj-ea", locale.script)
+      } else {
+        ""
+      }
+      if east_asian != "" {
         let columns = match east_asian_fonts.get(row.index) {
           Some(columns) => columns
           None => {
@@ -489,7 +498,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             columns
           }
         }
-        columns[cell.column] = minor_east_asian
+        columns[cell.column] = east_asian
       }
       let span = xlsx_plain_region_at(
         spans,
