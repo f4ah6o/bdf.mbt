@@ -70,3 +70,52 @@ pub fn scan_track(data : Bytes, max_tick : Int32) -> String {
     "problem": Json::string(track.problem),
   }).stringify()
 }
+
+///|
+#export_name("track_notes")
+pub fn track_notes(data : Bytes, max_tick : Int32) -> String {
+  let reader = @midi.MidiTrackReader::new()
+  try {
+    let track = @midi.scan_track(data, max_tick.to_int64())
+    let result = reader.read(track, 0)
+    let notes : Array[Json] = []
+    let controls : Array[Json] = []
+    for ch in 0..<16 {
+      for note in result.notes {
+        if note.channel == ch {
+          notes.push(
+            Json::array([
+              Json::number(ch.to_double()),
+              Json::number(note.on.to_double()),
+              Json::number(note.off.to_double()),
+              Json::number(note.key.to_double()),
+              Json::number(note.velocity.to_double()),
+            ]),
+          )
+        }
+      }
+      for control in result.controls {
+        if control.channel == ch {
+          controls.push(
+            Json::array([
+              Json::number(ch.to_double()),
+              Json::number(control.tick.to_double()),
+              Json::number(control.kind.to_double()),
+              Json::number(control.number.to_double()),
+              Json::number(control.value.to_double()),
+            ]),
+          )
+        }
+      }
+    }
+    Json::object({
+      "error": Json::string(""),
+      "notes": Json::array(notes),
+      "controls": Json::array(controls),
+      "warnings": Json::array(reader.warnings().map(Json::string)),
+    }).stringify()
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}

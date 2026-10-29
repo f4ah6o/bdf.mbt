@@ -37,6 +37,38 @@ pub(all) struct MidiInput {
   copyright : Bytes
 }
 
+pub(all) struct MidiRawControl {
+  channel : Int32
+  tick : Int64
+  kind : Int32
+  number : Int32
+  value : Int32
+}
+
+pub(all) struct MidiRawNote {
+  channel : Int32
+  key : Int32
+  velocity : Int32
+  on : Int64
+  off : Int64
+}
+
+pub(all) struct MidiTrackNotes {
+  notes : Array[MidiRawNote]
+  controls : Array[MidiRawControl]
+}
+
+pub struct MidiTrackReader {
+  warnings : Array[String]
+  warned : Map[String, Bool]
+  mut note_count : Int32
+  mut control_count : Int32
+  mut meta_count : Int32
+}
+pub fn MidiTrackReader::new() -> Self
+pub fn MidiTrackReader::read(Self, MidiTrackScan, Int32) -> MidiTrackNotes raise MidiInputError
+pub fn MidiTrackReader::warnings(Self) -> Array[String]
+
 pub(all) struct MidiTrackScan {
   events : Array[RawMidiEvent]
   parsed : Int32
