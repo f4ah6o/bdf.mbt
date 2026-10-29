@@ -36,6 +36,9 @@ for (const [j, c] of plainRuns.entries()) await verifyCase(c, `plain run ${j}`);
 const links = JSON.parse(await readFile(new URL('./links.json', import.meta.url)));
 assert.equal(links.length, 200, 'hyperlink fixture count');
 for (const [j, c] of links.entries()) await verifyCase(c, `hyperlink ${j}`);
+const percentLinks = JSON.parse(await readFile(new URL('./percent-links.json', import.meta.url)));
+assert.equal(percentLinks.length, 200, 'percent-encoded hyperlink fixture count');
+for (const [j, c] of percentLinks.entries()) await verifyCase(c, `percent-encoded hyperlink ${j}`);
 const inactiveCF = JSON.parse(await readFile(new URL('./inactive-cf.json', import.meta.url)));
 assert.equal(inactiveCF.length, 161, 'inactive conditional format fixture count');
 for (const [j, c] of inactiveCF.entries()) await verifyCase(c, `inactive conditional format ${j}`);
@@ -77,4 +80,4 @@ for (const encoded of unsupportedBase) {
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|complex borders)/);
 }
-console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length} links, and ${inactiveCF.length} inactive conditional formats match upstream.`);
+console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length} inactive conditional formats match upstream.`);

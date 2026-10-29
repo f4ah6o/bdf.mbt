@@ -64,7 +64,7 @@ func TestCodexLinks(t *testing.T) {
 		out = append(out, map[string]any{"input": b.Bytes(), "bdf": rendered.Bytes(), "warnings": x.Warnings, "mode": "none", "no_index": true})
 	}
 	unsupported := []any{}
-	for _, target := range []string{"https://example.com/%20", "http://example.com:bad"} {
+	for _, target := range []string{"https://example.com/%ZZ", "http://example.com:bad"} {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {

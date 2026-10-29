@@ -31,7 +31,8 @@ The base-fill and base-border cases are regenerated separately using
 `generate_base_fill_test.go` / `TestCodexBaseFill` and
 `generate_base_border_test.go` / `TestCodexBaseBorder`.
 Single-run cases use `generate_plain_run_test.go` and `TestCodexPlainRun`.
-Link cases use `generate_links_test.go` and `TestCodexLinks`.
+Link cases use `generate_links_test.go` / `TestCodexLinks` and
+`generate_percent_links_test.go` / `TestCodexPercentLinks`.
 Inactive conditional-format cases use `generate_inactive_cf_test.go` and
 `TestCodexInactiveCF`.
 To regenerate fixtures, copy `generate_workbook_test.go` without its build tag

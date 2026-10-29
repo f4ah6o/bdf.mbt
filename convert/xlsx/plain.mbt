@@ -191,11 +191,13 @@ fn xlsx_add_plain_links(
   if location != "" {
     target = target + "#" + location
   }
-  for b in @utf8.encode(target) {
+  let bytes = @utf8.encode(target)
+  let mut index = 0
+  while index < bytes.length() {
+    let b = bytes[index]
     let n = b.to_int()
     if n < 33 ||
       n > 126 ||
-      b == b'%' ||
       b == b'[' ||
       b == b']' ||
       b == b'\\' ||
@@ -209,6 +211,15 @@ fn xlsx_add_plain_links(
       b == b'|' {
       raise InvalidXlsxInput("xlsx: unsupported hyperlink URL")
     }
+    if b == b'%' {
+      if index + 2 >= bytes.length() ||
+        !xlsx_url_hex(bytes[index + 1]) ||
+        !xlsx_url_hex(bytes[index + 2]) {
+        raise InvalidXlsxInput("xlsx: unsupported hyperlink URL")
+      }
+      index += 2
+    }
+    index += 1
   }
   // Keep the HTTP authority to a simple host and optional numeric port.
   // Other forms are rejected until URL parsing matches Go's url.Parse.
@@ -261,6 +272,13 @@ fn xlsx_add_plain_links(
       })
     }
   }
+}
+
+///|
+fn xlsx_url_hex(b : Byte) -> Bool {
+  (b >= b'0' && b <= b'9') ||
+  (b >= b'A' && b <= b'F') ||
+  (b >= b'a' && b <= b'f')
 }
 
 ///|
@@ -433,7 +451,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// rejected. Conditional formats are accepted only when provably inactive.
 /// Views with base fills are limited to 1,000,000 cells, and views
 /// with base borders to 200,000 cells. External links support simple ASCII
-/// HTTP(S) and mailto URLs without percent escapes; other URL forms are rejected.
+/// HTTP(S) and mailto URLs with simple ASCII authorities; other URL forms are
+/// rejected.
 pub fn convert_plain_no_fonts(
   data : Bytes,
   data_mode~ : String = "",
