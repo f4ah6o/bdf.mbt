@@ -2,6 +2,7 @@
 package "f4ah6o/bdf/core"
 
 import {
+  "moonbitlang/core/buffer",
   "moonbitlang/core/debug",
 }
 
@@ -25,6 +26,10 @@ pub fn decode_path_collection(Bytes) -> Array[Path] raise
 pub fn decode_text_index(Bytes) -> Array[IndexRun] raise
 
 pub fn decode_tile_index(Bytes) -> Array[Tile] raise
+
+pub fn encode_object_resources(ObjectResources) -> Bytes raise
+
+pub fn encode_path_collection(Array[Path]) -> Bytes raise
 
 pub fn index_plain_text(Array[IndexRun]) -> String
 
@@ -208,6 +213,78 @@ pub(all) struct MidiSequence {
 pub(all) struct MusicData {
   seq : Bytes
   cues : Cues?
+}
+
+pub struct ObjectBuilder {
+  strings : Array[String]
+  string_index : Map[String, Int32]
+  paths : Array[PathEntry]
+  paints : Array[Paint]
+  fonts : Array[Font]
+  images : Array[String]
+  children : Array[String]
+  child_boxes : Array[(Float, Float, Float, Float)]
+  ops : @buffer.Buffer
+  mut bbox : (Float, Float, Float, Float)
+  mut auto_bbox : Bool
+  mut has_bbox : Bool
+}
+pub fn ObjectBuilder::add_font(Self, Font) -> Int32
+pub fn ObjectBuilder::add_image(Self, String) -> Int32
+pub fn ObjectBuilder::add_object(Self, String, (Float, Float, Float, Float)) -> Int32
+pub fn ObjectBuilder::add_paint(Self, Paint) -> Int32
+pub fn ObjectBuilder::add_path(Self, PathEntry) -> Int32
+pub fn ObjectBuilder::alpha(Self, Float) -> Unit
+pub fn ObjectBuilder::bbox(Self) -> (Float, Float, Float, Float)
+pub fn ObjectBuilder::blend(Self, Byte) -> Unit
+pub fn ObjectBuilder::clear_rect(Self, Float, Float, Float, Float) -> Unit
+pub fn ObjectBuilder::clip_path(Self, Int32, Byte) -> Unit raise
+pub fn ObjectBuilder::clip_rect(Self, Float, Float, Float, Float) -> Unit
+pub fn ObjectBuilder::dash(Self, Array[Float], Float) -> Unit
+pub fn ObjectBuilder::encode(Self) -> Bytes raise
+pub fn ObjectBuilder::ext(Self, Bytes) -> Unit
+pub fn ObjectBuilder::fill_color(Self, UInt32) -> Unit
+pub fn ObjectBuilder::fill_paint(Self, Int32) -> Unit raise
+pub fn ObjectBuilder::fill_path(Self, Int32, Byte) -> Unit raise
+pub fn ObjectBuilder::fill_path_at(Self, Int32, Byte, Float, Float) -> Unit raise
+pub fn ObjectBuilder::fill_path_run(Self, Byte, Array[ObjectGlyph]) -> Unit raise
+pub fn ObjectBuilder::fill_rect(Self, Float, Float, Float, Float) -> Unit
+pub fn ObjectBuilder::fill_text(Self, String, Float, Float, Float) -> Unit
+pub fn ObjectBuilder::filter(Self, String) -> Unit
+pub fn ObjectBuilder::font(Self, Int32, Float) -> Unit raise
+pub fn ObjectBuilder::group_begin(Self, Float, Byte, Float, Float, Float, Float) -> Unit
+pub fn ObjectBuilder::group_end(Self) -> Unit
+pub fn ObjectBuilder::image(Self, Int32, Float, Float, Float, Float) -> Unit raise
+pub fn ObjectBuilder::image_sub(Self, Int32, Float, Float, Float, Float, Float, Float, Float, Float) -> Unit raise
+pub fn ObjectBuilder::line(Self, Float, Byte, Byte, Float) -> Unit
+pub fn ObjectBuilder::link(Self, Float, Float, Float, Float, String) -> Unit
+pub fn ObjectBuilder::mark(Self, Byte, String) -> Unit
+pub fn ObjectBuilder::mask_begin(Self, Byte, UInt32, Bytes) -> Unit
+pub fn ObjectBuilder::mask_end(Self) -> Unit
+pub fn ObjectBuilder::new() -> Self
+pub fn ObjectBuilder::restore(Self) -> Unit
+pub fn ObjectBuilder::save(Self) -> Unit
+pub fn ObjectBuilder::scale(Self, Float, Float) -> Unit
+pub fn ObjectBuilder::set_bbox(Self, Float, Float, Float, Float) -> Unit
+pub fn ObjectBuilder::shadow(Self, UInt32, Float, Float, Float) -> Unit
+pub fn ObjectBuilder::smoothing(Self, Bool, Byte) -> Unit
+pub fn ObjectBuilder::stroke_color(Self, UInt32) -> Unit
+pub fn ObjectBuilder::stroke_paint(Self, Int32) -> Unit raise
+pub fn ObjectBuilder::stroke_path(Self, Int32) -> Unit raise
+pub fn ObjectBuilder::stroke_rect(Self, Float, Float, Float, Float) -> Unit
+pub fn ObjectBuilder::stroke_text(Self, String, Float, Float, Float) -> Unit
+pub fn ObjectBuilder::text_style(Self, Byte, Byte, Byte, Float) -> Unit
+pub fn ObjectBuilder::transform(Self, Float, Float, Float, Float, Float, Float) -> Unit
+pub fn ObjectBuilder::translate(Self, Float, Float) -> Unit
+pub fn ObjectBuilder::update_font(Self, Int32, Font) -> Unit raise
+pub fn ObjectBuilder::update_object(Self, Int32, String) -> Unit raise
+pub fn ObjectBuilder::use_object(Self, Int32) -> Unit raise
+pub fn ObjectBuilder::use_object_at(Self, Int32, Float, Float) -> Unit raise
+
+pub(all) struct ObjectGlyph {
+  path : Int32
+  x : Float
+  y : Float
 }
 
 pub(all) struct ObjectPart {

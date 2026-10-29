@@ -1,0 +1,21 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/compat/object"
+
+// Values
+pub fn build_auto_object() -> Bytes
+
+pub fn build_complete_object() -> Bytes
+
+pub fn build_object() -> Bytes
+
+pub fn roundtrip_object(Bytes) -> Bytes
+
+pub fn roundtrip_paths(Bytes) -> Bytes
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
