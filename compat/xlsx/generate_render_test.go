@@ -26,7 +26,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 8800; i++ {
+	for i := 0; i < 9000; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -266,6 +266,9 @@ func TestCodexXLSXRender(t *testing.T) {
 						horizontal := []string{"general", "left", "right", "center"}[(i/4)%4]
 						if i >= 8600 {
 							horizontal, wrap = "centerContinuous", ""
+							if i >= 8800 {
+								wrap = []string{` wrapText="1"`, ` shrinkToFit="1"`}[i%2]
+							}
 						}
 						st += fmt.Sprintf(`<xf fontId="%d" fillId="1" borderId="%d" numFmtId="%d"><alignment horizontal="%s" vertical="%s"%s/></xf>`, 6+j%2, j, []int{0, 2, 14, 164}[i%4], horizontal, []string{"bottom", "top", "center"}[(i/16)%3], wrap)
 					}
