@@ -444,3 +444,79 @@ pub fn score(data : Bytes) -> String {
       Json::object({ "error": Json::string(message) }).stringify()
   }
 }
+
+///|
+#export_name("prepare_score")
+pub fn prepare_score(data : Bytes) -> String {
+  try {
+    let p = @music.prepare_score(@midi.notate_file(@midi.read_file(data)))
+    let staves = p.staves.map(s => {
+      Json::array([
+        Json::number(s.part.to_double()),
+        Json::number(s.staff.to_double()),
+      ])
+    })
+    let rows = p.measures.map(row => {
+      Json::array(
+        row.map(m => {
+          let signs = m.accidentals.map(group => {
+            Json::array(
+              group.map(a => {
+                match a {
+                  Some(v) => Json::number(v.to_double())
+                  None => Json::null()
+                }
+              }),
+            )
+          })
+          let events = m.events.map(e => {
+            Json::array([
+              Json::number(e.offset.to_double()),
+              Json::number(e.voice.to_double()),
+              Json::boolean(e.rest),
+              Json::boolean(e.measure_rest),
+            ])
+          })
+          Json::object({
+            "clef": Json::array([
+              Json::number(m.clef.sign.to_double()),
+              Json::number(m.clef.line.to_double()),
+              Json::number(m.clef.octave.to_double()),
+            ]),
+            "clefChange": Json::boolean(m.clef_change),
+            "key": Json::array([
+              Json::number(m.key.fifths.to_double()),
+              Json::boolean(m.key.minor),
+            ]),
+            "previousKey": Json::array([
+              Json::number(m.previous_key.fifths.to_double()),
+              Json::boolean(m.previous_key.minor),
+            ]),
+            "keyChange": Json::boolean(m.key_change),
+            "events": Json::array(events),
+            "signs": Json::array(signs),
+            "voices": Json::number(m.voices.to_double()),
+          })
+        }),
+      )
+    })
+    Json::object({
+      "staves": Json::array(staves),
+      "grand": Json::boolean(p.grand),
+      "starts": Json::array(p.starts.map(v => Json::number(v.to_double()))),
+      "times": Json::array(
+        p.times.map(t => {
+          Json::array([
+            Json::number(t.beats.to_double()),
+            Json::number(t.beat_type.to_double()),
+          ])
+        }),
+      ),
+      "counts": Json::array(p.counts.map(v => Json::number(v.to_double()))),
+      "measures": Json::array(rows),
+    }).stringify()
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}

@@ -34,6 +34,8 @@ pub fn place_accidentals(EngravingClef, Array[EngravingNote], Array[Int32?]) -> 
 
 pub fn plan_staff(Array[QuantizedNote], Int32, Int32) -> StaffPlan?
 
+pub fn prepare_score(NotatedScore) -> PreparedScore
+
 pub fn quantize_notes(Array[MeasureSpan], Array[NotationNote]) -> Array[QuantizedNote]
 
 pub fn resolve_accidentals(KeySig, Array[EngravingEvent]) -> Array[Array[Int32?]]
@@ -196,6 +198,26 @@ pub(all) struct PlacedAccidental {
   column : Int32
 }
 
+pub(all) struct PreparedScore {
+  staves : Array[StaffReference]
+  grand : Bool
+  starts : Array[Int64]
+  times : Array[TimeSig]
+  counts : Array[Int32]
+  measures : Array[Array[PreparedStaffMeasure]]
+}
+
+pub(all) struct PreparedStaffMeasure {
+  clef : EngravingClef
+  clef_change : Bool
+  key : KeySig
+  previous_key : KeySig
+  key_change : Bool
+  events : Array[ScoreEvent]
+  accidentals : Array[Array[Int32?]]
+  voices : Int32
+}
+
 pub(all) struct QuantizedNote {
   on : Int64
   off : Int64
@@ -240,6 +262,11 @@ pub(all) struct StaffPlan {
   percussion : Bool
 }
 pub fn StaffPlan::staff_for(Self, Int32) -> Int32
+
+pub(all) struct StaffReference {
+  part : Int32
+  staff : Int32
+}
 
 pub(all) struct TempoChange {
   tick : Int64
