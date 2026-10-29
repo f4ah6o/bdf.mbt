@@ -109,6 +109,7 @@ pub(all) struct SizedGridCell {
   center : Bool
   visible : Bool
   occupied : Bool
+  color : UInt32
 }
 
 pub(all) struct SizedGridRow {

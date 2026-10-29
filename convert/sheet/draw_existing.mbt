@@ -6,6 +6,7 @@ pub(all) struct SizedGridCell {
   center : Bool
   visible : Bool
   occupied : Bool
+  color : UInt32
 }
 
 ///|
@@ -50,6 +51,7 @@ pub fn draw_sized_grid_no_fonts(
     }
     let row : Array[Cell] = []
     let render_cells : Map[Int32, Cell] = Map([])
+    let colors : Map[Int32, UInt32] = Map([])
     let centered : Map[Int32, Bool] = Map([])
     let visibility : Map[Int32, Bool] = Map([])
     for entry in sparse.cells {
@@ -65,6 +67,7 @@ pub fn draw_sized_grid_no_fonts(
         entry.cell
       }
       render_cells[entry.column] = entry.cell
+      colors[entry.column] = entry.color
       centered[entry.column] = entry.center
       visibility[entry.column] = entry.visible
     }
@@ -167,7 +170,7 @@ pub fn draw_sized_grid_no_fonts(
           reference,
           family,
           false,
-          0x000000ffU,
+          colors.get(column).unwrap_or(0x000000ffU),
           fallback_advance,
           None,
           None,

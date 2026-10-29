@@ -23,7 +23,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 1850; i++ {
+	for i := 0; i < 2000; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -66,11 +66,27 @@ func TestCodexXLSXRender(t *testing.T) {
 		rels += `</Relationships>`
 		add("xl/_rels/workbook.xml.rels", rels)
 		if i >= 1450 {
-			st := `<styleSheet><cellXfs><xf numFmtId="0"/>`
-			for _, id := range []int{1, 2, 3, 4, 9, 10, 11, 14, 20, 22, 46, 49} {
+			st := `<styleSheet>`
+			if i >= 1850 {
+				st += `<numFmts><numFmt numFmtId="164" formatCode="0.00;[Red](0.00)"/><numFmt numFmtId="165" formatCode="[Color10]0.00"/><numFmt numFmtId="166" formatCode="[Blue]0%"/></numFmts>`
+			}
+			st += `<cellXfs><xf numFmtId="0"/>`
+			ids := []int{1, 2, 3, 4, 9, 10, 11, 14, 20, 22, 46, 49}
+			if i >= 1850 {
+				ids = append(ids, 164, 165, 166)
+			}
+			for _, id := range ids {
 				st += fmt.Sprintf(`<xf numFmtId="%d"/>`, id)
 			}
-			st += `</cellXfs></styleSheet>`
+			st += `</cellXfs>`
+			if i >= 1850 {
+				st += `<colors><indexedColors>`
+				for j := 0; j < 20; j++ {
+					st += fmt.Sprintf(`<rgbColor rgb="FF%06X"/>`, r.Intn(1<<24))
+				}
+				st += `</indexedColors></colors>`
+			}
+			st += `</styleSheet>`
 			add("xl/styles.xml", st)
 		}
 		shared := []string{"Alpha", "日本語", "First_x000A_Second", "long shared string that extends across cells", "🙂 emoji"}
@@ -157,7 +173,12 @@ func TestCodexXLSXRender(t *testing.T) {
 					if i >= 1200 {
 						v := []string{"123456789", "-123456789", "0.123456789012345", "0.000000000012345", "123456789012345", "-0.987654321", "0"}[r.Intn(7)]
 						if i >= 1450 {
-							sheet += fmt.Sprintf(`<c r="%s%d" s="%d"><v>%s</v></c>`, col, y+1, 1+r.Intn(12), v)
+							sheet += fmt.Sprintf(`<c r="%s%d" s="%d"><v>%s</v></c>`, col, y+1, 1+r.Intn(func() int {
+								if i >= 1850 {
+									return 15
+								}
+								return 12
+							}()), v)
 						} else {
 							sheet += fmt.Sprintf(`<c r="%s%d"><v>%s</v></c>`, col, y+1, v)
 						}

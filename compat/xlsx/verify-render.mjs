@@ -13,7 +13,7 @@ for (const [i, c] of cases.entries()) {
   assert.equal(actual.manifest.parts.length, expected.manifest.parts.length, `XLSX parts ${i}`);
   for (const [j, p] of actual.manifest.parts.entries()) assert.deepEqual(Buffer.from(await actual.part(p.h)), Buffer.from(await expected.part(expected.manifest.parts[j].h)), `XLSX object ${i}:${j}`);
 }
-const styled = JSON.parse(await readFile(new URL('./display.json', import.meta.url))).at(-1);
+const styled = JSON.parse(await readFile(new URL('./cells.json', import.meta.url)))[0];
 assert.equal(xlsx_render_basic(Buffer.from(styled.input, 'base64'), 'none', true).length, 0, 'unsupported styled workbook must be rejected');
 const rich = JSON.parse(await readFile(new URL('./cells.json', import.meta.url)))[7];
 assert.equal(xlsx_render_basic(Buffer.from(rich.input, 'base64'), 'none', true).length, 0, 'unsupported rich strings must be rejected');

@@ -405,11 +405,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       }
       if styles.format_cell(cell, workbook.date1904, locale.number_locale)
         is Some(formatted) {
-        if formatted.color is Some(_) {
-          raise InvalidXlsxInput(
-            "xlsx: plain conversion does not support format colors",
-          )
-        }
         for piece in formatted.pieces {
           if piece.kind != 0 {
             raise InvalidXlsxInput(
@@ -443,6 +438,10 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           center: cell.kind == 3 || cell.kind == 4,
           visible: !(cell.kind == 1 && cell.number == 0.0 && !geo.show_zero),
           occupied: cell.kind != 0 && !(cell.kind == 2 && cell.text == ""),
+          color: match formatted.color {
+            Some(rgb) => (rgb << 8) | 255U
+            None => 0x000000ffU
+          },
         })
       }
     }
