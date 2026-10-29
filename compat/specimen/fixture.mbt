@@ -1345,3 +1345,48 @@ pub fn render_overview_view(
   }
   abort("missing font face")
 }
+
+///|
+#export_name("convert_specimen")
+pub fn convert_specimen(
+  data : Bytes,
+  ui_font : Bytes,
+  selection : String,
+  title : String,
+  text : String,
+  system : Bool,
+  no_index : Bool,
+  no_subset : Bool,
+  ignore_restrictions : Bool,
+) -> @font.SpecimenResult {
+  let db = @db.Database::new()
+  if ui_font.length() > 0 {
+    ignore(db.add_file("stix.ttf", ui_font))
+  }
+  let options : @font.SpecimenOptions = {
+    selection,
+    title,
+    text,
+    examples: 5,
+    system_fonts: system,
+    no_subset,
+    ignore_restrictions,
+    no_text_index: no_index,
+  }
+  try! @font.convert(data, db, options~)
+}
+
+///|
+#export_name("converted_specimen_bytes")
+pub fn converted_specimen_bytes(result : @font.SpecimenResult) -> Bytes {
+  result.bdf
+}
+
+///|
+#export_name("converted_specimen_report")
+pub fn converted_specimen_report(result : @font.SpecimenResult) -> String {
+  Json::object({
+    "summary": Json::string(result.summary),
+    "warnings": Json::array(result.warnings.map(Json::string)),
+  }).stringify()
+}

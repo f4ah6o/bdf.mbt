@@ -13,6 +13,8 @@ pub fn color_formats(Bytes, Bytes, Bytes, Bytes, Bytes) -> String
 
 pub fn color_palettes(Bytes) -> Array[Array[UInt32]]
 
+pub fn convert(Bytes, @db.Database, options? : SpecimenOptions) -> SpecimenResult raise
+
 pub fn detect(Bytes) -> Bool
 
 pub fn load(Bytes) -> FontFile raise
@@ -271,6 +273,18 @@ pub fn SpecimenNames::family(Self) -> String
 pub fn SpecimenNames::full(Self) -> String
 pub fn SpecimenNames::local(Self, Int32) -> Array[SpecimenName]
 
+pub(all) struct SpecimenOptions {
+  selection : String
+  title : String
+  text : String
+  examples : Int32
+  system_fonts : Bool
+  no_subset : Bool
+  ignore_restrictions : Bool
+  no_text_index : Bool
+}
+pub fn SpecimenOptions::new() -> Self
+
 pub struct SpecimenOutlines {
   // private fields
 }
@@ -308,6 +322,12 @@ pub(all) struct SpecimenPrograms {
 pub(all) struct SpecimenRenderedPage {
   height : Double
   object : Bytes
+}
+
+pub(all) struct SpecimenResult {
+  bdf : Bytes
+  summary : String
+  warnings : Array[String]
 }
 
 pub(all) struct SpecimenTextLine {

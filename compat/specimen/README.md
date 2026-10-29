@@ -180,3 +180,11 @@ and run `TestCodexFeatureView` with the same fixture root.
 To regenerate overview-view page cases, copy `generate-overview-view_test.go`
 without its build tag into upstream `converter/font` alongside `generate_test.go`
 and run `TestCodexOverviewView` with the same fixture root.
+
+`convert.json.gz` compares complete font conversions, including selected faces,
+metadata, embedded SFNT programs, scroll views, object and text-index parts,
+summary and warnings. Generate it by copying `generate-convert_test.go` without
+its build tag into upstream `converter/font` alongside `generate_test.go` and
+running `TestCodexFontConvert` with the same fixture root. Run
+`npm run test:font-convert` and `npm run test:font-convert-visual` after a JS
+build; the latter compares rendered upstream and MoonBit documents with vlmkit.
