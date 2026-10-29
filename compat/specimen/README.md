@@ -160,3 +160,7 @@ and run `TestCodexChartCells` with the same fixture root.
 To regenerate character-view page cases, copy `generate-character-view_test.go`
 without its build tag into upstream `converter/font` alongside `generate_test.go`
 and run `TestCodexCharacterView` with the same fixture root.
+
+To regenerate substitution-example cases, copy `generate-feature-examples_test.go`
+without its build tag into upstream `converter/font` alongside `generate_test.go`
+and run `TestCodexFeatureExamples` with the same fixture root.

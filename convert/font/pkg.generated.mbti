@@ -38,6 +38,24 @@ pub(all) struct BlockCoverage {
 
 type CharacterBand
 
+pub(all) struct FeatureExample {
+  before : Array[FeaturePlacedGlyph]
+  after : Array[FeaturePlacedGlyph]
+  before_width : Double
+  after_width : Double
+  alternatives : Bool
+  boxes : Bool
+  before_advance : Double
+  after_advance : Double
+  offset : Double
+  note : String
+}
+
+pub(all) struct FeatureExamples {
+  items : Array[FeatureExample]
+  total : Int64
+}
+
 pub(all) struct FeatureGroup {
   table : String
   tag : String
@@ -51,6 +69,12 @@ pub fn FeatureGroup::display_name(Self) -> String
 pub fn FeatureGroup::script_list(Self) -> String
 pub fn FeatureGroup::script_tags(Self) -> String
 
+pub(all) struct FeaturePlacedGlyph {
+  glyph : Int32
+  x : Double
+  y : Double
+}
+
 pub struct FileFace {
   index : Int32
   font : @sfnt.Font
@@ -59,6 +83,7 @@ pub struct FileFace {
 pub fn FileFace::character_view(Self, SpecimenTexter) -> SpecimenCharacterView
 pub fn FileFace::coverage(Self) -> Array[BlockCoverage]
 pub fn FileFace::feature_groups(Self) -> Array[FeatureGroup]
+pub fn FileFace::feature_planner(Self) -> SpecimenFeaturePlanner
 pub fn FileFace::glyph_definitions(Self) -> @otlayout.Gdef?
 pub fn FileFace::glyph_painter(Self, @core.ObjectBuilder, embedded? : @core.Font?, sample_font? : @core.Font?, doc_language? : String) -> GlyphPainter
 pub fn FileFace::glyph_view(Self, SpecimenTexter) -> SpecimenGlyphView
@@ -191,6 +216,11 @@ pub(all) struct SpecimenFaceUsage {
   face : Int32
   codepoints : Array[Int32]
 }
+
+pub struct SpecimenFeaturePlanner {
+  // private fields
+}
+pub fn SpecimenFeaturePlanner::gsub_examples(Self, FeatureGroup, Int32) -> FeatureExamples
 
 pub(all) struct SpecimenGlyph {
   name : String
