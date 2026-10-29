@@ -4,6 +4,8 @@ package "f4ah6o/bdf/compat/ooxml"
 // Values
 pub fn ooxml_package(Bytes) -> String
 
+pub fn ooxml_theme_fonts(Bytes) -> String
+
 // Errors
 
 // Types and methods

@@ -82,3 +82,25 @@ pub fn ooxml_package(data : Bytes) -> String {
     _ => "null"
   }
 }
+
+///|
+#export_name("ooxml_theme_fonts")
+pub fn ooxml_theme_fonts(data : Bytes) -> String {
+  try {
+    let workbook = @xlsx.read_xlsx_workbook(data)
+    let theme = workbook.package.theme_fonts(workbook.part)
+    let values : Array[Json] = []
+    for
+      ref in [
+        "+mj-lt", "+mn-lt", "+mj-ea", "+mn-ea", "+mj-cs", "+mn-cs", "+xx-ea", "+mj-x",
+        "regular", "+", "+😀-ea",
+      ] {
+      for script in ["", "Jpan", "Hans", "Hang", "Arab"] {
+        values.push(Json::string(theme.resolve(ref, script)))
+      }
+    }
+    Json::array(values).stringify()
+  } catch {
+    _ => "null"
+  }
+}
