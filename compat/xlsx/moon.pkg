@@ -1,5 +1,6 @@
 import {
   "f4ah6o/bdf/convert/xlsx",
+  "f4ah6o/bdf/encoding/parquet",
 }
 
 supported_targets = "js"

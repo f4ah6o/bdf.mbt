@@ -3,6 +3,7 @@ package "f4ah6o/bdf/convert/xlsx"
 
 import {
   "f4ah6o/bdf/convert/ooxml",
+  "f4ah6o/bdf/encoding/parquet",
 }
 
 // Values
@@ -49,6 +50,8 @@ pub fn xlsx_select_format_section(Array[XlsxFormatSection], Double) -> (Int32, B
 pub fn xlsx_split_format_sections(String) -> Array[String]
 
 pub fn xlsx_tint_color(XlsxRgb, Double) -> XlsxRgb
+
+pub fn xlsx_used_range(Array[XlsxRow]) -> XlsxRange?
 
 // Errors
 pub suberror XlsxInputError {
@@ -268,6 +271,7 @@ pub(all) struct XlsxStyles {
 pub fn XlsxStyles::format_cell(Self, XlsxCell, Bool, String) -> XlsxFormatted?
 pub fn XlsxStyles::number_format(Self, Int32, String) -> String
 pub fn XlsxStyles::resolve_color(Self, XlsxColor, XlsxRgb, Map[Int32, XlsxRgb]) -> XlsxRgb
+pub fn XlsxStyles::values_table(Self, Array[XlsxRow], XlsxRange, Array[String], Bool, String) -> @parquet.Table raise
 
 pub(all) struct XlsxWorkbook {
   package : @ooxml.OoxmlPackage

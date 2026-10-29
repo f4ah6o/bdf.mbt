@@ -613,3 +613,47 @@ pub fn xlsx_locale(data : Bytes) -> String {
     _ => "null"
   }
 }
+
+///|
+#export_name("xlsx_table_values")
+pub fn xlsx_table_values(
+  data : Bytes,
+  part : String,
+  locale : String,
+  names_json : String,
+) -> Bytes {
+  try {
+    let workbook = @xlsx.read_xlsx_workbook(data)
+    let styles = workbook.styles()
+    let rows = workbook.read_sheet_cells(part).sorted_rows()
+    let range = @xlsx.xlsx_used_range(rows).unwrap()
+    let names = @json.parse(names_json)
+      .as_array()
+      .unwrap()
+      .map(fn(value) { value.as_string().unwrap() })
+    @parquet.encode(
+      styles.values_table(rows, range, names, workbook.date1904, locale),
+    )
+  } catch {
+    _ => b""
+  }
+}
+
+///|
+#export_name("xlsx_used")
+pub fn xlsx_used(data : Bytes, part : String) -> String {
+  try {
+    let rows = @xlsx.read_xlsx_workbook(data)
+      .read_sheet_cells(part)
+      .sorted_rows()
+    let range = @xlsx.xlsx_used_range(rows).unwrap()
+    Json::array([
+      Json::number(range.row_start.to_double()),
+      Json::number(range.column_start.to_double()),
+      Json::number(range.row_end.to_double()),
+      Json::number(range.column_end.to_double()),
+    ]).stringify()
+  } catch {
+    _ => "null"
+  }
+}
