@@ -26,3 +26,15 @@ test "zero length percussion is retained and tonal notes are dropped" {
   assert_eq(p.end, 1L)
   assert_eq(p.warnings, ["notes of no length are left out"])
 }
+
+///|
+test "lyrics on the same note are joined and retained" {
+  let file = @midi.read_file(
+    b"MThd\x00\x00\x00\x06\x00\x00\x00\x01\x01\xe0MTrk\x00\x00\x00\x1b\x00\x90\x3c\x64\x00\xff\x05\x04Twin\x00\xff\x05\x03kle\x60\x80\x3c\x00\x00\xff\x2f\x00",
+  )
+  let p = @midi.performance(file)
+  assert_eq(p.tracks.length(), 1)
+  assert_eq(p.tracks[0].lyrics.length(), 1)
+  assert_eq(p.tracks[0].lyrics[0].tick, 0L)
+  assert_eq(p.tracks[0].lyrics[0].text, "Twin kle")
+}

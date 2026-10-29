@@ -321,3 +321,23 @@ pub fn performance(data : Bytes) -> String {
       Json::object({ "error": Json::string(message) }).stringify()
   }
 }
+
+///|
+#export_name("lyrics")
+pub fn lyrics(data : Bytes) -> String {
+  try {
+    let p = @midi.performance(@midi.read_file(data))
+    Json::array(
+      p.tracks.map(t => {
+        Json::array(
+          t.lyrics.map(l => {
+            Json::array([Json::number(l.tick.to_double()), Json::string(l.text)])
+          }),
+        )
+      }),
+    ).stringify()
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}

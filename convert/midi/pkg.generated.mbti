@@ -55,6 +55,11 @@ pub(all) struct MidiInput {
   copyright : Bytes
 }
 
+pub(all) struct MidiLyric {
+  tick : Int64
+  text : String
+}
+
 pub(all) struct MidiPerformance {
   credits : MidiCredits
   tracks : Array[MidiPerformanceTrack]
@@ -74,6 +79,7 @@ pub(all) struct MidiPerformanceTrack {
   pan : Int32
   notes : Array[MidiPlayNote]
   controls : Array[MidiPlayControl]
+  lyrics : Array[MidiLyric]
   source_track : Int32
 }
 

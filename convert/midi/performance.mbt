@@ -24,11 +24,12 @@ pub(all) struct MidiPerformanceTrack {
   pan : Int32
   notes : Array[MidiPlayNote]
   controls : Array[MidiPlayControl]
+  lyrics : Array[MidiLyric]
   source_track : Int32
 }
 
 ///|
-/// Performance before lyrics are assigned to notes.
+/// Performed notes, controls, lyrics and timing changes.
 pub(all) struct MidiPerformance {
   credits : MidiCredits
   tracks : Array[MidiPerformanceTrack]
@@ -86,8 +87,7 @@ fn last_initial(values : Array[MidiInitial], tick : Int64) -> MidiInitial? {
 }
 
 ///|
-/// Convert raw tracks into the upstream performance model. Lyrics are not
-/// yet assigned; timing, notes, controls and metadata changes are retained.
+/// Convert raw tracks into the upstream performance model.
 pub fn performance(file : MidiRawFile) -> MidiPerformance {
   let global : Array[Array[MidiInitial]] = []
   for _ in 0..<48 {
@@ -225,6 +225,7 @@ pub fn performance(file : MidiRawFile) -> MidiPerformance {
         pan,
         notes,
         controls,
+        lyrics: [],
         source_track: index,
       })
     }
@@ -286,6 +287,7 @@ pub fn performance(file : MidiRawFile) -> MidiPerformance {
       keys.push({ tick, fifths: k.fifths, minor: k.minor, })
     }
   }
+  assign_lyrics(file, decoder, tracks)
   if file.header.smpte {
     tempos.clear()
     tempos.push({ tick: 0L, bpm: 120.0, })
