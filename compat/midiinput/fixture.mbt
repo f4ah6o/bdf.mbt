@@ -1030,3 +1030,68 @@ pub fn score_basic_staff(
       Json::object({ "error": Json::string(message) }).stringify()
   }
 }
+
+///|
+#export_name("score_staff_marks")
+pub fn score_staff_marks(
+  data : Bytes,
+  texts : FixedArray[String],
+  widths : FixedArray[Double],
+  width : Double,
+  indent : Double,
+) -> String {
+  try {
+    let score = @midi.notate_file(@midi.read_file(data))
+    let prepared = @music.prepare_score(score)
+    let map : Map[String, Double] = Map([])
+    for i in 0..<texts.length() {
+      map[texts[i]] = widths[i]
+    }
+    let columns = @music.build_columns(score, prepared, text => {
+      map.get(text).unwrap_or(0.0)
+    })
+    let systems = @music.break_systems(score, prepared, columns, width, indent)
+    let out : Array[Json] = []
+    for sys in systems {
+      let staves : Array[Json] = []
+      for staff in 0..<prepared.staves.length() {
+        let layout = @music.layout_basic_staff(score, prepared, sys, staff)
+        @music.draw_staff_ties(layout, prepared, sys, staff)
+        @music.draw_staff_tuplets(layout, prepared, staff)
+        let d = layout.drawing
+        let prims = d
+          .primitives()
+          .map(p => {
+            let outline = match p.outline {
+              Some(o) => Json::array(o.coordinates.map(v => Json::number(v)))
+              None => Json::null()
+            }
+            Json::array([
+              Json::number(p.kind.to_double()),
+              Json::string(p.glyph),
+              Json::number(p.x),
+              Json::number(p.y),
+              Json::number(p.w),
+              Json::number(p.h),
+              Json::number(p.scale),
+              Json::number(p.width),
+              Json::number(p.dash),
+              outline,
+            ])
+          })
+        staves.push(
+          Json::object({
+            "primitives": Json::array(prims),
+            "above": Json::number(d.skyline(-1.0e9, 1.0e9, 0.0, true)),
+            "below": Json::number(d.skyline(-1.0e9, 1.0e9, 4.0, false)),
+          }),
+        )
+      }
+      out.push(Json::array(staves))
+    }
+    Json::array(out).stringify()
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}

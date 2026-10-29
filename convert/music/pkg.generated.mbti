@@ -26,6 +26,10 @@ pub fn draw_isolated_stem(MusicDrawing, NoteLayout, Double) -> Unit
 
 pub fn draw_staff_rest(MusicDrawing, NotatedScore, PreparedScore, MusicSystem, Int32, Int32, ScoreEvent, Double) -> RestLayout
 
+pub fn draw_staff_ties(BasicStaffLayout, PreparedScore, MusicSystem, Int32) -> Unit
+
+pub fn draw_staff_tuplets(BasicStaffLayout, PreparedScore, Int32) -> Unit
+
 pub fn drum_of(Int32) -> DrumNotation
 
 pub fn estimate_key(Array[Double], Int32) -> KeySig

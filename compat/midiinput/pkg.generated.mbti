@@ -34,6 +34,8 @@ pub fn score_notes(Bytes, FixedArray[String], FixedArray[Double], Double, Double
 
 pub fn score_rests(Bytes, FixedArray[String], FixedArray[Double], Double, Double) -> String
 
+pub fn score_staff_marks(Bytes, FixedArray[String], FixedArray[Double], Double, Double) -> String
+
 pub fn score_systems(Bytes, FixedArray[String], FixedArray[Double], Double, Double) -> String
 
 pub fn track_meta(Bytes) -> String
