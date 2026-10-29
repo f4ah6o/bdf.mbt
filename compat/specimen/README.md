@@ -14,6 +14,7 @@ waterfall and fallback selection across real and synthetic fonts.
 `glyphs.json.gz` compares glyph mappings, labels, alternatives, and Unicode scripts.
 `variations.json.gz` covers real, truncated and mutated fvar tables.
 `info.json.gz` checks language, variation-sequence and color metadata.
+`kerning.json.gz` checks GPOS and legacy kerning descriptions.
 
 After `moon build --target js`, run `npm run test:specimen` and
 `npm run test:specimen-plan`, `npm run test:specimen-names`,
@@ -60,3 +61,7 @@ build tag into upstream `converter/font`, along with `generate_test.go`, and run
 To regenerate the table-information cases, copy `generate-info_test.go` without
 its build tag into upstream `converter/font`, along with `generate_test.go`, and
 run `TestCodexInfoTables` with the same fixture root.
+
+To regenerate kerning cases, first generate `compat/gsub/gpos.json.gz`, then copy
+`generate-kerning_test.go` without its build tag into upstream `converter/font`
+with `generate_test.go` and run `TestCodexKerning`.

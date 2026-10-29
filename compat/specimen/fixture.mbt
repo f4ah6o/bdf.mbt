@@ -249,3 +249,15 @@ pub fn info_tables(
     ),
   }).stringify()
 }
+
+///|
+#export_name("kerning_description")
+pub fn kerning_description(data : Bytes, index : Int32) -> String {
+  let file = try! @font.load(data)
+  for face in file.faces() {
+    if face.index == index {
+      return face.kerning()
+    }
+  }
+  abort("missing font face")
+}

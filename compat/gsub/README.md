@@ -29,3 +29,9 @@ tables, and aggregate bounds. Run `npm run test:gdef` after a JS build;
 regenerate by copying `generate-gdef_test.go` without its build tag into upstream
 `internal/otlayout` with `generate_test.go`, then running `TestCodexGDEF` with
 the same fixture root.
+
+`gpos.json.gz` compares repeated GPOS pair counts, extension lookups, malformed
+tables and the shared lookup work budget. Run `npm run test:gpos` after a JS
+build. To regenerate, copy `generate-gpos_test.go` without its build tag into
+upstream `internal/otlayout` with `generate_test.go`, and run
+`TestCodexGPOSPairs` with the same fixture root.

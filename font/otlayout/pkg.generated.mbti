@@ -4,6 +4,8 @@ package "f4ah6o/bdf/font/otlayout"
 // Values
 pub fn parse_gdef(BytesView) -> Gdef?
 
+pub fn parse_gpos(BytesView) -> Gpos?
+
 pub fn parse_gsub(BytesView) -> Gsub?
 
 pub fn parse_layout(BytesView, gpos? : Bool) -> Layout?
@@ -16,6 +18,12 @@ pub(all) struct Gdef {
   mark_attach : Map[Int32, Int32]
   mark_sets : Array[Array[Int32]]
 }
+
+pub struct Gpos {
+  // private fields
+}
+pub fn Gpos::pair_count(Self, Int32) -> Int64
+pub fn Gpos::truncated(Self) -> Bool
 
 pub struct Gsub {
   // private fields

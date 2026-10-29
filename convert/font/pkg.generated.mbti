@@ -41,6 +41,7 @@ pub struct FileFace {
 }
 pub fn FileFace::coverage(Self) -> Array[BlockCoverage]
 pub fn FileFace::glyph_definitions(Self) -> @otlayout.Gdef?
+pub fn FileFace::kerning(Self) -> String
 pub fn FileFace::sample_plan(Self, String) -> SamplePlan
 pub fn FileFace::sample_program(Self, String) -> Bytes? raise
 pub fn FileFace::sample_pruned(Self, Array[Int32]) -> Bytes? raise

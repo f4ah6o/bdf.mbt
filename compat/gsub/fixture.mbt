@@ -114,3 +114,24 @@ pub fn inspect_gdef(data : Bytes) -> String {
       }).stringify()
   }
 }
+
+///|
+#export_name("inspect_gpos_pairs")
+pub fn inspect_gpos_pairs(data : Bytes, queries : Array[Int32]) -> String {
+  match @otlayout.parse_gpos(data[:]) {
+    None => Json::object({ "valid": Json::boolean(false) }).stringify()
+    Some(table) => {
+      let counts : Array[Json] = []
+      let truncated : Array[Json] = []
+      for index in queries {
+        counts.push(Json::number(table.pair_count(index).to_double()))
+        truncated.push(Json::boolean(table.truncated()))
+      }
+      Json::object({
+        "valid": Json::boolean(true),
+        "counts": Json::array(counts),
+        "truncated": Json::array(truncated),
+      }).stringify()
+    }
+  }
+}
