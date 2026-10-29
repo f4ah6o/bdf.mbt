@@ -2,7 +2,11 @@
 package "f4ah6o/bdf/compat/musicnotation"
 
 // Values
+pub fn curve(FixedArray[Double]) -> String
+
 pub fn divide_values(Int32, Int32, Int32, Int32, Bool, Bool) -> String
+
+pub fn drawing(FixedArray[Double], FixedArray[Double]) -> String
 
 pub fn drum(Int32) -> String
 

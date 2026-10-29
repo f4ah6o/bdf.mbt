@@ -26,7 +26,11 @@ pub fn key_of(Int32, Bool, Int32) -> KeySig
 
 pub fn key_positions(EngravingClef, KeySig) -> Array[Int32]
 
+pub fn music_curve(Double, Double, Double, Double, Double, Double, Double) -> MusicOutline
+
 pub fn music_glyph(String) -> MusicGlyph?
+
+pub fn music_quad(Double, Double, Double, Double, Double, Double, Double, Double) -> MusicOutline
 
 pub fn notate(Performance, time_override? : TimeSig?, key_override? : KeySig?) -> NotatedScore
 
@@ -115,6 +119,21 @@ pub(all) struct MusicColumn {
   slots : Array[MusicSlot]
 }
 
+pub struct MusicDrawing {
+  primitives : Array[MusicPrimitive]
+  top : Array[SkylineSegment]
+  bottom : Array[SkylineSegment]
+}
+pub fn MusicDrawing::fill(Self, MusicOutline) -> Unit
+pub fn MusicDrawing::glyph(Self, String, Double, Double, Double) -> Unit
+pub fn MusicDrawing::line(Self, Double, Double, Double, Double, Double, Double) -> Unit
+pub fn MusicDrawing::mark(Self, Int32, String) -> Unit
+pub fn MusicDrawing::new() -> Self
+pub fn MusicDrawing::primitives(Self) -> Array[MusicPrimitive]
+pub fn MusicDrawing::rect(Self, Double, Double, Double, Double) -> Unit
+pub fn MusicDrawing::skyline(Self, Double, Double, Double, Bool) -> Double
+pub fn MusicDrawing::text(Self, String, Double, Double, Int32, Double, Double, Double) -> Unit
+
 pub(all) struct MusicGlyph {
   name : String
   codepoint : Int32
@@ -123,6 +142,28 @@ pub(all) struct MusicGlyph {
   anchors : Map[String, (Double, Double)]
   verbs : Bytes
   coordinates : Array[Double]
+}
+
+pub(all) struct MusicOutline {
+  verbs : Bytes
+  coordinates : Array[Double]
+}
+pub fn MusicOutline::bounds(Self) -> (Double, Double, Double, Double)
+
+pub(all) struct MusicPrimitive {
+  kind : Int32
+  glyph : String
+  x : Double
+  y : Double
+  w : Double
+  h : Double
+  scale : Double
+  width : Double
+  dash : Double
+  outline : MusicOutline?
+  text : String
+  align : Int32
+  mark : Int32
 }
 
 pub(all) struct MusicSlot {
@@ -298,6 +339,12 @@ pub(all) struct ScoreNote {
 pub(all) struct ScoreTimeline {
   measures : Array[MeasureSpan]
   warnings : Array[String]
+}
+
+pub struct SkylineSegment {
+  x0 : Double
+  x1 : Double
+  y : Double
 }
 
 pub(all) struct StaffPlan {

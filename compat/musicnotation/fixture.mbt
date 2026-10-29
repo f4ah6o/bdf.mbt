@@ -550,3 +550,104 @@ pub fn positions(
     ),
   }).stringify()
 }
+
+///|
+#export_name("curve")
+pub fn curve(values : FixedArray[Double]) -> String {
+  let c = @music.music_curve(
+    values[0],
+    values[1],
+    values[2],
+    values[3],
+    values[4],
+    values[5],
+    values[6],
+  )
+  let (x0, y0, x1, y1) = c.bounds()
+  Json::object({
+    "verbs": Json::array(
+      c.verbs.to_array().map(b => Json::number(b.to_double())),
+    ),
+    "coordinates": Json::array(c.coordinates.map(v => Json::number(v))),
+    "bounds": Json::array([
+      Json::number(x0),
+      Json::number(y0),
+      Json::number(x1),
+      Json::number(y1),
+    ]),
+  }).stringify()
+}
+
+///|
+#export_name("drawing")
+pub fn drawing(
+  ops : FixedArray[Double],
+  queries : FixedArray[Double],
+) -> String {
+  let d = @music.MusicDrawing::new()
+  let names = ["gClef", "noteheadBlack", "accidentalSharp", "restQuarter"]
+  for i in 0..<(ops.length() / 9) {
+    let j = i * 9
+    match ops[j].to_int() {
+      0 => d.rect(ops[j + 1], ops[j + 2], ops[j + 3], ops[j + 4])
+      1 =>
+        d.line(
+          ops[j + 1],
+          ops[j + 2],
+          ops[j + 3],
+          ops[j + 4],
+          ops[j + 5],
+          ops[j + 6],
+        )
+      2 =>
+        d.glyph(names[ops[j + 1].to_int()], ops[j + 2], ops[j + 3], ops[j + 4])
+      3 =>
+        d.fill(
+          @music.music_quad(
+            ops[j + 1],
+            ops[j + 2],
+            ops[j + 3],
+            ops[j + 4],
+            ops[j + 5],
+            ops[j + 6],
+            ops[j + 7],
+            ops[j + 8],
+          ),
+        )
+      _ => ()
+    }
+  }
+  let prims = d
+    .primitives()
+    .map(p => {
+      Json::array([
+        Json::number(p.kind.to_double()),
+        Json::string(p.glyph),
+        Json::number(p.x),
+        Json::number(p.y),
+        Json::number(p.w),
+        Json::number(p.h),
+        Json::number(p.scale),
+        Json::number(p.width),
+        Json::number(p.dash),
+      ])
+    })
+  let sky : Array[Json] = []
+  for i in 0..<(queries.length() / 4) {
+    let j = i * 4
+    sky.push(
+      Json::number(
+        d.skyline(
+          queries[j],
+          queries[j + 1],
+          queries[j + 2],
+          queries[j + 3] != 0.0,
+        ),
+      ),
+    )
+  }
+  Json::object({
+    "primitives": Json::array(prims),
+    "skylines": Json::array(sky),
+  }).stringify()
+}

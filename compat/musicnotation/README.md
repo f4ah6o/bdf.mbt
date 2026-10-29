@@ -1,6 +1,6 @@
 # Music notation compatibility fixtures
 
-These fixtures compare musical meter, key estimation, pitch spelling measure timelines, note quantization, clef selection, percussion mapping, note-value division, voice assignment, staff events, Bravura glyphs, staff positions, score preparation, measure spacing and system layout with
+These fixtures compare musical meter, key estimation, pitch spelling measure timelines, note quantization, clef selection, percussion mapping, note-value division, voice assignment, staff events, Bravura glyphs, staff positions, score preparation, measure spacing, system layout and drawing primitives with
 shibukawa/bdf commit `4f9af52dca60be1eb0daade39f7dc41d6a1fe431`.
 They exercise all key signatures, negative and positive pitch numbers,
 spelling hints and deterministic duration histograms.
@@ -43,3 +43,6 @@ lyric widths supplied to the MoonBit layout function.
 System layout fixtures use `generate_systems_test.go` and
 `TestCodexMusicSystems` alongside the upstream copy of
 `generate_prepare_test.go`.
+
+Primitive and skyline fixtures use `generate_primitives_test.go` and
+`TestCodexMusicPrimitives`.
