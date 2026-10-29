@@ -72,27 +72,16 @@ pub fn OutlinePainter::draw(
     }
     match ref {
       Some(path) =>
-        run.push({
-          path,
-          x: Float::from_double(offsets[i] * self.upem),
-          y: 0.0F,
-        })
+        run.push({ path, x: specimen_f32(offsets[i] * self.upem), y: 0.0F, })
       None => ()
     }
   }
   if run.length() == 0 {
     return false
   }
-  let k = Float::from_double(size / self.upem)
+  let k = specimen_f32(size / self.upem)
   self.object.save()
-  self.object.transform(
-    k,
-    0.0F,
-    0.0F,
-    k,
-    Float::from_double(x),
-    Float::from_double(y),
-  )
+  self.object.transform(k, 0.0F, 0.0F, k, specimen_f32(x), specimen_f32(y))
   if alt != "" {
     self.object.mark(4, alt)
   }

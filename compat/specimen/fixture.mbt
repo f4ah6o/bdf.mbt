@@ -491,3 +491,62 @@ pub fn paint_embedded_glyphs(
 pub fn glyph_painter_object(f : GlyphPainterFixture) -> Bytes {
   try! f.object.encode()
 }
+
+///|
+#export_name("prepare_sample_painter")
+pub fn prepare_sample_painter(
+  data : Bytes,
+  index : Int32,
+  mode : Int32,
+  doc_language : String,
+) -> GlyphPainterFixture {
+  let file = try! @font.load(data)
+  for face in file.faces() {
+    if face.index == index {
+      let object = @core.ObjectBuilder::new()
+      object.set_bbox(0.0F, 0.0F, 720.0F, 1024.0F)
+      let glyph : @core.Font = {
+        hash: Some("00000000000000000000000000000000"),
+        family: "",
+        weight: 400,
+        style: 0,
+      }
+      let sample : @core.Font = {
+        hash: Some(
+          if mode == 4 {
+            "00000000000000000000000000000000"
+          } else {
+            "01000000000000000000000000000000"
+          },
+        ),
+        family: "",
+        weight: 400,
+        style: 0,
+      }
+      return {
+        object,
+        painter: face.glyph_painter(
+          object,
+          embedded=if mode == 1 || mode >= 3 { Some(glyph) } else { None },
+          sample_font=if mode >= 2 { Some(sample) } else { None },
+          doc_language~,
+        ),
+      }
+    }
+  }
+  abort("missing font face")
+}
+
+///|
+#export_name("paint_sample")
+pub fn paint_sample(
+  f : GlyphPainterFixture,
+  text : String,
+  x : Double,
+  y : Double,
+  size : Double,
+  rtl : Bool,
+  lang : String,
+) -> Unit {
+  ignore(try! f.painter.sample(text, x, y, size, rtl, lang))
+}

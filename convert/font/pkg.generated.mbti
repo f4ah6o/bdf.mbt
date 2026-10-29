@@ -56,7 +56,7 @@ pub struct FileFace {
 pub fn FileFace::coverage(Self) -> Array[BlockCoverage]
 pub fn FileFace::feature_groups(Self) -> Array[FeatureGroup]
 pub fn FileFace::glyph_definitions(Self) -> @otlayout.Gdef?
-pub fn FileFace::glyph_painter(Self, @core.ObjectBuilder, embedded? : @core.Font?) -> GlyphPainter
+pub fn FileFace::glyph_painter(Self, @core.ObjectBuilder, embedded? : @core.Font?, sample_font? : @core.Font?, doc_language? : String) -> GlyphPainter
 pub fn FileFace::kerning(Self) -> String
 pub fn FileFace::outline_painter(Self, @core.ObjectBuilder) -> OutlinePainter
 pub fn FileFace::outlines(Self) -> SpecimenOutlines
@@ -87,6 +87,7 @@ pub struct GlyphPainter {
 }
 pub fn GlyphPainter::draw(Self, Array[Int32], Array[Double], Double, Double, Double, String) -> Bool raise
 pub fn GlyphPainter::reset_state(Self) -> Unit
+pub fn GlyphPainter::sample(Self, String, Double, Double, Double, Bool, String) -> Bool raise
 
 pub struct OutlinePainter {
   // private fields

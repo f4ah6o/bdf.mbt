@@ -31,6 +31,8 @@ pub fn paint_embedded_glyphs(GlyphPainterFixture, Array[Int32], Array[Double], D
 
 pub fn paint_glyphs(PainterFixture, Array[Int32], Array[Double], Double, Double, Double, String) -> Unit
 
+pub fn paint_sample(GlyphPainterFixture, String, Double, Double, Double, Bool, String) -> Unit
+
 pub fn painter_object(PainterFixture) -> Bytes
 
 pub fn prepare_glyph_painter(Bytes, Int32) -> GlyphPainterFixture
@@ -38,6 +40,8 @@ pub fn prepare_glyph_painter(Bytes, Int32) -> GlyphPainterFixture
 pub fn prepare_outlines(Bytes, Int32) -> @font.SpecimenOutlines
 
 pub fn prepare_painter(Bytes, Int32) -> PainterFixture
+
+pub fn prepare_sample_painter(Bytes, Int32, Int32, String) -> GlyphPainterFixture
 
 pub fn pruned_program(Bytes, Int32, Array[Int32]) -> Bytes
 

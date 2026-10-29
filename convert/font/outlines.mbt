@@ -49,8 +49,8 @@ pub fn SpecimenOutlines::path(
     }
     verbs.push(verb.to_byte())
     for (x, y) in pairs {
-      coords.push(Float::from_double(x).to_double())
-      coords.push(Float::from_double(-y).to_double())
+      coords.push(specimen_f32(x).to_double())
+      coords.push(specimen_f32(-y).to_double())
     }
   }
   Some({ verbs: Bytes::from_array(verbs), coordinates: coords, })

@@ -24,6 +24,8 @@ users, UI names, characters and displayed descriptions against upstream.
 `paint.json.gz` compares complete outlined-glyph drawing objects, including
 path caching, transforms and alternative text. `glyph-paint.json.gz` checks
 embedded glyph runs, non-contiguous positions and outline fallback.
+`sample-paint.json.gz` checks sample text shaping, language tags, RTL and
+glyph fallback with and without embedded fonts.
 
 After `moon build --target js`, run `npm run test:specimen` and
 `npm run test:specimen-plan`, `npm run test:specimen-names`,
@@ -32,7 +34,7 @@ After `moon build --target js`, run `npm run test:specimen` and
 `npm run test:specimen-info`, `npm run test:specimen-overview`,
 `npm run test:specimen-features`, `npm run test:specimen-scroll`,
 `npm run test:specimen-path`, `npm run test:specimen-paint`,
-`npm run test:specimen-glyph-paint`, and
+`npm run test:specimen-glyph-paint`, `npm run test:specimen-sample-paint`, and
 `npm run test:specimen-visual`. To regenerate, copy `generate_test.go` without
 its first `//go:build ignore` line into the upstream checkout at
 `converter/font/codex_specimen_test.go`, then run:
@@ -103,3 +105,9 @@ To regenerate embedded-glyph painting cases, copy `generate-glyph-paint_test.go`
 without its build tag into upstream `converter/font` alongside
 `generate_test.go` and `generate-paint_test.go`, then run
 `TestCodexGlyphPainting` with the same fixture root.
+
+To regenerate sample-paint cases, copy `generate-sample-paint_test.go` without
+its build tag into upstream `converter/font` alongside `generate_test.go` and
+run `TestCodexSamplePainting` with the same fixture root. Generate Unicode 17
+simple-fold mappings by copying `generate-fold_test.go` into the same package
+and running `TestCodexSimpleFold` with Go Unicode 17, then format with `moon fmt`.

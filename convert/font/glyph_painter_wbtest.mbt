@@ -22,3 +22,18 @@ test "embedded glyph painter rejects invalid indices before drawing" {
   assert_false(painter.draw([], [], 0.0, 0.0, 12.0, ""))
   assert_true(painter.draw([1], [0.0], 0.0, 0.0, 12.0, "A"))
 }
+
+///|
+test "language matching uses Unicode simple folding, not full lowercase" {
+  assert_true(specimen_equal_fold("ſ", "S"))
+  assert_true(specimen_equal_fold("ẞ", "ß"))
+  assert_true(specimen_equal_fold("K", "k"))
+  assert_false(specimen_equal_fold("İ", "i"))
+  assert_false(specimen_equal_fold("ﬃ", "ffi"))
+}
+
+///|
+test "specimen coordinates sanitize non-finite values" {
+  assert_eq(specimen_f32(0.0 / 0.0), 0.0F)
+  assert_eq(specimen_f32(1.0 / 0.0), 0.0F)
+}
