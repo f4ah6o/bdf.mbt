@@ -1,0 +1,17 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/compat/specimen"
+
+// Values
+pub fn glyph_program(Bytes, Int32) -> Bytes
+
+pub fn pruned_program(Bytes, Int32, Array[Int32]) -> Bytes
+
+pub fn sample_program(Bytes, Int32) -> Bytes
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

@@ -35,7 +35,10 @@ pub fn Font::can_subset(Self, ignore_restrictions? : Bool) -> Bool
 pub fn Font::canvas_program(Self) -> Bytes raise
 pub fn Font::family_names(Self) -> Array[String]
 pub fn Font::glyph(Self, Int32) -> Int32?
+pub fn Font::glyph_program(Self) -> Bytes raise
 pub fn Font::mapped_program(Self, Array[Int32]) -> Bytes raise
+pub fn Font::specimen_pruned_truetype(Self, Array[Int32], Int64) -> Bytes? raise
+pub fn Font::specimen_whole_sample(Self, Int64) -> Bytes? raise
 pub fn Font::standalone_size(Self) -> Int64
 pub fn Font::subset_program(Self, Array[Int32]) -> Bytes? raise
 
