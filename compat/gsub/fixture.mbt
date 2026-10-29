@@ -81,3 +81,36 @@ pub fn layout_metadata(data : Bytes, gpos : Bool) -> String {
     }
   }
 }
+
+///|
+fn class_json(classes : Map[Int32, Int32]) -> Json {
+  let keys = classes.keys().collect()
+  keys.sort()
+  Json::array(
+    keys.map(g => {
+      Json::array([
+        Json::number(g.to_double()),
+        Json::number(classes[g].to_double()),
+      ])
+    }),
+  )
+}
+
+///|
+#export_name("inspect_gdef")
+pub fn inspect_gdef(data : Bytes) -> String {
+  match @otlayout.parse_gdef(data[:]) {
+    None => Json::object({ "valid": Json::boolean(false) }).stringify()
+    Some(g) =>
+      Json::object({
+        "valid": Json::boolean(true),
+        "classes": class_json(g.classes),
+        "attach": class_json(g.mark_attach),
+        "sets": Json::array(
+          g.mark_sets.map(s => {
+            Json::array(s.map(n => Json::number(n.to_double())))
+          }),
+        ),
+      }).stringify()
+  }
+}

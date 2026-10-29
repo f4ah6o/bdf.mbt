@@ -2,6 +2,7 @@
 package "f4ah6o/bdf/convert/font"
 
 import {
+  "f4ah6o/bdf/font/otlayout",
   "f4ah6o/bdf/font/sfnt",
 }
 
@@ -39,6 +40,7 @@ pub struct FileFace {
   size : Int64
 }
 pub fn FileFace::coverage(Self) -> Array[BlockCoverage]
+pub fn FileFace::glyph_definitions(Self) -> @otlayout.Gdef?
 pub fn FileFace::sample_plan(Self, String) -> SamplePlan
 pub fn FileFace::sample_program(Self, String) -> Bytes? raise
 pub fn FileFace::sample_pruned(Self, Array[Int32]) -> Bytes? raise

@@ -23,3 +23,9 @@ inputs. Run `npm run test:layout` after a JS build. To regenerate it, copy
 `generate-layout_test.go` without its build tag into upstream `internal/otlayout`
 alongside `generate_test.go`, and run `TestCodexLayoutMetadata` with the same
 `BDF_FIXTURE_ROOT`.
+
+`gdef.json.gz` checks glyph and mark-attachment classes, mark sets, malformed
+tables, and aggregate bounds. Run `npm run test:gdef` after a JS build;
+regenerate by copying `generate-gdef_test.go` without its build tag into upstream
+`internal/otlayout` with `generate_test.go`, then running `TestCodexGDEF` with
+the same fixture root.

@@ -2,6 +2,8 @@
 package "f4ah6o/bdf/font/otlayout"
 
 // Values
+pub fn parse_gdef(BytesView) -> Gdef?
+
 pub fn parse_gsub(BytesView) -> Gsub?
 
 pub fn parse_layout(BytesView, gpos? : Bool) -> Layout?
@@ -9,6 +11,12 @@ pub fn parse_layout(BytesView, gpos? : Bool) -> Layout?
 // Errors
 
 // Types and methods
+pub(all) struct Gdef {
+  classes : Map[Int32, Int32]
+  mark_attach : Map[Int32, Int32]
+  mark_sets : Array[Array[Int32]]
+}
+
 pub struct Gsub {
   // private fields
 }
