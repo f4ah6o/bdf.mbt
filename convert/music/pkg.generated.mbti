@@ -1,0 +1,35 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/music"
+
+// Values
+pub fn estimate_key(Array[Double], Int32) -> KeySig
+
+pub fn key_of(Int32, Bool, Int32) -> KeySig
+
+pub fn spell(Int32, KeySig, Int32) -> Pitch
+
+// Errors
+
+// Types and methods
+pub(all) struct KeySig {
+  fifths : Int32
+  minor : Bool
+}
+
+pub(all) struct Pitch {
+  step : Int32
+  alter : Int32
+  octave : Int32
+}
+
+pub(all) struct TimeSig {
+  beats : Int32
+  beat_type : Int32
+  symbol : String
+}
+pub fn TimeSig::beat(Self) -> (Int32, Bool)
+pub fn TimeSig::length(Self) -> Int32
+
+// Type aliases
+
+// Traits

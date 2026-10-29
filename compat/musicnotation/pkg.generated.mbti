@@ -1,0 +1,17 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/compat/musicnotation"
+
+// Values
+pub fn estimate(FixedArray[Double], Int32) -> String
+
+pub fn spell(Int32, Int32, Bool, Int32) -> String
+
+pub fn time(Int32, Int32) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
