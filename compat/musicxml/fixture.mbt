@@ -39,3 +39,38 @@ pub fn musicxml_mxl(data : Bytes) -> String {
     Json::string(error),
   ]).stringify()
 }
+
+///|
+#export_name("musicxml_values")
+pub fn musicxml_values(text : String) -> String {
+  let (n, nok) = @musicxml.musicxml_integer(text)
+  let (f, fok) = @musicxml.musicxml_float(text)
+  let (endings, more) = @musicxml.musicxml_ending_numbers(text)
+  Json::array([
+    Json::number(n.to_double()),
+    Json::boolean(nok),
+    Json::number(f),
+    Json::boolean(fok),
+    Json::array(endings.map(n => Json::number(n.to_double()))),
+    Json::boolean(more),
+  ]).stringify()
+}
+
+///|
+#export_name("musicxml_numbers")
+pub fn musicxml_numbers(max : Int32, names_json : String) -> String {
+  let names = @json.parse(names_json) catch { _ => return "[]" }
+  let numbered = @musicxml.MusicXmlNumbers::new(max)
+  let out : Array[Json] = []
+  match names {
+    Array(items) =>
+      for item in items {
+        match item {
+          String(name) => out.push(Json::number(numbered.get(name).to_double()))
+          _ => ()
+        }
+      }
+    _ => ()
+  }
+  Json::array(out).stringify()
+}

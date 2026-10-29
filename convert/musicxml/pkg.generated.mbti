@@ -8,9 +8,17 @@ pub fn detect_musicxml_text(Bytes) -> Bool
 
 pub fn musicxml_declared_encoding(Bytes) -> String
 
+pub fn musicxml_ending_numbers(String) -> (Array[Int64], Bool)
+
+pub fn musicxml_float(String) -> (Double, Bool)
+
 pub fn musicxml_head_text(Bytes) -> String
 
+pub fn musicxml_integer(String) -> (Int64, Bool)
+
 pub fn musicxml_is_score_text(String) -> Bool
+
+pub fn musicxml_tick_of(Double) -> Int32
 
 pub fn musicxml_to_utf8(Bytes) -> (Bytes, String)
 
@@ -24,6 +32,14 @@ pub suberror MusicXmlInputError {
 }
 
 // Types and methods
+pub struct MusicXmlNumbers {
+  names : Map[String, Int32]
+  taken : Map[Int32, Bool]
+  mut free : Int32
+  max : Int32
+}
+pub fn MusicXmlNumbers::get(Self, String) -> Int32
+pub fn MusicXmlNumbers::new(Int32) -> Self
 
 // Type aliases
 
