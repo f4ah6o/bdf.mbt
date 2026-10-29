@@ -206,8 +206,7 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
   } else {
     false
   }
-  if font.name != "Calibri" ||
-    (index == 0 && font.size != 11.0) ||
+  if (index == 0 && font.size != 11.0) ||
     font.italic ||
     font.underline != "" ||
     font.strike ||
@@ -236,7 +235,7 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 ///|
 /// Convert worksheets using estimated font metrics without embedding fonts.
 /// Supports sheet views with numeric, plain string, boolean and error cells,
-/// number formats, font colors, bold text, horizontal alignment, top or center
+/// number formats, named fonts, font colors, bold text, horizontal alignment, top or center
 /// vertical alignment, solid fills, line borders, merged cells and wrapping.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// complex features are rejected.
@@ -417,6 +416,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let fills : Map[Int32, Map[Int32, @sheet.GridSolidFill]] = Map([])
   let sizes : Map[Int32, Map[Int32, Double]] = Map([])
   let wraps : Map[Int32, Map[Int32, Bool]] = Map([])
+  let font_families : Map[Int32, Map[Int32, String]] = Map([])
   let east_asian_fonts : Map[Int32, Map[Int32, String]] = Map([])
   let minor_east_asian = workbook.package
     .theme_fonts(workbook.part)
@@ -463,6 +463,23 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         font_id
       }
       let font_size = styles.fonts[font_index].size
+      let font = styles.fonts[font_index]
+      let font_name = if font.scheme == "minor" || font.name == "" {
+        "Calibri"
+      } else {
+        font.name
+      }
+      if font_name != "Calibri" {
+        let columns = match font_families.get(row.index) {
+          Some(columns) => columns
+          None => {
+            let columns : Map[Int32, String] = Map([])
+            font_families[row.index] = columns
+            columns
+          }
+        }
+        columns[cell.column] = font_name
+      }
       if styles.fonts[font_index].scheme == "minor" && minor_east_asian != "" {
         let columns = match east_asian_fonts.get(row.index) {
           Some(columns) => columns
@@ -763,6 +780,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     east_asian_fonts~,
     wraps~,
     diagonals~,
+    font_families~,
   )
   (drawn, geo, parsed.missing_formula_values)
 }

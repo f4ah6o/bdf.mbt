@@ -26,7 +26,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 7200; i++ {
+	for i := 0; i < 7400; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -126,6 +126,15 @@ func TestCodexXLSXRender(t *testing.T) {
 					}
 				}
 				st += `</fonts>`
+				if i >= 7200 {
+					names := []string{"Calibri", "Arial", "Times New Roman", "Noto Sans", "MS PGothic", "MS Mincho"}
+					font := 0
+					st = regexp.MustCompile(`<name val="Calibri"/>`).ReplaceAllStringFunc(st, func(string) string {
+						name := names[((i-7200)/4+font)%len(names)]
+						font++
+						return fmt.Sprintf(`<name val="%s"/>`, name)
+					})
+				}
 			}
 			if i >= 3300 {
 				st += `<fills><fill/><fill><patternFill patternType="solid"><fgColor rgb="FF112233"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor indexed="10"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FF112233"/><bgColor rgb="FF556677"/></patternFill></fill></fills>`

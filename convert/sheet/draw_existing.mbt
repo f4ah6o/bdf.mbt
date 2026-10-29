@@ -94,6 +94,7 @@ pub fn draw_sized_grid_no_fonts(
   east_asian_fonts~ : Map[Int32, Map[Int32, String]] = Map([]),
   wraps~ : Map[Int32, Map[Int32, Bool]] = Map([]),
   diagonals~ : Map[Int32, Map[Int32, GridCellDiagonal]] = Map([]),
+  font_families~ : Map[Int32, Map[Int32, String]] = Map([]),
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -271,6 +272,15 @@ pub fn draw_sized_grid_no_fonts(
             _ => ""
           }
         None => ""
+      }
+      let family = match font_families.get(i) {
+        Some(columns) =>
+          match columns.get(column) {
+            Some(name) if name != "" =>
+              css_quote(name) + ", " + @fontdb.classify(name)
+            _ => family
+          }
+        None => family
       }
       let advance = (character : Char, is_bold : Bool) => {
         sized_fallback_advance(character, is_bold, size)
