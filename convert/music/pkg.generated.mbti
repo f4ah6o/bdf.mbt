@@ -1,6 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "f4ah6o/bdf/convert/music"
 
+import {
+  "f4ah6o/bdf/core",
+}
+
 // Values
 pub fn arrange_staff_note(MusicDrawing, PreparedStaffMeasure, ScoreEvent, Array[Int32?], Double, Double, beam_direction? : Bool?, beamed? : Bool) -> NoteLayout
 
@@ -58,6 +62,8 @@ pub fn music_curve(Double, Double, Double, Double, Double, Double, Double) -> Mu
 
 pub fn music_glyph(String) -> MusicGlyph?
 
+pub fn music_glyph_paths(Array[MusicDrawing], Double) -> MusicGlyphPaths
+
 pub fn music_quad(Double, Double, Double, Double, Double, Double, Double, Double) -> MusicOutline
 
 pub fn notate(Performance, time_override? : TimeSig?, key_override? : KeySig?) -> NotatedScore
@@ -89,6 +95,9 @@ pub fn staff_position(EngravingClef, Pitch) -> Int32
 pub fn write_staff_events(Array[VoiceNote], Array[MeasureSpan], Array[BeatGrid], Array[NotationLyric], Int32, Bool) -> Array[Array[ScoreEvent]]
 
 // Errors
+pub suberror MusicPaintError {
+  MissingMusicGlyph(String)
+}
 
 // Types and methods
 pub(all) struct BasicStaffLayout {
@@ -204,6 +213,13 @@ pub(all) struct MusicGlyph {
   coordinates : Array[Double]
 }
 
+pub struct MusicGlyphPaths {
+  paths : Array[@core.Path]
+  indices : Map[String, Int32]
+  staff_space : Double
+}
+pub fn MusicGlyphPaths::encode(Self) -> Bytes raise
+
 pub(all) struct MusicOutline {
   verbs : Bytes
   coordinates : Array[Double]
@@ -216,6 +232,17 @@ pub(all) struct MusicPageOptions {
   staff_space : Double
   title : String
 }
+
+pub struct MusicPainter {
+  object : @core.ObjectBuilder
+  glyphs : MusicGlyphPaths
+  hash : String
+  refs : Map[Int32, Int32]
+  mut line_width : Double
+  mut dashed : Bool
+}
+pub fn MusicPainter::draw(Self, MusicDrawing, Double, Double, (MusicPrimitive, Double, Double) -> Unit raise) -> Unit raise
+pub fn MusicPainter::new(@core.ObjectBuilder, MusicGlyphPaths, String) -> Self
 
 pub(all) struct MusicPartSpan {
   name : String

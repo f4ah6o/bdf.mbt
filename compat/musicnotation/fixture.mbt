@@ -801,3 +801,83 @@ pub fn spanning(
     }),
   ).stringify()
 }
+
+///|
+#export_name("paint_graphics")
+pub fn paint_graphics(
+  raw : FixedArray[Double],
+  sp : Double,
+  ox : Double,
+  oy : Double,
+) -> String {
+  try {
+    let drawing = @music.MusicDrawing::new()
+    let names = [
+      "gClef", "noteheadBlack", "accidentalSharp", "restQuarter", "brace",
+    ]
+    for i in 0..<(raw.length() / 9) {
+      let v = i * 9
+      match raw[v].to_int() {
+        0 =>
+          drawing.glyph(
+            names[raw[v + 1].to_int()],
+            raw[v + 2],
+            raw[v + 3],
+            raw[v + 4],
+          )
+        1 => drawing.rect(raw[v + 1], raw[v + 2], raw[v + 3], raw[v + 4])
+        2 =>
+          drawing.fill(
+            @music.music_quad(
+              raw[v + 1],
+              raw[v + 2],
+              raw[v + 3],
+              raw[v + 4],
+              raw[v + 5],
+              raw[v + 6],
+              raw[v + 7],
+              raw[v + 8],
+            ),
+          )
+        3 =>
+          drawing.line(
+            raw[v + 1],
+            raw[v + 2],
+            raw[v + 3],
+            raw[v + 4],
+            raw[v + 5],
+            raw[v + 6],
+          )
+        4 => drawing.mark(raw[v + 1].to_int(), "mark")
+        5 =>
+          drawing.spanning_glyph(
+            names[raw[v + 1].to_int()],
+            raw[v + 2],
+            raw[v + 3],
+            raw[v + 4],
+            raw[v + 5],
+          )
+        _ => ()
+      }
+    }
+    let glyphs = @music.music_glyph_paths([drawing], sp)
+    let paths = glyphs.encode()
+    let writer = @core.DocumentWriter::new()
+    let hash = writer.add_part("path", paths)
+    let object = @core.ObjectBuilder::new()
+    object.set_bbox(0.0F, 0.0F, 400.0F, 400.0F)
+    let painter = @music.MusicPainter::new(object, glyphs, hash)
+    painter.draw(drawing, ox, oy, (_, _, _) => ())
+    let path_json : Array[Json] = []
+    for byte in paths {
+      path_json.push(Json::number(byte.to_int().to_double()))
+    }
+    let obj_json : Array[Json] = []
+    for byte in object.encode() {
+      obj_json.push(Json::number(byte.to_int().to_double()))
+    }
+    Json::array([Json::array(path_json), Json::array(obj_json)]).stringify()
+  } catch {
+    err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
+  }
+}
