@@ -6,11 +6,15 @@ pub fn beat_grids(Array[MeasureSpan], Array[Int64]) -> Array[BeatGrid]
 
 pub fn build_timeline(Int64, Array[TimeChange], Array[KeyChange], Array[TempoChange], Array[Double], Int32, time_override? : TimeSig?, key_override? : KeySig?) -> ScoreTimeline
 
+pub fn divide_values(Int64, Int64, Int64, Int64, Bool, Bool) -> Array[NotationValue]
+
 pub fn drum_of(Int32) -> DrumNotation
 
 pub fn estimate_key(Array[Double], Int32) -> KeySig
 
 pub fn key_of(Int32, Bool, Int32) -> KeySig
+
+pub fn note_ticks(Int32, Int32) -> Int64
 
 pub fn percussion_durations(Array[QuantizedNote], Array[BeatGrid]) -> Array[QuantizedNote]
 
@@ -69,6 +73,13 @@ pub(all) struct NotationNote {
   key : Int32
   velocity : Int32
   spelling : Int32
+}
+
+pub(all) struct NotationValue {
+  offset : Int64
+  ticks : Int64
+  kind : Int32
+  dots : Int32
 }
 
 pub(all) struct Pitch {

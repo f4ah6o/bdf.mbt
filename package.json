@@ -78,7 +78,7 @@
     "build:demo": "moon build --target js --release && node demo/build.mjs",
     "test:demo": "node demo/test.mjs",
     "test:gpos": "node compat/gsub/verify-gpos.mjs && node compat/gsub/verify-position-values.mjs && node compat/gsub/verify-pairs.mjs && node compat/gsub/verify-attachments.mjs && node compat/specimen/verify-kerning.mjs",
-    "test:music-notation": "node compat/musicnotation/verify.mjs && node compat/musicnotation/verify-timeline.mjs && node compat/musicnotation/verify-quantize.mjs && node compat/musicnotation/verify-staff.mjs",
+    "test:music-notation": "node compat/musicnotation/verify.mjs && node compat/musicnotation/verify-timeline.mjs && node compat/musicnotation/verify-quantize.mjs && node compat/musicnotation/verify-staff.mjs && node compat/musicnotation/verify-values.mjs",
     "test:midi-input": "node compat/midiinput/verify.mjs && node compat/midiinput/verify-tracks.mjs && node compat/midiinput/verify-notes.mjs && node compat/midiinput/verify-files.mjs && node compat/midiinput/verify-meta.mjs && node compat/midiinput/verify-text.mjs && node compat/midiinput/verify-credits.mjs && node compat/midiinput/verify-performance.mjs && node compat/midiinput/verify-lyrics.mjs"
   }
 }

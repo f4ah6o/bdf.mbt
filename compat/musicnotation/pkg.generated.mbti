@@ -2,6 +2,8 @@
 package "f4ah6o/bdf/compat/musicnotation"
 
 // Values
+pub fn divide_values(Int32, Int32, Int32, Int32, Bool, Bool) -> String
+
 pub fn drum(Int32) -> String
 
 pub fn estimate(FixedArray[Double], Int32) -> String

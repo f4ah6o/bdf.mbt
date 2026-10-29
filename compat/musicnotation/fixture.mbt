@@ -230,3 +230,33 @@ pub fn drum(key : Int32) -> String {
     Json::number(d.voice.to_double()),
   ]).stringify()
 }
+
+///|
+#export_name("divide_values")
+pub fn divide_values(
+  start : Int32,
+  end : Int32,
+  beat : Int32,
+  length : Int32,
+  compound : Bool,
+  rest : Bool,
+) -> String {
+  let values = @music.divide_values(
+    start.to_int64(),
+    end.to_int64(),
+    beat.to_int64(),
+    length.to_int64(),
+    compound,
+    rest,
+  )
+  Json::array(
+    values.map(v => {
+      Json::array([
+        Json::number(v.offset.to_double()),
+        Json::number(v.ticks.to_double()),
+        Json::number(v.kind.to_double()),
+        Json::number(v.dots.to_double()),
+      ])
+    }),
+  ).stringify()
+}
