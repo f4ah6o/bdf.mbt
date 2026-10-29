@@ -314,3 +314,9 @@ pub fn Database::fallbacks(
   }
   out
 }
+
+///|
+/// Number of registered faces, without copying the face list.
+pub fn Database::face_count(self : Database) -> Int32 {
+  self.faces.length()
+}

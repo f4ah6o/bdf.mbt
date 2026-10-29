@@ -621,3 +621,91 @@ pub fn document_plan(
     ),
   }).stringify()
 }
+
+///|
+pub struct TexterFixture {
+  db : @db.Database
+  texter : @font.SpecimenTexter
+}
+
+///|
+#export_name("new_texter")
+pub fn new_texter() -> TexterFixture {
+  let db = @db.Database::new()
+  { db, texter: @font.SpecimenTexter::new(db), }
+}
+
+///|
+#export_name("texter_add_font")
+pub fn texter_add_font(f : TexterFixture, path : String, data : Bytes) -> Unit {
+  ignore(f.db.add_file(path, data))
+}
+
+///|
+#export_name("measure_text")
+pub fn measure_text(
+  f : TexterFixture,
+  text : String,
+  size : Double,
+  bold : Bool,
+  max_width : Double,
+) -> String {
+  let line = f.texter.line(text, size, bold)
+  let runs = line.runs.map(r => {
+    let face = match r.choice.resolved.face {
+      Some(id) => f.db.face(id)
+      None => None
+    }
+    Json::object({
+      "text": Json::string(r.text),
+      "lang": Json::string(r.lang),
+      "x": Json::number(r.x),
+      "width": Json::number(r.width),
+      "face": match face {
+        Some(entry) => Json::string(entry.path)
+        None => Json::null()
+      },
+      "index": Json::number(
+        (match face {
+          Some(entry) => entry.index
+          None => -1
+        }).to_double(),
+      ),
+      "requested": Json::string(r.choice.requested),
+      "generic": Json::string(r.choice.resolved.generic),
+      "bold": Json::boolean(r.choice.bold),
+      "italic": Json::boolean(r.choice.italic),
+      "synthBold": Json::boolean(r.choice.resolved.synth_bold),
+      "synthItalic": Json::boolean(r.choice.resolved.synth_italic),
+    })
+  })
+  Json::object({
+    "width": Json::number(line.width),
+    "runs": Json::array(runs),
+    "fit": Json::string(f.texter.fit(text, size, bold, max_width)),
+    "wrap": Json::array(
+      f.texter.wrap(text, size, bold, max_width).map(Json::string),
+    ),
+  }).stringify()
+}
+
+///|
+#export_name("texter_usage")
+pub fn texter_usage(f : TexterFixture) -> String {
+  let (faces, missing) = f.texter.usage()
+  Json::object({
+    "used": Json::array(
+      faces.map(usage => {
+        let face = f.db.face(usage.face).unwrap()
+        Json::object({
+          "path": Json::string(face.path),
+          "index": Json::number(face.index.to_double()),
+          "codes": Json::array(
+            usage.codepoints.map(c => Json::number(c.to_double())),
+          ),
+        })
+      }),
+    ),
+    "missing": Json::array(missing.map(c => Json::number(c.to_double()))),
+  }).stringify()
+}

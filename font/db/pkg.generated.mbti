@@ -29,6 +29,7 @@ pub struct Database {
 pub fn Database::add(Self, String, Int32, @sfnt.Font) -> Unit
 pub fn Database::add_file(Self, String, Bytes) -> Int32
 pub fn Database::face(Self, Int32) -> Face?
+pub fn Database::face_count(Self) -> Int32
 pub fn Database::face_for(Self, String, String, Int32, bold? : Bool, italic? : Bool) -> Choice
 pub fn Database::faces(Self) -> Array[Face]
 pub fn Database::fallbacks(Self, String, bold? : Bool, italic? : Bool) -> Array[Resolved]

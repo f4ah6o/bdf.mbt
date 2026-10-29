@@ -3,6 +3,7 @@ package "f4ah6o/bdf/convert/font"
 
 import {
   "f4ah6o/bdf/core",
+  "f4ah6o/bdf/font/db",
   "f4ah6o/bdf/font/otlayout",
   "f4ah6o/bdf/font/sfnt",
 }
@@ -175,6 +176,11 @@ pub(all) struct SpecimenFacePrograms {
   outlined : Bool
 }
 
+pub(all) struct SpecimenFaceUsage {
+  face : Int32
+  codepoints : Array[Int32]
+}
+
 pub(all) struct SpecimenGlyph {
   name : String
   characters : Array[Int32]
@@ -222,6 +228,29 @@ pub(all) struct SpecimenPrograms {
   font_parts : Int32
   outlined : Int32
 }
+
+pub(all) struct SpecimenTextLine {
+  runs : Array[SpecimenTextRun]
+  width : Double
+  size : Double
+}
+
+pub(all) struct SpecimenTextRun {
+  choice : @db.Choice
+  text : String
+  lang : String
+  x : Double
+  width : Double
+}
+
+pub struct SpecimenTexter {
+  // private fields
+}
+pub fn SpecimenTexter::fit(Self, String, Double, Bool, Double) -> String
+pub fn SpecimenTexter::line(Self, String, Double, Bool) -> SpecimenTextLine
+pub fn SpecimenTexter::new(@db.Database) -> Self
+pub fn SpecimenTexter::usage(Self) -> (Array[SpecimenFaceUsage], Array[Int32])
+pub fn SpecimenTexter::wrap(Self, String, Double, Bool, Double) -> Array[String]
 
 pub(all) struct SpecimenView {
   id : String
