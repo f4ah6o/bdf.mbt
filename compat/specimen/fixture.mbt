@@ -193,3 +193,32 @@ pub fn glyph_details(data : Bytes, index : Int32) -> String {
   }
   abort("missing font face")
 }
+
+///|
+#export_name("variations")
+pub fn variations(data : Bytes, raw_names : Bytes) -> String {
+  let v = @font.parse_variations(data, @font.parse_specimen_names(raw_names))
+  Json::object({
+    "axes": Json::array(
+      v.axes.map(a => {
+        Json::object({
+          "tag": Json::string(a.tag),
+          "name": Json::string(a.name),
+          "min": Json::number(a.minimum),
+          "default": Json::number(a.default_value),
+          "max": Json::number(a.maximum),
+          "hidden": Json::boolean(a.hidden),
+        })
+      }),
+    ),
+    "instances": Json::array(
+      v.instances.map(i => {
+        Json::object({
+          "name": Json::string(i.name),
+          "postscript": Json::string(i.postscript),
+          "coordinates": Json::array(i.coordinates.map(c => Json::number(c))),
+        })
+      }),
+    ),
+  }).stringify()
+}

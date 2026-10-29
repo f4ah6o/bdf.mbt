@@ -12,6 +12,8 @@ pub fn load(Bytes) -> FontFile raise
 
 pub fn parse_specimen_names(Bytes) -> SpecimenNames
 
+pub fn parse_variations(Bytes, SpecimenNames) -> Variations
+
 // Errors
 pub suberror FontInputError {
   InvalidFontInput(String)
@@ -38,6 +40,7 @@ pub fn FileFace::sample_whole_program(Self) -> Bytes? raise
 pub fn FileFace::script_counts(Self) -> Array[ScriptCount]
 pub fn FileFace::specimen_glyphs(Self) -> Array[SpecimenGlyph]
 pub fn FileFace::specimen_names(Self) -> SpecimenNames
+pub fn FileFace::variations(Self) -> Variations
 
 pub struct FontFile {
   container : String
@@ -103,6 +106,26 @@ pub(all) struct UnicodeBlock {
   last : Int32
   name : String
   assigned : Int32
+}
+
+pub(all) struct VariationAxis {
+  tag : String
+  name : String
+  minimum : Double
+  default_value : Double
+  maximum : Double
+  hidden : Bool
+}
+
+pub(all) struct VariationInstance {
+  name : String
+  postscript : String
+  coordinates : Array[Double]
+}
+
+pub(all) struct Variations {
+  axes : Array[VariationAxis]
+  instances : Array[VariationInstance]
 }
 
 // Type aliases
