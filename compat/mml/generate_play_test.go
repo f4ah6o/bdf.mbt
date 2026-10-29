@@ -1,0 +1,14 @@
+//go:build ignore
+
+// Copy into upstream converter/mml and run TestCodexMMLPlay.
+package mml
+import ("encoding/json"; "math/rand"; "os"; "path/filepath"; "testing")
+func TestCodexMMLPlay(t *testing.T) {
+ root:=os.Getenv("BDF_FIXTURE_ROOT");if root=="" {t.Fatal("BDF_FIXTURE_ROOT required")};r:=rand.New(rand.NewSource(837111))
+ samples:=[]string{"", "t120 l4 o4 cdefgab>c", "c4&{cd}4", "{cd}4&d4", "[cd|e]3", "/:3 c / d :/", "A K2 c K-1 c\nB @2 c", "MML@c4,d4,e4;", "#TITLE test\n$x=cde;$x;fg", "o9 g a b >c", "c z12 d k3 @z e", "c あ d", "c \u00a0 d", "c\"d", "@v5c@p2d", "t120.123456789c", "c0.d", "c\x00d", "c\x01d", "c\x07d", "c\x08d", "c\x0dd", "c\x7fd", "c\u0085d", "c\u200bd", "c\u0001d", "c%65535", "o10 c%65535", "[c%65535]200", "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[c]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1]1"}
+ for _,f:=range []string{"frere.mml","ode.mml","twinkle.mml","sjis.mml"} {b,e:=os.ReadFile(filepath.Join("testdata",f));if e!=nil{t.Fatal(e)};samples=append(samples,decode(b))}
+ fragments:=[]string{"c4", "d8.", "e%96", "f#16", "g-", "a+", "b", "r4", "w8", "o5", "o-1", "<", ">", "l8", "l0.", "t120.5", "t9999", "v0", "v15", "v+2", "v-3", "(", ")2", "q3", "@0", "@3", "@w2", "@p64", "@v64", "@unknown1", "&", "^8", "n48", "ns-2", "K3", "ENOF", "!", "日本", "\u00a0", "[cd|e]2", "[c[d]2]2", "/:2cd/e:/", "{c8d4e}4", "{c&c}16", "[", "{", ";", "\nA ", "\nB ", "#TITLE title\n"}
+ for i:=0;i<5000;i++ {s:="";for j:=0;j<1+r.Intn(12);j++ {s+=fragments[r.Intn(len(fragments))]+" "};samples=append(samples,s)}
+ out:=[]any{};for _,text:=range samples {for _,dialect:=range []string{"generic","ppmck","mabinogi","auto"} {oct:=r.Intn(3);program:=-1;if r.Intn(8)==0 {program=r.Intn(128)};opts:=Options{Dialect:dialect,Octave:OctaveShift(oct)};if program>=0 {opts.Program=&program};p,w,err:=Parse([]byte(text),&opts);warnings:=[]string{};warnings=append(warnings,w...);var result any=nil;if p!=nil {tracks:=[]any{};for _,tr:=range p.Tracks {notes:=[]any{};for _,n:=range tr.Notes {notes=append(notes,[]any{n.Tick,n.Dur,n.Key,n.Vel,n.Spell})};ctrl:=[]any{};for _,c:=range tr.Controls {ctrl=append(ctrl,[]any{c.Tick,int(c.Kind),c.Num,c.Value})};tracks=append(tracks,[]any{tr.Name,tr.Channel,tr.Program,tr.Volume,tr.Pan,notes,ctrl})};tempos:=[]any{};for _,t:=range p.Tempo{tempos=append(tempos,[]any{t.Tick,t.BPM})};result=[]any{p.Title,p.Composer,p.Arranger,p.Lyricist,p.Copyright,tracks,tempos,p.End}};errstr:="";if err!=nil {errstr=err.Error()};out=append(out,map[string]any{"input":text,"dialect":dialect,"octave":oct,"program":program,"want":[]any{result,warnings,errstr}})}}
+ b,e:=json.Marshal(out);if e!=nil{t.Fatal(e)};if e=os.WriteFile(filepath.Join(root,"compat/mml/play.json"),b,0644);e!=nil{t.Fatal(e)}
+}

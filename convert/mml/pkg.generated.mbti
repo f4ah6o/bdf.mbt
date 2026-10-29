@@ -28,6 +28,8 @@ pub fn mml_signed(Bytes, Int32) -> (Int32, Bool, Int32)
 
 pub fn mml_skip_args(Bytes, Int32) -> Int32
 
+pub fn parse_mml(Bytes, dialect? : String, octave? : Int32, program? : Int32) -> MmlParseResult
+
 pub fn split_mml_source(String, String) -> MmlSource
 
 pub fn strip_mml_comments(String, Bool) -> String
@@ -35,6 +37,48 @@ pub fn strip_mml_comments(String, Bool) -> String
 // Errors
 
 // Types and methods
+pub(all) struct MmlControl {
+  mut tick : Int32
+  kind : Int32
+  number : Int32
+  mut value : Int32
+}
+
+pub(all) struct MmlNote {
+  tick : Int32
+  mut duration : Int32
+  key : Int32
+  velocity : Int32
+  spelling : Int32
+}
+
+pub(all) struct MmlParseResult {
+  performance : MmlPerformance?
+  warnings : Array[String]
+  error : String
+}
+
+pub(all) struct MmlPerformance {
+  title : String
+  composer : String
+  arranger : String
+  lyricist : String
+  copyright : String
+  tracks : Array[MmlPlayedTrack]
+  tempos : Array[MmlTempo]
+  mut end : Int32
+}
+
+pub(all) struct MmlPlayedTrack {
+  mut name : String
+  mut channel : Int32
+  mut program : Int32
+  mut volume : Int32
+  mut pan : Int32
+  notes : Array[MmlNote]
+  controls : Array[MmlControl]
+}
+
 pub(all) struct MmlSource {
   mut title : String
   mut composer : String
@@ -45,6 +89,11 @@ pub(all) struct MmlSource {
   tracks : Array[MmlTrackSource]
   warnings : Array[String]
   seen : Map[String, Bool]
+}
+
+pub(all) struct MmlTempo {
+  mut tick : Int32
+  mut bpm : Double
 }
 
 pub(all) struct MmlTrackSource {

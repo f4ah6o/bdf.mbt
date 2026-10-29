@@ -74,3 +74,65 @@ pub fn mml_scan(text : String) -> String {
     Json::number(@mml.mml_break_at(b, b'/').to_double()),
   ]).stringify()
 }
+
+///|
+#export_name("mml_play")
+pub fn mml_play(
+  text : String,
+  dialect : String,
+  octave : Int32,
+  program : Int32,
+) -> String {
+  let result = @mml.parse_mml(@utf8.encode(text), dialect~, octave~, program~)
+  let perf = match result.performance {
+    None => Json::null()
+    Some(perf) => {
+      let tracks = perf.tracks.map(fn(tr) {
+        let notes = tr.notes.map(fn(n) {
+          Json::array([
+            Json::number(n.tick.to_double()),
+            Json::number(n.duration.to_double()),
+            Json::number(n.key.to_double()),
+            Json::number(n.velocity.to_double()),
+            Json::number(n.spelling.to_double()),
+          ])
+        })
+        let controls = tr.controls.map(fn(c) {
+          Json::array([
+            Json::number(c.tick.to_double()),
+            Json::number(c.kind.to_double()),
+            Json::number(c.number.to_double()),
+            Json::number(c.value.to_double()),
+          ])
+        })
+        Json::array([
+          Json::string(tr.name),
+          Json::number(tr.channel.to_double()),
+          Json::number(tr.program.to_double()),
+          Json::number(tr.volume.to_double()),
+          Json::number(tr.pan.to_double()),
+          Json::array(notes),
+          Json::array(controls),
+        ])
+      })
+      let tempos = perf.tempos.map(fn(t) {
+        Json::array([Json::number(t.tick.to_double()), Json::number(t.bpm)])
+      })
+      Json::array([
+        Json::string(perf.title),
+        Json::string(perf.composer),
+        Json::string(perf.arranger),
+        Json::string(perf.lyricist),
+        Json::string(perf.copyright),
+        Json::array(tracks),
+        Json::array(tempos),
+        Json::number(perf.end.to_double()),
+      ])
+    }
+  }
+  Json::array([
+    perf,
+    Json::array(result.warnings.map(fn(w) { Json::string(w) })),
+    Json::string(result.error),
+  ]).stringify()
+}
