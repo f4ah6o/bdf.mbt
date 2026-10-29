@@ -241,9 +241,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// Convert worksheets using estimated font metrics without embedding fonts.
 /// Supports sheet views with numeric, plain string, boolean and error cells,
 /// number formats, font colors, bold text, horizontal alignment, top or center
-/// vertical alignment, solid fills, line borders, merged cells and wrapping
-/// on fixed-height rows or merged cells. Border
-/// Multiple colors per line weight must use exact 8-bit RGB components;
+/// vertical alignment, solid fills, line borders, merged cells and wrapping.
+/// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// complex features are rejected.
 pub fn convert_plain_no_fonts(
   data : Bytes,
@@ -398,7 +397,15 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     count: run.count,
     size: run.size,
   })
-  let fitted = xlsx_plain_fitted_rows(rows, styles, geo, spans)
+  let fitted = xlsx_plain_fitted_rows(
+    rows,
+    styles,
+    geo,
+    spans,
+    widths,
+    workbook.date1904,
+    locale.number_locale,
+  )
   let heights : Array[@sheet.Run] = xlsx_row_runs(
     rows, geo, row_count, 12.65, fitted,
   ).map(run => { count: run.count, size: run.size, })
@@ -477,11 +484,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         cell.column,
       )
       let wrap = styles.cell_formats[format_index].alignment.wrap
-      if wrap && row.height < 0.0 && span is None && cell.kind != 0 {
-        raise InvalidXlsxInput(
-          "xlsx: wrapped cells on automatic-height rows are not supported",
-        )
-      }
       let (border, colors) = match border_cache.get(format_index) {
         Some(border) => border
         None => {
@@ -927,6 +929,9 @@ fn xlsx_plain_fitted_rows(
   styles : XlsxStyles,
   geometry : XlsxSheetGeometry,
   spans : Map[Int32, Map[Int32, Int32]],
+  widths : Array[Double],
+  date1904 : Bool,
+  locale : String,
 ) -> Map[Int32, Double] {
   let result : Map[Int32, Double] = Map([])
   for row in rows {
@@ -953,7 +958,26 @@ fn xlsx_plain_fitted_rows(
         font_id
       }
       let size = styles.fonts[font_index].size
-      if (0.9 + 0.25) * size > (0.9 + 0.25) * 11.0 + 0.01 {
+      if styles.cell_formats[format_index].alignment.wrap {
+        if styles.format_cell(cell, date1904, locale) is Some(formatted) {
+          let text = xlsx_plain_wrap_text(formatted.text())
+          let width = if cell.column >= 0 && cell.column < widths.length() {
+            Double::max(widths[cell.column] - 3.75, 0.0)
+          } else {
+            0.0
+          }
+          let bold = styles.fonts[font_index].bold
+          let advance = (c : Char, b : Bool) => {
+            @sheet.sized_fallback_advance(c, b, size)
+          }
+          let lines = @sheet.wrap_text(text, width, bold~, advance~)
+          let mut text_height = 0.0
+          for _ in lines {
+            text_height += 0.9 * size + 0.25 * size
+          }
+          best = Double::max(best, text_height)
+        }
+      } else if (0.9 + 0.25) * size > (0.9 + 0.25) * 11.0 + 0.01 {
         let text_height = 0.9 * size + 0.25 * size + 1.5 - 1.5
         best = Double::max(best, text_height)
       }
@@ -963,6 +987,23 @@ fn xlsx_plain_fitted_rows(
     }
   }
   result
+}
+
+///|
+fn xlsx_plain_wrap_text(text : String) -> String {
+  let output = StringBuilder()
+  let mut shown = 0
+  for c in text {
+    let ch = if c == '\t' { ' ' } else { c }
+    if ch == '\n' || ch.to_int() >= 0x20 {
+      output.write_char(ch)
+      shown += 1
+      if shown >= 1024 {
+        break
+      }
+    }
+  }
+  output.to_string()
 }
 
 ///|

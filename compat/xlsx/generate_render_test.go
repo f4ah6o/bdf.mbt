@@ -26,7 +26,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 6600; i++ {
+	for i := 0; i < 6800; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -282,7 +282,7 @@ func TestCodexXLSXRender(t *testing.T) {
 					attrs += ` hidden="1"`
 				}
 			}
-			if i >= 6500 {
+			if i >= 6500 && i < 6600 {
 				attrs = fmt.Sprintf(` ht="%d" customHeight="1"`, 15+r.Intn(60))
 			}
 			sheet += fmt.Sprintf(`<row r="%d"%s>`, y+1, attrs)
