@@ -216,6 +216,7 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
     (
       a.horizontal != "general" &&
       a.horizontal != "center" &&
+      a.horizontal != "centerContinuous" &&
       a.horizontal != "left" &&
       a.horizontal != "right"
     ) ||
@@ -236,8 +237,9 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// Supports sheet views with numeric, plain string, boolean and error cells,
 /// number formats, named and themed fonts, font colors, bold, italic, underlined
 /// and struck text, superscript and subscript, horizontal alignment, top or
-/// center vertical alignment, solid fills, line borders, merged cells, wrapping
-/// shrink-to-fit and indentation.
+/// center vertical alignment, solid fills, line borders, merged cells, wrapping,
+/// shrink-to-fit and indentation. Center-across-selection is supported without
+/// wrapping, shrink-to-fit or merged cells.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// complex features are rejected.
 pub fn convert_plain_no_fonts(
@@ -363,6 +365,36 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let rows = parsed.sorted_rows()
   let geo = workbook.read_sheet_geometry(ref.part)
   let (spans, region_rows, merge_regions) = xlsx_plain_spans(geo.merges)
+  let center_across : Map[Int32, Map[Int32, Bool]] = Map([])
+  for row in rows {
+    for cell in row.cells {
+      let index = if cell.style < 0 ||
+        cell.style >= styles.cell_formats.length() {
+        0
+      } else {
+        cell.style
+      }
+      let alignment = styles.cell_formats[index].alignment
+      if alignment.horizontal == "centerContinuous" {
+        if alignment.wrap ||
+          alignment.shrink ||
+          xlsx_plain_span_at(spans, row.index, cell.column) is Some(_) {
+          raise InvalidXlsxInput(
+            "xlsx: center across with wrapping, shrink or merges is not supported",
+          )
+        }
+        let columns = match center_across.get(row.index) {
+          Some(columns) => columns
+          None => {
+            let columns : Map[Int32, Bool] = Map([])
+            center_across[row.index] = columns
+            columns
+          }
+        }
+        columns[cell.column] = cell.kind == 0
+      }
+    }
+  }
   for column in geo.columns {
     if column.style > 0 {
       raise InvalidXlsxInput(
@@ -713,6 +745,19 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               cell_width += widths[column]
             }
           }
+          if styles.cell_formats[format_index].alignment.horizontal ==
+            "centerContinuous" {
+            if center_across.get(row.index) is Some(columns) {
+              let mut last = cell.column
+              while last + 1 < col_count && columns.get(last + 1) == Some(true) {
+                last += 1
+              }
+              cell_width = 0.0
+              for column in cell.column..<=last {
+                cell_width += widths[column]
+              }
+            }
+          }
           let mut width = 0.0
           for c in text {
             width += @sheet.sized_fallback_advance(c, false, drawn_size)
@@ -840,6 +885,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           column: cell.column,
           cell: { text, number: cell.kind == 1, },
           center: horizontal == "center" ||
+          horizontal == "centerContinuous" ||
           (horizontal == "general" && (cell.kind == 3 || cell.kind == 4)),
           visible: !(cell.kind == 1 && cell.number == 0.0 && !geo.show_zero),
           occupied: cell.kind != 0 && !(cell.kind == 2 && cell.text == ""),
@@ -888,6 +934,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     scripts~,
     shrink_scales~,
     indents~,
+    center_across~,
   )
   (drawn, geo, parsed.missing_formula_values)
 }

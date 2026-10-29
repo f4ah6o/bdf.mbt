@@ -107,6 +107,7 @@ pub fn draw_sized_grid_no_fonts(
   scripts~ : Map[Int32, Map[Int32, String]] = Map([]),
   shrink_scales~ : Map[Int32, Map[Int32, Double]] = Map([]),
   indents~ : Map[Int32, Map[Int32, Double]] = Map([]),
+  center_across~ : Map[Int32, Map[Int32, Bool]] = Map([]),
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -253,6 +254,18 @@ pub fn draw_sized_grid_no_fonts(
             hidden_by_span = true
           }
           break
+        }
+      }
+      if !hidden_by_span && !row_spans.contains(column) {
+        if center_across.get(i) is Some(columns) && columns.contains(column) {
+          if col_positions[column + 1] <= col_positions[column] {
+            hidden_by_span = true
+          } else {
+            while last + 1 < visible_columns &&
+                  columns.get(last + 1) == Some(true) {
+              last += 1
+            }
+          }
         }
       }
       if hidden_by_span ||
