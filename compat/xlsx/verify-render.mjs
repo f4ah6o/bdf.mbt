@@ -5,22 +5,31 @@ import { xlsx_render_basic, xlsx_render_warnings, xlsx_render_error } from '../.
 const index = JSON.parse(await readFile(new URL('./render/index.json', import.meta.url)));
 assert.ok(index.files.length > 0, 'XLSX rendering fixture list must not be empty');
 let i = 0;
+async function verifyCase(c, label) {
+  const expected = await BdfDocument.open(new BufferSource(Buffer.from(c.bdf, 'base64')));
+  const actual = await BdfDocument.open(new BufferSource(xlsx_render_basic(Buffer.from(c.input, 'base64'), c.mode, c.no_index)));
+  assert.deepEqual(JSON.parse(xlsx_render_warnings(Buffer.from(c.input, 'base64'), c.mode, c.no_index)), c.warnings ?? [], `XLSX warnings ${label}`);
+  assert.deepEqual(actual.manifest.meta, expected.manifest.meta, `XLSX metadata ${label}`);
+  assert.deepEqual(actual.manifest.views, expected.manifest.views, `XLSX view ${label}`);
+  assert.deepEqual(actual.manifest.tables ?? [], expected.manifest.tables ?? [], `XLSX tables ${label}`);
+  assert.equal(actual.manifest.parts.length, expected.manifest.parts.length, `XLSX parts ${label}`);
+  for (const [j, p] of actual.manifest.parts.entries()) assert.deepEqual(Buffer.from(await actual.part(p.h)), Buffer.from(await expected.part(expected.manifest.parts[j].h)), `XLSX object ${label}:${j}`);
+}
 for (const file of index.files) {
   assert.match(file, /^\d{3}\.json$/, 'invalid XLSX rendering fixture name');
   const cases = JSON.parse(await readFile(new URL(`./render/${file}`, import.meta.url)));
   for (const c of cases) {
-    const expected = await BdfDocument.open(new BufferSource(Buffer.from(c.bdf, 'base64')));
-    const actual = await BdfDocument.open(new BufferSource(xlsx_render_basic(Buffer.from(c.input, 'base64'), c.mode, c.no_index)));
-    assert.deepEqual(JSON.parse(xlsx_render_warnings(Buffer.from(c.input, 'base64'), c.mode, c.no_index)), c.warnings ?? [], `XLSX warnings ${i}`);
-    assert.deepEqual(actual.manifest.meta, expected.manifest.meta, `XLSX metadata ${i}`);
-    assert.deepEqual(actual.manifest.views, expected.manifest.views, `XLSX view ${i}`);
-    assert.deepEqual(actual.manifest.tables ?? [], expected.manifest.tables ?? [], `XLSX tables ${i}`);
-    assert.equal(actual.manifest.parts.length, expected.manifest.parts.length, `XLSX parts ${i}`);
-    for (const [j, p] of actual.manifest.parts.entries()) assert.deepEqual(Buffer.from(await actual.part(p.h)), Buffer.from(await expected.part(expected.manifest.parts[j].h)), `XLSX object ${i}:${j}`);
+    await verifyCase(c, i);
     i++;
   }
 }
 assert.equal(i, index.count, 'XLSX rendering fixture count');
+const baseFills = JSON.parse(await readFile(new URL('./base-fill.json', import.meta.url)));
+assert.equal(baseFills.length, 240, 'row and column fill fixture count');
+for (const [j, c] of baseFills.entries()) await verifyCase(c, `base fill ${j}`);
+const largeFill = Buffer.from(JSON.parse(await readFile(new URL('./base-fill-too-large.json', import.meta.url))), 'base64');
+assert.equal(xlsx_render_basic(largeFill, 'none', true).length, 0, 'oversized base fills must be rejected');
+assert.match(xlsx_render_error(largeFill, 'none', true), /row or column fill exceeds the supported view size/);
 const styled = JSON.parse(await readFile(new URL('./cells.json', import.meta.url)))[0];
 assert.equal(xlsx_render_basic(Buffer.from(styled.input, 'base64'), 'none', true).length, 0, 'unsupported styled workbook must be rejected');
 const rich = JSON.parse(await readFile(new URL('./cells.json', import.meta.url)))[7];
@@ -31,7 +40,7 @@ const unsupportedBase = JSON.parse(await readFile(new URL('./base-style-unsuppor
 assert.equal(unsupportedBase.length, 4, 'row and column fill and border fixtures');
 for (const encoded of unsupportedBase) {
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'painting base styles must be rejected');
+  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|borders)/);
 }
-console.log(`${i} basic XLSX renderings match upstream.`);
+console.log(`${i} basic XLSX renderings and ${baseFills.length} base fills match upstream.`);

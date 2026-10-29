@@ -238,8 +238,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// center vertical alignment, solid fills, line borders, merged cells, wrapping,
 /// shrink-to-fit, indentation and center-across-selection.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
-/// row and column styles with fills or borders and other complex features are
-/// rejected.
+/// patterned row and column fills, base borders and other complex features are
+/// rejected. Solid base fills are limited to views of at most 1,000,000 cells.
 pub fn convert_plain_no_fonts(
   data : Bytes,
   data_mode~ : String = "",
@@ -386,9 +386,10 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       }
     }
   }
+  let mut base_fills = false
   for column in geo.columns {
-    if column.style > 0 {
-      xlsx_check_nonpainting_base_style(styles, column.style)
+    if column.style >= 0 {
+      base_fills = xlsx_check_base_style(styles, column.style) || base_fills
     }
   }
   let (row_count, col_count) = xlsx_initial_extent(parsed, geo, [])
@@ -456,7 +457,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let border_cache : Map[Int32, (@sheet.GridCellBorder, Array[XlsxRgb])] = Map([])
   for row in rows {
     if row.style >= 0 {
-      xlsx_check_nonpainting_base_style(styles, row.style)
+      base_fills = xlsx_check_base_style(styles, row.style) || base_fills
     }
     let entries : Array[@sheet.SizedGridCell] = []
     for cell in row.cells {
@@ -920,8 +921,16 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     }
     cells.push({ index: row.index, cells: entries, })
   }
+  let draw_cells = if base_fills {
+    xlsx_plain_base_fills(
+      rows, cells, geo, styles, theme_colors, spans, region_rows, fills, row_count,
+      col_count,
+    )
+  } else {
+    cells
+  }
   let drawn = @sheet.draw_sized_grid_no_fonts(
-    cells,
+    draw_cells,
     geometry,
     all_columns,
     locale.language,
@@ -950,23 +959,122 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
 }
 
 ///|
-fn xlsx_check_nonpainting_base_style(
+fn xlsx_plain_base_fills(
+  rows : Array[XlsxRow],
+  cells : Array[@sheet.SizedGridRow],
+  geo : XlsxSheetGeometry,
   styles : XlsxStyles,
-  style : Int32,
-) -> Unit raise {
+  theme_colors : Map[Int32, XlsxRgb],
+  spans : Map[Int32, Map[Int32, Int32]],
+  region_rows : Map[Int32, Map[Int32, @sheet.GridMergeRegion]],
+  fills : Map[Int32, Map[Int32, @sheet.GridSolidFill]],
+  row_count : Int32,
+  col_count : Int32,
+) -> Array[@sheet.SizedGridRow] raise {
+  // Materializing missing formatted cells must stay bounded for huge views.
+  if row_count.to_int64() * col_count.to_int64() > 1000000L {
+    raise InvalidXlsxInput(
+      "xlsx: row or column fill exceeds the supported view size",
+    )
+  }
+  let column_base = Array::make(col_count, -1)
+  let column_last = Array::make(col_count, -1)
+  for column in geo.columns {
+    let first = Int32::max(column.first, 0)
+    let last = Int32::min(column.last, col_count - 1)
+    if first <= last {
+      for c in first..<=last {
+        column_last[c] = column.style
+        if column.style >= 0 {
+          column_base[c] = column.style
+        }
+      }
+    }
+  }
+  let by_row : Map[Int32, XlsxRow] = Map([])
+  let drawn_by_row : Map[Int32, @sheet.SizedGridRow] = Map([])
+  for row in rows {
+    by_row[row.index] = row
+  }
+  for row in cells {
+    drawn_by_row[row.index] = row
+  }
+  let result : Array[@sheet.SizedGridRow] = []
+  let black : XlsxRgb = { red: 0.0, green: 0.0, blue: 0.0, }
+  for r in 0..<row_count {
+    let source = by_row.get(r)
+    let explicit : Map[Int32, Bool] = Map([])
+    let row_style = if source is Some(row) {
+      for cell in row.cells {
+        explicit[cell.column] = true
+      }
+      row.style
+    } else {
+      -1
+    }
+    for c in 0..<col_count {
+      if explicit.contains(c) {
+        continue
+      }
+      let merged = xlsx_plain_region_at(spans, region_rows, r, c) is Some(_)
+      let style = if row_style >= 0 {
+        row_style
+      } else if merged {
+        column_last[c]
+      } else {
+        column_base[c]
+      }
+      if style < 0 {
+        continue
+      }
+      let index = if style >= styles.cell_formats.length() { 0 } else { style }
+      let fill_index = styles.cell_formats[index].fill
+      if fill_index < 0 || fill_index >= styles.fills.length() {
+        continue
+      }
+      let fill = styles.fills[fill_index]
+      if fill.pattern != "solid" {
+        continue
+      }
+      let columns = match fills.get(r) {
+        Some(columns) => columns
+        None => {
+          let columns : Map[Int32, @sheet.GridSolidFill] = Map([])
+          fills[r] = columns
+          columns
+        }
+      }
+      columns[c] = {
+        key: xlsx_solid_fill_key(fill),
+        color: styles.resolve_color(fill.foreground, black, theme_colors).rgba(),
+      }
+    }
+    match drawn_by_row.get(r) {
+      Some(row) => result.push(row)
+      None => if fills.contains(r) { result.push({ index: r, cells: [], }) }
+    }
+  }
+  result
+}
+
+///|
+fn xlsx_check_base_style(styles : XlsxStyles, style : Int32) -> Bool raise {
   let index = if style < 0 || style >= styles.cell_formats.length() {
     0
   } else {
     style
   }
   let format = styles.cell_formats[index]
+  let mut solid = false
   if format.fill >= 0 && format.fill < styles.fills.length() {
     let fill = styles.fills[format.fill]
-    if fill.pattern != "" || fill.gradient is Some(_) {
+    if (fill.pattern != "" && fill.pattern != "solid") ||
+      fill.gradient is Some(_) {
       raise InvalidXlsxInput(
         "xlsx: row or column styles with fills are not supported",
       )
     }
+    solid = fill.pattern == "solid"
   }
   if format.border >= 0 && format.border < styles.borders.length() {
     let border = styles.borders[format.border]
@@ -984,6 +1092,7 @@ fn xlsx_check_nonpainting_base_style(
       )
     }
   }
+  solid
 }
 
 ///|

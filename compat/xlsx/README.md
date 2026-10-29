@@ -20,11 +20,13 @@ borders (including diagonals and multiple colors at one weight), named and
 themed fonts and default font sizes, italic and decorated text, superscripts
 and subscripts, merged rectangles, center-across-selection, wrapped, indented
 and shrink-to-fit text, fixed and automatic row heights, hidden rows and
-columns, nonpainting row and column styles, and uncached formula warnings.
-Painting row and column styles have separate rejection cases. The rendering
+columns, row and column styles including solid backgrounds, and uncached formula
+warnings. Patterned base fills and base borders have separate rejection cases. The rendering
 cases are split into indexed chunks so individual fixture files stay small.
 Copy `generate_render_test.go` without its build tag into upstream
 `converter/xlsx` and run `TestCodexXLSXRender` to regenerate them.
+The base-fill cases are regenerated separately using
+`generate_base_fill_test.go` and `TestCodexBaseFill`.
 To regenerate fixtures, copy `generate_workbook_test.go` without its build tag
 into upstream `converter/xlsx` and run `TestCodexXLSXWorkbook` with
 `BDF_FIXTURE_ROOT` set to this repository.
