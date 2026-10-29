@@ -203,7 +203,7 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
     font.strike ||
     (font.scheme != "" && font.scheme != "minor") ||
     font.vertical != "" ||
-    a.horizontal != "general" ||
+    (a.horizontal != "general" && a.horizontal != "center") ||
     a.vertical != "bottom" ||
     a.wrap ||
     a.shrink ||
@@ -219,9 +219,9 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 }
 
 ///|
-/// Convert unstyled worksheets using estimated font metrics.
-/// Supports sheet views with numeric, plain string, boolean and error cells only; complex
-/// features are rejected. This entry point does not embed fonts.
+/// Convert worksheets using estimated font metrics without embedding fonts.
+/// Supports sheet views with numeric, plain string, boolean and error cells,
+/// number formats, font colors and centered alignment; complex features are rejected.
 pub fn convert_plain_no_fonts(
   data : Bytes,
   data_mode~ : String = "",
@@ -464,10 +464,19 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             }
           }
         }
+        let format_index = if cell.style < 0 ||
+          cell.style >= styles.cell_formats.length() {
+          0
+        } else {
+          cell.style
+        }
         entries.push({
           column: cell.column,
           cell: { text, number: cell.kind == 1, },
-          center: cell.kind == 3 || cell.kind == 4,
+          center: styles.cell_formats[format_index].alignment.horizontal ==
+          "center" ||
+          cell.kind == 3 ||
+          cell.kind == 4,
           visible: !(cell.kind == 1 && cell.number == 0.0 && !geo.show_zero),
           occupied: cell.kind != 0 && !(cell.kind == 2 && cell.text == ""),
           color: match formatted.color {

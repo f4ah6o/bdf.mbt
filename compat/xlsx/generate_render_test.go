@@ -12,6 +12,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -23,7 +24,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 2350; i++ {
+	for i := 0; i < 2500; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -93,7 +94,12 @@ func TestCodexXLSXRender(t *testing.T) {
 				}
 				st += `</fonts>`
 			}
-			st += `<cellXfs><xf numFmtId="0"/>`
+			st += `<cellXfs>`
+			if i >= 2450 {
+				st += `<xf numFmtId="0"><alignment horizontal="center"/></xf>`
+			} else {
+				st += `<xf numFmtId="0"/>`
+			}
 			ids := []int{1, 2, 3, 4, 9, 10, 11, 14, 20, 22, 46, 49}
 			if i >= 1850 {
 				ids = append(ids, 164, 165, 166)
@@ -108,6 +114,13 @@ func TestCodexXLSXRender(t *testing.T) {
 					}
 				}
 				st += fmt.Sprintf(`<xf numFmtId="%d" fontId="%d"/>`, id, font)
+			}
+			if i >= 2350 {
+				format := 0
+				if i >= 2400 && i < 2450 {
+					format = []int{2, 14, 164}[i%3]
+				}
+				st += fmt.Sprintf(`<xf numFmtId="%d"><alignment horizontal="center"/></xf>`, format)
 			}
 			st += `</cellXfs>`
 			if i >= 1850 {
@@ -225,6 +238,13 @@ func TestCodexXLSXRender(t *testing.T) {
 			sheet += `</row>`
 		}
 		sheet += `</sheetData></worksheet>`
+		if i >= 2350 {
+			style := 16
+			if i >= 2450 {
+				style = 0
+			}
+			sheet = regexp.MustCompile(`<c r="([^"]+)"(?: s="[0-9]+")?`).ReplaceAllString(sheet, fmt.Sprintf(`<c r="$1" s="%d"`, style))
+		}
 		add("xl/worksheets/sheet1.xml", sheet)
 		for j := 2; j <= count; j++ {
 			extra := fmt.Sprintf(`<row r="%d"><c r="A%d" t="str"><v>Sheet %d</v></c></row>`, 5+j, 5+j, j)

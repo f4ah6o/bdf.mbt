@@ -11,6 +11,8 @@ After building the JavaScript target, run `node compat/xlsx/verify-workbook.mjs`
 `node compat/xlsx/verify-cells.mjs`, `node compat/xlsx/verify-date.mjs`,
 `node compat/xlsx/verify-range.mjs`, `node compat/xlsx/verify-geometry.mjs`
 `node compat/xlsx/verify-styles.mjs`, `node compat/xlsx/verify-general.mjs`, `node compat/xlsx/verify-builtin.mjs`, `node compat/xlsx/verify-sections.mjs`, `node compat/xlsx/verify-formats.mjs`, `node compat/xlsx/verify-numeric.mjs`, `node compat/xlsx/verify-date-format.mjs`, `node compat/xlsx/verify-formatted.mjs`, `node compat/xlsx/verify-display.mjs`, `node compat/xlsx/verify-layout.mjs`, `node compat/xlsx/verify-paint.mjs`, `node compat/xlsx/verify-color.mjs`, `node compat/xlsx/verify-locale.mjs`, `node compat/xlsx/verify-table-values.mjs`, `node compat/xlsx/verify-list-tables.mjs`, `node compat/xlsx/verify-store-sheet.mjs`, and `node compat/xlsx/verify-render.mjs`.
+`npm run test:xlsx-compat` runs the complete XLSX and OOXML fixture suite; it is
+also included in `npm run test:visual` after the JavaScript build.
 To regenerate fixtures, copy `generate_workbook_test.go` without its build tag
 into upstream `converter/xlsx` and run `TestCodexXLSXWorkbook` with
 `BDF_FIXTURE_ROOT` set to this repository.
