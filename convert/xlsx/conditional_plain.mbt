@@ -28,6 +28,8 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   let mut conditional_count = 0
   let mut dxf_id = -1
   let mut operator = ""
+  let mut blank_matches = false
+  let mut any_blank_matches = false
   let matched : Map[Int32, Map[Int32, Bool]] = Map([])
   while true {
     let event = reader.read_event()
@@ -122,11 +124,13 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
                 "xlsx: plain conversion does not support conditional formatting",
               )
           }
-          if threshold.is_nan() ||
-            threshold.is_inf() ||
-            xlsx_plain_conditional_matches(0.0, threshold, operator) {
+          if threshold.is_nan() || threshold.is_inf() {
             xlsx_reject_conditional()
           }
+          blank_matches = xlsx_plain_conditional_matches(
+            0.0, threshold, operator,
+          )
+          any_blank_matches = blank_matches || any_blank_matches
           formula_depth = -1
         }
         if depth + 1 == rule_depth {
@@ -161,14 +165,22 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
                 if cell.kind == 0 {
                   continue
                 }
-                if cell.kind != 1 || cell.number.is_nan() {
+                if cell.kind == 1 && cell.number.is_nan() {
                   xlsx_reject_conditional()
                 }
-                if xlsx_plain_conditional_matches(
+                let matches = if cell.kind == 1 {
+                  xlsx_plain_conditional_matches(
                     cell.number,
                     threshold,
                     operator,
-                  ) {
+                  )
+                } else if cell.kind == 2 || cell.kind == 3 || cell.kind == 4 {
+                  xlsx_plain_conditional_matches(1.0, 0.0, operator)
+                } else {
+                  xlsx_reject_conditional()
+                  false
+                }
+                if matches {
                   let columns = match matched.get(row.index) {
                     Some(columns) => columns
                     None => {
@@ -197,14 +209,17 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
       _ => ()
     }
   }
-  if matched.is_empty() {
+  if matched.is_empty() && !any_blank_matches {
     return rows
   }
   if conditional_count != 1 || dxf_id < 0 {
     xlsx_reject_conditional()
   }
-  let font = self.xlsx_conditional_style(dxf_id)
-  xlsx_apply_conditional_style(rows, styles, matched, font)
+  let style = self.xlsx_conditional_style(dxf_id)
+  if any_blank_matches && (style.fill is Some(_) || style.border is Some(_)) {
+    xlsx_reject_conditional()
+  }
+  xlsx_apply_conditional_style(rows, styles, matched, style)
 }
 
 ///|

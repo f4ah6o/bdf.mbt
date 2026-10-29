@@ -66,6 +66,7 @@ func TestCodexInactiveCF(t *testing.T) {
 				rule = `<cfRule type="cellIs" operator="greaterThan"><formula>10</formula></cfRule>`
 			case 2:
 				cell = `<c r="A1" t="str"><v>x</v></c>`
+				rule = `<cfRule type="containsText" text="x"/>`
 			case 3:
 				rule = `<cfRule type="cellIs" operator="equal"><formula>0</formula></cfRule>`
 			case 4:

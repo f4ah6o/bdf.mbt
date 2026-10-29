@@ -42,6 +42,8 @@ Conditional-border cases use `generate_conditional_border_test.go` and
 `TestCodexConditionalBorder`.
 Conditional comparison cases use `generate_conditional_ops_test.go` and
 `TestCodexConditionalOps`.
+Conditional font cases matching blank cells use `generate_conditional_blank_test.go`
+and `TestCodexConditionalBlank`.
 To regenerate fixtures, copy `generate_workbook_test.go` without its build tag
 into upstream `converter/xlsx` and run `TestCodexXLSXWorkbook` with
 `BDF_FIXTURE_ROOT` set to this repository.

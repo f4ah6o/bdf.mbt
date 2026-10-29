@@ -54,11 +54,21 @@ for (const [j, c] of conditionalBorder.entries()) await verifyCase(c, `condition
 const conditionalOps = JSON.parse(await readFile(new URL('./conditional-ops.json', import.meta.url)));
 assert.equal(conditionalOps.length, 161, 'conditional comparison fixture count');
 for (const [j, c] of conditionalOps.entries()) await verifyCase(c, `conditional comparison ${j}`);
+const conditionalBlank = JSON.parse(await readFile(new URL('./conditional-blank.json', import.meta.url)));
+assert.equal(conditionalBlank.length, 161, 'conditional blank-cell fixture count');
+for (const [j, c] of conditionalBlank.entries()) await verifyCase(c, `conditional blank cell ${j}`);
+const unsupportedConditionalBlank = JSON.parse(await readFile(new URL('./conditional-blank-unsupported.json', import.meta.url)));
+assert.equal(unsupportedConditionalBlank.length, 8, 'unsupported conditional blank-cell fixture count');
+for (const encoded of unsupportedConditionalBlank) {
+  const input = Buffer.from(encoded, 'base64');
+  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional blank-cell styles must be rejected');
+  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+}
 const unsupportedConditionalOps = JSON.parse(await readFile(new URL('./conditional-ops-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalOps.length, 8, 'unsupported conditional comparison fixture count');
 for (const encoded of unsupportedConditionalOps) {
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'conditional formats applying to blank cells must be rejected');
+  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'conditional fills and borders on blank cells must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
 }
 const unsupportedConditionalBorder = JSON.parse(await readFile(new URL('./conditional-border-unsupported.json', import.meta.url)));
@@ -120,4 +130,4 @@ for (const encoded of unsupportedBase) {
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|complex borders)/);
 }
-console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length} conditional formats match upstream.`);
+console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length + conditionalBlank.length} conditional formats match upstream.`);

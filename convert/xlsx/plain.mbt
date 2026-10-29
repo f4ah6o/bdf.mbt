@@ -449,7 +449,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// patterned row and column fills, complex borders and other features are
 /// rejected. Supported numeric conditional rules may apply a differential font,
-/// solid fill and border or be inactive; other conditional formats are rejected.
+/// solid fill and border or be inactive; rules matching blank cells currently
+/// support font changes only. Other conditional formats are rejected.
 /// Views with base fills are limited to 1,000,000 cells, and views
 /// with base borders to 200,000 cells. External links support simple ASCII
 /// HTTP(S) and mailto URLs with simple ASCII authorities; other URL forms are
