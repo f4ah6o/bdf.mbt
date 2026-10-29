@@ -61,3 +61,31 @@ pub fn automatic_pruned(data : Bytes, index : Int32, text : String) -> Bytes {
   }
   abort("missing font face")
 }
+
+///|
+#export_name("sample_plan")
+pub fn sample_plan(data : Bytes, index : Int32, text : String) -> String {
+  let file = try! @font.load(data)
+  for face in file.faces() {
+    if face.index == index {
+      let plan = face.sample_plan(text)
+      let primary = match plan.primary {
+        Some(script) => script.code
+        None => ""
+      }
+      return Json::object({
+        "primary": Json::string(primary),
+        "scripts": Json::array(
+          plan.scripts.map(script => Json::string(script.code)),
+        ),
+        "specimen": Json::string(plan.specimen),
+        "charset": Json::array(plan.charset.map(line => Json::string(line))),
+        "waterfall": Json::string(plan.waterfall),
+        "rtl": Json::boolean(plan.rtl),
+        "lang": Json::string(plan.lang),
+        "all": Json::string(plan.all()),
+      }).stringify()
+    }
+  }
+  abort("missing font face")
+}

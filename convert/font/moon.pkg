@@ -1,6 +1,7 @@
 import {
   "f4ah6o/bdf/font/sfnt",
   "moonbitlang/core/string",
+  "moonbitlang/core/encoding/utf8",
   "moonbit-community/ucd",
 }
 

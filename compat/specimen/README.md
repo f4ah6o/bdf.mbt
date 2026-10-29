@@ -6,10 +6,11 @@ CFF, TTC, WOFF, color, variable, malformed bitmap-strike and CFF fallback cases 
 The pruned cases compare the automatically computed GSUB reachability set with
 upstream and also test the explicit-glyph API. Program sizes and SHA-256 hashes are
 compared with upstream; representative glyph programs are also rendered and
-compared with vlmkit.
+compared with vlmkit. `plan.json.gz` additionally compares sample language,
+waterfall and fallback selection across real and synthetic fonts.
 
 After `moon build --target js`, run `npm run test:specimen` and
-`npm run test:specimen-visual`. To regenerate, copy `generate_test.go` without
+`npm run test:specimen-plan`, and `npm run test:specimen-visual`. To regenerate, copy `generate_test.go` without
 its first `//go:build ignore` line into the upstream checkout at
 `converter/font/codex_specimen_test.go`, then run:
 
@@ -18,3 +19,8 @@ BDF_FIXTURE_ROOT=/path/to/bdf.mbt go test ./converter/font -run '^TestCodexGlyph
 ```
 
 The test writes `compat/specimen/upstream.json.gz` in the target repository.
+
+To regenerate sample-plan cases, also copy `generate-plan_test.go` without its
+build tag into the upstream `converter/font` package and run
+`go test ./converter/font -run '^TestCodexSamplePlans$'`, with the same
+`BDF_FIXTURE_ROOT` environment variable.

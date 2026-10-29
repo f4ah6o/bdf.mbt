@@ -153,3 +153,29 @@ pub fn Font::standalone_size(self : Font) -> Int64 {
   }
   size
 }
+
+///|
+/// Unicode characters mapped to valid nonzero glyphs, in code-point order.
+pub fn Font::characters(self : Font) -> Array[Int32] {
+  let result : Array[Int32] = []
+  for code, glyph in self.cmap {
+    if code >= 0 &&
+      code <= 0x10ffff &&
+      glyph > 0 &&
+      glyph < self.metrics.glyph_count {
+      result.push(code)
+    }
+  }
+  result.sort()
+  result
+}
+
+///|
+/// Return a copy of a raw SFNT table when present.
+pub fn Font::table(self : Font, tag : String) -> Bytes? {
+  if self.tables.contains(tag) {
+    Some(sfnt_table(self.source, self.tables, tag).to_owned())
+  } else {
+    None
+  }
+}
