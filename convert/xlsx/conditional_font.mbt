@@ -5,6 +5,7 @@ priv struct XlsxConditionalFont {
   mut strike : Bool?
   mut underline : String?
   mut color : XlsxColor?
+  mut fill : XlsxFill?
 }
 
 ///|
@@ -25,15 +26,18 @@ fn XlsxWorkbook::xlsx_conditional_font(
         "xlsx: plain conversion does not support conditional formatting",
       )
   }
-  let reader = @xml.NamespaceReader::from_string(
-    @utf8.decode_lossy(bytes[:], ignore_bom=true),
-  )
+  let text = @utf8.decode_lossy(bytes[:], ignore_bom=true)
+  if text.contains("<!ENTITY") {
+    raise InvalidXlsxInput("xlsx: the part declares entities")
+  }
+  let reader = @xml.NamespaceReader::from_string(text)
   let result : XlsxConditionalFont = {
     bold: None,
     italic: None,
     strike: None,
     underline: None,
     color: None,
+    fill: None,
   }
   let mut depth = 0
   let mut dxfs_depth = -1
@@ -41,6 +45,7 @@ fn XlsxWorkbook::xlsx_conditional_font(
   let mut font_depth = -1
   let mut index = 0
   let mut found_font = false
+  let mut found_fill = false
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -57,12 +62,37 @@ fn XlsxWorkbook::xlsx_conditional_font(
           }
           index += 1
         } else if depth == dxf_depth {
-          if name != "font" || found_font {
+          if name == "font" {
+            if found_font {
+              xlsx_reject_conditional()
+            }
+            found_font = true
+            if event.kind is Start(_) {
+              font_depth = depth + 1
+            }
+          } else if name == "fill" {
+            if found_fill {
+              xlsx_reject_conditional()
+            }
+            found_fill = true
+            let fill = xlsx_read_fill(reader, event.kind is Empty(_))
+            if fill.gradient is Some(_) {
+              xlsx_reject_conditional()
+            }
+            if fill.pattern == "" &&
+              (fill.foreground.kind != 0 || fill.background.kind != 0) {
+              fill.pattern = "solid"
+            }
+            if fill.pattern == "solid" && fill.background.kind != 0 {
+              fill.foreground = fill.background
+            }
+            if fill.pattern != "" && fill.pattern != "solid" {
+              xlsx_reject_conditional()
+            }
+            result.fill = if fill.pattern == "" { None } else { Some(fill) }
+            continue
+          } else {
             xlsx_reject_conditional()
-          }
-          found_font = true
-          if event.kind is Start(_) {
-            font_depth = depth + 1
           }
         } else if depth == font_depth {
           if event.kind is Start(_) {
@@ -98,7 +128,7 @@ fn XlsxWorkbook::xlsx_conditional_font(
           font_depth = -1
         }
         if depth + 1 == dxf_depth {
-          if !found_font {
+          if !found_font && !found_fill {
             xlsx_reject_conditional()
           }
           return result
@@ -151,6 +181,14 @@ fn xlsx_apply_conditional_font(
   diff : XlsxConditionalFont,
 ) -> Array[XlsxRow] {
   let new_formats : Map[Int32, Int32] = Map([])
+  let conditional_fill = match diff.fill {
+    Some(fill) => {
+      let index = styles.fills.length()
+      styles.fills.push(fill)
+      Some(index)
+    }
+    None => None
+  }
   let result : Array[XlsxRow] = []
   for row in rows {
     let columns = matched.get(row.index).unwrap_or(Map([]))
@@ -192,7 +230,11 @@ fn xlsx_apply_conditional_font(
           let new_font = styles.fonts.length()
           styles.fonts.push(font)
           let index = styles.cell_formats.length()
-          styles.cell_formats.push({ ..format, font: new_font, })
+          styles.cell_formats.push({
+            ..format,
+            font: new_font,
+            fill: conditional_fill.unwrap_or(format.fill),
+          })
           new_formats[old_index] = index
           index
         }

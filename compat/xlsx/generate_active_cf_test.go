@@ -98,7 +98,7 @@ func TestCodexActiveCF(t *testing.T) {
 		if i >= 160 {
 			switch i - 160 {
 			case 0:
-				dxf = `<fill><patternFill patternType="solid"><fgColor rgb="FFFF0000"/></patternFill></fill>`
+				dxf = `<fill><patternFill patternType="darkGray"><fgColor rgb="FFFF0000"/></patternFill></fill>`
 			case 1:
 				dxf = `<border><bottom style="thin"/></border>`
 			case 2:
@@ -108,7 +108,7 @@ func TestCodexActiveCF(t *testing.T) {
 			case 4:
 				dxf = `<font><u val="singleAccounting"/></font>`
 			case 5:
-				dxf = `<font><b/><color rgb="FF112233"/></font><fill/>`
+				dxf = `<font><b/></font><font><i/></font>`
 			}
 		}
 		add("xl/styles.xml", fmt.Sprintf(`<styleSheet><numFmts><numFmt numFmtId="164" formatCode="[Red]0"/></numFmts><fonts><font><name val="Calibri"/><sz val="11"/></font><font><name val="Calibri"/><sz val="11"/><b/></font></fonts><cellXfs><xf fontId="0"/><xf fontId="1" numFmtId="164" applyAlignment="1"><alignment wrapText="1"/></xf><xf fontId="2"/></cellXfs><dxfs><dxf>%s</dxf></dxfs></styleSheet>`, dxf))

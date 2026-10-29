@@ -45,6 +45,16 @@ for (const [j, c] of inactiveCF.entries()) await verifyCase(c, `inactive conditi
 const activeCF = JSON.parse(await readFile(new URL('./active-cf.json', import.meta.url)));
 assert.equal(activeCF.length, 161, 'conditional font fixture count');
 for (const [j, c] of activeCF.entries()) await verifyCase(c, `conditional font ${j}`);
+const conditionalFill = JSON.parse(await readFile(new URL('./conditional-fill.json', import.meta.url)));
+assert.equal(conditionalFill.length, 161, 'conditional fill fixture count');
+for (const [j, c] of conditionalFill.entries()) await verifyCase(c, `conditional fill ${j}`);
+const unsupportedConditionalFill = JSON.parse(await readFile(new URL('./conditional-fill-unsupported.json', import.meta.url)));
+assert.equal(unsupportedConditionalFill.length, 8, 'unsupported conditional fill fixture count');
+for (const encoded of unsupportedConditionalFill) {
+  const input = Buffer.from(encoded, 'base64');
+  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional fills must be rejected');
+  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+}
 const unsupportedActiveCF = JSON.parse(await readFile(new URL('./active-cf-unsupported.json', import.meta.url)));
 assert.equal(unsupportedActiveCF.length, 8, 'unsupported conditional font fixture count');
 for (const encoded of unsupportedActiveCF) {
@@ -90,4 +100,4 @@ for (const encoded of unsupportedBase) {
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|complex borders)/);
 }
-console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length} conditional formats match upstream.`);
+console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length} conditional formats match upstream.`);
