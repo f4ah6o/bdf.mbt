@@ -6,6 +6,8 @@ pub fn automatic_pruned(Bytes, Int32, String) -> Bytes
 
 pub fn coverage(Bytes, Int32) -> String
 
+pub fn features(Bytes, Int32) -> String
+
 pub fn glyph_details(Bytes, Int32) -> String
 
 pub fn glyph_names(Bytes, Int32) -> String

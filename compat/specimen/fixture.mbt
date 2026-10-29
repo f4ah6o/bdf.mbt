@@ -293,3 +293,32 @@ pub fn overview(data : Bytes, index : Int32, outlines : Bool) -> String {
   }
   abort("missing font face")
 }
+
+///|
+#export_name("features")
+pub fn features(data : Bytes, index : Int32) -> String {
+  let file = try! @font.load(data)
+  for face in file.faces() {
+    if face.index == index {
+      return Json::array(
+        face
+        .feature_groups()
+        .map(g => {
+          Json::object({
+            "table": Json::string(g.table),
+            "tag": Json::string(g.tag),
+            "lookups": Json::array(
+              g.lookups.map(x => Json::number(x.to_double())),
+            ),
+            "scripts": Json::array(g.scripts.map(Json::string)),
+            "uiName": Json::string(g.ui_name),
+            "characters": Json::array(
+              g.characters.map(x => Json::number(x.to_double())),
+            ),
+          })
+        }),
+      ).stringify()
+    }
+  }
+  abort("missing font face")
+}
