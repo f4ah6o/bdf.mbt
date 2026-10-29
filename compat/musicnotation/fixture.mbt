@@ -466,3 +466,87 @@ pub fn glyph(name : String) -> String {
     }
   }
 }
+
+///|
+#export_name("positions")
+pub fn positions(
+  fifths : Int32,
+  sign : Int32,
+  line : Int32,
+  octave : Int32,
+  raw_events : FixedArray[Int32],
+  raw_notes : FixedArray[Int32],
+) -> String {
+  let key : @music.KeySig = { fifths, minor: false, }
+  let clef : @music.EngravingClef = { sign, line, octave, }
+  let events : Array[@music.EngravingEvent] = []
+  for i in 0..<(raw_events.length() / 5) {
+    let notes : Array[@music.EngravingNote] = []
+    let start = raw_events[i * 5 + 3]
+    let end = raw_events[i * 5 + 4]
+    for n in start..<end {
+      notes.push({
+        pitch: {
+          step: raw_notes[n * 6],
+          alter: raw_notes[n * 6 + 1],
+          octave: raw_notes[n * 6 + 2],
+        },
+        accidental: raw_notes[n * 6 + 3],
+        cautionary: raw_notes[n * 6 + 4] != 0,
+        tie_stop: raw_notes[n * 6 + 5] != 0,
+      })
+    }
+    events.push({
+      offset: raw_events[i * 5].to_int64(),
+      voice: raw_events[i * 5 + 1],
+      grace: raw_events[i * 5 + 2] != 0,
+      notes,
+    })
+  }
+  let signs = @music.resolve_accidentals(key, events)
+  let all_signs : Array[Json] = []
+  let all_positions : Array[Json] = []
+  let all_placements : Array[Json] = []
+  for i, event in events {
+    all_signs.push(
+      Json::array(
+        signs[i].map(s => {
+          match s {
+            Some(n) => Json::number(n.to_double())
+            None => Json::null()
+          }
+        }),
+      ),
+    )
+    all_positions.push(
+      Json::array(
+        event.notes.map(n => {
+          Json::number(@music.staff_position(clef, n.pitch).to_double())
+        }),
+      ),
+    )
+    all_placements.push(
+      Json::array(
+        @music.place_accidentals(clef, event.notes, signs[i]).map(p => {
+          Json::array([
+            Json::number(p.note.to_double()),
+            Json::number(p.accidental.to_double()),
+            Json::number(p.position.to_double()),
+            Json::number(p.column.to_double()),
+          ])
+        }),
+      ),
+    )
+  }
+  Json::object({
+    "signs": Json::array(all_signs),
+    "positions": Json::array(all_positions),
+    "placements": Json::array(all_placements),
+    "keyPositions": Json::array(
+      @music.key_positions(clef, key).map(v => Json::number(v.to_double())),
+    ),
+    "keyAlters": Json::array(
+      @music.key_alters(key).map(v => Json::number(v.to_double())),
+    ),
+  }).stringify()
+}

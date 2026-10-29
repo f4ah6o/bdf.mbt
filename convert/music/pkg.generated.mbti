@@ -8,13 +8,19 @@ pub fn beat_grids(Array[MeasureSpan], Array[Int64]) -> Array[BeatGrid]
 
 pub fn build_timeline(Int64, Array[TimeChange], Array[KeyChange], Array[TempoChange], Array[Double], Int32, time_override? : TimeSig?, key_override? : KeySig?) -> ScoreTimeline
 
+pub fn cancelled_accidentals(KeySig, KeySig) -> Int32
+
 pub fn divide_values(Int64, Int64, Int64, Int64, Bool, Bool) -> Array[NotationValue]
 
 pub fn drum_of(Int32) -> DrumNotation
 
 pub fn estimate_key(Array[Double], Int32) -> KeySig
 
+pub fn key_alters(KeySig) -> Array[Int32]
+
 pub fn key_of(Int32, Bool, Int32) -> KeySig
+
+pub fn key_positions(EngravingClef, KeySig) -> Array[Int32]
 
 pub fn music_glyph(String) -> MusicGlyph?
 
@@ -24,11 +30,17 @@ pub fn note_ticks(Int32, Int32) -> Int64
 
 pub fn percussion_durations(Array[QuantizedNote], Array[BeatGrid]) -> Array[QuantizedNote]
 
+pub fn place_accidentals(EngravingClef, Array[EngravingNote], Array[Int32?]) -> Array[PlacedAccidental]
+
 pub fn plan_staff(Array[QuantizedNote], Int32, Int32) -> StaffPlan?
 
 pub fn quantize_notes(Array[MeasureSpan], Array[NotationNote]) -> Array[QuantizedNote]
 
+pub fn resolve_accidentals(KeySig, Array[EngravingEvent]) -> Array[Array[Int32?]]
+
 pub fn spell(Int32, KeySig, Int32) -> Pitch
+
+pub fn staff_position(EngravingClef, Pitch) -> Int32
 
 pub fn write_staff_events(Array[VoiceNote], Array[MeasureSpan], Array[BeatGrid], Array[NotationLyric], Int32, Bool) -> Array[Array[ScoreEvent]]
 
@@ -48,6 +60,26 @@ pub(all) struct DrumNotation {
   pitch : Pitch
   head : Int32
   voice : Int32
+}
+
+pub(all) struct EngravingClef {
+  sign : Int32
+  line : Int32
+  octave : Int32
+}
+
+pub(all) struct EngravingEvent {
+  offset : Int64
+  voice : Int32
+  grace : Bool
+  notes : Array[EngravingNote]
+}
+
+pub(all) struct EngravingNote {
+  pitch : Pitch
+  accidental : Int32
+  cautionary : Bool
+  tie_stop : Bool
 }
 
 pub(all) struct KeyChange {
@@ -155,6 +187,13 @@ pub(all) struct Pitch {
   step : Int32
   alter : Int32
   octave : Int32
+}
+
+pub(all) struct PlacedAccidental {
+  note : Int32
+  accidental : Int32
+  position : Int32
+  column : Int32
 }
 
 pub(all) struct QuantizedNote {
