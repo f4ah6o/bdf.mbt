@@ -95,6 +95,7 @@ pub fn draw_sized_grid_no_fonts(
   wraps~ : Map[Int32, Map[Int32, Bool]] = Map([]),
   diagonals~ : Map[Int32, Map[Int32, GridCellDiagonal]] = Map([]),
   font_families~ : Map[Int32, Map[Int32, String]] = Map([]),
+  italics~ : Map[Int32, Map[Int32, Bool]] = Map([]),
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -264,6 +265,10 @@ pub fn draw_sized_grid_no_fonts(
         Some(columns) => columns.get(column).unwrap_or(11.0)
         None => 11.0
       }
+      let italic = match italics.get(i) {
+        Some(columns) => columns.get(column).unwrap_or(false)
+        None => false
+      }
       let east_asian = match east_asian_fonts.get(i) {
         Some(columns) =>
           match columns.get(column) {
@@ -426,6 +431,7 @@ pub fn draw_sized_grid_no_fonts(
           Map([]),
           size~,
           east_asian~,
+          italic~,
         )
       }
     }

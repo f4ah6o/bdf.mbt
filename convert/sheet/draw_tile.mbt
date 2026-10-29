@@ -24,6 +24,7 @@ fn DrawTile::set_font(
   face : @sfnt.Font?,
   hash : String?,
   size~ : Double = 11.0,
+  italic~ : Bool = false,
 ) -> Unit raise {
   let weight = if bold &&
     (hash is None || (face is Some(f) && f.info.weight < 600)) {
@@ -53,11 +54,22 @@ fn DrawTile::set_font(
       None => family
     }
   }
-  let request_key = (if bold { "single:700:" } else { "single:400:" }) + family
+  let request_key = (if bold { "single:700:" } else { "single:400:" }) +
+    (if italic { "italic:" } else { "normal:" }) +
+    family
   let index = match self.fonts.get(request_key) {
     Some(index) => index
     None => {
-      let index = self.object.add_font({ hash, family, weight, style: 0, })
+      let index = self.object.add_font({
+        hash,
+        family,
+        weight,
+        style: if italic {
+          1
+        } else {
+          0
+        },
+      })
       self.fonts[request_key] = index
       index
     }
@@ -92,8 +104,9 @@ fn DrawTile::text_run(
   face : @sfnt.Font?,
   hash : String?,
   size~ : Double = 11.0,
+  italic~ : Bool = false,
 ) -> Unit raise {
-  self.set_font(family, bold, face, hash, size~)
+  self.set_font(family, bold, face, hash, size~, italic~)
   self.fill_color(color)
   self.object.fill_text(
     text,
@@ -116,6 +129,7 @@ fn DrawTile::emit_line(
   hash : String?,
   size~ : Double = 11.0,
   east_asian~ : String = "",
+  italic~ : Bool = false,
 ) -> Unit raise {
   let mut chars = StringBuilder()
   let mut has_chars = false
@@ -140,6 +154,7 @@ fn DrawTile::emit_line(
         face,
         hash,
         size~,
+        italic~,
       )
       run_x += run_width
       chars = StringBuilder()
@@ -166,6 +181,7 @@ fn DrawTile::emit_line(
       face,
       hash,
       size~,
+      italic~,
     )
   }
 }
@@ -185,6 +201,7 @@ fn DrawTile::emit_cell(
   hashes : Map[Int32, String],
   size~ : Double = 11.0,
   east_asian~ : String = "",
+  italic~ : Bool = false,
 ) -> Unit raise {
   self.object.mark(2, ref)
   if layout.lang_known {
@@ -224,6 +241,7 @@ fn DrawTile::emit_cell(
           hash,
           size~,
           east_asian~,
+          italic~,
         )
     }
   }
