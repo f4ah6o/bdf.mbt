@@ -65,6 +65,6 @@
     "test:gdef": "node compat/gsub/verify-gdef.mjs",
     "build:demo": "moon build --target js --release && node demo/build.mjs",
     "test:demo": "node demo/test.mjs",
-    "test:gpos": "node compat/gsub/verify-gpos.mjs && node compat/gsub/verify-position-values.mjs && node compat/gsub/verify-attachments.mjs && node compat/specimen/verify-kerning.mjs"
+    "test:gpos": "node compat/gsub/verify-gpos.mjs && node compat/gsub/verify-position-values.mjs && node compat/gsub/verify-pairs.mjs && node compat/gsub/verify-attachments.mjs && node compat/specimen/verify-kerning.mjs"
   }
 }

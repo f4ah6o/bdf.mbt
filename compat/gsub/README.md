@@ -70,3 +70,10 @@ Generate `context.json.gz` first, then copy `generate-attachments_test.go` witho
 its build tag into upstream `internal/otlayout` alongside `generate_test.go` and
 run `TestCodexAttachments` with the same fixture root. Run `npm run test:gpos`
 after a JS build.
+
+`pairs.json.gz` checks pair enumeration order, class expansion, zero adjustments,
+early termination and shared work budgets. Generate `gpos.json.gz` first, then
+copy `generate-pairs_test.go` without its build tag into upstream
+`internal/otlayout` alongside `generate_test.go` and run
+`TestCodexPositionPairs` with the same fixture root. Run `npm run test:gpos`
+after a JS build.

@@ -131,3 +131,136 @@ pub fn Gpos::pair_value(
   }
   None
 }
+
+///|
+/// One nonzero pair-positioning adjustment.
+pub(all) struct PositionPair {
+  first : Int32
+  second : Int32
+  first_value : PositionValue
+  second_value : PositionValue
+}
+
+///|
+priv struct PositionClassAdjustment {
+  second_class : Int32
+  first_value : PositionValue
+  second_value : PositionValue
+}
+
+///|
+fn PositionValue::is_zero(self : PositionValue) -> Bool {
+  self.x_placement == 0 &&
+  self.y_placement == 0 &&
+  self.x_advance == 0 &&
+  self.y_advance == 0
+}
+
+///|
+/// Visit nonzero pair adjustments, expanding class pairs in upstream order.
+/// The callback can stop iteration before large class expansions complete.
+pub fn Gpos::each_pair(
+  self : Gpos,
+  index : Int32,
+  visit : (PositionPair) -> Bool,
+) -> Unit {
+  for sub in self.pair_subtables(index) {
+    let s1 = value_size(sub.vf1)
+    let s2 = value_size(sub.vf2)
+    let cov = coverage(at(sub.data, u16(sub.data, 2)))
+    if sub.format == 1 {
+      if !self.spend(1L + cov.length().to_int64()) {
+        return
+      }
+      for first in cov {
+        let k = sub.coverage[first]
+        if k >= u16(sub.data, 8) {
+          continue
+        }
+        let set = at(sub.data, u16(sub.data, 10 + k * 2)).unwrap_or(b""[:])
+        let n = count(set, u16(set, 0), 2, 2 + s1 + s2)
+        if !self.spend(n.to_int64()) {
+          return
+        }
+        for j in 0..<n {
+          let pos = 2 + j * (2 + s1 + s2)
+          let v1 = position_value(set, pos + 2, sub.vf1)
+          let v2 = position_value(set, pos + 2 + s1, sub.vf2)
+          if (!v1.is_zero() || !v2.is_zero()) &&
+            !visit({
+              first,
+              second: u16(set, pos),
+              first_value: v1,
+              second_value: v2,
+            }) {
+            return
+          }
+        }
+      }
+    } else {
+      if !self.spend(
+          1L +
+          cov.length().to_int64() +
+          sub.class2.length().to_int64() +
+          sub.n1.to_int64() * sub.n2.to_int64(),
+        ) {
+        return
+      }
+      let class_glyphs : Map[Int32, Array[Int32]] = Map([])
+      for glyph, class in sub.class2 {
+        let glyphs = match class_glyphs.get(class) {
+          Some(glyphs) => glyphs
+          None => {
+            let glyphs : Array[Int32] = []
+            class_glyphs[class] = glyphs
+            glyphs
+          }
+        }
+        glyphs.push(glyph)
+      }
+      for _, glyphs in class_glyphs {
+        glyphs.sort()
+      }
+      let adjustments : Array[Array[PositionClassAdjustment]] = [
+        for _ in 0..<sub.n1 => []
+      ]
+      for c1 in 0..<sub.n1 {
+        for c2 in 1..<sub.n2 {
+          let pos = 16 + (c1 * sub.n2 + c2) * (s1 + s2)
+          let v1 = position_value(sub.data, pos, sub.vf1)
+          let v2 = position_value(sub.data, pos + s1, sub.vf2)
+          if (!v1.is_zero() || !v2.is_zero()) &&
+            class_glyphs.get(c2).unwrap_or([]).length() > 0 {
+            adjustments[c1].push({
+              second_class: c2,
+              first_value: v1,
+              second_value: v2,
+            })
+          }
+        }
+      }
+      for first in cov {
+        let c1 = sub.class1.get(first).unwrap_or(0)
+        if c1 >= sub.n1 {
+          continue
+        }
+        for a in adjustments[c1] {
+          let glyphs = class_glyphs[a.second_class]
+          if !self.spend(glyphs.length().to_int64()) {
+            return
+          }
+          for second in glyphs {
+            if !visit({
+                first,
+                second,
+                first_value: a.first_value,
+                second_value: a.second_value,
+              }) {
+              return
+            }
+          }
+        }
+      }
+    }
+  }
+}

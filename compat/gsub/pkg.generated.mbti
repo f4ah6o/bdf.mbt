@@ -26,6 +26,8 @@ pub fn open_gpos(Bytes) -> @otlayout.Gpos
 
 pub fn position_pair(@otlayout.Gpos, Int32, Int32, Int32) -> String
 
+pub fn position_pairs(@otlayout.Gpos, Int32, Int32) -> String
+
 pub fn position_singles(@otlayout.Gpos, Int32) -> String
 
 pub fn tag_names(String) -> String

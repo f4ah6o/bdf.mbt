@@ -44,6 +44,7 @@ pub struct Gpos {
 }
 pub fn Gpos::attachments(Self, Int32) -> Array[Attachment]
 pub fn Gpos::context(Self, Int32) -> LookupContext?
+pub fn Gpos::each_pair(Self, Int32, (PositionPair) -> Bool) -> Unit
 pub fn Gpos::each_single(Self, Int32, (Int32, PositionValue) -> Bool) -> Unit
 pub fn Gpos::mark_counts(Self, Int32) -> (Int32, Int32)
 pub fn Gpos::pair_count(Self, Int32) -> Int64
@@ -99,6 +100,13 @@ pub(all) struct LookupContext {
 pub(all) struct MarkAnchor {
   class : Int32
   anchor : Anchor
+}
+
+pub(all) struct PositionPair {
+  first : Int32
+  second : Int32
+  first_value : PositionValue
+  second_value : PositionValue
 }
 
 pub(all) struct PositionValue {

@@ -324,3 +324,25 @@ pub fn gpos_attachments(table : @otlayout.Gpos, index : Int32) -> String {
     "attachments": Json::array(attachments),
   }).stringify()
 }
+
+///|
+#export_name("position_pairs")
+pub fn position_pairs(
+  table : @otlayout.Gpos,
+  index : Int32,
+  limit : Int32,
+) -> String {
+  let values : Array[Json] = []
+  table.each_pair(index, pair => {
+    values.push(
+      Json::object({
+        "first": Json::number(pair.first.to_double()),
+        "second": Json::number(pair.second.to_double()),
+        "v1": position_json(pair.first_value),
+        "v2": position_json(pair.second_value),
+      }),
+    )
+    values.length() < limit
+  })
+  Json::array(values).stringify()
+}
