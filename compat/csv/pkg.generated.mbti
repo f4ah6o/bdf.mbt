@@ -6,6 +6,8 @@ pub fn decode_only(Bytes, String) -> String
 
 pub fn read_fixture(Bytes, String) -> String
 
+pub fn table_fixture(String) -> String
+
 // Errors
 
 // Types and methods

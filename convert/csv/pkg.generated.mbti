@@ -24,12 +24,25 @@ pub fn prepare_grid(ParseResult) -> Grid
 
 pub fn read_records(String, Dialect) -> Records raise
 
+pub fn table_value_type(String) -> ColumnType
+
+pub fn values_table(ParseResult) -> Table?
+
 // Errors
 pub suberror CsvError {
   InvalidDialect(String)
 }
 
 // Types and methods
+pub(all) enum ColumnType {
+  TextColumn
+  NumberColumn
+  IntegerColumn
+  BooleanColumn
+  DateColumn
+  DateTimeColumn
+} derive(Eq, @debug.Debug)
+
 pub(all) struct DecodedText {
   text : String
   charset : String
@@ -81,6 +94,26 @@ pub(all) struct Records {
   bad_quotes : Int32
   quoted_fields : Int32
   unfinished_quote : Bool
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Table {
+  columns : Array[TableColumn]
+  rows : Array[Array[TableValue]]
+} derive(Eq, @debug.Debug)
+
+pub(all) struct TableColumn {
+  name : String
+  kind : ColumnType
+} derive(Eq, @debug.Debug)
+
+pub(all) enum TableValue {
+  NullValue
+  TextValue(String)
+  NumberValue(Double)
+  IntegerValue(Int64)
+  BooleanValue(Bool)
+  DateValue(Int64)
+  DateTimeValue(Int64)
 } derive(Eq, @debug.Debug)
 
 // Type aliases

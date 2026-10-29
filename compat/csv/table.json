@@ -1,0 +1,172 @@
+[
+  {
+    "Input": "0",
+    "Kind": "integer",
+    "Value": "0"
+  },
+  {
+    "Input": "-0",
+    "Kind": "integer",
+    "Value": "0"
+  },
+  {
+    "Input": "+0",
+    "Kind": "integer",
+    "Value": "0"
+  },
+  {
+    "Input": "01",
+    "Kind": "string",
+    "Value": "01"
+  },
+  {
+    "Input": "+01",
+    "Kind": "string",
+    "Value": "+01"
+  },
+  {
+    "Input": "1.5",
+    "Kind": "number",
+    "Value": "1.5"
+  },
+  {
+    "Input": ".5",
+    "Kind": "number",
+    "Value": "0.5"
+  },
+  {
+    "Input": "1.",
+    "Kind": "number",
+    "Value": "1"
+  },
+  {
+    "Input": "-0.0",
+    "Kind": "number",
+    "Value": "-0"
+  },
+  {
+    "Input": "1e3",
+    "Kind": "number",
+    "Value": "1000"
+  },
+  {
+    "Input": "1e9999",
+    "Kind": "number",
+    "Value": "1e9999"
+  },
+  {
+    "Input": "1e-9999",
+    "Kind": "number",
+    "Value": "0"
+  },
+  {
+    "Input": "123456789012345678",
+    "Kind": "integer",
+    "Value": "123456789012345678"
+  },
+  {
+    "Input": "1234567890123456789",
+    "Kind": "number",
+    "Value": "1.2345678901234568e+18"
+  },
+  {
+    "Input": "2024-02-29",
+    "Kind": "date",
+    "Value": "19782"
+  },
+  {
+    "Input": "2023-02-29",
+    "Kind": "string",
+    "Value": "2023-02-29"
+  },
+  {
+    "Input": "0000-01-01",
+    "Kind": "date",
+    "Value": "-719528"
+  },
+  {
+    "Input": "9999-12-31",
+    "Kind": "date",
+    "Value": "2932896"
+  },
+  {
+    "Input": "1970-01-01T00:00:00Z",
+    "Kind": "datetime",
+    "Value": "0"
+  },
+  {
+    "Input": "1969-12-31T23:59:59.999Z",
+    "Kind": "datetime",
+    "Value": "-1"
+  },
+  {
+    "Input": "2024-05-20T14:05:00.12345678912+09:00",
+    "Kind": "datetime",
+    "Value": "1716181500123"
+  },
+  {
+    "Input": "2024-04-01 09:30",
+    "Kind": "datetime",
+    "Value": "1711963800000"
+  },
+  {
+    "Input": "2024-04-01 09:30Z",
+    "Kind": "string",
+    "Value": "2024-04-01 09:30Z"
+  },
+  {
+    "Input": "2024-04-01T09:30:00+0960",
+    "Kind": "datetime",
+    "Value": "1711927800000"
+  },
+  {
+    "Input": "2024-04-01 09:30:00+0960",
+    "Kind": "string",
+    "Value": "2024-04-01 09:30:00+0960"
+  },
+  {
+    "Input": "2024-04-01T09:30:00+24:60",
+    "Kind": "datetime",
+    "Value": "1711873800000"
+  },
+  {
+    "Input": "2024-04-01T24:00:00Z",
+    "Kind": "string",
+    "Value": "2024-04-01T24:00:00Z"
+  },
+  {
+    "Input": "2024-04-01T09:30:60Z",
+    "Kind": "string",
+    "Value": "2024-04-01T09:30:60Z"
+  },
+  {
+    "Input": "TRUE",
+    "Kind": "boolean",
+    "Value": "true"
+  },
+  {
+    "Input": "false",
+    "Kind": "boolean",
+    "Value": "false"
+  },
+  {
+    "Input": "00.1",
+    "Kind": "string",
+    "Value": "00.1"
+  },
+  {
+    "Input": " 12 ",
+    "Kind": "integer",
+    "Value": "12"
+  },
+  {
+    "Input": "NaN",
+    "Kind": "string",
+    "Value": "NaN"
+  },
+  {
+    "Input": "Infinity",
+    "Kind": "string",
+    "Value": "Infinity"
+  }
+]

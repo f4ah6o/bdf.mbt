@@ -14,6 +14,8 @@ To regenerate both files from the pinned upstream checkout, run:
 ```sh
 go run /path/to/bdf.mbt/compat/csv/generate.go > /path/to/bdf.mbt/compat/csv/upstream.json
 go run /path/to/bdf.mbt/compat/csv/generate-pairs.go > /path/to/bdf.mbt/compat/csv/pairs.json
+cp /path/to/bdf.mbt/compat/csv/generate-table_test.go converter/csv/
+BDF_CSV_TABLE_FIXTURE=/path/to/bdf.mbt/compat/csv/table.json go test ./converter/csv -run '^TestGenerateTableFixture$' -count=1
 ```
 
 After `moon build --target js`, run `npm run test:csv-compat` in this module.
