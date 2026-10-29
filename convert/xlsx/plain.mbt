@@ -238,8 +238,9 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// center vertical alignment, solid fills, line borders, merged cells, wrapping,
 /// shrink-to-fit, indentation and center-across-selection.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
-/// patterned row and column fills, base borders and other complex features are
-/// rejected. Solid base fills are limited to views of at most 1,000,000 cells.
+/// patterned row and column fills, complex borders and other features are
+/// rejected. Views with base fills are limited to 1,000,000 cells, and views
+/// with base borders to 200,000 cells.
 pub fn convert_plain_no_fonts(
   data : Bytes,
   data_mode~ : String = "",
@@ -387,9 +388,12 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     }
   }
   let mut base_fills = false
+  let mut base_borders = false
   for column in geo.columns {
     if column.style >= 0 {
-      base_fills = xlsx_check_base_style(styles, column.style) || base_fills
+      let (fill, border) = xlsx_check_base_style(styles, column.style)
+      base_fills = fill || base_fills
+      base_borders = border || base_borders
     }
   }
   let (row_count, col_count) = xlsx_initial_extent(parsed, geo, [])
@@ -457,7 +461,9 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let border_cache : Map[Int32, (@sheet.GridCellBorder, Array[XlsxRgb])] = Map([])
   for row in rows {
     if row.style >= 0 {
-      base_fills = xlsx_check_base_style(styles, row.style) || base_fills
+      let (fill, border) = xlsx_check_base_style(styles, row.style)
+      base_fills = fill || base_fills
+      base_borders = border || base_borders
     }
     let entries : Array[@sheet.SizedGridCell] = []
     for cell in row.cells {
@@ -921,10 +927,10 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     }
     cells.push({ index: row.index, cells: entries, })
   }
-  let draw_cells = if base_fills {
-    xlsx_plain_base_fills(
-      rows, cells, geo, styles, theme_colors, spans, region_rows, fills, row_count,
-      col_count,
+  let draw_cells = if base_fills || base_borders {
+    xlsx_plain_base_paint(
+      rows, cells, geo, styles, theme_colors, spans, region_rows, fills, borders,
+      border_colors, diagonals, border_colors_by_weight, row_count, col_count, base_borders,
     )
   } else {
     cells
@@ -959,7 +965,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
 }
 
 ///|
-fn xlsx_plain_base_fills(
+fn xlsx_plain_base_paint(
   rows : Array[XlsxRow],
   cells : Array[@sheet.SizedGridRow],
   geo : XlsxSheetGeometry,
@@ -968,13 +974,23 @@ fn xlsx_plain_base_fills(
   spans : Map[Int32, Map[Int32, Int32]],
   region_rows : Map[Int32, Map[Int32, @sheet.GridMergeRegion]],
   fills : Map[Int32, Map[Int32, @sheet.GridSolidFill]],
+  borders : Map[Int32, Map[Int32, @sheet.GridCellBorder]],
+  border_colors : Map[Int32, Map[Int32, Array[UInt32]]],
+  diagonals : Map[Int32, Map[Int32, @sheet.GridCellDiagonal]],
+  border_colors_by_weight : Map[Int32, XlsxRgb],
   row_count : Int32,
   col_count : Int32,
+  base_borders : Bool,
 ) -> Array[@sheet.SizedGridRow] raise {
   // Materializing missing formatted cells must stay bounded for huge views.
   if row_count.to_int64() * col_count.to_int64() > 1000000L {
     raise InvalidXlsxInput(
       "xlsx: row or column fill exceeds the supported view size",
+    )
+  }
+  if base_borders && row_count.to_int64() * col_count.to_int64() > 200000L {
+    raise InvalidXlsxInput(
+      "xlsx: row or column border exceeds the supported view size",
     )
   }
   let column_base = Array::make(col_count, -1)
@@ -1016,10 +1032,10 @@ fn xlsx_plain_base_fills(
       if explicit.contains(c) {
         continue
       }
-      let merged = xlsx_plain_region_at(spans, region_rows, r, c) is Some(_)
+      let region = xlsx_plain_region_at(spans, region_rows, r, c)
       let style = if row_style >= 0 {
         row_style
-      } else if merged {
+      } else if region is Some(_) {
         column_last[c]
       } else {
         column_base[c]
@@ -1028,6 +1044,12 @@ fn xlsx_plain_base_fills(
         continue
       }
       let index = if style >= styles.cell_formats.length() { 0 } else { style }
+      if base_borders {
+        xlsx_put_base_border(
+          styles, index, theme_colors, r, c, region, borders, border_colors, diagonals,
+          border_colors_by_weight,
+        )
+      }
       let fill_index = styles.cell_formats[index].fill
       if fill_index < 0 || fill_index >= styles.fills.length() {
         continue
@@ -1051,14 +1073,115 @@ fn xlsx_plain_base_fills(
     }
     match drawn_by_row.get(r) {
       Some(row) => result.push(row)
-      None => if fills.contains(r) { result.push({ index: r, cells: [], }) }
+      None =>
+        if fills.contains(r) || borders.contains(r) || diagonals.contains(r) {
+          result.push({ index: r, cells: [], })
+        }
     }
   }
   result
 }
 
 ///|
-fn xlsx_check_base_style(styles : XlsxStyles, style : Int32) -> Bool raise {
+fn xlsx_put_base_border(
+  styles : XlsxStyles,
+  format : Int32,
+  theme : Map[Int32, XlsxRgb],
+  row : Int32,
+  col : Int32,
+  region : @sheet.GridMergeRegion?,
+  borders : Map[Int32, Map[Int32, @sheet.GridCellBorder]],
+  colors_by_row : Map[Int32, Map[Int32, Array[UInt32]]],
+  diagonals : Map[Int32, Map[Int32, @sheet.GridCellDiagonal]],
+  colors_by_weight : Map[Int32, XlsxRgb],
+) -> Unit raise {
+  let (border, colors) = xlsx_plain_border(styles, format, theme)
+  let weights = [border.top, border.bottom, border.left, border.right]
+  if weights.any(weight => weight != 0) {
+    for i, weight in weights {
+      if weight != 0 {
+        xlsx_check_border_color(colors_by_weight, weight, colors[i])
+      }
+    }
+    let columns = match borders.get(row) {
+      Some(columns) => columns
+      None => {
+        let columns : Map[Int32, @sheet.GridCellBorder] = Map([])
+        borders[row] = columns
+        columns
+      }
+    }
+    columns[col] = if region is Some(region) {
+      {
+        top: if row == region.row_start {
+          border.top
+        } else {
+          0
+        },
+        bottom: if row == region.row_end {
+          border.bottom
+        } else {
+          0
+        },
+        left: if col == region.column_start {
+          border.left
+        } else {
+          0
+        },
+        right: if col == region.column_end {
+          border.right
+        } else {
+          0
+        },
+      }
+    } else {
+      border
+    }
+    let row_colors = match colors_by_row.get(row) {
+      Some(row_colors) => row_colors
+      None => {
+        let row_colors : Map[Int32, Array[UInt32]] = Map([])
+        colors_by_row[row] = row_colors
+        row_colors
+      }
+    }
+    row_colors[col] = colors.map(color => color.rgba())
+  }
+  let id = styles.cell_formats[format].border
+  if id >= 0 && id < styles.borders.length() {
+    let source = styles.borders[id]
+    if source.diagonal_up || source.diagonal_down {
+      let (weight, color) = xlsx_plain_border_side(
+        styles,
+        source.diagonal,
+        theme,
+      )
+      if weight != 0 {
+        xlsx_check_border_color(colors_by_weight, weight, color)
+        let columns = match diagonals.get(row) {
+          Some(columns) => columns
+          None => {
+            let columns : Map[Int32, @sheet.GridCellDiagonal] = Map([])
+            diagonals[row] = columns
+            columns
+          }
+        }
+        columns[col] = {
+          weight,
+          color: color.rgba(),
+          up: source.diagonal_up,
+          down: source.diagonal_down,
+        }
+      }
+    }
+  }
+}
+
+///|
+fn xlsx_check_base_style(
+  styles : XlsxStyles,
+  style : Int32,
+) -> (Bool, Bool) raise {
   let index = if style < 0 || style >= styles.cell_formats.length() {
     0
   } else {
@@ -1076,23 +1199,24 @@ fn xlsx_check_base_style(styles : XlsxStyles, style : Int32) -> Bool raise {
     }
     solid = fill.pattern == "solid"
   }
+  let mut has_border = false
   if format.border >= 0 && format.border < styles.borders.length() {
     let border = styles.borders[format.border]
-    if border.left.style != "" ||
+    if border.vertical.style != "" || border.horizontal.style != "" {
+      raise InvalidXlsxInput(
+        "xlsx: row or column styles with complex borders are not supported",
+      )
+    }
+    has_border = border.left.style != "" ||
       border.right.style != "" ||
       border.top.style != "" ||
       border.bottom.style != "" ||
-      border.diagonal.style != "" ||
-      border.vertical.style != "" ||
-      border.horizontal.style != "" ||
-      border.diagonal_up ||
-      border.diagonal_down {
-      raise InvalidXlsxInput(
-        "xlsx: row or column styles with borders are not supported",
+      (
+        border.diagonal.style != "" &&
+        (border.diagonal_up || border.diagonal_down)
       )
-    }
   }
-  solid
+  (solid, has_border)
 }
 
 ///|

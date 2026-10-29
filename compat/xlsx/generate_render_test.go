@@ -580,7 +580,7 @@ func TestCodexXLSXRender(t *testing.T) {
 		t.Fatal(e)
 	}
 	out = append(out, map[string]any{"input": fixed, "bdf": fixedBDF.Bytes(), "warnings": fixedResult.Warnings, "mode": "none", "no_index": true})
-	// Patterned base fills and base borders remain unsupported.
+	// Patterned base fills and complex base borders remain unsupported.
 	unsupportedBase := []any{}
 	for _, base := range []string{"row", "column"} {
 		for _, paint := range []string{"fill", "border"} {
@@ -603,7 +603,7 @@ func TestCodexXLSXRender(t *testing.T) {
 			} else {
 				border = 1
 			}
-			addPart("xl/styles.xml", fmt.Sprintf(`<styleSheet><fills><fill/><fill><patternFill patternType="darkGray"><fgColor rgb="FF112233"/></patternFill></fill></fills><borders><border/><border><bottom style="thin"/></border></borders><cellXfs><xf/><xf fillId="%d" borderId="%d"/></cellXfs></styleSheet>`, fill, border))
+			addPart("xl/styles.xml", fmt.Sprintf(`<styleSheet><fills><fill/><fill><patternFill patternType="darkGray"><fgColor rgb="FF112233"/></patternFill></fill></fills><borders><border/><border><vertical style="thin"/></border></borders><cellXfs><xf/><xf fillId="%d" borderId="%d"/></cellXfs></styleSheet>`, fill, border))
 			cols, attrs := "", ""
 			if base == "column" {
 				cols = `<cols><col min="1" max="2" style="1"/></cols>`

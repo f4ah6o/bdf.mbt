@@ -27,9 +27,15 @@ assert.equal(i, index.count, 'XLSX rendering fixture count');
 const baseFills = JSON.parse(await readFile(new URL('./base-fill.json', import.meta.url)));
 assert.equal(baseFills.length, 240, 'row and column fill fixture count');
 for (const [j, c] of baseFills.entries()) await verifyCase(c, `base fill ${j}`);
+const baseBorders = JSON.parse(await readFile(new URL('./base-border.json', import.meta.url)));
+assert.equal(baseBorders.length, 240, 'row and column border fixture count');
+for (const [j, c] of baseBorders.entries()) await verifyCase(c, `base border ${j}`);
 const largeFill = Buffer.from(JSON.parse(await readFile(new URL('./base-fill-too-large.json', import.meta.url))), 'base64');
 assert.equal(xlsx_render_basic(largeFill, 'none', true).length, 0, 'oversized base fills must be rejected');
 assert.match(xlsx_render_error(largeFill, 'none', true), /row or column fill exceeds the supported view size/);
+const largeBorder = Buffer.from(JSON.parse(await readFile(new URL('./base-border-too-large.json', import.meta.url))), 'base64');
+assert.equal(xlsx_render_basic(largeBorder, 'none', true).length, 0, 'oversized base borders must be rejected');
+assert.match(xlsx_render_error(largeBorder, 'none', true), /row or column border exceeds the supported view size/);
 const styled = JSON.parse(await readFile(new URL('./cells.json', import.meta.url)))[0];
 assert.equal(xlsx_render_basic(Buffer.from(styled.input, 'base64'), 'none', true).length, 0, 'unsupported styled workbook must be rejected');
 const rich = JSON.parse(await readFile(new URL('./cells.json', import.meta.url)))[7];
@@ -41,6 +47,6 @@ assert.equal(unsupportedBase.length, 4, 'row and column fill and border fixtures
 for (const encoded of unsupportedBase) {
   const input = Buffer.from(encoded, 'base64');
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|borders)/);
+  assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|complex borders)/);
 }
-console.log(`${i} basic XLSX renderings and ${baseFills.length} base fills match upstream.`);
+console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, and ${baseBorders.length} base borders match upstream.`);
