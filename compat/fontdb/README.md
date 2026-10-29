@@ -6,6 +6,7 @@ per-character fallback, and complete CSV documents from shibukawa/bdf at commit
 the STIX fixture already in `compat/font/fixtures` and cover different families,
 weights, styles, glyph coverage and line metrics. Conversion cases cover
 whole-font embedding, subsetting, system-font references and missing fonts.
+`order.json` checks embedded-font order with unequal-length and non-ASCII paths.
 
 After building with `moon build --target js`, run `npm run test:fontdb-compat`
 and `npm run test:fontdb-visual`. The latter renders the upstream and MoonBit
@@ -29,3 +30,8 @@ converter, build upstream with `GOOS=js GOARCH=wasm go build -tags
 'bdf_noconv officeonly' -o /path/to/upstream.wasm ./cmd/bdfwasm`, then set
 `BDF_UPSTREAM_WASM` to that file and `BDF_GO_EXEC` to the matching Go toolchain's
 `lib/wasm/wasm_exec.js` before running the test.
+
+To regenerate the ordering fixture, copy `generate-order.go` without its build
+tag into `converter/codex-fontorder/main.go` in the upstream checkout, then run
+`go run ./converter/codex-fontorder /path/to/bdf.mbt > /path/to/bdf.mbt/compat/fontdb/order.json`.
+The original `upstream.json` must already exist.

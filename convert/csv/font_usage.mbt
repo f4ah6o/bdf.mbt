@@ -39,3 +39,18 @@ fn csv_missing_warning(codes : Array[Int32]) -> String? {
   out.write_string("; viewers draw them with their own fonts")
   Some(out.to_string())
 }
+
+///|
+// Go orders font paths lexicographically by UTF-8 bytes. Unicode scalar order
+// has the same ordering for well-formed UTF-8; MoonBit's String.compare first
+// compares lengths, so it cannot be used here.
+fn csv_path_compare(a : String, b : String) -> Int32 {
+  let left : Array[Char] = [ for c in a => c ]
+  let right : Array[Char] = [ for c in b => c ]
+  for i in 0..<Int32::min(left.length(), right.length()) {
+    if left[i] != right[i] {
+      return left[i].to_int().compare(right[i].to_int())
+    }
+  }
+  left.length().compare(right.length())
+}

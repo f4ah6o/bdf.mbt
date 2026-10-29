@@ -184,7 +184,7 @@ fn convert_grid(
       ordered.sort_by((a, b) => {
         let left = db.face(a.face).unwrap()
         let right = db.face(b.face).unwrap()
-        let path_order = left.path.compare(right.path)
+        let path_order = csv_path_compare(left.path, right.path)
         if path_order == 0 {
           left.index.compare(right.index)
         } else {

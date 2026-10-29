@@ -26,7 +26,7 @@
     "test:font-compat": "node compat/font/verify.mjs",
     "test:font-visual": "node compat/font/visual-compare.mjs",
     "test:cff-compat": "node compat/cff/verify.mjs",
-    "test:fontdb-compat": "node compat/fontdb/verify.mjs",
+    "test:fontdb-compat": "node compat/fontdb/verify.mjs && node compat/fontdb/verify-order.mjs",
     "test:fontdb-visual": "node compat/fontdb/visual-compare.mjs",
     "test:native-fonts": "node compat/converter/native-fonts-test.mjs",
     "test:woff-compat": "node compat/woff/verify.mjs",
