@@ -308,6 +308,35 @@ pub fn write_staff_events(
   staff : Int32,
   percussion : Bool,
 ) -> Array[Array[ScoreEvent]] {
+  let lyrics = snapped_lyrics(beats, source_lyrics)
+  write_staff_events_shared(notes, measures, beats, lyrics, staff, percussion)
+}
+
+///|
+fn snapped_lyrics(
+  beats : Array[BeatGrid],
+  source_lyrics : Array[NotationLyric],
+) -> Map[Int64, String] {
+  let lyrics : Map[Int64, String] = Map([])
+  if beats.is_empty() {
+    return lyrics
+  }
+  for item in source_lyrics {
+    let on = grid_at(beats, item.tick).snap(item.tick)
+    lyrics[on] = lyrics.get(on).unwrap_or("") + item.text
+  }
+  lyrics
+}
+
+///|
+fn write_staff_events_shared(
+  notes : Array[VoiceNote],
+  measures : Array[MeasureSpan],
+  beats : Array[BeatGrid],
+  lyrics : Map[Int64, String],
+  staff : Int32,
+  percussion : Bool,
+) -> Array[Array[ScoreEvent]] {
   let events : Array[Array[ScoreEvent]] = []
   for _ in measures {
     events.push([])
@@ -316,11 +345,6 @@ pub fn write_staff_events(
     return events
   }
   let voices = assign_voices(notes, measures, beats, percussion)
-  let lyrics : Map[Int64, String] = Map([])
-  for item in source_lyrics {
-    let on = grid_at(beats, item.tick).snap(item.tick)
-    lyrics[on] = lyrics.get(on).unwrap_or("") + item.text
-  }
   for v in 0..<2 {
     let used : Array[Bool] = []
     for _ in measures {

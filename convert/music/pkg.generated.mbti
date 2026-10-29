@@ -16,6 +16,8 @@ pub fn estimate_key(Array[Double], Int32) -> KeySig
 
 pub fn key_of(Int32, Bool, Int32) -> KeySig
 
+pub fn notate(Performance, time_override? : TimeSig?, key_override? : KeySig?) -> NotatedScore
+
 pub fn note_ticks(Int32, Int32) -> Int64
 
 pub fn percussion_durations(Array[QuantizedNote], Array[BeatGrid]) -> Array[QuantizedNote]
@@ -66,6 +68,30 @@ pub(all) struct MeasureSpan {
   tempo : Array[TempoMark]
 }
 
+pub(all) struct NotatedPart {
+  name : String
+  clefs : Array[NotationClef]
+  percussion : Bool
+  measures : Array[NotatedPartMeasure]
+}
+
+pub(all) struct NotatedPartMeasure {
+  key : KeySig?
+  events : Array[ScoreEvent]
+}
+
+pub(all) struct NotatedScore {
+  title : String
+  subtitle : String
+  composer : String
+  lyricist : String
+  arranger : String
+  copyright : String
+  timeline : ScoreTimeline
+  parts : Array[NotatedPart]
+  error : String
+}
+
 pub(all) struct NotationClef {
   sign : Int32
   octave : Int32
@@ -89,6 +115,28 @@ pub(all) struct NotationValue {
   ticks : Int64
   kind : Int32
   dots : Int32
+}
+
+pub(all) struct Performance {
+  title : String
+  subtitle : String
+  composer : String
+  lyricist : String
+  arranger : String
+  copyright : String
+  tracks : Array[PerformanceTrack]
+  times : Array[TimeChange]
+  keys : Array[KeyChange]
+  tempos : Array[TempoChange]
+  end : Int64
+}
+
+pub(all) struct PerformanceTrack {
+  name : String
+  channel : Int32
+  program : Int32
+  notes : Array[NotationNote]
+  lyrics : Array[NotationLyric]
 }
 
 pub(all) struct Pitch {

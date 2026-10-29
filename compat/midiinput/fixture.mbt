@@ -341,3 +341,106 @@ pub fn lyrics(data : Bytes) -> String {
       Json::object({ "error": Json::string(message) }).stringify()
   }
 }
+
+///|
+#export_name("score")
+pub fn score(data : Bytes) -> String {
+  try {
+    let result = @midi.notate_file(@midi.read_file(data))
+    let measures = result.timeline.measures.map(m => {
+      let time = if m.show_time {
+        Json::array([
+          Json::number(m.time.beats.to_double()),
+          Json::number(m.time.beat_type.to_double()),
+          Json::string(m.time.symbol),
+        ])
+      } else {
+        Json::null()
+      }
+      let tempos = m.tempo.map(t => {
+        Json::array([
+          Json::number(t.offset.to_double()),
+          Json::number(t.dots.to_double()),
+          Json::number(t.per_minute),
+        ])
+      })
+      Json::array([
+        Json::number(m.length.to_double()),
+        time,
+        Json::array(tempos),
+      ])
+    })
+    let parts = result.parts.map(p => {
+      let clefs = p.clefs.map(c => {
+        Json::array([
+          Json::number(c.sign.to_double()),
+          Json::number(c.octave.to_double()),
+        ])
+      })
+      let pms = p.measures.map(m => {
+        let key = match m.key {
+          Some(k) =>
+            Json::array([
+              Json::number(k.fifths.to_double()),
+              Json::boolean(k.minor),
+            ])
+          None => Json::null()
+        }
+        let events = m.events.map(e => {
+          let ns = e.notes.map(n => {
+            Json::array([
+              Json::number(n.pitch.step.to_double()),
+              Json::number(n.pitch.alter.to_double()),
+              Json::number(n.pitch.octave.to_double()),
+              Json::number(n.head.to_double()),
+              Json::boolean(n.tie_start),
+              Json::boolean(n.tie_stop),
+            ])
+          })
+          let lyric = match e.lyric {
+            Some(l) =>
+              Json::array([
+                Json::string(l.text),
+                Json::number(l.syllabic.to_double()),
+              ])
+            None => Json::null()
+          }
+          Json::array([
+            Json::number(e.offset.to_double()),
+            Json::number(e.duration.to_double()),
+            Json::number(e.staff.to_double()),
+            Json::number(e.voice.to_double()),
+            Json::number(e.kind.to_double()),
+            Json::number(e.dots.to_double()),
+            Json::boolean(e.rest),
+            Json::boolean(e.measure_rest),
+            Json::boolean(e.tuplet_beat is Some(_)),
+            Json::array(ns),
+            lyric,
+          ])
+        })
+        Json::array([key, Json::array(events)])
+      })
+      Json::object({
+        "name": Json::string(p.name),
+        "percussion": Json::boolean(p.percussion),
+        "clefs": Json::array(clefs),
+        "measures": Json::array(pms),
+      })
+    })
+    Json::object({
+      "title": Json::string(result.title),
+      "composer": Json::string(result.composer),
+      "lyricist": Json::string(result.lyricist),
+      "arranger": Json::string(result.arranger),
+      "copyright": Json::string(result.copyright),
+      "error": Json::string(result.error),
+      "warnings": Json::array(result.timeline.warnings.map(Json::string)),
+      "measures": Json::array(measures),
+      "parts": Json::array(parts),
+    }).stringify()
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}

@@ -1,10 +1,16 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "f4ah6o/bdf/convert/midi"
 
+import {
+  "f4ah6o/bdf/convert/music",
+}
+
 // Values
 pub fn credits(MidiRawFile) -> MidiCredits
 
 pub fn detect(Bytes) -> Bool
+
+pub fn notate_file(MidiRawFile, time_override? : @music.TimeSig?, key_override? : @music.KeySig?) -> @music.NotatedScore
 
 pub fn performance(MidiRawFile) -> MidiPerformance
 

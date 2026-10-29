@@ -18,6 +18,8 @@ pub fn read_file(Bytes) -> String
 
 pub fn scan_track(Bytes, Int32) -> String
 
+pub fn score(Bytes) -> String
+
 pub fn track_meta(Bytes) -> String
 
 pub fn track_notes(Bytes, Int32) -> String
