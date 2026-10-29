@@ -1619,3 +1619,189 @@ pub fn score_guitar(data : Bytes) -> String {
       Json::object({ "error": Json::string(message) }).stringify()
   }
 }
+
+///|
+#export_name("score_tab_views")
+pub fn score_tab_views(
+  data : Bytes,
+  width : Double,
+  height : Double,
+  sp : Double,
+  title : String,
+) -> String {
+  try {
+    let original = @midi.notate_file(@midi.read_file(data))
+    let score : @music.NotatedScore = {
+      title: "",
+      subtitle: "",
+      composer: "",
+      lyricist: "",
+      arranger: "",
+      copyright: "",
+      timeline: original.timeline,
+      parts: original.parts,
+      error: original.error,
+    }
+    let db = @db.Database::new()
+    let doc = @core.DocumentWriter::new()
+    let rendered = @music.render_midi_pages(score, db, doc, {
+      page: { width, height, staff_space: sp, title, },
+      system_fonts: true,
+      no_subset: false,
+      ignore_restrictions: false,
+      no_woff2: true,
+      document_language: "",
+    })
+    let texter = @music.MusicTexter::new(db)
+    let fonts : @music.MusicTextFonts = { hashes: Map([]), warnings: [], }
+    let result : Array[Json] = []
+    let mut part_count = 0
+    for pi, part in score.parts {
+      if part.percussion {
+        continue
+      }
+      let input = @music.guitar_score_onsets(score, pi)
+      if input.onsets.is_empty() {
+        continue
+      }
+      let mut count = 0
+      for onset in input.onsets {
+        count += onset.notes.length()
+      }
+      if count > 20000 {
+        continue
+      }
+      if part_count >= 4 {
+        break
+      }
+      part_count += 1
+      for preset in @music.guitar_presets() {
+        match
+          @music.render_guitar_tab(
+            score,
+            rendered.layout,
+            pi,
+            preset,
+            texter,
+            fonts,
+          ) {
+          None => ()
+          Some(tab) => {
+            let pages : Array[Json] = []
+            for page in tab.pages {
+              let hash = doc.add_part("obj", page.object)
+              pages.push(
+                Json::array([
+                  Json::number(Float::from_double(page.width).to_double()),
+                  Json::number(Float::from_double(page.height).to_double()),
+                  Json::string(hash),
+                ]),
+              )
+            }
+            result.push(
+              Json::array([
+                Json::string(tab.id),
+                Json::string(tab.title),
+                Json::array(pages),
+              ]),
+            )
+          }
+        }
+      }
+    }
+    Json::array(result).stringify()
+  } catch {
+    err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
+  }
+}
+
+///|
+#export_name("score_tab_cues")
+pub fn score_tab_cues(
+  data : Bytes,
+  width : Double,
+  height : Double,
+  sp : Double,
+  title : String,
+  division : Int32,
+  selected : Bool,
+) -> String {
+  try {
+    let original = @midi.notate_file(@midi.read_file(data))
+    let score : @music.NotatedScore = {
+      title: "",
+      subtitle: "",
+      composer: "",
+      lyricist: "",
+      arranger: "",
+      copyright: "",
+      timeline: original.timeline,
+      parts: original.parts,
+      error: original.error,
+    }
+    let db = @db.Database::new()
+    let doc = @core.DocumentWriter::new()
+    let rendered = @music.render_midi_pages(score, db, doc, {
+      page: { width, height, staff_space: sp, title, },
+      system_fonts: true,
+      no_subset: false,
+      ignore_restrictions: false,
+      no_woff2: true,
+      document_language: "",
+    })
+    let texter = @music.MusicTexter::new(db)
+    let fonts : @music.MusicTextFonts = { hashes: Map([]), warnings: [], }
+    let result : Array[Json] = []
+    let mut part_count = 0
+    for pi, part in score.parts {
+      if part.percussion {
+        continue
+      }
+      let input = @music.guitar_score_onsets(score, pi)
+      if input.onsets.is_empty() {
+        continue
+      }
+      let mut count = 0
+      for onset in input.onsets {
+        count += onset.notes.length()
+      }
+      if count > 20000 {
+        continue
+      }
+      if part_count >= 4 {
+        break
+      }
+      part_count += 1
+      for preset in @music.guitar_presets() {
+        match
+          @music.render_guitar_tab(
+            score,
+            rendered.layout,
+            pi,
+            preset,
+            texter,
+            fonts,
+          ) {
+          None => ()
+          Some(tab) => {
+            let keep = if selected {
+              Some([ for i in 0..<tab.pages.length() => i < 2 ])
+            } else {
+              None
+            }
+            let (cues, _) = @music.guitar_tab_cues(score, tab, division, keep~)
+            let hash = if cues.systems.is_empty() {
+              ""
+            } else {
+              doc.add_part("idx", @core.encode_cues(cues))
+            }
+            result.push(Json::array([Json::string(tab.id), Json::string(hash)]))
+          }
+        }
+      }
+    }
+    Json::array(result).stringify()
+  } catch {
+    err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
+  }
+}

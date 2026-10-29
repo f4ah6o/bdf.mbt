@@ -56,6 +56,10 @@ pub fn score_system_marks(Bytes, FixedArray[String], FixedArray[Double], FixedAr
 
 pub fn score_systems(Bytes, FixedArray[String], FixedArray[Double], Double, Double) -> String
 
+pub fn score_tab_cues(Bytes, Double, Double, Double, String, Int32, Bool) -> String
+
+pub fn score_tab_views(Bytes, Double, Double, Double, String) -> String
+
 pub fn track_meta(Bytes) -> String
 
 pub fn track_notes(Bytes, Int32) -> String

@@ -58,6 +58,8 @@ pub fn guitar_score_onsets(NotatedScore, Int32) -> GuitarScoreOnsets
 
 pub fn guitar_shapes(Array[GuitarNote], GuitarPreset, Bool) -> Array[GuitarShape]
 
+pub fn guitar_tab_cues(NotatedScore, GuitarTabView, Int32, keep? : Array[Bool]?) -> (@core.Cues, Bool)
+
 pub fn key_alters(KeySig) -> Array[Int32]
 
 pub fn key_of(Int32, Bool, Int32) -> KeySig
@@ -95,6 +97,8 @@ pub fn plan_staff(Array[QuantizedNote], Int32, Int32) -> StaffPlan?
 pub fn prepare_score(NotatedScore) -> PreparedScore
 
 pub fn quantize_notes(Array[MeasureSpan], Array[NotationNote]) -> Array[QuantizedNote]
+
+pub fn render_guitar_tab(NotatedScore, MusicScoreLayout, Int32, GuitarPreset, MusicTexter, MusicTextFonts, document_language? : String) -> GuitarTabView? raise
 
 pub fn render_midi_pages(NotatedScore, @db.Database, @core.DocumentWriter, MusicRenderOptions) -> MusicRenderedPages raise
 
@@ -207,6 +211,28 @@ pub(all) struct GuitarShape {
   positions : Array[GuitarPosition]
   cost : Double
   base : Int32
+}
+
+pub(all) struct GuitarTabPage {
+  width : Double
+  height : Double
+  object : Bytes
+}
+
+pub(all) struct GuitarTabPoint {
+  measure : Int32
+  offset : Int64
+  system : Int32
+  x : Double
+}
+
+pub(all) struct GuitarTabView {
+  id : String
+  title : String
+  pages : Array[GuitarTabPage]
+  systems : Array[@core.CueSystem]
+  points : Array[GuitarTabPoint]
+  omitted : Int32
 }
 
 pub(all) struct KeyChange {
