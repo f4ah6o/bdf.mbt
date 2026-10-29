@@ -1,0 +1,17 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/compat/fontinput"
+
+// Values
+pub fn detect(Bytes) -> Bool
+
+pub fn inspect_file(Bytes) -> String
+
+pub fn select(Bytes, String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

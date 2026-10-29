@@ -143,3 +143,32 @@ test "composite glyph components are bounded and preserve record offsets" {
   assert_eq(glyph_components(data[:12]), [])
   assert_eq(glyph_components(b"\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"[:]), [])
 }
+
+///|
+test "parsing rejects excessive repeated name notices" {
+  let names = Bytes::make(61206, 0xa9).to_array()
+  put16(names, 0, 0)
+  put16(names, 2, 100)
+  put16(names, 4, 1206)
+  for i in 0..<100 {
+    let rec = 6 + i * 12
+    for j in 0..<12 {
+      names[rec + j] = 0
+    }
+    put16(names, rec, 1)
+    put16(names, rec + 8, 60000)
+  }
+  let tables : Map[String, Array[Byte]] = {
+    "name": names,
+    "maxp": [0, 1, 0, 0, 0, 2],
+  }
+  let data = build_tables(tables, false)
+  let error = try {
+    ignore(parse(data))
+    ""
+  } catch {
+    InvalidFont(message) => message
+    _ => "unexpected error"
+  }
+  assert_eq(error, "sfnt: the records of the name table are too long together")
+}

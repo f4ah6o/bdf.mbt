@@ -1,0 +1,7 @@
+import {
+  "f4ah6o/bdf/font/sfnt",
+  "moonbitlang/core/string",
+  "moonbit-community/ucd",
+}
+
+supported_targets = "+js+wasm-gc"

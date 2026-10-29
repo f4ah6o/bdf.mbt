@@ -1,0 +1,36 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/font"
+
+import {
+  "f4ah6o/bdf/font/sfnt",
+}
+
+// Values
+pub fn detect(Bytes) -> Bool
+
+pub fn load(Bytes) -> FontFile raise
+
+// Errors
+pub suberror FontInputError {
+  InvalidFontInput(String)
+}
+
+// Types and methods
+pub struct FileFace {
+  index : Int32
+  font : @sfnt.Font
+  size : Int64
+}
+
+pub struct FontFile {
+  container : String
+  collection : Bool
+  size : Int32
+  // private fields
+}
+pub fn FontFile::faces(Self) -> Array[FileFace]
+pub fn FontFile::select(Self, String) -> (Array[FileFace], Array[String]) raise
+
+// Type aliases
+
+// Traits

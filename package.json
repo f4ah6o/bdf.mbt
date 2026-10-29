@@ -14,7 +14,7 @@
     "pngjs": "7.0.0"
   },
   "scripts": {
-    "test:visual": "npm run test:text-compat && moon build --target js && node compat/writer/verify.mjs && node compat/writer/verify-sealing.mjs && npm run test:object-compat && node compat/image/verify.mjs && npm run test:csv-compat && npm run test:csv-visual && npm run test:cff-compat && npm run test:woff-compat && npm run test:font-compat && npm run test:fontdb-compat && npm run test:fontdb-visual && npm run test:font-visual && npm run test:sheet-compat && npm run test:parquet-compat && npm run test:music-compat && node compat/converter/client-test.mjs && npm run test:native-fonts && node compat/visual/compare.mjs",
+    "test:visual": "npm run test:text-compat && moon build --target js && node compat/writer/verify.mjs && node compat/writer/verify-sealing.mjs && npm run test:object-compat && node compat/image/verify.mjs && npm run test:csv-compat && npm run test:csv-visual && npm run test:cff-compat && npm run test:woff-compat && npm run test:font-input && npm run test:font-compat && npm run test:fontdb-compat && npm run test:fontdb-visual && npm run test:font-visual && npm run test:sheet-compat && npm run test:parquet-compat && npm run test:music-compat && node compat/converter/client-test.mjs && npm run test:native-fonts && node compat/visual/compare.mjs",
     "test:object-compat": "node compat/object/verify.mjs",
     "test:csv-visual": "node compat/csv/visual-compare.mjs",
     "test:sheet-compat": "node compat/sheet/generate-style-source.mjs --check && node compat/sheet/generate-style-test.mjs --check && node compat/sheet/verify.mjs && node compat/sheet/verify-styled.mjs",
@@ -29,6 +29,7 @@
     "test:fontdb-compat": "node compat/fontdb/verify.mjs",
     "test:fontdb-visual": "node compat/fontdb/visual-compare.mjs",
     "test:native-fonts": "node compat/converter/native-fonts-test.mjs",
-    "test:woff-compat": "node compat/woff/verify.mjs"
+    "test:woff-compat": "node compat/woff/verify.mjs",
+    "test:font-input": "node compat/fontinput/verify.mjs"
   }
 }

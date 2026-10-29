@@ -133,11 +133,23 @@ pub fn parse(data : Bytes, index~ : Int32 = 0) -> Font raise {
   )
   let cmap = parse_cmap(sfnt_table(data, tables, "cmap"))
   let info = read_face_info(data, tables)
-  { metrics, info, cmap, advances, source: data, tables, }
+  let font : Font = { metrics, info, cmap, advances, source: data, tables, }
+  ignore(rebuild_notices(font))
+  font
 }
 
 ///|
 /// Size of the source font file in bytes, including any collection container.
 pub fn Font::byte_length(self : Font) -> Int32 {
   self.source.length()
+}
+
+///|
+/// Size of an SFNT rebuilt from this face's tables, including alignment.
+pub fn Font::standalone_size(self : Font) -> Int64 {
+  let mut size = 12L + 16L * self.tables.length().to_int64()
+  for _, (_, length) in self.tables {
+    size += (length.to_int64() + 3L) / 4L * 4L
+  }
+  size
 }
