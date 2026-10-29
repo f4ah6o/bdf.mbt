@@ -238,7 +238,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// center vertical alignment, solid fills, line borders, merged cells, wrapping,
 /// shrink-to-fit, indentation and center-across-selection.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
-/// complex features are rejected.
+/// row and column styles with fills or borders and other complex features are
+/// rejected.
 pub fn convert_plain_no_fonts(
   data : Bytes,
   data_mode~ : String = "",
@@ -387,9 +388,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   }
   for column in geo.columns {
     if column.style > 0 {
-      raise InvalidXlsxInput(
-        "xlsx: plain conversion does not support column styles",
-      )
+      xlsx_check_nonpainting_base_style(styles, column.style)
     }
   }
   let (row_count, col_count) = xlsx_initial_extent(parsed, geo, [])
@@ -457,9 +456,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let border_cache : Map[Int32, (@sheet.GridCellBorder, Array[XlsxRgb])] = Map([])
   for row in rows {
     if row.style >= 0 {
-      raise InvalidXlsxInput(
-        "xlsx: plain conversion does not support row styles",
-      )
+      xlsx_check_nonpainting_base_style(styles, row.style)
     }
     let entries : Array[@sheet.SizedGridCell] = []
     for cell in row.cells {
@@ -950,6 +947,43 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     center_across~,
   )
   (drawn, geo, parsed.missing_formula_values)
+}
+
+///|
+fn xlsx_check_nonpainting_base_style(
+  styles : XlsxStyles,
+  style : Int32,
+) -> Unit raise {
+  let index = if style < 0 || style >= styles.cell_formats.length() {
+    0
+  } else {
+    style
+  }
+  let format = styles.cell_formats[index]
+  if format.fill >= 0 && format.fill < styles.fills.length() {
+    let fill = styles.fills[format.fill]
+    if fill.pattern != "" || fill.gradient is Some(_) {
+      raise InvalidXlsxInput(
+        "xlsx: row or column styles with fills are not supported",
+      )
+    }
+  }
+  if format.border >= 0 && format.border < styles.borders.length() {
+    let border = styles.borders[format.border]
+    if border.left.style != "" ||
+      border.right.style != "" ||
+      border.top.style != "" ||
+      border.bottom.style != "" ||
+      border.diagonal.style != "" ||
+      border.vertical.style != "" ||
+      border.horizontal.style != "" ||
+      border.diagonal_up ||
+      border.diagonal_down {
+      raise InvalidXlsxInput(
+        "xlsx: row or column styles with borders are not supported",
+      )
+    }
+  }
 }
 
 ///|

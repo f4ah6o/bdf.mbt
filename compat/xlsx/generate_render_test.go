@@ -26,7 +26,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 9700; i++ {
+	for i := 0; i < 9800; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -349,6 +349,9 @@ func TestCodexXLSXRender(t *testing.T) {
 				}(), r.Intn(6)/5)
 			}
 			sheet += `</cols>`
+			if i >= 9700 {
+				sheet = strings.ReplaceAll(sheet, `<col min=`, fmt.Sprintf(`<col style="%d" min=`, 1+i%15))
+			}
 		}
 		sheet += `<sheetData>`
 		for y := 0; y < r.Intn(4)+1; y++ {
@@ -369,6 +372,9 @@ func TestCodexXLSXRender(t *testing.T) {
 			}
 			if i >= 6500 && i < 6600 {
 				attrs = fmt.Sprintf(` ht="%d" customHeight="1"`, 15+r.Intn(60))
+			}
+			if i >= 9700 {
+				attrs += fmt.Sprintf(` s="%d" customFormat="1"`, 1+i%15)
 			}
 			sheet += fmt.Sprintf(`<row r="%d"%s>`, y+1, attrs)
 			for x := 0; x < r.Intn(4)+1; x++ {
@@ -574,6 +580,50 @@ func TestCodexXLSXRender(t *testing.T) {
 		t.Fatal(e)
 	}
 	out = append(out, map[string]any{"input": fixed, "bdf": fixedBDF.Bytes(), "warnings": fixedResult.Warnings, "mode": "none", "no_index": true})
+	// Base styles paint cells absent from the file. These remain unsupported.
+	unsupportedBase := []any{}
+	for _, base := range []string{"row", "column"} {
+		for _, paint := range []string{"fill", "border"} {
+			var fixture bytes.Buffer
+			w := zip.NewWriter(&fixture)
+			addPart := func(name, content string) {
+				part, err := w.Create(name)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if _, err = part.Write([]byte(content)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			addPart("xl/workbook.xml", `<workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet" r:id="r1"/></sheets></workbook>`)
+			addPart("xl/_rels/workbook.xml.rels", `<Relationships><Relationship Id="r1" Type="x/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="r2" Type="x/styles" Target="styles.xml"/></Relationships>`)
+			fill, border := 0, 0
+			if paint == "fill" {
+				fill = 1
+			} else {
+				border = 1
+			}
+			addPart("xl/styles.xml", fmt.Sprintf(`<styleSheet><fills><fill/><fill><patternFill patternType="solid"><fgColor rgb="FF112233"/></patternFill></fill></fills><borders><border/><border><bottom style="thin"/></border></borders><cellXfs><xf/><xf fillId="%d" borderId="%d"/></cellXfs></styleSheet>`, fill, border))
+			cols, attrs := "", ""
+			if base == "column" {
+				cols = `<cols><col min="1" max="2" style="1"/></cols>`
+			} else {
+				attrs = ` s="1" customFormat="1"`
+			}
+			addPart("xl/worksheets/sheet1.xml", fmt.Sprintf(`<worksheet>%s<sheetData><row r="1"%s><c r="A1" t="str"><v>x</v></c></row></sheetData></worksheet>`, cols, attrs))
+			if err := w.Close(); err != nil {
+				t.Fatal(err)
+			}
+			unsupportedBase = append(unsupportedBase, fixture.Bytes())
+		}
+	}
+	unsupported, e := json.Marshal(unsupportedBase)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if e = os.WriteFile(filepath.Join(root, "compat/xlsx/base-style-unsupported.json"), unsupported, 0644); e != nil {
+		t.Fatal(e)
+	}
 	dir := filepath.Join(root, "compat/xlsx/render")
 	if e = os.MkdirAll(dir, 0755); e != nil {
 		t.Fatal(e)

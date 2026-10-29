@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { BdfDocument, BufferSource } from '@bdfkit/core';
-import { xlsx_render_basic, xlsx_render_warnings } from '../../_build/js/debug/build/compat/xlsx/xlsx.js';
+import { xlsx_render_basic, xlsx_render_warnings, xlsx_render_error } from '../../_build/js/debug/build/compat/xlsx/xlsx.js';
 const index = JSON.parse(await readFile(new URL('./render/index.json', import.meta.url)));
 assert.ok(index.files.length > 0, 'XLSX rendering fixture list must not be empty');
 let i = 0;
@@ -27,4 +27,11 @@ const rich = JSON.parse(await readFile(new URL('./cells.json', import.meta.url))
 assert.equal(xlsx_render_basic(Buffer.from(rich.input, 'base64'), 'none', true).length, 0, 'unsupported rich strings must be rejected');
 const autoHeight = JSON.parse(await readFile(new URL('./auto-height.json', import.meta.url)));
 assert.ok(xlsx_render_basic(Buffer.from(autoHeight, 'base64'), 'none', true).length, 'nondefault font sizes on auto-height rows must convert');
+const unsupportedBase = JSON.parse(await readFile(new URL('./base-style-unsupported.json', import.meta.url)));
+assert.equal(unsupportedBase.length, 4, 'row and column fill and border fixtures');
+for (const encoded of unsupportedBase) {
+  const input = Buffer.from(encoded, 'base64');
+  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'painting base styles must be rejected');
+  assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|borders)/);
+}
 console.log(`${i} basic XLSX renderings match upstream.`);
