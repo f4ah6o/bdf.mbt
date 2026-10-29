@@ -434,3 +434,50 @@ pub fn xlsx_display(data : Bytes, part : String, locale : String) -> String {
     _ => "null"
   }
 }
+
+///|
+#export_name("xlsx_layout")
+pub fn xlsx_layout(
+  data : Bytes,
+  part : String,
+  mdw : Double,
+  line : Double,
+) -> String {
+  try {
+    let workbook = @xlsx.read_xlsx_workbook(data)
+    let cells = workbook.read_sheet_cells(part)
+    let geometry = workbook.read_sheet_geometry(part)
+    let (rows, columns) = @xlsx.xlsx_initial_extent(cells, geometry, [])
+    let runs = @xlsx.xlsx_column_runs(geometry, columns, mdw)
+    let sorted = cells.sorted_rows()
+    let fitted : Map[Int32, Double] = Map([])
+    for row in sorted {
+      if row.index % 3 == 0 {
+        fitted[row.index] = 22.5 + (row.index % 5).to_double() * 1.5
+      }
+    }
+    let row_runs = @xlsx.xlsx_row_runs(sorted, geometry, rows, line, fitted)
+    Json::array([
+      Json::number(rows.to_double()),
+      Json::number(columns.to_double()),
+      Json::array(
+        runs.map(fn(run) {
+          Json::array([
+            Json::number(run.count.to_double()),
+            Json::number(run.size.to_double()),
+          ])
+        }),
+      ),
+      Json::array(
+        row_runs.map(fn(run) {
+          Json::array([
+            Json::number(run.count.to_double()),
+            Json::number(run.size.to_double()),
+          ])
+        }),
+      ),
+    ]).stringify()
+  } catch {
+    _ => "null"
+  }
+}

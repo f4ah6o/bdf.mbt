@@ -16,6 +16,8 @@ pub fn xlsx_builtin_format(Int32, String) -> String
 
 pub fn xlsx_col_name(Int32) -> String
 
+pub fn xlsx_column_runs(XlsxSheetGeometry, Int32, Double) -> Array[XlsxSizeRun]
+
 pub fn xlsx_decode_string(String) -> String
 
 pub fn xlsx_default_palette() -> Array[UInt32]
@@ -30,6 +32,8 @@ pub fn xlsx_format_numeric(XlsxFormatSection, Double) -> (Array[XlsxFormatPiece]
 
 pub fn xlsx_format_text(Array[XlsxFormatSection], String) -> XlsxFormatted
 
+pub fn xlsx_initial_extent(XlsxSheetCells, XlsxSheetGeometry, Array[(Int32, Int32)]) -> (Int32, Int32)
+
 pub fn xlsx_iso_serial(String, Bool) -> Double?
 
 pub fn xlsx_parse_number_format(String, Array[UInt32]) -> Array[XlsxFormatSection]
@@ -37,6 +41,8 @@ pub fn xlsx_parse_number_format(String, Array[UInt32]) -> Array[XlsxFormatSectio
 pub fn xlsx_parse_range(String) -> XlsxRange?
 
 pub fn xlsx_parse_ref(String) -> (Int32, Int32, Bool)
+
+pub fn xlsx_row_runs(Array[XlsxRow], XlsxSheetGeometry, Int32, Double, Map[Int32, Double]) -> Array[XlsxSizeRun]
 
 pub fn xlsx_select_format_section(Array[XlsxFormatSection], Double) -> (Int32, Bool)
 
@@ -190,6 +196,11 @@ pub(all) struct XlsxSheetRef {
   chart : Bool
   hidden : Bool
   index : Int32
+}
+
+pub(all) struct XlsxSizeRun {
+  count : Int32
+  size : Float
 }
 
 pub(all) struct XlsxStyles {
