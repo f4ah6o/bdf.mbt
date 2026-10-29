@@ -881,3 +881,47 @@ pub fn paint_graphics(
     err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
   }
 }
+
+///|
+#export_name("music_text")
+pub fn music_text(
+  font_name : String,
+  data : Bytes,
+  text : String,
+  size : Double,
+  bold : Bool,
+  italic : Bool,
+) -> String {
+  let db = @db.Database::new()
+  if font_name != "" {
+    ignore(db.add_file(font_name, data))
+  }
+  let texter = @music.MusicTexter::new(db)
+  let line = texter.line(text, size, bold, italic)
+  let runs = line.runs.map(run => {
+    let c = run.choice
+    let path = match c.resolved.face {
+      Some(index) => db.face(index).unwrap().path
+      None => ""
+    }
+    Json::array([
+      Json::string(path),
+      Json::string(c.requested),
+      Json::string(c.resolved.generic),
+      Json::boolean(c.bold),
+      Json::boolean(c.italic),
+      Json::boolean(c.resolved.synth_bold),
+      Json::boolean(c.resolved.synth_italic),
+      Json::string(run.text),
+      Json::boolean(run.cjk),
+      Json::number(run.x),
+      Json::number(run.width),
+    ])
+  })
+  Json::array([
+    Json::number(line.width),
+    Json::number(line.ascent),
+    Json::number(line.descent),
+    Json::array(runs),
+  ]).stringify()
+}

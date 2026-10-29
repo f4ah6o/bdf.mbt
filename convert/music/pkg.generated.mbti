@@ -3,6 +3,7 @@ package "f4ah6o/bdf/convert/music"
 
 import {
   "f4ah6o/bdf/core",
+  "f4ah6o/bdf/font/db",
 }
 
 // Values
@@ -318,11 +319,37 @@ pub(all) struct MusicSystemPlacement {
   page : Int32
 }
 
+pub(all) struct MusicTextLine {
+  runs : Array[MusicTextRun]
+  width : Double
+  size : Double
+  ascent : Double
+  descent : Double
+}
+
 pub(all) struct MusicTextMetrics {
   width : Double
   ascent : Double
   descent : Double
 }
+
+pub(all) struct MusicTextRun {
+  choice : @db.Choice
+  text : String
+  cjk : Bool
+  x : Double
+  width : Double
+}
+
+pub struct MusicTexter {
+  db : @db.Database
+  used : Map[Int32, Map[Int32, Bool]]
+  missing : Map[Int32, Bool]
+}
+pub fn MusicTexter::line(Self, String, Double, Bool, Bool) -> MusicTextLine
+pub fn MusicTexter::missing_codepoints(Self) -> Array[Int32]
+pub fn MusicTexter::new(@db.Database) -> Self
+pub fn MusicTexter::used_codepoints(Self) -> Array[(Int32, Array[Int32])]
 
 pub(all) struct NotatedPart {
   name : String
