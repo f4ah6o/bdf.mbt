@@ -31,7 +31,7 @@ const outputRoot = path.join(root, '_build/visual-diff');
 mkdirSync(outputRoot, { recursive: true });
 const output = mkdtempSync(path.join(outputRoot, 'run-'));
 const executable = path.join(root, 'node_modules/.bin/vlmkit');
-const allowed = ['/compat/visual/', '/compat/interactive/', '/compat/sheet/', '/compat/continuous/', '/compat/music/', '/compat/midiinput/', '/compat/converter/', '/compat/specimen/', '/compat/image/', '/compat/csv/', '/compat/render_worker/', '/node_modules/@bdfkit/', '/_build/js/debug/build/browser/', '/_build/js/debug/build/compat/writer/', '/_build/js/debug/build/converter_worker/', '/_build/js/debug/build/native_converter_worker/', '/_build/js/debug/build/render_worker/'];
+const allowed = ['/compat/visual/', '/compat/interactive/', '/compat/sheet/', '/compat/continuous/', '/compat/music/', '/compat/midiinput/', '/compat/mml/', '/compat/converter/', '/compat/specimen/', '/compat/image/', '/compat/csv/', '/compat/render_worker/', '/node_modules/@bdfkit/', '/_build/js/debug/build/browser/', '/_build/js/debug/build/compat/writer/', '/_build/js/debug/build/converter_worker/', '/_build/js/debug/build/native_converter_worker/', '/_build/js/debug/build/render_worker/'];
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.bdf': 'application/octet-stream' };
 
 function run(args) {

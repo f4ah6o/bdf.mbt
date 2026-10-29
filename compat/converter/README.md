@@ -10,3 +10,7 @@ four combinations of upstream and MoonBit client and Worker using the upstream
 `@bdfkit/convert-office` 0.2.1 TinyGo Wasm runtime. The runtime and Go support
 script are test dependencies only; the converter engines have not been ported
 by these tests.
+
+`native-test.mjs` also exercises the native Worker through both clients. Its
+MML fixtures compare complete upstream-generated documents, summaries, warnings,
+format detection and parameter errors for actual UTF-8 and Shift_JIS files.

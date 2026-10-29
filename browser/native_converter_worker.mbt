@@ -22,7 +22,7 @@ extern "js" fn native_unsupported_named_format(name : String) -> Bool =
 
 ///|
 extern "js" fn native_converter_formats(request : ConverterRequest) -> Unit =
-  #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'csv',description:'CSV or TSV (comma-, tab-, semicolon- or bar-separated values)',extensions:['.csv','.tsv','.tab']},{name:'font',description:'Font file (TrueType, OpenType, WOFF)',extensions:['.ttf','.otf','.ttc','.otc','.woff','.woff2']},{name:'midi',description:'Standard MIDI File',extensions:['.mid','.midi','.smf','.kar','.rmi']},{name:'image',description:'Image stored as it is: PNG, JPEG, GIF, WebP, AVIF, BMP, ICO or SVG',extensions:['.png','.apng','.jpg','.jpeg','.jpe','.jfif','.gif','.webp','.avif','.bmp','.ico','.svg']}]})
+  #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'csv',description:'CSV or TSV (comma-, tab-, semicolon- or bar-separated values)',extensions:['.csv','.tsv','.tab']},{name:'font',description:'Font file (TrueType, OpenType, WOFF)',extensions:['.ttf','.otf','.ttc','.otc','.woff','.woff2']},{name:'midi',description:'Standard MIDI File',extensions:['.mid','.midi','.smf','.kar','.rmi']},{name:'mml',description:'Music Macro Language (MML)',extensions:['.mml']},{name:'image',description:'Image stored as it is: PNG, JPEG, GIF, WebP, AVIF, BMP, ICO or SVG',extensions:['.png','.apng','.jpg','.jpeg','.jpe','.jfif','.gif','.webp','.avif','.bmp','.ico','.svg']}]})
 
 ///|
 extern "js" fn native_converter_result(
@@ -122,14 +122,20 @@ async fn NativeConverterState::dispatch(
     format != "image" &&
     format != "csv" &&
     format != "font" &&
-    format != "midi" {
+    format != "midi" &&
+    format != "mml" {
     native_converter_error(request, "unknown format \"" + format + "\"", "")
     return
   }
   let name = native_converter_option(request, "name")
   let data = native_converter_data(request)
   if format == "midi" || (format == "" && @midi.detect(data)) {
-    native_convert_midi(request, data, kind == "open", database)
+    native_convert_music(request, data, kind == "open", database, false)
+    return
+  }
+  let head = data[:if data.length() < 1024 { data.length() } else { 1024 }].to_owned()
+  if format == "mml" || (format == "" && @mml.detect_mml(head)) {
+    native_convert_music(request, data, kind == "open", database, true)
     return
   }
   if format == "csv" {
@@ -168,7 +174,11 @@ async fn NativeConverterState::dispatch(
         let strong_other = @hpgl.detect(head) ||
           @utf8.decode_lossy(head).contains("%PDF-")
         if midi_named && !strong_other {
-          native_convert_midi(request, data, kind == "open", database)
+          native_convert_music(request, data, kind == "open", database, false)
+          return
+        }
+        if lower.has_suffix(".mml") && !strong_other {
+          native_convert_music(request, data, kind == "open", database, true)
           return
         }
         if font_named && !strong_other {
@@ -338,11 +348,12 @@ fn native_convert_font(
 }
 
 ///|
-fn native_convert_midi(
+fn native_convert_music(
   request : ConverterRequest,
   data : Bytes,
   opened : Bool,
   database : @fontdb.Database?,
+  is_mml : Bool,
 ) -> Unit {
   let tab = @music.parse_music_tab(native_converter_param(request, "tab")) catch {
     @music.InvalidMusicParameter(message) => {
@@ -350,13 +361,95 @@ fn native_convert_midi(
       return
     }
   }
+  let dialect = if is_mml {
+    native_converter_param(request, "dialect").to_lower()
+  } else {
+    ""
+  }
+  if dialect != "" &&
+    dialect != "auto" &&
+    dialect != "generic" &&
+    dialect != "mabinogi" &&
+    dialect != "ppmck" {
+    native_converter_error(
+      request,
+      "mml: parameter dialect: " +
+      Json::string(dialect).stringify() +
+      " is not auto, generic, mabinogi or ppmck",
+      "",
+    )
+    return
+  }
+  let octave_value = if is_mml {
+    native_converter_param(request, "octave").to_lower()
+  } else {
+    ""
+  }
+  let octave = match octave_value {
+    "" | "auto" => 0
+    "normal" => 1
+    "reverse" => 2
+    _ => {
+      native_converter_error(
+        request,
+        "mml: parameter octave: " +
+        Json::string(octave_value).stringify() +
+        " is not auto, normal or reverse",
+        "",
+      )
+      return
+    }
+  }
+  let program_value = if is_mml {
+    native_converter_param(request, "program")
+  } else {
+    ""
+  }
+  let program = if program_value == "" {
+    -1
+  } else {
+    let bytes = @utf8.encode(program_value)
+    let mut i = if bytes.length() > 0 && (bytes[0] == b'+' || bytes[0] == b'-') {
+      1
+    } else {
+      0
+    }
+    let mut valid = i < bytes.length()
+    while i < bytes.length() {
+      if bytes[i] < b'0' || bytes[i] > b'9' {
+        valid = false
+      }
+      i += 1
+    }
+    let n = @string.parse_int64(program_value) catch {
+      _ => {
+        valid = false
+        0L
+      }
+    }
+    if !valid || n < 0L || n > 127L {
+      native_converter_error(
+        request,
+        "mml: parameter program: " +
+        Json::string(program_value).stringify() +
+        " is not a number 0–127",
+        "",
+      )
+      return
+    }
+    n.to_int()
+  }
   let time_value = native_converter_param(request, "time")
   let time = if time_value == "" {
     None
   } else {
     Some(@music.parse_music_time(time_value)) catch {
       @music.InvalidMusicParameter(message) => {
-        native_converter_error(request, message, "")
+        native_converter_error(
+          request,
+          (if is_mml { "mml: " } else { "" }) + message,
+          "",
+        )
         return
       }
     }
@@ -367,7 +460,11 @@ fn native_convert_midi(
   } else {
     Some(@music.parse_music_key(key_value)) catch {
       @music.InvalidMusicParameter(message) => {
-        native_converter_error(request, message, "")
+        native_converter_error(
+          request,
+          (if is_mml { "mml: " } else { "" }) + message,
+          "",
+        )
         return
       }
     }
@@ -386,24 +483,39 @@ fn native_convert_midi(
       return
     }
   }
-  let result = @midi.convert(
-    data,
-    database.unwrap_or(@fontdb.Database::new()),
-    options={
-      page: { width: 0.0, height: 0.0, staff_space: 0.0, title: "", },
-      pages: None,
-      time,
-      key,
-      no_play: false,
-      no_text_index: false,
-      system_fonts: false,
-      no_subset: false,
-      ignore_restrictions: false,
-      no_woff2: true,
-    },
-    guitar_tab=tab,
-    page_ranges=pages,
-  ) catch {
+  let options : @midi.MidiScoreOptions = {
+    page: { width: 0.0, height: 0.0, staff_space: 0.0, title: "", },
+    pages: None,
+    time,
+    key,
+    no_play: false,
+    no_text_index: false,
+    system_fonts: false,
+    no_subset: false,
+    ignore_restrictions: false,
+    no_woff2: true,
+  }
+  let db = database.unwrap_or(@fontdb.Database::new())
+  let result = try {
+    if is_mml {
+      @mml.convert(
+        data,
+        db,
+        options~,
+        dialect~,
+        octave~,
+        program~,
+        guitar_tab=tab,
+        page_ranges=pages,
+      )
+    } else {
+      @midi.convert(data, db, options~, guitar_tab=tab, page_ranges=pages)
+    }
+  } catch {
+    @mml.InvalidMmlInput(message) => {
+      native_converter_error(request, message, "")
+      return
+    }
     @midi.InvalidMidiInput(message) => {
       native_converter_error(request, message, "")
       return
@@ -420,7 +532,11 @@ fn native_convert_midi(
   native_converter_result(
     request,
     result.bdf,
-    "midi",
+    if is_mml {
+      "mml"
+    } else {
+      "midi"
+    },
     result.summary(),
     result.warnings,
     opened,
@@ -434,7 +550,7 @@ extern "js" fn install_native_converter_listener(
   #|(dispatch) => {self.onmessage=event=>{const request=event.data;Promise.resolve().then(()=>dispatch(request)).catch(e=>{const id=request?.type==='init'?0:Number(request?.id);self.postMessage({id,ok:false,error:e?.message??String(e),code:e?.code})})}}
 
 ///|
-/// Install the MoonBit converter Worker for native image, CSV, font and MIDI formats.
+/// Install the MoonBit converter Worker for native image, CSV, font, MIDI and MML formats.
 #export_name("bdf_install_native_converter_worker")
 pub fn bdf_install_native_converter_worker() -> Unit {
   let state : NativeConverterState = { ready: false, }

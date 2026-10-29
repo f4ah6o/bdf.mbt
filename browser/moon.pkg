@@ -5,6 +5,8 @@ import {
   "f4ah6o/bdf/convert/csv",
   "f4ah6o/bdf/convert/font",
   "f4ah6o/bdf/convert/midi",
+  "f4ah6o/bdf/convert/mml",
+  "moonbitlang/core/string",
   "f4ah6o/bdf/convert/music",
   "f4ah6o/bdf/font/db" @fontdb,
   "f4ah6o/bdf/convert/hpgl",

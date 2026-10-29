@@ -14,6 +14,7 @@ export async function verifyNativeConverter(browser, base) {
       const unzip = async data => new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
       const specimen = JSON.parse(new TextDecoder().decode(await unzip(specimenPacked)));
       const midiCases = JSON.parse(new TextDecoder().decode(await unzip(await (await fetch('/compat/midiinput/worker.json.gz')).arrayBuffer())));
+      const mmlCases = JSON.parse(new TextDecoder().decode(await unzip(await (await fetch('/compat/mml/worker.json.gz')).arrayBuffer())));
       const fontCase = specimen.cases.find(c => c.name === 'stix.ttf' && !c.system && !c.uiFont && !c.noIndex && !c.noSubset);
       const fontBytes = await unzip(Uint8Array.from(atob(specimen.files['stix.ttf']), c => c.charCodeAt(0)));
       const toBytes = encoded => Uint8Array.from(atob(encoded), c => c.charCodeAt(0));
@@ -65,6 +66,36 @@ export async function verifyNativeConverter(browser, base) {
           let namedMidiError;
           try { await client.convert(new TextEncoder().encode('not midi'), {name:'bad.mid'}); } catch (e) { namedMidiError = e.message; }
           if (namedMidiError !== 'midi: not a Standard MIDI File') throw new Error(kind + ': MIDI extension detection failed: ' + namedMidiError);
+          const mmlFormat = formats.find(f => f.name === 'mml');
+          if (mmlFormat?.description !== 'Music Macro Language (MML)' || JSON.stringify(mmlFormat.extensions) !== JSON.stringify(['.mml'])) throw new Error(kind + ': missing MML format');
+          for (const sample of mmlCases) {
+            const params = Object.fromEntries(['dialect', 'octave', 'program', 'time', 'key', 'tab'].filter(k => sample[k]).map(k => [k, sample[k]]));
+            const opts = { name: sample.name, pages: sample.pages, params };
+            const expected = await BdfDocument.open(new BufferSource(toBytes(sample.bdf)));
+            for (const [method, format] of [['convert', 'mml'], ['open', '']]) {
+              const result = await client[method](toBytes(sample.input), {...opts, format});
+              const actual = await BdfDocument.open(new BufferSource(result.bdf));
+              if (result.format !== 'mml' || result.summary !== sample.summary || JSON.stringify(result.warnings) !== JSON.stringify(sample.warnings)) throw new Error(kind + ': MML report differs for ' + sample.name + ': ' + JSON.stringify({summary:result.summary, expected:sample.summary,warnings:result.warnings, expectedWarnings:sample.warnings}));
+              if (method === 'open' && (result.pages !== 0 || result.stream !== undefined)) throw new Error(kind + ': MML open did not return a complete document');
+              for (const field of ['meta', 'views']) if (JSON.stringify(stable(actual.manifest[field] ?? [])) !== JSON.stringify(stable(expected.manifest[field] ?? []))) throw new Error(kind + ': MML ' + field + ' differs for ' + sample.name);
+              if (JSON.stringify(actual.manifest.parts.map(p => [p.t,p.h])) !== JSON.stringify(expected.manifest.parts.map(p => [p.t,p.h]))) throw new Error(kind + ': MML parts differ for ' + sample.name);
+            }
+          }
+          for (const [params, expected] of [
+            [{dialect:'bad'}, 'mml: parameter dialect: "bad" is not auto, generic, mabinogi or ppmck'],
+            [{octave:'bad'}, 'mml: parameter octave: "bad" is not auto, normal or reverse'],
+            [{program:'-1'}, 'mml: parameter program: "-1" is not a number 0–127'],
+            [{time:'bad'}, 'mml: parameter time: "bad" is not a time signature such as 3/4'],
+            [{key:'bad'}, 'mml: parameter key: "bad" is not a key such as G, Bb or F#m'],
+            [{tab:'maybe'}, 'parameter tab: "maybe" is not a boolean'],
+          ]) {
+            let error; try { await client.convert(toBytes(mmlCases[0].input), {format:'mml', params}); } catch (e) { error = e.message; }
+            if (error !== expected) throw new Error(kind + ': MML parameter error ' + error + ', expected ' + expected);
+          }
+          const detectedMml = await client.convert(new TextEncoder().encode('MML@c4,d4;'));
+          if (detectedMml.format !== 'mml') throw new Error(kind + ': MML content detection failed');
+          let namedMmlError; try { await client.convert(new TextEncoder().encode('r4'), {name:'empty.mml'}); } catch (e) { namedMmlError = e.message; }
+          if (namedMmlError !== 'mml: no notes') throw new Error(kind + ': MML extension detection failed: ' + namedMmlError);
           const fontFormat = formats.find(f => f.name === 'font');
           if (fontFormat?.description !== 'Font file (TrueType, OpenType, WOFF)' || JSON.stringify(fontFormat.extensions) !== JSON.stringify(['.ttf','.otf','.ttc','.otc','.woff','.woff2'])) throw new Error(kind + ': missing font format');
           for (const options of [{params:{examples:'5'}}, {format:'font', name:'anything.csv', params:{examples:'5'}}]) {
@@ -197,7 +228,7 @@ export async function verifyNativeConverter(browser, base) {
           for (const [input, name] of [
             ['IN;SP1;PA0,0;PD100,200;', 'plot.csv'],
             ['%PDF-1.7\nname,value\nA,1\n', 'document.csv'],
-            ['name,value\nA,1\nB,2\n', 'score.mml'],
+            ['name,value\nA,1\nB,2\n', 'score.musicxml'],
           ]) {
             let code;
             try { await client.convert(new TextEncoder().encode(input), { name }); } catch (e) { code = e.code; }
