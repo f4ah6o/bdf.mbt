@@ -20,13 +20,15 @@ WOFF, collections, boundary values, and mutated font tables.
 `features.json.gz` verifies grouped OpenType features, their lookups, script
 users, UI names, characters and displayed descriptions against upstream.
 `scroll.json.gz` checks page cuts, row positions, kept headings and anchors.
+`paths.json.gz` compares encoded BDF paths for TrueType and CFF glyphs.
 
 After `moon build --target js`, run `npm run test:specimen` and
 `npm run test:specimen-plan`, `npm run test:specimen-names`,
 `npm run test:specimen-coverage`, `npm run test:specimen-metadata`,
 `npm run test:specimen-glyphs`, `npm run test:specimen-variations`,
 `npm run test:specimen-info`, `npm run test:specimen-overview`,
-`npm run test:specimen-features`, `npm run test:specimen-scroll`, and
+`npm run test:specimen-features`, `npm run test:specimen-scroll`,
+`npm run test:specimen-path`, and
 `npm run test:specimen-visual`. To regenerate, copy `generate_test.go` without
 its first `//go:build ignore` line into the upstream checkout at
 `converter/font/codex_specimen_test.go`, then run:
@@ -83,3 +85,8 @@ then copy `generate-features_test.go` without its build tag into upstream
 To regenerate scroll-layout cases, copy `generate-scroll_test.go` without its
 build tag into upstream `converter/font` alongside `generate_test.go` and run
 `TestCodexScroll` with the same fixture root.
+
+To regenerate specimen paths, first generate `compat/font/outlines.json.gz`
+and `compat/font/cff-outlines.json.gz`, then copy `generate-path_test.go`
+without its build tag into upstream `converter/font` alongside `generate_test.go`
+and run `TestCodexSpecimenPaths` with the same fixture root.

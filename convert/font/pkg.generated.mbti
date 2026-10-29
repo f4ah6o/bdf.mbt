@@ -2,6 +2,7 @@
 package "f4ah6o/bdf/convert/font"
 
 import {
+  "f4ah6o/bdf/core",
   "f4ah6o/bdf/font/otlayout",
   "f4ah6o/bdf/font/sfnt",
 }
@@ -56,6 +57,7 @@ pub fn FileFace::coverage(Self) -> Array[BlockCoverage]
 pub fn FileFace::feature_groups(Self) -> Array[FeatureGroup]
 pub fn FileFace::glyph_definitions(Self) -> @otlayout.Gdef?
 pub fn FileFace::kerning(Self) -> String
+pub fn FileFace::outlines(Self) -> SpecimenOutlines
 pub fn FileFace::sample_plan(Self, String) -> SamplePlan
 pub fn FileFace::sample_program(Self, String) -> Bytes? raise
 pub fn FileFace::sample_pruned(Self, Array[Int32]) -> Bytes? raise
@@ -165,6 +167,12 @@ pub fn SpecimenNames::best(Self, Int32) -> String
 pub fn SpecimenNames::family(Self) -> String
 pub fn SpecimenNames::full(Self) -> String
 pub fn SpecimenNames::local(Self, Int32) -> Array[SpecimenName]
+
+pub struct SpecimenOutlines {
+  // private fields
+}
+pub fn SpecimenOutlines::bounds(Self, Int32) -> (Double, Double, Double, Double)?
+pub fn SpecimenOutlines::path(Self, Int32) -> @core.Path?
 
 pub(all) struct UnicodeBlock {
   first : Int32

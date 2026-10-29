@@ -378,3 +378,24 @@ pub fn scroll_plan(
     "anchors": Json::object(resolved),
   }).stringify()
 }
+
+///|
+#export_name("prepare_outlines")
+pub fn prepare_outlines(data : Bytes, index : Int32) -> @font.SpecimenOutlines {
+  let file = try! @font.load(data)
+  for face in file.faces() {
+    if face.index == index {
+      return face.outlines()
+    }
+  }
+  abort("missing font face")
+}
+
+///|
+#export_name("specimen_path")
+pub fn specimen_path(outlines : @font.SpecimenOutlines, glyph : Int32) -> Bytes {
+  match outlines.path(glyph) {
+    None => b""
+    Some(path) => try! @core.encode_path_collection([path])
+  }
+}
