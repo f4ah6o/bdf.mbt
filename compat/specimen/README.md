@@ -172,3 +172,7 @@ and run `TestCodexPositionExamples` with the same fixture root.
 To regenerate combined feature-detail cases, copy `generate-feature-details_test.go`
 without its build tag into upstream `converter/font` alongside `generate_test.go`
 and run `TestCodexFeatureDetails` with the same fixture root.
+
+To regenerate feature-view page cases, copy `generate-feature-view_test.go`
+without its build tag into upstream `converter/font` alongside `generate_test.go`
+and run `TestCodexFeatureView` with the same fixture root.

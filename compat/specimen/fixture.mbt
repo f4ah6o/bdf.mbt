@@ -1246,3 +1246,50 @@ pub fn feature_lookup_notes(f : FeaturePlannerFixture, index : Int32) -> String 
     }),
   ).stringify()
 }
+
+///|
+#export_name("render_feature_view")
+pub fn render_feature_view(
+  data : Bytes,
+  index : Int32,
+  ui_font : Bytes,
+  system : Bool,
+  outlined : Bool,
+  glyph_hash : String,
+  limit : Int32,
+) -> GlyphViewFixture {
+  let file = try! @font.load(data)
+  for face in file.faces() {
+    if face.index == index {
+      let db = @db.Database::new()
+      if ui_font.length() > 0 {
+        ignore(db.add_file("stix.ttf", ui_font))
+      }
+      let texter = @font.SpecimenTexter::new(db)
+      let view = face.feature_view(
+        texter,
+        face.sample_plan(""),
+        example_limit=limit,
+      )
+      let ui_fonts : @font.SpecimenUIFonts = if system {
+        { hashes: Map::new(), warnings: [], }
+      } else {
+        try! texter.embed(@core.DocumentWriter::new())
+      }
+      let glyph : @core.Font? = if outlined {
+        None
+      } else {
+        Some({ hash: Some(glyph_hash), family: "", weight: 400, style: 0, })
+      }
+      let programs : @font.SpecimenFacePrograms = {
+        face_index: face.index,
+        glyph_font: glyph,
+        sample_font: None,
+        sample: face.sample_plan(""),
+        outlined,
+      }
+      return { pages: try! view.render(programs, ui_fonts), }
+    }
+  }
+  abort("missing font face")
+}

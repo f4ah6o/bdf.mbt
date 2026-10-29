@@ -84,6 +84,7 @@ pub fn FileFace::character_view(Self, SpecimenTexter) -> SpecimenCharacterView
 pub fn FileFace::coverage(Self) -> Array[BlockCoverage]
 pub fn FileFace::feature_groups(Self) -> Array[FeatureGroup]
 pub fn FileFace::feature_planner(Self) -> SpecimenFeaturePlanner
+pub fn FileFace::feature_view(Self, SpecimenTexter, SamplePlan, example_limit? : Int32) -> SpecimenFeatureView
 pub fn FileFace::glyph_definitions(Self) -> @otlayout.Gdef?
 pub fn FileFace::glyph_painter(Self, @core.ObjectBuilder, embedded? : @core.Font?, sample_font? : @core.Font?, doc_language? : String) -> GlyphPainter
 pub fn FileFace::glyph_view(Self, SpecimenTexter) -> SpecimenGlyphView
@@ -223,6 +224,11 @@ pub struct SpecimenFeaturePlanner {
 pub fn SpecimenFeaturePlanner::gpos_examples(Self, FeatureGroup, Int32, SamplePlan) -> FeatureExamples
 pub fn SpecimenFeaturePlanner::gsub_examples(Self, FeatureGroup, Int32) -> FeatureExamples
 pub fn SpecimenFeaturePlanner::lookup_note(Self, FeatureGroup, Int32) -> String
+
+pub struct SpecimenFeatureView {
+  // private fields
+}
+pub fn SpecimenFeatureView::render(Self, SpecimenFacePrograms, SpecimenUIFonts) -> Array[SpecimenRenderedPage] raise
 
 pub(all) struct SpecimenGlyph {
   name : String
