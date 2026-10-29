@@ -3,6 +3,8 @@
 pub struct OoxmlPackage {
   archive : @zip.ZipArchive
   files : Map[String, @zip.ZipEntry]
+  rels : Map[String, Array[OoxmlRelationship]]
+  targets : Map[String, Map[String, OoxmlRelationship]]
 }
 
 ///|
@@ -36,7 +38,7 @@ pub fn open_ooxml(data : Bytes) -> OoxmlPackage raise OoxmlError {
   for entry in archive.entries {
     files[ooxml_name(entry.name, true)] = entry
   }
-  { archive, files, }
+  { archive, files, rels: Map([]), targets: Map([]), }
 }
 
 ///|
@@ -137,14 +139,22 @@ pub fn OoxmlPackage::relationships(
   } else {
     source
   }
+  if self.rels.get(source) is Some(cached) {
+    return cached.copy()
+  }
+  self.rels[source] = []
+  self.targets[source] = Map([])
   let (directory, base) = ooxml_part_directory(source)
   let bytes = self.read(directory + "_rels/" + base + ".rels") catch {
     _ => return []
   }
-  let reader = @xml.Reader::from_string(
-    @utf8.decode_lossy(bytes[:], ignore_bom=true),
-  )
+  let text = @utf8.decode_lossy(bytes[:], ignore_bom=true)
+  if text.contains("<!ENTITY") {
+    return []
+  }
+  let reader = @xml.Reader::from_string(text)
   let result : Array[OoxmlRelationship] = []
+  let positions : Map[String, Int32] = Map([])
   let mut depth = 0
   while true {
     let event = reader.read_event() catch { _ => return [] }
@@ -174,28 +184,37 @@ pub fn OoxmlPackage::relationships(
             },
             external,
           }
-          let mut replaced = false
-          for i in 0..<result.length() {
-            if result[i].id == id {
-              result[i] = relationship
-              replaced = true
-              break
+          match positions.get(id) {
+            Some(i) => result[i] = relationship
+            None => {
+              positions[id] = result.length()
+              result.push(relationship)
             }
-          }
-          if !replaced {
-            result.push(relationship)
           }
         }
         if event.kind is Start(_) {
           depth += 1
+        } else if depth == 0 {
+          break
         }
       }
-      End(_) => depth -= 1
+      End(_) => {
+        depth -= 1
+        if depth == 0 {
+          break
+        }
+      }
       Eof => break
       _ => ()
     }
   }
-  result
+  let index : Map[String, OoxmlRelationship] = Map([])
+  for rel in result {
+    index[rel.id] = rel
+  }
+  self.rels[source] = result
+  self.targets[source] = index
+  result.copy()
 }
 
 ///|
@@ -220,12 +239,18 @@ pub fn OoxmlPackage::target(
   source : String,
   id : String,
 ) -> OoxmlRelationship? {
-  for relationship in self.relationships(source) {
-    if relationship.id == id && relationship.target != "" {
-      return Some(relationship)
-    }
+  let key = if source.has_prefix("/") { source[1:].to_owned() } else { source }
+  if !self.targets.contains(key) {
+    ignore(self.relationships(source))
   }
-  None
+  match self.targets.get(key) {
+    Some(index) =>
+      match index.get(id) {
+        Some(rel) => if rel.target != "" { Some(rel) } else { None }
+        None => None
+      }
+    None => None
+  }
 }
 
 ///|

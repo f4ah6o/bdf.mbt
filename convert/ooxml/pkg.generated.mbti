@@ -19,6 +19,8 @@ pub suberror OoxmlError {
 pub struct OoxmlPackage {
   archive : @zip.ZipArchive
   files : Map[String, @zip.ZipEntry]
+  rels : Map[String, Array[OoxmlRelationship]]
+  targets : Map[String, Map[String, OoxmlRelationship]]
 }
 pub fn OoxmlPackage::has(Self, String) -> Bool
 pub fn OoxmlPackage::part_size(Self, String) -> Int32?

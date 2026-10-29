@@ -1,12 +1,36 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "f4ah6o/bdf/convert/xlsx"
 
+import {
+  "f4ah6o/bdf/convert/ooxml",
+}
+
 // Values
 pub fn detect_xlsx(Bytes, Bytes) -> Bool
 
+pub fn read_xlsx_workbook(Bytes) -> XlsxWorkbook raise XlsxInputError
+
 // Errors
+pub suberror XlsxInputError {
+  InvalidXlsxInput(String)
+}
 
 // Types and methods
+pub(all) struct XlsxSheetRef {
+  name : String
+  part : String
+  chart : Bool
+  hidden : Bool
+  index : Int32
+}
+
+pub(all) struct XlsxWorkbook {
+  package : @ooxml.OoxmlPackage
+  part : String
+  date1904 : Bool
+  sheets : Array[XlsxSheetRef]
+  warnings : Array[String]
+}
 
 // Type aliases
 
