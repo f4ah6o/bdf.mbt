@@ -220,7 +220,6 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
       a.horizontal != "right"
     ) ||
     (a.vertical != "bottom" && a.vertical != "top" && a.vertical != "center") ||
-    a.shrink ||
     a.indent != 0 ||
     a.rotation != 0 ||
     a.justify_last ||
@@ -238,7 +237,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// Supports sheet views with numeric, plain string, boolean and error cells,
 /// number formats, named and themed fonts, font colors, bold, italic, underlined
 /// and struck text, superscript and subscript, horizontal alignment, top or
-/// center vertical alignment, solid fills, line borders, merged cells and wrapping.
+/// center vertical alignment, solid fills, line borders, merged cells, wrapping
+/// and shrink-to-fit.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// complex features are rejected.
 pub fn convert_plain_no_fonts(
@@ -412,6 +412,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let italics : Map[Int32, Map[Int32, Bool]] = Map([])
   let decorations : Map[Int32, Map[Int32, @sheet.GridTextDecoration]] = Map([])
   let scripts : Map[Int32, Map[Int32, String]] = Map([])
+  let shrink_scales : Map[Int32, Map[Int32, Double]] = Map([])
   let fills : Map[Int32, Map[Int32, @sheet.GridSolidFill]] = Map([])
   let sizes : Map[Int32, Map[Int32, Double]] = Map([])
   let wraps : Map[Int32, Map[Int32, Bool]] = Map([])
@@ -663,6 +664,38 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           }
         }
         let mut text = formatted.text()
+        if styles.cell_formats[format_index].alignment.shrink &&
+          !wrap &&
+          cell.kind != 1 {
+          let mut cell_width = if cell.column >= 0 &&
+            cell.column < widths.length() {
+            widths[cell.column]
+          } else {
+            0.0
+          }
+          if span is Some(region) && cell.column == region.column_start {
+            cell_width = 0.0
+            for column in region.column_start..<=region.column_end {
+              cell_width += widths[column]
+            }
+          }
+          let scale = xlsx_plain_shrink_scale(
+            text,
+            Double::max(cell_width - 3.75, 0.0),
+            drawn_size,
+          )
+          if scale != 1.0 {
+            let columns = match shrink_scales.get(row.index) {
+              Some(columns) => columns
+              None => {
+                let columns : Map[Int32, Double] = Map([])
+                shrink_scales[row.index] = columns
+                columns
+              }
+            }
+            columns[cell.column] = scale
+          }
+        }
         if cell.kind == 1 && !wrap {
           let mut cell_width = if cell.column >= 0 &&
             cell.column < widths.length() {
@@ -838,6 +871,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     italics~,
     decorations~,
     scripts~,
+    shrink_scales~,
   )
   (drawn, geo, parsed.missing_formula_values)
 }
@@ -1090,7 +1124,28 @@ fn xlsx_plain_fitted_rows(
           best = Double::max(best, text_height)
         }
       } else if (0.9 + 0.25) * size > (0.9 + 0.25) * 11.0 + 0.01 {
-        let text_height = 0.9 * size + 0.25 * size + 1.5 - 1.5
+        let mut actual_size = size
+        if styles.cell_formats[format_index].alignment.shrink && cell.kind != 1 {
+          if styles.format_cell(cell, date1904, locale) is Some(formatted) {
+            let width = if cell.column >= 0 && cell.column < widths.length() {
+              Double::max(widths[cell.column] - 3.75, 0.0)
+            } else {
+              0.0
+            }
+            let drawn_size = if styles.fonts[font_index].vertical == "" {
+              size
+            } else {
+              size * (2.0 / 3.0)
+            }
+            let scale = xlsx_plain_shrink_scale(
+              formatted.text(),
+              width,
+              drawn_size,
+            )
+            actual_size = if scale == 0.0 { size } else { size * scale }
+          }
+        }
+        let text_height = 0.9 * actual_size + 0.25 * actual_size + 1.5 - 1.5
         best = Double::max(best, text_height)
       }
     }
@@ -1099,6 +1154,36 @@ fn xlsx_plain_fitted_rows(
     }
   }
   result
+}
+
+///|
+fn xlsx_plain_shrink_scale(
+  text : String,
+  available : Double,
+  size : Double,
+) -> Double {
+  let mut width = 0.0
+  let mut shown = 0
+  for c in text {
+    if c == '\n' {
+      shown += 1
+    } else {
+      let ch = if c == '\t' { ' ' } else { c }
+      if ch.to_int() < 0x20 {
+        continue
+      }
+      width += @sheet.sized_fallback_advance(ch, false, size)
+      shown += 1
+    }
+    if shown >= 1024 {
+      break
+    }
+  }
+  if width > available + 0.01 && width > 0.0 {
+    available / width
+  } else {
+    1.0
+  }
 }
 
 ///|

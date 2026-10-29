@@ -18,8 +18,9 @@ and `form-fixed.xlsx`
 workbooks, along with generated cases for solid fills, colored and dashed
 borders (including diagonals and multiple colors at one weight), named and
 themed fonts, italic and decorated text, superscripts and subscripts, merged
-rectangles, wrapped text with fixed and automatic row heights, hidden rows and
-columns, and uncached formula warnings.
+rectangles, wrapped and shrink-to-fit text, fixed and automatic row heights,
+hidden rows and columns, and uncached formula warnings. The rendering cases are
+split into indexed chunks so individual fixture files stay small.
 Copy `generate_render_test.go` without its build tag into upstream
 `converter/xlsx` and run `TestCodexXLSXRender` to regenerate them.
 To regenerate fixtures, copy `generate_workbook_test.go` without its build tag

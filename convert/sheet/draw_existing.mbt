@@ -105,6 +105,7 @@ pub fn draw_sized_grid_no_fonts(
   italics~ : Map[Int32, Map[Int32, Bool]] = Map([]),
   decorations~ : Map[Int32, Map[Int32, GridTextDecoration]] = Map([]),
   scripts~ : Map[Int32, Map[Int32, String]] = Map([]),
+  shrink_scales~ : Map[Int32, Map[Int32, Double]] = Map([]),
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -270,10 +271,16 @@ pub fn draw_sized_grid_no_fonts(
         Some(columns) => columns.get(column).unwrap_or(false)
         None => false
       }
-      let size = match sizes.get(i) {
+      let original_size = match sizes.get(i) {
         Some(columns) => columns.get(column).unwrap_or(11.0)
         None => 11.0
       }
+      let scale = match shrink_scales.get(i) {
+        Some(columns) => columns.get(column).unwrap_or(1.0)
+        None => 1.0
+      }
+      let size = original_size * scale
+      let line_size = if scale == 0.0 { original_size } else { size }
       let script = match scripts.get(i) {
         Some(columns) => columns.get(column).unwrap_or("")
         None => ""
@@ -307,9 +314,14 @@ pub fn draw_sized_grid_no_fonts(
         None => family
       }
       let advance = (character : Char, is_bold : Bool) => {
-        sized_fallback_advance(character, is_bold, draw_size)
+        let initial_size = if script == "" {
+          original_size
+        } else {
+          original_size * (2.0 / 3.0)
+        }
+        sized_fallback_advance(character, is_bold, initial_size) * scale
       }
-      let metrics = (_ : Char, _ : Bool) => (0.9 * size, 0.25 * size)
+      let metrics = (_ : Char, _ : Bool) => (0.9 * line_size, 0.25 * line_size)
       let wrap = match wraps.get(i) {
         Some(columns) => columns.get(column).unwrap_or(false)
         None => false
@@ -406,7 +418,7 @@ pub fn draw_sized_grid_no_fonts(
         col_positions,
         y,
         height,
-        size,
+        line_size,
         last_row == i && !wrap,
       )
       let vertical = match verticals.get(i) {
@@ -414,7 +426,7 @@ pub fn draw_sized_grid_no_fonts(
         None => "bottom"
       }
       let layout = sized_grid_vertical_layout(
-        horizontal, y, height, vertical, size,
+        horizontal, y, height, vertical, line_size,
       )
       let shift = if script == "superscript" {
         size * 0.33

@@ -26,7 +26,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 8200; i++ {
+	for i := 0; i < 8400; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -249,8 +249,10 @@ func TestCodexXLSXRender(t *testing.T) {
 				if i >= 5400 {
 					for j := 1; j <= 4; j++ {
 						wrap := ""
-						if i >= 6500 {
+						if i >= 6500 && i < 8200 {
 							wrap = ` wrapText="1"`
+						} else if i >= 8200 {
+							wrap = ` shrinkToFit="1"`
 						}
 						st += fmt.Sprintf(`<xf fontId="%d" fillId="1" borderId="%d" numFmtId="%d"><alignment horizontal="%s" vertical="%s"%s/></xf>`, 6+j%2, j, []int{0, 2, 14, 164}[i%4], []string{"general", "left", "right", "center"}[(i/4)%4], []string{"bottom", "top", "center"}[(i/16)%3], wrap)
 					}
@@ -548,11 +550,28 @@ func TestCodexXLSXRender(t *testing.T) {
 		t.Fatal(e)
 	}
 	out = append(out, map[string]any{"input": fixed, "bdf": fixedBDF.Bytes(), "warnings": fixedResult.Warnings, "mode": "none", "no_index": true})
-	data, e := json.Marshal(out)
+	dir := filepath.Join(root, "compat/xlsx/render")
+	if e = os.MkdirAll(dir, 0755); e != nil {
+		t.Fatal(e)
+	}
+	files := []string{}
+	for start := 0; start < len(out); start += 1000 {
+		end := min(start+1000, len(out))
+		name := fmt.Sprintf("%03d.json", start/1000)
+		data, err := json.Marshal(out[start:end])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = os.WriteFile(filepath.Join(dir, name), data, 0644); err != nil {
+			t.Fatal(err)
+		}
+		files = append(files, name)
+	}
+	index, e := json.Marshal(map[string]any{"count": len(out), "files": files})
 	if e != nil {
 		t.Fatal(e)
 	}
-	if e = os.WriteFile(filepath.Join(root, "compat/xlsx/render.json"), data, 0644); e != nil {
+	if e = os.WriteFile(filepath.Join(dir, "index.json"), index, 0644); e != nil {
 		t.Fatal(e)
 	}
 }
