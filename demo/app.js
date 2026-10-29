@@ -24,6 +24,7 @@ function setBusy(value) {
   $('#open-file').disabled = value;
   $('#sample').disabled = value;
   $('#csv-sample').disabled = value;
+  for (const link of document.querySelectorAll('[data-sample]')) link.setAttribute('aria-disabled', String(value));
   view.disabled = value || !viewer.document;
 }
 function pageCount() { return viewer.view?.pages?.length ?? 0; }
@@ -110,6 +111,18 @@ file.addEventListener('change', async () => {
   file.value = '';
   await openLocal(selected);
 });
+const samples = {
+  bdf: ['./samples/upstream-demo.bdf', 'upstream-demo.bdf'],
+  csv: ['./samples/people.csv', 'people.csv'],
+  image: ['./samples/illustration.svg', 'illustration.svg'],
+};
+for (const link of document.querySelectorAll('[data-sample]')) {
+  link.addEventListener('click', event => {
+    if (busy) { event.preventDefault(); return; }
+    const sample = samples[link.dataset.sample];
+    if (sample) void openSample(...sample);
+  });
+}
 $('#sample').addEventListener('click', () => openSample('./samples/upstream-demo.bdf', 'upstream-demo.bdf'));
 $('#csv-sample').addEventListener('click', () => openSample('./samples/people.csv', 'people.csv'));
 view.addEventListener('change', () => { viewer.setView(view.value); viewer.stage.scrollTop = 0; viewer.stage.scrollLeft = 0; currentPage = 0; updatePage(); });

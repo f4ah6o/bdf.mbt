@@ -18,7 +18,7 @@
       <div><p class="eyebrow">BROWSER DOCUMENT FORMAT</p><h1 id="intro-title">ドキュメントを、ブラウザで。</h1><p class="description">BDF の表示、検索、CSV・画像の変換を試せます。ファイルをドロップするか、サンプルを開いてください。</p></div>
       <div class="intro-actions"><button id="open-file" class="button primary" type="button">ファイルを開く</button><input id="file" hidden type="file" accept=".bdf,.csv,.tsv,.tab,.bmp,.ico,.jpg,.jpeg,.png,.gif,.webp,.avif,.svg"><button id="sample" class="button secondary" type="button">サンプルを開く</button></div>
     </section>
-    <section class="viewer-card" aria-label="ドキュメントビューア">
+    <section id="viewer" class="viewer-card" aria-label="ドキュメントビューア">
       <div class="viewer-top"><div><span class="live-dot" aria-hidden="true"></span><strong id="document-name">デモ文書</strong><span id="document-meta" class="document-meta"></span></div><a id="download" class="download" download="document.bdf" hidden>BDF を保存 ↓</a></div>
       <div class="toolbar" aria-label="表示と検索">
         <label>ビュー <select id="view" aria-label="ビュー" disabled><option>読み込み中</option></select></label>
@@ -30,9 +30,26 @@
       <div id="preview" class="preview" aria-label="文書のプレビュー"></div>
       <div class="viewer-footer"><p id="status" role="status" aria-live="polite">サンプルを読み込んでいます…</p><button id="csv-sample" type="button" class="text-button">CSV サンプルを試す →</button></div>
     </section>
-    <section class="about" aria-labelledby="about-title"><div><h2 id="about-title">対応しているファイル</h2><p>BDF、CSV / TSV、PNG、JPEG、GIF、WebP、AVIF、SVG、BMP、ICO を開けます。PDF や Office などの変換は移植中です。</p></div><div><h2>このデモについて</h2><p>表示と変換は MoonBit の JavaScript 版で動きます。サンプル文書は <a href="https://github.com/shibukawa/bdf">shibukawa/bdf</a> のデモ PDF から生成しています（<a href="./licenses/BDF-MIT.txt">MIT ライセンス</a>）。埋め込みフォント: <a href="./licenses/Liberation.txt">Liberation</a>、<a href="./licenses/IPA.txt">IPA</a>、<a href="./licenses/WenQuanYi-README.txt">WenQuanYi</a>。</p></div></section>
+    <section class="gallery" aria-labelledby="gallery-title">
+      <div class="section-heading"><div><p class="eyebrow">EXPLORE DOCUMENTS</p><h2 id="gallery-title">文書のかたちに合わせたプレビュー</h2><p>サンプルをビューアで開いて、表示や検索を試せます。</p></div><a class="section-link" href="./coverage.html">Porting coverage <span aria-hidden="true">↗</span></a></div>
+      <div class="gallery-grid">
+        <article class="format-card">
+          <img src="./previews/bdf.png" alt="文書の先頭ページのプレビュー" width="640" height="400" loading="lazy">
+          <div class="card-body"><p class="card-kicker">DOCUMENT</p><h3>BDF 文書</h3><p>PDF から事前に作成された BDF を表示。ページ移動やテキスト検索を試せます。</p><div class="card-links"><a href="#viewer" data-sample="bdf">ビューアで開く <span aria-hidden="true">↗</span></a><a href="./formats.html#bdf">形式の説明</a></div></div>
+        </article>
+        <article class="format-card">
+          <img src="./previews/csv.png" alt="表形式のデータのプレビュー" width="640" height="400" loading="lazy">
+          <div class="card-body"><p class="card-kicker">SPREADSHEET</p><h3>CSV / TSV</h3><p>行と列のデータをブラウザで変換し、スクロールできる表として表示します。</p><div class="card-links"><a href="#viewer" data-sample="csv">ビューアで開く <span aria-hidden="true">↗</span></a><a href="./formats.html#csv">形式の説明</a></div></div>
+        </article>
+        <article class="format-card">
+          <img src="./previews/image.png" alt="画像のプレビュー" width="640" height="400" loading="lazy">
+          <div class="card-body"><p class="card-kicker">IMAGE</p><h3>画像</h3><p>SVG や PNG、JPEG などの画像を BDF に変換し、ページとして表示します。</p><div class="card-links"><a href="#viewer" data-sample="image">ビューアで開く <span aria-hidden="true">↗</span></a><a href="./formats.html#image">形式の説明</a></div></div>
+        </article>
+      </div>
+    </section>
+    <section class="about" aria-labelledby="about-title"><div><h2 id="about-title">ブラウザで試す</h2><p>ファイルを開くかビューアにドロップすると、このブラウザ内で処理します。</p></div><div><h2>サンプルとライセンス</h2><p>文書サンプルの元データ: <a href="./licenses/BDF-MIT.txt">MIT ライセンス</a>。埋め込みフォント: <a href="./licenses/Liberation.txt">Liberation</a>、<a href="./licenses/IPA.txt">IPA</a>、<a href="./licenses/WenQuanYi-README.txt">WenQuanYi</a>。</p></div></section>
   </main>
-  <footer class="page-footer"><span>BDF viewer · MoonBit port</span><a href="https://github.com/f4ah6o/bdf.mbt">ソースコードを見る ↗</a></footer>
+  <footer class="page-footer"><p>shibukawa/bdf から独立して移植した非公式プロジェクトです。上流の公式提供・提携ではありません。</p><a href="https://github.com/f4ah6o/bdf.mbt">ソースコードを見る ↗</a></footer>
   <script type="module" src="./app.js"></script>
 </body>
 </html>

@@ -6,7 +6,7 @@ import { resolve, extname } from 'node:path';
 import { chromium } from 'playwright';
 
 const root = resolve(import.meta.dirname, '../_build/pages');
-const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.csv': 'text/csv; charset=utf-8', '.bdf': 'application/octet-stream' };
+const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.csv': 'text/csv; charset=utf-8', '.bdf': 'application/octet-stream', '.png': 'image/png', '.svg': 'image/svg+xml' };
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   if (!url.pathname.startsWith('/bdf.mbt/')) { res.writeHead(404).end(); return; }
@@ -77,6 +77,28 @@ try {
   assert.match(await page.locator('#status').textContent(), /unsupported\.pdf/);
   await page.locator('#sample').press('Enter');
   await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'upstream-demo.bdf' && !document.querySelector('#status').classList.contains('error'), null, { timeout: 30000 });
+  for (const [kind, name] of [['csv', 'people.csv'], ['image', 'illustration.svg'], ['bdf', 'upstream-demo.bdf']]) {
+    await page.locator(`[data-sample="${kind}"]`).click();
+    await page.waitForFunction(n => document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled, name, { timeout: 30000 });
+    assert.equal(await page.locator('#status').evaluate(el => el.classList.contains('error')), false, `${kind} sample`);
+  }
+  for (const card of await page.locator('.format-card').all()) {
+    assert.equal(await card.locator('img').evaluate(img => img.complete && img.naturalWidth > 1), true, 'card preview');
+    const href = await card.getByRole('link', { name: '形式の説明' }).getAttribute('href');
+    const response = await page.request.get(new URL(href, url).href);
+    assert.equal(response.status(), 200, href);
+    const section = href.split('#')[1];
+    const description = await browser.newPage();
+    await description.goto(new URL(href, url).href);
+    assert.equal(await description.locator(`#${section}`).count(), 1, href);
+    await description.close();
+  }
+  const coverage = await browser.newPage();
+  await coverage.goto(new URL('coverage.html', url).href);
+  assert.equal(await coverage.getByRole('heading', { name: 'Porting coverage' }).count(), 1);
+  await coverage.getByRole('link', { name: '← デモに戻る' }).click();
+  assert.equal(new URL(coverage.url()).pathname, '/bdf.mbt/');
+  await coverage.close();
   assert.deepEqual(errors, []);
   await page.close();
   const mobile = await browser.newPage({ viewport: { width: 375, height: 812 } });
