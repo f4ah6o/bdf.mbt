@@ -252,3 +252,72 @@ pub fn file_credits(data : Bytes) -> String {
       Json::object({ "error": Json::string(message) }).stringify()
   }
 }
+
+///|
+#export_name("performance")
+pub fn performance(data : Bytes) -> String {
+  try {
+    let p = @midi.performance(@midi.read_file(data))
+    let tracks = p.tracks.map(t => {
+      Json::object({
+        "name": Json::string(t.name),
+        "channel": Json::number(t.channel.to_double()),
+        "program": Json::number(t.program.to_double()),
+        "volume": Json::number(t.volume.to_double()),
+        "pan": Json::number(t.pan.to_double()),
+        "notes": Json::array(
+          t.notes.map(n => {
+            Json::array([
+              Json::number(n.tick.to_double()),
+              Json::number(n.duration.to_double()),
+              Json::number(n.key.to_double()),
+              Json::number(n.velocity.to_double()),
+            ])
+          }),
+        ),
+        "controls": Json::array(
+          t.controls.map(c => {
+            Json::array([
+              Json::number(c.tick.to_double()),
+              Json::number(c.kind.to_double()),
+              Json::number(c.number.to_double()),
+              Json::number(c.value.to_double()),
+            ])
+          }),
+        ),
+      })
+    })
+    Json::object({
+      "tracks": Json::array(tracks),
+      "end": Json::number(p.end.to_double()),
+      "division": Json::number(p.division.to_double()),
+      "warnings": Json::array(p.warnings.map(Json::string)),
+      "tempos": Json::array(
+        p.tempos.map(t => {
+          Json::array([Json::number(t.tick.to_double()), Json::number(t.bpm)])
+        }),
+      ),
+      "times": Json::array(
+        p.times.map(t => {
+          Json::array([
+            Json::number(t.tick.to_double()),
+            Json::number(t.beats.to_double()),
+            Json::number(t.beat_type.to_double()),
+          ])
+        }),
+      ),
+      "keys": Json::array(
+        p.keys.map(k => {
+          Json::array([
+            Json::number(k.tick.to_double()),
+            Json::number(k.fifths.to_double()),
+            Json::boolean(k.minor),
+          ])
+        }),
+      ),
+    }).stringify()
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}

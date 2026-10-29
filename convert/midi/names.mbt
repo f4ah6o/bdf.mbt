@@ -206,20 +206,40 @@ pub fn track_name(
 ) -> String {
   let decoder = MidiTextDecoder::new(file)
   let item = file.tracks[track].notes
-  let channel_name = decoder.name(item.channel_names[channel])
-  if channel_name != "" {
-    return channel_name
-  }
-  let titled = file.header.format == 0 && track == 0
-  let mut name = if titled { "" } else { decoder.name(item.name) }
-  if name == "" {
-    name = decoder.name(item.instrument)
-  }
   let channels : Map[Int32, Bool] = Map([])
   for note in item.notes {
     channels[note.channel] = true
   }
-  if name != "" && channels.length() > 1 {
+  track_name_decoded(
+    item,
+    decoder,
+    channel,
+    has_program,
+    program,
+    file.header.format == 0 && track == 0,
+    channels.length(),
+  )
+}
+
+///|
+fn track_name_decoded(
+  item : MidiTrackNotes,
+  decoder : MidiTextDecoder,
+  channel : Int32,
+  has_program : Bool,
+  program : Int32,
+  titled : Bool,
+  channel_count : Int32,
+) -> String {
+  let channel_name = decoder.name(item.channel_names[channel])
+  if channel_name != "" {
+    return channel_name
+  }
+  let mut name = if titled { "" } else { decoder.name(item.name) }
+  if name == "" {
+    name = decoder.name(item.instrument)
+  }
+  if name != "" && channel_count > 1 {
     return "\{name} (ch \{channel + 1})"
   }
   if name != "" {

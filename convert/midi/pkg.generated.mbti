@@ -6,6 +6,8 @@ pub fn credits(MidiRawFile) -> MidiCredits
 
 pub fn detect(Bytes) -> Bool
 
+pub fn performance(MidiRawFile) -> MidiPerformance
+
 pub fn program_name(Int32) -> String
 
 pub fn read_file(Bytes) -> MidiRawFile raise MidiInputError
@@ -51,6 +53,42 @@ pub(all) struct MidiInput {
   smf : Bytes
   title : Bytes
   copyright : Bytes
+}
+
+pub(all) struct MidiPerformance {
+  credits : MidiCredits
+  tracks : Array[MidiPerformanceTrack]
+  tempos : Array[MidiRawTempo]
+  times : Array[MidiRawTime]
+  keys : Array[MidiRawKey]
+  end : Int64
+  division : Int32
+  warnings : Array[String]
+}
+
+pub(all) struct MidiPerformanceTrack {
+  name : String
+  channel : Int32
+  program : Int32
+  volume : Int32
+  pan : Int32
+  notes : Array[MidiPlayNote]
+  controls : Array[MidiPlayControl]
+  source_track : Int32
+}
+
+pub(all) struct MidiPlayControl {
+  tick : Int64
+  kind : Int32
+  number : Int32
+  value : Int32
+}
+
+pub(all) struct MidiPlayNote {
+  tick : Int64
+  duration : Int64
+  key : Int32
+  velocity : Int32
 }
 
 pub(all) struct MidiRawControl {

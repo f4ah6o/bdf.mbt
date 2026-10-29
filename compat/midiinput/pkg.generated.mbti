@@ -10,6 +10,8 @@ pub fn file_credits(Bytes) -> String
 
 pub fn header(Bytes, Int32) -> String
 
+pub fn performance(Bytes) -> String
+
 pub fn read_file(Bytes) -> String
 
 pub fn scan_track(Bytes, Int32) -> String
