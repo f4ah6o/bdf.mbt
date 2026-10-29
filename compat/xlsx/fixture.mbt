@@ -239,3 +239,46 @@ pub fn xlsx_builtin(id : Int32, locale : String) -> String {
 pub fn xlsx_format_sections(code : String) -> String {
   Json::array(@xlsx.xlsx_split_format_sections(code).map(Json::string)).stringify()
 }
+
+///|
+#export_name("xlsx_parse_format")
+pub fn xlsx_parse_format(code : String) -> String {
+  let sections = @xlsx.xlsx_parse_number_format(
+    code,
+    @xlsx.xlsx_default_palette(),
+  )
+  Json::array(
+    sections.map(fn(section) {
+      let tokens = section.tokens.map(fn(token) {
+        Json::array([
+          Json::number(token.kind.to_double()),
+          Json::string(token.text),
+        ])
+      })
+      Json::array([
+        Json::array(tokens),
+        match section.color {
+          Some(color) => Json::number(color.to_double())
+          None => Json::null()
+        },
+        Json::string(section.condition_operator),
+        Json::number(section.condition_value),
+        Json::boolean(section.date),
+        Json::boolean(section.text),
+        Json::string(section.locale),
+        Json::number(section.dbnum.to_double()),
+      ])
+    }),
+  ).stringify()
+}
+
+///|
+#export_name("xlsx_select_format")
+pub fn xlsx_select_format(code : String, value : Double) -> String {
+  let sections = @xlsx.xlsx_parse_number_format(
+    code,
+    @xlsx.xlsx_default_palette(),
+  )
+  let (index, unsigned) = @xlsx.xlsx_select_format_section(sections, value)
+  Json::array([Json::number(index.to_double()), Json::boolean(unsigned)]).stringify()
+}

@@ -16,13 +16,19 @@ pub fn xlsx_col_name(Int32) -> String
 
 pub fn xlsx_decode_string(String) -> String
 
+pub fn xlsx_default_palette() -> Array[UInt32]
+
 pub fn xlsx_format_general(Double, Int32) -> String
 
 pub fn xlsx_iso_serial(String, Bool) -> Double?
 
+pub fn xlsx_parse_number_format(String, Array[UInt32]) -> Array[XlsxFormatSection]
+
 pub fn xlsx_parse_range(String) -> XlsxRange?
 
 pub fn xlsx_parse_ref(String) -> (Int32, Int32, Bool)
+
+pub fn xlsx_select_format_section(Array[XlsxFormatSection], Double) -> (Int32, Bool)
 
 pub fn xlsx_split_format_sections(String) -> Array[String]
 
@@ -84,6 +90,22 @@ pub(all) struct XlsxFont {
   mut vertical : String
   mut scheme : String
   mut family : Int32
+}
+
+pub(all) struct XlsxFormatSection {
+  tokens : Array[XlsxFormatToken]
+  mut color : UInt32?
+  mut condition_operator : String
+  mut condition_value : Double
+  mut date : Bool
+  mut text : Bool
+  mut locale : String
+  mut dbnum : Int32
+}
+
+pub(all) struct XlsxFormatToken {
+  kind : Int32
+  text : String
 }
 
 pub(all) struct XlsxRange {
