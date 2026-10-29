@@ -227,3 +227,15 @@ pub fn xlsx_styles(data : Bytes) -> String {
 pub fn xlsx_general(value : Double, width : Int32) -> String {
   @xlsx.xlsx_format_general(value, width)
 }
+
+///|
+#export_name("xlsx_builtin")
+pub fn xlsx_builtin(id : Int32, locale : String) -> String {
+  @xlsx.xlsx_builtin_format(id, locale)
+}
+
+///|
+#export_name("xlsx_format_sections")
+pub fn xlsx_format_sections(code : String) -> String {
+  Json::array(@xlsx.xlsx_split_format_sections(code).map(Json::string)).stringify()
+}

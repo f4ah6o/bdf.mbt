@@ -2,7 +2,11 @@
 package "f4ah6o/bdf/compat/xlsx"
 
 // Values
+pub fn xlsx_builtin(Int32, String) -> String
+
 pub fn xlsx_cells(Bytes, String) -> String
+
+pub fn xlsx_format_sections(String) -> String
 
 pub fn xlsx_general(Double, Int32) -> String
 
