@@ -115,8 +115,18 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
           } else {
             text
           }
-          let value = if text.has_prefix("$") {
-            match xlsx_absolute_conditional_value(text, rows) {
+          let data = @utf8.encode(text)
+          let reference = data.length() > 0 &&
+            (
+              data[0] == b'$' ||
+              (data[0] >= b'A' && data[0] <= b'Z') ||
+              (data[0] >= b'a' && data[0] <= b'z')
+            )
+          let single = ranges.length() == 1 &&
+            ranges[0].row_start == ranges[0].row_end &&
+            ranges[0].column_start == ranges[0].column_end
+          let value = if reference {
+            match xlsx_conditional_reference_value(text, rows, single) {
               Some(value) => value
               None => {
                 xlsx_reject_conditional()
@@ -267,15 +277,18 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
 }
 
 ///|
-fn xlsx_absolute_conditional_value(
+fn xlsx_conditional_reference_value(
   text : String,
   rows : Array[XlsxRow],
+  allow_relative : Bool,
 ) -> Double? {
   let data = @utf8.encode(text)
-  if data.length() < 4 || data[0] != b'$' {
+  if data.length() < 2 {
     return None
   }
-  let mut i = 1
+  let col_absolute = data[0] == b'$'
+  let mut i = if col_absolute { 1 } else { 0 }
+  let column_start = i
   while i < data.length() &&
         (
           (data[i] >= b'A' && data[i] <= b'Z') ||
@@ -283,10 +296,16 @@ fn xlsx_absolute_conditional_value(
         ) {
     i += 1
   }
-  if i == 1 || i >= data.length() || data[i] != b'$' {
+  if i == column_start || i >= data.length() {
     return None
   }
-  i += 1
+  let row_absolute = data[i] == b'$'
+  if row_absolute {
+    i += 1
+  }
+  if !allow_relative && (!col_absolute || !row_absolute) {
+    return None
+  }
   let start = i
   while i < data.length() && data[i] >= b'0' && data[i] <= b'9' {
     i += 1
