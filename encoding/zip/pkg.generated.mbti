@@ -1,0 +1,31 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/encoding/zip"
+
+// Values
+pub fn open_zip(Bytes) -> ZipArchive raise ZipError
+
+// Errors
+pub suberror ZipError {
+  InvalidZip(String)
+}
+
+// Types and methods
+pub(all) struct ZipArchive {
+  data : Bytes
+  entries : Array[ZipEntry]
+}
+pub fn ZipArchive::read(Self, ZipEntry, Int32) -> Bytes raise ZipError
+
+pub(all) struct ZipEntry {
+  name : String
+  method : Int32
+  flags : Int32
+  crc32 : UInt32
+  compressed_size : Int32
+  size : Int32
+  offset : Int32
+}
+
+// Type aliases
+
+// Traits
