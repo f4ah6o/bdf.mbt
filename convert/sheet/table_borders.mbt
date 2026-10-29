@@ -81,6 +81,17 @@ fn GridDrawContext::paint_table_borders(
       put_grid_edge(vertical, row, col + 1, borders[3])
     }
   }
+  self.draw_grid_edges(horizontal, vertical, columns, rows)
+}
+
+///|
+fn GridDrawContext::draw_grid_edges(
+  self : GridDrawContext,
+  horizontal : Map[String, GridEdge],
+  vertical : Map[String, GridEdge],
+  columns : Array[Double],
+  rows : Array[Double],
+) -> Unit raise {
   let hs : Array[GridEdge] = [ for _, edge in horizontal => edge ]
   hs.sort_by((a, b) => {
     if a.row == b.row {
@@ -110,12 +121,14 @@ fn GridDrawContext::paint_table_borders(
       j += 1
     }
     let y = rows[first.row]
-    add_grid_segment(groups, first.border, {
-      x0: columns[first.column],
-      y0: y,
-      x1: columns[hs[j - 1].column + 1],
-      y1: y,
-    })
+    if columns[hs[j - 1].column + 1] > columns[first.column] {
+      add_grid_segment(groups, first.border, {
+        x0: columns[first.column],
+        y0: y,
+        x1: columns[hs[j - 1].column + 1],
+        y1: y,
+      })
+    }
     i = j
   }
   i = 0
@@ -130,12 +143,14 @@ fn GridDrawContext::paint_table_borders(
       j += 1
     }
     let x = columns[first.column]
-    add_grid_segment(groups, first.border, {
-      x0: x,
-      y0: rows[first.row],
-      x1: x,
-      y1: rows[vs[j - 1].row + 1],
-    })
+    if rows[vs[j - 1].row + 1] > rows[first.row] {
+      add_grid_segment(groups, first.border, {
+        x0: x,
+        y0: rows[first.row],
+        x1: x,
+        y1: rows[vs[j - 1].row + 1],
+      })
+    }
     i = j
   }
   groups.sort_by((a, b) => {

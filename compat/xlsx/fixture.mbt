@@ -768,6 +768,22 @@ pub fn xlsx_render_basic(
 }
 
 ///|
+#export_name("xlsx_render_error")
+pub fn xlsx_render_error(
+  data : Bytes,
+  mode : String,
+  no_text_index : Bool,
+) -> String {
+  try {
+    let _ = @xlsx.convert_plain_no_fonts(data, data_mode=mode, no_text_index~)
+    ""
+  } catch {
+    @xlsx.InvalidXlsxInput(message) => message
+    _ => "other conversion error"
+  }
+}
+
+///|
 #export_name("xlsx_render_warnings")
 pub fn xlsx_render_warnings(
   data : Bytes,

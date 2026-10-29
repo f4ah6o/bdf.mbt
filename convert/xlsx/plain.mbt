@@ -199,6 +199,17 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
   } else {
     false
   }
+  let complex_border = if format.border >= 0 &&
+    format.border < styles.borders.length() {
+    let b = styles.borders[format.border]
+    b.diagonal.style != "" ||
+    b.vertical.style != "" ||
+    b.horizontal.style != "" ||
+    b.diagonal_up ||
+    b.diagonal_down
+  } else {
+    false
+  }
   if font.name != "Calibri" ||
     (index == 0 && font.size != 11.0) ||
     font.italic ||
@@ -219,7 +230,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
     a.rotation != 0 ||
     a.justify_last ||
     (nondefault_fill && (index == 0 || !solid_fill)) ||
-    nondefault_border {
+    (index == 0 && nondefault_border) ||
+    complex_border {
     raise InvalidXlsxInput(
       "xlsx: plain conversion does not support styled cells",
     )
@@ -230,7 +242,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// Convert worksheets using estimated font metrics without embedding fonts.
 /// Supports sheet views with numeric, plain string, boolean and error cells,
 /// number formats, font colors, bold text, horizontal alignment, top or center
-/// vertical alignment and solid fills on individual cells; complex features are rejected.
+/// vertical alignment, solid fills and basic black borders on individual cells;
+/// complex features are rejected.
 pub fn convert_plain_no_fonts(
   data : Bytes,
   data_mode~ : String = "",
@@ -286,6 +299,7 @@ pub fn convert_plain_no_fonts(
   let grids : Array[@sheet.NamedGrid] = []
   let mut counter = 0
   let mut warned_rtl = false
+  let warned_sheets : Map[String, Bool] = Map([])
   let doc_language = metadata.language.get(0).unwrap_or("")
   for index, ref in workbook.sheets {
     if ref.hidden {
@@ -298,7 +312,7 @@ pub fn convert_plain_no_fonts(
     }
     let number = index + 1
     let id = "sheet" + number.to_string()
-    let (drawn, geo) = workbook.xlsx_draw_plain_sheet(
+    let (drawn, geo, missing_formula_values) = workbook.xlsx_draw_plain_sheet(
       ref, styles, locale, doc_language, theme_colors,
     )
     let (next, table_warnings) = workbook.store_sheet_tables(
@@ -315,7 +329,16 @@ pub fn convert_plain_no_fonts(
     for warning in table_warnings {
       warnings.push(warning)
     }
-    if geo.right_to_left && !warned_rtl {
+    if !warned_sheets.contains(ref.name) && missing_formula_values > 0 {
+      warnings.push(
+        "sheet " +
+        xlsx_go_quote(ref.name, '"') +
+        ": " +
+        missing_formula_values.to_string() +
+        " formula cell(s) have no calculated value and are left empty (the workbook was saved without calculating them)",
+      )
+    }
+    if !warned_sheets.contains(ref.name) && geo.right_to_left && !warned_rtl {
       warnings.push(
         "sheet " +
         xlsx_go_quote(ref.name, '"') +
@@ -323,6 +346,7 @@ pub fn convert_plain_no_fonts(
       )
       warned_rtl = true
     }
+    warned_sheets[ref.name] = true
     grids.push({
       id,
       title: ref.name,
@@ -343,14 +367,9 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   locale : XlsxLocale,
   doc_language : String,
   theme_colors : Map[Int32, XlsxRgb],
-) -> (@sheet.DrawnGrid, XlsxSheetGeometry) raise {
+) -> (@sheet.DrawnGrid, XlsxSheetGeometry, Int32) raise {
   workbook.xlsx_check_plain_sheet(ref.part)
   let parsed = workbook.read_sheet_cells(ref.part)
-  if parsed.missing_formula_values > 0 {
-    raise InvalidXlsxInput(
-      "xlsx: plain conversion requires cached formula values",
-    )
-  }
   let rows = parsed.sorted_rows()
   let geo = workbook.read_sheet_geometry(ref.part)
   if !geo.merges.is_empty() {
@@ -397,9 +416,11 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let bolds : Map[Int32, Map[Int32, Bool]] = Map([])
   let fills : Map[Int32, Map[Int32, @sheet.GridSolidFill]] = Map([])
   let sizes : Map[Int32, Map[Int32, Double]] = Map([])
+  let borders : Map[Int32, Map[Int32, @sheet.GridCellBorder]] = Map([])
   let checked_styles : Map[Int32, Bool] = Map([])
   let format_cache : Map[Int32, Array[XlsxFormatSection]] = Map([])
   let color_cache : Map[Int32, UInt32] = Map([])
+  let border_cache : Map[Int32, @sheet.GridCellBorder] = Map([])
   for row in rows {
     if row.style >= 0 {
       raise InvalidXlsxInput(
@@ -434,6 +455,28 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         font_id
       }
       let font_size = styles.fonts[font_index].size
+      let border = match border_cache.get(format_index) {
+        Some(border) => border
+        None => {
+          let border = xlsx_plain_border(styles, format_index, theme_colors)
+          border_cache[format_index] = border
+          border
+        }
+      }
+      if border.top != 0 ||
+        border.bottom != 0 ||
+        border.left != 0 ||
+        border.right != 0 {
+        let columns = match borders.get(row.index) {
+          Some(columns) => columns
+          None => {
+            let columns : Map[Int32, @sheet.GridCellBorder] = Map([])
+            borders[row.index] = columns
+            columns
+          }
+        }
+        columns[cell.column] = border
+      }
       let fill_index = styles.cell_formats[format_index].fill
       if fill_index >= 0 && fill_index < styles.fills.length() {
         let fill = styles.fills[fill_index]
@@ -595,8 +638,57 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     bolds~,
     fills~,
     sizes~,
+    borders~,
   )
-  (drawn, geo)
+  (drawn, geo, parsed.missing_formula_values)
+}
+
+///|
+fn xlsx_plain_border(
+  styles : XlsxStyles,
+  format : Int32,
+  theme : Map[Int32, XlsxRgb],
+) -> @sheet.GridCellBorder raise {
+  let id = styles.cell_formats[format].border
+  if id < 0 || id >= styles.borders.length() {
+    return { top: 0, bottom: 0, left: 0, right: 0, }
+  }
+  let border = styles.borders[id]
+  {
+    top: xlsx_plain_border_side(styles, border.top, theme),
+    bottom: xlsx_plain_border_side(styles, border.bottom, theme),
+    left: xlsx_plain_border_side(styles, border.left, theme),
+    right: xlsx_plain_border_side(styles, border.right, theme),
+  }
+}
+
+///|
+fn xlsx_plain_border_side(
+  styles : XlsxStyles,
+  side : XlsxBorderSide,
+  theme : Map[Int32, XlsxRgb],
+) -> Int32 raise {
+  let weight = match side.style {
+    "" => 0
+    "thin" => 6
+    "medium" => 11
+    "double" => 12
+    "thick" => 13
+    _ =>
+      raise InvalidXlsxInput(
+        "xlsx: plain conversion does not support this border style",
+      )
+  }
+  let black : XlsxRgb = { red: 0.0, green: 0.0, blue: 0.0, }
+  if weight != 0 {
+    let color = styles.resolve_color(side.color, black, theme)
+    if color.red != 0.0 || color.green != 0.0 || color.blue != 0.0 {
+      raise InvalidXlsxInput(
+        "xlsx: plain conversion supports only black borders",
+      )
+    }
+  }
+  weight
 }
 
 ///|

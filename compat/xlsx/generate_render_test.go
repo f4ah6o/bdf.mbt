@@ -26,7 +26,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 4500; i++ {
+	for i := 0; i < 5000; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -130,6 +130,13 @@ func TestCodexXLSXRender(t *testing.T) {
 			if i >= 3300 {
 				st += `<fills><fill/><fill><patternFill patternType="solid"><fgColor rgb="FF112233"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor indexed="10"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FF112233"/><bgColor rgb="FF556677"/></patternFill></fill></fills>`
 			}
+			if i >= 4500 {
+				st += `<borders><border/>`
+				for _, line := range []string{"thin", "medium", "double", "thick"} {
+					st += fmt.Sprintf(`<border><left style="%s"><color rgb="00000000"/></left><right style="%s"/><top style="%s"/><bottom style="%s"/></border>`, line, line, line, line)
+				}
+				st += `</borders>`
+			}
 			st += `<cellXfs>`
 			if i >= 3150 {
 				st += fmt.Sprintf(`<xf numFmtId="0" fontId="5"><alignment horizontal="%s" vertical="%s"/></xf>`, []string{"general", "left", "right", "center"}[i%4], []string{"bottom", "top", "center"}[(i/4)%3])
@@ -162,7 +169,11 @@ func TestCodexXLSXRender(t *testing.T) {
 				if i >= 2400 && i < 2450 {
 					format = []int{2, 14, 164}[i%3]
 				}
-				if i >= 3600 {
+				if i >= 4500 {
+					for j := 1; j <= 4; j++ {
+						st += fmt.Sprintf(`<xf fontId="%d" fillId="1" borderId="%d" numFmtId="%d"><alignment horizontal="%s" vertical="%s"/></xf>`, 6+j%2, j, []int{0, 2, 14, 164}[i%4], []string{"general", "left", "right", "center"}[(i/4)%4], []string{"bottom", "top", "center"}[(i/16)%3])
+					}
+				} else if i >= 3600 {
 					st += fmt.Sprintf(`<xf fontId="6" fillId="1" numFmtId="%d"><alignment horizontal="%s" vertical="%s"/></xf>`, []int{0, 2, 14, 164}[i%4], []string{"general", "left", "right", "center"}[(i/4)%4], []string{"bottom", "top", "center"}[(i/16)%3])
 					if i >= 3750 {
 						st += fmt.Sprintf(`<xf fontId="7" fillId="1" numFmtId="%d"><alignment horizontal="%s" vertical="%s"/></xf>`, []int{0, 2, 14, 164}[i%4], []string{"general", "left", "right", "center"}[(i/4)%4], []string{"bottom", "top", "center"}[(i/16)%3])
@@ -313,7 +324,11 @@ func TestCodexXLSXRender(t *testing.T) {
 				style = 0
 			}
 			cellRE := regexp.MustCompile(`<c r="([^"]+)"(?: s="[0-9]+")?`)
-			if i >= 3750 {
+			if i >= 4500 {
+				sheet = cellRE.ReplaceAllStringFunc(sheet, func(match string) string {
+					return fmt.Sprintf(`<c r="%s" s="%d"`, cellRE.FindStringSubmatch(match)[1], 16+r.Intn(4))
+				})
+			} else if i >= 3750 {
 				sheet = cellRE.ReplaceAllStringFunc(sheet, func(match string) string {
 					return fmt.Sprintf(`<c r="%s" s="%d"`, cellRE.FindStringSubmatch(match)[1], 16+r.Intn(2))
 				})
@@ -324,6 +339,9 @@ func TestCodexXLSXRender(t *testing.T) {
 			} else {
 				sheet = cellRE.ReplaceAllString(sheet, fmt.Sprintf(`<c r="$1" s="%d"`, style))
 			}
+		}
+		if i >= 4800 {
+			sheet = strings.Replace(sheet, `</row>`, `<c r="G1" s="16"><f>1+2</f></c><c r="H1" s="17" t="str"><f>"x"</f><v/></c><c r="I1" s="18"><f>3+4</f><v>7</v></c></row>`, 1)
 		}
 		add("xl/worksheets/sheet1.xml", sheet)
 		for j := 2; j <= count; j++ {
@@ -385,6 +403,20 @@ func TestCodexXLSXRender(t *testing.T) {
 		}
 		out = append(out, map[string]any{"input": b.Bytes(), "bdf": file.Bytes(), "warnings": result.Warnings, "mode": mode, "no_index": noIndex})
 	}
+	// Exercise an upstream workbook with real styles, borders and uncached formulas.
+	actual, e := os.ReadFile(filepath.Join("testdata", "form-pages.xlsx"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	converted, e := Convert(bytes.NewReader(actual), int64(len(actual)), &Options{NoSystemFonts: true, SystemFonts: true, NoTextIndex: true, Data: "none"})
+	if e != nil {
+		t.Fatal(e)
+	}
+	var actualBDF bytes.Buffer
+	if e = converted.Doc.WriteSingle(&actualBDF); e != nil {
+		t.Fatal(e)
+	}
+	out = append(out, map[string]any{"input": actual, "bdf": actualBDF.Bytes(), "warnings": converted.Warnings, "mode": "none", "no_index": true})
 	data, e := json.Marshal(out)
 	if e != nil {
 		t.Fatal(e)

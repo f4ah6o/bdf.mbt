@@ -24,6 +24,15 @@ pub(all) struct GridSolidFill {
 }
 
 ///|
+/// Black border weights on the four sides of a cell.
+pub(all) struct GridCellBorder {
+  top : Int32
+  bottom : Int32
+  left : Int32
+  right : Int32
+}
+
+///|
 priv struct GridFillRect {
   x0 : Double
   x1 : Double
@@ -60,6 +69,7 @@ pub fn draw_sized_grid_no_fonts(
   bolds~ : Map[Int32, Map[Int32, Bool]] = Map([]),
   fills~ : Map[Int32, Map[Int32, GridSolidFill]] = Map([]),
   sizes~ : Map[Int32, Map[Int32, Double]] = Map([]),
+  borders~ : Map[Int32, Map[Int32, GridCellBorder]] = Map([]),
 ) -> DrawnGrid raise {
   let col_positions = grid_positions(all_columns)
   if col_positions.length() != 16385 {
@@ -247,6 +257,9 @@ pub fn draw_sized_grid_no_fonts(
       }
     }
   }
+  context.sized_grid_borders(
+    rows, borders, col_positions, row_positions, visible_columns,
+  )
   let tiles = context.tiles.map(fn(tile) {
     { x: tile.x, y: tile.y, object: tile.object.encode(), drawn: tile.drawn, }
   })
@@ -274,6 +287,60 @@ pub fn draw_sized_grid_no_fonts(
     },
     tiles,
   }
+}
+
+///|
+fn GridDrawContext::sized_grid_borders(
+  self : GridDrawContext,
+  rows : Array[SizedGridRow],
+  borders : Map[Int32, Map[Int32, GridCellBorder]],
+  columns : Array[Double],
+  row_positions : Array[Double],
+  visible_columns : Int32,
+) -> Unit raise {
+  let horizontal : Map[String, GridEdge] = Map([])
+  let vertical : Map[String, GridEdge] = Map([])
+  for row in rows {
+    let index = row.index
+    if index < 0 {
+      continue
+    }
+    if index >= row_positions.length() - 1 {
+      break
+    }
+    if row_positions[index] >= row_positions[index + 1] {
+      continue
+    }
+    if borders.get(index) is Some(values) {
+      let keys : Array[Int32] = [ for column, _ in values => column ]
+      keys.sort()
+      for column in keys {
+        if column < 0 ||
+          column >= visible_columns ||
+          columns[column] >= columns[column + 1] {
+          continue
+        }
+        let border = values[column]
+        put_grid_edge(horizontal, index, column, {
+          weight: border.top,
+          color: 0x000000ffU,
+        })
+        put_grid_edge(horizontal, index + 1, column, {
+          weight: border.bottom,
+          color: 0x000000ffU,
+        })
+        put_grid_edge(vertical, index, column, {
+          weight: border.left,
+          color: 0x000000ffU,
+        })
+        put_grid_edge(vertical, index, column + 1, {
+          weight: border.right,
+          color: 0x000000ffU,
+        })
+      }
+    }
+  }
+  self.draw_grid_edges(horizontal, vertical, columns, row_positions)
 }
 
 ///|
