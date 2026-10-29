@@ -204,7 +204,7 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
     (font.scheme != "" && font.scheme != "minor") ||
     font.vertical != "" ||
     (a.horizontal != "general" && a.horizontal != "center") ||
-    a.vertical != "bottom" ||
+    (a.vertical != "bottom" && a.vertical != "top" && a.vertical != "center") ||
     a.wrap ||
     a.shrink ||
     a.indent != 0 ||
@@ -221,7 +221,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 ///|
 /// Convert worksheets using estimated font metrics without embedding fonts.
 /// Supports sheet views with numeric, plain string, boolean and error cells,
-/// number formats, font colors and centered alignment; complex features are rejected.
+/// number formats, font colors, centered horizontal alignment and top or center
+/// vertical alignment; complex features are rejected.
 pub fn convert_plain_no_fonts(
   data : Bytes,
   data_mode~ : String = "",
@@ -386,6 +387,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     frozen_rows: Int32::min(geo.frozen_rows, row_count),
   }
   let cells : Array[@sheet.SizedGridRow] = []
+  let verticals : Map[Int32, Map[Int32, String]] = Map([])
   let checked_styles : Map[Int32, Bool] = Map([])
   let format_cache : Map[Int32, Array[XlsxFormatSection]] = Map([])
   let color_cache : Map[Int32, UInt32] = Map([])
@@ -470,6 +472,18 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         } else {
           cell.style
         }
+        let vertical = styles.cell_formats[format_index].alignment.vertical
+        if vertical != "bottom" {
+          let columns = match verticals.get(row.index) {
+            Some(columns) => columns
+            None => {
+              let columns : Map[Int32, String] = Map([])
+              verticals[row.index] = columns
+              columns
+            }
+          }
+          columns[cell.column] = vertical
+        }
         entries.push({
           column: cell.column,
           cell: { text, number: cell.kind == 1, },
@@ -506,6 +520,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     all_columns,
     locale.language,
     doc_language,
+    verticals~,
   )
   (drawn, geo)
 }

@@ -24,6 +24,7 @@ pub fn draw_sized_grid_no_fonts(
   all_columns : Array[Run],
   language : String,
   document_language : String,
+  verticals~ : Map[Int32, Map[Int32, String]] = Map([]),
 ) -> DrawnGrid raise {
   let col_positions = grid_positions(all_columns)
   if col_positions.length() != 16385 {
@@ -91,7 +92,7 @@ pub fn draw_sized_grid_no_fonts(
         row, display, column, col_positions, y, height, false, language, fallback_advance,
         fallback_line_metrics,
       )
-      let layout : DrawCell = if centered.get(column).unwrap_or(false) {
+      let horizontal : DrawCell = if centered.get(column).unwrap_or(false) {
         let lines = initial.lines.map(fn(line) {
           {
             text: line.text,
@@ -149,6 +150,11 @@ pub fn draw_sized_grid_no_fonts(
       } else {
         initial
       }
+      let vertical = match verticals.get(i) {
+        Some(columns) => columns.get(column).unwrap_or("bottom")
+        None => "bottom"
+      }
+      let layout = sized_grid_vertical_layout(horizontal, y, height, vertical)
       if layout.x1 > col_positions[visible_columns] {
         let target = layout.x1 - 0.01
         let mut lo = 0
@@ -206,6 +212,61 @@ pub fn draw_sized_grid_no_fonts(
       frozen_rows: geometry.frozen_rows,
     },
     tiles,
+  }
+}
+
+///|
+fn sized_grid_vertical_layout(
+  layout : DrawCell,
+  y : Double,
+  height : Double,
+  vertical : String,
+) -> DrawCell {
+  if vertical != "top" && vertical != "center" {
+    return layout
+  }
+  let metrics : Array[(Double, Double)] = []
+  let mut total = 0.0
+  for line in layout.lines {
+    let mut ascent = 0.0
+    let mut descent = 0.0
+    for character in line.text {
+      let (a, d) = fallback_line_metrics(character, false)
+      ascent = Double::max(ascent, a)
+      descent = Double::max(descent, d)
+    }
+    if ascent == 0.0 && descent == 0.0 {
+      let (a, d) = fallback_line_metrics('x', false)
+      ascent = a
+      descent = d
+    }
+    metrics.push((ascent, descent))
+    total += ascent + descent
+  }
+  let mut top = if vertical == "top" {
+    y + 0.75
+  } else {
+    y + (height - total) / 2.0
+  }
+  let lines : Array[DrawLine] = []
+  let mut tx0 = 1.0e300
+  let mut tx1 = -1.0e300
+  for i, line in layout.lines {
+    let (ascent, descent) = metrics[i]
+    tx0 = Double::min(tx0, line.x)
+    tx1 = Double::max(tx1, line.x + line.width)
+    lines.push({ ..line, baseline: top + ascent, })
+    top += ascent + descent
+  }
+  let ty0 = lines[0].baseline - metrics[0].0
+  let ty1 = lines[lines.length() - 1].baseline + metrics[metrics.length() - 1].1
+  {
+    ..layout,
+    clip: tx0 < layout.x0 - 0.01 ||
+    tx1 > layout.x1 + 0.01 ||
+    ty0 < y - 0.01 ||
+    ty1 > y + height + 0.01,
+    lines,
   }
 }
 
