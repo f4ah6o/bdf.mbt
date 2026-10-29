@@ -8,6 +8,8 @@ pub fn read_header(Bytes) -> MidiHeader raise MidiInputError
 
 pub fn read_varlen(Bytes) -> (Int32, Int32)
 
+pub fn scan_track(Bytes, Int64) -> MidiTrackScan
+
 pub fn unwrap_rmid(Bytes) -> MidiInput raise MidiInputError
 
 // Errors
@@ -33,6 +35,22 @@ pub(all) struct MidiInput {
   smf : Bytes
   title : Bytes
   copyright : Bytes
+}
+
+pub(all) struct MidiTrackScan {
+  events : Array[RawMidiEvent]
+  parsed : Int32
+  saw_end : Bool
+  damaged : Bool
+  end_tick : Int64
+  problem : String
+}
+
+pub(all) struct RawMidiEvent {
+  tick : Int64
+  status : Int32
+  kind : Int32
+  data : Bytes
 }
 
 // Type aliases

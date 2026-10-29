@@ -1,7 +1,7 @@
 # MIDI input compatibility fixtures
 
 These fixtures compare detection, RIFF RMID extraction, SMF header timing and
-variable-length quantities with shibukawa/bdf commit
+variable-length quantities and track repair boundaries with shibukawa/bdf commit
 `4f9af52dca60be1eb0daade39f7dc41d6a1fe431`. They include damaged RIFF
 chunks, duplicate metadata, SMPTE divisions, truncated headers and random
 inputs. These primitives do not yet implement MIDI-to-BDF notation.
@@ -13,3 +13,6 @@ To regenerate, copy `generate_test.go` without its first two lines to
 ```sh
 BDF_FIXTURE_ROOT=/path/to/bdf.mbt go test ./converter/midi -run '^TestCodexMidiInput$' -count=1
 ```
+
+Track fixtures use `generate_track_test.go` and `TestCodexMidiTrackScan` in
+the same way.

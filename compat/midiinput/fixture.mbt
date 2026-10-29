@@ -57,3 +57,16 @@ pub fn varlen(data : Bytes) -> String {
   let (value, count) = @midi.read_varlen(data)
   Json::array([Json::number(value.to_double()), Json::number(count.to_double())]).stringify()
 }
+
+///|
+#export_name("scan_track")
+pub fn scan_track(data : Bytes, max_tick : Int32) -> String {
+  let track = @midi.scan_track(data, max_tick.to_int64())
+  Json::object({
+    "parsed": Json::number(track.parsed.to_double()),
+    "sawEnd": Json::boolean(track.saw_end),
+    "damaged": Json::boolean(track.damaged),
+    "endTick": Json::number(track.end_tick.to_double()),
+    "problem": Json::string(track.problem),
+  }).stringify()
+}

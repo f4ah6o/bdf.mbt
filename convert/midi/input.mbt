@@ -187,6 +187,11 @@ pub fn MidiHeader::ppq(self : MidiHeader, tick : Int64) -> Int64 {
 /// Read a MIDI variable-length quantity. The second value is 0 for a
 /// truncated quantity and -1 for a quantity longer than four bytes.
 pub fn read_varlen(data : Bytes) -> (Int32, Int32) {
+  read_varlen_view(data[:])
+}
+
+///|
+fn read_varlen_view(data : BytesView) -> (Int32, Int32) {
   let mut value = 0
   for i in 0..<4 {
     if i >= data.length() {

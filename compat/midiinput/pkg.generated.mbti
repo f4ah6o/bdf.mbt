@@ -6,6 +6,8 @@ pub fn detect(Bytes) -> Bool
 
 pub fn header(Bytes, Int32) -> String
 
+pub fn scan_track(Bytes, Int32) -> String
+
 pub fn unwrap(Bytes) -> String
 
 pub fn varlen(Bytes) -> String
