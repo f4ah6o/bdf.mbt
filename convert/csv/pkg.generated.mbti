@@ -10,6 +10,8 @@ pub fn decode_text(Bytes, charset? : String) -> DecodedText raise
 
 pub fn detect_dialect(String, cut? : Bool, delimiter? : Byte, quote? : Int32) -> DialectGuess raise
 
+pub fn encode_table(Table) -> Bytes raise
+
 pub fn guess_language(String, String) -> String
 
 pub fn has_header(Array[Array[String]]) -> Bool

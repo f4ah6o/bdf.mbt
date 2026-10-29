@@ -1,0 +1,52 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/encoding/parquet"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn encode(Table) -> Bytes raise
+
+// Errors
+pub suberror ParquetError {
+  InvalidTable(String)
+} derive(@debug.Debug)
+
+// Types and methods
+type Chunk
+
+pub(all) struct Column {
+  name : String
+  kind : ColumnType
+} derive(Eq, @debug.Debug)
+
+pub(all) enum ColumnType {
+  StringColumn
+  NumberColumn
+  IntegerColumn
+  BooleanColumn
+  DateColumn
+  DateTimeColumn
+} derive(Eq, @debug.Debug)
+
+type Compact
+
+pub(all) struct Table {
+  columns : Array[Column]
+  rows : Array[Array[Value]]
+} derive(Eq, @debug.Debug)
+
+pub(all) enum Value {
+  Null
+  StringValue(String)
+  NumberValue(Double)
+  IntegerValue(Int64)
+  BooleanValue(Bool)
+  DateValue(Int64)
+  DateTimeValue(Int64)
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits

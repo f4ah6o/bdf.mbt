@@ -1,0 +1,15 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/compat/parquet"
+
+// Values
+pub fn encode_fixture(Int32) -> Bytes
+
+pub fn encode_large_fixture(String) -> Bytes
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
