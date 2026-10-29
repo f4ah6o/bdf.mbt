@@ -4,6 +4,8 @@ package "f4ah6o/bdf/compat/xlsx"
 // Values
 pub fn xlsx_cells(Bytes, String) -> String
 
+pub fn xlsx_general(Double, Int32) -> String
+
 pub fn xlsx_geometry(Bytes, String) -> String
 
 pub fn xlsx_iso_date(String, Bool) -> String

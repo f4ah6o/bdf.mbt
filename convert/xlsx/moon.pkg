@@ -3,6 +3,8 @@ import {
   "Milky2018/xml",
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/string",
+  "moonbitlang/core/bigint",
+  "moonbitlang/core/math",
 }
 
 supported_targets = "+js+wasm-gc"

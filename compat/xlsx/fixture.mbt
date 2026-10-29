@@ -221,3 +221,9 @@ pub fn xlsx_styles(data : Bytes) -> String {
     _ => "null"
   }
 }
+
+///|
+#export_name("xlsx_general")
+pub fn xlsx_general(value : Double, width : Int32) -> String {
+  @xlsx.xlsx_format_general(value, width)
+}

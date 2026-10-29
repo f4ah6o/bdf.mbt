@@ -14,6 +14,8 @@ pub fn xlsx_col_name(Int32) -> String
 
 pub fn xlsx_decode_string(String) -> String
 
+pub fn xlsx_format_general(Double, Int32) -> String
+
 pub fn xlsx_iso_serial(String, Bool) -> Double?
 
 pub fn xlsx_parse_range(String) -> XlsxRange?
