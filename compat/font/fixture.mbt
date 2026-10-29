@@ -167,10 +167,12 @@ fn csv_result(
   data : Bytes,
   font : Bytes,
   scenario : Int32,
+  index : Int32,
 ) -> @csv.NoFontResult raise {
   @csv.convert_with_font(
     data,
     font,
+    font_index=index,
     name="People",
     title="Report",
     header=if scenario == 3 { HeaderNo } else { HeaderYes },
@@ -184,14 +186,32 @@ fn csv_result(
 
 ///|
 #export_name("csv_document")
-pub fn csv_document(data : Bytes, font : Bytes, scenario : Int32) -> Bytes {
-  (try! csv_result(data, font, scenario)).bdf
+pub fn csv_document(
+  data : Bytes,
+  font : Bytes,
+  scenario : Int32,
+  index : Int32,
+) -> Bytes {
+  (try! csv_result(data, font, scenario, index)).bdf
 }
 
 ///|
 #export_name("csv_warnings")
-pub fn csv_warnings(data : Bytes, font : Bytes, scenario : Int32) -> String {
+pub fn csv_warnings(
+  data : Bytes,
+  font : Bytes,
+  scenario : Int32,
+  index : Int32,
+) -> String {
   Json::array(
-    (try! csv_result(data, font, scenario)).warnings.map(w => Json::string(w)),
+    (try! csv_result(data, font, scenario, index)).warnings.map(w => {
+      Json::string(w)
+    }),
   ).stringify()
+}
+
+///|
+#export_name("canvas_program")
+pub fn canvas_program(font : @sfnt.Font) -> Bytes {
+  try! font.canvas_program()
 }

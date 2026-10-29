@@ -8,7 +8,7 @@ try {
   for (const sample of cases.filter(sample => sample.bdf)) {
     const font = new Uint8Array(await (await fetch('../../' + sample.file)).arrayBuffer());
     const actual = document.body.dataset.converter === 'moon'
-      ? csv_document(new TextEncoder().encode(sample.input), font, sample.scenario)
+      ? csv_document(new TextEncoder().encode(sample.input), font, sample.scenario, sample.index ?? 0)
       : bytes(sample.bdf);
     const doc = await BdfDocument.open(new BufferSource(actual));
     const canvas = document.createElement('canvas');

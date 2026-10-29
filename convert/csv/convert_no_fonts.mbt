@@ -33,6 +33,7 @@ pub fn convert_no_fonts(
     no_text_index~,
     table_style~,
     font_data=None,
+    font_index=0,
     ignore_embedding_restrictions=false,
     system_fonts=false,
   )
@@ -41,11 +42,13 @@ pub fn convert_no_fonts(
 ///|
 /// Convert CSV using one explicitly supplied TrueType or OpenType font.
 /// The complete glyph outlines are embedded when the license permits it and
-/// glyphs are used. Font selection, subsetting, WOFF2 and TTC extraction are
-/// not yet supported. Set `system_fonts` to use font names without embedding.
+/// glyphs are used. `font_index` selects a face within a TTC collection.
+/// Automatic font selection, subsetting and WOFF2 are not yet supported.
+/// Set `system_fonts` to use font names without embedding.
 pub fn convert_with_font(
   data : Bytes,
   font_data : Bytes,
+  font_index~ : Int32 = 0,
   name~ : String = "",
   title~ : String = "",
   charset~ : String = "",
@@ -70,6 +73,7 @@ pub fn convert_with_font(
     no_text_index~,
     table_style~,
     font_data=Some(font_data),
+    font_index~,
     ignore_embedding_restrictions~,
     system_fonts~,
   )
@@ -88,6 +92,7 @@ fn convert_grid(
   no_text_index~ : Bool,
   table_style~ : String,
   font_data~ : Bytes?,
+  font_index~ : Int32,
   ignore_embedding_restrictions~ : Bool,
   system_fonts~ : Bool,
 ) -> NoFontResult raise {
@@ -103,12 +108,7 @@ fn convert_grid(
   let cells = sheet_cells(grid)
   let face = match font_data {
     Some(bytes) => {
-      if bytes.has_prefix(b"ttcf") {
-        raise InvalidDialect(
-          "TTC font collections are not supported for embedding",
-        )
-      }
-      let face = @sfnt.parse(bytes)
+      let face = @sfnt.parse(bytes, index=font_index)
       if face.info.family == "" || face.metrics.glyph_count == 0 {
         raise InvalidDialect("font has no usable glyph data or family name")
       }

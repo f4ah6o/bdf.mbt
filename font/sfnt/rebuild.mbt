@@ -33,15 +33,8 @@ fn checksum(data : Array[Byte]) -> UInt32 {
 ///|
 fn canvas_os2(font : Font) -> Array[Byte] {
   let table = sfnt_table(font.source, font.tables, "OS/2")
-  let hhea = sfnt_table(font.source, font.tables, "hhea")
-  let ascent = if hhea.length() >= 10 { s16(hhea, 4) } else { 0 }
-  let descent = if hhea.length() >= 10 { s16(hhea, 6) } else { 0 }
   let units = font.metrics.units_per_em
-  let (ascent, descent) = if ascent == 0 && descent == 0 {
-    (units * 8 / 10, -units * 2 / 10)
-  } else {
-    (ascent, descent)
-  }
+  let (ascent, descent) = rebuild_ascent_descent(font)
   let fs_type = if table.length() >= 10 { u16(table, 8) } else { 4 }
   let bytes = Bytes::make(96, 0).to_array()
   put16(bytes, 0, 3)
@@ -93,9 +86,9 @@ fn canvas_os2(font : Font) -> Array[Byte] {
 
 ///|
 /// Build a browser-ready whole font for horizontal text. Layout tables are
-/// removed to match upstream's unshaped glyph positioning; the original cmap
-/// and name tables are retained, including their licensing notices. The caller
-/// is responsible for checking `metrics.embeddable` before storing the result.
+/// removed to match upstream's unshaped glyph positioning; the cmap and name
+/// tables are reconstructed while retaining licensing notices. The caller is
+/// responsible for checking `metrics.embeddable` before storing the result.
 pub fn Font::canvas_program(self : Font) -> Bytes raise {
   let keep = [
     "glyf", "loca", "head", "hhea", "hmtx", "maxp", "cvt ", "fpgm", "prep", "CFF ",
@@ -112,17 +105,39 @@ pub fn Font::canvas_program(self : Font) -> Bytes raise {
         .to_array()
     }
   }
+  tables["cmap"] = build_cmap(self.cmap)
+  tables["name"] = build_names(self)
   tables["OS/2"] = canvas_os2(self)
   let post = Bytes::make(32, 0).to_array()
   put32(post, 0, 0x00030000U)
   tables["post"] = post
-  match tables.get("head") {
-    Some(head) if head.length() >= 54 => {
-      let style = (if self.info.weight >= 600 { 1 } else { 0 }) |
-        (if self.info.italic { 2 } else { 0 })
-      put16(head, 44, style)
+  if !tables.contains("head") || tables["head"].length() == 0 {
+    tables["head"] = default_head(self.metrics.units_per_em)
+  } else {
+    match tables.get("head") {
+      Some(head) if head.length() >= 54 => {
+        let style = (if self.info.weight >= 600 { 1 } else { 0 }) |
+          (if self.info.italic { 2 } else { 0 })
+        put16(head, 44, style)
+      }
+      _ => ()
     }
-    _ => raise InvalidFont("font has no usable head table")
+  }
+  let (ascent, descent) = rebuild_ascent_descent(self)
+  if !tables.contains("hhea") ||
+    tables["hhea"].length() == 0 ||
+    !tables.contains("hmtx") ||
+    tables["hmtx"].length() == 0 {
+    tables["hhea"] = default_hhea(
+      ascent,
+      descent,
+      self.metrics.units_per_em,
+      self.metrics.glyph_count,
+    )
+    tables["hmtx"] = default_hmtx(self)
+  }
+  if !tables.contains("maxp") || tables["maxp"].length() == 0 {
+    tables["maxp"] = default_maxp(self.metrics.glyph_count, self.metrics.is_cff)
   }
   let tags = tables.keys().collect()
   tags.sort()

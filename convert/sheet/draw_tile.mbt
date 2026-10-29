@@ -42,11 +42,12 @@ fn DrawTile::set_font(
       None => family
     }
   }
-  let index = match self.fonts.get(weight) {
+  let request_key = if bold { 700 } else { 400 }
+  let index = match self.fonts.get(request_key) {
     Some(index) => index
     None => {
       let index = self.object.add_font({ hash, family, weight, style: 0, })
-      self.fonts[weight] = index
+      self.fonts[request_key] = index
       index
     }
   }

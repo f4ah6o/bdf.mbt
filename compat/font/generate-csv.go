@@ -6,6 +6,7 @@ package main
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"github.com/shibukawa/bdf/converter/csv"
@@ -19,10 +20,26 @@ func main() {
 	paths := []string{"compat/visual/synthetic.ttf", "compat/font/fixtures/stix.ttf", "compat/font/fixtures/stix.otf", "compat/font/fixtures/features.ttf", "compat/font/fixtures/restricted.ttf", "compat/font/fixtures/variable.ttf", "compat/font/fixtures/color.ttf"}
 	inputs := []string{"name,amount,note\nAlice,1,hello\nBob,2,\"one\ntwo\"\n", "A,B\nC,200\n漢字カナ,7\n", "name,value\nalpha,22\nbeta,333\n", "", "name,value\n'Ann',1\n'Bob',2\n", "name,amount,note\nAlice,1,hello\nBob,2,\"one\ntwo\"\n", "name,amount,note\nAlice,1,hello\nBob,2,\"one\ntwo\"\n"}
 	out := []any{}
+	type spec struct {
+		path  string
+		index int
+	}
+	specs := []spec{}
 	for _, path := range paths {
+		specs = append(specs, spec{path, 0})
+	}
+	specs = append(specs, spec{"compat/font/fixtures/bold.ttc", 0}, spec{"compat/font/fixtures/bold.ttc", 1})
+	for _, item := range specs {
+		path := item.path
 		data, err := os.ReadFile(filepath.Join(root, path))
 		if err != nil {
 			panic(err)
+		}
+		if filepath.Ext(path) == ".ttc" {
+			data = append([]byte(nil), data...)
+			faceOffset := binary.BigEndian.Uint32(data[12+4*item.index:])
+			binary.BigEndian.PutUint32(data[8:], 1)
+			binary.BigEndian.PutUint32(data[12:], faceOffset)
 		}
 		dir, err := os.MkdirTemp("", "bdf-csv-font-")
 		if err != nil {
@@ -77,8 +94,8 @@ func main() {
 					parts = append(parts, map[string]any{"hash": p.Hash.String(), "type": p.Type, "data": p.Data})
 				}
 			}
-			entry := map[string]any{"file": path, "scenario": scenario, "input": input, "views": res.Doc.Views, "tables": res.Doc.Tables, "warnings": res.Warnings, "fontHash": fontHash, "fontTables": fontTables, "parts": parts}
-			if (path == "compat/font/fixtures/stix.ttf" || path == "compat/font/fixtures/stix.otf") && (scenario == 0 || scenario == 2) {
+			entry := map[string]any{"file": path, "index": item.index, "scenario": scenario, "input": input, "views": res.Doc.Views, "tables": res.Doc.Tables, "warnings": res.Warnings, "fontHash": fontHash, "fontTables": fontTables, "parts": parts}
+			if ((path == "compat/font/fixtures/stix.ttf" || path == "compat/font/fixtures/stix.otf") && (scenario == 0 || scenario == 2)) || (path == "compat/font/fixtures/bold.ttc" && scenario == 0) {
 				var encoded bytes.Buffer
 				if err := res.Doc.WriteSingle(&encoded); err != nil {
 					panic(err)
