@@ -18,6 +18,8 @@ pub fn sample_plan(Bytes, Int32, String) -> String
 
 pub fn sample_program(Bytes, Int32) -> Bytes
 
+pub fn specimen_names(Bytes) -> String
+
 // Errors
 
 // Types and methods

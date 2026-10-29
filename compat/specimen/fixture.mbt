@@ -127,3 +127,34 @@ pub fn coverage(data : Bytes, index : Int32) -> String {
   }
   abort("missing font face")
 }
+
+///|
+fn name_json(name : @font.SpecimenName) -> Json {
+  Json::object({
+    "id": Json::number(name.id.to_double()),
+    "lang": Json::string(name.lang),
+    "english": Json::boolean(name.english),
+    "text": Json::string(name.text),
+    "rank": Json::number(name.rank.to_double()),
+  })
+}
+
+///|
+#export_name("specimen_names")
+pub fn specimen_names(data : Bytes) -> String {
+  let names = @font.parse_specimen_names(data)
+  let best : Array[Json] = []
+  let locals : Array[Json] = []
+  for id in 0..<30 {
+    best.push(Json::string(names.best(id)))
+    locals.push(Json::array(names.local(id).map(name_json)))
+  }
+  Json::object({
+    "records": Json::array(names.records.map(name_json)),
+    "cut": Json::boolean(names.cut),
+    "best": Json::array(best),
+    "locals": Json::array(locals),
+    "family": Json::string(names.family()),
+    "full": Json::string(names.full()),
+  }).stringify()
+}

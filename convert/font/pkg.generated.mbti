@@ -10,6 +10,8 @@ pub fn detect(Bytes) -> Bool
 
 pub fn load(Bytes) -> FontFile raise
 
+pub fn parse_specimen_names(Bytes) -> SpecimenNames
+
 // Errors
 pub suberror FontInputError {
   InvalidFontInput(String)
@@ -33,6 +35,7 @@ pub fn FileFace::sample_pruned(Self, Array[Int32]) -> Bytes? raise
 pub fn FileFace::sample_pruned_truetype(Self, Array[Int32]) -> Bytes? raise
 pub fn FileFace::sample_truetype(Self, String) -> Bytes? raise
 pub fn FileFace::sample_whole_program(Self) -> Bytes? raise
+pub fn FileFace::specimen_names(Self) -> SpecimenNames
 
 pub struct FontFile {
   container : String
@@ -63,6 +66,23 @@ pub(all) struct SampleScript {
   charset : Array[String]
   rtl : Bool
 }
+
+pub(all) struct SpecimenName {
+  id : Int32
+  lang : String
+  english : Bool
+  text : String
+  rank : Int32
+}
+
+pub(all) struct SpecimenNames {
+  records : Array[SpecimenName]
+  cut : Bool
+}
+pub fn SpecimenNames::best(Self, Int32) -> String
+pub fn SpecimenNames::family(Self) -> String
+pub fn SpecimenNames::full(Self) -> String
+pub fn SpecimenNames::local(Self, Int32) -> Array[SpecimenName]
 
 pub(all) struct UnicodeBlock {
   first : Int32

@@ -232,3 +232,10 @@ fn csv_mostly_utf8(data : Bytes) -> Bool {
   }
   multi > 0 && bad.to_int64() * 20L <= multi.to_int64()
 }
+
+///|
+/// Decode bytes with a named encoding without interpreting a byte-order mark.
+/// The decoder follows the same Go-compatible rules used for CSV input.
+pub fn decode_charset(data : Bytes, charset : String) -> String raise {
+  csv_decode_charset(data, csv_charset_name(charset))
+}
