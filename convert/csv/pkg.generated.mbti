@@ -8,6 +8,8 @@ import {
 // Values
 pub fn detect_dialect(String, cut? : Bool, delimiter? : Byte, quote? : Int32) -> DialectGuess raise
 
+pub fn has_header(Array[Array[String]]) -> Bool
+
 pub fn looks_date_time(String) -> Bool
 
 pub fn looks_numeric(String) -> Bool
