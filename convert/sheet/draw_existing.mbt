@@ -33,6 +33,15 @@ pub(all) struct GridCellBorder {
 }
 
 ///|
+/// An inclusive merged rectangle in a sized grid.
+pub(all) struct GridMergeRegion {
+  row_start : Int32
+  row_end : Int32
+  column_start : Int32
+  column_end : Int32
+}
+
+///|
 priv struct GridFillRect {
   x0 : Double
   x1 : Double
@@ -72,7 +81,45 @@ pub fn draw_sized_grid_no_fonts(
   borders~ : Map[Int32, Map[Int32, GridCellBorder]] = Map([]),
   spans~ : Map[Int32, Map[Int32, Int32]] = Map([]),
   border_colors~ : Map[Int32, Map[Int32, Array[UInt32]]] = Map([]),
+  merge_regions~ : Array[GridMergeRegion] = [],
+  east_asian_fonts~ : Map[Int32, Map[Int32, String]] = Map([]),
 ) -> DrawnGrid raise {
+  let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
+  let mut region_room = 4194304L
+  for region in merge_regions {
+    if region.row_start < 0 ||
+      region.row_end >= 1048576 ||
+      region.row_end < region.row_start ||
+      region.column_start < 0 ||
+      region.column_end >= 16384 ||
+      region.column_end < region.column_start {
+      raise InvalidArgument("invalid merged region")
+    }
+    let area = (region.row_end - region.row_start + 1).to_int64() *
+      (region.column_end - region.column_start + 1).to_int64()
+    region_room -= area
+    if region_room < 0L {
+      raise InvalidArgument("too many merged cells")
+    }
+    for row in region.row_start..<=region.row_end {
+      if !(spans.get(row) is Some(columns) &&
+        columns.get(region.column_start) == Some(region.column_end)) {
+        raise InvalidArgument("merged region does not match its row spans")
+      }
+      let columns = match region_rows.get(row) {
+        Some(columns) => columns
+        None => {
+          let columns : Map[Int32, GridMergeRegion] = Map([])
+          region_rows[row] = columns
+          columns
+        }
+      }
+      if columns.contains(region.column_start) {
+        raise InvalidArgument("duplicate merged region")
+      }
+      columns[region.column_start] = region
+    }
+  }
   let mut span_room = 4194304L
   for row, columns in spans {
     if row < 0 || row >= 1048576 {
@@ -109,7 +156,7 @@ pub fn draw_sized_grid_no_fonts(
   let family = grid_family("")
   let visible_columns = grid_positions(geometry.columns).length() - 1
   context.sized_grid_fills(
-    rows, fills, col_positions, row_positions, visible_columns,
+    rows, fills, region_rows, merge_regions, col_positions, row_positions, visible_columns,
   )
   let mut text_columns = 0
   for sparse in rows {
@@ -125,6 +172,7 @@ pub fn draw_sized_grid_no_fonts(
     let colors : Map[Int32, UInt32] = Map([])
     let centered : Map[Int32, Bool] = Map([])
     let visibility : Map[Int32, Bool] = Map([])
+    let empty_strings : Map[Int32, Bool] = Map([])
     for entry in sparse.cells {
       if entry.column < 0 || entry.column >= 16384 {
         continue
@@ -141,6 +189,9 @@ pub fn draw_sized_grid_no_fonts(
       colors[entry.column] = entry.color
       centered[entry.column] = entry.center
       visibility[entry.column] = entry.visible
+      if !entry.occupied {
+        empty_strings[entry.column] = true
+      }
     }
     let row_spans = spans.get(i).unwrap_or(Map([]))
     for start, end in row_spans {
@@ -148,26 +199,32 @@ pub fn draw_sized_grid_no_fonts(
         row.push({ text: "", number: false, })
       }
       for column in start..<=end {
-        if row[column].text == "" {
+        if row[column].text == "" && !empty_strings.contains(column) {
           row[column] = { text: "\u0000", number: false, }
         }
       }
     }
     let y = row_positions[i]
     let height = row_positions[i + 1] - y
-    if height <= 0.0 {
-      continue
-    }
     for column, _ in row {
       if column >= 16384 {
         break
       }
       let mut last = column
       let mut hidden_by_span = false
+      let mut last_row = i
       for start, end in row_spans {
         if column >= start && column <= end {
-          if column == start {
+          let region = match region_rows.get(i) {
+            Some(columns) => columns.get(start)
+            None => None
+          }
+          if column == start &&
+            (region is None || (region is Some(r) && r.row_start == i)) {
             last = end
+            if region is Some(r) {
+              last_row = r.row_end
+            }
           } else {
             hidden_by_span = true
           }
@@ -176,8 +233,15 @@ pub fn draw_sized_grid_no_fonts(
       }
       if hidden_by_span ||
         !visibility.get(column).unwrap_or(false) ||
-        col_positions[last + 1] <= col_positions[column] {
+        col_positions[last + 1] <= col_positions[column] ||
+        last_row >= count ||
+        row_positions[last_row + 1] <= y {
         continue
+      }
+      let height = if last_row == i {
+        height
+      } else {
+        row_positions[last_row + 1] - y
       }
       let cell = render_cells[column]
       let bold = match bolds.get(i) {
@@ -187,6 +251,15 @@ pub fn draw_sized_grid_no_fonts(
       let size = match sizes.get(i) {
         Some(columns) => columns.get(column).unwrap_or(11.0)
         None => 11.0
+      }
+      let east_asian = match east_asian_fonts.get(i) {
+        Some(columns) =>
+          match columns.get(column) {
+            Some(name) if name != "" =>
+              css_quote(name) + ", " + @fontdb.classify(name)
+            _ => ""
+          }
+        None => ""
       }
       let advance = (character : Char, is_bold : Bool) => {
         sized_fallback_advance(character, is_bold, size)
@@ -206,6 +279,7 @@ pub fn draw_sized_grid_no_fonts(
         advance,
         metrics,
         end_column=last,
+        allow_overflow=last_row == i,
       )
       let horizontal : DrawCell = if centered.get(column).unwrap_or(false) {
         let lines = initial.lines.map(fn(line) {
@@ -222,7 +296,7 @@ pub fn draw_sized_grid_no_fonts(
         let mut x1 = col_positions[last + 1]
         let text0 = lines[0].x
         let text1 = lines[0].x + lines[0].width
-        if text0 < x0 || text1 > x1 {
+        if last_row == i && (text0 < x0 || text1 > x1) {
           let mut next = last + 1
           while next < 16384 && x1 < text1 {
             if next < row.length() && row[next].text != "" {
@@ -269,8 +343,17 @@ pub fn draw_sized_grid_no_fonts(
         None => "general"
       }
       let horizontal = sized_grid_horizontal_layout(
-        horizontal, horizontal_kind, row, display, column, last, col_positions, y,
-        height, size,
+        horizontal,
+        horizontal_kind,
+        row,
+        display,
+        column,
+        last,
+        col_positions,
+        y,
+        height,
+        size,
+        last_row == i,
       )
       let vertical = match verticals.get(i) {
         Some(columns) => columns.get(column).unwrap_or("bottom")
@@ -295,7 +378,7 @@ pub fn draw_sized_grid_no_fonts(
       }
       let reference = cell_reference(i, column, false) +
         (if row_spans.contains(column) {
-          ":" + cell_reference(i, last, false)
+          ":" + cell_reference(last_row, last, false)
         } else {
           ""
         })
@@ -312,12 +395,13 @@ pub fn draw_sized_grid_no_fonts(
           None,
           Map([]),
           size~,
+          east_asian~,
         )
       }
     }
   }
   context.sized_grid_borders(
-    rows, borders, border_colors, col_positions, row_positions, visible_columns,
+    rows, borders, border_colors, spans, col_positions, row_positions, visible_columns,
   )
   let tiles = context.tiles.map(fn(tile) {
     { x: tile.x, y: tile.y, object: tile.object.encode(), drawn: tile.drawn, }
@@ -354,6 +438,7 @@ fn GridDrawContext::sized_grid_borders(
   rows : Array[SizedGridRow],
   borders : Map[Int32, Map[Int32, GridCellBorder]],
   border_colors : Map[Int32, Map[Int32, Array[UInt32]]],
+  spans : Map[Int32, Map[Int32, Int32]],
   columns : Array[Double],
   row_positions : Array[Double],
   visible_columns : Int32,
@@ -368,16 +453,19 @@ fn GridDrawContext::sized_grid_borders(
     if index >= row_positions.length() - 1 {
       break
     }
-    if row_positions[index] >= row_positions[index + 1] {
-      continue
-    }
     if borders.get(index) is Some(values) {
       let keys : Array[Int32] = [ for column, _ in values => column ]
       keys.sort()
       for column in keys {
-        if column < 0 ||
-          column >= visible_columns ||
-          columns[column] >= columns[column + 1] {
+        if column < 0 || column >= visible_columns {
+          continue
+        }
+        let merged = grid_span_contains(spans, index, column)
+        if !merged &&
+          (
+            row_positions[index] >= row_positions[index + 1] ||
+            columns[column] >= columns[column + 1]
+          ) {
           continue
         }
         let border = values[column]
@@ -424,6 +512,8 @@ fn GridDrawContext::sized_grid_fills(
   self : GridDrawContext,
   rows : Array[SizedGridRow],
   fills : Map[Int32, Map[Int32, GridSolidFill]],
+  region_rows : Map[Int32, Map[Int32, GridMergeRegion]],
+  merge_regions : Array[GridMergeRegion],
   columns : Array[Double],
   row_positions : Array[Double],
   visible_columns : Int32,
@@ -454,6 +544,9 @@ fn GridDrawContext::sized_grid_fills(
       keys.sort()
       for column in keys {
         if column < 0 || column >= visible_columns {
+          continue
+        }
+        if grid_region_contains(region_rows, index, column) {
           continue
         }
         let x0 = columns[column]
@@ -499,6 +592,55 @@ fn GridDrawContext::sized_grid_fills(
   for rect in previous {
     self.sized_fill_rect(rect)
   }
+  for region in merge_regions {
+    if region.row_end + 1 >= row_positions.length() ||
+      region.column_end >= visible_columns {
+      continue
+    }
+    if fills.get(region.row_start) is Some(values) {
+      if values.get(region.column_start) is Some(fill) {
+        let x0 = columns[region.column_start]
+        let x1 = columns[region.column_end + 1]
+        let y0 = row_positions[region.row_start]
+        let y1 = row_positions[region.row_end + 1]
+        if x0 < x1 && y0 < y1 {
+          self.sized_fill_rect({ x0, x1, y0, y1, fill, })
+        }
+      }
+    }
+  }
+}
+
+///|
+fn grid_region_contains(
+  regions : Map[Int32, Map[Int32, GridMergeRegion]],
+  row : Int32,
+  column : Int32,
+) -> Bool {
+  if regions.get(row) is Some(columns) {
+    for _, region in columns {
+      if column >= region.column_start && column <= region.column_end {
+        return true
+      }
+    }
+  }
+  false
+}
+
+///|
+fn grid_span_contains(
+  spans : Map[Int32, Map[Int32, Int32]],
+  row : Int32,
+  column : Int32,
+) -> Bool {
+  if spans.get(row) is Some(columns) {
+    for start, end in columns {
+      if column >= start && column <= end {
+        return true
+      }
+    }
+  }
+  false
 }
 
 ///|
@@ -513,6 +655,7 @@ fn sized_grid_horizontal_layout(
   y : Double,
   height : Double,
   size : Double,
+  allow_overflow : Bool,
 ) -> DrawCell {
   if alignment != "left" && alignment != "right" {
     return layout
@@ -535,7 +678,10 @@ fn sized_grid_horizontal_layout(
   }
   let mut x0 = left
   let mut x1 = right
-  if !cell.number && !cell.text.contains("\n") && !cell.text.contains("\r") {
+  if allow_overflow &&
+    !cell.number &&
+    !cell.text.contains("\n") &&
+    !cell.text.contains("\r") {
     if alignment == "right" {
       let mut previous = column - 1
       while previous >= 0 && x0 > tx0 {

@@ -53,7 +53,7 @@ fn DrawTile::set_font(
       None => family
     }
   }
-  let request_key = if bold { "single:700" } else { "single:400" }
+  let request_key = (if bold { "single:700:" } else { "single:400:" }) + family
   let index = match self.fonts.get(request_key) {
     Some(index) => index
     None => {
@@ -115,6 +115,7 @@ fn DrawTile::emit_line(
   face : @sfnt.Font?,
   hash : String?,
   size~ : Double = 11.0,
+  east_asian~ : String = "",
 ) -> Unit raise {
   let mut chars = StringBuilder()
   let mut has_chars = false
@@ -129,7 +130,11 @@ fn DrawTile::emit_line(
         run_x,
         line.baseline,
         run_width,
-        family,
+        if cjk && east_asian != "" {
+          east_asian
+        } else {
+          family
+        },
         bold,
         color,
         face,
@@ -151,7 +156,11 @@ fn DrawTile::emit_line(
       run_x,
       line.baseline,
       run_width,
-      family,
+      if cjk && east_asian != "" {
+        east_asian
+      } else {
+        family
+      },
       bold,
       color,
       face,
@@ -175,6 +184,7 @@ fn DrawTile::emit_cell(
   fontset : GridFontSet?,
   hashes : Map[Int32, String],
   size~ : Double = 11.0,
+  east_asian~ : String = "",
 ) -> Unit raise {
   self.object.mark(2, ref)
   if layout.lang_known {
@@ -204,7 +214,17 @@ fn DrawTile::emit_cell(
       Some(fonts) =>
         self.emit_database_line(line, bold, color, advance, fonts, hashes)
       None =>
-        self.emit_line(line, family, bold, color, advance, face, hash, size~)
+        self.emit_line(
+          line,
+          family,
+          bold,
+          color,
+          advance,
+          face,
+          hash,
+          size~,
+          east_asian~,
+        )
     }
   }
   if layout.clip {

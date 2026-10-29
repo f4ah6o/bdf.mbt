@@ -26,7 +26,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 5700; i++ {
+	for i := 0; i < 6100; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -364,7 +364,9 @@ func TestCodexXLSXRender(t *testing.T) {
 		if i >= 4800 {
 			sheet = strings.Replace(sheet, `</row>`, `<c r="G1" s="16"><f>1+2</f></c><c r="H1" s="17" t="str"><f>"x"</f><v/></c><c r="I1" s="18"><f>3+4</f><v>7</v></c></row>`, 1)
 		}
-		if i >= 5000 && i < 5400 {
+		if i >= 5700 {
+			sheet = strings.Replace(sheet, `</worksheet>`, `<mergeCells count="2"><mergeCell ref="A1:C2"/><mergeCell ref="E3:F4"/></mergeCells></worksheet>`, 1)
+		} else if i >= 5000 && i < 5400 {
 			sheet = strings.Replace(sheet, `</worksheet>`, `<mergeCells count="2"><mergeCell ref="A1:C1"/><mergeCell ref="E2:F2"/></mergeCells></worksheet>`, 1)
 		}
 		add("xl/worksheets/sheet1.xml", sheet)
@@ -441,6 +443,19 @@ func TestCodexXLSXRender(t *testing.T) {
 		t.Fatal(e)
 	}
 	out = append(out, map[string]any{"input": actual, "bdf": actualBDF.Bytes(), "warnings": converted.Warnings, "mode": "none", "no_index": true})
+	printed, e := os.ReadFile(filepath.Join("testdata", "print.xlsx"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	printResult, e := Convert(bytes.NewReader(printed), int64(len(printed)), &Options{NoSystemFonts: true, SystemFonts: true, NoTextIndex: true, Data: "none"})
+	if e != nil {
+		t.Fatal(e)
+	}
+	var printBDF bytes.Buffer
+	if e = printResult.Doc.WriteSingle(&printBDF); e != nil {
+		t.Fatal(e)
+	}
+	out = append(out, map[string]any{"input": printed, "bdf": printBDF.Bytes(), "warnings": printResult.Warnings, "mode": "none", "no_index": true})
 	data, e := json.Marshal(out)
 	if e != nil {
 		t.Fatal(e)

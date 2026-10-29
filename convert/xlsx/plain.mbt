@@ -242,9 +242,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// Convert worksheets using estimated font metrics without embedding fonts.
 /// Supports sheet views with numeric, plain string, boolean and error cells,
 /// number formats, font colors, bold text, horizontal alignment, top or center
-/// vertical alignment, solid fills, basic borders and horizontal merged cells.
-/// Border colors are limited to one per line weight, and merged cells may not
-/// have fills or borders; complex features are rejected.
+/// vertical alignment, solid fills, basic borders and merged cells. Border
+/// colors are limited to one per line weight; complex features are rejected.
 pub fn convert_plain_no_fonts(
   data : Bytes,
   data_mode~ : String = "",
@@ -373,7 +372,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let parsed = workbook.read_sheet_cells(ref.part)
   let rows = parsed.sorted_rows()
   let geo = workbook.read_sheet_geometry(ref.part)
-  let spans = xlsx_plain_spans(geo.merges)
+  let (spans, region_rows, merge_regions) = xlsx_plain_spans(geo.merges)
   for column in geo.columns {
     if column.style > 0 {
       raise InvalidXlsxInput(
@@ -413,6 +412,10 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let bolds : Map[Int32, Map[Int32, Bool]] = Map([])
   let fills : Map[Int32, Map[Int32, @sheet.GridSolidFill]] = Map([])
   let sizes : Map[Int32, Map[Int32, Double]] = Map([])
+  let east_asian_fonts : Map[Int32, Map[Int32, String]] = Map([])
+  let minor_east_asian = workbook.package
+    .theme_fonts(workbook.part)
+    .resolve("+mn-ea", locale.script)
   let borders : Map[Int32, Map[Int32, @sheet.GridCellBorder]] = Map([])
   let border_colors : Map[Int32, Map[Int32, Array[UInt32]]] = Map([])
   let border_colors_by_weight : Map[Int32, XlsxRgb] = Map([])
@@ -454,7 +457,23 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         font_id
       }
       let font_size = styles.fonts[font_index].size
-      let span = xlsx_plain_span_at(spans, row.index, cell.column)
+      if styles.fonts[font_index].scheme == "minor" && minor_east_asian != "" {
+        let columns = match east_asian_fonts.get(row.index) {
+          Some(columns) => columns
+          None => {
+            let columns : Map[Int32, String] = Map([])
+            east_asian_fonts[row.index] = columns
+            columns
+          }
+        }
+        columns[cell.column] = minor_east_asian
+      }
+      let span = xlsx_plain_region_at(
+        spans,
+        region_rows,
+        row.index,
+        cell.column,
+      )
       let (border, colors) = match border_cache.get(format_index) {
         Some(border) => border
         None => {
@@ -493,7 +512,32 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             columns
           }
         }
-        columns[cell.column] = border
+        columns[cell.column] = if span is Some(region) {
+          {
+            top: if row.index == region.row_start {
+              border.top
+            } else {
+              0
+            },
+            bottom: if row.index == region.row_end {
+              border.bottom
+            } else {
+              0
+            },
+            left: if cell.column == region.column_start {
+              border.left
+            } else {
+              0
+            },
+            right: if cell.column == region.column_end {
+              border.right
+            } else {
+              0
+            },
+          }
+        } else {
+          border
+        }
         let row_colors = match border_colors.get(row.index) {
           Some(row_colors) => row_colors
           None => {
@@ -508,11 +552,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       if fill_index >= 0 && fill_index < styles.fills.length() {
         let fill = styles.fills[fill_index]
         if fill.pattern == "solid" {
-          if span is Some(_) {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support fills on merged cells",
-            )
-          }
           let columns = match fills.get(row.index) {
             Some(columns) => columns
             None => {
@@ -529,17 +568,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             .rgba(),
           }
         }
-      }
-      if span is Some(_) &&
-        (
-          border.top != 0 ||
-          border.bottom != 0 ||
-          border.left != 0 ||
-          border.right != 0
-        ) {
-        raise InvalidXlsxInput(
-          "xlsx: plain conversion does not support borders on merged cells",
-        )
       }
       let formatted = if cell.kind == 1 {
         Some(
@@ -583,9 +611,9 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           } else {
             0.0
           }
-          if span is Some((start, end)) && cell.column == start {
+          if span is Some(region) && cell.column == region.column_start {
             cell_width = 0.0
-            for column in start..<=end {
+            for column in region.column_start..<=region.column_end {
               cell_width += widths[column]
             }
           }
@@ -696,6 +724,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     borders~,
     spans~,
     border_colors~,
+    merge_regions~,
+    east_asian_fonts~,
   )
   (drawn, geo, parsed.missing_formula_values)
 }
@@ -753,44 +783,80 @@ fn xlsx_plain_border_side(
 ///|
 fn xlsx_plain_spans(
   ranges : Array[XlsxRange],
-) -> Map[Int32, Map[Int32, Int32]] raise {
+) -> (
+  Map[Int32, Map[Int32, Int32]],
+  Map[Int32, Map[Int32, @sheet.GridMergeRegion]],
+  Array[@sheet.GridMergeRegion],
+) raise {
   let spans : Map[Int32, Map[Int32, Int32]] = Map([])
+  let region_rows : Map[Int32, Map[Int32, @sheet.GridMergeRegion]] = Map([])
+  let regions : Array[@sheet.GridMergeRegion] = []
   let mut room = 4194304L
   for range in ranges {
-    if range.row_start != range.row_end ||
-      range.row_start < 0L ||
-      range.row_start >= 1048576L ||
+    if range.row_start < 0L ||
+      range.row_end >= 1048576L ||
+      range.row_start > range.row_end ||
       range.column_start < 0 ||
       range.column_end >= 16384 ||
       range.column_start > range.column_end {
-      raise InvalidXlsxInput(
-        "xlsx: plain conversion supports only horizontal merged cells",
-      )
+      raise InvalidXlsxInput("xlsx: merged cells are outside the sheet")
     }
-    let length = (range.column_end - range.column_start + 1).to_int64()
+    let length = (range.column_end - range.column_start + 1).to_int64() *
+      (range.row_end - range.row_start + 1L)
     if length > room {
       raise InvalidXlsxInput("xlsx: too many merged cells for plain conversion")
     }
     room -= length
-    let row = range.row_start.to_int()
-    let columns = match spans.get(row) {
-      Some(columns) => columns
-      None => {
-        let columns : Map[Int32, Int32] = Map([])
-        spans[row] = columns
-        columns
-      }
+    let region : @sheet.GridMergeRegion = {
+      row_start: range.row_start.to_int(),
+      row_end: range.row_end.to_int(),
+      column_start: range.column_start,
+      column_end: range.column_end,
     }
-    for start, end in columns {
-      if range.column_start <= end && range.column_end >= start {
-        raise InvalidXlsxInput(
-          "xlsx: plain conversion does not support overlapping merges",
-        )
+    regions.push(region)
+    for row in region.row_start..<=region.row_end {
+      let columns = match spans.get(row) {
+        Some(columns) => columns
+        None => {
+          let columns : Map[Int32, Int32] = Map([])
+          spans[row] = columns
+          columns
+        }
       }
+      for start, end in columns {
+        if range.column_start <= end && range.column_end >= start {
+          raise InvalidXlsxInput(
+            "xlsx: plain conversion does not support overlapping merges",
+          )
+        }
+      }
+      columns[range.column_start] = range.column_end
+      let row_regions = match region_rows.get(row) {
+        Some(columns) => columns
+        None => {
+          let columns : Map[Int32, @sheet.GridMergeRegion] = Map([])
+          region_rows[row] = columns
+          columns
+        }
+      }
+      row_regions[range.column_start] = region
     }
-    columns[range.column_start] = range.column_end
   }
-  spans
+  (spans, region_rows, regions)
+}
+
+///|
+fn xlsx_plain_region_at(
+  spans : Map[Int32, Map[Int32, Int32]],
+  region_rows : Map[Int32, Map[Int32, @sheet.GridMergeRegion]],
+  row : Int32,
+  column : Int32,
+) -> @sheet.GridMergeRegion? {
+  if xlsx_plain_span_at(spans, row, column) is Some((start, _)) &&
+    region_rows.get(row) is Some(columns) {
+    return columns.get(start)
+  }
+  None
 }
 
 ///|
