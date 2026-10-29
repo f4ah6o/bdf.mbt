@@ -565,3 +565,50 @@ pub fn score_columns(
       Json::object({ "error": Json::string(message) }).stringify()
   }
 }
+
+///|
+#export_name("score_systems")
+pub fn score_systems(
+  data : Bytes,
+  texts : FixedArray[String],
+  widths : FixedArray[Double],
+  width : Double,
+  indent : Double,
+) -> String {
+  try {
+    let score = @midi.notate_file(@midi.read_file(data))
+    let prepared = @music.prepare_score(score)
+    let map : Map[String, Double] = Map([])
+    for i in 0..<texts.length() {
+      map[texts[i]] = widths[i]
+    }
+    let columns = @music.build_columns(score, prepared, text => {
+      map.get(text).unwrap_or(0.0)
+    })
+    let systems = @music.break_systems(score, prepared, columns, width, indent)
+    Json::array(
+      systems.map(s => {
+        Json::array([
+          Json::number(s.first.to_double()),
+          Json::number(s.last.to_double()),
+          Json::number(s.header),
+          Json::number(s.width),
+          Json::array(
+            s.columns.map(c => {
+              Json::array([
+                Json::number(c.index.to_double()),
+                Json::number(c.x),
+                Json::number(c.width),
+                Json::number(c.body_start),
+                Json::array(c.slots.map(slot => Json::number(slot.x))),
+              ])
+            }),
+          ),
+        ])
+      }),
+    ).stringify()
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}

@@ -6,6 +6,8 @@ pub fn assign_voices(Array[VoiceNote], Array[MeasureSpan], Array[BeatGrid], Bool
 
 pub fn beat_grids(Array[MeasureSpan], Array[Int64]) -> Array[BeatGrid]
 
+pub fn break_systems(NotatedScore, PreparedScore, Array[MusicColumn], Double, Double) -> Array[MusicSystem]
+
 pub fn build_columns(NotatedScore, PreparedScore, (String) -> Double) -> Array[MusicColumn]
 
 pub fn build_timeline(Int64, Array[TimeChange], Array[KeyChange], Array[TempoChange], Array[Double], Int32, time_override? : TimeSig?, key_override? : KeySig?) -> ScoreTimeline
@@ -134,6 +136,14 @@ pub(all) struct MusicSlot {
   minimum : Double
 }
 
+pub(all) struct MusicSystem {
+  first : Int32
+  last : Int32
+  header : Double
+  width : Double
+  columns : Array[PositionedColumn]
+}
+
 pub(all) struct NotatedPart {
   name : String
   clefs : Array[NotationClef]
@@ -216,6 +226,19 @@ pub(all) struct PlacedAccidental {
   accidental : Int32
   position : Int32
   column : Int32
+}
+
+pub(all) struct PositionedColumn {
+  index : Int32
+  x : Double
+  width : Double
+  body_start : Double
+  slots : Array[PositionedSlot]
+}
+
+pub(all) struct PositionedSlot {
+  slot : MusicSlot
+  x : Double
 }
 
 pub(all) struct PreparedScore {
