@@ -14,6 +14,8 @@ pub fn spell(Int32, Int32, Bool, Int32) -> String
 
 pub fn staff(FixedArray[Int32], Int32, Int32) -> String
 
+pub fn staff_events(FixedArray[Int32], FixedArray[Int32], FixedArray[Int32], FixedArray[Int32], FixedArray[String], Int32, Bool) -> String
+
 pub fn time(Int32, Int32) -> String
 
 pub fn timeline(Int32, FixedArray[Int32], FixedArray[Int32], FixedArray[Double], FixedArray[Double], Int32, FixedArray[Int32], FixedArray[Int32]) -> String

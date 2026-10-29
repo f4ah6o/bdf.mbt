@@ -26,6 +26,8 @@ pub fn quantize_notes(Array[MeasureSpan], Array[NotationNote]) -> Array[Quantize
 
 pub fn spell(Int32, KeySig, Int32) -> Pitch
 
+pub fn write_staff_events(Array[VoiceNote], Array[MeasureSpan], Array[BeatGrid], Array[NotationLyric], Int32, Bool) -> Array[Array[ScoreEvent]]
+
 // Errors
 
 // Types and methods
@@ -69,6 +71,11 @@ pub(all) struct NotationClef {
   octave : Int32
 }
 
+pub(all) struct NotationLyric {
+  tick : Int64
+  text : String
+}
+
 pub(all) struct NotationNote {
   tick : Int64
   duration : Int64
@@ -96,6 +103,32 @@ pub(all) struct QuantizedNote {
   key : Int32
   velocity : Int32
   spelling : Int32
+}
+
+pub(all) struct ScoreEvent {
+  offset : Int64
+  duration : Int64
+  staff : Int32
+  voice : Int32
+  kind : Int32
+  dots : Int32
+  rest : Bool
+  measure_rest : Bool
+  tuplet_beat : Int64?
+  notes : Array[ScoreNote]
+  lyric : ScoreLyric?
+}
+
+pub(all) struct ScoreLyric {
+  text : String
+  syllabic : Int32
+}
+
+pub(all) struct ScoreNote {
+  pitch : Pitch
+  head : Int32
+  tie_start : Bool
+  tie_stop : Bool
 }
 
 pub(all) struct ScoreTimeline {

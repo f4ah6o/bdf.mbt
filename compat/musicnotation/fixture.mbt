@@ -330,3 +330,108 @@ pub fn voices(
     }),
   ).stringify()
 }
+
+///|
+#export_name("staff_events")
+pub fn staff_events(
+  raw_measures : FixedArray[Int32],
+  raw_beats : FixedArray[Int32],
+  raw_notes : FixedArray[Int32],
+  lyric_ticks : FixedArray[Int32],
+  lyric_texts : FixedArray[String],
+  staff : Int32,
+  percussion : Bool,
+) -> String {
+  let measures : Array[@music.MeasureSpan] = []
+  for i in 0..<(raw_measures.length() / 6) {
+    measures.push({
+      start: raw_measures[6 * i].to_int64(),
+      length: raw_measures[6 * i + 1].to_int64(),
+      time: {
+        beats: raw_measures[6 * i + 2],
+        beat_type: raw_measures[6 * i + 3],
+        symbol: "",
+      },
+      show_time: false,
+      key: None,
+      effective_key: {
+        fifths: raw_measures[6 * i + 4],
+        minor: raw_measures[6 * i + 5] != 0,
+      },
+      tempo: [],
+    })
+  }
+  let beats : Array[@music.BeatGrid] = []
+  for i in 0..<(raw_beats.length() / 5) {
+    beats.push({
+      start: raw_beats[5 * i].to_int64(),
+      length: raw_beats[5 * i + 1].to_int64(),
+      grid: raw_beats[5 * i + 2].to_int64(),
+      compound: raw_beats[5 * i + 3] != 0,
+      triplet: raw_beats[5 * i + 4] != 0,
+    })
+  }
+  let notes : Array[@music.VoiceNote] = []
+  for i in 0..<(raw_notes.length() / 6) {
+    notes.push({
+      note: {
+        on: raw_notes[6 * i].to_int64(),
+        off: raw_notes[6 * i + 1].to_int64(),
+        key: raw_notes[6 * i + 2],
+        velocity: raw_notes[6 * i + 3],
+        spelling: raw_notes[6 * i + 4],
+      },
+      voice_hint: raw_notes[6 * i + 5],
+    })
+  }
+  let lyrics : Array[@music.NotationLyric] = []
+  for i in 0..<lyric_ticks.length() {
+    lyrics.push({ tick: lyric_ticks[i].to_int64(), text: lyric_texts[i], })
+  }
+  let result = @music.write_staff_events(
+    notes, measures, beats, lyrics, staff, percussion,
+  )
+  Json::array(
+    result.map(measure => {
+      Json::array(
+        measure.map(e => {
+          let triplet = match e.tuplet_beat {
+            Some(tick) => Json::number(tick.to_double())
+            None => Json::null()
+          }
+          let lyric = match e.lyric {
+            Some(l) =>
+              Json::array([
+                Json::string(l.text),
+                Json::number(l.syllabic.to_double()),
+              ])
+            None => Json::null()
+          }
+          let notes = e.notes.map(n => {
+            Json::array([
+              Json::number(n.pitch.step.to_double()),
+              Json::number(n.pitch.alter.to_double()),
+              Json::number(n.pitch.octave.to_double()),
+              Json::number(n.head.to_double()),
+              Json::boolean(n.tie_start),
+              Json::boolean(n.tie_stop),
+            ])
+          })
+          Json::array([
+            Json::number(e.offset.to_double()),
+            Json::number(e.duration.to_double()),
+            Json::number(e.staff.to_double()),
+            Json::number(e.voice.to_double()),
+            Json::number(e.kind.to_double()),
+            Json::number(e.dots.to_double()),
+            Json::boolean(e.rest),
+            Json::boolean(e.measure_rest),
+            triplet,
+            Json::array(notes),
+            lyric,
+          ])
+        }),
+      )
+    }),
+  ).stringify()
+}
