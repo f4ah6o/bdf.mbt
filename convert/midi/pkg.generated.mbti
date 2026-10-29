@@ -2,7 +2,11 @@
 package "f4ah6o/bdf/convert/midi"
 
 // Values
+pub fn credits(MidiRawFile) -> MidiCredits
+
 pub fn detect(Bytes) -> Bool
+
+pub fn program_name(Int32) -> String
 
 pub fn read_file(Bytes) -> MidiRawFile raise MidiInputError
 
@@ -12,6 +16,8 @@ pub fn read_varlen(Bytes) -> (Int32, Int32)
 
 pub fn scan_track(Bytes, Int64) -> MidiTrackScan
 
+pub fn track_name(MidiRawFile, Int32, Int32, Bool, Int32) -> String
+
 pub fn unwrap_rmid(Bytes) -> MidiInput raise MidiInputError
 
 // Errors
@@ -20,6 +26,14 @@ pub suberror MidiInputError {
 }
 
 // Types and methods
+pub(all) struct MidiCredits {
+  title : String
+  composer : String
+  lyricist : String
+  arranger : String
+  copyright : String
+}
+
 pub(all) struct MidiHeader {
   format : Int32
   tracks : Int32

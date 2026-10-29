@@ -6,6 +6,8 @@ pub fn decode_text(Bytes) -> String
 
 pub fn detect(Bytes) -> Bool
 
+pub fn file_credits(Bytes) -> String
+
 pub fn header(Bytes, Int32) -> String
 
 pub fn read_file(Bytes) -> String

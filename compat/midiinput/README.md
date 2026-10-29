@@ -21,5 +21,6 @@ the same way. Generate them first, then use `generate_notes_test.go` and
 fixtures use `generate_file_test.go` and `TestCodexMidiFile`; this generator
 also needs `generate_test.go` copied into the upstream package. Track metadata
 fixtures use `generate_meta_test.go` and `TestCodexMidiTrackMeta`. Text
-decoding fixtures use `generate_text_test.go` and `TestCodexMidiText`, and
-require `generate_test.go` in the upstream package.
+decoding fixtures use `generate_text_test.go` and `TestCodexMidiText`; credits
+and naming fixtures use `generate_credits_test.go` and `TestCodexMidiCredits`.
+Both require `generate_test.go` in the upstream package.

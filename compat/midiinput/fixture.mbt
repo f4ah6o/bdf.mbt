@@ -223,3 +223,32 @@ pub fn decode_text(data : Bytes) -> String {
       Json::object({ "error": Json::string(message) }).stringify()
   }
 }
+
+///|
+#export_name("file_credits")
+pub fn file_credits(data : Bytes) -> String {
+  try {
+    let file = @midi.read_file(data)
+    let credits = @midi.credits(file)
+    let names : Array[Json] = []
+    for channel in 0..<16 {
+      names.push(
+        Json::array([
+          Json::string(@midi.track_name(file, 0, channel, false, 0)),
+          Json::string(@midi.track_name(file, 0, channel, true, channel * 7)),
+        ]),
+      )
+    }
+    Json::object({
+      "title": Json::string(credits.title),
+      "composer": Json::string(credits.composer),
+      "lyricist": Json::string(credits.lyricist),
+      "arranger": Json::string(credits.arranger),
+      "copyright": Json::string(credits.copyright),
+      "names": Json::array(names),
+    }).stringify()
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}
