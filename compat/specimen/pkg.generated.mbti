@@ -41,6 +41,8 @@ pub fn prepare_outlines(Bytes, Int32) -> @font.SpecimenOutlines
 
 pub fn prepare_painter(Bytes, Int32) -> PainterFixture
 
+pub fn prepare_programs(Bytes, String, String, Bool) -> String
+
 pub fn prepare_sample_painter(Bytes, Int32, Int32, String) -> GlyphPainterFixture
 
 pub fn pruned_program(Bytes, Int32, Array[Int32]) -> Bytes

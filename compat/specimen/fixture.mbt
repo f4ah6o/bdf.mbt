@@ -550,3 +550,42 @@ pub fn paint_sample(
 ) -> Unit {
   ignore(try! f.painter.sample(text, x, y, size, rtl, lang))
 }
+
+///|
+#export_name("prepare_programs")
+pub fn prepare_programs(
+  data : Bytes,
+  selection : String,
+  text : String,
+  ignore_restrictions : Bool,
+) -> String {
+  let file = try! @font.load(data)
+  let doc = @core.DocumentWriter::new()
+  let result = try! file.prepare_programs(
+    doc,
+    selection,
+    text,
+    ignore_restrictions~,
+  )
+  Json::object({
+    "faces": Json::array(
+      result.faces.map(face => {
+        Json::object({
+          "index": Json::number(face.face_index.to_double()),
+          "glyph": match face.glyph_font {
+            Some(font) => Json::string(font.hash.unwrap())
+            None => Json::null()
+          },
+          "sample": match face.sample_font {
+            Some(font) => Json::string(font.hash.unwrap())
+            None => Json::null()
+          },
+          "outlined": Json::boolean(face.outlined),
+        })
+      }),
+    ),
+    "warnings": Json::array(result.warnings.map(Json::string)),
+    "fontParts": Json::number(result.font_parts.to_double()),
+    "outlined": Json::number(result.outlined.to_double()),
+  }).stringify()
+}

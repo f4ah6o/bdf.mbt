@@ -391,3 +391,35 @@ pub fn Font::specimen_sample(
   }
   self.specimen_pruned(self.specimen_reachable(text), size)
 }
+
+///|
+/// Identify glyph-rendering tables within one shared SFNT/TTC byte source.
+/// The key is suitable for deduplication only among faces of the same file.
+pub fn Font::specimen_glyph_key(self : Font) -> String {
+  let out = StringBuilder()
+  for
+    tag in [
+      "glyf", "loca", "CFF ", "CFF2", "hmtx", "cvt ", "fpgm", "prep", "gasp", "COLR",
+      "CPAL", "sbix", "CBDT", "CBLC", "SVG ", "EBDT", "EBLC", "fvar", "avar",
+    ] {
+    match self.tables.get(tag) {
+      Some((offset, length)) if length > 0 =>
+        out.write_string(
+          tag + ":" + offset.to_string() + ":" + length.to_string() + ";",
+        )
+      _ => ()
+    }
+  }
+  let head = sfnt_table(self.source, self.tables, "head")
+  let hhea = sfnt_table(self.source, self.tables, "hhea")
+  out.write_string(
+    self.metrics.glyph_count.to_string() +
+    ":" +
+    u16(head, 18).to_string() +
+    ":" +
+    u16(head, 50).to_string() +
+    ":" +
+    u16(hhea, 34).to_string(),
+  )
+  out.to_string()
+}
