@@ -105,6 +105,8 @@ fn DrawTile::text_run(
   hash : String?,
   size~ : Double = 11.0,
   italic~ : Bool = false,
+  underline~ : String = "",
+  strike~ : Bool = false,
 ) -> Unit raise {
   self.set_font(family, bold, face, hash, size~, italic~)
   self.fill_color(color)
@@ -114,6 +116,34 @@ fn DrawTile::text_run(
     Float::from_double(y - self.y.to_double() * 2048.0),
     Float::from_double(width),
   )
+  let lx = x - self.x.to_double() * 2048.0
+  let ly = y - self.y.to_double() * 2048.0
+  let thickness = Double::max(0.05 * size, 0.75)
+  if underline != "" {
+    let uy = ly + 0.1 * size
+    self.object.fill_rect(
+      Float::from_double(lx),
+      Float::from_double(uy),
+      Float::from_double(width),
+      Float::from_double(thickness),
+    )
+    if underline.has_prefix("double") {
+      self.object.fill_rect(
+        Float::from_double(lx),
+        Float::from_double(uy + 2.0 * thickness),
+        Float::from_double(width),
+        Float::from_double(thickness),
+      )
+    }
+  }
+  if strike {
+    self.object.fill_rect(
+      Float::from_double(lx),
+      Float::from_double(ly - 0.3 * size),
+      Float::from_double(width),
+      Float::from_double(thickness),
+    )
+  }
   self.drawn = true
 }
 
@@ -130,6 +160,8 @@ fn DrawTile::emit_line(
   size~ : Double = 11.0,
   east_asian~ : String = "",
   italic~ : Bool = false,
+  underline~ : String = "",
+  strike~ : Bool = false,
 ) -> Unit raise {
   let mut chars = StringBuilder()
   let mut has_chars = false
@@ -155,6 +187,8 @@ fn DrawTile::emit_line(
         hash,
         size~,
         italic~,
+        underline~,
+        strike~,
       )
       run_x += run_width
       chars = StringBuilder()
@@ -182,6 +216,8 @@ fn DrawTile::emit_line(
       hash,
       size~,
       italic~,
+      underline~,
+      strike~,
     )
   }
 }
@@ -202,6 +238,8 @@ fn DrawTile::emit_cell(
   size~ : Double = 11.0,
   east_asian~ : String = "",
   italic~ : Bool = false,
+  underline~ : String = "",
+  strike~ : Bool = false,
 ) -> Unit raise {
   self.object.mark(2, ref)
   if layout.lang_known {
@@ -242,6 +280,8 @@ fn DrawTile::emit_cell(
           size~,
           east_asian~,
           italic~,
+          underline~,
+          strike~,
         )
     }
   }

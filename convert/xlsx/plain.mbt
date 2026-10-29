@@ -207,8 +207,6 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
     false
   }
   if (index == 0 && font.size != 11.0) ||
-    font.underline != "" ||
-    font.strike ||
     (font.scheme != "" && font.scheme != "minor" && font.scheme != "major") ||
     font.vertical != "" ||
     (
@@ -234,9 +232,9 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 ///|
 /// Convert worksheets using estimated font metrics without embedding fonts.
 /// Supports sheet views with numeric, plain string, boolean and error cells,
-/// number formats, named and themed fonts, font colors, bold and italic text,
-/// horizontal alignment, top or center vertical alignment, solid fills, line
-/// borders, merged cells and wrapping.
+/// number formats, named and themed fonts, font colors, bold, italic, underlined
+/// and struck text, horizontal alignment, top or center vertical alignment,
+/// solid fills, line borders, merged cells and wrapping.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// complex features are rejected.
 pub fn convert_plain_no_fonts(
@@ -408,6 +406,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let horizontals : Map[Int32, Map[Int32, String]] = Map([])
   let bolds : Map[Int32, Map[Int32, Bool]] = Map([])
   let italics : Map[Int32, Map[Int32, Bool]] = Map([])
+  let decorations : Map[Int32, Map[Int32, @sheet.GridTextDecoration]] = Map([])
   let fills : Map[Int32, Map[Int32, @sheet.GridSolidFill]] = Map([])
   let sizes : Map[Int32, Map[Int32, Double]] = Map([])
   let wraps : Map[Int32, Map[Int32, Bool]] = Map([])
@@ -732,6 +731,20 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           }
           columns[cell.column] = true
         }
+        if font.underline != "" || font.strike {
+          let columns = match decorations.get(row.index) {
+            Some(columns) => columns
+            None => {
+              let columns : Map[Int32, @sheet.GridTextDecoration] = Map([])
+              decorations[row.index] = columns
+              columns
+            }
+          }
+          columns[cell.column] = {
+            underline: font.underline,
+            strike: font.strike,
+          }
+        }
         if vertical != "bottom" {
           let columns = match verticals.get(row.index) {
             Some(columns) => columns
@@ -802,6 +815,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     diagonals~,
     font_families~,
     italics~,
+    decorations~,
   )
   (drawn, geo, parsed.missing_formula_values)
 }

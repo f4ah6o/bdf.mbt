@@ -42,6 +42,13 @@ pub(all) struct GridCellDiagonal {
 }
 
 ///|
+/// Text decorations on a cell's no-font rendering.
+pub(all) struct GridTextDecoration {
+  underline : String
+  strike : Bool
+}
+
+///|
 /// An inclusive merged rectangle in a sized grid.
 pub(all) struct GridMergeRegion {
   row_start : Int32
@@ -96,6 +103,7 @@ pub fn draw_sized_grid_no_fonts(
   diagonals~ : Map[Int32, Map[Int32, GridCellDiagonal]] = Map([]),
   font_families~ : Map[Int32, Map[Int32, String]] = Map([]),
   italics~ : Map[Int32, Map[Int32, Bool]] = Map([]),
+  decorations~ : Map[Int32, Map[Int32, GridTextDecoration]] = Map([]),
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -269,6 +277,11 @@ pub fn draw_sized_grid_no_fonts(
         Some(columns) => columns.get(column).unwrap_or(false)
         None => false
       }
+      let decoration = match decorations.get(i) {
+        Some(columns) =>
+          columns.get(column).unwrap_or({ underline: "", strike: false, })
+        None => { underline: "", strike: false, }
+      }
       let east_asian = match east_asian_fonts.get(i) {
         Some(columns) =>
           match columns.get(column) {
@@ -432,6 +445,8 @@ pub fn draw_sized_grid_no_fonts(
           size~,
           east_asian~,
           italic~,
+          underline=decoration.underline,
+          strike=decoration.strike,
         )
       }
     }
