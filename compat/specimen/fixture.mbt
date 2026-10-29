@@ -777,3 +777,81 @@ pub fn record_ui_text(
 ) -> Unit {
   ignore(f.texter.line(text, size, bold))
 }
+
+///|
+pub struct UIPainterFixture {
+  object : @core.ObjectBuilder
+  glyphs : @font.GlyphPainter
+  ui : @font.SpecimenUIPainter
+  texter : @font.SpecimenTexter
+}
+
+///|
+#export_name("prepare_ui_painter")
+pub fn prepare_ui_painter(
+  data : Bytes,
+  doc_language : String,
+  glyph_hash : String,
+  sample_hash : String,
+  font_set : UIFontFixture,
+) -> UIPainterFixture {
+  let file = try! @font.load(data)
+  let face = file.faces()[0]
+  let object = @core.ObjectBuilder::new()
+  object.set_bbox(0.0F, 0.0F, 720.0F, 1024.0F)
+  let glyph : @core.Font = {
+    hash: Some(glyph_hash),
+    family: "",
+    weight: 400,
+    style: 0,
+  }
+  let sample : @core.Font = {
+    hash: Some(sample_hash),
+    family: "",
+    weight: 400,
+    style: 0,
+  }
+  let glyphs = face.glyph_painter(
+    object,
+    embedded=Some(glyph),
+    sample_font=Some(sample),
+    doc_language~,
+  )
+  let texter = font_set.texter.texter
+  let ui = @font.SpecimenUIPainter::new(glyphs, texter, font_set.fonts)
+  { object, glyphs, ui, texter, }
+}
+
+///|
+#export_name("paint_ui_label")
+pub fn paint_ui_label(
+  f : UIPainterFixture,
+  text : String,
+  x : Double,
+  y : Double,
+  size : Double,
+  bold : Bool,
+  color : UInt32,
+  align : Int32,
+) -> Unit {
+  let line = f.texter.line(text, size, bold)
+  ignore(try! f.ui.label(line, x, y, color, align))
+}
+
+///|
+#export_name("paint_ui_sample")
+pub fn paint_ui_sample(f : UIPainterFixture, rtl : Bool) -> Unit {
+  ignore(try! f.glyphs.sample("Sample あ", 200.0, 300.0, 18.0, rtl, "ja"))
+}
+
+///|
+#export_name("paint_ui_glyphs")
+pub fn paint_ui_glyphs(f : UIPainterFixture, advance : Double) -> Unit {
+  ignore(try! f.glyphs.draw([1, 2], [0.0, advance], 100.0, 130.0, 16.0, "alt"))
+}
+
+///|
+#export_name("ui_painter_object")
+pub fn ui_painter_object(f : UIPainterFixture) -> Bytes {
+  try! f.object.encode()
+}

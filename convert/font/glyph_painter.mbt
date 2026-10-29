@@ -67,20 +67,20 @@ fn GlyphPainter::text_run(
     text.write_char(code.unsafe_to_char())
   }
   self.object.mark(4, alt)
-  let ref = match self.font_ref {
-    Some(ref) => ref
+  let reference = match self.font_ref {
+    Some(reference) => reference
     None => {
       let font = self.embedded.unwrap()
-      let ref = match (self.sample_font, self.sample_ref) {
+      let reference = match (self.sample_font, self.sample_ref) {
         (Some(sample), Some(existing)) if specimen_fonts_equal(sample, font) =>
           existing
         _ => self.object.add_font(font)
       }
-      self.font_ref = Some(ref)
-      ref
+      self.font_ref = Some(reference)
+      reference
     }
   }
-  self.set_font(ref, size)
+  self.set_font(reference, size)
   self.object.fill_text(
     text.to_string(),
     specimen_f32(x),
@@ -92,13 +92,13 @@ fn GlyphPainter::text_run(
 ///|
 fn GlyphPainter::set_font(
   self : GlyphPainter,
-  ref : Int32,
+  reference : Int32,
   size : Double,
 ) -> Unit raise {
   let value = specimen_f32(size)
-  if self.active_ref != Some(ref) || self.font_size != Some(value) {
-    self.object.font(ref, value)
-    self.active_ref = Some(ref)
+  if self.active_ref != Some(reference) || self.font_size != Some(value) {
+    self.object.font(reference, value)
+    self.active_ref = Some(reference)
     self.font_size = Some(value)
   }
 }
@@ -114,17 +114,17 @@ fn specimen_fonts_equal(a : @core.Font, b : @core.Font) -> Bool {
 ///|
 fn GlyphPainter::sample_font_ref(self : GlyphPainter) -> Int32 {
   match self.sample_ref {
-    Some(ref) => ref
+    Some(reference) => reference
     None => {
       let font = self.sample_font.unwrap()
-      let ref = match (self.embedded, self.font_ref) {
+      let reference = match (self.embedded, self.font_ref) {
         (Some(glyph_font), Some(existing)) if specimen_fonts_equal(
             glyph_font, font,
           ) => existing
         _ => self.object.add_font(font)
       }
-      self.sample_ref = Some(ref)
-      ref
+      self.sample_ref = Some(reference)
+      reference
     }
   }
 }

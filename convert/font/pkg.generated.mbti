@@ -259,6 +259,13 @@ pub(all) struct SpecimenUIFonts {
   warnings : Array[String]
 }
 
+pub struct SpecimenUIPainter {
+  // private fields
+}
+pub fn SpecimenUIPainter::label(Self, SpecimenTextLine, Double, Double, UInt32, Int32) -> Double raise
+pub fn SpecimenUIPainter::new(GlyphPainter, SpecimenTexter, SpecimenUIFonts) -> Self
+pub fn SpecimenUIPainter::text(Self, SpecimenTextLine, Double, Double, UInt32) -> Unit raise
+
 pub(all) struct SpecimenView {
   id : String
   title : String

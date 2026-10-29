@@ -42,6 +42,12 @@ pub fn paint_glyphs(PainterFixture, Array[Int32], Array[Double], Double, Double,
 
 pub fn paint_sample(GlyphPainterFixture, String, Double, Double, Double, Bool, String) -> Unit
 
+pub fn paint_ui_glyphs(UIPainterFixture, Double) -> Unit
+
+pub fn paint_ui_label(UIPainterFixture, String, Double, Double, Double, Bool, UInt32, Int32) -> Unit
+
+pub fn paint_ui_sample(UIPainterFixture, Bool) -> Unit
+
 pub fn painter_object(PainterFixture) -> Bytes
 
 pub fn prepare_glyph_painter(Bytes, Int32) -> GlyphPainterFixture
@@ -53,6 +59,8 @@ pub fn prepare_painter(Bytes, Int32) -> PainterFixture
 pub fn prepare_programs(Bytes, String, String, Bool) -> String
 
 pub fn prepare_sample_painter(Bytes, Int32, Int32, String) -> GlyphPainterFixture
+
+pub fn prepare_ui_painter(Bytes, String, String, String, UIFontFixture) -> UIPainterFixture
 
 pub fn pruned_program(Bytes, Int32, Array[Int32]) -> Bytes
 
@@ -78,6 +86,8 @@ pub fn ui_font_records(UIFontFixture, String, Double, Bool) -> String
 
 pub fn ui_font_summary(UIFontFixture) -> String
 
+pub fn ui_painter_object(UIPainterFixture) -> Bytes
+
 pub fn variations(Bytes, Bytes) -> String
 
 // Errors
@@ -101,6 +111,13 @@ pub struct TexterFixture {
 pub struct UIFontFixture {
   texter : TexterFixture
   fonts : @font.SpecimenUIFonts
+}
+
+pub struct UIPainterFixture {
+  object : @core.ObjectBuilder
+  glyphs : @font.GlyphPainter
+  ui : @font.SpecimenUIPainter
+  texter : @font.SpecimenTexter
 }
 
 // Type aliases

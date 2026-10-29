@@ -5,7 +5,7 @@ pub struct OutlinePainter {
   priv outlines : SpecimenOutlines
   priv upem : Double
   priv paths : Map[Int32, Int32]
-  priv mut fill_set : Bool
+  priv mut fill : UInt32?
 }
 
 ///|
@@ -19,22 +19,27 @@ pub fn FileFace::outline_painter(
     outlines: self.outlines(),
     upem: self.font.metrics.units_per_em.to_double(),
     paths: Map([]),
-    fill_set: false,
+    fill: None,
   }
 }
 
 ///|
 /// Invalidate the cached fill after changing the object's drawing state.
 pub fn OutlinePainter::reset_fill(self : OutlinePainter) -> Unit {
-  self.fill_set = false
+  self.fill = None
+}
+
+///|
+fn OutlinePainter::set_fill(self : OutlinePainter, color : UInt32) -> Unit {
+  if self.fill != Some(color) {
+    self.object.fill_color(color)
+    self.fill = Some(color)
+  }
 }
 
 ///|
 fn OutlinePainter::ensure_fill(self : OutlinePainter) -> Unit {
-  if !self.fill_set {
-    self.object.fill_color(0x1f1f1fffU)
-    self.fill_set = true
-  }
+  self.set_fill(0x1f1f1fffU)
 }
 
 ///|
@@ -58,19 +63,19 @@ pub fn OutlinePainter::draw(
   self.ensure_fill()
   let run : Array[@core.ObjectGlyph] = []
   for i, glyph in glyphs {
-    let ref = match self.paths.get(glyph) {
-      Some(ref) => Some(ref)
+    let reference = match self.paths.get(glyph) {
+      Some(reference) => Some(reference)
       None =>
         match self.outlines.path(glyph) {
           Some(path) => {
-            let ref = self.object.add_path(@core.Inline(path))
-            self.paths[glyph] = ref
-            Some(ref)
+            let reference = self.object.add_path(@core.Inline(path))
+            self.paths[glyph] = reference
+            Some(reference)
           }
           None => None
         }
     }
-    match ref {
+    match reference {
       Some(path) =>
         run.push({ path, x: specimen_f32(offsets[i] * self.upem), y: 0.0F, })
       None => ()
