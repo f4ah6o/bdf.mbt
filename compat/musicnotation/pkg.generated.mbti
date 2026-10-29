@@ -18,6 +18,8 @@ pub fn time(Int32, Int32) -> String
 
 pub fn timeline(Int32, FixedArray[Int32], FixedArray[Int32], FixedArray[Double], FixedArray[Double], Int32, FixedArray[Int32], FixedArray[Int32]) -> String
 
+pub fn voices(FixedArray[Int32], FixedArray[Int32], FixedArray[Int32], Bool) -> String
+
 // Errors
 
 // Types and methods

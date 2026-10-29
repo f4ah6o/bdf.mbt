@@ -2,6 +2,8 @@
 package "f4ah6o/bdf/convert/music"
 
 // Values
+pub fn assign_voices(Array[VoiceNote], Array[MeasureSpan], Array[BeatGrid], Bool) -> Array[Array[VoiceChord]]
+
 pub fn beat_grids(Array[MeasureSpan], Array[Int64]) -> Array[BeatGrid]
 
 pub fn build_timeline(Int64, Array[TimeChange], Array[KeyChange], Array[TempoChange], Array[Double], Int32, time_override? : TimeSig?, key_override? : KeySig?) -> ScoreTimeline
@@ -130,6 +132,17 @@ pub(all) struct TimeSig {
 }
 pub fn TimeSig::beat(Self) -> (Int32, Bool)
 pub fn TimeSig::length(Self) -> Int32
+
+pub(all) struct VoiceChord {
+  on : Int64
+  mut off : Int64
+  notes : Array[VoiceNote]
+}
+
+pub(all) struct VoiceNote {
+  note : QuantizedNote
+  voice_hint : Int32
+}
 
 // Type aliases
 

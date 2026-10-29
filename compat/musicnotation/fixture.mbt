@@ -260,3 +260,73 @@ pub fn divide_values(
     }),
   ).stringify()
 }
+
+///|
+#export_name("voices")
+pub fn voices(
+  raw_measures : FixedArray[Int32],
+  raw_beats : FixedArray[Int32],
+  raw_notes : FixedArray[Int32],
+  percussion : Bool,
+) -> String {
+  let measures : Array[@music.MeasureSpan] = []
+  for i in 0..<(raw_measures.length() / 2) {
+    measures.push({
+      start: raw_measures[2 * i].to_int64(),
+      length: raw_measures[2 * i + 1].to_int64(),
+      time: { beats: 4, beat_type: 4, symbol: "", },
+      show_time: false,
+      key: None,
+      effective_key: { fifths: 0, minor: false, },
+      tempo: [],
+    })
+  }
+  let beats : Array[@music.BeatGrid] = []
+  for i in 0..<(raw_beats.length() / 3) {
+    beats.push({
+      start: raw_beats[3 * i].to_int64(),
+      length: raw_beats[3 * i + 1].to_int64(),
+      grid: raw_beats[3 * i + 2].to_int64(),
+      compound: false,
+      triplet: false,
+    })
+  }
+  let notes : Array[@music.VoiceNote] = []
+  for i in 0..<(raw_notes.length() / 6) {
+    notes.push({
+      note: {
+        on: raw_notes[6 * i].to_int64(),
+        off: raw_notes[6 * i + 1].to_int64(),
+        key: raw_notes[6 * i + 2],
+        velocity: raw_notes[6 * i + 3],
+        spelling: raw_notes[6 * i + 4],
+      },
+      voice_hint: raw_notes[6 * i + 5],
+    })
+  }
+  let result = @music.assign_voices(notes, measures, beats, percussion)
+  Json::array(
+    result.map(v => {
+      Json::array(
+        v.map(ch => {
+          Json::array([
+            Json::number(ch.on.to_double()),
+            Json::number(ch.off.to_double()),
+            Json::array(
+              ch.notes.map(n => {
+                Json::array([
+                  Json::number(n.note.on.to_double()),
+                  Json::number(n.note.off.to_double()),
+                  Json::number(n.note.key.to_double()),
+                  Json::number(n.note.velocity.to_double()),
+                  Json::number(n.note.spelling.to_double()),
+                  Json::number(n.voice_hint.to_double()),
+                ])
+              }),
+            ),
+          ])
+        }),
+      )
+    }),
+  ).stringify()
+}
