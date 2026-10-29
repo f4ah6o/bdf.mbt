@@ -153,3 +153,106 @@ pub fn xlsx_decode_string(text : String) -> String {
   }
   output.to_string()
 }
+
+///|
+/// An inclusive rectangle of zero-based worksheet coordinates.
+pub(all) struct XlsxRange {
+  row_start : Int64
+  column_start : Int32
+  row_end : Int64
+  column_end : Int32
+}
+
+///|
+fn xlsx_parse_column(text : String) -> Int32? {
+  let mut col = 0
+  for b in @utf8.encode(text) {
+    let mut c = b.to_int()
+    if c == 36 {
+      continue
+    }
+    if c >= 97 && c <= 122 {
+      c -= 32
+    }
+    if c < 65 || c > 90 {
+      return None
+    }
+    col = col * 26 + c - 64
+    if col > 16384 {
+      return None
+    }
+  }
+  if col > 0 {
+    Some(col - 1)
+  } else {
+    None
+  }
+}
+
+///|
+fn xlsx_strip_dollar(text : String) -> String {
+  let out = StringBuilder()
+  for c in text {
+    if c != '$' {
+      out.write_char(c)
+    }
+  }
+  out.to_string()
+}
+
+///|
+/// Parse a cell, whole-row or whole-column Excel range.
+pub fn xlsx_parse_range(text : String) -> XlsxRange? {
+  let data = @utf8.encode(xlsx_trim(text))
+  let mut split = -1
+  for i in 0..<data.length() {
+    if data[i] == b':' {
+      split = i
+      break
+    }
+  }
+  let first = if split < 0 {
+    @utf8.decode_lossy(data[:])
+  } else {
+    @utf8.decode_lossy(data[:split])
+  }
+  let last = if split < 0 {
+    first
+  } else {
+    @utf8.decode_lossy(data[split + 1:])
+  }
+  let (c0, r0, ok0) = xlsx_parse_ref(first)
+  if ok0 {
+    let (c1, r1, ok1) = xlsx_parse_ref(last)
+    if !ok1 {
+      return None
+    }
+    return Some({
+      row_start: Int32::min(r0, r1).to_int64(),
+      column_start: Int32::min(c0, c1),
+      row_end: Int32::max(r0, r1).to_int64(),
+      column_end: Int32::max(c0, c1),
+    })
+  }
+  match (xlsx_parse_column(first), xlsx_parse_column(last)) {
+    (Some(a), Some(b)) =>
+      return Some({
+        row_start: 0L,
+        column_start: Int32::min(a, b),
+        row_end: 1048575L,
+        column_end: Int32::max(a, b),
+      })
+    _ => ()
+  }
+  match
+    (xlsx_int(xlsx_strip_dollar(first)), xlsx_int(xlsx_strip_dollar(last))) {
+    (Some(a), Some(b)) if a >= 1L && b >= 1L =>
+      Some({
+        row_start: Int64::min(a, b) - 1L,
+        column_start: 0,
+        row_end: Int64::max(a, b) - 1L,
+        column_end: 16383,
+      })
+    _ => None
+  }
+}

@@ -16,6 +16,8 @@ pub fn xlsx_decode_string(String) -> String
 
 pub fn xlsx_iso_serial(String, Bool) -> Double?
 
+pub fn xlsx_parse_range(String) -> XlsxRange?
+
 pub fn xlsx_parse_ref(String) -> (Int32, Int32, Bool)
 
 // Errors
@@ -32,6 +34,21 @@ pub(all) struct XlsxCell {
   text : String
 }
 
+pub(all) struct XlsxColumn {
+  first : Int32
+  last : Int32
+  width : Double
+  hidden : Bool
+  style : Int32
+}
+
+pub(all) struct XlsxRange {
+  row_start : Int64
+  column_start : Int32
+  row_end : Int64
+  column_end : Int32
+}
+
 pub(all) struct XlsxRow {
   index : Int32
   height : Double
@@ -46,6 +63,21 @@ pub(all) struct XlsxSheetCells {
   missing_formula_values : Int32
 }
 pub fn XlsxSheetCells::sorted_rows(Self) -> Array[XlsxRow]
+
+pub(all) struct XlsxSheetGeometry {
+  default_column_width : Double
+  base_column_width : Double
+  default_row_height : Double
+  zero_height : Bool
+  show_grid : Bool
+  show_zero : Bool
+  right_to_left : Bool
+  frozen_columns : Int32
+  frozen_rows : Int32
+  columns : Array[XlsxColumn]
+  merges : Array[XlsxRange]
+  auto_filter : XlsxRange?
+}
 
 pub(all) struct XlsxSheetRef {
   name : String
@@ -64,6 +96,7 @@ pub(all) struct XlsxWorkbook {
   mut cached_shared_strings : Array[String]?
 }
 pub fn XlsxWorkbook::read_sheet_cells(Self, String) -> XlsxSheetCells raise
+pub fn XlsxWorkbook::read_sheet_geometry(Self, String) -> XlsxSheetGeometry raise
 pub fn XlsxWorkbook::shared_strings(Self) -> Array[String]
 
 // Type aliases

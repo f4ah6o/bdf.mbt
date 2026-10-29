@@ -92,3 +92,73 @@ pub fn xlsx_cells(data : Bytes, part : String) -> String {
     _ => "null"
   }
 }
+
+///|
+#export_name("xlsx_range")
+pub fn xlsx_range(value : String) -> String {
+  match @xlsx.xlsx_parse_range(value) {
+    None =>
+      Json::array([
+        Json::number(0.0),
+        Json::number(0.0),
+        Json::number(0.0),
+        Json::number(0.0),
+        Json::boolean(false),
+      ]).stringify()
+    Some(r) =>
+      Json::array([
+        Json::number(r.row_start.to_double()),
+        Json::number(r.column_start.to_double()),
+        Json::number(r.row_end.to_double()),
+        Json::number(r.column_end.to_double()),
+        Json::boolean(true),
+      ]).stringify()
+  }
+}
+
+///|
+fn xlsx_range_json(r : @xlsx.XlsxRange) -> Json {
+  Json::array([
+    Json::number(r.row_start.to_double()),
+    Json::number(r.column_start.to_double()),
+    Json::number(r.row_end.to_double()),
+    Json::number(r.column_end.to_double()),
+  ])
+}
+
+///|
+#export_name("xlsx_geometry")
+pub fn xlsx_geometry(data : Bytes, part : String) -> String {
+  try {
+    let workbook = @xlsx.read_xlsx_workbook(data)
+    let s = workbook.read_sheet_geometry(part)
+    let cols = s.columns.map(c => {
+      Json::array([
+        Json::number(c.first.to_double()),
+        Json::number(c.last.to_double()),
+        Json::number(c.width),
+        Json::boolean(c.hidden),
+        Json::number(c.style.to_double()),
+      ])
+    })
+    Json::array([
+      Json::number(s.default_column_width),
+      Json::number(s.base_column_width),
+      Json::number(s.default_row_height),
+      Json::boolean(s.zero_height),
+      Json::boolean(s.show_grid),
+      Json::boolean(s.show_zero),
+      Json::boolean(s.right_to_left),
+      Json::number(s.frozen_columns.to_double()),
+      Json::number(s.frozen_rows.to_double()),
+      Json::array(cols),
+      Json::array(s.merges.map(xlsx_range_json)),
+      match s.auto_filter {
+        None => Json::null()
+        Some(r) => xlsx_range_json(r)
+      },
+    ]).stringify()
+  } catch {
+    _ => "null"
+  }
+}
