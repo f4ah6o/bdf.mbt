@@ -25,5 +25,6 @@ build, `npm run test:woff2-encode` checks the decoded tables and Chromium font
 rendering, and writes encoded files under `_build/woff2-encoded`. To verify
 them with the upstream Go decoder, copy `verify-encode_test.go` without its
 build tag into upstream `font/woff2` and run `TestCodexExternalWOFF2Encoding`
-with the same fixture root. The MoonBit encoder uses its own Brotli stream and
-the standard null glyf transform, so its compressed bytes differ from Go.
+with the same fixture root. The MoonBit encoder uses the same glyf transform as Go and its own Brotli
+stream, so its compressed bytes differ from Go. Mutated inputs are stored as
+small patches with hashes of the upstream-decoded SFNTs.

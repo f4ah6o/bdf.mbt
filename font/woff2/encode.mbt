@@ -13,8 +13,8 @@ fn append_base128(out : Array[Byte], value : UInt32) -> Unit {
 
 ///|
 /// Encode a TrueType or CFF OpenType SFNT as a WOFF2 font. Glyph tables are
-/// stored without the optional glyf transform; the Brotli stream is bounded
-/// by the size of the supplied SFNT tables.
+/// stored using the glyf transform where possible; unsupported outlines use
+/// the null transform. The Brotli stream is bounded by the SFNT table size.
 pub fn encode(font : Bytes) -> Bytes raise {
   if font.length() < 12 {
     raise Woff2Failure("woff2: font too short")
@@ -40,6 +40,30 @@ pub fn encode(font : Bytes) -> Bytes raise {
     }
     tables[tag] = data[offset.to_int():offset.to_int() + length.to_int()].to_owned()
   }
+  let mut transformed : Bytes? = None
+  let mut loca_length = 0
+  match
+    (
+      tables.get("head"),
+      tables.get("maxp"),
+      tables.get("glyf"),
+      tables.get("loca"),
+    ) {
+    (Some(head), Some(maxp), Some(glyf), Some(loca)) if flavor != 0x4f54544fU &&
+      head.length() >= 54 &&
+      maxp.length() >= 6 => {
+      let count = get16(maxp[:], 4)
+      transformed = transform_glyf(glyf, loca, count, get16(head[:], 50) != 0)
+      if transformed is Some(_) {
+        let h = head.to_array()
+        put16(h, 50, 1)
+        put16(h, 16, get16(head[:], 16) | (1 << 11))
+        tables["head"] = Bytes::from_array(h)
+        loca_length = (count + 1) * 4
+      }
+    }
+    _ => ()
+  }
   let tags = tables.keys().collect()
   tags.sort()
   let directory : Array[Byte] = []
@@ -47,8 +71,20 @@ pub fn encode(font : Bytes) -> Bytes raise {
   let mut total = 12L + 16L * tags.length().to_int64()
   for tag in tags {
     let contents = tables[tag]
-    total += (contents.length().to_int64() + 3L) & -4L
-    if stream.length().to_int64() + contents.length().to_int64() > 268435456L {
+    let original_length = if transformed is Some(_) && tag == "loca" {
+      loca_length
+    } else {
+      contents.length()
+    }
+    total += (original_length.to_int64() + 3L) & -4L
+    let stored_length = if transformed is Some(bytes) && tag == "glyf" {
+      bytes.length()
+    } else if transformed is Some(_) && tag == "loca" {
+      0
+    } else {
+      contents.length()
+    }
+    if stream.length().to_int64() + stored_length.to_int64() > 268435456L {
       raise Woff2Failure("woff2: the tables of the font are too large")
     }
     let mut index = 63
@@ -58,7 +94,7 @@ pub fn encode(font : Bytes) -> Bytes raise {
         break
       }
     }
-    let flags = if tag == "glyf" || tag == "loca" {
+    let flags = if (tag == "glyf" || tag == "loca") && transformed is None {
       index | 0xc0
     } else {
       index
@@ -67,8 +103,15 @@ pub fn encode(font : Bytes) -> Bytes raise {
     if index == 63 {
       append_bytes(directory, @utf8.encode(tag)[:])
     }
-    append_base128(directory, contents.length().reinterpret_as_uint())
-    append_bytes(stream, contents[:])
+    append_base128(directory, original_length.reinterpret_as_uint())
+    if transformed is Some(bytes) && tag == "glyf" {
+      append_base128(directory, bytes.length().reinterpret_as_uint())
+      append_bytes(stream, bytes[:])
+    } else if transformed is Some(_) && tag == "loca" {
+      append_base128(directory, 0U)
+    } else {
+      append_bytes(stream, contents[:])
+    }
   }
   let compressed = @brotli.compress(
     Bytes::from_array(stream)[:],

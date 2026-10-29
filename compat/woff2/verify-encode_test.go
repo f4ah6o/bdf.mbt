@@ -7,6 +7,7 @@ package woff2
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -34,8 +35,8 @@ func TestCodexExternalWOFF2Encoding(t *testing.T) {
 		t.Fatal(err)
 	}
 	var cases []struct {
-		Name, Error string
-		Decoded     []byte
+		Name, Error, DecodedHash string
+		Decoded                  []byte
 	}
 	if err = json.Unmarshal(data, &cases); err != nil {
 		t.Fatal(err)
@@ -52,7 +53,12 @@ func TestCodexExternalWOFF2Encoding(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", c.Name, err)
 		}
-		if !bytes.Equal(decoded, c.Decoded) {
+		if c.DecodedHash != "" {
+			hash := sha256.Sum256(decoded)
+			if fmt.Sprintf("%x", hash) != c.DecodedHash {
+				t.Fatalf("%s: decoded SFNT differs", c.Name)
+			}
+		} else if !bytes.Equal(decoded, c.Decoded) {
 			t.Fatalf("%s: decoded SFNT differs", c.Name)
 		}
 	}
