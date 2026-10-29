@@ -26,7 +26,7 @@ func TestCodexXLSXRender(t *testing.T) {
 	}
 	r := rand.New(rand.NewSource(63156))
 	out := []any{}
-	for i := 0; i < 9400; i++ {
+	for i := 0; i < 9600; i++ {
 		var b bytes.Buffer
 		z := zip.NewWriter(&b)
 		add := func(n, s string) {
@@ -176,6 +176,9 @@ func TestCodexXLSXRender(t *testing.T) {
 						font++
 						return fmt.Sprintf(`<vertAlign val="%s"/></font>`, vert)
 					})
+				}
+				if i >= 9400 {
+					st = strings.Replace(st, `<sz val="11"/>`, fmt.Sprintf(`<sz val="%g"/>`, []float64{7, 9, 10, 12, 14, 18, 32}[i%7]), 1)
 				}
 			}
 			if i >= 3300 {

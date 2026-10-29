@@ -206,8 +206,7 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
   } else {
     false
   }
-  if (index == 0 && font.size != 11.0) ||
-    (font.scheme != "" && font.scheme != "minor" && font.scheme != "major") ||
+  if (font.scheme != "" && font.scheme != "minor" && font.scheme != "major") ||
     (
       font.vertical != "" &&
       font.vertical != "superscript" &&
@@ -411,6 +410,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     count: run.count,
     size: run.size,
   })
+  let default_size = styles.fonts[0].size
   let fitted = xlsx_plain_fitted_rows(
     rows,
     styles,
@@ -419,9 +419,14 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     widths,
     workbook.date1904,
     locale.number_locale,
+    default_size,
   )
   let heights : Array[@sheet.Run] = xlsx_row_runs(
-    rows, geo, row_count, 12.65, fitted,
+    rows,
+    geo,
+    row_count,
+    (0.9 + 0.25) * default_size,
+    fitted,
   ).map(run => { count: run.count, size: run.size, })
   let geometry : @sheet.GridGeometry = {
     columns,
@@ -1160,6 +1165,7 @@ fn xlsx_plain_fitted_rows(
   widths : Array[Double],
   date1904 : Bool,
   locale : String,
+  default_size : Double,
 ) -> Map[Int32, Double] {
   let result : Map[Int32, Double] = Map([])
   for row in rows {
@@ -1215,7 +1221,7 @@ fn xlsx_plain_fitted_rows(
           text_height = text_height + 1.5 - 1.5
           best = Double::max(best, text_height)
         }
-      } else if (0.9 + 0.25) * size > (0.9 + 0.25) * 11.0 + 0.01 {
+      } else if (0.9 + 0.25) * size > (0.9 + 0.25) * default_size + 0.01 {
         let mut actual_size = size
         if styles.cell_formats[format_index].alignment.shrink && cell.kind != 1 {
           if styles.format_cell(cell, date1904, locale) is Some(formatted) {
