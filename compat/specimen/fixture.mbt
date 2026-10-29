@@ -1235,3 +1235,14 @@ pub fn gpos_feature_examples(
     ),
   }).stringify()
 }
+
+///|
+#export_name("feature_lookup_notes")
+pub fn feature_lookup_notes(f : FeaturePlannerFixture, index : Int32) -> String {
+  let group = f.groups[index]
+  Json::array(
+    group.lookups.map(lookup => {
+      Json::string(f.planner.lookup_note(group, lookup))
+    }),
+  ).stringify()
+}

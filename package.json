@@ -47,7 +47,7 @@
     "test:specimen-info": "node compat/specimen/verify-info.mjs",
     "test:specimen-overview": "node compat/specimen/verify-overview.mjs",
     "test:specimen-features": "node compat/specimen/verify-features.mjs",
-    "test:specimen-feature-examples": "node compat/specimen/verify-feature-examples.mjs && node compat/specimen/verify-position-examples.mjs",
+    "test:specimen-feature-examples": "node compat/specimen/verify-feature-examples.mjs && node compat/specimen/verify-position-examples.mjs && node compat/specimen/verify-feature-details.mjs",
     "test:specimen-scroll": "node compat/specimen/verify-scroll.mjs",
     "test:specimen-path": "node compat/specimen/verify-path.mjs",
     "test:specimen-paint": "node compat/specimen/verify-paint.mjs",

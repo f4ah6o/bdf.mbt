@@ -168,3 +168,7 @@ and run `TestCodexFeatureExamples` with the same fixture root.
 To regenerate positioning-example cases, copy `generate-position-examples_test.go`
 without its build tag into upstream `converter/font` alongside `generate_test.go`
 and run `TestCodexPositionExamples` with the same fixture root.
+
+To regenerate combined feature-detail cases, copy `generate-feature-details_test.go`
+without its build tag into upstream `converter/font` alongside `generate_test.go`
+and run `TestCodexFeatureDetails` with the same fixture root.

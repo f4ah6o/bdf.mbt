@@ -18,6 +18,8 @@ pub fn coverage(Bytes, Int32) -> String
 
 pub fn document_plan(Bytes, String, String) -> String
 
+pub fn feature_lookup_notes(FeaturePlannerFixture, Int32) -> String
+
 pub fn features(Bytes, Int32) -> String
 
 pub fn finish_ui_fonts(TexterFixture, Bool, Bool, Bool) -> UIFontFixture

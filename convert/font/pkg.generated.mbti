@@ -222,6 +222,7 @@ pub struct SpecimenFeaturePlanner {
 }
 pub fn SpecimenFeaturePlanner::gpos_examples(Self, FeatureGroup, Int32, SamplePlan) -> FeatureExamples
 pub fn SpecimenFeaturePlanner::gsub_examples(Self, FeatureGroup, Int32) -> FeatureExamples
+pub fn SpecimenFeaturePlanner::lookup_note(Self, FeatureGroup, Int32) -> String
 
 pub(all) struct SpecimenGlyph {
   name : String

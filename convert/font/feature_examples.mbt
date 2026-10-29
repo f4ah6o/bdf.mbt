@@ -154,3 +154,86 @@ pub fn SpecimenFeaturePlanner::gsub_examples(
   }
   { items, total: total.val, }
 }
+
+///|
+/// Describe a feature lookup and consume its shared inspection budget.
+pub fn SpecimenFeaturePlanner::lookup_note(
+  self : SpecimenFeaturePlanner,
+  group : FeatureGroup,
+  index : Int32,
+) -> String {
+  let is_gpos = group.table == "GPOS"
+  let layout = if is_gpos { self.gpos_layout } else { self.gsub_layout }
+  guard layout is Some(layout) && layout.lookups.get(index) is Some(lookup) else {
+    return ""
+  }
+  let mut text = "#" +
+    index.to_string() +
+    " " +
+    @otlayout.lookup_type_name(lookup.typ, gpos=is_gpos)
+  let context = if is_gpos {
+    match self.gpos {
+      Some(table) => table.context(index)
+      None => None
+    }
+  } else {
+    match self.gsub {
+      Some(table) => table.context(index)
+      None => None
+    }
+  }
+  match context {
+    Some(context) if context.nested.length() > 0 => {
+      let references = context.nested.map(n => "#" + n.to_string()).join(" ")
+      let label = if context.rules == 1 { "rule" } else { "rules" }
+      return text +
+        " (" +
+        info_number(context.rules.to_int64()) +
+        " " +
+        label +
+        ", applying " +
+        references +
+        ")"
+    }
+    _ => ()
+  }
+  let n = Ref(0L)
+  if is_gpos {
+    match self.gpos {
+      Some(table) =>
+        if lookup.typ == 2 {
+          n.val = table.pair_count(index)
+        } else if lookup.typ == 1 {
+          table.each_single(index, (_, _) => {
+            n.val += 1L
+            true
+          })
+        } else {
+          let (marks, bases) = table.mark_counts(index)
+          if marks > 0 {
+            return text +
+              " (" +
+              info_number(marks.to_int64()) +
+              " marks, " +
+              info_number(bases.to_int64()) +
+              " bases)"
+          }
+          n.val = bases.to_int64()
+        }
+      None => ()
+    }
+  } else {
+    match self.gsub {
+      Some(table) =>
+        table.each_substitution(index, _ => {
+          n.val += 1L
+          true
+        })
+      None => ()
+    }
+  }
+  if n.val > 0L {
+    text += " (" + info_number(n.val) + ")"
+  }
+  text
+}
