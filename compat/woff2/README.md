@@ -17,3 +17,13 @@ BDF_FIXTURE_ROOT=/path/to/bdf.mbt go test ./font/woff2 -run '^TestCodexWOFF2Deco
 
 The upstream checkout must include its WOFF2 test files and Brotli encoder. The
 fixture generator writes `compat/woff2/upstream.json.gz` in the target repo.
+
+`encode.json.gz` records SFNT inputs and normalized expected tables for the
+encoder. Copy `generate-encode_test.go` without its build tag into upstream
+`font/woff2` and run `TestCodexWOFF2EncodeInputs` to regenerate it. After a JS
+build, `npm run test:woff2-encode` checks the decoded tables and Chromium font
+rendering, and writes encoded files under `_build/woff2-encoded`. To verify
+them with the upstream Go decoder, copy `verify-encode_test.go` without its
+build tag into upstream `font/woff2` and run `TestCodexExternalWOFF2Encoding`
+with the same fixture root. The MoonBit encoder uses its own Brotli stream and
+the standard null glyf transform, so its compressed bytes differ from Go.

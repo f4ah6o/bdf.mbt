@@ -23,3 +23,30 @@ pub fn decode_valid(result : DecodeResult) -> Bool {
 pub fn decode_bytes(result : DecodeResult) -> Bytes {
   result.data
 }
+
+///|
+pub struct EncodeResult {
+  data : Bytes
+  error : String
+}
+
+///|
+#export_name("encode_woff2")
+pub fn encode_woff2(data : Bytes) -> EncodeResult {
+  { data: @woff2.encode(data), error: "", } catch {
+    @woff2.Woff2Failure(message) => { data: b"", error: message, }
+    error => { data: b"", error: error.to_string(), }
+  }
+}
+
+///|
+#export_name("encode_bytes")
+pub fn encode_bytes(result : EncodeResult) -> Bytes {
+  result.data
+}
+
+///|
+#export_name("encode_error")
+pub fn encode_error(result : EncodeResult) -> String {
+  result.error
+}

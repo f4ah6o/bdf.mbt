@@ -8,12 +8,23 @@ pub fn decode_valid(DecodeResult) -> Bool
 
 pub fn decode_woff2(Bytes) -> DecodeResult
 
+pub fn encode_bytes(EncodeResult) -> Bytes
+
+pub fn encode_error(EncodeResult) -> String
+
+pub fn encode_woff2(Bytes) -> EncodeResult
+
 // Errors
 
 // Types and methods
 pub struct DecodeResult {
   valid : Bool
   data : Bytes
+}
+
+pub struct EncodeResult {
+  data : Bytes
+  error : String
 }
 
 // Type aliases

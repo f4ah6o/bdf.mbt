@@ -4,6 +4,8 @@ package "f4ah6o/bdf/font/woff2"
 // Values
 pub fn decode(Bytes) -> Bytes raise
 
+pub fn encode(Bytes) -> Bytes raise
+
 // Errors
 pub suberror Woff2Error {
   Woff2Failure(String)
