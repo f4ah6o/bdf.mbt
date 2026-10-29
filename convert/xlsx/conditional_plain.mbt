@@ -110,6 +110,11 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
         depth -= 1
         if depth + 1 == formula_depth {
           let text = xlsx_trim(formula.to_string())
+          let text = if text.has_prefix("=") {
+            xlsx_trim(text[1:].to_owned())
+          } else {
+            text
+          }
           for c in text {
             if !((c >= '0' && c <= '9') ||
               c == '.' ||

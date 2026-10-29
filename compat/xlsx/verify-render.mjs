@@ -57,6 +57,16 @@ for (const [j, c] of conditionalOps.entries()) await verifyCase(c, `conditional 
 const conditionalBetween = JSON.parse(await readFile(new URL('./conditional-between.json', import.meta.url)));
 assert.equal(conditionalBetween.length, 161, 'conditional interval fixture count');
 for (const [j, c] of conditionalBetween.entries()) await verifyCase(c, `conditional interval ${j}`);
+const conditionalEquals = JSON.parse(await readFile(new URL('./conditional-equals.json', import.meta.url)));
+assert.equal(conditionalEquals.length, 161, 'conditional formula prefix fixture count');
+for (const [j, c] of conditionalEquals.entries()) await verifyCase(c, `conditional formula prefix ${j}`);
+const unsupportedConditionalEquals = JSON.parse(await readFile(new URL('./conditional-equals-unsupported.json', import.meta.url)));
+assert.equal(unsupportedConditionalEquals.length, 8, 'unsupported conditional formula prefix fixture count');
+for (const encoded of unsupportedConditionalEquals) {
+  const input = Buffer.from(encoded, 'base64');
+  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional formulas must be rejected');
+  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+}
 const unsupportedConditionalBetween = JSON.parse(await readFile(new URL('./conditional-between-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalBetween.length, 8, 'unsupported conditional interval fixture count');
 for (const encoded of unsupportedConditionalBetween) {
@@ -150,4 +160,4 @@ for (const encoded of unsupportedBase) {
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|complex borders)/);
 }
-console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length + conditionalBetween.length + conditionalBlank.length + conditionalPaintBlank.length} conditional formats match upstream.`);
+console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length + conditionalBetween.length + conditionalEquals.length + conditionalBlank.length + conditionalPaintBlank.length} conditional formats match upstream.`);
