@@ -112,7 +112,7 @@ func TestCodexConditionalOps(t *testing.T) {
 			}
 		}
 		if i >= 160 && i < 166 {
-			dxf = `<fill><patternFill patternType="solid"><fgColor rgb="FFAA5511"/></patternFill></fill>`
+			dxf = `<fill><patternFill patternType="darkGray"><fgColor rgb="FFAA5511"/></patternFill></fill>`
 		}
 		add("xl/styles.xml", fmt.Sprintf(`<styleSheet><numFmts><numFmt numFmtId="164" formatCode="[Red]0"/></numFmts><fonts><font><name val="Calibri"/><sz val="11"/></font><font><name val="Calibri"/><sz val="11"/><b/></font></fonts><fills><fill/><fill><patternFill patternType="solid"><fgColor rgb="FF00BB00"/></patternFill></fill></fills><borders><border/><border diagonalDown="1"><top style="medium"/><right style="thin"/><diagonal style="dotted"/></border></borders><cellXfs><xf fontId="0" fillId="0" borderId="0"/><xf fontId="1" fillId="1" borderId="1" numFmtId="164" applyAlignment="1"><alignment wrapText="1"/></xf><xf fontId="2" fillId="2" borderId="2"/></cellXfs><dxfs><dxf>%s</dxf></dxfs></styleSheet>`, dxf))
 		style := (i / 8) % 2

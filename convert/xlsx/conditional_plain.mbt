@@ -6,6 +6,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   part : String,
   rows : Array[XlsxRow],
   styles : XlsxStyles,
+  geometry : XlsxSheetGeometry,
   row_count : Int32,
   col_count : Int32,
 ) -> Array[XlsxRow] raise {
@@ -216,8 +217,29 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
     xlsx_reject_conditional()
   }
   let style = self.xlsx_conditional_style(dxf_id)
-  if any_blank_matches && (style.fill is Some(_) || style.border is Some(_)) {
-    xlsx_reject_conditional()
+  let rows = if any_blank_matches &&
+    (style.fill is Some(_) || style.border is Some(_)) {
+    if 4194304L - room > 200000L {
+      xlsx_reject_conditional()
+    }
+    // Upstream skips runs of absent rows in ranges taller than 1001 rows.
+    // Reject those ranges until that traversal is reproduced here.
+    for range in ranges {
+      if range.row_end - range.row_start > 1000L {
+        xlsx_reject_conditional()
+      }
+    }
+    xlsx_materialize_conditional_blanks(
+      rows,
+      geometry,
+      styles.cell_formats.length(),
+      ranges,
+      row_count,
+      col_count,
+      matched,
+    )
+  } else {
+    rows
   }
   xlsx_apply_conditional_style(rows, styles, matched, style)
 }

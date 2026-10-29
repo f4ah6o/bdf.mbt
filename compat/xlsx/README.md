@@ -44,6 +44,8 @@ Conditional comparison cases use `generate_conditional_ops_test.go` and
 `TestCodexConditionalOps`.
 Conditional font cases matching blank cells use `generate_conditional_blank_test.go`
 and `TestCodexConditionalBlank`.
+Blank-cell paint cases use `generate_conditional_paint_blank_test.go` and
+`TestCodexConditionalPaintBlank`.
 To regenerate fixtures, copy `generate_workbook_test.go` without its build tag
 into upstream `converter/xlsx` and run `TestCodexXLSXWorkbook` with
 `BDF_FIXTURE_ROOT` set to this repository.
