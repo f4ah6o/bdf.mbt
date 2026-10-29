@@ -48,6 +48,7 @@ pub fn Font::specimen_whole_sample(Self, Int64) -> Bytes? raise
 pub fn Font::standalone_size(Self) -> Int64
 pub fn Font::subset_program(Self, Array[Int32]) -> Bytes? raise
 pub fn Font::table(Self, String) -> Bytes?
+pub fn Font::table_lengths(Self) -> Array[(String, Int32)]
 
 pub(all) struct Metrics {
   units_per_em : Int32

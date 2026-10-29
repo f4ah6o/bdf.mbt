@@ -15,12 +15,14 @@ waterfall and fallback selection across real and synthetic fonts.
 `variations.json.gz` covers real, truncated and mutated fvar tables.
 `info.json.gz` checks language, variation-sequence and color metadata.
 `kerning.json.gz` checks GPOS and legacy kerning descriptions.
+`overview.json.gz` compares the ordered overview sections and table sizes, including
+WOFF, collections, boundary values, and mutated font tables.
 
 After `moon build --target js`, run `npm run test:specimen` and
 `npm run test:specimen-plan`, `npm run test:specimen-names`,
 `npm run test:specimen-coverage`, `npm run test:specimen-metadata`,
 `npm run test:specimen-glyphs`, `npm run test:specimen-variations`,
-`npm run test:specimen-info`, and
+`npm run test:specimen-info`, `npm run test:specimen-overview`, and
 `npm run test:specimen-visual`. To regenerate, copy `generate_test.go` without
 its first `//go:build ignore` line into the upstream checkout at
 `converter/font/codex_specimen_test.go`, then run:
@@ -65,3 +67,7 @@ run `TestCodexInfoTables` with the same fixture root.
 To regenerate kerning cases, first generate `compat/gsub/gpos.json.gz`, then copy
 `generate-kerning_test.go` without its build tag into upstream `converter/font`
 with `generate_test.go` and run `TestCodexKerning`.
+
+To regenerate overview cases, first generate `compat/specimen/upstream.json.gz`,
+then copy `generate-overview_test.go` without its build tag into upstream
+`converter/font` alongside `generate_test.go` and run `TestCodexOverview`.

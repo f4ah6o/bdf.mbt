@@ -261,3 +261,35 @@ pub fn kerning_description(data : Bytes, index : Int32) -> String {
   }
   abort("missing font face")
 }
+
+///|
+fn overview_row(row : @font.OverviewRow) -> Json {
+  Json::object({
+    "label": Json::string(row.label),
+    "value": Json::string(row.value),
+    "lang": Json::string(row.lang),
+  })
+}
+
+///|
+#export_name("overview")
+pub fn overview(data : Bytes, index : Int32, outlines : Bool) -> String {
+  let file = try! @font.load(data)
+  for face in file.faces() {
+    if face.index == index {
+      let sections = file
+        .overview(face, outlines~)
+        .map(s => {
+          Json::object({
+            "title": Json::string(s.title),
+            "rows": Json::array(s.rows.map(overview_row)),
+          })
+        })
+      return Json::object({
+        "sections": Json::array(sections),
+        "tables": Json::array(face.table_list().map(overview_row)),
+      }).stringify()
+    }
+  }
+  abort("missing font face")
+}

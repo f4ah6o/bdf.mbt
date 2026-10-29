@@ -51,6 +51,7 @@ pub fn FileFace::sample_whole_program(Self) -> Bytes? raise
 pub fn FileFace::script_counts(Self) -> Array[ScriptCount]
 pub fn FileFace::specimen_glyphs(Self) -> Array[SpecimenGlyph]
 pub fn FileFace::specimen_names(Self) -> SpecimenNames
+pub fn FileFace::table_list(Self) -> Array[OverviewRow]
 pub fn FileFace::variations(Self) -> Variations
 
 pub struct FontFile {
@@ -60,7 +61,19 @@ pub struct FontFile {
   // private fields
 }
 pub fn FontFile::faces(Self) -> Array[FileFace]
+pub fn FontFile::overview(Self, FileFace, outlines? : Bool) -> Array[OverviewSection]
 pub fn FontFile::select(Self, String) -> (Array[FileFace], Array[String]) raise
+
+pub(all) struct OverviewRow {
+  label : String
+  value : String
+  lang : String
+}
+
+pub(all) struct OverviewSection {
+  title : String
+  rows : Array[OverviewRow]
+}
 
 pub(all) struct SamplePlan {
   primary : SampleScript?

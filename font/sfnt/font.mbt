@@ -179,3 +179,16 @@ pub fn Font::table(self : Font, tag : String) -> Bytes? {
     None
   }
 }
+
+///|
+/// Return SFNT table names and stored lengths in tag order.
+pub fn Font::table_lengths(self : Font) -> Array[(String, Int32)] {
+  let tags = self.tables.keys().collect()
+  tags.sort()
+  [
+    for tag in tags => {
+      let (_, length) = self.tables[tag]
+      (tag, length)
+    }
+  ]
+}
