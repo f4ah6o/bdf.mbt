@@ -16,6 +16,8 @@ pub fn lyrics(Bytes) -> String
 
 pub fn midi_document(Bytes, Double, Double, Double, String, Bool, Bool, Bool) -> String
 
+pub fn midi_document_options(Bytes, String, String, String, Bool) -> String
+
 pub fn midi_document_tab(Bytes, Double, Double, Double, String, Bool, Bool, Bool) -> String
 
 pub fn midi_document_tab_fonts(Bytes, Bytes, Double, Double, Double, String, Bool, Bool, Bool) -> String

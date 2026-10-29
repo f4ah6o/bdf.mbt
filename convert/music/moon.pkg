@@ -3,6 +3,8 @@ import {
   "f4ah6o/bdf/font/db",
   "f4ah6o/bdf/font/woff2",
   "moonbitlang/core/string",
+  "moonbitlang/core/encoding/utf8",
+  "moonbit-community/ucd",
   "moonbitlang/core/math",
 }
 

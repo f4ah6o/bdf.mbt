@@ -88,6 +88,12 @@ pub fn note_ticks(Int32, Int32) -> Int64
 
 pub fn paginate_systems(Array[MusicSystemExtent], Double, Double, Double) -> Array[MusicSystemPlacement]
 
+pub fn parse_music_key(String) -> KeySig raise MusicParameterError
+
+pub fn parse_music_tab(String) -> Bool raise MusicParameterError
+
+pub fn parse_music_time(String) -> TimeSig raise MusicParameterError
+
 pub fn percussion_durations(Array[QuantizedNote], Array[BeatGrid]) -> Array[QuantizedNote]
 
 pub fn place_accidentals(EngravingClef, Array[EngravingNote], Array[Int32?]) -> Array[PlacedAccidental]
@@ -117,6 +123,10 @@ pub fn write_staff_events(Array[VoiceNote], Array[MeasureSpan], Array[BeatGrid],
 // Errors
 pub suberror MusicPaintError {
   MissingMusicGlyph(String)
+}
+
+pub suberror MusicParameterError {
+  InvalidMusicParameter(String)
 }
 
 pub suberror MusicRenderError {

@@ -44,3 +44,5 @@ Score-view document fixtures use `generate_document_test.go` and `TestCodexMidiD
 The visual fixture uses `generate_visual_test.go` and `TestCodexMidiVisual`. Run `npm run test:midi-visual` after building the JavaScript target to compare the Go and MoonBit score views with vlmkit.
 
 The complete score and TAB document oracles use `generate_document_tab_test.go` and `generate_document_tab_fonts_test.go`, with and without an embedded font. The visual fixture includes both score and TAB views.
+
+Notation and page-range document fixtures use `generate_options_test.go` and `TestCodexMidiOptions` in upstream `converter/midi`.

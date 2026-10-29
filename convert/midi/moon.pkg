@@ -1,5 +1,6 @@
 import {
   "f4ah6o/bdf/core",
+  "f4ah6o/bdf/convert",
   "f4ah6o/bdf/render",
   "f4ah6o/bdf/font/db",
   "f4ah6o/bdf/convert/csv",

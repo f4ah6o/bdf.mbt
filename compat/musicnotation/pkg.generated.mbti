@@ -20,6 +20,8 @@ pub fn guitar_fingering(FixedArray[Int32], Int32) -> String
 
 pub fn guitar_shapes(FixedArray[Int32], Int32, Bool) -> String
 
+pub fn music_params(String) -> String
+
 pub fn music_text(String, Bytes, String, Double, Bool, Bool) -> String
 
 pub fn music_text_fonts(String, Bytes, Int32) -> String

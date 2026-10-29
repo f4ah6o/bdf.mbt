@@ -1120,3 +1120,40 @@ pub fn guitar_fingering(raw : FixedArray[Int32], preset : Int32) -> String {
   }
   Json::array([Json::array(positions), Json::number(result.omitted.to_double())]).stringify()
 }
+
+///|
+#export_name("music_params")
+pub fn music_params(value : String) -> String {
+  let time = try {
+    let t = @music.parse_music_time(value)
+    Json::array([
+      Json::array([
+        Json::number(t.beats.to_double()),
+        Json::number(t.beat_type.to_double()),
+        Json::string(t.symbol),
+      ]),
+      Json::string(""),
+    ])
+  } catch {
+    @music.InvalidMusicParameter(e) =>
+      Json::array([Json::null(), Json::string(e)])
+  }
+  let key = try {
+    let k = @music.parse_music_key(value)
+    Json::array([
+      Json::array([Json::number(k.fifths.to_double()), Json::boolean(k.minor)]),
+      Json::string(""),
+    ])
+  } catch {
+    @music.InvalidMusicParameter(e) =>
+      Json::array([Json::null(), Json::string(e)])
+  }
+  let tab = Json::array([
+    Json::boolean(@music.parse_music_tab(value)),
+    Json::string(""),
+  ]) catch {
+    @music.InvalidMusicParameter(e) =>
+      Json::array([Json::null(), Json::string(e)])
+  }
+  Json::array([time, key, tab]).stringify()
+}

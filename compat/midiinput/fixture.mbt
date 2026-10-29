@@ -1914,3 +1914,58 @@ pub fn midi_document_tab_fonts(
     err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
   }
 }
+
+///|
+#export_name("midi_document_options")
+pub fn midi_document_options(
+  data : Bytes,
+  time : String,
+  key : String,
+  pages : String,
+  tab : Bool,
+) -> String {
+  try {
+    let t = if time == "" { None } else { Some(@music.parse_music_time(time)) }
+    let k = if key == "" { None } else { Some(@music.parse_music_key(key)) }
+    let ranges = @convert.parse_pages(pages)
+    let result = @midi.convert(
+      data,
+      @db.Database::new(),
+      options={
+        page: { width: 400.0, height: 450.0, staff_space: 4.0, title: "", },
+        pages: None,
+        time: t,
+        key: k,
+        no_play: false,
+        no_text_index: false,
+        system_fonts: true,
+        no_subset: false,
+        ignore_restrictions: false,
+        no_woff2: true,
+      },
+      guitar_tab=tab,
+      page_ranges=ranges,
+    )
+    let bytes : Array[Json] = []
+    for b in result.bdf {
+      bytes.push(Json::number(b.to_int().to_double()))
+    }
+    Json::array([
+      Json::array(bytes),
+      Json::array(result.warnings.map(v => Json::string(v))),
+      Json::array(
+        [
+          result.pages,
+          result.systems,
+          result.measures,
+          result.parts,
+          result.staves,
+          result.notes,
+          result.embedded_fonts,
+        ].map(v => Json::number(v.to_double())),
+      ),
+    ]).stringify()
+  } catch {
+    err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
+  }
+}

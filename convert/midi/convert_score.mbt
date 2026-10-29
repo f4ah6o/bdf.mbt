@@ -51,7 +51,7 @@ pub fn convert_score(
   db : @db.Database,
   options~ : MidiScoreOptions = MidiScoreOptions::new(),
 ) -> MidiScoreResult raise {
-  convert_midi(data, db, options, false)
+  convert_midi(data, db, options, false, None)
 }
 
 ///|
@@ -61,8 +61,9 @@ pub fn convert(
   db : @db.Database,
   options~ : MidiScoreOptions = MidiScoreOptions::new(),
   guitar_tab~ : Bool = true,
+  page_ranges~ : Array[@convert.PageSpan]? = None,
 ) -> MidiScoreResult raise {
-  convert_midi(data, db, options, guitar_tab)
+  convert_midi(data, db, options, guitar_tab, page_ranges)
 }
 
 ///|
@@ -106,6 +107,7 @@ fn convert_midi(
   db : @db.Database,
   options : MidiScoreOptions,
   guitar_tab : Bool,
+  page_ranges : Array[@convert.PageSpan]?,
 ) -> MidiScoreResult raise {
   if data.length() > 67108864 {
     raise InvalidMidiInput("midi: the file is larger than 67108864 bytes")
@@ -175,7 +177,16 @@ fn convert_midi(
   for _ in rendered.objects {
     keep.push(false)
   }
-  match options.pages {
+  let requested : Array[Int64]? = match page_ranges {
+    Some(_) =>
+      @convert.page_numbers(page_ranges, rendered.objects.length().to_int64())
+    None =>
+      match options.pages {
+        Some(pages) => Some(pages.map(page => page.to_int64()))
+        None => None
+      }
+  }
+  match requested {
     None =>
       for i in 0..<rendered.objects.length() {
         selected.push(i)
@@ -183,7 +194,7 @@ fn convert_midi(
       }
     Some(pages) =>
       for page in pages {
-        if page < 1 || page > rendered.objects.length() {
+        if page < 1L || page > rendered.objects.length().to_int64() {
           warnings.push(
             "page " +
             page.to_string() +
@@ -192,8 +203,9 @@ fn convert_midi(
             ")",
           )
         } else {
-          selected.push(page - 1)
-          keep[page - 1] = true
+          let index = page.to_int() - 1
+          selected.push(index)
+          keep[index] = true
         }
       }
   }
@@ -231,7 +243,16 @@ fn convert_midi(
     for _ in tab.objects {
       tab_keep.push(false)
     }
-    match options.pages {
+    let requested = match page_ranges {
+      Some(_) =>
+        @convert.page_numbers(page_ranges, tab.objects.length().to_int64())
+      None =>
+        match options.pages {
+          Some(pages) => Some(pages.map(page => page.to_int64()))
+          None => None
+        }
+    }
+    match requested {
       None =>
         for i in 0..<tab.objects.length() {
           tab_selected.push(i)
@@ -239,9 +260,10 @@ fn convert_midi(
         }
       Some(pages) =>
         for n in pages {
-          if n >= 1 && n <= tab.objects.length() {
-            tab_selected.push(n - 1)
-            tab_keep[n - 1] = true
+          if n >= 1L && n <= tab.objects.length().to_int64() {
+            let index = n.to_int() - 1
+            tab_selected.push(index)
+            tab_keep[index] = true
           }
         }
     }
