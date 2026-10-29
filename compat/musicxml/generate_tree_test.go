@@ -1,0 +1,13 @@
+//go:build ignore
+
+// Copy into upstream converter/musicxml and run TestCodexMusicXMLTree.
+package musicxml
+import ("encoding/json"; "encoding/xml"; "sort"; "strings"; "bytes"; "math/rand"; "os"; "path/filepath"; "testing"; "github.com/shibukawa/tinygodriver/encoding/xmlro")
+func TestCodexMusicXMLTree(t *testing.T) {
+ root:=os.Getenv("BDF_FIXTURE_ROOT");if root==""{t.Fatal("BDF_FIXTURE_ROOT required")};samples:=[][]byte{[]byte(`<x a="test" x:b="2">text <b/> after<![CDATA[here]]></x>`),[]byte(`<x><a/> \n <b>text &amp; more</b></x>`),[]byte(`<root><a x=""/><b>1</b><b>2</b></root>`),[]byte(`<x>&copy; &nbsp; &unknown;</x>`),[]byte(`<!DOCTYPE x [<!ENTITY composer "Bach">]><x>&composer;</x>`),[]byte(`<x attr="a &unknown; b">hello &unknown;</x>`)};for _,name:=range []string{"ode_to_joy.mxl","ode_to_joy.musicxml","twinkle_timewise.musicxml","minuet.musicxml"}{b,e:=os.ReadFile(filepath.Join("testdata",name));if e!=nil{t.Fatal(e)};samples=append(samples,b)}
+ samples=append(samples,[]byte("<root>"+strings.Repeat("x",70000)+"</root>"), []byte("<root>"+strings.Repeat("<![CDATA[abc]]>",24000)+"</root>"))
+ keys:=make([]string,0,len(xml.HTMLEntity));for name:=range xml.HTMLEntity{keys=append(keys,name)};sort.Strings(keys);for _,name:=range keys{samples=append(samples,[]byte(`<x a="&`+name+`;">&`+name+`;</x>`))};samples=append(samples,[]byte(`<!DOCTYPE x [<!ENTITY copy "custom">]><x>&copy;</x>`),[]byte(`<x><![CDATA[&copy; &unknown;]]><!-- &copy; -->&copy;</x>`),[]byte(`<x a="&notreal;">&notreal;</x>`),[]byte(`<x><!-- <!ENTITY copy "fake"> -->&copy;</x>`))
+ r:=rand.New(rand.NewSource(78224));fragments:=[]string{`<a/>`,`<b p="1">hello</b>`,`<n:z xmlns:n="urn:x" n:id="id">é</n:z>`,`<v> hello &amp; goodbye </v>`,`<x> \n </x>`,`<q><![CDATA[ hello <world>]]></q>`,`text `,`&#xA;`};for i:=0;i<500;i++{s:="<root>";for j:=0;j<1+r.Intn(20);j++{s+=fragments[r.Intn(len(fragments))]};samples=append(samples,[]byte(s+"</root>"))}
+ var nodeJson func(*node) any;nodeJson=func(n *node)any{attrs:=[]any{};for _,a:=range n.attrs{attrs=append(attrs,[]string{a.name,a.value})};kids:=[]any{};for _,k:=range n.kids{kids=append(kids,nodeJson(k))};return []any{n.name,attrs,n.text,kids}}
+ out:=[]any{};for _,input:=range samples{data,e:=readInput(bytes.NewReader(input),int64(len(input)));if e!=nil{t.Fatal(e)};data,_=toUTF8(data);rd:=newXMLReader(data);for{k,e:=rd.Next();if e!=nil{t.Fatal(e)};if k==xmlro.StartElement{n,e:=readNode(rd);if e!=nil{t.Fatal(e)};out=append(out,map[string]any{"input":input,"want":nodeJson(n)});break};if k==xmlro.EOF{t.Fatal("no root")}}};b,e:=json.Marshal(out);if e!=nil{t.Fatal(e)};if e=os.WriteFile(filepath.Join(root,"compat/musicxml/tree.json"),b,0644);e!=nil{t.Fatal(e)}
+}

@@ -18,6 +18,8 @@ pub fn musicxml_integer(String) -> (Int64, Bool)
 
 pub fn musicxml_is_score_text(String) -> Bool
 
+pub fn musicxml_read_tree(Bytes) -> MusicXmlNode raise MusicXmlInputError
+
 pub fn musicxml_tick_of(Double) -> Int32
 
 pub fn musicxml_to_utf8(Bytes) -> (Bytes, String)
@@ -32,6 +34,20 @@ pub suberror MusicXmlInputError {
 }
 
 // Types and methods
+pub(all) struct MusicXmlAttribute {
+  name : String
+  value : String
+}
+
+pub(all) struct MusicXmlNode {
+  name : String
+  attributes : Array[MusicXmlAttribute]
+  children : Array[MusicXmlNode]
+  mut text : String
+}
+pub fn MusicXmlNode::attr(Self, String) -> String?
+pub fn MusicXmlNode::child(Self, String) -> Self?
+
 pub struct MusicXmlNumbers {
   names : Map[String, Int32]
   taken : Map[Int32, Bool]

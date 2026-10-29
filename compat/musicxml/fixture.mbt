@@ -74,3 +74,25 @@ pub fn musicxml_numbers(max : Int32, names_json : String) -> String {
   }
   Json::array(out).stringify()
 }
+
+///|
+fn musicxml_tree_json(node : @musicxml.MusicXmlNode) -> Json {
+  Json::array([
+    Json::string(node.name),
+    Json::array(
+      node.attributes.map(a => {
+        Json::array([Json::string(a.name), Json::string(a.value)])
+      }),
+    ),
+    Json::string(node.text),
+    Json::array(node.children.map(musicxml_tree_json)),
+  ])
+}
+
+///|
+#export_name("musicxml_tree")
+pub fn musicxml_tree(data : Bytes) -> String {
+  musicxml_tree_json(@musicxml.musicxml_read_tree(data)).stringify() catch {
+    _ => "null"
+  }
+}
