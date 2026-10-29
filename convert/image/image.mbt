@@ -18,7 +18,7 @@ pub(all) struct ImageResult {
 ///|
 /// Convert a BMP, ICO, JPEG, PNG, GIF, WebP, AVIF or SVG to a single-page BDF.
 /// JPEG, PNG, WebP and AVIF support EXIF and XMP metadata, GIF supports XMP,
-/// and JPEG also supports IPTC. Malformed SVG, some XML character encodings,
+/// and JPEG also supports IPTC. Some malformed SVG, XML character encodings,
 /// and PNG Creation Time timezone abbreviations are
 /// not yet supported. The optional
 /// title overrides the document title, while the

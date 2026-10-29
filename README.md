@@ -46,7 +46,7 @@ let cues = @core.decode_cues(cue_bytes)
 let cursor = @render.cursor_at_tick(cues, 480.0)
 ```
 
-The `convert/image` package converts BMP, ICO, JPEG, PNG, GIF, WebP, AVIF and SVG images on both targets, preserving the input bytes and matching upstream page geometry and figure alternative text. JPEG and PNG EXIF orientation and metadata, JPEG IPTC, AVIF rotation, SVG metadata, and UTF-8 or BOM-marked UTF-16 XMP are supported. WebP EXIF orientation is reported but not applied, matching browsers. Malformed SVG and XMP, other XML encodings, and PNG Creation Time timezone abbreviations are not yet supported. `bdf_create_native_converter` exposes the supported formats through a browser Worker without a Go runtime.
+The `convert/image` package converts BMP, ICO, JPEG, PNG, GIF, WebP, AVIF and SVG images on both targets, preserving the input bytes and matching upstream page geometry and figure alternative text. JPEG and PNG EXIF orientation and metadata, JPEG IPTC, AVIF rotation, SVG metadata, and UTF-8 or BOM-marked UTF-16 XMP are supported. WebP EXIF orientation is reported but not applied, matching browsers. Some malformed SVG and XMP, other XML encodings, and PNG Creation Time timezone abbreviations are not yet supported. `bdf_create_native_converter` exposes the supported formats through a browser Worker without a Go runtime.
 
 `DocumentWriter` accepts manifest-format JSON for metadata, views and tables, and writes an unencrypted single-file document with content-addressed, deduplicated parts. It chooses identity or raw DEFLATE storage using the upstream defaults. It does not yet generate object drawing commands or encrypted and split output.
 

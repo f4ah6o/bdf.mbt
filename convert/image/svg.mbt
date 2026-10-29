@@ -92,6 +92,33 @@ fn svg_has_trailing_content(text : String) -> Bool {
 }
 
 ///|
+// Accept a partial tree only for an end-of-input error. Other XML errors can
+// have different recovery rules upstream and must not silently lose metadata.
+fn svg_is_truncated(text : String) -> Bool {
+  let reader = @xml.NamespaceReader::from_string(text)
+  while true {
+    let event = reader.read_event() catch {
+      @xml.At(error~, span~) =>
+        match error {
+          @xml.UnexpectedEof => return true
+          @xml.InvalidSyntax(message) =>
+            return message.has_prefix("unclosed element: <") ||
+              (
+                span.end.offset == text.length() &&
+                message == "expected '>' or '/>' at end of start tag"
+              )
+          _ => return false
+        }
+      _ => return false
+    }
+    if event.kind is Eof {
+      return false
+    }
+  }
+  false
+}
+
+///|
 fn read_svg(data : Bytes) -> Picture raise {
   guard svg_decode(data, false) is Some((text, utf16)) else {
     raise ImageFailure("image: SVG encoding is not yet supported")
@@ -107,7 +134,10 @@ fn read_svg(data : Bytes) -> Picture raise {
         "image: input is not a supported BMP, ICO, JPEG, PNG, GIF, WebP, AVIF or SVG image",
       )
     }
-    raise ImageFailure("image: malformed SVG is not yet supported")
+    // The upstream parser keeps the root and any children read before EOF.
+    if root is None || !svg_is_truncated(text) {
+      raise ImageFailure("image: malformed SVG is not yet supported")
+    }
   }
   guard root is Some(root) && root.name == "svg" else {
     raise ImageFailure("image: SVG: the SVG document has no root element")

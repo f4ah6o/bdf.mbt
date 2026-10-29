@@ -12,8 +12,7 @@ for (const expected of fixtures) {
   assert.deepEqual(convert_warnings(input), expected.warnings);
   for (const [n, accepted] of Object.entries(expected.prefixes)) {
     const actual = accepts(input.subarray(0, Number(n)));
-    // The upstream SVG reader tolerates malformed, truncated XML; the native
-    // converter currently rejects it explicitly.
+    // Some XML syntax errors are still rejected even when upstream recovers.
     if (expected.format === 'svg' && accepted && !actual && Number(n) < input.length) continue;
     assert.equal(actual, accepted, `${expected.name}: prefix ${n}`);
   }
@@ -27,4 +26,4 @@ for (const expected of fixtures) {
   const object = doc.manifest.views[0].pages[0].layers[0].obj;
   assert.deepEqual(Buffer.from(await doc.part(object)), Buffer.from(expected.object, 'base64'));
 }
-console.log('Image conversion compatibility: BMP, ICO, JPEG, PNG, GIF, WebP, AVIF and SVG match upstream pages, original bytes and BOBJ. Truncated SVG acceptance is not yet compatible.');
+console.log('Image conversion compatibility: BMP, ICO, JPEG, PNG, GIF, WebP, AVIF and SVG match upstream pages, original bytes and BOBJ. Some malformed SVG acceptance remains unsupported.');

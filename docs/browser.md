@@ -164,7 +164,7 @@ converter.terminate();
 `open()` returns the complete document with `pages: 0` for these formats.
 The native Worker currently supports BMP, ICO, JPEG, PNG, GIF, WebP, AVIF and SVG, and rejects
 the `fonts` option. JPEG, PNG, WebP and AVIF support EXIF and XMP metadata, GIF supports
-XMP, SVG supports RDF metadata, and JPEG also supports IPTC. Malformed SVG or XMP, other XML character encodings and PNG Creation Time timezone
+XMP, SVG supports RDF metadata, and JPEG also supports IPTC. Some malformed SVG or XMP, other XML character encodings and PNG Creation Time timezone
 abbreviations are not yet supported. `bdf_converter_client`
 can also wrap its Worker; pass an empty Wasm URL. Other conversion engines remain to be ported.
 

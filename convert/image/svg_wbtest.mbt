@@ -22,4 +22,16 @@ test "SVG trailing content is distinguished from malformed SVG" {
     _ => false
   }
   assert_true(invalid)
+  let unknown_entity = good.replace(
+    old="/>",
+    new="><title>&unknown;</title></svg>",
+  )
+  let rejected = try {
+    ignore(convert(@utf8.encode(unknown_entity)))
+    false
+  } catch {
+    ImageFailure(message) => message.contains("malformed SVG")
+    _ => false
+  }
+  assert_true(rejected)
 }
