@@ -10,6 +10,11 @@ const allowed = ['/compat/mml/', '/node_modules/@bdfkit/', '/_build/js/debug/bui
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript' };
 const server = createServer((request, response) => {
   const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
+  if (pathname === '/compat/mml/render-pending') {
+    response.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' });
+    response.flushHeaders();
+    return;
+  }
   const file = path.resolve(root, '.' + pathname);
   if (!allowed.some(prefix => file.startsWith(path.resolve(root, '.' + prefix) + path.sep))) { response.writeHead(403).end(); return; }
   const stream = createReadStream(file);
@@ -31,7 +36,6 @@ try {
       const page = await browser.newPage(); const errors = [];
       page.on('pageerror', error => errors.push(String(error)));
       await page.goto(base + name + '.html', { waitUntil: 'networkidle' });
-      await page.waitForFunction(() => window.bdfStatus === 'ready' || window.bdfStatus === 'error');
       const result = await page.evaluate(() => ({ status: window.bdfStatus, error: window.bdfError, count: document.querySelectorAll('canvas').length }));
       assert.equal(result.status, 'ready', result.error); assert.ok(result.count >= 2); assert.deepEqual(errors, []);
       await page.close();

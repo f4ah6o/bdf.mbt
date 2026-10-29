@@ -1,6 +1,10 @@
 import { BdfDocument, BufferSource } from '@bdfkit/core';
 import { PageRenderer } from '@bdfkit/render';
 import { mml_document } from '/_build/js/debug/build/compat/mml/mml.js';
+// Keep the page's network activity open until the asynchronous canvases finish.
+// vlmkit navigates with networkidle before taking its own screenshots.
+const renderGate = new AbortController();
+fetch('./render-pending', { signal: renderGate.signal }).then(response => response.text()).catch(() => {});
 try {
   const response = await fetch('./visual.json.gz');
   const json = await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).text();
@@ -19,3 +23,4 @@ try {
   }
   window.bdfStatus = 'ready';
 } catch (error) { window.bdfStatus = 'error'; window.bdfError = String(error?.stack ?? error); console.error(error); }
+finally { renderGate.abort(); }
