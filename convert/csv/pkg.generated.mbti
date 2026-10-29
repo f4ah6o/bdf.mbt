@@ -10,6 +10,8 @@ pub fn decode_text(Bytes, charset? : String) -> DecodedText raise
 
 pub fn detect_dialect(String, cut? : Bool, delimiter? : Byte, quote? : Int32) -> DialectGuess raise
 
+pub fn guess_language(String, String) -> String
+
 pub fn has_header(Array[Array[String]]) -> Bool
 
 pub fn looks_date_time(String) -> Bool
@@ -17,6 +19,8 @@ pub fn looks_date_time(String) -> Bool
 pub fn looks_numeric(String) -> Bool
 
 pub fn parse(Bytes, charset? : String, delimiter? : Byte, quote? : Int32, header? : Header) -> ParseResult raise
+
+pub fn prepare_grid(ParseResult) -> Grid
 
 pub fn read_records(String, Dialect) -> Records raise
 
@@ -44,6 +48,16 @@ pub(all) struct DialectGuess {
   fields : Int32
   score : Double
   numbers : Int32
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Grid {
+  rows : Array[Array[GridCell]]
+  header_rows : Int32
+} derive(Eq, @debug.Debug)
+
+pub(all) struct GridCell {
+  text : String
+  number : Bool
 } derive(Eq, @debug.Debug)
 
 pub(all) enum Header {
