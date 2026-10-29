@@ -36,3 +36,5 @@ Generate the Unicode letter and script table with the upstream Go toolchain:
 ```sh
 go run compat/midiinput/generate_lyric_scripts.go > convert/midi/lyric_scripts.mbt
 ```
+
+Regenerated MIDI playback fixtures use `generate_smf_test.go` and `TestCodexGeneratedSMF`, reading `score.json`; they include waits longer than an SMF delta can encode.

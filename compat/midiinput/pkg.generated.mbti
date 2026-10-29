@@ -8,6 +8,8 @@ pub fn detect(Bytes) -> Bool
 
 pub fn file_credits(Bytes) -> String
 
+pub fn generated_smf(Bytes) -> String
+
 pub fn header(Bytes, Int32) -> String
 
 pub fn lyrics(Bytes) -> String

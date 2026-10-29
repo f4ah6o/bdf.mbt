@@ -1500,3 +1500,20 @@ pub fn score_cues(
     err => Json::object({ "error": Json::string(err.to_string()) }).stringify()
   }
 }
+
+///|
+#export_name("generated_smf")
+pub fn generated_smf(data : Bytes) -> String {
+  try {
+    let performance = @midi.performance(@midi.read_file(data))
+    let smf = @midi.performance_smf(performance)
+    let output : Array[Json] = []
+    for byte in smf {
+      output.push(Json::number(byte.to_int().to_double()))
+    }
+    Json::array(output).stringify()
+  } catch {
+    @midi.InvalidMidiInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+  }
+}
