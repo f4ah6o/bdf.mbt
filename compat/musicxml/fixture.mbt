@@ -96,3 +96,42 @@ pub fn musicxml_tree(data : Bytes) -> String {
     _ => "null"
   }
 }
+
+///|
+#export_name("musicxml_header")
+pub fn musicxml_header(data : Bytes) -> String {
+  try {
+    let header = @musicxml.musicxml_header(@musicxml.musicxml_read_tree(data))
+    let parts = header.parts.map(fn(p) {
+      let inst = p.instruments.map(fn(v) {
+        Json::array([
+          Json::string(v.id),
+          Json::number(v.channel.to_double()),
+          Json::number(v.program.to_double()),
+          Json::number(v.unpitched.to_double()),
+          Json::number(v.volume.to_double()),
+          Json::number(v.pan.to_double()),
+        ])
+      })
+      Json::array([
+        Json::string(p.id),
+        Json::string(p.name),
+        Json::string(p.abbreviation),
+        Json::string(p.track_name),
+        Json::array(inst),
+      ])
+    })
+    Json::array([
+      Json::string(header.title),
+      Json::string(header.subtitle),
+      Json::string(header.composer),
+      Json::string(header.lyricist),
+      Json::string(header.arranger),
+      Json::string(header.rights),
+      Json::array(parts),
+      Json::array(header.warnings.map(v => Json::string(v))),
+    ]).stringify()
+  } catch {
+    _ => "null"
+  }
+}

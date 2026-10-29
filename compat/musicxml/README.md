@@ -1,7 +1,7 @@
 # MusicXML input compatibility fixtures
 
 These fixtures compare text detection, UTF-16 byte-order recognition, XML
-encoding declarations, text repair, MXL score selection, numeric values, voice numbering and element trees against upstream `converter/musicxml`.
+encoding declarations, text repair, MXL score selection, numeric values, voice numbering, element trees and score headers against upstream `converter/musicxml`.
 After building the JavaScript target, run `npm run test:musicxml-input`.
 
 To regenerate the fixtures, copy each `generate_*_test.go` without its build tag

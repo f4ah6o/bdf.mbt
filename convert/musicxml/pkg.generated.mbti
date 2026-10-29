@@ -14,6 +14,8 @@ pub fn musicxml_float(String) -> (Double, Bool)
 
 pub fn musicxml_head_text(Bytes) -> String
 
+pub fn musicxml_header(MusicXmlNode) -> MusicXmlHeader
+
 pub fn musicxml_integer(String) -> (Int64, Bool)
 
 pub fn musicxml_is_score_text(String) -> Bool
@@ -39,6 +41,26 @@ pub(all) struct MusicXmlAttribute {
   value : String
 }
 
+pub(all) struct MusicXmlHeader {
+  title : String
+  subtitle : String
+  composer : String
+  lyricist : String
+  arranger : String
+  rights : String
+  parts : Array[MusicXmlPartHeader]
+  warnings : Array[String]
+}
+
+pub(all) struct MusicXmlInstrument {
+  id : String
+  channel : Int32
+  program : Int32
+  unpitched : Int32
+  volume : Int32
+  pan : Int32
+}
+
 pub(all) struct MusicXmlNode {
   name : String
   attributes : Array[MusicXmlAttribute]
@@ -56,6 +78,14 @@ pub struct MusicXmlNumbers {
 }
 pub fn MusicXmlNumbers::get(Self, String) -> Int32
 pub fn MusicXmlNumbers::new(Int32) -> Self
+
+pub(all) struct MusicXmlPartHeader {
+  id : String
+  name : String
+  abbreviation : String
+  track_name : String
+  instruments : Array[MusicXmlInstrument]
+}
 
 // Type aliases
 

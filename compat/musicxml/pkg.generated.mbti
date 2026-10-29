@@ -4,6 +4,8 @@ package "f4ah6o/bdf/compat/musicxml"
 // Values
 pub fn musicxml_detect_text(Bytes) -> String
 
+pub fn musicxml_header(Bytes) -> String
+
 pub fn musicxml_mxl(Bytes) -> String
 
 pub fn musicxml_numbers(Int32, String) -> String
