@@ -100,6 +100,8 @@ pub fn render_feature_view(Bytes, Int32, Bytes, Bool, Bool, String, Int32) -> Gl
 
 pub fn render_glyph_view(Bytes, Int32, Bytes, Bool, Bool, String) -> GlyphViewFixture
 
+pub fn render_overview_view(Bytes, Int32, Bytes, Bool, Bool, String, String) -> GlyphViewFixture
+
 pub fn sample_plan(Bytes, Int32, String) -> String
 
 pub fn sample_program(Bytes, Int32) -> Bytes

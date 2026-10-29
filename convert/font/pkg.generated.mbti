@@ -112,6 +112,7 @@ pub struct FontFile {
 pub fn FontFile::document_plan(Self, String, String) -> SpecimenDocumentPlan raise
 pub fn FontFile::faces(Self) -> Array[FileFace]
 pub fn FontFile::overview(Self, FileFace, outlines? : Bool) -> Array[OverviewSection]
+pub fn FontFile::overview_view(Self, FileFace, SpecimenTexter, SamplePlan, Bool) -> SpecimenOverviewView
 pub fn FontFile::prepare_programs(Self, @core.DocumentWriter, String, String, ignore_restrictions? : Bool) -> SpecimenPrograms raise
 pub fn FontFile::select(Self, String) -> (Array[FileFace], Array[String]) raise
 
@@ -275,6 +276,11 @@ pub struct SpecimenOutlines {
 }
 pub fn SpecimenOutlines::bounds(Self, Int32) -> (Double, Double, Double, Double)?
 pub fn SpecimenOutlines::path(Self, Int32) -> @core.Path?
+
+pub struct SpecimenOverviewView {
+  // private fields
+}
+pub fn SpecimenOverviewView::render(Self, SpecimenFacePrograms, SpecimenUIFonts) -> Array[SpecimenRenderedPage] raise
 
 pub struct SpecimenPagePainter {
   // private fields
