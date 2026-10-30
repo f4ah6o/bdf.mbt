@@ -120,6 +120,7 @@ pub(all) struct GridRichColorRun {
   family_override : Bool
   family : String
   east_asian : String
+  size : Double
   bold : Bool
   italic : Bool
   underline : String

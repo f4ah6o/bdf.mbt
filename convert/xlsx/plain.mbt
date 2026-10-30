@@ -1306,6 +1306,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         if rich_cells.get(row.index) is Some(columns) &&
           columns.get(cell.column) is Some(run) &&
           !run.segments.is_empty() {
+          let alignment = styles.cell_formats[format_index].alignment
           if font.vertical != "" ||
             (
               horizontal != "general" &&
@@ -1333,7 +1334,35 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             let color = match segment.font {
               None => default_color
               Some(segment_font) => {
-                if (segment_font.size != 0.0 && segment_font.size != font.size) ||
+                let varying = segment_font.size > 0.0 &&
+                  segment_font.size != font.size
+                if (
+                    varying &&
+                    (
+                      alignment.wrap ||
+                      alignment.shrink ||
+                      (
+                        horizontal != "general" &&
+                        horizontal != "left" &&
+                        horizontal != "right" &&
+                        horizontal != "center" &&
+                        horizontal != "centerContinuous"
+                      ) ||
+                      run.text.length() > 1024 ||
+                      run.text.trim().to_string() != run.text ||
+                      !run.text.iter().all(ch => ch.to_int() >= 0x20) ||
+                      !run.segments
+                      .iter()
+                      .all(part => {
+                        part.text == "" ||
+                        (
+                          part.font is Some(f) &&
+                          f.size > 0.0 &&
+                          f.size <= font.size
+                        )
+                      })
+                    )
+                  ) ||
                   segment_font.vertical != "" {
                   raise InvalidXlsxInput(
                     "xlsx: plain conversion does not support these styled rich text runs",
@@ -1407,6 +1436,11 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
                 family_override,
                 family,
                 east_asian,
+                size: match segment.font {
+                  Some(font) if font.size != 0.0 &&
+                    font.size != styles.fonts[font_index].size => font.size
+                  _ => 0.0
+                },
                 bold,
                 italic,
                 underline,
@@ -2041,23 +2075,52 @@ fn xlsx_apply_plain_run_fonts(
           let base = styles.fonts[font_index]
           let mut size = 0.0
           let mut uniform = true
+          let mut all_explicit = true
+          let mut max_size = 0.0
           for segment in segments {
             if segment.text == "" {
               continue
             }
             let effective = match segment.font {
               Some(font) if font.size > 0.0 => font.size
-              _ => base.size
+              _ => {
+                all_explicit = false
+                base.size
+              }
             }
+            max_size = Double::max(max_size, effective)
             if size == 0.0 {
               size = effective
             } else if size != effective {
               uniform = false
             }
           }
-          if uniform && size > 0.0 && size != base.size {
+          let al = format.alignment
+          let safe_varying = !uniform &&
+            all_explicit &&
+            !al.wrap &&
+            !al.shrink &&
+            (
+              al.horizontal == "general" ||
+              al.horizontal == "left" ||
+              al.horizontal == "right" ||
+              al.horizontal == "center" ||
+              al.horizontal == "centerContinuous"
+            ) &&
+            run is Some(run) &&
+            run.text.length() <= 1024 &&
+            run.text.trim().to_string() == run.text &&
+            run.text.iter().all(ch => ch.to_int() >= 0x20)
+          let target_size = if uniform {
+            size
+          } else if safe_varying {
+            max_size
+          } else {
+            0.0
+          }
+          if target_size > 0.0 && target_size != base.size {
             let new_font = styles.fonts.length()
-            styles.fonts.push({ ..base, size, })
+            styles.fonts.push({ ..base, size: target_size, })
             let new_style = styles.cell_formats.length()
             styles.cell_formats.push({ ..format, font: new_font, })
             { ..cell, style: new_style, }

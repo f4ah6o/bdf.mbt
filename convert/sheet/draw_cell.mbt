@@ -64,6 +64,7 @@ fn grid_cell_layout(
   overflow_end~ : Int32 = -1,
   allow_overflow~ : Bool = true,
   force_wrap~ : Bool = false,
+  line_width~ : Double? = None,
   indent~ : Double = 0.0,
 ) -> DrawCell {
   let x = col_positions[column]
@@ -81,6 +82,9 @@ fn grid_cell_layout(
     bold~,
     advance~,
   )
+  if !wraps && line_width is Some(width) && !lines.is_empty() {
+    lines[0] = { ..lines[0], width, }
+  }
   if !wraps &&
     cell.number &&
     grid_total_width(lines[0].text, bold, advance) > available + 0.01 {

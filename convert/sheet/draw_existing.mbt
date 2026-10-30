@@ -56,6 +56,7 @@ pub(all) struct GridRichColorRun {
   family_override : Bool
   family : String
   east_asian : String
+  size : Double
   bold : Bool
   italic : Bool
   underline : String
@@ -379,6 +380,45 @@ pub fn draw_sized_grid_no_fonts(
       }
       let text = sized_grid_text(cell.text, wrap)
       let display : Cell = { text, number: cell.number, }
+      let rich_runs = match rich_colors.get(i) {
+        Some(columns) => columns.get(column).unwrap_or([])
+        None => []
+      }
+      let mut varying = false
+      for run in rich_runs {
+        if run.size.is_nan() || run.size.is_inf() || run.size < 0.0 {
+          raise InvalidArgument("invalid styled run size")
+        }
+        if run.size > 0.0 {
+          varying = true
+        }
+      }
+      let mut rich_width = 0.0
+      if varying {
+        if wrap ||
+          scale != 1.0 ||
+          script != "" ||
+          text.length() > 1024 ||
+          text.trim().to_string() != text {
+          raise InvalidArgument("varying run sizes require one unscaled line")
+        }
+        let mut shown = 0
+        for run in rich_runs {
+          let run_size = if run.size > 0.0 { run.size } else { draw_size }
+          for ch in run.text {
+            if ch.to_int() < 0x20 {
+              raise InvalidArgument("varying run sizes require printable text")
+            }
+            shown += 1
+            if shown > 1024 {
+              raise InvalidArgument(
+                "varying run sizes exceed the supported length",
+              )
+            }
+            rich_width += sized_fallback_advance(ch, run.bold, run_size)
+          }
+        }
+      }
       let initial = grid_cell_layout(
         row,
         display,
@@ -394,6 +434,7 @@ pub fn draw_sized_grid_no_fonts(
         overflow_end=overflow_last,
         allow_overflow=last_row == i,
         force_wrap=wrap,
+        line_width=if varying { Some(rich_width) } else { None },
         indent~,
       )
       let horizontal : DrawCell = if centered.get(column).unwrap_or(false) {
@@ -521,10 +562,6 @@ pub fn draw_sized_grid_no_fonts(
         } else {
           ""
         })
-      let rich_runs = match rich_colors.get(i) {
-        Some(columns) => columns.get(column).unwrap_or([])
-        None => []
-      }
       let rich_lines : Array[Array[GridRichColorRun]] = []
       if !rich_runs.is_empty() {
         let chars : Array[Char] = []

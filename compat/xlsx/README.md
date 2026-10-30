@@ -117,7 +117,7 @@ Their coverage uses `generate_multi_color_runs_test.go`,
 `generate_multi_color_runs_unsupported_test.go`,
 `generate_multi_font_runs_test.go`, `generate_multi_font_runs_geometry_test.go`,
 `generate_multi_font_runs_conditional_test.go`, `generate_multi_font_precision_test.go`
-and `generate_multi_font_legacy_test.go`. Other multi-run styles remain unsupported.
+and `generate_multi_font_legacy_test.go`.
 Alignment and Unicode coverage uses `generate_multi_align_runs_test.go`,
 `generate_multi_align_runs_geometry_test.go`, `generate_multi_align_runs_conditional_test.go`,
 `generate_multi_align_precision_test.go`, `generate_multi_unicode_runs_test.go`,
@@ -161,3 +161,10 @@ Blank-cell paint cases use `generate_conditional_paint_blank_test.go` and
 To regenerate fixtures, copy `generate_workbook_test.go` without its build tag
 into upstream `converter/xlsx` and run `TestCodexXLSXWorkbook` with
 `BDF_FIXTURE_ROOT` set to this repository.
+
+Varying explicit run sizes are supported on an unscaled single line with no
+leading or trailing whitespace. Coverage uses `generate_multi_varying_size_test.go`,
+`generate_multi_varying_aligned_test.go`, `generate_multi_varying_unicode_test.go`,
+`generate_multi_varying_unicode_aligned_test.go`, `generate_multi_varying_height_test.go`,
+`generate_multi_varying_conditional_test.go`, `generate_multi_varying_fuzz_test.go`
+and `generate_multi_varying_unsupported_test.go`.

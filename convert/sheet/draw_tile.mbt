@@ -301,6 +301,7 @@ fn DrawTile::emit_cell(
         } else {
           east_asian
         }
+        let run_size = if run.size > 0.0 { run.size } else { size }
         let mut chars = StringBuilder()
         let mut has_chars = false
         let mut cjk = false
@@ -323,7 +324,7 @@ fn DrawTile::emit_cell(
               run.color,
               face,
               hash,
-              size~,
+              size=run_size,
               italic=run.italic,
               underline=run.underline,
               strike=run.strike,
@@ -335,7 +336,11 @@ fn DrawTile::emit_cell(
           has_chars = true
           cjk = next_cjk
           chars.write_char(character)
-          let step = advance(character, run.bold)
+          let step = if run.size > 0.0 {
+            sized_fallback_advance(character, run.bold, run.size)
+          } else {
+            advance(character, run.bold)
+          }
           width += step
           offset += step
         }
@@ -354,7 +359,7 @@ fn DrawTile::emit_cell(
             run.color,
             face,
             hash,
-            size~,
+            size=run_size,
             italic=run.italic,
             underline=run.underline,
             strike=run.strike,
