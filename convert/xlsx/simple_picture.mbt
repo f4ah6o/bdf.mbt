@@ -795,8 +795,15 @@ fn xlsx_crop_svg_size(image : Bytes) -> (Double, Double)? {
         }
         let mut width : Double? = None
         let mut height : Double? = None
+        let mut view_box : String? = None
         for attr in element.attributes {
           if attr.name.namespace_uri is None &&
+            attr.name.local_name == "viewBox" {
+            if view_box is Some(_) {
+              return None
+            }
+            view_box = Some(attr.value)
+          } else if attr.name.namespace_uri is None &&
             (
               attr.name.local_name == "width" ||
               attr.name.local_name == "height"
@@ -818,16 +825,74 @@ fn xlsx_crop_svg_size(image : Bytes) -> (Double, Double)? {
             }
           }
         }
-        return match (width, height) {
-          (Some(w), Some(h)) => Some((w, h))
-          _ => None
+        if (width, height) is (Some(w), Some(h)) {
+          return Some((w, h))
         }
+        let box = match view_box {
+          Some(box) => box
+          None => return None
+        }
+        let (vw, vh) = match xlsx_crop_svg_viewbox(box) {
+          Some(size) => size
+          None => return None
+        }
+        let (w, h) = match (width, height) {
+          (Some(w), None) => (w, w * vh / vw)
+          (None, Some(h)) => (h * vw / vh, h)
+          (None, None) => (vw, vh)
+          (Some(w), Some(h)) => (w, h)
+        }
+        if w <= 0.0 ||
+          h <= 0.0 ||
+          w > 1000000.0 ||
+          h > 1000000.0 ||
+          w.is_inf() ||
+          h.is_inf() {
+          return None
+        }
+        return Some((w, h))
       }
       End(_) | Eof => return None
       _ => ()
     }
   }
   None
+}
+
+///|
+fn xlsx_crop_svg_viewbox(value : String) -> (Double, Double)? {
+  let fields : Array[String] = []
+  let word = StringBuilder()
+  for ch in value {
+    if ch == ',' || ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' {
+      let part = word.to_string()
+      if part != "" {
+        fields.push(part)
+        word.reset()
+      }
+    } else {
+      word.write_char(ch)
+    }
+    if fields.length() > 4 {
+      return None
+    }
+  }
+  let part = word.to_string()
+  if part != "" {
+    fields.push(part)
+  }
+  if fields.length() != 4 {
+    return None
+  }
+  let w = match xlsx_int(fields[2]) {
+    Some(v) if v > 0L && v <= 1000000L => v
+    _ => return None
+  }
+  let h = match xlsx_int(fields[3]) {
+    Some(v) if v > 0L && v <= 1000000L => v
+    _ => return None
+  }
+  Some((w.to_double(), h.to_double()))
 }
 
 ///|
