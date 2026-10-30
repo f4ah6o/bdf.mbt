@@ -79,7 +79,7 @@ func TestCodexPlainRun(t *testing.T) {
 		}
 		out = append(out, map[string]any{"input": b.Bytes(), "bdf": rendered.Bytes(), "warnings": x.Warnings, "mode": "none", "no_index": true})
 	}
-	for name, v := range map[string]any{"plain-run.json": out, "plain-run-unsupported.json": rejects} {
+	for name, v := range map[string]any{"plain-run.json": out, "plain-run-unsupported-original.json": rejects} {
 		data, e := json.Marshal(v)
 		if e != nil {
 			t.Fatal(e)

@@ -1346,10 +1346,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               Some(segment_font) => {
                 if segment_font.name != "" ||
                   segment_font.size != 0.0 ||
-                  segment_font.bold ||
-                  segment_font.italic ||
-                  segment_font.underline != "" ||
-                  segment_font.strike ||
                   segment_font.vertical != "" {
                   raise InvalidXlsxInput(
                     "xlsx: plain conversion does not support these styled rich text runs",
@@ -1380,7 +1376,19 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
                 text: segments[last].text + segment.text,
               }
             } else {
-              segments.push({ text: segment.text, color, })
+              let (bold, italic, underline, strike) = match segment.font {
+                None => (false, false, "", false)
+                Some(font) =>
+                  (font.bold, font.italic, font.underline, font.strike)
+              }
+              segments.push({
+                text: segment.text,
+                color,
+                bold,
+                italic,
+                underline,
+                strike,
+              })
             }
             previous_plain = plain
           }

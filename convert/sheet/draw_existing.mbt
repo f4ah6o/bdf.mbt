@@ -53,6 +53,10 @@ pub(all) struct GridTextDecoration {
 pub(all) struct GridRichColorRun {
   text : String
   color : UInt32
+  bold : Bool
+  italic : Bool
+  underline : String
+  strike : Bool
 }
 
 ///|

@@ -58,7 +58,7 @@ func TestCodexMultiColorRunsUnsupported(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	if e = os.WriteFile(filepath.Join(root, "compat/xlsx/multi-color-runs-unsupported.json"), data, 0644); e != nil {
+	if e = os.WriteFile(filepath.Join(root, "compat/xlsx/multi-color-runs-unsupported-original.json"), data, 0644); e != nil {
 		t.Fatal(e)
 	}
 }

@@ -117,6 +117,10 @@ pub(all) struct GridMergeRegion {
 pub(all) struct GridRichColorRun {
   text : String
   color : UInt32
+  bold : Bool
+  italic : Bool
+  underline : String
+  strike : Bool
 }
 
 pub(all) struct GridSolidFill {

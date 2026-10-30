@@ -284,31 +284,33 @@ fn DrawTile::emit_cell(
       self.object.mark(if line.cjk_wrap { 5 } else { 1 }, "")
     }
     if !rich_runs.is_empty() {
-      let mut x = line.x
+      let mut offset = 0.0
       for run in rich_runs {
         if run.text == "" {
           continue
         }
         let mut width = 0.0
+        let start = offset
         for character in run.text {
-          width += advance(character, bold)
+          let step = advance(character, run.bold)
+          width += step
+          offset += step
         }
         self.text_run(
           run.text,
-          x,
+          line.x + start,
           line.baseline,
           width,
           family,
-          bold,
+          run.bold,
           run.color,
           face,
           hash,
           size~,
-          italic~,
-          underline~,
-          strike~,
+          italic=run.italic,
+          underline=run.underline,
+          strike=run.strike,
         )
-        x += width
       }
     } else {
       match fontset {

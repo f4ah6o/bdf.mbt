@@ -105,12 +105,27 @@ const multiColorRunsConditional = JSON.parse(await readFile(new URL('./multi-col
 assert.equal(multiColorRunsConditional.length, 160, 'multiple color run conditional fixture count');
 for (const [j, c] of multiColorRunsConditional.entries()) await verifyCase(c, `multiple color run conditional ${j}`);
 const unsupportedMultiColorRuns = JSON.parse(await readFile(new URL('./multi-color-runs-unsupported.json', import.meta.url)));
-assert.equal(unsupportedMultiColorRuns.length, 32, 'unsupported multiple color run fixture count');
+assert.equal(unsupportedMultiColorRuns.length, 31, 'unsupported multiple color run fixture count');
 for (const encoded of unsupportedMultiColorRuns) {
   const input = Buffer.from(encoded, 'base64');
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported styled runs must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /styled rich text runs/);
 }
+const multiFontRuns = JSON.parse(await readFile(new URL('./multi-font-runs.json', import.meta.url)));
+assert.equal(multiFontRuns.length, 320, 'multiple font run fixture count');
+for (const [j, c] of multiFontRuns.entries()) await verifyCase(c, `multiple font runs ${j}`);
+const multiFontRunsGeometry = JSON.parse(await readFile(new URL('./multi-font-runs-geometry.json', import.meta.url)));
+assert.equal(multiFontRunsGeometry.length, 256, 'multiple font run geometry fixture count');
+for (const [j, c] of multiFontRunsGeometry.entries()) await verifyCase(c, `multiple font run geometry ${j}`);
+const multiFontRunsConditional = JSON.parse(await readFile(new URL('./multi-font-runs-conditional.json', import.meta.url)));
+assert.equal(multiFontRunsConditional.length, 160, 'multiple font run conditional fixture count');
+for (const [j, c] of multiFontRunsConditional.entries()) await verifyCase(c, `multiple font run conditional ${j}`);
+const multiFontPrecision = JSON.parse(await readFile(new URL('./multi-font-precision.json', import.meta.url)));
+assert.equal(multiFontPrecision.length, 400, 'multiple font run precision fixture count');
+for (const [j, c] of multiFontPrecision.entries()) await verifyCase(c, `multiple font run precision ${j}`);
+const multiFontLegacy = JSON.parse(await readFile(new URL('./multi-font-legacy.json', import.meta.url)));
+assert.equal(multiFontLegacy.length, 3, 'multiple font run legacy fixture count');
+for (const [j, c] of multiFontLegacy.entries()) await verifyCase(c, `multiple font run legacy ${j}`);
 const links = JSON.parse(await readFile(new URL('./links.json', import.meta.url)));
 assert.equal(links.length, 200, 'hyperlink fixture count');
 for (const [j, c] of links.entries()) await verifyCase(c, `hyperlink ${j}`);
@@ -433,7 +448,7 @@ for (const [j, encoded] of unsupportedLinks.entries()) {
   assert.match(xlsx_render_error(input, 'none', true), j < 2 ? /unsupported hyperlink URL/ : /links exceed the supported tile budget/);
 }
 const unsupportedRuns = JSON.parse(await readFile(new URL('./plain-run-unsupported.json', import.meta.url)));
-assert.equal(unsupportedRuns.length, 8, 'unsupported rich-text run fixture count');
+assert.equal(unsupportedRuns.length, 6, 'unsupported rich-text run fixture count');
 for (const encoded of unsupportedRuns) {
   const input = Buffer.from(encoded, 'base64');
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported rich-text runs must be rejected');
@@ -456,4 +471,4 @@ for (const encoded of unsupportedBase) {
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|complex borders)/);
 }
-console.log(`${i} basic XLSX renderings, ${ignoredSheetFeatures.length + ignoredSheetExtensions.length} ignored sheet feature cases, ${sheetAutoFilter.length + sheetAutoFilterTiles.length} autofilters, ${sheetNotes.length + sheetNotesFilter.length} notes, ${sheetMissingParts.length} missing part cases, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length + multiplePlainRuns.length + richRunLegacy.length + richRunData.length + richRunWrap.length + richRunIdentity.length + singleStyledRun.length + singleStyledRunConditional.length + singleStyledRunVariants.length + singleStyledRunLegacy.length + multiColorRuns.length + multiColorRunsGeometry.length + multiColorRunsConditional.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length + conditionalBetween.length + conditionalEquals.length + conditionalLiteral.length + conditionalMovingLiteral.length + conditionalTypedReference.length + conditionalInvalidReference.length + conditionalAbsolute.length + conditionalSingleRef.length + conditionalAxisRef.length + conditionalMovingRef.length + conditionalNegativeRef.length + conditionalNegativeBlank.length + conditionalNegativeString.length + conditionalPredicates.length + conditionalText.length + conditionalTop.length + conditionalAverage.length + conditionalStdDev.length + conditionalLargeStdDev.length + conditionalOverflowMean.length + conditionalNonfiniteAverage.length + conditionalDisjoint.length + conditionalDisjointMoving.length + conditionalSameStyle.length + conditionalIdenticalBlocks.length + conditionalSameRuleStyle.length + conditionalDisjointMatches.length + conditionalDuplicate.length + conditionalBlank.length + conditionalPaintBlank.length} conditional formats match upstream.`);
+console.log(`${i} basic XLSX renderings, ${ignoredSheetFeatures.length + ignoredSheetExtensions.length} ignored sheet feature cases, ${sheetAutoFilter.length + sheetAutoFilterTiles.length} autofilters, ${sheetNotes.length + sheetNotesFilter.length} notes, ${sheetMissingParts.length} missing part cases, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length + multiplePlainRuns.length + richRunLegacy.length + richRunData.length + richRunWrap.length + richRunIdentity.length + singleStyledRun.length + singleStyledRunConditional.length + singleStyledRunVariants.length + singleStyledRunLegacy.length + multiColorRuns.length + multiColorRunsGeometry.length + multiColorRunsConditional.length + multiFontRuns.length + multiFontRunsGeometry.length + multiFontRunsConditional.length + multiFontPrecision.length + multiFontLegacy.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length + conditionalBetween.length + conditionalEquals.length + conditionalLiteral.length + conditionalMovingLiteral.length + conditionalTypedReference.length + conditionalInvalidReference.length + conditionalAbsolute.length + conditionalSingleRef.length + conditionalAxisRef.length + conditionalMovingRef.length + conditionalNegativeRef.length + conditionalNegativeBlank.length + conditionalNegativeString.length + conditionalPredicates.length + conditionalText.length + conditionalTop.length + conditionalAverage.length + conditionalStdDev.length + conditionalLargeStdDev.length + conditionalOverflowMean.length + conditionalNonfiniteAverage.length + conditionalDisjoint.length + conditionalDisjointMoving.length + conditionalSameStyle.length + conditionalIdenticalBlocks.length + conditionalSameRuleStyle.length + conditionalDisjointMatches.length + conditionalDuplicate.length + conditionalBlank.length + conditionalPaintBlank.length} conditional formats match upstream.`);
