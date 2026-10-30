@@ -416,7 +416,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
             [
               "rect", "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram",
               "trapezoid", "homePlate", "chevron", "plus", "hexagon", "octagon",
-              "roundRect", "flowChartProcess", "flowChartDecision", "flowChartExtract",
+              "roundRect", "actionButtonBlank", "flowChartProcess", "flowChartDecision", "flowChartExtract",
               "flowChartMerge", "flowChartInputOutput", "flowChartPreparation", "flowChartPunchedCard",
               "flowChartCollate", "flowChartManualInput", "flowChartManualOperation",
               "flowChartOffpageConnector", "irregularSeal1", "irregularSeal2", "lightningBolt",
@@ -436,7 +436,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
               "flowChartExtract"
             shape_geometry = if is_shape {
               match xlsx_attr(element, "prst", "") {
-                "flowChartProcess" => "rect"
+                "actionButtonBlank" | "flowChartProcess" => "rect"
                 "flowChartDecision" => "diamond"
                 "flowChartExtract" => "triangle"
                 other => other
