@@ -74,12 +74,8 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             xlsx_reject_conditional()
           }
           conditional_depth = depth + 1
-          block_room = room
           rule_count = 0
           ranges = []
-          matched = Map([])
-          blank_positions = Map([])
-          any_blank_matches = false
           let text = StringBuilder()
           for ch in xlsx_attr(element, "sqref", "") {
             if ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' {
@@ -105,9 +101,12 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             xlsx_reject_conditional()
           }
           rule_count += 1
+          block_room = room
+          matched = Map([])
+          blank_positions = Map([])
+          any_blank_matches = false
           rule_type = xlsx_attr(element, "type", "")
-          if rule_count != 1 ||
-            ![
+          if ![
               "cellIs", "containsBlanks", "notContainsBlanks", "containsErrors",
               "notContainsErrors", "containsText", "notContainsText", "beginsWith",
               "endsWith", "top10", "aboveAverage", "duplicateValues", "uniqueValues",
@@ -325,12 +324,6 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             xlsx_conditional_text_matches(rule_type, "", rule_text)
           }
           any_blank_matches = blank_matches || any_blank_matches
-          rule_depth = -1
-        }
-        if depth + 1 == conditional_depth {
-          if rule_count != 1 {
-            xlsx_reject_conditional()
-          }
           if rule_type == "top10" {
             top_threshold = xlsx_conditional_top_threshold(
               rows, ranges, row_count, col_count, top_rank, top_percent, top_bottom,
@@ -512,6 +505,12 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
               dxf_id,
               covered: block_room - room,
             })
+          }
+          rule_depth = -1
+        }
+        if depth + 1 == conditional_depth {
+          if rule_count == 0 {
+            xlsx_reject_conditional()
           }
           conditional_depth = -1
         }

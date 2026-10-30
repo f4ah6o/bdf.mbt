@@ -76,7 +76,7 @@ func TestCodexInactiveCF(t *testing.T) {
 			case 6:
 				rule = `<cfRule type="cellIs" operator="greaterThan"><formula>10</formula><formula>20</formula></cfRule>`
 			case 7:
-				rule += rule
+				rule = `<cfRule type="colorScale" dxfId="0"></cfRule>`
 			}
 			ref = "A1"
 		}

@@ -81,7 +81,9 @@ Nonfinite values use `generate_conditional_nonfinite_average_test.go` and
 `generate_conditional_disjoint_test.go` and `TestCodexConditionalDisjoint`;
 moving references use `generate_conditional_disjoint_moving_test.go` and
 `TestCodexConditionalDisjointMoving`. Overlapping ranges with the same style use
-`generate_conditional_same_style_test.go` and `TestCodexConditionalSameStyle`.
+`generate_conditional_same_style_test.go` and `TestCodexConditionalSameStyle`;
+multiple rules use `generate_conditional_same_rule_style_test.go` and
+`TestCodexConditionalSameRuleStyle`.
 `conditional-identical-blocks.json` retains Go results for formerly unsupported
 identical conditional blocks. Regenerate it from the adjacent input seeds with
 `generate_conditional_identical_blocks_test.go` and `TestCodexConditionalIdenticalBlocks`.
