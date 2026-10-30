@@ -1,25 +1,13 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { createReadStream, mkdtempSync, readFileSync, mkdirSync } from 'node:fs';
-import { createServer } from 'node:http';
+import { mkdtempSync, readFileSync, mkdirSync } from 'node:fs';
+import { createVisualServer } from './visual-server.mjs';
 import path from 'node:path';
 import { chromium } from 'playwright';
 import { PNG } from 'pngjs';
 
 const root = process.cwd();
-const allowed = ['/compat/xlsx/', '/node_modules/@bdfkit/', '/_build/js/debug/build/compat/xlsx/', '/_build/js/debug/build/browser/'];
-const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json' };
-const server = createServer((request, response) => {
-  const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
-  const file = path.resolve(root, '.' + pathname);
-  if (!allowed.some(prefix => file.startsWith(path.resolve(root, '.' + prefix) + path.sep))) {
-    response.writeHead(403).end(); return;
-  }
-  const stream = createReadStream(file);
-  stream.once('error', () => { if (!response.headersSent) response.writeHead(404); response.end(); });
-  response.setHeader('Content-Type', mime[path.extname(file)] ?? 'application/octet-stream');
-  stream.pipe(response);
-});
+const server = createVisualServer(root);
 await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
 const base = 'http://127.0.0.1:' + server.address().port + '/compat/xlsx/';
 const run = args => new Promise((resolve, reject) => {

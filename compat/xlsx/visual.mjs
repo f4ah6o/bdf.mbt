@@ -11,6 +11,11 @@ const cases = [
   ['overlapping tables, row and column styles', 'plain-table-multi-whole-paired-stripe-style.json', 6],
 ];
 const bytes = value => Uint8Array.from(atob(value), character => character.charCodeAt(0));
+// VLMKit captures in a separate browser from preflight. Keep its request open
+// until this page has completed all asynchronous conversion and rendering.
+const token = crypto.randomUUID();
+const barrier = await fetch(`./visual-wait?token=${token}`);
+if (!barrier.ok) throw new Error(`visual wait: HTTP ${barrier.status}`);
 try {
   for (const [label, file, index] of cases) {
     const response = await fetch('./' + file);
@@ -38,4 +43,8 @@ try {
   window.bdfStatus = 'ready';
 } catch (error) {
   window.bdfStatus = 'error'; window.bdfError = String(error?.stack ?? error); console.error(error);
+} finally {
+  const response = await fetch(`./visual-release?token=${token}`, { method: 'POST' });
+  if (!response.ok) throw new Error(`visual release: HTTP ${response.status}`);
+  await barrier.text();
 }
