@@ -115,6 +115,7 @@ const samples = {
   bdf: ['./samples/upstream-demo.bdf', 'upstream-demo.bdf'],
   csv: ['./samples/people.csv', 'people.csv'],
   xlsx: ['./samples/sales.xlsx', 'sales.xlsx'],
+  'xlsx-picture': ['./samples/field-guide.xlsx', 'field-guide.xlsx'],
   image: ['./samples/illustration.svg', 'illustration.svg'],
   font: ['./samples/stix.ttf', 'stix.ttf'],
 };

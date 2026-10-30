@@ -166,6 +166,35 @@ try {
     assert.equal(await page.locator('#search').inputValue(), '');
     await page.locator('#view').selectOption('sheet2');
   }
+  const hasIllustration = () => {
+    let gold = 0, green = 0;
+    for (const canvas of document.querySelectorAll('#preview canvas')) {
+      if (!canvas.width || !canvas.height) continue;
+      const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+      for (let i = 0; i < pixels.length; i += 4) {
+        const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
+        if (pixels[i + 3] && r > 225 && g > 150 && g < 215 && b < 120) gold++;
+        if (pixels[i + 3] && r > 80 && r < 130 && g > 140 && g < 190 && b > 130 && b < 180) green++;
+      }
+    }
+    return gold > 50 && green > 500;
+  };
+  await page.locator('[data-sample="xlsx-picture"]').click();
+  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'field-guide.xlsx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  assert.equal(await page.locator('#status').evaluate(el => el.classList.contains('error')), false, 'illustrated workbook conversion');
+  assert.deepEqual(await page.locator('#view option').evaluateAll(options => options.map(option => option.value)), ['sheet1']);
+  await page.waitForFunction(hasIllustration, null, { timeout: 30000 });
+  await page.locator('#search').fill('Mountain');
+  await page.locator('#search-form button').click();
+  await page.waitForFunction(() => /^1 \/ [1-9]/.test(document.querySelector('#search-status').textContent), null, { timeout: 30000 });
+  const pictureDownload = page.waitForEvent('download');
+  await page.locator('#download').click();
+  const pictureSaved = await pictureDownload;
+  assert.equal(pictureSaved.suggestedFilename(), 'field-guide.bdf');
+  await page.locator('#file').setInputFiles({ name: 'field-guide.bdf', mimeType: 'application/octet-stream', buffer: await readFile(await pictureSaved.path()) });
+  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'field-guide.bdf' && !document.querySelector('#open-file').disabled, null, { timeout: 30000 });
+  assert.equal(await page.locator('#status').evaluate(el => el.classList.contains('error')), false, 'illustrated BDF reload');
+  await page.waitForFunction(hasIllustration, null, { timeout: 30000 });
   const warnings = JSON.parse(await readFile(resolve(import.meta.dirname, '../compat/xlsx/render/001.json')));
   const warningCase = warnings.find(item => item.warnings?.includes('sheet "Sheet1": right-to-left sheets are drawn left to right'));
   assert.ok(warningCase, 'XLSX warning fixture');
@@ -218,7 +247,7 @@ try {
   await mobile.waitForSelector('[data-bdf-page="0"] canvas[data-loaded="ready"]', { timeout: 30000 });
   assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'mobile page overflow');
   await mobile.close();
-  console.log('Demo: all 20 upstream pages, search, navigation, download, CSV, SVG, font TTF/WOFF2, XLSX conversion, sheet switching, warnings, replacement, search, saving, errors and mobile subpath passed.');
+  console.log('Demo: all 20 upstream pages, search, navigation, download, CSV, SVG, font TTF/WOFF2, XLSX conversion, sheet switching, embedded PNG, BDF save/reload, warnings, replacement, errors and mobile subpath passed.');
 } finally {
   await browser.close();
   await new Promise(resolvePromise => server.close(resolvePromise));
