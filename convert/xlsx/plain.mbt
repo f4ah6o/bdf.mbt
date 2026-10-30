@@ -1191,20 +1191,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     rows = xlsx_normalize_conditional_styles(rows, styles.cell_formats.length())
   }
   if has_table_style {
-    for column in geo.columns {
-      if column.style >= 0 {
-        raise InvalidXlsxInput(
-          "xlsx: plain conversion does not support worksheet feature tableParts",
-        )
-      }
-    }
     let matches : Map[Int32, Map[Int32, Map[Int32, Bool]]] = Map([])
     for row in rows {
-      if row.style >= 0 {
-        raise InvalidXlsxInput(
-          "xlsx: plain conversion does not support worksheet feature tableParts",
-        )
-      }
       for cell in row.cells {
         let format = input_styles.cell_formats[cell.style]
         if format.font != 0 {
@@ -1267,7 +1255,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     if diff.fill is None {
       continue
     }
-    if !geo.merges.is_empty() || range.row_end - range.row_start > 1000L {
+    if range.row_end - range.row_start > 1000L {
       raise InvalidXlsxInput(
         "xlsx: plain conversion does not support worksheet feature tableParts",
       )
@@ -1277,6 +1265,20 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     let last_row = Int64::min(range.row_end, (row_count - 1).to_int64()).to_int()
     let first_col = Int32::max(range.column_start, 0)
     let last_col = Int32::min(range.column_end, col_count - 1)
+    let row_styles : Map[Int32, Int32] = Map([])
+    for row in parsed.sorted_rows() {
+      row_styles[row.index] = row.style
+    }
+    let column_styles : Map[Int32, Int32] = Map([])
+    for column in geo.columns {
+      let lo = Int32::max(first_col, column.first)
+      let hi = Int32::min(last_col, column.last)
+      if lo <= hi {
+        for c in lo..<=hi {
+          column_styles[c] = column.style
+        }
+      }
+    }
     if first_row <= last_row && first_col <= last_col {
       for r in first_row..<=last_row {
         let columns : Map[Int32, Bool] = Map([])
@@ -1287,7 +1289,29 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               c >= other.column_start &&
               c <= other.column_end {
               if owner == table_index {
-                columns[c] = true
+                let row_style = row_styles.get(r).unwrap_or(-1)
+                let base_style = if row_style >= 0 {
+                  row_style
+                } else {
+                  column_styles.get(c).unwrap_or(-1)
+                }
+                let index = if base_style < 0 ||
+                  base_style >= input_styles.cell_formats.length() {
+                  0
+                } else {
+                  base_style
+                }
+                let fill_id = input_styles.cell_formats[index].fill
+                let nonempty = if fill_id >= 0 &&
+                  fill_id < input_styles.fills.length() {
+                  let fill = input_styles.fills[fill_id]
+                  fill.pattern != "" || fill.gradient is Some(_)
+                } else {
+                  false
+                }
+                if !nonempty {
+                  columns[c] = true
+                }
               }
               break
             }
@@ -1299,9 +1323,26 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     for row in parsed.sorted_rows() {
       if allowed.get(row.index) is Some(columns) {
         for cell in row.cells {
-          if !columns.contains(cell.column) {
+          if row.index.to_int64() < range.row_start ||
+            row.index.to_int64() > range.row_end ||
+            cell.column < range.column_start ||
+            cell.column > range.column_end {
             continue
           }
+          let mut owned = false
+          for owner, (other, _) in table_rules {
+            if row.index.to_int64() >= other.row_start &&
+              row.index.to_int64() <= other.row_end &&
+              cell.column >= other.column_start &&
+              cell.column <= other.column_end {
+              owned = owner == table_index
+              break
+            }
+          }
+          if !owned {
+            continue
+          }
+          columns[cell.column] = true
           let index = if cell.style < 0 ||
             cell.style >= input_styles.cell_formats.length() {
             0
