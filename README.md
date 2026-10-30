@@ -133,4 +133,6 @@ MIT; see [LICENSE](LICENSE). This port adapts code and fixtures from [shibukawa/
 
 Music symbols use Bravura, distributed under the [SIL Open Font License](licenses/Bravura-OFL.txt).
 
+PDF character maps include Adobe CMap data under the [Adobe CMap license](licenses/Adobe-CMap.txt).
+
 Font test fixtures include STIX Two Text, distributed under the [SIL Open Font License](compat/font/fixtures/OFL.txt); see [font fixture notes](compat/font/README.md).

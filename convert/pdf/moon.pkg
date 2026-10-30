@@ -1,6 +1,8 @@
 import {
   "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/encoding/base64",
   "moonbitlang/core/string",
+  "gaato/deflate/gzip",
 }
 
 supported_targets = "+js+wasm-gc"
