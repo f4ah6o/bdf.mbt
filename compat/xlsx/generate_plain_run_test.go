@@ -45,6 +45,11 @@ func TestCodexPlainRun(t *testing.T) {
 		} else if i == 123 {
 			text = `<r><t>one</t></r><r><rPr><i/></rPr><t>two</t></r>`
 		}
+		if i == 126 {
+			text = `<r><rPr><sz val="11"/><sz val="12"/></rPr><t>styled</t></r>`
+		} else if i == 127 {
+			text = `<r><rPr><sz val="1000"/></rPr><t>styled</t></r>`
+		}
 		shared, inline := `<si><t>ordinary</t></si>`, `<is><t>ordinary</t></is>`
 		if i%2 == 0 {
 			shared = "<si>" + text + "</si>"

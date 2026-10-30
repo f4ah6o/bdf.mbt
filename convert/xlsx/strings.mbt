@@ -16,8 +16,14 @@ fn xlsx_text_element(reader : @xml.NamespaceReader) -> String raise {
 }
 
 ///|
+priv struct XlsxPlainRun {
+  text : String
+  font : XlsxFont?
+}
+
+///|
 fn xlsx_rich_text(reader : @xml.NamespaceReader) -> String raise {
-  let (plain, _, _) = xlsx_rich_text_info(reader)
+  let (plain, _) = xlsx_rich_text_info(reader)
   plain
 }
 
@@ -26,12 +32,13 @@ fn xlsx_rich_text(reader : @xml.NamespaceReader) -> String raise {
 // text for drawing when the source contains multiple runs.
 fn xlsx_rich_text_info(
   reader : @xml.NamespaceReader,
-) -> (String, String, Bool) raise {
+) -> (String, XlsxPlainRun?) raise {
   let out = StringBuilder()
   let runs = StringBuilder()
   let mut depth = 1
   let mut run_depth = -1
   let mut run_count = 0
+  let mut run_font : XlsxFont? = None
   while depth > 0 {
     let event = reader.read_event()
     match event.kind {
@@ -41,7 +48,13 @@ fn xlsx_rich_text_info(
           run_depth = 2
           run_count += 1
         }
-        if name == "t" && (depth == 1 || depth == run_depth) {
+        if name == "rPr" && depth == run_depth {
+          let font = { ..xlsx_default_font(), name: "", size: 0.0, }
+          if event.kind is Start(_) {
+            xlsx_read_run_font(reader, font)
+          }
+          run_font = Some(font)
+        } else if name == "t" && (depth == 1 || depth == run_depth) {
           let text = if event.kind is Start(_) {
             xlsx_text_element(reader)
           } else {
@@ -66,11 +79,44 @@ fn xlsx_rich_text_info(
       _ => ()
     }
   }
-  (out.to_string(), runs.to_string(), run_count > 1)
+  (
+    out.to_string(),
+    if run_count > 1 || run_font is Some(_) {
+      Some({ text: runs.to_string(), font: run_font, })
+    } else {
+      None
+    },
+  )
 }
 
 ///|
-fn XlsxWorkbook::xlsx_shared_run_texts(self : XlsxWorkbook) -> Array[String?] {
+fn xlsx_read_run_font(
+  reader : @xml.NamespaceReader,
+  font : XlsxFont,
+) -> Unit raise {
+  let mut depth = 1
+  while depth > 0 {
+    let event = reader.read_event()
+    match event.kind {
+      Start(element) | Empty(element) => {
+        if depth == 1 && element.name.local_name != "name" {
+          font.apply(element)
+        }
+        if event.kind is Start(_) {
+          depth += 1
+        }
+      }
+      End(_) => depth -= 1
+      Eof => raise InvalidXlsxInput("xlsx: unexpected EOF")
+      _ => ()
+    }
+  }
+}
+
+///|
+fn XlsxWorkbook::xlsx_shared_run_texts(
+  self : XlsxWorkbook,
+) -> Array[XlsxPlainRun?] {
   let rel = match
     self.package.relationship_of_type(self.part, "/sharedStrings") {
     Some(rel) => rel
@@ -79,7 +125,7 @@ fn XlsxWorkbook::xlsx_shared_run_texts(self : XlsxWorkbook) -> Array[String?] {
   let bytes = self.package.read(rel.target) catch { _ => return [] }
   let text = @utf8.decode_lossy(bytes[:], ignore_bom=true)
   let reader = @xml.NamespaceReader::from_string(text)
-  let result : Array[String?] = []
+  let result : Array[XlsxPlainRun?] = []
   let mut depth = 0
   while true {
     let event = reader.read_event() catch { _ => return [] }
@@ -87,10 +133,8 @@ fn XlsxWorkbook::xlsx_shared_run_texts(self : XlsxWorkbook) -> Array[String?] {
       Start(element) | Empty(element) =>
         if depth == 1 && element.name.local_name == "si" {
           if event.kind is Start(_) {
-            let (_, runs, multiple) = xlsx_rich_text_info(reader) catch {
-              _ => return []
-            }
-            result.push(if multiple { Some(runs) } else { None })
+            let (_, run) = xlsx_rich_text_info(reader) catch { _ => return [] }
+            result.push(run)
           } else {
             result.push(None)
           }

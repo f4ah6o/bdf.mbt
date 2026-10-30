@@ -107,7 +107,9 @@ and `TestCodexMultiplePlainRunsSafe`. Plain runs with text number formats, mixed
 direct text, data extraction, wrapping and duplicate cell references use
 `generate_rich_run_data_test.go`, `generate_rich_run_wrap_test.go`,
 `generate_rich_run_identity_test.go` and `generate_rich_run_legacy_test.go`.
-Runs with their own font properties remain unsupported.
+Single styled runs use `generate_single_styled_run_test.go`,
+`generate_single_styled_run_conditional_test.go`, `generate_single_styled_run_variants_test.go`,
+and `generate_single_styled_run_legacy_test.go`; multiple styled runs remain unsupported.
 Duplicate and unique predicates use `generate_conditional_duplicate_test.go`
 and `TestCodexConditionalDuplicate`. Numeric comparison-key tests are generated
 by `generate_duplicate_keys_test.go` and `TestCodexXLSXDuplicateKeys`, including

@@ -125,9 +125,9 @@ fn xlsx_read_cell(
   empty : Bool,
   column : Int32,
   strings : Array[String],
-  shared_runs : Array[String?],
+  shared_runs : Array[XlsxPlainRun?],
   date1904 : Bool,
-) -> (XlsxCell, Bool, String?) raise {
+) -> (XlsxCell, Bool, XlsxPlainRun?) raise {
   let reference = xlsx_attr(element, "r", "")
   let (c, _, valid) = xlsx_parse_ref(reference)
   let column = if valid { c } else { column }
@@ -135,7 +135,7 @@ fn xlsx_read_cell(
   let typ = xlsx_attr(element, "t", "n")
   let mut value = ""
   let mut inline : String? = None
-  let mut inline_runs : String? = None
+  let mut inline_runs : XlsxPlainRun? = None
   let mut has_formula = false
   let mut has_value = false
   let mut depth = if empty { 0 } else { 1 }
@@ -152,9 +152,9 @@ fn xlsx_read_cell(
           has_value = true
         } else if depth == 1 && child.name.local_name == "is" {
           if event.kind is Start(_) {
-            let (plain, runs, multiple) = xlsx_rich_text_info(reader)
+            let (plain, runs) = xlsx_rich_text_info(reader)
             inline = Some(plain)
-            inline_runs = if multiple { Some(runs) } else { None }
+            inline_runs = runs
           } else {
             inline = Some("")
             inline_runs = None
@@ -208,8 +208,8 @@ pub fn XlsxWorkbook::read_sheet_cells(
 fn XlsxWorkbook::xlsx_read_sheet_cells_with_runs(
   self : XlsxWorkbook,
   part : String,
-  shared_runs : Array[String?],
-) -> (XlsxSheetCells, Map[Int32, Map[Int32, String]]) raise {
+  shared_runs : Array[XlsxPlainRun?],
+) -> (XlsxSheetCells, Map[Int32, Map[Int32, XlsxPlainRun]]) raise {
   let bytes = self.package.read(part) catch {
     @ooxml.InvalidOoxml(message) => raise InvalidXlsxInput(message)
   }
@@ -220,7 +220,7 @@ fn XlsxWorkbook::xlsx_read_sheet_cells_with_runs(
   let reader = @xml.NamespaceReader::from_string(text)
   let strings = self.load_shared_strings()
   let rows : Array[XlsxRow] = []
-  let rich_cells : Map[Int32, Map[Int32, String]] = Map([])
+  let rich_cells : Map[Int32, Map[Int32, XlsxPlainRun]] = Map([])
   let mut missing = 0
   let mut depth = 0
   let mut data_depth = -1
@@ -289,7 +289,7 @@ fn XlsxWorkbook::xlsx_read_sheet_cells_with_runs(
               let columns = match rich_cells.get(row_index) {
                 Some(columns) => columns
                 None => {
-                  let columns : Map[Int32, String] = Map([])
+                  let columns : Map[Int32, XlsxPlainRun] = Map([])
                   rich_cells[row_index] = columns
                   columns
                 }
