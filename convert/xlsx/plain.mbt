@@ -789,12 +789,15 @@ fn XlsxWorkbook::xlsx_table_effective_style(
 fn XlsxWorkbook::xlsx_plain_table_area(
   self : XlsxWorkbook,
   part : String,
+  table_rows : Array[XlsxRow],
+  table_room : Int64,
+  table_headers : Array[(Int32, Int32, Int32, Int32, Int32)],
   style_cache : Map[String, Bool],
   style_id_cache : Map[String, (Int32, Int32, Int64, Int32, Int64, Int32)],
   complex_rules : Map[Int32, XlsxComplexTable],
   complex_cache : Map[String, XlsxComplexStyle?],
   known_cache : Map[String, Bool],
-  unknown_styles : Array[String],
+  table_events : Array[(String, String)],
   table_rules : Array[
     (
       XlsxRange,
@@ -813,15 +816,42 @@ fn XlsxWorkbook::xlsx_plain_table_area(
     ),
   ],
 ) -> Int64 raise {
+  if !self.package.has(part) {
+    table_events.push(("", "table " + part + ": missing part " + part))
+    return -3L
+  }
   let data = self.package.read(part) catch { _ => return -1L }
   let text = @utf8.decode_lossy(data[:], ignore_bom=true)
   if text.contains("<!ENTITY") {
     return -1L
   }
-  let table = xlsx_read_list_table(data) catch { _ => None }
+  let table = xlsx_read_list_table(data) catch {
+    @xml.At(error~, span~) => {
+      let reason = match error {
+        @xml.UnexpectedEof => "xml: unexpected end of input"
+        @xml.InvalidSyntax(message) if message.has_prefix("unclosed element:") =>
+          "xml: unexpected end of input"
+        @xml.InvalidSyntax(message) if message ==
+          "empty document - no root element" => "unexpected EOF"
+        @xml.InvalidSyntax(message) if message.has_prefix("end tag mismatch:") =>
+          "xml: end tag does not match open element at byte " +
+          @utf8.encode(text[:span.start.offset].to_owned()).length().to_string()
+        @xml.InvalidSyntax(message) if message ==
+          "expected '>' or '/>' at end of start tag" &&
+          span.end.offset == text.length() => "xml: unexpected end of input"
+        @xml.InvalidSyntax(message) if message ==
+          "expected '>' after end tag name" &&
+          span.end.offset == text.length() => "xml: unexpected end of input"
+        _ => return -1L
+      }
+      table_events.push(("", "table " + part + ": " + part + ": " + reason))
+      return -3L
+    }
+    _ => return -1L
+  }
   let parsed_table = match table {
     Some(t) => t
-    None => return -1L
+    None => return -3L
   }
   let range = parsed_table.range
   if range.row_start < 0L ||
@@ -834,6 +864,31 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   }
   let area = (range.row_end - range.row_start + 1L) *
     (range.column_end - range.column_start + 1).to_int64()
+  let mut present = 0L
+  for row in table_rows {
+    if row.index.to_int64() < range.row_start ||
+      row.index.to_int64() > range.row_end {
+      continue
+    }
+    for cell in row.cells {
+      if cell.column >= range.column_start && cell.column <= range.column_end {
+        present += 1L
+      }
+    }
+  }
+  let missing = Int64::max(area - present, 0L)
+  if missing > table_room {
+    return -2L
+  }
+  table_headers.push(
+    (
+      range.row_start.to_int(),
+      range.row_end.to_int(),
+      range.column_start,
+      range.column_end,
+      parsed_table.header_rows,
+    ),
+  )
   let reader = @xml.NamespaceReader::from_string(text)
   let mut depth = 0
   let mut style_info_seen = false
@@ -919,7 +974,12 @@ fn XlsxWorkbook::xlsx_plain_table_area(
                     if known {
                       return -1L
                     }
-                    unknown_styles.push(style)
+                    table_events.push(
+                      (
+                        "tablestyle:" + style,
+                        "table style " + style + " is unknown",
+                      ),
+                    )
                   }
                 }
               }
@@ -1113,7 +1173,7 @@ fn XlsxWorkbook::xlsx_plain_table_area(
       },
     ),
   )
-  area
+  missing
 }
 
 ///|
@@ -1206,7 +1266,10 @@ fn XlsxWorkbook::xlsx_plain_table_filters(
 fn XlsxWorkbook::xlsx_check_plain_sheet(
   self : XlsxWorkbook,
   part : String,
-  unknown_styles : Array[String],
+  sheet_name : String,
+  table_rows : Array[XlsxRow],
+  table_headers : Array[(Int32, Int32, Int32, Int32, Int32)],
+  table_events : Array[(String, String)],
 ) -> (
   Array[@sheet.GridLink],
   Bool,
@@ -1252,7 +1315,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut link_depth = -1
   let mut extension_depth = -1
   let mut table_depth = -1
-  let mut table_room = 200000L
+  let mut table_room = 1048576L
   let complex_rules : Map[Int32, XlsxComplexTable] = Map([])
   let complex_cache : Map[String, XlsxComplexStyle?] = Map([])
   let known_cache : Map[String, Bool] = Map([])
@@ -1331,22 +1394,38 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           if self.package.target(part, id) is Some(rel) {
             let area = self.xlsx_plain_table_area(
               rel.target,
+              table_rows,
+              table_room,
+              table_headers,
               table_style_cache,
               table_style_id_cache,
               complex_rules,
               complex_cache,
               known_cache,
-              unknown_styles,
+              table_events,
               table_rules,
             )
-            if area < 0L || area > table_room {
-              raise InvalidXlsxInput(
-                "xlsx: plain conversion does not support worksheet feature tableParts",
+            if area == -3L {
+              ()
+            } else if area == -2L {
+              table_events.push(
+                (
+                  "tables:" + sheet_name,
+                  "sheet " +
+                  xlsx_go_quote(sheet_name, '"') +
+                  ": the tables cover more than 1048576 cells that are not in the file; the rest are drawn without their styles",
+                ),
               )
-            }
-            table_room -= area
-            for cell in self.xlsx_plain_table_filters(rel.target) {
-              table_filters.push(cell)
+            } else {
+              if area < 0L {
+                raise InvalidXlsxInput(
+                  "xlsx: plain conversion does not support worksheet feature tableParts",
+                )
+              }
+              table_room -= area
+              for cell in self.xlsx_plain_table_filters(rel.target) {
+                table_filters.push(cell)
+              }
             }
           }
         } else if extension_depth >= 0 &&
@@ -1851,9 +1930,9 @@ pub fn convert_plain_no_fonts(
     }
     let number = index + 1
     let id = "sheet" + number.to_string()
-    let unknown_styles : Array[String] = []
+    let table_events : Array[(String, String)] = []
     let (drawn, geo, missing_formula_values) = workbook.xlsx_draw_plain_sheet(
-      ref, styles, locale, doc_language, theme_colors, shared_runs, unknown_styles,
+      ref, styles, locale, doc_language, theme_colors, shared_runs, table_events,
     )
     let (next, table_warnings) = workbook.store_sheet_tables(
       writer,
@@ -1886,10 +1965,12 @@ pub fn convert_plain_no_fonts(
       )
       warned_rtl = true
     }
-    for style in unknown_styles {
-      if !warned_table_styles.contains(style) {
-        warned_table_styles[style] = true
-        warnings.push("table style " + style + " is unknown")
+    for (key, warning) in table_events {
+      if key == "" {
+        warnings.push(warning)
+      } else if !warned_table_styles.contains(key) {
+        warned_table_styles[key] = true
+        warnings.push(warning)
       }
     }
     warned_sheets[ref.name] = true
@@ -1914,8 +1995,14 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   doc_language : String,
   theme_colors : Map[Int32, XlsxRgb],
   shared_runs : Array[XlsxPlainRun?],
-  unknown_styles : Array[String],
+  table_events : Array[(String, String)],
 ) -> (@sheet.DrawnGrid, XlsxSheetGeometry, Int32) raise {
+  let (parsed, rich_cells) = workbook.xlsx_read_sheet_cells_with_runs(
+    ref.part,
+    shared_runs,
+  )
+  let mut rows = parsed.sorted_rows()
+  let table_headers : Array[(Int32, Int32, Int32, Int32, Int32)] = []
   let (
     links,
     has_conditional,
@@ -1923,10 +2010,12 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     table_filters,
     complex_rules,
     table_rules,
-  ) = workbook.xlsx_check_plain_sheet(ref.part, unknown_styles)
-  let (parsed, rich_cells) = workbook.xlsx_read_sheet_cells_with_runs(
+  ) = workbook.xlsx_check_plain_sheet(
     ref.part,
-    shared_runs,
+    ref.name,
+    rows,
+    table_headers,
+    table_events,
   )
   let mut styled_runs = false
   for _, columns in rich_cells {
@@ -1971,7 +2060,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   } else {
     input_styles
   }
-  let mut rows = parsed.sorted_rows()
   let notes = workbook.xlsx_plain_notes(ref.part)
   let geo = workbook.read_sheet_geometry(ref.part)
   let (spans, region_rows, merge_regions) = xlsx_plain_spans(geo.merges)
@@ -3197,17 +3285,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   } else {
     cells
   }
-  let table_headers = workbook
-    .read_sheet_tables(ref.part)
-    .map(table => {
-      (
-        table.range.row_start.to_int(),
-        table.range.row_end.to_int(),
-        table.range.column_start,
-        table.range.column_end,
-        table.header_rows,
-      )
-    })
   let drawn = @sheet.draw_sized_grid_no_fonts(
     draw_cells,
     geometry,
