@@ -418,6 +418,13 @@ fn XlsxWorkbook::xlsx_simple_picture(
               "flowChartMerge", "flowChartInputOutput", "flowChartPreparation", "flowChartPunchedCard",
               "flowChartCollate", "flowChartManualInput", "flowChartManualOperation",
               "flowChartOffpageConnector", "irregularSeal1", "irregularSeal2", "lightningBolt",
+              "bentUpArrow", "corner", "diagStripe", "dodecagon", "downArrow", "downArrowCallout",
+              "halfFrame", "heptagon", "leftArrow", "leftArrowCallout", "leftRightArrow",
+              "leftRightArrowCallout", "leftRightUpArrow", "leftUpArrow", "mathMinus",
+              "mathPlus", "nonIsoscelesTrapezoid", "notchedRightArrow", "quadArrow",
+              "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip1Rect",
+              "snip2DiagRect", "snip2SameRect", "star10", "star7", "upArrowCallout",
+              "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
             ].contains(xlsx_attr(element, "prst", "")) {
             if geometry {
               return None

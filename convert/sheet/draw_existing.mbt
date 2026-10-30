@@ -121,7 +121,9 @@ pub fn sized_fallback_advance(
 /// "flowChartInputOutput", "flowChartPreparation", "flowChartPunchedCard",
 /// "flowChartCollate", "flowChartManualInput", "flowChartManualOperation",
 /// "flowChartOffpageConnector", "irregularSeal1", "irregularSeal2" or
-/// "lightningBolt" per shape. An empty string or omitted list selects a rectangle.
+/// "lightningBolt", plus the straight-line DrawingML presets listed in
+/// `compat/xlsx/README.md`, per shape. An empty string or omitted list selects a
+/// rectangle.
 /// `shape_adjustments` contains optional DrawingML adjustment values from 0
 /// to 100,000 for triangles, parallelograms, trapezoids, home plates, chevrons,
 /// crosses, hexagons, octagons and rounded rectangles.

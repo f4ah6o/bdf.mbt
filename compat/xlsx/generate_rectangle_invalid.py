@@ -32,6 +32,7 @@ variants = {
     'hsl-color-extra-attribute': ('<a:srgbClr val="FF0000"/>', '<a:hslClr hue="0" foo="1"/>'),
     'linear-color-negative': ('<a:srgbClr val="FF0000"/>', '<a:scrgbClr r="-1"/>'),
     'linear-color-too-large': ('<a:srgbClr val="FF0000"/>', '<a:scrgbClr g="100001"/>'),
+    'formula-preset-adjustment': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="rightArrow"><a:avLst><a:gd name="adj1" fmla="val 25000"/></a:avLst></a:prstGeom>'),
     'flowchart-extract-adjustment': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="flowChartExtract"><a:avLst><a:gd name="adj" fmla="val 25000"/></a:avLst></a:prstGeom>'),
     'linear-color-malformed': ('<a:srgbClr val="FF0000"/>', '<a:scrgbClr b="not-a-number"/>'),
     'linear-color-extra-attribute': ('<a:srgbClr val="FF0000"/>', '<a:scrgbClr r="0" foo="1"/>'),
