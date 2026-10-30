@@ -5,7 +5,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
   self : XlsxWorkbook,
   part : String,
   theme_colors : Map[Int32, XlsxRgb],
-) -> Array[(@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool)]? {
+) -> Array[(@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool, String)]? {
   let bytes = self.package.read(part) catch { _ => return None }
   let source = @utf8.decode_lossy(bytes[:], ignore_bom=true)
   if source.contains("<!ENTITY") {
@@ -22,7 +22,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut kind = -1
   let mut anchors = 0
   let result : Array[
-    (@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool),
+    (@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool, String),
   ] = []
   let images : Map[String, Bytes] = Map([])
   let mut image_bytes = 0L
@@ -45,6 +45,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut saw_shape_alpha = false
   let mut saw_line_alpha = false
   let mut line_width = 0.75
+  let mut shape_dash = ""
+  let mut saw_dash = false
   let mut saw_blip_fill = false
   let mut saw_sppr = false
   let mut geometry = false
@@ -410,7 +412,27 @@ fn XlsxWorkbook::xlsx_simple_picture(
           )
           shape_fill is Some(_)
         } else if depth == 5 && parent == "ln" && is_shape {
-          if name == "noFill" &&
+          if name == "prstDash" {
+            if saw_dash ||
+              !(event.kind is Empty(_)) ||
+              element.attributes.length() > 1 {
+              return None
+            }
+            saw_dash = true
+            let dash_name = xlsx_attr(element, "val", "solid")
+            if element.attributes.length() == 1 &&
+              xlsx_attr(element, "val", "") == "" {
+              return None
+            }
+            if ![
+                "solid", "dot", "dash", "lgDash", "dashDot", "lgDashDot", "lgDashDotDot",
+                "sysDash", "sysDot", "sysDashDot", "sysDashDotDot",
+              ].contains(dash_name) {
+              return None
+            }
+            shape_dash = dash_name
+            true
+          } else if name == "noFill" &&
             event.kind is Empty(_) &&
             !saw_no_line &&
             !saw_line_fill &&
@@ -675,6 +697,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
                   shape_fill,
                   line_color.map(color => (color, line_width)),
                   shape_no_fill,
+                  shape_dash,
                 ),
               )
             }
@@ -698,6 +721,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
           saw_shape_alpha = false
           saw_line_alpha = false
           line_width = 0.75
+          shape_dash = ""
+          saw_dash = false
           saw_blip_fill = false
           saw_sppr = false
           geometry = false

@@ -51,6 +51,7 @@ fn GridDrawContext::paint_picture(
   shape_fill~ : UInt32? = None,
   shape_stroke~ : (UInt32, Double)? = None,
   shape_no_fill~ : Bool = false,
+  shape_dash~ : String = "",
 ) -> Int32 raise {
   if picture.kind < 0 ||
     picture.kind > 2 ||
@@ -127,6 +128,13 @@ fn GridDrawContext::paint_picture(
     picture.frame_height < 0.0 ||
     (picture.frame_width == 0.0) != (picture.frame_height == 0.0) {
     raise InvalidArgument("sheet: invalid picture transform frame")
+  }
+  if ![
+      "", "solid", "dot", "dash", "lgDash", "dashDot", "lgDashDot", "lgDashDotDot",
+      "sysDash", "sysDot", "sysDashDot", "sysDashDotDot",
+    ].contains(shape_dash) ||
+    (shape_dash != "" && shape_fill is None && !shape_no_fill) {
+    raise InvalidArgument("sheet: invalid shape dash pattern")
   }
   if shape_no_fill && shape_fill is Some(_) {
     raise InvalidArgument("sheet: conflicting shape fills")
@@ -365,6 +373,22 @@ fn GridDrawContext::paint_picture(
     if shape_stroke is Some((stroke, width)) {
       object.save()
       object.line(Float::from_double(width), 0, 0, 8.0F)
+      let dash : Array[Double] = match shape_dash {
+        "dot" => [1.0, 3.0]
+        "dash" => [4.0, 3.0]
+        "lgDash" => [8.0, 3.0]
+        "dashDot" => [4.0, 3.0, 1.0, 3.0]
+        "lgDashDot" => [8.0, 3.0, 1.0, 3.0]
+        "lgDashDotDot" => [8.0, 3.0, 1.0, 3.0, 1.0, 3.0]
+        "sysDash" => [3.0, 1.0]
+        "sysDot" => [1.0, 1.0]
+        "sysDashDot" => [3.0, 1.0, 1.0, 1.0]
+        "sysDashDotDot" => [3.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+        _ => []
+      }
+      if !dash.is_empty() {
+        object.dash(dash.map(value => Float::from_double(value * width)), 0.0F)
+      }
       object.stroke_color(stroke)
       object.stroke_path(path_index)
       object.restore()
