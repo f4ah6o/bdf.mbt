@@ -309,13 +309,27 @@ fn XlsxWorkbook::xlsx_table_style(
           kind != "lastHeaderCell" &&
           kind != "firstTotalCell" &&
           kind != "lastTotalCell"
-        ) ||
-        (selected_kind != "" && selected_kind != kind) {
+        ) {
         return (-1, 0, 1L, -1, 1L)
       }
-      selected_kind = kind
-      selected_width = width
-      chosen = id
+      if selected_kind == "" || selected_kind == kind {
+        selected_kind = kind
+        selected_width = width
+        chosen = id
+      } else if selected_kind == "wholeTable" && kind == "headerRow" {
+        other = id
+        selected_kind = "wholeHeader"
+      } else if selected_kind == "headerRow" && kind == "wholeTable" {
+        other = chosen
+        chosen = id
+        selected_kind = "wholeHeader"
+      } else if selected_kind == "wholeHeader" && kind == "wholeTable" {
+        chosen = id
+      } else if selected_kind == "wholeHeader" && kind == "headerRow" {
+        other = id
+      } else {
+        return (-1, 0, 1L, -1, 1L)
+      }
     }
   }
   if axis != 0 {
@@ -394,6 +408,8 @@ fn XlsxWorkbook::xlsx_table_style(
       13
     } else if selected_kind == "columnStripePair" {
       14
+    } else if selected_kind == "wholeHeader" {
+      15
     } else {
       0
     },
@@ -424,7 +440,13 @@ fn xlsx_table_stripe_choice(
   row : Int32,
   col : Int32,
 ) -> Int32 {
-  if region == 13 || region == 14 {
+  if region == 15 {
+    if row.to_int64() <= origin {
+      1
+    } else {
+      0
+    }
+  } else if region == 13 || region == 14 {
     let pos = if region == 13 {
       row.to_int64() - origin
     } else {
@@ -451,6 +473,54 @@ fn xlsx_table_stripe_choice(
     }
   } else {
     0
+  }
+}
+
+///|
+fn XlsxWorkbook::xlsx_table_effective_style(
+  self : XlsxWorkbook,
+  base_id : Int32,
+  extra_id : Int32,
+  region : Int32,
+  choice : Int32,
+) -> XlsxConditionalStyle raise {
+  if region != 15 || choice != 1 {
+    return self.xlsx_conditional_style(
+      if choice == 0 {
+        base_id
+      } else {
+        extra_id
+      },
+    )
+  }
+  let base = self.xlsx_conditional_style(base_id)
+  let extra = self.xlsx_conditional_style(extra_id)
+  {
+    bold: match extra.bold {
+      Some(v) => Some(v)
+      None => base.bold
+    },
+    italic: match extra.italic {
+      Some(v) => Some(v)
+      None => base.italic
+    },
+    strike: match extra.strike {
+      Some(v) => Some(v)
+      None => base.strike
+    },
+    underline: match extra.underline {
+      Some(v) => Some(v)
+      None => base.underline
+    },
+    color: match extra.color {
+      Some(v) => Some(v)
+      None => base.color
+    },
+    fill: match extra.fill {
+      Some(v) => Some(v)
+      None => base.fill
+    },
+    border: None,
   }
 }
 
@@ -581,7 +651,14 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   } else {
     column_stripes
   }
-  let stripe_origin = range.row_start + parsed_table.header_rows.to_int64()
+  let stripe_origin = if selected_region == 15 {
+    Int64::min(
+      range.row_end,
+      range.row_start + parsed_table.header_rows.to_int64() - 1L,
+    )
+  } else {
+    range.row_start + parsed_table.header_rows.to_int64()
+  }
   let stripe_start = Int64::min(
     range.row_end + 1L,
     Int64::max(range.row_start, stripe_origin),
@@ -1596,11 +1673,13 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         }
       }
     }
-    for index, (_, id, _, _, _, _, _, _, _, extra_id, _) in table_rules {
+    for index, (_, id, _, _, _, _, region, _, _, extra_id, _) in table_rules {
       for choice in 0..<2 {
         let selected = if choice == 0 { id } else { extra_id }
         if selected >= 0 && matches.get(index * 2 + choice) is Some(matched) {
-          let diff = workbook.xlsx_conditional_style(selected)
+          let diff = workbook.xlsx_table_effective_style(
+            id, extra_id, region, choice,
+          )
           let font_diff : XlsxConditionalStyle = { ..diff, fill: None, }
           rows = xlsx_apply_conditional_style(rows, styles, matched, font_diff)
         }
@@ -1637,7 +1716,9 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       if id < 0 {
         continue
       }
-      let diff = workbook.xlsx_conditional_style(id)
+      let diff = workbook.xlsx_table_effective_style(
+        base_id, extra_id, region, choice,
+      )
       if diff.fill is None {
         continue
       }
