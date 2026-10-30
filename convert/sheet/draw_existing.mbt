@@ -140,6 +140,7 @@ pub fn draw_sized_grid_no_fonts(
   rich_colors~ : Map[Int32, Map[Int32, Array[GridRichColorRun]]] = Map([]),
   rich_base_sizes~ : Map[Int32, Map[Int32, Double]] = Map([]),
   table_headers~ : Array[(Int32, Int32, Int32, Int32, Int32)] = [],
+  table_filters~ : Array[(Int32, Int32)] = [],
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -785,6 +786,20 @@ pub fn draw_sized_grid_no_fonts(
       let index = tile.object.add_path(@core.Inline(path))
       tile.object.fill_path(index, 0)
       tile.drawn = true
+    }
+  }
+  for (row, column) in table_filters {
+    if row >= 0 && row < count && column >= 0 && column < visible_columns {
+      let height = row_positions[row + 1] - row_positions[row]
+      let width = col_positions[column + 1] - col_positions[column]
+      if width > 0.0 && height > 0.0 {
+        context.paint_filter_button(
+          col_positions[column],
+          row_positions[row],
+          width,
+          height,
+        )
+      }
     }
   }
   if auto_filter is Some((row, first, last)) {

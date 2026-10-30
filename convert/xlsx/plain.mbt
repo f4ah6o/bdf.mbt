@@ -7,7 +7,7 @@ pub(all) struct XlsxPlainResult {
 }
 
 ///|
-// A table without a style or filter affects header marks and data extraction.
+// An unstyled table affects header marks, filters and data extraction.
 fn XlsxWorkbook::xlsx_plain_table_area(
   self : XlsxWorkbook,
   part : String,
@@ -43,10 +43,8 @@ fn XlsxWorkbook::xlsx_plain_table_area(
           return -1L
         }
         if depth == 1 &&
-          (
-            name == "autoFilter" ||
-            (name == "tableStyleInfo" && xlsx_attr(element, "name", "") != "")
-          ) {
+          name == "tableStyleInfo" &&
+          xlsx_attr(element, "name", "") != "" {
           return -1L
         }
         if event.kind is Start(_) {
@@ -69,10 +67,96 @@ fn XlsxWorkbook::xlsx_plain_table_area(
 }
 
 ///|
+fn XlsxWorkbook::xlsx_plain_table_filters(
+  self : XlsxWorkbook,
+  part : String,
+) -> Array[(Int32, Int32)] raise {
+  let data = self.package.read(part) catch { _ => return [] }
+  let table = match xlsx_read_list_table(data) {
+    Some(value) => value
+    None => return []
+  }
+  if table.header_rows <= 0 {
+    return []
+  }
+  let reader = @xml.NamespaceReader::from_string(
+    @utf8.decode_lossy(data[:], ignore_bom=true),
+  )
+  let hidden : Map[Int32, Bool] = Map([])
+  let mut depth = 0
+  let mut filter_depth = -1
+  let mut seen = false
+  while true {
+    let event = reader.read_event()
+    match event.kind {
+      Start(element) | Empty(element) => {
+        let name = element.name.local_name
+        if depth == 1 && name == "autoFilter" && !seen {
+          seen = true
+          if event.kind is Start(_) {
+            filter_depth = depth + 1
+          }
+        } else if depth == filter_depth && name == "filterColumn" {
+          let raw = xlsx_trim(xlsx_attr(element, "colId", ""))
+          let col = match xlsx_int(raw) {
+            Some(value) => value
+            None => {
+              let value = @string.parse_double(raw) catch { _ => 0.0 }
+              if value.is_nan() {
+                0L
+              } else if value.is_inf() || value <= -1.0 || value >= 16384.0 {
+                -1L
+              } else {
+                value.to_int64()
+              }
+            }
+          }
+          if col >= 0L &&
+            col < 16384L &&
+            (
+              xlsx_bool_or(element, "hiddenButton", false) ||
+              !xlsx_bool_or(element, "showButton", true)
+            ) {
+            hidden[col.to_int()] = true
+          }
+        }
+        if event.kind is Start(_) {
+          depth += 1
+        } else if depth == 0 {
+          break
+        }
+      }
+      End(_) => {
+        depth -= 1
+        if depth + 1 == filter_depth {
+          filter_depth = -1
+        }
+        if depth == 0 {
+          break
+        }
+      }
+      Eof => break
+      _ => ()
+    }
+  }
+  if !seen {
+    return []
+  }
+  let result : Array[(Int32, Int32)] = []
+  let r = table.range
+  for column in r.column_start..<=r.column_end {
+    if !hidden.get(column - r.column_start).unwrap_or(false) {
+      result.push((r.row_start.to_int(), column))
+    }
+  }
+  result
+}
+
+///|
 fn XlsxWorkbook::xlsx_check_plain_sheet(
   self : XlsxWorkbook,
   part : String,
-) -> (Array[@sheet.GridLink], Bool, XlsxRange?) raise {
+) -> (Array[@sheet.GridLink], Bool, XlsxRange?, Array[(Int32, Int32)]) raise {
   let data = self.package.read(part) catch {
     @ooxml.InvalidOoxml(message) => raise InvalidXlsxInput(message)
   }
@@ -98,6 +182,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut has_conditional = false
   let mut auto_filter : XlsxRange? = None
   let links : Array[@sheet.GridLink] = []
+  let table_filters : Array[(Int32, Int32)] = []
   let relationships = self.package.relationships(part)
   while true {
     let event = reader.read_event()
@@ -152,6 +237,9 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
               )
             }
             table_room -= area
+            for cell in self.xlsx_plain_table_filters(rel.target) {
+              table_filters.push(cell)
+            }
           }
         } else if extension_depth >= 0 &&
           depth >= extension_depth &&
@@ -273,7 +361,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
       _ => ()
     }
   }
-  (links, has_conditional, auto_filter)
+  (links, has_conditional, auto_filter, table_filters)
 }
 
 ///|
@@ -709,7 +797,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   theme_colors : Map[Int32, XlsxRgb],
   shared_runs : Array[XlsxPlainRun?],
 ) -> (@sheet.DrawnGrid, XlsxSheetGeometry, Int32) raise {
-  let (links, has_conditional, filter_range) = workbook.xlsx_check_plain_sheet(
+  let (links, has_conditional, filter_range, table_filters) = workbook.xlsx_check_plain_sheet(
     ref.part,
   )
   let (parsed, rich_cells) = workbook.xlsx_read_sheet_cells_with_runs(
@@ -1593,6 +1681,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     rich_colors~,
     rich_base_sizes=run_base_sizes,
     table_headers~,
+    table_filters~,
   ) catch {
     @sheet.InvalidArgument(message) => raise InvalidXlsxInput(message)
     error => raise error
