@@ -132,7 +132,10 @@ retained for reproducible legacy fixtures. Wrapping coverage uses
 font name or size are covered by `generate_multi_equal_font_runs_test.go`,
 `generate_multi_equal_font_variants_test.go`, `generate_multi_equal_font_conditional_test.go`,
 `generate_multi_base_font_runs_test.go`, `generate_multi_base_font_conditional_test.go`
-and `generate_multi_base_font_legacy_test.go`.
+and `generate_multi_base_font_legacy_test.go`. Shrink-to-fit coverage uses
+`generate_multi_shrink_runs_test.go`, `generate_multi_shrink_base_test.go`,
+`generate_multi_shrink_conditional_test.go`, `generate_multi_shrink_wrap_test.go`
+and `generate_multi_shrink_fuzz_test.go`.
 Duplicate and unique predicates use `generate_conditional_duplicate_test.go`
 and `TestCodexConditionalDuplicate`. Numeric comparison-key tests are generated
 by `generate_duplicate_keys_test.go` and `TestCodexXLSXDuplicateKeys`, including

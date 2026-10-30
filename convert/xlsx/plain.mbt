@@ -1308,7 +1308,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           !run.segments.is_empty() {
           let alignment = styles.cell_formats[format_index].alignment
           if font.vertical != "" ||
-            alignment.shrink ||
             (
               horizontal != "general" &&
               horizontal != "left" &&
