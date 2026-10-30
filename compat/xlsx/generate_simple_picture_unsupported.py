@@ -22,7 +22,7 @@ for index, case in enumerate(cases):
     if variant == 0:
         drawing = drawing.replace("<a:stretch>", '<a:srcRect l="100001"/><a:stretch>')
     elif variant == 1:
-        drawing = drawing.replace("<spPr>", '<spPr><a:xfrm rot="21600001"/>')
+        drawing = drawing.replace("<spPr>", '<spPr><a:xfrm rot="86400001"/>')
     elif variant == 2:
         drawing = drawing.replace(
             '<a:blip r:embed="img"/>',

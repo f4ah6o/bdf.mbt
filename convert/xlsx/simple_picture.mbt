@@ -184,7 +184,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
               return None
             }
             saw_nvpr = true
-            if xlsx_attr(element, "hidden", "") != "" {
+            let hidden = xlsx_trim(xlsx_attr(element, "hidden", ""))
+            if !["", "0", "false", "off"].contains(hidden) {
               return None
             }
             description = xlsx_trim(xlsx_attr(element, "descr", ""))
