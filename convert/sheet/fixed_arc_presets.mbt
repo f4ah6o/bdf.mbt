@@ -32,6 +32,7 @@ fn SheetArcPath::arc(
   ry : Double,
   start : Double,
   sweep : Double,
+  go_angles~ : Bool = false,
 ) -> Unit {
   if rx <= 0.0 || ry <= 0.0 {
     return
@@ -39,11 +40,20 @@ fn SheetArcPath::arc(
   let unit = 2.9088820866572161809e-7
   let start = start * unit
   let sweep = sweep * unit
-  let a0 = @math.atan2(rx * @math.sin(start), ry * @math.cos(start))
-  let end = @math.atan2(
-    rx * @math.sin(start + sweep),
-    ry * @math.cos(start + sweep),
-  )
+  let y0 = rx * @math.sin(start)
+  let x0 = ry * @math.cos(start)
+  let y1 = rx * @math.sin(start + sweep)
+  let x1 = ry * @math.cos(start + sweep)
+  let a0 = if go_angles {
+    sheet_arc_go_atan2(y0, x0)
+  } else {
+    @math.atan2(y0, x0)
+  }
+  let end = if go_angles {
+    sheet_arc_go_atan2(y1, x1)
+  } else {
+    @math.atan2(y1, x1)
+  }
   let d = end - (a0 + sweep)
   let d = @core.fused_multiply_add(
     -2.0 * @math.PI,
@@ -64,6 +74,103 @@ fn SheetArcPath::arc(
   self.coordinates.push(if sweep < 0.0 { 1.0 } else { 0.0 })
   self.x = @core.fused_multiply_add(rx, @math.cos(a1), cx)
   self.y = @core.fused_multiply_add(ry, @math.sin(a1), cy)
+}
+
+///|
+// Copyright 2009 The Go Authors. Adapted from Go math/atan.go and atan2.go
+// (BSD license: ../../licenses/Go-x-text.txt). The atan approximation is based
+// on the Cephes Math Library by Stephen L. Moshier; see
+// ../../licenses/Cephes.txt for its copyright and permission notice.
+// Go computes atan2 through atan(y / x) followed by a quadrant correction.
+// Browser and Wasm atan2 may round differently near pi, which changes BDF
+// coordinates even when the resulting angles have the same float32 value.
+fn sheet_arc_go_atan2(y : Double, x : Double) -> Double {
+  if y == 0.0 {
+    if x < 0.0 {
+      return if y.reinterpret_as_uint64() >> 63 == 0UL {
+        @math.PI
+      } else {
+        -@math.PI
+      }
+    }
+    return y
+  }
+  if x == 0.0 {
+    return if y > 0.0 { @math.PI / 2.0 } else { -@math.PI / 2.0 }
+  }
+  let q = sheet_arc_go_atan(y / x)
+  if x < 0.0 {
+    if q <= 0.0 {
+      q + @math.PI
+    } else {
+      q - @math.PI
+    }
+  } else {
+    q
+  }
+}
+
+///|
+// Go's atan range reduction is required here: near a quadrant the small
+// difference between atan and the platform math library survives as a path
+// coordinate after the arc center is computed.
+fn sheet_arc_go_atan(value : Double) -> Double {
+  if value == 0.0 {
+    return value
+  }
+  let x = value.abs()
+  let more = 6.123233995736765886130e-17
+  let result = if x <= 0.66 {
+    sheet_arc_go_xatan(x)
+  } else if x > 2.41421356237309504880 {
+    @math.PI / 2.0 - sheet_arc_go_xatan(1.0 / x) + more
+  } else {
+    @math.PI / 4.0 + sheet_arc_go_xatan((x - 1.0) / (x + 1.0)) + 0.5 * more
+  }
+  if value > 0.0 {
+    result
+  } else {
+    -result
+  }
+}
+
+///|
+fn sheet_arc_go_xatan(x : Double) -> Double {
+  let z = x * x
+  let p = @core.fused_multiply_add(
+    @core.fused_multiply_add(
+      @core.fused_multiply_add(
+        @core.fused_multiply_add(
+          -8.750608600031904122785e-1, z, -1.615753718733365076637e1,
+        ),
+        z,
+        -7.500855792314704667340e1,
+      ),
+      z,
+      -1.228866684490136173410e2,
+    ),
+    z,
+    -6.485021904942025371773e1,
+  )
+  let q = @core.fused_multiply_add(
+    @core.fused_multiply_add(
+      @core.fused_multiply_add(
+        @core.fused_multiply_add(
+          z + 2.485846490142306297962e1,
+          z,
+          1.650270098316988542046e2,
+        ),
+        z,
+        4.328810604912902668951e2,
+      ),
+      z,
+      4.853903996359136964868e2,
+    ),
+    z,
+    1.945506571482613964425e2,
+  )
+  let r = z * p / q
+  @core.fused_multiply_add(x, r, x)
 }
 
 ///|

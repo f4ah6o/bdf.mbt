@@ -425,7 +425,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
               "flowChartInputOutput", "flowChartPreparation", "flowChartPunchedCard",
               "flowChartCollate", "flowChartManualInput", "flowChartManualOperation",
               "flowChartOffpageConnector", "irregularSeal1", "irregularSeal2", "lightningBolt",
-              "swooshArrow", "flowChartDocument", "heart", "wave", "doubleWave",
+              "plaque", "round1Rect", "round2DiagRect", "round2SameRect", "snipRoundRect",
+              "bentArrow", "swooshArrow", "flowChartDocument", "heart", "wave", "doubleWave",
               "bentUpArrow", "corner", "diagStripe", "dodecagon", "downArrow", "downArrowCallout",
               "halfFrame", "heptagon", "leftArrow", "leftArrowCallout", "leftRightArrow",
               "leftRightArrowCallout", "leftRightUpArrow", "leftUpArrow", "mathMinus",
@@ -865,13 +866,14 @@ fn XlsxWorkbook::xlsx_simple_picture(
             [
               "triangle", "parallelogram", "trapezoid", "homePlate", "chevron", "plus",
               "hexagon", "octagon", "roundRect", "diagStripe", "snip1Rect", "star10",
-              "star7", "swooshArrow", "wave", "doubleWave", "bentUpArrow", "corner",
-              "downArrow", "downArrowCallout", "halfFrame", "leftArrow", "leftArrowCallout",
-              "leftRightArrow", "leftRightArrowCallout", "leftRightUpArrow", "leftUpArrow",
-              "mathMinus", "mathPlus", "nonIsoscelesTrapezoid", "notchedRightArrow",
-              "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout",
-              "snip2DiagRect", "snip2SameRect", "upArrowCallout", "upDownArrow",
-              "upArrow", "upDownArrowCallout", "wedgeRectCallout",
+              "star7", "plaque", "round1Rect", "round2DiagRect", "round2SameRect",
+              "snipRoundRect", "bentArrow", "swooshArrow", "wave", "doubleWave",
+              "bentUpArrow", "corner", "downArrow", "downArrowCallout", "halfFrame",
+              "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
+              "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid",
+              "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow",
+              "rightArrowCallout", "snip2DiagRect", "snip2SameRect", "upArrowCallout",
+              "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
             ].contains(shape_geometry)
           )
         } else if depth == 6 && parent == "avLst" && parents[4] == "prstGeom" {
@@ -903,13 +905,13 @@ fn XlsxWorkbook::xlsx_simple_picture(
             _ => return None
           }
           let first_guide = if [
-              "swooshArrow", "wave", "doubleWave", "bentUpArrow", "corner", "downArrow",
-              "downArrowCallout", "halfFrame", "leftArrow", "leftArrowCallout", "leftRightArrow",
-              "leftRightArrowCallout", "leftRightUpArrow", "leftUpArrow", "mathMinus",
-              "mathPlus", "nonIsoscelesTrapezoid", "notchedRightArrow", "quadArrow",
-              "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip2DiagRect",
-              "snip2SameRect", "upArrowCallout", "upDownArrow", "upArrow", "upDownArrowCallout",
-              "wedgeRectCallout",
+              "round2DiagRect", "round2SameRect", "snipRoundRect", "bentArrow", "swooshArrow",
+              "wave", "doubleWave", "bentUpArrow", "corner", "downArrow", "downArrowCallout",
+              "halfFrame", "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
+              "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid",
+              "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow",
+              "rightArrowCallout", "snip2DiagRect", "snip2SameRect", "upArrowCallout",
+              "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
             ].contains(shape_geometry) {
             "adj1"
           } else {
@@ -2227,23 +2229,24 @@ fn xlsx_shape_extra_guide_allowed(geometry : String, guide : String) -> Bool {
   match guide {
     "adj2" =>
       [
-        "swooshArrow", "wave", "doubleWave", "bentUpArrow", "corner", "downArrow",
-        "downArrowCallout", "halfFrame", "leftArrow", "leftArrowCallout", "leftRightArrow",
-        "leftRightArrowCallout", "leftRightUpArrow", "leftUpArrow", "nonIsoscelesTrapezoid",
-        "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout",
-        "snip2DiagRect", "snip2SameRect", "upArrowCallout", "upDownArrow", "upArrow",
-        "upDownArrowCallout", "wedgeRectCallout",
+        "round2DiagRect", "round2SameRect", "snipRoundRect", "bentArrow", "swooshArrow",
+        "wave", "doubleWave", "bentUpArrow", "corner", "downArrow", "downArrowCallout",
+        "halfFrame", "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
+        "leftRightUpArrow", "leftUpArrow", "nonIsoscelesTrapezoid", "notchedRightArrow",
+        "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip2DiagRect",
+        "snip2SameRect", "upArrowCallout", "upDownArrow", "upArrow", "upDownArrowCallout",
+        "wedgeRectCallout",
       ].contains(geometry)
     "adj3" =>
       [
-        "bentUpArrow", "downArrowCallout", "leftArrowCallout", "leftRightArrowCallout",
+        "bentArrow", "bentUpArrow", "downArrowCallout", "leftArrowCallout", "leftRightArrowCallout",
         "leftRightUpArrow", "leftUpArrow", "quadArrow", "quadArrowCallout", "rightArrowCallout",
         "upArrowCallout", "upDownArrowCallout",
       ].contains(geometry)
     "adj4" =>
       [
-        "downArrowCallout", "leftArrowCallout", "leftRightArrowCallout", "quadArrowCallout",
-        "rightArrowCallout", "upArrowCallout", "upDownArrowCallout",
+        "bentArrow", "downArrowCallout", "leftArrowCallout", "leftRightArrowCallout",
+        "quadArrowCallout", "rightArrowCallout", "upArrowCallout", "upDownArrowCallout",
       ].contains(geometry)
     _ => false
   }
