@@ -338,6 +338,17 @@ fn XlsxWorkbook::xlsx_table_style(
         chosen = id
       } else if selected_kind == "wholeTotal" && kind == "totalRow" {
         other = id
+      } else if selected_kind == "headerRow" && kind == "totalRow" {
+        other = id
+        selected_kind = "headerTotal"
+      } else if selected_kind == "totalRow" && kind == "headerRow" {
+        other = chosen
+        chosen = id
+        selected_kind = "headerTotal"
+      } else if selected_kind == "headerTotal" && kind == "headerRow" {
+        chosen = id
+      } else if selected_kind == "headerTotal" && kind == "totalRow" {
+        other = id
       } else {
         return (-1, 0, 1L, -1, 1L)
       }
@@ -423,6 +434,8 @@ fn XlsxWorkbook::xlsx_table_style(
       15
     } else if selected_kind == "wholeTotal" {
       16
+    } else if selected_kind == "headerTotal" {
+      17
     } else {
       0
     },
@@ -453,7 +466,19 @@ fn xlsx_table_stripe_choice(
   row : Int32,
   col : Int32,
 ) -> Int32 {
-  if region == 15 {
+  if region == 17 {
+    let header = row.to_int64() <= width
+    let total = row.to_int64() >= other_width
+    if header && total {
+      2
+    } else if header {
+      0
+    } else if total {
+      1
+    } else {
+      -1
+    }
+  } else if region == 15 {
     if row.to_int64() <= origin {
       1
     } else {
@@ -503,7 +528,8 @@ fn XlsxWorkbook::xlsx_table_effective_style(
   region : Int32,
   choice : Int32,
 ) -> XlsxConditionalStyle raise {
-  if (region != 15 && region != 16) || choice != 1 {
+  if !(((region == 15 || region == 16) && choice == 1) ||
+    (region == 17 && choice == 2)) {
     return self.xlsx_conditional_style(
       if choice == 0 {
         base_id
@@ -761,10 +787,43 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   } else {
     range.column_end
   }
+  let header_end = if parsed_table.header_rows > 0 {
+    Int64::min(
+      range.row_end,
+      range.row_start + parsed_table.header_rows.to_int64() - 1L,
+    )
+  } else {
+    range.row_start - 1L
+  }
+  let total_start = if parsed_table.totals_rows > 0 {
+    Int64::max(
+      range.row_start,
+      range.row_end - parsed_table.totals_rows.to_int64() + 1L,
+    )
+  } else {
+    range.row_end + 1L
+  }
   table_rules.push(
     (
-      range, style_rule, style_start, style_end, style_col_start, style_col_end,
-      selected_region, stripe_origin, selected_width, other_rule, other_width,
+      range,
+      style_rule,
+      style_start,
+      style_end,
+      style_col_start,
+      style_col_end,
+      selected_region,
+      stripe_origin,
+      if selected_region == 17 {
+        header_end
+      } else {
+        selected_width
+      },
+      other_rule,
+      if selected_region == 17 {
+        total_start
+      } else {
+        other_width
+      },
     ),
   )
   area
@@ -1678,7 +1737,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             row.index.to_int64() <= style_end &&
             cell.column >= style_col_start &&
             cell.column <= style_col_end {
-            let group_key = index * 2 + choice
+            let group_key = index * 3 + choice
             let group = match matches.get(group_key) {
               Some(value) => value
               None => {
@@ -1702,9 +1761,12 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       }
     }
     for index, (_, id, _, _, _, _, region, _, _, extra_id, _) in table_rules {
-      for choice in 0..<2 {
+      for choice in 0..<3 {
+        if choice == 2 && region != 17 {
+          continue
+        }
         let selected = if choice == 0 { id } else { extra_id }
-        if selected >= 0 && matches.get(index * 2 + choice) is Some(matched) {
+        if selected >= 0 && matches.get(index * 3 + choice) is Some(matched) {
           let diff = workbook.xlsx_table_effective_style(
             id, extra_id, region, choice,
           )
@@ -1739,7 +1801,10 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       extra_id,
       extra_width,
     ) in table_rules {
-    for choice in 0..<2 {
+    for choice in 0..<3 {
+      if choice == 2 && region != 17 {
+        continue
+      }
       let id = if choice == 0 { base_id } else { extra_id }
       if id < 0 {
         continue
