@@ -1363,6 +1363,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   table_rows : Array[XlsxRow],
   table_headers : Array[(Int32, Int32, Int32, Int32, Int32)],
   table_events : Array[(String, String)],
+  pictures : Array[@sheet.GridPicture],
 ) -> (
   Array[@sheet.GridLink],
   Bool,
@@ -1666,9 +1667,13 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
         _ => false
       }
       if !empty {
-        raise InvalidXlsxInput(
-          "xlsx: plain conversion does not support worksheet feature drawing",
-        )
+        match self.xlsx_simple_picture(target) {
+          Some(picture) => pictures.push(picture)
+          None =>
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion does not support worksheet feature drawing",
+            )
+        }
       }
     }
   }
@@ -1982,7 +1987,10 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// shrink-to-fit, indentation and center-across-selection.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// patterned row and column fills, complex borders and other features are
-/// rejected. Supported numeric conditional rules may apply a differential font,
+/// rejected. One untransformed embedded PNG is supported on a single visible
+/// sheet when its drawing fits in one tile, with zero cell-anchor offsets and
+/// row heights in quarter-point increments.
+/// Supported numeric conditional rules may apply a differential font,
 /// solid fill and border or be inactive. For blank-cell fills or borders,
 /// ranges are limited to 200,000 cells. Other conditional
 /// formats are rejected.
@@ -2055,9 +2063,6 @@ pub fn convert_plain_no_fonts(
     let number = index + 1
     let id = "sheet" + number.to_string()
     let table_events : Array[(String, String)] = []
-    let (drawn, geo, missing_formula_values) = workbook.xlsx_draw_plain_sheet(
-      ref, styles, locale, doc_language, theme_colors, shared_runs, table_events,
-    )
     let (next, table_warnings) = workbook.store_sheet_tables(
       writer,
       ref.part,
@@ -2067,6 +2072,10 @@ pub fn convert_plain_no_fonts(
       mode,
       counter,
       locale.number_locale,
+    )
+    let (drawn, geo, missing_formula_values) = workbook.xlsx_draw_plain_sheet(
+      ref, styles, locale, doc_language, theme_colors, shared_runs, table_events,
+      writer,
     )
     counter = next
     for warning in table_warnings {
@@ -2120,6 +2129,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   theme_colors : Map[Int32, XlsxRgb],
   shared_runs : Array[XlsxPlainRun?],
   table_events : Array[(String, String)],
+  writer : @core.DocumentWriter,
 ) -> (@sheet.DrawnGrid, XlsxSheetGeometry, Int32) raise {
   let (parsed, rich_cells) = workbook.xlsx_read_sheet_cells_with_runs(
     ref.part,
@@ -2127,6 +2137,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   )
   let mut rows = parsed.sorted_rows()
   let table_headers : Array[(Int32, Int32, Int32, Int32, Int32)] = []
+  let pictures : Array[@sheet.GridPicture] = []
   let (
     links,
     has_conditional,
@@ -2140,7 +2151,16 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     rows,
     table_headers,
     table_events,
+    pictures,
   )
+  if !pictures.is_empty() {
+    let visible = workbook.sheets.filter(sheet => !sheet.hidden)
+    if visible.length() != 1 {
+      raise InvalidXlsxInput(
+        "xlsx: picture conversion currently supports one visible sheet",
+      )
+    }
+  }
   let mut styled_runs = false
   for _, columns in rich_cells {
     for _, run in columns {
@@ -2186,6 +2206,21 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   }
   let notes = workbook.xlsx_plain_notes(ref.part)
   let geo = workbook.read_sheet_geometry(ref.part)
+  if !pictures.is_empty() {
+    let height = geo.default_row_height
+    if height > 0.0 && height * 4.0 != (height * 4.0).trunc() {
+      raise InvalidXlsxInput(
+        "xlsx: pictures with fractional row heights are not supported",
+      )
+    }
+    for row in rows {
+      if row.height >= 0.0 && row.height * 4.0 != (row.height * 4.0).trunc() {
+        raise InvalidXlsxInput(
+          "xlsx: pictures with fractional row heights are not supported",
+        )
+      }
+    }
+  }
   let (spans, region_rows, merge_regions) = xlsx_plain_spans(geo.merges)
   let center_across : Map[Int32, Map[Int32, Bool]] = Map([])
   for row in rows {
@@ -2220,6 +2255,9 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     }
   }
   let extent_points = notes.copy()
+  for picture in pictures {
+    extent_points.push((picture.to_row, picture.to_column))
+  }
   for (range, _, _, _, _, _, _, _, _, _, _, _, _) in table_rules {
     extent_points.push((range.row_end.to_int(), range.column_end))
   }
@@ -3448,6 +3486,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     rich_base_sizes=run_base_sizes,
     table_headers~,
     table_filters~,
+    pictures~,
+    picture_writer=Some(writer),
   ) catch {
     @sheet.InvalidArgument(message) => raise InvalidXlsxInput(message)
     error => raise error
