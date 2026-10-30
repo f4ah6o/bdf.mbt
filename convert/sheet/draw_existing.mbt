@@ -402,6 +402,7 @@ pub fn draw_sized_grid_no_fonts(
             baseline: line.baseline,
             width: line.width,
             cjk_wrap: line.cjk_wrap,
+            explicit: line.explicit,
           }
         })
         let mut x0 = col_positions[column]
@@ -521,19 +522,61 @@ pub fn draw_sized_grid_no_fonts(
         Some(columns) => columns.get(column).unwrap_or([])
         None => []
       }
+      let rich_lines : Array[Array[GridRichColorRun]] = []
       if !rich_runs.is_empty() {
-        let content = StringBuilder()
-        for run in rich_runs {
+        let chars : Array[Char] = []
+        let owners : Array[Int32] = []
+        for index, run in rich_runs {
           for ch in run.text {
-            if ch.to_int() < 0x20 {
+            if ch.to_int() < 0x20 && ch != '\n' {
               raise InvalidArgument("styled runs require printable text")
             }
+            chars.push(ch)
+            owners.push(index)
           }
-          content.write_string(run.text)
         }
-        if layout.lines.length() != 1 ||
-          layout.lines[0].text != content.to_string() {
-          raise InvalidArgument("styled runs must match one visible line")
+        let mut cursor = 0
+        for line_index, line in layout.lines {
+          if line_index > 0 {
+            while cursor < chars.length() &&
+                  chars[cursor] != '\n' &&
+                  break_space(chars[cursor]) {
+              cursor += 1
+            }
+            if line.explicit {
+              if cursor >= chars.length() || chars[cursor] != '\n' {
+                raise InvalidArgument("styled runs must match visible lines")
+              }
+              cursor += 1
+            }
+          }
+          let output : Array[GridRichColorRun] = []
+          let mut previous = -1
+          for ch in line.text {
+            if cursor >= chars.length() || chars[cursor] != ch {
+              raise InvalidArgument("styled runs must match visible lines")
+            }
+            let owner = owners[cursor]
+            if previous == owner && !output.is_empty() {
+              let last = output.length() - 1
+              output[last] = {
+                ..output[last],
+                text: output[last].text + ch.to_string(),
+              }
+            } else {
+              output.push({ ..rich_runs[owner], text: ch.to_string(), })
+            }
+            previous = owner
+            cursor += 1
+          }
+          rich_lines.push(output)
+        }
+        while cursor < chars.length() &&
+              (break_space(chars[cursor]) || chars[cursor] == '\n') {
+          cursor += 1
+        }
+        if cursor != chars.length() {
+          raise InvalidArgument("styled runs must match visible lines")
         }
       }
       for tile in context.in_bounds(layout.x0, layout.y0, layout.x1, layout.y1) {
@@ -553,7 +596,7 @@ pub fn draw_sized_grid_no_fonts(
           italic~,
           underline=decoration.underline,
           strike=decoration.strike,
-          rich_runs~,
+          rich_lines~,
         )
       }
     }

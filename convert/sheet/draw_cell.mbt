@@ -126,6 +126,7 @@ fn grid_cell_layout(
       baseline,
       width: line.width,
       cjk_wrap: line.cjk_wrap,
+      explicit: line.explicit,
     })
     top += ascent + descent
   }

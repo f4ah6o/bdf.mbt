@@ -1312,7 +1312,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             font.underline != "" ||
             font.strike ||
             font.vertical != "" ||
-            alignment.wrap ||
             alignment.shrink ||
             (
               horizontal != "general" &&
@@ -1329,7 +1328,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             )
           }
           for ch in run.text {
-            if ch.to_int() < 0x20 {
+            if ch.to_int() < 0x20 && !(ch == '\n' && alignment.wrap) {
               raise InvalidXlsxInput(
                 "xlsx: plain conversion does not support these styled rich text runs",
               )

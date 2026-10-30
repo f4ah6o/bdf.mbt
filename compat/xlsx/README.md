@@ -110,7 +110,7 @@ direct text, data extraction, wrapping and duplicate cell references use
 Single styled runs use `generate_single_styled_run_test.go`,
 `generate_single_styled_run_conditional_test.go`, `generate_single_styled_run_variants_test.go`,
 and `generate_single_styled_run_legacy_test.go`. Multiple styled runs with color, bold, italic, underline and strike are
-supported for unwrapped, single-line text with left, right or center alignment.
+supported with wrapping, explicit line breaks, and left, right or center alignment.
 Their coverage uses `generate_multi_color_runs_test.go`,
 `generate_multi_color_runs_geometry_test.go`,
 `generate_multi_color_runs_conditional_test.go` and
@@ -124,7 +124,10 @@ Alignment and Unicode coverage uses `generate_multi_align_runs_test.go`,
 `generate_multi_unicode_runs_geometry_test.go`, `generate_multi_unicode_runs_conditional_test.go`,
 `generate_multi_unicode_runs_aligned_test.go`, `generate_multi_unicode_repertoire_test.go`
 and `generate_multi_unicode_legacy_test.go`. The original unsupported inputs are
-retained for reproducible legacy fixtures.
+retained for reproducible legacy fixtures. Wrapping coverage uses
+`generate_multi_wrap_runs_test.go`, `generate_multi_newline_runs_test.go`,
+`generate_multi_wrap_runs_conditional_test.go`, `generate_multi_newline_runs_conditional_test.go`,
+`generate_multi_wrap_spaces_test.go` and `generate_multi_wrap_legacy_test.go`.
 Duplicate and unique predicates use `generate_conditional_duplicate_test.go`
 and `TestCodexConditionalDuplicate`. Numeric comparison-key tests are generated
 by `generate_duplicate_keys_test.go` and `TestCodexXLSXDuplicateKeys`, including

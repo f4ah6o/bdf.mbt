@@ -21,6 +21,7 @@ priv struct DrawLine {
   baseline : Double
   width : Double
   cjk_wrap : Bool
+  explicit : Bool
 }
 
 ///|

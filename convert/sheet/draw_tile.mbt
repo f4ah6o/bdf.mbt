@@ -257,7 +257,7 @@ fn DrawTile::emit_cell(
   italic~ : Bool = false,
   underline~ : String = "",
   strike~ : Bool = false,
-  rich_runs~ : Array[GridRichColorRun] = [],
+  rich_lines~ : Array[Array[GridRichColorRun]] = [],
 ) -> Unit raise {
   self.object.mark(2, ref)
   if layout.lang_known {
@@ -283,7 +283,8 @@ fn DrawTile::emit_cell(
     if i > 0 {
       self.object.mark(if line.cjk_wrap { 5 } else { 1 }, "")
     }
-    if !rich_runs.is_empty() {
+    if !rich_lines.is_empty() {
+      let rich_runs = rich_lines[i]
       let mut offset = 0.0
       for run in rich_runs {
         let mut chars = StringBuilder()
