@@ -83,7 +83,9 @@ moving references use `generate_conditional_disjoint_moving_test.go` and
 `TestCodexConditionalDisjointMoving`. Overlapping ranges with the same style use
 `generate_conditional_same_style_test.go` and `TestCodexConditionalSameStyle`;
 multiple rules use `generate_conditional_same_rule_style_test.go` and
-`TestCodexConditionalSameRuleStyle`.
+`TestCodexConditionalSameRuleStyle`. Rules with different styles and disjoint
+matches use `generate_conditional_disjoint_matches_test.go` and
+`TestCodexConditionalDisjointMatches`.
 `conditional-identical-blocks.json` retains Go results for formerly unsupported
 identical conditional blocks. Regenerate it from the adjacent input seeds with
 `generate_conditional_identical_blocks_test.go` and `TestCodexConditionalIdenticalBlocks`.
