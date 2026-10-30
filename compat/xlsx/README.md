@@ -204,4 +204,4 @@ The `plain-table-*` fixtures cover unstyled tables, including header marks, filt
 
 Table processing follows the upstream per-sheet budget for cells absent from the file. Invalid table ranges are skipped, and missing table parts and supported malformed XML errors produce warnings while other tables continue to render.
 
-Worksheets with empty drawing parts or anchors without drawable elements are converted; drawings containing shapes, images, or other drawable elements remain unsupported.
+Worksheets with empty drawing parts or anchors without drawable elements are converted, and missing drawing parts and supported malformed XML errors produce warnings; drawings containing shapes, images, or other drawable elements remain unsupported. Markup-compatibility alternatives in drawing parts are also rejected until drawing selection is supported.

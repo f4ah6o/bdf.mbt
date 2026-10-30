@@ -785,6 +785,45 @@ fn XlsxWorkbook::xlsx_table_effective_style(
 }
 
 ///|
+fn xlsx_xml_bom_bytes(data : Bytes) -> Int32 {
+  if data.length() >= 3 &&
+    data[0].to_int() == 239 &&
+    data[1].to_int() == 187 &&
+    data[2].to_int() == 191 {
+    3
+  } else {
+    0
+  }
+}
+
+///|
+fn xlsx_go_xml_error(
+  error : @xml.XmlErrorKind,
+  span : @xml.SourceSpan,
+  text : String,
+  bom : Int32,
+) -> String? {
+  match error {
+    @xml.UnexpectedEof => Some("xml: unexpected end of input")
+    @xml.InvalidSyntax(message) if message.has_prefix("unclosed element:") =>
+      Some("xml: unexpected end of input")
+    @xml.InvalidSyntax(message) if message == "empty document - no root element" =>
+      Some("unexpected EOF")
+    @xml.InvalidSyntax(message) if message.has_prefix("end tag mismatch:") =>
+      Some(
+        "xml: end tag does not match open element at byte " +
+        (@utf8.encode(text[:span.start.offset].to_owned()).length() + bom).to_string(),
+      )
+    @xml.InvalidSyntax(message) if message ==
+      "expected '>' or '/>' at end of start tag" &&
+      span.end.offset == text.length() => Some("xml: unexpected end of input")
+    @xml.InvalidSyntax(message) if message == "expected '>' after end tag name" &&
+      span.end.offset == text.length() => Some("xml: unexpected end of input")
+    _ => None
+  }
+}
+
+///|
 // An unstyled table affects header marks, filters and data extraction.
 fn XlsxWorkbook::xlsx_plain_table_area(
   self : XlsxWorkbook,
@@ -827,22 +866,10 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   }
   let table = xlsx_read_list_table(data) catch {
     @xml.At(error~, span~) => {
-      let reason = match error {
-        @xml.UnexpectedEof => "xml: unexpected end of input"
-        @xml.InvalidSyntax(message) if message.has_prefix("unclosed element:") =>
-          "xml: unexpected end of input"
-        @xml.InvalidSyntax(message) if message ==
-          "empty document - no root element" => "unexpected EOF"
-        @xml.InvalidSyntax(message) if message.has_prefix("end tag mismatch:") =>
-          "xml: end tag does not match open element at byte " +
-          @utf8.encode(text[:span.start.offset].to_owned()).length().to_string()
-        @xml.InvalidSyntax(message) if message ==
-          "expected '>' or '/>' at end of start tag" &&
-          span.end.offset == text.length() => "xml: unexpected end of input"
-        @xml.InvalidSyntax(message) if message ==
-          "expected '>' after end tag name" &&
-          span.end.offset == text.length() => "xml: unexpected end of input"
-        _ => return -1L
+      let reason = match
+        xlsx_go_xml_error(error, span, text, xlsx_xml_bom_bytes(data)) {
+        Some(reason) => reason
+        None => return -1L
       }
       table_events.push(("", "table " + part + ": " + part + ": " + reason))
       return -3L
@@ -1280,6 +1307,12 @@ fn XlsxWorkbook::xlsx_empty_drawing(
     match event.kind {
       Start(element) | Empty(element) => {
         let name = element.name.local_name
+        if name == "AlternateContent" &&
+          element.name.namespace_uri
+          .unwrap_or("")
+          .has_suffix("markup-compatibility/2006") {
+          return false
+        }
         if depth == 1 &&
           (
             name == "twoCellAnchor" ||
@@ -1403,6 +1436,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   ] = []
   let mut has_conditional = false
   let mut auto_filter : XlsxRange? = None
+  let mut drawing_target : String? = None
   let links : Array[@sheet.GridLink] = []
   let table_filters : Array[(Int32, Int32)] = []
   let relationships = self.package.relationships(part)
@@ -1423,15 +1457,10 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           }
           if name == "drawing" {
             let id = xlsx_rel_id(element, "id")
-            if id != "" && self.package.target(part, id) is Some(rel) {
-              let empty = self.xlsx_empty_drawing(rel.target) catch {
-                _ => false
-              }
-              if !empty {
-                raise InvalidXlsxInput(
-                  "xlsx: plain conversion does not support worksheet feature drawing",
-                )
-              }
+            drawing_target = if id == "" {
+              None
+            } else {
+              self.package.target(part, id).map(rel => rel.target)
             }
           }
           if name == "tableParts" && event.kind is Start(_) {
@@ -1611,6 +1640,36 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           raise InvalidXlsxInput("xlsx: unexpected EOF")
         }
       _ => ()
+    }
+  }
+  if drawing_target is Some(target) {
+    if !self.package.has(target) {
+      table_events.push(("", "drawing " + target + ": missing part " + target))
+    } else {
+      let empty = self.xlsx_empty_drawing(target) catch {
+        @xml.At(error~, span~) => {
+          let bytes = self.package.read(target) catch {
+            _ => raise InvalidXlsxInput("xlsx: unable to read drawing part")
+          }
+          let text = @utf8.decode_lossy(bytes[:], ignore_bom=true)
+          match
+            xlsx_go_xml_error(error, span, text, xlsx_xml_bom_bytes(bytes)) {
+            Some(reason) => {
+              table_events.push(
+                ("", "drawing " + target + ": " + target + ": " + reason),
+              )
+              true
+            }
+            None => false
+          }
+        }
+        _ => false
+      }
+      if !empty {
+        raise InvalidXlsxInput(
+          "xlsx: plain conversion does not support worksheet feature drawing",
+        )
+      }
     }
   }
   (
