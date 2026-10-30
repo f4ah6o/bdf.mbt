@@ -53,6 +53,9 @@ pub(all) struct GridTextDecoration {
 pub(all) struct GridRichColorRun {
   text : String
   color : UInt32
+  family_override : Bool
+  family : String
+  east_asian : String
   bold : Bool
   italic : Bool
   underline : String

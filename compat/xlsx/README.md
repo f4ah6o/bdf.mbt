@@ -141,6 +141,10 @@ use `generate_multi_edge_space_plain_test.go`, `generate_multi_edge_space_wrap_t
 `generate_multi_edge_newline_test.go`, `generate_multi_empty_runs_test.go`,
 `generate_multi_control_plain_test.go`, `generate_multi_control_wrap_test.go`,
 `generate_multi_control_shrink_test.go` and `generate_multi_edge_legacy_test.go`.
+Per-run font families and theme resolution use `generate_multi_family_runs_test.go`,
+`generate_multi_family_theme_test.go`, `generate_multi_family_conditional_test.go`,
+`generate_multi_family_shrink_test.go`, `generate_multi_family_generic_test.go`
+and `generate_multi_family_legacy_test.go`.
 Duplicate and unique predicates use `generate_conditional_duplicate_test.go`
 and `TestCodexConditionalDuplicate`. Numeric comparison-key tests are generated
 by `generate_duplicate_keys_test.go` and `TestCodexXLSXDuplicateKeys`, including

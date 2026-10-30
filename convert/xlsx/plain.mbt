@@ -1334,14 +1334,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             let color = match segment.font {
               None => default_color
               Some(segment_font) => {
-                if (
-                    segment_font.name != "" &&
-                    (
-                      segment_font.name != font.name ||
-                      segment_font.scheme != font.scheme
-                    )
-                  ) ||
-                  (segment_font.size != 0.0 && segment_font.size != font.size) ||
+                if (segment_font.size != 0.0 && segment_font.size != font.size) ||
                   segment_font.vertical != "" {
                   raise InvalidXlsxInput(
                     "xlsx: plain conversion does not support these styled rich text runs",
@@ -1377,9 +1370,44 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
                 Some(font) =>
                   (font.bold, font.italic, font.underline, font.strike)
               }
+              let family_override = match segment.font {
+                Some(font) => font.name != ""
+                None => false
+              }
+              let family = match segment.font {
+                Some(font) if font.name != "" => {
+                  let themed = if font.scheme == "minor" {
+                    theme.resolve("+mn-lt", locale.script)
+                  } else if font.scheme == "major" {
+                    theme.resolve("+mj-lt", locale.script)
+                  } else {
+                    ""
+                  }
+                  if themed != "" {
+                    themed
+                  } else {
+                    font.name
+                  }
+                }
+                _ => ""
+              }
+              let east_asian = match segment.font {
+                Some(font) if font.name != "" =>
+                  if font.scheme == "minor" {
+                    theme.resolve("+mn-ea", locale.script)
+                  } else if font.scheme == "major" {
+                    theme.resolve("+mj-ea", locale.script)
+                  } else {
+                    ""
+                  }
+                _ => ""
+              }
               segments.push({
                 text: segment.text,
                 color,
+                family_override,
+                family,
+                east_asian,
                 bold,
                 italic,
                 underline,

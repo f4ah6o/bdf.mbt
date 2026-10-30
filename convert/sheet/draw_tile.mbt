@@ -287,6 +287,20 @@ fn DrawTile::emit_cell(
       let rich_runs = rich_lines[i]
       let mut offset = 0.0
       for run in rich_runs {
+        let run_family = if run.family_override {
+          rich_family(run.family)
+        } else {
+          family
+        }
+        let run_east_asian = if run.family_override {
+          if run.east_asian == "" {
+            ""
+          } else {
+            rich_family(run.east_asian)
+          }
+        } else {
+          east_asian
+        }
         let mut chars = StringBuilder()
         let mut has_chars = false
         let mut cjk = false
@@ -300,10 +314,10 @@ fn DrawTile::emit_cell(
               line.x + start,
               line.baseline,
               width,
-              if cjk && east_asian != "" {
-                east_asian
+              if cjk && run_east_asian != "" {
+                run_east_asian
               } else {
-                family
+                run_family
               },
               run.bold,
               run.color,
@@ -331,10 +345,10 @@ fn DrawTile::emit_cell(
             line.x + start,
             line.baseline,
             width,
-            if cjk && east_asian != "" {
-              east_asian
+            if cjk && run_east_asian != "" {
+              run_east_asian
             } else {
-              family
+              run_family
             },
             run.bold,
             run.color,
@@ -391,4 +405,21 @@ fn css_quote(value : String) -> String {
   }
   result.write_char('"')
   result.to_string()
+}
+
+///|
+fn rich_family(name : String) -> String {
+  let generic = @fontdb.classify(name)
+  match name {
+    "sans-serif"
+    | "serif"
+    | "monospace"
+    | "cursive"
+    | "fantasy"
+    | "system-ui"
+    | "ui-sans-serif"
+    | "ui-serif"
+    | "ui-monospace" => generic
+    _ => css_quote(name) + ", " + generic
+  }
 }
