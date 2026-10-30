@@ -390,7 +390,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
             }
             true
           } else if name == "prstGeom" &&
-            ["rect", "ellipse", "diamond"].contains(
+            ["rect", "ellipse", "diamond", "triangle", "rtTriangle"].contains(
               xlsx_attr(element, "prst", ""),
             ) {
             if geometry {

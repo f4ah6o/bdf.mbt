@@ -137,10 +137,12 @@ fn GridDrawContext::paint_picture(
     (shape_dash != "" && shape_fill is None && !shape_no_fill) {
     raise InvalidArgument("sheet: invalid shape dash pattern")
   }
-  if !["", "rect", "ellipse", "diamond"].contains(shape_geometry) {
+  if !["", "rect", "ellipse", "diamond", "triangle", "rtTriangle"].contains(
+      shape_geometry,
+    ) {
     raise InvalidArgument("sheet: invalid shape geometry")
   }
-  if ["ellipse", "diamond"].contains(shape_geometry) &&
+  if ["ellipse", "diamond", "triangle", "rtTriangle"].contains(shape_geometry) &&
     shape_fill is None &&
     !shape_no_fill {
     raise InvalidArgument("sheet: shape geometry requires a shape")
@@ -380,6 +382,22 @@ fn GridDrawContext::paint_picture(
         draw_width,
         draw_height / 2.0,
         draw_width / 2.0,
+        draw_height,
+      ],
+    }
+  } else if shape_geometry == "triangle" || shape_geometry == "rtTriangle" {
+    {
+      verbs: b"\x00\x01\x01\x04",
+      coordinates: [
+        0.0,
+        draw_height,
+        if shape_geometry == "triangle" {
+          draw_width * 50000.0 / 100000.0
+        } else {
+          0.0
+        },
+        0.0,
+        draw_width,
         draw_height,
       ],
     }
