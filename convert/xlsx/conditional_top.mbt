@@ -93,8 +93,8 @@ fn xlsx_conditional_average_threshold(
   for value in values {
     sum += value
   }
-  if sum.is_nan() || sum.is_inf() {
-    xlsx_reject_conditional()
+  if sum.is_nan() {
+    return None
   }
   let mean = sum / values.length().to_double()
   if multiplier == 0.0 || values.length() < 2 {
@@ -106,12 +106,12 @@ fn xlsx_conditional_average_threshold(
     squared = xlsx_fma(difference, difference, squared)
   }
   if squared.is_nan() {
-    xlsx_reject_conditional()
+    return None
   }
   let sd = (squared / (values.length() - 1).to_double()).sqrt()
   let result = xlsx_fma(if above { multiplier } else { -multiplier }, sd, mean)
   if result.is_nan() {
-    xlsx_reject_conditional()
+    return None
   }
   Some(result)
 }

@@ -74,7 +74,8 @@ Average predicates use `generate_conditional_average_test.go` and
 `TestCodexConditionalAverage`; standard-deviation cases use
 `generate_conditional_stddev_test.go` and `TestCodexConditionalStdDev`. Large
 multipliers use `generate_conditional_large_stddev_test.go` and
-`TestCodexConditionalLargeStdDev`.
+`TestCodexConditionalLargeStdDev`; overflowed means use
+`generate_conditional_overflow_mean_test.go` and `TestCodexConditionalOverflowMean`.
 Duplicate and unique predicates use `generate_conditional_duplicate_test.go`
 and `TestCodexConditionalDuplicate`. Numeric comparison-key tests are generated
 by `generate_duplicate_keys_test.go` and `TestCodexXLSXDuplicateKeys`, including
