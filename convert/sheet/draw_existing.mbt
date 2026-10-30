@@ -116,11 +116,12 @@ pub fn sized_fallback_advance(
 /// `shape_strokes`, when supplied, pairs an optional RGBA color and width in
 /// points with each drawing. `shape_no_fills` marks shapes without a fill.
 /// `shape_geometries` selects "rect", "ellipse", "diamond", "triangle",
-/// "rtTriangle", "parallelogram", "trapezoid", "homePlate", "chevron" or
-/// "plus" per shape. An empty string or omitted list selects a rectangle.
+/// "rtTriangle", "parallelogram", "trapezoid", "homePlate", "chevron",
+/// "plus" or "hexagon" per shape. An empty string or omitted list selects a
+/// rectangle.
 /// `shape_adjustments` contains optional DrawingML adjustment values from 0
-/// to 100,000 for triangles, parallelograms, trapezoids, home plates, chevrons
-/// and crosses.
+/// to 100,000 for triangles, parallelograms, trapezoids, home plates, chevrons,
+/// crosses and hexagons.
 /// `shape_dashes` contains DrawingML preset dash names, or an empty string for
 /// a solid line. A caller that defers object storage may collect child parts in
 /// `picture_children` and pass them to `store_grids`.

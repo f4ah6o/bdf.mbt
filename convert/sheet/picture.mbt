@@ -140,13 +140,13 @@ fn GridDrawContext::paint_picture(
   }
   if ![
       "", "rect", "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram",
-      "trapezoid", "homePlate", "chevron", "plus",
+      "trapezoid", "homePlate", "chevron", "plus", "hexagon",
     ].contains(shape_geometry) {
     raise InvalidArgument("sheet: invalid shape geometry")
   }
   if [
       "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram", "trapezoid",
-      "homePlate", "chevron", "plus",
+      "homePlate", "chevron", "plus", "hexagon",
     ].contains(shape_geometry) &&
     shape_fill is None &&
     !shape_no_fill {
@@ -157,6 +157,7 @@ fn GridDrawContext::paint_picture(
       value > 100000L ||
       ![
         "triangle", "parallelogram", "trapezoid", "homePlate", "chevron", "plus",
+        "hexagon",
       ].contains(shape_geometry) {
       raise InvalidArgument("sheet: invalid shape adjustment")
     }
@@ -399,6 +400,12 @@ fn GridDrawContext::paint_picture(
         draw_height,
       ],
     }
+  } else if shape_geometry == "hexagon" {
+    sheet_hexagon_path(
+      draw_width,
+      draw_height,
+      shape_adjustment.unwrap_or(25000L),
+    )
   } else if shape_geometry == "plus" {
     let a = Double::min(shape_adjustment.unwrap_or(25000L).to_double(), 50000.0)
     let x1 = Double::min(draw_width, draw_height) * a / 100000.0
@@ -686,4 +693,27 @@ fn sheet_ellipse_path(width : Double, height : Double) -> @core.Path {
     cy = ey + hr * @math.sin(a1)
   }
   { verbs: b"\x00\x06\x06\x06\x06\x04", coordinates: args, }
+}
+
+///|
+fn sheet_hexagon_path(
+  width : Double,
+  height : Double,
+  adjustment : Int64,
+) -> @core.Path {
+  let ss = Double::min(width, height)
+  let max = if ss == 0.0 { 0.0 } else { 50000.0 * width / ss }
+  let a = Double::min(adjustment.to_double(), max)
+  let x1 = ss * a / 100000.0
+  let x2 = width - x1
+  let center = height / 2.0
+  let shd2 = center * 115470.0 / 100000.0
+  // Go rounds pi / 180 / 60000 once when compiling its angle constant.
+  let dy1 = shd2 * @math.sin(3600000.0 * 2.9088820866572161809e-7)
+  let y1 = center - dy1
+  let y2 = center + dy1
+  {
+    verbs: b"\x00\x01\x01\x01\x01\x01\x04",
+    coordinates: [0.0, center, x1, y1, x2, y1, width, center, x2, y2, x1, y2],
+  }
 }

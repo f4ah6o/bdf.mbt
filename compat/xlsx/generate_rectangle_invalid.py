@@ -6,6 +6,7 @@ variants = {
     'pentagon': ('prst="rect"', 'prst="pentagon"'),
     'adjustment-negative': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="triangle"><a:avLst><a:gd name="adj" fmla="val -1"/></a:avLst></a:prstGeom>'),
     'adjustment-too-large': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="triangle"><a:avLst><a:gd name="adj" fmla="val 100001"/></a:avLst></a:prstGeom>'),
+    'hexagon-vf-guide': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="hexagon"><a:avLst><a:gd name="vf" fmla="val 100000"/></a:avLst></a:prstGeom>'),
     'adjustment-unknown-guide': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="triangle"><a:avLst><a:gd name="other" fmla="val 1"/></a:avLst></a:prstGeom>'),
     'adjustment-unsupported-formula': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="triangle"><a:avLst><a:gd name="adj" fmla="*/ 1 2 3"/></a:avLst></a:prstGeom>'),
     'unknown-color': ('val="FF0000"', 'val="FF00ZZ"'),
