@@ -1,10 +1,10 @@
 ///|
-// Read one plain, untransformed embedded picture. Other drawing features
+// Read plain, untransformed embedded pictures. Other drawing features
 // remain unsupported until their rendering and relationship semantics exist.
 fn XlsxWorkbook::xlsx_simple_picture(
   self : XlsxWorkbook,
   part : String,
-) -> @sheet.GridPicture? {
+) -> Array[@sheet.GridPicture]? {
   let bytes = self.package.read(part) catch { _ => return None }
   let source = @utf8.decode_lossy(bytes[:], ignore_bom=true)
   if source.contains("<!ENTITY") {
@@ -20,6 +20,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut depth = 0
   let mut kind = -1
   let mut anchors = 0
+  let result : Array[@sheet.GridPicture] = []
+  let images : Map[String, Bytes] = Map([])
+  let mut image_bytes = 0L
   let mut pictures = 0
   let mut saw_from = false
   let mut saw_to = false
@@ -33,11 +36,25 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut from_column = -1
   let mut to_row = -1
   let mut to_column = -1
+  let mut from_x_offset = 0.0
+  let mut from_y_offset = 0.0
+  let mut to_x_offset = 0.0
+  let mut to_y_offset = 0.0
+  let mut seen_from_x_offset = false
+  let mut seen_from_y_offset = false
+  let mut seen_to_x_offset = false
+  let mut seen_to_y_offset = false
   let mut x = -1.0
   let mut y = -1.0
   let mut width = -1.0
   let mut height = -1.0
   let mut image_id = ""
+  let mut alpha : Float? = None
+  let mut fill_left = 0.0
+  let mut fill_top = 0.0
+  let mut fill_right = 0.0
+  let mut fill_bottom = 0.0
+  let mut saw_fill_rect = false
   let mut description = ""
   let mut title = ""
   let mut text = StringBuilder()
@@ -63,7 +80,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
             return None
           }
           anchors += 1
-          anchors == 1
+          anchors <= 128 && event.kind is Start(_)
         } else if depth == 2 &&
           (
             parent == "twoCellAnchor" ||
@@ -177,8 +194,49 @@ fn XlsxWorkbook::xlsx_simple_picture(
           } else {
             false
           }
+        } else if depth == 5 && parent == "blip" && name == "alphaModFix" {
+          if alpha is Some(_) {
+            return None
+          }
+          let value = match xlsx_int(xlsx_attr(element, "amt", "100000")) {
+            Some(value) if value >= 0L && value <= 100000L => value
+            _ => return None
+          }
+          alpha = Some(Float::from_double(value.to_double() / 100000.0))
+          true
         } else if depth == 5 && parent == "stretch" {
-          name == "fillRect" && element.attributes.is_empty()
+          if name != "fillRect" || saw_fill_rect {
+            return None
+          }
+          saw_fill_rect = true
+          let seen : Map[String, Bool] = Map([])
+          for attr in element.attributes {
+            let key = attr.name.local_name
+            if !["l", "t", "r", "b"].contains(key) ||
+              seen.contains(key) ||
+              attr.name.namespace_uri is Some(_) {
+              return None
+            }
+            seen[key] = true
+            let value = match xlsx_int(attr.value) {
+              Some(value) if value >= 0L && value <= 100000L =>
+                value.to_double() / 100000.0
+              _ => return None
+            }
+            if key == "l" {
+              fill_left = value
+            }
+            if key == "t" {
+              fill_top = value
+            }
+            if key == "r" {
+              fill_right = value
+            }
+            if key == "b" {
+              fill_bottom = value
+            }
+          }
+          fill_left + fill_right <= 1.0 && fill_top + fill_bottom <= 1.0
         } else if depth == 4 && parent == "spPr" {
           if name == "prstGeom" && xlsx_attr(element, "prst", "") == "rect" {
             if geometry {
@@ -217,16 +275,44 @@ fn XlsxWorkbook::xlsx_simple_picture(
         }
       End(_) => {
         if depth == 4 && (parents[2] == "from" || parents[2] == "to") {
-          let value = match xlsx_int(xlsx_trim(text.to_string())) {
-            Some(value) if value >= 0L && value <= 16383L => value.to_int()
+          let name = parents[3]
+          let raw = match xlsx_int(xlsx_trim(text.to_string())) {
+            Some(value) if value >= 0L && value <= 254000000L => value
             _ => return None
           }
-          let name = parents[3]
           if name == "colOff" || name == "rowOff" {
-            if value != 0 {
-              return None
+            let offset = raw.to_double() / 12700.0
+            if parents[2] == "from" {
+              if name == "colOff" {
+                if seen_from_x_offset {
+                  return None
+                }
+                seen_from_x_offset = true
+                from_x_offset = offset
+              } else {
+                if seen_from_y_offset {
+                  return None
+                }
+                seen_from_y_offset = true
+                from_y_offset = offset
+              }
+            } else if name == "colOff" {
+              if seen_to_x_offset {
+                return None
+              }
+              seen_to_x_offset = true
+              to_x_offset = offset
+            } else {
+              if seen_to_y_offset {
+                return None
+              }
+              seen_to_y_offset = true
+              to_y_offset = offset
             }
+          } else if raw > 16383L {
+            return None
           } else if parents[2] == "from" {
+            let value = raw.to_int()
             if name == "col" {
               if from_column >= 0 {
                 return None
@@ -239,16 +325,101 @@ fn XlsxWorkbook::xlsx_simple_picture(
               from_row = value
             }
           } else if name == "col" {
+            let value = raw.to_int()
             if to_column >= 0 {
               return None
             }
             to_column = value
           } else if name == "row" {
+            let value = raw.to_int()
             if to_row >= 0 {
               return None
             }
             to_row = value
           }
+        }
+        if depth == 2 {
+          if pictures != 1 ||
+            !saw_nv ||
+            !saw_nvpr ||
+            !saw_blip_fill ||
+            !saw_sppr ||
+            !geometry ||
+            !stretch ||
+            image_id == "" {
+            return None
+          }
+          match
+            self.xlsx_finish_simple_picture(
+              part,
+              kind,
+              from_row,
+              from_column,
+              to_row,
+              to_column,
+              from_x_offset,
+              from_y_offset,
+              to_x_offset,
+              to_y_offset,
+              x,
+              y,
+              width,
+              height,
+              image_id,
+              alpha,
+              fill_left,
+              fill_top,
+              fill_right,
+              fill_bottom,
+              description,
+              title,
+              images,
+              1073741824L - image_bytes,
+            ) {
+            Some(picture) => {
+              image_bytes += picture.image.length().to_int64()
+              if image_bytes > 1073741824L {
+                return None
+              }
+              result.push(picture)
+            }
+            None => return None
+          }
+          kind = -1
+          pictures = 0
+          saw_from = false
+          saw_to = false
+          saw_nv = false
+          saw_nvpr = false
+          saw_blip_fill = false
+          saw_sppr = false
+          geometry = false
+          stretch = false
+          from_row = -1
+          from_column = -1
+          to_row = -1
+          to_column = -1
+          from_x_offset = 0.0
+          from_y_offset = 0.0
+          to_x_offset = 0.0
+          to_y_offset = 0.0
+          seen_from_x_offset = false
+          seen_from_y_offset = false
+          seen_to_x_offset = false
+          seen_to_y_offset = false
+          x = -1.0
+          y = -1.0
+          width = -1.0
+          height = -1.0
+          image_id = ""
+          alpha = None
+          fill_left = 0.0
+          fill_top = 0.0
+          fill_right = 0.0
+          fill_bottom = 0.0
+          saw_fill_rect = false
+          description = ""
+          title = ""
         }
         depth -= 1
         if depth == 0 {
@@ -259,17 +430,43 @@ fn XlsxWorkbook::xlsx_simple_picture(
       _ => ()
     }
   }
-  if anchors != 1 ||
-    pictures != 1 ||
-    !saw_nv ||
-    !saw_nvpr ||
-    !saw_blip_fill ||
-    !saw_sppr ||
-    !geometry ||
-    !stretch ||
-    image_id == "" {
-    return None
+  if result.is_empty() {
+    None
+  } else {
+    Some(result)
   }
+}
+
+///|
+fn XlsxWorkbook::xlsx_finish_simple_picture(
+  self : XlsxWorkbook,
+  part : String,
+  kind : Int32,
+  from_row : Int32,
+  from_column : Int32,
+  input_to_row : Int32,
+  input_to_column : Int32,
+  from_x_offset : Double,
+  from_y_offset : Double,
+  to_x_offset : Double,
+  to_y_offset : Double,
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+  image_id : String,
+  alpha : Float?,
+  fill_left : Double,
+  fill_top : Double,
+  fill_right : Double,
+  fill_bottom : Double,
+  description : String,
+  title : String,
+  images : Map[String, Bytes],
+  remaining_bytes : Int64,
+) -> @sheet.GridPicture? {
+  let mut to_row = input_to_row
+  let mut to_column = input_to_column
   if kind == 0 &&
     (
       from_row < 0 ||
@@ -290,7 +487,18 @@ fn XlsxWorkbook::xlsx_simple_picture(
     Some(rel) if !rel.external => rel
     _ => return None
   }
-  let image = self.package.read(rel.target) catch { _ => return None }
+  if self.package.part_size(rel.target).unwrap_or(0).to_int64() >
+    remaining_bytes {
+    return None
+  }
+  let image = match images.get(rel.target) {
+    Some(image) => image
+    None => {
+      let image = self.package.read(rel.target) catch { _ => return None }
+      images[rel.target] = image
+      image
+    }
+  }
   if !xlsx_picture_image_format(image) {
     return None
   }
@@ -311,6 +519,10 @@ fn XlsxWorkbook::xlsx_simple_picture(
     from_column,
     to_row,
     to_column,
+    from_x_offset,
+    from_y_offset,
+    to_x_offset,
+    to_y_offset,
     x,
     y,
     width,
@@ -321,6 +533,11 @@ fn XlsxWorkbook::xlsx_simple_picture(
       title
     },
     image,
+    alpha,
+    fill_left,
+    fill_top,
+    fill_right,
+    fill_bottom,
   })
 }
 

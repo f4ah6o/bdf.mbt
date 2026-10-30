@@ -15,11 +15,11 @@ async function verifyCase(c, label) {
   assert.equal(actual.manifest.parts.length, expected.manifest.parts.length, `XLSX parts ${label}`);
   for (const [j, p] of actual.manifest.parts.entries()) assert.deepEqual(Buffer.from(await actual.part(p.h)), Buffer.from(await expected.part(expected.manifest.parts[j].h)), `XLSX object ${label}:${j}`);
 }
-const pictureFiles = ['simple-picture.json', 'simple-picture-variants.json', 'simple-picture-geometry.json', 'simple-picture-styled.json', 'simple-picture-hidden.json', 'simple-picture-quarter.json', 'simple-picture-empty.json', 'simple-picture-links.json', 'simple-picture-table.json', 'picture-multisheet.json', 'picture-multitile.json', 'picture-multisheet-distinct.json', 'picture-far-tile.json', 'picture-formats.json'];
+const pictureFiles = ['simple-picture.json', 'simple-picture-variants.json', 'simple-picture-geometry.json', 'simple-picture-styled.json', 'simple-picture-hidden.json', 'simple-picture-quarter.json', 'simple-picture-empty.json', 'simple-picture-links.json', 'simple-picture-table.json', 'picture-multisheet.json', 'picture-multitile.json', 'picture-multisheet-distinct.json', 'picture-far-tile.json', 'picture-formats.json', 'picture-multiple.json', 'picture-multiple-tiles.json', 'picture-multiple-formats.json', 'picture-multiple-orphan.json', 'picture-multiple-full-hidden.json', 'picture-offsets.json', 'picture-offsets-varying.json', 'picture-offsets-hidden.json', 'picture-alpha.json', 'picture-alpha-mixed.json', 'picture-fill-rect.json', 'picture-fill-mixed.json', 'picture-fill-precision.json'];
 let simplePictureCount = 0;
 for (const file of pictureFiles) {
   const cases = JSON.parse(await readFile(new URL(`./${file}`, import.meta.url)));
-  assert.equal(cases.length, (file === 'simple-picture.json' || file === 'simple-picture-empty.json') ? 48 : 144, `picture fixture count ${file}`);
+  assert.equal(cases.length, (file === 'simple-picture.json' || file === 'simple-picture-empty.json') ? 48 : file === 'picture-multiple-orphan.json' ? 96 : file === 'picture-multiple-full-hidden.json' ? 8 : 144, `picture fixture count ${file}`);
   for (const [j, c] of cases.entries()) { await verifyCase(c, `picture ${file} ${j}`); simplePictureCount++; }
 }
 const unsupportedPictures = JSON.parse(await readFile(new URL('./simple-picture-unsupported.json', import.meta.url)));
@@ -57,6 +57,26 @@ for (const [j, c] of unsupportedPictureFormats.entries()) {
   const input = Buffer.from(c.input, 'base64');
   assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `unsupported picture format must be rejected ${j}`);
   assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing/);
+}
+const pictureCountLimit = JSON.parse(await readFile(new URL('./picture-count-limit.json', import.meta.url)));
+assert.equal(pictureCountLimit.length, 2, 'picture count boundary fixture count');
+await verifyCase(pictureCountLimit[0], '128 pictures');
+simplePictureCount++;
+{
+  const c = pictureCountLimit[1];
+  const input = Buffer.from(c.input, 'base64');
+  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, '129 pictures must be rejected');
+  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing/);
+}
+const columnExtent = JSON.parse(await readFile(new URL('./column-extent.json', import.meta.url)));
+assert.equal(columnExtent.length, 96, 'column extent fixture count');
+for (const [j, c] of columnExtent.entries()) await verifyCase(c, `column extent ${j}`);
+const invalidPictures = JSON.parse(await readFile(new URL('./picture-invalid.json', import.meta.url)));
+assert.equal(invalidPictures.length, 11, 'invalid picture fixture count');
+for (const c of invalidPictures) {
+  const input = Buffer.from(c.input, 'base64');
+  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `invalid picture ${c.label}`);
+  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing|picture/);
 }
 const conditionalMissingDxfLegacy = JSON.parse(await readFile(new URL('./conditional-missing-dxf-legacy.json', import.meta.url)));
 assert.equal(conditionalMissingDxfLegacy.length, 60, 'previously unsupported missing conditional style fixtures');

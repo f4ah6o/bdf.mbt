@@ -120,7 +120,7 @@ pub fn store_grid_parts(
 ) -> Map[String, Json] raise {
   for (x, y, _) in children {
     if x < 0 {
-      if x != -1 || y != -1 {
+      if y != -1 || -(x + 1) > grid.tiles.length() {
         raise InvalidArgument("sheet: invalid picture child tile")
       }
     } else if !grid.tiles.any(tile => tile.x == x && tile.y == y) {
@@ -128,9 +128,9 @@ pub fn store_grid_parts(
     }
   }
   let tiles : Map[String, Json] = Map([])
-  for tile in grid.tiles {
+  for index, tile in grid.tiles {
     for (x, y, child) in children {
-      if x == tile.x && y == tile.y {
+      if (x < 0 && -(x + 1) == index) || (x == tile.x && y == tile.y) {
         ignore(writer.add_part("obj", child))
       }
     }
@@ -140,7 +140,7 @@ pub fn store_grid_parts(
     }
   }
   for (x, _, child) in children {
-    if x < 0 {
+    if x < 0 && -(x + 1) == grid.tiles.length() {
       ignore(writer.add_part("obj", child))
     }
   }

@@ -12,18 +12,32 @@ test "invalid picture geometry reports an error instead of indexing outside the 
     kind: 0,
     from_row: 0,
     from_column: 0,
-    to_row: 1,
-    to_column: 1,
+    to_row: 0,
+    to_column: 0,
+    from_x_offset: 0.0,
+    from_y_offset: 0.0,
+    to_x_offset: 0.0,
+    to_y_offset: 0.0,
     x: 0.0,
     y: 0.0,
     width: 0.0,
     height: 0.0,
     description: "",
     image: b"",
+    alpha: None,
+    fill_left: 0.0,
+    fill_top: 0.0,
+    fill_right: 0.0,
+    fill_bottom: 0.0,
   }
   let invalid = [
     { ..picture, kind: 3, },
     { ..picture, from_row: -1, },
+    { ..picture, from_row: 2147483647, },
+    { ..picture, from_x_offset: -1.0, },
+    { ..picture, alpha: Some(2.0F), },
+    { ..picture, fill_left: -0.1, },
+    { ..picture, fill_left: 0.6, fill_right: 0.6, },
     { ..picture, from_column: 2, },
     { ..picture, to_row: 2, },
     { ..picture, to_column: -1, },
@@ -31,7 +45,15 @@ test "invalid picture geometry reports an error instead of indexing outside the 
   ]
   for value in invalid {
     let result = Ok(
-      context.paint_picture(writer, value, [0.0, 10.0], [0.0, 10.0], 10.0, None),
+      context.paint_picture(
+        writer,
+        value,
+        [0.0, 10.0],
+        [0.0, 10.0],
+        10.0,
+        None,
+        16384,
+      ),
     ) catch {
       error => Err(error)
     }
@@ -87,12 +109,21 @@ test "picture tiles reject coordinates outside the integer range" {
     from_column: 0,
     to_row: 0,
     to_column: 0,
+    from_x_offset: 0.0,
+    from_y_offset: 0.0,
+    to_x_offset: 0.0,
+    to_y_offset: 0.0,
     x: 4800000000000.0,
     y: 0.0,
     width: 10.0,
     height: 10.0,
     description: "",
     image: b"",
+    alpha: None,
+    fill_left: 0.0,
+    fill_top: 0.0,
+    fill_right: 0.0,
+    fill_bottom: 0.0,
   }
   let result = Ok(
     context.paint_picture(
@@ -102,6 +133,7 @@ test "picture tiles reject coordinates outside the integer range" {
       [0.0, 10.0],
       context.width,
       None,
+      16384,
     ),
   ) catch {
     error => Err(error)
@@ -109,5 +141,56 @@ test "picture tiles reject coordinates outside the integer range" {
   match result {
     Err(InvalidArgument(_)) => ()
     _ => fail("expected an out-of-range picture tile error")
+  }
+}
+
+///|
+test "pictures respect their cumulative tile budget" {
+  let context : GridDrawContext = {
+    tiles: [],
+    indexes: Map([]),
+    width: 10.0,
+    height: 10.0,
+    document_language: "",
+  }
+  let writer = @core.DocumentWriter::new()
+  let picture : GridPicture = {
+    kind: 2,
+    from_row: 0,
+    from_column: 0,
+    to_row: 0,
+    to_column: 0,
+    from_x_offset: 0.0,
+    from_y_offset: 0.0,
+    to_x_offset: 0.0,
+    to_y_offset: 0.0,
+    x: 0.0,
+    y: 0.0,
+    width: 1.0,
+    height: 1.0,
+    description: "",
+    image: b"",
+    alpha: None,
+    fill_left: 0.0,
+    fill_top: 0.0,
+    fill_right: 0.0,
+    fill_bottom: 0.0,
+  }
+  let result = Ok(
+    context.paint_picture(
+      writer,
+      picture,
+      [0.0, 10.0],
+      [0.0, 10.0],
+      10.0,
+      None,
+      0,
+    ),
+  ) catch {
+    error => Err(error)
+  }
+  match result {
+    Err(InvalidArgument(_)) => ()
+    _ => fail("expected a picture tile budget error")
   }
 }

@@ -26,7 +26,7 @@ for index, case in enumerate(cases):
     elif variant == 2:
         drawing = drawing.replace(
             '<a:blip r:embed="img"/>',
-            '<a:blip r:embed="img"><a:alphaModFix amt="50000"/></a:blip>',
+            '<a:blip r:embed="img"><a:alphaModFix amt="50000"/><a:blur rad="1"/></a:blip>',
         )
     elif variant == 3:
         drawing = drawing.replace("</pic>", "</pic><sp/>")
@@ -37,10 +37,10 @@ for index, case in enumerate(cases):
     elif variant == 5:
         drawing = drawing.replace('descr="example"', 'descr="example" hidden="1"')
     elif variant == 6:
-        drawing = drawing.replace("<a:fillRect/>", '<a:fillRect l="10000"/>')
+        drawing = drawing.replace("<a:fillRect/>", '<a:fillRect l="100001"/>')
     elif variant == 7:
         original_drawing = drawing
-        drawing = drawing.replace("<colOff>0</colOff>", "<colOff>12700</colOff>", 1)
+        drawing = drawing.replace("<colOff>0</colOff>", "<colOff>254000001</colOff>", 1)
         if drawing == original_drawing:
             drawing = re.sub(r'<pos x="[0-9]+"', '<pos x="254000001"', drawing, count=1)
     elif variant == 8:
