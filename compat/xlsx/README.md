@@ -200,4 +200,4 @@ The `multi-repeated-children-*` fixtures verify that the first run text and prop
 
 The `multi-large-font-*` and `single-large-font` fixtures cover run sizes of 1,000 and above in fixed-height rows, including wrapping, shrinking, and script formatting.
 
-The `plain-table-*` fixtures cover unstyled tables, including header marks, filter buttons, overlapping ranges, data extraction and empty cells. Named table styles remain unsupported.
+The `plain-table-*` fixtures cover unstyled tables, including header marks, filter buttons, overlapping ranges, data extraction and empty cells. Custom named styles with no effective elements are supported; named table styles with formatting remain unsupported.
