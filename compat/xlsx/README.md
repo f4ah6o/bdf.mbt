@@ -77,7 +77,10 @@ multipliers use `generate_conditional_large_stddev_test.go` and
 `TestCodexConditionalLargeStdDev`; overflowed means use
 `generate_conditional_overflow_mean_test.go` and `TestCodexConditionalOverflowMean`.
 Nonfinite values use `generate_conditional_nonfinite_average_test.go` and
-`TestCodexConditionalNonfiniteAverage`.
+`TestCodexConditionalNonfiniteAverage`. Independent conditional ranges use
+`generate_conditional_disjoint_test.go` and `TestCodexConditionalDisjoint`;
+moving references use `generate_conditional_disjoint_moving_test.go` and
+`TestCodexConditionalDisjointMoving`.
 Duplicate and unique predicates use `generate_conditional_duplicate_test.go`
 and `TestCodexConditionalDuplicate`. Numeric comparison-key tests are generated
 by `generate_duplicate_keys_test.go` and `TestCodexXLSXDuplicateKeys`, including

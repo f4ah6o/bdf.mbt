@@ -1,6 +1,17 @@
 ///|
-// One supported rule can apply a differential font, fill, or border.
-// Multiple matching rules are rejected until priority can be drawn.
+// Independent conditional ranges can each apply a differential style. Ranges
+// that overlap remain unsupported until rule priorities can be merged.
+priv struct XlsxConditionalBlock {
+  ranges : Array[XlsxRange]
+  matched : Map[Int32, Map[Int32, Bool]]
+  blank_positions : Map[Int32, Map[Int32, Bool]]
+  blank_matches : Bool
+  moving_reference : Bool
+  dxf_id : Int32
+  covered : Int64
+}
+
+///|
 fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   self : XlsxWorkbook,
   part : String,
@@ -32,11 +43,11 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   let mut invalid1 = false
   let mut invalid2 = false
   let mut moving_reference = false
-  let mut any_moving_reference = false
-  let blank_positions : Map[Int32, Map[Int32, Bool]] = Map([])
+  let mut blank_positions : Map[Int32, Map[Int32, Bool]] = Map([])
   let mut ranges : Array[XlsxRange] = []
   let mut room = 4194304L
-  let mut conditional_count = 0
+  let mut block_room = room
+  let blocks : Array[XlsxConditionalBlock] = []
   let mut dxf_id = -1
   let mut operator = ""
   let mut rule_type = ""
@@ -52,7 +63,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   let mut duplicate_counts : Map[String, Int32] = Map([])
   let mut blank_matches = false
   let mut any_blank_matches = false
-  let matched : Map[Int32, Map[Int32, Bool]] = Map([])
+  let mut matched : Map[Int32, Map[Int32, Bool]] = Map([])
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -63,9 +74,12 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             xlsx_reject_conditional()
           }
           conditional_depth = depth + 1
-          conditional_count += 1
+          block_room = room
           rule_count = 0
           ranges = []
+          matched = Map([])
+          blank_positions = Map([])
+          any_blank_matches = false
           let text = StringBuilder()
           for ch in xlsx_attr(element, "sqref", "") {
             if ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' {
@@ -223,7 +237,6 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
                 )
                 if fixed is None {
                   moving_reference = true
-                  any_moving_reference = true
                 }
                 if formula_count == 1 {
                   reference1 = text
@@ -334,9 +347,6 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             )
           }
           if moving_reference {
-            if conditional_count != 1 {
-              xlsx_reject_conditional()
-            }
             xlsx_match_moving_conditionals(
               rows, ranges, row_count, col_count, reference1, reference2, threshold,
               threshold_end, literal1, literal2, operator, matched, blank_positions,
@@ -489,6 +499,20 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
               }
             }
           }
+          if !matched.is_empty() || any_blank_matches {
+            if dxf_id < 0 {
+              xlsx_reject_conditional()
+            }
+            blocks.push({
+              ranges,
+              matched,
+              blank_positions,
+              blank_matches: any_blank_matches,
+              moving_reference,
+              dxf_id,
+              covered: block_room - room,
+            })
+          }
           conditional_depth = -1
         }
         if depth == 0 {
@@ -504,39 +528,51 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
       _ => ()
     }
   }
-  if any_moving_reference && conditional_count != 1 {
-    xlsx_reject_conditional()
-  }
-  if matched.is_empty() && !any_blank_matches {
-    return rows
-  }
-  if conditional_count != 1 || dxf_id < 0 {
-    xlsx_reject_conditional()
-  }
-  let style = self.xlsx_conditional_style(dxf_id)
-  let rows = if any_blank_matches &&
-    (style.fill is Some(_) || style.border is Some(_)) {
-    if 4194304L - room > 200000L {
-      xlsx_reject_conditional()
+  // Bound pairwise range checks independently of the covered-cell budget.
+  let mut comparisons = 4194304
+  for i in 0..<blocks.length() {
+    for j in 0..<i {
+      for a in blocks[i].ranges {
+        for b in blocks[j].ranges {
+          comparisons -= 1
+          if comparisons < 0 {
+            xlsx_reject_conditional()
+          }
+          if a.row_start <= b.row_end &&
+            b.row_start <= a.row_end &&
+            a.column_start <= b.column_end &&
+            b.column_start <= a.column_end {
+            xlsx_reject_conditional()
+          }
+        }
+      }
     }
-    xlsx_materialize_conditional_blanks(
-      rows,
-      geometry,
-      styles.cell_formats.length(),
-      ranges,
-      row_count,
-      col_count,
-      matched,
-      if moving_reference {
-        Some(blank_positions)
-      } else {
-        None
-      },
-    )
-  } else {
-    rows
   }
-  xlsx_apply_conditional_style(rows, styles, matched, style)
+  let mut result = rows
+  for block in blocks {
+    let style = self.xlsx_conditional_style(block.dxf_id)
+    if block.blank_matches && (style.fill is Some(_) || style.border is Some(_)) {
+      if block.covered > 200000L {
+        xlsx_reject_conditional()
+      }
+      result = xlsx_materialize_conditional_blanks(
+        result,
+        geometry,
+        styles.cell_formats.length(),
+        block.ranges,
+        row_count,
+        col_count,
+        block.matched,
+        if block.moving_reference {
+          Some(block.blank_positions)
+        } else {
+          None
+        },
+      )
+    }
+    result = xlsx_apply_conditional_style(result, styles, block.matched, style)
+  }
+  result
 }
 
 ///|
