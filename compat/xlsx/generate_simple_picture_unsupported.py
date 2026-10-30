@@ -20,7 +20,7 @@ for index, case in enumerate(cases):
     if variant in (4, 11):
         continue
     if variant == 0:
-        drawing = drawing.replace("<a:stretch>", '<a:srcRect l="10000"/><a:stretch>')
+        drawing = drawing.replace("<a:stretch>", '<a:srcRect l="100001"/><a:stretch>')
     elif variant == 1:
         drawing = drawing.replace("<spPr>", '<spPr><a:xfrm rot="60000"/>')
     elif variant == 2:

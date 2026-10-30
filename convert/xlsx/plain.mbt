@@ -1990,7 +1990,7 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// shrink-to-fit, indentation and center-across-selection.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// patterned row and column fills, complex borders and other features are
-/// rejected. Up to 128 untransformed embedded browser-supported images per
+/// rejected. Up to 128 embedded browser-supported images per
 /// sheet are supported with nonnegative cell-anchor offsets, at most one GiB of image
 /// data in total, and row heights in quarter-point increments.
 /// Supported numeric conditional rules may apply a differential font,

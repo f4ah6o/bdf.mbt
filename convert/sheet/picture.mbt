@@ -24,6 +24,14 @@ pub(all) struct GridPicture {
   fill_top : Double
   fill_right : Double
   fill_bottom : Double
+  crop_left : Double
+  crop_top : Double
+  crop_right : Double
+  crop_bottom : Double
+  image_width : Double
+  image_height : Double
+  flip_horizontal : Bool
+  flip_vertical : Bool
 }
 
 ///|
@@ -75,6 +83,36 @@ fn GridDrawContext::paint_picture(
   if picture.fill_left + picture.fill_right > 1.0 ||
     picture.fill_top + picture.fill_bottom > 1.0 {
     raise InvalidArgument("sheet: invalid picture inset")
+  }
+  for
+    crop in [
+      picture.crop_left,
+      picture.crop_top,
+      picture.crop_right,
+      picture.crop_bottom,
+    ] {
+    if crop.is_nan() || crop.is_inf() || crop < -1.0 || crop >= 1.0 {
+      raise InvalidArgument("sheet: invalid picture crop")
+    }
+  }
+  if picture.crop_left + picture.crop_right >= 1.0 ||
+    picture.crop_top + picture.crop_bottom >= 1.0 {
+    raise InvalidArgument("sheet: invalid picture crop")
+  }
+  let cropped = picture.crop_left != 0.0 ||
+    picture.crop_top != 0.0 ||
+    picture.crop_right != 0.0 ||
+    picture.crop_bottom != 0.0
+  if cropped &&
+    (
+      picture.image_width <= 0.0 ||
+      picture.image_height <= 0.0 ||
+      picture.image_width.is_nan() ||
+      picture.image_height.is_nan() ||
+      picture.image_width.is_inf() ||
+      picture.image_height.is_inf()
+    ) {
+    raise InvalidArgument("sheet: invalid picture size")
   }
   if picture.alpha is Some(alpha) {
     if alpha.is_nan() || alpha.is_inf() || alpha < 0.0F || alpha > 1.0F {
@@ -191,6 +229,32 @@ fn GridDrawContext::paint_picture(
     object.mark(10, picture.description)
   }
   object.save()
+  if picture.flip_horizontal || picture.flip_vertical {
+    object.transform(
+      if picture.flip_horizontal {
+        -1.0F
+      } else {
+        1.0F
+      },
+      0.0F,
+      0.0F,
+      if picture.flip_vertical {
+        -1.0F
+      } else {
+        1.0F
+      },
+      if picture.flip_horizontal {
+        Float::from_double(width)
+      } else {
+        0.0F
+      },
+      if picture.flip_vertical {
+        Float::from_double(height)
+      } else {
+        0.0F
+      },
+    )
+  }
   object.save()
   let path : @core.Path = {
     verbs: b"\x00\x01\x01\x01\x04",
@@ -202,13 +266,64 @@ fn GridDrawContext::paint_picture(
   if picture.alpha is Some(alpha) {
     object.alpha(alpha)
   }
-  object.image(
-    image_index,
-    Float::from_double(picture.fill_left * width),
-    Float::from_double(picture.fill_top * height),
-    Float::from_double(width * (1.0 - picture.fill_left - picture.fill_right)),
-    Float::from_double(height * (1.0 - picture.fill_top - picture.fill_bottom)),
-  )
+  let dx = picture.fill_left * width
+  let dy = picture.fill_top * height
+  let dw = width * (1.0 - picture.fill_left - picture.fill_right)
+  let dh = height * (1.0 - picture.fill_top - picture.fill_bottom)
+  if cropped {
+    let u0 = picture.crop_left * picture.image_width
+    let u1 = (1.0 - picture.crop_right) * picture.image_width
+    let v0 = picture.crop_top * picture.image_height
+    let v1 = (1.0 - picture.crop_bottom) * picture.image_height
+    let cu0 = Double::max(u0, 0.0)
+    let cu1 = Double::min(u1, picture.image_width)
+    let cv0 = Double::max(v0, 0.0)
+    let cv1 = Double::min(v1, picture.image_height)
+    // Go fuses the products and sums while computing destination coordinates.
+    let dx0 = @core.fused_multiply_add(
+      @core.fused_multiply_add(-picture.crop_left, picture.image_width, cu0) /
+      (u1 - u0),
+      dw,
+      dx,
+    )
+    let dx1 = @core.fused_multiply_add(
+      @core.fused_multiply_add(-picture.crop_left, picture.image_width, cu1) /
+      (u1 - u0),
+      dw,
+      dx,
+    )
+    let dy0 = @core.fused_multiply_add(
+      @core.fused_multiply_add(-picture.crop_top, picture.image_height, cv0) /
+      (v1 - v0),
+      dh,
+      dy,
+    )
+    let dy1 = @core.fused_multiply_add(
+      @core.fused_multiply_add(-picture.crop_top, picture.image_height, cv1) /
+      (v1 - v0),
+      dh,
+      dy,
+    )
+    object.image_sub(
+      image_index,
+      Float::from_double(cu0),
+      Float::from_double(cv0),
+      Float::from_double(cu1 - cu0),
+      Float::from_double(cv1 - cv0),
+      Float::from_double(dx0),
+      Float::from_double(dy0),
+      Float::from_double(dx1 - dx0),
+      Float::from_double(dy1 - dy0),
+    )
+  } else {
+    object.image(
+      image_index,
+      Float::from_double(dx),
+      Float::from_double(dy),
+      Float::from_double(dw),
+      Float::from_double(dh),
+    )
+  }
   object.restore()
   object.restore()
   if picture.description != "" {
