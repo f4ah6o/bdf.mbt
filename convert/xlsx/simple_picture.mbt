@@ -40,7 +40,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut saw_no_line = false
   let mut saw_line_fill = false
   let mut line_color : UInt32? = None
-  let mut theme_alpha_safe : Bool? = None
+  let mut theme_alpha_checked = false
+  let mut theme_alphas : Map[Int32, UInt32]? = None
   let mut saw_shape_alpha = false
   let mut saw_line_alpha = false
   let mut line_width = 0.75
@@ -395,15 +396,18 @@ fn XlsxWorkbook::xlsx_simple_picture(
           if !["srgbClr", "schemeClr"].contains(name) || shape_fill is Some(_) {
             return None
           }
-          if name == "schemeClr" {
-            if theme_alpha_safe is None {
-              theme_alpha_safe = Some(self.xlsx_shape_theme_alpha_safe())
-            }
-            if theme_alpha_safe is Some(false) {
-              return None
-            }
+          if name == "schemeClr" && !theme_alpha_checked {
+            theme_alphas = self.xlsx_shape_theme_alphas()
+            theme_alpha_checked = true
           }
-          shape_fill = xlsx_simple_shape_color(element, theme_colors)
+          if name == "schemeClr" && theme_alphas is None {
+            return None
+          }
+          shape_fill = xlsx_simple_shape_color(
+            element,
+            theme_colors,
+            theme_alphas.unwrap_or(Map([])),
+          )
           shape_fill is Some(_)
         } else if depth == 5 && parent == "ln" && is_shape {
           if name == "noFill" &&
@@ -429,15 +433,18 @@ fn XlsxWorkbook::xlsx_simple_picture(
           if !["srgbClr", "schemeClr"].contains(name) || line_color is Some(_) {
             return None
           }
-          if name == "schemeClr" {
-            if theme_alpha_safe is None {
-              theme_alpha_safe = Some(self.xlsx_shape_theme_alpha_safe())
-            }
-            if theme_alpha_safe is Some(false) {
-              return None
-            }
+          if name == "schemeClr" && !theme_alpha_checked {
+            theme_alphas = self.xlsx_shape_theme_alphas()
+            theme_alpha_checked = true
           }
-          line_color = xlsx_simple_shape_color(element, theme_colors)
+          if name == "schemeClr" && theme_alphas is None {
+            return None
+          }
+          line_color = xlsx_simple_shape_color(
+            element,
+            theme_colors,
+            theme_alphas.unwrap_or(Map([])),
+          )
           line_color is Some(_)
         } else if depth == 6 &&
           ["srgbClr", "schemeClr"].contains(parent) &&
@@ -752,34 +759,99 @@ fn XlsxWorkbook::xlsx_simple_picture(
 }
 
 ///|
-fn XlsxWorkbook::xlsx_shape_theme_alpha_safe(self : XlsxWorkbook) -> Bool {
+fn XlsxWorkbook::xlsx_shape_theme_alphas(
+  self : XlsxWorkbook,
+) -> Map[Int32, UInt32]? {
+  let result : Map[Int32, UInt32] = Map([])
   let rel = match self.package.relationship_of_type(self.part, "/theme") {
     Some(rel) if !rel.external => rel
-    Some(_) => return false
-    None => return true
+    Some(_) => return None
+    None => return Some(result)
   }
-  let data = self.package.read(rel.target) catch { _ => return false }
+  let data = self.package.read(rel.target) catch { _ => return None }
   let reader = @xml.NamespaceReader::from_string(
     @utf8.decode_lossy(data[:], ignore_bom=true),
   )
+  let parents = Array::make(16, "")
+  let seen_slots : Map[Int32, Bool] = Map([])
+  let mut depth = 0
+  let mut slot = -1
+  let mut found_color = false
   while true {
-    let event = reader.read_event() catch { _ => return false }
+    let event = reader.read_event() catch { _ => return None }
     match event.kind {
-      Start(element) | Empty(element) =>
-        if ["alpha", "alphaMod", "alphaOff"].contains(element.name.local_name) {
-          return false
+      Start(element) | Empty(element) => {
+        if depth >= parents.length() {
+          return None
         }
-      Eof => return true
+        let name = element.name.local_name
+        let in_scheme = depth >= 3 &&
+          parents[0] == "theme" &&
+          parents[1] == "themeElements" &&
+          parents[2] == "clrScheme"
+        if in_scheme && depth == 3 {
+          slot = xlsx_theme_slot(name)
+          found_color = false
+          if slot >= 0 {
+            if seen_slots.contains(slot) {
+              return None
+            }
+            seen_slots[slot] = true
+          }
+        } else if in_scheme &&
+          depth == 4 &&
+          slot >= 0 &&
+          ["srgbClr", "sysClr", "schemeClr", "prstClr", "scrgbClr", "hslClr"].contains(
+            name,
+          ) {
+          if found_color {
+            return None
+          }
+          found_color = true
+        } else if in_scheme && ["alpha", "alphaMod", "alphaOff"].contains(name) {
+          if name != "alpha" ||
+            depth != 5 ||
+            slot < 0 ||
+            !found_color ||
+            !["srgbClr", "sysClr", "schemeClr", "prstClr", "scrgbClr", "hslClr"].contains(
+              parents[4],
+            ) ||
+            !(event.kind is Empty(_)) ||
+            element.attributes.length() != 1 {
+            return None
+          }
+          let value = match xlsx_int(xlsx_attr(element, "val", "")) {
+            Some(value) if value >= 0L && value <= 100000L => value
+            _ => return None
+          }
+          result[slot] = ((value * 255L + 50000L) / 100000L).to_int().to_uint()
+        }
+        parents[depth] = name
+        if event.kind is Start(_) {
+          depth += 1
+        }
+      }
+      End(_) => {
+        depth -= 1
+        if depth < 0 {
+          return None
+        }
+        if depth == 3 {
+          slot = -1
+        }
+      }
+      Eof => return if depth == 0 { Some(result) } else { None }
       _ => ()
     }
   }
-  false
+  None
 }
 
 ///|
 fn xlsx_simple_shape_color(
   element : @xml.NamespaceElement,
   theme_colors : Map[Int32, XlsxRgb],
+  theme_alphas : Map[Int32, UInt32],
 ) -> UInt32? {
   if element.name.local_name == "schemeClr" {
     if element.attributes.length() != 1 {
@@ -804,7 +876,12 @@ fn xlsx_simple_shape_color(
     let red = (color.red * 255.0 + 0.5).to_int().to_uint()
     let green = (color.green * 255.0 + 0.5).to_int().to_uint()
     let blue = (color.blue * 255.0 + 0.5).to_int().to_uint()
-    return Some((red << 24) | (green << 16) | (blue << 8) | 255U)
+    return Some(
+      (red << 24) |
+      (green << 16) |
+      (blue << 8) |
+      theme_alphas.get(slot).unwrap_or(255U),
+    )
   }
   let bytes = @utf8.encode(xlsx_attr(element, "val", ""))
   if bytes.length() != 6 || element.attributes.length() != 1 {

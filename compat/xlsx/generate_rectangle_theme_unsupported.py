@@ -3,12 +3,15 @@ from pathlib import Path
 root = Path(__file__).resolve().parent
 source = json.loads((root / 'rectangle-theme-colors.json').read_text())[1]
 out = []
-for name in ('alpha', 'alphaMod', 'alphaOff'):
+for name, value in (('alpha', '100001'), ('alphaMod', '50000'), ('alphaOff', '50000'), ('duplicate-slot', '')):
     with zipfile.ZipFile(io.BytesIO(base64.b64decode(source['input']))) as archive:
         parts = {entry.filename: archive.read(entry) for entry in archive.infolist()}
     path = 'xl/theme/theme1.xml'
     xml = parts[path].decode()
-    xml, count = re.subn(r'<a:srgbClr val="([0-9A-F]{6})"/>', lambda m: f'<a:srgbClr val="{m.group(1)}"><a:{name} val="50000"/></a:srgbClr>', xml, count=1)
+    if name == 'duplicate-slot':
+        xml, count = re.subn(r'(<a:lt1>.*?</a:lt1>)', lambda m: m.group(1) * 2, xml, count=1)
+    else:
+        xml, count = re.subn(r'<a:srgbClr val="([0-9A-F]{6})"/>', lambda m: f'<a:srgbClr val="{m.group(1)}"><a:{name} val="{value}"/></a:srgbClr>', xml, count=1)
     assert count == 1
     parts[path] = xml.encode()
     buf = io.BytesIO()

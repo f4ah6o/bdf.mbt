@@ -18,8 +18,17 @@ test "shape theme colors and opacity match DrawingML" {
       Empty(element) => element
       _ => fail("expected a color element")
     }
-    assert_eq(xlsx_simple_shape_color(element, theme), expected)
+    assert_eq(xlsx_simple_shape_color(element, theme, Map([])), expected)
   }
+  let reader = @xml.NamespaceReader::from_string("<schemeClr val=\"accent1\"/>")
+  let element = match reader.read_event().kind {
+    Empty(element) => element
+    _ => fail("expected a color element")
+  }
+  assert_eq(
+    xlsx_simple_shape_color(element, theme, Map([(4, 128U)])),
+    Some(0x12345680U),
+  )
   let reader = @xml.NamespaceReader::from_string("<alpha val=\"50000\"/>")
   let element = match reader.read_event().kind {
     Empty(element) => element
