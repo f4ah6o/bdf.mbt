@@ -7,7 +7,7 @@ const cases = [
   ['row stripes, sizes 2 and default', 'plain-table-whole-paired-row-stripe-style-plain.json', 4],
   ['column stripes, sizes 2 and default', 'plain-table-whole-paired-column-stripe-style-plain.json', 4],
   ['row font and fill, cell style precedence', 'plain-table-whole-paired-row-stripe-style-mixed.json', 10],
-  ['overlapping tables, row and column stripes', 'plain-table-multi-whole-paired-stripe-style.json', 6],
+  ['overlapping tables, row and column styles', 'plain-table-multi-whole-paired-stripe-style.json', 6],
 ];
 const bytes = value => Uint8Array.from(atob(value), character => character.charCodeAt(0));
 try {
