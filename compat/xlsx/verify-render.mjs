@@ -61,8 +61,11 @@ for (const [j, c] of unsupportedPictures.entries()) {
   assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `unsupported picture must be rejected ${j}`);
   assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing|picture/);
 }
+const previouslyUnsupportedFormulaPresets = JSON.parse(await readFile(new URL('./formula-previously-unsupported.json', import.meta.url)));
+assert.equal(previouslyUnsupportedFormulaPresets.length, 2, 'previously unsupported formula preset fixture count');
+for (const c of previouslyUnsupportedFormulaPresets) await verifyCase(c, `previously unsupported formula preset ${c.label}`);
 const invalidRectangles = JSON.parse(await readFile(new URL('./rectangle-invalid.json', import.meta.url)));
-assert.equal(invalidRectangles.length, 62, 'unsupported rectangle fixture count');
+assert.equal(invalidRectangles.length, 60, 'unsupported rectangle fixture count');
 for (const c of invalidRectangles) {
   const input = Buffer.from(c.input, 'base64');
   assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `unsupported rectangle ${c.label}`);

@@ -219,6 +219,10 @@ The following straight-line preset geometries are supported: `bentUpArrow`,
 `adj4` guides are supported from 0 to 100,000, individually or in combination.
 Duplicate guides, guides not defined by the preset, and other explicit
 adjustment guides are rejected rather than silently ignored.
+The `formula-previously-unsupported` fixtures preserve two former rejection
+cases using valid `rightArrow` adjustments. `generate_rectangle_invalid.py`
+recreates their original inputs; `generate_formula_previously_unsupported_test.go`
+produces their expected output and warnings using the upstream Go converter.
 The curved `flowChartDocument`, `heart`, `wave`, `doubleWave`, and `swooshArrow` presets are
 also supported. Wave `adj1` accepts 0–100,000 and `adj2` accepts -100,000–100,000.
 Swoosh arrow `adj1` and `adj2` accept 0–100,000. These guides work individually
