@@ -131,14 +131,11 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
             )
           }
         } else if depth == run_depth && name == "rPr" {
-          if props_seen {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text",
-            )
-          }
-          props_seen = true
-          if event.kind is Start(_) {
-            props_depth = depth + 1
+          if !props_seen {
+            props_seen = true
+            if event.kind is Start(_) {
+              props_depth = depth + 1
+            }
           }
         } else if depth == props_depth && name == "sz" && !run_size_seen {
           run_size_seen = true
@@ -155,11 +152,6 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           }
         } else if depth == run_depth && name == "t" {
           run_texts += 1
-          if run_texts > 1 {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text",
-            )
-          }
         }
         if event.kind is Start(_) {
           depth += 1
@@ -383,14 +375,11 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
             )
           }
         } else if depth == run_depth && name == "rPr" {
-          if props_seen {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text",
-            )
-          }
-          props_seen = true
-          if event.kind is Start(_) {
-            props_depth = depth + 1
+          if !props_seen {
+            props_seen = true
+            if event.kind is Start(_) {
+              props_depth = depth + 1
+            }
           }
         } else if depth == props_depth && name == "sz" && !run_size_seen {
           run_size_seen = true
@@ -407,11 +396,6 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
           }
         } else if depth == run_depth && name == "t" {
           run_texts += 1
-          if run_texts > 1 {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text",
-            )
-          }
         }
         if event.kind is Start(_) {
           depth += 1

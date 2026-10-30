@@ -195,3 +195,5 @@ The `multi-script-*` fixtures compare superscript and subscript rich-text runs a
 The `multi-base-script-*` fixtures also cover runs inheriting superscript or subscript from the cell font, alongside runs overriding it.
 
 The `multi-repeated-props-*` fixtures verify that the first run font name and size are used when those properties repeat.
+
+The `multi-repeated-children-*` fixtures verify that the first run text and properties elements take precedence when they repeat.
