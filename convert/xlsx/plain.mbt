@@ -157,19 +157,21 @@ fn XlsxWorkbook::xlsx_nonformatting_table_style(
 }
 
 ///|
-// Resolve a custom style containing one supported table-region differential.
+// Resolve supported table-region differentials.
 fn XlsxWorkbook::xlsx_table_style(
   self : XlsxWorkbook,
   wanted : String,
-) -> (Int32, Int32) raise {
+) -> (Int32, Int32, Int64, Int32, Int64, Int32) raise {
   let rel = match self.package.relationship_of_type(self.part, "/styles") {
     Some(value) => value
-    None => return (-1, 0)
+    None => return (-1, 0, 1L, -1, 1L, -1)
   }
-  let data = self.package.read(rel.target) catch { _ => return (-1, 0) }
+  let data = self.package.read(rel.target) catch {
+    _ => return (-1, 0, 1L, -1, 1L, -1)
+  }
   let text = @utf8.decode_lossy(data[:], ignore_bom=true)
   if text.contains("<!ENTITY") {
-    return (-1, 0)
+    return (-1, 0, 1L, -1, 1L, -1)
   }
   let reader = @xml.NamespaceReader::from_string(text)
   let mut depth = 0
@@ -181,7 +183,7 @@ fn XlsxWorkbook::xlsx_table_style(
   let mut dxf_count = 0
   let mut found = false
   let mut invalid = false
-  let mut items : Array[(String, Int32)] = []
+  let mut items : Array[(String, Int32, Int64)] = []
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -212,10 +214,24 @@ fn XlsxWorkbook::xlsx_table_style(
         } else if depth == style_depth && name == "tableStyleElement" {
           let kind = xlsx_attr(element, "type", "")
           if xlsx_table_style_region_used(kind) {
+            let mut width = 1L
+            if kind == "firstRowStripe" ||
+              kind == "secondRowStripe" ||
+              kind == "firstColumnStripe" ||
+              kind == "secondColumnStripe" {
+              let size = xlsx_trim(xlsx_attr(element, "size", ""))
+              if size != "" {
+                match xlsx_int(size) {
+                  Some(n) if n >= -2147483648L && n <= 2147483647L =>
+                    width = Int64::max(1L, n)
+                  _ => invalid = true
+                }
+              }
+            }
             let raw = xlsx_trim(xlsx_attr(element, "dxfId", ""))
             match xlsx_int(raw) {
               Some(n) if n >= -2147483648L && n <= 2147483647L =>
-                items.push((kind, n.to_int()))
+                items.push((kind, n.to_int(), width))
               _ => invalid = true
             }
           }
@@ -241,18 +257,151 @@ fn XlsxWorkbook::xlsx_table_style(
           break
         }
       }
-      Eof => if depth == 0 { break } else { return (-1, 0) }
+      Eof => if depth == 0 { break } else { return (-1, 0, 1L, -1, 1L, -1) }
       _ => ()
     }
   }
   if !found || invalid {
-    return (-1, 0)
+    return (-1, 0, 1L, -1, 1L, -1)
+  }
+  let mut whole = -1
+  let mut stripe_axis = 0
+  let mut first_stripe = -1
+  let mut second_stripe = -1
+  let mut first_size = 1L
+  let mut second_size = 1L
+  let mut has_other = false
+  for (kind, id, width) in items {
+    if id < 0 || id >= dxf_count {
+      continue
+    }
+    if kind == "wholeTable" {
+      whole = id
+    } else if kind == "firstRowStripe" ||
+      kind == "secondRowStripe" ||
+      kind == "firstColumnStripe" ||
+      kind == "secondColumnStripe" {
+      let axis = if kind == "firstRowStripe" || kind == "secondRowStripe" {
+        1
+      } else {
+        2
+      }
+      if stripe_axis != 0 && stripe_axis != axis {
+        has_other = true
+      }
+      stripe_axis = axis
+      if kind == "firstRowStripe" || kind == "firstColumnStripe" {
+        first_stripe = id
+        first_size = width
+      } else {
+        second_stripe = id
+        second_size = width
+      }
+    } else {
+      has_other = true
+    }
+  }
+  if whole >= 0 && (first_stripe >= 0 || second_stripe >= 0) && !has_other {
+    let base = self.xlsx_conditional_style(whole) catch {
+      _ => return (-1, 0, 1L, -1, 1L, -1)
+    }
+    if base.border is Some(_) {
+      return (-1, 0, 1L, -1, 1L, -1)
+    }
+    if first_stripe >= 0 {
+      let first = self.xlsx_conditional_style(first_stripe) catch {
+        _ => return (-1, 0, 1L, -1, 1L, -1)
+      }
+      if first.border is Some(_) {
+        return (-1, 0, 1L, -1, 1L, -1)
+      }
+    }
+    if second_stripe >= 0 {
+      let second = self.xlsx_conditional_style(second_stripe) catch {
+        _ => return (-1, 0, 1L, -1, 1L, -1)
+      }
+      if second.border is Some(_) {
+        return (-1, 0, 1L, -1, 1L, -1)
+      }
+    }
+    if first_stripe >= 0 && second_stripe >= 0 {
+      return (
+        whole,
+        if stripe_axis == 1 {
+          23
+        } else {
+          24
+        },
+        first_size,
+        first_stripe,
+        second_size,
+        second_stripe,
+      )
+    }
+    if first_stripe >= 0 {
+      return (
+        whole,
+        if stripe_axis == 1 {
+          19
+        } else {
+          21
+        },
+        first_size,
+        first_stripe,
+        1L,
+        -1,
+      )
+    }
+    return (
+      whole,
+      if stripe_axis == 1 {
+        20
+      } else {
+        22
+      },
+      second_size,
+      second_stripe,
+      1L,
+      -1,
+    )
   }
   let mut chosen = -1
   let mut selected_kind = ""
-  for (kind, id) in items {
-    if id >= 0 && id < dxf_count {
-      if (
+  let mut selected_width = 1L
+  let mut other = -1
+  let mut other_width = 1L
+  let mut third = -1
+  let mut axis = 0
+  let mut first_id = -1
+  let mut second_id = -1
+  let mut first_width = 1L
+  let mut second_width = 1L
+  for (kind, id, width) in items {
+    if id < 0 || id >= dxf_count {
+      continue
+    }
+    let stripe_axis = if kind == "firstRowStripe" || kind == "secondRowStripe" {
+      1
+    } else if kind == "firstColumnStripe" || kind == "secondColumnStripe" {
+      2
+    } else {
+      0
+    }
+    if stripe_axis != 0 {
+      if selected_kind != "" || (axis != 0 && axis != stripe_axis) {
+        return (-1, 0, 1L, -1, 1L, -1)
+      }
+      axis = stripe_axis
+      if kind == "firstRowStripe" || kind == "firstColumnStripe" {
+        first_id = id
+        first_width = width
+      } else {
+        second_id = id
+        second_width = width
+      }
+    } else {
+      if axis != 0 ||
+        (
           kind != "wholeTable" &&
           kind != "headerRow" &&
           kind != "totalRow" &&
@@ -262,20 +411,122 @@ fn XlsxWorkbook::xlsx_table_style(
           kind != "lastHeaderCell" &&
           kind != "firstTotalCell" &&
           kind != "lastTotalCell"
-        ) ||
-        (selected_kind != "" && selected_kind != kind) {
-        return (-1, 0)
+        ) {
+        return (-1, 0, 1L, -1, 1L, -1)
       }
-      selected_kind = kind
-      chosen = id
+      if selected_kind == "" || selected_kind == kind {
+        selected_kind = kind
+        selected_width = width
+        chosen = id
+      } else if selected_kind == "wholeTable" && kind == "headerRow" {
+        other = id
+        selected_kind = "wholeHeader"
+      } else if selected_kind == "headerRow" && kind == "wholeTable" {
+        other = chosen
+        chosen = id
+        selected_kind = "wholeHeader"
+      } else if selected_kind == "wholeHeader" && kind == "wholeTable" {
+        chosen = id
+      } else if selected_kind == "wholeHeader" && kind == "headerRow" {
+        other = id
+      } else if selected_kind == "wholeTable" && kind == "totalRow" {
+        other = id
+        selected_kind = "wholeTotal"
+      } else if selected_kind == "totalRow" && kind == "wholeTable" {
+        other = chosen
+        chosen = id
+        selected_kind = "wholeTotal"
+      } else if selected_kind == "wholeTotal" && kind == "wholeTable" {
+        chosen = id
+      } else if selected_kind == "wholeTotal" && kind == "totalRow" {
+        other = id
+      } else if selected_kind == "headerRow" && kind == "totalRow" {
+        other = id
+        selected_kind = "headerTotal"
+      } else if selected_kind == "totalRow" && kind == "headerRow" {
+        other = chosen
+        chosen = id
+        selected_kind = "headerTotal"
+      } else if selected_kind == "headerTotal" && kind == "headerRow" {
+        chosen = id
+      } else if selected_kind == "headerTotal" && kind == "totalRow" {
+        other = id
+      } else if selected_kind == "wholeHeader" && kind == "totalRow" {
+        third = id
+        selected_kind = "wholeHeaderTotal"
+      } else if selected_kind == "wholeTotal" && kind == "headerRow" {
+        third = other
+        other = id
+        selected_kind = "wholeHeaderTotal"
+      } else if selected_kind == "headerTotal" && kind == "wholeTable" {
+        third = other
+        other = chosen
+        chosen = id
+        selected_kind = "wholeHeaderTotal"
+      } else if selected_kind == "wholeHeaderTotal" && kind == "wholeTable" {
+        chosen = id
+      } else if selected_kind == "wholeHeaderTotal" && kind == "headerRow" {
+        other = id
+      } else if selected_kind == "wholeHeaderTotal" && kind == "totalRow" {
+        third = id
+      } else {
+        return (-1, 0, 1L, -1, 1L, -1)
+      }
+    }
+  }
+  if axis != 0 {
+    if first_id >= 0 && second_id >= 0 {
+      chosen = first_id
+      selected_width = first_width
+      other = second_id
+      other_width = second_width
+      selected_kind = if axis == 1 {
+        "rowStripePair"
+      } else {
+        "columnStripePair"
+      }
+    } else if first_id >= 0 {
+      chosen = first_id
+      selected_width = first_width
+      selected_kind = if axis == 1 {
+        "firstRowStripe"
+      } else {
+        "firstColumnStripe"
+      }
+    } else if second_id >= 0 {
+      chosen = second_id
+      selected_width = second_width
+      selected_kind = if axis == 1 {
+        "secondRowStripe"
+      } else {
+        "secondColumnStripe"
+      }
     }
   }
   if chosen < 0 {
-    return (-1, 0)
+    return (-1, 0, 1L, -1, 1L, -1)
   }
-  let diff = self.xlsx_conditional_style(chosen) catch { _ => return (-1, 0) }
+  let diff = self.xlsx_conditional_style(chosen) catch {
+    _ => return (-1, 0, 1L, -1, 1L, -1)
+  }
   if diff.border is Some(_) {
-    return (-1, 0)
+    return (-1, 0, 1L, -1, 1L, -1)
+  }
+  if other >= 0 {
+    let extra = self.xlsx_conditional_style(other) catch {
+      _ => return (-1, 0, 1L, -1, 1L, -1)
+    }
+    if extra.border is Some(_) {
+      return (-1, 0, 1L, -1, 1L, -1)
+    }
+  }
+  if third >= 0 {
+    let last = self.xlsx_conditional_style(third) catch {
+      _ => return (-1, 0, 1L, -1, 1L, -1)
+    }
+    if last.border is Some(_) {
+      return (-1, 0, 1L, -1, 1L, -1)
+    }
   }
   (
     chosen,
@@ -295,9 +546,33 @@ fn XlsxWorkbook::xlsx_table_style(
       7
     } else if selected_kind == "lastTotalCell" {
       8
+    } else if selected_kind == "firstRowStripe" {
+      9
+    } else if selected_kind == "secondRowStripe" {
+      10
+    } else if selected_kind == "firstColumnStripe" {
+      11
+    } else if selected_kind == "secondColumnStripe" {
+      12
+    } else if selected_kind == "rowStripePair" {
+      13
+    } else if selected_kind == "columnStripePair" {
+      14
+    } else if selected_kind == "wholeHeader" {
+      15
+    } else if selected_kind == "wholeTotal" {
+      16
+    } else if selected_kind == "headerTotal" {
+      17
+    } else if selected_kind == "wholeHeaderTotal" {
+      18
     } else {
       0
     },
+    selected_width,
+    other,
+    other_width,
+    third,
   )
 }
 
@@ -313,13 +588,220 @@ fn xlsx_table_style_flag(
 }
 
 ///|
+fn xlsx_table_stripe_choice(
+  region : Int32,
+  origin : Int64,
+  range : XlsxRange,
+  width : Int64,
+  other_width : Int64,
+  overlay_end : Int64,
+  row : Int32,
+  col : Int32,
+) -> Int32 {
+  if region == 23 || region == 24 {
+    if row.to_int64() < origin || row.to_int64() > overlay_end {
+      return 0
+    }
+    let pos = if region == 23 {
+      row.to_int64() - origin
+    } else {
+      (col - range.column_start).to_int64()
+    }
+    if pos % (width + other_width) < width {
+      1
+    } else {
+      2
+    }
+  } else if region >= 19 && region <= 22 {
+    if row.to_int64() < origin || row.to_int64() > overlay_end {
+      return 0
+    }
+    let pos = if region == 19 || region == 20 {
+      row.to_int64() - origin
+    } else {
+      (col - range.column_start).to_int64()
+    }
+    let offset = pos % (width + 1L)
+    if ((region == 19 || region == 21) && offset < width) ||
+      ((region == 20 || region == 22) && offset >= 1L) {
+      1
+    } else {
+      0
+    }
+  } else if region == 18 {
+    let header = row.to_int64() <= width
+    let total = row.to_int64() >= other_width
+    if header && total {
+      3
+    } else if header {
+      1
+    } else if total {
+      2
+    } else {
+      0
+    }
+  } else if region == 17 {
+    let header = row.to_int64() <= width
+    let total = row.to_int64() >= other_width
+    if header && total {
+      2
+    } else if header {
+      0
+    } else if total {
+      1
+    } else {
+      -1
+    }
+  } else if region == 15 {
+    if row.to_int64() <= origin {
+      1
+    } else {
+      0
+    }
+  } else if region == 16 {
+    if row.to_int64() >= origin {
+      1
+    } else {
+      0
+    }
+  } else if region == 13 || region == 14 {
+    let pos = if region == 13 {
+      row.to_int64() - origin
+    } else {
+      (col - range.column_start).to_int64()
+    }
+    if pos % (width + other_width) < width {
+      0
+    } else {
+      1
+    }
+  } else if region == 9 || region == 10 {
+    let offset = (row.to_int64() - origin) % (width + 1L)
+    if (region == 9 && offset < width) || (region == 10 && offset >= 1L) {
+      0
+    } else {
+      -1
+    }
+  } else if region == 11 || region == 12 {
+    let offset = (col - range.column_start).to_int64() % (width + 1L)
+    if (region == 11 && offset < width) || (region == 12 && offset >= 1L) {
+      0
+    } else {
+      -1
+    }
+  } else {
+    0
+  }
+}
+
+///|
+fn xlsx_merge_table_style(
+  base : XlsxConditionalStyle,
+  extra : XlsxConditionalStyle,
+) -> XlsxConditionalStyle {
+  {
+    bold: match extra.bold {
+      Some(v) => Some(v)
+      None => base.bold
+    },
+    italic: match extra.italic {
+      Some(v) => Some(v)
+      None => base.italic
+    },
+    strike: match extra.strike {
+      Some(v) => Some(v)
+      None => base.strike
+    },
+    underline: match extra.underline {
+      Some(v) => Some(v)
+      None => base.underline
+    },
+    color: match extra.color {
+      Some(v) => Some(v)
+      None => base.color
+    },
+    fill: match extra.fill {
+      Some(v) => Some(v)
+      None => base.fill
+    },
+    border: None,
+  }
+}
+
+///|
+fn XlsxWorkbook::xlsx_table_effective_style(
+  self : XlsxWorkbook,
+  base_id : Int32,
+  extra_id : Int32,
+  third_id : Int32,
+  region : Int32,
+  choice : Int32,
+) -> XlsxConditionalStyle raise {
+  if (region == 23 || region == 24) && choice > 0 {
+    return xlsx_merge_table_style(
+      self.xlsx_conditional_style(base_id),
+      self.xlsx_conditional_style(if choice == 1 { extra_id } else { third_id }),
+    )
+  }
+  if region == 18 && choice > 0 {
+    let mut result = self.xlsx_conditional_style(base_id)
+    if choice == 1 || choice == 3 {
+      result = xlsx_merge_table_style(
+        result,
+        self.xlsx_conditional_style(extra_id),
+      )
+    }
+    if choice == 2 || choice == 3 {
+      result = xlsx_merge_table_style(
+        result,
+        self.xlsx_conditional_style(third_id),
+      )
+    }
+    return result
+  }
+  if !((
+      (region == 15 || region == 16 || (region >= 19 && region <= 22)) &&
+      choice == 1
+    ) ||
+    (region == 17 && choice == 2)) {
+    return self.xlsx_conditional_style(
+      if choice == 0 {
+        base_id
+      } else {
+        extra_id
+      },
+    )
+  }
+  xlsx_merge_table_style(
+    self.xlsx_conditional_style(base_id),
+    self.xlsx_conditional_style(extra_id),
+  )
+}
+
+///|
 // An unstyled table affects header marks, filters and data extraction.
 fn XlsxWorkbook::xlsx_plain_table_area(
   self : XlsxWorkbook,
   part : String,
   style_cache : Map[String, Bool],
-  style_id_cache : Map[String, (Int32, Int32)],
-  table_rules : Array[(XlsxRange, Int32, Int64, Int64, Int32, Int32)],
+  style_id_cache : Map[String, (Int32, Int32, Int64, Int32, Int64, Int32)],
+  table_rules : Array[
+    (
+      XlsxRange,
+      Int32,
+      Int64,
+      Int64,
+      Int32,
+      Int32,
+      Int32,
+      Int64,
+      Int64,
+      Int32,
+      Int64,
+      Int32,
+      Int64,
+    ),
+  ],
 ) -> Int64 raise {
   let data = self.package.read(part) catch { _ => return -1L }
   let text = @utf8.decode_lossy(data[:], ignore_bom=true)
@@ -347,8 +829,14 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   let mut style_info_seen = false
   let mut style_rule = -1
   let mut selected_region = 0
+  let mut selected_width = 1L
+  let mut other_rule = -1
+  let mut third_rule = -1
+  let mut other_width = 1L
   let mut first_column = false
   let mut last_column = false
+  let mut row_stripes = false
+  let mut column_stripes = false
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -361,6 +849,8 @@ fn XlsxWorkbook::xlsx_plain_table_area(
           style_info_seen = true
           first_column = xlsx_table_style_flag(element, "showFirstColumn")
           last_column = xlsx_table_style_flag(element, "showLastColumn")
+          row_stripes = xlsx_table_style_flag(element, "showRowStripes")
+          column_stripes = xlsx_table_style_flag(element, "showColumnStripes")
           let style = xlsx_decode_string(xlsx_attr(element, "name", ""))
           if style != "" {
             let accepted = match style_cache.get(style) {
@@ -372,7 +862,8 @@ fn XlsxWorkbook::xlsx_plain_table_area(
               }
             }
             if !accepted {
-              let (rule, region) = match style_id_cache.get(style) {
+              let (rule, region, width, extra, extra_width, last) = match
+                style_id_cache.get(style) {
                 Some(value) => value
                 None => {
                   let value = self.xlsx_table_style(style)
@@ -382,6 +873,10 @@ fn XlsxWorkbook::xlsx_plain_table_area(
               }
               style_rule = rule
               selected_region = region
+              selected_width = width
+              other_rule = extra
+              third_rule = last
+              other_width = extra_width
               if style_rule < 0 {
                 return -1L
               }
@@ -406,7 +901,49 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   }
   let header_corner = selected_region == 5 || selected_region == 6
   let total_corner = selected_region == 7 || selected_region == 8
-  let style_start = if selected_region == 2 {
+  let stripe_region = selected_region >= 9 && selected_region <= 14
+  let stripe_active = if selected_region == 9 ||
+    selected_region == 10 ||
+    selected_region == 13 {
+    row_stripes
+  } else {
+    column_stripes
+  }
+  let stripe_origin = if selected_region == 15 {
+    Int64::min(
+      range.row_end,
+      range.row_start + parsed_table.header_rows.to_int64() - 1L,
+    )
+  } else if selected_region == 16 {
+    if parsed_table.totals_rows > 0 {
+      Int64::max(
+        range.row_start,
+        range.row_end - parsed_table.totals_rows.to_int64() + 1L,
+      )
+    } else {
+      range.row_end + 1L
+    }
+  } else {
+    range.row_start + parsed_table.header_rows.to_int64()
+  }
+  let stripe_start = Int64::min(
+    range.row_end + 1L,
+    Int64::max(range.row_start, stripe_origin),
+  )
+  let stripe_end = Int64::max(
+    range.row_start - 1L,
+    Int64::min(
+      range.row_end,
+      range.row_end - parsed_table.totals_rows.to_int64(),
+    ),
+  )
+  let style_start = if stripe_region {
+    if stripe_active {
+      stripe_start
+    } else {
+      range.row_end + 1L
+    }
+  } else if selected_region == 2 {
     if parsed_table.totals_rows > 0 {
       Int64::max(
         range.row_start,
@@ -424,7 +961,9 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   } else {
     range.row_start
   }
-  let style_end = if selected_region == 1 {
+  let style_end = if stripe_region {
+    stripe_end
+  } else if selected_region == 1 {
     if parsed_table.header_rows > 0 {
       Int64::min(
         range.row_end,
@@ -461,8 +1000,63 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   } else {
     range.column_end
   }
+  let header_end = if parsed_table.header_rows > 0 {
+    Int64::min(
+      range.row_end,
+      range.row_start + parsed_table.header_rows.to_int64() - 1L,
+    )
+  } else {
+    range.row_start - 1L
+  }
+  let total_start = if parsed_table.totals_rows > 0 {
+    Int64::max(
+      range.row_start,
+      range.row_end - parsed_table.totals_rows.to_int64() + 1L,
+    )
+  } else {
+    range.row_end + 1L
+  }
+  let overlay_stripe = selected_region >= 19 && selected_region <= 24
+  let overlay_active = if selected_region == 19 ||
+    selected_region == 20 ||
+    selected_region == 23 {
+    row_stripes
+  } else {
+    column_stripes
+  }
+  let overlay_end = if overlay_active {
+    range.row_end - parsed_table.totals_rows.to_int64()
+  } else {
+    stripe_origin - 1L
+  }
   table_rules.push(
-    (range, style_rule, style_start, style_end, style_col_start, style_col_end),
+    (
+      range,
+      style_rule,
+      style_start,
+      style_end,
+      style_col_start,
+      style_col_end,
+      selected_region,
+      stripe_origin,
+      if selected_region == 17 || selected_region == 18 {
+        header_end
+      } else {
+        selected_width
+      },
+      other_rule,
+      if selected_region == 17 || selected_region == 18 {
+        total_start
+      } else {
+        other_width
+      },
+      third_rule,
+      if overlay_stripe {
+        overlay_end
+      } else {
+        0L
+      },
+    ),
   )
   area
 }
@@ -562,7 +1156,23 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   Bool,
   XlsxRange?,
   Array[(Int32, Int32)],
-  Array[(XlsxRange, Int32, Int64, Int64, Int32, Int32)],
+  Array[
+    (
+      XlsxRange,
+      Int32,
+      Int64,
+      Int64,
+      Int32,
+      Int32,
+      Int32,
+      Int64,
+      Int64,
+      Int32,
+      Int64,
+      Int32,
+      Int64,
+    ),
+  ],
 ) raise {
   let data = self.package.read(part) catch {
     @ooxml.InvalidOoxml(message) => raise InvalidXlsxInput(message)
@@ -587,8 +1197,27 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut table_depth = -1
   let mut table_room = 200000L
   let table_style_cache : Map[String, Bool] = Map([])
-  let table_style_id_cache : Map[String, (Int32, Int32)] = Map([])
-  let table_rules : Array[(XlsxRange, Int32, Int64, Int64, Int32, Int32)] = []
+  let table_style_id_cache : Map[
+    String,
+    (Int32, Int32, Int64, Int32, Int64, Int32),
+  ] = Map([])
+  let table_rules : Array[
+    (
+      XlsxRange,
+      Int32,
+      Int64,
+      Int64,
+      Int32,
+      Int32,
+      Int32,
+      Int64,
+      Int64,
+      Int32,
+      Int64,
+      Int32,
+      Int64,
+    ),
+  ] = []
   let mut has_conditional = false
   let mut auto_filter : XlsxRange? = None
   let links : Array[@sheet.GridLink] = []
@@ -1228,7 +1857,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     }
   }
   let mut has_table_style = false
-  for (_, id, _, _, _, _) in table_rules {
+  for (_, id, _, _, _, _, _, _, _, _, _, _, _) in table_rules {
     if id >= 0 {
       has_table_style = true
     }
@@ -1318,6 +1947,13 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             style_end,
             style_col_start,
             style_col_end,
+            region,
+            origin,
+            width,
+            extra_id,
+            extra_width,
+            third_id,
+            overlay_end,
           ) in table_rules {
           if row.index.to_int64() < range.row_start ||
             row.index.to_int64() > range.row_end ||
@@ -1325,16 +1961,36 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             cell.column > range.column_end {
             continue
           }
-          if id >= 0 &&
+          let choice = xlsx_table_stripe_choice(
+            region,
+            origin,
+            range,
+            width,
+            extra_width,
+            overlay_end,
+            row.index,
+            cell.column,
+          )
+          let selected = if choice == 0 {
+            id
+          } else if (region == 18 && choice >= 2) ||
+            ((region == 23 || region == 24) && choice == 2) {
+            third_id
+          } else {
+            extra_id
+          }
+          if selected >= 0 &&
+            choice >= 0 &&
             row.index.to_int64() >= style_start &&
             row.index.to_int64() <= style_end &&
             cell.column >= style_col_start &&
             cell.column <= style_col_end {
-            let group = match matches.get(index) {
+            let group_key = index * 4 + choice
+            let group = match matches.get(group_key) {
               Some(value) => value
               None => {
                 let value : Map[Int32, Map[Int32, Bool]] = Map([])
-                matches[index] = value
+                matches[group_key] = value
                 value
               }
             }
@@ -1352,11 +2008,34 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         }
       }
     }
-    for index, (_, id, _, _, _, _) in table_rules {
-      if id >= 0 && matches.get(index) is Some(matched) {
-        let diff = workbook.xlsx_conditional_style(id)
-        let font_diff : XlsxConditionalStyle = { ..diff, fill: None, }
-        rows = xlsx_apply_conditional_style(rows, styles, matched, font_diff)
+    for
+      index, (_, id, _, _, _, _, region, _, _, extra_id, _, third_id, _) in table_rules {
+      for choice in 0..<4 {
+        if (
+            choice == 2 &&
+            region != 17 &&
+            region != 18 &&
+            region != 23 &&
+            region != 24
+          ) ||
+          (choice == 3 && region != 18) {
+          continue
+        }
+        let selected = if choice == 0 {
+          id
+        } else if (region == 18 && choice >= 2) ||
+          ((region == 23 || region == 24) && choice == 2) {
+          third_id
+        } else {
+          extra_id
+        }
+        if selected >= 0 && matches.get(index * 4 + choice) is Some(matched) {
+          let diff = workbook.xlsx_table_effective_style(
+            id, extra_id, third_id, region, choice,
+          )
+          let font_diff : XlsxConditionalStyle = { ..diff, fill: None, }
+          rows = xlsx_apply_conditional_style(rows, styles, matched, font_diff)
+        }
       }
     }
   }
@@ -1374,166 +2053,216 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   for
     table_index, (
       range,
-      id,
+      base_id,
       style_start,
       style_end,
       style_col_start,
       style_col_end,
+      region,
+      origin,
+      width,
+      extra_id,
+      extra_width,
+      third_id,
+      overlay_end,
     ) in table_rules {
-    if id < 0 {
-      continue
-    }
-    let diff = workbook.xlsx_conditional_style(id)
-    if diff.fill is None {
-      continue
-    }
-    let allowed : Map[Int32, Map[Int32, Bool]] = Map([])
-    let first_row = Int64::max(style_start, 0L).to_int()
-    let last_row = Int64::min(style_end, (row_count - 1).to_int64()).to_int()
-    let first_col = Int32::max(style_col_start, 0)
-    let last_col = Int32::min(style_col_end, col_count - 1)
-    let row_styles : Map[Int32, Int32] = Map([])
-    for row in parsed.sorted_rows() {
-      row_styles[row.index] = row.style
-    }
-    let column_styles : Map[Int32, Int32] = Map([])
-    for column in geo.columns {
-      let lo = Int32::max(first_col, column.first)
-      let hi = Int32::min(last_col, column.last)
-      if lo <= hi {
-        for c in lo..<=hi {
-          column_styles[c] = column.style
-        }
+    for choice in 0..<4 {
+      if (
+          choice == 2 &&
+          region != 17 &&
+          region != 18 &&
+          region != 23 &&
+          region != 24
+        ) ||
+        (choice == 3 && region != 18) {
+        continue
       }
-    }
-    if first_row <= last_row && first_col <= last_col {
-      for r in first_row..<=last_row {
-        let columns : Map[Int32, Bool] = Map([])
-        for c in first_col..<=last_col {
-          for owner, (other, _, _, _, _, _) in table_rules {
-            if r.to_int64() >= other.row_start &&
-              r.to_int64() <= other.row_end &&
-              c >= other.column_start &&
-              c <= other.column_end {
-              if owner == table_index {
-                let row_style = row_styles.get(r).unwrap_or(-1)
-                let base_style = if row_style >= 0 {
-                  row_style
-                } else {
-                  column_styles.get(c).unwrap_or(-1)
-                }
-                let index = if base_style < 0 ||
-                  base_style >= input_styles.cell_formats.length() {
-                  0
-                } else {
-                  base_style
-                }
-                let fill_id = input_styles.cell_formats[index].fill
-                let nonempty = if fill_id >= 0 &&
-                  fill_id < input_styles.fills.length() {
-                  let fill = input_styles.fills[fill_id]
-                  fill.pattern != "" || fill.gradient is Some(_)
-                } else {
-                  false
-                }
-                if !nonempty {
-                  columns[c] = true
-                }
-              }
-              break
-            }
-          }
-        }
-        allowed[r] = columns
+      let id = if choice == 0 {
+        base_id
+      } else if (region == 18 && choice >= 2) ||
+        ((region == 23 || region == 24) && choice == 2) {
+        third_id
+      } else {
+        extra_id
       }
-    }
-    for row in parsed.sorted_rows() {
-      if allowed.get(row.index) is Some(columns) {
-        for cell in row.cells {
-          if row.index.to_int64() < range.row_start ||
-            row.index.to_int64() > range.row_end ||
-            cell.column < first_col ||
-            cell.column > last_col {
-            continue
-          }
-          let mut owned = false
-          for owner, (other, _, _, _, _, _) in table_rules {
-            if row.index.to_int64() >= other.row_start &&
-              row.index.to_int64() <= other.row_end &&
-              cell.column >= other.column_start &&
-              cell.column <= other.column_end {
-              owned = owner == table_index
-              break
-            }
-          }
-          if !owned {
-            continue
-          }
-          columns[cell.column] = true
-          let index = if cell.style < 0 ||
-            cell.style >= input_styles.cell_formats.length() {
-            0
-          } else {
-            cell.style
-          }
-          let fill_id = input_styles.cell_formats[index].fill
-          if fill_id >= 0 && fill_id < input_styles.fills.length() {
-            let fill = input_styles.fills[fill_id]
-            if fill.pattern != "" || fill.gradient is Some(_) {
-              columns.remove(cell.column)
-            }
+      if id < 0 {
+        continue
+      }
+      let diff = workbook.xlsx_table_effective_style(
+        base_id, extra_id, third_id, region, choice,
+      )
+      if diff.fill is None {
+        continue
+      }
+      let allowed : Map[Int32, Map[Int32, Bool]] = Map([])
+      let first_row = Int64::max(style_start, 0L).to_int()
+      let last_row = Int64::min(style_end, (row_count - 1).to_int64()).to_int()
+      let first_col = Int32::max(style_col_start, 0)
+      let last_col = Int32::min(style_col_end, col_count - 1)
+      let row_styles : Map[Int32, Int32] = Map([])
+      for row in parsed.sorted_rows() {
+        row_styles[row.index] = row.style
+      }
+      let column_styles : Map[Int32, Int32] = Map([])
+      for column in geo.columns {
+        let lo = Int32::max(first_col, column.first)
+        let hi = Int32::min(last_col, column.last)
+        if lo <= hi {
+          for c in lo..<=hi {
+            column_styles[c] = column.style
           }
         }
       }
-    }
-    let matched : Map[Int32, Map[Int32, Bool]] = Map([])
-    let chunks : Array[XlsxRange] = []
-    let mut start = first_row
-    while start <= last_row {
-      let finish = Int32::min(start + 999, last_row)
-      chunks.push({
-        ..range,
-        row_start: start.to_int64(),
-        row_end: finish.to_int64(),
-      })
-      start = finish + 1
-    }
-    rows = xlsx_materialize_conditional_blanks(
-      rows,
-      geo,
-      styles.cell_formats.length(),
-      chunks,
-      row_count,
-      col_count,
-      matched,
-      Some(allowed),
-    )
-    for row in rows {
-      if allowed.get(row.index) is Some(columns) {
-        for cell in row.cells {
-          if columns.contains(cell.column) {
-            let result = match matched.get(row.index) {
-              Some(value) => value
-              None => {
-                let value : Map[Int32, Bool] = Map([])
-                matched[row.index] = value
-                value
+      if first_row <= last_row && first_col <= last_col {
+        for r in first_row..<=last_row {
+          let columns : Map[Int32, Bool] = Map([])
+          for c in first_col..<=last_col {
+            if xlsx_table_stripe_choice(
+                region, origin, range, width, extra_width, overlay_end, r, c,
+              ) !=
+              choice {
+              continue
+            }
+            for
+              owner, (other, _, _, _, _, _, _, _, _, _, _, _, _) in table_rules {
+              if r.to_int64() >= other.row_start &&
+                r.to_int64() <= other.row_end &&
+                c >= other.column_start &&
+                c <= other.column_end {
+                if owner == table_index {
+                  let row_style = row_styles.get(r).unwrap_or(-1)
+                  let base_style = if row_style >= 0 {
+                    row_style
+                  } else {
+                    column_styles.get(c).unwrap_or(-1)
+                  }
+                  let index = if base_style < 0 ||
+                    base_style >= input_styles.cell_formats.length() {
+                    0
+                  } else {
+                    base_style
+                  }
+                  let fill_id = input_styles.cell_formats[index].fill
+                  let nonempty = if fill_id >= 0 &&
+                    fill_id < input_styles.fills.length() {
+                    let fill = input_styles.fills[fill_id]
+                    fill.pattern != "" || fill.gradient is Some(_)
+                  } else {
+                    false
+                  }
+                  if !nonempty {
+                    columns[c] = true
+                  }
+                }
+                break
               }
             }
-            result[cell.column] = true
+          }
+          allowed[r] = columns
+        }
+      }
+      for row in parsed.sorted_rows() {
+        if allowed.get(row.index) is Some(columns) {
+          for cell in row.cells {
+            if row.index.to_int64() < range.row_start ||
+              row.index.to_int64() > range.row_end ||
+              cell.column < first_col ||
+              cell.column > last_col {
+              continue
+            }
+            if xlsx_table_stripe_choice(
+                region,
+                origin,
+                range,
+                width,
+                extra_width,
+                overlay_end,
+                row.index,
+                cell.column,
+              ) !=
+              choice {
+              continue
+            }
+            let mut owned = false
+            for
+              owner, (other, _, _, _, _, _, _, _, _, _, _, _, _) in table_rules {
+              if row.index.to_int64() >= other.row_start &&
+                row.index.to_int64() <= other.row_end &&
+                cell.column >= other.column_start &&
+                cell.column <= other.column_end {
+                owned = owner == table_index
+                break
+              }
+            }
+            if !owned {
+              continue
+            }
+            columns[cell.column] = true
+            let index = if cell.style < 0 ||
+              cell.style >= input_styles.cell_formats.length() {
+              0
+            } else {
+              cell.style
+            }
+            let fill_id = input_styles.cell_formats[index].fill
+            if fill_id >= 0 && fill_id < input_styles.fills.length() {
+              let fill = input_styles.fills[fill_id]
+              if fill.pattern != "" || fill.gradient is Some(_) {
+                columns.remove(cell.column)
+              }
+            }
           }
         }
       }
+      let matched : Map[Int32, Map[Int32, Bool]] = Map([])
+      let chunks : Array[XlsxRange] = []
+      let mut start = first_row
+      while start <= last_row {
+        let finish = Int32::min(start + 999, last_row)
+        chunks.push({
+          ..range,
+          row_start: start.to_int64(),
+          row_end: finish.to_int64(),
+        })
+        start = finish + 1
+      }
+      rows = xlsx_materialize_conditional_blanks(
+        rows,
+        geo,
+        styles.cell_formats.length(),
+        chunks,
+        row_count,
+        col_count,
+        matched,
+        Some(allowed),
+      )
+      for row in rows {
+        if allowed.get(row.index) is Some(columns) {
+          for cell in row.cells {
+            if columns.contains(cell.column) {
+              let result = match matched.get(row.index) {
+                Some(value) => value
+                None => {
+                  let value : Map[Int32, Bool] = Map([])
+                  matched[row.index] = value
+                  value
+                }
+              }
+              result[cell.column] = true
+            }
+          }
+        }
+      }
+      let fill_diff : XlsxConditionalStyle = {
+        ..diff,
+        bold: None,
+        italic: None,
+        strike: None,
+        underline: None,
+        color: None,
+      }
+      rows = xlsx_apply_conditional_style(rows, styles, matched, fill_diff)
     }
-    let fill_diff : XlsxConditionalStyle = {
-      ..diff,
-      bold: None,
-      italic: None,
-      strike: None,
-      underline: None,
-      color: None,
-    }
-    rows = xlsx_apply_conditional_style(rows, styles, matched, fill_diff)
   }
   if has_conditional {
     rows = workbook.xlsx_apply_plain_conditionals(
