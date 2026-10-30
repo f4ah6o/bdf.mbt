@@ -144,7 +144,12 @@ use `generate_multi_edge_space_plain_test.go`, `generate_multi_edge_space_wrap_t
 Per-run font families and theme resolution use `generate_multi_family_runs_test.go`,
 `generate_multi_family_theme_test.go`, `generate_multi_family_conditional_test.go`,
 `generate_multi_family_shrink_test.go`, `generate_multi_family_generic_test.go`
-and `generate_multi_family_legacy_test.go`.
+and `generate_multi_family_legacy_test.go`. Uniform per-run sizes and the
+1,024-character display limit use `generate_multi_uniform_size_test.go`,
+`generate_multi_uniform_size_variants_test.go`, `generate_multi_uniform_size_shrink_test.go`,
+`generate_multi_uniform_size_conditional_test.go`, `generate_multi_truncate_plain_test.go`,
+`generate_multi_truncate_wrap_test.go`, `generate_multi_truncate_shrink_test.go`
+and `generate_multi_truncate_legacy_test.go`.
 Duplicate and unique predicates use `generate_conditional_duplicate_test.go`
 and `TestCodexConditionalDuplicate`. Numeric comparison-key tests are generated
 by `generate_duplicate_keys_test.go` and `TestCodexXLSXDuplicateKeys`, including

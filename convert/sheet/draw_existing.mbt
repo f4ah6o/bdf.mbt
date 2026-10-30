@@ -529,17 +529,30 @@ pub fn draw_sized_grid_no_fonts(
       if !rich_runs.is_empty() {
         let chars : Array[Char] = []
         let owners : Array[Int32] = []
+        let mut shown = 0
         for index, run in rich_runs {
+          if shown >= 1024 {
+            break
+          }
           for ch in run.text {
-            if ch == '\n' && !wrap {
-              continue
+            if ch == '\n' {
+              if wrap {
+                chars.push(ch)
+                owners.push(index)
+              }
+              shown += 1
+            } else {
+              let visible = if ch == '\t' { ' ' } else { ch }
+              if visible.to_int() < 0x20 {
+                continue
+              }
+              chars.push(visible)
+              owners.push(index)
+              shown += 1
             }
-            let visible = if ch == '\t' { ' ' } else { ch }
-            if visible.to_int() < 0x20 && visible != '\n' {
-              continue
+            if shown >= 1024 {
+              break
             }
-            chars.push(visible)
-            owners.push(index)
           }
         }
         let mut cursor = 0

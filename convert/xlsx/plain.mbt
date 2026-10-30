@@ -698,7 +698,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let mut styled_runs = false
   for _, columns in rich_cells {
     for _, run in columns {
-      if run.font is Some(_) {
+      if run.font is Some(_) || !run.segments.is_empty() {
         styled_runs = true
       }
     }
@@ -1313,8 +1313,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               horizontal != "right" &&
               horizontal != "center" &&
               horizontal != "centerContinuous"
-            ) ||
-            run.text.length() > 1024 {
+            ) {
             raise InvalidXlsxInput(
               "xlsx: plain conversion does not support these styled rich text runs",
             )
@@ -2024,6 +2023,47 @@ fn xlsx_apply_plain_run_fonts(
           let new_style = styles.cell_formats.length()
           styles.cell_formats.push({ ..format, font: new_font, })
           { ..cell, style: new_style, }
+        }
+        Some({ segments, .. }) if !segments.is_empty() => {
+          let index = if cell.style < 0 ||
+            cell.style >= styles.cell_formats.length() {
+            0
+          } else {
+            cell.style
+          }
+          let format = styles.cell_formats[index]
+          let font_index = if format.font < 0 ||
+            format.font >= styles.fonts.length() {
+            0
+          } else {
+            format.font
+          }
+          let base = styles.fonts[font_index]
+          let mut size = 0.0
+          let mut uniform = true
+          for segment in segments {
+            if segment.text == "" {
+              continue
+            }
+            let effective = match segment.font {
+              Some(font) if font.size > 0.0 => font.size
+              _ => base.size
+            }
+            if size == 0.0 {
+              size = effective
+            } else if size != effective {
+              uniform = false
+            }
+          }
+          if uniform && size > 0.0 && size != base.size {
+            let new_font = styles.fonts.length()
+            styles.fonts.push({ ..base, size, })
+            let new_style = styles.cell_formats.length()
+            styles.cell_formats.push({ ..format, font: new_font, })
+            { ..cell, style: new_style, }
+          } else {
+            cell
+          }
         }
         _ => cell
       }
