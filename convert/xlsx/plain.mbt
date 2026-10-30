@@ -44,9 +44,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           // The upstream worksheet reader ignores unrecognized top-level
           // metadata. These elements have rendering semantics there and must
           // remain unsupported until they are implemented here.
-          if ["drawing", "legacyDrawing", "tableParts", "AlternateContent"].contains(
-              name,
-            ) {
+          if ["drawing", "tableParts", "AlternateContent"].contains(name) {
             raise InvalidXlsxInput(
               "xlsx: plain conversion does not support worksheet feature " +
               name,
@@ -646,6 +644,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   }
   let parsed = workbook.read_sheet_cells(ref.part)
   let mut rows = parsed.sorted_rows()
+  let notes = workbook.xlsx_plain_notes(ref.part)
   if shared_multi_run || inline_multi_run {
     for row in rows {
       for cell in row.cells {
@@ -707,7 +706,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       base_borders = border || base_borders
     }
   }
-  let (row_count, col_count) = xlsx_initial_extent(parsed, geo, [])
+  let (row_count, col_count) = xlsx_initial_extent(parsed, geo, notes)
   if has_conditional {
     rows = xlsx_normalize_conditional_styles(rows, styles.cell_formats.length())
   }
@@ -1292,6 +1291,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         Some((range.row_start.to_int(), range.column_start, range.column_end))
       _ => None
     },
+    notes~,
   ) catch {
     @sheet.InvalidArgument(message) => raise InvalidXlsxInput(message)
     error => raise error

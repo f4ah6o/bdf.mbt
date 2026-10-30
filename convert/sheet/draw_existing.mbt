@@ -120,6 +120,7 @@ pub fn draw_sized_grid_no_fonts(
   center_across~ : Map[Int32, Map[Int32, Bool]] = Map([]),
   links~ : Array[GridLink] = [],
   auto_filter~ : (Int32, Int32, Int32)? = None,
+  notes~ : Array[(Int32, Int32)] = [],
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -529,6 +530,52 @@ pub fn draw_sized_grid_no_fonts(
     rows, borders, border_colors, diagonals, spans, region_rows, merge_regions, col_positions,
     row_positions, visible_columns,
   )
+  for (row, column) in notes {
+    if row < 0 || row >= count || column < 0 || column >= visible_columns {
+      continue
+    }
+    let mut first_row = row
+    let mut last_row = row
+    let mut first_column = column
+    let mut last_column = column
+    if region_rows.get(row) is Some(regions) {
+      for _, region in regions {
+        if column >= region.column_start && column <= region.column_end {
+          first_row = region.row_start
+          last_row = region.row_end
+          first_column = region.column_start
+          last_column = region.column_end
+        }
+      }
+    }
+    let x0 = col_positions[first_column]
+    let x1 = col_positions[last_column + 1]
+    let y0 = row_positions[first_row]
+    let y1 = row_positions[last_row + 1]
+    if x1 <= x0 || y1 <= y0 {
+      continue
+    }
+    let size = 3.75
+    for tile in context.in_bounds(x1 - size, y0, x1, y0 + size) {
+      let ox = tile.x.to_double() * 2048.0
+      let oy = tile.y.to_double() * 2048.0
+      let path : @core.Path = {
+        verbs: b"\x00\x01\x01\x04",
+        coordinates: [
+          x1 - size - ox,
+          y0 - oy,
+          x1 - ox,
+          y0 - oy,
+          x1 - ox,
+          y0 + size - oy,
+        ],
+      }
+      tile.fill_color(0xe02020ffU)
+      let index = tile.object.add_path(@core.Inline(path))
+      tile.object.fill_path(index, 0)
+      tile.drawn = true
+    }
+  }
   if auto_filter is Some((row, first, last)) {
     if row >= 0 && row < count && first >= 0 && first < visible_columns {
       let end = Int32::min(last, visible_columns - 1)

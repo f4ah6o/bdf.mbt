@@ -43,6 +43,19 @@ for (const [j, c] of sheetAutoFilter.entries()) await verifyCase(c, `sheet autof
 const sheetAutoFilterTiles = JSON.parse(await readFile(new URL('./sheet-autofilter-tiles.json', import.meta.url)));
 assert.equal(sheetAutoFilterTiles.length, 128, 'sheet autofilter tile fixture count');
 for (const [j, c] of sheetAutoFilterTiles.entries()) await verifyCase(c, `sheet autofilter tiles ${j}`);
+const sheetNotes = JSON.parse(await readFile(new URL('./sheet-notes.json', import.meta.url)));
+assert.equal(sheetNotes.length, 192, 'sheet note fixture count');
+for (const [j, c] of sheetNotes.entries()) await verifyCase(c, `sheet notes ${j}`);
+const sheetNotesFilter = JSON.parse(await readFile(new URL('./sheet-notes-filter.json', import.meta.url)));
+assert.equal(sheetNotesFilter.length, 128, 'sheet note and autofilter fixture count');
+for (const [j, c] of sheetNotesFilter.entries()) await verifyCase(c, `sheet notes and autofilter ${j}`);
+const unsupportedSheetNotes = JSON.parse(await readFile(new URL('./sheet-notes-unsupported.json', import.meta.url)));
+assert.equal(unsupportedSheetNotes.length, 8, 'unsupported sheet note fixture count');
+for (const encoded of unsupportedSheetNotes) {
+  const input = Buffer.from(encoded, 'base64');
+  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'multiple comments must be rejected');
+  assert.match(xlsx_render_error(input, 'none', true), /multiple comments/);
+}
 const baseFills = JSON.parse(await readFile(new URL('./base-fill.json', import.meta.url)));
 assert.equal(baseFills.length, 240, 'row and column fill fixture count');
 for (const [j, c] of baseFills.entries()) await verifyCase(c, `base fill ${j}`);
@@ -407,4 +420,4 @@ for (const encoded of unsupportedBase) {
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|complex borders)/);
 }
-console.log(`${i} basic XLSX renderings, ${ignoredSheetFeatures.length + ignoredSheetExtensions.length} ignored sheet feature cases, ${sheetAutoFilter.length + sheetAutoFilterTiles.length} autofilters, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length + multiplePlainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length + conditionalBetween.length + conditionalEquals.length + conditionalLiteral.length + conditionalMovingLiteral.length + conditionalTypedReference.length + conditionalInvalidReference.length + conditionalAbsolute.length + conditionalSingleRef.length + conditionalAxisRef.length + conditionalMovingRef.length + conditionalNegativeRef.length + conditionalNegativeBlank.length + conditionalNegativeString.length + conditionalPredicates.length + conditionalText.length + conditionalTop.length + conditionalAverage.length + conditionalStdDev.length + conditionalLargeStdDev.length + conditionalOverflowMean.length + conditionalNonfiniteAverage.length + conditionalDisjoint.length + conditionalDisjointMoving.length + conditionalSameStyle.length + conditionalIdenticalBlocks.length + conditionalSameRuleStyle.length + conditionalDisjointMatches.length + conditionalDuplicate.length + conditionalBlank.length + conditionalPaintBlank.length} conditional formats match upstream.`);
+console.log(`${i} basic XLSX renderings, ${ignoredSheetFeatures.length + ignoredSheetExtensions.length} ignored sheet feature cases, ${sheetAutoFilter.length + sheetAutoFilterTiles.length} autofilters, ${sheetNotes.length + sheetNotesFilter.length} notes, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length + multiplePlainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length + conditionalBetween.length + conditionalEquals.length + conditionalLiteral.length + conditionalMovingLiteral.length + conditionalTypedReference.length + conditionalInvalidReference.length + conditionalAbsolute.length + conditionalSingleRef.length + conditionalAxisRef.length + conditionalMovingRef.length + conditionalNegativeRef.length + conditionalNegativeBlank.length + conditionalNegativeString.length + conditionalPredicates.length + conditionalText.length + conditionalTop.length + conditionalAverage.length + conditionalStdDev.length + conditionalLargeStdDev.length + conditionalOverflowMean.length + conditionalNonfiniteAverage.length + conditionalDisjoint.length + conditionalDisjointMoving.length + conditionalSameStyle.length + conditionalIdenticalBlocks.length + conditionalSameRuleStyle.length + conditionalDisjointMatches.length + conditionalDuplicate.length + conditionalBlank.length + conditionalPaintBlank.length} conditional formats match upstream.`);
