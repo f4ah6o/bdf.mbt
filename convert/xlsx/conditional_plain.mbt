@@ -670,7 +670,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
       }
       continue
     }
-    if stopped_blanks || (block.blank_matches && !stopped.is_empty()) {
+    if block.blank_matches && (stopped_blanks || !stopped.is_empty()) {
       xlsx_reject_conditional()
     }
     if stopped.is_empty() {
