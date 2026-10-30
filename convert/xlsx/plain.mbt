@@ -1668,7 +1668,10 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
       }
       if !empty {
         match self.xlsx_simple_picture(target) {
-          Some(picture) => pictures.push(picture)
+          Some(found) =>
+            for picture in found {
+              pictures.push(picture)
+            }
           None =>
             raise InvalidXlsxInput(
               "xlsx: plain conversion does not support worksheet feature drawing",
@@ -1987,9 +1990,9 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// shrink-to-fit, indentation and center-across-selection.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// patterned row and column fills, complex borders and other features are
-/// rejected. One untransformed embedded browser-supported image per sheet is
-/// supported with zero cell-anchor offsets and row heights in quarter-point
-/// increments.
+/// rejected. Up to 128 untransformed embedded browser-supported images per
+/// sheet are supported with nonnegative cell-anchor offsets, at most one GiB of image
+/// data in total, and row heights in quarter-point increments.
 /// Supported numeric conditional rules may apply a differential font,
 /// solid fill and border or be inactive. For blank-cell fills or borders,
 /// ranges are limited to 200,000 cells. Other conditional
@@ -3531,6 +3534,15 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     pictures~,
     picture_writer=Some(writer),
     picture_children=Some(children),
+    column_axis_default=Some(
+      Float::from_double(
+        if geo.default_column_width > 0.0 {
+          xlsx_col_width_points(geo.default_column_width, 7.0)
+        } else {
+          ((geo.base_column_width * 7.0 + 5.0) / 8.0).ceil() * 8.0 * 0.75
+        },
+      ),
+    ),
   ) catch {
     @sheet.InvalidArgument(message) => raise InvalidXlsxInput(message)
     error => raise error

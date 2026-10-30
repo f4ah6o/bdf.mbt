@@ -149,6 +149,7 @@ pub fn draw_sized_grid_no_fonts(
   pictures~ : Array[GridPicture] = [],
   picture_writer~ : @core.DocumentWriter? = None,
   picture_children~ : Array[(Int32, Int32, Bytes)]? = None,
+  column_axis_default~ : Float? = None,
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -863,27 +864,54 @@ pub fn draw_sized_grid_no_fonts(
     }
   }
   if !pictures.is_empty() {
+    if pictures.length() > 128 {
+      raise InvalidArgument("sheet: too many pictures")
+    }
+    for position in row_positions {
+      if position.is_nan() ||
+        position.is_inf() ||
+        position * 4.0 != (position * 4.0).trunc() {
+        raise InvalidArgument(
+          "sheet: pictures with fractional row heights are not supported",
+        )
+      }
+    }
     let writer = match picture_writer {
       Some(writer) => writer
       None => raise InvalidArgument("sheet: missing picture writer")
     }
+    let mut room = 16384
     for picture in pictures {
-      context.paint_picture(
+      room -= context.paint_picture(
         writer,
         picture,
         row_positions,
         col_positions,
-        col_positions[visible_columns],
+        match column_axis_default {
+          Some(_) => col_positions[col_positions.length() - 1]
+          None => col_positions[visible_columns]
+        },
         picture_children,
+        room,
       )
     }
   }
   let tiles = context.tiles.map(fn(tile) {
     { x: tile.x, y: tile.y, object: tile.object.encode(), drawn: tile.drawn, }
   })
+  let mut last_exception = 0
+  if column_axis_default is Some(default_size) {
+    let mut offset = 0
+    for run in all_columns {
+      offset += run.count
+      if run.size != default_size {
+        last_exception = offset
+      }
+    }
+  }
   let final_count = Int32::min(
     16384,
-    Int32::max(visible_columns, text_columns + 2),
+    Int32::max(last_exception, Int32::max(visible_columns, text_columns + 2)),
   )
   let columns : Array[Run] = []
   let mut remaining = final_count
