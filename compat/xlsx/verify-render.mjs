@@ -186,6 +186,16 @@ for (const [j, c] of conditionalLiteral.entries()) await verifyCase(c, `conditio
 const conditionalMovingLiteral = JSON.parse(await readFile(new URL('./conditional-moving-literal.json', import.meta.url)));
 assert.equal(conditionalMovingLiteral.length, 434, 'moving conditional literal fixture count');
 for (const [j, c] of conditionalMovingLiteral.entries()) await verifyCase(c, `moving conditional literal ${j}`);
+const conditionalTypedReference = JSON.parse(await readFile(new URL('./conditional-typed-reference.json', import.meta.url)));
+assert.equal(conditionalTypedReference.length, 233, 'typed conditional reference fixture count');
+for (const [j, c] of conditionalTypedReference.entries()) await verifyCase(c, `typed conditional reference ${j}`);
+const unsupportedConditionalTypedReference = JSON.parse(await readFile(new URL('./conditional-typed-reference-unsupported.json', import.meta.url)));
+assert.equal(unsupportedConditionalTypedReference.length, 8, 'unsupported typed conditional reference fixture count');
+for (const encoded of unsupportedConditionalTypedReference) {
+  const input = Buffer.from(encoded, 'base64');
+  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported typed conditional reference must be rejected');
+  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+}
 const unsupportedConditionalMovingLiteral = JSON.parse(await readFile(new URL('./conditional-moving-literal-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalMovingLiteral.length, 8, 'unsupported moving conditional literal fixture count');
 for (const encoded of unsupportedConditionalMovingLiteral) {
@@ -300,4 +310,4 @@ for (const encoded of unsupportedBase) {
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|complex borders)/);
 }
-console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length + conditionalBetween.length + conditionalEquals.length + conditionalLiteral.length + conditionalMovingLiteral.length + conditionalAbsolute.length + conditionalSingleRef.length + conditionalAxisRef.length + conditionalMovingRef.length + conditionalNegativeRef.length + conditionalNegativeBlank.length + conditionalPredicates.length + conditionalText.length + conditionalTop.length + conditionalAverage.length + conditionalStdDev.length + conditionalDuplicate.length + conditionalBlank.length + conditionalPaintBlank.length} conditional formats match upstream.`);
+console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length + conditionalBetween.length + conditionalEquals.length + conditionalLiteral.length + conditionalMovingLiteral.length + conditionalTypedReference.length + conditionalAbsolute.length + conditionalSingleRef.length + conditionalAxisRef.length + conditionalMovingRef.length + conditionalNegativeRef.length + conditionalNegativeBlank.length + conditionalPredicates.length + conditionalText.length + conditionalTop.length + conditionalAverage.length + conditionalStdDev.length + conditionalDuplicate.length + conditionalBlank.length + conditionalPaintBlank.length} conditional formats match upstream.`);

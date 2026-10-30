@@ -52,6 +52,8 @@ Single-cell relative-reference cases use `generate_conditional_single_ref_test.g
 and `TestCodexConditionalSingleRef`.
 Axis-aligned relative-reference cases use `generate_conditional_axis_ref_test.go`
 and `TestCodexConditionalAxisRef`.
+Typed string, boolean, error and numeric references use
+`generate_conditional_typed_reference_test.go` and `TestCodexConditionalTypedReference`.
 Moving relative-reference cases use `generate_conditional_moving_ref_test.go`
 and `TestCodexConditionalMovingRef`; bounded ranges, blank paints, multiple
 ranges, and sparse rows are covered.

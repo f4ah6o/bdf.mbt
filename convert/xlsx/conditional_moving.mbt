@@ -65,34 +65,44 @@ fn xlsx_match_moving_conditionals(
         let delta_row = r - ranges[0].row_start.to_int()
         let delta_col = c - ranges[0].column_start
         let lo = if reference1 == "" {
-          Some(threshold)
+          Some({ number: threshold, text: literal1, })
         } else {
           xlsx_conditional_shifted_reference(
             reference1, rows, delta_row, delta_col,
           )
         }
         let hi = if reference2 == "" {
-          Some(threshold_end)
+          Some({ number: threshold_end, text: literal2, })
         } else {
           xlsx_conditional_shifted_reference(
             reference2, rows, delta_row, delta_col,
           )
         }
         let lo = match lo {
-          Some(v) if !v.is_nan() && !v.is_inf() => v
-          _ => {
+          Some(v) => {
+            if v.text is None && (v.number.is_nan() || v.number.is_inf()) {
+              xlsx_reject_conditional()
+            }
+            v
+          }
+          None => {
             xlsx_reject_conditional()
-            0.0
+            { number: 0.0, text: None, }
           }
         }
         let hi = match hi {
-          Some(v) if !v.is_nan() && !v.is_inf() => v
-          _ => {
+          Some(v) => {
+            if v.text is None && (v.number.is_nan() || v.number.is_inf()) {
+              xlsx_reject_conditional()
+            }
+            v
+          }
+          None => {
             xlsx_reject_conditional()
-            0.0
+            { number: 0.0, text: None, }
           }
         }
-        let applies = if literal1 is Some(_) || literal2 is Some(_) {
+        let applies = if lo.text is Some(_) || hi.text is Some(_) {
           let text : String? = if kind == 0 || kind == 1 {
             None
           } else if kind == 3 {
@@ -107,13 +117,19 @@ fn xlsx_match_moving_conditionals(
             xlsx_reject_conditional()
           }
           xlsx_conditional_literal_matches(
-            number, text, lo, literal1, hi, literal2, operator,
+            number,
+            text,
+            lo.number,
+            lo.text,
+            hi.number,
+            hi.text,
+            operator,
           )
         } else if kind == 0 || kind == 1 {
           if number.is_nan() {
             xlsx_reject_conditional()
           }
-          xlsx_plain_conditional_matches(number, lo, hi, operator)
+          xlsx_plain_conditional_matches(number, lo.number, hi.number, operator)
         } else if kind == 2 || kind == 3 || kind == 4 {
           ["greaterThan", "greaterThanOrEqual", "notEqual", "notBetween"].contains(
             operator,

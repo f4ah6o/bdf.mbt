@@ -122,6 +122,8 @@ pub(all) struct XlsxColumn {
   style : Int32
 }
 
+type XlsxConditionalValue
+
 pub(all) struct XlsxFill {
   mut pattern : String
   mut foreground : XlsxColor

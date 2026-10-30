@@ -126,7 +126,7 @@ func TestCodexConditionalBetween(t *testing.T) {
 		if i >= 160 && i < 166 {
 			bad := []string{
 				`<formula>1</formula>`, `<formula>1</formula><formula>2</formula><formula>3</formula>`,
-				`<formula>A1</formula><formula>2</formula>`, `<formula>1</formula><formula/>`,
+				`<formula>SUM(A1:A2)</formula><formula>2</formula>`, `<formula>1</formula><formula/>`,
 				`<formula></formula><formula>2</formula>`, `<formula>1</formula><formula>NaN</formula>`,
 			}
 			rule = `<conditionalFormatting sqref="A1:E3"><cfRule type="cellIs" operator="between" dxfId="0">` + bad[i-160] + `</cfRule></conditionalFormatting>`

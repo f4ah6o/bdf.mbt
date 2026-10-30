@@ -1,4 +1,10 @@
 ///|
+struct XlsxConditionalValue {
+  number : Double
+  text : String?
+}
+
+///|
 // Non-numeric operands are compared as Go's lowercased UTF-8 strings. Numeric
 // and blank operands sort before strings, booleans, and errors.
 fn xlsx_conditional_literal_compare(

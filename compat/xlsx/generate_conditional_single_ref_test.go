@@ -126,7 +126,7 @@ func TestCodexConditionalSingleRef(t *testing.T) {
 		ref := refs[i%len(refs)]
 		rule := fmt.Sprintf(`<conditionalFormatting sqref="A1"><cfRule type="cellIs" operator="%s" dxfId="0"><formula> = %s </formula><formula>G1</formula></cfRule></conditionalFormatting>`, op, ref)
 		if i >= 160 && i < 166 {
-			bad := []string{"$A$0", "A1+1", "$A$1", "XFE1", "A1048577", "$F$$1"}
+			bad := []string{"$A$0", "A1+1", "SUM(A1:A2)", "XFE1", "A1048577", "$F$$1"}
 			rule = `<conditionalFormatting sqref="A1"><cfRule type="cellIs" operator="between" dxfId="0"><formula>` + bad[i-160] + `</formula><formula>$G$1</formula></cfRule></conditionalFormatting>`
 		}
 		if i == 166 {

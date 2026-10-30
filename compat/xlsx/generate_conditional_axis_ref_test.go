@@ -128,7 +128,7 @@ func TestCodexConditionalAxisRef(t *testing.T) {
 		}
 		rule := fmt.Sprintf(`<conditionalFormatting sqref="%s"><cfRule type="cellIs" operator="%s" dxfId="0"><formula> = %s </formula><formula>%s</formula></cfRule></conditionalFormatting>`, rangeRef, op, expr1, expr2)
 		if i >= 160 && i < 166 {
-			bad := []string{"XFE1", "A1048577", "$F$$1", "$A$0", "A1+1", "$A$1"}
+			bad := []string{"XFE1", "A1048577", "$F$$1", "$A$0", "A1+1", "SUM(A1:A2)"}
 			rule = `<conditionalFormatting sqref="` + rangeRef + `"><cfRule type="cellIs" operator="between" dxfId="0"><formula>` + bad[i-160] + `</formula><formula>$G$1</formula></cfRule></conditionalFormatting>`
 		}
 		if i == 166 {

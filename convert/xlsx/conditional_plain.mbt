@@ -227,7 +227,14 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
                   reference2 = text
                 }
                 match xlsx_conditional_reference_value(text, rows, true, true) {
-                  Some(value) => value
+                  Some(value) => {
+                    if formula_count == 1 {
+                      literal1 = value.text
+                    } else {
+                      literal2 = value.text
+                    }
+                    value.number
+                  }
                   None => {
                     xlsx_reject_conditional()
                     0.0
@@ -528,7 +535,7 @@ fn xlsx_conditional_reference_value(
   rows : Array[XlsxRow],
   fixed_row : Bool,
   fixed_column : Bool,
-) -> Double? {
+) -> XlsxConditionalValue? {
   let original = text
   let text = if text.has_prefix("-") { text[1:].to_owned() } else { text }
   let data = @utf8.encode(text)
@@ -571,7 +578,7 @@ fn xlsx_conditional_shifted_reference(
   rows : Array[XlsxRow],
   row_offset : Int32,
   column_offset : Int32,
-) -> Double? {
+) -> XlsxConditionalValue? {
   let negative = text.has_prefix("-")
   let text = if negative { text[1:].to_owned() } else { text }
   let data = @utf8.encode(text)
@@ -604,22 +611,42 @@ fn xlsx_conditional_shifted_reference(
       continue
     }
     for cell in candidate.cells {
-      if cell.column == column {
-        if cell.kind == 0 {
-          return Some(0.0)
-        }
-        if cell.kind == 1 {
-          return Some(if negative { -cell.number } else { cell.number })
-        }
-        if negative && cell.kind == 3 {
-          return Some(-cell.number)
-        }
+      if cell.column != column {
+        continue
+      }
+      if cell.kind == 0 {
+        return Some({ number: 0.0, text: None, })
+      }
+      if cell.kind == 1 {
+        return Some({
+          number: if negative {
+            -cell.number
+          } else {
+            cell.number
+          },
+          text: None,
+        })
+      }
+      if negative && cell.kind == 3 {
+        return Some({ number: -cell.number, text: None, })
+      }
+      if negative {
         return None
       }
+      if cell.kind == 3 {
+        return Some({
+          number: 0.0,
+          text: Some(if cell.number != 0.0 { "TRUE" } else { "FALSE" }),
+        })
+      }
+      if cell.kind == 2 || cell.kind == 4 {
+        return Some({ number: 0.0, text: Some(cell.text), })
+      }
+      return None
     }
-    return Some(0.0)
+    return Some({ number: 0.0, text: None, })
   }
-  Some(0.0)
+  Some({ number: 0.0, text: None, })
 }
 
 ///|
