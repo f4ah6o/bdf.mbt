@@ -54,3 +54,12 @@ fn xlsx_shape_apply_lum(
     blue: xlsx_clamp_color(xlsx_color_component(hue - 1.0 / 3.0, p, q)),
   }
 }
+
+///|
+fn xlsx_shape_clamp_rgb(color : XlsxRgb) -> XlsxRgb {
+  {
+    red: xlsx_clamp_color(color.red),
+    green: xlsx_clamp_color(color.green),
+    blue: xlsx_clamp_color(color.blue),
+  }
+}

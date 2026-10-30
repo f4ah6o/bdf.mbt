@@ -470,10 +470,10 @@ fn XlsxWorkbook::xlsx_simple_picture(
             theme_colors,
             theme_alphas.unwrap_or(Map([])),
           )
-          shape_invertible = !["scrgbClr", "hslClr"].contains(name)
-          shape_rgb = if ["srgbClr", "prstClr", "sysClr", "schemeClr"].contains(
-              name,
-            ) {
+          shape_invertible = name != "scrgbClr"
+          shape_rgb = if name == "hslClr" {
+            xlsx_shape_parse_hsl(element)
+          } else if ["srgbClr", "prstClr", "sysClr", "schemeClr"].contains(name) {
             shape_fill.map(color => xlsx_rgb_from_uint(color >> 8))
           } else {
             None
@@ -542,10 +542,10 @@ fn XlsxWorkbook::xlsx_simple_picture(
             theme_colors,
             theme_alphas.unwrap_or(Map([])),
           )
-          line_invertible = !["scrgbClr", "hslClr"].contains(name)
-          line_rgb = if ["srgbClr", "prstClr", "sysClr", "schemeClr"].contains(
-              name,
-            ) {
+          line_invertible = name != "scrgbClr"
+          line_rgb = if name == "hslClr" {
+            xlsx_shape_parse_hsl(element)
+          } else if ["srgbClr", "prstClr", "sysClr", "schemeClr"].contains(name) {
             line_color.map(color => xlsx_rgb_from_uint(color >> 8))
           } else {
             None
@@ -570,9 +570,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
             }
             if shape_rgb is Some(rgb) {
               let next = {
-                red: 1.0 - rgb.red,
-                green: 1.0 - rgb.green,
-                blue: 1.0 - rgb.blue,
+                red: xlsx_clamp_color(1.0 - rgb.red),
+                green: xlsx_clamp_color(1.0 - rgb.green),
+                blue: xlsx_clamp_color(1.0 - rgb.blue),
               }
               shape_rgb = Some(next)
               shape_fill = shape_fill.map(color => {
@@ -607,6 +607,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
               None => return None
             }
             shape_alpha = next
+            shape_rgb = shape_rgb.map(xlsx_shape_clamp_rgb)
             shape_fill = shape_fill.map(color => {
               (color & 0xffffff00U) | (next * 255.0).round().to_uint()
             })
@@ -628,9 +629,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
             }
             if line_rgb is Some(rgb) {
               let next = {
-                red: 1.0 - rgb.red,
-                green: 1.0 - rgb.green,
-                blue: 1.0 - rgb.blue,
+                red: xlsx_clamp_color(1.0 - rgb.red),
+                green: xlsx_clamp_color(1.0 - rgb.green),
+                blue: xlsx_clamp_color(1.0 - rgb.blue),
               }
               line_rgb = Some(next)
               line_color = line_color.map(color => {
@@ -665,6 +666,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
               None => return None
             }
             line_alpha = next
+            line_rgb = line_rgb.map(xlsx_shape_clamp_rgb)
             line_color = line_color.map(color => {
               (color & 0xffffff00U) | (next * 255.0).round().to_uint()
             })
@@ -1167,38 +1169,9 @@ fn xlsx_simple_shape_color(
     )
   }
   if element.name.local_name == "hslClr" {
-    let mut hue = 0L
-    let mut sat = 0.0
-    let mut lum = 0.0
-    let seen : Map[String, Bool] = Map([])
-    for attr in element.attributes {
-      let name = attr.name.local_name
-      if !["hue", "sat", "lum"].contains(name) ||
-        seen.contains(name) ||
-        attr.name.namespace_uri is Some(_) {
-        return None
-      }
-      seen[name] = true
-      if name == "hue" {
-        hue = match xlsx_int(attr.value) {
-          Some(value) if value >= 0L && value <= 21600000L => value
-          _ => return None
-        }
-      } else {
-        let value = match xlsx_drawing_fraction(attr.value) {
-          Some(value) if value >= 0.0 && value <= 1.0 => value
-          _ => return None
-        }
-        if name == "sat" {
-          sat = value
-        } else {
-          lum = value
-        }
-      }
-    }
-    return Some(
-      xlsx_shape_hsl_fractions(hue.to_double() / 60000.0 / 360.0, sat, lum),
-    )
+    return xlsx_shape_parse_hsl(element).map(color => {
+      xlsx_shape_pack_rgb(color, 255U)
+    })
   }
   if element.name.local_name == "scrgbClr" {
     let components : Array[Double] = [0.0, 0.0, 0.0]
@@ -1280,6 +1253,40 @@ fn xlsx_simple_shape_color(
 }
 
 ///|
+fn xlsx_shape_parse_hsl(element : @xml.NamespaceElement) -> XlsxRgb? {
+  let mut hue = 0L
+  let mut sat = 0.0
+  let mut lum = 0.0
+  let seen : Map[String, Bool] = Map([])
+  for attr in element.attributes {
+    let name = attr.name.local_name
+    if !["hue", "sat", "lum"].contains(name) ||
+      seen.contains(name) ||
+      attr.name.namespace_uri is Some(_) {
+      return None
+    }
+    seen[name] = true
+    if name == "hue" {
+      hue = match xlsx_int(attr.value) {
+        Some(value) if value >= 0L && value <= 21600000L => value
+        _ => return None
+      }
+    } else {
+      let value = match xlsx_drawing_fraction(attr.value) {
+        Some(value) if value >= 0.0 && value <= 1.0 => value
+        _ => return None
+      }
+      if name == "sat" {
+        sat = value
+      } else {
+        lum = value
+      }
+    }
+  }
+  Some(xlsx_shape_hsl_rgb(hue.to_double() / 60000.0 / 360.0, sat, lum))
+}
+
+///|
 fn xlsx_shape_hsl_color(
   hue_units : Int64,
   sat_units : Int64,
@@ -1294,7 +1301,12 @@ fn xlsx_shape_hsl_color(
 
 ///|
 fn xlsx_shape_hsl_fractions(hue : Double, sat : Double, lum : Double) -> UInt32 {
-  let color = if sat == 0.0 {
+  xlsx_shape_pack_rgb(xlsx_shape_hsl_rgb(hue, sat, lum), 255U)
+}
+
+///|
+fn xlsx_shape_hsl_rgb(hue : Double, sat : Double, lum : Double) -> XlsxRgb {
+  if sat == 0.0 {
     { red: lum, green: lum, blue: lum, }
   } else {
     let q = if lum < 0.5 {
@@ -1309,10 +1321,6 @@ fn xlsx_shape_hsl_fractions(hue : Double, sat : Double, lum : Double) -> UInt32 
       blue: xlsx_color_component(hue - 1.0 / 3.0, p, q),
     }
   }
-  let red = (xlsx_clamp_color(color.red) * 255.0).round().to_uint()
-  let green = (xlsx_clamp_color(color.green) * 255.0).round().to_uint()
-  let blue = (xlsx_clamp_color(color.blue) * 255.0).round().to_uint()
-  (red << 24) | (green << 16) | (blue << 8) | 255U
 }
 
 ///|
