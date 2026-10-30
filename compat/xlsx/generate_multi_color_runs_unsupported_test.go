@@ -54,11 +54,22 @@ func TestCodexMultiColorRunsUnsupported(t *testing.T) {
 		}
 		out = append(out, b.Bytes())
 	}
-	data, e := json.Marshal(out)
-	if e != nil {
-		t.Fatal(e)
+	filtered := []any{}
+	for i, input := range out {
+		if i != 0 && i != 3 && i != 24 && i != 27 {
+			filtered = append(filtered, input)
+		}
 	}
-	if e = os.WriteFile(filepath.Join(root, "compat/xlsx/multi-color-runs-unsupported-original.json"), data, 0644); e != nil {
-		t.Fatal(e)
+	for name, inputs := range map[string][]any{
+		"multi-color-runs-unsupported-original.json": out,
+		"multi-color-runs-unsupported.json":          filtered,
+	} {
+		data, e := json.Marshal(inputs)
+		if e != nil {
+			t.Fatal(e)
+		}
+		if e = os.WriteFile(filepath.Join(root, "compat/xlsx", name), data, 0644); e != nil {
+			t.Fatal(e)
+		}
 	}
 }

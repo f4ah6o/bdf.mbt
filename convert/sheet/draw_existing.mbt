@@ -525,8 +525,8 @@ pub fn draw_sized_grid_no_fonts(
         let content = StringBuilder()
         for run in rich_runs {
           for ch in run.text {
-            if ch.to_int() < 0x20 || ch.to_int() > 0x7e {
-              raise InvalidArgument("styled runs require printable ASCII")
+            if ch.to_int() < 0x20 {
+              raise InvalidArgument("styled runs require printable text")
             }
           }
           content.write_string(run.text)

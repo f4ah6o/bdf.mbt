@@ -286,31 +286,65 @@ fn DrawTile::emit_cell(
     if !rich_runs.is_empty() {
       let mut offset = 0.0
       for run in rich_runs {
-        if run.text == "" {
-          continue
-        }
+        let mut chars = StringBuilder()
+        let mut has_chars = false
+        let mut cjk = false
         let mut width = 0.0
-        let start = offset
+        let mut start = offset
         for character in run.text {
+          let next_cjk = is_cjk(character.to_int())
+          if has_chars && next_cjk != cjk {
+            self.text_run(
+              chars.to_string(),
+              line.x + start,
+              line.baseline,
+              width,
+              if cjk && east_asian != "" {
+                east_asian
+              } else {
+                family
+              },
+              run.bold,
+              run.color,
+              face,
+              hash,
+              size~,
+              italic=run.italic,
+              underline=run.underline,
+              strike=run.strike,
+            )
+            chars = StringBuilder()
+            width = 0.0
+            start = offset
+          }
+          has_chars = true
+          cjk = next_cjk
+          chars.write_char(character)
           let step = advance(character, run.bold)
           width += step
           offset += step
         }
-        self.text_run(
-          run.text,
-          line.x + start,
-          line.baseline,
-          width,
-          family,
-          run.bold,
-          run.color,
-          face,
-          hash,
-          size~,
-          italic=run.italic,
-          underline=run.underline,
-          strike=run.strike,
-        )
+        if has_chars {
+          self.text_run(
+            chars.to_string(),
+            line.x + start,
+            line.baseline,
+            width,
+            if cjk && east_asian != "" {
+              east_asian
+            } else {
+              family
+            },
+            run.bold,
+            run.color,
+            face,
+            hash,
+            size~,
+            italic=run.italic,
+            underline=run.underline,
+            strike=run.strike,
+          )
+        }
       }
     } else {
       match fontset {

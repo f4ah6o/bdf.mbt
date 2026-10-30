@@ -1314,7 +1314,13 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             font.vertical != "" ||
             alignment.wrap ||
             alignment.shrink ||
-            (horizontal != "general" && horizontal != "left") ||
+            (
+              horizontal != "general" &&
+              horizontal != "left" &&
+              horizontal != "right" &&
+              horizontal != "center" &&
+              horizontal != "centerContinuous"
+            ) ||
             run.text == "" ||
             run.text.length() > 1024 ||
             run.text.trim().to_string() != run.text {
@@ -1323,7 +1329,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             )
           }
           for ch in run.text {
-            if ch.to_int() < 0x20 || ch.to_int() > 0x7e {
+            if ch.to_int() < 0x20 {
               raise InvalidXlsxInput(
                 "xlsx: plain conversion does not support these styled rich text runs",
               )

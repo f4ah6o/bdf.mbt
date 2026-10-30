@@ -105,7 +105,7 @@ const multiColorRunsConditional = JSON.parse(await readFile(new URL('./multi-col
 assert.equal(multiColorRunsConditional.length, 160, 'multiple color run conditional fixture count');
 for (const [j, c] of multiColorRunsConditional.entries()) await verifyCase(c, `multiple color run conditional ${j}`);
 const unsupportedMultiColorRuns = JSON.parse(await readFile(new URL('./multi-color-runs-unsupported.json', import.meta.url)));
-assert.equal(unsupportedMultiColorRuns.length, 31, 'unsupported multiple color run fixture count');
+assert.equal(unsupportedMultiColorRuns.length, 28, 'unsupported multiple color run fixture count');
 for (const encoded of unsupportedMultiColorRuns) {
   const input = Buffer.from(encoded, 'base64');
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported styled runs must be rejected');
@@ -126,6 +126,36 @@ for (const [j, c] of multiFontPrecision.entries()) await verifyCase(c, `multiple
 const multiFontLegacy = JSON.parse(await readFile(new URL('./multi-font-legacy.json', import.meta.url)));
 assert.equal(multiFontLegacy.length, 3, 'multiple font run legacy fixture count');
 for (const [j, c] of multiFontLegacy.entries()) await verifyCase(c, `multiple font run legacy ${j}`);
+const multiAlignRuns = JSON.parse(await readFile(new URL('./multi-align-runs.json', import.meta.url)));
+assert.equal(multiAlignRuns.length, 320, 'multi-align-runs fixture count');
+for (const [j, c] of multiAlignRuns.entries()) await verifyCase(c, `multi-align-runs ${j}`);
+const multiAlignGeometry = JSON.parse(await readFile(new URL('./multi-align-runs-geometry.json', import.meta.url)));
+assert.equal(multiAlignGeometry.length, 256, 'multi-align-runs-geometry fixture count');
+for (const [j, c] of multiAlignGeometry.entries()) await verifyCase(c, `multi-align-runs-geometry ${j}`);
+const multiAlignConditional = JSON.parse(await readFile(new URL('./multi-align-runs-conditional.json', import.meta.url)));
+assert.equal(multiAlignConditional.length, 160, 'multi-align-runs-conditional fixture count');
+for (const [j, c] of multiAlignConditional.entries()) await verifyCase(c, `multi-align-runs-conditional ${j}`);
+const multiAlignPrecision = JSON.parse(await readFile(new URL('./multi-align-precision.json', import.meta.url)));
+assert.equal(multiAlignPrecision.length, 400, 'multi-align-precision fixture count');
+for (const [j, c] of multiAlignPrecision.entries()) await verifyCase(c, `multi-align-precision ${j}`);
+const multiUnicodeRuns = JSON.parse(await readFile(new URL('./multi-unicode-runs.json', import.meta.url)));
+assert.equal(multiUnicodeRuns.length, 320, 'multi-unicode-runs fixture count');
+for (const [j, c] of multiUnicodeRuns.entries()) await verifyCase(c, `multi-unicode-runs ${j}`);
+const multiUnicodeGeometry = JSON.parse(await readFile(new URL('./multi-unicode-runs-geometry.json', import.meta.url)));
+assert.equal(multiUnicodeGeometry.length, 256, 'multi-unicode-runs-geometry fixture count');
+for (const [j, c] of multiUnicodeGeometry.entries()) await verifyCase(c, `multi-unicode-runs-geometry ${j}`);
+const multiUnicodeConditional = JSON.parse(await readFile(new URL('./multi-unicode-runs-conditional.json', import.meta.url)));
+assert.equal(multiUnicodeConditional.length, 160, 'multi-unicode-runs-conditional fixture count');
+for (const [j, c] of multiUnicodeConditional.entries()) await verifyCase(c, `multi-unicode-runs-conditional ${j}`);
+const multiUnicodeAligned = JSON.parse(await readFile(new URL('./multi-unicode-runs-aligned.json', import.meta.url)));
+assert.equal(multiUnicodeAligned.length, 320, 'multi-unicode-runs-aligned fixture count');
+for (const [j, c] of multiUnicodeAligned.entries()) await verifyCase(c, `multi-unicode-runs-aligned ${j}`);
+const multiUnicodeRepertoire = JSON.parse(await readFile(new URL('./multi-unicode-repertoire.json', import.meta.url)));
+assert.equal(multiUnicodeRepertoire.length, 512, 'multi-unicode-repertoire fixture count');
+for (const [j, c] of multiUnicodeRepertoire.entries()) await verifyCase(c, `multi-unicode-repertoire ${j}`);
+const multiUnicodeLegacy = JSON.parse(await readFile(new URL('./multi-unicode-legacy.json', import.meta.url)));
+assert.equal(multiUnicodeLegacy.length, 3, 'multi-unicode-legacy fixture count');
+for (const [j, c] of multiUnicodeLegacy.entries()) await verifyCase(c, `multi-unicode-legacy ${j}`);
 const links = JSON.parse(await readFile(new URL('./links.json', import.meta.url)));
 assert.equal(links.length, 200, 'hyperlink fixture count');
 for (const [j, c] of links.entries()) await verifyCase(c, `hyperlink ${j}`);
@@ -471,4 +501,4 @@ for (const encoded of unsupportedBase) {
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|complex borders)/);
 }
-console.log(`${i} basic XLSX renderings, ${ignoredSheetFeatures.length + ignoredSheetExtensions.length} ignored sheet feature cases, ${sheetAutoFilter.length + sheetAutoFilterTiles.length} autofilters, ${sheetNotes.length + sheetNotesFilter.length} notes, ${sheetMissingParts.length} missing part cases, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length + multiplePlainRuns.length + richRunLegacy.length + richRunData.length + richRunWrap.length + richRunIdentity.length + singleStyledRun.length + singleStyledRunConditional.length + singleStyledRunVariants.length + singleStyledRunLegacy.length + multiColorRuns.length + multiColorRunsGeometry.length + multiColorRunsConditional.length + multiFontRuns.length + multiFontRunsGeometry.length + multiFontRunsConditional.length + multiFontPrecision.length + multiFontLegacy.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length + conditionalBetween.length + conditionalEquals.length + conditionalLiteral.length + conditionalMovingLiteral.length + conditionalTypedReference.length + conditionalInvalidReference.length + conditionalAbsolute.length + conditionalSingleRef.length + conditionalAxisRef.length + conditionalMovingRef.length + conditionalNegativeRef.length + conditionalNegativeBlank.length + conditionalNegativeString.length + conditionalPredicates.length + conditionalText.length + conditionalTop.length + conditionalAverage.length + conditionalStdDev.length + conditionalLargeStdDev.length + conditionalOverflowMean.length + conditionalNonfiniteAverage.length + conditionalDisjoint.length + conditionalDisjointMoving.length + conditionalSameStyle.length + conditionalIdenticalBlocks.length + conditionalSameRuleStyle.length + conditionalDisjointMatches.length + conditionalDuplicate.length + conditionalBlank.length + conditionalPaintBlank.length} conditional formats match upstream.`);
+console.log(`${i} basic XLSX renderings, ${ignoredSheetFeatures.length + ignoredSheetExtensions.length} ignored sheet feature cases, ${sheetAutoFilter.length + sheetAutoFilterTiles.length} autofilters, ${sheetNotes.length + sheetNotesFilter.length} notes, ${sheetMissingParts.length} missing part cases, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length + multiplePlainRuns.length + richRunLegacy.length + richRunData.length + richRunWrap.length + richRunIdentity.length + singleStyledRun.length + singleStyledRunConditional.length + singleStyledRunVariants.length + singleStyledRunLegacy.length + multiColorRuns.length + multiColorRunsGeometry.length + multiColorRunsConditional.length + multiFontRuns.length + multiFontRunsGeometry.length + multiFontRunsConditional.length + multiFontPrecision.length + multiFontLegacy.length + multiAlignRuns.length + multiAlignGeometry.length + multiAlignConditional.length + multiAlignPrecision.length + multiUnicodeRuns.length + multiUnicodeGeometry.length + multiUnicodeConditional.length + multiUnicodeAligned.length + multiUnicodeRepertoire.length + multiUnicodeLegacy.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length + conditionalBetween.length + conditionalEquals.length + conditionalLiteral.length + conditionalMovingLiteral.length + conditionalTypedReference.length + conditionalInvalidReference.length + conditionalAbsolute.length + conditionalSingleRef.length + conditionalAxisRef.length + conditionalMovingRef.length + conditionalNegativeRef.length + conditionalNegativeBlank.length + conditionalNegativeString.length + conditionalPredicates.length + conditionalText.length + conditionalTop.length + conditionalAverage.length + conditionalStdDev.length + conditionalLargeStdDev.length + conditionalOverflowMean.length + conditionalNonfiniteAverage.length + conditionalDisjoint.length + conditionalDisjointMoving.length + conditionalSameStyle.length + conditionalIdenticalBlocks.length + conditionalSameRuleStyle.length + conditionalDisjointMatches.length + conditionalDuplicate.length + conditionalBlank.length + conditionalPaintBlank.length} conditional formats match upstream.`);
