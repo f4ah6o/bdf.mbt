@@ -9,6 +9,8 @@ priv struct XlsxConditionalBlock {
   moving_reference : Bool
   dxf_id : Int32
   stop_if_true : Bool
+  priority : Int32
+  priority_known : Bool
   covered : Int64
 }
 
@@ -101,6 +103,8 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   let blocks : Array[XlsxConditionalBlock] = []
   let mut dxf_id = -1
   let mut stop_if_true = false
+  let mut priority = 1073741824
+  let mut priority_known = true
   let mut operator = ""
   let mut rule_type = ""
   let mut rule_text = ""
@@ -197,6 +201,39 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
           }
           dxf_id = xlsx_node_int(element, "dxfId", -1)
           stop_if_true = xlsx_attr_bool(element, "stopIfTrue")
+          let raw_priority = xlsx_trim(xlsx_attr(element, "priority", ""))
+          priority_known = true
+          if raw_priority != "" {
+            let lower_priority = raw_priority.to_lower()
+            if lower_priority.contains("_") ||
+              lower_priority.has_prefix("0x") ||
+              lower_priority.has_prefix("+0x") ||
+              lower_priority.has_prefix("-0x") {
+              priority_known = false
+            } else {
+              match xlsx_int(raw_priority) {
+                Some(n) =>
+                  if n < -2147483648L || n > 2147483647L {
+                    priority_known = false
+                  }
+                None => {
+                  let value = @string.parse_double(raw_priority) catch {
+                    _ => {
+                      priority_known = false
+                      0.0
+                    }
+                  }
+                  if value.is_nan() ||
+                    value.is_inf() ||
+                    value < -2147483648.0 ||
+                    value > 2147483647.0 {
+                    priority_known = false
+                  }
+                }
+              }
+            }
+          }
+          priority = xlsx_node_int(element, "priority", 1073741824)
           operator = xlsx_attr(element, "operator", "equal")
           formula_count = 0
           reference1 = ""
@@ -561,6 +598,8 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
               moving_reference,
               dxf_id,
               stop_if_true,
+              priority,
+              priority_known,
               covered: block_room - room,
             })
           }
@@ -586,12 +625,80 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
     }
   }
   let dxf_count = self.xlsx_conditional_dxf_count() catch { _ => -1 }
+  let has_missing_stop = blocks.any(block => {
+    block.stop_if_true &&
+    (block.dxf_id < 0 || (dxf_count >= 0 && block.dxf_id >= dxf_count))
+  })
+  let ordered = [ for i, block in blocks => (i, block) ]
+  if has_missing_stop {
+    for entry in ordered {
+      if !entry.1.priority_known {
+        xlsx_reject_conditional()
+      }
+    }
+    ordered.sort_by((a, b) => {
+      if a.1.priority == b.1.priority {
+        a.0.compare(b.0)
+      } else {
+        a.1.priority.compare(b.1.priority)
+      }
+    })
+  }
   let relevant : Array[XlsxConditionalBlock] = []
-  for block in blocks {
+  let stopped : Map[Int32, Map[Int32, Bool]] = Map([])
+  let mut stopped_blanks = false
+  for entry in ordered {
+    let block = entry.1
     let missing = block.dxf_id < 0 ||
       (dxf_count >= 0 && block.dxf_id >= dxf_count)
-    if !missing || block.stop_if_true {
+    if missing {
+      if block.stop_if_true {
+        stopped_blanks = stopped_blanks || block.blank_matches
+        for row, columns in block.matched {
+          let target = match stopped.get(row) {
+            Some(value) => value
+            None => {
+              let value : Map[Int32, Bool] = Map([])
+              stopped[row] = value
+              value
+            }
+          }
+          for column, _ in columns {
+            target[column] = true
+          }
+        }
+      }
+      continue
+    }
+    if stopped_blanks || (block.blank_matches && !stopped.is_empty()) {
+      xlsx_reject_conditional()
+    }
+    if stopped.is_empty() {
       relevant.push(block)
+      continue
+    }
+    let matched : Map[Int32, Map[Int32, Bool]] = Map([])
+    for row, columns in block.matched {
+      for column, _ in columns {
+        let blocked = match stopped.get(row) {
+          Some(value) => value.contains(column)
+          None => false
+        }
+        if !blocked {
+          let target = match matched.get(row) {
+            Some(value) => value
+            None => {
+              let value : Map[Int32, Bool] = Map([])
+              matched[row] = value
+              value
+            }
+          }
+          target[column] = true
+        }
+      }
+    }
+    if !matched.is_empty() || block.blank_matches {
+      relevant.push({ ..block, matched, })
     }
   }
   // Bound pairwise range checks independently of the covered-cell budget.

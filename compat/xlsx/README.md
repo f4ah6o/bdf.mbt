@@ -206,4 +206,4 @@ Table processing follows the upstream per-sheet budget for cells absent from the
 
 Worksheets with empty drawing parts or anchors without drawable elements are converted, and missing drawing parts and supported malformed XML errors produce warnings; drawings containing shapes, images, or other drawable elements remain unsupported. Markup-compatibility alternatives in drawing parts are also rejected until drawing selection is supported.
 
-Conditional rules that reference absent differential styles leave formatting unchanged. Overlapping stopping rules remain unsupported when their effects cannot yet be resolved. Hexadecimal and underscored conditional style IDs are also unsupported.
+Conditional rules that reference absent differential styles leave formatting unchanged. Missing-style stopping rules follow priority for matched explicit cells. Stopping rules that match blanks remain unsupported when later formatting could be affected. Hexadecimal and underscored conditional style IDs, and unsupported priority representations in interacting stopping rules, are also rejected.
