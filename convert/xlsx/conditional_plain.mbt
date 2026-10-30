@@ -27,6 +27,8 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   let mut threshold_end = 0.0
   let mut reference1 = ""
   let mut reference2 = ""
+  let mut literal1 : String? = None
+  let mut literal2 : String? = None
   let mut moving_reference = false
   let mut any_moving_reference = false
   let blank_positions : Map[Int32, Map[Int32, Bool]] = Map([])
@@ -124,6 +126,8 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
           formula_count = 0
           reference1 = ""
           reference2 = ""
+          literal1 = None
+          literal2 = None
           moving_reference = false
         } else if depth == rule_depth {
           if name != "formula" || event.kind is Empty(_) {
@@ -159,72 +163,102 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
               text
             }
             let data = @utf8.encode(text)
-            let reference_start = if data.length() > 0 && data[0] == b'-' {
-              1
+            let literal : String? = if data.length() >= 2 &&
+              data[0] == b'"' &&
+              data[data.length() - 1] == b'"' {
+              Some(
+                @utf8.decode_lossy(data[1:data.length() - 1]).replace(
+                  old="\"\"",
+                  new="\"",
+                ),
+              )
+            } else if text.to_lower() == "true" {
+              Some("TRUE")
+            } else if text.to_lower() == "false" {
+              Some("FALSE")
             } else {
-              0
+              None
             }
-            let reference = data.length() > reference_start &&
-              (
-                data[reference_start] == b'$' ||
-                (data[reference_start] >= b'A' && data[reference_start] <= b'Z') ||
-                (data[reference_start] >= b'a' && data[reference_start] <= b'z')
-              )
-            let mut fixed_row = true
-            let mut fixed_column = true
-            for range in ranges {
-              fixed_row = fixed_row &&
-                range.row_start == ranges[0].row_start &&
-                range.row_end == ranges[0].row_start
-              fixed_column = fixed_column &&
-                range.column_start == ranges[0].column_start &&
-                range.column_end == ranges[0].column_start
-            }
-            let value = if reference {
-              let fixed = xlsx_conditional_reference_value(
-                text, rows, fixed_row, fixed_column,
-              )
-              if fixed is None {
-                moving_reference = true
-                any_moving_reference = true
+            if literal is Some(_) {
+              if formula_count == 1 {
+                literal1 = literal
+              } else {
+                literal2 = literal
+              }
+            } else {
+              let reference_start = if data.length() > 0 && data[0] == b'-' {
+                1
+              } else {
+                0
+              }
+              let reference = data.length() > reference_start &&
+                (
+                  data[reference_start] == b'$' ||
+                  (
+                    data[reference_start] >= b'A' &&
+                    data[reference_start] <= b'Z'
+                  ) ||
+                  (
+                    data[reference_start] >= b'a' &&
+                    data[reference_start] <= b'z'
+                  )
+                )
+              let mut fixed_row = true
+              let mut fixed_column = true
+              for range in ranges {
+                fixed_row = fixed_row &&
+                  range.row_start == ranges[0].row_start &&
+                  range.row_end == ranges[0].row_start
+                fixed_column = fixed_column &&
+                  range.column_start == ranges[0].column_start &&
+                  range.column_end == ranges[0].column_start
+              }
+              let value = if reference {
+                let fixed = xlsx_conditional_reference_value(
+                  text, rows, fixed_row, fixed_column,
+                )
+                if fixed is None {
+                  moving_reference = true
+                  any_moving_reference = true
+                }
+                if formula_count == 1 {
+                  reference1 = text
+                } else {
+                  reference2 = text
+                }
+                match xlsx_conditional_reference_value(text, rows, true, true) {
+                  Some(value) => value
+                  None => {
+                    xlsx_reject_conditional()
+                    0.0
+                  }
+                }
+              } else {
+                for c in text {
+                  if !((c >= '0' && c <= '9') ||
+                    c == '.' ||
+                    c == '+' ||
+                    c == '-' ||
+                    c == 'e' ||
+                    c == 'E') {
+                    xlsx_reject_conditional()
+                  }
+                }
+                @string.parse_double(text) catch {
+                  _ =>
+                    raise InvalidXlsxInput(
+                      "xlsx: plain conversion does not support conditional formatting",
+                    )
+                }
+              }
+              if value.is_nan() || value.is_inf() {
+                xlsx_reject_conditional()
               }
               if formula_count == 1 {
-                reference1 = text
+                threshold = value
               } else {
-                reference2 = text
+                threshold_end = value
               }
-              match xlsx_conditional_reference_value(text, rows, true, true) {
-                Some(value) => value
-                None => {
-                  xlsx_reject_conditional()
-                  0.0
-                }
-              }
-            } else {
-              for c in text {
-                if !((c >= '0' && c <= '9') ||
-                  c == '.' ||
-                  c == '+' ||
-                  c == '-' ||
-                  c == 'e' ||
-                  c == 'E') {
-                  xlsx_reject_conditional()
-                }
-              }
-              @string.parse_double(text) catch {
-                _ =>
-                  raise InvalidXlsxInput(
-                    "xlsx: plain conversion does not support conditional formatting",
-                  )
-              }
-            }
-            if value.is_nan() || value.is_inf() {
-              xlsx_reject_conditional()
-            }
-            if formula_count == 1 {
-              threshold = value
-            } else {
-              threshold_end = value
             }
           }
           formula_depth = -1
@@ -239,10 +273,25 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             xlsx_reject_conditional()
           }
           blank_matches = if rule_type == "cellIs" {
-            !moving_reference &&
-            xlsx_plain_conditional_matches(
-              0.0, threshold, threshold_end, operator,
-            )
+            if literal1 is Some(_) || literal2 is Some(_) {
+              if moving_reference {
+                xlsx_reject_conditional()
+              }
+              xlsx_conditional_literal_matches(
+                0.0,
+                None,
+                threshold,
+                literal1,
+                threshold_end,
+                literal2,
+                operator,
+              )
+            } else {
+              !moving_reference &&
+              xlsx_plain_conditional_matches(
+                0.0, threshold, threshold_end, operator,
+              )
+            }
           } else {
             rule_type == "containsBlanks" ||
             rule_type == "notContainsErrors" ||
@@ -375,6 +424,26 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
                     }
                     _ => false
                   }
+                } else if literal1 is Some(_) || literal2 is Some(_) {
+                  let cell_text : String? = if cell.kind == 1 {
+                    None
+                  } else if cell.kind == 3 {
+                    Some(if cell.number != 0.0 { "TRUE" } else { "FALSE" })
+                  } else if cell.kind == 2 || cell.kind == 4 {
+                    Some(cell.text)
+                  } else {
+                    xlsx_reject_conditional()
+                    None
+                  }
+                  xlsx_conditional_literal_matches(
+                    cell.number,
+                    cell_text,
+                    threshold,
+                    literal1,
+                    threshold_end,
+                    literal2,
+                    operator,
+                  )
                 } else if cell.kind == 1 {
                   xlsx_plain_conditional_matches(
                     cell.number,
