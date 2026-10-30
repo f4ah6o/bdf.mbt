@@ -3,9 +3,7 @@ from pathlib import Path
 root=Path(__file__).resolve().parent
 source=json.loads((root/'picture-crop-svg.json').read_text())[10]
 values={
- 'missing-size': b'<svg xmlns="http://www.w3.org/2000/svg" height="2"/>',
  'zero-size': b'<svg xmlns="http://www.w3.org/2000/svg" width="0" height="2"/>',
- 'percentage-size': b'<svg xmlns="http://www.w3.org/2000/svg" width="20%" height="2"/>',
  'oversized-dimension': b'<svg xmlns="http://www.w3.org/2000/svg" width="1000001" height="2"/>',
  'viewbox-units': b'<svg viewBox="0 0 2px 2"/>',
  'viewbox-zero': b'<svg viewBox="0 0 0 2"/>',

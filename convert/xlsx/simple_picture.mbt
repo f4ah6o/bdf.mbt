@@ -670,10 +670,10 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
   let crop_ignored = image.length() >= 12 &&
     image[4:8] == b"ftyp"[:] &&
     (image[8:12] == b"avif"[:] || image[8:12] == b"avis"[:])
-  let crop_left = if crop_ignored { 0.0 } else { crop_left }
-  let crop_top = if crop_ignored { 0.0 } else { crop_top }
-  let crop_right = if crop_ignored { 0.0 } else { crop_right }
-  let crop_bottom = if crop_ignored { 0.0 } else { crop_bottom }
+  let mut crop_left = if crop_ignored { 0.0 } else { crop_left }
+  let mut crop_top = if crop_ignored { 0.0 } else { crop_top }
+  let mut crop_right = if crop_ignored { 0.0 } else { crop_right }
+  let mut crop_bottom = if crop_ignored { 0.0 } else { crop_bottom }
   let (image_width, image_height) = if crop_left != 0.0 ||
     crop_top != 0.0 ||
     crop_right != 0.0 ||
@@ -684,6 +684,12 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
     }
   } else {
     (0.0, 0.0)
+  }
+  if image_width == 0.0 && image_height == 0.0 {
+    crop_left = 0.0
+    crop_top = 0.0
+    crop_right = 0.0
+    crop_bottom = 0.0
   }
   if kind == 1 {
     to_row = from_row + (height / 15.0).to_int() + 1
@@ -962,7 +968,7 @@ fn xlsx_crop_svg_size(image : Bytes) -> (Double, Double)? {
         }
         let box = match view_box {
           Some(box) => box
-          None => return None
+          None => return Some((0.0, 0.0))
         }
         let (vw, vh) = match xlsx_crop_svg_viewbox(box) {
           Some(size) => size
