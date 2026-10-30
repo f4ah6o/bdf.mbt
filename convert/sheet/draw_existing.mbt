@@ -111,6 +111,8 @@ pub fn sized_fallback_advance(
 /// Draw unstyled cells in an already-sized sheet with fallback font metrics.
 /// Supplying pictures also requires a document writer for their image and
 /// drawing parts. `hidden_pictures`, when supplied, has one flag per picture.
+/// `shape_fills`, when supplied, has one optional color per drawing encoded as
+/// 0xRRGGBBAA; a color renders a filled rectangle instead of an image.
 /// A caller that defers object storage may collect child parts in
 /// `picture_children` and pass them to `store_grids`.
 pub fn draw_sized_grid_no_fonts(
@@ -149,6 +151,7 @@ pub fn draw_sized_grid_no_fonts(
   table_filters~ : Array[(Int32, Int32)] = [],
   pictures~ : Array[GridPicture] = [],
   hidden_pictures~ : Array[Bool] = [],
+  shape_fills~ : Array[UInt32?] = [],
   picture_writer~ : @core.DocumentWriter? = None,
   picture_children~ : Array[(Int32, Int32, Bytes)]? = None,
   column_axis_default~ : Float? = None,
@@ -869,6 +872,9 @@ pub fn draw_sized_grid_no_fonts(
     hidden_pictures.length() != pictures.length() {
     raise InvalidArgument("sheet: invalid picture visibility list")
   }
+  if !shape_fills.is_empty() && shape_fills.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid shape fill list")
+  }
   if !pictures.is_empty() {
     if pictures.length() > 128 {
       raise InvalidArgument("sheet: too many pictures")
@@ -899,6 +905,11 @@ pub fn draw_sized_grid_no_fonts(
         },
         picture_children,
         room,
+        shape_fill=if shape_fills.is_empty() {
+          None
+        } else {
+          shape_fills[index]
+        },
         hidden=if hidden_pictures.is_empty() {
           false
         } else {
