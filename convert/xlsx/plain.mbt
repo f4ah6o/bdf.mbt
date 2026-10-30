@@ -7,8 +7,28 @@ pub(all) struct XlsxPlainResult {
 }
 
 ///|
-// The workbook may define a named table style with no elements.
-fn XlsxWorkbook::xlsx_empty_table_style(
+fn xlsx_table_style_region_used(name : String) -> Bool {
+  match name {
+    "wholeTable"
+    | "firstColumnStripe"
+    | "secondColumnStripe"
+    | "firstRowStripe"
+    | "secondRowStripe"
+    | "lastColumn"
+    | "firstColumn"
+    | "headerRow"
+    | "totalRow"
+    | "firstHeaderCell"
+    | "lastHeaderCell"
+    | "firstTotalCell"
+    | "lastTotalCell" => true
+    _ => false
+  }
+}
+
+///|
+// Ignore custom style elements that cannot select a differential format.
+fn XlsxWorkbook::xlsx_nonformatting_table_style(
   self : XlsxWorkbook,
   wanted : String,
 ) -> Bool raise {
@@ -26,13 +46,25 @@ fn XlsxWorkbook::xlsx_empty_table_style(
   let mut styles_depth = -1
   let mut style_depth = -1
   let mut styles_seen = false
+  let mut dxf_depth = -1
+  let mut dxf_seen = false
+  let mut dxf_count = 0L
   let mut found = false
-  let mut empty = false
+  let mut ambiguous = false
+  let mut used_ids : Array[Int64] = []
   while true {
     let event = reader.read_event()
     match event.kind {
       Start(element) | Empty(element) => {
         let name = element.name.local_name
+        if depth == 1 && name == "dxfs" && !dxf_seen {
+          dxf_seen = true
+          if event.kind is Start(_) {
+            dxf_depth = depth + 1
+          }
+        } else if depth == dxf_depth && name == "dxf" {
+          dxf_count += 1L
+        }
         if depth == 1 && name == "tableStyles" && !styles_seen {
           styles_seen = true
           if event.kind is Start(_) {
@@ -42,13 +74,39 @@ fn XlsxWorkbook::xlsx_empty_table_style(
           let actual = xlsx_decode_string(xlsx_attr(element, "name", ""))
           if actual == wanted {
             found = true
-            empty = true
+            ambiguous = false
+            used_ids = []
             if event.kind is Start(_) {
               style_depth = depth + 1
             }
           }
         } else if depth == style_depth && name == "tableStyleElement" {
-          empty = false
+          if xlsx_table_style_region_used(xlsx_attr(element, "type", "")) {
+            let raw = xlsx_trim(xlsx_attr(element, "dxfId", ""))
+            let lower = raw.to_lower()
+            if lower.has_prefix("0x") ||
+              lower.has_prefix("+0x") ||
+              lower.has_prefix("-0x") {
+              ambiguous = true
+            } else {
+              let id = match xlsx_int(raw) {
+                Some(value) => value
+                None => {
+                  let value = @string.parse_double(raw) catch { _ => -1.0 }
+                  if value.is_nan() {
+                    0L
+                  } else if value >= 2147483647.0 {
+                    2147483647L
+                  } else if value <= -1.0 {
+                    -1L
+                  } else {
+                    value.to_int64()
+                  }
+                }
+              }
+              used_ids.push(id)
+            }
+          }
         }
         if event.kind is Start(_) {
           depth += 1
@@ -58,6 +116,9 @@ fn XlsxWorkbook::xlsx_empty_table_style(
       }
       End(_) => {
         depth -= 1
+        if depth + 1 == dxf_depth {
+          dxf_depth = -1
+        }
         if depth + 1 == style_depth {
           style_depth = -1
         }
@@ -72,7 +133,15 @@ fn XlsxWorkbook::xlsx_empty_table_style(
       _ => ()
     }
   }
-  found && empty
+  if !found || ambiguous {
+    return false
+  }
+  for id in used_ids {
+    if id >= 0L && id < dxf_count {
+      return false
+    }
+  }
+  true
 }
 
 ///|
@@ -120,7 +189,7 @@ fn XlsxWorkbook::xlsx_plain_table_area(
             let accepted = match style_cache.get(style) {
               Some(value) => value
               None => {
-                let value = self.xlsx_empty_table_style(style)
+                let value = self.xlsx_nonformatting_table_style(style)
                 style_cache[style] = value
                 value
               }
