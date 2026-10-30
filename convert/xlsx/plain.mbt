@@ -1973,7 +1973,11 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       base_borders = border || base_borders
     }
   }
-  let (row_count, col_count) = xlsx_initial_extent(parsed, geo, notes)
+  let extent_points = notes.copy()
+  for (range, _, _, _, _, _, _, _, _, _, _, _, _) in table_rules {
+    extent_points.push((range.row_end.to_int(), range.column_end))
+  }
+  let (row_count, col_count) = xlsx_initial_extent(parsed, geo, extent_points)
   if has_conditional || styled_runs || has_table_style {
     rows = xlsx_normalize_conditional_styles(rows, styles.cell_formats.length())
   }
