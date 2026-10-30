@@ -265,9 +265,11 @@ fn XlsxWorkbook::xlsx_table_style(
     return (-1, 0, 1L, -1, 1L, -1)
   }
   let mut whole = -1
-  let mut stripe = -1
-  let mut stripe_kind = ""
-  let mut stripe_size = 1L
+  let mut stripe_axis = 0
+  let mut first_stripe = -1
+  let mut second_stripe = -1
+  let mut first_size = 1L
+  let mut second_size = 1L
   let mut has_other = false
   for (kind, id, width) in items {
     if id < 0 || id >= dxf_count {
@@ -279,36 +281,89 @@ fn XlsxWorkbook::xlsx_table_style(
       kind == "secondRowStripe" ||
       kind == "firstColumnStripe" ||
       kind == "secondColumnStripe" {
-      if stripe_kind != "" && stripe_kind != kind {
+      let axis = if kind == "firstRowStripe" || kind == "secondRowStripe" {
+        1
+      } else {
+        2
+      }
+      if stripe_axis != 0 && stripe_axis != axis {
         has_other = true
       }
-      stripe_kind = kind
-      stripe = id
-      stripe_size = width
+      stripe_axis = axis
+      if kind == "firstRowStripe" || kind == "firstColumnStripe" {
+        first_stripe = id
+        first_size = width
+      } else {
+        second_stripe = id
+        second_size = width
+      }
     } else {
       has_other = true
     }
   }
-  if whole >= 0 && stripe >= 0 && !has_other {
+  if whole >= 0 && (first_stripe >= 0 || second_stripe >= 0) && !has_other {
     let base = self.xlsx_conditional_style(whole) catch {
       _ => return (-1, 0, 1L, -1, 1L, -1)
     }
-    let overlay = self.xlsx_conditional_style(stripe) catch {
-      _ => return (-1, 0, 1L, -1, 1L, -1)
-    }
-    if base.border is Some(_) || overlay.border is Some(_) {
+    if base.border is Some(_) {
       return (-1, 0, 1L, -1, 1L, -1)
     }
-    let region = if stripe_kind == "firstRowStripe" {
-      19
-    } else if stripe_kind == "secondRowStripe" {
-      20
-    } else if stripe_kind == "firstColumnStripe" {
-      21
-    } else {
-      22
+    if first_stripe >= 0 {
+      let first = self.xlsx_conditional_style(first_stripe) catch {
+        _ => return (-1, 0, 1L, -1, 1L, -1)
+      }
+      if first.border is Some(_) {
+        return (-1, 0, 1L, -1, 1L, -1)
+      }
     }
-    return (whole, region, stripe_size, stripe, 1L, -1)
+    if second_stripe >= 0 {
+      let second = self.xlsx_conditional_style(second_stripe) catch {
+        _ => return (-1, 0, 1L, -1, 1L, -1)
+      }
+      if second.border is Some(_) {
+        return (-1, 0, 1L, -1, 1L, -1)
+      }
+    }
+    if first_stripe >= 0 && second_stripe >= 0 {
+      return (
+        whole,
+        if stripe_axis == 1 {
+          23
+        } else {
+          24
+        },
+        first_size,
+        first_stripe,
+        second_size,
+        second_stripe,
+      )
+    }
+    if first_stripe >= 0 {
+      return (
+        whole,
+        if stripe_axis == 1 {
+          19
+        } else {
+          21
+        },
+        first_size,
+        first_stripe,
+        1L,
+        -1,
+      )
+    }
+    return (
+      whole,
+      if stripe_axis == 1 {
+        20
+      } else {
+        22
+      },
+      second_size,
+      second_stripe,
+      1L,
+      -1,
+    )
   }
   let mut chosen = -1
   let mut selected_kind = ""
@@ -539,11 +594,26 @@ fn xlsx_table_stripe_choice(
   range : XlsxRange,
   width : Int64,
   other_width : Int64,
+  overlay_end : Int64,
   row : Int32,
   col : Int32,
 ) -> Int32 {
-  if region >= 19 && region <= 22 {
-    if row.to_int64() < origin || row.to_int64() > other_width {
+  if region == 23 || region == 24 {
+    if row.to_int64() < origin || row.to_int64() > overlay_end {
+      return 0
+    }
+    let pos = if region == 23 {
+      row.to_int64() - origin
+    } else {
+      (col - range.column_start).to_int64()
+    }
+    if pos % (width + other_width) < width {
+      1
+    } else {
+      2
+    }
+  } else if region >= 19 && region <= 22 {
+    if row.to_int64() < origin || row.to_int64() > overlay_end {
       return 0
     }
     let pos = if region == 19 || region == 20 {
@@ -667,6 +737,12 @@ fn XlsxWorkbook::xlsx_table_effective_style(
   region : Int32,
   choice : Int32,
 ) -> XlsxConditionalStyle raise {
+  if (region == 23 || region == 24) && choice > 0 {
+    return xlsx_merge_table_style(
+      self.xlsx_conditional_style(base_id),
+      self.xlsx_conditional_style(if choice == 1 { extra_id } else { third_id }),
+    )
+  }
   if region == 18 && choice > 0 {
     let mut result = self.xlsx_conditional_style(base_id)
     if choice == 1 || choice == 3 {
@@ -723,6 +799,7 @@ fn XlsxWorkbook::xlsx_plain_table_area(
       Int32,
       Int64,
       Int32,
+      Int64,
     ),
   ],
 ) -> Int64 raise {
@@ -939,8 +1016,10 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   } else {
     range.row_end + 1L
   }
-  let overlay_stripe = selected_region >= 19 && selected_region <= 22
-  let overlay_active = if selected_region == 19 || selected_region == 20 {
+  let overlay_stripe = selected_region >= 19 && selected_region <= 24
+  let overlay_active = if selected_region == 19 ||
+    selected_region == 20 ||
+    selected_region == 23 {
     row_stripes
   } else {
     column_stripes
@@ -968,12 +1047,15 @@ fn XlsxWorkbook::xlsx_plain_table_area(
       other_rule,
       if selected_region == 17 || selected_region == 18 {
         total_start
-      } else if overlay_stripe {
-        overlay_end
       } else {
         other_width
       },
       third_rule,
+      if overlay_stripe {
+        overlay_end
+      } else {
+        0L
+      },
     ),
   )
   area
@@ -1088,6 +1170,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
       Int32,
       Int64,
       Int32,
+      Int64,
     ),
   ],
 ) raise {
@@ -1132,6 +1215,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
       Int32,
       Int64,
       Int32,
+      Int64,
     ),
   ] = []
   let mut has_conditional = false
@@ -1773,7 +1857,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     }
   }
   let mut has_table_style = false
-  for (_, id, _, _, _, _, _, _, _, _, _, _) in table_rules {
+  for (_, id, _, _, _, _, _, _, _, _, _, _, _) in table_rules {
     if id >= 0 {
       has_table_style = true
     }
@@ -1869,6 +1953,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             extra_id,
             extra_width,
             third_id,
+            overlay_end,
           ) in table_rules {
           if row.index.to_int64() < range.row_start ||
             row.index.to_int64() > range.row_end ||
@@ -1882,12 +1967,14 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             range,
             width,
             extra_width,
+            overlay_end,
             row.index,
             cell.column,
           )
           let selected = if choice == 0 {
             id
-          } else if region == 18 && choice >= 2 {
+          } else if (region == 18 && choice >= 2) ||
+            ((region == 23 || region == 24) && choice == 2) {
             third_id
           } else {
             extra_id
@@ -1922,15 +2009,22 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       }
     }
     for
-      index, (_, id, _, _, _, _, region, _, _, extra_id, _, third_id) in table_rules {
+      index, (_, id, _, _, _, _, region, _, _, extra_id, _, third_id, _) in table_rules {
       for choice in 0..<4 {
-        if (choice == 2 && region != 17 && region != 18) ||
+        if (
+            choice == 2 &&
+            region != 17 &&
+            region != 18 &&
+            region != 23 &&
+            region != 24
+          ) ||
           (choice == 3 && region != 18) {
           continue
         }
         let selected = if choice == 0 {
           id
-        } else if region == 18 && choice >= 2 {
+        } else if (region == 18 && choice >= 2) ||
+          ((region == 23 || region == 24) && choice == 2) {
           third_id
         } else {
           extra_id
@@ -1970,15 +2064,23 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       extra_id,
       extra_width,
       third_id,
+      overlay_end,
     ) in table_rules {
     for choice in 0..<4 {
-      if (choice == 2 && region != 17 && region != 18) ||
+      if (
+          choice == 2 &&
+          region != 17 &&
+          region != 18 &&
+          region != 23 &&
+          region != 24
+        ) ||
         (choice == 3 && region != 18) {
         continue
       }
       let id = if choice == 0 {
         base_id
-      } else if region == 18 && choice >= 2 {
+      } else if (region == 18 && choice >= 2) ||
+        ((region == 23 || region == 24) && choice == 2) {
         third_id
       } else {
         extra_id
@@ -2016,12 +2118,13 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           let columns : Map[Int32, Bool] = Map([])
           for c in first_col..<=last_col {
             if xlsx_table_stripe_choice(
-                region, origin, range, width, extra_width, r, c,
+                region, origin, range, width, extra_width, overlay_end, r, c,
               ) !=
               choice {
               continue
             }
-            for owner, (other, _, _, _, _, _, _, _, _, _, _, _) in table_rules {
+            for
+              owner, (other, _, _, _, _, _, _, _, _, _, _, _, _) in table_rules {
               if r.to_int64() >= other.row_start &&
                 r.to_int64() <= other.row_end &&
                 c >= other.column_start &&
@@ -2073,6 +2176,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
                 range,
                 width,
                 extra_width,
+                overlay_end,
                 row.index,
                 cell.column,
               ) !=
@@ -2080,7 +2184,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               continue
             }
             let mut owned = false
-            for owner, (other, _, _, _, _, _, _, _, _, _, _, _) in table_rules {
+            for
+              owner, (other, _, _, _, _, _, _, _, _, _, _, _, _) in table_rules {
               if row.index.to_int64() >= other.row_start &&
                 row.index.to_int64() <= other.row_end &&
                 cell.column >= other.column_start &&
