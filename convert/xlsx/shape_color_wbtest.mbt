@@ -55,3 +55,19 @@ test "shape system colors use the upstream fallback" {
     assert_eq(xlsx_simple_shape_color(element, Map([]), Map([])), expected)
   }
 }
+
+///|
+test "DrawingML preset color aliases match upstream" {
+  for
+    (name, expected) in [
+      ("red", Some(0xff0000U)),
+      ("RED", Some(0xff0000U)),
+      ("dkBlue", Some(0x00008bU)),
+      ("ltGray", Some(0xd3d3d3U)),
+      ("medSeaGreen", Some(0x3cb371U)),
+      ("mediumblue", None),
+      ("unknown", None),
+    ] {
+    assert_eq(xlsx_shape_preset_color(name), expected)
+  }
+}

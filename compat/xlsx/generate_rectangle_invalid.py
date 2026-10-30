@@ -13,6 +13,8 @@ variants = {
     'alpha-extra-attribute': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="1" foo="2"/></a:srgbClr>'),
     'fill-and-no-fill': ('</a:solidFill>', '</a:solidFill><a:noFill/>'),
     'duplicate-no-fill': ('<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill>', '<a:noFill/><a:noFill/>'),
+    'unknown-preset-color': ('<a:srgbClr val="FF0000"/>', '<a:prstClr val="unknown"/>'),
+    'preset-color-extra-attribute': ('<a:srgbClr val="FF0000"/>', '<a:prstClr val="red" foo="1"/>'),
     'system-color-extra-attribute': ('<a:srgbClr val="FF0000"/>', '<a:sysClr val="window" foo="1"/>'),
     'system-color-relationship-attribute': ('<a:srgbClr val="FF0000"/>', '<a:sysClr r:val="window"/>'),
     'system-color-transform': ('<a:srgbClr val="FF0000"/>', '<a:sysClr val="window"><a:tint val="50000"/></a:sysClr>'),

@@ -395,7 +395,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
             false
           }
         } else if depth == 5 && parent == "solidFill" && is_shape {
-          if !["srgbClr", "schemeClr", "sysClr"].contains(name) ||
+          if !["srgbClr", "schemeClr", "sysClr", "prstClr"].contains(name) ||
             shape_fill is Some(_) {
             return None
           }
@@ -453,7 +453,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
           parent == "solidFill" &&
           parents[4] == "ln" &&
           is_shape {
-          if !["srgbClr", "schemeClr", "sysClr"].contains(name) ||
+          if !["srgbClr", "schemeClr", "sysClr", "prstClr"].contains(name) ||
             line_color is Some(_) {
             return None
           }
@@ -471,7 +471,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
           )
           line_color is Some(_)
         } else if depth == 6 &&
-          ["srgbClr", "schemeClr", "sysClr"].contains(parent) &&
+          ["srgbClr", "schemeClr", "sysClr", "prstClr"].contains(parent) &&
           parents[4] == "solidFill" &&
           is_shape {
           if name != "alpha" || !(event.kind is Empty(_)) || saw_shape_alpha {
@@ -484,7 +484,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
           }
           shape_fill is Some(_)
         } else if depth == 7 &&
-          ["srgbClr", "schemeClr", "sysClr"].contains(parent) &&
+          ["srgbClr", "schemeClr", "sysClr", "prstClr"].contains(parent) &&
           parents[5] == "solidFill" &&
           parents[4] == "ln" &&
           is_shape {
@@ -918,6 +918,16 @@ fn xlsx_simple_shape_color(
       .round()
       .to_uint(),
     )
+  }
+  if element.name.local_name == "prstClr" {
+    if element.attributes.length() != 1 {
+      return None
+    }
+    let color = match xlsx_shape_preset_color(xlsx_attr(element, "val", "")) {
+      Some(color) => color
+      None => return None
+    }
+    return Some((color << 8) | 255U)
   }
   if element.name.local_name == "sysClr" {
     let seen : Map[String, Bool] = Map([])
