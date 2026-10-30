@@ -851,13 +851,11 @@ fn XlsxWorkbook::xlsx_shape_theme_alphas(
               value >= (if name == "alphaOff" { -100000L } else { 0L }) => value
             _ => return None
           }
-          let fraction = value.to_double() / 100000.0
-          let previous = result.get(slot).unwrap_or(1.0)
-          result[slot] = match name {
-            "alpha" => fraction
-            "alphaMod" => previous * fraction
-            _ => previous + fraction
-          }
+          result[slot] = xlsx_shape_apply_theme_alpha(
+            name,
+            result.get(slot).unwrap_or(1.0),
+            value,
+          )
         }
         parents[depth] = name
         if event.kind is Start(_) {
@@ -878,6 +876,21 @@ fn XlsxWorkbook::xlsx_shape_theme_alphas(
     }
   }
   None
+}
+
+///|
+fn xlsx_shape_apply_theme_alpha(
+  name : String,
+  previous : Double,
+  value : Int64,
+) -> Double {
+  let fraction = value.to_double() / 100000.0
+  let next = match name {
+    "alpha" => fraction
+    "alphaMod" => previous * fraction
+    _ => previous + fraction
+  }
+  Double::max(0.0, Double::min(1.0, next))
 }
 
 ///|

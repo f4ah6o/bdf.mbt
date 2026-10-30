@@ -71,3 +71,13 @@ test "DrawingML preset color aliases match upstream" {
     assert_eq(xlsx_shape_preset_color(name), expected)
   }
 }
+
+///|
+test "theme opacity clamps after each modifier" {
+  let over = xlsx_shape_apply_theme_alpha("alphaOff", 0.6, 80000L)
+  assert_eq(over, 1.0)
+  assert_eq(xlsx_shape_apply_theme_alpha("alphaMod", over, 50000L), 0.5)
+  let under = xlsx_shape_apply_theme_alpha("alphaOff", 0.2, -50000L)
+  assert_eq(under, 0.0)
+  assert_eq(xlsx_shape_apply_theme_alpha("alphaOff", under, 80000L), 0.8)
+}
