@@ -146,9 +146,6 @@ fn GridDrawContext::paint_picture(
     ) {
     raise InvalidArgument("sheet: picture anchor is outside the sheet")
   }
-  if picture.kind == 2 && (picture.x < 0.0 || picture.y < 0.0) {
-    raise InvalidArgument("sheet: invalid picture position")
-  }
   let (x, y, width, height) = if picture.kind == 0 {
     let x = columns[picture.from_column] +
       Double::min(

@@ -62,7 +62,6 @@ test "invalid picture geometry reports an error instead of indexing outside the 
     { ..picture, from_column: 2, },
     { ..picture, to_row: 2, },
     { ..picture, to_column: -1, },
-    { ..picture, kind: 2, x: -1.0, },
   ]
   for value in invalid {
     let result = Ok(

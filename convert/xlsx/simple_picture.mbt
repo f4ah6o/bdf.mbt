@@ -46,6 +46,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut seen_to_y_offset = false
   let mut x = -1.0
   let mut y = -1.0
+  let mut saw_position = false
   let mut width = -1.0
   let mut height = -1.0
   let mut image_id = ""
@@ -116,14 +117,15 @@ fn XlsxWorkbook::xlsx_simple_picture(
             saw_to = true
             kind == 0
           } else if name == "pos" && kind == 2 {
-            if x >= 0.0 || y >= 0.0 {
+            if saw_position {
               return None
             }
+            saw_position = true
             let px = xlsx_int(xlsx_attr(element, "x", ""))
             let py = xlsx_int(xlsx_attr(element, "y", ""))
             match (px, py) {
-              (Some(a), Some(b)) if a >= 0L &&
-                b >= 0L &&
+              (Some(a), Some(b)) if a >= -254000000L &&
+                b >= -254000000L &&
                 a <= 254000000L &&
                 b <= 254000000L => {
                 x = a.to_double() / 12700.0
@@ -467,6 +469,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
         }
         if depth == 2 {
           if pictures != 1 ||
+            (kind == 2 && !saw_position) ||
             saw_xfrm_off != saw_xfrm_ext ||
             !saw_nv ||
             !saw_nvpr ||
@@ -546,6 +549,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
           seen_to_y_offset = false
           x = -1.0
           y = -1.0
+          saw_position = false
           width = -1.0
           height = -1.0
           image_id = ""
@@ -639,7 +643,7 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
     (from_row < 0 || from_column < 0 || width < 0.0 || height < 0.0) {
     return None
   }
-  if kind == 2 && (x < 0.0 || y < 0.0 || width < 0.0 || height < 0.0) {
+  if kind == 2 && (width < 0.0 || height < 0.0) {
     return None
   }
   let rel = match self.package.target(part, image_id) {
