@@ -54,11 +54,22 @@ func TestCodexMultiVaryingUnsupported(t *testing.T) {
 		}
 		out = append(out, b.Bytes())
 	}
-	data, e := json.Marshal(out)
-	if e != nil {
-		t.Fatal(e)
+	filtered := []any{}
+	for i, input := range out {
+		if i != 0 && i != 6 && i != 8 && i != 14 && i != 24 && i != 30 {
+			filtered = append(filtered, input)
+		}
 	}
-	if e = os.WriteFile(filepath.Join(root, "compat/xlsx/multi-varying-unsupported.json"), data, 0644); e != nil {
-		t.Fatal(e)
+	for name, inputs := range map[string][]any{
+		"multi-varying-unsupported-original.json": out,
+		"multi-varying-unsupported.json":          filtered,
+	} {
+		data, e := json.Marshal(inputs)
+		if e != nil {
+			t.Fatal(e)
+		}
+		if e = os.WriteFile(filepath.Join(root, "compat/xlsx", name), data, 0644); e != nil {
+			t.Fatal(e)
+		}
 	}
 }

@@ -56,7 +56,7 @@ func TestCodexMultiColorRunsUnsupported(t *testing.T) {
 	}
 	filtered := []any{}
 	for i, input := range out {
-		if i == 1 || i == 9 || i == 17 || i == 25 {
+		if i == 17 {
 			filtered = append(filtered, input)
 		}
 	}

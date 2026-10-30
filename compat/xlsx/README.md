@@ -162,9 +162,12 @@ To regenerate fixtures, copy `generate_workbook_test.go` without its build tag
 into upstream `converter/xlsx` and run `TestCodexXLSXWorkbook` with
 `BDF_FIXTURE_ROOT` set to this repository.
 
-Varying explicit run sizes are supported on an unscaled single line with no
+Varying run sizes, including sizes inherited from the cell, are supported on an unscaled single line with no
 leading or trailing whitespace. Coverage uses `generate_multi_varying_size_test.go`,
 `generate_multi_varying_aligned_test.go`, `generate_multi_varying_unicode_test.go`,
 `generate_multi_varying_unicode_aligned_test.go`, `generate_multi_varying_height_test.go`,
 `generate_multi_varying_conditional_test.go`, `generate_multi_varying_fuzz_test.go`
-and `generate_multi_varying_unsupported_test.go`.
+and `generate_multi_varying_unsupported_test.go`. Inherited-size cases use
+`generate_multi_inherited_size_test.go`, `generate_multi_inherited_base_test.go`,
+`generate_multi_inherited_conditional_test.go`, `generate_multi_inherited_height_test.go`,
+`generate_multi_inherited_legacy_test.go` and `generate_multi_inherited_varying_legacy_test.go`.

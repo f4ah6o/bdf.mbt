@@ -792,7 +792,33 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       col_count,
     )
   }
+  let run_base_sizes : Map[Int32, Map[Int32, Double]] = Map([])
   if styled_runs {
+    for row in rows {
+      for cell in row.cells {
+        if rich_cells.get(row.index) is Some(columns) &&
+          columns.get(cell.column) is Some(run) &&
+          !run.segments.is_empty() {
+          let index = if cell.style < 0 ||
+            cell.style >= styles.cell_formats.length() {
+            0
+          } else {
+            cell.style
+          }
+          let id = styles.cell_formats[index].font
+          let id = if id < 0 || id >= styles.fonts.length() { 0 } else { id }
+          let sizes = match run_base_sizes.get(row.index) {
+            Some(sizes) => sizes
+            None => {
+              let sizes : Map[Int32, Double] = Map([])
+              run_base_sizes[row.index] = sizes
+              sizes
+            }
+          }
+          sizes[cell.column] = styles.fonts[id].size
+        }
+      }
+    }
     rows = xlsx_apply_plain_run_fonts(rows, styles, rich_cells)
   }
   let visible_cols = xlsx_column_runs(geo, col_count, 7.0)
@@ -1319,6 +1345,10 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               "xlsx: plain conversion does not support these styled rich text runs",
             )
           }
+          let original_size = match run_base_sizes.get(row.index) {
+            Some(sizes) => sizes.get(cell.column).unwrap_or(font.size)
+            None => font.size
+          }
           let default_color = xlsx_plain_font_color(
             styles,
             cell.style,
@@ -1355,11 +1385,12 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
                       .iter()
                       .all(part => {
                         part.text == "" ||
-                        (
-                          part.font is Some(f) &&
-                          f.size > 0.0 &&
-                          f.size <= font.size
-                        )
+                        (match part.font {
+                          Some(f) =>
+                            (if f.size > 0.0 { f.size } else { original_size }) <=
+                            font.size
+                          None => original_size <= font.size
+                        })
                       })
                     )
                   ) ||
@@ -1436,10 +1467,16 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
                 family_override,
                 family,
                 east_asian,
-                size: match segment.font {
-                  Some(font) if font.size != 0.0 &&
-                    font.size != styles.fonts[font_index].size => font.size
-                  _ => 0.0
+                size: {
+                  let effective = match segment.font {
+                    Some(font) if font.size > 0.0 => font.size
+                    _ => original_size
+                  }
+                  if effective != styles.fonts[font_index].size {
+                    effective
+                  } else {
+                    0.0
+                  }
                 },
                 bold,
                 italic,
@@ -2075,7 +2112,6 @@ fn xlsx_apply_plain_run_fonts(
           let base = styles.fonts[font_index]
           let mut size = 0.0
           let mut uniform = true
-          let mut all_explicit = true
           let mut max_size = 0.0
           for segment in segments {
             if segment.text == "" {
@@ -2083,10 +2119,7 @@ fn xlsx_apply_plain_run_fonts(
             }
             let effective = match segment.font {
               Some(font) if font.size > 0.0 => font.size
-              _ => {
-                all_explicit = false
-                base.size
-              }
+              _ => base.size
             }
             max_size = Double::max(max_size, effective)
             if size == 0.0 {
@@ -2097,7 +2130,6 @@ fn xlsx_apply_plain_run_fonts(
           }
           let al = format.alignment
           let safe_varying = !uniform &&
-            all_explicit &&
             !al.wrap &&
             !al.shrink &&
             (
