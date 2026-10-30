@@ -3,7 +3,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parent
 source = json.loads((root / 'rectangle-theme-colors.json').read_text())[1]
 out = []
-for name, value in (('alpha', '100001'), ('alphaMod', '50000'), ('alphaOff', '50000'), ('duplicate-slot', '')):
+for name, value in (('alpha', '100001'), ('alphaMod', '-1'), ('alphaOff', '100001'), ('duplicate-slot', '')):
     with zipfile.ZipFile(io.BytesIO(base64.b64decode(source['input']))) as archive:
         parts = {entry.filename: archive.read(entry) for entry in archive.infolist()}
     path = 'xl/theme/theme1.xml'

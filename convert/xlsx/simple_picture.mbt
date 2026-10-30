@@ -41,7 +41,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut saw_line_fill = false
   let mut line_color : UInt32? = None
   let mut theme_alpha_checked = false
-  let mut theme_alphas : Map[Int32, UInt32]? = None
+  let mut theme_alphas : Map[Int32, Double]? = None
   let mut saw_shape_alpha = false
   let mut saw_line_alpha = false
   let mut line_width = 0.75
@@ -761,8 +761,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
 ///|
 fn XlsxWorkbook::xlsx_shape_theme_alphas(
   self : XlsxWorkbook,
-) -> Map[Int32, UInt32]? {
-  let result : Map[Int32, UInt32] = Map([])
+) -> Map[Int32, Double]? {
+  let result : Map[Int32, Double] = Map([])
   let rel = match self.package.relationship_of_type(self.part, "/theme") {
     Some(rel) if !rel.external => rel
     Some(_) => return None
@@ -809,8 +809,7 @@ fn XlsxWorkbook::xlsx_shape_theme_alphas(
           }
           found_color = true
         } else if in_scheme && ["alpha", "alphaMod", "alphaOff"].contains(name) {
-          if name != "alpha" ||
-            depth != 5 ||
+          if depth != 5 ||
             slot < 0 ||
             !found_color ||
             !["srgbClr", "sysClr", "schemeClr", "prstClr", "scrgbClr", "hslClr"].contains(
@@ -821,10 +820,17 @@ fn XlsxWorkbook::xlsx_shape_theme_alphas(
             return None
           }
           let value = match xlsx_int(xlsx_attr(element, "val", "")) {
-            Some(value) if value >= 0L && value <= 100000L => value
+            Some(value) if value <= 100000L &&
+              value >= (if name == "alphaOff" { -100000L } else { 0L }) => value
             _ => return None
           }
-          result[slot] = ((value * 255L + 50000L) / 100000L).to_int().to_uint()
+          let fraction = value.to_double() / 100000.0
+          let previous = result.get(slot).unwrap_or(1.0)
+          result[slot] = match name {
+            "alpha" => fraction
+            "alphaMod" => previous * fraction
+            _ => previous + fraction
+          }
         }
         parents[depth] = name
         if event.kind is Start(_) {
@@ -851,7 +857,7 @@ fn XlsxWorkbook::xlsx_shape_theme_alphas(
 fn xlsx_simple_shape_color(
   element : @xml.NamespaceElement,
   theme_colors : Map[Int32, XlsxRgb],
-  theme_alphas : Map[Int32, UInt32],
+  theme_alphas : Map[Int32, Double],
 ) -> UInt32? {
   if element.name.local_name == "schemeClr" {
     if element.attributes.length() != 1 {
@@ -880,7 +886,10 @@ fn xlsx_simple_shape_color(
       (red << 24) |
       (green << 16) |
       (blue << 8) |
-      theme_alphas.get(slot).unwrap_or(255U),
+      (Double::max(0.0, Double::min(1.0, theme_alphas.get(slot).unwrap_or(1.0))) *
+      255.0)
+      .round()
+      .to_uint(),
     )
   }
   let bytes = @utf8.encode(xlsx_attr(element, "val", ""))
