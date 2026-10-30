@@ -553,6 +553,15 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
   if !xlsx_picture_image_format(image) {
     return None
   }
+  // Go has no AVIF image.DecodeConfig registration, so it draws the full
+  // image when a crop is present but intrinsic dimensions are unavailable.
+  let crop_ignored = image.length() >= 12 &&
+    image[4:8] == b"ftyp"[:] &&
+    (image[8:12] == b"avif"[:] || image[8:12] == b"avis"[:])
+  let crop_left = if crop_ignored { 0.0 } else { crop_left }
+  let crop_top = if crop_ignored { 0.0 } else { crop_top }
+  let crop_right = if crop_ignored { 0.0 } else { crop_right }
+  let crop_bottom = if crop_ignored { 0.0 } else { crop_bottom }
   let (image_width, image_height) = if crop_left != 0.0 ||
     crop_top != 0.0 ||
     crop_right != 0.0 ||
