@@ -11,7 +11,7 @@ mutations = [
     ('alpha-negative', lambda s: re.sub(r'<a:alphaModFix\b[^>]*/>', '<a:alphaModFix amt="-1"/>', s, count=1)),
     ('alpha-overflow', lambda s: re.sub(r'<a:alphaModFix\b[^>]*/>', '<a:alphaModFix amt="100001"/>', s, count=1)),
     ('alpha-duplicate', lambda s: re.sub(r'(<a:alphaModFix\b[^>]*/>)', r'\1\1', s, count=1)),
-    ('offset-negative', lambda s: s.replace('<colOff>0</colOff>', '<colOff>-1</colOff>', 1)),
+    ('offset-too-negative', lambda s: s.replace('<colOff>0</colOff>', '<colOff>-254000001</colOff>', 1)),
     ('offset-overflow', lambda s: s.replace('<colOff>0</colOff>', '<colOff>254000001</colOff>', 1)),
     ('offset-duplicate', lambda s: s.replace('<colOff>0</colOff>', '<colOff>0</colOff><colOff>0</colOff>', 1)),
 ]

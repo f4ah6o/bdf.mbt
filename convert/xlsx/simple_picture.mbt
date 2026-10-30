@@ -46,6 +46,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut seen_to_y_offset = false
   let mut x = -1.0
   let mut y = -1.0
+  let mut saw_position = false
   let mut width = -1.0
   let mut height = -1.0
   let mut image_id = ""
@@ -61,8 +62,13 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut crop_bottom = 0.0
   let mut saw_crop = false
   let mut saw_xfrm = false
+  let mut saw_xfrm_off = false
+  let mut saw_xfrm_ext = false
+  let mut frame_width = 0.0
+  let mut frame_height = 0.0
   let mut flip_horizontal = false
   let mut flip_vertical = false
+  let mut rotation = 0
   let mut description = ""
   let mut title = ""
   let mut text = StringBuilder()
@@ -111,14 +117,15 @@ fn XlsxWorkbook::xlsx_simple_picture(
             saw_to = true
             kind == 0
           } else if name == "pos" && kind == 2 {
-            if x >= 0.0 || y >= 0.0 {
+            if saw_position {
               return None
             }
+            saw_position = true
             let px = xlsx_int(xlsx_attr(element, "x", ""))
             let py = xlsx_int(xlsx_attr(element, "y", ""))
             match (px, py) {
-              (Some(a), Some(b)) if a >= 0L &&
-                b >= 0L &&
+              (Some(a), Some(b)) if a >= -254000000L &&
+                b >= -254000000L &&
                 a <= 254000000L &&
                 b <= 254000000L => {
                 x = a.to_double() / 12700.0
@@ -294,9 +301,12 @@ fn XlsxWorkbook::xlsx_simple_picture(
               }
               seen[key] = true
               if key == "rot" {
-                if xlsx_int(attr.value) != Some(0L) {
-                  return None
+                let value = match xlsx_int(attr.value) {
+                  Some(value) if value >= -21600000L && value <= 21600000L =>
+                    value
+                  _ => return None
                 }
+                rotation = value.to_int()
                 continue
               }
               let flag = if attr.value == "1" || attr.value == "true" {
@@ -323,6 +333,49 @@ fn XlsxWorkbook::xlsx_simple_picture(
           } else {
             false
           }
+        } else if depth == 5 && parent == "xfrm" {
+          if !(event.kind is Empty(_)) {
+            return None
+          }
+          let keys = if name == "off" {
+            if saw_xfrm_off {
+              return None
+            }
+            saw_xfrm_off = true
+            ["x", "y"]
+          } else if name == "ext" {
+            if saw_xfrm_ext {
+              return None
+            }
+            saw_xfrm_ext = true
+            ["cx", "cy"]
+          } else {
+            return None
+          }
+          let seen : Map[String, Bool] = Map([])
+          for attr in element.attributes {
+            let key = attr.name.local_name
+            if !keys.contains(key) ||
+              seen.contains(key) ||
+              attr.name.namespace_uri is Some(_) {
+              return None
+            }
+            seen[key] = true
+            let value = match xlsx_int(attr.value) {
+              Some(value) if value >= 0L &&
+                value <= 254000000L &&
+                (name != "ext" || value > 0L) => value
+              _ => return None
+            }
+            if name == "ext" {
+              if key == "cx" {
+                frame_width = value.to_double() / 12700.0
+              } else {
+                frame_height = value.to_double() / 12700.0
+              }
+            }
+          }
+          seen.length() == 2
         } else if depth == 5 && parent == "prstGeom" {
           name == "avLst" && event.kind is Empty(_)
         } else {
@@ -353,7 +406,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
         if depth == 4 && (parents[2] == "from" || parents[2] == "to") {
           let name = parents[3]
           let raw = match xlsx_int(xlsx_trim(text.to_string())) {
-            Some(value) if value >= 0L && value <= 254000000L => value
+            Some(value) if value >= -254000000L && value <= 254000000L => value
             _ => return None
           }
           if name == "colOff" || name == "rowOff" {
@@ -385,7 +438,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
               seen_to_y_offset = true
               to_y_offset = offset
             }
-          } else if raw > 16383L {
+          } else if raw < 0L || raw > 16383L {
             return None
           } else if parents[2] == "from" {
             let value = raw.to_int()
@@ -416,6 +469,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
         }
         if depth == 2 {
           if pictures != 1 ||
+            (kind == 2 && !saw_position) ||
+            saw_xfrm_off != saw_xfrm_ext ||
             !saw_nv ||
             !saw_nvpr ||
             !saw_blip_fill ||
@@ -453,6 +508,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
               crop_bottom,
               flip_horizontal,
               flip_vertical,
+              rotation,
+              frame_width,
+              frame_height,
               description,
               title,
               images,
@@ -491,6 +549,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
           seen_to_y_offset = false
           x = -1.0
           y = -1.0
+          saw_position = false
           width = -1.0
           height = -1.0
           image_id = ""
@@ -506,8 +565,13 @@ fn XlsxWorkbook::xlsx_simple_picture(
           crop_bottom = 0.0
           saw_crop = false
           saw_xfrm = false
+          saw_xfrm_off = false
+          saw_xfrm_ext = false
+          frame_width = 0.0
+          frame_height = 0.0
           flip_horizontal = false
           flip_vertical = false
+          rotation = 0
           description = ""
           title = ""
         }
@@ -556,6 +620,9 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
   crop_bottom : Double,
   flip_horizontal : Bool,
   flip_vertical : Bool,
+  rotation : Int32,
+  frame_width : Double,
+  frame_height : Double,
   description : String,
   title : String,
   images : Map[String, Bytes],
@@ -576,7 +643,7 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
     (from_row < 0 || from_column < 0 || width < 0.0 || height < 0.0) {
     return None
   }
-  if kind == 2 && (x < 0.0 || y < 0.0 || width < 0.0 || height < 0.0) {
+  if kind == 2 && (width < 0.0 || height < 0.0) {
     return None
   }
   let rel = match self.package.target(part, image_id) {
@@ -603,10 +670,10 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
   let crop_ignored = image.length() >= 12 &&
     image[4:8] == b"ftyp"[:] &&
     (image[8:12] == b"avif"[:] || image[8:12] == b"avis"[:])
-  let crop_left = if crop_ignored { 0.0 } else { crop_left }
-  let crop_top = if crop_ignored { 0.0 } else { crop_top }
-  let crop_right = if crop_ignored { 0.0 } else { crop_right }
-  let crop_bottom = if crop_ignored { 0.0 } else { crop_bottom }
+  let mut crop_left = if crop_ignored { 0.0 } else { crop_left }
+  let mut crop_top = if crop_ignored { 0.0 } else { crop_top }
+  let mut crop_right = if crop_ignored { 0.0 } else { crop_right }
+  let mut crop_bottom = if crop_ignored { 0.0 } else { crop_bottom }
   let (image_width, image_height) = if crop_left != 0.0 ||
     crop_top != 0.0 ||
     crop_right != 0.0 ||
@@ -617,6 +684,12 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
     }
   } else {
     (0.0, 0.0)
+  }
+  if image_width == 0.0 && image_height == 0.0 {
+    crop_left = 0.0
+    crop_top = 0.0
+    crop_right = 0.0
+    crop_bottom = 0.0
   }
   if kind == 1 {
     to_row = from_row + (height / 15.0).to_int() + 1
@@ -662,6 +735,9 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
     image_height,
     flip_horizontal,
     flip_vertical,
+    rotation,
+    frame_width,
+    frame_height,
   })
 }
 
@@ -842,6 +918,8 @@ fn xlsx_crop_svg_size(image : Bytes) -> (Double, Double)? {
         }
         let mut width : Double? = None
         let mut height : Double? = None
+        let mut seen_width = false
+        let mut seen_height = false
         let mut view_box : String? = None
         for attr in element.attributes {
           if attr.name.namespace_uri is None &&
@@ -855,20 +933,33 @@ fn xlsx_crop_svg_size(image : Bytes) -> (Double, Double)? {
               attr.name.local_name == "width" ||
               attr.name.local_name == "height"
             ) {
-            let value = match xlsx_crop_svg_length(attr.value, true) {
-              Some(value) => value
-              None => return None
+            let raw = @utf8.encode(attr.value)
+            let mut end = raw.length()
+            while end > 0 &&
+                  [b' ', b'\t', b'\r', b'\n', b'\x0c'].contains(raw[end - 1]) {
+              end -= 1
+            }
+            let relative = end > 0 && raw[end - 1] == b'%'
+            let value = if relative {
+              None
+            } else {
+              match xlsx_crop_svg_length(attr.value, true) {
+                Some(value) => Some(value)
+                None => return None
+              }
             }
             if attr.name.local_name == "width" {
-              if width is Some(_) {
+              if seen_width {
                 return None
               }
-              width = Some(value)
+              seen_width = true
+              width = value
             } else {
-              if height is Some(_) {
+              if seen_height {
                 return None
               }
-              height = Some(value)
+              seen_height = true
+              height = value
             }
           }
         }
@@ -877,7 +968,7 @@ fn xlsx_crop_svg_size(image : Bytes) -> (Double, Double)? {
         }
         let box = match view_box {
           Some(box) => box
-          None => return None
+          None => return Some((0.0, 0.0))
         }
         let (vw, vh) = match xlsx_crop_svg_viewbox(box) {
           Some(size) => size
