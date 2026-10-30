@@ -66,6 +66,20 @@ try {
     const after = PNG.sync.read(readFileSync(path.join(output, 'compat_xlsx_visual-' + variant + '-' + result.viewport + '.png')));
     assert.equal(before.width, after.width);
     assert.equal(before.height, after.height);
+    for (const [name, png] of [['reference', before], [variant, after]]) {
+      for (let sample = 0; sample < 4; sample++) {
+        let colored = 0;
+        const top = 24 + sample * 169;
+        assert.ok(png.height >= top + 145, `${result.viewport}: ${name} case ${sample} is clipped vertically`);
+        for (let y = top; y < top + 145; y++) {
+          for (let x = 8; x < Math.min(png.width, 568); x++) {
+            const i = (y * png.width + x) * 4;
+            if (png.data[i + 3] && Math.max(png.data[i], png.data[i + 1], png.data[i + 2]) - Math.min(png.data[i], png.data[i + 1], png.data[i + 2]) > 30) colored++;
+          }
+        }
+        assert.ok(colored > 50, `${result.viewport}: ${name} case ${sample} is blank or uncolored`);
+      }
+    }
     let changed = 0, dark = 0;
     for (let i = 0; i < before.data.length; i += 4) {
       if (before.data[i] !== after.data[i] || before.data[i+1] !== after.data[i+1] ||
