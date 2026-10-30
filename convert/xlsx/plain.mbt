@@ -157,11 +157,124 @@ fn XlsxWorkbook::xlsx_nonformatting_table_style(
 }
 
 ///|
+// Resolve a custom style containing only a whole-table font differential.
+fn XlsxWorkbook::xlsx_whole_table_font_style(
+  self : XlsxWorkbook,
+  wanted : String,
+) -> Int32 raise {
+  let rel = match self.package.relationship_of_type(self.part, "/styles") {
+    Some(value) => value
+    None => return -1
+  }
+  let data = self.package.read(rel.target) catch { _ => return -1 }
+  let text = @utf8.decode_lossy(data[:], ignore_bom=true)
+  if text.contains("<!ENTITY") {
+    return -1
+  }
+  let reader = @xml.NamespaceReader::from_string(text)
+  let mut depth = 0
+  let mut styles_depth = -1
+  let mut style_depth = -1
+  let mut styles_seen = false
+  let mut dxf_depth = -1
+  let mut dxf_seen = false
+  let mut dxf_count = 0
+  let mut found = false
+  let mut invalid = false
+  let mut items : Array[(String, Int32)] = []
+  while true {
+    let event = reader.read_event()
+    match event.kind {
+      Start(element) | Empty(element) => {
+        let name = element.name.local_name
+        if depth == 1 && name == "dxfs" && !dxf_seen {
+          dxf_seen = true
+          if event.kind is Start(_) {
+            dxf_depth = depth + 1
+          }
+        } else if depth == dxf_depth && name == "dxf" {
+          dxf_count += 1
+        }
+        if depth == 1 && name == "tableStyles" && !styles_seen {
+          styles_seen = true
+          if event.kind is Start(_) {
+            styles_depth = depth + 1
+          }
+        } else if depth == styles_depth && name == "tableStyle" {
+          if xlsx_decode_string(xlsx_attr(element, "name", "")) == wanted {
+            found = true
+            invalid = false
+            items = []
+            if event.kind is Start(_) {
+              style_depth = depth + 1
+            }
+          }
+        } else if depth == style_depth && name == "tableStyleElement" {
+          let kind = xlsx_attr(element, "type", "")
+          if xlsx_table_style_region_used(kind) {
+            let raw = xlsx_trim(xlsx_attr(element, "dxfId", ""))
+            match xlsx_int(raw) {
+              Some(n) if n >= -2147483648L && n <= 2147483647L =>
+                items.push((kind, n.to_int()))
+              _ => invalid = true
+            }
+          }
+        }
+        if event.kind is Start(_) {
+          depth += 1
+        } else if depth == 0 {
+          break
+        }
+      }
+      End(_) => {
+        depth -= 1
+        if depth + 1 == dxf_depth {
+          dxf_depth = -1
+        }
+        if depth + 1 == style_depth {
+          style_depth = -1
+        }
+        if depth + 1 == styles_depth {
+          styles_depth = -1
+        }
+        if depth == 0 {
+          break
+        }
+      }
+      Eof => if depth == 0 { break } else { return -1 }
+      _ => ()
+    }
+  }
+  if !found || invalid {
+    return -1
+  }
+  let mut chosen = -1
+  for (kind, id) in items {
+    if id >= 0 && id < dxf_count {
+      if kind != "wholeTable" {
+        return -1
+      }
+      chosen = id
+    }
+  }
+  if chosen < 0 {
+    return -1
+  }
+  let diff = self.xlsx_conditional_style(chosen) catch { _ => return -1 }
+  if diff.fill is Some(_) || diff.border is Some(_) {
+    return -1
+  }
+  chosen
+}
+
+///|
 // An unstyled table affects header marks, filters and data extraction.
 fn XlsxWorkbook::xlsx_plain_table_area(
   self : XlsxWorkbook,
   part : String,
   style_cache : Map[String, Bool],
+  font_cache : Map[String, Int32],
+  table_rules : Array[(XlsxRange, Int32)],
 ) -> Int64 raise {
   let data = self.package.read(part) catch { _ => return -1L }
   let text = @utf8.decode_lossy(data[:], ignore_bom=true)
@@ -186,6 +299,7 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   let reader = @xml.NamespaceReader::from_string(text)
   let mut depth = 0
   let mut style_info_seen = false
+  let mut font_rule = -1
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -207,7 +321,17 @@ fn XlsxWorkbook::xlsx_plain_table_area(
               }
             }
             if !accepted {
-              return -1L
+              font_rule = match font_cache.get(style) {
+                Some(value) => value
+                None => {
+                  let value = self.xlsx_whole_table_font_style(style)
+                  font_cache[style] = value
+                  value
+                }
+              }
+              if font_rule < 0 {
+                return -1L
+              }
             }
           }
         }
@@ -227,6 +351,7 @@ fn XlsxWorkbook::xlsx_plain_table_area(
       _ => ()
     }
   }
+  table_rules.push((range, font_rule))
   area
 }
 
@@ -320,7 +445,13 @@ fn XlsxWorkbook::xlsx_plain_table_filters(
 fn XlsxWorkbook::xlsx_check_plain_sheet(
   self : XlsxWorkbook,
   part : String,
-) -> (Array[@sheet.GridLink], Bool, XlsxRange?, Array[(Int32, Int32)]) raise {
+) -> (
+  Array[@sheet.GridLink],
+  Bool,
+  XlsxRange?,
+  Array[(Int32, Int32)],
+  Array[(XlsxRange, Int32)],
+) raise {
   let data = self.package.read(part) catch {
     @ooxml.InvalidOoxml(message) => raise InvalidXlsxInput(message)
   }
@@ -344,6 +475,8 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut table_depth = -1
   let mut table_room = 200000L
   let table_style_cache : Map[String, Bool] = Map([])
+  let table_font_cache : Map[String, Int32] = Map([])
+  let table_rules : Array[(XlsxRange, Int32)] = []
   let mut has_conditional = false
   let mut auto_filter : XlsxRange? = None
   let links : Array[@sheet.GridLink] = []
@@ -395,7 +528,12 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
         } else if depth == table_depth && name == "tablePart" {
           let id = xlsx_rel_id(element, "id")
           if self.package.target(part, id) is Some(rel) {
-            let area = self.xlsx_plain_table_area(rel.target, table_style_cache)
+            let area = self.xlsx_plain_table_area(
+              rel.target,
+              table_style_cache,
+              table_font_cache,
+              table_rules,
+            )
             if area < 0L || area > table_room {
               raise InvalidXlsxInput(
                 "xlsx: plain conversion does not support worksheet feature tableParts",
@@ -526,7 +664,18 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
       _ => ()
     }
   }
-  (links, has_conditional, auto_filter, table_filters)
+  let mut has_table_font = false
+  for (_, id) in table_rules {
+    if id >= 0 {
+      has_table_font = true
+    }
+  }
+  if has_table_font && table_rules.length() > 1 {
+    raise InvalidXlsxInput(
+      "xlsx: plain conversion does not support worksheet feature tableParts",
+    )
+  }
+  (links, has_conditional, auto_filter, table_filters, table_rules)
 }
 
 ///|
@@ -962,7 +1111,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   theme_colors : Map[Int32, XlsxRgb],
   shared_runs : Array[XlsxPlainRun?],
 ) -> (@sheet.DrawnGrid, XlsxSheetGeometry, Int32) raise {
-  let (links, has_conditional, filter_range, table_filters) = workbook.xlsx_check_plain_sheet(
+  let (links, has_conditional, filter_range, table_filters, table_rules) = workbook.xlsx_check_plain_sheet(
     ref.part,
   )
   let (parsed, rich_cells) = workbook.xlsx_read_sheet_cells_with_runs(
@@ -977,7 +1126,13 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       }
     }
   }
-  let styles = if has_conditional || styled_runs {
+  let mut has_table_font = false
+  for (_, id) in table_rules {
+    if id >= 0 {
+      has_table_font = true
+    }
+  }
+  let styles = if has_conditional || styled_runs || has_table_font {
     {
       ..input_styles,
       fonts: input_styles.fonts.copy(),
@@ -1043,8 +1198,50 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     }
   }
   let (row_count, col_count) = xlsx_initial_extent(parsed, geo, notes)
-  if has_conditional || styled_runs {
+  if has_conditional || styled_runs || has_table_font {
     rows = xlsx_normalize_conditional_styles(rows, styles.cell_formats.length())
+  }
+  if has_table_font {
+    for column in geo.columns {
+      if column.style >= 0 {
+        raise InvalidXlsxInput(
+          "xlsx: plain conversion does not support worksheet feature tableParts",
+        )
+      }
+    }
+    let (range, id) = table_rules[0]
+    let matched : Map[Int32, Map[Int32, Bool]] = Map([])
+    for row in rows {
+      if row.style >= 0 {
+        raise InvalidXlsxInput(
+          "xlsx: plain conversion does not support worksheet feature tableParts",
+        )
+      }
+      if row.index.to_int64() < range.row_start ||
+        row.index.to_int64() > range.row_end {
+        continue
+      }
+      for cell in row.cells {
+        if cell.column < range.column_start || cell.column > range.column_end {
+          continue
+        }
+        let format = input_styles.cell_formats[cell.style]
+        if format.font != 0 {
+          continue
+        }
+        let columns = match matched.get(row.index) {
+          Some(value) => value
+          None => {
+            let value : Map[Int32, Bool] = Map([])
+            matched[row.index] = value
+            value
+          }
+        }
+        columns[cell.column] = true
+      }
+    }
+    let diff = workbook.xlsx_conditional_style(id)
+    rows = xlsx_apply_conditional_style(rows, styles, matched, diff)
   }
   let layout_base_sizes = xlsx_rich_base_sizes(rows, styles, rich_cells)
   let (layout_rows, layout_styles) = if styled_runs {
