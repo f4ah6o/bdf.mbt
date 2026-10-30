@@ -162,8 +162,8 @@ To regenerate fixtures, copy `generate_workbook_test.go` without its build tag
 into upstream `converter/xlsx` and run `TestCodexXLSXWorkbook` with
 `BDF_FIXTURE_ROOT` set to this repository.
 
-Varying run sizes, including sizes inherited from the cell, support wrapped cells.
-Unwrapped cells currently require a single line without leading or trailing whitespace. Coverage uses `generate_multi_varying_size_test.go`,
+Varying run sizes, including sizes inherited from the cell, support wrapping,
+shrink-to-fit, whitespace, controls and the display-length limit. Coverage uses `generate_multi_varying_size_test.go`,
 `generate_multi_varying_aligned_test.go`, `generate_multi_varying_unicode_test.go`,
 `generate_multi_varying_unicode_aligned_test.go`, `generate_multi_varying_height_test.go`,
 `generate_multi_varying_conditional_test.go`, `generate_multi_varying_fuzz_test.go`
@@ -180,3 +180,12 @@ Mixed-size wrapping uses `generate_multi_real_wrap_explicit_test.go`,
 `generate_multi_real_wrap_control_test.go`, `generate_multi_real_wrap_edges_test.go`,
 `generate_multi_real_wrap_long_test.go`, `generate_multi_real_wrap_legacy_test.go`
 and `generate_multi_real_wrap_varying_legacy_test.go`.
+
+Mixed-size normalization and shrinking use `generate_multi_varying_spaces_test.go`,
+`generate_multi_varying_control_test.go`, `generate_multi_varying_ghost_test.go`,
+`generate_multi_varying_long_test.go`, `generate_multi_varying_control_legacy_test.go`,
+`generate_multi_mixed_shrink_base_test.go`, `generate_multi_mixed_shrink_control_test.go`,
+`generate_multi_mixed_shrink_fuzz_test.go`, `generate_multi_mixed_shrink_conditional_test.go`,
+`generate_multi_mixed_shrink_height_test.go`, `generate_multi_mixed_shrink_ghost_test.go`,
+`generate_multi_mixed_shrink_long_test.go`, `generate_multi_mixed_shrink_tiny_test.go`,
+`generate_single_styled_shrink_tiny_test.go` and `generate_multi_real_wrap_ghost_test.go`.

@@ -333,7 +333,14 @@ pub fn draw_sized_grid_no_fonts(
         None => 0.0
       }
       let size = original_size * scale
-      let line_size = if scale == 0.0 { original_size } else { size }
+      let line_size = if scale == 0.0 {
+        match rich_base_sizes.get(i) {
+          Some(values) => values.get(column).unwrap_or(original_size)
+          None => original_size
+        }
+      } else {
+        size
+      }
       let script = match scripts.get(i) {
         Some(columns) => columns.get(column).unwrap_or("")
         None => ""
@@ -395,41 +402,53 @@ pub fn draw_sized_grid_no_fonts(
         }
       }
       let mut rich_width = 0.0
+      let mut visible_width = 0.0
       if varying {
-        if scale != 1.0 ||
-          script != "" ||
-          (!wrap && text.length() > 1024) ||
-          (!wrap && text.trim().to_string() != text) {
+        if script != "" {
           raise InvalidArgument(
             "styled rich text runs require one unscaled line",
           )
         }
         let mut shown = 0
         for run in rich_runs {
-          let run_size = if run.size > 0.0 { run.size } else { draw_size }
+          let run_size = if run.size > 0.0 { run.size } else { original_size }
           if wrap && shown >= 1024 {
             break
           }
           for ch in run.text {
-            if !wrap && ch.to_int() < 0x20 {
-              raise InvalidArgument("varying run sizes require printable text")
-            }
-            if ch == '\n' || ch == '\t' || ch.to_int() >= 0x20 {
+            if ch == '\n' {
               shown += 1
+            } else {
+              let visible = if ch == '\t' { ' ' } else { ch }
+              if visible.to_int() < 0x20 {
+                continue
+              }
+              shown += 1
+              if !wrap {
+                rich_width += sized_fallback_advance(
+                    visible,
+                    run.bold,
+                    run_size,
+                  ) *
+                  scale
+                if !break_space(visible) {
+                  visible_width = rich_width
+                }
+              }
             }
             if shown > 1024 {
               raise InvalidArgument(
                 "varying run sizes exceed the supported length",
               )
             }
-            if !wrap {
-              rich_width += sized_fallback_advance(ch, run.bold, run_size)
-            }
             if wrap && shown >= 1024 {
               break
             }
           }
         }
+      }
+      if varying && !wrap {
+        rich_width = visible_width
       }
       let rich_layout = if varying && wrap {
         let measure : Array[RichMeasureRun] = rich_runs.map(run => {
@@ -695,6 +714,7 @@ pub fn draw_sized_grid_no_fonts(
           underline=decoration.underline,
           strike=decoration.strike,
           rich_lines~,
+          rich_scale=scale,
         )
       }
     }

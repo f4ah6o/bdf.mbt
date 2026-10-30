@@ -1138,11 +1138,18 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               }
             }
           }
-          let scale = xlsx_plain_shrink_scale(
-            text,
-            Double::max(cell_width - 3.75 - indent, 0.0),
-            drawn_size,
-          )
+          let available = Double::max(cell_width - 3.75 - indent, 0.0)
+          let scale = if rich_cells.get(row.index) is Some(columns) &&
+            columns.get(cell.column) is Some(run) &&
+            !run.segments.is_empty() {
+            let base_size = match run_base_sizes.get(row.index) {
+              Some(sizes) => sizes.get(cell.column).unwrap_or(drawn_size)
+              None => drawn_size
+            }
+            xlsx_rich_shrink_scale(run.segments, base_size, available)
+          } else {
+            xlsx_plain_shrink_scale(text, available, drawn_size)
+          }
           if scale != 1.0 {
             let columns = match shrink_scales.get(row.index) {
               Some(columns) => columns
@@ -1333,8 +1340,12 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           )
           let black : XlsxRgb = { red: 0.0, green: 0.0, blue: 0.0, }
           let segments : Array[@sheet.GridRichColorRun] = []
+          let visible_segments = xlsx_shown_segments(
+            run.segments,
+            alignment.wrap,
+          )
           let mut previous_plain = false
-          for segment in run.segments {
+          for segment in visible_segments {
             if segment.text == "" {
               continue
             }
@@ -1346,7 +1357,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
                 if (
                     varying &&
                     (
-                      (alignment.shrink && !alignment.wrap) ||
                       (
                         horizontal != "general" &&
                         horizontal != "left" &&
@@ -1354,16 +1364,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
                         horizontal != "center" &&
                         horizontal != "centerContinuous"
                       ) ||
-                      (!alignment.wrap && run.text.length() > 1024) ||
-                      (
-                        !alignment.wrap &&
-                        run.text.trim().to_string() != run.text
-                      ) ||
-                      (
-                        !alignment.wrap &&
-                        !run.text.iter().all(ch => ch.to_int() >= 0x20)
-                      ) ||
-                      !run.segments
+                      !visible_segments
                       .iter()
                       .all(part => {
                         part.text == "" ||
@@ -2017,6 +2018,40 @@ fn xlsx_plain_center_end(
 }
 
 ///|
+fn xlsx_shown_segments(
+  segments : Array[XlsxRunSegment],
+  wrap : Bool,
+) -> Array[XlsxRunSegment] {
+  let result : Array[XlsxRunSegment] = []
+  let mut shown = 0
+  for segment in segments {
+    if shown >= 1024 {
+      break
+    }
+    let text = StringBuilder()
+    for ch in segment.text {
+      if ch == '\n' {
+        shown += 1
+        if wrap {
+          text.write_char(ch)
+        }
+      } else if ch == '\t' || ch.to_int() >= 0x20 {
+        shown += 1
+        text.write_char(ch)
+      }
+      if shown >= 1024 {
+        break
+      }
+    }
+    let visible = text.to_string()
+    if visible != "" {
+      result.push({ ..segment, text: visible, })
+    }
+  }
+  result
+}
+
+///|
 fn xlsx_rich_base_sizes(
   rows : Array[XlsxRow],
   styles : XlsxStyles,
@@ -2027,7 +2062,7 @@ fn xlsx_rich_base_sizes(
     for cell in row.cells {
       if rich_cells.get(row.index) is Some(columns) &&
         columns.get(cell.column) is Some(run) &&
-        !run.segments.is_empty() {
+        (run.font is Some(_) || !run.segments.is_empty()) {
         let index = if cell.style < 0 ||
           cell.style >= styles.cell_formats.length() {
           0
@@ -2131,7 +2166,11 @@ fn xlsx_apply_plain_run_fonts(
           let mut size = 0.0
           let mut uniform = true
           let mut max_size = 0.0
-          for segment in segments {
+          let visible_segments = xlsx_shown_segments(
+            segments,
+            format.alignment.wrap,
+          )
+          for segment in visible_segments {
             if segment.text == "" {
               continue
             }
@@ -2148,7 +2187,6 @@ fn xlsx_apply_plain_run_fonts(
           }
           let al = format.alignment
           let safe_varying = !uniform &&
-            (!al.shrink || al.wrap) &&
             (
               al.horizontal == "general" ||
               al.horizontal == "left" ||
@@ -2156,10 +2194,8 @@ fn xlsx_apply_plain_run_fonts(
               al.horizontal == "center" ||
               al.horizontal == "centerContinuous"
             ) &&
-            run is Some(run) &&
-            (al.wrap || run.text.length() <= 1024) &&
-            (al.wrap || run.text.trim().to_string() == run.text) &&
-            (al.wrap || run.text.iter().all(ch => ch.to_int() >= 0x20))
+            run is Some(_)
+
           let target_size = if uniform {
             size
           } else if safe_varying {
@@ -2340,12 +2376,22 @@ fn xlsx_plain_fitted_rows(
             } else {
               size * (2.0 / 3.0)
             }
-            let scale = xlsx_plain_shrink_scale(
-              formatted.text(),
-              width,
-              drawn_size,
-            )
-            actual_size = if scale == 0.0 { size } else { size * scale }
+            let scale = if rich_cells.get(row.index) is Some(columns) &&
+              columns.get(cell.column) is Some(run) &&
+              !run.segments.is_empty() {
+              let base_size = match layout_base_sizes.get(row.index) {
+                Some(sizes) => sizes.get(cell.column).unwrap_or(drawn_size)
+                None => drawn_size
+              }
+              xlsx_rich_shrink_scale(run.segments, base_size, width)
+            } else {
+              xlsx_plain_shrink_scale(formatted.text(), width, drawn_size)
+            }
+            let fallback = match layout_base_sizes.get(row.index) {
+              Some(values) => values.get(cell.column).unwrap_or(size)
+              None => size
+            }
+            actual_size = if scale == 0.0 { fallback } else { size * scale }
           }
         }
         let text_height = 0.9 * actual_size + 0.25 * actual_size + 1.5 - 1.5
@@ -2371,6 +2417,30 @@ fn xlsx_plain_indent(alignment : XlsxAlignment, kind : Int32) -> Double {
     alignment.indent.to_double() * 7.5
   } else {
     0.0
+  }
+}
+
+///|
+fn xlsx_rich_shrink_scale(
+  segments : Array[XlsxRunSegment],
+  base_size : Double,
+  available : Double,
+) -> Double {
+  let mut width = 0.0
+  for segment in xlsx_shown_segments(segments, false) {
+    let size = match segment.font {
+      Some(font) if font.size > 0.0 => font.size
+      _ => base_size
+    }
+    for ch in segment.text {
+      let character = if ch == '\t' { ' ' } else { ch }
+      width += @sheet.sized_fallback_advance(character, false, size)
+    }
+  }
+  if width > available + 0.01 && width > 0.0 {
+    available / width
+  } else {
+    1.0
   }
 }
 

@@ -258,6 +258,7 @@ fn DrawTile::emit_cell(
   underline~ : String = "",
   strike~ : Bool = false,
   rich_lines~ : Array[Array[GridRichColorRun]] = [],
+  rich_scale~ : Double = 1.0,
 ) -> Unit raise {
   self.object.mark(2, ref)
   if layout.lang_known {
@@ -301,7 +302,7 @@ fn DrawTile::emit_cell(
         } else {
           east_asian
         }
-        let run_size = if run.size > 0.0 { run.size } else { size }
+        let run_size = if run.size > 0.0 { run.size * rich_scale } else { size }
         let mut chars = StringBuilder()
         let mut has_chars = false
         let mut cjk = false
@@ -337,7 +338,7 @@ fn DrawTile::emit_cell(
           cjk = next_cjk
           chars.write_char(character)
           let step = if run.size > 0.0 {
-            sized_fallback_advance(character, run.bold, run.size)
+            sized_fallback_advance(character, run.bold, run.size) * rich_scale
           } else {
             advance(character, run.bold)
           }
