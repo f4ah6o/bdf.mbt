@@ -53,6 +53,7 @@ fn GridDrawContext::paint_picture(
   shape_no_fill~ : Bool = false,
   shape_dash~ : String = "",
   shape_geometry~ : String = "rect",
+  shape_adjustment~ : Int64? = None,
 ) -> Int32 raise {
   if picture.kind < 0 ||
     picture.kind > 2 ||
@@ -149,6 +150,13 @@ fn GridDrawContext::paint_picture(
     shape_fill is None &&
     !shape_no_fill {
     raise InvalidArgument("sheet: shape geometry requires a shape")
+  }
+  if shape_adjustment is Some(value) {
+    if value < 0L ||
+      value > 100000L ||
+      !["triangle", "parallelogram", "trapezoid"].contains(shape_geometry) {
+      raise InvalidArgument("sheet: invalid shape adjustment")
+    }
   }
   if shape_no_fill && shape_fill is Some(_) {
     raise InvalidArgument("sheet: conflicting shape fills")
@@ -389,7 +397,16 @@ fn GridDrawContext::paint_picture(
       ],
     }
   } else if shape_geometry == "parallelogram" || shape_geometry == "trapezoid" {
-    let x = Double::min(draw_width, draw_height) * 25000.0 / 100000.0
+    let ss = Double::min(draw_width, draw_height)
+    let max = if ss == 0.0 {
+      0.0
+    } else if shape_geometry == "trapezoid" {
+      50000.0 * draw_width / ss
+    } else {
+      100000.0 * draw_width / ss
+    }
+    let adj = Double::min(shape_adjustment.unwrap_or(25000L).to_double(), max)
+    let x = ss * adj / 100000.0
     {
       verbs: b"\x00\x01\x01\x01\x04",
       coordinates: [
@@ -418,7 +435,7 @@ fn GridDrawContext::paint_picture(
         0.0,
         draw_height,
         if shape_geometry == "triangle" {
-          draw_width * 50000.0 / 100000.0
+          draw_width * shape_adjustment.unwrap_or(50000L).to_double() / 100000.0
         } else {
           0.0
         },

@@ -6,7 +6,16 @@ fn XlsxWorkbook::xlsx_simple_picture(
   part : String,
   theme_colors : Map[Int32, XlsxRgb],
 ) -> Array[
-  (@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool, String, String),
+  (
+    @sheet.GridPicture,
+    Bool,
+    UInt32?,
+    (UInt32, Double)?,
+    Bool,
+    String,
+    String,
+    Int64?,
+  ),
 ]? {
   let bytes = self.package.read(part) catch { _ => return None }
   let source = @utf8.decode_lossy(bytes[:], ignore_bom=true)
@@ -24,7 +33,16 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut kind = -1
   let mut anchors = 0
   let result : Array[
-    (@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool, String, String),
+    (
+      @sheet.GridPicture,
+      Bool,
+      UInt32?,
+      (UInt32, Double)?,
+      Bool,
+      String,
+      String,
+      Int64?,
+    ),
   ] = []
   let images : Map[String, Bytes] = Map([])
   let mut image_bytes = 0L
@@ -55,6 +73,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut saw_sppr = false
   let mut geometry = false
   let mut shape_geometry = ""
+  let mut shape_adjustment : Int64? = None
+  let mut saw_adjustments = false
   let mut stretch = false
   let mut from_row = -1
   let mut from_column = -1
@@ -597,7 +617,38 @@ fn XlsxWorkbook::xlsx_simple_picture(
           }
           seen.length() == 2
         } else if depth == 5 && parent == "prstGeom" {
-          name == "avLst" && event.kind is Empty(_)
+          if name != "avLst" || (saw_adjustments && !(event.kind is Empty(_))) {
+            return None
+          }
+          saw_adjustments = true
+          event.kind is Empty(_) ||
+          (
+            is_shape &&
+            ["triangle", "parallelogram", "trapezoid"].contains(shape_geometry)
+          )
+        } else if depth == 6 && parent == "avLst" && parents[4] == "prstGeom" {
+          if name != "gd" ||
+            !(event.kind is Empty(_)) ||
+            shape_adjustment is Some(_) ||
+            element.attributes.length() != 2 ||
+            xlsx_attr(element, "name", "") != "adj" {
+            return None
+          }
+          for attr in element.attributes {
+            if attr.name.namespace_uri is Some(_) ||
+              !["name", "fmla"].contains(attr.name.local_name) {
+              return None
+            }
+          }
+          let formula = xlsx_attr(element, "fmla", "")
+          if !formula.has_prefix("val ") {
+            return None
+          }
+          shape_adjustment = match xlsx_int(formula[4:].to_owned()) {
+            Some(value) if value >= 0L && value <= 100000L => Some(value)
+            _ => return None
+          }
+          true
         } else {
           false
         }
@@ -757,6 +808,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
                   shape_no_fill,
                   shape_dash,
                   shape_geometry,
+                  shape_adjustment,
                 ),
               )
             }
@@ -788,6 +840,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
           saw_sppr = false
           geometry = false
           shape_geometry = ""
+          shape_adjustment = None
+          saw_adjustments = false
           stretch = false
           from_row = -1
           from_column = -1

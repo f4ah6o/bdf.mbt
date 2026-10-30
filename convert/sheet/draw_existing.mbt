@@ -118,6 +118,8 @@ pub fn sized_fallback_advance(
 /// `shape_geometries` selects "rect", "ellipse", "diamond", "triangle",
 /// "rtTriangle", "parallelogram" or "trapezoid" per shape. An empty string
 /// or omitted list selects a rectangle.
+/// `shape_adjustments` contains optional DrawingML adjustment values from 0
+/// to 100,000 for triangles, parallelograms and trapezoids.
 /// `shape_dashes` contains DrawingML preset dash names, or an empty string for
 /// a solid line. A caller that defers object storage may collect child parts in
 /// `picture_children` and pass them to `store_grids`.
@@ -162,6 +164,7 @@ pub fn draw_sized_grid_no_fonts(
   shape_no_fills~ : Array[Bool] = [],
   shape_dashes~ : Array[String] = [],
   shape_geometries~ : Array[String] = [],
+  shape_adjustments~ : Array[Int64?] = [],
   picture_writer~ : @core.DocumentWriter? = None,
   picture_children~ : Array[(Int32, Int32, Bytes)]? = None,
   column_axis_default~ : Float? = None,
@@ -898,6 +901,10 @@ pub fn draw_sized_grid_no_fonts(
     shape_geometries.length() != pictures.length() {
     raise InvalidArgument("sheet: invalid shape geometry list")
   }
+  if !shape_adjustments.is_empty() &&
+    shape_adjustments.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid shape adjustment list")
+  }
   if !pictures.is_empty() {
     if pictures.length() > 128 {
       raise InvalidArgument("sheet: too many pictures")
@@ -928,6 +935,11 @@ pub fn draw_sized_grid_no_fonts(
         },
         picture_children,
         room,
+        shape_adjustment=if shape_adjustments.is_empty() {
+          None
+        } else {
+          shape_adjustments[index]
+        },
         shape_geometry=if shape_geometries.is_empty() {
           "rect"
         } else {

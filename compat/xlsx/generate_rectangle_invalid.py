@@ -4,8 +4,10 @@ root = Path(__file__).resolve().parent
 source = json.loads((root / 'simple-rectangle.json').read_text())[0]
 variants = {
     'pentagon': ('prst="rect"', 'prst="pentagon"'),
-    'adjusted-parallelogram': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="parallelogram"><a:avLst><a:gd name="adj" fmla="val 10000"/></a:avLst></a:prstGeom>'),
-    'adjusted-triangle': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="triangle"><a:avLst><a:gd name="adj" fmla="val 10000"/></a:avLst></a:prstGeom>'),
+    'adjustment-negative': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="triangle"><a:avLst><a:gd name="adj" fmla="val -1"/></a:avLst></a:prstGeom>'),
+    'adjustment-too-large': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="triangle"><a:avLst><a:gd name="adj" fmla="val 100001"/></a:avLst></a:prstGeom>'),
+    'adjustment-unknown-guide': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="triangle"><a:avLst><a:gd name="other" fmla="val 1"/></a:avLst></a:prstGeom>'),
+    'adjustment-unsupported-formula': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="triangle"><a:avLst><a:gd name="adj" fmla="*/ 1 2 3"/></a:avLst></a:prstGeom>'),
     'unknown-color': ('val="FF0000"', 'val="FF00ZZ"'),
     'color-transform': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:lumMod val="50000"/></a:srgbClr>'),
     'alpha-too-large': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="100001"/></a:srgbClr>'),
