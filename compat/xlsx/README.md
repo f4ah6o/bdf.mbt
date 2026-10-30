@@ -219,5 +219,8 @@ The following straight-line preset geometries are supported: `bentUpArrow`,
 `adj4` guides are supported from 0 to 100,000, individually or in combination.
 Duplicate guides, guides not defined by the preset, and other explicit
 adjustment guides are rejected rather than silently ignored.
+The curved `flowChartDocument`, `heart`, `wave`, and `doubleWave` presets are
+also supported. Wave `adj1` accepts 0–100,000 and `adj2` accepts -100,000–100,000,
+individually or together; other adjustment guides remain unsupported.
 
 Conditional rules that reference absent differential styles leave formatting unchanged. Missing-style stopping rules follow priority for matched explicit cells. Stopping rules that match blanks remain unsupported when later formatting could be affected. Hexadecimal and underscored conditional style IDs, and unsupported priority representations in interacting stopping rules, are also rejected.

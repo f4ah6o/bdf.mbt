@@ -122,15 +122,17 @@ pub fn sized_fallback_advance(
 /// "flowChartCollate", "flowChartManualInput", "flowChartManualOperation",
 /// "flowChartOffpageConnector", "irregularSeal1", "irregularSeal2" or
 /// "lightningBolt", plus the straight-line DrawingML presets listed in
-/// `compat/xlsx/README.md`, per shape. An empty string or omitted list selects a
+/// `compat/xlsx/README.md`, and "flowChartDocument", "heart", "wave", or
+/// "doubleWave", per shape. An empty string or omitted list selects a
 /// rectangle.
 /// `shape_adjustments` contains optional DrawingML adjustment values from 0
 /// to 100,000 for triangles, parallelograms, trapezoids, home plates, chevrons,
 /// crosses, hexagons, octagons, rounded rectangles, diagonal stripes, snipped
 /// corners, seven- or ten-point stars, and the first adjustment of supported
-/// straight-line presets. `shape_extra_adjustments` supplies `adj2` through
+/// straight-line presets or waves. `shape_extra_adjustments` supplies `adj2` through
 /// `adj4` by name, where defined by the preset, in the same range. Its entries
-/// correspond to the pictures and may be empty for other geometries.
+/// correspond to the pictures and may be empty for other geometries. For wave
+/// geometries, `adj2` may also be negative down to -100,000.
 /// `shape_dashes` contains DrawingML preset dash names, or an empty string for
 /// a solid line. A caller that defers object storage may collect child parts in
 /// `picture_children` and pass them to `store_grids`.

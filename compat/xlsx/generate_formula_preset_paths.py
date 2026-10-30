@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate straight-line preset paths from upstream presets.xml.gz.
+"""Generate closed preset paths from upstream presets.xml.gz.
 
 Usage: python3 compat/xlsx/generate_formula_preset_paths.py /path/to/presets.xml.gz
 Write stdout to convert/sheet/formula_presets.mbt, then run moon fmt.
@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 with gzip.open(sys.argv[1], 'rb') as source:
     root = ET.fromstring(source.read())
 
-names = '''bentUpArrow corner diagStripe dodecagon downArrow downArrowCallout
+names = '''flowChartDocument heart wave doubleWave bentUpArrow corner diagStripe dodecagon downArrow downArrowCallout
 halfFrame heptagon leftArrow leftArrowCallout leftRightArrow leftRightArrowCallout
 leftRightUpArrow leftUpArrow mathMinus mathPlus nonIsoscelesTrapezoid
 notchedRightArrow quadArrow quadArrowCallout rightArrow rightArrowCallout
@@ -48,7 +48,7 @@ def formula(text):
 
 lines = [
     '///|',
-    '// Straight-line preset paths generated from the upstream DrawingML definitions.',
+    '// Preset paths generated from the upstream DrawingML definitions.',
     'fn sheet_formula_preset_path(geometry : String, width : Double, height : Double, adjustment : Int64?, extra~ : Map[String, Int64] = Map([])) -> @core.Path {',
     '  let ss = Double::min(width, height)',
     '  let ls = Double::max(width, height)',
@@ -75,7 +75,8 @@ for name in names:
     assert path.get('fill', 'norm') == 'norm' and path.get('stroke', 'true') == 'true'
     assert path[-1].tag == 'close'
     assert sum(child.tag == 'moveTo' for child in path) == 1
-    assert all(child.tag in ('moveTo', 'lnTo', 'close') for child in path)
+    assert all(child.tag in ('moveTo', 'lnTo', 'cubicBezTo', 'close') for child in path)
+    assert all(len(child.findall('pt')) == {'moveTo': 1, 'lnTo': 1, 'cubicBezTo': 3, 'close': 0}[child.tag] for child in path)
     defined = defined_builtin.copy()
     lines.append(f'    "{name}" => {{')
     for guide in shape.findall('./avLst/gd') + shape.findall('./gdLst/gd'):
@@ -95,8 +96,8 @@ for name in names:
     width, height = path.get('w'), path.get('h')
     lines.append('      let sx = ' + (f'width / {float(width):.1f}' if width else '1.0'))
     lines.append('      let sy = ' + (f'height / {float(height):.1f}' if height else '1.0'))
-    points = [child.find('pt') for child in path if child.tag in ('moveTo', 'lnTo')]
-    verbs = '\\x00' + '\\x01' * (len(points) - 1) + '\\x04'
+    points = [point for child in path for point in child.findall('pt')]
+    verbs = ''.join({'moveTo': '\\x00', 'lnTo': '\\x01', 'cubicBezTo': '\\x03', 'close': '\\x04'}[child.tag] for child in path)
     lines.append(f'      {{ verbs: b"{verbs}", coordinates: [')
     for point in points:
         x, y = point.get('x'), point.get('y')

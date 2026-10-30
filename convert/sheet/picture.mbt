@@ -144,13 +144,14 @@ fn GridDrawContext::paint_picture(
       "trapezoid", "homePlate", "chevron", "plus", "hexagon", "octagon", "roundRect",
       "flowChartMerge", "flowChartInputOutput", "flowChartPreparation", "flowChartPunchedCard",
       "flowChartCollate", "flowChartManualInput", "flowChartManualOperation", "flowChartOffpageConnector",
-      "irregularSeal1", "irregularSeal2", "lightningBolt", "bentUpArrow", "corner",
-      "diagStripe", "dodecagon", "downArrow", "downArrowCallout", "halfFrame", "heptagon",
-      "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
-      "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid",
-      "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout",
-      "snip1Rect", "snip2DiagRect", "snip2SameRect", "star10", "star7", "upArrowCallout",
-      "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
+      "irregularSeal1", "irregularSeal2", "lightningBolt", "flowChartDocument", "heart",
+      "wave", "doubleWave", "bentUpArrow", "corner", "diagStripe", "dodecagon", "downArrow",
+      "downArrowCallout", "halfFrame", "heptagon", "leftArrow", "leftArrowCallout",
+      "leftRightArrow", "leftRightArrowCallout", "leftRightUpArrow", "leftUpArrow",
+      "mathMinus", "mathPlus", "nonIsoscelesTrapezoid", "notchedRightArrow", "quadArrow",
+      "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip1Rect", "snip2DiagRect",
+      "snip2SameRect", "star10", "star7", "upArrowCallout", "upDownArrow", "upArrow",
+      "upDownArrowCallout", "wedgeRectCallout",
     ].contains(shape_geometry) {
     raise InvalidArgument("sheet: invalid shape geometry")
   }
@@ -159,13 +160,14 @@ fn GridDrawContext::paint_picture(
       "homePlate", "chevron", "plus", "hexagon", "octagon", "roundRect", "flowChartMerge",
       "flowChartInputOutput", "flowChartPreparation", "flowChartPunchedCard", "flowChartCollate",
       "flowChartManualInput", "flowChartManualOperation", "flowChartOffpageConnector",
-      "irregularSeal1", "irregularSeal2", "lightningBolt", "bentUpArrow", "corner",
-      "diagStripe", "dodecagon", "downArrow", "downArrowCallout", "halfFrame", "heptagon",
-      "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
-      "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid",
-      "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout",
-      "snip1Rect", "snip2DiagRect", "snip2SameRect", "star10", "star7", "upArrowCallout",
-      "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
+      "irregularSeal1", "irregularSeal2", "lightningBolt", "flowChartDocument", "heart",
+      "wave", "doubleWave", "bentUpArrow", "corner", "diagStripe", "dodecagon", "downArrow",
+      "downArrowCallout", "halfFrame", "heptagon", "leftArrow", "leftArrowCallout",
+      "leftRightArrow", "leftRightArrowCallout", "leftRightUpArrow", "leftUpArrow",
+      "mathMinus", "mathPlus", "nonIsoscelesTrapezoid", "notchedRightArrow", "quadArrow",
+      "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip1Rect", "snip2DiagRect",
+      "snip2SameRect", "star10", "star7", "upArrowCallout", "upDownArrow", "upArrow",
+      "upDownArrowCallout", "wedgeRectCallout",
     ].contains(shape_geometry) &&
     shape_fill is None &&
     !shape_no_fill {
@@ -177,18 +179,23 @@ fn GridDrawContext::paint_picture(
       ![
         "triangle", "parallelogram", "trapezoid", "homePlate", "chevron", "plus",
         "hexagon", "octagon", "roundRect", "diagStripe", "snip1Rect", "star10", "star7",
-        "bentUpArrow", "corner", "downArrow", "downArrowCallout", "halfFrame", "leftArrow",
-        "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout", "leftRightUpArrow",
-        "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid", "notchedRightArrow",
-        "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip2DiagRect",
-        "snip2SameRect", "upArrowCallout", "upDownArrow", "upArrow", "upDownArrowCallout",
-        "wedgeRectCallout",
+        "wave", "doubleWave", "bentUpArrow", "corner", "downArrow", "downArrowCallout",
+        "halfFrame", "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
+        "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid",
+        "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout",
+        "snip2DiagRect", "snip2SameRect", "upArrowCallout", "upDownArrow", "upArrow",
+        "upDownArrowCallout", "wedgeRectCallout",
       ].contains(shape_geometry) {
       raise InvalidArgument("sheet: invalid shape adjustment")
     }
   }
   for guide, value in shape_extra_adjustments {
-    if value < 0L ||
+    if value <
+      (if guide == "adj2" && ["wave", "doubleWave"].contains(shape_geometry) {
+        -100000L
+      } else {
+        0L
+      }) ||
       value > 100000L ||
       !sheet_shape_extra_guide_allowed(shape_geometry, guide) {
       raise InvalidArgument("sheet: invalid extra shape adjustment")
@@ -540,13 +547,13 @@ fn GridDrawContext::paint_picture(
       ],
     }
   } else if [
-      "bentUpArrow", "corner", "diagStripe", "dodecagon", "downArrow", "downArrowCallout",
-      "halfFrame", "heptagon", "leftArrow", "leftArrowCallout", "leftRightArrow",
-      "leftRightArrowCallout", "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus",
-      "nonIsoscelesTrapezoid", "notchedRightArrow", "quadArrow", "quadArrowCallout",
-      "rightArrow", "rightArrowCallout", "snip1Rect", "snip2DiagRect", "snip2SameRect",
-      "star10", "star7", "upArrowCallout", "upDownArrow", "upArrow", "upDownArrowCallout",
-      "wedgeRectCallout",
+      "flowChartDocument", "heart", "wave", "doubleWave", "bentUpArrow", "corner",
+      "diagStripe", "dodecagon", "downArrow", "downArrowCallout", "halfFrame", "heptagon",
+      "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
+      "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid",
+      "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout",
+      "snip1Rect", "snip2DiagRect", "snip2SameRect", "star10", "star7", "upArrowCallout",
+      "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
     ].contains(shape_geometry) {
     sheet_formula_preset_path(
       shape_geometry,
@@ -909,11 +916,12 @@ fn sheet_shape_extra_guide_allowed(geometry : String, guide : String) -> Bool {
   match guide {
     "adj2" =>
       [
-        "bentUpArrow", "corner", "downArrow", "downArrowCallout", "halfFrame", "leftArrow",
-        "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout", "leftRightUpArrow",
-        "leftUpArrow", "nonIsoscelesTrapezoid", "notchedRightArrow", "quadArrow",
-        "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip2DiagRect", "snip2SameRect",
-        "upArrowCallout", "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
+        "wave", "doubleWave", "bentUpArrow", "corner", "downArrow", "downArrowCallout",
+        "halfFrame", "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
+        "leftRightUpArrow", "leftUpArrow", "nonIsoscelesTrapezoid", "notchedRightArrow",
+        "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip2DiagRect",
+        "snip2SameRect", "upArrowCallout", "upDownArrow", "upArrow", "upDownArrowCallout",
+        "wedgeRectCallout",
       ].contains(geometry)
     "adj3" =>
       [
