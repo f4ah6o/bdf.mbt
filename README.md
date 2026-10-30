@@ -15,7 +15,7 @@ MoonBit implementation of the BDF v1 wire-format reader and the browser-facing `
 
 This is an **incremental port**, not a feature-equivalent replacement for the upstream npm packages. In particular, a full DOM viewer, wasm-gc cryptography, some interactive sheet features and PDF/Office/CAD decoders are not yet implemented. Unsupported drawing opcodes fail explicitly instead of silently rendering incorrectly.
 
-Upstream implementation: https://github.com/shibukawa/bdf (MIT). Wire specification: https://github.com/shibukawa/bdf/blob/main/docs/spec.md .
+Upstream implementation: https://github.com/shibukawa/bdf ([MIT license](licenses/Shibukawa-bdf.txt)). Wire specification: https://github.com/shibukawa/bdf/blob/main/docs/spec.md .
 
 ## Verify
 

@@ -1,5 +1,5 @@
 ///|
-// Read one plain, untransformed embedded PNG picture. Other drawing features
+// Read one plain, untransformed embedded picture. Other drawing features
 // remain unsupported until their rendering and relationship semantics exist.
 fn XlsxWorkbook::xlsx_simple_picture(
   self : XlsxWorkbook,
@@ -291,7 +291,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
     _ => return None
   }
   let image = self.package.read(rel.target) catch { _ => return None }
-  if image.length() < 8 || image[:8] != b"\x89PNG\r\n\x1a\n"[:] {
+  if !xlsx_picture_image_format(image) {
     return None
   }
   if kind == 1 {
@@ -322,4 +322,33 @@ fn XlsxWorkbook::xlsx_simple_picture(
     },
     image,
   })
+}
+
+///|
+// Match the upstream image-format sniff used when images are kept unchanged.
+fn xlsx_picture_image_format(image : Bytes) -> Bool {
+  if image.length() >= 8 && image[:8] == b"\x89PNG\r\n\x1a\n"[:] {
+    return true
+  }
+  if image.length() >= 3 && image[:3] == b"\xff\xd8\xff"[:] {
+    return true
+  }
+  if image.length() >= 6 &&
+    (image[:6] == b"GIF87a"[:] || image[:6] == b"GIF89a"[:]) {
+    return true
+  }
+  if image.length() >= 2 && image[:2] == b"BM"[:] {
+    return true
+  }
+  if image.length() >= 12 &&
+    image[:4] == b"RIFF"[:] &&
+    image[8:12] == b"WEBP"[:] {
+    return true
+  }
+  if image.length() >= 12 &&
+    image[4:8] == b"ftyp"[:] &&
+    (image[8:12] == b"avif"[:] || image[8:12] == b"avis"[:]) {
+    return true
+  }
+  @utf8.decode_lossy(image[:Int32::min(image.length(), 512)]).contains("<svg")
 }

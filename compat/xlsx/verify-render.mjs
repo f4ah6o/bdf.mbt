@@ -15,7 +15,7 @@ async function verifyCase(c, label) {
   assert.equal(actual.manifest.parts.length, expected.manifest.parts.length, `XLSX parts ${label}`);
   for (const [j, p] of actual.manifest.parts.entries()) assert.deepEqual(Buffer.from(await actual.part(p.h)), Buffer.from(await expected.part(expected.manifest.parts[j].h)), `XLSX object ${label}:${j}`);
 }
-const pictureFiles = ['simple-picture.json', 'simple-picture-variants.json', 'simple-picture-geometry.json', 'simple-picture-styled.json', 'simple-picture-hidden.json', 'simple-picture-quarter.json', 'simple-picture-empty.json', 'simple-picture-links.json', 'simple-picture-table.json', 'picture-multisheet.json', 'picture-multitile.json', 'picture-multisheet-distinct.json', 'picture-far-tile.json'];
+const pictureFiles = ['simple-picture.json', 'simple-picture-variants.json', 'simple-picture-geometry.json', 'simple-picture-styled.json', 'simple-picture-hidden.json', 'simple-picture-quarter.json', 'simple-picture-empty.json', 'simple-picture-links.json', 'simple-picture-table.json', 'picture-multisheet.json', 'picture-multitile.json', 'picture-multisheet-distinct.json', 'picture-far-tile.json', 'picture-formats.json'];
 let simplePictureCount = 0;
 for (const file of pictureFiles) {
   const cases = JSON.parse(await readFile(new URL(`./${file}`, import.meta.url)));
@@ -42,6 +42,13 @@ for (const [j, c] of pictureBatched.entries()) {
   const input = Buffer.from(c.input, 'base64');
   assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `batched picture must be rejected ${j}`);
   assert.match(xlsx_render_error(input, c.mode, c.no_index), /batched multi-sheet/);
+}
+const unsupportedPictureFormats = JSON.parse(await readFile(new URL('./picture-unsupported-formats.json', import.meta.url)));
+assert.equal(unsupportedPictureFormats.length, 56, 'unsupported picture format fixture count');
+for (const [j, c] of unsupportedPictureFormats.entries()) {
+  const input = Buffer.from(c.input, 'base64');
+  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `unsupported picture format must be rejected ${j}`);
+  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing/);
 }
 const pictureBatchBoundary = JSON.parse(await readFile(new URL('./picture-batch-boundary.json', import.meta.url)));
 assert.equal(pictureBatchBoundary.length, 8, 'picture batching boundary fixture count');
