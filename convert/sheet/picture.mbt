@@ -142,6 +142,7 @@ fn GridDrawContext::paint_picture(
   if ![
       "", "rect", "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram",
       "trapezoid", "homePlate", "chevron", "plus", "hexagon", "octagon", "roundRect",
+      "flowChartTerminator", "flowChartDisplay", "flowChartOnlineStorage", "flowChartPunchedTape",
       "flowChartAlternateProcess", "flowChartMerge", "flowChartInputOutput", "flowChartPreparation",
       "flowChartPunchedCard", "flowChartCollate", "flowChartManualInput", "flowChartManualOperation",
       "flowChartOffpageConnector", "irregularSeal1", "irregularSeal2", "lightningBolt",
@@ -157,7 +158,8 @@ fn GridDrawContext::paint_picture(
   }
   if [
       "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram", "trapezoid",
-      "homePlate", "chevron", "plus", "hexagon", "octagon", "roundRect", "flowChartAlternateProcess",
+      "homePlate", "chevron", "plus", "hexagon", "octagon", "roundRect", "flowChartTerminator",
+      "flowChartDisplay", "flowChartOnlineStorage", "flowChartPunchedTape", "flowChartAlternateProcess",
       "flowChartMerge", "flowChartInputOutput", "flowChartPreparation", "flowChartPunchedCard",
       "flowChartCollate", "flowChartManualInput", "flowChartManualOperation", "flowChartOffpageConnector",
       "irregularSeal1", "irregularSeal2", "lightningBolt", "swooshArrow", "flowChartDocument",
@@ -445,6 +447,10 @@ fn GridDrawContext::paint_picture(
       draw_height,
       shape_adjustment.unwrap_or(16667L),
     )
+  } else if [
+      "flowChartTerminator", "flowChartDisplay", "flowChartOnlineStorage", "flowChartPunchedTape",
+    ].contains(shape_geometry) {
+    sheet_fixed_arc_preset_path(shape_geometry, draw_width, draw_height)
   } else if shape_geometry == "flowChartAlternateProcess" {
     sheet_rounded_preset_path(
       draw_width,

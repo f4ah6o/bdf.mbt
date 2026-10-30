@@ -118,19 +118,21 @@ pub fn sized_fallback_advance(
 /// `shape_geometries` selects "rect", "ellipse", "diamond", "triangle",
 /// "rtTriangle", "parallelogram", "trapezoid", "homePlate", "chevron",
 /// "plus", "hexagon", "octagon", "roundRect", "flowChartAlternateProcess",
-/// "flowChartMerge",
-/// "flowChartInputOutput", "flowChartPreparation", "flowChartPunchedCard",
+/// "flowChartMerge", "flowChartInputOutput", "flowChartPreparation",
+/// "flowChartPunchedCard", "flowChartTerminator", "flowChartDisplay",
+/// "flowChartOnlineStorage", "flowChartPunchedTape",
 /// "flowChartCollate", "flowChartManualInput", "flowChartManualOperation",
 /// "flowChartOffpageConnector", "irregularSeal1", "irregularSeal2" or
 /// "lightningBolt", plus the straight-line DrawingML presets listed in
 /// `compat/xlsx/README.md`, and "flowChartDocument", "heart", "wave", or
-/// "doubleWave", per shape. An empty string or omitted list selects a
+/// "doubleWave", or "swooshArrow", per shape. An empty string or omitted list selects a
 /// rectangle.
 /// `shape_adjustments` contains optional DrawingML adjustment values from 0
 /// to 100,000 for triangles, parallelograms, trapezoids, home plates, chevrons,
 /// crosses, hexagons, octagons, rounded rectangles, diagonal stripes, snipped
 /// corners, seven- or ten-point stars, and the first adjustment of supported
-/// straight-line presets or waves. `shape_extra_adjustments` supplies `adj2` through
+/// straight-line presets, waves, or swoosh arrows. `shape_extra_adjustments`
+/// supplies `adj2` through
 /// `adj4` by name, where defined by the preset, in the same range. Its entries
 /// correspond to the pictures and may be empty for other geometries. For wave
 /// geometries, `adj2` may also be negative down to -100,000.
