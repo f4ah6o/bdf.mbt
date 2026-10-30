@@ -1306,7 +1306,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         if rich_cells.get(row.index) is Some(columns) &&
           columns.get(cell.column) is Some(run) &&
           !run.segments.is_empty() {
-          let alignment = styles.cell_formats[format_index].alignment
           if font.vertical != "" ||
             (
               horizontal != "general" &&
@@ -1315,19 +1314,10 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               horizontal != "center" &&
               horizontal != "centerContinuous"
             ) ||
-            run.text == "" ||
-            run.text.length() > 1024 ||
-            run.text.trim().to_string() != run.text {
+            run.text.length() > 1024 {
             raise InvalidXlsxInput(
               "xlsx: plain conversion does not support these styled rich text runs",
             )
-          }
-          for ch in run.text {
-            if ch.to_int() < 0x20 && !(ch == '\n' && alignment.wrap) {
-              raise InvalidXlsxInput(
-                "xlsx: plain conversion does not support these styled rich text runs",
-              )
-            }
           }
           let default_color = xlsx_plain_font_color(
             styles,

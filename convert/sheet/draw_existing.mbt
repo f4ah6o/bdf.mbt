@@ -528,10 +528,14 @@ pub fn draw_sized_grid_no_fonts(
         let owners : Array[Int32] = []
         for index, run in rich_runs {
           for ch in run.text {
-            if ch.to_int() < 0x20 && ch != '\n' {
-              raise InvalidArgument("styled runs require printable text")
+            if ch == '\n' && !wrap {
+              continue
             }
-            chars.push(ch)
+            let visible = if ch == '\t' { ' ' } else { ch }
+            if visible.to_int() < 0x20 && visible != '\n' {
+              continue
+            }
+            chars.push(visible)
             owners.push(index)
           }
         }

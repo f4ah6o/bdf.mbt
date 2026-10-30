@@ -135,7 +135,12 @@ font name or size are covered by `generate_multi_equal_font_runs_test.go`,
 and `generate_multi_base_font_legacy_test.go`. Shrink-to-fit coverage uses
 `generate_multi_shrink_runs_test.go`, `generate_multi_shrink_base_test.go`,
 `generate_multi_shrink_conditional_test.go`, `generate_multi_shrink_wrap_test.go`
-and `generate_multi_shrink_fuzz_test.go`.
+and `generate_multi_shrink_fuzz_test.go`. Empty and whitespace-only runs,
+leading and trailing whitespace, line breaks, tabs and other control characters
+use `generate_multi_edge_space_plain_test.go`, `generate_multi_edge_space_wrap_test.go`,
+`generate_multi_edge_newline_test.go`, `generate_multi_empty_runs_test.go`,
+`generate_multi_control_plain_test.go`, `generate_multi_control_wrap_test.go`,
+`generate_multi_control_shrink_test.go` and `generate_multi_edge_legacy_test.go`.
 Duplicate and unique predicates use `generate_conditional_duplicate_test.go`
 and `TestCodexConditionalDuplicate`. Numeric comparison-key tests are generated
 by `generate_duplicate_keys_test.go` and `TestCodexXLSXDuplicateKeys`, including
