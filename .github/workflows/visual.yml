@@ -17,6 +17,10 @@ jobs:
       - run: moon update
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      - name: Test XLSX table decoration rendering
+        run: |
+          moon build --target js
+          npm run test:xlsx-visual
       - run: npm run test:visual
       - uses: actions/upload-artifact@v4
         if: failure()
