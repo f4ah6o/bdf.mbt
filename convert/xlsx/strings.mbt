@@ -122,12 +122,28 @@ fn xlsx_read_run_font(
   font : XlsxFont,
 ) -> Unit raise {
   let mut depth = 1
+  // Upstream reads the first rFont and sz child from the run properties.
+  let mut font_seen = false
+  let mut size_seen = false
   while depth > 0 {
     let event = reader.read_event()
     match event.kind {
       Start(element) | Empty(element) => {
         if depth == 1 && element.name.local_name != "name" {
-          font.apply(element)
+          let name = element.name.local_name
+          if name == "rFont" {
+            if !font_seen {
+              font.apply(element)
+            }
+            font_seen = true
+          } else if name == "sz" {
+            if !size_seen {
+              font.apply(element)
+            }
+            size_seen = true
+          } else {
+            font.apply(element)
+          }
         }
         if event.kind is Start(_) {
           depth += 1

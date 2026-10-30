@@ -193,3 +193,5 @@ Mixed-size normalization and shrinking use `generate_multi_varying_spaces_test.g
 The `multi-script-*` fixtures compare superscript and subscript rich-text runs against the Go converter, including inherited sizes, wrapping, shrinking, narrow columns, and conditional formatting. `multi-script-legacy.json` covers all four formerly rejected inputs.
 
 The `multi-base-script-*` fixtures also cover runs inheriting superscript or subscript from the cell font, alongside runs overriding it.
+
+The `multi-repeated-props-*` fixtures verify that the first run font name and size are used when those properties repeat.

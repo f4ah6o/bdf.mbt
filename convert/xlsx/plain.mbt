@@ -28,7 +28,6 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut run_texts = 0
   let mut props_seen = false
   let mut props_depth = -1
-  let mut run_font_seen = false
   let mut run_size_seen = false
   let mut link_depth = -1
   let mut extension_depth = -1
@@ -119,11 +118,9 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
         } else if depth == cell_depth && name == "is" && event.kind is Start(_) {
           inline_depth = depth + 1
           props_seen = false
-          run_font_seen = false
           run_size_seen = false
         } else if depth == inline_depth && name == "r" {
           props_seen = false
-          run_font_seen = false
           run_size_seen = false
           run_texts = 0
           if event.kind is Start(_) {
@@ -143,19 +140,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           if event.kind is Start(_) {
             props_depth = depth + 1
           }
-        } else if depth == props_depth && name == "rFont" {
-          if run_font_seen {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text with repeated run fonts",
-            )
-          }
-          run_font_seen = true
-        } else if depth == props_depth && name == "sz" {
-          if run_size_seen {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text with repeated run font sizes",
-            )
-          }
+        } else if depth == props_depth && name == "sz" && !run_size_seen {
           run_size_seen = true
           let raw = xlsx_trim(xlsx_attr(element, "val", "")).to_lower()
           let size = @string.parse_double(raw) catch { _ => 0.0 }
@@ -376,7 +361,6 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
   let mut run_texts = 0
   let mut props_seen = false
   let mut props_depth = -1
-  let mut run_font_seen = false
   let mut run_size_seen = false
   while true {
     let event = reader.read_event()
@@ -386,11 +370,9 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
         if depth == 1 && name == "si" && event.kind is Start(_) {
           string_depth = depth + 1
           props_seen = false
-          run_font_seen = false
           run_size_seen = false
         } else if depth == string_depth && name == "r" {
           props_seen = false
-          run_font_seen = false
           run_size_seen = false
           run_texts = 0
           if event.kind is Start(_) {
@@ -410,19 +392,7 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
           if event.kind is Start(_) {
             props_depth = depth + 1
           }
-        } else if depth == props_depth && name == "rFont" {
-          if run_font_seen {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text with repeated run fonts",
-            )
-          }
-          run_font_seen = true
-        } else if depth == props_depth && name == "sz" {
-          if run_size_seen {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text with repeated run font sizes",
-            )
-          }
+        } else if depth == props_depth && name == "sz" && !run_size_seen {
           run_size_seen = true
           let raw = xlsx_trim(xlsx_attr(element, "val", "")).to_lower()
           let size = @string.parse_double(raw) catch { _ => 0.0 }
