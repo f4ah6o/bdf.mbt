@@ -65,7 +65,7 @@ Text predicates use `generate_conditional_text_test.go` and
 `TestCodexConditionalText`. Go Unicode lowercase mappings are regenerated
 with `generate_lowercase_test.go` and `TestCodexXLSXLowercaseTable`.
 Top and bottom rank predicates use `generate_conditional_top_test.go`
-and `TestCodexConditionalTop`.
+and `TestCodexConditionalTop`, including large and decimal ranks.
 Average predicates use `generate_conditional_average_test.go` and
 `TestCodexConditionalAverage`; standard-deviation cases use
 `generate_conditional_stddev_test.go` and `TestCodexConditionalStdDev`.

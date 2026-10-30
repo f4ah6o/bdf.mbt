@@ -116,7 +116,7 @@ func TestCodexConditionalTop(t *testing.T) {
 		}
 		add("xl/styles.xml", fmt.Sprintf(`<styleSheet><numFmts><numFmt numFmtId="164" formatCode="[Red]0"/></numFmts><fonts><font><name val="Calibri"/><sz val="11"/></font><font><name val="Calibri"/><sz val="11"/><b/></font></fonts><fills><fill/><fill><patternFill patternType="solid"><fgColor rgb="FF00BB00"/></patternFill></fill></fills><borders><border/><border diagonalDown="1"><top style="medium"/><right style="thin"/><diagonal style="dotted"/></border></borders><cellXfs><xf fontId="0" fillId="0" borderId="0"/><xf fontId="1" fillId="1" borderId="1" numFmtId="164" applyAlignment="1"><alignment wrapText="1"/></xf><xf fontId="2" fillId="2" borderId="2"/></cellXfs><dxfs><dxf>%s</dxf></dxfs></styleSheet>`, dxf))
 		style := (i / 8) % 2
-		ranks := []string{"0", "-1", "1", "2", "3", "10", "50", "100", "200", "1000", "bad", "1000000", "-1000000", " 1.9 ", "2e0", "-0.9"}
+		ranks := []string{"0", "-1", "1", "2", "3", "10", "50", "100", "200000000000", "10000000000", "bad", "1000001", "-9999999999", " 1.9 ", "2e0", "-0.9"}
 		rank := ranks[(i/16)%len(ranks)]
 		percent := "0"
 		if i%2 != 0 {
@@ -133,7 +133,7 @@ func TestCodexConditionalTop(t *testing.T) {
 			rule = `<conditionalFormatting sqref="A1:F3"><cfRule type="colorScale" dxfId="0"/></conditionalFormatting>`
 		}
 		if i == 256 {
-			rule = `<conditionalFormatting sqref="A1:F3"><cfRule type="top10" rank="1000001" dxfId="0"></cfRule></conditionalFormatting>`
+			rule = `<conditionalFormatting sqref="A1:F3"><cfRule type="top10" rank="200000000001" dxfId="0"></cfRule></conditionalFormatting>`
 		}
 		if i == 257 {
 			rule = `<conditionalFormatting sqref="A1:F3"><cfRule type="top10" rank="0x1p1" dxfId="0"></cfRule></conditionalFormatting>`

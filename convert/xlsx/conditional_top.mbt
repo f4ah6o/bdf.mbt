@@ -134,17 +134,19 @@ fn xlsx_conditional_stddev(raw : String) -> Double raise {
 }
 
 ///|
-// Go's attribute reader accepts whitespace, decimal and exponent forms, and
-// truncates finite decimals towards zero. Bound the supported rank before
-// conversion so a large value cannot overflow on either MoonBit target.
+// Go truncates decimal ranks towards zero. Saturating ranks that exceed the
+// maximum covered-cell budget preserves their effect without Int32 overflow.
 fn xlsx_conditional_rank(raw : String) -> Int32 raise {
   let text = xlsx_trim(raw)
   match xlsx_int(text) {
     Some(n) => {
-      if n < -1000000L || n > 1000000L {
+      if n > 200000000000L {
         xlsx_reject_conditional()
       }
-      n.to_int()
+      if n <= 0L {
+        return -1
+      }
+      Int64::min(n, 4194304L).to_int()
     }
     None => {
       // Go also accepts hexadecimal floats, which the MoonBit parser does not.
@@ -155,11 +157,14 @@ fn xlsx_conditional_rank(raw : String) -> Int32 raise {
         xlsx_reject_conditional()
       }
       let value = @string.parse_double(text) catch { _ => return 10 }
-      if value.is_nan() ||
-        value.is_inf() ||
-        value < -1000000.0 ||
-        value > 1000000.0 {
+      if value.is_nan() || value.is_inf() || value > 200000000000.0 {
         xlsx_reject_conditional()
+      }
+      if value <= 0.0 {
+        return -1
+      }
+      if value >= 4194304.0 {
+        return 4194304
       }
       value.to_int()
     }
