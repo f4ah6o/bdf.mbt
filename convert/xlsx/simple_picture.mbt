@@ -75,6 +75,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut shape_geometry = ""
   let mut shape_adjustment : Int64? = None
   let mut saw_adjustments = false
+  let mut shape_adjustments_allowed = true
   let mut stretch = false
   let mut from_row = -1
   let mut from_column = -1
@@ -413,16 +414,19 @@ fn XlsxWorkbook::xlsx_simple_picture(
             [
               "rect", "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram",
               "trapezoid", "homePlate", "chevron", "plus", "hexagon", "octagon",
-              "roundRect", "flowChartProcess", "flowChartDecision",
+              "roundRect", "flowChartProcess", "flowChartDecision", "flowChartExtract",
             ].contains(xlsx_attr(element, "prst", "")) {
             if geometry {
               return None
             }
             geometry = true
+            shape_adjustments_allowed = xlsx_attr(element, "prst", "") !=
+              "flowChartExtract"
             shape_geometry = if is_shape {
               match xlsx_attr(element, "prst", "") {
                 "flowChartProcess" => "rect"
                 "flowChartDecision" => "diamond"
+                "flowChartExtract" => "triangle"
                 other => other
               }
             } else {
@@ -629,6 +633,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
           event.kind is Empty(_) ||
           (
             is_shape &&
+            shape_adjustments_allowed &&
             [
               "triangle", "parallelogram", "trapezoid", "homePlate", "chevron", "plus",
               "hexagon", "octagon", "roundRect",
@@ -850,6 +855,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
           shape_geometry = ""
           shape_adjustment = None
           saw_adjustments = false
+          shape_adjustments_allowed = true
           stretch = false
           from_row = -1
           from_column = -1
