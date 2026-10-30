@@ -302,14 +302,14 @@ fn XlsxWorkbook::xlsx_table_style(
     }
   }
   if whole >= 0 && (first_stripe >= 0 || second_stripe >= 0) && !has_other {
-    let base = self.xlsx_conditional_style(whole) catch {
+    let base = self.xlsx_table_differential_style(whole) catch {
       _ => return (-1, 0, 1L, -1, 1L, -1)
     }
     if base.border is Some(_) {
       return (-1, 0, 1L, -1, 1L, -1)
     }
     if first_stripe >= 0 {
-      let first = self.xlsx_conditional_style(first_stripe) catch {
+      let first = self.xlsx_table_differential_style(first_stripe) catch {
         _ => return (-1, 0, 1L, -1, 1L, -1)
       }
       if first.border is Some(_) {
@@ -317,7 +317,7 @@ fn XlsxWorkbook::xlsx_table_style(
       }
     }
     if second_stripe >= 0 {
-      let second = self.xlsx_conditional_style(second_stripe) catch {
+      let second = self.xlsx_table_differential_style(second_stripe) catch {
         _ => return (-1, 0, 1L, -1, 1L, -1)
       }
       if second.border is Some(_) {
@@ -506,14 +506,14 @@ fn XlsxWorkbook::xlsx_table_style(
   if chosen < 0 {
     return (-1, 0, 1L, -1, 1L, -1)
   }
-  let diff = self.xlsx_conditional_style(chosen) catch {
+  let diff = self.xlsx_table_differential_style(chosen) catch {
     _ => return (-1, 0, 1L, -1, 1L, -1)
   }
   if diff.border is Some(_) {
     return (-1, 0, 1L, -1, 1L, -1)
   }
   if other >= 0 {
-    let extra = self.xlsx_conditional_style(other) catch {
+    let extra = self.xlsx_table_differential_style(other) catch {
       _ => return (-1, 0, 1L, -1, 1L, -1)
     }
     if extra.border is Some(_) {
@@ -521,7 +521,7 @@ fn XlsxWorkbook::xlsx_table_style(
     }
   }
   if third >= 0 {
-    let last = self.xlsx_conditional_style(third) catch {
+    let last = self.xlsx_table_differential_style(third) catch {
       _ => return (-1, 0, 1L, -1, 1L, -1)
     }
     if last.border is Some(_) {
@@ -739,22 +739,28 @@ fn XlsxWorkbook::xlsx_table_effective_style(
 ) -> XlsxConditionalStyle raise {
   if (region == 23 || region == 24) && choice > 0 {
     return xlsx_merge_table_style(
-      self.xlsx_conditional_style(base_id),
-      self.xlsx_conditional_style(if choice == 1 { extra_id } else { third_id }),
+      self.xlsx_table_differential_style(base_id),
+      self.xlsx_table_differential_style(
+        if choice == 1 {
+          extra_id
+        } else {
+          third_id
+        },
+      ),
     )
   }
   if region == 18 && choice > 0 {
-    let mut result = self.xlsx_conditional_style(base_id)
+    let mut result = self.xlsx_table_differential_style(base_id)
     if choice == 1 || choice == 3 {
       result = xlsx_merge_table_style(
         result,
-        self.xlsx_conditional_style(extra_id),
+        self.xlsx_table_differential_style(extra_id),
       )
     }
     if choice == 2 || choice == 3 {
       result = xlsx_merge_table_style(
         result,
-        self.xlsx_conditional_style(third_id),
+        self.xlsx_table_differential_style(third_id),
       )
     }
     return result
@@ -764,7 +770,7 @@ fn XlsxWorkbook::xlsx_table_effective_style(
       choice == 1
     ) ||
     (region == 17 && choice == 2)) {
-    return self.xlsx_conditional_style(
+    return self.xlsx_table_differential_style(
       if choice == 0 {
         base_id
       } else {
@@ -773,9 +779,48 @@ fn XlsxWorkbook::xlsx_table_effective_style(
     )
   }
   xlsx_merge_table_style(
-    self.xlsx_conditional_style(base_id),
-    self.xlsx_conditional_style(extra_id),
+    self.xlsx_table_differential_style(base_id),
+    self.xlsx_table_differential_style(extra_id),
   )
+}
+
+///|
+fn xlsx_xml_bom_bytes(data : Bytes) -> Int32 {
+  if data.length() >= 3 &&
+    data[0].to_int() == 239 &&
+    data[1].to_int() == 187 &&
+    data[2].to_int() == 191 {
+    3
+  } else {
+    0
+  }
+}
+
+///|
+fn xlsx_go_xml_error(
+  error : @xml.XmlErrorKind,
+  span : @xml.SourceSpan,
+  text : String,
+  bom : Int32,
+) -> String? {
+  match error {
+    @xml.UnexpectedEof => Some("xml: unexpected end of input")
+    @xml.InvalidSyntax(message) if message.has_prefix("unclosed element:") =>
+      Some("xml: unexpected end of input")
+    @xml.InvalidSyntax(message) if message == "empty document - no root element" =>
+      Some("unexpected EOF")
+    @xml.InvalidSyntax(message) if message.has_prefix("end tag mismatch:") =>
+      Some(
+        "xml: end tag does not match open element at byte " +
+        (@utf8.encode(text[:span.start.offset].to_owned()).length() + bom).to_string(),
+      )
+    @xml.InvalidSyntax(message) if message ==
+      "expected '>' or '/>' at end of start tag" &&
+      span.end.offset == text.length() => Some("xml: unexpected end of input")
+    @xml.InvalidSyntax(message) if message == "expected '>' after end tag name" &&
+      span.end.offset == text.length() => Some("xml: unexpected end of input")
+    _ => None
+  }
 }
 
 ///|
@@ -783,8 +828,15 @@ fn XlsxWorkbook::xlsx_table_effective_style(
 fn XlsxWorkbook::xlsx_plain_table_area(
   self : XlsxWorkbook,
   part : String,
+  table_rows : Array[XlsxRow],
+  table_room : Int64,
+  table_headers : Array[(Int32, Int32, Int32, Int32, Int32)],
   style_cache : Map[String, Bool],
   style_id_cache : Map[String, (Int32, Int32, Int64, Int32, Int64, Int32)],
+  complex_rules : Map[Int32, XlsxComplexTable],
+  complex_cache : Map[String, XlsxComplexStyle?],
+  known_cache : Map[String, Bool],
+  table_events : Array[(String, String)],
   table_rules : Array[
     (
       XlsxRange,
@@ -803,15 +855,30 @@ fn XlsxWorkbook::xlsx_plain_table_area(
     ),
   ],
 ) -> Int64 raise {
+  if !self.package.has(part) {
+    table_events.push(("", "table " + part + ": missing part " + part))
+    return -3L
+  }
   let data = self.package.read(part) catch { _ => return -1L }
   let text = @utf8.decode_lossy(data[:], ignore_bom=true)
   if text.contains("<!ENTITY") {
     return -1L
   }
-  let table = xlsx_read_list_table(data) catch { _ => None }
+  let table = xlsx_read_list_table(data) catch {
+    @xml.At(error~, span~) => {
+      let reason = match
+        xlsx_go_xml_error(error, span, text, xlsx_xml_bom_bytes(data)) {
+        Some(reason) => reason
+        None => return -1L
+      }
+      table_events.push(("", "table " + part + ": " + part + ": " + reason))
+      return -3L
+    }
+    _ => return -1L
+  }
   let parsed_table = match table {
     Some(t) => t
-    None => return -1L
+    None => return -3L
   }
   let range = parsed_table.range
   if range.row_start < 0L ||
@@ -824,10 +891,36 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   }
   let area = (range.row_end - range.row_start + 1L) *
     (range.column_end - range.column_start + 1).to_int64()
+  let mut present = 0L
+  for row in table_rows {
+    if row.index.to_int64() < range.row_start ||
+      row.index.to_int64() > range.row_end {
+      continue
+    }
+    for cell in row.cells {
+      if cell.column >= range.column_start && cell.column <= range.column_end {
+        present += 1L
+      }
+    }
+  }
+  let missing = Int64::max(area - present, 0L)
+  if missing > table_room {
+    return -2L
+  }
+  table_headers.push(
+    (
+      range.row_start.to_int(),
+      range.row_end.to_int(),
+      range.column_start,
+      range.column_end,
+      parsed_table.header_rows,
+    ),
+  )
   let reader = @xml.NamespaceReader::from_string(text)
   let mut depth = 0
   let mut style_info_seen = false
   let mut style_rule = -1
+  let mut complex_style : XlsxComplexStyle? = None
   let mut selected_region = 0
   let mut selected_width = 1L
   let mut other_rule = -1
@@ -878,7 +971,44 @@ fn XlsxWorkbook::xlsx_plain_table_area(
               third_rule = last
               other_width = extra_width
               if style_rule < 0 {
-                return -1L
+                complex_style = match complex_cache.get(style) {
+                  Some(value) => value
+                  None => {
+                    let value = self.xlsx_complex_table_style(style)
+                    complex_cache[style] = value
+                    value
+                  }
+                }
+                match complex_style {
+                  Some(value) => {
+                    for id in value.ids {
+                      if id >= 0 {
+                        style_rule = id
+                        break
+                      }
+                    }
+                    selected_region = 25
+                  }
+                  None => {
+                    let known = match known_cache.get(style) {
+                      Some(value) => value
+                      None => {
+                        let value = self.xlsx_table_style_defined(style)
+                        known_cache[style] = value
+                        value
+                      }
+                    }
+                    if known {
+                      return -1L
+                    }
+                    table_events.push(
+                      (
+                        "tablestyle:" + style,
+                        "table style " + style + " is unknown",
+                      ),
+                    )
+                  }
+                }
               }
             }
           }
@@ -1029,6 +1159,18 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   } else {
     stripe_origin - 1L
   }
+  if complex_style is Some(style) {
+    complex_rules[table_rules.length()] = {
+      style,
+      range,
+      header: parsed_table.header_rows,
+      totals: parsed_table.totals_rows,
+      first_column,
+      last_column,
+      row_stripes,
+      column_stripes,
+    }
+  }
   table_rules.push(
     (
       range,
@@ -1058,7 +1200,7 @@ fn XlsxWorkbook::xlsx_plain_table_area(
       },
     ),
   )
-  area
+  missing
 }
 
 ///|
@@ -1148,14 +1290,92 @@ fn XlsxWorkbook::xlsx_plain_table_filters(
 }
 
 ///|
+fn XlsxWorkbook::xlsx_empty_drawing(
+  self : XlsxWorkbook,
+  part : String,
+) -> Bool raise {
+  let data = self.package.read(part) catch { _ => return false }
+  let text = @utf8.decode_lossy(data[:], ignore_bom=true)
+  if text.contains("<!ENTITY") {
+    return false
+  }
+  let reader = @xml.NamespaceReader::from_string(text)
+  let mut depth = 0
+  let mut anchor_depth = -1
+  while true {
+    let event = reader.read_event()
+    match event.kind {
+      Start(element) | Empty(element) => {
+        let name = element.name.local_name
+        if name == "AlternateContent" &&
+          element.name.namespace_uri
+          .unwrap_or("")
+          .has_suffix("markup-compatibility/2006") {
+          return false
+        }
+        if depth == 1 &&
+          (
+            name == "twoCellAnchor" ||
+            name == "oneCellAnchor" ||
+            name == "absoluteAnchor"
+          ) {
+          if event.kind is Start(_) {
+            anchor_depth = depth + 1
+          }
+        } else if depth == anchor_depth &&
+          (
+            name == "sp" ||
+            name == "grpSp" ||
+            name == "graphicFrame" ||
+            name == "cxnSp" ||
+            name == "pic" ||
+            name == "contentPart"
+          ) {
+          return false
+        }
+        if event.kind is Start(_) {
+          depth += 1
+        } else if depth == 0 {
+          break
+        }
+      }
+      End(_) => {
+        depth -= 1
+        if depth + 1 == anchor_depth {
+          anchor_depth = -1
+        }
+        if depth == 0 {
+          break
+        }
+      }
+      Eof => if depth == 0 { break } else { return false }
+      _ => ()
+    }
+  }
+  true
+}
+
+///|
 fn XlsxWorkbook::xlsx_check_plain_sheet(
   self : XlsxWorkbook,
   part : String,
+  sheet_name : String,
+  theme_colors : Map[Int32, XlsxRgb],
+  table_rows : Array[XlsxRow],
+  table_headers : Array[(Int32, Int32, Int32, Int32, Int32)],
+  table_events : Array[(String, String)],
+  pictures : Array[@sheet.GridPicture],
+  hidden_pictures : Array[Bool],
+  shape_fills : Array[UInt32?],
+  shape_strokes : Array[(UInt32, Double)?],
+  shape_no_fills : Array[Bool],
+  shape_dashes : Array[String],
 ) -> (
   Array[@sheet.GridLink],
   Bool,
   XlsxRange?,
   Array[(Int32, Int32)],
+  Map[Int32, XlsxComplexTable],
   Array[
     (
       XlsxRange,
@@ -1195,7 +1415,10 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut link_depth = -1
   let mut extension_depth = -1
   let mut table_depth = -1
-  let mut table_room = 200000L
+  let mut table_room = 1048576L
+  let complex_rules : Map[Int32, XlsxComplexTable] = Map([])
+  let complex_cache : Map[String, XlsxComplexStyle?] = Map([])
+  let known_cache : Map[String, Bool] = Map([])
   let table_style_cache : Map[String, Bool] = Map([])
   let table_style_id_cache : Map[
     String,
@@ -1220,6 +1443,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   ] = []
   let mut has_conditional = false
   let mut auto_filter : XlsxRange? = None
+  let mut drawing_target : String? = None
   let links : Array[@sheet.GridLink] = []
   let table_filters : Array[(Int32, Int32)] = []
   let relationships = self.package.relationships(part)
@@ -1240,10 +1464,10 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           }
           if name == "drawing" {
             let id = xlsx_rel_id(element, "id")
-            if id != "" && self.package.target(part, id) is Some(_) {
-              raise InvalidXlsxInput(
-                "xlsx: plain conversion does not support worksheet feature drawing",
-              )
+            drawing_target = if id == "" {
+              None
+            } else {
+              self.package.target(part, id).map(rel => rel.target)
             }
           }
           if name == "tableParts" && event.kind is Start(_) {
@@ -1271,18 +1495,38 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           if self.package.target(part, id) is Some(rel) {
             let area = self.xlsx_plain_table_area(
               rel.target,
+              table_rows,
+              table_room,
+              table_headers,
               table_style_cache,
               table_style_id_cache,
+              complex_rules,
+              complex_cache,
+              known_cache,
+              table_events,
               table_rules,
             )
-            if area < 0L || area > table_room {
-              raise InvalidXlsxInput(
-                "xlsx: plain conversion does not support worksheet feature tableParts",
+            if area == -3L {
+              ()
+            } else if area == -2L {
+              table_events.push(
+                (
+                  "tables:" + sheet_name,
+                  "sheet " +
+                  xlsx_go_quote(sheet_name, '"') +
+                  ": the tables cover more than 1048576 cells that are not in the file; the rest are drawn without their styles",
+                ),
               )
-            }
-            table_room -= area
-            for cell in self.xlsx_plain_table_filters(rel.target) {
-              table_filters.push(cell)
+            } else {
+              if area < 0L {
+                raise InvalidXlsxInput(
+                  "xlsx: plain conversion does not support worksheet feature tableParts",
+                )
+              }
+              table_room -= area
+              for cell in self.xlsx_plain_table_filters(rel.target) {
+                table_filters.push(cell)
+              }
             }
           }
         } else if extension_depth >= 0 &&
@@ -1405,7 +1649,51 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
       _ => ()
     }
   }
-  (links, has_conditional, auto_filter, table_filters, table_rules)
+  if drawing_target is Some(target) {
+    if !self.package.has(target) {
+      table_events.push(("", "drawing " + target + ": missing part " + target))
+    } else {
+      let empty = self.xlsx_empty_drawing(target) catch {
+        @xml.At(error~, span~) => {
+          let bytes = self.package.read(target) catch {
+            _ => raise InvalidXlsxInput("xlsx: unable to read drawing part")
+          }
+          let text = @utf8.decode_lossy(bytes[:], ignore_bom=true)
+          match
+            xlsx_go_xml_error(error, span, text, xlsx_xml_bom_bytes(bytes)) {
+            Some(reason) => {
+              table_events.push(
+                ("", "drawing " + target + ": " + target + ": " + reason),
+              )
+              true
+            }
+            None => false
+          }
+        }
+        _ => false
+      }
+      if !empty {
+        match self.xlsx_simple_picture(target, theme_colors) {
+          Some(found) =>
+            for (picture, hidden, fill, stroke, no_fill, dash) in found {
+              pictures.push(picture)
+              hidden_pictures.push(hidden)
+              shape_fills.push(fill)
+              shape_strokes.push(stroke)
+              shape_no_fills.push(no_fill)
+              shape_dashes.push(dash)
+            }
+          None =>
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion does not support worksheet feature drawing",
+            )
+        }
+      }
+    }
+  }
+  (
+    links, has_conditional, auto_filter, table_filters, complex_rules, table_rules,
+  )
 }
 
 ///|
@@ -1713,7 +2001,10 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// shrink-to-fit, indentation and center-across-selection.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// patterned row and column fills, complex borders and other features are
-/// rejected. Supported numeric conditional rules may apply a differential font,
+/// rejected. Up to 128 embedded browser-supported images per
+/// sheet are supported with bounded cell-anchor offsets, at most one GiB of image
+/// data in total, and row heights in quarter-point increments.
+/// Supported numeric conditional rules may apply a differential font,
 /// solid fill and border or be inactive. For blank-cell fills or borders,
 /// ranges are limited to 200,000 cells. Other conditional
 /// formats are rejected.
@@ -1769,10 +2060,27 @@ pub fn convert_plain_no_fonts(
   let mode = if data_mode == "default" { "" } else { data_mode }
   let warnings = workbook.warnings.copy()
   let grids : Array[@sheet.NamedGrid] = []
+  let picture_children : Array[Array[(Int32, Int32, Bytes)]] = []
   let mut counter = 0
   let mut warned_rtl = false
   let warned_sheets : Map[String, Bool] = Map([])
+  let warned_table_styles : Map[String, Bool] = Map([])
   let doc_language = metadata.language.get(0).unwrap_or("")
+  let mut visible_sheets = 0
+  let mut sheet_bytes = 0L
+  for ref in workbook.sheets {
+    if !ref.hidden {
+      visible_sheets += 1
+      sheet_bytes += workbook.package
+        .part_size(ref.part)
+        .unwrap_or(0)
+        .to_int64()
+    }
+  }
+  let batched = visible_sheets > 1 && sheet_bytes >= 2097152L
+  let tile_maps : Array[Map[String, Json]] = []
+  let mut pending = 0
+  let mut batch_bytes = 0L
   for index, ref in workbook.sheets {
     if ref.hidden {
       continue
@@ -1784,9 +2092,8 @@ pub fn convert_plain_no_fonts(
     }
     let number = index + 1
     let id = "sheet" + number.to_string()
-    let (drawn, geo, missing_formula_values) = workbook.xlsx_draw_plain_sheet(
-      ref, styles, locale, doc_language, theme_colors, shared_runs,
-    )
+    let table_events : Array[(String, String)] = []
+    let children : Array[(Int32, Int32, Bytes)] = []
     let (next, table_warnings) = workbook.store_sheet_tables(
       writer,
       ref.part,
@@ -1797,6 +2104,11 @@ pub fn convert_plain_no_fonts(
       counter,
       locale.number_locale,
     )
+    let (drawn, geo, missing_formula_values) = workbook.xlsx_draw_plain_sheet(
+      ref, styles, locale, doc_language, theme_colors, shared_runs, table_events,
+      writer, children,
+    )
+    picture_children.push(children)
     counter = next
     for warning in table_warnings {
       warnings.push(warning)
@@ -1818,6 +2130,14 @@ pub fn convert_plain_no_fonts(
       )
       warned_rtl = true
     }
+    for (key, warning) in table_events {
+      if key == "" {
+        warnings.push(warning)
+      } else if !warned_table_styles.contains(key) {
+        warned_table_styles[key] = true
+        warnings.push(warning)
+      }
+    }
     warned_sheets[ref.name] = true
     grids.push({
       id,
@@ -1826,8 +2146,39 @@ pub fn convert_plain_no_fonts(
       gridlines: geo.show_grid,
       frozen_columns: Int32::min(geo.frozen_columns, 16384),
     })
+    if batched {
+      let size = workbook.package.part_size(ref.part).unwrap_or(0).to_int64()
+      batch_bytes += Int64::min(size, 1048576L - batch_bytes)
+      if batch_bytes >= 1048576L {
+        while pending < grids.length() {
+          tile_maps.push(
+            @sheet.store_grid_parts(
+              writer,
+              grids[pending].grid,
+              picture_children[pending],
+            ),
+          )
+          pending += 1
+        }
+        batch_bytes = 0L
+      }
+    }
   }
-  @sheet.store_grids(writer, grids, !no_text_index)
+  if batched {
+    while pending < grids.length() {
+      tile_maps.push(
+        @sheet.store_grid_parts(
+          writer,
+          grids[pending].grid,
+          picture_children[pending],
+        ),
+      )
+      pending += 1
+    }
+    @sheet.store_grid_views(writer, grids, tile_maps, !no_text_index)
+  } else {
+    @sheet.store_grids(writer, grids, !no_text_index, picture_children~)
+  }
   { bdf: writer.write_single(), warnings, sheets: grids.length(), }
 }
 
@@ -1840,13 +2191,42 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   doc_language : String,
   theme_colors : Map[Int32, XlsxRgb],
   shared_runs : Array[XlsxPlainRun?],
+  table_events : Array[(String, String)],
+  writer : @core.DocumentWriter,
+  children : Array[(Int32, Int32, Bytes)],
 ) -> (@sheet.DrawnGrid, XlsxSheetGeometry, Int32) raise {
-  let (links, has_conditional, filter_range, table_filters, table_rules) = workbook.xlsx_check_plain_sheet(
-    ref.part,
-  )
   let (parsed, rich_cells) = workbook.xlsx_read_sheet_cells_with_runs(
     ref.part,
     shared_runs,
+  )
+  let mut rows = parsed.sorted_rows()
+  let table_headers : Array[(Int32, Int32, Int32, Int32, Int32)] = []
+  let pictures : Array[@sheet.GridPicture] = []
+  let hidden_pictures : Array[Bool] = []
+  let shape_fills : Array[UInt32?] = []
+  let shape_strokes : Array[(UInt32, Double)?] = []
+  let shape_no_fills : Array[Bool] = []
+  let shape_dashes : Array[String] = []
+  let (
+    links,
+    has_conditional,
+    filter_range,
+    table_filters,
+    complex_rules,
+    table_rules,
+  ) = workbook.xlsx_check_plain_sheet(
+    ref.part,
+    ref.name,
+    theme_colors,
+    rows,
+    table_headers,
+    table_events,
+    pictures,
+    hidden_pictures,
+    shape_fills,
+    shape_strokes,
+    shape_no_fills,
+    shape_dashes,
   )
   let mut styled_runs = false
   for _, columns in rich_cells {
@@ -1891,9 +2271,23 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   } else {
     input_styles
   }
-  let mut rows = parsed.sorted_rows()
   let notes = workbook.xlsx_plain_notes(ref.part)
   let geo = workbook.read_sheet_geometry(ref.part)
+  if !pictures.is_empty() {
+    let height = geo.default_row_height
+    if height > 0.0 && height * 4.0 != (height * 4.0).trunc() {
+      raise InvalidXlsxInput(
+        "xlsx: pictures with fractional row heights are not supported",
+      )
+    }
+    for row in rows {
+      if row.height >= 0.0 && row.height * 4.0 != (row.height * 4.0).trunc() {
+        raise InvalidXlsxInput(
+          "xlsx: pictures with fractional row heights are not supported",
+        )
+      }
+    }
+  }
   let (spans, region_rows, merge_regions) = xlsx_plain_spans(geo.merges)
   let center_across : Map[Int32, Map[Int32, Bool]] = Map([])
   for row in rows {
@@ -1927,12 +2321,20 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       base_borders = border || base_borders
     }
   }
-  let (row_count, col_count) = xlsx_initial_extent(parsed, geo, notes)
+  let extent_points = notes.copy()
+  for picture in pictures {
+    extent_points.push((picture.to_row, picture.to_column))
+  }
+  for (range, _, _, _, _, _, _, _, _, _, _, _, _) in table_rules {
+    extent_points.push((range.row_end.to_int(), range.column_end))
+  }
+  let (row_count, col_count) = xlsx_initial_extent(parsed, geo, extent_points)
   if has_conditional || styled_runs || has_table_style {
     rows = xlsx_normalize_conditional_styles(rows, styles.cell_formats.length())
   }
   if has_table_style {
     let matches : Map[Int32, Map[Int32, Map[Int32, Bool]]] = Map([])
+    let matched_choices : Map[Int32, Array[Int32]] = Map([])
     for row in rows {
       for cell in row.cells {
         let format = input_styles.cell_formats[cell.style]
@@ -1961,17 +2363,31 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             cell.column > range.column_end {
             continue
           }
-          let choice = xlsx_table_stripe_choice(
-            region,
-            origin,
-            range,
-            width,
-            extra_width,
-            overlay_end,
-            row.index,
-            cell.column,
-          )
-          let selected = if choice == 0 {
+          let choice = if region == 25 {
+            xlsx_complex_table_mask(
+              complex_rules[index],
+              row.index,
+              cell.column,
+            )
+          } else {
+            xlsx_table_stripe_choice(
+              region,
+              origin,
+              range,
+              width,
+              extra_width,
+              overlay_end,
+              row.index,
+              cell.column,
+            )
+          }
+          let selected = if region == 25 {
+            if choice != 0 {
+              id
+            } else {
+              -1
+            }
+          } else if choice == 0 {
             id
           } else if (region == 18 && choice >= 2) ||
             ((region == 23 || region == 24) && choice == 2) {
@@ -1985,12 +2401,21 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             row.index.to_int64() <= style_end &&
             cell.column >= style_col_start &&
             cell.column <= style_col_end {
-            let group_key = index * 4 + choice
+            let group_key = index * 8192 + choice
             let group = match matches.get(group_key) {
               Some(value) => value
               None => {
                 let value : Map[Int32, Map[Int32, Bool]] = Map([])
                 matches[group_key] = value
+                let choices = match matched_choices.get(index) {
+                  Some(existing) => existing
+                  None => {
+                    let existing : Array[Int32] = []
+                    matched_choices[index] = existing
+                    existing
+                  }
+                }
+                choices.push(choice)
                 value
               }
             }
@@ -2010,18 +2435,32 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     }
     for
       index, (_, id, _, _, _, _, region, _, _, extra_id, _, third_id, _) in table_rules {
-      for choice in 0..<4 {
-        if (
-            choice == 2 &&
-            region != 17 &&
-            region != 18 &&
-            region != 23 &&
-            region != 24
-          ) ||
-          (choice == 3 && region != 18) {
+      let choices = match matched_choices.get(index) {
+        Some(value) => value
+        None => []
+      }
+      choices.sort()
+      for choice in choices {
+        if region != 25 &&
+          (
+            (
+              choice == 2 &&
+              region != 17 &&
+              region != 18 &&
+              region != 23 &&
+              region != 24
+            ) ||
+            (choice == 3 && region != 18)
+          ) {
           continue
         }
-        let selected = if choice == 0 {
+        let selected = if region == 25 {
+          if choice != 0 {
+            id
+          } else {
+            -1
+          }
+        } else if choice == 0 {
           id
         } else if (region == 18 && choice >= 2) ||
           ((region == 23 || region == 24) && choice == 2) {
@@ -2029,11 +2468,22 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         } else {
           extra_id
         }
-        if selected >= 0 && matches.get(index * 4 + choice) is Some(matched) {
-          let diff = workbook.xlsx_table_effective_style(
-            id, extra_id, third_id, region, choice,
-          )
-          let font_diff : XlsxConditionalStyle = { ..diff, fill: None, }
+        if selected >= 0 && matches.get(index * 8192 + choice) is Some(matched) {
+          let diff = if region == 25 {
+            workbook.xlsx_complex_table_effective_style(
+              complex_rules[index],
+              choice,
+            )
+          } else {
+            workbook.xlsx_table_effective_style(
+              id, extra_id, third_id, region, choice,
+            )
+          }
+          let font_diff : XlsxConditionalStyle = {
+            ..diff,
+            fill: None,
+            border: None,
+          }
           rows = xlsx_apply_conditional_style(rows, styles, matched, font_diff)
         }
       }
@@ -2066,18 +2516,47 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       third_id,
       overlay_end,
     ) in table_rules {
-    for choice in 0..<4 {
-      if (
-          choice == 2 &&
-          region != 17 &&
-          region != 18 &&
-          region != 23 &&
-          region != 24
-        ) ||
-        (choice == 3 && region != 18) {
+    let choices : Array[Int32] = []
+    if region == 25 {
+      let seen : Map[Int32, Bool] = Map([])
+      let r0 = Int64::max(style_start, 0L).to_int()
+      let r1 = Int64::min(style_end, (row_count - 1).to_int64()).to_int()
+      let c0 = Int32::max(style_col_start, 0)
+      let c1 = Int32::min(style_col_end, col_count - 1)
+      if r0 <= r1 && c0 <= c1 {
+        for r in r0..<=r1 {
+          for c in c0..<=c1 {
+            let mask = xlsx_complex_table_mask(complex_rules[table_index], r, c)
+            if mask != 0 && !seen.contains(mask) {
+              seen[mask] = true
+              choices.push(mask)
+            }
+          }
+        }
+      }
+    } else {
+      choices.push(0)
+      choices.push(1)
+      choices.push(2)
+      choices.push(3)
+    }
+    for choice in choices {
+      if region != 25 &&
+        (
+          (
+            choice == 2 &&
+            region != 17 &&
+            region != 18 &&
+            region != 23 &&
+            region != 24
+          ) ||
+          (choice == 3 && region != 18)
+        ) {
         continue
       }
-      let id = if choice == 0 {
+      let id = if region == 25 {
+        base_id
+      } else if choice == 0 {
         base_id
       } else if (region == 18 && choice >= 2) ||
         ((region == 23 || region == 24) && choice == 2) {
@@ -2088,9 +2567,16 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       if id < 0 {
         continue
       }
-      let diff = workbook.xlsx_table_effective_style(
-        base_id, extra_id, third_id, region, choice,
-      )
+      let diff = if region == 25 {
+        workbook.xlsx_complex_table_effective_style(
+          complex_rules[table_index],
+          choice,
+        )
+      } else {
+        workbook.xlsx_table_effective_style(
+          base_id, extra_id, third_id, region, choice,
+        )
+      }
       if diff.fill is None {
         continue
       }
@@ -2117,9 +2603,13 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         for r in first_row..<=last_row {
           let columns : Map[Int32, Bool] = Map([])
           for c in first_col..<=last_col {
-            if xlsx_table_stripe_choice(
-                region, origin, range, width, extra_width, overlay_end, r, c,
-              ) !=
+            if (if region == 25 {
+                xlsx_complex_table_mask(complex_rules[table_index], r, c)
+              } else {
+                xlsx_table_stripe_choice(
+                  region, origin, range, width, extra_width, overlay_end, r, c,
+                )
+              }) !=
               choice {
               continue
             }
@@ -2170,16 +2660,24 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               cell.column > last_col {
               continue
             }
-            if xlsx_table_stripe_choice(
-                region,
-                origin,
-                range,
-                width,
-                extra_width,
-                overlay_end,
-                row.index,
-                cell.column,
-              ) !=
+            if (if region == 25 {
+                xlsx_complex_table_mask(
+                  complex_rules[table_index],
+                  row.index,
+                  cell.column,
+                )
+              } else {
+                xlsx_table_stripe_choice(
+                  region,
+                  origin,
+                  range,
+                  width,
+                  extra_width,
+                  overlay_end,
+                  row.index,
+                  cell.column,
+                )
+              }) !=
               choice {
               continue
             }
@@ -2260,10 +2758,14 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         strike: None,
         underline: None,
         color: None,
+        border: None,
       }
       rows = xlsx_apply_conditional_style(rows, styles, matched, fill_diff)
     }
   }
+  rows = workbook.xlsx_apply_table_borders(
+    rows, styles, geo, row_count, col_count, table_rules, complex_rules,
+  )
   if has_conditional {
     rows = workbook.xlsx_apply_plain_conditionals(
       ref.part,
@@ -2339,7 +2841,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let borders : Map[Int32, Map[Int32, @sheet.GridCellBorder]] = Map([])
   let diagonals : Map[Int32, Map[Int32, @sheet.GridCellDiagonal]] = Map([])
   let border_colors : Map[Int32, Map[Int32, Array[UInt32]]] = Map([])
-  let border_colors_by_weight : Map[Int32, XlsxRgb] = Map([])
+  let border_color_keys : Map[Int32, Map[Int32, Array[String]]] = Map([])
+  let diagonal_color_keys : Map[Int32, Map[Int32, String]] = Map([])
   let checked_styles : Map[Int32, Bool] = Map([])
   let format_cache : Map[Int32, Array[XlsxFormatSection]] = Map([])
   let color_cache : Map[Int32, UInt32] = Map([])
@@ -2456,7 +2959,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             theme_colors,
           )
           if weight != 0 {
-            xlsx_check_border_color(border_colors_by_weight, weight, color)
             let columns = match diagonals.get(row.index) {
               Some(columns) => columns
               None => {
@@ -2471,6 +2973,12 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               up: source_border.diagonal_up,
               down: source_border.diagonal_down,
             }
+            xlsx_record_diagonal_color_key(
+              diagonal_color_keys,
+              row.index,
+              cell.column,
+              color,
+            )
           }
         }
       }
@@ -2478,13 +2986,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         border.bottom != 0 ||
         border.left != 0 ||
         border.right != 0 {
-        let weights = [border.top, border.bottom, border.left, border.right]
-        for i, weight in weights {
-          if weight == 0 {
-            continue
-          }
-          xlsx_check_border_color(border_colors_by_weight, weight, colors[i])
-        }
         let columns = match borders.get(row.index) {
           Some(columns) => columns
           None => {
@@ -2528,6 +3029,12 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           }
         }
         row_colors[cell.column] = colors.map(color => color.rgba())
+        xlsx_record_border_color_keys(
+          border_color_keys,
+          row.index,
+          cell.column,
+          colors,
+        )
       }
       let fill_index = styles.cell_formats[format_index].fill
       if fill_index >= 0 && fill_index < styles.fills.length() {
@@ -3001,22 +3508,12 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let draw_cells = if base_fills || base_borders {
     xlsx_plain_base_paint(
       rows, cells, geo, styles, theme_colors, spans, region_rows, fills, borders,
-      border_colors, diagonals, border_colors_by_weight, row_count, col_count, base_borders,
+      border_colors, border_color_keys, diagonals, diagonal_color_keys, row_count,
+      col_count, base_borders,
     )
   } else {
     cells
   }
-  let table_headers = workbook
-    .read_sheet_tables(ref.part)
-    .map(table => {
-      (
-        table.range.row_start.to_int(),
-        table.range.row_end.to_int(),
-        table.range.column_start,
-        table.range.column_end,
-        table.header_rows,
-      )
-    })
   let drawn = @sheet.draw_sized_grid_no_fonts(
     draw_cells,
     geometry,
@@ -3031,6 +3528,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     borders~,
     spans~,
     border_colors~,
+    border_color_keys~,
+    diagonal_color_keys~,
     merge_regions~,
     east_asian_fonts~,
     wraps~,
@@ -3054,6 +3553,23 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     rich_base_sizes=run_base_sizes,
     table_headers~,
     table_filters~,
+    pictures~,
+    hidden_pictures~,
+    shape_fills~,
+    shape_strokes~,
+    shape_no_fills~,
+    shape_dashes~,
+    picture_writer=Some(writer),
+    picture_children=Some(children),
+    column_axis_default=Some(
+      Float::from_double(
+        if geo.default_column_width > 0.0 {
+          xlsx_col_width_points(geo.default_column_width, 7.0)
+        } else {
+          ((geo.base_column_width * 7.0 + 5.0) / 8.0).ceil() * 8.0 * 0.75
+        },
+      ),
+    ),
   ) catch {
     @sheet.InvalidArgument(message) => raise InvalidXlsxInput(message)
     error => raise error
@@ -3073,8 +3589,9 @@ fn xlsx_plain_base_paint(
   fills : Map[Int32, Map[Int32, @sheet.GridSolidFill]],
   borders : Map[Int32, Map[Int32, @sheet.GridCellBorder]],
   border_colors : Map[Int32, Map[Int32, Array[UInt32]]],
+  border_color_keys : Map[Int32, Map[Int32, Array[String]]],
   diagonals : Map[Int32, Map[Int32, @sheet.GridCellDiagonal]],
-  border_colors_by_weight : Map[Int32, XlsxRgb],
+  diagonal_color_keys : Map[Int32, Map[Int32, String]],
   row_count : Int32,
   col_count : Int32,
   base_borders : Bool,
@@ -3143,8 +3660,8 @@ fn xlsx_plain_base_paint(
       let index = if style >= styles.cell_formats.length() { 0 } else { style }
       if base_borders {
         xlsx_put_base_border(
-          styles, index, theme_colors, r, c, region, borders, border_colors, diagonals,
-          border_colors_by_weight,
+          styles, index, theme_colors, r, c, region, borders, border_colors, border_color_keys,
+          diagonals, diagonal_color_keys,
         )
       }
       let fill_index = styles.cell_formats[index].fill
@@ -3189,17 +3706,13 @@ fn xlsx_put_base_border(
   region : @sheet.GridMergeRegion?,
   borders : Map[Int32, Map[Int32, @sheet.GridCellBorder]],
   colors_by_row : Map[Int32, Map[Int32, Array[UInt32]]],
+  color_keys_by_row : Map[Int32, Map[Int32, Array[String]]],
   diagonals : Map[Int32, Map[Int32, @sheet.GridCellDiagonal]],
-  colors_by_weight : Map[Int32, XlsxRgb],
+  diagonal_color_keys : Map[Int32, Map[Int32, String]],
 ) -> Unit raise {
   let (border, colors) = xlsx_plain_border(styles, format, theme)
   let weights = [border.top, border.bottom, border.left, border.right]
   if weights.any(weight => weight != 0) {
-    for i, weight in weights {
-      if weight != 0 {
-        xlsx_check_border_color(colors_by_weight, weight, colors[i])
-      }
-    }
     let columns = match borders.get(row) {
       Some(columns) => columns
       None => {
@@ -3243,6 +3756,7 @@ fn xlsx_put_base_border(
       }
     }
     row_colors[col] = colors.map(color => color.rgba())
+    xlsx_record_border_color_keys(color_keys_by_row, row, col, colors)
   }
   let id = styles.cell_formats[format].border
   if id >= 0 && id < styles.borders.length() {
@@ -3254,7 +3768,6 @@ fn xlsx_put_base_border(
         theme,
       )
       if weight != 0 {
-        xlsx_check_border_color(colors_by_weight, weight, color)
         let columns = match diagonals.get(row) {
           Some(columns) => columns
           None => {
@@ -3269,6 +3782,7 @@ fn xlsx_put_base_border(
           up: source.diagonal_up,
           down: source.diagonal_down,
         }
+        xlsx_record_diagonal_color_key(diagonal_color_keys, row, col, color)
       }
     }
   }
@@ -3317,36 +3831,116 @@ fn xlsx_check_base_style(
 }
 
 ///|
-fn xlsx_check_border_color(
-  colors : Map[Int32, XlsxRgb],
-  weight : Int32,
-  color : XlsxRgb,
-) -> Unit raise {
-  if colors.get(weight) is Some(previous) {
-    if (
-        previous.red != color.red ||
-        previous.green != color.green ||
-        previous.blue != color.blue
-      ) &&
-      (!xlsx_plain_byte_color(previous) || !xlsx_plain_byte_color(color)) {
-      raise InvalidXlsxInput(
-        "xlsx: mixed border colors require 8-bit RGB components",
-      )
-    }
-  } else {
-    colors[weight] = color
+fn xlsx_go_color_component(value : Double) -> String {
+  let text = value.to_string()
+  if value == 0.0 || value.abs() >= 0.0001 || value.is_nan() || value.is_inf() {
+    return text
   }
+  let chars : Array[Char] = [ for c in text => c ]
+  let mut epos = -1
+  for i in 0..<chars.length() {
+    if chars[i] == 'e' || chars[i] == 'E' {
+      epos = i
+      break
+    }
+  }
+  let out = StringBuilder()
+  if epos >= 0 {
+    for i in 0..<epos {
+      out.write_char(chars[i])
+    }
+    out.write_char('e')
+    let mut start = epos + 1
+    if start < chars.length() && (chars[start] == '-' || chars[start] == '+') {
+      out.write_char(chars[start])
+      start += 1
+    } else {
+      out.write_char('+')
+    }
+    if chars.length() - start < 2 {
+      out.write_char('0')
+    }
+    for i in start..<chars.length() {
+      out.write_char(chars[i])
+    }
+    return out.to_string()
+  }
+  let mut point = -1
+  let mut first = -1
+  for i in 0..<chars.length() {
+    if chars[i] == '.' {
+      point = i
+    } else if point >= 0 && chars[i] != '0' && first < 0 {
+      first = i
+    }
+  }
+  if point < 0 || first < 0 {
+    return text
+  }
+  if chars[0] == '-' {
+    out.write_char('-')
+  }
+  out.write_char(chars[first])
+  if first + 1 < chars.length() {
+    out.write_char('.')
+    for i in (first + 1)..<chars.length() {
+      out.write_char(chars[i])
+    }
+  }
+  let exponent = first - point
+  out.write_string("e-")
+  if exponent < 10 {
+    out.write_char('0')
+  }
+  out.write_string(exponent.to_string())
+  out.to_string()
 }
 
 ///|
-fn xlsx_plain_byte_color(color : XlsxRgb) -> Bool {
-  for value in [color.red, color.green, color.blue] {
-    let scaled = value * 255.0
-    if (scaled - scaled.round()).abs() > 1.0e-9 {
-      return false
+fn xlsx_raw_border_color_key(color : XlsxRgb) -> String {
+  "{" +
+  xlsx_go_color_component(color.red) +
+  " " +
+  xlsx_go_color_component(color.green) +
+  " " +
+  xlsx_go_color_component(color.blue) +
+  "}"
+}
+
+///|
+fn xlsx_record_border_color_keys(
+  keys : Map[Int32, Map[Int32, Array[String]]],
+  row : Int32,
+  column : Int32,
+  colors : Array[XlsxRgb],
+) -> Unit {
+  let columns = match keys.get(row) {
+    Some(value) => value
+    None => {
+      let value : Map[Int32, Array[String]] = Map([])
+      keys[row] = value
+      value
     }
   }
-  true
+  columns[column] = colors.map(color => xlsx_raw_border_color_key(color))
+}
+
+///|
+fn xlsx_record_diagonal_color_key(
+  keys : Map[Int32, Map[Int32, String]],
+  row : Int32,
+  column : Int32,
+  color : XlsxRgb,
+) -> Unit {
+  let columns = match keys.get(row) {
+    Some(value) => value
+    None => {
+      let value : Map[Int32, String] = Map([])
+      keys[row] = value
+      value
+    }
+  }
+  columns[column] = xlsx_raw_border_color_key(color)
 }
 
 ///|

@@ -10,24 +10,51 @@ priv struct XlsxConditionalStyle {
 }
 
 ///|
+// Skip a duplicate table differential component; upstream keeps the first.
+fn xlsx_skip_table_differential(
+  reader : @xml.NamespaceReader,
+  empty : Bool,
+) -> Unit raise {
+  if empty {
+    return
+  }
+  let mut depth = 1
+  while depth > 0 {
+    match reader.read_event().kind {
+      Start(_) => depth += 1
+      End(_) => depth -= 1
+      Eof => raise InvalidXlsxInput("xlsx: unexpected EOF")
+      _ => ()
+    }
+  }
+}
+
+///|
 fn XlsxWorkbook::xlsx_conditional_style(
   self : XlsxWorkbook,
   wanted : Int32,
+  for_table~ : Bool = false,
+  source~ : String? = None,
 ) -> XlsxConditionalStyle raise {
-  let part = match self.package.relationship_of_type(self.part, "/styles") {
-    Some(rel) => rel.target
-    None =>
-      raise InvalidXlsxInput(
-        "xlsx: plain conversion does not support conditional formatting",
-      )
+  let text = match source {
+    Some(value) => value
+    None => {
+      let part = match self.package.relationship_of_type(self.part, "/styles") {
+        Some(rel) => rel.target
+        None =>
+          raise InvalidXlsxInput(
+            "xlsx: plain conversion does not support conditional formatting",
+          )
+      }
+      let bytes = self.package.read(part) catch {
+        _ =>
+          raise InvalidXlsxInput(
+            "xlsx: plain conversion does not support conditional formatting",
+          )
+      }
+      @utf8.decode_lossy(bytes[:], ignore_bom=true)
+    }
   }
-  let bytes = self.package.read(part) catch {
-    _ =>
-      raise InvalidXlsxInput(
-        "xlsx: plain conversion does not support conditional formatting",
-      )
-  }
-  let text = @utf8.decode_lossy(bytes[:], ignore_bom=true)
   if text.contains("<!ENTITY") {
     raise InvalidXlsxInput("xlsx: the part declares entities")
   }
@@ -59,7 +86,11 @@ fn XlsxWorkbook::xlsx_conditional_style(
         } else if depth == dxfs_depth && name == "dxf" {
           if index == wanted {
             if event.kind is Empty(_) {
-              xlsx_reject_conditional()
+              if for_table {
+                return result
+              } else {
+                xlsx_reject_conditional()
+              }
             }
             dxf_depth = depth + 1
           }
@@ -67,7 +98,11 @@ fn XlsxWorkbook::xlsx_conditional_style(
         } else if depth == dxf_depth {
           if name == "font" {
             if found_font {
-              xlsx_reject_conditional()
+              if !for_table {
+                xlsx_reject_conditional()
+              }
+              xlsx_skip_table_differential(reader, event.kind is Empty(_))
+              continue
             }
             found_font = true
             if event.kind is Start(_) {
@@ -75,7 +110,11 @@ fn XlsxWorkbook::xlsx_conditional_style(
             }
           } else if name == "fill" {
             if found_fill {
-              xlsx_reject_conditional()
+              if !for_table {
+                xlsx_reject_conditional()
+              }
+              xlsx_skip_table_differential(reader, event.kind is Empty(_))
+              continue
             }
             found_fill = true
             let fill = xlsx_read_fill(reader, event.kind is Empty(_))
@@ -96,18 +135,22 @@ fn XlsxWorkbook::xlsx_conditional_style(
             continue
           } else if name == "border" {
             if found_border {
-              xlsx_reject_conditional()
+              if !for_table {
+                xlsx_reject_conditional()
+              }
+              xlsx_skip_table_differential(reader, event.kind is Empty(_))
+              continue
             }
             found_border = true
             result.border = Some(
               xlsx_read_border(reader, element, event.kind is Empty(_)),
             )
             continue
-          } else {
+          } else if !for_table {
             xlsx_reject_conditional()
           }
         } else if depth == font_depth {
-          if event.kind is Start(_) {
+          if event.kind is Start(_) && !for_table {
             xlsx_reject_conditional()
           }
           match name {
@@ -116,7 +159,10 @@ fn XlsxWorkbook::xlsx_conditional_style(
             "strike" => result.strike = Some(xlsx_bool_or(element, "val", true))
             "u" => {
               let value = xlsx_attr(element, "val", "single")
-              if value != "single" && value != "double" && value != "none" {
+              if value != "single" &&
+                value != "double" &&
+                value != "none" &&
+                !for_table {
                 xlsx_reject_conditional()
               }
               result.underline = Some(if value == "none" { "" } else { value })
@@ -125,7 +171,7 @@ fn XlsxWorkbook::xlsx_conditional_style(
               let color = xlsx_color(element)
               result.color = if color.kind != 0 { Some(color) } else { None }
             }
-            _ => xlsx_reject_conditional()
+            _ => if !for_table { xlsx_reject_conditional() }
           }
         }
         if event.kind is Start(_) {
@@ -140,7 +186,7 @@ fn XlsxWorkbook::xlsx_conditional_style(
           font_depth = -1
         }
         if depth + 1 == dxf_depth {
-          if !found_font && !found_fill && !found_border {
+          if !found_font && !found_fill && !found_border && !for_table {
             xlsx_reject_conditional()
           }
           return result
@@ -303,4 +349,22 @@ fn xlsx_apply_conditional_style(
     result.push({ ..row, cells, })
   }
   result
+}
+
+///|
+// Table styles ignore differential number formats and other nonvisual fields.
+fn XlsxWorkbook::xlsx_table_differential_style(
+  self : XlsxWorkbook,
+  wanted : Int32,
+) -> XlsxConditionalStyle raise {
+  if wanted >= 1000000000 {
+    match xlsx_builtin_table_dxf(wanted - 1000000000) {
+      Some(xml) =>
+        self.xlsx_conditional_style(0, for_table=true, source=Some(xml))
+      None =>
+        raise InvalidXlsxInput("xlsx: unknown built-in table differential")
+    }
+  } else {
+    self.xlsx_conditional_style(wanted, for_table=true)
+  }
 }

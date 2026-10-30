@@ -109,6 +109,15 @@ pub fn sized_fallback_advance(
 
 ///|
 /// Draw unstyled cells in an already-sized sheet with fallback font metrics.
+/// Supplying pictures also requires a document writer for their image and
+/// drawing parts. `hidden_pictures`, when supplied, has one flag per picture.
+/// `shape_fills`, when supplied, has one optional color per drawing encoded as
+/// 0xRRGGBBAA; a color renders a filled rectangle instead of an image.
+/// `shape_strokes`, when supplied, pairs an optional RGBA color and width in
+/// points with each drawing. `shape_no_fills` marks rectangles without a fill.
+/// `shape_dashes` contains DrawingML preset dash names, or an empty string for
+/// a solid line. A caller that defers object storage may collect child parts in
+/// `picture_children` and pass them to `store_grids`.
 pub fn draw_sized_grid_no_fonts(
   rows : Array[SizedGridRow],
   geometry : GridGeometry,
@@ -123,6 +132,8 @@ pub fn draw_sized_grid_no_fonts(
   borders~ : Map[Int32, Map[Int32, GridCellBorder]] = Map([]),
   spans~ : Map[Int32, Map[Int32, Int32]] = Map([]),
   border_colors~ : Map[Int32, Map[Int32, Array[UInt32]]] = Map([]),
+  border_color_keys~ : Map[Int32, Map[Int32, Array[String]]] = Map([]),
+  diagonal_color_keys~ : Map[Int32, Map[Int32, String]] = Map([]),
   merge_regions~ : Array[GridMergeRegion] = [],
   east_asian_fonts~ : Map[Int32, Map[Int32, String]] = Map([]),
   wraps~ : Map[Int32, Map[Int32, Bool]] = Map([]),
@@ -141,6 +152,15 @@ pub fn draw_sized_grid_no_fonts(
   rich_base_sizes~ : Map[Int32, Map[Int32, Double]] = Map([]),
   table_headers~ : Array[(Int32, Int32, Int32, Int32, Int32)] = [],
   table_filters~ : Array[(Int32, Int32)] = [],
+  pictures~ : Array[GridPicture] = [],
+  hidden_pictures~ : Array[Bool] = [],
+  shape_fills~ : Array[UInt32?] = [],
+  shape_strokes~ : Array[(UInt32, Double)?] = [],
+  shape_no_fills~ : Array[Bool] = [],
+  shape_dashes~ : Array[String] = [],
+  picture_writer~ : @core.DocumentWriter? = None,
+  picture_children~ : Array[(Int32, Int32, Bytes)]? = None,
+  column_axis_default~ : Float? = None,
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -739,8 +759,8 @@ pub fn draw_sized_grid_no_fonts(
     }
   }
   context.sized_grid_borders(
-    rows, borders, border_colors, diagonals, spans, region_rows, merge_regions, col_positions,
-    row_positions, visible_columns,
+    rows, borders, border_colors, border_color_keys, diagonals, diagonal_color_keys,
+    spans, region_rows, merge_regions, col_positions, row_positions, visible_columns,
   )
   for (row, column) in notes {
     if row < 0 || row >= count || column < 0 || column >= visible_columns {
@@ -854,12 +874,96 @@ pub fn draw_sized_grid_no_fonts(
       )
     }
   }
+  if !hidden_pictures.is_empty() &&
+    hidden_pictures.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid picture visibility list")
+  }
+  if !shape_fills.is_empty() && shape_fills.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid shape fill list")
+  }
+  if !shape_strokes.is_empty() && shape_strokes.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid shape stroke list")
+  }
+  if !shape_no_fills.is_empty() && shape_no_fills.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid shape fill visibility list")
+  }
+  if !shape_dashes.is_empty() && shape_dashes.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid shape dash list")
+  }
+  if !pictures.is_empty() {
+    if pictures.length() > 128 {
+      raise InvalidArgument("sheet: too many pictures")
+    }
+    for position in row_positions {
+      if position.is_nan() ||
+        position.is_inf() ||
+        position * 4.0 != (position * 4.0).trunc() {
+        raise InvalidArgument(
+          "sheet: pictures with fractional row heights are not supported",
+        )
+      }
+    }
+    let writer = match picture_writer {
+      Some(writer) => writer
+      None => raise InvalidArgument("sheet: missing picture writer")
+    }
+    let mut room = 16384
+    for index, picture in pictures {
+      room -= context.paint_picture(
+        writer,
+        picture,
+        row_positions,
+        col_positions,
+        match column_axis_default {
+          Some(_) => col_positions[col_positions.length() - 1]
+          None => col_positions[visible_columns]
+        },
+        picture_children,
+        room,
+        shape_dash=if shape_dashes.is_empty() {
+          ""
+        } else {
+          shape_dashes[index]
+        },
+        shape_no_fill=if shape_no_fills.is_empty() {
+          false
+        } else {
+          shape_no_fills[index]
+        },
+        shape_stroke=if shape_strokes.is_empty() {
+          None
+        } else {
+          shape_strokes[index]
+        },
+        shape_fill=if shape_fills.is_empty() {
+          None
+        } else {
+          shape_fills[index]
+        },
+        hidden=if hidden_pictures.is_empty() {
+          false
+        } else {
+          hidden_pictures[index]
+        },
+      )
+    }
+  }
   let tiles = context.tiles.map(fn(tile) {
     { x: tile.x, y: tile.y, object: tile.object.encode(), drawn: tile.drawn, }
   })
+  let mut last_exception = 0
+  if column_axis_default is Some(default_size) {
+    let mut offset = 0
+    for run in all_columns {
+      offset += run.count
+      if run.size != default_size {
+        last_exception = offset
+      }
+    }
+  }
   let final_count = Int32::min(
     16384,
-    Int32::max(visible_columns, text_columns + 2),
+    Int32::max(last_exception, Int32::max(visible_columns, text_columns + 2)),
   )
   let columns : Array[Run] = []
   let mut remaining = final_count
@@ -900,7 +1004,9 @@ fn GridDrawContext::sized_grid_borders(
   rows : Array[SizedGridRow],
   borders : Map[Int32, Map[Int32, GridCellBorder]],
   border_colors : Map[Int32, Map[Int32, Array[UInt32]]],
+  border_color_keys : Map[Int32, Map[Int32, Array[String]]],
   diagonals : Map[Int32, Map[Int32, GridCellDiagonal]],
+  diagonal_color_keys : Map[Int32, Map[Int32, String]],
   spans : Map[Int32, Map[Int32, Int32]],
   region_rows : Map[Int32, Map[Int32, GridMergeRegion]],
   merge_regions : Array[GridMergeRegion],
@@ -931,6 +1037,10 @@ fn GridDrawContext::sized_grid_borders(
           add_sized_diagonal(
             diagonal_segments,
             values[column],
+            match diagonal_color_keys.get(index) {
+              Some(row_keys) => row_keys.get(column).unwrap_or("")
+              None => ""
+            },
             columns[column],
             row_positions[index],
             columns[column + 1],
@@ -961,7 +1071,13 @@ fn GridDrawContext::sized_grid_borders(
           Some(row_colors) => row_colors.get(column).unwrap_or([])
           None => []
         }
-        put_sized_borders(horizontal, vertical, index, column, border, colors)
+        let color_keys = match border_color_keys.get(index) {
+          Some(row_keys) => row_keys.get(column).unwrap_or([])
+          None => []
+        }
+        put_sized_borders(
+          horizontal, vertical, index, column, border, colors, color_keys,
+        )
       }
     }
   }
@@ -980,7 +1096,13 @@ fn GridDrawContext::sized_grid_borders(
               Some(row_colors) => row_colors.get(column).unwrap_or([])
               None => []
             }
-            put_sized_borders(horizontal, vertical, row, column, border, colors)
+            let color_keys = match border_color_keys.get(row) {
+              Some(row_keys) => row_keys.get(column).unwrap_or([])
+              None => []
+            }
+            put_sized_borders(
+              horizontal, vertical, row, column, border, colors, color_keys,
+            )
           }
         }
       }
@@ -992,6 +1114,10 @@ fn GridDrawContext::sized_grid_borders(
         add_sized_diagonal(
           diagonal_segments,
           diagonal,
+          match diagonal_color_keys.get(region.row_start) {
+            Some(row_keys) => row_keys.get(region.column_start).unwrap_or("")
+            None => ""
+          },
           columns[region.column_start],
           row_positions[region.row_start],
           columns[region.column_end + 1],
@@ -1006,6 +1132,7 @@ fn GridDrawContext::sized_grid_borders(
     columns,
     row_positions,
     diagonals=diagonal_segments,
+    xlsx_color_order=true,
   )
 }
 
@@ -1013,6 +1140,7 @@ fn GridDrawContext::sized_grid_borders(
 fn add_sized_diagonal(
   segments : Array[GridDiagonalSegment],
   diagonal : GridCellDiagonal,
+  color_key : String,
   x0 : Double,
   y0 : Double,
   x1 : Double,
@@ -1023,10 +1151,10 @@ fn add_sized_diagonal(
     color: diagonal.color,
   }
   if diagonal.down {
-    segments.push({ border, segment: { x0, y0, x1, y1, }, })
+    segments.push({ border, segment: { x0, y0, x1, y1, }, color_key, })
   }
   if diagonal.up {
-    segments.push({ border, segment: { x0, y0: y1, x1, y1: y0, }, })
+    segments.push({ border, segment: { x0, y0: y1, x1, y1: y0, }, color_key, })
   }
 }
 
@@ -1038,21 +1166,38 @@ fn put_sized_borders(
   column : Int32,
   border : GridCellBorder,
   colors : Array[UInt32],
+  color_keys : Array[String],
 ) -> Unit {
   let color = fn(i : Int32) { colors.get(i).unwrap_or(0x000000ffU) }
-  put_grid_edge(horizontal, row, column, {
-    weight: border.top,
-    color: color(0),
-  })
-  put_grid_edge(horizontal, row + 1, column, {
-    weight: border.bottom,
-    color: color(1),
-  })
-  put_grid_edge(vertical, row, column, { weight: border.left, color: color(2), })
-  put_grid_edge(vertical, row, column + 1, {
-    weight: border.right,
-    color: color(3),
-  })
+  let color_key = fn(i : Int32) { color_keys.get(i).unwrap_or("") }
+  put_grid_edge(
+    horizontal,
+    row,
+    column,
+    { weight: border.top, color: color(0), },
+    color_key=color_key(0),
+  )
+  put_grid_edge(
+    horizontal,
+    row + 1,
+    column,
+    { weight: border.bottom, color: color(1), },
+    color_key=color_key(1),
+  )
+  put_grid_edge(
+    vertical,
+    row,
+    column,
+    { weight: border.left, color: color(2), },
+    color_key=color_key(2),
+  )
+  put_grid_edge(
+    vertical,
+    row,
+    column + 1,
+    { weight: border.right, color: color(3), },
+    color_key=color_key(3),
+  )
 }
 
 ///|
