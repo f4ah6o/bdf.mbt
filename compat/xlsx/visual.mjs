@@ -6,6 +6,7 @@ import { render_bdf_sheet_region_async } from '/_build/js/debug/build/browser/br
 const cases = [
   ['row stripes, sizes 2 and default', 'plain-table-whole-paired-row-stripe-style-plain.json', 4],
   ['column stripes, sizes 2 and default', 'plain-table-whole-paired-column-stripe-style-plain.json', 4],
+  ['cell fill over data-row stripe', 'plain-table-whole-paired-row-stripe-style-plain.json', 74],
   ['row font and fill, cell style precedence', 'plain-table-whole-paired-row-stripe-style-mixed.json', 10],
   ['overlapping tables, row and column styles', 'plain-table-multi-whole-paired-stripe-style.json', 6],
 ];
@@ -25,13 +26,13 @@ try {
     const surface = document.createElement('div'); surface.className = 'surface';
     section.append(title, surface); document.querySelector('#host').append(section);
     if (mode === 'moon') {
-      await render_bdf_sheet_region_async(surface, data, 0, 0, 560, 145, 1);
+      await render_bdf_sheet_region_async(surface, data, 0, 0, 560, 115, 1);
     } else {
       const doc = await BdfDocument.open(new BufferSource(data));
-      const canvas = document.createElement('canvas'); canvas.width = 560; canvas.height = 145;
+      const canvas = document.createElement('canvas'); canvas.width = 560; canvas.height = 115;
       surface.append(canvas);
       await new PageRenderer(doc).renderSheet(canvas.getContext('2d'), doc.manifest.views[0],
-        { x: 0, y: 0, w: 560, h: 145 }, { scale: 1 });
+        { x: 0, y: 0, w: 560, h: 115 }, { scale: 1 });
     }
   }
   window.bdfStatus = 'ready';

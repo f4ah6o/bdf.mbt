@@ -40,7 +40,7 @@ try {
       await page.waitForFunction(() => window.bdfStatus === 'ready' || window.bdfStatus === 'error');
       const result = await page.evaluate(() => ({ status: window.bdfStatus, error: window.bdfError, count: document.querySelectorAll('canvas').length }));
       assert.equal(result.status, 'ready', result.error);
-      assert.equal(result.count, 4);
+      assert.equal(result.count, 5);
       const colors = await page.locator('canvas').evaluateAll(canvases => canvases.map(canvas => {
         const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
         let colored = 0;
@@ -67,11 +67,11 @@ try {
     assert.equal(before.width, after.width);
     assert.equal(before.height, after.height);
     for (const [name, png] of [['reference', before], [variant, after]]) {
-      for (let sample = 0; sample < 4; sample++) {
+      for (let sample = 0; sample < 5; sample++) {
         let colored = 0;
-        const top = 24 + sample * 169;
-        assert.ok(png.height >= top + 145, `${result.viewport}: ${name} case ${sample} is clipped vertically`);
-        for (let y = top; y < top + 145; y++) {
+        const top = 24 + sample * 139;
+        assert.ok(png.height >= top + 115, `${result.viewport}: ${name} case ${sample} is clipped vertically`);
+        for (let y = top; y < top + 115; y++) {
           for (let x = 8; x < Math.min(png.width, 568); x++) {
             const i = (y * png.width + x) * 4;
             if (png.data[i + 3] && Math.max(png.data[i], png.data[i + 1], png.data[i + 2]) - Math.min(png.data[i], png.data[i + 1], png.data[i + 2]) > 30) colored++;
