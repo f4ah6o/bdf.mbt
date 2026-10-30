@@ -6,6 +6,7 @@ BDF を保存
 Porting coverage
 BDF 文書
 CSV / TSV
+Excel
 フォント
 画像
 ビューアで開く

@@ -114,6 +114,7 @@ file.addEventListener('change', async () => {
 const samples = {
   bdf: ['./samples/upstream-demo.bdf', 'upstream-demo.bdf'],
   csv: ['./samples/people.csv', 'people.csv'],
+  xlsx: ['./samples/sales.xlsx', 'sales.xlsx'],
   image: ['./samples/illustration.svg', 'illustration.svg'],
   font: ['./samples/stix.ttf', 'stix.ttf'],
 };
@@ -126,7 +127,7 @@ for (const link of document.querySelectorAll('[data-sample]')) {
 }
 $('#sample').addEventListener('click', () => openSample('./samples/upstream-demo.bdf', 'upstream-demo.bdf'));
 $('#csv-sample').addEventListener('click', () => openSample('./samples/people.csv', 'people.csv'));
-view.addEventListener('change', () => { viewer.setView(view.value); viewer.stage.scrollTop = 0; viewer.stage.scrollLeft = 0; currentPage = 0; updatePage(); });
+view.addEventListener('change', () => { $('#search-status').textContent = ''; viewer.setView(view.value); viewer.stage.scrollTop = 0; viewer.stage.scrollLeft = 0; currentPage = 0; updatePage(); });
 $('#layout').addEventListener('change', event => { viewer.setLayout(event.target.value); viewer.scrollToPage(currentPage); updatePage(); });
 $('#zoom').addEventListener('change', event => { viewer.setZoom(Number(event.target.value)); viewer.scrollToPage(currentPage); });
 $('#previous').addEventListener('click', () => { currentPage--; updatePage(); viewer.scrollToPage(currentPage); });
