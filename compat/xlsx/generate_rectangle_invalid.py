@@ -3,7 +3,8 @@ from pathlib import Path
 root = Path(__file__).resolve().parent
 source = json.loads((root / 'simple-rectangle.json').read_text())[0]
 variants = {
-    'parallelogram': ('prst="rect"', 'prst="parallelogram"'),
+    'pentagon': ('prst="rect"', 'prst="pentagon"'),
+    'adjusted-parallelogram': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="parallelogram"><a:avLst><a:gd name="adj" fmla="val 10000"/></a:avLst></a:prstGeom>'),
     'adjusted-triangle': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="triangle"><a:avLst><a:gd name="adj" fmla="val 10000"/></a:avLst></a:prstGeom>'),
     'unknown-color': ('val="FF0000"', 'val="FF00ZZ"'),
     'color-transform': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:lumMod val="50000"/></a:srgbClr>'),

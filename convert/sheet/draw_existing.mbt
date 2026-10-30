@@ -115,8 +115,9 @@ pub fn sized_fallback_advance(
 /// 0xRRGGBBAA; a color renders a filled shape instead of an image.
 /// `shape_strokes`, when supplied, pairs an optional RGBA color and width in
 /// points with each drawing. `shape_no_fills` marks shapes without a fill.
-/// `shape_geometries` selects "rect", "ellipse", "diamond", "triangle" or
-/// "rtTriangle" per shape. An empty string or omitted list selects a rectangle.
+/// `shape_geometries` selects "rect", "ellipse", "diamond", "triangle",
+/// "rtTriangle", "parallelogram" or "trapezoid" per shape. An empty string
+/// or omitted list selects a rectangle.
 /// `shape_dashes` contains DrawingML preset dash names, or an empty string for
 /// a solid line. A caller that defers object storage may collect child parts in
 /// `picture_children` and pass them to `store_grids`.
