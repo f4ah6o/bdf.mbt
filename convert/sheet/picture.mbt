@@ -140,13 +140,13 @@ fn GridDrawContext::paint_picture(
   }
   if ![
       "", "rect", "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram",
-      "trapezoid", "homePlate", "chevron", "plus", "hexagon",
+      "trapezoid", "homePlate", "chevron", "plus", "hexagon", "octagon",
     ].contains(shape_geometry) {
     raise InvalidArgument("sheet: invalid shape geometry")
   }
   if [
       "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram", "trapezoid",
-      "homePlate", "chevron", "plus", "hexagon",
+      "homePlate", "chevron", "plus", "hexagon", "octagon",
     ].contains(shape_geometry) &&
     shape_fill is None &&
     !shape_no_fill {
@@ -157,7 +157,7 @@ fn GridDrawContext::paint_picture(
       value > 100000L ||
       ![
         "triangle", "parallelogram", "trapezoid", "homePlate", "chevron", "plus",
-        "hexagon",
+        "hexagon", "octagon",
       ].contains(shape_geometry) {
       raise InvalidArgument("sheet: invalid shape adjustment")
     }
@@ -398,6 +398,18 @@ fn GridDrawContext::paint_picture(
         draw_height / 2.0,
         draw_width / 2.0,
         draw_height,
+      ],
+    }
+  } else if shape_geometry == "octagon" {
+    let a = Double::min(shape_adjustment.unwrap_or(29289L).to_double(), 50000.0)
+    let x1 = Double::min(draw_width, draw_height) * a / 100000.0
+    let x2 = draw_width - x1
+    let y2 = draw_height - x1
+    {
+      verbs: b"\x00\x01\x01\x01\x01\x01\x01\x01\x04",
+      coordinates: [
+        0.0, x1, x1, 0.0, x2, 0.0, draw_width, x1, draw_width, y2, x2, draw_height,
+        x1, draw_height, 0.0, y2,
       ],
     }
   } else if shape_geometry == "hexagon" {

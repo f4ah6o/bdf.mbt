@@ -412,7 +412,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
           } else if name == "prstGeom" &&
             [
               "rect", "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram",
-              "trapezoid", "homePlate", "chevron", "plus", "hexagon",
+              "trapezoid", "homePlate", "chevron", "plus", "hexagon", "octagon",
             ].contains(xlsx_attr(element, "prst", "")) {
             if geometry {
               return None
@@ -626,7 +626,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
             is_shape &&
             [
               "triangle", "parallelogram", "trapezoid", "homePlate", "chevron", "plus",
-              "hexagon",
+              "hexagon", "octagon",
             ].contains(shape_geometry)
           )
         } else if depth == 6 && parent == "avLst" && parents[4] == "prstGeom" {
