@@ -965,8 +965,10 @@ fn XlsxWorkbook::xlsx_shape_theme_alphas(
             return None
           }
           let value = match xlsx_int(xlsx_attr(element, "val", "")) {
-            Some(value) if value <= 100000L &&
-              value >= (if name == "alphaOff" { -100000L } else { 0L }) => value
+            Some(value) if value <=
+              (if name == "alpha" { 100000L } else { 1000000L }) &&
+              value >= (if name == "alphaOff" { -1000000L } else { 0L }) =>
+              value
             _ => return None
           }
           result[slot] = xlsx_shape_apply_theme_alpha(
@@ -1216,8 +1218,8 @@ fn xlsx_shape_alpha_modifier(
     return None
   }
   let value = match xlsx_int(xlsx_attr(element, "val", "")) {
-    Some(value) if value <= 100000L &&
-      value >= (if name == "alphaOff" { -100000L } else { 0L }) => value
+    Some(value) if value <= (if name == "alpha" { 100000L } else { 1000000L }) &&
+      value >= (if name == "alphaOff" { -1000000L } else { 0L }) => value
     _ => return None
   }
   Some(xlsx_shape_apply_theme_alpha(name, previous, value))

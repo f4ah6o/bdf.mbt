@@ -81,3 +81,11 @@ test "theme opacity clamps after each modifier" {
   assert_eq(under, 0.0)
   assert_eq(xlsx_shape_apply_theme_alpha("alphaOff", under, 80000L), 0.8)
 }
+
+///|
+test "shape opacity modifiers support multipliers and offsets over 100 percent" {
+  assert_eq(xlsx_shape_apply_theme_alpha("alphaMod", 0.25, 150000L), 0.375)
+  assert_eq(xlsx_shape_apply_theme_alpha("alphaMod", 0.25, 1000000L), 1.0)
+  assert_eq(xlsx_shape_apply_theme_alpha("alphaOff", 0.25, 100001L), 1.0)
+  assert_eq(xlsx_shape_apply_theme_alpha("alphaOff", 0.75, -100001L), 0.0)
+}
