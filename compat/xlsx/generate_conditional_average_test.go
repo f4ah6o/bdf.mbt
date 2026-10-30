@@ -130,7 +130,7 @@ func TestCodexConditionalAverage(t *testing.T) {
 			rule = `<conditionalFormatting sqref="A1:F3"><cfRule type="aboveAverage" stdDev="0x1p1" dxfId="0"></cfRule></conditionalFormatting>`
 		}
 		if i == 262 {
-			rule += rule
+			rule += strings.Replace(rule, `dxfId="0"`, `dxfId="1"`, 1)
 		}
 		if i == 263 {
 			rule = strings.Replace(rule, `dxfId="0"`, `dxfId="5"`, 1)

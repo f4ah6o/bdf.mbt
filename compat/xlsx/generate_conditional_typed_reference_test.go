@@ -138,7 +138,7 @@ func TestCodexConditionalTypedReference(t *testing.T) {
 		}
 		if i == 166 {
 			rule = `<conditionalFormatting sqref="A1:A3"><cfRule type="cellIs" operator="notEqual" dxfId="0"><formula>$F$1</formula></cfRule></conditionalFormatting>`
-			rule += rule
+			rule += strings.Replace(rule, `dxfId="0"`, `dxfId="1"`, 1)
 		}
 		if i == 167 {
 			rule = `<conditionalFormatting sqref="A1:A3"><cfRule type="cellIs" operator="notEqual" dxfId="5"><formula>$F$1</formula></cfRule></conditionalFormatting>`

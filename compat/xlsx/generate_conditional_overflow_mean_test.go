@@ -130,7 +130,7 @@ func TestCodexConditionalOverflowMean(t *testing.T) {
 		}
 		if i == 262 {
 			rule = strings.Replace(rule, `stdDev="1e6"`, `stdDev="0"`, 1)
-			rule += rule
+			rule += strings.Replace(rule, `dxfId="0"`, `dxfId="1"`, 1)
 		}
 		if i == 263 {
 			rule = strings.Replace(rule, `stdDev="1e6"`, `stdDev="0"`, 1)

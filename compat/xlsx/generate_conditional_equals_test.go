@@ -132,7 +132,7 @@ func TestCodexConditionalEquals(t *testing.T) {
 			rule = `<conditionalFormatting sqref="A1:E3"><cfRule type="cellIs" operator="between" dxfId="0">` + bad[i-160] + `</cfRule></conditionalFormatting>`
 		}
 		if i == 166 {
-			rule += rule
+			rule += strings.Replace(rule, `dxfId="0"`, `dxfId="1"`, 1)
 		}
 		if i == 167 {
 			rule = strings.Replace(rule, `dxfId="0"`, `dxfId="5"`, 1)

@@ -133,7 +133,7 @@ func TestCodexConditionalAxisRef(t *testing.T) {
 		}
 		if i == 166 {
 			rule = strings.Replace(rule, `operator="between"`, `operator="notBetween"`, 1)
-			rule += rule
+			rule += strings.Replace(rule, `dxfId="0"`, `dxfId="1"`, 1)
 		}
 		if i == 167 {
 			rule = strings.Replace(rule, `operator="between"`, `operator="notBetween"`, 1)

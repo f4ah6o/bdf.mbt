@@ -133,7 +133,7 @@ func TestCodexConditionalMovingLiteral(t *testing.T) {
 		}
 		if i == 326 {
 			rule = `<conditionalFormatting sqref="A1:F3"><cfRule type="cellIs" operator="notEqual" dxfId="0"><formula>"unused"</formula></cfRule></conditionalFormatting>`
-			rule += rule
+			rule += strings.Replace(rule, `dxfId="0"`, `dxfId="1"`, 1)
 		}
 		if i == 327 {
 			rule = `<conditionalFormatting sqref="A1:F3"><cfRule type="cellIs" operator="notEqual" dxfId="5"><formula>"unused"</formula></cfRule></conditionalFormatting>`

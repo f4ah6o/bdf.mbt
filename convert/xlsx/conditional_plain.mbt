@@ -1,6 +1,6 @@
 ///|
-// Independent conditional ranges can each apply a differential style. Ranges
-// that overlap remain unsupported until rule priorities can be merged.
+// Conditional ranges can each apply a differential style. Overlapping ranges
+// need the same differential style until rule priorities can be merged.
 priv struct XlsxConditionalBlock {
   ranges : Array[XlsxRange]
   matched : Map[Int32, Map[Int32, Bool]]
@@ -538,7 +538,8 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
           if comparisons < 0 {
             xlsx_reject_conditional()
           }
-          if a.row_start <= b.row_end &&
+          if blocks[i].dxf_id != blocks[j].dxf_id &&
+            a.row_start <= b.row_end &&
             b.row_start <= a.row_end &&
             a.column_start <= b.column_end &&
             b.column_start <= a.column_end {
