@@ -863,23 +863,37 @@ fn xlsx_crop_svg_length(value : String) -> Double? {
         [b' ', b'\t', b'\r', b'\n', b'\x0c'].contains(data[i]) {
     i += 1
   }
-  if i + 2 <= data.length() &&
-    (data[i] == b'p' || data[i] == b'P') &&
-    (data[i + 1] == b'x' || data[i + 1] == b'X') {
-    i += 2
+  let unit_start = i
+  while i < data.length() &&
+        (
+          (data[i] >= b'a' && data[i] <= b'z') ||
+          (data[i] >= b'A' && data[i] <= b'Z')
+        ) {
+    i += 1
   }
+  let unit = @utf8.decode(data[unit_start:i]) catch { _ => return None }
   while i < data.length() &&
         [b' ', b'\t', b'\r', b'\n', b'\x0c'].contains(data[i]) {
     i += 1
   }
-  if i != data.length() ||
-    parsed <= 0.0 ||
-    parsed > 1000000.0 ||
-    parsed.is_nan() ||
-    parsed.is_inf() {
+  if i != data.length() || parsed <= 0.0 || parsed.is_nan() || parsed.is_inf() {
     return None
   }
-  Some(parsed)
+  let size = match unit.to_lower() {
+    "" | "px" => parsed
+    "pt" => parsed * (96.0 / 72.0)
+    "pc" | "em" => parsed * 16.0
+    "in" => parsed * 96.0
+    "cm" => parsed * (96.0 / 2.54)
+    "mm" => parsed * (96.0 / 25.4)
+    "q" => parsed * (96.0 / 101.6)
+    "ex" => parsed * 8.0
+    _ => return None
+  }
+  if size > 1000000.0 || size.is_inf() {
+    return None
+  }
+  Some(size)
 }
 
 ///|
