@@ -415,6 +415,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
               "rect", "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram",
               "trapezoid", "homePlate", "chevron", "plus", "hexagon", "octagon",
               "roundRect", "flowChartProcess", "flowChartDecision", "flowChartExtract",
+              "flowChartMerge",
             ].contains(xlsx_attr(element, "prst", "")) {
             if geometry {
               return None

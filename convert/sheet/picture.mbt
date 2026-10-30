@@ -141,12 +141,13 @@ fn GridDrawContext::paint_picture(
   if ![
       "", "rect", "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram",
       "trapezoid", "homePlate", "chevron", "plus", "hexagon", "octagon", "roundRect",
+      "flowChartMerge",
     ].contains(shape_geometry) {
     raise InvalidArgument("sheet: invalid shape geometry")
   }
   if [
       "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram", "trapezoid",
-      "homePlate", "chevron", "plus", "hexagon", "octagon", "roundRect",
+      "homePlate", "chevron", "plus", "hexagon", "octagon", "roundRect", "flowChartMerge",
     ].contains(shape_geometry) &&
     shape_fill is None &&
     !shape_no_fill {
@@ -506,6 +507,11 @@ fn GridDrawContext::paint_picture(
         },
         draw_height,
       ],
+    }
+  } else if shape_geometry == "flowChartMerge" {
+    {
+      verbs: b"\x00\x01\x01\x04",
+      coordinates: [0.0, 0.0, draw_width, 0.0, draw_width / 2.0, draw_height],
     }
   } else if shape_geometry == "triangle" || shape_geometry == "rtTriangle" {
     {
