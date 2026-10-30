@@ -65,14 +65,14 @@ fn xlsx_match_moving_conditionals(
         let delta_row = r - ranges[0].row_start.to_int()
         let delta_col = c - ranges[0].column_start
         let lo = if reference1 == "" {
-          Some({ number: threshold, text: literal1, })
+          Some({ number: threshold, text: literal1, valid: true, })
         } else {
           xlsx_conditional_shifted_reference(
             reference1, rows, delta_row, delta_col,
           )
         }
         let hi = if reference2 == "" {
-          Some({ number: threshold_end, text: literal2, })
+          Some({ number: threshold_end, text: literal2, valid: true, })
         } else {
           xlsx_conditional_shifted_reference(
             reference2, rows, delta_row, delta_col,
@@ -87,7 +87,7 @@ fn xlsx_match_moving_conditionals(
           }
           None => {
             xlsx_reject_conditional()
-            { number: 0.0, text: None, }
+            { number: 0.0, text: None, valid: false, }
           }
         }
         let hi = match hi {
@@ -99,8 +99,11 @@ fn xlsx_match_moving_conditionals(
           }
           None => {
             xlsx_reject_conditional()
-            { number: 0.0, text: None, }
+            { number: 0.0, text: None, valid: false, }
           }
+        }
+        if !lo.valid || !hi.valid {
+          continue
         }
         let applies = if lo.text is Some(_) || hi.text is Some(_) {
           let text : String? = if kind == 0 || kind == 1 {

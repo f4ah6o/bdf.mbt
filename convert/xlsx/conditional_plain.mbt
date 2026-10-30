@@ -29,6 +29,8 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   let mut reference2 = ""
   let mut literal1 : String? = None
   let mut literal2 : String? = None
+  let mut invalid1 = false
+  let mut invalid2 = false
   let mut moving_reference = false
   let mut any_moving_reference = false
   let blank_positions : Map[Int32, Map[Int32, Bool]] = Map([])
@@ -128,6 +130,8 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
           reference2 = ""
           literal1 = None
           literal2 = None
+          invalid1 = false
+          invalid2 = false
           moving_reference = false
         } else if depth == rule_depth {
           if name != "formula" || event.kind is Empty(_) {
@@ -230,8 +234,10 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
                   Some(value) => {
                     if formula_count == 1 {
                       literal1 = value.text
+                      invalid1 = !value.valid
                     } else {
                       literal2 = value.text
+                      invalid2 = !value.valid
                     }
                     value.number
                   }
@@ -281,6 +287,8 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
           }
           blank_matches = if rule_type == "cellIs" {
             if moving_reference {
+              false
+            } else if invalid1 || invalid2 {
               false
             } else if literal1 is Some(_) || literal2 is Some(_) {
               xlsx_conditional_literal_matches(
@@ -345,7 +353,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
                 xlsx_reject_conditional()
               }
             }
-            if moving_reference {
+            if moving_reference || invalid1 || invalid2 {
               continue
             }
             for row in rows {
@@ -604,7 +612,7 @@ fn xlsx_conditional_shifted_reference(
   // The formula evaluator used for negation rejects references outside the
   // worksheet, while a plain reference is handled directly as a blank.
   if negative && (row < 0 || row >= 1048576 || column < 0 || column >= 16384) {
-    return None
+    return Some({ number: 0.0, text: None, valid: false, })
   }
   for candidate in rows {
     if candidate.index != row {
@@ -615,7 +623,7 @@ fn xlsx_conditional_shifted_reference(
         continue
       }
       if cell.kind == 0 {
-        return Some({ number: 0.0, text: None, })
+        return Some({ number: 0.0, text: None, valid: true, })
       }
       if cell.kind == 1 {
         return Some({
@@ -625,43 +633,50 @@ fn xlsx_conditional_shifted_reference(
             cell.number
           },
           text: None,
+          valid: true,
         })
       }
       if negative && cell.kind == 3 {
-        return Some({ number: -cell.number, text: None, })
+        return Some({ number: -cell.number, text: None, valid: true, })
       }
       if negative && cell.kind == 2 {
         let source = xlsx_trim(cell.text)
         // Go also accepts hexadecimal floats, which MoonBit does not parse.
-        if source.contains("x") ||
-          source.contains("X") ||
-          source.contains("p") ||
-          source.contains("P") {
+        let lower = source.to_lower()
+        if lower.has_prefix("0x") ||
+          lower.has_prefix("+0x") ||
+          lower.has_prefix("-0x") {
           return None
         }
-        let value = @string.parse_double(source) catch { _ => return None }
+        let value = @string.parse_double(source) catch {
+          _ => return Some({ number: 0.0, text: None, valid: false, })
+        }
         if value.is_nan() || value.is_inf() {
           return None
         }
-        return Some({ number: -value, text: None, })
+        return Some({ number: -value, text: None, valid: true, })
       }
       if negative {
+        if cell.kind == 4 {
+          return Some({ number: 0.0, text: None, valid: false, })
+        }
         return None
       }
       if cell.kind == 3 {
         return Some({
           number: 0.0,
           text: Some(if cell.number != 0.0 { "TRUE" } else { "FALSE" }),
+          valid: true,
         })
       }
       if cell.kind == 2 || cell.kind == 4 {
-        return Some({ number: 0.0, text: Some(cell.text), })
+        return Some({ number: 0.0, text: Some(cell.text), valid: true, })
       }
       return None
     }
-    return Some({ number: 0.0, text: None, })
+    return Some({ number: 0.0, text: None, valid: true, })
   }
-  Some({ number: 0.0, text: None, })
+  Some({ number: 0.0, text: None, valid: true, })
 }
 
 ///|

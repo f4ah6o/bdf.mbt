@@ -61,7 +61,8 @@ Negated numeric-reference cases use `generate_conditional_negative_ref_test.go`
 and `TestCodexConditionalNegativeRef`.
 Negated blank and boolean references use `generate_conditional_negative_blank_test.go`
 and `TestCodexConditionalNegativeBlank`. Negated numeric strings use
-`generate_conditional_negative_string_test.go` and `TestCodexConditionalNegativeString`.
+`generate_conditional_negative_string_test.go` and `TestCodexConditionalNegativeString`. Invalid computed references use
+`generate_conditional_invalid_reference_test.go` and `TestCodexConditionalInvalidReference`.
 Blank and error predicates use `generate_conditional_predicates_test.go`
 and `TestCodexConditionalPredicates`.
 Text predicates use `generate_conditional_text_test.go` and

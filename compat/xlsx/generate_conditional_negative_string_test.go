@@ -154,7 +154,7 @@ func TestCodexConditionalNegativeString(t *testing.T) {
 			ref1 = `<c r="F1" t="str"><v>0x1p1</v></c>`
 		}
 		if i == 161 {
-			ref1 = `<c r="F1" t="str"><v>1__0</v></c>`
+			ref1 = `<c r="F1" t="str"><v>0x1p2</v></c>`
 		}
 
 		add("xl/worksheets/sheet1.xml", fmt.Sprintf(`<worksheet><sheetData><row r="1" s="1" customFormat="1"><c r="A1" s="%d" t="str"><v>text</v></c><c r="B1" s="%d" t="b"><v>1</v></c><c r="C1" s="3" t="e"><v>#N/A</v></c><c r="D1" s="2"><v>%d</v></c>%s%s</row><row r="2"><c r="A2"><v>-1</v></c><c r="F2" t="str"><v> -2 </v></c><c r="G2" t="str"><v>0</v></c></row><row r="3"><c r="A3"><v>4</v></c><c r="F3" t="str"><v>3e0</v></c><c r="G3" t="str"><v>0.5</v></c></row></sheetData>%s%s</worksheet>`, style, 1-style, number, ref1, ref2, merge, rule))

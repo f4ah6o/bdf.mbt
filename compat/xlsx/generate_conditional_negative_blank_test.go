@@ -128,7 +128,7 @@ func TestCodexConditionalNegativeBlank(t *testing.T) {
 		}
 		rule := fmt.Sprintf(`<conditionalFormatting sqref="%s"><cfRule type="cellIs" operator="%s" dxfId="0"><formula> = %s </formula><formula>%s</formula></cfRule></conditionalFormatting>`, rangeRef, op, expr1, expr2)
 		if i >= 160 && i < 166 {
-			bad := []string{"-$C$1", "-$A$1", "$F$$1", "$A$0", "A1+1", "SUM(A1:A2)"}
+			bad := []string{"SUM(A1:A2)", "A1+1", "$F$$1", "$A$0", "A1+1", "SUM(A1:A2)"}
 			rule = `<conditionalFormatting sqref="` + rangeRef + `"><cfRule type="cellIs" operator="between" dxfId="0"><formula>` + bad[i-160] + `</formula><formula>$G$1</formula></cfRule></conditionalFormatting>`
 		}
 		if i == 166 {
@@ -171,7 +171,7 @@ func TestCodexConditionalNegativeBlank(t *testing.T) {
 		add("xl/workbook.xml", `<workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet" r:id="r1"/></sheets></workbook>`)
 		add("xl/_rels/workbook.xml.rels", `<Relationships><Relationship Id="r1" Type="x/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="r2" Type="x/styles" Target="styles.xml"/></Relationships>`)
 		add("xl/styles.xml", `<styleSheet><dxfs><dxf><font><b/></font></dxf></dxfs></styleSheet>`)
-		add("xl/worksheets/sheet1.xml", `<worksheet><sheetData><row r="2"><c r="B2"><v>1</v></c></row></sheetData><conditionalFormatting sqref="B2 A1"><cfRule type="cellIs" operator="equal" dxfId="0"><formula>-A1</formula></cfRule></conditionalFormatting></worksheet>`)
+		add("xl/worksheets/sheet1.xml", `<worksheet><sheetData><row r="2"><c r="B2"><v>1</v></c></row></sheetData><conditionalFormatting sqref="B2 A1"><cfRule type="cellIs" operator="equal" dxfId="0"><formula>SUM(A1:A2)</formula></cfRule></conditionalFormatting></worksheet>`)
 		if err := z.Close(); err != nil {
 			t.Fatal(err)
 		}

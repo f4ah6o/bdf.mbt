@@ -2,6 +2,7 @@
 struct XlsxConditionalValue {
   number : Double
   text : String?
+  valid : Bool
 }
 
 ///|
