@@ -785,6 +785,8 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   part : String,
   style_cache : Map[String, Bool],
   style_id_cache : Map[String, (Int32, Int32, Int64, Int32, Int64, Int32)],
+  complex_rules : Map[Int32, XlsxComplexTable],
+  complex_cache : Map[String, XlsxComplexStyle?],
   table_rules : Array[
     (
       XlsxRange,
@@ -828,6 +830,7 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   let mut depth = 0
   let mut style_info_seen = false
   let mut style_rule = -1
+  let mut complex_style : XlsxComplexStyle? = None
   let mut selected_region = 0
   let mut selected_width = 1L
   let mut other_rule = -1
@@ -878,7 +881,26 @@ fn XlsxWorkbook::xlsx_plain_table_area(
               third_rule = last
               other_width = extra_width
               if style_rule < 0 {
-                return -1L
+                complex_style = match complex_cache.get(style) {
+                  Some(value) => value
+                  None => {
+                    let value = self.xlsx_complex_table_style(style)
+                    complex_cache[style] = value
+                    value
+                  }
+                }
+                match complex_style {
+                  Some(value) => {
+                    for id in value.ids {
+                      if id >= 0 {
+                        style_rule = id
+                        break
+                      }
+                    }
+                    selected_region = 25
+                  }
+                  None => return -1L
+                }
               }
             }
           }
@@ -1029,6 +1051,18 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   } else {
     stripe_origin - 1L
   }
+  if complex_style is Some(style) {
+    complex_rules[table_rules.length()] = {
+      style,
+      range,
+      header: parsed_table.header_rows,
+      totals: parsed_table.totals_rows,
+      first_column,
+      last_column,
+      row_stripes,
+      column_stripes,
+    }
+  }
   table_rules.push(
     (
       range,
@@ -1156,6 +1190,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   Bool,
   XlsxRange?,
   Array[(Int32, Int32)],
+  Map[Int32, XlsxComplexTable],
   Array[
     (
       XlsxRange,
@@ -1196,6 +1231,8 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut extension_depth = -1
   let mut table_depth = -1
   let mut table_room = 200000L
+  let complex_rules : Map[Int32, XlsxComplexTable] = Map([])
+  let complex_cache : Map[String, XlsxComplexStyle?] = Map([])
   let table_style_cache : Map[String, Bool] = Map([])
   let table_style_id_cache : Map[
     String,
@@ -1273,6 +1310,8 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
               rel.target,
               table_style_cache,
               table_style_id_cache,
+              complex_rules,
+              complex_cache,
               table_rules,
             )
             if area < 0L || area > table_room {
@@ -1405,7 +1444,9 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
       _ => ()
     }
   }
-  (links, has_conditional, auto_filter, table_filters, table_rules)
+  (
+    links, has_conditional, auto_filter, table_filters, complex_rules, table_rules,
+  )
 }
 
 ///|
@@ -1841,9 +1882,14 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   theme_colors : Map[Int32, XlsxRgb],
   shared_runs : Array[XlsxPlainRun?],
 ) -> (@sheet.DrawnGrid, XlsxSheetGeometry, Int32) raise {
-  let (links, has_conditional, filter_range, table_filters, table_rules) = workbook.xlsx_check_plain_sheet(
-    ref.part,
-  )
+  let (
+    links,
+    has_conditional,
+    filter_range,
+    table_filters,
+    complex_rules,
+    table_rules,
+  ) = workbook.xlsx_check_plain_sheet(ref.part)
   let (parsed, rich_cells) = workbook.xlsx_read_sheet_cells_with_runs(
     ref.part,
     shared_runs,
@@ -1933,6 +1979,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   }
   if has_table_style {
     let matches : Map[Int32, Map[Int32, Map[Int32, Bool]]] = Map([])
+    let matched_choices : Map[Int32, Array[Int32]] = Map([])
     for row in rows {
       for cell in row.cells {
         let format = input_styles.cell_formats[cell.style]
@@ -1961,17 +2008,31 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             cell.column > range.column_end {
             continue
           }
-          let choice = xlsx_table_stripe_choice(
-            region,
-            origin,
-            range,
-            width,
-            extra_width,
-            overlay_end,
-            row.index,
-            cell.column,
-          )
-          let selected = if choice == 0 {
+          let choice = if region == 25 {
+            xlsx_complex_table_mask(
+              complex_rules[index],
+              row.index,
+              cell.column,
+            )
+          } else {
+            xlsx_table_stripe_choice(
+              region,
+              origin,
+              range,
+              width,
+              extra_width,
+              overlay_end,
+              row.index,
+              cell.column,
+            )
+          }
+          let selected = if region == 25 {
+            if choice != 0 {
+              id
+            } else {
+              -1
+            }
+          } else if choice == 0 {
             id
           } else if (region == 18 && choice >= 2) ||
             ((region == 23 || region == 24) && choice == 2) {
@@ -1985,12 +2046,21 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             row.index.to_int64() <= style_end &&
             cell.column >= style_col_start &&
             cell.column <= style_col_end {
-            let group_key = index * 4 + choice
+            let group_key = index * 8192 + choice
             let group = match matches.get(group_key) {
               Some(value) => value
               None => {
                 let value : Map[Int32, Map[Int32, Bool]] = Map([])
                 matches[group_key] = value
+                let choices = match matched_choices.get(index) {
+                  Some(existing) => existing
+                  None => {
+                    let existing : Array[Int32] = []
+                    matched_choices[index] = existing
+                    existing
+                  }
+                }
+                choices.push(choice)
                 value
               }
             }
@@ -2010,18 +2080,32 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     }
     for
       index, (_, id, _, _, _, _, region, _, _, extra_id, _, third_id, _) in table_rules {
-      for choice in 0..<4 {
-        if (
-            choice == 2 &&
-            region != 17 &&
-            region != 18 &&
-            region != 23 &&
-            region != 24
-          ) ||
-          (choice == 3 && region != 18) {
+      let choices = match matched_choices.get(index) {
+        Some(value) => value
+        None => []
+      }
+      choices.sort()
+      for choice in choices {
+        if region != 25 &&
+          (
+            (
+              choice == 2 &&
+              region != 17 &&
+              region != 18 &&
+              region != 23 &&
+              region != 24
+            ) ||
+            (choice == 3 && region != 18)
+          ) {
           continue
         }
-        let selected = if choice == 0 {
+        let selected = if region == 25 {
+          if choice != 0 {
+            id
+          } else {
+            -1
+          }
+        } else if choice == 0 {
           id
         } else if (region == 18 && choice >= 2) ||
           ((region == 23 || region == 24) && choice == 2) {
@@ -2029,10 +2113,17 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         } else {
           extra_id
         }
-        if selected >= 0 && matches.get(index * 4 + choice) is Some(matched) {
-          let diff = workbook.xlsx_table_effective_style(
-            id, extra_id, third_id, region, choice,
-          )
+        if selected >= 0 && matches.get(index * 8192 + choice) is Some(matched) {
+          let diff = if region == 25 {
+            workbook.xlsx_complex_table_effective_style(
+              complex_rules[index],
+              choice,
+            )
+          } else {
+            workbook.xlsx_table_effective_style(
+              id, extra_id, third_id, region, choice,
+            )
+          }
           let font_diff : XlsxConditionalStyle = { ..diff, fill: None, }
           rows = xlsx_apply_conditional_style(rows, styles, matched, font_diff)
         }
@@ -2066,18 +2157,47 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       third_id,
       overlay_end,
     ) in table_rules {
-    for choice in 0..<4 {
-      if (
-          choice == 2 &&
-          region != 17 &&
-          region != 18 &&
-          region != 23 &&
-          region != 24
-        ) ||
-        (choice == 3 && region != 18) {
+    let choices : Array[Int32] = []
+    if region == 25 {
+      let seen : Map[Int32, Bool] = Map([])
+      let r0 = Int64::max(style_start, 0L).to_int()
+      let r1 = Int64::min(style_end, (row_count - 1).to_int64()).to_int()
+      let c0 = Int32::max(style_col_start, 0)
+      let c1 = Int32::min(style_col_end, col_count - 1)
+      if r0 <= r1 && c0 <= c1 {
+        for r in r0..<=r1 {
+          for c in c0..<=c1 {
+            let mask = xlsx_complex_table_mask(complex_rules[table_index], r, c)
+            if mask != 0 && !seen.contains(mask) {
+              seen[mask] = true
+              choices.push(mask)
+            }
+          }
+        }
+      }
+    } else {
+      choices.push(0)
+      choices.push(1)
+      choices.push(2)
+      choices.push(3)
+    }
+    for choice in choices {
+      if region != 25 &&
+        (
+          (
+            choice == 2 &&
+            region != 17 &&
+            region != 18 &&
+            region != 23 &&
+            region != 24
+          ) ||
+          (choice == 3 && region != 18)
+        ) {
         continue
       }
-      let id = if choice == 0 {
+      let id = if region == 25 {
+        base_id
+      } else if choice == 0 {
         base_id
       } else if (region == 18 && choice >= 2) ||
         ((region == 23 || region == 24) && choice == 2) {
@@ -2088,9 +2208,16 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       if id < 0 {
         continue
       }
-      let diff = workbook.xlsx_table_effective_style(
-        base_id, extra_id, third_id, region, choice,
-      )
+      let diff = if region == 25 {
+        workbook.xlsx_complex_table_effective_style(
+          complex_rules[table_index],
+          choice,
+        )
+      } else {
+        workbook.xlsx_table_effective_style(
+          base_id, extra_id, third_id, region, choice,
+        )
+      }
       if diff.fill is None {
         continue
       }
@@ -2117,9 +2244,13 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         for r in first_row..<=last_row {
           let columns : Map[Int32, Bool] = Map([])
           for c in first_col..<=last_col {
-            if xlsx_table_stripe_choice(
-                region, origin, range, width, extra_width, overlay_end, r, c,
-              ) !=
+            if (if region == 25 {
+                xlsx_complex_table_mask(complex_rules[table_index], r, c)
+              } else {
+                xlsx_table_stripe_choice(
+                  region, origin, range, width, extra_width, overlay_end, r, c,
+                )
+              }) !=
               choice {
               continue
             }
@@ -2170,16 +2301,24 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               cell.column > last_col {
               continue
             }
-            if xlsx_table_stripe_choice(
-                region,
-                origin,
-                range,
-                width,
-                extra_width,
-                overlay_end,
-                row.index,
-                cell.column,
-              ) !=
+            if (if region == 25 {
+                xlsx_complex_table_mask(
+                  complex_rules[table_index],
+                  row.index,
+                  cell.column,
+                )
+              } else {
+                xlsx_table_stripe_choice(
+                  region,
+                  origin,
+                  range,
+                  width,
+                  extra_width,
+                  overlay_end,
+                  row.index,
+                  cell.column,
+                )
+              }) !=
               choice {
               continue
             }
