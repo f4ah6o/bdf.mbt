@@ -45,6 +45,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   let mut average_equal = false
   let mut average_stddev = 0.0
   let mut average_threshold : Double? = None
+  let mut duplicate_counts : Map[String, Int32] = Map([])
   let mut blank_matches = false
   let mut any_blank_matches = false
   let matched : Map[Int32, Map[Int32, Bool]] = Map([])
@@ -91,7 +92,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             ![
               "cellIs", "containsBlanks", "notContainsBlanks", "containsErrors",
               "notContainsErrors", "containsText", "notContainsText", "beginsWith",
-              "endsWith", "top10", "aboveAverage",
+              "endsWith", "top10", "aboveAverage", "duplicateValues", "uniqueValues",
             ].contains(rule_type) ||
             (
               rule_type == "cellIs" &&
@@ -264,6 +265,11 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
               rows, ranges, row_count, col_count, average_stddev, average_above,
             )
           }
+          if rule_type == "duplicateValues" || rule_type == "uniqueValues" {
+            duplicate_counts = xlsx_conditional_duplicate_counts(
+              rows, ranges, row_count, col_count,
+            )
+          }
           if moving_reference {
             if conditional_count != 1 {
               xlsx_reject_conditional()
@@ -309,6 +315,13 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
                     "notContainsBlanks" => !blank
                     "containsErrors" => cell.kind == 4
                     "notContainsErrors" => cell.kind != 4
+                    "duplicateValues" | "uniqueValues" =>
+                      match xlsx_conditional_duplicate_key(cell) {
+                        Some(key) =>
+                          (duplicate_counts.get(key).unwrap_or(0) > 1) ==
+                          (rule_type == "duplicateValues")
+                        None => false
+                      }
                     "aboveAverage" =>
                       if cell.kind != 1 {
                         false

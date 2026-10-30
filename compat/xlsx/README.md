@@ -69,6 +69,9 @@ and `TestCodexConditionalTop`.
 Average predicates use `generate_conditional_average_test.go` and
 `TestCodexConditionalAverage`; standard-deviation cases use
 `generate_conditional_stddev_test.go` and `TestCodexConditionalStdDev`.
+Duplicate and unique predicates use `generate_conditional_duplicate_test.go`
+and `TestCodexConditionalDuplicate`. Numeric comparison-key tests are generated
+by `generate_duplicate_keys_test.go` and `TestCodexXLSXDuplicateKeys`.
 Conditional font cases matching blank cells use `generate_conditional_blank_test.go`
 and `TestCodexConditionalBlank`.
 Blank-cell paint cases use `generate_conditional_paint_blank_test.go` and
