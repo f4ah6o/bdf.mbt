@@ -7,7 +7,7 @@ values={
  'angle-too-large':'<a:xfrm rot="27000000"/>',
  'angle-not-integer':'<a:xfrm rot="1.5"/>',
  'duplicate-angle':'<a:xfrm rot="0" rot="5400000"/>',
- 'rotated-frame':'<a:xfrm rot="5400000"><a:off x="0" y="0"/><a:ext cx="12700" cy="12700"/></a:xfrm>',
+ 'rotated-frame-zero-extent':'<a:xfrm rot="5400000"><a:off x="0" y="0"/><a:ext cx="0" cy="12700"/></a:xfrm>',
 }
 out=[]
 for label,value in values.items():

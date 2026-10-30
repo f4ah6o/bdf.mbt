@@ -150,6 +150,8 @@ pub(all) struct GridPicture {
   flip_horizontal : Bool
   flip_vertical : Bool
   rotation : Int32
+  frame_width : Double
+  frame_height : Double
 }
 
 pub(all) struct GridRichColorRun {

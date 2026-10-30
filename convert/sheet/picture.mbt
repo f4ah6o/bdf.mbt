@@ -33,6 +33,8 @@ pub(all) struct GridPicture {
   flip_horizontal : Bool
   flip_vertical : Bool
   rotation : Int32
+  frame_width : Double
+  frame_height : Double
 }
 
 ///|
@@ -116,6 +118,15 @@ fn GridDrawContext::paint_picture(
       picture.image_height.is_inf()
     ) {
     raise InvalidArgument("sheet: invalid picture size")
+  }
+  if picture.frame_width.is_nan() ||
+    picture.frame_width.is_inf() ||
+    picture.frame_height.is_nan() ||
+    picture.frame_height.is_inf() ||
+    picture.frame_width < 0.0 ||
+    picture.frame_height < 0.0 ||
+    (picture.frame_width == 0.0) != (picture.frame_height == 0.0) {
+    raise InvalidArgument("sheet: invalid picture transform frame")
   }
   if picture.alpha is Some(alpha) {
     if alpha.is_nan() || alpha.is_inf() || alpha < 0.0F || alpha > 1.0F {
@@ -231,6 +242,37 @@ fn GridDrawContext::paint_picture(
   if picture.description != "" {
     object.mark(10, picture.description)
   }
+  let mut draw_width = width
+  let mut draw_height = height
+  let mut origin_x = 0.0
+  let mut origin_y = 0.0
+  if picture.frame_width > 0.0 {
+    let sx = width / picture.frame_width
+    let sy = height / picture.frame_height
+    let center_x = picture.frame_width * sx / 2.0
+    let center_y = picture.frame_height * sy / 2.0
+    let angle = (if picture.rotation < 0 {
+        -picture.rotation
+      } else {
+        picture.rotation
+      }) %
+      10800000
+    let sideways = angle > 2700000 && angle < 8100000
+    draw_width = picture.frame_width * (if sideways { sy } else { sx })
+    draw_height = picture.frame_height * (if sideways { sx } else { sy })
+    origin_x = center_x - draw_width / 2.0
+    origin_y = center_y - draw_height / 2.0
+  }
+  if draw_width.is_nan() ||
+    draw_width.is_inf() ||
+    draw_height.is_nan() ||
+    draw_height.is_inf() ||
+    origin_x.is_nan() ||
+    origin_x.is_inf() ||
+    origin_y.is_nan() ||
+    origin_y.is_inf() {
+    raise InvalidArgument("sheet: invalid picture transform frame")
+  }
   object.save()
   if picture.rotation != 0 {
     let radians = picture.rotation.to_double() / 60000.0 * @math.PI / 180.0
@@ -242,8 +284,14 @@ fn GridDrawContext::paint_picture(
     let b = sin * fh
     let c = -sin * fv
     let d = cos * fv
-    let e = a * (-width / 2.0) + c * (-height / 2.0) + width / 2.0
-    let f = b * (-width / 2.0) + d * (-height / 2.0) + height / 2.0
+    let e = a * (-draw_width / 2.0) +
+      c * (-draw_height / 2.0) +
+      origin_x +
+      draw_width / 2.0
+    let f = b * (-draw_width / 2.0) +
+      d * (-draw_height / 2.0) +
+      origin_y +
+      draw_height / 2.0
     object.transform(
       Float::from_double(a),
       Float::from_double(b),
@@ -267,21 +315,25 @@ fn GridDrawContext::paint_picture(
         1.0F
       },
       if picture.flip_horizontal {
-        Float::from_double(width)
+        Float::from_double(origin_x + draw_width)
       } else {
-        0.0F
+        Float::from_double(origin_x)
       },
       if picture.flip_vertical {
-        Float::from_double(height)
+        Float::from_double(origin_y + draw_height)
       } else {
-        0.0F
+        Float::from_double(origin_y)
       },
     )
+  } else if origin_x != 0.0 || origin_y != 0.0 {
+    object.translate(Float::from_double(origin_x), Float::from_double(origin_y))
   }
   object.save()
   let path : @core.Path = {
     verbs: b"\x00\x01\x01\x01\x04",
-    coordinates: [0.0, 0.0, width, 0.0, width, height, 0.0, height],
+    coordinates: [
+      0.0, 0.0, draw_width, 0.0, draw_width, draw_height, 0.0, draw_height,
+    ],
   }
   let path_index = object.add_path(@core.Inline(path))
   object.clip_path(path_index, 0)
@@ -289,10 +341,10 @@ fn GridDrawContext::paint_picture(
   if picture.alpha is Some(alpha) {
     object.alpha(alpha)
   }
-  let dx = picture.fill_left * width
-  let dy = picture.fill_top * height
-  let dw = width * (1.0 - picture.fill_left - picture.fill_right)
-  let dh = height * (1.0 - picture.fill_top - picture.fill_bottom)
+  let dx = picture.fill_left * draw_width
+  let dy = picture.fill_top * draw_height
+  let dw = draw_width * (1.0 - picture.fill_left - picture.fill_right)
+  let dh = draw_height * (1.0 - picture.fill_top - picture.fill_bottom)
   if cropped {
     let u0 = picture.crop_left * picture.image_width
     let u1 = (1.0 - picture.crop_right) * picture.image_width

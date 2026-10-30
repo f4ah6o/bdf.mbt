@@ -63,6 +63,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut saw_xfrm = false
   let mut saw_xfrm_off = false
   let mut saw_xfrm_ext = false
+  let mut frame_width = 0.0
+  let mut frame_height = 0.0
   let mut flip_horizontal = false
   let mut flip_vertical = false
   let mut rotation = 0
@@ -357,11 +359,18 @@ fn XlsxWorkbook::xlsx_simple_picture(
               return None
             }
             seen[key] = true
-            match xlsx_int(attr.value) {
+            let value = match xlsx_int(attr.value) {
               Some(value) if value >= 0L &&
                 value <= 254000000L &&
-                (name != "ext" || value > 0L) => ()
+                (name != "ext" || value > 0L) => value
               _ => return None
+            }
+            if name == "ext" {
+              if key == "cx" {
+                frame_width = value.to_double() / 12700.0
+              } else {
+                frame_height = value.to_double() / 12700.0
+              }
             }
           }
           seen.length() == 2
@@ -459,7 +468,6 @@ fn XlsxWorkbook::xlsx_simple_picture(
         if depth == 2 {
           if pictures != 1 ||
             saw_xfrm_off != saw_xfrm_ext ||
-            (saw_xfrm_off && rotation != 0) ||
             !saw_nv ||
             !saw_nvpr ||
             !saw_blip_fill ||
@@ -498,6 +506,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
               flip_horizontal,
               flip_vertical,
               rotation,
+              frame_width,
+              frame_height,
               description,
               title,
               images,
@@ -553,6 +563,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
           saw_xfrm = false
           saw_xfrm_off = false
           saw_xfrm_ext = false
+          frame_width = 0.0
+          frame_height = 0.0
           flip_horizontal = false
           flip_vertical = false
           rotation = 0
@@ -605,6 +617,8 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
   flip_horizontal : Bool,
   flip_vertical : Bool,
   rotation : Int32,
+  frame_width : Double,
+  frame_height : Double,
   description : String,
   title : String,
   images : Map[String, Bytes],
@@ -712,6 +726,8 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
     flip_horizontal,
     flip_vertical,
     rotation,
+    frame_width,
+    frame_height,
   })
 }
 
