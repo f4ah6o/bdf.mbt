@@ -140,13 +140,13 @@ fn GridDrawContext::paint_picture(
   }
   if ![
       "", "rect", "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram",
-      "trapezoid", "homePlate", "chevron", "plus", "hexagon", "octagon",
+      "trapezoid", "homePlate", "chevron", "plus", "hexagon", "octagon", "roundRect",
     ].contains(shape_geometry) {
     raise InvalidArgument("sheet: invalid shape geometry")
   }
   if [
       "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram", "trapezoid",
-      "homePlate", "chevron", "plus", "hexagon", "octagon",
+      "homePlate", "chevron", "plus", "hexagon", "octagon", "roundRect",
     ].contains(shape_geometry) &&
     shape_fill is None &&
     !shape_no_fill {
@@ -157,7 +157,7 @@ fn GridDrawContext::paint_picture(
       value > 100000L ||
       ![
         "triangle", "parallelogram", "trapezoid", "homePlate", "chevron", "plus",
-        "hexagon", "octagon",
+        "hexagon", "octagon", "roundRect",
       ].contains(shape_geometry) {
       raise InvalidArgument("sheet: invalid shape adjustment")
     }
@@ -400,6 +400,12 @@ fn GridDrawContext::paint_picture(
         draw_height,
       ],
     }
+  } else if shape_geometry == "roundRect" {
+    sheet_round_rect_path(
+      draw_width,
+      draw_height,
+      shape_adjustment.unwrap_or(16667L),
+    )
   } else if shape_geometry == "octagon" {
     let a = Double::min(shape_adjustment.unwrap_or(29289L).to_double(), 50000.0)
     let x1 = Double::min(draw_width, draw_height) * a / 100000.0
@@ -728,4 +734,69 @@ fn sheet_hexagon_path(
     verbs: b"\x00\x01\x01\x01\x01\x01\x04",
     coordinates: [0.0, center, x1, y1, x2, y1, width, center, x2, y2, x1, y2],
   }
+}
+
+///|
+fn sheet_round_rect_path(
+  width : Double,
+  height : Double,
+  adjustment : Int64,
+) -> @core.Path {
+  let radius = Double::min(width, height) *
+    Double::min(adjustment.to_double(), 50000.0) /
+    100000.0
+  let right = width - radius
+  let bottom = height - radius
+  let args : Array[Double] = [0.0, radius]
+  if radius <= 0.0 {
+    return {
+      verbs: b"\x00\x01\x01\x01\x04",
+      coordinates: [0.0, radius, right, 0.0, width, bottom, radius, height],
+    }
+  }
+  let verbs : Array[Byte] = [b'\x00']
+  let mut cx = 0.0
+  let mut cy = radius
+  let unit = 2.9088820866572161809e-7
+  for i, degrees in [10800000.0, 16200000.0, 0.0, 5400000.0] {
+    let st = degrees * unit
+    let sw = 5400000.0 * unit
+    let a0 = @math.atan2(radius * @math.sin(st), radius * @math.cos(st))
+    let aend = @math.atan2(
+      radius * @math.sin(st + sw),
+      radius * @math.cos(st + sw),
+    )
+    let d = aend - (a0 + sw)
+    let d = d - 2.0 * @math.PI * (d / (2.0 * @math.PI)).round()
+    let a1 = a0 + sw + d
+    let ex = cx - radius * @math.cos(a0)
+    let ey = cy - radius * @math.sin(a0)
+    verbs.push(b'\x06')
+    args.push(ex)
+    args.push(ey)
+    args.push(radius)
+    args.push(radius)
+    args.push(0.0)
+    args.push(a0)
+    args.push(a1)
+    args.push(0.0)
+    cx = ex + radius * @math.cos(a1)
+    cy = ey + radius * @math.sin(a1)
+    if i < 3 {
+      let (nx, ny) = if i == 0 {
+        (right, 0.0)
+      } else if i == 1 {
+        (width, bottom)
+      } else {
+        (radius, height)
+      }
+      verbs.push(b'\x01')
+      args.push(nx)
+      args.push(ny)
+      cx = nx
+      cy = ny
+    }
+  }
+  verbs.push(b'\x04')
+  { verbs: Bytes::from_array(verbs), coordinates: args, }
 }
