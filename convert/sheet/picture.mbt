@@ -50,6 +50,8 @@ fn GridDrawContext::paint_picture(
   hidden~ : Bool = false,
   shape_fill~ : UInt32? = None,
   shape_stroke~ : (UInt32, Double)? = None,
+  shape_no_fill~ : Bool = false,
+  shape_dash~ : String = "",
 ) -> Int32 raise {
   if picture.kind < 0 ||
     picture.kind > 2 ||
@@ -127,8 +129,18 @@ fn GridDrawContext::paint_picture(
     (picture.frame_width == 0.0) != (picture.frame_height == 0.0) {
     raise InvalidArgument("sheet: invalid picture transform frame")
   }
+  if ![
+      "", "solid", "dot", "dash", "lgDash", "dashDot", "lgDashDot", "lgDashDotDot",
+      "sysDash", "sysDot", "sysDashDot", "sysDashDotDot",
+    ].contains(shape_dash) ||
+    (shape_dash != "" && shape_fill is None && !shape_no_fill) {
+    raise InvalidArgument("sheet: invalid shape dash pattern")
+  }
+  if shape_no_fill && shape_fill is Some(_) {
+    raise InvalidArgument("sheet: conflicting shape fills")
+  }
   if shape_stroke is Some((_, width)) {
-    if shape_fill is None ||
+    if (shape_fill is None && !shape_no_fill) ||
       width.is_nan() ||
       width.is_inf() ||
       width <= 0.0 ||
@@ -235,7 +247,7 @@ fn GridDrawContext::paint_picture(
     }
     tile_count = (nx * ny).to_int()
   }
-  if hidden {
+  if hidden || (shape_no_fill && shape_stroke is None) {
     let empty = @core.ObjectBuilder::new().encode()
     if pending is Some(pending) {
       pending.push((-1 - self.tiles.length(), -1, empty))
@@ -244,7 +256,7 @@ fn GridDrawContext::paint_picture(
     }
     return tile_count
   }
-  let image_hash = if shape_fill is Some(_) {
+  let image_hash = if shape_no_fill || shape_fill is Some(_) {
     ""
   } else {
     writer.add_part("img", picture.image)
@@ -353,12 +365,30 @@ fn GridDrawContext::paint_picture(
     ],
   }
   let path_index = object.add_path(@core.Inline(path))
-  if shape_fill is Some(color) {
-    object.fill_color(color)
-    object.fill_path(path_index, 0)
+  if shape_no_fill || shape_fill is Some(_) {
+    if shape_fill is Some(color) {
+      object.fill_color(color)
+      object.fill_path(path_index, 0)
+    }
     if shape_stroke is Some((stroke, width)) {
       object.save()
       object.line(Float::from_double(width), 0, 0, 8.0F)
+      let dash : Array[Double] = match shape_dash {
+        "dot" => [1.0, 3.0]
+        "dash" => [4.0, 3.0]
+        "lgDash" => [8.0, 3.0]
+        "dashDot" => [4.0, 3.0, 1.0, 3.0]
+        "lgDashDot" => [8.0, 3.0, 1.0, 3.0]
+        "lgDashDotDot" => [8.0, 3.0, 1.0, 3.0, 1.0, 3.0]
+        "sysDash" => [3.0, 1.0]
+        "sysDot" => [1.0, 1.0]
+        "sysDashDot" => [3.0, 1.0, 1.0, 1.0]
+        "sysDashDotDot" => [3.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+        _ => []
+      }
+      if !dash.is_empty() {
+        object.dash(dash.map(value => Float::from_double(value * width)), 0.0F)
+      }
       object.stroke_color(stroke)
       object.stroke_path(path_index)
       object.restore()

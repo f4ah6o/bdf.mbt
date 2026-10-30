@@ -114,8 +114,10 @@ pub fn sized_fallback_advance(
 /// `shape_fills`, when supplied, has one optional color per drawing encoded as
 /// 0xRRGGBBAA; a color renders a filled rectangle instead of an image.
 /// `shape_strokes`, when supplied, pairs an optional RGBA color and width in
-/// points with each drawing. A caller that defers object storage may collect
-/// child parts in `picture_children` and pass them to `store_grids`.
+/// points with each drawing. `shape_no_fills` marks rectangles without a fill.
+/// `shape_dashes` contains DrawingML preset dash names, or an empty string for
+/// a solid line. A caller that defers object storage may collect child parts in
+/// `picture_children` and pass them to `store_grids`.
 pub fn draw_sized_grid_no_fonts(
   rows : Array[SizedGridRow],
   geometry : GridGeometry,
@@ -154,6 +156,8 @@ pub fn draw_sized_grid_no_fonts(
   hidden_pictures~ : Array[Bool] = [],
   shape_fills~ : Array[UInt32?] = [],
   shape_strokes~ : Array[(UInt32, Double)?] = [],
+  shape_no_fills~ : Array[Bool] = [],
+  shape_dashes~ : Array[String] = [],
   picture_writer~ : @core.DocumentWriter? = None,
   picture_children~ : Array[(Int32, Int32, Bytes)]? = None,
   column_axis_default~ : Float? = None,
@@ -880,6 +884,12 @@ pub fn draw_sized_grid_no_fonts(
   if !shape_strokes.is_empty() && shape_strokes.length() != pictures.length() {
     raise InvalidArgument("sheet: invalid shape stroke list")
   }
+  if !shape_no_fills.is_empty() && shape_no_fills.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid shape fill visibility list")
+  }
+  if !shape_dashes.is_empty() && shape_dashes.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid shape dash list")
+  }
   if !pictures.is_empty() {
     if pictures.length() > 128 {
       raise InvalidArgument("sheet: too many pictures")
@@ -910,6 +920,16 @@ pub fn draw_sized_grid_no_fonts(
         },
         picture_children,
         room,
+        shape_dash=if shape_dashes.is_empty() {
+          ""
+        } else {
+          shape_dashes[index]
+        },
+        shape_no_fill=if shape_no_fills.is_empty() {
+          false
+        } else {
+          shape_no_fills[index]
+        },
         shape_stroke=if shape_strokes.is_empty() {
           None
         } else {

@@ -4,7 +4,8 @@
 fn XlsxWorkbook::xlsx_simple_picture(
   self : XlsxWorkbook,
   part : String,
-) -> Array[(@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?)]? {
+  theme_colors : Map[Int32, XlsxRgb],
+) -> Array[(@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool, String)]? {
   let bytes = self.package.read(part) catch { _ => return None }
   let source = @utf8.decode_lossy(bytes[:], ignore_bom=true)
   if source.contains("<!ENTITY") {
@@ -20,7 +21,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut depth = 0
   let mut kind = -1
   let mut anchors = 0
-  let result : Array[(@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?)] = []
+  let result : Array[
+    (@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool, String),
+  ] = []
   let images : Map[String, Bytes] = Map([])
   let mut image_bytes = 0L
   let mut pictures = 0
@@ -31,12 +34,19 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut picture_hidden = false
   let mut is_shape = false
   let mut shape_fill : UInt32? = None
-  let mut saw_solid_fill = false
+  let mut shape_no_fill = false
+  let mut saw_shape_fill = false
   let mut saw_line = false
   let mut saw_no_line = false
   let mut saw_line_fill = false
   let mut line_color : UInt32? = None
+  let mut theme_alpha_checked = false
+  let mut theme_alphas : Map[Int32, Double]? = None
+  let mut saw_shape_alpha = false
+  let mut saw_line_alpha = false
   let mut line_width = 0.75
+  let mut shape_dash = ""
+  let mut saw_dash = false
   let mut saw_blip_fill = false
   let mut saw_sppr = false
   let mut geometry = false
@@ -336,10 +346,19 @@ fn XlsxWorkbook::xlsx_simple_picture(
             }
             true
           } else if is_shape && name == "solidFill" {
-            if saw_solid_fill {
+            if saw_shape_fill {
               return None
             }
-            saw_solid_fill = true
+            saw_shape_fill = true
+            true
+          } else if is_shape && name == "noFill" {
+            if saw_shape_fill ||
+              !(event.kind is Empty(_)) ||
+              !element.attributes.is_empty() {
+              return None
+            }
+            saw_shape_fill = true
+            shape_no_fill = true
             true
           } else if is_shape && name == "ln" {
             if saw_line {
@@ -376,15 +395,45 @@ fn XlsxWorkbook::xlsx_simple_picture(
             false
           }
         } else if depth == 5 && parent == "solidFill" && is_shape {
-          if name != "srgbClr" ||
-            !(event.kind is Empty(_)) ||
+          if !["srgbClr", "schemeClr", "sysClr", "prstClr"].contains(name) ||
             shape_fill is Some(_) {
             return None
           }
-          shape_fill = xlsx_simple_shape_color(element)
+          if name == "schemeClr" && !theme_alpha_checked {
+            theme_alphas = self.xlsx_shape_theme_alphas()
+            theme_alpha_checked = true
+          }
+          if name == "schemeClr" && theme_alphas is None {
+            return None
+          }
+          shape_fill = xlsx_simple_shape_color(
+            element,
+            theme_colors,
+            theme_alphas.unwrap_or(Map([])),
+          )
           shape_fill is Some(_)
         } else if depth == 5 && parent == "ln" && is_shape {
-          if name == "noFill" &&
+          if name == "prstDash" {
+            if saw_dash ||
+              !(event.kind is Empty(_)) ||
+              element.attributes.length() > 1 {
+              return None
+            }
+            saw_dash = true
+            let dash_name = xlsx_attr(element, "val", "solid")
+            if element.attributes.length() == 1 &&
+              xlsx_attr(element, "val", "") == "" {
+              return None
+            }
+            if ![
+                "solid", "dot", "dash", "lgDash", "dashDot", "lgDashDot", "lgDashDotDot",
+                "sysDash", "sysDot", "sysDashDot", "sysDashDotDot",
+              ].contains(dash_name) {
+              return None
+            }
+            shape_dash = dash_name
+            true
+          } else if name == "noFill" &&
             event.kind is Empty(_) &&
             !saw_no_line &&
             !saw_line_fill &&
@@ -404,12 +453,49 @@ fn XlsxWorkbook::xlsx_simple_picture(
           parent == "solidFill" &&
           parents[4] == "ln" &&
           is_shape {
-          if name != "srgbClr" ||
-            !(event.kind is Empty(_)) ||
+          if !["srgbClr", "schemeClr", "sysClr", "prstClr"].contains(name) ||
             line_color is Some(_) {
             return None
           }
-          line_color = xlsx_simple_shape_color(element)
+          if name == "schemeClr" && !theme_alpha_checked {
+            theme_alphas = self.xlsx_shape_theme_alphas()
+            theme_alpha_checked = true
+          }
+          if name == "schemeClr" && theme_alphas is None {
+            return None
+          }
+          line_color = xlsx_simple_shape_color(
+            element,
+            theme_colors,
+            theme_alphas.unwrap_or(Map([])),
+          )
+          line_color is Some(_)
+        } else if depth == 6 &&
+          ["srgbClr", "schemeClr", "sysClr", "prstClr"].contains(parent) &&
+          parents[4] == "solidFill" &&
+          is_shape {
+          if name != "alpha" || !(event.kind is Empty(_)) || saw_shape_alpha {
+            return None
+          }
+          saw_shape_alpha = true
+          shape_fill = match shape_fill {
+            Some(color) => xlsx_simple_shape_alpha(element, color)
+            None => return None
+          }
+          shape_fill is Some(_)
+        } else if depth == 7 &&
+          ["srgbClr", "schemeClr", "sysClr", "prstClr"].contains(parent) &&
+          parents[5] == "solidFill" &&
+          parents[4] == "ln" &&
+          is_shape {
+          if name != "alpha" || !(event.kind is Empty(_)) || saw_line_alpha {
+            return None
+          }
+          saw_line_alpha = true
+          line_color = match line_color {
+            Some(color) => xlsx_simple_shape_alpha(element, color)
+            None => return None
+          }
           line_color is Some(_)
         } else if depth == 5 && parent == "xfrm" {
           if !(event.kind is Empty(_)) {
@@ -556,8 +642,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
             (
               is_shape &&
               (
-                !saw_solid_fill ||
-                shape_fill is None ||
+                !saw_shape_fill ||
+                (!shape_no_fill && shape_fill is None) ||
                 (saw_line && !saw_no_line && line_color is None)
               )
             ) ||
@@ -612,6 +698,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
                   picture_hidden,
                   shape_fill,
                   line_color.map(color => (color, line_width)),
+                  shape_no_fill,
+                  shape_dash,
                 ),
               )
             }
@@ -626,12 +714,17 @@ fn XlsxWorkbook::xlsx_simple_picture(
           picture_hidden = false
           is_shape = false
           shape_fill = None
-          saw_solid_fill = false
+          shape_no_fill = false
+          saw_shape_fill = false
           saw_line = false
           saw_no_line = false
           saw_line_fill = false
           line_color = None
+          saw_shape_alpha = false
+          saw_line_alpha = false
           line_width = 0.75
+          shape_dash = ""
+          saw_dash = false
           saw_blip_fill = false
           saw_sppr = false
           geometry = false
@@ -693,7 +786,191 @@ fn XlsxWorkbook::xlsx_simple_picture(
 }
 
 ///|
-fn xlsx_simple_shape_color(element : @xml.NamespaceElement) -> UInt32? {
+fn XlsxWorkbook::xlsx_shape_theme_alphas(
+  self : XlsxWorkbook,
+) -> Map[Int32, Double]? {
+  let result : Map[Int32, Double] = Map([])
+  let rel = match self.package.relationship_of_type(self.part, "/theme") {
+    Some(rel) if !rel.external => rel
+    Some(_) => return None
+    None => return Some(result)
+  }
+  let data = self.package.read(rel.target) catch { _ => return None }
+  let reader = @xml.NamespaceReader::from_string(
+    @utf8.decode_lossy(data[:], ignore_bom=true),
+  )
+  let parents = Array::make(16, "")
+  let seen_slots : Map[Int32, Bool] = Map([])
+  let mut depth = 0
+  let mut slot = -1
+  let mut found_color = false
+  while true {
+    let event = reader.read_event() catch { _ => return None }
+    match event.kind {
+      Start(element) | Empty(element) => {
+        if depth >= parents.length() {
+          return None
+        }
+        let name = element.name.local_name
+        let in_scheme = depth >= 3 &&
+          parents[0] == "theme" &&
+          parents[1] == "themeElements" &&
+          parents[2] == "clrScheme"
+        if in_scheme && depth == 3 {
+          slot = xlsx_theme_slot(name)
+          found_color = false
+          if slot >= 0 {
+            if seen_slots.contains(slot) {
+              return None
+            }
+            seen_slots[slot] = true
+          }
+        } else if in_scheme &&
+          depth == 4 &&
+          slot >= 0 &&
+          ["srgbClr", "sysClr", "schemeClr", "prstClr", "scrgbClr", "hslClr"].contains(
+            name,
+          ) {
+          if found_color {
+            return None
+          }
+          found_color = true
+        } else if in_scheme && ["alpha", "alphaMod", "alphaOff"].contains(name) {
+          if depth != 5 ||
+            slot < 0 ||
+            !found_color ||
+            !["srgbClr", "sysClr", "schemeClr", "prstClr", "scrgbClr", "hslClr"].contains(
+              parents[4],
+            ) ||
+            !(event.kind is Empty(_)) ||
+            element.attributes.length() != 1 {
+            return None
+          }
+          let value = match xlsx_int(xlsx_attr(element, "val", "")) {
+            Some(value) if value <= 100000L &&
+              value >= (if name == "alphaOff" { -100000L } else { 0L }) => value
+            _ => return None
+          }
+          result[slot] = xlsx_shape_apply_theme_alpha(
+            name,
+            result.get(slot).unwrap_or(1.0),
+            value,
+          )
+        }
+        parents[depth] = name
+        if event.kind is Start(_) {
+          depth += 1
+        }
+      }
+      End(_) => {
+        depth -= 1
+        if depth < 0 {
+          return None
+        }
+        if depth == 3 {
+          slot = -1
+        }
+      }
+      Eof => return if depth == 0 { Some(result) } else { None }
+      _ => ()
+    }
+  }
+  None
+}
+
+///|
+fn xlsx_shape_apply_theme_alpha(
+  name : String,
+  previous : Double,
+  value : Int64,
+) -> Double {
+  let fraction = value.to_double() / 100000.0
+  let next = match name {
+    "alpha" => fraction
+    "alphaMod" => previous * fraction
+    _ => previous + fraction
+  }
+  Double::max(0.0, Double::min(1.0, next))
+}
+
+///|
+fn xlsx_simple_shape_color(
+  element : @xml.NamespaceElement,
+  theme_colors : Map[Int32, XlsxRgb],
+  theme_alphas : Map[Int32, Double],
+) -> UInt32? {
+  if element.name.local_name == "schemeClr" {
+    if element.attributes.length() != 1 {
+      return None
+    }
+    let name = xlsx_attr(element, "val", "")
+    if name == "phClr" {
+      return Some(0x000000ffU)
+    }
+    let mapped = match name {
+      "bg1" => "lt1"
+      "tx1" => "dk1"
+      "bg2" => "lt2"
+      "tx2" => "dk2"
+      _ => name
+    }
+    let slot = xlsx_theme_slot(mapped)
+    let color = match theme_colors.get(slot) {
+      Some(color) => color
+      None => return None
+    }
+    let red = (color.red * 255.0 + 0.5).to_int().to_uint()
+    let green = (color.green * 255.0 + 0.5).to_int().to_uint()
+    let blue = (color.blue * 255.0 + 0.5).to_int().to_uint()
+    return Some(
+      (red << 24) |
+      (green << 16) |
+      (blue << 8) |
+      (Double::max(0.0, Double::min(1.0, theme_alphas.get(slot).unwrap_or(1.0))) *
+      255.0)
+      .round()
+      .to_uint(),
+    )
+  }
+  if element.name.local_name == "prstClr" {
+    if element.attributes.length() != 1 {
+      return None
+    }
+    let color = match xlsx_shape_preset_color(xlsx_attr(element, "val", "")) {
+      Some(color) => color
+      None => return None
+    }
+    return Some((color << 8) | 255U)
+  }
+  if element.name.local_name == "sysClr" {
+    let seen : Map[String, Bool] = Map([])
+    for attr in element.attributes {
+      let name = attr.name.local_name
+      if !["val", "lastClr"].contains(name) ||
+        seen.contains(name) ||
+        attr.name.namespace_uri is Some(_) {
+        return None
+      }
+      seen[name] = true
+    }
+    let color = match xlsx_theme_hex(xlsx_attr(element, "lastClr", "")) {
+      Some(color) => color
+      None =>
+        xlsx_rgb_from_uint(
+          if ["window", "btnHighlight", "highlightText", "menu", "info"].contains(
+              xlsx_attr(element, "val", ""),
+            ) {
+            0xffffffU
+          } else {
+            0U
+          },
+        )
+    }
+    let red = (color.red * 255.0).round().to_uint()
+    let green = (color.green * 255.0).round().to_uint()
+    let blue = (color.blue * 255.0).round().to_uint()
+    return Some((red << 24) | (green << 16) | (blue << 8) | 255U)
+  }
   let bytes = @utf8.encode(xlsx_attr(element, "val", ""))
   if bytes.length() != 6 || element.attributes.length() != 1 {
     return None
@@ -707,6 +984,23 @@ fn xlsx_simple_shape_color(element : @xml.NamespaceElement) -> UInt32? {
     rgb = rgb * 16U + digit.to_uint()
   }
   Some((rgb << 8) | 255U)
+}
+
+///|
+fn xlsx_simple_shape_alpha(
+  element : @xml.NamespaceElement,
+  color : UInt32,
+) -> UInt32? {
+  if element.attributes.length() != 1 {
+    return None
+  }
+  let value = match xlsx_int(xlsx_attr(element, "val", "")) {
+    Some(value) if value >= 0L && value <= 100000L => value
+    _ => return None
+  }
+  // Go rounds the percentage to the nearest 8-bit alpha value.
+  let alpha = ((value * 255L + 50000L) / 100000L).to_int().to_uint()
+  Some((color & 0xffffff00U) | alpha)
 }
 
 ///|
