@@ -646,14 +646,19 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   }
   let relevant : Array[XlsxConditionalBlock] = []
   let stopped : Map[Int32, Map[Int32, Bool]] = Map([])
-  let mut stopped_blanks = false
+  let stopped_blank_ranges : Array[XlsxRange] = []
+  let mut stop_comparisons = 4194304
   for entry in ordered {
     let block = entry.1
     let missing = block.dxf_id < 0 ||
       (dxf_count >= 0 && block.dxf_id >= dxf_count)
     if missing {
       if block.stop_if_true {
-        stopped_blanks = stopped_blanks || block.blank_matches
+        if block.blank_matches {
+          for range in block.ranges {
+            stopped_blank_ranges.push(range)
+          }
+        }
         for row, columns in block.matched {
           let target = match stopped.get(row) {
             Some(value) => value
@@ -670,8 +675,37 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
       }
       continue
     }
-    if block.blank_matches && (stopped_blanks || !stopped.is_empty()) {
-      xlsx_reject_conditional()
+    if block.blank_matches {
+      for range in block.ranges {
+        for stopped_range in stopped_blank_ranges {
+          stop_comparisons -= 1
+          if stop_comparisons < 0 {
+            xlsx_reject_conditional()
+          }
+          if range.row_start <= stopped_range.row_end &&
+            stopped_range.row_start <= range.row_end &&
+            range.column_start <= stopped_range.column_end &&
+            stopped_range.column_start <= range.column_end {
+            xlsx_reject_conditional()
+          }
+        }
+        for row, columns in stopped {
+          stop_comparisons -= 1
+          if stop_comparisons < 0 {
+            xlsx_reject_conditional()
+          }
+          if row.to_int64() >= range.row_start &&
+            row.to_int64() <= range.row_end {
+            for column, _ in columns {
+              stop_comparisons -= 1
+              if stop_comparisons < 0 ||
+                (column >= range.column_start && column <= range.column_end) {
+                xlsx_reject_conditional()
+              }
+            }
+          }
+        }
+      }
     }
     if stopped.is_empty() {
       relevant.push(block)
