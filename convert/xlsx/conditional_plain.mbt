@@ -8,7 +8,60 @@ priv struct XlsxConditionalBlock {
   blank_matches : Bool
   moving_reference : Bool
   dxf_id : Int32
+  stop_if_true : Bool
+  priority : Int32
+  priority_known : Bool
   covered : Int64
+}
+
+///|
+fn XlsxWorkbook::xlsx_conditional_dxf_count(self : XlsxWorkbook) -> Int32 raise {
+  let rel = match self.package.relationship_of_type(self.part, "/styles") {
+    Some(value) => value
+    None => return 0
+  }
+  let bytes = self.package.read(rel.target) catch { _ => return 0 }
+  let text = @utf8.decode_lossy(bytes[:], ignore_bom=true)
+  if text.contains("<!ENTITY") {
+    return -1
+  }
+  let reader = @xml.NamespaceReader::from_string(text)
+  let mut depth = 0
+  let mut dxfs_depth = -1
+  let mut count = 0
+  while true {
+    let event = reader.read_event()
+    match event.kind {
+      Start(element) | Empty(element) => {
+        let name = element.name.local_name
+        if depth == 1 && name == "dxfs" {
+          if event.kind is Empty(_) {
+            return 0
+          }
+          dxfs_depth = depth + 1
+        } else if depth == dxfs_depth && name == "dxf" {
+          count += 1
+        }
+        if event.kind is Start(_) {
+          depth += 1
+        } else if depth == 0 {
+          break
+        }
+      }
+      End(_) => {
+        depth -= 1
+        if depth + 1 == dxfs_depth {
+          return count
+        }
+        if depth == 0 {
+          break
+        }
+      }
+      Eof => if depth == 0 { break } else { return -1 }
+      _ => ()
+    }
+  }
+  count
 }
 
 ///|
@@ -49,6 +102,9 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   let mut block_room = room
   let blocks : Array[XlsxConditionalBlock] = []
   let mut dxf_id = -1
+  let mut stop_if_true = false
+  let mut priority = 1073741824
+  let mut priority_known = true
   let mut operator = ""
   let mut rule_type = ""
   let mut rule_text = ""
@@ -136,7 +192,48 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             )
           }
           rule_depth = depth + 1
-          dxf_id = xlsx_attr_int(element, "dxfId", -1)
+          let raw_dxf = xlsx_trim(xlsx_attr(element, "dxfId", "")).to_lower()
+          if raw_dxf.contains("_") ||
+            raw_dxf.has_prefix("0x") ||
+            raw_dxf.has_prefix("+0x") ||
+            raw_dxf.has_prefix("-0x") {
+            xlsx_reject_conditional()
+          }
+          dxf_id = xlsx_node_int(element, "dxfId", -1)
+          stop_if_true = xlsx_attr_bool(element, "stopIfTrue")
+          let raw_priority = xlsx_trim(xlsx_attr(element, "priority", ""))
+          priority_known = true
+          if raw_priority != "" {
+            let lower_priority = raw_priority.to_lower()
+            if lower_priority.contains("_") ||
+              lower_priority.has_prefix("0x") ||
+              lower_priority.has_prefix("+0x") ||
+              lower_priority.has_prefix("-0x") {
+              priority_known = false
+            } else {
+              match xlsx_int(raw_priority) {
+                Some(n) =>
+                  if n < -2147483648L || n > 2147483647L {
+                    priority_known = false
+                  }
+                None => {
+                  let value = @string.parse_double(raw_priority) catch {
+                    _ => {
+                      priority_known = false
+                      0.0
+                    }
+                  }
+                  if value.is_nan() ||
+                    value.is_inf() ||
+                    value < -2147483648.0 ||
+                    value > 2147483647.0 {
+                    priority_known = false
+                  }
+                }
+              }
+            }
+          }
+          priority = xlsx_node_int(element, "priority", 1073741824)
           operator = xlsx_attr(element, "operator", "equal")
           formula_count = 0
           reference1 = ""
@@ -493,9 +590,6 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             }
           }
           if !matched.is_empty() || any_blank_matches {
-            if dxf_id < 0 {
-              xlsx_reject_conditional()
-            }
             blocks.push({
               ranges,
               matched,
@@ -503,6 +597,9 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
               blank_matches: any_blank_matches,
               moving_reference,
               dxf_id,
+              stop_if_true,
+              priority,
+              priority_known,
               covered: block_room - room,
             })
           }
@@ -527,13 +624,146 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
       _ => ()
     }
   }
+  let dxf_count = self.xlsx_conditional_dxf_count() catch { _ => -1 }
+  let has_missing_stop = blocks.any(block => {
+    block.stop_if_true &&
+    (block.dxf_id < 0 || (dxf_count >= 0 && block.dxf_id >= dxf_count))
+  })
+  let ordered = [ for i, block in blocks => (i, block) ]
+  if has_missing_stop {
+    for entry in ordered {
+      if !entry.1.priority_known {
+        xlsx_reject_conditional()
+      }
+    }
+    ordered.sort_by((a, b) => {
+      if a.1.priority == b.1.priority {
+        a.0.compare(b.0)
+      } else {
+        a.1.priority.compare(b.1.priority)
+      }
+    })
+  }
+  let relevant : Array[XlsxConditionalBlock] = []
+  let stopped : Map[Int32, Map[Int32, Bool]] = Map([])
+  let stopped_blank_ranges : Array[XlsxRange] = []
+  let mut stop_comparisons = 4194304
+  for entry in ordered {
+    let block = entry.1
+    let missing = block.dxf_id < 0 ||
+      (dxf_count >= 0 && block.dxf_id >= dxf_count)
+    if missing {
+      if block.stop_if_true {
+        if block.blank_matches {
+          if block.moving_reference {
+            for row, columns in block.blank_positions {
+              let target = match stopped.get(row) {
+                Some(value) => value
+                None => {
+                  let value : Map[Int32, Bool] = Map([])
+                  stopped[row] = value
+                  value
+                }
+              }
+              for column, _ in columns {
+                target[column] = true
+              }
+            }
+          } else {
+            for range in block.ranges {
+              stopped_blank_ranges.push(range)
+            }
+          }
+        }
+        for row, columns in block.matched {
+          let target = match stopped.get(row) {
+            Some(value) => value
+            None => {
+              let value : Map[Int32, Bool] = Map([])
+              stopped[row] = value
+              value
+            }
+          }
+          for column, _ in columns {
+            target[column] = true
+          }
+        }
+      }
+      continue
+    }
+    let paints_blanks = if block.blank_matches {
+      let style = self.xlsx_conditional_style(block.dxf_id)
+      style.fill is Some(_) || style.border is Some(_)
+    } else {
+      false
+    }
+    if paints_blanks {
+      for range in block.ranges {
+        for stopped_range in stopped_blank_ranges {
+          stop_comparisons -= 1
+          if stop_comparisons < 0 {
+            xlsx_reject_conditional()
+          }
+          if range.row_start <= stopped_range.row_end &&
+            stopped_range.row_start <= range.row_end &&
+            range.column_start <= stopped_range.column_end &&
+            stopped_range.column_start <= range.column_end {
+            xlsx_reject_conditional()
+          }
+        }
+        for row, columns in stopped {
+          stop_comparisons -= 1
+          if stop_comparisons < 0 {
+            xlsx_reject_conditional()
+          }
+          if row.to_int64() >= range.row_start &&
+            row.to_int64() <= range.row_end {
+            for column, _ in columns {
+              stop_comparisons -= 1
+              if stop_comparisons < 0 ||
+                (column >= range.column_start && column <= range.column_end) {
+                xlsx_reject_conditional()
+              }
+            }
+          }
+        }
+      }
+    }
+    if stopped.is_empty() {
+      relevant.push(block)
+      continue
+    }
+    let matched : Map[Int32, Map[Int32, Bool]] = Map([])
+    for row, columns in block.matched {
+      for column, _ in columns {
+        let blocked = match stopped.get(row) {
+          Some(value) => value.contains(column)
+          None => false
+        }
+        if !blocked {
+          let target = match matched.get(row) {
+            Some(value) => value
+            None => {
+              let value : Map[Int32, Bool] = Map([])
+              matched[row] = value
+              value
+            }
+          }
+          target[column] = true
+        }
+      }
+    }
+    if !matched.is_empty() || block.blank_matches {
+      relevant.push({ ..block, matched, })
+    }
+  }
   // Bound pairwise range checks independently of the covered-cell budget.
   let mut comparisons = 4194304
-  for i in 0..<blocks.length() {
+  for i in 0..<relevant.length() {
     for j in 0..<i {
       let mut ranges_overlap = false
-      for a in blocks[i].ranges {
-        for b in blocks[j].ranges {
+      for a in relevant[i].ranges {
+        for b in relevant[j].ranges {
           comparisons -= 1
           if comparisons < 0 {
             xlsx_reject_conditional()
@@ -546,16 +776,16 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
           }
         }
       }
-      if ranges_overlap && blocks[i].dxf_id != blocks[j].dxf_id {
-        if blocks[i].blank_matches || blocks[j].blank_matches {
+      if ranges_overlap && relevant[i].dxf_id != relevant[j].dxf_id {
+        if relevant[i].blank_matches || relevant[j].blank_matches {
           xlsx_reject_conditional()
         }
-        for row, columns in blocks[i].matched {
+        for row, columns in relevant[i].matched {
           comparisons -= 1
           if comparisons < 0 {
             xlsx_reject_conditional()
           }
-          if blocks[j].matched.get(row) is Some(other) {
+          if relevant[j].matched.get(row) is Some(other) {
             for column, _ in columns {
               comparisons -= 1
               if comparisons < 0 || other.contains(column) {
@@ -568,7 +798,10 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
     }
   }
   let mut result = rows
-  for block in blocks {
+  for block in relevant {
+    if block.dxf_id < 0 || (dxf_count >= 0 && block.dxf_id >= dxf_count) {
+      continue
+    }
     let style = self.xlsx_conditional_style(block.dxf_id)
     if block.blank_matches && (style.fill is Some(_) || style.border is Some(_)) {
       if block.covered > 200000L {

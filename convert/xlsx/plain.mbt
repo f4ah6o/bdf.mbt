@@ -785,16 +785,58 @@ fn XlsxWorkbook::xlsx_table_effective_style(
 }
 
 ///|
+fn xlsx_xml_bom_bytes(data : Bytes) -> Int32 {
+  if data.length() >= 3 &&
+    data[0].to_int() == 239 &&
+    data[1].to_int() == 187 &&
+    data[2].to_int() == 191 {
+    3
+  } else {
+    0
+  }
+}
+
+///|
+fn xlsx_go_xml_error(
+  error : @xml.XmlErrorKind,
+  span : @xml.SourceSpan,
+  text : String,
+  bom : Int32,
+) -> String? {
+  match error {
+    @xml.UnexpectedEof => Some("xml: unexpected end of input")
+    @xml.InvalidSyntax(message) if message.has_prefix("unclosed element:") =>
+      Some("xml: unexpected end of input")
+    @xml.InvalidSyntax(message) if message == "empty document - no root element" =>
+      Some("unexpected EOF")
+    @xml.InvalidSyntax(message) if message.has_prefix("end tag mismatch:") =>
+      Some(
+        "xml: end tag does not match open element at byte " +
+        (@utf8.encode(text[:span.start.offset].to_owned()).length() + bom).to_string(),
+      )
+    @xml.InvalidSyntax(message) if message ==
+      "expected '>' or '/>' at end of start tag" &&
+      span.end.offset == text.length() => Some("xml: unexpected end of input")
+    @xml.InvalidSyntax(message) if message == "expected '>' after end tag name" &&
+      span.end.offset == text.length() => Some("xml: unexpected end of input")
+    _ => None
+  }
+}
+
+///|
 // An unstyled table affects header marks, filters and data extraction.
 fn XlsxWorkbook::xlsx_plain_table_area(
   self : XlsxWorkbook,
   part : String,
+  table_rows : Array[XlsxRow],
+  table_room : Int64,
+  table_headers : Array[(Int32, Int32, Int32, Int32, Int32)],
   style_cache : Map[String, Bool],
   style_id_cache : Map[String, (Int32, Int32, Int64, Int32, Int64, Int32)],
   complex_rules : Map[Int32, XlsxComplexTable],
   complex_cache : Map[String, XlsxComplexStyle?],
   known_cache : Map[String, Bool],
-  unknown_styles : Array[String],
+  table_events : Array[(String, String)],
   table_rules : Array[
     (
       XlsxRange,
@@ -813,15 +855,30 @@ fn XlsxWorkbook::xlsx_plain_table_area(
     ),
   ],
 ) -> Int64 raise {
+  if !self.package.has(part) {
+    table_events.push(("", "table " + part + ": missing part " + part))
+    return -3L
+  }
   let data = self.package.read(part) catch { _ => return -1L }
   let text = @utf8.decode_lossy(data[:], ignore_bom=true)
   if text.contains("<!ENTITY") {
     return -1L
   }
-  let table = xlsx_read_list_table(data) catch { _ => None }
+  let table = xlsx_read_list_table(data) catch {
+    @xml.At(error~, span~) => {
+      let reason = match
+        xlsx_go_xml_error(error, span, text, xlsx_xml_bom_bytes(data)) {
+        Some(reason) => reason
+        None => return -1L
+      }
+      table_events.push(("", "table " + part + ": " + part + ": " + reason))
+      return -3L
+    }
+    _ => return -1L
+  }
   let parsed_table = match table {
     Some(t) => t
-    None => return -1L
+    None => return -3L
   }
   let range = parsed_table.range
   if range.row_start < 0L ||
@@ -834,6 +891,31 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   }
   let area = (range.row_end - range.row_start + 1L) *
     (range.column_end - range.column_start + 1).to_int64()
+  let mut present = 0L
+  for row in table_rows {
+    if row.index.to_int64() < range.row_start ||
+      row.index.to_int64() > range.row_end {
+      continue
+    }
+    for cell in row.cells {
+      if cell.column >= range.column_start && cell.column <= range.column_end {
+        present += 1L
+      }
+    }
+  }
+  let missing = Int64::max(area - present, 0L)
+  if missing > table_room {
+    return -2L
+  }
+  table_headers.push(
+    (
+      range.row_start.to_int(),
+      range.row_end.to_int(),
+      range.column_start,
+      range.column_end,
+      parsed_table.header_rows,
+    ),
+  )
   let reader = @xml.NamespaceReader::from_string(text)
   let mut depth = 0
   let mut style_info_seen = false
@@ -919,7 +1001,12 @@ fn XlsxWorkbook::xlsx_plain_table_area(
                     if known {
                       return -1L
                     }
-                    unknown_styles.push(style)
+                    table_events.push(
+                      (
+                        "tablestyle:" + style,
+                        "table style " + style + " is unknown",
+                      ),
+                    )
                   }
                 }
               }
@@ -1113,7 +1200,7 @@ fn XlsxWorkbook::xlsx_plain_table_area(
       },
     ),
   )
-  area
+  missing
 }
 
 ///|
@@ -1203,10 +1290,86 @@ fn XlsxWorkbook::xlsx_plain_table_filters(
 }
 
 ///|
+fn XlsxWorkbook::xlsx_empty_drawing(
+  self : XlsxWorkbook,
+  part : String,
+) -> Bool raise {
+  let data = self.package.read(part) catch { _ => return false }
+  let text = @utf8.decode_lossy(data[:], ignore_bom=true)
+  if text.contains("<!ENTITY") {
+    return false
+  }
+  let reader = @xml.NamespaceReader::from_string(text)
+  let mut depth = 0
+  let mut anchor_depth = -1
+  while true {
+    let event = reader.read_event()
+    match event.kind {
+      Start(element) | Empty(element) => {
+        let name = element.name.local_name
+        if name == "AlternateContent" &&
+          element.name.namespace_uri
+          .unwrap_or("")
+          .has_suffix("markup-compatibility/2006") {
+          return false
+        }
+        if depth == 1 &&
+          (
+            name == "twoCellAnchor" ||
+            name == "oneCellAnchor" ||
+            name == "absoluteAnchor"
+          ) {
+          if event.kind is Start(_) {
+            anchor_depth = depth + 1
+          }
+        } else if depth == anchor_depth &&
+          (
+            name == "sp" ||
+            name == "grpSp" ||
+            name == "graphicFrame" ||
+            name == "cxnSp" ||
+            name == "pic" ||
+            name == "contentPart"
+          ) {
+          return false
+        }
+        if event.kind is Start(_) {
+          depth += 1
+        } else if depth == 0 {
+          break
+        }
+      }
+      End(_) => {
+        depth -= 1
+        if depth + 1 == anchor_depth {
+          anchor_depth = -1
+        }
+        if depth == 0 {
+          break
+        }
+      }
+      Eof => if depth == 0 { break } else { return false }
+      _ => ()
+    }
+  }
+  true
+}
+
+///|
 fn XlsxWorkbook::xlsx_check_plain_sheet(
   self : XlsxWorkbook,
   part : String,
-  unknown_styles : Array[String],
+  sheet_name : String,
+  theme_colors : Map[Int32, XlsxRgb],
+  table_rows : Array[XlsxRow],
+  table_headers : Array[(Int32, Int32, Int32, Int32, Int32)],
+  table_events : Array[(String, String)],
+  pictures : Array[@sheet.GridPicture],
+  hidden_pictures : Array[Bool],
+  shape_fills : Array[UInt32?],
+  shape_strokes : Array[(UInt32, Double)?],
+  shape_no_fills : Array[Bool],
+  shape_dashes : Array[String],
 ) -> (
   Array[@sheet.GridLink],
   Bool,
@@ -1252,7 +1415,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut link_depth = -1
   let mut extension_depth = -1
   let mut table_depth = -1
-  let mut table_room = 200000L
+  let mut table_room = 1048576L
   let complex_rules : Map[Int32, XlsxComplexTable] = Map([])
   let complex_cache : Map[String, XlsxComplexStyle?] = Map([])
   let known_cache : Map[String, Bool] = Map([])
@@ -1280,6 +1443,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   ] = []
   let mut has_conditional = false
   let mut auto_filter : XlsxRange? = None
+  let mut drawing_target : String? = None
   let links : Array[@sheet.GridLink] = []
   let table_filters : Array[(Int32, Int32)] = []
   let relationships = self.package.relationships(part)
@@ -1300,10 +1464,10 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           }
           if name == "drawing" {
             let id = xlsx_rel_id(element, "id")
-            if id != "" && self.package.target(part, id) is Some(_) {
-              raise InvalidXlsxInput(
-                "xlsx: plain conversion does not support worksheet feature drawing",
-              )
+            drawing_target = if id == "" {
+              None
+            } else {
+              self.package.target(part, id).map(rel => rel.target)
             }
           }
           if name == "tableParts" && event.kind is Start(_) {
@@ -1331,22 +1495,38 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           if self.package.target(part, id) is Some(rel) {
             let area = self.xlsx_plain_table_area(
               rel.target,
+              table_rows,
+              table_room,
+              table_headers,
               table_style_cache,
               table_style_id_cache,
               complex_rules,
               complex_cache,
               known_cache,
-              unknown_styles,
+              table_events,
               table_rules,
             )
-            if area < 0L || area > table_room {
-              raise InvalidXlsxInput(
-                "xlsx: plain conversion does not support worksheet feature tableParts",
+            if area == -3L {
+              ()
+            } else if area == -2L {
+              table_events.push(
+                (
+                  "tables:" + sheet_name,
+                  "sheet " +
+                  xlsx_go_quote(sheet_name, '"') +
+                  ": the tables cover more than 1048576 cells that are not in the file; the rest are drawn without their styles",
+                ),
               )
-            }
-            table_room -= area
-            for cell in self.xlsx_plain_table_filters(rel.target) {
-              table_filters.push(cell)
+            } else {
+              if area < 0L {
+                raise InvalidXlsxInput(
+                  "xlsx: plain conversion does not support worksheet feature tableParts",
+                )
+              }
+              table_room -= area
+              for cell in self.xlsx_plain_table_filters(rel.target) {
+                table_filters.push(cell)
+              }
             }
           }
         } else if extension_depth >= 0 &&
@@ -1467,6 +1647,48 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           raise InvalidXlsxInput("xlsx: unexpected EOF")
         }
       _ => ()
+    }
+  }
+  if drawing_target is Some(target) {
+    if !self.package.has(target) {
+      table_events.push(("", "drawing " + target + ": missing part " + target))
+    } else {
+      let empty = self.xlsx_empty_drawing(target) catch {
+        @xml.At(error~, span~) => {
+          let bytes = self.package.read(target) catch {
+            _ => raise InvalidXlsxInput("xlsx: unable to read drawing part")
+          }
+          let text = @utf8.decode_lossy(bytes[:], ignore_bom=true)
+          match
+            xlsx_go_xml_error(error, span, text, xlsx_xml_bom_bytes(bytes)) {
+            Some(reason) => {
+              table_events.push(
+                ("", "drawing " + target + ": " + target + ": " + reason),
+              )
+              true
+            }
+            None => false
+          }
+        }
+        _ => false
+      }
+      if !empty {
+        match self.xlsx_simple_picture(target, theme_colors) {
+          Some(found) =>
+            for (picture, hidden, fill, stroke, no_fill, dash) in found {
+              pictures.push(picture)
+              hidden_pictures.push(hidden)
+              shape_fills.push(fill)
+              shape_strokes.push(stroke)
+              shape_no_fills.push(no_fill)
+              shape_dashes.push(dash)
+            }
+          None =>
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion does not support worksheet feature drawing",
+            )
+        }
+      }
     }
   }
   (
@@ -1779,7 +2001,10 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// shrink-to-fit, indentation and center-across-selection.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// patterned row and column fills, complex borders and other features are
-/// rejected. Supported numeric conditional rules may apply a differential font,
+/// rejected. Up to 128 embedded browser-supported images per
+/// sheet are supported with bounded cell-anchor offsets, at most one GiB of image
+/// data in total, and row heights in quarter-point increments.
+/// Supported numeric conditional rules may apply a differential font,
 /// solid fill and border or be inactive. For blank-cell fills or borders,
 /// ranges are limited to 200,000 cells. Other conditional
 /// formats are rejected.
@@ -1835,11 +2060,27 @@ pub fn convert_plain_no_fonts(
   let mode = if data_mode == "default" { "" } else { data_mode }
   let warnings = workbook.warnings.copy()
   let grids : Array[@sheet.NamedGrid] = []
+  let picture_children : Array[Array[(Int32, Int32, Bytes)]] = []
   let mut counter = 0
   let mut warned_rtl = false
   let warned_sheets : Map[String, Bool] = Map([])
   let warned_table_styles : Map[String, Bool] = Map([])
   let doc_language = metadata.language.get(0).unwrap_or("")
+  let mut visible_sheets = 0
+  let mut sheet_bytes = 0L
+  for ref in workbook.sheets {
+    if !ref.hidden {
+      visible_sheets += 1
+      sheet_bytes += workbook.package
+        .part_size(ref.part)
+        .unwrap_or(0)
+        .to_int64()
+    }
+  }
+  let batched = visible_sheets > 1 && sheet_bytes >= 2097152L
+  let tile_maps : Array[Map[String, Json]] = []
+  let mut pending = 0
+  let mut batch_bytes = 0L
   for index, ref in workbook.sheets {
     if ref.hidden {
       continue
@@ -1851,10 +2092,8 @@ pub fn convert_plain_no_fonts(
     }
     let number = index + 1
     let id = "sheet" + number.to_string()
-    let unknown_styles : Array[String] = []
-    let (drawn, geo, missing_formula_values) = workbook.xlsx_draw_plain_sheet(
-      ref, styles, locale, doc_language, theme_colors, shared_runs, unknown_styles,
-    )
+    let table_events : Array[(String, String)] = []
+    let children : Array[(Int32, Int32, Bytes)] = []
     let (next, table_warnings) = workbook.store_sheet_tables(
       writer,
       ref.part,
@@ -1865,6 +2104,11 @@ pub fn convert_plain_no_fonts(
       counter,
       locale.number_locale,
     )
+    let (drawn, geo, missing_formula_values) = workbook.xlsx_draw_plain_sheet(
+      ref, styles, locale, doc_language, theme_colors, shared_runs, table_events,
+      writer, children,
+    )
+    picture_children.push(children)
     counter = next
     for warning in table_warnings {
       warnings.push(warning)
@@ -1886,10 +2130,12 @@ pub fn convert_plain_no_fonts(
       )
       warned_rtl = true
     }
-    for style in unknown_styles {
-      if !warned_table_styles.contains(style) {
-        warned_table_styles[style] = true
-        warnings.push("table style " + style + " is unknown")
+    for (key, warning) in table_events {
+      if key == "" {
+        warnings.push(warning)
+      } else if !warned_table_styles.contains(key) {
+        warned_table_styles[key] = true
+        warnings.push(warning)
       }
     }
     warned_sheets[ref.name] = true
@@ -1900,8 +2146,39 @@ pub fn convert_plain_no_fonts(
       gridlines: geo.show_grid,
       frozen_columns: Int32::min(geo.frozen_columns, 16384),
     })
+    if batched {
+      let size = workbook.package.part_size(ref.part).unwrap_or(0).to_int64()
+      batch_bytes += Int64::min(size, 1048576L - batch_bytes)
+      if batch_bytes >= 1048576L {
+        while pending < grids.length() {
+          tile_maps.push(
+            @sheet.store_grid_parts(
+              writer,
+              grids[pending].grid,
+              picture_children[pending],
+            ),
+          )
+          pending += 1
+        }
+        batch_bytes = 0L
+      }
+    }
   }
-  @sheet.store_grids(writer, grids, !no_text_index)
+  if batched {
+    while pending < grids.length() {
+      tile_maps.push(
+        @sheet.store_grid_parts(
+          writer,
+          grids[pending].grid,
+          picture_children[pending],
+        ),
+      )
+      pending += 1
+    }
+    @sheet.store_grid_views(writer, grids, tile_maps, !no_text_index)
+  } else {
+    @sheet.store_grids(writer, grids, !no_text_index, picture_children~)
+  }
   { bdf: writer.write_single(), warnings, sheets: grids.length(), }
 }
 
@@ -1914,8 +2191,22 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   doc_language : String,
   theme_colors : Map[Int32, XlsxRgb],
   shared_runs : Array[XlsxPlainRun?],
-  unknown_styles : Array[String],
+  table_events : Array[(String, String)],
+  writer : @core.DocumentWriter,
+  children : Array[(Int32, Int32, Bytes)],
 ) -> (@sheet.DrawnGrid, XlsxSheetGeometry, Int32) raise {
+  let (parsed, rich_cells) = workbook.xlsx_read_sheet_cells_with_runs(
+    ref.part,
+    shared_runs,
+  )
+  let mut rows = parsed.sorted_rows()
+  let table_headers : Array[(Int32, Int32, Int32, Int32, Int32)] = []
+  let pictures : Array[@sheet.GridPicture] = []
+  let hidden_pictures : Array[Bool] = []
+  let shape_fills : Array[UInt32?] = []
+  let shape_strokes : Array[(UInt32, Double)?] = []
+  let shape_no_fills : Array[Bool] = []
+  let shape_dashes : Array[String] = []
   let (
     links,
     has_conditional,
@@ -1923,10 +2214,19 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     table_filters,
     complex_rules,
     table_rules,
-  ) = workbook.xlsx_check_plain_sheet(ref.part, unknown_styles)
-  let (parsed, rich_cells) = workbook.xlsx_read_sheet_cells_with_runs(
+  ) = workbook.xlsx_check_plain_sheet(
     ref.part,
-    shared_runs,
+    ref.name,
+    theme_colors,
+    rows,
+    table_headers,
+    table_events,
+    pictures,
+    hidden_pictures,
+    shape_fills,
+    shape_strokes,
+    shape_no_fills,
+    shape_dashes,
   )
   let mut styled_runs = false
   for _, columns in rich_cells {
@@ -1971,9 +2271,23 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   } else {
     input_styles
   }
-  let mut rows = parsed.sorted_rows()
   let notes = workbook.xlsx_plain_notes(ref.part)
   let geo = workbook.read_sheet_geometry(ref.part)
+  if !pictures.is_empty() {
+    let height = geo.default_row_height
+    if height > 0.0 && height * 4.0 != (height * 4.0).trunc() {
+      raise InvalidXlsxInput(
+        "xlsx: pictures with fractional row heights are not supported",
+      )
+    }
+    for row in rows {
+      if row.height >= 0.0 && row.height * 4.0 != (row.height * 4.0).trunc() {
+        raise InvalidXlsxInput(
+          "xlsx: pictures with fractional row heights are not supported",
+        )
+      }
+    }
+  }
   let (spans, region_rows, merge_regions) = xlsx_plain_spans(geo.merges)
   let center_across : Map[Int32, Map[Int32, Bool]] = Map([])
   for row in rows {
@@ -2008,6 +2322,9 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     }
   }
   let extent_points = notes.copy()
+  for picture in pictures {
+    extent_points.push((picture.to_row, picture.to_column))
+  }
   for (range, _, _, _, _, _, _, _, _, _, _, _, _) in table_rules {
     extent_points.push((range.row_end.to_int(), range.column_end))
   }
@@ -3197,17 +3514,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   } else {
     cells
   }
-  let table_headers = workbook
-    .read_sheet_tables(ref.part)
-    .map(table => {
-      (
-        table.range.row_start.to_int(),
-        table.range.row_end.to_int(),
-        table.range.column_start,
-        table.range.column_end,
-        table.header_rows,
-      )
-    })
   let drawn = @sheet.draw_sized_grid_no_fonts(
     draw_cells,
     geometry,
@@ -3247,6 +3553,23 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     rich_base_sizes=run_base_sizes,
     table_headers~,
     table_filters~,
+    pictures~,
+    hidden_pictures~,
+    shape_fills~,
+    shape_strokes~,
+    shape_no_fills~,
+    shape_dashes~,
+    picture_writer=Some(writer),
+    picture_children=Some(children),
+    column_axis_default=Some(
+      Float::from_double(
+        if geo.default_column_width > 0.0 {
+          xlsx_col_width_points(geo.default_column_width, 7.0)
+        } else {
+          ((geo.base_column_width * 7.0 + 5.0) / 8.0).ceil() * 8.0 * 0.75
+        },
+      ),
+    ),
   ) catch {
     @sheet.InvalidArgument(message) => raise InvalidXlsxInput(message)
     error => raise error
