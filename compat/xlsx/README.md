@@ -20,7 +20,7 @@ borders (including diagonals and multiple colors at one weight), named and
 themed fonts and default font sizes, italic and decorated text, superscripts
 and subscripts, merged rectangles, center-across-selection, wrapped, indented
 and shrink-to-fit text, fixed and automatic row heights, hidden rows and
-columns, single unformatted text runs, links, conditional font, solid-fill, and border formats,
+columns, unformatted text runs, links, conditional font, solid-fill, and border formats,
 row and column styles including solid backgrounds and borders, and
 uncached formula warnings. Patterned base fills and complex base borders have
 separate rejection cases. The rendering
@@ -103,8 +103,11 @@ marker paths without assuming the Go map iteration order. The fixtures use
 `generate_sheet_multiple_notes_test.go`, `generate_sheet_multiple_notes_filter_test.go`,
 and `generate_sheet_multiple_notes_legacy_test.go`.
 Multiple unformatted text runs use `generate_multiple_plain_runs_safe_test.go`
-and `TestCodexMultiplePlainRunsSafe`. Mixed direct text and runs and text number
-formats remain outside the plain renderer's supported subset.
+and `TestCodexMultiplePlainRunsSafe`. Plain runs with text number formats, mixed
+direct text, data extraction, wrapping and duplicate cell references use
+`generate_rich_run_data_test.go`, `generate_rich_run_wrap_test.go`,
+`generate_rich_run_identity_test.go` and `generate_rich_run_legacy_test.go`.
+Runs with their own font properties remain unsupported.
 Duplicate and unique predicates use `generate_conditional_duplicate_test.go`
 and `TestCodexConditionalDuplicate`. Numeric comparison-key tests are generated
 by `generate_duplicate_keys_test.go` and `TestCodexXLSXDuplicateKeys`, including

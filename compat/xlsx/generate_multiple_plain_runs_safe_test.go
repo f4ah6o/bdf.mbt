@@ -63,7 +63,7 @@ func TestCodexMultiplePlainRunsSafe(t *testing.T) {
 		}
 		out = append(out, map[string]any{"input": b.Bytes(), "bdf": rendered.Bytes(), "warnings": x.Warnings, "mode": "none", "no_index": true})
 	}
-	for name, v := range map[string]any{"multiple-plain-runs-safe.json": out, "multiple-plain-runs-safe-unsupported.json": rejects} {
+	for name, v := range map[string]any{"multiple-plain-runs-safe.json": out, "multiple-plain-runs-legacy-inputs.json": rejects} {
 		data, e := json.Marshal(v)
 		if e != nil {
 			t.Fatal(e)

@@ -125,8 +125,9 @@ fn xlsx_read_cell(
   empty : Bool,
   column : Int32,
   strings : Array[String],
+  shared_runs : Array[String?],
   date1904 : Bool,
-) -> (XlsxCell, Bool) raise {
+) -> (XlsxCell, Bool, String?) raise {
   let reference = xlsx_attr(element, "r", "")
   let (c, _, valid) = xlsx_parse_ref(reference)
   let column = if valid { c } else { column }
@@ -134,6 +135,7 @@ fn xlsx_read_cell(
   let typ = xlsx_attr(element, "t", "n")
   let mut value = ""
   let mut inline : String? = None
+  let mut inline_runs : String? = None
   let mut has_formula = false
   let mut has_value = false
   let mut depth = if empty { 0 } else { 1 }
@@ -149,13 +151,14 @@ fn xlsx_read_cell(
           }
           has_value = true
         } else if depth == 1 && child.name.local_name == "is" {
-          inline = Some(
-            if event.kind is Start(_) {
-              xlsx_rich_text(reader)
-            } else {
-              ""
-            },
-          )
+          if event.kind is Start(_) {
+            let (plain, runs, multiple) = xlsx_rich_text_info(reader)
+            inline = Some(plain)
+            inline_runs = if multiple { Some(runs) } else { None }
+          } else {
+            inline = Some("")
+            inline_runs = None
+          }
           has_value = true
         } else {
           if depth == 1 && child.name.local_name == "f" {
@@ -173,9 +176,21 @@ fn xlsx_read_cell(
   let (kind, number, text) = xlsx_cell_value(
     typ, value, inline, strings, date1904,
   )
+  let runs = if typ == "inlineStr" {
+    inline_runs
+  } else if typ == "s" {
+    match xlsx_int(xlsx_trim(value)) {
+      Some(index) if index >= 0L && index < shared_runs.length().to_int64() =>
+        shared_runs[index.to_int()]
+      _ => None
+    }
+  } else {
+    None
+  }
   (
     { column, style, kind, number, text, },
     has_formula && (!has_value || (xlsx_trim(value) == "" && inline is None)),
+    runs,
   )
 }
 
@@ -185,6 +200,16 @@ pub fn XlsxWorkbook::read_sheet_cells(
   self : XlsxWorkbook,
   part : String,
 ) -> XlsxSheetCells raise {
+  let (cells, _) = self.xlsx_read_sheet_cells_with_runs(part, [])
+  cells
+}
+
+///|
+fn XlsxWorkbook::xlsx_read_sheet_cells_with_runs(
+  self : XlsxWorkbook,
+  part : String,
+  shared_runs : Array[String?],
+) -> (XlsxSheetCells, Map[Int32, Map[Int32, String]]) raise {
   let bytes = self.package.read(part) catch {
     @ooxml.InvalidOoxml(message) => raise InvalidXlsxInput(message)
   }
@@ -195,6 +220,7 @@ pub fn XlsxWorkbook::read_sheet_cells(
   let reader = @xml.NamespaceReader::from_string(text)
   let strings = self.load_shared_strings()
   let rows : Array[XlsxRow] = []
+  let rich_cells : Map[Int32, Map[Int32, String]] = Map([])
   let mut missing = 0
   let mut depth = 0
   let mut data_depth = -1
@@ -248,14 +274,33 @@ pub fn XlsxWorkbook::read_sheet_cells(
             row_depth = depth + 1
           }
         } else if depth == row_depth && name == "c" && !rows.is_empty() {
-          let (cell, no_value) = xlsx_read_cell(
+          let (cell, no_value, runs) = xlsx_read_cell(
             reader,
             element,
             event.kind is Empty(_),
             next_col,
             strings,
+            shared_runs,
             self.date1904,
           )
+          let row_index = rows[rows.length() - 1].index
+          match runs {
+            Some(text) => {
+              let columns = match rich_cells.get(row_index) {
+                Some(columns) => columns
+                None => {
+                  let columns : Map[Int32, String] = Map([])
+                  rich_cells[row_index] = columns
+                  columns
+                }
+              }
+              columns[cell.column] = text
+            }
+            None =>
+              if rich_cells.get(row_index) is Some(columns) {
+                columns.remove(cell.column)
+              }
+          }
           rows[rows.length() - 1].cells.push(cell)
           next_col = cell.column + 1
           if no_value {
@@ -288,7 +333,7 @@ pub fn XlsxWorkbook::read_sheet_cells(
       _ => ()
     }
   }
-  { rows, missing_formula_values: missing, }
+  ({ rows, missing_formula_values: missing, }, rich_cells)
 }
 
 ///|
