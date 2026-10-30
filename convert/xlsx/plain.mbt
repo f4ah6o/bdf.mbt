@@ -1352,32 +1352,31 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             let color = match segment.font {
               None => default_color
               Some(segment_font) => {
-                let varying = segment_font.size > 0.0 &&
-                  segment_font.size != font.size
-                if (
-                    varying &&
-                    (
-                      (
-                        horizontal != "general" &&
-                        horizontal != "left" &&
-                        horizontal != "right" &&
-                        horizontal != "center" &&
-                        horizontal != "centerContinuous"
-                      ) ||
-                      !visible_segments
-                      .iter()
-                      .all(part => {
-                        part.text == "" ||
-                        (match part.font {
-                          Some(f) =>
-                            (if f.size > 0.0 { f.size } else { original_size }) <=
-                            font.size
-                          None => original_size <= font.size
-                        })
-                      })
-                    )
+                let varying = (
+                    segment_font.size > 0.0 && segment_font.size != font.size
                   ) ||
-                  segment_font.vertical != "" {
+                  segment_font.vertical != ""
+                if varying &&
+                  (
+                    (
+                      horizontal != "general" &&
+                      horizontal != "left" &&
+                      horizontal != "right" &&
+                      horizontal != "center" &&
+                      horizontal != "centerContinuous"
+                    ) ||
+                    !visible_segments
+                    .iter()
+                    .all(part => {
+                      part.text == "" ||
+                      (match part.font {
+                        Some(f) =>
+                          (if f.size > 0.0 { f.size } else { original_size }) <=
+                          font.size
+                        None => original_size <= font.size
+                      })
+                    })
+                  ) {
                   raise InvalidXlsxInput(
                     "xlsx: plain conversion does not support these styled rich text runs",
                   )
@@ -1465,6 +1464,10 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
                 italic,
                 underline,
                 strike,
+                vertical: match segment.font {
+                  Some(f) => f.vertical
+                  None => ""
+                },
               })
             }
             previous_plain = plain
@@ -2333,7 +2336,14 @@ fn xlsx_plain_fitted_rows(
               } else if first != actual {
                 varying = true
               }
-              rich_measure.push({ text: segment.text, size: actual, })
+              let vertical = match segment.font {
+                Some(f) => f.vertical
+                None => ""
+              }
+              if vertical != "" {
+                varying = true
+              }
+              rich_measure.push({ text: segment.text, size: actual, vertical, })
             }
           }
           let mut text_height = 0.0
@@ -2432,9 +2442,13 @@ fn xlsx_rich_shrink_scale(
       Some(font) if font.size > 0.0 => font.size
       _ => base_size
     }
+    let measure_size = match segment.font {
+      Some(f) if f.vertical != "" => size * (2.0 / 3.0)
+      _ => size
+    }
     for ch in segment.text {
       let character = if ch == '\t' { ' ' } else { ch }
-      width += @sheet.sized_fallback_advance(character, false, size)
+      width += @sheet.sized_fallback_advance(character, false, measure_size)
     }
   }
   if width > available + 0.01 && width > 0.0 {

@@ -127,6 +127,7 @@ pub(all) struct GridRichColorRun {
   italic : Bool
   underline : String
   strike : Bool
+  vertical : String
 }
 
 pub(all) struct GridSolidFill {
@@ -157,6 +158,7 @@ pub(all) struct NamedGrid {
 pub(all) struct RichMeasureRun {
   text : String
   size : Double
+  vertical : String
 }
 
 pub(all) struct RichWrappedLine {

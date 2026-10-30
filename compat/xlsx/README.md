@@ -189,3 +189,5 @@ Mixed-size normalization and shrinking use `generate_multi_varying_spaces_test.g
 `generate_multi_mixed_shrink_height_test.go`, `generate_multi_mixed_shrink_ghost_test.go`,
 `generate_multi_mixed_shrink_long_test.go`, `generate_multi_mixed_shrink_tiny_test.go`,
 `generate_single_styled_shrink_tiny_test.go` and `generate_multi_real_wrap_ghost_test.go`.
+
+The `multi-script-*` fixtures compare superscript and subscript rich-text runs against the Go converter, including inherited sizes, wrapping, shrinking, narrow columns, and conditional formatting. `multi-script-legacy.json` covers all four formerly rejected inputs.

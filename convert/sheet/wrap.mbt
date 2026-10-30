@@ -146,6 +146,7 @@ pub fn wrap_text(
 pub(all) struct RichMeasureRun {
   text : String
   size : Double
+  vertical : String
 }
 
 ///|
@@ -190,7 +191,15 @@ pub fn wrap_rich_text(
         }
         items.push({
           character,
-          width: sized_fallback_advance(character, false, run.size),
+          width: sized_fallback_advance(
+            character,
+            false,
+            if run.vertical != "" {
+              run.size * (2.0 / 3.0)
+            } else {
+              run.size
+            },
+          ),
           size: run.size,
           is_break: false,
         })

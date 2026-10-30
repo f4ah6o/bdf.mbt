@@ -61,6 +61,7 @@ pub(all) struct GridRichColorRun {
   italic : Bool
   underline : String
   strike : Bool
+  vertical : String
 }
 
 ///|
@@ -397,7 +398,7 @@ pub fn draw_sized_grid_no_fonts(
         if run.size.is_nan() || run.size.is_inf() || run.size < 0.0 {
           raise InvalidArgument("invalid styled run size")
         }
-        if run.size > 0.0 {
+        if run.size > 0.0 || run.vertical != "" {
           varying = true
         }
       }
@@ -411,7 +412,12 @@ pub fn draw_sized_grid_no_fonts(
         }
         let mut shown = 0
         for run in rich_runs {
-          let run_size = if run.size > 0.0 { run.size } else { original_size }
+          let raw_size = if run.size > 0.0 { run.size } else { original_size }
+          let run_size = if run.vertical != "" {
+            raw_size * (2.0 / 3.0)
+          } else {
+            raw_size
+          }
           if wrap && shown >= 1024 {
             break
           }
@@ -453,6 +459,7 @@ pub fn draw_sized_grid_no_fonts(
       let rich_layout = if varying && wrap {
         let measure : Array[RichMeasureRun] = rich_runs.map(run => {
           text: run.text,
+          vertical: run.vertical,
           size: if run.size > 0.0 {
             run.size
           } else {
@@ -715,6 +722,7 @@ pub fn draw_sized_grid_no_fonts(
           strike=decoration.strike,
           rich_lines~,
           rich_scale=scale,
+          rich_base_size=original_size,
         )
       }
     }

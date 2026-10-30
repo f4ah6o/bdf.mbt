@@ -259,6 +259,7 @@ fn DrawTile::emit_cell(
   strike~ : Bool = false,
   rich_lines~ : Array[Array[GridRichColorRun]] = [],
   rich_scale~ : Double = 1.0,
+  rich_base_size~ : Double = 0.0,
 ) -> Unit raise {
   self.object.mark(2, ref)
   if layout.lang_known {
@@ -302,7 +303,23 @@ fn DrawTile::emit_cell(
         } else {
           east_asian
         }
-        let run_size = if run.size > 0.0 { run.size * rich_scale } else { size }
+        let raw_size = if run.size > 0.0 { run.size } else { rich_base_size }
+        let scaled_size = raw_size * rich_scale
+        let run_size = if run.vertical == "superscript" ||
+          run.vertical == "subscript" {
+          scaled_size * (2.0 / 3.0)
+        } else if run.size > 0.0 {
+          scaled_size
+        } else {
+          size
+        }
+        let shift = if run.vertical == "superscript" {
+          scaled_size * 0.33
+        } else if run.vertical == "subscript" {
+          -scaled_size * 0.15
+        } else {
+          0.0
+        }
         let mut chars = StringBuilder()
         let mut has_chars = false
         let mut cjk = false
@@ -314,7 +331,7 @@ fn DrawTile::emit_cell(
             self.text_run(
               chars.to_string(),
               line.x + start,
-              line.baseline,
+              line.baseline - shift,
               width,
               if cjk && run_east_asian != "" {
                 run_east_asian
@@ -337,8 +354,14 @@ fn DrawTile::emit_cell(
           has_chars = true
           cjk = next_cjk
           chars.write_char(character)
-          let step = if run.size > 0.0 {
-            sized_fallback_advance(character, run.bold, run.size) * rich_scale
+          let step = if run.size > 0.0 || run.vertical != "" {
+            let measure_size = if run.vertical != "" {
+              raw_size * (2.0 / 3.0)
+            } else {
+              raw_size
+            }
+            sized_fallback_advance(character, run.bold, measure_size) *
+            rich_scale
           } else {
             advance(character, run.bold)
           }
@@ -349,7 +372,7 @@ fn DrawTile::emit_cell(
           self.text_run(
             chars.to_string(),
             line.x + start,
-            line.baseline,
+            line.baseline - shift,
             width,
             if cjk && run_east_asian != "" {
               run_east_asian
