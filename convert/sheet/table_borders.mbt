@@ -3,6 +3,7 @@ priv struct GridEdge {
   row : Int32
   column : Int32
   border : GridStyleBorder
+  color_key : String
 }
 
 ///|
@@ -17,12 +18,14 @@ priv struct GridSegment {
 priv struct GridDiagonalSegment {
   border : GridStyleBorder
   segment : GridSegment
+  color_key : String
 }
 
 ///|
 priv struct GridEdgeGroup {
   border : GridStyleBorder
   segments : Array[GridSegment]
+  color_key : String
 }
 
 ///|
@@ -38,6 +41,7 @@ fn put_grid_edge(
   row : Int32,
   column : Int32,
   border : GridStyleBorder,
+  color_key~ : String = "",
 ) -> Unit {
   if border.weight == 0 {
     return
@@ -47,7 +51,7 @@ fn put_grid_edge(
     Some(existing) => if existing.border.weight >= border.weight { return }
     None => ()
   }
-  edges[key] = { row, column, border, }
+  edges[key] = { row, column, border, color_key, }
 }
 
 ///|
@@ -55,15 +59,17 @@ fn add_grid_segment(
   groups : Array[GridEdgeGroup],
   border : GridStyleBorder,
   segment : GridSegment,
+  color_key~ : String = "",
 ) -> Unit {
   for group in groups {
     if group.border.weight == border.weight &&
-      group.border.color == border.color {
+      group.border.color == border.color &&
+      group.color_key == color_key {
       group.segments.push(segment)
       return
     }
   }
-  groups.push({ border, segments: [segment], })
+  groups.push({ border, segments: [segment], color_key, })
 }
 
 ///|
@@ -91,6 +97,35 @@ fn GridDrawContext::paint_table_borders(
 }
 
 ///|
+// XLSX orders equal-weight strokes by Go's textual RGB tuple.
+fn xlsx_grid_border_color_key(color : UInt32) -> String {
+  let red = ((color >> 24) & 255U).to_double() / 255.0
+  let green = ((color >> 16) & 255U).to_double() / 255.0
+  let blue = ((color >> 8) & 255U).to_double() / 255.0
+  "{" + red.to_string() + " " + green.to_string() + " " + blue.to_string() + "}"
+}
+
+///|
+fn xlsx_grid_string_compare(a : String, b : String) -> Int32 {
+  let left : Array[Char] = [ for c in a => c ]
+  let right : Array[Char] = [ for c in b => c ]
+  for i in 0..<Int32::min(left.length(), right.length()) {
+    if left[i] != right[i] {
+      return left[i].to_int().compare(right[i].to_int())
+    }
+  }
+  left.length().compare(right.length())
+}
+
+///|
+fn xlsx_grid_border_color_compare(a : UInt32, b : UInt32) -> Int32 {
+  xlsx_grid_string_compare(
+    xlsx_grid_border_color_key(a),
+    xlsx_grid_border_color_key(b),
+  )
+}
+
+///|
 fn GridDrawContext::draw_grid_edges(
   self : GridDrawContext,
   horizontal : Map[String, GridEdge],
@@ -98,6 +133,7 @@ fn GridDrawContext::draw_grid_edges(
   columns : Array[Double],
   rows : Array[Double],
   diagonals~ : Array[GridDiagonalSegment] = [],
+  xlsx_color_order~ : Bool = false,
 ) -> Unit raise {
   let hs : Array[GridEdge] = [ for _, edge in horizontal => edge ]
   hs.sort_by((a, b) => {
@@ -124,17 +160,23 @@ fn GridDrawContext::draw_grid_edges(
           hs[j].row == first.row &&
           hs[j].column == hs[j - 1].column + 1 &&
           hs[j].border.weight == first.border.weight &&
-          hs[j].border.color == first.border.color {
+          hs[j].border.color == first.border.color &&
+          hs[j].color_key == first.color_key {
       j += 1
     }
     let y = rows[first.row]
     if columns[hs[j - 1].column + 1] > columns[first.column] {
-      add_grid_segment(groups, first.border, {
-        x0: columns[first.column],
-        y0: y,
-        x1: columns[hs[j - 1].column + 1],
-        y1: y,
-      })
+      add_grid_segment(
+        groups,
+        first.border,
+        {
+          x0: columns[first.column],
+          y0: y,
+          x1: columns[hs[j - 1].column + 1],
+          y1: y,
+        },
+        color_key=first.color_key,
+      )
     }
     i = j
   }
@@ -146,26 +188,46 @@ fn GridDrawContext::draw_grid_edges(
           vs[j].column == first.column &&
           vs[j].row == vs[j - 1].row + 1 &&
           vs[j].border.weight == first.border.weight &&
-          vs[j].border.color == first.border.color {
+          vs[j].border.color == first.border.color &&
+          vs[j].color_key == first.color_key {
       j += 1
     }
     let x = columns[first.column]
     if rows[vs[j - 1].row + 1] > rows[first.row] {
-      add_grid_segment(groups, first.border, {
-        x0: x,
-        y0: rows[first.row],
-        x1: x,
-        y1: rows[vs[j - 1].row + 1],
-      })
+      add_grid_segment(
+        groups,
+        first.border,
+        { x0: x, y0: rows[first.row], x1: x, y1: rows[vs[j - 1].row + 1], },
+        color_key=first.color_key,
+      )
     }
     i = j
   }
   for diagonal in diagonals {
-    add_grid_segment(groups, diagonal.border, diagonal.segment)
+    add_grid_segment(
+      groups,
+      diagonal.border,
+      diagonal.segment,
+      color_key=diagonal.color_key,
+    )
   }
   groups.sort_by((a, b) => {
     if a.border.weight == b.border.weight {
-      a.border.color.compare(b.border.color)
+      if xlsx_color_order {
+        let ak = if a.color_key == "" {
+          xlsx_grid_border_color_key(a.border.color)
+        } else {
+          a.color_key
+        }
+        let bk = if b.color_key == "" {
+          xlsx_grid_border_color_key(b.border.color)
+        } else {
+          b.color_key
+        }
+        xlsx_grid_string_compare(ak, bk)
+      } else {
+        a.border.color.compare(b.border.color)
+      }
     } else {
       a.border.weight.compare(b.border.weight)
     }

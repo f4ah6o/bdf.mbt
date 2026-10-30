@@ -123,6 +123,8 @@ pub fn draw_sized_grid_no_fonts(
   borders~ : Map[Int32, Map[Int32, GridCellBorder]] = Map([]),
   spans~ : Map[Int32, Map[Int32, Int32]] = Map([]),
   border_colors~ : Map[Int32, Map[Int32, Array[UInt32]]] = Map([]),
+  border_color_keys~ : Map[Int32, Map[Int32, Array[String]]] = Map([]),
+  diagonal_color_keys~ : Map[Int32, Map[Int32, String]] = Map([]),
   merge_regions~ : Array[GridMergeRegion] = [],
   east_asian_fonts~ : Map[Int32, Map[Int32, String]] = Map([]),
   wraps~ : Map[Int32, Map[Int32, Bool]] = Map([]),
@@ -739,8 +741,8 @@ pub fn draw_sized_grid_no_fonts(
     }
   }
   context.sized_grid_borders(
-    rows, borders, border_colors, diagonals, spans, region_rows, merge_regions, col_positions,
-    row_positions, visible_columns,
+    rows, borders, border_colors, border_color_keys, diagonals, diagonal_color_keys,
+    spans, region_rows, merge_regions, col_positions, row_positions, visible_columns,
   )
   for (row, column) in notes {
     if row < 0 || row >= count || column < 0 || column >= visible_columns {
@@ -900,7 +902,9 @@ fn GridDrawContext::sized_grid_borders(
   rows : Array[SizedGridRow],
   borders : Map[Int32, Map[Int32, GridCellBorder]],
   border_colors : Map[Int32, Map[Int32, Array[UInt32]]],
+  border_color_keys : Map[Int32, Map[Int32, Array[String]]],
   diagonals : Map[Int32, Map[Int32, GridCellDiagonal]],
+  diagonal_color_keys : Map[Int32, Map[Int32, String]],
   spans : Map[Int32, Map[Int32, Int32]],
   region_rows : Map[Int32, Map[Int32, GridMergeRegion]],
   merge_regions : Array[GridMergeRegion],
@@ -931,6 +935,10 @@ fn GridDrawContext::sized_grid_borders(
           add_sized_diagonal(
             diagonal_segments,
             values[column],
+            match diagonal_color_keys.get(index) {
+              Some(row_keys) => row_keys.get(column).unwrap_or("")
+              None => ""
+            },
             columns[column],
             row_positions[index],
             columns[column + 1],
@@ -961,7 +969,13 @@ fn GridDrawContext::sized_grid_borders(
           Some(row_colors) => row_colors.get(column).unwrap_or([])
           None => []
         }
-        put_sized_borders(horizontal, vertical, index, column, border, colors)
+        let color_keys = match border_color_keys.get(index) {
+          Some(row_keys) => row_keys.get(column).unwrap_or([])
+          None => []
+        }
+        put_sized_borders(
+          horizontal, vertical, index, column, border, colors, color_keys,
+        )
       }
     }
   }
@@ -980,7 +994,13 @@ fn GridDrawContext::sized_grid_borders(
               Some(row_colors) => row_colors.get(column).unwrap_or([])
               None => []
             }
-            put_sized_borders(horizontal, vertical, row, column, border, colors)
+            let color_keys = match border_color_keys.get(row) {
+              Some(row_keys) => row_keys.get(column).unwrap_or([])
+              None => []
+            }
+            put_sized_borders(
+              horizontal, vertical, row, column, border, colors, color_keys,
+            )
           }
         }
       }
@@ -992,6 +1012,10 @@ fn GridDrawContext::sized_grid_borders(
         add_sized_diagonal(
           diagonal_segments,
           diagonal,
+          match diagonal_color_keys.get(region.row_start) {
+            Some(row_keys) => row_keys.get(region.column_start).unwrap_or("")
+            None => ""
+          },
           columns[region.column_start],
           row_positions[region.row_start],
           columns[region.column_end + 1],
@@ -1006,6 +1030,7 @@ fn GridDrawContext::sized_grid_borders(
     columns,
     row_positions,
     diagonals=diagonal_segments,
+    xlsx_color_order=true,
   )
 }
 
@@ -1013,6 +1038,7 @@ fn GridDrawContext::sized_grid_borders(
 fn add_sized_diagonal(
   segments : Array[GridDiagonalSegment],
   diagonal : GridCellDiagonal,
+  color_key : String,
   x0 : Double,
   y0 : Double,
   x1 : Double,
@@ -1023,10 +1049,10 @@ fn add_sized_diagonal(
     color: diagonal.color,
   }
   if diagonal.down {
-    segments.push({ border, segment: { x0, y0, x1, y1, }, })
+    segments.push({ border, segment: { x0, y0, x1, y1, }, color_key, })
   }
   if diagonal.up {
-    segments.push({ border, segment: { x0, y0: y1, x1, y1: y0, }, })
+    segments.push({ border, segment: { x0, y0: y1, x1, y1: y0, }, color_key, })
   }
 }
 
@@ -1038,21 +1064,38 @@ fn put_sized_borders(
   column : Int32,
   border : GridCellBorder,
   colors : Array[UInt32],
+  color_keys : Array[String],
 ) -> Unit {
   let color = fn(i : Int32) { colors.get(i).unwrap_or(0x000000ffU) }
-  put_grid_edge(horizontal, row, column, {
-    weight: border.top,
-    color: color(0),
-  })
-  put_grid_edge(horizontal, row + 1, column, {
-    weight: border.bottom,
-    color: color(1),
-  })
-  put_grid_edge(vertical, row, column, { weight: border.left, color: color(2), })
-  put_grid_edge(vertical, row, column + 1, {
-    weight: border.right,
-    color: color(3),
-  })
+  let color_key = fn(i : Int32) { color_keys.get(i).unwrap_or("") }
+  put_grid_edge(
+    horizontal,
+    row,
+    column,
+    { weight: border.top, color: color(0), },
+    color_key=color_key(0),
+  )
+  put_grid_edge(
+    horizontal,
+    row + 1,
+    column,
+    { weight: border.bottom, color: color(1), },
+    color_key=color_key(1),
+  )
+  put_grid_edge(
+    vertical,
+    row,
+    column,
+    { weight: border.left, color: color(2), },
+    color_key=color_key(2),
+  )
+  put_grid_edge(
+    vertical,
+    row,
+    column + 1,
+    { weight: border.right, color: color(3), },
+    color_key=color_key(3),
+  )
 }
 
 ///|
