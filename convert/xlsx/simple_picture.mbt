@@ -808,7 +808,7 @@ fn xlsx_crop_svg_size(image : Bytes) -> (Double, Double)? {
               attr.name.local_name == "width" ||
               attr.name.local_name == "height"
             ) {
-            let value = match xlsx_crop_svg_length(attr.value) {
+            let value = match xlsx_crop_svg_length(attr.value, true) {
               Some(value) => value
               None => return None
             }
@@ -884,19 +884,19 @@ fn xlsx_crop_svg_viewbox(value : String) -> (Double, Double)? {
   if fields.length() != 4 {
     return None
   }
-  let w = match xlsx_int(fields[2]) {
-    Some(v) if v > 0L && v <= 1000000L => v
-    _ => return None
+  let w = match xlsx_crop_svg_length(fields[2], false) {
+    Some(v) => v
+    None => return None
   }
-  let h = match xlsx_int(fields[3]) {
-    Some(v) if v > 0L && v <= 1000000L => v
-    _ => return None
+  let h = match xlsx_crop_svg_length(fields[3], false) {
+    Some(v) => v
+    None => return None
   }
-  Some((w.to_double(), h.to_double()))
+  Some((w, h))
 }
 
 ///|
-fn xlsx_crop_svg_length(value : String) -> Double? {
+fn xlsx_crop_svg_length(value : String, allow_units : Bool) -> Double? {
   let data = @utf8.encode(value)
   let mut i = 0
   while i < data.length() &&
@@ -956,6 +956,9 @@ fn xlsx_crop_svg_length(value : String) -> Double? {
     i += 1
   }
   if i != data.length() || parsed <= 0.0 || parsed.is_nan() || parsed.is_inf() {
+    return None
+  }
+  if !allow_units && unit != "" {
     return None
   }
   let size = match unit.to_lower() {
