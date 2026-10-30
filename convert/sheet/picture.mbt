@@ -140,12 +140,13 @@ fn GridDrawContext::paint_picture(
   }
   if ![
       "", "rect", "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram",
-      "trapezoid",
+      "trapezoid", "homePlate", "chevron",
     ].contains(shape_geometry) {
     raise InvalidArgument("sheet: invalid shape geometry")
   }
   if [
       "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram", "trapezoid",
+      "homePlate", "chevron",
     ].contains(shape_geometry) &&
     shape_fill is None &&
     !shape_no_fill {
@@ -154,7 +155,9 @@ fn GridDrawContext::paint_picture(
   if shape_adjustment is Some(value) {
     if value < 0L ||
       value > 100000L ||
-      !["triangle", "parallelogram", "trapezoid"].contains(shape_geometry) {
+      !["triangle", "parallelogram", "trapezoid", "homePlate", "chevron"].contains(
+        shape_geometry,
+      ) {
       raise InvalidArgument("sheet: invalid shape adjustment")
     }
   }
@@ -395,6 +398,45 @@ fn GridDrawContext::paint_picture(
         draw_width / 2.0,
         draw_height,
       ],
+    }
+  } else if shape_geometry == "homePlate" || shape_geometry == "chevron" {
+    let ss = Double::min(draw_width, draw_height)
+    let x = ss * shape_adjustment.unwrap_or(50000L).to_double() / 100000.0
+    let y = draw_height / 2.0
+    if shape_geometry == "homePlate" {
+      {
+        verbs: b"\x00\x01\x01\x01\x01\x04",
+        coordinates: [
+          0.0,
+          0.0,
+          draw_width - x,
+          0.0,
+          draw_width,
+          y,
+          draw_width - x,
+          draw_height,
+          0.0,
+          draw_height,
+        ],
+      }
+    } else {
+      {
+        verbs: b"\x00\x01\x01\x01\x01\x01\x04",
+        coordinates: [
+          0.0,
+          0.0,
+          draw_width - x,
+          0.0,
+          draw_width,
+          y,
+          draw_width - x,
+          draw_height,
+          0.0,
+          draw_height,
+          x,
+          y,
+        ],
+      }
     }
   } else if shape_geometry == "parallelogram" || shape_geometry == "trapezoid" {
     let ss = Double::min(draw_width, draw_height)
