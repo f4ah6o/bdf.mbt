@@ -126,7 +126,7 @@ func TestCodexConditionalStdDev(t *testing.T) {
 		std := stds[(i/16)%len(stds)]
 		rule := fmt.Sprintf(`<conditionalFormatting sqref="A1:F3 C1:F2"><cfRule type="aboveAverage" aboveAverage="%s" equalAverage="%s" stdDev="%s" dxfId="0"></cfRule></conditionalFormatting>`, above, equal, std)
 		if i >= 256 && i < 262 {
-			rule = `<conditionalFormatting sqref="A1:F3"><cfRule type="aboveAverage" stdDev="1e100" dxfId="0"></cfRule></conditionalFormatting>`
+			rule = `<conditionalFormatting sqref="A1:F3"><cfRule type="aboveAverage" stdDev="0x1p1" dxfId="0"></cfRule></conditionalFormatting>`
 		}
 		if i == 262 {
 			rule = strings.Replace(rule, `stdDev="1"`, `stdDev="0"`, 1)

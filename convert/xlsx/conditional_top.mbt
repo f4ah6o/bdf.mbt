@@ -105,19 +105,19 @@ fn xlsx_conditional_average_threshold(
     let difference = value - mean
     squared = xlsx_fma(difference, difference, squared)
   }
-  if squared.is_nan() || squared.is_inf() {
+  if squared.is_nan() {
     xlsx_reject_conditional()
   }
   let sd = (squared / (values.length() - 1).to_double()).sqrt()
   let result = xlsx_fma(if above { multiplier } else { -multiplier }, sd, mean)
-  if result.is_nan() || result.is_inf() {
+  if result.is_nan() {
     xlsx_reject_conditional()
   }
   Some(result)
 }
 
 ///|
-// Keep decimal multipliers bounded and reject hexadecimal floats.
+// Reject hexadecimal floats, which MoonBit does not parse.
 fn xlsx_conditional_stddev(raw : String) -> Double raise {
   let text = xlsx_trim(raw)
   if text.contains("x") ||
@@ -127,7 +127,7 @@ fn xlsx_conditional_stddev(raw : String) -> Double raise {
     xlsx_reject_conditional()
   }
   let value = @string.parse_double(text) catch { _ => return 0.0 }
-  if value.is_nan() || value.is_inf() || value < -1000000.0 || value > 1000000.0 {
+  if value.is_nan() || value.is_inf() {
     xlsx_reject_conditional()
   }
   value
