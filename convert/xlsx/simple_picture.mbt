@@ -413,14 +413,18 @@ fn XlsxWorkbook::xlsx_simple_picture(
             [
               "rect", "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram",
               "trapezoid", "homePlate", "chevron", "plus", "hexagon", "octagon",
-              "roundRect",
+              "roundRect", "flowChartProcess", "flowChartDecision",
             ].contains(xlsx_attr(element, "prst", "")) {
             if geometry {
               return None
             }
             geometry = true
             shape_geometry = if is_shape {
-              xlsx_attr(element, "prst", "")
+              match xlsx_attr(element, "prst", "") {
+                "flowChartProcess" => "rect"
+                "flowChartDecision" => "diamond"
+                other => other
+              }
             } else {
               "rect"
             }
