@@ -157,7 +157,7 @@ fn XlsxWorkbook::xlsx_nonformatting_table_style(
 }
 
 ///|
-// Resolve a custom style containing one whole-table, header-row or total-row differential.
+// Resolve a custom style containing one supported table-region differential.
 fn XlsxWorkbook::xlsx_table_style(
   self : XlsxWorkbook,
   wanted : String,
@@ -252,7 +252,13 @@ fn XlsxWorkbook::xlsx_table_style(
   let mut selected_kind = ""
   for (kind, id) in items {
     if id >= 0 && id < dxf_count {
-      if (kind != "wholeTable" && kind != "headerRow" && kind != "totalRow") ||
+      if (
+          kind != "wholeTable" &&
+          kind != "headerRow" &&
+          kind != "totalRow" &&
+          kind != "firstColumn" &&
+          kind != "lastColumn"
+        ) ||
         (selected_kind != "" && selected_kind != kind) {
         return (-1, 0)
       }
@@ -273,10 +279,25 @@ fn XlsxWorkbook::xlsx_table_style(
       1
     } else if selected_kind == "totalRow" {
       2
+    } else if selected_kind == "firstColumn" {
+      3
+    } else if selected_kind == "lastColumn" {
+      4
     } else {
       0
     },
   )
+}
+
+///|
+fn xlsx_table_style_flag(
+  element : @xml.NamespaceElement,
+  name : String,
+) -> Bool {
+  match xlsx_trim(xlsx_attr(element, name, "")) {
+    "1" | "true" | "on" => true
+    _ => false
+  }
 }
 
 ///|
@@ -286,7 +307,7 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   part : String,
   style_cache : Map[String, Bool],
   style_id_cache : Map[String, (Int32, Int32)],
-  table_rules : Array[(XlsxRange, Int32, Int64, Int64)],
+  table_rules : Array[(XlsxRange, Int32, Int64, Int64, Int32, Int32)],
 ) -> Int64 raise {
   let data = self.package.read(part) catch { _ => return -1L }
   let text = @utf8.decode_lossy(data[:], ignore_bom=true)
@@ -314,6 +335,8 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   let mut style_info_seen = false
   let mut style_rule = -1
   let mut selected_region = 0
+  let mut first_column = false
+  let mut last_column = false
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -324,6 +347,8 @@ fn XlsxWorkbook::xlsx_plain_table_area(
         }
         if depth == 1 && name == "tableStyleInfo" && !style_info_seen {
           style_info_seen = true
+          first_column = xlsx_table_style_flag(element, "showFirstColumn")
+          last_column = xlsx_table_style_flag(element, "showLastColumn")
           let style = xlsx_decode_string(xlsx_attr(element, "name", ""))
           if style != "" {
             let accepted = match style_cache.get(style) {
@@ -391,7 +416,22 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   } else {
     range.row_end
   }
-  table_rules.push((range, style_rule, style_start, style_end))
+  let style_col_start = if (selected_region == 3 && !first_column) ||
+    (selected_region == 4 && !last_column) {
+    range.column_end + 1
+  } else if selected_region == 4 {
+    range.column_end
+  } else {
+    range.column_start
+  }
+  let style_col_end = if selected_region == 3 {
+    range.column_start
+  } else {
+    range.column_end
+  }
+  table_rules.push(
+    (range, style_rule, style_start, style_end, style_col_start, style_col_end),
+  )
   area
 }
 
@@ -490,7 +530,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   Bool,
   XlsxRange?,
   Array[(Int32, Int32)],
-  Array[(XlsxRange, Int32, Int64, Int64)],
+  Array[(XlsxRange, Int32, Int64, Int64, Int32, Int32)],
 ) raise {
   let data = self.package.read(part) catch {
     @ooxml.InvalidOoxml(message) => raise InvalidXlsxInput(message)
@@ -516,7 +556,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut table_room = 200000L
   let table_style_cache : Map[String, Bool] = Map([])
   let table_style_id_cache : Map[String, (Int32, Int32)] = Map([])
-  let table_rules : Array[(XlsxRange, Int32, Int64, Int64)] = []
+  let table_rules : Array[(XlsxRange, Int32, Int64, Int64, Int32, Int32)] = []
   let mut has_conditional = false
   let mut auto_filter : XlsxRange? = None
   let links : Array[@sheet.GridLink] = []
@@ -1156,7 +1196,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     }
   }
   let mut has_table_style = false
-  for (_, id, _, _) in table_rules {
+  for (_, id, _, _, _, _) in table_rules {
     if id >= 0 {
       has_table_style = true
     }
@@ -1238,7 +1278,15 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         if format.font != 0 {
           continue
         }
-        for index, (range, id, style_start, style_end) in table_rules {
+        for
+          index, (
+            range,
+            id,
+            style_start,
+            style_end,
+            style_col_start,
+            style_col_end,
+          ) in table_rules {
           if row.index.to_int64() < range.row_start ||
             row.index.to_int64() > range.row_end ||
             cell.column < range.column_start ||
@@ -1247,7 +1295,9 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           }
           if id >= 0 &&
             row.index.to_int64() >= style_start &&
-            row.index.to_int64() <= style_end {
+            row.index.to_int64() <= style_end &&
+            cell.column >= style_col_start &&
+            cell.column <= style_col_end {
             let group = match matches.get(index) {
               Some(value) => value
               None => {
@@ -1270,7 +1320,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         }
       }
     }
-    for index, (_, id, _, _) in table_rules {
+    for index, (_, id, _, _, _, _) in table_rules {
       if id >= 0 && matches.get(index) is Some(matched) {
         let diff = workbook.xlsx_conditional_style(id)
         let font_diff : XlsxConditionalStyle = { ..diff, fill: None, }
@@ -1289,7 +1339,15 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   } else {
     (rows, styles)
   }
-  for table_index, (range, id, style_start, style_end) in table_rules {
+  for
+    table_index, (
+      range,
+      id,
+      style_start,
+      style_end,
+      style_col_start,
+      style_col_end,
+    ) in table_rules {
     if id < 0 {
       continue
     }
@@ -1300,8 +1358,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     let allowed : Map[Int32, Map[Int32, Bool]] = Map([])
     let first_row = Int64::max(style_start, 0L).to_int()
     let last_row = Int64::min(style_end, (row_count - 1).to_int64()).to_int()
-    let first_col = Int32::max(range.column_start, 0)
-    let last_col = Int32::min(range.column_end, col_count - 1)
+    let first_col = Int32::max(style_col_start, 0)
+    let last_col = Int32::min(style_col_end, col_count - 1)
     let row_styles : Map[Int32, Int32] = Map([])
     for row in parsed.sorted_rows() {
       row_styles[row.index] = row.style
@@ -1320,7 +1378,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       for r in first_row..<=last_row {
         let columns : Map[Int32, Bool] = Map([])
         for c in first_col..<=last_col {
-          for owner, (other, _, _, _) in table_rules {
+          for owner, (other, _, _, _, _, _) in table_rules {
             if r.to_int64() >= other.row_start &&
               r.to_int64() <= other.row_end &&
               c >= other.column_start &&
@@ -1362,12 +1420,12 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         for cell in row.cells {
           if row.index.to_int64() < range.row_start ||
             row.index.to_int64() > range.row_end ||
-            cell.column < range.column_start ||
-            cell.column > range.column_end {
+            cell.column < first_col ||
+            cell.column > last_col {
             continue
           }
           let mut owned = false
-          for owner, (other, _, _, _) in table_rules {
+          for owner, (other, _, _, _, _, _) in table_rules {
             if row.index.to_int64() >= other.row_start &&
               row.index.to_int64() <= other.row_end &&
               cell.column >= other.column_start &&
