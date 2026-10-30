@@ -142,7 +142,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           let raw = xlsx_trim(xlsx_attr(element, "val", "")).to_lower()
           let size = @string.parse_double(raw) catch { _ => 0.0 }
           if size.is_inf() ||
-            size >= 1000.0 ||
+            size >= 1000000.0 ||
             raw.has_prefix("0x") ||
             raw.has_prefix("+0x") ||
             raw.has_prefix("-0x") {
@@ -386,7 +386,7 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
           let raw = xlsx_trim(xlsx_attr(element, "val", "")).to_lower()
           let size = @string.parse_double(raw) catch { _ => 0.0 }
           if size.is_inf() ||
-            size >= 1000.0 ||
+            size >= 1000000.0 ||
             raw.has_prefix("0x") ||
             raw.has_prefix("+0x") ||
             raw.has_prefix("-0x") {

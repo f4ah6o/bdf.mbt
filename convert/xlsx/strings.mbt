@@ -150,7 +150,10 @@ fn xlsx_read_run_font(
             font_seen = true
           } else if name == "sz" {
             if !size_seen {
-              font.apply(element)
+              let size = xlsx_float_or(element, "val", 0.0)
+              if size > 0.0 {
+                font.size = size
+              }
             }
             size_seen = true
           } else {
