@@ -30,3 +30,10 @@ Upstream currently inherits some code spaces during Go map iteration. For
 on iteration order. This port resolves the entire parent chain deterministically;
 the fixture generator uses the same complete-chain expectation for that field.
 CID and Unicode lookup expectations still come directly from upstream.
+
+PDF stream fixtures compare TIFF and PNG predictors, Flate, RunLength, LZW,
+ASCIIHex and ASCII85 filters, and multi-filter pipelines against upstream.
+The generated tests include limits, invalid data, truncated streams and LZW
+dictionary-width changes. Each `generate_*_test.go` file runs without its
+build tag as the correspondingly named `TestCodex*` test in upstream
+`converter/pdf`, with `BDF_REFERENCE_OUTPUT` set to its generated test path.
