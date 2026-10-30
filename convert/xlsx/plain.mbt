@@ -157,8 +157,8 @@ fn XlsxWorkbook::xlsx_nonformatting_table_style(
 }
 
 ///|
-// Resolve a custom style containing only a whole-table font differential.
-fn XlsxWorkbook::xlsx_whole_table_font_style(
+// Resolve a custom style containing a whole-table font or fill differential.
+fn XlsxWorkbook::xlsx_whole_table_style(
   self : XlsxWorkbook,
   wanted : String,
 ) -> Int32 raise {
@@ -264,16 +264,6 @@ fn XlsxWorkbook::xlsx_whole_table_font_style(
   if diff.border is Some(_) {
     return -1
   }
-  if diff.fill is Some(_) &&
-    (
-      diff.bold is Some(_) ||
-      diff.italic is Some(_) ||
-      diff.strike is Some(_) ||
-      diff.underline is Some(_) ||
-      diff.color is Some(_)
-    ) {
-    return -1
-  }
   chosen
 }
 
@@ -283,7 +273,7 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   self : XlsxWorkbook,
   part : String,
   style_cache : Map[String, Bool],
-  font_cache : Map[String, Int32],
+  style_id_cache : Map[String, Int32],
   table_rules : Array[(XlsxRange, Int32)],
 ) -> Int64 raise {
   let data = self.package.read(part) catch { _ => return -1L }
@@ -309,7 +299,7 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   let reader = @xml.NamespaceReader::from_string(text)
   let mut depth = 0
   let mut style_info_seen = false
-  let mut font_rule = -1
+  let mut style_rule = -1
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -331,15 +321,15 @@ fn XlsxWorkbook::xlsx_plain_table_area(
               }
             }
             if !accepted {
-              font_rule = match font_cache.get(style) {
+              style_rule = match style_id_cache.get(style) {
                 Some(value) => value
                 None => {
-                  let value = self.xlsx_whole_table_font_style(style)
-                  font_cache[style] = value
+                  let value = self.xlsx_whole_table_style(style)
+                  style_id_cache[style] = value
                   value
                 }
               }
-              if font_rule < 0 {
+              if style_rule < 0 {
                 return -1L
               }
             }
@@ -361,7 +351,7 @@ fn XlsxWorkbook::xlsx_plain_table_area(
       _ => ()
     }
   }
-  table_rules.push((range, font_rule))
+  table_rules.push((range, style_rule))
   area
 }
 
@@ -485,7 +475,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut table_depth = -1
   let mut table_room = 200000L
   let table_style_cache : Map[String, Bool] = Map([])
-  let table_font_cache : Map[String, Int32] = Map([])
+  let table_style_id_cache : Map[String, Int32] = Map([])
   let table_rules : Array[(XlsxRange, Int32)] = []
   let mut has_conditional = false
   let mut auto_filter : XlsxRange? = None
@@ -541,7 +531,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
             let area = self.xlsx_plain_table_area(
               rel.target,
               table_style_cache,
-              table_font_cache,
+              table_style_id_cache,
               table_rules,
             )
             if area < 0L || area > table_room {
@@ -1125,13 +1115,13 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       }
     }
   }
-  let mut has_table_font = false
+  let mut has_table_style = false
   for (_, id) in table_rules {
     if id >= 0 {
-      has_table_font = true
+      has_table_style = true
     }
   }
-  let styles = if has_conditional || styled_runs || has_table_font {
+  let styles = if has_conditional || styled_runs || has_table_style {
     {
       ..input_styles,
       fonts: input_styles.fonts.copy(),
@@ -1197,10 +1187,10 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     }
   }
   let (row_count, col_count) = xlsx_initial_extent(parsed, geo, notes)
-  if has_conditional || styled_runs || has_table_font {
+  if has_conditional || styled_runs || has_table_style {
     rows = xlsx_normalize_conditional_styles(rows, styles.cell_formats.length())
   }
-  if has_table_font {
+  if has_table_style {
     for column in geo.columns {
       if column.style >= 0 {
         raise InvalidXlsxInput(
@@ -1253,9 +1243,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     for index, (_, id) in table_rules {
       if id >= 0 && matches.get(index) is Some(matched) {
         let diff = workbook.xlsx_conditional_style(id)
-        if diff.fill is None {
-          rows = xlsx_apply_conditional_style(rows, styles, matched, diff)
-        }
+        let font_diff : XlsxConditionalStyle = { ..diff, fill: None, }
+        rows = xlsx_apply_conditional_style(rows, styles, matched, font_diff)
       }
     }
   }
@@ -1270,7 +1259,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   } else {
     (rows, styles)
   }
-  for (range, id) in table_rules {
+  for table_index, (range, id) in table_rules {
     if id < 0 {
       continue
     }
@@ -1278,9 +1267,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     if diff.fill is None {
       continue
     }
-    if table_rules.length() != 1 ||
-      !geo.merges.is_empty() ||
-      range.row_end - range.row_start > 1000L {
+    if !geo.merges.is_empty() || range.row_end - range.row_start > 1000L {
       raise InvalidXlsxInput(
         "xlsx: plain conversion does not support worksheet feature tableParts",
       )
@@ -1294,7 +1281,17 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       for r in first_row..<=last_row {
         let columns : Map[Int32, Bool] = Map([])
         for c in first_col..<=last_col {
-          columns[c] = true
+          for owner, (other, _) in table_rules {
+            if r.to_int64() >= other.row_start &&
+              r.to_int64() <= other.row_end &&
+              c >= other.column_start &&
+              c <= other.column_end {
+              if owner == table_index {
+                columns[c] = true
+              }
+              break
+            }
+          }
         }
         allowed[r] = columns
       }
@@ -1349,7 +1346,15 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         }
       }
     }
-    rows = xlsx_apply_conditional_style(rows, styles, matched, diff)
+    let fill_diff : XlsxConditionalStyle = {
+      ..diff,
+      bold: None,
+      italic: None,
+      strike: None,
+      underline: None,
+      color: None,
+    }
+    rows = xlsx_apply_conditional_style(rows, styles, matched, fill_diff)
   }
   if has_conditional {
     rows = workbook.xlsx_apply_plain_conditionals(
