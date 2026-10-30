@@ -66,6 +66,8 @@ Text predicates use `generate_conditional_text_test.go` and
 with `generate_lowercase_test.go` and `TestCodexXLSXLowercaseTable`.
 Top and bottom rank predicates use `generate_conditional_top_test.go`
 and `TestCodexConditionalTop`.
+Average predicates without a standard-deviation multiplier use
+`generate_conditional_average_test.go` and `TestCodexConditionalAverage`.
 Conditional font cases matching blank cells use `generate_conditional_blank_test.go`
 and `TestCodexConditionalBlank`.
 Blank-cell paint cases use `generate_conditional_paint_blank_test.go` and

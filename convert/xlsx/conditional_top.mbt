@@ -10,6 +10,33 @@ fn xlsx_conditional_top_threshold(
   percent : Bool,
   bottom : Bool,
 ) -> Double? raise {
+  let values = xlsx_conditional_numeric_values(
+    rows, ranges, row_count, col_count,
+  )
+  if values.is_empty() {
+    return None
+  }
+  let rank = if percent {
+    Int64::max(1L, values.length().to_int64() * rank.to_int64() / 100L)
+  } else {
+    rank.to_int64()
+  }
+  if rank <= 0L {
+    return None
+  }
+  let rank = Int64::min(rank, values.length().to_int64()).to_int()
+  values.sort_by((a, b) => if a < b { -1 } else if a > b { 1 } else { 0 })
+  Some(if bottom { values[rank - 1] } else { values[values.length() - rank] })
+}
+
+///|
+// Collect cells in range order, matching the upstream rule's deduplication.
+fn xlsx_conditional_numeric_values(
+  rows : Array[XlsxRow],
+  ranges : Array[XlsxRange],
+  row_count : Int32,
+  col_count : Int32,
+) -> Array[Double] raise {
   let values : Array[Double] = []
   let seen : Map[Int32, Map[Int32, Bool]] = Map([])
   for range in ranges {
@@ -44,20 +71,46 @@ fn xlsx_conditional_top_threshold(
       }
     }
   }
+  values
+}
+
+///|
+fn xlsx_conditional_mean(
+  rows : Array[XlsxRow],
+  ranges : Array[XlsxRange],
+  row_count : Int32,
+  col_count : Int32,
+) -> Double? raise {
+  let values = xlsx_conditional_numeric_values(
+    rows, ranges, row_count, col_count,
+  )
   if values.is_empty() {
     return None
   }
-  let rank = if percent {
-    Int64::max(1L, values.length().to_int64() * rank.to_int64() / 100L)
-  } else {
-    rank.to_int64()
+  let mut sum = 0.0
+  for value in values {
+    sum += value
   }
-  if rank <= 0L {
-    return None
+  if sum.is_nan() || sum.is_inf() {
+    xlsx_reject_conditional()
   }
-  let rank = Int64::min(rank, values.length().to_int64()).to_int()
-  values.sort_by((a, b) => if a < b { -1 } else if a > b { 1 } else { 0 })
-  Some(if bottom { values[rank - 1] } else { values[values.length() - rank] })
+  Some(sum / values.length().to_double())
+}
+
+///|
+// A nonzero standard-deviation multiplier needs a separate variance path.
+fn xlsx_conditional_require_zero_stddev(raw : String) -> Unit raise {
+  let text = xlsx_trim(raw)
+  if text.contains("x") ||
+    text.contains("X") ||
+    text.contains("p") ||
+    text.contains("P") {
+    xlsx_reject_conditional()
+  }
+  let value = @string.parse_double(text) catch { _ => return }
+  if value != 0.0 || value.is_nan() {
+    xlsx_reject_conditional()
+  }
 }
 
 ///|

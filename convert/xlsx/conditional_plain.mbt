@@ -41,6 +41,9 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   let mut top_percent = false
   let mut top_bottom = false
   let mut top_threshold : Double? = None
+  let mut average_above = true
+  let mut average_equal = false
+  let mut average_threshold : Double? = None
   let mut blank_matches = false
   let mut any_blank_matches = false
   let matched : Map[Int32, Map[Int32, Bool]] = Map([])
@@ -87,7 +90,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             ![
               "cellIs", "containsBlanks", "notContainsBlanks", "containsErrors",
               "notContainsErrors", "containsText", "notContainsText", "beginsWith",
-              "endsWith", "top10",
+              "endsWith", "top10", "aboveAverage",
             ].contains(rule_type) ||
             (
               rule_type == "cellIs" &&
@@ -103,6 +106,15 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             top_rank = xlsx_conditional_rank(xlsx_attr(element, "rank", ""))
             top_percent = xlsx_attr_bool(element, "percent")
             top_bottom = xlsx_attr_bool(element, "bottom")
+          }
+          if rule_type == "aboveAverage" {
+            average_above = !["0", "false", "off"].contains(
+              xlsx_trim(xlsx_attr(element, "aboveAverage", "")),
+            )
+            average_equal = xlsx_attr_bool(element, "equalAverage")
+            xlsx_conditional_require_zero_stddev(
+              xlsx_attr(element, "stdDev", ""),
+            )
           }
           rule_depth = depth + 1
           dxf_id = xlsx_attr_int(element, "dxfId", -1)
@@ -246,6 +258,11 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
               rows, ranges, row_count, col_count, top_rank, top_percent, top_bottom,
             )
           }
+          if rule_type == "aboveAverage" {
+            average_threshold = xlsx_conditional_mean(
+              rows, ranges, row_count, col_count,
+            )
+          }
           if moving_reference {
             if conditional_count != 1 {
               xlsx_reject_conditional()
@@ -291,6 +308,26 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
                     "notContainsBlanks" => !blank
                     "containsErrors" => cell.kind == 4
                     "notContainsErrors" => cell.kind != 4
+                    "aboveAverage" =>
+                      if cell.kind != 1 {
+                        false
+                      } else {
+                        match average_threshold {
+                          Some(threshold) =>
+                            if average_above {
+                              if average_equal {
+                                cell.number >= threshold
+                              } else {
+                                cell.number > threshold
+                              }
+                            } else if average_equal {
+                              cell.number <= threshold
+                            } else {
+                              cell.number < threshold
+                            }
+                          None => false
+                        }
+                      }
                     "top10" =>
                       if cell.kind != 1 {
                         false
