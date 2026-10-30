@@ -261,7 +261,17 @@ fn XlsxWorkbook::xlsx_whole_table_font_style(
     return -1
   }
   let diff = self.xlsx_conditional_style(chosen) catch { _ => return -1 }
-  if diff.fill is Some(_) || diff.border is Some(_) {
+  if diff.border is Some(_) {
+    return -1
+  }
+  if diff.fill is Some(_) &&
+    (
+      diff.bold is Some(_) ||
+      diff.italic is Some(_) ||
+      diff.strike is Some(_) ||
+      diff.underline is Some(_) ||
+      diff.color is Some(_)
+    ) {
     return -1
   }
   chosen
@@ -1243,7 +1253,9 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     for index, (_, id) in table_rules {
       if id >= 0 && matches.get(index) is Some(matched) {
         let diff = workbook.xlsx_conditional_style(id)
-        rows = xlsx_apply_conditional_style(rows, styles, matched, diff)
+        if diff.fill is None {
+          rows = xlsx_apply_conditional_style(rows, styles, matched, diff)
+        }
       }
     }
   }
@@ -1257,6 +1269,87 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     (xlsx_apply_plain_run_fonts(rows, layout_styles, rich_cells), layout_styles)
   } else {
     (rows, styles)
+  }
+  for (range, id) in table_rules {
+    if id < 0 {
+      continue
+    }
+    let diff = workbook.xlsx_conditional_style(id)
+    if diff.fill is None {
+      continue
+    }
+    if table_rules.length() != 1 ||
+      !geo.merges.is_empty() ||
+      range.row_end - range.row_start > 1000L {
+      raise InvalidXlsxInput(
+        "xlsx: plain conversion does not support worksheet feature tableParts",
+      )
+    }
+    let allowed : Map[Int32, Map[Int32, Bool]] = Map([])
+    let first_row = Int64::max(range.row_start, 0L).to_int()
+    let last_row = Int64::min(range.row_end, (row_count - 1).to_int64()).to_int()
+    let first_col = Int32::max(range.column_start, 0)
+    let last_col = Int32::min(range.column_end, col_count - 1)
+    if first_row <= last_row && first_col <= last_col {
+      for r in first_row..<=last_row {
+        let columns : Map[Int32, Bool] = Map([])
+        for c in first_col..<=last_col {
+          columns[c] = true
+        }
+        allowed[r] = columns
+      }
+    }
+    for row in parsed.sorted_rows() {
+      if allowed.get(row.index) is Some(columns) {
+        for cell in row.cells {
+          if !columns.contains(cell.column) {
+            continue
+          }
+          let index = if cell.style < 0 ||
+            cell.style >= input_styles.cell_formats.length() {
+            0
+          } else {
+            cell.style
+          }
+          let fill_id = input_styles.cell_formats[index].fill
+          if fill_id >= 0 && fill_id < input_styles.fills.length() {
+            let fill = input_styles.fills[fill_id]
+            if fill.pattern != "" || fill.gradient is Some(_) {
+              columns.remove(cell.column)
+            }
+          }
+        }
+      }
+    }
+    let matched : Map[Int32, Map[Int32, Bool]] = Map([])
+    rows = xlsx_materialize_conditional_blanks(
+      rows,
+      geo,
+      styles.cell_formats.length(),
+      [range],
+      row_count,
+      col_count,
+      matched,
+      Some(allowed),
+    )
+    for row in rows {
+      if allowed.get(row.index) is Some(columns) {
+        for cell in row.cells {
+          if columns.contains(cell.column) {
+            let result = match matched.get(row.index) {
+              Some(value) => value
+              None => {
+                let value : Map[Int32, Bool] = Map([])
+                matched[row.index] = value
+                value
+              }
+            }
+            result[cell.column] = true
+          }
+        }
+      }
+    }
+    rows = xlsx_apply_conditional_style(rows, styles, matched, diff)
   }
   if has_conditional {
     rows = workbook.xlsx_apply_plain_conditionals(
