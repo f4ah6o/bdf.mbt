@@ -117,7 +117,8 @@ pub fn sized_fallback_advance(
 /// points with each drawing. `shape_no_fills` marks shapes without a fill.
 /// `shape_geometries` selects "rect", "ellipse", "diamond", "triangle",
 /// "rtTriangle", "parallelogram", "trapezoid", "homePlate", "chevron",
-/// "plus", "hexagon", "octagon", "roundRect", "flowChartMerge",
+/// "plus", "hexagon", "octagon", "roundRect", "flowChartAlternateProcess",
+/// "flowChartMerge",
 /// "flowChartInputOutput", "flowChartPreparation", "flowChartPunchedCard",
 /// "flowChartCollate", "flowChartManualInput", "flowChartManualOperation",
 /// "flowChartOffpageConnector", "irregularSeal1", "irregularSeal2" or
