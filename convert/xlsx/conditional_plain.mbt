@@ -37,6 +37,10 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   let mut operator = ""
   let mut rule_type = ""
   let mut rule_text = ""
+  let mut top_rank = 10
+  let mut top_percent = false
+  let mut top_bottom = false
+  let mut top_threshold : Double? = None
   let mut blank_matches = false
   let mut any_blank_matches = false
   let matched : Map[Int32, Map[Int32, Bool]] = Map([])
@@ -83,7 +87,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             ![
               "cellIs", "containsBlanks", "notContainsBlanks", "containsErrors",
               "notContainsErrors", "containsText", "notContainsText", "beginsWith",
-              "endsWith",
+              "endsWith", "top10",
             ].contains(rule_type) ||
             (
               rule_type == "cellIs" &&
@@ -95,6 +99,11 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             xlsx_reject_conditional()
           }
           rule_text = xlsx_go_lower(xlsx_attr(element, "text", ""))
+          if rule_type == "top10" {
+            top_rank = xlsx_conditional_rank(xlsx_attr(element, "rank", ""))
+            top_percent = xlsx_attr_bool(element, "percent")
+            top_bottom = xlsx_attr_bool(element, "bottom")
+          }
           rule_depth = depth + 1
           dxf_id = xlsx_attr_int(element, "dxfId", -1)
           operator = xlsx_attr(element, "operator", "equal")
@@ -232,6 +241,11 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
           if rule_count != 1 {
             xlsx_reject_conditional()
           }
+          if rule_type == "top10" {
+            top_threshold = xlsx_conditional_top_threshold(
+              rows, ranges, row_count, col_count, top_rank, top_percent, top_bottom,
+            )
+          }
           if moving_reference {
             if conditional_count != 1 {
               xlsx_reject_conditional()
@@ -277,6 +291,20 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
                     "notContainsBlanks" => !blank
                     "containsErrors" => cell.kind == 4
                     "notContainsErrors" => cell.kind != 4
+                    "top10" =>
+                      if cell.kind != 1 {
+                        false
+                      } else {
+                        match top_threshold {
+                          Some(threshold) =>
+                            if top_bottom {
+                              cell.number <= threshold
+                            } else {
+                              cell.number >= threshold
+                            }
+                          None => false
+                        }
+                      }
                     "containsText"
                     | "notContainsText"
                     | "beginsWith"
