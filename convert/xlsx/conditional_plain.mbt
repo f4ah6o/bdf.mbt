@@ -630,6 +630,21 @@ fn xlsx_conditional_shifted_reference(
       if negative && cell.kind == 3 {
         return Some({ number: -cell.number, text: None, })
       }
+      if negative && cell.kind == 2 {
+        let source = xlsx_trim(cell.text)
+        // Go also accepts hexadecimal floats, which MoonBit does not parse.
+        if source.contains("x") ||
+          source.contains("X") ||
+          source.contains("p") ||
+          source.contains("P") {
+          return None
+        }
+        let value = @string.parse_double(source) catch { _ => return None }
+        if value.is_nan() || value.is_inf() {
+          return None
+        }
+        return Some({ number: -value, text: None, })
+      }
       if negative {
         return None
       }
