@@ -1146,7 +1146,12 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               Some(sizes) => sizes.get(cell.column).unwrap_or(drawn_size)
               None => drawn_size
             }
-            xlsx_rich_shrink_scale(run.segments, base_size, available)
+            xlsx_rich_shrink_scale(
+              run.segments,
+              base_size,
+              font.vertical,
+              available,
+            )
           } else {
             xlsx_plain_shrink_scale(text, available, drawn_size)
           }
@@ -1280,7 +1285,10 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             strike: font.strike,
           }
         }
-        if font.vertical != "" {
+        if font.vertical != "" &&
+          !(rich_cells.get(row.index) is Some(cols) &&
+          cols.get(cell.column) is Some(r) &&
+          !r.segments.is_empty()) {
           let columns = match scripts.get(row.index) {
             Some(columns) => columns
             None => {
@@ -1317,14 +1325,11 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           columns.get(cell.column) is Some(run) &&
           !run.segments.is_empty() {
           let alignment = styles.cell_formats[format_index].alignment
-          if font.vertical != "" ||
-            (
-              horizontal != "general" &&
-              horizontal != "left" &&
-              horizontal != "right" &&
-              horizontal != "center" &&
-              horizontal != "centerContinuous"
-            ) {
+          if horizontal != "general" &&
+            horizontal != "left" &&
+            horizontal != "right" &&
+            horizontal != "center" &&
+            horizontal != "centerContinuous" {
             raise InvalidXlsxInput(
               "xlsx: plain conversion does not support these styled rich text runs",
             )
@@ -1466,7 +1471,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
                 strike,
                 vertical: match segment.font {
                   Some(f) => f.vertical
-                  None => ""
+                  None => font.vertical
                 },
               })
             }
@@ -2305,7 +2310,12 @@ fn xlsx_plain_fitted_rows(
             0.0
           }
           let bold = styles.fonts[font_index].bold
-          let drawn_size = if styles.fonts[font_index].vertical == "" {
+          let drawn_size = if styles.fonts[font_index].vertical == "" ||
+            (
+              rich_cells.get(row.index) is Some(cols) &&
+              cols.get(cell.column) is Some(r) &&
+              !r.segments.is_empty()
+            ) {
             size
           } else {
             size * (2.0 / 3.0)
@@ -2338,7 +2348,7 @@ fn xlsx_plain_fitted_rows(
               }
               let vertical = match segment.font {
                 Some(f) => f.vertical
-                None => ""
+                None => styles.fonts[font_index].vertical
               }
               if vertical != "" {
                 varying = true
@@ -2393,7 +2403,12 @@ fn xlsx_plain_fitted_rows(
                 Some(sizes) => sizes.get(cell.column).unwrap_or(drawn_size)
                 None => drawn_size
               }
-              xlsx_rich_shrink_scale(run.segments, base_size, width)
+              xlsx_rich_shrink_scale(
+                run.segments,
+                base_size,
+                styles.fonts[font_index].vertical,
+                width,
+              )
             } else {
               xlsx_plain_shrink_scale(formatted.text(), width, drawn_size)
             }
@@ -2434,6 +2449,7 @@ fn xlsx_plain_indent(alignment : XlsxAlignment, kind : Int32) -> Double {
 fn xlsx_rich_shrink_scale(
   segments : Array[XlsxRunSegment],
   base_size : Double,
+  base_vertical : String,
   available : Double,
 ) -> Double {
   let mut width = 0.0
@@ -2442,10 +2458,11 @@ fn xlsx_rich_shrink_scale(
       Some(font) if font.size > 0.0 => font.size
       _ => base_size
     }
-    let measure_size = match segment.font {
-      Some(f) if f.vertical != "" => size * (2.0 / 3.0)
-      _ => size
+    let vertical = match segment.font {
+      Some(f) => f.vertical
+      None => base_vertical
     }
+    let measure_size = if vertical != "" { size * (2.0 / 3.0) } else { size }
     for ch in segment.text {
       let character = if ch == '\t' { ' ' } else { ch }
       width += @sheet.sized_fallback_advance(character, false, measure_size)
