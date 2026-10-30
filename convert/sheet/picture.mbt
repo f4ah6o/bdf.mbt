@@ -142,24 +142,24 @@ fn GridDrawContext::paint_picture(
   if ![
       "", "rect", "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram",
       "trapezoid", "homePlate", "chevron", "plus", "hexagon", "octagon", "roundRect",
-      "flowChartMerge", "flowChartInputOutput", "flowChartPreparation", "flowChartPunchedCard",
-      "flowChartCollate", "flowChartManualInput", "flowChartManualOperation", "flowChartOffpageConnector",
-      "irregularSeal1", "irregularSeal2", "lightningBolt", "swooshArrow", "flowChartDocument",
-      "heart", "wave", "doubleWave", "bentUpArrow", "corner", "diagStripe", "dodecagon",
-      "downArrow", "downArrowCallout", "halfFrame", "heptagon", "leftArrow", "leftArrowCallout",
-      "leftRightArrow", "leftRightArrowCallout", "leftRightUpArrow", "leftUpArrow",
-      "mathMinus", "mathPlus", "nonIsoscelesTrapezoid", "notchedRightArrow", "quadArrow",
-      "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip1Rect", "snip2DiagRect",
-      "snip2SameRect", "star10", "star7", "upArrowCallout", "upDownArrow", "upArrow",
-      "upDownArrowCallout", "wedgeRectCallout",
+      "flowChartAlternateProcess", "flowChartMerge", "flowChartInputOutput", "flowChartPreparation",
+      "flowChartPunchedCard", "flowChartCollate", "flowChartManualInput", "flowChartManualOperation",
+      "flowChartOffpageConnector", "irregularSeal1", "irregularSeal2", "lightningBolt",
+      "swooshArrow", "flowChartDocument", "heart", "wave", "doubleWave", "bentUpArrow",
+      "corner", "diagStripe", "dodecagon", "downArrow", "downArrowCallout", "halfFrame",
+      "heptagon", "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
+      "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid",
+      "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout",
+      "snip1Rect", "snip2DiagRect", "snip2SameRect", "star10", "star7", "upArrowCallout",
+      "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
     ].contains(shape_geometry) {
     raise InvalidArgument("sheet: invalid shape geometry")
   }
   if [
       "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram", "trapezoid",
-      "homePlate", "chevron", "plus", "hexagon", "octagon", "roundRect", "flowChartMerge",
-      "flowChartInputOutput", "flowChartPreparation", "flowChartPunchedCard", "flowChartCollate",
-      "flowChartManualInput", "flowChartManualOperation", "flowChartOffpageConnector",
+      "homePlate", "chevron", "plus", "hexagon", "octagon", "roundRect", "flowChartAlternateProcess",
+      "flowChartMerge", "flowChartInputOutput", "flowChartPreparation", "flowChartPunchedCard",
+      "flowChartCollate", "flowChartManualInput", "flowChartManualOperation", "flowChartOffpageConnector",
       "irregularSeal1", "irregularSeal2", "lightningBolt", "swooshArrow", "flowChartDocument",
       "heart", "wave", "doubleWave", "bentUpArrow", "corner", "diagStripe", "dodecagon",
       "downArrow", "downArrowCallout", "halfFrame", "heptagon", "leftArrow", "leftArrowCallout",
@@ -444,6 +444,12 @@ fn GridDrawContext::paint_picture(
       draw_width,
       draw_height,
       shape_adjustment.unwrap_or(16667L),
+    )
+  } else if shape_geometry == "flowChartAlternateProcess" {
+    sheet_rounded_preset_path(
+      draw_width,
+      draw_height,
+      Double::min(draw_width, draw_height) / 6.0,
     )
   } else if shape_geometry == "octagon" {
     let a = Double::min(shape_adjustment.unwrap_or(29289L).to_double(), 50000.0)
@@ -855,6 +861,15 @@ fn sheet_round_rect_path(
   let radius = Double::min(width, height) *
     Double::min(adjustment.to_double(), 50000.0) /
     100000.0
+  sheet_rounded_preset_path(width, height, radius)
+}
+
+///|
+fn sheet_rounded_preset_path(
+  width : Double,
+  height : Double,
+  radius : Double,
+) -> @core.Path {
   let right = width - radius
   let bottom = height - radius
   let args : Array[Double] = [0.0, radius]
