@@ -65,6 +65,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut saw_xfrm_ext = false
   let mut flip_horizontal = false
   let mut flip_vertical = false
+  let mut rotation = 0
   let mut description = ""
   let mut title = ""
   let mut text = StringBuilder()
@@ -296,9 +297,13 @@ fn XlsxWorkbook::xlsx_simple_picture(
               }
               seen[key] = true
               if key == "rot" {
-                if xlsx_int(attr.value) != Some(0L) {
-                  return None
+                let value = match xlsx_int(attr.value) {
+                  Some(value) if value >= -21600000L &&
+                    value <= 21600000L &&
+                    value % 5400000L == 0L => value
+                  _ => return None
                 }
+                rotation = value.to_int()
                 continue
               }
               let flag = if attr.value == "1" || attr.value == "true" {
@@ -455,6 +460,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
         if depth == 2 {
           if pictures != 1 ||
             saw_xfrm_off != saw_xfrm_ext ||
+            (saw_xfrm_off && rotation != 0) ||
             !saw_nv ||
             !saw_nvpr ||
             !saw_blip_fill ||
@@ -492,6 +498,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
               crop_bottom,
               flip_horizontal,
               flip_vertical,
+              rotation,
               description,
               title,
               images,
@@ -549,6 +556,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
           saw_xfrm_ext = false
           flip_horizontal = false
           flip_vertical = false
+          rotation = 0
           description = ""
           title = ""
         }
@@ -597,6 +605,7 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
   crop_bottom : Double,
   flip_horizontal : Bool,
   flip_vertical : Bool,
+  rotation : Int32,
   description : String,
   title : String,
   images : Map[String, Bytes],
@@ -703,6 +712,7 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
     image_height,
     flip_horizontal,
     flip_vertical,
+    rotation,
   })
 }
 

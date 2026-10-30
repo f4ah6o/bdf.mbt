@@ -32,6 +32,7 @@ pub(all) struct GridPicture {
   image_height : Double
   flip_horizontal : Bool
   flip_vertical : Bool
+  rotation : Int32
 }
 
 ///|
@@ -47,6 +48,9 @@ fn GridDrawContext::paint_picture(
 ) -> Int32 raise {
   if picture.kind < 0 ||
     picture.kind > 2 ||
+    picture.rotation < -21600000 ||
+    picture.rotation > 21600000 ||
+    picture.rotation % 5400000 != 0 ||
     picture.x.is_nan() ||
     picture.x.is_inf() ||
     picture.y.is_nan() ||
@@ -229,7 +233,27 @@ fn GridDrawContext::paint_picture(
     object.mark(10, picture.description)
   }
   object.save()
-  if picture.flip_horizontal || picture.flip_vertical {
+  if picture.rotation != 0 {
+    let radians = picture.rotation.to_double() / 60000.0 * @math.PI / 180.0
+    let sin = @math.sin(radians)
+    let cos = @math.cos(radians)
+    let fh = if picture.flip_horizontal { -1.0 } else { 1.0 }
+    let fv = if picture.flip_vertical { -1.0 } else { 1.0 }
+    let a = cos * fh
+    let b = sin * fh
+    let c = -sin * fv
+    let d = cos * fv
+    let e = a * (-width / 2.0) + c * (-height / 2.0) + width / 2.0
+    let f = b * (-width / 2.0) + d * (-height / 2.0) + height / 2.0
+    object.transform(
+      Float::from_double(a),
+      Float::from_double(b),
+      Float::from_double(c),
+      Float::from_double(d),
+      Float::from_double(e),
+      Float::from_double(f),
+    )
+  } else if picture.flip_horizontal || picture.flip_vertical {
     object.transform(
       if picture.flip_horizontal {
         -1.0F

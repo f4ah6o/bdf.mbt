@@ -37,9 +37,11 @@ test "invalid picture geometry reports an error instead of indexing outside the 
     image_height: 0.0,
     flip_horizontal: false,
     flip_vertical: false,
+    rotation: 0,
   }
   let invalid = [
     { ..picture, kind: 3, },
+    { ..picture, rotation: 1, },
     { ..picture, from_row: -1, },
     { ..picture, from_row: 2147483647, },
     { ..picture, from_x_offset: -1.0, },
@@ -140,6 +142,7 @@ test "picture tiles reject coordinates outside the integer range" {
     image_height: 0.0,
     flip_horizontal: false,
     flip_vertical: false,
+    rotation: 0,
   }
   let result = Ok(
     context.paint_picture(
@@ -199,6 +202,7 @@ test "pictures respect their cumulative tile budget" {
     image_height: 0.0,
     flip_horizontal: false,
     flip_vertical: false,
+    rotation: 0,
   }
   let result = Ok(
     context.paint_picture(
