@@ -132,6 +132,19 @@ try {
     for (let i = 0; i < pixels.length; i += 4) if (pixels[i + 3] > 0 && pixels[i] < 100 && pixels[i + 1] < 100 && pixels[i + 2] < 100 && ++dark > 100) return true;
     return false;
   }), null, { timeout: 30000 });
+  await page.waitForFunction(() => {
+    let teal = 0, orange = 0;
+    for (const canvas of document.querySelectorAll('#preview canvas')) {
+      if (!canvas.width || !canvas.height) continue;
+      const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+      for (let i = 0; i < pixels.length; i += 4) {
+        const [r, g, b, a] = pixels.subarray(i, i + 4);
+        if (a && r < 55 && g > 45 && g < 130 && b > 60 && b < 150) teal++;
+        if (a && r > 235 && g > 180 && g < 240 && b > 150 && b < 220) orange++;
+      }
+    }
+    return teal > 500 && orange > 100;
+  }, null, { timeout: 30000 });
   await page.locator('#search').fill('Notebook');
   await page.locator('#search-form button').click();
   await page.waitForFunction(() => /^1 \/ [1-9]/.test(document.querySelector('#search-status').textContent), null, { timeout: 30000 });
