@@ -199,3 +199,5 @@ The `multi-repeated-props-*` fixtures verify that the first run font name and si
 The `multi-repeated-children-*` fixtures verify that the first run text and properties elements take precedence when they repeat.
 
 The `multi-large-font-*` and `single-large-font` fixtures cover run sizes of 1,000 and above in fixed-height rows, including wrapping, shrinking, and script formatting.
+
+The `plain-table-*` fixtures cover unstyled tables without filters, including header marks, overlapping ranges, data extraction and empty cells. Styled and filtered tables remain unsupported.

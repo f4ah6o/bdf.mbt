@@ -7,6 +7,68 @@ pub(all) struct XlsxPlainResult {
 }
 
 ///|
+// A table without a style or filter affects header marks and data extraction.
+fn XlsxWorkbook::xlsx_plain_table_area(
+  self : XlsxWorkbook,
+  part : String,
+) -> Int64 raise {
+  let data = self.package.read(part) catch { _ => return -1L }
+  let text = @utf8.decode_lossy(data[:], ignore_bom=true)
+  if text.contains("<!ENTITY") {
+    return -1L
+  }
+  let table = xlsx_read_list_table(data) catch { _ => None }
+  let range = match table {
+    Some(t) => t.range
+    None => return -1L
+  }
+  if range.row_start < 0L ||
+    range.row_end < range.row_start ||
+    range.row_end >= 1048576L ||
+    range.column_start < 0 ||
+    range.column_end < range.column_start ||
+    range.column_end >= 16384 {
+    return -1L
+  }
+  let area = (range.row_end - range.row_start + 1L) *
+    (range.column_end - range.column_start + 1).to_int64()
+  let reader = @xml.NamespaceReader::from_string(text)
+  let mut depth = 0
+  while true {
+    let event = reader.read_event()
+    match event.kind {
+      Start(element) | Empty(element) => {
+        let name = element.name.local_name
+        if depth == 0 && name != "table" {
+          return -1L
+        }
+        if depth == 1 &&
+          (
+            name == "autoFilter" ||
+            (name == "tableStyleInfo" && xlsx_attr(element, "name", "") != "")
+          ) {
+          return -1L
+        }
+        if event.kind is Start(_) {
+          depth += 1
+        } else if depth == 0 {
+          break
+        }
+      }
+      End(_) => {
+        depth -= 1
+        if depth == 0 {
+          break
+        }
+      }
+      Eof => if depth == 0 { break } else { return -1L }
+      _ => ()
+    }
+  }
+  area
+}
+
+///|
 fn XlsxWorkbook::xlsx_check_plain_sheet(
   self : XlsxWorkbook,
   part : String,
@@ -32,6 +94,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut link_depth = -1
   let mut extension_depth = -1
   let mut table_depth = -1
+  let mut table_room = 200000L
   let mut has_conditional = false
   let mut auto_filter : XlsxRange? = None
   let links : Array[@sheet.GridLink] = []
@@ -81,10 +144,14 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           }
         } else if depth == table_depth && name == "tablePart" {
           let id = xlsx_rel_id(element, "id")
-          if self.package.target(part, id) is Some(_) {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support worksheet feature tableParts",
-            )
+          if self.package.target(part, id) is Some(rel) {
+            let area = self.xlsx_plain_table_area(rel.target)
+            if area < 0L || area > table_room {
+              raise InvalidXlsxInput(
+                "xlsx: plain conversion does not support worksheet feature tableParts",
+              )
+            }
+            table_room -= area
           }
         } else if extension_depth >= 0 &&
           depth >= extension_depth &&
@@ -1479,6 +1546,17 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   } else {
     cells
   }
+  let table_headers = workbook
+    .read_sheet_tables(ref.part)
+    .map(table => {
+      (
+        table.range.row_start.to_int(),
+        table.range.row_end.to_int(),
+        table.range.column_start,
+        table.range.column_end,
+        table.header_rows,
+      )
+    })
   let drawn = @sheet.draw_sized_grid_no_fonts(
     draw_cells,
     geometry,
@@ -1514,6 +1592,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     notes~,
     rich_colors~,
     rich_base_sizes=run_base_sizes,
+    table_headers~,
   ) catch {
     @sheet.InvalidArgument(message) => raise InvalidXlsxInput(message)
     error => raise error

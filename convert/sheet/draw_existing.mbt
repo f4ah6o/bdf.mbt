@@ -139,6 +139,7 @@ pub fn draw_sized_grid_no_fonts(
   notes~ : Array[(Int32, Int32)] = [],
   rich_colors~ : Map[Int32, Map[Int32, Array[GridRichColorRun]]] = Map([]),
   rich_base_sizes~ : Map[Int32, Map[Int32, Double]] = Map([]),
+  table_headers~ : Array[(Int32, Int32, Int32, Int32, Int32)] = [],
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -623,12 +624,21 @@ pub fn draw_sized_grid_no_fonts(
         }
         text_columns = Int32::max(text_columns, Int32::min(lo, 16383) + 1)
       }
+      let mut table_header = false
+      for table in table_headers {
+        let (r0, r1, c0, c1, header) = table
+        if i >= r0 && i <= r1 && column >= c0 && column <= c1 {
+          table_header = i.to_int64() < r0.to_int64() + header.to_int64()
+          break
+        }
+      }
       let reference = cell_reference(i, column, false) +
         (if row_spans.contains(column) {
           ":" + cell_reference(last_row, reference_last, false)
         } else {
           ""
-        })
+        }) +
+        (if table_header { " col" } else { "" })
       let rich_lines : Array[Array[GridRichColorRun]] = []
       if !rich_runs.is_empty() {
         let chars : Array[Char] = []
