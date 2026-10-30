@@ -83,7 +83,7 @@ for name in names:
         for token in expression.split()[1:]:
             assert token in defined or re.fullmatch(r'-?\d+(\.\d+)?', token), (name, token)
         key = guide.get('name')
-        if key == 'adj' and name in ('diagStripe', 'snip1Rect', 'star10', 'star7'):
+        if (key == 'adj' and name in ('diagStripe', 'snip1Rect', 'star10', 'star7')) or key == 'adj1':
             default = formula(expression)
             lines.append(f'      env["{key}"] = if adjustment is Some(value) {{ value.to_double() }} else {{ {default} }}')
         else:

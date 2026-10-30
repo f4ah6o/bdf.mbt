@@ -647,7 +647,12 @@ fn XlsxWorkbook::xlsx_simple_picture(
             [
               "triangle", "parallelogram", "trapezoid", "homePlate", "chevron", "plus",
               "hexagon", "octagon", "roundRect", "diagStripe", "snip1Rect", "star10",
-              "star7",
+              "star7", "bentUpArrow", "corner", "downArrow", "downArrowCallout",
+              "halfFrame", "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
+              "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid",
+              "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow",
+              "rightArrowCallout", "snip2DiagRect", "snip2SameRect", "upArrowCallout",
+              "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
             ].contains(shape_geometry)
           )
         } else if depth == 6 && parent == "avLst" && parents[4] == "prstGeom" {
@@ -655,7 +660,19 @@ fn XlsxWorkbook::xlsx_simple_picture(
             !(event.kind is Empty(_)) ||
             shape_adjustment is Some(_) ||
             element.attributes.length() != 2 ||
-            xlsx_attr(element, "name", "") != "adj" {
+            xlsx_attr(element, "name", "") !=
+            (if [
+                "bentUpArrow", "corner", "downArrow", "downArrowCallout", "halfFrame",
+                "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
+                "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid",
+                "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow",
+                "rightArrowCallout", "snip2DiagRect", "snip2SameRect", "upArrowCallout",
+                "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
+              ].contains(shape_geometry) {
+              "adj1"
+            } else {
+              "adj"
+            }) {
             return None
           }
           for attr in element.attributes {

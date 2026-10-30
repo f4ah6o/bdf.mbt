@@ -215,7 +215,8 @@ The following straight-line preset geometries are supported: `bentUpArrow`,
 `snip2DiagRect`, `snip2SameRect`, `star10`, `star7`, `upArrowCallout`,
 `upDownArrow`, `upArrow`, `upDownArrowCallout`, and `wedgeRectCallout`. The
 `adj` guide is supported from 0 to 100,000 for `diagStripe`, `snip1Rect`,
-`star10`, and `star7`. Other explicit adjustment guides for these presets are
-rejected rather than silently ignored.
+`star10`, and `star7`. A single `adj1` guide in the same range is supported for
+the other presets above that define `adj1`. Additional or other explicit
+adjustment guides for these presets are rejected rather than silently ignored.
 
 Conditional rules that reference absent differential styles leave formatting unchanged. Missing-style stopping rules follow priority for matched explicit cells. Stopping rules that match blanks remain unsupported when later formatting could be affected. Hexadecimal and underscored conditional style IDs, and unsupported priority representations in interacting stopping rules, are also rejected.

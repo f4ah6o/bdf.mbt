@@ -176,6 +176,12 @@ fn GridDrawContext::paint_picture(
       ![
         "triangle", "parallelogram", "trapezoid", "homePlate", "chevron", "plus",
         "hexagon", "octagon", "roundRect", "diagStripe", "snip1Rect", "star10", "star7",
+        "bentUpArrow", "corner", "downArrow", "downArrowCallout", "halfFrame", "leftArrow",
+        "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout", "leftRightUpArrow",
+        "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid", "notchedRightArrow",
+        "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip2DiagRect",
+        "snip2SameRect", "upArrowCallout", "upDownArrow", "upArrow", "upDownArrowCallout",
+        "wedgeRectCallout",
       ].contains(shape_geometry) {
       raise InvalidArgument("sheet: invalid shape adjustment")
     }

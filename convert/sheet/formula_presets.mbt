@@ -51,7 +51,11 @@ fn sheet_formula_preset_path(
   env["ssd32"] = ss / 32.0
   match geometry {
     "bentUpArrow" => {
-      env["adj1"] = 25000.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        25000.0
+      }
       env["adj2"] = 25000.0
       env["adj3"] = 25000.0
       env["a1"] = sheet_preset_pin(0.0, env.get("adj1").unwrap_or(0.0), 50000.0)
@@ -135,7 +139,11 @@ fn sheet_formula_preset_path(
       }
     }
     "corner" => {
-      env["adj1"] = 50000.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        50000.0
+      }
       env["adj2"] = 50000.0
       env["maxAdj1"] = sheet_preset_muldiv(
         100000.0,
@@ -326,7 +334,11 @@ fn sheet_formula_preset_path(
       }
     }
     "downArrow" => {
-      env["adj1"] = 50000.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        50000.0
+      }
       env["adj2"] = 50000.0
       env["maxAdj2"] = sheet_preset_muldiv(
         100000.0,
@@ -393,7 +405,11 @@ fn sheet_formula_preset_path(
       }
     }
     "downArrowCallout" => {
-      env["adj1"] = 25000.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        25000.0
+      }
       env["adj2"] = 25000.0
       env["adj3"] = 25000.0
       env["adj4"] = 64977.0
@@ -505,7 +521,11 @@ fn sheet_formula_preset_path(
       }
     }
     "halfFrame" => {
-      env["adj1"] = 33333.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        33333.0
+      }
       env["adj2"] = 33333.0
       env["maxAdj2"] = sheet_preset_muldiv(
         100000.0,
@@ -694,7 +714,11 @@ fn sheet_formula_preset_path(
       }
     }
     "leftArrow" => {
-      env["adj1"] = 50000.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        50000.0
+      }
       env["adj2"] = 50000.0
       env["maxAdj2"] = sheet_preset_muldiv(
         100000.0,
@@ -761,7 +785,11 @@ fn sheet_formula_preset_path(
       }
     }
     "leftArrowCallout" => {
-      env["adj1"] = 25000.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        25000.0
+      }
       env["adj2"] = 25000.0
       env["adj3"] = 25000.0
       env["adj4"] = 64977.0
@@ -877,7 +905,11 @@ fn sheet_formula_preset_path(
       }
     }
     "leftRightArrow" => {
-      env["adj1"] = 50000.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        50000.0
+      }
       env["adj2"] = 50000.0
       env["maxAdj2"] = sheet_preset_muldiv(
         50000.0,
@@ -953,7 +985,11 @@ fn sheet_formula_preset_path(
       }
     }
     "leftRightArrowCallout" => {
-      env["adj1"] = 25000.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        25000.0
+      }
       env["adj2"] = 25000.0
       env["adj3"] = 25000.0
       env["adj4"] = 48123.0
@@ -1084,7 +1120,11 @@ fn sheet_formula_preset_path(
       }
     }
     "leftRightUpArrow" => {
-      env["adj1"] = 25000.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        25000.0
+      }
       env["adj2"] = 25000.0
       env["adj3"] = 25000.0
       env["a2"] = sheet_preset_pin(0.0, env.get("adj2").unwrap_or(0.0), 50000.0)
@@ -1207,7 +1247,11 @@ fn sheet_formula_preset_path(
       }
     }
     "leftUpArrow" => {
-      env["adj1"] = 25000.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        25000.0
+      }
       env["adj2"] = 25000.0
       env["adj3"] = 25000.0
       env["a2"] = sheet_preset_pin(0.0, env.get("adj2").unwrap_or(0.0), 50000.0)
@@ -1319,7 +1363,11 @@ fn sheet_formula_preset_path(
       }
     }
     "mathMinus" => {
-      env["adj1"] = 23520.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        23520.0
+      }
       env["a1"] = sheet_preset_pin(
         0.0,
         env.get("adj1").unwrap_or(0.0),
@@ -1364,7 +1412,11 @@ fn sheet_formula_preset_path(
       }
     }
     "mathPlus" => {
-      env["adj1"] = 23520.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        23520.0
+      }
       env["a1"] = sheet_preset_pin(0.0, env.get("adj1").unwrap_or(0.0), 73490.0)
       env["dx1"] = sheet_preset_muldiv(
         env.get("w").unwrap_or(0.0),
@@ -1438,7 +1490,11 @@ fn sheet_formula_preset_path(
       }
     }
     "nonIsoscelesTrapezoid" => {
-      env["adj1"] = 25000.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        25000.0
+      }
       env["adj2"] = 25000.0
       env["maxAdj"] = sheet_preset_muldiv(
         50000.0,
@@ -1517,7 +1573,11 @@ fn sheet_formula_preset_path(
       }
     }
     "notchedRightArrow" => {
-      env["adj1"] = 50000.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        50000.0
+      }
       env["adj2"] = 50000.0
       env["maxAdj2"] = sheet_preset_muldiv(
         100000.0,
@@ -1586,7 +1646,11 @@ fn sheet_formula_preset_path(
       }
     }
     "quadArrow" => {
-      env["adj1"] = 22500.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        22500.0
+      }
       env["adj2"] = 22500.0
       env["adj3"] = 22500.0
       env["a2"] = sheet_preset_pin(0.0, env.get("adj2").unwrap_or(0.0), 50000.0)
@@ -1721,7 +1785,11 @@ fn sheet_formula_preset_path(
       }
     }
     "quadArrowCallout" => {
-      env["adj1"] = 18515.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        18515.0
+      }
       env["adj2"] = 18515.0
       env["adj3"] = 18515.0
       env["adj4"] = 48123.0
@@ -1889,7 +1957,11 @@ fn sheet_formula_preset_path(
       }
     }
     "rightArrow" => {
-      env["adj1"] = 50000.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        50000.0
+      }
       env["adj2"] = 50000.0
       env["maxAdj2"] = sheet_preset_muldiv(
         100000.0,
@@ -1956,7 +2028,11 @@ fn sheet_formula_preset_path(
       }
     }
     "rightArrowCallout" => {
-      env["adj1"] = 25000.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        25000.0
+      }
       env["adj2"] = 25000.0
       env["adj3"] = 25000.0
       env["adj4"] = 64977.0
@@ -2107,7 +2183,11 @@ fn sheet_formula_preset_path(
       }
     }
     "snip2DiagRect" => {
-      env["adj1"] = 0.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        0.0
+      }
       env["adj2"] = 16667.0
       env["a1"] = sheet_preset_pin(0.0, env.get("adj1").unwrap_or(0.0), 50000.0)
       env["a2"] = sheet_preset_pin(0.0, env.get("adj2").unwrap_or(0.0), 50000.0)
@@ -2173,7 +2253,11 @@ fn sheet_formula_preset_path(
       }
     }
     "snip2SameRect" => {
-      env["adj1"] = 16667.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        16667.0
+      }
       env["adj2"] = 0.0
       env["a1"] = sheet_preset_pin(0.0, env.get("adj1").unwrap_or(0.0), 50000.0)
       env["a2"] = sheet_preset_pin(0.0, env.get("adj2").unwrap_or(0.0), 50000.0)
@@ -2597,7 +2681,11 @@ fn sheet_formula_preset_path(
       }
     }
     "upArrowCallout" => {
-      env["adj1"] = 25000.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        25000.0
+      }
       env["adj2"] = 25000.0
       env["adj3"] = 25000.0
       env["adj4"] = 64977.0
@@ -2713,7 +2801,11 @@ fn sheet_formula_preset_path(
       }
     }
     "upDownArrow" => {
-      env["adj1"] = 50000.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        50000.0
+      }
       env["adj2"] = 50000.0
       env["maxAdj2"] = sheet_preset_muldiv(
         50000.0,
@@ -2789,7 +2881,11 @@ fn sheet_formula_preset_path(
       }
     }
     "upArrow" => {
-      env["adj1"] = 50000.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        50000.0
+      }
       env["adj2"] = 50000.0
       env["maxAdj2"] = sheet_preset_muldiv(
         100000.0,
@@ -2856,7 +2952,11 @@ fn sheet_formula_preset_path(
       }
     }
     "upDownArrowCallout" => {
-      env["adj1"] = 25000.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        25000.0
+      }
       env["adj2"] = 25000.0
       env["adj3"] = 25000.0
       env["adj4"] = 48123.0
@@ -2987,7 +3087,11 @@ fn sheet_formula_preset_path(
       }
     }
     "wedgeRectCallout" => {
-      env["adj1"] = -20833.0
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        -20833.0
+      }
       env["adj2"] = 62500.0
       env["dxPos"] = sheet_preset_muldiv(
         env.get("w").unwrap_or(0.0),
