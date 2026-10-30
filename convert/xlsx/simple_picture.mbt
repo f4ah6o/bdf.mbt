@@ -44,6 +44,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut theme_alphas : Map[Int32, Double]? = None
   let mut shape_alpha = 1.0
   let mut line_alpha = 1.0
+  let mut shape_invertible = false
+  let mut line_invertible = false
   let mut line_width = 0.75
   let mut shape_dash = ""
   let mut saw_dash = false
@@ -413,6 +415,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
             theme_colors,
             theme_alphas.unwrap_or(Map([])),
           )
+          shape_invertible = !["scrgbClr", "hslClr"].contains(name)
           shape_alpha = xlsx_shape_initial_alpha(
             element,
             theme_alphas.unwrap_or(Map([])),
@@ -477,6 +480,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
             theme_colors,
             theme_alphas.unwrap_or(Map([])),
           )
+          line_invertible = !["scrgbClr", "hslClr"].contains(name)
           line_alpha = xlsx_shape_initial_alpha(
             element,
             theme_alphas.unwrap_or(Map([])),
@@ -491,15 +495,22 @@ fn XlsxWorkbook::xlsx_simple_picture(
           if !(event.kind is Empty(_)) {
             return None
           }
-          let next = match
-            xlsx_shape_alpha_modifier(name, element, shape_alpha) {
-            Some(value) => value
-            None => return None
+          if name == "inv" {
+            if !shape_invertible || !element.attributes.is_empty() {
+              return None
+            }
+            shape_fill = shape_fill.map(color => color ^ 0xffffff00U)
+          } else {
+            let next = match
+              xlsx_shape_alpha_modifier(name, element, shape_alpha) {
+              Some(value) => value
+              None => return None
+            }
+            shape_alpha = next
+            shape_fill = shape_fill.map(color => {
+              (color & 0xffffff00U) | (next * 255.0).round().to_uint()
+            })
           }
-          shape_alpha = next
-          shape_fill = shape_fill.map(color => {
-            (color & 0xffffff00U) | (next * 255.0).round().to_uint()
-          })
           shape_fill is Some(_)
         } else if depth == 7 &&
           ["srgbClr", "schemeClr", "sysClr", "prstClr", "scrgbClr", "hslClr"].contains(
@@ -511,15 +522,22 @@ fn XlsxWorkbook::xlsx_simple_picture(
           if !(event.kind is Empty(_)) {
             return None
           }
-          let next = match
-            xlsx_shape_alpha_modifier(name, element, line_alpha) {
-            Some(value) => value
-            None => return None
+          if name == "inv" {
+            if !line_invertible || !element.attributes.is_empty() {
+              return None
+            }
+            line_color = line_color.map(color => color ^ 0xffffff00U)
+          } else {
+            let next = match
+              xlsx_shape_alpha_modifier(name, element, line_alpha) {
+              Some(value) => value
+              None => return None
+            }
+            line_alpha = next
+            line_color = line_color.map(color => {
+              (color & 0xffffff00U) | (next * 255.0).round().to_uint()
+            })
           }
-          line_alpha = next
-          line_color = line_color.map(color => {
-            (color & 0xffffff00U) | (next * 255.0).round().to_uint()
-          })
           line_color is Some(_)
         } else if depth == 5 && parent == "xfrm" {
           if !(event.kind is Empty(_)) {
@@ -746,6 +764,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
           line_color = None
           shape_alpha = 1.0
           line_alpha = 1.0
+          shape_invertible = false
+          line_invertible = false
           line_width = 0.75
           shape_dash = ""
           saw_dash = false
