@@ -1049,7 +1049,9 @@ fn xlsx_simple_shape_color(
     )
   }
   if element.name.local_name == "hslClr" {
-    let components : Array[Int64] = [0L, 0L, 0L]
+    let mut hue = 0L
+    let mut sat = 0.0
+    let mut lum = 0.0
     let seen : Map[String, Bool] = Map([])
     for attr in element.attributes {
       let name = attr.name.local_name
@@ -1059,16 +1061,25 @@ fn xlsx_simple_shape_color(
         return None
       }
       seen[name] = true
-      let limit = if name == "hue" { 21600000L } else { 100000L }
-      let value = match xlsx_int(attr.value) {
-        Some(value) if value >= 0L && value <= limit => value
-        _ => return None
+      if name == "hue" {
+        hue = match xlsx_int(attr.value) {
+          Some(value) if value >= 0L && value <= 21600000L => value
+          _ => return None
+        }
+      } else {
+        let value = match xlsx_drawing_fraction(attr.value) {
+          Some(value) if value >= 0.0 && value <= 1.0 => value
+          _ => return None
+        }
+        if name == "sat" {
+          sat = value
+        } else {
+          lum = value
+        }
       }
-      let index = if name == "hue" { 0 } else if name == "sat" { 1 } else { 2 }
-      components[index] = value
     }
     return Some(
-      xlsx_shape_hsl_color(components[0], components[1], components[2]),
+      xlsx_shape_hsl_fractions(hue.to_double() / 60000.0 / 360.0, sat, lum),
     )
   }
   if element.name.local_name == "scrgbClr" {
@@ -1156,9 +1167,15 @@ fn xlsx_shape_hsl_color(
   sat_units : Int64,
   lum_units : Int64,
 ) -> UInt32 {
-  let hue = hue_units.to_double() / 60000.0 / 360.0
-  let sat = sat_units.to_double() / 100000.0
-  let lum = lum_units.to_double() / 100000.0
+  xlsx_shape_hsl_fractions(
+    hue_units.to_double() / 60000.0 / 360.0,
+    sat_units.to_double() / 100000.0,
+    lum_units.to_double() / 100000.0,
+  )
+}
+
+///|
+fn xlsx_shape_hsl_fractions(hue : Double, sat : Double, lum : Double) -> UInt32 {
   let color = if sat == 0.0 {
     { red: lum, green: lum, blue: lum, }
   } else {
@@ -1204,18 +1221,26 @@ fn xlsx_shape_initial_alpha(
 }
 
 ///|
-fn xlsx_shape_opacity_fraction(
-  element : @xml.NamespaceElement,
-  name : String,
-) -> Double? {
-  let raw = xlsx_trim(xlsx_attr(element, "val", ""))
+fn xlsx_drawing_fraction(value : String) -> Double? {
+  let raw = xlsx_trim(value)
   let percent = raw.has_suffix("%")
   let digits = if percent { raw[:raw.length() - 1].to_owned() } else { raw }
   let number = @string.parse_double(digits) catch { _ => return None }
   if number.is_nan() || number.is_inf() {
     return None
   }
-  let fraction = number / (if percent { 100.0 } else { 100000.0 })
+  Some(number / (if percent { 100.0 } else { 100000.0 }))
+}
+
+///|
+fn xlsx_shape_opacity_fraction(
+  element : @xml.NamespaceElement,
+  name : String,
+) -> Double? {
+  let fraction = match xlsx_drawing_fraction(xlsx_attr(element, "val", "")) {
+    Some(value) => value
+    None => return None
+  }
   if fraction < (if name == "alphaOff" { -10.0 } else { 0.0 }) ||
     fraction > (if name == "alpha" { 1.0 } else { 10.0 }) {
     return None
