@@ -655,8 +655,24 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
     if missing {
       if block.stop_if_true {
         if block.blank_matches {
-          for range in block.ranges {
-            stopped_blank_ranges.push(range)
+          if block.moving_reference {
+            for row, columns in block.blank_positions {
+              let target = match stopped.get(row) {
+                Some(value) => value
+                None => {
+                  let value : Map[Int32, Bool] = Map([])
+                  stopped[row] = value
+                  value
+                }
+              }
+              for column, _ in columns {
+                target[column] = true
+              }
+            }
+          } else {
+            for range in block.ranges {
+              stopped_blank_ranges.push(range)
+            }
           }
         }
         for row, columns in block.matched {
