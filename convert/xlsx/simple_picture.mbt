@@ -404,7 +404,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
         if depth == 4 && (parents[2] == "from" || parents[2] == "to") {
           let name = parents[3]
           let raw = match xlsx_int(xlsx_trim(text.to_string())) {
-            Some(value) if value >= 0L && value <= 254000000L => value
+            Some(value) if value >= -254000000L && value <= 254000000L => value
             _ => return None
           }
           if name == "colOff" || name == "rowOff" {
@@ -436,7 +436,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
               seen_to_y_offset = true
               to_y_offset = offset
             }
-          } else if raw > 16383L {
+          } else if raw < 0L || raw > 16383L {
             return None
           } else if parents[2] == "from" {
             let value = raw.to_int()

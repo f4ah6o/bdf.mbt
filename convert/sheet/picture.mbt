@@ -62,16 +62,12 @@ fn GridDrawContext::paint_picture(
     picture.height.is_inf() ||
     picture.from_x_offset.is_nan() ||
     picture.from_x_offset.is_inf() ||
-    picture.from_x_offset < 0.0 ||
     picture.from_y_offset.is_nan() ||
     picture.from_y_offset.is_inf() ||
-    picture.from_y_offset < 0.0 ||
     picture.to_x_offset.is_nan() ||
     picture.to_x_offset.is_inf() ||
-    picture.to_x_offset < 0.0 ||
     picture.to_y_offset.is_nan() ||
-    picture.to_y_offset.is_inf() ||
-    picture.to_y_offset < 0.0 {
+    picture.to_y_offset.is_inf() {
     raise InvalidArgument("sheet: invalid picture geometry")
   }
   for

@@ -56,7 +56,6 @@ test "invalid picture geometry reports an error instead of indexing outside the 
     },
     { ..picture, from_row: -1, },
     { ..picture, from_row: 2147483647, },
-    { ..picture, from_x_offset: -1.0, },
     { ..picture, alpha: Some(2.0F), },
     { ..picture, fill_left: -0.1, },
     { ..picture, fill_left: 0.6, fill_right: 0.6, },
