@@ -6,7 +6,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
   part : String,
   theme_colors : Map[Int32, XlsxRgb],
 ) -> Array[
-  (@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool, String, Bool),
+  (@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool, String, String),
 ]? {
   let bytes = self.package.read(part) catch { _ => return None }
   let source = @utf8.decode_lossy(bytes[:], ignore_bom=true)
@@ -24,7 +24,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut kind = -1
   let mut anchors = 0
   let result : Array[
-    (@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool, String, Bool),
+    (@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool, String, String),
   ] = []
   let images : Map[String, Bytes] = Map([])
   let mut image_bytes = 0L
@@ -54,7 +54,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut saw_blip_fill = false
   let mut saw_sppr = false
   let mut geometry = false
-  let mut ellipse = false
+  let mut shape_geometry = ""
   let mut stretch = false
   let mut from_row = -1
   let mut from_column = -1
@@ -390,12 +390,18 @@ fn XlsxWorkbook::xlsx_simple_picture(
             }
             true
           } else if name == "prstGeom" &&
-            ["rect", "ellipse"].contains(xlsx_attr(element, "prst", "")) {
+            ["rect", "ellipse", "diamond"].contains(
+              xlsx_attr(element, "prst", ""),
+            ) {
             if geometry {
               return None
             }
             geometry = true
-            ellipse = is_shape && xlsx_attr(element, "prst", "") == "ellipse"
+            shape_geometry = if is_shape {
+              xlsx_attr(element, "prst", "")
+            } else {
+              "rect"
+            }
             if !is_shape && xlsx_attr(element, "prst", "") != "rect" {
               return None
             }
@@ -749,7 +755,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
                   line_color.map(color => (color, line_width)),
                   shape_no_fill,
                   shape_dash,
-                  ellipse,
+                  shape_geometry,
                 ),
               )
             }
@@ -780,7 +786,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
           saw_blip_fill = false
           saw_sppr = false
           geometry = false
-          ellipse = false
+          shape_geometry = ""
           stretch = false
           from_row = -1
           from_column = -1

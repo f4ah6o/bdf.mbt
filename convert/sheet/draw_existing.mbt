@@ -112,10 +112,11 @@ pub fn sized_fallback_advance(
 /// Supplying pictures also requires a document writer for their image and
 /// drawing parts. `hidden_pictures`, when supplied, has one flag per picture.
 /// `shape_fills`, when supplied, has one optional color per drawing encoded as
-/// 0xRRGGBBAA; a color renders a filled rectangle instead of an image.
+/// 0xRRGGBBAA; a color renders a filled shape instead of an image.
 /// `shape_strokes`, when supplied, pairs an optional RGBA color and width in
-/// points with each drawing. `shape_no_fills` marks rectangles without a fill.
-/// `shape_ellipses` marks ellipse shapes; otherwise shapes are rectangles.
+/// points with each drawing. `shape_no_fills` marks shapes without a fill.
+/// `shape_geometries` selects "rect", "ellipse" or "diamond" per shape;
+/// an empty string or an omitted list selects the default rectangle.
 /// `shape_dashes` contains DrawingML preset dash names, or an empty string for
 /// a solid line. A caller that defers object storage may collect child parts in
 /// `picture_children` and pass them to `store_grids`.
@@ -159,7 +160,7 @@ pub fn draw_sized_grid_no_fonts(
   shape_strokes~ : Array[(UInt32, Double)?] = [],
   shape_no_fills~ : Array[Bool] = [],
   shape_dashes~ : Array[String] = [],
-  shape_ellipses~ : Array[Bool] = [],
+  shape_geometries~ : Array[String] = [],
   picture_writer~ : @core.DocumentWriter? = None,
   picture_children~ : Array[(Int32, Int32, Bytes)]? = None,
   column_axis_default~ : Float? = None,
@@ -892,7 +893,8 @@ pub fn draw_sized_grid_no_fonts(
   if !shape_dashes.is_empty() && shape_dashes.length() != pictures.length() {
     raise InvalidArgument("sheet: invalid shape dash list")
   }
-  if !shape_ellipses.is_empty() && shape_ellipses.length() != pictures.length() {
+  if !shape_geometries.is_empty() &&
+    shape_geometries.length() != pictures.length() {
     raise InvalidArgument("sheet: invalid shape geometry list")
   }
   if !pictures.is_empty() {
@@ -925,10 +927,10 @@ pub fn draw_sized_grid_no_fonts(
         },
         picture_children,
         room,
-        shape_ellipse=if shape_ellipses.is_empty() {
-          false
+        shape_geometry=if shape_geometries.is_empty() {
+          "rect"
         } else {
-          shape_ellipses[index]
+          shape_geometries[index]
         },
         shape_dash=if shape_dashes.is_empty() {
           ""

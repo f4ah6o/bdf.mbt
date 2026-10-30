@@ -52,7 +52,7 @@ fn GridDrawContext::paint_picture(
   shape_stroke~ : (UInt32, Double)? = None,
   shape_no_fill~ : Bool = false,
   shape_dash~ : String = "",
-  shape_ellipse~ : Bool = false,
+  shape_geometry~ : String = "rect",
 ) -> Int32 raise {
   if picture.kind < 0 ||
     picture.kind > 2 ||
@@ -137,8 +137,13 @@ fn GridDrawContext::paint_picture(
     (shape_dash != "" && shape_fill is None && !shape_no_fill) {
     raise InvalidArgument("sheet: invalid shape dash pattern")
   }
-  if shape_ellipse && shape_fill is None && !shape_no_fill {
-    raise InvalidArgument("sheet: ellipse requires a shape")
+  if !["", "rect", "ellipse", "diamond"].contains(shape_geometry) {
+    raise InvalidArgument("sheet: invalid shape geometry")
+  }
+  if ["ellipse", "diamond"].contains(shape_geometry) &&
+    shape_fill is None &&
+    !shape_no_fill {
+    raise InvalidArgument("sheet: shape geometry requires a shape")
   }
   if shape_no_fill && shape_fill is Some(_) {
     raise InvalidArgument("sheet: conflicting shape fills")
@@ -362,8 +367,22 @@ fn GridDrawContext::paint_picture(
   } else if origin_x != 0.0 || origin_y != 0.0 {
     object.translate(Float::from_double(origin_x), Float::from_double(origin_y))
   }
-  let path : @core.Path = if shape_ellipse {
+  let path : @core.Path = if shape_geometry == "ellipse" {
     sheet_ellipse_path(draw_width, draw_height)
+  } else if shape_geometry == "diamond" {
+    {
+      verbs: b"\x00\x01\x01\x01\x04",
+      coordinates: [
+        0.0,
+        draw_height / 2.0,
+        draw_width / 2.0,
+        0.0,
+        draw_width,
+        draw_height / 2.0,
+        draw_width / 2.0,
+        draw_height,
+      ],
+    }
   } else {
     {
       verbs: b"\x00\x01\x01\x01\x04",
@@ -398,7 +417,7 @@ fn GridDrawContext::paint_picture(
         object.dash(dash.map(value => Float::from_double(value * width)), 0.0F)
       }
       object.stroke_color(stroke)
-      if !shape_ellipse || (draw_width > 0.0 && draw_height > 0.0) {
+      if shape_geometry != "ellipse" || (draw_width > 0.0 && draw_height > 0.0) {
         object.stroke_path(path_index)
       }
       object.restore()
