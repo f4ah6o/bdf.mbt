@@ -327,6 +327,17 @@ fn XlsxWorkbook::xlsx_table_style(
         chosen = id
       } else if selected_kind == "wholeHeader" && kind == "headerRow" {
         other = id
+      } else if selected_kind == "wholeTable" && kind == "totalRow" {
+        other = id
+        selected_kind = "wholeTotal"
+      } else if selected_kind == "totalRow" && kind == "wholeTable" {
+        other = chosen
+        chosen = id
+        selected_kind = "wholeTotal"
+      } else if selected_kind == "wholeTotal" && kind == "wholeTable" {
+        chosen = id
+      } else if selected_kind == "wholeTotal" && kind == "totalRow" {
+        other = id
       } else {
         return (-1, 0, 1L, -1, 1L)
       }
@@ -410,6 +421,8 @@ fn XlsxWorkbook::xlsx_table_style(
       14
     } else if selected_kind == "wholeHeader" {
       15
+    } else if selected_kind == "wholeTotal" {
+      16
     } else {
       0
     },
@@ -442,6 +455,12 @@ fn xlsx_table_stripe_choice(
 ) -> Int32 {
   if region == 15 {
     if row.to_int64() <= origin {
+      1
+    } else {
+      0
+    }
+  } else if region == 16 {
+    if row.to_int64() >= origin {
       1
     } else {
       0
@@ -484,7 +503,7 @@ fn XlsxWorkbook::xlsx_table_effective_style(
   region : Int32,
   choice : Int32,
 ) -> XlsxConditionalStyle raise {
-  if region != 15 || choice != 1 {
+  if (region != 15 && region != 16) || choice != 1 {
     return self.xlsx_conditional_style(
       if choice == 0 {
         base_id
@@ -656,6 +675,15 @@ fn XlsxWorkbook::xlsx_plain_table_area(
       range.row_end,
       range.row_start + parsed_table.header_rows.to_int64() - 1L,
     )
+  } else if selected_region == 16 {
+    if parsed_table.totals_rows > 0 {
+      Int64::max(
+        range.row_start,
+        range.row_end - parsed_table.totals_rows.to_int64() + 1L,
+      )
+    } else {
+      range.row_end + 1L
+    }
   } else {
     range.row_start + parsed_table.header_rows.to_int64()
   }
