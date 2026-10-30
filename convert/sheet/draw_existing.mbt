@@ -49,6 +49,13 @@ pub(all) struct GridTextDecoration {
 }
 
 ///|
+/// A text run with its own color in a single-line fallback-font cell.
+pub(all) struct GridRichColorRun {
+  text : String
+  color : UInt32
+}
+
+///|
 /// An inclusive merged rectangle in a sized grid.
 pub(all) struct GridMergeRegion {
   row_start : Int32
@@ -121,6 +128,7 @@ pub fn draw_sized_grid_no_fonts(
   links~ : Array[GridLink] = [],
   auto_filter~ : (Int32, Int32, Int32)? = None,
   notes~ : Array[(Int32, Int32)] = [],
+  rich_colors~ : Map[Int32, Map[Int32, Array[GridRichColorRun]]] = Map([]),
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -505,6 +513,25 @@ pub fn draw_sized_grid_no_fonts(
         } else {
           ""
         })
+      let rich_runs = match rich_colors.get(i) {
+        Some(columns) => columns.get(column).unwrap_or([])
+        None => []
+      }
+      if !rich_runs.is_empty() {
+        let content = StringBuilder()
+        for run in rich_runs {
+          for ch in run.text {
+            if ch.to_int() < 0x20 || ch.to_int() > 0x7e {
+              raise InvalidArgument("styled runs require printable ASCII")
+            }
+          }
+          content.write_string(run.text)
+        }
+        if layout.lines.length() != 1 ||
+          layout.lines[0].text != content.to_string() {
+          raise InvalidArgument("styled runs must match one visible line")
+        }
+      }
       for tile in context.in_bounds(layout.x0, layout.y0, layout.x1, layout.y1) {
         tile.emit_cell(
           layout,
@@ -522,6 +549,7 @@ pub fn draw_sized_grid_no_fonts(
           italic~,
           underline=decoration.underline,
           strike=decoration.strike,
+          rich_runs~,
         )
       }
     }

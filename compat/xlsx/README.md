@@ -109,7 +109,13 @@ direct text, data extraction, wrapping and duplicate cell references use
 `generate_rich_run_identity_test.go` and `generate_rich_run_legacy_test.go`.
 Single styled runs use `generate_single_styled_run_test.go`,
 `generate_single_styled_run_conditional_test.go`, `generate_single_styled_run_variants_test.go`,
-and `generate_single_styled_run_legacy_test.go`; multiple styled runs remain unsupported.
+and `generate_single_styled_run_legacy_test.go`. Multiple styled runs differing
+only in color are supported for unwrapped, single-line printable ASCII text.
+Their coverage uses `generate_multi_color_runs_test.go`,
+`generate_multi_color_runs_geometry_test.go`,
+`generate_multi_color_runs_conditional_test.go` and
+`generate_multi_color_runs_unsupported_test.go`. Other multi-run styles remain
+unsupported.
 Duplicate and unique predicates use `generate_conditional_duplicate_test.go`
 and `TestCodexConditionalDuplicate`. Numeric comparison-key tests are generated
 by `generate_duplicate_keys_test.go` and `TestCodexXLSXDuplicateKeys`, including

@@ -19,6 +19,13 @@ fn xlsx_text_element(reader : @xml.NamespaceReader) -> String raise {
 priv struct XlsxPlainRun {
   text : String
   font : XlsxFont?
+  segments : Array[XlsxRunSegment]
+}
+
+///|
+priv struct XlsxRunSegment {
+  text : String
+  font : XlsxFont?
 }
 
 ///|
@@ -39,6 +46,9 @@ fn xlsx_rich_text_info(
   let mut run_depth = -1
   let mut run_count = 0
   let mut run_font : XlsxFont? = None
+  let mut run_text = StringBuilder()
+  let segments : Array[XlsxRunSegment] = []
+  let mut has_font = false
   while depth > 0 {
     let event = reader.read_event()
     match event.kind {
@@ -47,6 +57,8 @@ fn xlsx_rich_text_info(
         if name == "r" && depth == 1 && event.kind is Start(_) {
           run_depth = 2
           run_count += 1
+          run_font = None
+          run_text = StringBuilder()
         }
         if name == "rPr" && depth == run_depth {
           let font = { ..xlsx_default_font(), name: "", size: 0.0, }
@@ -54,6 +66,7 @@ fn xlsx_rich_text_info(
             xlsx_read_run_font(reader, font)
           }
           run_font = Some(font)
+          has_font = true
         } else if name == "t" && (depth == 1 || depth == run_depth) {
           let text = if event.kind is Start(_) {
             xlsx_text_element(reader)
@@ -64,6 +77,7 @@ fn xlsx_rich_text_info(
           out.write_string(text)
           if depth == run_depth {
             runs.write_string(text)
+            run_text.write_string(text)
           }
         } else if event.kind is Start(_) {
           depth += 1
@@ -72,6 +86,7 @@ fn xlsx_rich_text_info(
       End(_) => {
         depth -= 1
         if depth < run_depth {
+          segments.push({ text: run_text.to_string(), font: run_font, })
           run_depth = -1
         }
       }
@@ -81,8 +96,20 @@ fn xlsx_rich_text_info(
   }
   (
     out.to_string(),
-    if run_count > 1 || run_font is Some(_) {
-      Some({ text: runs.to_string(), font: run_font, })
+    if run_count > 1 || has_font {
+      Some({
+        text: runs.to_string(),
+        font: if run_count == 1 {
+          segments[0].font
+        } else {
+          None
+        },
+        segments: if run_count > 1 && has_font {
+          segments
+        } else {
+          []
+        },
+      })
     } else {
       None
     },

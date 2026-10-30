@@ -257,6 +257,7 @@ fn DrawTile::emit_cell(
   italic~ : Bool = false,
   underline~ : String = "",
   strike~ : Bool = false,
+  rich_runs~ : Array[GridRichColorRun] = [],
 ) -> Unit raise {
   self.object.mark(2, ref)
   if layout.lang_known {
@@ -282,24 +283,53 @@ fn DrawTile::emit_cell(
     if i > 0 {
       self.object.mark(if line.cjk_wrap { 5 } else { 1 }, "")
     }
-    match fontset {
-      Some(fonts) =>
-        self.emit_database_line(line, bold, color, advance, fonts, hashes)
-      None =>
-        self.emit_line(
-          line,
+    if !rich_runs.is_empty() {
+      let mut x = line.x
+      for run in rich_runs {
+        if run.text == "" {
+          continue
+        }
+        let mut width = 0.0
+        for character in run.text {
+          width += advance(character, bold)
+        }
+        self.text_run(
+          run.text,
+          x,
+          line.baseline,
+          width,
           family,
           bold,
-          color,
-          advance,
+          run.color,
           face,
           hash,
           size~,
-          east_asian~,
           italic~,
           underline~,
           strike~,
         )
+        x += width
+      }
+    } else {
+      match fontset {
+        Some(fonts) =>
+          self.emit_database_line(line, bold, color, advance, fonts, hashes)
+        None =>
+          self.emit_line(
+            line,
+            family,
+            bold,
+            color,
+            advance,
+            face,
+            hash,
+            size~,
+            east_asian~,
+            italic~,
+            underline~,
+            strike~,
+          )
+      }
     }
   }
   if layout.clip {

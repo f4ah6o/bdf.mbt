@@ -26,7 +26,6 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut inline_depth = -1
   let mut run_depth = -1
   let mut run_texts = 0
-  let mut run_count = 0
   let mut props_seen = false
   let mut props_depth = -1
   let mut run_font_seen = false
@@ -119,12 +118,13 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           }
         } else if depth == cell_depth && name == "is" && event.kind is Start(_) {
           inline_depth = depth + 1
-          run_count = 0
           props_seen = false
           run_font_seen = false
           run_size_seen = false
         } else if depth == inline_depth && name == "r" {
-          run_count += 1
+          props_seen = false
+          run_font_seen = false
+          run_size_seen = false
           run_texts = 0
           if event.kind is Start(_) {
             run_depth = depth + 1
@@ -205,11 +205,6 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           table_depth = -1
         }
         if depth + 1 == inline_depth {
-          if props_seen && run_count != 1 {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text",
-            )
-          }
           inline_depth = -1
         }
         if depth + 1 == cell_depth {
@@ -379,7 +374,6 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
   let mut string_depth = -1
   let mut run_depth = -1
   let mut run_texts = 0
-  let mut run_count = 0
   let mut props_seen = false
   let mut props_depth = -1
   let mut run_font_seen = false
@@ -391,12 +385,13 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
         let name = element.name.local_name
         if depth == 1 && name == "si" && event.kind is Start(_) {
           string_depth = depth + 1
-          run_count = 0
           props_seen = false
           run_font_seen = false
           run_size_seen = false
         } else if depth == string_depth && name == "r" {
-          run_count += 1
+          props_seen = false
+          run_font_seen = false
+          run_size_seen = false
           run_texts = 0
           if event.kind is Start(_) {
             run_depth = depth + 1
@@ -468,11 +463,6 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
           run_depth = -1
         }
         if depth + 1 == string_depth {
-          if props_seen && run_count != 1 {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text",
-            )
-          }
           string_depth = -1
         }
         if depth == 0 {
@@ -851,6 +841,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let bolds : Map[Int32, Map[Int32, Bool]] = Map([])
   let italics : Map[Int32, Map[Int32, Bool]] = Map([])
   let decorations : Map[Int32, Map[Int32, @sheet.GridTextDecoration]] = Map([])
+  let rich_colors : Map[Int32, Map[Int32, Array[@sheet.GridRichColorRun]]] = Map([],
+  )
   let scripts : Map[Int32, Map[Int32, String]] = Map([])
   let shrink_scales : Map[Int32, Map[Int32, Double]] = Map([])
   let indents : Map[Int32, Map[Int32, Double]] = Map([])
@@ -1311,6 +1303,98 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           }
           columns[cell.column] = horizontal
         }
+        if rich_cells.get(row.index) is Some(columns) &&
+          columns.get(cell.column) is Some(run) &&
+          !run.segments.is_empty() {
+          let alignment = styles.cell_formats[format_index].alignment
+          if font.bold ||
+            font.italic ||
+            font.underline != "" ||
+            font.strike ||
+            font.vertical != "" ||
+            alignment.wrap ||
+            alignment.shrink ||
+            (horizontal != "general" && horizontal != "left") ||
+            run.text == "" ||
+            run.text.length() > 1024 ||
+            run.text.trim().to_string() != run.text {
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion does not support these styled rich text runs",
+            )
+          }
+          for ch in run.text {
+            if ch.to_int() < 0x20 || ch.to_int() > 0x7e {
+              raise InvalidXlsxInput(
+                "xlsx: plain conversion does not support these styled rich text runs",
+              )
+            }
+          }
+          let default_color = xlsx_plain_font_color(
+            styles,
+            cell.style,
+            theme_colors,
+          )
+          let black : XlsxRgb = { red: 0.0, green: 0.0, blue: 0.0, }
+          let segments : Array[@sheet.GridRichColorRun] = []
+          let mut previous_plain = false
+          for segment in run.segments {
+            if segment.text == "" {
+              continue
+            }
+            let color = match segment.font {
+              None => default_color
+              Some(segment_font) => {
+                if segment_font.name != "" ||
+                  segment_font.size != 0.0 ||
+                  segment_font.bold ||
+                  segment_font.italic ||
+                  segment_font.underline != "" ||
+                  segment_font.strike ||
+                  segment_font.vertical != "" {
+                  raise InvalidXlsxInput(
+                    "xlsx: plain conversion does not support these styled rich text runs",
+                  )
+                }
+                if segment_font.color.kind == 0 {
+                  default_color
+                } else {
+                  if segment_font.color.kind == 2 &&
+                    segment_font.color.index >= 0 &&
+                    segment_font.color.index < 12 &&
+                    !theme_colors.contains(segment_font.color.index) {
+                    raise InvalidXlsxInput(
+                      "xlsx: plain conversion does not support this theme color",
+                    )
+                  }
+                  styles
+                  .resolve_color(segment_font.color, black, theme_colors)
+                  .rgba()
+                }
+              }
+            }
+            let plain = segment.font is None
+            if plain && previous_plain && !segments.is_empty() {
+              let last = segments.length() - 1
+              segments[last] = {
+                ..segments[last],
+                text: segments[last].text + segment.text,
+              }
+            } else {
+              segments.push({ text: segment.text, color, })
+            }
+            previous_plain = plain
+          }
+          let row_colors = match rich_colors.get(row.index) {
+            Some(row_colors) => row_colors
+            None => {
+              let row_colors : Map[Int32, Array[@sheet.GridRichColorRun]] = Map([],
+              )
+              rich_colors[row.index] = row_colors
+              row_colors
+            }
+          }
+          row_colors[cell.column] = segments
+        }
         entries.push({
           column: cell.column,
           cell: { text, number: cell.kind == 1, },
@@ -1381,6 +1465,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       _ => None
     },
     notes~,
+    rich_colors~,
   ) catch {
     @sheet.InvalidArgument(message) => raise InvalidXlsxInput(message)
     error => raise error
