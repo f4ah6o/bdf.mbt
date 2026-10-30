@@ -1,0 +1,104 @@
+//go:build ignore
+
+// Copy into upstream converter/xlsx and run TestCodexPlainTableMultiTotalStyle.
+package xlsx
+
+import (
+	"archive/zip"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+func TestCodexPlainTableMultiTotalStyle(t *testing.T) {
+	root := os.Getenv("BDF_FIXTURE_ROOT")
+	if root == "" {
+		t.Fatal("BDF_FIXTURE_ROOT required")
+	}
+	texts := []string{
+		`<r><rPr><sz val="9"/><vertAlign val="superscript"/></rPr><t>日本語 </t></r><r><t>two</t></r>`,
+		`<r><rPr><sz val="18"/><vertAlign val="subscript"/><b/></rPr><t>hello </t></r><r><rPr><vertAlign val="superscript"/><i/></rPr><t>世界</t></r>`,
+		`<r><t>漢字abc </t></r><r><rPr><sz val="14"/><vertAlign val="superscript"/><rFont val="Courier New"/></rPr><t>text</t></r>`,
+		`<r><rPr><sz val="14"/><vertAlign val="superscript"/></rPr><t>日本語 </t></r><r><rPr><u/></rPr><t>two</t></r>`,
+		`<r><rPr><color rgb="FF1122CC"/></rPr><t>one </t></r><r><rPr><sz val="8"/><vertAlign val="subscript"/></rPr><t>世界</t></r>`,
+		`<r><rPr><strike/></rPr><t>hello </t></r><r><rPr><sz val="18"/><vertAlign val="subscript"/><rFont val="Arial"/></rPr><t>world</t></r>`,
+		`<r><t>one</t></r><r><rPr><sz val="14"/><vertAlign val="superscript"/></rPr><t>two</t></r><r><t>世界</t></r>`,
+		`<r><rPr><sz val="14"/><vertAlign val="superscript"/></rPr><t/></r><r><t>漢字abc </t></r><r><rPr><sz val="18"/><vertAlign val="subscript"/></rPr><t>文章</t></r>`,
+	}
+	out := []any{}
+	for i := 0; i < 192; i++ {
+		var b bytes.Buffer
+		z := zip.NewWriter(&b)
+		add := func(n, s string) {
+			w, e := z.Create(n)
+			if e != nil {
+				t.Fatal(e)
+			}
+			if _, e = w.Write([]byte(s)); e != nil {
+				t.Fatal(e)
+			}
+		}
+		add("xl/workbook.xml", `<workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet" r:id="r1"/></sheets></workbook>`)
+		add("xl/_rels/workbook.xml.rels", `<Relationships><Relationship Id="r1" Type="x/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="r2" Type="x/styles" Target="styles.xml"/><Relationship Id="r3" Type="x/sharedStrings" Target="sharedStrings.xml"/></Relationships>`)
+		add("xl/styles.xml", `<styleSheet><numFmts><numFmt numFmtId="164" formatCode="0;0;0;[Red]&quot;prefix &quot;@"/></numFmts><fonts><font><sz val="11"/></font><font><sz val="18"/><color rgb="FF008855"/></font></fonts><fills><fill/><fill><patternFill patternType="solid"><fgColor rgb="FFDD9900"/></patternFill></fill></fills><cellXfs><xf><alignment horizontal="center"/></xf><xf fillId="1"><alignment horizontal="right"/></xf><xf fontId="1"><alignment horizontal="centerContinuous"/></xf><xf><alignment horizontal="right" indent="1"/></xf></cellXfs><dxfs><dxf><font><b/></font><fill><patternFill patternType="solid"><fgColor rgb="FF1122CC"/></patternFill></fill></dxf><dxf><font><i/></font><fill><patternFill patternType="solid"><fgColor rgb="FF33CC66"/></patternFill></fill></dxf><dxf><fill><patternFill patternType="solid"><bgColor rgb="FFCC5500"/></patternFill></fill></dxf></dxfs><tableStyles><tableStyle name="BoldStyle"><tableStyleElement type="totalRow" dxfId="0"/></tableStyle><tableStyle name="ItalicStyle"><tableStyleElement type="totalRow" dxfId="1"/></tableStyle></tableStyles></styleSheet>`)
+		text := texts[i%len(texts)]
+		add("xl/sharedStrings.xml", `<sst><si>`+text+`</si></sst>`)
+		style := (i / 8) % 4
+		body := fmt.Sprintf(`<worksheet><cols><col min="1" max="1" width="4" customWidth="1"/><col min="2" max="2" width="6" customWidth="1"/></cols><sheetData><row r="1"><c r="A1" s="%d" t="s"><v>0</v></c><c r="B1" s="%d" t="inlineStr"><is>%s</is></c></row></sheetData></worksheet>`, style, style, text)
+		body = strings.Replace(body, `</sheetData>`, `<row r="2"><c r="A2" t="inlineStr"><is><t>value</t></is></c><c r="B2"><v>42</v></c></row><row r="3"><c r="B3" t="inlineStr"><is><t>total</t></is></c></row></sheetData>`, 1)
+		merges := []string{`A1:B1`, `A2:B2`, `A1:A2`, `A2:A3`, `A1:B2`, `A2:B3`}
+		body = strings.Replace(body, `</worksheet>`, `<mergeCells count="1"><mergeCell ref="`+merges[(i/8)%len(merges)]+`"/></mergeCells></worksheet>`, 1)
+		if (i/8)%2 == 0 {
+			body = strings.Replace(body, `<row r="2"`, `<row s="1" customFormat="1" r="2"`, 1)
+		}
+		if (i/16)%2 == 0 {
+			body = strings.Replace(body, `<col min="1"`, `<col style="1" min="1"`, 1)
+		}
+		if (i/32)%2 == 0 {
+			body = strings.Replace(body, `<col min="2"`, `<col style="2" min="2"`, 1)
+		}
+		body = strings.Replace(body, `</worksheet>`, `<tableParts count="2"><tablePart xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="t1"/><tablePart xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="t2"/></tableParts></worksheet>`, 1)
+		body = strings.Replace(body, `</sheetData>`, `</sheetData><autoFilter ref="A1:B3"/>`, 1)
+		body = strings.Replace(body, `</sheetData>`, `</sheetData><conditionalFormatting sqref="A1:B3"><cfRule type="notContainsBlanks" dxfId="2"></cfRule></conditionalFormatting>`, 1)
+		add("xl/worksheets/sheet1.xml", body)
+		add("xl/worksheets/_rels/sheet1.xml.rels", `<Relationships><Relationship Id="t1" Type="x/table" Target="../tables/table1.xml"/><Relationship Id="t2" Type="x/table" Target="../tables/table2.xml"/></Relationships>`)
+		refs := []string{"A1:B2", "B2:B3", "A2:B3", "A1:B3", "A3:B3", "A1:A3"}
+		headers := []int{0, 1, 2}
+		infos := []string{"", `<tableStyleInfo/>`, `<tableStyleInfo name="" showRowStripes="1"/>`}
+		table := fmt.Sprintf(`<table ref="%s" name="Test" displayName="Test" headerRowCount="%d" totalsRowCount="%d"><tableColumns count="2"><tableColumn id="1" name="one"/><tableColumn id="2" name="two"/></tableColumns>%s</table>`, refs[(i/8)%len(refs)], headers[(i/48)%len(headers)], (i/144)%2, infos[(i/24)%len(infos)])
+		table = strings.Replace(table, `</table>`, `<autoFilter><filterColumn colId="0" hiddenButton="1"/></autoFilter></table>`, 1)
+		names1 := []string{"BoldStyle", "", "BoldStyle"}
+		names2 := []string{"ItalicStyle", "ItalicStyle", ""}
+		table = strings.Replace(table, `</tableColumns>`, `</tableColumns><tableStyleInfo name="`+names1[(i/8)%len(names1)]+`"/>`, 1)
+		add("xl/tables/table1.xml", table)
+		second := fmt.Sprintf(`<table ref="%s" name="Second" displayName="Second" totalsRowCount="1" headerRowCount="%d"><tableColumns count="2"><tableColumn id="1" name="one"/><tableColumn id="2" name="two"/></tableColumns></table>`, refs[((i/8)+1)%len(refs)], headers[((i/48)+1)%len(headers)])
+		second = strings.Replace(second, `</table>`, `<autoFilter/></table>`, 1)
+		second = strings.Replace(second, `</tableColumns>`, `</tableColumns><tableStyleInfo name="`+names2[(i/8)%len(names2)]+`"/>`, 1)
+		add("xl/tables/table2.xml", second)
+		if e := z.Close(); e != nil {
+			t.Fatal(e)
+		}
+		mode := []string{"none", "all", "default"}[(i/2)%3]
+		noIndex := i%2 == 0
+		result, e := Convert(bytes.NewReader(b.Bytes()), int64(b.Len()), &Options{NoSystemFonts: true, SystemFonts: true, NoTextIndex: noIndex, Data: mode})
+		if e != nil {
+			t.Fatal(e)
+		}
+		var doc bytes.Buffer
+		if e = result.Doc.WriteSingle(&doc); e != nil {
+			t.Fatal(e)
+		}
+		out = append(out, map[string]any{"input": b.Bytes(), "bdf": doc.Bytes(), "warnings": result.Warnings, "mode": mode, "no_index": noIndex})
+	}
+	data, e := json.Marshal(out)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if e = os.WriteFile(filepath.Join(root, "compat/xlsx/plain-table-multi-total-style.json"), data, 0644); e != nil {
+		t.Fatal(e)
+	}
+}
