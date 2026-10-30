@@ -36,3 +36,22 @@ test "shape theme colors and opacity match DrawingML" {
   }
   assert_eq(xlsx_simple_shape_alpha(element, 0x123456ffU), Some(0x12345680U))
 }
+
+///|
+test "shape system colors use the upstream fallback" {
+  for
+    (source, expected) in [
+      ("<sysClr val=\"window\"/>", Some(0xffffffffU)),
+      ("<sysClr val=\"menu\" lastClr=\"00FF22\"/>", Some(0x00ff22ffU)),
+      ("<sysClr val=\"other\" lastClr=\"invalid\"/>", Some(0x000000ffU)),
+      ("<sysClr lastClr=\"aabbcc\"/>", Some(0xaabbccffU)),
+      ("<sysClr val=\"menu\" extra=\"1\"/>", None),
+    ] {
+    let reader = @xml.NamespaceReader::from_string(source)
+    let element = match reader.read_event().kind {
+      Empty(element) => element
+      _ => fail("expected a system color element")
+    }
+    assert_eq(xlsx_simple_shape_color(element, Map([]), Map([])), expected)
+  }
+}

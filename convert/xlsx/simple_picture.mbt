@@ -395,7 +395,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
             false
           }
         } else if depth == 5 && parent == "solidFill" && is_shape {
-          if !["srgbClr", "schemeClr"].contains(name) || shape_fill is Some(_) {
+          if !["srgbClr", "schemeClr", "sysClr"].contains(name) ||
+            shape_fill is Some(_) {
             return None
           }
           if name == "schemeClr" && !theme_alpha_checked {
@@ -452,7 +453,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
           parent == "solidFill" &&
           parents[4] == "ln" &&
           is_shape {
-          if !["srgbClr", "schemeClr"].contains(name) || line_color is Some(_) {
+          if !["srgbClr", "schemeClr", "sysClr"].contains(name) ||
+            line_color is Some(_) {
             return None
           }
           if name == "schemeClr" && !theme_alpha_checked {
@@ -469,7 +471,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
           )
           line_color is Some(_)
         } else if depth == 6 &&
-          ["srgbClr", "schemeClr"].contains(parent) &&
+          ["srgbClr", "schemeClr", "sysClr"].contains(parent) &&
           parents[4] == "solidFill" &&
           is_shape {
           if name != "alpha" || !(event.kind is Empty(_)) || saw_shape_alpha {
@@ -482,7 +484,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
           }
           shape_fill is Some(_)
         } else if depth == 7 &&
-          ["srgbClr", "schemeClr"].contains(parent) &&
+          ["srgbClr", "schemeClr", "sysClr"].contains(parent) &&
           parents[5] == "solidFill" &&
           parents[4] == "ln" &&
           is_shape {
@@ -916,6 +918,35 @@ fn xlsx_simple_shape_color(
       .round()
       .to_uint(),
     )
+  }
+  if element.name.local_name == "sysClr" {
+    let seen : Map[String, Bool] = Map([])
+    for attr in element.attributes {
+      let name = attr.name.local_name
+      if !["val", "lastClr"].contains(name) ||
+        seen.contains(name) ||
+        attr.name.namespace_uri is Some(_) {
+        return None
+      }
+      seen[name] = true
+    }
+    let color = match xlsx_theme_hex(xlsx_attr(element, "lastClr", "")) {
+      Some(color) => color
+      None =>
+        xlsx_rgb_from_uint(
+          if ["window", "btnHighlight", "highlightText", "menu", "info"].contains(
+              xlsx_attr(element, "val", ""),
+            ) {
+            0xffffffU
+          } else {
+            0U
+          },
+        )
+    }
+    let red = (color.red * 255.0).round().to_uint()
+    let green = (color.green * 255.0).round().to_uint()
+    let blue = (color.blue * 255.0).round().to_uint()
+    return Some((red << 24) | (green << 16) | (blue << 8) | 255U)
   }
   let bytes = @utf8.encode(xlsx_attr(element, "val", ""))
   if bytes.length() != 6 || element.attributes.length() != 1 {
