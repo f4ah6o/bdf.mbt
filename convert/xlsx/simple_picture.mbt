@@ -4,7 +4,7 @@
 fn XlsxWorkbook::xlsx_simple_picture(
   self : XlsxWorkbook,
   part : String,
-) -> Array[(@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?)]? {
+) -> Array[(@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool)]? {
   let bytes = self.package.read(part) catch { _ => return None }
   let source = @utf8.decode_lossy(bytes[:], ignore_bom=true)
   if source.contains("<!ENTITY") {
@@ -20,7 +20,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut depth = 0
   let mut kind = -1
   let mut anchors = 0
-  let result : Array[(@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?)] = []
+  let result : Array[
+    (@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool),
+  ] = []
   let images : Map[String, Bytes] = Map([])
   let mut image_bytes = 0L
   let mut pictures = 0
@@ -31,7 +33,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut picture_hidden = false
   let mut is_shape = false
   let mut shape_fill : UInt32? = None
-  let mut saw_solid_fill = false
+  let mut shape_no_fill = false
+  let mut saw_shape_fill = false
   let mut saw_line = false
   let mut saw_no_line = false
   let mut saw_line_fill = false
@@ -338,10 +341,19 @@ fn XlsxWorkbook::xlsx_simple_picture(
             }
             true
           } else if is_shape && name == "solidFill" {
-            if saw_solid_fill {
+            if saw_shape_fill {
               return None
             }
-            saw_solid_fill = true
+            saw_shape_fill = true
+            true
+          } else if is_shape && name == "noFill" {
+            if saw_shape_fill ||
+              !(event.kind is Empty(_)) ||
+              !element.attributes.is_empty() {
+              return None
+            }
+            saw_shape_fill = true
+            shape_no_fill = true
             true
           } else if is_shape && name == "ln" {
             if saw_line {
@@ -581,8 +593,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
             (
               is_shape &&
               (
-                !saw_solid_fill ||
-                shape_fill is None ||
+                !saw_shape_fill ||
+                (!shape_no_fill && shape_fill is None) ||
                 (saw_line && !saw_no_line && line_color is None)
               )
             ) ||
@@ -637,6 +649,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
                   picture_hidden,
                   shape_fill,
                   line_color.map(color => (color, line_width)),
+                  shape_no_fill,
                 ),
               )
             }
@@ -651,7 +664,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
           picture_hidden = false
           is_shape = false
           shape_fill = None
-          saw_solid_fill = false
+          shape_no_fill = false
+          saw_shape_fill = false
           saw_line = false
           saw_no_line = false
           saw_line_fill = false
