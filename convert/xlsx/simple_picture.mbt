@@ -581,23 +581,36 @@ fn XlsxWorkbook::xlsx_simple_picture(
             } else {
               shape_fill = shape_fill.map(color => color ^ 0xffffff00U)
             }
-          } else if ["lumMod", "lumOff", "lum", "satMod", "satOff", "sat"].contains(
-              name,
-            ) {
+          } else if [
+              "lumMod", "lumOff", "lum", "satMod", "satOff", "sat", "hueMod", "hueOff",
+              "hue",
+            ].contains(name) {
             if element.attributes.length() != 1 ||
               shape_rgb is None ||
               element.attributes[0].name.local_name != "val" ||
               element.attributes[0].name.namespace_uri is Some(_) {
               return None
             }
-            let fraction = match
-              xlsx_drawing_fraction(xlsx_attr(element, "val", "")) {
-              Some(value) if value >=
-                (if name == "lumOff" || name == "satOff" { -10.0 } else { 0.0 }) &&
-                value <=
-                (if name == "lum" || name == "sat" { 1.0 } else { 10.0 }) =>
-                value
-              _ => return None
+            let fraction = if name == "hue" || name == "hueOff" {
+              match xlsx_int(xlsx_attr(element, "val", "")) {
+                Some(value) if value >=
+                  (if name == "hueOff" { -21600000L } else { 0L }) &&
+                  value <= 21600000L => value.to_double() / 60000.0 / 360.0
+                _ => return None
+              }
+            } else {
+              match xlsx_drawing_fraction(xlsx_attr(element, "val", "")) {
+                Some(value) if value >=
+                  (if name == "lumOff" || name == "satOff" {
+                    -10.0
+                  } else {
+                    0.0
+                  }) &&
+                  value <=
+                  (if name == "lum" || name == "sat" { 1.0 } else { 10.0 }) =>
+                  value
+                _ => return None
+              }
             }
             let next = xlsx_shape_apply_hsl_modifier(
               shape_rgb.unwrap(),
@@ -648,23 +661,36 @@ fn XlsxWorkbook::xlsx_simple_picture(
             } else {
               line_color = line_color.map(color => color ^ 0xffffff00U)
             }
-          } else if ["lumMod", "lumOff", "lum", "satMod", "satOff", "sat"].contains(
-              name,
-            ) {
+          } else if [
+              "lumMod", "lumOff", "lum", "satMod", "satOff", "sat", "hueMod", "hueOff",
+              "hue",
+            ].contains(name) {
             if element.attributes.length() != 1 ||
               line_rgb is None ||
               element.attributes[0].name.local_name != "val" ||
               element.attributes[0].name.namespace_uri is Some(_) {
               return None
             }
-            let fraction = match
-              xlsx_drawing_fraction(xlsx_attr(element, "val", "")) {
-              Some(value) if value >=
-                (if name == "lumOff" || name == "satOff" { -10.0 } else { 0.0 }) &&
-                value <=
-                (if name == "lum" || name == "sat" { 1.0 } else { 10.0 }) =>
-                value
-              _ => return None
+            let fraction = if name == "hue" || name == "hueOff" {
+              match xlsx_int(xlsx_attr(element, "val", "")) {
+                Some(value) if value >=
+                  (if name == "hueOff" { -21600000L } else { 0L }) &&
+                  value <= 21600000L => value.to_double() / 60000.0 / 360.0
+                _ => return None
+              }
+            } else {
+              match xlsx_drawing_fraction(xlsx_attr(element, "val", "")) {
+                Some(value) if value >=
+                  (if name == "lumOff" || name == "satOff" {
+                    -10.0
+                  } else {
+                    0.0
+                  }) &&
+                  value <=
+                  (if name == "lum" || name == "sat" { 1.0 } else { 10.0 }) =>
+                  value
+                _ => return None
+              }
             }
             let next = xlsx_shape_apply_hsl_modifier(
               line_rgb.unwrap(),

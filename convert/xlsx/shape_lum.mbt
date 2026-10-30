@@ -42,9 +42,16 @@ fn xlsx_shape_apply_hsl_modifier(
     sat *= fraction
   } else if name == "satOff" {
     sat += fraction
-  } else {
+  } else if name == "sat" {
     sat = fraction
+  } else if name == "hueMod" {
+    hue *= fraction
+  } else if name == "hueOff" {
+    hue += fraction
+  } else {
+    hue = fraction
   }
+  hue -= hue.floor()
   lum = xlsx_clamp_color(lum)
   sat = xlsx_clamp_color(sat)
   if sat == 0.0 {
