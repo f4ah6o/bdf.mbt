@@ -129,14 +129,7 @@ func TestCodexConditionalDuplicate(t *testing.T) {
 		if i >= 256 && i < 262 {
 			rule = `<conditionalFormatting sqref="A1:F3"><cfRule type="colorScale" dxfId="0"/></conditionalFormatting>`
 		}
-		if i == 256 {
-			first = "1e301"
-			rule = `<conditionalFormatting sqref="A1:F3"><cfRule type="duplicateValues" dxfId="0"></cfRule></conditionalFormatting>`
-		}
-		if i == 257 {
-			first = "1e-301"
-			rule = `<conditionalFormatting sqref="A1:F3"><cfRule type="duplicateValues" dxfId="0"></cfRule></conditionalFormatting>`
-		}
+
 		if i == 262 {
 			rule += rule
 		}
@@ -148,7 +141,7 @@ func TestCodexConditionalDuplicate(t *testing.T) {
 		if i%4 == 0 {
 			merge = `<mergeCells><mergeCell ref="B1:C1"/></mergeCells>`
 		}
-		add("xl/worksheets/sheet1.xml", fmt.Sprintf(`<worksheet><sheetData><row r="1" s="1" customFormat="1"><c r="A1" s="%d"><v>%s</v></c><c r="B1" s="%d"><v>%s</v></c><c r="C1" s="3" t="str"><v>Ä</v></c><c r="D1" s="2" t="str"><v>ä</v></c><c r="E1"><v>-0</v></c><c r="F1"><v>0</v></c></row><row r="2"><c r="A2" t="str"><v>  </v></c><c r="B2" t="str"><v>K</v></c><c r="C2" t="str"><v>k</v></c><c r="D2" t="b"><v>1</v></c><c r="E2" t="b"><v>1</v></c><c r="F2" t="e"><v>#N/A</v></c></row><row r="3"><c r="B3" t="str"><v>unique</v></c><c r="D3" t="e"><v>#REF!</v></c></row></sheetData>%s%s</worksheet>`, style, first, 1-style, second, merge, rule))
+		add("xl/worksheets/sheet1.xml", fmt.Sprintf(`<worksheet><sheetData><row r="1" s="1" customFormat="1"><c r="A1" s="%d"><v>%s</v></c><c r="B1" s="%d"><v>%s</v></c><c r="C1" s="3" t="str"><v>Ä</v></c><c r="D1" s="2" t="str"><v>ä</v></c><c r="E1"><v>-0</v></c><c r="F1"><v>0</v></c></row><row r="2"><c r="A2" t="str"><v>  </v></c><c r="B2" t="str"><v>K</v></c><c r="C2" t="str"><v>k</v></c><c r="D2" t="b"><v>1</v></c><c r="E2" t="b"><v>1</v></c><c r="F2" t="e"><v>#N/A</v></c></row><row r="3"><c r="A3" t="str"><v>TrUe</v></c><c r="B3" t="str"><v>unique</v></c><c r="C3" t="str"><v>#n/a</v></c><c r="D3" t="e"><v>#REF!</v></c></row></sheetData>%s%s</worksheet>`, style, first, 1-style, second, merge, rule))
 
 		if e = z.Close(); e != nil {
 			t.Fatal(e)

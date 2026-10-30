@@ -16,18 +16,19 @@ fn xlsx_conditional_duplicate_key(cell : XlsxCell) -> String? raise {
       return Some("n" + sign + "0")
     }
     let magnitude = if negative { -number } else { number }
-    // Keep the decimal-power calculation away from underflow and overflow.
-    if magnitude < 1.0e-300 || magnitude > 1.0e300 {
-      xlsx_reject_conditional()
-    }
     let mut exponent = @math.log10(magnitude).floor().to_int()
-    if magnitude >= xlsx_pow10(exponent + 1) {
+    if xlsx_compare_decimal_power(magnitude, exponent + 1) >= 0 {
       exponent += 1
-    } else if magnitude < xlsx_pow10(exponent) {
+    } else if xlsx_compare_decimal_power(magnitude, exponent) < 0 {
       exponent -= 1
     }
     let mut scale = 14 - exponent
     let mut digits = xlsx_scaled_integer(magnitude, scale).to_string()
+    if digits.length() < 15 {
+      // Rounded powers of ten can be one exponent off for subnormals.
+      scale += 15 - digits.length()
+      digits = xlsx_scaled_integer(magnitude, scale).to_string()
+    }
     if digits.length() > 15 {
       digits = digits[:digits.length() - 1].to_owned()
       scale -= 1
@@ -94,4 +95,36 @@ fn xlsx_conditional_duplicate_counts(
     }
   }
   counts
+}
+
+///|
+// Compare a finite positive binary float to 10^exponent exactly. Rounded
+// double powers can fall on the wrong side of a subnormal boundary.
+fn xlsx_compare_decimal_power(value : Double, exponent : Int32) -> Int32 {
+  let bits = value.reinterpret_as_uint64()
+  let exponent_bits = ((bits >> 52) & 0x7ffUL).to_int()
+  let fraction = bits & 0xfffffffffffffUL
+  let mantissa = if exponent_bits == 0 {
+    fraction
+  } else {
+    fraction | 0x10000000000000UL
+  }
+  let binary_exponent = if exponent_bits == 0 {
+    -1074
+  } else {
+    exponent_bits - 1023 - 52
+  }
+  let mut numerator = @bigint.BigInt::from_uint64(mantissa)
+  let mut denominator = @bigint.BigInt::from_int(1)
+  if binary_exponent >= 0 {
+    numerator = numerator << binary_exponent
+  } else {
+    denominator = denominator << -binary_exponent
+  }
+  if exponent >= 0 {
+    denominator = denominator * xlsx_pow10_big(exponent)
+  } else {
+    numerator = numerator * xlsx_pow10_big(-exponent)
+  }
+  numerator.compare(denominator)
 }

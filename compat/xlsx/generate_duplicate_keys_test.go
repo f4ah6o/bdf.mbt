@@ -29,6 +29,20 @@ func TestCodexXLSXDuplicateKeys(t *testing.T) {
 		fmt.Fprintf(w, "    (0x%016xUL, 0x%016xUL, %t),\n", math.Float64bits(a), math.Float64bits(b), strconv.FormatFloat(a, 'g', 15, 64) == strconv.FormatFloat(b, 'g', 15, 64))
 	}
 	emit(0, math.Copysign(0, -1))
+	emit(math.SmallestNonzeroFloat64, math.Nextafter(math.SmallestNonzeroFloat64, math.Inf(1)))
+	emit(math.MaxFloat64, math.Nextafter(math.MaxFloat64, 0))
+	for e := -323; e <= -300; e++ {
+		x := math.Pow10(e)
+		if x != 0 {
+			emit(x, math.Nextafter(x, 0))
+			emit(x, math.Nextafter(x, math.Inf(1)))
+		}
+	}
+	for e := 300; e <= 308; e++ {
+		x := math.Pow10(e)
+		emit(x, math.Nextafter(x, 0))
+		emit(x, math.Nextafter(x, math.Inf(1)))
+	}
 	for e := -280; e <= 280; e += 10 {
 		x := math.Pow10(e)
 		emit(x, math.Nextafter(x, 0))
@@ -48,10 +62,10 @@ func TestCodexXLSXDuplicateKeys(t *testing.T) {
 		emit(a, b)
 	}
 	fmt.Fprintln(w, `  ]
-  for (a, b, equal) in cases {
+  for index, (a, b, equal) in cases {
     let left : XlsxCell = { column: 0, style: 0, kind: 1, number: a.reinterpret_as_double(), text: "" }
     let right : XlsxCell = { column: 0, style: 0, kind: 1, number: b.reinterpret_as_double(), text: "" }
-    assert_eq(xlsx_conditional_duplicate_key(left) == xlsx_conditional_duplicate_key(right), equal)
+    assert_eq(xlsx_conditional_duplicate_key(left) == xlsx_conditional_duplicate_key(right), equal, msg=index.to_string())
   }
 }`)
 	if err := w.Flush(); err != nil {
