@@ -66,6 +66,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut line_alpha = 1.0
   let mut shape_invertible = false
   let mut line_invertible = false
+  let mut shape_rgb : XlsxRgb? = None
+  let mut line_rgb : XlsxRgb? = None
   let mut line_width = 0.75
   let mut shape_dash = ""
   let mut saw_dash = false
@@ -469,6 +471,13 @@ fn XlsxWorkbook::xlsx_simple_picture(
             theme_alphas.unwrap_or(Map([])),
           )
           shape_invertible = !["scrgbClr", "hslClr"].contains(name)
+          shape_rgb = if ["srgbClr", "prstClr", "sysClr", "schemeClr"].contains(
+              name,
+            ) {
+            shape_fill.map(color => xlsx_rgb_from_uint(color >> 8))
+          } else {
+            None
+          }
           shape_alpha = xlsx_shape_initial_alpha(
             element,
             theme_alphas.unwrap_or(Map([])),
@@ -534,6 +543,13 @@ fn XlsxWorkbook::xlsx_simple_picture(
             theme_alphas.unwrap_or(Map([])),
           )
           line_invertible = !["scrgbClr", "hslClr"].contains(name)
+          line_rgb = if ["srgbClr", "prstClr", "sysClr", "schemeClr"].contains(
+              name,
+            ) {
+            line_color.map(color => xlsx_rgb_from_uint(color >> 8))
+          } else {
+            None
+          }
           line_alpha = xlsx_shape_initial_alpha(
             element,
             theme_alphas.unwrap_or(Map([])),
@@ -552,7 +568,38 @@ fn XlsxWorkbook::xlsx_simple_picture(
             if !shape_invertible || !element.attributes.is_empty() {
               return None
             }
-            shape_fill = shape_fill.map(color => color ^ 0xffffff00U)
+            if shape_rgb is Some(rgb) {
+              let next = {
+                red: 1.0 - rgb.red,
+                green: 1.0 - rgb.green,
+                blue: 1.0 - rgb.blue,
+              }
+              shape_rgb = Some(next)
+              shape_fill = shape_fill.map(color => {
+                xlsx_shape_pack_rgb(next, color & 255U)
+              })
+            } else {
+              shape_fill = shape_fill.map(color => color ^ 0xffffff00U)
+            }
+          } else if name == "lumMod" || name == "lumOff" {
+            if element.attributes.length() != 1 ||
+              shape_rgb is None ||
+              element.attributes[0].name.local_name != "val" ||
+              element.attributes[0].name.namespace_uri is Some(_) {
+              return None
+            }
+            let fraction = match
+              xlsx_drawing_fraction(xlsx_attr(element, "val", "")) {
+              Some(value) if value >=
+                (if name == "lumOff" { -10.0 } else { 0.0 }) &&
+                value <= 10.0 => value
+              _ => return None
+            }
+            let next = xlsx_shape_apply_lum(shape_rgb.unwrap(), name, fraction)
+            shape_rgb = Some(next)
+            shape_fill = shape_fill.map(color => {
+              xlsx_shape_pack_rgb(next, color & 255U)
+            })
           } else {
             let next = match
               xlsx_shape_alpha_modifier(name, element, shape_alpha) {
@@ -579,7 +626,38 @@ fn XlsxWorkbook::xlsx_simple_picture(
             if !line_invertible || !element.attributes.is_empty() {
               return None
             }
-            line_color = line_color.map(color => color ^ 0xffffff00U)
+            if line_rgb is Some(rgb) {
+              let next = {
+                red: 1.0 - rgb.red,
+                green: 1.0 - rgb.green,
+                blue: 1.0 - rgb.blue,
+              }
+              line_rgb = Some(next)
+              line_color = line_color.map(color => {
+                xlsx_shape_pack_rgb(next, color & 255U)
+              })
+            } else {
+              line_color = line_color.map(color => color ^ 0xffffff00U)
+            }
+          } else if name == "lumMod" || name == "lumOff" {
+            if element.attributes.length() != 1 ||
+              line_rgb is None ||
+              element.attributes[0].name.local_name != "val" ||
+              element.attributes[0].name.namespace_uri is Some(_) {
+              return None
+            }
+            let fraction = match
+              xlsx_drawing_fraction(xlsx_attr(element, "val", "")) {
+              Some(value) if value >=
+                (if name == "lumOff" { -10.0 } else { 0.0 }) &&
+                value <= 10.0 => value
+              _ => return None
+            }
+            let next = xlsx_shape_apply_lum(line_rgb.unwrap(), name, fraction)
+            line_rgb = Some(next)
+            line_color = line_color.map(color => {
+              xlsx_shape_pack_rgb(next, color & 255U)
+            })
           } else {
             let next = match
               xlsx_shape_alpha_modifier(name, element, line_alpha) {
@@ -874,6 +952,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
           line_alpha = 1.0
           shape_invertible = false
           line_invertible = false
+          shape_rgb = None
+          line_rgb = None
           line_width = 0.75
           shape_dash = ""
           saw_dash = false
