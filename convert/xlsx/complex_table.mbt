@@ -32,9 +32,11 @@ fn XlsxWorkbook::xlsx_complex_table_style(
 ) -> XlsxComplexStyle? raise {
   let rel = match self.package.relationship_of_type(self.part, "/styles") {
     Some(value) => value
-    None => return None
+    None => return xlsx_builtin_table_style(wanted)
   }
-  let data = self.package.read(rel.target) catch { _ => return None }
+  let data = self.package.read(rel.target) catch {
+    _ => return xlsx_builtin_table_style(wanted)
+  }
   let text = @utf8.decode_lossy(data[:], ignore_bom=true)
   if text.contains("<!ENTITY") {
     return None
@@ -126,7 +128,10 @@ fn XlsxWorkbook::xlsx_complex_table_style(
       _ => ()
     }
   }
-  if !found || invalid {
+  if !found {
+    return xlsx_builtin_table_style(wanted)
+  }
+  if invalid {
     return None
   }
   let names = xlsx_complex_table_names()

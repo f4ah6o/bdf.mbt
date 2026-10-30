@@ -2496,7 +2496,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let borders : Map[Int32, Map[Int32, @sheet.GridCellBorder]] = Map([])
   let diagonals : Map[Int32, Map[Int32, @sheet.GridCellDiagonal]] = Map([])
   let border_colors : Map[Int32, Map[Int32, Array[UInt32]]] = Map([])
-  let border_colors_by_weight : Map[Int32, XlsxRgb] = Map([])
+  let border_color_keys : Map[Int32, Map[Int32, Array[String]]] = Map([])
+  let diagonal_color_keys : Map[Int32, Map[Int32, String]] = Map([])
   let checked_styles : Map[Int32, Bool] = Map([])
   let format_cache : Map[Int32, Array[XlsxFormatSection]] = Map([])
   let color_cache : Map[Int32, UInt32] = Map([])
@@ -2613,7 +2614,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             theme_colors,
           )
           if weight != 0 {
-            xlsx_check_border_color(border_colors_by_weight, weight, color)
             let columns = match diagonals.get(row.index) {
               Some(columns) => columns
               None => {
@@ -2628,6 +2628,12 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               up: source_border.diagonal_up,
               down: source_border.diagonal_down,
             }
+            xlsx_record_diagonal_color_key(
+              diagonal_color_keys,
+              row.index,
+              cell.column,
+              color,
+            )
           }
         }
       }
@@ -2635,13 +2641,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         border.bottom != 0 ||
         border.left != 0 ||
         border.right != 0 {
-        let weights = [border.top, border.bottom, border.left, border.right]
-        for i, weight in weights {
-          if weight == 0 {
-            continue
-          }
-          xlsx_check_border_color(border_colors_by_weight, weight, colors[i])
-        }
         let columns = match borders.get(row.index) {
           Some(columns) => columns
           None => {
@@ -2685,6 +2684,12 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           }
         }
         row_colors[cell.column] = colors.map(color => color.rgba())
+        xlsx_record_border_color_keys(
+          border_color_keys,
+          row.index,
+          cell.column,
+          colors,
+        )
       }
       let fill_index = styles.cell_formats[format_index].fill
       if fill_index >= 0 && fill_index < styles.fills.length() {
@@ -3158,7 +3163,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let draw_cells = if base_fills || base_borders {
     xlsx_plain_base_paint(
       rows, cells, geo, styles, theme_colors, spans, region_rows, fills, borders,
-      border_colors, diagonals, border_colors_by_weight, row_count, col_count, base_borders,
+      border_colors, border_color_keys, diagonals, diagonal_color_keys, row_count,
+      col_count, base_borders,
     )
   } else {
     cells
@@ -3188,6 +3194,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     borders~,
     spans~,
     border_colors~,
+    border_color_keys~,
+    diagonal_color_keys~,
     merge_regions~,
     east_asian_fonts~,
     wraps~,
@@ -3230,8 +3238,9 @@ fn xlsx_plain_base_paint(
   fills : Map[Int32, Map[Int32, @sheet.GridSolidFill]],
   borders : Map[Int32, Map[Int32, @sheet.GridCellBorder]],
   border_colors : Map[Int32, Map[Int32, Array[UInt32]]],
+  border_color_keys : Map[Int32, Map[Int32, Array[String]]],
   diagonals : Map[Int32, Map[Int32, @sheet.GridCellDiagonal]],
-  border_colors_by_weight : Map[Int32, XlsxRgb],
+  diagonal_color_keys : Map[Int32, Map[Int32, String]],
   row_count : Int32,
   col_count : Int32,
   base_borders : Bool,
@@ -3300,8 +3309,8 @@ fn xlsx_plain_base_paint(
       let index = if style >= styles.cell_formats.length() { 0 } else { style }
       if base_borders {
         xlsx_put_base_border(
-          styles, index, theme_colors, r, c, region, borders, border_colors, diagonals,
-          border_colors_by_weight,
+          styles, index, theme_colors, r, c, region, borders, border_colors, border_color_keys,
+          diagonals, diagonal_color_keys,
         )
       }
       let fill_index = styles.cell_formats[index].fill
@@ -3346,17 +3355,13 @@ fn xlsx_put_base_border(
   region : @sheet.GridMergeRegion?,
   borders : Map[Int32, Map[Int32, @sheet.GridCellBorder]],
   colors_by_row : Map[Int32, Map[Int32, Array[UInt32]]],
+  color_keys_by_row : Map[Int32, Map[Int32, Array[String]]],
   diagonals : Map[Int32, Map[Int32, @sheet.GridCellDiagonal]],
-  colors_by_weight : Map[Int32, XlsxRgb],
+  diagonal_color_keys : Map[Int32, Map[Int32, String]],
 ) -> Unit raise {
   let (border, colors) = xlsx_plain_border(styles, format, theme)
   let weights = [border.top, border.bottom, border.left, border.right]
   if weights.any(weight => weight != 0) {
-    for i, weight in weights {
-      if weight != 0 {
-        xlsx_check_border_color(colors_by_weight, weight, colors[i])
-      }
-    }
     let columns = match borders.get(row) {
       Some(columns) => columns
       None => {
@@ -3400,6 +3405,7 @@ fn xlsx_put_base_border(
       }
     }
     row_colors[col] = colors.map(color => color.rgba())
+    xlsx_record_border_color_keys(color_keys_by_row, row, col, colors)
   }
   let id = styles.cell_formats[format].border
   if id >= 0 && id < styles.borders.length() {
@@ -3411,7 +3417,6 @@ fn xlsx_put_base_border(
         theme,
       )
       if weight != 0 {
-        xlsx_check_border_color(colors_by_weight, weight, color)
         let columns = match diagonals.get(row) {
           Some(columns) => columns
           None => {
@@ -3426,6 +3431,7 @@ fn xlsx_put_base_border(
           up: source.diagonal_up,
           down: source.diagonal_down,
         }
+        xlsx_record_diagonal_color_key(diagonal_color_keys, row, col, color)
       }
     }
   }
@@ -3474,36 +3480,116 @@ fn xlsx_check_base_style(
 }
 
 ///|
-fn xlsx_check_border_color(
-  colors : Map[Int32, XlsxRgb],
-  weight : Int32,
-  color : XlsxRgb,
-) -> Unit raise {
-  if colors.get(weight) is Some(previous) {
-    if (
-        previous.red != color.red ||
-        previous.green != color.green ||
-        previous.blue != color.blue
-      ) &&
-      (!xlsx_plain_byte_color(previous) || !xlsx_plain_byte_color(color)) {
-      raise InvalidXlsxInput(
-        "xlsx: mixed border colors require 8-bit RGB components",
-      )
-    }
-  } else {
-    colors[weight] = color
+fn xlsx_go_color_component(value : Double) -> String {
+  let text = value.to_string()
+  if value == 0.0 || value.abs() >= 0.0001 || value.is_nan() || value.is_inf() {
+    return text
   }
+  let chars : Array[Char] = [ for c in text => c ]
+  let mut epos = -1
+  for i in 0..<chars.length() {
+    if chars[i] == 'e' || chars[i] == 'E' {
+      epos = i
+      break
+    }
+  }
+  let out = StringBuilder()
+  if epos >= 0 {
+    for i in 0..<epos {
+      out.write_char(chars[i])
+    }
+    out.write_char('e')
+    let mut start = epos + 1
+    if start < chars.length() && (chars[start] == '-' || chars[start] == '+') {
+      out.write_char(chars[start])
+      start += 1
+    } else {
+      out.write_char('+')
+    }
+    if chars.length() - start < 2 {
+      out.write_char('0')
+    }
+    for i in start..<chars.length() {
+      out.write_char(chars[i])
+    }
+    return out.to_string()
+  }
+  let mut point = -1
+  let mut first = -1
+  for i in 0..<chars.length() {
+    if chars[i] == '.' {
+      point = i
+    } else if point >= 0 && chars[i] != '0' && first < 0 {
+      first = i
+    }
+  }
+  if point < 0 || first < 0 {
+    return text
+  }
+  if chars[0] == '-' {
+    out.write_char('-')
+  }
+  out.write_char(chars[first])
+  if first + 1 < chars.length() {
+    out.write_char('.')
+    for i in (first + 1)..<chars.length() {
+      out.write_char(chars[i])
+    }
+  }
+  let exponent = first - point
+  out.write_string("e-")
+  if exponent < 10 {
+    out.write_char('0')
+  }
+  out.write_string(exponent.to_string())
+  out.to_string()
 }
 
 ///|
-fn xlsx_plain_byte_color(color : XlsxRgb) -> Bool {
-  for value in [color.red, color.green, color.blue] {
-    let scaled = value * 255.0
-    if (scaled - scaled.round()).abs() > 1.0e-9 {
-      return false
+fn xlsx_raw_border_color_key(color : XlsxRgb) -> String {
+  "{" +
+  xlsx_go_color_component(color.red) +
+  " " +
+  xlsx_go_color_component(color.green) +
+  " " +
+  xlsx_go_color_component(color.blue) +
+  "}"
+}
+
+///|
+fn xlsx_record_border_color_keys(
+  keys : Map[Int32, Map[Int32, Array[String]]],
+  row : Int32,
+  column : Int32,
+  colors : Array[XlsxRgb],
+) -> Unit {
+  let columns = match keys.get(row) {
+    Some(value) => value
+    None => {
+      let value : Map[Int32, Array[String]] = Map([])
+      keys[row] = value
+      value
     }
   }
-  true
+  columns[column] = colors.map(color => xlsx_raw_border_color_key(color))
+}
+
+///|
+fn xlsx_record_diagonal_color_key(
+  keys : Map[Int32, Map[Int32, String]],
+  row : Int32,
+  column : Int32,
+  color : XlsxRgb,
+) -> Unit {
+  let columns = match keys.get(row) {
+    Some(value) => value
+    None => {
+      let value : Map[Int32, String] = Map([])
+      keys[row] = value
+      value
+    }
+  }
+  columns[column] = xlsx_raw_border_color_key(color)
 }
 
 ///|

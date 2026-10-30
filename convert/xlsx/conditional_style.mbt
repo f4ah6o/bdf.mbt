@@ -34,21 +34,27 @@ fn XlsxWorkbook::xlsx_conditional_style(
   self : XlsxWorkbook,
   wanted : Int32,
   for_table~ : Bool = false,
+  source~ : String? = None,
 ) -> XlsxConditionalStyle raise {
-  let part = match self.package.relationship_of_type(self.part, "/styles") {
-    Some(rel) => rel.target
-    None =>
-      raise InvalidXlsxInput(
-        "xlsx: plain conversion does not support conditional formatting",
-      )
+  let text = match source {
+    Some(value) => value
+    None => {
+      let part = match self.package.relationship_of_type(self.part, "/styles") {
+        Some(rel) => rel.target
+        None =>
+          raise InvalidXlsxInput(
+            "xlsx: plain conversion does not support conditional formatting",
+          )
+      }
+      let bytes = self.package.read(part) catch {
+        _ =>
+          raise InvalidXlsxInput(
+            "xlsx: plain conversion does not support conditional formatting",
+          )
+      }
+      @utf8.decode_lossy(bytes[:], ignore_bom=true)
+    }
   }
-  let bytes = self.package.read(part) catch {
-    _ =>
-      raise InvalidXlsxInput(
-        "xlsx: plain conversion does not support conditional formatting",
-      )
-  }
-  let text = @utf8.decode_lossy(bytes[:], ignore_bom=true)
   if text.contains("<!ENTITY") {
     raise InvalidXlsxInput("xlsx: the part declares entities")
   }
@@ -351,5 +357,14 @@ fn XlsxWorkbook::xlsx_table_differential_style(
   self : XlsxWorkbook,
   wanted : Int32,
 ) -> XlsxConditionalStyle raise {
-  self.xlsx_conditional_style(wanted, for_table=true)
+  if wanted >= 1000000000 {
+    match xlsx_builtin_table_dxf(wanted - 1000000000) {
+      Some(xml) =>
+        self.xlsx_conditional_style(0, for_table=true, source=Some(xml))
+      None =>
+        raise InvalidXlsxInput("xlsx: unknown built-in table differential")
+    }
+  } else {
+    self.xlsx_conditional_style(wanted, for_table=true)
+  }
 }
