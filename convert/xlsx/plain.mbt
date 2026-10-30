@@ -31,6 +31,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut multi_run = false
   let mut link_depth = -1
   let mut extension_depth = -1
+  let mut table_depth = -1
   let mut has_conditional = false
   let mut auto_filter : XlsxRange? = None
   let links : Array[@sheet.GridLink] = []
@@ -44,11 +45,22 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           // The upstream worksheet reader ignores unrecognized top-level
           // metadata. These elements have rendering semantics there and must
           // remain unsupported until they are implemented here.
-          if ["drawing", "tableParts", "AlternateContent"].contains(name) {
+          if name == "AlternateContent" {
             raise InvalidXlsxInput(
               "xlsx: plain conversion does not support worksheet feature " +
               name,
             )
+          }
+          if name == "drawing" {
+            let id = xlsx_rel_id(element, "id")
+            if id != "" && self.package.target(part, id) is Some(_) {
+              raise InvalidXlsxInput(
+                "xlsx: plain conversion does not support worksheet feature drawing",
+              )
+            }
+          }
+          if name == "tableParts" && event.kind is Start(_) {
+            table_depth = depth + 1
           }
           if name == "sheetData" && event.kind is Start(_) {
             sheet_data_depth = depth + 1
@@ -66,6 +78,13 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           }
           if name == "extLst" && event.kind is Start(_) {
             extension_depth = depth + 1
+          }
+        } else if depth == table_depth && name == "tablePart" {
+          let id = xlsx_rel_id(element, "id")
+          if self.package.target(part, id) is Some(_) {
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion does not support worksheet feature tableParts",
+            )
           }
         } else if extension_depth >= 0 &&
           depth >= extension_depth &&
@@ -145,6 +164,9 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
         }
         if depth + 1 == extension_depth {
           extension_depth = -1
+        }
+        if depth + 1 == table_depth {
+          table_depth = -1
         }
         if depth + 1 == inline_depth {
           if run_count > 1 {
