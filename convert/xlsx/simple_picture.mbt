@@ -42,8 +42,10 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut line_color : UInt32? = None
   let mut theme_alpha_checked = false
   let mut theme_alphas : Map[Int32, Double]? = None
-  let mut saw_shape_alpha = false
-  let mut saw_line_alpha = false
+  let mut shape_alpha = 1.0
+  let mut line_alpha = 1.0
+  let mut shape_invertible = false
+  let mut line_invertible = false
   let mut line_width = 0.75
   let mut shape_dash = ""
   let mut saw_dash = false
@@ -395,7 +397,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
             false
           }
         } else if depth == 5 && parent == "solidFill" && is_shape {
-          if !["srgbClr", "schemeClr", "sysClr", "prstClr"].contains(name) ||
+          if ![
+              "srgbClr", "schemeClr", "sysClr", "prstClr", "scrgbClr", "hslClr",
+            ].contains(name) ||
             shape_fill is Some(_) {
             return None
           }
@@ -409,6 +413,11 @@ fn XlsxWorkbook::xlsx_simple_picture(
           shape_fill = xlsx_simple_shape_color(
             element,
             theme_colors,
+            theme_alphas.unwrap_or(Map([])),
+          )
+          shape_invertible = !["scrgbClr", "hslClr"].contains(name)
+          shape_alpha = xlsx_shape_initial_alpha(
+            element,
             theme_alphas.unwrap_or(Map([])),
           )
           shape_fill is Some(_)
@@ -453,7 +462,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
           parent == "solidFill" &&
           parents[4] == "ln" &&
           is_shape {
-          if !["srgbClr", "schemeClr", "sysClr", "prstClr"].contains(name) ||
+          if ![
+              "srgbClr", "schemeClr", "sysClr", "prstClr", "scrgbClr", "hslClr",
+            ].contains(name) ||
             line_color is Some(_) {
             return None
           }
@@ -469,32 +480,63 @@ fn XlsxWorkbook::xlsx_simple_picture(
             theme_colors,
             theme_alphas.unwrap_or(Map([])),
           )
+          line_invertible = !["scrgbClr", "hslClr"].contains(name)
+          line_alpha = xlsx_shape_initial_alpha(
+            element,
+            theme_alphas.unwrap_or(Map([])),
+          )
           line_color is Some(_)
         } else if depth == 6 &&
-          ["srgbClr", "schemeClr", "sysClr", "prstClr"].contains(parent) &&
+          ["srgbClr", "schemeClr", "sysClr", "prstClr", "scrgbClr", "hslClr"].contains(
+            parent,
+          ) &&
           parents[4] == "solidFill" &&
           is_shape {
-          if name != "alpha" || !(event.kind is Empty(_)) || saw_shape_alpha {
+          if !(event.kind is Empty(_)) {
             return None
           }
-          saw_shape_alpha = true
-          shape_fill = match shape_fill {
-            Some(color) => xlsx_simple_shape_alpha(element, color)
-            None => return None
+          if name == "inv" {
+            if !shape_invertible || !element.attributes.is_empty() {
+              return None
+            }
+            shape_fill = shape_fill.map(color => color ^ 0xffffff00U)
+          } else {
+            let next = match
+              xlsx_shape_alpha_modifier(name, element, shape_alpha) {
+              Some(value) => value
+              None => return None
+            }
+            shape_alpha = next
+            shape_fill = shape_fill.map(color => {
+              (color & 0xffffff00U) | (next * 255.0).round().to_uint()
+            })
           }
           shape_fill is Some(_)
         } else if depth == 7 &&
-          ["srgbClr", "schemeClr", "sysClr", "prstClr"].contains(parent) &&
+          ["srgbClr", "schemeClr", "sysClr", "prstClr", "scrgbClr", "hslClr"].contains(
+            parent,
+          ) &&
           parents[5] == "solidFill" &&
           parents[4] == "ln" &&
           is_shape {
-          if name != "alpha" || !(event.kind is Empty(_)) || saw_line_alpha {
+          if !(event.kind is Empty(_)) {
             return None
           }
-          saw_line_alpha = true
-          line_color = match line_color {
-            Some(color) => xlsx_simple_shape_alpha(element, color)
-            None => return None
+          if name == "inv" {
+            if !line_invertible || !element.attributes.is_empty() {
+              return None
+            }
+            line_color = line_color.map(color => color ^ 0xffffff00U)
+          } else {
+            let next = match
+              xlsx_shape_alpha_modifier(name, element, line_alpha) {
+              Some(value) => value
+              None => return None
+            }
+            line_alpha = next
+            line_color = line_color.map(color => {
+              (color & 0xffffff00U) | (next * 255.0).round().to_uint()
+            })
           }
           line_color is Some(_)
         } else if depth == 5 && parent == "xfrm" {
@@ -720,8 +762,10 @@ fn XlsxWorkbook::xlsx_simple_picture(
           saw_no_line = false
           saw_line_fill = false
           line_color = None
-          saw_shape_alpha = false
-          saw_line_alpha = false
+          shape_alpha = 1.0
+          line_alpha = 1.0
+          shape_invertible = false
+          line_invertible = false
           line_width = 0.75
           shape_dash = ""
           saw_dash = false
@@ -932,6 +976,54 @@ fn xlsx_simple_shape_color(
       .to_uint(),
     )
   }
+  if element.name.local_name == "hslClr" {
+    let components : Array[Int64] = [0L, 0L, 0L]
+    let seen : Map[String, Bool] = Map([])
+    for attr in element.attributes {
+      let name = attr.name.local_name
+      if !["hue", "sat", "lum"].contains(name) ||
+        seen.contains(name) ||
+        attr.name.namespace_uri is Some(_) {
+        return None
+      }
+      seen[name] = true
+      let limit = if name == "hue" { 21600000L } else { 100000L }
+      let value = match xlsx_int(attr.value) {
+        Some(value) if value >= 0L && value <= limit => value
+        _ => return None
+      }
+      let index = if name == "hue" { 0 } else if name == "sat" { 1 } else { 2 }
+      components[index] = value
+    }
+    return Some(
+      xlsx_shape_hsl_color(components[0], components[1], components[2]),
+    )
+  }
+  if element.name.local_name == "scrgbClr" {
+    let components : Array[Int32] = [0, 0, 0]
+    let seen : Map[String, Bool] = Map([])
+    for attr in element.attributes {
+      let name = attr.name.local_name
+      if !["r", "g", "b"].contains(name) ||
+        seen.contains(name) ||
+        attr.name.namespace_uri is Some(_) {
+        return None
+      }
+      seen[name] = true
+      let value = match xlsx_int(attr.value) {
+        Some(value) if value >= 0L && value <= 100000L => value.to_int()
+        _ => return None
+      }
+      let index = if name == "r" { 0 } else if name == "g" { 1 } else { 2 }
+      components[index] = value
+    }
+    return Some(
+      (xlsx_shape_linear_component(components[0]) << 24) |
+      (xlsx_shape_linear_component(components[1]) << 16) |
+      (xlsx_shape_linear_component(components[2]) << 8) |
+      255U,
+    )
+  }
   if element.name.local_name == "prstClr" {
     if element.attributes.length() != 1 {
       return None
@@ -987,20 +1079,74 @@ fn xlsx_simple_shape_color(
 }
 
 ///|
-fn xlsx_simple_shape_alpha(
+fn xlsx_shape_hsl_color(
+  hue_units : Int64,
+  sat_units : Int64,
+  lum_units : Int64,
+) -> UInt32 {
+  let hue = hue_units.to_double() / 60000.0 / 360.0
+  let sat = sat_units.to_double() / 100000.0
+  let lum = lum_units.to_double() / 100000.0
+  let color = if sat == 0.0 {
+    { red: lum, green: lum, blue: lum, }
+  } else {
+    let q = if lum < 0.5 {
+      lum * (1.0 + sat)
+    } else {
+      xlsx_fma(-lum, sat, lum + sat)
+    }
+    let p = 2.0 * lum - q
+    {
+      red: xlsx_color_component(hue + 1.0 / 3.0, p, q),
+      green: xlsx_color_component(hue, p, q),
+      blue: xlsx_color_component(hue - 1.0 / 3.0, p, q),
+    }
+  }
+  let red = (xlsx_clamp_color(color.red) * 255.0).round().to_uint()
+  let green = (xlsx_clamp_color(color.green) * 255.0).round().to_uint()
+  let blue = (xlsx_clamp_color(color.blue) * 255.0).round().to_uint()
+  (red << 24) | (green << 16) | (blue << 8) | 255U
+}
+
+///|
+fn xlsx_shape_initial_alpha(
   element : @xml.NamespaceElement,
-  color : UInt32,
-) -> UInt32? {
-  if element.attributes.length() != 1 {
+  alphas : Map[Int32, Double],
+) -> Double {
+  if element.name.local_name != "schemeClr" {
+    return 1.0
+  }
+  let name = xlsx_attr(element, "val", "")
+  let mapped = match name {
+    "bg1" => "lt1"
+    "tx1" => "dk1"
+    "bg2" => "lt2"
+    "tx2" => "dk2"
+    _ => name
+  }
+  if name == "phClr" {
+    1.0
+  } else {
+    alphas.get(xlsx_theme_slot(mapped)).unwrap_or(1.0)
+  }
+}
+
+///|
+fn xlsx_shape_alpha_modifier(
+  name : String,
+  element : @xml.NamespaceElement,
+  previous : Double,
+) -> Double? {
+  if !["alpha", "alphaMod", "alphaOff"].contains(name) ||
+    element.attributes.length() != 1 {
     return None
   }
   let value = match xlsx_int(xlsx_attr(element, "val", "")) {
-    Some(value) if value >= 0L && value <= 100000L => value
+    Some(value) if value <= 100000L &&
+      value >= (if name == "alphaOff" { -100000L } else { 0L }) => value
     _ => return None
   }
-  // Go rounds the percentage to the nearest 8-bit alpha value.
-  let alpha = ((value * 255L + 50000L) / 100000L).to_int().to_uint()
-  Some((color & 0xffffff00U) | alpha)
+  Some(xlsx_shape_apply_theme_alpha(name, previous, value))
 }
 
 ///|

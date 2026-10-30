@@ -34,7 +34,7 @@ test "shape theme colors and opacity match DrawingML" {
     Empty(element) => element
     _ => fail("expected an alpha element")
   }
-  assert_eq(xlsx_simple_shape_alpha(element, 0x123456ffU), Some(0x12345680U))
+  assert_eq(xlsx_shape_alpha_modifier("alpha", element, 1.0), Some(0.5))
 }
 
 ///|
