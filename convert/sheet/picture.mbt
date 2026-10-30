@@ -30,6 +30,8 @@ pub(all) struct GridPicture {
   crop_bottom : Double
   image_width : Double
   image_height : Double
+  flip_horizontal : Bool
+  flip_vertical : Bool
 }
 
 ///|
@@ -227,6 +229,32 @@ fn GridDrawContext::paint_picture(
     object.mark(10, picture.description)
   }
   object.save()
+  if picture.flip_horizontal || picture.flip_vertical {
+    object.transform(
+      if picture.flip_horizontal {
+        -1.0F
+      } else {
+        1.0F
+      },
+      0.0F,
+      0.0F,
+      if picture.flip_vertical {
+        -1.0F
+      } else {
+        1.0F
+      },
+      if picture.flip_horizontal {
+        Float::from_double(width)
+      } else {
+        0.0F
+      },
+      if picture.flip_vertical {
+        Float::from_double(height)
+      } else {
+        0.0F
+      },
+    )
+  }
   object.save()
   let path : @core.Path = {
     verbs: b"\x00\x01\x01\x01\x04",

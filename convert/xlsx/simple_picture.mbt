@@ -60,6 +60,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut crop_right = 0.0
   let mut crop_bottom = 0.0
   let mut saw_crop = false
+  let mut saw_xfrm = false
+  let mut flip_horizontal = false
+  let mut flip_vertical = false
   let mut description = ""
   let mut title = ""
   let mut text = StringBuilder()
@@ -276,7 +279,42 @@ fn XlsxWorkbook::xlsx_simple_picture(
           }
           fill_left + fill_right <= 1.0 && fill_top + fill_bottom <= 1.0
         } else if depth == 4 && parent == "spPr" {
-          if name == "prstGeom" && xlsx_attr(element, "prst", "") == "rect" {
+          if name == "xfrm" {
+            if saw_xfrm {
+              return None
+            }
+            saw_xfrm = true
+            let seen : Map[String, Bool] = Map([])
+            for attr in element.attributes {
+              let key = attr.name.local_name
+              if !["flipH", "flipV", "rot"].contains(key) ||
+                seen.contains(key) ||
+                attr.name.namespace_uri is Some(_) {
+                return None
+              }
+              seen[key] = true
+              if key == "rot" {
+                if xlsx_int(attr.value) != Some(0L) {
+                  return None
+                }
+                continue
+              }
+              let flag = if attr.value == "1" || attr.value == "true" {
+                true
+              } else if attr.value == "0" || attr.value == "false" {
+                false
+              } else {
+                return None
+              }
+              if key == "flipH" {
+                flip_horizontal = flag
+              } else {
+                flip_vertical = flag
+              }
+            }
+            true
+          } else if name == "prstGeom" &&
+            xlsx_attr(element, "prst", "") == "rect" {
             if geometry {
               return None
             }
@@ -413,6 +451,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
               crop_top,
               crop_right,
               crop_bottom,
+              flip_horizontal,
+              flip_vertical,
               description,
               title,
               images,
@@ -465,6 +505,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
           crop_right = 0.0
           crop_bottom = 0.0
           saw_crop = false
+          saw_xfrm = false
+          flip_horizontal = false
+          flip_vertical = false
           description = ""
           title = ""
         }
@@ -511,6 +554,8 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
   crop_top : Double,
   crop_right : Double,
   crop_bottom : Double,
+  flip_horizontal : Bool,
+  flip_vertical : Bool,
   description : String,
   title : String,
   images : Map[String, Bytes],
@@ -615,6 +660,8 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
     crop_bottom,
     image_width,
     image_height,
+    flip_horizontal,
+    flip_vertical,
   })
 }
 

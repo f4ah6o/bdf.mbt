@@ -147,6 +147,8 @@ pub(all) struct GridPicture {
   crop_bottom : Double
   image_width : Double
   image_height : Double
+  flip_horizontal : Bool
+  flip_vertical : Bool
 }
 
 pub(all) struct GridRichColorRun {
