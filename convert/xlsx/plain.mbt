@@ -39,10 +39,11 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
       Start(element) | Empty(element) => {
         let name = element.name.local_name
         if depth == 1 {
-          if ![
-              "sheetData", "dimension", "sheetViews", "cols", "sheetFormatPr", "sheetPr",
-              "pageMargins", "pageSetup", "printOptions", "headerFooter", "rowBreaks",
-              "colBreaks", "mergeCells", "hyperlinks", "conditionalFormatting",
+          // The upstream worksheet reader ignores unrecognized top-level
+          // metadata. These elements have rendering semantics there and must
+          // remain unsupported until they are implemented here.
+          if [
+              "drawing", "legacyDrawing", "autoFilter", "tableParts", "extLst", "AlternateContent",
             ].contains(name) {
             raise InvalidXlsxInput(
               "xlsx: plain conversion does not support worksheet feature " +

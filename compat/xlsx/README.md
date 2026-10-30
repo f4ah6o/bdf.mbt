@@ -89,6 +89,8 @@ matches use `generate_conditional_disjoint_matches_test.go` and
 `conditional-identical-blocks.json` retains Go results for formerly unsupported
 identical conditional blocks. Regenerate it from the adjacent input seeds with
 `generate_conditional_identical_blocks_test.go` and `TestCodexConditionalIdenticalBlocks`.
+Ignored worksheet metadata uses `generate_ignored_sheet_features_test.go` and
+`TestCodexIgnoredSheetFeatures`.
 Multiple unformatted text runs use `generate_multiple_plain_runs_safe_test.go`
 and `TestCodexMultiplePlainRunsSafe`. Mixed direct text and runs and text number
 formats remain outside the plain renderer's supported subset.
