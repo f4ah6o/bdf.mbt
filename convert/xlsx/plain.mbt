@@ -1360,6 +1360,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   self : XlsxWorkbook,
   part : String,
   sheet_name : String,
+  theme_colors : Map[Int32, XlsxRgb],
   table_rows : Array[XlsxRow],
   table_headers : Array[(Int32, Int32, Int32, Int32, Int32)],
   table_events : Array[(String, String)],
@@ -1671,7 +1672,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
         _ => false
       }
       if !empty {
-        match self.xlsx_simple_picture(target) {
+        match self.xlsx_simple_picture(target, theme_colors) {
           Some(found) =>
             for (picture, hidden, fill, stroke, no_fill) in found {
               pictures.push(picture)
@@ -2213,6 +2214,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   ) = workbook.xlsx_check_plain_sheet(
     ref.part,
     ref.name,
+    theme_colors,
     rows,
     table_headers,
     table_events,

@@ -13,7 +13,7 @@ variants = {
     'alpha-extra-attribute': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="1" foo="2"/></a:srgbClr>'),
     'fill-and-no-fill': ('</a:solidFill>', '</a:solidFill><a:noFill/>'),
     'duplicate-no-fill': ('<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill>', '<a:noFill/><a:noFill/>'),
-    'theme-color': ('<a:srgbClr val="FF0000"/>', '<a:schemeClr val="accent1"/>'),
+    'unknown-theme-color': ('<a:srgbClr val="FF0000"/>', '<a:schemeClr val="unknown"/>'),
     'gradient': ('<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill>', '<a:gradFill/>'),
     'dashed-line': ('<a:ln><a:noFill/></a:ln>', '<a:ln><a:solidFill><a:srgbClr val="000000"/></a:solidFill><a:prstDash val="dash"/></a:ln>'),
     'line-missing-color': ('<a:ln><a:noFill/></a:ln>', '<a:ln><a:solidFill/></a:ln>'),
