@@ -395,9 +395,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
             false
           }
         } else if depth == 5 && parent == "solidFill" && is_shape {
-          if !["srgbClr", "schemeClr", "sysClr", "prstClr", "scrgbClr"].contains(
-              name,
-            ) ||
+          if ![
+              "srgbClr", "schemeClr", "sysClr", "prstClr", "scrgbClr", "hslClr",
+            ].contains(name) ||
             shape_fill is Some(_) {
             return None
           }
@@ -455,9 +455,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
           parent == "solidFill" &&
           parents[4] == "ln" &&
           is_shape {
-          if !["srgbClr", "schemeClr", "sysClr", "prstClr", "scrgbClr"].contains(
-              name,
-            ) ||
+          if ![
+              "srgbClr", "schemeClr", "sysClr", "prstClr", "scrgbClr", "hslClr",
+            ].contains(name) ||
             line_color is Some(_) {
             return None
           }
@@ -475,7 +475,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
           )
           line_color is Some(_)
         } else if depth == 6 &&
-          ["srgbClr", "schemeClr", "sysClr", "prstClr", "scrgbClr"].contains(
+          ["srgbClr", "schemeClr", "sysClr", "prstClr", "scrgbClr", "hslClr"].contains(
             parent,
           ) &&
           parents[4] == "solidFill" &&
@@ -490,7 +490,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
           }
           shape_fill is Some(_)
         } else if depth == 7 &&
-          ["srgbClr", "schemeClr", "sysClr", "prstClr", "scrgbClr"].contains(
+          ["srgbClr", "schemeClr", "sysClr", "prstClr", "scrgbClr", "hslClr"].contains(
             parent,
           ) &&
           parents[5] == "solidFill" &&
@@ -940,6 +940,29 @@ fn xlsx_simple_shape_color(
       .to_uint(),
     )
   }
+  if element.name.local_name == "hslClr" {
+    let components : Array[Int64] = [0L, 0L, 0L]
+    let seen : Map[String, Bool] = Map([])
+    for attr in element.attributes {
+      let name = attr.name.local_name
+      if !["hue", "sat", "lum"].contains(name) ||
+        seen.contains(name) ||
+        attr.name.namespace_uri is Some(_) {
+        return None
+      }
+      seen[name] = true
+      let limit = if name == "hue" { 21600000L } else { 100000L }
+      let value = match xlsx_int(attr.value) {
+        Some(value) if value >= 0L && value <= limit => value
+        _ => return None
+      }
+      let index = if name == "hue" { 0 } else if name == "sat" { 1 } else { 2 }
+      components[index] = value
+    }
+    return Some(
+      xlsx_shape_hsl_color(components[0], components[1], components[2]),
+    )
+  }
   if element.name.local_name == "scrgbClr" {
     let components : Array[Int32] = [0, 0, 0]
     let seen : Map[String, Bool] = Map([])
@@ -1017,6 +1040,36 @@ fn xlsx_simple_shape_color(
     rgb = rgb * 16U + digit.to_uint()
   }
   Some((rgb << 8) | 255U)
+}
+
+///|
+fn xlsx_shape_hsl_color(
+  hue_units : Int64,
+  sat_units : Int64,
+  lum_units : Int64,
+) -> UInt32 {
+  let hue = hue_units.to_double() / 60000.0 / 360.0
+  let sat = sat_units.to_double() / 100000.0
+  let lum = lum_units.to_double() / 100000.0
+  let color = if sat == 0.0 {
+    { red: lum, green: lum, blue: lum, }
+  } else {
+    let q = if lum < 0.5 {
+      lum * (1.0 + sat)
+    } else {
+      xlsx_fma(-lum, sat, lum + sat)
+    }
+    let p = 2.0 * lum - q
+    {
+      red: xlsx_color_component(hue + 1.0 / 3.0, p, q),
+      green: xlsx_color_component(hue, p, q),
+      blue: xlsx_color_component(hue - 1.0 / 3.0, p, q),
+    }
+  }
+  let red = (xlsx_clamp_color(color.red) * 255.0).round().to_uint()
+  let green = (xlsx_clamp_color(color.green) * 255.0).round().to_uint()
+  let blue = (xlsx_clamp_color(color.blue) * 255.0).round().to_uint()
+  (red << 24) | (green << 16) | (blue << 8) | 255U
 }
 
 ///|
