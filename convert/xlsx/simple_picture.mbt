@@ -423,14 +423,15 @@ fn XlsxWorkbook::xlsx_simple_picture(
               "flowChartExtract", "flowChartMerge", "flowChartInputOutput", "flowChartPreparation",
               "flowChartPunchedCard", "flowChartCollate", "flowChartManualInput",
               "flowChartManualOperation", "flowChartOffpageConnector", "irregularSeal1",
-              "irregularSeal2", "lightningBolt", "flowChartDocument", "heart", "wave",
-              "doubleWave", "bentUpArrow", "corner", "diagStripe", "dodecagon", "downArrow",
-              "downArrowCallout", "halfFrame", "heptagon", "leftArrow", "leftArrowCallout",
-              "leftRightArrow", "leftRightArrowCallout", "leftRightUpArrow", "leftUpArrow",
-              "mathMinus", "mathPlus", "nonIsoscelesTrapezoid", "notchedRightArrow",
-              "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout",
-              "snip1Rect", "snip2DiagRect", "snip2SameRect", "star10", "star7", "upArrowCallout",
-              "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
+              "irregularSeal2", "lightningBolt", "swooshArrow", "flowChartDocument",
+              "heart", "wave", "doubleWave", "bentUpArrow", "corner", "diagStripe",
+              "dodecagon", "downArrow", "downArrowCallout", "halfFrame", "heptagon",
+              "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
+              "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid",
+              "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow",
+              "rightArrowCallout", "snip1Rect", "snip2DiagRect", "snip2SameRect",
+              "star10", "star7", "upArrowCallout", "upDownArrow", "upArrow", "upDownArrowCallout",
+              "wedgeRectCallout",
             ].contains(xlsx_attr(element, "prst", "")) {
             if geometry {
               return None
@@ -863,13 +864,13 @@ fn XlsxWorkbook::xlsx_simple_picture(
             [
               "triangle", "parallelogram", "trapezoid", "homePlate", "chevron", "plus",
               "hexagon", "octagon", "roundRect", "diagStripe", "snip1Rect", "star10",
-              "star7", "wave", "doubleWave", "bentUpArrow", "corner", "downArrow",
-              "downArrowCallout", "halfFrame", "leftArrow", "leftArrowCallout", "leftRightArrow",
-              "leftRightArrowCallout", "leftRightUpArrow", "leftUpArrow", "mathMinus",
-              "mathPlus", "nonIsoscelesTrapezoid", "notchedRightArrow", "quadArrow",
-              "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip2DiagRect",
-              "snip2SameRect", "upArrowCallout", "upDownArrow", "upArrow", "upDownArrowCallout",
-              "wedgeRectCallout",
+              "star7", "swooshArrow", "wave", "doubleWave", "bentUpArrow", "corner",
+              "downArrow", "downArrowCallout", "halfFrame", "leftArrow", "leftArrowCallout",
+              "leftRightArrow", "leftRightArrowCallout", "leftRightUpArrow", "leftUpArrow",
+              "mathMinus", "mathPlus", "nonIsoscelesTrapezoid", "notchedRightArrow",
+              "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout",
+              "snip2DiagRect", "snip2SameRect", "upArrowCallout", "upDownArrow",
+              "upArrow", "upDownArrowCallout", "wedgeRectCallout",
             ].contains(shape_geometry)
           )
         } else if depth == 6 && parent == "avLst" && parents[4] == "prstGeom" {
@@ -901,12 +902,13 @@ fn XlsxWorkbook::xlsx_simple_picture(
             _ => return None
           }
           let first_guide = if [
-              "wave", "doubleWave", "bentUpArrow", "corner", "downArrow", "downArrowCallout",
-              "halfFrame", "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
-              "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid",
-              "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow",
-              "rightArrowCallout", "snip2DiagRect", "snip2SameRect", "upArrowCallout",
-              "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
+              "swooshArrow", "wave", "doubleWave", "bentUpArrow", "corner", "downArrow",
+              "downArrowCallout", "halfFrame", "leftArrow", "leftArrowCallout", "leftRightArrow",
+              "leftRightArrowCallout", "leftRightUpArrow", "leftUpArrow", "mathMinus",
+              "mathPlus", "nonIsoscelesTrapezoid", "notchedRightArrow", "quadArrow",
+              "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip2DiagRect",
+              "snip2SameRect", "upArrowCallout", "upDownArrow", "upArrow", "upDownArrowCallout",
+              "wedgeRectCallout",
             ].contains(shape_geometry) {
             "adj1"
           } else {
@@ -2224,12 +2226,12 @@ fn xlsx_shape_extra_guide_allowed(geometry : String, guide : String) -> Bool {
   match guide {
     "adj2" =>
       [
-        "wave", "doubleWave", "bentUpArrow", "corner", "downArrow", "downArrowCallout",
-        "halfFrame", "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
-        "leftRightUpArrow", "leftUpArrow", "nonIsoscelesTrapezoid", "notchedRightArrow",
-        "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip2DiagRect",
-        "snip2SameRect", "upArrowCallout", "upDownArrow", "upArrow", "upDownArrowCallout",
-        "wedgeRectCallout",
+        "swooshArrow", "wave", "doubleWave", "bentUpArrow", "corner", "downArrow",
+        "downArrowCallout", "halfFrame", "leftArrow", "leftArrowCallout", "leftRightArrow",
+        "leftRightArrowCallout", "leftRightUpArrow", "leftUpArrow", "nonIsoscelesTrapezoid",
+        "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout",
+        "snip2DiagRect", "snip2SameRect", "upArrowCallout", "upDownArrow", "upArrow",
+        "upDownArrowCallout", "wedgeRectCallout",
       ].contains(geometry)
     "adj3" =>
       [

@@ -20,6 +20,7 @@ fn sheet_formula_preset_path(
   env["vc"] = height / 2.0
   env["ss"] = ss
   env["ls"] = ls
+  env["cd4"] = 5400000.0
   env["wd2"] = width / 2.0
   env["hd2"] = height / 2.0
   env["ssd2"] = ss / 2.0
@@ -51,6 +52,111 @@ fn sheet_formula_preset_path(
   env["hd32"] = height / 32.0
   env["ssd32"] = ss / 32.0
   match geometry {
+    "swooshArrow" => {
+      env["adj1"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        25000.0
+      }
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 16667.0
+      }
+      env["a1"] = sheet_preset_pin(1.0, env.get("adj1").unwrap_or(0.0), 75000.0)
+      env["maxAdj2"] = sheet_preset_muldiv(
+        70000.0,
+        env.get("w").unwrap_or(0.0),
+        env.get("ss").unwrap_or(0.0),
+      )
+      env["a2"] = sheet_preset_pin(
+        0.0,
+        env.get("adj2").unwrap_or(0.0),
+        env.get("maxAdj2").unwrap_or(0.0),
+      )
+      env["ad1"] = sheet_preset_muldiv(
+        env.get("h").unwrap_or(0.0),
+        env.get("a1").unwrap_or(0.0),
+        100000.0,
+      )
+      env["ad2"] = sheet_preset_muldiv(
+        env.get("ss").unwrap_or(0.0),
+        env.get("a2").unwrap_or(0.0),
+        100000.0,
+      )
+      env["xB"] = env.get("r").unwrap_or(0.0) +
+        0.0 -
+        env.get("ad2").unwrap_or(0.0)
+      env["yB"] = env.get("t").unwrap_or(0.0) +
+        env.get("ssd8").unwrap_or(0.0) -
+        0.0
+      env["alfa"] = sheet_preset_muldiv(
+        env.get("cd4").unwrap_or(0.0),
+        1.0,
+        14.0,
+      )
+      env["dx0"] = env.get("ssd8").unwrap_or(0.0) *
+        0x3fbcd8224003e0e7UL.reinterpret_as_double()
+      env["xC"] = env.get("xB").unwrap_or(0.0) +
+        0.0 -
+        env.get("dx0").unwrap_or(0.0)
+      env["dx1"] = env.get("ad1").unwrap_or(0.0) *
+        0x3fbcd8224003e0e7UL.reinterpret_as_double()
+      env["yF"] = env.get("yB").unwrap_or(0.0) +
+        env.get("ad1").unwrap_or(0.0) -
+        0.0
+      env["xF"] = env.get("xB").unwrap_or(0.0) +
+        env.get("dx1").unwrap_or(0.0) -
+        0.0
+      env["xE"] = env.get("xF").unwrap_or(0.0) +
+        env.get("dx0").unwrap_or(0.0) -
+        0.0
+      env["yE"] = env.get("yF").unwrap_or(0.0) +
+        env.get("ssd8").unwrap_or(0.0) -
+        0.0
+      env["dy2"] = env.get("yE").unwrap_or(0.0) +
+        0.0 -
+        env.get("t").unwrap_or(0.0)
+      env["dy22"] = sheet_preset_muldiv(env.get("dy2").unwrap_or(0.0), 1.0, 2.0)
+      env["dy3"] = sheet_preset_muldiv(env.get("h").unwrap_or(0.0), 1.0, 20.0)
+      env["yD"] = env.get("t").unwrap_or(0.0) +
+        env.get("dy22").unwrap_or(0.0) -
+        env.get("dy3").unwrap_or(0.0)
+      env["dy4"] = sheet_preset_muldiv(env.get("hd6").unwrap_or(0.0), 1.0, 1.0)
+      env["yP1"] = env.get("hd6").unwrap_or(0.0) +
+        env.get("dy4").unwrap_or(0.0) -
+        0.0
+      env["xP1"] = env.get("wd6").unwrap_or(0.0)
+      env["dy5"] = sheet_preset_muldiv(env.get("hd6").unwrap_or(0.0), 1.0, 2.0)
+      env["yP2"] = env.get("yF").unwrap_or(0.0) +
+        env.get("dy5").unwrap_or(0.0) -
+        0.0
+      env["xP2"] = env.get("wd4").unwrap_or(0.0)
+      let sx = 1.0
+      let sy = 1.0
+      {
+        verbs: b"\x00\x02\x01\x01\x01\x01\x02\x04",
+        coordinates: [
+          env.get("l").unwrap_or(0.0) * sx,
+          env.get("b").unwrap_or(0.0) * sy,
+          env.get("xP1").unwrap_or(0.0) * sx,
+          env.get("yP1").unwrap_or(0.0) * sy,
+          env.get("xB").unwrap_or(0.0) * sx,
+          env.get("yB").unwrap_or(0.0) * sy,
+          env.get("xC").unwrap_or(0.0) * sx,
+          env.get("t").unwrap_or(0.0) * sy,
+          env.get("r").unwrap_or(0.0) * sx,
+          env.get("yD").unwrap_or(0.0) * sy,
+          env.get("xE").unwrap_or(0.0) * sx,
+          env.get("yE").unwrap_or(0.0) * sy,
+          env.get("xF").unwrap_or(0.0) * sx,
+          env.get("yF").unwrap_or(0.0) * sy,
+          env.get("xP2").unwrap_or(0.0) * sx,
+          env.get("yP2").unwrap_or(0.0) * sy,
+          env.get("l").unwrap_or(0.0) * sx,
+          env.get("b").unwrap_or(0.0) * sy,
+        ],
+      }
+    }
     "flowChartDocument" => {
       env["y1"] = sheet_preset_muldiv(
         env.get("h").unwrap_or(0.0),
