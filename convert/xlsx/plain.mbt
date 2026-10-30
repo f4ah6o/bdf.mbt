@@ -264,6 +264,52 @@ fn XlsxWorkbook::xlsx_table_style(
   if !found || invalid {
     return (-1, 0, 1L, -1, 1L, -1)
   }
+  let mut whole = -1
+  let mut stripe = -1
+  let mut stripe_kind = ""
+  let mut stripe_size = 1L
+  let mut has_other = false
+  for (kind, id, width) in items {
+    if id < 0 || id >= dxf_count {
+      continue
+    }
+    if kind == "wholeTable" {
+      whole = id
+    } else if kind == "firstRowStripe" ||
+      kind == "secondRowStripe" ||
+      kind == "firstColumnStripe" ||
+      kind == "secondColumnStripe" {
+      if stripe_kind != "" && stripe_kind != kind {
+        has_other = true
+      }
+      stripe_kind = kind
+      stripe = id
+      stripe_size = width
+    } else {
+      has_other = true
+    }
+  }
+  if whole >= 0 && stripe >= 0 && !has_other {
+    let base = self.xlsx_conditional_style(whole) catch {
+      _ => return (-1, 0, 1L, -1, 1L, -1)
+    }
+    let overlay = self.xlsx_conditional_style(stripe) catch {
+      _ => return (-1, 0, 1L, -1, 1L, -1)
+    }
+    if base.border is Some(_) || overlay.border is Some(_) {
+      return (-1, 0, 1L, -1, 1L, -1)
+    }
+    let region = if stripe_kind == "firstRowStripe" {
+      19
+    } else if stripe_kind == "secondRowStripe" {
+      20
+    } else if stripe_kind == "firstColumnStripe" {
+      21
+    } else {
+      22
+    }
+    return (whole, region, stripe_size, stripe, 1L, -1)
+  }
   let mut chosen = -1
   let mut selected_kind = ""
   let mut selected_width = 1L
@@ -496,7 +542,23 @@ fn xlsx_table_stripe_choice(
   row : Int32,
   col : Int32,
 ) -> Int32 {
-  if region == 18 {
+  if region >= 19 && region <= 22 {
+    if row.to_int64() < origin || row.to_int64() > other_width {
+      return 0
+    }
+    let pos = if region == 19 || region == 20 {
+      row.to_int64() - origin
+    } else {
+      (col - range.column_start).to_int64()
+    }
+    let offset = pos % (width + 1L)
+    if ((region == 19 || region == 21) && offset < width) ||
+      ((region == 20 || region == 22) && offset >= 1L) {
+      1
+    } else {
+      0
+    }
+  } else if region == 18 {
     let header = row.to_int64() <= width
     let total = row.to_int64() >= other_width
     if header && total {
@@ -621,7 +683,10 @@ fn XlsxWorkbook::xlsx_table_effective_style(
     }
     return result
   }
-  if !(((region == 15 || region == 16) && choice == 1) ||
+  if !((
+      (region == 15 || region == 16 || (region >= 19 && region <= 22)) &&
+      choice == 1
+    ) ||
     (region == 17 && choice == 2)) {
     return self.xlsx_conditional_style(
       if choice == 0 {
@@ -874,6 +939,17 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   } else {
     range.row_end + 1L
   }
+  let overlay_stripe = selected_region >= 19 && selected_region <= 22
+  let overlay_active = if selected_region == 19 || selected_region == 20 {
+    row_stripes
+  } else {
+    column_stripes
+  }
+  let overlay_end = if overlay_active {
+    range.row_end - parsed_table.totals_rows.to_int64()
+  } else {
+    stripe_origin - 1L
+  }
   table_rules.push(
     (
       range,
@@ -892,6 +968,8 @@ fn XlsxWorkbook::xlsx_plain_table_area(
       other_rule,
       if selected_region == 17 || selected_region == 18 {
         total_start
+      } else if overlay_stripe {
+        overlay_end
       } else {
         other_width
       },
