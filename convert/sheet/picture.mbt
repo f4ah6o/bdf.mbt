@@ -47,11 +47,14 @@ fn GridDrawContext::paint_picture(
   view_width : Double,
   pending : Array[(Int32, Int32, Bytes)]?,
   room : Int32,
+  hidden~ : Bool = false,
+  shape_fill~ : UInt32? = None,
+  shape_stroke~ : (UInt32, Double)? = None,
 ) -> Int32 raise {
   if picture.kind < 0 ||
     picture.kind > 2 ||
-    picture.rotation < -21600000 ||
-    picture.rotation > 21600000 ||
+    picture.rotation < -86400000 ||
+    picture.rotation > 86400000 ||
     picture.x.is_nan() ||
     picture.x.is_inf() ||
     picture.y.is_nan() ||
@@ -123,6 +126,15 @@ fn GridDrawContext::paint_picture(
     picture.frame_height < 0.0 ||
     (picture.frame_width == 0.0) != (picture.frame_height == 0.0) {
     raise InvalidArgument("sheet: invalid picture transform frame")
+  }
+  if shape_stroke is Some((_, width)) {
+    if shape_fill is None ||
+      width.is_nan() ||
+      width.is_inf() ||
+      width <= 0.0 ||
+      width > 20000.0 {
+      raise InvalidArgument("sheet: invalid shape line width")
+    }
   }
   if picture.alpha is Some(alpha) {
     if alpha.is_nan() || alpha.is_inf() || alpha < 0.0F || alpha > 1.0F {
@@ -223,7 +235,20 @@ fn GridDrawContext::paint_picture(
     }
     tile_count = (nx * ny).to_int()
   }
-  let image_hash = writer.add_part("img", picture.image)
+  if hidden {
+    let empty = @core.ObjectBuilder::new().encode()
+    if pending is Some(pending) {
+      pending.push((-1 - self.tiles.length(), -1, empty))
+    } else {
+      ignore(writer.add_part("obj", empty))
+    }
+    return tile_count
+  }
+  let image_hash = if shape_fill is Some(_) {
+    ""
+  } else {
+    writer.add_part("img", picture.image)
+  }
   let object = @core.ObjectBuilder::new()
   let bbox = (
     Float::from_double(-margin),
@@ -321,7 +346,6 @@ fn GridDrawContext::paint_picture(
   } else if origin_x != 0.0 || origin_y != 0.0 {
     object.translate(Float::from_double(origin_x), Float::from_double(origin_y))
   }
-  object.save()
   let path : @core.Path = {
     verbs: b"\x00\x01\x01\x01\x04",
     coordinates: [
@@ -329,70 +353,83 @@ fn GridDrawContext::paint_picture(
     ],
   }
   let path_index = object.add_path(@core.Inline(path))
-  object.clip_path(path_index, 0)
-  let image_index = object.add_image(image_hash)
-  if picture.alpha is Some(alpha) {
-    object.alpha(alpha)
-  }
-  let dx = picture.fill_left * draw_width
-  let dy = picture.fill_top * draw_height
-  let dw = draw_width * (1.0 - picture.fill_left - picture.fill_right)
-  let dh = draw_height * (1.0 - picture.fill_top - picture.fill_bottom)
-  if cropped {
-    let u0 = picture.crop_left * picture.image_width
-    let u1 = (1.0 - picture.crop_right) * picture.image_width
-    let v0 = picture.crop_top * picture.image_height
-    let v1 = (1.0 - picture.crop_bottom) * picture.image_height
-    let cu0 = Double::max(u0, 0.0)
-    let cu1 = Double::min(u1, picture.image_width)
-    let cv0 = Double::max(v0, 0.0)
-    let cv1 = Double::min(v1, picture.image_height)
-    // Go fuses the products and sums while computing destination coordinates.
-    let dx0 = @core.fused_multiply_add(
-      @core.fused_multiply_add(-picture.crop_left, picture.image_width, cu0) /
-      (u1 - u0),
-      dw,
-      dx,
-    )
-    let dx1 = @core.fused_multiply_add(
-      @core.fused_multiply_add(-picture.crop_left, picture.image_width, cu1) /
-      (u1 - u0),
-      dw,
-      dx,
-    )
-    let dy0 = @core.fused_multiply_add(
-      @core.fused_multiply_add(-picture.crop_top, picture.image_height, cv0) /
-      (v1 - v0),
-      dh,
-      dy,
-    )
-    let dy1 = @core.fused_multiply_add(
-      @core.fused_multiply_add(-picture.crop_top, picture.image_height, cv1) /
-      (v1 - v0),
-      dh,
-      dy,
-    )
-    object.image_sub(
-      image_index,
-      Float::from_double(cu0),
-      Float::from_double(cv0),
-      Float::from_double(cu1 - cu0),
-      Float::from_double(cv1 - cv0),
-      Float::from_double(dx0),
-      Float::from_double(dy0),
-      Float::from_double(dx1 - dx0),
-      Float::from_double(dy1 - dy0),
-    )
+  if shape_fill is Some(color) {
+    object.fill_color(color)
+    object.fill_path(path_index, 0)
+    if shape_stroke is Some((stroke, width)) {
+      object.save()
+      object.line(Float::from_double(width), 0, 0, 8.0F)
+      object.stroke_color(stroke)
+      object.stroke_path(path_index)
+      object.restore()
+    }
   } else {
-    object.image(
-      image_index,
-      Float::from_double(dx),
-      Float::from_double(dy),
-      Float::from_double(dw),
-      Float::from_double(dh),
-    )
+    object.save()
+    object.clip_path(path_index, 0)
+    let image_index = object.add_image(image_hash)
+    if picture.alpha is Some(alpha) {
+      object.alpha(alpha)
+    }
+    let dx = picture.fill_left * draw_width
+    let dy = picture.fill_top * draw_height
+    let dw = draw_width * (1.0 - picture.fill_left - picture.fill_right)
+    let dh = draw_height * (1.0 - picture.fill_top - picture.fill_bottom)
+    if cropped {
+      let u0 = picture.crop_left * picture.image_width
+      let u1 = (1.0 - picture.crop_right) * picture.image_width
+      let v0 = picture.crop_top * picture.image_height
+      let v1 = (1.0 - picture.crop_bottom) * picture.image_height
+      let cu0 = Double::max(u0, 0.0)
+      let cu1 = Double::min(u1, picture.image_width)
+      let cv0 = Double::max(v0, 0.0)
+      let cv1 = Double::min(v1, picture.image_height)
+      // Go fuses the products and sums while computing destination coordinates.
+      let dx0 = @core.fused_multiply_add(
+        @core.fused_multiply_add(-picture.crop_left, picture.image_width, cu0) /
+        (u1 - u0),
+        dw,
+        dx,
+      )
+      let dx1 = @core.fused_multiply_add(
+        @core.fused_multiply_add(-picture.crop_left, picture.image_width, cu1) /
+        (u1 - u0),
+        dw,
+        dx,
+      )
+      let dy0 = @core.fused_multiply_add(
+        @core.fused_multiply_add(-picture.crop_top, picture.image_height, cv0) /
+        (v1 - v0),
+        dh,
+        dy,
+      )
+      let dy1 = @core.fused_multiply_add(
+        @core.fused_multiply_add(-picture.crop_top, picture.image_height, cv1) /
+        (v1 - v0),
+        dh,
+        dy,
+      )
+      object.image_sub(
+        image_index,
+        Float::from_double(cu0),
+        Float::from_double(cv0),
+        Float::from_double(cu1 - cu0),
+        Float::from_double(cv1 - cv0),
+        Float::from_double(dx0),
+        Float::from_double(dy0),
+        Float::from_double(dx1 - dx0),
+        Float::from_double(dy1 - dy0),
+      )
+    } else {
+      object.image(
+        image_index,
+        Float::from_double(dx),
+        Float::from_double(dy),
+        Float::from_double(dw),
+        Float::from_double(dh),
+      )
+    }
+    object.restore()
   }
-  object.restore()
   object.restore()
   if picture.description != "" {
     object.mark(11, "")

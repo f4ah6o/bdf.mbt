@@ -1364,6 +1364,9 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   table_headers : Array[(Int32, Int32, Int32, Int32, Int32)],
   table_events : Array[(String, String)],
   pictures : Array[@sheet.GridPicture],
+  hidden_pictures : Array[Bool],
+  shape_fills : Array[UInt32?],
+  shape_strokes : Array[(UInt32, Double)?],
 ) -> (
   Array[@sheet.GridLink],
   Bool,
@@ -1669,8 +1672,11 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
       if !empty {
         match self.xlsx_simple_picture(target) {
           Some(found) =>
-            for picture in found {
+            for (picture, hidden, fill, stroke) in found {
               pictures.push(picture)
+              hidden_pictures.push(hidden)
+              shape_fills.push(fill)
+              shape_strokes.push(stroke)
             }
           None =>
             raise InvalidXlsxInput(
@@ -2191,6 +2197,9 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let mut rows = parsed.sorted_rows()
   let table_headers : Array[(Int32, Int32, Int32, Int32, Int32)] = []
   let pictures : Array[@sheet.GridPicture] = []
+  let hidden_pictures : Array[Bool] = []
+  let shape_fills : Array[UInt32?] = []
+  let shape_strokes : Array[(UInt32, Double)?] = []
   let (
     links,
     has_conditional,
@@ -2205,6 +2214,9 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     table_headers,
     table_events,
     pictures,
+    hidden_pictures,
+    shape_fills,
+    shape_strokes,
   )
   let mut styled_runs = false
   for _, columns in rich_cells {
@@ -3532,6 +3544,9 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     table_headers~,
     table_filters~,
     pictures~,
+    hidden_pictures~,
+    shape_fills~,
+    shape_strokes~,
     picture_writer=Some(writer),
     picture_children=Some(children),
     column_axis_default=Some(

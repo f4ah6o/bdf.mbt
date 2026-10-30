@@ -1,10 +1,10 @@
 ///|
-// Read plain, untransformed embedded pictures. Other drawing features
-// remain unsupported until their rendering and relationship semantics exist.
+// Read embedded pictures and solid-color rectangles. Other drawing
+// features remain unsupported until their rendering and relationship semantics exist.
 fn XlsxWorkbook::xlsx_simple_picture(
   self : XlsxWorkbook,
   part : String,
-) -> Array[@sheet.GridPicture]? {
+) -> Array[(@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?)]? {
   let bytes = self.package.read(part) catch { _ => return None }
   let source = @utf8.decode_lossy(bytes[:], ignore_bom=true)
   if source.contains("<!ENTITY") {
@@ -20,7 +20,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut depth = 0
   let mut kind = -1
   let mut anchors = 0
-  let result : Array[@sheet.GridPicture] = []
+  let result : Array[(@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?)] = []
   let images : Map[String, Bytes] = Map([])
   let mut image_bytes = 0L
   let mut pictures = 0
@@ -28,6 +28,15 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut saw_to = false
   let mut saw_nv = false
   let mut saw_nvpr = false
+  let mut picture_hidden = false
+  let mut is_shape = false
+  let mut shape_fill : UInt32? = None
+  let mut saw_solid_fill = false
+  let mut saw_line = false
+  let mut saw_no_line = false
+  let mut saw_line_fill = false
+  let mut line_color : UInt32? = None
+  let mut line_width = 0.75
   let mut saw_blip_fill = false
   let mut saw_sppr = false
   let mut geometry = false
@@ -101,7 +110,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
             parent == "oneCellAnchor" ||
             parent == "absoluteAnchor"
           ) {
-          if name == "pic" {
+          if name == "pic" || name == "sp" {
+            is_shape = name == "sp"
             pictures += 1
             pictures == 1
           } else if name == "from" {
@@ -156,14 +166,14 @@ fn XlsxWorkbook::xlsx_simple_picture(
           }
         } else if depth == 3 && (parent == "from" || parent == "to") {
           ["col", "colOff", "row", "rowOff"].contains(name)
-        } else if depth == 3 && parent == "pic" {
-          if name == "nvPicPr" {
+        } else if depth == 3 && (parent == "pic" || parent == "sp") {
+          if (name == "nvPicPr" && !is_shape) || (name == "nvSpPr" && is_shape) {
             if saw_nv {
               return None
             }
             saw_nv = true
             true
-          } else if name == "blipFill" {
+          } else if name == "blipFill" && !is_shape {
             if saw_blip_fill {
               return None
             }
@@ -178,20 +188,22 @@ fn XlsxWorkbook::xlsx_simple_picture(
           } else {
             false
           }
-        } else if depth == 4 && parent == "nvPicPr" {
+        } else if depth == 4 && (parent == "nvPicPr" || parent == "nvSpPr") {
           if name == "cNvPr" {
             if saw_nvpr {
               return None
             }
             saw_nvpr = true
-            if xlsx_attr(element, "hidden", "") != "" {
+            let hidden = xlsx_trim(xlsx_attr(element, "hidden", ""))
+            if !["", "0", "false", "off", "1", "true", "on"].contains(hidden) {
               return None
             }
+            picture_hidden = ["1", "true", "on"].contains(hidden)
             description = xlsx_trim(xlsx_attr(element, "descr", ""))
             title = xlsx_trim(xlsx_attr(element, "title", ""))
             true
           } else {
-            name == "cNvPicPr"
+            (name == "cNvPicPr" && !is_shape) || (name == "cNvSpPr" && is_shape)
           }
         } else if depth == 4 && parent == "blipFill" {
           if name == "blip" {
@@ -302,7 +314,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
               seen[key] = true
               if key == "rot" {
                 let value = match xlsx_int(attr.value) {
-                  Some(value) if value >= -21600000L && value <= 21600000L =>
+                  Some(value) if value >= -86400000L && value <= 86400000L =>
                     value
                   _ => return None
                 }
@@ -323,6 +335,36 @@ fn XlsxWorkbook::xlsx_simple_picture(
               }
             }
             true
+          } else if is_shape && name == "solidFill" {
+            if saw_solid_fill {
+              return None
+            }
+            saw_solid_fill = true
+            true
+          } else if is_shape && name == "ln" {
+            if saw_line {
+              return None
+            }
+            saw_line = true
+            let mut seen_width = false
+            for attr in element.attributes {
+              if seen_width ||
+                attr.name.local_name != "w" ||
+                attr.name.namespace_uri is Some(_) {
+                return None
+              }
+              seen_width = true
+              let value = match xlsx_int(attr.value) {
+                Some(value) if value >= 0L && value <= 254000000L => value
+                _ => return None
+              }
+              line_width = if value == 0L {
+                0.5
+              } else {
+                value.to_double() / 12700.0
+              }
+            }
+            true
           } else if name == "prstGeom" &&
             xlsx_attr(element, "prst", "") == "rect" {
             if geometry {
@@ -333,6 +375,42 @@ fn XlsxWorkbook::xlsx_simple_picture(
           } else {
             false
           }
+        } else if depth == 5 && parent == "solidFill" && is_shape {
+          if name != "srgbClr" ||
+            !(event.kind is Empty(_)) ||
+            shape_fill is Some(_) {
+            return None
+          }
+          shape_fill = xlsx_simple_shape_color(element)
+          shape_fill is Some(_)
+        } else if depth == 5 && parent == "ln" && is_shape {
+          if name == "noFill" &&
+            event.kind is Empty(_) &&
+            !saw_no_line &&
+            !saw_line_fill &&
+            element.attributes.is_empty() {
+            saw_no_line = true
+            true
+          } else if name == "solidFill" &&
+            !saw_no_line &&
+            !saw_line_fill &&
+            element.attributes.is_empty() {
+            saw_line_fill = true
+            true
+          } else {
+            false
+          }
+        } else if depth == 6 &&
+          parent == "solidFill" &&
+          parents[4] == "ln" &&
+          is_shape {
+          if name != "srgbClr" ||
+            !(event.kind is Empty(_)) ||
+            line_color is Some(_) {
+            return None
+          }
+          line_color = xlsx_simple_shape_color(element)
+          line_color is Some(_)
         } else if depth == 5 && parent == "xfrm" {
           if !(event.kind is Empty(_)) {
             return None
@@ -473,11 +551,17 @@ fn XlsxWorkbook::xlsx_simple_picture(
             saw_xfrm_off != saw_xfrm_ext ||
             !saw_nv ||
             !saw_nvpr ||
-            !saw_blip_fill ||
             !saw_sppr ||
             !geometry ||
-            !stretch ||
-            image_id == "" {
+            (
+              is_shape &&
+              (
+                !saw_solid_fill ||
+                shape_fill is None ||
+                (saw_line && !saw_no_line && line_color is None)
+              )
+            ) ||
+            (!is_shape && (!saw_blip_fill || !stretch || image_id == "")) {
             return None
           }
           match
@@ -515,13 +599,21 @@ fn XlsxWorkbook::xlsx_simple_picture(
               title,
               images,
               1073741824L - image_bytes,
+              is_shape,
             ) {
             Some(picture) => {
               image_bytes += picture.image.length().to_int64()
               if image_bytes > 1073741824L {
                 return None
               }
-              result.push(picture)
+              result.push(
+                (
+                  picture,
+                  picture_hidden,
+                  shape_fill,
+                  line_color.map(color => (color, line_width)),
+                ),
+              )
             }
             None => return None
           }
@@ -531,6 +623,15 @@ fn XlsxWorkbook::xlsx_simple_picture(
           saw_to = false
           saw_nv = false
           saw_nvpr = false
+          picture_hidden = false
+          is_shape = false
+          shape_fill = None
+          saw_solid_fill = false
+          saw_line = false
+          saw_no_line = false
+          saw_line_fill = false
+          line_color = None
+          line_width = 0.75
           saw_blip_fill = false
           saw_sppr = false
           geometry = false
@@ -592,6 +693,23 @@ fn XlsxWorkbook::xlsx_simple_picture(
 }
 
 ///|
+fn xlsx_simple_shape_color(element : @xml.NamespaceElement) -> UInt32? {
+  let bytes = @utf8.encode(xlsx_attr(element, "val", ""))
+  if bytes.length() != 6 || element.attributes.length() != 1 {
+    return None
+  }
+  let mut rgb = 0U
+  for byte in bytes {
+    let digit = xlsx_hex(byte)
+    if digit < 0 {
+      return None
+    }
+    rgb = rgb * 16U + digit.to_uint()
+  }
+  Some((rgb << 8) | 255U)
+}
+
+///|
 fn XlsxWorkbook::xlsx_finish_simple_picture(
   self : XlsxWorkbook,
   part : String,
@@ -627,6 +745,7 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
   title : String,
   images : Map[String, Bytes],
   remaining_bytes : Int64,
+  is_shape : Bool,
 ) -> @sheet.GridPicture? {
   let mut to_row = input_to_row
   let mut to_column = input_to_column
@@ -646,24 +765,29 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
   if kind == 2 && (width < 0.0 || height < 0.0) {
     return None
   }
-  let rel = match self.package.target(part, image_id) {
-    Some(rel) if !rel.external => rel
-    _ => return None
-  }
-  if self.package.part_size(rel.target).unwrap_or(0).to_int64() >
-    remaining_bytes {
-    return None
-  }
-  let image = match images.get(rel.target) {
-    Some(image) => image
-    None => {
-      let image = self.package.read(rel.target) catch { _ => return None }
-      images[rel.target] = image
-      image
+  let image = if is_shape {
+    b""
+  } else {
+    let rel = match self.package.target(part, image_id) {
+      Some(rel) if !rel.external => rel
+      _ => return None
     }
-  }
-  if !xlsx_picture_image_format(image) {
-    return None
+    if self.package.part_size(rel.target).unwrap_or(0).to_int64() >
+      remaining_bytes {
+      return None
+    }
+    let image = match images.get(rel.target) {
+      Some(image) => image
+      None => {
+        let image = self.package.read(rel.target) catch { _ => return None }
+        images[rel.target] = image
+        image
+      }
+    }
+    if !xlsx_picture_image_format(image) {
+      return None
+    }
+    image
   }
   // Go has no AVIF image.DecodeConfig registration, so it draws the full
   // image when a crop is present but intrinsic dimensions are unavailable.

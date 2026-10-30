@@ -17,12 +17,12 @@ for index, case in enumerate(cases):
     original = parts.copy()
     drawing = parts["xl/drawings/drawing1.xml"].decode()
     variant = index % 12
-    if variant in (4, 11):
+    if variant in (4, 5, 11):
         continue
     if variant == 0:
         drawing = drawing.replace("<a:stretch>", '<a:srcRect l="100001"/><a:stretch>')
     elif variant == 1:
-        drawing = drawing.replace("<spPr>", '<spPr><a:xfrm rot="21600001"/>')
+        drawing = drawing.replace("<spPr>", '<spPr><a:xfrm rot="86400001"/>')
     elif variant == 2:
         drawing = drawing.replace(
             '<a:blip r:embed="img"/>',
@@ -34,8 +34,6 @@ for index, case in enumerate(cases):
         parts["xl/workbook.xml"] = parts["xl/workbook.xml"].replace(
             b"</sheets>", b'<sheet name="Second" r:id="r1"/></sheets>'
         )
-    elif variant == 5:
-        drawing = drawing.replace('descr="example"', 'descr="example" hidden="1"')
     elif variant == 6:
         drawing = drawing.replace("<a:fillRect/>", '<a:fillRect l="100001"/>')
     elif variant == 7:

@@ -110,8 +110,12 @@ pub fn sized_fallback_advance(
 ///|
 /// Draw unstyled cells in an already-sized sheet with fallback font metrics.
 /// Supplying pictures also requires a document writer for their image and
-/// drawing parts. A caller that defers object storage may collect child parts
-/// in `picture_children` and pass them to `store_grids`.
+/// drawing parts. `hidden_pictures`, when supplied, has one flag per picture.
+/// `shape_fills`, when supplied, has one optional color per drawing encoded as
+/// 0xRRGGBBAA; a color renders a filled rectangle instead of an image.
+/// `shape_strokes`, when supplied, pairs an optional RGBA color and width in
+/// points with each drawing. A caller that defers object storage may collect
+/// child parts in `picture_children` and pass them to `store_grids`.
 pub fn draw_sized_grid_no_fonts(
   rows : Array[SizedGridRow],
   geometry : GridGeometry,
@@ -147,6 +151,9 @@ pub fn draw_sized_grid_no_fonts(
   table_headers~ : Array[(Int32, Int32, Int32, Int32, Int32)] = [],
   table_filters~ : Array[(Int32, Int32)] = [],
   pictures~ : Array[GridPicture] = [],
+  hidden_pictures~ : Array[Bool] = [],
+  shape_fills~ : Array[UInt32?] = [],
+  shape_strokes~ : Array[(UInt32, Double)?] = [],
   picture_writer~ : @core.DocumentWriter? = None,
   picture_children~ : Array[(Int32, Int32, Bytes)]? = None,
   column_axis_default~ : Float? = None,
@@ -863,6 +870,16 @@ pub fn draw_sized_grid_no_fonts(
       )
     }
   }
+  if !hidden_pictures.is_empty() &&
+    hidden_pictures.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid picture visibility list")
+  }
+  if !shape_fills.is_empty() && shape_fills.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid shape fill list")
+  }
+  if !shape_strokes.is_empty() && shape_strokes.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid shape stroke list")
+  }
   if !pictures.is_empty() {
     if pictures.length() > 128 {
       raise InvalidArgument("sheet: too many pictures")
@@ -881,7 +898,7 @@ pub fn draw_sized_grid_no_fonts(
       None => raise InvalidArgument("sheet: missing picture writer")
     }
     let mut room = 16384
-    for picture in pictures {
+    for index, picture in pictures {
       room -= context.paint_picture(
         writer,
         picture,
@@ -893,6 +910,21 @@ pub fn draw_sized_grid_no_fonts(
         },
         picture_children,
         room,
+        shape_stroke=if shape_strokes.is_empty() {
+          None
+        } else {
+          shape_strokes[index]
+        },
+        shape_fill=if shape_fills.is_empty() {
+          None
+        } else {
+          shape_fills[index]
+        },
+        hidden=if hidden_pictures.is_empty() {
+          false
+        } else {
+          hidden_pictures[index]
+        },
       )
     }
   }

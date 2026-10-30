@@ -43,7 +43,7 @@ test "invalid picture geometry reports an error instead of indexing outside the 
   }
   let invalid = [
     { ..picture, kind: 3, },
-    { ..picture, rotation: 21600001, },
+    { ..picture, rotation: 86400001, },
     { ..picture, frame_width: 1.0, frame_height: 0.0, },
     { ..picture, frame_width: -1.0, frame_height: 1.0, },
     {
