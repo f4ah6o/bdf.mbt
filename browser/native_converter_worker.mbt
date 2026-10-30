@@ -22,7 +22,7 @@ extern "js" fn native_unsupported_named_format(name : String) -> Bool =
 
 ///|
 extern "js" fn native_converter_formats(request : ConverterRequest) -> Unit =
-  #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'csv',description:'CSV or TSV (comma-, tab-, semicolon- or bar-separated values)',extensions:['.csv','.tsv','.tab']},{name:'font',description:'Font file (TrueType, OpenType, WOFF)',extensions:['.ttf','.otf','.ttc','.otc','.woff','.woff2']},{name:'midi',description:'Standard MIDI File',extensions:['.mid','.midi','.smf','.kar','.rmi']},{name:'mml',description:'Music Macro Language (MML)',extensions:['.mml']},{name:'image',description:'Image stored as it is: PNG, JPEG, GIF, WebP, AVIF, BMP, ICO or SVG',extensions:['.png','.apng','.jpg','.jpeg','.jpe','.jfif','.gif','.webp','.avif','.bmp','.ico','.svg']}]})
+  #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'csv',description:'CSV or TSV (comma-, tab-, semicolon- or bar-separated values)',extensions:['.csv','.tsv','.tab']},{name:'xlsx',description:'Excel workbook (limited worksheet subset)',extensions:['.xlsx']},{name:'font',description:'Font file (TrueType, OpenType, WOFF)',extensions:['.ttf','.otf','.ttc','.otc','.woff','.woff2']},{name:'midi',description:'Standard MIDI File',extensions:['.mid','.midi','.smf','.kar','.rmi']},{name:'mml',description:'Music Macro Language (MML)',extensions:['.mml']},{name:'image',description:'Image stored as it is: PNG, JPEG, GIF, WebP, AVIF, BMP, ICO or SVG',extensions:['.png','.apng','.jpg','.jpeg','.jpe','.jfif','.gif','.webp','.avif','.bmp','.ico','.svg']}]})
 
 ///|
 extern "js" fn native_converter_result(
@@ -121,6 +121,7 @@ async fn NativeConverterState::dispatch(
   if format != "" &&
     format != "image" &&
     format != "csv" &&
+    format != "xlsx" &&
     format != "font" &&
     format != "midi" &&
     format != "mml" {
@@ -136,6 +137,10 @@ async fn NativeConverterState::dispatch(
   let head = data[:if data.length() < 1024 { data.length() } else { 1024 }].to_owned()
   if format == "mml" || (format == "" && @mml.detect_mml(head)) {
     native_convert_music(request, data, kind == "open", database, true)
+    return
+  }
+  if format == "xlsx" {
+    native_convert_xlsx(request, data, kind == "open")
     return
   }
   if format == "csv" {
@@ -173,6 +178,10 @@ async fn NativeConverterState::dispatch(
         }].to_owned()
         let strong_other = @hpgl.detect(head) ||
           @utf8.decode_lossy(head).contains("%PDF-")
+        if lower.has_suffix(".xlsx") && !strong_other {
+          native_convert_xlsx(request, data, kind == "open")
+          return
+        }
         if midi_named && !strong_other {
           native_convert_music(request, data, kind == "open", database, false)
           return
@@ -290,6 +299,32 @@ fn native_convert_csv(
     result.bdf,
     "csv",
     @csv.summary(result.parsed),
+    result.warnings,
+    opened,
+  )
+}
+
+///|
+fn native_convert_xlsx(
+  request : ConverterRequest,
+  data : Bytes,
+  opened : Bool,
+) -> Unit {
+  let result = @xlsx.convert_plain_no_fonts(data) catch {
+    @xlsx.InvalidXlsxInput(message) => {
+      native_converter_error(request, message, "")
+      return
+    }
+    error => {
+      native_converter_error(request, error.to_string(), "")
+      return
+    }
+  }
+  native_converter_result(
+    request,
+    result.bdf,
+    "xlsx",
+    "\{result.sheets} sheet(s)",
     result.warnings,
     opened,
   )

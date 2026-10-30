@@ -8,7 +8,7 @@ import { resolve, extname } from 'node:path';
 import { chromium } from 'playwright';
 
 const root = resolve(import.meta.dirname, '../_build/pages');
-const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.csv': 'text/csv; charset=utf-8', '.bdf': 'application/octet-stream', '.png': 'image/png', '.svg': 'image/svg+xml' };
+const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.csv': 'text/csv; charset=utf-8', '.bdf': 'application/octet-stream', '.png': 'image/png', '.svg': 'image/svg+xml', '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   if (!url.pathname.startsWith('/bdf.mbt/')) { res.writeHead(404).end(); return; }
@@ -121,6 +121,66 @@ try {
   await page.locator('#search').fill('STIX');
   await page.locator('#search-form button').click();
   await page.waitForFunction(() => /\d+ \/ \d+/.test(document.querySelector('#search-status').textContent), null, { timeout: 30000 });
+  await page.locator('[data-sample="xlsx"]').click();
+  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'sales.xlsx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  assert.equal(await page.locator('#status').evaluate(el => el.classList.contains('error')), false);
+  assert.deepEqual(await page.locator('#view option').evaluateAll(options => options.map(option => option.value)), ['sheet1', 'sheet2']);
+  await page.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => {
+    if (!canvas.width || !canvas.height) return false;
+    const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+    let dark = 0;
+    for (let i = 0; i < pixels.length; i += 4) if (pixels[i + 3] > 0 && pixels[i] < 100 && pixels[i + 1] < 100 && pixels[i + 2] < 100 && ++dark > 100) return true;
+    return false;
+  }), null, { timeout: 30000 });
+  await page.locator('#search').fill('Notebook');
+  await page.locator('#search-form button').click();
+  await page.waitForFunction(() => /^1 \/ [1-9]/.test(document.querySelector('#search-status').textContent), null, { timeout: 30000 });
+  await page.locator('#view').selectOption('sheet2');
+  assert.equal(await page.locator('#search-status').textContent(), '');
+  await page.locator('#search').fill('Spring');
+  await page.locator('#search-form button').click();
+  await page.waitForFunction(() => /^1 \/ [1-9]/.test(document.querySelector('#search-status').textContent), null, { timeout: 30000 });
+  const xlsxDownload = page.waitForEvent('download');
+  await page.locator('#download').click();
+  const xlsxSaved = await xlsxDownload;
+  assert.equal(xlsxSaved.suggestedFilename(), 'sales.bdf');
+  const xlsxDoc = await BdfDocument.open(new BufferSource(await readFile(await xlsxSaved.path())));
+  assert.deepEqual(xlsxDoc.manifest.views.map(view => view.id), ['sheet1', 'sheet2']);
+  const samplePath = resolve(root, 'samples/sales.xlsx');
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await page.locator('#file').setInputFiles(samplePath);
+    await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'sales.xlsx' && document.querySelector('#view').value === 'sheet1' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+    assert.equal(await page.locator('#search').inputValue(), '');
+    await page.locator('#view').selectOption('sheet2');
+  }
+  const warnings = JSON.parse(await readFile(resolve(import.meta.dirname, '../compat/xlsx/render/001.json')));
+  const warningCase = warnings.find(item => item.warnings?.includes('sheet "Sheet1": right-to-left sheets are drawn left to right'));
+  assert.ok(warningCase, 'XLSX warning fixture');
+  await page.locator('#file').setInputFiles({ name: 'rtl.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from(warningCase.input, 'base64') });
+  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'rtl.xlsx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  assert.match(await page.locator('#status').textContent(), /right-to-left sheets are drawn left to right/);
+  const unsupported = JSON.parse(await readFile(resolve(import.meta.dirname, '../compat/xlsx/ignored-sheet-extensions-unsupported.json')));
+  await page.locator('#file').setInputFiles({ name: 'unsupported.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from(unsupported[0], 'base64') });
+  await page.waitForFunction(() => document.querySelector('#status').classList.contains('error'), null, { timeout: 30000 });
+  assert.match(await page.locator('#status').textContent(), /extended conditional formatting/);
+  assert.equal(await page.locator('#document-name').textContent(), 'rtl.xlsx');
+  await page.locator('#file').setInputFiles({ name: 'picture.xlsx', mimeType: 'image/svg+xml', buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="48"><rect width="64" height="48" fill="red"/></svg>') });
+  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'picture.xlsx' && !document.querySelector('#open-file').disabled, null, { timeout: 30000 });
+  assert.equal(await page.locator('#status').evaluate(el => el.classList.contains('error')), false, 'image signature takes precedence over filename');
+  const explicit = await page.evaluate(async () => {
+    const { bdf_create_native_converter } = await import('./browser.js');
+    const client = bdf_create_native_converter(new URL('./native_converter_worker.js', location.href).href);
+    try {
+      await client.ready;
+      const bytes = new Uint8Array(await (await fetch('./samples/sales.xlsx')).arrayBuffer());
+      const result = await client.convert(bytes, { format: 'xlsx' });
+      return { format: result.format, bytes: result.bdf.length };
+    } finally { client.terminate(); }
+  });
+  assert.equal(explicit.format, 'xlsx');
+  assert.ok(explicit.bytes > 0, 'explicit XLSX conversion');
+  await page.locator('#csv-sample').click();
+  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'people.csv' && !document.querySelector('#open-file').disabled, null, { timeout: 30000 });
   for (const card of await page.locator('.format-card').all()) {
     assert.equal(await card.locator('img').evaluate(img => img.complete && img.naturalWidth > 1), true, 'card preview');
     const href = await card.getByRole('link', { name: '形式の説明' }).getAttribute('href');
@@ -145,7 +205,7 @@ try {
   await mobile.waitForSelector('[data-bdf-page="0"] canvas[data-loaded="ready"]', { timeout: 30000 });
   assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'mobile page overflow');
   await mobile.close();
-  console.log('Demo: all 20 upstream pages, search, navigation, download, CSV, SVG, font TTF/WOFF2, views, search, saving, errors and mobile subpath passed.');
+  console.log('Demo: all 20 upstream pages, search, navigation, download, CSV, SVG, font TTF/WOFF2, XLSX conversion, sheet switching, warnings, replacement, search, saving, errors and mobile subpath passed.');
 } finally {
   await browser.close();
   await new Promise(resolvePromise => server.close(resolvePromise));

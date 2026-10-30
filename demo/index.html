@@ -15,8 +15,8 @@
   </header>
   <main>
     <section class="intro" aria-labelledby="intro-title">
-      <div><p class="eyebrow">BROWSER DOCUMENT FORMAT</p><h1 id="intro-title">ドキュメントを、ブラウザで。</h1><p class="description">BDF の表示、検索、CSV・画像・フォントの変換を試せます。ファイルをドロップするか、サンプルを開いてください。</p></div>
-      <div class="intro-actions"><button id="open-file" class="button primary" type="button">ファイルを開く</button><input id="file" hidden type="file" accept=".bdf,.csv,.tsv,.tab,.bmp,.ico,.jpg,.jpeg,.png,.gif,.webp,.avif,.svg,.ttf,.woff2"><button id="sample" class="button secondary" type="button">サンプルを開く</button></div>
+      <div><p class="eyebrow">BROWSER DOCUMENT FORMAT</p><h1 id="intro-title">ドキュメントを、ブラウザで。</h1><p class="description">BDF の表示、検索、CSV・Excel・画像・フォントの変換を試せます。ファイルをドロップするか、サンプルを開いてください。</p></div>
+      <div class="intro-actions"><button id="open-file" class="button primary" type="button">ファイルを開く</button><input id="file" hidden type="file" accept=".bdf,.csv,.tsv,.tab,.bmp,.ico,.jpg,.jpeg,.png,.gif,.webp,.avif,.svg,.ttf,.woff2,.xlsx"><button id="sample" class="button secondary" type="button">サンプルを開く</button></div>
     </section>
     <section id="viewer" class="viewer-card" aria-label="ドキュメントビューア">
       <div class="viewer-top"><div><span class="live-dot" aria-hidden="true"></span><strong id="document-name">デモ文書</strong><span id="document-meta" class="document-meta"></span></div><a id="download" class="download" download="document.bdf" hidden>BDF を保存 ↓</a></div>
@@ -42,6 +42,10 @@
           <div class="card-body"><p class="card-kicker">SPREADSHEET</p><h3>CSV / TSV</h3><p>行と列のデータをブラウザで変換し、スクロールできる表として表示します。</p><div class="card-links"><a href="#viewer" data-sample="csv">ビューアで開く <span aria-hidden="true">↗</span></a><a href="./formats.html#csv">形式の説明</a></div></div>
         </article>
         <article class="format-card">
+          <img src="./previews/xlsx.png" alt="Excel シートのプレビュー" width="640" height="400" loading="lazy">
+          <div class="card-body"><p class="card-kicker">SPREADSHEET</p><h3>Excel</h3><p>シートをブラウザ内で変換し、表を切り替えて表示します。</p><div class="card-links"><a href="#viewer" data-sample="xlsx">ビューアで開く <span aria-hidden="true">↗</span></a><a href="./formats.html#xlsx">形式の説明</a></div></div>
+        </article>
+        <article class="format-card">
           <img src="./previews/image.png" alt="画像のプレビュー" width="640" height="400" loading="lazy">
           <div class="card-body"><p class="card-kicker">IMAGE</p><h3>画像</h3><p>SVG や PNG、JPEG などの画像を BDF に変換し、ページとして表示します。</p><div class="card-links"><a href="#viewer" data-sample="image">ビューアで開く <span aria-hidden="true">↗</span></a><a href="./formats.html#image">形式の説明</a></div></div>
         </article>
@@ -51,7 +55,7 @@
         </article>
       </div>
     </section>
-    <section class="about" aria-labelledby="about-title"><div><h2 id="about-title">ブラウザで試す</h2><p>ファイルを開くかビューアにドロップすると、このブラウザ内で処理します。</p></div><div><h2>サンプルとライセンス</h2><p>文書サンプルの元データ: <a href="./licenses/BDF-MIT.txt">MIT ライセンス</a>。埋め込みフォント: <a href="./licenses/Liberation.txt">Liberation</a>、<a href="./licenses/IPA.txt">IPA</a>、<a href="./licenses/WenQuanYi-README.txt">WenQuanYi</a>。フォント見本: STIX Two Text（<a href="./licenses/STIX-OFL.txt">SIL Open Font License</a>）。</p></div></section>
+    <section class="about" aria-labelledby="about-title"><div><h2 id="about-title">ブラウザで試す</h2><p>ファイルを開くかビューアにドロップすると、このブラウザ内で処理します。</p></div><div><h2>サンプルとライセンス</h2><p>文書サンプルの元データ: <a href="./licenses/BDF-MIT.txt">MIT ライセンス</a>。埋め込みフォント: <a href="./licenses/Liberation.txt">Liberation</a>、<a href="./licenses/IPA.txt">IPA</a>、<a href="./licenses/WenQuanYi-README.txt">WenQuanYi</a>。フォント見本: STIX Two Text（<a href="./licenses/STIX-OFL.txt">SIL Open Font License</a>）。Excel サンプル: <a href="./licenses/PROJECT-MIT.txt">MIT ライセンス</a>。</p></div></section>
   </main>
   <footer class="page-footer"><p>shibukawa/bdf から独立して移植した非公式プロジェクトです。上流の公式提供・提携ではありません。</p><a href="https://github.com/f4ah6o/bdf.mbt">ソースコードを見る ↗</a></footer>
   <script type="module" src="./app.js"></script>

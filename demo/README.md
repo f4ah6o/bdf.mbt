@@ -10,8 +10,8 @@ go run ./cmd/bdf generate -q site/demo/demo.pdf upstream-demo.bdf
 
 The checked-in sample has SHA-256
 `e1cab46517eb3f0b1a4f2aeb4a5d0037e99161c4a1b77017f0c0903439608deb`.
-The PDF is converted ahead of time: the MoonBit port does not yet convert PDF
-or Office files. Rendering and CSV, image, and font specimen conversion in the demo use the
+The PDF is converted ahead of time. Rendering and CSV, XLSX, image, and font
+specimen conversion in the demo use the
 MoonBit JavaScript target, without a Go or WebAssembly runtime. Files chosen
 by the user are handled in the browser. The sample contains Liberation fonts
 ([OFL](licenses/Liberation.txt)), IPA Gothic ([IPA Font License](licenses/IPA.txt)),
@@ -49,3 +49,8 @@ Pages → Build and deployment → Source → GitHub Actions**, then run the wor
 again from the Actions tab. GitHub reports the resulting site URL in the
 workflow's deployment step. The expected default project URL is
 `https://f4ah6o.github.io/bdf.mbt/`.
+
+The two-sheet `samples/sales.xlsx` is an original synthetic workbook generated
+by `python3 demo/generate-xlsx-sample.py`, distributed under this repository’s
+[project MIT license](licenses/PROJECT-MIT.txt). The demo converts the supported
+XLSX subset without embedded fonts.
