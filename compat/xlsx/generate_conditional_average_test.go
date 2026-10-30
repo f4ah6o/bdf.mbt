@@ -127,7 +127,7 @@ func TestCodexConditionalAverage(t *testing.T) {
 		}
 		rule := fmt.Sprintf(`<conditionalFormatting sqref="A1:F3 C1:F2"><cfRule type="aboveAverage" aboveAverage="%s" equalAverage="%s" stdDev="%s" dxfId="0"></cfRule></conditionalFormatting>`, above, equal, std)
 		if i >= 256 && i < 262 {
-			rule = `<conditionalFormatting sqref="A1:F3"><cfRule type="aboveAverage" stdDev="1" dxfId="0"></cfRule></conditionalFormatting>`
+			rule = `<conditionalFormatting sqref="A1:F3"><cfRule type="aboveAverage" stdDev="1e100" dxfId="0"></cfRule></conditionalFormatting>`
 		}
 		if i == 262 {
 			rule += rule

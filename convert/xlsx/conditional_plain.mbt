@@ -43,6 +43,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   let mut top_threshold : Double? = None
   let mut average_above = true
   let mut average_equal = false
+  let mut average_stddev = 0.0
   let mut average_threshold : Double? = None
   let mut blank_matches = false
   let mut any_blank_matches = false
@@ -112,7 +113,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
               xlsx_trim(xlsx_attr(element, "aboveAverage", "")),
             )
             average_equal = xlsx_attr_bool(element, "equalAverage")
-            xlsx_conditional_require_zero_stddev(
+            average_stddev = xlsx_conditional_stddev(
               xlsx_attr(element, "stdDev", ""),
             )
           }
@@ -259,8 +260,8 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             )
           }
           if rule_type == "aboveAverage" {
-            average_threshold = xlsx_conditional_mean(
-              rows, ranges, row_count, col_count,
+            average_threshold = xlsx_conditional_average_threshold(
+              rows, ranges, row_count, col_count, average_stddev, average_above,
             )
           }
           if moving_reference {

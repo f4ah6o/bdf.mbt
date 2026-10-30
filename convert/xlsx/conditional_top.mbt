@@ -75,11 +75,13 @@ fn xlsx_conditional_numeric_values(
 }
 
 ///|
-fn xlsx_conditional_mean(
+fn xlsx_conditional_average_threshold(
   rows : Array[XlsxRow],
   ranges : Array[XlsxRange],
   row_count : Int32,
   col_count : Int32,
+  multiplier : Double,
+  above : Bool,
 ) -> Double? raise {
   let values = xlsx_conditional_numeric_values(
     rows, ranges, row_count, col_count,
@@ -94,12 +96,29 @@ fn xlsx_conditional_mean(
   if sum.is_nan() || sum.is_inf() {
     xlsx_reject_conditional()
   }
-  Some(sum / values.length().to_double())
+  let mean = sum / values.length().to_double()
+  if multiplier == 0.0 || values.length() < 2 {
+    return Some(mean)
+  }
+  let mut squared = 0.0
+  for value in values {
+    let difference = value - mean
+    squared = xlsx_fma(difference, difference, squared)
+  }
+  if squared.is_nan() || squared.is_inf() {
+    xlsx_reject_conditional()
+  }
+  let sd = (squared / (values.length() - 1).to_double()).sqrt()
+  let result = xlsx_fma(if above { multiplier } else { -multiplier }, sd, mean)
+  if result.is_nan() || result.is_inf() {
+    xlsx_reject_conditional()
+  }
+  Some(result)
 }
 
 ///|
-// A nonzero standard-deviation multiplier needs a separate variance path.
-fn xlsx_conditional_require_zero_stddev(raw : String) -> Unit raise {
+// Keep decimal multipliers bounded and reject hexadecimal floats.
+fn xlsx_conditional_stddev(raw : String) -> Double raise {
   let text = xlsx_trim(raw)
   if text.contains("x") ||
     text.contains("X") ||
@@ -107,10 +126,11 @@ fn xlsx_conditional_require_zero_stddev(raw : String) -> Unit raise {
     text.contains("P") {
     xlsx_reject_conditional()
   }
-  let value = @string.parse_double(text) catch { _ => return }
-  if value != 0.0 || value.is_nan() {
+  let value = @string.parse_double(text) catch { _ => return 0.0 }
+  if value.is_nan() || value.is_inf() || value < -1000000.0 || value > 1000000.0 {
     xlsx_reject_conditional()
   }
+  value
 }
 
 ///|
