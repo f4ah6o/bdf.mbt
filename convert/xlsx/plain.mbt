@@ -1263,6 +1263,66 @@ fn XlsxWorkbook::xlsx_plain_table_filters(
 }
 
 ///|
+fn XlsxWorkbook::xlsx_empty_drawing(
+  self : XlsxWorkbook,
+  part : String,
+) -> Bool raise {
+  let data = self.package.read(part) catch { _ => return false }
+  let text = @utf8.decode_lossy(data[:], ignore_bom=true)
+  if text.contains("<!ENTITY") {
+    return false
+  }
+  let reader = @xml.NamespaceReader::from_string(text)
+  let mut depth = 0
+  let mut anchor_depth = -1
+  while true {
+    let event = reader.read_event()
+    match event.kind {
+      Start(element) | Empty(element) => {
+        let name = element.name.local_name
+        if depth == 1 &&
+          (
+            name == "twoCellAnchor" ||
+            name == "oneCellAnchor" ||
+            name == "absoluteAnchor"
+          ) {
+          if event.kind is Start(_) {
+            anchor_depth = depth + 1
+          }
+        } else if depth == anchor_depth &&
+          (
+            name == "sp" ||
+            name == "grpSp" ||
+            name == "graphicFrame" ||
+            name == "cxnSp" ||
+            name == "pic" ||
+            name == "contentPart"
+          ) {
+          return false
+        }
+        if event.kind is Start(_) {
+          depth += 1
+        } else if depth == 0 {
+          break
+        }
+      }
+      End(_) => {
+        depth -= 1
+        if depth + 1 == anchor_depth {
+          anchor_depth = -1
+        }
+        if depth == 0 {
+          break
+        }
+      }
+      Eof => if depth == 0 { break } else { return false }
+      _ => ()
+    }
+  }
+  true
+}
+
+///|
 fn XlsxWorkbook::xlsx_check_plain_sheet(
   self : XlsxWorkbook,
   part : String,
@@ -1363,10 +1423,15 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           }
           if name == "drawing" {
             let id = xlsx_rel_id(element, "id")
-            if id != "" && self.package.target(part, id) is Some(_) {
-              raise InvalidXlsxInput(
-                "xlsx: plain conversion does not support worksheet feature drawing",
-              )
+            if id != "" && self.package.target(part, id) is Some(rel) {
+              let empty = self.xlsx_empty_drawing(rel.target) catch {
+                _ => false
+              }
+              if !empty {
+                raise InvalidXlsxInput(
+                  "xlsx: plain conversion does not support worksheet feature drawing",
+                )
+              }
             }
           }
           if name == "tableParts" && event.kind is Start(_) {
