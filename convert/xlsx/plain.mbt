@@ -1307,11 +1307,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           columns.get(cell.column) is Some(run) &&
           !run.segments.is_empty() {
           let alignment = styles.cell_formats[format_index].alignment
-          if font.bold ||
-            font.italic ||
-            font.underline != "" ||
-            font.strike ||
-            font.vertical != "" ||
+          if font.vertical != "" ||
             alignment.shrink ||
             (
               horizontal != "general" &&
@@ -1349,8 +1345,14 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             let color = match segment.font {
               None => default_color
               Some(segment_font) => {
-                if segment_font.name != "" ||
-                  segment_font.size != 0.0 ||
+                if (
+                    segment_font.name != "" &&
+                    (
+                      segment_font.name != font.name ||
+                      segment_font.scheme != font.scheme
+                    )
+                  ) ||
+                  (segment_font.size != 0.0 && segment_font.size != font.size) ||
                   segment_font.vertical != "" {
                   raise InvalidXlsxInput(
                     "xlsx: plain conversion does not support these styled rich text runs",
@@ -1382,7 +1384,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               }
             } else {
               let (bold, italic, underline, strike) = match segment.font {
-                None => (false, false, "", false)
+                None => (font.bold, font.italic, font.underline, font.strike)
                 Some(font) =>
                   (font.bold, font.italic, font.underline, font.strike)
               }
