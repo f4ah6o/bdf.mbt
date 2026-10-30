@@ -37,3 +37,13 @@ The generated tests include limits, invalid data, truncated streams and LZW
 dictionary-width changes. Each `generate_*_test.go` file runs without its
 build tag as the correspondingly named `TestCodex*` test in upstream
 `converter/pdf`, with `BDF_REFERENCE_OUTPUT` set to its generated test path.
+
+The file-object fixtures compare pdfcpu object parsing against 6,912 generated
+inputs and 486 objects extracted from 11 upstream PDF test files. The same
+upstream files exercise cross-reference tables and streams, indirect object
+resolution, inherited page attributes, and decoded page-content bytes.
+Synthetic fixtures cover incremental updates, compressed object streams,
+page-tree cycles and repeated leaves. These tests use the PDF files in upstream
+`converter/pdf/testdata`; each generator documents its output and dependencies.
+The file parser and page walker are internal components, not yet a complete
+PDF converter.
