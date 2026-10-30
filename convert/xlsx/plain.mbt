@@ -7,10 +7,80 @@ pub(all) struct XlsxPlainResult {
 }
 
 ///|
+// The workbook may define a named table style with no elements.
+fn XlsxWorkbook::xlsx_empty_table_style(
+  self : XlsxWorkbook,
+  wanted : String,
+) -> Bool raise {
+  let rel = match self.package.relationship_of_type(self.part, "/styles") {
+    Some(value) => value
+    None => return false
+  }
+  let data = self.package.read(rel.target) catch { _ => return false }
+  let text = @utf8.decode_lossy(data[:], ignore_bom=true)
+  if text.contains("<!ENTITY") {
+    return false
+  }
+  let reader = @xml.NamespaceReader::from_string(text)
+  let mut depth = 0
+  let mut styles_depth = -1
+  let mut style_depth = -1
+  let mut styles_seen = false
+  let mut found = false
+  let mut empty = false
+  while true {
+    let event = reader.read_event()
+    match event.kind {
+      Start(element) | Empty(element) => {
+        let name = element.name.local_name
+        if depth == 1 && name == "tableStyles" && !styles_seen {
+          styles_seen = true
+          if event.kind is Start(_) {
+            styles_depth = depth + 1
+          }
+        } else if depth == styles_depth && name == "tableStyle" {
+          let actual = xlsx_decode_string(xlsx_attr(element, "name", ""))
+          if actual == wanted {
+            found = true
+            empty = true
+            if event.kind is Start(_) {
+              style_depth = depth + 1
+            }
+          }
+        } else if depth == style_depth && name == "tableStyleElement" {
+          empty = false
+        }
+        if event.kind is Start(_) {
+          depth += 1
+        } else if depth == 0 {
+          break
+        }
+      }
+      End(_) => {
+        depth -= 1
+        if depth + 1 == style_depth {
+          style_depth = -1
+        }
+        if depth + 1 == styles_depth {
+          styles_depth = -1
+        }
+        if depth == 0 {
+          break
+        }
+      }
+      Eof => if depth == 0 { break } else { return false }
+      _ => ()
+    }
+  }
+  found && empty
+}
+
+///|
 // An unstyled table affects header marks, filters and data extraction.
 fn XlsxWorkbook::xlsx_plain_table_area(
   self : XlsxWorkbook,
   part : String,
+  style_cache : Map[String, Bool],
 ) -> Int64 raise {
   let data = self.package.read(part) catch { _ => return -1L }
   let text = @utf8.decode_lossy(data[:], ignore_bom=true)
@@ -34,6 +104,7 @@ fn XlsxWorkbook::xlsx_plain_table_area(
     (range.column_end - range.column_start + 1).to_int64()
   let reader = @xml.NamespaceReader::from_string(text)
   let mut depth = 0
+  let mut style_info_seen = false
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -42,10 +113,22 @@ fn XlsxWorkbook::xlsx_plain_table_area(
         if depth == 0 && name != "table" {
           return -1L
         }
-        if depth == 1 &&
-          name == "tableStyleInfo" &&
-          xlsx_attr(element, "name", "") != "" {
-          return -1L
+        if depth == 1 && name == "tableStyleInfo" && !style_info_seen {
+          style_info_seen = true
+          let style = xlsx_decode_string(xlsx_attr(element, "name", ""))
+          if style != "" {
+            let accepted = match style_cache.get(style) {
+              Some(value) => value
+              None => {
+                let value = self.xlsx_empty_table_style(style)
+                style_cache[style] = value
+                value
+              }
+            }
+            if !accepted {
+              return -1L
+            }
+          }
         }
         if event.kind is Start(_) {
           depth += 1
@@ -179,6 +262,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut extension_depth = -1
   let mut table_depth = -1
   let mut table_room = 200000L
+  let table_style_cache : Map[String, Bool] = Map([])
   let mut has_conditional = false
   let mut auto_filter : XlsxRange? = None
   let links : Array[@sheet.GridLink] = []
@@ -230,7 +314,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
         } else if depth == table_depth && name == "tablePart" {
           let id = xlsx_rel_id(element, "id")
           if self.package.target(part, id) is Some(rel) {
-            let area = self.xlsx_plain_table_area(rel.target)
+            let area = self.xlsx_plain_table_area(rel.target, table_style_cache)
             if area < 0L || area > table_room {
               raise InvalidXlsxInput(
                 "xlsx: plain conversion does not support worksheet feature tableParts",
