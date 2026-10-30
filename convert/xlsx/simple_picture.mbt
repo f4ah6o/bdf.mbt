@@ -581,6 +581,51 @@ fn XlsxWorkbook::xlsx_simple_picture(
             } else {
               shape_fill = shape_fill.map(color => color ^ 0xffffff00U)
             }
+          } else if name == "comp" || name == "gray" {
+            if !element.attributes.is_empty() || shape_rgb is None {
+              return None
+            }
+            let previous = shape_rgb.unwrap()
+            let next = if name == "comp" {
+              xlsx_shape_apply_hsl_modifier(previous, "hueOff", 0.5)
+            } else {
+              xlsx_shape_gray(previous)
+            }
+            shape_rgb = Some(next)
+            shape_fill = shape_fill.map(color => {
+              xlsx_shape_pack_rgb(next, color & 255U)
+            })
+          } else if [
+              "red", "redMod", "redOff", "green", "greenMod", "greenOff", "blue",
+              "blueMod", "blueOff",
+            ].contains(name) {
+            if element.attributes.length() != 1 ||
+              shape_rgb is None ||
+              element.attributes[0].name.local_name != "val" ||
+              element.attributes[0].name.namespace_uri is Some(_) {
+              return None
+            }
+            let fraction = match
+              xlsx_drawing_fraction(xlsx_attr(element, "val", "")) {
+              Some(value) if value >=
+                (if name.has_suffix("Off") { -10.0 } else { 0.0 }) &&
+                value <=
+                (if name.has_suffix("Mod") || name.has_suffix("Off") {
+                  10.0
+                } else {
+                  1.0
+                }) => value
+              _ => return None
+            }
+            let next = xlsx_shape_apply_channel(
+              shape_rgb.unwrap(),
+              name,
+              fraction,
+            )
+            shape_rgb = Some(next)
+            shape_fill = shape_fill.map(color => {
+              xlsx_shape_pack_rgb(next, color & 255U)
+            })
           } else if [
               "lumMod", "lumOff", "lum", "satMod", "satOff", "sat", "hueMod", "hueOff",
               "hue",
@@ -661,6 +706,51 @@ fn XlsxWorkbook::xlsx_simple_picture(
             } else {
               line_color = line_color.map(color => color ^ 0xffffff00U)
             }
+          } else if name == "comp" || name == "gray" {
+            if !element.attributes.is_empty() || line_rgb is None {
+              return None
+            }
+            let previous = line_rgb.unwrap()
+            let next = if name == "comp" {
+              xlsx_shape_apply_hsl_modifier(previous, "hueOff", 0.5)
+            } else {
+              xlsx_shape_gray(previous)
+            }
+            line_rgb = Some(next)
+            line_color = line_color.map(color => {
+              xlsx_shape_pack_rgb(next, color & 255U)
+            })
+          } else if [
+              "red", "redMod", "redOff", "green", "greenMod", "greenOff", "blue",
+              "blueMod", "blueOff",
+            ].contains(name) {
+            if element.attributes.length() != 1 ||
+              line_rgb is None ||
+              element.attributes[0].name.local_name != "val" ||
+              element.attributes[0].name.namespace_uri is Some(_) {
+              return None
+            }
+            let fraction = match
+              xlsx_drawing_fraction(xlsx_attr(element, "val", "")) {
+              Some(value) if value >=
+                (if name.has_suffix("Off") { -10.0 } else { 0.0 }) &&
+                value <=
+                (if name.has_suffix("Mod") || name.has_suffix("Off") {
+                  10.0
+                } else {
+                  1.0
+                }) => value
+              _ => return None
+            }
+            let next = xlsx_shape_apply_channel(
+              line_rgb.unwrap(),
+              name,
+              fraction,
+            )
+            line_rgb = Some(next)
+            line_color = line_color.map(color => {
+              xlsx_shape_pack_rgb(next, color & 255U)
+            })
           } else if [
               "lumMod", "lumOff", "lum", "satMod", "satOff", "sat", "hueMod", "hueOff",
               "hue",

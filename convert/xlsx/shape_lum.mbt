@@ -78,3 +78,56 @@ fn xlsx_shape_clamp_rgb(color : XlsxRgb) -> XlsxRgb {
     blue: xlsx_clamp_color(color.blue),
   }
 }
+
+///|
+fn xlsx_shape_gray(color : XlsxRgb) -> XlsxRgb {
+  let gray = xlsx_clamp_color(
+    xlsx_fma(
+      0.0722,
+      color.blue,
+      xlsx_fma(0.7152, color.green, 0.2126 * color.red),
+    ),
+  )
+  { red: gray, green: gray, blue: gray, }
+}
+
+///|
+fn xlsx_shape_apply_channel(
+  color : XlsxRgb,
+  name : String,
+  value : Double,
+) -> XlsxRgb {
+  let previous = if name.has_prefix("red") {
+    color.red
+  } else if name.has_prefix("green") {
+    color.green
+  } else {
+    color.blue
+  }
+  let next = xlsx_clamp_color(
+    if name.has_suffix("Mod") {
+      previous * value
+    } else if name.has_suffix("Off") {
+      previous + value
+    } else {
+      value
+    },
+  )
+  {
+    red: if name.has_prefix("red") {
+      next
+    } else {
+      xlsx_clamp_color(color.red)
+    },
+    green: if name.has_prefix("green") {
+      next
+    } else {
+      xlsx_clamp_color(color.green)
+    },
+    blue: if name.has_prefix("blue") {
+      next
+    } else {
+      xlsx_clamp_color(color.blue)
+    },
+  }
+}
