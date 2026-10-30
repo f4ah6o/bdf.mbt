@@ -31,7 +31,7 @@ def value(token):
 def formula(text):
     operator, *args = text.split()
     if operator == 'tan':
-        assert args[1] == 'alfa'  # swooshArrow uses a single fixed angle.
+        assert name == 'swooshArrow' and args[1] == 'alfa'  # The fixed tangent applies only to this preset.
     args = [value(arg) for arg in args] + ['0.0'] * (3 - len(args))
     x, y, z = args[:3]
     operations = {
@@ -72,6 +72,9 @@ lines.append('  match geometry {')
 
 for name in names:
     shape = root.find(name)
+    if name == 'swooshArrow':
+        angles = [guide for guide in shape.findall('./gdLst/gd') if guide.get('name') == 'alfa']
+        assert len(angles) == 1 and angles[0].get('fmla') == '*/ cd4 1 14', 'swooshArrow fixed tangent angle changed'
     paths = shape.find('pathLst')
     assert len(paths) == 1
     path = paths[0]
