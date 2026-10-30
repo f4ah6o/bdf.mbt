@@ -358,3 +358,59 @@ fn xlsx_complex_table_border(
   }
   (result, "\{top_id},\{bottom_id},\{left_id},\{right_id}")
 }
+
+///|
+// Treat unreadable style parts conservatively as defined, not as unknown names.
+fn XlsxWorkbook::xlsx_table_style_defined(
+  self : XlsxWorkbook,
+  wanted : String,
+) -> Bool raise {
+  let rel = match self.package.relationship_of_type(self.part, "/styles") {
+    Some(value) => value
+    None => return false
+  }
+  let data = self.package.read(rel.target) catch { _ => return true }
+  let text = @utf8.decode_lossy(data[:], ignore_bom=true)
+  if text.contains("<!ENTITY") {
+    return true
+  }
+  let reader = @xml.NamespaceReader::from_string(text)
+  let mut depth = 0
+  let mut styles_depth = -1
+  let mut seen = false
+  while true {
+    let event = reader.read_event()
+    match event.kind {
+      Start(element) | Empty(element) => {
+        let name = element.name.local_name
+        if depth == 1 && name == "tableStyles" && !seen {
+          seen = true
+          if event.kind is Start(_) {
+            styles_depth = depth + 1
+          }
+        } else if depth == styles_depth &&
+          name == "tableStyle" &&
+          xlsx_decode_string(xlsx_attr(element, "name", "")) == wanted {
+          return true
+        }
+        if event.kind is Start(_) {
+          depth += 1
+        } else if depth == 0 {
+          break
+        }
+      }
+      End(_) => {
+        depth -= 1
+        if depth + 1 == styles_depth {
+          styles_depth = -1
+        }
+        if depth == 0 {
+          break
+        }
+      }
+      Eof => if depth == 0 { break } else { return true }
+      _ => ()
+    }
+  }
+  false
+}

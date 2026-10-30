@@ -793,6 +793,8 @@ fn XlsxWorkbook::xlsx_plain_table_area(
   style_id_cache : Map[String, (Int32, Int32, Int64, Int32, Int64, Int32)],
   complex_rules : Map[Int32, XlsxComplexTable],
   complex_cache : Map[String, XlsxComplexStyle?],
+  known_cache : Map[String, Bool],
+  unknown_styles : Array[String],
   table_rules : Array[
     (
       XlsxRange,
@@ -905,7 +907,20 @@ fn XlsxWorkbook::xlsx_plain_table_area(
                     }
                     selected_region = 25
                   }
-                  None => return -1L
+                  None => {
+                    let known = match known_cache.get(style) {
+                      Some(value) => value
+                      None => {
+                        let value = self.xlsx_table_style_defined(style)
+                        known_cache[style] = value
+                        value
+                      }
+                    }
+                    if known {
+                      return -1L
+                    }
+                    unknown_styles.push(style)
+                  }
                 }
               }
             }
@@ -1191,6 +1206,7 @@ fn XlsxWorkbook::xlsx_plain_table_filters(
 fn XlsxWorkbook::xlsx_check_plain_sheet(
   self : XlsxWorkbook,
   part : String,
+  unknown_styles : Array[String],
 ) -> (
   Array[@sheet.GridLink],
   Bool,
@@ -1239,6 +1255,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut table_room = 200000L
   let complex_rules : Map[Int32, XlsxComplexTable] = Map([])
   let complex_cache : Map[String, XlsxComplexStyle?] = Map([])
+  let known_cache : Map[String, Bool] = Map([])
   let table_style_cache : Map[String, Bool] = Map([])
   let table_style_id_cache : Map[
     String,
@@ -1318,6 +1335,8 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
               table_style_id_cache,
               complex_rules,
               complex_cache,
+              known_cache,
+              unknown_styles,
               table_rules,
             )
             if area < 0L || area > table_room {
@@ -1819,6 +1838,7 @@ pub fn convert_plain_no_fonts(
   let mut counter = 0
   let mut warned_rtl = false
   let warned_sheets : Map[String, Bool] = Map([])
+  let warned_table_styles : Map[String, Bool] = Map([])
   let doc_language = metadata.language.get(0).unwrap_or("")
   for index, ref in workbook.sheets {
     if ref.hidden {
@@ -1831,8 +1851,9 @@ pub fn convert_plain_no_fonts(
     }
     let number = index + 1
     let id = "sheet" + number.to_string()
+    let unknown_styles : Array[String] = []
     let (drawn, geo, missing_formula_values) = workbook.xlsx_draw_plain_sheet(
-      ref, styles, locale, doc_language, theme_colors, shared_runs,
+      ref, styles, locale, doc_language, theme_colors, shared_runs, unknown_styles,
     )
     let (next, table_warnings) = workbook.store_sheet_tables(
       writer,
@@ -1865,6 +1886,12 @@ pub fn convert_plain_no_fonts(
       )
       warned_rtl = true
     }
+    for style in unknown_styles {
+      if !warned_table_styles.contains(style) {
+        warned_table_styles[style] = true
+        warnings.push("table style " + style + " is unknown")
+      }
+    }
     warned_sheets[ref.name] = true
     grids.push({
       id,
@@ -1887,6 +1914,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   doc_language : String,
   theme_colors : Map[Int32, XlsxRgb],
   shared_runs : Array[XlsxPlainRun?],
+  unknown_styles : Array[String],
 ) -> (@sheet.DrawnGrid, XlsxSheetGeometry, Int32) raise {
   let (
     links,
@@ -1895,7 +1923,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     table_filters,
     complex_rules,
     table_rules,
-  ) = workbook.xlsx_check_plain_sheet(ref.part)
+  ) = workbook.xlsx_check_plain_sheet(ref.part, unknown_styles)
   let (parsed, rich_cells) = workbook.xlsx_read_sheet_cells_with_runs(
     ref.part,
     shared_runs,
