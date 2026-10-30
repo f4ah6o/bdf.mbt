@@ -32,7 +32,7 @@ variants = {
     'hsl-color-extra-attribute': ('<a:srgbClr val="FF0000"/>', '<a:hslClr hue="0" foo="1"/>'),
     'linear-color-negative': ('<a:srgbClr val="FF0000"/>', '<a:scrgbClr r="-1"/>'),
     'linear-color-too-large': ('<a:srgbClr val="FF0000"/>', '<a:scrgbClr g="100001"/>'),
-    'linear-color-decimal': ('<a:srgbClr val="FF0000"/>', '<a:scrgbClr b="1.5"/>'),
+    'linear-color-malformed': ('<a:srgbClr val="FF0000"/>', '<a:scrgbClr b="not-a-number"/>'),
     'linear-color-extra-attribute': ('<a:srgbClr val="FF0000"/>', '<a:scrgbClr r="0" foo="1"/>'),
     'unknown-preset-color': ('<a:srgbClr val="FF0000"/>', '<a:prstClr val="unknown"/>'),
     'preset-color-extra-attribute': ('<a:srgbClr val="FF0000"/>', '<a:prstClr val="red" foo="1"/>'),

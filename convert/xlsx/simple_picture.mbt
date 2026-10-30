@@ -1083,7 +1083,7 @@ fn xlsx_simple_shape_color(
     )
   }
   if element.name.local_name == "scrgbClr" {
-    let components : Array[Int32] = [0, 0, 0]
+    let components : Array[Double] = [0.0, 0.0, 0.0]
     let seen : Map[String, Bool] = Map([])
     for attr in element.attributes {
       let name = attr.name.local_name
@@ -1093,17 +1093,17 @@ fn xlsx_simple_shape_color(
         return None
       }
       seen[name] = true
-      let value = match xlsx_int(attr.value) {
-        Some(value) if value >= 0L && value <= 100000L => value.to_int()
+      let value = match xlsx_drawing_fraction(attr.value) {
+        Some(value) if value >= 0.0 && value <= 1.0 => value
         _ => return None
       }
       let index = if name == "r" { 0 } else if name == "g" { 1 } else { 2 }
       components[index] = value
     }
     return Some(
-      (xlsx_shape_linear_component(components[0]) << 24) |
-      (xlsx_shape_linear_component(components[1]) << 16) |
-      (xlsx_shape_linear_component(components[2]) << 8) |
+      (xlsx_shape_linear_fraction(components[0]) << 24) |
+      (xlsx_shape_linear_fraction(components[1]) << 16) |
+      (xlsx_shape_linear_fraction(components[2]) << 8) |
       255U,
     )
   }
