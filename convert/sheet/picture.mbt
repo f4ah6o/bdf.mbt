@@ -47,6 +47,7 @@ fn GridDrawContext::paint_picture(
   view_width : Double,
   pending : Array[(Int32, Int32, Bytes)]?,
   room : Int32,
+  hidden~ : Bool = false,
 ) -> Int32 raise {
   if picture.kind < 0 ||
     picture.kind > 2 ||
@@ -222,6 +223,15 @@ fn GridDrawContext::paint_picture(
       raise InvalidArgument("sheet: drawings exceed the supported tile budget")
     }
     tile_count = (nx * ny).to_int()
+  }
+  if hidden {
+    let empty = @core.ObjectBuilder::new().encode()
+    if pending is Some(pending) {
+      pending.push((-1 - self.tiles.length(), -1, empty))
+    } else {
+      ignore(writer.add_part("obj", empty))
+    }
+    return tile_count
   }
   let image_hash = writer.add_part("img", picture.image)
   let object = @core.ObjectBuilder::new()

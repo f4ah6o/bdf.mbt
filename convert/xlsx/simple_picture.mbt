@@ -4,7 +4,7 @@
 fn XlsxWorkbook::xlsx_simple_picture(
   self : XlsxWorkbook,
   part : String,
-) -> Array[@sheet.GridPicture]? {
+) -> Array[(@sheet.GridPicture, Bool)]? {
   let bytes = self.package.read(part) catch { _ => return None }
   let source = @utf8.decode_lossy(bytes[:], ignore_bom=true)
   if source.contains("<!ENTITY") {
@@ -20,7 +20,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut depth = 0
   let mut kind = -1
   let mut anchors = 0
-  let result : Array[@sheet.GridPicture] = []
+  let result : Array[(@sheet.GridPicture, Bool)] = []
   let images : Map[String, Bytes] = Map([])
   let mut image_bytes = 0L
   let mut pictures = 0
@@ -28,6 +28,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut saw_to = false
   let mut saw_nv = false
   let mut saw_nvpr = false
+  let mut picture_hidden = false
   let mut saw_blip_fill = false
   let mut saw_sppr = false
   let mut geometry = false
@@ -185,9 +186,10 @@ fn XlsxWorkbook::xlsx_simple_picture(
             }
             saw_nvpr = true
             let hidden = xlsx_trim(xlsx_attr(element, "hidden", ""))
-            if !["", "0", "false", "off"].contains(hidden) {
+            if !["", "0", "false", "off", "1", "true", "on"].contains(hidden) {
               return None
             }
+            picture_hidden = ["1", "true", "on"].contains(hidden)
             description = xlsx_trim(xlsx_attr(element, "descr", ""))
             title = xlsx_trim(xlsx_attr(element, "title", ""))
             true
@@ -522,7 +524,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
               if image_bytes > 1073741824L {
                 return None
               }
-              result.push(picture)
+              result.push((picture, picture_hidden))
             }
             None => return None
           }
@@ -532,6 +534,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
           saw_to = false
           saw_nv = false
           saw_nvpr = false
+          picture_hidden = false
           saw_blip_fill = false
           saw_sppr = false
           geometry = false

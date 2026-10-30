@@ -110,8 +110,9 @@ pub fn sized_fallback_advance(
 ///|
 /// Draw unstyled cells in an already-sized sheet with fallback font metrics.
 /// Supplying pictures also requires a document writer for their image and
-/// drawing parts. A caller that defers object storage may collect child parts
-/// in `picture_children` and pass them to `store_grids`.
+/// drawing parts. `hidden_pictures`, when supplied, has one flag per picture.
+/// A caller that defers object storage may collect child parts in
+/// `picture_children` and pass them to `store_grids`.
 pub fn draw_sized_grid_no_fonts(
   rows : Array[SizedGridRow],
   geometry : GridGeometry,
@@ -147,6 +148,7 @@ pub fn draw_sized_grid_no_fonts(
   table_headers~ : Array[(Int32, Int32, Int32, Int32, Int32)] = [],
   table_filters~ : Array[(Int32, Int32)] = [],
   pictures~ : Array[GridPicture] = [],
+  hidden_pictures~ : Array[Bool] = [],
   picture_writer~ : @core.DocumentWriter? = None,
   picture_children~ : Array[(Int32, Int32, Bytes)]? = None,
   column_axis_default~ : Float? = None,
@@ -863,6 +865,10 @@ pub fn draw_sized_grid_no_fonts(
       )
     }
   }
+  if !hidden_pictures.is_empty() &&
+    hidden_pictures.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid picture visibility list")
+  }
   if !pictures.is_empty() {
     if pictures.length() > 128 {
       raise InvalidArgument("sheet: too many pictures")
@@ -881,7 +887,7 @@ pub fn draw_sized_grid_no_fonts(
       None => raise InvalidArgument("sheet: missing picture writer")
     }
     let mut room = 16384
-    for picture in pictures {
+    for index, picture in pictures {
       room -= context.paint_picture(
         writer,
         picture,
@@ -893,6 +899,11 @@ pub fn draw_sized_grid_no_fonts(
         },
         picture_children,
         room,
+        hidden=if hidden_pictures.is_empty() {
+          false
+        } else {
+          hidden_pictures[index]
+        },
       )
     }
   }
