@@ -922,6 +922,20 @@ fn xlsx_crop_svg_length(value : String) -> Double? {
   if digits == 0 {
     return None
   }
+  if i < data.length() && (data[i] == b'e' || data[i] == b'E') {
+    let marker = i
+    i += 1
+    if i < data.length() && (data[i] == b'+' || data[i] == b'-') {
+      i += 1
+    }
+    let exponent_start = i
+    while i < data.length() && data[i] >= b'0' && data[i] <= b'9' {
+      i += 1
+    }
+    if i == exponent_start {
+      i = marker
+    }
+  }
   let number = @utf8.decode(data[start:i]) catch { _ => return None }
   let parsed = @string.parse_double(number) catch { _ => return None }
   while i < data.length() &&
