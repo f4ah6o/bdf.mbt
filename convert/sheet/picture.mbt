@@ -50,8 +50,8 @@ fn GridDrawContext::paint_picture(
 ) -> Int32 raise {
   if picture.kind < 0 ||
     picture.kind > 2 ||
-    picture.rotation < -21600000 ||
-    picture.rotation > 21600000 ||
+    picture.rotation < -86400000 ||
+    picture.rotation > 86400000 ||
     picture.x.is_nan() ||
     picture.x.is_inf() ||
     picture.y.is_nan() ||

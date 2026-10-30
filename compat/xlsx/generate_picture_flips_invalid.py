@@ -3,7 +3,7 @@ from pathlib import Path
 root=Path(__file__).resolve().parent
 source=json.loads((root/'picture-flips-mixed.json').read_text())[0]
 values={
- 'rotation-out-of-range':'<a:xfrm rot="21600001"/>',
+ 'rotation-out-of-range':'<a:xfrm rot="86400001"/>',
  'invalid-boolean':'<a:xfrm flipH="yes"/>',
  'duplicate-attribute':'<a:xfrm flipH="1" flipH="0"/>',
  'unknown-attribute':'<a:xfrm foo="1"/>',

@@ -24,6 +24,16 @@ test "quarter-turn trigonometry matches upstream float encodings" {
 test "arbitrary rotation trigonometry matches upstream float encodings" {
   for
     (units, sine, cosine) in [
+      (21600001, 0x349c2b5fU, 0x3f800000U),
+      (27000000, 0x3f800000U, 0x25b07d7eU),
+      (43200000, 0xa60d3132U, 0x3f800000U),
+      (53999999, 0x349c2b5fU, 0xbf800000U),
+      (64800000, 0xa653c9caU, 0x3f800000U),
+      (86399999, 0xb49c2b5fU, 0x3f800000U),
+      (86400000, 0xa68d3132U, 0x3f800000U),
+      (-21600001, 0xb49c2b5fU, 0x3f800000U),
+      (-64800000, 0x2653c9caU, 0x3f800000U),
+      (-86400000, 0x268d3132U, 0x3f800000U),
       (12345, 0x3b6b571bU, 0x3f7fff94U),
       (60000, 0x3c8ef859U, 0x3f7ff605U),
       (2700000, 0x3f3504f3U, 0x3f3504f3U),

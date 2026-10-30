@@ -302,7 +302,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
               seen[key] = true
               if key == "rot" {
                 let value = match xlsx_int(attr.value) {
-                  Some(value) if value >= -21600000L && value <= 21600000L =>
+                  Some(value) if value >= -86400000L && value <= 86400000L =>
                     value
                   _ => return None
                 }
