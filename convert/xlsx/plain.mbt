@@ -30,6 +30,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut root_text = false
   let mut multi_run = false
   let mut link_depth = -1
+  let mut extension_depth = -1
   let mut has_conditional = false
   let links : Array[@sheet.GridLink] = []
   let relationships = self.package.relationships(part)
@@ -43,7 +44,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           // metadata. These elements have rendering semantics there and must
           // remain unsupported until they are implemented here.
           if [
-              "drawing", "legacyDrawing", "autoFilter", "tableParts", "extLst", "AlternateContent",
+              "drawing", "legacyDrawing", "autoFilter", "tableParts", "AlternateContent",
             ].contains(name) {
             raise InvalidXlsxInput(
               "xlsx: plain conversion does not support worksheet feature " +
@@ -59,6 +60,15 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           if name == "conditionalFormatting" {
             has_conditional = true
           }
+          if name == "extLst" && event.kind is Start(_) {
+            extension_depth = depth + 1
+          }
+        } else if extension_depth >= 0 &&
+          depth >= extension_depth &&
+          name == "conditionalFormattings" {
+          raise InvalidXlsxInput(
+            "xlsx: plain conversion does not support extended conditional formatting",
+          )
         } else if depth == link_depth && name == "hyperlink" {
           xlsx_add_plain_links(links, relationships, element)
         } else if depth == sheet_data_depth &&
@@ -128,6 +138,9 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
         }
         if depth + 1 == link_depth {
           link_depth = -1
+        }
+        if depth + 1 == extension_depth {
+          extension_depth = -1
         }
         if depth + 1 == inline_depth {
           if run_count > 1 {

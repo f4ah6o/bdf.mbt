@@ -27,6 +27,16 @@ assert.equal(i, index.count, 'XLSX rendering fixture count');
 const ignoredSheetFeatures = JSON.parse(await readFile(new URL('./ignored-sheet-features.json', import.meta.url)));
 assert.equal(ignoredSheetFeatures.length, 320, 'ignored sheet feature fixture count');
 for (const [j, c] of ignoredSheetFeatures.entries()) await verifyCase(c, `ignored sheet feature ${j}`);
+const ignoredSheetExtensions = JSON.parse(await readFile(new URL('./ignored-sheet-extensions.json', import.meta.url)));
+assert.equal(ignoredSheetExtensions.length, 160, 'ignored sheet extension fixture count');
+for (const [j, c] of ignoredSheetExtensions.entries()) await verifyCase(c, `ignored sheet extension ${j}`);
+const unsupportedSheetExtensions = JSON.parse(await readFile(new URL('./ignored-sheet-extensions-unsupported.json', import.meta.url)));
+assert.equal(unsupportedSheetExtensions.length, 8, 'unsupported sheet extension fixture count');
+for (const encoded of unsupportedSheetExtensions) {
+  const input = Buffer.from(encoded, 'base64');
+  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'extended conditional formats must be rejected');
+  assert.match(xlsx_render_error(input, 'none', true), /extended conditional formatting/);
+}
 const baseFills = JSON.parse(await readFile(new URL('./base-fill.json', import.meta.url)));
 assert.equal(baseFills.length, 240, 'row and column fill fixture count');
 for (const [j, c] of baseFills.entries()) await verifyCase(c, `base fill ${j}`);
@@ -391,4 +401,4 @@ for (const encoded of unsupportedBase) {
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|complex borders)/);
 }
-console.log(`${i} basic XLSX renderings, ${ignoredSheetFeatures.length} ignored sheet feature cases, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length + multiplePlainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length + conditionalBetween.length + conditionalEquals.length + conditionalLiteral.length + conditionalMovingLiteral.length + conditionalTypedReference.length + conditionalInvalidReference.length + conditionalAbsolute.length + conditionalSingleRef.length + conditionalAxisRef.length + conditionalMovingRef.length + conditionalNegativeRef.length + conditionalNegativeBlank.length + conditionalNegativeString.length + conditionalPredicates.length + conditionalText.length + conditionalTop.length + conditionalAverage.length + conditionalStdDev.length + conditionalLargeStdDev.length + conditionalOverflowMean.length + conditionalNonfiniteAverage.length + conditionalDisjoint.length + conditionalDisjointMoving.length + conditionalSameStyle.length + conditionalIdenticalBlocks.length + conditionalSameRuleStyle.length + conditionalDisjointMatches.length + conditionalDuplicate.length + conditionalBlank.length + conditionalPaintBlank.length} conditional formats match upstream.`);
+console.log(`${i} basic XLSX renderings, ${ignoredSheetFeatures.length + ignoredSheetExtensions.length} ignored sheet feature cases, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length + multiplePlainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length + conditionalBetween.length + conditionalEquals.length + conditionalLiteral.length + conditionalMovingLiteral.length + conditionalTypedReference.length + conditionalInvalidReference.length + conditionalAbsolute.length + conditionalSingleRef.length + conditionalAxisRef.length + conditionalMovingRef.length + conditionalNegativeRef.length + conditionalNegativeBlank.length + conditionalNegativeString.length + conditionalPredicates.length + conditionalText.length + conditionalTop.length + conditionalAverage.length + conditionalStdDev.length + conditionalLargeStdDev.length + conditionalOverflowMean.length + conditionalNonfiniteAverage.length + conditionalDisjoint.length + conditionalDisjointMoving.length + conditionalSameStyle.length + conditionalIdenticalBlocks.length + conditionalSameRuleStyle.length + conditionalDisjointMatches.length + conditionalDuplicate.length + conditionalBlank.length + conditionalPaintBlank.length} conditional formats match upstream.`);
