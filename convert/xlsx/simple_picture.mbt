@@ -912,6 +912,8 @@ fn xlsx_crop_svg_size(image : Bytes) -> (Double, Double)? {
         }
         let mut width : Double? = None
         let mut height : Double? = None
+        let mut seen_width = false
+        let mut seen_height = false
         let mut view_box : String? = None
         for attr in element.attributes {
           if attr.name.namespace_uri is None &&
@@ -925,20 +927,33 @@ fn xlsx_crop_svg_size(image : Bytes) -> (Double, Double)? {
               attr.name.local_name == "width" ||
               attr.name.local_name == "height"
             ) {
-            let value = match xlsx_crop_svg_length(attr.value, true) {
-              Some(value) => value
-              None => return None
+            let raw = @utf8.encode(attr.value)
+            let mut end = raw.length()
+            while end > 0 &&
+                  [b' ', b'\t', b'\r', b'\n', b'\x0c'].contains(raw[end - 1]) {
+              end -= 1
+            }
+            let relative = end > 0 && raw[end - 1] == b'%'
+            let value = if relative {
+              None
+            } else {
+              match xlsx_crop_svg_length(attr.value, true) {
+                Some(value) => Some(value)
+                None => return None
+              }
             }
             if attr.name.local_name == "width" {
-              if width is Some(_) {
+              if seen_width {
                 return None
               }
-              width = Some(value)
+              seen_width = true
+              width = value
             } else {
-              if height is Some(_) {
+              if seen_height {
                 return None
               }
-              height = Some(value)
+              seen_height = true
+              height = value
             }
           }
         }
