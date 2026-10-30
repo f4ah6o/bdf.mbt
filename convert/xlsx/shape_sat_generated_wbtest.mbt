@@ -1,0 +1,2492 @@
+///|
+// Generated using the upstream DrawingML color modifiers.
+test "saturation modifiers match Go" {
+  check_sat_modifiers(0x003039U, 0, -10, 0x1d1d1dffU)
+  check_absolute_hsl(0x003039U, 0, 0, 0x000000ffU)
+  check_sat_modifiers(
+    0x0c45a6U, 0.079189999999999997, -9.8765300000000007, 0x595959ffU,
+  )
+  check_absolute_hsl(
+    0x0c45a6U, 0.32718999999999998, 0.37198999999999999, 0x40577effU,
+  )
+  check_sat_modifiers(
+    0x185b13U, 0.15837999999999999, -9.7530599999999996, 0x373737ffU,
+  )
+  check_absolute_hsl(
+    0x185b13U, 0.65437999999999996, 0.74397999999999997, 0x99e893ffU,
+  )
+  check_sat_modifiers(0x247080U, 0.23757, -9.6295900000000003, 0x525252ffU)
+  check_absolute_hsl(
+    0x247080U, 0.98157000000000005, 0.11595999999999999, 0x01303bffU,
+  )
+  check_sat_modifiers(
+    0x3085edU, 0.31675999999999999, -9.5061199999999992, 0x8f8f8fffU,
+  )
+  check_absolute_hsl(
+    0x3085edU, 0.30875000000000002, 0.48794999999999999, 0x5679a3ffU,
+  )
+  check_sat_modifiers(
+    0x3c9b5aU, 0.39595000000000002, -9.3826499999999999, 0x6b6b6bffU,
+  )
+  check_absolute_hsl(
+    0x3c9b5aU, 0.63593999999999995, 0.85994000000000004, 0xc5f2d3ffU,
+  )
+  check_sat_modifiers(
+    0x48b0c7U, 0.47514000000000001, -9.2591800000000006, 0x888888ffU,
+  )
+  check_absolute_hsl(
+    0x48b0c7U, 0.96313000000000004, 0.23191999999999999, 0x025f74ffU,
+  )
+  check_sat_modifiers(
+    0x54c634U, 0.55432999999999999, -9.1357099999999996, 0x7d7d7dffU,
+  )
+  check_absolute_hsl(
+    0x54c634U, 0.29031000000000001, 0.60390999999999995, 0x8ab77dffU,
+  )
+  check_sat_modifiers(
+    0x60dba1U, 0.63351999999999997, -9.0122400000000003, 0x9e9e9effU,
+  )
+  check_absolute_hsl(
+    0x60dba1U, 0.61750000000000005, 0.97589999999999999, 0xf5fdf9ffU,
+  )
+  check_sat_modifiers(
+    0x6cf10eU, 0.71270999999999995, -8.8887699999999992, 0x808080ffU,
+  )
+  check_absolute_hsl(
+    0x6cf10eU, 0.94469000000000003, 0.34788000000000002, 0x4aad05ffU,
+  )
+  check_sat_modifiers(
+    0x79067bU, 0.79190000000000005, -8.7652999999999999, 0x414141ffU,
+  )
+  check_absolute_hsl(0x79067bU, 0.27187, 0.71987000000000001, 0xcaa4cbffU)
+  check_sat_modifiers(
+    0x851be8U, 0.87109000000000003, -8.6418300000000006, 0x828282ffU,
+  )
+  check_absolute_hsl(
+    0x851be8U, 0.59906000000000004, 0.091850000000000001, 0x180925ffU,
+  )
+  check_sat_modifiers(
+    0x913155U, 0.95028000000000001, -8.5183599999999995, 0x616161ffU,
+  )
+  check_absolute_hsl(
+    0x913155U, 0.92625000000000002, 0.46383999999999997, 0xe4095bffU,
+  )
+  check_sat_modifiers(
+    0x9d46c2U, 1.0294700000000001, -8.3948900000000002, 0x848484ffU,
+  )
+  check_absolute_hsl(
+    0x9d46c2U, 0.25342999999999999, 0.83582999999999996, 0xd9cbe0ffU,
+  )
+  check_sat_modifiers(0xa95c2fU, 1.10866, -8.2714200000000009, 0x6c6c6cffU)
+  check_absolute_hsl(
+    0xa95c2fU, 0.58062000000000002, 0.20780999999999999, 0x542d16ffU,
+  )
+  check_sat_modifiers(
+    0xb5719cU, 1.1878500000000001, -8.1479499999999998, 0x939393ffU,
+  )
+  check_absolute_hsl(
+    0xb5719cU, 0.90781000000000001, 0.57979999999999998, 0xf533aeffU,
+  )
+  check_sat_modifiers(
+    0xc18709U, 1.2670399999999999, -8.0244800000000005, 0x656565ffU,
+  )
+  check_absolute_hsl(0xc18709U, 0.23499, 0.95179000000000002, 0xf6f4f0ffU)
+  check_sat_modifiers(0xcd9c76U, 1.34623, -7.9010100000000003, 0xa2a2a2ffU)
+  check_absolute_hsl(0xcd9c76U, 0.56218000000000001, 0.32377, 0x814d24ffU)
+  check_sat_modifiers(
+    0xd9b1e3U, 1.4254199999999999, -7.7775400000000001, 0xcacacaffU,
+  )
+  check_absolute_hsl(
+    0xd9b1e3U, 0.88936999999999999, 0.69576000000000005, 0xdb6cf6ffU,
+  )
+  check_sat_modifiers(0xe5c750U, 1.50461, -7.6540699999999999, 0x9b9b9bffU)
+  check_absolute_hsl(
+    0xe5c750U, 0.21654999999999999, 0.067739999999999995, 0x15140effU,
+  )
+  check_sat_modifiers(
+    0xf1dcbdU, 1.5838000000000001, -7.5305999999999997, 0xd7d7d7ffU,
+  )
+  check_absolute_hsl(0xf1dcbdU, 0.54374, 0.43973000000000001, 0xad7c33ffU)
+  check_sat_modifiers(0xfdf22aU, 1.66299, -7.4071300000000004, 0x949494ffU)
+  check_absolute_hsl(0xfdf22aU, 0.87092999999999998, 0.81172, 0xf9f4a5ffU)
+  check_sat_modifiers(
+    0x0a0797U, 1.7421800000000001, -7.2836600000000002, 0x4f4f4fffU,
+  )
+  check_absolute_hsl(0x0a0797U, 0.19811000000000001, 0.1837, 0x262638ffU)
+  check_sat_modifiers(
+    0x161d04U, 1.8213699999999999, -7.1601900000000001, 0x101010ffU,
+  )
+  check_absolute_hsl(
+    0x161d04U, 0.52529999999999999, 0.55569000000000002, 0xa8c952ffU,
+  )
+  check_sat_modifiers(0x223271U, 1.90056, -7.0367199999999999, 0x4a4a4affU)
+  check_absolute_hsl(
+    0x223271U, 0.85248999999999997, 0.92767999999999995, 0xdde3fcffU,
+  )
+  check_sat_modifiers(
+    0x2e47deU, 1.9797499999999999, -6.9132499999999997, 0x868686ffU,
+  )
+  check_absolute_hsl(0x2e47deU, 0.17967, 0.29965999999999998, 0x3f435affU)
+  check_sat_modifiers(
+    0x3a5d4bU, 2.0589400000000002, -6.7897800000000004, 0x4c4c4cffU,
+  )
+  check_absolute_hsl(
+    0x3a5d4bU, 0.50685999999999998, 0.67164999999999997, 0x81d6aaffU,
+  )
+  check_sat_modifiers(
+    0x4672b8U, 2.1381299999999999, -6.6663100000000002, 0x7f7f7fffU,
+  )
+  check_absolute_hsl(
+    0x4672b8U, 0.83404999999999996, 0.043630000000000002, 0x020914ffU,
+  )
+  check_sat_modifiers(0x528825U, 2.21732, -6.54284, 0x575757ffU)
+  check_absolute_hsl(
+    0x528825U, 0.16123000000000001, 0.41561999999999999, 0x687b59ffU,
+  )
+  check_sat_modifiers(
+    0x5e9d92U, 2.2965100000000001, -6.4193699999999998, 0x7e7e7effU,
+  )
+  check_absolute_hsl(
+    0x5e9d92U, 0.48842000000000002, 0.78761000000000003, 0xaee3daffU,
+  )
+  check_sat_modifiers(
+    0x6ab2ffU, 2.3757000000000001, -6.2958999999999996, 0xb5b5b5ffU,
+  )
+  check_absolute_hsl(
+    0x6ab2ffU, 0.81560999999999995, 0.15959000000000001, 0x08284affU,
+  )
+  check_sat_modifiers(
+    0x76c86cU, 2.4548899999999998, -6.1724300000000003, 0x9a9a9affU,
+  )
+  check_absolute_hsl(0x76c86cU, 0.14279, 0.53158000000000005, 0x7a9976ffU)
+  check_sat_modifiers(
+    0x82ddd9U, 2.5340799999999999, -6.0489600000000001, 0xb0b0b0ffU,
+  )
+  check_absolute_hsl(
+    0x82ddd9U, 0.46998000000000001, 0.90356999999999998, 0xdbf2f1ffU,
+  )
+  check_sat_modifiers(0x8ef346U, 2.61327, -5.9254899999999999, 0x9d9d9dffU)
+  check_absolute_hsl(
+    0x8ef346U, 0.79717000000000005, 0.27555000000000002, 0x3d7e0effU,
+  )
+  check_sat_modifiers(
+    0x9b08b3U, 2.6924600000000001, -5.8020199999999997, 0x5e5e5effU,
+  )
+  check_absolute_hsl(0x9b08b3U, 0.12435, 0.64754, 0xad9ab0ffU)
+  check_sat_modifiers(
+    0xa71e20U, 2.7716500000000002, -5.6785500000000004, 0x636363ffU,
+  )
+  check_absolute_hsl(0xa71e20U, 0.45154, 0.019519999999999999, 0x070303ffU)
+  check_sat_modifiers(
+    0xb3338dU, 2.8508399999999998, -5.5550800000000002, 0x737373ffU,
+  )
+  check_absolute_hsl(
+    0xb3338dU, 0.77873000000000003, 0.39151000000000002, 0xb21683ffU,
+  )
+  check_sat_modifiers(0xbf48faU, 2.9300299999999999, -5.43161, 0xa1a1a1ffU)
+  check_absolute_hsl(0xbf48faU, 0.10591, 0.76349999999999996, 0xc5bcc9ffU)
+  check_sat_modifiers(0xcb5e67U, 3.00922, -5.3081399999999999, 0x949494ffU)
+  check_absolute_hsl(
+    0xcb5e67U, 0.43309999999999998, 0.13547999999999999, 0x321416ffU,
+  )
+  check_sat_modifiers(
+    0xd773d4U, 3.0884100000000001, -5.1846699999999997, 0xa5a5a5ffU,
+  )
+  check_absolute_hsl(
+    0xd773d4U, 0.76029000000000002, 0.50746999999999998, 0xe122dbffU,
+  )
+  check_sat_modifiers(
+    0xe38941U, 3.1676000000000002, -5.0612000000000004, 0x929292ffU,
+  )
+  check_absolute_hsl(
+    0xe38941U, 0.087470000000000006, 0.87946000000000002, 0xe3e0deffU,
+  )
+  check_sat_modifiers(
+    0xef9eaeU, 3.2467899999999998, -4.9377300000000002, 0xc7c7c7ffU,
+  )
+  check_absolute_hsl(0xef9eaeU, 0.41465999999999997, 0.25144, 0x5b2630ffU)
+  check_sat_modifiers(0xfbb41bU, 3.3259799999999999, -4.81426, 0x8b8b8bffU)
+  check_absolute_hsl(
+    0xfbb41bU, 0.74185000000000001, 0.62343000000000004, 0xe6b958ffU,
+  )
+  check_sat_modifiers(0x07c988U, 3.40517, -4.6907899999999998, 0x686868ffU)
+  check_absolute_hsl(
+    0x07c988U, 0.069029999999999994, 0.99541999999999997, 0xfefefeffU,
+  )
+  check_sat_modifiers(
+    0x13def5U, 3.4843600000000001, -4.5673199999999996, 0x848484ffU,
+  )
+  check_absolute_hsl(0x13def5U, 0.39622000000000002, 0.3674, 0x397b83ffU)
+  check_sat_modifiers(
+    0x1ff462U, 3.5635500000000002, -4.4438500000000003, 0x8a8a8affU,
+  )
+  check_absolute_hsl(0x1ff462U, 0.72341, 0.73938999999999999, 0x8cedabffU)
+  check_sat_modifiers(
+    0x2c09cfU, 3.6427399999999999, -4.3203800000000001, 0x6c6c6cffU,
+  )
+  check_absolute_hsl(0x2c09cfU, 0.050590000000000003, 0.11137, 0x1b1b1effU)
+  check_sat_modifiers(0x381f3cU, 3.72193, -4.1969099999999999, 0x2e2e2effU)
+  check_absolute_hsl(0x381f3cU, 0.37778, 0.48336000000000001, 0x9d4daaffU)
+  check_sat_modifiers(
+    0x4434a9U, 3.8011200000000001, -4.0734399999999997, 0x6f6f6fffU,
+  )
+  check_absolute_hsl(
+    0x4434a9U, 0.70496999999999999, 0.85535000000000005, 0xc7c0f4ffU,
+  )
+  check_sat_modifiers(0x504a16U, 3.8803100000000001, -3.94997, 0x333333ffU)
+  check_absolute_hsl(0x504a16U, 0.032149999999999998, 0.22733, 0x3c3b38ffU)
+  check_sat_modifiers(
+    0x5c5f83U, 3.9594999999999998, -3.8264999999999998, 0x707070ffU,
+  )
+  check_absolute_hsl(
+    0x5c5f83U, 0.35933999999999999, 0.59931999999999996, 0x747abeffU,
+  )
+  check_sat_modifiers(0x6874f0U, 4.0386899999999999, -3.70303, 0xacacacffU)
+  check_absolute_hsl(
+    0x6874f0U, 0.68652999999999997, 0.97131000000000001, 0xf3f4fdffU,
+  )
+  check_sat_modifiers(
+    0x748a5dU, 4.1178800000000004, -3.5795599999999999, 0x737373ffU,
+  )
+  check_absolute_hsl(0x748a5dU, 0.01371, 0.34328999999999998, 0x585956ffU)
+  check_sat_modifiers(
+    0x809fcaU, 4.1970700000000001, -3.4560900000000001, 0xa5a5a5ffU,
+  )
+  check_absolute_hsl(
+    0x809fcaU, 0.34089999999999998, 0.71528000000000003, 0x9eb2cfffU,
+  )
+  check_sat_modifiers(
+    0x8cb537U, 4.2762599999999997, -3.3326199999999999, 0x767676ffU,
+  )
+  check_absolute_hsl(
+    0x8cb537U, 0.66808999999999996, 0.087260000000000004, 0x1b2507ffU,
+  )
+  check_sat_modifiers(
+    0x98caa4U, 4.3554500000000003, -3.2091500000000002, 0xb1b1b1ffU,
+  )
+  check_absolute_hsl(
+    0x98caa4U, 0.99528000000000005, 0.45924999999999999, 0x01ea38ffU,
+  )
+  check_sat_modifiers(0xa4e011U, 4.4346399999999999, -3.08568, 0x797979ffU)
+  check_absolute_hsl(
+    0xa4e011U, 0.32246000000000002, 0.83123999999999998, 0xdae2c6ffU,
+  )
+  check_sat_modifiers(
+    0xb0f57eU, 4.5138299999999996, -2.9622099999999998, 0xbababaffU,
+  )
+  check_absolute_hsl(
+    0xb0f57eU, 0.64964999999999995, 0.20322000000000001, 0x2e5512ffU,
+  )
+  check_sat_modifiers(0xbd0aebU, 4.5930200000000001, -2.83874, 0x7a7a7affU)
+  check_absolute_hsl(0xbd0aebU, 0.97684000000000004, 0.57521, 0xd129fcffU)
+  check_sat_modifiers(
+    0xc92058U, 4.6722099999999998, -2.7152699999999999, 0x757575ffU,
+  )
+  check_absolute_hsl(
+    0xc92058U, 0.30402000000000001, 0.94720000000000004, 0xf6edf0ffU,
+  )
+  check_sat_modifiers(
+    0xd535c5U, 4.7514000000000003, -2.5918000000000001, 0x858585ffU,
+  )
+  check_absolute_hsl(
+    0xd535c5U, 0.63121000000000005, 0.31918000000000002, 0x851e7affU,
+  )
+  check_sat_modifiers(
+    0xe14b32U, 4.8305899999999999, -2.4683299999999999, 0x8a8a8affU,
+  )
+  check_absolute_hsl(
+    0xe14b32U, 0.95840000000000003, 0.69116999999999995, 0xfc7a65ffU,
+  )
+  check_sat_modifiers(
+    0xed609fU, 4.9097799999999996, -2.3448600000000002, 0xa7a7a7ffU,
+  )
+  check_absolute_hsl(0xed609fU, 0.28558, 0.063149999999999998, 0x150c10ffU)
+  check_sat_modifiers(0xf9760cU, 4.9889700000000001, -2.22139, 0x838383ffU)
+  check_absolute_hsl(
+    0xf9760cU, 0.61277000000000004, 0.43514000000000003, 0xb3682bffU,
+  )
+  check_sat_modifiers(
+    0x058b79U, 5.0681599999999998, -2.0979199999999998, 0x484848ffU,
+  )
+  check_absolute_hsl(
+    0x058b79U, 0.93996000000000002, 0.80713000000000001, 0xa0fcf0ffU,
+  )
+  check_sat_modifiers(0x11a0e6U, 5.1473500000000003, -1.97445, 0x7c7c7cffU)
+  check_absolute_hsl(
+    0x11a0e6U, 0.26713999999999999, 0.17910999999999999, 0x21323affU,
+  )
+  check_sat_modifiers(0x1db653U, 5.22654, -1.8509800000000001, 0x6a6a6affU)
+  check_absolute_hsl(
+    0x1db653U, 0.59433000000000002, 0.55110000000000003, 0x48d179ffU,
+  )
+  check_sat_modifiers(
+    0x29cbc0U, 5.3057299999999996, -1.7275100000000001, 0x7a7a7affU,
+  )
+  check_absolute_hsl(
+    0x29cbc0U, 0.92152000000000001, 0.92308999999999997, 0xd9fdfbffU,
+  )
+  check_sat_modifiers(
+    0x35e12dU, 5.3849200000000002, -1.6040399999999999, 0x878787ffU,
+  )
+  check_absolute_hsl(0x35e12dU, 0.2487, 0.29507, 0x3a5e39ffU)
+  check_sat_modifiers(
+    0x41f69aU, 5.4641099999999998, -1.4805699999999999, 0x9c9c9cffU,
+  )
+  check_absolute_hsl(
+    0x41f69aU, 0.57589000000000001, 0.66705999999999999, 0x79dba9ffU,
+  )
+  check_sat_modifiers(0x4e0c07U, 5.5433000000000003, -1.3571, 0x2b2b2bffU)
+  check_absolute_hsl(
+    0x4e0c07U, 0.90307999999999999, 0.039039999999999998, 0x130201ffU,
+  )
+  check_sat_modifiers(0x5a2174U, 5.62249, -1.23363, 0x4b4b4bffU)
+  check_absolute_hsl(
+    0x5a2174U, 0.23025999999999999, 0.41103000000000001, 0x725181ffU,
+  )
+  check_sat_modifiers(0x6636e1U, 5.7016799999999996, -1.11016, 0x8b8b8bffU)
+  check_absolute_hsl(0x6636e1U, 0.55745, 0.78302000000000005, 0xbaa9e7ffU)
+  check_sat_modifiers(
+    0x724c4eU, 5.7808700000000002, -0.98668999999999996, 0x605e5effU,
+  )
+  check_absolute_hsl(0x724c4eU, 0.88463999999999998, 0.155, 0x4a0508ffU)
+  check_sat_modifiers(
+    0x7e61bbU, 5.8600599999999998, -0.86321999999999999, 0x897f9dffU,
+  )
+  check_absolute_hsl(
+    0x7e61bbU, 0.21182000000000001, 0.52698999999999996, 0x7d6da0ffU,
+  )
+  check_sat_modifiers(
+    0x8a7728U, 5.9392500000000004, -0.73975000000000002, 0x706742ffU,
+  )
+  check_absolute_hsl(0x8a7728U, 0.53900999999999999, 0.89898, 0xf3eed7ffU)
+  check_sat_modifiers(0x968c95U, 6.01844, -0.61628000000000005, 0x919191ffU)
+  check_absolute_hsl(
+    0x968c95U, 0.86619999999999997, 0.27095999999999998, 0x810975ffU,
+  )
+  check_sat_modifiers(
+    0xa2a202U, 6.0976299999999997, -0.49281000000000003, 0x7c7c28ffU,
+  )
+  check_absolute_hsl(0xa2a202U, 0.19338, 0.64295000000000002, 0xb6b692ffU)
+  check_sat_modifiers(0xaeb76fU, 6.1768200000000002, -0.36934, 0xc6d74fffU)
+  check_absolute_hsl(
+    0xaeb76fU, 0.52056999999999998, 0.014930000000000001, 0x050602ffU,
+  )
+  check_sat_modifiers(
+    0xbaccdcU, 6.2560099999999998, -0.24587000000000001, 0xa4cdf2ffU,
+  )
+  check_absolute_hsl(
+    0xbaccdcU, 0.84775999999999996, 0.38691999999999999, 0x0f68b6ffU,
+  )
+  check_sat_modifiers(
+    0xc6e249U, 6.3352000000000004, -0.12239999999999999, 0xd0f239ffU,
+  )
+  check_absolute_hsl(
+    0xc6e249U, 0.17494000000000001, 0.75890999999999997, 0xc8ccb7ffU,
+  )
+  check_sat_modifiers(0xd2f7b6U, 6.41439, 0.00107, 0xd1ffaeffU)
+  check_absolute_hsl(
+    0xd2f7b6U, 0.50212999999999997, 0.13089000000000001, 0x1f3211ffU,
+  )
+  check_sat_modifiers(0xdf0d23U, 6.4935799999999997, 0.12454, 0xec0019ffU)
+  check_absolute_hsl(
+    0xdf0d23U, 0.82931999999999995, 0.50287999999999999, 0xe9172dffU,
+  )
+  check_sat_modifiers(
+    0xeb2290U, 6.5727700000000002, 0.24801000000000001, 0xff0e92ffU,
+  )
+  check_absolute_hsl(0xeb2290U, 0.1565, 0.87487000000000004, 0xe4dae0ffU)
+  check_sat_modifiers(
+    0xf737fdU, 6.6519599999999999, 0.37147999999999998, 0xf935ffffU,
+  )
+  check_absolute_hsl(
+    0xf737fdU, 0.48369000000000001, 0.24685000000000001, 0x5c215dffU,
+  )
+  check_sat_modifiers(0x034d6aU, 6.7311500000000004, 0.49495, 0x004e6dffU)
+  check_absolute_hsl(
+    0x034d6aU, 0.81088000000000005, 0.61883999999999995, 0x4fc0edffU,
+  )
+  check_sat_modifiers(
+    0x0f62d7U, 6.8103400000000001, 0.61841999999999997, 0x005fe6ffU,
+  )
+  check_absolute_hsl(
+    0x0f62d7U, 0.13805999999999999, 0.99082999999999999, 0xfcfdfdffU,
+  )
+  check_sat_modifiers(
+    0x1b7844U, 6.8895299999999997, 0.74189000000000005, 0x009341ffU,
+  )
+  check_absolute_hsl(0x1b7844U, 0.46525, 0.36281000000000002, 0x318857ffU)
+  check_sat_modifiers(
+    0x278db1U, 6.9687200000000002, 0.86536000000000002, 0x00a0d8ffU,
+  )
+  check_absolute_hsl(
+    0x278db1U, 0.79244000000000003, 0.73480000000000001, 0x86d5f1ffU,
+  )
+  check_sat_modifiers(
+    0x33a31eU, 7.0479099999999999, 0.98882999999999999, 0x1ec100ffU,
+  )
+  check_absolute_hsl(0x33a31eU, 0.11962, 0.10678, 0x191e18ffU)
+  check_sat_modifiers(
+    0x3fb88bU, 7.1271000000000004, 1.1123000000000001, 0x00f79bffU,
+  )
+  check_absolute_hsl(
+    0x3fb88bU, 0.44680999999999998, 0.47876999999999997, 0x44b188ffU,
+  )
+  check_sat_modifiers(0x4bcdf8U, 7.2062900000000001, 1.23577, 0x44d1ffffU)
+  check_absolute_hsl(
+    0x4bcdf8U, 0.77400000000000002, 0.85075999999999996, 0xbbe8f6ffU,
+  )
+  check_sat_modifiers(0x57e365U, 7.2854799999999997, 1.35924, 0x3bff4fffU)
+  check_absolute_hsl(
+    0x57e365U, 0.10118000000000001, 0.22273999999999999, 0x333f34ffU,
+  )
+  check_sat_modifiers(0x63f8d2U, 7.3646700000000003, 1.48271, 0x5cffd5ffU)
+  check_absolute_hsl(
+    0x63f8d2U, 0.42836999999999997, 0.59472999999999998, 0x6bc4adffU,
+  )
+  check_sat_modifiers(
+    0x700e3fU, 7.4438599999999999, 1.6061799999999999, 0x7e003fffU,
+  )
+  check_absolute_hsl(
+    0x700e3fU, 0.75556000000000001, 0.96672000000000002, 0xfdf0f7ffU,
+  )
+  check_sat_modifiers(
+    0x7c23acU, 7.5230499999999996, 1.7296499999999999, 0x8600cfffU,
+  )
+  check_absolute_hsl(0x7c23acU, 0.082739999999999994, 0.3387, 0x594f5effU)
+  check_sat_modifiers(
+    0x883919U, 7.6022400000000001, 1.8531200000000001, 0xa12e00ffU,
+  )
+  check_absolute_hsl(
+    0x883919U, 0.40993000000000002, 0.71069000000000004, 0xd3a897ffU,
+  )
+  check_sat_modifiers(
+    0x944e86U, 7.6814299999999998, 1.9765900000000001, 0xe200b5ffU,
+  )
+  check_absolute_hsl(0x944e86U, 0.73712, 0.082669999999999993, 0x25061effU)
+  check_sat_modifiers(0xa063f3U, 7.7606200000000003, 2.10006, 0x9e57ffffU)
+  check_absolute_hsl(
+    0xa063f3U, 0.064299999999999996, 0.45466000000000001, 0x736c7bffU,
+  )
+  check_sat_modifiers(
+    0xac7960U, 7.8398099999999999, 2.2235299999999998, 0xff5d0dffU,
+  )
+  check_absolute_hsl(0xac7960U, 0.39149, 0.82665, 0xe4cdc1ffU)
+  check_sat_modifiers(0xb88ecdU, 7.9189999999999996, 2.347, 0xc95cffffU)
+  check_absolute_hsl(0xb88ecdU, 0.71867999999999999, 0.19863, 0x3f0e57ffU)
+  check_sat_modifiers(
+    0xc4a43aU, 7.9981900000000001, 2.4704700000000002, 0xfec300ffU,
+  )
+  check_absolute_hsl(
+    0xc4a43aU, 0.045859999999999998, 0.57062000000000002, 0x97948cffU,
+  )
+  check_sat_modifiers(
+    0xd0b9a7U, 8.0773799999999998, 2.5939399999999999, 0xffb378ffU,
+  )
+  check_absolute_hsl(
+    0xd0b9a7U, 0.37304999999999999, 0.94260999999999995, 0xf6f0ebffU,
+  )
+  check_sat_modifiers(
+    0xdccf14U, 8.1565700000000003, 2.7174100000000001, 0xf0e000ffU,
+  )
+  check_absolute_hsl(
+    0xdccf14U, 0.70023999999999997, 0.31458999999999998, 0x888118ffU,
+  )
+  check_sat_modifiers(
+    0xe8e481U, 8.2357600000000009, 2.8408799999999998, 0xfff96affU,
+  )
+  check_absolute_hsl(0xe8e481U, 0.02742, 0.68657999999999997, 0xb1b1adffU)
+  check_sat_modifiers(0xf4f9eeU, 8.3149499999999996, 2.96435, 0xf5ffe8ffU)
+  check_absolute_hsl(
+    0xf4f9eeU, 0.35460999999999998, 0.058560000000000001, 0x0f140affU,
+  )
+  check_sat_modifiers(
+    0x010f5bU, 8.3941400000000002, 3.0878199999999998, 0x000e5cffU,
+  )
+  check_absolute_hsl(
+    0x010f5bU, 0.68179999999999996, 0.43054999999999999, 0x233ab9ffU,
+  )
+  check_sat_modifiers(0x0d24c8U, 8.4733300000000007, 3.21129, 0x001ad5ffU)
+  check_absolute_hsl(
+    0x0d24c8U, 0.0089800000000000001, 0.80254000000000003, 0xcccccdffU,
+  )
+  check_sat_modifiers(
+    0x193a35U, 8.5525199999999995, 3.3347600000000002, 0x005346ffU,
+  )
+  check_absolute_hsl(
+    0x193a35U, 0.33617000000000002, 0.17452000000000001, 0x1e3b37ffU,
+  )
+  check_sat_modifiers(0x254fa2U, 8.63171, 3.4582299999999999, 0x0043c7ffU)
+  check_absolute_hsl(
+    0x254fa2U, 0.66335999999999995, 0.54651000000000005, 0x3f72d8ffU,
+  )
+  check_sat_modifiers(
+    0x31650fU, 8.7109000000000005, 3.5817000000000001, 0x2e7400ffU,
+  )
+  check_absolute_hsl(
+    0x31650fU, 0.99055000000000004, 0.91849999999999998, 0xe6ffd6ffU,
+  )
+  check_sat_modifiers(
+    0x3d7a7cU, 8.7900899999999993, 3.7051699999999999, 0x00b3b9ffU,
+  )
+  check_absolute_hsl(
+    0x3d7a7cU, 0.31773000000000001, 0.29048000000000002, 0x336062ffU,
+  )
+  check_sat_modifiers(0x498fe9U, 8.8692799999999998, 3.82864, 0x338cffffU)
+  check_absolute_hsl(0x498fe9U, 0.64492000000000005, 0.66247, 0x71a2e0ffU)
+  check_sat_modifiers(
+    0x55a556U, 8.9484700000000004, 3.9521099999999998, 0x00fa03ffU,
+  )
+  check_absolute_hsl(
+    0x55a556U, 0.97211000000000003, 0.034450000000000001, 0x001100ffU,
+  )
+  check_sat_modifiers(
+    0x61bac3U, 9.0276599999999991, 4.0755800000000004, 0x25ebffffU,
+  )
+  check_absolute_hsl(0x61bac3U, 0.29929, 0.40644000000000002, 0x498187ffU)
+  check_sat_modifiers(
+    0x6dd030U, 9.1068499999999997, 4.1990499999999997, 0x62ff01ffU,
+  )
+  check_absolute_hsl(
+    0x6dd030U, 0.62648000000000004, 0.77842999999999996, 0xbeeaa3ffU,
+  )
+  check_sat_modifiers(
+    0x79e59dU, 9.1860400000000002, 4.3225199999999999, 0x5fff94ffU,
+  )
+  check_absolute_hsl(
+    0x79e59dU, 0.95367000000000002, 0.15040999999999999, 0x024b1affU,
+  )
+  check_sat_modifiers(
+    0x85fb0aU, 9.2652300000000007, 4.4459900000000001, 0x85ff06ffU,
+  )
+  check_absolute_hsl(
+    0x85fb0aU, 0.28084999999999999, 0.52239999999999998, 0x86a763ffU,
+  )
+  check_sat_modifiers(
+    0x921077U, 9.3444199999999995, 4.5694600000000003, 0xa20080ffU,
+  )
+  check_absolute_hsl(
+    0x921077U, 0.60804000000000002, 0.89439000000000002, 0xf4d4eeffU,
+  )
+  check_sat_modifiers(0x9e25e4U, 9.42361, 4.6929299999999996, 0xa50affffU)
+  check_absolute_hsl(0x9e25e4U, 0.93523000000000001, 0.26637, 0x550483ffU)
+  check_sat_modifiers(
+    0xaa3b51U, 9.5028000000000006, 4.8163999999999998, 0xe5002dffU,
+  )
+  check_absolute_hsl(
+    0xaa3b51U, 0.26240999999999998, 0.63836000000000004, 0xbb8b94ffU,
+  )
+  check_sat_modifiers(0xb650beU, 9.5819899999999993, 4.93987, 0xee0fffffU)
+  check_absolute_hsl(0xb650beU, 0.58960000000000001, 0.01034, 0x040104ffU)
+  check_sat_modifiers(
+    0xc2662bU, 9.6611799999999999, 5.0633400000000002, 0xed5d00ffU,
+  )
+  check_absolute_hsl(0xc2662bU, 0.91678999999999999, 0.38233, 0xbb4e08ffU)
+  check_sat_modifiers(
+    0xce7b98U, 9.7403700000000004, 5.1868100000000004, 0xff4a89ffU,
+  )
+  check_absolute_hsl(
+    0xce7b98U, 0.24396999999999999, 0.75431999999999999, 0xd0b1bcffU,
+  )
+  check_sat_modifiers(
+    0xda9105U, 9.8195599999999992, 5.3102799999999997, 0xdf9300ffU,
+  )
+  check_absolute_hsl(0xda9105U, 0.57116, 0.1263, 0x33260effU)
+  check_sat_modifiers(
+    0xe6a672U, 9.8987499999999997, 5.4337499999999999, 0xffa359ffU,
+  )
+  check_absolute_hsl(
+    0xe6a672U, 0.89834999999999998, 0.49829000000000001, 0xf1730dffU,
+  )
+  check_sat_modifiers(0xf2bbdfU, 9.9779400000000003, 5.55722, 0xffaee3ffU)
+  check_absolute_hsl(
+    0xf2bbdfU, 0.22553000000000001, 0.87028000000000005, 0xe5d6e0ffU,
+  )
+  check_sat_modifiers(
+    0xfed14cU, 0.057119999999999997, 5.6806900000000002, 0xffd14bffU,
+  )
+  check_absolute_hsl(0xfed14cU, 0.55271999999999999, 0.24226, 0x604f1cffU)
+  check_sat_modifiers(
+    0x0ae6b9U, 0.13630999999999999, 5.8041600000000004, 0x00f0bfffU,
+  )
+  check_absolute_hsl(
+    0x0ae6b9U, 0.87990999999999997, 0.61424999999999996, 0x46f3d0ffU,
+  )
+  check_sat_modifiers(0x16fc26U, 0.2155, 5.9276299999999997, 0x13ff23ffU)
+  check_absolute_hsl(0x16fc26U, 0.20709, 0.98624000000000001, 0xfbfcfbffU)
+  check_sat_modifiers(
+    0x231193U, 0.29469000000000001, 6.0510999999999999, 0x1700a4ffU,
+  )
+  check_absolute_hsl(
+    0x231193U, 0.53427999999999998, 0.35821999999999998, 0x382b8cffU,
+  )
+  check_sat_modifiers(
+    0x2f2700U, 0.37387999999999999, 6.1745700000000001, 0x2f2700ffU,
+  )
+  check_absolute_hsl(
+    0x2f2700U, 0.86146999999999996, 0.73021000000000003, 0xf5e17fffU,
+  )
+  check_sat_modifiers(
+    0x3b3c6dU, 0.45306999999999997, 6.2980400000000003, 0x0003a8ffU,
+  )
+  check_absolute_hsl(0x3b3c6dU, 0.18865000000000001, 0.10219, 0x15151fffU)
+  check_sat_modifiers(
+    0x4751daU, 0.53225999999999996, 6.4215099999999996, 0x2231ffffU,
+  )
+  check_absolute_hsl(
+    0x4751daU, 0.51583999999999997, 0.47417999999999999, 0x3b43b7ffU,
+  )
+  check_sat_modifiers(
+    0x536747U, 0.61145000000000005, 6.5449799999999998, 0x41ae00ffU,
+  )
+  check_absolute_hsl(
+    0x536747U, 0.84302999999999995, 0.84616999999999998, 0xd0f9b7ffU,
+  )
+  check_sat_modifiers(0x5f7cb4U, 0.69064000000000003, 6.66845, 0x1464ffffU)
+  check_absolute_hsl(0x5f7cb4U, 0.17021, 0.21815000000000001, 0x2e3541ffU)
+  check_sat_modifiers(
+    0x6b9221U, 0.76983000000000001, 6.7919200000000002, 0x75b300ffU,
+  )
+  check_absolute_hsl(0x6b9221U, 0.49740000000000001, 0.59014, 0xa7ca63ffU)
+  check_sat_modifiers(0x77a78eU, 0.84902, 6.9153900000000004, 0x1fff8affU)
+  check_absolute_hsl(
+    0x77a78eU, 0.82459000000000005, 0.96213000000000004, 0xedfdf5ffU,
+  )
+  check_sat_modifiers(
+    0x83bcfbU, 0.92820999999999998, 7.0388599999999997, 0x7fbcffffU,
+  )
+  check_absolute_hsl(
+    0x83bcfbU, 0.15176999999999999, 0.33411000000000002, 0x485562ffU,
+  )
+  check_sat_modifiers(
+    0x8fd268U, 1.0074000000000001, 7.1623299999999999, 0x83ff3bffU,
+  )
+  check_absolute_hsl(0x8fd268U, 0.47896, 0.70609999999999995, 0xabd890ffU)
+  check_sat_modifiers(
+    0x9be7d5U, 1.0865899999999999, 7.2858000000000001, 0x83ffe2ffU,
+  )
+  check_absolute_hsl(
+    0x9be7d5U, 0.80615000000000003, 0.078079999999999997, 0x04241cffU,
+  )
+  check_sat_modifiers(0xa7fd42U, 1.16578, 7.4092700000000002, 0xa7ff40ffU)
+  check_absolute_hsl(0xa7fd42U, 0.13333, 0.45007000000000003, 0x748263ffU)
+  check_sat_modifiers(
+    0xb412afU, 1.2449699999999999, 7.5327400000000004, 0xc600c0ffU,
+  )
+  check_absolute_hsl(
+    0xb412afU, 0.46051999999999998, 0.82206000000000001, 0xe7bde5ffU,
+  )
+  check_sat_modifiers(0xc0281cU, 1.32416, 7.6562099999999997, 0xdc1000ffU)
+  check_absolute_hsl(
+    0xc0281cU, 0.78771000000000002, 0.19403999999999999, 0x58100bffU,
+  )
+  check_sat_modifiers(
+    0xcc3d89U, 1.4033500000000001, 7.7796799999999999, 0xff0a8cffU,
+  )
+  check_absolute_hsl(
+    0xcc3d89U, 0.11489000000000001, 0.56603000000000003, 0x9d8491ffU,
+  )
+  check_sat_modifiers(0xd852f6U, 1.48254, 7.9031500000000001, 0xde49ffffU)
+  check_absolute_hsl(
+    0xd852f6U, 0.44207999999999997, 0.93801999999999996, 0xf4e8f6ffU,
+  )
+  check_sat_modifiers(
+    0xe46863U, 1.5617300000000001, 8.0266199999999994, 0xff4f48ffU,
+  )
+  check_absolute_hsl(0xe46863U, 0.76927000000000001, 0.31, 0x8c1712ffU)
+  check_sat_modifiers(
+    0xf07dd0U, 1.6409199999999999, 8.1500900000000005, 0xff6ed7ffU,
+  )
+  check_absolute_hsl(
+    0xf07dd0U, 0.096449999999999994, 0.68198999999999999, 0xb6a6b1ffU,
+  )
+  check_sat_modifiers(0xfc933dU, 1.72011, 8.2735599999999998, 0xff933affU)
+  check_absolute_hsl(
+    0xfc933dU, 0.42364000000000002, 0.053969999999999997, 0x140d08ffU,
+  )
+  check_sat_modifiers(
+    0x08a8aaU, 1.7992999999999999, 8.3970300000000009, 0x00b0b2ffU,
+  )
+  check_absolute_hsl(0x08a8aaU, 0.75083, 0.42596000000000001, 0x1bbcbeffU)
+  check_sat_modifiers(0x14be17U, 1.87849, 8.5205000000000002, 0x00d204ffU)
+  check_absolute_hsl(
+    0x14be17U, 0.078009999999999996, 0.79795000000000005, 0xc7cfc8ffU,
+  )
+  check_sat_modifiers(
+    0x20d384U, 1.9576800000000001, 8.6439699999999995, 0x00f388ffU,
+  )
+  check_absolute_hsl(0x20d384U, 0.4052, 0.16993, 0x1a3d2dffU)
+  check_sat_modifiers(0x2ce8f1U, 2.03687, 8.7674400000000006, 0x1ef5ffffU)
+  check_absolute_hsl(
+    0x2ce8f1U, 0.73238999999999999, 0.54191999999999996, 0x35d8e0ffU,
+  )
+  check_sat_modifiers(
+    0x38fe5eU, 2.1160600000000001, 8.8909099999999999, 0x37ff5dffU,
+  )
+  check_absolute_hsl(0x38fe5eU, 0.059569999999999998, 0.91391, 0xe8eae8ffU)
+  check_sat_modifiers(
+    0x4513cbU, 2.1952500000000001, 9.0143799999999992, 0x3c00deffU,
+  )
+  check_absolute_hsl(
+    0x4513cbU, 0.38675999999999999, 0.28588999999999998, 0x3c2d65ffU,
+  )
+  check_sat_modifiers(
+    0x512938U, 2.2744399999999998, 9.1378500000000003, 0x7a002effU,
+  )
+  check_absolute_hsl(
+    0x512938U, 0.71394999999999997, 0.65788000000000002, 0xe66998ffU,
+  )
+  check_sat_modifiers(
+    0x5d3ea5U, 2.3536299999999999, 9.2613199999999996, 0x4400e3ffU,
+  )
+  check_absolute_hsl(0x5d3ea5U, 0.04113, 0.029860000000000001, 0x070708ffU)
+  check_sat_modifiers(0x695412U, 2.43282, 9.3847900000000006, 0x7b5d00ffU)
+  check_absolute_hsl(
+    0x695412U, 0.36831999999999998, 0.40184999999999998, 0x8c7a41ffU,
+  )
+  check_sat_modifiers(
+    0x75697fU, 2.5120100000000001, 9.5082599999999999, 0x7f00e8ffU,
+  )
+  check_absolute_hsl(
+    0x75697fU, 0.69550999999999996, 0.77383999999999997, 0xc99dedffU,
+  )
+  check_sat_modifiers(
+    0x817eecU, 2.5912000000000002, 9.6317299999999992, 0x6f6bffffU,
+  )
+  check_absolute_hsl(
+    0x817eecU, 0.022689999999999998, 0.14582000000000001, 0x242426ffU,
+  )
+  check_sat_modifiers(
+    0x8d9459U, 2.6703899999999998, 9.7552000000000003, 0xd1ed00ffU,
+  )
+  check_absolute_hsl(
+    0x8d9459U, 0.34988000000000002, 0.51780999999999999, 0xa5af59ffU,
+  )
+  check_sat_modifiers(
+    0x99a9c6U, 2.7495799999999999, 9.8786699999999996, 0x6099ffffU,
+  )
+  check_absolute_hsl(
+    0x99a9c6U, 0.67706999999999995, 0.88980000000000004, 0xd0ddf6ffU,
+  )
+  check_sat_modifiers(0xa5bf33U, 2.82877, -9.9978700000000007, 0x797979ffU)
+  check_absolute_hsl(
+    0xa5bf33U, 0.0042500000000000003, 0.26178000000000001, 0x434342ffU,
+  )
+  check_sat_modifiers(
+    0xb1d4a0U, 2.9079600000000001, -9.8743999999999996, 0xbababaffU,
+  )
+  check_absolute_hsl(
+    0xb1d4a0U, 0.33144000000000001, 0.63376999999999994, 0x97c183ffU,
+  )
+  check_sat_modifiers(
+    0xbdea0dU, 2.9871500000000002, -9.7509300000000003, 0x7c7c7cffU,
+  )
+  check_absolute_hsl(
+    0xbdea0dU, 0.65863000000000005, 0.0057499999999999999, 0x020201ffU,
+  )
+  check_sat_modifiers(
+    0xc9ff7aU, 3.0663399999999998, -9.6274599999999992, 0xbdbdbdffU,
+  )
+  check_absolute_hsl(
+    0xc9ff7aU, 0.98582000000000003, 0.37774000000000002, 0x72bf01ffU,
+  )
+  check_sat_modifiers(
+    0xd614e7U, 3.1455299999999999, -9.5039899999999999, 0x7e7e7effU,
+  )
+  check_absolute_hsl(0xd614e7U, 0.313, 0.74973000000000001, 0xd0abd3ffU)
+  check_sat_modifiers(0xe22a54U, 3.22472, -9.3805200000000006, 0x868686ffU)
+  check_absolute_hsl(0xe22a54U, 0.64019000000000004, 0.12171, 0x330b14ffU)
+  check_sat_modifiers(
+    0xee3fc1U, 3.3039100000000001, -9.2570499999999996, 0x979797ffU,
+  )
+  check_absolute_hsl(
+    0xee3fc1U, 0.96738000000000002, 0.49370000000000003, 0xf804b9ffU,
+  )
+  check_sat_modifiers(
+    0xfa552eU, 3.3831000000000002, -9.1335800000000003, 0x949494ffU,
+  )
+  check_absolute_hsl(
+    0xfa552eU, 0.29455999999999999, 0.86568999999999996, 0xe7d7d3ffU,
+  )
+  check_sat_modifiers(
+    0x066a9bU, 3.4622899999999999, -9.0101099999999992, 0x515151ffU,
+  )
+  check_absolute_hsl(
+    0x066a9bU, 0.62175000000000002, 0.23766999999999999, 0x174a62ffU,
+  )
+  check_sat_modifiers(0x128008U, 3.54148, -8.8866399999999999, 0x444444ffU)
+  check_absolute_hsl(
+    0x128008U, 0.94894000000000001, 0.60965999999999998, 0x4dfa3dffU,
+  )
+  check_sat_modifiers(
+    0x1e9575U, 3.6206700000000001, -8.7631700000000006, 0x5a5a5affU,
+  )
+  check_absolute_hsl(
+    0x1e9575U, 0.27611999999999998, 0.98165000000000002, 0xf9fcfbffU,
+  )
+  check_sat_modifiers(
+    0x2aaae2U, 3.6998600000000001, -8.6396999999999995, 0x868686ffU,
+  )
+  check_absolute_hsl(0x2aaae2U, 0.60331000000000001, 0.35363, 0x246f91ffU)
+  check_sat_modifiers(
+    0x36c04fU, 3.7790499999999998, -8.5162300000000002, 0x7b7b7bffU,
+  )
+  check_absolute_hsl(
+    0x36c04fU, 0.93049999999999999, 0.72562000000000004, 0x78fa90ffU,
+  )
+  check_sat_modifiers(
+    0x42d5bcU, 3.8582399999999999, -8.3927600000000009, 0x8c8c8cffU,
+  )
+  check_absolute_hsl(
+    0x42d5bcU, 0.25768000000000002, 0.097600000000000006, 0x121f1dffU,
+  )
+  check_sat_modifiers(0x4eeb29U, 3.93743, -8.2692899999999998, 0x8a8a8affU)
+  check_absolute_hsl(0x4eeb29U, 0.58487, 0.46959000000000001, 0x4cbe32ffU)
+  check_sat_modifiers(
+    0x5b0096U, 4.0166199999999996, -8.1458200000000005, 0x4b4b4bffU,
+  )
+  check_absolute_hsl(
+    0x5b0096U, 0.91205999999999998, 0.84157999999999999, 0xdeb2fbffU,
+  )
+  check_sat_modifiers(
+    0x671603U, 4.0958100000000002, -8.0223499999999994, 0x353535ffU,
+  )
+  check_absolute_hsl(0x671603U, 0.23924000000000001, 0.21356, 0x432e29ffU)
+  check_sat_modifiers(
+    0x732b70U, 4.1749999999999998, -7.8988800000000001, 0x4f4f4fffU,
+  )
+  check_absolute_hsl(
+    0x732b70U, 0.56642999999999999, 0.58555000000000001, 0xd159ccffU,
+  )
+  check_sat_modifiers(
+    0x7f40ddU, 4.2541900000000004, -7.7754099999999999, 0x8f8f8fffU,
+  )
+  check_absolute_hsl(
+    0x7f40ddU, 0.89361999999999997, 0.95753999999999995, 0xf2eafeffU,
+  )
+  check_sat_modifiers(0x8b564aU, 4.33338, -7.6519399999999997, 0x6a6a6affU)
+  check_absolute_hsl(0x8b564aU, 0.2208, 0.32951999999999998, 0x674841ffU)
+  check_sat_modifiers(
+    0x976bb7U, 4.4125699999999997, -7.5284700000000004, 0x919191ffU,
+  )
+  check_absolute_hsl(
+    0x976bb7U, 0.54798999999999998, 0.70150999999999997, 0xb989ddffU,
+  )
+  check_sat_modifiers(
+    0xa38124U, 4.4917600000000002, -7.4050000000000002, 0x636363ffU,
+  )
+  check_absolute_hsl(0xa38124U, 0.87517999999999996, 0.07349, 0x231a02ffU)
+  check_sat_modifiers(
+    0xaf9691U, 4.5709499999999998, -7.2815300000000001, 0xa0a0a0ffU,
+  )
+  check_absolute_hsl(
+    0xaf9691U, 0.20236000000000001, 0.44547999999999999, 0x89625bffU,
+  )
+  check_sat_modifiers(
+    0xbbabfeU, 4.6501400000000004, -7.1580599999999999, 0xd4d4d4ffU,
+  )
+  check_absolute_hsl(
+    0xbbabfeU, 0.52954999999999997, 0.81747000000000003, 0xc1b8e9ffU,
+  )
+  check_sat_modifiers(0xc7c16bU, 4.72933, -7.0345899999999997, 0x999999ffU)
+  check_absolute_hsl(
+    0xc7c16bU, 0.85673999999999995, 0.18945000000000001, 0x5a5407ffU,
+  )
+  check_sat_modifiers(
+    0xd3d6d8U, 4.8085199999999997, -6.9111200000000004, 0xd5d5d5ffU,
+  )
+  check_absolute_hsl(0xd3d6d8U, 0.18392, 0.56144000000000005, 0x7b93a4ffU)
+  check_sat_modifiers(
+    0xdfec45U, 4.8877100000000002, -6.7876500000000002, 0x999999ffU,
+  )
+  check_absolute_hsl(
+    0xdfec45U, 0.51110999999999995, 0.93342999999999998, 0xf5f7e5ffU,
+  )
+  check_sat_modifiers(0xec01b2U, 4.9668999999999999, -6.66418, 0x777777ffU)
+  check_absolute_hsl(
+    0xec01b2U, 0.83830000000000005, 0.30541000000000001, 0x8f0d6fffU,
+  )
+  check_sat_modifiers(
+    0xf8171fU, 5.0460900000000004, -6.5407099999999998, 0x888888ffU,
+  )
+  check_absolute_hsl(0xf8171fU, 0.16547999999999999, 0.6774, 0xba9fa0ffU)
+  check_sat_modifiers(
+    0x042c8cU, 5.1252800000000001, -6.4172399999999996, 0x484848ffU,
+  )
+  check_absolute_hsl(0x042c8cU, 0.49267, 0.04938, 0x060a13ffU)
+  check_sat_modifiers(
+    0x1041f9U, 5.2044699999999997, -6.2937700000000003, 0x848484ffU,
+  )
+  check_absolute_hsl(
+    0x1041f9U, 0.81986000000000003, 0.42137000000000002, 0x1338c4ffU,
+  )
+  check_sat_modifiers(
+    0x1c5766U, 5.2836600000000002, -6.1703000000000001, 0x414141ffU,
+  )
+  check_absolute_hsl(0x1c5766U, 0.14704, 0.79335999999999995, 0xc3cfd2ffU)
+  check_sat_modifiers(
+    0x286cd3U, 5.3628499999999999, -6.0468299999999999, 0x7e7e7effU,
+  )
+  check_absolute_hsl(
+    0x286cd3U, 0.47422999999999998, 0.16533999999999999, 0x16263effU,
+  )
+  check_sat_modifiers(
+    0x348240U, 5.4420400000000004, -5.9233599999999997, 0x5b5b5bffU,
+  )
+  check_absolute_hsl(
+    0x348240U, 0.80142000000000002, 0.53732999999999997, 0x2ae848ffU,
+  )
+  check_sat_modifiers(
+    0x4097adU, 5.5212300000000001, -5.7998900000000004, 0x777777ffU,
+  )
+  check_absolute_hsl(
+    0x4097adU, 0.12859999999999999, 0.90932000000000002, 0xe5eaebffU,
+  )
+  check_sat_modifiers(
+    0x4cad1aU, 5.6004199999999997, -5.6764200000000002, 0x646464ffU,
+  )
+  check_absolute_hsl(
+    0x4cad1aU, 0.45578999999999997, 0.28129999999999999, 0x3d6827ffU,
+  )
+  check_sat_modifiers(
+    0x58c287U, 5.6796100000000003, -5.5529500000000001, 0x8d8d8dffU,
+  )
+  check_absolute_hsl(
+    0x58c287U, 0.78298000000000001, 0.65329000000000004, 0x61ec9fffU,
+  )
+  check_sat_modifiers(
+    0x64d7f4U, 5.7587999999999999, -5.4294799999999999, 0xacacacffU,
+  )
+  check_absolute_hsl(
+    0x64d7f4U, 0.11015999999999999, 0.025270000000000001, 0x060707ffU,
+  )
+  check_sat_modifiers(
+    0x70ed61U, 5.8379899999999996, -5.3060099999999997, 0xa7a7a7ffU,
+  )
+  check_absolute_hsl(0x70ed61U, 0.43735000000000002, 0.39726, 0x429239ffU)
+  check_sat_modifiers(
+    0x7d02ceU, 5.9171800000000001, -5.1825400000000004, 0x686868ffU,
+  )
+  check_absolute_hsl(0x7d02ceU, 0.76454, 0.76924999999999999, 0xcd97f1ffU)
+  check_sat_modifiers(
+    0x89183bU, 5.9963699999999998, -5.0590700000000002, 0x515151ffU,
+  )
+  check_absolute_hsl(
+    0x89183bU, 0.091719999999999996, 0.14122999999999999, 0x272123ffU,
+  )
+  check_sat_modifiers(0x952da8U, 6.0755600000000003, -4.9356, 0x6b6b6bffU)
+  check_absolute_hsl(0x952da8U, 0.41891, 0.51322000000000001, 0xa74fb7ffU)
+  check_sat_modifiers(
+    0xa14315U, 6.1547499999999999, -4.8121299999999998, 0x5b5b5bffU,
+  )
+  check_absolute_hsl(
+    0xa14315U, 0.74609999999999999, 0.88521000000000005, 0xf8daccffU,
+  )
+  check_sat_modifiers(
+    0xad5882U, 6.2339399999999996, -4.6886599999999996, 0x838383ffU,
+  )
+  check_absolute_hsl(
+    0xad5882U, 0.073279999999999998, 0.25718999999999997, 0x463d42ffU,
+  )
+  check_sat_modifiers(
+    0xb96defU, 6.3131300000000001, -4.5651900000000003, 0xaeaeaeffU,
+  )
+  check_absolute_hsl(
+    0xb96defU, 0.40046999999999999, 0.62917999999999996, 0xa77bc6ffU,
+  )
+  check_sat_modifiers(
+    0xc5835cU, 6.3923199999999998, -4.4417200000000001, 0x919191ffU,
+  )
+  check_absolute_hsl(0xc5835cU, 0.72765999999999997, 0.00116, 0x010000ffU)
+  check_sat_modifiers(
+    0xd198c9U, 6.4715100000000003, -4.3182499999999999, 0xb4b4b4ffU,
+  )
+  check_absolute_hsl(0xd198c9U, 0.05484, 0.37314999999999998, 0x645a63ffU)
+  check_sat_modifiers(0xddae36U, 6.5507, -4.1947799999999997, 0x8a8a8affU)
+  check_absolute_hsl(
+    0xddae36U, 0.38202999999999998, 0.74514000000000002, 0xd7c9a5ffU,
+  )
+  check_sat_modifiers(
+    0xe9c3a3U, 6.6298899999999996, -4.0713100000000004, 0xc6c6c6ffU,
+  )
+  check_absolute_hsl(0xe9c3a3U, 0.70921999999999996, 0.11712, 0x331c09ffU)
+  check_sat_modifiers(
+    0xf5d910U, 6.7090800000000002, -3.9478399999999998, 0x838383ffU,
+  )
+  check_absolute_hsl(
+    0xf5d910U, 0.036400000000000002, 0.48910999999999999, 0x818078ffU,
+  )
+  check_sat_modifiers(0x01ee7dU, 6.7882699999999998, -3.82437, 0x787878ffU)
+  check_absolute_hsl(
+    0x01ee7dU, 0.36359000000000002, 0.86109999999999998, 0xcfe8dcffU,
+  )
+  check_sat_modifiers(
+    0x0e03eaU, 6.8674600000000003, -3.7008999999999999, 0x767676ffU,
+  )
+  check_absolute_hsl(
+    0x0e03eaU, 0.69077999999999995, 0.23308000000000001, 0x161264ffU,
+  )
+  check_sat_modifiers(0x1a1957U, 6.94665, -3.5774300000000001, 0x383838ffU)
+  check_absolute_hsl(0x1a1957U, 0.01796, 0.60507, 0x99989cffU)
+  check_sat_modifiers(
+    0x262ec4U, 7.0258399999999996, -3.4539599999999999, 0x757575ffU,
+  )
+  check_absolute_hsl(
+    0x262ec4U, 0.34515000000000001, 0.97706000000000004, 0xf7f7fbffU,
+  )
+  check_sat_modifiers(
+    0x324431U, 7.1050300000000002, -3.3304900000000002, 0x3b3b3bffU,
+  )
+  check_absolute_hsl(
+    0x324431U, 0.67234000000000005, 0.34904000000000002, 0x23951dffU,
+  )
+  check_sat_modifiers(0x3e599eU, 7.1842199999999998, -3.20702, 0x6e6e6effU)
+  check_absolute_hsl(
+    0x3e599eU, 0.99953000000000003, 0.72102999999999995, 0x7199ffffU,
+  )
+  check_sat_modifiers(
+    0x4a6f0bU, 7.2634100000000004, -3.0835499999999998, 0x3d3d3dffU,
+  )
+  check_absolute_hsl(0x4a6f0bU, 0.32671, 0.093009999999999995, 0x1a1f10ffU)
+  check_sat_modifiers(0x568478U, 7.3426, -2.96008, 0x6d6d6dffU)
+  check_absolute_hsl(
+    0x568478U, 0.65390000000000004, 0.46500000000000002, 0x29c49cffU,
+  )
+  check_sat_modifiers(
+    0x6299e5U, 7.4217899999999997, -2.8366099999999999, 0xa4a4a4ffU,
+  )
+  check_absolute_hsl(
+    0x6299e5U, 0.98109000000000002, 0.83699000000000001, 0xadcffeffU,
+  )
+  check_sat_modifiers(
+    0x6eaf52U, 7.5009800000000002, -2.7131400000000001, 0x818181ffU,
+  )
+  check_absolute_hsl(
+    0x6eaf52U, 0.30826999999999999, 0.20896999999999999, 0x2f4625ffU,
+  )
+  check_sat_modifiers(
+    0x7ac4bfU, 7.5801699999999999, -2.5896699999999999, 0x9f9f9fffU,
+  )
+  check_absolute_hsl(
+    0x7ac4bfU, 0.63546000000000002, 0.58096000000000003, 0x50d8cfffU,
+  )
+  check_sat_modifiers(
+    0x86da2cU, 7.6593600000000004, -2.4662000000000002, 0x838383ffU,
+  )
+  check_absolute_hsl(
+    0x86da2cU, 0.96265000000000001, 0.95294999999999996, 0xf3ffe7ffU,
+  )
+  check_sat_modifiers(0x92ef99U, 7.73855, -2.34273, 0xc1c1c1ffU)
+  check_absolute_hsl(0x92ef99U, 0.28982999999999998, 0.32493, 0x3b6b3effU)
+  check_sat_modifiers(
+    0x9f0506U, 7.8177399999999997, -2.2192599999999998, 0x525252ffU,
+  )
+  check_absolute_hsl(
+    0x9f0506U, 0.61702000000000001, 0.69691999999999998, 0xe18283ffU,
+  )
+  check_sat_modifiers(0xab1a73U, 7.8969300000000002, -2.09579, 0x626262ffU)
+  check_absolute_hsl(
+    0xab1a73U, 0.94420999999999999, 0.068900000000000003, 0x220115ffU,
+  )
+  check_sat_modifiers(
+    0xb72fe0U, 7.9761199999999999, -1.9723200000000001, 0x888888ffU,
+  )
+  check_absolute_hsl(0xb72fe0U, 0.27139000000000002, 0.44089, 0x81528fffU)
+  check_sat_modifiers(
+    0xc3454dU, 8.0553100000000004, -1.8488500000000001, 0x848484ffU,
+  )
+  check_absolute_hsl(0xc3454dU, 0.59858, 0.81288000000000005, 0xecb3b6ffU)
+  check_sat_modifiers(
+    0xcf5abaU, 8.1344999999999992, -1.7253799999999999, 0x959595ffU,
+  )
+  check_absolute_hsl(0xcf5abaU, 0.92576999999999998, 0.18486, 0x5b034bffU)
+  check_sat_modifiers(
+    0xdb7027U, 8.2136899999999997, -1.6019099999999999, 0x818181ffU,
+  )
+  check_absolute_hsl(
+    0xdb7027U, 0.25295000000000001, 0.55684999999999996, 0xab8971ffU,
+  )
+  check_sat_modifiers(0xe78594U, 8.2928800000000003, -1.47844, 0xb6b6b6ffU)
+  check_absolute_hsl(0xe78594U, 0.58013999999999999, 0.92884, 0xf7e2e6ffU)
+  check_sat_modifiers(0xf39b01U, 8.3720700000000008, -1.35497, 0x7a7a7affU)
+  check_absolute_hsl(
+    0xf39b01U, 0.90732999999999997, 0.30081999999999998, 0x926007ffU,
+  )
+  check_sat_modifiers(0xffb06eU, 8.4512599999999996, -1.2315, 0xb7b7b7ffU)
+  check_absolute_hsl(0xffb06eU, 0.23451, 0.67281000000000002, 0xbfaa98ffU)
+  check_sat_modifiers(
+    0x0bc5dbU, 8.5304500000000001, -1.1080300000000001, 0x737373ffU,
+  )
+  check_absolute_hsl(
+    0x0bc5dbU, 0.56169999999999998, 0.044790000000000003, 0x051012ffU,
+  )
+  check_sat_modifiers(
+    0x17db48U, 8.6096400000000006, -0.98455999999999999, 0x777b78ffU,
+  )
+  check_absolute_hsl(
+    0x17db48U, 0.88888999999999996, 0.41677999999999998, 0x0cc93bffU,
+  )
+  check_sat_modifiers(
+    0x23f0b5U, 8.6888299999999994, -0.86109000000000002, 0x799a90ffU,
+  )
+  check_absolute_hsl(
+    0x23f0b5U, 0.21607000000000001, 0.78876999999999997, 0xbdd5ceffU,
+  )
+  check_sat_modifiers(
+    0x300622U, 8.7680199999999999, -0.73762000000000005, 0x22141dffU,
+  )
+  check_absolute_hsl(0x300622U, 0.54325999999999997, 0.16075, 0x3f1330ffU)
+  check_sat_modifiers(
+    0x3c1b8fU, 8.8472100000000005, -0.61414999999999997, 0x473476ffU,
+  )
+  check_absolute_hsl(
+    0x3c1b8fU, 0.87044999999999995, 0.53273999999999999, 0x5b20f0ffU,
+  )
+  check_sat_modifiers(
+    0x4830fcU, 8.9263999999999992, -0.49068000000000001, 0x6d61cbffU,
+  )
+  check_absolute_hsl(0x4830fcU, 0.19763, 0.90473000000000003, 0xe3e2ecffU)
+  check_sat_modifiers(
+    0x544669U, 9.0055899999999998, -0.36720999999999998, 0x4c208fffU,
+  )
+  check_absolute_hsl(
+    0x544669U, 0.52481999999999995, 0.27671000000000001, 0x3f226cffU,
+  )
+  check_sat_modifiers(
+    0x605bd6U, 9.0847800000000003, -0.24374000000000001, 0x514be6ffU,
+  )
+  check_absolute_hsl(
+    0x605bd6U, 0.85201000000000005, 0.64870000000000005, 0x5f59f2ffU,
+  )
+  check_sat_modifiers(0x6c7143U, 9.1639700000000008, -0.12027, 0x98a90bffU)
+  check_absolute_hsl(0x6c7143U, 0.17918999999999999, 0.02068, 0x060604ffU)
+  check_sat_modifiers(
+    0x7886b0U, 9.2431599999999996, 0.0032000000000000002, 0x295effffU,
+  )
+  check_absolute_hsl(
+    0x7886b0U, 0.50638000000000005, 0.39267000000000002, 0x314b97ffU,
+  )
+  check_sat_modifiers(0x849c1dU, 9.3223500000000001, 0.12667, 0x96b900ffU)
+  check_absolute_hsl(
+    0x849c1dU, 0.83357000000000003, 0.76466000000000001, 0xe2f591ffU,
+  )
+  check_sat_modifiers(
+    0x90b18aU, 9.4015400000000007, 0.25013999999999997, 0x5aff3cffU,
+  )
+  check_absolute_hsl(0x90b18aU, 0.16075, 0.13664000000000001, 0x1f281dffU)
+  check_sat_modifiers(0x9cc6f7U, 9.4807299999999994, 0.37361, 0x94c5ffffU)
+  check_absolute_hsl(
+    0x9cc6f7U, 0.48793999999999998, 0.50863000000000003, 0x457dbfffU,
+  )
+  check_sat_modifiers(0xa8dc64U, 9.55992, 0.49708000000000002, 0xadff41ffU)
+  check_absolute_hsl(
+    0xa8dc64U, 0.81513000000000002, 0.88061999999999996, 0xe4f9c8ffU,
+  )
+  check_sat_modifiers(
+    0xb4f1d1U, 9.6391100000000005, 0.62055000000000005, 0xa6ffd0ffU,
+  )
+  check_absolute_hsl(
+    0xb4f1d1U, 0.14230999999999999, 0.25259999999999999, 0x374a40ffU,
+  )
+  check_sat_modifiers(
+    0xc1073eU, 9.7182999999999993, 0.74402000000000001, 0xc8003bffU,
+  )
+  check_absolute_hsl(
+    0xc1073eU, 0.46949999999999997, 0.62458999999999998, 0xcc728dffU,
+  )
+  check_sat_modifiers(
+    0xcd1cabU, 9.7974899999999998, 0.86748999999999998, 0xe900bcffU,
+  )
+  check_absolute_hsl(
+    0xcd1cabU, 0.79669000000000001, 0.99658000000000002, 0xfffdffffU,
+  )
+  check_sat_modifiers(
+    0xd93218U, 9.8766800000000003, 0.99095999999999995, 0xf12000ffU,
+  )
+  check_absolute_hsl(0xd93218U, 0.12386999999999999, 0.36856, 0x6a5552ffU)
+  check_sat_modifiers(0xe54785U, 9.9558700000000009, 1.11443, 0xff2d7fffU)
+  check_absolute_hsl(
+    0xe54785U, 0.45106000000000002, 0.74055000000000004, 0xdb9fb6ffU,
+  )
+  check_sat_modifiers(0xf15cf2U, 0.035049999999999998, 1.2379, 0xfe4fffffU)
+  check_absolute_hsl(0xf15cf2U, 0.77825, 0.11253000000000001, 0x330633ffU)
+  check_sat_modifiers(0xfd725fU, 0.11423999999999999, 1.36137, 0xff705dffU)
+  check_absolute_hsl(0xfd725fU, 0.10543, 0.48452000000000001, 0x89726fffU)
+  check_sat_modifiers(
+    0x0987ccU, 0.19342999999999999, 1.4848399999999999, 0x008ad5ffU,
+  )
+  check_absolute_hsl(0x0987ccU, 0.43262, 0.85650999999999999, 0xcbdfeaffU)
+  check_sat_modifiers(
+    0x159d39U, 0.27261999999999997, 1.6083099999999999, 0x00b22fffU,
+  )
+  check_absolute_hsl(0x159d39U, 0.75980999999999999, 0.22849, 0x0e6725ffU)
+  check_sat_modifiers(
+    0x21b2a6U, 0.35181000000000001, 1.7317800000000001, 0x00d3c2ffU,
+  )
+  check_absolute_hsl(
+    0x21b2a6U, 0.086989999999999998, 0.60048000000000001, 0x90a2a1ffU,
+  )
+  check_sat_modifiers(
+    0x2dc813U, 0.43099999999999999, 1.8552500000000001, 0x1fdb00ffU,
+  )
+  check_absolute_hsl(
+    0x2dc813U, 0.41417999999999999, 0.97246999999999995, 0xf6fbf5ffU,
+  )
+  check_sat_modifiers(0x39dd80U, 0.51019000000000003, 1.97872, 0x17ff7bffU)
+  check_absolute_hsl(
+    0x39dd80U, 0.74136999999999997, 0.34444999999999998, 0x17994fffU,
+  )
+  check_sat_modifiers(
+    0x45f2edU, 0.58938000000000001, 2.1021899999999998, 0x38fff9ffU,
+  )
+  check_absolute_hsl(0x45f2edU, 0.06855, 0.71643999999999997, 0xb2bcbbffU)
+  check_sat_modifiers(0x52085aU, 0.66857, 2.22566, 0x580062ffU)
+  check_absolute_hsl(
+    0x52085aU, 0.39573999999999998, 0.088419999999999999, 0x1e0e1fffU,
+  )
+  check_sat_modifiers(
+    0x5e1dc7U, 0.74775999999999998, 2.3491300000000002, 0x5700e4ffU,
+  )
+  check_absolute_hsl(
+    0x5e1dc7U, 0.72292999999999996, 0.46040999999999999, 0x6121caffU,
+  )
+  check_sat_modifiers(
+    0x6a3334U, 0.82694999999999996, 2.4725999999999999, 0x9d0003ffU,
+  )
+  check_absolute_hsl(
+    0x6a3334U, 0.050110000000000002, 0.83240000000000003, 0xd6d2d2ffU,
+  )
+  check_sat_modifiers(
+    0x7648a1U, 0.90613999999999995, 2.5960700000000001, 0x7800e9ffU,
+  )
+  check_absolute_hsl(
+    0x7648a1U, 0.37730000000000002, 0.20438000000000001, 0x352048ffU,
+  )
+  check_sat_modifiers(
+    0x825e0eU, 0.98533000000000004, 2.7195399999999998, 0x906300ffU,
+  )
+  check_absolute_hsl(
+    0x825e0eU, 0.70448999999999995, 0.57637000000000005, 0xdfb047ffU,
+  )
+  check_sat_modifiers(0x8e737bU, 1.0645199999999999, 2.84301, 0xff024dffU)
+  check_absolute_hsl(
+    0x8e737bU, 0.031669999999999997, 0.94835999999999998, 0xf2f1f2ffU,
+  )
+  check_sat_modifiers(0x9a88e8U, 1.14371, 2.9664799999999998, 0x8c71ffffU)
+  check_absolute_hsl(
+    0x9a88e8U, 0.35886000000000001, 0.32034000000000001, 0x3f346fffU,
+  )
+  check_sat_modifiers(0xa69e55U, 1.2229000000000001, 3.08995, 0xfbe200ffU)
+  check_absolute_hsl(0xa69e55U, 0.68605000000000005, 0.69233, 0xe6dc7bffU)
+  check_sat_modifiers(0xb2b3c2U, 1.30209, 3.2134200000000002, 0x757effffU)
+  check_absolute_hsl(0xb2b3c2U, 0.01323, 0.064310000000000006, 0x101011ffU)
+  check_sat_modifiers(
+    0xbec92fU, 1.3812800000000001, 3.3368899999999999, 0xe6f800ffU,
+  )
+  check_absolute_hsl(0xbec92fU, 0.34042, 0.43630000000000002, 0x909549ffU)
+  check_sat_modifiers(
+    0xcade9cU, 1.4604699999999999, 3.4603600000000001, 0xd7ff7bffU,
+  )
+  check_absolute_hsl(
+    0xcade9cU, 0.66761000000000004, 0.80828999999999995, 0xdbefadffU,
+  )
+  check_sat_modifiers(0xd6f409U, 1.53966, 3.5838299999999998, 0xddfd00ffU)
+  check_absolute_hsl(
+    0xd6f409U, 0.99480000000000002, 0.18027000000000001, 0x505c00ffU,
+  )
+  check_sat_modifiers(0xe30976U, 1.6188499999999999, 3.7073, 0xec0076ffU)
+  check_absolute_hsl(
+    0xe30976U, 0.32197999999999999, 0.55225999999999997, 0xb2688dffU,
+  )
+  check_sat_modifiers(0xef1ee3U, 1.69804, 3.8307699999999998, 0xff0ef1ffU)
+  check_absolute_hsl(
+    0xef1ee3U, 0.64917000000000002, 0.92425000000000002, 0xf8dff7ffU,
+  )
+  check_sat_modifiers(0xfb3450U, 1.7772300000000001, 3.95424, 0xff304dffU)
+  check_absolute_hsl(
+    0xfb3450U, 0.97636000000000001, 0.29622999999999999, 0x950217ffU,
+  )
+  check_sat_modifiers(0x0749bdU, 1.85642, 4.0777099999999997, 0x0047c4ffU)
+  check_absolute_hsl(
+    0x0749bdU, 0.30353999999999998, 0.66822000000000004, 0x91a3c4ffU,
+  )
+  check_sat_modifiers(
+    0x135f2aU, 1.9356100000000001, 4.2011799999999999, 0x007223ffU,
+  )
+  check_absolute_hsl(0x135f2aU, 0.63073000000000001, 0.0402, 0x041108ffU)
+  check_sat_modifiers(
+    0x1f7497U, 2.0148000000000001, 4.3246500000000001, 0x0081b6ffU,
+  )
+  check_absolute_hsl(0x1f7497U, 0.95791999999999999, 0.41219, 0x0493ceffU)
+  check_sat_modifiers(
+    0x2b8a04U, 2.0939899999999998, 4.4481200000000003, 0x298e00ffU,
+  )
+  check_absolute_hsl(
+    0x2b8a04U, 0.28510000000000002, 0.78417999999999999, 0xc1d8b8ffU,
+  )
+  check_sat_modifiers(
+    0x379f71U, 2.1731799999999999, 4.5715899999999996, 0x00d677ffU,
+  )
+  check_absolute_hsl(0x379f71U, 0.61229, 0.15615999999999999, 0x0f402bffU)
+  check_sat_modifiers(0x43b4deU, 2.25237, 4.6950599999999998, 0x22c3ffffU)
+  check_absolute_hsl(
+    0x43b4deU, 0.93947999999999998, 0.52815000000000001, 0x16baf8ffU,
+  )
+  check_sat_modifiers(0x4fca4bU, 2.3315600000000001, 4.81853, 0x1dff16ffU)
+  check_absolute_hsl(
+    0x4fca4bU, 0.26666000000000001, 0.90014000000000005, 0xdfecdfffU,
+  )
+  check_sat_modifiers(
+    0x5bdfb8U, 2.4107500000000002, 4.9420000000000002, 0x3bffc5ffU,
+  )
+  check_absolute_hsl(
+    0x5bdfb8U, 0.59384999999999999, 0.27211999999999997, 0x1c6f56ffU,
+  )
+  check_sat_modifiers(
+    0x67f525U, 2.4899399999999998, 5.0654700000000004, 0x63ff1bffU,
+  )
+  check_absolute_hsl(
+    0x67f525U, 0.92103999999999997, 0.64410999999999996, 0x86f851ffU,
+  )
+  check_sat_modifiers(
+    0x740a92U, 2.5691299999999999, 5.1889399999999997, 0x7a009cffU,
+  )
+  check_absolute_hsl(0x740a92U, 0.24822, 0.01609, 0x050305ffU)
+  check_sat_modifiers(0x801fffU, 2.64832, 5.3124099999999999, 0x801fffffU)
+  check_absolute_hsl(
+    0x801fffU, 0.57540999999999998, 0.38807999999999998, 0x5b2a9cffU,
+  )
+  check_sat_modifiers(0x8c356cU, 2.7275100000000001, 5.43588, 0xc1007affU)
+  check_absolute_hsl(
+    0x8c356cU, 0.90259999999999996, 0.76007000000000002, 0xf98bd0ffU,
+  )
+  check_sat_modifiers(
+    0x984ad9U, 2.8067000000000002, 5.5593500000000002, 0x9b24ffffU,
+  )
+  check_absolute_hsl(0x984ad9U, 0.22978000000000001, 0.13205, 0x221a29ffU)
+  check_sat_modifiers(
+    0xa46046U, 2.8858899999999998, 5.6828200000000004, 0xea4100ffU,
+  )
+  check_absolute_hsl(
+    0xa46046U, 0.55696999999999997, 0.50404000000000004, 0xc7613affU,
+  )
+  check_sat_modifiers(
+    0xb075b3U, 2.9650799999999999, 5.8062899999999997, 0xf529ffffU,
+  )
+  check_absolute_hsl(
+    0xb075b3U, 0.88415999999999995, 0.87602999999999998, 0xf9c3fbffU,
+  )
+  check_sat_modifiers(0xbc8b20U, 3.04427, 5.9297599999999999, 0xdc9700ffU)
+  check_absolute_hsl(0xbc8b20U, 0.21134, 0.24801000000000001, 0x4d4432ffU)
+  check_sat_modifiers(
+    0xc8a08dU, 3.1234600000000001, 6.0532300000000001, 0xff8c56ffU,
+  )
+  check_absolute_hsl(0xc8a08dU, 0.53852999999999995, 0.62, 0xd28c6affU)
+  check_sat_modifiers(
+    0xd4b5faU, 3.2026500000000002, 6.1767000000000003, 0xd3b0ffffU,
+  )
+  check_absolute_hsl(
+    0xd4b5faU, 0.86572000000000005, 0.99199000000000004, 0xfdfbffffU,
+  )
+  check_sat_modifiers(
+    0xe0cb67U, 3.2818399999999999, 6.3001699999999996, 0xffdf48ffU,
+  )
+  check_absolute_hsl(
+    0xe0cb67U, 0.19289999999999999, 0.36397000000000002, 0x6f694bffU,
+  )
+  check_sat_modifiers(0xece0d4U, 3.36103, 6.4236399999999998, 0xffe0c1ffU)
+  check_absolute_hsl(
+    0xece0d4U, 0.52009000000000005, 0.73595999999999995, 0xdfbc99ffU,
+  )
+  check_sat_modifiers(0xf8f641U, 3.4402200000000001, 6.54711, 0xfffd3affU)
+  check_absolute_hsl(
+    0xf8f641U, 0.84728000000000003, 0.10793999999999999, 0x333204ffU,
+  )
+  check_sat_modifiers(
+    0x050baeU, 3.5194100000000001, 6.6705800000000002, 0x0006b3ffU,
+  )
+  check_absolute_hsl(0x050baeU, 0.17446, 0.47993000000000002, 0x656790ffU)
+  check_sat_modifiers(
+    0x11211bU, 3.5985999999999998, 6.7940500000000004, 0x00321fffU,
+  )
+  check_absolute_hsl(
+    0x11211bU, 0.50165000000000004, 0.85192000000000001, 0xc6ecdeffU,
+  )
+  check_sat_modifiers(
+    0x1d3688U, 3.6777899999999999, 6.9175199999999997, 0x0027a5ffU,
+  )
+  check_absolute_hsl(
+    0x1d3688U, 0.82884000000000002, 0.22389999999999999, 0x0a2068ffU,
+  )
+  check_sat_modifiers(0x294bf5U, 3.75698, 7.0409899999999999, 0x1f44ffffU)
+  check_absolute_hsl(
+    0x294bf5U, 0.15601999999999999, 0.59589000000000003, 0x888da8ffU,
+  )
+  check_sat_modifiers(
+    0x356162U, 3.8361700000000001, 7.1644600000000001, 0x009497ffU,
+  )
+  check_absolute_hsl(
+    0x356162U, 0.48320999999999997, 0.96787999999999996, 0xf3fbfbffU,
+  )
+  check_sat_modifiers(
+    0x4176cfU, 3.9153600000000002, 7.2879300000000002, 0x116affffU,
+  )
+  check_absolute_hsl(0x4176cfU, 0.81040000000000001, 0.33986, 0x10459dffU)
+  check_sat_modifiers(
+    0x4d8c3cU, 3.9945499999999998, 7.4114000000000004, 0x2ac800ffU,
+  )
+  check_absolute_hsl(
+    0x4d8c3cU, 0.13758000000000001, 0.71184999999999998, 0xb0c0abffU,
+  )
+  check_sat_modifiers(
+    0x59a1a9U, 4.0737399999999999, 7.5348699999999997, 0x03e6ffffU,
+  )
+  check_absolute_hsl(
+    0x59a1a9U, 0.46477000000000002, 0.083830000000000002, 0x0b1d1fffU,
+  )
+  check_sat_modifiers(
+    0x65b716U, 4.1529299999999996, 7.6583399999999999, 0x65cd00ffU,
+  )
+  check_absolute_hsl(0x65b716U, 0.79196, 0.45582, 0x73d018ffU)
+  check_sat_modifiers(
+    0x71cc83U, 4.2321200000000001, 7.7818100000000001, 0x3eff64ffU,
+  )
+  check_absolute_hsl(0x71cc83U, 0.11914, 0.82781000000000005, 0xced8d0ffU)
+  check_sat_modifiers(
+    0x7de1f0U, 4.3113099999999998, 7.9052800000000003, 0x6eecffffU,
+  )
+  check_absolute_hsl(0x7de1f0U, 0.44633, 0.19979, 0x1c444affU)
+  check_sat_modifiers(
+    0x89f75dU, 4.3905000000000003, 8.0287500000000005, 0x86ff55ffU,
+  )
+  check_absolute_hsl(
+    0x89f75dU, 0.77351999999999999, 0.57177999999999995, 0x6ee63dffU,
+  )
+  check_sat_modifiers(
+    0x960ccaU, 4.4696899999999999, 8.1522199999999998, 0x9b00d6ffU,
+  )
+  check_absolute_hsl(0x960ccaU, 0.1007, 0.94377, 0xf1eff2ffU)
+  check_sat_modifiers(
+    0xa22237U, 4.5488799999999996, 8.2756900000000009, 0xc40020ffU,
+  )
+  check_absolute_hsl(
+    0xa22237U, 0.42788999999999999, 0.31574999999999998, 0x732e39ffU,
+  )
+  check_sat_modifiers(
+    0xae37a4U, 4.6280700000000001, 8.3991600000000002, 0xe500d2ffU,
+  )
+  check_absolute_hsl(
+    0xae37a4U, 0.75507999999999997, 0.68774000000000002, 0xeb73e1ffU,
+  )
+  check_sat_modifiers(
+    0xba4d11U, 4.7072599999999998, 8.5226299999999995, 0xcb4800ffU,
+  )
+  check_absolute_hsl(0xba4d11U, 0.08226, 0.059720000000000002, 0x100f0effU)
+  check_sat_modifiers(
+    0xc6627eU, 4.7864500000000003, 8.6461000000000006, 0xff2965ffU,
+  )
+  check_absolute_hsl(
+    0xc6627eU, 0.40944999999999998, 0.43170999999999998, 0x9b415affU,
+  )
+  check_sat_modifiers(0xd277ebU, 4.86564, 8.7695699999999999, 0xdd63ffffU)
+  check_absolute_hsl(
+    0xd277ebU, 0.73663999999999996, 0.80369999999999997, 0xe2a8f2ffU,
+  )
+  check_sat_modifiers(
+    0xde8d58U, 4.9448299999999996, 8.8930399999999992, 0xff8637ffU,
+  )
+  check_absolute_hsl(0xde8d58U, 0.063820000000000002, 0.17568, 0x302c2affU)
+  check_sat_modifiers(
+    0xeaa2c5U, 5.0240200000000002, 9.0165100000000002, 0xff8dc4ffU,
+  )
+  check_absolute_hsl(
+    0xeaa2c5U, 0.39101000000000002, 0.54766999999999999, 0xb95f8affU,
+  )
+  check_sat_modifiers(
+    0xf6b832U, 5.1032099999999998, 9.1399799999999995, 0xffbb29ffU,
+  )
+  check_absolute_hsl(
+    0xf6b832U, 0.71819999999999995, 0.91966000000000003, 0xf9f0dcffU,
+  )
+  check_sat_modifiers(
+    0x02cd9fU, 5.1824000000000003, 9.2634500000000006, 0x00cfa0ffU,
+  )
+  check_absolute_hsl(
+    0x02cd9fU, 0.045379999999999997, 0.29164000000000001, 0x474e4cffU,
+  )
+  check_sat_modifiers(0x0ee30cU, 5.26159, 9.3869199999999999, 0x02ef00ffU)
+  check_absolute_hsl(
+    0x0ee30cU, 0.37257000000000001, 0.66363000000000005, 0x8ac989ffU,
+  )
+  check_sat_modifiers(
+    0x1af879U, 5.3407799999999996, 9.5103899999999992, 0x13ff78ffU,
+  )
+  check_absolute_hsl(
+    0x1af879U, 0.69976000000000005, 0.035610000000000003, 0x030f08ffU,
+  )
+  check_sat_modifiers(
+    0x270de6U, 5.4199700000000002, 9.6338600000000003, 0x1d00f3ffU,
+  )
+  check_absolute_hsl(
+    0x270de6U, 0.026939999999999999, 0.40760000000000002, 0x66656bffU,
+  )
+  check_sat_modifiers(
+    0x332353U, 5.4991599999999998, 9.7573299999999996, 0x270076ffU,
+  )
+  check_absolute_hsl(0x332353U, 0.35413, 0.77959000000000001, 0xc0b3dbffU)
+  check_sat_modifiers(
+    0x3f38c0U, 5.5783500000000004, 9.8808000000000007, 0x0d00f8ffU,
+  )
+  check_absolute_hsl(
+    0x3f38c0U, 0.68132000000000004, 0.15157000000000001, 0x0f0c41ffU,
+  )
+  check_sat_modifiers(0x4b4e2dU, 5.65754, -9.9957399999999996, 0x3e3e3effU)
+  check_absolute_hsl(
+    0x4b4e2dU, 0.0085000000000000006, 0.52356000000000003, 0x868784ffU,
+  )
+  check_sat_modifiers(
+    0x57639aU, 5.7367299999999997, -9.8722700000000003, 0x797979ffU,
+  )
+  check_absolute_hsl(
+    0x57639aU, 0.33568999999999999, 0.89554999999999996, 0xdbdfedffU,
+  )
+  check_sat_modifiers(
+    0x637907U, 5.8159200000000002, -9.7487999999999992, 0x404040ffU,
+  )
+  check_absolute_hsl(
+    0x637907U, 0.66288000000000002, 0.26752999999999999, 0x607117ffU,
+  )
+  check_sat_modifiers(
+    0x6f8e74U, 5.8951099999999999, -9.6253299999999999, 0x7f7f7fffU,
+  )
+  check_absolute_hsl(
+    0x6f8e74U, 0.99007000000000001, 0.63951999999999998, 0x48fe65ffU,
+  )
+  check_sat_modifiers(
+    0x7ba3e1U, 5.9743000000000004, -9.5018600000000006, 0xaeaeaeffU,
+  )
+  check_absolute_hsl(0x7ba3e1U, 0.31724999999999998, 0.0115, 0x020304ffU)
+  check_sat_modifiers(0x87b94eU, 6.05349, -9.3783899999999996, 0x848484ffU)
+  check_absolute_hsl(0x87b94eU, 0.64444000000000001, 0.38349, 0x66a123ffU)
+  check_sat_modifiers(
+    0x93cebbU, 6.1326799999999997, -9.2549200000000003, 0xb1b1b1ffU,
+  )
+  check_absolute_hsl(
+    0x93cebbU, 0.97162999999999999, 0.75548000000000004, 0x84fdd6ffU,
+  )
+  check_sat_modifiers(
+    0x9fe428U, 6.2118700000000002, -9.1314499999999992, 0x868686ffU,
+  )
+  check_absolute_hsl(
+    0x9fe428U, 0.29881000000000002, 0.12745999999999999, 0x232a17ffU,
+  )
+  check_sat_modifiers(
+    0xabf995U, 6.2910599999999999, -9.0079799999999999, 0xc7c7c7ffU,
+  )
+  check_absolute_hsl(0xabf995U, 0.626, 0.49945000000000001, 0x53cf30ffU)
+  check_sat_modifiers(
+    0xb80f02U, 6.3702500000000004, -8.8845100000000006, 0x5d5d5dffU,
+  )
+  check_absolute_hsl(
+    0xb80f02U, 0.95318999999999998, 0.87143999999999999, 0xfdc3bfffU,
+  )
+  check_sat_modifiers(
+    0xc4246fU, 6.4494400000000001, -8.7610399999999995, 0x747474ffU,
+  )
+  check_absolute_hsl(0xc4246fU, 0.28037000000000001, 0.24342, 0x4f2d3dffU)
+  check_sat_modifiers(
+    0xd039dcU, 6.5286299999999997, -8.6375700000000002, 0x8b8b8bffU,
+  )
+  check_absolute_hsl(
+    0xd039dcU, 0.60755999999999999, 0.61541000000000001, 0xd061d9ffU,
+  )
+  check_sat_modifiers(
+    0xdc4f49U, 6.6078200000000002, -8.5140999999999991, 0x939393ffU,
+  )
+  check_absolute_hsl(
+    0xdc4f49U, 0.93474999999999997, 0.98740000000000006, 0xfff9f9ffU,
+  )
+  check_sat_modifiers(
+    0xe864b6U, 6.6870099999999999, -8.3906299999999998, 0xa6a6a6ffU,
+  )
+  check_absolute_hsl(0xe864b6U, 0.26193, 0.35937999999999998, 0x744461ffU)
+  check_sat_modifiers(
+    0xf47a23U, 6.7662000000000004, -8.2671600000000005, 0x8c8c8cffU,
+  )
+  check_absolute_hsl(
+    0xf47a23U, 0.58911999999999998, 0.73136999999999996, 0xe3b492ffU,
+  )
+  check_sat_modifiers(
+    0x008f90U, 6.8453900000000001, -8.1436899999999994, 0x484848ffU,
+  )
+  check_absolute_hsl(0x008f90U, 0.91630999999999996, 0.10335, 0x023233ffU)
+  check_sat_modifiers(
+    0x0ca4fdU, 6.9245799999999997, -8.0202200000000001, 0x858585ffU,
+  )
+  check_absolute_hsl(
+    0x0ca4fdU, 0.24349000000000001, 0.47533999999999998, 0x5c8197ffU,
+  )
+  check_sat_modifiers(
+    0x18ba6aU, 7.0037700000000003, -7.8967499999999999, 0x696969ffU,
+  )
+  check_absolute_hsl(
+    0x18ba6aU, 0.57067999999999997, 0.84733000000000003, 0xc2eed8ffU,
+  )
+  check_sat_modifiers(
+    0x24cfd7U, 7.0829599999999999, -7.7732799999999997, 0x7e7e7effU,
+  )
+  check_absolute_hsl(0x24cfd7U, 0.89786999999999995, 0.21931, 0x06666affU)
+  check_sat_modifiers(
+    0x30e544U, 7.1621499999999996, -7.6498100000000004, 0x8b8b8bffU,
+  )
+  check_absolute_hsl(0x30e544U, 0.22505, 0.59130000000000005, 0x7fae85ffU)
+  check_sat_modifiers(
+    0x3cfab1U, 7.2413400000000001, -7.5263400000000003, 0x9b9b9bffU,
+  )
+  check_absolute_hsl(
+    0x3cfab1U, 0.55223999999999995, 0.96328999999999998, 0xf0fbf7ffU,
+  )
+  check_sat_modifiers(
+    0x49101eU, 7.3205299999999998, -7.4028700000000001, 0x2d2d2dffU,
+  )
+  check_absolute_hsl(
+    0x49101eU, 0.87943000000000005, 0.33527000000000001, 0xa10a2fffU,
+  )
+  check_sat_modifiers(
+    0x55258bU, 7.3997200000000003, -7.2793999999999999, 0x585858ffU,
+  )
+  check_absolute_hsl(0x55258bU, 0.20660999999999999, 0.70726, 0xb3a5c4ffU)
+  check_sat_modifiers(
+    0x613af8U, 7.4789099999999999, -7.1559299999999997, 0x999999ffU,
+  )
+  check_absolute_hsl(
+    0x613af8U, 0.53380000000000005, 0.079240000000000005, 0x0e091fffU,
+  )
+  check_sat_modifiers(
+    0x6d5065U, 7.5580999999999996, -7.0324600000000004, 0x5f5f5fffU,
+  )
+  check_absolute_hsl(
+    0x6d5065U, 0.86099000000000003, 0.45123000000000002, 0xd6109fffU,
+  )
+  check_sat_modifiers(
+    0x7965d2U, 7.6372900000000001, -6.9089900000000002, 0x9b9b9bffU,
+  )
+  check_absolute_hsl(0x7965d2U, 0.18817, 0.82321999999999995, 0xcdc9daffU)
+  check_sat_modifiers(0x857b3fU, 7.7164799999999998, -6.78552, 0x626262ffU)
+  check_absolute_hsl(
+    0x857b3fU, 0.51536000000000004, 0.19520000000000001, 0x4b4418ffU,
+  )
+  check_sat_modifiers(
+    0x9190acU, 7.7956700000000003, -6.6620499999999998, 0x9e9e9effU,
+  )
+  check_absolute_hsl(
+    0x9190acU, 0.84255000000000002, 0.56718999999999997, 0x3a34eeffU,
+  )
+  check_sat_modifiers(0x9da619U, 7.87486, -6.5385799999999996, 0x606060ffU)
+  check_absolute_hsl(
+    0x9da619U, 0.16972999999999999, 0.93918000000000001, 0xf2f2edffU,
+  )
+  check_sat_modifiers(
+    0xa9bb86U, 7.9540499999999996, -6.4151100000000003, 0xa1a1a1ffU,
+  )
+  check_absolute_hsl(
+    0xa9bb86U, 0.49691999999999997, 0.31115999999999999, 0x5c7728ffU,
+  )
+  check_sat_modifiers(
+    0xb5d0f3U, 8.0332399999999993, -6.2916400000000001, 0xd4d4d4ffU,
+  )
+  check_absolute_hsl(
+    0xb5d0f3U, 0.82411000000000001, 0.68315000000000003, 0x6ca6f1ffU,
+  )
+  check_sat_modifiers(
+    0xc1e660U, 8.1124299999999998, -6.1681699999999999, 0xa3a3a3ffU,
+  )
+  check_absolute_hsl(
+    0xc1e660U, 0.15129000000000001, 0.055129999999999998, 0x0f100cffU,
+  )
+  check_sat_modifiers(
+    0xcdfbcdU, 8.1916200000000003, -6.0446999999999997, 0xe4e4e4ffU,
+  )
+  check_absolute_hsl(0xcdfbcdU, 0.47848000000000002, 0.42712, 0x39a139ffU)
+  check_sat_modifiers(
+    0xda113aU, 8.2708100000000009, -5.9212300000000004, 0x767676ffU,
+  )
+  check_absolute_hsl(0xda113aU, 0.80567, 0.79910999999999999, 0xf5a3b3ffU)
+  check_sat_modifiers(
+    0xe626a7U, 8.3499999999999996, -5.7977600000000002, 0x868686ffU,
+  )
+  check_absolute_hsl(0xe626a7U, 0.13285, 0.17108999999999999, 0x31262effU)
+  check_sat_modifiers(
+    0xf23c14U, 8.4291900000000002, -5.6742900000000001, 0x838383ffU,
+  )
+  check_absolute_hsl(0xf23c14U, 0.46004, 0.54308000000000001, 0xc06855ffU)
+  check_sat_modifiers(
+    0xfe5181U, 8.5083800000000007, -5.5508199999999999, 0xa8a8a8ffU,
+  )
+  check_absolute_hsl(
+    0xfe5181U, 0.78722999999999999, 0.91507000000000005, 0xfad8e2ffU,
+  )
+  check_sat_modifiers(
+    0x0a66eeU, 8.5875699999999995, -5.4273499999999997, 0x7c7c7cffU,
+  )
+  check_absolute_hsl(0x0a66eeU, 0.11441, 0.28705000000000003, 0x414852ffU)
+  check_sat_modifiers(0x167c5bU, 8.66676, -5.3038800000000004, 0x494949ffU)
+  check_absolute_hsl(
+    0x167c5bU, 0.44159999999999999, 0.65903999999999996, 0x82ceb6ffU,
+  )
+  check_sat_modifiers(
+    0x2291c8U, 8.7459500000000006, -5.1804100000000002, 0x757575ffU,
+  )
+  check_absolute_hsl(
+    0x2291c8U, 0.76878999999999997, 0.031019999999999999, 0x020a0effU,
+  )
+  check_sat_modifiers(0x2ea735U, 8.8251399999999993, -5.05694, 0x6b6b6bffU)
+  check_absolute_hsl(0x2ea735U, 0.09597, 0.40300999999999998, 0x5d715effU)
+  check_sat_modifiers(
+    0x3abca2U, 8.9043299999999999, -4.9334699999999998, 0x7b7b7bffU,
+  )
+  check_absolute_hsl(
+    0x3abca2U, 0.42315999999999998, 0.77500000000000002, 0xadded4ffU,
+  )
+  check_sat_modifiers(
+    0x46d20fU, 8.9835200000000004, -4.8099999999999996, 0x717171ffU,
+  )
+  check_absolute_hsl(0x46d20fU, 0.75034999999999996, 0.14698, 0x194209ffU)
+  check_sat_modifiers(
+    0x52e77cU, 9.0627099999999992, -4.6865300000000003, 0x9d9d9dffU,
+  )
+  check_absolute_hsl(
+    0x52e77cU, 0.077530000000000002, 0.51897000000000004, 0x7b8e80ffU,
+  )
+  check_sat_modifiers(
+    0x5efce9U, 9.1418999999999997, -4.5630600000000001, 0xadadadffU,
+  )
+  check_absolute_hsl(
+    0x5efce9U, 0.40472000000000002, 0.89095999999999997, 0xd8eeecffU,
+  )
+  check_sat_modifiers(
+    0x6b1256U, 9.2210900000000002, -4.4395899999999999, 0x3f3f3fffU,
+  )
+  check_absolute_hsl(
+    0x6b1256U, 0.73190999999999995, 0.26294000000000001, 0x74125dffU,
+  )
+  check_sat_modifiers(
+    0x7727c3U, 9.3002800000000008, -4.3161199999999997, 0x757575ffU,
+  )
+  check_absolute_hsl(
+    0x7727c3U, 0.059089999999999997, 0.63492999999999999, 0xa29ca7ffU,
+  )
+  check_sat_modifiers(
+    0x833d30U, 9.3794699999999995, -4.1926500000000004, 0x5a5a5affU,
+  )
+  check_absolute_hsl(
+    0x833d30U, 0.38628000000000001, 0.0069100000000000003, 0x020101ffU,
+  )
+  check_sat_modifiers(
+    0x8f529dU, 9.4586600000000001, -4.0691800000000002, 0x787878ffU,
+  )
+  check_absolute_hsl(
+    0x8f529dU, 0.71347000000000005, 0.37890000000000001, 0x8c1ca6ffU,
+  )
+  check_sat_modifiers(
+    0x9b680aU, 9.5378500000000006, -3.9457100000000001, 0x525252ffU,
+  )
+  check_absolute_hsl(
+    0x9b680aU, 0.040649999999999999, 0.75088999999999995, 0xc2c0bdffU,
+  )
+  check_sat_modifiers(
+    0xa77d77U, 9.6170399999999994, -3.8222399999999999, 0x8f8f8fffU,
+  )
+  check_absolute_hsl(0xa77d77U, 0.36784, 0.12286999999999999, 0x2b1714ffU)
+  check_sat_modifiers(
+    0xb392e4U, 9.6962299999999999, -3.6987700000000001, 0xbbbbbbffU,
+  )
+  check_absolute_hsl(
+    0xb392e4U, 0.69503000000000004, 0.49486000000000002, 0x6d26d6ffU,
+  )
+  check_sat_modifiers(
+    0xbfa851U, 9.7754200000000004, -3.5752999999999999, 0x888888ffU,
+  )
+  check_absolute_hsl(
+    0xbfa851U, 0.022210000000000001, 0.86685000000000001, 0xdedddcffU,
+  )
+  check_sat_modifiers(
+    0xcbbdbeU, 9.8546099999999992, -3.4518300000000002, 0xc4c4c4ffU,
+  )
+  check_absolute_hsl(
+    0xcbbdbeU, 0.34939999999999999, 0.23882999999999999, 0x52282bffU,
+  )
+  check_sat_modifiers(0xd7d32bU, 9.9337999999999997, -3.32836, 0x818181ffU)
+  check_absolute_hsl(
+    0xd7d32bU, 0.67659000000000002, 0.61082000000000003, 0xdfdc59ffU,
+  )
+  check_sat_modifiers(0xe3e898U, 0.01298, -3.2048899999999998, 0xc0c0c0ffU)
+  check_absolute_hsl(
+    0xe3e898U, 0.0037699999999999999, 0.98280999999999996, 0xfbfbfbffU,
+  )
+  check_sat_modifiers(0xeffe05U, 0.092170000000000002, -3.08142, 0x828282ffU)
+  check_absolute_hsl(
+    0xeffe05U, 0.33095999999999998, 0.35478999999999999, 0x75783dffU,
+  )
+  check_sat_modifiers(
+    0xfc1372U, 0.17136000000000001, -2.9579499999999999, 0x888888ffU,
+  )
+  check_absolute_hsl(
+    0xfc1372U, 0.65815000000000001, 0.72677999999999998, 0xe78bb1ffU,
+  )
+  check_sat_modifiers(
+    0x0828dfU, 0.25054999999999999, -2.8344800000000001, 0x747474ffU,
+  )
+  check_absolute_hsl(
+    0x0828dfU, 0.98533999999999999, 0.098760000000000001, 0x000832ffU,
+  )
+  check_sat_modifiers(
+    0x143e4cU, 0.32973999999999998, -2.7110099999999999, 0x303030ffU,
+  )
+  check_absolute_hsl(0x143e4cU, 0.31252000000000002, 0.47075, 0x538b9effU)
+  check_sat_modifiers(
+    0x2053b9U, 0.40893000000000002, -2.5875400000000002, 0x6d6d6dffU,
+  )
+  check_absolute_hsl(0x2053b9U, 0.63971, 0.84274000000000004, 0xbdcef1ffU)
+  check_sat_modifiers(0x2c6926U, 0.48812, -2.46407, 0x484848ffU)
+  check_absolute_hsl(
+    0x2c6926U, 0.96689999999999998, 0.21471999999999999, 0x0b6c02ffU,
+  )
+  check_sat_modifiers(
+    0x387e93U, 0.56730999999999998, -2.3405999999999998, 0x666666ffU,
+  )
+  check_absolute_hsl(
+    0x387e93U, 0.29408000000000001, 0.58670999999999995, 0x77a6b5ffU,
+  )
+  check_sat_modifiers(0x449400U, 0.64649999999999996, -2.21713, 0x4a4a4affU)
+  check_absolute_hsl(0x449400U, 0.62126999999999999, 0.9587, 0xf4fbeeffU)
+  check_sat_modifiers(
+    0x50a96dU, 0.72568999999999995, -2.0936599999999999, 0x7d7d7dffU,
+  )
+  check_absolute_hsl(
+    0x50a96dU, 0.94845999999999997, 0.33067999999999997, 0x04a438ffU,
+  )
+  check_sat_modifiers(
+    0x5cbedaU, 0.80488000000000004, -1.9701900000000001, 0x9b9b9bffU,
+  )
+  check_absolute_hsl(0x5cbedaU, 0.27564, 0.70267000000000002, 0x9ebfc8ffU)
+  check_sat_modifiers(
+    0x68d447U, 0.88407000000000002, -1.8467199999999999, 0x8e8e8effU,
+  )
+  check_absolute_hsl(
+    0x68d447U, 0.60282999999999998, 0.074649999999999994, 0x0d1f08ffU,
+  )
+  check_sat_modifiers(
+    0x74e9b4U, 0.96326000000000001, -1.7232499999999999, 0xafafafffU,
+  )
+  check_absolute_hsl(
+    0x74e9b4U, 0.93001999999999996, 0.44663999999999998, 0x08dc7cffU,
+  )
+  check_sat_modifiers(0x80ff21U, 1.0424500000000001, -1.59978, 0x909090ffU)
+  check_absolute_hsl(
+    0x80ff21U, 0.25719999999999998, 0.81862999999999997, 0xcfddc5ffU,
+  )
+  check_sat_modifiers(0x8d148eU, 1.12164, -1.47631, 0x515151ffU)
+  check_absolute_hsl(0x8d148eU, 0.58438999999999997, 0.19061, 0x4d144dffU)
+  check_sat_modifiers(0x9929fbU, 1.2008300000000001, -1.35284, 0x929292ffU)
+  check_absolute_hsl(
+    0x9929fbU, 0.91157999999999995, 0.56259999999999999, 0x962af5ffU,
+  )
+  check_sat_modifiers(
+    0xa53f68U, 1.2800199999999999, -1.2293700000000001, 0x727272ffU,
+  )
+  check_absolute_hsl(0xa53f68U, 0.23876, 0.93459000000000003, 0xf2eaeeffU)
+  check_sat_modifiers(0xb154d5U, 1.35921, -1.1059000000000001, 0x959595ffU)
+  check_absolute_hsl(
+    0xb154d5U, 0.56594999999999995, 0.30657000000000001, 0x62227affU,
+  )
+  check_sat_modifiers(
+    0xbd6a42U, 1.4383999999999999, -0.98243000000000003, 0x808080ffU,
+  )
+  check_absolute_hsl(
+    0xbd6a42U, 0.89314000000000004, 0.67856000000000005, 0xf69364ffU,
+  )
+  check_sat_modifiers(0xc97fafU, 1.51759, -0.85895999999999995, 0xa4a4a4ffU)
+  check_absolute_hsl(
+    0xc97fafU, 0.22031999999999999, 0.050540000000000002, 0x100a0effU,
+  )
+  check_sat_modifiers(
+    0xd5951cU, 1.5967800000000001, -0.73548999999999998, 0x988259ffU,
+  )
+  check_absolute_hsl(
+    0xd5951cU, 0.54751000000000005, 0.42253000000000002, 0xa77e31ffU,
+  )
+  check_sat_modifiers(0xe1aa89U, 1.67597, -0.61202000000000001, 0xd1ae99ffU)
+  check_absolute_hsl(0xe1aa89U, 0.87470000000000003, 0.79452, 0xf8bf9dffU)
+  check_sat_modifiers(
+    0xedbff6U, 1.7551600000000001, -0.48854999999999998, 0xe7c8edffU,
+  )
+  check_absolute_hsl(0xedbff6U, 0.20188, 0.16650000000000001, 0x302233ffU)
+  check_sat_modifiers(
+    0xf9d563U, 1.8343499999999999, -0.36508000000000002, 0xe1c97bffU,
+  )
+  check_absolute_hsl(
+    0xf9d563U, 0.52907000000000004, 0.53849000000000002, 0xc8aa4bffU,
+  )
+  check_sat_modifiers(0x05ead0U, 1.91354, -0.24160999999999999, 0x1dd2beffU)
+  check_absolute_hsl(
+    0x05ead0U, 0.85626000000000002, 0.91047999999999996, 0xd5fcf7ffU,
+  )
+  check_sat_modifiers(0x12003dU, 1.9927299999999999, -0.11814, 0x130439ffU)
+  check_absolute_hsl(
+    0x12003dU, 0.18343999999999999, 0.28245999999999999, 0x433b55ffU,
+  )
+  check_sat_modifiers(0x1e15aaU, 2.07192, 0.0053299999999999997, 0x0c00bfffU)
+  check_absolute_hsl(
+    0x1e15aaU, 0.51063000000000003, 0.65444999999999998, 0x7f7ad4ffU,
+  )
+  check_sat_modifiers(0x2a2b17U, 2.1511100000000001, 0.1288, 0x383b07ffU)
+  check_absolute_hsl(
+    0x2a2b17U, 0.83782000000000001, 0.026429999999999999, 0x0c0c01ffU,
+  )
+  check_sat_modifiers(
+    0x364084U, 2.2303000000000002, 0.25226999999999999, 0x0018baffU,
+  )
+  check_absolute_hsl(0x364084U, 0.16500000000000001, 0.39842, 0x555976ffU)
+  check_sat_modifiers(
+    0x4255f1U, 2.3094899999999998, 0.37574000000000002, 0x344affffU,
+  )
+  check_absolute_hsl(
+    0x4255f1U, 0.49219000000000002, 0.77041000000000004, 0xa8aee1ffU,
+  )
+  check_sat_modifiers(
+    0x4e6b5eU, 2.3886799999999999, 0.49920999999999999, 0x0cad65ffU,
+  )
+  check_absolute_hsl(0x4e6b5eU, 0.81938, 0.14238999999999999, 0x074227ffU)
+  check_sat_modifiers(0x5a80cbU, 2.46787, 0.62268000000000001, 0x266fffffU)
+  check_absolute_hsl(0x5a80cbU, 0.14656, 0.51437999999999995, 0x717d95ffU)
+  check_sat_modifiers(
+    0x669638U, 2.5470600000000001, 0.74614999999999998, 0x65ce00ffU,
+  )
+  check_absolute_hsl(0x669638U, 0.47375, 0.88636999999999999, 0xe2f0d4ffU)
+  check_sat_modifiers(
+    0x72aba5U, 2.6262500000000002, 0.86961999999999995, 0x1effe7ffU,
+  )
+  check_absolute_hsl(
+    0x72aba5U, 0.80093999999999999, 0.25835000000000002, 0x0d776cffU,
+  )
+  check_sat_modifiers(
+    0x7ec112U, 2.7054399999999998, 0.99309000000000003, 0x82d300ffU,
+  )
+  check_absolute_hsl(
+    0x7ec112U, 0.12812000000000001, 0.63034000000000001, 0xa4ad95ffU,
+  )
+  check_sat_modifiers(0x8ad67fU, 2.7846299999999999, 1.11656, 0x6bff56ffU)
+  check_absolute_hsl(0x8ad67fU, 0.45530999999999999, 0.00232, 0x000100ffU)
+  check_sat_modifiers(0x96ebecU, 2.86382, 1.24003, 0x83feffffU)
+  check_absolute_hsl(
+    0x96ebecU, 0.78249999999999997, 0.37430999999999998, 0x15a8aaffU,
+  )
+  check_sat_modifiers(
+    0xa30159U, 2.9430100000000001, 1.3634999999999999, 0xa40059ffU,
+  )
+  check_absolute_hsl(0xa30159U, 0.10968, 0.74629999999999996, 0xc5b7bfffU)
+  check_sat_modifiers(
+    0xaf16c6U, 3.0222000000000002, 1.4869699999999999, 0xbf00dcffU,
+  )
+  check_absolute_hsl(0xaf16c6U, 0.43686999999999998, 0.11828, 0x28112bffU)
+  check_sat_modifiers(
+    0xbb2c33U, 3.1013899999999999, 1.6104400000000001, 0xe7000bffU,
+  )
+  check_absolute_hsl(
+    0xbb2c33U, 0.76405999999999996, 0.49026999999999998, 0xdd1d27ffU,
+  )
+  check_sat_modifiers(0xc741a0U, 3.18058, 1.7339100000000001, 0xff09b7ffU)
+  check_absolute_hsl(
+    0xc741a0U, 0.091240000000000002, 0.86226000000000003, 0xdfd9ddffU,
+  )
+  check_sat_modifiers(0xd3570dU, 3.2597700000000001, 1.85738, 0xe05400ffU)
+  check_absolute_hsl(0xd3570dU, 0.41843000000000002, 0.23424, 0x553523ffU)
+  check_sat_modifiers(0xdf6c7aU, 3.3389600000000002, 1.98085, 0xff4c62ffU)
+  check_absolute_hsl(
+    0xdf6c7aU, 0.74561999999999995, 0.60623000000000005, 0xe55062ffU,
+  )
+  check_sat_modifiers(0xeb81e7U, 3.4181499999999998, 2.10432, 0xff6df9ffU)
+  check_absolute_hsl(
+    0xeb81e7U, 0.072800000000000004, 0.97821999999999998, 0xfaf9faffU,
+  )
+  check_sat_modifiers(
+    0xf79754U, 3.4973399999999999, 2.2277900000000002, 0xff964cffU,
+  )
+  check_absolute_hsl(
+    0xf79754U, 0.39999000000000001, 0.35020000000000001, 0x7d5336ffU,
+  )
+  check_sat_modifiers(0x03acc1U, 3.57653, 2.3512599999999999, 0x00aec4ffU)
+  check_absolute_hsl(0x03acc1U, 0.72718000000000005, 0.72219, 0x85e0ecffU)
+  check_sat_modifiers(
+    0x0fc22eU, 3.6557200000000001, 2.4747300000000001, 0x00d124ffU,
+  )
+  check_absolute_hsl(
+    0x0fc22eU, 0.054359999999999999, 0.094170000000000004, 0x171917ffU,
+  )
+  check_sat_modifiers(
+    0x1bd79bU, 3.7349100000000002, 2.5981999999999998, 0x00f2a5ffU,
+  )
+  check_absolute_hsl(0x1bd79bU, 0.38155, 0.46616000000000002, 0x4aa487ffU)
+  check_sat_modifiers(0x27ed08U, 3.8140999999999998, 2.72167, 0x21f500ffU)
+  check_absolute_hsl(
+    0x27ed08U, 0.70874000000000004, 0.83814999999999995, 0xc0f3b8ffU,
+  )
+  check_sat_modifiers(
+    0x340275U, 3.8932899999999999, 2.8451399999999998, 0x340077ffU,
+  )
+  check_absolute_hsl(
+    0x340275U, 0.035920000000000001, 0.21013000000000001, 0x353438ffU,
+  )
+  check_sat_modifiers(0x4017e2U, 3.97248, 2.96861, 0x3200f9ffU)
+  check_absolute_hsl(
+    0x4017e2U, 0.36310999999999999, 0.58211999999999997, 0x7d6ebbffU,
+  )
+  check_sat_modifiers(
+    0x4c2d4fU, 4.0516699999999997, 3.0920800000000002, 0x71007cffU,
+  )
+  check_absolute_hsl(
+    0x4c2d4fU, 0.69030000000000002, 0.95411000000000001, 0xfaebfbffU,
+  )
+  check_sat_modifiers(
+    0x5842bcU, 4.1308600000000002, 3.2155499999999999, 0x2e00feffU,
+  )
+  check_absolute_hsl(
+    0x5842bcU, 0.017479999999999999, 0.32608999999999999, 0x525255ffU,
+  )
+  check_sat_modifiers(
+    0x645829U, 4.2100499999999998, 3.3390200000000001, 0x8d7000ffU,
+  )
+  check_absolute_hsl(
+    0x645829U, 0.34466999999999998, 0.69808000000000003, 0xcdc297ffU,
+  )
+  check_sat_modifiers(
+    0x706d96U, 4.2892400000000004, 3.4624899999999998, 0x1604ffffU,
+  )
+  check_absolute_hsl(
+    0x706d96U, 0.67186000000000001, 0.070059999999999997, 0x08061effU,
+  )
+  check_sat_modifiers(0x7c8303U, 4.36843, 3.58596, 0x7f8600ffU)
+  check_absolute_hsl(0x7c8303U, 0.99904999999999999, 0.44205, 0xd5e100ffU)
+  check_sat_modifiers(
+    0x889870U, 4.4476199999999997, 3.7094299999999998, 0x9dff09ffU,
+  )
+  check_absolute_hsl(
+    0x889870U, 0.32623000000000002, 0.81403999999999999, 0xd3dfc0ffU,
+  )
+  check_sat_modifiers(0x94adddU, 4.5268100000000002, 3.8329, 0x72a2ffffU)
+  check_absolute_hsl(0x94adddU, 0.65342, 0.18601999999999999, 0x10264effU)
+  check_sat_modifiers(
+    0xa0c34aU, 4.6059999999999999, 3.9563700000000002, 0xb9ff0effU,
+  )
+  check_absolute_hsl(
+    0xa0c34aU, 0.98060999999999998, 0.55801000000000001, 0xbdfd20ffU,
+  )
+  check_sat_modifiers(
+    0xacd8b7U, 4.6851900000000004, 4.0798399999999999, 0x85ffa3ffU,
+  )
+  check_absolute_hsl(
+    0xacd8b7U, 0.30779000000000001, 0.93000000000000005, 0xe8f3eaffU,
+  )
+  check_sat_modifiers(
+    0xb8ee24U, 4.7643800000000001, 4.2033100000000001, 0xc0ff13ffU,
+  )
+  check_absolute_hsl(
+    0xb8ee24U, 0.63497999999999999, 0.30198000000000003, 0x647e1cffU,
+  )
+  check_sat_modifiers(
+    0xc50391U, 4.8435699999999997, 4.3267800000000003, 0xc80092ffU,
+  )
+  check_absolute_hsl(
+    0xc50391U, 0.96216999999999997, 0.67396999999999996, 0xfc5cd1ffU,
+  )
+  check_sat_modifiers(
+    0xd118feU, 4.9227600000000002, 4.4502499999999996, 0xd217ffffU,
+  )
+  check_absolute_hsl(0xd118feU, 0.28935, 0.045949999999999998, 0x0e080fffU)
+  check_sat_modifiers(
+    0xdd2e6bU, 5.0019499999999999, 4.5737199999999998, 0xff0c61ffU,
+  )
+  check_absolute_hsl(
+    0xdd2e6bU, 0.61653999999999998, 0.41793999999999998, 0xac2957ffU,
+  )
+  check_sat_modifiers(0xe943d8U, 5.0811400000000004, 4.69719, 0xff2de9ffU)
+  check_absolute_hsl(
+    0xe943d8U, 0.94372999999999996, 0.78993000000000002, 0xfc97f2ffU,
+  )
+  check_sat_modifiers(
+    0xf55945U, 5.1603300000000001, 4.8206600000000002, 0xff513bffU,
+  )
+  check_absolute_hsl(0xf55945U, 0.27090999999999998, 0.16191, 0x34211effU)
+  check_sat_modifiers(
+    0x016eb2U, 5.2395199999999997, 4.9441300000000004, 0x006eb3ffU,
+  )
+  check_absolute_hsl(
+    0x016eb2U, 0.59809999999999997, 0.53390000000000004, 0x4199cfffU,
+  )
+  check_sat_modifiers(
+    0x0d841fU, 5.3187100000000003, 5.0675999999999997, 0x009116ffU,
+  )
+  check_absolute_hsl(
+    0x0d841fU, 0.92528999999999995, 0.90588999999999997, 0xd1fdd8ffU,
+  )
+  check_sat_modifiers(
+    0x19998cU, 5.3978999999999999, 5.1910699999999999, 0x00b2a0ffU,
+  )
+  check_absolute_hsl(
+    0x19998cU, 0.25247000000000003, 0.27787000000000001, 0x355955ffU,
+  )
+  check_sat_modifiers(0x25aef9U, 5.4770899999999996, 5.31454, 0x1fb0ffffU)
+  check_absolute_hsl(
+    0x25aef9U, 0.57965999999999995, 0.64985999999999999, 0x72b5d9ffU,
+  )
+  check_sat_modifiers(
+    0x31c466U, 5.5562800000000001, 5.4380100000000002, 0x00f558ffU,
+  )
+  check_absolute_hsl(
+    0x31c466U, 0.90685000000000004, 0.021839999999999998, 0x010b04ffU,
+  )
+  check_sat_modifiers(
+    0x3dd9d3U, 5.6354699999999998, 5.5614800000000004, 0x17fff6ffU,
+  )
+  check_absolute_hsl(
+    0x3dd9d3U, 0.23402999999999999, 0.39383000000000001, 0x4d7c7affU,
+  )
+  check_sat_modifiers(
+    0x49ef40U, 5.7146600000000003, 5.6849499999999997, 0x3bff30ffU,
+  )
+  check_absolute_hsl(
+    0x49ef40U, 0.56122000000000005, 0.76581999999999995, 0xa5e5a2ffU,
+  )
+  check_sat_modifiers(
+    0x5604adU, 5.7938499999999999, 5.8084199999999999, 0x5600b1ffU,
+  )
+  check_absolute_hsl(
+    0x5604adU, 0.88841000000000003, 0.13780000000000001, 0x220442ffU,
+  )
+  check_sat_modifiers(
+    0x621a1aU, 5.8730399999999996, 5.9318900000000001, 0x7c0000ffU,
+  )
+  check_absolute_hsl(0x621a1aU, 0.21559, 0.50978999999999997, 0x9d6767ffU)
+  check_sat_modifiers(
+    0x6e2f87U, 5.9522300000000001, 6.0553600000000003, 0x8200b6ffU,
+  )
+  check_absolute_hsl(
+    0x6e2f87U, 0.54278000000000004, 0.88178000000000001, 0xe8d0f1ffU,
+  )
+  check_sat_modifiers(
+    0x7a44f4U, 6.0314199999999998, 6.1788299999999996, 0x7639ffffU,
+  )
+  check_absolute_hsl(
+    0x7a44f4U, 0.86997000000000002, 0.25375999999999999, 0x2b0879ffU,
+  )
+  check_sat_modifiers(
+    0x865a61U, 6.1106100000000003, 6.3022999999999998, 0xe00024ffU,
+  )
+  check_absolute_hsl(
+    0x865a61U, 0.19714999999999999, 0.62575000000000003, 0xb28d93ffU,
+  )
+  check_sat_modifiers(0x926fceU, 6.1898, 6.42577, 0x853effffU)
+  check_absolute_hsl(
+    0x926fceU, 0.52434000000000003, 0.99773999999999996, 0xfefeffffU,
+  )
+  check_sat_modifiers(
+    0x9e853bU, 6.2689899999999996, 6.5492400000000002, 0xd9a200ffU,
+  )
+  check_absolute_hsl(
+    0x9e853bU, 0.85153000000000001, 0.36971999999999999, 0xaf860effU,
+  )
+  check_sat_modifiers(
+    0xaa9aa8U, 6.3481800000000002, 6.6727100000000004, 0xff45e8ffU,
+  )
+  check_absolute_hsl(
+    0xaa9aa8U, 0.17871000000000001, 0.74170999999999998, 0xc9b1c6ffU,
+  )
+  check_sat_modifiers(
+    0xb6b015U, 6.4273699999999998, 6.7961799999999997, 0xcbc300ffU,
+  )
+  check_absolute_hsl(0xb6b015U, 0.50590000000000002, 0.11369, 0x2c2b0effU)
+  check_sat_modifiers(
+    0xc2c582U, 6.5065600000000003, 6.9196499999999999, 0xf7ff48ffU,
+  )
+  check_absolute_hsl(0xc2c582U, 0.83309, 0.48568, 0xdae315ffU)
+  check_sat_modifiers(0xcedaefU, 6.58575, 7.04312, 0xbed6ffffU)
+  check_absolute_hsl(0xcedaefU, 0.16027, 0.85767000000000004, 0xd5d9e1ffU)
+  check_sat_modifiers(
+    0xdaf05cU, 6.6649399999999996, 7.1665900000000002, 0xe5ff4dffU,
+  )
+  check_absolute_hsl(0xdaf05cU, 0.48746, 0.22964999999999999, 0x4f571effU)
+  check_sat_modifiers(
+    0xe705c9U, 6.7441300000000002, 7.2900600000000004, 0xec00cdffU,
+  )
+  check_absolute_hsl(
+    0xe705c9U, 0.81464999999999999, 0.60163999999999995, 0xec47d6ffU,
+  )
+  check_sat_modifiers(
+    0xf31b36U, 6.8233199999999998, 7.4135299999999997, 0xff0f2dffU,
+  )
+  check_absolute_hsl(0xf31b36U, 0.14183000000000001, 0.97363, 0xf9f7f8ffU)
+  check_sat_modifiers(
+    0xff30a3U, 6.9025100000000004, 7.5369999999999999, 0xff30a3ffU,
+  )
+  check_absolute_hsl(
+    0xff30a3U, 0.46901999999999999, 0.34560999999999997, 0x812f5dffU,
+  )
+  check_sat_modifiers(0x0b4610U, 6.9817, 7.6604700000000001, 0x005107ffU)
+  check_absolute_hsl(
+    0x0b4610U, 0.79620999999999997, 0.71760000000000002, 0x7ef087ffU,
+  )
+  check_sat_modifiers(
+    0x175b7dU, 7.0608899999999997, 7.7839400000000003, 0x006394ffU,
+  )
+  check_absolute_hsl(0x175b7dU, 0.12339, 0.089580000000000007, 0x14181affU)
+  check_sat_modifiers(
+    0x2370eaU, 7.1400800000000002, 7.9074099999999996, 0x0e6bffffU,
+  )
+  check_absolute_hsl(
+    0x2370eaU, 0.45057999999999998, 0.46156999999999998, 0x416aabffU,
+  )
+  check_sat_modifiers(
+    0x2f8657U, 7.2192699999999999, 8.0308799999999998, 0x00b553ffU,
+  )
+  check_absolute_hsl(
+    0x2f8657U, 0.77776999999999996, 0.83355999999999997, 0xb4f6d2ffU,
+  )
+  check_sat_modifiers(
+    0x3b9bc4U, 7.2984600000000004, 8.1543500000000009, 0x00b3ffffU,
+  )
+  check_absolute_hsl(0x3b9bc4U, 0.10495, 0.20554, 0x2f373affU)
+  check_sat_modifiers(0x47b131U, 7.37765, 8.2778200000000002, 0x27e200ffU)
+  check_absolute_hsl(
+    0x47b131U, 0.43214000000000002, 0.57752999999999999, 0x75c265ffU,
+  )
+  check_sat_modifiers(
+    0x53c69eU, 7.4568399999999997, 8.4012899999999995, 0x1affafffU,
+  )
+  check_absolute_hsl(
+    0x53c69eU, 0.75932999999999995, 0.94952000000000003, 0xe8fcf5ffU,
+  )
+  check_sat_modifiers(
+    0x5fdc0bU, 7.5360300000000002, 8.5247600000000006, 0x5de700ffU,
+  )
+  check_absolute_hsl(
+    0x5fdc0bU, 0.086510000000000004, 0.32150000000000001, 0x51594bffU,
+  )
+  check_sat_modifiers(
+    0x6bf178U, 7.6152199999999999, 8.6482299999999999, 0x5dff6dffU,
+  )
+  check_absolute_hsl(
+    0x6bf178U, 0.41370000000000001, 0.69349000000000005, 0x91d197ffU,
+  )
+  check_sat_modifiers(
+    0x7806e5U, 7.6944100000000004, 8.7716999999999992, 0x7800ebffU,
+  )
+  check_absolute_hsl(0x7806e5U, 0.74089000000000005, 0.06547, 0x11041dffU)
+  check_sat_modifiers(
+    0x841c52U, 7.7736000000000001, 8.8951700000000002, 0xa00053ffU,
+  )
+  check_absolute_hsl(
+    0x841c52U, 0.068070000000000006, 0.43746000000000002, 0x776870ffU,
+  )
+  check_sat_modifiers(
+    0x9031bfU, 7.8527899999999997, 9.0186399999999995, 0xa100f0ffU,
+  )
+  check_absolute_hsl(0x9031bfU, 0.39526, 0.80945, 0xd5bbe2ffU)
+  check_sat_modifiers(
+    0x9c472cU, 7.9319800000000003, 9.1421100000000006, 0xc83000ffU,
+  )
+  check_absolute_hsl(
+    0x9c472cU, 0.72245000000000004, 0.18143000000000001, 0x501d0dffU,
+  )
+  check_sat_modifiers(
+    0xa85c99U, 8.0111699999999999, 9.2655799999999999, 0xff05ceffU,
+  )
+  check_absolute_hsl(
+    0xa85c99U, 0.049630000000000001, 0.55342000000000002, 0x938791ffU,
+  )
+  check_sat_modifiers(
+    0xb47206U, 8.0903600000000004, 9.3890499999999992, 0xba7300ffU,
+  )
+  check_absolute_hsl(
+    0xb47206U, 0.37681999999999999, 0.92540999999999995, 0xf3eee5ffU,
+  )
+  check_sat_modifiers(
+    0xc08773U, 8.1695499999999992, 9.5125200000000003, 0xff6934ffU,
+  )
+  check_absolute_hsl(
+    0xc08773U, 0.70401000000000002, 0.29738999999999999, 0x813216ffU,
+  )
+  check_sat_modifiers(
+    0xcc9ce0U, 8.2487399999999997, 9.6359899999999996, 0xd97dffffU,
+  )
+  check_absolute_hsl(
+    0xcc9ce0U, 0.031189999999999999, 0.66937999999999998, 0xaca8adffU,
+  )
+  check_sat_modifiers(
+    0xd8b24dU, 8.3279300000000003, 9.7594600000000007, 0xffc426ffU,
+  )
+  check_absolute_hsl(
+    0xd8b24dU, 0.35837999999999998, 0.041360000000000001, 0x0e0c07ffU,
+  )
+  check_sat_modifiers(0xe4c7baU, 8.4071200000000008, 9.88293, 0xffbd9fffU)
+  check_absolute_hsl(0xe4c7baU, 0.68557000000000001, 0.41335, 0xb24e21ffU)
+  check_sat_modifiers(
+    0xf0dd27U, 8.4863099999999996, -9.9936100000000003, 0x8c8c8cffU,
+  )
+  check_absolute_hsl(
+    0xf0dd27U, 0.012749999999999999, 0.78534000000000004, 0xc9c9c8ffU,
+  )
+  check_sat_modifiers(
+    0xfcf294U, 8.5655000000000001, -9.8701399999999992, 0xc8c8c8ffU,
+  )
+  check_absolute_hsl(
+    0xfcf294U, 0.33994000000000002, 0.15731999999999999, 0x36331affU,
+  )
+  check_sat_modifiers(
+    0x090801U, 8.6446900000000007, -9.7466699999999999, 0x050505ffU,
+  )
+  check_absolute_hsl(0x090801U, 0.66713, 0.52930999999999995, 0xd7c337ffU)
+  check_sat_modifiers(
+    0x151d6eU, 8.7238799999999994, -9.6232000000000006, 0x424242ffU,
+  )
+  check_absolute_hsl(
+    0x151d6eU, 0.99431999999999998, 0.90129999999999999, 0xcdd1ffffU,
+  )
+  check_sat_modifiers(0x2132dbU, 8.80307, -9.4997299999999996, 0x7e7e7effU)
+  check_absolute_hsl(
+    0x2132dbU, 0.32150000000000001, 0.27328000000000002, 0x2f335cffU,
+  )
+  check_sat_modifiers(
+    0x2d4848U, 8.8822600000000005, -9.3762600000000003, 0x3b3b3bffU,
+  )
+  check_absolute_hsl(
+    0x2d4848U, 0.64868999999999999, 0.64527000000000001, 0x6adfdfffU,
+  )
+  check_sat_modifiers(
+    0x395db5U, 8.9614499999999992, -9.2527899999999992, 0x777777ffU,
+  )
+  check_absolute_hsl(
+    0x395db5U, 0.97587999999999997, 0.017250000000000001, 0x000309ffU,
+  )
+  check_sat_modifiers(
+    0x457322U, 9.0406399999999998, -9.1293199999999999, 0x4b4b4bffU,
+  )
+  check_absolute_hsl(0x457322U, 0.30306, 0.38923999999999997, 0x5f8145ffU)
+  check_sat_modifiers(
+    0x51888fU, 9.1198300000000003, -9.0058500000000006, 0x707070ffU,
+  )
+  check_absolute_hsl(
+    0x51888fU, 0.63024999999999998, 0.76122999999999996, 0x9ce0e8ffU,
+  )
+  check_sat_modifiers(
+    0x5d9dfcU, 9.1990200000000009, -8.8823799999999995, 0xadadadffU,
+  )
+  check_absolute_hsl(0x5d9dfcU, 0.95743999999999996, 0.13321, 0x011c42ffU)
+  check_sat_modifiers(
+    0x69b369U, 9.2782099999999996, -8.7589100000000002, 0x8e8e8effU,
+  )
+  check_absolute_hsl(
+    0x69b369U, 0.28461999999999998, 0.50519999999999998, 0x5da55dffU,
+  )
+  check_sat_modifiers(
+    0x75c8d6U, 9.3574000000000002, -8.6354399999999991, 0xa6a6a6ffU,
+  )
+  check_absolute_hsl(
+    0x75c8d6U, 0.61180999999999996, 0.87719000000000003, 0xcdedf3ffU,
+  )
+  check_sat_modifiers(
+    0x81de43U, 9.4365900000000007, -8.5119699999999998, 0x919191ffU,
+  )
+  check_absolute_hsl(0x81de43U, 0.93899999999999995, 0.24917, 0x347b04ffU)
+  check_sat_modifiers(
+    0x8df3b0U, 9.5157799999999995, -8.3885000000000005, 0xc0c0c0ffU,
+  )
+  check_absolute_hsl(
+    0x8df3b0U, 0.26618000000000003, 0.62116000000000005, 0x85b896ffU,
+  )
+  check_sat_modifiers(0x9a091dU, 9.59497, -8.2650299999999994, 0x525252ffU)
+  check_absolute_hsl(
+    0x9a091dU, 0.59336999999999995, 0.99314999999999998, 0xfefcfdffU,
+  )
+  check_sat_modifiers(
+    0xa61e8aU, 9.6741600000000005, -8.1415600000000001, 0x626262ffU,
+  )
+  check_absolute_hsl(
+    0xa61e8aU, 0.92056000000000004, 0.36513000000000001, 0xb30790ffU,
+  )
+  check_sat_modifiers(
+    0xb233f7U, 9.7533499999999993, -8.0180900000000008, 0x959595ffU,
+  )
+  check_absolute_hsl(0xb233f7U, 0.24773999999999999, 0.73712, 0xc1abcdffU)
+  check_sat_modifiers(
+    0xbe4964U, 9.8325399999999998, -7.8946199999999997, 0x848484ffU,
+  )
+  check_absolute_hsl(0xbe4964U, 0.57493000000000005, 0.1091, 0x2c0c13ffU)
+  check_sat_modifiers(
+    0xca5ed1U, 9.9117300000000004, -7.7711499999999996, 0x989898ffU,
+  )
+  check_absolute_hsl(
+    0xca5ed1U, 0.90212000000000003, 0.48109000000000002, 0xdc0ce9ffU,
+  )
+  check_sat_modifiers(
+    0xd6743eU, 9.9909199999999991, -7.6476800000000003, 0x8a8a8affU,
+  )
+  check_absolute_hsl(0xd6743eU, 0.2293, 0.85307999999999995, 0xe2d7d1ffU)
+  check_sat_modifiers(
+    0xe289abU, 0.070099999999999996, -7.5242100000000001, 0xb5b5b5ffU,
+  )
+  check_absolute_hsl(
+    0xe289abU, 0.55649000000000004, 0.22506000000000001, 0x591932ffU,
+  )
+  check_sat_modifiers(
+    0xee9f18U, 0.14929000000000001, -7.4007399999999999, 0x838383ffU,
+  )
+  check_absolute_hsl(
+    0xee9f18U, 0.88368000000000002, 0.59704999999999997, 0xf3b03dffU,
+  )
+  check_sat_modifiers(
+    0xfab485U, 0.22847999999999999, -7.2772699999999997, 0xc0c0c0ffU,
+  )
+  check_absolute_hsl(
+    0xfab485U, 0.21085999999999999, 0.96904000000000001, 0xf9f7f5ffU,
+  )
+  check_sat_modifiers(0x06c9f2U, 0.30767, -7.1538000000000004, 0x7c7c7cffU)
+  check_absolute_hsl(
+    0x06c9f2U, 0.53805000000000003, 0.34101999999999999, 0x287586ffU,
+  )
+  check_sat_modifiers(
+    0x12df5fU, 0.38685999999999998, -7.0303300000000002, 0x797979ffU,
+  )
+  check_absolute_hsl(
+    0x12df5fU, 0.86524000000000001, 0.71301000000000003, 0x76f5a6ffU,
+  )
+  check_sat_modifiers(0x1ef4ccU, 0.46605000000000002, -6.90686, 0x898989ffU)
+  check_absolute_hsl(
+    0x1ef4ccU, 0.19242000000000001, 0.084989999999999996, 0x121a18ffU,
+  )
+}
+
+///|
+fn check_sat_modifiers(
+  rgb : UInt32,
+  mod : Double,
+  off : Double,
+  expected : UInt32,
+) -> Unit raise {
+  let color = xlsx_rgb_from_uint(rgb)
+  let color = xlsx_shape_apply_hsl_modifier(color, "satMod", mod)
+  let color = xlsx_shape_apply_hsl_modifier(color, "satOff", off)
+  assert_eq(xlsx_shape_pack_rgb(color, 255U), expected)
+}
+
+///|
+fn check_absolute_hsl(
+  rgb : UInt32,
+  sat : Double,
+  lum : Double,
+  expected : UInt32,
+) -> Unit raise {
+  let color = xlsx_rgb_from_uint(rgb)
+  let color = xlsx_shape_apply_hsl_modifier(color, "sat", sat)
+  let color = xlsx_shape_apply_hsl_modifier(color, "lum", lum)
+  assert_eq(xlsx_shape_pack_rgb(color, 255U), expected)
+}

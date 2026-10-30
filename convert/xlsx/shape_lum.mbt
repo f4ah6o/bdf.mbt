@@ -7,7 +7,7 @@ fn xlsx_shape_pack_rgb(color : XlsxRgb, alpha : UInt32) -> UInt32 {
 }
 
 ///|
-fn xlsx_shape_apply_lum(
+fn xlsx_shape_apply_hsl_modifier(
   color : XlsxRgb,
   name : String,
   fraction : Double,
@@ -32,13 +32,21 @@ fn xlsx_shape_apply_lum(
     }
     hue /= 6.0
   }
-  lum = xlsx_clamp_color(
-    if name == "lumMod" {
-      lum * fraction
-    } else {
-      lum + fraction
-    },
-  )
+  if name == "lumMod" {
+    lum *= fraction
+  } else if name == "lumOff" {
+    lum += fraction
+  } else if name == "lum" {
+    lum = fraction
+  } else if name == "satMod" {
+    sat *= fraction
+  } else if name == "satOff" {
+    sat += fraction
+  } else {
+    sat = fraction
+  }
+  lum = xlsx_clamp_color(lum)
+  sat = xlsx_clamp_color(sat)
   if sat == 0.0 {
     return { red: lum, green: lum, blue: lum, }
   }

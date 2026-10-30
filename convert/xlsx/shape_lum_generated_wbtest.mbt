@@ -1538,8 +1538,8 @@ fn check_lum_modifiers(
   expected : UInt32,
 ) -> Unit raise {
   let color = xlsx_rgb_from_uint(rgb)
-  let color = xlsx_shape_apply_lum(color, "lumMod", mod)
-  let color = xlsx_shape_apply_lum(color, "lumOff", off)
-  let color = xlsx_shape_apply_lum(color, "lumMod", second)
+  let color = xlsx_shape_apply_hsl_modifier(color, "lumMod", mod)
+  let color = xlsx_shape_apply_hsl_modifier(color, "lumOff", off)
+  let color = xlsx_shape_apply_hsl_modifier(color, "lumMod", second)
   assert_eq(xlsx_shape_pack_rgb(color, 255U), expected)
 }

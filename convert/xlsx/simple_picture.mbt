@@ -581,7 +581,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
             } else {
               shape_fill = shape_fill.map(color => color ^ 0xffffff00U)
             }
-          } else if name == "lumMod" || name == "lumOff" {
+          } else if ["lumMod", "lumOff", "lum", "satMod", "satOff", "sat"].contains(
+              name,
+            ) {
             if element.attributes.length() != 1 ||
               shape_rgb is None ||
               element.attributes[0].name.local_name != "val" ||
@@ -591,11 +593,17 @@ fn XlsxWorkbook::xlsx_simple_picture(
             let fraction = match
               xlsx_drawing_fraction(xlsx_attr(element, "val", "")) {
               Some(value) if value >=
-                (if name == "lumOff" { -10.0 } else { 0.0 }) &&
-                value <= 10.0 => value
+                (if name == "lumOff" || name == "satOff" { -10.0 } else { 0.0 }) &&
+                value <=
+                (if name == "lum" || name == "sat" { 1.0 } else { 10.0 }) =>
+                value
               _ => return None
             }
-            let next = xlsx_shape_apply_lum(shape_rgb.unwrap(), name, fraction)
+            let next = xlsx_shape_apply_hsl_modifier(
+              shape_rgb.unwrap(),
+              name,
+              fraction,
+            )
             shape_rgb = Some(next)
             shape_fill = shape_fill.map(color => {
               xlsx_shape_pack_rgb(next, color & 255U)
@@ -640,7 +648,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
             } else {
               line_color = line_color.map(color => color ^ 0xffffff00U)
             }
-          } else if name == "lumMod" || name == "lumOff" {
+          } else if ["lumMod", "lumOff", "lum", "satMod", "satOff", "sat"].contains(
+              name,
+            ) {
             if element.attributes.length() != 1 ||
               line_rgb is None ||
               element.attributes[0].name.local_name != "val" ||
@@ -650,11 +660,17 @@ fn XlsxWorkbook::xlsx_simple_picture(
             let fraction = match
               xlsx_drawing_fraction(xlsx_attr(element, "val", "")) {
               Some(value) if value >=
-                (if name == "lumOff" { -10.0 } else { 0.0 }) &&
-                value <= 10.0 => value
+                (if name == "lumOff" || name == "satOff" { -10.0 } else { 0.0 }) &&
+                value <=
+                (if name == "lum" || name == "sat" { 1.0 } else { 10.0 }) =>
+                value
               _ => return None
             }
-            let next = xlsx_shape_apply_lum(line_rgb.unwrap(), name, fraction)
+            let next = xlsx_shape_apply_hsl_modifier(
+              line_rgb.unwrap(),
+              name,
+              fraction,
+            )
             line_rgb = Some(next)
             line_color = line_color.map(color => {
               xlsx_shape_pack_rgb(next, color & 255U)

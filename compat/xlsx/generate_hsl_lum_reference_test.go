@@ -44,9 +44,9 @@ func TestCodexHslLumReference(t *testing.T) {
 fn check_hsl_lum(hue : Double, sat : Double, lum : Double, mod : Double, off : Double, expected : UInt32) -> Unit raise {
   let color = xlsx_shape_hsl_rgb(hue, sat, lum)
   let color = { red: 1.0 - color.red, green: 1.0 - color.green, blue: 1.0 - color.blue }
-  let color = xlsx_shape_apply_lum(color, "lumMod", mod)
+  let color = xlsx_shape_apply_hsl_modifier(color, "lumMod", mod)
   let color = { red: 1.0 - color.red, green: 1.0 - color.green, blue: 1.0 - color.blue }
-  let color = xlsx_shape_apply_lum(color, "lumOff", off)
+  let color = xlsx_shape_apply_hsl_modifier(color, "lumOff", off)
   assert_eq(xlsx_shape_pack_rgb(color, 255U), expected)
 }`)
 }
