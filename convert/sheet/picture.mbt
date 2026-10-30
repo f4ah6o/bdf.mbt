@@ -49,6 +49,7 @@ fn GridDrawContext::paint_picture(
   room : Int32,
   hidden~ : Bool = false,
   shape_fill~ : UInt32? = None,
+  shape_stroke~ : (UInt32, Double)? = None,
 ) -> Int32 raise {
   if picture.kind < 0 ||
     picture.kind > 2 ||
@@ -125,6 +126,15 @@ fn GridDrawContext::paint_picture(
     picture.frame_height < 0.0 ||
     (picture.frame_width == 0.0) != (picture.frame_height == 0.0) {
     raise InvalidArgument("sheet: invalid picture transform frame")
+  }
+  if shape_stroke is Some((_, width)) {
+    if shape_fill is None ||
+      width.is_nan() ||
+      width.is_inf() ||
+      width <= 0.0 ||
+      width > 20000.0 {
+      raise InvalidArgument("sheet: invalid shape line width")
+    }
   }
   if picture.alpha is Some(alpha) {
     if alpha.is_nan() || alpha.is_inf() || alpha < 0.0F || alpha > 1.0F {
@@ -346,6 +356,13 @@ fn GridDrawContext::paint_picture(
   if shape_fill is Some(color) {
     object.fill_color(color)
     object.fill_path(path_index, 0)
+    if shape_stroke is Some((stroke, width)) {
+      object.save()
+      object.line(Float::from_double(width), 0, 0, 8.0F)
+      object.stroke_color(stroke)
+      object.stroke_path(path_index)
+      object.restore()
+    }
   } else {
     object.save()
     object.clip_path(path_index, 0)
