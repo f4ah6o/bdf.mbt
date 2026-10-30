@@ -52,6 +52,7 @@ fn GridDrawContext::paint_picture(
   shape_stroke~ : (UInt32, Double)? = None,
   shape_no_fill~ : Bool = false,
   shape_dash~ : String = "",
+  shape_ellipse~ : Bool = false,
 ) -> Int32 raise {
   if picture.kind < 0 ||
     picture.kind > 2 ||
@@ -135,6 +136,9 @@ fn GridDrawContext::paint_picture(
     ].contains(shape_dash) ||
     (shape_dash != "" && shape_fill is None && !shape_no_fill) {
     raise InvalidArgument("sheet: invalid shape dash pattern")
+  }
+  if shape_ellipse && shape_fill is None && !shape_no_fill {
+    raise InvalidArgument("sheet: ellipse requires a shape")
   }
   if shape_no_fill && shape_fill is Some(_) {
     raise InvalidArgument("sheet: conflicting shape fills")
@@ -358,11 +362,15 @@ fn GridDrawContext::paint_picture(
   } else if origin_x != 0.0 || origin_y != 0.0 {
     object.translate(Float::from_double(origin_x), Float::from_double(origin_y))
   }
-  let path : @core.Path = {
-    verbs: b"\x00\x01\x01\x01\x04",
-    coordinates: [
-      0.0, 0.0, draw_width, 0.0, draw_width, draw_height, 0.0, draw_height,
-    ],
+  let path : @core.Path = if shape_ellipse {
+    sheet_ellipse_path(draw_width, draw_height)
+  } else {
+    {
+      verbs: b"\x00\x01\x01\x01\x04",
+      coordinates: [
+        0.0, 0.0, draw_width, 0.0, draw_width, draw_height, 0.0, draw_height,
+      ],
+    }
   }
   let path_index = object.add_path(@core.Inline(path))
   if shape_no_fill || shape_fill is Some(_) {
@@ -390,7 +398,9 @@ fn GridDrawContext::paint_picture(
         object.dash(dash.map(value => Float::from_double(value * width)), 0.0F)
       }
       object.stroke_color(stroke)
-      object.stroke_path(path_index)
+      if !shape_ellipse || (draw_width > 0.0 && draw_height > 0.0) {
+        object.stroke_path(path_index)
+      }
       object.restore()
     }
   } else {
@@ -506,4 +516,40 @@ fn GridDrawContext::paint_picture(
     tile.drawn = true
   }
   tile_count
+}
+
+///|
+fn sheet_ellipse_path(width : Double, height : Double) -> @core.Path {
+  let wr = width / 2.0
+  let hr = height / 2.0
+  if wr <= 0.0 || hr <= 0.0 {
+    return { verbs: b"\x00\x04", coordinates: [0.0, hr], }
+  }
+  let args : Array[Double] = [0.0, hr]
+  let mut cx = 0.0
+  let mut cy = hr
+  // Go rounds the constant pi / 180 / 60000 once at compile time.
+  let unit = 2.9088820866572161809e-7
+  for degrees in [10800000.0, 16200000.0, 0.0, 5400000.0] {
+    let st = degrees * unit
+    let sw = 5400000.0 * unit
+    let a0 = @math.atan2(wr * @math.sin(st), hr * @math.cos(st))
+    let aend = @math.atan2(wr * @math.sin(st + sw), hr * @math.cos(st + sw))
+    let d = aend - (a0 + sw)
+    let d = d - 2.0 * @math.PI * (d / (2.0 * @math.PI)).round()
+    let a1 = a0 + sw + d
+    let ex = cx - wr * @math.cos(a0)
+    let ey = cy - hr * @math.sin(a0)
+    args.push(ex)
+    args.push(ey)
+    args.push(wr)
+    args.push(hr)
+    args.push(0.0)
+    args.push(a0)
+    args.push(a1)
+    args.push(0.0)
+    cx = ex + wr * @math.cos(a1)
+    cy = ey + hr * @math.sin(a1)
+  }
+  { verbs: b"\x00\x06\x06\x06\x06\x04", coordinates: args, }
 }

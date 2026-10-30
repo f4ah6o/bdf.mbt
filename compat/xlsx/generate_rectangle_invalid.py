@@ -3,7 +3,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parent
 source = json.loads((root / 'simple-rectangle.json').read_text())[0]
 variants = {
-    'ellipse': ('prst="rect"', 'prst="ellipse"'),
+    'triangle': ('prst="rect"', 'prst="triangle"'),
     'unknown-color': ('val="FF0000"', 'val="FF00ZZ"'),
     'color-transform': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:lumMod val="50000"/></a:srgbClr>'),
     'alpha-too-large': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="100001"/></a:srgbClr>'),

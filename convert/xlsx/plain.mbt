@@ -1370,6 +1370,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   shape_strokes : Array[(UInt32, Double)?],
   shape_no_fills : Array[Bool],
   shape_dashes : Array[String],
+  shape_ellipses : Array[Bool],
 ) -> (
   Array[@sheet.GridLink],
   Bool,
@@ -1675,13 +1676,14 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
       if !empty {
         match self.xlsx_simple_picture(target, theme_colors) {
           Some(found) =>
-            for (picture, hidden, fill, stroke, no_fill, dash) in found {
+            for (picture, hidden, fill, stroke, no_fill, dash, ellipse) in found {
               pictures.push(picture)
               hidden_pictures.push(hidden)
               shape_fills.push(fill)
               shape_strokes.push(stroke)
               shape_no_fills.push(no_fill)
               shape_dashes.push(dash)
+              shape_ellipses.push(ellipse)
             }
           None =>
             raise InvalidXlsxInput(
@@ -2207,6 +2209,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let shape_strokes : Array[(UInt32, Double)?] = []
   let shape_no_fills : Array[Bool] = []
   let shape_dashes : Array[String] = []
+  let shape_ellipses : Array[Bool] = []
   let (
     links,
     has_conditional,
@@ -2227,6 +2230,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     shape_strokes,
     shape_no_fills,
     shape_dashes,
+    shape_ellipses,
   )
   let mut styled_runs = false
   for _, columns in rich_cells {
@@ -3559,6 +3563,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     shape_strokes~,
     shape_no_fills~,
     shape_dashes~,
+    shape_ellipses~,
     picture_writer=Some(writer),
     picture_children=Some(children),
     column_axis_default=Some(

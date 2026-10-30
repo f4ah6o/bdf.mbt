@@ -115,6 +115,7 @@ pub fn sized_fallback_advance(
 /// 0xRRGGBBAA; a color renders a filled rectangle instead of an image.
 /// `shape_strokes`, when supplied, pairs an optional RGBA color and width in
 /// points with each drawing. `shape_no_fills` marks rectangles without a fill.
+/// `shape_ellipses` marks ellipse shapes; otherwise shapes are rectangles.
 /// `shape_dashes` contains DrawingML preset dash names, or an empty string for
 /// a solid line. A caller that defers object storage may collect child parts in
 /// `picture_children` and pass them to `store_grids`.
@@ -158,6 +159,7 @@ pub fn draw_sized_grid_no_fonts(
   shape_strokes~ : Array[(UInt32, Double)?] = [],
   shape_no_fills~ : Array[Bool] = [],
   shape_dashes~ : Array[String] = [],
+  shape_ellipses~ : Array[Bool] = [],
   picture_writer~ : @core.DocumentWriter? = None,
   picture_children~ : Array[(Int32, Int32, Bytes)]? = None,
   column_axis_default~ : Float? = None,
@@ -890,6 +892,9 @@ pub fn draw_sized_grid_no_fonts(
   if !shape_dashes.is_empty() && shape_dashes.length() != pictures.length() {
     raise InvalidArgument("sheet: invalid shape dash list")
   }
+  if !shape_ellipses.is_empty() && shape_ellipses.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid shape geometry list")
+  }
   if !pictures.is_empty() {
     if pictures.length() > 128 {
       raise InvalidArgument("sheet: too many pictures")
@@ -920,6 +925,11 @@ pub fn draw_sized_grid_no_fonts(
         },
         picture_children,
         room,
+        shape_ellipse=if shape_ellipses.is_empty() {
+          false
+        } else {
+          shape_ellipses[index]
+        },
         shape_dash=if shape_dashes.is_empty() {
           ""
         } else {

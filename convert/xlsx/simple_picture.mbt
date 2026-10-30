@@ -5,7 +5,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
   self : XlsxWorkbook,
   part : String,
   theme_colors : Map[Int32, XlsxRgb],
-) -> Array[(@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool, String)]? {
+) -> Array[
+  (@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool, String, Bool),
+]? {
   let bytes = self.package.read(part) catch { _ => return None }
   let source = @utf8.decode_lossy(bytes[:], ignore_bom=true)
   if source.contains("<!ENTITY") {
@@ -22,7 +24,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut kind = -1
   let mut anchors = 0
   let result : Array[
-    (@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool, String),
+    (@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool, String, Bool),
   ] = []
   let images : Map[String, Bytes] = Map([])
   let mut image_bytes = 0L
@@ -52,6 +54,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut saw_blip_fill = false
   let mut saw_sppr = false
   let mut geometry = false
+  let mut ellipse = false
   let mut stretch = false
   let mut from_row = -1
   let mut from_column = -1
@@ -387,11 +390,15 @@ fn XlsxWorkbook::xlsx_simple_picture(
             }
             true
           } else if name == "prstGeom" &&
-            xlsx_attr(element, "prst", "") == "rect" {
+            ["rect", "ellipse"].contains(xlsx_attr(element, "prst", "")) {
             if geometry {
               return None
             }
             geometry = true
+            ellipse = is_shape && xlsx_attr(element, "prst", "") == "ellipse"
+            if !is_shape && xlsx_attr(element, "prst", "") != "rect" {
+              return None
+            }
             true
           } else {
             false
@@ -742,6 +749,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
                   line_color.map(color => (color, line_width)),
                   shape_no_fill,
                   shape_dash,
+                  ellipse,
                 ),
               )
             }
@@ -772,6 +780,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
           saw_blip_fill = false
           saw_sppr = false
           geometry = false
+          ellipse = false
           stretch = false
           from_row = -1
           from_column = -1
