@@ -964,12 +964,9 @@ fn XlsxWorkbook::xlsx_shape_theme_alphas(
             element.attributes.length() != 1 {
             return None
           }
-          let value = match xlsx_int(xlsx_attr(element, "val", "")) {
-            Some(value) if value <=
-              (if name == "alpha" { 100000L } else { 1000000L }) &&
-              value >= (if name == "alphaOff" { -1000000L } else { 0L }) =>
-              value
-            _ => return None
+          let value = match xlsx_shape_opacity_fraction(element, name) {
+            Some(value) => value
+            None => return None
           }
           result[slot] = xlsx_shape_apply_theme_alpha(
             name,
@@ -1002,9 +999,8 @@ fn XlsxWorkbook::xlsx_shape_theme_alphas(
 fn xlsx_shape_apply_theme_alpha(
   name : String,
   previous : Double,
-  value : Int64,
+  fraction : Double,
 ) -> Double {
-  let fraction = value.to_double() / 100000.0
   let next = match name {
     "alpha" => fraction
     "alphaMod" => previous * fraction
@@ -1208,6 +1204,26 @@ fn xlsx_shape_initial_alpha(
 }
 
 ///|
+fn xlsx_shape_opacity_fraction(
+  element : @xml.NamespaceElement,
+  name : String,
+) -> Double? {
+  let raw = xlsx_trim(xlsx_attr(element, "val", ""))
+  let percent = raw.has_suffix("%")
+  let digits = if percent { raw[:raw.length() - 1].to_owned() } else { raw }
+  let number = @string.parse_double(digits) catch { _ => return None }
+  if number.is_nan() || number.is_inf() {
+    return None
+  }
+  let fraction = number / (if percent { 100.0 } else { 100000.0 })
+  if fraction < (if name == "alphaOff" { -10.0 } else { 0.0 }) ||
+    fraction > (if name == "alpha" { 1.0 } else { 10.0 }) {
+    return None
+  }
+  Some(fraction)
+}
+
+///|
 fn xlsx_shape_alpha_modifier(
   name : String,
   element : @xml.NamespaceElement,
@@ -1217,10 +1233,9 @@ fn xlsx_shape_alpha_modifier(
     element.attributes.length() != 1 {
     return None
   }
-  let value = match xlsx_int(xlsx_attr(element, "val", "")) {
-    Some(value) if value <= (if name == "alpha" { 100000L } else { 1000000L }) &&
-      value >= (if name == "alphaOff" { -1000000L } else { 0L }) => value
-    _ => return None
+  let value = match xlsx_shape_opacity_fraction(element, name) {
+    Some(value) => value
+    None => return None
   }
   Some(xlsx_shape_apply_theme_alpha(name, previous, value))
 }

@@ -13,7 +13,7 @@ variants = {
     'color-transform': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:lumMod val="50000"/></a:srgbClr>'),
     'alpha-too-large': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="100001"/></a:srgbClr>'),
     'alpha-negative': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="-1"/></a:srgbClr>'),
-    'alpha-decimal': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="1.5"/></a:srgbClr>'),
+    'alpha-malformed': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="bad%"/></a:srgbClr>'),
     'alpha-mod-too-large': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alphaMod val="1000001"/></a:srgbClr>'),
     'alpha-mod-negative': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alphaMod val="-1"/></a:srgbClr>'),
     'alpha-off-too-small': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alphaOff val="-1000001"/></a:srgbClr>'),
