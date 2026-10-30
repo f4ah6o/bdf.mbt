@@ -257,7 +257,11 @@ fn XlsxWorkbook::xlsx_table_style(
           kind != "headerRow" &&
           kind != "totalRow" &&
           kind != "firstColumn" &&
-          kind != "lastColumn"
+          kind != "lastColumn" &&
+          kind != "firstHeaderCell" &&
+          kind != "lastHeaderCell" &&
+          kind != "firstTotalCell" &&
+          kind != "lastTotalCell"
         ) ||
         (selected_kind != "" && selected_kind != kind) {
         return (-1, 0)
@@ -283,6 +287,14 @@ fn XlsxWorkbook::xlsx_table_style(
       3
     } else if selected_kind == "lastColumn" {
       4
+    } else if selected_kind == "firstHeaderCell" {
+      5
+    } else if selected_kind == "lastHeaderCell" {
+      6
+    } else if selected_kind == "firstTotalCell" {
+      7
+    } else if selected_kind == "lastTotalCell" {
+      8
     } else {
       0
     },
@@ -392,12 +404,20 @@ fn XlsxWorkbook::xlsx_plain_table_area(
       _ => ()
     }
   }
+  let header_corner = selected_region == 5 || selected_region == 6
+  let total_corner = selected_region == 7 || selected_region == 8
   let style_start = if selected_region == 2 {
     if parsed_table.totals_rows > 0 {
       Int64::max(
         range.row_start,
         range.row_end - parsed_table.totals_rows.to_int64() + 1L,
       )
+    } else {
+      range.row_end + 1L
+    }
+  } else if total_corner {
+    if parsed_table.totals_rows > 0 {
+      range.row_end
     } else {
       range.row_end + 1L
     }
@@ -413,18 +433,30 @@ fn XlsxWorkbook::xlsx_plain_table_area(
     } else {
       range.row_start - 1L
     }
+  } else if header_corner {
+    if parsed_table.header_rows > 0 {
+      range.row_start
+    } else {
+      range.row_start - 1L
+    }
   } else {
     range.row_end
   }
-  let style_col_start = if (selected_region == 3 && !first_column) ||
-    (selected_region == 4 && !last_column) {
+  let first_region = selected_region == 3 ||
+    selected_region == 5 ||
+    selected_region == 7
+  let last_region = selected_region == 4 ||
+    selected_region == 6 ||
+    selected_region == 8
+  let style_col_start = if (first_region && !first_column) ||
+    (last_region && !last_column) {
     range.column_end + 1
-  } else if selected_region == 4 {
+  } else if last_region {
     range.column_end
   } else {
     range.column_start
   }
-  let style_col_end = if selected_region == 3 {
+  let style_col_end = if first_region {
     range.column_start
   } else {
     range.column_end
