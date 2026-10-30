@@ -49,13 +49,6 @@ for (const [j, c] of sheetNotes.entries()) await verifyCase(c, `sheet notes ${j}
 const sheetNotesFilter = JSON.parse(await readFile(new URL('./sheet-notes-filter.json', import.meta.url)));
 assert.equal(sheetNotesFilter.length, 128, 'sheet note and autofilter fixture count');
 for (const [j, c] of sheetNotesFilter.entries()) await verifyCase(c, `sheet notes and autofilter ${j}`);
-const unsupportedSheetNotes = JSON.parse(await readFile(new URL('./sheet-notes-unsupported.json', import.meta.url)));
-assert.equal(unsupportedSheetNotes.length, 8, 'unsupported sheet note fixture count');
-for (const encoded of unsupportedSheetNotes) {
-  const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'multiple comments must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /multiple comments/);
-}
 const baseFills = JSON.parse(await readFile(new URL('./base-fill.json', import.meta.url)));
 assert.equal(baseFills.length, 240, 'row and column fill fixture count');
 for (const [j, c] of baseFills.entries()) await verifyCase(c, `base fill ${j}`);

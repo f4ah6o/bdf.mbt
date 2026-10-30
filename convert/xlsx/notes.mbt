@@ -1,7 +1,8 @@
 ///|
 // The upstream reader uses the first comments relationship and paints a
 // corner marker for each distinct valid cell reference. Invalid comment XML
-// is ignored. Multiple distinct notes need stable upstream drawing order.
+// is ignored. Sort markers for deterministic output; their opaque shapes can
+// be drawn in any order.
 fn XlsxWorkbook::xlsx_plain_notes(
   self : XlsxWorkbook,
   part : String,
@@ -16,8 +17,8 @@ fn XlsxWorkbook::xlsx_plain_notes(
   let mut depth = 0
   let mut list_depth = -1
   let mut seen_list = false
-  let mut first : (Int32, Int32)? = None
-  let mut multiple = false
+  let notes : Array[(Int32, Int32)] = []
+  let seen : Map[Int32, Map[Int32, Bool]] = Map([])
   while true {
     let event = reader.read_event() catch { _ => return [] }
     match event.kind {
@@ -33,12 +34,17 @@ fn XlsxWorkbook::xlsx_plain_notes(
             xlsx_attr(element, "ref", ""),
           )
           if valid {
-            match first {
-              None => first = Some((row, column))
-              Some((previous_row, previous_column)) =>
-                if row != previous_row || column != previous_column {
-                  multiple = true
-                }
+            let columns = match seen.get(row) {
+              Some(columns) => columns
+              None => {
+                let columns : Map[Int32, Bool] = Map([])
+                seen[row] = columns
+                columns
+              }
+            }
+            if !columns.contains(column) {
+              columns[column] = true
+              notes.push((row, column))
             }
           }
         }
@@ -61,13 +67,12 @@ fn XlsxWorkbook::xlsx_plain_notes(
       _ => ()
     }
   }
-  if multiple {
-    raise InvalidXlsxInput(
-      "xlsx: plain conversion does not support multiple comments",
-    )
-  }
-  match first {
-    Some(note) => [note]
-    None => []
-  }
+  notes.sort_by((a, b) => {
+    if a.0 != b.0 {
+      a.0.compare(b.0)
+    } else {
+      a.1.compare(b.1)
+    }
+  })
+  notes
 }

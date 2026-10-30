@@ -77,7 +77,7 @@ func TestCodexSheetNotes(t *testing.T) {
 		}
 		out = append(out, map[string]any{"input": b.Bytes(), "bdf": doc.Bytes(), "warnings": result.Warnings, "mode": "none", "no_index": true})
 	}
-	for name, v := range map[string]any{"sheet-notes.json": out, "sheet-notes-unsupported.json": unsupported} {
+	for name, v := range map[string]any{"sheet-notes.json": out, "sheet-multiple-notes-legacy-inputs.json": unsupported} {
 		data, e := json.Marshal(v)
 		if e != nil {
 			t.Fatal(e)

@@ -97,6 +97,10 @@ Worksheet filter buttons use `generate_sheet_autofilter_test.go` and
 `generate_sheet_autofilter_tiles_test.go` and `TestCodexSheetAutoFilterTiles`.
 Sheet comment markers use `generate_sheet_notes_test.go` and `TestCodexSheetNotes`; their interaction with
 filters uses `generate_sheet_notes_filter_test.go` and `TestCodexSheetNotesFilter`.
+Multiple notes are checked with `verify-sheet-multiple-notes.mjs`, which compares
+marker paths without assuming the Go map iteration order. The fixtures use
+`generate_sheet_multiple_notes_test.go`, `generate_sheet_multiple_notes_filter_test.go`,
+and `generate_sheet_multiple_notes_legacy_test.go`.
 Multiple unformatted text runs use `generate_multiple_plain_runs_safe_test.go`
 and `TestCodexMultiplePlainRunsSafe`. Mixed direct text and runs and text number
 formats remain outside the plain renderer's supported subset.
