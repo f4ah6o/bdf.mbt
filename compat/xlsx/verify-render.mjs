@@ -38,29 +38,25 @@ for (const [j, c] of picturePrecision.entries()) {
 }
 const pictureBatched = JSON.parse(await readFile(new URL('./picture-batched.json', import.meta.url)));
 assert.equal(pictureBatched.length, 16, 'batched picture fixture count');
-for (const [j, c] of pictureBatched.entries()) {
-  const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `batched picture must be rejected ${j}`);
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /batched multi-sheet/);
-}
+for (const [j, c] of pictureBatched.entries()) { await verifyCase(c, `batched picture ${j}`); simplePictureCount++; }
+const pictureBatchBoundary = JSON.parse(await readFile(new URL('./picture-batch-boundary.json', import.meta.url)));
+assert.equal(pictureBatchBoundary.length, 8, 'picture batching boundary fixture count');
+for (const [j, c] of pictureBatchBoundary.entries()) { await verifyCase(c, `picture batching boundary ${j}`); simplePictureCount++; }
+const pictureThreeSheetBatch = JSON.parse(await readFile(new URL('./picture-three-sheet-batch.json', import.meta.url)));
+assert.equal(pictureThreeSheetBatch.length, 8, 'three-sheet picture batching fixture count');
+for (const [j, c] of pictureThreeSheetBatch.entries()) { await verifyCase(c, `three-sheet picture batch ${j}`); simplePictureCount++; }
+const pictureThreeSheetDistinct = JSON.parse(await readFile(new URL('./picture-three-sheet-distinct.json', import.meta.url)));
+assert.equal(pictureThreeSheetDistinct.length, 8, 'three-sheet distinct picture fixture count');
+for (const [j, c] of pictureThreeSheetDistinct.entries()) { await verifyCase(c, `three-sheet distinct picture batch ${j}`); simplePictureCount++; }
+const batchWithoutPictures = JSON.parse(await readFile(new URL('./batch-without-pictures.json', import.meta.url)));
+assert.equal(batchWithoutPictures.length, 16, 'batch fixture count without pictures');
+for (const [j, c] of batchWithoutPictures.entries()) await verifyCase(c, `batch without pictures ${j}`);
 const unsupportedPictureFormats = JSON.parse(await readFile(new URL('./picture-unsupported-formats.json', import.meta.url)));
 assert.equal(unsupportedPictureFormats.length, 56, 'unsupported picture format fixture count');
 for (const [j, c] of unsupportedPictureFormats.entries()) {
   const input = Buffer.from(c.input, 'base64');
   assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `unsupported picture format must be rejected ${j}`);
   assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing/);
-}
-const pictureBatchBoundary = JSON.parse(await readFile(new URL('./picture-batch-boundary.json', import.meta.url)));
-assert.equal(pictureBatchBoundary.length, 8, 'picture batching boundary fixture count');
-for (const [j, c] of pictureBatchBoundary.entries()) {
-  if (j % 2 === 0) {
-    await verifyCase(c, `picture below batching boundary ${j}`);
-    simplePictureCount++;
-  } else {
-    const input = Buffer.from(c.input, 'base64');
-    assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `picture at batching boundary must be rejected ${j}`);
-    assert.match(xlsx_render_error(input, c.mode, c.no_index), /batched multi-sheet/);
-  }
 }
 const conditionalMissingDxfLegacy = JSON.parse(await readFile(new URL('./conditional-missing-dxf-legacy.json', import.meta.url)));
 assert.equal(conditionalMissingDxfLegacy.length, 60, 'previously unsupported missing conditional style fixtures');

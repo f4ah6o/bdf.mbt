@@ -1988,9 +1988,8 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// patterned row and column fills, complex borders and other features are
 /// rejected. One untransformed embedded browser-supported image per sheet is
-/// supported with zero
-/// cell-anchor offsets and row heights in quarter-point increments. Large
-/// multi-sheet workbooks that require batched object encoding are rejected.
+/// supported with zero cell-anchor offsets and row heights in quarter-point
+/// increments.
 /// Supported numeric conditional rules may apply a differential font,
 /// solid fill and border or be inactive. For blank-cell fills or borders,
 /// ranges are limited to 200,000 cells. Other conditional
@@ -2065,6 +2064,9 @@ pub fn convert_plain_no_fonts(
     }
   }
   let batched = visible_sheets > 1 && sheet_bytes >= 2097152L
+  let tile_maps : Array[Map[String, Json]] = []
+  let mut pending = 0
+  let mut batch_bytes = 0L
   for index, ref in workbook.sheets {
     if ref.hidden {
       continue
@@ -2090,7 +2092,7 @@ pub fn convert_plain_no_fonts(
     )
     let (drawn, geo, missing_formula_values) = workbook.xlsx_draw_plain_sheet(
       ref, styles, locale, doc_language, theme_colors, shared_runs, table_events,
-      writer, children, batched,
+      writer, children,
     )
     picture_children.push(children)
     counter = next
@@ -2130,8 +2132,39 @@ pub fn convert_plain_no_fonts(
       gridlines: geo.show_grid,
       frozen_columns: Int32::min(geo.frozen_columns, 16384),
     })
+    if batched {
+      let size = workbook.package.part_size(ref.part).unwrap_or(0).to_int64()
+      batch_bytes += Int64::min(size, 1048576L - batch_bytes)
+      if batch_bytes >= 1048576L {
+        while pending < grids.length() {
+          tile_maps.push(
+            @sheet.store_grid_parts(
+              writer,
+              grids[pending].grid,
+              picture_children[pending],
+            ),
+          )
+          pending += 1
+        }
+        batch_bytes = 0L
+      }
+    }
   }
-  @sheet.store_grids(writer, grids, !no_text_index, picture_children~)
+  if batched {
+    while pending < grids.length() {
+      tile_maps.push(
+        @sheet.store_grid_parts(
+          writer,
+          grids[pending].grid,
+          picture_children[pending],
+        ),
+      )
+      pending += 1
+    }
+    @sheet.store_grid_views(writer, grids, tile_maps, !no_text_index)
+  } else {
+    @sheet.store_grids(writer, grids, !no_text_index, picture_children~)
+  }
   { bdf: writer.write_single(), warnings, sheets: grids.length(), }
 }
 
@@ -2147,7 +2180,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   table_events : Array[(String, String)],
   writer : @core.DocumentWriter,
   children : Array[(Int32, Int32, Bytes)],
-  batched : Bool,
 ) -> (@sheet.DrawnGrid, XlsxSheetGeometry, Int32) raise {
   let (parsed, rich_cells) = workbook.xlsx_read_sheet_cells_with_runs(
     ref.part,
@@ -2171,11 +2203,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     table_events,
     pictures,
   )
-  if batched && !pictures.is_empty() {
-    raise InvalidXlsxInput(
-      "xlsx: pictures in batched multi-sheet workbooks are not supported",
-    )
-  }
   let mut styled_runs = false
   for _, columns in rich_cells {
     for _, run in columns {
