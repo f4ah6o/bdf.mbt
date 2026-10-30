@@ -675,7 +675,13 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
       }
       continue
     }
-    if block.blank_matches {
+    let paints_blanks = if block.blank_matches {
+      let style = self.xlsx_conditional_style(block.dxf_id)
+      style.fill is Some(_) || style.border is Some(_)
+    } else {
+      false
+    }
+    if paints_blanks {
       for range in block.ranges {
         for stopped_range in stopped_blank_ranges {
           stop_comparisons -= 1
