@@ -1372,6 +1372,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   shape_dashes : Array[String],
   shape_geometries : Array[String],
   shape_adjustments : Array[Int64?],
+  shape_extra_adjustments : Array[Map[String, Int64]],
 ) -> (
   Array[@sheet.GridLink],
   Bool,
@@ -1687,6 +1688,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
                 dash,
                 geometry,
                 adjustment,
+                extra_adjustments,
               ) in found {
               pictures.push(picture)
               hidden_pictures.push(hidden)
@@ -1696,6 +1698,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
               shape_dashes.push(dash)
               shape_geometries.push(geometry)
               shape_adjustments.push(adjustment)
+              shape_extra_adjustments.push(extra_adjustments)
             }
           None =>
             raise InvalidXlsxInput(
@@ -2223,6 +2226,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let shape_dashes : Array[String] = []
   let shape_geometries : Array[String] = []
   let shape_adjustments : Array[Int64?] = []
+  let shape_extra_adjustments : Array[Map[String, Int64]] = []
   let (
     links,
     has_conditional,
@@ -2245,6 +2249,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     shape_dashes,
     shape_geometries,
     shape_adjustments,
+    shape_extra_adjustments,
   )
   let mut styled_runs = false
   for _, columns in rich_cells {
@@ -3579,6 +3584,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     shape_dashes~,
     shape_geometries~,
     shape_adjustments~,
+    shape_extra_adjustments~,
     picture_writer=Some(writer),
     picture_children=Some(children),
     column_axis_default=Some(

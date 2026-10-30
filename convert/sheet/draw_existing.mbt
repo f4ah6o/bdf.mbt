@@ -128,7 +128,9 @@ pub fn sized_fallback_advance(
 /// to 100,000 for triangles, parallelograms, trapezoids, home plates, chevrons,
 /// crosses, hexagons, octagons, rounded rectangles, diagonal stripes, snipped
 /// corners, seven- or ten-point stars, and the first adjustment of supported
-/// straight-line presets.
+/// straight-line presets. `shape_extra_adjustments` supplies `adj2` through
+/// `adj4` by name, where defined by the preset, in the same range. Its entries
+/// correspond to the pictures and may be empty for other geometries.
 /// `shape_dashes` contains DrawingML preset dash names, or an empty string for
 /// a solid line. A caller that defers object storage may collect child parts in
 /// `picture_children` and pass them to `store_grids`.
@@ -174,6 +176,7 @@ pub fn draw_sized_grid_no_fonts(
   shape_dashes~ : Array[String] = [],
   shape_geometries~ : Array[String] = [],
   shape_adjustments~ : Array[Int64?] = [],
+  shape_extra_adjustments~ : Array[Map[String, Int64]] = [],
   picture_writer~ : @core.DocumentWriter? = None,
   picture_children~ : Array[(Int32, Int32, Bytes)]? = None,
   column_axis_default~ : Float? = None,
@@ -914,6 +917,10 @@ pub fn draw_sized_grid_no_fonts(
     shape_adjustments.length() != pictures.length() {
     raise InvalidArgument("sheet: invalid shape adjustment list")
   }
+  if !shape_extra_adjustments.is_empty() &&
+    shape_extra_adjustments.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid extra shape adjustment list")
+  }
   if !pictures.is_empty() {
     if pictures.length() > 128 {
       raise InvalidArgument("sheet: too many pictures")
@@ -948,6 +955,11 @@ pub fn draw_sized_grid_no_fonts(
           None
         } else {
           shape_adjustments[index]
+        },
+        shape_extra_adjustments=if shape_extra_adjustments.is_empty() {
+          Map([])
+        } else {
+          shape_extra_adjustments[index]
         },
         shape_geometry=if shape_geometries.is_empty() {
           "rect"

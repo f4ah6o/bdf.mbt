@@ -15,6 +15,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
     String,
     String,
     Int64?,
+    Map[String, Int64],
   ),
 ]? {
   let bytes = self.package.read(part) catch { _ => return None }
@@ -42,6 +43,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
       String,
       String,
       Int64?,
+      Map[String, Int64],
     ),
   ] = []
   let images : Map[String, Bytes] = Map([])
@@ -76,6 +78,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut geometry = false
   let mut shape_geometry = ""
   let mut shape_adjustment : Int64? = None
+  let mut shape_extra_adjustments : Map[String, Int64] = Map([])
   let mut saw_adjustments = false
   let mut shape_adjustments_allowed = true
   let mut stretch = false
@@ -416,17 +419,18 @@ fn XlsxWorkbook::xlsx_simple_picture(
             [
               "rect", "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram",
               "trapezoid", "homePlate", "chevron", "plus", "hexagon", "octagon",
-              "roundRect", "actionButtonBlank", "flowChartProcess", "flowChartDecision", "flowChartExtract",
-              "flowChartMerge", "flowChartInputOutput", "flowChartPreparation", "flowChartPunchedCard",
-              "flowChartCollate", "flowChartManualInput", "flowChartManualOperation",
-              "flowChartOffpageConnector", "irregularSeal1", "irregularSeal2", "lightningBolt",
-              "bentUpArrow", "corner", "diagStripe", "dodecagon", "downArrow", "downArrowCallout",
-              "halfFrame", "heptagon", "leftArrow", "leftArrowCallout", "leftRightArrow",
-              "leftRightArrowCallout", "leftRightUpArrow", "leftUpArrow", "mathMinus",
-              "mathPlus", "nonIsoscelesTrapezoid", "notchedRightArrow", "quadArrow",
-              "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip1Rect",
-              "snip2DiagRect", "snip2SameRect", "star10", "star7", "upArrowCallout",
-              "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
+              "roundRect", "actionButtonBlank", "flowChartProcess", "flowChartDecision",
+              "flowChartExtract", "flowChartMerge", "flowChartInputOutput", "flowChartPreparation",
+              "flowChartPunchedCard", "flowChartCollate", "flowChartManualInput",
+              "flowChartManualOperation", "flowChartOffpageConnector", "irregularSeal1",
+              "irregularSeal2", "lightningBolt", "bentUpArrow", "corner", "diagStripe",
+              "dodecagon", "downArrow", "downArrowCallout", "halfFrame", "heptagon",
+              "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
+              "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid",
+              "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow",
+              "rightArrowCallout", "snip1Rect", "snip2DiagRect", "snip2SameRect",
+              "star10", "star7", "upArrowCallout", "upDownArrow", "upArrow", "upDownArrowCallout",
+              "wedgeRectCallout",
             ].contains(xlsx_attr(element, "prst", "")) {
             if geometry {
               return None
@@ -870,21 +874,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
         } else if depth == 6 && parent == "avLst" && parents[4] == "prstGeom" {
           if name != "gd" ||
             !(event.kind is Empty(_)) ||
-            shape_adjustment is Some(_) ||
-            element.attributes.length() != 2 ||
-            xlsx_attr(element, "name", "") !=
-            (if [
-                "bentUpArrow", "corner", "downArrow", "downArrowCallout", "halfFrame",
-                "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
-                "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid",
-                "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow",
-                "rightArrowCallout", "snip2DiagRect", "snip2SameRect", "upArrowCallout",
-                "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
-              ].contains(shape_geometry) {
-              "adj1"
-            } else {
-              "adj"
-            }) {
+            element.attributes.length() != 2 {
             return None
           }
           for attr in element.attributes {
@@ -893,13 +883,38 @@ fn XlsxWorkbook::xlsx_simple_picture(
               return None
             }
           }
+          let guide = xlsx_attr(element, "name", "")
           let formula = xlsx_attr(element, "fmla", "")
           if !formula.has_prefix("val ") {
             return None
           }
-          shape_adjustment = match xlsx_int(formula[4:].to_owned()) {
-            Some(value) if value >= 0L && value <= 100000L => Some(value)
+          let value = match xlsx_int(formula[4:].to_owned()) {
+            Some(value) if value >= 0L && value <= 100000L => value
             _ => return None
+          }
+          let first_guide = if [
+              "bentUpArrow", "corner", "downArrow", "downArrowCallout", "halfFrame",
+              "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
+              "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid",
+              "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow",
+              "rightArrowCallout", "snip2DiagRect", "snip2SameRect", "upArrowCallout",
+              "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
+            ].contains(shape_geometry) {
+            "adj1"
+          } else {
+            "adj"
+          }
+          if guide == first_guide {
+            if shape_adjustment is Some(_) {
+              return None
+            }
+            shape_adjustment = Some(value)
+          } else {
+            if !xlsx_shape_extra_guide_allowed(shape_geometry, guide) ||
+              shape_extra_adjustments.get(guide) is Some(_) {
+              return None
+            }
+            shape_extra_adjustments[guide] = value
           }
           true
         } else {
@@ -1062,6 +1077,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
                   shape_dash,
                   shape_geometry,
                   shape_adjustment,
+                  shape_extra_adjustments,
                 ),
               )
             }
@@ -1096,6 +1112,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
           geometry = false
           shape_geometry = ""
           shape_adjustment = None
+          shape_extra_adjustments = Map([])
           saw_adjustments = false
           shape_adjustments_allowed = true
           stretch = false
@@ -2192,4 +2209,30 @@ fn xlsx_crop_png_size(image : Bytes) -> (Double, Double)? {
     return None
   }
   Some((w.to_double(), h.to_double()))
+}
+
+///|
+fn xlsx_shape_extra_guide_allowed(geometry : String, guide : String) -> Bool {
+  match guide {
+    "adj2" =>
+      [
+        "bentUpArrow", "corner", "downArrow", "downArrowCallout", "halfFrame", "leftArrow",
+        "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout", "leftRightUpArrow",
+        "leftUpArrow", "nonIsoscelesTrapezoid", "notchedRightArrow", "quadArrow",
+        "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip2DiagRect", "snip2SameRect",
+        "upArrowCallout", "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
+      ].contains(geometry)
+    "adj3" =>
+      [
+        "bentUpArrow", "downArrowCallout", "leftArrowCallout", "leftRightArrowCallout",
+        "leftRightUpArrow", "leftUpArrow", "quadArrow", "quadArrowCallout", "rightArrowCallout",
+        "upArrowCallout", "upDownArrowCallout",
+      ].contains(geometry)
+    "adj4" =>
+      [
+        "downArrowCallout", "leftArrowCallout", "leftRightArrowCallout", "quadArrowCallout",
+        "rightArrowCallout", "upArrowCallout", "upDownArrowCallout",
+      ].contains(geometry)
+    _ => false
+  }
 }

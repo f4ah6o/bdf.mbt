@@ -49,7 +49,7 @@ def formula(text):
 lines = [
     '///|',
     '// Straight-line preset paths generated from the upstream DrawingML definitions.',
-    'fn sheet_formula_preset_path(geometry : String, width : Double, height : Double, adjustment : Int64?) -> @core.Path {',
+    'fn sheet_formula_preset_path(geometry : String, width : Double, height : Double, adjustment : Int64?, extra~ : Map[String, Int64] = Map([])) -> @core.Path {',
     '  let ss = Double::min(width, height)',
     '  let ls = Double::max(width, height)',
     '  let env : Map[String, Double] = Map([])',
@@ -86,6 +86,9 @@ for name in names:
         if (key == 'adj' and name in ('diagStripe', 'snip1Rect', 'star10', 'star7')) or key == 'adj1':
             default = formula(expression)
             lines.append(f'      env["{key}"] = if adjustment is Some(value) {{ value.to_double() }} else {{ {default} }}')
+        elif key in ('adj2', 'adj3', 'adj4'):
+            default = formula(expression)
+            lines.append(f'      env["{key}"] = match extra.get("{key}") {{ Some(value) => value.to_double(); None => {default} }}')
         else:
             lines.append(f'      env["{key}"] = {formula(expression)}')
         defined.add(key)

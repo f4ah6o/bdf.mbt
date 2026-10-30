@@ -5,6 +5,7 @@ fn sheet_formula_preset_path(
   width : Double,
   height : Double,
   adjustment : Int64?,
+  extra~ : Map[String, Int64] = Map([]),
 ) -> @core.Path {
   let ss = Double::min(width, height)
   let ls = Double::max(width, height)
@@ -56,8 +57,14 @@ fn sheet_formula_preset_path(
       } else {
         25000.0
       }
-      env["adj2"] = 25000.0
-      env["adj3"] = 25000.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
+      env["adj3"] = match extra.get("adj3") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
       env["a1"] = sheet_preset_pin(0.0, env.get("adj1").unwrap_or(0.0), 50000.0)
       env["a2"] = sheet_preset_pin(0.0, env.get("adj2").unwrap_or(0.0), 50000.0)
       env["a3"] = sheet_preset_pin(0.0, env.get("adj3").unwrap_or(0.0), 50000.0)
@@ -144,7 +151,10 @@ fn sheet_formula_preset_path(
       } else {
         50000.0
       }
-      env["adj2"] = 50000.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 50000.0
+      }
       env["maxAdj1"] = sheet_preset_muldiv(
         100000.0,
         env.get("h").unwrap_or(0.0),
@@ -339,7 +349,10 @@ fn sheet_formula_preset_path(
       } else {
         50000.0
       }
-      env["adj2"] = 50000.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 50000.0
+      }
       env["maxAdj2"] = sheet_preset_muldiv(
         100000.0,
         env.get("h").unwrap_or(0.0),
@@ -410,9 +423,18 @@ fn sheet_formula_preset_path(
       } else {
         25000.0
       }
-      env["adj2"] = 25000.0
-      env["adj3"] = 25000.0
-      env["adj4"] = 64977.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
+      env["adj3"] = match extra.get("adj3") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
+      env["adj4"] = match extra.get("adj4") {
+        Some(value) => value.to_double()
+        None => 64977.0
+      }
       env["maxAdj2"] = sheet_preset_muldiv(
         50000.0,
         env.get("w").unwrap_or(0.0),
@@ -526,7 +548,10 @@ fn sheet_formula_preset_path(
       } else {
         33333.0
       }
-      env["adj2"] = 33333.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 33333.0
+      }
       env["maxAdj2"] = sheet_preset_muldiv(
         100000.0,
         env.get("w").unwrap_or(0.0),
@@ -719,7 +744,10 @@ fn sheet_formula_preset_path(
       } else {
         50000.0
       }
-      env["adj2"] = 50000.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 50000.0
+      }
       env["maxAdj2"] = sheet_preset_muldiv(
         100000.0,
         env.get("w").unwrap_or(0.0),
@@ -790,9 +818,18 @@ fn sheet_formula_preset_path(
       } else {
         25000.0
       }
-      env["adj2"] = 25000.0
-      env["adj3"] = 25000.0
-      env["adj4"] = 64977.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
+      env["adj3"] = match extra.get("adj3") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
+      env["adj4"] = match extra.get("adj4") {
+        Some(value) => value.to_double()
+        None => 64977.0
+      }
       env["maxAdj2"] = sheet_preset_muldiv(
         50000.0,
         env.get("h").unwrap_or(0.0),
@@ -910,7 +947,10 @@ fn sheet_formula_preset_path(
       } else {
         50000.0
       }
-      env["adj2"] = 50000.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 50000.0
+      }
       env["maxAdj2"] = sheet_preset_muldiv(
         50000.0,
         env.get("w").unwrap_or(0.0),
@@ -990,9 +1030,18 @@ fn sheet_formula_preset_path(
       } else {
         25000.0
       }
-      env["adj2"] = 25000.0
-      env["adj3"] = 25000.0
-      env["adj4"] = 48123.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
+      env["adj3"] = match extra.get("adj3") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
+      env["adj4"] = match extra.get("adj4") {
+        Some(value) => value.to_double()
+        None => 48123.0
+      }
       env["maxAdj2"] = sheet_preset_muldiv(
         50000.0,
         env.get("h").unwrap_or(0.0),
@@ -1125,8 +1174,14 @@ fn sheet_formula_preset_path(
       } else {
         25000.0
       }
-      env["adj2"] = 25000.0
-      env["adj3"] = 25000.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
+      env["adj3"] = match extra.get("adj3") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
       env["a2"] = sheet_preset_pin(0.0, env.get("adj2").unwrap_or(0.0), 50000.0)
       env["maxAdj1"] = sheet_preset_muldiv(
         env.get("a2").unwrap_or(0.0),
@@ -1252,8 +1307,14 @@ fn sheet_formula_preset_path(
       } else {
         25000.0
       }
-      env["adj2"] = 25000.0
-      env["adj3"] = 25000.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
+      env["adj3"] = match extra.get("adj3") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
       env["a2"] = sheet_preset_pin(0.0, env.get("adj2").unwrap_or(0.0), 50000.0)
       env["maxAdj1"] = sheet_preset_muldiv(
         env.get("a2").unwrap_or(0.0),
@@ -1495,7 +1556,10 @@ fn sheet_formula_preset_path(
       } else {
         25000.0
       }
-      env["adj2"] = 25000.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
       env["maxAdj"] = sheet_preset_muldiv(
         50000.0,
         env.get("w").unwrap_or(0.0),
@@ -1578,7 +1642,10 @@ fn sheet_formula_preset_path(
       } else {
         50000.0
       }
-      env["adj2"] = 50000.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 50000.0
+      }
       env["maxAdj2"] = sheet_preset_muldiv(
         100000.0,
         env.get("w").unwrap_or(0.0),
@@ -1651,8 +1718,14 @@ fn sheet_formula_preset_path(
       } else {
         22500.0
       }
-      env["adj2"] = 22500.0
-      env["adj3"] = 22500.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 22500.0
+      }
+      env["adj3"] = match extra.get("adj3") {
+        Some(value) => value.to_double()
+        None => 22500.0
+      }
       env["a2"] = sheet_preset_pin(0.0, env.get("adj2").unwrap_or(0.0), 50000.0)
       env["maxAdj1"] = sheet_preset_muldiv(
         env.get("a2").unwrap_or(0.0),
@@ -1790,9 +1863,18 @@ fn sheet_formula_preset_path(
       } else {
         18515.0
       }
-      env["adj2"] = 18515.0
-      env["adj3"] = 18515.0
-      env["adj4"] = 48123.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 18515.0
+      }
+      env["adj3"] = match extra.get("adj3") {
+        Some(value) => value.to_double()
+        None => 18515.0
+      }
+      env["adj4"] = match extra.get("adj4") {
+        Some(value) => value.to_double()
+        None => 48123.0
+      }
       env["a2"] = sheet_preset_pin(0.0, env.get("adj2").unwrap_or(0.0), 50000.0)
       env["maxAdj1"] = sheet_preset_muldiv(
         env.get("a2").unwrap_or(0.0),
@@ -1962,7 +2044,10 @@ fn sheet_formula_preset_path(
       } else {
         50000.0
       }
-      env["adj2"] = 50000.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 50000.0
+      }
       env["maxAdj2"] = sheet_preset_muldiv(
         100000.0,
         env.get("w").unwrap_or(0.0),
@@ -2033,9 +2118,18 @@ fn sheet_formula_preset_path(
       } else {
         25000.0
       }
-      env["adj2"] = 25000.0
-      env["adj3"] = 25000.0
-      env["adj4"] = 64977.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
+      env["adj3"] = match extra.get("adj3") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
+      env["adj4"] = match extra.get("adj4") {
+        Some(value) => value.to_double()
+        None => 64977.0
+      }
       env["maxAdj2"] = sheet_preset_muldiv(
         50000.0,
         env.get("h").unwrap_or(0.0),
@@ -2188,7 +2282,10 @@ fn sheet_formula_preset_path(
       } else {
         0.0
       }
-      env["adj2"] = 16667.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 16667.0
+      }
       env["a1"] = sheet_preset_pin(0.0, env.get("adj1").unwrap_or(0.0), 50000.0)
       env["a2"] = sheet_preset_pin(0.0, env.get("adj2").unwrap_or(0.0), 50000.0)
       env["lx1"] = sheet_preset_muldiv(
@@ -2258,7 +2355,10 @@ fn sheet_formula_preset_path(
       } else {
         16667.0
       }
-      env["adj2"] = 0.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 0.0
+      }
       env["a1"] = sheet_preset_pin(0.0, env.get("adj1").unwrap_or(0.0), 50000.0)
       env["a2"] = sheet_preset_pin(0.0, env.get("adj2").unwrap_or(0.0), 50000.0)
       env["tx1"] = sheet_preset_muldiv(
@@ -2686,9 +2786,18 @@ fn sheet_formula_preset_path(
       } else {
         25000.0
       }
-      env["adj2"] = 25000.0
-      env["adj3"] = 25000.0
-      env["adj4"] = 64977.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
+      env["adj3"] = match extra.get("adj3") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
+      env["adj4"] = match extra.get("adj4") {
+        Some(value) => value.to_double()
+        None => 64977.0
+      }
       env["maxAdj2"] = sheet_preset_muldiv(
         50000.0,
         env.get("w").unwrap_or(0.0),
@@ -2806,7 +2915,10 @@ fn sheet_formula_preset_path(
       } else {
         50000.0
       }
-      env["adj2"] = 50000.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 50000.0
+      }
       env["maxAdj2"] = sheet_preset_muldiv(
         50000.0,
         env.get("h").unwrap_or(0.0),
@@ -2886,7 +2998,10 @@ fn sheet_formula_preset_path(
       } else {
         50000.0
       }
-      env["adj2"] = 50000.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 50000.0
+      }
       env["maxAdj2"] = sheet_preset_muldiv(
         100000.0,
         env.get("h").unwrap_or(0.0),
@@ -2957,9 +3072,18 @@ fn sheet_formula_preset_path(
       } else {
         25000.0
       }
-      env["adj2"] = 25000.0
-      env["adj3"] = 25000.0
-      env["adj4"] = 48123.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
+      env["adj3"] = match extra.get("adj3") {
+        Some(value) => value.to_double()
+        None => 25000.0
+      }
+      env["adj4"] = match extra.get("adj4") {
+        Some(value) => value.to_double()
+        None => 48123.0
+      }
       env["maxAdj2"] = sheet_preset_muldiv(
         50000.0,
         env.get("w").unwrap_or(0.0),
@@ -3092,7 +3216,10 @@ fn sheet_formula_preset_path(
       } else {
         -20833.0
       }
-      env["adj2"] = 62500.0
+      env["adj2"] = match extra.get("adj2") {
+        Some(value) => value.to_double()
+        None => 62500.0
+      }
       env["dxPos"] = sheet_preset_muldiv(
         env.get("w").unwrap_or(0.0),
         env.get("adj1").unwrap_or(0.0),

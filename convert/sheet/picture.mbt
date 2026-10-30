@@ -54,6 +54,7 @@ fn GridDrawContext::paint_picture(
   shape_dash~ : String = "",
   shape_geometry~ : String = "rect",
   shape_adjustment~ : Int64? = None,
+  shape_extra_adjustments~ : Map[String, Int64] = Map([]),
 ) -> Int32 raise {
   if picture.kind < 0 ||
     picture.kind > 2 ||
@@ -184,6 +185,13 @@ fn GridDrawContext::paint_picture(
         "wedgeRectCallout",
       ].contains(shape_geometry) {
       raise InvalidArgument("sheet: invalid shape adjustment")
+    }
+  }
+  for guide, value in shape_extra_adjustments {
+    if value < 0L ||
+      value > 100000L ||
+      !sheet_shape_extra_guide_allowed(shape_geometry, guide) {
+      raise InvalidArgument("sheet: invalid extra shape adjustment")
     }
   }
   if shape_no_fill && shape_fill is Some(_) {
@@ -541,7 +549,11 @@ fn GridDrawContext::paint_picture(
       "wedgeRectCallout",
     ].contains(shape_geometry) {
     sheet_formula_preset_path(
-      shape_geometry, draw_width, draw_height, shape_adjustment,
+      shape_geometry,
+      draw_width,
+      draw_height,
+      shape_adjustment,
+      extra=shape_extra_adjustments,
     )
   } else if [
       "flowChartCollate", "flowChartManualInput", "flowChartManualOperation", "flowChartOffpageConnector",
@@ -890,4 +902,30 @@ fn sheet_round_rect_path(
   }
   verbs.push(b'\x04')
   { verbs: Bytes::from_array(verbs), coordinates: args, }
+}
+
+///|
+fn sheet_shape_extra_guide_allowed(geometry : String, guide : String) -> Bool {
+  match guide {
+    "adj2" =>
+      [
+        "bentUpArrow", "corner", "downArrow", "downArrowCallout", "halfFrame", "leftArrow",
+        "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout", "leftRightUpArrow",
+        "leftUpArrow", "nonIsoscelesTrapezoid", "notchedRightArrow", "quadArrow",
+        "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip2DiagRect", "snip2SameRect",
+        "upArrowCallout", "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
+      ].contains(geometry)
+    "adj3" =>
+      [
+        "bentUpArrow", "downArrowCallout", "leftArrowCallout", "leftRightArrowCallout",
+        "leftRightUpArrow", "leftUpArrow", "quadArrow", "quadArrowCallout", "rightArrowCallout",
+        "upArrowCallout", "upDownArrowCallout",
+      ].contains(geometry)
+    "adj4" =>
+      [
+        "downArrowCallout", "leftArrowCallout", "leftRightArrowCallout", "quadArrowCallout",
+        "rightArrowCallout", "upArrowCallout", "upDownArrowCallout",
+      ].contains(geometry)
+    _ => false
+  }
 }
