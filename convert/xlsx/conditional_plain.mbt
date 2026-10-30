@@ -8,7 +8,58 @@ priv struct XlsxConditionalBlock {
   blank_matches : Bool
   moving_reference : Bool
   dxf_id : Int32
+  stop_if_true : Bool
   covered : Int64
+}
+
+///|
+fn XlsxWorkbook::xlsx_conditional_dxf_count(self : XlsxWorkbook) -> Int32 raise {
+  let rel = match self.package.relationship_of_type(self.part, "/styles") {
+    Some(value) => value
+    None => return 0
+  }
+  let bytes = self.package.read(rel.target) catch { _ => return 0 }
+  let text = @utf8.decode_lossy(bytes[:], ignore_bom=true)
+  if text.contains("<!ENTITY") {
+    return -1
+  }
+  let reader = @xml.NamespaceReader::from_string(text)
+  let mut depth = 0
+  let mut dxfs_depth = -1
+  let mut count = 0
+  while true {
+    let event = reader.read_event()
+    match event.kind {
+      Start(element) | Empty(element) => {
+        let name = element.name.local_name
+        if depth == 1 && name == "dxfs" {
+          if event.kind is Empty(_) {
+            return 0
+          }
+          dxfs_depth = depth + 1
+        } else if depth == dxfs_depth && name == "dxf" {
+          count += 1
+        }
+        if event.kind is Start(_) {
+          depth += 1
+        } else if depth == 0 {
+          break
+        }
+      }
+      End(_) => {
+        depth -= 1
+        if depth + 1 == dxfs_depth {
+          return count
+        }
+        if depth == 0 {
+          break
+        }
+      }
+      Eof => if depth == 0 { break } else { return -1 }
+      _ => ()
+    }
+  }
+  count
 }
 
 ///|
@@ -49,6 +100,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
   let mut block_room = room
   let blocks : Array[XlsxConditionalBlock] = []
   let mut dxf_id = -1
+  let mut stop_if_true = false
   let mut operator = ""
   let mut rule_type = ""
   let mut rule_text = ""
@@ -136,7 +188,15 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             )
           }
           rule_depth = depth + 1
-          dxf_id = xlsx_attr_int(element, "dxfId", -1)
+          let raw_dxf = xlsx_trim(xlsx_attr(element, "dxfId", "")).to_lower()
+          if raw_dxf.contains("_") ||
+            raw_dxf.has_prefix("0x") ||
+            raw_dxf.has_prefix("+0x") ||
+            raw_dxf.has_prefix("-0x") {
+            xlsx_reject_conditional()
+          }
+          dxf_id = xlsx_node_int(element, "dxfId", -1)
+          stop_if_true = xlsx_attr_bool(element, "stopIfTrue")
           operator = xlsx_attr(element, "operator", "equal")
           formula_count = 0
           reference1 = ""
@@ -493,9 +553,6 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             }
           }
           if !matched.is_empty() || any_blank_matches {
-            if dxf_id < 0 {
-              xlsx_reject_conditional()
-            }
             blocks.push({
               ranges,
               matched,
@@ -503,6 +560,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
               blank_matches: any_blank_matches,
               moving_reference,
               dxf_id,
+              stop_if_true,
               covered: block_room - room,
             })
           }
@@ -527,13 +585,22 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
       _ => ()
     }
   }
+  let dxf_count = self.xlsx_conditional_dxf_count() catch { _ => -1 }
+  let relevant : Array[XlsxConditionalBlock] = []
+  for block in blocks {
+    let missing = block.dxf_id < 0 ||
+      (dxf_count >= 0 && block.dxf_id >= dxf_count)
+    if !missing || block.stop_if_true {
+      relevant.push(block)
+    }
+  }
   // Bound pairwise range checks independently of the covered-cell budget.
   let mut comparisons = 4194304
-  for i in 0..<blocks.length() {
+  for i in 0..<relevant.length() {
     for j in 0..<i {
       let mut ranges_overlap = false
-      for a in blocks[i].ranges {
-        for b in blocks[j].ranges {
+      for a in relevant[i].ranges {
+        for b in relevant[j].ranges {
           comparisons -= 1
           if comparisons < 0 {
             xlsx_reject_conditional()
@@ -546,16 +613,16 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
           }
         }
       }
-      if ranges_overlap && blocks[i].dxf_id != blocks[j].dxf_id {
-        if blocks[i].blank_matches || blocks[j].blank_matches {
+      if ranges_overlap && relevant[i].dxf_id != relevant[j].dxf_id {
+        if relevant[i].blank_matches || relevant[j].blank_matches {
           xlsx_reject_conditional()
         }
-        for row, columns in blocks[i].matched {
+        for row, columns in relevant[i].matched {
           comparisons -= 1
           if comparisons < 0 {
             xlsx_reject_conditional()
           }
-          if blocks[j].matched.get(row) is Some(other) {
+          if relevant[j].matched.get(row) is Some(other) {
             for column, _ in columns {
               comparisons -= 1
               if comparisons < 0 || other.contains(column) {
@@ -568,7 +635,10 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
     }
   }
   let mut result = rows
-  for block in blocks {
+  for block in relevant {
+    if block.dxf_id < 0 || (dxf_count >= 0 && block.dxf_id >= dxf_count) {
+      continue
+    }
     let style = self.xlsx_conditional_style(block.dxf_id)
     if block.blank_matches && (style.fill is Some(_) || style.border is Some(_)) {
       if block.covered > 200000L {
