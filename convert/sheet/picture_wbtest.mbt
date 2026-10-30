@@ -41,7 +41,7 @@ test "invalid picture geometry reports an error instead of indexing outside the 
   }
   let invalid = [
     { ..picture, kind: 3, },
-    { ..picture, rotation: 1, },
+    { ..picture, rotation: 21600001, },
     { ..picture, from_row: -1, },
     { ..picture, from_row: 2147483647, },
     { ..picture, from_x_offset: -1.0, },

@@ -50,7 +50,6 @@ fn GridDrawContext::paint_picture(
     picture.kind > 2 ||
     picture.rotation < -21600000 ||
     picture.rotation > 21600000 ||
-    picture.rotation % 5400000 != 0 ||
     picture.x.is_nan() ||
     picture.x.is_inf() ||
     picture.y.is_nan() ||

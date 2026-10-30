@@ -3,7 +3,7 @@ from pathlib import Path
 root=Path(__file__).resolve().parent
 source=json.loads((root/'picture-quarter-turns.json').read_text())[0]
 values={
- 'not-quarter':'<a:xfrm rot="2700000"/>',
+ 'angle-too-negative':'<a:xfrm rot="-21600001"/>',
  'angle-too-large':'<a:xfrm rot="27000000"/>',
  'angle-not-integer':'<a:xfrm rot="1.5"/>',
  'duplicate-angle':'<a:xfrm rot="0" rot="5400000"/>',

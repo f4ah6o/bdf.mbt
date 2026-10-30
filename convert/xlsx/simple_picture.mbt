@@ -298,9 +298,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
               seen[key] = true
               if key == "rot" {
                 let value = match xlsx_int(attr.value) {
-                  Some(value) if value >= -21600000L &&
-                    value <= 21600000L &&
-                    value % 5400000L == 0L => value
+                  Some(value) if value >= -21600000L && value <= 21600000L =>
+                    value
                   _ => return None
                 }
                 rotation = value.to_int()

@@ -19,3 +19,24 @@ test "quarter-turn trigonometry matches upstream float encodings" {
     )
   }
 }
+
+///|
+test "arbitrary rotation trigonometry matches upstream float encodings" {
+  for
+    (units, sine, cosine) in [
+      (12345, 0x3b6b571bU, 0x3f7fff94U),
+      (60000, 0x3c8ef859U, 0x3f7ff605U),
+      (2700000, 0x3f3504f3U, 0x3f3504f3U),
+      (5399999, 0x3f800000U, 0x349c2b5fU),
+      (7230000, 0x3f5c93bbU, 0xbf01ee09U),
+      (-900000, 0xbe8483eeU, 0x3f7746eaU),
+      (-13800000, 0x3f441b7dU, 0xbf248dbbU),
+    ] {
+    let angle = units.to_double() / 60000.0 * @math.PI / 180.0
+    assert_eq(Float::from_double(@math.sin(angle)).reinterpret_as_uint(), sine)
+    assert_eq(
+      Float::from_double(@math.cos(angle)).reinterpret_as_uint(),
+      cosine,
+    )
+  }
+}
