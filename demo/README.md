@@ -37,11 +37,13 @@ python3 -m http.server --directory _build/pages 8000
 The test serves the site under `/bdf.mbt/`, exercises all sample pages,
 search, navigation, downloading, CSV and SVG conversion, TTF and WOFF2 font
 specimens, view selection and saving, unsupported files,
-and mobile layout. It requires Playwright Chromium. Run the `vlmkit` gates
+XLSX input, and mobile layout. An XLSX fixture is also rendered in Chromium
+and compared pixel-for-pixel with its upstream Go-generated BDF using the same
+viewer. This checks that fixture, not every Excel feature. It requires Playwright Chromium. Run the `vlmkit` gates
 against the served URL for markup and accessibility checks.
 
-The `Demo pages` workflow builds and tests the site on pushes to `main` and
-on manual runs. It deploys only if the repository's Pages source is already
+The `Demo pages` workflow builds and tests the site on pull requests, pushes to
+`main`, and manual runs. It deploys only from `main` if the repository's Pages source is already
 set to **GitHub Actions** and the `github-pages` environment already exists.
 It uses that environment and its protection rules without changing repository
 settings or creating an environment. If Pages is disabled, an administrator can choose **Settings →
