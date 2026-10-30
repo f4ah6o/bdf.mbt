@@ -42,7 +42,9 @@ try {
   }
   window.bdfStatus = 'ready';
 } catch (error) {
-  window.bdfStatus = 'error'; window.bdfError = String(error?.stack ?? error); console.error(error);
+  window.bdfStatus = 'error'; window.bdfError = String(error?.stack ?? error);
+  document.querySelector('#host').replaceChildren();
+  console.error(error);
 } finally {
   const response = await fetch(`./visual-release?token=${token}`, { method: 'POST' });
   if (!response.ok) throw new Error(`visual release: HTTP ${response.status}`);
