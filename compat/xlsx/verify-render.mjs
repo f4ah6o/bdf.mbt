@@ -15,7 +15,7 @@ async function verifyCase(c, label) {
   assert.equal(actual.manifest.parts.length, expected.manifest.parts.length, `XLSX parts ${label}`);
   for (const [j, p] of actual.manifest.parts.entries()) assert.deepEqual(Buffer.from(await actual.part(p.h)), Buffer.from(await expected.part(expected.manifest.parts[j].h)), `XLSX object ${label}:${j}`);
 }
-const pictureFiles = ['simple-picture.json', 'simple-picture-variants.json', 'simple-picture-geometry.json', 'simple-picture-styled.json', 'simple-picture-hidden.json', 'simple-picture-quarter.json', 'simple-picture-empty.json', 'simple-picture-links.json', 'simple-picture-table.json', 'picture-multisheet.json', 'picture-multitile.json', 'picture-multisheet-distinct.json', 'picture-far-tile.json', 'picture-formats.json', 'picture-multiple.json', 'picture-multiple-tiles.json', 'picture-multiple-formats.json', 'picture-multiple-orphan.json', 'picture-multiple-full-hidden.json', 'picture-offsets.json', 'picture-offsets-varying.json', 'picture-offsets-hidden.json', 'picture-alpha.json', 'picture-alpha-mixed.json', 'picture-fill-rect.json', 'picture-fill-mixed.json', 'picture-fill-precision.json'];
+const pictureFiles = ['simple-picture.json', 'simple-picture-variants.json', 'simple-picture-geometry.json', 'simple-picture-styled.json', 'simple-picture-hidden.json', 'simple-picture-quarter.json', 'simple-picture-empty.json', 'simple-picture-links.json', 'simple-picture-table.json', 'picture-multisheet.json', 'picture-multitile.json', 'picture-multisheet-distinct.json', 'picture-far-tile.json', 'picture-formats.json', 'picture-multiple.json', 'picture-multiple-tiles.json', 'picture-multiple-formats.json', 'picture-multiple-orphan.json', 'picture-multiple-full-hidden.json', 'picture-offsets.json', 'picture-offsets-varying.json', 'picture-offsets-hidden.json', 'picture-alpha.json', 'picture-alpha-mixed.json', 'picture-fill-rect.json', 'picture-fill-mixed.json', 'picture-fill-precision.json', 'picture-crop.json', 'picture-crop-mixed.json', 'picture-crop-negative.json', 'picture-crop-dimensions.json', 'picture-crop-size-sweep.json', 'picture-crop-gif.json', 'picture-crop-bmp.json', 'picture-crop-jpeg.json', 'picture-crop-jpeg-real.json', 'picture-crop-webp.json', 'picture-crop-webp-lossless.json', 'picture-crop-webp-lossy.json'];
 let simplePictureCount = 0;
 for (const file of pictureFiles) {
   const cases = JSON.parse(await readFile(new URL(`./${file}`, import.meta.url)));
@@ -76,6 +76,13 @@ assert.equal(invalidPictures.length, 11, 'invalid picture fixture count');
 for (const c of invalidPictures) {
   const input = Buffer.from(c.input, 'base64');
   assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `invalid picture ${c.label}`);
+  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing|picture/);
+}
+const invalidCrops = JSON.parse(await readFile(new URL('./picture-crop-invalid.json', import.meta.url)));
+assert.equal(invalidCrops.length, 23, 'invalid picture crop fixture count');
+for (const c of invalidCrops) {
+  const input = Buffer.from(c.input, 'base64');
+  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `invalid crop ${c.label}`);
   assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing|picture/);
 }
 const conditionalMissingDxfLegacy = JSON.parse(await readFile(new URL('./conditional-missing-dxf-legacy.json', import.meta.url)));

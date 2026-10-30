@@ -29,6 +29,12 @@ test "invalid picture geometry reports an error instead of indexing outside the 
     fill_top: 0.0,
     fill_right: 0.0,
     fill_bottom: 0.0,
+    crop_left: 0.0,
+    crop_top: 0.0,
+    crop_right: 0.0,
+    crop_bottom: 0.0,
+    image_width: 0.0,
+    image_height: 0.0,
   }
   let invalid = [
     { ..picture, kind: 3, },
@@ -124,6 +130,12 @@ test "picture tiles reject coordinates outside the integer range" {
     fill_top: 0.0,
     fill_right: 0.0,
     fill_bottom: 0.0,
+    crop_left: 0.0,
+    crop_top: 0.0,
+    crop_right: 0.0,
+    crop_bottom: 0.0,
+    image_width: 0.0,
+    image_height: 0.0,
   }
   let result = Ok(
     context.paint_picture(
@@ -175,6 +187,12 @@ test "pictures respect their cumulative tile budget" {
     fill_top: 0.0,
     fill_right: 0.0,
     fill_bottom: 0.0,
+    crop_left: 0.0,
+    crop_top: 0.0,
+    crop_right: 0.0,
+    crop_bottom: 0.0,
+    image_width: 0.0,
+    image_height: 0.0,
   }
   let result = Ok(
     context.paint_picture(

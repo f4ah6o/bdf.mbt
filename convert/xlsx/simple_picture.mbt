@@ -55,6 +55,11 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut fill_right = 0.0
   let mut fill_bottom = 0.0
   let mut saw_fill_rect = false
+  let mut crop_left = 0.0
+  let mut crop_top = 0.0
+  let mut crop_right = 0.0
+  let mut crop_bottom = 0.0
+  let mut saw_crop = false
   let mut description = ""
   let mut title = ""
   let mut text = StringBuilder()
@@ -185,6 +190,39 @@ fn XlsxWorkbook::xlsx_simple_picture(
             }
             image_id = xlsx_rel_id(element, "embed")
             image_id != "" && xlsx_rel_id(element, "link") == ""
+          } else if name == "srcRect" {
+            if saw_crop {
+              return None
+            }
+            saw_crop = true
+            let seen : Map[String, Bool] = Map([])
+            for attr in element.attributes {
+              let key = attr.name.local_name
+              if !["l", "t", "r", "b"].contains(key) ||
+                seen.contains(key) ||
+                attr.name.namespace_uri is Some(_) {
+                return None
+              }
+              seen[key] = true
+              let value = match xlsx_int(attr.value) {
+                Some(value) if value >= -100000L && value < 100000L =>
+                  value.to_double() / 100000.0
+                _ => return None
+              }
+              if key == "l" {
+                crop_left = value
+              }
+              if key == "t" {
+                crop_top = value
+              }
+              if key == "r" {
+                crop_right = value
+              }
+              if key == "b" {
+                crop_bottom = value
+              }
+            }
+            crop_left + crop_right < 1.0 && crop_top + crop_bottom < 1.0
           } else if name == "stretch" {
             if stretch {
               return None
@@ -371,6 +409,10 @@ fn XlsxWorkbook::xlsx_simple_picture(
               fill_top,
               fill_right,
               fill_bottom,
+              crop_left,
+              crop_top,
+              crop_right,
+              crop_bottom,
               description,
               title,
               images,
@@ -418,6 +460,11 @@ fn XlsxWorkbook::xlsx_simple_picture(
           fill_right = 0.0
           fill_bottom = 0.0
           saw_fill_rect = false
+          crop_left = 0.0
+          crop_top = 0.0
+          crop_right = 0.0
+          crop_bottom = 0.0
+          saw_crop = false
           description = ""
           title = ""
         }
@@ -460,6 +507,10 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
   fill_top : Double,
   fill_right : Double,
   fill_bottom : Double,
+  crop_left : Double,
+  crop_top : Double,
+  crop_right : Double,
+  crop_bottom : Double,
   description : String,
   title : String,
   images : Map[String, Bytes],
@@ -502,6 +553,17 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
   if !xlsx_picture_image_format(image) {
     return None
   }
+  let (image_width, image_height) = if crop_left != 0.0 ||
+    crop_top != 0.0 ||
+    crop_right != 0.0 ||
+    crop_bottom != 0.0 {
+    match xlsx_crop_image_size(image) {
+      Some(size) => size
+      None => return None
+    }
+  } else {
+    (0.0, 0.0)
+  }
   if kind == 1 {
     to_row = from_row + (height / 15.0).to_int() + 1
     to_column = from_column + (width / 48.0).to_int() + 1
@@ -538,6 +600,12 @@ fn XlsxWorkbook::xlsx_finish_simple_picture(
     fill_top,
     fill_right,
     fill_bottom,
+    crop_left,
+    crop_top,
+    crop_right,
+    crop_bottom,
+    image_width,
+    image_height,
   })
 }
 
@@ -568,4 +636,268 @@ fn xlsx_picture_image_format(image : Bytes) -> Bool {
     return true
   }
   @utf8.decode_lossy(image[:Int32::min(image.length(), 512)]).contains("<svg")
+}
+
+///|
+fn xlsx_crop_image_size(image : Bytes) -> (Double, Double)? {
+  if image.length() >= 13 &&
+    (image[:6] == b"GIF87a"[:] || image[:6] == b"GIF89a"[:]) {
+    let flags = image[10].to_int()
+    let palette_size = if (flags & 0x80) != 0 {
+      3 * (1 << ((flags & 7) + 1))
+    } else {
+      0
+    }
+    if image.length() < 13 + palette_size {
+      return None
+    }
+    let width = image[6].to_int() | (image[7].to_int() << 8)
+    let height = image[8].to_int() | (image[9].to_int() << 8)
+    if width <= 0 || height <= 0 {
+      return None
+    }
+    return Some((width.to_double(), height.to_double()))
+  }
+  if image.length() >= 54 &&
+    image[:2] == b"BM"[:] &&
+    image[6:10] == b"\x00\x00\x00\x00"[:] {
+    let le32 = fn(offset : Int32) -> Int64 {
+      image[offset].to_int64() |
+      (image[offset + 1].to_int64() << 8) |
+      (image[offset + 2].to_int64() << 16) |
+      (image[offset + 3].to_int64() << 24)
+    }
+    let bits = image[28].to_int() | (image[29].to_int() << 8)
+    if le32(10) != 54L ||
+      le32(14) != 40L ||
+      image[26] != 1 ||
+      image[27] != 0 ||
+      (bits != 24 && bits != 32) ||
+      le32(30) != 0L {
+      return None
+    }
+    let width = le32(18)
+    let raw_height = le32(22)
+    let height = if raw_height >= 2147483648L {
+      4294967296L - raw_height
+    } else {
+      raw_height
+    }
+    if width <= 0L || width > 1000000L || height <= 0L || height > 1000000L {
+      return None
+    }
+    return Some((width.to_double(), height.to_double()))
+  }
+  if image.length() >= 30 &&
+    image[:4] == b"RIFF"[:] &&
+    image[8:16] == b"WEBPVP8X"[:] {
+    let riff_size = image[4].to_int64() |
+      (image[5].to_int64() << 8) |
+      (image[6].to_int64() << 16) |
+      (image[7].to_int64() << 24)
+    if riff_size < 22L || image[16:20] != b"\x0a\x00\x00\x00"[:] {
+      return None
+    }
+    let width = 1L +
+      image[24].to_int64() +
+      (image[25].to_int64() << 8) +
+      (image[26].to_int64() << 16)
+    let height = 1L +
+      image[27].to_int64() +
+      (image[28].to_int64() << 8) +
+      (image[29].to_int64() << 16)
+    if width * height > 2147483647L {
+      return None
+    }
+    return Some((width.to_double(), height.to_double()))
+  }
+  if image.length() >= 25 &&
+    image[:4] == b"RIFF"[:] &&
+    image[8:12] == b"WEBP"[:] &&
+    (image[12:16] == b"VP8 "[:] || image[12:16] == b"VP8L"[:]) {
+    let riff_size = image[4].to_int64() |
+      (image[5].to_int64() << 8) |
+      (image[6].to_int64() << 16) |
+      (image[7].to_int64() << 24)
+    let chunk_size = image[16].to_int64() |
+      (image[17].to_int64() << 8) |
+      (image[18].to_int64() << 16) |
+      (image[19].to_int64() << 24)
+    if riff_size < 12L ||
+      chunk_size > riff_size - 12L ||
+      chunk_size > 2147483647L {
+      return None
+    }
+    if image[12:16] == b"VP8L"[:] {
+      if chunk_size < 5L || image[20] != 0x2f || image[24].to_int() >> 5 != 0 {
+        return None
+      }
+      let bits = image[21].to_int64() |
+        (image[22].to_int64() << 8) |
+        (image[23].to_int64() << 16) |
+        (image[24].to_int64() << 24)
+      return Some(
+        (
+          (1L + (bits & 0x3fffL)).to_double(),
+          (1L + ((bits >> 14) & 0x3fffL)).to_double(),
+        ),
+      )
+    }
+    if chunk_size < 10L ||
+      image.length() < 30 ||
+      (image[20].to_int() & 1) != 0 ||
+      image[23:26] != b"\x9d\x01\x2a"[:] {
+      return None
+    }
+    let width = image[26].to_int() | ((image[27].to_int() & 63) << 8)
+    let height = image[28].to_int() | ((image[29].to_int() & 63) << 8)
+    if width <= 0 || height <= 0 {
+      return None
+    }
+    return Some((width.to_double(), height.to_double()))
+  }
+  if image.length() >= 3 && image[:3] == b"\xff\xd8\xff"[:] {
+    return xlsx_crop_jpeg_size(image)
+  }
+  xlsx_crop_png_size(image)
+}
+
+///|
+fn xlsx_crop_jpeg_size(image : Bytes) -> (Double, Double)? {
+  let mut offset = 2
+  let mut width = 0
+  let mut height = 0
+  let mut frame_seen = false
+  let mut segments = 0
+  while offset < image.length() {
+    if image[offset] != 0xff {
+      return None
+    }
+    while offset < image.length() && image[offset] == 0xff {
+      offset += 1
+    }
+    if offset >= image.length() {
+      return None
+    }
+    let marker = image[offset].to_int()
+    offset += 1
+    if marker >= 0xd0 && marker <= 0xd7 {
+      continue
+    }
+    if marker == 0xd9 {
+      return None
+    }
+    if offset > image.length() - 2 {
+      return None
+    }
+    let length = (image[offset].to_int() << 8) | image[offset + 1].to_int()
+    if length < 2 || length > image.length() - offset {
+      return None
+    }
+    let start = offset + 2
+    let data_len = length - 2
+    segments += 1
+    if segments > 4096 {
+      return None
+    }
+    if marker == 0xc0 || marker == 0xc1 || marker == 0xc2 {
+      if frame_seen || data_len < 9 || image[start] != 8 {
+        return None
+      }
+      let components = image[start + 5].to_int()
+      if (components != 1 && components != 3) || data_len != 6 + 3 * components {
+        return None
+      }
+      height = (image[start + 1].to_int() << 8) | image[start + 2].to_int()
+      width = (image[start + 3].to_int() << 8) | image[start + 4].to_int()
+      if width <= 0 || height <= 0 {
+        return None
+      }
+      let ids : Map[Int32, Bool] = Map([])
+      let hs : Array[Int32] = []
+      let vs : Array[Int32] = []
+      let mut max_h = 0
+      let mut max_v = 0
+      for i in 0..<components {
+        let id = image[start + 6 + i * 3].to_int()
+        let sampling = image[start + 7 + i * 3].to_int()
+        let h = sampling >> 4
+        let v = sampling & 15
+        let table = image[start + 8 + i * 3].to_int()
+        if ids.contains(id) ||
+          ![1, 2, 4].contains(h) ||
+          ![1, 2, 4].contains(v) ||
+          table > 3 {
+          return None
+        }
+        ids[id] = true
+        hs.push(h)
+        vs.push(v)
+        max_h = Int32::max(max_h, h)
+        max_v = Int32::max(max_v, v)
+      }
+      if components == 3 {
+        for i in 0..<components {
+          if max_h % hs[i] != 0 || max_v % vs[i] != 0 {
+            return None
+          }
+        }
+      }
+      frame_seen = true
+    } else if marker == 0xda {
+      if !frame_seen {
+        return None
+      }
+      return Some((width.to_double(), height.to_double()))
+    } else if !(marker == 0xc4 ||
+      marker == 0xdb ||
+      marker == 0xdd ||
+      marker == 0xfe ||
+      (marker >= 0xe0 && marker <= 0xef)) {
+      return None
+    }
+    offset += length
+  }
+  None
+}
+
+///|
+fn xlsx_crop_png_size(image : Bytes) -> (Double, Double)? {
+  if image.length() < 33 ||
+    image[:8] != b"\x89PNG\r\n\x1a\n"[:] ||
+    image[8:16] != b"\x00\x00\x00\x0dIHDR"[:] {
+    return None
+  }
+  let mut crc = 0xffffffffU
+  for byte in image[12:29] {
+    crc = crc ^ byte.to_uint()
+    for _ in 0..<8 {
+      crc = if (crc & 1U) != 0U { (crc >> 1) ^ 0xedb88320U } else { crc >> 1 }
+    }
+  }
+  crc = crc ^ 0xffffffffU
+  let crc_expected = (image[29].to_uint() << 24) |
+    (image[30].to_uint() << 16) |
+    (image[31].to_uint() << 8) |
+    image[32].to_uint()
+  if crc != crc_expected || image[26] != 0 || image[27] != 0 || image[28] > 1 {
+    return None
+  }
+  let bit_depth = image[24].to_int()
+  let color_type = image[25].to_int()
+  if !((bit_depth == 8 || bit_depth == 16) && [0, 2, 4, 6].contains(color_type)) {
+    return None
+  }
+  let w = (image[16].to_int64() << 24) |
+    (image[17].to_int64() << 16) |
+    (image[18].to_int64() << 8) |
+    image[19].to_int64()
+  let h = (image[20].to_int64() << 24) |
+    (image[21].to_int64() << 16) |
+    (image[22].to_int64() << 8) |
+    image[23].to_int64()
+  if w <= 0L || h <= 0L || w > 1000000L || h > 1000000L {
+    return None
+  }
+  Some((w.to_double(), h.to_double()))
 }
