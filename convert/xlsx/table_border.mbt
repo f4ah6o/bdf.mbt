@@ -1,6 +1,6 @@
 ///|
-// Apply a whole-table differential border beneath explicit cell borders.
-fn XlsxWorkbook::xlsx_apply_whole_table_borders(
+// Apply table-region differential borders beneath explicit cell borders.
+fn XlsxWorkbook::xlsx_apply_table_borders(
   self : XlsxWorkbook,
   original : Array[XlsxRow],
   styles : XlsxStyles,
@@ -32,13 +32,20 @@ fn XlsxWorkbook::xlsx_apply_whole_table_borders(
       continue
     }
     let table = complex_rules[index]
-    if table.style.ids[0] < 0 {
-      continue
+    let borders : Array[XlsxBorder?] = Array::make(13, None)
+    let mut has_border = false
+    for i in 0..<table.style.ids.length() {
+      let id = table.style.ids[i]
+      if id >= 0 {
+        let diff = self.xlsx_table_differential_style(id)
+        borders[i] = diff.border
+        if diff.border is Some(_) {
+          has_border = true
+        }
+      }
     }
-    let diff = self.xlsx_conditional_style(table.style.ids[0])
-    let border = match diff.border {
-      Some(value) => value
-      None => continue
+    if !has_border {
+      continue
     }
     let first_row = Int64::max(range.row_start, 0L).to_int()
     let last_row = Int64::min(range.row_end, (row_count - 1).to_int64()).to_int()
@@ -86,7 +93,7 @@ fn XlsxWorkbook::xlsx_apply_whole_table_borders(
       matched,
       Some(allowed),
     )
-    let formats : Map[Int32, Int32] = Map([])
+    let formats : Map[String, Int32] = Map([])
     let next_rows : Array[XlsxRow] = []
     for row in rows {
       let cells : Array[XlsxCell] = []
@@ -99,17 +106,26 @@ fn XlsxWorkbook::xlsx_apply_whole_table_borders(
           cells.push(cell)
           continue
         }
-        let edge = (if row.index.to_int64() == range.row_start { 1 } else { 0 }) |
-          (if row.index.to_int64() == range.row_end { 2 } else { 0 }) |
-          (if cell.column == range.column_start { 4 } else { 0 }) |
-          (if cell.column == range.column_end { 8 } else { 0 })
+        let (border, border_key) = xlsx_complex_table_border(
+          table,
+          borders,
+          row.index,
+          cell.column,
+        )
+        if border.top.style == "" &&
+          border.bottom.style == "" &&
+          border.left.style == "" &&
+          border.right.style == "" {
+          cells.push(cell)
+          continue
+        }
         let old_index = if cell.style < 0 ||
           cell.style >= styles.cell_formats.length() {
           0
         } else {
           cell.style
         }
-        let key = old_index * 16 + edge
+        let key = old_index.to_string() + ":" + border_key
         let new_index = match formats.get(key) {
           Some(value) => value
           None => {
@@ -130,26 +146,10 @@ fn XlsxWorkbook::xlsx_apply_whole_table_borders(
                 horizontal: xlsx_empty_side(),
               }
             }
-            let top = if (edge & 1) != 0 {
-              border.top
-            } else {
-              border.horizontal
-            }
-            let bottom = if (edge & 2) != 0 {
-              border.bottom
-            } else {
-              border.horizontal
-            }
-            let left = if (edge & 4) != 0 {
-              border.left
-            } else {
-              border.vertical
-            }
-            let right = if (edge & 8) != 0 {
-              border.right
-            } else {
-              border.vertical
-            }
+            let top = border.top
+            let bottom = border.bottom
+            let left = border.left
+            let right = border.right
             let border_index = styles.borders.length()
             styles.borders.push({
               ..base,

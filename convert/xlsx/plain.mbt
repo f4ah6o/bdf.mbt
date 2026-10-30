@@ -302,14 +302,14 @@ fn XlsxWorkbook::xlsx_table_style(
     }
   }
   if whole >= 0 && (first_stripe >= 0 || second_stripe >= 0) && !has_other {
-    let base = self.xlsx_conditional_style(whole) catch {
+    let base = self.xlsx_table_differential_style(whole) catch {
       _ => return (-1, 0, 1L, -1, 1L, -1)
     }
     if base.border is Some(_) {
       return (-1, 0, 1L, -1, 1L, -1)
     }
     if first_stripe >= 0 {
-      let first = self.xlsx_conditional_style(first_stripe) catch {
+      let first = self.xlsx_table_differential_style(first_stripe) catch {
         _ => return (-1, 0, 1L, -1, 1L, -1)
       }
       if first.border is Some(_) {
@@ -317,7 +317,7 @@ fn XlsxWorkbook::xlsx_table_style(
       }
     }
     if second_stripe >= 0 {
-      let second = self.xlsx_conditional_style(second_stripe) catch {
+      let second = self.xlsx_table_differential_style(second_stripe) catch {
         _ => return (-1, 0, 1L, -1, 1L, -1)
       }
       if second.border is Some(_) {
@@ -506,14 +506,14 @@ fn XlsxWorkbook::xlsx_table_style(
   if chosen < 0 {
     return (-1, 0, 1L, -1, 1L, -1)
   }
-  let diff = self.xlsx_conditional_style(chosen) catch {
+  let diff = self.xlsx_table_differential_style(chosen) catch {
     _ => return (-1, 0, 1L, -1, 1L, -1)
   }
   if diff.border is Some(_) {
     return (-1, 0, 1L, -1, 1L, -1)
   }
   if other >= 0 {
-    let extra = self.xlsx_conditional_style(other) catch {
+    let extra = self.xlsx_table_differential_style(other) catch {
       _ => return (-1, 0, 1L, -1, 1L, -1)
     }
     if extra.border is Some(_) {
@@ -521,7 +521,7 @@ fn XlsxWorkbook::xlsx_table_style(
     }
   }
   if third >= 0 {
-    let last = self.xlsx_conditional_style(third) catch {
+    let last = self.xlsx_table_differential_style(third) catch {
       _ => return (-1, 0, 1L, -1, 1L, -1)
     }
     if last.border is Some(_) {
@@ -739,22 +739,28 @@ fn XlsxWorkbook::xlsx_table_effective_style(
 ) -> XlsxConditionalStyle raise {
   if (region == 23 || region == 24) && choice > 0 {
     return xlsx_merge_table_style(
-      self.xlsx_conditional_style(base_id),
-      self.xlsx_conditional_style(if choice == 1 { extra_id } else { third_id }),
+      self.xlsx_table_differential_style(base_id),
+      self.xlsx_table_differential_style(
+        if choice == 1 {
+          extra_id
+        } else {
+          third_id
+        },
+      ),
     )
   }
   if region == 18 && choice > 0 {
-    let mut result = self.xlsx_conditional_style(base_id)
+    let mut result = self.xlsx_table_differential_style(base_id)
     if choice == 1 || choice == 3 {
       result = xlsx_merge_table_style(
         result,
-        self.xlsx_conditional_style(extra_id),
+        self.xlsx_table_differential_style(extra_id),
       )
     }
     if choice == 2 || choice == 3 {
       result = xlsx_merge_table_style(
         result,
-        self.xlsx_conditional_style(third_id),
+        self.xlsx_table_differential_style(third_id),
       )
     }
     return result
@@ -764,7 +770,7 @@ fn XlsxWorkbook::xlsx_table_effective_style(
       choice == 1
     ) ||
     (region == 17 && choice == 2)) {
-    return self.xlsx_conditional_style(
+    return self.xlsx_table_differential_style(
       if choice == 0 {
         base_id
       } else {
@@ -773,8 +779,8 @@ fn XlsxWorkbook::xlsx_table_effective_style(
     )
   }
   xlsx_merge_table_style(
-    self.xlsx_conditional_style(base_id),
-    self.xlsx_conditional_style(extra_id),
+    self.xlsx_table_differential_style(base_id),
+    self.xlsx_table_differential_style(extra_id),
   )
 }
 
@@ -2412,7 +2418,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       rows = xlsx_apply_conditional_style(rows, styles, matched, fill_diff)
     }
   }
-  rows = workbook.xlsx_apply_whole_table_borders(
+  rows = workbook.xlsx_apply_table_borders(
     rows, styles, geo, row_count, col_count, table_rules, complex_rules,
   )
   if has_conditional {

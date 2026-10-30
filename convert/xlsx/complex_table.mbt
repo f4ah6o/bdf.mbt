@@ -147,20 +147,16 @@ fn XlsxWorkbook::xlsx_complex_table_style(
     }
   }
   let mut any = false
-  let mut count = 0
-  let mut has_border = false
   for id in ids {
     if id < 0 {
       continue
     }
-    let style = self.xlsx_conditional_style(id) catch { _ => return None }
-    if style.border is Some(_) {
-      has_border = true
+    let _style = self.xlsx_table_differential_style(id) catch {
+      _ => return None
     }
     any = true
-    count += 1
   }
-  if !any || (has_border && (count != 1 || ids[0] < 0)) {
+  if !any {
     return None
   }
   Some({ ids, sizes, })
@@ -230,7 +226,7 @@ fn XlsxWorkbook::xlsx_complex_table_effective_style(
   let mut result : XlsxConditionalStyle? = None
   for i in 0..<table.style.ids.length() {
     if (mask & (1 << i)) != 0 {
-      let diff = self.xlsx_conditional_style(table.style.ids[i])
+      let diff = self.xlsx_table_differential_style(table.style.ids[i])
       result = Some(
         match result {
           Some(base) => xlsx_merge_table_style(base, diff)
@@ -241,6 +237,119 @@ fn XlsxWorkbook::xlsx_complex_table_effective_style(
   }
   match result {
     Some(value) => value
-    None => self.xlsx_conditional_style(-1)
+    None => self.xlsx_table_differential_style(-1)
   }
+}
+
+///|
+// Bounds of the selected table region, including individual stripe runs.
+fn xlsx_complex_table_region(
+  table : XlsxComplexTable,
+  index : Int32,
+  row : Int32,
+  col : Int32,
+) -> (Int64, Int64, Int64, Int64) {
+  let range = table.range
+  let r0 = range.row_start
+  let r1 = range.row_end
+  let c0 = range.column_start.to_int64()
+  let c1 = range.column_end.to_int64()
+  let data0 = r0 + table.header.to_int64()
+  let data1 = r1 - table.totals.to_int64()
+  if index == 1 || index == 2 {
+    let first = table.style.sizes[1]
+    let second = table.style.sizes[2]
+    let off = (col.to_int64() - c0) % (first + second)
+    let start = col.to_int64() - off + (if index == 2 { first } else { 0L })
+    let size = if index == 2 { second } else { first }
+    (data0, start, data1, start + size - 1L)
+  } else if index == 3 || index == 4 {
+    let first = table.style.sizes[3]
+    let second = table.style.sizes[4]
+    let off = (row.to_int64() - data0) % (first + second)
+    let start = row.to_int64() - off + (if index == 4 { first } else { 0L })
+    let size = if index == 4 { second } else { first }
+    (start, c0, Int64::min(start + size - 1L, data1), c1)
+  } else if index == 5 {
+    (r0, c1, r1, c1)
+  } else if index == 6 {
+    (r0, c0, r1, c0)
+  } else if index == 7 {
+    (r0, c0, r0 + table.header.to_int64() - 1L, c1)
+  } else if index == 8 {
+    (r1 - table.totals.to_int64() + 1L, c0, r1, c1)
+  } else if index == 9 {
+    (r0, c0, r0, c0)
+  } else if index == 10 {
+    (r0, c1, r0, c1)
+  } else if index == 11 {
+    (r1, c0, r1, c0)
+  } else if index == 12 {
+    (r1, c1, r1, c1)
+  } else {
+    (r0, c0, r1, c1)
+  }
+}
+
+///|
+// Resolve each side independently, in the same region precedence as upstream.
+fn xlsx_complex_table_border(
+  table : XlsxComplexTable,
+  borders : Array[XlsxBorder?],
+  row : Int32,
+  col : Int32,
+) -> (XlsxBorder, String) {
+  let mask = xlsx_complex_table_mask(table, row, col)
+  let mut top = xlsx_empty_side()
+  let mut bottom = xlsx_empty_side()
+  let mut left = xlsx_empty_side()
+  let mut right = xlsx_empty_side()
+  let mut top_id = 0
+  let mut bottom_id = 0
+  let mut left_id = 0
+  let mut right_id = 0
+  for i in 0..<borders.length() {
+    if (mask & (1 << i)) == 0 {
+      continue
+    }
+    if borders[i] is Some(border) {
+      let (r0, c0, r1, c1) = xlsx_complex_table_region(table, i, row, col)
+      let top_outer = row.to_int64() == r0
+      let bottom_outer = row.to_int64() == r1
+      let left_outer = col.to_int64() == c0
+      let right_outer = col.to_int64() == c1
+      let t = if top_outer { border.top } else { border.horizontal }
+      let b = if bottom_outer { border.bottom } else { border.horizontal }
+      let l = if left_outer { border.left } else { border.vertical }
+      let r = if right_outer { border.right } else { border.vertical }
+      if t.style != "" {
+        top = t
+        top_id = i * 2 + (if top_outer { 1 } else { 2 })
+      }
+      if b.style != "" {
+        bottom = b
+        bottom_id = i * 2 + (if bottom_outer { 1 } else { 2 })
+      }
+      if l.style != "" {
+        left = l
+        left_id = i * 2 + (if left_outer { 1 } else { 2 })
+      }
+      if r.style != "" {
+        right = r
+        right_id = i * 2 + (if right_outer { 1 } else { 2 })
+      }
+    }
+  }
+  let result : XlsxBorder = {
+    top,
+    bottom,
+    left,
+    right,
+    diagonal: xlsx_empty_side(),
+    diagonal_up: false,
+    diagonal_down: false,
+    vertical: xlsx_empty_side(),
+    horizontal: xlsx_empty_side(),
+  }
+  (result, "\{top_id},\{bottom_id},\{left_id},\{right_id}")
 }
