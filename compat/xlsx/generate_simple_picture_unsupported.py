@@ -17,6 +17,8 @@ for index, case in enumerate(cases):
     original = parts.copy()
     drawing = parts["xl/drawings/drawing1.xml"].decode()
     variant = index % 12
+    if variant in (4, 11):
+        continue
     if variant == 0:
         drawing = drawing.replace("<a:stretch>", '<a:srcRect l="10000"/><a:stretch>')
     elif variant == 1:
@@ -40,7 +42,7 @@ for index, case in enumerate(cases):
         original_drawing = drawing
         drawing = drawing.replace("<colOff>0</colOff>", "<colOff>12700</colOff>", 1)
         if drawing == original_drawing:
-            drawing = re.sub(r'<pos x="[0-9]+"', '<pos x="25400000"', drawing, count=1)
+            drawing = re.sub(r'<pos x="[0-9]+"', '<pos x="254000001"', drawing, count=1)
     elif variant == 8:
         drawing = drawing.replace('prst="rect"', 'prst="ellipse"')
     elif variant == 9:

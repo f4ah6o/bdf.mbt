@@ -110,7 +110,8 @@ pub fn sized_fallback_advance(
 ///|
 /// Draw unstyled cells in an already-sized sheet with fallback font metrics.
 /// Supplying pictures also requires a document writer for their image and
-/// drawing parts. Pictures currently have to fit in the first tile.
+/// drawing parts. A caller that defers object storage may collect child parts
+/// in `picture_children` and pass them to `store_grids`.
 pub fn draw_sized_grid_no_fonts(
   rows : Array[SizedGridRow],
   geometry : GridGeometry,
@@ -147,6 +148,7 @@ pub fn draw_sized_grid_no_fonts(
   table_filters~ : Array[(Int32, Int32)] = [],
   pictures~ : Array[GridPicture] = [],
   picture_writer~ : @core.DocumentWriter? = None,
+  picture_children~ : Array[(Int32, Int32, Bytes)]? = None,
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -866,7 +868,14 @@ pub fn draw_sized_grid_no_fonts(
       None => raise InvalidArgument("sheet: missing picture writer")
     }
     for picture in pictures {
-      context.paint_picture(writer, picture, row_positions, col_positions)
+      context.paint_picture(
+        writer,
+        picture,
+        row_positions,
+        col_positions,
+        col_positions[visible_columns],
+        picture_children,
+      )
     }
   }
   let tiles = context.tiles.map(fn(tile) {

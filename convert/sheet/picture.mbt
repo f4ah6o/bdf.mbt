@@ -24,6 +24,8 @@ fn GridDrawContext::paint_picture(
   picture : GridPicture,
   rows : Array[Double],
   columns : Array[Double],
+  view_width : Double,
+  pending : Array[(Int32, Int32, Bytes)]?,
 ) -> Unit raise {
   if picture.kind < 0 ||
     picture.kind > 2 ||
@@ -94,16 +96,25 @@ fn GridDrawContext::paint_picture(
     return
   }
   let margin = Double::max(width, height) * 0.5 + 8.0
-  if x + width + margin > 2048.0 || y + height + margin > 2048.0 {
-    raise InvalidArgument(
-      "sheet: pictures spanning multiple tiles are not supported",
-    )
+  if view_width.is_nan() ||
+    view_width.is_inf() ||
+    self.height.is_nan() ||
+    self.height.is_inf() {
+    raise InvalidArgument("sheet: invalid picture view dimensions")
   }
-  for tile in self.tiles {
-    if tile.x != 0 || tile.y != 0 {
-      raise InvalidArgument(
-        "sheet: pictures with multiple tiles are not supported",
-      )
+  let x0 = Double::max(x - margin, 0.0)
+  let y0 = Double::max(y - margin, 0.0)
+  let x1 = Double::min(x + width + margin, view_width)
+  let y1 = Double::min(y + height + margin, self.height)
+  let max_coordinate = 2147483647.0 * 2048.0
+  if x1 > max_coordinate || y1 > max_coordinate {
+    raise InvalidArgument("sheet: picture tile coordinates are too large")
+  }
+  if x0 < x1 && y0 < y1 {
+    let nx = (x1 / 2048.0).ceil() - (x0 / 2048.0).floor()
+    let ny = (y1 / 2048.0).ceil() - (y0 / 2048.0).floor()
+    if nx * ny > 16384.0 {
+      raise InvalidArgument("sheet: drawings exceed the supported tile budget")
     }
   }
   let image_hash = writer.add_part("img", picture.image)
@@ -139,15 +150,27 @@ fn GridDrawContext::paint_picture(
   if picture.description != "" {
     object.mark(11, "")
   }
-  let hash = writer.add_part("obj", object.encode())
-  let tiles = self.in_bounds(
-    x - margin,
-    y - margin,
-    x + width + margin,
-    y + height + margin,
-  )
-  if tiles.length() > 16384 {
-    raise InvalidArgument("sheet: drawings exceed the supported tile budget")
+  let encoded = object.encode()
+  let hash = if pending is Some(_) {
+    @core.DocumentWriter::new().add_part("obj", encoded)
+  } else {
+    writer.add_part("obj", encoded)
+  }
+  let tiles = self.in_bounds(x0, y0, x1, y1)
+  if pending is Some(pending) {
+    let mut first_x = -1
+    let mut first_y = -1
+    let wanted : Map[String, Bool] = Map([])
+    for tile in tiles {
+      wanted["\{tile.x},\{tile.y}"] = true
+    }
+    for existing in self.tiles {
+      if first_x < 0 && wanted.contains("\{existing.x},\{existing.y}") {
+        first_x = existing.x
+        first_y = existing.y
+      }
+    }
+    pending.push((first_x, first_y, encoded))
   }
   for tile in tiles {
     let index = tile.object.add_object(hash, bbox)

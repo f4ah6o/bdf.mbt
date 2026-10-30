@@ -1987,9 +1987,9 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// shrink-to-fit, indentation and center-across-selection.
 /// Multiple border colors per line weight must use exact 8-bit RGB components;
 /// patterned row and column fills, complex borders and other features are
-/// rejected. One untransformed embedded PNG is supported on a single visible
-/// sheet when its drawing fits in one tile, with zero cell-anchor offsets and
-/// row heights in quarter-point increments.
+/// rejected. One untransformed embedded PNG per sheet is supported with zero
+/// cell-anchor offsets and row heights in quarter-point increments. Large
+/// multi-sheet workbooks that require batched object encoding are rejected.
 /// Supported numeric conditional rules may apply a differential font,
 /// solid fill and border or be inactive. For blank-cell fills or borders,
 /// ranges are limited to 200,000 cells. Other conditional
@@ -2046,11 +2046,24 @@ pub fn convert_plain_no_fonts(
   let mode = if data_mode == "default" { "" } else { data_mode }
   let warnings = workbook.warnings.copy()
   let grids : Array[@sheet.NamedGrid] = []
+  let picture_children : Array[Array[(Int32, Int32, Bytes)]] = []
   let mut counter = 0
   let mut warned_rtl = false
   let warned_sheets : Map[String, Bool] = Map([])
   let warned_table_styles : Map[String, Bool] = Map([])
   let doc_language = metadata.language.get(0).unwrap_or("")
+  let mut visible_sheets = 0
+  let mut sheet_bytes = 0L
+  for ref in workbook.sheets {
+    if !ref.hidden {
+      visible_sheets += 1
+      sheet_bytes += workbook.package
+        .part_size(ref.part)
+        .unwrap_or(0)
+        .to_int64()
+    }
+  }
+  let batched = visible_sheets > 1 && sheet_bytes >= 2097152L
   for index, ref in workbook.sheets {
     if ref.hidden {
       continue
@@ -2063,6 +2076,7 @@ pub fn convert_plain_no_fonts(
     let number = index + 1
     let id = "sheet" + number.to_string()
     let table_events : Array[(String, String)] = []
+    let children : Array[(Int32, Int32, Bytes)] = []
     let (next, table_warnings) = workbook.store_sheet_tables(
       writer,
       ref.part,
@@ -2075,8 +2089,9 @@ pub fn convert_plain_no_fonts(
     )
     let (drawn, geo, missing_formula_values) = workbook.xlsx_draw_plain_sheet(
       ref, styles, locale, doc_language, theme_colors, shared_runs, table_events,
-      writer,
+      writer, children, batched,
     )
+    picture_children.push(children)
     counter = next
     for warning in table_warnings {
       warnings.push(warning)
@@ -2115,7 +2130,7 @@ pub fn convert_plain_no_fonts(
       frozen_columns: Int32::min(geo.frozen_columns, 16384),
     })
   }
-  @sheet.store_grids(writer, grids, !no_text_index)
+  @sheet.store_grids(writer, grids, !no_text_index, picture_children~)
   { bdf: writer.write_single(), warnings, sheets: grids.length(), }
 }
 
@@ -2130,6 +2145,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   shared_runs : Array[XlsxPlainRun?],
   table_events : Array[(String, String)],
   writer : @core.DocumentWriter,
+  children : Array[(Int32, Int32, Bytes)],
+  batched : Bool,
 ) -> (@sheet.DrawnGrid, XlsxSheetGeometry, Int32) raise {
   let (parsed, rich_cells) = workbook.xlsx_read_sheet_cells_with_runs(
     ref.part,
@@ -2153,13 +2170,10 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     table_events,
     pictures,
   )
-  if !pictures.is_empty() {
-    let visible = workbook.sheets.filter(sheet => !sheet.hidden)
-    if visible.length() != 1 {
-      raise InvalidXlsxInput(
-        "xlsx: picture conversion currently supports one visible sheet",
-      )
-    }
+  if batched && !pictures.is_empty() {
+    raise InvalidXlsxInput(
+      "xlsx: pictures in batched multi-sheet workbooks are not supported",
+    )
   }
   let mut styled_runs = false
   for _, columns in rich_cells {
@@ -3488,6 +3502,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     table_filters~,
     pictures~,
     picture_writer=Some(writer),
+    picture_children=Some(children),
   ) catch {
     @sheet.InvalidArgument(message) => raise InvalidXlsxInput(message)
     error => raise error

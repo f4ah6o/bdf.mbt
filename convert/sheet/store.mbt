@@ -117,14 +117,38 @@ pub fn store_grids(
   writer : @core.DocumentWriter,
   grids : Array[NamedGrid],
   text_index : Bool,
+  picture_children~ : Array[Array[(Int32, Int32, Bytes)]] = [],
 ) -> Unit raise {
+  if !picture_children.is_empty() && picture_children.length() != grids.length() {
+    raise InvalidArgument("sheet: picture children do not match the grids")
+  }
   let tile_maps : Array[Map[String, Json]] = []
-  for named in grids {
+  for index, named in grids {
+    let children = picture_children.get(index).unwrap_or([])
+    for (x, y, _) in children {
+      if x < 0 {
+        if x != -1 || y != -1 {
+          raise InvalidArgument("sheet: invalid picture child tile")
+        }
+      } else if !named.grid.tiles.any(tile => tile.x == x && tile.y == y) {
+        raise InvalidArgument("sheet: missing picture child tile")
+      }
+    }
     let tiles : Map[String, Json] = Map([])
     for tile in named.grid.tiles {
+      for (x, y, child) in children {
+        if x == tile.x && y == tile.y {
+          ignore(writer.add_part("obj", child))
+        }
+      }
       let hash = writer.add_part("obj", tile.object)
       if tile.drawn {
         tiles["\{tile.x},\{tile.y}"] = Json::string(hash)
+      }
+    }
+    for (x, _, child) in children {
+      if x < 0 {
+        ignore(writer.add_part("obj", child))
       }
     }
     tile_maps.push(tiles)

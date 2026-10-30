@@ -94,8 +94,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
             match (px, py) {
               (Some(a), Some(b)) if a >= 0L &&
                 b >= 0L &&
-                a <= 12700000L &&
-                b <= 12700000L => {
+                a <= 254000000L &&
+                b <= 254000000L => {
                 x = a.to_double() / 12700.0
                 y = b.to_double() / 12700.0
                 true
@@ -111,8 +111,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
             match (cx, cy) {
               (Some(a), Some(b)) if a >= 0L &&
                 b >= 0L &&
-                a <= 12700000L &&
-                b <= 12700000L => {
+                a <= 254000000L &&
+                b <= 254000000L => {
                 width = a.to_double() / 12700.0
                 height = b.to_double() / 12700.0
                 true
