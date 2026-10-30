@@ -61,6 +61,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut crop_bottom = 0.0
   let mut saw_crop = false
   let mut saw_xfrm = false
+  let mut saw_xfrm_off = false
+  let mut saw_xfrm_ext = false
   let mut flip_horizontal = false
   let mut flip_vertical = false
   let mut description = ""
@@ -323,6 +325,42 @@ fn XlsxWorkbook::xlsx_simple_picture(
           } else {
             false
           }
+        } else if depth == 5 && parent == "xfrm" {
+          if !(event.kind is Empty(_)) {
+            return None
+          }
+          let keys = if name == "off" {
+            if saw_xfrm_off {
+              return None
+            }
+            saw_xfrm_off = true
+            ["x", "y"]
+          } else if name == "ext" {
+            if saw_xfrm_ext {
+              return None
+            }
+            saw_xfrm_ext = true
+            ["cx", "cy"]
+          } else {
+            return None
+          }
+          let seen : Map[String, Bool] = Map([])
+          for attr in element.attributes {
+            let key = attr.name.local_name
+            if !keys.contains(key) ||
+              seen.contains(key) ||
+              attr.name.namespace_uri is Some(_) {
+              return None
+            }
+            seen[key] = true
+            match xlsx_int(attr.value) {
+              Some(value) if value >= 0L &&
+                value <= 254000000L &&
+                (name != "ext" || value > 0L) => ()
+              _ => return None
+            }
+          }
+          seen.length() == 2
         } else if depth == 5 && parent == "prstGeom" {
           name == "avLst" && event.kind is Empty(_)
         } else {
@@ -416,6 +454,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
         }
         if depth == 2 {
           if pictures != 1 ||
+            saw_xfrm_off != saw_xfrm_ext ||
             !saw_nv ||
             !saw_nvpr ||
             !saw_blip_fill ||
@@ -506,6 +545,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
           crop_bottom = 0.0
           saw_crop = false
           saw_xfrm = false
+          saw_xfrm_off = false
+          saw_xfrm_ext = false
           flip_horizontal = false
           flip_vertical = false
           description = ""
