@@ -171,3 +171,5 @@ and `generate_multi_varying_unsupported_test.go`. Inherited-size cases use
 `generate_multi_inherited_size_test.go`, `generate_multi_inherited_base_test.go`,
 `generate_multi_inherited_conditional_test.go`, `generate_multi_inherited_height_test.go`,
 `generate_multi_inherited_legacy_test.go` and `generate_multi_inherited_varying_legacy_test.go`.
+Wrap-enabled cells that fit on one line are covered by `generate_multi_varying_wrap_fit_test.go`,
+`generate_multi_varying_wrap_fit_conditional_test.go` and `generate_multi_varying_wrap_fit_height_test.go`.

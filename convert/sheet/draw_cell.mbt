@@ -82,7 +82,7 @@ fn grid_cell_layout(
     bold~,
     advance~,
   )
-  if !wraps && line_width is Some(width) && !lines.is_empty() {
+  if line_width is Some(width) && lines.length() == 1 {
     lines[0] = { ..lines[0], width, }
   }
   if !wraps &&

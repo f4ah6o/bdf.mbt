@@ -395,12 +395,13 @@ pub fn draw_sized_grid_no_fonts(
       }
       let mut rich_width = 0.0
       if varying {
-        if wrap ||
-          scale != 1.0 ||
+        if scale != 1.0 ||
           script != "" ||
           text.length() > 1024 ||
           text.trim().to_string() != text {
-          raise InvalidArgument("varying run sizes require one unscaled line")
+          raise InvalidArgument(
+            "styled rich text runs require one unscaled line",
+          )
         }
         let mut shown = 0
         for run in rich_runs {
@@ -437,6 +438,9 @@ pub fn draw_sized_grid_no_fonts(
         line_width=if varying { Some(rich_width) } else { None },
         indent~,
       )
+      if varying && initial.lines.length() != 1 {
+        raise InvalidArgument("styled rich text runs require one unscaled line")
+      }
       let horizontal : DrawCell = if centered.get(column).unwrap_or(false) {
         let lines = initial.lines.map(fn(line) {
           {

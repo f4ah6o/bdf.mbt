@@ -1369,7 +1369,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
                 if (
                     varying &&
                     (
-                      alignment.wrap ||
                       alignment.shrink ||
                       (
                         horizontal != "general" &&
@@ -2130,7 +2129,6 @@ fn xlsx_apply_plain_run_fonts(
           }
           let al = format.alignment
           let safe_varying = !uniform &&
-            !al.wrap &&
             !al.shrink &&
             (
               al.horizontal == "general" ||
