@@ -5,7 +5,12 @@ source = json.loads((root / 'simple-rectangle.json').read_text())[0]
 variants = {
     'ellipse': ('prst="rect"', 'prst="ellipse"'),
     'unknown-color': ('val="FF0000"', 'val="FF00ZZ"'),
-    'color-alpha': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="50000"/></a:srgbClr>'),
+    'color-transform': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:lumMod val="50000"/></a:srgbClr>'),
+    'alpha-too-large': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="100001"/></a:srgbClr>'),
+    'alpha-negative': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="-1"/></a:srgbClr>'),
+    'alpha-decimal': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="1.5"/></a:srgbClr>'),
+    'alpha-duplicate': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="1"/><a:alpha val="2"/></a:srgbClr>'),
+    'alpha-extra-attribute': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="1" foo="2"/></a:srgbClr>'),
     'theme-color': ('<a:srgbClr val="FF0000"/>', '<a:schemeClr val="accent1"/>'),
     'gradient': ('<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill>', '<a:gradFill/>'),
     'dashed-line': ('<a:ln><a:noFill/></a:ln>', '<a:ln><a:solidFill><a:srgbClr val="000000"/></a:solidFill><a:prstDash val="dash"/></a:ln>'),

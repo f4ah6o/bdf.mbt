@@ -36,6 +36,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut saw_no_line = false
   let mut saw_line_fill = false
   let mut line_color : UInt32? = None
+  let mut saw_shape_alpha = false
+  let mut saw_line_alpha = false
   let mut line_width = 0.75
   let mut saw_blip_fill = false
   let mut saw_sppr = false
@@ -376,9 +378,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
             false
           }
         } else if depth == 5 && parent == "solidFill" && is_shape {
-          if name != "srgbClr" ||
-            !(event.kind is Empty(_)) ||
-            shape_fill is Some(_) {
+          if name != "srgbClr" || shape_fill is Some(_) {
             return None
           }
           shape_fill = xlsx_simple_shape_color(element)
@@ -404,12 +404,37 @@ fn XlsxWorkbook::xlsx_simple_picture(
           parent == "solidFill" &&
           parents[4] == "ln" &&
           is_shape {
-          if name != "srgbClr" ||
-            !(event.kind is Empty(_)) ||
-            line_color is Some(_) {
+          if name != "srgbClr" || line_color is Some(_) {
             return None
           }
           line_color = xlsx_simple_shape_color(element)
+          line_color is Some(_)
+        } else if depth == 6 &&
+          parent == "srgbClr" &&
+          parents[4] == "solidFill" &&
+          is_shape {
+          if name != "alpha" || !(event.kind is Empty(_)) || saw_shape_alpha {
+            return None
+          }
+          saw_shape_alpha = true
+          shape_fill = match shape_fill {
+            Some(color) => xlsx_simple_shape_alpha(element, color)
+            None => return None
+          }
+          shape_fill is Some(_)
+        } else if depth == 7 &&
+          parent == "srgbClr" &&
+          parents[5] == "solidFill" &&
+          parents[4] == "ln" &&
+          is_shape {
+          if name != "alpha" || !(event.kind is Empty(_)) || saw_line_alpha {
+            return None
+          }
+          saw_line_alpha = true
+          line_color = match line_color {
+            Some(color) => xlsx_simple_shape_alpha(element, color)
+            None => return None
+          }
           line_color is Some(_)
         } else if depth == 5 && parent == "xfrm" {
           if !(event.kind is Empty(_)) {
@@ -631,6 +656,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
           saw_no_line = false
           saw_line_fill = false
           line_color = None
+          saw_shape_alpha = false
+          saw_line_alpha = false
           line_width = 0.75
           saw_blip_fill = false
           saw_sppr = false
@@ -707,6 +734,23 @@ fn xlsx_simple_shape_color(element : @xml.NamespaceElement) -> UInt32? {
     rgb = rgb * 16U + digit.to_uint()
   }
   Some((rgb << 8) | 255U)
+}
+
+///|
+fn xlsx_simple_shape_alpha(
+  element : @xml.NamespaceElement,
+  color : UInt32,
+) -> UInt32? {
+  if element.attributes.length() != 1 {
+    return None
+  }
+  let value = match xlsx_int(xlsx_attr(element, "val", "")) {
+    Some(value) if value >= 0L && value <= 100000L => value
+    _ => return None
+  }
+  // Go rounds the percentage to the nearest 8-bit alpha value.
+  let alpha = ((value * 255L + 50000L) / 100000L).to_int().to_uint()
+  Some((color & 0xffffff00U) | alpha)
 }
 
 ///|
