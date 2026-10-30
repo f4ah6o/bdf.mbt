@@ -768,7 +768,66 @@ fn xlsx_crop_image_size(image : Bytes) -> (Double, Double)? {
   if image.length() >= 3 && image[:3] == b"\xff\xd8\xff"[:] {
     return xlsx_crop_jpeg_size(image)
   }
-  xlsx_crop_png_size(image)
+  if xlsx_crop_png_size(image) is Some(size) {
+    return Some(size)
+  }
+  xlsx_crop_svg_size(image)
+}
+
+///|
+fn xlsx_crop_svg_size(image : Bytes) -> (Double, Double)? {
+  if image.length() > 4194304 {
+    return None
+  }
+  let source = @utf8.decode(image[:], ignore_bom=true) catch {
+    _ => return None
+  }
+  if source.contains("<!ENTITY") {
+    return None
+  }
+  let reader = @xml.NamespaceReader::from_string(source)
+  while true {
+    let event = reader.read_event() catch { _ => return None }
+    match event.kind {
+      Start(element) | Empty(element) => {
+        if element.name.local_name != "svg" {
+          return None
+        }
+        let mut width : Int64? = None
+        let mut height : Int64? = None
+        for attr in element.attributes {
+          if attr.name.namespace_uri is None &&
+            (
+              attr.name.local_name == "width" ||
+              attr.name.local_name == "height"
+            ) {
+            let value = match xlsx_int(xlsx_trim(attr.value)) {
+              Some(value) if value > 0L && value <= 1000000L => value
+              _ => return None
+            }
+            if attr.name.local_name == "width" {
+              if width is Some(_) {
+                return None
+              }
+              width = Some(value)
+            } else {
+              if height is Some(_) {
+                return None
+              }
+              height = Some(value)
+            }
+          }
+        }
+        return match (width, height) {
+          (Some(w), Some(h)) => Some((w.to_double(), h.to_double()))
+          _ => None
+        }
+      }
+      End(_) | Eof => return None
+      _ => ()
+    }
+  }
+  None
 }
 
 ///|
