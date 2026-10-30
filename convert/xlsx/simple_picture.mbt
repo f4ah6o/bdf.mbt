@@ -395,7 +395,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
             false
           }
         } else if depth == 5 && parent == "solidFill" && is_shape {
-          if !["srgbClr", "schemeClr", "sysClr", "prstClr"].contains(name) ||
+          if !["srgbClr", "schemeClr", "sysClr", "prstClr", "scrgbClr"].contains(
+              name,
+            ) ||
             shape_fill is Some(_) {
             return None
           }
@@ -453,7 +455,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
           parent == "solidFill" &&
           parents[4] == "ln" &&
           is_shape {
-          if !["srgbClr", "schemeClr", "sysClr", "prstClr"].contains(name) ||
+          if !["srgbClr", "schemeClr", "sysClr", "prstClr", "scrgbClr"].contains(
+              name,
+            ) ||
             line_color is Some(_) {
             return None
           }
@@ -471,7 +475,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
           )
           line_color is Some(_)
         } else if depth == 6 &&
-          ["srgbClr", "schemeClr", "sysClr", "prstClr"].contains(parent) &&
+          ["srgbClr", "schemeClr", "sysClr", "prstClr", "scrgbClr"].contains(
+            parent,
+          ) &&
           parents[4] == "solidFill" &&
           is_shape {
           if name != "alpha" || !(event.kind is Empty(_)) || saw_shape_alpha {
@@ -484,7 +490,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
           }
           shape_fill is Some(_)
         } else if depth == 7 &&
-          ["srgbClr", "schemeClr", "sysClr", "prstClr"].contains(parent) &&
+          ["srgbClr", "schemeClr", "sysClr", "prstClr", "scrgbClr"].contains(
+            parent,
+          ) &&
           parents[5] == "solidFill" &&
           parents[4] == "ln" &&
           is_shape {
@@ -930,6 +938,31 @@ fn xlsx_simple_shape_color(
       255.0)
       .round()
       .to_uint(),
+    )
+  }
+  if element.name.local_name == "scrgbClr" {
+    let components : Array[Int32] = [0, 0, 0]
+    let seen : Map[String, Bool] = Map([])
+    for attr in element.attributes {
+      let name = attr.name.local_name
+      if !["r", "g", "b"].contains(name) ||
+        seen.contains(name) ||
+        attr.name.namespace_uri is Some(_) {
+        return None
+      }
+      seen[name] = true
+      let value = match xlsx_int(attr.value) {
+        Some(value) if value >= 0L && value <= 100000L => value.to_int()
+        _ => return None
+      }
+      let index = if name == "r" { 0 } else if name == "g" { 1 } else { 2 }
+      components[index] = value
+    }
+    return Some(
+      (xlsx_shape_linear_component(components[0]) << 24) |
+      (xlsx_shape_linear_component(components[1]) << 16) |
+      (xlsx_shape_linear_component(components[2]) << 8) |
+      255U,
     )
   }
   if element.name.local_name == "prstClr" {
