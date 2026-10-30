@@ -40,6 +40,9 @@ func TestCodexPlainRun(t *testing.T) {
 		if i >= 120 {
 			text = []string{`<r/>`, `<r><t>one</t></r><r><t>two</t></r>`, `<r><t>one</t><t>two</t></r>`, `<r><rPr><b/></rPr><t>styled</t></r>`}[((i-120)/2)%4]
 		}
+		if i == 122 {
+			text = `<r><t>one</t></r><r><t>two</t></r><t>suffix</t>`
+		}
 		shared, inline := `<si><t>ordinary</t></si>`, `<is><t>ordinary</t></is>`
 		if i%2 == 0 {
 			shared = "<si>" + text + "</si>"

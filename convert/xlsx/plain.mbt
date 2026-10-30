@@ -10,7 +10,7 @@ pub(all) struct XlsxPlainResult {
 fn XlsxWorkbook::xlsx_check_plain_sheet(
   self : XlsxWorkbook,
   part : String,
-) -> (Array[@sheet.GridLink], Bool) raise {
+) -> (Array[@sheet.GridLink], Bool, Bool) raise {
   let data = self.package.read(part) catch {
     @ooxml.InvalidOoxml(message) => raise InvalidXlsxInput(message)
   }
@@ -27,6 +27,8 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut run_depth = -1
   let mut run_count = 0
   let mut run_texts = 0
+  let mut root_text = false
+  let mut multi_run = false
   let mut link_depth = -1
   let mut has_conditional = false
   let links : Array[@sheet.GridLink] = []
@@ -82,13 +84,9 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
         } else if depth == cell_depth && name == "is" && event.kind is Start(_) {
           inline_depth = depth + 1
           run_count = 0
+          root_text = false
         } else if depth == inline_depth && name == "r" {
           run_count += 1
-          if run_count > 1 {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text",
-            )
-          }
           run_texts = 0
           if event.kind is Start(_) {
             run_depth = depth + 1
@@ -97,6 +95,8 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
               "xlsx: plain conversion does not support rich text",
             )
           }
+        } else if depth == inline_depth && name == "t" {
+          root_text = true
         } else if depth == run_depth && name == "rPr" {
           raise InvalidXlsxInput(
             "xlsx: plain conversion does not support rich text",
@@ -129,6 +129,14 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           link_depth = -1
         }
         if depth + 1 == inline_depth {
+          if run_count > 1 {
+            if root_text {
+              raise InvalidXlsxInput(
+                "xlsx: plain conversion does not support rich text",
+              )
+            }
+            multi_run = true
+          }
           inline_depth = -1
         }
         if depth + 1 == cell_depth {
@@ -153,7 +161,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
       _ => ()
     }
   }
-  (links, has_conditional)
+  (links, has_conditional, multi_run)
 }
 
 ///|
@@ -282,13 +290,13 @@ fn xlsx_url_hex(b : Byte) -> Bool {
 }
 
 ///|
-fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
+fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Bool raise {
   let rel = match
     self.package.relationship_of_type(self.part, "/sharedStrings") {
     Some(r) => r
-    None => return
+    None => return false
   }
-  let data = self.package.read(rel.target) catch { _ => return }
+  let data = self.package.read(rel.target) catch { _ => return false }
   let text = @utf8.decode_lossy(data[:], ignore_bom=true)
   if text.contains("<!ENTITY") {
     raise InvalidXlsxInput("xlsx: the part declares entities")
@@ -299,6 +307,8 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
   let mut run_depth = -1
   let mut run_count = 0
   let mut run_texts = 0
+  let mut root_text = false
+  let mut multi_run = false
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -307,13 +317,9 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
         if depth == 1 && name == "si" && event.kind is Start(_) {
           string_depth = depth + 1
           run_count = 0
+          root_text = false
         } else if depth == string_depth && name == "r" {
           run_count += 1
-          if run_count > 1 {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text",
-            )
-          }
           run_texts = 0
           if event.kind is Start(_) {
             run_depth = depth + 1
@@ -322,6 +328,8 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
               "xlsx: plain conversion does not support rich text",
             )
           }
+        } else if depth == string_depth && name == "t" {
+          root_text = true
         } else if depth == run_depth && name == "rPr" {
           raise InvalidXlsxInput(
             "xlsx: plain conversion does not support rich text",
@@ -351,6 +359,14 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
           run_depth = -1
         }
         if depth + 1 == string_depth {
+          if run_count > 1 {
+            if root_text {
+              raise InvalidXlsxInput(
+                "xlsx: plain conversion does not support rich text",
+              )
+            }
+            multi_run = true
+          }
           string_depth = -1
         }
         if depth == 0 {
@@ -366,6 +382,7 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
       _ => ()
     }
   }
+  multi_run
 }
 
 ///|
@@ -473,7 +490,7 @@ pub fn convert_plain_no_fonts(
   let styles = workbook.styles()
   let theme_colors = workbook.xlsx_plain_theme_colors()
   xlsx_check_plain_style(styles, 0)
-  workbook.xlsx_check_plain_strings()
+  let shared_multi_run = workbook.xlsx_check_plain_strings()
   let dc : Map[String, Json] = Map([])
   for
     (key, values) in [
@@ -519,7 +536,7 @@ pub fn convert_plain_no_fonts(
     let number = index + 1
     let id = "sheet" + number.to_string()
     let (drawn, geo, missing_formula_values) = workbook.xlsx_draw_plain_sheet(
-      ref, styles, locale, doc_language, theme_colors,
+      ref, styles, locale, doc_language, theme_colors, shared_multi_run,
     )
     let (next, table_warnings) = workbook.store_sheet_tables(
       writer,
@@ -573,8 +590,11 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   locale : XlsxLocale,
   doc_language : String,
   theme_colors : Map[Int32, XlsxRgb],
+  shared_multi_run : Bool,
 ) -> (@sheet.DrawnGrid, XlsxSheetGeometry, Int32) raise {
-  let (links, has_conditional) = workbook.xlsx_check_plain_sheet(ref.part)
+  let (links, has_conditional, inline_multi_run) = workbook.xlsx_check_plain_sheet(
+    ref.part,
+  )
   let styles = if has_conditional {
     {
       ..input_styles,
@@ -606,6 +626,33 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   }
   let parsed = workbook.read_sheet_cells(ref.part)
   let mut rows = parsed.sorted_rows()
+  if shared_multi_run || inline_multi_run {
+    for row in rows {
+      for cell in row.cells {
+        if cell.kind != 2 {
+          continue
+        }
+        let index = if cell.style < 0 ||
+          cell.style >= styles.cell_formats.length() {
+          0
+        } else {
+          cell.style
+        }
+        let format = styles.number_format(
+          styles.cell_formats[index].number_format,
+          locale.number_locale,
+        )
+        let sections = xlsx_parse_number_format(format, styles.palette)
+        for i, section in sections {
+          if section.text || i == 3 {
+            raise InvalidXlsxInput(
+              "xlsx: plain conversion does not support rich text with text number formats",
+            )
+          }
+        }
+      }
+    }
+  }
   let geo = workbook.read_sheet_geometry(ref.part)
   let (spans, region_rows, merge_regions) = xlsx_plain_spans(geo.merges)
   let center_across : Map[Int32, Map[Int32, Bool]] = Map([])
