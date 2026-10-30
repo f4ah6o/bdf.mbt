@@ -11,7 +11,7 @@ fn xlsx_conditional_top_threshold(
   bottom : Bool,
 ) -> Double? raise {
   let values = xlsx_conditional_numeric_values(
-    rows, ranges, row_count, col_count,
+    rows, ranges, row_count, col_count, false,
   )
   if values.is_empty() {
     return None
@@ -36,6 +36,7 @@ fn xlsx_conditional_numeric_values(
   ranges : Array[XlsxRange],
   row_count : Int32,
   col_count : Int32,
+  allow_nan : Bool,
 ) -> Array[Double] raise {
   let values : Array[Double] = []
   let seen : Map[Int32, Map[Int32, Bool]] = Map([])
@@ -53,7 +54,7 @@ fn xlsx_conditional_numeric_values(
           cell.kind != 1 {
           continue
         }
-        if cell.number.is_nan() {
+        if cell.number.is_nan() && !allow_nan {
           xlsx_reject_conditional()
         }
         let columns = match seen.get(row.index) {
@@ -84,7 +85,7 @@ fn xlsx_conditional_average_threshold(
   above : Bool,
 ) -> Double? raise {
   let values = xlsx_conditional_numeric_values(
-    rows, ranges, row_count, col_count,
+    rows, ranges, row_count, col_count, true,
   )
   if values.is_empty() {
     return None
@@ -97,18 +98,27 @@ fn xlsx_conditional_average_threshold(
     return None
   }
   let mean = sum / values.length().to_double()
-  if multiplier == 0.0 || values.length() < 2 {
+  if multiplier == 0.0 {
     return Some(mean)
   }
+  if multiplier.is_nan() {
+    return None
+  }
   let mut squared = 0.0
-  for value in values {
-    let difference = value - mean
-    squared = xlsx_fma(difference, difference, squared)
+  if values.length() >= 2 {
+    for value in values {
+      let difference = value - mean
+      squared = xlsx_fma(difference, difference, squared)
+    }
   }
   if squared.is_nan() {
     return None
   }
-  let sd = (squared / (values.length() - 1).to_double()).sqrt()
+  let sd = if values.length() < 2 {
+    0.0
+  } else {
+    (squared / (values.length() - 1).to_double()).sqrt()
+  }
   let result = xlsx_fma(if above { multiplier } else { -multiplier }, sd, mean)
   if result.is_nan() {
     return None
@@ -120,15 +130,24 @@ fn xlsx_conditional_average_threshold(
 // Reject hexadecimal floats, which MoonBit does not parse.
 fn xlsx_conditional_stddev(raw : String) -> Double raise {
   let text = xlsx_trim(raw)
-  if text.contains("x") ||
-    text.contains("X") ||
-    text.contains("p") ||
-    text.contains("P") {
+  let lower = text.to_lower()
+  if lower.has_prefix("0x") ||
+    lower.has_prefix("+0x") ||
+    lower.has_prefix("-0x") {
     xlsx_reject_conditional()
   }
+  if lower == "+nan" || lower == "-nan" {
+    return 0.0
+  }
   let value = @string.parse_double(text) catch { _ => return 0.0 }
-  if value.is_nan() || value.is_inf() {
-    xlsx_reject_conditional()
+  if value.is_inf() &&
+    !["inf", "+inf", "-inf", "infinity", "+infinity", "-infinity"].contains(
+      lower,
+    ) {
+    return 0.0
+  }
+  if value.is_nan() && lower != "nan" {
+    return 0.0
   }
   value
 }

@@ -368,7 +368,9 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
                 if cell.kind == 0 {
                   continue
                 }
-                if cell.kind == 1 && cell.number.is_nan() {
+                if cell.kind == 1 &&
+                  cell.number.is_nan() &&
+                  rule_type != "aboveAverage" {
                   xlsx_reject_conditional()
                 }
                 let matches = if rule_type != "cellIs" {

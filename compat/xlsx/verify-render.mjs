@@ -109,6 +109,16 @@ for (const [j, c] of conditionalLargeStdDev.entries()) await verifyCase(c, `larg
 const conditionalOverflowMean = JSON.parse(await readFile(new URL('./conditional-overflow-mean.json', import.meta.url)));
 assert.equal(conditionalOverflowMean.length, 465, 'overflowed conditional mean fixture count');
 for (const [j, c] of conditionalOverflowMean.entries()) await verifyCase(c, `overflowed conditional mean ${j}`);
+const conditionalNonfiniteAverage = JSON.parse(await readFile(new URL('./conditional-nonfinite-average.json', import.meta.url)));
+assert.equal(conditionalNonfiniteAverage.length, 705, 'nonfinite conditional average fixture count');
+for (const [j, c] of conditionalNonfiniteAverage.entries()) await verifyCase(c, `nonfinite conditional average ${j}`);
+const unsupportedConditionalNonfiniteAverage = JSON.parse(await readFile(new URL('./conditional-nonfinite-average-unsupported.json', import.meta.url)));
+assert.equal(unsupportedConditionalNonfiniteAverage.length, 8, 'unsupported nonfinite conditional average fixture count');
+for (const encoded of unsupportedConditionalNonfiniteAverage) {
+  const input = Buffer.from(encoded, 'base64');
+  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional average must be rejected');
+  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+}
 const unsupportedConditionalOverflowMean = JSON.parse(await readFile(new URL('./conditional-overflow-mean-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalOverflowMean.length, 8, 'unsupported overflowed conditional mean fixture count');
 for (const encoded of unsupportedConditionalOverflowMean) {
@@ -350,4 +360,4 @@ for (const encoded of unsupportedBase) {
   assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
   assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|complex borders)/);
 }
-console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length + conditionalBetween.length + conditionalEquals.length + conditionalLiteral.length + conditionalMovingLiteral.length + conditionalTypedReference.length + conditionalInvalidReference.length + conditionalAbsolute.length + conditionalSingleRef.length + conditionalAxisRef.length + conditionalMovingRef.length + conditionalNegativeRef.length + conditionalNegativeBlank.length + conditionalNegativeString.length + conditionalPredicates.length + conditionalText.length + conditionalTop.length + conditionalAverage.length + conditionalStdDev.length + conditionalLargeStdDev.length + conditionalOverflowMean.length + conditionalDuplicate.length + conditionalBlank.length + conditionalPaintBlank.length} conditional formats match upstream.`);
+console.log(`${i} basic XLSX renderings, ${baseFills.length} base fills, ${baseBorders.length} base borders, ${plainRuns.length} plain runs, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length + conditionalBetween.length + conditionalEquals.length + conditionalLiteral.length + conditionalMovingLiteral.length + conditionalTypedReference.length + conditionalInvalidReference.length + conditionalAbsolute.length + conditionalSingleRef.length + conditionalAxisRef.length + conditionalMovingRef.length + conditionalNegativeRef.length + conditionalNegativeBlank.length + conditionalNegativeString.length + conditionalPredicates.length + conditionalText.length + conditionalTop.length + conditionalAverage.length + conditionalStdDev.length + conditionalLargeStdDev.length + conditionalOverflowMean.length + conditionalNonfiniteAverage.length + conditionalDuplicate.length + conditionalBlank.length + conditionalPaintBlank.length} conditional formats match upstream.`);
