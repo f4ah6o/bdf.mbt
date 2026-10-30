@@ -646,7 +646,8 @@ fn XlsxWorkbook::xlsx_simple_picture(
             shape_adjustments_allowed &&
             [
               "triangle", "parallelogram", "trapezoid", "homePlate", "chevron", "plus",
-              "hexagon", "octagon", "roundRect",
+              "hexagon", "octagon", "roundRect", "diagStripe", "snip1Rect", "star10",
+              "star7",
             ].contains(shape_geometry)
           )
         } else if depth == 6 && parent == "avLst" && parents[4] == "prstGeom" {

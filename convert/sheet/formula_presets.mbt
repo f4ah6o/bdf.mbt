@@ -4,6 +4,7 @@ fn sheet_formula_preset_path(
   geometry : String,
   width : Double,
   height : Double,
+  adjustment : Int64?,
 ) -> @core.Path {
   let ss = Double::min(width, height)
   let ls = Double::max(width, height)
@@ -207,7 +208,11 @@ fn sheet_formula_preset_path(
       }
     }
     "diagStripe" => {
-      env["adj"] = 50000.0
+      env["adj"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        50000.0
+      }
       env["a"] = sheet_preset_pin(0.0, env.get("adj").unwrap_or(0.0), 100000.0)
       env["x2"] = sheet_preset_muldiv(
         env.get("w").unwrap_or(0.0),
@@ -2063,7 +2068,11 @@ fn sheet_formula_preset_path(
       }
     }
     "snip1Rect" => {
-      env["adj"] = 16667.0
+      env["adj"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        16667.0
+      }
       env["a"] = sheet_preset_pin(0.0, env.get("adj").unwrap_or(0.0), 50000.0)
       env["dx1"] = sheet_preset_muldiv(
         env.get("ss").unwrap_or(0.0),
@@ -2230,7 +2239,11 @@ fn sheet_formula_preset_path(
       }
     }
     "star10" => {
-      env["adj"] = 42533.0
+      env["adj"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        42533.0
+      }
       env["hf"] = 105146.0
       env["a"] = sheet_preset_pin(0.0, env.get("adj").unwrap_or(0.0), 50000.0)
       env["swd2"] = sheet_preset_muldiv(
@@ -2394,7 +2407,11 @@ fn sheet_formula_preset_path(
       }
     }
     "star7" => {
-      env["adj"] = 34601.0
+      env["adj"] = if adjustment is Some(value) {
+        value.to_double()
+      } else {
+        34601.0
+      }
       env["hf"] = 102572.0
       env["vf"] = 105210.0
       env["a"] = sheet_preset_pin(0.0, env.get("adj").unwrap_or(0.0), 50000.0)

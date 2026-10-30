@@ -175,7 +175,7 @@ fn GridDrawContext::paint_picture(
       value > 100000L ||
       ![
         "triangle", "parallelogram", "trapezoid", "homePlate", "chevron", "plus",
-        "hexagon", "octagon", "roundRect",
+        "hexagon", "octagon", "roundRect", "diagStripe", "snip1Rect", "star10", "star7",
       ].contains(shape_geometry) {
       raise InvalidArgument("sheet: invalid shape adjustment")
     }
@@ -534,7 +534,9 @@ fn GridDrawContext::paint_picture(
       "star10", "star7", "upArrowCallout", "upDownArrow", "upArrow", "upDownArrowCallout",
       "wedgeRectCallout",
     ].contains(shape_geometry) {
-    sheet_formula_preset_path(shape_geometry, draw_width, draw_height)
+    sheet_formula_preset_path(
+      shape_geometry, draw_width, draw_height, shape_adjustment,
+    )
   } else if [
       "flowChartCollate", "flowChartManualInput", "flowChartManualOperation", "flowChartOffpageConnector",
       "irregularSeal1", "irregularSeal2", "lightningBolt",
