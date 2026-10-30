@@ -46,6 +46,8 @@ fn xlsx_rich_text_info(
   let mut run_depth = -1
   let mut run_count = 0
   let mut run_font : XlsxFont? = None
+  let mut run_props_seen = false
+  let mut run_text_seen = false
   let mut run_text = StringBuilder()
   let segments : Array[XlsxRunSegment] = []
   let mut has_font = false
@@ -58,6 +60,8 @@ fn xlsx_rich_text_info(
           run_depth = 2
           run_count += 1
           run_font = None
+          run_props_seen = false
+          run_text_seen = false
           run_text = StringBuilder()
         }
         if name == "rPr" && depth == run_depth {
@@ -65,8 +69,11 @@ fn xlsx_rich_text_info(
           if event.kind is Start(_) {
             xlsx_read_run_font(reader, font)
           }
-          run_font = Some(font)
-          has_font = true
+          if !run_props_seen {
+            run_font = Some(font)
+            has_font = true
+          }
+          run_props_seen = true
         } else if name == "t" && (depth == 1 || depth == run_depth) {
           let text = if event.kind is Start(_) {
             xlsx_text_element(reader)
@@ -74,10 +81,15 @@ fn xlsx_rich_text_info(
             ""
           }
           let text = xlsx_decode_string(text)
-          out.write_string(text)
+          if depth != run_depth || !run_text_seen {
+            out.write_string(text)
+            if depth == run_depth {
+              runs.write_string(text)
+              run_text.write_string(text)
+            }
+          }
           if depth == run_depth {
-            runs.write_string(text)
-            run_text.write_string(text)
+            run_text_seen = true
           }
         } else if event.kind is Start(_) {
           depth += 1
@@ -122,12 +134,28 @@ fn xlsx_read_run_font(
   font : XlsxFont,
 ) -> Unit raise {
   let mut depth = 1
+  // Upstream reads the first rFont and sz child from the run properties.
+  let mut font_seen = false
+  let mut size_seen = false
   while depth > 0 {
     let event = reader.read_event()
     match event.kind {
       Start(element) | Empty(element) => {
         if depth == 1 && element.name.local_name != "name" {
-          font.apply(element)
+          let name = element.name.local_name
+          if name == "rFont" {
+            if !font_seen {
+              font.apply(element)
+            }
+            font_seen = true
+          } else if name == "sz" {
+            if !size_seen {
+              font.apply(element)
+            }
+            size_seen = true
+          } else {
+            font.apply(element)
+          }
         }
         if event.kind is Start(_) {
           depth += 1

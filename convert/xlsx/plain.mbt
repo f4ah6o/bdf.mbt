@@ -28,7 +28,6 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut run_texts = 0
   let mut props_seen = false
   let mut props_depth = -1
-  let mut run_font_seen = false
   let mut run_size_seen = false
   let mut link_depth = -1
   let mut extension_depth = -1
@@ -119,11 +118,9 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
         } else if depth == cell_depth && name == "is" && event.kind is Start(_) {
           inline_depth = depth + 1
           props_seen = false
-          run_font_seen = false
           run_size_seen = false
         } else if depth == inline_depth && name == "r" {
           props_seen = false
-          run_font_seen = false
           run_size_seen = false
           run_texts = 0
           if event.kind is Start(_) {
@@ -134,28 +131,13 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
             )
           }
         } else if depth == run_depth && name == "rPr" {
-          if props_seen {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text",
-            )
+          if !props_seen {
+            props_seen = true
+            if event.kind is Start(_) {
+              props_depth = depth + 1
+            }
           }
-          props_seen = true
-          if event.kind is Start(_) {
-            props_depth = depth + 1
-          }
-        } else if depth == props_depth && name == "rFont" {
-          if run_font_seen {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text with repeated run fonts",
-            )
-          }
-          run_font_seen = true
-        } else if depth == props_depth && name == "sz" {
-          if run_size_seen {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text with repeated run font sizes",
-            )
-          }
+        } else if depth == props_depth && name == "sz" && !run_size_seen {
           run_size_seen = true
           let raw = xlsx_trim(xlsx_attr(element, "val", "")).to_lower()
           let size = @string.parse_double(raw) catch { _ => 0.0 }
@@ -170,11 +152,6 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           }
         } else if depth == run_depth && name == "t" {
           run_texts += 1
-          if run_texts > 1 {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text",
-            )
-          }
         }
         if event.kind is Start(_) {
           depth += 1
@@ -376,7 +353,6 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
   let mut run_texts = 0
   let mut props_seen = false
   let mut props_depth = -1
-  let mut run_font_seen = false
   let mut run_size_seen = false
   while true {
     let event = reader.read_event()
@@ -386,11 +362,9 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
         if depth == 1 && name == "si" && event.kind is Start(_) {
           string_depth = depth + 1
           props_seen = false
-          run_font_seen = false
           run_size_seen = false
         } else if depth == string_depth && name == "r" {
           props_seen = false
-          run_font_seen = false
           run_size_seen = false
           run_texts = 0
           if event.kind is Start(_) {
@@ -401,28 +375,13 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
             )
           }
         } else if depth == run_depth && name == "rPr" {
-          if props_seen {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text",
-            )
+          if !props_seen {
+            props_seen = true
+            if event.kind is Start(_) {
+              props_depth = depth + 1
+            }
           }
-          props_seen = true
-          if event.kind is Start(_) {
-            props_depth = depth + 1
-          }
-        } else if depth == props_depth && name == "rFont" {
-          if run_font_seen {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text with repeated run fonts",
-            )
-          }
-          run_font_seen = true
-        } else if depth == props_depth && name == "sz" {
-          if run_size_seen {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text with repeated run font sizes",
-            )
-          }
+        } else if depth == props_depth && name == "sz" && !run_size_seen {
           run_size_seen = true
           let raw = xlsx_trim(xlsx_attr(element, "val", "")).to_lower()
           let size = @string.parse_double(raw) catch { _ => 0.0 }
@@ -437,11 +396,6 @@ fn XlsxWorkbook::xlsx_check_plain_strings(self : XlsxWorkbook) -> Unit raise {
           }
         } else if depth == run_depth && name == "t" {
           run_texts += 1
-          if run_texts > 1 {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support rich text",
-            )
-          }
         }
         if event.kind is Start(_) {
           depth += 1
@@ -1146,7 +1100,12 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               Some(sizes) => sizes.get(cell.column).unwrap_or(drawn_size)
               None => drawn_size
             }
-            xlsx_rich_shrink_scale(run.segments, base_size, available)
+            xlsx_rich_shrink_scale(
+              run.segments,
+              base_size,
+              font.vertical,
+              available,
+            )
           } else {
             xlsx_plain_shrink_scale(text, available, drawn_size)
           }
@@ -1280,7 +1239,10 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
             strike: font.strike,
           }
         }
-        if font.vertical != "" {
+        if font.vertical != "" &&
+          !(rich_cells.get(row.index) is Some(cols) &&
+          cols.get(cell.column) is Some(r) &&
+          !r.segments.is_empty()) {
           let columns = match scripts.get(row.index) {
             Some(columns) => columns
             None => {
@@ -1317,14 +1279,11 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           columns.get(cell.column) is Some(run) &&
           !run.segments.is_empty() {
           let alignment = styles.cell_formats[format_index].alignment
-          if font.vertical != "" ||
-            (
-              horizontal != "general" &&
-              horizontal != "left" &&
-              horizontal != "right" &&
-              horizontal != "center" &&
-              horizontal != "centerContinuous"
-            ) {
+          if horizontal != "general" &&
+            horizontal != "left" &&
+            horizontal != "right" &&
+            horizontal != "center" &&
+            horizontal != "centerContinuous" {
             raise InvalidXlsxInput(
               "xlsx: plain conversion does not support these styled rich text runs",
             )
@@ -1466,7 +1425,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
                 strike,
                 vertical: match segment.font {
                   Some(f) => f.vertical
-                  None => ""
+                  None => font.vertical
                 },
               })
             }
@@ -2305,7 +2264,12 @@ fn xlsx_plain_fitted_rows(
             0.0
           }
           let bold = styles.fonts[font_index].bold
-          let drawn_size = if styles.fonts[font_index].vertical == "" {
+          let drawn_size = if styles.fonts[font_index].vertical == "" ||
+            (
+              rich_cells.get(row.index) is Some(cols) &&
+              cols.get(cell.column) is Some(r) &&
+              !r.segments.is_empty()
+            ) {
             size
           } else {
             size * (2.0 / 3.0)
@@ -2338,7 +2302,7 @@ fn xlsx_plain_fitted_rows(
               }
               let vertical = match segment.font {
                 Some(f) => f.vertical
-                None => ""
+                None => styles.fonts[font_index].vertical
               }
               if vertical != "" {
                 varying = true
@@ -2393,7 +2357,12 @@ fn xlsx_plain_fitted_rows(
                 Some(sizes) => sizes.get(cell.column).unwrap_or(drawn_size)
                 None => drawn_size
               }
-              xlsx_rich_shrink_scale(run.segments, base_size, width)
+              xlsx_rich_shrink_scale(
+                run.segments,
+                base_size,
+                styles.fonts[font_index].vertical,
+                width,
+              )
             } else {
               xlsx_plain_shrink_scale(formatted.text(), width, drawn_size)
             }
@@ -2434,6 +2403,7 @@ fn xlsx_plain_indent(alignment : XlsxAlignment, kind : Int32) -> Double {
 fn xlsx_rich_shrink_scale(
   segments : Array[XlsxRunSegment],
   base_size : Double,
+  base_vertical : String,
   available : Double,
 ) -> Double {
   let mut width = 0.0
@@ -2442,10 +2412,11 @@ fn xlsx_rich_shrink_scale(
       Some(font) if font.size > 0.0 => font.size
       _ => base_size
     }
-    let measure_size = match segment.font {
-      Some(f) if f.vertical != "" => size * (2.0 / 3.0)
-      _ => size
+    let vertical = match segment.font {
+      Some(f) => f.vertical
+      None => base_vertical
     }
+    let measure_size = if vertical != "" { size * (2.0 / 3.0) } else { size }
     for ch in segment.text {
       let character = if ch == '\t' { ' ' } else { ch }
       width += @sheet.sized_fallback_advance(character, false, measure_size)
