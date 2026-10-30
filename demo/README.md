@@ -38,9 +38,10 @@ The test serves the site under `/bdf.mbt/`, exercises all sample pages,
 search, navigation, downloading, CSV and SVG conversion, TTF and WOFF2 font
 specimens, view selection and saving, unsupported files,
 XLSX input, and mobile layout. An XLSX fixture is also rendered in Chromium
-and compared pixel-for-pixel with its upstream Go-generated BDF using the same
-viewer. This checks that fixture, not every Excel feature. It requires Playwright Chromium. Run the `vlmkit` gates
-against the served URL for markup and accessibility checks.
+and each sheet is compared pixel-for-pixel with its upstream Go-generated BDF
+using the same viewer. This checks that fixture, not every Excel feature.
+The test requires Playwright Chromium. Run the `vlmkit` gates against the
+served URL for markup and accessibility checks.
 
 The `Demo pages` workflow builds and tests the site on pull requests, pushes to
 `main`, and manual runs. It deploys only from `main` if the repository's Pages source is already

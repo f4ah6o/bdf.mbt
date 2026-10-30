@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createReadStream } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import { gunzipSync } from 'node:zlib';
 import { BdfDocument, BufferSource } from '@bdfkit/core';
@@ -168,36 +169,46 @@ try {
     await page.locator('#view').selectOption('sheet2');
   }
   const visualCases = JSON.parse(await readFile(resolve(import.meta.dirname, '../compat/xlsx/render/001.json')));
-  const visualCase = visualCases[15];
+  // Select the four-sheet workbook by content so fixture reordering cannot
+  // silently narrow this end-to-end test to a different input.
+  const visualCase = visualCases.find(item => createHash('sha256').update(Buffer.from(item.input, 'base64')).digest('hex') === 'd3df5666380ffefead5bafce06c6670ed26fa7fbe1b16effff85bef748af643c');
+  assert.ok(visualCase, 'four-sheet XLSX visual fixture');
   assert.equal(visualCase.mode, '');
   assert.equal(visualCase.no_index, false);
-  async function sheetImage(name, bytes) {
+  async function sheetImages(name, bytes) {
     await page.locator('#file').setInputFiles({ name, mimeType: 'application/octet-stream', buffer: Buffer.from(bytes, 'base64') });
     await page.waitForFunction(n => document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled, name, { timeout: 60000 });
     assert.equal(await page.locator('#status').evaluate(el => el.classList.contains('error')), false, name);
-    await page.waitForFunction(() => {
-      const canvas = document.querySelector('#preview canvas');
-      if (!canvas?.width || !canvas.height) return false;
-      const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
-      let dark = 0;
-      for (let i = 0; i < pixels.length; i += 4) {
-        if (pixels[i + 3] && pixels[i] < 100 && pixels[i + 1] < 100 && pixels[i + 2] < 100 && ++dark > 100) return true;
-      }
-      return false;
-    }, null, { timeout: 30000 });
-    const canvas = page.locator('#preview canvas').first();
-    const dataUrl = await canvas.evaluate(el => el.toDataURL('image/png'));
-    return PNG.sync.read(Buffer.from(dataUrl.split(',')[1], 'base64'));
+    const ids = await page.locator('#view option').evaluateAll(options => options.map(option => option.value));
+    assert.deepEqual(ids, ['sheet1', 'sheet2', 'sheet3', 'sheet4'], `${name} sheet order`);
+    const images = [];
+    for (const id of ids) {
+      await page.locator('#view').selectOption(id);
+      await page.waitForFunction(() => {
+        const canvas = document.querySelector('#preview canvas');
+        if (!canvas?.width || !canvas.height) return false;
+        const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+        let dark = 0;
+        for (let i = 0; i < pixels.length; i += 4) {
+          if (pixels[i + 3] && pixels[i] < 100 && pixels[i + 1] < 100 && pixels[i + 2] < 100 && ++dark > 100) return true;
+        }
+        return false;
+      }, null, { timeout: 30000 });
+      const dataUrl = await page.locator('#preview canvas').first().evaluate(el => el.toDataURL('image/png'));
+      images.push(PNG.sync.read(Buffer.from(dataUrl.split(',')[1], 'base64')));
+    }
+    return images;
   }
-  const reference = await sheetImage('upstream.xlsx.bdf', visualCase.bdf);
-  const converted = await sheetImage('comparison.xlsx', visualCase.input);
-  assert.deepEqual([converted.width, converted.height], [reference.width, reference.height], 'XLSX reference dimensions');
-  let darkPixels = 0;
-  for (let i = 0; i < reference.data.length; i += 4) {
-    if (reference.data[i + 3] && reference.data[i] < 100 && reference.data[i + 1] < 100 && reference.data[i + 2] < 100) darkPixels++;
+  const references = await sheetImages('upstream.xlsx.bdf', visualCase.bdf);
+  const converted = await sheetImages('comparison.xlsx', visualCase.input);
+  for (let i = 0; i < references.length; i++) {
+    const reference = references[i];
+    assert.deepEqual([converted[i].width, converted[i].height], [reference.width, reference.height], `XLSX sheet ${i + 1} reference dimensions`);
+    assert.deepEqual(converted[i].data, reference.data, `XLSX sheet ${i + 1} browser conversion matches upstream BDF rendering`);
+    for (let j = 0; j < i; j++) {
+      assert.notDeepEqual(reference.data, references[j].data, `XLSX reference sheets ${j + 1} and ${i + 1} are visually distinct`);
+    }
   }
-  assert.ok(darkPixels > 100, 'XLSX reference contains visible content');
-  assert.deepEqual(converted.data, reference.data, 'XLSX browser conversion matches upstream BDF rendering');
   const warnings = JSON.parse(await readFile(resolve(import.meta.dirname, '../compat/xlsx/render/001.json')));
   const warningCase = warnings.find(item => item.warnings?.includes('sheet "Sheet1": right-to-left sheets are drawn left to right'));
   assert.ok(warningCase, 'XLSX warning fixture');
