@@ -664,17 +664,6 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
       _ => ()
     }
   }
-  let mut has_table_font = false
-  for (_, id) in table_rules {
-    if id >= 0 {
-      has_table_font = true
-    }
-  }
-  if has_table_font && table_rules.length() > 1 {
-    raise InvalidXlsxInput(
-      "xlsx: plain conversion does not support worksheet feature tableParts",
-    )
-  }
   (links, has_conditional, auto_filter, table_filters, table_rules)
 }
 
@@ -1209,39 +1198,54 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         )
       }
     }
-    let (range, id) = table_rules[0]
-    let matched : Map[Int32, Map[Int32, Bool]] = Map([])
+    let matches : Map[Int32, Map[Int32, Map[Int32, Bool]]] = Map([])
     for row in rows {
       if row.style >= 0 {
         raise InvalidXlsxInput(
           "xlsx: plain conversion does not support worksheet feature tableParts",
         )
       }
-      if row.index.to_int64() < range.row_start ||
-        row.index.to_int64() > range.row_end {
-        continue
-      }
       for cell in row.cells {
-        if cell.column < range.column_start || cell.column > range.column_end {
-          continue
-        }
         let format = input_styles.cell_formats[cell.style]
         if format.font != 0 {
           continue
         }
-        let columns = match matched.get(row.index) {
-          Some(value) => value
-          None => {
-            let value : Map[Int32, Bool] = Map([])
-            matched[row.index] = value
-            value
+        for index, (range, id) in table_rules {
+          if row.index.to_int64() < range.row_start ||
+            row.index.to_int64() > range.row_end ||
+            cell.column < range.column_start ||
+            cell.column > range.column_end {
+            continue
           }
+          if id >= 0 {
+            let group = match matches.get(index) {
+              Some(value) => value
+              None => {
+                let value : Map[Int32, Map[Int32, Bool]] = Map([])
+                matches[index] = value
+                value
+              }
+            }
+            let columns = match group.get(row.index) {
+              Some(value) => value
+              None => {
+                let value : Map[Int32, Bool] = Map([])
+                group[row.index] = value
+                value
+              }
+            }
+            columns[cell.column] = true
+          }
+          break
         }
-        columns[cell.column] = true
       }
     }
-    let diff = workbook.xlsx_conditional_style(id)
-    rows = xlsx_apply_conditional_style(rows, styles, matched, diff)
+    for index, (_, id) in table_rules {
+      if id >= 0 && matches.get(index) is Some(matched) {
+        let diff = workbook.xlsx_conditional_style(id)
+        rows = xlsx_apply_conditional_style(rows, styles, matched, diff)
+      }
+    }
   }
   let layout_base_sizes = xlsx_rich_base_sizes(rows, styles, rich_cells)
   let (layout_rows, layout_styles) = if styled_runs {
