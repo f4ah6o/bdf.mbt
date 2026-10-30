@@ -2128,7 +2128,11 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               id, extra_id, third_id, region, choice,
             )
           }
-          let font_diff : XlsxConditionalStyle = { ..diff, fill: None, }
+          let font_diff : XlsxConditionalStyle = {
+            ..diff,
+            fill: None,
+            border: None,
+          }
           rows = xlsx_apply_conditional_style(rows, styles, matched, font_diff)
         }
       }
@@ -2403,10 +2407,14 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         strike: None,
         underline: None,
         color: None,
+        border: None,
       }
       rows = xlsx_apply_conditional_style(rows, styles, matched, fill_diff)
     }
   }
+  rows = workbook.xlsx_apply_whole_table_borders(
+    rows, styles, geo, row_count, col_count, table_rules, complex_rules,
+  )
   if has_conditional {
     rows = workbook.xlsx_apply_plain_conditionals(
       ref.part,

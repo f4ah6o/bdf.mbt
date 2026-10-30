@@ -91,6 +91,27 @@ fn GridDrawContext::paint_table_borders(
 }
 
 ///|
+// XLSX orders equal-weight strokes by Go's textual RGB tuple.
+fn xlsx_grid_border_color_key(color : UInt32) -> String {
+  let red = ((color >> 24) & 255U).to_double() / 255.0
+  let green = ((color >> 16) & 255U).to_double() / 255.0
+  let blue = ((color >> 8) & 255U).to_double() / 255.0
+  "{" + red.to_string() + " " + green.to_string() + " " + blue.to_string() + "}"
+}
+
+///|
+fn xlsx_grid_border_color_compare(a : UInt32, b : UInt32) -> Int32 {
+  let left : Array[Char] = [ for c in xlsx_grid_border_color_key(a) => c ]
+  let right : Array[Char] = [ for c in xlsx_grid_border_color_key(b) => c ]
+  for i in 0..<Int32::min(left.length(), right.length()) {
+    if left[i] != right[i] {
+      return left[i].to_int().compare(right[i].to_int())
+    }
+  }
+  left.length().compare(right.length())
+}
+
+///|
 fn GridDrawContext::draw_grid_edges(
   self : GridDrawContext,
   horizontal : Map[String, GridEdge],
@@ -98,6 +119,7 @@ fn GridDrawContext::draw_grid_edges(
   columns : Array[Double],
   rows : Array[Double],
   diagonals~ : Array[GridDiagonalSegment] = [],
+  xlsx_color_order~ : Bool = false,
 ) -> Unit raise {
   let hs : Array[GridEdge] = [ for _, edge in horizontal => edge ]
   hs.sort_by((a, b) => {
@@ -165,7 +187,11 @@ fn GridDrawContext::draw_grid_edges(
   }
   groups.sort_by((a, b) => {
     if a.border.weight == b.border.weight {
-      a.border.color.compare(b.border.color)
+      if xlsx_color_order {
+        xlsx_grid_border_color_compare(a.border.color, b.border.color)
+      } else {
+        a.border.color.compare(b.border.color)
+      }
     } else {
       a.border.weight.compare(b.border.weight)
     }

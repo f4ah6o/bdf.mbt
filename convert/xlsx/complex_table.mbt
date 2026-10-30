@@ -147,17 +147,20 @@ fn XlsxWorkbook::xlsx_complex_table_style(
     }
   }
   let mut any = false
+  let mut count = 0
+  let mut has_border = false
   for id in ids {
     if id < 0 {
       continue
     }
     let style = self.xlsx_conditional_style(id) catch { _ => return None }
     if style.border is Some(_) {
-      return None
+      has_border = true
     }
     any = true
+    count += 1
   }
-  if !any {
+  if !any || (has_border && (count != 1 || ids[0] < 0)) {
     return None
   }
   Some({ ids, sizes, })

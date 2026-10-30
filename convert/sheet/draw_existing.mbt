@@ -1006,6 +1006,7 @@ fn GridDrawContext::sized_grid_borders(
     columns,
     row_positions,
     diagonals=diagonal_segments,
+    xlsx_color_order=true,
   )
 }
 
