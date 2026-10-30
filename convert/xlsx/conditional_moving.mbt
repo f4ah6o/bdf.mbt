@@ -10,6 +10,8 @@ fn xlsx_match_moving_conditionals(
   reference2 : String,
   threshold : Double,
   threshold_end : Double,
+  literal1 : String?,
+  literal2 : String?,
   operator : String,
   matched : Map[Int32, Map[Int32, Bool]],
   blanks : Map[Int32, Map[Int32, Bool]],
@@ -49,11 +51,13 @@ fn xlsx_match_moving_conditionals(
       for c in range.column_start..<=end_col {
         let mut kind = 0
         let mut number = 0.0
+        let mut content = ""
         if row is Some(row) {
           for cell in row.cells {
             if cell.column == c {
               kind = cell.kind
               number = cell.number
+              content = cell.text
               break
             }
           }
@@ -88,7 +92,24 @@ fn xlsx_match_moving_conditionals(
             0.0
           }
         }
-        let applies = if kind == 0 || kind == 1 {
+        let applies = if literal1 is Some(_) || literal2 is Some(_) {
+          let text : String? = if kind == 0 || kind == 1 {
+            None
+          } else if kind == 3 {
+            Some(if number != 0.0 { "TRUE" } else { "FALSE" })
+          } else if kind == 2 || kind == 4 {
+            Some(content)
+          } else {
+            xlsx_reject_conditional()
+            None
+          }
+          if kind == 1 && number.is_nan() {
+            xlsx_reject_conditional()
+          }
+          xlsx_conditional_literal_matches(
+            number, text, lo, literal1, hi, literal2, operator,
+          )
+        } else if kind == 0 || kind == 1 {
           if number.is_nan() {
             xlsx_reject_conditional()
           }

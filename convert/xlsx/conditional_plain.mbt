@@ -273,10 +273,9 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             xlsx_reject_conditional()
           }
           blank_matches = if rule_type == "cellIs" {
-            if literal1 is Some(_) || literal2 is Some(_) {
-              if moving_reference {
-                xlsx_reject_conditional()
-              }
+            if moving_reference {
+              false
+            } else if literal1 is Some(_) || literal2 is Some(_) {
               xlsx_conditional_literal_matches(
                 0.0,
                 None,
@@ -325,7 +324,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             }
             xlsx_match_moving_conditionals(
               rows, ranges, row_count, col_count, reference1, reference2, threshold,
-              threshold_end, operator, matched, blank_positions,
+              threshold_end, literal1, literal2, operator, matched, blank_positions,
             )
             any_blank_matches = !blank_positions.is_empty()
           }

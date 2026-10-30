@@ -140,7 +140,7 @@ func TestCodexConditionalLiteral(t *testing.T) {
 		}
 
 		if i == 328 {
-			rule = `<conditionalFormatting sqref="A1:A3"><cfRule type="cellIs" operator="between" dxfId="0"><formula>$F1</formula><formula>"x"</formula></cfRule></conditionalFormatting>`
+			rule = `<conditionalFormatting sqref="A1:A3"><cfRule type="cellIs" operator="between" dxfId="0"><formula>SUM(F1:F3)</formula><formula>"x"</formula></cfRule></conditionalFormatting>`
 		}
 		merge := ""
 		if i%4 == 0 {
