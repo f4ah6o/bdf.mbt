@@ -1255,11 +1255,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     if diff.fill is None {
       continue
     }
-    if range.row_end - range.row_start > 1000L {
-      raise InvalidXlsxInput(
-        "xlsx: plain conversion does not support worksheet feature tableParts",
-      )
-    }
     let allowed : Map[Int32, Map[Int32, Bool]] = Map([])
     let first_row = Int64::max(range.row_start, 0L).to_int()
     let last_row = Int64::min(range.row_end, (row_count - 1).to_int64()).to_int()
@@ -1360,11 +1355,22 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       }
     }
     let matched : Map[Int32, Map[Int32, Bool]] = Map([])
+    let chunks : Array[XlsxRange] = []
+    let mut start = first_row
+    while start <= last_row {
+      let finish = Int32::min(start + 999, last_row)
+      chunks.push({
+        ..range,
+        row_start: start.to_int64(),
+        row_end: finish.to_int64(),
+      })
+      start = finish + 1
+    }
     rows = xlsx_materialize_conditional_blanks(
       rows,
       geo,
       styles.cell_formats.length(),
-      [range],
+      chunks,
       row_count,
       col_count,
       matched,
