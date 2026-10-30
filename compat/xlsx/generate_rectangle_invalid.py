@@ -10,7 +10,7 @@ variants = {
     'gradient': ('<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill>', '<a:gradFill/>'),
     'visible-line': ('<a:ln><a:noFill/></a:ln>', '<a:ln><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln>'),
     'default-line': ('<a:ln><a:noFill/></a:ln>', ''),
-    'rotation': ('<spPr>', '<spPr><a:xfrm rot="5400000"/>'),
+    'rotation-out-of-range': ('<spPr>', '<spPr><a:xfrm rot="86400001"/>'),
     'text': ('</sp>', '<txBody><a:bodyPr/><a:lstStyle/></txBody></sp>'),
     'duplicate-fill': ('</a:solidFill>', '</a:solidFill><a:solidFill><a:srgbClr val="00FF00"/></a:solidFill>'),
 }

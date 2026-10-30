@@ -1,5 +1,5 @@
 ///|
-// Read embedded pictures and unrotated, solid-color rectangles. Other drawing
+// Read embedded pictures and solid-color rectangles. Other drawing
 // features remain unsupported until their rendering and relationship semantics exist.
 fn XlsxWorkbook::xlsx_simple_picture(
   self : XlsxWorkbook,
@@ -296,9 +296,6 @@ fn XlsxWorkbook::xlsx_simple_picture(
           fill_left + fill_right <= 1.0 && fill_top + fill_bottom <= 1.0
         } else if depth == 4 && parent == "spPr" {
           if name == "xfrm" {
-            if is_shape {
-              return None
-            }
             if saw_xfrm {
               return None
             }
