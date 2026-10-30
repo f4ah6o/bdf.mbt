@@ -119,6 +119,7 @@ pub fn draw_sized_grid_no_fonts(
   indents~ : Map[Int32, Map[Int32, Double]] = Map([]),
   center_across~ : Map[Int32, Map[Int32, Bool]] = Map([]),
   links~ : Array[GridLink] = [],
+  auto_filter~ : (Int32, Int32, Int32)? = None,
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -528,6 +529,23 @@ pub fn draw_sized_grid_no_fonts(
     rows, borders, border_colors, diagonals, spans, region_rows, merge_regions, col_positions,
     row_positions, visible_columns,
   )
+  if auto_filter is Some((row, first, last)) {
+    if row >= 0 && row < count && first >= 0 && first < visible_columns {
+      let end = Int32::min(last, visible_columns - 1)
+      let height = row_positions[row + 1] - row_positions[row]
+      for column in first..<=end {
+        let width = col_positions[column + 1] - col_positions[column]
+        if width > 0.0 && height > 0.0 {
+          context.paint_filter_button(
+            col_positions[column],
+            row_positions[row],
+            width,
+            height,
+          )
+        }
+      }
+    }
+  }
   let mut link_room = 16384
   for link in links {
     if link.row_start < 0 ||

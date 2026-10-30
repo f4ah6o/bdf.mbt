@@ -10,7 +10,7 @@ pub(all) struct XlsxPlainResult {
 fn XlsxWorkbook::xlsx_check_plain_sheet(
   self : XlsxWorkbook,
   part : String,
-) -> (Array[@sheet.GridLink], Bool, Bool) raise {
+) -> (Array[@sheet.GridLink], Bool, Bool, XlsxRange?) raise {
   let data = self.package.read(part) catch {
     @ooxml.InvalidOoxml(message) => raise InvalidXlsxInput(message)
   }
@@ -32,6 +32,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   let mut link_depth = -1
   let mut extension_depth = -1
   let mut has_conditional = false
+  let mut auto_filter : XlsxRange? = None
   let links : Array[@sheet.GridLink] = []
   let relationships = self.package.relationships(part)
   while true {
@@ -43,9 +44,9 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           // The upstream worksheet reader ignores unrecognized top-level
           // metadata. These elements have rendering semantics there and must
           // remain unsupported until they are implemented here.
-          if [
-              "drawing", "legacyDrawing", "autoFilter", "tableParts", "AlternateContent",
-            ].contains(name) {
+          if ["drawing", "legacyDrawing", "tableParts", "AlternateContent"].contains(
+              name,
+            ) {
             raise InvalidXlsxInput(
               "xlsx: plain conversion does not support worksheet feature " +
               name,
@@ -59,6 +60,11 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
           }
           if name == "conditionalFormatting" {
             has_conditional = true
+          }
+          if name == "autoFilter" {
+            if xlsx_parse_range(xlsx_attr(element, "ref", "")) is Some(range) {
+              auto_filter = Some(range)
+            }
           }
           if name == "extLst" && event.kind is Start(_) {
             extension_depth = depth + 1
@@ -175,7 +181,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
       _ => ()
     }
   }
-  (links, has_conditional, multi_run)
+  (links, has_conditional, multi_run, auto_filter)
 }
 
 ///|
@@ -606,7 +612,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   theme_colors : Map[Int32, XlsxRgb],
   shared_multi_run : Bool,
 ) -> (@sheet.DrawnGrid, XlsxSheetGeometry, Int32) raise {
-  let (links, has_conditional, inline_multi_run) = workbook.xlsx_check_plain_sheet(
+  let (links, has_conditional, inline_multi_run, filter_range) = workbook.xlsx_check_plain_sheet(
     ref.part,
   )
   let styles = if has_conditional {
@@ -1280,6 +1286,12 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     indents~,
     center_across~,
     links~,
+    auto_filter=match filter_range {
+      Some(range) if range.row_start >= 0L &&
+        range.row_start < row_count.to_int64() =>
+        Some((range.row_start.to_int(), range.column_start, range.column_end))
+      _ => None
+    },
   ) catch {
     @sheet.InvalidArgument(message) => raise InvalidXlsxInput(message)
     error => raise error

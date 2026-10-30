@@ -92,6 +92,9 @@ identical conditional blocks. Regenerate it from the adjacent input seeds with
 Ignored worksheet metadata uses `generate_ignored_sheet_features_test.go` and
 `TestCodexIgnoredSheetFeatures`; sheet extensions use
 `generate_ignored_sheet_extensions_test.go` and `TestCodexIgnoredSheetExtensions`.
+Worksheet filter buttons use `generate_sheet_autofilter_test.go` and
+`TestCodexSheetAutoFilter`; tile boundaries use
+`generate_sheet_autofilter_tiles_test.go` and `TestCodexSheetAutoFilterTiles`.
 Multiple unformatted text runs use `generate_multiple_plain_runs_safe_test.go`
 and `TestCodexMultiplePlainRunsSafe`. Mixed direct text and runs and text number
 formats remain outside the plain renderer's supported subset.

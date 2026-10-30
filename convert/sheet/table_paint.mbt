@@ -65,43 +65,54 @@ fn GridDrawContext::paint_table_buttons(
   for column in 0..<count {
     let w = columns[column + 1] - columns[column]
     let h = rows[1] - rows[0]
-    let size = Double::min(12.0, Double::min(h - 0.75, w))
-    if size <= 2.0 {
-      continue
+    self.paint_filter_button(columns[column], rows[0], w, h)
+  }
+}
+
+///|
+fn GridDrawContext::paint_filter_button(
+  self : GridDrawContext,
+  left : Double,
+  top : Double,
+  w : Double,
+  h : Double,
+) -> Unit raise {
+  let size = Double::min(12.0, Double::min(h - 0.75, w))
+  if size <= 2.0 {
+    return
+  }
+  let x = left + w - size - 0.375
+  let y = top + h - size - 0.375
+  for tile in self.in_bounds(x, y, x + size, y + size) {
+    tile.fill_color(0xf4f4f4ffU)
+    tile.rectangle(x, y, size, size)
+    tile.object.line(0.75F, 0, 0, 10.0F)
+    tile.object.stroke_color(0xa6a6a6ffU)
+    let ox = tile.x.to_double() * 2048.0
+    let oy = tile.y.to_double() * 2048.0
+    tile.object.stroke_rect(
+      Float::from_double(x - ox + 0.375),
+      Float::from_double(y - oy + 0.375),
+      Float::from_double(size - 0.75),
+      Float::from_double(size - 0.75),
+    )
+    let cx = x + size / 2.0 - ox
+    let cy = y + size / 2.0 - oy
+    let width = size * 0.28
+    let path : @core.Path = {
+      verbs: b"\x00\x01\x01\x04",
+      coordinates: [
+        cx - width,
+        cy - width / 2.0,
+        cx + width,
+        cy - width / 2.0,
+        cx,
+        cy + width / 2.0,
+      ],
     }
-    let x = columns[column] + w - size - 0.375
-    let y = rows[0] + h - size - 0.375
-    for tile in self.in_bounds(x, y, x + size, y + size) {
-      tile.fill_color(0xf4f4f4ffU)
-      tile.rectangle(x, y, size, size)
-      tile.object.line(0.75F, 0, 0, 10.0F)
-      tile.object.stroke_color(0xa6a6a6ffU)
-      let ox = tile.x.to_double() * 2048.0
-      let oy = tile.y.to_double() * 2048.0
-      tile.object.stroke_rect(
-        Float::from_double(x - ox + 0.375),
-        Float::from_double(y - oy + 0.375),
-        Float::from_double(size - 0.75),
-        Float::from_double(size - 0.75),
-      )
-      let cx = x + size / 2.0 - ox
-      let cy = y + size / 2.0 - oy
-      let width = size * 0.28
-      let path : @core.Path = {
-        verbs: b"\x00\x01\x01\x04",
-        coordinates: [
-          cx - width,
-          cy - width / 2.0,
-          cx + width,
-          cy - width / 2.0,
-          cx,
-          cy + width / 2.0,
-        ],
-      }
-      tile.fill_color(0x404040ffU)
-      let index = tile.object.add_path(@core.Inline(path))
-      tile.object.fill_path(index, 0)
-      tile.drawn = true
-    }
+    tile.fill_color(0x404040ffU)
+    let index = tile.object.add_path(@core.Inline(path))
+    tile.object.fill_path(index, 0)
+    tile.drawn = true
   }
 }
