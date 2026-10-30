@@ -142,13 +142,17 @@ fn GridDrawContext::paint_picture(
       "", "rect", "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram",
       "trapezoid", "homePlate", "chevron", "plus", "hexagon", "octagon", "roundRect",
       "flowChartMerge", "flowChartInputOutput", "flowChartPreparation", "flowChartPunchedCard",
+      "flowChartCollate", "flowChartManualInput", "flowChartManualOperation", "flowChartOffpageConnector",
+      "irregularSeal1", "irregularSeal2", "lightningBolt",
     ].contains(shape_geometry) {
     raise InvalidArgument("sheet: invalid shape geometry")
   }
   if [
       "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram", "trapezoid",
       "homePlate", "chevron", "plus", "hexagon", "octagon", "roundRect", "flowChartMerge",
-      "flowChartInputOutput", "flowChartPreparation", "flowChartPunchedCard",
+      "flowChartInputOutput", "flowChartPreparation", "flowChartPunchedCard", "flowChartCollate",
+      "flowChartManualInput", "flowChartManualOperation", "flowChartOffpageConnector",
+      "irregularSeal1", "irregularSeal2", "lightningBolt",
     ].contains(shape_geometry) &&
     shape_fill is None &&
     !shape_no_fill {
@@ -509,6 +513,11 @@ fn GridDrawContext::paint_picture(
         draw_height,
       ],
     }
+  } else if [
+      "flowChartCollate", "flowChartManualInput", "flowChartManualOperation", "flowChartOffpageConnector",
+      "irregularSeal1", "irregularSeal2", "lightningBolt",
+    ].contains(shape_geometry) {
+    sheet_fixed_preset_path(shape_geometry, draw_width, draw_height)
   } else if shape_geometry == "flowChartPunchedCard" {
     let sx = draw_width / 5.0
     let sy = draw_height / 5.0

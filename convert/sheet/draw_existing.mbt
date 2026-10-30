@@ -118,8 +118,10 @@ pub fn sized_fallback_advance(
 /// `shape_geometries` selects "rect", "ellipse", "diamond", "triangle",
 /// "rtTriangle", "parallelogram", "trapezoid", "homePlate", "chevron",
 /// "plus", "hexagon", "octagon", "roundRect", "flowChartMerge",
-/// "flowChartInputOutput", "flowChartPreparation" or "flowChartPunchedCard"
-/// per shape. An empty string or omitted list selects a rectangle.
+/// "flowChartInputOutput", "flowChartPreparation", "flowChartPunchedCard",
+/// "flowChartCollate", "flowChartManualInput", "flowChartManualOperation",
+/// "flowChartOffpageConnector", "irregularSeal1", "irregularSeal2" or
+/// "lightningBolt" per shape. An empty string or omitted list selects a rectangle.
 /// `shape_adjustments` contains optional DrawingML adjustment values from 0
 /// to 100,000 for triangles, parallelograms, trapezoids, home plates, chevrons,
 /// crosses, hexagons, octagons and rounded rectangles.
