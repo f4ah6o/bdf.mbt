@@ -27,7 +27,7 @@ fn xlsx_table_style_region_used(name : String) -> Bool {
 }
 
 ///|
-// Ignore custom style elements that cannot select a differential format.
+// Table differential formats without font, fill, or border do not affect drawing.
 fn XlsxWorkbook::xlsx_nonformatting_table_style(
   self : XlsxWorkbook,
   wanted : String,
@@ -48,7 +48,8 @@ fn XlsxWorkbook::xlsx_nonformatting_table_style(
   let mut styles_seen = false
   let mut dxf_depth = -1
   let mut dxf_seen = false
-  let mut dxf_count = 0L
+  let mut dxf_inner_depth = -1
+  let dxf_effects : Array[Bool] = []
   let mut found = false
   let mut ambiguous = false
   let mut used_ids : Array[Int64] = []
@@ -63,7 +64,13 @@ fn XlsxWorkbook::xlsx_nonformatting_table_style(
             dxf_depth = depth + 1
           }
         } else if depth == dxf_depth && name == "dxf" {
-          dxf_count += 1L
+          dxf_effects.push(false)
+          if event.kind is Start(_) {
+            dxf_inner_depth = depth + 1
+          }
+        } else if depth == dxf_inner_depth &&
+          (name == "font" || name == "fill" || name == "border") {
+          dxf_effects[dxf_effects.length() - 1] = true
         }
         if depth == 1 && name == "tableStyles" && !styles_seen {
           styles_seen = true
@@ -116,6 +123,9 @@ fn XlsxWorkbook::xlsx_nonformatting_table_style(
       }
       End(_) => {
         depth -= 1
+        if depth + 1 == dxf_inner_depth {
+          dxf_inner_depth = -1
+        }
         if depth + 1 == dxf_depth {
           dxf_depth = -1
         }
@@ -137,7 +147,9 @@ fn XlsxWorkbook::xlsx_nonformatting_table_style(
     return false
   }
   for id in used_ids {
-    if id >= 0L && id < dxf_count {
+    if id >= 0L &&
+      id < dxf_effects.length().to_int64() &&
+      dxf_effects[id.to_int()] {
       return false
     }
   }
