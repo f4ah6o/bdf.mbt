@@ -19,6 +19,8 @@ priv struct DrawLine {
   text : String
   x : Double
   baseline : Double
+  ascent : Double
+  descent : Double
   width : Double
   cjk_wrap : Bool
   explicit : Bool

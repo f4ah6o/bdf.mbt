@@ -56,7 +56,7 @@ func TestCodexMultiVaryingUnsupported(t *testing.T) {
 	}
 	filtered := []any{}
 	for i, input := range out {
-		if i != 0 && i != 6 && i != 8 && i != 14 && i != 24 && i != 30 {
+		if i != 0 && i != 6 && i != 8 && i != 14 && i != 16 && i != 17 && i != 18 && i != 19 && i != 20 && i != 22 && i != 23 && i != 24 && i != 30 {
 			filtered = append(filtered, input)
 		}
 	}

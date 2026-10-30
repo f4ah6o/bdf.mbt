@@ -772,6 +772,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   if has_conditional || styled_runs {
     rows = xlsx_normalize_conditional_styles(rows, styles.cell_formats.length())
   }
+  let layout_base_sizes = xlsx_rich_base_sizes(rows, styles, rich_cells)
   let (layout_rows, layout_styles) = if styled_runs {
     let layout_styles : XlsxStyles = {
       ..styles,
@@ -792,33 +793,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       col_count,
     )
   }
-  let run_base_sizes : Map[Int32, Map[Int32, Double]] = Map([])
+  let run_base_sizes = xlsx_rich_base_sizes(rows, styles, rich_cells)
   if styled_runs {
-    for row in rows {
-      for cell in row.cells {
-        if rich_cells.get(row.index) is Some(columns) &&
-          columns.get(cell.column) is Some(run) &&
-          !run.segments.is_empty() {
-          let index = if cell.style < 0 ||
-            cell.style >= styles.cell_formats.length() {
-            0
-          } else {
-            cell.style
-          }
-          let id = styles.cell_formats[index].font
-          let id = if id < 0 || id >= styles.fonts.length() { 0 } else { id }
-          let sizes = match run_base_sizes.get(row.index) {
-            Some(sizes) => sizes
-            None => {
-              let sizes : Map[Int32, Double] = Map([])
-              run_base_sizes[row.index] = sizes
-              sizes
-            }
-          }
-          sizes[cell.column] = styles.fonts[id].size
-        }
-      }
-    }
     rows = xlsx_apply_plain_run_fonts(rows, styles, rich_cells)
   }
   let visible_cols = xlsx_column_runs(geo, col_count, 7.0)
@@ -848,6 +824,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     locale.number_locale,
     default_size,
     rich_cells,
+    layout_base_sizes,
   )
   let heights : Array[@sheet.Run] = xlsx_row_runs(
     layout_rows,
@@ -1369,7 +1346,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
                 if (
                     varying &&
                     (
-                      alignment.shrink ||
+                      (alignment.shrink && !alignment.wrap) ||
                       (
                         horizontal != "general" &&
                         horizontal != "left" &&
@@ -1377,9 +1354,15 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
                         horizontal != "center" &&
                         horizontal != "centerContinuous"
                       ) ||
-                      run.text.length() > 1024 ||
-                      run.text.trim().to_string() != run.text ||
-                      !run.text.iter().all(ch => ch.to_int() >= 0x20) ||
+                      (!alignment.wrap && run.text.length() > 1024) ||
+                      (
+                        !alignment.wrap &&
+                        run.text.trim().to_string() != run.text
+                      ) ||
+                      (
+                        !alignment.wrap &&
+                        !run.text.iter().all(ch => ch.to_int() >= 0x20)
+                      ) ||
                       !run.segments
                       .iter()
                       .all(part => {
@@ -1567,6 +1550,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     },
     notes~,
     rich_colors~,
+    rich_base_sizes=run_base_sizes,
   ) catch {
     @sheet.InvalidArgument(message) => raise InvalidXlsxInput(message)
     error => raise error
@@ -2033,6 +2017,41 @@ fn xlsx_plain_center_end(
 }
 
 ///|
+fn xlsx_rich_base_sizes(
+  rows : Array[XlsxRow],
+  styles : XlsxStyles,
+  rich_cells : Map[Int32, Map[Int32, XlsxPlainRun]],
+) -> Map[Int32, Map[Int32, Double]] {
+  let result : Map[Int32, Map[Int32, Double]] = Map([])
+  for row in rows {
+    for cell in row.cells {
+      if rich_cells.get(row.index) is Some(columns) &&
+        columns.get(cell.column) is Some(run) &&
+        !run.segments.is_empty() {
+        let index = if cell.style < 0 ||
+          cell.style >= styles.cell_formats.length() {
+          0
+        } else {
+          cell.style
+        }
+        let id = styles.cell_formats[index].font
+        let id = if id < 0 || id >= styles.fonts.length() { 0 } else { id }
+        let sizes = match result.get(row.index) {
+          Some(sizes) => sizes
+          None => {
+            let sizes : Map[Int32, Double] = Map([])
+            result[row.index] = sizes
+            sizes
+          }
+        }
+        sizes[cell.column] = styles.fonts[id].size
+      }
+    }
+  }
+  result
+}
+
+///|
 fn xlsx_apply_plain_run_fonts(
   rows : Array[XlsxRow],
   styles : XlsxStyles,
@@ -2129,7 +2148,7 @@ fn xlsx_apply_plain_run_fonts(
           }
           let al = format.alignment
           let safe_varying = !uniform &&
-            !al.shrink &&
+            (!al.shrink || al.wrap) &&
             (
               al.horizontal == "general" ||
               al.horizontal == "left" ||
@@ -2138,9 +2157,9 @@ fn xlsx_apply_plain_run_fonts(
               al.horizontal == "centerContinuous"
             ) &&
             run is Some(run) &&
-            run.text.length() <= 1024 &&
-            run.text.trim().to_string() == run.text &&
-            run.text.iter().all(ch => ch.to_int() >= 0x20)
+            (al.wrap || run.text.length() <= 1024) &&
+            (al.wrap || run.text.trim().to_string() == run.text) &&
+            (al.wrap || run.text.iter().all(ch => ch.to_int() >= 0x20))
           let target_size = if uniform {
             size
           } else if safe_varying {
@@ -2199,6 +2218,7 @@ fn xlsx_plain_fitted_rows(
   locale : String,
   default_size : Double,
   rich_cells : Map[Int32, Map[Int32, XlsxPlainRun]],
+  layout_base_sizes : Map[Int32, Map[Int32, Double]],
 ) -> Map[Int32, Double] {
   let result : Map[Int32, Double] = Map([])
   for row in rows {
@@ -2254,10 +2274,46 @@ fn xlsx_plain_fitted_rows(
           let advance = (c : Char, b : Bool) => {
             @sheet.sized_fallback_advance(c, b, drawn_size)
           }
-          let lines = @sheet.wrap_text(text, width, bold~, advance~)
+          let rich_measure : Array[@sheet.RichMeasureRun] = []
+          let mut varying = false
+          if rich_cells.get(row.index) is Some(columns) &&
+            columns.get(cell.column) is Some(run) &&
+            !run.segments.is_empty() {
+            let base_size = match layout_base_sizes.get(row.index) {
+              Some(values) => values.get(cell.column).unwrap_or(size)
+              None => size
+            }
+            let mut first = 0.0
+            for segment in run.segments {
+              if segment.text == "" {
+                continue
+              }
+              let actual = match segment.font {
+                Some(font) if font.size > 0.0 => font.size
+                _ => base_size
+              }
+              if first == 0.0 {
+                first = actual
+              } else if first != actual {
+                varying = true
+              }
+              rich_measure.push({ text: segment.text, size: actual, })
+            }
+          }
           let mut text_height = 0.0
-          for _ in lines {
-            text_height += 0.9 * size + 0.25 * size
+          if varying {
+            let base_size = match layout_base_sizes.get(row.index) {
+              Some(values) => values.get(cell.column).unwrap_or(size)
+              None => size
+            }
+            for line in @sheet.wrap_rich_text(rich_measure, width, base_size) {
+              text_height += 0.9 * line.size + 0.25 * line.size
+            }
+          } else {
+            let lines = @sheet.wrap_text(text, width, bold~, advance~)
+            for _ in lines {
+              text_height += 0.9 * size + 0.25 * size
+            }
           }
           text_height = text_height + 1.5 - 1.5
           best = Double::max(best, text_height)

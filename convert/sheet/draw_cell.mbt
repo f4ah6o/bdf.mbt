@@ -65,6 +65,7 @@ fn grid_cell_layout(
   allow_overflow~ : Bool = true,
   force_wrap~ : Bool = false,
   line_width~ : Double? = None,
+  rich_layout~ : Array[RichWrappedLine]? = None,
   indent~ : Double = 0.0,
 ) -> DrawCell {
   let x = col_positions[column]
@@ -72,16 +73,27 @@ fn grid_cell_layout(
   let width = col_positions[last + 1] - x
   let wraps = force_wrap || cell.text.contains("\n") || cell.text.contains("\r")
   let available = Double::max(width - 3.75 - indent, 0.0)
-  let mut lines = wrap_text(
-    cell.text,
-    if wraps {
-      available
-    } else {
-      1.0e300
-    },
-    bold~,
-    advance~,
-  )
+  let mut lines = match rich_layout {
+    Some(rich) =>
+      rich.map(line => {
+        text: line.text,
+        width: line.width,
+        explicit: line.explicit,
+        wrapped: line.wrapped,
+        cjk_wrap: line.cjk_wrap,
+      })
+    None =>
+      wrap_text(
+        cell.text,
+        if wraps {
+          available
+        } else {
+          1.0e300
+        },
+        bold~,
+        advance~,
+      )
+  }
   if line_width is Some(width) && lines.length() == 1 {
     lines[0] = { ..lines[0], width, }
   }
@@ -98,12 +110,26 @@ fn grid_cell_layout(
     let mut ascent = 0.0
     let mut descent = 0.0
     for character in line.text {
-      let (a, d) = metrics(character, bold)
+      let (a, d) = match rich_layout {
+        Some(rich) =>
+          (
+            0.9 * rich[line_metrics.length()].size,
+            0.25 * rich[line_metrics.length()].size,
+          )
+        None => metrics(character, bold)
+      }
       ascent = Double::max(ascent, a)
       descent = Double::max(descent, d)
     }
     if ascent == 0.0 && descent == 0.0 {
-      let (a, d) = metrics('x', bold)
+      let (a, d) = match rich_layout {
+        Some(rich) =>
+          (
+            0.9 * rich[line_metrics.length()].size,
+            0.25 * rich[line_metrics.length()].size,
+          )
+        None => metrics('x', bold)
+      }
       ascent = a
       descent = d
     }
@@ -128,6 +154,8 @@ fn grid_cell_layout(
       text: grid_visible_text(line.text),
       x: lx,
       baseline,
+      ascent,
+      descent,
       width: line.width,
       cjk_wrap: line.cjk_wrap,
       explicit: line.explicit,

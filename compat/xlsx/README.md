@@ -162,8 +162,8 @@ To regenerate fixtures, copy `generate_workbook_test.go` without its build tag
 into upstream `converter/xlsx` and run `TestCodexXLSXWorkbook` with
 `BDF_FIXTURE_ROOT` set to this repository.
 
-Varying run sizes, including sizes inherited from the cell, are supported on an unscaled single line with no
-leading or trailing whitespace. Coverage uses `generate_multi_varying_size_test.go`,
+Varying run sizes, including sizes inherited from the cell, support wrapped cells.
+Unwrapped cells currently require a single line without leading or trailing whitespace. Coverage uses `generate_multi_varying_size_test.go`,
 `generate_multi_varying_aligned_test.go`, `generate_multi_varying_unicode_test.go`,
 `generate_multi_varying_unicode_aligned_test.go`, `generate_multi_varying_height_test.go`,
 `generate_multi_varying_conditional_test.go`, `generate_multi_varying_fuzz_test.go`
@@ -173,3 +173,10 @@ and `generate_multi_varying_unsupported_test.go`. Inherited-size cases use
 `generate_multi_inherited_legacy_test.go` and `generate_multi_inherited_varying_legacy_test.go`.
 Wrap-enabled cells that fit on one line are covered by `generate_multi_varying_wrap_fit_test.go`,
 `generate_multi_varying_wrap_fit_conditional_test.go` and `generate_multi_varying_wrap_fit_height_test.go`.
+Mixed-size wrapping uses `generate_multi_real_wrap_explicit_test.go`,
+`generate_multi_real_wrap_inherited_test.go`, `generate_multi_real_wrap_height_test.go`,
+`generate_multi_real_wrap_conditional_test.go`, `generate_multi_real_wrap_vertical_test.go`,
+`generate_multi_real_wrap_fuzz_test.go`, `generate_multi_real_wrap_shrink_test.go`,
+`generate_multi_real_wrap_control_test.go`, `generate_multi_real_wrap_edges_test.go`,
+`generate_multi_real_wrap_long_test.go`, `generate_multi_real_wrap_legacy_test.go`
+and `generate_multi_real_wrap_varying_legacy_test.go`.

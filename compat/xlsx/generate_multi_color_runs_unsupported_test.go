@@ -55,11 +55,6 @@ func TestCodexMultiColorRunsUnsupported(t *testing.T) {
 		out = append(out, b.Bytes())
 	}
 	filtered := []any{}
-	for i, input := range out {
-		if i == 17 {
-			filtered = append(filtered, input)
-		}
-	}
 	for name, inputs := range map[string][]any{
 		"multi-color-runs-unsupported-original.json": out,
 		"multi-color-runs-unsupported.json":          filtered,

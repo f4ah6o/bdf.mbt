@@ -137,6 +137,7 @@ pub fn draw_sized_grid_no_fonts(
   auto_filter~ : (Int32, Int32, Int32)? = None,
   notes~ : Array[(Int32, Int32)] = [],
   rich_colors~ : Map[Int32, Map[Int32, Array[GridRichColorRun]]] = Map([]),
+  rich_base_sizes~ : Map[Int32, Map[Int32, Double]] = Map([]),
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -397,8 +398,8 @@ pub fn draw_sized_grid_no_fonts(
       if varying {
         if scale != 1.0 ||
           script != "" ||
-          text.length() > 1024 ||
-          text.trim().to_string() != text {
+          (!wrap && text.length() > 1024) ||
+          (!wrap && text.trim().to_string() != text) {
           raise InvalidArgument(
             "styled rich text runs require one unscaled line",
           )
@@ -406,19 +407,55 @@ pub fn draw_sized_grid_no_fonts(
         let mut shown = 0
         for run in rich_runs {
           let run_size = if run.size > 0.0 { run.size } else { draw_size }
+          if wrap && shown >= 1024 {
+            break
+          }
           for ch in run.text {
-            if ch.to_int() < 0x20 {
+            if !wrap && ch.to_int() < 0x20 {
               raise InvalidArgument("varying run sizes require printable text")
             }
-            shown += 1
+            if ch == '\n' || ch == '\t' || ch.to_int() >= 0x20 {
+              shown += 1
+            }
             if shown > 1024 {
               raise InvalidArgument(
                 "varying run sizes exceed the supported length",
               )
             }
-            rich_width += sized_fallback_advance(ch, run.bold, run_size)
+            if !wrap {
+              rich_width += sized_fallback_advance(ch, run.bold, run_size)
+            }
+            if wrap && shown >= 1024 {
+              break
+            }
           }
         }
+      }
+      let rich_layout = if varying && wrap {
+        let measure : Array[RichMeasureRun] = rich_runs.map(run => {
+          text: run.text,
+          size: if run.size > 0.0 {
+            run.size
+          } else {
+            draw_size
+          },
+        })
+        let rich_base = match rich_base_sizes.get(i) {
+          Some(values) => values.get(column).unwrap_or(draw_size)
+          None => draw_size
+        }
+        Some(
+          wrap_rich_text(
+            measure,
+            Double::max(
+              col_positions[last + 1] - col_positions[column] - 3.75 - indent,
+              0.0,
+            ),
+            rich_base,
+          ),
+        )
+      } else {
+        None
       }
       let initial = grid_cell_layout(
         row,
@@ -435,12 +472,10 @@ pub fn draw_sized_grid_no_fonts(
         overflow_end=overflow_last,
         allow_overflow=last_row == i,
         force_wrap=wrap,
-        line_width=if varying { Some(rich_width) } else { None },
+        line_width=if varying && !wrap { Some(rich_width) } else { None },
+        rich_layout~,
         indent~,
       )
-      if varying && initial.lines.length() != 1 {
-        raise InvalidArgument("styled rich text runs require one unscaled line")
-      }
       let horizontal : DrawCell = if centered.get(column).unwrap_or(false) {
         let lines = initial.lines.map(fn(line) {
           {
@@ -448,6 +483,8 @@ pub fn draw_sized_grid_no_fonts(
             x: col_positions[column] +
             (col_positions[last + 1] - col_positions[column] - line.width) / 2.0,
             baseline: line.baseline,
+            ascent: line.ascent,
+            descent: line.descent,
             width: line.width,
             cjk_wrap: line.cjk_wrap,
             explicit: line.explicit,
@@ -479,9 +516,9 @@ pub fn draw_sized_grid_no_fonts(
             previous -= 1
           }
         }
-        let (ascent, descent) = metrics('x', bold)
-        let ty0 = lines[0].baseline - ascent
-        let ty1 = lines[lines.length() - 1].baseline + descent
+        let ty0 = lines[0].baseline - lines[0].ascent
+        let ty1 = lines[lines.length() - 1].baseline +
+          lines[lines.length() - 1].descent
         let clipped = text0 < x0 - 0.01 ||
           text1 > x1 + 0.01 ||
           ty0 < y - 0.01 ||
@@ -1123,7 +1160,7 @@ fn sized_grid_horizontal_layout(
   positions : Array[Double],
   y : Double,
   height : Double,
-  size : Double,
+  _size : Double,
   allow_overflow : Bool,
   indent : Double,
 ) -> DrawCell {
@@ -1172,9 +1209,9 @@ fn sized_grid_horizontal_layout(
       }
     }
   }
-  let (ascent, descent) = (0.9 * size, 0.25 * size)
-  let ty0 = lines[0].baseline - ascent
-  let ty1 = lines[lines.length() - 1].baseline + descent
+  let ty0 = lines[0].baseline - lines[0].ascent
+  let ty1 = lines[lines.length() - 1].baseline +
+    lines[lines.length() - 1].descent
   let clip = tx0 < x0 - 0.01 ||
     tx1 > x1 + 0.01 ||
     ty0 < y - 0.01 ||
@@ -1192,7 +1229,7 @@ fn sized_grid_vertical_layout(
   y : Double,
   height : Double,
   vertical : String,
-  size : Double,
+  _size : Double,
 ) -> DrawCell {
   if vertical != "top" && vertical != "center" {
     return layout
@@ -1200,21 +1237,8 @@ fn sized_grid_vertical_layout(
   let metrics : Array[(Double, Double)] = []
   let mut total = 0.0
   for line in layout.lines {
-    let mut ascent = 0.0
-    let mut descent = 0.0
-    for character in line.text {
-      let _ = character
-      let (a, d) = (0.9 * size, 0.25 * size)
-      ascent = Double::max(ascent, a)
-      descent = Double::max(descent, d)
-    }
-    if ascent == 0.0 && descent == 0.0 {
-      let (a, d) = (0.9 * size, 0.25 * size)
-      ascent = a
-      descent = d
-    }
-    metrics.push((ascent, descent))
-    total += ascent + descent
+    metrics.push((line.ascent, line.descent))
+    total += line.ascent + line.descent
   }
   let mut top = if vertical == "top" {
     y + 0.75
