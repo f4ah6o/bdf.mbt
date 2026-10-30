@@ -793,17 +793,17 @@ fn xlsx_crop_svg_size(image : Bytes) -> (Double, Double)? {
         if element.name.local_name != "svg" {
           return None
         }
-        let mut width : Int64? = None
-        let mut height : Int64? = None
+        let mut width : Double? = None
+        let mut height : Double? = None
         for attr in element.attributes {
           if attr.name.namespace_uri is None &&
             (
               attr.name.local_name == "width" ||
               attr.name.local_name == "height"
             ) {
-            let value = match xlsx_int(xlsx_trim(attr.value)) {
-              Some(value) if value > 0L && value <= 1000000L => value
-              _ => return None
+            let value = match xlsx_crop_svg_length(attr.value) {
+              Some(value) => value
+              None => return None
             }
             if attr.name.local_name == "width" {
               if width is Some(_) {
@@ -819,7 +819,7 @@ fn xlsx_crop_svg_size(image : Bytes) -> (Double, Double)? {
           }
         }
         return match (width, height) {
-          (Some(w), Some(h)) => Some((w.to_double(), h.to_double()))
+          (Some(w), Some(h)) => Some((w, h))
           _ => None
         }
       }
@@ -828,6 +828,58 @@ fn xlsx_crop_svg_size(image : Bytes) -> (Double, Double)? {
     }
   }
   None
+}
+
+///|
+fn xlsx_crop_svg_length(value : String) -> Double? {
+  let data = @utf8.encode(value)
+  let mut i = 0
+  while i < data.length() &&
+        [b' ', b'\t', b'\r', b'\n', b'\x0c'].contains(data[i]) {
+    i += 1
+  }
+  let start = i
+  if i < data.length() && data[i] == b'+' {
+    i += 1
+  }
+  let mut digits = 0
+  while i < data.length() && data[i] >= b'0' && data[i] <= b'9' {
+    i += 1
+    digits += 1
+  }
+  if i < data.length() && data[i] == b'.' {
+    i += 1
+    while i < data.length() && data[i] >= b'0' && data[i] <= b'9' {
+      i += 1
+      digits += 1
+    }
+  }
+  if digits == 0 {
+    return None
+  }
+  let number = @utf8.decode(data[start:i]) catch { _ => return None }
+  let parsed = @string.parse_double(number) catch { _ => return None }
+  while i < data.length() &&
+        [b' ', b'\t', b'\r', b'\n', b'\x0c'].contains(data[i]) {
+    i += 1
+  }
+  if i + 2 <= data.length() &&
+    (data[i] == b'p' || data[i] == b'P') &&
+    (data[i + 1] == b'x' || data[i + 1] == b'X') {
+    i += 2
+  }
+  while i < data.length() &&
+        [b' ', b'\t', b'\r', b'\n', b'\x0c'].contains(data[i]) {
+    i += 1
+  }
+  if i != data.length() ||
+    parsed <= 0.0 ||
+    parsed > 1000000.0 ||
+    parsed.is_nan() ||
+    parsed.is_inf() {
+    return None
+  }
+  Some(parsed)
 }
 
 ///|
