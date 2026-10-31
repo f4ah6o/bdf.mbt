@@ -797,6 +797,31 @@ fn pptx_rotated_rect_path(
 }
 
 ///|
+fn pptx_rotate_path(
+  path : @core.Path,
+  cx : Double,
+  cy : Double,
+  rotation : Double,
+) -> @core.Path {
+  if rotation == 0.0 {
+    return path
+  }
+  let radians = rotation * 3.141592653589793 / 180.0
+  let sine = @math.sin(radians)
+  let cosine = @math.cos(radians)
+  let coordinates : Array[Double] = []
+  let mut index = 0
+  while index + 1 < path.coordinates.length() {
+    let dx = path.coordinates[index] - cx
+    let dy = path.coordinates[index + 1] - cy
+    coordinates.push(cx + dx * cosine - dy * sine)
+    coordinates.push(cy + dx * sine + dy * cosine)
+    index += 2
+  }
+  { verbs: path.verbs, coordinates, }
+}
+
+///|
 fn pptx_round_rect_path(
   x : Double,
   y : Double,
@@ -1413,21 +1438,23 @@ fn pptx_render_slide(
           )
           object.fill_path(path_index, 0)
         } else if geometry == "ellipse" {
-          let path_index = object.add_path(
-            @core.Inline(
-              pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
-            ),
+          let path = pptx_rotate_path(
+            pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
+            shape_x + draw_width / 2.0,
+            shape_y + draw_height / 2.0,
+            transform.rotation,
           )
-          object.fill_path(path_index, 0)
+          object.fill_path(object.add_path(@core.Inline(path)), 0)
         } else if geometry == "roundRect" {
-          let path_index = object.add_path(
-            @core.Inline(
-              pptx_round_rect_path(
-                shape_x, shape_y, draw_width, draw_height, corner_radius,
-              ),
+          let path = pptx_rotate_path(
+            pptx_round_rect_path(
+              shape_x, shape_y, draw_width, draw_height, corner_radius,
             ),
+            shape_x + draw_width / 2.0,
+            shape_y + draw_height / 2.0,
+            transform.rotation,
           )
-          object.fill_path(path_index, 0)
+          object.fill_path(object.add_path(@core.Inline(path)), 0)
         } else {
           object.fill_rect(
             Float::from_double(shape_x),
@@ -1472,25 +1499,27 @@ fn pptx_render_slide(
         object.stroke_color(stroke_color)
         object.stroke_path(path_index)
       } else if geometry == "ellipse" {
-        let path_index = object.add_path(
-          @core.Inline(
-            pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
-          ),
+        let path = pptx_rotate_path(
+          pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
+          shape_x + draw_width / 2.0,
+          shape_y + draw_height / 2.0,
+          transform.rotation,
         )
         object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
         object.stroke_color(stroke_color)
-        object.stroke_path(path_index)
+        object.stroke_path(object.add_path(@core.Inline(path)))
       } else if geometry == "roundRect" {
-        let path_index = object.add_path(
-          @core.Inline(
-            pptx_round_rect_path(
-              shape_x, shape_y, draw_width, draw_height, corner_radius,
-            ),
+        let path = pptx_rotate_path(
+          pptx_round_rect_path(
+            shape_x, shape_y, draw_width, draw_height, corner_radius,
           ),
+          shape_x + draw_width / 2.0,
+          shape_y + draw_height / 2.0,
+          transform.rotation,
         )
         object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
         object.stroke_color(stroke_color)
-        object.stroke_path(path_index)
+        object.stroke_path(object.add_path(@core.Inline(path)))
       } else if geometry == "rect" || geometry == "" {
         object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
         object.stroke_color(stroke_color)
