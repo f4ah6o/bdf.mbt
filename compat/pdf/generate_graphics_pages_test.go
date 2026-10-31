@@ -36,7 +36,7 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer out.Close()
-	for i := 0; i < 17; i++ {
+	for i := 0; i < 26; i++ {
 		content := []byte("q 0.2 0.4 0.8 rg 10 20 100 60 re f Q 2 w 0 0 m 20 40 l S\n")
 		resources := ""
 		if i == 8 {
@@ -73,6 +73,31 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		if i == 15 {
 			content = []byte("/missing gs 0 0 40 50 re f\n")
 		}
+		font := ""
+		if i >= 17 {
+			resources = "/Resources << /Font << /F1 5 0 R >> >>"
+			font = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"
+			switch i {
+			case 17:
+				content = []byte("BT /F1 12 Tf 1 0 0 1 100 200 Tm (Hello World) Tj ET")
+			case 18:
+				content = []byte("BT /F1 14 Tf 20 30 Td (A) Tj (B) Tj ET")
+			case 19:
+				content = []byte("0.2 0.4 0.8 rg BT /F1 10 Tf <4380e9> Tj ET")
+			case 20:
+				content = []byte("BT /F1 18 Tf 0 1 -1 0 200 300 Tm (Rotate) Tj ET")
+			case 21:
+				content = []byte("BT /F1 12 Tf (First) Tj ET BT /F1 12 Tf 10 20 Td (Second) Tj ET")
+			case 22:
+				content = []byte("q 2 Tc Q BT /F1 12 Tf (Restored) Tj ET")
+			case 23:
+				content = []byte("BT /missing 12 Tf (Fallback) Tj ET")
+			case 24:
+				content = []byte("BT /F1 12 Tf (First) Tj ET q BT /F1 12 Tf (Second) Tj ET Q")
+			case 25:
+				content = []byte("BT /F1 12 Tf <0100ff01> Tj ET")
+			}
+		}
 		filter := ""
 		if i&1 != 0 {
 			var b bytes.Buffer
@@ -85,7 +110,7 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		var b bytes.Buffer
 		b.WriteString("%PDF-1.7\n%graphics\n")
 		count := 5
-		if profile != "" || i == 16 {
+		if profile != "" || i == 16 || font != "" {
 			count = 6
 		}
 		offsets := make([]int, count)
@@ -105,6 +130,10 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		if profile != "" {
 			offsets[5] = b.Len()
 			fmt.Fprintf(&b, "5 0 obj\n<< /Length 0 %s >>\nstream\n\nendstream\nendobj\n", profile)
+		}
+		if font != "" {
+			offsets[5] = b.Len()
+			fmt.Fprintf(&b, "5 0 obj\n%s\nendobj\n", font)
 		}
 		if i == 16 {
 			offsets[5] = b.Len()
@@ -136,7 +165,7 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		if e != nil {
 			t.Fatal(e)
 		}
-		c := &converter{pdf: p, warned: map[string]bool{}}
+		c := &converter{pdf: p, opts: &Options{}, warned: map[string]bool{}, fonts: map[string]*pdfFont{}}
 		obj := newPending(bdf.Rect{X: 0, Y: 0, W: float32(page.w), H: float32(page.h)})
 		in := c.newInterp(obj, leaves[0].attrs.Resources, page.base, 0)
 		in.transform(page.base)

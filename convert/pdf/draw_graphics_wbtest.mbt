@@ -26,7 +26,7 @@ fn check_pdf_graphics(content : Bytes, expected : Bytes) -> Unit raise {
 test "unsupported PDF graphics commands fail closed" {
   let graphics = PdfGraphics::new(10.0, 10.0, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
   let rejected = try {
-    graphics.run(b"BT")
+    graphics.run(b"BI")
     false
   } catch {
     _ => true
@@ -161,5 +161,23 @@ fn check_pdf_graphics_document_options(
       actual_document.part(left.parts[i].hash),
       expected_document.part(right.parts[i].hash),
     )
+  }
+}
+
+///|
+test "unsupported PDF text operations fail closed" {
+  for
+    content in [
+      b"BT /missing 12 Tf 1 Tc (x) Tj ET", b"BT /missing 12 Tf (x) Tj 1 2 Td (y) Tj ET",
+      b"BT /missing 12 Tf [(x) -20 (y)] TJ ET", b"BT /missing 12 Tf 0 0 m ET",
+    ] {
+    let graphics = PdfGraphics::new(10.0, 10.0, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
+    let rejected = try {
+      graphics.run(content)
+      false
+    } catch {
+      _ => true
+    }
+    assert_true(rejected)
   }
 }

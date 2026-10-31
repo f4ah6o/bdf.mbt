@@ -57,6 +57,12 @@ fn PdfGraphics::execute(
   operator : Bytes,
   args : Array[ContentValue],
 ) -> Unit raise PdfStreamError {
+  if self.text_operator(operator, args) {
+    return
+  }
+  if self.text.state.in_text {
+    raise InvalidStream("unsupported operator in PDF text object")
+  }
   if self.path.execute(operator, args) {
     return
   }
@@ -258,6 +264,7 @@ fn PdfGraphics::run(
       }
     }
   }
+  self.finish_text()
   while !self.stack.is_empty() {
     self.restore()
   }

@@ -14,6 +14,9 @@ priv struct PdfDrawState {
   mut fill_alpha : Double
   mut stroke_alpha : Double
   mut blend : Byte
+  mut font : PdfSimpleFont?
+  mut font_key : Int32
+  mut font_size : Double
 }
 
 ///|
@@ -24,6 +27,8 @@ priv struct PdfEmittedState {
   mut dash_key : String
   mut alpha : Double
   mut blend : Byte
+  mut font_key : Int32
+  mut font_size : Double
 }
 
 ///|
@@ -31,10 +36,20 @@ priv struct PdfGraphics {
   object : @core.ObjectBuilder
   file : PdfFile?
   resources : PdfObject?
+  text : PdfLimitedText
+  fonts : Map[(Int64, Int64), (PdfSimpleFont, Int32)]
+  font_refs : Map[Int32, Int32]
+  mut next_font_key : Int32
   mut path : PdfDrawPath
   mut state : PdfDrawState
   mut emitted : PdfEmittedState
-  stack : Array[(PdfDrawState, PdfEmittedState)]
+  stack : Array[
+    (
+      PdfDrawState,
+      PdfEmittedState,
+      (Double, Double, Double, Double, Double, Int32),
+    ),
+  ]
   mut unsaved : Int32
   mut clip : Int32
 }
@@ -56,6 +71,9 @@ fn PdfDrawState::copy(self : PdfDrawState) -> PdfDrawState {
     fill_alpha: self.fill_alpha,
     stroke_alpha: self.stroke_alpha,
     blend: self.blend,
+    font: self.font,
+    font_key: self.font_key,
+    font_size: self.font_size,
   }
 }
 
@@ -68,6 +86,8 @@ fn PdfEmittedState::copy(self : PdfEmittedState) -> PdfEmittedState {
     dash_key: self.dash_key,
     alpha: self.alpha,
     blend: self.blend,
+    font_key: self.font_key,
+    font_size: self.font_size,
   }
 }
 
@@ -90,6 +110,10 @@ fn PdfGraphics::new(
     object,
     file,
     resources,
+    text: PdfLimitedText::new(),
+    fonts: Map([]),
+    font_refs: Map([]),
+    next_font_key: 1,
     path: PdfDrawPath::new(),
     state: {
       matrix: base,
@@ -106,6 +130,9 @@ fn PdfGraphics::new(
       fill_alpha: 1.0,
       stroke_alpha: 1.0,
       blend: 0,
+      font: None,
+      font_key: 0,
+      font_size: 0.0,
     },
     emitted: {
       fill: None,
@@ -114,6 +141,8 @@ fn PdfGraphics::new(
       dash_key: "",
       alpha: 1.0,
       blend: 0,
+      font_key: -1,
+      font_size: 0.0,
     },
     stack: [],
     unsaved: 0,
@@ -146,7 +175,21 @@ fn PdfGraphics::save(self : PdfGraphics) -> Unit {
     self.unsaved += 1
     return
   }
-  self.stack.push((self.state.copy(), self.emitted.copy()))
+  let text = self.text.state
+  self.stack.push(
+    (
+      self.state.copy(),
+      self.emitted.copy(),
+      (
+        text.char_spacing,
+        text.word_spacing,
+        text.horizontal_scale,
+        text.leading,
+        text.rise,
+        text.rendering_mode,
+      ),
+    ),
+  )
   self.object.save()
 }
 
@@ -157,7 +200,14 @@ fn PdfGraphics::restore(self : PdfGraphics) -> Unit {
     return
   }
   match self.stack.pop() {
-    Some((state, emitted)) => {
+    Some((state, emitted, (character, word, scale, leading, rise, mode))) => {
+      let text = self.text.state
+      text.char_spacing = character
+      text.word_spacing = word
+      text.horizontal_scale = scale
+      text.leading = leading
+      text.rise = rise
+      text.rendering_mode = mode
       self.state = state
       self.emitted = emitted
       self.object.restore()
