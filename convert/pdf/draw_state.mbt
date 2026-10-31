@@ -36,7 +36,8 @@ priv struct PdfEmittedState {
 priv struct PdfGraphics {
   object : @core.ObjectBuilder
   file : PdfFile?
-  resources : PdfObject?
+  mut resources : PdfObject?
+  mut form_depth : Int32
   text : PdfLimitedText
   default_font : PdfSimpleFont
   child_writer : @core.DocumentWriter
@@ -117,6 +118,7 @@ fn PdfGraphics::new(
     object,
     file,
     resources,
+    form_depth: 0,
     text: PdfLimitedText::new(),
     default_font: match file {
       Some(value) => value.default_simple_font()

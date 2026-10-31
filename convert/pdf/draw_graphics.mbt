@@ -242,6 +242,87 @@ fn PdfGraphics::draw_image_xobject(
 }
 
 ///|
+fn pdf_form_numbers(
+  file : PdfFile,
+  dict : PdfObject,
+  key : Bytes,
+  count : Int32,
+) -> Array[Double]? raise PdfStreamError {
+  match file.page_deref(pdf_dict_get(dict, key)) {
+    PdfNull => None
+    PdfArray(values) if values.length() == count => {
+      let out : Array[Double] = []
+      for value in values {
+        match file.page_num(Some(value)) {
+          Some(number) => out.push(number)
+          None => raise InvalidStream("invalid PDF form array")
+        }
+      }
+      Some(out)
+    }
+    _ => raise InvalidStream("invalid PDF form array")
+  }
+}
+
+///|
+fn PdfGraphics::draw_form_xobject(
+  self : PdfGraphics,
+  file : PdfFile,
+  dict : PdfObject,
+  raw : Bytes,
+) -> Unit raise PdfStreamError {
+  if self.form_depth >= 16 {
+    raise InvalidStream("PDF form XObject nesting limit")
+  }
+  match file.page_deref(pdf_dict_get(dict, b"Group")) {
+    PdfNull => ()
+    _ => raise InvalidStream("PDF form transparency groups are not supported")
+  }
+  let matrix = pdf_form_numbers(file, dict, b"Matrix", 6)
+  let bbox = pdf_form_numbers(file, dict, b"BBox", 4)
+  let old_resources = self.resources
+  match pdf_dict_get(dict, b"Resources") {
+    Some(value) => self.resources = Some(file.page_deref(Some(value)))
+    None => ()
+  }
+  defer {
+    self.form_depth -= 1
+    self.resources = old_resources
+  }
+  self.form_depth += 1
+  let depth = self.stack.length()
+  self.save()
+  match matrix {
+    Some(values) =>
+      self.transform(
+        (values[0], values[1], values[2], values[3], values[4], values[5]),
+      )
+    None => ()
+  }
+  match bbox {
+    Some(values) => {
+      let width = values[2] - values[0]
+      let height = values[3] - values[1]
+      if width > 0.0 && height > 0.0 {
+        self.object.clip_rect(
+          Float::from_double(values[0]),
+          Float::from_double(values[1]),
+          Float::from_double(width),
+          Float::from_double(height),
+        )
+      }
+    }
+    None => ()
+  }
+  self.run_ops(raw)
+  self.finish_text()
+  while self.stack.length() > depth + 1 {
+    self.restore()
+  }
+  self.restore()
+}
+
+///|
 fn PdfGraphics::draw_xobject(
   self : PdfGraphics,
   name : Bytes,
@@ -271,8 +352,13 @@ fn PdfGraphics::draw_xobject(
       }
       self.draw_image_xobject(file, loaded.value, raw)
     }
-    PdfName(b"Form") =>
-      raise InvalidStream("PDF form XObjects are not supported yet")
+    PdfName(b"Form") => {
+      let raw = match loaded.stream {
+        Some(value) => value
+        None => raise InvalidStream("PDF form stream is missing")
+      }
+      self.draw_form_xobject(file, loaded.value, raw)
+    }
     _ => raise InvalidStream("unsupported PDF XObject")
   }
 }
@@ -491,7 +577,7 @@ fn PdfGraphics::execute(
 }
 
 ///|
-fn PdfGraphics::run(
+fn PdfGraphics::run_ops(
   self : PdfGraphics,
   content : Bytes,
 ) -> Unit raise PdfStreamError {
@@ -516,6 +602,14 @@ fn PdfGraphics::run(
       }
     }
   }
+}
+
+///|
+fn PdfGraphics::run(
+  self : PdfGraphics,
+  content : Bytes,
+) -> Unit raise PdfStreamError {
+  self.run_ops(content)
   self.finish_text()
   while !self.stack.is_empty() {
     self.restore()

@@ -102,8 +102,9 @@ They check the image part bytes, the page object's image resource, PNG
 dimensions, colour type and decoded scanlines. Upstream may re-encode sample
 images as WebP or AVIF, so these tests do not claim byte parity with its image
 payloads; the pixels are equivalent. Colour-key masks, encoded images with
-masks, `Decode` arrays on colour images, JPX, JBIG2, CCITT and form XObjects
-are rejected by this internal path.
+masks, `Decode` arrays on colour images, JPX, JBIG2, CCITT and form
+transparency groups are rejected by this internal path. Form XObjects are
+executed with their own resources, `/Matrix` and `/BBox` clip.
 
 The text-state fixtures compare text matrix, line movement, spacing, scaling,
 leading, rise and rendering-mode operators against upstream before glyph

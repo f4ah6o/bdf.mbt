@@ -251,25 +251,6 @@ test "PDF image bit depths other than 8 fail closed" {
 }
 
 ///|
-test "PDF form XObjects fail closed" {
-  let rejected = try {
-    ignore(
-      pdf_graphics_document(
-        pdf_xobject_test_document(
-          b"q /Im1 Do Q", "/Type /XObject /Subtype /Form /BBox [0 0 10 10]", b"",
-        ),
-        no_text_index=true,
-      ),
-    )
-    false
-  } catch {
-    InvalidStream(message) => message.contains("form XObjects")
-    _ => false
-  }
-  assert_true(rejected)
-}
-
-///|
 test "PDF inline JPEG image is stored unchanged" {
   let jpeg = b"\xff\xd8inline\xff\xd9"
   let document = pdf_graphics_document(
@@ -471,6 +452,56 @@ test "PDF encoded images with masks fail closed" {
     false
   } catch {
     InvalidStream(message) => message.contains("encoded image data")
+    _ => false
+  }
+  assert_true(rejected)
+}
+
+///|
+fn pdf_form_image_test_document(group : Bool) -> Bytes {
+  let form_extra = if group { " /Group << /S /Transparency >>" } else { "" }
+  pdf_test_pdf([
+    b"<< /Type /Catalog /Pages 2 0 R >>",
+    b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+    b"<< /Type /Page /Parent 2 0 R /Resources << /XObject << /Fm1 5 0 R >> >> /Contents 4 0 R >>",
+    pdf_test_stream("", b"q /Fm1 Do Q"),
+    pdf_test_stream(
+      "/Type /XObject /Subtype /Form /BBox [0 0 100 100] /Resources << /XObject << /Im1 6 0 R >> >>" +
+      form_extra,
+      b"q 100 0 0 100 0 0 cm /Im1 Do Q",
+    ),
+    pdf_test_stream(
+      "/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode",
+      b"\xff\xd8form\xff\xd9",
+    ),
+  ])
+}
+
+///|
+test "PDF form XObject inherits its own resources" {
+  let document = pdf_graphics_document(
+    pdf_form_image_test_document(false),
+    no_text_index=true,
+  )
+  assert_eq(
+    pdf_test_image_bytes(document),
+    b"\xff\xd8form\xff\xd9",
+    msg="PDF form image bytes",
+  )
+}
+
+///|
+test "PDF form transparency groups fail closed" {
+  let rejected = try {
+    ignore(
+      pdf_graphics_document(
+        pdf_form_image_test_document(true),
+        no_text_index=true,
+      ),
+    )
+    false
+  } catch {
+    InvalidStream(message) => message.contains("transparency groups")
     _ => false
   }
   assert_true(rejected)
