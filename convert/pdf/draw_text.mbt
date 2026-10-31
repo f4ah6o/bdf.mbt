@@ -187,19 +187,32 @@ fn PdfGraphics::flush_text(self : PdfGraphics) -> Unit raise PdfStreamError {
   } else {
     text.state.rendering_mode
   }
-  if mode == 0 || mode == 4 {
+  let draw = text.draw.to_string()
+  let x = Float::from_double(text.run_start)
+  let advance = Float::from_double(text.advance)
+  if mode == 0 || mode == 4 || mode == 2 || mode == 6 {
     self.sync_fill()
     self.sync_alpha(false)
-  } else if self.emitted.fill != Some(0U) {
-    self.object.fill_color(0U)
-    self.emitted.fill = Some(0U)
+    self.object.fill_text(draw, x, 0.0F, advance)
   }
-  self.object.fill_text(
-    text.draw.to_string(),
-    Float::from_double(text.run_start),
-    0.0F,
-    Float::from_double(text.advance),
-  )
+  if mode == 1 || mode == 5 || mode == 2 || mode == 6 {
+    self.sync_stroke_color()
+    let mut scale = pdf_matrix_scale(text.state.base) *
+      text.state.horizontal_scale.abs().sqrt()
+    if scale < 0.000000001 {
+      scale = 1.0
+    }
+    self.sync_line_scaled(1.0 / scale)
+    self.sync_alpha(true)
+    self.object.stroke_text(draw, x, 0.0F, advance)
+  }
+  if mode != 0 && mode != 1 && mode != 2 && mode != 4 && mode != 5 && mode != 6 {
+    if self.emitted.fill != Some(0U) {
+      self.object.fill_color(0U)
+      self.emitted.fill = Some(0U)
+    }
+    self.object.fill_text(draw, x, 0.0F, advance)
+  }
   text.draw = StringBuilder()
   text.actual = StringBuilder()
   text.advance = 0.0
@@ -234,11 +247,6 @@ fn PdfGraphics::text_operator(
   if operator == b"Tj" {
     if !text.state.in_text {
       ignore(text.state.execute(b"BT", []))
-    }
-    let mode = text.state.rendering_mode
-    if self.state.font_size != 0.0 &&
-      (mode == 1 || mode == 2 || mode == 5 || mode == 6) {
-      raise InvalidStream("PDF stroked text is not supported yet")
     }
     let font = match self.state.font {
       Some(font) => font

@@ -233,15 +233,18 @@ fn PdfGraphics::sync_fill(self : PdfGraphics) -> Unit {
 }
 
 ///|
-fn PdfGraphics::sync_stroke(self : PdfGraphics) -> Unit {
+fn PdfGraphics::sync_stroke_color(self : PdfGraphics) -> Unit {
   if self.emitted.stroke != Some(self.state.stroke) {
     self.object.stroke_color(self.state.stroke)
     self.emitted.stroke = Some(self.state.stroke)
   }
-  let mut width = self.state.width
+}
+
+///|
+fn PdfGraphics::sync_line_scaled(self : PdfGraphics, factor : Double) -> Unit {
+  let mut width = self.state.width * factor
   if width <= 0.0 {
-    let (a, b, c, d, _, _) = self.state.matrix
-    width = 0.8 / Double::max((a * d - b * c).abs().sqrt(), 0.000001)
+    width = 0.8 / Double::max(pdf_matrix_scale(self.state.matrix), 0.000001)
   }
   let line = (width, self.state.cap, self.state.join, self.state.miter)
   if self.emitted.line != Some(line) {
@@ -253,10 +256,16 @@ fn PdfGraphics::sync_stroke(self : PdfGraphics) -> Unit {
     )
     self.emitted.line = Some(line)
   }
-  let key = pdf_dash_key(self.state.dash, self.state.phase)
+  let dash = if factor == 1.0 {
+    self.state.dash
+  } else {
+    self.state.dash.map(fn(value) { value * factor })
+  }
+  let phase = self.state.phase * factor
+  let key = pdf_dash_key(dash, phase)
   if key != self.emitted.dash_key {
     let mut positive = false
-    let segments = self.state.dash.map(fn(value) {
+    let segments = dash.map(fn(value) {
       if value > 0.0 {
         positive = true
       }
@@ -268,10 +277,16 @@ fn PdfGraphics::sync_stroke(self : PdfGraphics) -> Unit {
       } else {
         []
       },
-      Float::from_double(self.state.phase),
+      Float::from_double(phase),
     )
     self.emitted.dash_key = key
   }
+}
+
+///|
+fn PdfGraphics::sync_stroke(self : PdfGraphics) -> Unit {
+  self.sync_stroke_color()
+  self.sync_line_scaled(1.0)
 }
 
 ///|

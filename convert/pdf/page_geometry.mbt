@@ -9,6 +9,15 @@ fn pdf_matrix_fma(a : Double, b : Double, c : Double) -> Double {
 }
 
 ///|
+// Go evaluates the first product separately and fuses the subtraction.
+fn pdf_matrix_scale(
+  matrix : (Double, Double, Double, Double, Double, Double),
+) -> Double {
+  let (a, b, c, d, _, _) = matrix
+  pdf_matrix_fma(-b, c, a * d).abs().sqrt()
+}
+
+///|
 fn pdf_matrix_mul(
   m : (Double, Double, Double, Double, Double, Double),
   n : (Double, Double, Double, Double, Double, Double),

@@ -172,7 +172,7 @@ fn check_pdf_graphics_document_options(
 test "unsupported PDF text operations fail closed" {
   for
     content in [
-      b"BT /missing 12 Tf 2 Tr (x) Tj ET", b"BT /missing 12 Tf 2 Tr (x) Tj ET", b"BT /missing 12 Tf 0 0 m ET",
+      b"BT /missing 12 Tf (x) Tj BI ET", b"BT /missing 12 Tf 0 0 m ET",
     ] {
     let graphics = PdfGraphics::new(10.0, 10.0, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
     let rejected = try {
@@ -193,4 +193,12 @@ test "PDF text advance uses upstream Go fused arithmetic" {
   graphics.execute(b"Tc", [Real(0.121)])
   graphics.execute(b"Tj", [Literal(b"A")])
   assert_eq(graphics.text.advance, 7.70479)
+}
+
+///|
+test "PDF matrix scale matches upstream Go fused determinant" {
+  assert_eq(
+    pdf_matrix_scale((1.0, 0.667, 11.37, 7.82579, 0.0, 0.0)),
+    0.49193495504995344,
+  )
 }
