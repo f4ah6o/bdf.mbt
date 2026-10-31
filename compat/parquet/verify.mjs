@@ -23,6 +23,6 @@ assert.deepEqual(table.columns, [
 ]);
 assert.deepEqual(Buffer.from(await doc.part(table.part)), Buffer.from(cases[4], 'base64'));
 const without = await BdfDocument.open(new BufferSource(document_fixture(false)));
-assert.equal(without.manifest.tables.length, 0);
+assert.equal(Object.hasOwn(without.manifest, 'tables'), false, 'empty table list is omitted as in upstream Go');
 assert.equal(without.manifest.parts.length, 0);
 console.log('Parquet bytes match upstream fixtures.');
