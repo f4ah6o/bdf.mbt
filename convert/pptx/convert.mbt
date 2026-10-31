@@ -567,7 +567,7 @@ fn pptx_collect_shapes(
 ) -> Unit {
   for shape in pptx_children(Some(node)) {
     match shape.element.name.local_name {
-      "sp" | "pic" =>
+      "sp" | "pic" | "graphicFrame" =>
         if !(skip_placeholders && pptx_has_placeholder(shape)) {
           out.push((shape, offset_x, offset_y))
         }
@@ -593,6 +593,83 @@ fn pptx_collect_shapes(
 }
 
 ///|
+
+///|
+fn pptx_table_lines(shape : PptxXmlNode) -> Array[String] {
+  let table = pptx_child(
+    pptx_child(pptx_child(Some(shape), "graphic"), "graphicData"),
+    "tbl",
+  )
+  let lines : Array[String] = []
+  for row in pptx_children(table) {
+    if row.element.name.local_name != "tr" {
+      continue
+    }
+    let line = StringBuilder()
+    let mut first = true
+    for cell in pptx_children(Some(row)) {
+      if cell.element.name.local_name != "tc" {
+        continue
+      }
+      if !first {
+        line.write_string("\t")
+      }
+      first = false
+      let cell_text = StringBuilder()
+      for paragraph in pptx_children(pptx_child(Some(cell), "txBody")) {
+        if paragraph.element.name.local_name != "p" {
+          continue
+        }
+        for run in pptx_children(Some(paragraph)) {
+          if run.element.name.local_name == "r" {
+            match pptx_child(Some(run), "t") {
+              Some(value) => cell_text.write_string(value.text.to_string())
+              None => ()
+            }
+          }
+        }
+      }
+      line.write_string(cell_text.to_string())
+    }
+    if line.to_string() != "" {
+      lines.push(line.to_string())
+    }
+  }
+  lines
+}
+
+///|
+fn pptx_emit_table(
+  shape : PptxXmlNode,
+  object : @core.ObjectBuilder,
+  x : Double,
+  y : Double,
+  fonts : (String, String),
+) -> Unit raise {
+  let lines = pptx_table_lines(shape)
+  if lines.is_empty() {
+    return
+  }
+  let (_, minor) = fonts
+  let index = object.add_font({
+    hash: None,
+    family: minor,
+    weight: 400,
+    style: 0,
+  })
+  let mut baseline = y + 12.0
+  for line in lines {
+    object.font(index, 12.0)
+    object.fill_color(0x000000ffU)
+    object.fill_text(
+      line,
+      Float::from_double(x),
+      Float::from_double(baseline),
+      Float::from_double(pptx_text_width(line, 12.0)),
+    )
+    baseline += 14.4
+  }
+}
 
 ///|
 fn pptx_render_slide(
@@ -688,9 +765,11 @@ fn pptx_render_slide(
   }
   for shape_entry in shapes {
     let (shape, offset_x, offset_y) = shape_entry
-    let mut transform = pptx_transform_node(
-      pptx_child(pptx_child(Some(shape), "spPr"), "xfrm"),
-    )
+    let mut transform = if shape.element.name.local_name == "graphicFrame" {
+      pptx_transform_node(pptx_child(Some(shape), "xfrm"))
+    } else {
+      pptx_transform_node(pptx_child(pptx_child(Some(shape), "spPr"), "xfrm"))
+    }
     if transform is None {
       match pptx_placeholder_key(shape) {
         Some(key) =>
@@ -727,6 +806,10 @@ fn pptx_render_slide(
     }
     let shape_x = transform.x + offset_x
     let shape_y = transform.y + offset_y
+    if shape.element.name.local_name == "graphicFrame" {
+      pptx_emit_table(shape, object, shape_x, shape_y, theme_fonts)
+      continue
+    }
     if shape.element.name.local_name == "pic" {
       let blip = pptx_child(pptx_child(Some(shape), "blipFill"), "blip")
       let embed = match blip {
