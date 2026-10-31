@@ -98,7 +98,13 @@ func TestCodexPDFPages(t *testing.T) {
 			}
 			h := fnv.New64a()
 			h.Write(content)
-			fmt.Fprintf(out, "(%s,%s,%s,%d,%t,%s,%d,%dUL),\n", id, pageRect(leaf.attrs.MediaBox), pageRect(leaf.attrs.CropBox), leaf.attrs.Rotate, leaf.attrs.Resources != nil, err, len(content), h.Sum64())
+			fmt.Fprintf(out, "(%s,%s,%s,%d,%t,%s,%d,%dUL,[", id, pageRect(leaf.attrs.MediaBox), pageRect(leaf.attrs.CropBox), leaf.attrs.Rotate, leaf.attrs.Resources != nil, err, len(content), h.Sum64())
+			for _, which := range []string{"crop", "media", "bleed", "trim", "art"} {
+				pr := &pageRef{attrs: leaf.attrs, dict: leaf.dict}
+				pr.geometry(&pdf{ctx: ctx}, which)
+				fmt.Fprintf(out, "(%#.17g,%#.17g,(%#.17g,%#.17g,%#.17g,%#.17g,%#.17g,%#.17g)),", pr.w, pr.h, pr.base[0], pr.base[1], pr.base[2], pr.base[3], pr.base[4], pr.base[5])
+			}
+			fmt.Fprintln(out, "]),")
 		}
 		fmt.Fprintln(out, "])\n}")
 		t.Logf("%s: %d pages", name, len(leaves))

@@ -13,6 +13,7 @@ fn check_pdf_pages(
       String?,
       Int32,
       UInt64,
+      Array[(Double, Double, (Double, Double, Double, Double, Double, Double))],
     ),
   ],
 ) -> Unit raise {
@@ -27,7 +28,7 @@ fn check_pdf_pages(
   assert_eq(actual_left, left, msg=name)
   assert_eq(pages.length(), expected.length(), msg=name)
   for i in 0..<expected.length() {
-    let (id, media, crop, rotate, resources, error, length, digest) = expected[i]
+    let (id, media, crop, rotate, resources, error, length, digest, geometry) = expected[i]
     let page = pages[i]
     let actual_id = match page.reference {
       Some(PdfRef(number, _)) => Some(number)
@@ -50,6 +51,16 @@ fn check_pdf_pages(
       hash = (hash ^ byte.to_uint64()) * 1099511628211UL
     }
     assert_eq(hash, digest, msg="\{name} page \{i} content bytes")
+    let choices = ["crop", "media", "bleed", "trim", "art"]
+    for j in 0..<choices.length() {
+      let actual = file.page_geometry(page, choices[j])
+      let (width, height, matrix) = geometry[j]
+      assert_eq(
+        actual,
+        { width, height, matrix, },
+        msg="\{name} page \{i} geometry \{choices[j]}",
+      )
+    }
   }
 }
 
@@ -165,4 +176,69 @@ test "PDF page stream accepts indirect filter names and parameters" {
     trailer: PdfNull,
   }
   assert_eq(file.page_content(PdfDict([(b"Contents", PdfRef(1L, 0L))])), b"42")
+}
+
+///|
+test "PDF page geometry clips boxes and rotates in page space" {
+  let file : PdfFile = {
+    data: b"",
+    entries: {},
+    objects: {},
+    loading: {},
+    object_streams: {},
+    trailers: [],
+    trailer: PdfNull,
+  }
+  let attrs : PdfPageAttrs = {
+    media: Some((0.0, 0.0, 600.0, 800.0)),
+    crop: Some((10.0, 20.0, 500.0, 700.0)),
+    rotate: 0,
+    resources: None,
+  }
+  let page : PdfPageLeaf = {
+    dict: PdfDict([
+      (
+        b"TrimBox",
+        PdfArray([PdfInt(480L), PdfInt(600L), PdfInt(40L), PdfInt(50L)]),
+      ),
+    ]),
+    reference: None,
+    attrs,
+    error: None,
+  }
+  assert_eq(file.page_geometry(page, "crop"), {
+    width: 490.0,
+    height: 680.0,
+    matrix: (1.0, 0.0, 0.0, -1.0, -10.0, 700.0),
+  })
+  assert_eq(file.page_geometry(page, "media").width, 600.0)
+  assert_eq(file.page_geometry(page, "trim"), {
+    width: 440.0,
+    height: 550.0,
+    matrix: (1.0, 0.0, 0.0, -1.0, -40.0, 600.0),
+  })
+  attrs.rotate = 90
+  assert_eq(file.page_geometry(page, "crop"), {
+    width: 680.0,
+    height: 490.0,
+    matrix: (0.0, 1.0, 1.0, 0.0, -20.0, -10.0),
+  })
+  attrs.rotate = 180
+  assert_eq(file.page_geometry(page, "crop"), {
+    width: 490.0,
+    height: 680.0,
+    matrix: (-1.0, 0.0, 0.0, 1.0, 500.0, -20.0),
+  })
+  attrs.rotate = -90
+  assert_eq(file.page_geometry(page, "crop"), {
+    width: 680.0,
+    height: 490.0,
+    matrix: (0.0, -1.0, -1.0, 0.0, 700.0, 500.0),
+  })
+  attrs.media = Some((0.0, 0.0, 20001.0, 800.0))
+  assert_eq(file.page_geometry(page, "media"), {
+    width: 792.0,
+    height: 612.0,
+    matrix: (0.0, -1.0, -1.0, 0.0, 792.0, 612.0),
+  })
 }
