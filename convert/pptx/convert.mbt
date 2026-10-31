@@ -775,6 +775,34 @@ fn pptx_chart_values(node : PptxXmlNode?, child_name : String) -> Array[String] 
 }
 
 ///|
+fn pptx_line_path(
+  values : Array[Double],
+  maximum : Double,
+  left : Double,
+  top : Double,
+  width : Double,
+  height : Double,
+) -> @core.Path {
+  let verbs : Array[Byte] = [0]
+  let coordinates : Array[Double] = []
+  let count = values.length().to_double()
+  for index, value in values {
+    if index > 0 {
+      verbs.push(1)
+    }
+    let x = if count <= 1.0 {
+      left + width / 2.0
+    } else {
+      left + width * index.to_double() / (count - 1.0)
+    }
+    let y = top + height - height * value / maximum
+    coordinates.push(x)
+    coordinates.push(y)
+  }
+  { verbs: Bytes::from_array(verbs), coordinates, }
+}
+
+///|
 fn pptx_emit_chart(
   shape : PptxXmlNode,
   package : @ooxml.OoxmlPackage,
@@ -811,11 +839,15 @@ fn pptx_emit_chart(
     _ => raise PptxInvalid("PPTX chart part is missing")
   }
   let root = pptx_parse_xml(@utf8.decode_lossy(root[:], ignore_bom=true))
-  let bar = pptx_child(
-    pptx_child(pptx_child(Some(root), "chart"), "plotArea"),
-    "barChart",
-  )
-  let series = pptx_children(bar)
+  let plot_area = pptx_child(pptx_child(Some(root), "chart"), "plotArea")
+  let bar = pptx_child(plot_area, "barChart")
+  let line_chart = pptx_child(plot_area, "lineChart")
+  let is_line = bar is None && line_chart is Some(_)
+  let chart = match bar {
+    Some(value) => Some(value)
+    None => line_chart
+  }
+  let series = pptx_children(chart)
   let values : Array[Double] = []
   let categories : Array[String] = []
   let mut fill = 0x4472c4ffU
@@ -861,14 +893,41 @@ fn pptx_emit_chart(
   object.fill_color(fill)
   let slot = plot_width / values.length().to_double()
   let bar_width = slot * 0.6
-  for index, value in values {
-    let bar_height = plot_height * value / maximum
-    object.fill_rect(
-      Float::from_double(left + slot * index.to_double() + slot * 0.2),
-      Float::from_double(baseline - bar_height),
-      Float::from_double(bar_width),
-      Float::from_double(bar_height),
+  if is_line {
+    let path = object.add_path(
+      @core.Inline(
+        pptx_line_path(values, maximum, left, top, plot_width, plot_height),
+      ),
     )
+    object.line(2.0F, 0, 0, 8.0F)
+    object.stroke_color(fill)
+    object.stroke_path(path)
+    object.fill_color(fill)
+    let count = values.length().to_double()
+    for index, value in values {
+      let x = if count <= 1.0 {
+        left + plot_width / 2.0
+      } else {
+        left + plot_width * index.to_double() / (count - 1.0)
+      }
+      let y = baseline - plot_height * value / maximum
+      object.fill_rect(
+        Float::from_double(x - 2.0),
+        Float::from_double(y - 2.0),
+        4.0,
+        4.0,
+      )
+    }
+  } else {
+    for index, value in values {
+      let bar_height = plot_height * value / maximum
+      object.fill_rect(
+        Float::from_double(left + slot * index.to_double() + slot * 0.2),
+        Float::from_double(baseline - bar_height),
+        Float::from_double(bar_width),
+        Float::from_double(bar_height),
+      )
+    }
   }
   if !categories.is_empty() {
     let (_, minor) = fonts

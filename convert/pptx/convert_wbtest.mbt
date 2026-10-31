@@ -1991,3 +1991,140 @@ test "PPTX bar charts draw bars and category labels" {
   assert_true(axis, msg="PPTX chart axis")
   assert_eq(text.to_string(), "ABC", msg="PPTX chart categories")
 }
+
+///|
+fn pptx_line_chart_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/4VVCTSU6x+eBZNQjCVEUrJkm8ou185YZ0yIssZYMsaYmTCW7FuNJdxsY8negogj",
+  )
+  joined.write_string(
+    "ayRkS6WUq7knuom4TbLM2O/4X//jmnM793vP+d7ze8/3Puc8z+/3PQ/SAswmAAAADgD+aHV1Tpt/",
+  )
+  joined.write_string(
+    "JsUNBADqQQAAP/P0smEAlojGEl1tSTg0wVkpxB9TjbJAdMO4OxblS5wq1cQhccgJ8RCx6G4G0P5r",
+  )
+  joined.write_string(
+    "DR9J7kXvCi1wQhIoOg+QGVyhZ3wObQy2n4fd4uy4NVifAWo/VLCQb9LxQOKGn5xsLK2TIy3l/PF+",
+  )
+  joined.write_string(
+    "uzCb2sN8ZrDxCycTKZ9SUGUQoh46aYY0mvjHcUK+2umY6/E89wbvtaC0GORfjpDepPtHJOpg/IXo",
+  )
+  joined.write_string(
+    "YcdG9KGXMqaCOFJdUuKEq1+lk2qDOtanUWLi5l7WwqKWZezgMq1ZGPa6msaPQsbZfqJsoeRnUxwZ",
+  )
+  joined.write_string(
+    "dcZLkB+6KI1ZbX2dXHWHltKrNFPtYb7qODSu7D/byejJhXmS4ATHreA8s2UnkA4OQVgNi1HqOvpE",
+  )
+  joined.write_string(
+    "Ih8RIzF9NbR5RRy5Tzy8Nb2onlkpMgXkYu6ueDSGoKy0804ZGT74FMYN+d6KsMEHU88nPW9xNnpv",
+  )
+  joined.write_string(
+    "Nw3OUptLmINYCdJXhBDW50Msf4wol2GLgrwOk1VIMsWnzd1mst5lngPVbJLCACZmWoreNGRnDJv/",
+  )
+  joined.write_string(
+    "o7vKGoNZwT4UUB1ZAwqrEEilZIq+Mj8drpctE5tmX+Fk0h1rq+6bThvAj3yqBA4PeBYI8Wo7A+ey",
+  )
+  joined.write_string(
+    "o7bfXxeWjpep/SbkvBY4JX8LLcIjDZSUOnYChe0YNb4dra7qGjHeBthP7WXIyLMRZgVnUts5xeGI",
+  )
+  joined.write_string(
+    "yjg8msAcDXeibwB2ZzBS0hF+oDO8PbRNAfdvqoGv0K2YMQs+tgB/XT24F1Vv61ZyyfVQD0XjmfIm",
+  )
+  joined.write_string(
+    "eg5Jd3r4oWZYn3VOf+9x92beTtiMD0YDzlj70BHUWVXllnUTeMop3e1cB/ddhAinoU25tGM529fM",
+  )
+  joined.write_string(
+    "uOasNwTrUJNaHz7+BK38Kyv3bPMPb2h+EQ+I82m+qNZ5WGobAq3svxqetjYjPwfsn+m4ozJhBBvj",
+  )
+  joined.write_string(
+    "788tGL+w+nZIlHO4hf32euuQ9ihAArLlTf80sOT4dALfCC35xdhVqoHa0ppv+rG5LwS8XwBiwcDS",
+  )
+  joined.write_string(
+    "Q2YlyRRAYleAv/vLKsNuv+uY/ebl+EitPNA00SBuVOZ7hK/FPCIq3WnCLS/OSWB9hSMQicNt0BhP",
+  )
+  joined.write_string(
+    "PuV9q3MI6oP3agPtbECGlW1qWChOxHpCB2b+2te33RAoDyX+WaFZ+qtcsI9atIOJGGfOhYOQF2bD",
+  )
+  joined.write_string(
+    "j+E7/VYvTbtpqdmbDLlbgzdwyf6c2ocA/6acuXxJb/4aD8YBvOWxHqhyMM2FKkSc7eO0HvMZKibz",
+  )
+  joined.write_string(
+    "SwNrGYX2xmNRTTzbaw8iQPvJ1p8ItahjVlJMssd3yRIwvp5owi7n/xVn/sF2cIct+8t2Vz6vgNcH",
+  )
+  joined.write_string(
+    "b8AzsUYz9l8h3LNL0cOxUjc2w8AtSNwkfho/ArPbhJ1rvZCU+Qhq7gI4ed9ZfVz/ablONb3zisHE",
+  )
+  joined.write_string(
+    "5LyCmYOsQbX921wvy2b+vn7T23xHT5HlVmN5bdI8Yfgv/dNlwV1uAx7CcaYRPdHPKmSDToSLFndY",
+  )
+  joined.write_string(
+    "jhGhBqP+0Y03KyMx7+iZFaWj6oZqmxqSS0mSaN5uPTPQl9phbVkSh36VebhOZeF+unEBR9o1mVTL",
+  )
+  joined.write_string(
+    "maYnuJ/uHtGCDCssk2M8XSf+c0SuXnSFDVTI2JZqCy+HPMQkOtyIVAnyfRwhDlY0VkBeFFkfXj+7",
+  )
+  joined.write_string(
+    "mIF/NZc6LxWKtjLuKyVDfR8LDmDk1+ocqV+yGJ1ktwLV+pKw2dmSDnnnSW39knHGU7sGni5BQGET",
+  )
+  joined.write_string(
+    "6pxuvXVelaqQKtdC0mWcbLtKdDzjBLVLanC6OPfs0gH3Jj22+lqNcVXd7cSiJu5uzqgmAGZUVin7",
+  )
+  joined.write_string(
+    "duTXx0PRMfUWl1ftNRFzwjyRtGffl7CxqENvhXL9BF0lR2cxQcre6n6WNU1U0WSoYAHyytQ146LR",
+  )
+  joined.write_string(
+    "KJzt9qWPnWbsTjIrPF9bPI0peUuCEaKISseNzvUiKIfdSvR3Wd0h77RF/S917hTEj42XwCfFn0S9",
+  )
+  joined.write_string(
+    "P2ew22e3wW2gCgkLC3ZDGQslXC8AuFzOjV72SjbJTfSy+n6tb/aswHfGqusfWnv4uOOJhL+3Xa2p",
+  )
+  joined.write_string(
+    "V5kRE0+jC/TS72dw9x6wMj/6fPn9CNgnNV9YTPu9y1j75vyQL8pEbn4gI7xsUYTUqr2cQf7gcMdO",
+  )
+  joined.write_string(
+    "f9TKgPOipbpBI3tE5H1akWzdIbtYlLzLywDsbE3bRD3lms+HuSgyv67hOEWwgYB9DlSYC0kLKoXU",
+  )
+  joined.write_string(
+    "bFBt8o8VIKy4UrqUdVuz00/1n7Q09BGL2hZ+WYpsoAQawOB/riR4JJUj2/KUFdQneYeTybJcecic",
+  )
+  joined.write_string(
+    "ge5HtR7YRgErxTIKdPS67Wsjd9S7/rIELpGh4d/FIxUppMk+YbsZ1zN8mlNWse7Pe/ESWn13I3F+",
+  )
+  joined.write_string(
+    "+qLsiX4xCgfvWQAfbLp1RZ3LiTTVeOMtsRpO/FW5vSebOhXG6G5idMUA+bin8B+veDz8/RRFnXuu",
+  )
+  joined.write_string(
+    "9uIW05+BIAHwz5P7/08UEPDvOc4KwJpeewA6wH1ZxnqRNRv2LgqD/j0pWBFYzXUPQQT8n1bLCsZq",
+  )
+  joined.write_string(
+    "XntgHGz/bWWsaKzesIe2zPYTp2CFYB35PQh3jp/8AEgLdo6dTyDMRWVefQzZqf4CSyM8RasJAAA=",
+  )
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX line charts draw a polyline and markers" {
+  let result = convert(pptx_line_chart_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut line = false
+  let mut markers = 0
+  let text = StringBuilder()
+  for command in commands {
+    match command {
+      @render.StrokePath(_) => line = true
+      @render.FillRect(_, _, w, h) => if w == 4.0 && h == 4.0 { markers += 1 }
+      @render.FillText(value, _, _, _) => text.write_string(value)
+      _ => ()
+    }
+  }
+  assert_true(line, msg="PPTX line chart")
+  assert_eq(markers, 3, msg="PPTX line markers")
+  assert_eq(text.to_string(), "ABC", msg="PPTX line categories")
+}
