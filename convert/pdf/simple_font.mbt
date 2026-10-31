@@ -14,6 +14,8 @@ priv struct PdfSimpleFont {
   composite_map : PdfCMap?
   cid_widths : Map[Int64, Double]
   default_width : Double
+  vertical_metrics : Map[Int64, (Double, Double, Double)]
+  default_vertical : (Double, Double)
   collection : String
 }
 
@@ -74,15 +76,13 @@ fn PdfFile::simple_font(
       Some(value) => value
       None => pdf_identity_font_cmap(false)
     }
-    if map.vertical {
-      raise InvalidStream("vertical composite PDF fonts are not supported yet")
-    }
     Some(map)
   } else {
     None
   }
   let cid_widths = self.cid_font_widths(cid)
   let default_width = self.font_number(pdf_dict_get(cid, b"DW"), 1000.0)
+  let (default_vertical, vertical_metrics) = self.cid_vertical_metrics(cid)
   let system = self.page_deref(pdf_dict_get(cid, b"CIDSystemInfo"))
   let registry = self.metadata_text(pdf_dict_get(system, b"Registry"))
   let ordering = self.metadata_text(pdf_dict_get(system, b"Ordering"))
@@ -235,6 +235,8 @@ fn PdfFile::simple_font(
     composite_map,
     cid_widths,
     default_width,
+    vertical_metrics,
+    default_vertical,
     collection,
   }
   match key {
@@ -496,5 +498,90 @@ fn PdfSimpleFont::glyph_width(
     self.cid_widths.get(glyph.cid).unwrap_or(self.default_width) / 1000.0
   } else {
     self.width(glyph.code.to_int())
+  }
+}
+
+///|
+fn PdfFile::cid_vertical_metrics(
+  self : PdfFile,
+  cid : PdfObject,
+) -> ((Double, Double), Map[Int64, (Double, Double, Double)]) {
+  let default_vertical = match self.page_deref(pdf_dict_get(cid, b"DW2")) {
+    PdfArray(values) if values.length() == 2 =>
+      (
+        self.font_number(Some(values[0]), 0.0),
+        self.font_number(Some(values[1]), 0.0),
+      )
+    _ => (880.0, -1000.0)
+  }
+  let metrics : Map[Int64, (Double, Double, Double)] = Map([])
+  let values = match self.page_deref(pdf_dict_get(cid, b"W2")) {
+    PdfArray(entries) => entries
+    _ => return (default_vertical, metrics)
+  }
+  let mut i = 0
+  while i < values.length() {
+    let start = match self.page_num(Some(values[i])) {
+      Some(value) => value
+      None => {
+        i += 1
+        continue
+      }
+    }
+    if i + 1 < values.length() {
+      match self.page_deref(Some(values[i + 1])) {
+        PdfArray(entries) => {
+          let base = start.to_int64() & 0xffffffffL
+          let mut j = 0
+          while j + 2 < entries.length() {
+            metrics[(base + (j / 3).to_int64()) & 0xffffffffL] = (
+              self.font_number(Some(entries[j]), 0.0),
+              self.font_number(Some(entries[j + 1]), 0.0),
+              self.font_number(Some(entries[j + 2]), 0.0),
+            )
+            j += 3
+          }
+          i += 2
+          continue
+        }
+        _ => ()
+      }
+      if i + 4 < values.length() {
+        let end = self.font_number(Some(values[i + 1]), start)
+        let value = (
+          self.font_number(Some(values[i + 2]), default_vertical.1),
+          self.font_number(Some(values[i + 3]), 500.0),
+          self.font_number(Some(values[i + 4]), default_vertical.0),
+        )
+        if start >= 0.0 && end <= 4294967295.0 && end - start < 65536.0 {
+          let last = end.to_int64()
+          for code = start.to_int64(); code <= last; code = code + 1L {
+            metrics[code] = value
+          }
+        }
+        i += 5
+        continue
+      }
+    }
+    i += 1
+  }
+  (default_vertical, metrics)
+}
+
+///|
+fn PdfSimpleFont::glyph_vertical_metrics(
+  self : PdfSimpleFont,
+  glyph : PdfGlyphCode,
+) -> (Double, Double, Double) {
+  match self.vertical_metrics.get(glyph.cid) {
+    Some((w, x, y)) => (w / 1000.0, x / 1000.0, y / 1000.0)
+    None => {
+      let (top, advance) = if self.default_vertical == (0.0, 0.0) {
+        (880.0, -1000.0)
+      } else {
+        self.default_vertical
+      }
+      (advance / 1000.0, self.glyph_width(glyph) / 2.0, top / 1000.0)
+    }
   }
 }

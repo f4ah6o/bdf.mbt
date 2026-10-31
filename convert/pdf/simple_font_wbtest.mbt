@@ -117,12 +117,11 @@ test "embedded and unsupported composite PDF fonts fail closed" {
     (b"Subtype", PdfName(b"Type0")),
     (b"Encoding", PdfRef(2L, 0L)),
   ])
+  let vertical = file.simple_font(vertical_cmap)
   assert_true(
-    try {
-      ignore(file.simple_font(vertical_cmap))
-      false
-    } catch {
-      _ => true
+    match vertical.composite_map {
+      Some(map) => map.vertical
+      None => false
     },
   )
   let composite = PdfDict([
@@ -137,9 +136,19 @@ test "embedded and unsupported composite PDF fonts fail closed" {
       _ => true
     },
   )
+  let vertical = file.simple_font(composite)
+  assert_true(
+    match vertical.composite_map {
+      Some(map) => map.vertical
+      None => false
+    },
+  )
+  let graphics = PdfGraphics::new(10.0, 10.0, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
+  graphics.state.font = Some(vertical)
+  graphics.state.font_size = 12.0
   assert_true(
     try {
-      ignore(file.simple_font(composite))
+      graphics.run(b"BT (x) Tj ET")
       false
     } catch {
       _ => true

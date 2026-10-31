@@ -51,6 +51,8 @@ fn pdf_default_simple_font() -> PdfSimpleFont {
     composite_map: None,
     cid_widths: Map([]),
     default_width: 1000.0,
+    vertical_metrics: Map([]),
+    default_vertical: (880.0, -1000.0),
     collection: "",
   }
 }
@@ -271,6 +273,11 @@ fn PdfGraphics::text_operator(
         self.state.font = Some(fallback)
         fallback
       }
+    }
+    match font.composite_map {
+      Some(map) if map.vertical =>
+        raise InvalidStream("vertical composite PDF text is not supported yet")
+      _ => ()
     }
     if n > 0 {
       let bytes = match args[n - 1] {
