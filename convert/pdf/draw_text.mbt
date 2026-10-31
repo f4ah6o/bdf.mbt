@@ -1,10 +1,17 @@
 ///|
-// A single simple-font run. Other text modes fail closed until supported.
+// Text block and accumulated simple-font run.
 priv struct PdfLimitedText {
   state : PdfTextState
   mut draw : StringBuilder
   mut actual : StringBuilder
   mut advance : Double
+  mut run_start : Double
+  mut open : Bool
+  mut open_base : (Double, Double, Double, Double, Double, Double)
+  mut open_scale : Double
+  mut open_rise : Double
+  mut saved_matrix : (Double, Double, Double, Double, Double, Double)
+  mut saved_emitted : PdfEmittedState?
   mut has_run : Bool
   mut alt : Bool
 }
@@ -16,6 +23,13 @@ fn PdfLimitedText::new() -> PdfLimitedText {
     draw: StringBuilder(),
     actual: StringBuilder(),
     advance: 0.0,
+    run_start: 0.0,
+    open: false,
+    open_base: (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    open_scale: 1.0,
+    open_rise: 0.0,
+    saved_matrix: (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+    saved_emitted: None,
     has_run: false,
     alt: false,
   }
@@ -87,76 +101,107 @@ fn PdfGraphics::select_simple_font(
 }
 
 ///|
-fn PdfGraphics::finish_text(self : PdfGraphics) -> Unit raise PdfStreamError {
+fn PdfGraphics::close_text_block(self : PdfGraphics) -> Unit {
   let text = self.text
-  if text.has_run {
-    let font = match self.state.font {
-      Some(font) => font
-      None => self.default_font
-    }
-    let old_matrix = self.state.matrix
-    let old_emitted = self.emitted.copy()
-    self.object.save()
-    if text.state.base != (1.0, 0.0, 0.0, 1.0, 0.0, 0.0) {
-      self.transform(text.state.base)
-    }
-    if text.state.horizontal_scale != 1.0 || text.state.rise != 0.0 {
-      self.transform(
-        (text.state.horizontal_scale, 0.0, 0.0, 1.0, 0.0, text.state.rise),
-      )
-    }
-    self.transform((1.0, 0.0, 0.0, -1.0, 0.0, 0.0))
-    let reference = match self.font_refs.get(self.state.font_key) {
-      Some(value) => value
-      None => {
-        let value = self.object.add_font({
-          hash: None,
-          family: font.family,
-          weight: font.weight,
-          style: font.style,
-        })
-        self.font_refs[self.state.font_key] = value
-        value
-      }
-    }
-    if self.emitted.font_key != self.state.font_key ||
-      self.emitted.font_size != self.state.font_size {
-      self.object.font(reference, Float::from_double(self.state.font_size)) catch {
-        _ => raise InvalidStream("PDF font output failed")
-      }
-      self.emitted.font_key = self.state.font_key
-      self.emitted.font_size = self.state.font_size
-    }
-    if self.emitted.letter_spacing != text.state.char_spacing {
-      self.object.text_style(
-        0,
-        0,
-        0,
-        Float::from_double(text.state.char_spacing),
-      )
-      self.emitted.letter_spacing = text.state.char_spacing
-    }
-    if text.alt {
-      self.object.mark(4, text.actual.to_string())
-    }
-    self.sync_fill()
-    self.sync_alpha(false)
-    self.object.fill_text(
-      text.draw.to_string(),
-      0.0F,
-      0.0F,
-      Float::from_double(text.advance),
-    )
+  if text.open {
     self.object.restore()
-    self.state.matrix = old_matrix
-    self.emitted = old_emitted
+    self.state.matrix = text.saved_matrix
+    match text.saved_emitted {
+      Some(emitted) => self.emitted = emitted
+      None => ()
+    }
+    text.open = false
+    text.saved_emitted = None
   }
+}
+
+///|
+fn PdfGraphics::open_text_block(self : PdfGraphics) -> Unit {
+  let text = self.text
+  if text.open &&
+    text.open_base == text.state.base &&
+    text.open_scale == text.state.horizontal_scale &&
+    text.open_rise == text.state.rise {
+    return
+  }
+  self.close_text_block()
+  text.saved_matrix = self.state.matrix
+  text.saved_emitted = Some(self.emitted.copy())
+  self.object.save()
+  if text.state.base != (1.0, 0.0, 0.0, 1.0, 0.0, 0.0) {
+    self.transform(text.state.base)
+  }
+  if text.state.horizontal_scale != 1.0 || text.state.rise != 0.0 {
+    self.transform(
+      (text.state.horizontal_scale, 0.0, 0.0, 1.0, 0.0, text.state.rise),
+    )
+  }
+  self.transform((1.0, 0.0, 0.0, -1.0, 0.0, 0.0))
+  text.open = true
+  text.open_base = text.state.base
+  text.open_scale = text.state.horizontal_scale
+  text.open_rise = text.state.rise
+}
+
+///|
+fn PdfGraphics::flush_text(self : PdfGraphics) -> Unit raise PdfStreamError {
+  let text = self.text
+  if !text.has_run {
+    return
+  }
+  let font = match self.state.font {
+    Some(font) => font
+    None => self.default_font
+  }
+  self.open_text_block()
+  let reference = match self.font_refs.get(self.state.font_key) {
+    Some(value) => value
+    None => {
+      let value = self.object.add_font({
+        hash: None,
+        family: font.family,
+        weight: font.weight,
+        style: font.style,
+      })
+      self.font_refs[self.state.font_key] = value
+      value
+    }
+  }
+  if self.emitted.font_key != self.state.font_key ||
+    self.emitted.font_size != self.state.font_size {
+    self.object.font(reference, Float::from_double(self.state.font_size)) catch {
+      _ => raise InvalidStream("PDF font output failed")
+    }
+    self.emitted.font_key = self.state.font_key
+    self.emitted.font_size = self.state.font_size
+  }
+  if self.emitted.letter_spacing != text.state.char_spacing {
+    self.object.text_style(0, 0, 0, Float::from_double(text.state.char_spacing))
+    self.emitted.letter_spacing = text.state.char_spacing
+  }
+  if text.alt {
+    self.object.mark(4, text.actual.to_string())
+  }
+  self.sync_fill()
+  self.sync_alpha(false)
+  self.object.fill_text(
+    text.draw.to_string(),
+    Float::from_double(text.run_start),
+    0.0F,
+    Float::from_double(text.advance),
+  )
   text.draw = StringBuilder()
   text.actual = StringBuilder()
   text.advance = 0.0
   text.has_run = false
   text.alt = false
-  text.state.in_text = false
+}
+
+///|
+fn PdfGraphics::finish_text(self : PdfGraphics) -> Unit raise PdfStreamError {
+  self.flush_text()
+  self.close_text_block()
+  self.text.state.in_text = false
 }
 
 ///|
@@ -180,9 +225,7 @@ fn PdfGraphics::text_operator(
     if !text.state.in_text {
       ignore(text.state.execute(b"BT", []))
     }
-    if text.state.word_spacing != 0.0 ||
-      text.state.rendering_mode != 0 ||
-      self.state.font_size <= 0.0 {
+    if text.state.rendering_mode != 0 || self.state.font_size <= 0.0 {
       raise InvalidStream("unsupported PDF text state")
     }
     let font = match self.state.font {
@@ -200,6 +243,18 @@ fn PdfGraphics::text_operator(
         _ => b""
       }
       for byte in bytes {
+        let word_space = byte == b' ' && text.state.word_spacing != 0.0
+        if word_space {
+          self.flush_text()
+        }
+        if !text.has_run {
+          let scale = if text.state.horizontal_scale == 0.0 {
+            1.0
+          } else {
+            text.state.horizontal_scale
+          }
+          text.run_start = text.state.x / scale
+        }
         let code = byte.to_int()
         let actual = font.unicode(code)
         if actual == "" {
@@ -220,6 +275,11 @@ fn PdfGraphics::text_operator(
         } else {
           pdf_matrix_fma(width, self.state.font_size, text.state.char_spacing)
         }
+        let advance = if word_space {
+          advance + text.state.word_spacing
+        } else {
+          advance
+        }
         text.advance += advance
         let scale = if text.state.horizontal_scale == 0.0 {
           1.0
@@ -228,6 +288,9 @@ fn PdfGraphics::text_operator(
         }
         text.state.x = pdf_matrix_fma(advance, scale, text.state.x)
         text.has_run = true
+        if word_space {
+          self.flush_text()
+        }
       }
     }
     return true
@@ -243,16 +306,17 @@ fn PdfGraphics::text_operator(
             Literal(_) | Hex(_) => ignore(self.text_operator(b"Tj", [value]))
             Integer(_) | Real(_) => {
               let number = pdf_draw_number([value], 0)
-              if !text.has_run || number.abs() > 150.0 {
-                raise InvalidStream("PDF text adjustment requires a new run")
-              }
               let scale = if text.state.horizontal_scale == 0.0 {
                 1.0
               } else {
                 text.state.horizontal_scale
               }
               let shift = -number / 1000.0 * self.state.font_size * scale
-              text.advance += shift / scale
+              if text.has_run && number.abs() <= 150.0 {
+                text.advance += shift / scale
+              } else {
+                self.flush_text()
+              }
               text.state.x += shift
             }
             _ => raise InvalidStream("unsupported PDF text array value")
@@ -313,40 +377,27 @@ fn PdfGraphics::text_operator(
       }
     }
     if !merged {
-      if next.base == text.state.base {
-        raise InvalidStream(
-          "PDF text repositioning requires a shared text block",
-        )
-      }
-      let was_in_text = text.state.in_text
-      self.finish_text()
-      text.state.in_text = was_in_text
+      self.flush_text()
       text.state.leading = next.leading
       text.state.set_line(next.base)
     }
     return true
   }
   if operator == b"Tf" {
-    if text.has_run {
-      raise InvalidStream(
-        "PDF font change within a text run is not supported yet",
-      )
-    }
+    self.flush_text()
     if n >= 2 {
       match args[n - 2] {
         Name(name) =>
           self.select_simple_font(name, pdf_draw_number(args, n - 1))
-        _ => ()
+        _ => self.select_simple_font(b"", pdf_draw_number(args, n - 1))
       }
     }
     return true
   }
   match operator {
     b"Tc" | b"Tw" | b"Tz" | b"TL" | b"Ts" | b"Tr" => {
-      if text.has_run {
-        raise InvalidStream(
-          "PDF text positioning within a run is not supported yet",
-        )
+      if operator != b"TL" {
+        self.flush_text()
       }
       ignore(text.state.execute(operator, args))
       true

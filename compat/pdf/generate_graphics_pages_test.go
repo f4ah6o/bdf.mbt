@@ -36,7 +36,7 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer out.Close()
-	for i := 0; i < 41; i++ {
+	for i := 0; i < 50; i++ {
 		content := []byte("q 0.2 0.4 0.8 rg 10 20 100 60 re f Q 2 w 0 0 m 20 40 l S\n")
 		resources := ""
 		if i == 8 {
@@ -126,6 +126,24 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 				content = []byte("BT /F1 12 Tf .8 .6 -.6 .8 100 200 Tm (A) Tj 8.004 0 Td (B) Tj ET")
 			case 40:
 				content = []byte("BT /F1 12 Tf 80 Tz [(A) -100] TJ 7.3632 0 Td (B) Tj ET")
+			case 41:
+				content = []byte("BT /F1 12 Tf [(A) -400 (B) 200 (C)] TJ ET")
+			case 42:
+				content = []byte("BT /F1 12 Tf (one) Tj 18 TL T* (two) Tj ET")
+			case 43:
+				content = []byte("BT /F1 12 Tf (one) Tj /F1 18 Tf (two) Tj ET")
+			case 44:
+				content = []byte("BT /F1 12 Tf (one) Tj 1 Tc (two) Tj ET")
+			case 45:
+				content = []byte("BT /F1 12 Tf (Long) Tj 0 0 Td (Again) Tj ET")
+			case 46:
+				content = []byte("BT /F1 12 Tf [300 (Shifted) -200 (Again)] TJ ET")
+			case 47:
+				content = []byte("BT /F1 12 Tf 1.5 Tw (A B C) Tj ET")
+			case 48:
+				content = []byte("BT /F1 12 Tf .5 Tc 3 Tw (Space Words) Tj ET")
+			case 49:
+				content = []byte("BT /F1 12 Tf (First) Tj 7 13 Tf (Fallback) Tj ET")
 			}
 		}
 		filter := ""

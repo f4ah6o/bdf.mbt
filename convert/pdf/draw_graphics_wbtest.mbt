@@ -172,8 +172,7 @@ fn check_pdf_graphics_document_options(
 test "unsupported PDF text operations fail closed" {
   for
     content in [
-      b"BT /missing 12 Tf 1 Tw (x) Tj ET", b"BT /missing 12 Tf (x) Tj /missing 13 Tf (y) Tj ET",
-      b"BT /missing 12 Tf [(x) -200 (y)] TJ ET", b"BT /missing 12 Tf 0 0 m ET",
+      b"BT /missing 12 Tf 2 Tr (x) Tj ET", b"BT /missing 12 Tf 2 Tr (x) Tj ET", b"BT /missing 12 Tf 0 0 m ET",
     ] {
     let graphics = PdfGraphics::new(10.0, 10.0, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
     let rejected = try {
