@@ -1,5 +1,8 @@
 # PDF compatibility fixtures
 
+`convert/pdf` exposes `detect` and `convert`, and the native converter Worker
+advertises the `pdf` format. The fixtures below exercise the internal path.
+
 The content-stream lexer fixtures compare token types, byte values, numeric
 values, malformed-input recovery, nesting and inline-image boundaries with the
 upstream Go PDF converter. The lexer is an internal building block; it does not

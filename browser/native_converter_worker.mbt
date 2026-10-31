@@ -22,7 +22,7 @@ extern "js" fn native_unsupported_named_format(name : String) -> Bool =
 
 ///|
 extern "js" fn native_converter_formats(request : ConverterRequest) -> Unit =
-  #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'csv',description:'CSV or TSV (comma-, tab-, semicolon- or bar-separated values)',extensions:['.csv','.tsv','.tab']},{name:'xlsx',description:'Excel workbook (limited worksheet subset)',extensions:['.xlsx']},{name:'font',description:'Font file (TrueType, OpenType, WOFF)',extensions:['.ttf','.otf','.ttc','.otc','.woff','.woff2']},{name:'midi',description:'Standard MIDI File',extensions:['.mid','.midi','.smf','.kar','.rmi']},{name:'mml',description:'Music Macro Language (MML)',extensions:['.mml']},{name:'image',description:'Image stored as it is: PNG, JPEG, GIF, WebP, AVIF, BMP, ICO or SVG',extensions:['.png','.apng','.jpg','.jpeg','.jpe','.jfif','.gif','.webp','.avif','.bmp','.ico','.svg']}]})
+  #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'csv',description:'CSV or TSV (comma-, tab-, semicolon- or bar-separated values)',extensions:['.csv','.tsv','.tab']},{name:'xlsx',description:'Excel workbook (limited worksheet subset)',extensions:['.xlsx']},{name:'font',description:'Font file (TrueType, OpenType, WOFF)',extensions:['.ttf','.otf','.ttc','.otc','.woff','.woff2']},{name:'midi',description:'Standard MIDI File',extensions:['.mid','.midi','.smf','.kar','.rmi']},{name:'mml',description:'Music Macro Language (MML)',extensions:['.mml']},{name:'pdf',description:'PDF document',extensions:['.pdf']},{name:'image',description:'Image stored as it is: PNG, JPEG, GIF, WebP, AVIF, BMP, ICO or SVG',extensions:['.png','.apng','.jpg','.jpeg','.jpe','.jfif','.gif','.webp','.avif','.bmp','.ico','.svg']}]})
 
 ///|
 extern "js" fn native_converter_result(
@@ -124,7 +124,8 @@ async fn NativeConverterState::dispatch(
     format != "xlsx" &&
     format != "font" &&
     format != "midi" &&
-    format != "mml" {
+    format != "mml" &&
+    format != "pdf" {
     native_converter_error(request, "unknown format \"" + format + "\"", "")
     return
   }
@@ -137,6 +138,10 @@ async fn NativeConverterState::dispatch(
   let head = data[:if data.length() < 1024 { data.length() } else { 1024 }].to_owned()
   if format == "mml" || (format == "" && @mml.detect_mml(head)) {
     native_convert_music(request, data, kind == "open", database, true)
+    return
+  }
+  if format == "pdf" || (format == "" && @pdf.detect(data)) {
+    native_convert_pdf(request, data)
     return
   }
   if format == "xlsx" {
@@ -301,6 +306,30 @@ fn native_convert_csv(
     @csv.summary(result.parsed),
     result.warnings,
     opened,
+  )
+}
+
+///|
+fn native_convert_pdf(request : ConverterRequest, data : Bytes) -> Unit {
+  let result = @pdf.convert(
+    data,
+    box=native_converter_param(request, "box"),
+    title=native_converter_param(request, "title"),
+    no_text_index=native_converter_param(request, "no_text_index") == "true",
+    no_share_prefix=native_converter_param(request, "no_share_prefix") == "true",
+  ) catch {
+    @pdf.PdfFailure(message) => {
+      native_converter_error(request, "pdf: " + message, "")
+      return
+    }
+  }
+  native_converter_result(
+    request,
+    result.bdf,
+    "pdf",
+    result.summary,
+    result.warnings,
+    false,
   )
 }
 

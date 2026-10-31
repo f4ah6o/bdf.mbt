@@ -2,10 +2,25 @@
 package "f4ah6o/bdf/convert/pdf"
 
 // Values
+pub fn convert(Bytes, box? : String, title? : String, no_text_index? : Bool, no_share_prefix? : Bool) -> PdfResult raise PdfError
+
+pub fn detect(Bytes) -> Bool
 
 // Errors
+pub suberror PdfError {
+  PdfFailure(String)
+}
 
 // Types and methods
+pub(all) struct PdfResult {
+  bdf : Bytes
+  format : String
+  pages : Int32
+  summary : String
+  warnings : Array[String]
+  shared_prefixes : Int32
+  shared_bytes : Int64
+}
 
 // Type aliases
 
