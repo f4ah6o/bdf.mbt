@@ -51,6 +51,19 @@ priv struct TextState {
 }
 
 ///|
+/// Reuse one budget across the top-level objects of a view when building an index.
+pub struct TextExtractionBudget {
+  seen : Map[String, Bool]
+  mut reused : Int32
+  mut failure : String?
+}
+
+///|
+pub fn TextExtractionBudget::new() -> TextExtractionBudget {
+  { seen: {}, reused: 0, failure: None, }
+}
+
+///|
 priv struct TextCollector {
   runs : Array[TextRun]
   links : Array[TextLink]
@@ -60,8 +73,7 @@ priv struct TextCollector {
   origins : Map[Int32, TextRect]
   mut leaf : Int32
   mut reserved : TextNode?
-  seen : Map[String, Bool]
-  mut reused : Int32
+  budget : TextExtractionBudget
   mut pending : Int32
   mut has_mark : Bool
   mut alt : String?
@@ -239,10 +251,10 @@ fn collect_object(
   let mut masking = 0
   for command in compile_object(object.object) {
     if repeated {
-      if collector.reused >= 134217728 {
+      if collector.budget.reused >= 134217728 {
         raise InvalidOperands("objects are drawn too many times")
       }
-      collector.reused += 1
+      collector.budget.reused += 1
     }
     match command {
       Save => stack.push(st)
@@ -359,9 +371,9 @@ fn collect_object(
           _ => (0.0, 0.0)
         }
         let child = resolve(hash)
-        let again = child is Some(_) && collector.seen.contains(hash)
+        let again = child is Some(_) && collector.budget.seen.contains(hash)
         if child is Some(_) {
-          collector.seen[hash] = true
+          collector.budget.seen[hash] = true
         }
         if collector.alt is Some(_) {
           let (bx, _, bw, _) = match child {
@@ -401,6 +413,25 @@ pub fn extract_text(
   resolve : (String) -> @core.ObjectResources? raise,
   matrix~ : Matrix = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0),
 ) -> TextContent raise {
+  extract_text_with_budget(
+    object,
+    resolve,
+    TextExtractionBudget::new(),
+    matrix~,
+  )
+}
+
+///|
+/// Extract an object while sharing child-use limits with other top-level objects.
+pub fn extract_text_with_budget(
+  object : @core.ObjectResources,
+  resolve : (String) -> @core.ObjectResources? raise,
+  budget : TextExtractionBudget,
+  matrix~ : Matrix = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0),
+) -> TextContent raise {
+  if budget.failure is Some(message) {
+    raise InvalidOperands(message)
+  }
   let collector : TextCollector = {
     runs: [],
     links: [],
@@ -410,15 +441,32 @@ pub fn extract_text(
     origins: {},
     leaf: -1,
     reserved: None,
-    seen: {},
-    reused: 0,
+    budget,
     pending: 0,
     has_mark: false,
     alt: None,
     lang: "",
   }
-  collect_object(collector, object, resolve, matrix, 0, false, None)
-  collector.flush_alt({ matrix, font: None, size: 10.0, align: 0, clip: None, })
+  try {
+    collect_object(collector, object, resolve, matrix, 0, false, None)
+    collector.flush_alt({
+      matrix,
+      font: None,
+      size: 10.0,
+      align: 0,
+      clip: None,
+    })
+  } catch {
+    InvalidOperands(message) => {
+      if [
+          "too many text runs", "objects are drawn too many times", "objects draw objects too deep",
+        ].contains(message) {
+        budget.failure = Some(message)
+      }
+      raise InvalidOperands(message)
+    }
+    error => raise error
+  }
   while collector.open.length() > 0 {
     collector.close_top()
   }

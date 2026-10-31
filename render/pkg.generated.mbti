@@ -31,6 +31,8 @@ pub fn decode_commands(Bytes) -> Array[Command] raise
 
 pub fn extract_text(@core.ObjectResources, (String) -> @core.ObjectResources? raise, matrix? : (Double, Double, Double, Double, Double, Double)) -> TextContent raise
 
+pub fn extract_text_with_budget(@core.ObjectResources, (String) -> @core.ObjectResources? raise, TextExtractionBudget, matrix? : (Double, Double, Double, Double, Double, Double)) -> TextContent raise
+
 pub fn initial_channel() -> ChannelState
 
 pub fn join_text(Array[TextRun]) -> String
@@ -48,6 +50,8 @@ pub fn page_text_index(@core.View, (String) -> Bytes raise, (String) -> @core.Ob
 pub fn parse_cell_ref(String) -> CellRef?
 
 pub fn patch_of(Int32) -> SynthPatch
+
+pub fn plan_shared_prefixes(Array[PrefixSource], Int32) -> Array[PrefixPlan] raise
 
 pub fn pulse_duty(Int32) -> Double
 
@@ -199,6 +203,29 @@ pub(all) struct PathPlacement {
   y : Double
 } derive(@debug.Debug)
 
+pub(all) struct PrefixPlan {
+  source : Int32
+  prefix : PrefixRewrite
+  members : Array[PrefixPlanMember]
+}
+
+pub(all) struct PrefixPlanMember {
+  source : Int32
+  saved : Int32
+  rest : PrefixRewrite
+}
+
+pub(all) struct PrefixRewrite {
+  data : Bytes
+  fonts : Array[Int32]
+  children : Array[Int32]
+}
+
+pub(all) struct PrefixSource {
+  resources : @core.ObjectResources
+  child_bounds : Array[(Float, Float, Float, Float)]
+}
+
 pub(all) struct SheetViewport {
   x : Double
   y : Double
@@ -221,6 +248,13 @@ pub(all) struct TextContent {
   links : Array[TextLink]
   nodes : Array[TextNode]
 }
+
+pub struct TextExtractionBudget {
+  seen : Map[String, Bool]
+  mut reused : Int32
+  mut failure : String?
+}
+pub fn TextExtractionBudget::new() -> Self
 
 pub(all) struct TextLink {
   x : Double

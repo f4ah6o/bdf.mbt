@@ -112,9 +112,30 @@ pub fn sized_fallback_advance(
 /// Supplying pictures also requires a document writer for their image and
 /// drawing parts. `hidden_pictures`, when supplied, has one flag per picture.
 /// `shape_fills`, when supplied, has one optional color per drawing encoded as
-/// 0xRRGGBBAA; a color renders a filled rectangle instead of an image.
+/// 0xRRGGBBAA; a color renders a filled shape instead of an image.
 /// `shape_strokes`, when supplied, pairs an optional RGBA color and width in
-/// points with each drawing. `shape_no_fills` marks rectangles without a fill.
+/// points with each drawing. `shape_no_fills` marks shapes without a fill.
+/// `shape_geometries` selects "rect", "ellipse", "diamond", "triangle",
+/// "rtTriangle", "parallelogram", "trapezoid", "homePlate", "chevron",
+/// "plus", "hexagon", "octagon", "roundRect", "flowChartAlternateProcess",
+/// "flowChartMerge", "flowChartInputOutput", "flowChartPreparation",
+/// "flowChartPunchedCard", "flowChartTerminator", "flowChartDisplay",
+/// "flowChartOnlineStorage", "flowChartPunchedTape",
+/// "flowChartCollate", "flowChartManualInput", "flowChartManualOperation",
+/// "flowChartOffpageConnector", "irregularSeal1", "irregularSeal2" or
+/// "lightningBolt", plus the straight-line DrawingML presets listed in
+/// `compat/xlsx/README.md`, and "flowChartDocument", "heart", "wave", or
+/// "doubleWave", or "swooshArrow", per shape. An empty string or omitted list selects a
+/// rectangle.
+/// `shape_adjustments` contains optional DrawingML adjustment values from 0
+/// to 100,000 for triangles, parallelograms, trapezoids, home plates, chevrons,
+/// crosses, hexagons, octagons, rounded rectangles, diagonal stripes, snipped
+/// corners, seven- or ten-point stars, and the first adjustment of supported
+/// straight-line presets, waves, or swoosh arrows. `shape_extra_adjustments`
+/// supplies `adj2` through
+/// `adj4` by name, where defined by the preset, in the same range. Its entries
+/// correspond to the pictures and may be empty for other geometries. For wave
+/// geometries, `adj2` may also be negative down to -100,000.
 /// `shape_dashes` contains DrawingML preset dash names, or an empty string for
 /// a solid line. A caller that defers object storage may collect child parts in
 /// `picture_children` and pass them to `store_grids`.
@@ -158,6 +179,9 @@ pub fn draw_sized_grid_no_fonts(
   shape_strokes~ : Array[(UInt32, Double)?] = [],
   shape_no_fills~ : Array[Bool] = [],
   shape_dashes~ : Array[String] = [],
+  shape_geometries~ : Array[String] = [],
+  shape_adjustments~ : Array[Int64?] = [],
+  shape_extra_adjustments~ : Array[Map[String, Int64]] = [],
   picture_writer~ : @core.DocumentWriter? = None,
   picture_children~ : Array[(Int32, Int32, Bytes)]? = None,
   column_axis_default~ : Float? = None,
@@ -890,6 +914,18 @@ pub fn draw_sized_grid_no_fonts(
   if !shape_dashes.is_empty() && shape_dashes.length() != pictures.length() {
     raise InvalidArgument("sheet: invalid shape dash list")
   }
+  if !shape_geometries.is_empty() &&
+    shape_geometries.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid shape geometry list")
+  }
+  if !shape_adjustments.is_empty() &&
+    shape_adjustments.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid shape adjustment list")
+  }
+  if !shape_extra_adjustments.is_empty() &&
+    shape_extra_adjustments.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid extra shape adjustment list")
+  }
   if !pictures.is_empty() {
     if pictures.length() > 128 {
       raise InvalidArgument("sheet: too many pictures")
@@ -920,6 +956,21 @@ pub fn draw_sized_grid_no_fonts(
         },
         picture_children,
         room,
+        shape_adjustment=if shape_adjustments.is_empty() {
+          None
+        } else {
+          shape_adjustments[index]
+        },
+        shape_extra_adjustments=if shape_extra_adjustments.is_empty() {
+          Map([])
+        } else {
+          shape_extra_adjustments[index]
+        },
+        shape_geometry=if shape_geometries.is_empty() {
+          "rect"
+        } else {
+          shape_geometries[index]
+        },
         shape_dash=if shape_dashes.is_empty() {
           ""
         } else {

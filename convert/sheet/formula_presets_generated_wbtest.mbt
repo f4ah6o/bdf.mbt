@@ -1,0 +1,9078 @@
+///|
+// Generated from upstream DrawingML preset geometry.
+test "formula preset paths match Go" {
+  check_formula_preset_path("bentUpArrow", 0, 0, None, [
+    0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U,
+    0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U,
+    0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U,
+  ])
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.024645669291338584,
+    0.056614173228346457,
+    None,
+    [
+      0x00000000U, 0x3d4ea78dU, 0x3c7c5f25U, 0x3d4ea78dU, 0x3c7c5f25U, 0x3bc9e5b7U,
+      0x3c49e5b7U, 0x3bc9e5b7U, 0x3c976c49U, 0x00000000U, 0x3cc9e5b7U, 0x3bc9e5b7U,
+      0x3cb0a900U, 0x3bc9e5b7U, 0x3cb0a900U, 0x3d67e443U, 0x00000000U, 0x3d67e443U,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.049291338582677167,
+    0.11322834645669291,
+    None,
+    [
+      0x00000000U, 0x3dcea78dU, 0x3cfc5f25U, 0x3dcea78dU, 0x3cfc5f25U, 0x3c49e5b7U,
+      0x3cc9e5b7U, 0x3c49e5b7U, 0x3d176c49U, 0x00000000U, 0x3d49e5b7U, 0x3c49e5b7U,
+      0x3d30a900U, 0x3c49e5b7U, 0x3d30a900U, 0x3de7e443U, 0x00000000U, 0x3de7e443U,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.073937007874015748,
+    0.16984251968503938,
+    None,
+    [
+      0x00000000U, 0x3e1afda9U, 0x3d3d475cU, 0x3e1afda9U, 0x3d3d475cU, 0x3c976c49U,
+      0x3d176c49U, 0x3c976c49U, 0x3d63226eU, 0x00000000U, 0x3d976c49U, 0x3c976c49U,
+      0x3d847ec0U, 0x3c976c49U, 0x3d847ec0U, 0x3e2deb33U, 0x00000000U, 0x3e2deb33U,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.098582677165354335,
+    0.22645669291338583,
+    None,
+    [
+      0x00000000U, 0x3e4ea78dU, 0x3d7c5f25U, 0x3e4ea78dU, 0x3d7c5f25U, 0x3cc9e5b7U,
+      0x3d49e5b7U, 0x3cc9e5b7U, 0x3d976c49U, 0x00000000U, 0x3dc9e5b7U, 0x3cc9e5b7U,
+      0x3db0a900U, 0x3cc9e5b7U, 0x3db0a900U, 0x3e67e443U, 0x00000000U, 0x3e67e443U,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.12322834645669291,
+    0.28307086614173227,
+    None,
+    [
+      0x00000000U, 0x3e8128b8U, 0x3d9dbb77U, 0x3e8128b8U, 0x3d9dbb77U, 0x3cfc5f25U,
+      0x3d7c5f25U, 0x3cfc5f25U, 0x3dbd475cU, 0x00000000U, 0x3dfc5f25U, 0x3cfc5f25U,
+      0x3ddcd340U, 0x3cfc5f25U, 0x3ddcd340U, 0x3e90eeaaU, 0x00000000U, 0x3e90eeaaU,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.1478740157480315,
+    0.33968503937007877,
+    None,
+    [
+      0x00000000U, 0x3e9afda9U, 0x3dbd475cU, 0x3e9afda9U, 0x3dbd475cU, 0x3d176c49U,
+      0x3d976c49U, 0x3d176c49U, 0x3de3226eU, 0x00000000U, 0x3e176c49U, 0x3d176c49U,
+      0x3e047ec0U, 0x3d176c49U, 0x3e047ec0U, 0x3eadeb33U, 0x00000000U, 0x3eadeb33U,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.17251968503937007,
+    0.39629921259842521,
+    None,
+    [
+      0x00000000U, 0x3eb4d29bU, 0x3ddcd340U, 0x3eb4d29bU, 0x3ddcd340U, 0x3d30a900U,
+      0x3db0a900U, 0x3d30a900U, 0x3e047ec0U, 0x00000000U, 0x3e30a900U, 0x3d30a900U,
+      0x3e1a93e0U, 0x3d30a900U, 0x3e1a93e0U, 0x3ecae7bbU, 0x00000000U, 0x3ecae7bbU,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.19716535433070867,
+    0.45291338582677165,
+    None,
+    [
+      0x00000000U, 0x3ecea78dU, 0x3dfc5f25U, 0x3ecea78dU, 0x3dfc5f25U, 0x3d49e5b7U,
+      0x3dc9e5b7U, 0x3d49e5b7U, 0x3e176c49U, 0x00000000U, 0x3e49e5b7U, 0x3d49e5b7U,
+      0x3e30a900U, 0x3d49e5b7U, 0x3e30a900U, 0x3ee7e443U, 0x00000000U, 0x3ee7e443U,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.22181102362204724,
+    0.50952755905511815,
+    None,
+    [
+      0x00000000U, 0x3ee87c7eU, 0x3e0df585U, 0x3ee87c7eU, 0x3e0df585U, 0x3d63226eU,
+      0x3de3226eU, 0x3d63226eU, 0x3e2a59d2U, 0x00000000U, 0x3e63226eU, 0x3d63226eU,
+      0x3e46be20U, 0x3d63226eU, 0x3e46be20U, 0x3f027066U, 0x00000000U, 0x3f027066U,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.24645669291338582,
+    0.56614173228346454,
+    None,
+    [
+      0x00000000U, 0x3f0128b8U, 0x3e1dbb77U, 0x3f0128b8U, 0x3e1dbb77U, 0x3d7c5f25U,
+      0x3dfc5f25U, 0x3d7c5f25U, 0x3e3d475cU, 0x00000000U, 0x3e7c5f25U, 0x3d7c5f25U,
+      0x3e5cd340U, 0x3d7c5f25U, 0x3e5cd340U, 0x3f10eeaaU, 0x00000000U, 0x3f10eeaaU,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.27110236220472439,
+    0.62275590551181104,
+    None,
+    [
+      0x00000000U, 0x3f0e1331U, 0x3e2d8169U, 0x3f0e1331U, 0x3e2d8169U, 0x3d8acdeeU,
+      0x3e0acdeeU, 0x3d8acdeeU, 0x3e5034e5U, 0x00000000U, 0x3e8acdeeU, 0x3d8acdeeU,
+      0x3e72e860U, 0x3d8acdeeU, 0x3e72e860U, 0x3f1f6ceeU, 0x00000000U, 0x3f1f6ceeU,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.29574803149606299,
+    0.67937007874015753,
+    None,
+    [
+      0x00000000U, 0x3f1afda9U, 0x3e3d475cU, 0x3f1afda9U, 0x3e3d475cU, 0x3d976c49U,
+      0x3e176c49U, 0x3d976c49U, 0x3e63226eU, 0x00000000U, 0x3e976c49U, 0x3d976c49U,
+      0x3e847ec0U, 0x3d976c49U, 0x3e847ec0U, 0x3f2deb33U, 0x00000000U, 0x3f2deb33U,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.32039370078740159,
+    0.73598425196850392,
+    None,
+    [
+      0x00000000U, 0x3f27e822U, 0x3e4d0d4eU, 0x3f27e822U, 0x3e4d0d4eU, 0x3da40aa5U,
+      0x3e240aa5U, 0x3da40aa5U, 0x3e760ff7U, 0x00000000U, 0x3ea40aa5U, 0x3da40aa5U,
+      0x3e8f8950U, 0x3da40aa5U, 0x3e8f8950U, 0x3f3c6977U, 0x00000000U, 0x3f3c6977U,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.34503937007874014,
+    0.79259842519685042,
+    None,
+    [
+      0x00000000U, 0x3f34d29bU, 0x3e5cd340U, 0x3f34d29bU, 0x3e5cd340U, 0x3db0a900U,
+      0x3e30a900U, 0x3db0a900U, 0x3e847ec0U, 0x00000000U, 0x3eb0a900U, 0x3db0a900U,
+      0x3e9a93e0U, 0x3db0a900U, 0x3e9a93e0U, 0x3f4ae7bbU, 0x00000000U, 0x3f4ae7bbU,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.36968503937007874,
+    0.84921259842519681,
+    None,
+    [
+      0x00000000U, 0x3f41bd14U, 0x3e6c9932U, 0x3f41bd14U, 0x3e6c9932U, 0x3dbd475cU,
+      0x3e3d475cU, 0x3dbd475cU, 0x3e8df585U, 0x00000000U, 0x3ebd475cU, 0x3dbd475cU,
+      0x3ea59e70U, 0x3dbd475cU, 0x3ea59e70U, 0x3f5965ffU, 0x00000000U, 0x3f5965ffU,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    0.97220472440944883,
+    0.62354330708661421,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x3e9fa089U, 0x00000000U, 0x3e9fa089U, 0x3e9fa089U,
+      0x3f78e269U, 0x3e9fa089U, 0x3f78e269U, 0x3f1fa089U, 0x00000000U, 0x3f1fa089U,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    0.99685039370078743,
+    0.68015748031496059,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x3eae1ecdU, 0x00000000U, 0x3eae1ecdU, 0x3eae1ecdU,
+      0x3f7f3196U, 0x3eae1ecdU, 0x3f7f3196U, 0x3f2e1ecdU, 0x00000000U, 0x3f2e1ecdU,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.0214960629921259,
+    0.73677165354330709,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x3ebc9d11U, 0x00000000U, 0x3ebc9d11U, 0x3ebc9d11U,
+      0x3f82c062U, 0x3ebc9d11U, 0x3f82c062U, 0x3f3c9d11U, 0x00000000U, 0x3f3c9d11U,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.0461417322834645,
+    0.79338582677165359,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x3ecb1b55U, 0x00000000U, 0x3ecb1b55U, 0x3ecb1b55U,
+      0x3f85e7f9U, 0x3ecb1b55U, 0x3f85e7f9U, 0x3f4b1b55U, 0x00000000U, 0x3f4b1b55U,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.0707874015748031,
+    0.84999999999999998,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x3ed9999aU, 0x00000000U, 0x3ed9999aU, 0x3ed9999aU,
+      0x3f890f90U, 0x3ed9999aU, 0x3f890f90U, 0x3f59999aU, 0x00000000U, 0x3f59999aU,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.0954330708661417,
+    0.90661417322834648,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x3ee817deU, 0x00000000U, 0x3ee817deU, 0x3ee817deU,
+      0x3f8c3727U, 0x3ee817deU, 0x3f8c3727U, 0x3f6817deU, 0x00000000U, 0x3f6817deU,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.1200787401574803,
+    0.96322834645669286,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x3ef69622U, 0x00000000U, 0x3ef69622U, 0x3ef69622U,
+      0x3f8f5ebdU, 0x3ef69622U, 0x3f8f5ebdU, 0x3f769622U, 0x00000000U, 0x3f769622U,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.1447244094488189,
+    1.0198425196850394,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x3f028a33U, 0x00000000U, 0x3f028a33U, 0x3f028a33U,
+      0x3f928654U, 0x3f028a33U, 0x3f928654U, 0x3f828a33U, 0x00000000U, 0x3f828a33U,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.1693700787401575,
+    1.0764566929133859,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x3f09c955U, 0x00000000U, 0x3f09c955U, 0x3f09c955U,
+      0x3f95adebU, 0x3f09c955U, 0x3f95adebU, 0x3f89c955U, 0x00000000U, 0x3f89c955U,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.1940157480314961,
+    1.1330708661417324,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x3f110877U, 0x00000000U, 0x3f110877U, 0x3f110877U,
+      0x3f98d582U, 0x3f110877U, 0x3f98d582U, 0x3f910877U, 0x00000000U, 0x3f910877U,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.2186614173228347,
+    1.1896850393700786,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x3f184799U, 0x00000000U, 0x3f184799U, 0x3f184799U,
+      0x3f9bfd19U, 0x3f184799U, 0x3f9bfd19U, 0x3f984799U, 0x00000000U, 0x3f984799U,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.2433070866141733,
+    1.2462992125984251,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x3f1f24b0U, 0x00000000U, 0x3f1f24b0U, 0x3f1fe8c7U,
+      0x3f9f24b0U, 0x3f1fe8c7U, 0x3f9f24b0U, 0x3f9f86bcU, 0x00000000U, 0x3f9f86bcU,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.2679527559055117,
+    1.3029133858267716,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x3f224c47U, 0x00000000U, 0x3f224c47U, 0x3f2b3f75U,
+      0x3fa24c47U, 0x3f2b3f75U, 0x3fa24c47U, 0x3fa6c5deU, 0x00000000U, 0x3fa6c5deU,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.2925984251968503,
+    1.3595275590551181,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x3f2573ddU, 0x00000000U, 0x3f2573ddU, 0x3f369622U,
+      0x3fa573ddU, 0x3f369622U, 0x3fa573ddU, 0x3fae0500U, 0x00000000U, 0x3fae0500U,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.3172440944881889,
+    1.4161417322834646,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x3f289b74U, 0x00000000U, 0x3f289b74U, 0x3f41eccfU,
+      0x3fa89b74U, 0x3f41eccfU, 0x3fa89b74U, 0x3fb54422U, 0x00000000U, 0x3fb54422U,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.3418897637795275,
+    1.4727559055118111,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x3f2bc30bU, 0x00000000U, 0x3f2bc30bU, 0x3f4d437dU,
+      0x3fabc30bU, 0x3f4d437dU, 0x3fabc30bU, 0x3fbc8344U, 0x00000000U, 0x3fbc8344U,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    1.9444094488188977,
+    1.2470866141732284,
+    None,
+    [
+      0x00000000U, 0x3f1fa089U, 0x3f78e269U, 0x00000000U, 0x3ff8e269U, 0x00000000U,
+      0x00000000U, 0x3f9fa089U,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    1.9690551181102363,
+    1.3037007874015749,
+    None,
+    [
+      0x00000000U, 0x3f26dfabU, 0x3f7c0a00U, 0x00000000U, 0x3ffc0a00U, 0x00000000U,
+      0x00000000U, 0x3fa6dfabU,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    1.9937007874015749,
+    1.3603149606299212,
+    None,
+    [
+      0x00000000U, 0x3f2e1ecdU, 0x3f7f3196U, 0x00000000U, 0x3fff3196U, 0x00000000U,
+      0x00000000U, 0x3fae1ecdU,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    2.0183464566929135,
+    1.4169291338582677,
+    None,
+    [
+      0x00000000U, 0x3f355defU, 0x3f812c97U, 0x00000000U, 0x40012c97U, 0x00000000U,
+      0x00000000U, 0x3fb55defU,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    2.0429921259842518,
+    1.4735433070866142,
+    None,
+    [
+      0x00000000U, 0x3f3c9d11U, 0x3f82c062U, 0x00000000U, 0x4002c062U, 0x00000000U,
+      0x00000000U, 0x3fbc9d11U,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    2.0676377952755907,
+    1.5301574803149607,
+    None,
+    [
+      0x00000000U, 0x3f43dc33U, 0x3f84542dU, 0x00000000U, 0x4004542dU, 0x00000000U,
+      0x00000000U, 0x3fc3dc33U,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    2.092283464566929,
+    1.5867716535433072,
+    None,
+    [
+      0x00000000U, 0x3f4b1b55U, 0x3f85e7f9U, 0x00000000U, 0x4005e7f9U, 0x00000000U,
+      0x00000000U, 0x3fcb1b55U,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    2.1169291338582679,
+    1.6433858267716535,
+    None,
+    [
+      0x00000000U, 0x3f525a77U, 0x3f877bc4U, 0x00000000U, 0x40077bc4U, 0x00000000U,
+      0x00000000U, 0x3fd25a77U,
+    ],
+  )
+  check_formula_preset_path("diagStripe", 2.1415748031496062, 1.7, None, [
+    0x00000000U, 0x3f59999aU, 0x3f890f90U, 0x00000000U, 0x40090f90U, 0x00000000U,
+    0x00000000U, 0x3fd9999aU,
+  ])
+  check_formula_preset_path(
+    "diagStripe",
+    2.1662204724409451,
+    1.7566141732283465,
+    None,
+    [
+      0x00000000U, 0x3f60d8bcU, 0x3f8aa35bU, 0x00000000U, 0x400aa35bU, 0x00000000U,
+      0x00000000U, 0x3fe0d8bcU,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    2.1908661417322834,
+    1.813228346456693,
+    None,
+    [
+      0x00000000U, 0x3f6817deU, 0x3f8c3727U, 0x00000000U, 0x400c3727U, 0x00000000U,
+      0x00000000U, 0x3fe817deU,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    2.2155118110236223,
+    1.8698425196850395,
+    None,
+    [
+      0x00000000U, 0x3f6f5700U, 0x3f8dcaf2U, 0x00000000U, 0x400dcaf2U, 0x00000000U,
+      0x00000000U, 0x3fef5700U,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    2.2401574803149606,
+    1.9264566929133857,
+    None,
+    [
+      0x00000000U, 0x3f769622U, 0x3f8f5ebdU, 0x00000000U, 0x400f5ebdU, 0x00000000U,
+      0x00000000U, 0x3ff69622U,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    2.264803149606299,
+    1.9830708661417322,
+    None,
+    [
+      0x00000000U, 0x3f7dd544U, 0x3f90f289U, 0x00000000U, 0x4010f289U, 0x00000000U,
+      0x00000000U, 0x3ffdd544U,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    2.2894488188976378,
+    2.0396850393700787,
+    None,
+    [
+      0x00000000U, 0x3f828a33U, 0x3f928654U, 0x00000000U, 0x40128654U, 0x00000000U,
+      0x00000000U, 0x40028a33U,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    2.3140944881889762,
+    2.0962992125984252,
+    None,
+    [
+      0x00000000U, 0x3f8629c4U, 0x3f941a20U, 0x00000000U, 0x40141a20U, 0x00000000U,
+      0x00000000U, 0x400629c4U,
+    ],
+  )
+  check_formula_preset_path(
+    "dodecagon",
+    2.9166141732283464,
+    1.8706299212598425,
+    None,
+    [
+      0x00000000U, 0x3f2f4787U, 0x3ec8134eU, 0x3e80528cU, 0x3f88a4fbU, 0x00000000U,
+      0x3fecaea2U, 0x00000000U, 0x4021a765U, 0x3e80528cU, 0x403aa9ceU, 0x3f2f4787U,
+      0x403aa9ceU, 0x3f97cd09U, 0x4021a765U, 0x3fcf5c2aU, 0x3fecaea2U, 0x3fef70cdU,
+      0x3f88a4fbU, 0x3fef70cdU, 0x3ec8134eU, 0x3fcf5c2aU, 0x00000000U, 0x3f97cd09U,
+    ],
+  )
+  check_formula_preset_path(
+    "dodecagon",
+    2.9412598425196852,
+    1.927244094488189,
+    None,
+    [
+      0x00000000U, 0x3f34958eU, 0x3ec9c41dU, 0x3e8434c2U, 0x3f89cc93U, 0x00000000U,
+      0x3feeaea1U, 0x00000000U, 0x40230516U, 0x3e8434c2U, 0x403c3d9aU, 0x3f34958eU,
+      0x403c3d9aU, 0x3f9c6528U, 0x40230516U, 0x3fd5a2bfU, 0x3feeaea1U, 0x3ff6afefU,
+      0x3f89cc93U, 0x3ff6afefU, 0x3ec9c41dU, 0x3fd5a2bfU, 0x00000000U, 0x3f9c6528U,
+    ],
+  )
+  check_formula_preset_path(
+    "dodecagon",
+    2.9659055118110236,
+    1.9838582677165355,
+    None,
+    [
+      0x00000000U, 0x3f39e395U, 0x3ecb74ecU, 0x3e8816f9U, 0x3f8af42aU, 0x00000000U,
+      0x3ff0aea0U, 0x00000000U, 0x402462c8U, 0x3e8816f9U, 0x403dd165U, 0x3f39e395U,
+      0x403dd165U, 0x3fa0fd47U, 0x402462c8U, 0x3fdbe953U, 0x3ff0aea0U, 0x3ffdef11U,
+      0x3f8af42aU, 0x3ffdef11U, 0x3ecb74ecU, 0x3fdbe953U, 0x00000000U, 0x3fa0fd47U,
+    ],
+  )
+  check_formula_preset_path(
+    "dodecagon",
+    2.9905511811023624,
+    2.0404724409448818,
+    None,
+    [
+      0x00000000U, 0x3f3f319cU, 0x3ecd25bbU, 0x3e8bf930U, 0x3f8c1bc2U, 0x00000000U,
+      0x3ff2ae9fU, 0x00000000U, 0x4025c079U, 0x3e8bf930U, 0x403f6531U, 0x3f3f319cU,
+      0x403f6531U, 0x3fa59566U, 0x4025c079U, 0x3fe22fe7U, 0x3ff2ae9fU, 0x4002971aU,
+      0x3f8c1bc2U, 0x4002971aU, 0x3ecd25bbU, 0x3fe22fe7U, 0x00000000U, 0x3fa59566U,
+    ],
+  )
+  check_formula_preset_path(
+    "dodecagon",
+    3.0151968503937008,
+    2.0970866141732283,
+    None,
+    [
+      0x00000000U, 0x3f447fa2U, 0x3eced68aU, 0x3e8fdb67U, 0x3f8d435aU, 0x00000000U,
+      0x3ff4ae9fU, 0x00000000U, 0x40271e2bU, 0x3e8fdb67U, 0x4040f8fcU, 0x3f447fa2U,
+      0x4040f8fcU, 0x3faa2d84U, 0x40271e2bU, 0x3fe8767cU, 0x3ff4ae9fU, 0x400636abU,
+      0x3f8d435aU, 0x400636abU, 0x3eced68aU, 0x3fe8767cU, 0x00000000U, 0x3faa2d84U,
+    ],
+  )
+  check_formula_preset_path(
+    "dodecagon",
+    3.0398425196850392,
+    2.1537007874015748,
+    None,
+    [
+      0x00000000U, 0x3f49cda9U, 0x3ed08758U, 0x3e93bd9dU, 0x3f8e6af2U, 0x00000000U,
+      0x3ff6ae9eU, 0x00000000U, 0x40287bddU, 0x3e93bd9dU, 0x40428cc8U, 0x3f49cda9U,
+      0x40428cc8U, 0x3faec5a3U, 0x40287bddU, 0x3feebd10U, 0x3ff6ae9eU, 0x4009d63cU,
+      0x3f8e6af2U, 0x4009d63cU, 0x3ed08758U, 0x3feebd10U, 0x00000000U, 0x3faec5a3U,
+    ],
+  )
+  check_formula_preset_path(
+    "dodecagon",
+    3.064488188976378,
+    2.2103149606299213,
+    None,
+    [
+      0x00000000U, 0x3f4f1bb0U, 0x3ed23827U, 0x3e979fd4U, 0x3f8f9289U, 0x00000000U,
+      0x3ff8ae9dU, 0x00000000U, 0x4029d98eU, 0x3e979fd4U, 0x40442093U, 0x3f4f1bb0U,
+      0x40442093U, 0x3fb35dc2U, 0x4029d98eU, 0x3ff503a5U, 0x3ff8ae9dU, 0x400d75cdU,
+      0x3f8f9289U, 0x400d75cdU, 0x3ed23827U, 0x3ff503a5U, 0x00000000U, 0x3fb35dc2U,
+    ],
+  )
+  check_formula_preset_path(
+    "dodecagon",
+    3.0891338582677164,
+    2.2669291338582678,
+    None,
+    [
+      0x00000000U, 0x3f5469b6U, 0x3ed3e8f6U, 0x3e9b820bU, 0x3f90ba21U, 0x00000000U,
+      0x3ffaae9cU, 0x00000000U, 0x402b3740U, 0x3e9b820bU, 0x4045b45eU, 0x3f5469b6U,
+      0x4045b45eU, 0x3fb7f5e1U, 0x402b3740U, 0x3ffb4a39U, 0x3ffaae9cU, 0x4011155eU,
+      0x3f90ba21U, 0x4011155eU, 0x3ed3e8f6U, 0x3ffb4a39U, 0x00000000U, 0x3fb7f5e1U,
+    ],
+  )
+  check_formula_preset_path(
+    "dodecagon",
+    3.1137795275590552,
+    2.3235433070866143,
+    None,
+    [
+      0x00000000U, 0x3f59b7bdU, 0x3ed599c5U, 0x3e9f6442U, 0x3f91e1b9U, 0x00000000U,
+      0x3ffcae9bU, 0x00000000U, 0x402c94f1U, 0x3e9f6442U, 0x4047482aU, 0x3f59b7bdU,
+      0x4047482aU, 0x3fbc8dffU, 0x402c94f1U, 0x4000c867U, 0x3ffcae9bU, 0x4014b4efU,
+      0x3f91e1b9U, 0x4014b4efU, 0x3ed599c5U, 0x4000c867U, 0x00000000U, 0x3fbc8dffU,
+    ],
+  )
+  check_formula_preset_path(
+    "dodecagon",
+    3.1384251968503936,
+    2.3801574803149608,
+    None,
+    [
+      0x00000000U, 0x3f5f05c4U, 0x3ed74a94U, 0x3ea34679U, 0x3f930950U, 0x00000000U,
+      0x3ffeae9aU, 0x00000000U, 0x402df2a3U, 0x3ea34679U, 0x4048dbf5U, 0x3f5f05c4U,
+      0x4048dbf5U, 0x3fc1261eU, 0x402df2a3U, 0x4003ebb1U, 0x3ffeae9aU, 0x40185480U,
+      0x3f930950U, 0x40185480U, 0x3ed74a94U, 0x4003ebb1U, 0x00000000U, 0x3fc1261eU,
+    ],
+  )
+  check_formula_preset_path(
+    "dodecagon",
+    3.1630708661417324,
+    2.4367716535433073,
+    None,
+    [
+      0x00000000U, 0x3f6453cbU, 0x3ed8fb63U, 0x3ea728afU, 0x3f9430e8U, 0x00000000U,
+      0x4000574dU, 0x00000000U, 0x402f5054U, 0x3ea728afU, 0x404a6fc1U, 0x3f6453cbU,
+      0x404a6fc1U, 0x3fc5be3dU, 0x402f5054U, 0x40070efbU, 0x4000574dU, 0x401bf411U,
+      0x3f9430e8U, 0x401bf411U, 0x3ed8fb63U, 0x40070efbU, 0x00000000U, 0x3fc5be3dU,
+    ],
+  )
+  check_formula_preset_path(
+    "dodecagon",
+    3.1877165354330708,
+    2.4933858267716533,
+    None,
+    [
+      0x00000000U, 0x3f69a1d1U, 0x3edaac32U, 0x3eab0ae6U, 0x3f955880U, 0x00000000U,
+      0x4001574cU, 0x00000000U, 0x4030ae06U, 0x3eab0ae6U, 0x404c038cU, 0x3f69a1d1U,
+      0x404c038cU, 0x3fca565cU, 0x4030ae06U, 0x400a3245U, 0x4001574cU, 0x401f93a2U,
+      0x3f955880U, 0x401f93a2U, 0x3edaac32U, 0x400a3245U, 0x00000000U, 0x3fca565cU,
+    ],
+  )
+  check_formula_preset_path(
+    "dodecagon",
+    3.2123622047244096,
+    2.5499999999999998,
+    None,
+    [
+      0x00000000U, 0x3f6eefd8U, 0x3edc5d00U, 0x3eaeed1dU, 0x3f968018U, 0x00000000U,
+      0x4002574cU, 0x00000000U, 0x40320bb8U, 0x3eaeed1dU, 0x404d9758U, 0x3f6eefd8U,
+      0x404d9758U, 0x3fceee7aU, 0x40320bb8U, 0x400d5590U, 0x4002574cU, 0x40233333U,
+      0x3f968018U, 0x40233333U, 0x3edc5d00U, 0x400d5590U, 0x00000000U, 0x3fceee7aU,
+    ],
+  )
+  check_formula_preset_path(
+    "dodecagon",
+    3.237007874015748,
+    2.6066141732283463,
+    None,
+    [
+      0x00000000U, 0x3f743ddfU, 0x3ede0dcfU, 0x3eb2cf54U, 0x3f97a7afU, 0x00000000U,
+      0x4003574bU, 0x00000000U, 0x40336969U, 0x3eb2cf54U, 0x404f2b23U, 0x3f743ddfU,
+      0x404f2b23U, 0x3fd38699U, 0x40336969U, 0x401078daU, 0x4003574bU, 0x4026d2c4U,
+      0x3f97a7afU, 0x4026d2c4U, 0x3ede0dcfU, 0x401078daU, 0x00000000U, 0x3fd38699U,
+    ],
+  )
+  check_formula_preset_path(
+    "dodecagon",
+    3.2616535433070868,
+    2.6632283464566928,
+    None,
+    [
+      0x00000000U, 0x3f798be5U, 0x3edfbe9eU, 0x3eb6b18aU, 0x3f98cf47U, 0x00000000U,
+      0x4004574bU, 0x00000000U, 0x4034c71bU, 0x3eb6b18aU, 0x4050beefU, 0x3f798be5U,
+      0x4050beefU, 0x3fd81eb8U, 0x4034c71bU, 0x40139c24U, 0x4004574bU, 0x402a7255U,
+      0x3f98cf47U, 0x402a7255U, 0x3edfbe9eU, 0x40139c24U, 0x00000000U, 0x3fd81eb8U,
+    ],
+  )
+  check_formula_preset_path(
+    "dodecagon",
+    3.2862992125984252,
+    2.7198425196850393,
+    None,
+    [
+      0x00000000U, 0x3f7ed9ecU, 0x3ee16f6dU, 0x3eba93c1U, 0x3f99f6dfU, 0x00000000U,
+      0x4005574bU, 0x00000000U, 0x403624ccU, 0x3eba93c1U, 0x405252baU, 0x3f7ed9ecU,
+      0x405252baU, 0x3fdcb6d7U, 0x403624ccU, 0x4016bf6eU, 0x4005574bU, 0x402e11e6U,
+      0x3f99f6dfU, 0x402e11e6U, 0x3ee16f6dU, 0x4016bf6eU, 0x00000000U, 0x3fdcb6d7U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    3.8888188976377953,
+    2.4941732283464568,
+    None,
+    [
+      0x00000000U, 0x3f9fa089U, 0x3f78e269U, 0x3f9fa089U, 0x3f78e269U, 0x00000000U,
+      0x403aa9ceU, 0x00000000U, 0x403aa9ceU, 0x3f9fa089U, 0x4078e269U, 0x3f9fa089U,
+      0x3ff8e269U, 0x401fa089U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    3.9134645669291337,
+    2.5507874015748033,
+    None,
+    [
+      0x00000000U, 0x3fa3401aU, 0x3f7a7634U, 0x3fa3401aU, 0x3f7a7634U, 0x00000000U,
+      0x403bd8a7U, 0x00000000U, 0x403bd8a7U, 0x3fa3401aU, 0x407a7634U, 0x3fa3401aU,
+      0x3ffa7634U, 0x4023401aU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    3.9381102362204725,
+    2.6074015748031498,
+    None,
+    [
+      0x00000000U, 0x3fa6dfabU, 0x3f7c0a00U, 0x3fa6dfabU, 0x3f7c0a00U, 0x00000000U,
+      0x403d0780U, 0x00000000U, 0x403d0780U, 0x3fa6dfabU, 0x407c0a00U, 0x3fa6dfabU,
+      0x3ffc0a00U, 0x4026dfabU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    3.9627559055118109,
+    2.6640157480314959,
+    None,
+    [
+      0x00000000U, 0x3faa7f3cU, 0x3f7d9dcbU, 0x3faa7f3cU, 0x3f7d9dcbU, 0x00000000U,
+      0x403e3658U, 0x00000000U, 0x403e3658U, 0x3faa7f3cU, 0x407d9dcbU, 0x3faa7f3cU,
+      0x3ffd9dcbU, 0x402a7f3cU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    3.9874015748031497,
+    2.7206299212598424,
+    None,
+    [
+      0x00000000U, 0x3fae1ecdU, 0x3f7f3196U, 0x3fae1ecdU, 0x3f7f3196U, 0x00000000U,
+      0x403f6531U, 0x00000000U, 0x403f6531U, 0x3fae1ecdU, 0x407f3196U, 0x3fae1ecdU,
+      0x3fff3196U, 0x402e1ecdU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    4.0120472440944885,
+    2.7772440944881889,
+    None,
+    [
+      0x00000000U, 0x3fb1be5eU, 0x3f8062b1U, 0x3fb1be5eU, 0x3f8062b1U, 0x00000000U,
+      0x40409409U, 0x00000000U, 0x40409409U, 0x3fb1be5eU, 0x408062b1U, 0x3fb1be5eU,
+      0x400062b1U, 0x4031be5eU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    4.0366929133858269,
+    2.8338582677165354,
+    None,
+    [
+      0x00000000U, 0x3fb55defU, 0x3f812c97U, 0x3fb55defU, 0x3f812c97U, 0x00000000U,
+      0x4041c2e2U, 0x00000000U, 0x4041c2e2U, 0x3fb55defU, 0x40812c97U, 0x3fb55defU,
+      0x40012c97U, 0x40355defU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    4.0613385826771653,
+    2.8904724409448819,
+    None,
+    [
+      0x00000000U, 0x3fb8fd80U, 0x3f81f67cU, 0x3fb8fd80U, 0x3f81f67cU, 0x00000000U,
+      0x4042f1baU, 0x00000000U, 0x4042f1baU, 0x3fb8fd80U, 0x4081f67cU, 0x3fb8fd80U,
+      0x4001f67cU, 0x4038fd80U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    4.0859842519685037,
+    2.9470866141732284,
+    None,
+    [
+      0x00000000U, 0x3fbc9d11U, 0x3f82c062U, 0x3fbc9d11U, 0x3f82c062U, 0x00000000U,
+      0x40442093U, 0x00000000U, 0x40442093U, 0x3fbc9d11U, 0x4082c062U, 0x3fbc9d11U,
+      0x4002c062U, 0x403c9d11U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    4.1106299212598429,
+    3.0037007874015749,
+    None,
+    [
+      0x00000000U, 0x3fc03ca2U, 0x3f838a48U, 0x3fc03ca2U, 0x3f838a48U, 0x00000000U,
+      0x40454f6cU, 0x00000000U, 0x40454f6cU, 0x3fc03ca2U, 0x40838a48U, 0x3fc03ca2U,
+      0x40038a48U, 0x40403ca2U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    4.1352755905511813,
+    3.0603149606299214,
+    None,
+    [
+      0x00000000U, 0x3fc3dc33U, 0x3f84542dU, 0x3fc3dc33U, 0x3f84542dU, 0x00000000U,
+      0x40467e44U, 0x00000000U, 0x40467e44U, 0x3fc3dc33U, 0x4084542dU, 0x3fc3dc33U,
+      0x4004542dU, 0x4043dc33U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    4.1599212598425197,
+    3.1169291338582679,
+    None,
+    [
+      0x00000000U, 0x3fc77bc4U, 0x3f851e13U, 0x3fc77bc4U, 0x3f851e13U, 0x00000000U,
+      0x4047ad1dU, 0x00000000U, 0x4047ad1dU, 0x3fc77bc4U, 0x40851e13U, 0x3fc77bc4U,
+      0x40051e13U, 0x40477bc4U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    4.1845669291338581,
+    3.1735433070866144,
+    None,
+    [
+      0x00000000U, 0x3fcb1b55U, 0x3f85e7f9U, 0x3fcb1b55U, 0x3f85e7f9U, 0x00000000U,
+      0x4048dbf5U, 0x00000000U, 0x4048dbf5U, 0x3fcb1b55U, 0x4085e7f9U, 0x3fcb1b55U,
+      0x4005e7f9U, 0x404b1b55U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    4.2092125984251965,
+    3.2301574803149604,
+    None,
+    [
+      0x00000000U, 0x3fcebae6U, 0x3f86b1dfU, 0x3fcebae6U, 0x3f86b1dfU, 0x00000000U,
+      0x404a0aceU, 0x00000000U, 0x404a0aceU, 0x3fcebae6U, 0x4086b1dfU, 0x3fcebae6U,
+      0x4006b1dfU, 0x404ebae6U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    4.2338582677165357,
+    3.2867716535433069,
+    None,
+    [
+      0x00000000U, 0x3fd25a77U, 0x3f877bc4U, 0x3fd25a77U, 0x3f877bc4U, 0x00000000U,
+      0x404b39a7U, 0x00000000U, 0x404b39a7U, 0x3fd25a77U, 0x40877bc4U, 0x3fd25a77U,
+      0x40077bc4U, 0x40525a77U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    4.2585039370078741,
+    3.3433858267716534,
+    None,
+    [
+      0x00000000U, 0x3fd5fa09U, 0x3f8845aaU, 0x3fd5fa09U, 0x3f8845aaU, 0x00000000U,
+      0x404c687fU, 0x00000000U, 0x404c687fU, 0x3fd5fa09U, 0x408845aaU, 0x3fd5fa09U,
+      0x400845aaU, 0x4055fa09U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    4.8610236220472443,
+    3.1177165354330709,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x409b8d81U, 0x00000000U, 0x409b8d81U, 0x4001a6afU,
+      0x40347e97U, 0x4001a6afU, 0x40347e97U, 0x4015a680U, 0x404d6facU, 0x4015a680U,
+      0x401b8d81U, 0x404788abU, 0x3fd356adU, 0x4015a680U, 0x40029c6cU, 0x4015a680U,
+      0x40029c6cU, 0x4001a6afU, 0x00000000U, 0x4001a6afU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    4.8856692913385826,
+    3.1743307086614174,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x409c5767U, 0x00000000U, 0x409c5767U, 0x40040164U,
+      0x4035bc6fU, 0x40040164U, 0x4035bc6fU, 0x40185e2dU, 0x404f2176U, 0x40185e2dU,
+      0x401c5767U, 0x404b283cU, 0x3fd31ab0U, 0x40185e2dU, 0x4002f260U, 0x40185e2dU,
+      0x4002f260U, 0x40040164U, 0x00000000U, 0x40040164U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    4.910314960629921,
+    3.2309448818897639,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x409d214dU, 0x00000000U, 0x409d214dU, 0x40065c18U,
+      0x4036fa46U, 0x40065c18U, 0x4036fa46U, 0x401b15daU, 0x4050d340U, 0x401b15daU,
+      0x401d214dU, 0x404ec7cdU, 0x3fd2deb3U, 0x401b15daU, 0x40034853U, 0x401b15daU,
+      0x40034853U, 0x40065c18U, 0x00000000U, 0x40065c18U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    4.9349606299212603,
+    3.2875590551181104,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x409deb33U, 0x00000000U, 0x409deb33U, 0x4008b6cdU,
+      0x4038381eU, 0x4008b6cdU, 0x4038381eU, 0x401dcd87U, 0x4052850aU, 0x401dcd87U,
+      0x401deb33U, 0x4052675eU, 0x3fd2a2b6U, 0x401dcd87U, 0x40039e47U, 0x401dcd87U,
+      0x40039e47U, 0x4008b6cdU, 0x00000000U, 0x4008b6cdU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    4.9596062992125987,
+    3.3441732283464565,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x409eb518U, 0x00000000U, 0x409eb518U, 0x400b1181U,
+      0x403975f6U, 0x400b1181U, 0x403975f6U, 0x40208533U, 0x405436d4U, 0x40208533U,
+      0x401eb518U, 0x405606efU, 0x3fd266b9U, 0x40208533U, 0x4003f43aU, 0x40208533U,
+      0x4003f43aU, 0x400b1181U, 0x00000000U, 0x400b1181U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    4.984251968503937,
+    3.400787401574803,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x409f7efeU, 0x00000000U, 0x409f7efeU, 0x400d6c36U,
+      0x403ab3ceU, 0x400d6c36U, 0x403ab3ceU, 0x40233ce0U, 0x4055e89eU, 0x40233ce0U,
+      0x401f7efeU, 0x4059a680U, 0x3fd22abcU, 0x40233ce0U, 0x40044a2eU, 0x40233ce0U,
+      0x40044a2eU, 0x400d6c36U, 0x00000000U, 0x400d6c36U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    5.0088976377952754,
+    3.4574015748031495,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a048e4U, 0x00000000U, 0x40a048e4U, 0x400fc6eaU,
+      0x403bf1a6U, 0x400fc6eaU, 0x403bf1a6U, 0x4025f48dU, 0x40579a68U, 0x4025f48dU,
+      0x402048e4U, 0x405d4611U, 0x3fd1eebfU, 0x4025f48dU, 0x4004a022U, 0x4025f48dU,
+      0x4004a022U, 0x400fc6eaU, 0x00000000U, 0x400fc6eaU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    5.0335433070866138,
+    3.514015748031496,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a112c9U, 0x00000000U, 0x40a112c9U, 0x4012219fU,
+      0x403d2f7eU, 0x4012219fU, 0x403d2f7eU, 0x4028ac3aU, 0x40594c32U, 0x4028ac3aU,
+      0x402112c9U, 0x4060e5a2U, 0x3fd1b2c2U, 0x4028ac3aU, 0x4004f615U, 0x4028ac3aU,
+      0x4004f615U, 0x4012219fU, 0x00000000U, 0x4012219fU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    5.0581889763779531,
+    3.5706299212598425,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a1dcafU, 0x00000000U, 0x40a1dcafU, 0x40147c53U,
+      0x403e6d56U, 0x40147c53U, 0x403e6d56U, 0x402b63e7U, 0x405afdfcU, 0x402b63e7U,
+      0x4021dcafU, 0x40648533U, 0x3fd176c5U, 0x402b63e7U, 0x40054c09U, 0x402b63e7U,
+      0x40054c09U, 0x40147c53U, 0x00000000U, 0x40147c53U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    5.0828346456692914,
+    3.627244094488189,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a2a695U, 0x00000000U, 0x40a2a695U, 0x4016d708U,
+      0x403fab2dU, 0x4016d708U, 0x403fab2dU, 0x402e1b93U, 0x405cafc6U, 0x402e1b93U,
+      0x4022a695U, 0x406824c4U, 0x3fd13ac7U, 0x402e1b93U, 0x4005a1fcU, 0x402e1b93U,
+      0x4005a1fcU, 0x4016d708U, 0x00000000U, 0x4016d708U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    5.1074803149606298,
+    3.6838582677165355,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a3707bU, 0x00000000U, 0x40a3707bU, 0x401931bcU,
+      0x4040e905U, 0x401931bcU, 0x4040e905U, 0x4030d340U, 0x405e6190U, 0x4030d340U,
+      0x4023707bU, 0x406bc455U, 0x3fd0fecaU, 0x4030d340U, 0x4005f7f0U, 0x4030d340U,
+      0x4005f7f0U, 0x401931bcU, 0x00000000U, 0x401931bcU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    5.1321259842519682,
+    3.740472440944882,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a43a60U, 0x00000000U, 0x40a43a60U, 0x401b8c71U,
+      0x404226ddU, 0x401b8c71U, 0x404226ddU, 0x40338aedU, 0x4060135aU, 0x40338aedU,
+      0x40243a60U, 0x406f63e7U, 0x3fd0c2cdU, 0x40338aedU, 0x40064de3U, 0x40338aedU,
+      0x40064de3U, 0x401b8c71U, 0x00000000U, 0x401b8c71U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    5.1567716535433075,
+    3.7970866141732285,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a50446U, 0x00000000U, 0x40a50446U, 0x401de725U,
+      0x404364b5U, 0x401de725U, 0x404364b5U, 0x4036429aU, 0x4061c524U, 0x4036429aU,
+      0x40250446U, 0x40730378U, 0x3fd086d0U, 0x4036429aU, 0x4006a3d7U, 0x4036429aU,
+      0x4006a3d7U, 0x401de725U, 0x00000000U, 0x401de725U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    5.1814173228346458,
+    3.853700787401575,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a5ce2cU, 0x00000000U, 0x40a5ce2cU, 0x402041daU,
+      0x4044a28dU, 0x402041daU, 0x4044a28dU, 0x4038fa46U, 0x406376eeU, 0x4038fa46U,
+      0x4025ce2cU, 0x4076a309U, 0x3fd04ad3U, 0x4038fa46U, 0x4006f9cbU, 0x4038fa46U,
+      0x4006f9cbU, 0x402041daU, 0x00000000U, 0x402041daU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    5.2060629921259842,
+    3.9103149606299215,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a69811U, 0x00000000U, 0x40a69811U, 0x40229c8eU,
+      0x4045e065U, 0x40229c8eU, 0x4045e065U, 0x403bb1f3U, 0x406528b8U, 0x403bb1f3U,
+      0x40269811U, 0x407a429aU, 0x3fd00ed6U, 0x403bb1f3U, 0x40074fbeU, 0x403bb1f3U,
+      0x40074fbeU, 0x40229c8eU, 0x00000000U, 0x40229c8eU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    5.2307086614173226,
+    3.9669291338582675,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a761f7U, 0x00000000U, 0x40a761f7U, 0x4024f743U,
+      0x40471e3cU, 0x4024f743U, 0x40471e3cU, 0x403e69a0U, 0x4066da82U, 0x403e69a0U,
+      0x402761f7U, 0x407de22bU, 0x3fcfd2d9U, 0x403e69a0U, 0x4007a5b2U, 0x403e69a0U,
+      0x4007a5b2U, 0x4024f743U, 0x00000000U, 0x4024f743U,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    5.8332283464566927,
+    3.741259842519685,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40baa9ceU, 0x00000000U, 0x4078e2baU, 0x3f9fa020U,
+      0x3f9fa020U, 0x3f9fa020U, 0x3f9fa020U, 0x403c4048U, 0x00000000U, 0x406f70cdU,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    5.8578740157480311,
+    3.7978740157480315,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40bb73b4U, 0x00000000U, 0x4079efedU, 0x3fa20a7fU,
+      0x3fa20a7fU, 0x3fa20a7fU, 0x3fa20a7fU, 0x403e890fU, 0x00000000U, 0x4073105eU,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    5.8825196850393704,
+    3.854488188976378,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40bc3d9aU, 0x00000000U, 0x407afd1fU, 0x3fa474deU,
+      0x3fa474deU, 0x3fa474deU, 0x3fa474deU, 0x4040cec1U, 0x00000000U, 0x4076afefU,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    5.9071653543307088,
+    3.9111023622047245,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40bd0780U, 0x00000000U, 0x407c0a52U, 0x3fa6df3dU,
+      0x3fa6df3dU, 0x3fa6df3dU, 0x3fa6df3dU, 0x40431169U, 0x00000000U, 0x407a4f80U,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    5.9318110236220472,
+    3.967716535433071,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40bdd165U, 0x00000000U, 0x407d1785U, 0x3fa9499dU,
+      0x3fa9499dU, 0x3fa9499dU, 0x3fa9499dU, 0x40455111U, 0x00000000U, 0x407def11U,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    5.9564566929133855,
+    4.0243307086614175,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40be9b4bU, 0x00000000U, 0x407e24b7U, 0x3fabb3fcU,
+      0x3fabb3fcU, 0x3fabb3fcU, 0x3fabb3fcU, 0x40478dc1U, 0x00000000U, 0x4080c751U,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    5.9811023622047248,
+    4.0809448818897636,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40bf6531U, 0x00000000U, 0x407f31eaU, 0x3fae1e5bU,
+      0x3fae1e5bU, 0x3fae1e5bU, 0x3fae1e5bU, 0x4049c784U, 0x00000000U, 0x4082971aU,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    6.0057480314960632,
+    4.1375590551181105,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40c02f16U, 0x00000000U, 0x40801f8eU, 0x3fb088baU,
+      0x3fb088baU, 0x3fb088baU, 0x3fb088baU, 0x404bfe62U, 0x00000000U, 0x408466e2U,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    6.0303937007874016,
+    4.1941732283464566,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40c0f8fcU, 0x00000000U, 0x4080a628U, 0x3fb2f319U,
+      0x3fb2f319U, 0x3fb2f319U, 0x3fb2f319U, 0x404e3265U, 0x00000000U, 0x408636abU,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    6.0550393700787399,
+    4.2507874015748035,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40c1c2e2U, 0x00000000U, 0x40812cc1U, 0x3fb55d78U,
+      0x3fb55d78U, 0x3fb55d78U, 0x3fb55d78U, 0x40506395U, 0x00000000U, 0x40880673U,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    6.0796850393700783,
+    4.3074015748031496,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40c28cc8U, 0x00000000U, 0x4081b35aU, 0x3fb7c7d7U,
+      0x3fb7c7d7U, 0x3fb7c7d7U, 0x3fb7c7d7U, 0x405291fcU, 0x00000000U, 0x4089d63cU,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    6.1043307086614176,
+    4.3640157480314965,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40c356adU, 0x00000000U, 0x408239f4U, 0x3fba3236U,
+      0x3fba3236U, 0x3fba3236U, 0x3fba3236U, 0x4054bda1U, 0x00000000U, 0x408ba604U,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    6.128976377952756,
+    4.4206299212598426,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40c42093U, 0x00000000U, 0x4082c08dU, 0x3fbc9c96U,
+      0x3fbc9c96U, 0x3fbc9c96U, 0x3fbc9c96U, 0x4056e68eU, 0x00000000U, 0x408d75cdU,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    6.1536220472440943,
+    4.4772440944881886,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40c4ea79U, 0x00000000U, 0x40834726U, 0x3fbf06f5U,
+      0x3fbf06f5U, 0x3fbf06f5U, 0x3fbf06f5U, 0x40590ccbU, 0x00000000U, 0x408f4595U,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    6.1782677165354327,
+    4.5338582677165356,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40c5b45eU, 0x00000000U, 0x4083cdc0U, 0x3fc17154U,
+      0x3fc17154U, 0x3fc17154U, 0x3fc17154U, 0x405b3060U, 0x00000000U, 0x4091155eU,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    6.202913385826772,
+    4.5904724409448816,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40c67e44U, 0x00000000U, 0x40845459U, 0x3fc3dbb3U,
+      0x3fc3dbb3U, 0x3fc3dbb3U, 0x3fc3dbb3U, 0x405d5155U, 0x00000000U, 0x4092e526U,
+    ],
+  )
+  check_formula_preset_path(
+    "heptagon",
+    6.8054330708661421,
+    4.3648031496062991,
+    None,
+    [
+      0xb7946aecU, 0x4033a672U, 0x3f2c87c3U, 0x3f5d504aU, 0x4059c61cU, 0x00000000U,
+      0x40c43523U, 0x3f5d504aU, 0x40d9c641U, 0x4033a672U, 0x409d588dU, 0x408baca8U,
+      0x3ff1b63aU, 0x408baca8U,
+    ],
+  )
+  check_formula_preset_path(
+    "heptagon",
+    6.8300787401574805,
+    4.4214173228346461,
+    None,
+    [
+      0xb794f485U, 0x4035faf8U, 0x3f2d27b7U, 0x3f602f28U, 0x405a9001U, 0x00000000U,
+      0x40c4eb0aU, 0x3f602f28U, 0x40da9027U, 0x4035faf8U, 0x409dea6dU, 0x408d7c71U,
+      0x3ff29651U, 0x408d7c71U,
+    ],
+  )
+  check_formula_preset_path(
+    "heptagon",
+    6.8547244094488189,
+    4.4780314960629921,
+    None,
+    [
+      0xb7957e1eU, 0x40384f7eU, 0x3f2dc7abU, 0x3f630e06U, 0x405b59e7U, 0x00000000U,
+      0x40c5a0f2U, 0x3f630e06U, 0x40db5a0cU, 0x40384f7eU, 0x409e7c4dU, 0x408f4c3aU,
+      0x3ff37668U, 0x408f4c3aU,
+    ],
+  )
+  check_formula_preset_path(
+    "heptagon",
+    6.8793700787401573,
+    4.5346456692913382,
+    None,
+    [
+      0xb79607b7U, 0x403aa404U, 0x3f2e679eU, 0x3f65ece4U, 0x405c23cdU, 0x00000000U,
+      0x40c656d9U, 0x3f65ece4U, 0x40dc23f2U, 0x403aa404U, 0x409f0e2dU, 0x40911c03U,
+      0x3ff4567fU, 0x40911c03U,
+    ],
+  )
+  check_formula_preset_path(
+    "heptagon",
+    6.9040157480314956,
+    4.5912598425196851,
+    None,
+    [
+      0xb7969150U, 0x403cf88aU, 0x3f2f0792U, 0x3f68cbc2U, 0x405cedb2U, 0x00000000U,
+      0x40c70cc0U, 0x3f68cbc2U, 0x40dcedd8U, 0x403cf88aU, 0x409fa00dU, 0x4092ebccU,
+      0x3ff53696U, 0x4092ebccU,
+    ],
+  )
+  check_formula_preset_path(
+    "heptagon",
+    6.9286614173228349,
+    4.6478740157480312,
+    None,
+    [
+      0xb7971ae9U, 0x403f4d11U, 0x3f2fa786U, 0x3f6baaa0U, 0x405db798U, 0x00000000U,
+      0x40c7c2a7U, 0x3f6baaa0U, 0x40ddb7beU, 0x403f4d11U, 0x40a031edU, 0x4094bb96U,
+      0x3ff616aeU, 0x4094bb96U,
+    ],
+  )
+  check_formula_preset_path(
+    "heptagon",
+    6.9533070866141733,
+    4.7044881889763781,
+    None,
+    [
+      0xb797a482U, 0x4041a197U, 0x3f30477aU, 0x3f6e897eU, 0x405e817eU, 0x00000000U,
+      0x40c8788fU, 0x3f6e897eU, 0x40de81a4U, 0x4041a197U, 0x40a0c3cdU, 0x40968b5fU,
+      0x3ff6f6c5U, 0x40968b5fU,
+    ],
+  )
+  check_formula_preset_path(
+    "heptagon",
+    6.9779527559055117,
+    4.7611023622047242,
+    None,
+    [
+      0xb7982e1bU, 0x4043f61dU, 0x3f30e76eU, 0x3f71685cU, 0x405f4b64U, 0x00000000U,
+      0x40c92e76U, 0x3f71685cU, 0x40df4b8aU, 0x4043f61dU, 0x40a155adU, 0x40985b28U,
+      0x3ff7d6dcU, 0x40985b28U,
+    ],
+  )
+  check_formula_preset_path(
+    "heptagon",
+    7.0025984251968501,
+    4.8177165354330711,
+    None,
+    [
+      0xb798b7b4U, 0x40464aa3U, 0x3f318761U, 0x3f74473aU, 0x40601549U, 0x00000000U,
+      0x40c9e45dU, 0x3f74473aU, 0x40e0156fU, 0x40464aa3U, 0x40a1e78dU, 0x409a2af1U,
+      0x3ff8b6f3U, 0x409a2af1U,
+    ],
+  )
+  check_formula_preset_path(
+    "heptagon",
+    7.0272440944881893,
+    4.8743307086614172,
+    None,
+    [
+      0xb799414dU, 0x40489f29U, 0x3f322755U, 0x3f772617U, 0x4060df2fU, 0x00000000U,
+      0x40ca9a44U, 0x3f772617U, 0x40e0df55U, 0x40489f29U, 0x40a2796dU, 0x409bfabaU,
+      0x3ff9970aU, 0x409bfabaU,
+    ],
+  )
+  check_formula_preset_path(
+    "heptagon",
+    7.0518897637795277,
+    4.9309448818897641,
+    None,
+    [
+      0xb799cae6U, 0x404af3b0U, 0x3f32c749U, 0x3f7a04f5U, 0x4061a915U, 0x00000000U,
+      0x40cb502cU, 0x3f7a04f5U, 0x40e1a93bU, 0x404af3b0U, 0x40a30b4dU, 0x409dca83U,
+      0x3ffa7721U, 0x409dca83U,
+    ],
+  )
+  check_formula_preset_path(
+    "heptagon",
+    7.0765354330708661,
+    4.9875590551181102,
+    None,
+    [
+      0xb79a547fU, 0x404d4836U, 0x3f33673dU, 0x3f7ce3d3U, 0x406272faU, 0x00000000U,
+      0x40cc0613U, 0x3f7ce3d3U, 0x40e27321U, 0x404d4836U, 0x40a39d2cU, 0x409f9a4dU,
+      0x3ffb5738U, 0x409f9a4dU,
+    ],
+  )
+  check_formula_preset_path(
+    "heptagon",
+    7.1011811023622045,
+    5.0441732283464571,
+    None,
+    [
+      0xb79ade18U, 0x404f9cbcU, 0x3f340730U, 0x3f7fc2b1U, 0x40633ce0U, 0x00000000U,
+      0x40ccbbfaU, 0x3f7fc2b1U, 0x40e33d07U, 0x404f9cbcU, 0x40a42f0cU, 0x40a16a16U,
+      0x3ffc374fU, 0x40a16a16U,
+    ],
+  )
+  check_formula_preset_path(
+    "heptagon",
+    7.1258267716535437,
+    5.1007874015748031,
+    None,
+    [
+      0xb79b67b1U, 0x4051f142U, 0x3f34a724U, 0x3f8150c8U, 0x406406c6U, 0x00000000U,
+      0x40cd71e1U, 0x3f8150c8U, 0x40e406edU, 0x4051f142U, 0x40a4c0ecU, 0x40a339dfU,
+      0x3ffd1766U, 0x40a339dfU,
+    ],
+  )
+  check_formula_preset_path(
+    "heptagon",
+    7.1504724409448821,
+    5.1574015748031492,
+    None,
+    [
+      0xb79bf14aU, 0x405445c9U, 0x3f354718U, 0x3f82c036U, 0x4064d0acU, 0x00000000U,
+      0x40ce27c9U, 0x3f82c036U, 0x40e4d0d3U, 0x405445c9U, 0x40a552ccU, 0x40a509a8U,
+      0x3ffdf77dU, 0x40a509a8U,
+    ],
+  )
+  check_formula_preset_path(
+    "heptagon",
+    7.1751181102362205,
+    5.2140157480314961,
+    None,
+    [
+      0xb79c7ae3U, 0x40569a4fU, 0x3f35e70cU, 0x3f842fa5U, 0x40659a91U, 0x00000000U,
+      0x40ceddb0U, 0x3f842fa5U, 0x40e59ab8U, 0x40569a4fU, 0x40a5e4acU, 0x40a6d971U,
+      0x3ffed794U, 0x40a6d971U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    7.7776377952755906,
+    4.9883464566929137,
+    None,
+    [
+      0x00000000U, 0x401fa089U, 0x401fa089U, 0x00000000U, 0x401fa089U, 0x3f9fa089U,
+      0x40f8e269U, 0x3f9fa089U, 0x40f8e269U, 0x406f70cdU, 0x401fa089U, 0x406f70cdU,
+      0x401fa089U, 0x409fa089U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    7.802283464566929,
+    5.0449606299212597,
+    None,
+    [
+      0x00000000U, 0x40217051U, 0x40217051U, 0x00000000U, 0x40217051U, 0x3fa17051U,
+      0x40f9ac4eU, 0x3fa17051U, 0x40f9ac4eU, 0x4072287aU, 0x40217051U, 0x4072287aU,
+      0x40217051U, 0x40a17051U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    7.8269291338582674,
+    5.1015748031496067,
+    None,
+    [
+      0x00000000U, 0x4023401aU, 0x4023401aU, 0x00000000U, 0x4023401aU, 0x3fa3401aU,
+      0x40fa7634U, 0x3fa3401aU, 0x40fa7634U, 0x4074e027U, 0x4023401aU, 0x4074e027U,
+      0x4023401aU, 0x40a3401aU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    7.8515748031496067,
+    5.1581889763779527,
+    None,
+    [
+      0x00000000U, 0x40250fe2U, 0x40250fe2U, 0x00000000U, 0x40250fe2U, 0x3fa50fe2U,
+      0x40fb401aU, 0x3fa50fe2U, 0x40fb401aU, 0x407797d3U, 0x40250fe2U, 0x407797d3U,
+      0x40250fe2U, 0x40a50fe2U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    7.876220472440945,
+    5.2148031496062996,
+    None,
+    [
+      0x00000000U, 0x4026dfabU, 0x4026dfabU, 0x00000000U, 0x4026dfabU, 0x3fa6dfabU,
+      0x40fc0a00U, 0x3fa6dfabU, 0x40fc0a00U, 0x407a4f80U, 0x4026dfabU, 0x407a4f80U,
+      0x4026dfabU, 0x40a6dfabU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    7.9008661417322834,
+    5.2714173228346457,
+    None,
+    [
+      0x00000000U, 0x4028af73U, 0x4028af73U, 0x00000000U, 0x4028af73U, 0x3fa8af73U,
+      0x40fcd3e5U, 0x3fa8af73U, 0x40fcd3e5U, 0x407d072dU, 0x4028af73U, 0x407d072dU,
+      0x4028af73U, 0x40a8af73U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    7.9255118110236218,
+    5.3280314960629918,
+    None,
+    [
+      0x00000000U, 0x402a7f3cU, 0x402a7f3cU, 0x00000000U, 0x402a7f3cU, 0x3faa7f3cU,
+      0x40fd9dcbU, 0x3faa7f3cU, 0x40fd9dcbU, 0x407fbedaU, 0x402a7f3cU, 0x407fbedaU,
+      0x402a7f3cU, 0x40aa7f3cU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    7.9501574803149611,
+    5.3846456692913387,
+    None,
+    [
+      0x00000000U, 0x402c4f04U, 0x402c4f04U, 0x00000000U, 0x402c4f04U, 0x3fac4f04U,
+      0x40fe67b1U, 0x3fac4f04U, 0x40fe67b1U, 0x40813b43U, 0x402c4f04U, 0x40813b43U,
+      0x402c4f04U, 0x40ac4f04U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    7.9748031496062994,
+    5.4412598425196848,
+    None,
+    [
+      0x00000000U, 0x402e1ecdU, 0x402e1ecdU, 0x00000000U, 0x402e1ecdU, 0x3fae1ecdU,
+      0x40ff3196U, 0x3fae1ecdU, 0x40ff3196U, 0x4082971aU, 0x402e1ecdU, 0x4082971aU,
+      0x402e1ecdU, 0x40ae1ecdU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    7.9994488188976378,
+    5.4978740157480317,
+    None,
+    [
+      0x00000000U, 0x402fee95U, 0x402fee95U, 0x00000000U, 0x402fee95U, 0x3fafee95U,
+      0x40fffb7cU, 0x3fafee95U, 0x40fffb7cU, 0x4083f2f0U, 0x402fee95U, 0x4083f2f0U,
+      0x402fee95U, 0x40afee95U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    8.0240944881889771,
+    5.5544881889763777,
+    None,
+    [
+      0x00000000U, 0x4031be5eU, 0x4031be5eU, 0x00000000U, 0x4031be5eU, 0x3fb1be5eU,
+      0x410062b1U, 0x3fb1be5eU, 0x410062b1U, 0x40854ec7U, 0x4031be5eU, 0x40854ec7U,
+      0x4031be5eU, 0x40b1be5eU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    8.0487401574803155,
+    5.6111023622047247,
+    None,
+    [
+      0x00000000U, 0x40338e27U, 0x40338e27U, 0x00000000U, 0x40338e27U, 0x3fb38e27U,
+      0x4100c7a4U, 0x3fb38e27U, 0x4100c7a4U, 0x4086aa9dU, 0x40338e27U, 0x4086aa9dU,
+      0x40338e27U, 0x40b38e27U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    8.0733858267716538,
+    5.6677165354330707,
+    None,
+    [
+      0x00000000U, 0x40355defU, 0x40355defU, 0x00000000U, 0x40355defU, 0x3fb55defU,
+      0x41012c97U, 0x3fb55defU, 0x41012c97U, 0x40880673U, 0x40355defU, 0x40880673U,
+      0x40355defU, 0x40b55defU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    8.0980314960629922,
+    5.7243307086614177,
+    None,
+    [
+      0x00000000U, 0x40372db8U, 0x40372db8U, 0x00000000U, 0x40372db8U, 0x3fb72db8U,
+      0x41019189U, 0x3fb72db8U, 0x41019189U, 0x4089624aU, 0x40372db8U, 0x4089624aU,
+      0x40372db8U, 0x40b72db8U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    8.1226771653543306,
+    5.7809448818897637,
+    None,
+    [
+      0x00000000U, 0x4038fd80U, 0x4038fd80U, 0x00000000U, 0x4038fd80U, 0x3fb8fd80U,
+      0x4101f67cU, 0x3fb8fd80U, 0x4101f67cU, 0x408abe20U, 0x4038fd80U, 0x408abe20U,
+      0x4038fd80U, 0x40b8fd80U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    8.147322834645669,
+    5.8375590551181098,
+    None,
+    [
+      0x00000000U, 0x403acd49U, 0x403acd49U, 0x00000000U, 0x403acd49U, 0x3fbacd49U,
+      0x41025b6fU, 0x3fbacd49U, 0x41025b6fU, 0x408c19f6U, 0x403acd49U, 0x408c19f6U,
+      0x403acd49U, 0x40bacd49U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.7498425196850391,
+    5.6118897637795273,
+    None,
+    [
+      0x00000000U, 0x4033949aU, 0x3fb3949aU, 0x3fb3949aU, 0x3fb3949aU, 0x4006af73U,
+      0x40442012U, 0x4006af73U, 0x40442012U, 0x00000000U, 0x410bff5bU, 0x00000000U,
+      0x410bff5bU, 0x40b3949aU, 0x40442012U, 0x40b3949aU, 0x40442012U, 0x406079c0U,
+      0x3fb3949aU, 0x406079c0U, 0x3fb3949aU, 0x4086af73U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.7744881889763775,
+    5.6685039370078742,
+    None,
+    [
+      0x00000000U, 0x40356462U, 0x3fb56462U, 0x3fb56462U, 0x3fb56462U, 0x40080b4aU,
+      0x4044ad7dU, 0x40080b4aU, 0x4044ad7dU, 0x00000000U, 0x410c644eU, 0x00000000U,
+      0x410c644eU, 0x40b56462U, 0x4044ad7dU, 0x40b56462U, 0x4044ad7dU, 0x4062bd7bU,
+      0x3fb56462U, 0x4062bd7bU, 0x3fb56462U, 0x40880b4aU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.7991338582677159,
+    5.7251181102362203,
+    None,
+    [
+      0x00000000U, 0x4037342bU, 0x3fb7342bU, 0x3fb7342bU, 0x3fb7342bU, 0x40096720U,
+      0x40453ae9U, 0x40096720U, 0x40453ae9U, 0x00000000U, 0x410cc941U, 0x00000000U,
+      0x410cc941U, 0x40b7342bU, 0x40453ae9U, 0x40b7342bU, 0x40453ae9U, 0x40650136U,
+      0x3fb7342bU, 0x40650136U, 0x3fb7342bU, 0x40896720U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.8237795275590543,
+    5.7817322834645672,
+    None,
+    [
+      0x00000000U, 0x403903f3U, 0x3fb903f3U, 0x3fb903f3U, 0x3fb903f3U, 0x400ac2f7U,
+      0x4045c855U, 0x400ac2f7U, 0x4045c855U, 0x00000000U, 0x410d2e33U, 0x00000000U,
+      0x410d2e33U, 0x40b903f3U, 0x4045c855U, 0x40b903f3U, 0x4045c855U, 0x406744f0U,
+      0x3fb903f3U, 0x406744f0U, 0x3fb903f3U, 0x408ac2f7U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.8484251968503944,
+    5.8383464566929133,
+    None,
+    [
+      0x00000000U, 0x403ad3bcU, 0x3fbad3bcU, 0x3fbad3bcU, 0x3fbad3bcU, 0x400c1ecdU,
+      0x404655c1U, 0x400c1ecdU, 0x404655c1U, 0x00000000U, 0x410d9326U, 0x00000000U,
+      0x410d9326U, 0x40bad3bcU, 0x404655c1U, 0x40bad3bcU, 0x404655c1U, 0x406988abU,
+      0x3fbad3bcU, 0x406988abU, 0x3fbad3bcU, 0x408c1ecdU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.8730708661417328,
+    5.8949606299212602,
+    None,
+    [
+      0x00000000U, 0x403ca384U, 0x3fbca384U, 0x3fbca384U, 0x3fbca384U, 0x400d7aa3U,
+      0x4046e32dU, 0x400d7aa3U, 0x4046e32dU, 0x00000000U, 0x410df819U, 0x00000000U,
+      0x410df819U, 0x40bca384U, 0x4046e32dU, 0x40bca384U, 0x4046e32dU, 0x406bcc66U,
+      0x3fbca384U, 0x406bcc66U, 0x3fbca384U, 0x408d7aa3U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.8977165354330712,
+    5.9515748031496063,
+    None,
+    [
+      0x00000000U, 0x403e734dU, 0x3fbe734dU, 0x3fbe734dU, 0x3fbe734dU, 0x400ed67aU,
+      0x40477098U, 0x400ed67aU, 0x40477098U, 0x00000000U, 0x410e5d0cU, 0x00000000U,
+      0x410e5d0cU, 0x40be734dU, 0x40477098U, 0x40be734dU, 0x40477098U, 0x406e1020U,
+      0x3fbe734dU, 0x406e1020U, 0x3fbe734dU, 0x408ed67aU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.9223622047244096,
+    6.0081889763779524,
+    None,
+    [
+      0x00000000U, 0x40404316U, 0x3fc04316U, 0x3fc04316U, 0x3fc04316U, 0x40103250U,
+      0x4047fe04U, 0x40103250U, 0x4047fe04U, 0x00000000U, 0x410ec1ffU, 0x00000000U,
+      0x410ec1ffU, 0x40c04316U, 0x4047fe04U, 0x40c04316U, 0x4047fe04U, 0x407053dbU,
+      0x3fc04316U, 0x407053dbU, 0x3fc04316U, 0x40903250U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.9470078740157479,
+    6.0648031496062993,
+    None,
+    [
+      0x00000000U, 0x404212deU, 0x3fc212deU, 0x3fc212deU, 0x3fc212deU, 0x40118e27U,
+      0x40488b70U, 0x40118e27U, 0x40488b70U, 0x00000000U, 0x410f26f2U, 0x00000000U,
+      0x410f26f2U, 0x40c212deU, 0x40488b70U, 0x40c212deU, 0x40488b70U, 0x40729796U,
+      0x3fc212deU, 0x40729796U, 0x3fc212deU, 0x40918e27U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.9716535433070863,
+    6.1214173228346453,
+    None,
+    [
+      0x00000000U, 0x4043e2a7U, 0x3fc3e2a7U, 0x3fc3e2a7U, 0x3fc3e2a7U, 0x4012e9fdU,
+      0x404918dcU, 0x4012e9fdU, 0x404918dcU, 0x00000000U, 0x410f8be5U, 0x00000000U,
+      0x410f8be5U, 0x40c3e2a7U, 0x404918dcU, 0x40c3e2a7U, 0x404918dcU, 0x4074db50U,
+      0x3fc3e2a7U, 0x4074db50U, 0x3fc3e2a7U, 0x4092e9fdU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.9962992125984247,
+    6.1780314960629923,
+    None,
+    [
+      0x00000000U, 0x4045b26fU, 0x3fc5b26fU, 0x3fc5b26fU, 0x3fc5b26fU, 0x401445d3U,
+      0x4049a647U, 0x401445d3U, 0x4049a647U, 0x00000000U, 0x410ff0d7U, 0x00000000U,
+      0x410ff0d7U, 0x40c5b26fU, 0x4049a647U, 0x40c5b26fU, 0x4049a647U, 0x40771f0bU,
+      0x3fc5b26fU, 0x40771f0bU, 0x3fc5b26fU, 0x409445d3U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    9.0209448818897631,
+    6.2346456692913383,
+    None,
+    [
+      0x00000000U, 0x40478238U, 0x3fc78238U, 0x3fc78238U, 0x3fc78238U, 0x4015a1aaU,
+      0x404a33b3U, 0x4015a1aaU, 0x404a33b3U, 0x00000000U, 0x411055caU, 0x00000000U,
+      0x411055caU, 0x40c78238U, 0x404a33b3U, 0x40c78238U, 0x404a33b3U, 0x407962c6U,
+      0x3fc78238U, 0x407962c6U, 0x3fc78238U, 0x4095a1aaU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    9.0455905511811032,
+    6.2912598425196853,
+    None,
+    [
+      0x00000000U, 0x40495200U, 0x3fc95200U, 0x3fc95200U, 0x3fc95200U, 0x4016fd80U,
+      0x404ac11fU, 0x4016fd80U, 0x404ac11fU, 0x00000000U, 0x4110babdU, 0x00000000U,
+      0x4110babdU, 0x40c95200U, 0x404ac11fU, 0x40c95200U, 0x404ac11fU, 0x407ba680U,
+      0x3fc95200U, 0x407ba680U, 0x3fc95200U, 0x4096fd80U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    9.0702362204724416,
+    6.3478740157480313,
+    None,
+    [
+      0x00000000U, 0x404b21c9U, 0x3fcb21c9U, 0x3fcb21c9U, 0x3fcb21c9U, 0x40185957U,
+      0x404b4e8bU, 0x40185957U, 0x404b4e8bU, 0x00000000U, 0x41111fb0U, 0x00000000U,
+      0x41111fb0U, 0x40cb21c9U, 0x404b4e8bU, 0x40cb21c9U, 0x404b4e8bU, 0x407dea3bU,
+      0x3fcb21c9U, 0x407dea3bU, 0x3fcb21c9U, 0x40985957U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    9.09488188976378,
+    6.4044881889763783,
+    None,
+    [
+      0x00000000U, 0x404cf191U, 0x3fccf191U, 0x3fccf191U, 0x3fccf191U, 0x4019b52dU,
+      0x404bdbf7U, 0x4019b52dU, 0x404bdbf7U, 0x00000000U, 0x411184a3U, 0x00000000U,
+      0x411184a3U, 0x40ccf191U, 0x404bdbf7U, 0x40ccf191U, 0x404bdbf7U, 0x408016fbU,
+      0x3fccf191U, 0x408016fbU, 0x3fccf191U, 0x4099b52dU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    9.1195275590551184,
+    6.4611023622047243,
+    None,
+    [
+      0x00000000U, 0x404ec15aU, 0x3fcec15aU, 0x3fcec15aU, 0x3fcec15aU, 0x401b1103U,
+      0x404c6962U, 0x401b1103U, 0x404c6962U, 0x00000000U, 0x4111e996U, 0x00000000U,
+      0x4111e996U, 0x40cec15aU, 0x404c6962U, 0x40cec15aU, 0x404c6962U, 0x408138d8U,
+      0x3fcec15aU, 0x408138d8U, 0x3fcec15aU, 0x409b1103U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.7220472440944885,
+    6.2354330708661418,
+    None,
+    [
+      0x00000000U, 0x404788abU, 0x404788abU, 0x00000000U, 0x404788abU, 0x3fc788abU,
+      0x40d356adU, 0x3fc788abU, 0x40d356adU, 0x00000000U, 0x411b8d81U, 0x404788abU,
+      0x40d356adU, 0x40c788abU, 0x40d356adU, 0x4095a680U, 0x404788abU, 0x4095a680U,
+      0x404788abU, 0x40c788abU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.7466929133858269,
+    6.2920472440944879,
+    None,
+    [
+      0x00000000U, 0x40495873U, 0x40495873U, 0x00000000U, 0x40495873U, 0x3fc95873U,
+      0x40d338afU, 0x3fc95873U, 0x40d338afU, 0x00000000U, 0x411bf274U, 0x40495873U,
+      0x40d338afU, 0x40c95873U, 0x40d338afU, 0x40970257U, 0x40495873U, 0x40970257U,
+      0x40495873U, 0x40c95873U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.7713385826771653,
+    6.3486614173228348,
+    None,
+    [
+      0x00000000U, 0x404b283cU, 0x404b283cU, 0x00000000U, 0x404b283cU, 0x3fcb283cU,
+      0x40d31ab0U, 0x3fcb283cU, 0x40d31ab0U, 0x00000000U, 0x411c5767U, 0x404b283cU,
+      0x40d31ab0U, 0x40cb283cU, 0x40d31ab0U, 0x40985e2dU, 0x404b283cU, 0x40985e2dU,
+      0x404b283cU, 0x40cb283cU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.7959842519685036,
+    6.4052755905511809,
+    None,
+    [
+      0x00000000U, 0x404cf805U, 0x404cf805U, 0x00000000U, 0x404cf805U, 0x3fccf805U,
+      0x40d2fcb2U, 0x3fccf805U, 0x40d2fcb2U, 0x00000000U, 0x411cbc5aU, 0x404cf805U,
+      0x40d2fcb2U, 0x40ccf805U, 0x40d2fcb2U, 0x4099ba03U, 0x404cf805U, 0x4099ba03U,
+      0x404cf805U, 0x40ccf805U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.820629921259842,
+    6.4618897637795278,
+    None,
+    [
+      0x00000000U, 0x404ec7cdU, 0x404ec7cdU, 0x00000000U, 0x404ec7cdU, 0x3fcec7cdU,
+      0x40d2deb3U, 0x3fcec7cdU, 0x40d2deb3U, 0x00000000U, 0x411d214dU, 0x404ec7cdU,
+      0x40d2deb3U, 0x40cec7cdU, 0x40d2deb3U, 0x409b15daU, 0x404ec7cdU, 0x409b15daU,
+      0x404ec7cdU, 0x40cec7cdU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.8452755905511804,
+    6.5185039370078739,
+    None,
+    [
+      0x00000000U, 0x40509796U, 0x40509796U, 0x00000000U, 0x40509796U, 0x3fd09796U,
+      0x40d2c0b5U, 0x3fd09796U, 0x40d2c0b5U, 0x00000000U, 0x411d8640U, 0x40509796U,
+      0x40d2c0b5U, 0x40d09796U, 0x40d2c0b5U, 0x409c71b0U, 0x40509796U, 0x409c71b0U,
+      0x40509796U, 0x40d09796U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.8699212598425206,
+    6.5751181102362208,
+    None,
+    [
+      0x00000000U, 0x4052675eU, 0x4052675eU, 0x00000000U, 0x4052675eU, 0x3fd2675eU,
+      0x40d2a2b6U, 0x3fd2675eU, 0x40d2a2b6U, 0x00000000U, 0x411deb33U, 0x4052675eU,
+      0x40d2a2b6U, 0x40d2675eU, 0x40d2a2b6U, 0x409dcd87U, 0x4052675eU, 0x409dcd87U,
+      0x4052675eU, 0x40d2675eU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.8945669291338589,
+    6.6317322834645669,
+    None,
+    [
+      0x00000000U, 0x40543727U, 0x40543727U, 0x00000000U, 0x40543727U, 0x3fd43727U,
+      0x40d284b8U, 0x3fd43727U, 0x40d284b8U, 0x00000000U, 0x411e5025U, 0x40543727U,
+      0x40d284b8U, 0x40d43727U, 0x40d284b8U, 0x409f295dU, 0x40543727U, 0x409f295dU,
+      0x40543727U, 0x40d43727U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.9192125984251973,
+    6.6883464566929129,
+    None,
+    [
+      0x00000000U, 0x405606efU, 0x405606efU, 0x00000000U, 0x405606efU, 0x3fd606efU,
+      0x40d266b9U, 0x3fd606efU, 0x40d266b9U, 0x00000000U, 0x411eb518U, 0x405606efU,
+      0x40d266b9U, 0x40d606efU, 0x40d266b9U, 0x40a08533U, 0x405606efU, 0x40a08533U,
+      0x405606efU, 0x40d606efU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.9438582677165357,
+    6.7449606299212599,
+    None,
+    [
+      0x00000000U, 0x4057d6b8U, 0x4057d6b8U, 0x00000000U, 0x4057d6b8U, 0x3fd7d6b8U,
+      0x40d248baU, 0x3fd7d6b8U, 0x40d248baU, 0x00000000U, 0x411f1a0bU, 0x4057d6b8U,
+      0x40d248baU, 0x40d7d6b8U, 0x40d248baU, 0x40a1e10aU, 0x4057d6b8U, 0x40a1e10aU,
+      0x4057d6b8U, 0x40d7d6b8U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.9685039370078741,
+    6.8015748031496059,
+    None,
+    [
+      0x00000000U, 0x4059a680U, 0x4059a680U, 0x00000000U, 0x4059a680U, 0x3fd9a680U,
+      0x40d22abcU, 0x3fd9a680U, 0x40d22abcU, 0x00000000U, 0x411f7efeU, 0x4059a680U,
+      0x40d22abcU, 0x40d9a680U, 0x40d22abcU, 0x40a33ce0U, 0x4059a680U, 0x40a33ce0U,
+      0x4059a680U, 0x40d9a680U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.9931496062992125,
+    6.8581889763779529,
+    None,
+    [
+      0x00000000U, 0x405b7649U, 0x405b7649U, 0x00000000U, 0x405b7649U, 0x3fdb7649U,
+      0x40d20cbdU, 0x3fdb7649U, 0x40d20cbdU, 0x00000000U, 0x411fe3f1U, 0x405b7649U,
+      0x40d20cbdU, 0x40db7649U, 0x40d20cbdU, 0x40a498b7U, 0x405b7649U, 0x40a498b7U,
+      0x405b7649U, 0x40db7649U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    10.017795275590551,
+    6.9148031496062989,
+    None,
+    [
+      0x00000000U, 0x405d4611U, 0x405d4611U, 0x00000000U, 0x405d4611U, 0x3fdd4611U,
+      0x40d1eebfU, 0x3fdd4611U, 0x40d1eebfU, 0x00000000U, 0x412048e4U, 0x405d4611U,
+      0x40d1eebfU, 0x40dd4611U, 0x40d1eebfU, 0x40a5f48dU, 0x405d4611U, 0x40a5f48dU,
+      0x405d4611U, 0x40dd4611U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    10.042440944881889,
+    6.9714173228346459,
+    None,
+    [
+      0x00000000U, 0x405f15daU, 0x405f15daU, 0x00000000U, 0x405f15daU, 0x3fdf15daU,
+      0x40d1d0c0U, 0x3fdf15daU, 0x40d1d0c0U, 0x00000000U, 0x4120add7U, 0x405f15daU,
+      0x40d1d0c0U, 0x40df15daU, 0x40d1d0c0U, 0x40a75063U, 0x405f15daU, 0x40a75063U,
+      0x405f15daU, 0x40df15daU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    10.067086614173228,
+    7.0280314960629919,
+    None,
+    [
+      0x00000000U, 0x4060e5a2U, 0x4060e5a2U, 0x00000000U, 0x4060e5a2U, 0x3fe0e5a2U,
+      0x40d1b2c2U, 0x3fe0e5a2U, 0x40d1b2c2U, 0x00000000U, 0x412112c9U, 0x4060e5a2U,
+      0x40d1b2c2U, 0x40e0e5a2U, 0x40d1b2c2U, 0x40a8ac3aU, 0x4060e5a2U, 0x40a8ac3aU,
+      0x4060e5a2U, 0x40e0e5a2U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    10.091732283464568,
+    7.0846456692913389,
+    None,
+    [
+      0x00000000U, 0x4062b56bU, 0x4062b56bU, 0x00000000U, 0x4062b56bU, 0x3fe2b56bU,
+      0x40d194c3U, 0x3fe2b56bU, 0x40d194c3U, 0x00000000U, 0x412177bcU, 0x4062b56bU,
+      0x40d194c3U, 0x40e2b56bU, 0x40d194c3U, 0x40aa0810U, 0x4062b56bU, 0x40aa0810U,
+      0x4062b56bU, 0x40e2b56bU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.694251968503938,
+    6.8589763779527555,
+    None,
+    [
+      0x00000000U, 0x405b7cbcU, 0x3fdb7cbcU, 0x3fdb7cbcU, 0x3fdb7cbcU, 0x40249d8dU,
+      0x4031880cU, 0x40249d8dU, 0x4031880cU, 0x00000000U, 0x40fd734aU, 0x00000000U,
+      0x40fd734aU, 0x40249d8dU, 0x410fac10U, 0x40249d8dU, 0x410fac10U, 0x3fdb7cbcU,
+      0x412b1ba8U, 0x405b7cbcU, 0x410fac10U, 0x40a49d8dU, 0x410fac10U, 0x40892df6U,
+      0x40fd734aU, 0x40892df6U, 0x40fd734aU, 0x40db7cbcU, 0x4031880cU, 0x40db7cbcU,
+      0x4031880cU, 0x40892df6U, 0x3fdb7cbcU, 0x40892df6U, 0x3fdb7cbcU, 0x40a49d8dU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.718897637795276,
+    6.9155905511811024,
+    None,
+    [
+      0x00000000U, 0x405d4c85U, 0x3fdd4c85U, 0x3fdd4c85U, 0x3fdd4c85U, 0x4025f963U,
+      0x4031f0c9U, 0x4025f963U, 0x4031f0c9U, 0x00000000U, 0x40fe08d1U, 0x00000000U,
+      0x40fe08d1U, 0x4025f963U, 0x410fd70aU, 0x4025f963U, 0x410fd70aU, 0x3fdd4c85U,
+      0x412b809bU, 0x405d4c85U, 0x410fd70aU, 0x40a5f963U, 0x410fd70aU, 0x408a4fd3U,
+      0x40fe08d1U, 0x408a4fd3U, 0x40fe08d1U, 0x40dd4c85U, 0x4031f0c9U, 0x40dd4c85U,
+      0x4031f0c9U, 0x408a4fd3U, 0x3fdd4c85U, 0x408a4fd3U, 0x3fdd4c85U, 0x40a5f963U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.743543307086615,
+    6.9722047244094485,
+    None,
+    [
+      0x00000000U, 0x405f1c4dU, 0x3fdf1c4dU, 0x3fdf1c4dU, 0x3fdf1c4dU, 0x4027553aU,
+      0x40325986U, 0x4027553aU, 0x40325986U, 0x00000000U, 0x40fe9e59U, 0x00000000U,
+      0x40fe9e59U, 0x4027553aU, 0x41100204U, 0x4027553aU, 0x41100204U, 0x3fdf1c4dU,
+      0x412be58eU, 0x405f1c4dU, 0x41100204U, 0x40a7553aU, 0x41100204U, 0x408b71b0U,
+      0x40fe9e59U, 0x408b71b0U, 0x40fe9e59U, 0x40df1c4dU, 0x40325986U, 0x40df1c4dU,
+      0x40325986U, 0x408b71b0U, 0x3fdf1c4dU, 0x408b71b0U, 0x3fdf1c4dU, 0x40a7553aU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.768188976377953,
+    7.0288188976377954,
+    None,
+    [
+      0x00000000U, 0x4060ec16U, 0x3fe0ec16U, 0x3fe0ec16U, 0x3fe0ec16U, 0x4028b110U,
+      0x4032c243U, 0x4028b110U, 0x4032c243U, 0x00000000U, 0x40ff33e0U, 0x00000000U,
+      0x40ff33e0U, 0x4028b110U, 0x41102cfeU, 0x4028b110U, 0x41102cfeU, 0x3fe0ec16U,
+      0x412c4a81U, 0x4060ec16U, 0x41102cfeU, 0x40a8b110U, 0x41102cfeU, 0x408c938eU,
+      0x40ff33e0U, 0x408c938eU, 0x40ff33e0U, 0x40e0ec16U, 0x4032c243U, 0x40e0ec16U,
+      0x4032c243U, 0x408c938eU, 0x3fe0ec16U, 0x408c938eU, 0x3fe0ec16U, 0x40a8b110U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.792834645669291,
+    7.0854330708661415,
+    None,
+    [
+      0x00000000U, 0x4062bbdeU, 0x3fe2bbdeU, 0x3fe2bbdeU, 0x3fe2bbdeU, 0x402a0ce7U,
+      0x40332b00U, 0x402a0ce7U, 0x40332b00U, 0x00000000U, 0x40ffc967U, 0x00000000U,
+      0x40ffc967U, 0x402a0ce7U, 0x411057f8U, 0x402a0ce7U, 0x411057f8U, 0x3fe2bbdeU,
+      0x412caf73U, 0x4062bbdeU, 0x411057f8U, 0x40aa0ce7U, 0x411057f8U, 0x408db56bU,
+      0x40ffc967U, 0x408db56bU, 0x40ffc967U, 0x40e2bbdeU, 0x40332b00U, 0x40e2bbdeU,
+      0x40332b00U, 0x408db56bU, 0x3fe2bbdeU, 0x408db56bU, 0x3fe2bbdeU, 0x40aa0ce7U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.81748031496063,
+    7.1420472440944884,
+    None,
+    [
+      0x00000000U, 0x40648ba7U, 0x3fe48ba7U, 0x3fe48ba7U, 0x3fe48ba7U, 0x402b68bdU,
+      0x403393bdU, 0x402b68bdU, 0x403393bdU, 0x00000000U, 0x41002f77U, 0x00000000U,
+      0x41002f77U, 0x402b68bdU, 0x411082f1U, 0x402b68bdU, 0x411082f1U, 0x3fe48ba7U,
+      0x412d1466U, 0x40648ba7U, 0x411082f1U, 0x40ab68bdU, 0x411082f1U, 0x408ed748U,
+      0x41002f77U, 0x408ed748U, 0x41002f77U, 0x40e48ba7U, 0x403393bdU, 0x40e48ba7U,
+      0x403393bdU, 0x408ed748U, 0x3fe48ba7U, 0x408ed748U, 0x3fe48ba7U, 0x40ab68bdU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.842125984251968,
+    7.1986614173228345,
+    None,
+    [
+      0x00000000U, 0x40665b6fU, 0x3fe65b6fU, 0x3fe65b6fU, 0x3fe65b6fU, 0x402cc493U,
+      0x4033fc7aU, 0x402cc493U, 0x4033fc7aU, 0x00000000U, 0x41007a3bU, 0x00000000U,
+      0x41007a3bU, 0x402cc493U, 0x4110adebU, 0x402cc493U, 0x4110adebU, 0x3fe65b6fU,
+      0x412d7959U, 0x40665b6fU, 0x4110adebU, 0x40acc493U, 0x4110adebU, 0x408ff925U,
+      0x41007a3bU, 0x408ff925U, 0x41007a3bU, 0x40e65b6fU, 0x4033fc7aU, 0x40e65b6fU,
+      0x4033fc7aU, 0x408ff925U, 0x3fe65b6fU, 0x408ff925U, 0x3fe65b6fU, 0x40acc493U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.866771653543307,
+    7.2552755905511814,
+    None,
+    [
+      0x00000000U, 0x40682b38U, 0x3fe82b38U, 0x3fe82b38U, 0x3fe82b38U, 0x402e206aU,
+      0x40346537U, 0x402e206aU, 0x40346537U, 0x00000000U, 0x4100c4feU, 0x00000000U,
+      0x4100c4feU, 0x402e206aU, 0x4110d8e5U, 0x402e206aU, 0x4110d8e5U, 0x3fe82b38U,
+      0x412dde4cU, 0x40682b38U, 0x4110d8e5U, 0x40ae206aU, 0x4110d8e5U, 0x40911b03U,
+      0x4100c4feU, 0x40911b03U, 0x4100c4feU, 0x40e82b38U, 0x40346537U, 0x40e82b38U,
+      0x40346537U, 0x40911b03U, 0x3fe82b38U, 0x40911b03U, 0x3fe82b38U, 0x40ae206aU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.891417322834645,
+    7.3118897637795275,
+    None,
+    [
+      0x00000000U, 0x4069fb00U, 0x3fe9fb00U, 0x3fe9fb00U, 0x3fe9fb00U, 0x402f7c40U,
+      0x4034cdf4U, 0x402f7c40U, 0x4034cdf4U, 0x00000000U, 0x41010fc2U, 0x00000000U,
+      0x41010fc2U, 0x402f7c40U, 0x411103dfU, 0x402f7c40U, 0x411103dfU, 0x3fe9fb00U,
+      0x412e433fU, 0x4069fb00U, 0x411103dfU, 0x40af7c40U, 0x411103dfU, 0x40923ce0U,
+      0x41010fc2U, 0x40923ce0U, 0x41010fc2U, 0x40e9fb00U, 0x4034cdf4U, 0x40e9fb00U,
+      0x4034cdf4U, 0x40923ce0U, 0x3fe9fb00U, 0x40923ce0U, 0x3fe9fb00U, 0x40af7c40U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.916062992125985,
+    7.3685039370078744,
+    None,
+    [
+      0x00000000U, 0x406bcac9U, 0x3febcac9U, 0x3febcac9U, 0x3febcac9U, 0x4030d817U,
+      0x403536b1U, 0x4030d817U, 0x403536b1U, 0x00000000U, 0x41015a86U, 0x00000000U,
+      0x41015a86U, 0x4030d817U, 0x41112ed9U, 0x4030d817U, 0x41112ed9U, 0x3febcac9U,
+      0x412ea832U, 0x406bcac9U, 0x41112ed9U, 0x40b0d817U, 0x41112ed9U, 0x40935ebdU,
+      0x41015a86U, 0x40935ebdU, 0x41015a86U, 0x40ebcac9U, 0x403536b1U, 0x40ebcac9U,
+      0x403536b1U, 0x40935ebdU, 0x3febcac9U, 0x40935ebdU, 0x3febcac9U, 0x40b0d817U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.940708661417323,
+    7.4251181102362205,
+    None,
+    [
+      0x00000000U, 0x406d9a91U, 0x3fed9a91U, 0x3fed9a91U, 0x3fed9a91U, 0x403233edU,
+      0x40359f6eU, 0x403233edU, 0x40359f6eU, 0x00000000U, 0x4101a549U, 0x00000000U,
+      0x4101a549U, 0x403233edU, 0x411159d2U, 0x403233edU, 0x411159d2U, 0x3fed9a91U,
+      0x412f0d25U, 0x406d9a91U, 0x411159d2U, 0x40b233edU, 0x411159d2U, 0x4094809bU,
+      0x4101a549U, 0x4094809bU, 0x4101a549U, 0x40ed9a91U, 0x40359f6eU, 0x40ed9a91U,
+      0x40359f6eU, 0x4094809bU, 0x3fed9a91U, 0x4094809bU, 0x3fed9a91U, 0x40b233edU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.965354330708662,
+    7.4817322834645665,
+    None,
+    [
+      0x00000000U, 0x406f6a5aU, 0x3fef6a5aU, 0x3fef6a5aU, 0x3fef6a5aU, 0x40338fc3U,
+      0x4036082bU, 0x40338fc3U, 0x4036082bU, 0x00000000U, 0x4101f00dU, 0x00000000U,
+      0x4101f00dU, 0x40338fc3U, 0x411184ccU, 0x40338fc3U, 0x411184ccU, 0x3fef6a5aU,
+      0x412f7217U, 0x406f6a5aU, 0x411184ccU, 0x40b38fc3U, 0x411184ccU, 0x4095a278U,
+      0x4101f00dU, 0x4095a278U, 0x4101f00dU, 0x40ef6a5aU, 0x4036082bU, 0x40ef6a5aU,
+      0x4036082bU, 0x4095a278U, 0x3fef6a5aU, 0x4095a278U, 0x3fef6a5aU, 0x40b38fc3U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.99,
+    7.5383464566929135,
+    None,
+    [
+      0x00000000U, 0x40713a22U, 0x3ff13a22U, 0x3ff13a22U, 0x3ff13a22U, 0x4034eb9aU,
+      0x403670e8U, 0x4034eb9aU, 0x403670e8U, 0x00000000U, 0x41023ad0U, 0x00000000U,
+      0x41023ad0U, 0x4034eb9aU, 0x4111afc6U, 0x4034eb9aU, 0x4111afc6U, 0x3ff13a22U,
+      0x412fd70aU, 0x40713a22U, 0x4111afc6U, 0x40b4eb9aU, 0x4111afc6U, 0x4096c455U,
+      0x41023ad0U, 0x4096c455U, 0x41023ad0U, 0x40f13a22U, 0x403670e8U, 0x40f13a22U,
+      0x403670e8U, 0x4096c455U, 0x3ff13a22U, 0x4096c455U, 0x3ff13a22U, 0x40b4eb9aU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    11.014645669291339,
+    7.5949606299212595,
+    None,
+    [
+      0x00000000U, 0x407309ebU, 0x3ff309ebU, 0x3ff309ebU, 0x3ff309ebU, 0x40364770U,
+      0x4036d9a5U, 0x40364770U, 0x4036d9a5U, 0x00000000U, 0x41028594U, 0x00000000U,
+      0x41028594U, 0x40364770U, 0x4111dac0U, 0x40364770U, 0x4111dac0U, 0x3ff309ebU,
+      0x41303bfdU, 0x407309ebU, 0x4111dac0U, 0x40b64770U, 0x4111dac0U, 0x4097e633U,
+      0x41028594U, 0x4097e633U, 0x41028594U, 0x40f309ebU, 0x4036d9a5U, 0x40f309ebU,
+      0x4036d9a5U, 0x4097e633U, 0x3ff309ebU, 0x4097e633U, 0x3ff309ebU, 0x40b64770U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    11.039291338582677,
+    7.6515748031496065,
+    None,
+    [
+      0x00000000U, 0x4074d9b3U, 0x3ff4d9b3U, 0x3ff4d9b3U, 0x3ff4d9b3U, 0x4037a347U,
+      0x40374262U, 0x4037a347U, 0x40374262U, 0x00000000U, 0x4102d058U, 0x00000000U,
+      0x4102d058U, 0x4037a347U, 0x411205baU, 0x4037a347U, 0x411205baU, 0x3ff4d9b3U,
+      0x4130a0f0U, 0x4074d9b3U, 0x411205baU, 0x40b7a347U, 0x411205baU, 0x40990810U,
+      0x4102d058U, 0x40990810U, 0x4102d058U, 0x40f4d9b3U, 0x40374262U, 0x40f4d9b3U,
+      0x40374262U, 0x40990810U, 0x3ff4d9b3U, 0x40990810U, 0x3ff4d9b3U, 0x40b7a347U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    11.063937007874015,
+    7.7081889763779525,
+    None,
+    [
+      0x00000000U, 0x4076a97cU, 0x3ff6a97cU, 0x3ff6a97cU, 0x3ff6a97cU, 0x4038ff1dU,
+      0x4037ab1fU, 0x4038ff1dU, 0x4037ab1fU, 0x00000000U, 0x41031b1bU, 0x00000000U,
+      0x41031b1bU, 0x4038ff1dU, 0x411230b3U, 0x4038ff1dU, 0x411230b3U, 0x3ff6a97cU,
+      0x413105e3U, 0x4076a97cU, 0x411230b3U, 0x40b8ff1dU, 0x411230b3U, 0x409a29edU,
+      0x41031b1bU, 0x409a29edU, 0x41031b1bU, 0x40f6a97cU, 0x4037ab1fU, 0x40f6a97cU,
+      0x4037ab1fU, 0x409a29edU, 0x3ff6a97cU, 0x409a29edU, 0x3ff6a97cU, 0x40b8ff1dU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.666456692913385,
+    7.48251968503937,
+    None,
+    [
+      0x00000000U, 0x40b3949aU, 0x3fef70cdU, 0x406f70cdU, 0x3fef70cdU, 0x4095a680U,
+      0x409cbbb5U, 0x4095a680U, 0x409cbbb5U, 0x3fef70cdU, 0x407d9b36U, 0x3fef70cdU,
+      0x40baa9ceU, 0x00000000U, 0x40f68602U, 0x3fef70cdU, 0x40d897e8U, 0x3fef70cdU,
+      0x40d897e8U, 0x4095a680U, 0x411cbbb5U, 0x4095a680U, 0x411cbbb5U, 0x406f70cdU,
+      0x413aa9ceU, 0x40b3949aU, 0x411cbbb5U, 0x40ef70cdU, 0x411cbbb5U, 0x40d182b3U,
+      0x3fef70cdU, 0x40d182b3U, 0x3fef70cdU, 0x40ef70cdU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.691102362204724,
+    7.5391338582677161,
+    None,
+    [
+      0x00000000U, 0x40b4f070U, 0x3ff14096U, 0x40714096U, 0x3ff14096U, 0x4096c85eU,
+      0x409ce6afU, 0x4096c85eU, 0x409ce6afU, 0x3ff14096U, 0x407d7d38U, 0x3ff14096U,
+      0x40bb0ec1U, 0x00000000U, 0x40f75ee7U, 0x3ff14096U, 0x40d936d4U, 0x3ff14096U,
+      0x40d936d4U, 0x4096c85eU, 0x411ce6afU, 0x4096c85eU, 0x411ce6afU, 0x40714096U,
+      0x413b0ec1U, 0x40b4f070U, 0x411ce6afU, 0x40f14096U, 0x411ce6afU, 0x40d31883U,
+      0x3ff14096U, 0x40d31883U, 0x3ff14096U, 0x40f14096U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.715748031496062,
+    7.595748031496063,
+    None,
+    [
+      0x00000000U, 0x40b64c47U, 0x3ff3105eU, 0x4073105eU, 0x3ff3105eU, 0x4097ea3bU,
+      0x409d11a8U, 0x4097ea3bU, 0x409d11a8U, 0x3ff3105eU, 0x407d5f39U, 0x3ff3105eU,
+      0x40bb73b4U, 0x00000000U, 0x40f837ccU, 0x3ff3105eU, 0x40d9d5c0U, 0x3ff3105eU,
+      0x40d9d5c0U, 0x4097ea3bU, 0x411d11a8U, 0x4097ea3bU, 0x411d11a8U, 0x4073105eU,
+      0x413b73b4U, 0x40b64c47U, 0x411d11a8U, 0x40f3105eU, 0x411d11a8U, 0x40d4ae52U,
+      0x3ff3105eU, 0x40d4ae52U, 0x3ff3105eU, 0x40f3105eU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.740393700787402,
+    7.6523622047244091,
+    None,
+    [
+      0x00000000U, 0x40b7a81dU, 0x3ff4e027U, 0x4074e027U, 0x3ff4e027U, 0x40990c18U,
+      0x409d3ca2U, 0x40990c18U, 0x409d3ca2U, 0x3ff4e027U, 0x407d413bU, 0x3ff4e027U,
+      0x40bbd8a7U, 0x00000000U, 0x40f910b1U, 0x3ff4e027U, 0x40da74acU, 0x3ff4e027U,
+      0x40da74acU, 0x40990c18U, 0x411d3ca2U, 0x40990c18U, 0x411d3ca2U, 0x4074e027U,
+      0x413bd8a7U, 0x40b7a81dU, 0x411d3ca2U, 0x40f4e027U, 0x411d3ca2U, 0x40d64422U,
+      0x3ff4e027U, 0x40d64422U, 0x3ff4e027U, 0x40f4e027U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.765039370078741,
+    7.708976377952756,
+    None,
+    [
+      0x00000000U, 0x40b903f3U, 0x3ff6afefU, 0x4076afefU, 0x3ff6afefU, 0x409a2df6U,
+      0x409d679cU, 0x409a2df6U, 0x409d679cU, 0x3ff6afefU, 0x407d233cU, 0x3ff6afefU,
+      0x40bc3d9aU, 0x00000000U, 0x40f9e996U, 0x3ff6afefU, 0x40db1398U, 0x3ff6afefU,
+      0x40db1398U, 0x409a2df6U, 0x411d679cU, 0x409a2df6U, 0x411d679cU, 0x4076afefU,
+      0x413c3d9aU, 0x40b903f3U, 0x411d679cU, 0x40f6afefU, 0x411d679cU, 0x40d7d9f1U,
+      0x3ff6afefU, 0x40d7d9f1U, 0x3ff6afefU, 0x40f6afefU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.789685039370079,
+    7.7655905511811021,
+    None,
+    [
+      0x00000000U, 0x40ba5fcaU, 0x3ff87fb8U, 0x40787fb8U, 0x3ff87fb8U, 0x409b4fd3U,
+      0x409d9296U, 0x409b4fd3U, 0x409d9296U, 0x3ff87fb8U, 0x407d053eU, 0x3ff87fb8U,
+      0x40bca28dU, 0x00000000U, 0x40fac27bU, 0x3ff87fb8U, 0x40dbb284U, 0x3ff87fb8U,
+      0x40dbb284U, 0x409b4fd3U, 0x411d9296U, 0x409b4fd3U, 0x411d9296U, 0x40787fb8U,
+      0x413ca28dU, 0x40ba5fcaU, 0x411d9296U, 0x40f87fb8U, 0x411d9296U, 0x40d96fc1U,
+      0x3ff87fb8U, 0x40d96fc1U, 0x3ff87fb8U, 0x40f87fb8U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.814330708661418,
+    7.822204724409449,
+    None,
+    [
+      0x00000000U, 0x40bbbba0U, 0x3ffa4f80U, 0x407a4f80U, 0x3ffa4f80U, 0x409c71b0U,
+      0x409dbd90U, 0x409c71b0U, 0x409dbd90U, 0x3ffa4f80U, 0x407ce73fU, 0x3ffa4f80U,
+      0x40bd0780U, 0x00000000U, 0x40fb9b60U, 0x3ffa4f80U, 0x40dc5170U, 0x3ffa4f80U,
+      0x40dc5170U, 0x409c71b0U, 0x411dbd90U, 0x409c71b0U, 0x411dbd90U, 0x407a4f80U,
+      0x413d0780U, 0x40bbbba0U, 0x411dbd90U, 0x40fa4f80U, 0x411dbd90U, 0x40db0590U,
+      0x3ffa4f80U, 0x40db0590U, 0x3ffa4f80U, 0x40fa4f80U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.838976377952756,
+    7.8788188976377951,
+    None,
+    [
+      0x00000000U, 0x40bd1777U, 0x3ffc1f49U, 0x407c1f49U, 0x3ffc1f49U, 0x409d938eU,
+      0x409de889U, 0x409d938eU, 0x409de889U, 0x3ffc1f49U, 0x407cc941U, 0x3ffc1f49U,
+      0x40bd6c72U, 0x00000000U, 0x40fc7445U, 0x3ffc1f49U, 0x40dcf05cU, 0x3ffc1f49U,
+      0x40dcf05cU, 0x409d938eU, 0x411de889U, 0x409d938eU, 0x411de889U, 0x407c1f49U,
+      0x413d6c72U, 0x40bd1777U, 0x411de889U, 0x40fc1f49U, 0x411de889U, 0x40dc9b60U,
+      0x3ffc1f49U, 0x40dc9b60U, 0x3ffc1f49U, 0x40fc1f49U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.863622047244094,
+    7.935433070866142,
+    None,
+    [
+      0x00000000U, 0x40be734dU, 0x3ffdef11U, 0x407def11U, 0x3ffdef11U, 0x409eb56bU,
+      0x409e1383U, 0x409eb56bU, 0x409e1383U, 0x3ffdef11U, 0x407cab42U, 0x3ffdef11U,
+      0x40bdd165U, 0x00000000U, 0x40fd4d2aU, 0x3ffdef11U, 0x40dd8f48U, 0x3ffdef11U,
+      0x40dd8f48U, 0x409eb56bU, 0x411e1383U, 0x409eb56bU, 0x411e1383U, 0x407def11U,
+      0x413dd165U, 0x40be734dU, 0x411e1383U, 0x40fdef11U, 0x411e1383U, 0x40de312fU,
+      0x3ffdef11U, 0x40de312fU, 0x3ffdef11U, 0x40fdef11U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.888267716535433,
+    7.9920472440944881,
+    None,
+    [
+      0x00000000U, 0x40bfcf23U, 0x3fffbedaU, 0x407fbedaU, 0x3fffbedaU, 0x409fd748U,
+      0x409e3e7dU, 0x409fd748U, 0x409e3e7dU, 0x3fffbedaU, 0x407c8d43U, 0x3fffbedaU,
+      0x40be3658U, 0x00000000U, 0x40fe260fU, 0x3fffbedaU, 0x40de2e33U, 0x3fffbedaU,
+      0x40de2e33U, 0x409fd748U, 0x411e3e7dU, 0x409fd748U, 0x411e3e7dU, 0x407fbedaU,
+      0x413e3658U, 0x40bfcf23U, 0x411e3e7dU, 0x40ffbedaU, 0x411e3e7dU, 0x40dfc6ffU,
+      0x3fffbedaU, 0x40dfc6ffU, 0x3fffbedaU, 0x40ffbedaU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.912913385826771,
+    8.048661417322835,
+    None,
+    [
+      0x00000000U, 0x40c12afaU, 0x4000c751U, 0x4080c751U, 0x4000c751U, 0x40a0f925U,
+      0x409e6977U, 0x40a0f925U, 0x409e6977U, 0x4000c751U, 0x407c6f45U, 0x4000c751U,
+      0x40be9b4bU, 0x00000000U, 0x40fefef4U, 0x4000c751U, 0x40decd1fU, 0x4000c751U,
+      0x40decd1fU, 0x40a0f925U, 0x411e6977U, 0x40a0f925U, 0x411e6977U, 0x4080c751U,
+      0x413e9b4bU, 0x40c12afaU, 0x411e6977U, 0x4100c751U, 0x411e6977U, 0x40e15cceU,
+      0x4000c751U, 0x40e15cceU, 0x4000c751U, 0x4100c751U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.937559055118109,
+    8.105275590551182,
+    None,
+    [
+      0x00000000U, 0x40c286d0U, 0x4001af35U, 0x4081af35U, 0x4001af35U, 0x40a21b03U,
+      0x409e9471U, 0x40a21b03U, 0x409e9471U, 0x4001af35U, 0x407c5146U, 0x4001af35U,
+      0x40bf003eU, 0x00000000U, 0x40ffd7d9U, 0x4001af35U, 0x40df6c0bU, 0x4001af35U,
+      0x40df6c0bU, 0x40a21b03U, 0x411e9471U, 0x40a21b03U, 0x411e9471U, 0x4081af35U,
+      0x413f003eU, 0x40c286d0U, 0x411e9471U, 0x4101af35U, 0x411e9471U, 0x40e2f29eU,
+      0x4001af35U, 0x40e2f29eU, 0x4001af35U, 0x4101af35U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.96220472440945,
+    8.1618897637795271,
+    None,
+    [
+      0x00000000U, 0x40c3e2a7U, 0x4002971aU, 0x4082971aU, 0x4002971aU, 0x40a33ce0U,
+      0x409ebf6aU, 0x40a33ce0U, 0x409ebf6aU, 0x4002971aU, 0x407c3348U, 0x4002971aU,
+      0x40bf6531U, 0x00000000U, 0x4100585fU, 0x4002971aU, 0x40e00af7U, 0x4002971aU,
+      0x40e00af7U, 0x40a33ce0U, 0x411ebf6aU, 0x40a33ce0U, 0x411ebf6aU, 0x4082971aU,
+      0x413f6531U, 0x40c3e2a7U, 0x411ebf6aU, 0x4102971aU, 0x411ebf6aU, 0x40e4886dU,
+      0x4002971aU, 0x40e4886dU, 0x4002971aU, 0x4102971aU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.986850393700788,
+    8.2185039370078741,
+    None,
+    [
+      0x00000000U, 0x40c53e7dU, 0x40037efeU, 0x40837efeU, 0x40037efeU, 0x40a45ebdU,
+      0x409eea64U, 0x40a45ebdU, 0x409eea64U, 0x40037efeU, 0x407c1549U, 0x40037efeU,
+      0x40bfca24U, 0x00000000U, 0x4100c4d1U, 0x40037efeU, 0x40e0a9e3U, 0x40037efeU,
+      0x40e0a9e3U, 0x40a45ebdU, 0x411eea64U, 0x40a45ebdU, 0x411eea64U, 0x40837efeU,
+      0x413fca24U, 0x40c53e7dU, 0x411eea64U, 0x41037efeU, 0x411eea64U, 0x40e61e3cU,
+      0x40037efeU, 0x40e61e3cU, 0x40037efeU, 0x41037efeU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    12.011496062992126,
+    8.275118110236221,
+    None,
+    [
+      0x00000000U, 0x40c69a53U, 0x400466e2U, 0x408466e2U, 0x400466e2U, 0x40a5809bU,
+      0x409f155eU, 0x40a5809bU, 0x409f155eU, 0x400466e2U, 0x407bf74bU, 0x400466e2U,
+      0x40c02f16U, 0x00000000U, 0x41013144U, 0x400466e2U, 0x40e148cfU, 0x400466e2U,
+      0x40e148cfU, 0x40a5809bU, 0x411f155eU, 0x40a5809bU, 0x411f155eU, 0x408466e2U,
+      0x41402f16U, 0x40c69a53U, 0x411f155eU, 0x410466e2U, 0x411f155eU, 0x40e7b40cU,
+      0x400466e2U, 0x40e7b40cU, 0x400466e2U, 0x410466e2U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    12.036141732283465,
+    8.3317322834645662,
+    None,
+    [
+      0x00000000U, 0x40c7f62aU, 0x40054ec7U, 0x40854ec7U, 0x40054ec7U, 0x40a6a278U,
+      0x409f4058U, 0x40a6a278U, 0x409f4058U, 0x40054ec7U, 0x407bd94cU, 0x40054ec7U,
+      0x40c09409U, 0x00000000U, 0x41019db6U, 0x40054ec7U, 0x40e1e7bbU, 0x40054ec7U,
+      0x40e1e7bbU, 0x40a6a278U, 0x411f4058U, 0x40a6a278U, 0x411f4058U, 0x40854ec7U,
+      0x41409409U, 0x40c7f62aU, 0x411f4058U, 0x41054ec7U, 0x411f4058U, 0x40e949dbU,
+      0x40054ec7U, 0x40e949dbU, 0x40054ec7U, 0x41054ec7U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.638661417322835,
+    8.1060629921259846,
+    None,
+    [
+      0x00000000U, 0x40c28ba7U, 0x4001b26fU, 0x4081b26fU, 0x4001b26fU, 0x40a21f0bU,
+      0x4119950bU, 0x40a21f0bU, 0x4119950bU, 0x4001b26fU, 0x41095ebdU, 0x4001b26fU,
+      0x4129cb59U, 0x00000000U, 0x414a37f5U, 0x4001b26fU, 0x413a01a7U, 0x4001b26fU,
+      0x413a01a7U, 0x40e2f842U, 0x4001b26fU, 0x40e2f842U, 0x4001b26fU, 0x4101b26fU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.663307086614173,
+    8.1626771653543315,
+    None,
+    [
+      0x00000000U, 0x40c3e77dU, 0x40029a53U, 0x40829a53U, 0x40029a53U, 0x40a340e8U,
+      0x4119a309U, 0x40a340e8U, 0x4119a309U, 0x40029a53U, 0x41094fbeU, 0x40029a53U,
+      0x4129f653U, 0x00000000U, 0x414a9ce8U, 0x40029a53U, 0x413a499dU, 0x40029a53U,
+      0x413a499dU, 0x40e48e12U, 0x40029a53U, 0x40e48e12U, 0x40029a53U, 0x41029a53U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.687952755905512,
+    8.2192913385826767,
+    None,
+    [
+      0x00000000U, 0x40c54353U, 0x40038238U, 0x40838238U, 0x40038238U, 0x40a462c6U,
+      0x4119b106U, 0x40a462c6U, 0x4119b106U, 0x40038238U, 0x410940bfU, 0x40038238U,
+      0x412a214dU, 0x00000000U, 0x414b01dbU, 0x40038238U, 0x413a9194U, 0x40038238U,
+      0x413a9194U, 0x40e623e1U, 0x40038238U, 0x40e623e1U, 0x40038238U, 0x41038238U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.71259842519685,
+    8.2759055118110236,
+    None,
+    [
+      0x00000000U, 0x40c69f2aU, 0x40046a1cU, 0x40846a1cU, 0x40046a1cU, 0x40a584a3U,
+      0x4119bf03U, 0x40a584a3U, 0x4119bf03U, 0x40046a1cU, 0x410931c0U, 0x40046a1cU,
+      0x412a4c47U, 0x00000000U, 0x414b66ceU, 0x40046a1cU, 0x413ad98aU, 0x40046a1cU,
+      0x413ad98aU, 0x40e7b9b1U, 0x40046a1cU, 0x40e7b9b1U, 0x40046a1cU, 0x41046a1cU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.737244094488188,
+    8.3325196850393706,
+    None,
+    [
+      0x00000000U, 0x40c7fb00U, 0x40055200U, 0x40855200U, 0x40055200U, 0x40a6a680U,
+      0x4119cd00U, 0x40a6a680U, 0x4119cd00U, 0x40055200U, 0x410922c0U, 0x40055200U,
+      0x412a7740U, 0x00000000U, 0x414bcbc0U, 0x40055200U, 0x413b2180U, 0x40055200U,
+      0x413b2180U, 0x40e94f80U, 0x40055200U, 0x40e94f80U, 0x40055200U, 0x41055200U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.761889763779527,
+    8.3891338582677157,
+    None,
+    [
+      0x00000000U, 0x40c956d7U, 0x400639e4U, 0x408639e4U, 0x400639e4U, 0x40a7c85eU,
+      0x4119dafeU, 0x40a7c85eU, 0x4119dafeU, 0x400639e4U, 0x410913c1U, 0x400639e4U,
+      0x412aa23aU, 0x00000000U, 0x414c30b3U, 0x400639e4U, 0x413b6977U, 0x400639e4U,
+      0x413b6977U, 0x40eae550U, 0x400639e4U, 0x40eae550U, 0x400639e4U, 0x410639e4U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.786535433070867,
+    8.4457480314960627,
+    None,
+    [
+      0x00000000U, 0x40cab2adU, 0x400721c9U, 0x408721c9U, 0x400721c9U, 0x40a8ea3bU,
+      0x4119e8fbU, 0x40a8ea3bU, 0x4119e8fbU, 0x400721c9U, 0x410904c2U, 0x400721c9U,
+      0x412acd34U, 0x00000000U, 0x414c95a6U, 0x400721c9U, 0x413bb16dU, 0x400721c9U,
+      0x413bb16dU, 0x40ec7b1fU, 0x400721c9U, 0x40ec7b1fU, 0x400721c9U, 0x410721c9U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.811181102362205,
+    8.5023622047244096,
+    None,
+    [
+      0x00000000U, 0x40cc0e83U, 0x400809adU, 0x408809adU, 0x400809adU, 0x40aa0c18U,
+      0x4119f6f8U, 0x40aa0c18U, 0x4119f6f8U, 0x400809adU, 0x4108f5c3U, 0x400809adU,
+      0x412af82eU, 0x00000000U, 0x414cfa99U, 0x400809adU, 0x413bf963U, 0x400809adU,
+      0x413bf963U, 0x40ee10efU, 0x400809adU, 0x40ee10efU, 0x400809adU, 0x410809adU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.835826771653544,
+    8.5589763779527566,
+    None,
+    [
+      0x00000000U, 0x40cd6a5aU, 0x4008f191U, 0x4088f191U, 0x4008f191U, 0x40ab2df6U,
+      0x411a04f5U, 0x40ab2df6U, 0x411a04f5U, 0x4008f191U, 0x4108e6c3U, 0x4008f191U,
+      0x412b2328U, 0x00000000U, 0x414d5f8cU, 0x4008f191U, 0x413c415aU, 0x4008f191U,
+      0x413c415aU, 0x40efa6beU, 0x4008f191U, 0x40efa6beU, 0x4008f191U, 0x4108f191U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.860472440944882,
+    8.6155905511811017,
+    None,
+    [
+      0x00000000U, 0x40cec630U, 0x4009d975U, 0x4089d975U, 0x4009d975U, 0x40ac4fd3U,
+      0x411a12f3U, 0x40ac4fd3U, 0x411a12f3U, 0x4009d975U, 0x4108d7c4U, 0x4009d975U,
+      0x412b4e21U, 0x00000000U, 0x414dc47fU, 0x4009d975U, 0x413c8950U, 0x4009d975U,
+      0x413c8950U, 0x40f13c8eU, 0x4009d975U, 0x40f13c8eU, 0x4009d975U, 0x4109d975U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.88511811023622,
+    8.6722047244094487,
+    None,
+    [
+      0x00000000U, 0x40d02207U, 0x400ac15aU, 0x408ac15aU, 0x400ac15aU, 0x40ad71b0U,
+      0x411a20f0U, 0x40ad71b0U, 0x411a20f0U, 0x400ac15aU, 0x4108c8c5U, 0x400ac15aU,
+      0x412b791bU, 0x00000000U, 0x414e2972U, 0x400ac15aU, 0x413cd146U, 0x400ac15aU,
+      0x413cd146U, 0x40f2d25dU, 0x400ac15aU, 0x40f2d25dU, 0x400ac15aU, 0x410ac15aU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.909763779527559,
+    8.7288188976377956,
+    None,
+    [
+      0x00000000U, 0x40d17dddU, 0x400ba93eU, 0x408ba93eU, 0x400ba93eU, 0x40ae938eU,
+      0x411a2eedU, 0x40ae938eU, 0x411a2eedU, 0x400ba93eU, 0x4108b9c5U, 0x400ba93eU,
+      0x412ba415U, 0x00000000U, 0x414e8e64U, 0x400ba93eU, 0x413d193dU, 0x400ba93eU,
+      0x413d193dU, 0x40f4682dU, 0x400ba93eU, 0x40f4682dU, 0x400ba93eU, 0x410ba93eU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.934409448818897,
+    8.7854330708661426,
+    None,
+    [
+      0x00000000U, 0x40d2d9b3U, 0x400c9122U, 0x408c9122U, 0x400c9122U, 0x40afb56bU,
+      0x411a3ceaU, 0x40afb56bU, 0x411a3ceaU, 0x400c9122U, 0x4108aac6U, 0x400c9122U,
+      0x412bcf0fU, 0x00000000U, 0x414ef357U, 0x400c9122U, 0x413d6133U, 0x400c9122U,
+      0x413d6133U, 0x40f5fdfcU, 0x400c9122U, 0x40f5fdfcU, 0x400c9122U, 0x410c9122U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.959055118110236,
+    8.8420472440944877,
+    None,
+    [
+      0x00000000U, 0x40d4358aU, 0x400d7907U, 0x408d7907U, 0x400d7907U, 0x40b0d748U,
+      0x411a4ae8U, 0x40b0d748U, 0x411a4ae8U, 0x400d7907U, 0x41089bc7U, 0x400d7907U,
+      0x412bfa09U, 0x00000000U, 0x414f584aU, 0x400d7907U, 0x413da929U, 0x400d7907U,
+      0x413da929U, 0x40f793cbU, 0x400d7907U, 0x40f793cbU, 0x400d7907U, 0x410d7907U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.983700787401574,
+    8.8986614173228347,
+    None,
+    [
+      0x00000000U, 0x40d59160U, 0x400e60ebU, 0x408e60ebU, 0x400e60ebU, 0x40b1f925U,
+      0x411a58e5U, 0x40b1f925U, 0x411a58e5U, 0x400e60ebU, 0x41088cc8U, 0x400e60ebU,
+      0x412c2502U, 0x00000000U, 0x414fbd3dU, 0x400e60ebU, 0x413df120U, 0x400e60ebU,
+      0x413df120U, 0x40f9299bU, 0x400e60ebU, 0x40f9299bU, 0x400e60ebU, 0x410e60ebU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    13.008346456692914,
+    8.9552755905511816,
+    None,
+    [
+      0x00000000U, 0x40d6ed37U, 0x400f48cfU, 0x408f48cfU, 0x400f48cfU, 0x40b31b03U,
+      0x411a66e2U, 0x40b31b03U, 0x411a66e2U, 0x400f48cfU, 0x41087dc8U, 0x400f48cfU,
+      0x412c4ffcU, 0x00000000U, 0x41502230U, 0x400f48cfU, 0x413e3916U, 0x400f48cfU,
+      0x413e3916U, 0x40fabf6aU, 0x400f48cfU, 0x40fabf6aU, 0x400f48cfU, 0x410f48cfU,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.610866141732284,
+    8.7296062992125982,
+    None,
+    [
+      0x3fe6ed6aU, 0x4055a518U, 0x413ce86eU, 0x4055a518U, 0x413ce86eU, 0x40ac8663U,
+      0x3fe6ed6aU, 0x40ac8663U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.635511811023623,
+    8.7862204724409452,
+    None,
+    [
+      0x3fe75876U, 0x405707cbU, 0x413d4000U, 0x405707cbU, 0x413d4000U, 0x40ada4d2U,
+      0x3fe75876U, 0x40ada4d2U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.660157480314961,
+    8.8428346456692921,
+    None,
+    [
+      0x3fe7c382U, 0x40586a7fU, 0x413d9791U, 0x40586a7fU, 0x413d9791U, 0x40aec341U,
+      0x3fe7c382U, 0x40aec341U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.684803149606299,
+    8.8994488188976373,
+    None,
+    [
+      0x3fe82e8dU, 0x4059cd32U, 0x413def22U, 0x4059cd32U, 0x413def22U, 0x40afe1b0U,
+      0x3fe82e8dU, 0x40afe1b0U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.709448818897638,
+    8.9560629921259842,
+    None,
+    [
+      0x3fe89999U, 0x405b2fe6U, 0x413e46b4U, 0x405b2fe6U, 0x413e46b4U, 0x40b1001eU,
+      0x3fe89999U, 0x40b1001eU,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.734094488188976,
+    9.0126771653543312,
+    None,
+    [
+      0x3fe904a5U, 0x405c929aU, 0x413e9e45U, 0x405c929aU, 0x413e9e45U, 0x40b21e8dU,
+      0x3fe904a5U, 0x40b21e8dU,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.758740157480315,
+    9.0692913385826763,
+    None,
+    [
+      0x3fe96fb1U, 0x405df54dU, 0x413ef5d7U, 0x405df54dU, 0x413ef5d7U, 0x40b33cfcU,
+      0x3fe96fb1U, 0x40b33cfcU,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.783385826771653,
+    9.1259055118110233,
+    None,
+    [
+      0x3fe9dabcU, 0x405f5801U, 0x413f4d68U, 0x405f5801U, 0x413f4d68U, 0x40b45b6bU,
+      0x3fe9dabcU, 0x40b45b6bU,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.808031496062991,
+    9.1825196850393702,
+    None,
+    [
+      0x3fea45c8U, 0x4060bab4U, 0x413fa4f9U, 0x4060bab4U, 0x413fa4f9U, 0x40b579d9U,
+      0x3fea45c8U, 0x40b579d9U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.832677165354331,
+    9.2391338582677172,
+    None,
+    [
+      0x3feab0d4U, 0x40621d68U, 0x413ffc8bU, 0x40621d68U, 0x413ffc8bU, 0x40b69848U,
+      0x3feab0d4U, 0x40b69848U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.85732283464567,
+    9.2957480314960623,
+    None,
+    [
+      0x3feb1be0U, 0x4063801bU, 0x4140541cU, 0x4063801bU, 0x4140541cU, 0x40b7b6b7U,
+      0x3feb1be0U, 0x40b7b6b7U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.881968503937008,
+    9.3523622047244093,
+    None,
+    [
+      0x3feb86ebU, 0x4064e2cfU, 0x4140abaeU, 0x4064e2cfU, 0x4140abaeU, 0x40b8d526U,
+      0x3feb86ebU, 0x40b8d526U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.906614173228347,
+    9.4089763779527562,
+    None,
+    [
+      0x3febf1f7U, 0x40664583U, 0x4141033fU, 0x40664583U, 0x4141033fU, 0x40b9f394U,
+      0x3febf1f7U, 0x40b9f394U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.931259842519685,
+    9.4655905511811032,
+    None,
+    [
+      0x3fec5d03U, 0x4067a836U, 0x41415ad0U, 0x4067a836U, 0x41415ad0U, 0x40bb1203U,
+      0x3fec5d03U, 0x40bb1203U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.955905511811023,
+    9.5222047244094483,
+    None,
+    [
+      0x3fecc80fU, 0x40690aeaU, 0x4141b262U, 0x40690aeaU, 0x4141b262U, 0x40bc3072U,
+      0x3fecc80fU, 0x40bc3072U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.980551181102362,
+    9.5788188976377953,
+    None,
+    [
+      0x3fed331bU, 0x406a6d9dU, 0x414209f3U, 0x406a6d9dU, 0x414209f3U, 0x40bd4ee1U,
+      0x3fed331bU, 0x40bd4ee1U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.583070866141732,
+    9.3531496062992119,
+    None,
+    [
+      0x3ff76c16U, 0x4064e7beU, 0x40c621a1U, 0x4064e7beU, 0x40c621a1U, 0x3f9eb074U,
+      0x41064372U, 0x3f9eb074U, 0x41064372U, 0x4064e7beU, 0x414a66bfU, 0x4064e7beU,
+      0x414a66bfU, 0x40b8d921U, 0x41064372U, 0x40b8d921U, 0x41064372U, 0x4101d072U,
+      0x40c621a1U, 0x4101d072U, 0x40c621a1U, 0x40b8d921U, 0x3ff76c16U, 0x40b8d921U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.60771653543307,
+    9.4097637795275588,
+    None,
+    [
+      0x3ff7d722U, 0x40664a72U, 0x40c65009U, 0x40664a72U, 0x40c65009U, 0x3f9fa65aU,
+      0x41069130U, 0x3f9fa65aU, 0x41069130U, 0x40664a72U, 0x414abe51U, 0x40664a72U,
+      0x414abe51U, 0x40b9f790U, 0x41069130U, 0x40b9f790U, 0x41069130U, 0x41029999U,
+      0x40c65009U, 0x41029999U, 0x40c65009U, 0x40b9f790U, 0x3ff7d722U, 0x40b9f790U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.632362204724409,
+    9.4663779527559058,
+    None,
+    [
+      0x3ff8422eU, 0x4067ad25U, 0x40c67e72U, 0x4067ad25U, 0x40c67e72U, 0x3fa09c40U,
+      0x4106deefU, 0x3fa09c40U, 0x4106deefU, 0x4067ad25U, 0x414b15e2U, 0x4067ad25U,
+      0x414b15e2U, 0x40bb15ffU, 0x4106deefU, 0x40bb15ffU, 0x4106deefU, 0x410362c1U,
+      0x40c67e72U, 0x410362c1U, 0x40c67e72U, 0x40bb15ffU, 0x3ff8422eU, 0x40bb15ffU,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.657007874015749,
+    9.5229921259842527,
+    None,
+    [
+      0x3ff8ad39U, 0x40690fd9U, 0x40c6acdaU, 0x40690fd9U, 0x40c6acdaU, 0x3fa19226U,
+      0x41072caeU, 0x3fa19226U, 0x41072caeU, 0x40690fd9U, 0x414b6d74U, 0x40690fd9U,
+      0x414b6d74U, 0x40bc346eU, 0x41072caeU, 0x40bc346eU, 0x41072caeU, 0x41042be8U,
+      0x40c6acdaU, 0x41042be8U, 0x40c6acdaU, 0x40bc346eU, 0x3ff8ad39U, 0x40bc346eU,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.681653543307087,
+    9.5796062992125979,
+    None,
+    [
+      0x3ff91845U, 0x406a728cU, 0x40c6db42U, 0x406a728cU, 0x40c6db42U, 0x3fa2880cU,
+      0x41077a6cU, 0x3fa2880cU, 0x41077a6cU, 0x406a728cU, 0x414bc505U, 0x406a728cU,
+      0x414bc505U, 0x40bd52dcU, 0x41077a6cU, 0x40bd52dcU, 0x41077a6cU, 0x4104f510U,
+      0x40c6db42U, 0x4104f510U, 0x40c6db42U, 0x40bd52dcU, 0x3ff91845U, 0x40bd52dcU,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.706299212598426,
+    9.6362204724409448,
+    None,
+    [
+      0x3ff98351U, 0x406bd540U, 0x40c709abU, 0x406bd540U, 0x40c709abU, 0x3fa37df2U,
+      0x4107c82bU, 0x3fa37df2U, 0x4107c82bU, 0x406bd540U, 0x414c1c96U, 0x406bd540U,
+      0x414c1c96U, 0x40be714bU, 0x4107c82bU, 0x40be714bU, 0x4107c82bU, 0x4105be37U,
+      0x40c709abU, 0x4105be37U, 0x40c709abU, 0x40be714bU, 0x3ff98351U, 0x40be714bU,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.730944881889764,
+    9.6928346456692918,
+    None,
+    [
+      0x3ff9ee5dU, 0x406d37f3U, 0x40c73813U, 0x406d37f3U, 0x40c73813U, 0x3fa473d8U,
+      0x410815eaU, 0x3fa473d8U, 0x410815eaU, 0x406d37f3U, 0x414c7428U, 0x406d37f3U,
+      0x414c7428U, 0x40bf8fbaU, 0x410815eaU, 0x40bf8fbaU, 0x410815eaU, 0x4106875fU,
+      0x40c73813U, 0x4106875fU, 0x40c73813U, 0x40bf8fbaU, 0x3ff9ee5dU, 0x40bf8fbaU,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.755590551181102,
+    9.7494488188976369,
+    None,
+    [
+      0x3ffa5969U, 0x406e9aa7U, 0x40c7667cU, 0x406e9aa7U, 0x40c7667cU, 0x3fa569beU,
+      0x410863a8U, 0x3fa569beU, 0x410863a8U, 0x406e9aa7U, 0x414ccbb9U, 0x406e9aa7U,
+      0x414ccbb9U, 0x40c0ae29U, 0x410863a8U, 0x40c0ae29U, 0x410863a8U, 0x41075086U,
+      0x40c7667cU, 0x41075086U, 0x40c7667cU, 0x40c0ae29U, 0x3ffa5969U, 0x40c0ae29U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.780236220472441,
+    9.8060629921259839,
+    None,
+    [
+      0x3ffac474U, 0x406ffd5bU, 0x40c794e4U, 0x406ffd5bU, 0x40c794e4U, 0x3fa65fa3U,
+      0x4108b167U, 0x3fa65fa3U, 0x4108b167U, 0x406ffd5bU, 0x414d234aU, 0x406ffd5bU,
+      0x414d234aU, 0x40c1cc97U, 0x4108b167U, 0x40c1cc97U, 0x4108b167U, 0x410819aeU,
+      0x40c794e4U, 0x410819aeU, 0x40c794e4U, 0x40c1cc97U, 0x3ffac474U, 0x40c1cc97U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.804881889763779,
+    9.8626771653543308,
+    None,
+    [
+      0x3ffb2f80U, 0x4071600eU, 0x40c7c34cU, 0x4071600eU, 0x40c7c34cU, 0x3fa75589U,
+      0x4108ff26U, 0x3fa75589U, 0x4108ff26U, 0x4071600eU, 0x414d7adcU, 0x4071600eU,
+      0x414d7adcU, 0x40c2eb06U, 0x4108ff26U, 0x40c2eb06U, 0x4108ff26U, 0x4108e2d5U,
+      0x40c7c34cU, 0x4108e2d5U, 0x40c7c34cU, 0x40c2eb06U, 0x3ffb2f80U, 0x40c2eb06U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.829527559055117,
+    9.9192913385826778,
+    None,
+    [
+      0x3ffb9a8cU, 0x4072c2c2U, 0x40c7f1b5U, 0x4072c2c2U, 0x40c7f1b5U, 0x3fa84b6fU,
+      0x41094ce4U, 0x3fa84b6fU, 0x41094ce4U, 0x4072c2c2U, 0x414dd26dU, 0x4072c2c2U,
+      0x414dd26dU, 0x40c40975U, 0x41094ce4U, 0x40c40975U, 0x41094ce4U, 0x4109abfdU,
+      0x40c7f1b5U, 0x4109abfdU, 0x40c7f1b5U, 0x40c40975U, 0x3ffb9a8cU, 0x40c40975U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.854173228346456,
+    9.9759055118110229,
+    None,
+    [
+      0x3ffc0598U, 0x40742575U, 0x40c8201dU, 0x40742575U, 0x40c8201dU, 0x3fa94155U,
+      0x41099aa3U, 0x3fa94155U, 0x41099aa3U, 0x40742575U, 0x414e29ffU, 0x40742575U,
+      0x414e29ffU, 0x40c527e4U, 0x41099aa3U, 0x40c527e4U, 0x41099aa3U, 0x410a7524U,
+      0x40c8201dU, 0x410a7524U, 0x40c8201dU, 0x40c527e4U, 0x3ffc0598U, 0x40c527e4U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.878818897637796,
+    10.03251968503937,
+    None,
+    [
+      0x3ffc70a3U, 0x40758829U, 0x40c84e85U, 0x40758829U, 0x40c84e85U, 0x3faa373bU,
+      0x4109e862U, 0x3faa373bU, 0x4109e862U, 0x40758829U, 0x414e8190U, 0x40758829U,
+      0x414e8190U, 0x40c64652U, 0x4109e862U, 0x40c64652U, 0x4109e862U, 0x410b3e4cU,
+      0x40c84e85U, 0x410b3e4cU, 0x40c84e85U, 0x40c64652U, 0x3ffc70a3U, 0x40c64652U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.903464566929134,
+    10.089133858267717,
+    None,
+    [
+      0x3ffcdbafU, 0x4076eadcU, 0x40c87ceeU, 0x4076eadcU, 0x40c87ceeU, 0x3fab2d21U,
+      0x410a3620U, 0x3fab2d21U, 0x410a3620U, 0x4076eadcU, 0x414ed921U, 0x4076eadcU,
+      0x414ed921U, 0x40c764c1U, 0x410a3620U, 0x40c764c1U, 0x410a3620U, 0x410c0774U,
+      0x40c87ceeU, 0x410c0774U, 0x40c87ceeU, 0x40c764c1U, 0x3ffcdbafU, 0x40c764c1U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.928110236220473,
+    10.145748031496064,
+    None,
+    [
+      0x3ffd46bbU, 0x40784d90U, 0x40c8ab56U, 0x40784d90U, 0x40c8ab56U, 0x3fac2307U,
+      0x410a83dfU, 0x3fac2307U, 0x410a83dfU, 0x40784d90U, 0x414f30b3U, 0x40784d90U,
+      0x414f30b3U, 0x40c88330U, 0x410a83dfU, 0x40c88330U, 0x410a83dfU, 0x410cd09bU,
+      0x40c8ab56U, 0x410cd09bU, 0x40c8ab56U, 0x40c88330U, 0x3ffd46bbU, 0x40c88330U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.952755905511811,
+    10.202362204724409,
+    None,
+    [
+      0x3ffdb1c7U, 0x4079b044U, 0x40c8d9bfU, 0x4079b044U, 0x40c8d9bfU, 0x3fad18ecU,
+      0x410ad19eU, 0x3fad18ecU, 0x410ad19eU, 0x4079b044U, 0x414f8844U, 0x4079b044U,
+      0x414f8844U, 0x40c9a19eU, 0x410ad19eU, 0x40c9a19eU, 0x410ad19eU, 0x410d99c3U,
+      0x40c8d9bfU, 0x410d99c3U, 0x40c8d9bfU, 0x40c9a19eU, 0x3ffdb1c7U, 0x40c9a19eU,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.555275590551181,
+    9.9766929133858273,
+    None,
+    [
+      0x00000000U, 0x411fa089U, 0x401fa089U, 0x00000000U, 0x4150fa46U, 0x00000000U,
+      0x4178e269U, 0x411fa089U,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.57992125984252,
+    10.033307086614172,
+    None,
+    [
+      0x00000000U, 0x4120886dU, 0x4020886dU, 0x00000000U, 0x41512540U, 0x00000000U,
+      0x4179475cU, 0x4120886dU,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.604566929133858,
+    10.089921259842519,
+    None,
+    [
+      0x00000000U, 0x41217051U, 0x40217051U, 0x00000000U, 0x4151503aU, 0x00000000U,
+      0x4179ac4eU, 0x41217051U,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.629212598425196,
+    10.146535433070866,
+    None,
+    [
+      0x00000000U, 0x41225836U, 0x40225836U, 0x00000000U, 0x41517b34U, 0x00000000U,
+      0x417a1141U, 0x41225836U,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.653858267716535,
+    10.203149606299213,
+    None,
+    [
+      0x00000000U, 0x4123401aU, 0x4023401aU, 0x00000000U, 0x4151a62eU, 0x00000000U,
+      0x417a7634U, 0x4123401aU,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.678503937007873,
+    10.259763779527558,
+    None,
+    [
+      0x00000000U, 0x412427feU, 0x402427feU, 0x00000000U, 0x4151d127U, 0x00000000U,
+      0x417adb27U, 0x412427feU,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.703149606299213,
+    10.316377952755905,
+    None,
+    [
+      0x00000000U, 0x41250fe2U, 0x40250fe2U, 0x00000000U, 0x4151fc21U, 0x00000000U,
+      0x417b401aU, 0x41250fe2U,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.727795275590552,
+    10.372992125984252,
+    None,
+    [
+      0x00000000U, 0x4125f7c7U, 0x4025f7c7U, 0x00000000U, 0x4152271bU, 0x00000000U,
+      0x417ba50dU, 0x4125f7c7U,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.75244094488189,
+    10.429606299212599,
+    None,
+    [
+      0x00000000U, 0x4126dfabU, 0x4026dfabU, 0x00000000U, 0x41525215U, 0x00000000U,
+      0x417c0a00U, 0x4126dfabU,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.777086614173228,
+    10.486220472440944,
+    None,
+    [
+      0x00000000U, 0x4127c78fU, 0x4027c78fU, 0x00000000U, 0x41527d0fU, 0x00000000U,
+      0x417c6ef2U, 0x4127c78fU,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.801732283464567,
+    10.542834645669291,
+    None,
+    [
+      0x00000000U, 0x4128af73U, 0x4028af73U, 0x00000000U, 0x4152a808U, 0x00000000U,
+      0x417cd3e5U, 0x4128af73U,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.826377952755905,
+    10.599448818897638,
+    None,
+    [
+      0x00000000U, 0x41299758U, 0x40299758U, 0x00000000U, 0x4152d302U, 0x00000000U,
+      0x417d38d8U, 0x41299758U,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.851023622047244,
+    10.656062992125984,
+    None,
+    [
+      0x00000000U, 0x412a7f3cU, 0x402a7f3cU, 0x00000000U, 0x4152fdfcU, 0x00000000U,
+      0x417d9dcbU, 0x412a7f3cU,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.875669291338582,
+    10.71267716535433,
+    None,
+    [
+      0x00000000U, 0x412b6720U, 0x402b6720U, 0x00000000U, 0x415328f6U, 0x00000000U,
+      0x417e02beU, 0x412b6720U,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.900314960629922,
+    10.769291338582677,
+    None,
+    [
+      0x00000000U, 0x412c4f04U, 0x402c4f04U, 0x00000000U, 0x415353f0U, 0x00000000U,
+      0x417e67b1U, 0x412c4f04U,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.92496062992126,
+    10.825905511811024,
+    None,
+    [
+      0x00000000U, 0x412d36e9U, 0x402d36e9U, 0x00000000U, 0x41537ee9U, 0x00000000U,
+      0x417ecca4U, 0x412d36e9U,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.527480314960631,
+    10.600236220472441,
+    None,
+    [
+      0x00000000U, 0x40299a91U, 0x4133a347U, 0x40299a91U, 0x4133a347U, 0x00000000U,
+      0x41843848U, 0x40a99a91U, 0x4133a347U, 0x41299a91U, 0x4133a347U, 0x40fe67daU,
+      0x00000000U, 0x40fe67daU, 0x40299a91U, 0x40a99a91U,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.552125984251969,
+    10.656850393700788,
+    None,
+    [
+      0x00000000U, 0x402a8276U, 0x41339447U, 0x402a8276U, 0x41339447U, 0x00000000U,
+      0x41846ac1U, 0x40aa8276U, 0x41339447U, 0x412a8276U, 0x41339447U, 0x40ffc3b0U,
+      0x00000000U, 0x40ffc3b0U, 0x402a8276U, 0x40aa8276U,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.576771653543307,
+    10.713464566929133,
+    None,
+    [
+      0x00000000U, 0x402b6a5aU, 0x41338548U, 0x402b6a5aU, 0x41338548U, 0x00000000U,
+      0x41849d3aU, 0x40ab6a5aU, 0x41338548U, 0x412b6a5aU, 0x41338548U, 0x41008fc3U,
+      0x00000000U, 0x41008fc3U, 0x402b6a5aU, 0x40ab6a5aU,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.601417322834646,
+    10.77007874015748,
+    None,
+    [
+      0x00000000U, 0x402c523eU, 0x41337649U, 0x402c523eU, 0x41337649U, 0x00000000U,
+      0x4184cfb4U, 0x40ac523eU, 0x41337649U, 0x412c523eU, 0x41337649U, 0x41013dafU,
+      0x00000000U, 0x41013dafU, 0x402c523eU, 0x40ac523eU,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.626062992125984,
+    10.826692913385827,
+    None,
+    [
+      0x00000000U, 0x402d3a22U, 0x41336749U, 0x402d3a22U, 0x41336749U, 0x00000000U,
+      0x4185022dU, 0x40ad3a22U, 0x41336749U, 0x412d3a22U, 0x41336749U, 0x4101eb9aU,
+      0x00000000U, 0x4101eb9aU, 0x402d3a22U, 0x40ad3a22U,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.650708661417323,
+    10.883307086614174,
+    None,
+    [
+      0x00000000U, 0x402e2207U, 0x4133584aU, 0x402e2207U, 0x4133584aU, 0x00000000U,
+      0x418534a7U, 0x40ae2207U, 0x4133584aU, 0x412e2207U, 0x4133584aU, 0x41029985U,
+      0x00000000U, 0x41029985U, 0x402e2207U, 0x40ae2207U,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.675354330708661,
+    10.939921259842519,
+    None,
+    [
+      0x00000000U, 0x402f09ebU, 0x4133494bU, 0x402f09ebU, 0x4133494bU, 0x00000000U,
+      0x41856720U, 0x40af09ebU, 0x4133494bU, 0x412f09ebU, 0x4133494bU, 0x41034770U,
+      0x00000000U, 0x41034770U, 0x402f09ebU, 0x40af09ebU,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.699999999999999,
+    10.996535433070866,
+    None,
+    [
+      0x00000000U, 0x402ff1cfU, 0x41333a4cU, 0x402ff1cfU, 0x41333a4cU, 0x00000000U,
+      0x4185999aU, 0x40aff1cfU, 0x41333a4cU, 0x412ff1cfU, 0x41333a4cU, 0x4103f55bU,
+      0x00000000U, 0x4103f55bU, 0x402ff1cfU, 0x40aff1cfU,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.724645669291338,
+    11.053149606299213,
+    None,
+    [
+      0x00000000U, 0x4030d9b3U, 0x41332b4cU, 0x4030d9b3U, 0x41332b4cU, 0x00000000U,
+      0x4185cc13U, 0x40b0d9b3U, 0x41332b4cU, 0x4130d9b3U, 0x41332b4cU, 0x4104a347U,
+      0x00000000U, 0x4104a347U, 0x4030d9b3U, 0x40b0d9b3U,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.749291338582676,
+    11.10976377952756,
+    None,
+    [
+      0x00000000U, 0x4031c198U, 0x41331c4dU, 0x4031c198U, 0x41331c4dU, 0x00000000U,
+      0x4185fe8cU, 0x40b1c198U, 0x41331c4dU, 0x4131c198U, 0x41331c4dU, 0x41055132U,
+      0x00000000U, 0x41055132U, 0x4031c198U, 0x40b1c198U,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.773937007874014,
+    11.166377952755905,
+    None,
+    [
+      0x00000000U, 0x4032a97cU, 0x41330d4eU, 0x4032a97cU, 0x41330d4eU, 0x00000000U,
+      0x41863106U, 0x40b2a97cU, 0x41330d4eU, 0x4132a97cU, 0x41330d4eU, 0x4105ff1dU,
+      0x00000000U, 0x4105ff1dU, 0x4032a97cU, 0x40b2a97cU,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.798582677165353,
+    11.222992125984252,
+    None,
+    [
+      0x00000000U, 0x40339160U, 0x4132fe4fU, 0x40339160U, 0x4132fe4fU, 0x00000000U,
+      0x4186637fU, 0x40b39160U, 0x4132fe4fU, 0x41339160U, 0x4132fe4fU, 0x4106ad08U,
+      0x00000000U, 0x4106ad08U, 0x40339160U, 0x40b39160U,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.823228346456691,
+    11.279606299212599,
+    None,
+    [
+      0x00000000U, 0x40347944U, 0x4132ef4fU, 0x40347944U, 0x4132ef4fU, 0x00000000U,
+      0x418695f9U, 0x40b47944U, 0x4132ef4fU, 0x41347944U, 0x4132ef4fU, 0x41075af3U,
+      0x00000000U, 0x41075af3U, 0x40347944U, 0x40b47944U,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.847874015748033,
+    11.336220472440944,
+    None,
+    [
+      0x00000000U, 0x40356129U, 0x4132e050U, 0x40356129U, 0x4132e050U, 0x00000000U,
+      0x4186c872U, 0x40b56129U, 0x4132e050U, 0x41356129U, 0x4132e050U, 0x410808dfU,
+      0x00000000U, 0x410808dfU, 0x40356129U, 0x40b56129U,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.872519685039371,
+    11.392834645669291,
+    None,
+    [
+      0x00000000U, 0x4036490dU, 0x4132d151U, 0x4036490dU, 0x4132d151U, 0x00000000U,
+      0x4186faecU, 0x40b6490dU, 0x4132d151U, 0x4136490dU, 0x4132d151U, 0x4108b6caU,
+      0x00000000U, 0x4108b6caU, 0x4036490dU, 0x40b6490dU,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.89716535433071,
+    11.449448818897638,
+    None,
+    [
+      0x00000000U, 0x403730f1U, 0x4132c251U, 0x403730f1U, 0x4132c251U, 0x00000000U,
+      0x41872d65U, 0x40b730f1U, 0x4132c251U, 0x413730f1U, 0x4132c251U, 0x410964b5U,
+      0x00000000U, 0x410964b5U, 0x403730f1U, 0x40b730f1U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.499685039370078,
+    11.223779527559055,
+    None,
+    [
+      0x00000000U, 0x40b3949aU, 0x40219f57U, 0x404589dcU, 0x40219f57U, 0x408b2cc4U,
+      0x40ef96e0U, 0x408b2cc4U, 0x40ef96e0U, 0x40219f57U, 0x40c72f0aU, 0x40219f57U,
+      0x410bff5bU, 0x00000000U, 0x41346731U, 0x40219f57U, 0x41203346U, 0x40219f57U,
+      0x41203346U, 0x408b2cc4U, 0x416f96e0U, 0x408b2cc4U, 0x416f96e0U, 0x404589dcU,
+      0x418bff5bU, 0x40b3949aU, 0x416f96e0U, 0x41023223U, 0x416f96e0U, 0x40dbfc70U,
+      0x41203346U, 0x40dbfc70U, 0x41203346U, 0x410b2cc4U, 0x41346731U, 0x410b2cc4U,
+      0x410bff5bU, 0x4133949aU, 0x40c72f0aU, 0x410b2cc4U, 0x40ef96e0U, 0x410b2cc4U,
+      0x40ef96e0U, 0x40dbfc70U, 0x40219f57U, 0x40dbfc70U, 0x40219f57U, 0x41023223U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.524330708661417,
+    11.280393700787402,
+    None,
+    [
+      0x00000000U, 0x40b47c7eU, 0x4022700bU, 0x404688f1U, 0x4022700bU, 0x408be07bU,
+      0x40efc7a6U, 0x408be07bU, 0x40efc7a6U, 0x4022700bU, 0x40c72ba3U, 0x4022700bU,
+      0x410c31d4U, 0x00000000U, 0x4134cdd7U, 0x4022700bU, 0x41207fd6U, 0x4022700bU,
+      0x41207fd6U, 0x408be07bU, 0x416fc7a6U, 0x408be07bU, 0x416fc7a6U, 0x404688f1U,
+      0x418c31d4U, 0x40b47c7eU, 0x416fc7a6U, 0x4102da42U, 0x416fc7a6U, 0x40dd1881U,
+      0x41207fd6U, 0x40dd1881U, 0x41207fd6U, 0x410be07bU, 0x4134cdd7U, 0x410be07bU,
+      0x410c31d4U, 0x41347c7eU, 0x40c72ba3U, 0x410be07bU, 0x40efc7a6U, 0x410be07bU,
+      0x40efc7a6U, 0x40dd1881U, 0x4022700bU, 0x40dd1881U, 0x4022700bU, 0x4102da42U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.548976377952755,
+    11.337007874015748,
+    None,
+    [
+      0x00000000U, 0x40b56462U, 0x402340bfU, 0x40478806U, 0x402340bfU, 0x408c9433U,
+      0x40eff86cU, 0x408c9433U, 0x40eff86cU, 0x402340bfU, 0x40c7283cU, 0x402340bfU,
+      0x410c644eU, 0x00000000U, 0x4135347dU, 0x402340bfU, 0x4120cc66U, 0x402340bfU,
+      0x4120cc66U, 0x408c9433U, 0x416ff86cU, 0x408c9433U, 0x416ff86cU, 0x40478806U,
+      0x418c644eU, 0x40b56462U, 0x416ff86cU, 0x41038261U, 0x416ff86cU, 0x40de3492U,
+      0x4120cc66U, 0x40de3492U, 0x4120cc66U, 0x410c9433U, 0x4135347dU, 0x410c9433U,
+      0x410c644eU, 0x41356462U, 0x40c7283cU, 0x410c9433U, 0x40eff86cU, 0x410c9433U,
+      0x40eff86cU, 0x40de3492U, 0x402340bfU, 0x40de3492U, 0x402340bfU, 0x41038261U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.573622047244093,
+    11.393622047244094,
+    None,
+    [
+      0x00000000U, 0x40b64c47U, 0x40241173U, 0x4048871aU, 0x40241173U, 0x408d47eaU,
+      0x40f02932U, 0x408d47eaU, 0x40f02932U, 0x40241173U, 0x40c724d5U, 0x40241173U,
+      0x410c96c7U, 0x00000000U, 0x41359b24U, 0x40241173U, 0x412118f6U, 0x40241173U,
+      0x412118f6U, 0x408d47eaU, 0x41702932U, 0x408d47eaU, 0x41702932U, 0x4048871aU,
+      0x418c96c7U, 0x40b64c47U, 0x41702932U, 0x41042a80U, 0x41702932U, 0x40df50a3U,
+      0x412118f6U, 0x40df50a3U, 0x412118f6U, 0x410d47eaU, 0x41359b24U, 0x410d47eaU,
+      0x410c96c7U, 0x41364c47U, 0x40c724d5U, 0x410d47eaU, 0x40f02932U, 0x410d47eaU,
+      0x40f02932U, 0x40df50a3U, 0x40241173U, 0x40df50a3U, 0x40241173U, 0x41042a80U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.598267716535432,
+    11.450236220472441,
+    None,
+    [
+      0x00000000U, 0x40b7342bU, 0x4024e227U, 0x4049862fU, 0x4024e227U, 0x408dfba1U,
+      0x40f059f8U, 0x408dfba1U, 0x40f059f8U, 0x4024e227U, 0x40c7216eU, 0x4024e227U,
+      0x410cc941U, 0x00000000U, 0x413601caU, 0x4024e227U, 0x41216585U, 0x4024e227U,
+      0x41216585U, 0x408dfba1U, 0x417059f8U, 0x408dfba1U, 0x417059f8U, 0x4049862fU,
+      0x418cc941U, 0x40b7342bU, 0x417059f8U, 0x4104d29fU, 0x417059f8U, 0x40e06cb5U,
+      0x41216585U, 0x40e06cb5U, 0x41216585U, 0x410dfba1U, 0x413601caU, 0x410dfba1U,
+      0x410cc941U, 0x4137342bU, 0x40c7216eU, 0x410dfba1U, 0x40f059f8U, 0x410dfba1U,
+      0x40f059f8U, 0x40e06cb5U, 0x4024e227U, 0x40e06cb5U, 0x4024e227U, 0x4104d29fU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.62291338582677,
+    11.506850393700788,
+    None,
+    [
+      0x00000000U, 0x40b81c0fU, 0x4025b2daU, 0x404a8544U, 0x4025b2daU, 0x408eaf59U,
+      0x40f08abdU, 0x408eaf59U, 0x40f08abdU, 0x4025b2daU, 0x40c71e07U, 0x4025b2daU,
+      0x410cfbbaU, 0x00000000U, 0x41366871U, 0x4025b2daU, 0x4121b215U, 0x4025b2daU,
+      0x4121b215U, 0x408eaf59U, 0x41708abdU, 0x408eaf59U, 0x41708abdU, 0x404a8544U,
+      0x418cfbbaU, 0x40b81c0fU, 0x41708abdU, 0x41057abeU, 0x41708abdU, 0x40e188c6U,
+      0x4121b215U, 0x40e188c6U, 0x4121b215U, 0x410eaf59U, 0x41366871U, 0x410eaf59U,
+      0x410cfbbaU, 0x41381c0fU, 0x40c71e07U, 0x410eaf59U, 0x40f08abdU, 0x410eaf59U,
+      0x40f08abdU, 0x40e188c6U, 0x4025b2daU, 0x40e188c6U, 0x4025b2daU, 0x41057abeU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.647559055118109,
+    11.563464566929134,
+    None,
+    [
+      0x00000000U, 0x40b903f3U, 0x4026838eU, 0x404b8459U, 0x4026838eU, 0x408f6310U,
+      0x40f0bb83U, 0x408f6310U, 0x40f0bb83U, 0x4026838eU, 0x40c71aa0U, 0x4026838eU,
+      0x410d2e33U, 0x00000000U, 0x4136cf17U, 0x4026838eU, 0x4121fea5U, 0x4026838eU,
+      0x4121fea5U, 0x408f6310U, 0x4170bb83U, 0x408f6310U, 0x4170bb83U, 0x404b8459U,
+      0x418d2e33U, 0x40b903f3U, 0x4170bb83U, 0x410622ddU, 0x4170bb83U, 0x40e2a4d7U,
+      0x4121fea5U, 0x40e2a4d7U, 0x4121fea5U, 0x410f6310U, 0x4136cf17U, 0x410f6310U,
+      0x410d2e33U, 0x413903f3U, 0x40c71aa0U, 0x410f6310U, 0x40f0bb83U, 0x410f6310U,
+      0x40f0bb83U, 0x40e2a4d7U, 0x4026838eU, 0x40e2a4d7U, 0x4026838eU, 0x410622ddU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.67220472440945,
+    11.62007874015748,
+    None,
+    [
+      0x00000000U, 0x40b9ebd8U, 0x40275442U, 0x404c836dU, 0x40275442U, 0x409016c7U,
+      0x40f0ec49U, 0x409016c7U, 0x40f0ec49U, 0x40275442U, 0x40c71739U, 0x40275442U,
+      0x410d60adU, 0x00000000U, 0x413735bdU, 0x40275442U, 0x41224b35U, 0x40275442U,
+      0x41224b35U, 0x409016c7U, 0x4170ec49U, 0x409016c7U, 0x4170ec49U, 0x404c836dU,
+      0x418d60adU, 0x40b9ebd8U, 0x4170ec49U, 0x4106cafcU, 0x4170ec49U, 0x40e3c0e8U,
+      0x41224b35U, 0x40e3c0e8U, 0x41224b35U, 0x411016c7U, 0x413735bdU, 0x411016c7U,
+      0x410d60adU, 0x4139ebd8U, 0x40c71739U, 0x411016c7U, 0x40f0ec49U, 0x411016c7U,
+      0x40f0ec49U, 0x40e3c0e8U, 0x40275442U, 0x40e3c0e8U, 0x40275442U, 0x4106cafcU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.696850393700789,
+    11.676692913385827,
+    None,
+    [
+      0x00000000U, 0x40bad3bcU, 0x402824f6U, 0x404d8282U, 0x402824f6U, 0x4090ca7eU,
+      0x40f11d0fU, 0x4090ca7eU, 0x40f11d0fU, 0x402824f6U, 0x40c713d2U, 0x402824f6U,
+      0x410d9326U, 0x00000000U, 0x41379c64U, 0x402824f6U, 0x412297c5U, 0x402824f6U,
+      0x412297c5U, 0x4090ca7eU, 0x41711d0fU, 0x4090ca7eU, 0x41711d0fU, 0x404d8282U,
+      0x418d9326U, 0x40bad3bcU, 0x41711d0fU, 0x4107731bU, 0x41711d0fU, 0x40e4dcf9U,
+      0x412297c5U, 0x40e4dcf9U, 0x412297c5U, 0x4110ca7eU, 0x41379c64U, 0x4110ca7eU,
+      0x410d9326U, 0x413ad3bcU, 0x40c713d2U, 0x4110ca7eU, 0x40f11d0fU, 0x4110ca7eU,
+      0x40f11d0fU, 0x40e4dcf9U, 0x402824f6U, 0x40e4dcf9U, 0x402824f6U, 0x4107731bU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.721496062992127,
+    11.733307086614174,
+    None,
+    [
+      0x00000000U, 0x40bbbba0U, 0x4028f5aaU, 0x404e8197U, 0x4028f5aaU, 0x40917e36U,
+      0x40f14dd5U, 0x40917e36U, 0x40f14dd5U, 0x4028f5aaU, 0x40c7106bU, 0x4028f5aaU,
+      0x410dc5a0U, 0x00000000U, 0x4138030aU, 0x4028f5aaU, 0x4122e455U, 0x4028f5aaU,
+      0x4122e455U, 0x40917e36U, 0x41714dd5U, 0x40917e36U, 0x41714dd5U, 0x404e8197U,
+      0x418dc5a0U, 0x40bbbba0U, 0x41714dd5U, 0x41081b3bU, 0x41714dd5U, 0x40e5f90bU,
+      0x4122e455U, 0x40e5f90bU, 0x4122e455U, 0x41117e36U, 0x4138030aU, 0x41117e36U,
+      0x410dc5a0U, 0x413bbba0U, 0x40c7106bU, 0x41117e36U, 0x40f14dd5U, 0x41117e36U,
+      0x40f14dd5U, 0x40e5f90bU, 0x4028f5aaU, 0x40e5f90bU, 0x4028f5aaU, 0x41081b3bU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.746141732283466,
+    11.78992125984252,
+    None,
+    [
+      0x00000000U, 0x40bca384U, 0x4029c65eU, 0x404f80abU, 0x4029c65eU, 0x409231edU,
+      0x40f17e9bU, 0x409231edU, 0x40f17e9bU, 0x4029c65eU, 0x40c70d03U, 0x4029c65eU,
+      0x410df819U, 0x00000000U, 0x413869b1U, 0x4029c65eU, 0x412330e5U, 0x4029c65eU,
+      0x412330e5U, 0x409231edU, 0x41717e9bU, 0x409231edU, 0x41717e9bU, 0x404f80abU,
+      0x418df819U, 0x40bca384U, 0x41717e9bU, 0x4108c35aU, 0x41717e9bU, 0x40e7151cU,
+      0x412330e5U, 0x40e7151cU, 0x412330e5U, 0x411231edU, 0x413869b1U, 0x411231edU,
+      0x410df819U, 0x413ca384U, 0x40c70d03U, 0x411231edU, 0x40f17e9bU, 0x411231edU,
+      0x40f17e9bU, 0x40e7151cU, 0x4029c65eU, 0x40e7151cU, 0x4029c65eU, 0x4108c35aU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.770787401574804,
+    11.846535433070866,
+    None,
+    [
+      0x00000000U, 0x40bd8b69U, 0x402a9711U, 0x40507fc0U, 0x402a9711U, 0x4092e5a4U,
+      0x40f1af61U, 0x4092e5a4U, 0x40f1af61U, 0x402a9711U, 0x40c7099cU, 0x402a9711U,
+      0x410e2a93U, 0x00000000U, 0x4138d057U, 0x402a9711U, 0x41237d75U, 0x402a9711U,
+      0x41237d75U, 0x4092e5a4U, 0x4171af61U, 0x4092e5a4U, 0x4171af61U, 0x40507fc0U,
+      0x418e2a93U, 0x40bd8b69U, 0x4171af61U, 0x41096b79U, 0x4171af61U, 0x40e8312dU,
+      0x41237d75U, 0x40e8312dU, 0x41237d75U, 0x4112e5a4U, 0x4138d057U, 0x4112e5a4U,
+      0x410e2a93U, 0x413d8b69U, 0x40c7099cU, 0x4112e5a4U, 0x40f1af61U, 0x4112e5a4U,
+      0x40f1af61U, 0x40e8312dU, 0x402a9711U, 0x40e8312dU, 0x402a9711U, 0x41096b79U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.795433070866142,
+    11.903149606299213,
+    None,
+    [
+      0x00000000U, 0x40be734dU, 0x402b67c5U, 0x40517ed5U, 0x402b67c5U, 0x4093995cU,
+      0x40f1e027U, 0x4093995cU, 0x40f1e027U, 0x402b67c5U, 0x40c70635U, 0x402b67c5U,
+      0x410e5d0cU, 0x00000000U, 0x413936fdU, 0x402b67c5U, 0x4123ca05U, 0x402b67c5U,
+      0x4123ca05U, 0x4093995cU, 0x4171e027U, 0x4093995cU, 0x4171e027U, 0x40517ed5U,
+      0x418e5d0cU, 0x40be734dU, 0x4171e027U, 0x410a1398U, 0x4171e027U, 0x40e94d3eU,
+      0x4123ca05U, 0x40e94d3eU, 0x4123ca05U, 0x4113995cU, 0x413936fdU, 0x4113995cU,
+      0x410e5d0cU, 0x413e734dU, 0x40c70635U, 0x4113995cU, 0x40f1e027U, 0x4113995cU,
+      0x40f1e027U, 0x40e94d3eU, 0x402b67c5U, 0x40e94d3eU, 0x402b67c5U, 0x410a1398U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.820078740157481,
+    11.95976377952756,
+    None,
+    [
+      0x00000000U, 0x40bf5b31U, 0x402c3879U, 0x40527de9U, 0x402c3879U, 0x40944d13U,
+      0x40f210edU, 0x40944d13U, 0x40f210edU, 0x402c3879U, 0x40c702ceU, 0x402c3879U,
+      0x410e8f85U, 0x00000000U, 0x41399da4U, 0x402c3879U, 0x41241695U, 0x402c3879U,
+      0x41241695U, 0x40944d13U, 0x417210edU, 0x40944d13U, 0x417210edU, 0x40527de9U,
+      0x418e8f85U, 0x40bf5b31U, 0x417210edU, 0x410abbb7U, 0x417210edU, 0x40ea6950U,
+      0x41241695U, 0x40ea6950U, 0x41241695U, 0x41144d13U, 0x41399da4U, 0x41144d13U,
+      0x410e8f85U, 0x413f5b31U, 0x40c702ceU, 0x41144d13U, 0x40f210edU, 0x41144d13U,
+      0x40f210edU, 0x40ea6950U, 0x402c3879U, 0x40ea6950U, 0x402c3879U, 0x410abbb7U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.844724409448819,
+    12.016377952755905,
+    None,
+    [
+      0x00000000U, 0x40c04316U, 0x402d092dU, 0x40537cfeU, 0x402d092dU, 0x409500caU,
+      0x40f241b2U, 0x409500caU, 0x40f241b2U, 0x402d092dU, 0x40c6ff67U, 0x402d092dU,
+      0x410ec1ffU, 0x00000000U, 0x413a044aU, 0x402d092dU, 0x41246324U, 0x402d092dU,
+      0x41246324U, 0x409500caU, 0x417241b2U, 0x409500caU, 0x417241b2U, 0x40537cfeU,
+      0x418ec1ffU, 0x40c04316U, 0x417241b2U, 0x410b63d6U, 0x417241b2U, 0x40eb8561U,
+      0x41246324U, 0x40eb8561U, 0x41246324U, 0x411500caU, 0x413a044aU, 0x411500caU,
+      0x410ec1ffU, 0x41404316U, 0x40c6ff67U, 0x411500caU, 0x40f241b2U, 0x411500caU,
+      0x40f241b2U, 0x40eb8561U, 0x402d092dU, 0x40eb8561U, 0x402d092dU, 0x410b63d6U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.869370078740157,
+    12.072992125984252,
+    None,
+    [
+      0x00000000U, 0x40c12afaU, 0x402dd9e1U, 0x40547c13U, 0x402dd9e1U, 0x4095b482U,
+      0x40f27278U, 0x4095b482U, 0x40f27278U, 0x402dd9e1U, 0x40c6fc00U, 0x402dd9e1U,
+      0x410ef478U, 0x00000000U, 0x413a6af1U, 0x402dd9e1U, 0x4124afb4U, 0x402dd9e1U,
+      0x4124afb4U, 0x4095b482U, 0x41727278U, 0x4095b482U, 0x41727278U, 0x40547c13U,
+      0x418ef478U, 0x40c12afaU, 0x41727278U, 0x410c0bf5U, 0x41727278U, 0x40eca172U,
+      0x4124afb4U, 0x40eca172U, 0x4124afb4U, 0x4115b482U, 0x413a6af1U, 0x4115b482U,
+      0x410ef478U, 0x41412afaU, 0x40c6fc00U, 0x4115b482U, 0x40f27278U, 0x4115b482U,
+      0x40f27278U, 0x40eca172U, 0x402dd9e1U, 0x40eca172U, 0x402dd9e1U, 0x410c0bf5U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.471889763779526,
+    11.84732283464567,
+    None,
+    [
+      0x00000000U, 0x40bd8ea2U, 0x400c62d3U, 0x406eba71U, 0x400c62d3U, 0x409a75eeU,
+      0x40995296U, 0x409a75eeU, 0x40995296U, 0x4044ac53U, 0x41023a14U, 0x4044ac53U,
+      0x41023a14U, 0x400c62d3U, 0x40e15b73U, 0x400c62d3U, 0x4113c66eU, 0x00000000U,
+      0x4136df23U, 0x400c62d3U, 0x412552c9U, 0x400c62d3U, 0x412552c9U, 0x4044ac53U,
+      0x415ae391U, 0x4044ac53U, 0x415ae391U, 0x409a75eeU, 0x41823a14U, 0x409a75eeU,
+      0x41823a14U, 0x406eba71U, 0x4193c66eU, 0x40bd8ea2U, 0x41823a14U, 0x4101e006U,
+      0x41823a14U, 0x40e0a757U, 0x415ae391U, 0x40e0a757U, 0x415ae391U, 0x410c638eU,
+      0x412552c9U, 0x410c638eU, 0x412552c9U, 0x411a75eeU, 0x4136df23U, 0x411a75eeU,
+      0x4113c66eU, 0x413d8ea2U, 0x40e15b73U, 0x411a75eeU, 0x41023a14U, 0x411a75eeU,
+      0x41023a14U, 0x410c638eU, 0x40995296U, 0x410c638eU, 0x40995296U, 0x40e0a757U,
+      0x400c62d3U, 0x40e0a757U, 0x400c62d3U, 0x4101e006U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.496535433070868,
+    11.903937007874015,
+    None,
+    [
+      0x00000000U, 0x40be7687U, 0x400d0e90U, 0x406fde7dU, 0x400d0e90U, 0x409b32e3U,
+      0x409986f4U, 0x409b32e3U, 0x409986f4U, 0x40459cecU, 0x41025716U, 0x40459cecU,
+      0x41025716U, 0x400d0e90U, 0x40e16a87U, 0x400d0e90U, 0x4113f8e8U, 0x00000000U,
+      0x41373c8cU, 0x400d0e90U, 0x41259abaU, 0x400d0e90U, 0x41259abaU, 0x40459cecU,
+      0x415b2e55U, 0x40459cecU, 0x415b2e55U, 0x409b32e3U, 0x41825716U, 0x409b32e3U,
+      0x41825716U, 0x406fde7dU, 0x4193f8e8U, 0x40be7687U, 0x41825716U, 0x41027ee7U,
+      0x41825716U, 0x40e1ba2bU, 0x415b2e55U, 0x40e1ba2bU, 0x415b2e55U, 0x410d0f4cU,
+      0x41259abaU, 0x410d0f4cU, 0x41259abaU, 0x411b32e3U, 0x41373c8cU, 0x411b32e3U,
+      0x4113f8e8U, 0x413e7687U, 0x40e16a87U, 0x411b32e3U, 0x41025716U, 0x411b32e3U,
+      0x41025716U, 0x410d0f4cU, 0x409986f4U, 0x410d0f4cU, 0x409986f4U, 0x40e1ba2bU,
+      0x400d0e90U, 0x40e1ba2bU, 0x400d0e90U, 0x41027ee7U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.521181102362206,
+    11.960551181102362,
+    None,
+    [
+      0x00000000U, 0x40bf5e6bU, 0x400dba4eU, 0x40710288U, 0x400dba4eU, 0x409befd8U,
+      0x4099bb53U, 0x409befd8U, 0x4099bb53U, 0x40468d85U, 0x41027417U, 0x40468d85U,
+      0x41027417U, 0x400dba4eU, 0x40e1799bU, 0x400dba4eU, 0x41142b61U, 0x00000000U,
+      0x413799f4U, 0x400dba4eU, 0x4125e2abU, 0x400dba4eU, 0x4125e2abU, 0x40468d85U,
+      0x415b7919U, 0x40468d85U, 0x415b7919U, 0x409befd8U, 0x41827417U, 0x409befd8U,
+      0x41827417U, 0x40710288U, 0x41942b61U, 0x40bf5e6bU, 0x41827417U, 0x41031dc9U,
+      0x41827417U, 0x40e2ccfeU, 0x415b7919U, 0x40e2ccfeU, 0x415b7919U, 0x410dbb0aU,
+      0x4125e2abU, 0x410dbb0aU, 0x4125e2abU, 0x411befd8U, 0x413799f4U, 0x411befd8U,
+      0x41142b61U, 0x413f5e6bU, 0x40e1799bU, 0x411befd8U, 0x41027417U, 0x411befd8U,
+      0x41027417U, 0x410dbb0aU, 0x4099bb53U, 0x410dbb0aU, 0x4099bb53U, 0x40e2ccfeU,
+      0x400dba4eU, 0x40e2ccfeU, 0x400dba4eU, 0x41031dc9U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.545826771653545,
+    12.017165354330709,
+    None,
+    [
+      0x00000000U, 0x40c0464fU, 0x400e660bU, 0x40722694U, 0x400e660bU, 0x409cacccU,
+      0x4099efb1U, 0x409cacccU, 0x4099efb1U, 0x40477e1dU, 0x41029119U, 0x40477e1dU,
+      0x41029119U, 0x400e660bU, 0x40e188afU, 0x400e660bU, 0x41145ddaU, 0x00000000U,
+      0x4137f75dU, 0x400e660bU, 0x41262a9cU, 0x400e660bU, 0x41262a9cU, 0x40477e1dU,
+      0x415bc3dcU, 0x40477e1dU, 0x415bc3dcU, 0x409cacccU, 0x41829119U, 0x409cacccU,
+      0x41829119U, 0x40722694U, 0x41945ddaU, 0x40c0464fU, 0x41829119U, 0x4103bcaaU,
+      0x41829119U, 0x40e3dfd2U, 0x415bc3dcU, 0x40e3dfd2U, 0x415bc3dcU, 0x410e66c8U,
+      0x41262a9cU, 0x410e66c8U, 0x41262a9cU, 0x411cacccU, 0x4137f75dU, 0x411cacccU,
+      0x41145ddaU, 0x4140464fU, 0x40e188afU, 0x411cacccU, 0x41029119U, 0x411cacccU,
+      0x41029119U, 0x410e66c8U, 0x4099efb1U, 0x410e66c8U, 0x4099efb1U, 0x40e3dfd2U,
+      0x400e660bU, 0x40e3dfd2U, 0x400e660bU, 0x4103bcaaU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.570472440944883,
+    12.073779527559054,
+    None,
+    [
+      0x00000000U, 0x40c12e33U, 0x400f11c8U, 0x40734a9fU, 0x400f11c8U, 0x409d69c1U,
+      0x409a2410U, 0x409d69c1U, 0x409a2410U, 0x40486eb6U, 0x4102ae1bU, 0x40486eb6U,
+      0x4102ae1bU, 0x400f11c8U, 0x40e197c4U, 0x400f11c8U, 0x41149054U, 0x00000000U,
+      0x413854c6U, 0x400f11c8U, 0x4126728dU, 0x400f11c8U, 0x4126728dU, 0x40486eb6U,
+      0x415c0ea0U, 0x40486eb6U, 0x415c0ea0U, 0x409d69c1U, 0x4182ae1bU, 0x409d69c1U,
+      0x4182ae1bU, 0x40734a9fU, 0x41949054U, 0x40c12e33U, 0x4182ae1bU, 0x41045b8cU,
+      0x4182ae1bU, 0x40e4f2a5U, 0x415c0ea0U, 0x40e4f2a5U, 0x415c0ea0U, 0x410f1286U,
+      0x4126728dU, 0x410f1286U, 0x4126728dU, 0x411d69c1U, 0x413854c6U, 0x411d69c1U,
+      0x41149054U, 0x41412e33U, 0x40e197c4U, 0x411d69c1U, 0x4102ae1bU, 0x411d69c1U,
+      0x4102ae1bU, 0x410f1286U, 0x409a2410U, 0x410f1286U, 0x409a2410U, 0x40e4f2a5U,
+      0x400f11c8U, 0x40e4f2a5U, 0x400f11c8U, 0x41045b8cU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.595118110236221,
+    12.130393700787401,
+    None,
+    [
+      0x00000000U, 0x40c21618U, 0x400fbd85U, 0x40746eaaU, 0x400fbd85U, 0x409e26b6U,
+      0x409a586eU, 0x409e26b6U, 0x409a586eU, 0x40495f4fU, 0x4102cb1dU, 0x40495f4fU,
+      0x4102cb1dU, 0x400fbd85U, 0x40e1a6d8U, 0x400fbd85U, 0x4114c2cdU, 0x00000000U,
+      0x4138b22fU, 0x400fbd85U, 0x4126ba7eU, 0x400fbd85U, 0x4126ba7eU, 0x40495f4fU,
+      0x415c5963U, 0x40495f4fU, 0x415c5963U, 0x409e26b6U, 0x4182cb1dU, 0x409e26b6U,
+      0x4182cb1dU, 0x40746eaaU, 0x4194c2cdU, 0x40c21618U, 0x4182cb1dU, 0x4104fa6dU,
+      0x4182cb1dU, 0x40e60579U, 0x415c5963U, 0x40e60579U, 0x415c5963U, 0x410fbe44U,
+      0x4126ba7eU, 0x410fbe44U, 0x4126ba7eU, 0x411e26b6U, 0x4138b22fU, 0x411e26b6U,
+      0x4114c2cdU, 0x41421618U, 0x40e1a6d8U, 0x411e26b6U, 0x4102cb1dU, 0x411e26b6U,
+      0x4102cb1dU, 0x410fbe44U, 0x409a586eU, 0x410fbe44U, 0x409a586eU, 0x40e60579U,
+      0x400fbd85U, 0x40e60579U, 0x400fbd85U, 0x4104fa6dU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.61976377952756,
+    12.187007874015748,
+    None,
+    [
+      0x00000000U, 0x40c2fdfcU, 0x40106942U, 0x407592b6U, 0x40106942U, 0x409ee3abU,
+      0x409a8ccdU, 0x409ee3abU, 0x409a8ccdU, 0x404a4fe8U, 0x4102e81eU, 0x404a4fe8U,
+      0x4102e81eU, 0x40106942U, 0x40e1b5ecU, 0x40106942U, 0x4114f547U, 0x00000000U,
+      0x41390f97U, 0x40106942U, 0x4127026fU, 0x40106942U, 0x4127026fU, 0x404a4fe8U,
+      0x415ca427U, 0x404a4fe8U, 0x415ca427U, 0x409ee3abU, 0x4182e81eU, 0x409ee3abU,
+      0x4182e81eU, 0x407592b6U, 0x4194f547U, 0x40c2fdfcU, 0x4182e81eU, 0x4105994fU,
+      0x4182e81eU, 0x40e7184dU, 0x415ca427U, 0x40e7184dU, 0x415ca427U, 0x41106a02U,
+      0x4127026fU, 0x41106a02U, 0x4127026fU, 0x411ee3abU, 0x41390f97U, 0x411ee3abU,
+      0x4114f547U, 0x4142fdfcU, 0x40e1b5ecU, 0x411ee3abU, 0x4102e81eU, 0x411ee3abU,
+      0x4102e81eU, 0x41106a02U, 0x409a8ccdU, 0x41106a02U, 0x409a8ccdU, 0x40e7184dU,
+      0x40106942U, 0x40e7184dU, 0x40106942U, 0x4105994fU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.644409448818898,
+    12.243622047244095,
+    None,
+    [
+      0x00000000U, 0x40c3e5e0U, 0x40111500U, 0x4076b6c1U, 0x40111500U, 0x409fa0a0U,
+      0x409ac12bU, 0x409fa0a0U, 0x409ac12bU, 0x404b4081U, 0x41030520U, 0x404b4081U,
+      0x41030520U, 0x40111500U, 0x40e1c501U, 0x40111500U, 0x411527c0U, 0x00000000U,
+      0x41396d00U, 0x40111500U, 0x41274a60U, 0x40111500U, 0x41274a60U, 0x404b4081U,
+      0x415ceeebU, 0x404b4081U, 0x415ceeebU, 0x409fa0a0U, 0x41830520U, 0x409fa0a0U,
+      0x41830520U, 0x4076b6c1U, 0x419527c0U, 0x40c3e5e0U, 0x41830520U, 0x41063830U,
+      0x41830520U, 0x40e82b20U, 0x415ceeebU, 0x40e82b20U, 0x415ceeebU, 0x411115c0U,
+      0x41274a60U, 0x411115c0U, 0x41274a60U, 0x411fa0a0U, 0x41396d00U, 0x411fa0a0U,
+      0x411527c0U, 0x4143e5e0U, 0x40e1c501U, 0x411fa0a0U, 0x41030520U, 0x411fa0a0U,
+      0x41030520U, 0x411115c0U, 0x409ac12bU, 0x411115c0U, 0x409ac12bU, 0x40e82b20U,
+      0x40111500U, 0x40e82b20U, 0x40111500U, 0x41063830U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.669055118110236,
+    12.30023622047244,
+    None,
+    [
+      0x00000000U, 0x40c4cdc4U, 0x4011c0bdU, 0x4077daccU, 0x4011c0bdU, 0x40a05d95U,
+      0x409af58aU, 0x40a05d95U, 0x409af58aU, 0x404c3119U, 0x41032222U, 0x404c3119U,
+      0x41032222U, 0x4011c0bdU, 0x40e1d415U, 0x4011c0bdU, 0x41155a3aU, 0x00000000U,
+      0x4139ca69U, 0x4011c0bdU, 0x41279251U, 0x4011c0bdU, 0x41279251U, 0x404c3119U,
+      0x415d39aeU, 0x404c3119U, 0x415d39aeU, 0x40a05d95U, 0x41832222U, 0x40a05d95U,
+      0x41832222U, 0x4077daccU, 0x41955a3aU, 0x40c4cdc4U, 0x41832222U, 0x4106d711U,
+      0x41832222U, 0x40e93df4U, 0x415d39aeU, 0x40e93df4U, 0x415d39aeU, 0x4111c17eU,
+      0x41279251U, 0x4111c17eU, 0x41279251U, 0x41205d95U, 0x4139ca69U, 0x41205d95U,
+      0x41155a3aU, 0x4144cdc4U, 0x40e1d415U, 0x41205d95U, 0x41032222U, 0x41205d95U,
+      0x41032222U, 0x4111c17eU, 0x409af58aU, 0x4111c17eU, 0x409af58aU, 0x40e93df4U,
+      0x4011c0bdU, 0x40e93df4U, 0x4011c0bdU, 0x4106d711U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.693700787401575,
+    12.356850393700787,
+    None,
+    [
+      0x00000000U, 0x40c5b5a9U, 0x40126c7aU, 0x4078fed8U, 0x40126c7aU, 0x40a11a8aU,
+      0x409b29e8U, 0x40a11a8aU, 0x409b29e8U, 0x404d21b2U, 0x41033f24U, 0x404d21b2U,
+      0x41033f24U, 0x40126c7aU, 0x40e1e329U, 0x40126c7aU, 0x41158cb3U, 0x00000000U,
+      0x413a27d1U, 0x40126c7aU, 0x4127da42U, 0x40126c7aU, 0x4127da42U, 0x404d21b2U,
+      0x415d8472U, 0x404d21b2U, 0x415d8472U, 0x40a11a8aU, 0x41833f24U, 0x40a11a8aU,
+      0x41833f24U, 0x4078fed8U, 0x41958cb3U, 0x40c5b5a9U, 0x41833f24U, 0x410775f3U,
+      0x41833f24U, 0x40ea50c7U, 0x415d8472U, 0x40ea50c7U, 0x415d8472U, 0x41126d3cU,
+      0x4127da42U, 0x41126d3cU, 0x4127da42U, 0x41211a8aU, 0x413a27d1U, 0x41211a8aU,
+      0x41158cb3U, 0x4145b5a9U, 0x40e1e329U, 0x41211a8aU, 0x41033f24U, 0x41211a8aU,
+      0x41033f24U, 0x41126d3cU, 0x409b29e8U, 0x41126d3cU, 0x409b29e8U, 0x40ea50c7U,
+      0x40126c7aU, 0x40ea50c7U, 0x40126c7aU, 0x410775f3U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.718346456692913,
+    12.413464566929134,
+    None,
+    [
+      0x00000000U, 0x40c69d8dU, 0x40131837U, 0x407a22e3U, 0x40131837U, 0x40a1d77fU,
+      0x409b5e47U, 0x40a1d77fU, 0x409b5e47U, 0x404e124bU, 0x41035c26U, 0x404e124bU,
+      0x41035c26U, 0x40131837U, 0x40e1f23dU, 0x40131837U, 0x4115bf2cU, 0x00000000U,
+      0x413a853aU, 0x40131837U, 0x41282233U, 0x40131837U, 0x41282233U, 0x404e124bU,
+      0x415dcf36U, 0x404e124bU, 0x415dcf36U, 0x40a1d77fU, 0x41835c26U, 0x40a1d77fU,
+      0x41835c26U, 0x407a22e3U, 0x4195bf2cU, 0x40c69d8dU, 0x41835c26U, 0x410814d4U,
+      0x41835c26U, 0x40eb639bU, 0x415dcf36U, 0x40eb639bU, 0x415dcf36U, 0x411318faU,
+      0x41282233U, 0x411318faU, 0x41282233U, 0x4121d77fU, 0x413a853aU, 0x4121d77fU,
+      0x4115bf2cU, 0x41469d8dU, 0x40e1f23dU, 0x4121d77fU, 0x41035c26U, 0x4121d77fU,
+      0x41035c26U, 0x411318faU, 0x409b5e47U, 0x411318faU, 0x409b5e47U, 0x40eb639bU,
+      0x40131837U, 0x40eb639bU, 0x40131837U, 0x410814d4U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.742992125984252,
+    12.470078740157481,
+    None,
+    [
+      0x00000000U, 0x40c78571U, 0x4013c3f4U, 0x407b46eeU, 0x4013c3f4U, 0x40a29474U,
+      0x409b92a5U, 0x40a29474U, 0x409b92a5U, 0x404f02e4U, 0x41037927U, 0x404f02e4U,
+      0x41037927U, 0x4013c3f4U, 0x40e20152U, 0x4013c3f4U, 0x4115f1a6U, 0x00000000U,
+      0x413ae2a3U, 0x4013c3f4U, 0x41286a24U, 0x4013c3f4U, 0x41286a24U, 0x404f02e4U,
+      0x415e19f9U, 0x404f02e4U, 0x415e19f9U, 0x40a29474U, 0x41837927U, 0x40a29474U,
+      0x41837927U, 0x407b46eeU, 0x4195f1a6U, 0x40c78571U, 0x41837927U, 0x4108b3b6U,
+      0x41837927U, 0x40ec766eU, 0x415e19f9U, 0x40ec766eU, 0x415e19f9U, 0x4113c4b8U,
+      0x41286a24U, 0x4113c4b8U, 0x41286a24U, 0x41229474U, 0x413ae2a3U, 0x41229474U,
+      0x4115f1a6U, 0x41478571U, 0x40e20152U, 0x41229474U, 0x41037927U, 0x41229474U,
+      0x41037927U, 0x4113c4b8U, 0x409b92a5U, 0x4113c4b8U, 0x409b92a5U, 0x40ec766eU,
+      0x4013c3f4U, 0x40ec766eU, 0x4013c3f4U, 0x4108b3b6U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.76763779527559,
+    12.526692913385826,
+    None,
+    [
+      0x00000000U, 0x40c86d56U, 0x40146fb1U, 0x407c6afaU, 0x40146fb1U, 0x40a35169U,
+      0x409bc704U, 0x40a35169U, 0x409bc704U, 0x404ff37dU, 0x41039629U, 0x404ff37dU,
+      0x41039629U, 0x40146fb1U, 0x40e21066U, 0x40146fb1U, 0x4116241fU, 0x00000000U,
+      0x413b400cU, 0x40146fb1U, 0x4128b215U, 0x40146fb1U, 0x4128b215U, 0x404ff37dU,
+      0x415e64bdU, 0x404ff37dU, 0x415e64bdU, 0x40a35169U, 0x41839629U, 0x40a35169U,
+      0x41839629U, 0x407c6afaU, 0x4196241fU, 0x40c86d56U, 0x41839629U, 0x41095297U,
+      0x41839629U, 0x40ed8942U, 0x415e64bdU, 0x40ed8942U, 0x415e64bdU, 0x41147076U,
+      0x4128b215U, 0x41147076U, 0x4128b215U, 0x41235169U, 0x413b400cU, 0x41235169U,
+      0x4116241fU, 0x41486d56U, 0x40e21066U, 0x41235169U, 0x41039629U, 0x41235169U,
+      0x41039629U, 0x41147076U, 0x409bc704U, 0x41147076U, 0x409bc704U, 0x40ed8942U,
+      0x40146fb1U, 0x40ed8942U, 0x40146fb1U, 0x41095297U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.792283464566928,
+    12.583307086614173,
+    None,
+    [
+      0x00000000U, 0x40c9553aU, 0x40151b6fU, 0x407d8f05U, 0x40151b6fU, 0x40a40e5eU,
+      0x409bfb62U, 0x40a40e5eU, 0x409bfb62U, 0x4050e415U, 0x4103b32bU, 0x4050e415U,
+      0x4103b32bU, 0x40151b6fU, 0x40e21f7aU, 0x40151b6fU, 0x41165699U, 0x00000000U,
+      0x413b9d74U, 0x40151b6fU, 0x4128fa07U, 0x40151b6fU, 0x4128fa07U, 0x4050e415U,
+      0x415eaf80U, 0x4050e415U, 0x415eaf80U, 0x40a40e5eU, 0x4183b32bU, 0x40a40e5eU,
+      0x4183b32bU, 0x407d8f05U, 0x41965699U, 0x40c9553aU, 0x4183b32bU, 0x4109f179U,
+      0x4183b32bU, 0x40ee9c15U, 0x415eaf80U, 0x40ee9c15U, 0x415eaf80U, 0x41151c34U,
+      0x4128fa07U, 0x41151c34U, 0x4128fa07U, 0x41240e5eU, 0x413b9d74U, 0x41240e5eU,
+      0x41165699U, 0x4149553aU, 0x40e21f7aU, 0x41240e5eU, 0x4103b32bU, 0x41240e5eU,
+      0x4103b32bU, 0x41151c34U, 0x409bfb62U, 0x41151c34U, 0x409bfb62U, 0x40ee9c15U,
+      0x40151b6fU, 0x40ee9c15U, 0x40151b6fU, 0x4109f179U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.816929133858267,
+    12.63992125984252,
+    None,
+    [
+      0x00000000U, 0x40ca3d1eU, 0x4015c72cU, 0x407eb310U, 0x4015c72cU, 0x40a4cb53U,
+      0x409c2fc1U, 0x40a4cb53U, 0x409c2fc1U, 0x4051d4aeU, 0x4103d02dU, 0x4051d4aeU,
+      0x4103d02dU, 0x4015c72cU, 0x40e22e8eU, 0x4015c72cU, 0x41168912U, 0x00000000U,
+      0x413bfaddU, 0x4015c72cU, 0x412941f8U, 0x4015c72cU, 0x412941f8U, 0x4051d4aeU,
+      0x415efa44U, 0x4051d4aeU, 0x415efa44U, 0x40a4cb53U, 0x4183d02dU, 0x40a4cb53U,
+      0x4183d02dU, 0x407eb310U, 0x41968912U, 0x40ca3d1eU, 0x4183d02dU, 0x410a905aU,
+      0x4183d02dU, 0x40efaee9U, 0x415efa44U, 0x40efaee9U, 0x415efa44U, 0x4115c7f3U,
+      0x412941f8U, 0x4115c7f3U, 0x412941f8U, 0x4124cb53U, 0x413bfaddU, 0x4124cb53U,
+      0x41168912U, 0x414a3d1eU, 0x40e22e8eU, 0x4124cb53U, 0x4103d02dU, 0x4124cb53U,
+      0x4103d02dU, 0x4115c7f3U, 0x409c2fc1U, 0x4115c7f3U, 0x409c2fc1U, 0x40efaee9U,
+      0x4015c72cU, 0x40efaee9U, 0x4015c72cU, 0x410a905aU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.841574803149605,
+    12.696535433070865,
+    None,
+    [
+      0x00000000U, 0x40cb2502U, 0x401672e9U, 0x407fd71cU, 0x401672e9U, 0x40a58848U,
+      0x409c641fU, 0x40a58848U, 0x409c641fU, 0x4052c547U, 0x4103ed2eU, 0x4052c547U,
+      0x4103ed2eU, 0x401672e9U, 0x40e23da3U, 0x401672e9U, 0x4116bb8cU, 0x00000000U,
+      0x413c5846U, 0x401672e9U, 0x412989e9U, 0x401672e9U, 0x412989e9U, 0x4052c547U,
+      0x415f4508U, 0x4052c547U, 0x415f4508U, 0x40a58848U, 0x4183ed2eU, 0x40a58848U,
+      0x4183ed2eU, 0x407fd71cU, 0x4196bb8cU, 0x40cb2502U, 0x4183ed2eU, 0x410b2f3bU,
+      0x4183ed2eU, 0x40f0c1bdU, 0x415f4508U, 0x40f0c1bdU, 0x415f4508U, 0x411673b1U,
+      0x412989e9U, 0x411673b1U, 0x412989e9U, 0x41258848U, 0x413c5846U, 0x41258848U,
+      0x4116bb8cU, 0x414b2502U, 0x40e23da3U, 0x41258848U, 0x4103ed2eU, 0x41258848U,
+      0x4103ed2eU, 0x411673b1U, 0x409c641fU, 0x411673b1U, 0x409c641fU, 0x40f0c1bdU,
+      0x401672e9U, 0x40f0c1bdU, 0x401672e9U, 0x410b2f3bU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.444094488188977,
+    12.470866141732284,
+    None,
+    [
+      0x00000000U, 0x404788abU, 0x415356adU, 0x404788abU, 0x415356adU, 0x00000000U,
+      0x419b8d81U, 0x40c788abU, 0x415356adU, 0x414788abU, 0x415356adU, 0x4115a680U,
+      0x00000000U, 0x4115a680U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.468740157480315,
+    12.527480314960631,
+    None,
+    [
+      0x00000000U, 0x4048708fU, 0x415347aeU, 0x4048708fU, 0x415347aeU, 0x00000000U,
+      0x419bbffbU, 0x40c8708fU, 0x415347aeU, 0x4148708fU, 0x415347aeU, 0x4116546bU,
+      0x00000000U, 0x4116546bU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.493385826771654,
+    12.584094488188976,
+    None,
+    [
+      0x00000000U, 0x40495873U, 0x415338afU, 0x40495873U, 0x415338afU, 0x00000000U,
+      0x419bf274U, 0x40c95873U, 0x415338afU, 0x41495873U, 0x415338afU, 0x41170257U,
+      0x00000000U, 0x41170257U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.518031496062992,
+    12.640708661417323,
+    None,
+    [
+      0x00000000U, 0x404a4058U, 0x415329b0U, 0x404a4058U, 0x415329b0U, 0x00000000U,
+      0x419c24eeU, 0x40ca4058U, 0x415329b0U, 0x414a4058U, 0x415329b0U, 0x4117b042U,
+      0x00000000U, 0x4117b042U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.542677165354331,
+    12.69732283464567,
+    None,
+    [
+      0x00000000U, 0x404b283cU, 0x41531ab0U, 0x404b283cU, 0x41531ab0U, 0x00000000U,
+      0x419c5767U, 0x40cb283cU, 0x41531ab0U, 0x414b283cU, 0x41531ab0U, 0x41185e2dU,
+      0x00000000U, 0x41185e2dU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.567322834645669,
+    12.753937007874017,
+    None,
+    [
+      0x00000000U, 0x404c1020U, 0x41530bb1U, 0x404c1020U, 0x41530bb1U, 0x00000000U,
+      0x419c89e1U, 0x40cc1020U, 0x41530bb1U, 0x414c1020U, 0x41530bb1U, 0x41190c18U,
+      0x00000000U, 0x41190c18U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.591968503937007,
+    12.810551181102362,
+    None,
+    [
+      0x00000000U, 0x404cf805U, 0x4152fcb2U, 0x404cf805U, 0x4152fcb2U, 0x00000000U,
+      0x419cbc5aU, 0x40ccf805U, 0x4152fcb2U, 0x414cf805U, 0x4152fcb2U, 0x4119ba03U,
+      0x00000000U, 0x4119ba03U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.616614173228346,
+    12.867165354330709,
+    None,
+    [
+      0x00000000U, 0x404ddfe9U, 0x4152edb2U, 0x404ddfe9U, 0x4152edb2U, 0x00000000U,
+      0x419ceed3U, 0x40cddfe9U, 0x4152edb2U, 0x414ddfe9U, 0x4152edb2U, 0x411a67efU,
+      0x00000000U, 0x411a67efU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.641259842519684,
+    12.923779527559056,
+    None,
+    [
+      0x00000000U, 0x404ec7cdU, 0x4152deb3U, 0x404ec7cdU, 0x4152deb3U, 0x00000000U,
+      0x419d214dU, 0x40cec7cdU, 0x4152deb3U, 0x414ec7cdU, 0x4152deb3U, 0x411b15daU,
+      0x00000000U, 0x411b15daU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.665905511811022,
+    12.980393700787401,
+    None,
+    [
+      0x00000000U, 0x404fafb1U, 0x4152cfb4U, 0x404fafb1U, 0x4152cfb4U, 0x00000000U,
+      0x419d53c6U, 0x40cfafb1U, 0x4152cfb4U, 0x414fafb1U, 0x4152cfb4U, 0x411bc3c5U,
+      0x00000000U, 0x411bc3c5U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.690551181102361,
+    13.037007874015748,
+    None,
+    [
+      0x00000000U, 0x40509796U, 0x4152c0b5U, 0x40509796U, 0x4152c0b5U, 0x00000000U,
+      0x419d8640U, 0x40d09796U, 0x4152c0b5U, 0x41509796U, 0x4152c0b5U, 0x411c71b0U,
+      0x00000000U, 0x411c71b0U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.715196850393699,
+    13.093622047244095,
+    None,
+    [
+      0x00000000U, 0x40517f7aU, 0x4152b1b5U, 0x40517f7aU, 0x4152b1b5U, 0x00000000U,
+      0x419db8b9U, 0x40d17f7aU, 0x4152b1b5U, 0x41517f7aU, 0x4152b1b5U, 0x411d1f9bU,
+      0x00000000U, 0x411d1f9bU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.739842519685041,
+    13.150236220472442,
+    None,
+    [
+      0x00000000U, 0x4052675eU, 0x4152a2b6U, 0x4052675eU, 0x4152a2b6U, 0x00000000U,
+      0x419deb33U, 0x40d2675eU, 0x4152a2b6U, 0x4152675eU, 0x4152a2b6U, 0x411dcd87U,
+      0x00000000U, 0x411dcd87U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.764488188976379,
+    13.206850393700787,
+    None,
+    [
+      0x00000000U, 0x40534f42U, 0x415293b7U, 0x40534f42U, 0x415293b7U, 0x00000000U,
+      0x419e1dacU, 0x40d34f42U, 0x415293b7U, 0x41534f42U, 0x415293b7U, 0x411e7b72U,
+      0x00000000U, 0x411e7b72U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.789133858267718,
+    13.263464566929134,
+    None,
+    [
+      0x00000000U, 0x40543727U, 0x415284b8U, 0x40543727U, 0x415284b8U, 0x00000000U,
+      0x419e5025U, 0x40d43727U, 0x415284b8U, 0x41543727U, 0x415284b8U, 0x411f295dU,
+      0x00000000U, 0x411f295dU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.813779527559056,
+    13.320078740157481,
+    None,
+    [
+      0x00000000U, 0x40551f0bU, 0x415275b8U, 0x40551f0bU, 0x415275b8U, 0x00000000U,
+      0x419e829fU, 0x40d51f0bU, 0x415275b8U, 0x41551f0bU, 0x415275b8U, 0x411fd748U,
+      0x00000000U, 0x411fd748U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.416299212598425,
+    13.094409448818897,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x4154411fU, 0x00000000U, 0x4154411fU, 0x409d2207U,
+      0x4189243eU, 0x409d2207U, 0x4189243eU, 0x405182b3U, 0x41a35495U, 0x40d182b3U,
+      0x4189243eU, 0x411d2207U, 0x4189243eU, 0x4102f1b0U, 0x4154411fU, 0x4102f1b0U,
+      0x4154411fU, 0x415182b3U, 0x00000000U, 0x415182b3U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.440944881889763,
+    13.151023622047244,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x415482b7U, 0x00000000U, 0x415482b7U, 0x409dcff2U,
+      0x418939bbU, 0x409dcff2U, 0x418939bbU, 0x40526a98U, 0x41a3870eU, 0x40d26a98U,
+      0x418939bbU, 0x411dcff2U, 0x418939bbU, 0x4103829fU, 0x415482b7U, 0x4103829fU,
+      0x415482b7U, 0x41526a98U, 0x00000000U, 0x41526a98U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.465590551181101,
+    13.207637795275591,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x4154c44fU, 0x00000000U, 0x4154c44fU, 0x409e7dddU,
+      0x41894f38U, 0x409e7dddU, 0x41894f38U, 0x4053527cU, 0x41a3b988U, 0x40d3527cU,
+      0x41894f38U, 0x411e7dddU, 0x41894f38U, 0x4104138eU, 0x4154c44fU, 0x4104138eU,
+      0x4154c44fU, 0x4153527cU, 0x00000000U, 0x4153527cU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.49023622047244,
+    13.264251968503936,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x415505e7U, 0x00000000U, 0x415505e7U, 0x409f2bc8U,
+      0x418964b5U, 0x409f2bc8U, 0x418964b5U, 0x40543a60U, 0x41a3ec01U, 0x40d43a60U,
+      0x418964b5U, 0x411f2bc8U, 0x418964b5U, 0x4104a47cU, 0x415505e7U, 0x4104a47cU,
+      0x415505e7U, 0x41543a60U, 0x00000000U, 0x41543a60U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.514881889763778,
+    13.320866141732283,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x4155477fU, 0x00000000U, 0x4155477fU, 0x409fd9b3U,
+      0x41897a32U, 0x409fd9b3U, 0x41897a32U, 0x40552245U, 0x41a41e7aU, 0x40d52245U,
+      0x41897a32U, 0x411fd9b3U, 0x41897a32U, 0x4105356bU, 0x4155477fU, 0x4105356bU,
+      0x4155477fU, 0x41552245U, 0x00000000U, 0x41552245U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.539527559055117,
+    13.37748031496063,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41558917U, 0x00000000U, 0x41558917U, 0x40a0879fU,
+      0x41898fafU, 0x40a0879fU, 0x41898fafU, 0x40560a29U, 0x41a450f4U, 0x40d60a29U,
+      0x41898fafU, 0x4120879fU, 0x41898fafU, 0x4105c659U, 0x41558917U, 0x4105c659U,
+      0x41558917U, 0x41560a29U, 0x00000000U, 0x41560a29U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.564173228346458,
+    13.434094488188977,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x4155caafU, 0x00000000U, 0x4155caafU, 0x40a1358aU,
+      0x4189a52cU, 0x40a1358aU, 0x4189a52cU, 0x4056f20dU, 0x41a4836dU, 0x40d6f20dU,
+      0x4189a52cU, 0x4121358aU, 0x4189a52cU, 0x41065748U, 0x4155caafU, 0x41065748U,
+      0x4155caafU, 0x4156f20dU, 0x00000000U, 0x4156f20dU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.588818897637797,
+    13.490708661417322,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41560c46U, 0x00000000U, 0x41560c46U, 0x40a1e375U,
+      0x4189baa9U, 0x40a1e375U, 0x4189baa9U, 0x4057d9f1U, 0x41a4b5e7U, 0x40d7d9f1U,
+      0x4189baa9U, 0x4121e375U, 0x4189baa9U, 0x4106e837U, 0x41560c46U, 0x4106e837U,
+      0x41560c46U, 0x4157d9f1U, 0x00000000U, 0x4157d9f1U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.613464566929135,
+    13.547322834645669,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41564ddeU, 0x00000000U, 0x41564ddeU, 0x40a29160U,
+      0x4189d025U, 0x40a29160U, 0x4189d025U, 0x4058c1d6U, 0x41a4e860U, 0x40d8c1d6U,
+      0x4189d025U, 0x41229160U, 0x4189d025U, 0x41077925U, 0x41564ddeU, 0x41077925U,
+      0x41564ddeU, 0x4158c1d6U, 0x00000000U, 0x4158c1d6U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.638110236220474,
+    13.603937007874016,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41568f76U, 0x00000000U, 0x41568f76U, 0x40a33f4bU,
+      0x4189e5a2U, 0x40a33f4bU, 0x4189e5a2U, 0x4059a9baU, 0x41a51adaU, 0x40d9a9baU,
+      0x4189e5a2U, 0x41233f4bU, 0x4189e5a2U, 0x41080a14U, 0x41568f76U, 0x41080a14U,
+      0x41568f76U, 0x4159a9baU, 0x00000000U, 0x4159a9baU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.662755905511812,
+    13.660551181102361,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x4156d10eU, 0x00000000U, 0x4156d10eU, 0x40a3ed37U,
+      0x4189fb1fU, 0x40a3ed37U, 0x4189fb1fU, 0x405a919eU, 0x41a54d53U, 0x40da919eU,
+      0x4189fb1fU, 0x4123ed37U, 0x4189fb1fU, 0x41089b03U, 0x4156d10eU, 0x41089b03U,
+      0x4156d10eU, 0x415a919eU, 0x00000000U, 0x415a919eU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.68740157480315,
+    13.717165354330708,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x415712a6U, 0x00000000U, 0x415712a6U, 0x40a49b22U,
+      0x418a109cU, 0x40a49b22U, 0x418a109cU, 0x405b7982U, 0x41a57fccU, 0x40db7982U,
+      0x418a109cU, 0x41249b22U, 0x418a109cU, 0x41092bf1U, 0x415712a6U, 0x41092bf1U,
+      0x415712a6U, 0x415b7982U, 0x00000000U, 0x415b7982U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.712047244094489,
+    13.773779527559055,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x4157543eU, 0x00000000U, 0x4157543eU, 0x40a5490dU,
+      0x418a2619U, 0x40a5490dU, 0x418a2619U, 0x405c6167U, 0x41a5b246U, 0x40dc6167U,
+      0x418a2619U, 0x4125490dU, 0x418a2619U, 0x4109bce0U, 0x4157543eU, 0x4109bce0U,
+      0x4157543eU, 0x415c6167U, 0x00000000U, 0x415c6167U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.736692913385827,
+    13.830393700787402,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x415795d6U, 0x00000000U, 0x415795d6U, 0x40a5f6f8U,
+      0x418a3b96U, 0x40a5f6f8U, 0x418a3b96U, 0x405d494bU, 0x41a5e4bfU, 0x40dd494bU,
+      0x418a3b96U, 0x4125f6f8U, 0x418a3b96U, 0x410a4dcfU, 0x415795d6U, 0x410a4dcfU,
+      0x415795d6U, 0x415d494bU, 0x00000000U, 0x415d494bU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.761338582677165,
+    13.887007874015747,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x4157d76eU, 0x00000000U, 0x4157d76eU, 0x40a6a4e3U,
+      0x418a5113U, 0x40a6a4e3U, 0x418a5113U, 0x405e312fU, 0x41a61739U, 0x40de312fU,
+      0x418a5113U, 0x4126a4e3U, 0x418a5113U, 0x410adebdU, 0x4157d76eU, 0x410adebdU,
+      0x4157d76eU, 0x415e312fU, 0x00000000U, 0x415e312fU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.785984251968504,
+    13.943622047244094,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41581906U, 0x00000000U, 0x41581906U, 0x40a752cfU,
+      0x418a6690U, 0x40a752cfU, 0x418a6690U, 0x405f1913U, 0x41a649b2U, 0x40df1913U,
+      0x418a6690U, 0x412752cfU, 0x418a6690U, 0x410b6facU, 0x41581906U, 0x410b6facU,
+      0x41581906U, 0x415f1913U, 0x00000000U, 0x415f1913U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.388503937007876,
+    13.717952755905511,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x4198d12bU, 0x00000000U, 0x41ab1ba8U, 0x401253e8U,
+      0x41ab1ba8U, 0x415b7cbcU, 0x00000000U, 0x415b7cbcU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.413149606299214,
+    13.774566929133858,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x4198f051U, 0x00000000U, 0x41ab4e21U, 0x4012ee81U,
+      0x41ab4e21U, 0x415c64a0U, 0x00000000U, 0x415c64a0U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.437795275590553,
+    13.831181102362205,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41990f78U, 0x00000000U, 0x41ab809bU, 0x4013891aU,
+      0x41ab809bU, 0x415d4c85U, 0x00000000U, 0x415d4c85U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.462440944881891,
+    13.887795275590552,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41992e9eU, 0x00000000U, 0x41abb314U, 0x401423b3U,
+      0x41abb314U, 0x415e3469U, 0x00000000U, 0x415e3469U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.487086614173229,
+    13.944409448818897,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41994dc4U, 0x00000000U, 0x41abe58eU, 0x4014be4cU,
+      0x41abe58eU, 0x415f1c4dU, 0x00000000U, 0x415f1c4dU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.511732283464568,
+    14.001023622047244,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41996cebU, 0x00000000U, 0x41ac1807U, 0x401558e5U,
+      0x41ac1807U, 0x41600431U, 0x00000000U, 0x41600431U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.536377952755906,
+    14.057637795275591,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41998c11U, 0x00000000U, 0x41ac4a81U, 0x4015f37eU,
+      0x41ac4a81U, 0x4160ec16U, 0x00000000U, 0x4160ec16U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.561023622047244,
+    14.114251968503938,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x4199ab37U, 0x00000000U, 0x41ac7cfaU, 0x40168e17U,
+      0x41ac7cfaU, 0x4161d3faU, 0x00000000U, 0x4161d3faU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.585669291338583,
+    14.170866141732283,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x4199ca5dU, 0x00000000U, 0x41acaf73U, 0x401728b0U,
+      0x41acaf73U, 0x4162bbdeU, 0x00000000U, 0x4162bbdeU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.610314960629921,
+    14.22748031496063,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x4199e984U, 0x00000000U, 0x41ace1edU, 0x4017c349U,
+      0x41ace1edU, 0x4163a3c2U, 0x00000000U, 0x4163a3c2U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.63496062992126,
+    14.284094488188977,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x419a08aaU, 0x00000000U, 0x41ad1466U, 0x40185de1U,
+      0x41ad1466U, 0x41648ba7U, 0x00000000U, 0x41648ba7U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.659606299212598,
+    14.340708661417322,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x419a27d0U, 0x00000000U, 0x41ad46e0U, 0x4018f87aU,
+      0x41ad46e0U, 0x4165738bU, 0x00000000U, 0x4165738bU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.684251968503936,
+    14.397322834645669,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x419a46f7U, 0x00000000U, 0x41ad7959U, 0x40199313U,
+      0x41ad7959U, 0x41665b6fU, 0x00000000U, 0x41665b6fU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.708897637795275,
+    14.453937007874016,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x419a661dU, 0x00000000U, 0x41adabd3U, 0x401a2dacU,
+      0x41adabd3U, 0x41674353U, 0x00000000U, 0x41674353U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.733543307086613,
+    14.510551181102363,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x419a8543U, 0x00000000U, 0x41adde4cU, 0x401ac845U,
+      0x41adde4cU, 0x41682b38U, 0x00000000U, 0x41682b38U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.758188976377951,
+    14.567165354330708,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x419aa46aU, 0x00000000U, 0x41ae10c5U, 0x401b62deU,
+      0x41ae10c5U, 0x4169131cU, 0x00000000U, 0x4169131cU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.360708661417323,
+    14.341496062992126,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x419fc367U, 0x00000000U, 0x41b2e2bbU, 0x4018faa1U,
+      0x41b2e2bbU, 0x416576c5U, 0x41b2e2bbU, 0x416576c5U, 0x4018faa1U, 0x416576c5U,
+      0x00000000U, 0x413f381cU, 0x00000000U, 0x00000000U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.385354330708662,
+    14.398110236220472,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x419fe28dU, 0x00000000U, 0x41b31535U, 0x4019953aU,
+      0x41b31535U, 0x41665ea9U, 0x41b31535U, 0x41665ea9U, 0x4019953aU, 0x41665ea9U,
+      0x00000000U, 0x413ff95aU, 0x00000000U, 0x00000000U,
+    ],
+  )
+  check_formula_preset_path("snip2DiagRect", 22.41, 14.454724409448819, None, [
+    0x00000000U, 0x00000000U, 0x41a001b4U, 0x00000000U, 0x41b347aeU, 0x401a2fd3U,
+    0x41b347aeU, 0x4167468dU, 0x41b347aeU, 0x4167468dU, 0x401a2fd3U, 0x4167468dU,
+    0x00000000U, 0x4140ba98U, 0x00000000U, 0x00000000U,
+  ])
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.434645669291339,
+    14.511338582677165,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41a020daU, 0x00000000U, 0x41b37a28U, 0x401aca6cU,
+      0x41b37a28U, 0x41682e71U, 0x41b37a28U, 0x41682e71U, 0x401aca6cU, 0x41682e71U,
+      0x00000000U, 0x41417bd6U, 0x00000000U, 0x00000000U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.459291338582677,
+    14.567952755905512,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41a04000U, 0x00000000U, 0x41b3aca1U, 0x401b6505U,
+      0x41b3aca1U, 0x41691656U, 0x41b3aca1U, 0x41691656U, 0x401b6505U, 0x41691656U,
+      0x00000000U, 0x41423d14U, 0x00000000U, 0x00000000U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.483937007874015,
+    14.624566929133858,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41a05f27U, 0x00000000U, 0x41b3df1aU, 0x401bff9eU,
+      0x41b3df1aU, 0x4169fe3aU, 0x41b3df1aU, 0x4169fe3aU, 0x401bff9eU, 0x4169fe3aU,
+      0x00000000U, 0x4142fe52U, 0x00000000U, 0x00000000U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.508582677165354,
+    14.681181102362205,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41a07e4dU, 0x00000000U, 0x41b41194U, 0x401c9a37U,
+      0x41b41194U, 0x416ae61eU, 0x41b41194U, 0x416ae61eU, 0x401c9a37U, 0x416ae61eU,
+      0x00000000U, 0x4143bf90U, 0x00000000U, 0x00000000U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.533228346456692,
+    14.737795275590551,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41a09d73U, 0x00000000U, 0x41b4440dU, 0x401d34d0U,
+      0x41b4440dU, 0x416bce02U, 0x41b4440dU, 0x416bce02U, 0x401d34d0U, 0x416bce02U,
+      0x00000000U, 0x414480cfU, 0x00000000U, 0x00000000U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.55787401574803,
+    14.794409448818898,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41a0bc9aU, 0x00000000U, 0x41b47687U, 0x401dcf69U,
+      0x41b47687U, 0x416cb5e7U, 0x41b47687U, 0x416cb5e7U, 0x401dcf69U, 0x416cb5e7U,
+      0x00000000U, 0x4145420dU, 0x00000000U, 0x00000000U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.582519685039369,
+    14.851023622047244,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41a0dbc0U, 0x00000000U, 0x41b4a900U, 0x401e6a02U,
+      0x41b4a900U, 0x416d9dcbU, 0x41b4a900U, 0x416d9dcbU, 0x401e6a02U, 0x416d9dcbU,
+      0x00000000U, 0x4146034bU, 0x00000000U, 0x00000000U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.607165354330707,
+    14.907637795275591,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41a0fae6U, 0x00000000U, 0x41b4db7aU, 0x401f049bU,
+      0x41b4db7aU, 0x416e85afU, 0x41b4db7aU, 0x416e85afU, 0x401f049bU, 0x416e85afU,
+      0x00000000U, 0x4146c489U, 0x00000000U, 0x00000000U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.631811023622046,
+    14.964251968503937,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41a11a0cU, 0x00000000U, 0x41b50df3U, 0x401f9f34U,
+      0x41b50df3U, 0x416f6d93U, 0x41b50df3U, 0x416f6d93U, 0x401f9f34U, 0x416f6d93U,
+      0x00000000U, 0x414785c7U, 0x00000000U, 0x00000000U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.656456692913387,
+    15.020866141732283,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41a13933U, 0x00000000U, 0x41b5406cU, 0x402039ccU,
+      0x41b5406cU, 0x41705578U, 0x41b5406cU, 0x41705578U, 0x402039ccU, 0x41705578U,
+      0x00000000U, 0x41484705U, 0x00000000U, 0x00000000U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.681102362204726,
+    15.07748031496063,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41a15859U, 0x00000000U, 0x41b572e6U, 0x4020d465U,
+      0x41b572e6U, 0x41713d5cU, 0x41b572e6U, 0x41713d5cU, 0x4020d465U, 0x41713d5cU,
+      0x00000000U, 0x41490843U, 0x00000000U, 0x00000000U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.705748031496064,
+    15.134094488188977,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41a1777fU, 0x00000000U, 0x41b5a55fU, 0x40216efeU,
+      0x41b5a55fU, 0x41722540U, 0x41b5a55fU, 0x41722540U, 0x40216efeU, 0x41722540U,
+      0x00000000U, 0x4149c981U, 0x00000000U, 0x00000000U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.730393700787403,
+    15.190708661417323,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x41a196a6U, 0x00000000U, 0x41b5d7d9U, 0x40220997U,
+      0x41b5d7d9U, 0x41730d25U, 0x41b5d7d9U, 0x41730d25U, 0x40220997U, 0x41730d25U,
+      0x00000000U, 0x414a8abfU, 0x00000000U, 0x00000000U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.332913385826771,
+    14.96503937007874,
+    None,
+    [
+      0x401fa15aU, 0x00000000U, 0x41a6b5a3U, 0x00000000U, 0x41baa9ceU, 0x401fa15aU,
+      0x41baa9ceU, 0x416f70cdU, 0x41baa9ceU, 0x416f70cdU, 0x00000000U, 0x416f70cdU,
+      0x00000000U, 0x416f70cdU, 0x00000000U, 0x401fa15aU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.357559055118109,
+    15.021653543307087,
+    None,
+    [
+      0x40203bf3U, 0x00000000U, 0x41a6d4caU, 0x00000000U, 0x41badc48U, 0x40203bf3U,
+      0x41badc48U, 0x417058b1U, 0x41badc48U, 0x417058b1U, 0x00000000U, 0x417058b1U,
+      0x00000000U, 0x417058b1U, 0x00000000U, 0x40203bf3U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.382204724409448,
+    15.078267716535432,
+    None,
+    [
+      0x4020d68cU, 0x00000000U, 0x41a6f3f0U, 0x00000000U, 0x41bb0ec1U, 0x4020d68cU,
+      0x41bb0ec1U, 0x41714096U, 0x41bb0ec1U, 0x41714096U, 0x00000000U, 0x41714096U,
+      0x00000000U, 0x41714096U, 0x00000000U, 0x4020d68cU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.406850393700786,
+    15.134881889763779,
+    None,
+    [
+      0x40217125U, 0x00000000U, 0x41a71316U, 0x00000000U, 0x41bb413bU, 0x40217125U,
+      0x41bb413bU, 0x4172287aU, 0x41bb413bU, 0x4172287aU, 0x00000000U, 0x4172287aU,
+      0x00000000U, 0x4172287aU, 0x00000000U, 0x40217125U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.431496062992125,
+    15.191496062992126,
+    None,
+    [
+      0x40220bbeU, 0x00000000U, 0x41a7323cU, 0x00000000U, 0x41bb73b4U, 0x40220bbeU,
+      0x41bb73b4U, 0x4173105eU, 0x41bb73b4U, 0x4173105eU, 0x00000000U, 0x4173105eU,
+      0x00000000U, 0x4173105eU, 0x00000000U, 0x40220bbeU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.456141732283463,
+    15.248110236220473,
+    None,
+    [
+      0x4022a657U, 0x00000000U, 0x41a75163U, 0x00000000U, 0x41bba62eU, 0x4022a657U,
+      0x41bba62eU, 0x4173f842U, 0x41bba62eU, 0x4173f842U, 0x00000000U, 0x4173f842U,
+      0x00000000U, 0x4173f842U, 0x00000000U, 0x4022a657U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.480787401574805,
+    15.304724409448818,
+    None,
+    [
+      0x402340f0U, 0x00000000U, 0x41a77089U, 0x00000000U, 0x41bbd8a7U, 0x402340f0U,
+      0x41bbd8a7U, 0x4174e027U, 0x41bbd8a7U, 0x4174e027U, 0x00000000U, 0x4174e027U,
+      0x00000000U, 0x4174e027U, 0x00000000U, 0x402340f0U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.505433070866143,
+    15.361338582677165,
+    None,
+    [
+      0x4023db89U, 0x00000000U, 0x41a78fafU, 0x00000000U, 0x41bc0b20U, 0x4023db89U,
+      0x41bc0b20U, 0x4175c80bU, 0x41bc0b20U, 0x4175c80bU, 0x00000000U, 0x4175c80bU,
+      0x00000000U, 0x4175c80bU, 0x00000000U, 0x4023db89U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.530078740157482,
+    15.417952755905512,
+    None,
+    [
+      0x40247622U, 0x00000000U, 0x41a7aed6U, 0x00000000U, 0x41bc3d9aU, 0x40247622U,
+      0x41bc3d9aU, 0x4176afefU, 0x41bc3d9aU, 0x4176afefU, 0x00000000U, 0x4176afefU,
+      0x00000000U, 0x4176afefU, 0x00000000U, 0x40247622U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.55472440944882,
+    15.474566929133859,
+    None,
+    [
+      0x402510bbU, 0x00000000U, 0x41a7cdfcU, 0x00000000U, 0x41bc7013U, 0x402510bbU,
+      0x41bc7013U, 0x417797d3U, 0x41bc7013U, 0x417797d3U, 0x00000000U, 0x417797d3U,
+      0x00000000U, 0x417797d3U, 0x00000000U, 0x402510bbU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.579370078740158,
+    15.531181102362204,
+    None,
+    [
+      0x4025ab54U, 0x00000000U, 0x41a7ed22U, 0x00000000U, 0x41bca28dU, 0x4025ab54U,
+      0x41bca28dU, 0x41787fb8U, 0x41bca28dU, 0x41787fb8U, 0x00000000U, 0x41787fb8U,
+      0x00000000U, 0x41787fb8U, 0x00000000U, 0x4025ab54U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.604015748031497,
+    15.587795275590551,
+    None,
+    [
+      0x402645edU, 0x00000000U, 0x41a80c49U, 0x00000000U, 0x41bcd506U, 0x402645edU,
+      0x41bcd506U, 0x4179679cU, 0x41bcd506U, 0x4179679cU, 0x00000000U, 0x4179679cU,
+      0x00000000U, 0x4179679cU, 0x00000000U, 0x402645edU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.628661417322835,
+    15.644409448818898,
+    None,
+    [
+      0x4026e086U, 0x00000000U, 0x41a82b6fU, 0x00000000U, 0x41bd0780U, 0x4026e086U,
+      0x41bd0780U, 0x417a4f80U, 0x41bd0780U, 0x417a4f80U, 0x00000000U, 0x417a4f80U,
+      0x00000000U, 0x417a4f80U, 0x00000000U, 0x4026e086U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.653307086614173,
+    15.701023622047243,
+    None,
+    [
+      0x40277b1fU, 0x00000000U, 0x41a84a95U, 0x00000000U, 0x41bd39f9U, 0x40277b1fU,
+      0x41bd39f9U, 0x417b3765U, 0x41bd39f9U, 0x417b3765U, 0x00000000U, 0x417b3765U,
+      0x00000000U, 0x417b3765U, 0x00000000U, 0x40277b1fU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.677952755905512,
+    15.75763779527559,
+    None,
+    [
+      0x402815b8U, 0x00000000U, 0x41a869bcU, 0x00000000U, 0x41bd6c72U, 0x402815b8U,
+      0x41bd6c72U, 0x417c1f49U, 0x41bd6c72U, 0x417c1f49U, 0x00000000U, 0x417c1f49U,
+      0x00000000U, 0x417c1f49U, 0x00000000U, 0x402815b8U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.70259842519685,
+    15.814251968503937,
+    None,
+    [
+      0x4028b050U, 0x00000000U, 0x41a888e2U, 0x00000000U, 0x41bd9eecU, 0x4028b050U,
+      0x41bd9eecU, 0x417d072dU, 0x41bd9eecU, 0x417d072dU, 0x00000000U, 0x417d072dU,
+      0x00000000U, 0x417d072dU, 0x00000000U, 0x4028b050U,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.305118110236222,
+    15.588582677165354,
+    None,
+    [
+      0xb79dc45fU, 0x40ac57a6U, 0x4056f62eU, 0x407969a1U, 0x409489caU, 0x3fbe88eeU,
+      0x410cb2a3U, 0x3fbe86b5U, 0x414270e2U, 0x00000000U, 0x41782f21U, 0x3fbe86b5U,
+      0x419d4e6fU, 0x3fbe88eeU, 0x41a7921cU, 0x407969a1U, 0x41c270ecU, 0x40ac57a6U,
+      0x41b82d88U, 0x40f96ad6U, 0x41c270ecU, 0x41233f03U, 0x41a7921cU, 0x413b106dU,
+      0x419d4e6fU, 0x416199b8U, 0x41782f21U, 0x416199ffU, 0x414270e2U, 0x41796ad6U,
+      0x410cb2a3U, 0x416199ffU, 0x409489caU, 0x416199b8U, 0x4056f62eU, 0x413b106dU,
+      0xb79dc45fU, 0x41233f03U, 0x3fa43596U, 0x40f96ad6U,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.329763779527561,
+    15.645196850393701,
+    None,
+    [
+      0xb79ded53U, 0x40acf7e2U, 0x40572dfbU, 0x407a5184U, 0x4094b059U, 0x3fbf3a14U,
+      0x410cd729U, 0x3fbf37d9U, 0x4142a35bU, 0x00000000U, 0x41786f8dU, 0x3fbf37d9U,
+      0x419d7745U, 0x3fbf3a14U, 0x41a7bd9cU, 0x407a5184U, 0x41c2a365U, 0x40acf7e2U,
+      0x41b85d58U, 0x40fa52baU, 0x41c2a365U, 0x4123d6c9U, 0x41a7bd9cU, 0x413bbe59U,
+      0x419d7745U, 0x41626b77U, 0x41786f8dU, 0x41626bbfU, 0x4142a35bU, 0x417a52baU,
+      0x410cd729U, 0x41626bbfU, 0x4094b059U, 0x41626b77U, 0x40572dfbU, 0x413bbe59U,
+      0xb79ded53U, 0x4123d6c9U, 0x3fa46037U, 0x40fa52baU,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.354409448818899,
+    15.701811023622048,
+    None,
+    [
+      0xb79e1647U, 0x40ad981dU, 0x405765c8U, 0x407b3967U, 0x4094d6e8U, 0x3fbfeb39U,
+      0x410cfbafU, 0x3fbfe8fcU, 0x4142d5d5U, 0x00000000U, 0x4178affaU, 0x3fbfe8fcU,
+      0x419da01bU, 0x3fbfeb39U, 0x41a7e91cU, 0x407b3967U, 0x41c2d5dfU, 0x40ad981dU,
+      0x41b88d27U, 0x40fb3a9eU, 0x41c2d5dfU, 0x41246e90U, 0x41a7e91cU, 0x413c6c44U,
+      0x419da01bU, 0x41633d37U, 0x4178affaU, 0x41633d7fU, 0x4142d5d5U, 0x417b3a9eU,
+      0x410cfbafU, 0x41633d7fU, 0x4094d6e8U, 0x41633d37U, 0x405765c8U, 0x413c6c44U,
+      0xb79e1647U, 0x41246e90U, 0x3fa48ad7U, 0x40fb3a9eU,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.379055118110237,
+    15.758425196850395,
+    None,
+    [
+      0xb79e3f3cU, 0x40ae3859U, 0x40579d95U, 0x407c214aU, 0x4094fd77U, 0x3fc09c5fU,
+      0x410d2035U, 0x3fc09a20U, 0x4143084eU, 0x00000000U, 0x4178f067U, 0x3fc09a20U,
+      0x419dc8f0U, 0x3fc09c5fU, 0x41a8149bU, 0x407c214aU, 0x41c30858U, 0x40ae3859U,
+      0x41b8bcf7U, 0x40fc2282U, 0x41c30858U, 0x41250656U, 0x41a8149bU, 0x413d1a30U,
+      0x419dc8f0U, 0x41640ef7U, 0x4178f067U, 0x41640f3fU, 0x4143084eU, 0x417c2282U,
+      0x410d2035U, 0x41640f3fU, 0x4094fd77U, 0x41640ef7U, 0x40579d95U, 0x413d1a30U,
+      0xb79e3f3cU, 0x41250656U, 0x3fa4b577U, 0x40fc2282U,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.403700787401576,
+    15.81503937007874,
+    None,
+    [
+      0xb79e6830U, 0x40aed894U, 0x4057d563U, 0x407d092eU, 0x40952406U, 0x3fc14d84U,
+      0x410d44bbU, 0x3fc14b43U, 0x41433ac7U, 0x00000000U, 0x417930d4U, 0x3fc14b43U,
+      0x419df1c6U, 0x3fc14d84U, 0x41a8401bU, 0x407d092eU, 0x41c33ad1U, 0x40aed894U,
+      0x41b8ecc6U, 0x40fd0a67U, 0x41c33ad1U, 0x41259e1dU, 0x41a8401bU, 0x413dc81bU,
+      0x419df1c6U, 0x4164e0b6U, 0x417930d4U, 0x4164e0feU, 0x41433ac7U, 0x417d0a67U,
+      0x410d44bbU, 0x4164e0feU, 0x40952406U, 0x4164e0b6U, 0x4057d563U, 0x413dc81bU,
+      0xb79e6830U, 0x41259e1dU, 0x3fa4e018U, 0x40fd0a67U,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.428346456692914,
+    15.871653543307087,
+    None,
+    [
+      0xb79e9124U, 0x40af78d0U, 0x40580d30U, 0x407df111U, 0x40954a95U, 0x3fc1feaaU,
+      0x410d6941U, 0x3fc1fc67U, 0x41436d41U, 0x00000000U, 0x41797141U, 0x3fc1fc67U,
+      0x419e1a9cU, 0x3fc1feaaU, 0x41a86b9bU, 0x407df111U, 0x41c36d4bU, 0x40af78d0U,
+      0x41b91c95U, 0x40fdf24bU, 0x41c36d4bU, 0x412635e3U, 0x41a86b9bU, 0x413e7607U,
+      0x419e1a9cU, 0x4165b276U, 0x41797141U, 0x4165b2beU, 0x41436d41U, 0x417df24bU,
+      0x410d6941U, 0x4165b2beU, 0x40954a95U, 0x4165b276U, 0x40580d30U, 0x413e7607U,
+      0xb79e9124U, 0x412635e3U, 0x3fa50ab8U, 0x40fdf24bU,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.452992125984252,
+    15.928267716535434,
+    None,
+    [
+      0xb79eba18U, 0x40b0190bU, 0x405844fdU, 0x407ed8f4U, 0x40957124U, 0x3fc2afcfU,
+      0x410d8dc7U, 0x3fc2ad8aU, 0x41439fbaU, 0x00000000U, 0x4179b1aeU, 0x3fc2ad8aU,
+      0x419e4371U, 0x3fc2afcfU, 0x41a8971bU, 0x407ed8f4U, 0x41c39fc4U, 0x40b0190bU,
+      0x41b94c65U, 0x40feda2fU, 0x41c39fc4U, 0x4126cdaaU, 0x41a8971bU, 0x413f23f2U,
+      0x419e4371U, 0x41668435U, 0x4179b1aeU, 0x4166847eU, 0x41439fbaU, 0x417eda2fU,
+      0x410d8dc7U, 0x4166847eU, 0x40957124U, 0x41668435U, 0x405844fdU, 0x413f23f2U,
+      0xb79eba18U, 0x4126cdaaU, 0x3fa53559U, 0x40feda2fU,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.477637795275591,
+    15.984881889763779,
+    None,
+    [
+      0xb79ee30dU, 0x40b0b947U, 0x40587ccaU, 0x407fc0d7U, 0x409597b3U, 0x3fc360f5U,
+      0x410db24dU, 0x3fc35eaeU, 0x4143d234U, 0x00000000U, 0x4179f21bU, 0x3fc35eaeU,
+      0x419e6c47U, 0x3fc360f5U, 0x41a8c29bU, 0x407fc0d7U, 0x41c3d23eU, 0x40b0b947U,
+      0x41b97c34U, 0x40ffc214U, 0x41c3d23eU, 0x41276570U, 0x41a8c29bU, 0x413fd1deU,
+      0x419e6c47U, 0x416755f5U, 0x4179f21bU, 0x4167563eU, 0x4143d234U, 0x417fc214U,
+      0x410db24dU, 0x4167563eU, 0x409597b3U, 0x416755f5U, 0x40587ccaU, 0x413fd1deU,
+      0xb79ee30dU, 0x41276570U, 0x3fa55ff9U, 0x40ffc214U,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.502283464566929,
+    16.041496062992127,
+    None,
+    [
+      0xb79f0c01U, 0x40b15982U, 0x4058b497U, 0x4080545dU, 0x4095be42U, 0x3fc4121aU,
+      0x410dd6d3U, 0x3fc40fd1U, 0x414404adU, 0x00000000U, 0x417a3288U, 0x3fc40fd1U,
+      0x419e951dU, 0x3fc4121aU, 0x41a8ee1aU, 0x4080545dU, 0x41c404b7U, 0x40b15982U,
+      0x41b9ac04U, 0x410054fcU, 0x41c404b7U, 0x4127fd37U, 0x41a8ee1aU, 0x41407fc9U,
+      0x419e951dU, 0x416827b4U, 0x417a3288U, 0x416827feU, 0x414404adU, 0x418054fcU,
+      0x410dd6d3U, 0x416827feU, 0x4095be42U, 0x416827b4U, 0x4058b497U, 0x41407fc9U,
+      0xb79f0c01U, 0x4127fd37U, 0x3fa58a99U, 0x410054fcU,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.526929133858268,
+    16.098110236220471,
+    None,
+    [
+      0xb79f34f5U, 0x40b1f9beU, 0x4058ec64U, 0x4080c84fU, 0x4095e4d1U, 0x3fc4c340U,
+      0x410dfb59U, 0x3fc4c0f5U, 0x41443727U, 0x00000000U, 0x417a72f5U, 0x3fc4c0f5U,
+      0x419ebdf2U, 0x3fc4c340U, 0x41a9199aU, 0x4080c84fU, 0x41c43731U, 0x40b1f9beU,
+      0x41b9dbd3U, 0x4100c8eeU, 0x41c43731U, 0x412894fdU, 0x41a9199aU, 0x41412db5U,
+      0x419ebdf2U, 0x4168f974U, 0x417a72f5U, 0x4168f9bdU, 0x41443727U, 0x4180c8eeU,
+      0x410dfb59U, 0x4168f9bdU, 0x4095e4d1U, 0x4168f974U, 0x4058ec64U, 0x41412db5U,
+      0xb79f34f5U, 0x412894fdU, 0x3fa5b53aU, 0x4100c8eeU,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.551574803149606,
+    16.154724409448818,
+    None,
+    [
+      0xb79f5deaU, 0x40b299faU, 0x40592431U, 0x40813c40U, 0x40960b60U, 0x3fc57465U,
+      0x410e1fdfU, 0x3fc57218U, 0x414469a0U, 0x00000000U, 0x417ab361U, 0x3fc57218U,
+      0x419ee6c8U, 0x3fc57465U, 0x41a9451aU, 0x40813c40U, 0x41c469aaU, 0x40b299faU,
+      0x41ba0ba2U, 0x41013ce0U, 0x41c469aaU, 0x41292cc4U, 0x41a9451aU, 0x4141dba0U,
+      0x419ee6c8U, 0x4169cb34U, 0x417ab361U, 0x4169cb7dU, 0x414469a0U, 0x41813ce0U,
+      0x410e1fdfU, 0x4169cb7dU, 0x40960b60U, 0x4169cb34U, 0x40592431U, 0x4141dba0U,
+      0xb79f5deaU, 0x41292cc4U, 0x3fa5dfdaU, 0x41013ce0U,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.576220472440944,
+    16.211338582677165,
+    None,
+    [
+      0xb79f86deU, 0x40b33a35U, 0x40595bfeU, 0x4081b032U, 0x409631efU, 0x3fc6258bU,
+      0x410e4465U, 0x3fc6233bU, 0x41449c19U, 0x00000000U, 0x417af3ceU, 0x3fc6233bU,
+      0x419f0f9eU, 0x3fc6258bU, 0x41a9709aU, 0x4081b032U, 0x41c49c23U, 0x40b33a35U,
+      0x41ba3b72U, 0x4101b0d2U, 0x41c49c23U, 0x4129c48aU, 0x41a9709aU, 0x4142898cU,
+      0x419f0f9eU, 0x416a9cf3U, 0x417af3ceU, 0x416a9d3dU, 0x41449c19U, 0x4181b0d2U,
+      0x410e4465U, 0x416a9d3dU, 0x409631efU, 0x416a9cf3U, 0x40595bfeU, 0x4142898cU,
+      0xb79f86deU, 0x4129c48aU, 0x3fa60a7bU, 0x4101b0d2U,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.600866141732283,
+    16.267952755905512,
+    None,
+    [
+      0xb79fafd2U, 0x40b3da71U, 0x405993cbU, 0x40822423U, 0x4096587eU, 0x3fc6d6b1U,
+      0x410e68ebU, 0x3fc6d45fU, 0x4144ce93U, 0x00000000U, 0x417b343bU, 0x3fc6d45fU,
+      0x419f3874U, 0x3fc6d6b1U, 0x41a99c19U, 0x40822423U, 0x41c4ce9dU, 0x40b3da71U,
+      0x41ba6b41U, 0x410224c4U, 0x41c4ce9dU, 0x412a5c51U, 0x41a99c19U, 0x41433777U,
+      0x419f3874U, 0x416b6eb3U, 0x417b343bU, 0x416b6efdU, 0x4144ce93U, 0x418224c4U,
+      0x410e68ebU, 0x416b6efdU, 0x4096587eU, 0x416b6eb3U, 0x405993cbU, 0x41433777U,
+      0xb79fafd2U, 0x412a5c51U, 0x3fa6351bU, 0x410224c4U,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.625511811023621,
+    16.324566929133859,
+    None,
+    [
+      0xb79fd8c7U, 0x40b47aacU, 0x4059cb99U, 0x40829815U, 0x40967f0dU, 0x3fc787d6U,
+      0x410e8d71U, 0x3fc78582U, 0x4145010cU, 0x00000000U, 0x417b74a8U, 0x3fc78582U,
+      0x419f6149U, 0x3fc787d6U, 0x41a9c799U, 0x40829815U, 0x41c50116U, 0x40b47aacU,
+      0x41ba9b11U, 0x410298b7U, 0x41c50116U, 0x412af417U, 0x41a9c799U, 0x4143e563U,
+      0x419f6149U, 0x416c4072U, 0x417b74a8U, 0x416c40bdU, 0x4145010cU, 0x418298b7U,
+      0x410e8d71U, 0x416c40bdU, 0x40967f0dU, 0x416c4072U, 0x4059cb99U, 0x4143e563U,
+      0xb79fd8c7U, 0x412af417U, 0x3fa65fbcU, 0x410298b7U,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.650157480314959,
+    16.381181102362206,
+    None,
+    [
+      0xb7a001bbU, 0x40b51ae8U, 0x405a0366U, 0x40830c07U, 0x4096a59cU, 0x3fc838fcU,
+      0x410eb1f7U, 0x3fc836a6U, 0x41453386U, 0x00000000U, 0x417bb515U, 0x3fc836a6U,
+      0x419f8a1fU, 0x3fc838fcU, 0x41a9f319U, 0x40830c07U, 0x41c53390U, 0x40b51ae8U,
+      0x41bacae0U, 0x41030ca9U, 0x41c53390U, 0x412b8bdeU, 0x41a9f319U, 0x4144934eU,
+      0x419f8a1fU, 0x416d1232U, 0x417bb515U, 0x416d127dU, 0x41453386U, 0x41830ca9U,
+      0x410eb1f7U, 0x416d127dU, 0x4096a59cU, 0x416d1232U, 0x405a0366U, 0x4144934eU,
+      0xb7a001bbU, 0x412b8bdeU, 0x3fa68a5cU, 0x41030ca9U,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.674803149606298,
+    16.437795275590553,
+    None,
+    [
+      0xb7a02aafU, 0x40b5bb23U, 0x405a3b33U, 0x40837ff8U, 0x4096cc2bU, 0x3fc8ea21U,
+      0x410ed67dU, 0x3fc8e7c9U, 0x414565ffU, 0x00000000U, 0x417bf582U, 0x3fc8e7c9U,
+      0x419fb2f5U, 0x3fc8ea21U, 0x41aa1e99U, 0x40837ff8U, 0x41c56609U, 0x40b5bb23U,
+      0x41bafaafU, 0x4103809bU, 0x41c56609U, 0x412c23a4U, 0x41aa1e99U, 0x4145413aU,
+      0x419fb2f5U, 0x416de3f1U, 0x417bf582U, 0x416de43cU, 0x414565ffU, 0x4183809bU,
+      0x410ed67dU, 0x416de43cU, 0x4096cc2bU, 0x416de3f1U, 0x405a3b33U, 0x4145413aU,
+      0xb7a02aafU, 0x412c23a4U, 0x3fa6b4fcU, 0x4103809bU,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.27732283464567,
+    16.212125984251969,
+    None,
+    [
+      0xb889d100U, 0x4126d169U, 0x40791d3dU, 0x40e6e23dU, 0x402034ecU, 0x404d816aU,
+      0x410bf0a9U, 0x404d8184U, 0x414a37f5U, 0x00000000U, 0x41843fa0U, 0x404d8184U,
+      0x41b63158U, 0x404d816aU, 0x41ab144dU, 0x40e6e23dU, 0x41ca3817U, 0x4126d169U,
+      0x419d387dU, 0x4143546dU, 0x41921b5eU, 0x4181b29cU, 0x414a37f5U, 0x4166e21eU,
+      0x40e0725bU, 0x4181b29cU, 0x40b3fddfU, 0x4143546dU,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.301968503937008,
+    16.268740157480316,
+    None,
+    [
+      0xb889f366U, 0x4127668bU, 0x40795b6bU, 0x40e7b0a4U, 0x40205ce9U, 0x404e3921U,
+      0x410c1397U, 0x404e393cU, 0x414a6a6eU, 0x00000000U, 0x418460a3U, 0x404e393cU,
+      0x41b65ed1U, 0x404e3921U, 0x41ab3f01U, 0x40e7b0a4U, 0x41ca6a91U, 0x4127668bU,
+      0x419d5fbbU, 0x4144030cU, 0x41923fd6U, 0x4182268eU, 0x414a6a6eU, 0x4167b086U,
+      0x40e0aa60U, 0x4182268eU, 0x40b42accU, 0x4144030cU,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.326614173228347,
+    16.325354330708663,
+    None,
+    [
+      0xb88a15cdU, 0x4127fbadU, 0x40799999U, 0x40e87f0cU, 0x402084e6U, 0x404ef0d8U,
+      0x410c3685U, 0x404ef0f3U, 0x414a9ce8U, 0x00000000U, 0x418481a5U, 0x404ef0f3U,
+      0x41b68c4bU, 0x404ef0d8U, 0x41ab69b5U, 0x40e87f0cU, 0x41ca9d0aU, 0x4127fbadU,
+      0x419d86f9U, 0x4144b1abU, 0x4192644eU, 0x41829a80U, 0x414a9ce8U, 0x41687eedU,
+      0x40e0e266U, 0x41829a80U, 0x40b457baU, 0x4144b1abU,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.351259842519685,
+    16.381968503937006,
+    None,
+    [
+      0xb88a3833U, 0x412890ceU, 0x4079d7c7U, 0x40e94d73U, 0x4020ace3U, 0x404fa890U,
+      0x410c5973U, 0x404fa8abU, 0x414acf61U, 0x00000000U, 0x4184a2a8U, 0x404fa8abU,
+      0x41b6b9c5U, 0x404fa890U, 0x41ab9469U, 0x40e94d73U, 0x41cacf84U, 0x412890ceU,
+      0x419dae38U, 0x41456049U, 0x419288c6U, 0x41830e73U, 0x414acf61U, 0x41694d54U,
+      0x40e11a6cU, 0x41830e73U, 0x40b484a7U, 0x41456049U,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.375905511811023,
+    16.438582677165353,
+    None,
+    [
+      0xb88a5a99U, 0x412925f0U, 0x407a15f5U, 0x40ea1bdbU, 0x4020d4e0U, 0x40506047U,
+      0x410c7c61U, 0x40506062U, 0x414b01dbU, 0x00000000U, 0x4184c3aaU, 0x40506062U,
+      0x41b6e73fU, 0x40506047U, 0x41abbf1cU, 0x40ea1bdbU, 0x41cb01fdU, 0x412925f0U,
+      0x419dd576U, 0x41460ee8U, 0x4192ad3eU, 0x41838265U, 0x414b01dbU, 0x416a1bbcU,
+      0x40e15272U, 0x41838265U, 0x40b4b194U, 0x41460ee8U,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.400551181102362,
+    16.4951968503937,
+    None,
+    [
+      0xb88a7cffU, 0x4129bb11U, 0x407a5422U, 0x40eaea42U, 0x4020fcddU, 0x405117ffU,
+      0x410c9f4fU, 0x4051181aU, 0x414b3454U, 0x00000000U, 0x4184e4adU, 0x4051181aU,
+      0x41b714b9U, 0x405117ffU, 0x41abe9d0U, 0x40eaea42U, 0x41cb3477U, 0x4129bb11U,
+      0x419dfcb4U, 0x4146bd87U, 0x4192d1b6U, 0x4183f657U, 0x414b3454U, 0x416aea23U,
+      0x40e18a77U, 0x4183f657U, 0x40b4de81U, 0x4146bd87U,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.4251968503937,
+    16.551811023622047,
+    None,
+    [
+      0xb88a9f65U, 0x412a5033U, 0x407a9250U, 0x40ebb8aaU, 0x402124daU, 0x4051cfb6U,
+      0x410cc23dU, 0x4051cfd1U, 0x414b66ceU, 0x00000000U, 0x418505afU, 0x4051cfd1U,
+      0x41b74232U, 0x4051cfb6U, 0x41ac1484U, 0x40ebb8aaU, 0x41cb66f0U, 0x412a5033U,
+      0x419e23f2U, 0x41476c25U, 0x4192f62eU, 0x41846a4aU, 0x414b66ceU, 0x416bb88aU,
+      0x40e1c27dU, 0x41846a4aU, 0x40b50b6eU, 0x41476c25U,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.449842519685038,
+    16.608425196850394,
+    None,
+    [
+      0xb88ac1ccU, 0x412ae554U, 0x407ad07eU, 0x40ec8711U, 0x40214cd7U, 0x4052876eU,
+      0x410ce52bU, 0x40528789U, 0x414b9947U, 0x00000000U, 0x418526b2U, 0x40528789U,
+      0x41b76facU, 0x4052876eU, 0x41ac3f37U, 0x40ec8711U, 0x41cb996aU, 0x412ae554U,
+      0x419e4b30U, 0x41481ac4U, 0x41931aa6U, 0x4184de3cU, 0x414b9947U, 0x416c86f2U,
+      0x40e1fa83U, 0x4184de3cU, 0x40b5385bU, 0x41481ac4U,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.474488188976377,
+    16.665039370078741,
+    None,
+    [
+      0xb88ae432U, 0x412b7a76U, 0x407b0eacU, 0x40ed5579U, 0x402174d4U, 0x40533f25U,
+      0x410d0819U, 0x40533f41U, 0x414bcbc0U, 0x00000000U, 0x418547b4U, 0x40533f41U,
+      0x41b79d26U, 0x40533f25U, 0x41ac69ebU, 0x40ed5579U, 0x41cbcbe3U, 0x412b7a76U,
+      0x419e726eU, 0x4148c963U, 0x41933f1eU, 0x4185522eU, 0x414bcbc0U, 0x416d5559U,
+      0x40e23289U, 0x4185522eU, 0x40b56549U, 0x4148c963U,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.499133858267715,
+    16.721653543307088,
+    None,
+    [
+      0xb88b0698U, 0x412c0f97U, 0x407b4cdaU, 0x40ee23e0U, 0x40219cd1U, 0x4053f6ddU,
+      0x410d2b07U, 0x4053f6f8U, 0x414bfe3aU, 0x00000000U, 0x418568b7U, 0x4053f6f8U,
+      0x41b7caa0U, 0x4053f6ddU, 0x41ac949fU, 0x40ee23e0U, 0x41cbfe5dU, 0x412c0f97U,
+      0x419e99acU, 0x41497801U, 0x41936396U, 0x4185c620U, 0x414bfe3aU, 0x416e23c0U,
+      0x40e26a8eU, 0x4185c620U, 0x40b59236U, 0x41497801U,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.523779527559054,
+    16.778267716535431,
+    None,
+    [
+      0xb88b28feU, 0x412ca4b9U, 0x407b8b08U, 0x40eef247U, 0x4021c4ceU, 0x4054ae94U,
+      0x410d4df4U, 0x4054aeb0U, 0x414c30b3U, 0x00000000U, 0x418589b9U, 0x4054aeb0U,
+      0x41b7f81aU, 0x4054ae94U, 0x41acbf52U, 0x40eef247U, 0x41cc30d6U, 0x412ca4b9U,
+      0x419ec0ebU, 0x414a26a0U, 0x4193880eU, 0x41863a13U, 0x414c30b3U, 0x416ef228U,
+      0x40e2a294U, 0x41863a13U, 0x40b5bf23U, 0x414a26a0U,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.548425196850392,
+    16.834881889763778,
+    None,
+    [
+      0xb88b4b65U, 0x412d39dbU, 0x407bc936U, 0x40efc0afU, 0x4021eccaU, 0x4055664cU,
+      0x410d70e2U, 0x40556667U, 0x414c632dU, 0x00000000U, 0x4185aabcU, 0x40556667U,
+      0x41b82593U, 0x4055664cU, 0x41acea06U, 0x40efc0afU, 0x41cc6350U, 0x412d39dbU,
+      0x419ee829U, 0x414ad53fU, 0x4193ac86U, 0x4186ae05U, 0x414c632dU, 0x416fc08fU,
+      0x40e2da9aU, 0x4186ae05U, 0x40b5ec10U, 0x414ad53fU,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.573070866141734,
+    16.891496062992125,
+    None,
+    [
+      0xb88b6dcbU, 0x412dcefcU, 0x407c0764U, 0x40f08f16U, 0x402214c7U, 0x40561e03U,
+      0x410d93d0U, 0x40561e1fU, 0x414c95a6U, 0x00000000U, 0x4185cbbeU, 0x40561e1fU,
+      0x41b8530dU, 0x40561e03U, 0x41ad14baU, 0x40f08f16U, 0x41cc95c9U, 0x412dcefcU,
+      0x419f0f67U, 0x414b83ddU, 0x4193d0feU, 0x418721f7U, 0x414c95a6U, 0x41708ef7U,
+      0x40e312a0U, 0x418721f7U, 0x40b618fdU, 0x414b83ddU,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.597716535433072,
+    16.948110236220472,
+    None,
+    [
+      0xb88b9031U, 0x412e641eU, 0x407c4592U, 0x40f15d7eU, 0x40223cc4U, 0x4056d5bbU,
+      0x410db6beU, 0x4056d5d6U, 0x414cc820U, 0x00000000U, 0x4185ecc0U, 0x4056d5d6U,
+      0x41b88087U, 0x4056d5bbU, 0x41ad3f6dU, 0x40f15d7eU, 0x41ccc842U, 0x412e641eU,
+      0x419f36a5U, 0x414c327cU, 0x4193f576U, 0x418795eaU, 0x414cc820U, 0x41715d5eU,
+      0x40e34aa6U, 0x418795eaU, 0x40b645eaU, 0x414c327cU,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.622362204724411,
+    17.004724409448819,
+    None,
+    [
+      0xb88bb297U, 0x412ef93fU, 0x407c83c0U, 0x40f22be5U, 0x402264c1U, 0x40578d72U,
+      0x410dd9acU, 0x40578d8eU, 0x414cfa99U, 0x00000000U, 0x41860dc3U, 0x40578d8eU,
+      0x41b8ae01U, 0x40578d72U, 0x41ad6a21U, 0x40f22be5U, 0x41ccfabcU, 0x412ef93fU,
+      0x419f5de3U, 0x414ce11bU, 0x419419eeU, 0x418809dcU, 0x414cfa99U, 0x41722bc5U,
+      0x40e382abU, 0x418809dcU, 0x40b672d8U, 0x414ce11bU,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.647007874015749,
+    17.061338582677166,
+    None,
+    [
+      0xb88bd4feU, 0x412f8e61U, 0x407cc1eeU, 0x40f2fa4dU, 0x40228cbeU, 0x4058452aU,
+      0x410dfc9aU, 0x40584546U, 0x414d2d12U, 0x00000000U, 0x41862ec5U, 0x40584546U,
+      0x41b8db7bU, 0x4058452aU, 0x41ad94d5U, 0x40f2fa4dU, 0x41cd2d35U, 0x412f8e61U,
+      0x419f8521U, 0x414d8fb9U, 0x41943e66U, 0x41887dceU, 0x414d2d12U, 0x4172fa2dU,
+      0x40e3bab1U, 0x41887dceU, 0x40b69fc5U, 0x414d8fb9U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.249527559055117,
+    16.835669291338583,
+    None,
+    [
+      0x00000000U, 0x40bcaef4U, 0x4130532bU, 0x40bcaef4U, 0x4130532bU, 0x4086af73U,
+      0x410ea74fU, 0x4086af73U, 0x4151ff08U, 0x00000000U, 0x418aab61U, 0x4086af73U,
+      0x4173aae5U, 0x4086af73U, 0x4173aae5U, 0x40bcaef4U, 0x41d1ff08U, 0x40bcaef4U,
+      0x41d1ff08U, 0x4186af73U, 0x00000000U, 0x4186af73U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.274173228346456,
+    16.89228346456693,
+    None,
+    [
+      0x00000000U, 0x40bd5162U, 0x413068a8U, 0x40bd5162U, 0x413068a8U, 0x40872366U,
+      0x410e9fcfU, 0x40872366U, 0x41523182U, 0x00000000U, 0x418ae19aU, 0x40872366U,
+      0x4173fa5bU, 0x40872366U, 0x4173fa5bU, 0x40bd5162U, 0x41d23182U, 0x40bd5162U,
+      0x41d23182U, 0x41872366U, 0x00000000U, 0x41872366U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.298818897637794,
+    16.948897637795277,
+    None,
+    [
+      0x00000000U, 0x40bdf3d0U, 0x41307e25U, 0x40bdf3d0U, 0x41307e25U, 0x40879758U,
+      0x410e984fU, 0x40879758U, 0x415263fbU, 0x00000000U, 0x418b17d3U, 0x40879758U,
+      0x417449d1U, 0x40879758U, 0x417449d1U, 0x40bdf3d0U, 0x41d263fbU, 0x40bdf3d0U,
+      0x41d263fbU, 0x41879758U, 0x00000000U, 0x41879758U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.323464566929133,
+    17.005511811023624,
+    None,
+    [
+      0x00000000U, 0x40be963fU, 0x413093a2U, 0x40be963fU, 0x413093a2U, 0x40880b4aU,
+      0x410e90d0U, 0x40880b4aU, 0x41529675U, 0x00000000U, 0x418b4e0dU, 0x40880b4aU,
+      0x41749947U, 0x40880b4aU, 0x41749947U, 0x40be963fU, 0x41d29675U, 0x40be963fU,
+      0x41d29675U, 0x41880b4aU, 0x00000000U, 0x41880b4aU,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.348110236220471,
+    17.062125984251967,
+    None,
+    [
+      0x00000000U, 0x40bf38adU, 0x4130a91fU, 0x40bf38adU, 0x4130a91fU, 0x40887f3cU,
+      0x410e8950U, 0x40887f3cU, 0x4152c8eeU, 0x00000000U, 0x418b8446U, 0x40887f3cU,
+      0x4174e8bdU, 0x40887f3cU, 0x4174e8bdU, 0x40bf38adU, 0x41d2c8eeU, 0x40bf38adU,
+      0x41d2c8eeU, 0x41887f3cU, 0x00000000U, 0x41887f3cU,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.372755905511809,
+    17.118740157480314,
+    None,
+    [
+      0x00000000U, 0x40bfdb1bU, 0x4130be9cU, 0x40bfdb1bU, 0x4130be9cU, 0x4088f32eU,
+      0x410e81d0U, 0x4088f32eU, 0x4152fb67U, 0x00000000U, 0x418bba7fU, 0x4088f32eU,
+      0x41753833U, 0x4088f32eU, 0x41753833U, 0x40bfdb1bU, 0x41d2fb67U, 0x40bfdb1bU,
+      0x41d2fb67U, 0x4188f32eU, 0x00000000U, 0x4188f32eU,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.397401574803151,
+    17.175354330708661,
+    None,
+    [
+      0x00000000U, 0x40c07d89U, 0x4130d419U, 0x40c07d89U, 0x4130d419U, 0x40896720U,
+      0x410e7a51U, 0x40896720U, 0x41532de1U, 0x00000000U, 0x418bf0b8U, 0x40896720U,
+      0x417587a9U, 0x40896720U, 0x417587a9U, 0x40c07d89U, 0x41d32de1U, 0x40c07d89U,
+      0x41d32de1U, 0x41896720U, 0x00000000U, 0x41896720U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.42204724409449,
+    17.231968503937008,
+    None,
+    [
+      0x00000000U, 0x40c11ff8U, 0x4130e996U, 0x40c11ff8U, 0x4130e996U, 0x4089db12U,
+      0x410e72d1U, 0x4089db12U, 0x4153605aU, 0x00000000U, 0x418c26f2U, 0x4089db12U,
+      0x4175d71fU, 0x4089db12U, 0x4175d71fU, 0x40c11ff8U, 0x41d3605aU, 0x40c11ff8U,
+      0x41d3605aU, 0x4189db12U, 0x00000000U, 0x4189db12U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.446692913385828,
+    17.288582677165355,
+    None,
+    [
+      0x00000000U, 0x40c1c266U, 0x4130ff13U, 0x40c1c266U, 0x4130ff13U, 0x408a4f04U,
+      0x410e6b52U, 0x408a4f04U, 0x415392d4U, 0x00000000U, 0x418c5d2bU, 0x408a4f04U,
+      0x41762695U, 0x408a4f04U, 0x41762695U, 0x40c1c266U, 0x41d392d4U, 0x40c1c266U,
+      0x41d392d4U, 0x418a4f04U, 0x00000000U, 0x418a4f04U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.471338582677166,
+    17.345196850393702,
+    None,
+    [
+      0x00000000U, 0x40c264d4U, 0x41311490U, 0x40c264d4U, 0x41311490U, 0x408ac2f7U,
+      0x410e63d2U, 0x408ac2f7U, 0x4153c54dU, 0x00000000U, 0x418c9364U, 0x408ac2f7U,
+      0x4176760bU, 0x408ac2f7U, 0x4176760bU, 0x40c264d4U, 0x41d3c54dU, 0x40c264d4U,
+      0x41d3c54dU, 0x418ac2f7U, 0x00000000U, 0x418ac2f7U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.495984251968505,
+    17.401811023622049,
+    None,
+    [
+      0x00000000U, 0x40c30743U, 0x41312a0cU, 0x40c30743U, 0x41312a0cU, 0x408b36e9U,
+      0x410e5c52U, 0x408b36e9U, 0x4153f7c7U, 0x00000000U, 0x418cc99dU, 0x408b36e9U,
+      0x4176c581U, 0x408b36e9U, 0x4176c581U, 0x40c30743U, 0x41d3f7c7U, 0x40c30743U,
+      0x41d3f7c7U, 0x418b36e9U, 0x00000000U, 0x418b36e9U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.520629921259843,
+    17.458425196850392,
+    None,
+    [
+      0x00000000U, 0x40c3a9b1U, 0x41313f89U, 0x40c3a9b1U, 0x41313f89U, 0x408baadbU,
+      0x410e54d3U, 0x408baadbU, 0x41542a40U, 0x00000000U, 0x418cffd7U, 0x408baadbU,
+      0x417714f7U, 0x408baadbU, 0x417714f7U, 0x40c3a9b1U, 0x41d42a40U, 0x40c3a9b1U,
+      0x41d42a40U, 0x418baadbU, 0x00000000U, 0x418baadbU,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.545275590551181,
+    17.515039370078739,
+    None,
+    [
+      0x00000000U, 0x40c44c1fU, 0x41315506U, 0x40c44c1fU, 0x41315506U, 0x408c1ecdU,
+      0x410e4d53U, 0x408c1ecdU, 0x41545cb9U, 0x00000000U, 0x418d3610U, 0x408c1ecdU,
+      0x4177646dU, 0x408c1ecdU, 0x4177646dU, 0x40c44c1fU, 0x41d45cb9U, 0x40c44c1fU,
+      0x41d45cb9U, 0x418c1ecdU, 0x00000000U, 0x418c1ecdU,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.56992125984252,
+    17.571653543307086,
+    None,
+    [
+      0x00000000U, 0x40c4ee8eU, 0x41316a83U, 0x40c4ee8eU, 0x41316a83U, 0x408c92bfU,
+      0x410e45d3U, 0x408c92bfU, 0x41548f33U, 0x00000000U, 0x418d6c49U, 0x408c92bfU,
+      0x4177b3e3U, 0x408c92bfU, 0x4177b3e3U, 0x40c4ee8eU, 0x41d48f33U, 0x40c4ee8eU,
+      0x41d48f33U, 0x418c92bfU, 0x00000000U, 0x418c92bfU,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.594566929133858,
+    17.628267716535433,
+    None,
+    [
+      0x00000000U, 0x40c590fcU, 0x41318000U, 0x40c590fcU, 0x41318000U, 0x408d06b1U,
+      0x410e3e54U, 0x408d06b1U, 0x4154c1acU, 0x00000000U, 0x418da282U, 0x408d06b1U,
+      0x41780359U, 0x408d06b1U, 0x41780359U, 0x40c590fcU, 0x41d4c1acU, 0x40c590fcU,
+      0x41d4c1acU, 0x418d06b1U, 0x00000000U, 0x418d06b1U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.619212598425197,
+    17.68488188976378,
+    None,
+    [
+      0x00000000U, 0x40c6336aU, 0x4131957dU, 0x40c6336aU, 0x4131957dU, 0x408d7aa3U,
+      0x410e36d4U, 0x408d7aa3U, 0x4154f426U, 0x00000000U, 0x418dd8bcU, 0x408d7aa3U,
+      0x417852cfU, 0x408d7aa3U, 0x417852cfU, 0x40c6336aU, 0x41d4f426U, 0x40c6336aU,
+      0x41d4f426U, 0x418d7aa3U, 0x00000000U, 0x418d7aa3U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.221732283464569,
+    17.459212598425196,
+    None,
+    [
+      0x00000000U, 0x410bac78U, 0x4159c61cU, 0x00000000U, 0x41d9c61cU, 0x410bac78U,
+      0x41a35495U, 0x410bac78U, 0x41a35495U, 0x410bac78U, 0x41d9c61cU, 0x410bac78U,
+      0x4159c61cU, 0x418bac78U, 0x00000000U, 0x410bac78U, 0x40d9c61cU, 0x410bac78U,
+      0x40d9c61cU, 0x410bac78U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.246377952755907,
+    17.515826771653543,
+    None,
+    [
+      0x00000000U, 0x410c206aU, 0x4159f895U, 0x00000000U, 0x41d9f895U, 0x410c206aU,
+      0x41a37a70U, 0x410c206aU, 0x41a37a70U, 0x410c206aU, 0x41d9f895U, 0x410c206aU,
+      0x4159f895U, 0x418c206aU, 0x00000000U, 0x410c206aU, 0x40d9f895U, 0x410c206aU,
+      0x40d9f895U, 0x410c206aU,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.271023622047245,
+    17.57244094488189,
+    None,
+    [
+      0x00000000U, 0x410c945cU, 0x415a2b0eU, 0x00000000U, 0x41da2b0eU, 0x410c945cU,
+      0x41a3a04bU, 0x410c945cU, 0x41a3a04bU, 0x410c945cU, 0x41da2b0eU, 0x410c945cU,
+      0x415a2b0eU, 0x418c945cU, 0x00000000U, 0x410c945cU, 0x40da2b0eU, 0x410c945cU,
+      0x40da2b0eU, 0x410c945cU,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.295669291338584,
+    17.629055118110237,
+    None,
+    [
+      0x00000000U, 0x410d084eU, 0x415a5d88U, 0x00000000U, 0x41da5d88U, 0x410d084eU,
+      0x41a3c626U, 0x410d084eU, 0x41a3c626U, 0x410d084eU, 0x41da5d88U, 0x410d084eU,
+      0x415a5d88U, 0x418d084eU, 0x00000000U, 0x410d084eU, 0x40da5d88U, 0x410d084eU,
+      0x40da5d88U, 0x410d084eU,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.320314960629922,
+    17.685669291338584,
+    None,
+    [
+      0x00000000U, 0x410d7c40U, 0x415a9001U, 0x00000000U, 0x41da9001U, 0x410d7c40U,
+      0x41a3ec01U, 0x410d7c40U, 0x41a3ec01U, 0x410d7c40U, 0x41da9001U, 0x410d7c40U,
+      0x415a9001U, 0x418d7c40U, 0x00000000U, 0x410d7c40U, 0x40da9001U, 0x410d7c40U,
+      0x40da9001U, 0x410d7c40U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.34496062992126,
+    17.742283464566928,
+    None,
+    [
+      0x00000000U, 0x410df032U, 0x415ac27bU, 0x00000000U, 0x41dac27bU, 0x410df032U,
+      0x41a411dcU, 0x410df032U, 0x41a411dcU, 0x410df032U, 0x41dac27bU, 0x410df032U,
+      0x415ac27bU, 0x418df032U, 0x00000000U, 0x410df032U, 0x40dac27bU, 0x410df032U,
+      0x40dac27bU, 0x410df032U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.369606299212599,
+    17.798897637795275,
+    None,
+    [
+      0x00000000U, 0x410e6424U, 0x415af4f4U, 0x00000000U, 0x41daf4f4U, 0x410e6424U,
+      0x41a437b7U, 0x410e6424U, 0x41a437b7U, 0x410e6424U, 0x41daf4f4U, 0x410e6424U,
+      0x415af4f4U, 0x418e6424U, 0x00000000U, 0x410e6424U, 0x40daf4f4U, 0x410e6424U,
+      0x40daf4f4U, 0x410e6424U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.394251968503937,
+    17.855511811023622,
+    None,
+    [
+      0x00000000U, 0x410ed817U, 0x415b276eU, 0x00000000U, 0x41db276eU, 0x410ed817U,
+      0x41a45d92U, 0x410ed817U, 0x41a45d92U, 0x410ed817U, 0x41db276eU, 0x410ed817U,
+      0x415b276eU, 0x418ed817U, 0x00000000U, 0x410ed817U, 0x40db276eU, 0x410ed817U,
+      0x40db276eU, 0x410ed817U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.418897637795276,
+    17.912125984251968,
+    None,
+    [
+      0x00000000U, 0x410f4c09U, 0x415b59e7U, 0x00000000U, 0x41db59e7U, 0x410f4c09U,
+      0x41a4836dU, 0x410f4c09U, 0x41a4836dU, 0x410f4c09U, 0x41db59e7U, 0x410f4c09U,
+      0x415b59e7U, 0x418f4c09U, 0x00000000U, 0x410f4c09U, 0x40db59e7U, 0x410f4c09U,
+      0x40db59e7U, 0x410f4c09U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.443543307086614,
+    17.968740157480315,
+    None,
+    [
+      0x00000000U, 0x410fbffbU, 0x415b8c60U, 0x00000000U, 0x41db8c60U, 0x410fbffbU,
+      0x41a4a948U, 0x410fbffbU, 0x41a4a948U, 0x410fbffbU, 0x41db8c60U, 0x410fbffbU,
+      0x415b8c60U, 0x418fbffbU, 0x00000000U, 0x410fbffbU, 0x40db8c60U, 0x410fbffbU,
+      0x40db8c60U, 0x410fbffbU,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.468188976377952,
+    18.025354330708662,
+    None,
+    [
+      0x00000000U, 0x411033edU, 0x415bbedaU, 0x00000000U, 0x41dbbedaU, 0x411033edU,
+      0x41a4cf23U, 0x411033edU, 0x41a4cf23U, 0x411033edU, 0x41dbbedaU, 0x411033edU,
+      0x415bbedaU, 0x419033edU, 0x00000000U, 0x411033edU, 0x40dbbedaU, 0x411033edU,
+      0x40dbbedaU, 0x411033edU,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.492834645669291,
+    18.081968503937009,
+    None,
+    [
+      0x00000000U, 0x4110a7dfU, 0x415bf153U, 0x00000000U, 0x41dbf153U, 0x4110a7dfU,
+      0x41a4f4feU, 0x4110a7dfU, 0x41a4f4feU, 0x4110a7dfU, 0x41dbf153U, 0x4110a7dfU,
+      0x415bf153U, 0x4190a7dfU, 0x00000000U, 0x4110a7dfU, 0x40dbf153U, 0x4110a7dfU,
+      0x40dbf153U, 0x4110a7dfU,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.517480314960629,
+    18.138582677165353,
+    None,
+    [
+      0x00000000U, 0x41111bd1U, 0x415c23cdU, 0x00000000U, 0x41dc23cdU, 0x41111bd1U,
+      0x41a51adaU, 0x41111bd1U, 0x41a51adaU, 0x41111bd1U, 0x41dc23cdU, 0x41111bd1U,
+      0x415c23cdU, 0x41911bd1U, 0x00000000U, 0x41111bd1U, 0x40dc23cdU, 0x41111bd1U,
+      0x40dc23cdU, 0x41111bd1U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.542125984251967,
+    18.1951968503937,
+    None,
+    [
+      0x00000000U, 0x41118fc3U, 0x415c5646U, 0x00000000U, 0x41dc5646U, 0x41118fc3U,
+      0x41a540b5U, 0x41118fc3U, 0x41a540b5U, 0x41118fc3U, 0x41dc5646U, 0x41118fc3U,
+      0x415c5646U, 0x41918fc3U, 0x00000000U, 0x41118fc3U, 0x40dc5646U, 0x41118fc3U,
+      0x40dc5646U, 0x41118fc3U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.566771653543306,
+    18.251811023622047,
+    None,
+    [
+      0x00000000U, 0x411203b5U, 0x415c88c0U, 0x00000000U, 0x41dc88c0U, 0x411203b5U,
+      0x41a56690U, 0x411203b5U, 0x41a56690U, 0x411203b5U, 0x41dc88c0U, 0x411203b5U,
+      0x415c88c0U, 0x419203b5U, 0x00000000U, 0x411203b5U, 0x40dc88c0U, 0x411203b5U,
+      0x40dc88c0U, 0x411203b5U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.591417322834644,
+    18.308425196850393,
+    None,
+    [
+      0x00000000U, 0x411277a8U, 0x415cbb39U, 0x00000000U, 0x41dcbb39U, 0x411277a8U,
+      0x41a58c6bU, 0x411277a8U, 0x41a58c6bU, 0x411277a8U, 0x41dcbb39U, 0x411277a8U,
+      0x415cbb39U, 0x419277a8U, 0x00000000U, 0x411277a8U, 0x40dcbb39U, 0x411277a8U,
+      0x40dcbb39U, 0x411277a8U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.193937007874016,
+    18.08275590551181,
+    None,
+    [
+      0x00000000U, 0x4110a97cU, 0x41618d2fU, 0x00000000U, 0x41e18d2fU, 0x4110a97cU,
+      0x41a929e3U, 0x4110a97cU, 0x41a929e3U, 0x4190a97cU, 0x40e18d2fU, 0x4190a97cU,
+      0x40e18d2fU, 0x4110a97cU,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.218582677165355,
+    18.139370078740157,
+    None,
+    [
+      0x00000000U, 0x41111d6eU, 0x4161bfa8U, 0x00000000U, 0x41e1bfa8U, 0x41111d6eU,
+      0x41a94fbeU, 0x41111d6eU, 0x41a94fbeU, 0x41911d6eU, 0x40e1bfa8U, 0x41911d6eU,
+      0x40e1bfa8U, 0x41111d6eU,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.243228346456693,
+    18.195984251968504,
+    None,
+    [
+      0x00000000U, 0x41119160U, 0x4161f222U, 0x00000000U, 0x41e1f222U, 0x41119160U,
+      0x41a97599U, 0x41119160U, 0x41a97599U, 0x41919160U, 0x40e1f222U, 0x41919160U,
+      0x40e1f222U, 0x41119160U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.267874015748031,
+    18.252598425196851,
+    None,
+    [
+      0x00000000U, 0x41120552U, 0x4162249bU, 0x00000000U, 0x41e2249bU, 0x41120552U,
+      0x41a99b74U, 0x41120552U, 0x41a99b74U, 0x41920552U, 0x40e2249bU, 0x41920552U,
+      0x40e2249bU, 0x41120552U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.29251968503937,
+    18.309212598425198,
+    None,
+    [
+      0x00000000U, 0x41127944U, 0x41625715U, 0x00000000U, 0x41e25715U, 0x41127944U,
+      0x41a9c14fU, 0x41127944U, 0x41a9c14fU, 0x41927944U, 0x40e25715U, 0x41927944U,
+      0x40e25715U, 0x41127944U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.317165354330708,
+    18.365826771653545,
+    None,
+    [
+      0x00000000U, 0x4112ed37U, 0x4162898eU, 0x00000000U, 0x41e2898eU, 0x4112ed37U,
+      0x41a9e72aU, 0x4112ed37U, 0x41a9e72aU, 0x4192ed37U, 0x40e2898eU, 0x4192ed37U,
+      0x40e2898eU, 0x4112ed37U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.341811023622046,
+    18.422440944881888,
+    None,
+    [
+      0x00000000U, 0x41136129U, 0x4162bc07U, 0x00000000U, 0x41e2bc07U, 0x41136129U,
+      0x41aa0d06U, 0x41136129U, 0x41aa0d06U, 0x41936129U, 0x40e2bc07U, 0x41936129U,
+      0x40e2bc07U, 0x41136129U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.366456692913385,
+    18.479055118110235,
+    None,
+    [
+      0x00000000U, 0x4113d51bU, 0x4162ee81U, 0x00000000U, 0x41e2ee81U, 0x4113d51bU,
+      0x41aa32e1U, 0x4113d51bU, 0x41aa32e1U, 0x4193d51bU, 0x40e2ee81U, 0x4193d51bU,
+      0x40e2ee81U, 0x4113d51bU,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.391102362204723,
+    18.535669291338582,
+    None,
+    [
+      0x00000000U, 0x4114490dU, 0x416320faU, 0x00000000U, 0x41e320faU, 0x4114490dU,
+      0x41aa58bcU, 0x4114490dU, 0x41aa58bcU, 0x4194490dU, 0x40e320faU, 0x4194490dU,
+      0x40e320faU, 0x4114490dU,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.415748031496062,
+    18.592283464566929,
+    None,
+    [
+      0x00000000U, 0x4114bcffU, 0x41635374U, 0x00000000U, 0x41e35374U, 0x4114bcffU,
+      0x41aa7e97U, 0x4114bcffU, 0x41aa7e97U, 0x4194bcffU, 0x40e35374U, 0x4194bcffU,
+      0x40e35374U, 0x4114bcffU,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.4403937007874,
+    18.648897637795276,
+    None,
+    [
+      0x00000000U, 0x411530f1U, 0x416385edU, 0x00000000U, 0x41e385edU, 0x411530f1U,
+      0x41aaa472U, 0x411530f1U, 0x41aaa472U, 0x419530f1U, 0x40e385edU, 0x419530f1U,
+      0x40e385edU, 0x411530f1U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.465039370078742,
+    18.705511811023623,
+    None,
+    [
+      0x00000000U, 0x4115a4e3U, 0x4163b867U, 0x00000000U, 0x41e3b867U, 0x4115a4e3U,
+      0x41aaca4dU, 0x4115a4e3U, 0x41aaca4dU, 0x4195a4e3U, 0x40e3b867U, 0x4195a4e3U,
+      0x40e3b867U, 0x4115a4e3U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.48968503937008,
+    18.76212598425197,
+    None,
+    [
+      0x00000000U, 0x411618d6U, 0x4163eae0U, 0x00000000U, 0x41e3eae0U, 0x411618d6U,
+      0x41aaf028U, 0x411618d6U, 0x41aaf028U, 0x419618d6U, 0x40e3eae0U, 0x419618d6U,
+      0x40e3eae0U, 0x411618d6U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.514330708661419,
+    18.818740157480313,
+    None,
+    [
+      0x00000000U, 0x41168cc8U, 0x41641d59U, 0x00000000U, 0x41e41d59U, 0x41168cc8U,
+      0x41ab1603U, 0x41168cc8U, 0x41ab1603U, 0x41968cc8U, 0x40e41d59U, 0x41968cc8U,
+      0x40e41d59U, 0x41168cc8U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.538976377952757,
+    18.87535433070866,
+    None,
+    [
+      0x00000000U, 0x411700baU, 0x41644fd3U, 0x00000000U, 0x41e44fd3U, 0x411700baU,
+      0x41ab3bdeU, 0x411700baU, 0x41ab3bdeU, 0x419700baU, 0x40e44fd3U, 0x419700baU,
+      0x40e44fd3U, 0x411700baU,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.563622047244095,
+    18.931968503937007,
+    None,
+    [
+      0x00000000U, 0x411774acU, 0x4164824cU, 0x00000000U, 0x41e4824cU, 0x411774acU,
+      0x41ab61b9U, 0x411774acU, 0x41ab61b9U, 0x419774acU, 0x40e4824cU, 0x419774acU,
+      0x40e4824cU, 0x411774acU,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.166141732283464,
+    18.706299212598424,
+    None,
+    [
+      0x00000000U, 0x409b44adU, 0x4143eaa2U, 0x409b44adU, 0x4143eaa2U, 0x4095a680U,
+      0x411e8102U, 0x4095a680U, 0x41695442U, 0x00000000U, 0x419a13c1U, 0x4095a680U,
+      0x41875ef1U, 0x4095a680U, 0x41875ef1U, 0x409b44adU, 0x41e95442U, 0x409b44adU,
+      0x41e95442U, 0x415daaaaU, 0x41875ef1U, 0x415daaaaU, 0x41875ef1U, 0x416079c0U,
+      0x419a13c1U, 0x416079c0U, 0x41695442U, 0x4195a680U, 0x411e8102U, 0x416079c0U,
+      0x4143eaa2U, 0x416079c0U, 0x4143eaa2U, 0x415daaaaU, 0x00000000U, 0x415daaaaU,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.190787401574802,
+    18.762913385826771,
+    None,
+    [
+      0x00000000U, 0x409bbcfaU, 0x4144001fU, 0x409bbcfaU, 0x4144001fU, 0x40961a72U,
+      0x411e7982U, 0x40961a72U, 0x416986bcU, 0x00000000U, 0x419a49faU, 0x40961a72U,
+      0x418786acU, 0x40961a72U, 0x418786acU, 0x409bbcfaU, 0x41e986bcU, 0x409bbcfaU,
+      0x41e986bcU, 0x415e5668U, 0x418786acU, 0x415e5668U, 0x418786acU, 0x416127abU,
+      0x419a49faU, 0x416127abU, 0x416986bcU, 0x41961a72U, 0x411e7982U, 0x416127abU,
+      0x4144001fU, 0x416127abU, 0x4144001fU, 0x415e5668U, 0x00000000U, 0x415e5668U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.21543307086614,
+    18.819527559055118,
+    None,
+    [
+      0x00000000U, 0x409c3546U, 0x4144159cU, 0x409c3546U, 0x4144159cU, 0x40968e64U,
+      0x411e7203U, 0x40968e64U, 0x4169b935U, 0x00000000U, 0x419a8034U, 0x40968e64U,
+      0x4187ae67U, 0x40968e64U, 0x4187ae67U, 0x409c3546U, 0x41e9b935U, 0x409c3546U,
+      0x41e9b935U, 0x415f0226U, 0x4187ae67U, 0x415f0226U, 0x4187ae67U, 0x4161d597U,
+      0x419a8034U, 0x4161d597U, 0x4169b935U, 0x41968e64U, 0x411e7203U, 0x4161d597U,
+      0x4144159cU, 0x4161d597U, 0x4144159cU, 0x415f0226U, 0x00000000U, 0x415f0226U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.240078740157479,
+    18.876141732283465,
+    None,
+    [
+      0x00000000U, 0x409cad93U, 0x41442b19U, 0x409cad93U, 0x41442b19U, 0x40970257U,
+      0x411e6a83U, 0x40970257U, 0x4169ebaeU, 0x00000000U, 0x419ab66dU, 0x40970257U,
+      0x4187d622U, 0x40970257U, 0x4187d622U, 0x409cad93U, 0x41e9ebaeU, 0x409cad93U,
+      0x41e9ebaeU, 0x415fade4U, 0x4187d622U, 0x415fade4U, 0x4187d622U, 0x41628382U,
+      0x419ab66dU, 0x41628382U, 0x4169ebaeU, 0x41970257U, 0x411e6a83U, 0x41628382U,
+      0x41442b19U, 0x41628382U, 0x41442b19U, 0x415fade4U, 0x00000000U, 0x415fade4U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.264724409448817,
+    18.932755905511812,
+    None,
+    [
+      0x00000000U, 0x409d25dfU, 0x41444096U, 0x409d25dfU, 0x41444096U, 0x40977649U,
+      0x411e6303U, 0x40977649U, 0x416a1e28U, 0x00000000U, 0x419aeca6U, 0x40977649U,
+      0x4187fdddU, 0x40977649U, 0x4187fdddU, 0x409d25dfU, 0x41ea1e28U, 0x409d25dfU,
+      0x41ea1e28U, 0x416059a2U, 0x4187fdddU, 0x416059a2U, 0x4187fdddU, 0x4163316dU,
+      0x419aeca6U, 0x4163316dU, 0x416a1e28U, 0x41977649U, 0x411e6303U, 0x4163316dU,
+      0x41444096U, 0x4163316dU, 0x41444096U, 0x416059a2U, 0x00000000U, 0x416059a2U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.289370078740159,
+    18.989370078740158,
+    None,
+    [
+      0x00000000U, 0x409d9e2bU, 0x41445613U, 0x409d9e2bU, 0x41445613U, 0x4097ea3bU,
+      0x411e5b84U, 0x4097ea3bU, 0x416a50a1U, 0x00000000U, 0x419b22dfU, 0x4097ea3bU,
+      0x41882598U, 0x4097ea3bU, 0x41882598U, 0x409d9e2bU, 0x41ea50a1U, 0x409d9e2bU,
+      0x41ea50a1U, 0x41610560U, 0x41882598U, 0x41610560U, 0x41882598U, 0x4163df58U,
+      0x419b22dfU, 0x4163df58U, 0x416a50a1U, 0x4197ea3bU, 0x411e5b84U, 0x4163df58U,
+      0x41445613U, 0x4163df58U, 0x41445613U, 0x41610560U, 0x00000000U, 0x41610560U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.314015748031498,
+    19.045984251968505,
+    None,
+    [
+      0x00000000U, 0x409e1678U, 0x41446b8fU, 0x409e1678U, 0x41446b8fU, 0x40985e2dU,
+      0x411e5404U, 0x40985e2dU, 0x416a831bU, 0x00000000U, 0x419b5919U, 0x40985e2dU,
+      0x41884d53U, 0x40985e2dU, 0x41884d53U, 0x409e1678U, 0x41ea831bU, 0x409e1678U,
+      0x41ea831bU, 0x4161b11eU, 0x41884d53U, 0x4161b11eU, 0x41884d53U, 0x41648d43U,
+      0x419b5919U, 0x41648d43U, 0x416a831bU, 0x41985e2dU, 0x411e5404U, 0x41648d43U,
+      0x41446b8fU, 0x41648d43U, 0x41446b8fU, 0x4161b11eU, 0x00000000U, 0x4161b11eU,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.338661417322836,
+    19.102598425196849,
+    None,
+    [
+      0x00000000U, 0x409e8ec4U, 0x4144810cU, 0x409e8ec4U, 0x4144810cU, 0x4098d21fU,
+      0x411e4c85U, 0x4098d21fU, 0x416ab594U, 0x00000000U, 0x419b8f52U, 0x4098d21fU,
+      0x4188750eU, 0x4098d21fU, 0x4188750eU, 0x409e8ec4U, 0x41eab594U, 0x409e8ec4U,
+      0x41eab594U, 0x41625cdcU, 0x4188750eU, 0x41625cdcU, 0x4188750eU, 0x41653b2fU,
+      0x419b8f52U, 0x41653b2fU, 0x416ab594U, 0x4198d21fU, 0x411e4c85U, 0x41653b2fU,
+      0x4144810cU, 0x41653b2fU, 0x4144810cU, 0x41625cdcU, 0x00000000U, 0x41625cdcU,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.363307086614174,
+    19.159212598425196,
+    None,
+    [
+      0x00000000U, 0x409f0710U, 0x41449689U, 0x409f0710U, 0x41449689U, 0x40994611U,
+      0x411e4505U, 0x40994611U, 0x416ae80eU, 0x00000000U, 0x419bc58bU, 0x40994611U,
+      0x41889cc9U, 0x40994611U, 0x41889cc9U, 0x409f0710U, 0x41eae80eU, 0x409f0710U,
+      0x41eae80eU, 0x4163089aU, 0x41889cc9U, 0x4163089aU, 0x41889cc9U, 0x4165e91aU,
+      0x419bc58bU, 0x4165e91aU, 0x416ae80eU, 0x41994611U, 0x411e4505U, 0x4165e91aU,
+      0x41449689U, 0x4165e91aU, 0x41449689U, 0x4163089aU, 0x00000000U, 0x4163089aU,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.387952755905513,
+    19.215826771653543,
+    None,
+    [
+      0x00000000U, 0x409f7f5dU, 0x4144ac06U, 0x409f7f5dU, 0x4144ac06U, 0x4099ba03U,
+      0x411e3d85U, 0x4099ba03U, 0x416b1a87U, 0x00000000U, 0x419bfbc4U, 0x4099ba03U,
+      0x4188c484U, 0x4099ba03U, 0x4188c484U, 0x409f7f5dU, 0x41eb1a87U, 0x409f7f5dU,
+      0x41eb1a87U, 0x4163b458U, 0x4188c484U, 0x4163b458U, 0x4188c484U, 0x41669705U,
+      0x419bfbc4U, 0x41669705U, 0x416b1a87U, 0x4199ba03U, 0x411e3d85U, 0x41669705U,
+      0x4144ac06U, 0x41669705U, 0x4144ac06U, 0x4163b458U, 0x00000000U, 0x4163b458U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.412598425196851,
+    19.27244094488189,
+    None,
+    [
+      0x00000000U, 0x409ff7a9U, 0x4144c183U, 0x409ff7a9U, 0x4144c183U, 0x409a2df6U,
+      0x411e3606U, 0x409a2df6U, 0x416b4d00U, 0x00000000U, 0x419c31feU, 0x409a2df6U,
+      0x4188ec3fU, 0x409a2df6U, 0x4188ec3fU, 0x409ff7a9U, 0x41eb4d00U, 0x409ff7a9U,
+      0x41eb4d00U, 0x41646016U, 0x4188ec3fU, 0x41646016U, 0x4188ec3fU, 0x416744f0U,
+      0x419c31feU, 0x416744f0U, 0x416b4d00U, 0x419a2df6U, 0x411e3606U, 0x416744f0U,
+      0x4144c183U, 0x416744f0U, 0x4144c183U, 0x41646016U, 0x00000000U, 0x41646016U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.437244094488189,
+    19.329055118110237,
+    None,
+    [
+      0x00000000U, 0x40a06ff6U, 0x4144d700U, 0x40a06ff6U, 0x4144d700U, 0x409aa1e8U,
+      0x411e2e86U, 0x409aa1e8U, 0x416b7f7aU, 0x00000000U, 0x419c6837U, 0x409aa1e8U,
+      0x418913faU, 0x409aa1e8U, 0x418913faU, 0x40a06ff6U, 0x41eb7f7aU, 0x40a06ff6U,
+      0x41eb7f7aU, 0x41650bd4U, 0x418913faU, 0x41650bd4U, 0x418913faU, 0x4167f2dbU,
+      0x419c6837U, 0x4167f2dbU, 0x416b7f7aU, 0x419aa1e8U, 0x411e2e86U, 0x4167f2dbU,
+      0x4144d700U, 0x4167f2dbU, 0x4144d700U, 0x41650bd4U, 0x00000000U, 0x41650bd4U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.461889763779528,
+    19.385669291338584,
+    None,
+    [
+      0x00000000U, 0x40a0e842U, 0x4144ec7dU, 0x40a0e842U, 0x4144ec7dU, 0x409b15daU,
+      0x411e2706U, 0x409b15daU, 0x416bb1f3U, 0x00000000U, 0x419c9e70U, 0x409b15daU,
+      0x41893bb5U, 0x409b15daU, 0x41893bb5U, 0x40a0e842U, 0x41ebb1f3U, 0x40a0e842U,
+      0x41ebb1f3U, 0x4165b793U, 0x41893bb5U, 0x4165b793U, 0x41893bb5U, 0x4168a0c7U,
+      0x419c9e70U, 0x4168a0c7U, 0x416bb1f3U, 0x419b15daU, 0x411e2706U, 0x4168a0c7U,
+      0x4144ec7dU, 0x4168a0c7U, 0x4144ec7dU, 0x4165b793U, 0x00000000U, 0x4165b793U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.486535433070866,
+    19.44228346456693,
+    None,
+    [
+      0x00000000U, 0x40a1608eU, 0x414501faU, 0x40a1608eU, 0x414501faU, 0x409b89ccU,
+      0x411e1f87U, 0x409b89ccU, 0x416be46dU, 0x00000000U, 0x419cd4a9U, 0x409b89ccU,
+      0x41896370U, 0x409b89ccU, 0x41896370U, 0x40a1608eU, 0x41ebe46dU, 0x40a1608eU,
+      0x41ebe46dU, 0x41666351U, 0x41896370U, 0x41666351U, 0x41896370U, 0x41694eb2U,
+      0x419cd4a9U, 0x41694eb2U, 0x416be46dU, 0x419b89ccU, 0x411e1f87U, 0x41694eb2U,
+      0x414501faU, 0x41694eb2U, 0x414501faU, 0x41666351U, 0x00000000U, 0x41666351U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.511181102362205,
+    19.498897637795274,
+    None,
+    [
+      0x00000000U, 0x40a1d8dbU, 0x41451777U, 0x40a1d8dbU, 0x41451777U, 0x409bfdbeU,
+      0x411e1807U, 0x409bfdbeU, 0x416c16e6U, 0x00000000U, 0x419d0ae3U, 0x409bfdbeU,
+      0x41898b2bU, 0x409bfdbeU, 0x41898b2bU, 0x40a1d8dbU, 0x41ec16e6U, 0x40a1d8dbU,
+      0x41ec16e6U, 0x41670f0fU, 0x41898b2bU, 0x41670f0fU, 0x41898b2bU, 0x4169fc9dU,
+      0x419d0ae3U, 0x4169fc9dU, 0x416c16e6U, 0x419bfdbeU, 0x411e1807U, 0x4169fc9dU,
+      0x41451777U, 0x4169fc9dU, 0x41451777U, 0x41670f0fU, 0x00000000U, 0x41670f0fU,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.535826771653543,
+    19.555511811023621,
+    None,
+    [
+      0x00000000U, 0x40a25127U, 0x41452cf4U, 0x40a25127U, 0x41452cf4U, 0x409c71b0U,
+      0x411e1087U, 0x409c71b0U, 0x416c4960U, 0x00000000U, 0x419d411cU, 0x409c71b0U,
+      0x4189b2e6U, 0x409c71b0U, 0x4189b2e6U, 0x40a25127U, 0x41ec4960U, 0x40a25127U,
+      0x41ec4960U, 0x4167bacdU, 0x4189b2e6U, 0x4167bacdU, 0x4189b2e6U, 0x416aaa88U,
+      0x419d411cU, 0x416aaa88U, 0x416c4960U, 0x419c71b0U, 0x411e1087U, 0x416aaa88U,
+      0x41452cf4U, 0x416aaa88U, 0x41452cf4U, 0x4167bacdU, 0x00000000U, 0x4167bacdU,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.138346456692915,
+    19.329842519685041,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a0bce4U, 0x00000000U, 0x40a0bce4U, 0x00000000U,
+      0x4148ec1cU, 0x00000000U, 0x41f11b55U, 0x00000000U, 0x41f11b55U, 0x41346970U,
+      0x41f11b55U, 0x41346970U, 0x41f11b55U, 0x4180dd99U, 0x41f11b55U, 0x419aa384U,
+      0x4148ec1cU, 0x419aa384U, 0x410ca5b0U, 0x41adf7f5U, 0x40a0bce4U, 0x419aa384U,
+      0x00000000U, 0x419aa384U, 0x00000000U, 0x4180dd99U, 0x00000000U, 0x41346970U,
+      0x00000000U, 0x41346970U,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.162992125984253,
+    19.386456692913384,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a0de8aU, 0x00000000U, 0x40a0de8aU, 0x00000000U,
+      0x4149162cU, 0x00000000U, 0x41f14dcfU, 0x00000000U, 0x41f14dcfU, 0x4134f0b5U,
+      0x41f14dcfU, 0x4134f0b5U, 0x41f14dcfU, 0x41813e38U, 0x41f14dcfU, 0x419b1777U,
+      0x4149162cU, 0x419b1777U, 0x410cc322U, 0x41ae7a65U, 0x40a0de8aU, 0x419b1777U,
+      0x00000000U, 0x419b1777U, 0x00000000U, 0x41813e38U, 0x00000000U, 0x4134f0b5U,
+      0x00000000U, 0x4134f0b5U,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.187637795275592,
+    19.443070866141731,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a10030U, 0x00000000U, 0x40a10030U, 0x00000000U,
+      0x4149403cU, 0x00000000U, 0x41f18048U, 0x00000000U, 0x41f18048U, 0x413577faU,
+      0x41f18048U, 0x413577faU, 0x41f18048U, 0x41819ed7U, 0x41f18048U, 0x419b8b69U,
+      0x4149403cU, 0x419b8b69U, 0x410ce094U, 0x41aefcd6U, 0x40a10030U, 0x419b8b69U,
+      0x00000000U, 0x419b8b69U, 0x00000000U, 0x41819ed7U, 0x00000000U, 0x413577faU,
+      0x00000000U, 0x413577faU,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.21228346456693,
+    19.499685039370078,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a121d6U, 0x00000000U, 0x40a121d6U, 0x00000000U,
+      0x41496a4cU, 0x00000000U, 0x41f1b2c2U, 0x00000000U, 0x41f1b2c2U, 0x4135ff3fU,
+      0x41f1b2c2U, 0x4135ff3fU, 0x41f1b2c2U, 0x4181ff76U, 0x41f1b2c2U, 0x419bff5bU,
+      0x41496a4cU, 0x419bff5bU, 0x410cfe05U, 0x41af7f46U, 0x40a121d6U, 0x419bff5bU,
+      0x00000000U, 0x419bff5bU, 0x00000000U, 0x4181ff76U, 0x00000000U, 0x4135ff3fU,
+      0x00000000U, 0x4135ff3fU,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.236929133858268,
+    19.556299212598425,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a1437dU, 0x00000000U, 0x40a1437dU, 0x00000000U,
+      0x4149945cU, 0x00000000U, 0x41f1e53bU, 0x00000000U, 0x41f1e53bU, 0x41368685U,
+      0x41f1e53bU, 0x41368685U, 0x41f1e53bU, 0x41826016U, 0x41f1e53bU, 0x419c734dU,
+      0x4149945cU, 0x419c734dU, 0x410d1b77U, 0x41b001b7U, 0x40a1437dU, 0x419c734dU,
+      0x00000000U, 0x419c734dU, 0x00000000U, 0x41826016U, 0x00000000U, 0x41368685U,
+      0x00000000U, 0x41368685U,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.261574803149607,
+    19.612913385826772,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a16523U, 0x00000000U, 0x40a16523U, 0x00000000U,
+      0x4149be6cU, 0x00000000U, 0x41f217b5U, 0x00000000U, 0x41f217b5U, 0x41370dcaU,
+      0x41f217b5U, 0x41370dcaU, 0x41f217b5U, 0x4182c0b5U, 0x41f217b5U, 0x419ce73fU,
+      0x4149be6cU, 0x419ce73fU, 0x410d38e8U, 0x41b08427U, 0x40a16523U, 0x419ce73fU,
+      0x00000000U, 0x419ce73fU, 0x00000000U, 0x4182c0b5U, 0x00000000U, 0x41370dcaU,
+      0x00000000U, 0x41370dcaU,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.286220472440945,
+    19.669527559055119,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a186c9U, 0x00000000U, 0x40a186c9U, 0x00000000U,
+      0x4149e87cU, 0x00000000U, 0x41f24a2eU, 0x00000000U, 0x41f24a2eU, 0x4137950fU,
+      0x41f24a2eU, 0x4137950fU, 0x41f24a2eU, 0x41832154U, 0x41f24a2eU, 0x419d5b31U,
+      0x4149e87cU, 0x419d5b31U, 0x410d565aU, 0x41b10697U, 0x40a186c9U, 0x419d5b31U,
+      0x00000000U, 0x419d5b31U, 0x00000000U, 0x41832154U, 0x00000000U, 0x4137950fU,
+      0x00000000U, 0x4137950fU,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.310866141732284,
+    19.726141732283466,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a1a870U, 0x00000000U, 0x40a1a870U, 0x00000000U,
+      0x414a128bU, 0x00000000U, 0x41f27ca7U, 0x00000000U, 0x41f27ca7U, 0x41381c54U,
+      0x41f27ca7U, 0x41381c54U, 0x41f27ca7U, 0x418381f3U, 0x41f27ca7U, 0x419dcf23U,
+      0x414a128bU, 0x419dcf23U, 0x410d73ccU, 0x41b18908U, 0x40a1a870U, 0x419dcf23U,
+      0x00000000U, 0x419dcf23U, 0x00000000U, 0x418381f3U, 0x00000000U, 0x41381c54U,
+      0x00000000U, 0x41381c54U,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.335511811023622,
+    19.782755905511809,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a1ca16U, 0x00000000U, 0x40a1ca16U, 0x00000000U,
+      0x414a3c9bU, 0x00000000U, 0x41f2af21U, 0x00000000U, 0x41f2af21U, 0x4138a399U,
+      0x41f2af21U, 0x4138a399U, 0x41f2af21U, 0x4183e292U, 0x41f2af21U, 0x419e4316U,
+      0x414a3c9bU, 0x419e4316U, 0x410d913dU, 0x41b20b78U, 0x40a1ca16U, 0x419e4316U,
+      0x00000000U, 0x419e4316U, 0x00000000U, 0x4183e292U, 0x00000000U, 0x4138a399U,
+      0x00000000U, 0x4138a399U,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.36015748031496,
+    19.839370078740156,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a1ebbcU, 0x00000000U, 0x40a1ebbcU, 0x00000000U,
+      0x414a66abU, 0x00000000U, 0x41f2e19aU, 0x00000000U, 0x41f2e19aU, 0x41392adeU,
+      0x41f2e19aU, 0x41392adeU, 0x41f2e19aU, 0x41844331U, 0x41f2e19aU, 0x419eb708U,
+      0x414a66abU, 0x419eb708U, 0x410daeafU, 0x41b28de9U, 0x40a1ebbcU, 0x419eb708U,
+      0x00000000U, 0x419eb708U, 0x00000000U, 0x41844331U, 0x00000000U, 0x41392adeU,
+      0x00000000U, 0x41392adeU,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.384803149606299,
+    19.895984251968503,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a20d62U, 0x00000000U, 0x40a20d62U, 0x00000000U,
+      0x414a90bbU, 0x00000000U, 0x41f31414U, 0x00000000U, 0x41f31414U, 0x4139b223U,
+      0x41f31414U, 0x4139b223U, 0x41f31414U, 0x4184a3d0U, 0x41f31414U, 0x419f2afaU,
+      0x414a90bbU, 0x419f2afaU, 0x410dcc20U, 0x41b31059U, 0x40a20d62U, 0x419f2afaU,
+      0x00000000U, 0x419f2afaU, 0x00000000U, 0x4184a3d0U, 0x00000000U, 0x4139b223U,
+      0x00000000U, 0x4139b223U,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.409448818897637,
+    19.95259842519685,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a22f09U, 0x00000000U, 0x40a22f09U, 0x00000000U,
+      0x414abacbU, 0x00000000U, 0x41f3468dU, 0x00000000U, 0x41f3468dU, 0x413a3969U,
+      0x41f3468dU, 0x413a3969U, 0x41f3468dU, 0x4185046fU, 0x41f3468dU, 0x419f9eecU,
+      0x414abacbU, 0x419f9eecU, 0x410de992U, 0x41b392c9U, 0x40a22f09U, 0x419f9eecU,
+      0x00000000U, 0x419f9eecU, 0x00000000U, 0x4185046fU, 0x00000000U, 0x413a3969U,
+      0x00000000U, 0x413a3969U,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.434094488188975,
+    20.009212598425197,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a250afU, 0x00000000U, 0x40a250afU, 0x00000000U,
+      0x414ae4dbU, 0x00000000U, 0x41f37907U, 0x00000000U, 0x41f37907U, 0x413ac0aeU,
+      0x41f37907U, 0x413ac0aeU, 0x41f37907U, 0x4185650eU, 0x41f37907U, 0x41a012deU,
+      0x414ae4dbU, 0x41a012deU, 0x410e0704U, 0x41b4153aU, 0x40a250afU, 0x41a012deU,
+      0x00000000U, 0x41a012deU, 0x00000000U, 0x4185650eU, 0x00000000U, 0x413ac0aeU,
+      0x00000000U, 0x413ac0aeU,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.458740157480314,
+    20.065826771653544,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a27255U, 0x00000000U, 0x40a27255U, 0x00000000U,
+      0x414b0eebU, 0x00000000U, 0x41f3ab80U, 0x00000000U, 0x41f3ab80U, 0x413b47f3U,
+      0x41f3ab80U, 0x413b47f3U, 0x41f3ab80U, 0x4185c5adU, 0x41f3ab80U, 0x41a086d0U,
+      0x414b0eebU, 0x41a086d0U, 0x410e2475U, 0x41b497aaU, 0x40a27255U, 0x41a086d0U,
+      0x00000000U, 0x41a086d0U, 0x00000000U, 0x4185c5adU, 0x00000000U, 0x413b47f3U,
+      0x00000000U, 0x413b47f3U,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.483385826771652,
+    20.122440944881891,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a293fcU, 0x00000000U, 0x40a293fcU, 0x00000000U,
+      0x414b38faU, 0x00000000U, 0x41f3ddf9U, 0x00000000U, 0x41f3ddf9U, 0x413bcf38U,
+      0x41f3ddf9U, 0x413bcf38U, 0x41f3ddf9U, 0x4186264dU, 0x41f3ddf9U, 0x41a0fac2U,
+      0x414b38faU, 0x41a0fac2U, 0x410e41e7U, 0x41b51a1bU, 0x40a293fcU, 0x41a0fac2U,
+      0x00000000U, 0x41a0fac2U, 0x00000000U, 0x4186264dU, 0x00000000U, 0x413bcf38U,
+      0x00000000U, 0x413bcf38U,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.508031496062991,
+    20.179055118110234,
+    None,
+    [
+      0x00000000U, 0x00000000U, 0x40a2b5a2U, 0x00000000U, 0x40a2b5a2U, 0x00000000U,
+      0x414b630aU, 0x00000000U, 0x41f41073U, 0x00000000U, 0x41f41073U, 0x413c567dU,
+      0x41f41073U, 0x413c567dU, 0x41f41073U, 0x418686ecU, 0x41f41073U, 0x41a16eb4U,
+      0x414b630aU, 0x41a16eb4U, 0x410e5f58U, 0x41b59c8bU, 0x40a2b5a2U, 0x41a16eb4U,
+      0x00000000U, 0x41a16eb4U, 0x00000000U, 0x418686ecU, 0x00000000U, 0x413c567dU,
+      0x00000000U, 0x413c567dU,
+    ],
+  )
+  check_formula_preset_path("bentUpArrow", 0, 0, Some(0L), [
+    0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U,
+    0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U,
+    0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U,
+  ])
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.024645669291338584,
+    0.056614173228346457,
+    Some(1L),
+    [
+      0x00000000U, 0x3d67e401U, 0x3c976c07U, 0x3d67e401U, 0x3c976c07U, 0x3bc9e5b7U,
+      0x3c49e5b7U, 0x3bc9e5b7U, 0x3c976c49U, 0x00000000U, 0x3cc9e5b7U, 0x3bc9e5b7U,
+      0x3c976c8bU, 0x3bc9e5b7U, 0x3c976c8bU, 0x3d67e443U, 0x00000000U, 0x3d67e443U,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.049291338582677167,
+    0.11322834645669291,
+    Some(16667L),
+    [
+      0x00000000U, 0x3dd71109U, 0x3d06990fU, 0x3dd71109U, 0x3d06990fU, 0x3c49e5b7U,
+      0x3cc9e5b7U, 0x3c49e5b7U, 0x3d176c49U, 0x00000000U, 0x3d49e5b7U, 0x3c49e5b7U,
+      0x3d283f84U, 0x3c49e5b7U, 0x3d283f84U, 0x3de7e443U, 0x00000000U, 0x3de7e443U,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.073937007874015748,
+    0.16984251968503938,
+    Some(25000L),
+    [
+      0x00000000U, 0x3e1afda9U, 0x3d3d475cU, 0x3e1afda9U, 0x3d3d475cU, 0x3c976c49U,
+      0x3d176c49U, 0x3c976c49U, 0x3d63226eU, 0x00000000U, 0x3d976c49U, 0x3c976c49U,
+      0x3d847ec0U, 0x3c976c49U, 0x3d847ec0U, 0x3e2deb33U, 0x00000000U, 0x3e2deb33U,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.098582677165354335,
+    0.22645669291338583,
+    Some(50000L),
+    [
+      0x00000000U, 0x3e356ad6U, 0x3d49e5b7U, 0x3e356ad6U, 0x3d49e5b7U, 0x3cc9e5b7U,
+      0x3d49e5b7U, 0x3cc9e5b7U, 0x3d976c49U, 0x00000000U, 0x3dc9e5b7U, 0x3cc9e5b7U,
+      0x3dc9e5b7U, 0x3cc9e5b7U, 0x3dc9e5b7U, 0x3e67e443U, 0x00000000U, 0x3e67e443U,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.12322834645669291,
+    0.28307086614173227,
+    Some(75000L),
+    [
+      0x00000000U, 0x3e62c58bU, 0x3d7c5f25U, 0x3e62c58bU, 0x3d7c5f25U, 0x3cfc5f25U,
+      0x3d7c5f25U, 0x3cfc5f25U, 0x3dbd475cU, 0x00000000U, 0x3dfc5f25U, 0x3cfc5f25U,
+      0x3dfc5f25U, 0x3cfc5f25U, 0x3dfc5f25U, 0x3e90eeaaU, 0x00000000U, 0x3e90eeaaU,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.1478740157480315,
+    0.33968503937007877,
+    Some(99999L),
+    [
+      0x00000000U, 0x3e881020U, 0x3d976c49U, 0x3e881020U, 0x3d976c49U, 0x3d176c49U,
+      0x3d976c49U, 0x3d176c49U, 0x3de3226eU, 0x00000000U, 0x3e176c49U, 0x3d176c49U,
+      0x3e176c49U, 0x3d176c49U, 0x3e176c49U, 0x3eadeb33U, 0x00000000U, 0x3eadeb33U,
+    ],
+  )
+  check_formula_preset_path(
+    "bentUpArrow",
+    0.17251968503937007,
+    0.39629921259842521,
+    Some(100000L),
+    [
+      0x00000000U, 0x3e9ebd7bU, 0x3db0a900U, 0x3e9ebd7bU, 0x3db0a900U, 0x3d30a900U,
+      0x3db0a900U, 0x3d30a900U, 0x3e047ec0U, 0x00000000U, 0x3e30a900U, 0x3d30a900U,
+      0x3e30a900U, 0x3d30a900U, 0x3e30a900U, 0x3ecae7bbU, 0x00000000U, 0x3ecae7bbU,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    0.97220472440944883,
+    0.62354330708661421,
+    Some(0L),
+    [
+      0x00000000U, 0x00000000U, 0x3e9fa089U, 0x00000000U, 0x3e9fa089U, 0x3f1fa089U,
+      0x3f78e269U, 0x3f1fa089U, 0x3f78e269U, 0x3f1fa089U, 0x00000000U, 0x3f1fa089U,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    0.99685039370078743,
+    0.68015748031496059,
+    Some(1L),
+    [
+      0x00000000U, 0x00000000U, 0x3eae1ecdU, 0x00000000U, 0x3eae1ecdU, 0x3f2e1e5bU,
+      0x3f7f3196U, 0x3f2e1e5bU, 0x3f7f3196U, 0x3f2e1ecdU, 0x00000000U, 0x3f2e1ecdU,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.0214960629921259,
+    0.73677165354330709,
+    Some(16667L),
+    [
+      0x00000000U, 0x00000000U, 0x3ebc9d11U, 0x00000000U, 0x3ebc9d11U, 0x3f1d2d65U,
+      0x3f82c062U, 0x3f1d2d65U, 0x3f82c062U, 0x3f3c9d11U, 0x00000000U, 0x3f3c9d11U,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.0461417322834645,
+    0.79338582677165359,
+    Some(25000L),
+    [
+      0x00000000U, 0x00000000U, 0x3ecb1b55U, 0x00000000U, 0x3ecb1b55U, 0x3f185480U,
+      0x3f85e7f9U, 0x3f185480U, 0x3f85e7f9U, 0x3f4b1b55U, 0x00000000U, 0x3f4b1b55U,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.0707874015748031,
+    0.84999999999999998,
+    Some(50000L),
+    [
+      0x00000000U, 0x00000000U, 0x3ed9999aU, 0x00000000U, 0x3ed9999aU, 0x3ed9999aU,
+      0x3f890f90U, 0x3ed9999aU, 0x3f890f90U, 0x3f59999aU, 0x00000000U, 0x3f59999aU,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.0954330708661417,
+    0.90661417322834648,
+    Some(75000L),
+    [
+      0x00000000U, 0x00000000U, 0x3ee817deU, 0x00000000U, 0x3ee817deU, 0x3e6817deU,
+      0x3f8c3727U, 0x3e6817deU, 0x3f8c3727U, 0x3f6817deU, 0x00000000U, 0x3f6817deU,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.1200787401574803,
+    0.96322834645669286,
+    Some(99999L),
+    [
+      0x00000000U, 0x00000000U, 0x3ef69622U, 0x00000000U, 0x3ef69622U, 0x37219a58U,
+      0x3f8f5ebdU, 0x37219a58U, 0x3f8f5ebdU, 0x3f769622U, 0x00000000U, 0x3f769622U,
+    ],
+  )
+  check_formula_preset_path(
+    "corner",
+    1.1447244094488189,
+    1.0198425196850394,
+    Some(100000L),
+    [
+      0x00000000U, 0x00000000U, 0x3f028a33U, 0x00000000U, 0x3f028a33U, 0x00000000U,
+      0x3f928654U, 0x00000000U, 0x3f928654U, 0x3f828a33U, 0x00000000U, 0x3f828a33U,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    1.9444094488188977,
+    1.2470866141732284,
+    Some(0L),
+    [
+      0x00000000U, 0x00000000U, 0x00000000U, 0x00000000U, 0x3ff8e269U, 0x00000000U,
+      0x00000000U, 0x3f9fa089U,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    1.9690551181102363,
+    1.3037007874015749,
+    Some(1L),
+    [
+      0x00000000U, 0x375ab986U, 0x37a52d23U, 0x00000000U, 0x3ffc0a00U, 0x00000000U,
+      0x00000000U, 0x3fa6dfabU,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    1.9937007874015749,
+    1.3603149606299212,
+    Some(16667L),
+    [
+      0x00000000U, 0x3e682a42U, 0x3eaa21eeU, 0x00000000U, 0x3fff3196U, 0x00000000U,
+      0x00000000U, 0x3fae1ecdU,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    2.0183464566929135,
+    1.4169291338582677,
+    Some(25000L),
+    [
+      0x00000000U, 0x3eb55defU, 0x3f012c97U, 0x00000000U, 0x40012c97U, 0x00000000U,
+      0x00000000U, 0x3fb55defU,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    2.0429921259842518,
+    1.4735433070866142,
+    Some(50000L),
+    [
+      0x00000000U, 0x3f3c9d11U, 0x3f82c062U, 0x00000000U, 0x4002c062U, 0x00000000U,
+      0x00000000U, 0x3fbc9d11U,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    2.0676377952755907,
+    1.5301574803149607,
+    Some(75000L),
+    [
+      0x00000000U, 0x3f92e526U, 0x3fc67e44U, 0x00000000U, 0x4004542dU, 0x00000000U,
+      0x00000000U, 0x3fc3dc33U,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    2.092283464566929,
+    1.5867716535433072,
+    Some(99999L),
+    [
+      0x00000000U, 0x3fcb1ad0U, 0x4005e7a1U, 0x00000000U, 0x4005e7f9U, 0x00000000U,
+      0x00000000U, 0x3fcb1b55U,
+    ],
+  )
+  check_formula_preset_path(
+    "diagStripe",
+    2.1169291338582679,
+    1.6433858267716535,
+    Some(100000L),
+    [
+      0x00000000U, 0x3fd25a77U, 0x40077bc4U, 0x00000000U, 0x40077bc4U, 0x00000000U,
+      0x00000000U, 0x3fd25a77U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    3.8888188976377953,
+    2.4941732283464568,
+    Some(0L),
+    [
+      0x00000000U, 0x3f9fa089U, 0x3ff8e269U, 0x3f9fa089U, 0x3ff8e269U, 0x00000000U,
+      0x3ff8e269U, 0x00000000U, 0x3ff8e269U, 0x3f9fa089U, 0x4078e269U, 0x3f9fa089U,
+      0x3ff8e269U, 0x401fa089U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    3.9134645669291337,
+    2.5507874015748033,
+    Some(1L),
+    [
+      0x00000000U, 0x3fa3401aU, 0x3ffa7590U, 0x3fa3401aU, 0x3ffa7590U, 0x00000000U,
+      0x3ffa76d8U, 0x00000000U, 0x3ffa76d8U, 0x3fa3401aU, 0x407a7634U, 0x3fa3401aU,
+      0x3ffa7634U, 0x4023401aU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    3.9381102362204725,
+    2.6074015748031498,
+    Some(16667L),
+    [
+      0x00000000U, 0x3fa6dfabU, 0x3fd2081eU, 0x3fa6dfabU, 0x3fd2081eU, 0x00000000U,
+      0x401305f1U, 0x00000000U, 0x401305f1U, 0x3fa6dfabU, 0x407c0a00U, 0x3fa6dfabU,
+      0x3ffc0a00U, 0x4026dfabU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    3.9627559055118109,
+    2.6640157480314959,
+    Some(25000L),
+    [
+      0x00000000U, 0x3faa7f3cU, 0x3fbe3658U, 0x3faa7f3cU, 0x3fbe3658U, 0x00000000U,
+      0x401e829fU, 0x00000000U, 0x401e829fU, 0x3faa7f3cU, 0x407d9dcbU, 0x3faa7f3cU,
+      0x3ffd9dcbU, 0x402a7f3cU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    3.9874015748031497,
+    2.7206299212598424,
+    Some(50000L),
+    [
+      0x00000000U, 0x3fae1ecdU, 0x3f7f3196U, 0x3fae1ecdU, 0x3f7f3196U, 0x00000000U,
+      0x403f6531U, 0x00000000U, 0x403f6531U, 0x3fae1ecdU, 0x407f3196U, 0x3fae1ecdU,
+      0x3fff3196U, 0x402e1ecdU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    4.0120472440944885,
+    2.7772440944881889,
+    Some(75000L),
+    [
+      0x00000000U, 0x3fb1be5eU, 0x3f0062b1U, 0x3fb1be5eU, 0x3f0062b1U, 0x00000000U,
+      0x4060acb6U, 0x00000000U, 0x4060acb6U, 0x3fb1be5eU, 0x408062b1U, 0x3fb1be5eU,
+      0x400062b1U, 0x4031be5eU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    4.0366929133858269,
+    2.8338582677165354,
+    Some(99999L),
+    [
+      0x00000000U, 0x3fb55defU, 0x37a94fa9U, 0x3fb55defU, 0x37a94fa9U, 0x00000000U,
+      0x40812c6cU, 0x00000000U, 0x40812c6cU, 0x3fb55defU, 0x40812c97U, 0x3fb55defU,
+      0x40012c97U, 0x40355defU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrow",
+    4.0613385826771653,
+    2.8904724409448819,
+    Some(100000L),
+    [
+      0x00000000U, 0x3fb8fd80U, 0x00000000U, 0x3fb8fd80U, 0x00000000U, 0x00000000U,
+      0x4081f67cU, 0x00000000U, 0x4081f67cU, 0x3fb8fd80U, 0x4081f67cU, 0x3fb8fd80U,
+      0x4001f67cU, 0x4038fd80U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    4.8610236220472443,
+    3.1177165354330709,
+    Some(0L),
+    [
+      0x00000000U, 0x00000000U, 0x409b8d81U, 0x00000000U, 0x409b8d81U, 0x4001a6afU,
+      0x401b8d81U, 0x4001a6afU, 0x401b8d81U, 0x4015a680U, 0x404d6facU, 0x4015a680U,
+      0x401b8d81U, 0x404788abU, 0x3fd356adU, 0x4015a680U, 0x401b8d81U, 0x4015a680U,
+      0x401b8d81U, 0x4001a6afU, 0x00000000U, 0x4001a6afU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    4.8856692913385826,
+    3.1743307086614174,
+    Some(1L),
+    [
+      0x00000000U, 0x00000000U, 0x409c5767U, 0x00000000U, 0x409c5767U, 0x40040164U,
+      0x401c57aaU, 0x40040164U, 0x401c57aaU, 0x40185e2dU, 0x404f2176U, 0x40185e2dU,
+      0x401c5767U, 0x404b283cU, 0x3fd31ab0U, 0x40185e2dU, 0x401c5725U, 0x40185e2dU,
+      0x401c5725U, 0x40040164U, 0x00000000U, 0x40040164U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    4.910314960629921,
+    3.2309448818897639,
+    Some(16667L),
+    [
+      0x00000000U, 0x00000000U, 0x409d214dU, 0x00000000U, 0x409d214dU, 0x40065c18U,
+      0x402e5cb5U, 0x40065c18U, 0x402e5cb5U, 0x401b15daU, 0x4050d340U, 0x401b15daU,
+      0x401d214dU, 0x404ec7cdU, 0x3fd2deb3U, 0x401b15daU, 0x400be5e5U, 0x401b15daU,
+      0x400be5e5U, 0x40065c18U, 0x00000000U, 0x40065c18U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    4.9349606299212603,
+    3.2875590551181104,
+    Some(25000L),
+    [
+      0x00000000U, 0x00000000U, 0x409deb33U, 0x00000000U, 0x409deb33U, 0x4008b6cdU,
+      0x4038381eU, 0x4008b6cdU, 0x4038381eU, 0x401dcd87U, 0x4052850aU, 0x401dcd87U,
+      0x401deb33U, 0x4052675eU, 0x3fd2a2b6U, 0x401dcd87U, 0x40039e47U, 0x401dcd87U,
+      0x40039e47U, 0x4008b6cdU, 0x00000000U, 0x4008b6cdU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    4.9596062992125987,
+    3.3441732283464565,
+    Some(50000L),
+    [
+      0x00000000U, 0x00000000U, 0x409eb518U, 0x00000000U, 0x409eb518U, 0x400b1181U,
+      0x405436d4U, 0x400b1181U, 0x405436d4U, 0x40208533U, 0x405436d4U, 0x40208533U,
+      0x401eb518U, 0x405606efU, 0x3fd266b9U, 0x40208533U, 0x3fd266b9U, 0x40208533U,
+      0x3fd266b9U, 0x400b1181U, 0x00000000U, 0x400b1181U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    4.984251968503937,
+    3.400787401574803,
+    Some(75000L),
+    [
+      0x00000000U, 0x00000000U, 0x409f7efeU, 0x00000000U, 0x409f7efeU, 0x400d6c36U,
+      0x4055e89eU, 0x400d6c36U, 0x4055e89eU, 0x40233ce0U, 0x4055e89eU, 0x40233ce0U,
+      0x401f7efeU, 0x4059a680U, 0x3fd22abcU, 0x40233ce0U, 0x3fd22abcU, 0x40233ce0U,
+      0x3fd22abcU, 0x400d6c36U, 0x00000000U, 0x400d6c36U,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    5.0088976377952754,
+    3.4574015748031495,
+    Some(99999L),
+    [
+      0x00000000U, 0x00000000U, 0x40a048e4U, 0x00000000U, 0x40a048e4U, 0x400fc6eaU,
+      0x40579a68U, 0x400fc6eaU, 0x40579a68U, 0x4025f48dU, 0x40579a68U, 0x4025f48dU,
+      0x402048e4U, 0x405d4611U, 0x3fd1eebfU, 0x4025f48dU, 0x3fd1eebfU, 0x4025f48dU,
+      0x3fd1eebfU, 0x400fc6eaU, 0x00000000U, 0x400fc6eaU,
+    ],
+  )
+  check_formula_preset_path(
+    "downArrowCallout",
+    5.0335433070866138,
+    3.514015748031496,
+    Some(100000L),
+    [
+      0x00000000U, 0x00000000U, 0x40a112c9U, 0x00000000U, 0x40a112c9U, 0x4012219fU,
+      0x40594c32U, 0x4012219fU, 0x40594c32U, 0x4028ac3aU, 0x40594c32U, 0x4028ac3aU,
+      0x402112c9U, 0x4060e5a2U, 0x3fd1b2c2U, 0x4028ac3aU, 0x3fd1b2c2U, 0x4028ac3aU,
+      0x3fd1b2c2U, 0x4012219fU, 0x00000000U, 0x4012219fU,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    5.8332283464566927,
+    3.741259842519685,
+    Some(0L),
+    [
+      0x00000000U, 0x00000000U, 0x40baa9ceU, 0x00000000U, 0x40baa9ceU, 0x00000000U,
+      0x3f9fa020U, 0x00000000U, 0x3f9fa020U, 0x403c4048U, 0x00000000U, 0x406f70cdU,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    5.8578740157480311,
+    3.7978740157480315,
+    Some(1L),
+    [
+      0x00000000U, 0x00000000U, 0x40bb73b4U, 0x00000000U, 0x40bb7339U, 0x381f4b5dU,
+      0x3fa20a7fU, 0x381f4b5dU, 0x3fa20a7fU, 0x403e890fU, 0x00000000U, 0x4073105eU,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    5.8825196850393704,
+    3.854488188976378,
+    Some(16667L),
+    [
+      0x00000000U, 0x00000000U, 0x40bc3d9aU, 0x00000000U, 0x409cddd7U, 0x3f247622U,
+      0x3fa474deU, 0x3f247622U, 0x3fa474deU, 0x4040cec1U, 0x00000000U, 0x4076afefU,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    5.9071653543307088,
+    3.9111023622047245,
+    Some(25000L),
+    [
+      0x00000000U, 0x00000000U, 0x40bd0780U, 0x00000000U, 0x408dc5a0U, 0x3f7a4f80U,
+      0x3fa6df3dU, 0x3f7a4f80U, 0x3fa6df3dU, 0x40431169U, 0x00000000U, 0x407a4f80U,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    5.9318110236220472,
+    3.967716535433071,
+    Some(50000L),
+    [
+      0x00000000U, 0x00000000U, 0x40bdd165U, 0x00000000U, 0x403dd165U, 0x3ffdef11U,
+      0x3fa9499dU, 0x3ffdef11U, 0x3fa9499dU, 0x40455111U, 0x00000000U, 0x407def11U,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    5.9564566929133855,
+    4.0243307086614175,
+    Some(75000L),
+    [
+      0x00000000U, 0x00000000U, 0x40be9b4bU, 0x00000000U, 0x3fbe9b4bU, 0x40412afaU,
+      0x3fabb3fcU, 0x40412afaU, 0x3fabb3fcU, 0x40478dc1U, 0x00000000U, 0x4080c751U,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    5.9811023622047248,
+    4.0809448818897636,
+    Some(99999L),
+    [
+      0x00000000U, 0x00000000U, 0x40bf6531U, 0x00000000U, 0x3fae1e5bU, 0x4049c784U,
+      0x3fae1e5bU, 0x4049c784U, 0x3fae1e5bU, 0x4049c784U, 0x00000000U, 0x4082971aU,
+    ],
+  )
+  check_formula_preset_path(
+    "halfFrame",
+    6.0057480314960632,
+    4.1375590551181105,
+    Some(100000L),
+    [
+      0x00000000U, 0x00000000U, 0x40c02f16U, 0x00000000U, 0x3fb088baU, 0x404bfe62U,
+      0x3fb088baU, 0x404bfe62U, 0x3fb088baU, 0x404bfe62U, 0x00000000U, 0x408466e2U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    7.7776377952755906,
+    4.9883464566929137,
+    Some(0L),
+    [
+      0x00000000U, 0x401fa089U, 0x401fa089U, 0x00000000U, 0x401fa089U, 0x401fa089U,
+      0x40f8e269U, 0x401fa089U, 0x40f8e269U, 0x401fa089U, 0x401fa089U, 0x401fa089U,
+      0x401fa089U, 0x409fa089U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    7.802283464566929,
+    5.0449606299212597,
+    Some(1L),
+    [
+      0x00000000U, 0x40217051U, 0x40217051U, 0x00000000U, 0x40217051U, 0x40216fe7U,
+      0x40f9ac4eU, 0x40216fe7U, 0x40f9ac4eU, 0x402170bbU, 0x40217051U, 0x402170bbU,
+      0x40217051U, 0x40a17051U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    7.8269291338582674,
+    5.1015748031496067,
+    Some(16667L),
+    [
+      0x00000000U, 0x4023401aU, 0x4023401aU, 0x00000000U, 0x4023401aU, 0x40080a9dU,
+      0x40fa7634U, 0x40080a9dU, 0x40fa7634U, 0x403e7597U, 0x4023401aU, 0x403e7597U,
+      0x4023401aU, 0x40a3401aU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    7.8515748031496067,
+    5.1581889763779527,
+    Some(25000L),
+    [
+      0x00000000U, 0x40250fe2U, 0x40250fe2U, 0x00000000U, 0x40250fe2U, 0x3ff797d3U,
+      0x40fb401aU, 0x3ff797d3U, 0x40fb401aU, 0x404e53dbU, 0x40250fe2U, 0x404e53dbU,
+      0x40250fe2U, 0x40a50fe2U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    7.876220472440945,
+    5.2148031496062996,
+    Some(50000L),
+    [
+      0x00000000U, 0x4026dfabU, 0x4026dfabU, 0x00000000U, 0x4026dfabU, 0x3fa6dfabU,
+      0x40fc0a00U, 0x3fa6dfabU, 0x40fc0a00U, 0x407a4f80U, 0x4026dfabU, 0x407a4f80U,
+      0x4026dfabU, 0x40a6dfabU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    7.9008661417322834,
+    5.2714173228346457,
+    Some(75000L),
+    [
+      0x00000000U, 0x4028af73U, 0x4028af73U, 0x00000000U, 0x4028af73U, 0x3f28af73U,
+      0x40fcd3e5U, 0x3f28af73U, 0x40fcd3e5U, 0x40939985U, 0x4028af73U, 0x40939985U,
+      0x4028af73U, 0x40a8af73U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    7.9255118110236218,
+    5.3280314960629918,
+    Some(99999L),
+    [
+      0x00000000U, 0x402a7f3cU, 0x402a7f3cU, 0x00000000U, 0x402a7f3cU, 0x37df794dU,
+      0x40fd9dcbU, 0x37df794dU, 0x40fd9dcbU, 0x40aa7f04U, 0x402a7f3cU, 0x40aa7f04U,
+      0x402a7f3cU, 0x40aa7f3cU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrow",
+    7.9501574803149611,
+    5.3846456692913387,
+    Some(100000L),
+    [
+      0x00000000U, 0x402c4f04U, 0x402c4f04U, 0x00000000U, 0x402c4f04U, 0x00000000U,
+      0x40fe67b1U, 0x00000000U, 0x40fe67b1U, 0x40ac4f04U, 0x402c4f04U, 0x40ac4f04U,
+      0x402c4f04U, 0x40ac4f04U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.7498425196850391,
+    5.6118897637795273,
+    Some(0L),
+    [
+      0x00000000U, 0x4033949aU, 0x3fb3949aU, 0x3fb3949aU, 0x3fb3949aU, 0x4033949aU,
+      0x40442012U, 0x4033949aU, 0x40442012U, 0x00000000U, 0x410bff5bU, 0x00000000U,
+      0x410bff5bU, 0x40b3949aU, 0x40442012U, 0x40b3949aU, 0x40442012U, 0x4033949aU,
+      0x3fb3949aU, 0x4033949aU, 0x3fb3949aU, 0x4086af73U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.7744881889763775,
+    5.6685039370078742,
+    Some(1L),
+    [
+      0x00000000U, 0x40356462U, 0x3fb56462U, 0x3fb56462U, 0x3fb56462U, 0x403563ebU,
+      0x4044ad7dU, 0x403563ebU, 0x4044ad7dU, 0x00000000U, 0x410c644eU, 0x00000000U,
+      0x410c644eU, 0x40b56462U, 0x4044ad7dU, 0x40b56462U, 0x4044ad7dU, 0x403564d9U,
+      0x3fb56462U, 0x403564d9U, 0x3fb56462U, 0x40880b4aU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.7991338582677159,
+    5.7251181102362203,
+    Some(16667L),
+    [
+      0x00000000U, 0x4037342bU, 0x3fb7342bU, 0x3fb7342bU, 0x3fb7342bU, 0x4018ab51U,
+      0x40453ae9U, 0x4018ab51U, 0x40453ae9U, 0x00000000U, 0x410cc941U, 0x00000000U,
+      0x410cc941U, 0x40b7342bU, 0x40453ae9U, 0x40b7342bU, 0x40453ae9U, 0x4055bd05U,
+      0x3fb7342bU, 0x4055bd05U, 0x3fb7342bU, 0x40896720U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.8237795275590543,
+    5.7817322834645672,
+    Some(25000L),
+    [
+      0x00000000U, 0x403903f3U, 0x3fb903f3U, 0x3fb903f3U, 0x3fb903f3U, 0x400ac2f7U,
+      0x4045c855U, 0x400ac2f7U, 0x4045c855U, 0x00000000U, 0x410d2e33U, 0x00000000U,
+      0x410d2e33U, 0x40b903f3U, 0x4045c855U, 0x40b903f3U, 0x4045c855U, 0x406744f0U,
+      0x3fb903f3U, 0x406744f0U, 0x3fb903f3U, 0x408ac2f7U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.8484251968503944,
+    5.8383464566929133,
+    Some(50000L),
+    [
+      0x00000000U, 0x403ad3bcU, 0x3fbad3bcU, 0x3fbad3bcU, 0x3fbad3bcU, 0x3fbad3bcU,
+      0x404655c1U, 0x3fbad3bcU, 0x404655c1U, 0x00000000U, 0x410d9326U, 0x00000000U,
+      0x410d9326U, 0x40bad3bcU, 0x404655c1U, 0x40bad3bcU, 0x404655c1U, 0x408c1ecdU,
+      0x3fbad3bcU, 0x408c1ecdU, 0x3fbad3bcU, 0x408c1ecdU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.8730708661417328,
+    5.8949606299212602,
+    Some(75000L),
+    [
+      0x00000000U, 0x403ca384U, 0x3fbca384U, 0x3fbca384U, 0x3fbca384U, 0x3fbca384U,
+      0x4046e32dU, 0x3fbca384U, 0x4046e32dU, 0x00000000U, 0x410df819U, 0x00000000U,
+      0x410df819U, 0x40bca384U, 0x4046e32dU, 0x40bca384U, 0x4046e32dU, 0x408d7aa3U,
+      0x3fbca384U, 0x408d7aa3U, 0x3fbca384U, 0x408d7aa3U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.8977165354330712,
+    5.9515748031496063,
+    Some(99999L),
+    [
+      0x00000000U, 0x403e734dU, 0x3fbe734dU, 0x3fbe734dU, 0x3fbe734dU, 0x3fbe734dU,
+      0x40477098U, 0x3fbe734dU, 0x40477098U, 0x00000000U, 0x410e5d0cU, 0x00000000U,
+      0x410e5d0cU, 0x40be734dU, 0x40477098U, 0x40be734dU, 0x40477098U, 0x408ed67aU,
+      0x3fbe734dU, 0x408ed67aU, 0x3fbe734dU, 0x408ed67aU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftArrowCallout",
+    8.9223622047244096,
+    6.0081889763779524,
+    Some(100000L),
+    [
+      0x00000000U, 0x40404316U, 0x3fc04316U, 0x3fc04316U, 0x3fc04316U, 0x3fc04316U,
+      0x4047fe04U, 0x3fc04316U, 0x4047fe04U, 0x00000000U, 0x410ec1ffU, 0x00000000U,
+      0x410ec1ffU, 0x40c04316U, 0x4047fe04U, 0x40c04316U, 0x4047fe04U, 0x40903250U,
+      0x3fc04316U, 0x40903250U, 0x3fc04316U, 0x40903250U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.7220472440944885,
+    6.2354330708661418,
+    Some(0L),
+    [
+      0x00000000U, 0x404788abU, 0x404788abU, 0x00000000U, 0x404788abU, 0x404788abU,
+      0x40d356adU, 0x404788abU, 0x40d356adU, 0x00000000U, 0x411b8d81U, 0x404788abU,
+      0x40d356adU, 0x40c788abU, 0x40d356adU, 0x404788abU, 0x404788abU, 0x404788abU,
+      0x404788abU, 0x40c788abU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.7466929133858269,
+    6.2920472440944879,
+    Some(1L),
+    [
+      0x00000000U, 0x40495873U, 0x40495873U, 0x00000000U, 0x40495873U, 0x404957f0U,
+      0x40d338afU, 0x404957f0U, 0x40d338afU, 0x00000000U, 0x411bf274U, 0x40495873U,
+      0x40d338afU, 0x40c95873U, 0x40d338afU, 0x404958f7U, 0x40495873U, 0x404958f7U,
+      0x40495873U, 0x40c95873U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.7713385826771653,
+    6.3486614173228348,
+    Some(16667L),
+    [
+      0x00000000U, 0x404b283cU, 0x404b283cU, 0x00000000U, 0x404b283cU, 0x40294c06U,
+      0x40d31ab0U, 0x40294c06U, 0x40d31ab0U, 0x00000000U, 0x411c5767U, 0x404b283cU,
+      0x40d31ab0U, 0x40cb283cU, 0x40d31ab0U, 0x406d0472U, 0x404b283cU, 0x406d0472U,
+      0x404b283cU, 0x40cb283cU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.7959842519685036,
+    6.4052755905511809,
+    Some(25000L),
+    [
+      0x00000000U, 0x404cf805U, 0x404cf805U, 0x00000000U, 0x404cf805U, 0x4019ba03U,
+      0x40d2fcb2U, 0x4019ba03U, 0x40d2fcb2U, 0x00000000U, 0x411cbc5aU, 0x404cf805U,
+      0x40d2fcb2U, 0x40ccf805U, 0x40d2fcb2U, 0x40801b03U, 0x404cf805U, 0x40801b03U,
+      0x404cf805U, 0x40ccf805U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.820629921259842,
+    6.4618897637795278,
+    Some(50000L),
+    [
+      0x00000000U, 0x404ec7cdU, 0x404ec7cdU, 0x00000000U, 0x404ec7cdU, 0x3fcec7cdU,
+      0x40d2deb3U, 0x3fcec7cdU, 0x40d2deb3U, 0x00000000U, 0x411d214dU, 0x404ec7cdU,
+      0x40d2deb3U, 0x40cec7cdU, 0x40d2deb3U, 0x409b15daU, 0x404ec7cdU, 0x409b15daU,
+      0x404ec7cdU, 0x40cec7cdU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.8452755905511804,
+    6.5185039370078739,
+    Some(75000L),
+    [
+      0x00000000U, 0x40509796U, 0x40509796U, 0x00000000U, 0x40509796U, 0x3f509796U,
+      0x40d2c0b5U, 0x3f509796U, 0x40d2c0b5U, 0x00000000U, 0x411d8640U, 0x40509796U,
+      0x40d2c0b5U, 0x40d09796U, 0x40d2c0b5U, 0x40b684a3U, 0x40509796U, 0x40b684a3U,
+      0x40509796U, 0x40d09796U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.8699212598425206,
+    6.5751181102362208,
+    Some(99999L),
+    [
+      0x00000000U, 0x4052675eU, 0x4052675eU, 0x00000000U, 0x4052675eU, 0x3809e3e6U,
+      0x40d2a2b6U, 0x3809e3e6U, 0x40d2a2b6U, 0x00000000U, 0x411deb33U, 0x4052675eU,
+      0x40d2a2b6U, 0x40d2675eU, 0x40d2a2b6U, 0x40d26719U, 0x4052675eU, 0x40d26719U,
+      0x4052675eU, 0x40d2675eU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrow",
+    9.8945669291338589,
+    6.6317322834645669,
+    Some(100000L),
+    [
+      0x00000000U, 0x40543727U, 0x40543727U, 0x00000000U, 0x40543727U, 0x00000000U,
+      0x40d284b8U, 0x00000000U, 0x40d284b8U, 0x00000000U, 0x411e5025U, 0x40543727U,
+      0x40d284b8U, 0x40d43727U, 0x40d284b8U, 0x40d43727U, 0x40543727U, 0x40d43727U,
+      0x40543727U, 0x40d43727U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.694251968503938,
+    6.8589763779527555,
+    Some(0L),
+    [
+      0x00000000U, 0x405b7cbcU, 0x3fdb7cbcU, 0x3fdb7cbcU, 0x3fdb7cbcU, 0x405b7cbcU,
+      0x4031880cU, 0x405b7cbcU, 0x4031880cU, 0x00000000U, 0x40fd734aU, 0x00000000U,
+      0x40fd734aU, 0x405b7cbcU, 0x410fac10U, 0x405b7cbcU, 0x410fac10U, 0x3fdb7cbcU,
+      0x412b1ba8U, 0x405b7cbcU, 0x410fac10U, 0x40a49d8dU, 0x410fac10U, 0x405b7cbcU,
+      0x40fd734aU, 0x405b7cbcU, 0x40fd734aU, 0x40db7cbcU, 0x4031880cU, 0x40db7cbcU,
+      0x4031880cU, 0x405b7cbcU, 0x3fdb7cbcU, 0x405b7cbcU, 0x3fdb7cbcU, 0x40a49d8dU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.718897637795276,
+    6.9155905511811024,
+    Some(1L),
+    [
+      0x00000000U, 0x405d4c85U, 0x3fdd4c85U, 0x3fdd4c85U, 0x3fdd4c85U, 0x405d4bf4U,
+      0x4031f0c9U, 0x405d4bf4U, 0x4031f0c9U, 0x00000000U, 0x40fe08d1U, 0x00000000U,
+      0x40fe08d1U, 0x405d4bf4U, 0x410fd70aU, 0x405d4bf4U, 0x410fd70aU, 0x3fdd4c85U,
+      0x412b809bU, 0x405d4c85U, 0x410fd70aU, 0x40a5f963U, 0x410fd70aU, 0x405d4d16U,
+      0x40fe08d1U, 0x405d4d16U, 0x40fe08d1U, 0x40dd4c85U, 0x4031f0c9U, 0x40dd4c85U,
+      0x4031f0c9U, 0x405d4d16U, 0x3fdd4c85U, 0x405d4d16U, 0x3fdd4c85U, 0x40a5f963U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.743543307086615,
+    6.9722047244094485,
+    Some(16667L),
+    [
+      0x00000000U, 0x405f1c4dU, 0x3fdf1c4dU, 0x3fdf1c4dU, 0x3fdf1c4dU, 0x4039ecbaU,
+      0x40325986U, 0x4039ecbaU, 0x40325986U, 0x00000000U, 0x40fe9e59U, 0x00000000U,
+      0x40fe9e59U, 0x4039ecbaU, 0x41100204U, 0x4039ecbaU, 0x41100204U, 0x3fdf1c4dU,
+      0x412be58eU, 0x405f1c4dU, 0x41100204U, 0x40a7553aU, 0x41100204U, 0x408225f0U,
+      0x40fe9e59U, 0x408225f0U, 0x40fe9e59U, 0x40df1c4dU, 0x40325986U, 0x40df1c4dU,
+      0x40325986U, 0x408225f0U, 0x3fdf1c4dU, 0x408225f0U, 0x3fdf1c4dU, 0x40a7553aU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.768188976377953,
+    7.0288188976377954,
+    Some(25000L),
+    [
+      0x00000000U, 0x4060ec16U, 0x3fe0ec16U, 0x3fe0ec16U, 0x3fe0ec16U, 0x4028b110U,
+      0x4032c243U, 0x4028b110U, 0x4032c243U, 0x00000000U, 0x40ff33e0U, 0x00000000U,
+      0x40ff33e0U, 0x4028b110U, 0x41102cfeU, 0x4028b110U, 0x41102cfeU, 0x3fe0ec16U,
+      0x412c4a81U, 0x4060ec16U, 0x41102cfeU, 0x40a8b110U, 0x41102cfeU, 0x408c938eU,
+      0x40ff33e0U, 0x408c938eU, 0x40ff33e0U, 0x40e0ec16U, 0x4032c243U, 0x40e0ec16U,
+      0x4032c243U, 0x408c938eU, 0x3fe0ec16U, 0x408c938eU, 0x3fe0ec16U, 0x40a8b110U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.792834645669291,
+    7.0854330708661415,
+    Some(50000L),
+    [
+      0x00000000U, 0x4062bbdeU, 0x3fe2bbdeU, 0x3fe2bbdeU, 0x3fe2bbdeU, 0x3fe2bbdeU,
+      0x40332b00U, 0x3fe2bbdeU, 0x40332b00U, 0x00000000U, 0x40ffc967U, 0x00000000U,
+      0x40ffc967U, 0x3fe2bbdeU, 0x411057f8U, 0x3fe2bbdeU, 0x411057f8U, 0x3fe2bbdeU,
+      0x412caf73U, 0x4062bbdeU, 0x411057f8U, 0x40aa0ce7U, 0x411057f8U, 0x40aa0ce7U,
+      0x40ffc967U, 0x40aa0ce7U, 0x40ffc967U, 0x40e2bbdeU, 0x40332b00U, 0x40e2bbdeU,
+      0x40332b00U, 0x40aa0ce7U, 0x3fe2bbdeU, 0x40aa0ce7U, 0x3fe2bbdeU, 0x40aa0ce7U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.81748031496063,
+    7.1420472440944884,
+    Some(75000L),
+    [
+      0x00000000U, 0x40648ba7U, 0x3fe48ba7U, 0x3fe48ba7U, 0x3fe48ba7U, 0x3fe48ba7U,
+      0x403393bdU, 0x3fe48ba7U, 0x403393bdU, 0x00000000U, 0x41002f77U, 0x00000000U,
+      0x41002f77U, 0x3fe48ba7U, 0x411082f1U, 0x3fe48ba7U, 0x411082f1U, 0x3fe48ba7U,
+      0x412d1466U, 0x40648ba7U, 0x411082f1U, 0x40ab68bdU, 0x411082f1U, 0x40ab68bdU,
+      0x41002f77U, 0x40ab68bdU, 0x41002f77U, 0x40e48ba7U, 0x403393bdU, 0x40e48ba7U,
+      0x403393bdU, 0x40ab68bdU, 0x3fe48ba7U, 0x40ab68bdU, 0x3fe48ba7U, 0x40ab68bdU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.842125984251968,
+    7.1986614173228345,
+    Some(99999L),
+    [
+      0x00000000U, 0x40665b6fU, 0x3fe65b6fU, 0x3fe65b6fU, 0x3fe65b6fU, 0x3fe65b6fU,
+      0x4033fc7aU, 0x3fe65b6fU, 0x4033fc7aU, 0x00000000U, 0x41007a3bU, 0x00000000U,
+      0x41007a3bU, 0x3fe65b6fU, 0x4110adebU, 0x3fe65b6fU, 0x4110adebU, 0x3fe65b6fU,
+      0x412d7959U, 0x40665b6fU, 0x4110adebU, 0x40acc493U, 0x4110adebU, 0x40acc493U,
+      0x41007a3bU, 0x40acc493U, 0x41007a3bU, 0x40e65b6fU, 0x4033fc7aU, 0x40e65b6fU,
+      0x4033fc7aU, 0x40acc493U, 0x3fe65b6fU, 0x40acc493U, 0x3fe65b6fU, 0x40acc493U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightArrowCallout",
+    10.866771653543307,
+    7.2552755905511814,
+    Some(100000L),
+    [
+      0x00000000U, 0x40682b38U, 0x3fe82b38U, 0x3fe82b38U, 0x3fe82b38U, 0x3fe82b38U,
+      0x40346537U, 0x3fe82b38U, 0x40346537U, 0x00000000U, 0x4100c4feU, 0x00000000U,
+      0x4100c4feU, 0x3fe82b38U, 0x4110d8e5U, 0x3fe82b38U, 0x4110d8e5U, 0x3fe82b38U,
+      0x412dde4cU, 0x40682b38U, 0x4110d8e5U, 0x40ae206aU, 0x4110d8e5U, 0x40ae206aU,
+      0x4100c4feU, 0x40ae206aU, 0x4100c4feU, 0x40e82b38U, 0x40346537U, 0x40e82b38U,
+      0x40346537U, 0x40ae206aU, 0x3fe82b38U, 0x40ae206aU, 0x3fe82b38U, 0x40ae206aU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.666456692913385,
+    7.48251968503937,
+    Some(0L),
+    [
+      0x00000000U, 0x40b3949aU, 0x3fef70cdU, 0x406f70cdU, 0x3fef70cdU, 0x40b3949aU,
+      0x40baa9ceU, 0x40b3949aU, 0x40baa9ceU, 0x3fef70cdU, 0x407d9b36U, 0x3fef70cdU,
+      0x40baa9ceU, 0x00000000U, 0x40f68602U, 0x3fef70cdU, 0x40baa9ceU, 0x3fef70cdU,
+      0x40baa9ceU, 0x40b3949aU, 0x411cbbb5U, 0x40b3949aU, 0x411cbbb5U, 0x406f70cdU,
+      0x413aa9ceU, 0x40b3949aU, 0x411cbbb5U, 0x40ef70cdU, 0x411cbbb5U, 0x40b3949aU,
+      0x3fef70cdU, 0x40b3949aU, 0x3fef70cdU, 0x40ef70cdU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.691102362204724,
+    7.5391338582677161,
+    Some(1L),
+    [
+      0x00000000U, 0x40b4f070U, 0x3ff14096U, 0x40714096U, 0x3ff14096U, 0x40b4f021U,
+      0x40bb0e72U, 0x40b4f021U, 0x40bb0e72U, 0x3ff14096U, 0x407d7d38U, 0x3ff14096U,
+      0x40bb0ec1U, 0x00000000U, 0x40f75ee7U, 0x3ff14096U, 0x40bb0f10U, 0x3ff14096U,
+      0x40bb0f10U, 0x40b4f021U, 0x411ce6afU, 0x40b4f021U, 0x411ce6afU, 0x40714096U,
+      0x413b0ec1U, 0x40b4f070U, 0x411ce6afU, 0x40f14096U, 0x411ce6afU, 0x40b4f0bfU,
+      0x3ff14096U, 0x40b4f0bfU, 0x3ff14096U, 0x40f14096U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.715748031496062,
+    7.595748031496063,
+    Some(16667L),
+    [
+      0x00000000U, 0x40b64c47U, 0x3ff3105eU, 0x4073105eU, 0x3ff3105eU, 0x40a20acfU,
+      0x40a7323cU, 0x40a20acfU, 0x40a7323cU, 0x3ff3105eU, 0x407d5f39U, 0x3ff3105eU,
+      0x40bb73b4U, 0x00000000U, 0x40f837ccU, 0x3ff3105eU, 0x40cfb52cU, 0x3ff3105eU,
+      0x40cfb52cU, 0x40a20acfU, 0x411d11a8U, 0x40a20acfU, 0x411d11a8U, 0x4073105eU,
+      0x413b73b4U, 0x40b64c47U, 0x411d11a8U, 0x40f3105eU, 0x411d11a8U, 0x40ca8dbeU,
+      0x3ff3105eU, 0x40ca8dbeU, 0x3ff3105eU, 0x40f3105eU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.740393700787402,
+    7.6523622047244091,
+    Some(25000L),
+    [
+      0x00000000U, 0x40b7a81dU, 0x3ff4e027U, 0x4074e027U, 0x3ff4e027U, 0x40990c18U,
+      0x409d3ca2U, 0x40990c18U, 0x409d3ca2U, 0x3ff4e027U, 0x407d413bU, 0x3ff4e027U,
+      0x40bbd8a7U, 0x00000000U, 0x40f910b1U, 0x3ff4e027U, 0x40da74acU, 0x3ff4e027U,
+      0x40da74acU, 0x40990c18U, 0x411d3ca2U, 0x40990c18U, 0x411d3ca2U, 0x4074e027U,
+      0x413bd8a7U, 0x40b7a81dU, 0x411d3ca2U, 0x40f4e027U, 0x411d3ca2U, 0x40d64422U,
+      0x3ff4e027U, 0x40d64422U, 0x3ff4e027U, 0x40f4e027U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.765039370078741,
+    7.708976377952756,
+    Some(50000L),
+    [
+      0x00000000U, 0x40b903f3U, 0x3ff6afefU, 0x4076afefU, 0x3ff6afefU, 0x4076afefU,
+      0x407d233cU, 0x4076afefU, 0x407d233cU, 0x3ff6afefU, 0x407d233cU, 0x3ff6afefU,
+      0x40bc3d9aU, 0x00000000U, 0x40f9e996U, 0x3ff6afefU, 0x40f9e996U, 0x3ff6afefU,
+      0x40f9e996U, 0x4076afefU, 0x411d679cU, 0x4076afefU, 0x411d679cU, 0x4076afefU,
+      0x413c3d9aU, 0x40b903f3U, 0x411d679cU, 0x40f6afefU, 0x411d679cU, 0x40f6afefU,
+      0x3ff6afefU, 0x40f6afefU, 0x3ff6afefU, 0x40f6afefU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.789685039370079,
+    7.7655905511811021,
+    Some(75000L),
+    [
+      0x00000000U, 0x40ba5fcaU, 0x3ff87fb8U, 0x40787fb8U, 0x3ff87fb8U, 0x40787fb8U,
+      0x407d053eU, 0x40787fb8U, 0x407d053eU, 0x3ff87fb8U, 0x407d053eU, 0x3ff87fb8U,
+      0x40bca28dU, 0x00000000U, 0x40fac27bU, 0x3ff87fb8U, 0x40fac27bU, 0x3ff87fb8U,
+      0x40fac27bU, 0x40787fb8U, 0x411d9296U, 0x40787fb8U, 0x411d9296U, 0x40787fb8U,
+      0x413ca28dU, 0x40ba5fcaU, 0x411d9296U, 0x40f87fb8U, 0x411d9296U, 0x40f87fb8U,
+      0x3ff87fb8U, 0x40f87fb8U, 0x3ff87fb8U, 0x40f87fb8U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.814330708661418,
+    7.822204724409449,
+    Some(99999L),
+    [
+      0x00000000U, 0x40bbbba0U, 0x3ffa4f80U, 0x407a4f80U, 0x3ffa4f80U, 0x407a4f80U,
+      0x407ce73fU, 0x407a4f80U, 0x407ce73fU, 0x3ffa4f80U, 0x407ce73fU, 0x3ffa4f80U,
+      0x40bd0780U, 0x00000000U, 0x40fb9b60U, 0x3ffa4f80U, 0x40fb9b60U, 0x3ffa4f80U,
+      0x40fb9b60U, 0x407a4f80U, 0x411dbd90U, 0x407a4f80U, 0x411dbd90U, 0x407a4f80U,
+      0x413d0780U, 0x40bbbba0U, 0x411dbd90U, 0x40fa4f80U, 0x411dbd90U, 0x40fa4f80U,
+      0x3ffa4f80U, 0x40fa4f80U, 0x3ffa4f80U, 0x40fa4f80U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftRightUpArrow",
+    11.838976377952756,
+    7.8788188976377951,
+    Some(100000L),
+    [
+      0x00000000U, 0x40bd1777U, 0x3ffc1f49U, 0x407c1f49U, 0x3ffc1f49U, 0x407c1f49U,
+      0x407cc941U, 0x407c1f49U, 0x407cc941U, 0x3ffc1f49U, 0x407cc941U, 0x3ffc1f49U,
+      0x40bd6c72U, 0x00000000U, 0x40fc7445U, 0x3ffc1f49U, 0x40fc7445U, 0x3ffc1f49U,
+      0x40fc7445U, 0x407c1f49U, 0x411de889U, 0x407c1f49U, 0x411de889U, 0x407c1f49U,
+      0x413d6c72U, 0x40bd1777U, 0x411de889U, 0x40fc1f49U, 0x411de889U, 0x40fc1f49U,
+      0x3ffc1f49U, 0x40fc1f49U, 0x3ffc1f49U, 0x40fc1f49U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.638661417322835,
+    8.1060629921259846,
+    Some(0L),
+    [
+      0x00000000U, 0x40c28ba7U, 0x4001b26fU, 0x4081b26fU, 0x4001b26fU, 0x40c28ba7U,
+      0x4129cb59U, 0x40c28ba7U, 0x4129cb59U, 0x4001b26fU, 0x41095ebdU, 0x4001b26fU,
+      0x4129cb59U, 0x00000000U, 0x414a37f5U, 0x4001b26fU, 0x4129cb59U, 0x4001b26fU,
+      0x4129cb59U, 0x40c28ba7U, 0x4001b26fU, 0x40c28ba7U, 0x4001b26fU, 0x4101b26fU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.663307086614173,
+    8.1626771653543315,
+    Some(1L),
+    [
+      0x00000000U, 0x40c3e77dU, 0x40029a53U, 0x40829a53U, 0x40029a53U, 0x40c3e727U,
+      0x4129f628U, 0x40c3e727U, 0x4129f628U, 0x40029a53U, 0x41094fbeU, 0x40029a53U,
+      0x4129f653U, 0x00000000U, 0x414a9ce8U, 0x40029a53U, 0x4129f67eU, 0x40029a53U,
+      0x4129f67eU, 0x40c3e7d3U, 0x40029a53U, 0x40c3e7d3U, 0x40029a53U, 0x41029a53U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.687952755905512,
+    8.2192913385826767,
+    Some(16667L),
+    [
+      0x00000000U, 0x40c54353U, 0x40038238U, 0x40838238U, 0x40038238U, 0x40af582dU,
+      0x411f2bbaU, 0x40af582dU, 0x411f2bbaU, 0x40038238U, 0x410940bfU, 0x40038238U,
+      0x412a214dU, 0x00000000U, 0x414b01dbU, 0x40038238U, 0x413516e0U, 0x40038238U,
+      0x413516e0U, 0x40db2e79U, 0x40038238U, 0x40db2e79U, 0x40038238U, 0x41038238U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.71259842519685,
+    8.2759055118110236,
+    Some(25000L),
+    [
+      0x00000000U, 0x40c69f2aU, 0x40046a1cU, 0x40846a1cU, 0x40046a1cU, 0x40a584a3U,
+      0x4119bf03U, 0x40a584a3U, 0x4119bf03U, 0x40046a1cU, 0x410931c0U, 0x40046a1cU,
+      0x412a4c47U, 0x00000000U, 0x414b66ceU, 0x40046a1cU, 0x413ad98aU, 0x40046a1cU,
+      0x413ad98aU, 0x40e7b9b1U, 0x40046a1cU, 0x40e7b9b1U, 0x40046a1cU, 0x41046a1cU,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.737244094488188,
+    8.3325196850393706,
+    Some(50000L),
+    [
+      0x00000000U, 0x40c7fb00U, 0x40055200U, 0x40855200U, 0x40055200U, 0x40855200U,
+      0x410922c0U, 0x40855200U, 0x410922c0U, 0x40055200U, 0x410922c0U, 0x40055200U,
+      0x412a7740U, 0x00000000U, 0x414bcbc0U, 0x40055200U, 0x414bcbc0U, 0x40055200U,
+      0x414bcbc0U, 0x41055200U, 0x40055200U, 0x41055200U, 0x40055200U, 0x41055200U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.761889763779527,
+    8.3891338582677157,
+    Some(75000L),
+    [
+      0x00000000U, 0x40c956d7U, 0x400639e4U, 0x408639e4U, 0x400639e4U, 0x408639e4U,
+      0x410913c1U, 0x408639e4U, 0x410913c1U, 0x400639e4U, 0x410913c1U, 0x400639e4U,
+      0x412aa23aU, 0x00000000U, 0x414c30b3U, 0x400639e4U, 0x414c30b3U, 0x400639e4U,
+      0x414c30b3U, 0x410639e4U, 0x400639e4U, 0x410639e4U, 0x400639e4U, 0x410639e4U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.786535433070867,
+    8.4457480314960627,
+    Some(99999L),
+    [
+      0x00000000U, 0x40cab2adU, 0x400721c9U, 0x408721c9U, 0x400721c9U, 0x408721c9U,
+      0x410904c2U, 0x408721c9U, 0x410904c2U, 0x400721c9U, 0x410904c2U, 0x400721c9U,
+      0x412acd34U, 0x00000000U, 0x414c95a6U, 0x400721c9U, 0x414c95a6U, 0x400721c9U,
+      0x414c95a6U, 0x410721c9U, 0x400721c9U, 0x410721c9U, 0x400721c9U, 0x410721c9U,
+    ],
+  )
+  check_formula_preset_path(
+    "leftUpArrow",
+    12.811181102362205,
+    8.5023622047244096,
+    Some(100000L),
+    [
+      0x00000000U, 0x40cc0e83U, 0x400809adU, 0x408809adU, 0x400809adU, 0x408809adU,
+      0x4108f5c3U, 0x408809adU, 0x4108f5c3U, 0x400809adU, 0x4108f5c3U, 0x400809adU,
+      0x412af82eU, 0x00000000U, 0x414cfa99U, 0x400809adU, 0x414cfa99U, 0x400809adU,
+      0x414cfa99U, 0x410809adU, 0x400809adU, 0x410809adU, 0x400809adU, 0x410809adU,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.610866141732284,
+    8.7296062992125982,
+    Some(0L),
+    [
+      0x3fe6ed6aU, 0x408bac78U, 0x413ce86eU, 0x408bac78U, 0x413ce86eU, 0x408bac78U,
+      0x3fe6ed6aU, 0x408bac78U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.635511811023623,
+    8.7862204724409452,
+    Some(1L),
+    [
+      0x3fe75876U, 0x408c9400U, 0x413d4000U, 0x408c9400U, 0x413d4000U, 0x408c94b8U,
+      0x3fe75876U, 0x408c94b8U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.660157480314961,
+    8.8428346456692921,
+    Some(16667L),
+    [
+      0x3fe7c382U, 0x406bced8U, 0x413d9791U, 0x406bced8U, 0x413d9791U, 0x40a51114U,
+      0x3fe7c382U, 0x40a51114U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.684803149606299,
+    8.8994488188976373,
+    Some(25000L),
+    [
+      0x3fe82e8dU, 0x40559637U, 0x413def22U, 0x40559637U, 0x413def22U, 0x40b1fd2eU,
+      0x3fe82e8dU, 0x40b1fd2eU,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.709448818897638,
+    8.9560629921259842,
+    Some(50000L),
+    [
+      0x3fe89999U, 0x400f4c09U, 0x413e46b4U, 0x400f4c09U, 0x413e46b4U, 0x40d6f20dU,
+      0x3fe89999U, 0x40d6f20dU,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.734094488188976,
+    9.0126771653543312,
+    Some(75000L),
+    [
+      0x3fe904a5U, 0x3f9033edU, 0x413e9e45U, 0x3f9033edU, 0x413e9e45U, 0x40fc5adfU,
+      0x3fe904a5U, 0x40fc5adfU,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.758740157480315,
+    9.0692913385826763,
+    Some(99999L),
+    [
+      0x3fe96fb1U, 0x383e3263U, 0x413ef5d7U, 0x383e3263U, 0x413ef5d7U, 0x41111ba2U,
+      0x3fe96fb1U, 0x41111ba2U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathMinus",
+    13.783385826771653,
+    9.1259055118110233,
+    Some(100000L),
+    [
+      0x3fe9dabcU, 0x00000000U, 0x413f4d68U, 0x00000000U, 0x413f4d68U, 0x411203b5U,
+      0x3fe9dabcU, 0x411203b5U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.583070866141732,
+    9.3531496062992119,
+    Some(0L),
+    [
+      0x3ff76c16U, 0x4095a680U, 0x40e95442U, 0x4095a680U, 0x40e95442U, 0x3f9eb074U,
+      0x40e95442U, 0x3f9eb074U, 0x40e95442U, 0x4095a680U, 0x414a66bfU, 0x4095a680U,
+      0x414a66bfU, 0x4095a680U, 0x40e95442U, 0x4095a680U, 0x40e95442U, 0x4101d072U,
+      0x40e95442U, 0x4101d072U, 0x40e95442U, 0x4095a680U, 0x3ff76c16U, 0x4095a680U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.60771653543307,
+    9.4097637795275588,
+    Some(1L),
+    [
+      0x3ff7d722U, 0x40968e02U, 0x40e9b8d2U, 0x40968e02U, 0x40e9b8d2U, 0x3f9fa65aU,
+      0x40e9b998U, 0x3f9fa65aU, 0x40e9b998U, 0x40968e02U, 0x414abe51U, 0x40968e02U,
+      0x414abe51U, 0x40968ec7U, 0x40e9b998U, 0x40968ec7U, 0x40e9b998U, 0x41029999U,
+      0x40e9b8d2U, 0x41029999U, 0x40e9b8d2U, 0x40968ec7U, 0x3ff7d722U, 0x40968ec7U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.632362204724409,
+    9.4663779527559058,
+    Some(16667L),
+    [
+      0x3ff8422eU, 0x407c6f8cU, 0x40d0dfa5U, 0x407c6f8cU, 0x40d0dfa5U, 0x3fa09c40U,
+      0x4101ae55U, 0x3fa09c40U, 0x4101ae55U, 0x407c6f8cU, 0x414b15e2U, 0x407c6f8cU,
+      0x414b15e2U, 0x40b0b4cbU, 0x4101ae55U, 0x40b0b4cbU, 0x4101ae55U, 0x410362c1U,
+      0x40d0dfa5U, 0x410362c1U, 0x40d0dfa5U, 0x40b0b4cbU, 0x3ff8422eU, 0x40b0b4cbU,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.657007874015749,
+    9.5229921259842527,
+    Some(25000L),
+    [
+      0x3ff8ad39U, 0x40648d43U, 0x40c46b8fU, 0x40648d43U, 0x40c46b8fU, 0x3fa19226U,
+      0x41084d53U, 0x3fa19226U, 0x41084d53U, 0x40648d43U, 0x414b6d74U, 0x40648d43U,
+      0x414b6d74U, 0x40be75b8U, 0x41084d53U, 0x40be75b8U, 0x41084d53U, 0x41042be8U,
+      0x40c46b8fU, 0x41042be8U, 0x40c46b8fU, 0x40be75b8U, 0x3ff8ad39U, 0x40be75b8U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.681653543307087,
+    9.5796062992125979,
+    Some(50000L),
+    [
+      0x3ff91845U, 0x40194611U, 0x409e4505U, 0x40194611U, 0x409e4505U, 0x3fa2880cU,
+      0x411bc58bU, 0x3fa2880cU, 0x411bc58bU, 0x40194611U, 0x414bc505U, 0x40194611U,
+      0x414bc505U, 0x40e5e91aU, 0x411bc58bU, 0x40e5e91aU, 0x411bc58bU, 0x4104f510U,
+      0x409e4505U, 0x4104f510U, 0x409e4505U, 0x40e5e91aU, 0x3ff91845U, 0x40e5e91aU,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.706299212598426,
+    9.6362204724409448,
+    Some(75000L),
+    [
+      0x3ff98351U, 0x3fa37df2U, 0x4073fd0fU, 0x3fa37df2U, 0x4073fd0fU, 0x3fa37df2U,
+      0x412e4dbdU, 0x3fa37df2U, 0x412e4dbdU, 0x3fa37df2U, 0x414c1c96U, 0x3fa37df2U,
+      0x414c1c96U, 0x4105be37U, 0x412e4dbdU, 0x4105be37U, 0x412e4dbdU, 0x4105be37U,
+      0x4073fd0fU, 0x4105be37U, 0x4073fd0fU, 0x4105be37U, 0x3ff98351U, 0x4105be37U,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.730944881889764,
+    9.6928346456692918,
+    Some(99999L),
+    [
+      0x3ff9ee5dU, 0x3fa473d8U, 0x4073721fU, 0x3fa473d8U, 0x4073721fU, 0x3fa473d8U,
+      0x412ed56cU, 0x3fa473d8U, 0x412ed56cU, 0x3fa473d8U, 0x414c7428U, 0x3fa473d8U,
+      0x414c7428U, 0x4106875fU, 0x412ed56cU, 0x4106875fU, 0x412ed56cU, 0x4106875fU,
+      0x4073721fU, 0x4106875fU, 0x4073721fU, 0x4106875fU, 0x3ff9ee5dU, 0x4106875fU,
+    ],
+  )
+  check_formula_preset_path(
+    "mathPlus",
+    14.755590551181102,
+    9.7494488188976369,
+    Some(100000L),
+    [
+      0x3ffa5969U, 0x3fa569beU, 0x4072e72fU, 0x3fa569beU, 0x4072e72fU, 0x3fa569beU,
+      0x412f5d1aU, 0x3fa569beU, 0x412f5d1aU, 0x3fa569beU, 0x414ccbb9U, 0x3fa569beU,
+      0x414ccbb9U, 0x41075086U, 0x412f5d1aU, 0x41075086U, 0x412f5d1aU, 0x41075086U,
+      0x4072e72fU, 0x41075086U, 0x4072e72fU, 0x41075086U, 0x3ffa5969U, 0x41075086U,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.555275590551181,
+    9.9766929133858273,
+    Some(0L),
+    [
+      0x00000000U, 0x411fa089U, 0x00000000U, 0x00000000U, 0x4150fa46U, 0x00000000U,
+      0x4178e269U, 0x411fa089U,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.57992125984252,
+    10.033307086614172,
+    Some(1L),
+    [
+      0x00000000U, 0x4120886dU, 0x38d269e8U, 0x00000000U, 0x41512540U, 0x00000000U,
+      0x4179475cU, 0x4120886dU,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.604566929133858,
+    10.089921259842519,
+    Some(16667L),
+    [
+      0x00000000U, 0x41217051U, 0x3fd74187U, 0x00000000U, 0x4151503aU, 0x00000000U,
+      0x4179ac4eU, 0x41217051U,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.629212598425196,
+    10.146535433070866,
+    Some(25000L),
+    [
+      0x00000000U, 0x41225836U, 0x40225836U, 0x00000000U, 0x41517b34U, 0x00000000U,
+      0x417a1141U, 0x41225836U,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.653858267716535,
+    10.203149606299213,
+    Some(50000L),
+    [
+      0x00000000U, 0x4123401aU, 0x40a3401aU, 0x00000000U, 0x4151a62eU, 0x00000000U,
+      0x417a7634U, 0x4123401aU,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.678503937007873,
+    10.259763779527558,
+    Some(75000L),
+    [
+      0x00000000U, 0x412427feU, 0x40f63bfdU, 0x00000000U, 0x4151d127U, 0x00000000U,
+      0x417adb27U, 0x412427feU,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.703149606299213,
+    10.316377952755905,
+    Some(99999L),
+    [
+      0x00000000U, 0x41250fe2U, 0x40fb401aU, 0x00000000U, 0x4151fc21U, 0x00000000U,
+      0x417b401aU, 0x41250fe2U,
+    ],
+  )
+  check_formula_preset_path(
+    "nonIsoscelesTrapezoid",
+    15.727795275590552,
+    10.372992125984252,
+    Some(100000L),
+    [
+      0x00000000U, 0x4125f7c7U, 0x40fba50dU, 0x00000000U, 0x4152271bU, 0x00000000U,
+      0x417ba50dU, 0x4125f7c7U,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.527480314960631,
+    10.600236220472441,
+    Some(0L),
+    [
+      0x00000000U, 0x40a99a91U, 0x4133a347U, 0x40a99a91U, 0x4133a347U, 0x00000000U,
+      0x41843848U, 0x40a99a91U, 0x4133a347U, 0x41299a91U, 0x4133a347U, 0x40a99a91U,
+      0x00000000U, 0x40a99a91U, 0x00000000U, 0x40a99a91U,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.552125984251969,
+    10.656850393700788,
+    Some(1L),
+    [
+      0x00000000U, 0x40aa8206U, 0x41339447U, 0x40aa8206U, 0x41339447U, 0x00000000U,
+      0x41846ac1U, 0x40aa8276U, 0x41339447U, 0x412a8276U, 0x41339447U, 0x40aa82e5U,
+      0x00000000U, 0x40aa82e5U, 0x385f7d88U, 0x40aa8276U,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.576771653543307,
+    10.713464566929133,
+    Some(16667L),
+    [
+      0x00000000U, 0x408ed87bU, 0x41338548U, 0x408ed87bU, 0x41338548U, 0x00000000U,
+      0x41849d3aU, 0x40ab6a5aU, 0x41338548U, 0x412b6a5aU, 0x41338548U, 0x40c7fc39U,
+      0x00000000U, 0x40c7fc39U, 0x3f648ef9U, 0x40ab6a5aU,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.601417322834646,
+    10.77007874015748,
+    Some(25000L),
+    [
+      0x00000000U, 0x40813dafU, 0x41337649U, 0x40813dafU, 0x41337649U, 0x00000000U,
+      0x4184cfb4U, 0x40ac523eU, 0x41337649U, 0x412c523eU, 0x41337649U, 0x40d766ceU,
+      0x00000000U, 0x40d766ceU, 0x3fac523eU, 0x40ac523eU,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.626062992125984,
+    10.826692913385827,
+    Some(50000L),
+    [
+      0x00000000U, 0x402d3a22U, 0x41336749U, 0x402d3a22U, 0x41336749U, 0x00000000U,
+      0x4185022dU, 0x40ad3a22U, 0x41336749U, 0x412d3a22U, 0x41336749U, 0x4101eb9aU,
+      0x00000000U, 0x4101eb9aU, 0x402d3a22U, 0x40ad3a22U,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.650708661417323,
+    10.883307086614174,
+    Some(75000L),
+    [
+      0x00000000U, 0x3fae2207U, 0x4133584aU, 0x3fae2207U, 0x4133584aU, 0x00000000U,
+      0x418534a7U, 0x40ae2207U, 0x4133584aU, 0x412e2207U, 0x4133584aU, 0x41185dc6U,
+      0x00000000U, 0x41185dc6U, 0x40829985U, 0x40ae2207U,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.675354330708661,
+    10.939921259842519,
+    Some(99999L),
+    [
+      0x00000000U, 0x38656d41U, 0x4133494bU, 0x38656d41U, 0x4133494bU, 0x00000000U,
+      0x41856720U, 0x40af09ebU, 0x4133494bU, 0x412f09ebU, 0x4133494bU, 0x412f09b2U,
+      0x00000000U, 0x412f09b2U, 0x40af0978U, 0x40af09ebU,
+    ],
+  )
+  check_formula_preset_path(
+    "notchedRightArrow",
+    16.699999999999999,
+    10.996535433070866,
+    Some(100000L),
+    [
+      0x00000000U, 0x00000000U, 0x41333a4cU, 0x00000000U, 0x41333a4cU, 0x00000000U,
+      0x4185999aU, 0x40aff1cfU, 0x41333a4cU, 0x412ff1cfU, 0x41333a4cU, 0x412ff1cfU,
+      0x00000000U, 0x412ff1cfU, 0x40aff1cfU, 0x40aff1cfU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.499685039370078,
+    11.223779527559055,
+    Some(0L),
+    [
+      0x00000000U, 0x40b3949aU, 0x40219f57U, 0x404589dcU, 0x40219f57U, 0x40b3949aU,
+      0x410bff5bU, 0x40b3949aU, 0x410bff5bU, 0x40219f57U, 0x40c72f0aU, 0x40219f57U,
+      0x410bff5bU, 0x00000000U, 0x41346731U, 0x40219f57U, 0x410bff5bU, 0x40219f57U,
+      0x410bff5bU, 0x40b3949aU, 0x416f96e0U, 0x40b3949aU, 0x416f96e0U, 0x404589dcU,
+      0x418bff5bU, 0x40b3949aU, 0x416f96e0U, 0x41023223U, 0x416f96e0U, 0x40b3949aU,
+      0x410bff5bU, 0x40b3949aU, 0x410bff5bU, 0x410b2cc4U, 0x41346731U, 0x410b2cc4U,
+      0x410bff5bU, 0x4133949aU, 0x40c72f0aU, 0x410b2cc4U, 0x410bff5bU, 0x410b2cc4U,
+      0x410bff5bU, 0x40b3949aU, 0x40219f57U, 0x40b3949aU, 0x40219f57U, 0x41023223U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.524330708661417,
+    11.280393700787402,
+    Some(1L),
+    [
+      0x00000000U, 0x40b47c7eU, 0x4022700bU, 0x404688f1U, 0x4022700bU, 0x40b47c08U,
+      0x410c3199U, 0x40b47c08U, 0x410c3199U, 0x4022700bU, 0x40c72ba3U, 0x4022700bU,
+      0x410c31d4U, 0x00000000U, 0x4134cdd7U, 0x4022700bU, 0x410c320fU, 0x4022700bU,
+      0x410c320fU, 0x40b47c08U, 0x416fc7a6U, 0x40b47c08U, 0x416fc7a6U, 0x404688f1U,
+      0x418c31d4U, 0x40b47c7eU, 0x416fc7a6U, 0x4102da42U, 0x416fc7a6U, 0x40b47cf4U,
+      0x410c320fU, 0x40b47cf4U, 0x410c320fU, 0x410be07bU, 0x4134cdd7U, 0x410be07bU,
+      0x410c31d4U, 0x41347c7eU, 0x40c72ba3U, 0x410be07bU, 0x410c3199U, 0x410be07bU,
+      0x410c3199U, 0x40b47cf4U, 0x4022700bU, 0x40b47cf4U, 0x4022700bU, 0x4102da42U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.548976377952755,
+    11.337007874015748,
+    Some(16667L),
+    [
+      0x00000000U, 0x40b56462U, 0x402340bfU, 0x40478806U, 0x402340bfU, 0x409728d5U,
+      0x40fa8d0eU, 0x409728d5U, 0x40fa8d0eU, 0x402340bfU, 0x40c7283cU, 0x402340bfU,
+      0x410c644eU, 0x00000000U, 0x4135347dU, 0x402340bfU, 0x411b8214U, 0x402340bfU,
+      0x411b8214U, 0x409728d5U, 0x416ff86cU, 0x409728d5U, 0x416ff86cU, 0x40478806U,
+      0x418c644eU, 0x40b56462U, 0x416ff86cU, 0x41038261U, 0x416ff86cU, 0x40d39ff0U,
+      0x411b8214U, 0x40d39ff0U, 0x411b8214U, 0x410c9433U, 0x4135347dU, 0x410c9433U,
+      0x410c644eU, 0x41356462U, 0x40c7283cU, 0x410c9433U, 0x40fa8d0eU, 0x410c9433U,
+      0x40fa8d0eU, 0x40d39ff0U, 0x402340bfU, 0x40d39ff0U, 0x402340bfU, 0x41038261U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.573622047244093,
+    11.393622047244094,
+    Some(25000L),
+    [
+      0x00000000U, 0x40b64c47U, 0x40241173U, 0x4048871aU, 0x40241173U, 0x4088b935U,
+      0x40eb9a7dU, 0x4088b935U, 0x40eb9a7dU, 0x40241173U, 0x40c724d5U, 0x40241173U,
+      0x410c96c7U, 0x00000000U, 0x41359b24U, 0x40241173U, 0x41236050U, 0x40241173U,
+      0x41236050U, 0x4088b935U, 0x41702932U, 0x4088b935U, 0x41702932U, 0x4048871aU,
+      0x418c96c7U, 0x40b64c47U, 0x41702932U, 0x41042a80U, 0x41702932U, 0x40e3df58U,
+      0x41236050U, 0x40e3df58U, 0x41236050U, 0x410d47eaU, 0x41359b24U, 0x410d47eaU,
+      0x410c96c7U, 0x41364c47U, 0x40c724d5U, 0x410d47eaU, 0x40eb9a7dU, 0x410d47eaU,
+      0x40eb9a7dU, 0x40e3df58U, 0x40241173U, 0x40e3df58U, 0x40241173U, 0x41042a80U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.598267716535432,
+    11.450236220472441,
+    Some(50000L),
+    [
+      0x00000000U, 0x40b7342bU, 0x4024e227U, 0x4049862fU, 0x4024e227U, 0x4049862fU,
+      0x40c7216eU, 0x4049862fU, 0x40c7216eU, 0x4024e227U, 0x40c7216eU, 0x4024e227U,
+      0x410cc941U, 0x00000000U, 0x413601caU, 0x4024e227U, 0x413601caU, 0x4024e227U,
+      0x413601caU, 0x4049862fU, 0x417059f8U, 0x4049862fU, 0x417059f8U, 0x4049862fU,
+      0x418cc941U, 0x40b7342bU, 0x417059f8U, 0x4104d29fU, 0x417059f8U, 0x4104d29fU,
+      0x413601caU, 0x4104d29fU, 0x413601caU, 0x410dfba1U, 0x413601caU, 0x410dfba1U,
+      0x410cc941U, 0x4137342bU, 0x40c7216eU, 0x410dfba1U, 0x40c7216eU, 0x410dfba1U,
+      0x40c7216eU, 0x4104d29fU, 0x4024e227U, 0x4104d29fU, 0x4024e227U, 0x4104d29fU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.62291338582677,
+    11.506850393700788,
+    Some(75000L),
+    [
+      0x00000000U, 0x40b81c0fU, 0x4025b2daU, 0x404a8544U, 0x4025b2daU, 0x404a8544U,
+      0x40c71e07U, 0x404a8544U, 0x40c71e07U, 0x4025b2daU, 0x40c71e07U, 0x4025b2daU,
+      0x410cfbbaU, 0x00000000U, 0x41366871U, 0x4025b2daU, 0x41366871U, 0x4025b2daU,
+      0x41366871U, 0x404a8544U, 0x41708abdU, 0x404a8544U, 0x41708abdU, 0x404a8544U,
+      0x418cfbbaU, 0x40b81c0fU, 0x41708abdU, 0x41057abeU, 0x41708abdU, 0x41057abeU,
+      0x41366871U, 0x41057abeU, 0x41366871U, 0x410eaf59U, 0x41366871U, 0x410eaf59U,
+      0x410cfbbaU, 0x41381c0fU, 0x40c71e07U, 0x410eaf59U, 0x40c71e07U, 0x410eaf59U,
+      0x40c71e07U, 0x41057abeU, 0x4025b2daU, 0x41057abeU, 0x4025b2daU, 0x41057abeU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.647559055118109,
+    11.563464566929134,
+    Some(99999L),
+    [
+      0x00000000U, 0x40b903f3U, 0x4026838eU, 0x404b8459U, 0x4026838eU, 0x404b8459U,
+      0x40c71aa0U, 0x404b8459U, 0x40c71aa0U, 0x4026838eU, 0x40c71aa0U, 0x4026838eU,
+      0x410d2e33U, 0x00000000U, 0x4136cf17U, 0x4026838eU, 0x4136cf17U, 0x4026838eU,
+      0x4136cf17U, 0x404b8459U, 0x4170bb83U, 0x404b8459U, 0x4170bb83U, 0x404b8459U,
+      0x418d2e33U, 0x40b903f3U, 0x4170bb83U, 0x410622ddU, 0x4170bb83U, 0x410622ddU,
+      0x4136cf17U, 0x410622ddU, 0x4136cf17U, 0x410f6310U, 0x4136cf17U, 0x410f6310U,
+      0x410d2e33U, 0x413903f3U, 0x40c71aa0U, 0x410f6310U, 0x40c71aa0U, 0x410f6310U,
+      0x40c71aa0U, 0x410622ddU, 0x4026838eU, 0x410622ddU, 0x4026838eU, 0x410622ddU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrow",
+    17.67220472440945,
+    11.62007874015748,
+    Some(100000L),
+    [
+      0x00000000U, 0x40b9ebd8U, 0x40275442U, 0x404c836dU, 0x40275442U, 0x404c836dU,
+      0x40c71739U, 0x404c836dU, 0x40c71739U, 0x40275442U, 0x40c71739U, 0x40275442U,
+      0x410d60adU, 0x00000000U, 0x413735bdU, 0x40275442U, 0x413735bdU, 0x40275442U,
+      0x413735bdU, 0x404c836dU, 0x4170ec49U, 0x404c836dU, 0x4170ec49U, 0x404c836dU,
+      0x418d60adU, 0x40b9ebd8U, 0x4170ec49U, 0x4106cafcU, 0x4170ec49U, 0x4106cafcU,
+      0x413735bdU, 0x4106cafcU, 0x413735bdU, 0x411016c7U, 0x413735bdU, 0x411016c7U,
+      0x410d60adU, 0x4139ebd8U, 0x40c71739U, 0x411016c7U, 0x40c71739U, 0x411016c7U,
+      0x40c71739U, 0x4106cafcU, 0x40275442U, 0x4106cafcU, 0x40275442U, 0x4106cafcU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.471889763779526,
+    11.84732283464567,
+    Some(0L),
+    [
+      0x00000000U, 0x40bd8ea2U, 0x400c62d3U, 0x406eba71U, 0x400c62d3U, 0x40bd8ea2U,
+      0x40995296U, 0x40bd8ea2U, 0x40995296U, 0x4044ac53U, 0x4113c66eU, 0x4044ac53U,
+      0x4113c66eU, 0x400c62d3U, 0x40e15b73U, 0x400c62d3U, 0x4113c66eU, 0x00000000U,
+      0x4136df23U, 0x400c62d3U, 0x4113c66eU, 0x400c62d3U, 0x4113c66eU, 0x4044ac53U,
+      0x415ae391U, 0x4044ac53U, 0x415ae391U, 0x40bd8ea2U, 0x41823a14U, 0x40bd8ea2U,
+      0x41823a14U, 0x406eba71U, 0x4193c66eU, 0x40bd8ea2U, 0x41823a14U, 0x4101e006U,
+      0x41823a14U, 0x40bd8ea2U, 0x415ae391U, 0x40bd8ea2U, 0x415ae391U, 0x410c638eU,
+      0x4113c66eU, 0x410c638eU, 0x4113c66eU, 0x411a75eeU, 0x4136df23U, 0x411a75eeU,
+      0x4113c66eU, 0x413d8ea2U, 0x40e15b73U, 0x411a75eeU, 0x4113c66eU, 0x411a75eeU,
+      0x4113c66eU, 0x410c638eU, 0x40995296U, 0x410c638eU, 0x40995296U, 0x40bd8ea2U,
+      0x400c62d3U, 0x40bd8ea2U, 0x400c62d3U, 0x4101e006U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.496535433070868,
+    11.903937007874015,
+    Some(1L),
+    [
+      0x00000000U, 0x40be7687U, 0x400d0e90U, 0x406fde7dU, 0x400d0e90U, 0x40be760aU,
+      0x409986f4U, 0x40be760aU, 0x409986f4U, 0x40459cecU, 0x4113f8a9U, 0x40459cecU,
+      0x4113f8a9U, 0x400d0e90U, 0x40e16a87U, 0x400d0e90U, 0x4113f8e8U, 0x00000000U,
+      0x41373c8cU, 0x400d0e90U, 0x4113f926U, 0x400d0e90U, 0x4113f926U, 0x40459cecU,
+      0x415b2e55U, 0x40459cecU, 0x415b2e55U, 0x40be760aU, 0x41825716U, 0x40be760aU,
+      0x41825716U, 0x406fde7dU, 0x4193f8e8U, 0x40be7687U, 0x41825716U, 0x41027ee7U,
+      0x41825716U, 0x40be7703U, 0x415b2e55U, 0x40be7703U, 0x415b2e55U, 0x410d0f4cU,
+      0x4113f926U, 0x410d0f4cU, 0x4113f926U, 0x411b32e3U, 0x41373c8cU, 0x411b32e3U,
+      0x4113f8e8U, 0x413e7687U, 0x40e16a87U, 0x411b32e3U, 0x4113f8a9U, 0x411b32e3U,
+      0x4113f8a9U, 0x410d0f4cU, 0x409986f4U, 0x410d0f4cU, 0x409986f4U, 0x40be7703U,
+      0x400d0e90U, 0x40be7703U, 0x400d0e90U, 0x41027ee7U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.521181102362206,
+    11.960551181102362,
+    Some(16667L),
+    [
+      0x00000000U, 0x40bf5e6bU, 0x400dba4eU, 0x40710288U, 0x400dba4eU, 0x409f792fU,
+      0x4099bb53U, 0x409f792fU, 0x4099bb53U, 0x40468d85U, 0x410438c3U, 0x40468d85U,
+      0x410438c3U, 0x400dba4eU, 0x40e1799bU, 0x400dba4eU, 0x41142b61U, 0x00000000U,
+      0x413799f4U, 0x400dba4eU, 0x41241dffU, 0x400dba4eU, 0x41241dffU, 0x40468d85U,
+      0x415b7919U, 0x40468d85U, 0x415b7919U, 0x409f792fU, 0x41827417U, 0x409f792fU,
+      0x41827417U, 0x40710288U, 0x41942b61U, 0x40bf5e6bU, 0x41827417U, 0x41031dc9U,
+      0x41827417U, 0x40df43a7U, 0x415b7919U, 0x40df43a7U, 0x415b7919U, 0x410dbb0aU,
+      0x41241dffU, 0x410dbb0aU, 0x41241dffU, 0x411befd8U, 0x413799f4U, 0x411befd8U,
+      0x41142b61U, 0x413f5e6bU, 0x40e1799bU, 0x411befd8U, 0x410438c3U, 0x411befd8U,
+      0x410438c3U, 0x410dbb0aU, 0x4099bb53U, 0x410dbb0aU, 0x4099bb53U, 0x40df43a7U,
+      0x400dba4eU, 0x40df43a7U, 0x400dba4eU, 0x41031dc9U,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.545826771653545,
+    12.017165354330709,
+    Some(25000L),
+    [
+      0x00000000U, 0x40c0464fU, 0x400e660bU, 0x40722694U, 0x400e660bU, 0x409034bbU,
+      0x4099efb1U, 0x409034bbU, 0x4099efb1U, 0x40477e1dU, 0x40f8aa21U, 0x40477e1dU,
+      0x40f8aa21U, 0x400e660bU, 0x40e188afU, 0x400e660bU, 0x41145ddaU, 0x00000000U,
+      0x4137f75dU, 0x400e660bU, 0x412c66a4U, 0x400e660bU, 0x412c66a4U, 0x40477e1dU,
+      0x415bc3dcU, 0x40477e1dU, 0x415bc3dcU, 0x409034bbU, 0x41829119U, 0x409034bbU,
+      0x41829119U, 0x40722694U, 0x41945ddaU, 0x40c0464fU, 0x41829119U, 0x4103bcaaU,
+      0x41829119U, 0x40f057e3U, 0x415bc3dcU, 0x40f057e3U, 0x415bc3dcU, 0x410e66c8U,
+      0x412c66a4U, 0x410e66c8U, 0x412c66a4U, 0x411cacccU, 0x4137f75dU, 0x411cacccU,
+      0x41145ddaU, 0x4140464fU, 0x40e188afU, 0x411cacccU, 0x40f8aa21U, 0x411cacccU,
+      0x40f8aa21U, 0x410e66c8U, 0x4099efb1U, 0x410e66c8U, 0x4099efb1U, 0x40f057e3U,
+      0x400e660bU, 0x40f057e3U, 0x400e660bU, 0x4103bcaaU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.570472440944883,
+    12.073779527559054,
+    Some(50000L),
+    [
+      0x00000000U, 0x40c12e33U, 0x400f11c8U, 0x40734a9fU, 0x400f11c8U, 0x40734a9fU,
+      0x409a2410U, 0x40734a9fU, 0x409a2410U, 0x40486eb6U, 0x40e197c4U, 0x40486eb6U,
+      0x40e197c4U, 0x400f11c8U, 0x40e197c4U, 0x400f11c8U, 0x41149054U, 0x00000000U,
+      0x413854c6U, 0x400f11c8U, 0x413854c6U, 0x400f11c8U, 0x413854c6U, 0x40486eb6U,
+      0x415c0ea0U, 0x40486eb6U, 0x415c0ea0U, 0x40734a9fU, 0x4182ae1bU, 0x40734a9fU,
+      0x4182ae1bU, 0x40734a9fU, 0x41949054U, 0x40c12e33U, 0x4182ae1bU, 0x41045b8cU,
+      0x4182ae1bU, 0x41045b8cU, 0x415c0ea0U, 0x41045b8cU, 0x415c0ea0U, 0x410f1286U,
+      0x413854c6U, 0x410f1286U, 0x413854c6U, 0x411d69c1U, 0x413854c6U, 0x411d69c1U,
+      0x41149054U, 0x41412e33U, 0x40e197c4U, 0x411d69c1U, 0x40e197c4U, 0x411d69c1U,
+      0x40e197c4U, 0x410f1286U, 0x409a2410U, 0x410f1286U, 0x409a2410U, 0x41045b8cU,
+      0x400f11c8U, 0x41045b8cU, 0x400f11c8U, 0x41045b8cU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.595118110236221,
+    12.130393700787401,
+    Some(75000L),
+    [
+      0x00000000U, 0x40c21618U, 0x400fbd85U, 0x40746eaaU, 0x400fbd85U, 0x40746eaaU,
+      0x409a586eU, 0x40746eaaU, 0x409a586eU, 0x40495f4fU, 0x40e1a6d8U, 0x40495f4fU,
+      0x40e1a6d8U, 0x400fbd85U, 0x40e1a6d8U, 0x400fbd85U, 0x4114c2cdU, 0x00000000U,
+      0x4138b22fU, 0x400fbd85U, 0x4138b22fU, 0x400fbd85U, 0x4138b22fU, 0x40495f4fU,
+      0x415c5963U, 0x40495f4fU, 0x415c5963U, 0x40746eaaU, 0x4182cb1dU, 0x40746eaaU,
+      0x4182cb1dU, 0x40746eaaU, 0x4194c2cdU, 0x40c21618U, 0x4182cb1dU, 0x4104fa6dU,
+      0x4182cb1dU, 0x4104fa6dU, 0x415c5963U, 0x4104fa6dU, 0x415c5963U, 0x410fbe44U,
+      0x4138b22fU, 0x410fbe44U, 0x4138b22fU, 0x411e26b6U, 0x4138b22fU, 0x411e26b6U,
+      0x4114c2cdU, 0x41421618U, 0x40e1a6d8U, 0x411e26b6U, 0x40e1a6d8U, 0x411e26b6U,
+      0x40e1a6d8U, 0x410fbe44U, 0x409a586eU, 0x410fbe44U, 0x409a586eU, 0x4104fa6dU,
+      0x400fbd85U, 0x4104fa6dU, 0x400fbd85U, 0x4104fa6dU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.61976377952756,
+    12.187007874015748,
+    Some(99999L),
+    [
+      0x00000000U, 0x40c2fdfcU, 0x40106942U, 0x407592b6U, 0x40106942U, 0x407592b6U,
+      0x409a8ccdU, 0x407592b6U, 0x409a8ccdU, 0x404a4fe8U, 0x40e1b5ecU, 0x404a4fe8U,
+      0x40e1b5ecU, 0x40106942U, 0x40e1b5ecU, 0x40106942U, 0x4114f547U, 0x00000000U,
+      0x41390f97U, 0x40106942U, 0x41390f97U, 0x40106942U, 0x41390f97U, 0x404a4fe8U,
+      0x415ca427U, 0x404a4fe8U, 0x415ca427U, 0x407592b6U, 0x4182e81eU, 0x407592b6U,
+      0x4182e81eU, 0x407592b6U, 0x4194f547U, 0x40c2fdfcU, 0x4182e81eU, 0x4105994fU,
+      0x4182e81eU, 0x4105994fU, 0x415ca427U, 0x4105994fU, 0x415ca427U, 0x41106a02U,
+      0x41390f97U, 0x41106a02U, 0x41390f97U, 0x411ee3abU, 0x41390f97U, 0x411ee3abU,
+      0x4114f547U, 0x4142fdfcU, 0x40e1b5ecU, 0x411ee3abU, 0x40e1b5ecU, 0x411ee3abU,
+      0x40e1b5ecU, 0x41106a02U, 0x409a8ccdU, 0x41106a02U, 0x409a8ccdU, 0x4105994fU,
+      0x40106942U, 0x4105994fU, 0x40106942U, 0x4105994fU,
+    ],
+  )
+  check_formula_preset_path(
+    "quadArrowCallout",
+    18.644409448818898,
+    12.243622047244095,
+    Some(100000L),
+    [
+      0x00000000U, 0x40c3e5e0U, 0x40111500U, 0x4076b6c1U, 0x40111500U, 0x4076b6c1U,
+      0x409ac12bU, 0x4076b6c1U, 0x409ac12bU, 0x404b4081U, 0x40e1c501U, 0x404b4081U,
+      0x40e1c501U, 0x40111500U, 0x40e1c501U, 0x40111500U, 0x411527c0U, 0x00000000U,
+      0x41396d00U, 0x40111500U, 0x41396d00U, 0x40111500U, 0x41396d00U, 0x404b4081U,
+      0x415ceeebU, 0x404b4081U, 0x415ceeebU, 0x4076b6c1U, 0x41830520U, 0x4076b6c1U,
+      0x41830520U, 0x4076b6c1U, 0x419527c0U, 0x40c3e5e0U, 0x41830520U, 0x41063830U,
+      0x41830520U, 0x41063830U, 0x415ceeebU, 0x41063830U, 0x415ceeebU, 0x411115c0U,
+      0x41396d00U, 0x411115c0U, 0x41396d00U, 0x411fa0a0U, 0x41396d00U, 0x411fa0a0U,
+      0x411527c0U, 0x4143e5e0U, 0x40e1c501U, 0x411fa0a0U, 0x40e1c501U, 0x411fa0a0U,
+      0x40e1c501U, 0x411115c0U, 0x409ac12bU, 0x411115c0U, 0x409ac12bU, 0x41063830U,
+      0x40111500U, 0x41063830U, 0x40111500U, 0x41063830U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.444094488188977,
+    12.470866141732284,
+    Some(0L),
+    [
+      0x00000000U, 0x40c788abU, 0x415356adU, 0x40c788abU, 0x415356adU, 0x00000000U,
+      0x419b8d81U, 0x40c788abU, 0x415356adU, 0x414788abU, 0x415356adU, 0x40c788abU,
+      0x00000000U, 0x40c788abU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.468740157480315,
+    12.527480314960631,
+    Some(1L),
+    [
+      0x00000000U, 0x40c8700cU, 0x415347aeU, 0x40c8700cU, 0x415347aeU, 0x00000000U,
+      0x419bbffbU, 0x40c8708fU, 0x415347aeU, 0x4148708fU, 0x415347aeU, 0x40c87113U,
+      0x00000000U, 0x40c87113U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.493385826771654,
+    12.584094488188976,
+    Some(16667L),
+    [
+      0x00000000U, 0x40a7c98aU, 0x415338afU, 0x40a7c98aU, 0x415338afU, 0x00000000U,
+      0x419bf274U, 0x40c95873U, 0x415338afU, 0x41495873U, 0x415338afU, 0x40eae75dU,
+      0x00000000U, 0x40eae75dU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.518031496062992,
+    12.640708661417323,
+    Some(25000L),
+    [
+      0x00000000U, 0x4097b042U, 0x415329b0U, 0x4097b042U, 0x415329b0U, 0x00000000U,
+      0x419c24eeU, 0x40ca4058U, 0x415329b0U, 0x414a4058U, 0x415329b0U, 0x40fcd06eU,
+      0x00000000U, 0x40fcd06eU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.542677165354331,
+    12.69732283464567,
+    Some(50000L),
+    [
+      0x00000000U, 0x404b283cU, 0x41531ab0U, 0x404b283cU, 0x41531ab0U, 0x00000000U,
+      0x419c5767U, 0x40cb283cU, 0x41531ab0U, 0x414b283cU, 0x41531ab0U, 0x41185e2dU,
+      0x00000000U, 0x41185e2dU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.567322834645669,
+    12.753937007874017,
+    Some(75000L),
+    [
+      0x00000000U, 0x3fcc1020U, 0x41530bb1U, 0x3fcc1020U, 0x41530bb1U, 0x00000000U,
+      0x419c89e1U, 0x40cc1020U, 0x41530bb1U, 0x414c1020U, 0x41530bb1U, 0x41328e1cU,
+      0x00000000U, 0x41328e1cU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.591968503937007,
+    12.810551181102362,
+    Some(99999L),
+    [
+      0x00000000U, 0x38865410U, 0x4152fcb2U, 0x38865410U, 0x4152fcb2U, 0x00000000U,
+      0x419cbc5aU, 0x40ccf805U, 0x4152fcb2U, 0x414cf805U, 0x4152fcb2U, 0x414cf7c1U,
+      0x00000000U, 0x414cf7c1U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrow",
+    19.616614173228346,
+    12.867165354330709,
+    Some(100000L),
+    [
+      0x00000000U, 0xa6800000U, 0x4152edb2U, 0xa6800000U, 0x4152edb2U, 0x00000000U,
+      0x419ceed3U, 0x40cddfe9U, 0x4152edb2U, 0x414ddfe9U, 0x4152edb2U, 0x414ddfe9U,
+      0x00000000U, 0x414ddfe9U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.416299212598425,
+    13.094409448818897,
+    Some(0L),
+    [
+      0x00000000U, 0x00000000U, 0x4154411fU, 0x00000000U, 0x4154411fU, 0x40d182b3U,
+      0x4189243eU, 0x40d182b3U, 0x4189243eU, 0x405182b3U, 0x41a35495U, 0x40d182b3U,
+      0x4189243eU, 0x411d2207U, 0x4189243eU, 0x40d182b3U, 0x4154411fU, 0x40d182b3U,
+      0x4154411fU, 0x415182b3U, 0x00000000U, 0x415182b3U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.440944881889763,
+    13.151023622047244,
+    Some(1L),
+    [
+      0x00000000U, 0x00000000U, 0x415482b7U, 0x00000000U, 0x415482b7U, 0x40d26a0eU,
+      0x418939bbU, 0x40d26a0eU, 0x418939bbU, 0x40526a98U, 0x41a3870eU, 0x40d26a98U,
+      0x418939bbU, 0x411dcff2U, 0x418939bbU, 0x40d26b22U, 0x415482b7U, 0x40d26b22U,
+      0x415482b7U, 0x41526a98U, 0x00000000U, 0x41526a98U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.465590551181101,
+    13.207637795275591,
+    Some(16667L),
+    [
+      0x00000000U, 0x00000000U, 0x4154c44fU, 0x00000000U, 0x4154c44fU, 0x40b019e4U,
+      0x41894f38U, 0x40b019e4U, 0x41894f38U, 0x4053527cU, 0x41a3b988U, 0x40d3527cU,
+      0x41894f38U, 0x411e7dddU, 0x41894f38U, 0x40f68b14U, 0x4154c44fU, 0x40f68b14U,
+      0x4154c44fU, 0x4153527cU, 0x00000000U, 0x4153527cU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.49023622047244,
+    13.264251968503936,
+    Some(25000L),
+    [
+      0x00000000U, 0x00000000U, 0x415505e7U, 0x00000000U, 0x415505e7U, 0x409f2bc8U,
+      0x418964b5U, 0x409f2bc8U, 0x418964b5U, 0x40543a60U, 0x41a3ec01U, 0x40d43a60U,
+      0x418964b5U, 0x411f2bc8U, 0x418964b5U, 0x4104a47cU, 0x415505e7U, 0x4104a47cU,
+      0x415505e7U, 0x41543a60U, 0x00000000U, 0x41543a60U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.514881889763778,
+    13.320866141732283,
+    Some(50000L),
+    [
+      0x00000000U, 0x00000000U, 0x4155477fU, 0x00000000U, 0x4155477fU, 0x40552245U,
+      0x41897a32U, 0x40552245U, 0x41897a32U, 0x40552245U, 0x41a41e7aU, 0x40d52245U,
+      0x41897a32U, 0x411fd9b3U, 0x41897a32U, 0x411fd9b3U, 0x4155477fU, 0x411fd9b3U,
+      0x4155477fU, 0x41552245U, 0x00000000U, 0x41552245U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.539527559055117,
+    13.37748031496063,
+    Some(75000L),
+    [
+      0x00000000U, 0x00000000U, 0x41558917U, 0x00000000U, 0x41558917U, 0x40560a29U,
+      0x41898fafU, 0x40560a29U, 0x41898fafU, 0x40560a29U, 0x41a450f4U, 0x40d60a29U,
+      0x41898fafU, 0x4120879fU, 0x41898fafU, 0x4120879fU, 0x41558917U, 0x4120879fU,
+      0x41558917U, 0x41560a29U, 0x00000000U, 0x41560a29U,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.564173228346458,
+    13.434094488188977,
+    Some(99999L),
+    [
+      0x00000000U, 0x00000000U, 0x4155caafU, 0x00000000U, 0x4155caafU, 0x4056f20dU,
+      0x4189a52cU, 0x4056f20dU, 0x4189a52cU, 0x4056f20dU, 0x41a4836dU, 0x40d6f20dU,
+      0x4189a52cU, 0x4121358aU, 0x4189a52cU, 0x4121358aU, 0x4155caafU, 0x4121358aU,
+      0x4155caafU, 0x4156f20dU, 0x00000000U, 0x4156f20dU,
+    ],
+  )
+  check_formula_preset_path(
+    "rightArrowCallout",
+    20.588818897637797,
+    13.490708661417322,
+    Some(100000L),
+    [
+      0x00000000U, 0x00000000U, 0x41560c46U, 0x00000000U, 0x41560c46U, 0x4057d9f1U,
+      0x4189baa9U, 0x4057d9f1U, 0x4189baa9U, 0x4057d9f1U, 0x41a4b5e7U, 0x40d7d9f1U,
+      0x4189baa9U, 0x4121e375U, 0x4189baa9U, 0x4121e375U, 0x41560c46U, 0x4121e375U,
+      0x41560c46U, 0x4157d9f1U, 0x00000000U, 0x4157d9f1U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.388503937007876,
+    13.717952755905511,
+    Some(0L),
+    [
+      0x00000000U, 0x00000000U, 0x41ab1ba8U, 0x00000000U, 0x41ab1ba8U, 0x00000000U,
+      0x41ab1ba8U, 0x415b7cbcU, 0x00000000U, 0x415b7cbcU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.413149606299214,
+    13.774566929133858,
+    Some(1L),
+    [
+      0x00000000U, 0x00000000U, 0x41ab4dd9U, 0x00000000U, 0x41ab4e21U, 0x39106fd2U,
+      0x41ab4e21U, 0x415c64a0U, 0x00000000U, 0x415c64a0U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.437795275590553,
+    13.831181102362205,
+    Some(16667L),
+    [
+      0x00000000U, 0x00000000U, 0x41990f78U, 0x00000000U, 0x41ab809bU, 0x4013891aU,
+      0x41ab809bU, 0x415d4c85U, 0x00000000U, 0x415d4c85U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.462440944881891,
+    13.887795275590552,
+    Some(25000L),
+    [
+      0x00000000U, 0x00000000U, 0x418fec87U, 0x00000000U, 0x41abb314U, 0x405e3469U,
+      0x41abb314U, 0x415e3469U, 0x00000000U, 0x415e3469U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.487086614173229,
+    13.944409448818897,
+    Some(50000L),
+    [
+      0x00000000U, 0x00000000U, 0x41683cf5U, 0x00000000U, 0x41abe58eU, 0x40df1c4dU,
+      0x41abe58eU, 0x415f1c4dU, 0x00000000U, 0x415f1c4dU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.511732283464568,
+    14.001023622047244,
+    Some(75000L),
+    [
+      0x00000000U, 0x00000000U, 0x41682df6U, 0x00000000U, 0x41ac1807U, 0x40e00431U,
+      0x41ac1807U, 0x41600431U, 0x00000000U, 0x41600431U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.536377952755906,
+    14.057637795275591,
+    Some(99999L),
+    [
+      0x00000000U, 0x00000000U, 0x41681ef6U, 0x00000000U, 0x41ac4a81U, 0x40e0ec16U,
+      0x41ac4a81U, 0x4160ec16U, 0x00000000U, 0x4160ec16U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip1Rect",
+    21.561023622047244,
+    14.114251968503938,
+    Some(100000L),
+    [
+      0x00000000U, 0x00000000U, 0x41680ff7U, 0x00000000U, 0x41ac7cfaU, 0x40e1d3faU,
+      0x41ac7cfaU, 0x4161d3faU, 0x00000000U, 0x4161d3faU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.360708661417323,
+    14.341496062992126,
+    Some(0L),
+    [
+      0x00000000U, 0x00000000U, 0x419fc367U, 0x00000000U, 0x41b2e2bbU, 0x4018faa1U,
+      0x41b2e2bbU, 0x416576c5U, 0x41b2e2bbU, 0x416576c5U, 0x4018faa1U, 0x416576c5U,
+      0x00000000U, 0x413f381cU, 0x00000000U, 0x00000000U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.385354330708662,
+    14.398110236220472,
+    Some(1L),
+    [
+      0x3916f9a2U, 0x00000000U, 0x419fe28dU, 0x00000000U, 0x41b31535U, 0x4019953aU,
+      0x41b31535U, 0x41665e12U, 0x41b314e9U, 0x41665ea9U, 0x4019953aU, 0x41665ea9U,
+      0x00000000U, 0x413ff95aU, 0x00000000U, 0x3916f9a2U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.41,
+    14.454724409448819,
+    Some(16667L),
+    [
+      0x401a2fd3U, 0x00000000U, 0x41a001b4U, 0x00000000U, 0x41b347aeU, 0x401a2fd3U,
+      0x41b347aeU, 0x4140ba98U, 0x41a001b4U, 0x4167468dU, 0x401a2fd3U, 0x4167468dU,
+      0x00000000U, 0x4140ba98U, 0x00000000U, 0x401a2fd3U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.434645669291339,
+    14.511338582677165,
+    Some(25000L),
+    [
+      0x40682e71U, 0x00000000U, 0x41a020daU, 0x00000000U, 0x41b37a28U, 0x401aca6cU,
+      0x41b37a28U, 0x412e22d5U, 0x41967459U, 0x41682e71U, 0x401aca6cU, 0x41682e71U,
+      0x00000000U, 0x41417bd6U, 0x00000000U, 0x40682e71U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.459291338582677,
+    14.567952755905512,
+    Some(50000L),
+    [
+      0x40e91656U, 0x00000000U, 0x41a04000U, 0x00000000U, 0x41b3aca1U, 0x401b6505U,
+      0x41b3aca1U, 0x40e91656U, 0x4172ce17U, 0x41691656U, 0x401b6505U, 0x41691656U,
+      0x00000000U, 0x41423d14U, 0x00000000U, 0x40e91656U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.483937007874015,
+    14.624566929133858,
+    Some(75000L),
+    [
+      0x40e9fe3aU, 0x00000000U, 0x41a05f27U, 0x00000000U, 0x41b3df1aU, 0x401bff9eU,
+      0x41b3df1aU, 0x40e9fe3aU, 0x4172bf18U, 0x4169fe3aU, 0x401bff9eU, 0x4169fe3aU,
+      0x00000000U, 0x4142fe52U, 0x00000000U, 0x40e9fe3aU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.508582677165354,
+    14.681181102362205,
+    Some(99999L),
+    [
+      0x40eae61eU, 0x00000000U, 0x41a07e4dU, 0x00000000U, 0x41b41194U, 0x401c9a37U,
+      0x41b41194U, 0x40eae61eU, 0x4172b019U, 0x416ae61eU, 0x401c9a37U, 0x416ae61eU,
+      0x00000000U, 0x4143bf90U, 0x00000000U, 0x40eae61eU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2DiagRect",
+    22.533228346456692,
+    14.737795275590551,
+    Some(100000L),
+    [
+      0x40ebce02U, 0x00000000U, 0x41a09d73U, 0x00000000U, 0x41b4440dU, 0x401d34d0U,
+      0x41b4440dU, 0x40ebce02U, 0x4172a119U, 0x416bce02U, 0x401d34d0U, 0x416bce02U,
+      0x00000000U, 0x414480cfU, 0x00000000U, 0x40ebce02U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.332913385826771,
+    14.96503937007874,
+    Some(0L),
+    [
+      0x00000000U, 0x00000000U, 0x41baa9ceU, 0x00000000U, 0x41baa9ceU, 0x00000000U,
+      0x41baa9ceU, 0x416f70cdU, 0x41baa9ceU, 0x416f70cdU, 0x00000000U, 0x416f70cdU,
+      0x00000000U, 0x416f70cdU, 0x00000000U, 0x00000000U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.357559055118109,
+    15.021653543307087,
+    Some(1L),
+    [
+      0x391d8372U, 0x00000000U, 0x41badbf9U, 0x00000000U, 0x41badc48U, 0x391d8372U,
+      0x41badc48U, 0x417058b1U, 0x41badc48U, 0x417058b1U, 0x00000000U, 0x417058b1U,
+      0x00000000U, 0x417058b1U, 0x00000000U, 0x391d8372U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.382204724409448,
+    15.078267716535432,
+    Some(16667L),
+    [
+      0x4020d68cU, 0x00000000U, 0x41a6f3f0U, 0x00000000U, 0x41bb0ec1U, 0x4020d68cU,
+      0x41bb0ec1U, 0x41714096U, 0x41bb0ec1U, 0x41714096U, 0x00000000U, 0x41714096U,
+      0x00000000U, 0x41714096U, 0x00000000U, 0x4020d68cU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.406850393700786,
+    15.134881889763779,
+    Some(25000L),
+    [
+      0x4072287aU, 0x00000000U, 0x419cfc2cU, 0x00000000U, 0x41bb413bU, 0x4072287aU,
+      0x41bb413bU, 0x4172287aU, 0x41bb413bU, 0x4172287aU, 0x00000000U, 0x4172287aU,
+      0x00000000U, 0x4172287aU, 0x00000000U, 0x4072287aU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.431496062992125,
+    15.191496062992126,
+    Some(50000L),
+    [
+      0x40f3105eU, 0x00000000U, 0x417d5f39U, 0x00000000U, 0x41bb73b4U, 0x40f3105eU,
+      0x41bb73b4U, 0x4173105eU, 0x41bb73b4U, 0x4173105eU, 0x00000000U, 0x4173105eU,
+      0x00000000U, 0x4173105eU, 0x00000000U, 0x40f3105eU,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.456141732283463,
+    15.248110236220473,
+    Some(75000L),
+    [
+      0x40f3f842U, 0x00000000U, 0x417d503aU, 0x00000000U, 0x41bba62eU, 0x40f3f842U,
+      0x41bba62eU, 0x4173f842U, 0x41bba62eU, 0x4173f842U, 0x00000000U, 0x4173f842U,
+      0x00000000U, 0x4173f842U, 0x00000000U, 0x40f3f842U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.480787401574805,
+    15.304724409448818,
+    Some(99999L),
+    [
+      0x40f4e027U, 0x00000000U, 0x417d413bU, 0x00000000U, 0x41bbd8a7U, 0x40f4e027U,
+      0x41bbd8a7U, 0x4174e027U, 0x41bbd8a7U, 0x4174e027U, 0x00000000U, 0x4174e027U,
+      0x00000000U, 0x4174e027U, 0x00000000U, 0x40f4e027U,
+    ],
+  )
+  check_formula_preset_path(
+    "snip2SameRect",
+    23.505433070866143,
+    15.361338582677165,
+    Some(100000L),
+    [
+      0x40f5c80bU, 0x00000000U, 0x417d323cU, 0x00000000U, 0x41bc0b20U, 0x40f5c80bU,
+      0x41bc0b20U, 0x4175c80bU, 0x41bc0b20U, 0x4175c80bU, 0x00000000U, 0x4175c80bU,
+      0x00000000U, 0x4175c80bU, 0x00000000U, 0x40f5c80bU,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.305118110236222,
+    15.588582677165354,
+    Some(0L),
+    [
+      0xb79dc45fU, 0x40ac57a6U, 0x414270e2U, 0x40f96ad6U, 0x409489caU, 0x3fbe88eeU,
+      0x414270e2U, 0x40f96ad6U, 0x414270e2U, 0x00000000U, 0x414270e2U, 0x40f96ad6U,
+      0x419d4e6fU, 0x3fbe88eeU, 0x414270e2U, 0x40f96ad6U, 0x41c270ecU, 0x40ac57a6U,
+      0x414270e2U, 0x40f96ad6U, 0x41c270ecU, 0x41233f03U, 0x414270e2U, 0x40f96ad6U,
+      0x419d4e6fU, 0x416199b8U, 0x414270e2U, 0x40f96ad6U, 0x414270e2U, 0x41796ad6U,
+      0x414270e2U, 0x40f96ad6U, 0x409489caU, 0x416199b8U, 0x414270e2U, 0x40f96ad6U,
+      0xb79dc45fU, 0x41233f03U, 0x414270e2U, 0x40f96ad6U,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.329763779527561,
+    15.645196850393701,
+    Some(1L),
+    [
+      0xb79ded53U, 0x40acf7e2U, 0x4142a282U, 0x40fa51f9U, 0x4094b059U, 0x3fbf3a14U,
+      0x4142a308U, 0x40fa5182U, 0x4142a35bU, 0x00000000U, 0x4142a3aeU, 0x40fa5182U,
+      0x419d7745U, 0x3fbf3a14U, 0x4142a434U, 0x40fa51f9U, 0x41c2a365U, 0x40acf7e2U,
+      0x4142a467U, 0x40fa52baU, 0x41c2a365U, 0x4123d6c9U, 0x4142a434U, 0x40fa537bU,
+      0x419d7745U, 0x41626b77U, 0x4142a3aeU, 0x40fa53f2U, 0x4142a35bU, 0x417a52baU,
+      0x4142a308U, 0x40fa53f2U, 0x4094b059U, 0x41626b77U, 0x4142a282U, 0x40fa537bU,
+      0xb79ded53U, 0x4123d6c9U, 0x4142a24fU, 0x40fa52baU,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.354409448818899,
+    15.701811023622048,
+    Some(16667L),
+    [
+      0xb79e1647U, 0x40ad981dU, 0x410b96a7U, 0x40ca0134U, 0x4094d6e8U, 0x3fbfeb39U,
+      0x412dbb96U, 0x40ab9531U, 0x4142d5d5U, 0x00000000U, 0x4157f014U, 0x40ab9531U,
+      0x419da01bU, 0x3fbfeb39U, 0x417a1502U, 0x40ca0134U, 0x41c2d5dfU, 0x40ad981dU,
+      0x41838fd9U, 0x40fb3a9eU, 0x41c2d5dfU, 0x41246e90U, 0x417a1502U, 0x41163a04U,
+      0x419da01bU, 0x41633d37U, 0x4157f014U, 0x41257006U, 0x4142d5d5U, 0x417b3a9eU,
+      0x412dbb96U, 0x41257006U, 0x4094d6e8U, 0x41633d37U, 0x410b96a7U, 0x41163a04U,
+      0xb79e1647U, 0x41246e90U, 0x40fd17efU, 0x40fb3a9eU,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.379055118110237,
+    15.758425196850395,
+    Some(25000L),
+    [
+      0xb79e3f3cU, 0x40ae3859U, 0x40e028fdU, 0x40b2089dU, 0x4094fd77U, 0x3fc09c5fU,
+      0x412358e6U, 0x40843cb5U, 0x4143084eU, 0x00000000U, 0x4162b7b6U, 0x40843cb5U,
+      0x419dc8f0U, 0x3fc09c5fU, 0x418afe0fU, 0x40b2089dU, 0x41c30858U, 0x40ae3859U,
+      0x4194c88eU, 0x40fc2282U, 0x41c30858U, 0x41250656U, 0x418afe0fU, 0x41231e34U,
+      0x419dc8f0U, 0x41640ef7U, 0x4162b7b6U, 0x413a0428U, 0x4143084eU, 0x417c2282U,
+      0x412358e6U, 0x413a0428U, 0x4094fd77U, 0x41640ef7U, 0x40e028fdU, 0x41231e34U,
+      0xb79e3f3cU, 0x41250656U, 0x40b8feffU, 0x40fc2282U,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.403700787401576,
+    15.81503937007874,
+    Some(50000L),
+    [
+      0xb79e6830U, 0x40aed894U, 0x3fe941c7U, 0x40509c9cU, 0x40952406U, 0x3fc14d84U,
+      0x4103cb91U, 0x3ec62414U, 0x41433ac7U, 0x00000000U, 0x418154ffU, 0x3ec62414U,
+      0x419df1c6U, 0x3fc14d84U, 0x41b4a6abU, 0x40509c9cU, 0x41c33ad1U, 0x40aed894U,
+      0x41c840bcU, 0x40fd0a67U, 0x41c33ad1U, 0x41259e1dU, 0x41b4a6abU, 0x4148e340U,
+      0x419df1c6U, 0x4164e0b6U, 0x418154ffU, 0x4176d946U, 0x41433ac7U, 0x417d0a67U,
+      0x4103cb91U, 0x4176d946U, 0x40952406U, 0x4164e0b6U, 0x3fe941c7U, 0x4148e340U,
+      0xb79e6830U, 0x41259e1dU, 0xbf20be87U, 0x40fd0a67U,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.428346456692914,
+    15.871653543307087,
+    Some(75000L),
+    [
+      0xb79e9124U, 0x40af78d0U, 0x3fe97e15U, 0x40515bc9U, 0x40954a95U, 0x3fc1feaaU,
+      0x4103eda4U, 0x3ec6d9a9U, 0x41436d41U, 0x00000000U, 0x4181766fU, 0x3ec6d9a9U,
+      0x419e1a9cU, 0x3fc1feaaU, 0x41b4d560U, 0x40515bc9U, 0x41c36d4bU, 0x40af78d0U,
+      0x41c87482U, 0x40fdf24bU, 0x41c36d4bU, 0x412635e3U, 0x41b4d560U, 0x41499b59U,
+      0x419e1a9cU, 0x4165b276U, 0x4181766fU, 0x4177bb7eU, 0x41436d41U, 0x417df24bU,
+      0x4103eda4U, 0x4177bb7eU, 0x40954a95U, 0x4165b276U, 0x3fe97e15U, 0x41499b59U,
+      0xb79e9124U, 0x412635e3U, 0xbf20e816U, 0x40fdf24bU,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.452992125984252,
+    15.928267716535434,
+    Some(99999L),
+    [
+      0xb79eba18U, 0x40b0190bU, 0x3fe9ba64U, 0x40521af6U, 0x40957124U, 0x3fc2afcfU,
+      0x41040fb7U, 0x3ec78f3dU, 0x41439fbaU, 0x00000000U, 0x418197dfU, 0x3ec78f3dU,
+      0x419e4371U, 0x3fc2afcfU, 0x41b50414U, 0x40521af6U, 0x41c39fc4U, 0x40b0190bU,
+      0x41c8a847U, 0x40feda2fU, 0x41c39fc4U, 0x4126cdaaU, 0x41b50414U, 0x414a5372U,
+      0x419e4371U, 0x41668435U, 0x418197dfU, 0x41789db5U, 0x41439fbaU, 0x417eda2fU,
+      0x41040fb7U, 0x41789db5U, 0x40957124U, 0x41668435U, 0x3fe9ba64U, 0x414a5372U,
+      0xb79eba18U, 0x4126cdaaU, 0xbf2111a5U, 0x40feda2fU,
+    ],
+  )
+  check_formula_preset_path(
+    "star10",
+    24.477637795275591,
+    15.984881889763779,
+    Some(100000L),
+    [
+      0xb79ee30dU, 0x40b0b947U, 0x3fe9f6b2U, 0x4052da23U, 0x409597b3U, 0x3fc360f5U,
+      0x410431caU, 0x3ec844d2U, 0x4143d234U, 0x00000000U, 0x4181b94fU, 0x3ec844d2U,
+      0x419e6c47U, 0x3fc360f5U, 0x41b532c9U, 0x4052da23U, 0x41c3d23eU, 0x40b0b947U,
+      0x41c8dc0dU, 0x40ffc214U, 0x41c3d23eU, 0x41276570U, 0x41b532c9U, 0x414b0b8bU,
+      0x419e6c47U, 0x416755f5U, 0x4181b94fU, 0x41797fedU, 0x4143d234U, 0x417fc214U,
+      0x410431caU, 0x41797fedU, 0x409597b3U, 0x416755f5U, 0x3fe9f6b2U, 0x414b0b8bU,
+      0xb79ee30dU, 0x41276570U, 0xbf213b34U, 0x40ffc214U,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.27732283464567,
+    16.212125984251969,
+    Some(0L),
+    [
+      0xb889d100U, 0x4126d169U, 0x414a37f5U, 0x41087448U, 0x402034ecU, 0x404d816aU,
+      0x414a37f5U, 0x41087448U, 0x414a37f5U, 0x00000000U, 0x414a37f5U, 0x41087448U,
+      0x41b63158U, 0x404d816aU, 0x414a37f5U, 0x41087448U, 0x41ca3817U, 0x4126d169U,
+      0x414a37f5U, 0x41087448U, 0x41921b5eU, 0x4181b29cU, 0x414a37f5U, 0x41087448U,
+      0x40e0725bU, 0x4181b29cU, 0x414a37f5U, 0x41087448U,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.301968503937008,
+    16.268740157480316,
+    Some(1L),
+    [
+      0xb889f366U, 0x4127668bU, 0x414a6965U, 0x4108ee1dU, 0x40205ce9U, 0x404e3921U,
+      0x414a69f8U, 0x4108eda3U, 0x414a6a6eU, 0x00000000U, 0x414a6ae5U, 0x4108eda3U,
+      0x41b65ed1U, 0x404e3921U, 0x414a6b78U, 0x4108ee1dU, 0x41ca6a91U, 0x4127668bU,
+      0x414a6b43U, 0x4108eeb4U, 0x41923fd6U, 0x4182268eU, 0x414a6a6eU, 0x4108eef8U,
+      0x40e0aa60U, 0x4182268eU, 0x414a699aU, 0x4108eeb4U,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.326614173228347,
+    16.325354330708663,
+    Some(16667L),
+    [
+      0xb88a15cdU, 0x4127fbadU, 0x410712d6U, 0x40fe6e20U, 0x402084e6U, 0x404ef0d8U,
+      0x412c8e2fU, 0x40c04796U, 0x414a9ce8U, 0x00000000U, 0x4168aba1U, 0x40c04796U,
+      0x41b68c4bU, 0x404ef0d8U, 0x4187137dU, 0x40fe6e20U, 0x41ca9d0aU, 0x4127fbadU,
+      0x41806335U, 0x4125f715U, 0x4192644eU, 0x41829a80U, 0x414a9ce8U, 0x413735e8U,
+      0x40e0e266U, 0x41829a80U, 0x41147367U, 0x4125f715U,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.351259842519685,
+    16.381968503937006,
+    Some(25000L),
+    [
+      0xb88a3833U, 0x412890ceU, 0x40cacf1cU, 0x40f515ebU, 0x4020ace3U, 0x404fa890U,
+      0x411dae4cU, 0x409789d3U, 0x414acf61U, 0x00000000U, 0x4177f077U, 0x409789d3U,
+      0x41b6b9c5U, 0x404fa890U, 0x41981b9aU, 0x40f515ebU, 0x41cacf84U, 0x412890ceU,
+      0x418e10bbU, 0x4134de4aU, 0x419288c6U, 0x41830e73U, 0x414acf61U, 0x414ed35cU,
+      0x40e11a6cU, 0x41830e73U, 0x40f2fa9aU, 0x4134de4aU,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.375905511811023,
+    16.438582677165353,
+    Some(50000L),
+    [
+      0xb88a5a99U, 0x412925f0U, 0xb88a5a99U, 0x40d72509U, 0x4020d4e0U, 0x40506047U,
+      0x40e15272U, 0x3f5b3aa4U, 0x414b01dbU, 0x00000000U, 0x4192ad3eU, 0x3f5b3aa4U,
+      0x41b6e73fU, 0x40506047U, 0x41cb01fdU, 0x40d72509U, 0x41cb01fdU, 0x412925f0U,
+      0x41b6e73fU, 0x4160a062U, 0x4192ad3eU, 0x41838265U, 0x414b01dbU, 0x418a5c3aU,
+      0x40e15272U, 0x41838265U, 0x4020d4e0U, 0x4160a062U,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.400551181102362,
+    16.4951968503937,
+    Some(75000L),
+    [
+      0xb88a7cffU, 0x4129bb11U, 0xb88a7cffU, 0x40d7e2b9U, 0x4020fcddU, 0x405117ffU,
+      0x40e18a77U, 0x3f5bfbedU, 0x414b3454U, 0x00000000U, 0x4192d1b6U, 0x3f5bfbedU,
+      0x41b714b9U, 0x405117ffU, 0x41cb3477U, 0x40d7e2b9U, 0x41cb3477U, 0x4129bb11U,
+      0x41b714b9U, 0x4161666eU, 0x4192d1b6U, 0x4183f657U, 0x414b3454U, 0x418ad637U,
+      0x40e18a77U, 0x4183f657U, 0x4020fcddU, 0x4161666eU,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.4251968503937,
+    16.551811023622047,
+    Some(99999L),
+    [
+      0xb88a9f65U, 0x412a5033U, 0xb88a9f65U, 0x40d8a068U, 0x402124daU, 0x4051cfb6U,
+      0x40e1c27dU, 0x3f5cbd36U, 0x414b66ceU, 0x00000000U, 0x4192f62eU, 0x3f5cbd36U,
+      0x41b74232U, 0x4051cfb6U, 0x41cb66f0U, 0x40d8a068U, 0x41cb66f0U, 0x412a5033U,
+      0x41b74232U, 0x41622c79U, 0x4192f62eU, 0x41846a4aU, 0x414b66ceU, 0x418b5033U,
+      0x40e1c27dU, 0x41846a4aU, 0x402124daU, 0x41622c79U,
+    ],
+  )
+  check_formula_preset_path(
+    "star7",
+    25.449842519685038,
+    16.608425196850394,
+    Some(100000L),
+    [
+      0xb88ac1ccU, 0x412ae554U, 0xb88ac1ccU, 0x40d95e17U, 0x40214cd7U, 0x4052876eU,
+      0x40e1fa83U, 0x3f5d7e7fU, 0x414b9947U, 0x00000000U, 0x41931aa6U, 0x3f5d7e7fU,
+      0x41b76facU, 0x4052876eU, 0x41cb996aU, 0x40d95e17U, 0x41cb996aU, 0x412ae554U,
+      0x41b76facU, 0x4162f284U, 0x41931aa6U, 0x4184de3cU, 0x414b9947U, 0x418bca30U,
+      0x40e1fa83U, 0x4184de3cU, 0x40214cd7U, 0x4162f284U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.249527559055117,
+    16.835669291338583,
+    Some(0L),
+    [
+      0x00000000U, 0x40bcaef4U, 0x4151ff08U, 0x40bcaef4U, 0x4151ff08U, 0x4086af73U,
+      0x410ea74fU, 0x4086af73U, 0x4151ff08U, 0x00000000U, 0x418aab61U, 0x4086af73U,
+      0x4151ff08U, 0x4086af73U, 0x4151ff08U, 0x40bcaef4U, 0x41d1ff08U, 0x40bcaef4U,
+      0x41d1ff08U, 0x4186af73U, 0x00000000U, 0x4186af73U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.274173228346456,
+    16.89228346456693,
+    Some(1L),
+    [
+      0x00000000U, 0x40bd5162U, 0x41523129U, 0x40bd5162U, 0x41523129U, 0x40872366U,
+      0x410e9fcfU, 0x40872366U, 0x41523182U, 0x00000000U, 0x418ae19aU, 0x40872366U,
+      0x415231daU, 0x40872366U, 0x415231daU, 0x40bd5162U, 0x41d23182U, 0x40bd5162U,
+      0x41d23182U, 0x41872366U, 0x00000000U, 0x41872366U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.298818897637794,
+    16.948897637795277,
+    Some(16667L),
+    [
+      0x00000000U, 0x40bdf3d0U, 0x413bcaa4U, 0x40bdf3d0U, 0x413bcaa4U, 0x40879758U,
+      0x410e984fU, 0x40879758U, 0x415263fbU, 0x00000000U, 0x418b17d3U, 0x40879758U,
+      0x4168fd52U, 0x40879758U, 0x4168fd52U, 0x40bdf3d0U, 0x41d263fbU, 0x40bdf3d0U,
+      0x41d263fbU, 0x41879758U, 0x00000000U, 0x41879758U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.323464566929133,
+    17.005511811023624,
+    Some(25000L),
+    [
+      0x00000000U, 0x40be963fU, 0x413093a2U, 0x40be963fU, 0x413093a2U, 0x40880b4aU,
+      0x410e90d0U, 0x40880b4aU, 0x41529675U, 0x00000000U, 0x418b4e0dU, 0x40880b4aU,
+      0x41749947U, 0x40880b4aU, 0x41749947U, 0x40be963fU, 0x41d29675U, 0x40be963fU,
+      0x41d29675U, 0x41880b4aU, 0x00000000U, 0x41880b4aU,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.348110236220471,
+    17.062125984251967,
+    Some(50000L),
+    [
+      0x00000000U, 0x40bf38adU, 0x410e8950U, 0x40bf38adU, 0x410e8950U, 0x40887f3cU,
+      0x410e8950U, 0x40887f3cU, 0x4152c8eeU, 0x00000000U, 0x418b8446U, 0x40887f3cU,
+      0x418b8446U, 0x40887f3cU, 0x418b8446U, 0x40bf38adU, 0x41d2c8eeU, 0x40bf38adU,
+      0x41d2c8eeU, 0x41887f3cU, 0x00000000U, 0x41887f3cU,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.372755905511809,
+    17.118740157480314,
+    Some(75000L),
+    [
+      0x00000000U, 0x40bfdb1bU, 0x410e81d0U, 0x40bfdb1bU, 0x410e81d0U, 0x4088f32eU,
+      0x410e81d0U, 0x4088f32eU, 0x4152fb67U, 0x00000000U, 0x418bba7fU, 0x4088f32eU,
+      0x418bba7fU, 0x4088f32eU, 0x418bba7fU, 0x40bfdb1bU, 0x41d2fb67U, 0x40bfdb1bU,
+      0x41d2fb67U, 0x4188f32eU, 0x00000000U, 0x4188f32eU,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.397401574803151,
+    17.175354330708661,
+    Some(99999L),
+    [
+      0x00000000U, 0x40c07d89U, 0x410e7a51U, 0x40c07d89U, 0x410e7a51U, 0x40896720U,
+      0x410e7a51U, 0x40896720U, 0x41532de1U, 0x00000000U, 0x418bf0b8U, 0x40896720U,
+      0x418bf0b8U, 0x40896720U, 0x418bf0b8U, 0x40c07d89U, 0x41d32de1U, 0x40c07d89U,
+      0x41d32de1U, 0x41896720U, 0x00000000U, 0x41896720U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrowCallout",
+    26.42204724409449,
+    17.231968503937008,
+    Some(100000L),
+    [
+      0x00000000U, 0x40c11ff8U, 0x410e72d1U, 0x40c11ff8U, 0x410e72d1U, 0x4089db12U,
+      0x410e72d1U, 0x4089db12U, 0x4153605aU, 0x00000000U, 0x418c26f2U, 0x4089db12U,
+      0x418c26f2U, 0x4089db12U, 0x418c26f2U, 0x40c11ff8U, 0x41d3605aU, 0x40c11ff8U,
+      0x41d3605aU, 0x4189db12U, 0x00000000U, 0x4189db12U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.221732283464569,
+    17.459212598425196,
+    Some(0L),
+    [
+      0x00000000U, 0x410bac78U, 0x4159c61cU, 0x00000000U, 0x41d9c61cU, 0x410bac78U,
+      0x4159c61cU, 0x410bac78U, 0x4159c61cU, 0x410bac78U, 0x41d9c61cU, 0x410bac78U,
+      0x4159c61cU, 0x418bac78U, 0x00000000U, 0x410bac78U, 0x4159c61cU, 0x410bac78U,
+      0x4159c61cU, 0x410bac78U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.246377952755907,
+    17.515826771653543,
+    Some(1L),
+    [
+      0x00000000U, 0x410c206aU, 0x4159f895U, 0x00000000U, 0x41d9f895U, 0x410c206aU,
+      0x4159f924U, 0x410c206aU, 0x4159f924U, 0x410c206aU, 0x41d9f895U, 0x410c206aU,
+      0x4159f895U, 0x418c206aU, 0x00000000U, 0x410c206aU, 0x4159f806U, 0x410c206aU,
+      0x4159f806U, 0x410c206aU,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.271023622047245,
+    17.57244094488189,
+    Some(16667L),
+    [
+      0x00000000U, 0x410c945cU, 0x415a2b0eU, 0x00000000U, 0x41da2b0eU, 0x410c945cU,
+      0x417e87c0U, 0x410c945cU, 0x417e87c0U, 0x410c945cU, 0x41da2b0eU, 0x410c945cU,
+      0x415a2b0eU, 0x418c945cU, 0x00000000U, 0x410c945cU, 0x4135ce5cU, 0x410c945cU,
+      0x4135ce5cU, 0x410c945cU,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.295669291338584,
+    17.629055118110237,
+    Some(25000L),
+    [
+      0x00000000U, 0x410d084eU, 0x415a5d88U, 0x00000000U, 0x41da5d88U, 0x410d084eU,
+      0x41887a75U, 0x410d084eU, 0x41887a75U, 0x410d084eU, 0x41da5d88U, 0x410d084eU,
+      0x415a5d88U, 0x418d084eU, 0x00000000U, 0x410d084eU, 0x4123c626U, 0x410d084eU,
+      0x4123c626U, 0x410d084eU,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.320314960629922,
+    17.685669291338584,
+    Some(50000L),
+    [
+      0x00000000U, 0x410d7c40U, 0x415a9001U, 0x00000000U, 0x41da9001U, 0x410d7c40U,
+      0x41a3ec01U, 0x410d7c40U, 0x41a3ec01U, 0x410d7c40U, 0x41da9001U, 0x410d7c40U,
+      0x415a9001U, 0x418d7c40U, 0x00000000U, 0x410d7c40U, 0x40da9001U, 0x410d7c40U,
+      0x40da9001U, 0x410d7c40U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.34496062992126,
+    17.742283464566928,
+    Some(75000L),
+    [
+      0x00000000U, 0x410df032U, 0x415ac27bU, 0x00000000U, 0x41dac27bU, 0x410df032U,
+      0x41bf6a2bU, 0x410df032U, 0x41bf6a2bU, 0x410df032U, 0x41dac27bU, 0x410df032U,
+      0x415ac27bU, 0x418df032U, 0x00000000U, 0x410df032U, 0x405ac27bU, 0x410df032U,
+      0x405ac27bU, 0x410df032U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.369606299212599,
+    17.798897637795275,
+    Some(99999L),
+    [
+      0x00000000U, 0x410e6424U, 0x415af4f4U, 0x00000000U, 0x41daf4f4U, 0x410e6424U,
+      0x41daf4acU, 0x410e6424U, 0x41daf4acU, 0x410e6424U, 0x41daf4f4U, 0x410e6424U,
+      0x415af4f4U, 0x418e6424U, 0x00000000U, 0x410e6424U, 0x390f7eddU, 0x410e6424U,
+      0x390f7eddU, 0x410e6424U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrow",
+    27.394251968503937,
+    17.855511811023622,
+    Some(100000L),
+    [
+      0x00000000U, 0x410ed817U, 0x415b276eU, 0x00000000U, 0x41db276eU, 0x410ed817U,
+      0x41db276eU, 0x410ed817U, 0x41db276eU, 0x410ed817U, 0x41db276eU, 0x410ed817U,
+      0x415b276eU, 0x418ed817U, 0x00000000U, 0x410ed817U, 0xa7000000U, 0x410ed817U,
+      0xa7000000U, 0x410ed817U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.193937007874016,
+    18.08275590551181,
+    Some(0L),
+    [
+      0x00000000U, 0x4110a97cU, 0x41618d2fU, 0x00000000U, 0x41e18d2fU, 0x4110a97cU,
+      0x41618d2fU, 0x4110a97cU, 0x41618d2fU, 0x4190a97cU, 0x41618d2fU, 0x4190a97cU,
+      0x41618d2fU, 0x4110a97cU,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.218582677165355,
+    18.139370078740157,
+    Some(1L),
+    [
+      0x00000000U, 0x41111d6eU, 0x4161bfa8U, 0x00000000U, 0x41e1bfa8U, 0x41111d6eU,
+      0x4161c03cU, 0x41111d6eU, 0x4161c03cU, 0x41911d6eU, 0x4161bf14U, 0x41911d6eU,
+      0x4161bf14U, 0x41111d6eU,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.243228346456693,
+    18.195984251968504,
+    Some(16667L),
+    [
+      0x00000000U, 0x41119160U, 0x4161f222U, 0x00000000U, 0x41e1f222U, 0x41119160U,
+      0x4183cd57U, 0x41119160U, 0x4183cd57U, 0x41919160U, 0x413c4995U, 0x41919160U,
+      0x413c4995U, 0x41119160U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.267874015748031,
+    18.252598425196851,
+    Some(25000L),
+    [
+      0x00000000U, 0x41120552U, 0x4162249bU, 0x00000000U, 0x41e2249bU, 0x41120552U,
+      0x418d56e1U, 0x41120552U, 0x418d56e1U, 0x41920552U, 0x41299b74U, 0x41920552U,
+      0x41299b74U, 0x41120552U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.29251968503937,
+    18.309212598425198,
+    Some(50000L),
+    [
+      0x00000000U, 0x41127944U, 0x41625715U, 0x00000000U, 0x41e25715U, 0x41127944U,
+      0x41a9c14fU, 0x41127944U, 0x41a9c14fU, 0x41927944U, 0x40e25715U, 0x41927944U,
+      0x40e25715U, 0x41127944U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.317165354330708,
+    18.365826771653545,
+    Some(75000L),
+    [
+      0x00000000U, 0x4112ed37U, 0x4162898eU, 0x00000000U, 0x41e2898eU, 0x4112ed37U,
+      0x41c6385cU, 0x4112ed37U, 0x41c6385cU, 0x4192ed37U, 0x4062898eU, 0x4192ed37U,
+      0x4062898eU, 0x4112ed37U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.341811023622046,
+    18.422440944881888,
+    Some(99999L),
+    [
+      0x00000000U, 0x41136129U, 0x4162bc07U, 0x00000000U, 0x41e2bc07U, 0x41136129U,
+      0x41e2bbbdU, 0x41136129U, 0x41e2bbbdU, 0x41936129U, 0x391497bcU, 0x41936129U,
+      0x391497bcU, 0x41136129U,
+    ],
+  )
+  check_formula_preset_path(
+    "upArrow",
+    28.366456692913385,
+    18.479055118110235,
+    Some(100000L),
+    [
+      0x00000000U, 0x4113d51bU, 0x4162ee81U, 0x00000000U, 0x41e2ee81U, 0x4113d51bU,
+      0x41e2ee81U, 0x4113d51bU, 0x41e2ee81U, 0x4193d51bU, 0x00000000U, 0x4193d51bU,
+      0x00000000U, 0x4113d51bU,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.166141732283464,
+    18.706299212598424,
+    Some(0L),
+    [
+      0x00000000U, 0x409b44adU, 0x41695442U, 0x409b44adU, 0x41695442U, 0x4095a680U,
+      0x411e8102U, 0x4095a680U, 0x41695442U, 0x00000000U, 0x419a13c1U, 0x4095a680U,
+      0x41695442U, 0x4095a680U, 0x41695442U, 0x409b44adU, 0x41e95442U, 0x409b44adU,
+      0x41e95442U, 0x415daaaaU, 0x41695442U, 0x415daaaaU, 0x41695442U, 0x416079c0U,
+      0x419a13c1U, 0x416079c0U, 0x41695442U, 0x4195a680U, 0x411e8102U, 0x416079c0U,
+      0x41695442U, 0x416079c0U, 0x41695442U, 0x415daaaaU, 0x00000000U, 0x415daaaaU,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.190787401574802,
+    18.762913385826771,
+    Some(1L),
+    [
+      0x00000000U, 0x409bbcfaU, 0x41698659U, 0x409bbcfaU, 0x41698659U, 0x40961a72U,
+      0x411e7982U, 0x40961a72U, 0x416986bcU, 0x00000000U, 0x419a49faU, 0x40961a72U,
+      0x4169871eU, 0x40961a72U, 0x4169871eU, 0x409bbcfaU, 0x41e986bcU, 0x409bbcfaU,
+      0x41e986bcU, 0x415e5668U, 0x4169871eU, 0x415e5668U, 0x4169871eU, 0x416127abU,
+      0x419a49faU, 0x416127abU, 0x416986bcU, 0x41961a72U, 0x411e7982U, 0x416127abU,
+      0x41698659U, 0x416127abU, 0x41698659U, 0x415e5668U, 0x00000000U, 0x415e5668U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.21543307086614,
+    18.819527559055118,
+    Some(16667L),
+    [
+      0x00000000U, 0x409c3546U, 0x4150a159U, 0x409c3546U, 0x4150a159U, 0x40968e64U,
+      0x411e7203U, 0x40968e64U, 0x4169b935U, 0x00000000U, 0x419a8034U, 0x40968e64U,
+      0x41816889U, 0x40968e64U, 0x41816889U, 0x409c3546U, 0x41e9b935U, 0x409c3546U,
+      0x41e9b935U, 0x415f0226U, 0x41816889U, 0x415f0226U, 0x41816889U, 0x4161d597U,
+      0x419a8034U, 0x4161d597U, 0x4169b935U, 0x41968e64U, 0x411e7203U, 0x4161d597U,
+      0x4150a159U, 0x4161d597U, 0x4150a159U, 0x415f0226U, 0x00000000U, 0x415f0226U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.240078740157479,
+    18.876141732283465,
+    Some(25000L),
+    [
+      0x00000000U, 0x409cad93U, 0x41442b19U, 0x409cad93U, 0x41442b19U, 0x40970257U,
+      0x411e6a83U, 0x40970257U, 0x4169ebaeU, 0x00000000U, 0x419ab66dU, 0x40970257U,
+      0x4187d622U, 0x40970257U, 0x4187d622U, 0x409cad93U, 0x41e9ebaeU, 0x409cad93U,
+      0x41e9ebaeU, 0x415fade4U, 0x4187d622U, 0x415fade4U, 0x4187d622U, 0x41628382U,
+      0x419ab66dU, 0x41628382U, 0x4169ebaeU, 0x41970257U, 0x411e6a83U, 0x41628382U,
+      0x41442b19U, 0x41628382U, 0x41442b19U, 0x415fade4U, 0x00000000U, 0x415fade4U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.264724409448817,
+    18.932755905511812,
+    Some(50000L),
+    [
+      0x00000000U, 0x409d25dfU, 0x411e6303U, 0x409d25dfU, 0x411e6303U, 0x40977649U,
+      0x411e6303U, 0x40977649U, 0x416a1e28U, 0x00000000U, 0x419aeca6U, 0x40977649U,
+      0x419aeca6U, 0x40977649U, 0x419aeca6U, 0x409d25dfU, 0x41ea1e28U, 0x409d25dfU,
+      0x41ea1e28U, 0x416059a2U, 0x419aeca6U, 0x416059a2U, 0x419aeca6U, 0x4163316dU,
+      0x419aeca6U, 0x4163316dU, 0x416a1e28U, 0x41977649U, 0x411e6303U, 0x4163316dU,
+      0x411e6303U, 0x4163316dU, 0x411e6303U, 0x416059a2U, 0x00000000U, 0x416059a2U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.289370078740159,
+    18.989370078740158,
+    Some(75000L),
+    [
+      0x00000000U, 0x409d9e2bU, 0x411e5b84U, 0x409d9e2bU, 0x411e5b84U, 0x4097ea3bU,
+      0x411e5b84U, 0x4097ea3bU, 0x416a50a1U, 0x00000000U, 0x419b22dfU, 0x4097ea3bU,
+      0x419b22dfU, 0x4097ea3bU, 0x419b22dfU, 0x409d9e2bU, 0x41ea50a1U, 0x409d9e2bU,
+      0x41ea50a1U, 0x41610560U, 0x419b22dfU, 0x41610560U, 0x419b22dfU, 0x4163df58U,
+      0x419b22dfU, 0x4163df58U, 0x416a50a1U, 0x4197ea3bU, 0x411e5b84U, 0x4163df58U,
+      0x411e5b84U, 0x4163df58U, 0x411e5b84U, 0x41610560U, 0x00000000U, 0x41610560U,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.314015748031498,
+    19.045984251968505,
+    Some(99999L),
+    [
+      0x00000000U, 0x409e1678U, 0x411e5404U, 0x409e1678U, 0x411e5404U, 0x40985e2dU,
+      0x411e5404U, 0x40985e2dU, 0x416a831bU, 0x00000000U, 0x419b5919U, 0x40985e2dU,
+      0x419b5919U, 0x40985e2dU, 0x419b5919U, 0x409e1678U, 0x41ea831bU, 0x409e1678U,
+      0x41ea831bU, 0x4161b11eU, 0x419b5919U, 0x4161b11eU, 0x419b5919U, 0x41648d43U,
+      0x419b5919U, 0x41648d43U, 0x416a831bU, 0x41985e2dU, 0x411e5404U, 0x41648d43U,
+      0x411e5404U, 0x41648d43U, 0x411e5404U, 0x4161b11eU, 0x00000000U, 0x4161b11eU,
+    ],
+  )
+  check_formula_preset_path(
+    "upDownArrowCallout",
+    29.338661417322836,
+    19.102598425196849,
+    Some(100000L),
+    [
+      0x00000000U, 0x409e8ec4U, 0x411e4c85U, 0x409e8ec4U, 0x411e4c85U, 0x4098d21fU,
+      0x411e4c85U, 0x4098d21fU, 0x416ab594U, 0x00000000U, 0x419b8f52U, 0x4098d21fU,
+      0x419b8f52U, 0x4098d21fU, 0x419b8f52U, 0x409e8ec4U, 0x41eab594U, 0x409e8ec4U,
+      0x41eab594U, 0x41625cdcU, 0x419b8f52U, 0x41625cdcU, 0x419b8f52U, 0x41653b2fU,
+      0x419b8f52U, 0x41653b2fU, 0x416ab594U, 0x4198d21fU, 0x411e4c85U, 0x41653b2fU,
+      0x411e4c85U, 0x41653b2fU, 0x411e4c85U, 0x41625cdcU, 0x00000000U, 0x41625cdcU,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.138346456692915,
+    19.329842519685041,
+    Some(0L),
+    [
+      0x00000000U, 0x00000000U, 0x40a0bce4U, 0x00000000U, 0x40a0bce4U, 0x00000000U,
+      0x4148ec1cU, 0x00000000U, 0x41f11b55U, 0x00000000U, 0x41f11b55U, 0x41346970U,
+      0x41f11b55U, 0x41346970U, 0x41f11b55U, 0x4180dd99U, 0x41f11b55U, 0x419aa384U,
+      0x4148ec1cU, 0x419aa384U, 0x41711b55U, 0x41adf7f5U, 0x40a0bce4U, 0x419aa384U,
+      0x00000000U, 0x419aa384U, 0x00000000U, 0x4180dd99U, 0x00000000U, 0x41346970U,
+      0x00000000U, 0x41346970U,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.162992125984253,
+    19.386456692913384,
+    Some(1L),
+    [
+      0x00000000U, 0x00000000U, 0x418cc2b9U, 0x00000000U, 0x418cc2b9U, 0x00000000U,
+      0x41c9162cU, 0x00000000U, 0x41f14dcfU, 0x00000000U, 0x41f14dcfU, 0x4134f0b5U,
+      0x41f14dcfU, 0x4134f0b5U, 0x41f14dcfU, 0x41813e38U, 0x41f14dcfU, 0x419b1777U,
+      0x41c9162cU, 0x419b1777U, 0x41714f0bU, 0x41ae7a65U, 0x418cc2b9U, 0x419b1777U,
+      0x00000000U, 0x419b1777U, 0x00000000U, 0x41813e38U, 0x00000000U, 0x4134f0b5U,
+      0x00000000U, 0x4134f0b5U,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.187637795275592,
+    19.443070866141731,
+    Some(16667L),
+    [
+      0x00000000U, 0x00000000U, 0x418ce02aU, 0x00000000U, 0x418ce02aU, 0x00000000U,
+      0x41c9403cU, 0x00000000U, 0x41f18048U, 0x00000000U, 0x41f18048U, 0x413577faU,
+      0x41f18048U, 0x413577faU, 0x41f18048U, 0x41819ed7U, 0x41f18048U, 0x419b8b69U,
+      0x41c9403cU, 0x419b8b69U, 0x41a10065U, 0x41aefcd6U, 0x418ce02aU, 0x419b8b69U,
+      0x00000000U, 0x419b8b69U, 0x00000000U, 0x41819ed7U, 0x00000000U, 0x413577faU,
+      0x00000000U, 0x413577faU,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.21228346456693,
+    19.499685039370078,
+    Some(25000L),
+    [
+      0x00000000U, 0x00000000U, 0x418cfd9cU, 0x00000000U, 0x418cfd9cU, 0x00000000U,
+      0x41c96a4cU, 0x00000000U, 0x41f1b2c2U, 0x00000000U, 0x41f1b2c2U, 0x4135ff3fU,
+      0x41f1b2c2U, 0x4135ff3fU, 0x41f1b2c2U, 0x4181ff76U, 0x41f1b2c2U, 0x419bff5bU,
+      0x41c96a4cU, 0x419bff5bU, 0x41b54611U, 0x41af7f46U, 0x418cfd9cU, 0x419bff5bU,
+      0x00000000U, 0x419bff5bU, 0x00000000U, 0x4181ff76U, 0x00000000U, 0x4135ff3fU,
+      0x00000000U, 0x4135ff3fU,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.236929133858268,
+    19.556299212598425,
+    Some(50000L),
+    [
+      0x00000000U, 0x00000000U, 0x418d1b0dU, 0x00000000U, 0x418d1b0dU, 0x00000000U,
+      0x41c9945cU, 0x00000000U, 0x41f1e53bU, 0x00000000U, 0x41f1e53bU, 0x41368685U,
+      0x41f1e53bU, 0x41368685U, 0x41f1e53bU, 0x41826016U, 0x41f1e53bU, 0x419c734dU,
+      0x41c9945cU, 0x419c734dU, 0x41f1e53bU, 0x41b001b7U, 0x418d1b0dU, 0x419c734dU,
+      0x00000000U, 0x419c734dU, 0x00000000U, 0x41826016U, 0x00000000U, 0x41368685U,
+      0x00000000U, 0x41368685U,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.261574803149607,
+    19.612913385826772,
+    Some(75000L),
+    [
+      0x00000000U, 0x00000000U, 0x418d387fU, 0x00000000U, 0x418d387fU, 0x00000000U,
+      0x41c9be6cU, 0x00000000U, 0x41f217b5U, 0x00000000U, 0x41f217b5U, 0x41370dcaU,
+      0x42174ed1U, 0x41b08427U, 0x41f217b5U, 0x4182c0b5U, 0x41f217b5U, 0x419ce73fU,
+      0x41c9be6cU, 0x419ce73fU, 0x418d387fU, 0x419ce73fU, 0x418d387fU, 0x419ce73fU,
+      0x00000000U, 0x419ce73fU, 0x00000000U, 0x4182c0b5U, 0x00000000U, 0x41370dcaU,
+      0x00000000U, 0x41370dcaU,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.286220472440945,
+    19.669527559055119,
+    Some(99999L),
+    [
+      0x00000000U, 0x00000000U, 0x418d55f0U, 0x00000000U, 0x418d55f0U, 0x00000000U,
+      0x41c9e87cU, 0x00000000U, 0x41f24a2eU, 0x00000000U, 0x41f24a2eU, 0x4137950fU,
+      0x4235b753U, 0x41b10697U, 0x41f24a2eU, 0x41832154U, 0x41f24a2eU, 0x419d5b31U,
+      0x41c9e87cU, 0x419d5b31U, 0x418d55f0U, 0x419d5b31U, 0x418d55f0U, 0x419d5b31U,
+      0x00000000U, 0x419d5b31U, 0x00000000U, 0x41832154U, 0x00000000U, 0x4137950fU,
+      0x00000000U, 0x4137950fU,
+    ],
+  )
+  check_formula_preset_path(
+    "wedgeRectCallout",
+    30.310866141732284,
+    19.726141732283466,
+    Some(100000L),
+    [
+      0x00000000U, 0x00000000U, 0x418d7362U, 0x00000000U, 0x418d7362U, 0x00000000U,
+      0x41ca128bU, 0x00000000U, 0x41f27ca7U, 0x00000000U, 0x41f27ca7U, 0x41381c54U,
+      0x4235dd7eU, 0x41b18908U, 0x41f27ca7U, 0x418381f3U, 0x41f27ca7U, 0x419dcf23U,
+      0x41ca128bU, 0x419dcf23U, 0x418d7362U, 0x419dcf23U, 0x418d7362U, 0x419dcf23U,
+      0x00000000U, 0x419dcf23U, 0x00000000U, 0x418381f3U, 0x00000000U, 0x41381c54U,
+      0x00000000U, 0x41381c54U,
+    ],
+  )
+}
+
+///|
+fn check_formula_preset_path(
+  name : String,
+  width : Double,
+  height : Double,
+  adjustment : Int64?,
+  expected : Array[UInt32],
+) -> Unit raise {
+  let path = sheet_formula_preset_path(name, width, height, adjustment)
+  assert_eq(path.coordinates.length(), expected.length())
+  for i in 0..<expected.length() {
+    assert_eq(
+      Float::from_double(path.coordinates[i]).reinterpret_as_uint(),
+      expected[i],
+    )
+  }
+}

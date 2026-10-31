@@ -51,12 +51,13 @@ pub fn build_sheet_text_index(
     }
   })
   let index : Array[@core.IndexRun] = []
+  let budget = TextExtractionBudget::new()
   for tile in sorted {
     let object = match resolve(tile.object) {
       Some(object) => object
       None => raise InvalidOperands("text index object missing")
     }
-    let content = extract_text(object, resolve)
+    let content = extract_text_with_budget(object, resolve, budget)
     let mut count = 0
     for run in content.runs {
       if !(run.x >= 0.0 && run.x < size && run.y >= 0.0 && run.y < size) {
@@ -90,13 +91,14 @@ pub fn build_page_text_index(
     raise InvalidOperands("sheet text index requires tiles")
   }
   let index : Array[@core.IndexRun] = []
+  let budget = TextExtractionBudget::new()
   for a, page in view.pages {
     for b, layer in page.layers {
       let object = match resolve(layer.object) {
         Some(object) => object
         None => raise InvalidOperands("text index object missing")
       }
-      let content = extract_text(object, resolve)
+      let content = extract_text_with_budget(object, resolve, budget)
       for i, run in content.runs {
         index.push({
           a,

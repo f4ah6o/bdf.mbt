@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>ファイルを BDF に変換 · BDF viewer</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body data-start-sample="csv">
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">B</span><div><strong>BDF viewer</strong><span>MoonBit demo</span></div></div>
+    <p class="privacy">ファイルはブラウザ内で処理されます</p>
+    <a class="source-link" href="./">← デモに戻る</a>
+  </header>
+  <main>
+    <section class="intro" aria-labelledby="intro-title">
+      <div><p class="eyebrow">BDF CONVERTER</p><h1 id="intro-title">ファイルを BDF に変換</h1><p class="description">CSV・TSV、Excel（XLSX）、画像、フォントをブラウザ内で BDF に変換し、その場で表示・保存できます。<a href="./formats.html">対応形式の説明</a> · <a href="./coverage.html">Porting coverage</a></p></div>
+      <div class="intro-actions"><button id="open-file" class="button primary" type="button">ファイルを選ぶ</button><input id="file" hidden type="file" accept=".bdf,.csv,.tsv,.tab,.xlsx,.svg,.png,.jpg,.jpeg,.gif,.webp,.avif,.bmp,.ico,.ttf,.woff2"><button id="sample" class="button secondary" type="button">BDF サンプルを開く</button></div>
+    </section>
+    <section class="converter-samples" aria-label="変換サンプル">
+      <p>サンプルを変換:</p>
+      <div class="converter-sample-links"><a href="#viewer" data-sample="csv">CSV</a><a href="#viewer" data-sample="xlsx">Excel</a><a href="#viewer" data-sample="xlsx-picture">画像入り Excel</a><a href="#viewer" data-sample="image">SVG 画像</a><a href="#viewer" data-sample="font">フォント</a></div>
+    </section>
+    <section id="viewer" class="viewer-card" aria-label="変換結果のビューア">
+      <div class="viewer-top"><div><span class="live-dot" aria-hidden="true"></span><strong id="document-name">変換結果</strong><span id="document-meta" class="document-meta"></span></div><a id="download" class="download" download="document.bdf" hidden>BDF を保存 ↓</a></div>
+      <div class="toolbar" aria-label="表示と検索">
+        <label>ビュー <select id="view" aria-label="ビュー" disabled><option>読み込み中</option></select></label>
+        <label>表示 <select id="layout" aria-label="表示方法"><option value="single">ページ</option><option value="spread">見開き</option><option value="continuous">連続</option></select></label>
+        <label>倍率 <select id="zoom" aria-label="倍率"><option value="0.5">50%</option><option value="0.75">75%</option><option value="1" selected>100%</option><option value="1.25">125%</option><option value="1.5">150%</option><option value="2">200%</option></select></label>
+        <div class="page-nav" role="group" aria-label="ページ移動"><button id="previous" type="button" aria-label="前のページ">‹</button><span id="page-number" aria-live="polite">–</span><button id="next" type="button" aria-label="次のページ">›</button></div>
+        <form id="search-form" role="search"><label for="search">検索</label><input id="search" type="search" placeholder="文書内を検索"><button type="submit">検索</button><span id="search-status" aria-live="polite"></span></form>
+      </div>
+      <div id="preview" class="preview" aria-label="変換結果のプレビュー"></div>
+      <div class="viewer-footer"><p id="status" role="status" aria-live="polite">サンプルを変換しています…</p><button id="csv-sample" type="button" class="text-button">CSV サンプルを試す →</button></div>
+    </section>
+    <section class="about" aria-label="変換について"><div><h2>ファイルを選んで変換</h2><p>ファイルを選ぶか、プレビューにドロップしてください。変換結果を BDF として保存し、再び開けます。</p></div><div><h2>サンプルとライセンス</h2><p>Excel サンプル: <a href="./licenses/PROJECT-MIT.txt">MIT ライセンス</a>。フォント見本: STIX Two Text（<a href="./licenses/STIX-OFL.txt">SIL Open Font License</a>）。</p></div></section>
+  </main>
+  <footer class="page-footer"><p>shibukawa/bdf から独立して移植した非公式プロジェクトです。上流の公式提供・提携ではありません。</p><a href="https://github.com/f4ah6o/bdf.mbt">ソースコードを見る ↗</a></footer>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

@@ -5,7 +5,19 @@ fn XlsxWorkbook::xlsx_simple_picture(
   self : XlsxWorkbook,
   part : String,
   theme_colors : Map[Int32, XlsxRgb],
-) -> Array[(@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool, String)]? {
+) -> Array[
+  (
+    @sheet.GridPicture,
+    Bool,
+    UInt32?,
+    (UInt32, Double)?,
+    Bool,
+    String,
+    String,
+    Int64?,
+    Map[String, Int64],
+  ),
+]? {
   let bytes = self.package.read(part) catch { _ => return None }
   let source = @utf8.decode_lossy(bytes[:], ignore_bom=true)
   if source.contains("<!ENTITY") {
@@ -22,7 +34,17 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut kind = -1
   let mut anchors = 0
   let result : Array[
-    (@sheet.GridPicture, Bool, UInt32?, (UInt32, Double)?, Bool, String),
+    (
+      @sheet.GridPicture,
+      Bool,
+      UInt32?,
+      (UInt32, Double)?,
+      Bool,
+      String,
+      String,
+      Int64?,
+      Map[String, Int64],
+    ),
   ] = []
   let images : Map[String, Bytes] = Map([])
   let mut image_bytes = 0L
@@ -46,12 +68,19 @@ fn XlsxWorkbook::xlsx_simple_picture(
   let mut line_alpha = 1.0
   let mut shape_invertible = false
   let mut line_invertible = false
+  let mut shape_rgb : XlsxRgb? = None
+  let mut line_rgb : XlsxRgb? = None
   let mut line_width = 0.75
   let mut shape_dash = ""
   let mut saw_dash = false
   let mut saw_blip_fill = false
   let mut saw_sppr = false
   let mut geometry = false
+  let mut shape_geometry = ""
+  let mut shape_adjustment : Int64? = None
+  let mut shape_extra_adjustments : Map[String, Int64] = Map([])
+  let mut saw_adjustments = false
+  let mut shape_adjustments_allowed = true
   let mut stretch = false
   let mut from_row = -1
   let mut from_column = -1
@@ -387,11 +416,44 @@ fn XlsxWorkbook::xlsx_simple_picture(
             }
             true
           } else if name == "prstGeom" &&
-            xlsx_attr(element, "prst", "") == "rect" {
+            [
+              "rect", "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram",
+              "trapezoid", "homePlate", "chevron", "plus", "hexagon", "octagon",
+              "roundRect", "actionButtonBlank", "flowChartProcess", "flowChartDecision",
+              "flowChartExtract", "flowChartTerminator", "flowChartDisplay", "flowChartOnlineStorage",
+              "flowChartPunchedTape", "flowChartAlternateProcess", "flowChartMerge",
+              "flowChartInputOutput", "flowChartPreparation", "flowChartPunchedCard",
+              "flowChartCollate", "flowChartManualInput", "flowChartManualOperation",
+              "flowChartOffpageConnector", "irregularSeal1", "irregularSeal2", "lightningBolt",
+              "plaque", "round1Rect", "round2DiagRect", "round2SameRect", "snipRoundRect",
+              "bentArrow", "swooshArrow", "flowChartDocument", "heart", "wave", "doubleWave",
+              "bentUpArrow", "corner", "diagStripe", "dodecagon", "downArrow", "downArrowCallout",
+              "halfFrame", "heptagon", "leftArrow", "leftArrowCallout", "leftRightArrow",
+              "leftRightArrowCallout", "leftRightUpArrow", "leftUpArrow", "mathMinus",
+              "mathPlus", "nonIsoscelesTrapezoid", "notchedRightArrow", "quadArrow",
+              "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip1Rect",
+              "snip2DiagRect", "snip2SameRect", "star10", "star7", "upArrowCallout",
+              "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
+            ].contains(xlsx_attr(element, "prst", "")) {
             if geometry {
               return None
             }
             geometry = true
+            shape_adjustments_allowed = xlsx_attr(element, "prst", "") !=
+              "flowChartExtract"
+            shape_geometry = if is_shape {
+              match xlsx_attr(element, "prst", "") {
+                "actionButtonBlank" | "flowChartProcess" => "rect"
+                "flowChartDecision" => "diamond"
+                "flowChartExtract" => "triangle"
+                other => other
+              }
+            } else {
+              "rect"
+            }
+            if !is_shape && xlsx_attr(element, "prst", "") != "rect" {
+              return None
+            }
             true
           } else {
             false
@@ -415,7 +477,14 @@ fn XlsxWorkbook::xlsx_simple_picture(
             theme_colors,
             theme_alphas.unwrap_or(Map([])),
           )
-          shape_invertible = !["scrgbClr", "hslClr"].contains(name)
+          shape_invertible = name != "scrgbClr"
+          shape_rgb = if name == "hslClr" {
+            xlsx_shape_parse_hsl(element)
+          } else if ["srgbClr", "prstClr", "sysClr", "schemeClr"].contains(name) {
+            shape_fill.map(color => xlsx_rgb_from_uint(color >> 8))
+          } else {
+            None
+          }
           shape_alpha = xlsx_shape_initial_alpha(
             element,
             theme_alphas.unwrap_or(Map([])),
@@ -480,7 +549,14 @@ fn XlsxWorkbook::xlsx_simple_picture(
             theme_colors,
             theme_alphas.unwrap_or(Map([])),
           )
-          line_invertible = !["scrgbClr", "hslClr"].contains(name)
+          line_invertible = name != "scrgbClr"
+          line_rgb = if name == "hslClr" {
+            xlsx_shape_parse_hsl(element)
+          } else if ["srgbClr", "prstClr", "sysClr", "schemeClr"].contains(name) {
+            line_color.map(color => xlsx_rgb_from_uint(color >> 8))
+          } else {
+            None
+          }
           line_alpha = xlsx_shape_initial_alpha(
             element,
             theme_alphas.unwrap_or(Map([])),
@@ -499,7 +575,104 @@ fn XlsxWorkbook::xlsx_simple_picture(
             if !shape_invertible || !element.attributes.is_empty() {
               return None
             }
-            shape_fill = shape_fill.map(color => color ^ 0xffffff00U)
+            if shape_rgb is Some(rgb) {
+              let next = {
+                red: xlsx_clamp_color(1.0 - rgb.red),
+                green: xlsx_clamp_color(1.0 - rgb.green),
+                blue: xlsx_clamp_color(1.0 - rgb.blue),
+              }
+              shape_rgb = Some(next)
+              shape_fill = shape_fill.map(color => {
+                xlsx_shape_pack_rgb(next, color & 255U)
+              })
+            } else {
+              shape_fill = shape_fill.map(color => color ^ 0xffffff00U)
+            }
+          } else if name == "comp" || name == "gray" {
+            if !element.attributes.is_empty() || shape_rgb is None {
+              return None
+            }
+            let previous = shape_rgb.unwrap()
+            let next = if name == "comp" {
+              xlsx_shape_apply_hsl_modifier(previous, "hueOff", 0.5)
+            } else {
+              xlsx_shape_gray(previous)
+            }
+            shape_rgb = Some(next)
+            shape_fill = shape_fill.map(color => {
+              xlsx_shape_pack_rgb(next, color & 255U)
+            })
+          } else if [
+              "red", "redMod", "redOff", "green", "greenMod", "greenOff", "blue",
+              "blueMod", "blueOff",
+            ].contains(name) {
+            if element.attributes.length() != 1 ||
+              shape_rgb is None ||
+              element.attributes[0].name.local_name != "val" ||
+              element.attributes[0].name.namespace_uri is Some(_) {
+              return None
+            }
+            let fraction = match
+              xlsx_drawing_fraction(xlsx_attr(element, "val", "")) {
+              Some(value) if value >=
+                (if name.has_suffix("Off") { -10.0 } else { 0.0 }) &&
+                value <=
+                (if name.has_suffix("Mod") || name.has_suffix("Off") {
+                  10.0
+                } else {
+                  1.0
+                }) => value
+              _ => return None
+            }
+            let next = xlsx_shape_apply_channel(
+              shape_rgb.unwrap(),
+              name,
+              fraction,
+            )
+            shape_rgb = Some(next)
+            shape_fill = shape_fill.map(color => {
+              xlsx_shape_pack_rgb(next, color & 255U)
+            })
+          } else if [
+              "lumMod", "lumOff", "lum", "satMod", "satOff", "sat", "hueMod", "hueOff",
+              "hue",
+            ].contains(name) {
+            if element.attributes.length() != 1 ||
+              shape_rgb is None ||
+              element.attributes[0].name.local_name != "val" ||
+              element.attributes[0].name.namespace_uri is Some(_) {
+              return None
+            }
+            let fraction = if name == "hue" || name == "hueOff" {
+              match xlsx_int(xlsx_attr(element, "val", "")) {
+                Some(value) if value >=
+                  (if name == "hueOff" { -21600000L } else { 0L }) &&
+                  value <= 21600000L => value.to_double() / 60000.0 / 360.0
+                _ => return None
+              }
+            } else {
+              match xlsx_drawing_fraction(xlsx_attr(element, "val", "")) {
+                Some(value) if value >=
+                  (if name == "lumOff" || name == "satOff" {
+                    -10.0
+                  } else {
+                    0.0
+                  }) &&
+                  value <=
+                  (if name == "lum" || name == "sat" { 1.0 } else { 10.0 }) =>
+                  value
+                _ => return None
+              }
+            }
+            let next = xlsx_shape_apply_hsl_modifier(
+              shape_rgb.unwrap(),
+              name,
+              fraction,
+            )
+            shape_rgb = Some(next)
+            shape_fill = shape_fill.map(color => {
+              xlsx_shape_pack_rgb(next, color & 255U)
+            })
           } else {
             let next = match
               xlsx_shape_alpha_modifier(name, element, shape_alpha) {
@@ -507,6 +680,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
               None => return None
             }
             shape_alpha = next
+            shape_rgb = shape_rgb.map(xlsx_shape_clamp_rgb)
             shape_fill = shape_fill.map(color => {
               (color & 0xffffff00U) | (next * 255.0).round().to_uint()
             })
@@ -526,7 +700,104 @@ fn XlsxWorkbook::xlsx_simple_picture(
             if !line_invertible || !element.attributes.is_empty() {
               return None
             }
-            line_color = line_color.map(color => color ^ 0xffffff00U)
+            if line_rgb is Some(rgb) {
+              let next = {
+                red: xlsx_clamp_color(1.0 - rgb.red),
+                green: xlsx_clamp_color(1.0 - rgb.green),
+                blue: xlsx_clamp_color(1.0 - rgb.blue),
+              }
+              line_rgb = Some(next)
+              line_color = line_color.map(color => {
+                xlsx_shape_pack_rgb(next, color & 255U)
+              })
+            } else {
+              line_color = line_color.map(color => color ^ 0xffffff00U)
+            }
+          } else if name == "comp" || name == "gray" {
+            if !element.attributes.is_empty() || line_rgb is None {
+              return None
+            }
+            let previous = line_rgb.unwrap()
+            let next = if name == "comp" {
+              xlsx_shape_apply_hsl_modifier(previous, "hueOff", 0.5)
+            } else {
+              xlsx_shape_gray(previous)
+            }
+            line_rgb = Some(next)
+            line_color = line_color.map(color => {
+              xlsx_shape_pack_rgb(next, color & 255U)
+            })
+          } else if [
+              "red", "redMod", "redOff", "green", "greenMod", "greenOff", "blue",
+              "blueMod", "blueOff",
+            ].contains(name) {
+            if element.attributes.length() != 1 ||
+              line_rgb is None ||
+              element.attributes[0].name.local_name != "val" ||
+              element.attributes[0].name.namespace_uri is Some(_) {
+              return None
+            }
+            let fraction = match
+              xlsx_drawing_fraction(xlsx_attr(element, "val", "")) {
+              Some(value) if value >=
+                (if name.has_suffix("Off") { -10.0 } else { 0.0 }) &&
+                value <=
+                (if name.has_suffix("Mod") || name.has_suffix("Off") {
+                  10.0
+                } else {
+                  1.0
+                }) => value
+              _ => return None
+            }
+            let next = xlsx_shape_apply_channel(
+              line_rgb.unwrap(),
+              name,
+              fraction,
+            )
+            line_rgb = Some(next)
+            line_color = line_color.map(color => {
+              xlsx_shape_pack_rgb(next, color & 255U)
+            })
+          } else if [
+              "lumMod", "lumOff", "lum", "satMod", "satOff", "sat", "hueMod", "hueOff",
+              "hue",
+            ].contains(name) {
+            if element.attributes.length() != 1 ||
+              line_rgb is None ||
+              element.attributes[0].name.local_name != "val" ||
+              element.attributes[0].name.namespace_uri is Some(_) {
+              return None
+            }
+            let fraction = if name == "hue" || name == "hueOff" {
+              match xlsx_int(xlsx_attr(element, "val", "")) {
+                Some(value) if value >=
+                  (if name == "hueOff" { -21600000L } else { 0L }) &&
+                  value <= 21600000L => value.to_double() / 60000.0 / 360.0
+                _ => return None
+              }
+            } else {
+              match xlsx_drawing_fraction(xlsx_attr(element, "val", "")) {
+                Some(value) if value >=
+                  (if name == "lumOff" || name == "satOff" {
+                    -10.0
+                  } else {
+                    0.0
+                  }) &&
+                  value <=
+                  (if name == "lum" || name == "sat" { 1.0 } else { 10.0 }) =>
+                  value
+                _ => return None
+              }
+            }
+            let next = xlsx_shape_apply_hsl_modifier(
+              line_rgb.unwrap(),
+              name,
+              fraction,
+            )
+            line_rgb = Some(next)
+            line_color = line_color.map(color => {
+              xlsx_shape_pack_rgb(next, color & 255U)
+            })
           } else {
             let next = match
               xlsx_shape_alpha_modifier(name, element, line_alpha) {
@@ -534,6 +805,7 @@ fn XlsxWorkbook::xlsx_simple_picture(
               None => return None
             }
             line_alpha = next
+            line_rgb = line_rgb.map(xlsx_shape_clamp_rgb)
             line_color = line_color.map(color => {
               (color & 0xffffff00U) | (next * 255.0).round().to_uint()
             })
@@ -583,7 +855,81 @@ fn XlsxWorkbook::xlsx_simple_picture(
           }
           seen.length() == 2
         } else if depth == 5 && parent == "prstGeom" {
-          name == "avLst" && event.kind is Empty(_)
+          if name != "avLst" || (saw_adjustments && !(event.kind is Empty(_))) {
+            return None
+          }
+          saw_adjustments = true
+          event.kind is Empty(_) ||
+          (
+            is_shape &&
+            shape_adjustments_allowed &&
+            [
+              "triangle", "parallelogram", "trapezoid", "homePlate", "chevron", "plus",
+              "hexagon", "octagon", "roundRect", "diagStripe", "snip1Rect", "star10",
+              "star7", "plaque", "round1Rect", "round2DiagRect", "round2SameRect",
+              "snipRoundRect", "bentArrow", "swooshArrow", "wave", "doubleWave",
+              "bentUpArrow", "corner", "downArrow", "downArrowCallout", "halfFrame",
+              "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
+              "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid",
+              "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow",
+              "rightArrowCallout", "snip2DiagRect", "snip2SameRect", "upArrowCallout",
+              "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
+            ].contains(shape_geometry)
+          )
+        } else if depth == 6 && parent == "avLst" && parents[4] == "prstGeom" {
+          if name != "gd" ||
+            !(event.kind is Empty(_)) ||
+            element.attributes.length() != 2 {
+            return None
+          }
+          for attr in element.attributes {
+            if attr.name.namespace_uri is Some(_) ||
+              !["name", "fmla"].contains(attr.name.local_name) {
+              return None
+            }
+          }
+          let guide = xlsx_attr(element, "name", "")
+          let formula = xlsx_attr(element, "fmla", "")
+          if !formula.has_prefix("val ") {
+            return None
+          }
+          let value = match xlsx_int(formula[4:].to_owned()) {
+            Some(value) if value >=
+              (if guide == "adj2" &&
+                ["wave", "doubleWave"].contains(shape_geometry) {
+                -100000L
+              } else {
+                0L
+              }) &&
+              value <= 100000L => value
+            _ => return None
+          }
+          let first_guide = if [
+              "round2DiagRect", "round2SameRect", "snipRoundRect", "bentArrow", "swooshArrow",
+              "wave", "doubleWave", "bentUpArrow", "corner", "downArrow", "downArrowCallout",
+              "halfFrame", "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
+              "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid",
+              "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow",
+              "rightArrowCallout", "snip2DiagRect", "snip2SameRect", "upArrowCallout",
+              "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
+            ].contains(shape_geometry) {
+            "adj1"
+          } else {
+            "adj"
+          }
+          if guide == first_guide {
+            if shape_adjustment is Some(_) {
+              return None
+            }
+            shape_adjustment = Some(value)
+          } else {
+            if !xlsx_shape_extra_guide_allowed(shape_geometry, guide) ||
+              shape_extra_adjustments.get(guide) is Some(_) {
+              return None
+            }
+            shape_extra_adjustments[guide] = value
+          }
+          true
         } else {
           false
         }
@@ -742,6 +1088,9 @@ fn XlsxWorkbook::xlsx_simple_picture(
                   line_color.map(color => (color, line_width)),
                   shape_no_fill,
                   shape_dash,
+                  shape_geometry,
+                  shape_adjustment,
+                  shape_extra_adjustments,
                 ),
               )
             }
@@ -766,12 +1115,19 @@ fn XlsxWorkbook::xlsx_simple_picture(
           line_alpha = 1.0
           shape_invertible = false
           line_invertible = false
+          shape_rgb = None
+          line_rgb = None
           line_width = 0.75
           shape_dash = ""
           saw_dash = false
           saw_blip_fill = false
           saw_sppr = false
           geometry = false
+          shape_geometry = ""
+          shape_adjustment = None
+          shape_extra_adjustments = Map([])
+          saw_adjustments = false
+          shape_adjustments_allowed = true
           stretch = false
           from_row = -1
           from_column = -1
@@ -890,10 +1246,9 @@ fn XlsxWorkbook::xlsx_shape_theme_alphas(
             element.attributes.length() != 1 {
             return None
           }
-          let value = match xlsx_int(xlsx_attr(element, "val", "")) {
-            Some(value) if value <= 100000L &&
-              value >= (if name == "alphaOff" { -100000L } else { 0L }) => value
-            _ => return None
+          let value = match xlsx_shape_opacity_fraction(element, name) {
+            Some(value) => value
+            None => return None
           }
           result[slot] = xlsx_shape_apply_theme_alpha(
             name,
@@ -926,9 +1281,8 @@ fn XlsxWorkbook::xlsx_shape_theme_alphas(
 fn xlsx_shape_apply_theme_alpha(
   name : String,
   previous : Double,
-  value : Int64,
+  fraction : Double,
 ) -> Double {
-  let fraction = value.to_double() / 100000.0
   let next = match name {
     "alpha" => fraction
     "alphaMod" => previous * fraction
@@ -977,30 +1331,12 @@ fn xlsx_simple_shape_color(
     )
   }
   if element.name.local_name == "hslClr" {
-    let components : Array[Int64] = [0L, 0L, 0L]
-    let seen : Map[String, Bool] = Map([])
-    for attr in element.attributes {
-      let name = attr.name.local_name
-      if !["hue", "sat", "lum"].contains(name) ||
-        seen.contains(name) ||
-        attr.name.namespace_uri is Some(_) {
-        return None
-      }
-      seen[name] = true
-      let limit = if name == "hue" { 21600000L } else { 100000L }
-      let value = match xlsx_int(attr.value) {
-        Some(value) if value >= 0L && value <= limit => value
-        _ => return None
-      }
-      let index = if name == "hue" { 0 } else if name == "sat" { 1 } else { 2 }
-      components[index] = value
-    }
-    return Some(
-      xlsx_shape_hsl_color(components[0], components[1], components[2]),
-    )
+    return xlsx_shape_parse_hsl(element).map(color => {
+      xlsx_shape_pack_rgb(color, 255U)
+    })
   }
   if element.name.local_name == "scrgbClr" {
-    let components : Array[Int32] = [0, 0, 0]
+    let components : Array[Double] = [0.0, 0.0, 0.0]
     let seen : Map[String, Bool] = Map([])
     for attr in element.attributes {
       let name = attr.name.local_name
@@ -1010,17 +1346,17 @@ fn xlsx_simple_shape_color(
         return None
       }
       seen[name] = true
-      let value = match xlsx_int(attr.value) {
-        Some(value) if value >= 0L && value <= 100000L => value.to_int()
+      let value = match xlsx_drawing_fraction(attr.value) {
+        Some(value) if value >= 0.0 && value <= 1.0 => value
         _ => return None
       }
       let index = if name == "r" { 0 } else if name == "g" { 1 } else { 2 }
       components[index] = value
     }
     return Some(
-      (xlsx_shape_linear_component(components[0]) << 24) |
-      (xlsx_shape_linear_component(components[1]) << 16) |
-      (xlsx_shape_linear_component(components[2]) << 8) |
+      (xlsx_shape_linear_fraction(components[0]) << 24) |
+      (xlsx_shape_linear_fraction(components[1]) << 16) |
+      (xlsx_shape_linear_fraction(components[2]) << 8) |
       255U,
     )
   }
@@ -1079,15 +1415,60 @@ fn xlsx_simple_shape_color(
 }
 
 ///|
+fn xlsx_shape_parse_hsl(element : @xml.NamespaceElement) -> XlsxRgb? {
+  let mut hue = 0L
+  let mut sat = 0.0
+  let mut lum = 0.0
+  let seen : Map[String, Bool] = Map([])
+  for attr in element.attributes {
+    let name = attr.name.local_name
+    if !["hue", "sat", "lum"].contains(name) ||
+      seen.contains(name) ||
+      attr.name.namespace_uri is Some(_) {
+      return None
+    }
+    seen[name] = true
+    if name == "hue" {
+      hue = match xlsx_int(attr.value) {
+        Some(value) if value >= 0L && value <= 21600000L => value
+        _ => return None
+      }
+    } else {
+      let value = match xlsx_drawing_fraction(attr.value) {
+        Some(value) if value >= 0.0 && value <= 1.0 => value
+        _ => return None
+      }
+      if name == "sat" {
+        sat = value
+      } else {
+        lum = value
+      }
+    }
+  }
+  Some(xlsx_shape_hsl_rgb(hue.to_double() / 60000.0 / 360.0, sat, lum))
+}
+
+///|
 fn xlsx_shape_hsl_color(
   hue_units : Int64,
   sat_units : Int64,
   lum_units : Int64,
 ) -> UInt32 {
-  let hue = hue_units.to_double() / 60000.0 / 360.0
-  let sat = sat_units.to_double() / 100000.0
-  let lum = lum_units.to_double() / 100000.0
-  let color = if sat == 0.0 {
+  xlsx_shape_hsl_fractions(
+    hue_units.to_double() / 60000.0 / 360.0,
+    sat_units.to_double() / 100000.0,
+    lum_units.to_double() / 100000.0,
+  )
+}
+
+///|
+fn xlsx_shape_hsl_fractions(hue : Double, sat : Double, lum : Double) -> UInt32 {
+  xlsx_shape_pack_rgb(xlsx_shape_hsl_rgb(hue, sat, lum), 255U)
+}
+
+///|
+fn xlsx_shape_hsl_rgb(hue : Double, sat : Double, lum : Double) -> XlsxRgb {
+  if sat == 0.0 {
     { red: lum, green: lum, blue: lum, }
   } else {
     let q = if lum < 0.5 {
@@ -1102,10 +1483,6 @@ fn xlsx_shape_hsl_color(
       blue: xlsx_color_component(hue - 1.0 / 3.0, p, q),
     }
   }
-  let red = (xlsx_clamp_color(color.red) * 255.0).round().to_uint()
-  let green = (xlsx_clamp_color(color.green) * 255.0).round().to_uint()
-  let blue = (xlsx_clamp_color(color.blue) * 255.0).round().to_uint()
-  (red << 24) | (green << 16) | (blue << 8) | 255U
 }
 
 ///|
@@ -1132,6 +1509,34 @@ fn xlsx_shape_initial_alpha(
 }
 
 ///|
+fn xlsx_drawing_fraction(value : String) -> Double? {
+  let raw = xlsx_trim(value)
+  let percent = raw.has_suffix("%")
+  let digits = if percent { raw[:raw.length() - 1].to_owned() } else { raw }
+  let number = @string.parse_double(digits) catch { _ => return None }
+  if number.is_nan() || number.is_inf() {
+    return None
+  }
+  Some(number / (if percent { 100.0 } else { 100000.0 }))
+}
+
+///|
+fn xlsx_shape_opacity_fraction(
+  element : @xml.NamespaceElement,
+  name : String,
+) -> Double? {
+  let fraction = match xlsx_drawing_fraction(xlsx_attr(element, "val", "")) {
+    Some(value) => value
+    None => return None
+  }
+  if fraction < (if name == "alphaOff" { -10.0 } else { 0.0 }) ||
+    fraction > (if name == "alpha" { 1.0 } else { 10.0 }) {
+    return None
+  }
+  Some(fraction)
+}
+
+///|
 fn xlsx_shape_alpha_modifier(
   name : String,
   element : @xml.NamespaceElement,
@@ -1141,10 +1546,9 @@ fn xlsx_shape_alpha_modifier(
     element.attributes.length() != 1 {
     return None
   }
-  let value = match xlsx_int(xlsx_attr(element, "val", "")) {
-    Some(value) if value <= 100000L &&
-      value >= (if name == "alphaOff" { -100000L } else { 0L }) => value
-    _ => return None
+  let value = match xlsx_shape_opacity_fraction(element, name) {
+    Some(value) => value
+    None => return None
   }
   Some(xlsx_shape_apply_theme_alpha(name, previous, value))
 }
@@ -1818,4 +2222,32 @@ fn xlsx_crop_png_size(image : Bytes) -> (Double, Double)? {
     return None
   }
   Some((w.to_double(), h.to_double()))
+}
+
+///|
+fn xlsx_shape_extra_guide_allowed(geometry : String, guide : String) -> Bool {
+  match guide {
+    "adj2" =>
+      [
+        "round2DiagRect", "round2SameRect", "snipRoundRect", "bentArrow", "swooshArrow",
+        "wave", "doubleWave", "bentUpArrow", "corner", "downArrow", "downArrowCallout",
+        "halfFrame", "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
+        "leftRightUpArrow", "leftUpArrow", "nonIsoscelesTrapezoid", "notchedRightArrow",
+        "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip2DiagRect",
+        "snip2SameRect", "upArrowCallout", "upDownArrow", "upArrow", "upDownArrowCallout",
+        "wedgeRectCallout",
+      ].contains(geometry)
+    "adj3" =>
+      [
+        "bentArrow", "bentUpArrow", "downArrowCallout", "leftArrowCallout", "leftRightArrowCallout",
+        "leftRightUpArrow", "leftUpArrow", "quadArrow", "quadArrowCallout", "rightArrowCallout",
+        "upArrowCallout", "upDownArrowCallout",
+      ].contains(geometry)
+    "adj4" =>
+      [
+        "bentArrow", "downArrowCallout", "leftArrowCallout", "leftRightArrowCallout",
+        "quadArrowCallout", "rightArrowCallout", "upArrowCallout", "upDownArrowCallout",
+      ].contains(geometry)
+    _ => false
+  }
 }

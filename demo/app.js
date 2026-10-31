@@ -151,4 +151,5 @@ viewer.stage.addEventListener('scroll', () => {
 });
 viewer.addEventListener('error', event => { event.preventDefault(); say(`表示できませんでした: ${event.detail?.message ?? event.detail}`, true); });
 window.addEventListener('pagehide', event => { if (!event.persisted) { viewer.destroy(); converter.terminate(); if (downloadUrl) URL.revokeObjectURL(downloadUrl); } });
-openSample('./samples/upstream-demo.bdf', 'upstream-demo.bdf');
+if (document.body.dataset.startSample === 'csv') openSample(...samples.csv);
+else openSample(...samples.bdf);

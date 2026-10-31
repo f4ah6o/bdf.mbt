@@ -61,6 +61,8 @@ pub fn parse_segment(String) -> Segment? raise
 
 pub fn parse_smf(Bytes) -> MidiSequence raise
 
+pub fn prefix_resource_data(ObjectResources, Byte, Int32) -> Bytes raise
+
 pub fn prepare_sealing(Bytes) -> SealingPlan raise
 
 pub fn sealed_references(String, Manifest) -> Map[String, String] raise
@@ -408,6 +410,16 @@ pub(all) struct Segment {
   from : Int32
   to : Int32
 } derive(Eq, @debug.Debug)
+
+pub struct Sha256Stream {
+  state : FixedArray[UInt32]
+  pending : FixedArray[Byte]
+  mut used : Int32
+  mut size : Int64
+}
+pub fn Sha256Stream::digest(Self) -> String
+pub fn Sha256Stream::new() -> Self
+pub fn Sha256Stream::write(Self, BytesView) -> Unit
 
 pub(all) struct SheetRun {
   count : Int32

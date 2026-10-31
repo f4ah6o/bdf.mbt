@@ -3,21 +3,39 @@ from pathlib import Path
 root = Path(__file__).resolve().parent
 source = json.loads((root / 'simple-rectangle.json').read_text())[0]
 variants = {
-    'ellipse': ('prst="rect"', 'prst="ellipse"'),
+    'pentagon': ('prst="rect"', 'prst="pentagon"'),
+    'adjustment-negative': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="triangle"><a:avLst><a:gd name="adj" fmla="val -1"/></a:avLst></a:prstGeom>'),
+    'adjustment-too-large': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="triangle"><a:avLst><a:gd name="adj" fmla="val 100001"/></a:avLst></a:prstGeom>'),
+    'hexagon-vf-guide': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="hexagon"><a:avLst><a:gd name="vf" fmla="val 100000"/></a:avLst></a:prstGeom>'),
+    'adjustment-unknown-guide': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="triangle"><a:avLst><a:gd name="other" fmla="val 1"/></a:avLst></a:prstGeom>'),
+    'adjustment-unsupported-formula': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="triangle"><a:avLst><a:gd name="adj" fmla="*/ 1 2 3"/></a:avLst></a:prstGeom>'),
     'unknown-color': ('val="FF0000"', 'val="FF00ZZ"'),
-    'color-transform': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:lumMod val="50000"/></a:srgbClr>'),
+    'channel-absolute-too-large': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:red val="100001"/></a:srgbClr>'),
+    'channel-offset-too-small': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:blueOff val="-1000001"/></a:srgbClr>'),
+    'complement-extra-attribute': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:comp val="1"/></a:srgbClr>'),
+    'gray-extra-attribute': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:gray val="1"/></a:srgbClr>'),
+    'hue-absolute-negative': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:hue val="-1"/></a:srgbClr>'),
+    'hue-offset-too-small': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:hueOff val="-21600001"/></a:srgbClr>'),
+    'hue-modifier-too-large': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:hueMod val="1000001"/></a:srgbClr>'),
+    'hue-angle-decimal': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:hue val="1.5"/></a:srgbClr>'),
+    'saturation-absolute-too-large': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:sat val="100001"/></a:srgbClr>'),
+    'saturation-offset-too-small': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:satOff val="-1000001"/></a:srgbClr>'),
+    'lum-modifier-nonfinite': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:lumMod val="NaN"/></a:srgbClr>'),
+    'lum-modifier-invalid-range': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:lumOff val="1000001"/></a:srgbClr>'),
+    'lum-modifier-on-hsl-nonfinite': ('<a:srgbClr val="FF0000"/>', '<a:hslClr hue="0" sat="100000" lum="50000"><a:lumMod val="NaN"/></a:hslClr>'),
+    'color-transform': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:gamma/></a:srgbClr>'),
     'alpha-too-large': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="100001"/></a:srgbClr>'),
     'alpha-negative': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="-1"/></a:srgbClr>'),
-    'alpha-decimal': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="1.5"/></a:srgbClr>'),
-    'alpha-mod-too-large': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alphaMod val="100001"/></a:srgbClr>'),
+    'alpha-malformed': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="bad%"/></a:srgbClr>'),
+    'alpha-mod-too-large': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alphaMod val="1000001"/></a:srgbClr>'),
     'alpha-mod-negative': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alphaMod val="-1"/></a:srgbClr>'),
-    'alpha-off-too-small': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alphaOff val="-100001"/></a:srgbClr>'),
-    'alpha-off-too-large': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alphaOff val="100001"/></a:srgbClr>'),
+    'alpha-off-too-small': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alphaOff val="-1000001"/></a:srgbClr>'),
+    'alpha-off-too-large': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alphaOff val="1000001"/></a:srgbClr>'),
     'alpha-extra-attribute': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:alpha val="1" foo="2"/></a:srgbClr>'),
     'fill-and-no-fill': ('</a:solidFill>', '</a:solidFill><a:noFill/>'),
     'duplicate-no-fill': ('<a:solidFill><a:srgbClr val="FF0000"/></a:solidFill>', '<a:noFill/><a:noFill/>'),
     'invert-linear-color': ('<a:srgbClr val="FF0000"/>', '<a:scrgbClr r="50000"><a:inv/></a:scrgbClr>'),
-    'invert-hsl-color': ('<a:srgbClr val="FF0000"/>', '<a:hslClr hue="1"><a:inv/></a:hslClr>'),
+    'invert-hsl-extra-attribute': ('<a:srgbClr val="FF0000"/>', '<a:hslClr hue="1"><a:inv val="1"/></a:hslClr>'),
     'invert-extra-attribute': ('<a:srgbClr val="FF0000"/>', '<a:srgbClr val="FF0000"><a:inv val="1"/></a:srgbClr>'),
     'hsl-color-negative-hue': ('<a:srgbClr val="FF0000"/>', '<a:hslClr hue="-1"/>'),
     'hsl-color-hue-too-large': ('<a:srgbClr val="FF0000"/>', '<a:hslClr hue="21600001"/>'),
@@ -27,7 +45,8 @@ variants = {
     'hsl-color-extra-attribute': ('<a:srgbClr val="FF0000"/>', '<a:hslClr hue="0" foo="1"/>'),
     'linear-color-negative': ('<a:srgbClr val="FF0000"/>', '<a:scrgbClr r="-1"/>'),
     'linear-color-too-large': ('<a:srgbClr val="FF0000"/>', '<a:scrgbClr g="100001"/>'),
-    'linear-color-decimal': ('<a:srgbClr val="FF0000"/>', '<a:scrgbClr b="1.5"/>'),
+    'flowchart-extract-adjustment': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="flowChartExtract"><a:avLst><a:gd name="adj" fmla="val 25000"/></a:avLst></a:prstGeom>'),
+    'linear-color-malformed': ('<a:srgbClr val="FF0000"/>', '<a:scrgbClr b="not-a-number"/>'),
     'linear-color-extra-attribute': ('<a:srgbClr val="FF0000"/>', '<a:scrgbClr r="0" foo="1"/>'),
     'unknown-preset-color': ('<a:srgbClr val="FF0000"/>', '<a:prstClr val="unknown"/>'),
     'preset-color-extra-attribute': ('<a:srgbClr val="FF0000"/>', '<a:prstClr val="red" foo="1"/>'),
@@ -45,19 +64,30 @@ variants = {
     'text': ('</sp>', '<txBody><a:bodyPr/><a:lstStyle/></txBody></sp>'),
     'duplicate-fill': ('</a:solidFill>', '</a:solidFill><a:solidFill><a:srgbClr val="00FF00"/></a:solidFill>'),
 }
-out = []
-for label, (old, new) in variants.items():
-    with zipfile.ZipFile(io.BytesIO(base64.b64decode(source['input']))) as archive:
-        parts = {entry.filename: archive.read(entry) for entry in archive.infolist()}
-    name = 'xl/drawings/drawing1.xml'
-    drawing = parts[name].decode()
-    assert drawing.count(old) == 1, label
-    parts[name] = drawing.replace(old, new, 1).encode()
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as archive:
-        for name, data in parts.items():
-            entry = zipfile.ZipInfo(name, (1980, 1, 1, 0, 0, 0))
-            entry.compress_type = zipfile.ZIP_DEFLATED
-            archive.writestr(entry, data)
-    out.append({'input': base64.b64encode(buf.getvalue()).decode(), 'mode': source['mode'], 'no_index': source['no_index'], 'label': label})
+supported_variants = {
+    'formula-preset-multiple-adjustments': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="rightArrow"><a:avLst><a:gd name="adj1" fmla="val 25000"/><a:gd name="adj2" fmla="val 30000"/></a:avLst></a:prstGeom>'),
+    'formula-preset-adjustment': ('<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>', '<a:prstGeom prst="rightArrow"><a:avLst><a:gd name="adj2" fmla="val 25000"/></a:avLst></a:prstGeom>'),
+}
+
+def generate(variants):
+    out = []
+    for label, (old, new) in variants.items():
+        with zipfile.ZipFile(io.BytesIO(base64.b64decode(source['input']))) as archive:
+            parts = {entry.filename: archive.read(entry) for entry in archive.infolist()}
+        name = 'xl/drawings/drawing1.xml'
+        drawing = parts[name].decode()
+        assert drawing.count(old) == 1, label
+        parts[name] = drawing.replace(old, new, 1).encode()
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as archive:
+            for name, data in parts.items():
+                entry = zipfile.ZipInfo(name, (1980, 1, 1, 0, 0, 0))
+                entry.compress_type = zipfile.ZIP_DEFLATED
+                archive.writestr(entry, data)
+        out.append({'input': base64.b64encode(buf.getvalue()).decode(), 'mode': source['mode'], 'no_index': source['no_index'], 'label': label})
+    return out
+
+out = generate(variants)
+supported = generate(supported_variants)
+(root / 'formula-previously-unsupported-inputs.json').write_text(json.dumps(supported, separators=(',', ':')))
 (root / 'rectangle-invalid.json').write_text(json.dumps(out, separators=(',', ':')))

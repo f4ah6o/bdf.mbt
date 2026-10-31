@@ -52,6 +52,9 @@ fn GridDrawContext::paint_picture(
   shape_stroke~ : (UInt32, Double)? = None,
   shape_no_fill~ : Bool = false,
   shape_dash~ : String = "",
+  shape_geometry~ : String = "rect",
+  shape_adjustment~ : Int64? = None,
+  shape_extra_adjustments~ : Map[String, Int64] = Map([]),
 ) -> Int32 raise {
   if picture.kind < 0 ||
     picture.kind > 2 ||
@@ -135,6 +138,74 @@ fn GridDrawContext::paint_picture(
     ].contains(shape_dash) ||
     (shape_dash != "" && shape_fill is None && !shape_no_fill) {
     raise InvalidArgument("sheet: invalid shape dash pattern")
+  }
+  if ![
+      "", "rect", "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram",
+      "trapezoid", "homePlate", "chevron", "plus", "hexagon", "octagon", "roundRect",
+      "plaque", "round1Rect", "round2DiagRect", "round2SameRect", "snipRoundRect",
+      "bentArrow", "flowChartTerminator", "flowChartDisplay", "flowChartOnlineStorage",
+      "flowChartPunchedTape", "flowChartAlternateProcess", "flowChartMerge", "flowChartInputOutput",
+      "flowChartPreparation", "flowChartPunchedCard", "flowChartCollate", "flowChartManualInput",
+      "flowChartManualOperation", "flowChartOffpageConnector", "irregularSeal1",
+      "irregularSeal2", "lightningBolt", "swooshArrow", "flowChartDocument", "heart",
+      "wave", "doubleWave", "bentUpArrow", "corner", "diagStripe", "dodecagon", "downArrow",
+      "downArrowCallout", "halfFrame", "heptagon", "leftArrow", "leftArrowCallout",
+      "leftRightArrow", "leftRightArrowCallout", "leftRightUpArrow", "leftUpArrow",
+      "mathMinus", "mathPlus", "nonIsoscelesTrapezoid", "notchedRightArrow", "quadArrow",
+      "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip1Rect", "snip2DiagRect",
+      "snip2SameRect", "star10", "star7", "upArrowCallout", "upDownArrow", "upArrow",
+      "upDownArrowCallout", "wedgeRectCallout",
+    ].contains(shape_geometry) {
+    raise InvalidArgument("sheet: invalid shape geometry")
+  }
+  if [
+      "ellipse", "diamond", "triangle", "rtTriangle", "parallelogram", "trapezoid",
+      "homePlate", "chevron", "plus", "hexagon", "octagon", "roundRect", "plaque",
+      "round1Rect", "round2DiagRect", "round2SameRect", "snipRoundRect", "bentArrow",
+      "flowChartTerminator", "flowChartDisplay", "flowChartOnlineStorage", "flowChartPunchedTape",
+      "flowChartAlternateProcess", "flowChartMerge", "flowChartInputOutput", "flowChartPreparation",
+      "flowChartPunchedCard", "flowChartCollate", "flowChartManualInput", "flowChartManualOperation",
+      "flowChartOffpageConnector", "irregularSeal1", "irregularSeal2", "lightningBolt",
+      "swooshArrow", "flowChartDocument", "heart", "wave", "doubleWave", "bentUpArrow",
+      "corner", "diagStripe", "dodecagon", "downArrow", "downArrowCallout", "halfFrame",
+      "heptagon", "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
+      "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid",
+      "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout",
+      "snip1Rect", "snip2DiagRect", "snip2SameRect", "star10", "star7", "upArrowCallout",
+      "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
+    ].contains(shape_geometry) &&
+    shape_fill is None &&
+    !shape_no_fill {
+    raise InvalidArgument("sheet: shape geometry requires a shape")
+  }
+  if shape_adjustment is Some(value) {
+    if value < 0L ||
+      value > 100000L ||
+      ![
+        "triangle", "parallelogram", "trapezoid", "homePlate", "chevron", "plus",
+        "hexagon", "octagon", "roundRect", "diagStripe", "snip1Rect", "star10", "star7",
+        "plaque", "round1Rect", "round2DiagRect", "round2SameRect", "snipRoundRect",
+        "bentArrow", "swooshArrow", "wave", "doubleWave", "bentUpArrow", "corner",
+        "downArrow", "downArrowCallout", "halfFrame", "leftArrow", "leftArrowCallout",
+        "leftRightArrow", "leftRightArrowCallout", "leftRightUpArrow", "leftUpArrow",
+        "mathMinus", "mathPlus", "nonIsoscelesTrapezoid", "notchedRightArrow", "quadArrow",
+        "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip2DiagRect", "snip2SameRect",
+        "upArrowCallout", "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
+      ].contains(shape_geometry) {
+      raise InvalidArgument("sheet: invalid shape adjustment")
+    }
+  }
+  for guide, value in shape_extra_adjustments {
+    if value <
+      (if guide == "adj2" && ["wave", "doubleWave"].contains(shape_geometry) {
+        -100000L
+      } else {
+        0L
+      }) ||
+      value > 100000L ||
+      !sheet_shape_extra_guide_allowed(shape_geometry, guide) {
+      raise InvalidArgument("sheet: invalid extra shape adjustment")
+    }
   }
   if shape_no_fill && shape_fill is Some(_) {
     raise InvalidArgument("sheet: conflicting shape fills")
@@ -358,11 +429,244 @@ fn GridDrawContext::paint_picture(
   } else if origin_x != 0.0 || origin_y != 0.0 {
     object.translate(Float::from_double(origin_x), Float::from_double(origin_y))
   }
-  let path : @core.Path = {
-    verbs: b"\x00\x01\x01\x01\x04",
-    coordinates: [
-      0.0, 0.0, draw_width, 0.0, draw_width, draw_height, 0.0, draw_height,
-    ],
+  let path : @core.Path = if shape_geometry == "ellipse" {
+    sheet_ellipse_path(draw_width, draw_height)
+  } else if shape_geometry == "diamond" {
+    {
+      verbs: b"\x00\x01\x01\x01\x04",
+      coordinates: [
+        0.0,
+        draw_height / 2.0,
+        draw_width / 2.0,
+        0.0,
+        draw_width,
+        draw_height / 2.0,
+        draw_width / 2.0,
+        draw_height,
+      ],
+    }
+  } else if shape_geometry == "roundRect" {
+    sheet_round_rect_path(
+      draw_width,
+      draw_height,
+      shape_adjustment.unwrap_or(16667L),
+    )
+  } else if [
+      "plaque", "round1Rect", "round2DiagRect", "round2SameRect", "snipRoundRect",
+      "bentArrow",
+    ].contains(shape_geometry) {
+    sheet_adjustable_arc_preset_path(
+      shape_geometry,
+      draw_width,
+      draw_height,
+      shape_adjustment,
+      extra=shape_extra_adjustments,
+    )
+  } else if [
+      "flowChartTerminator", "flowChartDisplay", "flowChartOnlineStorage", "flowChartPunchedTape",
+    ].contains(shape_geometry) {
+    sheet_fixed_arc_preset_path(shape_geometry, draw_width, draw_height)
+  } else if shape_geometry == "flowChartAlternateProcess" {
+    sheet_rounded_preset_path(
+      draw_width,
+      draw_height,
+      Double::min(draw_width, draw_height) / 6.0,
+    )
+  } else if shape_geometry == "octagon" {
+    let a = Double::min(shape_adjustment.unwrap_or(29289L).to_double(), 50000.0)
+    let x1 = Double::min(draw_width, draw_height) * a / 100000.0
+    let x2 = draw_width - x1
+    let y2 = draw_height - x1
+    {
+      verbs: b"\x00\x01\x01\x01\x01\x01\x01\x01\x04",
+      coordinates: [
+        0.0, x1, x1, 0.0, x2, 0.0, draw_width, x1, draw_width, y2, x2, draw_height,
+        x1, draw_height, 0.0, y2,
+      ],
+    }
+  } else if shape_geometry == "hexagon" {
+    sheet_hexagon_path(
+      draw_width,
+      draw_height,
+      shape_adjustment.unwrap_or(25000L),
+    )
+  } else if shape_geometry == "plus" {
+    let a = Double::min(shape_adjustment.unwrap_or(25000L).to_double(), 50000.0)
+    let x1 = Double::min(draw_width, draw_height) * a / 100000.0
+    let x2 = draw_width - x1
+    let y2 = draw_height - x1
+    {
+      verbs: b"\x00\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x04",
+      coordinates: [
+        0.0, x1, x1, x1, x1, 0.0, x2, 0.0, x2, x1, draw_width, x1, draw_width, y2,
+        x2, y2, x2, draw_height, x1, draw_height, x1, y2, 0.0, y2,
+      ],
+    }
+  } else if shape_geometry == "homePlate" || shape_geometry == "chevron" {
+    let ss = Double::min(draw_width, draw_height)
+    let x = ss * shape_adjustment.unwrap_or(50000L).to_double() / 100000.0
+    let y = draw_height / 2.0
+    if shape_geometry == "homePlate" {
+      {
+        verbs: b"\x00\x01\x01\x01\x01\x04",
+        coordinates: [
+          0.0,
+          0.0,
+          draw_width - x,
+          0.0,
+          draw_width,
+          y,
+          draw_width - x,
+          draw_height,
+          0.0,
+          draw_height,
+        ],
+      }
+    } else {
+      {
+        verbs: b"\x00\x01\x01\x01\x01\x01\x04",
+        coordinates: [
+          0.0,
+          0.0,
+          draw_width - x,
+          0.0,
+          draw_width,
+          y,
+          draw_width - x,
+          draw_height,
+          0.0,
+          draw_height,
+          x,
+          y,
+        ],
+      }
+    }
+  } else if shape_geometry == "parallelogram" || shape_geometry == "trapezoid" {
+    let ss = Double::min(draw_width, draw_height)
+    let max = if ss == 0.0 {
+      0.0
+    } else if shape_geometry == "trapezoid" {
+      50000.0 * draw_width / ss
+    } else {
+      100000.0 * draw_width / ss
+    }
+    let adj = Double::min(shape_adjustment.unwrap_or(25000L).to_double(), max)
+    let x = ss * adj / 100000.0
+    {
+      verbs: b"\x00\x01\x01\x01\x04",
+      coordinates: [
+        0.0,
+        draw_height,
+        x,
+        0.0,
+        if shape_geometry == "parallelogram" {
+          draw_width
+        } else {
+          draw_width - x
+        },
+        0.0,
+        if shape_geometry == "parallelogram" {
+          draw_width - x
+        } else {
+          draw_width
+        },
+        draw_height,
+      ],
+    }
+  } else if [
+      "swooshArrow", "flowChartDocument", "heart", "wave", "doubleWave", "bentUpArrow",
+      "corner", "diagStripe", "dodecagon", "downArrow", "downArrowCallout", "halfFrame",
+      "heptagon", "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
+      "leftRightUpArrow", "leftUpArrow", "mathMinus", "mathPlus", "nonIsoscelesTrapezoid",
+      "notchedRightArrow", "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout",
+      "snip1Rect", "snip2DiagRect", "snip2SameRect", "star10", "star7", "upArrowCallout",
+      "upDownArrow", "upArrow", "upDownArrowCallout", "wedgeRectCallout",
+    ].contains(shape_geometry) {
+    sheet_formula_preset_path(
+      shape_geometry,
+      draw_width,
+      draw_height,
+      shape_adjustment,
+      extra=shape_extra_adjustments,
+    )
+  } else if [
+      "flowChartCollate", "flowChartManualInput", "flowChartManualOperation", "flowChartOffpageConnector",
+      "irregularSeal1", "irregularSeal2", "lightningBolt",
+    ].contains(shape_geometry) {
+    sheet_fixed_preset_path(shape_geometry, draw_width, draw_height)
+  } else if shape_geometry == "flowChartPunchedCard" {
+    let sx = draw_width / 5.0
+    let sy = draw_height / 5.0
+    {
+      verbs: b"\x00\x01\x01\x01\x01\x04",
+      coordinates: [
+        0.0,
+        sy,
+        sx,
+        0.0,
+        5.0 * sx,
+        0.0,
+        5.0 * sx,
+        5.0 * sy,
+        0.0,
+        5.0 * sy,
+      ],
+    }
+  } else if shape_geometry == "flowChartPreparation" {
+    let sx = draw_width / 10.0
+    let sy = draw_height / 10.0
+    {
+      verbs: b"\x00\x01\x01\x01\x01\x01\x04",
+      coordinates: [
+        0.0,
+        5.0 * sy,
+        2.0 * sx,
+        0.0,
+        8.0 * sx,
+        0.0,
+        10.0 * sx,
+        5.0 * sy,
+        8.0 * sx,
+        10.0 * sy,
+        2.0 * sx,
+        10.0 * sy,
+      ],
+    }
+  } else if shape_geometry == "flowChartInputOutput" {
+    let sx = draw_width / 5.0
+    let sy = draw_height / 5.0
+    {
+      verbs: b"\x00\x01\x01\x01\x04",
+      coordinates: [0.0, 5.0 * sy, sx, 0.0, 5.0 * sx, 0.0, 4.0 * sx, 5.0 * sy],
+    }
+  } else if shape_geometry == "flowChartMerge" {
+    {
+      verbs: b"\x00\x01\x01\x04",
+      coordinates: [0.0, 0.0, draw_width, 0.0, draw_width / 2.0, draw_height],
+    }
+  } else if shape_geometry == "triangle" || shape_geometry == "rtTriangle" {
+    {
+      verbs: b"\x00\x01\x01\x04",
+      coordinates: [
+        0.0,
+        draw_height,
+        if shape_geometry == "triangle" {
+          draw_width * shape_adjustment.unwrap_or(50000L).to_double() / 100000.0
+        } else {
+          0.0
+        },
+        0.0,
+        draw_width,
+        draw_height,
+      ],
+    }
+  } else {
+    {
+      verbs: b"\x00\x01\x01\x01\x04",
+      coordinates: [
+        0.0, 0.0, draw_width, 0.0, draw_width, draw_height, 0.0, draw_height,
+      ],
+    }
   }
   let path_index = object.add_path(@core.Inline(path))
   if shape_no_fill || shape_fill is Some(_) {
@@ -390,7 +694,9 @@ fn GridDrawContext::paint_picture(
         object.dash(dash.map(value => Float::from_double(value * width)), 0.0F)
       }
       object.stroke_color(stroke)
-      object.stroke_path(path_index)
+      if shape_geometry != "ellipse" || (draw_width > 0.0 && draw_height > 0.0) {
+        object.stroke_path(path_index)
+      }
       object.restore()
     }
   } else {
@@ -506,4 +812,165 @@ fn GridDrawContext::paint_picture(
     tile.drawn = true
   }
   tile_count
+}
+
+///|
+fn sheet_ellipse_path(width : Double, height : Double) -> @core.Path {
+  let wr = width / 2.0
+  let hr = height / 2.0
+  if wr <= 0.0 || hr <= 0.0 {
+    return { verbs: b"\x00\x04", coordinates: [0.0, hr], }
+  }
+  let args : Array[Double] = [0.0, hr]
+  let mut cx = 0.0
+  let mut cy = hr
+  // Go rounds the constant pi / 180 / 60000 once at compile time.
+  let unit = 2.9088820866572161809e-7
+  for degrees in [10800000.0, 16200000.0, 0.0, 5400000.0] {
+    let st = degrees * unit
+    let sw = 5400000.0 * unit
+    let a0 = @math.atan2(wr * @math.sin(st), hr * @math.cos(st))
+    let aend = @math.atan2(wr * @math.sin(st + sw), hr * @math.cos(st + sw))
+    let d = aend - (a0 + sw)
+    let d = d - 2.0 * @math.PI * (d / (2.0 * @math.PI)).round()
+    let a1 = a0 + sw + d
+    let ex = cx - wr * @math.cos(a0)
+    let ey = cy - hr * @math.sin(a0)
+    args.push(ex)
+    args.push(ey)
+    args.push(wr)
+    args.push(hr)
+    args.push(0.0)
+    args.push(a0)
+    args.push(a1)
+    args.push(0.0)
+    cx = ex + wr * @math.cos(a1)
+    cy = ey + hr * @math.sin(a1)
+  }
+  { verbs: b"\x00\x06\x06\x06\x06\x04", coordinates: args, }
+}
+
+///|
+fn sheet_hexagon_path(
+  width : Double,
+  height : Double,
+  adjustment : Int64,
+) -> @core.Path {
+  let ss = Double::min(width, height)
+  let max = if ss == 0.0 { 0.0 } else { 50000.0 * width / ss }
+  let a = Double::min(adjustment.to_double(), max)
+  let x1 = ss * a / 100000.0
+  let x2 = width - x1
+  let center = height / 2.0
+  let shd2 = center * 115470.0 / 100000.0
+  // Go rounds pi / 180 / 60000 once when compiling its angle constant.
+  let dy1 = shd2 * @math.sin(3600000.0 * 2.9088820866572161809e-7)
+  let y1 = center - dy1
+  let y2 = center + dy1
+  {
+    verbs: b"\x00\x01\x01\x01\x01\x01\x04",
+    coordinates: [0.0, center, x1, y1, x2, y1, width, center, x2, y2, x1, y2],
+  }
+}
+
+///|
+fn sheet_round_rect_path(
+  width : Double,
+  height : Double,
+  adjustment : Int64,
+) -> @core.Path {
+  let radius = Double::min(width, height) *
+    Double::min(adjustment.to_double(), 50000.0) /
+    100000.0
+  sheet_rounded_preset_path(width, height, radius)
+}
+
+///|
+fn sheet_rounded_preset_path(
+  width : Double,
+  height : Double,
+  radius : Double,
+) -> @core.Path {
+  let right = width - radius
+  let bottom = height - radius
+  let args : Array[Double] = [0.0, radius]
+  if radius <= 0.0 {
+    return {
+      verbs: b"\x00\x01\x01\x01\x04",
+      coordinates: [0.0, radius, right, 0.0, width, bottom, radius, height],
+    }
+  }
+  let verbs : Array[Byte] = [b'\x00']
+  let mut cx = 0.0
+  let mut cy = radius
+  let unit = 2.9088820866572161809e-7
+  for i, degrees in [10800000.0, 16200000.0, 0.0, 5400000.0] {
+    let st = degrees * unit
+    let sw = 5400000.0 * unit
+    let a0 = @math.atan2(radius * @math.sin(st), radius * @math.cos(st))
+    let aend = @math.atan2(
+      radius * @math.sin(st + sw),
+      radius * @math.cos(st + sw),
+    )
+    let d = aend - (a0 + sw)
+    let d = d - 2.0 * @math.PI * (d / (2.0 * @math.PI)).round()
+    let a1 = a0 + sw + d
+    let ex = cx - radius * @math.cos(a0)
+    let ey = cy - radius * @math.sin(a0)
+    verbs.push(b'\x06')
+    args.push(ex)
+    args.push(ey)
+    args.push(radius)
+    args.push(radius)
+    args.push(0.0)
+    args.push(a0)
+    args.push(a1)
+    args.push(0.0)
+    cx = ex + radius * @math.cos(a1)
+    cy = ey + radius * @math.sin(a1)
+    if i < 3 {
+      let (nx, ny) = if i == 0 {
+        (right, 0.0)
+      } else if i == 1 {
+        (width, bottom)
+      } else {
+        (radius, height)
+      }
+      verbs.push(b'\x01')
+      args.push(nx)
+      args.push(ny)
+      cx = nx
+      cy = ny
+    }
+  }
+  verbs.push(b'\x04')
+  { verbs: Bytes::from_array(verbs), coordinates: args, }
+}
+
+///|
+fn sheet_shape_extra_guide_allowed(geometry : String, guide : String) -> Bool {
+  match guide {
+    "adj2" =>
+      [
+        "round2DiagRect", "round2SameRect", "snipRoundRect", "bentArrow", "swooshArrow",
+        "wave", "doubleWave", "bentUpArrow", "corner", "downArrow", "downArrowCallout",
+        "halfFrame", "leftArrow", "leftArrowCallout", "leftRightArrow", "leftRightArrowCallout",
+        "leftRightUpArrow", "leftUpArrow", "nonIsoscelesTrapezoid", "notchedRightArrow",
+        "quadArrow", "quadArrowCallout", "rightArrow", "rightArrowCallout", "snip2DiagRect",
+        "snip2SameRect", "upArrowCallout", "upDownArrow", "upArrow", "upDownArrowCallout",
+        "wedgeRectCallout",
+      ].contains(geometry)
+    "adj3" =>
+      [
+        "bentArrow", "bentUpArrow", "downArrowCallout", "leftArrowCallout", "leftRightArrowCallout",
+        "leftRightUpArrow", "leftUpArrow", "quadArrow", "quadArrowCallout", "rightArrowCallout",
+        "upArrowCallout", "upDownArrowCallout",
+      ].contains(geometry)
+    "adj4" =>
+      [
+        "bentArrow", "downArrowCallout", "leftArrowCallout", "leftRightArrowCallout",
+        "quadArrowCallout", "rightArrowCallout", "upArrowCallout", "upDownArrowCallout",
+      ].contains(geometry)
+    _ => false
+  }
 }

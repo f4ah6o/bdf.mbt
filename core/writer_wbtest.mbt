@@ -87,7 +87,9 @@ test "writer sets the upstream default generator without mutating metadata" {
   let parsed = @json.parse(@utf8.decode_lossy(split.manifest))
   assert_eq(required_string(field(parsed, "meta"), "generator"), "bdf-go/0.1")
   assert_false(fields.contains("generator"))
-  let custom = DocumentWriter::new(meta=Json::object({ "generator": Json::string("custom/2") }))
+  let custom = DocumentWriter::new(
+    meta=Json::object({ "generator": Json::string("custom/2") }),
+  )
   let manifest = @json.parse(@utf8.decode_lossy(custom.write_split().manifest))
   assert_eq(required_string(field(manifest, "meta"), "generator"), "custom/2")
 }
@@ -119,4 +121,14 @@ test "writer preserves already compressed media but compresses plain image and f
   assert_eq(doc.part(hashes[1]), svg)
   assert_eq(doc.part(hashes[2]), font)
   assert_eq(doc.part(hashes[3]), audio)
+}
+
+///|
+test "empty table collection is omitted" {
+  let writer = DocumentWriter::new()
+  let split = writer.write_split()
+  let json = @utf8.decode(split.manifest)
+  assert_true(json.contains("\"views\":[]"))
+  assert_false(json.contains("\"tables\""))
+  assert_true(json.contains("\"parts\":[]"))
 }

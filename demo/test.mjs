@@ -283,6 +283,41 @@ try {
   await coverage.getByRole('link', { name: '← デモに戻る' }).click();
   assert.equal(new URL(coverage.url()).pathname, '/bdf.mbt/');
   await coverage.close();
+  const converterPage = await browser.newPage({ viewport: { width: 1280, height: 900 }, acceptDownloads: true });
+  converterPage.on('pageerror', error => errors.push(error.message));
+  await page.getByRole('link', { name: '変換ページへ' }).click();
+  assert.equal(new URL(page.url()).pathname, '/bdf.mbt/converter.html');
+  await converterPage.goto(page.url());
+  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'people.csv' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  await converterPage.getByRole('button', { name: 'BDF サンプルを開く' }).click();
+  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'upstream-demo.bdf' && !document.querySelector('#open-file').disabled, null, { timeout: 30000 });
+  for (const [sample, name] of [['csv', 'people.csv'], ['xlsx', 'sales.xlsx'], ['image', 'illustration.svg'], ['font', 'stix.ttf']]) {
+    await converterPage.locator('#file').setInputFiles(resolve(root, 'samples', name));
+    await converterPage.waitForFunction(n => document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled, name, { timeout: 60000 });
+    assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, `converter ${sample}`);
+    await converterPage.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => canvas.width > 0 && canvas.height > 0), null, { timeout: 30000 });
+    assert.equal(await converterPage.locator('#download').getAttribute('download'), name.replace(/\.[^.]+$/, '') + '.bdf');
+  }
+  await converterPage.locator('[data-sample="xlsx-picture"]').click();
+  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'field-guide.xlsx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  await converterPage.waitForFunction(hasIllustration, null, { timeout: 30000 });
+  await converterPage.locator('#search').fill('Mountain');
+  await converterPage.locator('#search-form button').click();
+  await converterPage.waitForFunction(() => /^1 \/ [1-9]/.test(document.querySelector('#search-status').textContent), null, { timeout: 30000 });
+  const converterDownload = converterPage.waitForEvent('download');
+  await converterPage.locator('#download').click();
+  const converted = await converterDownload;
+  assert.equal(converted.suggestedFilename(), 'field-guide.bdf');
+  await converterPage.locator('#file').setInputFiles({ name: 'field-guide.bdf', mimeType: 'application/octet-stream', buffer: await readFile(await converted.path()) });
+  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'field-guide.bdf' && !document.querySelector('#open-file').disabled, null, { timeout: 30000 });
+  await converterPage.waitForFunction(hasIllustration, null, { timeout: 30000 });
+  await converterPage.locator('#file').setInputFiles({ name: 'unsupported.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7\n') });
+  await converterPage.waitForFunction(() => document.querySelector('#status').classList.contains('error'), null, { timeout: 30000 });
+  assert.match(await converterPage.locator('#status').textContent(), /unsupported\.pdf/);
+  assert.equal(await converterPage.locator('#document-name').textContent(), 'field-guide.bdf');
+  await converterPage.getByRole('link', { name: '← デモに戻る' }).click();
+  assert.equal(new URL(converterPage.url()).pathname, '/bdf.mbt/');
+  await converterPage.close();
   assert.deepEqual(errors, []);
   await page.close();
   const mobile = await browser.newPage({ viewport: { width: 375, height: 812 } });
@@ -290,6 +325,11 @@ try {
   await mobile.waitForSelector('[data-bdf-page="0"] canvas[data-loaded="ready"]', { timeout: 30000 });
   assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'mobile page overflow');
   await mobile.close();
+  const mobileConverter = await browser.newPage({ viewport: { width: 375, height: 812 } });
+  await mobileConverter.goto(new URL('converter.html', url).href);
+  await mobileConverter.waitForFunction(() => document.querySelector('#document-name').textContent === 'people.csv', null, { timeout: 60000 });
+  assert.equal(await mobileConverter.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'mobile converter overflow');
+  await mobileConverter.close();
   console.log('Demo: all 20 upstream pages, search, navigation, download, CSV, SVG, font TTF/WOFF2, XLSX conversion, sheet switching, embedded PNG, BDF save/reload, warnings, replacement, errors and mobile subpath passed.');
 } finally {
   await browser.close();
