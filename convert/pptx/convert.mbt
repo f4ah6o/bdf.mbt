@@ -24,6 +24,14 @@ priv struct PptxLineItem {
 }
 
 ///|
+priv struct PptxPlacement {
+  sx : Double
+  sy : Double
+  tx : Double
+  ty : Double
+}
+
+///|
 priv struct PptxPlaceholderDefaults {
   size : Double?
   color : UInt32?
@@ -576,41 +584,86 @@ fn pptx_placeholder_defaults(
 }
 
 ///|
+fn PptxPlacement::compose(
+  self : PptxPlacement,
+  child : PptxPlacement,
+) -> PptxPlacement {
+  {
+    sx: self.sx * child.sx,
+    sy: self.sy * child.sy,
+    tx: self.tx + self.sx * child.tx,
+    ty: self.ty + self.sy * child.ty,
+  }
+}
+
+///|
+fn pptx_group_placement(shape : PptxXmlNode) -> PptxPlacement {
+  let xfrm = pptx_child(pptx_child(Some(shape), "grpSpPr"), "xfrm")
+  let off = pptx_child(xfrm, "off")
+  let ext = pptx_child(xfrm, "ext")
+  let ch_off = pptx_child(xfrm, "chOff")
+  let ch_ext = pptx_child(xfrm, "chExt")
+  let off_x = match off {
+    Some(value) => pptx_measure(pptx_attribute(value.element, "x", ""), 0.0)
+    None => 0.0
+  }
+  let off_y = match off {
+    Some(value) => pptx_measure(pptx_attribute(value.element, "y", ""), 0.0)
+    None => 0.0
+  }
+  let ext_x = match ext {
+    Some(value) => pptx_measure(pptx_attribute(value.element, "cx", ""), 0.0)
+    None => 0.0
+  }
+  let ext_y = match ext {
+    Some(value) => pptx_measure(pptx_attribute(value.element, "cy", ""), 0.0)
+    None => 0.0
+  }
+  let ch_x = match ch_off {
+    Some(value) => pptx_measure(pptx_attribute(value.element, "x", ""), 0.0)
+    None => 0.0
+  }
+  let ch_y = match ch_off {
+    Some(value) => pptx_measure(pptx_attribute(value.element, "y", ""), 0.0)
+    None => 0.0
+  }
+  let ch_w = match ch_ext {
+    Some(value) => pptx_measure(pptx_attribute(value.element, "cx", ""), 0.0)
+    None => 0.0
+  }
+  let ch_h = match ch_ext {
+    Some(value) => pptx_measure(pptx_attribute(value.element, "cy", ""), 0.0)
+    None => 0.0
+  }
+  let sx = if ch_w > 0.0 && ext_x > 0.0 { ext_x / ch_w } else { 1.0 }
+  let sy = if ch_h > 0.0 && ext_y > 0.0 { ext_y / ch_h } else { 1.0 }
+  { sx, sy, tx: off_x - ch_x * sx, ty: off_y - ch_y * sy, }
+}
+
+///|
 fn pptx_collect_shapes(
   node : PptxXmlNode,
-  offset_x : Double,
-  offset_y : Double,
+  placement : PptxPlacement,
   skip_placeholders : Bool,
-  out : Array[(PptxXmlNode, Double, Double)],
+  out : Array[(PptxXmlNode, PptxPlacement)],
 ) -> Unit {
   for shape in pptx_children(Some(node)) {
     match shape.element.name.local_name {
       "sp" | "pic" | "graphicFrame" =>
         if !(skip_placeholders && pptx_has_placeholder(shape)) {
-          out.push((shape, offset_x, offset_y))
+          out.push((shape, placement))
         }
-      "grpSp" => {
-        let transform = pptx_transform_node(
-          pptx_child(pptx_child(Some(shape), "grpSpPr"), "xfrm"),
-        )
-        let (dx, dy) = match transform {
-          Some(value) => (value.x, value.y)
-          None => (0.0, 0.0)
-        }
+      "grpSp" =>
         pptx_collect_shapes(
           shape,
-          offset_x + dx,
-          offset_y + dy,
+          placement.compose(pptx_group_placement(shape)),
           skip_placeholders,
           out,
         )
-      }
       _ => ()
     }
   }
 }
-
-///|
 
 ///|
 fn pptx_table_lines(shape : PptxXmlNode) -> Array[String] {
@@ -1083,17 +1136,23 @@ fn pptx_render_slide(
     Some(value) => pptx_placeholder_defaults(value, theme)
     None => Map([])
   }
-  let shapes : Array[(PptxXmlNode, Double, Double)] = []
+  let shapes : Array[(PptxXmlNode, PptxPlacement)] = []
+  let root_placement : PptxPlacement = { sx: 1.0, sy: 1.0, tx: 0.0, ty: 0.0, }
   for index in 0..<roots.length() {
     let tree = pptx_child(pptx_child(Some(roots[index]), "cSld"), "spTree")
     match tree {
       Some(value) =>
-        pptx_collect_shapes(value, 0.0, 0.0, index + 1 < roots.length(), shapes)
+        pptx_collect_shapes(
+          value,
+          root_placement,
+          index + 1 < roots.length(),
+          shapes,
+        )
       None => ()
     }
   }
   for shape_entry in shapes {
-    let (shape, offset_x, offset_y) = shape_entry
+    let (shape, placement) = shape_entry
     let mut transform = if shape.element.name.local_name == "graphicFrame" {
       pptx_transform_node(pptx_child(Some(shape), "xfrm"))
     } else {
@@ -1130,24 +1189,18 @@ fn pptx_render_slide(
         }
       None => ()
     }
-    if transform.width <= 0.0 || transform.height <= 0.0 {
+    let draw_width = transform.width * placement.sx
+    let draw_height = transform.height * placement.sy
+    if draw_width <= 0.0 || draw_height <= 0.0 {
       continue
     }
-    let shape_x = transform.x + offset_x
-    let shape_y = transform.y + offset_y
+    let shape_x = placement.tx + transform.x * placement.sx
+    let shape_y = placement.ty + transform.y * placement.sy
     if shape.element.name.local_name == "graphicFrame" {
       if pptx_table_lines(shape).is_empty() {
         pptx_emit_chart(
-          shape,
-          package,
-          part,
-          object,
-          shape_x,
-          shape_y,
-          transform.width,
-          transform.height,
-          theme,
-          theme_fonts,
+          shape, package, part, object, shape_x, shape_y, draw_width, draw_height,
+          theme, theme_fonts,
         )
       } else {
         pptx_emit_table(shape, object, shape_x, shape_y, theme_fonts)
@@ -1183,8 +1236,8 @@ fn pptx_render_slide(
         index,
         Float::from_double(shape_x),
         Float::from_double(shape_y),
-        Float::from_double(transform.width),
-        Float::from_double(transform.height),
+        Float::from_double(draw_width),
+        Float::from_double(draw_height),
       )
       continue
     }
@@ -1205,7 +1258,7 @@ fn pptx_render_slide(
         }
         None => 0.16667
       }
-      fraction * Double::min(transform.width, transform.height)
+      fraction * Double::min(draw_width, draw_height)
     } else {
       0.0
     }
@@ -1228,12 +1281,7 @@ fn pptx_render_slide(
         if geometry == "ellipse" {
           let path_index = object.add_path(
             @core.Inline(
-              pptx_ellipse_path(
-                shape_x,
-                shape_y,
-                transform.width,
-                transform.height,
-              ),
+              pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
             ),
           )
           object.fill_path(path_index, 0)
@@ -1241,11 +1289,7 @@ fn pptx_render_slide(
           let path_index = object.add_path(
             @core.Inline(
               pptx_round_rect_path(
-                shape_x,
-                shape_y,
-                transform.width,
-                transform.height,
-                corner_radius,
+                shape_x, shape_y, draw_width, draw_height, corner_radius,
               ),
             ),
           )
@@ -1254,8 +1298,8 @@ fn pptx_render_slide(
           object.fill_rect(
             Float::from_double(shape_x),
             Float::from_double(shape_y),
-            Float::from_double(transform.width),
-            Float::from_double(transform.height),
+            Float::from_double(draw_width),
+            Float::from_double(draw_height),
           )
         }
       }
@@ -1281,12 +1325,7 @@ fn pptx_render_slide(
       if geometry == "ellipse" {
         let path_index = object.add_path(
           @core.Inline(
-            pptx_ellipse_path(
-              shape_x,
-              shape_y,
-              transform.width,
-              transform.height,
-            ),
+            pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
           ),
         )
         object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
@@ -1296,11 +1335,7 @@ fn pptx_render_slide(
         let path_index = object.add_path(
           @core.Inline(
             pptx_round_rect_path(
-              shape_x,
-              shape_y,
-              transform.width,
-              transform.height,
-              corner_radius,
+              shape_x, shape_y, draw_width, draw_height, corner_radius,
             ),
           ),
         )
@@ -1313,8 +1348,8 @@ fn pptx_render_slide(
         object.stroke_rect(
           Float::from_double(shape_x),
           Float::from_double(shape_y),
-          Float::from_double(transform.width),
-          Float::from_double(transform.height),
+          Float::from_double(draw_width),
+          Float::from_double(draw_height),
         )
       }
     }
@@ -1352,9 +1387,8 @@ fn pptx_render_slide(
             line[line.length() - 1].advance -
             shape_x
           match align {
-            "right" => offset = Double::max(0.0, transform.width - total)
-            "center" =>
-              offset = Double::max(0.0, (transform.width - total) / 2.0)
+            "right" => offset = Double::max(0.0, draw_width - total)
+            "center" => offset = Double::max(0.0, (draw_width - total) / 2.0)
             _ => ()
           }
         }
@@ -1411,12 +1445,12 @@ fn pptx_render_slide(
               line_height = size * 1.2
             }
             let item_x = x - shape_x
-            if x + advance > shape_x + transform.width && !line.is_empty() {
+            if x + advance > shape_x + draw_width && !line.is_empty() {
               flush()
               y += line_height
               x = shape_x
             }
-            if y > shape_y + transform.height {
+            if y > shape_y + draw_height {
               flush()
               break
             }

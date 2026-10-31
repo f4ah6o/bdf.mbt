@@ -28,7 +28,7 @@ fonts, paragraph default run properties, placeholder transform and default run-f
 flattening, basic bar, line and pie charts, layout/master backgrounds and non-placeholder
 decorations, translated
 group shapes, solid shape fills and paragraph/run text with approximate
-metrics. Chart types other than bar, line and pie charts and group rotation/scaling are
-not rendered yet; layout/master placeholder shapes are skipped after their
+metrics. Chart types other than bar, line and pie charts and group rotation are not
+rendered yet; layout/master placeholder shapes are skipped after their
 transforms are used for inheritance. The native
 converter Worker advertises the `pptx` format.
