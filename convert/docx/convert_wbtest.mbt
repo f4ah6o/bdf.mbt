@@ -473,3 +473,129 @@ test "DOCX headers and footers are rendered on each page" {
   assert_true(value.contains("Header"), msg="DOCX header")
   assert_true(value.contains("Footer"), msg="DOCX footer")
 }
+
+///|
+fn docx_header_variant_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GB4vyM+dv33Li5WRgYGPWYGBmGgaLRzfl5Jal5JfEhlQWpxrF5F",
+  )
+  joined.write_string(
+    "bs7RSbv9DhuItJXPO/QpStWvu0XA61LjNEGJU8wyN9U7W/M/FXr//mbhe5Vx6mmGpC3/T38/XbT3",
+  )
+  joined.write_string(
+    "TvThMgnP6usfKiML2/yqlsbe/zD9rHPhaUnVAq6e8hsfmIXit4V/fSYwIYLPOuvHhKAdwk1PGsRW",
+  )
+  joined.write_string(
+    "fGGMDbOS111S07OXQyF+ofvGFaukFfd6vwiaeIzv3jXtNwnZQtHvP381UVmkeO6d+uMTWRYtCVta",
+  )
+  joined.write_string(
+    "ppRuLH7FvNRC8NQcm6qMC41pNw8cdT20oobP4um8T6dd1k6wdfbpT9jsvefnipZPRdnFm/7senbI",
+  )
+  joined.write_string(
+    "735p1CNL+22tL1SFnqpvX2ajLbZldu32ZIcAief77ZO1/inWfzz/5/X+Z92Py/PvMwaghNrORpfC",
+  )
+  joined.write_string(
+    "DUCeFjDkuIF0fFFqTrG+HojsPW/Nd8iAh+3B3GCXe5lRbC0Bk/U4VmprsXcImfdmyHkdWrxdnZlZ",
+  )
+  joined.write_string(
+    "gc3t9n7707nfNxjvTPQ5Zs3mG8rsqL7XyM/Ygv/4Vz6PU4c0DavbecR8LnwMrT4U+WTTZDVhIc0O",
+  )
+  joined.write_string(
+    "b55lcw7Pu6SivkUp1G6B9uSL7tpFmouXOZ7ovuBhXrp36ce7DP8SJ8UZduzNauDxPlCfY9/n9ujg",
+  )
+  joined.write_string(
+    "6dWu0+vn/PASiXTpnXnwrrvr1dWxomIa+S+Pd//hRPVYpFf+o71AngwTEAPp8vyiFH2I71Lyk0tz",
+  )
+  joined.write_string(
+    "gSkDlCTAPt16cS/XIQOBAx/vLufYfnuLqMuRLd66O7rsDkyMsd/g6yTkev+eAgeXa4yV3PG//w6/",
+  )
+  joined.write_string(
+    "PfXbYoO05X1pXQXvoIQlSwP35rHO8f9axHyG/QoX+2LPA802U44mlS9hdN7zMTbftrvjG9MugTfT",
+  )
+  joined.write_string(
+    "ivWtpS6qH5vUN/vYDkFnmdjTuqe4tx35bBJb/D3T4WPqpmahB3yrmMqqIn4dN/O97L2qZ0/fksMu",
+  )
+  joined.write_string(
+    "TeUtXTEiF7eKLPo5a7OK04Hlv7/++fsnvN6+vv7ru8/rl4v5o3p7w941c6cDeXuAWADm7YzUxJTU",
+  )
+  joined.write_string(
+    "IkOQf2XP+vIdUhBgfbB3ucLm7SHix0xa83o+MlQxBC2z5+RJcVi9XXzXz0kzp1de5o9/f4Tdcm2j",
+  )
+  joined.write_string(
+    "yJxZYiyXJN54bW66/rluT5PHzQmmegJaPxKbHOV/rY3W6S7yWXlbRMfyuN8pE70XvllOLlo3RW7M",
+  )
+  joined.write_string(
+    "jnGb91Tshhuf8rKQXXsnP9+21yM/jCn2VlKrduT9AqP86fIZOkX6r1ed2l243eZ6PaonRNKfhE4B",
+  )
+  joined.write_string(
+    "8nZhesII4omDXOCUuds/sKh8rpzLsV132/gX8Adc2yF6bYvK0Ze3b7/75Phpsv3fH7yzfyl096c8",
+  )
+  joined.write_string(
+    "uLRlwYRnL2x02eLOv6xhV705aXO0iskH58ZCi6/V263Cns5Ycpt3jeVyv+yZ4Txhs2ZM8PrWJ5Oj",
+  )
+  joined.write_string(
+    "p6xf1f9G6Likq1f5jS9bc/OtIvwNpmwLeeglp3Z+knyGbNH614tOtb/csEfuH6oPZrp83w/ywU5M",
+  )
+  joined.write_string(
+    "HxhDfOAISnGsF/Yu59i8faWei9fkdSL8C9g5zmZwn1U50xKWn3/pbPP5D/+/HDbXyXKdZjmpMfhy",
+  )
+  joined.write_string(
+    "k5PU4vkvkx983SO/foGK9ae8zha2Og2DG877Syenh55SuZuWcMqyNOq0RWLBpSMtIXnvTxx8KvRz",
+  )
+  joined.write_string(
+    "8fYTdoUygUty2l3n3/62qHk2Z06kt+i6lOroiXIvbIrWZ6/7lHdLd/5beVQf6MxaF+0GLBTmAPOP",
+  )
+  joined.write_string(
+    "IMwHyDmnd9JBYGHK0/bexnWq9ekw3hmrtu7u8ZQREO5hPyG1vfeK2sTHa3uWH881N1Np27Hj3+v1",
+  )
+  joined.write_string(
+    "9TK7Px91D3avPpAwx/doiomY4I07mcmnQ/bkh203FmQNClt9K9LjKGNTRIr5Z7OLevdNEzST2KUn",
+  )
+  joined.write_string(
+    "mYmKTvRfwlPJ2sul/Pxg0dqCGxpJnUtzZLP69doFfjQsm/axokZfOnWNxa0H9TkxgTNkph1nYxNu",
+  )
+  joined.write_string(
+    "iRKMVwo5xj6xsDl6Of/dy+WMux1udrfufDNJL0n+r39at+B1/nnvX4VyOsW5a97e8i58N4Pl2upl",
+  )
+  joined.write_string(
+    "TEsZ4xcyPNl5aPv2Nqe3WUKCam7LmeZ/2WT96hd768GCzvX/jiXyf2uqk8kwCjm8601x/L5ao3PV",
+  )
+  joined.write_string(
+    "s498nPL9XNqc+2ct7JnOr5Jv+/ynzkoh41TXuaLXHTHF10xFxK8u3Blic2SvzpzFk2WOVc2abJPr",
+  )
+  joined.write_string(
+    "Pe//6jfcAd6MTCLMuGsxGGhgZMBep6EbgF6gIwwwY0Qp3tE1oheYCI38TPiLT3ST0MsghElszJgl",
+  )
+  joined.write_string(
+    "Erpu9MyP0H2aGbMoQNeNnvEQuntZMLMhum70RI/Q7c+KJQsEeLOygaTZgXAvUNsRMA8Ajx1OWpcI",
+  )
+  joined.write_string("AAA=")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "DOCX first and even headers are selected" {
+  let result = convert(docx_header_variant_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  assert_eq(result.pages, 2)
+  let text = StringBuilder()
+  for page in manifest.views[0].pages {
+    let resources = @core.decode_object_resources(
+      @core.open_single(result.bdf).part(page.layers[0].object),
+    )
+    for command in @render.compile_object(resources.object) {
+      match command {
+        @render.FillText(value, _, _, _) => {
+          text.write_string(value)
+          text.write_string(" ")
+        }
+        _ => ()
+      }
+    }
+  }
+  let value = text.to_string()
+  assert_true(value.contains("FirstHeader"), msg="DOCX first header")
+  assert_true(value.contains("EvenHeader"), msg="DOCX even header")
+}

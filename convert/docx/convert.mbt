@@ -106,8 +106,17 @@ fn docx_section_at(document : DocxTextDocument, index : Int32) -> DocxSection {
 }
 
 ///|
-fn docx_story_part(section : DocxSection, header : Bool) -> String {
+fn docx_story_part(
+  section : DocxSection,
+  header : Bool,
+  kind : String,
+) -> String {
   let stories = if header { section.headers } else { section.footers }
+  for entry in stories {
+    if entry.0 == kind {
+      return entry.1
+    }
+  }
   for entry in stories {
     if entry.0 == "default" {
       return entry.1
@@ -214,6 +223,7 @@ fn docx_render_document(
   let mut line_width = 0.0
   let mut line_height = 12.0
   let mut page_open = false
+  let mut page_ordinal = 0
 
   fn ensure_font(builder : @core.ObjectBuilder, item : DocxLineItem) -> Int32 {
     let key = item.font +
@@ -272,7 +282,14 @@ fn docx_render_document(
     }
     emit_line(line, "left", line_start, line_start + line_width)
     line.clear()
-    let header_part = docx_story_part(section, true)
+    let story_kind = if section.title_page && page_ordinal == 1 {
+      "first"
+    } else if page_ordinal % 2 == 0 {
+      "even"
+    } else {
+      "default"
+    }
+    let header_part = docx_story_part(section, true, story_kind)
     let header_lines = if header_part == "" {
       []
     } else {
@@ -292,7 +309,7 @@ fn docx_render_document(
       section.header + 10.0,
       10.0,
     )
-    let footer_part = docx_story_part(section, false)
+    let footer_part = docx_story_part(section, false, story_kind)
     let footer_lines = if footer_part == "" {
       []
     } else {
@@ -337,6 +354,7 @@ fn docx_render_document(
     line_start = section.left
     line_x = section.left
     line_width = 0.0
+    page_ordinal += 1
     page_open = true
   }
 
@@ -368,6 +386,7 @@ fn docx_render_document(
       flush_page()
       section_index = paragraph.section_index
       section = docx_section_at(document, section_index)
+      page_ordinal = 0
       new_page()
     }
     let props = paragraph.props
