@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import { createReadStream } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import { gunzipSync } from 'node:zlib';
 import { BdfDocument, BufferSource } from '@bdfkit/core';
 import { createServer } from 'node:http';
 import { resolve, extname } from 'node:path';
 import { chromium } from 'playwright';
+import { PNG } from 'pngjs';
 
 const root = resolve(import.meta.dirname, '../_build/pages');
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.csv': 'text/csv; charset=utf-8', '.bdf': 'application/octet-stream', '.png': 'image/png', '.svg': 'image/svg+xml', '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
@@ -165,6 +167,47 @@ try {
     await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'sales.xlsx' && document.querySelector('#view').value === 'sheet1' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
     assert.equal(await page.locator('#search').inputValue(), '');
     await page.locator('#view').selectOption('sheet2');
+  }
+  const visualCases = JSON.parse(await readFile(resolve(import.meta.dirname, '../compat/xlsx/render/001.json')));
+  // Select the four-sheet workbook by content so fixture reordering cannot
+  // silently narrow this end-to-end test to a different input.
+  const visualCase = visualCases.find(item => createHash('sha256').update(Buffer.from(item.input, 'base64')).digest('hex') === 'd3df5666380ffefead5bafce06c6670ed26fa7fbe1b16effff85bef748af643c');
+  assert.ok(visualCase, 'four-sheet XLSX visual fixture');
+  assert.equal(visualCase.mode, '');
+  assert.equal(visualCase.no_index, false);
+  async function sheetImages(name, bytes) {
+    await page.locator('#file').setInputFiles({ name, mimeType: 'application/octet-stream', buffer: Buffer.from(bytes, 'base64') });
+    await page.waitForFunction(n => document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled, name, { timeout: 60000 });
+    assert.equal(await page.locator('#status').evaluate(el => el.classList.contains('error')), false, name);
+    const ids = await page.locator('#view option').evaluateAll(options => options.map(option => option.value));
+    assert.deepEqual(ids, ['sheet1', 'sheet2', 'sheet3', 'sheet4'], `${name} sheet order`);
+    const images = [];
+    for (const id of ids) {
+      await page.locator('#view').selectOption(id);
+      await page.waitForFunction(() => {
+        const canvas = document.querySelector('#preview canvas');
+        if (!canvas?.width || !canvas.height) return false;
+        const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+        let dark = 0;
+        for (let i = 0; i < pixels.length; i += 4) {
+          if (pixels[i + 3] && pixels[i] < 100 && pixels[i + 1] < 100 && pixels[i + 2] < 100 && ++dark > 100) return true;
+        }
+        return false;
+      }, null, { timeout: 30000 });
+      const dataUrl = await page.locator('#preview canvas').first().evaluate(el => el.toDataURL('image/png'));
+      images.push(PNG.sync.read(Buffer.from(dataUrl.split(',')[1], 'base64')));
+    }
+    return images;
+  }
+  const references = await sheetImages('upstream.xlsx.bdf', visualCase.bdf);
+  const convertedSheets = await sheetImages('comparison.xlsx', visualCase.input);
+  for (let i = 0; i < references.length; i++) {
+    const reference = references[i];
+    assert.deepEqual([convertedSheets[i].width, convertedSheets[i].height], [reference.width, reference.height], `XLSX sheet ${i + 1} reference dimensions`);
+    assert.deepEqual(convertedSheets[i].data, reference.data, `XLSX sheet ${i + 1} browser conversion matches upstream BDF rendering`);
+    for (let j = 0; j < i; j++) {
+      assert.notDeepEqual(reference.data, references[j].data, `XLSX reference sheets ${j + 1} and ${i + 1} are visually distinct`);
+    }
   }
   const hasIllustration = () => {
     let gold = 0, green = 0;
