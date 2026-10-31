@@ -87,6 +87,11 @@ fn PdfGraphics::finish_text(self : PdfGraphics) -> Unit raise PdfStreamError {
     if text.state.base != (1.0, 0.0, 0.0, 1.0, 0.0, 0.0) {
       self.transform(text.state.base)
     }
+    if text.state.horizontal_scale != 1.0 || text.state.rise != 0.0 {
+      self.transform(
+        (text.state.horizontal_scale, 0.0, 0.0, 1.0, 0.0, text.state.rise),
+      )
+    }
     self.transform((1.0, 0.0, 0.0, -1.0, 0.0, 0.0))
     let reference = match self.font_refs.get(self.state.font_key) {
       Some(value) => value
@@ -108,6 +113,15 @@ fn PdfGraphics::finish_text(self : PdfGraphics) -> Unit raise PdfStreamError {
       }
       self.emitted.font_key = self.state.font_key
       self.emitted.font_size = self.state.font_size
+    }
+    if self.emitted.letter_spacing != text.state.char_spacing {
+      self.object.text_style(
+        0,
+        0,
+        0,
+        Float::from_double(text.state.char_spacing),
+      )
+      self.emitted.letter_spacing = text.state.char_spacing
     }
     if text.alt {
       self.object.mark(4, text.actual.to_string())
@@ -153,10 +167,7 @@ fn PdfGraphics::text_operator(
     if !text.state.in_text {
       ignore(text.state.execute(b"BT", []))
     }
-    if text.state.char_spacing != 0.0 ||
-      text.state.word_spacing != 0.0 ||
-      text.state.horizontal_scale != 1.0 ||
-      text.state.rise != 0.0 ||
+    if text.state.word_spacing != 0.0 ||
       text.state.rendering_mode != 0 ||
       self.state.font_size <= 0.0 {
       raise InvalidStream("unsupported PDF text state")
@@ -185,7 +196,11 @@ fn PdfGraphics::text_operator(
           text.draw.write_string(actual)
         }
         text.actual.write_string(actual)
-        text.advance += font.width(code) * self.state.font_size
+        text.advance += pdf_matrix_fma(
+          font.width(code),
+          self.state.font_size,
+          text.state.char_spacing,
+        )
         text.has_run = true
       }
     }

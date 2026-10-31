@@ -29,6 +29,7 @@ priv struct PdfEmittedState {
   mut blend : Byte
   mut font_key : Int32
   mut font_size : Double
+  mut letter_spacing : Double
 }
 
 ///|
@@ -88,6 +89,7 @@ fn PdfEmittedState::copy(self : PdfEmittedState) -> PdfEmittedState {
     blend: self.blend,
     font_key: self.font_key,
     font_size: self.font_size,
+    letter_spacing: self.letter_spacing,
   }
 }
 
@@ -143,6 +145,7 @@ fn PdfGraphics::new(
       blend: 0,
       font_key: -1,
       font_size: 0.0,
+      letter_spacing: 0.0,
     },
     stack: [],
     unsaved: 0,

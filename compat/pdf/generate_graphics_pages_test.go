@@ -36,7 +36,7 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer out.Close()
-	for i := 0; i < 26; i++ {
+	for i := 0; i < 30; i++ {
 		content := []byte("q 0.2 0.4 0.8 rg 10 20 100 60 re f Q 2 w 0 0 m 20 40 l S\n")
 		resources := ""
 		if i == 8 {
@@ -96,6 +96,14 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 				content = []byte("BT /F1 12 Tf (First) Tj ET q BT /F1 12 Tf (Second) Tj ET Q")
 			case 25:
 				content = []byte("BT /F1 12 Tf <0100ff01> Tj ET")
+			case 26:
+				content = []byte("BT /F1 13 Tf 1.25 Tc (Spaced text) Tj ET")
+			case 27:
+				content = []byte("BT /F1 12 Tf 75 Tz 3 Ts 10 20 Td (Scaled) Tj ET")
+			case 28:
+				content = []byte("BT /F1 11 Tf -0.25 Tc 125 Tz -2 Ts (A) Tj (B) Tj ET")
+			case 29:
+				content = []byte("q 2 Tc 50 Tz 4 Ts Q BT /F1 12 Tf (Restored) Tj ET")
 			}
 		}
 		filter := ""

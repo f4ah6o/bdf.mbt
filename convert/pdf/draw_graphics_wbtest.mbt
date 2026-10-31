@@ -168,7 +168,7 @@ fn check_pdf_graphics_document_options(
 test "unsupported PDF text operations fail closed" {
   for
     content in [
-      b"BT /missing 12 Tf 1 Tc (x) Tj ET", b"BT /missing 12 Tf (x) Tj 1 2 Td (y) Tj ET",
+      b"BT /missing 12 Tf 1 Tw (x) Tj ET", b"BT /missing 12 Tf (x) Tj 1 2 Td (y) Tj ET",
       b"BT /missing 12 Tf [(x) -20 (y)] TJ ET", b"BT /missing 12 Tf 0 0 m ET",
     ] {
     let graphics = PdfGraphics::new(10.0, 10.0, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
@@ -180,4 +180,14 @@ test "unsupported PDF text operations fail closed" {
     }
     assert_true(rejected)
   }
+}
+
+///|
+test "PDF text advance uses upstream Go fused arithmetic" {
+  let graphics = PdfGraphics::new(10.0, 10.0, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
+  graphics.execute(b"BT", [])
+  graphics.execute(b"Tf", [Name(b"missing"), Real(11.37)])
+  graphics.execute(b"Tc", [Real(0.121)])
+  graphics.execute(b"Tj", [Literal(b"A")])
+  assert_eq(graphics.text.advance, 7.70479)
 }
