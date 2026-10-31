@@ -42,16 +42,88 @@ fn pptx_hex_color(value : String) -> UInt32 {
 }
 
 ///|
-fn pptx_node_color(node : PptxXmlNode?, key : String) -> UInt32? {
-  let color = pptx_child(pptx_child(node, key), "srgbClr")
-  match color {
+fn pptx_solid_color(
+  node : PptxXmlNode?,
+  theme : Map[String, UInt32],
+) -> UInt32? {
+  match node {
     Some(value) =>
-      match pptx_attribute(value.element, "val", "") {
-        "" => None
-        hex => Some(pptx_hex_color(hex))
+      match pptx_child(Some(value), "srgbClr") {
+        Some(color) => {
+          let hex = pptx_attribute(color.element, "val", "")
+          if hex == "" {
+            None
+          } else {
+            Some(pptx_hex_color(hex))
+          }
+        }
+        None =>
+          match pptx_child(Some(value), "schemeClr") {
+            Some(color) => {
+              let name = pptx_attribute(color.element, "val", "")
+              if name == "" {
+                None
+              } else {
+                theme.get(name)
+              }
+            }
+            None => None
+          }
       }
     None => None
   }
+}
+
+///|
+fn pptx_node_color(
+  node : PptxXmlNode?,
+  key : String,
+  theme : Map[String, UInt32],
+) -> UInt32? {
+  pptx_solid_color(pptx_child(node, key), theme)
+}
+
+///|
+fn pptx_theme_colors(package : @ooxml.OoxmlPackage) -> Map[String, UInt32] {
+  let colors : Map[String, UInt32] = {}
+  let part = match package.relationship_of_type("", "/theme") {
+    Some(rel) => rel.target
+    None => "ppt/theme/theme1.xml"
+  }
+  if !package.has(part) {
+    return colors
+  }
+  let root = pptx_read_xml(package, part) catch { _ => return colors }
+  let scheme = pptx_child(
+    pptx_child(pptx_child(Some(root), "themeElements"), "clrScheme"),
+    "",
+  )
+  ignore(scheme)
+  let scheme = pptx_child(pptx_child(Some(root), "themeElements"), "clrScheme")
+  for entry in pptx_children(scheme) {
+    let name = entry.element.name.local_name
+    let color = match pptx_child(Some(entry), "srgbClr") {
+      Some(value) =>
+        match pptx_attribute(value.element, "val", "") {
+          "" => None
+          hex => Some(pptx_hex_color(hex))
+        }
+      None =>
+        match pptx_child(Some(entry), "sysClr") {
+          Some(value) =>
+            match pptx_attribute(value.element, "lastClr", "") {
+              "" => None
+              hex => Some(pptx_hex_color(hex))
+            }
+          None => None
+        }
+    }
+    match color {
+      Some(value) => colors[name] = value
+      None => ()
+    }
+  }
+  colors
 }
 
 ///|
@@ -86,9 +158,9 @@ fn pptx_run_italic(run : PptxXmlNode) -> Bool {
 }
 
 ///|
-fn pptx_run_color(run : PptxXmlNode) -> UInt32 {
+fn pptx_run_color(run : PptxXmlNode, theme : Map[String, UInt32]) -> UInt32 {
   let rpr = pptx_child(Some(run), "rPr")
-  match pptx_node_color(rpr, "solidFill") {
+  match pptx_node_color(rpr, "solidFill", theme) {
     Some(value) => value
     None => 0x000000ffU
   }
@@ -161,6 +233,7 @@ fn pptx_render_slide(
   width : Double,
   height : Double,
   writer : @core.DocumentWriter,
+  theme : Map[String, UInt32],
 ) -> Json raise {
   let object = @core.ObjectBuilder::new()
   let fonts : Map[String, Int32] = Map([])
@@ -169,6 +242,7 @@ fn pptx_render_slide(
   let background = pptx_node_color(
     pptx_child(pptx_child(pptx_child(Some(root), "cSld"), "bg"), "bgPr"),
     "solidFill",
+    theme,
   )
   match background {
     Some(color) => {
@@ -235,7 +309,11 @@ fn pptx_render_slide(
       )
       continue
     }
-    let fill = pptx_node_color(pptx_child(Some(shape), "spPr"), "solidFill")
+    let fill = pptx_node_color(
+      pptx_child(Some(shape), "spPr"),
+      "solidFill",
+      theme,
+    )
     match fill {
       Some(color) => {
         object.fill_color(color)
@@ -359,7 +437,7 @@ fn pptx_render_slide(
                 0
               },
               size,
-              color: pptx_run_color(child),
+              color: pptx_run_color(child, theme),
               x: item_x,
               advance,
             })
@@ -421,6 +499,7 @@ pub fn convert(data : Bytes, title~ : String = "") -> PptxResult raise {
     meta["title"] = Json::string(title)
   }
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
+  let theme = pptx_theme_colors(pkg)
   let pages : Array[Json] = []
   for slide in presentation.slides {
     if slide.hidden {
@@ -433,6 +512,7 @@ pub fn convert(data : Bytes, title~ : String = "") -> PptxResult raise {
         presentation.width,
         presentation.height,
         writer,
+        theme,
       ),
     )
   }

@@ -347,3 +347,117 @@ test "PPTX pictures are embedded" {
   assert_eq(images, 1, msg="PPTX picture command")
   assert_eq(size, (72.0, 72.0), msg="PPTX picture size")
 }
+
+///|
+fn pptx_theme_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GDw2BEfu9H8nw07IwPDciYGBmGgaLRzfl5Jal5JfEhlQWpxrF5F",
+  )
+  joined.write_string(
+    "bs7aIGv/wwYC936KTruuVXiqQSDrUuNxDp6n7BHnVDe+ml5zfdXf7zGTlBi1ShqOXrtbqz93b5T8",
+  )
+  joined.write_string(
+    "HuHqExnJK55uWrOkISEp2zn+9PazwYXarJP41pYZOuj2NxTdjVlrdpxFY4bMhmnMgbuCuc4yxCVL",
+  )
+  joined.write_string(
+    "CrPMKzGs9o15Fqeau20Xe2lsqPmpIw4CKxYEOputZn/x5dzECpuCar5JBxeKfDcu+LJqqd/JyMWd",
+  )
+  joined.write_string(
+    "z7Pkb+XrHT25MOVZy8GDajEGDqs28z1+kt4s/L7VfHIu96PQ9Kpr8wK1VIM0mY3yD03brz23U2r3",
+  )
+  joined.write_string(
+    "OamMxTcrl02Zf3TP76Bpcbc37BBgkzUv3Dft/9y0oL1TGn7cTbT7L5cw6WdByGX77HuMASjhVuT3",
+  )
+  joined.write_string(
+    "ff4mIE8XGHbcQDq+KDWnWF8PRPaeP8t1yICH/cNu/8Ci8rs2HSd2xbrcCH3GPMXsddtrdl/R79/E",
+  )
+  joined.write_string(
+    "/P1sKnw+nddfkje/LI2/x6RSfYGWV8KLKdcnGzOt+1tZzeDmaaWb/j7gQBNL7uaV+hanp5RnzGHa",
+  )
+  joined.write_string(
+    "2GMhZLBMpG/OZKmLXlo1DtPVm/vDlsW4HW4OMc+c8P5U0fnHyxnPnkqZKyZgHcv4enrD/xt1Emqt",
+  )
+  joined.write_string(
+    "6uvficX+KnykPTFVkleNUVFFTikob99l12mN5qbxtTf3MKB67ULF+SPngTwPoNdAogUFJfoFRanF",
+  )
+  joined.write_string(
+    "wFSRWJKZnwdKE70T/LOZDAWOvv8rkvjOtPBi6u6ca96CLPm59g4eaXcd/k3sXFRXlazr+mLp9u8z",
+  )
+  joined.write_string(
+    "Ku2fnd1gWX3cb8bJYwqJOwUOGLzIyLHw+PHrzr6yAytWJEzpZlSNmZBgvI9npb8kp3PgUrXIpSyv",
+  )
+  joined.write_string(
+    "JrfsnHKl2K/KbX2GoHCb1eykb6tCZvP/sXwum9+SsTPc7AC/yn92oeUns2r6f73Qfs148sW+hSa3",
+  )
+  joined.write_string(
+    "XQyuCZ+cOfdm8M+rZ6Q4z+5infZ79xnrywzy7P/Svz8+9SXy0O2irUKL7FzjVbbc3bV7tvuDnccr",
+  )
+  joined.write_string(
+    "mFEDoGTuqS8bgDxFYADIQwMAEr/owQCN743A+BZge3B3Ocf221tkXZZkigvu8qptmBBzO2FWS4zI",
+  )
+  joined.write_string(
+    "729shQEFBX/e/9j/eNa7jRFlxz2OWTOGBjI5L99jlidUIOl329bA61Jm5l5nRm2hkrfLLBdP1SzP",
+  )
+  joined.write_string(
+    "MGuMcJPhnBHMxX7O8+wOD1B8my/u7/axPNbJvnJdkVPc9Kd9x/2Zb+lP/hrl8KaUNyeC+V/y70IT",
+  )
+  joined.write_string(
+    "rv64u2IlL49z+l3LOLOgR1iNcf2PeWGu1xq28/7/taaWCdWzWc5cYRuBPFak2C7JSM1NhZCGIG/G",
+  )
+  joined.write_string(
+    "9t4FpejW97Vdk6pzn7eeiNjOXai/wM7hzSuZLStNjs7fbs7HYiiu+PzJE+/LtskB5fMrvVIWRkkG",
+  )
+  joined.write_string(
+    "zIuRUpPSndP3t4i7i/tSg+LE7R8+8cTuztigFy6/d1LxIyndGO+dV6M2C0tXTs2bl1LuaZkkONPd",
+  )
+  joined.write_string(
+    "NqWGw4xtr1naYmU/lrfiW/gvrfhwvEBR/o6Pes+nzy92nvEs8TO6mv7EZl654mprNu7a/CUO23v/",
+  )
+  joined.write_string(
+    "cb6Uv7Tmn1zt3G+8qF4U+LpX1hDoPQtgGScK9WJxTmZKajGEAvuxN/B0FrCU2/Ndu+Xd2VuKItdd",
+  )
+  joined.write_string(
+    "+JZMSOZU+csQOkm4Oc7jUOmvr7Ga76P1d2uXpZelbY3xdZsc2GphcTrDdrVGYJiF5Q3mxfG/z2Y7",
+  )
+  joined.write_string(
+    "e/rc8Vo3N7RnXsiS1e9SX95eoeq4oXdt+pcZk/IZF1loHX58pjJ14/XdCRWH0i0a+LW0ZlcccnU7",
+  )
+  joined.write_string(
+    "vGfVvQMfDl7i5vzP38nzh32q7UPrK0plUc9k/tpplK4r2vL4XL7zzB8y2xt5Jl20VJ0mvWXTcdOu",
+  )
+  joined.write_string(
+    "Q0tnsz/s0WS1WZR8cs/cXwlFZbX+am73Xx9ddKh7bp7qk3WzhARvrJtdefnJvgqpBmv/kqoJsx1f",
+  )
+  joined.write_string(
+    "fzqx72o7X8qTWYF6LPdW71OQU3u46vj2zCjrylMP8s+4mufX8rnmOZz+KK57f8nSdTumzTQSfRSw",
+  )
+  joined.write_string(
+    "SH9LuJXFff537K2vexfW1HxnD/BmZBJhxl2TwEADIwP2egXdAPQiFWGABSNKAYuuEb3AQmgUZsJe",
+  )
+  joined.write_string(
+    "fKGbgJ7jESaIMBPM/+iGoecohGGMLNjzF7oJ6AkWYcITFhzJN8CblQ2khA0I+4BaPcA8AMS5qcns",
+  )
+  joined.write_string("BwAA")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX theme colours resolve scheme colours" {
+  let result = convert(pptx_theme_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut red = false
+  for command in commands {
+    match command {
+      @render.FillColor(0xff0000ff) => red = true
+      _ => ()
+    }
+  }
+  assert_true(red, msg="PPTX theme accent colour")
+}
