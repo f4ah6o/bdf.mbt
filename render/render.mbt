@@ -98,9 +98,18 @@ fn read_object(r : @core.Reader, objects : Array[String]) -> String raise {
 /// Decode BDF opset 1 into an immutable, backend-neutral Canvas command list.
 /// Unknown draw opcodes are rejected, never silently skipped.
 pub fn compile_object(object : @core.ObjectPart) -> Array[Command] raise {
+  compile_object_with_spans(object, None)
+}
+
+///|
+fn compile_object_with_spans(
+  object : @core.ObjectPart,
+  spans : Array[InstructionSpan]?,
+) -> Array[Command] raise {
   let r = @core.Reader::new(object.ops)
   let commands : Array[Command] = []
   while r.remaining() > 0 {
+    let start = r.pos
     let opcode = r.u8()
     match opcode {
       0x01 => commands.push(Save)
@@ -207,6 +216,9 @@ pub fn compile_object(object : @core.ObjectPart) -> Array[Command] raise {
       0x71 => commands.push(Mark(r.u8(), read_text(r, object.strings)))
       0xff => commands.push(Ext(r.take(r.u32())))
       _ => raise UnsupportedOpcode(opcode)
+    }
+    if spans is Some(out) {
+      out.push({ start, end: r.pos, command: commands[commands.length() - 1], })
     }
   }
   commands
