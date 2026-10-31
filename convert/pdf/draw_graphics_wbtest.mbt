@@ -275,3 +275,28 @@ test "PDF text index failure warns and leaves the document unindexed" {
     0,
   )
 }
+
+///|
+fn check_pdf_shared_document(
+  data : Bytes,
+  no_share : Bool,
+  no_index : Bool,
+  expected : Bytes,
+  expected_count : Int32,
+  expected_saved : Int64,
+  expected_warnings : Array[String],
+) -> Unit raise {
+  let (actual, warnings, count, saved) = pdf_graphics_document_full(data, no_share_prefix=no_share, no_text_index=no_index)
+  assert_eq((count, saved), (expected_count, expected_saved), msg="PDF prefix share stats")
+  assert_eq(warnings, expected_warnings, msg="PDF warnings")
+  let left = @core.single_to_split(actual)
+  let right = @core.single_to_split(expected)
+  assert_eq(left.manifest, right.manifest, msg="PDF shared BDF manifest")
+  assert_eq(left.parts.length(), right.parts.length(), msg="PDF shared BDF part count")
+  let actual_doc = @core.open_single(actual)
+  let expected_doc = @core.open_single(expected)
+  for i in 0..<left.parts.length() {
+    assert_eq(left.parts[i].hash, right.parts[i].hash, msg="PDF shared BDF part hash")
+    assert_eq(actual_doc.part(left.parts[i].hash), expected_doc.part(right.parts[i].hash), msg="PDF shared BDF part bytes")
+  }
+}

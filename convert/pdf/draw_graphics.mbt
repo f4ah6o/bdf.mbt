@@ -291,7 +291,7 @@ fn PdfFile::graphics_page_parts(
   self : PdfFile,
   page : PdfPageLeaf,
   which : String,
-) -> (PdfPageGeometry, Bytes, Array[Bytes]) raise PdfStreamError {
+) -> (PdfPageGeometry, Bytes, Array[Bytes], Array[String]) raise PdfStreamError {
   match page.error {
     Some(message) => raise InvalidStream(message)
     None => ()
@@ -314,7 +314,22 @@ fn PdfFile::graphics_page_parts(
   let encoded = graphics.object.encode() catch {
     _ => raise InvalidStream("PDF graphics output failed")
   }
-  (geometry, encoded, graphics.children)
+  let identities : Array[String] = Array::make(graphics.font_refs.length(), "")
+  for key, index in graphics.font_refs {
+    if index < 0 || index >= identities.length() {
+      raise InvalidStream("invalid PDF font identity table")
+    }
+    let mut identity = if key == 0 { "default" } else { "local:\{key}" }
+    for reference, cached in graphics.fonts {
+      let (number, generation) = reference
+      let (_, local_key) = cached
+      if local_key == key {
+        identity = "ref:\{number}:\{generation}"
+      }
+    }
+    identities[index] = identity
+  }
+  (geometry, encoded, graphics.children, identities)
 }
 
 ///|
@@ -323,7 +338,7 @@ fn PdfFile::graphics_page(
   page : PdfPageLeaf,
   which : String,
 ) -> (PdfPageGeometry, Bytes) raise PdfStreamError {
-  let (geometry, encoded, children) = self.graphics_page_parts(page, which)
+  let (geometry, encoded, children, _) = self.graphics_page_parts(page, which)
   if !children.is_empty() {
     raise InvalidStream(
       "PDF page contains child objects and requires document context",

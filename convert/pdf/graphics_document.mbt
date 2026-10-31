@@ -17,12 +17,14 @@ fn pdf_graphics_document(
   box~ : String = "crop",
   title~ : String = "",
   no_text_index~ : Bool = false,
+  no_share_prefix~ : Bool = false,
 ) -> Bytes raise PdfStreamError {
   let (document, _) = pdf_graphics_document_result(
     data,
     box~,
     title~,
     no_text_index~,
+    no_share_prefix~,
   )
   document
 }
@@ -33,7 +35,26 @@ fn pdf_graphics_document_result(
   box~ : String = "crop",
   title~ : String = "",
   no_text_index~ : Bool = false,
+  no_share_prefix~ : Bool = false,
 ) -> (Bytes, Array[String]) raise PdfStreamError {
+  let (data, warnings, _, _) = pdf_graphics_document_full(
+    data,
+    box~,
+    title~,
+    no_text_index~,
+    no_share_prefix~,
+  )
+  (data, warnings)
+}
+
+///|
+fn pdf_graphics_document_full(
+  data : Bytes,
+  box~ : String = "crop",
+  title~ : String = "",
+  no_text_index~ : Bool = false,
+  no_share_prefix~ : Bool = false,
+) -> (Bytes, Array[String], Int32, Int64) raise PdfStreamError {
   if !["", "crop", "media", "bleed", "trim", "art"].contains(box) {
     raise InvalidStream("unknown PDF page box")
   }
@@ -84,40 +105,87 @@ fn pdf_graphics_document_result(
   }
   meta["source"] = Json::string("pdf")
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
-  let output_pages : Array[Json] = []
+  let pending : Array[PdfPendingObject] = []
+  let bodies : Array[Int32] = []
+  let geometry : Array[PdfPageGeometry] = []
+  for page in pages {
+    let (page_geometry, object, children, font_ids) = file.graphics_page_parts(
+      page, box,
+    )
+    let body_id = pending.length()
+    let child_ids : Array[Int32] = []
+    let child_bounds : Array[(Float, Float, Float, Float)] = []
+    for i, child in children {
+      child_ids.push(body_id + 1 + i)
+      let resource = @core.decode_object_resources(child) catch {
+        _ => raise InvalidStream("invalid PDF child object")
+      }
+      if !resource.object.objects.is_empty() {
+        raise InvalidStream("nested PDF pending child unsupported")
+      }
+      let (x, y, w, h) = resource.object.bbox
+      child_bounds.push(
+        (
+          Float::from_double(x),
+          Float::from_double(y),
+          Float::from_double(w),
+          Float::from_double(h),
+        ),
+      )
+    }
+    pending.push(pdf_pending(object, child_ids, child_bounds, font_ids))
+    for child in children {
+      pending.push(pdf_pending(child, [], [], []))
+    }
+    bodies.push(body_id)
+    geometry.push(page_geometry)
+  }
+  let original_count = pending.length()
+  let mut selected_bodies = bodies.copy()
+  let mut replaced : Map[Int32, Bool] = {}
+  let mut shared_count = 0
+  let mut shared_bytes = 0L
+  let warnings : Array[String] = []
+  if !no_share_prefix && bodies.length() >= 2 {
+    try {
+      let (staged, selected, removed, count, saved) = pdf_plan_shared(
+        pending, bodies,
+      )
+      for object in staged {
+        pending.push(object)
+      }
+      selected_bodies = selected
+      replaced = removed
+      shared_count = count
+      shared_bytes = saved
+    } catch {
+      error => warnings.push("prefix sharing: " + error.to_string())
+    }
+  }
   let objects : Map[String, @core.ObjectResources] = Map([])
+  for i in 0..<pending.length() {
+    if i < original_count && replaced.contains(i) {
+      continue
+    }
+    ignore(pdf_finalize_pending(pending, i, writer, objects))
+  }
+  let output_pages : Array[Json] = []
   let index : Array[@core.IndexRun] = []
   let budget = @render.TextExtractionBudget::new()
   let mut index_error : String? = None
-  for page in pages {
-    let (geometry, object, children) = file.graphics_page_parts(page, box)
-    for child in children {
-      let hash = writer.add_part("obj", child) catch {
-        _ => raise InvalidStream("PDF BDF child output failed")
-      }
-      if !no_text_index {
-        objects[hash] = @core.decode_object_resources(child) catch {
-          _ => raise InvalidStream("PDF BDF child decoding failed")
-        }
-      }
-    }
-    let hash = writer.add_part("obj", object) catch {
-      _ => raise InvalidStream("PDF BDF object output failed")
-    }
+  for i, body in selected_bodies {
+    let item = pending[body]
     if !no_text_index && index_error is None {
-      index_error = pdf_collect_index(
-        index,
-        objects,
-        object,
-        budget,
-        output_pages.length(),
-      )
+      let object = @core.encode_object_resources(item.resources) catch {
+        _ => raise InvalidStream("PDF object encoding failed")
+      }
+      index_error = pdf_collect_index(index, objects, object, budget, i)
     }
-    let width = Float::from_double(geometry.width)
-    let height = Float::from_double(geometry.height)
+    let width = Float::from_double(geometry[i].width)
+    let height = Float::from_double(geometry[i].height)
     let layer = Json::object({
       "role": Json::string("body"),
-      "obj": Json::string(hash),
+      "obj": Json::string(item.hash),
     })
     output_pages.push(
       Json::object({
@@ -131,9 +199,10 @@ fn pdf_graphics_document_result(
     "id": Json::string("pages"),
     "kind": Json::string("fixed"),
   }
-  let warnings = pdf_write_index(
-    writer, view, index, index_error, no_text_index,
-  )
+  for
+    warning in pdf_write_index(writer, view, index, index_error, no_text_index) {
+    warnings.push(warning)
+  }
   if document_title != "" {
     view["title"] = Json::string(document_title)
   }
@@ -145,7 +214,7 @@ fn pdf_graphics_document_result(
     _ => raise InvalidStream("PDF BDF document output failed")
   }
 
-  (document, warnings)
+  (document, warnings, shared_count, shared_bytes)
 }
 
 ///|
