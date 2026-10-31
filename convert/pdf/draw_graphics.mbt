@@ -328,12 +328,56 @@ fn PdfGraphics::draw_form_xobject(
   if self.form_depth >= 16 {
     raise InvalidStream("PDF form XObject nesting limit")
   }
-  match file.page_deref(pdf_dict_get(dict, b"Group")) {
-    PdfNull => ()
-    _ => raise InvalidStream("PDF form transparency groups are not supported")
+  let group = match file.page_deref(pdf_dict_get(dict, b"Group")) {
+    PdfNull => None
+    PdfDict(_) => Some(file.page_deref(pdf_dict_get(dict, b"Group")))
+    _ => raise InvalidStream("invalid PDF form group")
+  }
+  let group_style = match group {
+    Some(value) => {
+      match file.page_deref(pdf_dict_get(value, b"S")) {
+        PdfName(b"Transparency") => ()
+        _ => raise InvalidStream("unsupported PDF form group")
+      }
+      let alpha = match file.page_num(pdf_dict_get(value, b"ca")) {
+        Some(number) => Double::min(1.0, Double::max(0.0, number))
+        None => 1.0
+      }
+      let blend = match file.page_deref(pdf_dict_get(value, b"BM")) {
+        PdfName(name) => pdf_blend_mode(name)
+        PdfArray(values) if !values.is_empty() =>
+          match file.page_deref(Some(values[0])) {
+            PdfName(name) => pdf_blend_mode(name)
+            _ => 0
+          }
+        _ => 0
+      }
+      Some((alpha, blend))
+    }
+    None => None
   }
   let matrix = pdf_form_numbers(file, dict, b"Matrix", 6)
   let bbox = pdf_form_numbers(file, dict, b"BBox", 4)
+  let identity = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+  let placed_matrix = match matrix {
+    Some(values) =>
+      (values[0], values[1], values[2], values[3], values[4], values[5])
+    None => identity
+  }
+  let group_bounds = match group_style {
+    Some(_) =>
+      match bbox {
+        Some(values) =>
+          Some(
+            pdf_transform_rect(
+              placed_matrix,
+              (values[0], values[1], values[2], values[3]),
+            ),
+          )
+        None => None
+      }
+    None => None
+  }
   let old_resources = self.resources
   match pdf_dict_get(dict, b"Resources") {
     Some(value) => self.resources = Some(file.page_deref(Some(value)))
@@ -346,6 +390,21 @@ fn PdfGraphics::draw_form_xobject(
   self.form_depth += 1
   let depth = self.stack.length()
   self.save()
+  let mut grouped = false
+  match (group_style, group_bounds) {
+    (Some((alpha, blend)), Some((x, y, width, height))) => {
+      self.object.group_begin(
+        Float::from_double(alpha),
+        blend,
+        Float::from_double(x),
+        Float::from_double(y),
+        Float::from_double(width),
+        Float::from_double(height),
+      )
+      grouped = true
+    }
+    _ => ()
+  }
   match matrix {
     Some(values) =>
       self.transform(
@@ -372,6 +431,9 @@ fn PdfGraphics::draw_form_xobject(
   self.finish_text()
   while self.stack.length() > depth + 1 {
     self.restore()
+  }
+  if grouped {
+    self.object.group_end()
   }
   self.restore()
 }

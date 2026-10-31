@@ -133,6 +133,10 @@ sequence. They check that `/OFF` layers emit no fill and `/ON` layers do, and
 that a `/StructTreeRoot` no longer blocks visual conversion. Structure tags are
 not emitted as BDF semantic structure yet.
 
+The form test also checks a form XObject with a `/Group /S /Transparency`:
+the page body must contain one BDF group begin/end pair, with the group bounds
+taken from the form BBox and matrix.
+
 The text-state fixtures compare text matrix, line movement, spacing, scaling,
 leading, rise and rendering-mode operators against upstream before glyph
 output. `generate_text_state_test.go` needs `BDF_PDF_FIXTURES` and

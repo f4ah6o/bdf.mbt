@@ -467,20 +467,22 @@ test "PDF form XObject inherits its own resources" {
 }
 
 ///|
-test "PDF form transparency groups fail closed" {
-  let rejected = try {
-    ignore(
-      pdf_graphics_document(
-        pdf_form_image_test_document(true),
-        no_text_index=true,
-      ),
-    )
-    false
-  } catch {
-    InvalidStream(message) => message.contains("transparency groups")
-    _ => false
+test "PDF form transparency groups are emitted" {
+  let document = pdf_graphics_document(
+    pdf_form_image_test_document(true),
+    no_text_index=true,
+  )
+  let commands = pdf_test_body_commands(document)
+  let mut begins = 0
+  let mut ends = 0
+  for command in commands {
+    match command {
+      @render.GroupBegin(_, _, _, _, _, _) => begins += 1
+      @render.GroupEnd => ends += 1
+      _ => ()
+    }
   }
-  assert_true(rejected)
+  assert_eq((begins, ends), (1, 1), msg="PDF form transparency group")
 }
 
 ///|
@@ -800,14 +802,19 @@ fn pdf_optional_content_test_document(config : String, tagged : Bool) -> Bytes {
 }
 
 ///|
-fn pdf_test_fill_rects(document : Bytes) -> Int32 raise {
+fn pdf_test_body_commands(document : Bytes) -> Array[@render.Command] raise {
   let split = @core.single_to_split(document)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
   let body_hash = manifest.views[0].pages[0].layers[0].object
   let resources = @core.decode_object_resources(
     @core.open_single(document).part(body_hash),
   )
-  let commands = @render.compile_object(resources.object)
+  @render.compile_object(resources.object)
+}
+
+///|
+fn pdf_test_fill_rects(document : Bytes) -> Int32 raise {
+  let commands = pdf_test_body_commands(document)
   let mut count = 0
   for command in commands {
     match command {
