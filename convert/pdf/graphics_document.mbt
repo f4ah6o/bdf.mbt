@@ -18,6 +18,22 @@ fn pdf_graphics_document(
   title~ : String = "",
   no_text_index~ : Bool = false,
 ) -> Bytes raise PdfStreamError {
+  let (document, _) = pdf_graphics_document_result(
+    data,
+    box~,
+    title~,
+    no_text_index~,
+  )
+  document
+}
+
+///|
+fn pdf_graphics_document_result(
+  data : Bytes,
+  box~ : String = "crop",
+  title~ : String = "",
+  no_text_index~ : Bool = false,
+) -> (Bytes, Array[String]) raise PdfStreamError {
   if !["", "crop", "media", "bleed", "trim", "art"].contains(box) {
     raise InvalidStream("unknown PDF page box")
   }
@@ -71,6 +87,8 @@ fn pdf_graphics_document(
   let output_pages : Array[Json] = []
   let objects : Map[String, @core.ObjectResources] = Map([])
   let index : Array[@core.IndexRun] = []
+  let budget = @render.TextExtractionBudget::new()
+  let mut index_error : String? = None
   for page in pages {
     let (geometry, object, children) = file.graphics_page_parts(page, box)
     for child in children {
@@ -86,28 +104,14 @@ fn pdf_graphics_document(
     let hash = writer.add_part("obj", object) catch {
       _ => raise InvalidStream("PDF BDF object output failed")
     }
-    if !no_text_index {
-      let resources = @core.decode_object_resources(object) catch {
-        _ => raise InvalidStream("PDF BDF object decoding failed")
-      }
-      let content = @render.extract_text(resources, fn(child_hash) {
-        objects.get(child_hash)
-      }) catch {
-        _ => raise InvalidStream("PDF BDF text extraction failed")
-      }
-      for i, run in content.runs {
-        index.push({
-          a: output_pages.length(),
-          b: 0,
-          ordinal: run.ordinal,
-          separator: if i == 0 {
-            2
-          } else {
-            run.separator
-          },
-          text: run.text,
-        })
-      }
+    if !no_text_index && index_error is None {
+      index_error = pdf_collect_index(
+        index,
+        objects,
+        object,
+        budget,
+        output_pages.length(),
+      )
     }
     let width = Float::from_double(geometry.width)
     let height = Float::from_double(geometry.height)
@@ -127,15 +131,9 @@ fn pdf_graphics_document(
     "id": Json::string("pages"),
     "kind": Json::string("fixed"),
   }
-  if !no_text_index {
-    let encoded = @core.encode_text_index(index) catch {
-      _ => raise InvalidStream("PDF BDF text index encoding failed")
-    }
-    let hash = writer.add_part("idx", encoded) catch {
-      _ => raise InvalidStream("PDF BDF text index output failed")
-    }
-    view["textIndex"] = Json::string(hash)
-  }
+  let warnings = pdf_write_index(
+    writer, view, index, index_error, no_text_index,
+  )
   if document_title != "" {
     view["title"] = Json::string(document_title)
   }
@@ -143,7 +141,70 @@ fn pdf_graphics_document(
     view["pages"] = Json::array(output_pages)
   }
   writer.add_view(Json::object(view))
-  writer.write_single() catch {
+  let document = writer.write_single() catch {
     _ => raise InvalidStream("PDF BDF document output failed")
+  }
+
+  (document, warnings)
+}
+
+///|
+fn pdf_collect_index(
+  index : Array[@core.IndexRun],
+  objects : Map[String, @core.ObjectResources],
+  object : Bytes,
+  budget : @render.TextExtractionBudget,
+  page : Int32,
+) -> String? {
+  let content = try {
+    let resources = @core.decode_object_resources(object)
+    @render.extract_text_with_budget(
+      resources,
+      fn(hash) { objects.get(hash) },
+      budget,
+    )
+  } catch {
+    @render.InvalidOperands(message) => return Some(message)
+    error => return Some(error.to_string())
+  }
+  for i, run in content.runs {
+    index.push({
+      a: page,
+      b: 0,
+      ordinal: run.ordinal,
+      separator: if i == 0 {
+        2
+      } else {
+        run.separator
+      },
+      text: run.text,
+    })
+  }
+  None
+}
+
+///|
+fn pdf_write_index(
+  writer : @core.DocumentWriter,
+  view : Map[String, Json],
+  index : Array[@core.IndexRun],
+  failure : String?,
+  disabled : Bool,
+) -> Array[String] raise PdfStreamError {
+  if disabled {
+    return []
+  }
+  match failure {
+    Some(message) => ["text index: bdf: " + message]
+    None => {
+      let encoded = @core.encode_text_index(index) catch {
+        _ => raise InvalidStream("PDF BDF text index encoding failed")
+      }
+      let hash = writer.add_part("idx", encoded) catch {
+        _ => raise InvalidStream("PDF BDF text index output failed")
+      }
+      view["textIndex"] = Json::string(hash)
+      []
+    }
   }
 }

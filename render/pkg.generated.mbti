@@ -31,6 +31,8 @@ pub fn decode_commands(Bytes) -> Array[Command] raise
 
 pub fn extract_text(@core.ObjectResources, (String) -> @core.ObjectResources? raise, matrix? : (Double, Double, Double, Double, Double, Double)) -> TextContent raise
 
+pub fn extract_text_with_budget(@core.ObjectResources, (String) -> @core.ObjectResources? raise, TextExtractionBudget, matrix? : (Double, Double, Double, Double, Double, Double)) -> TextContent raise
+
 pub fn initial_channel() -> ChannelState
 
 pub fn join_text(Array[TextRun]) -> String
@@ -221,6 +223,13 @@ pub(all) struct TextContent {
   links : Array[TextLink]
   nodes : Array[TextNode]
 }
+
+pub struct TextExtractionBudget {
+  seen : Map[String, Bool]
+  mut reused : Int32
+  mut failure : String?
+}
+pub fn TextExtractionBudget::new() -> Self
 
 pub(all) struct TextLink {
   x : Double

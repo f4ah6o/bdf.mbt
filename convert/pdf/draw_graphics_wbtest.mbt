@@ -250,3 +250,28 @@ test "unsupported positioning during vertical PDF text fails closed" {
   }
   assert_true(rejected)
 }
+
+///|
+test "PDF text index failure warns and leaves the document unindexed" {
+  let writer = @core.DocumentWriter::new()
+  let view : Map[String, Json] = {
+    "id": Json::string("pages"),
+    "kind": Json::string("fixed"),
+  }
+  let warnings = pdf_write_index(
+    writer,
+    view,
+    [],
+    Some("objects are drawn too many times"),
+    false,
+  )
+  assert_eq(warnings, ["text index: bdf: objects are drawn too many times"])
+  assert_true(view.get("textIndex") is None)
+  writer.add_view(Json::object(view))
+  let split = @core.single_to_split(writer.write_single())
+  assert_eq(split.parts.length(), 0)
+  assert_eq(
+    pdf_write_index(writer, view, [], Some("ignored"), true).length(),
+    0,
+  )
+}
