@@ -2585,3 +2585,126 @@ test "PPTX picture alpha is applied" {
   assert_true(alpha, msg="PPTX picture alpha")
   assert_true(image, msg="PPTX picture")
 }
+
+///|
+fn pptx_crop_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GD4syc+9jC/91V2RgaGdCYGBmGgaLRzfl5Jal5JfEhlQWpxrF5F",
+  )
+  joined.write_string(
+    "bs7aIG//wwY8+z5rL4oJnN3H7LTiLZ9N34HEPwzapbczKjXPLXt7//E2n6bMx0c0N9nX80evvM6e",
+  )
+  joined.write_string(
+    "flROeOYD6Z1a2poXXl+QtDf5VPw5ysbDUbKG3awi54mg57rbs6uKezyaTs6TsnwmIz9VyXYRs5az",
+  )
+  joined.write_string(
+    "y3kP+UnNZ1KlQlj2tjJejQ29qy1b4za/2ybzxLa6Y3JlZt3TmbdPV+DU9fy4hccvrrdFYu3FCZLh",
+  )
+  joined.write_string(
+    "1ffn7hS5z6dq/FxSyndJtNyEV4sOt8SY7zjXXWfxWNI81+zrzI/ntvssc/7IqLm/MTnm6IxQH48z",
+  )
+  joined.write_string(
+    "M66e3r9XX0f8172MN033LJdNsT8652/oNL4e+7W1ujyReZc+rflnfXZNldeCZ/WX6hgDUMKtyO/7",
+  )
+  joined.write_string(
+    "/E1Ani4w7LiBdHxRak6xvh6I7D1/luuQAQ/7h93+gUXld206TuyKdbkR+ox5itnrttfsvqLfv4n5",
+  )
+  joined.write_string(
+    "+9lU+Hw6r78kb35ZGn+PSaX6Ai2vhBdTrk82Zlr3t7Kawc3TSjf9fcCBJpbczSv1LU5PKc+Yw7Sx",
+  )
+  joined.write_string(
+    "x0LIYJlI35zJUhe9tGocpqs394cti3E73Bxinjnh/ami84+XM549lTJXTMA6lvH19Ib/N+ok1FrV",
+  )
+  joined.write_string(
+    "178Ti/1V+Eh7YqokrxqjooqcUlDevsuu0xrNTeNrb+5hQPXahYrzR84DeR5Ar4FECwpK9AuKUouB",
+  )
+  joined.write_string(
+    "qSKxJDM/D5Qmeif4ZzMZChx9/1ck8Z1p4cXU3TnXvAVZ8nPtHTzS7jr8m9i5qK4qWdf1xdLt32dU",
+  )
+  joined.write_string(
+    "2j87u8Gy+rjfjJPHFBJ3ChwweJGRY+Hx49edfWUHVqxImNLNqBozIcF4H89Kf0lO58ClapFLWV5N",
+  )
+  joined.write_string(
+    "btk55UqxX5Xb+gxB4Tar2UnfVoXM5v9j+Vw2vyVjZ7jZAX6V/+xCy09m1fT/eqH9mvHki30LTW67",
+  )
+  joined.write_string(
+    "GFwTPjlz7s3gn1fPSHGe3cU67ffuM9aXGeTZ/6V/f3zqS+Sh20VbhRbZucarbLm7a/ds9wc7j1cw",
+  )
+  joined.write_string(
+    "owZAydxTXzYAeYrAAJCHBgAkftGDARrfG4HxLcD24O5yju23t8i6LMkUF9zlVdswIeZ2wqyWGJHf",
+  )
+  joined.write_string(
+    "39gKAwoK/rz/sf/xrHcbI8qOexyzZgwNZHJevscsT6hA0u+2rYHXpczMvc6M2kIlb5dZLp6qWZ5h",
+  )
+  joined.write_string(
+    "1hjhJsM5I5iL/Zzn2R0eoPg2X9zf7WN5rJN95boip7jpT/uO+zPf0p/8NcrhTSlvTgTzv+TfhSZc",
+  )
+  joined.write_string(
+    "/XF3xUpeHuf0u5ZxZkGPsBrj+h/zwlyvNWzn/f9rTS0TqmeXiaxT2grkKQM9qwD1bHFOZkpqMdTP",
+  )
+  joined.write_string(
+    "YI4hsm+zmA152B7Y+iduub6LRcrLIn6a0ImoSewC286lV03rfTvt2dvsF5Mc2vom/dgv33t8/o5V",
+  )
+  joined.write_string(
+    "+XqmKoYbrjJriM2OEch/UGW5d0/jqt4jF2e18N7ZcajwVo/8nqDXM3e1xIS6L5GKiDrNfiRLvC+k",
+  )
+  joined.write_string(
+    "9JTOX6PlQiu/bqw4k2J/0vhdW2L/03sNLw+GpKcvmHNXe8Vp3c/1b0zOH/xUvSl+4lLblQcEqsvZ",
+  )
+  joined.write_string(
+    "V1bksW05dkLvwv261ZsrDmQeab+/LB7Vy4ea5R5ZQ8s8UVQvIzzbO8nR77CBgOv3OYc+zfOL2sqx",
+  )
+  joined.write_string(
+    "SO3uAq+cANanDOtsM3Vu9pmWeVdVv5ngoL1RYfbPk/Mr5epT975cm5i+ZIF1+Mefax7wzH0zpex4",
+  )
+  joined.write_string(
+    "V/2b7d/757RqzBFaVhzxkZtt38r31/bxuG00eeP0UvvesRfeDQrRW5TOWPXrVfq6hx354uX+oYUx",
+  )
+  joined.write_string(
+    "VsRQNoVXp+sR45oLff0CH+U7lD7ONPudPe+f8X3T3mk/7pyc7Lu7xpnj7IaQjK38e/zMJ793eyr1",
+  )
+  joined.write_string(
+    "Z57A5k9Rzx6ds9YtN/myZ175kS2rfjQZq+d0qVV+dDmR+KlYv6c48gDvw4Qt97OSX22VMFks9JZR",
+  )
+  joined.write_string(
+    "eGLcFa1gF0mPfQt7zoTUhC5J/yPFuThnc46QQnnKr6mM13/UTKxZovG7LWedJtu18D+Z+2LU1Hb/",
+  )
+  joined.write_string(
+    "OcHYX5vy6dQ0czsfiRk7DJ4x7+88KKLE89/zLytqaEdvmMnrDOR5MiCKk9zUlMxE/czcxHRgYBfk",
+  )
+  joined.write_string(
+    "pb/m+VD8/OmkR0kJCQ++fingZLrko3CGUel/3MxQniUsNrEyzlrPVP5b1D9gOBzILsbWWn6mfrqN",
+  )
+  joined.write_string(
+    "BqNm2oeSr8WRz6dcYAGWYYxMIsy4KzYYaGBkwF7NoRuAXsIjDLBgRCnv0TWil58IjcJM2EtTdBPQ",
+  )
+  joined.write_string(
+    "CyCECSLMBIsjdMPQMzjCMEYWwtkd3TT0vIMw7QsLjpyEbgR6gkAYkcSGPXkEeLOygVSwA+EdoOXX",
+  )
+  joined.write_string("wTwAyj8lRMkIAAA=")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX picture source rectangles are cropped" {
+  let result = convert(pptx_crop_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut cropped = false
+  for command in commands {
+    match command {
+      @render.ImageSub(_, sx, _, sw, _, _, _, _, _) =>
+        if sx == 1.0 && sw == 1.0 {
+          cropped = true
+        }
+      _ => ()
+    }
+  }
+  assert_true(cropped, msg="PPTX picture crop")
+}

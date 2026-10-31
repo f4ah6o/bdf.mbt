@@ -1085,6 +1085,47 @@ fn pptx_emit_chart(
 }
 
 ///|
+fn pptx_u32_be(data : Bytes, offset : Int32) -> Int32 {
+  (data[offset].to_int() << 24) |
+  (data[offset + 1].to_int() << 16) |
+  (data[offset + 2].to_int() << 8) |
+  data[offset + 3].to_int()
+}
+
+///|
+fn pptx_png_size(data : Bytes) -> (Int32, Int32)? {
+  if data.length() < 24 || data[:8] != b"\x89PNG\r\n\x1a\n"[:] {
+    return None
+  }
+  Some((pptx_u32_be(data, 16), pptx_u32_be(data, 20)))
+}
+
+///|
+fn pptx_src_rect(shape : PptxXmlNode) -> (Double, Double, Double, Double)? {
+  let rect = pptx_child(pptx_child(Some(shape), "blipFill"), "srcRect")
+  match rect {
+    Some(value) => {
+      let factor = fn(name) {
+        (@string.parse_double(pptx_attribute(value.element, name, "0")) catch {
+          _ => 0.0
+        }) /
+        100000.0
+      }
+      let left = factor("l")
+      let top = factor("t")
+      let right = factor("r")
+      let bottom = factor("b")
+      if left <= 0.0 && top <= 0.0 && right <= 0.0 && bottom <= 0.0 {
+        None
+      } else {
+        Some((left, top, right, bottom))
+      }
+    }
+    None => None
+  }
+}
+
+///|
 fn pptx_picture_alpha(shape : PptxXmlNode) -> Double? {
   let blip = pptx_child(pptx_child(Some(shape), "blipFill"), "blip")
   let fix = pptx_child(blip, "alphaModFix")
@@ -1283,13 +1324,39 @@ fn pptx_render_slide(
         object.alpha(Float::from_double(alpha.unwrap()))
       }
       let index = object.add_image(hash)
-      object.image(
-        index,
-        Float::from_double(shape_x),
-        Float::from_double(shape_y),
-        Float::from_double(draw_width),
-        Float::from_double(draw_height),
-      )
+      let mut cropped = false
+      match (pptx_png_size(bytes), pptx_src_rect(shape)) {
+        (Some((image_width, image_height)), Some((left, top, right, bottom))) => {
+          let sx = left * image_width.to_double()
+          let sy = top * image_height.to_double()
+          let sw = (1.0 - left - right) * image_width.to_double()
+          let sh = (1.0 - top - bottom) * image_height.to_double()
+          if sw > 0.0 && sh > 0.0 {
+            object.image_sub(
+              index,
+              Float::from_double(sx),
+              Float::from_double(sy),
+              Float::from_double(sw),
+              Float::from_double(sh),
+              Float::from_double(shape_x),
+              Float::from_double(shape_y),
+              Float::from_double(draw_width),
+              Float::from_double(draw_height),
+            )
+            cropped = true
+          }
+        }
+        _ => ()
+      }
+      if !cropped {
+        object.image(
+          index,
+          Float::from_double(shape_x),
+          Float::from_double(shape_y),
+          Float::from_double(draw_width),
+          Float::from_double(draw_height),
+        )
+      }
       if alpha is Some(_) {
         object.restore()
       }
