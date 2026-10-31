@@ -27,10 +27,12 @@ fn PdfGraphics::end_path(
       let index = self.object.add_path(@core.Inline(entry))
       if fill {
         self.sync_fill()
+        self.sync_alpha(false)
         self.object.fill_path(index, rule)
       }
       if stroke {
         self.sync_stroke()
+        self.sync_alpha(true)
         self.object.stroke_path(index)
       }
       if self.clip >= 0 {
@@ -60,6 +62,13 @@ fn PdfGraphics::execute(
   }
   let n = args.length()
   match operator {
+    b"gs" =>
+      if n >= 1 {
+        match args[n - 1] {
+          Name(name) => self.apply_ext_state(name)
+          _ => ()
+        }
+      }
     b"q" => self.save()
     b"Q" => self.restore()
     b"cm" =>
@@ -147,7 +156,7 @@ fn PdfGraphics::execute(
       }
     b"CS" | b"cs" =>
       if n >= 1 {
-        let space = pdf_device_color_space(args[n - 1])
+        let space = self.resolve_color_space(args[n - 1])
         if operator == b"CS" {
           self.state.stroke_space = space
           self.state.stroke = 0x000000ffU
@@ -272,6 +281,8 @@ fn PdfFile::graphics_page(
     geometry.width,
     geometry.height,
     geometry.matrix,
+    file=Some(self),
+    resources=page.attrs.resources,
   )
   graphics.run(content)
   let encoded = graphics.object.encode() catch {

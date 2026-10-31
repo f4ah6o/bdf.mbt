@@ -61,3 +61,33 @@ fn check_pdf_graphics_page(
     )
   }
 }
+
+///|
+test "unsupported PDF soft masks fail closed" {
+  let file : PdfFile = {
+    data: b"",
+    entries: {},
+    objects: {},
+    loading: {},
+    object_streams: {},
+    trailers: [],
+    trailer: PdfNull,
+  }
+  let resources = PdfDict([
+    (b"ExtGState", PdfDict([(b"GS1", PdfDict([(b"SMask", PdfDict([]))]))])),
+  ])
+  let graphics = PdfGraphics::new(
+    10.0,
+    10.0,
+    (1.0, 0.0, 0.0, 1.0, 0.0, 0.0),
+    file=Some(file),
+    resources=Some(resources),
+  )
+  let rejected = try {
+    graphics.run(b"/GS1 gs")
+    false
+  } catch {
+    _ => true
+  }
+  assert_true(rejected)
+}

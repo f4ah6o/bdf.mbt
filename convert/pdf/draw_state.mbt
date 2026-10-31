@@ -11,6 +11,9 @@ priv struct PdfDrawState {
   mut miter : Double
   mut dash : Array[Double]
   mut phase : Double
+  mut fill_alpha : Double
+  mut stroke_alpha : Double
+  mut blend : Byte
 }
 
 ///|
@@ -19,11 +22,15 @@ priv struct PdfEmittedState {
   mut stroke : UInt32?
   mut line : (Double, Byte, Byte, Double)?
   mut dash_key : String
+  mut alpha : Double
+  mut blend : Byte
 }
 
 ///|
 priv struct PdfGraphics {
   object : @core.ObjectBuilder
+  file : PdfFile?
+  resources : PdfObject?
   mut path : PdfDrawPath
   mut state : PdfDrawState
   mut emitted : PdfEmittedState
@@ -46,6 +53,9 @@ fn PdfDrawState::copy(self : PdfDrawState) -> PdfDrawState {
     miter: self.miter,
     dash: self.dash.copy(),
     phase: self.phase,
+    fill_alpha: self.fill_alpha,
+    stroke_alpha: self.stroke_alpha,
+    blend: self.blend,
   }
 }
 
@@ -56,6 +66,8 @@ fn PdfEmittedState::copy(self : PdfEmittedState) -> PdfEmittedState {
     stroke: self.stroke,
     line: self.line,
     dash_key: self.dash_key,
+    alpha: self.alpha,
+    blend: self.blend,
   }
 }
 
@@ -64,6 +76,8 @@ fn PdfGraphics::new(
   width : Double,
   height : Double,
   base : (Double, Double, Double, Double, Double, Double),
+  file~ : PdfFile? = None,
+  resources~ : PdfObject? = None,
 ) -> PdfGraphics {
   let object = @core.ObjectBuilder::new()
   object.set_bbox(
@@ -74,6 +88,8 @@ fn PdfGraphics::new(
   )
   let graphics : PdfGraphics = {
     object,
+    file,
+    resources,
     path: PdfDrawPath::new(),
     state: {
       matrix: base,
@@ -87,8 +103,18 @@ fn PdfGraphics::new(
       miter: 10.0,
       dash: [],
       phase: 0.0,
+      fill_alpha: 1.0,
+      stroke_alpha: 1.0,
+      blend: 0,
     },
-    emitted: { fill: None, stroke: None, line: None, dash_key: "", },
+    emitted: {
+      fill: None,
+      stroke: None,
+      line: None,
+      dash_key: "",
+      alpha: 1.0,
+      blend: 0,
+    },
     stack: [],
     unsaved: 0,
     clip: -1,
@@ -187,5 +213,22 @@ fn PdfGraphics::sync_stroke(self : PdfGraphics) -> Unit {
       Float::from_double(self.state.phase),
     )
     self.emitted.dash_key = key
+  }
+}
+
+///|
+fn PdfGraphics::sync_alpha(self : PdfGraphics, stroke : Bool) -> Unit {
+  let alpha = if stroke {
+    self.state.stroke_alpha
+  } else {
+    self.state.fill_alpha
+  }
+  if self.emitted.alpha != alpha {
+    self.object.alpha(Float::from_double(alpha))
+    self.emitted.alpha = alpha
+  }
+  if self.emitted.blend != self.state.blend {
+    self.object.blend(self.state.blend)
+    self.emitted.blend = self.state.blend
   }
 }

@@ -66,3 +66,6 @@ PDF-to-BDF converter. Run `TestCodexPDFGraphics` and
 The graphics comparisons also cover dash patterns, rounding-based state
 deduplication and device color-space operators. `generate_dash_test.go`
 compares 512 pairs of dash values with `TestCodexPDFDashKeys` upstream.
+The synthetic page cases also cover inherited named and ICC-based color
+spaces, and extended graphics states for transparency, blending and line
+dashes. Nontrivial soft masks remain unsupported by this internal renderer.
