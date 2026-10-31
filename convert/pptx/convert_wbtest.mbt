@@ -2462,3 +2462,126 @@ test "PPTX rotated rectangles use rotated paths" {
   }
   assert_true(path, msg="PPTX rotated rectangle")
 }
+
+///|
+fn pptx_picture_alpha_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GC4vCc+9jC/91V2RgaGdCYGBmGgaLRzfl5Jal5JfEhlQWpxrF5F",
+  )
+  joined.write_string(
+    "bs7aIG//wwY8+z5rL4oJnN3H7LTiLZ9N34HEPwzapbczKjXPLXt7//E2n6bMx0c0N9nX80evvM6e",
+  )
+  joined.write_string(
+    "flROeOYD6Z1a2poXXl+QtDf5VPw5ysbDUbKG3awi54mg57rbs6uKezyaTs6TsnwmIz9VyXYRs5az",
+  )
+  joined.write_string(
+    "y3kP+UnNZ1KlQlj2tjJejQ29qy1b4za/2ybzxLa6Y3JlZt3TmbdPV+DU9fy4hccvrrdFYu3FCZLh",
+  )
+  joined.write_string(
+    "1ffn7hS5z6dq/FxSyndJtNyEV4sOt8SY7zjXXWfxWNI81+zrzI/ntvssc/7IqLm/MTnm6IxQH48z",
+  )
+  joined.write_string(
+    "M66e3r9XX0f8172MN033LJdNsT8652/oNL4e+7W1ujyReZc+rflnfXZNldeCZ/WX6hgDUMKtyO/7",
+  )
+  joined.write_string(
+    "/E1Ani4w7LiBdHxRak6xvh6I7D1/luuQAQ/7h93+gUXld206TuyKdbkR+ox5itnrttfsvqLfv4n5",
+  )
+  joined.write_string(
+    "+9lU+Hw6r78kb35ZGn+PSaX6Ai2vhBdTrk82Zlr3t7Kawc3TSjf9fcCBJpbczSv1LU5PKc+Yw7Sx",
+  )
+  joined.write_string(
+    "x0LIYJlI35zJUhe9tGocpqs394cti3E73Bxinjnh/ami84+XM549lTJXTMA6lvH19Ib/N+ok1FrV",
+  )
+  joined.write_string(
+    "178Ti/1V+Eh7YqokrxqjooqcUlDevsuu0xrNTeNrb+5hQPXahYrzR84DeR5Ar4FECwpK9AuKUouB",
+  )
+  joined.write_string(
+    "qSKxJDM/D5Qmeif4ZzMZChx9/1ck8Z1p4cXU3TnXvAVZ8nPtHTzS7jr8m9i5qK4qWdf1xdLt32dU",
+  )
+  joined.write_string(
+    "2j87u8Gy+rjfjJPHFBJ3ChwweJGRY+Hx49edfWUHVqxImNLNqBozIcF4H89Kf0lO58ClapFLWV5N",
+  )
+  joined.write_string(
+    "btk55UqxX5Xb+gxB4Tar2UnfVoXM5v9j+Vw2vyVjZ7jZAX6V/+xCy09m1fT/eqH9mvHki30LTW67",
+  )
+  joined.write_string(
+    "GFwTPjlz7s3gn1fPSHGe3cU67ffuM9aXGeTZ/6V/f3zqS+Sh20VbhRbZucarbLm7a/ds9wc7j1cw",
+  )
+  joined.write_string(
+    "owZAydxTXzYAeYrAAJCHBgAkftGDARrfG4HxLcD24O5yju23t8i6LMkUF9zlVdswIeZ2wqyWGJHf",
+  )
+  joined.write_string(
+    "39gKAwoK/rz/sf/xrHcbI8qOexyzZgwNZHJevscsT6hA0u+2rYHXpczMvc6M2kIlb5dZLp6qWZ5h",
+  )
+  joined.write_string(
+    "1hjhJsM5I5iL/Zzn2R0eoPg2X9zf7WN5rJN95boip7jpT/uO+zPf0p/8NcrhTSlvTgTzv+TfhSZc",
+  )
+  joined.write_string(
+    "/XF3xUpeHuf0u5ZxZkGPsBrj+h/zwlyvNWzn/f9rTS0TqmeXiaxT2grkKQM9qwD1bHFOZkpqMdTP",
+  )
+  joined.write_string(
+    "YI4hsm+zmA152B7Y+iduub6LRcrLIn6a0ImoSewC286lV03rfTvt2dvsF5Mc2vom/dgv33t8/o5V",
+  )
+  joined.write_string(
+    "+XqmKoYbrjJriM2OEch/UGW5d0/jqt4jF2e18N7ZcajwVo/8nqDXM3e1xIS6L5GKiDrNfiRLvC+k",
+  )
+  joined.write_string(
+    "9JTOX6PlQiu/bqw4k2J/0vhdW2L/03sNLw+GpKcvmHNXe8Vp3c/1b0zOH/xUvSl+4lLblQcEqsvZ",
+  )
+  joined.write_string(
+    "V1bksW05dkLvwv261ZsrDmQeab+/LB7Vy4Z/Di92BXq3FFjmiaJ6GeHZ3qDTecBY3fNdW+f+aTaW",
+  )
+  joined.write_string(
+    "UGnVh0GKXy9wbf3C3LNXcdqfSbkZP37fagyYUHVg+tyUsrTryuGn47SLHOSXmJrO9ePyulCgveTm",
+  )
+  joined.write_string(
+    "1S/Vm6tqlqm4pLEEX0vw7Zd4salyRYzkFAXPHKeXWbeOvvBqOGB9RcdnjfPkHdeqzib9+mJdIMc8",
+  )
+  joined.write_string(
+    "60SS1BLRM12POE0mt83zvWGrdmjz/C0366vq++9tW/vkR9bPuOWxfmpyVzeEvFjCvcXT/HG81xOp",
+  )
+  joined.write_string(
+    "O8eU056onD8qc23S+r8XPhdGVCu5+qZPkVgWbNLZXd0v4mb3/VDkdMY7FjlTS7RXhgRvZBSOX3Qv",
+  )
+  joined.write_string(
+    "qehLfpLj5/xlMcfvrY04Oc9ANnuXxqWTzA+WnPRVrOrZc3qDb9n8E49XPnQ68HVDzdo9DNq/r72O",
+  )
+  joined.write_string(
+    "CdZYsv7l6RI7/2dPKhonRL5Rfhhusv9h4pbGi+LnMg/G1xm4cR1enYleZgby32JyAPJcGRAFS25q",
+  )
+  joined.write_string(
+    "SmaifmZuYjow2Avy0l/zfCh+/nTSo6SEhAdfvxRwMl3qUThzkEVFfQr7feYgm3l6fYqixZPq59gf",
+  )
+  joined.write_string(
+    "OHDgzIkTBZ/uL/nuUMjmH24/vdSP0xdYlDEyiTDjrt9goIGRAXtth24AekGPMMCCEaXYR9eIXowi",
+  )
+  joined.write_string(
+    "NAozYS9U0U1AL4cQJogwEyyV0A1Dz+cIwxhZCOd6dNPQsxDCtC8sODIUuhHoqQFhRA4b9rQR4M3K",
+  )
+  joined.write_string("BlLBDoR3gJbfA/MA2fcFINAIAAA=")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX picture alpha is applied" {
+  let result = convert(pptx_picture_alpha_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut alpha = false
+  let mut image = false
+  for command in commands {
+    match command {
+      @render.Alpha(value) => if value == 0.5 { alpha = true }
+      @render.Image(_, _, _, _, _) => image = true
+      _ => ()
+    }
+  }
+  assert_true(alpha, msg="PPTX picture alpha")
+  assert_true(image, msg="PPTX picture")
+}

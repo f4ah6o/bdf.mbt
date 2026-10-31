@@ -1085,6 +1085,21 @@ fn pptx_emit_chart(
 }
 
 ///|
+fn pptx_picture_alpha(shape : PptxXmlNode) -> Double? {
+  let blip = pptx_child(pptx_child(Some(shape), "blipFill"), "blip")
+  let fix = pptx_child(blip, "alphaModFix")
+  match fix {
+    Some(value) =>
+      match pptx_attribute(value.element, "amt", "") {
+        "" => None
+        text =>
+          Some((@string.parse_double(text) catch { _ => 100000.0 }) / 100000.0)
+      }
+    None => None
+  }
+}
+
+///|
 fn pptx_render_slide(
   package : @ooxml.OoxmlPackage,
   part : String,
@@ -1262,6 +1277,11 @@ fn pptx_render_slide(
         _ => raise PptxInvalid("PPTX picture part is missing")
       }
       let hash = writer.add_part("img", bytes)
+      let alpha = pptx_picture_alpha(shape)
+      if alpha is Some(_) {
+        object.save()
+        object.alpha(Float::from_double(alpha.unwrap()))
+      }
       let index = object.add_image(hash)
       object.image(
         index,
@@ -1270,6 +1290,9 @@ fn pptx_render_slide(
         Float::from_double(draw_width),
         Float::from_double(draw_height),
       )
+      if alpha is Some(_) {
+        object.restore()
+      }
       continue
     }
     let geom = pptx_child(pptx_child(Some(shape), "spPr"), "prstGeom")
