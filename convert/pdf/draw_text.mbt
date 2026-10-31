@@ -63,6 +63,33 @@ fn PdfFile::default_simple_font(self : PdfFile) -> PdfSimpleFont {
 }
 
 ///|
+fn PdfGraphics::simple_font_resource(
+  self : PdfGraphics,
+  file : PdfFile,
+  object : PdfObject,
+) -> (PdfSimpleFont, Int32) raise PdfStreamError {
+  match object {
+    PdfRef(number, generation) =>
+      match self.fonts.get((number, generation)) {
+        Some(cached) => cached
+        None => {
+          let font = file.simple_font(object)
+          let key = self.next_font_key
+          self.next_font_key += 1
+          self.fonts[(number, generation)] = (font, key)
+          (font, key)
+        }
+      }
+    _ => {
+      let font = file.simple_font(object)
+      let key = self.next_font_key
+      self.next_font_key += 1
+      (font, key)
+    }
+  }
+}
+
+///|
 fn PdfGraphics::select_simple_font(
   self : PdfGraphics,
   name : Bytes,
@@ -73,23 +100,7 @@ fn PdfGraphics::select_simple_font(
       let resources = file.page_deref(self.resources)
       let fonts = file.page_deref(pdf_dict_get(resources, b"Font"))
       match pdf_dict_get(fonts, name) {
-        Some(PdfRef(number, generation)) =>
-          match self.fonts.get((number, generation)) {
-            Some(cached) => cached
-            None => {
-              let font = file.simple_font(PdfRef(number, generation))
-              let key = self.next_font_key
-              self.next_font_key += 1
-              self.fonts[(number, generation)] = (font, key)
-              (font, key)
-            }
-          }
-        Some(object) => {
-          let font = file.simple_font(object)
-          let key = self.next_font_key
-          self.next_font_key += 1
-          (font, key)
-        }
+        Some(object) => self.simple_font_resource(file, object)
         None => (self.default_font, 0)
       }
     }

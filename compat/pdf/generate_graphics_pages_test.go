@@ -36,7 +36,7 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer out.Close()
-	for i := 0; i < 64; i++ {
+	for i := 0; i < 70; i++ {
 		content := []byte("q 0.2 0.4 0.8 rg 10 20 100 60 re f Q 2 w 0 0 m 20 40 l S\n")
 		resources := ""
 		if i == 8 {
@@ -172,7 +172,22 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 				content = []byte("BT /F1 12 Tf 16 TL (First) Tj 2 .5 (Second Words) \" ET")
 			case 63:
 				content = []byte("BT /F1 12 Tf 0 TL (A) Tj 0 .25 (B C) \" ET")
+			case 64:
+				content = []byte("BT /F1 12 Tf (Black) Tj 1 0 0 rg (Red) Tj ET")
+			case 65:
+				content = []byte("BT /F1 12 Tf 2 Tr (Both) Tj 4 w 0 0 1 RG (Blue) Tj ET")
+			case 66:
+				content = []byte("BT /F1 12 Tf (A) Tj /DeviceRGB cs 1 0 0 sc (B) Tj ET")
+			case 67:
+				content = []byte("/GS1 gs BT (Font) Tj ET")
+			case 68:
+				content = []byte("BT /F1 12 Tf (One) Tj /GS1 gs (Two) Tj ET")
+			case 69:
+				content = []byte("BT /F1 12 Tf (One) Tj .3 g (Two) Tj 0 g (Three) Tj ET")
 			}
+		}
+		if i == 67 || i == 68 {
+			resources = "/Resources << /Font << /F1 5 0 R >> /ExtGState << /GS1 << /Font [5 0 R 22] /ca 0.5 /CA 0.7 >> >> >>"
 		}
 		filter := ""
 		if i&1 != 0 {

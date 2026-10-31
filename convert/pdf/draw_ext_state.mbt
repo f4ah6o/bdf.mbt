@@ -46,6 +46,19 @@ fn PdfGraphics::apply_ext_state(
       }
     None => ()
   }
+  match file.page_deref(pdf_dict_get(state, b"Font")) {
+    PdfArray(values) if values.length() == 2 =>
+      if file.page_deref(Some(values[0])) is PdfDict(_) {
+        let (font, key) = self.simple_font_resource(file, values[0])
+        self.state.font = Some(font)
+        self.state.font_key = key
+        match file.page_num(Some(values[1])) {
+          Some(size) => self.state.font_size = size
+          None => ()
+        }
+      }
+    _ => ()
+  }
   match pdf_dict_get(state, b"LW") {
     Some(value) =>
       match file.page_num(Some(value)) {

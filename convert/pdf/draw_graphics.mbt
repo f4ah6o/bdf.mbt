@@ -61,7 +61,21 @@ fn PdfGraphics::execute(
     return
   }
   if self.text.state.in_text {
-    raise InvalidStream("unsupported operator in PDF text object")
+    match operator {
+      b"gs"
+      | b"SC"
+      | b"SCN"
+      | b"sc"
+      | b"scn"
+      | b"g"
+      | b"G"
+      | b"rg"
+      | b"RG"
+      | b"k"
+      | b"K" => self.flush_text()
+      b"CS" | b"cs" | b"w" | b"J" | b"j" | b"M" | b"d" | b"ri" | b"i" => ()
+      _ => raise InvalidStream("unsupported operator in PDF text object")
+    }
   }
   if self.path.execute(operator, args) {
     return
