@@ -88,3 +88,10 @@ leading, rise and rendering-mode operators against upstream before glyph
 output. `generate_text_state_test.go` needs `BDF_PDF_FIXTURES` and
 `BDF_REFERENCE_OUTPUT` and runs as `TestCodexPDFTextState` upstream. Text
 glyph decoding and drawing remain to be implemented.
+
+The simple-font fixtures compare the Standard, WinAnsi and MacRoman glyph
+names and Unicode values, encoding differences, system-font style selection
+and width fallback against upstream. Run `generate_simple_encodings.py` against
+the upstream checkout for the tables, and `TestCodexPDFSimpleEncoding` and
+`TestCodexPDFSimpleFont` using the corresponding Go generators. Embedded,
+Type 0 and Type 3 fonts are not yet handled by this internal simple-font path.
