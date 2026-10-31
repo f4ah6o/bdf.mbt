@@ -116,6 +116,31 @@ fn pptx_text_width(text : String, size : Double) -> Double {
 }
 
 ///|
+fn pptx_collect_shapes(
+  node : PptxXmlNode,
+  offset_x : Double,
+  offset_y : Double,
+  out : Array[(PptxXmlNode, Double, Double)],
+) -> Unit {
+  for shape in pptx_children(Some(node)) {
+    match shape.element.name.local_name {
+      "sp" => out.push((shape, offset_x, offset_y))
+      "grpSp" => {
+        let transform = pptx_transform_node(
+          pptx_child(pptx_child(Some(shape), "grpSpPr"), "xfrm"),
+        )
+        let (dx, dy) = match transform {
+          Some(value) => (value.x, value.y)
+          None => (0.0, 0.0)
+        }
+        pptx_collect_shapes(shape, offset_x + dx, offset_y + dy, out)
+      }
+      _ => ()
+    }
+  }
+}
+
+///|
 fn pptx_render_slide(
   package : @ooxml.OoxmlPackage,
   part : String,
@@ -127,11 +152,29 @@ fn pptx_render_slide(
   let fonts : Map[String, Int32] = Map([])
   let root = pptx_read_xml(package, part)
   let tree = pptx_child(pptx_child(Some(root), "cSld"), "spTree")
-  for shape in pptx_children(tree) {
-    let kind = shape.element.name.local_name
-    if kind != "sp" {
-      continue
+  let background = pptx_node_color(
+    pptx_child(pptx_child(pptx_child(Some(root), "cSld"), "bg"), "bgPr"),
+    "solidFill",
+  )
+  match background {
+    Some(color) => {
+      object.fill_color(color)
+      object.fill_rect(
+        0.0,
+        0.0,
+        Float::from_double(width),
+        Float::from_double(height),
+      )
     }
+    None => ()
+  }
+  let shapes : Array[(PptxXmlNode, Double, Double)] = []
+  match tree {
+    Some(value) => pptx_collect_shapes(value, 0.0, 0.0, shapes)
+    None => ()
+  }
+  for shape_entry in shapes {
+    let (shape, offset_x, offset_y) = shape_entry
     let transform = pptx_transform_node(
       pptx_child(pptx_child(Some(shape), "spPr"), "xfrm"),
     )
@@ -142,13 +185,15 @@ fn pptx_render_slide(
     if transform.width <= 0.0 || transform.height <= 0.0 {
       continue
     }
+    let shape_x = transform.x + offset_x
+    let shape_y = transform.y + offset_y
     let fill = pptx_node_color(pptx_child(Some(shape), "spPr"), "solidFill")
     match fill {
       Some(color) => {
         object.fill_color(color)
         object.fill_rect(
-          Float::from_double(transform.x),
-          Float::from_double(transform.y),
+          Float::from_double(shape_x),
+          Float::from_double(shape_y),
           Float::from_double(transform.width),
           Float::from_double(transform.height),
         )
@@ -162,7 +207,7 @@ fn pptx_render_slide(
     let line : Array[PptxLineItem] = []
     let mut line_width = 0.0
     let mut line_height = 21.6
-    let mut y = transform.y + line_height
+    let mut y = shape_y + line_height
     let mut paragraph_index = 0
     for paragraph in pptx_children(Some(body)) {
       if paragraph.element.name.local_name != "p" {
@@ -177,7 +222,7 @@ fn pptx_render_slide(
           }
         None => "left"
       }
-      let mut x = transform.x
+      let mut x = shape_x
       if paragraph_index > 0 {
         y += line_height
       }
@@ -187,7 +232,7 @@ fn pptx_render_slide(
         if !line.is_empty() {
           let total = line[line.length() - 1].x +
             line[line.length() - 1].advance -
-            transform.x
+            shape_x
           match align {
             "right" => offset = Double::max(0.0, transform.width - total)
             "center" =>
@@ -214,7 +259,7 @@ fn pptx_render_slide(
           object.fill_color(item.color)
           object.fill_text(
             item.text,
-            Float::from_double(transform.x + offset + item.x),
+            Float::from_double(shape_x + offset + item.x),
             Float::from_double(y),
             Float::from_double(item.advance),
           )
@@ -243,13 +288,13 @@ fn pptx_render_slide(
             if line.is_empty() {
               line_height = size * 1.2
             }
-            let item_x = x - transform.x
-            if x + advance > transform.x + transform.width && !line.is_empty() {
+            let item_x = x - shape_x
+            if x + advance > shape_x + transform.width && !line.is_empty() {
               flush()
               y += line_height
-              x = transform.x
+              x = shape_x
             }
-            if y > transform.y + transform.height {
+            if y > shape_y + transform.height {
               flush()
               break
             }
@@ -271,7 +316,7 @@ fn pptx_render_slide(
               advance,
             })
             x += advance
-            line_width = x - transform.x
+            line_width = x - shape_x
           }
           _ => ()
         }
