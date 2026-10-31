@@ -110,17 +110,25 @@ fn writer_encode_part(part : WriterPart) -> (Bytes, String) {
 }
 
 ///|
-fn DocumentWriter::manifest(self : DocumentWriter, entries : Array[Json]) -> Json {
+fn DocumentWriter::manifest(
+  self : DocumentWriter,
+  entries : Array[Json],
+) -> Json {
   let meta = if self.meta is Object(fields) {
     let copy : Map[String, Json] = Map([])
-    for key, value in fields { copy[key] = value }
+    for key, value in fields {
+      copy[key] = value
+    }
     match copy.get("generator") {
-      None | Some(String("")) | Some(Null) => copy["generator"] = Json::string("bdf-go/0.1")
+      None | Some(String("")) | Some(Null) =>
+        copy["generator"] = Json::string("bdf-go/0.1")
       _ => ()
     }
     Json::object(copy)
-  } else { self.meta }
-  Json::object({
+  } else {
+    self.meta
+  }
+  let root : Map[String, Json] = {
     "bdf": Json::number(1.0),
     "opset": Json::number(1.0),
     "unit": Json::string("pt"),
@@ -128,7 +136,11 @@ fn DocumentWriter::manifest(self : DocumentWriter, entries : Array[Json]) -> Jso
     "views": Json::array(self.views),
     "tables": Json::array(self.tables),
     "parts": Json::array(entries),
-  })
+  }
+  if self.tables.is_empty() {
+    root.remove("tables")
+  }
+  Json::object(root)
 }
 
 ///|
