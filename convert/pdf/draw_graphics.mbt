@@ -91,13 +91,24 @@ fn PdfGraphics::execute(
         .to_int()
         .to_byte()
     b"M" => self.state.miter = pdf_draw_number(args, n - 1)
+    b"d" =>
+      if n >= 2 {
+        self.state.dash = match args[n - 2] {
+          ArrayValue(values) =>
+            values.map(fn(value) { pdf_draw_number([value], 0) })
+          _ => []
+        }
+        self.state.phase = pdf_draw_number(args, n - 1)
+      }
     b"g" | b"G" => {
       let value = pdf_draw_number(args, n - 1)
       let color = pdf_color(value, value, value)
       if operator == b"G" {
         self.state.stroke = color
+        self.state.stroke_space = PdfGray
       } else {
         self.state.fill = color
+        self.state.fill_space = PdfGray
       }
     }
     b"rg" | b"RG" =>
@@ -109,8 +120,10 @@ fn PdfGraphics::execute(
         )
         if operator == b"RG" {
           self.state.stroke = color
+          self.state.stroke_space = PdfRGB
         } else {
           self.state.fill = color
+          self.state.fill_space = PdfRGB
         }
       }
     b"k" | b"K" =>
@@ -126,10 +139,45 @@ fn PdfGraphics::execute(
         )
         if operator == b"K" {
           self.state.stroke = color
+          self.state.stroke_space = PdfCMYK
         } else {
           self.state.fill = color
+          self.state.fill_space = PdfCMYK
         }
       }
+    b"CS" | b"cs" =>
+      if n >= 1 {
+        let space = pdf_device_color_space(args[n - 1])
+        if operator == b"CS" {
+          self.state.stroke_space = space
+          self.state.stroke = 0x000000ffU
+        } else {
+          self.state.fill_space = space
+          self.state.fill = 0x000000ffU
+        }
+      }
+    b"SC" | b"SCN" | b"sc" | b"scn" => {
+      let stroke = operator == b"SC" || operator == b"SCN"
+      let space = if stroke {
+        self.state.stroke_space
+      } else {
+        self.state.fill_space
+      }
+      let values : Array[Double] = []
+      for arg in args {
+        match arg {
+          Integer(value) => values.push(value.to_double())
+          Real(value) => values.push(value)
+          _ => ()
+        }
+      }
+      let color = pdf_device_color(space, values)
+      if stroke {
+        self.state.stroke = color
+      } else {
+        self.state.fill = color
+      }
+    }
     b"W" => self.clip = 0
     b"W*" => self.clip = 1
     b"S" =>

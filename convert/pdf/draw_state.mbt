@@ -2,11 +2,15 @@
 priv struct PdfDrawState {
   mut matrix : (Double, Double, Double, Double, Double, Double)
   mut fill : UInt32
+  mut fill_space : PdfDeviceColorSpace
   mut stroke : UInt32
+  mut stroke_space : PdfDeviceColorSpace
   mut width : Double
   mut cap : Byte
   mut join : Byte
   mut miter : Double
+  mut dash : Array[Double]
+  mut phase : Double
 }
 
 ///|
@@ -14,6 +18,7 @@ priv struct PdfEmittedState {
   mut fill : UInt32?
   mut stroke : UInt32?
   mut line : (Double, Byte, Byte, Double)?
+  mut dash_key : String
 }
 
 ///|
@@ -32,17 +37,26 @@ fn PdfDrawState::copy(self : PdfDrawState) -> PdfDrawState {
   {
     matrix: self.matrix,
     fill: self.fill,
+    fill_space: self.fill_space,
     stroke: self.stroke,
+    stroke_space: self.stroke_space,
     width: self.width,
     cap: self.cap,
     join: self.join,
     miter: self.miter,
+    dash: self.dash.copy(),
+    phase: self.phase,
   }
 }
 
 ///|
 fn PdfEmittedState::copy(self : PdfEmittedState) -> PdfEmittedState {
-  { fill: self.fill, stroke: self.stroke, line: self.line, }
+  {
+    fill: self.fill,
+    stroke: self.stroke,
+    line: self.line,
+    dash_key: self.dash_key,
+  }
 }
 
 ///|
@@ -64,13 +78,17 @@ fn PdfGraphics::new(
     state: {
       matrix: base,
       fill: 0x000000ffU,
+      fill_space: PdfGray,
       stroke: 0x000000ffU,
+      stroke_space: PdfGray,
       width: 1.0,
       cap: 0,
       join: 0,
       miter: 10.0,
+      dash: [],
+      phase: 0.0,
     },
-    emitted: { fill: None, stroke: None, line: None, },
+    emitted: { fill: None, stroke: None, line: None, dash_key: "", },
     stack: [],
     unsaved: 0,
     clip: -1,
@@ -150,5 +168,24 @@ fn PdfGraphics::sync_stroke(self : PdfGraphics) -> Unit {
       Float::from_double(self.state.miter),
     )
     self.emitted.line = Some(line)
+  }
+  let key = pdf_dash_key(self.state.dash, self.state.phase)
+  if key != self.emitted.dash_key {
+    let mut positive = false
+    let segments = self.state.dash.map(fn(value) {
+      if value > 0.0 {
+        positive = true
+      }
+      Float::from_double(value)
+    })
+    self.object.dash(
+      if positive {
+        segments
+      } else {
+        []
+      },
+      Float::from_double(self.state.phase),
+    )
+    self.emitted.dash_key = key
   }
 }

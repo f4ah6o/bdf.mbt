@@ -63,3 +63,6 @@ pages with Flate compression and all right-angle rotations. The internal
 renderer rejects operators it does not yet implement; it is not a complete
 PDF-to-BDF converter. Run `TestCodexPDFGraphics` and
 `TestCodexPDFGraphicsPages` using the corresponding generator files.
+The graphics comparisons also cover dash patterns, rounding-based state
+deduplication and device color-space operators. `generate_dash_test.go`
+compares 512 pairs of dash values with `TestCodexPDFDashKeys` upstream.
