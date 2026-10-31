@@ -52,6 +52,112 @@ fn PdfGraphics::end_path(
 }
 
 ///|
+fn PdfGraphics::store_image(
+  self : PdfGraphics,
+  data : Bytes,
+) -> Int32 raise PdfStreamError {
+  let hash = self.child_writer.add_part("img", data) catch {
+    _ => raise InvalidStream("PDF image output failed")
+  }
+  if !self.image_hashes.contains(hash) {
+    self.image_hashes[hash] = true
+    self.images.push(data)
+  }
+  self.object.add_image(hash)
+}
+
+///|
+// Image XObjects keep JPEG bytes as they are and encode 8-bit samples as PNG.
+// Masks and other codecs need decoders that are not ported yet, so they fail
+// closed.
+fn PdfGraphics::draw_image_xobject(
+  self : PdfGraphics,
+  file : PdfFile,
+  dict : PdfObject,
+  raw : Bytes,
+) -> Unit raise PdfStreamError {
+  match pdf_dict_get(dict, b"ImageMask") {
+    Some(PdfBool(true)) =>
+      raise InvalidStream("PDF image masks are not supported yet")
+    _ => ()
+  }
+  for key in [b"SMask", b"Mask"] {
+    match pdf_dict_get(dict, key) {
+      Some(PdfNull) | None => ()
+      Some(_) => raise InvalidStream("PDF image masks are not supported yet")
+    }
+  }
+  match pdf_dict_get(dict, b"Decode") {
+    Some(PdfArray(values)) if !values.is_empty() =>
+      raise InvalidStream("PDF image Decode arrays are not supported yet")
+    _ => ()
+  }
+  let (data, codec) = pdf_decode_stream(
+    raw,
+    file.resolved_stream_filters(dict),
+    1073741824L,
+    false,
+    1073741824L,
+  )
+  match codec {
+    Some(b"DCTDecode") => {
+      if data.length() < 2 || data[0] != b'\xff' || data[1] != b'\xd8' {
+        raise InvalidStream("invalid PDF JPEG image")
+      }
+      let index = self.store_image(data)
+      self.object.image(index, 0.0F, 0.0F, 1.0F, 1.0F) catch {
+        _ => raise InvalidStream("PDF image placement failed")
+      }
+    }
+    Some(_) => raise InvalidStream("unsupported PDF image filter")
+    None => {
+      let (width, height, rgb) = pdf_image_rgb_samples(file, dict, data)
+      let png = pdf_png_encode_rgb(width, height, rgb)
+      let index = self.store_image(png)
+      self.object.image(index, 0.0F, 0.0F, 1.0F, 1.0F) catch {
+        _ => raise InvalidStream("PDF image placement failed")
+      }
+    }
+  }
+}
+
+///|
+fn PdfGraphics::draw_xobject(
+  self : PdfGraphics,
+  name : Bytes,
+) -> Unit raise PdfStreamError {
+  let file = match self.file {
+    Some(value) => value
+    None => raise InvalidStream("PDF XObject resource missing")
+  }
+  let resources = match self.resources {
+    Some(value) => value
+    None => raise InvalidStream("PDF XObject resource missing")
+  }
+  let xobjects = file.page_deref(pdf_dict_get(resources, b"XObject"))
+  let reference = match pdf_dict_get(xobjects, name) {
+    Some(value) => value
+    None => raise InvalidStream("PDF XObject is missing")
+  }
+  let loaded = match reference {
+    PdfRef(number, _) => file.load(number, 0)
+    _ => { value: reference, stream: None, }
+  }
+  match file.page_deref(pdf_dict_get(loaded.value, b"Subtype")) {
+    PdfName(b"Image") => {
+      let raw = match loaded.stream {
+        Some(value) => value
+        None => raise InvalidStream("PDF image stream is missing")
+      }
+      self.draw_image_xobject(file, loaded.value, raw)
+    }
+    PdfName(b"Form") =>
+      raise InvalidStream("PDF form XObjects are not supported yet")
+    _ => raise InvalidStream("unsupported PDF XObject")
+  }
+}
+
+///|
 fn PdfGraphics::execute(
   self : PdfGraphics,
   operator : Bytes,
@@ -63,6 +169,7 @@ fn PdfGraphics::execute(
   if self.text.state.in_text {
     match operator {
       b"gs"
+      | b"Do"
       | b"SC"
       | b"SCN"
       | b"sc"
@@ -86,6 +193,13 @@ fn PdfGraphics::execute(
       if n >= 1 {
         match args[n - 1] {
           Name(name) => self.apply_ext_state(name)
+          _ => ()
+        }
+      }
+    b"Do" =>
+      if n >= 1 {
+        match args[n - 1] {
+          Name(name) => self.draw_xobject(name)
           _ => ()
         }
       }
@@ -291,7 +405,7 @@ fn PdfFile::graphics_page_parts(
   self : PdfFile,
   page : PdfPageLeaf,
   which : String,
-) -> (PdfPageGeometry, Bytes, Array[Bytes], Array[String]) raise PdfStreamError {
+) -> (PdfPageGeometry, Bytes, Array[Bytes], Array[String], Array[Bytes]) raise PdfStreamError {
   match page.error {
     Some(message) => raise InvalidStream(message)
     None => ()
@@ -329,7 +443,7 @@ fn PdfFile::graphics_page_parts(
     }
     identities[index] = identity
   }
-  (geometry, encoded, graphics.children, identities)
+  (geometry, encoded, graphics.children, identities, graphics.images)
 }
 
 ///|
@@ -338,8 +452,10 @@ fn PdfFile::graphics_page(
   page : PdfPageLeaf,
   which : String,
 ) -> (PdfPageGeometry, Bytes) raise PdfStreamError {
-  let (geometry, encoded, children, _) = self.graphics_page_parts(page, which)
-  if !children.is_empty() {
+  let (geometry, encoded, children, _, images) = self.graphics_page_parts(
+    page, which,
+  )
+  if !children.is_empty() || !images.is_empty() {
     raise InvalidStream(
       "PDF page contains child objects and requires document context",
     )

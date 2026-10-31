@@ -93,6 +93,15 @@ part hash and decoded part byte. Compressed part lengths differ between the Go
 and MoonBit DEFLATE encoders, so the test canonicalizes the stored `len`
 manifest field; decoded sizes, hashes and bytes are exact.
 
+The image tests build synthetic PDFs with image XObjects. JPEG
+`DCTDecode` bytes are stored unchanged, while 8-bit Flate samples in
+DeviceGray, DeviceRGB and DeviceCMYK are converted to non-interlaced PNG parts.
+They check the image part bytes, the page object's image resource, PNG
+dimensions and the decoded RGB scanlines. Upstream may re-encode sample images
+as WebP or AVIF, so these tests do not claim byte parity with its image
+payloads; the pixels are equivalent. Image masks, `Decode` arrays, JPX, JBIG2,
+CCITT, form XObjects and inline images are rejected by this internal path.
+
 The text-state fixtures compare text matrix, line movement, spacing, scaling,
 leading, rise and rendering-mode operators against upstream before glyph
 output. `generate_text_state_test.go` needs `BDF_PDF_FIXTURES` and

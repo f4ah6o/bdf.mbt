@@ -41,6 +41,8 @@ priv struct PdfGraphics {
   default_font : PdfSimpleFont
   child_writer : @core.DocumentWriter
   children : Array[Bytes]
+  images : Array[Bytes]
+  image_hashes : Map[String, Bool]
   fonts : Map[(Int64, Int64), (PdfSimpleFont, Int32)]
   font_refs : Map[Int32, Int32]
   mut next_font_key : Int32
@@ -122,6 +124,8 @@ fn PdfGraphics::new(
     },
     child_writer: @core.DocumentWriter::new(),
     children: [],
+    images: [],
+    image_hashes: {},
     fonts: Map([]),
     font_refs: Map([]),
     next_font_key: 1,
