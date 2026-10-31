@@ -61,6 +61,8 @@ test "DOCX sections match upstream Go 0" {
         false,
         false,
         [(0.0000000000000000, 451.29999999999995)],
+        [("default", "word/header1.xml")],
+        [("default", "word/footer1.xml")],
       ),
       (
         "continuous",
@@ -76,6 +78,8 @@ test "DOCX sections match upstream Go 0" {
           (0.0000000000000000, 215.02499999999998),
           (236.27499999999998, 215.02499999999998),
         ],
+        [],
+        [],
       ),
       (
         "continuous",
@@ -88,6 +92,8 @@ test "DOCX sections match upstream Go 0" {
         false,
         false,
         [(0.0000000000000000, 451.29999999999995)],
+        [],
+        [],
       ),
       (
         "nextPage",
@@ -100,6 +106,8 @@ test "DOCX sections match upstream Go 0" {
         false,
         false,
         [(0.0000000000000000, 697.89999999999998)],
+        [("default", "word/header1.xml"), ("first", "word/header2.xml")],
+        [("default", "word/footer1.xml")],
       ),
     ],
   )
@@ -141,6 +149,8 @@ test "DOCX sections match upstream Go 1" {
         false,
         false,
         [(0.0000000000000000, 306.15000000000003)],
+        [("default", "word/header1.xml")],
+        [("default", "word/footer1.xml")],
       ),
     ],
   )
@@ -180,6 +190,8 @@ test "DOCX sections match upstream Go 2" {
         false,
         false,
         [(0.0000000000000000, 306.15000000000003)],
+        [],
+        [("default", "word/footer1.xml")],
       ),
     ],
   )
@@ -220,6 +232,8 @@ test "DOCX sections match upstream Go 3" {
         false,
         false,
         [(0.0000000000000000, 451.29999999999995)],
+        [("default", "word/header1.xml")],
+        [("default", "word/footer1.xml")],
       ),
     ],
   )
@@ -260,6 +274,8 @@ test "DOCX sections match upstream Go 4" {
         false,
         false,
         [(0.0000000000000000, 425.19999999999993)],
+        [],
+        [("default", "word/footer1.xml")],
       ),
     ],
   )
@@ -301,6 +317,8 @@ test "DOCX sections match upstream Go 5" {
         false,
         false,
         [(0.0000000000000000, 451.29999999999995)],
+        [],
+        [],
       ),
     ],
   )
@@ -340,6 +358,8 @@ test "DOCX sections match upstream Go 6" {
         false,
         false,
         [(0.0000000000000000, 425.19999999999993)],
+        [],
+        [],
       ),
     ],
   )
@@ -386,6 +406,8 @@ test "DOCX sections match upstream Go 7" {
         true,
         false,
         [(0.0000000000000000, 657.60000000000002)],
+        [("default", "word/header1.xml")],
+        [("default", "word/footer1.xml")],
       ),
     ],
   )
@@ -396,7 +418,8 @@ test "DOCX sections match upstream Go 8" {
   check_docx_sections(
     "synthetic.docx",
     [
-      "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",
+      "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",
     ],
     "custom/doc.xml",
     [
@@ -426,6 +449,8 @@ test "DOCX sections match upstream Go 8" {
           (0.0000000000000000, 100.00000000000000),
           (112.00000000000000, 150.00000000000000),
         ],
+        [("first", "custom/header2.xml")],
+        [("default", "custom/footer.xml")],
       ),
       (
         "nextPage",
@@ -442,6 +467,8 @@ test "DOCX sections match upstream Go 8" {
           (185.10236220472441, 149.10236220472441),
           (370.20472440944883, 149.10236220472441),
         ],
+        [],
+        [],
       ),
     ],
   )

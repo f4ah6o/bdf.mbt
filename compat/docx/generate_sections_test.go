@@ -13,6 +13,7 @@ import (
 	"github.com/shibukawa/bdf/converter/internal/ooxml"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -34,7 +35,8 @@ func sectionSynthetic(t *testing.T) []byte {
 	z := zip.NewWriter(&b)
 	files := []struct{ name, content string }{
 		{"_rels/.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="x" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="custom/doc.xml"/></Relationships>`},
-		{"custom/doc.xml", `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:pPr><w:sectPr><w:pgSz w:w="9in" w:h="12in"/><w:pgSz w:w="1in" w:h="1in"/><w:pgMar w:top="-400" w:bottom="-720" w:left="1000" w:right="1100" w:header="300" w:footer="400" w:gutter="200"/><w:type w:val="continuous"/><w:titlePg/><w:pgNumType w:start="3" w:fmt="upperRoman"/><w:docGrid w:type="linesAndChars" w:linePitch="360" w:charSpace="2048"/><w:textDirection w:val="tbRl"/><w:cols w:equalWidth="false" w:sep="1"><w:col w:w="2000" w:space="240"/><w:col w:w="3000"/></w:cols></w:sectPr></w:pPr></w:p><w:p/><w:sectPr><w:pgMar w:left="2cm"/><w:pgMar w:left="1in"/><w:cols w:num="3" w:space="720" w:sep="true"/></w:sectPr></w:body></w:document>`},
+		{"custom/_rels/doc.xml.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="h1" Type="x" Target="header1.xml"/><Relationship Id="h2" Type="x" Target="header2.xml"/><Relationship Id="f1" Type="x" Target="footer.xml"/></Relationships>`},
+		{"custom/doc.xml", `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body><w:p><w:pPr><w:sectPr><w:pgSz w:w="9in" w:h="12in"/><w:pgSz w:w="1in" w:h="1in"/><w:pgMar w:top="-400" w:bottom="-720" w:left="1000" w:right="1100" w:header="300" w:footer="400" w:gutter="200"/><w:headerReference w:type="first" r:id="h1"/><w:headerReference w:type="first" r:id="h2"/><w:footerReference r:id="f1"/><w:headerReference w:type="even" r:id="missing"/><w:type w:val="continuous"/><w:titlePg/><w:pgNumType w:start="3" w:fmt="upperRoman"/><w:docGrid w:type="linesAndChars" w:linePitch="360" w:charSpace="2048"/><w:textDirection w:val="tbRl"/><w:cols w:equalWidth="false" w:sep="1"><w:col w:w="2000" w:space="240"/><w:col w:w="3000"/></w:cols></w:sectPr></w:pPr></w:p><w:p/><w:sectPr><w:pgMar w:left="2cm"/><w:pgMar w:left="1in"/><w:cols w:num="3" w:space="720" w:sep="true"/></w:sectPr></w:body></w:document>`},
 	}
 	for _, f := range files {
 		w, e := z.Create(f.name)
@@ -108,7 +110,20 @@ func TestCodexDOCXSections(t *testing.T) {
 			for _, col := range s.cols {
 				fmt.Fprintf(out, "(%#.17g,%#.17g),", col.x, col.w)
 			}
-			fmt.Fprintln(out, "]),")
+			fmt.Fprint(out, "],")
+			for _, refs := range []map[string]string{s.hdr, s.ftr} {
+				keys := make([]string, 0, len(refs))
+				for key := range refs {
+					keys = append(keys, key)
+				}
+				sort.Strings(keys)
+				fmt.Fprint(out, "[")
+				for _, key := range keys {
+					fmt.Fprintf(out, "(%q,%q),", key, refs[key])
+				}
+				fmt.Fprint(out, "],")
+			}
+			fmt.Fprintln(out, "),")
 		}
 		fmt.Fprintln(out, "])\n}")
 		t.Logf("%s: %d sections", name, len(sections))

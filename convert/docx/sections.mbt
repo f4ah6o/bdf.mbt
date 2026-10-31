@@ -1,6 +1,5 @@
 ///|
-// Basic section geometry used by the document layout stage. Additional
-// section features (columns, headers, footers and grids) are handled later.
+// Section geometry, columns, text grid, and story references for document layout.
 priv struct DocxSection {
   mut width : Double
   mut height : Double
@@ -26,6 +25,8 @@ priv struct DocxSection {
   mut equal_width : Bool
   raw_columns : Array[(String, String)]
   columns : Array[(Double, Double)]
+  headers : Array[(String, String)]
+  footers : Array[(String, String)]
 } derive(Debug, Eq)
 
 ///|
@@ -118,6 +119,8 @@ fn docx_new_section(previous : DocxSection?) -> DocxSection {
     equal_width: true,
     raw_columns: [],
     columns: [],
+    headers: [],
+    footers: [],
   }
 }
 
@@ -248,6 +251,41 @@ fn docx_bool(
 }
 
 ///|
+fn docx_add_story_reference(
+  section : DocxSection,
+  package : @ooxml.OoxmlPackage,
+  part : String,
+  element : @xml.NamespaceElement,
+  header : Bool,
+) -> Unit {
+  let mut id = ""
+  for attr in element.attributes {
+    if attr.name.local_name == "id" &&
+      (match attr.name.namespace_uri {
+        Some(uri) => uri.has_suffix("relationships")
+        None => false
+      }) {
+      id = attr.value
+      break
+    }
+  }
+  match package.target(part, id) {
+    Some(rel) => {
+      let kind = docx_attribute(element, "type", "default")
+      let stories = if header { section.headers } else { section.footers }
+      for i in 0..<stories.length() {
+        if stories[i].0 == kind {
+          stories[i] = (kind, rel.target)
+          return
+        }
+      }
+      stories.push((kind, rel.target))
+    }
+    None => ()
+  }
+}
+
+///|
 fn docx_sections(data : Bytes) -> (String, Array[DocxSection]) raise {
   let package = @ooxml.open_ooxml(data)
   let part = match package.relationship_of_type("", "/officeDocument") {
@@ -304,6 +342,19 @@ fn docx_sections(data : Bytes) -> (String, Array[DocxSection]) raise {
             section_depth = depth + 1
           }
         } else if depth == section_depth {
+          if name == "headerReference" || name == "footerReference" {
+            match section {
+              Some(current) =>
+                docx_add_story_reference(
+                  current,
+                  package,
+                  part,
+                  element,
+                  name == "headerReference",
+                )
+              None => ()
+            }
+          }
           let take = !seen.contains(name)
           if take {
             seen[name] = true
