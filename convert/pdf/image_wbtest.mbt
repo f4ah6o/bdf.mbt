@@ -868,3 +868,45 @@ test "PDF tagged structure is ignored for rendering" {
   )
   assert_eq(pdf_test_fill_rects(document), 1, msg="PDF tagged content")
 }
+
+///|
+fn pdf_annotation_appearance_document(with_appearance : Bool) -> Bytes {
+  let annotation = if with_appearance {
+    "<< /Type /Annot /Subtype /Square /Rect [10 20 30 40] /AP << /N 6 0 R >> >>"
+  } else {
+    "<< /Type /Annot /Subtype /Square /Rect [10 20 30 40] >>"
+  }
+  let objects : Array[Bytes] = [
+    b"<< /Type /Catalog /Pages 2 0 R >>",
+    b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+    b"<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Annots [5 0 R] >>",
+    pdf_test_stream("", b""),
+    @utf8.encode(annotation),
+  ]
+  if with_appearance {
+    objects.push(
+      pdf_test_stream(
+        "/Type /XObject /Subtype /Form /BBox [0 0 10 10] /Resources << >>", b"0 0 1 rg 0 0 10 10 re f",
+      ),
+    )
+  }
+  pdf_test_pdf(objects)
+}
+
+///|
+test "PDF annotation appearance streams are drawn" {
+  let document = pdf_graphics_document(
+    pdf_annotation_appearance_document(true),
+    no_text_index=true,
+  )
+  assert_eq(pdf_test_fill_rects(document), 1, msg="PDF annotation appearance")
+}
+
+///|
+test "PDF annotations without appearance streams are skipped" {
+  let document = pdf_graphics_document(
+    pdf_annotation_appearance_document(false),
+    no_text_index=true,
+  )
+  assert_eq(pdf_test_fill_rects(document), 0, msg="PDF annotation without AP")
+}

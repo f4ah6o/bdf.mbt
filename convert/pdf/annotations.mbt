@@ -50,9 +50,10 @@ fn PdfGraphics::emit_annotations(
 ) -> Unit raise PdfStreamError {
   for value in values {
     let dict = file.page_deref(Some(value))
-    match file.page_deref(pdf_dict_get(dict, b"Subtype")) {
-      PdfName(b"Link") => ()
-      _ => continue
+    let subtype = file.page_deref(pdf_dict_get(dict, b"Subtype"))
+    match subtype {
+      PdfName(b"Popup") => continue
+      _ => ()
     }
     let flags = match file.page_num(pdf_dict_get(dict, b"F")) {
       Some(number) => number.to_int()
@@ -61,12 +62,17 @@ fn PdfGraphics::emit_annotations(
     if (flags & 2) != 0 || (flags & 32) != 0 {
       continue
     }
-    let url = self.link_target(file, dict)
-    if url == "" {
-      continue
+    let rect = match pdf_annotation_rect(file, dict) {
+      Some(value) => value
+      None => continue
     }
-    match pdf_annotation_rect(file, dict) {
-      Some((x, y, width, height)) =>
+    match subtype {
+      PdfName(b"Link") => {
+        let url = self.link_target(file, dict)
+        if url == "" {
+          continue
+        }
+        let (x, y, width, height) = rect
         self.object.link(
           Float::from_double(x),
           Float::from_double(y),
@@ -74,7 +80,13 @@ fn PdfGraphics::emit_annotations(
           Float::from_double(height),
           url,
         )
-      None => ()
+      }
+      _ =>
+        match pdf_annotation_appearance(file, dict) {
+          Some((appearance, raw)) =>
+            self.draw_annotation_appearance(file, appearance, raw, rect)
+          None => ()
+        }
     }
   }
 }
@@ -110,4 +122,87 @@ fn PdfGraphics::draw_annotations(
     self.emit_annotations(file, values)
     self.restore()
   }
+}
+
+///|
+fn pdf_annotation_appearance(
+  file : PdfFile,
+  dict : PdfObject,
+) -> (PdfObject, Bytes)? raise PdfStreamError {
+  let appearance = file.page_deref(pdf_dict_get(dict, b"AP"))
+  let normal = match pdf_dict_get(appearance, b"N") {
+    Some(value) => value
+    None => return None
+  }
+  match normal {
+    PdfRef(number, _) => {
+      let loaded = file.load(number, 0)
+      let raw = match loaded.stream {
+        Some(value) => value
+        None => return None
+      }
+      Some((loaded.value, raw))
+    }
+    _ => None
+  }
+}
+
+///|
+fn PdfGraphics::draw_annotation_appearance(
+  self : PdfGraphics,
+  file : PdfFile,
+  dict : PdfObject,
+  raw : Bytes,
+  rect : (Double, Double, Double, Double),
+) -> Unit raise PdfStreamError {
+  let bbox = match pdf_form_numbers(file, dict, b"BBox", 4) {
+    Some(values) => (values[0], values[1], values[2], values[3])
+    None => return
+  }
+  let matrix = match pdf_form_numbers(file, dict, b"Matrix", 6) {
+    Some(values) =>
+      (values[0], values[1], values[2], values[3], values[4], values[5])
+    None => (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+  }
+  let transformed = pdf_transform_rect(matrix, bbox)
+  let width = transformed.2 - transformed.0
+  let height = transformed.3 - transformed.1
+  if width <= 0.0 || height <= 0.0 {
+    return
+  }
+  let (rect_x, rect_y, rect_width, rect_height) = rect
+  let scale_x = rect_width / width
+  let scale_y = rect_height / height
+  let mapping = (
+    scale_x,
+    0.0,
+    0.0,
+    scale_y,
+    rect_x - transformed.0 * scale_x,
+    rect_y - transformed.1 * scale_y,
+  )
+  let combined = pdf_matrix_mul(mapping, matrix)
+  let old_resources = self.resources
+  match pdf_dict_get(dict, b"Resources") {
+    Some(value) => self.resources = Some(file.page_deref(Some(value)))
+    None => ()
+  }
+  defer {
+    self.resources = old_resources
+  }
+  let depth = self.stack.length()
+  self.save()
+  self.object.clip_rect(
+    Float::from_double(rect_x),
+    Float::from_double(rect_y),
+    Float::from_double(rect_width),
+    Float::from_double(rect_height),
+  )
+  self.transform(combined)
+  self.run_ops(raw)
+  self.finish_text()
+  while self.stack.length() > depth + 1 {
+    self.restore()
+  }
+  self.restore()
 }
