@@ -170,6 +170,9 @@ fn docx_apply_numbering(
         props: paragraph.mark,
         width: 0.0,
         height: 0.0,
+        anchored: false,
+        x: 0.0,
+        y: 0.0,
       })
       paragraph.items.insert(1, {
         kind: "tab",
@@ -178,6 +181,9 @@ fn docx_apply_numbering(
         props: paragraph.mark,
         width: 0.0,
         height: 0.0,
+        anchored: false,
+        x: 0.0,
+        y: 0.0,
       })
       paragraph.props.left += level.left
     }

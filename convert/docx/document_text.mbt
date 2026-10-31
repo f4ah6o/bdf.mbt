@@ -8,6 +8,9 @@ priv struct DocxTextItem {
   props : DocxRunProps
   width : Double
   height : Double
+  anchored : Bool
+  x : Double
+  y : Double
 } derive(Debug, Eq)
 
 ///|
@@ -210,7 +213,17 @@ fn docx_text_push(
   props : DocxRunProps,
   clear~ : Bool = false,
 ) -> Unit {
-  items.push({ kind, text, clear, props, width: 0.0, height: 0.0, })
+  items.push({
+    kind,
+    text,
+    clear,
+    props,
+    width: 0.0,
+    height: 0.0,
+    anchored: false,
+    x: 0.0,
+    y: 0.0,
+  })
 }
 
 ///|
@@ -253,6 +266,18 @@ fn docx_emu(value : String) -> Double {
 }
 
 ///|
+fn docx_anchor_offset(anchor : DocxXmlNode, name : String) -> Double? {
+  match anchor.child(name) {
+    Some(position) =>
+      match position.child("posOffset") {
+        Some(offset) => Some(docx_emu(offset.text.to_string()))
+        None => None
+      }
+    None => None
+  }
+}
+
+///|
 fn docx_text_drawing(
   node : DocxXmlNode,
   items : Array[DocxTextItem],
@@ -287,7 +312,24 @@ fn docx_text_drawing(
   if embed == "" {
     docx_text_unsupported("drawing without an embedded image")
   }
-  items.push({ kind: "image", text: embed, clear: false, props, width, height, })
+  let anchored = node.child("inline") is None
+  let mut x = 0.0
+  let mut y = 0.0
+  if anchored {
+    x = docx_anchor_offset(container, "positionH").unwrap_or(0.0)
+    y = docx_anchor_offset(container, "positionV").unwrap_or(0.0)
+  }
+  items.push({
+    kind: "image",
+    text: embed,
+    clear: false,
+    props,
+    width,
+    height,
+    anchored,
+    x,
+    y,
+  })
 }
 
 ///|

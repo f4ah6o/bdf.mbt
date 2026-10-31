@@ -452,25 +452,38 @@ fn docx_render_document(
             _ => raise DocxInvalid("DOCX image part is missing")
           }
           let hash = writer.add_part("img", bytes)
-          let mut width = if item.width > 0.0 { item.width } else { 72.0 }
-          let mut height = if item.height > 0.0 { item.height } else { 72.0 }
-          let available = right - line_x
-          if available > 0.0 && width > available {
-            height = height * available / width
-            width = available
+          let width = if item.width > 0.0 { item.width } else { 72.0 }
+          let height = if item.height > 0.0 { item.height } else { 72.0 }
+          if item.anchored {
+            let index = object.add_image(hash)
+            object.image(
+              index,
+              Float::from_double(item.x),
+              Float::from_double(item.y),
+              Float::from_double(width),
+              Float::from_double(height),
+            )
+          } else {
+            let mut width = width
+            let mut height = height
+            let available = right - line_x
+            if available > 0.0 && width > available {
+              height = height * available / width
+              width = available
+            }
+            ensure_page(height)
+            let index = object.add_image(hash)
+            object.image(
+              index,
+              Float::from_double(line_x),
+              Float::from_double(y - height),
+              Float::from_double(width),
+              Float::from_double(height),
+            )
+            line_x += width
+            line_width = line_x - left
+            line_height = Double::max(line_height, height)
           }
-          ensure_page(height)
-          let index = object.add_image(hash)
-          object.image(
-            index,
-            Float::from_double(line_x),
-            Float::from_double(y - height),
-            Float::from_double(width),
-            Float::from_double(height),
-          )
-          line_x += width
-          line_width = line_x - left
-          line_height = Double::max(line_height, height)
         }
         _ => {
           let size = if item.props.size > 0.0 { item.props.size } else { 10.0 }

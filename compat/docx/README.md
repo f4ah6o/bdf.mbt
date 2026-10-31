@@ -21,7 +21,8 @@ WordprocessingML. It lays out paragraphs with approximate character widths and
 supports explicit line/page breaks, tabs, paragraph spacing, alignment, basic
 font weight/style/size and the section page geometry. Table rows are flattened to tab-separated paragraphs with tab stops from
 `tblGrid`. Inline drawings with an embedded PNG/JPEG part are placed at their
-`wp:extent`; numbered paragraphs receive decimal or bullet prefixes from
+`wp:extent`; anchored drawings use page-relative `wp:posOffset` coordinates.
+Numbered paragraphs receive decimal or bullet prefixes from
 `numbering.xml` (level counters and left indents). Floating drawings, EMF/WMF
 images, numbering overrides, header images and fields are rejected by the
 reader or omitted. Default, first-page and even-page header/footer paragraph

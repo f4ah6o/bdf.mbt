@@ -599,3 +599,105 @@ test "DOCX first and even headers are selected" {
   assert_true(value.contains("FirstHeader"), msg="DOCX first header")
   assert_true(value.contains("EvenHeader"), msg="DOCX even header")
 }
+
+///|
+fn docx_anchor_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GBo2hMfu+h74o+fQN4DRgYGYSAd7ZyfV5KaVxIfUlmQWhyrV5Gb",
+  )
+  joined.write_string(
+    "UzvR14/ZkKf1+xylU2JnUxIaBV75iP/RaXS1bJhakbZIzW/KkqV7bf24Y0N0T//Ye/58n/jpueVJ",
+  )
+  joined.write_string(
+    "3Zq3HfbuybbWnFBiMG1ZXN3ae7PcNYsYjR4wJep/n/G0aEfkmm+CmxNmFOk/D3o0OSjy/AvF7YpK",
+  )
+  joined.write_string(
+    "G43aniz8YOyr1RR3uOXVvtdyU/hCJngFZ/Fb6sQVtPRqPyo9/vSxAmfstEc/M9ZE7m2RmHs1ICI8",
+  )
+  joined.write_string(
+    "2ihd82y+0+knByenS3/WlV6ya0bA1NeM13d6XJZMr7275trMHw/2+1xb8KMl5N7Bzev2ORudYtn7",
+  )
+  joined.write_string(
+    "8cyW/+zxN3R6Fl+teJS9fUbTsTk/Pe5tVT/avHR/79WHDof5A1BCamejS+EGIE8LGFLcQDq+KDWn",
+  )
+  joined.write_string(
+    "WF8PRPaet+Y7ZMDD9mBusMu9zCi2loDJehwrtbXYO4TMezPkvA4t3q7OzKzA5nZ7v/3p3O8bjHcm",
+  )
+  joined.write_string(
+    "+hyzZvMNZXZU32vkZ2zBf/wrn8epQ5qG1e08Yj4XPoZWH4p8smmymrCQZoc3z7I5h+ddUlHfohRq",
+  )
+  joined.write_string(
+    "t0B78kV37SLNxcscT3Rf8DAv3bv0412Gf4mT4gw79mY18HgfqM+x73N7dPD0atfp9XN+eIlEuvTO",
+  )
+  joined.write_string(
+    "PHjX3fXq6lhRMY38l8e7/3Ciemx1RkwwyGMKQI/JAOny/KIUfYjvUvKTS3OBqQGUDKA+3cjFZAj0",
+  )
+  joined.write_string(
+    "6d3lGjf3zmtSKrIVF4xxlVfYsjPu46xp27r27WUVZ2U/rvLnvv+uu4f9H/lp7j7AJebL3RTB/viG",
+  )
+  joined.write_string(
+    "1o45/J95O2Im8Po1eh6cbPTmV2T5Ik7vs08uHtXROhR5MMLrjtfMrx5yxcJKhXt5FCt1Sn3C3K6E",
+  )
+  joined.write_string(
+    "b1GZnrt72svLDf9Oi7gvVpA9y3Xkp+RLeWue5stb+H896zzdz/Wy5u06BTVv10b1xx/2xphM1D2x",
+  )
+  joined.write_string(
+    "b3J8/1d9VJ++i4zLXwb05WdmBgZBmE+R/Th3sm/+bQOetve/RZveaQsr37RSLtN33CDbJnrj2m6l",
+  )
+  joined.write_string(
+    "y9sYah2DXqfsr5siu/2cHverZp+oJ86T12+ptpA8G2fg8jTn6PVy7XMXvK5r3A7983394ePV55KE",
+  )
+  joined.write_string(
+    "tgneilzzQ1K5foX9m7ZNhZ9uLvDt4TCb5nz095QaToHUfrcj1s8vXop73STYeefCwQdOj5snSyiL",
+  )
+  joined.write_string(
+    "Gkh1XX0lLLFQZ77hPzE/4SMbGGKSv19+5iPynkHv/wntn3xMqUufNxir3GkqyF2t8k6/eK4F41aP",
+  )
+  joined.write_string(
+    "Jb5vpvbvWbZTPrb4XP786ROme2ca1WqueRMrcXZFz/UfL5SsQ+eU2D4XPab7ftGpK+tzHu1/oGgR",
+  )
+  joined.write_string(
+    "XKhv9aT4SP+23hmvSj9Wup7nW7fv3LuWnU12dxl0t83+7zj/mIjN0ppjKls/pO5dqHLuyc+ry/Jc",
+  )
+  joined.write_string(
+    "brI+rFYVfxanEvjeo0nnXorM1k/sS0v7Tplxq85SNhPlvz8rl+1gqcSeZYftYyKmtBw9kbiQpefS",
+  )
+  joined.write_string(
+    "AdelHUa2fUE/3z2XN3tyepNeF6+p8RTbm7d/n1XhZa0Rb9yn5i6uaD7TuenVry/P5GK9KjdsXr9x",
+  )
+  joined.write_string(
+    "bnmijtX15p9bDtwuXfufCTVSA/lvMTkAea5ALAqL1NzUlMxE/czcxPRUQ72CvPTXPB+Knz+d9Cgp",
+  )
+  joined.write_string(
+    "IeHB1y8FnEyXehTOHGRRUZ/Cfp85yGaeXp+iaPGk+jn2Bw4cOHPiRMGn+0u+OxSy+YfbTy/14/Rl",
+  )
+  joined.write_string(
+    "CPBmZBJhxl1swkADIwP2QhTdAPTSBGEASASpbEHXiJ5bERqZmfDnXXST0HMDwqS3TFjyBrp29HBH",
+  )
+  joined.write_string("aD/EgiMWArxZ2UBKWIHQDWizKSuIBwCn/xU8kQYAAA==")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "DOCX anchored images use page offsets" {
+  let result = convert(docx_anchor_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut placed = false
+  for command in commands {
+    match command {
+      @render.Image(_, x, y, w, h) =>
+        if x == 100.0 && y == 200.0 && w == 72.0 && h == 72.0 {
+          placed = true
+        }
+      _ => ()
+    }
+  }
+  assert_true(placed, msg="DOCX anchored image")
+}
