@@ -248,13 +248,17 @@ try {
   await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'people.csv' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
   await converterPage.getByRole('button', { name: 'BDF サンプルを開く' }).click();
   await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'upstream-demo.bdf' && !document.querySelector('#open-file').disabled, null, { timeout: 30000 });
-  for (const [sample, name] of [['csv', 'people.csv'], ['xlsx', 'sales.xlsx'], ['image', 'illustration.svg'], ['font', 'stix.ttf']]) {
+  for (const [sample, name] of [['csv', 'people.csv'], ['xlsx', 'sales.xlsx'], ['image', 'illustration.svg'], ['font', 'stix.ttf'], ['pdf', 'simple.pdf']]) {
     await converterPage.locator('#file').setInputFiles(resolve(root, 'samples', name));
     await converterPage.waitForFunction(n => document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled, name, { timeout: 60000 });
     assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, `converter ${sample}`);
     await converterPage.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => canvas.width > 0 && canvas.height > 0), null, { timeout: 30000 });
     assert.equal(await converterPage.locator('#download').getAttribute('download'), name.replace(/\.[^.]+$/, '') + '.bdf');
   }
+  await converterPage.locator('[data-sample="pdf"]').click();
+  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'simple.pdf' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, 'converter pdf sample');
+  await converterPage.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => canvas.width > 0 && canvas.height > 0), null, { timeout: 30000 });
   await converterPage.locator('[data-sample="xlsx-picture"]').click();
   await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'field-guide.xlsx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
   await converterPage.waitForFunction(hasIllustration, null, { timeout: 30000 });

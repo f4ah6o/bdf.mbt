@@ -97,7 +97,7 @@ constructing this public record directly must provide the map; use
 ## Browser demo
 
 The [browser demo](https://f4ah6o.github.io/bdf.mbt/) ([source](demo/README.md)) displays the upstream 20-page sample
-and supports local BDF, CSV and image files using the MoonBit JavaScript build.
+and supports local BDF, CSV, XLSX, image, font and a checked PDF subset using the MoonBit JavaScript build.
 The repository's Pages publishing source must be configured before the
 `Demo pages` workflow can publish it.
 

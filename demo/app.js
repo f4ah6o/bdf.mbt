@@ -118,6 +118,7 @@ const samples = {
   'xlsx-picture': ['./samples/field-guide.xlsx', 'field-guide.xlsx'],
   image: ['./samples/illustration.svg', 'illustration.svg'],
   font: ['./samples/stix.ttf', 'stix.ttf'],
+  pdf: ['./samples/simple.pdf', 'simple.pdf'],
 };
 for (const link of document.querySelectorAll('[data-sample]')) {
   link.addEventListener('click', event => {
