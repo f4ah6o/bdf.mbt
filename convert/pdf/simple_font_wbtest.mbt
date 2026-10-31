@@ -74,7 +74,7 @@ fn check_pdf_simple_font(
 }
 
 ///|
-test "embedded and composite PDF fonts fail closed" {
+test "embedded and unsupported composite PDF fonts fail closed" {
   let file : PdfFile = {
     data: b"",
     entries: {},
@@ -89,7 +89,28 @@ test "embedded and composite PDF fonts fail closed" {
   let embedded = PdfDict([
     (b"FontDescriptor", PdfDict([(b"FontFile2", PdfRef(1L, 0L))])),
   ])
-  let composite = PdfDict([(b"Subtype", PdfName(b"Type0"))])
+  let composite_embedded = PdfDict([
+    (b"Subtype", PdfName(b"Type0")),
+    (b"Encoding", PdfName(b"Identity-H")),
+    (
+      b"DescendantFonts",
+      PdfArray([
+        PdfDict([(b"FontDescriptor", PdfDict([(b"FontFile2", PdfRef(1L, 0L))]))]),
+      ]),
+    ),
+  ])
+  assert_true(
+    try {
+      ignore(file.simple_font(composite_embedded))
+      false
+    } catch {
+      _ => true
+    },
+  )
+  let composite = PdfDict([
+    (b"Subtype", PdfName(b"Type0")),
+    (b"Encoding", PdfName(b"Identity-V")),
+  ])
   assert_true(
     try {
       ignore(file.simple_font(embedded))

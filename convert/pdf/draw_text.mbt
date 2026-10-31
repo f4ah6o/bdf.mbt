@@ -47,6 +47,11 @@ fn pdf_default_simple_font() -> PdfSimpleFont {
     weight: 400,
     style: 0,
     used_nul: false,
+    composite: false,
+    composite_map: None,
+    cid_widths: Map([]),
+    default_width: 1000.0,
+    collection: "",
   }
 }
 
@@ -273,8 +278,10 @@ fn PdfGraphics::text_operator(
         Hex(value) => pdf_text_hex(value)
         _ => b""
       }
-      for byte in bytes {
-        let word_space = byte == b' ' && text.state.word_spacing != 0.0
+      for glyph in font.decode(bytes) {
+        let word_space = glyph.size == 1 &&
+          glyph.code == 32L &&
+          text.state.word_spacing != 0.0
         if word_space {
           self.flush_text()
         }
@@ -286,21 +293,21 @@ fn PdfGraphics::text_operator(
           }
           text.run_start = text.state.x / scale
         }
-        let code = byte.to_int()
-        let actual = font.unicode(code)
+        let code = glyph.code.to_int()
+        let actual = font.glyph_unicode(glyph)
         if actual == "" {
-          if code != 0 || !font.used_nul {
+          if !font.composite && (code != 0 || !font.used_nul) {
             pdf_text_char(text.draw, code)
             text.alt = true
           }
-          if code == 0 {
+          if !font.composite && code == 0 {
             font.used_nul = true
           }
         } else {
           text.draw.write_string(actual)
         }
         text.actual.write_string(actual)
-        let width = font.width(code)
+        let width = font.glyph_width(glyph)
         let advance = if text.state.char_spacing == 0.0 {
           width * self.state.font_size + text.state.char_spacing
         } else {

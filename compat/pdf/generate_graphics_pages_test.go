@@ -36,7 +36,7 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer out.Close()
-	for i := 0; i < 70; i++ {
+	for i := 0; i < 78; i++ {
 		content := []byte("q 0.2 0.4 0.8 rg 10 20 100 60 re f Q 2 w 0 0 m 20 40 l S\n")
 		resources := ""
 		if i == 8 {
@@ -184,10 +184,37 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 				content = []byte("BT /F1 12 Tf (One) Tj /GS1 gs (Two) Tj ET")
 			case 69:
 				content = []byte("BT /F1 12 Tf (One) Tj .3 g (Two) Tj 0 g (Three) Tj ET")
+			case 70:
+				content = []byte("BT /F1 12 Tf <00010002000a000b> Tj ET")
+			case 71:
+				content = []byte("BT /F1 16 Tf 1.5 Tc [<00010002> -200 <000a>] TJ ET")
+			case 72:
+				content = []byte("BT /F1 13 Tf <00010002000a0000> Tj ET")
+			case 73:
+				content = []byte("BT /F1 10 Tf 2 Tr <00010002000c> Tj ET")
+			case 74:
+				content = []byte("BT /F1 12 Tf <00413042> Tj ET")
+			case 75:
+				content = []byte("BT /F1 12 Tf <814282a0> Tj ET")
+			case 76:
+				content = []byte("BT /F1 12 Tf <00414e00> Tj ET")
+			case 77:
+				content = []byte("BT /F1 12 Tf <41e38182> Tj ET")
 			}
 		}
 		if i == 67 || i == 68 {
 			resources = "/Resources << /Font << /F1 5 0 R >> /ExtGState << /GS1 << /Font [5 0 R 22] /ca 0.5 /CA 0.7 >> >> >>"
+		}
+		composite := i >= 70
+		if composite {
+			font = "<< /Type /Font /Subtype /Type0 /BaseFont /MS-Mincho /Encoding /Identity-H /DescendantFonts [6 0 R] /ToUnicode 7 0 R >>"
+			if i == 72 {
+				font = "<< /Type /Font /Subtype /Type0 /BaseFont /MS-Mincho /Encoding /Identity-H /DescendantFonts [6 0 R] >>"
+			}
+			if i >= 74 {
+				enc := map[int]string{74: "UniJIS-UTF16-H", 75: "90ms-RKSJ-H", 76: "UniGB-UTF16-H", 77: "UniJIS-UTF8-H"}[i]
+				font = fmt.Sprintf("<< /Type /Font /Subtype /Type0 /BaseFont /MS-Mincho /Encoding /%s /DescendantFonts [6 0 R] >>", enc)
+			}
 		}
 		filter := ""
 		if i&1 != 0 {
@@ -203,6 +230,9 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		count := 5
 		if profile != "" || i == 16 || font != "" {
 			count = 6
+		}
+		if composite {
+			count = 8
 		}
 		offsets := make([]int, count)
 		catalog := "<< /Type /Catalog /Pages 2 0 R >>"
@@ -225,6 +255,17 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		if font != "" {
 			offsets[5] = b.Len()
 			fmt.Fprintf(&b, "5 0 obj\n%s\nendobj\n", font)
+		}
+		if composite {
+			offsets[6] = b.Len()
+			ordering := "Japan1"
+			if i == 76 {
+				ordering = "GB1"
+			}
+			fmt.Fprintf(&b, "6 0 obj\n<< /Type /Font /Subtype /CIDFontType2 /BaseFont /MS-Mincho /CIDSystemInfo << /Registry (Adobe) /Ordering (%s) /Supplement 0 >> /DW 900 /W [1 [500 700] 10 12 600] /FontDescriptor << /Flags 2 /ItalicAngle -12 >> >>\nendobj\n", ordering)
+			cmap := "1 begincodespacerange <0000> <ffff> endcodespacerange 4 beginbfchar <0001> <0041> <0002> <20ac> <000a> <3042> <000c> <4e00> endbfchar"
+			offsets[7] = b.Len()
+			fmt.Fprintf(&b, "7 0 obj\n<< /Length %d >>\nstream\n%s\nendstream\nendobj\n", len(cmap), cmap)
 		}
 		if i == 16 {
 			offsets[5] = b.Len()

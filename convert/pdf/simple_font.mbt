@@ -1,5 +1,5 @@
 ///|
-// The metrics and encoding of an unembedded, non-Type-3 simple font.
+// Metrics and encoding of supported unembedded PDF fonts.
 priv struct PdfSimpleFont {
   encoding : PdfSimpleEncoding
   to_unicode : PdfCMap?
@@ -10,6 +10,11 @@ priv struct PdfSimpleFont {
   weight : Int32
   style : Int32
   mut used_nul : Bool
+  composite : Bool
+  composite_map : PdfCMap?
+  cid_widths : Map[Int64, Double]
+  default_width : Double
+  collection : String
 }
 
 ///|
@@ -46,10 +51,67 @@ fn PdfFile::simple_font(
     raise InvalidStream("PDF font dictionary missing")
   }
   let subtype = self.page_deref(pdf_dict_get(dict, b"Subtype"))
-  if subtype == PdfName(b"Type0") || subtype == PdfName(b"Type3") {
+  if subtype == PdfName(b"Type3") {
     raise InvalidStream("unsupported PDF font subtype")
   }
-  let desc = self.page_deref(pdf_dict_get(dict, b"FontDescriptor"))
+  let composite = subtype == PdfName(b"Type0")
+  let cid = if composite {
+    match self.page_deref(pdf_dict_get(dict, b"DescendantFonts")) {
+      PdfArray(values) if !values.is_empty() => self.page_deref(Some(values[0]))
+      _ => PdfNull
+    }
+  } else {
+    PdfNull
+  }
+  let desc = if composite {
+    self.page_deref(pdf_dict_get(cid, b"FontDescriptor"))
+  } else {
+    self.page_deref(pdf_dict_get(dict, b"FontDescriptor"))
+  }
+  let composite_map : PdfCMap? = if composite {
+    match self.page_deref(pdf_dict_get(dict, b"Encoding")) {
+      PdfName(b"Identity-H") | PdfNull => {
+        let map = PdfCMap::new()
+        map.identity = true
+        map.ranges.push({ size: 2, low: 0L, high: 65535L, })
+        Some(map)
+      }
+      PdfName(bytes) => {
+        let name = @utf8.decode_lossy(bytes[:])
+        match pdf_cjk_maps.get(name) {
+          Some(source) if !source.vertical => {
+            let map = PdfCMap::new()
+            map.predefined = name
+            for space in source.codespaces {
+              map.ranges.push(space)
+            }
+            Some(map)
+          }
+          _ => raise InvalidStream("unsupported composite PDF font encoding")
+        }
+      }
+      _ => raise InvalidStream("unsupported composite PDF font encoding")
+    }
+  } else {
+    None
+  }
+  let cid_widths = self.cid_font_widths(cid)
+  let default_width = self.font_number(pdf_dict_get(cid, b"DW"), 1000.0)
+  let system = self.page_deref(pdf_dict_get(cid, b"CIDSystemInfo"))
+  let registry = self.metadata_text(pdf_dict_get(system, b"Registry"))
+  let ordering = self.metadata_text(pdf_dict_get(system, b"Ordering"))
+  let collection = if registry != "" && ordering != "" {
+    registry + "-" + ordering
+  } else {
+    match composite_map {
+      Some(map) =>
+        match pdf_cjk_maps.get(map.predefined) {
+          Some(source) => source.collection
+          None => ""
+        }
+      None => ""
+    }
+  }
   for key in [b"FontFile2", b"FontFile3", b"FontFile"] {
     match pdf_dict_get(desc, key) {
       Some(PdfRef(number, _)) => {
@@ -183,6 +245,11 @@ fn PdfFile::simple_font(
     weight,
     style,
     used_nul: false,
+    composite,
+    composite_map,
+    cid_widths,
+    default_width,
+    collection,
   }
   match key {
     Some(value) => self.font_cache[value] = font
@@ -227,4 +294,130 @@ fn PdfSimpleFont::width(self : PdfSimpleFont, code : Int32) -> Double {
     return 0.556
   }
   0.5
+}
+
+///|
+fn PdfFile::cid_font_widths(
+  self : PdfFile,
+  cid : PdfObject,
+) -> Map[Int64, Double] {
+  let widths : Map[Int64, Double] = Map([])
+  let values = match self.page_deref(pdf_dict_get(cid, b"W")) {
+    PdfArray(entries) => entries
+    _ => return widths
+  }
+  let mut i = 0
+  while i < values.length() {
+    let start = match self.page_num(Some(values[i])) {
+      Some(value) => value
+      None => {
+        i += 1
+        continue
+      }
+    }
+    if i + 1 < values.length() {
+      match self.page_deref(Some(values[i + 1])) {
+        PdfArray(entries) => {
+          let base = start.to_int64() & 0xffffffffL
+          for j in 0..<entries.length() {
+            widths[(base + j.to_int64()) & 0xffffffffL] = self.font_number(
+              Some(entries[j]),
+              1000.0,
+            )
+          }
+          i += 2
+          continue
+        }
+        _ => ()
+      }
+      if i + 2 < values.length() {
+        let end = self.font_number(Some(values[i + 1]), start)
+        let width = self.font_number(Some(values[i + 2]), 1000.0)
+        if start >= 0.0 && end <= 4294967295.0 && end - start < 65536.0 {
+          let first = start.to_int64()
+          let last = end.to_int64()
+          for code = first; code <= last; code = code + 1L {
+            widths[code] = width
+          }
+        }
+        i += 3
+        continue
+      }
+    }
+    i += 1
+  }
+  widths
+}
+
+///|
+fn PdfSimpleFont::decode(
+  self : PdfSimpleFont,
+  bytes : Bytes,
+) -> Array[PdfGlyphCode] {
+  match self.composite_map {
+    Some(map) => map.decode(bytes)
+    None => {
+      let glyphs : Array[PdfGlyphCode] = []
+      for byte in bytes {
+        let code = byte.to_int64()
+        glyphs.push({ code, size: 1, cid: code, })
+      }
+      glyphs
+    }
+  }
+}
+
+///|
+fn PdfSimpleFont::glyph_unicode(
+  self : PdfSimpleFont,
+  glyph : PdfGlyphCode,
+) -> String {
+  if !self.composite {
+    return self.unicode(glyph.code.to_int())
+  }
+  match self.to_unicode {
+    Some(cmap) => {
+      let text = cmap.to_unicode(glyph.code)
+      if text != "" {
+        return text
+      }
+    }
+    None => ()
+  }
+  match self.composite_map {
+    Some(map) =>
+      match pdf_cjk_maps.get(map.predefined) {
+        Some(source) =>
+          match source.code_point(glyph.code) {
+            Some(code) if code >= 0x20L => {
+              let out = StringBuilder()
+              pdf_text_char(out, code.to_int())
+              return out.to_string()
+            }
+            _ => ()
+          }
+        None => ()
+      }
+    None => ()
+  }
+  match pdf_cjk_unicode(self.collection, glyph.cid) {
+    Some((code, _)) if code >= 0x20L => {
+      let out = StringBuilder()
+      pdf_text_char(out, code.to_int())
+      out.to_string()
+    }
+    _ => ""
+  }
+}
+
+///|
+fn PdfSimpleFont::glyph_width(
+  self : PdfSimpleFont,
+  glyph : PdfGlyphCode,
+) -> Double {
+  if self.composite {
+    self.cid_widths.get(glyph.cid).unwrap_or(self.default_width) / 1000.0
+  } else {
+    self.width(glyph.code.to_int())
+  }
 }
