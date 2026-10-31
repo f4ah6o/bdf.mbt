@@ -53,3 +53,6 @@ and rectangles (16,384 operations), including float32 coordinates, bounds and
 current points, against the upstream PDF interpreter. Generate them with
 `generate_draw_path_test.go` as `TestCodexPDFDrawPath` beside upstream
 `converter/pdf`, with `BDF_REFERENCE_OUTPUT` set to the generated test path.
+`generate_draw_operators_test.go` additionally compares path operators and
+malformed operand lists with the upstream interpreter, using
+`BDF_PDF_FIXTURES` for the testdata directory.
