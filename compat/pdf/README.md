@@ -113,6 +113,12 @@ ported yet fall back to a flat colour sampled at the domain midpoint. Shading
 patterns are checked through a `/Pattern` colour space and path fill; tiling
 patterns are rejected.
 
+The embedded-font tests build synthetic PDFs whose font descriptor carries a
+TrueType `/FontFile2` stream. They check that the font part bytes are stored
+unchanged, that Flate-compressed programs are decoded, and that the page's font
+resource references the part hash. Type 1 `/FontFile` and bare CFF programs are
+rejected until their outline conversion is ported.
+
 The text-state fixtures compare text matrix, line movement, spacing, scaling,
 leading, rise and rendering-mode operators against upstream before glyph
 output. `generate_text_state_test.go` needs `BDF_PDF_FIXTURES` and

@@ -669,3 +669,93 @@ test "PDF pattern outside a Pattern colour space fails closed" {
   }
   assert_true(rejected)
 }
+
+///|
+fn pdf_embedded_font_test_document(font_data : Bytes, filter : String) -> Bytes {
+  pdf_test_pdf([
+    b"<< /Type /Catalog /Pages 2 0 R >>",
+    b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+    b"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
+    pdf_test_stream("", b"BT /F1 12 Tf 10 10 Td (A) Tj ET"),
+    @utf8.encode(
+      "<< /Type /Font /Subtype /TrueType /BaseFont /Embedded /FirstChar 32 /LastChar 32 /Widths [600] /FontDescriptor 6 0 R /Encoding /WinAnsiEncoding >>",
+    ),
+    @utf8.encode(
+      "<< /Type /FontDescriptor /FontName /Embedded /Flags 32 /FontBBox [0 0 1000 1000] /ItalicAngle 0 /Ascent 800 /Descent -200 /CapHeight 700 /StemV 80 /FontFile2 7 0 R >>",
+    ),
+    pdf_test_stream(filter, font_data),
+  ])
+}
+
+///|
+fn pdf_test_font_part(document : Bytes) -> (String, Bytes) raise {
+  let split = @core.single_to_split(document)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  for part in manifest.parts {
+    if part.kind == "font" {
+      return (part.hash, @core.open_single(document).part(part.hash))
+    }
+  }
+  fail("PDF font part is missing")
+}
+
+///|
+test "PDF embedded TrueType font is stored unchanged" {
+  let font_data = b"\x00\x01\x00\x00embedded-true-type"
+  let document = pdf_graphics_document(
+    pdf_embedded_font_test_document(font_data, ""),
+    no_text_index=true,
+  )
+  let (hash, data) = pdf_test_font_part(document)
+  assert_eq(data, font_data, msg="PDF embedded font bytes")
+  let split = @core.single_to_split(document)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(document).part(body_hash),
+  )
+  assert_eq(resources.fonts[0].hash, Some(hash), msg="PDF font resource hash")
+}
+
+///|
+test "PDF embedded Flate font stream is decoded" {
+  let font_data = b"\x00\x01\x00\x00flate-font"
+  let document = pdf_graphics_document(
+    pdf_embedded_font_test_document(
+      @zlib.compress(font_data[:]),
+      "/Filter /FlateDecode",
+    ),
+    no_text_index=true,
+  )
+  let (_, data) = pdf_test_font_part(document)
+  assert_eq(data, font_data, msg="PDF embedded Flate font bytes")
+}
+
+///|
+test "PDF Type1 font programs fail closed" {
+  let rejected = try {
+    ignore(
+      pdf_graphics_document(
+        pdf_test_pdf([
+          b"<< /Type /Catalog /Pages 2 0 R >>",
+          b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+          b"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
+          pdf_test_stream("", b"BT /F1 12 Tf 10 10 Td (A) Tj ET"),
+          @utf8.encode(
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Embedded /FirstChar 32 /LastChar 32 /Widths [600] /FontDescriptor 6 0 R /Encoding /WinAnsiEncoding >>",
+          ),
+          @utf8.encode(
+            "<< /Type /FontDescriptor /FontName /Embedded /Flags 32 /FontBBox [0 0 1000 1000] /ItalicAngle 0 /Ascent 800 /Descent -200 /CapHeight 700 /StemV 80 /FontFile 7 0 R >>",
+          ),
+          pdf_test_stream("", b"%!PS-AdobeFont-1.0"),
+        ]),
+        no_text_index=true,
+      ),
+    )
+    false
+  } catch {
+    InvalidStream(message) => message.contains("unsupported embedded PDF font")
+    _ => false
+  }
+  assert_true(rejected)
+}

@@ -46,6 +46,8 @@ priv struct PdfGraphics {
   children : Array[Bytes]
   images : Array[Bytes]
   image_hashes : Map[String, Bool]
+  font_parts : Array[Bytes]
+  font_hashes : Map[String, Bool]
   fonts : Map[(Int64, Int64), (PdfSimpleFont, Int32)]
   font_refs : Map[Int32, Int32]
   mut next_font_key : Int32
@@ -132,6 +134,8 @@ fn PdfGraphics::new(
     children: [],
     images: [],
     image_hashes: {},
+    font_parts: [],
+    font_hashes: {},
     fonts: Map([]),
     font_refs: Map([]),
     next_font_key: 1,

@@ -67,6 +67,21 @@ fn PdfGraphics::end_path(
 }
 
 ///|
+fn PdfGraphics::store_font(
+  self : PdfGraphics,
+  data : Bytes,
+) -> String raise PdfStreamError {
+  let hash = self.child_writer.add_part("font", data) catch {
+    _ => raise InvalidStream("PDF font output failed")
+  }
+  if !self.font_hashes.contains(hash) {
+    self.font_hashes[hash] = true
+    self.font_parts.push(data)
+  }
+  hash
+}
+
+///|
 fn PdfGraphics::store_image(
   self : PdfGraphics,
   data : Bytes,
@@ -692,7 +707,14 @@ fn PdfFile::graphics_page_parts(
   self : PdfFile,
   page : PdfPageLeaf,
   which : String,
-) -> (PdfPageGeometry, Bytes, Array[Bytes], Array[String], Array[Bytes]) raise PdfStreamError {
+) -> (
+  PdfPageGeometry,
+  Bytes,
+  Array[Bytes],
+  Array[String],
+  Array[Bytes],
+  Array[Bytes],
+) raise PdfStreamError {
   match page.error {
     Some(message) => raise InvalidStream(message)
     None => ()
@@ -730,7 +752,14 @@ fn PdfFile::graphics_page_parts(
     }
     identities[index] = identity
   }
-  (geometry, encoded, graphics.children, identities, graphics.images)
+  (
+    geometry,
+    encoded,
+    graphics.children,
+    identities,
+    graphics.images,
+    graphics.font_parts,
+  )
 }
 
 ///|
@@ -739,10 +768,10 @@ fn PdfFile::graphics_page(
   page : PdfPageLeaf,
   which : String,
 ) -> (PdfPageGeometry, Bytes) raise PdfStreamError {
-  let (geometry, encoded, children, _, images) = self.graphics_page_parts(
+  let (geometry, encoded, children, _, images, fonts) = self.graphics_page_parts(
     page, which,
   )
-  if !children.is_empty() || !images.is_empty() {
+  if !children.is_empty() || !images.is_empty() || !fonts.is_empty() {
     raise InvalidStream(
       "PDF page contains child objects and requires document context",
     )

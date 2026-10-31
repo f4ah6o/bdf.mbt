@@ -109,13 +109,20 @@ fn pdf_graphics_document_full(
   let bodies : Array[Int32] = []
   let geometry : Array[PdfPageGeometry] = []
   for page in pages {
-    let (page_geometry, object, children, font_ids, images) = file.graphics_page_parts(
+    let (page_geometry, object, children, font_ids, images, fonts) = file.graphics_page_parts(
       page, box,
     )
     for image in images {
       ignore(
         writer.add_part("img", image) catch {
           _ => raise InvalidStream("PDF image output failed")
+        },
+      )
+    }
+    for font in fonts {
+      ignore(
+        writer.add_part("font", font) catch {
+          _ => raise InvalidStream("PDF font output failed")
         },
       )
     }
