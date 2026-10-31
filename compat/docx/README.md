@@ -19,7 +19,8 @@ other section features, document content, and conversion are still to be added.
 `convert/docx` exposes `detect` and `convert` for a text-only subset of
 WordprocessingML. It lays out paragraphs with approximate character widths and
 supports explicit line/page breaks, tabs, paragraph spacing, alignment, basic
-font weight/style/size and the section page geometry. Tables, images, numbering,
-headers, footers and fields are rejected by the reader or omitted. The native
+font weight/style/size and the section page geometry. Table rows are flattened to tab-separated paragraphs with tab stops from
+`tblGrid`; images, numbering, headers, footers and fields are rejected by the
+reader or omitted. The native
 converter Worker advertises the `docx` format.
 

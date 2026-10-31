@@ -278,9 +278,21 @@ fn docx_render_document(
           current_align = "left"
         }
         "tab" => {
-          let tab = 36.0
-          let next = docx_round_up((line_x - left) / tab) * tab + left
-          line_x = if next <= line_x { line_x + tab } else { next }
+          let relative = line_x - left
+          let mut next = 0.0
+          for stop in props.tabs {
+            if stop.position > relative {
+              next = stop.position
+              break
+            }
+          }
+          if next == 0.0 {
+            next = docx_round_up(relative / 36.0) * 36.0
+            if next <= relative {
+              next += 36.0
+            }
+          }
+          line_x = left + next
         }
         _ => {
           let size = if item.props.size > 0.0 { item.props.size } else { 10.0 }

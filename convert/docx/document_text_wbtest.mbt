@@ -70,7 +70,7 @@ fn reject_docx_document_text(chunks : Array[String]) -> Unit raise {
 test "DOCX unsupported content is rejected" {
   for
     source in [
-      "<body><tbl/></body>", "<body><p><r><drawing/></r></p></body>", "<body><p><r><fldChar fldCharType=\"begin\"/></r></p></body>",
+      "<body><p><r><drawing/></r></p></body>", "<body><p><r><fldChar fldCharType=\"begin\"/></r></p></body>",
       "<body><p><fldSimple instr=\"PAGE\"/></p></body>", "<body><p><r><rPr><vanish/></rPr><t>hidden</t></r></p></body>",
       "<body><p><r><rPr><caps/></rPr><t>case</t></r></p></body>", "<body><p><r><rPr><smallCaps/></rPr><t>case</t></r></p></body>",
       "<body><p><r><rPr><eastAsianLayout vert=\"1\"/></rPr><t>12</t></r></p></body>",

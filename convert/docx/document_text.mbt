@@ -350,6 +350,56 @@ fn DocxTextWalker::blocks(
           self.section_index += 1
         }
       }
+      "tbl" => {
+        let grid : Array[Double] = []
+        match child.child("tblGrid") {
+          Some(value) =>
+            for column in value.children {
+              if column.name() == "gridCol" {
+                grid.push(
+                  docx_measure(docx_attribute(column.element, "w", ""), 0.0),
+                )
+              }
+            }
+          None => ()
+        }
+        for row in child.children {
+          if row.name() != "tr" {
+            continue
+          }
+          let items : Array[DocxTextItem] = []
+          let mut first = true
+          for cell in row.children {
+            if cell.name() != "tc" {
+              continue
+            }
+            if !first {
+              docx_text_push(items, "tab", "\t", docx_default_run_props())
+            }
+            first = false
+            for part in cell.children {
+              if part.name() == "p" {
+                docx_text_inlines(part, items, self.styles, "")
+              } else if part.name() == "tbl" {
+                docx_text_unsupported("nested table")
+              }
+            }
+          }
+          docx_text_push(items, "break", "\n", docx_default_run_props())
+          let props = docx_default_paragraph_props()
+          let mut position = 0.0
+          for width in grid {
+            position += width
+            props.tabs.push({ position, alignment: "left", leader: "none", })
+          }
+          self.paragraphs.push({
+            props,
+            mark: docx_default_run_props(),
+            items,
+            section_index: self.section_index,
+          })
+        }
+      }
       "sdt" => {
         let mut seen_content = false
         for sub in child.children {

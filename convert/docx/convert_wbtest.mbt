@@ -77,3 +77,97 @@ test "DOCX text conversion emits a page and text" {
 test "DOCX detection rejects non-ZIP input" {
   assert_false(detect(b"not a document"))
 }
+
+///|
+fn docx_table_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GC4tS0+9qS/1IbXQN46RgYGYSAd7ZyfV5KaVxIfUlmQWhyrV5Gb",
+  )
+  joined.write_string(
+    "Uxuw1++wgcC9Sq7T2l2yEgJOnlYfjJmcKxsm13rqvNn8tNj79zeL3JcNXI/vfl+9Pvptk3j0mTdK",
+  )
+  joined.write_string(
+    "Xz+5bQ1SmJkh67v3T8R+k+9BBYybHign6n8/UWQaU/q61kks1OfO6Z1TviwwnS3JvKGLc6VS8hlG",
+  )
+  joined.write_string(
+    "L9vPS4Rn+M8IuL/t7VyziVxBmaceKba/43S/8UNpXvnXWp1JFzeL9Ls/mnTV2+OkNfPSR1Xe38K9",
+  )
+  joined.write_string(
+    "ir0CQisffHgjFB/edEVcWOzJ+4bJ79bqTZ7r+pFv5x6nFTp/RTdfNZvlu8Lr6/6zrfMKZeYe3FxX",
+  )
+  joined.write_string(
+    "6G0plbJuMvv6cx4M7vZ/vya+eygdgBI2OxtdCjcAeVrAsOEG0vFFqTnF+nogsve8Nd8hAx62B3OD",
+  )
+  joined.write_string(
+    "Xe5lRrG1BEzW41iprcXeIWTemyHndWjxdnVmZgU2t9v77U/nft9gvDPR55g1m28os6P6XiM/Ywv+",
+  )
+  joined.write_string(
+    "41/5PE4d0jSsbucR87nwMbT6UOSTTZPVhIU0O7x5ls05PO+SivoWpVC7BdqTL7prF2kuXuZ4ovuC",
+  )
+  joined.write_string(
+    "h3np3qUf7zL8S5wUZ9ixN6uBx/tAfY59n9ujg6dXu06vn/PDSyTSpXfmwbvurldXx4qKaeS/PN79",
+  )
+  joined.write_string(
+    "hxPVY3xr0jNYgJ56BMSCQNHy/KIU/ZT85NJcYMyDorw08CAwynn2fhYNfacTq5mx6ppfA4u6isoD",
+  )
+  joined.write_string(
+    "5ksq3tqqhVMkTv2ourRsqVNPt6y9/e+b5/59yCz5plj74uC1lN0nPdV02S9Gh07efr39tOxJJiPt",
+  )
+  joined.write_string(
+    "GWza2UWTGmVmdf8N4Hzw3i3qTBK79KqFarKLVmvw7pnc1sprkZn8juOeQc/C8BIG/Tnses4dTG6X",
+  )
+  joined.write_string(
+    "lc7nr0jcq+qbc7PJolcu2na3+/3ujysX7Wefy7vYT+cU51/m+LMGf0M76zbVbMkz0czLU7935Nvk",
+  )
+  joined.write_string(
+    "0pWT5i+//9d/uWfLvzOyKsefrzy3cvp6kzvbNE5V3F746tHvqvBz3BZfj9S4CMYcOe3yce+rAt5o",
+  )
+  joined.write_string(
+    "B5bNx6LkpufcKru4+DTry1/WZ80DvBmZRJhx5xQYaGBkwJ5v0A1AT04IA2QYURIXukb06EJo/MqI",
+  )
+  joined.write_string("JfICvFnZQNLMQLgTSGswg3gAS3fStPcDAAA=")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "DOCX table rows become tabbed paragraphs" {
+  let data = docx_table_fixture()
+  let document = docx_document_text(data)
+  assert_eq(document.paragraphs.length(), 1)
+  let paragraph = document.paragraphs[0]
+  assert_eq(paragraph.props.tabs.length(), 2)
+  assert_eq(paragraph.props.tabs[0].position, 100.0)
+  assert_eq(paragraph.props.tabs[1].position, 250.0)
+  let kinds = StringBuilder()
+  let text = StringBuilder()
+  for item in paragraph.items {
+    kinds.write_string(item.kind)
+    kinds.write_string(",")
+    text.write_string(item.text)
+  }
+  assert_eq(text.to_string(), "A\tB\n")
+  assert_eq(kinds.to_string(), "char,tab,char,break,")
+}
+
+///|
+test "DOCX table conversion places cells on tab stops" {
+  let result = convert(docx_table_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut a_x = -1.0
+  let mut b_x = -1.0
+  for command in commands {
+    match command {
+      @render.FillText("A", x, _, _) => a_x = x
+      @render.FillText("B", x, _, _) => b_x = x
+      _ => ()
+    }
+  }
+  assert_eq((a_x, b_x), (72.0, 172.0), msg="DOCX table tab stops")
+}
