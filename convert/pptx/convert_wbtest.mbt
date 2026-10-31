@@ -461,3 +461,117 @@ test "PPTX theme colours resolve scheme colours" {
   }
   assert_true(red, msg="PPTX theme accent colour")
 }
+
+///|
+fn pptx_color_modifier_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/4VVCzQTbBjebJlbNTYVXZYKxVkoGVGtXHKpYZJLm/uYYjcLi3VWUWHua0SYyC1C",
+  )
+  joined.write_string(
+    "qblHJZdcij8q1t9BLBQnQgn/VP/x26nzf98533fe73zvc87zvO/3fDZWIDAcAABIAeAVrvhS1IIR",
+  )
+  joined.write_string(
+    "BAgA5EoAADDR6SljMolOINFdTzAohAD87mB/vyKsofVjbejbr4rcHg1qCwt6uvNCo5Tce4hju2rp",
+  )
+  joined.write_string(
+    "SFJoT8H8DC5hG1CDzmroFjC10mqcEdWwkCaiZ977u4XZLDePM8auz/htdlTNVQlrigJ10MhYFk2A",
+  )
+  joined.write_string(
+    "K9JrBO9M3lTCBdlW2sm0AVw8lWDgdLpOyHHckIuq/4NKyFm8ParlCRqax7M11rsNEU61xwcbUULW",
+  )
+  joined.write_string(
+    "JNRnwmf2UqYKbmGanbIihk8j3pB3NzRneg2F1der4bTRBffWDAz6XIKNh6MS/WX77X3Odafbaqhi",
+  )
+  joined.write_string(
+    "d4H2kB9xH2qmRShXtSsTs14zcjgZDdVzWK5Lb0k5VHIzilrLXUzzxtZwWLMC94OLW9wSvlJOdB06",
+  )
+  joined.write_string(
+    "8xZos0I3GmYm464oQoq0kxXtrjSCX4DW7qU1uqNN5pG2HGSiytqWFiQwutpUiTd5ZT8E4uiNXh6F",
+  )
+  joined.write_string(
+    "HFecmV5njTEKPva5QyublBHovZaty1DnaVi6CTk9iXsl7swzQgBmFvuRPuM2dRfB/vfytfSfcYKI",
+  )
+  joined.write_string(
+    "NyRK2foK2jnwmBuJyi8sNULRSeqXYk/m4MweXzqB8o0bb6F1DOQC21q80tZBDfHA0STW4qvzG9TC",
+  )
+  joined.write_string(
+    "1Ys/rcN/o/ZrxhOUVqsBVXZs2YYl1XaZci+g9rkyX1cDVlJ7HtzxpEMUmYuoLZ1SKHQtCo0QIOoK",
+  )
+  joined.write_string(
+    "d7ovmbTUE9Fx1mckdKAN4/Nw90/7qC8IVX7dVvJgsv8htLm3AL0QH3Hz/DlPpKnwFn8mmXFoqK3E",
+  )
+  joined.write_string(
+    "IKQRk9z8dKt7BbROW0j00zef/dZXG1iXl+fGiQKq4uLc9tbK5VsrSRvb3lJzugUeSQyr4PwVgDln",
+  )
+  joined.write_string(
+    "VkyUh13en+oxXXAide13g+HN5DBihYNe3dodixCF3ObTobHfhJqjwGZhbaZur4l2N6z5etpru68v",
+  )
+  joined.write_string(
+    "W5Wl2ypXceeqWg27AAjIgs/MQMuU06Ne2n2FmwdNXXeUCSqrUo++q2gMBq0UgJ7WMlUiilREAiB+",
+  )
+  joined.write_string(
+    "CfCzvuIy/Kp3qajeUMl3glwpfm/ZZpNs3/XylZZMVhyu1y0lDAefm5ak2lAo38dnHw6kfCp1DGw0",
+  )
+  joined.write_string(
+    "f2oItLeVMM6t1iMpUJQwvQe0LTt9fWuMgZoK9I85BlnXdgUR9S44mm2STraTgbRbtJWbL9UblRUb",
+  )
+  joined.write_string(
+    "dczgaQQk/w7tiEvS+5hGa9AbrcQvzuixs6v9HEELnnNUXZlYF8E6+odGaUw3sZXHhqkBi2fTT5p2",
+  )
+  joined.write_string(
+    "s/irF78VMiVWkj1tLHOyVBSt+k+16USCP+HnqrNEEx8tWOro8HFmZEKI/3B4kyNflqrFO4geG9lU",
+  )
+  joined.write_string(
+    "lq/bkMFHrQHrrFcZHhy06jrgaROUwbD0ynRWsknHKaspI2/EzNNkI2U7WSrx/InPcvgqYsluB0RN",
+  )
+  joined.write_string(
+    "QkC/MhJnVfHS+R5sI+MaKd0ryMLAQ/760QNeoVJ6kjV63lnbMeCP68vWduZNNFJUEH3H1NmfJ4UV",
+  )
+  joined.write_string(
+    "rRZ0zJ6XPoNG6UEqtw0lZZnkbDQ/ekH6A6KzcGELM2169UqKvtkO+mgRPQeRxyn+ohjg5+tFCPi5",
+  )
+  joined.write_string(
+    "/eAYjX2GEblc9aQid5yeWMCDvswHY8k8SyTCzSM3ejDJD4atTb/flUMZ6Bd8GWMHqTuRzYqatjKF",
+  )
+  joined.write_string(
+    "Re5lODjHvMv5Rer2rPErH5mmFlf7pO4UxrPTCbzUIdLHER748F3p+55T8KzbwCMhCSlXws92bu12",
+  )
+  joined.write_string(
+    "KmY86UTUM5SyI4z6jZ3r7+7ccnjy7fMoqcXYqxPfZdXnHpMp3MBik8j6zdUcOy5m75igfTiG7z5s",
+  )
+  joined.write_string(
+    "obUBj/Uof2rvUsSj1GM3HmPfqCOTmuJ7PIfPRj4YbWoS2lU4Kwp7GBiVTBo727S8kGt/bWLaGtRH",
+  )
+  joined.write_string(
+    "v2hf82ra8v02f6QrRx3kwP78wJRvmbL1Sz61+8NC5k7vtOt77FH7ytvHRvQPnqJiNBAbJknVgR+a",
+  )
+  joined.write_string(
+    "NBm6qqFZuyZnS+v5CS6tBYkPnqU4IJPHwlP/psyD4xajhiA2VkAJOOjPH8u/gwUE/P6bEQcQd9hl",
+  )
+  joined.write_string(
+    "AH3gCr8VTxT3r+VEmMTv3UwcQdwAlhHgoP+1A3Ew8Qe2DAYE//65iSOI9+8ywiD4D91sY7VKcumK",
+  )
+  joined.write_string("pGjGLKX+iP4BCXkWifsHAAA=")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX theme colour modifiers change luminance" {
+  let result = convert(pptx_color_modifier_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut dark_red = false
+  for command in commands {
+    match command {
+      @render.FillColor(0x800000ff) => dark_red = true
+      _ => ()
+    }
+  }
+  assert_true(dark_red, msg="PPTX lumMod")
+}

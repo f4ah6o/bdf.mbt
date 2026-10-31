@@ -42,6 +42,78 @@ fn pptx_hex_color(value : String) -> UInt32 {
 }
 
 ///|
+fn pptx_color_channel(color : UInt32, shift : Int32) -> Double {
+  ((color >> shift) & 0xffU).to_double()
+}
+
+///|
+fn pptx_pack_color(red : Double, green : Double, blue : Double) -> UInt32 {
+  let r = (Double::min(255.0, Double::max(0.0, red)) + 0.5)
+    .to_int()
+    .reinterpret_as_uint()
+  let g = (Double::min(255.0, Double::max(0.0, green)) + 0.5)
+    .to_int()
+    .reinterpret_as_uint()
+  let b = (Double::min(255.0, Double::max(0.0, blue)) + 0.5)
+    .to_int()
+    .reinterpret_as_uint()
+  (r << 24) | (g << 16) | (b << 8) | 0xffU
+}
+
+///|
+fn pptx_color_modifier(node : PptxXmlNode, name : String) -> Double? {
+  match pptx_child(Some(node), name) {
+    Some(value) =>
+      match pptx_attribute(value.element, "val", "") {
+        "" => None
+        text => Some((@string.parse_double(text) catch { _ => 0.0 }) / 100000.0)
+      }
+    None => None
+  }
+}
+
+///|
+fn pptx_apply_color_modifiers(color : UInt32, node : PptxXmlNode) -> UInt32 {
+  let mut red = pptx_color_channel(color, 24)
+  let mut green = pptx_color_channel(color, 16)
+  let mut blue = pptx_color_channel(color, 8)
+  for child in node.children {
+    let factor = pptx_color_modifier(node, child.element.name.local_name)
+    match child.element.name.local_name {
+      "lumMod" | "shade" =>
+        match factor {
+          Some(value) => {
+            red *= value
+            green *= value
+            blue *= value
+          }
+          None => ()
+        }
+      "lumOff" =>
+        match factor {
+          Some(value) => {
+            red += value * 255.0
+            green += value * 255.0
+            blue += value * 255.0
+          }
+          None => ()
+        }
+      "tint" =>
+        match factor {
+          Some(value) => {
+            red += (255.0 - red) * value
+            green += (255.0 - green) * value
+            blue += (255.0 - blue) * value
+          }
+          None => ()
+        }
+      _ => ()
+    }
+  }
+  pptx_pack_color(red, green, blue)
+}
+
+///|
 fn pptx_solid_color(
   node : PptxXmlNode?,
   theme : Map[String, UInt32],
@@ -64,7 +136,10 @@ fn pptx_solid_color(
               if name == "" {
                 None
               } else {
-                theme.get(name)
+                match theme.get(name) {
+                  Some(base) => Some(pptx_apply_color_modifiers(base, color))
+                  None => None
+                }
               }
             }
             None => None
