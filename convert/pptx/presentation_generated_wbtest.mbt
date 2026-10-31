@@ -1568,15 +1568,19 @@ test "PPTX presentation matches upstream Go 6" {
   check_pptx_manifest(
     "synthetic.pptx",
     [
-      "H4sIAAAAAAAA/9xWeTzU+xr+jux7YRRlKbIzLjdS6JRDIhkca5RlQmHsW7Y2jDEzslQcKsWczCASkq0xxU1mksKtscxQRJFRZ8y13s+ZUppu3XPun3fm/fz++r3P5/e8z/s+72tvs45XGggCQcD9EwEAHAlHBEXo6f7xzKSairfBRB8wiRZmezz1YVfrpES0Jvmu0ZPSjbFBLpr1/jrpp5Ym5pYHi8I//JKhc6K2KkK3jzzipZd+AToSgHHS3DVunXvdY5uJL2Zik3+bI+0yHMcvqnjsjmm8/fo0WIvmku8jwwpUZfYO/Ii5bgtUsv2GQZxEoIFsO8GPQt0U+npmoy/5JLC3ERB0akDPpwMAZgAA3ycgAQDwjYqIRAbrhYYjInRjg4P8cPDjZJikxc2tLHChqOdChvqRJY3c5Ze8BO0OkUb34jzS1AR634YeFpI+1UV9i9b6e2CnjmFukDO+vDL2kocW1R0TMXK1KDfXBW+tmYYvepbTPKf/3HPY3E38EmODA1IZUfbMuiSWhSq3dcYL+cbn3QntpPRZjPOY+MJhUs7BVm36idpvGQ0nT5FbjEuZwQn90U/5rSTWXZrcwRRiGT33tGbbKFSehcu8DxxlDZ8ZrUcR04qHnR/oSZB9Xz6aWFokPwb2NgKC7NcCB+4DAKwgAHxfQbkvBfgo5GoZOILepugTyDDRFAZx4xYlYWQseVTV8WKlqqz9FlX9Wh3fMsPmxGL7/cr7LmJXZpNX1LB+P93SLb7h4dj1guTjvCzZq1e4X16jsF9arQxlK19mAJ2VLdiU/IIl+4YFWaI93dIhLjgQqrf40BWvEWuW3rqdWvfeCuPtF7quN7/ijL/mgbFjB9eHppknX6n/tSl2YP6FOT9H2sEEocVsAIDPD5kpfWEWERToh4j4RBAZgvjML5NaLdwGk2xnugjFpRyOCs2qy0HTVRJPZXnR6Kqy4S4Bw16hBDp9Xqz13bDZ+SZL6q37W4/Z5JbWoI83",
-      "8Ox3hcWFHYYhUdsrHxKNKw2kFb2SLI2NKHyTT6qWLgZO+/pP+FGqZBetxgIzIMjNfWfdkjen2G9mMmK8egtI/Ztqa6iQxO0Q6us6C+g8FKvR0yrAES5a4/qh8wCAafC/0IuMQf4/0IN+oRfkHYeMivws3OGsg8fJe0TP3fQZA/CevbLtLDytAFookl69QaILl+XU35AYhs/KxnyAxg8LTN7pNU6mVyR41JReqn01pHNsgOfGEfViBWHHIYcmaeuAePVwPqhDZyr0gN16L2yH0f6Nt05EaphvI5y3HWgUsVQ1ihyYV982O665ryPYzVql64MCwmIs66ZY/KHnds1ERi+pm+RIORQ25Nbpr0wIvBJXxH4jTj0x2GQY7TtZZLRTAP2yAIZs3rXk/WbLboK920zKu9lGieWlAPYWTi1+tl2E/QMAoP/DTlb+thb/qZX1sW0wyXMMoqtZilrjAyhRRUaMT6yTz5KqUj0Tq/1Y6RxtG5wPdZolM7ywoIW4rfJzvVPvVCFaPMmAuALkjHyeKeV1UuPOtwfIlVTY6w+FqrKn7poHWJFxSPyux2fGFd/hrUqRfm4XpCdUmFSnt2RIgJ2Bpz2mIEaqLi9oRhm0bufTkI6mKrQrYDVMzD6KbeESW5L9V8QO9o6IRIR/pmaLg4eQYYKpN33CUhzmvCXgRfJOBc88U3aWo1KFbj3JHUzqbApIZKyoss3px/flTFhSGlIr0utIG7qmdyjV7Y4ojnbHRGnNVvftHbI7kXj1l5Byu5Zyd1698fciUHfpdqKY2yRGu8nch4cpSKq/dHQ+U1Ld3xknpO7v3AqW+af/hlnQYDnnN9KISYNTtdH9vWP04XahhDCGKcZKamU8zGrJWm2kmveKgkLyR2uqEMDsKQcALP+Qr8w3s/uJbonjVEghTDJB5tGKfM6JF4TXxmUmZZNXCPCnsjP5qq7juIrmn2ZYeWIfdJUP2wmbw/5ZM5rvNgV9FHC8z2PUByWDRFVJ",
-      "byVAyzONFEi/9xmauVoz29OsTkG2GmeXNNdYBmWM1FQ57DI77xolhs5jsM8q5tarWyvefmLop9tC8ymzZWswXWR7cO+UeD3JZshr0bjMeVpGf4eYbGNFLMRFAm+HWL/Cm8LUavacS5nL744azdC5DikeKXkI/O9OayXtCsMqhXnJ/laLPI0gOT4wH5SZYJTryyWXjERO/5qqiqdcvEYPusHeztigd6FbyvG9Nym/AIeeGLK4fBBTj3JbvouSaUZ3nqxwXrzunLOAs5nzRxAhCgmmtqIxi7cUiJ3IVCVj66o57D340EC9l9bRVsa7HHFJraFxbTjx/pxiVvVwqb5AGVYtZryiYeA04n6/ycJ8qgHTNt/VYD5kDl2Smolh88zf5TksKPnbxg4vlNFdU+yjV7DLBtQnGS4GLamHCvlNxBIuh51CGP4+Pcwx4wlh/gQsBAAy718T9JMNO3Xqh+xTFgXdRCVFJTuDyD33enZOdkt1HzW7kaIjr7ozqTRo05UPp2PlH5iOu46p7qV57L42KEcJUoO6P96p+aaLZlcukJH95EVcjFcE/VXC8v38BR5/jOL6O86hfewwSp11sspeClnQQTJZPp4ym+iS4Cg88i87QnN3P3H/kbQFU7Otua0iR4XZffAmTPbyx5m8Z6gNzwIAtHB6FMIjDb6QWns1iXCR/OrU405ce21IrL7PCdK3JxZ38tqFLreax4k2yI/OE26ctatFaRWCE4U83AJ966B/Hu3kuv++e7nR1lo9dBWI83fn/cbeP30WN8ZaN1VeTefEMb4/sSK44daa1defZMX/PUPmxlg7HzKr6ZwwEuAu0ncg1vbj1xCCQt8ZK3sbPv4/XhAGwqCeBwCaEAAA/HsAfXRLS6gMAAA=",
+      "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",
     ],
     "custom/pres.xml",
     720.00000000000000,
     425.19685039370080,
     7L,
-    [("custom/slides/two.xml", true), ("custom/slides/one.xml", false)],
+    [
+      ("custom/slides/two.xml", true),
+      ("custom/slides/one.xml", false),
+      ("custom/slides/two.xml", true),
+    ],
     [
       (
         "custom/layouts/one.xml",
@@ -1591,6 +1595,13 @@ test "PPTX presentation matches upstream Go 6" {
         true,
         false,
         [("accent1", "accent3"), ("bg1", "lt1"), ("tx1", "dk2")],
+      ),
+      (
+        "custom/layouts/one.xml",
+        "custom/masters/one.xml",
+        false,
+        false,
+        [("accent1", "accent3"), ("bg1", "lt1"), ("tx1", "dk1")],
       ),
     ],
     [
@@ -1621,6 +1632,7 @@ test "PPTX presentation matches upstream Go 6" {
         ("sp", None),
         ("sp", None),
       ],
+      [],
     ],
     [
       ([], [("ctrTitle", Some("1"))], [("title", None)]),
@@ -1634,6 +1646,7 @@ test "PPTX presentation matches upstream Go 6" {
         [("ctrTitle", Some("1"))],
         [("title", None)],
       ),
+      ([], [("ctrTitle", Some("1"))], [("title", None)]),
     ],
   )
 }

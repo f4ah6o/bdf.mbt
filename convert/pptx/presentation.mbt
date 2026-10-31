@@ -98,82 +98,52 @@ fn pptx_presentation(data : Bytes) -> PptxPresentation raise {
     Some(rel) => rel.target
     None => "ppt/presentation.xml"
   }
-  let bytes = package.read(part)
-  let text = @utf8.decode_lossy(bytes[:], ignore_bom=true)
-  if text.contains("<!ENTITY") {
-    raise InvalidPptx("OOXML part declares entities")
+  let root = pptx_read_xml(package, part)
+  let first_slide = pptx_int64(
+    pptx_attribute(root.element, "firstSlideNum", "1"),
+    1L,
+  )
+  let (width, height) = match pptx_child(Some(root), "sldSz") {
+    Some(size) =>
+      (
+        pptx_measure(pptx_attribute(size.element, "cx", ""), 720.0),
+        pptx_measure(pptx_attribute(size.element, "cy", ""), 540.0),
+      )
+    None => (720.0, 540.0)
   }
-  let reader = @xml.NamespaceReader::from_string(text)
-  let mut width = 720.0
-  let mut height = 540.0
-  let mut first_slide = 1L
-  let mut depth = 0
-  let mut slide_list = -1
-  let mut found_size = false
-  let mut found_list = false
   let slides : Array[PptxSlide] = []
-  while true {
-    let event = reader.read_event()
-    match event.kind {
-      Start(element) | Empty(element) => {
-        let name = element.name.local_name
-        if depth == 0 {
-          let value = pptx_trim(pptx_attribute(element, "firstSlideNum", "1"))
-          first_slide = @string.parse_int64(value) catch {
-            _ => @string.parse_double(value).to_int64() catch { _ => 1L }
-          }
-        } else if depth == 1 && name == "sldSz" && !found_size {
-          found_size = true
-          width = pptx_measure(pptx_attribute(element, "cx", ""), 720.0)
-          height = pptx_measure(pptx_attribute(element, "cy", ""), 540.0)
-        } else if depth == 1 && name == "sldIdLst" && !found_list {
-          found_list = true
-          if event.kind is Start(_) {
-            slide_list = depth + 1
-          }
-        } else if depth == slide_list && name == "sldId" {
-          let mut id = ""
-          for attr in element.attributes {
-            if attr.name.local_name == "id" &&
-              (match attr.name.namespace_uri {
-                Some(uri) => uri.has_suffix("relationships")
-                None => false
-              }) {
-              id = attr.value
-              break
-            }
-          }
-          match package.target(part, id) {
-            Some(rel) =>
-              slides.push({
-                part: rel.target,
-                hidden: pptx_hidden(package, rel.target),
-              })
-            None => ()
-          }
-        }
-        if event.kind is Start(_) {
-          depth += 1
-        } else if depth == 0 {
-          break
-        }
+  let list = pptx_child(Some(root), "sldIdLst")
+  for slide in pptx_children(list) {
+    if slide.element.name.local_name != "sldId" {
+      continue
+    }
+    let mut id = ""
+    for attr in slide.element.attributes {
+      if attr.name.local_name == "id" &&
+        (match attr.name.namespace_uri {
+          Some(uri) => uri.has_suffix("relationships")
+          None => false
+        }) {
+        id = attr.value
+        break
       }
-      End(_) => {
-        depth -= 1
-        if depth + 1 == slide_list {
-          slide_list = -1
-        }
-        if depth == 0 {
-          break
-        }
-      }
-      Eof => break
-      _ => ()
+    }
+    match package.target(part, id) {
+      Some(rel) =>
+        slides.push({
+          part: rel.target,
+          hidden: pptx_hidden(package, rel.target),
+        })
+      None => ()
     }
   }
-  if width <= 0.0 || height <= 0.0 || width > 20000.0 || height > 20000.0 {
-    width = 720.0
-    height = 540.0
+  let (width, height) = if width <= 0.0 ||
+    height <= 0.0 ||
+    width > 20000.0 ||
+    height > 20000.0 {
+    (720.0, 540.0)
+  } else {
+    (width, height)
   }
   { part, width, height, first_slide, slides, }
 }
