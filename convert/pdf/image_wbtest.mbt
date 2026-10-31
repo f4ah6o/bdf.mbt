@@ -410,30 +410,6 @@ test "PDF image stencil mask removes painted pixels" {
 }
 
 ///|
-test "PDF colour key masks fail closed" {
-  let rejected = try {
-    ignore(
-      pdf_graphics_document(
-        pdf_masked_image_test_document(
-          1,
-          1,
-          "/Mask [0 0 0 0 0 0]",
-          @zlib.compress(b"\xff\x00\x00"[:]),
-          "",
-          b"",
-        ),
-        no_text_index=true,
-      ),
-    )
-    false
-  } catch {
-    InvalidStream(message) => message.contains("colour key")
-    _ => false
-  }
-  assert_true(rejected)
-}
-
-///|
 test "PDF encoded images with masks fail closed" {
   let rejected = try {
     ignore(
@@ -909,4 +885,24 @@ test "PDF annotations without appearance streams are skipped" {
     no_text_index=true,
   )
   assert_eq(pdf_test_fill_rects(document), 0, msg="PDF annotation without AP")
+}
+
+///|
+test "PDF colour key mask removes matching pixels" {
+  let document = pdf_graphics_document(
+    pdf_masked_image_test_document(
+      2,
+      1,
+      "/Mask [0 0 0 0 0 0]",
+      @zlib.compress(b"\x00\x00\x00\xff\xff\xff"[:]),
+      "",
+      b"",
+    ),
+    no_text_index=true,
+  )
+  assert_eq(
+    pdf_test_image_rgba(document, 2, 1),
+    pdf_test_rgba_scanline([(0, 0, 0, 0), (255, 255, 255, 255)]),
+    msg="PDF colour key scanline",
+  )
 }

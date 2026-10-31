@@ -252,17 +252,41 @@ fn PdfGraphics::draw_image_xobject(
       Some(value) => value
       None => raise InvalidStream("PDF image color space is missing")
     }
-    let mask = match soft_mask {
-      Some(value) => pdf_load_soft_mask(file, value)
+    let rgb = pdf_image_rgb_samples(width, height, space, data)
+    let rgba = pdf_image_rgba_from_rgb(width, height, rgb)
+    let masked = match soft_mask {
+      Some(value) =>
+        pdf_apply_image_mask(
+          rgba,
+          width,
+          height,
+          pdf_load_soft_mask(file, value),
+        )
       None =>
         match stencil_mask {
-          Some(value) => pdf_load_stencil_mask(file, value)
+          Some(PdfArray(values)) => {
+            let key : Array[Double] = []
+            for value in values {
+              match file.page_num(Some(value)) {
+                Some(number) => key.push(number)
+                None => raise InvalidStream("invalid PDF colour key mask")
+              }
+            }
+            pdf_apply_image_alpha(
+              rgba,
+              pdf_color_key_alpha(width, height, space, data, key),
+            )
+          }
+          Some(value) =>
+            pdf_apply_image_mask(
+              rgba,
+              width,
+              height,
+              pdf_load_stencil_mask(file, value),
+            )
           None => raise InvalidStream("PDF image mask is missing")
         }
     }
-    let rgb = pdf_image_rgb_samples(width, height, space, data)
-    let rgba = pdf_image_rgba_from_rgb(width, height, rgb)
-    let masked = pdf_apply_image_mask(rgba, width, height, mask)
     self.emit_image(pdf_png_encode_rgba(width, height, masked))
   } else {
     self.draw_image_data(
