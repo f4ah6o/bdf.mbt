@@ -672,6 +672,29 @@ fn pptx_emit_table(
 }
 
 ///|
+fn pptx_ellipse_path(
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+) -> @core.Path {
+  let cx = x + width / 2.0
+  let cy = y + height / 2.0
+  let rx = width / 2.0
+  let ry = height / 2.0
+  let verbs : Array[Byte] = [0]
+  let coordinates : Array[Double] = [cx + rx, cy]
+  for i in 1..<49 {
+    let angle = 2.0 * 3.141592653589793 * i.to_double() / 48.0
+    verbs.push(1)
+    coordinates.push(cx + rx * @math.cos(angle))
+    coordinates.push(cy + ry * @math.sin(angle))
+  }
+  verbs.push(4)
+  { verbs: Bytes::from_array(verbs), coordinates, }
+}
+
+///|
 fn pptx_render_slide(
   package : @ooxml.OoxmlPackage,
   part : String,
@@ -844,6 +867,11 @@ fn pptx_render_slide(
       )
       continue
     }
+    let geometry = match
+      pptx_child(pptx_child(Some(shape), "spPr"), "prstGeom") {
+      Some(value) => pptx_attribute(value.element, "prst", "rect")
+      None => "rect"
+    }
     let fill = pptx_node_color(
       pptx_child(Some(shape), "spPr"),
       "solidFill",
@@ -852,12 +880,26 @@ fn pptx_render_slide(
     match fill {
       Some(color) => {
         object.fill_color(color)
-        object.fill_rect(
-          Float::from_double(shape_x),
-          Float::from_double(shape_y),
-          Float::from_double(transform.width),
-          Float::from_double(transform.height),
-        )
+        if geometry == "ellipse" {
+          let path_index = object.add_path(
+            @core.Inline(
+              pptx_ellipse_path(
+                shape_x,
+                shape_y,
+                transform.width,
+                transform.height,
+              ),
+            ),
+          )
+          object.fill_path(path_index, 0)
+        } else {
+          object.fill_rect(
+            Float::from_double(shape_x),
+            Float::from_double(shape_y),
+            Float::from_double(transform.width),
+            Float::from_double(transform.height),
+          )
+        }
       }
       None => ()
     }
@@ -875,12 +917,21 @@ fn pptx_render_slide(
         Some(color) => color
         None => 0x000000ffU
       }
-      let geometry = match
-        pptx_child(pptx_child(Some(shape), "spPr"), "prstGeom") {
-        Some(value) => pptx_attribute(value.element, "prst", "rect")
-        None => "rect"
-      }
-      if geometry == "rect" || geometry == "" {
+      if geometry == "ellipse" {
+        let path_index = object.add_path(
+          @core.Inline(
+            pptx_ellipse_path(
+              shape_x,
+              shape_y,
+              transform.width,
+              transform.height,
+            ),
+          ),
+        )
+        object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
+        object.stroke_color(stroke_color)
+        object.stroke_path(path_index)
+      } else if geometry == "rect" || geometry == "" {
         object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
         object.stroke_color(stroke_color)
         object.stroke_rect(
