@@ -315,6 +315,22 @@ fn PdfGraphics::text_operator(
     }
     return true
   }
+  if operator == b"'" {
+    if n >= 1 {
+      ignore(self.text_operator(b"T*", []))
+      ignore(self.text_operator(b"Tj", [args[n - 1]]))
+    }
+    return true
+  }
+  if operator == b"\"" {
+    if n >= 3 {
+      text.state.word_spacing = pdf_draw_number(args, n - 3)
+      text.state.char_spacing = pdf_draw_number(args, n - 2)
+      ignore(self.text_operator(b"T*", []))
+      ignore(self.text_operator(b"Tj", [args[n - 1]]))
+    }
+    return true
+  }
   if operator == b"TJ" {
     if n < 1 {
       return true
