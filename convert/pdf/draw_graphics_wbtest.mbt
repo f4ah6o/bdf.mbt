@@ -277,6 +277,35 @@ test "PDF text index failure warns and leaves the document unindexed" {
 }
 
 ///|
+// The stored length of a compressed part depends on the DEFLATE encoder, so
+// compare manifests with every part's "len" field canonicalized. Hashes,
+// decoded sizes, page references and the part bytes themselves are still
+// compared exactly.
+fn pdf_manifest_without_stored_lengths(manifest : Bytes) -> Bytes {
+  let out = @buffer.Buffer(size_hint=manifest.length())
+  let mut i = 0
+  while i < manifest.length() {
+    if i + 6 <= manifest.length() &&
+      manifest[i] == b'"' &&
+      manifest[i + 1] == b'l' &&
+      manifest[i + 2] == b'e' &&
+      manifest[i + 3] == b'n' &&
+      manifest[i + 4] == b'"' &&
+      manifest[i + 5] == b':' {
+      out.write_string_utf8("\"len\":0")
+      i += 6
+      while i < manifest.length() && manifest[i] >= b'0' && manifest[i] <= b'9' {
+        i += 1
+      }
+    } else {
+      out.write_byte(manifest[i])
+      i += 1
+    }
+  }
+  out.to_bytes()
+}
+
+///|
 fn check_pdf_shared_document(
   data : Bytes,
   no_share : Bool,
@@ -286,17 +315,41 @@ fn check_pdf_shared_document(
   expected_saved : Int64,
   expected_warnings : Array[String],
 ) -> Unit raise {
-  let (actual, warnings, count, saved) = pdf_graphics_document_full(data, no_share_prefix=no_share, no_text_index=no_index)
-  assert_eq((count, saved), (expected_count, expected_saved), msg="PDF prefix share stats")
+  let (actual, warnings, count, saved) = pdf_graphics_document_full(
+    data,
+    no_share_prefix=no_share,
+    no_text_index=no_index,
+  )
+  assert_eq(
+    (count, saved),
+    (expected_count, expected_saved),
+    msg="PDF prefix share stats",
+  )
   assert_eq(warnings, expected_warnings, msg="PDF warnings")
   let left = @core.single_to_split(actual)
   let right = @core.single_to_split(expected)
-  assert_eq(left.manifest, right.manifest, msg="PDF shared BDF manifest")
-  assert_eq(left.parts.length(), right.parts.length(), msg="PDF shared BDF part count")
+  assert_eq(
+    pdf_manifest_without_stored_lengths(left.manifest),
+    pdf_manifest_without_stored_lengths(right.manifest),
+    msg="PDF shared BDF manifest",
+  )
+  assert_eq(
+    left.parts.length(),
+    right.parts.length(),
+    msg="PDF shared BDF part count",
+  )
   let actual_doc = @core.open_single(actual)
   let expected_doc = @core.open_single(expected)
   for i in 0..<left.parts.length() {
-    assert_eq(left.parts[i].hash, right.parts[i].hash, msg="PDF shared BDF part hash")
-    assert_eq(actual_doc.part(left.parts[i].hash), expected_doc.part(right.parts[i].hash), msg="PDF shared BDF part bytes")
+    assert_eq(
+      left.parts[i].hash,
+      right.parts[i].hash,
+      msg="PDF shared BDF part hash",
+    )
+    assert_eq(
+      actual_doc.part(left.parts[i].hash),
+      expected_doc.part(right.parts[i].hash),
+      msg="PDF shared BDF part bytes",
+    )
   }
 }

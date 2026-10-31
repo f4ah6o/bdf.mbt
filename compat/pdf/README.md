@@ -76,18 +76,31 @@ from a UTF-8 BOM string is normalized to replacement characters for MoonBit's
 Unicode strings. Regenerate with `generate_metadata_text_test.go`,
 `generate_metadata_date_test.go` and `generate_metadata_test.go` beside the
 upstream PDF sources; the latter also needs `BDF_PDF_FIXTURES`.
-The page fixtures also compare complete graphics-only BDF documents, including
-metadata, page-boundary selection, title overrides and an empty page tree.
-They compare decoded manifests and part bytes; compressed manifest bytes can
-vary between the Go and MoonBit DEFLATE encoders. Unsupported PDF content,
-annotations, encryption, optional content and tagged structure are rejected by
-this internal path.
+The page fixtures also compare complete PDF-to-BDF documents, including
+metadata, page-boundary selection, title overrides, an empty page tree, simple
+and composite text, text indexes and shared page prefixes. They compare decoded
+manifests and part bytes. Unsupported PDF content, annotations, encryption,
+optional content and tagged structure are rejected by this internal path.
+
+The shared-prefix fixtures compare complete documents whose pages begin with a
+common instruction stream. `generate_shared_pages_test.go` runs as
+`TestCodexPDFSharedPages` beside upstream `converter/pdf` with
+`BDF_REFERENCE_OUTPUT` set to
+`convert/pdf/draw_graphics_shared_generated_wbtest.mbt`. Eight page scenarios
+are each run with the no-sharing and no-text-index masks, and the fixtures
+check `SharedPrefixes`, `SharedBytes`, warnings, decoded manifests, and every
+part hash and decoded part byte. Compressed part lengths differ between the Go
+and MoonBit DEFLATE encoders, so the test canonicalizes the stored `len`
+manifest field; decoded sizes, hashes and bytes are exact.
 
 The text-state fixtures compare text matrix, line movement, spacing, scaling,
 leading, rise and rendering-mode operators against upstream before glyph
 output. `generate_text_state_test.go` needs `BDF_PDF_FIXTURES` and
 `BDF_REFERENCE_OUTPUT` and runs as `TestCodexPDFTextState` upstream. Text
-glyph decoding and drawing remain to be implemented.
+drawing is checked for simple fonts, composite CID fonts with encoding CMaps,
+vertical writing, spacing changes and rendering modes. Embedded Type1/CFF font
+programs and Type3 glyph procedures are not yet handled; unsupported text
+features fail closed.
 
 The simple-font fixtures compare the Standard, WinAnsi and MacRoman glyph
 names and Unicode values, encoding differences, system-font style selection
