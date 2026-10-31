@@ -36,7 +36,7 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer out.Close()
-	for i := 0; i < 78; i++ {
+	for i := 0; i < 81; i++ {
 		content := []byte("q 0.2 0.4 0.8 rg 10 20 100 60 re f Q 2 w 0 0 m 20 40 l S\n")
 		resources := ""
 		if i == 8 {
@@ -200,6 +200,12 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 				content = []byte("BT /F1 12 Tf <00414e00> Tj ET")
 			case 77:
 				content = []byte("BT /F1 12 Tf <41e38182> Tj ET")
+			case 78:
+				content = []byte("BT /F1 12 Tf (ABC) Tj ET")
+			case 79:
+				content = []byte("BT /F1 12 Tf <00010002000a> Tj ET")
+			case 80:
+				content = []byte("BT /F1 12 Tf <00010002000a> Tj ET")
 			}
 		}
 		if i == 67 || i == 68 {
@@ -211,10 +217,13 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 			if i == 72 {
 				font = "<< /Type /Font /Subtype /Type0 /BaseFont /MS-Mincho /Encoding /Identity-H /DescendantFonts [6 0 R] >>"
 			}
-			if i >= 74 {
+			if i >= 74 && i <= 77 {
 				enc := map[int]string{74: "UniJIS-UTF16-H", 75: "90ms-RKSJ-H", 76: "UniGB-UTF16-H", 77: "UniJIS-UTF8-H"}[i]
 				font = fmt.Sprintf("<< /Type /Font /Subtype /Type0 /BaseFont /MS-Mincho /Encoding /%s /DescendantFonts [6 0 R] >>", enc)
 			}
+		}
+		if i >= 78 {
+			font = "<< /Type /Font /Subtype /Type0 /BaseFont /MS-Mincho /Encoding 8 0 R /DescendantFonts [6 0 R] /ToUnicode 7 0 R >>"
 		}
 		filter := ""
 		if i&1 != 0 {
@@ -233,6 +242,12 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		}
 		if composite {
 			count = 8
+		}
+		if i >= 78 {
+			count = 9
+		}
+		if i == 80 {
+			count = 10
 		}
 		offsets := make([]int, count)
 		catalog := "<< /Type /Catalog /Pages 2 0 R >>"
@@ -266,6 +281,25 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 			cmap := "1 begincodespacerange <0000> <ffff> endcodespacerange 4 beginbfchar <0001> <0041> <0002> <20ac> <000a> <3042> <000c> <4e00> endbfchar"
 			offsets[7] = b.Len()
 			fmt.Fprintf(&b, "7 0 obj\n<< /Length %d >>\nstream\n%s\nendstream\nendobj\n", len(cmap), cmap)
+		}
+		if i >= 78 {
+			source := "1 begincodespacerange <00> <ff> endcodespacerange 3 begincidchar <41> 1 <42> 2 <43> 10 endcidchar"
+			extra := ""
+			if i == 79 {
+				source = "1 begincidchar <0001> 10 endcidchar"
+				extra = "/UseCMap /Identity-H"
+			}
+			if i == 80 {
+				source = "1 begincidchar <0001> 10 endcidchar"
+				extra = "/UseCMap 9 0 R"
+			}
+			offsets[8] = b.Len()
+			fmt.Fprintf(&b, "8 0 obj\n<< /Length %d %s >>\nstream\n%s\nendstream\nendobj\n", len(source), extra, source)
+			if i == 80 {
+				parent := "/Identity-H usecmap"
+				offsets[9] = b.Len()
+				fmt.Fprintf(&b, "9 0 obj\n<< /Length %d >>\nstream\n%s\nendstream\nendobj\n", len(parent), parent)
+			}
 		}
 		if i == 16 {
 			offsets[5] = b.Len()

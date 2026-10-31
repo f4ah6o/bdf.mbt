@@ -69,29 +69,15 @@ fn PdfFile::simple_font(
     self.page_deref(pdf_dict_get(dict, b"FontDescriptor"))
   }
   let composite_map : PdfCMap? = if composite {
-    match self.page_deref(pdf_dict_get(dict, b"Encoding")) {
-      PdfName(b"Identity-H") | PdfNull => {
-        let map = PdfCMap::new()
-        map.identity = true
-        map.ranges.push({ size: 2, low: 0L, high: 65535L, })
-        Some(map)
-      }
-      PdfName(bytes) => {
-        let name = @utf8.decode_lossy(bytes[:])
-        match pdf_cjk_maps.get(name) {
-          Some(source) if !source.vertical => {
-            let map = PdfCMap::new()
-            map.predefined = name
-            for space in source.codespaces {
-              map.ranges.push(space)
-            }
-            Some(map)
-          }
-          _ => raise InvalidStream("unsupported composite PDF font encoding")
-        }
-      }
-      _ => raise InvalidStream("unsupported composite PDF font encoding")
+    let encoding = pdf_dict_get(dict, b"Encoding")
+    let map = match self.font_encoding_cmap(encoding, 0) {
+      Some(value) => value
+      None => pdf_identity_font_cmap(false)
     }
+    if map.vertical {
+      raise InvalidStream("vertical composite PDF fonts are not supported yet")
+    }
+    Some(map)
   } else {
     None
   }
@@ -294,6 +280,97 @@ fn PdfSimpleFont::width(self : PdfSimpleFont, code : Int32) -> Double {
     return 0.556
   }
   0.5
+}
+
+///|
+fn pdf_identity_font_cmap(vertical : Bool) -> PdfCMap {
+  let map = PdfCMap::new()
+  map.identity = true
+  map.vertical = vertical
+  map.ranges.push({ size: 2, low: 0L, high: 65535L, })
+  map
+}
+
+///|
+fn pdf_named_font_cmap(bytes : Bytes) -> PdfCMap? {
+  if bytes == b"Identity-H" || bytes == b"Identity-V" {
+    return Some(pdf_identity_font_cmap(bytes == b"Identity-V"))
+  }
+  let name = @utf8.decode_lossy(bytes[:])
+  match pdf_cjk_maps.get(name) {
+    Some(source) => {
+      let map = PdfCMap::new()
+      map.predefined = name
+      map.vertical = source.vertical
+      for space in source.codespaces {
+        map.ranges.push(space)
+      }
+      Some(map)
+    }
+    None => None
+  }
+}
+
+///|
+fn PdfFile::font_encoding_cmap(
+  self : PdfFile,
+  object : PdfObject?,
+  depth : Int32,
+) -> PdfCMap? raise PdfStreamError {
+  if depth > 1 {
+    return None
+  }
+  match object {
+    Some(PdfName(name)) =>
+      match pdf_named_font_cmap(name) {
+        Some(map) => Some(map)
+        None => raise InvalidStream("unsupported composite PDF font encoding")
+      }
+    Some(PdfRef(number, _)) => {
+      let loaded : PdfLoaded? = Some(self.load(number, 0)) catch { _ => None }
+      match loaded {
+        Some(value) =>
+          match value.stream {
+            Some(raw) => {
+              let (data, filter) = pdf_decode_stream(
+                raw,
+                self.resolved_stream_filters(value.value),
+                268435456L,
+                false,
+                268435456L,
+              )
+              if filter is Some(_) {
+                raise InvalidStream(
+                  "unsupported composite PDF font CMap filter",
+                )
+              }
+              let parent = if depth == 0 {
+                let use = pdf_dict_get(value.value, b"UseCMap")
+                match use {
+                  Some(PdfRef(parent_number, _)) if parent_number == number =>
+                    None
+                  _ => self.font_encoding_cmap(use, depth + 1)
+                }
+              } else {
+                None
+              }
+              let map = pdf_parse_cmap(data, parent)
+              if self.font_number(pdf_dict_get(value.value, b"WMode"), 0.0) ==
+                1.0 {
+                map.vertical = true
+              }
+              if map.unresolved_parent {
+                raise InvalidStream("unsupported parent PDF font CMap")
+              }
+              Some(map)
+            }
+            None => self.font_encoding_cmap(Some(value.value), depth + 1)
+          }
+        None => None
+      }
+    }
+    _ => None
+  }
 }
 
 ///|

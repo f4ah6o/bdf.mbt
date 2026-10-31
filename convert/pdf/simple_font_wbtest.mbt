@@ -78,7 +78,13 @@ test "embedded and unsupported composite PDF fonts fail closed" {
   let file : PdfFile = {
     data: b"",
     entries: {},
-    objects: { 1L: { value: PdfDict([]), stream: Some(b"data"), } },
+    objects: {
+      1L: { value: PdfDict([]), stream: Some(b"data"), },
+      2L: {
+        value: PdfDict([(b"WMode", PdfInt(1L))]),
+        stream: Some(b"/Identity-H usecmap"),
+      },
+    },
     loading: {},
     object_streams: {},
     trailers: [],
@@ -102,6 +108,18 @@ test "embedded and unsupported composite PDF fonts fail closed" {
   assert_true(
     try {
       ignore(file.simple_font(composite_embedded))
+      false
+    } catch {
+      _ => true
+    },
+  )
+  let vertical_cmap = PdfDict([
+    (b"Subtype", PdfName(b"Type0")),
+    (b"Encoding", PdfRef(2L, 0L)),
+  ])
+  assert_true(
+    try {
+      ignore(file.simple_font(vertical_cmap))
       false
     } catch {
       _ => true
