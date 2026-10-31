@@ -169,6 +169,24 @@ fn pptx_node_color(
 }
 
 ///|
+fn pptx_node_alpha(node : PptxXmlNode?, key : String) -> Double? {
+  let solid = pptx_child(node, key)
+  let color = match pptx_child(solid, "srgbClr") {
+    Some(value) => Some(value)
+    None => pptx_child(solid, "schemeClr")
+  }
+  match pptx_child(color, "alpha") {
+    Some(value) =>
+      match pptx_attribute(value.element, "val", "") {
+        "" => None
+        text =>
+          Some((@string.parse_double(text) catch { _ => 100000.0 }) / 100000.0)
+      }
+    None => None
+  }
+}
+
+///|
 fn pptx_theme_colors(package : @ooxml.OoxmlPackage) -> Map[String, UInt32] {
   let colors : Map[String, UInt32] = {}
   let part = match package.relationship_of_type("", "/theme") {
@@ -932,8 +950,16 @@ fn pptx_render_slide(
       "solidFill",
       theme,
     )
+    let fill_alpha = pptx_node_alpha(
+      pptx_child(Some(shape), "spPr"),
+      "solidFill",
+    )
     match fill {
       Some(color) => {
+        if fill_alpha is Some(_) {
+          object.save()
+          object.alpha(Float::from_double(fill_alpha.unwrap()))
+        }
         object.fill_color(color)
         if geometry == "ellipse" {
           let path_index = object.add_path(
@@ -970,6 +996,9 @@ fn pptx_render_slide(
         }
       }
       None => ()
+    }
+    if fill_alpha is Some(_) {
+      object.restore()
     }
     let stroke = pptx_child(pptx_child(Some(shape), "spPr"), "ln")
     let stroke_width = match stroke {
