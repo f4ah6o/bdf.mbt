@@ -221,6 +221,12 @@ fn PdfGraphics::text_operator(
           pdf_matrix_fma(width, self.state.font_size, text.state.char_spacing)
         }
         text.advance += advance
+        let scale = if text.state.horizontal_scale == 0.0 {
+          1.0
+        } else {
+          text.state.horizontal_scale
+        }
+        text.state.x = pdf_matrix_fma(advance, scale, text.state.x)
         text.has_run = true
       }
     }
@@ -247,11 +253,76 @@ fn PdfGraphics::text_operator(
               }
               let shift = -number / 1000.0 * self.state.font_size * scale
               text.advance += shift / scale
+              text.state.x += shift
             }
             _ => raise InvalidStream("unsupported PDF text array value")
           }
         }
       _ => raise InvalidStream("invalid PDF text array")
+    }
+    return true
+  }
+  if operator == b"Td" ||
+    operator == b"TD" ||
+    operator == b"Tm" ||
+    operator == b"T*" {
+    if (operator == b"Td" || operator == b"TD") && n < 2 {
+      return true
+    }
+    if operator == b"Tm" && n < 6 {
+      return true
+    }
+    if !text.has_run {
+      ignore(text.state.execute(operator, args))
+      return true
+    }
+    let next = PdfTextState::new()
+    next.line_matrix = text.state.line_matrix
+    next.leading = text.state.leading
+    ignore(next.execute(operator, args))
+    let (a, b, c, d, e, f) = text.state.base
+    let (na, nb, nc, nd, ne, nf) = next.base
+    let mut merged = false
+    if a == na && b == nb && c == nc && d == nd {
+      let dxv = ne - e
+      let dyv = nf - f
+      let length = pdf_matrix_fma(a, a, b * b)
+      if length > 0.0 {
+        let dx = pdf_matrix_fma(dxv, a, dyv * b) / length
+        let rx = pdf_matrix_fma(-dx, a, dxv)
+        let ry = pdf_matrix_fma(-dx, b, dyv)
+        let size = if self.state.font_size <= 0.0 {
+          1.0
+        } else {
+          self.state.font_size
+        }
+        if pdf_matrix_fma(rx, rx, ry * ry) < 0.000001 * size * size &&
+          (dx - text.state.x).abs() <= 0.25 * size {
+          let scale = if text.state.horizontal_scale == 0.0 {
+            1.0
+          } else {
+            text.state.horizontal_scale
+          }
+          text.advance += (dx - text.state.x) / scale
+          text.state.x = dx
+          text.state.matrix = next.base
+          text.state.line_matrix = next.base
+          text.state.leading = next.leading
+          merged = true
+        }
+      }
+    }
+    if !merged {
+      if next.base == text.state.base {
+        raise InvalidStream(
+          "PDF text repositioning requires a shared text block",
+        )
+      }
+      let was_in_text = text.state.in_text
+      self.finish_text()
+      text.state.in_text = was_in_text
+      text.state.leading = next.leading
+      text.state.set_line(next.base)
     }
     return true
   }
@@ -271,16 +342,7 @@ fn PdfGraphics::text_operator(
     return true
   }
   match operator {
-    b"Tc"
-    | b"Tw"
-    | b"Tz"
-    | b"TL"
-    | b"Ts"
-    | b"Tr"
-    | b"Td"
-    | b"TD"
-    | b"Tm"
-    | b"T*" => {
+    b"Tc" | b"Tw" | b"Tz" | b"TL" | b"Ts" | b"Tr" => {
       if text.has_run {
         raise InvalidStream(
           "PDF text positioning within a run is not supported yet",
