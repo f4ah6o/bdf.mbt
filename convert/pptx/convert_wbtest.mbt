@@ -695,3 +695,138 @@ test "PPTX theme fonts resolve minor and +mj-lt runs" {
   assert_true(minor, msg="PPTX minor font")
   assert_true(major, msg="PPTX major font")
 }
+
+///|
+fn pptx_layout_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/41VCThUex8+YzCUxNgVRZZwMR4MovLZYkZjL7p2BtMdY5ixL8mW3WQP3cTYSiRc",
+  )
+  joined.write_string(
+    "2XOLCVkTZdJiHcvFLSHrHd/X98jce597z3nOOc/7f87/fc77/n7n95oiwcy8AACwAXH1DnbHDMg1",
+  )
+  joined.write_string(
+    "h0EA0MkEADz01R91vXBENI7oYBmIRxPsFAI8sbWpnainMK6YJa3oqZ8y1KfCuRCD4G520I1PwCn3",
+  )
+  joined.write_string(
+    "VOuANEpZTh3FKN7S1IZzyjVpxuGcjYJacOEbTrCMu1xL7+HefsTIaarVlu8myY5gwI0Fj9qUr8c+",
+  )
+  joined.write_string(
+    "U/uiXy9yFop0Q/Ituayo6ZAWBoCp3sKLucMsYKWkuzyik8eIpxUSxhGG7qdGs9tlIkemRH6B0Z4v",
+  )
+  joined.write_string(
+    "rs0GgdhL46qp+uq+VsebRhA6xsFV1T1ZmQv9JOmZ8rv2gVckQQLSx4p71lgg7wlBt/KFXRW5xnmy",
+  )
+  joined.write_string(
+    "ydB3Fz6CzT/1jG7NkHlKKzwznnV0tkkgw467rZQoqeUvzAkIDs6mZrqE4nI0vpgwp8AaxAZ/Xz6v",
+  )
+  joined.write_string(
+    "glyFpGVfc97mND3gnQ9q7c4jOpKn+3eY/nTwQWMJigp796S+nkO/wjggy40mZj7+Y1qxzxvs9F5b",
+  )
+  joined.write_string(
+    "TYPT4fMx85CLfGur/CYorQDjT32KZNwdP7ejiSqB0vmyCEda+kiaMlPFdmAwYGB0Rt59yfRJBLNn",
+  )
+  joined.write_string(
+    "dZmiene6v0ceU1WiOhRWzJuclyY8gJAN0c6Sjky5VGxr8DTSUg1DWury6ZsoAfV0ud7m59K0A81n",
+  )
+  joined.write_string(
+    "he++DhOUipauXOS32/Ael7uJFjoiBRKTEBU3x7W81M+8rqbqEPqmCTgorT+g71kfHRnSpe2t4vFE",
+  )
+  joined.write_string(
+    "RbwPmkDvDCcixgu31xdJJJOfmJS42pe2eZ0WVb0H0I3YYSQ3s5fneW1DtzHtnZtxBWFBLvL6tKK6",
+  )
+  joined.write_string(
+    "tezA89M9DzWCKajszo6TTvVcT2A0D6y64frG2xa/J6WljukJIElbkqNyC0eZiRC7rlmRlE0R81xa",
+  )
+  joined.write_string(
+    "VH36EAEVZFDpwc0TcybXefWeZe7RLY0ZEa8oj/rL8CdHJXYh0JLOqyEpGzS5eVAnreWuClUPNszT",
+  )
+  joined.write_string(
+    "eev2G4uvr14Is/c0sGRuNr7QfAmcgOy4r010rdj8SvWphRac03eQqBlraMy98KGeEgA+aADxdtfK",
+  )
+  joined.write_string(
+    "QzoSoxtw4psB/6svow3f6l1FrzcX64exErY6ao2IHhkjwN2ACA0n2VIdc6JseTdXWb1N8fitpfXW",
+  )
+  joined.write_string(
+    "iZzFKms/imGHJsjKjEm3pAmOg+KFUNSzMMQgBtOsC5KDEn8r1ijMkPH3gF+3NjjOnm1xCNJr1PPY",
+  )
+  joined.write_string(
+    "cK/eaoUpCcYaHXGQsgofHfusqWSKCXhUMe3LFe0F3yNYa/COy6a3yqEU+zF+4iyFHTXs8SI/kUcK",
+  )
+  joined.write_string(
+    "VLn+8yX94fC6I7sb5aFMB8XGS5HO1dIRnC725DexBCzGFU34pvm/QOk7tc17aiHLe2pzLVm4MXPi",
+  )
+  joined.write_string(
+    "ER8kNoALPp6RnlAfswVq7kBE5ETo9o5taEBKZICZs0BTTEa5Nkmt7cx7zOP3qG4Rtl6aPGdbWkyc",
+  )
+  joined.write_string(
+    "IGdPQctgeP1b/JJ4QkTAcP/M8TVE1SxGL1MsVTENTuYmyFiUiOdA/MjDVrVWs9RwN7f46lekXj/w",
+  )
+  joined.write_string(
+    "OFx/g8LpOc8hEhmYPPk5ha09sprYJqNFcFLyTVc1/Dp2R/6BaxzwaujqKu4ziKG+I8ltwnS5u/SL",
+  )
+  joined.write_string(
+    "76DkfbFJZt17k6/pM1/mEvGl+SFrX1nvD7GykiHhcbfh5lskz+ioSvffVKLfPV6oUNWsTuvcgc39",
+  )
+  joined.write_string(
+    "zNF1o1cYNXI/AooWltMkjK8UhjVeK5bQcyLTHpjloWT7dQPr/H9YST35hnla/SyFJqjt0YtIePgI",
+  )
+  joined.write_string(
+    "JfTsynxt7PqKNN6eBV0QG2C49lAmXsRjQCiIm3uX+6Z9yN3qY2Fx9jn3ssogl4OLpmWslC0XaZ87",
+  )
+  joined.write_string(
+    "NvEr5LQ83GklnYmSoauJvAqOo5G3UiHrSM76w/Bf7Etw1MzEvJbyOioTOLfilAQv2ihy+eni75is",
+  )
+  joined.write_string(
+    "5Wk3EL+IdZRIwsT9DAvxa859rMyEsslG0Qc3vGrCmrm77y2REc5KyA1bu0t2Q47JoDDCdUnZ57uV",
+  )
+  joined.write_string(
+    "WwxmsjXUwyTpRqrQQ0TsezONnQK9fImE78GfjbUr5dLzDgKmokyLMo/iXaSTJrOwPKmtlGT2GqhO",
+  )
+  joined.write_string(
+    "80J3Y7XyvI+mbBzrxxAvlfZ5vjZDWseyvT9v64k56oXEEMccZUxNfgBU1Ot+7iC//afL8Fsp4eJR",
+  )
+  joined.write_string(
+    "q9FF67wR8kAIARr/NaNKh1I3rN6uY2wHGWZXJDqKVVhAF9kCgfagpNb/vFY9+baq7/mSc0t8Yk7z",
+  )
+  joined.write_string(
+    "ZOeJRqx/hazNx6SFwDGkhnSF5jnkDVYpGSlyBXubaQZ+gLUb9oP1O9E8Lg3EpaPBucLjvXVOM6Z9",
+  )
+  joined.write_string(
+    "Mi0UQ2U+kxVx4Qm3aPYgnNEYCTID9Io19ehRhssmL1ILlB499UDwm19MBKlWrde8w4qjh4zPexe3",
+  )
+  joined.write_string(
+    "cuyWwGe3LTzdABuRra7oqWL86tgrAVMkiIkX/PdR/f8jHAT8dXAzEjDm1T6BFuhAejFuZEyD/Y0C",
+  )
+  joined.write_string(
+    "TH+dDYwMjON0n0EQ/I/DlZGMcVztk7Ew//Pw+tOnMUyCfbZ15r+ZC4wUjP2/T6HP+i/+BlMkC+ve",
+  )
+  joined.write_string("6xD6OUunKYPsoT8AVhdynKgJAAA=")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX layout backgrounds and decorations are rendered" {
+  let result = convert(pptx_layout_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut green = false
+  let mut blue = false
+  let text = StringBuilder()
+  for command in commands {
+    match command {
+      @render.FillColor(0x00ff00ff) => green = true
+      @render.FillColor(0x0000ffff) => blue = true
+      @render.FillText(value, _, _, _) => text.write_string(value)
+      _ => ()
+    }
+  }
+  assert_true(green, msg="PPTX layout background")
+  assert_true(blue, msg="PPTX layout decoration")
+  assert_eq(text.to_string(), "Slide")
+}

@@ -330,15 +330,31 @@ fn pptx_attribute_any(
 }
 
 ///|
+fn pptx_has_placeholder(shape : PptxXmlNode) -> Bool {
+  let container = if shape.element.name.local_name == "pic" {
+    "nvPicPr"
+  } else {
+    "nvSpPr"
+  }
+  pptx_child(pptx_child(Some(shape), container), "nvPr") is Some(_) &&
+  pptx_child(pptx_child(pptx_child(Some(shape), container), "nvPr"), "ph")
+  is Some(_)
+}
+
+///|
 fn pptx_collect_shapes(
   node : PptxXmlNode,
   offset_x : Double,
   offset_y : Double,
+  skip_placeholders : Bool,
   out : Array[(PptxXmlNode, Double, Double)],
 ) -> Unit {
   for shape in pptx_children(Some(node)) {
     match shape.element.name.local_name {
-      "sp" | "pic" => out.push((shape, offset_x, offset_y))
+      "sp" | "pic" =>
+        if !(skip_placeholders && pptx_has_placeholder(shape)) {
+          out.push((shape, offset_x, offset_y))
+        }
       "grpSp" => {
         let transform = pptx_transform_node(
           pptx_child(pptx_child(Some(shape), "grpSpPr"), "xfrm"),
@@ -347,12 +363,20 @@ fn pptx_collect_shapes(
           Some(value) => (value.x, value.y)
           None => (0.0, 0.0)
         }
-        pptx_collect_shapes(shape, offset_x + dx, offset_y + dy, out)
+        pptx_collect_shapes(
+          shape,
+          offset_x + dx,
+          offset_y + dy,
+          skip_placeholders,
+          out,
+        )
       }
       _ => ()
     }
   }
 }
+
+///|
 
 ///|
 fn pptx_render_slide(
@@ -367,12 +391,38 @@ fn pptx_render_slide(
   let object = @core.ObjectBuilder::new()
   let fonts : Map[String, Int32] = Map([])
   let root = pptx_read_xml(package, part)
-  let tree = pptx_child(pptx_child(Some(root), "cSld"), "spTree")
-  let background = pptx_node_color(
+  let mut layout_root : PptxXmlNode? = None
+  let mut master_root : PptxXmlNode? = None
+  match (Some(pptx_slide_context(package, part)) catch { _ => None }) {
+    Some(context) => {
+      if context.draw_master && context.master_part != "" {
+        master_root = Some(pptx_read_xml(package, context.master_part))
+      }
+      if context.draw_layout && context.layout_part != "" {
+        layout_root = Some(pptx_read_xml(package, context.layout_part))
+      }
+    }
+    None => ()
+  }
+  let mut background = pptx_node_color(
     pptx_child(pptx_child(pptx_child(Some(root), "cSld"), "bg"), "bgPr"),
     "solidFill",
     theme,
   )
+  if background is None && layout_root is Some(value) {
+    background = pptx_node_color(
+      pptx_child(pptx_child(pptx_child(Some(value), "cSld"), "bg"), "bgPr"),
+      "solidFill",
+      theme,
+    )
+  }
+  if background is None && master_root is Some(value) {
+    background = pptx_node_color(
+      pptx_child(pptx_child(pptx_child(Some(value), "cSld"), "bg"), "bgPr"),
+      "solidFill",
+      theme,
+    )
+  }
   match background {
     Some(color) => {
       object.fill_color(color)
@@ -385,10 +435,24 @@ fn pptx_render_slide(
     }
     None => ()
   }
-  let shapes : Array[(PptxXmlNode, Double, Double)] = []
-  match tree {
-    Some(value) => pptx_collect_shapes(value, 0.0, 0.0, shapes)
+  let roots : Array[PptxXmlNode] = []
+  match master_root {
+    Some(value) => roots.push(value)
     None => ()
+  }
+  match layout_root {
+    Some(value) => roots.push(value)
+    None => ()
+  }
+  roots.push(root)
+  let shapes : Array[(PptxXmlNode, Double, Double)] = []
+  for index in 0..<roots.length() {
+    let tree = pptx_child(pptx_child(Some(roots[index]), "cSld"), "spTree")
+    match tree {
+      Some(value) =>
+        pptx_collect_shapes(value, 0.0, 0.0, index + 1 < roots.length(), shapes)
+      None => ()
+    }
   }
   for shape_entry in shapes {
     let (shape, offset_x, offset_y) = shape_entry
