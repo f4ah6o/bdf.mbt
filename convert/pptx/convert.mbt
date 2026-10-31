@@ -116,6 +116,20 @@ fn pptx_text_width(text : String, size : Double) -> Double {
 }
 
 ///|
+fn pptx_attribute_any(
+  element : @xml.NamespaceElement,
+  name : String,
+  default : String,
+) -> String {
+  for attr in element.attributes {
+    if attr.name.local_name == name {
+      return attr.value
+    }
+  }
+  default
+}
+
+///|
 fn pptx_collect_shapes(
   node : PptxXmlNode,
   offset_x : Double,
@@ -124,7 +138,7 @@ fn pptx_collect_shapes(
 ) -> Unit {
   for shape in pptx_children(Some(node)) {
     match shape.element.name.local_name {
-      "sp" => out.push((shape, offset_x, offset_y))
+      "sp" | "pic" => out.push((shape, offset_x, offset_y))
       "grpSp" => {
         let transform = pptx_transform_node(
           pptx_child(pptx_child(Some(shape), "grpSpPr"), "xfrm"),
@@ -187,6 +201,40 @@ fn pptx_render_slide(
     }
     let shape_x = transform.x + offset_x
     let shape_y = transform.y + offset_y
+    if shape.element.name.local_name == "pic" {
+      let blip = pptx_child(pptx_child(Some(shape), "blipFill"), "blip")
+      let embed = match blip {
+        Some(value) => pptx_attribute_any(value.element, "embed", "")
+        None => ""
+      }
+      if embed == "" {
+        raise PptxInvalid("PPTX picture has no embedded image")
+      }
+      let mut target = ""
+      let mut external = false
+      for rel in package.relationships(part) {
+        if rel.id == embed {
+          target = rel.target
+          external = rel.external
+        }
+      }
+      if target == "" || external {
+        raise PptxInvalid("PPTX picture relationship is missing")
+      }
+      let bytes = package.read(target) catch {
+        _ => raise PptxInvalid("PPTX picture part is missing")
+      }
+      let hash = writer.add_part("img", bytes)
+      let index = object.add_image(hash)
+      object.image(
+        index,
+        Float::from_double(shape_x),
+        Float::from_double(shape_y),
+        Float::from_double(transform.width),
+        Float::from_double(transform.height),
+      )
+      continue
+    }
     let fill = pptx_node_color(pptx_child(Some(shape), "spPr"), "solidFill")
     match fill {
       Some(color) => {
