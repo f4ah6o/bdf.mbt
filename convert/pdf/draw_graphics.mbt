@@ -399,6 +399,27 @@ fn PdfGraphics::execute(
   operator : Bytes,
   args : Array[ContentValue],
 ) -> Unit raise PdfStreamError {
+  match operator {
+    b"BDC" => {
+      let count = args.length()
+      if count >= 2 && !self.property_visible(args[count - 1]) {
+        self.hidden += 1
+      }
+      return
+    }
+    b"BMC" => return
+    b"EMC" => {
+      if self.hidden > 0 {
+        self.hidden -= 1
+      }
+      return
+    }
+    b"MP" | b"DP" => return
+    _ => ()
+  }
+  if self.hidden > 0 {
+    return
+  }
   if self.text_operator(operator, args) {
     return
   }
@@ -727,6 +748,7 @@ fn PdfFile::graphics_page_parts(
     geometry.matrix,
     file=Some(self),
     resources=page.attrs.resources,
+    optional_content=pdf_optional_content(self),
   )
   graphics.run(content)
   graphics.draw_annotations(page.dict, geometry.matrix)

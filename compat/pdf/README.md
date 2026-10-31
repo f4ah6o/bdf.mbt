@@ -127,6 +127,11 @@ that the page body contains a BDF link command with the annotation rectangle and
 target URL. Hidden and no-view annotations are skipped; other appearance
 streams are not drawn yet.
 
+The optional-content tests build a page with one OCG and a `/OC` marked-content
+sequence. They check that `/OFF` layers emit no fill and `/ON` layers do, and
+that a `/StructTreeRoot` no longer blocks visual conversion. Structure tags are
+not emitted as BDF semantic structure yet.
+
 The text-state fixtures compare text matrix, line movement, spacing, scaling,
 leading, rise and rendering-mode operators against upstream before glyph
 output. `generate_text_state_test.go` needs `BDF_PDF_FIXTURES` and

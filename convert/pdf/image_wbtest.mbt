@@ -797,3 +797,74 @@ test "PDF link annotations become link commands" {
     None => fail("PDF link annotation is missing")
   }
 }
+
+///|
+fn pdf_optional_content_test_document(config : String, tagged : Bool) -> Bytes {
+  let catalog = if tagged {
+    "<< /Type /Catalog /Pages 2 0 R /StructTreeRoot << /Type /StructTreeRoot >> /OCProperties << /OCGs [5 0 R] /D " +
+    config +
+    " >> >>"
+  } else {
+    "<< /Type /Catalog /Pages 2 0 R /OCProperties << /OCGs [5 0 R] /D " +
+    config +
+    " >> >>"
+  }
+  let content = if tagged {
+    b"q /P << /MCID 0 >> BDC 0 0 100 100 re f EMC Q"
+  } else {
+    b"q /OC /L1 BDC 0 0 100 100 re f EMC Q"
+  }
+  pdf_test_pdf([
+    @utf8.encode(catalog),
+    b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+    b"<< /Type /Page /Parent 2 0 R /Resources << /Properties << /L1 5 0 R >> >> /Contents 4 0 R >>",
+    pdf_test_stream("", content),
+    b"<< /Type /OCG /Name (Layer) >>",
+  ])
+}
+
+///|
+fn pdf_test_fill_rects(document : Bytes) -> Int32 raise {
+  let split = @core.single_to_split(document)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(document).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut count = 0
+  for command in commands {
+    match command {
+      @render.FillRect(_, _, _, _) | @render.FillPath(_, _) => count += 1
+      _ => ()
+    }
+  }
+  count
+}
+
+///|
+test "PDF optional content off layers are hidden" {
+  let document = pdf_graphics_document(
+    pdf_optional_content_test_document("<< /OFF [5 0 R] >>", false),
+    no_text_index=true,
+  )
+  assert_eq(pdf_test_fill_rects(document), 0, msg="PDF hidden layer")
+}
+
+///|
+test "PDF optional content on layers are visible" {
+  let document = pdf_graphics_document(
+    pdf_optional_content_test_document("<< /ON [5 0 R] >>", false),
+    no_text_index=true,
+  )
+  assert_eq(pdf_test_fill_rects(document), 1, msg="PDF visible layer")
+}
+
+///|
+test "PDF tagged structure is ignored for rendering" {
+  let document = pdf_graphics_document(
+    pdf_optional_content_test_document("<< /ON [5 0 R] >>", true),
+    no_text_index=true,
+  )
+  assert_eq(pdf_test_fill_rects(document), 1, msg="PDF tagged content")
+}

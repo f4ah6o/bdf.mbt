@@ -65,16 +65,6 @@ fn pdf_graphics_document_full(
     _ => ()
   }
   let catalog = file.page_deref(file.trailer_entry(b"Root"))
-  match pdf_dict_get(catalog, b"OCProperties") {
-    Some(value) if value != PdfNull =>
-      raise InvalidStream("PDF optional content is not supported yet")
-    _ => ()
-  }
-  match pdf_dict_get(catalog, b"StructTreeRoot") {
-    Some(value) if value != PdfNull =>
-      raise InvalidStream("PDF tagged structure is not supported yet")
-    _ => ()
-  }
   let (pages, left) = file.page_leaves()
   if left != 0 {
     raise InvalidStream("PDF page tree has omitted repetitions")

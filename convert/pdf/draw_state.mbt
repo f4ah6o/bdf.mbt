@@ -40,6 +40,8 @@ priv struct PdfGraphics {
   file : PdfFile?
   mut resources : PdfObject?
   mut form_depth : Int32
+  optional_content : Map[Int64, Bool]
+  mut hidden : Int32
   text : PdfLimitedText
   default_font : PdfSimpleFont
   child_writer : @core.DocumentWriter
@@ -112,6 +114,7 @@ fn PdfGraphics::new(
   base : (Double, Double, Double, Double, Double, Double),
   file~ : PdfFile? = None,
   resources~ : PdfObject? = None,
+  optional_content~ : Map[Int64, Bool] = {},
 ) -> PdfGraphics {
   let object = @core.ObjectBuilder::new()
   object.set_bbox(
@@ -125,6 +128,8 @@ fn PdfGraphics::new(
     file,
     resources,
     form_depth: 0,
+    optional_content,
+    hidden: 0,
     text: PdfLimitedText::new(),
     default_font: match file {
       Some(value) => value.default_simple_font()
