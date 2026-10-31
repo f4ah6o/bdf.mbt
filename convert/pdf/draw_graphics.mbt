@@ -376,6 +376,7 @@ fn PdfGraphics::execute(
     match operator {
       b"gs"
       | b"Do"
+      | b"sh"
       | b"SC"
       | b"SCN"
       | b"sc"
@@ -406,6 +407,13 @@ fn PdfGraphics::execute(
       if n >= 1 {
         match args[n - 1] {
           Name(name) => self.draw_xobject(name)
+          _ => ()
+        }
+      }
+    b"sh" =>
+      if n >= 1 {
+        match args[n - 1] {
+          Name(name) => self.paint_shading(name)
           _ => ()
         }
       }

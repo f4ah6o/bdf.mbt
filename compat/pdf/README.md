@@ -106,6 +106,11 @@ masks, `Decode` arrays on colour images, JPX, JBIG2, CCITT and form
 transparency groups are rejected by this internal path. Form XObjects are
 executed with their own resources, `/Matrix` and `/BBox` clip.
 
+The shading tests build synthetic PDFs with axial and radial shadings. They
+check the BDF gradient paint kind, coordinates, stop offsets and colours, and
+that stitching functions are sampled. Function-based shading types that are not
+ported yet fall back to a flat colour sampled at the domain midpoint.
+
 The text-state fixtures compare text matrix, line movement, spacing, scaling,
 leading, rise and rendering-mode operators against upstream before glyph
 output. `generate_text_state_test.go` needs `BDF_PDF_FIXTURES` and

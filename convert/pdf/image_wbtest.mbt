@@ -506,3 +506,93 @@ test "PDF form transparency groups fail closed" {
   }
   assert_true(rejected)
 }
+
+///|
+fn pdf_shading_test_document(shading : String) -> Bytes {
+  pdf_test_pdf([
+    b"<< /Type /Catalog /Pages 2 0 R >>",
+    b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+    b"<< /Type /Page /Parent 2 0 R /Resources << /Shading << /Sh1 5 0 R >> >> /Contents 4 0 R >>",
+    pdf_test_stream("", b"/Sh1 sh"),
+    @utf8.encode(shading),
+  ])
+}
+
+///|
+fn pdf_test_body_paints(document : Bytes) -> Array[@core.Paint] raise {
+  let split = @core.single_to_split(document)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  @core.decode_object_resources(@core.open_single(document).part(body_hash)).paints
+}
+
+///|
+test "PDF axial shading becomes a linear gradient" {
+  let document = pdf_graphics_document(
+    pdf_shading_test_document(
+      "<< /ShadingType 2 /ColorSpace /DeviceRGB /Coords [0 0 200 0] /Function << /FunctionType 2 /Domain [0 1] /C0 [1 0 0] /C1 [0 0 1] /N 1 >> >>",
+    ),
+    no_text_index=true,
+  )
+  let paints = pdf_test_body_paints(document)
+  guard paints.length() == 1 else { fail("PDF axial shading paint count") }
+  guard paints[0] is @core.Gradient(0, coords, stops) else {
+    fail("PDF axial shading paint kind")
+  }
+  assert_eq(coords, [0.0, 0.0, 200.0, 0.0], msg="PDF axial shading coords")
+  assert_eq(stops.length(), 2, msg="PDF axial shading stops")
+  assert_eq(stops[0].offset, 0.0)
+  assert_eq(stops[1].offset, 1.0)
+  assert_eq(stops[0].color, 0xff0000ffU.reinterpret_as_int())
+  assert_eq(stops[1].color, 0x0000ffffU.reinterpret_as_int())
+}
+
+///|
+test "PDF radial shading becomes a radial gradient" {
+  let document = pdf_graphics_document(
+    pdf_shading_test_document(
+      "<< /ShadingType 3 /ColorSpace /DeviceRGB /Coords [100 100 0 100 100 100] /Function << /FunctionType 2 /Domain [0 1] /C0 [1 1 1] /C1 [0 0 0] /N 1 >> >>",
+    ),
+    no_text_index=true,
+  )
+  let paints = pdf_test_body_paints(document)
+  guard paints.length() == 1 else { fail("PDF radial shading paint count") }
+  guard paints[0] is @core.Gradient(1, coords, stops) else {
+    fail("PDF radial shading paint kind")
+  }
+  assert_eq(
+    coords,
+    [100.0, 100.0, 0.0, 100.0, 100.0, 100.0],
+    msg="PDF radial shading coords",
+  )
+  assert_eq(stops.length(), 2, msg="PDF radial shading stops")
+  assert_eq(stops[0].color, 0xffffffffU.reinterpret_as_int())
+  assert_eq(stops[1].color, 0x000000ffU.reinterpret_as_int())
+}
+
+///|
+test "PDF stitching shading samples its functions" {
+  let document = pdf_graphics_document(
+    pdf_shading_test_document(
+      "<< /ShadingType 2 /ColorSpace /DeviceRGB /Coords [0 0 200 0] /Function << /FunctionType 3 /Domain [0 1] /Functions [<< /FunctionType 2 /Domain [0 1] /C0 [1 0 0] /C1 [0 1 0] /N 1 >> << /FunctionType 2 /Domain [0 1] /C0 [0 1 0] /C1 [0 0 1] /N 1 >>] /Bounds [0.5] /Encode [0 1 0 1] >> >>",
+    ),
+    no_text_index=true,
+  )
+  let paints = pdf_test_body_paints(document)
+  guard paints.length() == 1 else { fail("PDF stitching paint count") }
+  guard paints[0] is @core.Gradient(0, _, stops) else {
+    fail("PDF stitching paint kind")
+  }
+  assert_eq(stops.length(), 33, msg="PDF stitching stops")
+}
+
+///|
+test "PDF function shading falls back to a flat colour" {
+  let document = pdf_graphics_document(
+    pdf_shading_test_document(
+      "<< /ShadingType 1 /ColorSpace /DeviceRGB /Domain [0 1 0 1] /Function << /FunctionType 2 /Domain [0 1] /C0 [1 0 0] /C1 [1 0 0] /N 1 >> >>",
+    ),
+    no_text_index=true,
+  )
+  assert_eq(pdf_test_body_paints(document).length(), 0)
+}
