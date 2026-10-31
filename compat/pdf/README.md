@@ -142,8 +142,8 @@ leading, rise and rendering-mode operators against upstream before glyph
 output. `generate_text_state_test.go` needs `BDF_PDF_FIXTURES` and
 `BDF_REFERENCE_OUTPUT` and runs as `TestCodexPDFTextState` upstream. Text
 drawing is checked for simple fonts, composite CID fonts with encoding CMaps,
-vertical writing, spacing changes and rendering modes. Embedded Type1/CFF font programs use the system-font fallback; Type3 glyph
-procedures are not yet handled and unsupported text features fail closed.
+vertical writing, spacing changes and rendering modes. Embedded Type1/CFF font programs and Type3 glyph procedures use the system-font
+fallback; unsupported text features fail closed.
 
 The simple-font fixtures compare the Standard, WinAnsi and MacRoman glyph
 names and Unicode values, encoding differences, system-font style selection

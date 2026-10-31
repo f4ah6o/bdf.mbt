@@ -115,9 +115,7 @@ fn PdfFile::simple_font(
     raise InvalidStream("PDF font dictionary missing")
   }
   let subtype = self.page_deref(pdf_dict_get(dict, b"Subtype"))
-  if subtype == PdfName(b"Type3") {
-    raise InvalidStream("unsupported PDF font subtype")
-  }
+  let type3 = subtype == PdfName(b"Type3")
   let composite = subtype == PdfName(b"Type0")
   let cid = if composite {
     match self.page_deref(pdf_dict_get(dict, b"DescendantFonts")) {
@@ -160,7 +158,7 @@ fn PdfFile::simple_font(
       None => ""
     }
   }
-  let mut fallback = false
+  let mut fallback = type3
   let embedded = self.embedded_font(desc) catch {
     _ => {
       fallback = true

@@ -949,3 +949,24 @@ test "PDF annotation appearance state selects the off stream" {
   )
   assert_eq(pdf_test_fill_rects(document), 0, msg="PDF annotation off state")
 }
+
+///|
+test "PDF Type3 fonts fall back to a system font" {
+  let (_, warnings) = pdf_graphics_document_result(
+    pdf_test_pdf([
+      b"<< /Type /Catalog /Pages 2 0 R >>",
+      b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+      b"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
+      pdf_test_stream("", b"BT /F1 12 Tf 10 10 Td (A) Tj ET"),
+      b"<< /Type /Font /Subtype /Type3 /FontBBox [0 0 1000 1000] /FontMatrix [0.001 0 0 0.001 0 0] /CharProcs << >> /Encoding << /Type /Encoding /Differences [65 /A] >> /FirstChar 65 /LastChar 65 /Widths [600] >>",
+    ]),
+    no_text_index=true,
+  )
+  let mut found = false
+  for warning in warnings {
+    if warning.contains("system font") {
+      found = true
+    }
+  }
+  assert_true(found, msg="PDF Type3 fallback warning")
+}
