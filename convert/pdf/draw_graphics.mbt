@@ -285,13 +285,13 @@ fn PdfGraphics::run(
 }
 
 ///|
-// Render a page made solely from the supported graphics operators. Text,
-// images and other operators deliberately fail until their renderers exist.
-fn PdfFile::graphics_page(
+// Render supported page graphics and text, including child objects.
+// Unsupported operators still fail rather than producing incomplete output.
+fn PdfFile::graphics_page_parts(
   self : PdfFile,
   page : PdfPageLeaf,
   which : String,
-) -> (PdfPageGeometry, Bytes) raise PdfStreamError {
+) -> (PdfPageGeometry, Bytes, Array[Bytes]) raise PdfStreamError {
   match page.error {
     Some(message) => raise InvalidStream(message)
     None => ()
@@ -313,6 +313,21 @@ fn PdfFile::graphics_page(
   graphics.run(content)
   let encoded = graphics.object.encode() catch {
     _ => raise InvalidStream("PDF graphics output failed")
+  }
+  (geometry, encoded, graphics.children)
+}
+
+///|
+fn PdfFile::graphics_page(
+  self : PdfFile,
+  page : PdfPageLeaf,
+  which : String,
+) -> (PdfPageGeometry, Bytes) raise PdfStreamError {
+  let (geometry, encoded, children) = self.graphics_page_parts(page, which)
+  if !children.is_empty() {
+    raise InvalidStream(
+      "PDF page contains child objects and requires document context",
+    )
   }
   (geometry, encoded)
 }

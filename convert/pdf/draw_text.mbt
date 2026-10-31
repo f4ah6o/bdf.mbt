@@ -1,5 +1,16 @@
 ///|
 // Text block and accumulated simple-font run.
+priv struct PdfVerticalGlyph {
+  draw : String
+  offset : Double
+  x : Double
+  y : Double
+  advance : Double
+  along : Double
+  turn : Bool
+}
+
+///|
 priv struct PdfLimitedText {
   state : PdfTextState
   mut draw : StringBuilder
@@ -12,6 +23,11 @@ priv struct PdfLimitedText {
   mut open_rise : Double
   mut saved_matrix : (Double, Double, Double, Double, Double, Double)
   mut saved_emitted : PdfEmittedState?
+  vertical_glyphs : Array[PdfVerticalGlyph]
+  mut vertical_text : StringBuilder
+  mut vertical_x : Double
+  mut vertical_y : Double
+  mut vertical_size : Double
   mut has_run : Bool
   mut alt : Bool
 }
@@ -30,6 +46,11 @@ fn PdfLimitedText::new() -> PdfLimitedText {
     open_rise: 0.0,
     saved_matrix: (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
     saved_emitted: None,
+    vertical_glyphs: [],
+    vertical_text: StringBuilder(),
+    vertical_x: 0.0,
+    vertical_y: 0.0,
+    vertical_size: 0.0,
     has_run: false,
     alt: false,
   }
@@ -164,6 +185,7 @@ fn PdfGraphics::open_text_block(self : PdfGraphics) -> Unit {
 ///|
 fn PdfGraphics::flush_text(self : PdfGraphics) -> Unit raise PdfStreamError {
   let text = self.text
+  self.flush_vertical()
   if !text.has_run {
     return
   }
@@ -274,10 +296,20 @@ fn PdfGraphics::text_operator(
         fallback
       }
     }
-    match font.composite_map {
-      Some(map) if map.vertical =>
-        raise InvalidStream("vertical composite PDF text is not supported yet")
-      _ => ()
+    let vertical = match font.composite_map {
+      Some(map) => map.vertical
+      None => false
+    }
+    if vertical {
+      if n > 0 {
+        let bytes = match args[n - 1] {
+          Literal(value) => value
+          Hex(value) => pdf_text_hex(value)
+          _ => b""
+        }
+        self.show_vertical(font, bytes)
+      }
+      return true
     }
     if n > 0 {
       let bytes = match args[n - 1] {
@@ -367,6 +399,18 @@ fn PdfGraphics::text_operator(
             Literal(_) | Hex(_) => ignore(self.text_operator(b"Tj", [value]))
             Integer(_) | Real(_) => {
               let number = pdf_draw_number([value], 0)
+              let vertical = match self.state.font {
+                Some(font) =>
+                  match font.composite_map {
+                    Some(map) => map.vertical
+                    None => false
+                  }
+                None => false
+              }
+              if vertical {
+                text.state.y -= number / 1000.0 * self.state.font_size
+                continue
+              }
               let scale = if text.state.horizontal_scale == 0.0 {
                 1.0
               } else {
@@ -391,6 +435,9 @@ fn PdfGraphics::text_operator(
     operator == b"TD" ||
     operator == b"Tm" ||
     operator == b"T*" {
+    if !text.vertical_glyphs.is_empty() || text.vertical_text.to_string() != "" {
+      raise InvalidStream("vertical PDF text positioning is not supported yet")
+    }
     if (operator == b"Td" || operator == b"TD") && n < 2 {
       return true
     }

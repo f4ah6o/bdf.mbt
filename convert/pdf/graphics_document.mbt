@@ -69,7 +69,12 @@ fn pdf_graphics_document(
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
   let output_pages : Array[Json] = []
   for page in pages {
-    let (geometry, object) = file.graphics_page(page, box)
+    let (geometry, object, children) = file.graphics_page_parts(page, box)
+    for child in children {
+      ignore(writer.add_part("obj", child)) catch {
+        _ => raise InvalidStream("PDF BDF child output failed")
+      }
+    }
     let hash = writer.add_part("obj", object) catch {
       _ => raise InvalidStream("PDF BDF object output failed")
     }

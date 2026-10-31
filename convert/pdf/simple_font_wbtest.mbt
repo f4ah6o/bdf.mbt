@@ -143,17 +143,6 @@ test "embedded and unsupported composite PDF fonts fail closed" {
       None => false
     },
   )
-  let graphics = PdfGraphics::new(10.0, 10.0, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
-  graphics.state.font = Some(vertical)
-  graphics.state.font_size = 12.0
-  assert_true(
-    try {
-      graphics.run(b"BT (x) Tj ET")
-      false
-    } catch {
-      _ => true
-    },
-  )
 }
 
 ///|
