@@ -124,7 +124,9 @@ fn docx_text_section_check(section : DocxXmlNode) -> Unit raise {
       | "titlePg"
       | "pgNumType"
       | "docGrid"
-      | "textDirection" =>
+      | "textDirection"
+      | "headerReference"
+      | "footerReference" =>
         if !child.children.is_empty() {
           docx_text_unsupported(child.name())
         }

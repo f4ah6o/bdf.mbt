@@ -106,6 +106,84 @@ fn docx_section_at(document : DocxTextDocument, index : Int32) -> DocxSection {
 }
 
 ///|
+fn docx_story_part(section : DocxSection, header : Bool) -> String {
+  let stories = if header { section.headers } else { section.footers }
+  for entry in stories {
+    if entry.0 == "default" {
+      return entry.1
+    }
+  }
+  if stories.is_empty() {
+    ""
+  } else {
+    stories[0].1
+  }
+}
+
+///|
+fn docx_story_text(
+  package : @ooxml.OoxmlPackage,
+  part : String,
+) -> Array[String] raise {
+  if part == "" || !package.has(part) {
+    return []
+  }
+  let root = docx_text_xml(
+    @utf8.decode_lossy(package.read(part)[:], ignore_bom=true),
+  )
+  let lines : Array[String] = []
+  fn collect(node : DocxXmlNode, text : StringBuilder) -> Unit {
+    if node.name() == "t" {
+      text.write_string(node.text.to_string())
+    }
+    for child in node.children {
+      collect(child, text)
+    }
+  }
+  for child in root.children {
+    if child.name() == "p" {
+      let text = StringBuilder()
+      collect(child, text)
+      if text.to_string() != "" {
+        lines.push(text.to_string())
+      }
+    }
+  }
+  lines
+}
+
+///|
+fn docx_emit_story(
+  object : @core.ObjectBuilder,
+  lines : Array[String],
+  x : Double,
+  y : Double,
+  size : Double,
+) -> Unit raise {
+  if lines.is_empty() {
+    return
+  }
+  let index = object.add_font({
+    hash: None,
+    family: "sans-serif",
+    weight: 400,
+    style: 0,
+  })
+  let mut baseline = y
+  for line in lines {
+    object.font(index, Float::from_double(size))
+    object.fill_color(0x000000ffU)
+    object.fill_text(
+      line,
+      Float::from_double(x),
+      Float::from_double(baseline),
+      Float::from_double(docx_text_width(line, size)),
+    )
+    baseline += size * 1.2
+  }
+}
+
+///|
 fn docx_render_document(
   document : DocxTextDocument,
   title : String,
@@ -127,6 +205,7 @@ fn docx_render_document(
   let mut section = docx_section_at(document, 0)
   let mut object = @core.ObjectBuilder::new()
   let fonts : Map[String, Int32] = Map([])
+  let stories : Map[String, Array[String]] = Map([])
   let mut section_index = 0
   let mut y = section.top
   let line : Array[DocxLineItem] = []
@@ -193,6 +272,46 @@ fn docx_render_document(
     }
     emit_line(line, "left", line_start, line_start + line_width)
     line.clear()
+    let header_part = docx_story_part(section, true)
+    let header_lines = if header_part == "" {
+      []
+    } else {
+      match stories.get(header_part) {
+        Some(value) => value
+        None => {
+          let value = docx_story_text(pkg, header_part) catch { _ => [] }
+          stories[header_part] = value
+          value
+        }
+      }
+    }
+    docx_emit_story(
+      object,
+      header_lines,
+      section.left,
+      section.header + 10.0,
+      10.0,
+    )
+    let footer_part = docx_story_part(section, false)
+    let footer_lines = if footer_part == "" {
+      []
+    } else {
+      match stories.get(footer_part) {
+        Some(value) => value
+        None => {
+          let value = docx_story_text(pkg, footer_part) catch { _ => [] }
+          stories[footer_part] = value
+          value
+        }
+      }
+    }
+    docx_emit_story(
+      object,
+      footer_lines,
+      section.left,
+      section.height - section.footer - footer_lines.length().to_double() * 12.0,
+      10.0,
+    )
     let encoded = object.encode()
     let hash = writer.add_part("obj", encoded)
     pages.push(

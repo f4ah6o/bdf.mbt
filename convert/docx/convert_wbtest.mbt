@@ -362,3 +362,114 @@ test "DOCX numbered paragraphs get decimal prefixes" {
   let second = document.paragraphs[1]
   assert_eq(second.items[0].text, "2.")
 }
+
+///|
+fn docx_story_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GA4uiM+9sB7Y09WRgaGdUwMDMJA0Wjn/LyS1LyS+JDKgtTiWL2K",
+  )
+  joined.write_string(
+    "3Jytk3b7HTYQaSufd+hTlKqfpICTp1WBZONCmwMTaydFHLGb1h99a/vxTC/2kBdMi//G74uf9vrq",
+  )
+  joined.write_string(
+    "ud6k7om6P930TntxfZnV87VW+f41/6NrReYckJY4maz8/UTR1birr2sdxCzf7Jzo7PXQT/Mas9WD",
+  )
+  joined.write_string(
+    "SUy/1pSIyC6p6dnLteD+QvfS2FBzr8n+L4InLuO7eY3/xsE0n0eF09c/VxR0n/aozsxvjZsTx+Kr",
+  )
+  joined.write_string(
+    "Ezat23avZrGIu9PMyez8/GYflKSXWHnPmDKf8fgd77qZGbxd4R0vJWPKVvJ3uUlekp4++el70/Sy",
+  )
+  joined.write_string(
+    "oOuRvcv/XBFTykw55//u2KclFhvqCjOPNyQY6P2vOxZTM/G+4NL6h+ePxteU/sh7qx6AEmo7G10K",
+  )
+  joined.write_string(
+    "NwB5WsCQ4wbS8UWpOcX6eiCy97w13yEDHrYHc4Nd7mVGsbUETNbjWKmtxd4hZN6bIed1aPF2dWZm",
+  )
+  joined.write_string(
+    "BTa32/vtT+d+32C8M9HnmDWbbyizo/peIz9jC/7jX/k8Th3SNKxu5xHzufAxtPpQ5JNNk9WEhTQ7",
+  )
+  joined.write_string(
+    "vHmWzTk875KK+halULsF2pMvumsXaS5e5nii+4KHeenepR/vMvxLnBRn2LE3q4HH+0B9jn2f26OD",
+  )
+  joined.write_string(
+    "p1e7Tq+f88NLJNKld+bBu+6uV1fHiopp5L883v2HE9VjcTZrVfYAeXOAHpMB0uX5RSn6EN+l5CeX",
+  )
+  joined.write_string(
+    "5gJTBihJgH269sJ+rkMGAsc/3l3Osf32Fj6lpFuuLuEX2S0mvZbPKVbsXJSfHzBBTEZGpl7mZ43i",
+  )
+  joined.write_string(
+    "7Fd2Xx652ZXkiIpE8jWtSbt80+3gzy2z1zu0dFxLOD9NxEbDIfScmfsrw2XmC9/GCHBudHSUXhzt",
+  )
+  joined.write_string(
+    "LVnizdzWI3uzZOVNfonLX3pLVujfmBDz5GfQr42MT4+IsC8+IH9G7sjLhy/EZ7/edXlLaq3siWP6",
+  )
+  joined.write_string(
+    "nDeFpD55utwP8HmWLR7Z5FD3/v2/m+tnPt7x/978fXNqsn6yoPpa4CxP9UQgbysQC8B8nZGamJJa",
+  )
+  joined.write_string(
+    "ZAjyruzZg1zgON3tH1hUPlfO5ditu238C/gDru3gvbZF5ejL27fffZr4YbL93w+8s38pnJY6eWBp",
+  )
+  joined.write_string(
+    "pqOi78X1JtIVtsc/y05Jcb+XO/HCAX5WtupX3/M+rjll6LldOqLIb+41I12JOSaGilPfyFruiAmb",
+  )
+  joined.write_string(
+    "91XupnqfcNeUdxteZt++V1Kg3aibu/LQ1Bz5FzZF61/HPD1cErHvlj1apB3cemcCuvPT8vNL4M63",
+  )
+  joined.write_string(
+    "5Ws24GF9sHd5x57pF/hCWzly5iywdWB55q5UluK+dG+t8DT/bfP+3Pl2f8Ns/q48H768UF62zCeZ",
+  )
+  joined.write_string(
+    "i48e/G0aMz/BpHLWn3MtfHUrLpRP/5bxTEVNfrJZe7Pp0hsRqx93Hcw+KqiZbuz9QXP9phvNqV2H",
+  )
+  joined.write_string(
+    "lFc9e7fhdnWsfc4Hacfpt5McuVZKzxD2yj4dM+Vyxaz9ZfWort8eHFmpCkxuYsASSBDmeuTE1hvo",
+  )
+  joined.write_string(
+    "63/YgGfvZ+1VdyK3ZR0IWTu35QILu8qR4/wnpJb3XjkycbLhsfXHM817H+v1xf/58+j5GnP7PI19",
+  )
+  joined.write_string(
+    "jYtc47uP5uhxfdDNer07qqY2Lz98UYdn5Vq2LwHdyi4bM/OutXsl7y5/EHyQyy6sPeqLZqvXqRvf",
+  )
+  joined.write_string(
+    "HoTMSWQ4b9r8JCTJY66NwkuHG049fxqkUyzn3/devkZcXXKXG1vvRl2buWwzXDjYpt5weZPbsegh",
+  )
+  joined.write_string(
+    "Y/mK/p88lgF8Kyuf7N56JrLP5NhGuYW++cor2Zc23jvI8FFtQcInww3FvG5v21W4Vq1Zx7r3Rbpi",
+  )
+  joined.write_string(
+    "cbOjz3XTnOVtF2r/GHWbb9M4rZo/R/7pn7yjPzs/rNJ4nfDg91MXxdtfXzKVzxDaxS134M9qP7Ws",
+  )
+  joined.write_string(
+    "jwF9BVKFTUUmtd+0z1dPmi6f+48hwJuRSYQZd7kOAw2MDNhLeXQD0Is4hAFmjCgFHrpG9CIEoZGf",
+  )
+  joined.write_string(
+    "CX+Bgm4SerZEmMTKjJlJMdyBlisQuo8wY+YRdN3oqRKhu4kFSxoN8GZlA0mzAWE9UNs1VhAPAPdY",
+  )
+  joined.write_string("7atrBwAA")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "DOCX headers and footers are rendered on each page" {
+  let result = convert(docx_story_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let text = StringBuilder()
+  for command in commands {
+    match command {
+      @render.FillText(value, _, _, _) => text.write_string(value)
+      _ => ()
+    }
+  }
+  let value = text.to_string()
+  assert_true(value.contains("Body"), msg="DOCX body")
+  assert_true(value.contains("Header"), msg="DOCX header")
+  assert_true(value.contains("Footer"), msg="DOCX footer")
+}

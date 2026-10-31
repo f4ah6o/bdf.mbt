@@ -23,7 +23,8 @@ font weight/style/size and the section page geometry. Table rows are flattened t
 `tblGrid`. Inline drawings with an embedded PNG/JPEG part are placed at their
 `wp:extent`; numbered paragraphs receive decimal or bullet prefixes from
 `numbering.xml` (level counters and left indents). Floating drawings, EMF/WMF
-images, numbering overrides, headers, footers and fields are rejected by the
-reader or omitted. The native
+images, numbering overrides, first/even header variants, header images and
+fields are rejected by the reader or omitted. Default header and footer
+paragraph text is drawn at the section header/footer distances. The native
 converter Worker advertises the `docx` format.
 
