@@ -120,6 +120,7 @@ const samples = {
   font: ['./samples/stix.ttf', 'stix.ttf'],
   pdf: ['./samples/simple.pdf', 'simple.pdf'],
   docx: ['./samples/simple.docx', 'simple.docx'],
+  pptx: ['./samples/simple.pptx', 'simple.pptx'],
 };
 for (const link of document.querySelectorAll('[data-sample]')) {
   link.addEventListener('click', event => {

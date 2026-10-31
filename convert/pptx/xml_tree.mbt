@@ -3,6 +3,7 @@
 priv struct PptxXmlNode {
   element : @xml.NamespaceElement
   children : Array[PptxXmlNode]
+  text : StringBuilder
 }
 
 ///|
@@ -22,7 +23,11 @@ fn pptx_parse_xml(content : String) -> PptxXmlNode raise {
         if count > 8388608 || stack.length() > 20000 {
           raise InvalidPptx("OOXML part exceeds XML limits")
         }
-        let node : PptxXmlNode = { element, children: [], }
+        let node : PptxXmlNode = {
+          element,
+          children: [],
+          text: StringBuilder(),
+        }
         if stack.is_empty() {
           if root is Some(_) {
             raise InvalidPptx("multiple XML roots")
@@ -35,6 +40,10 @@ fn pptx_parse_xml(content : String) -> PptxXmlNode raise {
           stack.push(node)
         }
       }
+      Text(value) | CData(value) =>
+        if !stack.is_empty() {
+          stack[stack.length() - 1].text.write_string(value)
+        }
       End(_) => ignore(stack.pop())
       Eof => break
       _ => ()

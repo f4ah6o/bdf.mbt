@@ -20,4 +20,10 @@ corresponding `TestCodexPPTXPlaceholders` or `TestCodexPPTXTransforms` with
 `-count=1`. Strip the build tag from each overlay. Run `moon fmt convert/pptx`
 afterward; JavaScript and wasm-gc execute the same expectations.
 
-These readers are internal building blocks, not a PPTX converter.
+## Limited converter
+
+`convert/pptx` exposes `detect` and `convert` for a shape/text subset of
+PresentationML. It renders visible slides, solid shape fills and paragraph/run
+text with approximate metrics. Placeholder inheritance, themes, images, charts,
+tables, group shapes and layout/master content are not rendered yet. The native
+converter Worker advertises the `pptx` format.

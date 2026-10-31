@@ -2,10 +2,22 @@
 package "f4ah6o/bdf/convert/pptx"
 
 // Values
+pub fn convert(Bytes, title? : String) -> PptxResult raise
+
+pub fn detect(Bytes) -> Bool
 
 // Errors
+pub suberror PptxConvertError {
+  PptxInvalid(String)
+}
 
 // Types and methods
+pub(all) struct PptxResult {
+  bdf : Bytes
+  pages : Int32
+  summary : String
+  warnings : Array[String]
+}
 
 // Type aliases
 
