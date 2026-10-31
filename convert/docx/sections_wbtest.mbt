@@ -6,6 +6,7 @@ fn check_docx_sections(
   expected : Array[
     (Double, Double, Double, Double, Double, Double, Double, Double, Bool, Bool),
   ],
+  border_data : Array[(Bool, Bool, Bool, Array[(String, Double, Double)?])],
   layout : Array[
     (
       String,
@@ -32,6 +33,12 @@ fn check_docx_sections(
   let (actual_part, sections) = docx_sections(input)
   assert_eq(actual_part, part, msg=name)
   assert_eq(sections.length(), expected.length(), msg=name)
+  if name == "synthetic.docx" {
+    match sections[0].borders[0] {
+      Some(border) => assert_eq(border.color, "FF0000")
+      None => fail("synthetic top border missing")
+    }
+  }
   for i in 0..<expected.length() {
     let (
       width,
@@ -46,6 +53,20 @@ fn check_docx_sections(
       bottom_exact,
     ) = expected[i]
     let item = sections[i]
+    let (from_text, first, not_first, borders) = border_data[i]
+    assert_eq(
+      (item.border_from_text, item.border_first, item.border_not_first),
+      (from_text, first, not_first),
+      msg="\{name} border flags \{i}",
+    )
+    for j in 0..<borders.length() {
+      let actual = match item.borders[j] {
+        Some(border) => Some((border.style, border.width, border.space))
+        None => None
+      }
+      assert_eq(actual, borders[j], msg="\{name} border \{i} side \{j}")
+    }
+
     let (
       typ,
       title,

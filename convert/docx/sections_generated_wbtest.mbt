@@ -50,6 +50,12 @@ test "DOCX sections match upstream Go 0" {
       ),
     ],
     [
+      (false, false, false, [None, None, None, None]),
+      (false, false, false, [None, None, None, None]),
+      (false, false, false, [None, None, None, None]),
+      (false, false, false, [None, None, None, None]),
+    ],
+    [
       (
         "nextPage",
         false,
@@ -137,6 +143,7 @@ test "DOCX sections match upstream Go 1" {
         false, false,
       ),
     ],
+    [(false, false, false, [None, None, None, None])],
     [
       (
         "nextPage",
@@ -178,6 +185,7 @@ test "DOCX sections match upstream Go 2" {
         false, false,
       ),
     ],
+    [(false, false, false, [None, None, None, None])],
     [
       (
         "nextPage",
@@ -220,6 +228,7 @@ test "DOCX sections match upstream Go 3" {
         false, false,
       ),
     ],
+    [(false, false, false, [None, None, None, None])],
     [
       (
         "nextPage",
@@ -262,6 +271,7 @@ test "DOCX sections match upstream Go 4" {
         false, false,
       ),
     ],
+    [(false, false, false, [None, None, None, None])],
     [
       (
         "nextPage",
@@ -305,6 +315,7 @@ test "DOCX sections match upstream Go 5" {
         false, false,
       ),
     ],
+    [(false, false, false, [None, None, None, None])],
     [
       (
         "nextPage",
@@ -346,6 +357,7 @@ test "DOCX sections match upstream Go 6" {
         false, false,
       ),
     ],
+    [(false, false, false, [None, None, None, None])],
     [
       (
         "nextPage",
@@ -394,6 +406,7 @@ test "DOCX sections match upstream Go 7" {
         false, false,
       ),
     ],
+    [(false, false, false, [None, None, None, None])],
     [
       (
         "nextPage",
@@ -418,8 +431,8 @@ test "DOCX sections match upstream Go 8" {
   check_docx_sections(
     "synthetic.docx",
     [
-      "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",
+      "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",
     ],
     "custom/doc.xml",
     [
@@ -433,6 +446,20 @@ test "DOCX sections match upstream Go 8" {
         56.692913385826770, 72.000000000000000, 36.000000000000000, 36.000000000000000,
         false, false,
       ),
+    ],
+    [
+      (
+        false,
+        true,
+        false,
+        [
+          Some(("single", 0.25000000000000000, 10.000000000000000)),
+          Some(("nil", 0.0000000000000000, 0.0000000000000000)),
+          Some(("double", 3.0000000000000000, 4.0000000000000000)),
+          None,
+        ],
+      ),
+      (false, false, false, [None, None, None, None]),
     ],
     [
       (

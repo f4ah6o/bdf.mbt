@@ -27,6 +27,21 @@ priv struct DocxSection {
   columns : Array[(Double, Double)]
   headers : Array[(String, String)]
   footers : Array[(String, String)]
+  borders : Array[DocxBorder?]
+  mut border_from_text : Bool
+  mut border_first : Bool
+  mut border_not_first : Bool
+} derive(Debug, Eq)
+
+///|
+priv struct DocxBorder {
+  style : String
+  width : Double
+  space : Double
+  color : String
+  theme_color : String
+  theme_tint : String
+  theme_shade : String
 } derive(Debug, Eq)
 
 ///|
@@ -121,6 +136,10 @@ fn docx_new_section(previous : DocxSection?) -> DocxSection {
     columns: [],
     headers: [],
     footers: [],
+    borders: [None, None, None, None],
+    border_from_text: false,
+    border_first: false,
+    border_not_first: false,
   }
 }
 
@@ -214,6 +233,13 @@ fn docx_section_element(
       let value = docx_attribute(element, "val", "")
       section.vertical = value == "tbRl" || value == "tbRlV" || value == "tbLrV"
     }
+    "pgBorders" => {
+      section.border_from_text = docx_attribute(element, "offsetFrom", "text") ==
+        "text"
+      let display = docx_attribute(element, "display", "allPages")
+      section.border_first = display == "firstPage"
+      section.border_not_first = display == "notFirstPage"
+    }
     "cols" => {
       section.column_count = docx_number(
         docx_attribute(element, "num", ""),
@@ -286,6 +312,31 @@ fn docx_add_story_reference(
 }
 
 ///|
+fn docx_page_border(element : @xml.NamespaceElement) -> DocxBorder {
+  let style = docx_attribute(element, "val", "")
+  let raw_width = docx_number(docx_attribute(element, "sz", ""), 4.0)
+    .to_int64()
+    .to_double() /
+    8.0
+  let width = if style == "nil" || style == "none" {
+    raw_width
+  } else {
+    Double::max(raw_width, 0.25)
+  }
+  {
+    style,
+    width,
+    space: docx_number(docx_attribute(element, "space", ""), 0.0)
+    .to_int64()
+    .to_double(),
+    color: docx_attribute(element, "color", "auto"),
+    theme_color: docx_attribute(element, "themeColor", ""),
+    theme_tint: docx_attribute(element, "themeTint", ""),
+    theme_shade: docx_attribute(element, "themeShade", ""),
+  }
+}
+
+///|
 fn docx_sections(data : Bytes) -> (String, Array[DocxSection]) raise {
   let package = @ooxml.open_ooxml(data)
   let part = match package.relationship_of_type("", "/officeDocument") {
@@ -306,6 +357,9 @@ fn docx_sections(data : Bytes) -> (String, Array[DocxSection]) raise {
   let seen : Map[String, Bool] = Map([])
   let mut column_depth = -1
   let mut read_columns = false
+  let mut border_depth = -1
+  let mut read_borders = false
+  let border_sides : Map[String, Bool] = Map([])
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -325,6 +379,9 @@ fn docx_sections(data : Bytes) -> (String, Array[DocxSection]) raise {
           seen.clear()
           column_depth = -1
           read_columns = false
+          border_depth = -1
+          read_borders = false
+          border_sides.clear()
           let previous = if sections.is_empty() {
             None
           } else {
@@ -363,9 +420,29 @@ fn docx_sections(data : Bytes) -> (String, Array[DocxSection]) raise {
             read_columns = take
             column_depth = if event.kind is Start(_) { depth + 1 } else { -1 }
           }
+          if name == "pgBorders" {
+            read_borders = take
+            border_depth = if event.kind is Start(_) { depth + 1 } else { -1 }
+          }
           if take {
             match section {
               Some(current) => docx_section_element(current, element)
+              None => ()
+            }
+          }
+        } else if depth == border_depth && read_borders {
+          let index = match name {
+            "top" => 0
+            "left" => 1
+            "bottom" => 2
+            "right" => 3
+            _ => -1
+          }
+          if index >= 0 && !border_sides.contains(name) {
+            border_sides[name] = true
+            match section {
+              Some(current) =>
+                current.borders[index] = Some(docx_page_border(element))
               None => ()
             }
           }
@@ -386,6 +463,10 @@ fn docx_sections(data : Bytes) -> (String, Array[DocxSection]) raise {
         }
       }
       End(_) => {
+        if path.length() == border_depth {
+          border_depth = -1
+          read_borders = false
+        }
         if path.length() == column_depth {
           column_depth = -1
           read_columns = false
