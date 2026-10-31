@@ -695,6 +695,45 @@ fn pptx_ellipse_path(
 }
 
 ///|
+fn pptx_round_rect_path(
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+  radius : Double,
+) -> @core.Path {
+  let r = Double::min(radius, Double::min(width, height) / 2.0)
+  if r <= 0.0 {
+    return {
+      verbs: b"\x00\x01\x01\x01\x04",
+      coordinates: [x, y, x + width, y, x + width, y + height, x, y + height],
+    }
+  }
+  let verbs : Array[Byte] = [0]
+  let coordinates : Array[Double] = [x + r, y]
+  verbs.push(1)
+  coordinates.push(x + width - r)
+  coordinates.push(y)
+  let corners : Array[(Double, Double, Double)] = [
+    (x + width - r, y + r, -3.141592653589793 / 2.0),
+    (x + width - r, y + height - r, 0.0),
+    (x + r, y + height - r, 3.141592653589793 / 2.0),
+    (x + r, y + r, 3.141592653589793),
+  ]
+  for corner in corners {
+    let (cx, cy, start) = corner
+    for index in 1..<9 {
+      let angle = start + 3.141592653589793 / 2.0 * index.to_double() / 8.0
+      verbs.push(1)
+      coordinates.push(cx + r * @math.cos(angle))
+      coordinates.push(cy + r * @math.sin(angle))
+    }
+  }
+  verbs.push(4)
+  { verbs: Bytes::from_array(verbs), coordinates, }
+}
+
+///|
 fn pptx_render_slide(
   package : @ooxml.OoxmlPackage,
   part : String,
@@ -867,10 +906,26 @@ fn pptx_render_slide(
       )
       continue
     }
-    let geometry = match
-      pptx_child(pptx_child(Some(shape), "spPr"), "prstGeom") {
+    let geom = pptx_child(pptx_child(Some(shape), "spPr"), "prstGeom")
+    let geometry = match geom {
       Some(value) => pptx_attribute(value.element, "prst", "rect")
       None => "rect"
+    }
+    let corner_radius = if geometry == "roundRect" {
+      let fraction = match pptx_child(pptx_child(geom, "avLst"), "gd") {
+        Some(value) => {
+          let fmla = pptx_attribute(value.element, "fmla", "val 16667")
+          let token = match fmla.split(" ").last() {
+            Some(value) => value.to_string()
+            None => "16667"
+          }
+          (@string.parse_double(token) catch { _ => 16667.0 }) / 100000.0
+        }
+        None => 0.16667
+      }
+      fraction * Double::min(transform.width, transform.height)
+    } else {
+      0.0
     }
     let fill = pptx_node_color(
       pptx_child(Some(shape), "spPr"),
@@ -888,6 +943,19 @@ fn pptx_render_slide(
                 shape_y,
                 transform.width,
                 transform.height,
+              ),
+            ),
+          )
+          object.fill_path(path_index, 0)
+        } else if geometry == "roundRect" {
+          let path_index = object.add_path(
+            @core.Inline(
+              pptx_round_rect_path(
+                shape_x,
+                shape_y,
+                transform.width,
+                transform.height,
+                corner_radius,
               ),
             ),
           )
@@ -925,6 +993,21 @@ fn pptx_render_slide(
               shape_y,
               transform.width,
               transform.height,
+            ),
+          ),
+        )
+        object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
+        object.stroke_color(stroke_color)
+        object.stroke_path(path_index)
+      } else if geometry == "roundRect" {
+        let path_index = object.add_path(
+          @core.Inline(
+            pptx_round_rect_path(
+              shape_x,
+              shape_y,
+              transform.width,
+              transform.height,
+              corner_radius,
             ),
           ),
         )
