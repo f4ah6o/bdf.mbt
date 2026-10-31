@@ -214,3 +214,60 @@ fn pdf_apply_image_mask(
   }
   out.to_bytes()
 }
+
+///|
+fn pdf_color_key_alpha(
+  width : Int32,
+  height : Int32,
+  space : PdfDeviceColorSpace,
+  data : Bytes,
+  key : Array[Double],
+) -> Bytes raise PdfStreamError {
+  let components = match space {
+    PdfGray => 1
+    PdfRGB => 3
+    PdfCMYK => 4
+    PdfPattern => raise InvalidStream("PDF image with a pattern colour space")
+  }
+  if key.length() != components * 2 {
+    raise InvalidStream("PDF colour key mask has the wrong size")
+  }
+  let needed = width * height * components
+  if data.length() < needed {
+    raise InvalidStream("PDF image samples are truncated")
+  }
+  let alpha = @buffer.Buffer(size_hint=width * height)
+  for pixel in 0..<(width * height) {
+    let mut masked = true
+    for component in 0..<components {
+      let value = data[pixel * components + component].to_double()
+      let low = key[component * 2] * 255.0
+      let high = key[component * 2 + 1] * 255.0
+      if value < low || value > high {
+        masked = false
+      }
+    }
+    alpha.write_byte(if masked { 0 } else { 0xff })
+  }
+  alpha.to_bytes()
+}
+
+///|
+fn pdf_apply_image_alpha(
+  rgba : Bytes,
+  alpha : Bytes,
+) -> Bytes raise PdfStreamError {
+  let pixels = rgba.length() / 4
+  if rgba.length() != pixels * 4 || alpha.length() != pixels {
+    raise InvalidStream("invalid PDF image alpha")
+  }
+  let out = @buffer.Buffer(size_hint=rgba.length())
+  for pixel in 0..<pixels {
+    let source = pixel * 4
+    out.write_byte(rgba[source])
+    out.write_byte(rgba[source + 1])
+    out.write_byte(rgba[source + 2])
+    out.write_byte(alpha[pixel])
+  }
+  out.to_bytes()
+}

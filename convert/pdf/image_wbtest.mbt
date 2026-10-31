@@ -410,30 +410,6 @@ test "PDF image stencil mask removes painted pixels" {
 }
 
 ///|
-test "PDF colour key masks fail closed" {
-  let rejected = try {
-    ignore(
-      pdf_graphics_document(
-        pdf_masked_image_test_document(
-          1,
-          1,
-          "/Mask [0 0 0 0 0 0]",
-          @zlib.compress(b"\xff\x00\x00"[:]),
-          "",
-          b"",
-        ),
-        no_text_index=true,
-      ),
-    )
-    false
-  } catch {
-    InvalidStream(message) => message.contains("colour key")
-    _ => false
-  }
-  assert_true(rejected)
-}
-
-///|
 test "PDF encoded images with masks fail closed" {
   let rejected = try {
     ignore(
@@ -491,20 +467,22 @@ test "PDF form XObject inherits its own resources" {
 }
 
 ///|
-test "PDF form transparency groups fail closed" {
-  let rejected = try {
-    ignore(
-      pdf_graphics_document(
-        pdf_form_image_test_document(true),
-        no_text_index=true,
-      ),
-    )
-    false
-  } catch {
-    InvalidStream(message) => message.contains("transparency groups")
-    _ => false
+test "PDF form transparency groups are emitted" {
+  let document = pdf_graphics_document(
+    pdf_form_image_test_document(true),
+    no_text_index=true,
+  )
+  let commands = pdf_test_body_commands(document)
+  let mut begins = 0
+  let mut ends = 0
+  for command in commands {
+    match command {
+      @render.GroupBegin(_, _, _, _, _, _) => begins += 1
+      @render.GroupEnd => ends += 1
+      _ => ()
+    }
   }
-  assert_true(rejected)
+  assert_eq((begins, ends), (1, 1), msg="PDF form transparency group")
 }
 
 ///|
@@ -668,4 +646,308 @@ test "PDF pattern outside a Pattern colour space fails closed" {
     _ => false
   }
   assert_true(rejected)
+}
+
+///|
+fn pdf_embedded_font_test_document(font_data : Bytes, filter : String) -> Bytes {
+  pdf_test_pdf([
+    b"<< /Type /Catalog /Pages 2 0 R >>",
+    b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+    b"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
+    pdf_test_stream("", b"BT /F1 12 Tf 10 10 Td (A) Tj ET"),
+    @utf8.encode(
+      "<< /Type /Font /Subtype /TrueType /BaseFont /Embedded /FirstChar 32 /LastChar 32 /Widths [600] /FontDescriptor 6 0 R /Encoding /WinAnsiEncoding >>",
+    ),
+    @utf8.encode(
+      "<< /Type /FontDescriptor /FontName /Embedded /Flags 32 /FontBBox [0 0 1000 1000] /ItalicAngle 0 /Ascent 800 /Descent -200 /CapHeight 700 /StemV 80 /FontFile2 7 0 R >>",
+    ),
+    pdf_test_stream(filter, font_data),
+  ])
+}
+
+///|
+fn pdf_test_font_part(document : Bytes) -> (String, Bytes) raise {
+  let split = @core.single_to_split(document)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  for part in manifest.parts {
+    if part.kind == "font" {
+      return (part.hash, @core.open_single(document).part(part.hash))
+    }
+  }
+  fail("PDF font part is missing")
+}
+
+///|
+test "PDF embedded TrueType font is stored unchanged" {
+  let font_data = b"\x00\x01\x00\x00embedded-true-type"
+  let document = pdf_graphics_document(
+    pdf_embedded_font_test_document(font_data, ""),
+    no_text_index=true,
+  )
+  let (hash, data) = pdf_test_font_part(document)
+  assert_eq(data, font_data, msg="PDF embedded font bytes")
+  let split = @core.single_to_split(document)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(document).part(body_hash),
+  )
+  assert_eq(resources.fonts[0].hash, Some(hash), msg="PDF font resource hash")
+}
+
+///|
+test "PDF embedded Flate font stream is decoded" {
+  let font_data = b"\x00\x01\x00\x00flate-font"
+  let document = pdf_graphics_document(
+    pdf_embedded_font_test_document(
+      @zlib.compress(font_data[:]),
+      "/Filter /FlateDecode",
+    ),
+    no_text_index=true,
+  )
+  let (_, data) = pdf_test_font_part(document)
+  assert_eq(data, font_data, msg="PDF embedded Flate font bytes")
+}
+
+///|
+test "PDF Type1 font programs fail closed" {
+  let rejected = try {
+    ignore(
+      pdf_graphics_document(
+        pdf_test_pdf([
+          b"<< /Type /Catalog /Pages 2 0 R >>",
+          b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+          b"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
+          pdf_test_stream("", b"BT /F1 12 Tf 10 10 Td (A) Tj ET"),
+          @utf8.encode(
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Embedded /FirstChar 32 /LastChar 32 /Widths [600] /FontDescriptor 6 0 R /Encoding /WinAnsiEncoding >>",
+          ),
+          @utf8.encode(
+            "<< /Type /FontDescriptor /FontName /Embedded /Flags 32 /FontBBox [0 0 1000 1000] /ItalicAngle 0 /Ascent 800 /Descent -200 /CapHeight 700 /StemV 80 /FontFile 7 0 R >>",
+          ),
+          pdf_test_stream("", b"%!PS-AdobeFont-1.0"),
+        ]),
+        no_text_index=true,
+      ),
+    )
+    false
+  } catch {
+    InvalidStream(message) => message.contains("unsupported embedded PDF font")
+    _ => false
+  }
+  assert_true(rejected)
+}
+
+///|
+test "PDF link annotations become link commands" {
+  let document = pdf_graphics_document(
+    pdf_test_pdf([
+      b"<< /Type /Catalog /Pages 2 0 R >>",
+      b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+      b"<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Annots [5 0 R] >>",
+      pdf_test_stream("", b""),
+      @utf8.encode(
+        "<< /Type /Annot /Subtype /Link /Rect [10 20 30 40] /A << /S /URI /URI (https://example.org/) >> >>",
+      ),
+    ]),
+    no_text_index=true,
+  )
+  let split = @core.single_to_split(document)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(document).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut found : (Double, Double, Double, Double, String)? = None
+  for command in commands {
+    match command {
+      @render.Link(x, y, width, height, url) =>
+        found = Some((x, y, width, height, url))
+      _ => ()
+    }
+  }
+  match found {
+    Some((x, y, width, height, url)) => {
+      assert_eq((x, y, width, height), (10.0, 20.0, 20.0, 20.0))
+      assert_eq(url, "https://example.org/")
+    }
+    None => fail("PDF link annotation is missing")
+  }
+}
+
+///|
+fn pdf_optional_content_test_document(config : String, tagged : Bool) -> Bytes {
+  let catalog = if tagged {
+    "<< /Type /Catalog /Pages 2 0 R /StructTreeRoot << /Type /StructTreeRoot >> /OCProperties << /OCGs [5 0 R] /D " +
+    config +
+    " >> >>"
+  } else {
+    "<< /Type /Catalog /Pages 2 0 R /OCProperties << /OCGs [5 0 R] /D " +
+    config +
+    " >> >>"
+  }
+  let content = if tagged {
+    b"q /P << /MCID 0 >> BDC 0 0 100 100 re f EMC Q"
+  } else {
+    b"q /OC /L1 BDC 0 0 100 100 re f EMC Q"
+  }
+  pdf_test_pdf([
+    @utf8.encode(catalog),
+    b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+    b"<< /Type /Page /Parent 2 0 R /Resources << /Properties << /L1 5 0 R >> >> /Contents 4 0 R >>",
+    pdf_test_stream("", content),
+    b"<< /Type /OCG /Name (Layer) >>",
+  ])
+}
+
+///|
+fn pdf_test_body_commands(document : Bytes) -> Array[@render.Command] raise {
+  let split = @core.single_to_split(document)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(document).part(body_hash),
+  )
+  @render.compile_object(resources.object)
+}
+
+///|
+fn pdf_test_fill_rects(document : Bytes) -> Int32 raise {
+  let commands = pdf_test_body_commands(document)
+  let mut count = 0
+  for command in commands {
+    match command {
+      @render.FillRect(_, _, _, _) | @render.FillPath(_, _) => count += 1
+      _ => ()
+    }
+  }
+  count
+}
+
+///|
+test "PDF optional content off layers are hidden" {
+  let document = pdf_graphics_document(
+    pdf_optional_content_test_document("<< /OFF [5 0 R] >>", false),
+    no_text_index=true,
+  )
+  assert_eq(pdf_test_fill_rects(document), 0, msg="PDF hidden layer")
+}
+
+///|
+test "PDF optional content on layers are visible" {
+  let document = pdf_graphics_document(
+    pdf_optional_content_test_document("<< /ON [5 0 R] >>", false),
+    no_text_index=true,
+  )
+  assert_eq(pdf_test_fill_rects(document), 1, msg="PDF visible layer")
+}
+
+///|
+test "PDF tagged structure is ignored for rendering" {
+  let document = pdf_graphics_document(
+    pdf_optional_content_test_document("<< /ON [5 0 R] >>", true),
+    no_text_index=true,
+  )
+  assert_eq(pdf_test_fill_rects(document), 1, msg="PDF tagged content")
+}
+
+///|
+fn pdf_annotation_appearance_document(with_appearance : Bool) -> Bytes {
+  let annotation = if with_appearance {
+    "<< /Type /Annot /Subtype /Square /Rect [10 20 30 40] /AP << /N 6 0 R >> >>"
+  } else {
+    "<< /Type /Annot /Subtype /Square /Rect [10 20 30 40] >>"
+  }
+  let objects : Array[Bytes] = [
+    b"<< /Type /Catalog /Pages 2 0 R >>",
+    b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+    b"<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Annots [5 0 R] >>",
+    pdf_test_stream("", b""),
+    @utf8.encode(annotation),
+  ]
+  if with_appearance {
+    objects.push(
+      pdf_test_stream(
+        "/Type /XObject /Subtype /Form /BBox [0 0 10 10] /Resources << >>", b"0 0 1 rg 0 0 10 10 re f",
+      ),
+    )
+  }
+  pdf_test_pdf(objects)
+}
+
+///|
+test "PDF annotation appearance streams are drawn" {
+  let document = pdf_graphics_document(
+    pdf_annotation_appearance_document(true),
+    no_text_index=true,
+  )
+  assert_eq(pdf_test_fill_rects(document), 1, msg="PDF annotation appearance")
+}
+
+///|
+test "PDF annotations without appearance streams are skipped" {
+  let document = pdf_graphics_document(
+    pdf_annotation_appearance_document(false),
+    no_text_index=true,
+  )
+  assert_eq(pdf_test_fill_rects(document), 0, msg="PDF annotation without AP")
+}
+
+///|
+test "PDF colour key mask removes matching pixels" {
+  let document = pdf_graphics_document(
+    pdf_masked_image_test_document(
+      2,
+      1,
+      "/Mask [0 0 0 0 0 0]",
+      @zlib.compress(b"\x00\x00\x00\xff\xff\xff"[:]),
+      "",
+      b"",
+    ),
+    no_text_index=true,
+  )
+  assert_eq(
+    pdf_test_image_rgba(document, 2, 1),
+    pdf_test_rgba_scanline([(0, 0, 0, 0), (255, 255, 255, 255)]),
+    msg="PDF colour key scanline",
+  )
+}
+
+///|
+fn pdf_annotation_state_document(state : String) -> Bytes {
+  let annotation = "<< /Type /Annot /Subtype /Square /Rect [10 20 30 40] /AP << /N << /Off 6 0 R /On 7 0 R >> >> /AS /" +
+    state +
+    " >>"
+  pdf_test_pdf([
+    b"<< /Type /Catalog /Pages 2 0 R >>",
+    b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+    b"<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Annots [5 0 R] >>",
+    pdf_test_stream("", b""),
+    @utf8.encode(annotation),
+    pdf_test_stream(
+      "/Type /XObject /Subtype /Form /BBox [0 0 10 10] /Resources << >>", b"",
+    ),
+    pdf_test_stream(
+      "/Type /XObject /Subtype /Form /BBox [0 0 10 10] /Resources << >>", b"0 0 1 rg 0 0 10 10 re f",
+    ),
+  ])
+}
+
+///|
+test "PDF annotation appearance state selects the on stream" {
+  let document = pdf_graphics_document(
+    pdf_annotation_state_document("On"),
+    no_text_index=true,
+  )
+  assert_eq(pdf_test_fill_rects(document), 1, msg="PDF annotation on state")
+}
+
+///|
+test "PDF annotation appearance state selects the off stream" {
+  let document = pdf_graphics_document(
+    pdf_annotation_state_document("Off"),
+    no_text_index=true,
+  )
+  assert_eq(pdf_test_fill_rects(document), 0, msg="PDF annotation off state")
 }

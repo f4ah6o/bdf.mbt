@@ -75,6 +75,7 @@ fn pdf_default_simple_font() -> PdfSimpleFont {
     vertical_metrics: Map([]),
     default_vertical: (880.0, -1000.0),
     collection: "",
+    embedded: None,
   }
 }
 
@@ -197,8 +198,12 @@ fn PdfGraphics::flush_text(self : PdfGraphics) -> Unit raise PdfStreamError {
   let reference = match self.font_refs.get(self.state.font_key) {
     Some(value) => value
     None => {
+      let hash = match font.embedded {
+        Some(data) => Some(self.store_font(data))
+        None => None
+      }
       let value = self.object.add_font({
-        hash: None,
+        hash,
         family: font.family,
         weight: font.weight,
         style: font.style,

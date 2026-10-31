@@ -6,6 +6,8 @@ priv struct DocxTextItem {
   text : String
   clear : Bool
   props : DocxRunProps
+  width : Double
+  height : Double
 } derive(Debug, Eq)
 
 ///|
@@ -122,7 +124,9 @@ fn docx_text_section_check(section : DocxXmlNode) -> Unit raise {
       | "titlePg"
       | "pgNumType"
       | "docGrid"
-      | "textDirection" =>
+      | "textDirection"
+      | "headerReference"
+      | "footerReference" =>
         if !child.children.is_empty() {
           docx_text_unsupported(child.name())
         }
@@ -143,6 +147,15 @@ fn docx_text_ppr(props : DocxParagraphProps, node : DocxXmlNode) -> Bool raise {
   for child in node.children {
     let name = child.name()
     match name {
+      "numPr" =>
+        for sub in child.children {
+          match sub.name() {
+            "numId" => props.number_id = docx_attribute(sub.element, "val", "")
+            "ilvl" =>
+              props.level = docx_props_number(sub.element, "val", 0.0).to_int()
+            other => docx_text_unsupported("numPr " + other)
+          }
+        }
       "sectPr" =>
         if !has_section {
           docx_text_section_check(child)
@@ -197,7 +210,7 @@ fn docx_text_push(
   props : DocxRunProps,
   clear~ : Bool = false,
 ) -> Unit {
-  items.push({ kind, text, clear, props, })
+  items.push({ kind, text, clear, props, width: 0.0, height: 0.0, })
 }
 
 ///|
@@ -218,6 +231,63 @@ fn docx_text_chars(
       }
     }
   }
+}
+
+///|
+fn docx_attribute_any(
+  element : @xml.NamespaceElement,
+  name : String,
+  default : String,
+) -> String {
+  for attr in element.attributes {
+    if attr.name.local_name == name {
+      return attr.value
+    }
+  }
+  default
+}
+
+///|
+fn docx_emu(value : String) -> Double {
+  (@string.parse_double(value.trim()) catch { _ => 0.0 }) / 12700.0
+}
+
+///|
+fn docx_text_drawing(
+  node : DocxXmlNode,
+  items : Array[DocxTextItem],
+  props : DocxRunProps,
+) -> Unit raise {
+  let container = match node.child("inline") {
+    Some(value) => Some(value)
+    None => node.child("anchor")
+  }
+  let container = match container {
+    Some(value) => value
+    None => return docx_text_unsupported("drawing")
+  }
+  let (width, height) = match container.child("extent") {
+    Some(value) =>
+      (
+        docx_emu(docx_attribute_any(value.element, "cx", "")),
+        docx_emu(docx_attribute_any(value.element, "cy", "")),
+      )
+    None => (0.0, 0.0)
+  }
+  let mut embed = ""
+  fn find_blip(value : DocxXmlNode) -> Unit {
+    if value.name() == "blip" {
+      embed = docx_attribute_any(value.element, "embed", "")
+    }
+    for child in value.children {
+      find_blip(child)
+    }
+  }
+  find_blip(container)
+  if embed == "" {
+    docx_text_unsupported("drawing without an embedded image")
+  }
+  items.push({ kind: "image", text: embed, clear: false, props, width, height, })
 }
 
 ///|
@@ -245,7 +315,10 @@ fn docx_text_run(
   }
   for child in node.children {
     let name = child.name()
-    if name != "rPr" && name != "t" && !child.children.is_empty() {
+    if name != "rPr" &&
+      name != "t" &&
+      name != "drawing" &&
+      !child.children.is_empty() {
       docx_text_unsupported(name)
     }
     match name {
@@ -275,6 +348,7 @@ fn docx_text_run(
       "cr" => docx_text_push(items, "break", "\n", props)
       "noBreakHyphen" => docx_text_chars(items, "\u2011", props)
       "softHyphen" | "lastRenderedPageBreak" => ()
+      "drawing" => docx_text_drawing(child, items, props)
       other => docx_text_unsupported(other)
     }
   }
@@ -350,6 +424,56 @@ fn DocxTextWalker::blocks(
           self.section_index += 1
         }
       }
+      "tbl" => {
+        let grid : Array[Double] = []
+        match child.child("tblGrid") {
+          Some(value) =>
+            for column in value.children {
+              if column.name() == "gridCol" {
+                grid.push(
+                  docx_measure(docx_attribute(column.element, "w", ""), 0.0),
+                )
+              }
+            }
+          None => ()
+        }
+        for row in child.children {
+          if row.name() != "tr" {
+            continue
+          }
+          let items : Array[DocxTextItem] = []
+          let mut first = true
+          for cell in row.children {
+            if cell.name() != "tc" {
+              continue
+            }
+            if !first {
+              docx_text_push(items, "tab", "\t", docx_default_run_props())
+            }
+            first = false
+            for part in cell.children {
+              if part.name() == "p" {
+                docx_text_inlines(part, items, self.styles, "")
+              } else if part.name() == "tbl" {
+                docx_text_unsupported("nested table")
+              }
+            }
+          }
+          docx_text_push(items, "break", "\n", docx_default_run_props())
+          let props = docx_default_paragraph_props()
+          let mut position = 0.0
+          for width in grid {
+            position += width
+            props.tabs.push({ position, alignment: "left", leader: "none", })
+          }
+          self.paragraphs.push({
+            props,
+            mark: docx_default_run_props(),
+            items,
+            section_index: self.section_index,
+          })
+        }
+      }
       "sdt" => {
         let mut seen_content = false
         for sub in child.children {
@@ -381,7 +505,7 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     Some(rel) => rel.target
     None => "word/document.xml"
   }
-  for typ in ["/numbering", "/settings", "/footnotes", "/endnotes"] {
+  for typ in ["/settings", "/footnotes", "/endnotes"] {
     if package.relationship_of_type(part, typ) is Some(_) {
       docx_text_unsupported(typ)
     }
@@ -419,5 +543,17 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
   if part != section_part || walker.section_index >= sections.length() {
     raise InvalidDocx("inconsistent DOCX sections")
   }
+  let numbering = match package.relationship_of_type(part, "/numbering") {
+    Some(rel) => {
+      if rel.external {
+        docx_text_unsupported("external numbering")
+      }
+      docx_numbering_from_xml(
+        @utf8.decode_lossy(package.read(rel.target)[:], ignore_bom=true),
+      )
+    }
+    None => docx_numbering_empty()
+  }
+  docx_apply_numbering(walker.paragraphs, numbering)
   { part, sections, paragraphs: walker.paragraphs, }
 }

@@ -65,16 +65,6 @@ fn pdf_graphics_document_full(
     _ => ()
   }
   let catalog = file.page_deref(file.trailer_entry(b"Root"))
-  match pdf_dict_get(catalog, b"OCProperties") {
-    Some(value) if value != PdfNull =>
-      raise InvalidStream("PDF optional content is not supported yet")
-    _ => ()
-  }
-  match pdf_dict_get(catalog, b"StructTreeRoot") {
-    Some(value) if value != PdfNull =>
-      raise InvalidStream("PDF tagged structure is not supported yet")
-    _ => ()
-  }
   let (pages, left) = file.page_leaves()
   if left != 0 {
     raise InvalidStream("PDF page tree has omitted repetitions")
@@ -109,13 +99,20 @@ fn pdf_graphics_document_full(
   let bodies : Array[Int32] = []
   let geometry : Array[PdfPageGeometry] = []
   for page in pages {
-    let (page_geometry, object, children, font_ids, images) = file.graphics_page_parts(
+    let (page_geometry, object, children, font_ids, images, fonts) = file.graphics_page_parts(
       page, box,
     )
     for image in images {
       ignore(
         writer.add_part("img", image) catch {
           _ => raise InvalidStream("PDF image output failed")
+        },
+      )
+    }
+    for font in fonts {
+      ignore(
+        writer.add_part("font", font) catch {
+          _ => raise InvalidStream("PDF font output failed")
         },
       )
     }

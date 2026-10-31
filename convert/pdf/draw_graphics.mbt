@@ -67,6 +67,21 @@ fn PdfGraphics::end_path(
 }
 
 ///|
+fn PdfGraphics::store_font(
+  self : PdfGraphics,
+  data : Bytes,
+) -> String raise PdfStreamError {
+  let hash = self.child_writer.add_part("font", data) catch {
+    _ => raise InvalidStream("PDF font output failed")
+  }
+  if !self.font_hashes.contains(hash) {
+    self.font_hashes[hash] = true
+    self.font_parts.push(data)
+  }
+  hash
+}
+
+///|
 fn PdfGraphics::store_image(
   self : PdfGraphics,
   data : Bytes,
@@ -237,17 +252,41 @@ fn PdfGraphics::draw_image_xobject(
       Some(value) => value
       None => raise InvalidStream("PDF image color space is missing")
     }
-    let mask = match soft_mask {
-      Some(value) => pdf_load_soft_mask(file, value)
+    let rgb = pdf_image_rgb_samples(width, height, space, data)
+    let rgba = pdf_image_rgba_from_rgb(width, height, rgb)
+    let masked = match soft_mask {
+      Some(value) =>
+        pdf_apply_image_mask(
+          rgba,
+          width,
+          height,
+          pdf_load_soft_mask(file, value),
+        )
       None =>
         match stencil_mask {
-          Some(value) => pdf_load_stencil_mask(file, value)
+          Some(PdfArray(values)) => {
+            let key : Array[Double] = []
+            for value in values {
+              match file.page_num(Some(value)) {
+                Some(number) => key.push(number)
+                None => raise InvalidStream("invalid PDF colour key mask")
+              }
+            }
+            pdf_apply_image_alpha(
+              rgba,
+              pdf_color_key_alpha(width, height, space, data, key),
+            )
+          }
+          Some(value) =>
+            pdf_apply_image_mask(
+              rgba,
+              width,
+              height,
+              pdf_load_stencil_mask(file, value),
+            )
           None => raise InvalidStream("PDF image mask is missing")
         }
     }
-    let rgb = pdf_image_rgb_samples(width, height, space, data)
-    let rgba = pdf_image_rgba_from_rgb(width, height, rgb)
-    let masked = pdf_apply_image_mask(rgba, width, height, mask)
     self.emit_image(pdf_png_encode_rgba(width, height, masked))
   } else {
     self.draw_image_data(
@@ -289,12 +328,56 @@ fn PdfGraphics::draw_form_xobject(
   if self.form_depth >= 16 {
     raise InvalidStream("PDF form XObject nesting limit")
   }
-  match file.page_deref(pdf_dict_get(dict, b"Group")) {
-    PdfNull => ()
-    _ => raise InvalidStream("PDF form transparency groups are not supported")
+  let group = match file.page_deref(pdf_dict_get(dict, b"Group")) {
+    PdfNull => None
+    PdfDict(_) => Some(file.page_deref(pdf_dict_get(dict, b"Group")))
+    _ => raise InvalidStream("invalid PDF form group")
+  }
+  let group_style = match group {
+    Some(value) => {
+      match file.page_deref(pdf_dict_get(value, b"S")) {
+        PdfName(b"Transparency") => ()
+        _ => raise InvalidStream("unsupported PDF form group")
+      }
+      let alpha = match file.page_num(pdf_dict_get(value, b"ca")) {
+        Some(number) => Double::min(1.0, Double::max(0.0, number))
+        None => 1.0
+      }
+      let blend = match file.page_deref(pdf_dict_get(value, b"BM")) {
+        PdfName(name) => pdf_blend_mode(name)
+        PdfArray(values) if !values.is_empty() =>
+          match file.page_deref(Some(values[0])) {
+            PdfName(name) => pdf_blend_mode(name)
+            _ => 0
+          }
+        _ => 0
+      }
+      Some((alpha, blend))
+    }
+    None => None
   }
   let matrix = pdf_form_numbers(file, dict, b"Matrix", 6)
   let bbox = pdf_form_numbers(file, dict, b"BBox", 4)
+  let identity = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+  let placed_matrix = match matrix {
+    Some(values) =>
+      (values[0], values[1], values[2], values[3], values[4], values[5])
+    None => identity
+  }
+  let group_bounds = match group_style {
+    Some(_) =>
+      match bbox {
+        Some(values) =>
+          Some(
+            pdf_transform_rect(
+              placed_matrix,
+              (values[0], values[1], values[2], values[3]),
+            ),
+          )
+        None => None
+      }
+    None => None
+  }
   let old_resources = self.resources
   match pdf_dict_get(dict, b"Resources") {
     Some(value) => self.resources = Some(file.page_deref(Some(value)))
@@ -307,6 +390,21 @@ fn PdfGraphics::draw_form_xobject(
   self.form_depth += 1
   let depth = self.stack.length()
   self.save()
+  let mut grouped = false
+  match (group_style, group_bounds) {
+    (Some((alpha, blend)), Some((x, y, width, height))) => {
+      self.object.group_begin(
+        Float::from_double(alpha),
+        blend,
+        Float::from_double(x),
+        Float::from_double(y),
+        Float::from_double(width),
+        Float::from_double(height),
+      )
+      grouped = true
+    }
+    _ => ()
+  }
   match matrix {
     Some(values) =>
       self.transform(
@@ -333,6 +431,9 @@ fn PdfGraphics::draw_form_xobject(
   self.finish_text()
   while self.stack.length() > depth + 1 {
     self.restore()
+  }
+  if grouped {
+    self.object.group_end()
   }
   self.restore()
 }
@@ -384,6 +485,27 @@ fn PdfGraphics::execute(
   operator : Bytes,
   args : Array[ContentValue],
 ) -> Unit raise PdfStreamError {
+  match operator {
+    b"BDC" => {
+      let count = args.length()
+      if count >= 2 && !self.property_visible(args[count - 1]) {
+        self.hidden += 1
+      }
+      return
+    }
+    b"BMC" => return
+    b"EMC" => {
+      if self.hidden > 0 {
+        self.hidden -= 1
+      }
+      return
+    }
+    b"MP" | b"DP" => return
+    _ => ()
+  }
+  if self.hidden > 0 {
+    return
+  }
   if self.text_operator(operator, args) {
     return
   }
@@ -692,15 +814,17 @@ fn PdfFile::graphics_page_parts(
   self : PdfFile,
   page : PdfPageLeaf,
   which : String,
-) -> (PdfPageGeometry, Bytes, Array[Bytes], Array[String], Array[Bytes]) raise PdfStreamError {
+) -> (
+  PdfPageGeometry,
+  Bytes,
+  Array[Bytes],
+  Array[String],
+  Array[Bytes],
+  Array[Bytes],
+) raise PdfStreamError {
   match page.error {
     Some(message) => raise InvalidStream(message)
     None => ()
-  }
-  match self.page_deref(pdf_dict_get(page.dict, b"Annots")) {
-    PdfArray(values) if !values.is_empty() =>
-      raise InvalidStream("PDF annotations are not supported yet")
-    _ => ()
   }
   let geometry = self.page_geometry(page, which)
   let content = self.page_content(page.dict)
@@ -710,8 +834,10 @@ fn PdfFile::graphics_page_parts(
     geometry.matrix,
     file=Some(self),
     resources=page.attrs.resources,
+    optional_content=pdf_optional_content(self),
   )
   graphics.run(content)
+  graphics.draw_annotations(page.dict, geometry.matrix)
   let encoded = graphics.object.encode() catch {
     _ => raise InvalidStream("PDF graphics output failed")
   }
@@ -730,7 +856,14 @@ fn PdfFile::graphics_page_parts(
     }
     identities[index] = identity
   }
-  (geometry, encoded, graphics.children, identities, graphics.images)
+  (
+    geometry,
+    encoded,
+    graphics.children,
+    identities,
+    graphics.images,
+    graphics.font_parts,
+  )
 }
 
 ///|
@@ -739,10 +872,10 @@ fn PdfFile::graphics_page(
   page : PdfPageLeaf,
   which : String,
 ) -> (PdfPageGeometry, Bytes) raise PdfStreamError {
-  let (geometry, encoded, children, _, images) = self.graphics_page_parts(
+  let (geometry, encoded, children, _, images, fonts) = self.graphics_page_parts(
     page, which,
   )
-  if !children.is_empty() || !images.is_empty() {
+  if !children.is_empty() || !images.is_empty() || !fonts.is_empty() {
     raise InvalidStream(
       "PDF page contains child objects and requires document context",
     )

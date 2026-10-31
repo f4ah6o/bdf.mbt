@@ -10,8 +10,9 @@ go run ./cmd/bdf generate -q site/demo/demo.pdf upstream-demo.bdf
 
 The checked-in sample has SHA-256
 `e1cab46517eb3f0b1a4f2aeb4a5d0037e99161c4a1b77017f0c0903439608deb`.
-The PDF is converted ahead of time. Rendering and CSV, XLSX, image, and font
-specimen conversion in the demo use the
+The 20-page sample is converted ahead of time; the demo also converts a small PDF
+in the browser. Rendering and CSV, XLSX, DOCX, PPTX, image, font specimen and PDF conversion
+in the demo use the
 MoonBit JavaScript target, without a Go or WebAssembly runtime. Files chosen
 by the user are handled in the browser. The sample contains Liberation fonts
 ([OFL](licenses/Liberation.txt)), IPA Gothic ([IPA Font License](licenses/IPA.txt)),
@@ -36,12 +37,12 @@ python3 -m http.server --directory _build/pages 8000
 
 The test serves the site under `/bdf.mbt/`, exercises all sample pages and the
 converter page, search, navigation, downloading, CSV and SVG conversion, TTF
-and WOFF2 font specimens, view selection and saving, unsupported files, XLSX
-input, and mobile layout. An XLSX fixture is also rendered in Chromium
-and each sheet is compared pixel-for-pixel with its upstream Go-generated BDF
-using the same viewer. This checks that fixture, not every Excel feature.
-The test requires Playwright Chromium. Run the `vlmkit` gates against the
-served URL for markup and accessibility checks.
+and WOFF2 font specimens, PDF, DOCX and PPTX conversion, view selection and
+saving, unsupported files, XLSX input, and mobile layout. An XLSX fixture is
+also rendered in Chromium and each sheet is compared pixel-for-pixel with its
+upstream Go-generated BDF using the same viewer. This checks that fixture, not
+every Excel feature. The test requires Playwright Chromium. Run the `vlmkit`
+gates against the served URL for markup and accessibility checks.
 
 The `Demo pages` workflow builds and tests the site on pull requests, pushes to
 `main`, and manual runs. It deploys only from `main` if the repository's Pages source is already

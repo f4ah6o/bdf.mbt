@@ -1,5 +1,8 @@
 # PDF compatibility fixtures
 
+`convert/pdf` exposes `detect` and `convert`, and the native converter Worker
+advertises the `pdf` format. The fixtures below exercise the internal path.
+
 The content-stream lexer fixtures compare token types, byte values, numeric
 values, malformed-input recovery, nesting and inline-image boundaries with the
 upstream Go PDF converter. The lexer is an internal building block; it does not
@@ -101,9 +104,8 @@ stencil `/Mask` or 8-bit grayscale `/SMask` attachments supply image alpha.
 They check the image part bytes, the page object's image resource, PNG
 dimensions, colour type and decoded scanlines. Upstream may re-encode sample
 images as WebP or AVIF, so these tests do not claim byte parity with its image
-payloads; the pixels are equivalent. Colour-key masks, encoded images with
-masks, `Decode` arrays on colour images, JPX, JBIG2, CCITT and form
-transparency groups are rejected by this internal path. Form XObjects are
+payloads; the pixels are equivalent. Encoded images with masks, `Decode` arrays on colour images, JPX, JBIG2, CCITT
+and form transparency groups are rejected by this internal path. Form XObjects are
 executed with their own resources, `/Matrix` and `/BBox` clip.
 
 The shading tests build synthetic PDFs with axial and radial shadings. They
@@ -112,6 +114,28 @@ that stitching functions are sampled. Function-based shading types that are not
 ported yet fall back to a flat colour sampled at the domain midpoint. Shading
 patterns are checked through a `/Pattern` colour space and path fill; tiling
 patterns are rejected.
+
+The embedded-font tests build synthetic PDFs whose font descriptor carries a
+TrueType `/FontFile2` stream. They check that the font part bytes are stored
+unchanged, that Flate-compressed programs are decoded, and that the page's font
+resource references the part hash. Type 1 `/FontFile` and bare CFF programs are
+rejected until their outline conversion is ported.
+
+The annotation test builds a page whose `/Annots` names a URI link. It checks
+that the page body contains a BDF link command with the annotation rectangle and
+target URL. Hidden and no-view annotations are skipped. Non-link annotations
+draw their normal `/AP` stream, mapped from the appearance BBox to the
+annotation rectangle. A state dictionary selects the `/AS` stream (falling back
+to the first state); form-field actions are not handled yet.
+
+The optional-content tests build a page with one OCG and a `/OC` marked-content
+sequence. They check that `/OFF` layers emit no fill and `/ON` layers do, and
+that a `/StructTreeRoot` no longer blocks visual conversion. Structure tags are
+not emitted as BDF semantic structure yet.
+
+The form test also checks a form XObject with a `/Group /S /Transparency`:
+the page body must contain one BDF group begin/end pair, with the group bounds
+taken from the form BBox and matrix.
 
 The text-state fixtures compare text matrix, line movement, spacing, scaling,
 leading, rise and rendering-mode operators against upstream before glyph

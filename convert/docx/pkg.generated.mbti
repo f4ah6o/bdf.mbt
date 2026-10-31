@@ -2,10 +2,22 @@
 package "f4ah6o/bdf/convert/docx"
 
 // Values
+pub fn convert(Bytes, title? : String) -> DocxResult raise
+
+pub fn detect(Bytes) -> Bool
 
 // Errors
+pub suberror DocxConvertError {
+  DocxInvalid(String)
+}
 
 // Types and methods
+pub(all) struct DocxResult {
+  bdf : Bytes
+  pages : Int32
+  summary : String
+  warnings : Array[String]
+}
 
 // Type aliases
 

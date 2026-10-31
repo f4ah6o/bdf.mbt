@@ -1,0 +1,38 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 300 200] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R /Annots [6 0 R] >>
+endobj
+4 0 obj
+<< /Length 70 >>
+stream
+BT /F1 24 Tf 20 120 Td (Hello PDF) Tj ET
+0.8 0 0 rg 20 40 100 40 re f
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Type /Annot /Subtype /Link /Rect [20 40 120 80] /A << /S /URI /URI (https://example.org/) >> >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000145 00000 n 
+0000000263 00000 n 
+0000000382 00000 n 
+0000000479 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+594
+%%EOF

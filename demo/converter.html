@@ -16,11 +16,11 @@
   <main>
     <section class="intro" aria-labelledby="intro-title">
       <div><p class="eyebrow">BDF CONVERTER</p><h1 id="intro-title">ファイルを BDF に変換</h1><p class="description">CSV・TSV、Excel（XLSX）、画像、フォントをブラウザ内で BDF に変換し、その場で表示・保存できます。<a href="./formats.html">対応形式の説明</a> · <a href="./coverage.html">Porting coverage</a></p></div>
-      <div class="intro-actions"><button id="open-file" class="button primary" type="button">ファイルを選ぶ</button><input id="file" hidden type="file" accept=".bdf,.csv,.tsv,.tab,.xlsx,.svg,.png,.jpg,.jpeg,.gif,.webp,.avif,.bmp,.ico,.ttf,.woff2"><button id="sample" class="button secondary" type="button">BDF サンプルを開く</button></div>
+      <div class="intro-actions"><button id="open-file" class="button primary" type="button">ファイルを選ぶ</button><input id="file" hidden type="file" accept=".bdf,.csv,.tsv,.tab,.xlsx,.svg,.png,.jpg,.jpeg,.gif,.webp,.avif,.bmp,.ico,.ttf,.woff2,.pdf"><button id="sample" class="button secondary" type="button">BDF サンプルを開く</button></div>
     </section>
     <section class="converter-samples" aria-label="変換サンプル">
       <p>サンプルを変換:</p>
-      <div class="converter-sample-links"><a href="#viewer" data-sample="csv">CSV</a><a href="#viewer" data-sample="xlsx">Excel</a><a href="#viewer" data-sample="xlsx-picture">画像入り Excel</a><a href="#viewer" data-sample="image">SVG 画像</a><a href="#viewer" data-sample="font">フォント</a></div>
+      <div class="converter-sample-links"><a href="#viewer" data-sample="csv">CSV</a><a href="#viewer" data-sample="xlsx">Excel</a><a href="#viewer" data-sample="xlsx-picture">画像入り Excel</a><a href="#viewer" data-sample="image">SVG 画像</a><a href="#viewer" data-sample="font">フォント</a><a href="#viewer" data-sample="pdf">PDF</a><a href="#viewer" data-sample="docx">Word</a><a href="#viewer" data-sample="pptx">PowerPoint</a></div>
     </section>
     <section id="viewer" class="viewer-card" aria-label="変換結果のビューア">
       <div class="viewer-top"><div><span class="live-dot" aria-hidden="true"></span><strong id="document-name">変換結果</strong><span id="document-meta" class="document-meta"></span></div><a id="download" class="download" download="document.bdf" hidden>BDF を保存 ↓</a></div>

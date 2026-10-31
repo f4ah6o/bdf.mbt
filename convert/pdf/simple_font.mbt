@@ -17,6 +17,7 @@ priv struct PdfSimpleFont {
   vertical_metrics : Map[Int64, (Double, Double, Double)]
   default_vertical : (Double, Double)
   collection : String
+  embedded : Bytes?
 }
 
 ///|
@@ -28,6 +29,66 @@ fn PdfFile::font_number(
   match self.page_num(object) {
     Some(value) => value
     None => default
+  }
+}
+
+///|
+fn PdfFile::embedded_font_stream(
+  self : PdfFile,
+  number : Int64,
+) -> Bytes raise PdfStreamError {
+  let loaded = self.load(number, 0)
+  let raw = match loaded.stream {
+    Some(value) => value
+    None => raise InvalidStream("embedded PDF font is not a stream")
+  }
+  let (data, codec) = pdf_decode_stream(
+    raw,
+    self.resolved_stream_filters(loaded.value),
+    268435456L,
+    false,
+    268435456L,
+  )
+  if codec is Some(_) {
+    raise InvalidStream("encoded embedded PDF fonts are not supported")
+  }
+  if data.length() < 4 {
+    raise InvalidStream("embedded PDF font is truncated")
+  }
+  let magic = [data[0], data[1], data[2], data[3]]
+  let supported = magic == [b'\x00', b'\x01', b'\x00', b'\x00'] ||
+    magic == [b'O', b'T', b'T', b'O'] ||
+    magic == [b't', b'r', b'u', b'e']
+  if !supported {
+    raise InvalidStream("unsupported embedded PDF font format")
+  }
+  data
+}
+
+///|
+fn PdfFile::embedded_font(
+  self : PdfFile,
+  desc : PdfObject,
+) -> Bytes? raise PdfStreamError {
+  match pdf_dict_get(desc, b"FontFile2") {
+    Some(PdfRef(number, _)) => return Some(self.embedded_font_stream(number))
+    Some(_) => raise InvalidStream("invalid PDF FontFile2")
+    None => ()
+  }
+  match pdf_dict_get(desc, b"FontFile3") {
+    Some(PdfRef(number, _)) => {
+      let loaded = self.load(number, 0)
+      match self.page_deref(pdf_dict_get(loaded.value, b"Subtype")) {
+        PdfName(b"OpenType") => return Some(self.embedded_font_stream(number))
+        _ => raise InvalidStream("unsupported embedded PDF font format")
+      }
+    }
+    Some(_) => raise InvalidStream("invalid PDF FontFile3")
+    None => ()
+  }
+  match pdf_dict_get(desc, b"FontFile") {
+    Some(_) => raise InvalidStream("unsupported embedded PDF font format")
+    None => None
   }
 }
 
@@ -98,17 +159,7 @@ fn PdfFile::simple_font(
       None => ""
     }
   }
-  for key in [b"FontFile2", b"FontFile3", b"FontFile"] {
-    match pdf_dict_get(desc, key) {
-      Some(PdfRef(number, _)) => {
-        let loaded : PdfLoaded? = Some(self.load(number, 0)) catch { _ => None }
-        if loaded is Some({ stream: Some(_), .. }) {
-          raise InvalidStream("embedded PDF fonts are not supported yet")
-        }
-      }
-      _ => ()
-    }
-  }
+  let embedded = self.embedded_font(desc)
   let base_name = match self.page_deref(pdf_dict_get(dict, b"BaseFont")) {
     PdfName(value) => @utf8.decode_lossy(value[:])
     _ => ""
@@ -238,6 +289,7 @@ fn PdfFile::simple_font(
     vertical_metrics,
     default_vertical,
     collection,
+    embedded,
   }
   match key {
     Some(value) => self.font_cache[value] = font
