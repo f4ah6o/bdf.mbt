@@ -200,11 +200,11 @@ try {
     return images;
   }
   const references = await sheetImages('upstream.xlsx.bdf', visualCase.bdf);
-  const converted = await sheetImages('comparison.xlsx', visualCase.input);
+  const convertedSheets = await sheetImages('comparison.xlsx', visualCase.input);
   for (let i = 0; i < references.length; i++) {
     const reference = references[i];
-    assert.deepEqual([converted[i].width, converted[i].height], [reference.width, reference.height], `XLSX sheet ${i + 1} reference dimensions`);
-    assert.deepEqual(converted[i].data, reference.data, `XLSX sheet ${i + 1} browser conversion matches upstream BDF rendering`);
+    assert.deepEqual([convertedSheets[i].width, convertedSheets[i].height], [reference.width, reference.height], `XLSX sheet ${i + 1} reference dimensions`);
+    assert.deepEqual(convertedSheets[i].data, reference.data, `XLSX sheet ${i + 1} browser conversion matches upstream BDF rendering`);
     for (let j = 0; j < i; j++) {
       assert.notDeepEqual(reference.data, references[j].data, `XLSX reference sheets ${j + 1} and ${i + 1} are visually distinct`);
     }
