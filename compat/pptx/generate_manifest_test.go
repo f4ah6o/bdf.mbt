@@ -39,10 +39,10 @@ func syntheticPPTX(t *testing.T) []byte {
 		{"custom/_rels/pres.xml.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="a" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/one.xml"/><Relationship Id="b" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/two.xml"/></Relationships>`},
 		{"custom/slides/_rels/one.xml.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="l1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../layouts/one.xml"/></Relationships>`},
 		{"custom/slides/_rels/two.xml.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="l1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../layouts/one.xml"/></Relationships>`},
-		{"custom/layouts/one.xml", `<p:sldLayout xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" showMasterSp="false"><p:clrMapOvr><p:overrideClrMapping accent1="accent3"/></p:clrMapOvr></p:sldLayout>`},
+		{"custom/layouts/one.xml", `<p:sldLayout xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" showMasterSp="false"><p:clrMapOvr><p:overrideClrMapping accent1="accent3"/></p:clrMapOvr><p:cSld><p:spTree><p:sp><p:nvSpPr><p:nvPr><p:ph type="ctrTitle" idx="1"/></p:nvPr></p:nvSpPr></p:sp></p:spTree></p:cSld></p:sldLayout>`},
 		{"custom/layouts/_rels/one.xml.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="m1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../masters/one.xml"/></Relationships>`},
-		{"custom/masters/one.xml", `<p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:clrMap bg1="lt1" tx1="dk1" accent1="accent2"/></p:sldMaster>`},
-		{"custom/slides/one.xml", `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:clrMapOvr><p:overrideClrMapping tx1="dk2"/></p:clrMapOvr></p:sld>`},
+		{"custom/masters/one.xml", `<p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:clrMap bg1="lt1" tx1="dk1" accent1="accent2"/><p:cSld><p:spTree><p:sp><p:nvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr></p:sp></p:spTree></p:cSld></p:sldMaster>`},
+		{"custom/slides/one.xml", `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:clrMapOvr><p:overrideClrMapping tx1="dk2"/></p:clrMapOvr><p:cSld><p:spTree><p:sp><p:nvSpPr><p:nvPr><p:ph type="title" idx="1"/></p:nvPr></p:nvSpPr></p:sp><p:sp><p:nvSpPr><p:nvPr><p:ph/></p:nvPr></p:nvSpPr></p:sp><p:sp><p:nvPicPr><p:nvPr><p:ph type="pic" idx="3"/></p:nvPr></p:nvPicPr><p:nvSpPr><p:nvPr><p:ph type="body" idx="4"/></p:nvPr></p:nvSpPr></p:sp><p:sp><p:nvSpPr/><p:nvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr></p:sp><p:sp><p:nvSpPr><p:nvPr/><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr></p:sp></p:spTree></p:cSld></p:sld>`},
 		{"custom/slides/two.xml", `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" show="off" showMasterSp="false"><p:clrMapOvr/><p:clrMapOvr><p:overrideClrMapping bg1="dk2"/></p:clrMapOvr></p:sld>`},
 	}
 	for _, f := range files {
@@ -105,6 +105,7 @@ func TestCodexPPTXManifest(t *testing.T) {
 		fmt.Fprintf(out, "///|\ntest \"PPTX presentation matches upstream Go %d\" {\n check_pptx_manifest(%q,%s,%q,%#.17g,%#.17g,%dL,[\n", idx, name, manifestChunks(z.Bytes()), part, w, h, first)
 		count := 0
 		var contexts []string
+		var placeholdersData []string
 		for _, slide := range root.Path("sldIdLst").Children("sldId") {
 			if r, ok := p.Target(part, slide.RelID("id")); ok {
 				sn, e := p.XML(r.Target)
@@ -145,6 +146,20 @@ func TestCodexPPTXManifest(t *testing.T) {
 				for _, key := range keys {
 					fmt.Fprintf(&colors, "(%q,%q),", key, colorMap[key])
 				}
+				var groups []string
+				for _, root := range []*ooxml.Node{sn, layout, master} {
+					var values []string
+					for _, shape := range placeholders(root) {
+						ph := phOf(shape)
+						index := "None"
+						if value, ok := ph.Attr("idx"); ok {
+							index = fmt.Sprintf("Some(%q)", value)
+						}
+						values = append(values, fmt.Sprintf("(%q,%s)", phType(ph), index))
+					}
+					groups = append(groups, "["+strings.Join(values, ",")+"]")
+				}
+				placeholdersData = append(placeholdersData, "("+strings.Join(groups, ",")+"),")
 				contexts = append(contexts, fmt.Sprintf("(%q,%q,%t,%t,[%s]),", layoutPart, masterPart, show && layout != nil, show && layout != nil && layout.AttrBool("showMasterSp", true) && master != nil, colors.String()))
 				count++
 			}
@@ -152,6 +167,10 @@ func TestCodexPPTXManifest(t *testing.T) {
 		fmt.Fprintln(out, "],[")
 		for _, context := range contexts {
 			fmt.Fprintln(out, context)
+		}
+		fmt.Fprintln(out, "],[")
+		for _, placeholders := range placeholdersData {
+			fmt.Fprintln(out, placeholders)
 		}
 		fmt.Fprintln(out, "])\n}")
 		t.Logf("%s: %d slides", name, count)

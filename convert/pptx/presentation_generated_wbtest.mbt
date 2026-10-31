@@ -184,6 +184,101 @@ test "PPTX presentation matches upstream Go 0" {
         ],
       ),
     ],
+    [
+      (
+        [("ctrTitle", None), ("subTitle", Some("1"))],
+        [
+          ("ctrTitle", None),
+          ("subTitle", Some("1")),
+          ("dt", Some("10")),
+          ("ftr", Some("11")),
+          ("sldNum", Some("12")),
+        ],
+        [
+          ("title", None),
+          ("body", Some("1")),
+          ("dt", Some("2")),
+          ("ftr", Some("3")),
+          ("sldNum", Some("4")),
+        ],
+      ),
+      (
+        [("title", None), ("obj", Some("1"))],
+        [
+          ("title", None),
+          ("obj", Some("1")),
+          ("dt", Some("10")),
+          ("ftr", Some("11")),
+          ("sldNum", Some("12")),
+        ],
+        [
+          ("title", None),
+          ("body", Some("1")),
+          ("dt", Some("2")),
+          ("ftr", Some("3")),
+          ("sldNum", Some("4")),
+        ],
+      ),
+      (
+        [("title", None)],
+        [
+          ("title", None),
+          ("dt", Some("10")),
+          ("ftr", Some("11")),
+          ("sldNum", Some("12")),
+        ],
+        [
+          ("title", None),
+          ("body", Some("1")),
+          ("dt", Some("2")),
+          ("ftr", Some("3")),
+          ("sldNum", Some("4")),
+        ],
+      ),
+      (
+        [],
+        [("dt", Some("10")), ("ftr", Some("11")), ("sldNum", Some("12"))],
+        [
+          ("title", None),
+          ("body", Some("1")),
+          ("dt", Some("2")),
+          ("ftr", Some("3")),
+          ("sldNum", Some("4")),
+        ],
+      ),
+      (
+        [("title", None)],
+        [
+          ("title", None),
+          ("dt", Some("10")),
+          ("ftr", Some("11")),
+          ("sldNum", Some("12")),
+        ],
+        [
+          ("title", None),
+          ("body", Some("1")),
+          ("dt", Some("2")),
+          ("ftr", Some("3")),
+          ("sldNum", Some("4")),
+        ],
+      ),
+      (
+        [("title", None)],
+        [
+          ("title", None),
+          ("dt", Some("10")),
+          ("ftr", Some("11")),
+          ("sldNum", Some("12")),
+        ],
+        [
+          ("title", None),
+          ("body", Some("1")),
+          ("dt", Some("2")),
+          ("ftr", Some("3")),
+          ("sldNum", Some("4")),
+        ],
+      ),
+    ],
   )
 }
 
@@ -369,6 +464,91 @@ test "PPTX presentation matches upstream Go 1" {
         ],
       ),
     ],
+    [
+      (
+        [("title", None), ("obj", Some("1"))],
+        [
+          ("title", None),
+          ("obj", Some("1")),
+          ("dt", Some("10")),
+          ("ftr", Some("11")),
+          ("sldNum", Some("12")),
+        ],
+        [
+          ("title", None),
+          ("body", Some("1")),
+          ("dt", Some("2")),
+          ("ftr", Some("3")),
+          ("sldNum", Some("4")),
+        ],
+      ),
+      (
+        [("title", None), ("obj", Some("1"))],
+        [
+          ("title", None),
+          ("obj", Some("1")),
+          ("dt", Some("10")),
+          ("ftr", Some("11")),
+          ("sldNum", Some("12")),
+        ],
+        [
+          ("title", None),
+          ("body", Some("1")),
+          ("dt", Some("2")),
+          ("ftr", Some("3")),
+          ("sldNum", Some("4")),
+        ],
+      ),
+      (
+        [("title", None)],
+        [
+          ("title", None),
+          ("dt", Some("10")),
+          ("ftr", Some("11")),
+          ("sldNum", Some("12")),
+        ],
+        [
+          ("title", None),
+          ("body", Some("1")),
+          ("dt", Some("2")),
+          ("ftr", Some("3")),
+          ("sldNum", Some("4")),
+        ],
+      ),
+      (
+        [("title", None), ("obj", Some("1"))],
+        [
+          ("title", None),
+          ("obj", Some("1")),
+          ("dt", Some("10")),
+          ("ftr", Some("11")),
+          ("sldNum", Some("12")),
+        ],
+        [
+          ("title", None),
+          ("body", Some("1")),
+          ("dt", Some("2")),
+          ("ftr", Some("3")),
+          ("sldNum", Some("4")),
+        ],
+      ),
+      (
+        [("title", None)],
+        [
+          ("title", None),
+          ("dt", Some("10")),
+          ("ftr", Some("11")),
+          ("sldNum", Some("12")),
+        ],
+        [
+          ("title", None),
+          ("body", Some("1")),
+          ("dt", Some("2")),
+          ("ftr", Some("3")),
+          ("sldNum", Some("4")),
+        ],
+      ),
+    ],
   )
 }
 
@@ -434,6 +614,19 @@ test "PPTX presentation matches upstream Go 2" {
           ("hlink", "hlink"),
           ("tx1", "dk1"),
           ("tx2", "dk2"),
+        ],
+      ),
+    ],
+    [
+      (
+        [],
+        [("dt", Some("10")), ("ftr", Some("11")), ("sldNum", Some("12"))],
+        [
+          ("title", None),
+          ("body", Some("1")),
+          ("dt", Some("2")),
+          ("ftr", Some("3")),
+          ("sldNum", Some("4")),
         ],
       ),
     ],
@@ -505,6 +698,19 @@ test "PPTX presentation matches upstream Go 3" {
         ],
       ),
     ],
+    [
+      (
+        [],
+        [("dt", Some("10")), ("ftr", Some("11")), ("sldNum", Some("12"))],
+        [
+          ("title", None),
+          ("body", Some("1")),
+          ("dt", Some("2")),
+          ("ftr", Some("3")),
+          ("sldNum", Some("4")),
+        ],
+      ),
+    ],
   )
 }
 
@@ -569,6 +775,19 @@ test "PPTX presentation matches upstream Go 4" {
           ("hlink", "hlink"),
           ("tx1", "dk1"),
           ("tx2", "dk2"),
+        ],
+      ),
+    ],
+    [
+      (
+        [],
+        [("dt", Some("10")), ("ftr", Some("11")), ("sldNum", Some("12"))],
+        [
+          ("title", None),
+          ("body", Some("1")),
+          ("dt", Some("2")),
+          ("ftr", Some("3")),
+          ("sldNum", Some("4")),
         ],
       ),
     ],
@@ -640,6 +859,24 @@ test "PPTX presentation matches upstream Go 5" {
         ],
       ),
     ],
+    [
+      (
+        [("title", None)],
+        [
+          ("title", None),
+          ("dt", Some("10")),
+          ("ftr", Some("11")),
+          ("sldNum", Some("12")),
+        ],
+        [
+          ("title", None),
+          ("body", Some("1")),
+          ("dt", Some("2")),
+          ("ftr", Some("3")),
+          ("sldNum", Some("4")),
+        ],
+      ),
+    ],
   )
 }
 
@@ -648,9 +885,9 @@ test "PPTX presentation matches upstream Go 6" {
   check_pptx_manifest(
     "synthetic.pptx",
     [
-      "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",
+      "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",
     ],
     "custom/pres.xml",
     720.00000000000000,
@@ -671,6 +908,14 @@ test "PPTX presentation matches upstream Go 6" {
         true,
         false,
         [("accent1", "accent3"), ("bg1", "lt1"), ("tx1", "dk2")],
+      ),
+    ],
+    [
+      ([], [("ctrTitle", Some("1"))], [("title", None)]),
+      (
+        [("title", Some("1")), ("obj", None), ("body", Some("4"))],
+        [("ctrTitle", Some("1"))],
+        [("title", None)],
       ),
     ],
   )

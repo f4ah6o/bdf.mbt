@@ -8,6 +8,13 @@ fn check_pptx_manifest(
   first_slide : Int64,
   slides : Array[(String, Bool)],
   contexts : Array[(String, String, Bool, Bool, Array[(String, String)])],
+  placeholders : Array[
+    (
+      Array[(String, String?)],
+      Array[(String, String?)],
+      Array[(String, String?)],
+    ),
+  ],
 ) -> Unit raise {
   let joined = StringBuilder()
   for chunk in chunks {
@@ -24,8 +31,30 @@ fn check_pptx_manifest(
   assert_eq(actual.slides.length(), slides.length(), msg=name)
   for i in 0..<slides.length() {
     let (slide_part, hidden) = slides[i]
+    let (slide_ph, layout_ph, master_ph) = placeholders[i]
+    let load_ph = fn(part : String) -> Array[(String, String?)] raise {
+      if part == "" {
+        return []
+      }
+      pptx_placeholders(package, part).map(fn(ph) { (ph.kind, ph.index) })
+    }
     let context = pptx_slide_context(package, slide_part)
     let (layout_part, master_part, draw_layout, draw_master, colors) = contexts[i]
+    assert_eq(
+      load_ph(slide_part),
+      slide_ph,
+      msg="\{name} slide placeholders \{i}",
+    )
+    assert_eq(
+      load_ph(layout_part),
+      layout_ph,
+      msg="\{name} layout placeholders \{i}",
+    )
+    assert_eq(
+      load_ph(master_part),
+      master_ph,
+      msg="\{name} master placeholders \{i}",
+    )
     assert_eq(context.color_map.length(), colors.length())
     for (key, value) in colors {
       let mut found = false
