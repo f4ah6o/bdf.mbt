@@ -8,6 +8,9 @@ fn check_pptx_manifest(
   first_slide : Int64,
   slides : Array[(String, Bool)],
   contexts : Array[(String, String, Bool, Bool, Array[(String, String)])],
+  shape_transforms : Array[
+    Array[(String, (Double, Double, Double, Double, Double, Bool, Bool)?)],
+  ],
   placeholders : Array[
     (
       Array[(String, String?)],
@@ -31,6 +34,17 @@ fn check_pptx_manifest(
   assert_eq(actual.slides.length(), slides.length(), msg=name)
   for i in 0..<slides.length() {
     let (slide_part, hidden) = slides[i]
+    let transforms = pptx_shape_transforms(package, slide_part).map(fn(shape) {
+      let value = match shape.transform {
+        Some(xf) =>
+          Some(
+            (xf.x, xf.y, xf.width, xf.height, xf.rotation, xf.flip_h, xf.flip_v),
+          )
+        None => None
+      }
+      (shape.kind, value)
+    })
+    assert_eq(transforms, shape_transforms[i])
     let (slide_ph, layout_ph, master_ph) = placeholders[i]
     let load_ph = fn(part : String) -> Array[(String, String?)] raise {
       if part == "" {

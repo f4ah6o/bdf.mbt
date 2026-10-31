@@ -11,6 +11,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/shibukawa/bdf/converter/internal/ooxml"
+	"github.com/shibukawa/bdf/converter/internal/ooxml/drawingml"
 	"os"
 	"path/filepath"
 	"sort"
@@ -42,7 +43,7 @@ func syntheticPPTX(t *testing.T) []byte {
 		{"custom/layouts/one.xml", `<p:sldLayout xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" showMasterSp="false"><p:clrMapOvr><p:overrideClrMapping accent1="accent3"/></p:clrMapOvr><p:cSld><p:spTree><p:sp><p:nvSpPr><p:nvPr><p:ph type="ctrTitle" idx="1"/></p:nvPr></p:nvSpPr></p:sp></p:spTree></p:cSld></p:sldLayout>`},
 		{"custom/layouts/_rels/one.xml.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="m1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../masters/one.xml"/></Relationships>`},
 		{"custom/masters/one.xml", `<p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:clrMap bg1="lt1" tx1="dk1" accent1="accent2"/><p:cSld><p:spTree><p:sp><p:nvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr></p:sp></p:spTree></p:cSld></p:sldMaster>`},
-		{"custom/slides/one.xml", `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:clrMapOvr><p:overrideClrMapping tx1="dk2"/></p:clrMapOvr><p:cSld><p:spTree><p:sp><p:nvSpPr><p:nvPr><p:ph type="title" idx="1"/></p:nvPr></p:nvSpPr></p:sp><p:sp><p:nvSpPr><p:nvPr><p:ph/></p:nvPr></p:nvSpPr></p:sp><p:sp><p:nvPicPr><p:nvPr><p:ph type="pic" idx="3"/></p:nvPr></p:nvPicPr><p:nvSpPr><p:nvPr><p:ph type="body" idx="4"/></p:nvPr></p:nvSpPr></p:sp><p:sp><p:nvSpPr/><p:nvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr></p:sp><p:sp><p:nvSpPr><p:nvPr/><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr></p:sp></p:spTree></p:cSld></p:sld>`},
+		{"custom/slides/one.xml", `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><p:clrMapOvr><p:overrideClrMapping tx1="dk2"/></p:clrMapOvr><p:cSld><p:spTree><p:sp><p:nvSpPr><p:nvPr><p:ph type="title" idx="1"/></p:nvPr></p:nvSpPr><p:spPr><p:xfrm rot="5400000" flipH="1"><p:off x="12700" y="25400"/><p:ext cx="127000" cy="254000"/></p:xfrm></p:spPr></p:sp><p:sp><p:nvSpPr><p:nvPr><p:ph/></p:nvPr></p:nvSpPr></p:sp><p:sp><p:nvPicPr><p:nvPr><p:ph type="pic" idx="3"/></p:nvPr></p:nvPicPr><p:nvSpPr><p:nvPr><p:ph type="body" idx="4"/></p:nvPr></p:nvSpPr></p:sp><mc:AlternateContent><mc:Choice Requires="x"><p:pic/></mc:Choice><mc:Fallback><p:sp><p:spPr><p:xfrm><p:off x="12700" y="25400"/></p:xfrm></p:spPr><p:nvSpPr><p:nvPr><p:ph type="body" idx="9"/></p:nvPr></p:nvSpPr></p:sp></mc:Fallback></mc:AlternateContent><mc:AlternateContent><mc:Choice Requires="x"><p:pic/></mc:Choice><mc:Choice Requires="y"><p:sp/></mc:Choice></mc:AlternateContent><p:AlternateContent/><p:sp><p:nvSpPr/><p:nvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr></p:sp><p:sp><p:nvSpPr><p:nvPr/><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr></p:sp></p:spTree></p:cSld></p:sld>`},
 		{"custom/slides/two.xml", `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" show="off" showMasterSp="false"><p:clrMapOvr/><p:clrMapOvr><p:overrideClrMapping bg1="dk2"/></p:clrMapOvr></p:sld>`},
 	}
 	for _, f := range files {
@@ -106,6 +107,7 @@ func TestCodexPPTXManifest(t *testing.T) {
 		count := 0
 		var contexts []string
 		var placeholdersData []string
+		var shapeTransforms []string
 		for _, slide := range root.Path("sldIdLst").Children("sldId") {
 			if r, ok := p.Target(part, slide.RelID("id")); ok {
 				sn, e := p.XML(r.Target)
@@ -146,6 +148,16 @@ func TestCodexPPTXManifest(t *testing.T) {
 				for _, key := range keys {
 					fmt.Fprintf(&colors, "(%q,%q),", key, colorMap[key])
 				}
+				var transforms []string
+				for _, shape := range sn.Path("cSld", "spTree").Elements() {
+					x, y, w, h, rot, fh, fv, ok := drawingml.CodexShapeTransform(shape)
+					xf := "None"
+					if ok {
+						xf = fmt.Sprintf("Some((%#.17g,%#.17g,%#.17g,%#.17g,%#.17g,%t,%t))", x, y, w, h, rot, fh, fv)
+					}
+					transforms = append(transforms, fmt.Sprintf("(%q,%s)", shape.Name, xf))
+				}
+				shapeTransforms = append(shapeTransforms, "["+strings.Join(transforms, ",")+"],")
 				var groups []string
 				for _, root := range []*ooxml.Node{sn, layout, master} {
 					var values []string
@@ -167,6 +179,10 @@ func TestCodexPPTXManifest(t *testing.T) {
 		fmt.Fprintln(out, "],[")
 		for _, context := range contexts {
 			fmt.Fprintln(out, context)
+		}
+		fmt.Fprintln(out, "],[")
+		for _, transforms := range shapeTransforms {
+			fmt.Fprintln(out, transforms)
 		}
 		fmt.Fprintln(out, "],[")
 		for _, placeholders := range placeholdersData {

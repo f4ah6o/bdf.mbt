@@ -185,6 +185,196 @@ test "PPTX presentation matches upstream Go 0" {
       ),
     ],
     [
+      [("nvGrpSpPr", None), ("grpSpPr", None), ("sp", None), ("sp", None)],
+      [("nvGrpSpPr", None), ("grpSpPr", None), ("sp", None), ("sp", None)],
+      [
+        ("nvGrpSpPr", None),
+        ("grpSpPr", None),
+        ("sp", None),
+        (
+          "sp",
+          Some(
+            (
+              28.800000000000001, 115.20000000000000, 136.80000000000001, 86.400000000000006,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              194.39992125984253, 115.20000000000000, 136.80000000000001, 86.400000000000006,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              360.00000000000000, 115.20000000000000, 136.80000000000001, 86.400000000000006,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              525.60000000000002, 115.20000000000000, 136.80000000000001, 86.400000000000006,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              28.800000000000001, 230.40000000000001, 136.80000000000001, 86.400000000000006,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              194.39992125984253, 230.40000000000001, 136.80000000000001, 86.400000000000006,
+              20.000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              360.00000000000000, 230.40000000000001, 136.80000000000001, 86.400000000000006,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              525.60000000000002, 230.40000000000001, 136.80000000000001, 86.400000000000006,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "cxnSp",
+          Some(
+            (
+              36.000000000000000, 360.00000000000000, 288.00000000000000, 100.80000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "grpSp",
+          Some(
+            (
+              374.39999999999998, 360.00000000000000, 216.00000000000000, 93.599999999999994,
+              10.000000000000000, false, false,
+            ),
+          ),
+        ),
+      ],
+      [
+        ("nvGrpSpPr", None),
+        ("grpSpPr", None),
+        (
+          "sp",
+          Some(
+            (
+              28.800000000000001, 21.600000000000001, 302.39999999999998, 72.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              28.800000000000001, 104.40000000000001, 302.39999999999998, 72.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              28.800000000000001, 187.19999999999999, 302.39999999999998, 72.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              28.800000000000001, 270.00000000000000, 302.39999999999998, 72.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              352.80000000000001, 21.600000000000001, 338.39999999999998, 172.80000000000001,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              604.79999999999995, 216.00000000000000, 86.400000000000006, 273.60000000000002,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              352.80000000000001, 216.00000000000000, 230.40000000000001, 100.80000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+      ],
+      [
+        ("nvGrpSpPr", None),
+        ("grpSpPr", None),
+        ("sp", None),
+        (
+          "pic",
+          Some(
+            (
+              36.000000000000000, 115.20000000000000, 230.40000000000001, 172.80000000000001,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "graphicFrame",
+          Some(
+            (
+              302.39999999999998, 115.20000000000000, 374.39999999999998, 144.00000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+      ],
+      [("nvGrpSpPr", None), ("grpSpPr", None), ("sp", None)],
+    ],
+    [
       (
         [("ctrTitle", None), ("subTitle", Some("1"))],
         [
@@ -465,6 +655,196 @@ test "PPTX presentation matches upstream Go 1" {
       ),
     ],
     [
+      [("nvGrpSpPr", None), ("grpSpPr", None), ("sp", None), ("sp", None)],
+      [("nvGrpSpPr", None), ("grpSpPr", None), ("sp", None), ("sp", None)],
+      [
+        ("nvGrpSpPr", None),
+        ("grpSpPr", None),
+        ("sp", None),
+        (
+          "graphicFrame",
+          Some(
+            (
+              28.800000000000001, 115.20000000000000, 302.39999999999998, 244.80000000000001,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "graphicFrame",
+          Some(
+            (
+              338.39999999999998, 115.20000000000000, 302.39999999999998, 244.80000000000001,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "graphicFrame",
+          Some(
+            (
+              648.00000000000000, 115.20000000000000, 288.00000000000000, 244.80000000000001,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "graphicFrame",
+          Some(
+            (
+              28.800000000000001, 367.19999999999999, 432.00000000000000, 129.59999999999999,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+      ],
+      [
+        ("nvGrpSpPr", None),
+        ("grpSpPr", None),
+        ("sp", None),
+        (
+          "sp",
+          Some(
+            (
+              64.000000000000000, 126.00000000000000, 612.00000000000000, 356.37503937007875,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              806.39999999999998, 115.20000000000000, 100.80000000000000, 360.00000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "graphicFrame",
+          Some(
+            (
+              57.600000000000001, 388.80000000000001, 432.00000000000000, 86.400000000000006,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+      ],
+      [
+        ("nvGrpSpPr", None),
+        ("grpSpPr", None),
+        ("sp", None),
+        (
+          "sp",
+          Some(
+            (
+              36.000000000000000, 122.40000000000001, 187.19999999999999, 115.20000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              252.00000000000000, 122.40000000000001, 187.19999999999999, 115.20000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "cxnSp",
+          Some(
+            (
+              475.19999999999999, 136.80000000000001, 216.00000000000000, 0.0000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "cxnSp",
+          Some(
+            (
+              475.19999999999999, 180.00000000000000, 216.00000000000000, 0.0000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "cxnSp",
+          Some(
+            (
+              475.19999999999999, 223.19992125984251, 216.00000000000000, 0.0000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              720.00000000000000, 144.00000000000000, 144.00000000000000, 72.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              36.000000000000000, 302.39999999999998, 129.59999999999999, 100.80000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              187.19999999999999, 302.39999999999998, 129.59999999999999, 100.80000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              338.39999999999998, 302.39999999999998, 129.59999999999999, 100.80000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              489.60000000000002, 302.39999999999998, 129.59999999999999, 100.80000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              640.79999999999995, 302.39999999999998, 129.59999999999999, 100.80000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              792.00000000000000, 302.39999999999998, 129.59999999999999, 100.80000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+      ],
+    ],
+    [
       (
         [("title", None), ("obj", Some("1"))],
         [
@@ -618,6 +998,129 @@ test "PPTX presentation matches upstream Go 2" {
       ),
     ],
     [
+      [
+        ("nvGrpSpPr", None),
+        ("grpSpPr", None),
+        (
+          "sp",
+          Some(
+            (
+              60.000000000000000, 30.000000000000000, 600.00000000000000, 44.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              500.00000000000000, 80.000000000000000, 160.00000000000000, 26.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              60.000000000000000, 110.00000000000000, 420.00000000000000, 26.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              60.000000000000000, 140.00000000000000, 420.00000000000000, 26.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              60.000000000000000, 170.00000000000000, 420.00000000000000, 26.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              60.000000000000000, 200.00000000000000, 420.00000000000000, 26.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              60.000000000000000, 236.00000000000000, 200.00000000000000, 34.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              280.00000000000000, 236.00000000000000, 200.00000000000000, 30.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              60.000000000000000, 400.00000000000000, 420.00000000000000, 50.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "pic",
+          Some(
+            (
+              500.00000000000000, 120.00000000000000, 80.000000000000000, 80.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "pic",
+          Some(
+            (
+              600.00000000000000, 120.00000000000000, 80.000000000000000, 80.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "pic",
+          Some(
+            (
+              500.00000000000000, 215.00000000000000, 80.000000000000000, 80.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "pic",
+          Some(
+            (
+              500.00000000000000, 310.00000000000000, 160.00000000000000, 50.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+      ],
+    ],
+    [
       (
         [],
         [("dt", Some("10")), ("ftr", Some("11")), ("sldNum", Some("12"))],
@@ -699,6 +1202,75 @@ test "PPTX presentation matches upstream Go 3" {
       ),
     ],
     [
+      [
+        ("nvGrpSpPr", None),
+        ("grpSpPr", None),
+        (
+          "sp",
+          Some(
+            (
+              110.00000000000000, 40.000000000000000, 300.00000000000000, 36.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              450.00000000000000, 46.000000000000000, 160.00000000000000, 26.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              110.00000000000000, 80.000000000000000, 300.00000000000000, 26.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              410.00000000000000, 80.000000000000000, 200.00000000000000, 26.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "graphicFrame",
+          Some(
+            (
+              110.00000000000000, 116.00000000000000, 500.00000000000000, 264.00000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              110.00000000000000, 392.00000000000000, 300.00000000000000, 26.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              410.00000000000000, 392.00000000000000, 200.00000000000000, 26.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+      ],
+    ],
+    [
       (
         [],
         [("dt", Some("10")), ("ftr", Some("11")), ("sldNum", Some("12"))],
@@ -777,6 +1349,57 @@ test "PPTX presentation matches upstream Go 4" {
           ("tx2", "dk2"),
         ],
       ),
+    ],
+    [
+      [
+        ("nvGrpSpPr", None),
+        ("grpSpPr", None),
+        (
+          "sp",
+          Some(
+            (
+              40.000000000000000, 24.000000000000000, 440.00000000000000, 36.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              40.000000000000000, 60.000000000000000, 440.00000000000000, 26.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              520.00000000000000, 30.000000000000000, 160.00000000000000, 26.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "graphicFrame",
+          Some(
+            (
+              40.000000000000000, 96.000000000000000, 640.00000000000000, 66.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              40.000000000000000, 496.00000000000000, 640.00000000000000, 26.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+      ],
     ],
     [
       (
@@ -860,6 +1483,66 @@ test "PPTX presentation matches upstream Go 5" {
       ),
     ],
     [
+      [
+        ("nvGrpSpPr", None),
+        ("grpSpPr", None),
+        (
+          "sp",
+          Some(
+            (
+              36.000000000000000, 14.400000000000000, 885.60000000000002, 72.000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              36.000000000000000, 93.599999999999994, 432.00000000000000, 93.599999999999994,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              489.60000000000002, 93.599999999999994, 424.80000000000001, 93.599999999999994,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              36.000000000000000, 208.80000000000001, 878.39999999999998, 86.400000000000006,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              36.000000000000000, 316.80000000000001, 432.00000000000000, 115.20000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        (
+          "sp",
+          Some(
+            (
+              489.60000000000002, 316.80000000000001, 424.80000000000001, 115.20000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+      ],
+    ],
+    [
       (
         [("title", None)],
         [
@@ -885,9 +1568,9 @@ test "PPTX presentation matches upstream Go 6" {
   check_pptx_manifest(
     "synthetic.pptx",
     [
-      "H4sIAAAAAAAA/9xWeVjSaxb+0BRcSjPD1HJJUdFUGJ1sxUoTTUNQ09Q0FddCATFTc6FVzVAz2pyc8lZMiku2YI3bVcruJaHNZcoNrDRtdXmI0dB5LmUZjs298+eF8/z++s77fO95z3nPh3dXnKcNYAAG5H9qAICd8REkmq3Nb99jgvULmlDqd4fZzpgNQWjUBc4iNashpZ+E6Vmrckl+ltVR1ln7pYMfJ7uL4se2HbXeffMqzaad2xdsm3UK3hfN8LFcO+DGvBhosobIGNSNavLu/DshT1ndMPLW+hT8wkxUvaWUeN++PLuiYCWrz9GmHq7ZfMUuWSPGTqe5NJwv0KW8+rCEyN0H8O5QmM/tnPEsAMAHAMDcBDQAAMQ9tARyrC0lPoJmkxRLCs8j7OKiNJ0rl4vBqaLHp45a7JQimZMv5pWuuKdWE1B8svHtYI6T1mMxWfi2RfAmx+qvMTxreybJl1VWkXQm0EoQwKD1XShiMv1YbpaZrKLWE3Uf0U+Deh39F5wRaXmRjSNKWt0uJYmzyzx8WSrElJO3KDx+u/OAwhoiAbXINxbbhE5b8UZ0e99+bv2qy8OxqR2JT5SxGopnhlYOq4gdnga5SdwNKg4RFo/GPBf3Hnxenc3OLO71vWurwSW+uD8o/cR9APDuUJjkFXTLHQAAFgLA3ArqfSvAZyGnyyAT9AYfXcpFqdNF7CXLjFTJSdznCO/TFQgd/DIE+qY1scS+Lq0Y72rsdDp3aiRjyjw3fOM1m+Irgd4tzxrDfCc122zPueojz3Vom5dke+iX2MFHdAp1M56JdV6LIdLOJ8vuLYB1UWw//bqdhUzCZDWYCTijWEZoOEWx7Wz5wSjLLf2RWxdSMh0zzlf/rTapa/yZo7JM2u5UlU8FAICwHzIz+saMRooJj6B9IUiOi/jK75igSrUJpdk87KeSTN+xh5LPOZEjNE3bnx/cKUToxPtF9wZTSoXC8fkN73sxx2tdBNfuLI90Z16+",
-      "nrPrtoLrdlQydQeKnG1W8St7VYWdtmFwussqB77S0KOr0tMx74hRg+H8qzqfsP0xRyHkpe2H/DOW0vFLh0V7g9sKGzt0b14XQNLMIIJXHGf4ODwX+bgBKhMuEXnR8zgA4B34f+gl7CX/GejBv9EjhSaT9yR8FW5H/tZd3A3qhyvD+gHh8SadZjGrsxB+Ti2rSkujJS/fp+N2GpWVX8AYg6f0Qoduta3KEJanBl6/fObmyx7ryC6FKzstig1UvXu8arXdolMs4pXgXrwj8C24hcG59xxcl1zbnYB0NCk97tFVo+aCcEjoGrcwGRmwdLoX6+9m2jJmEOHcn185P8XzKa6OLWprfNjozfek9vjzooxLY84nF0leLxDs7q61TyQOFTmshua8KESR69ZKQ18vW1eK9/9Afz9SozEpjZYsk9Vis8cn1C8AAPQPO9l4di3+Wyujc5tQmodF7O0YunnNXTjbdPF8pfk8JReBadWHpBUPjA53mhCUsg+IF/dOTFhF3DDdXO3T9vZczoJ0O/YU0HMIazU6yRMkH2+O1rtUjkf3UBCSt/90jMZy88istQ8ODhi+Z2Evk8P9T2kPmg4LfN5wIdE4uyA8o3DvIs5J0gdj0GCmhNROFBg0G+Qi12A+i+3sl3Sp4I+IHRtKS4iI/0rNI48Qx0XBjlSGUeleH0M1CEX6PoWtQfTVZdlHVK49Ynan82qj00RTCImjcJfTiUEX/u0j5VmcRq2WdyuNOOtoxYkBjD1WI1Xtm3pwu9MubIsrw9WXBcyzHRhVgwdoN7Pn+w8xVtQ6hikMwxqrz4SMH9O0iPLNU7GI8m0Ak8rv/sKYQIp9z9Z0stO7395M7GjrF/Y2q6RSResZ2EVTA1Ss1M28r2reeQODjM/WVA5lbCgDAEz+kO/iWbP7hS7zuOeuUZTm3cqwBLpHwfuLaqH7nuyJNqqjW24lEqS6LgepcTsPkLyeFZrpx8BH02sdKhFBB3azlng9ai3ZeMh+",
-      "Q5Wii/fKs6it6NqoXBee2ahuVlWIlgnmH0tCGroxG+0xJfWIWEVD9bpjXdWXRrNaekQ04UHjkcGuX268Zk78y+pVoIQT59kYFHE4WLcK1+HAMF8TXzTk6WSi04TLPk0vHY4bao2LbEfcGgyBlD9/t82gLoi6qUeAmZSODW/m6L20rrnvIZnCa0kUd5DHYFQVWINZXSa0Gh6KhLueFo4/gMj8rUjMY4gAAFSFP1ajL87mw0PHORmrg4dsI0MjnF3Chp8frx56uOhhCOYK3VofsTr9Mkn3/NiBJP276we29yM2dQau+6lbj08yhwc8WG35uqUTVwY9WvDoWfLeYJrwZerknbMTClEMw4W3fCntEiqf45ZhuonPhXlpZuin8EfS/FK9Vfv+jSute9jBdt2ZObEes5zZoBaiKmkn1DIKJj+3+c/2Kwj5AIB6mewQBW3wjdTMh4iaHMnvXk/yiTMXuMb0eVk0zn61yCfP3JF603myaIL8aOPL48x0a6NpCFmcU5AXaLYp/X60fYr/e53Jo810T/g0kOwfMG+WY365ljzGTIMynk6XRaTS73BdebiZ8//9lbDKc3mcPMbM+Vg8nS4LB6h8keaAmNmP30MEwuYYK7y7kvJvB1SBKqhWAMBGBQAA/jMAYSKNJPsLAAA=",
+      "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",
     ],
     "custom/pres.xml",
     720.00000000000000,
@@ -911,9 +1594,43 @@ test "PPTX presentation matches upstream Go 6" {
       ),
     ],
     [
+      [],
+      [
+        (
+          "sp",
+          Some(
+            (
+              1.0000000000000000, 2.0000000000000000, 10.000000000000000, 20.000000000000000,
+              90.000000000000000, true, false,
+            ),
+          ),
+        ),
+        ("sp", None),
+        ("sp", None),
+        (
+          "sp",
+          Some(
+            (
+              1.0000000000000000, 2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+              0.0000000000000000, false, false,
+            ),
+          ),
+        ),
+        ("pic", None),
+        ("AlternateContent", None),
+        ("sp", None),
+        ("sp", None),
+      ],
+    ],
+    [
       ([], [("ctrTitle", Some("1"))], [("title", None)]),
       (
-        [("title", Some("1")), ("obj", None), ("body", Some("4"))],
+        [
+          ("title", Some("1")),
+          ("obj", None),
+          ("body", Some("4")),
+          ("body", Some("9")),
+        ],
         [("ctrTitle", Some("1"))],
         [("title", None)],
       ),

@@ -32,53 +32,73 @@ fn pptx_bool(
 }
 
 ///|
-fn pptx_transform(content : String) -> PptxTransform? raise {
-  if content.contains("<!ENTITY") {
-    raise InvalidPptx("OOXML part declares entities")
-  }
-  let reader = @xml.NamespaceReader::from_string(content)
-  let mut depth = 0
-  let mut have_root = false
-  let mut seen_off = false
-  let mut seen_ext = false
-  let mut x = 0.0
-  let mut y = 0.0
-  let mut width = 0.0
-  let mut height = 0.0
-  let mut rotation = 0.0
-  let mut flip_h = false
-  let mut flip_v = false
-  while true {
-    let event = reader.read_event()
-    match event.kind {
-      Start(element) | Empty(element) => {
-        if depth == 0 && !have_root {
-          have_root = true
-          rotation = pptx_int64(pptx_attribute(element, "rot", ""), 0L).to_double() /
-            60000.0
-          flip_h = pptx_bool(element, "flipH", false)
-          flip_v = pptx_bool(element, "flipV", false)
-        } else if depth == 1 && element.name.local_name == "off" && !seen_off {
-          seen_off = true
-          x = pptx_measure(pptx_attribute(element, "x", ""), 0.0)
-          y = pptx_measure(pptx_attribute(element, "y", ""), 0.0)
-        } else if depth == 1 && element.name.local_name == "ext" && !seen_ext {
-          seen_ext = true
-          width = pptx_measure(pptx_attribute(element, "cx", ""), 0.0)
-          height = pptx_measure(pptx_attribute(element, "cy", ""), 0.0)
-        }
-        if event.kind is Start(_) {
-          depth += 1
-        }
+fn pptx_transform_node(node : PptxXmlNode?) -> PptxTransform? {
+  match node {
+    Some(value) => {
+      let off = pptx_child(Some(value), "off")
+      let ext = pptx_child(Some(value), "ext")
+      if off is None && ext is None {
+        return None
       }
-      End(_) => depth -= 1
-      Eof => break
-      _ => ()
+      let (x, y) = match off {
+        Some(n) =>
+          (
+            pptx_measure(pptx_attribute(n.element, "x", ""), 0.0),
+            pptx_measure(pptx_attribute(n.element, "y", ""), 0.0),
+          )
+        None => (0.0, 0.0)
+      }
+      let (width, height) = match ext {
+        Some(n) =>
+          (
+            pptx_measure(pptx_attribute(n.element, "cx", ""), 0.0),
+            pptx_measure(pptx_attribute(n.element, "cy", ""), 0.0),
+          )
+        None => (0.0, 0.0)
+      }
+      Some({
+        x,
+        y,
+        width,
+        height,
+        rotation: pptx_int64(pptx_attribute(value.element, "rot", ""), 0L).to_double() /
+        60000.0,
+        flip_h: pptx_bool(value.element, "flipH", false),
+        flip_v: pptx_bool(value.element, "flipV", false),
+      })
     }
+    None => None
   }
-  if !have_root || (!seen_off && !seen_ext) {
-    None
-  } else {
-    Some({ x, y, width, height, rotation, flip_h, flip_v, })
+}
+
+///|
+fn pptx_transform(content : String) -> PptxTransform? raise {
+  pptx_transform_node(Some(pptx_parse_xml(content)))
+}
+
+///|
+priv struct PptxShapeTransform {
+  kind : String
+  transform : PptxTransform?
+} derive(Debug, Eq)
+
+///|
+fn pptx_shape_transforms(
+  package : @ooxml.OoxmlPackage,
+  part : String,
+) -> Array[PptxShapeTransform] raise {
+  let root = pptx_read_xml(package, part)
+  let tree = pptx_child(pptx_child(Some(root), "cSld"), "spTree")
+  let output : Array[PptxShapeTransform] = []
+  for shape in pptx_children(tree) {
+    let kind = shape.element.name.local_name
+    let transform = if kind == "graphicFrame" {
+      pptx_child(Some(shape), "xfrm")
+    } else {
+      let container = if kind == "grpSp" { "grpSpPr" } else { "spPr" }
+      pptx_child(pptx_child(Some(shape), container), "xfrm")
+    }
+    output.push({ kind, transform: pptx_transform_node(transform), })
   }
+  output
 }

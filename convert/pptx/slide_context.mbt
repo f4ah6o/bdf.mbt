@@ -14,66 +14,23 @@ fn pptx_read_slide_source(
   part : String,
   master : Bool,
 ) -> (Bool, Array[(String, String)]) raise {
-  let bytes = package.read(part)
-  let content = @utf8.decode_lossy(bytes[:], ignore_bom=true)
-  if content.contains("<!ENTITY") {
-    raise InvalidPptx("OOXML part declares entities")
+  let root = pptx_read_xml(package, part)
+  let value = pptx_trim(pptx_attribute(root.element, "showMasterSp", ""))
+  let show = value != "0" && value != "false" && value != "off"
+  let source = if master {
+    pptx_child(Some(root), "clrMap")
+  } else {
+    pptx_child(pptx_child(Some(root), "clrMapOvr"), "overrideClrMapping")
   }
-  let reader = @xml.NamespaceReader::from_string(content)
-  let mut root = false
-  let mut result = true
-  let path : Array[String] = []
   let colors : Array[(String, String)] = []
-  let mut found = false
-  let mut parent_seen = false
-  let mut parent_depth = -1
-  while true {
-    let event = reader.read_event()
-    match event.kind {
-      Start(element) | Empty(element) => {
-        let name = element.name.local_name
-        if !root {
-          root = true
-          let value = pptx_trim(pptx_attribute(element, "showMasterSp", ""))
-          if value == "0" || value == "false" || value == "off" {
-            result = false
-          }
-        }
-        if !master && path.length() == 1 && name == "clrMapOvr" {
-          if !parent_seen && event.kind is Start(_) {
-            parent_depth = 2
-          }
-          parent_seen = true
-        }
-        let selected = if master {
-          path.length() == 1 && name == "clrMap"
-        } else {
-          path.length() == parent_depth && name == "overrideClrMapping"
-        }
-        if selected && !found {
-          found = true
-          for attr in element.attributes {
-            colors.push((attr.name.local_name, attr.value))
-          }
-        }
-        if event.kind is Start(_) {
-          path.push(name)
-        }
+  match source {
+    Some(node) =>
+      for attr in node.element.attributes {
+        colors.push((attr.name.local_name, attr.value))
       }
-      End(_) => {
-        if path.length() == parent_depth {
-          parent_depth = -1
-        }
-        ignore(path.pop())
-      }
-      Eof => break
-      _ => ()
-    }
+    None => ()
   }
-  if !root {
-    raise InvalidPptx("empty slide XML")
-  }
-  (result, colors)
+  (show, colors)
 }
 
 ///|

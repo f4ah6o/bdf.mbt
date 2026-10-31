@@ -1,14 +1,23 @@
 # PPTX compatibility fixtures
 
-These fixtures compare presentation-part discovery, slide order, visibility,
-slide dimensions and first-slide numbering with the upstream Go converter.
-They use six upstream `converter/pptx/testdata` presentations and a generated
-package with a custom main part, strict relationship namespace, hidden slide,
-missing relationship and universal-measure units. To regenerate, copy
-`generate_manifest_test.go` without its build tag into upstream `converter/pptx`,
-set `BDF_PPTX_FIXTURES` to its testdata directory and `BDF_REFERENCE_OUTPUT`
-to the generated MoonBit test file, and run `TestCodexPPTXManifest`. Run
-`moon fmt convert/pptx` afterward. Both JavaScript and wasm-gc execute the
-same expectations.
+The fixtures compare presentation discovery, slide order and visibility, layout
+and master relationships, color mappings, placeholders, and shape transforms
+with the upstream Go converter. They use six upstream presentations and a
+synthetic package covering strict namespaces, missing relationships, universal
+measures, duplicate elements, and markup-compatibility alternatives.
 
-The presentation reader is an internal building block, not a PPTX converter.
+To regenerate `presentation_generated_wbtest.mbt`, overlay
+`generate_manifest_test.go` without its build tag in upstream `converter/pptx`
+and `drawingml_transform_export.go` without its build tag in upstream
+`converter/internal/ooxml/drawingml`. Set `BDF_PPTX_FIXTURES` to the upstream
+PPTX testdata directory and `BDF_REFERENCE_OUTPUT` to the output file, then run
+`TestCodexPPTXManifest` with `-count=1`.
+
+To regenerate the other fixtures, overlay `generate_placeholders_test.go` in
+`converter/pptx` or `generate_transforms_test.go` in
+`converter/internal/ooxml/drawingml`, set `BDF_REFERENCE_OUTPUT`, and run the
+corresponding `TestCodexPPTXPlaceholders` or `TestCodexPPTXTransforms` with
+`-count=1`. Strip the build tag from each overlay. Run `moon fmt convert/pptx`
+afterward; JavaScript and wasm-gc execute the same expectations.
+
+These readers are internal building blocks, not a PPTX converter.
