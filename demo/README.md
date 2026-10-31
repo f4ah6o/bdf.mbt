@@ -11,7 +11,7 @@ go run ./cmd/bdf generate -q site/demo/demo.pdf upstream-demo.bdf
 The checked-in sample has SHA-256
 `e1cab46517eb3f0b1a4f2aeb4a5d0037e99161c4a1b77017f0c0903439608deb`.
 The 20-page sample is converted ahead of time; the demo also converts a small PDF
-in the browser. Rendering and CSV, XLSX, image, font specimen and PDF conversion
+in the browser. Rendering and CSV, XLSX, DOCX, image, font specimen and PDF conversion
 in the demo use the
 MoonBit JavaScript target, without a Go or WebAssembly runtime. Files chosen
 by the user are handled in the browser. The sample contains Liberation fonts
@@ -37,7 +37,7 @@ python3 -m http.server --directory _build/pages 8000
 
 The test serves the site under `/bdf.mbt/`, exercises all sample pages,
 search, navigation, downloading, CSV and SVG conversion, TTF and WOFF2 font
-specimens, PDF conversion, view selection and saving, unsupported files,
+specimens, PDF and DOCX conversion, view selection and saving, unsupported files,
 and mobile layout. It requires Playwright Chromium. Run the `vlmkit` gates
 against the served URL for markup and accessibility checks.
 

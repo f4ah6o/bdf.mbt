@@ -119,6 +119,7 @@ const samples = {
   image: ['./samples/illustration.svg', 'illustration.svg'],
   font: ['./samples/stix.ttf', 'stix.ttf'],
   pdf: ['./samples/simple.pdf', 'simple.pdf'],
+  docx: ['./samples/simple.docx', 'simple.docx'],
 };
 for (const link of document.querySelectorAll('[data-sample]')) {
   link.addEventListener('click', event => {
