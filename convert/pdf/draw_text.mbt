@@ -182,8 +182,18 @@ fn PdfGraphics::flush_text(self : PdfGraphics) -> Unit raise PdfStreamError {
   if text.alt {
     self.object.mark(4, text.actual.to_string())
   }
-  self.sync_fill()
-  self.sync_alpha(false)
+  let mode = if self.state.font_size == 0.0 || text.state.rendering_mode == 7 {
+    3
+  } else {
+    text.state.rendering_mode
+  }
+  if mode == 0 || mode == 4 {
+    self.sync_fill()
+    self.sync_alpha(false)
+  } else if self.emitted.fill != Some(0U) {
+    self.object.fill_color(0U)
+    self.emitted.fill = Some(0U)
+  }
   self.object.fill_text(
     text.draw.to_string(),
     Float::from_double(text.run_start),
@@ -225,8 +235,10 @@ fn PdfGraphics::text_operator(
     if !text.state.in_text {
       ignore(text.state.execute(b"BT", []))
     }
-    if text.state.rendering_mode != 0 || self.state.font_size <= 0.0 {
-      raise InvalidStream("unsupported PDF text state")
+    let mode = text.state.rendering_mode
+    if self.state.font_size != 0.0 &&
+      (mode == 1 || mode == 2 || mode == 5 || mode == 6) {
+      raise InvalidStream("PDF stroked text is not supported yet")
     }
     let font = match self.state.font {
       Some(font) => font

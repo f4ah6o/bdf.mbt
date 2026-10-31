@@ -36,7 +36,7 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer out.Close()
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 55; i++ {
 		content := []byte("q 0.2 0.4 0.8 rg 10 20 100 60 re f Q 2 w 0 0 m 20 40 l S\n")
 		resources := ""
 		if i == 8 {
@@ -144,6 +144,16 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 				content = []byte("BT /F1 12 Tf .5 Tc 3 Tw (Space Words) Tj ET")
 			case 49:
 				content = []byte("BT /F1 12 Tf (First) Tj 7 13 Tf (Fallback) Tj ET")
+			case 50:
+				content = []byte("BT /F1 12 Tf 3 Tr (Invisible) Tj ET")
+			case 51:
+				content = []byte("BT /F1 12 Tf 7 Tr (ClipMode) Tj ET")
+			case 52:
+				content = []byte("BT /F1 12 Tf 4 Tr (Visible) Tj ET")
+			case 53:
+				content = []byte("BT /F1 0 Tf (Zero) Tj ET")
+			case 54:
+				content = []byte("BT /F1 12 Tf (Visible) Tj 3 Tr (Hidden) Tj 0 Tr (Again) Tj ET")
 			}
 		}
 		filter := ""
