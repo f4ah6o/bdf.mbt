@@ -14,6 +14,8 @@ fn check_pdf_simple_font(
     object_streams: {},
     trailers: [],
     trailer: PdfNull,
+    font_cache: Map([]),
+    default_font: None,
   }
   let fonts : Array[PdfObject] = [
     PdfDict([
@@ -81,6 +83,8 @@ test "embedded and composite PDF fonts fail closed" {
     object_streams: {},
     trailers: [],
     trailer: PdfNull,
+    font_cache: Map([]),
+    default_font: None,
   }
   let embedded = PdfDict([
     (b"FontDescriptor", PdfDict([(b"FontFile2", PdfRef(1L, 0L))])),
@@ -115,6 +119,8 @@ test "PDF simple font ToUnicode overrides its encoding" {
     object_streams: {},
     trailers: [],
     trailer: PdfNull,
+    font_cache: Map([]),
+    default_font: None,
   }
   let dict = PdfDict([
     (b"Subtype", PdfName(b"Type1")),

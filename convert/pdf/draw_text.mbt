@@ -32,6 +32,19 @@ fn pdf_default_simple_font() -> PdfSimpleFont {
     family: "sans-serif",
     weight: 400,
     style: 0,
+    used_nul: false,
+  }
+}
+
+///|
+fn PdfFile::default_simple_font(self : PdfFile) -> PdfSimpleFont {
+  match self.default_font {
+    Some(font) => font
+    None => {
+      let font = pdf_default_simple_font()
+      self.default_font = Some(font)
+      font
+    }
   }
 }
 
@@ -63,10 +76,10 @@ fn PdfGraphics::select_simple_font(
           self.next_font_key += 1
           (font, key)
         }
-        None => (pdf_default_simple_font(), 0)
+        None => (self.default_font, 0)
       }
     }
-    None => (pdf_default_simple_font(), 0)
+    None => (self.default_font, 0)
   }
   self.state.font = Some(font)
   self.state.font_key = key
@@ -79,7 +92,7 @@ fn PdfGraphics::finish_text(self : PdfGraphics) -> Unit raise PdfStreamError {
   if text.has_run {
     let font = match self.state.font {
       Some(font) => font
-      None => pdf_default_simple_font()
+      None => self.default_font
     }
     let old_matrix = self.state.matrix
     let old_emitted = self.emitted.copy()
@@ -175,7 +188,7 @@ fn PdfGraphics::text_operator(
     let font = match self.state.font {
       Some(font) => font
       None => {
-        let fallback = pdf_default_simple_font()
+        let fallback = self.default_font
         self.state.font = Some(fallback)
         fallback
       }
@@ -190,17 +203,24 @@ fn PdfGraphics::text_operator(
         let code = byte.to_int()
         let actual = font.unicode(code)
         if actual == "" {
-          pdf_text_char(text.draw, code)
-          text.alt = true
+          if code != 0 || !font.used_nul {
+            pdf_text_char(text.draw, code)
+            text.alt = true
+          }
+          if code == 0 {
+            font.used_nul = true
+          }
         } else {
           text.draw.write_string(actual)
         }
         text.actual.write_string(actual)
-        text.advance += pdf_matrix_fma(
-          font.width(code),
-          self.state.font_size,
-          text.state.char_spacing,
-        )
+        let width = font.width(code)
+        let advance = if text.state.char_spacing == 0.0 {
+          width * self.state.font_size + text.state.char_spacing
+        } else {
+          pdf_matrix_fma(width, self.state.font_size, text.state.char_spacing)
+        }
+        text.advance += advance
         text.has_run = true
       }
     }

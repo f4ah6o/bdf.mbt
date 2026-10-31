@@ -33,6 +33,8 @@ fn pdf_open_file(data : Bytes) -> PdfFile raise PdfStreamError {
     object_streams: Map([]),
     trailers: [],
     trailer: PdfNull,
+    font_cache: Map([]),
+    default_font: None,
   }
   let visited : Map[Int64, Bool] = Map([])
   let mut offset = pdf_start_xref(data)

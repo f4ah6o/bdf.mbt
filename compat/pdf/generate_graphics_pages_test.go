@@ -36,7 +36,7 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer out.Close()
-	for i := 0; i < 34; i++ {
+	for i := 0; i < 35; i++ {
 		content := []byte("q 0.2 0.4 0.8 rg 10 20 100 60 re f Q 2 w 0 0 m 20 40 l S\n")
 		resources := ""
 		if i == 8 {
@@ -112,6 +112,8 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 				content = []byte("BT /F1 13 Tf 80 Tz [(Kern) -75 (ing)] TJ ET")
 			case 33:
 				content = []byte("BT /F1 11 Tf .25 Tc [(A) 0 (B) -150 (C)] TJ ET")
+			case 34:
+				content = []byte("BT /F1 12 Tf <0000> Tj ET")
 			}
 		}
 		filter := ""
@@ -209,6 +211,37 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 			fmt.Fprintf(out, "///|\ntest \"PDF graphics document options match upstream Go\" {\n check_pdf_graphics_document_options(%s,%s)\n}\n", pageGraphicsBytes(data), pageGraphicsBytes(optionDocument.Bytes()))
 		}
 	}
+	// A font's glyph-use state is shared by all pages of a conversion.
+	var multi bytes.Buffer
+	multi.WriteString("%PDF-1.7\n%multi\n")
+	objects := []string{
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox [0 0 600 800] /Resources << /Font << /F1 7 0 R >> >> >>",
+		"<< /Type /Page /Parent 2 0 R /Contents 5 0 R >>",
+		"<< /Type /Page /Parent 2 0 R /Contents 6 0 R >>",
+	}
+	stream := "BT /F1 12 Tf <00> Tj ET"
+	objects = append(objects, fmt.Sprintf("<< /Length %d >>\nstream\n%s\nendstream", len(stream), stream), fmt.Sprintf("<< /Length %d >>\nstream\n%s\nendstream", len(stream), stream), "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+	offsetsMulti := make([]int, len(objects)+1)
+	for i, object := range objects {
+		offsetsMulti[i+1] = multi.Len()
+		fmt.Fprintf(&multi, "%d 0 obj\n%s\nendobj\n", i+1, object)
+	}
+	multiXref := multi.Len()
+	fmt.Fprintf(&multi, "xref\n0 %d\n0000000000 65535 f \n", len(offsetsMulti))
+	for _, offset := range offsetsMulti[1:] {
+		fmt.Fprintf(&multi, "%010d 00000 n \n", offset)
+	}
+	fmt.Fprintf(&multi, "trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", len(offsetsMulti), multiXref)
+	multiResult, err := Convert(bytes.NewReader(multi.Bytes()), &Options{NoTextIndex: true, NoSharePrefix: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var multiDocument bytes.Buffer
+	if err = multiResult.Doc.WriteSingle(&multiDocument); err != nil {
+		t.Fatal(err)
+	}
+	fmt.Fprintf(out, "///|\ntest \"PDF font usage across pages matches upstream Go\" {\n check_pdf_graphics_document(%s,%s)\n}\n", pageGraphicsBytes(multi.Bytes()), pageGraphicsBytes(multiDocument.Bytes()))
 	var empty bytes.Buffer
 	empty.WriteString("%PDF-1.7\n%empty\n")
 	offsets := make([]int, 3)

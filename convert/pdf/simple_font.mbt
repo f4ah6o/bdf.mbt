@@ -9,6 +9,7 @@ priv struct PdfSimpleFont {
   family : String
   weight : Int32
   style : Int32
+  mut used_nul : Bool
 }
 
 ///|
@@ -28,6 +29,18 @@ fn PdfFile::simple_font(
   self : PdfFile,
   object : PdfObject,
 ) -> PdfSimpleFont raise PdfStreamError {
+  let key = match object {
+    PdfRef(number, generation) => Some((number, generation))
+    _ => None
+  }
+  match key {
+    Some(value) =>
+      match self.font_cache.get(value) {
+        Some(font) => return font
+        None => ()
+      }
+    None => ()
+  }
   let dict = self.page_deref(Some(object))
   if !(dict is PdfDict(_)) {
     raise InvalidStream("PDF font dictionary missing")
@@ -160,7 +173,7 @@ fn PdfFile::simple_font(
     }
     _ => None
   }
-  {
+  let font : PdfSimpleFont = {
     encoding: self.simple_encoding(pdf_dict_get(dict, b"Encoding")),
     to_unicode: cmap,
     first: self.font_number(pdf_dict_get(dict, b"FirstChar"), 0.0).to_int(),
@@ -169,7 +182,13 @@ fn PdfFile::simple_font(
     family,
     weight,
     style,
+    used_nul: false,
   }
+  match key {
+    Some(value) => self.font_cache[value] = font
+    None => ()
+  }
+  font
 }
 
 ///|

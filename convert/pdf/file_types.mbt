@@ -15,6 +15,8 @@ priv struct PdfFile {
   object_streams : Map[Int64, PdfObjectStream]
   trailers : Array[PdfObject]
   mut trailer : PdfObject
+  font_cache : Map[(Int64, Int64), PdfSimpleFont]
+  mut default_font : PdfSimpleFont?
 }
 
 ///|

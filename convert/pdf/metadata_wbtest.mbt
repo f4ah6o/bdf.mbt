@@ -40,6 +40,8 @@ test "PDF metadata decodes text and separates keywords" {
     object_streams: {},
     trailers: [PdfDict([(b"Info", PdfRef(1L, 0L))])],
     trailer: PdfNull,
+    font_cache: Map([]),
+    default_font: None,
   }
   assert_eq(file.metadata(), {
     title: "T",

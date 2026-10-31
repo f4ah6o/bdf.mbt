@@ -72,6 +72,8 @@ test "unsupported PDF soft masks fail closed" {
     object_streams: {},
     trailers: [],
     trailer: PdfNull,
+    font_cache: Map([]),
+    default_font: None,
   }
   let resources = PdfDict([
     (b"ExtGState", PdfDict([(b"GS1", PdfDict([(b"SMask", PdfDict([]))]))])),
@@ -102,6 +104,8 @@ test "graphics-only PDF pages reject annotations" {
     object_streams: {},
     trailers: [],
     trailer: PdfNull,
+    font_cache: Map([]),
+    default_font: None,
   }
   let attrs : PdfPageAttrs = {
     media: None,

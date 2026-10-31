@@ -11,6 +11,8 @@ fn check_pdf_simple_encoding(
     object_streams: {},
     trailers: [],
     trailer: PdfNull,
+    font_cache: Map([]),
+    default_font: None,
   }
   let source : PdfObject? = match variant {
     0 => None

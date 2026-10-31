@@ -38,6 +38,7 @@ priv struct PdfGraphics {
   file : PdfFile?
   resources : PdfObject?
   text : PdfLimitedText
+  default_font : PdfSimpleFont
   fonts : Map[(Int64, Int64), (PdfSimpleFont, Int32)]
   font_refs : Map[Int32, Int32]
   mut next_font_key : Int32
@@ -113,6 +114,10 @@ fn PdfGraphics::new(
     file,
     resources,
     text: PdfLimitedText::new(),
+    default_font: match file {
+      Some(value) => value.default_simple_font()
+      None => pdf_default_simple_font()
+    },
     fonts: Map([]),
     font_refs: Map([]),
     next_font_key: 1,
