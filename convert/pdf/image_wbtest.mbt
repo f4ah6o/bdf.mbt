@@ -86,24 +86,86 @@ fn pdf_test_png_idat(png : Bytes) -> Bytes raise {
 }
 
 ///|
+fn pdf_test_image_bytes(document : Bytes) -> Bytes raise {
+  let split = @core.single_to_split(document)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  for part in manifest.parts {
+    if part.kind == "img" {
+      return @core.open_single(document).part(part.hash)
+    }
+  }
+  fail("PDF image part is missing")
+}
+
+///|
+fn pdf_inline_content(dict : String, data : Bytes) -> Bytes {
+  let out = @buffer.Buffer()
+  out.write_string_utf8("q 100 0 0 100 10 20 cm BI\n")
+  out.write_string_utf8(dict)
+  out.write_string_utf8("\nID ")
+  out.write_bytesview(data[:])
+  out.write_string_utf8("\nEI Q")
+  out.to_bytes()
+}
+
+///|
+fn pdf_inline_test_document(content : Bytes) -> Bytes {
+  pdf_test_pdf([
+    b"<< /Type /Catalog /Pages 2 0 R >>",
+    b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+    b"<< /Type /Page /Parent 2 0 R /Contents 4 0 R >>",
+    pdf_test_stream("", content),
+  ])
+}
+
+///|
+fn pdf_inline_mask_content(dict : String, data : Bytes) -> Bytes {
+  let out = @buffer.Buffer()
+  out.write_string_utf8("q 1 0 0 rg 100 0 0 100 10 20 cm BI\n")
+  out.write_string_utf8(dict)
+  out.write_string_utf8("\nID ")
+  out.write_bytesview(data[:])
+  out.write_string_utf8("\nEI Q")
+  out.to_bytes()
+}
+
+///|
+fn pdf_test_red_mask_scanline(pixels : Int32) -> Bytes {
+  let out = @buffer.Buffer()
+  out.write_byte(0)
+  for _ in 0..<pixels {
+    out.write_byte(0xff)
+    out.write_byte(0)
+    out.write_byte(0)
+    out.write_byte(0xff)
+  }
+  out.to_bytes()
+}
+
+///|
 fn pdf_test_image_rgb(
   document : Bytes,
   width : Int32,
   height : Int32,
 ) -> Bytes raise {
-  let split = @core.single_to_split(document)
-  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let mut image_hash = ""
-  for part in manifest.parts {
-    if part.kind == "img" {
-      image_hash = part.hash
-    }
-  }
-  assert_true(image_hash != "", msg="PDF image part")
-  let png = @core.open_single(document).part(image_hash)
+  let png = pdf_test_image_bytes(document)
   assert_eq(png[:8], b"\x89PNG\r\n\x1a\n"[:], msg="PDF image PNG signature")
   assert_eq(pdf_test_png_u32(png, 16), width, msg="PDF image width")
   assert_eq(pdf_test_png_u32(png, 20), height, msg="PDF image height")
+  @zlib.decompress(pdf_test_png_idat(png))
+}
+
+///|
+fn pdf_test_image_rgba(
+  document : Bytes,
+  width : Int32,
+  height : Int32,
+) -> Bytes raise {
+  let png = pdf_test_image_bytes(document)
+  assert_eq(png[:8], b"\x89PNG\r\n\x1a\n"[:], msg="PDF image PNG signature")
+  assert_eq(pdf_test_png_u32(png, 16), width, msg="PDF image width")
+  assert_eq(pdf_test_png_u32(png, 20), height, msg="PDF image height")
+  assert_eq(png[25].to_int(), 6, msg="PDF image colour type")
   @zlib.decompress(pdf_test_png_idat(png))
 }
 
@@ -205,4 +267,84 @@ test "PDF form XObjects fail closed" {
     _ => false
   }
   assert_true(rejected)
+}
+
+///|
+test "PDF inline JPEG image is stored unchanged" {
+  let jpeg = b"\xff\xd8inline\xff\xd9"
+  let document = pdf_graphics_document(
+    pdf_inline_test_document(
+      pdf_inline_content("/W 1 /H 1 /CS /RGB /BPC 8 /F /DCTDecode", jpeg),
+    ),
+    no_text_index=true,
+  )
+  assert_eq(pdf_test_image_bytes(document), jpeg, msg="PDF inline JPEG bytes")
+}
+
+///|
+test "PDF inline Flate RGB samples become PNG" {
+  let document = pdf_graphics_document(
+    pdf_inline_test_document(
+      pdf_inline_content(
+        "/W 2 /H 1 /CS /RGB /BPC 8 /F /FlateDecode",
+        @zlib.compress(b"\xff\x00\x00\x00\xff\x00"[:]),
+      ),
+    ),
+    no_text_index=true,
+  )
+  assert_eq(
+    pdf_test_image_rgb(document, 2, 1),
+    b"\x00\xff\x00\x00\x00\xff\x00",
+    msg="PDF inline RGB scanline",
+  )
+}
+
+///|
+test "PDF inline raw gray samples become PNG" {
+  let document = pdf_graphics_document(
+    pdf_inline_test_document(
+      pdf_inline_content("/W 1 /H 1 /CS /G /BPC 8", b"\x80"),
+    ),
+    no_text_index=true,
+  )
+  assert_eq(
+    pdf_test_image_rgb(document, 1, 1),
+    b"\x00\x80\x80\x80",
+    msg="PDF inline gray scanline",
+  )
+}
+
+///|
+test "PDF image mask XObject becomes RGBA PNG" {
+  let document = pdf_graphics_document(
+    pdf_xobject_test_document(
+      b"q 1 0 0 rg 100 0 0 100 10 20 cm /Im1 Do Q",
+      "/Type /XObject /Subtype /Image /ImageMask true /Width 8 /Height 1 /BitsPerComponent 1 /Filter /FlateDecode",
+      @zlib.compress(b"\x00"[:]),
+    ),
+    no_text_index=true,
+  )
+  assert_eq(
+    pdf_test_image_rgba(document, 8, 1),
+    pdf_test_red_mask_scanline(8),
+    msg="PDF mask scanline",
+  )
+}
+
+///|
+test "PDF inline image mask becomes RGBA PNG" {
+  let document = pdf_graphics_document(
+    pdf_inline_test_document(
+      pdf_inline_mask_content(
+        "/W 8 /H 1 /IM true /BPC 1 /F /FlateDecode",
+        @zlib.compress(b"\x00"[:]),
+      ),
+    ),
+    no_text_index=true,
+  )
+  assert_eq(
+    pdf_test_image_rgba(document, 8, 1),
+    pdf_test_red_mask_scanline(8),
+    msg="PDF inline mask scanline",
+  )
 }

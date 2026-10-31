@@ -70,39 +70,13 @@ fn pdf_png_encode_rgb(
 }
 
 ///|
-// Convert unencoded 8-bit PDF samples to RGB. Masks, Decode arrays and other
-// bit depths are rejected until their decoders are ported.
+// Convert unencoded 8-bit PDF samples to RGB.
 fn pdf_image_rgb_samples(
-  file : PdfFile,
-  dict : PdfObject,
+  width : Int32,
+  height : Int32,
+  space : PdfDeviceColorSpace,
   data : Bytes,
-) -> (Int32, Int32, Bytes) raise PdfStreamError {
-  let width = match file.page_num(pdf_dict_get(dict, b"Width")) {
-    Some(value) if value > 0.0 && value <= 65535.0 => value.to_int()
-    _ => raise InvalidStream("PDF image width is missing")
-  }
-  let height = match file.page_num(pdf_dict_get(dict, b"Height")) {
-    Some(value) if value > 0.0 && value <= 65535.0 => value.to_int()
-    _ => raise InvalidStream("PDF image height is missing")
-  }
-  let bpc = match file.page_num(pdf_dict_get(dict, b"BitsPerComponent")) {
-    Some(value) => value.to_int()
-    None => 8
-  }
-  if bpc != 8 {
-    raise InvalidStream(
-      "PDF image bit depths other than 8 are not supported yet",
-    )
-  }
-  match pdf_dict_get(dict, b"Decode") {
-    Some(PdfArray(values)) if !values.is_empty() =>
-      raise InvalidStream("PDF image Decode arrays are not supported yet")
-    _ => ()
-  }
-  let space = match pdf_dict_get(dict, b"ColorSpace") {
-    Some(value) => file.resolve_device_color(value, 0)
-    None => raise InvalidStream("PDF image color space is missing")
-  }
+) -> Bytes raise PdfStreamError {
   let components = match space {
     PdfGray => 1
     PdfRGB => 3
@@ -139,5 +113,81 @@ fn pdf_image_rgb_samples(
     }
     i += components
   }
-  (width, height, rgb.to_bytes())
+  rgb.to_bytes()
+}
+
+///|
+// Encode RGBA samples as a non-interlaced 8-bit PNG. Stencil masks use this
+// encoder so their transparent pixels survive.
+fn pdf_png_encode_rgba(
+  width : Int32,
+  height : Int32,
+  rgba : Bytes,
+) -> Bytes raise PdfStreamError {
+  if width <= 0 || height <= 0 {
+    raise InvalidStream("invalid PDF image size")
+  }
+  let row_size = width * 4
+  if rgba.length() != row_size * height {
+    raise InvalidStream("invalid PDF image samples")
+  }
+  let scanlines = @buffer.Buffer(size_hint=(row_size + 1) * height)
+  for y in 0..<height {
+    scanlines.write_byte(0)
+    scanlines.write_bytesview(rgba[y * row_size:y * row_size + row_size])
+  }
+  let header = @buffer.Buffer(size_hint=13)
+  pdf_png_write_u32(header, width.to_uint())
+  pdf_png_write_u32(header, height.to_uint())
+  header.write_byte(8)
+  header.write_byte(6)
+  header.write_byte(0)
+  header.write_byte(0)
+  header.write_byte(0)
+  let out = @buffer.Buffer()
+  out.write_bytesview(b"\x89PNG\r\n\x1a\n"[:])
+  pdf_png_chunk(out, b"IHDR", header.to_bytes())
+  pdf_png_chunk(out, b"IDAT", @zlib.compress(scanlines.to_bytes()[:]))
+  pdf_png_chunk(out, b"IEND", b"")
+  out.to_bytes()
+}
+
+///|
+// Convert a 1-bit stencil mask to RGBA using the current fill colour. By PDF
+// default a zero bit paints; a leading Decode value of 1 inverts that.
+fn pdf_image_mask_rgba(
+  width : Int32,
+  height : Int32,
+  invert : Bool,
+  fill : UInt32,
+  data : Bytes,
+) -> Bytes raise PdfStreamError {
+  if width <= 0 || height <= 0 {
+    raise InvalidStream("invalid PDF image size")
+  }
+  let row_bytes = (width + 7) / 8
+  if data.length() < row_bytes * height {
+    raise InvalidStream("PDF image mask samples are truncated")
+  }
+  let red = ((fill >> 24) & 0xffU).to_int().to_byte()
+  let green = ((fill >> 16) & 0xffU).to_int().to_byte()
+  let blue = ((fill >> 8) & 0xffU).to_int().to_byte()
+  let rgba = @buffer.Buffer(size_hint=width * height * 4)
+  for y in 0..<height {
+    for x in 0..<width {
+      let bit = (data[y * row_bytes + x / 8].to_int() >> (7 - x % 8)) & 1
+      if (bit == 0) == !invert {
+        rgba.write_byte(red)
+        rgba.write_byte(green)
+        rgba.write_byte(blue)
+        rgba.write_byte(0xff)
+      } else {
+        rgba.write_byte(0)
+        rgba.write_byte(0)
+        rgba.write_byte(0)
+        rgba.write_byte(0)
+      }
+    }
+  }
+  rgba.to_bytes()
 }

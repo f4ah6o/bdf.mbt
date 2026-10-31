@@ -67,19 +67,94 @@ fn PdfGraphics::store_image(
 }
 
 ///|
-// Image XObjects keep JPEG bytes as they are and encode 8-bit samples as PNG.
-// Masks and other codecs need decoders that are not ported yet, so they fail
-// closed.
+fn pdf_image_dimension(
+  file : PdfFile,
+  dict : PdfObject,
+  key : Bytes,
+  label : String,
+) -> Int32 raise PdfStreamError {
+  match file.page_num(pdf_dict_get(dict, key)) {
+    Some(value) if value > 0.0 && value <= 65535.0 => value.to_int()
+    _ => raise InvalidStream("PDF image " + label + " is missing")
+  }
+}
+
+///|
+fn PdfGraphics::emit_image(
+  self : PdfGraphics,
+  data : Bytes,
+) -> Unit raise PdfStreamError {
+  let index = self.store_image(data)
+  self.object.image(index, 0.0F, 0.0F, 1.0F, 1.0F) catch {
+    _ => raise InvalidStream("PDF image placement failed")
+  }
+}
+
+///|
+// Image data keeps JPEG bytes as they are, encodes 8-bit samples as PNG and
+// turns 1-bit stencil masks into RGBA PNGs. Other codecs and sample formats
+// need decoders that are not ported yet.
+fn PdfGraphics::draw_image_data(
+  self : PdfGraphics,
+  width : Int32,
+  height : Int32,
+  bpc : Int32,
+  space : PdfDeviceColorSpace?,
+  is_mask : Bool,
+  invert : Bool,
+  data : Bytes,
+  codec : Bytes?,
+) -> Unit raise PdfStreamError {
+  match codec {
+    Some(b"DCTDecode") => {
+      if is_mask {
+        raise InvalidStream("PDF image masks cannot use JPEG data")
+      }
+      if data.length() < 2 || data[0] != b'\xff' || data[1] != b'\xd8' {
+        raise InvalidStream("invalid PDF JPEG image")
+      }
+      self.emit_image(data)
+    }
+    Some(_) => raise InvalidStream("unsupported PDF image filter")
+    None =>
+      if is_mask {
+        if bpc != 1 {
+          raise InvalidStream("PDF image masks must have one bit per pixel")
+        }
+        let rgba = pdf_image_mask_rgba(
+          width,
+          height,
+          invert,
+          self.state.fill,
+          data,
+        )
+        self.emit_image(pdf_png_encode_rgba(width, height, rgba))
+      } else {
+        if bpc != 8 {
+          raise InvalidStream(
+            "PDF image bit depths other than 8 are not supported yet",
+          )
+        }
+        let space = match space {
+          Some(value) => value
+          None => raise InvalidStream("PDF image color space is missing")
+        }
+        let rgb = pdf_image_rgb_samples(width, height, space, data)
+        self.emit_image(pdf_png_encode_rgb(width, height, rgb))
+      }
+  }
+}
+
+///|
 fn PdfGraphics::draw_image_xobject(
   self : PdfGraphics,
   file : PdfFile,
   dict : PdfObject,
   raw : Bytes,
 ) -> Unit raise PdfStreamError {
-  match pdf_dict_get(dict, b"ImageMask") {
-    Some(PdfBool(true)) =>
-      raise InvalidStream("PDF image masks are not supported yet")
-    _ => ()
+  let is_mask = match file.page_deref(pdf_dict_get(dict, b"ImageMask")) {
+    PdfBool(value) => value
+    _ => false
   }
   for key in [b"SMask", b"Mask"] {
     match pdf_dict_get(dict, key) {
@@ -87,11 +162,36 @@ fn PdfGraphics::draw_image_xobject(
       Some(_) => raise InvalidStream("PDF image masks are not supported yet")
     }
   }
-  match pdf_dict_get(dict, b"Decode") {
-    Some(PdfArray(values)) if !values.is_empty() =>
-      raise InvalidStream("PDF image Decode arrays are not supported yet")
-    _ => ()
+  let decode : Array[Double] = match
+    file.page_deref(pdf_dict_get(dict, b"Decode")) {
+    PdfArray(values) =>
+      values.map(fn(value) {
+        match value {
+          PdfInt(number) => number.to_double()
+          PdfReal(number) => number
+          _ => 0.0
+        }
+      })
+    _ => []
   }
+  if !is_mask && !decode.is_empty() {
+    raise InvalidStream("PDF image Decode arrays are not supported yet")
+  }
+  let width = pdf_image_dimension(file, dict, b"Width", "width")
+  let height = pdf_image_dimension(file, dict, b"Height", "height")
+  let bpc = match file.page_num(pdf_dict_get(dict, b"BitsPerComponent")) {
+    Some(value) => value.to_int()
+    None => if is_mask { 1 } else { 8 }
+  }
+  let space = if is_mask {
+    None
+  } else {
+    match pdf_dict_get(dict, b"ColorSpace") {
+      Some(value) => Some(file.resolve_device_color(value, 0))
+      None => None
+    }
+  }
+  let invert = !decode.is_empty() && decode[0] == 1.0
   let (data, codec) = pdf_decode_stream(
     raw,
     file.resolved_stream_filters(dict),
@@ -99,26 +199,7 @@ fn PdfGraphics::draw_image_xobject(
     false,
     1073741824L,
   )
-  match codec {
-    Some(b"DCTDecode") => {
-      if data.length() < 2 || data[0] != b'\xff' || data[1] != b'\xd8' {
-        raise InvalidStream("invalid PDF JPEG image")
-      }
-      let index = self.store_image(data)
-      self.object.image(index, 0.0F, 0.0F, 1.0F, 1.0F) catch {
-        _ => raise InvalidStream("PDF image placement failed")
-      }
-    }
-    Some(_) => raise InvalidStream("unsupported PDF image filter")
-    None => {
-      let (width, height, rgb) = pdf_image_rgb_samples(file, dict, data)
-      let png = pdf_png_encode_rgb(width, height, rgb)
-      let index = self.store_image(png)
-      self.object.image(index, 0.0F, 0.0F, 1.0F, 1.0F) catch {
-        _ => raise InvalidStream("PDF image placement failed")
-      }
-    }
-  }
+  self.draw_image_data(width, height, bpc, space, is_mask, invert, data, codec)
 }
 
 ///|
@@ -387,7 +468,11 @@ fn PdfGraphics::run(
         }
       }
       Operator(op) => {
-        self.execute(op, args)
+        if op == b"BI" {
+          self.inline_image(lexer)
+        } else {
+          self.execute(op, args)
+        }
         args.clear()
       }
     }
