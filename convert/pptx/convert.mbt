@@ -861,6 +861,36 @@ fn pptx_render_slide(
       }
       None => ()
     }
+    let stroke = pptx_child(pptx_child(Some(shape), "spPr"), "ln")
+    let stroke_width = match stroke {
+      Some(value) =>
+        (@string.parse_double(pptx_attribute(value.element, "w", "0")) catch {
+          _ => 0.0
+        }) /
+        12700.0
+      None => 0.0
+    }
+    if stroke_width > 0.0 {
+      let stroke_color = match pptx_node_color(stroke, "solidFill", theme) {
+        Some(color) => color
+        None => 0x000000ffU
+      }
+      let geometry = match
+        pptx_child(pptx_child(Some(shape), "spPr"), "prstGeom") {
+        Some(value) => pptx_attribute(value.element, "prst", "rect")
+        None => "rect"
+      }
+      if geometry == "rect" || geometry == "" {
+        object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
+        object.stroke_color(stroke_color)
+        object.stroke_rect(
+          Float::from_double(shape_x),
+          Float::from_double(shape_y),
+          Float::from_double(transform.width),
+          Float::from_double(transform.height),
+        )
+      }
+    }
     let body = match pptx_child(Some(shape), "txBody") {
       Some(value) => value
       None => continue

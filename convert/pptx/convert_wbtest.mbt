@@ -1441,3 +1441,107 @@ test "PPTX tables are flattened into text rows" {
   assert_true(value.contains("A"), msg="PPTX table A")
   assert_true(value.contains("B"), msg="PPTX table B")
 }
+
+///|
+fn pptx_outline_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GD4tis+tm9SKtNPIM+UiYFBGEhHO+fnlaTmlcSHVBakFsfqVeTm",
+  )
+  joined.write_string(
+    "rA209j9sIHDvp+i061qFpxoEvC41Hufgeco+Z4530lX9n3dW/f0eM0mJUWuDQWT5/eDnVcUlYTIG",
+  )
+  joined.write_string(
+    "Ezn3TXy9aRLTXr65H52V72/zP7pWZMrB8oTm427zJjxZtnfV9uUdKhFvVk5MPvfRT/OSstUCI5cv",
+  )
+  joined.write_string(
+    "PV8ULU/YLHN0vWAtERAbfrX30sH0LztPTG7Pec3+JjF/c4XNpyrNSRcmiXznLjyVpXIko7ftzA6r",
+  )
+  joined.write_string(
+    "H++ivQr9NCItizNMJob5THiVdKjlj0zBtb0fUie9DNjjdOr8gxlLk85oqalcO3vnU/ly7lDn+9K9",
+  )
+  joined.write_string(
+    "sReqj0/6tHnm5vhjlxo/rrY/NeGpqu75X/tvn1knz3vlz+u31gEoIVXk933+JiBPl5GBgRtIxxel",
+  )
+  joined.write_string(
+    "5hTr64HI3vNnuQ4Z8LB/2O0fWFR+16bjxK5Ylxuhz5inmL1ue83uK/r9m5i/n02Fz6fz+kvy5pel",
+  )
+  joined.write_string(
+    "8feYVKov0PJKeDHl+mRjpnV/K6sZ3DytdNPfBxxoYsndvFLf4vSU8ow5TBt7LIQMlon0zZksddFL",
+  )
+  joined.write_string(
+    "q8Zhunpzf9iyGLfDzSHmmRPenyo6/3g549lTKXPFBKxjGV9Pb/h/o05CrVV9/Tux2F+Fj7Qnpkry",
+  )
+  joined.write_string(
+    "qjEqqsgpBeXtu+w6rdHcNL725h4GVK9dqDh/5DyQ5wH0Gki0oKBEv6AotRiYDhJLMvPzQKmgd4J/",
+  )
+  joined.write_string(
+    "NpOhwNH3f0US35kWXkzdnXPNW5AlP9fewSPtrsO/iZ2L6qqSdV1fLN3+fUal/bOzGyyrj/vNOHlM",
+  )
+  joined.write_string(
+    "IXGnwAGDFxk5Fh4/ft3ZV3ZgxYqEKd2MqjETEoz38az0l+R0DlyqFrmU5dXklp1TrhT7VbmtzxAU",
+  )
+  joined.write_string(
+    "brOanfRtVchs/j+Wz2XzWzJ2hpsd4Ff5zy60/GRWTf+vF9qvGU++2LfQ5LaLwTXhkzPn3gz+efWM",
+  )
+  joined.write_string(
+    "FOfZXazTfu8+Y32ZQZ79X/r3x6e+RB66XbRVaJGda7zKlru7ds92f7DzeAUzagCUzD31ZQOQpwgM",
+  )
+  joined.write_string(
+    "AHloAEDiFz0YoPG9ERjfAmwP7i7n2H57i6zLkkxxwV1etQ0TYm4nzGqJEfn9ja0woKDgz/sf+x/P",
+  )
+  joined.write_string(
+    "ercxouy4xzFrxtBAJufle8zyhAok/W7bGnhdyszc68yoLVTydpnl4qma5RlmjRFuMpwzgrnYz3me",
+  )
+  joined.write_string(
+    "3eEBim/zxf3dPpbHOtlXrityipv+tO+4P/Mt/clfoxzelPLmRDD/S/5daMLVH3dXrOTlcU6/axln",
+  )
+  joined.write_string(
+    "FvQIqzGu/zEvzPVaw3be/7/W1DKhepYnYZO1KtCjfMAsLwr1bHFOZkpqMYQyBEd34Ok8oBf3fNde",
+  )
+  joined.write_string(
+    "s3c6b0dYZsvDAM29Wz0u8Bc85nX55L1N+tD9634aF6L178WePVdhE5fLtjbC367kWsGM81wJKVLa",
+  )
+  joined.write_string(
+    "1sUPPuxcL++doMil3LqpzWKO5oG0vxuKQgMmqW7inPq4oOdiaMdCy0liiWmyM1u2XssWvPyC/4UN",
+  )
+  joined.write_string(
+    "q1HgkZKJYTs0utKvLDIuEBT8Lzgxbs6kzfZ/Sj9dejPljOmOveqzdtXMqnu+re5Oxfvt80onHWaa",
+  )
+  joined.write_string(
+    "IWhl+/Sx9apzAg9Yz6+22HiM7f3PxDWLpKLWF2/NPc3Gp//56SaPmXPX66ZNaTsxi+X8adfItD0/",
+  )
+  joined.write_string(
+    "NzeYyz53rlFeHZlnUZH1SGUhj7XqZv+Zk54nhKq/9ltZ+KF9ffjTSH2R9l16Xavf3ZVKm/hRcnLl",
+  )
+  joined.write_string(
+    "nKCD0T4/Zsv03d/5jzHAm5FJhBl3YQoDDYwM2ItWdAPQyxiEAVqMKCUOukb0HIzQyMqEPT+jm4Ce",
+  )
+  joined.write_string(
+    "BRAmsDETzBDohqEnMYRhn5lxJLgAb1Y2kBJWIPQBavVmBfEAVvMvhq0GAAA=",
+  )
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX rectangle outlines are stroked" {
+  let result = convert(pptx_outline_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut stroke = false
+  let mut color = false
+  for command in commands {
+    match command {
+      @render.StrokeRect(_, _, _, _) => stroke = true
+      @render.StrokeColor(0xff0000ff) => color = true
+      _ => ()
+    }
+  }
+  assert_true(stroke, msg="PPTX outline")
+  assert_true(color, msg="PPTX outline colour")
+}
