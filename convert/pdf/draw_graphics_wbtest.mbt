@@ -169,7 +169,7 @@ test "unsupported PDF text operations fail closed" {
   for
     content in [
       b"BT /missing 12 Tf 1 Tw (x) Tj ET", b"BT /missing 12 Tf (x) Tj 1 2 Td (y) Tj ET",
-      b"BT /missing 12 Tf [(x) -20 (y)] TJ ET", b"BT /missing 12 Tf 0 0 m ET",
+      b"BT /missing 12 Tf [(x) -200 (y)] TJ ET", b"BT /missing 12 Tf 0 0 m ET",
     ] {
     let graphics = PdfGraphics::new(10.0, 10.0, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
     let rejected = try {

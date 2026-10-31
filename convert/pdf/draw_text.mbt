@@ -206,6 +206,35 @@ fn PdfGraphics::text_operator(
     }
     return true
   }
+  if operator == b"TJ" {
+    if n < 1 {
+      return true
+    }
+    match args[n - 1] {
+      ArrayValue(values) =>
+        for value in values {
+          match value {
+            Literal(_) | Hex(_) => ignore(self.text_operator(b"Tj", [value]))
+            Integer(_) | Real(_) => {
+              let number = pdf_draw_number([value], 0)
+              if !text.has_run || number.abs() > 150.0 {
+                raise InvalidStream("PDF text adjustment requires a new run")
+              }
+              let scale = if text.state.horizontal_scale == 0.0 {
+                1.0
+              } else {
+                text.state.horizontal_scale
+              }
+              let shift = -number / 1000.0 * self.state.font_size * scale
+              text.advance += shift / scale
+            }
+            _ => raise InvalidStream("unsupported PDF text array value")
+          }
+        }
+      _ => raise InvalidStream("invalid PDF text array")
+    }
+    return true
+  }
   if operator == b"Tf" {
     if text.has_run {
       raise InvalidStream(
