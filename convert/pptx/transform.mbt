@@ -102,3 +102,63 @@ fn pptx_shape_transforms(
   }
   output
 }
+
+///|
+fn pptx_matrix_fma(a : Double, b : Double, c : Double) -> Double {
+  if a == 0.0 || b == 0.0 {
+    a * b + c
+  } else {
+    @core.fused_multiply_add(a, b, c)
+  }
+}
+
+///|
+fn pptx_matrix_mul(
+  first : (Double, Double, Double, Double, Double, Double),
+  second : (Double, Double, Double, Double, Double, Double),
+) -> (Double, Double, Double, Double, Double, Double) {
+  let (a, b, c, d, e, f) = first
+  let (g, h, i, j, k, l) = second
+  (
+    pptx_matrix_fma(a, g, c * h),
+    pptx_matrix_fma(b, g, d * h),
+    pptx_matrix_fma(a, i, c * j),
+    pptx_matrix_fma(b, i, d * j),
+    pptx_matrix_fma(a, k, c * l) + e,
+    pptx_matrix_fma(b, k, d * l) + f,
+  )
+}
+
+///|
+fn PptxTransform::matrix(
+  self : PptxTransform,
+  text : Bool,
+) -> (Double, Double, Double, Double, Double, Double) {
+  let rotation = if text && self.flip_v {
+    self.rotation + 180.0
+  } else {
+    self.rotation
+  }
+  if rotation == 0.0 && (text || (!self.flip_h && !self.flip_v)) {
+    return (1.0, 0.0, 0.0, 1.0, self.x, self.y)
+  }
+  let radians = rotation * 3.141592653589793 / 180.0
+  let sine = @math.sin(radians)
+  let cosine = @math.cos(radians)
+  let center = (
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    self.x + self.width / 2.0,
+    self.y + self.height / 2.0,
+  )
+  let rotate = (cosine, sine, -sine, cosine, 0.0, 0.0)
+  let horizontal = if !text && self.flip_h { -1.0 } else { 1.0 }
+  let vertical = if !text && self.flip_v { -1.0 } else { 1.0 }
+  let flip = (horizontal, 0.0, 0.0, vertical, 0.0, 0.0)
+  let origin = (1.0, 0.0, 0.0, 1.0, -self.width / 2.0, -self.height / 2.0)
+  let placed = pptx_matrix_mul(center, rotate)
+  let placed = if text { placed } else { pptx_matrix_mul(placed, flip) }
+  pptx_matrix_mul(placed, origin)
+}

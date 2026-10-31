@@ -104,3 +104,18 @@ test "PPTX sizes support standard and strict units" {
   assert_eq(pptx_measure("2.54cm", 0.0), 72.0)
   assert_eq(pptx_measure("garbage", 5.0), 5.0)
 }
+
+///|
+fn pptx_matrix_bits(
+  matrix : (Double, Double, Double, Double, Double, Double),
+) -> Array[UInt32] {
+  let (a, b, c, d, e, f) = matrix
+  [
+    Float::from_double(a).reinterpret_as_uint(),
+    Float::from_double(b).reinterpret_as_uint(),
+    Float::from_double(c).reinterpret_as_uint(),
+    Float::from_double(d).reinterpret_as_uint(),
+    Float::from_double(e).reinterpret_as_uint(),
+    Float::from_double(f).reinterpret_as_uint(),
+  ]
+}

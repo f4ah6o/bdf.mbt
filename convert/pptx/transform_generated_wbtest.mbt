@@ -1,56 +1,101 @@
 ///|
 test "PPTX transforms match upstream Go" {
   let cases : Array[
-    (String, (Double, Double, Double, Double, Double, Bool, Bool)?),
-  ] = [
-    ("<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"false\"></xfrm>", None),
     (
-      "<xfrm rot=\"0\" flipH=\"0\" flipV=\"true\"><off x=\"-25400\" y=\"12700\"/><ext cx=\"9144000\" cy=\"1in\"/></xfrm>",
+      String,
+      (Double, Double, Double, Double, Double, Bool, Bool)?,
+      Array[UInt32],
+      Array[UInt32],
+    ),
+  ] = [
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"false\" flipV=\"false\"></xfrm>",
+      None,
+      [],
+      [],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"0\" flipV=\"true\"><off x=\"-25400\" y=\"12700\"/><ext cx=\"9144000\" cy=\"1in\"/></xfrm>",
       Some(
         (
           -2.0000000000000000, 1.0000000000000000, 720.00000000000000, 72.000000000000000,
           0.0000000000000000, false, true,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0xc0000000U, 0x42920000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x44338000U, 0x42920000U,
+      ],
     ),
-    ("<xfrm rot=\"1234.5\" flipH=\"off\" flipV=\"false\"></xfrm>", None),
     (
-      "<xfrm rot=\"0\" flipH=\"0\" flipV=\"off\"><off x=\"7.2pt\" y=\"12700\"/><ext cx=\"bad\" cy=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"off\" flipV=\"false\"></xfrm>",
+      None,
+      [],
+      [],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"0\" flipV=\"off\"><off x=\"7.2pt\" y=\"12700\"/><ext cx=\"bad\" cy=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           7.2000000000000002, 1.0000000000000000, 0.0000000000000000, 72.000000000000000,
-          0.0000000000000000, false, false,
+          205.76130000000001, false, false,
         ),
       ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0xc107248dU, 0x428ad817U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0xc107248dU, 0x428ad817U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"false\"><ext cx=\" 3600 \" cy=\"-25400\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"off\" flipV=\"false\"><ext cx=\" 3600 \" cy=\"-25400\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 0.28346456692913385, -2.0000000000000000,
-          0.0000000000000000, false, false,
+          33.127566666666667, false, false,
         ),
       ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0xbf0601f2U, 0xbe75c2f5U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0xbf0601f2U, 0xbe75c2f5U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"1\"><off x=\"2.54cm\" y=\"1in\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"on\" flipV=\"1\"><off x=\"2.54cm\" y=\"1in\"/></xfrm>",
       Some(
         (
           72.000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
-          90.000000000000000, true, true,
+          30.000000000000000, true, true,
         ),
       ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x42900000U, 0x42900000U,
+      ],
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x42900000U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"1\" flipV=\"0\"><off x=\"12700\" y=\"12700\"/><ext cx=\"bad\" cy=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"-2700000\" flipH=\"1\" flipV=\"0\"><off x=\"12700\" y=\"12700\"/><ext cx=\"bad\" cy=\" 3600 \"/></xfrm>",
       Some(
         (
           1.0000000000000000, 1.0000000000000000, 0.0000000000000000, 0.28346456692913385,
-          0.0000000000000000, true, false,
+          -45.000000000000000, true, false,
         ),
       ),
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x3f6657feU, 0x3f855047U,
+      ],
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x3f6657feU, 0x3f855047U,
+      ],
     ),
-    ("<xfrm rot=\"0\" flipH=\"off\" flipV=\"0\"></xfrm>", None),
+    ("<xfrm rot=\"1987654\" flipH=\"off\" flipV=\"0\"></xfrm>", None, [], []),
     (
       "<xfrm rot=\" 42000 \" flipH=\"1\" flipV=\"off\"><off x=\"9144000\" y=\"-25400\"/><ext cx=\"-25400\" cy=\"7.2pt\"/></xfrm>",
       Some(
@@ -59,6 +104,12 @@ test "PPTX transforms match upstream Go" {
           0.69999999999999996, true, false,
         ),
       ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x443382d2U, 0xc000c3c3U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x443402cfU, 0xbffe66dfU,
+      ],
     ),
     (
       "<xfrm rot=\"5400000\" flipH=\"true\" flipV=\"1\"><off x=\" 3600 \" y=\" 3600 \"/><ext cx=\"0\" cy=\"12700\"/></xfrm>",
@@ -68,51 +119,87 @@ test "PPTX transforms match upstream Go" {
           90.000000000000000, true, true,
         ),
       ),
+      [
+        0xa48d3132U, 0xbf800000U, 0x3f800000U, 0xa48d3132U, 0xbe5dbb77U, 0x3f489122U,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0xbe5dbb77U, 0x3f489122U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"off\"><off x=\"9144000\" y=\"2.54cm\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"false\" flipV=\"off\"><off x=\"9144000\" y=\"2.54cm\"/></xfrm>",
       Some(
         (
           720.00000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
-          90.000000000000000, false, false,
+          30.000000000000000, false, false,
         ),
       ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x44340000U, 0x42900000U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x44340000U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"0\" flipV=\"false\"><off x=\"9144000\" y=\" 3600 \"/><ext cx=\"12700\" cy=\"7.2pt\"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"0\" flipV=\"false\"><off x=\"9144000\" y=\" 3600 \"/><ext cx=\"12700\" cy=\"7.2pt\"/></xfrm>",
       Some(
         (
           720.00000000000000, 0.28346456692913385, 1.0000000000000000, 7.2000000000000002,
-          0.020566666666666667, false, false,
+          -164.60905000000000, false, false,
         ),
       ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x443401b4U, 0x40ef9601U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x443401b4U, 0x40ef9601U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"true\" flipV=\"false\"><off x=\"7.2pt\" y=\"12700\"/><ext cx=\"12700\" cy=\"12700\"/></xfrm>",
+      "<xfrm rot=\"0\" flipH=\"true\" flipV=\"false\"><off x=\"7.2pt\" y=\"12700\"/><ext cx=\"12700\" cy=\"12700\"/></xfrm>",
       Some(
         (
           7.2000000000000002, 1.0000000000000000, 1.0000000000000000, 1.0000000000000000,
           0.0000000000000000, true, false,
         ),
       ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x41033333U, 0x3f800000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x40e66666U, 0x3f800000U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"off\" flipV=\"0\"><off x=\"2.54cm\" y=\"2.54cm\"/><ext cx=\"0\" cy=\"9144000\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"off\" flipV=\"0\"><off x=\"2.54cm\" y=\"2.54cm\"/><ext cx=\"0\" cy=\"9144000\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           72.000000000000000, 72.000000000000000, 0.0000000000000000, 720.00000000000000,
-          90.000000000000000, false, false,
+          30.000000000000000, false, false,
         ),
       ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x437c0000U, 0x42f07633U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x437c0000U, 0x42f07633U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"true\" flipV=\"on\"><ext cx=\"1in\" cy=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"true\" flipV=\"on\"><ext cx=\"1in\" cy=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.078661417322834645, 0.078661417322834645, 72.000000000000000, 7.2000000000000002,
-          0.0000000000000000, true, true,
+          33.127566666666667, true, true,
         ),
       ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x428084f2U, 0x41d2f103U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x428084f2U, 0x41d2f103U,
+      ],
     ),
     (
       "<xfrm rot=\"5400000\" flipH=\"off\" flipV=\"on\"><off x=\" 3600 \" y=\"2.54cm\"/><ext cx=\"9144000\" cy=\"bad\"/></xfrm>",
@@ -122,51 +209,87 @@ test "PPTX transforms match upstream Go" {
           90.000000000000000, false, true,
         ),
       ),
+      [
+        0x248d3132U, 0x3f800000U, 0x3f800000U, 0xa48d3132U, 0x43b42449U, 0xc3900000U,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0x43b42449U, 0x43d80000U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"false\" flipV=\"bad\"><off x=\"12700\" y=\"7.2pt\"/><ext cx=\"9144000\" cy=\"12700\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"false\" flipV=\"bad\"><off x=\"12700\" y=\"7.2pt\"/><ext cx=\"9144000\" cy=\"12700\"/></xfrm>",
       Some(
         (
           1.0000000000000000, 7.2000000000000002, 720.00000000000000, 1.0000000000000000,
-          -45.000000000000000, false, false,
+          33.127566666666667, false, false,
         ),
       ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x426f2814U, 0xc33d75e4U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x426f2814U, 0xc33d75e4U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"off\" flipV=\"false\"><off x=\"-25400\" y=\"-25400\"/><ext cx=\"7.2pt\" cy=\"bad\"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"off\" flipV=\"false\"><off x=\"-25400\" y=\"-25400\"/><ext cx=\"7.2pt\" cy=\"bad\"/></xfrm>",
       Some(
         (
           -2.0000000000000000, -2.0000000000000000, 7.2000000000000002, 0.0000000000000000,
-          -45.000000000000000, false, false,
+          205.76130000000001, false, false,
         ),
       ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x409af358U, 0xbedee731U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x409af358U, 0xbedee731U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"off\" flipV=\"off\"><off x=\"9144000\" y=\"7.2pt\"/><ext cx=\"-25400\" cy=\"7.2pt\"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"off\" flipV=\"off\"><off x=\"9144000\" y=\"7.2pt\"/><ext cx=\"-25400\" cy=\"7.2pt\"/></xfrm>",
       Some(
         (
           720.00000000000000, 7.2000000000000002, -2.0000000000000000, 7.2000000000000002,
-          0.69999999999999996, false, false,
+          -164.60905000000000, false, false,
         ),
       ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x44334525U, 0x4160167dU,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x44334525U, 0x4160167dU,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"1\" flipV=\"off\"><off x=\"bad\" y=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"1\" flipV=\"off\"><off x=\"bad\" y=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 7.2000000000000002, 0.0000000000000000, 0.0000000000000000,
-          0.69999999999999996, true, false,
+          -164.60905000000000, true, false,
         ),
       ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x00000000U, 0x40e66666U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x00000000U, 0x40e66666U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"bad\" flipV=\"false\"><off x=\"7.2pt\" y=\"bad\"/><ext cx=\"0\" cy=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"bad\" flipV=\"false\"><off x=\"7.2pt\" y=\"bad\"/><ext cx=\"0\" cy=\" 3600 \"/></xfrm>",
       Some(
         (
           7.2000000000000002, 0.0000000000000000, 0.0000000000000000, 0.28346456692913385,
-          0.020566666666666667, false, false,
+          0.69999999999999996, false, false,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x40e67496U, 0x37317624U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x40e67496U, 0x37317624U,
+      ],
     ),
     (
       "<xfrm rot=\"0\" flipH=\"bad\" flipV=\"0\"><off x=\"0\" y=\"9144000\"/><ext cx=\"9144000\" cy=\"9144000\"/></xfrm>",
@@ -176,15 +299,27 @@ test "PPTX transforms match upstream Go" {
           0.0000000000000000, false, false,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x44340000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x44340000U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"on\" flipV=\"on\"><ext cx=\"2.54cm\" cy=\"1in\"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"on\" flipV=\"on\"><ext cx=\"2.54cm\" cy=\"1in\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 72.000000000000000, 72.000000000000000,
-          0.0000000000000000, true, true,
+          205.76130000000001, true, true,
         ),
       ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x4199cb84U, 0xc141187aU,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x4199cb84U, 0xc141187aU,
+      ],
     ),
     (
       "<xfrm rot=\"5400000\" flipH=\"true\" flipV=\"1\"><off x=\" 3600 \" y=\"bad\"/><ext cx=\"2.54cm\" cy=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
@@ -194,33 +329,57 @@ test "PPTX transforms match upstream Go" {
           90.000000000000000, true, true,
         ),
       ),
+      [
+        0xa48d3132U, 0xbf800000U, 0x3f800000U, 0xa48d3132U, 0x3e912245U, 0x42900000U,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0x3e912245U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"1\" flipV=\"false\"><ext cx=\"-25400\" cy=\"1in\"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"1\" flipV=\"false\"><ext cx=\"-25400\" cy=\"1in\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, -2.0000000000000000, 72.000000000000000,
-          0.0000000000000000, true, false,
+          205.76130000000001, true, false,
         ),
       ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0xc17beed8U, 0x4289b69eU,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0xc18c6055U, 0x4287f990U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"bad\" flipV=\"1\"><off x=\"12700\" y=\" 3600 \"/><ext cx=\"2.54cm\" cy=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"5400000\" flipH=\"bad\" flipV=\"1\"><off x=\"12700\" y=\" 3600 \"/><ext cx=\"2.54cm\" cy=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           1.0000000000000000, 0.28346456692913385, 72.000000000000000, 0.0000000000000000,
-          0.69999999999999996, false, true,
+          90.000000000000000, false, true,
         ),
       ),
+      [
+        0x248d3132U, 0x3f800000U, 0x3f800000U, 0xa48d3132U, 0x42140000U, 0xc20eddbbU,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0x42140000U, 0x42112245U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"false\" flipV=\"bad\"><off x=\"bad\" y=\"bad\"/><ext cx=\"12700\" cy=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"false\" flipV=\"bad\"><off x=\"bad\" y=\"bad\"/><ext cx=\"12700\" cy=\" 3600 \"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 1.0000000000000000, 0.28346456692913385,
-          0.020566666666666667, false, false,
+          -164.60905000000000, false, false,
         ),
       ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x3f71c7a2U, 0x3ed2798cU,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x3f71c7a2U, 0x3ed2798cU,
+      ],
     ),
     (
       "<xfrm rot=\" 42000 \" flipH=\"true\" flipV=\"1\"><off x=\" 3600 \" y=\"2.54cm\"/></xfrm>",
@@ -230,33 +389,57 @@ test "PPTX transforms match upstream Go" {
           0.69999999999999996, true, true,
         ),
       ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x3e912245U, 0x42900000U,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x3e912245U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"0\" flipV=\"false\"><off x=\"0\" y=\"bad\"/><ext cx=\"2.54cm\" cy=\"-25400\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"0\" flipV=\"false\"><off x=\"0\" y=\"bad\"/><ext cx=\"2.54cm\" cy=\"-25400\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 72.000000000000000, -2.0000000000000000,
-          -45.000000000000000, false, false,
+          33.127566666666667, false, false,
         ),
       ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x40a9c33fU, 0xc19eb19bU,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x40a9c33fU, 0xc19eb19bU,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"0\" flipV=\"false\"><ext cx=\"-25400\" cy=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"bad\" flipH=\"0\" flipV=\"false\"><ext cx=\"-25400\" cy=\" 3600 \"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, -2.0000000000000000, 0.28346456692913385,
-          -45.000000000000000, false, false,
+          0.0000000000000000, false, false,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x00000000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"0\" flipV=\"on\"><off x=\"bad\" y=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"-2700000\" flipH=\"0\" flipV=\"on\"><off x=\"bad\" y=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.0000000000000000, false, true,
+          -45.000000000000000, false, true,
         ),
       ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x00000000U, 0x00000000U,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x00000000U, 0x00000000U,
+      ],
     ),
     (
       "<xfrm rot=\" 42000 \" flipH=\"off\" flipV=\"false\"><ext cx=\"bad\" cy=\"-25400\"/></xfrm>",
@@ -266,33 +449,57 @@ test "PPTX transforms match upstream Go" {
           0.69999999999999996, false, false,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0xbc4829d1U, 0xb89c82dcU,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0xbc4829d1U, 0xb89c82dcU,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"off\" flipV=\"1\"><off x=\"12700\" y=\"bad\"/><ext cx=\"9144000\" cy=\"2.54cm\"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"off\" flipV=\"1\"><off x=\"12700\" y=\"bad\"/><ext cx=\"9144000\" cy=\"2.54cm\"/></xfrm>",
       Some(
         (
           1.0000000000000000, 0.0000000000000000, 720.00000000000000, 72.000000000000000,
-          0.69999999999999996, false, true,
+          0.020566666666666667, false, true,
         ),
       ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x3f7cb2a3U, 0x428fbdd6U,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x44343f2cU, 0x42904229U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"false\" flipV=\"bad\"><off x=\"12700\" y=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"false\" flipV=\"bad\"><off x=\"12700\" y=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           1.0000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.69999999999999996, false, false,
+          0.020566666666666667, false, false,
         ),
       ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3f800000U, 0x42900000U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3f800000U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"false\" flipV=\"true\"><off x=\"12700\" y=\"-25400\"/><ext cx=\"1in\" cy=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"-2700000\" flipH=\"false\" flipV=\"true\"><off x=\"12700\" y=\"-25400\"/><ext cx=\"1in\" cy=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           1.0000000000000000, -2.0000000000000000, 72.000000000000000, 72.000000000000000,
-          0.0000000000000000, false, true,
+          -45.000000000000000, false, true,
         ),
       ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x42140000U, 0x42a9d2c9U,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x42afd2c9U, 0x42080000U,
+      ],
     ),
     (
       "<xfrm rot=\"bad\" flipH=\"bad\" flipV=\"bad\"><off x=\"1in\" y=\"-25400\"/><ext cx=\" 3600 \" cy=\"7.2pt\"/></xfrm>",
@@ -302,6 +509,12 @@ test "PPTX transforms match upstream Go" {
           0.0000000000000000, false, false,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42900000U, 0xc0000000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42900000U, 0xc0000000U,
+      ],
     ),
     (
       "<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"on\"><off x=\"999\" y=\"999\"/></xfrm>",
@@ -311,186 +524,312 @@ test "PPTX transforms match upstream Go" {
           90.000000000000000, false, true,
         ),
       ),
+      [
+        0x248d3132U, 0x3f800000U, 0x3f800000U, 0xa48d3132U, 0x3da1193dU, 0x3da1193dU,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0x3da1193dU, 0x3da1193dU,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"bad\" flipV=\"true\"><off x=\"7.2pt\" y=\"2.54cm\"/><ext cx=\"bad\" cy=\"-25400\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"bad\" flipV=\"true\"><off x=\"7.2pt\" y=\"2.54cm\"/><ext cx=\"bad\" cy=\"-25400\"/></xfrm>",
       Some(
         (
           7.2000000000000002, 72.000000000000000, 0.0000000000000000, -2.0000000000000000,
-          -45.000000000000000, false, true,
+          33.127566666666667, false, true,
         ),
       ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x40f7e35eU, 0x428c5339U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x40f7e35eU, 0x428c5339U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"true\" flipV=\"1\"><off x=\"0\" y=\"12700\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"bad\" flipH=\"true\" flipV=\"1\"><off x=\"0\" y=\"12700\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 1.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          -45.000000000000000, true, true,
+          0.0000000000000000, true, true,
         ),
       ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x00000000U, 0x3f800000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x00000000U, 0x3f800000U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"false\" flipV=\"true\"><off x=\"9144000\" y=\" 3600 \"/><ext cx=\"1in\" cy=\"-25400\"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"false\" flipV=\"true\"><off x=\"9144000\" y=\" 3600 \"/><ext cx=\"1in\" cy=\"-25400\"/></xfrm>",
       Some(
         (
           720.00000000000000, 0.28346456692913385, 72.000000000000000, -2.0000000000000000,
-          -45.000000000000000, false, true,
+          205.76130000000001, false, true,
         ),
       ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x4444ff32U, 0x417d49bbU,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x4434c92cU, 0xc17765c6U,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"true\" flipV=\"1\"><ext cx=\"2.54cm\" cy=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"bad\" flipH=\"true\" flipV=\"1\"><ext cx=\"2.54cm\" cy=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.078661417322834645, 0.078661417322834645, 72.000000000000000, 72.000000000000000,
           0.0000000000000000, true, true,
         ),
       ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x42902846U, 0x42902846U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x42902846U, 0x42902846U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"off\" flipV=\"false\"><off x=\"bad\" y=\"1in\"/><ext cx=\"9144000\" cy=\"bad\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"off\" flipV=\"false\"><off x=\"bad\" y=\"1in\"/><ext cx=\"9144000\" cy=\"bad\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 72.000000000000000, 720.00000000000000, 0.0000000000000000,
-          -45.000000000000000, false, false,
+          33.127566666666667, false, false,
         ),
       ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x426a1044U, 0xc2f97bcbU,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x426a1044U, 0xc2f97bcbU,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"0\" flipV=\"off\"><off x=\"-25400\" y=\"2.54cm\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"0\" flipV=\"off\"><off x=\"-25400\" y=\"2.54cm\"/></xfrm>",
       Some(
         (
           -2.0000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.0000000000000000, false, false,
+          33.127566666666667, false, false,
         ),
       ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0xc0000000U, 0x42900000U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0xc0000000U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"false\" flipV=\"false\"><off x=\"-25400\" y=\"0\"/><ext cx=\"1in\" cy=\"12700\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"false\" flipV=\"false\"><off x=\"-25400\" y=\"0\"/><ext cx=\"1in\" cy=\"12700\"/></xfrm>",
       Some(
         (
           -2.0000000000000000, 0.0000000000000000, 72.000000000000000, 1.0000000000000000,
-          0.020566666666666667, false, false,
+          30.000000000000000, false, false,
         ),
       ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x4044ad6fU, 0xc18f76cfU,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x4044ad6fU, 0xc18f76cfU,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"true\"><off x=\"12700\" y=\"7.2pt\"/><ext cx=\"1in\" cy=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"-2700000\" flipH=\"off\" flipV=\"true\"><off x=\"12700\" y=\"7.2pt\"/><ext cx=\"1in\" cy=\" 3600 \"/></xfrm>",
       Some(
         (
           1.0000000000000000, 7.2000000000000002, 72.000000000000000, 0.28346456692913385,
-          0.0000000000000000, false, true,
+          -45.000000000000000, false, true,
         ),
       ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x413a4f5dU, 0x42039758U,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x427a3969U, 0xc1901c73U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"0\" flipV=\"bad\"><off x=\"0\" y=\"12700\"/><ext cx=\"12700\" cy=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"5400000\" flipH=\"0\" flipV=\"bad\"><off x=\"0\" y=\"12700\"/><ext cx=\"12700\" cy=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 1.0000000000000000, 1.0000000000000000, 7.2000000000000002,
-          0.69999999999999996, false, false,
+          90.000000000000000, false, false,
         ),
       ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x40833333U, 0x40833333U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x40833333U, 0x40833333U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"bad\" flipV=\"0\"><ext cx=\" 3600 \" cy=\"0\"/></xfrm>",
+      "<xfrm rot=\"5400000\" flipH=\"bad\" flipV=\"0\"><ext cx=\" 3600 \" cy=\"0\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 0.28346456692913385, 0.0000000000000000,
-          0.020566666666666667, false, false,
+          90.000000000000000, false, false,
         ),
       ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x3e112245U, 0xbe112245U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x3e112245U, 0xbe112245U,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"true\" flipV=\"on\"><off x=\"-25400\" y=\"9144000\"/></xfrm>",
+      "<xfrm rot=\"bad\" flipH=\"true\" flipV=\"on\"><off x=\"-25400\" y=\"9144000\"/></xfrm>",
       Some(
         (
           -2.0000000000000000, 720.00000000000000, 0.0000000000000000, 0.0000000000000000,
           0.0000000000000000, true, true,
         ),
       ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0xc0000000U, 0x44340000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0xc0000000U, 0x44340000U,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"off\" flipV=\"off\"><off x=\"2.54cm\" y=\"0\"/><ext cx=\"2.54cm\" cy=\"2.54cm\"/></xfrm>",
+      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"off\"><off x=\"2.54cm\" y=\"0\"/><ext cx=\"2.54cm\" cy=\"2.54cm\"/></xfrm>",
       Some(
         (
           72.000000000000000, 0.0000000000000000, 72.000000000000000, 72.000000000000000,
           0.0000000000000000, false, false,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42900000U, 0x00000000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42900000U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"off\" flipV=\"1\"><ext cx=\"bad\" cy=\"1in\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"off\" flipV=\"1\"><ext cx=\"bad\" cy=\"1in\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.078661417322834645, 0.078661417322834645, 0.0000000000000000, 72.000000000000000,
-          0.69999999999999996, false, true,
+          30.000000000000000, false, true,
         ),
       ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0x3f000000U, 0xbf5db3d7U, 0xc18f5ee7U, 0x428682dbU,
+      ],
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0xc18f5ee7U, 0x428682dbU,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"0\" flipV=\"false\"><off x=\" 3600 \" y=\" 3600 \"/><ext cx=\"2.54cm\" cy=\"12700\"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"0\" flipV=\"false\"><off x=\" 3600 \" y=\" 3600 \"/><ext cx=\"2.54cm\" cy=\"12700\"/></xfrm>",
       Some(
         (
           0.28346456692913385, 0.28346456692913385, 72.000000000000000, 1.0000000000000000,
-          90.000000000000000, false, false,
+          -164.60905000000000, false, false,
         ),
       ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x428db82bU, 0x412d1f03U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x428db82bU, 0x412d1f03U,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"true\" flipV=\"1\"><off x=\"9144000\" y=\"-25400\"/><ext cx=\"0\" cy=\"7.2pt\"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"true\" flipV=\"1\"><off x=\"9144000\" y=\"-25400\"/><ext cx=\"0\" cy=\"7.2pt\"/></xfrm>",
       Some(
         (
           720.00000000000000, -2.0000000000000000, 0.0000000000000000, 7.2000000000000002,
-          0.0000000000000000, true, true,
+          205.76130000000001, true, true,
         ),
       ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x44346423U, 0xbfd233c7U,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x44346423U, 0xbfd233c7U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"0\" flipV=\"off\"><off x=\"bad\" y=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"5400000\" flipH=\"0\" flipV=\"off\"><off x=\"bad\" y=\" 3600 \"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
-          0.020566666666666667, false, false,
+          90.000000000000000, false, false,
         ),
       ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x00000000U, 0x3e912245U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x00000000U, 0x3e912245U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"1\" flipV=\"bad\"><off x=\" 3600 \" y=\"9144000\"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"1\" flipV=\"bad\"><off x=\" 3600 \" y=\"9144000\"/></xfrm>",
       Some(
         (
           0.28346456692913385, 720.00000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.020566666666666667, true, false,
+          -164.60905000000000, true, false,
         ),
       ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x3e912245U, 0x44340000U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x3e912245U, 0x44340000U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"bad\" flipV=\"true\"><off x=\"9144000\" y=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"bad\" flipV=\"true\"><off x=\"9144000\" y=\" 3600 \"/></xfrm>",
       Some(
         (
           720.00000000000000, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
-          90.000000000000000, false, true,
+          0.69999999999999996, false, true,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x44340000U, 0x3e912245U,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x44340000U, 0x3e912245U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"off\" flipV=\"off\"><off x=\"0\" y=\"1in\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"off\" flipV=\"off\"><off x=\"0\" y=\"1in\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
-          90.000000000000000, false, false,
+          30.000000000000000, false, false,
         ),
       ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x00000000U, 0x42900000U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x00000000U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"0\" flipV=\"0\"><off x=\"0\" y=\"1in\"/><ext cx=\"7.2pt\" cy=\"2.54cm\"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"0\" flipV=\"0\"><off x=\"0\" y=\"1in\"/><ext cx=\"7.2pt\" cy=\"2.54cm\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 72.000000000000000, 7.2000000000000002, 72.000000000000000,
-          90.000000000000000, false, false,
+          0.69999999999999996, false, false,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3ee15242U, 0x428feadbU,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3ee15242U, 0x428feadbU,
+      ],
     ),
     (
       "<xfrm rot=\"0\" flipH=\"bad\" flipV=\"on\"><off x=\"2.54cm\" y=\"0\"/><ext cx=\"1in\" cy=\"1in\"/></xfrm>",
@@ -500,97 +839,163 @@ test "PPTX transforms match upstream Go" {
           0.0000000000000000, false, true,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x42900000U, 0x42900000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x43100000U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"bad\" flipV=\"false\"><ext cx=\"0\" cy=\"0\"/></xfrm>",
+      "<xfrm rot=\"5400000\" flipH=\"bad\" flipV=\"false\"><ext cx=\"0\" cy=\"0\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.69999999999999996, false, false,
+          90.000000000000000, false, false,
         ),
       ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x00000000U, 0x00000000U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x00000000U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"1\" flipV=\"bad\"><off x=\"bad\" y=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"1\" flipV=\"bad\"><off x=\"bad\" y=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 7.2000000000000002, 0.0000000000000000, 0.0000000000000000,
-          0.020566666666666667, true, false,
+          0.69999999999999996, true, false,
         ),
       ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x00000000U, 0x40e66666U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x00000000U, 0x40e66666U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"1\" flipV=\"bad\"><off x=\"7.2pt\" y=\"7.2pt\"/><ext cx=\"-25400\" cy=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"0\" flipH=\"1\" flipV=\"bad\"><off x=\"7.2pt\" y=\"7.2pt\"/><ext cx=\"-25400\" cy=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           7.2000000000000002, 7.2000000000000002, -2.0000000000000000, 0.28346456692913385,
-          -45.000000000000000, true, false,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\" 42000 \" flipH=\"0\" flipV=\"0\"><off x=\"bad\" y=\"-25400\"/><off x=\"999\" y=\"999\"/></xfrm>",
-      Some(
-        (
-          0.0000000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.69999999999999996, false, false,
-        ),
-      ),
-    ),
-    ("<xfrm rot=\"0\" flipH=\"0\" flipV=\"false\"></xfrm>", None),
-    (
-      "<xfrm rot=\"-2700000\" flipH=\"false\" flipV=\"bad\"><ext cx=\"-25400\" cy=\"-25400\"/><off x=\"999\" y=\"999\"/></xfrm>",
-      Some(
-        (
-          0.078661417322834645, 0.078661417322834645, -2.0000000000000000, -2.0000000000000000,
-          -45.000000000000000, false, false,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"-2700000\" flipH=\"1\" flipV=\"bad\"><off x=\" 3600 \" y=\"-25400\"/><ext cx=\"12700\" cy=\"bad\"/></xfrm>",
-      Some(
-        (
-          0.28346456692913385, -2.0000000000000000, 1.0000000000000000, 0.0000000000000000,
-          -45.000000000000000, true, false,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"0\" flipH=\"true\" flipV=\"bad\"><off x=\"0\" y=\"9144000\"/><ext cx=\"2.54cm\" cy=\"2.54cm\"/></xfrm>",
-      Some(
-        (
-          0.0000000000000000, 720.00000000000000, 72.000000000000000, 72.000000000000000,
           0.0000000000000000, true, false,
         ),
       ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x40a66666U, 0x40e66666U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x40e66666U, 0x40e66666U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"off\" flipV=\"0\"><off x=\"1in\" y=\"bad\"/><ext cx=\"-25400\" cy=\"bad\"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"0\" flipV=\"0\"><off x=\"bad\" y=\"-25400\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
-          72.000000000000000, 0.0000000000000000, -2.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
           0.020566666666666667, false, false,
         ),
       ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x00000000U, 0xc0000000U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x00000000U, 0xc0000000U,
+      ],
+    ),
+    ("<xfrm rot=\"bad\" flipH=\"0\" flipV=\"false\"></xfrm>", None, [], []),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"false\" flipV=\"bad\"><ext cx=\"-25400\" cy=\"-25400\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, -2.0000000000000000, -2.0000000000000000,
+          33.127566666666667, false, false,
+        ),
+      ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0xbf216116U, 0x3eecdcd2U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0xbf216116U, 0x3eecdcd2U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"true\"><off x=\"12700\" y=\" 3600 \"/><ext cx=\"0\" cy=\"2.54cm\"/></xfrm>",
+      "<xfrm rot=\"bad\" flipH=\"1\" flipV=\"bad\"><off x=\" 3600 \" y=\"-25400\"/><ext cx=\"12700\" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, -2.0000000000000000, 1.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3fa44891U, 0xc0000000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3e912245U, 0xc0000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"true\" flipV=\"bad\"><off x=\"0\" y=\"9144000\"/><ext cx=\"2.54cm\" cy=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 720.00000000000000, 72.000000000000000, 72.000000000000000,
+          -45.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x42100000U, 0x443045a7U,
+      ],
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0xc16e9646U, 0x443d0000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"off\" flipV=\"0\"><off x=\"1in\" y=\"bad\"/><ext cx=\"-25400\" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.0000000000000000, -2.0000000000000000, 0.0000000000000000,
+          -164.60905000000000, false, false,
+        ),
+      ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x428c125dU, 0xbe87e303U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x428c125dU, 0xbe87e303U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"off\" flipV=\"true\"><off x=\"12700\" y=\" 3600 \"/><ext cx=\"0\" cy=\"2.54cm\"/></xfrm>",
       Some(
         (
           1.0000000000000000, 0.28346456692913385, 0.0000000000000000, 72.000000000000000,
-          0.0000000000000000, false, true,
+          33.127566666666667, false, true,
         ),
       ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0xc19564b8U, 0x4284dd1fU,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0xc19564b8U, 0x4284dd1fU,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"on\" flipV=\"on\"><off x=\"9144000\" y=\"1in\"/><ext cx=\"-25400\" cy=\"-25400\"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"on\" flipV=\"on\"><off x=\"9144000\" y=\"1in\"/><ext cx=\"-25400\" cy=\"-25400\"/></xfrm>",
       Some(
         (
           720.00000000000000, 72.000000000000000, -2.0000000000000000, -2.0000000000000000,
-          0.69999999999999996, true, true,
+          -164.60905000000000, true, true,
         ),
       ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x4433ecb8U, 0x42907586U,
+      ],
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x4433ecb8U, 0x42907586U,
+      ],
     ),
     (
       "<xfrm rot=\"-2700000\" flipH=\"false\" flipV=\"bad\"><ext cx=\"7.2pt\" cy=\"9144000\"/></xfrm>",
@@ -600,6 +1005,12 @@ test "PPTX transforms match upstream Go" {
           -45.000000000000000, false, false,
         ),
       ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0xc37d8108U, 0x42d7f96bU,
+      ],
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0xc37d8108U, 0x42d7f96bU,
+      ],
     ),
     (
       "<xfrm rot=\" 42000 \" flipH=\"1\" flipV=\"1\"><off x=\"12700\" y=\"12700\"/><ext cx=\" 3600 \" cy=\"12700\"/></xfrm>",
@@ -609,15 +1020,27 @@ test "PPTX transforms match upstream Go" {
           0.69999999999999996, true, true,
         ),
       ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x3fa3800fU, 0x40001bc2U,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x3fa3800fU, 0x40001bc2U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"false\" flipV=\"false\"><off x=\" 3600 \" y=\"1in\"/><ext cx=\"12700\" cy=\"-25400\"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"false\" flipV=\"false\"><off x=\" 3600 \" y=\"1in\"/><ext cx=\"12700\" cy=\"-25400\"/></xfrm>",
       Some(
         (
           0.28346456692913385, 72.000000000000000, 1.0000000000000000, -2.0000000000000000,
-          0.0000000000000000, false, false,
+          205.76130000000001, false, false,
         ),
       ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x3fd58dedU, 0x428ca226U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x3fd58dedU, 0x428ca226U,
+      ],
     ),
     (
       "<xfrm rot=\"1234.5\" flipH=\"true\" flipV=\"true\"><off x=\"2.54cm\" y=\"9144000\"/><ext cx=\"7.2pt\" cy=\"12700\"/><off x=\"999\" y=\"999\"/></xfrm>",
@@ -627,79 +1050,133 @@ test "PPTX transforms match upstream Go" {
           0.020566666666666667, true, true,
         ),
       ),
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x429e664fU, 0x44344015U,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x429e664fU, 0x44344015U,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"1\" flipV=\"on\"><off x=\"9144000\" y=\"0\"/></xfrm>",
+      "<xfrm rot=\"-2700000\" flipH=\"1\" flipV=\"on\"><off x=\"9144000\" y=\"0\"/></xfrm>",
       Some(
         (
           720.00000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.0000000000000000, true, true,
+          -45.000000000000000, true, true,
         ),
       ),
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x44340000U, 0x00000000U,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x44340000U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"on\" flipV=\"true\"><off x=\"9144000\" y=\"2.54cm\"/><ext cx=\"-25400\" cy=\"9144000\"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"on\" flipV=\"true\"><off x=\"9144000\" y=\"2.54cm\"/><ext cx=\"-25400\" cy=\"9144000\"/></xfrm>",
       Some(
         (
           720.00000000000000, 72.000000000000000, -2.0000000000000000, 720.00000000000000,
-          0.0000000000000000, true, true,
+          205.76130000000001, true, true,
         ),
       ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x445b175aU, 0x42d86da0U,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x445b175aU, 0x42d86da0U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"0\" flipV=\"on\"><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"0\" flipV=\"on\"><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.078661417322834645, 0.078661417322834645, 0.0000000000000000, 0.0000000000000000,
-          90.000000000000000, false, true,
+          -164.60905000000000, false, true,
         ),
       ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x3da1193dU, 0x3da1193dU,
+      ],
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x3da1193dU, 0x3da1193dU,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"bad\" flipV=\"bad\"><ext cx=\"9144000\" cy=\"1in\"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"bad\" flipV=\"bad\"><ext cx=\"9144000\" cy=\"1in\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 720.00000000000000, 72.000000000000000,
-          90.000000000000000, false, false,
+          0.69999999999999996, false, false,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3eeef08bU, 0xc08ca764U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3eeef08bU, 0xc08ca764U,
+      ],
     ),
-    ("<xfrm rot=\" 42000 \" flipH=\"off\" flipV=\"on\"></xfrm>", None),
+    ("<xfrm rot=\"1800000\" flipH=\"off\" flipV=\"on\"></xfrm>", None, [], []),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"0\" flipV=\"true\"><off x=\"bad\" y=\"-25400\"/><ext cx=\"0\" cy=\"bad\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"0\" flipV=\"true\"><off x=\"bad\" y=\"-25400\"/><ext cx=\"0\" cy=\"bad\"/></xfrm>",
       Some(
         (
           0.0000000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          -45.000000000000000, false, true,
+          33.127566666666667, false, true,
         ),
       ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x00000000U, 0xc0000000U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x00000000U, 0xc0000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"bad\"><off x=\"1in\" y=\"9144000\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"false\" flipV=\"bad\"><off x=\"1in\" y=\"9144000\"/></xfrm>",
       Some(
         (
           72.000000000000000, 720.00000000000000, 0.0000000000000000, 0.0000000000000000,
-          90.000000000000000, false, false,
+          30.000000000000000, false, false,
         ),
       ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x42900000U, 0x44340000U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x42900000U, 0x44340000U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"off\" flipV=\"1\"><off x=\"bad\" y=\"1in\"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"off\" flipV=\"1\"><off x=\"bad\" y=\"1in\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
-          90.000000000000000, false, true,
+          -164.60905000000000, false, true,
         ),
       ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x00000000U, 0x42900000U,
+      ],
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x00000000U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"0\" flipV=\"bad\"><off x=\"9144000\" y=\"7.2pt\"/><ext cx=\"0\" cy=\"-25400\"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"0\" flipV=\"bad\"><off x=\"9144000\" y=\"7.2pt\"/><ext cx=\"0\" cy=\"-25400\"/></xfrm>",
       Some(
         (
           720.00000000000000, 7.2000000000000002, 0.0000000000000000, -2.0000000000000000,
-          90.000000000000000, false, false,
+          0.020566666666666667, false, false,
         ),
       ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x4433fffaU, 0x40e66666U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x4433fffaU, 0x40e66666U,
+      ],
     ),
     (
       "<xfrm rot=\"0\" flipH=\"off\" flipV=\"0\"><off x=\"7.2pt\" y=\"12700\"/><ext cx=\" 3600 \" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
@@ -709,62 +1186,104 @@ test "PPTX transforms match upstream Go" {
           0.0000000000000000, false, false,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x40e66666U, 0x3f800000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x40e66666U, 0x3f800000U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"1\" flipV=\"off\"><off x=\"9144000\" y=\"2.54cm\"/><ext cx=\"bad\" cy=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"5400000\" flipH=\"1\" flipV=\"off\"><off x=\"9144000\" y=\"2.54cm\"/><ext cx=\"bad\" cy=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           720.00000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.69999999999999996, true, false,
+          90.000000000000000, true, false,
         ),
       ),
+      [
+        0xa48d3132U, 0xbf800000U, 0xbf800000U, 0x248d3132U, 0x44340000U, 0x42900000U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x44340000U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"bad\" flipV=\"1\"><ext cx=\"-25400\" cy=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"bad\" flipV=\"1\"><ext cx=\"-25400\" cy=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.078661417322834645, 0.078661417322834645, -2.0000000000000000, 0.0000000000000000,
-          0.69999999999999996, false, true,
+          30.000000000000000, false, true,
         ),
       ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0x3f000000U, 0xbf5db3d7U, 0xbd629012U, 0x3f142328U,
+      ],
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0xbfe4c858U, 0xbed7b9b1U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"off\"><off x=\"-25400\" y=\"bad\"/><ext cx=\"9144000\" cy=\"0\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"false\" flipV=\"off\"><off x=\"-25400\" y=\"bad\"/><ext cx=\"9144000\" cy=\"0\"/></xfrm>",
       Some(
         (
           -2.0000000000000000, 0.0000000000000000, 720.00000000000000, 0.0000000000000000,
-          90.000000000000000, false, false,
+          30.000000000000000, false, false,
         ),
       ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x4238ec65U, 0xc3340000U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x4238ec65U, 0xc3340000U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"1\" flipV=\"false\"><off x=\"12700\" y=\"7.2pt\"/><ext cx=\" 3600 \" cy=\"7.2pt\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"1\" flipV=\"false\"><off x=\"12700\" y=\"7.2pt\"/><ext cx=\" 3600 \" cy=\"7.2pt\"/></xfrm>",
       Some(
         (
           1.0000000000000000, 7.2000000000000002, 0.28346456692913385, 7.2000000000000002,
-          0.020566666666666667, true, false,
+          30.000000000000000, true, false,
         ),
       ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0xbf000000U, 0x3f5db3d7U, 0x40442060U, 0x40f81a02U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x40346a4fU, 0x40f390f0U,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"false\" flipV=\"1\"><off x=\"0\" y=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"-2700000\" flipH=\"false\" flipV=\"1\"><off x=\"0\" y=\" 3600 \"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
-          0.0000000000000000, false, true,
+          -45.000000000000000, false, true,
         ),
       ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x00000000U, 0x3e912245U,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x00000000U, 0x3e912245U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"false\" flipV=\"0\"><ext cx=\"2.54cm\" cy=\"2.54cm\"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"false\" flipV=\"0\"><ext cx=\"2.54cm\" cy=\"2.54cm\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 72.000000000000000, 72.000000000000000,
-          0.020566666666666667, false, false,
+          0.69999999999999996, false, false,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3ee28f31U, 0xbedfcee4U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3ee28f31U, 0xbedfcee4U,
+      ],
     ),
-    ("<xfrm rot=\"0\" flipH=\"bad\" flipV=\"true\"></xfrm>", None),
+    ("<xfrm rot=\"1987654\" flipH=\"bad\" flipV=\"true\"></xfrm>", None, [], []),
     (
       "<xfrm rot=\"bad\" flipH=\"0\" flipV=\"1\"><off x=\"bad\" y=\"7.2pt\"/></xfrm>",
       Some(
@@ -773,33 +1292,57 @@ test "PPTX transforms match upstream Go" {
           0.0000000000000000, false, true,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x00000000U, 0x40e66666U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x00000000U, 0x40e66666U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"true\" flipV=\"false\"><ext cx=\"1in\" cy=\"bad\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"true\" flipV=\"false\"><ext cx=\"1in\" cy=\"bad\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 72.000000000000000, 0.0000000000000000,
-          0.69999999999999996, true, false,
+          30.000000000000000, true, false,
         ),
       ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0xbf000000U, 0x3f5db3d7U, 0x42865a95U, 0x41900000U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x409a56b7U, 0xc1900000U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"false\" flipV=\"bad\"><off x=\"12700\" y=\"7.2pt\"/><ext cx=\"2.54cm\" cy=\"0\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"false\" flipV=\"bad\"><off x=\"12700\" y=\"7.2pt\"/><ext cx=\"2.54cm\" cy=\"0\"/></xfrm>",
       Some(
         (
           1.0000000000000000, 7.2000000000000002, 72.000000000000000, 0.0000000000000000,
-          0.69999999999999996, false, false,
+          30.000000000000000, false, false,
         ),
       ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x40ba56b7U, 0xc12ccccdU,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x40ba56b7U, 0xc12ccccdU,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"bad\" flipV=\"0\"><ext cx=\"0\" cy=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"bad\" flipV=\"0\"><ext cx=\"0\" cy=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.078661417322834645, 0.078661417322834645, 0.0000000000000000, 72.000000000000000,
-          0.020566666666666667, false, false,
+          0.69999999999999996, false, false,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3f04baadU, 0x3da699d6U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3f04baadU, 0x3da699d6U,
+      ],
     ),
     (
       "<xfrm rot=\"5400000\" flipH=\"0\" flipV=\"0\"><off x=\"2.54cm\" y=\"0\"/><ext cx=\"9144000\" cy=\"12700\"/><off x=\"999\" y=\"999\"/></xfrm>",
@@ -809,6 +1352,12 @@ test "PPTX transforms match upstream Go" {
           90.000000000000000, false, false,
         ),
       ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x43d84000U, 0xc3b3c000U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x43d84000U, 0xc3b3c000U,
+      ],
     ),
     (
       "<xfrm rot=\"0\" flipH=\"0\" flipV=\"1\"><off x=\"9144000\" y=\"bad\"/><ext cx=\"12700\" cy=\"-25400\"/></xfrm>",
@@ -818,24 +1367,42 @@ test "PPTX transforms match upstream Go" {
           0.0000000000000000, false, true,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x44340000U, 0xc0000000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x44344000U, 0xc0000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"true\" flipV=\"bad\"><off x=\"1in\" y=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"true\" flipV=\"bad\"><off x=\"1in\" y=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           72.000000000000000, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
-          0.0000000000000000, true, false,
+          205.76130000000001, true, false,
         ),
       ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x42900000U, 0x3e912245U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x42900000U, 0x3e912245U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"false\"><off x=\"1in\" y=\"-25400\"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"on\" flipV=\"false\"><off x=\"1in\" y=\"-25400\"/></xfrm>",
       Some(
         (
           72.000000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          90.000000000000000, true, false,
+          0.020566666666666667, true, false,
         ),
       ),
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x42900000U, 0xc0000000U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x42900000U, 0xc0000000U,
+      ],
     ),
     (
       "<xfrm rot=\"bad\" flipH=\"false\" flipV=\"off\"><off x=\"0\" y=\"12700\"/><ext cx=\"2.54cm\" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
@@ -845,60 +1412,102 @@ test "PPTX transforms match upstream Go" {
           0.0000000000000000, false, false,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x3f800000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x3f800000U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"false\" flipV=\"bad\"><off x=\"-25400\" y=\"12700\"/><ext cx=\"12700\" cy=\"0\"/></xfrm>",
+      "<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"bad\"><off x=\"-25400\" y=\"12700\"/><ext cx=\"12700\" cy=\"0\"/></xfrm>",
       Some(
         (
           -2.0000000000000000, 1.0000000000000000, 1.0000000000000000, 0.0000000000000000,
-          0.69999999999999996, false, false,
+          90.000000000000000, false, false,
         ),
       ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0xbfc00000U, 0x3f000000U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0xbfc00000U, 0x3f000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"bad\" flipV=\"on\"><off x=\"12700\" y=\"7.2pt\"/><ext cx=\"1in\" cy=\"bad\"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"bad\" flipV=\"on\"><off x=\"12700\" y=\"7.2pt\"/><ext cx=\"1in\" cy=\"bad\"/></xfrm>",
       Some(
         (
           1.0000000000000000, 7.2000000000000002, 72.000000000000000, 0.0000000000000000,
-          90.000000000000000, false, true,
+          0.69999999999999996, false, true,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x3f80580aU, 0x40d85376U,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x4291fea0U, 0x40f47957U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"on\" flipV=\"1\"><off x=\"0\" y=\"9144000\"/><ext cx=\"12700\" cy=\"7.2pt\"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"on\" flipV=\"1\"><off x=\"0\" y=\"9144000\"/><ext cx=\"12700\" cy=\"7.2pt\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 720.00000000000000, 1.0000000000000000, 7.2000000000000002,
-          0.69999999999999996, true, true,
+          0.020566666666666667, true, true,
         ),
       ),
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x3f7fab4fU, 0x4435ccd0U,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x3f7fab4fU, 0x4435ccd0U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"bad\" flipV=\"0\"><off x=\"12700\" y=\"bad\"/><ext cx=\"9144000\" cy=\"-25400\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"bad\" flipV=\"0\"><off x=\"12700\" y=\"bad\"/><ext cx=\"9144000\" cy=\"-25400\"/></xfrm>",
       Some(
         (
           1.0000000000000000, 0.0000000000000000, 720.00000000000000, -2.0000000000000000,
-          0.0000000000000000, false, false,
+          33.127566666666667, false, false,
         ),
       ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x426be0a5U, 0xc344e782U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x426be0a5U, 0xc344e782U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"on\"><off x=\"1in\" y=\"7.2pt\"/><ext cx=\"1in\" cy=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"on\" flipV=\"on\"><off x=\"1in\" y=\"7.2pt\"/><ext cx=\"1in\" cy=\" 3600 \"/></xfrm>",
       Some(
         (
           72.000000000000000, 7.2000000000000002, 72.000000000000000, 0.28346456692913385,
-          90.000000000000000, true, true,
+          0.020566666666666667, true, true,
         ),
       ),
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x430ffffdU, 0x40efe267U,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x430ffffdU, 0x40efe267U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"true\" flipV=\"off\"><off x=\" 3600 \" y=\"-25400\"/><ext cx=\"7.2pt\" cy=\"7.2pt\"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"true\" flipV=\"off\"><off x=\" 3600 \" y=\"-25400\"/><ext cx=\"7.2pt\" cy=\"7.2pt\"/></xfrm>",
       Some(
         (
           0.28346456692913385, -2.0000000000000000, 7.2000000000000002, 7.2000000000000002,
-          0.69999999999999996, true, false,
+          0.020566666666666667, true, false,
         ),
       ),
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x40ef8320U, 0xbfffd5a6U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3e91cbadU, 0xc000152bU,
+      ],
     ),
     (
       "<xfrm rot=\" 42000 \" flipH=\"off\" flipV=\"on\"><off x=\"12700\" y=\"2.54cm\"/><ext cx=\"bad\" cy=\"12700\"/></xfrm>",
@@ -908,6 +1517,12 @@ test "PPTX transforms match upstream Go" {
           0.69999999999999996, false, true,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x3f7e6facU, 0x4291fffbU,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x3f7e6facU, 0x4291fffbU,
+      ],
     ),
     (
       "<xfrm rot=\" 42000 \" flipH=\"false\" flipV=\"0\"><off x=\"9144000\" y=\"1in\"/><ext cx=\"0\" cy=\"-25400\"/></xfrm>",
@@ -917,60 +1532,102 @@ test "PPTX transforms match upstream Go" {
           0.69999999999999996, false, false,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x4433ff38U, 0x428ffff6U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x4433ff38U, 0x428ffff6U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"1\" flipV=\"1\"><off x=\"0\" y=\"bad\"/><ext cx=\"12700\" cy=\"0\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"1\" flipV=\"1\"><off x=\"0\" y=\"bad\"/><ext cx=\"12700\" cy=\"0\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 1.0000000000000000, 0.0000000000000000,
-          -45.000000000000000, true, true,
+          33.127566666666667, true, true,
         ),
       ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x3f6b31c1U, 0x3e8be7c0U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x3f6b31c1U, 0x3e8be7c0U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"0\" flipV=\"off\"><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"5400000\" flipH=\"0\" flipV=\"off\"><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.078661417322834645, 0.078661417322834645, 0.0000000000000000, 0.0000000000000000,
-          0.020566666666666667, false, false,
+          90.000000000000000, false, false,
         ),
       ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x3da1193dU, 0x3da1193dU,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x3da1193dU, 0x3da1193dU,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"bad\" flipV=\"0\"><ext cx=\"12700\" cy=\"12700\"/></xfrm>",
+      "<xfrm rot=\"5400000\" flipH=\"bad\" flipV=\"0\"><ext cx=\"12700\" cy=\"12700\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 1.0000000000000000, 1.0000000000000000,
-          0.69999999999999996, false, false,
+          90.000000000000000, false, false,
         ),
       ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x3f800000U, 0x00000000U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x3f800000U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"true\" flipV=\"false\"><off x=\"1in\" y=\"12700\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"true\" flipV=\"false\"><off x=\"1in\" y=\"12700\"/></xfrm>",
       Some(
         (
           72.000000000000000, 1.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.0000000000000000, true, false,
+          33.127566666666667, true, false,
         ),
       ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x42900000U, 0x3f800000U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x42900000U, 0x3f800000U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"true\" flipV=\"true\"><ext cx=\"1in\" cy=\"0\"/></xfrm>",
+      "<xfrm rot=\"0\" flipH=\"true\" flipV=\"true\"><ext cx=\"1in\" cy=\"0\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 72.000000000000000, 0.0000000000000000,
-          -45.000000000000000, true, true,
+          0.0000000000000000, true, true,
         ),
       ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x42900000U, 0x00000000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x42900000U, 0xa79ed758U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"false\" flipV=\"on\"><off x=\"9144000\" y=\"12700\"/><ext cx=\"12700\" cy=\"1in\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"false\" flipV=\"on\"><off x=\"9144000\" y=\"12700\"/><ext cx=\"12700\" cy=\"1in\"/></xfrm>",
       Some(
         (
           720.00000000000000, 1.0000000000000000, 1.0000000000000000, 72.000000000000000,
-          0.020566666666666667, false, true,
+          30.000000000000000, false, true,
         ),
       ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0x3f000000U, 0xbf5db3d7U, 0x442f844aU, 0x4287da95U,
+      ],
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x442fbbb6U, 0x4288da95U,
+      ],
     ),
     (
       "<xfrm rot=\"0\" flipH=\"bad\" flipV=\"0\"><off x=\"-25400\" y=\"2.54cm\"/><ext cx=\"-25400\" cy=\"1in\"/></xfrm>",
@@ -980,33 +1637,57 @@ test "PPTX transforms match upstream Go" {
           0.0000000000000000, false, false,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0xc0000000U, 0x42900000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0xc0000000U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"true\" flipV=\"off\"><ext cx=\"9144000\" cy=\"12700\"/></xfrm>",
+      "<xfrm rot=\"bad\" flipH=\"true\" flipV=\"off\"><ext cx=\"9144000\" cy=\"12700\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 720.00000000000000, 1.0000000000000000,
-          -45.000000000000000, true, false,
+          0.0000000000000000, true, false,
         ),
       ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x44340000U, 0x00000000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"on\" flipV=\"false\"><off x=\"9144000\" y=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"on\" flipV=\"false\"><off x=\"9144000\" y=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           720.00000000000000, 7.2000000000000002, 0.0000000000000000, 0.0000000000000000,
-          -45.000000000000000, true, false,
+          33.127566666666667, true, false,
         ),
       ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x44340000U, 0x40e66666U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x44340000U, 0x40e66666U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"1\" flipV=\"false\"><off x=\"-25400\" y=\"7.2pt\"/><ext cx=\"7.2pt\" cy=\"-25400\"/></xfrm>",
+      "<xfrm rot=\"5400000\" flipH=\"1\" flipV=\"false\"><off x=\"-25400\" y=\"7.2pt\"/><ext cx=\"7.2pt\" cy=\"-25400\"/></xfrm>",
       Some(
         (
           -2.0000000000000000, 7.2000000000000002, 7.2000000000000002, -2.0000000000000000,
-          0.020566666666666667, true, false,
+          90.000000000000000, true, false,
         ),
       ),
+      [
+        0xa48d3132U, 0xbf800000U, 0xbf800000U, 0x248d3132U, 0x3f19999aU, 0x411ccccdU,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x3f19999aU, 0x40266666U,
+      ],
     ),
     (
       "<xfrm rot=\" 42000 \" flipH=\"1\" flipV=\"off\"><off x=\"bad\" y=\"-25400\"/><ext cx=\"-25400\" cy=\"7.2pt\"/></xfrm>",
@@ -1016,35 +1697,64 @@ test "PPTX transforms match upstream Go" {
           0.69999999999999996, true, false,
         ),
       ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0xbffa5c61U, 0xc000c3c3U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3d33d761U, 0xbffe66dfU,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"off\"><off x=\"2.54cm\" y=\"0\"/><ext cx=\"-25400\" cy=\"2.54cm\"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"on\" flipV=\"off\"><off x=\"2.54cm\" y=\"0\"/><ext cx=\"-25400\" cy=\"2.54cm\"/></xfrm>",
       Some(
         (
           72.000000000000000, 0.0000000000000000, -2.0000000000000000, 72.000000000000000,
-          90.000000000000000, true, false,
+          0.69999999999999996, true, false,
         ),
       ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x428ce139U, 0xbc1c2503U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x4290e125U, 0x3c742e9fU,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"bad\" flipV=\"off\"><ext cx=\"9144000\" cy=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"bad\" flipV=\"off\"><ext cx=\"9144000\" cy=\" 3600 \"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 720.00000000000000, 0.28346456692913385,
-          90.000000000000000, false, false,
+          30.000000000000000, false, false,
         ),
       ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x424134f6U, 0xc333fb24U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x424134f6U, 0xc333fb24U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"1\" flipV=\"bad\"><off x=\"7.2pt\" y=\"2.54cm\"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"1\" flipV=\"bad\"><off x=\"7.2pt\" y=\"2.54cm\"/></xfrm>",
       Some(
         (
           7.2000000000000002, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
-          90.000000000000000, true, false,
+          0.020566666666666667, true, false,
         ),
       ),
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x40e66666U, 0x42900000U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x40e66666U, 0x42900000U,
+      ],
     ),
-    ("<xfrm rot=\"bad\" flipH=\"true\" flipV=\"false\"></xfrm>", None),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"true\" flipV=\"false\"></xfrm>",
+      None,
+      [],
+      [],
+    ),
     (
       "<xfrm rot=\"5400000\" flipH=\"1\" flipV=\"1\"><off x=\"12700\" y=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
@@ -1053,6 +1763,12 @@ test "PPTX transforms match upstream Go" {
           90.000000000000000, true, true,
         ),
       ),
+      [
+        0xa48d3132U, 0xbf800000U, 0x3f800000U, 0xa48d3132U, 0x3f800000U, 0x00000000U,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0x3f800000U, 0x00000000U,
+      ],
     ),
     (
       "<xfrm rot=\"-2700000\" flipH=\"on\" flipV=\"true\"><off x=\"9144000\" y=\"7.2pt\"/></xfrm>",
@@ -1062,43 +1778,73 @@ test "PPTX transforms match upstream Go" {
           -45.000000000000000, true, true,
         ),
       ),
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x44340000U, 0x40e66666U,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x44340000U, 0x40e66666U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"false\" flipV=\"on\"><off x=\" 3600 \" y=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"false\" flipV=\"on\"><off x=\" 3600 \" y=\" 3600 \"/></xfrm>",
       Some(
         (
           0.28346456692913385, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
-          0.69999999999999996, false, true,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"1234.5\" flipH=\"true\" flipV=\"off\"><off x=\"-25400\" y=\"2.54cm\"/><ext cx=\"1in\" cy=\"12700\"/></xfrm>",
-      Some(
-        (
-          -2.0000000000000000, 72.000000000000000, 72.000000000000000, 1.0000000000000000,
-          0.020566666666666667, true, false,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"1234.5\" flipH=\"false\" flipV=\"on\"><off x=\" 3600 \" y=\"bad\"/><ext cx=\"1in\" cy=\"bad\"/></xfrm>",
-      Some(
-        (
-          0.28346456692913385, 0.0000000000000000, 72.000000000000000, 0.0000000000000000,
           0.020566666666666667, false, true,
         ),
       ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x3e912245U, 0x3e912245U,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x3e912245U, 0x3e912245U,
+      ],
     ),
-    ("<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"0\"></xfrm>", None),
     (
-      "<xfrm rot=\"bad\" flipH=\"1\" flipV=\"1\"><off x=\"bad\" y=\"0\"/><ext cx=\"-25400\" cy=\"-25400\"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"true\" flipV=\"off\"><off x=\"-25400\" y=\"2.54cm\"/><ext cx=\"1in\" cy=\"12700\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 72.000000000000000, 72.000000000000000, 1.0000000000000000,
+          0.69999999999999996, true, false,
+        ),
+      ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x428c01c1U, 0x4290e134U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0xbffedfcdU, 0x428f1ed6U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"on\"><off x=\" 3600 \" y=\"bad\"/><ext cx=\"1in\" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 0.0000000000000000, 72.000000000000000, 0.0000000000000000,
+          90.000000000000000, false, true,
+        ),
+      ),
+      [
+        0x248d3132U, 0x3f800000U, 0x3f800000U, 0xa48d3132U, 0x42112245U, 0xc2100000U,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0x42112245U, 0x42100000U,
+      ],
+    ),
+    ("<xfrm rot=\"-9876543\" flipH=\"on\" flipV=\"0\"></xfrm>", None, [], []),
+    (
+      "<xfrm rot=\"0\" flipH=\"1\" flipV=\"1\"><off x=\"bad\" y=\"0\"/><ext cx=\"-25400\" cy=\"-25400\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, -2.0000000000000000, -2.0000000000000000,
           0.0000000000000000, true, true,
         ),
       ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0xc0000000U, 0xc0000000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0xc0000000U, 0xc0000000U,
+      ],
     ),
     (
       "<xfrm rot=\" 42000 \" flipH=\"false\" flipV=\"true\"><off x=\"2.54cm\" y=\"7.2pt\"/></xfrm>",
@@ -1108,6 +1854,12 @@ test "PPTX transforms match upstream Go" {
           0.69999999999999996, false, true,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x42900000U, 0x40e66666U,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x42900000U, 0x40e66666U,
+      ],
     ),
     (
       "<xfrm rot=\"bad\" flipH=\"0\" flipV=\"off\"><off x=\"7.2pt\" y=\"2.54cm\"/><ext cx=\"-25400\" cy=\"-25400\"/></xfrm>",
@@ -1117,24 +1869,42 @@ test "PPTX transforms match upstream Go" {
           0.0000000000000000, false, false,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x40e66666U, 0x42900000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x40e66666U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"true\" flipV=\"true\"><off x=\"12700\" y=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"true\" flipV=\"true\"><off x=\"12700\" y=\" 3600 \"/></xfrm>",
       Some(
         (
           1.0000000000000000, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
-          0.0000000000000000, true, true,
+          205.76130000000001, true, true,
         ),
       ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x3f800000U, 0x3e912245U,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x3f800000U, 0x3e912245U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"bad\" flipV=\"false\"><off x=\"7.2pt\" y=\"1in\"/><ext cx=\"12700\" cy=\"12700\"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"bad\" flipV=\"false\"><off x=\"7.2pt\" y=\"1in\"/><ext cx=\"12700\" cy=\"12700\"/></xfrm>",
       Some(
         (
           7.2000000000000002, 72.000000000000000, 1.0000000000000000, 1.0000000000000000,
-          0.020566666666666667, false, false,
+          0.69999999999999996, false, false,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x40e698bfU, 0x428ffce4U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x40e698bfU, 0x428ffce4U,
+      ],
     ),
     (
       "<xfrm rot=\"0\" flipH=\"bad\" flipV=\"true\"><off x=\"7.2pt\" y=\"12700\"/><ext cx=\"0\" cy=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
@@ -1144,60 +1914,102 @@ test "PPTX transforms match upstream Go" {
           0.0000000000000000, false, true,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x40e66666U, 0x42920000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x40e66666U, 0x42920000U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"false\" flipV=\"false\"><ext cx=\"-25400\" cy=\"9144000\"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"false\" flipV=\"false\"><ext cx=\"-25400\" cy=\"9144000\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, -2.0000000000000000, 720.00000000000000,
-          0.69999999999999996, false, false,
+          0.020566666666666667, false, false,
         ),
       ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3e045353U, 0x39c85b2aU,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3e045353U, 0x39c85b2aU,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"false\"><ext cx=\"2.54cm\" cy=\"0\"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"false\" flipV=\"false\"><ext cx=\"2.54cm\" cy=\"0\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 72.000000000000000, 0.0000000000000000,
-          90.000000000000000, false, false,
+          -164.60905000000000, false, false,
         ),
       ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x428d6afbU, 0x4118df63U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x428d6afbU, 0x4118df63U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"on\" flipV=\"1\"><ext cx=\"2.54cm\" cy=\"7.2pt\"/></xfrm>",
+      "<xfrm rot=\"-2700000\" flipH=\"on\" flipV=\"1\"><ext cx=\"2.54cm\" cy=\"7.2pt\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 72.000000000000000, 7.2000000000000002,
-          0.0000000000000000, true, true,
+          -45.000000000000000, true, true,
         ),
       ),
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x428000bbU, 0xc19a7b69U,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x428000bbU, 0xc19a7b69U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"0\" flipV=\"bad\"><off x=\"12700\" y=\" 3600 \"/><ext cx=\"1in\" cy=\"0\"/></xfrm>",
+      "<xfrm rot=\"0\" flipH=\"0\" flipV=\"bad\"><off x=\"12700\" y=\" 3600 \"/><ext cx=\"1in\" cy=\"0\"/></xfrm>",
       Some(
         (
           1.0000000000000000, 0.28346456692913385, 72.000000000000000, 0.0000000000000000,
           0.0000000000000000, false, false,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3f800000U, 0x3e912245U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3f800000U, 0x3e912245U,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"false\" flipV=\"bad\"><off x=\"7.2pt\" y=\"0\"/><ext cx=\"1in\" cy=\"9144000\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"false\" flipV=\"bad\"><off x=\"7.2pt\" y=\"0\"/><ext cx=\"1in\" cy=\"9144000\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           7.2000000000000002, 0.0000000000000000, 72.000000000000000, 720.00000000000000,
-          0.0000000000000000, false, false,
+          205.76130000000001, false, false,
         ),
       ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0xc2a1af33U, 0x442ef77cU,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0xc2a1af33U, 0x442ef77cU,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"true\" flipV=\"true\"><off x=\"0\" y=\"0\"/><ext cx=\"7.2pt\" cy=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"true\" flipV=\"true\"><off x=\"0\" y=\"0\"/><ext cx=\"7.2pt\" cy=\" 3600 \"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 7.2000000000000002, 0.28346456692913385,
-          0.020566666666666667, true, true,
+          -164.60905000000000, true, true,
         ),
       ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x3e2ab924U, 0xbf734b82U,
+      ],
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x3e2ab924U, 0xbf734b82U,
+      ],
     ),
     (
       "<xfrm rot=\"bad\" flipH=\"0\" flipV=\"bad\"><ext cx=\" 3600 \" cy=\"0\"/></xfrm>",
@@ -1207,33 +2019,57 @@ test "PPTX transforms match upstream Go" {
           0.0000000000000000, false, false,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x00000000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"0\" flipV=\"bad\"><off x=\"7.2pt\" y=\"7.2pt\"/><ext cx=\"7.2pt\" cy=\"2.54cm\"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"0\" flipV=\"bad\"><off x=\"7.2pt\" y=\"7.2pt\"/><ext cx=\"7.2pt\" cy=\"2.54cm\"/></xfrm>",
       Some(
         (
           7.2000000000000002, 7.2000000000000002, 7.2000000000000002, 72.000000000000000,
-          0.69999999999999996, false, false,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"1234.5\" flipH=\"off\" flipV=\"bad\"><off x=\"1in\" y=\"12700\"/></xfrm>",
-      Some(
-        (
-          72.000000000000000, 1.0000000000000000, 0.0000000000000000, 0.0000000000000000,
           0.020566666666666667, false, false,
         ),
       ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x40e6d043U, 0x40e65bd5U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x40e6d043U, 0x40e65bd5U,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"bad\" flipV=\"1\"><off x=\"9144000\" y=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"5400000\" flipH=\"off\" flipV=\"bad\"><off x=\"1in\" y=\"12700\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 1.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          90.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x42900000U, 0x3f800000U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x42900000U, 0x3f800000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"bad\" flipV=\"1\"><off x=\"9144000\" y=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           720.00000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.0000000000000000, false, true,
+          33.127566666666667, false, true,
         ),
       ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x44340000U, 0x42900000U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x44340000U, 0x42900000U,
+      ],
     ),
     (
       "<xfrm rot=\"-2700000\" flipH=\"off\" flipV=\"bad\"><off x=\"2.54cm\" y=\"7.2pt\"/><ext cx=\"1in\" cy=\"1in\"/><off x=\"999\" y=\"999\"/></xfrm>",
@@ -1243,69 +2079,117 @@ test "PPTX transforms match upstream Go" {
           -45.000000000000000, false, false,
         ),
       ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x42645a6eU, 0x422ccccdU,
+      ],
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x42645a6eU, 0x422ccccdU,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"false\" flipV=\"0\"><off x=\"7.2pt\" y=\"1in\"/><ext cx=\" 3600 \" cy=\"-25400\"/></xfrm>",
+      "<xfrm rot=\"0\" flipH=\"false\" flipV=\"0\"><off x=\"7.2pt\" y=\"1in\"/><ext cx=\" 3600 \" cy=\"-25400\"/></xfrm>",
       Some(
         (
           7.2000000000000002, 72.000000000000000, 0.28346456692913385, -2.0000000000000000,
-          -45.000000000000000, false, false,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"1234.5\" flipH=\"off\" flipV=\"off\"><off x=\"bad\" y=\"9144000\"/><ext cx=\"9144000\" cy=\"0\"/></xfrm>",
-      Some(
-        (
-          0.0000000000000000, 720.00000000000000, 720.00000000000000, 0.0000000000000000,
-          0.020566666666666667, false, false,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"5400000\" flipH=\"0\" flipV=\"on\"><off x=\"12700\" y=\"bad\"/><ext cx=\"2.54cm\" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
-      Some(
-        (
-          1.0000000000000000, 0.0000000000000000, 72.000000000000000, 0.0000000000000000,
-          90.000000000000000, false, true,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"0\" flipH=\"bad\" flipV=\"bad\"><off x=\"-25400\" y=\"-25400\"/></xfrm>",
-      Some(
-        (
-          -2.0000000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
           0.0000000000000000, false, false,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x40e66666U, 0x42900000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x40e66666U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"bad\" flipV=\"off\"><off x=\"bad\" y=\"0\"/><ext cx=\"bad\" cy=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"off\" flipV=\"off\"><off x=\"bad\" y=\"9144000\"/><ext cx=\"9144000\" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 720.00000000000000, 720.00000000000000, 0.0000000000000000,
+          30.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x4240ec65U, 0x44070000U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x4240ec65U, 0x44070000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"0\" flipV=\"on\"><off x=\"12700\" y=\"bad\"/><ext cx=\"2.54cm\" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 0.0000000000000000, 72.000000000000000, 0.0000000000000000,
+          0.020566666666666667, false, true,
+        ),
+      ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x3f800013U, 0xbc53b88cU,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x42920000U, 0x3c53b88cU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"bad\" flipV=\"bad\"><off x=\"-25400\" y=\"-25400\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          -45.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0xc0000000U, 0xc0000000U,
+      ],
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0xc0000000U, 0xc0000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"bad\" flipV=\"off\"><off x=\"bad\" y=\"0\"/><ext cx=\"bad\" cy=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.28346456692913385,
+          0.69999999999999996, false, false,
+        ),
+      ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3ae2f4f5U, 0x37317624U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3ae2f4f5U, 0x37317624U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"0\" flipV=\"off\"><off x=\"0\" y=\"bad\"/><ext cx=\"bad\" cy=\" 3600 \"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.28346456692913385,
           0.020566666666666667, false, false,
         ),
       ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x38556353U, 0x321cded7U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x38556353U, 0x321cded7U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"0\" flipV=\"off\"><off x=\"0\" y=\"bad\"/><ext cx=\"bad\" cy=\" 3600 \"/></xfrm>",
-      Some(
-        (
-          0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.28346456692913385,
-          90.000000000000000, false, false,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"1234.5\" flipH=\"true\" flipV=\"1\"><off x=\"2.54cm\" y=\"2.54cm\"/><ext cx=\"0\" cy=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"5400000\" flipH=\"true\" flipV=\"1\"><off x=\"2.54cm\" y=\"2.54cm\"/><ext cx=\"0\" cy=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           72.000000000000000, 72.000000000000000, 0.0000000000000000, 7.2000000000000002,
-          0.020566666666666667, true, true,
+          90.000000000000000, true, true,
         ),
       ),
+      [
+        0xa48d3132U, 0xbf800000U, 0x3f800000U, 0xa48d3132U, 0x4288cccdU, 0x42973333U,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0x4288cccdU, 0x42973333U,
+      ],
     ),
     (
       "<xfrm rot=\"1234.5\" flipH=\"true\" flipV=\"true\"><off x=\"bad\" y=\"1in\"/><ext cx=\"7.2pt\" cy=\"0\"/></xfrm>",
@@ -1315,26 +2199,49 @@ test "PPTX transforms match upstream Go" {
           0.020566666666666667, true, true,
         ),
       ),
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x40e66666U, 0x429000a9U,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x40e66666U, 0x429000a9U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"bad\" flipV=\"bad\"><off x=\"1in\" y=\"-25400\"/></xfrm>",
+      "<xfrm rot=\"0\" flipH=\"bad\" flipV=\"bad\"><off x=\"1in\" y=\"-25400\"/></xfrm>",
       Some(
         (
           72.000000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          -45.000000000000000, false, false,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"0\" flipH=\"false\" flipV=\"0\"><off x=\" 3600 \" y=\"2.54cm\"/></xfrm>",
-      Some(
-        (
-          0.28346456692913385, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
           0.0000000000000000, false, false,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42900000U, 0xc0000000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42900000U, 0xc0000000U,
+      ],
     ),
-    ("<xfrm rot=\"bad\" flipH=\"off\" flipV=\"true\"></xfrm>", None),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"false\" flipV=\"0\"><off x=\" 3600 \" y=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
+          33.127566666666667, false, false,
+        ),
+      ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x3e912245U, 0x42900000U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x3e912245U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"off\" flipV=\"true\"></xfrm>",
+      None,
+      [],
+      [],
+    ),
     (
       "<xfrm rot=\"0\" flipH=\"bad\" flipV=\"false\"><ext cx=\"7.2pt\" cy=\"12700\"/></xfrm>",
       Some(
@@ -1343,96 +2250,162 @@ test "PPTX transforms match upstream Go" {
           0.0000000000000000, false, false,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x00000000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"0\" flipV=\"1\"><off x=\"7.2pt\" y=\"7.2pt\"/><ext cx=\"12700\" cy=\"9144000\"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"0\" flipV=\"1\"><off x=\"7.2pt\" y=\"7.2pt\"/><ext cx=\"12700\" cy=\"9144000\"/></xfrm>",
       Some(
         (
           7.2000000000000002, 7.2000000000000002, 1.0000000000000000, 720.00000000000000,
-          0.0000000000000000, false, true,
+          205.76130000000001, false, true,
         ),
       ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x43249d53U, 0x422cc985U,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x4323b6c4U, 0x422b0c77U,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"1\" flipV=\"1\"><off x=\"2.54cm\" y=\"0\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"1\" flipV=\"1\"><off x=\"2.54cm\" y=\"0\"/></xfrm>",
       Some(
         (
           72.000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.0000000000000000, true, true,
+          33.127566666666667, true, true,
         ),
       ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x42900000U, 0x00000000U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x42900000U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"0\" flipV=\"on\"><off x=\"1in\" y=\"-25400\"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"0\" flipV=\"on\"><off x=\"1in\" y=\"-25400\"/></xfrm>",
       Some(
         (
           72.000000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          90.000000000000000, false, true,
+          0.69999999999999996, false, true,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x42900000U, 0xc0000000U,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x42900000U, 0xc0000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"0\" flipV=\"on\"><ext cx=\"12700\" cy=\"7.2pt\"/></xfrm>",
+      "<xfrm rot=\"bad\" flipH=\"0\" flipV=\"on\"><ext cx=\"12700\" cy=\"7.2pt\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 1.0000000000000000, 7.2000000000000002,
-          -45.000000000000000, false, true,
+          0.0000000000000000, false, true,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x00000000U, 0x40e66666U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x3f800000U, 0x40e66666U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"off\" flipV=\"off\"><off x=\"-25400\" y=\"2.54cm\"/><ext cx=\"12700\" cy=\"12700\"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"off\" flipV=\"off\"><off x=\"-25400\" y=\"2.54cm\"/><ext cx=\"12700\" cy=\"12700\"/></xfrm>",
       Some(
         (
           -2.0000000000000000, 72.000000000000000, 1.0000000000000000, 1.0000000000000000,
-          0.69999999999999996, false, false,
+          0.020566666666666667, false, false,
         ),
       ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0xbffffa1eU, 0x428fffe8U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0xbffffa1eU, 0x428fffe8U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"on\" flipV=\"1\"><ext cx=\" 3600 \" cy=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"1\"><ext cx=\" 3600 \" cy=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.078661417322834645, 0.078661417322834645, 0.28346456692913385, 0.28346456692913385,
-          0.69999999999999996, true, true,
+          90.000000000000000, true, true,
         ),
       ),
+      [
+        0xa48d3132U, 0xbf800000U, 0x3f800000U, 0xa48d3132U, 0x3da1193dU, 0x3eb96894U,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0x3da1193dU, 0x3eb96894U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"bad\"><off x=\"2.54cm\" y=\"-25400\"/><ext cx=\"-25400\" cy=\"1in\"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"off\" flipV=\"bad\"><off x=\"2.54cm\" y=\"-25400\"/><ext cx=\"-25400\" cy=\"1in\"/></xfrm>",
       Some(
         (
           72.000000000000000, -2.0000000000000000, -2.0000000000000000, 72.000000000000000,
-          0.0000000000000000, false, false,
+          205.76130000000001, false, false,
         ),
       ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x4259cfd6U, 0x4283f990U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x4259cfd6U, 0x4283f990U,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"true\" flipV=\"off\"><ext cx=\"0\" cy=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"bad\" flipH=\"true\" flipV=\"off\"><ext cx=\"0\" cy=\" 3600 \"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.28346456692913385,
           0.0000000000000000, true, false,
         ),
       ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x00000000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"true\" flipV=\"off\"><off x=\"12700\" y=\"0\"/></xfrm>",
+      "<xfrm rot=\"5400000\" flipH=\"true\" flipV=\"off\"><off x=\"12700\" y=\"0\"/></xfrm>",
       Some(
         (
           1.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.020566666666666667, true, false,
+          90.000000000000000, true, false,
         ),
       ),
+      [
+        0xa48d3132U, 0xbf800000U, 0xbf800000U, 0x248d3132U, 0x3f800000U, 0x00000000U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x3f800000U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"0\" flipV=\"false\"><ext cx=\"9144000\" cy=\"9144000\"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"0\" flipV=\"false\"><ext cx=\"9144000\" cy=\"9144000\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 720.00000000000000, 720.00000000000000,
-          -45.000000000000000, false, false,
+          205.76130000000001, false, false,
         ),
       ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x4403f067U, 0x44522bd3U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x4403f067U, 0x44522bd3U,
+      ],
     ),
     (
       "<xfrm rot=\"5400000\" flipH=\"bad\" flipV=\"off\"><off x=\"-25400\" y=\"-25400\"/><off x=\"999\" y=\"999\"/></xfrm>",
@@ -1442,60 +2415,102 @@ test "PPTX transforms match upstream Go" {
           90.000000000000000, false, false,
         ),
       ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0xc0000000U, 0xc0000000U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0xc0000000U, 0xc0000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"true\" flipV=\"off\"><off x=\"bad\" y=\"1in\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"true\" flipV=\"off\"><off x=\"bad\" y=\"1in\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
-          -45.000000000000000, true, false,
+          33.127566666666667, true, false,
         ),
       ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x00000000U, 0x42900000U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x00000000U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"bad\"><off x=\"0\" y=\"-25400\"/><ext cx=\"1in\" cy=\"1in\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"off\" flipV=\"bad\"><off x=\"0\" y=\"-25400\"/><ext cx=\"1in\" cy=\"1in\"/></xfrm>",
       Some(
         (
           0.0000000000000000, -2.0000000000000000, 72.000000000000000, 72.000000000000000,
-          0.0000000000000000, false, false,
+          33.127566666666667, false, false,
         ),
       ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x41cc34c5U, 0xc17d2954U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x41cc34c5U, 0xc17d2954U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"bad\"><ext cx=\"-25400\" cy=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"off\" flipV=\"bad\"><ext cx=\"-25400\" cy=\" 3600 \"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, -2.0000000000000000, 0.28346456692913385,
-          0.0000000000000000, false, false,
+          205.76130000000001, false, false,
         ),
       ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0xbffb29c9U, 0xbe2935eaU,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0xbffb29c9U, 0xbe2935eaU,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"on\" flipV=\"false\"><off x=\"12700\" y=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"on\" flipV=\"false\"><off x=\"12700\" y=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           1.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          -45.000000000000000, true, false,
+          205.76130000000001, true, false,
         ),
       ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x3f800000U, 0x00000000U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x3f800000U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"true\" flipV=\"bad\"><off x=\"0\" y=\"1in\"/><ext cx=\"7.2pt\" cy=\"-25400\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"true\" flipV=\"bad\"><off x=\"0\" y=\"1in\"/><ext cx=\"7.2pt\" cy=\"-25400\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 72.000000000000000, 7.2000000000000002, -2.0000000000000000,
-          90.000000000000000, true, false,
+          30.000000000000000, true, false,
         ),
       ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0xbf000000U, 0x3f5db3d7U, 0x40c6f754U, 0x42935501U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0xbc90edabU, 0x428c21ceU,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"0\" flipV=\"off\"><off x=\"2.54cm\" y=\"2.54cm\"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"0\" flipV=\"off\"><off x=\"2.54cm\" y=\"2.54cm\"/></xfrm>",
       Some(
         (
           72.000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
-          90.000000000000000, false, false,
+          -164.60905000000000, false, false,
         ),
       ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x42900000U, 0x42900000U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x42900000U, 0x42900000U,
+      ],
     ),
     (
       "<xfrm rot=\"bad\" flipH=\"true\" flipV=\"false\"><off x=\"0\" y=\"-25400\"/><ext cx=\" 3600 \" cy=\" 3600 \"/></xfrm>",
@@ -1505,42 +2520,72 @@ test "PPTX transforms match upstream Go" {
           0.0000000000000000, true, false,
         ),
       ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3e912245U, 0xc0000000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0xc0000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"on\" flipV=\"1\"><off x=\" 3600 \" y=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"on\" flipV=\"1\"><off x=\" 3600 \" y=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.28346456692913385, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
-          0.020566666666666667, true, true,
+          30.000000000000000, true, true,
         ),
       ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x3e912245U, 0x3e912245U,
+      ],
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x3e912245U, 0x3e912245U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"bad\" flipV=\"0\"><off x=\"-25400\" y=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"bad\" flipV=\"0\"><off x=\"-25400\" y=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           -2.0000000000000000, 7.2000000000000002, 0.0000000000000000, 0.0000000000000000,
-          90.000000000000000, false, false,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"0\"><off x=\"0\" y=\"1in\"/><ext cx=\"2.54cm\" cy=\"-25400\"/></xfrm>",
-      Some(
-        (
-          0.0000000000000000, 72.000000000000000, 72.000000000000000, -2.0000000000000000,
-          90.000000000000000, false, false,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"1234.5\" flipH=\"off\" flipV=\"false\"><off x=\"bad\" y=\"bad\"/><ext cx=\"0\" cy=\" 3600 \"/></xfrm>",
-      Some(
-        (
-          0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.28346456692913385,
           0.020566666666666667, false, false,
         ),
       ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0xc0000000U, 0x40e66666U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0xc0000000U, 0x40e66666U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"false\" flipV=\"0\"><off x=\"0\" y=\"1in\"/><ext cx=\"2.54cm\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 72.000000000000000, 72.000000000000000, -2.0000000000000000,
+          0.020566666666666667, false, false,
+        ),
+      ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0xb9bafaf9U, 0x428ff962U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0xb9bafaf9U, 0x428ff962U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"off\" flipV=\"false\"><off x=\"bad\" y=\"bad\"/><ext cx=\"0\" cy=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.28346456692913385,
+          0.69999999999999996, false, false,
+        ),
+      ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3ae2f4f5U, 0x37317624U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3ae2f4f5U, 0x37317624U,
+      ],
     ),
     (
       "<xfrm rot=\" 42000 \" flipH=\"true\" flipV=\"true\"><off x=\"1in\" y=\"12700\"/><ext cx=\"2.54cm\" cy=\"9144000\"/></xfrm>",
@@ -1550,96 +2595,162 @@ test "PPTX transforms match upstream Go" {
           0.69999999999999996, true, true,
         ),
       ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x430b9965U, 0x44345a6eU,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x430b9965U, 0x44345a6eU,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"bad\"><off x=\"9144000\" y=\"2.54cm\"/><ext cx=\"7.2pt\" cy=\"2.54cm\"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"false\" flipV=\"bad\"><off x=\"9144000\" y=\"2.54cm\"/><ext cx=\"7.2pt\" cy=\"2.54cm\"/></xfrm>",
       Some(
         (
           720.00000000000000, 72.000000000000000, 7.2000000000000002, 72.000000000000000,
-          90.000000000000000, false, false,
+          0.69999999999999996, false, false,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x44341c2aU, 0x428feadbU,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x44341c2aU, 0x428feadbU,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"1\" flipV=\"1\"><off x=\"-25400\" y=\"2.54cm\"/><ext cx=\"0\" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"1\" flipV=\"1\"><off x=\"-25400\" y=\"2.54cm\"/><ext cx=\"0\" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           -2.0000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
-          90.000000000000000, true, true,
+          0.020566666666666667, true, true,
         ),
       ),
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0xc0000000U, 0x42900000U,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0xc0000000U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"0\" flipV=\"true\"><off x=\"12700\" y=\"7.2pt\"/><ext cx=\"9144000\" cy=\"9144000\"/></xfrm>",
+      "<xfrm rot=\"bad\" flipH=\"0\" flipV=\"true\"><off x=\"12700\" y=\"7.2pt\"/><ext cx=\"9144000\" cy=\"9144000\"/></xfrm>",
       Some(
         (
           1.0000000000000000, 7.2000000000000002, 720.00000000000000, 720.00000000000000,
-          -45.000000000000000, false, true,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"bad\" flipH=\"false\" flipV=\"false\"><off x=\"1in\" y=\"12700\"/><ext cx=\"0\" cy=\"-25400\"/><off x=\"999\" y=\"999\"/></xfrm>",
-      Some(
-        (
-          72.000000000000000, 1.0000000000000000, 0.0000000000000000, -2.0000000000000000,
-          0.0000000000000000, false, false,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"-2700000\" flipH=\"off\" flipV=\"on\"><off x=\"2.54cm\" y=\"bad\"/><ext cx=\"0\" cy=\"9144000\"/></xfrm>",
-      Some(
-        (
-          72.000000000000000, 0.0000000000000000, 0.0000000000000000, 720.00000000000000,
-          -45.000000000000000, false, true,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"-2700000\" flipH=\"bad\" flipV=\"bad\"><off x=\"bad\" y=\"12700\"/><ext cx=\"12700\" cy=\"12700\"/></xfrm>",
-      Some(
-        (
-          0.0000000000000000, 1.0000000000000000, 1.0000000000000000, 1.0000000000000000,
-          -45.000000000000000, false, false,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"0\" flipH=\"false\" flipV=\"false\"><off x=\"2.54cm\" y=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
-      Some(
-        (
-          72.000000000000000, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
-          0.0000000000000000, false, false,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"1234.5\" flipH=\"bad\" flipV=\"1\"><off x=\"0\" y=\"9144000\"/><ext cx=\"12700\" cy=\"bad\"/></xfrm>",
-      Some(
-        (
-          0.0000000000000000, 720.00000000000000, 1.0000000000000000, 0.0000000000000000,
-          0.020566666666666667, false, true,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"0\" flipH=\"false\" flipV=\"on\"><off x=\" 3600 \" y=\"1in\"/><ext cx=\"bad\" cy=\"7.2pt\"/></xfrm>",
-      Some(
-        (
-          0.28346456692913385, 72.000000000000000, 0.0000000000000000, 7.2000000000000002,
           0.0000000000000000, false, true,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x3f800000U, 0x4435cccdU,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x44344000U, 0x4435cccdU,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"1\" flipV=\"on\"><off x=\"0\" y=\"1in\"/><ext cx=\"1in\" cy=\"7.2pt\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"false\" flipV=\"false\"><off x=\"1in\" y=\"12700\"/><ext cx=\"0\" cy=\"-25400\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 1.0000000000000000, 0.0000000000000000, -2.0000000000000000,
+          33.127566666666667, false, false,
+        ),
+      ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x428ee831U, 0x3f566382U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x428ee831U, 0x3f566382U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"on\"><off x=\"2.54cm\" y=\"bad\"/><ext cx=\"0\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.0000000000000000, 0.0000000000000000, 720.00000000000000,
+          0.0000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x42900000U, 0x44340000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x42900000U, 0x44340000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"bad\" flipV=\"bad\"><off x=\"bad\" y=\"12700\"/><ext cx=\"12700\" cy=\"12700\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 1.0000000000000000, 1.0000000000000000, 1.0000000000000000,
+          205.76130000000001, false, false,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x3f3ba58dU, 0x400aba40U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x3f3ba58dU, 0x400aba40U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"false\" flipV=\"false\"><off x=\"2.54cm\" y=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
+          33.127566666666667, false, false,
+        ),
+      ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x42900000U, 0x3e912245U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x42900000U, 0x3e912245U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"bad\" flipV=\"1\"><off x=\"0\" y=\"9144000\"/><ext cx=\"12700\" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 720.00000000000000, 1.0000000000000000, 0.0000000000000000,
+          90.000000000000000, false, true,
+        ),
+      ),
+      [
+        0x248d3132U, 0x3f800000U, 0x3f800000U, 0xa48d3132U, 0x3f000000U, 0x4433e000U,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0x3f000000U, 0x44342000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"false\" flipV=\"on\"><off x=\" 3600 \" y=\"1in\"/><ext cx=\"bad\" cy=\"7.2pt\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 72.000000000000000, 0.0000000000000000, 7.2000000000000002,
+          -45.000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x40350f23U, 0x429c4a8aU,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x40350f23U, 0x429c4a8aU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"1\" flipV=\"on\"><off x=\"0\" y=\"1in\"/><ext cx=\"1in\" cy=\"7.2pt\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 72.000000000000000, 72.000000000000000, 7.2000000000000002,
-          0.0000000000000000, true, true,
+          -45.000000000000000, true, true,
         ),
       ),
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x428000bbU, 0x4252c24bU,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x428000bbU, 0x4252c24bU,
+      ],
     ),
     (
       "<xfrm rot=\"-2700000\" flipH=\"bad\" flipV=\"off\"><off x=\"bad\" y=\"7.2pt\"/><ext cx=\"7.2pt\" cy=\"9144000\"/></xfrm>",
@@ -1649,177 +2760,297 @@ test "PPTX transforms match upstream Go" {
           -45.000000000000000, false, false,
         ),
       ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0xc37d8108U, 0x42e65fd1U,
+      ],
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0xc37d8108U, 0x42e65fd1U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"off\" flipV=\"false\"><off x=\"9144000\" y=\"0\"/></xfrm>",
+      "<xfrm rot=\"5400000\" flipH=\"off\" flipV=\"false\"><off x=\"9144000\" y=\"0\"/></xfrm>",
       Some(
         (
           720.00000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.69999999999999996, false, false,
+          90.000000000000000, false, false,
         ),
       ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x44340000U, 0x00000000U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x44340000U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"true\" flipV=\"on\"><off x=\"7.2pt\" y=\"12700\"/><ext cx=\"-25400\" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"true\" flipV=\"on\"><off x=\"7.2pt\" y=\"12700\"/><ext cx=\"-25400\" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           7.2000000000000002, 1.0000000000000000, -2.0000000000000000, 0.0000000000000000,
-          90.000000000000000, true, true,
+          0.69999999999999996, true, true,
         ),
       ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x40a66703U, 0x3f7cdf59U,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x40a66703U, 0x3f7cdf59U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"off\" flipV=\"true\"><ext cx=\"12700\" cy=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"off\" flipV=\"true\"><ext cx=\"12700\" cy=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.078661417322834645, 0.078661417322834645, 1.0000000000000000, 0.0000000000000000,
-          0.020566666666666667, false, true,
+          30.000000000000000, false, true,
         ),
       ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0x3f000000U, 0xbf5db3d7U, 0x3e1524f0U, 0xbe2f7362U,
+      ],
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x3f817e8aU, 0x3ea8464fU,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"0\" flipV=\"0\"><off x=\" 3600 \" y=\"7.2pt\"/><ext cx=\"1in\" cy=\"1in\"/></xfrm>",
+      "<xfrm rot=\"0\" flipH=\"0\" flipV=\"0\"><off x=\" 3600 \" y=\"7.2pt\"/><ext cx=\"1in\" cy=\"1in\"/></xfrm>",
       Some(
         (
           0.28346456692913385, 7.2000000000000002, 72.000000000000000, 72.000000000000000,
           0.0000000000000000, false, false,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3e912245U, 0x40e66666U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3e912245U, 0x40e66666U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"true\" flipV=\"bad\"><off x=\"9144000\" y=\"12700\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"true\" flipV=\"bad\"><off x=\"9144000\" y=\"12700\"/></xfrm>",
       Some(
         (
           720.00000000000000, 1.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          90.000000000000000, true, false,
+          30.000000000000000, true, false,
         ),
       ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0xbf000000U, 0x3f5db3d7U, 0x44340000U, 0x3f800000U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x44340000U, 0x3f800000U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"0\" flipV=\"0\"><off x=\"7.2pt\" y=\"bad\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"0\" flipV=\"0\"><off x=\"7.2pt\" y=\"bad\"/></xfrm>",
       Some(
         (
           7.2000000000000002, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          -45.000000000000000, false, false,
+          33.127566666666667, false, false,
         ),
       ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x40e66666U, 0x00000000U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x40e66666U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"1\" flipV=\"bad\"><off x=\"7.2pt\" y=\"1in\"/><ext cx=\"0\" cy=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"1\" flipV=\"bad\"><off x=\"7.2pt\" y=\"1in\"/><ext cx=\"0\" cy=\" 3600 \"/></xfrm>",
       Some(
         (
           7.2000000000000002, 72.000000000000000, 0.0000000000000000, 0.28346456692913385,
-          0.69999999999999996, true, false,
+          0.020566666666666667, true, false,
         ),
       ),
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x40e666d1U, 0x42900000U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x40e666d1U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"false\" flipV=\"0\"><off x=\"9144000\" y=\"0\"/><ext cx=\"bad\" cy=\"0\"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"false\" flipV=\"0\"><off x=\"9144000\" y=\"0\"/><ext cx=\"bad\" cy=\"0\"/></xfrm>",
       Some(
         (
           720.00000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          -45.000000000000000, false, false,
+          205.76130000000001, false, false,
         ),
       ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x44340000U, 0x00000000U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x44340000U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"off\" flipV=\"on\"><off x=\" 3600 \" y=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"off\" flipV=\"on\"><off x=\" 3600 \" y=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.28346456692913385, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
-          -45.000000000000000, false, true,
+          33.127566666666667, false, true,
         ),
       ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x3e912245U, 0x42900000U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x3e912245U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"0\" flipV=\"off\"><off x=\"1in\" y=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"0\" flipV=\"off\"><off x=\"1in\" y=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           72.000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          -45.000000000000000, false, false,
+          33.127566666666667, false, false,
         ),
       ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x42900000U, 0x00000000U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x42900000U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"1\" flipV=\"false\"><off x=\"12700\" y=\" 3600 \"/><ext cx=\"2.54cm\" cy=\"bad\"/></xfrm>",
+      "<xfrm rot=\"0\" flipH=\"1\" flipV=\"false\"><off x=\"12700\" y=\" 3600 \"/><ext cx=\"2.54cm\" cy=\"bad\"/></xfrm>",
       Some(
         (
           1.0000000000000000, 0.28346456692913385, 72.000000000000000, 0.0000000000000000,
           0.0000000000000000, true, false,
         ),
       ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42920000U, 0x3e912245U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3f800000U, 0x3e912245U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"bad\" flipV=\"1\"><off x=\"0\" y=\" 3600 \"/><ext cx=\"1in\" cy=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"bad\" flipV=\"1\"><off x=\"0\" y=\" 3600 \"/><ext cx=\"1in\" cy=\" 3600 \"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.28346456692913385, 72.000000000000000, 0.28346456692913385,
-          0.020566666666666667, false, true,
+          -164.60905000000000, false, true,
         ),
       ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x428d7e3dU, 0x411d7d47U,
+      ],
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x3faa11eeU, 0xc114417fU,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"off\" flipV=\"0\"><off x=\"9144000\" y=\"1in\"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"off\" flipV=\"0\"><off x=\"9144000\" y=\"1in\"/></xfrm>",
       Some(
         (
           720.00000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.020566666666666667, false, false,
+          0.69999999999999996, false, false,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x44340000U, 0x42900000U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x44340000U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"bad\" flipV=\"0\"><off x=\" 3600 \" y=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"bad\" flipV=\"0\"><off x=\" 3600 \" y=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.28346456692913385, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.020566666666666667, false, false,
+          0.69999999999999996, false, false,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3e912245U, 0x00000000U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3e912245U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"1\" flipV=\"1\"><off x=\"1in\" y=\" 3600 \"/><ext cx=\"7.2pt\" cy=\"12700\"/></xfrm>",
+      "<xfrm rot=\"-2700000\" flipH=\"1\" flipV=\"1\"><off x=\"1in\" y=\" 3600 \"/><ext cx=\"7.2pt\" cy=\"12700\"/></xfrm>",
       Some(
         (
           72.000000000000000, 0.28346456692913385, 7.2000000000000002, 1.0000000000000000,
-          0.0000000000000000, true, true,
+          -45.000000000000000, true, true,
         ),
       ),
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x429cff8fU, 0xbfb44be8U,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x429cff8fU, 0xbfb44be8U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"bad\" flipV=\"on\"><off x=\"1in\" y=\" 3600 \"/><ext cx=\"1in\" cy=\"0\"/></xfrm>",
+      "<xfrm rot=\"0\" flipH=\"bad\" flipV=\"on\"><off x=\"1in\" y=\" 3600 \"/><ext cx=\"1in\" cy=\"0\"/></xfrm>",
       Some(
         (
           72.000000000000000, 0.28346456692913385, 72.000000000000000, 0.0000000000000000,
           0.0000000000000000, false, true,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x42900000U, 0x3e912245U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x43100000U, 0x3e912245U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"bad\"><ext cx=\"7.2pt\" cy=\"bad\"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"on\" flipV=\"bad\"><ext cx=\"7.2pt\" cy=\"bad\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 7.2000000000000002, 0.0000000000000000,
-          90.000000000000000, true, false,
+          -164.60905000000000, true, false,
         ),
       ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x3e043441U, 0xbf74989fU,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x40e244c4U, 0x3f74989fU,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"off\" flipV=\"bad\"><off x=\"1in\" y=\"12700\"/><ext cx=\"9144000\" cy=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"bad\"><off x=\"1in\" y=\"12700\"/><ext cx=\"9144000\" cy=\" 3600 \"/></xfrm>",
       Some(
         (
           72.000000000000000, 1.0000000000000000, 720.00000000000000, 0.28346456692913385,
-          -45.000000000000000, false, false,
+          0.0000000000000000, false, false,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42900000U, 0x3f800000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42900000U, 0x3f800000U,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"1\" flipV=\"on\"><off x=\"1in\" y=\"0\"/></xfrm>",
+      "<xfrm rot=\"bad\" flipH=\"1\" flipV=\"on\"><off x=\"1in\" y=\"0\"/></xfrm>",
       Some(
         (
           72.000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
           0.0000000000000000, true, true,
         ),
       ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x42900000U, 0x00000000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x42900000U, 0x00000000U,
+      ],
     ),
     (
       "<xfrm rot=\"5400000\" flipH=\"true\" flipV=\"off\"><off x=\" 3600 \" y=\"9144000\"/></xfrm>",
@@ -1829,6 +3060,12 @@ test "PPTX transforms match upstream Go" {
           90.000000000000000, true, false,
         ),
       ),
+      [
+        0xa48d3132U, 0xbf800000U, 0xbf800000U, 0x248d3132U, 0x3e912245U, 0x44340000U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x3e912245U, 0x44340000U,
+      ],
     ),
     (
       "<xfrm rot=\"bad\" flipH=\"false\" flipV=\"off\"><off x=\"9144000\" y=\"7.2pt\"/><ext cx=\"0\" cy=\"-25400\"/></xfrm>",
@@ -1838,69 +3075,117 @@ test "PPTX transforms match upstream Go" {
           0.0000000000000000, false, false,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x44340000U, 0x40e66666U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x44340000U, 0x40e66666U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"off\" flipV=\"1\"><ext cx=\"0\" cy=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"1\"><ext cx=\"0\" cy=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.078661417322834645, 0.078661417322834645, 0.0000000000000000, 0.0000000000000000,
-          -45.000000000000000, false, true,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"-2700000\" flipH=\"on\" flipV=\"0\"><off x=\"1in\" y=\"12700\"/><ext cx=\"0\" cy=\" 3600 \"/></xfrm>",
-      Some(
-        (
-          72.000000000000000, 1.0000000000000000, 0.0000000000000000, 0.28346456692913385,
-          -45.000000000000000, true, false,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"5400000\" flipH=\"true\" flipV=\"0\"><off x=\"2.54cm\" y=\"2.54cm\"/><ext cx=\"9144000\" cy=\"9144000\"/></xfrm>",
-      Some(
-        (
-          72.000000000000000, 72.000000000000000, 720.00000000000000, 720.00000000000000,
-          90.000000000000000, true, false,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"-2700000\" flipH=\"off\" flipV=\"false\"><off x=\"2.54cm\" y=\" 3600 \"/></xfrm>",
-      Some(
-        (
-          72.000000000000000, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
-          -45.000000000000000, false, false,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"off\"><off x=\"-25400\" y=\"-25400\"/></xfrm>",
-      Some(
-        (
-          -2.0000000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.0000000000000000, false, false,
-        ),
-      ),
-    ),
-    (
-      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"1\"><ext cx=\"2.54cm\" cy=\"9144000\"/><off x=\"999\" y=\"999\"/></xfrm>",
-      Some(
-        (
-          0.078661417322834645, 0.078661417322834645, 72.000000000000000, 720.00000000000000,
           0.0000000000000000, false, true,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x3da1193dU, 0x3da1193dU,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x3da1193dU, 0x3da1193dU,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"on\" flipV=\"1\"><off x=\"bad\" y=\"bad\"/><ext cx=\"9144000\" cy=\"9144000\"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"on\" flipV=\"0\"><off x=\"1in\" y=\"12700\"/><ext cx=\"0\" cy=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 1.0000000000000000, 0.0000000000000000, 0.28346456692913385,
+          205.76130000000001, true, false,
+        ),
+      ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x428fe076U, 0x3fa27afcU,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x428fe076U, 0x3fa27afcU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"true\" flipV=\"0\"><off x=\"2.54cm\" y=\"2.54cm\"/><ext cx=\"9144000\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 72.000000000000000, 720.00000000000000, 720.00000000000000,
+          -164.60905000000000, true, false,
+        ),
+      ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0x3e87e303U, 0xbf76d1b4U, 0xc12a283aU, 0x442ae2d2U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x442ae2d2U, 0x445aa8a1U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"false\"><off x=\"2.54cm\" y=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42900000U, 0x3e912245U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42900000U, 0x3e912245U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"off\" flipV=\"off\"><off x=\"-25400\" y=\"-25400\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          205.76130000000001, false, false,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0xc0000000U, 0xc0000000U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0xc0000000U, 0xc0000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"off\" flipV=\"1\"><ext cx=\"2.54cm\" cy=\"9144000\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, 72.000000000000000, 720.00000000000000,
+          205.76130000000001, false, true,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x4360f707U, 0x424e04aeU,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x43201ef0U, 0x41a1b19cU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"on\" flipV=\"1\"><off x=\"bad\" y=\"bad\"/><ext cx=\"9144000\" cy=\"9144000\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 720.00000000000000, 720.00000000000000,
-          -45.000000000000000, true, true,
+          0.0000000000000000, true, true,
         ),
       ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x44340000U, 0x44340000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x44340000U, 0x44340000U,
+      ],
     ),
     (
       "<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"off\"><ext cx=\"0\" cy=\" 3600 \"/></xfrm>",
@@ -1910,24 +3195,42 @@ test "PPTX transforms match upstream Go" {
           90.000000000000000, false, false,
         ),
       ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x3e112245U, 0x3e112245U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x3e112245U, 0x3e112245U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"off\" flipV=\"off\"><ext cx=\"-25400\" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"off\" flipV=\"off\"><ext cx=\"-25400\" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.078661417322834645, 0.078661417322834645, -2.0000000000000000, 0.0000000000000000,
-          0.69999999999999996, false, false,
+          0.020566666666666667, false, false,
         ),
       ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3da11934U, 0x3da1d56fU,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3da11934U, 0x3da1d56fU,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"bad\" flipV=\"off\"><off x=\" 3600 \" y=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"bad\" flipV=\"off\"><off x=\" 3600 \" y=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.28346456692913385, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
-          90.000000000000000, false, false,
+          0.69999999999999996, false, false,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3e912245U, 0x3e912245U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3e912245U, 0x3e912245U,
+      ],
     ),
     (
       "<xfrm rot=\"0\" flipH=\"off\" flipV=\"off\"><off x=\"2.54cm\" y=\"bad\"/><ext cx=\"1in\" cy=\"12700\"/></xfrm>",
@@ -1937,15 +3240,27 @@ test "PPTX transforms match upstream Go" {
           0.0000000000000000, false, false,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42900000U, 0x00000000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42900000U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"0\" flipV=\"1\"><off x=\"12700\" y=\"9144000\"/><ext cx=\"1in\" cy=\"bad\"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"0\" flipV=\"1\"><off x=\"12700\" y=\"9144000\"/><ext cx=\"1in\" cy=\"bad\"/></xfrm>",
       Some(
         (
           1.0000000000000000, 720.00000000000000, 72.000000000000000, 0.0000000000000000,
-          0.69999999999999996, false, true,
+          0.020566666666666667, false, true,
         ),
       ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x3f800013U, 0x4433ff2cU,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x42920000U, 0x443400d4U,
+      ],
     ),
     (
       "<xfrm rot=\"0\" flipH=\"true\" flipV=\"off\"><off x=\"bad\" y=\"1in\"/><ext cx=\"0\" cy=\" 3600 \"/></xfrm>",
@@ -1955,42 +3270,72 @@ test "PPTX transforms match upstream Go" {
           0.0000000000000000, true, false,
         ),
       ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x42900000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"on\" flipV=\"off\"><off x=\"12700\" y=\"7.2pt\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"on\" flipV=\"off\"><off x=\"12700\" y=\"7.2pt\"/></xfrm>",
       Some(
         (
           1.0000000000000000, 7.2000000000000002, 0.0000000000000000, 0.0000000000000000,
-          -45.000000000000000, true, false,
+          33.127566666666667, true, false,
         ),
       ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x3f800000U, 0x40e66666U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x3f800000U, 0x40e66666U,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"true\" flipV=\"0\"><off x=\"1in\" y=\"9144000\"/></xfrm>",
+      "<xfrm rot=\"-2700000\" flipH=\"true\" flipV=\"0\"><off x=\"1in\" y=\"9144000\"/></xfrm>",
       Some(
         (
           72.000000000000000, 720.00000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.0000000000000000, true, false,
+          -45.000000000000000, true, false,
         ),
       ),
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x42900000U, 0x44340000U,
+      ],
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x42900000U, 0x44340000U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"off\" flipV=\"true\"><ext cx=\"bad\" cy=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"off\" flipV=\"true\"><ext cx=\"bad\" cy=\" 3600 \"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.28346456692913385,
-          0.020566666666666667, false, true,
+          0.69999999999999996, false, true,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0xbae2f4f5U, 0x3e9120e2U,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0xbae2f4f5U, 0x3e9120e2U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"on\" flipV=\"true\"><ext cx=\"2.54cm\" cy=\"-25400\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"on\" flipV=\"true\"><ext cx=\"2.54cm\" cy=\"-25400\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 72.000000000000000, -2.0000000000000000,
-          0.020566666666666667, true, true,
+          30.000000000000000, true, true,
         ),
       ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x42875a95U, 0x41811261U,
+      ],
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x42875a95U, 0x41811261U,
+      ],
     ),
     (
       "<xfrm rot=\"1234.5\" flipH=\"0\" flipV=\"false\"><off x=\"-25400\" y=\"1in\"/><ext cx=\"bad\" cy=\"1in\"/></xfrm>",
@@ -2000,15 +3345,27 @@ test "PPTX transforms match upstream Go" {
           0.020566666666666667, false, false,
         ),
       ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0xbffe588fU, 0x42900000U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0xbffe588fU, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"bad\"><off x=\"0\" y=\"2.54cm\"/><ext cx=\"9144000\" cy=\"7.2pt\"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"on\" flipV=\"bad\"><off x=\"0\" y=\"2.54cm\"/><ext cx=\"9144000\" cy=\"7.2pt\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 72.000000000000000, 720.00000000000000, 7.2000000000000002,
-          90.000000000000000, true, false,
+          0.69999999999999996, true, false,
         ),
       ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x44340118U, 0x4298cbfaU,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3d9118d2U, 0x4287344dU,
+      ],
     ),
     (
       "<xfrm rot=\"bad\" flipH=\"false\" flipV=\"on\"><off x=\" 3600 \" y=\" 3600 \"/></xfrm>",
@@ -2018,6 +3375,12 @@ test "PPTX transforms match upstream Go" {
           0.0000000000000000, false, true,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x3e912245U, 0x3e912245U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x3e912245U, 0x3e912245U,
+      ],
     ),
     (
       "<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"0\"><off x=\"0\" y=\" 3600 \"/><ext cx=\"9144000\" cy=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
@@ -2027,142 +3390,238 @@ test "PPTX transforms match upstream Go" {
           90.000000000000000, false, false,
         ),
       ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x43b40000U, 0xc3b3dbb7U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x43b40000U, 0xc3b3dbb7U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"off\" flipV=\"0\"><ext cx=\"9144000\" cy=\"9144000\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"off\" flipV=\"0\"><ext cx=\"9144000\" cy=\"9144000\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.078661417322834645, 0.078661417322834645, 720.00000000000000, 720.00000000000000,
-          0.69999999999999996, false, false,
+          -164.60905000000000, false, false,
         ),
       ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x4418e7dbU, 0x4448adaaU,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x4418e7dbU, 0x4448adaaU,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"false\" flipV=\"1\"><off x=\"9144000\" y=\"9144000\"/></xfrm>",
+      "<xfrm rot=\"1234.5\" flipH=\"false\" flipV=\"1\"><off x=\"9144000\" y=\"9144000\"/></xfrm>",
       Some(
         (
           720.00000000000000, 720.00000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.69999999999999996, false, true,
+          0.020566666666666667, false, true,
         ),
       ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x44340000U, 0x44340000U,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x44340000U, 0x44340000U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"on\" flipV=\"1\"><off x=\"1in\" y=\"7.2pt\"/><ext cx=\"12700\" cy=\"bad\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"on\" flipV=\"1\"><off x=\"1in\" y=\"7.2pt\"/><ext cx=\"12700\" cy=\"bad\"/></xfrm>",
       Some(
         (
           72.000000000000000, 7.2000000000000002, 1.0000000000000000, 0.0000000000000000,
-          0.020566666666666667, true, true,
+          30.000000000000000, true, true,
         ),
       ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x4291ddb4U, 0x40ee6666U,
+      ],
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x4291ddb4U, 0x40ee6666U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"off\" flipV=\"0\"><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"off\" flipV=\"0\"><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.078661417322834645, 0.078661417322834645, 0.0000000000000000, 0.0000000000000000,
-          -45.000000000000000, false, false,
+          33.127566666666667, false, false,
         ),
       ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x3da1193dU, 0x3da1193dU,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x3da1193dU, 0x3da1193dU,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"true\" flipV=\"1\"><off x=\"2.54cm\" y=\"7.2pt\"/><ext cx=\"2.54cm\" cy=\"1in\"/></xfrm>",
+      "<xfrm rot=\"-2700000\" flipH=\"true\" flipV=\"1\"><off x=\"2.54cm\" y=\"7.2pt\"/><ext cx=\"2.54cm\" cy=\"1in\"/></xfrm>",
       Some(
         (
           72.000000000000000, 7.2000000000000002, 72.000000000000000, 72.000000000000000,
-          0.0000000000000000, true, true,
+          -45.000000000000000, true, true,
         ),
       ),
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x431ee964U, 0x422ccccdU,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x431ee964U, 0x422ccccdU,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"0\" flipV=\"1\"><ext cx=\"1in\" cy=\"2.54cm\"/></xfrm>",
+      "<xfrm rot=\"0\" flipH=\"0\" flipV=\"1\"><ext cx=\"1in\" cy=\"2.54cm\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 72.000000000000000, 72.000000000000000,
-          -45.000000000000000, false, true,
+          0.0000000000000000, false, true,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x00000000U, 0x42900000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x42900000U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"1\" flipV=\"1\"><off x=\"0\" y=\"9144000\"/><ext cx=\"9144000\" cy=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"1\" flipV=\"1\"><off x=\"0\" y=\"9144000\"/><ext cx=\"9144000\" cy=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 720.00000000000000, 720.00000000000000, 0.0000000000000000,
-          90.000000000000000, true, true,
+          30.000000000000000, true, true,
         ),
       ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x4427f13aU, 0x44610000U,
+      ],
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x4427f13aU, 0x44610000U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"1\" flipV=\"true\"><ext cx=\" 3600 \" cy=\"1in\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"1\" flipV=\"true\"><ext cx=\" 3600 \" cy=\"1in\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.078661417322834645, 0.078661417322834645, 0.28346456692913385, 72.000000000000000,
-          0.0000000000000000, true, true,
+          205.76130000000001, true, true,
         ),
       ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x417bd3a6U, 0x406614a4U,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x417bd3a6U, 0x406614a4U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"false\" flipV=\"true\"><off x=\"bad\" y=\"bad\"/><ext cx=\"7.2pt\" cy=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"bad\" flipH=\"false\" flipV=\"true\"><off x=\"bad\" y=\"bad\"/><ext cx=\"7.2pt\" cy=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 7.2000000000000002, 0.28346456692913385,
-          -45.000000000000000, false, true,
+          0.0000000000000000, false, true,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x00000000U, 0x3e912245U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x40e66666U, 0x3e912245U,
+      ],
     ),
     (
-      "<xfrm rot=\"-2700000\" flipH=\"off\" flipV=\"1\"><off x=\"9144000\" y=\"-25400\"/><ext cx=\"0\" cy=\"7.2pt\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"off\" flipV=\"1\"><off x=\"9144000\" y=\"-25400\"/><ext cx=\"0\" cy=\"7.2pt\"/></xfrm>",
       Some(
         (
           720.00000000000000, -2.0000000000000000, 0.0000000000000000, 7.2000000000000002,
-          -45.000000000000000, false, true,
+          33.127566666666667, false, true,
         ),
       ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x44338216U, 0x4093acc7U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x44338216U, 0x4093acc7U,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"1\" flipV=\"bad\"><ext cx=\" 3600 \" cy=\"0\"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"1\" flipV=\"bad\"><ext cx=\" 3600 \" cy=\"0\"/></xfrm>",
       Some(
         (
           0.0000000000000000, 0.0000000000000000, 0.28346456692913385, 0.0000000000000000,
-          0.020566666666666667, true, false,
+          -164.60905000000000, true, false,
         ),
       ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x3ba68e6eU, 0xbd1a138aU,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x3e8e880bU, 0x3d1a138aU,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"true\" flipV=\"bad\"><off x=\"9144000\" y=\"-25400\"/><ext cx=\"12700\" cy=\"-25400\"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"true\" flipV=\"bad\"><off x=\"9144000\" y=\"-25400\"/><ext cx=\"12700\" cy=\"-25400\"/></xfrm>",
       Some(
         (
           720.00000000000000, -2.0000000000000000, 1.0000000000000000, -2.0000000000000000,
-          0.69999999999999996, true, false,
+          -164.60905000000000, true, false,
         ),
       ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x44341222U, 0xc083194fU,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x44344fd7U, 0xc075363dU,
+      ],
     ),
     (
-      "<xfrm rot=\"1234.5\" flipH=\"on\" flipV=\"false\"><off x=\"1in\" y=\"bad\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"on\" flipV=\"false\"><off x=\"1in\" y=\"bad\"/></xfrm>",
       Some(
         (
           72.000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.020566666666666667, true, false,
+          30.000000000000000, true, false,
         ),
       ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0xbf000000U, 0x3f5db3d7U, 0x42900000U, 0x00000000U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x42900000U, 0x00000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"true\" flipV=\"bad\"><off x=\"2.54cm\" y=\" 3600 \"/><ext cx=\"7.2pt\" cy=\"2.54cm\"/></xfrm>",
+      "<xfrm rot=\" 42000 \" flipH=\"true\" flipV=\"bad\"><off x=\"2.54cm\" y=\" 3600 \"/><ext cx=\"7.2pt\" cy=\"2.54cm\"/></xfrm>",
       Some(
         (
           72.000000000000000, 0.28346456692913385, 7.2000000000000002, 72.000000000000000,
-          90.000000000000000, true, false,
+          0.69999999999999996, true, false,
         ),
       ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x429f4772U, 0x3ea9071fU,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x4290e152U, 0x3e77fb6dU,
+      ],
     ),
-    ("<xfrm rot=\"bad\" flipH=\"bad\" flipV=\"bad\"></xfrm>", None),
+    ("<xfrm rot=\"bad\" flipH=\"bad\" flipV=\"bad\"></xfrm>", None, [], []),
     (
-      "<xfrm rot=\"bad\" flipH=\"on\" flipV=\"1\"><off x=\"2.54cm\" y=\"9144000\"/><ext cx=\"1in\" cy=\"bad\"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"on\" flipV=\"1\"><off x=\"2.54cm\" y=\"9144000\"/><ext cx=\"1in\" cy=\"bad\"/></xfrm>",
       Some(
         (
           72.000000000000000, 720.00000000000000, 72.000000000000000, 0.0000000000000000,
-          0.0000000000000000, true, true,
+          205.76130000000001, true, true,
         ),
       ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x429727e9U, 0x443016a1U,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x429727e9U, 0x443016a1U,
+      ],
     ),
     (
       "<xfrm rot=\" 42000 \" flipH=\"off\" flipV=\"on\"><off x=\"7.2pt\" y=\"bad\"/><ext cx=\"9144000\" cy=\"7.2pt\"/></xfrm>",
@@ -2172,70 +3631,3862 @@ test "PPTX transforms match upstream Go" {
           0.69999999999999996, false, true,
         ),
       ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x40e5da33U, 0x40334d98U,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x4435c844U, 0x413990cdU,
+      ],
     ),
     (
-      "<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"bad\"><off x=\"-25400\" y=\"1in\"/><ext cx=\"0\" cy=\"bad\"/></xfrm>",
+      "<xfrm rot=\"1800000\" flipH=\"on\" flipV=\"bad\"><off x=\"-25400\" y=\"1in\"/><ext cx=\"0\" cy=\"bad\"/></xfrm>",
       Some(
         (
           -2.0000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
-          90.000000000000000, true, false,
+          30.000000000000000, true, false,
         ),
       ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0xbf000000U, 0x3f5db3d7U, 0xc0000000U, 0x42900000U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0xc0000000U, 0x42900000U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"1\" flipV=\"bad\"><off x=\"-25400\" y=\"7.2pt\"/><ext cx=\"7.2pt\" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      "<xfrm rot=\"1987654\" flipH=\"1\" flipV=\"bad\"><off x=\"-25400\" y=\"7.2pt\"/><ext cx=\"7.2pt\" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
       Some(
         (
           -2.0000000000000000, 7.2000000000000002, 7.2000000000000002, 0.0000000000000000,
-          0.0000000000000000, true, false,
+          33.127566666666667, true, false,
         ),
       ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x4093acc7U, 0x4112adbeU,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0xbfb51984U, 0x40a77150U,
+      ],
     ),
     (
-      "<xfrm rot=\" 42000 \" flipH=\"1\" flipV=\"bad\"><off x=\"9144000\" y=\"-25400\"/><ext cx=\"bad\" cy=\"bad\"/></xfrm>",
+      "<xfrm rot=\"-9876543\" flipH=\"1\" flipV=\"bad\"><off x=\"9144000\" y=\"-25400\"/><ext cx=\"bad\" cy=\"bad\"/></xfrm>",
       Some(
         (
           720.00000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
-          0.69999999999999996, true, false,
+          -164.60905000000000, true, false,
         ),
       ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x44340000U, 0xc0000000U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x44340000U, 0xc0000000U,
+      ],
     ),
     (
-      "<xfrm rot=\"bad\" flipH=\"0\" flipV=\"bad\"><off x=\"9144000\" y=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"12345678\" flipH=\"0\" flipV=\"bad\"><off x=\"9144000\" y=\" 3600 \"/></xfrm>",
       Some(
         (
           720.00000000000000, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
-          0.0000000000000000, false, false,
+          205.76130000000001, false, false,
         ),
       ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x44340000U, 0x3e912245U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x44340000U, 0x3e912245U,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"on\" flipV=\"off\"><off x=\"9144000\" y=\" 3600 \"/><ext cx=\"9144000\" cy=\" 3600 \"/></xfrm>",
+      "<xfrm rot=\"bad\" flipH=\"on\" flipV=\"off\"><off x=\"9144000\" y=\" 3600 \"/><ext cx=\"9144000\" cy=\" 3600 \"/></xfrm>",
       Some(
         (
           720.00000000000000, 0.28346456692913385, 720.00000000000000, 0.28346456692913385,
           0.0000000000000000, true, false,
         ),
       ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x44b40000U, 0x3e912245U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x44340000U, 0x3e912245U,
+      ],
     ),
     (
-      "<xfrm rot=\"0\" flipH=\"off\" flipV=\"on\"><off x=\"9144000\" y=\" 3600 \"/><ext cx=\"12700\" cy=\"1in\"/></xfrm>",
+      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"on\"><off x=\"9144000\" y=\" 3600 \"/><ext cx=\"12700\" cy=\"1in\"/></xfrm>",
       Some(
         (
           720.00000000000000, 0.28346456692913385, 1.0000000000000000, 72.000000000000000,
           0.0000000000000000, false, true,
         ),
       ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x44340000U, 0x42909122U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x44344000U, 0x42909122U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"off\" flipV=\"off\"><off x=\"1in\" y=\" 3600 \"/><ext cx=\" 3600 \" cy=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.28346456692913385, 0.28346456692913385, 0.28346456692913385,
+          33.127566666666667, false, false,
+        ),
+      ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x42903374U, 0x3e6a8ac1U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x42903374U, 0x3e6a8ac1U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"1\" flipV=\"bad\"><off x=\"9144000\" y=\"-25400\"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.020566666666666667, true, false,
+        ),
+      ),
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x44340000U, 0xc0000000U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x44340000U, 0xc0000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"false\"><off x=\"7.2pt\" y=\"bad\"/><ext cx=\" 3600 \" cy=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          7.2000000000000002, 0.0000000000000000, 0.28346456692913385, 72.000000000000000,
+          90.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xa48d3132U, 0xbf800000U, 0xbf800000U, 0x248d3132U, 0x422d5defU, 0x42109122U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x422d5defU, 0x420f6edeU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"false\" flipV=\"1\"><off x=\"12700\" y=\"9144000\"/><ext cx=\"9144000\" cy=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 720.00000000000000, 720.00000000000000, 0.28346456692913385,
+          33.127566666666667, false, true,
+        ),
+      ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x426dc0f3U, 0x4402e131U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x44259a07U, 0x44654024U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"true\" flipV=\"true\"><off x=\" 3600 \" y=\" 3600 \"/><ext cx=\"7.2pt\" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 0.28346456692913385, 7.2000000000000002, 0.0000000000000000,
+          -164.60905000000000, true, true,
+        ),
+      ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x3ed33c65U, 0xbf2c077cU,
+      ],
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x3ed33c65U, 0xbf2c077cU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"0\" flipV=\"true\"><off x=\"2.54cm\" y=\"0\"/><ext cx=\"bad\" cy=\"1in\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.0000000000000000, 0.0000000000000000, 72.000000000000000,
+          0.020566666666666667, false, true,
+        ),
+      ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x428ff962U, 0x42900000U,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x428ff962U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"on\" flipV=\"bad\"><off x=\" 3600 \" y=\" 3600 \"/><ext cx=\"0\" cy=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 0.28346456692913385, 0.0000000000000000, 72.000000000000000,
+          33.127566666666667, true, false,
+        ),
+      ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x419fa941U, 0x40c4525bU,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x419fa941U, 0x40c4525bU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"0\" flipV=\"off\"><off x=\" 3600 \" y=\" 3600 \"/><ext cx=\"bad\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 0.28346456692913385, 0.0000000000000000, -2.0000000000000000,
+          205.76130000000001, false, false,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x3f37d494U, 0xbfcefeb4U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x3f37d494U, 0xbfcefeb4U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"on\"><ext cx=\"0\" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          90.000000000000000, false, true,
+        ),
+      ),
+      [
+        0x248d3132U, 0x3f800000U, 0x3f800000U, 0xa48d3132U, 0x00000000U, 0x00000000U,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0x00000000U, 0x00000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"bad\" flipV=\"false\"><off x=\" 3600 \" y=\"9144000\"/><ext cx=\"bad\" cy=\"12700\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 720.00000000000000, 0.0000000000000000, 1.0000000000000000,
+          0.020566666666666667, false, false,
+        ),
+      ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3e9139cbU, 0x44340000U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3e9139cbU, 0x44340000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"on\" flipV=\"bad\"><off x=\"7.2pt\" y=\"9144000\"/><ext cx=\" 3600 \" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          7.2000000000000002, 720.00000000000000, 0.28346456692913385, 0.0000000000000000,
+          30.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0xbf000000U, 0x3f5db3d7U, 0x40eedcfdU, 0x44340489U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x40e701f4U, 0x4433fb77U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"1\"><ext cx=\"7.2pt\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 7.2000000000000002, -2.0000000000000000,
+          90.000000000000000, true, true,
+        ),
+      ),
+      [
+        0xa48d3132U, 0xbf800000U, 0x3f800000U, 0xa48d3132U, 0x40933333U, 0x40266666U,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0x40933333U, 0x40266666U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"0\" flipV=\"off\"><ext cx=\" 3600 \" cy=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, 0.28346456692913385, 7.2000000000000002,
+          30.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x3ff2e631U, 0x3efaeee3U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x3ff2e631U, 0x3efaeee3U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"true\"><ext cx=\"-25400\" cy=\"7.2pt\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, -2.0000000000000000, 7.2000000000000002,
+          0.0000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x00000000U, 0x40e66666U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0xc0000000U, 0x40e66666U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"0\" flipV=\"off\"><ext cx=\"-25400\" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, -2.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x00000000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x00000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"off\" flipV=\"true\"><off x=\"2.54cm\" y=\"12700\"/><ext cx=\"12700\" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 1.0000000000000000, 1.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x42900000U, 0x3f800000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x42920000U, 0x3f800000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"off\" flipV=\"off\"><off x=\"-25400\" y=\"9144000\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 720.00000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.020566666666666667, false, false,
+        ),
+      ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0xc0000000U, 0x44340000U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0xc0000000U, 0x44340000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"1\" flipV=\"on\"><ext cx=\"1in\" cy=\"7.2pt\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 72.000000000000000, 7.2000000000000002,
+          0.0000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x42900000U, 0x40e66666U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x42900000U, 0x40e66666U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"true\" flipV=\"0\"><off x=\"12700\" y=\"9144000\"/><ext cx=\"2.54cm\" cy=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 720.00000000000000, 72.000000000000000, 72.000000000000000,
+          30.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0xbf000000U, 0x3f5db3d7U, 0x42ac5a95U, 0x4439b4adU,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x41be95aeU, 0x4430b4adU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"0\" flipV=\"off\"><off x=\" 3600 \" y=\"9144000\"/><ext cx=\"2.54cm\" cy=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 720.00000000000000, 72.000000000000000, 0.0000000000000000,
+          0.0000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3e912245U, 0x44340000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3e912245U, 0x44340000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"0\" flipV=\"true\"><ext cx=\"0\" cy=\"7.2pt\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 7.2000000000000002,
+          -164.60905000000000, false, true,
+        ),
+      ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x3f74989fU, 0x3e043441U,
+      ],
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x3f74989fU, 0x3e043441U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"on\" flipV=\"1\"><off x=\"9144000\" y=\"0\"/><ext cx=\"2.54cm\" cy=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, 0.0000000000000000, 72.000000000000000, 0.0000000000000000,
+          0.0000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x44460000U, 0x00000000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x44460000U, 0xa79ed758U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"0\" flipV=\"on\"><off x=\"9144000\" y=\"bad\"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x44340000U, 0x00000000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x44340000U, 0x00000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"1\" flipV=\"on\"><ext cx=\" 3600 \" cy=\"1in\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, 0.28346456692913385, 72.000000000000000,
+          0.0000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x3eb96894U, 0x42902846U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x3eb96894U, 0x42902846U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"true\" flipV=\"0\"><off x=\"12700\" y=\"7.2pt\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 7.2000000000000002, 0.0000000000000000, 0.0000000000000000,
+          30.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0xbf000000U, 0x3f5db3d7U, 0x3f800000U, 0x40e66666U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x3f800000U, 0x40e66666U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"0\" flipV=\"0\"><off x=\"12700\" y=\"-25400\"/><ext cx=\"1in\" cy=\"12700\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, -2.0000000000000000, 72.000000000000000, 1.0000000000000000,
+          -164.60905000000000, false, false,
+        ),
+      ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x428f2709U, 0x410895f1U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x428f2709U, 0x410895f1U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"on\" flipV=\"1\"><off x=\"1in\" y=\"0\"/><ext cx=\"bad\" cy=\"12700\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.0000000000000000, 0.0000000000000000, 1.0000000000000000,
+          30.000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x428f8000U, 0x3f6ed9ecU,
+      ],
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x428f8000U, 0x3f6ed9ecU,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"off\" flipV=\"off\"><off x=\"0\" y=\"1in\"/><ext cx=\"9144000\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 72.000000000000000, 720.00000000000000, 720.00000000000000,
+          0.69999999999999996, false, false,
+        ),
+      ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x408d997fU, 0x428741ebU,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x408d997fU, 0x428741ebU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"on\" flipV=\"0\"><off x=\"2.54cm\" y=\"0\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          205.76130000000001, true, false,
+        ),
+      ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x42900000U, 0x00000000U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x42900000U, 0x00000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"false\" flipV=\"off\"><off x=\"-25400\" y=\"-25400\"/><ext cx=\"bad\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, -2.0000000000000000, 0.0000000000000000, 720.00000000000000,
+          30.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x43320000U, 0x4238ec65U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x43320000U, 0x4238ec65U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"off\" flipV=\"on\"><off x=\"0\" y=\"bad\"/><ext cx=\"2.54cm\" cy=\"12700\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 72.000000000000000, 1.0000000000000000,
+          0.0000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x00000000U, 0x3f800000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x42900000U, 0x3f800000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"on\"><off x=\"1in\" y=\"12700\"/><ext cx=\"7.2pt\" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 1.0000000000000000, 7.2000000000000002, 0.0000000000000000,
+          90.000000000000000, false, true,
+        ),
+      ),
+      [
+        0x248d3132U, 0x3f800000U, 0x3f800000U, 0xa48d3132U, 0x42973333U, 0xc0266666U,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0x42973333U, 0x40933333U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"off\"><off x=\"1in\" y=\"7.2pt\"/><ext cx=\"9144000\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 7.2000000000000002, 720.00000000000000, -2.0000000000000000,
+          90.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xa48d3132U, 0xbf800000U, 0xbf800000U, 0x248d3132U, 0x43d78000U, 0x43b7199aU,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x43d78000U, 0xc3b0e666U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"0\" flipV=\"false\"><off x=\"bad\" y=\"-25400\"/><ext cx=\" 3600 \" cy=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, -2.0000000000000000, 0.28346456692913385, 7.2000000000000002,
+          205.76130000000001, false, false,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0xbfa5cb38U, 0x409cebf9U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0xbfa5cb38U, 0x409cebf9U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"false\" flipV=\"0\"><off x=\"12700\" y=\"-25400\"/><ext cx=\"1in\" cy=\"12700\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, -2.0000000000000000, 72.000000000000000, 1.0000000000000000,
+          0.69999999999999996, false, false,
+        ),
+      ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3f812033U, 0xc01c2545U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3f812033U, 0xc01c2545U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"false\"><ext cx=\"12700\" cy=\"12700\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 1.0000000000000000, 1.0000000000000000,
+          0.0000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x00000000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x00000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"true\" flipV=\"0\"><off x=\"2.54cm\" y=\"9144000\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 720.00000000000000, 0.0000000000000000, 0.0000000000000000,
+          -45.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x42900000U, 0x44340000U,
+      ],
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x42900000U, 0x44340000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"0\" flipV=\"false\"><off x=\"-25400\" y=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
+          90.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0xc0000000U, 0x3e912245U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0xc0000000U, 0x3e912245U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"true\" flipV=\"1\"><off x=\"0\" y=\"12700\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 1.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          33.127566666666667, true, true,
+        ),
+      ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x00000000U, 0x3f800000U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x00000000U, 0x3f800000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"0\" flipV=\"on\"><off x=\"2.54cm\" y=\"-25400\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x42900000U, 0xc0000000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x42900000U, 0xc0000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"true\" flipV=\"1\"><off x=\"9144000\" y=\"-25400\"/><ext cx=\"12700\" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, -2.0000000000000000, 1.0000000000000000, 0.0000000000000000,
+          33.127566666666667, true, true,
+        ),
+      ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x44343accU, 0xbfdd0610U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x44343accU, 0xbfdd0610U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"1\" flipV=\"on\"><off x=\"9144000\" y=\"9144000\"/><ext cx=\"7.2pt\" cy=\"1in\"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, 720.00000000000000, 7.2000000000000002, 72.000000000000000,
+          90.000000000000000, true, true,
+        ),
+      ),
+      [
+        0xa48d3132U, 0xbf800000U, 0x3f800000U, 0xa48d3132U, 0x442be666U, 0x443de666U,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0x442be666U, 0x443de666U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"0\" flipV=\"true\"><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, 0.0000000000000000, 0.0000000000000000,
+          0.020566666666666667, false, true,
+        ),
+      ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x3da1193dU, 0x3da1193dU,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x3da1193dU, 0x3da1193dU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"1\" flipV=\"true\"><ext cx=\"bad\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 720.00000000000000,
+          205.76130000000001, true, true,
+        ),
+      ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x431c76d8U, 0x420f1e32U,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x431c76d8U, 0x420f1e32U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"off\" flipV=\"off\"><off x=\"9144000\" y=\"7.2pt\"/><ext cx=\"2.54cm\" cy=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, 7.2000000000000002, 72.000000000000000, 0.28346456692913385,
+          205.76130000000001, false, false,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x44451712U, 0x41b8ed2aU,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x44451712U, 0x41b8ed2aU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"false\" flipV=\"true\"><off x=\"12700\" y=\"-25400\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x3f800000U, 0xc0000000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x3f800000U, 0xc0000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"on\" flipV=\"1\"><off x=\"0\" y=\"9144000\"/><ext cx=\"-25400\" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 720.00000000000000, -2.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0xc0000000U, 0x44340000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0xc0000000U, 0x44340000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"1\"><off x=\"0\" y=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
+          90.000000000000000, true, true,
+        ),
+      ),
+      [
+        0xa48d3132U, 0xbf800000U, 0x3f800000U, 0xa48d3132U, 0x00000000U, 0x42900000U,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0x00000000U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"0\" flipV=\"true\"><ext cx=\"0\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 720.00000000000000,
+          -164.60905000000000, false, true,
+        ),
+      ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x42bf173cU, 0x414e91a6U,
+      ],
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x42bf173cU, 0x414e91a6U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"off\" flipV=\"off\"><off x=\"2.54cm\" y=\"2.54cm\"/><ext cx=\"0\" cy=\"7.2pt\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 72.000000000000000, 0.0000000000000000, 7.2000000000000002,
+          90.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x42973333U, 0x42973333U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x42973333U, 0x42973333U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"on\" flipV=\"on\"><ext cx=\" 3600 \" cy=\"1in\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 0.28346456692913385, 72.000000000000000,
+          33.127566666666667, true, true,
+        ),
+      ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0xc19b4f5dU, 0x428473a5U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0xc19b4f5dU, 0x428473a5U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"false\" flipV=\"0\"><off x=\" 3600 \" y=\" 3600 \"/><ext cx=\"0\" cy=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 0.28346456692913385, 0.0000000000000000, 72.000000000000000,
+          205.76130000000001, false, false,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0xc175ceaeU, 0x42896939U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0xc175ceaeU, 0x42896939U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"true\" flipV=\"1\"><off x=\"1in\" y=\"0\"/><ext cx=\"-25400\" cy=\"1in\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.0000000000000000, -2.0000000000000000, 72.000000000000000,
+          30.000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x42508931U, 0x42855a95U,
+      ],
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x42508931U, 0x42855a95U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"bad\" flipV=\"off\"><off x=\"-25400\" y=\"12700\"/><ext cx=\" 3600 \" cy=\"12700\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 1.0000000000000000, 0.28346456692913385, 1.0000000000000000,
+          0.0000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0xc0000000U, 0x3f800000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0xc0000000U, 0x3f800000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"bad\" flipV=\"off\"><ext cx=\"1in\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 72.000000000000000, -2.0000000000000000,
+          0.69999999999999996, false, false,
+        ),
+      ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0xbc1c2503U, 0xbee138d3U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0xbc1c2503U, 0xbee138d3U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"bad\" flipV=\"1\"><off x=\" 3600 \" y=\"-25400\"/><ext cx=\"2.54cm\" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, -2.0000000000000000, 72.000000000000000, 0.0000000000000000,
+          -45.000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x412d3defU, 0x41bba592U,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x4276f50dU, 0xc1dba592U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"true\" flipV=\"true\"><off x=\"7.2pt\" y=\"12700\"/><ext cx=\"12700\" cy=\"12700\"/></xfrm>",
+      Some(
+        (
+          7.2000000000000002, 1.0000000000000000, 1.0000000000000000, 1.0000000000000000,
+          -45.000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x41068382U, 0x3fc00000U,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x41068382U, 0x3fc00000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"0\" flipV=\"0\"><off x=\"-25400\" y=\"-25400\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          -45.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0xc0000000U, 0xc0000000U,
+      ],
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0xc0000000U, 0xc0000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"1\" flipV=\"true\"><off x=\"bad\" y=\"1in\"/><ext cx=\"-25400\" cy=\"1in\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 72.000000000000000, -2.0000000000000000, 72.000000000000000,
+          205.76130000000001, true, true,
+        ),
+      ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x4178c0a9U, 0x42980670U,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x4178c0a9U, 0x42980670U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"1\" flipV=\"on\"><off x=\"2.54cm\" y=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.020566666666666667, true, true,
+        ),
+      ),
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x42900000U, 0x42900000U,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x42900000U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"true\" flipV=\"bad\"><off x=\"bad\" y=\"7.2pt\"/><ext cx=\"-25400\" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 7.2000000000000002, -2.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0xc0000000U, 0x40e66666U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x40e66666U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"bad\" flipV=\"off\"><off x=\"2.54cm\" y=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
+          -45.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x42900000U, 0x42900000U,
+      ],
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x42900000U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"0\" flipV=\"0\"><off x=\"1in\" y=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42900000U, 0x00000000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42900000U, 0x00000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"on\"><ext cx=\"2.54cm\" cy=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, 72.000000000000000, 72.000000000000000,
+          90.000000000000000, true, true,
+        ),
+      ),
+      [
+        0xa48d3132U, 0xbf800000U, 0x3f800000U, 0xa48d3132U, 0x3da1193dU, 0x42902846U,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0x3da1193dU, 0x42902846U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"false\" flipV=\"bad\"><off x=\"2.54cm\" y=\"12700\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 1.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          -164.60905000000000, false, false,
+        ),
+      ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x42900000U, 0x3f800000U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x42900000U, 0x3f800000U,
+      ],
+    ),
+    ("<xfrm rot=\"5400000\" flipH=\"0\" flipV=\"0\"></xfrm>", None, [], []),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"1\" flipV=\"on\"><off x=\"9144000\" y=\"bad\"/><ext cx=\"12700\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, 0.0000000000000000, 1.0000000000000000, 720.00000000000000,
+          33.127566666666667, true, true,
+        ),
+      ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x44030b53U, 0x44257079U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x44030b53U, 0x44257079U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"bad\" flipV=\"0\"><off x=\"-25400\" y=\"0\"/><ext cx=\"0\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 0.0000000000000000, 0.0000000000000000, -2.0000000000000000,
+          -45.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0xbfa57d86U, 0xbe95f61aU,
+      ],
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0xbfa57d86U, 0xbe95f61aU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"1\" flipV=\"on\"><off x=\"12700\" y=\"bad\"/><ext cx=\"12700\" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 0.0000000000000000, 1.0000000000000000, 0.0000000000000000,
+          205.76130000000001, true, true,
+        ),
+      ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x3f865c5dU, 0xbe5e86e4U,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x3f865c5dU, 0xbe5e86e4U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"on\" flipV=\"1\"><off x=\"7.2pt\" y=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          7.2000000000000002, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
+          -164.60905000000000, true, true,
+        ),
+      ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x40e66666U, 0x3e912245U,
+      ],
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x40e66666U, 0x3e912245U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"true\" flipV=\"1\"><off x=\"2.54cm\" y=\"1in\"/><ext cx=\"bad\" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.69999999999999996, true, true,
+        ),
+      ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x42900000U, 0x42900000U,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x42900000U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"off\" flipV=\"off\"><off x=\"9144000\" y=\"0\"/><ext cx=\"bad\" cy=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          -45.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x44340000U, 0x00000000U,
+      ],
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x44340000U, 0x00000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"1\" flipV=\"1\"><off x=\"12700\" y=\"1in\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x3f800000U, 0x42900000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x3f800000U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"on\" flipV=\"1\"><off x=\"-25400\" y=\"bad\"/><ext cx=\"bad\" cy=\"1in\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 0.0000000000000000, 0.0000000000000000, 72.000000000000000,
+          30.000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0xc1a00000U, 0x42865a95U,
+      ],
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0xc1a00000U, 0x42865a95U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"bad\" flipV=\"on\"><off x=\"12700\" y=\" 3600 \"/><ext cx=\"9144000\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 0.28346456692913385, 720.00000000000000, 720.00000000000000,
+          0.0000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x3f800000U, 0x44341224U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x44344000U, 0x44341224U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"1\"><off x=\" 3600 \" y=\"7.2pt\"/><ext cx=\"0\" cy=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 7.2000000000000002, 0.0000000000000000, 0.28346456692913385,
+          90.000000000000000, false, true,
+        ),
+      ),
+      [
+        0x248d3132U, 0x3f800000U, 0x3f800000U, 0xa48d3132U, 0x3e112245U, 0x40eaef79U,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0x3e112245U, 0x40eaef79U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"true\" flipV=\"0\"><off x=\"7.2pt\" y=\"9144000\"/><ext cx=\"2.54cm\" cy=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          7.2000000000000002, 720.00000000000000, 72.000000000000000, 72.000000000000000,
+          0.69999999999999996, true, false,
+        ),
+      ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x429f4635U, 0x44341c52U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x40f48f59U, 0x4433e406U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"true\" flipV=\"on\"><ext cx=\" 3600 \" cy=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 0.28346456692913385, 72.000000000000000,
+          205.76130000000001, true, true,
+        ),
+      ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x417a9173U, 0x40610bdbU,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x417a9173U, 0x40610bdbU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"0\" flipV=\"true\"><off x=\"9144000\" y=\"12700\"/><ext cx=\" 3600 \" cy=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, 1.0000000000000000, 0.28346456692913385, 72.000000000000000,
+          -164.60905000000000, false, true,
+        ),
+      ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x4436754fU, 0x401508f7U,
+      ],
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x443663d1U, 0x4010385bU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"on\" flipV=\"off\"><off x=\"0\" y=\"2.54cm\"/><ext cx=\"1in\" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 72.000000000000000, 72.000000000000000, 0.0000000000000000,
+          205.76130000000001, true, false,
+        ),
+      ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x4064fd1cU, 0x42616a10U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x4288d817U, 0x42af4af8U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"on\" flipV=\"1\"><off x=\"0\" y=\" 3600 \"/><ext cx=\"2.54cm\" cy=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.28346456692913385, 72.000000000000000, 0.28346456692913385,
+          33.127566666666667, true, true,
+        ),
+      ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x42842454U, 0x41a1be9bU,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x42842454U, 0x41a1be9bU,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"off\" flipV=\"1\"><ext cx=\"1in\" cy=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 72.000000000000000, 72.000000000000000,
+          0.69999999999999996, false, true,
+        ),
+      ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0xbedfcee4U, 0x428f1d71U,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x428f1d71U, 0x4290dfcfU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"1\" flipV=\"off\"><ext cx=\"12700\" cy=\"12700\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 1.0000000000000000, 1.0000000000000000,
+          -164.60905000000000, true, false,
+        ),
+      ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0x3e87e303U, 0xbf76d1b4U, 0xbdeb0cd7U, 0x3f597019U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x3f597019U, 0x3f8eb0cdU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"false\" flipV=\"0\"><off x=\"1in\" y=\"7.2pt\"/><ext cx=\"12700\" cy=\"12700\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 7.2000000000000002, 1.0000000000000000, 1.0000000000000000,
+          205.76130000000001, false, false,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x4291774bU, 0x4105e1c3U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x4291774bU, 0x4105e1c3U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"true\" flipV=\"off\"><off x=\"-25400\" y=\"-25400\"/><ext cx=\"bad\" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0xc0000000U, 0xc0000000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0xc0000000U, 0xc0000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"true\" flipV=\"0\"><ext cx=\"bad\" cy=\"12700\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, 0.0000000000000000, 1.0000000000000000,
+          -164.60905000000000, true, false,
+        ),
+      ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0x3e87e303U, 0xbf76d1b4U, 0xbd5d5992U, 0x3f87c601U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0xbd5d5992U, 0x3f87c601U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"1\" flipV=\"0\"><off x=\"7.2pt\" y=\"9144000\"/><ext cx=\"9144000\" cy=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          7.2000000000000002, 720.00000000000000, 720.00000000000000, 72.000000000000000,
+          205.76130000000001, true, false,
+        ),
+      ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x41daaa1cU, 0x441dfd4dU,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x4428f18bU, 0x446c38b9U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"off\" flipV=\"0\"><off x=\" 3600 \" y=\"2.54cm\"/><ext cx=\"1in\" cy=\"-25400\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 72.000000000000000, 72.000000000000000, -2.0000000000000000,
+          0.020566666666666667, false, false,
+        ),
+      ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3e90f386U, 0x428ff962U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3e90f386U, 0x428ff962U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"false\" flipV=\"on\"><off x=\"2.54cm\" y=\"0\"/><ext cx=\"0\" cy=\"12700\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.0000000000000000, 0.0000000000000000, 1.0000000000000000,
+          205.76130000000001, false, true,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x42906f43U, 0x3d4b8ba7U,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x42906f43U, 0x3d4b8ba7U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"bad\" flipV=\"bad\"><off x=\"12700\" y=\"7.2pt\"/><ext cx=\"-25400\" cy=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 7.2000000000000002, -2.0000000000000000, 72.000000000000000,
+          0.0000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3f800000U, 0x40e66666U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3f800000U, 0x40e66666U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"on\" flipV=\"on\"><off x=\" 3600 \" y=\"12700\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 1.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.020566666666666667, true, true,
+        ),
+      ),
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x3e912245U, 0x3f800000U,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x3e912245U, 0x3f800000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"on\" flipV=\"false\"><ext cx=\"12700\" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 1.0000000000000000, 0.0000000000000000,
+          30.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0xbf000000U, 0x3f5db3d7U, 0x3f6ed9ecU, 0x3e800000U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x3d8930a3U, 0xbe800000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"false\" flipV=\"false\"><ext cx=\"0\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 720.00000000000000,
+          30.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x43340000U, 0x4240ec65U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x43340000U, 0x4240ec65U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"on\" flipV=\"bad\"><off x=\"7.2pt\" y=\"9144000\"/><ext cx=\"2.54cm\" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          7.2000000000000002, 720.00000000000000, 72.000000000000000, 0.0000000000000000,
+          33.127566666666667, true, false,
+        ),
+      ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x4292b263U, 0x4438eb26U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x4150d34eU, 0x442f14daU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"off\" flipV=\"on\"><off x=\"1in\" y=\"9144000\"/><ext cx=\" 3600 \" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 720.00000000000000, 0.28346456692913385, 0.0000000000000000,
+          -164.60905000000000, false, true,
+        ),
+      ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x42908e88U, 0x44340268U,
+      ],
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x4290029aU, 0x4433fd98U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"false\" flipV=\"1\"><off x=\" 3600 \" y=\"-25400\"/><ext cx=\"2.54cm\" cy=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, -2.0000000000000000, 72.000000000000000, 0.28346456692913385,
+          205.76130000000001, false, true,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x428988c3U, 0x415a9173U,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x407b12a6U, 0xc18d0f07U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"false\" flipV=\"bad\"><ext cx=\"9144000\" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, 720.00000000000000, 0.0000000000000000,
+          -164.60905000000000, false, false,
+        ),
+      ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x4430cac2U, 0x42bf3f82U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x4430cac2U, 0x42bf3f82U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"on\" flipV=\"on\"><off x=\"-25400\" y=\"-25400\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          33.127566666666667, true, true,
+        ),
+      ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0xc0000000U, 0xc0000000U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0xc0000000U, 0xc0000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"bad\" flipV=\"false\"><off x=\"12700\" y=\"2.54cm\"/><ext cx=\"7.2pt\" cy=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 72.000000000000000, 7.2000000000000002, 0.28346456692913385,
+          0.020566666666666667, false, false,
+        ),
+      ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3f8001adU, 0x428fff57U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3f8001adU, 0x428fff57U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"1\" flipV=\"on\"><ext cx=\"2.54cm\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 72.000000000000000, 720.00000000000000,
+          0.0000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x42900000U, 0x44340000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x42900000U, 0x44340000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"true\" flipV=\"false\"><off x=\"1in\" y=\"1in\"/><ext cx=\"9144000\" cy=\"12700\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 72.000000000000000, 720.00000000000000, 1.0000000000000000,
+          30.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0xbf000000U, 0x3f5db3d7U, 0x443a013aU, 0x437c1126U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x42f0f633U, 0xc2d7ddb4U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"on\" flipV=\"off\"><off x=\" 3600 \" y=\"1in\"/><ext cx=\" 3600 \" cy=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 72.000000000000000, 0.28346456692913385, 0.28346456692913385,
+          0.0000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3f112245U, 0x42900000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3e912245U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"0\" flipV=\"on\"><off x=\"9144000\" y=\"9144000\"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, 720.00000000000000, 0.0000000000000000, 0.0000000000000000,
+          90.000000000000000, false, true,
+        ),
+      ),
+      [
+        0x248d3132U, 0x3f800000U, 0x3f800000U, 0xa48d3132U, 0x44340000U, 0x44340000U,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0x44340000U, 0x44340000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"1\" flipV=\"0\"><off x=\"2.54cm\" y=\"2.54cm\"/><ext cx=\"bad\" cy=\"-25400\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 72.000000000000000, 0.0000000000000000, -2.0000000000000000,
+          33.127566666666667, true, false,
+        ),
+      ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x428ee831U, 0x428facc7U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x428ee831U, 0x428facc7U,
+      ],
+    ),
+    ("<xfrm rot=\"1987654\" flipH=\"1\" flipV=\"off\"></xfrm>", None, [], []),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"bad\" flipV=\"off\"><off x=\"2.54cm\" y=\"-25400\"/><ext cx=\"7.2pt\" cy=\"7.2pt\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, -2.0000000000000000, 7.2000000000000002, 7.2000000000000002,
+          205.76130000000001, false, false,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x429a8e1dU, 0x40cd04e5U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x429a8e1dU, 0x40cd04e5U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"false\" flipV=\"false\"><off x=\"0\" y=\"9144000\"/><ext cx=\"1in\" cy=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 720.00000000000000, 72.000000000000000, 7.2000000000000002,
+          0.69999999999999996, false, false,
+        ),
+      ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3d3f26d6U, 0x4433e3dfU,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3d3f26d6U, 0x4433e3dfU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"off\" flipV=\"true\"><off x=\"12700\" y=\"7.2pt\"/><ext cx=\"2.54cm\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 7.2000000000000002, 72.000000000000000, -2.0000000000000000,
+          30.000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0x3f000000U, 0xbf5db3d7U, 0x40ca56b7U, 0xc14aa80aU,
+      ],
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x42895a95U, 0x41baabfbU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"off\" flipV=\"true\"><off x=\"-25400\" y=\"1in\"/><ext cx=\" 3600 \" cy=\"1in\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 72.000000000000000, 0.28346456692913385, 72.000000000000000,
+          90.000000000000000, false, true,
+        ),
+      ),
+      [
+        0x248d3132U, 0x3f800000U, 0x3f800000U, 0xa48d3132U, 0xc2176edeU, 0x42d7b76fU,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0xc2176edeU, 0x42d84891U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"0\" flipV=\"false\"><off x=\" 3600 \" y=\"12700\"/><ext cx=\"12700\" cy=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 1.0000000000000000, 1.0000000000000000, 7.2000000000000002,
+          0.0000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3e912245U, 0x3f800000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3e912245U, 0x3f800000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"bad\" flipV=\"false\"><off x=\"1in\" y=\"12700\"/><ext cx=\" 3600 \" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 1.0000000000000000, 0.28346456692913385, 0.0000000000000000,
+          -164.60905000000000, false, false,
+        ),
+      ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x42908e88U, 0x3f84d09cU,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x42908e88U, 0x3f84d09cU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"false\"><off x=\" 3600 \" y=\"9144000\"/><ext cx=\"-25400\" cy=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 720.00000000000000, -2.0000000000000000, 7.2000000000000002,
+          90.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x40388aafU, 0x44352666U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x40388aafU, 0x44352666U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"off\"><off x=\"2.54cm\" y=\" 3600 \"/><ext cx=\"7.2pt\" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.28346456692913385, 7.2000000000000002, 0.0000000000000000,
+          90.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xa48d3132U, 0xbf800000U, 0xbf800000U, 0x248d3132U, 0x42973333U, 0x40788aafU,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x42973333U, 0xc054421eU,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"false\" flipV=\"off\"></xfrm>",
+      None,
+      [],
+      [],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"1\" flipV=\"1\"><ext cx=\"1in\" cy=\"1in\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 72.000000000000000, 72.000000000000000,
+          0.69999999999999996, true, true,
+        ),
+      ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x428f1d71U, 0x4290dfcfU,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x428f1d71U, 0x4290dfcfU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"true\"><off x=\"1in\" y=\" 3600 \"/><ext cx=\"1in\" cy=\"9144000\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.28346456692913385, 72.000000000000000, 720.00000000000000,
+          0.0000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x42900000U, 0x44341224U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x43100000U, 0x44341224U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"bad\" flipV=\"bad\"><off x=\"-25400\" y=\"-25400\"/><ext cx=\"2.54cm\" cy=\"bad\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, -2.0000000000000000, 72.000000000000000, 0.0000000000000000,
+          0.69999999999999996, false, false,
+        ),
+      ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0xbfffa7f6U, 0xc01c25e1U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0xbfffa7f6U, 0xc01c25e1U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"0\" flipV=\"on\"><off x=\"0\" y=\"-25400\"/><ext cx=\"9144000\" cy=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, -2.0000000000000000, 720.00000000000000, 0.28346456692913385,
+          0.0000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x00000000U, 0xbfdbb76fU,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x44340000U, 0xbfdbb76fU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"0\" flipV=\"bad\"><off x=\"-25400\" y=\"7.2pt\"/><ext cx=\"7.2pt\" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 7.2000000000000002, 7.2000000000000002, 0.0000000000000000,
+          -45.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0xbf7211d2U, 0x411bedeaU,
+      ],
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0xbf7211d2U, 0x411bedeaU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"on\" flipV=\"true\"><off x=\"9144000\" y=\"bad\"/><ext cx=\"0\" cy=\"1in\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, 0.0000000000000000, 0.0000000000000000, 72.000000000000000,
+          0.0000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x44340000U, 0x42900000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x44340000U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"off\" flipV=\"true\"><ext cx=\"bad\" cy=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, 0.0000000000000000, 7.2000000000000002,
+          0.69999999999999996, false, true,
+        ),
+      ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x3d0e0cd7U, 0x40e8e898U,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x3d0e0cd7U, 0x40e8e898U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"bad\" flipV=\"true\"><off x=\"2.54cm\" y=\"2.54cm\"/><ext cx=\"-25400\" cy=\"1in\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 72.000000000000000, -2.0000000000000000, 72.000000000000000,
+          -45.000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x42c2536eU, 0x4304bfadU,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x42bf7f5bU, 0x430629b7U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"bad\" flipV=\"true\"><off x=\"bad\" y=\"9144000\"/><ext cx=\"-25400\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 720.00000000000000, -2.0000000000000000, 720.00000000000000,
+          -45.000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x437e43fbU, 0x44a6bb3eU,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x437cd9f1U, 0x44a6e87fU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"true\" flipV=\"bad\"><off x=\"12700\" y=\"12700\"/><ext cx=\"-25400\" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 1.0000000000000000, -2.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0xbf800000U, 0x3f800000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3f800000U, 0x3f800000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"true\" flipV=\"bad\"><ext cx=\" 3600 \" cy=\"1in\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 0.28346456692913385, 72.000000000000000,
+          30.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0xbf000000U, 0x3f5db3d7U, 0x41921da6U, 0x409c9b40U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x419026e3U, 0x4098122eU,
+      ],
+    ),
+    ("<xfrm rot=\"1234.5\" flipH=\"true\" flipV=\"off\"></xfrm>", None, [], []),
+    ("<xfrm rot=\" 42000 \" flipH=\"bad\" flipV=\"off\"></xfrm>", None, [], []),
+    ("<xfrm rot=\"0\" flipH=\"off\" flipV=\"false\"></xfrm>", None, [], []),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"1\" flipV=\"bad\"><off x=\"1in\" y=\"bad\"/><ext cx=\"7.2pt\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.0000000000000000, 7.2000000000000002, -2.0000000000000000,
+          -45.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x429db494U, 0xc035a99eU,
+      ],
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x429385e6U, 0x40102c18U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"1\" flipV=\"false\"><off x=\"2.54cm\" y=\"1in\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.69999999999999996, true, false,
+        ),
+      ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x42900000U, 0x42900000U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x42900000U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"on\" flipV=\"false\"><ext cx=\"0\" cy=\"12700\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 1.0000000000000000,
+          0.0000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x00000000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x00000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"0\" flipV=\"on\"><off x=\"1in\" y=\"7.2pt\"/><ext cx=\"1in\" cy=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 7.2000000000000002, 72.000000000000000, 0.28346456692913385,
+          -45.000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x42a549ecU, 0x42039758U,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x43058e5aU, 0xc1901c73U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"false\" flipV=\"bad\"><off x=\"9144000\" y=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
+          -45.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x44340000U, 0x42900000U,
+      ],
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x44340000U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"true\" flipV=\"true\"></xfrm>",
+      None,
+      [],
+      [],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"0\" flipV=\"false\"><off x=\"7.2pt\" y=\" 3600 \"/><ext cx=\"1in\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          7.2000000000000002, 0.28346456692913385, 72.000000000000000, -2.0000000000000000,
+          90.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x4228cccdU, 0xc212ddbbU,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x4228cccdU, 0xc212ddbbU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"0\" flipV=\"on\"><off x=\"7.2pt\" y=\"9144000\"/><ext cx=\"2.54cm\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          7.2000000000000002, 720.00000000000000, 72.000000000000000, 720.00000000000000,
+          -164.60905000000000, false, true,
+        ),
+      ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x432d744fU, 0x44399dc4U,
+      ],
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x42d012a8U, 0x4434d6c9U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"0\" flipV=\"bad\"><off x=\"-25400\" y=\"bad\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          205.76130000000001, false, false,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0xc0000000U, 0x00000000U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0xc0000000U, 0x00000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"false\" flipV=\"false\"><off x=\"0\" y=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
+          0.69999999999999996, false, false,
+        ),
+      ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x00000000U, 0x3e912245U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x00000000U, 0x3e912245U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"true\"><off x=\"1in\" y=\"12700\"/><ext cx=\"9144000\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 1.0000000000000000, 720.00000000000000, -2.0000000000000000,
+          90.000000000000000, true, true,
+        ),
+      ),
+      [
+        0xa48d3132U, 0xbf800000U, 0x3f800000U, 0xa48d3132U, 0x43d88000U, 0x43b40000U,
+      ],
+      [
+        0xa553c9caU, 0xbf800000U, 0x3f800000U, 0xa553c9caU, 0x43d88000U, 0x43b40000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"0\"><off x=\"12700\" y=\"9144000\"/><ext cx=\"-25400\" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 720.00000000000000, -2.0000000000000000, 0.0000000000000000,
+          90.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xa48d3132U, 0xbf800000U, 0xbf800000U, 0x248d3132U, 0xa48d3132U, 0x4433c000U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x248d3132U, 0x44344000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"0\" flipV=\"off\"><off x=\"0\" y=\"1in\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x42900000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"on\" flipV=\"false\"><off x=\"12700\" y=\"2.54cm\"/><ext cx=\"0\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 72.000000000000000, 0.0000000000000000, 720.00000000000000,
+          30.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0xbf000000U, 0x3f5db3d7U, 0x43350000U, 0x42f07633U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x43350000U, 0x42f07633U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"1\"><ext cx=\"bad\" cy=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, 0.0000000000000000, 0.28346456692913385,
+          0.0000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x3da1193dU, 0x3eb96894U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x3da1193dU, 0x3eb96894U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"false\" flipV=\"0\"><off x=\"12700\" y=\"2.54cm\"/><ext cx=\"0\" cy=\"-25400\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 72.000000000000000, 0.0000000000000000, -2.0000000000000000,
+          0.020566666666666667, false, false,
+        ),
+      ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3f7fe87aU, 0x42900000U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3f7fe87aU, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"bad\" flipV=\"on\"><off x=\"1in\" y=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
+          30.000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0x3f000000U, 0xbf5db3d7U, 0x42900000U, 0x3e912245U,
+      ],
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x42900000U, 0x3e912245U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"on\" flipV=\"0\"><off x=\"2.54cm\" y=\"1in\"/><ext cx=\"bad\" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
+          -164.60905000000000, true, false,
+        ),
+      ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x42900000U, 0x42900000U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x42900000U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"true\" flipV=\"false\"><off x=\"-25400\" y=\"-25400\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          -45.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0xc0000000U, 0xc0000000U,
+      ],
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0xc0000000U, 0xc0000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"true\" flipV=\"0\"><off x=\"1in\" y=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 7.2000000000000002, 0.0000000000000000, 0.0000000000000000,
+          0.69999999999999996, true, false,
+        ),
+      ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x42900000U, 0x40e66666U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x42900000U, 0x40e66666U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"0\" flipV=\"0\"><ext cx=\" 3600 \" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 0.28346456692913385, 0.0000000000000000,
+          0.69999999999999996, false, false,
+        ),
+      ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x37317624U, 0xbae2f4f5U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x37317624U, 0xbae2f4f5U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"true\" flipV=\"1\"><off x=\"9144000\" y=\" 3600 \"/><ext cx=\"12700\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, 0.28346456692913385, 1.0000000000000000, -2.0000000000000000,
+          0.69999999999999996, true, true,
+        ),
+      ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x443440c8U, 0xbfdaecd3U,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x443440c8U, 0xbfdaecd3U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"false\"><off x=\"7.2pt\" y=\"0\"/><ext cx=\"0\" cy=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          7.2000000000000002, 0.0000000000000000, 0.0000000000000000, 0.28346456692913385,
+          90.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xa48d3132U, 0xbf800000U, 0xbf800000U, 0x248d3132U, 0x40eaef79U, 0x3e112245U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x40eaef79U, 0x3e112245U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"1\" flipV=\"off\"><ext cx=\"0\" cy=\"1in\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 72.000000000000000,
+          33.127566666666667, true, false,
+        ),
+      ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x419d64b8U, 0x40bb4037U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x419d64b8U, 0x40bb4037U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"true\" flipV=\"1\"><off x=\"12700\" y=\"12700\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 1.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.020566666666666667, true, true,
+        ),
+      ),
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x3f800000U, 0x3f800000U,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x3f800000U, 0x3f800000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"true\" flipV=\"off\"><off x=\" 3600 \" y=\"9144000\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 720.00000000000000, 0.0000000000000000, 0.0000000000000000,
+          -164.60905000000000, true, false,
+        ),
+      ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x3e912245U, 0x44340000U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x3e912245U, 0x44340000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"true\" flipV=\"true\"><off x=\"bad\" y=\"9144000\"/><ext cx=\" 3600 \" cy=\"7.2pt\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 720.00000000000000, 0.28346456692913385, 7.2000000000000002,
+          0.020566666666666667, true, true,
+        ),
+      ),
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x3e9078e4U, 0x4435ccceU,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x3e9078e4U, 0x4435ccceU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"off\" flipV=\"1\"><off x=\"2.54cm\" y=\"12700\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 1.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          205.76130000000001, false, true,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x42900000U, 0x3f800000U,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x42900000U, 0x3f800000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"1\" flipV=\"false\"><off x=\" 3600 \" y=\"0\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          205.76130000000001, true, false,
+        ),
+      ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x3e912245U, 0x00000000U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x3e912245U, 0x00000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"bad\"><off x=\"0\" y=\"9144000\"/><ext cx=\"2.54cm\" cy=\"1in\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 720.00000000000000, 72.000000000000000, 72.000000000000000,
+          90.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x42900000U, 0x44340000U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x42900000U, 0x44340000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"1\" flipV=\"on\"><ext cx=\"2.54cm\" cy=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 72.000000000000000, 72.000000000000000,
+          33.127566666666667, true, true,
+        ),
+      ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x4239e59dU, 0x42aba52aU,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x4239e59dU, 0x42aba52aU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"false\" flipV=\"on\"><off x=\"bad\" y=\"1in\"/><ext cx=\"7.2pt\" cy=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 72.000000000000000, 7.2000000000000002, 0.28346456692913385,
+          0.020566666666666667, false, true,
+        ),
+      ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0x39bc3244U, 0xbf7fffffU, 0xb8546a4bU, 0x42909079U,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x40e665fbU, 0x429091ccU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"bad\" flipV=\"true\"><off x=\"0\" y=\"7.2pt\"/><ext cx=\"0\" cy=\"9144000\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 7.2000000000000002, 0.0000000000000000, 720.00000000000000,
+          0.0000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x00000000U, 0x4435cccdU,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x29468d2eU, 0x4435cccdU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"0\" flipV=\"true\"><off x=\"-25400\" y=\"7.2pt\"/><ext cx=\"7.2pt\" cy=\"1in\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 7.2000000000000002, 7.2000000000000002, 72.000000000000000,
+          205.76130000000001, false, true,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x41a3e8b6U, 0x41457b41U,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x41601148U, 0x411369b4U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"bad\" flipV=\"0\"><ext cx=\"12700\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 1.0000000000000000, 720.00000000000000,
+          -164.60905000000000, false, false,
+        ),
+      ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0xc2bd206aU, 0x4430ce38U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0xc2bd206aU, 0x4430ce38U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"on\" flipV=\"1\"><off x=\" 3600 \" y=\"9144000\"/><ext cx=\" 3600 \" cy=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 720.00000000000000, 0.28346456692913385, 0.28346456692913385,
+          33.127566666666667, true, true,
+        ),
+      ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x3eeed070U, 0x443415a0U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x3eeed070U, 0x443415a0U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"1\" flipV=\"1\"><ext cx=\"1in\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 72.000000000000000, -2.0000000000000000,
+          205.76130000000001, true, true,
+        ),
+      ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x40492c40U, 0xc17beed8U,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x40492c40U, 0xc17beed8U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"1\" flipV=\"on\"><off x=\"12700\" y=\"-25400\"/><ext cx=\"9144000\" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, -2.0000000000000000, 720.00000000000000, 0.0000000000000000,
+          30.000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x4428313aU, 0x43320000U,
+      ],
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x4428313aU, 0x43320000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"off\" flipV=\"bad\"><ext cx=\"2.54cm\" cy=\"-25400\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, 72.000000000000000, -2.0000000000000000,
+          205.76130000000001, false, false,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x4289dee4U, 0x415d310aU,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x4289dee4U, 0x415d310aU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"off\" flipV=\"false\"><off x=\"0\" y=\"1in\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
+          33.127566666666667, false, false,
+        ),
+      ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x00000000U, 0x42900000U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x00000000U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"off\" flipV=\"true\"><off x=\"-25400\" y=\"bad\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.69999999999999996, false, true,
+        ),
+      ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0xc0000000U, 0x00000000U,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0xc0000000U, 0x00000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"false\" flipV=\"true\"><off x=\"-25400\" y=\"0\"/><ext cx=\"12700\" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 0.0000000000000000, 1.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0xc0000000U, 0x00000000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0xbf800000U, 0xa48d3132U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"0\" flipV=\"off\"><off x=\"-25400\" y=\"12700\"/><ext cx=\"7.2pt\" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 1.0000000000000000, 7.2000000000000002, 0.0000000000000000,
+          0.0000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0xc0000000U, 0x3f800000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0xc0000000U, 0x3f800000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"true\" flipV=\"off\"><ext cx=\"7.2pt\" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 7.2000000000000002, 0.0000000000000000,
+          0.0000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x40e66666U, 0x00000000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x00000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"1\" flipV=\"1\"><off x=\"2.54cm\" y=\"-25400\"/><ext cx=\"bad\" cy=\"1in\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, -2.0000000000000000, 0.0000000000000000, 72.000000000000000,
+          0.69999999999999996, true, true,
+        ),
+      ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x428f1ed1U, 0x428bfea0U,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x428f1ed1U, 0x428bfea0U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"0\" flipV=\"off\"><off x=\"bad\" y=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
+          30.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x00000000U, 0x3e912245U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x00000000U, 0x3e912245U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"bad\" flipV=\"1\"><off x=\"2.54cm\" y=\"0\"/><ext cx=\"12700\" cy=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.0000000000000000, 1.0000000000000000, 0.28346456692913385,
+          205.76130000000001, false, true,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x42920619U, 0x3e6cf38fU,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x429038fcU, 0xbe501a39U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"bad\"><off x=\" 3600 \" y=\"-25400\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          90.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x3e912245U, 0xc0000000U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x3e912245U, 0xc0000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"true\" flipV=\"0\"><off x=\"bad\" y=\"bad\"/><ext cx=\"-25400\" cy=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, -2.0000000000000000, 72.000000000000000,
+          -164.60905000000000, true, false,
+        ),
+      ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0x3e87e303U, 0xbf76d1b4U, 0xc1197248U, 0x428df2deU,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0xc1384c7fU, 0x428ce318U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"off\" flipV=\"false\"><ext cx=\"12700\" cy=\"1in\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 1.0000000000000000, 72.000000000000000,
+          0.020566666666666667, false, false,
+        ),
+      ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3c53b8afU, 0xb939c3afU,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3c53b8afU, 0xb939c3afU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"on\" flipV=\"1\"><off x=\"1in\" y=\"-25400\"/><ext cx=\"7.2pt\" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, -2.0000000000000000, 7.2000000000000002, 0.0000000000000000,
+          30.000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x429d6f75U, 0xbe4ccccdU,
+      ],
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x429d6f75U, 0xbe4ccccdU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"true\" flipV=\"on\"><ext cx=\"1in\" cy=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, 72.000000000000000, 7.2000000000000002,
+          205.76130000000001, true, true,
+        ),
+      ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x40a71480U, 0xc1735c07U,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x40a71480U, 0xc1735c07U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"bad\" flipV=\"on\"><off x=\"9144000\" y=\"9144000\"/><ext cx=\"2.54cm\" cy=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, 720.00000000000000, 72.000000000000000, 72.000000000000000,
+          -45.000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x443d0000U, 0x4449ba59U,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x4449ba59U, 0x443d0000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"false\" flipV=\"true\"><off x=\"1in\" y=\"9144000\"/><ext cx=\"12700\" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 720.00000000000000, 1.0000000000000000, 0.0000000000000000,
+          0.69999999999999996, false, true,
+        ),
+      ),
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x42900005U, 0x4433ff9cU,
+      ],
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0x3c4829d1U, 0xbf7ffb1cU, 0x4291fffbU, 0x44340064U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"0\" flipV=\"off\"><off x=\"1in\" y=\"7.2pt\"/><ext cx=\" 3600 \" cy=\"7.2pt\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 7.2000000000000002, 0.28346456692913385, 7.2000000000000002,
+          -164.60905000000000, false, false,
+        ),
+      ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x428ea557U, 0x4164efa9U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x428ea557U, 0x4164efa9U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"true\" flipV=\"1\"><off x=\"12700\" y=\"1in\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
+          33.127566666666667, true, true,
+        ),
+      ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x3f800000U, 0x42900000U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x3f800000U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"true\" flipV=\"false\"><off x=\"1in\" y=\"9144000\"/><ext cx=\" 3600 \" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 720.00000000000000, 0.28346456692913385, 0.0000000000000000,
+          30.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0xbf000000U, 0x3f5db3d7U, 0x42908769U, 0x44340489U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x429009b9U, 0x4433fb77U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"bad\" flipV=\"true\"><off x=\"0\" y=\"bad\"/><ext cx=\"9144000\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 720.00000000000000, -2.0000000000000000,
+          -45.000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x42d1780aU, 0x437cd9f1U,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x4419767cU, 0xc38021fdU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"1\" flipV=\"on\"><off x=\"7.2pt\" y=\"9144000\"/><ext cx=\"-25400\" cy=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          7.2000000000000002, 720.00000000000000, -2.0000000000000000, 0.28346456692913385,
+          -164.60905000000000, true, true,
+        ),
+      ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x40e674c4U, 0x44341150U,
+      ],
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x40e674c4U, 0x44341150U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"false\" flipV=\"bad\"><ext cx=\"2.54cm\" cy=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 72.000000000000000, 0.28346456692913385,
+          -164.60905000000000, false, false,
+        ),
+      ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x428d57b8U, 0x411d53a4U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x428d57b8U, 0x411d53a4U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"1\" flipV=\"bad\"><off x=\"12700\" y=\"-25400\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, -2.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.020566666666666667, true, false,
+        ),
+      ),
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3f800000U, 0xc0000000U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3f800000U, 0xc0000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"1\" flipV=\"true\"><off x=\"1in\" y=\"bad\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.020566666666666667, true, true,
+        ),
+      ),
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x42900000U, 0x00000000U,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x42900000U, 0x00000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"true\" flipV=\"1\"><off x=\"-25400\" y=\"1in\"/><ext cx=\"0\" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
+          -164.60905000000000, true, true,
+        ),
+      ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0xc0000000U, 0x42900000U,
+      ],
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0xc0000000U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"on\" flipV=\"off\"><off x=\"2.54cm\" y=\"2.54cm\"/><ext cx=\"7.2pt\" cy=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 72.000000000000000, 7.2000000000000002, 72.000000000000000,
+          90.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xa48d3132U, 0xbf800000U, 0xbf800000U, 0x248d3132U, 0x42df3333U, 0x42df3333U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x42df3333U, 0x42d0cccdU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"0\" flipV=\"0\"><off x=\"1in\" y=\"1in\"/><ext cx=\" 3600 \" cy=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 72.000000000000000, 0.28346456692913385, 0.28346456692913385,
+          0.0000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42900000U, 0x42900000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42900000U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"0\" flipV=\"1\"><off x=\"9144000\" y=\"12700\"/><ext cx=\"12700\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, 1.0000000000000000, 1.0000000000000000, -2.0000000000000000,
+          -164.60905000000000, false, true,
+        ),
+      ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x44342ddeU, 0x3f8c653bU,
+      ],
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0xbe87e303U, 0x3f76d1b4U, 0x4433f029U, 0x3f54d8f4U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"true\" flipV=\"on\"><off x=\"12700\" y=\" 3600 \"/><ext cx=\"12700\" cy=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 0.28346456692913385, 1.0000000000000000, 7.2000000000000002,
+          0.0000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x40000000U, 0x40ef788bU,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x40000000U, 0x40ef788bU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"false\" flipV=\"bad\"><off x=\"bad\" y=\"12700\"/><ext cx=\" 3600 \" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 1.0000000000000000, 0.28346456692913385, -2.0000000000000000,
+          0.020566666666666667, false, false,
+        ),
+      ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0xb9bc310aU, 0x3f7ffca9U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0xb9bc310aU, 0x3f7ffca9U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"false\" flipV=\"off\"><off x=\"0\" y=\"9144000\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 720.00000000000000, 0.0000000000000000, 0.0000000000000000,
+          90.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x00000000U, 0x44340000U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x00000000U, 0x44340000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"1\" flipV=\"off\"><off x=\"0\" y=\"12700\"/><ext cx=\"bad\" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 1.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          30.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0xbf000000U, 0x3f5db3d7U, 0x00000000U, 0x3f800000U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x00000000U, 0x3f800000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"1\" flipV=\"bad\"><off x=\"7.2pt\" y=\"2.54cm\"/><ext cx=\"-25400\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          7.2000000000000002, 72.000000000000000, -2.0000000000000000, 720.00000000000000,
+          0.0000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x40a66666U, 0x42900000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x40e66666U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"0\" flipV=\"bad\"><ext cx=\"12700\" cy=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, 1.0000000000000000, 72.000000000000000,
+          33.127566666666667, false, false,
+        ),
+      ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x419eac43U, 0x40b50620U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x419eac43U, 0x40b50620U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"0\" flipV=\"off\"><off x=\"12700\" y=\" 3600 \"/><ext cx=\"9144000\" cy=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 0.28346456692913385, 720.00000000000000, 72.000000000000000,
+          205.76130000000001, false, false,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x442764beU, 0x43612b75U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x442764beU, 0x43612b75U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"on\" flipV=\"bad\"><off x=\"bad\" y=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
+          0.69999999999999996, true, false,
+        ),
+      ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x00000000U, 0x3e912245U,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x00000000U, 0x3e912245U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"0\" flipV=\"bad\"><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, 0.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3da1193dU, 0x3da1193dU,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3da1193dU, 0x3da1193dU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"on\" flipV=\"bad\"><off x=\"2.54cm\" y=\" 3600 \"/><ext cx=\"0\" cy=\"1in\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.28346456692913385, 0.0000000000000000, 72.000000000000000,
+          30.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0xbf000000U, 0x3f5db3d7U, 0x42b40000U, 0x40a368dcU,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x42b40000U, 0x40a368dcU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"false\" flipV=\"on\"><ext cx=\"7.2pt\" cy=\"1in\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, 7.2000000000000002, 72.000000000000000,
+          -45.000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x41d4b61cU, 0x42802902U,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x41fd70d3U, 0x426bf4a8U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"0\" flipV=\"0\"><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, 0.0000000000000000, 0.0000000000000000,
+          -45.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x3da1193dU, 0x3da1193dU,
+      ],
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x3da1193dU, 0x3da1193dU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"false\" flipV=\"false\"><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, 0.0000000000000000, 0.0000000000000000,
+          -164.60905000000000, false, false,
+        ),
+      ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x3da1193dU, 0x3da1193dU,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0x3da1193dU, 0x3da1193dU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"off\" flipV=\"1\"><off x=\"9144000\" y=\"0\"/><ext cx=\" 3600 \" cy=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, 0.0000000000000000, 0.28346456692913385, 0.28346456692913385,
+          205.76130000000001, false, true,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x4434152fU, 0x3d9b0187U,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x443404d8U, 0xbd429db5U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"bad\" flipV=\"bad\"><off x=\"-25400\" y=\"9144000\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 720.00000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0xc0000000U, 0x44340000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0xc0000000U, 0x44340000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"off\" flipV=\"false\"><off x=\"bad\" y=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          205.76130000000001, false, false,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x00000000U, 0x00000000U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x00000000U, 0x00000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"off\" flipV=\"false\"><off x=\"1in\" y=\"bad\"/><ext cx=\"9144000\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.0000000000000000, 720.00000000000000, 720.00000000000000,
+          205.76130000000001, false, false,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x4415f067U, 0x44522bd3U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x4415f067U, 0x44522bd3U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"true\" flipV=\"false\"><off x=\"bad\" y=\"12700\"/><ext cx=\"bad\" cy=\"7.2pt\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 1.0000000000000000, 0.0000000000000000, 7.2000000000000002,
+          0.020566666666666667, true, false,
+        ),
+      ),
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3aa96070U, 0x3f800002U,
+      ],
+      [
+        0x3f7fffffU, 0x39bc3244U, 0xb9bc3244U, 0x3f7fffffU, 0x3aa96070U, 0x3f800002U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"off\" flipV=\"on\"><off x=\"bad\" y=\"0\"/><ext cx=\"9144000\" cy=\"12700\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 720.00000000000000, 1.0000000000000000,
+          205.76130000000001, false, true,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x442b1c05U, 0x431c8391U,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x420ffcb8U, 0xc31c6a20U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"true\" flipV=\"off\"></xfrm>",
+      None,
+      [],
+      [],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"0\" flipV=\"on\"><off x=\"-25400\" y=\"2.54cm\"/><ext cx=\"-25400\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 72.000000000000000, -2.0000000000000000, 720.00000000000000,
+          0.0000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0xc0000000U, 0x44460000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0xc0800000U, 0x44460000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"off\" flipV=\"false\"><off x=\"7.2pt\" y=\"9144000\"/><ext cx=\"bad\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          7.2000000000000002, 720.00000000000000, 0.0000000000000000, -2.0000000000000000,
+          30.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x40d66666U, 0x4433f76dU,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x40d66666U, 0x4433f76dU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"off\" flipV=\"true\"></xfrm>",
+      None,
+      [],
+      [],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"true\" flipV=\"on\"><off x=\"bad\" y=\"12700\"/><ext cx=\"7.2pt\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 1.0000000000000000, 7.2000000000000002, 720.00000000000000,
+          0.0000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x40e66666U, 0x44344000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x40e66666U, 0x44344000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"bad\" flipV=\"off\"><off x=\"0\" y=\"2.54cm\"/><ext cx=\"7.2pt\" cy=\"2.54cm\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 72.000000000000000, 7.2000000000000002, 72.000000000000000,
+          -164.60905000000000, false, false,
+        ),
+      ),
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0xc01ef404U, 0x430faa16U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0xc01ef404U, 0x430faa16U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"on\" flipV=\"true\"><ext cx=\" 3600 \" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, 0.28346456692913385, 0.0000000000000000,
+          -45.000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x3ea42776U, 0xbcb09b54U,
+      ],
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0xbf3504f3U, 0xbf3504f3U, 0x3ea42776U, 0xbcb09b54U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"false\" flipV=\"false\"><off x=\"0\" y=\" 3600 \"/><ext cx=\"2.54cm\" cy=\"7.2pt\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.28346456692913385, 72.000000000000000, 7.2000000000000002,
+          0.0000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x3e912245U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x3e912245U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"true\" flipV=\"off\"><ext cx=\"bad\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 0.0000000000000000, -2.0000000000000000,
+          0.0000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x00000000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x00000000U, 0x00000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"off\" flipV=\"off\"><off x=\"1in\" y=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.28346456692913385, 0.0000000000000000, 0.0000000000000000,
+          90.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x42900000U, 0x3e912245U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x42900000U, 0x3e912245U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"true\" flipV=\"true\"><off x=\"12700\" y=\"0\"/><ext cx=\"7.2pt\" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 0.0000000000000000, 7.2000000000000002, 0.0000000000000000,
+          30.000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x40f6f754U, 0x3fe66666U,
+      ],
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x40f6f754U, 0x3fe66666U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"on\" flipV=\"on\"><off x=\"12700\" y=\"1in\"/><ext cx=\"2.54cm\" cy=\"-25400\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 72.000000000000000, 72.000000000000000, -2.0000000000000000,
+          0.0000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x42920000U, 0x428c0000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x42920000U, 0x428c0000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"bad\" flipV=\"on\"><off x=\"-25400\" y=\"2.54cm\"/><ext cx=\"1in\" cy=\"2.54cm\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 72.000000000000000, 72.000000000000000, 72.000000000000000,
+          0.0000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0xc0000000U, 0x43100000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x428c0000U, 0x43100000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"1\" flipV=\"false\"><off x=\"1in\" y=\"1in\"/><ext cx=\"0\" cy=\"12700\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 72.000000000000000, 0.0000000000000000, 1.0000000000000000,
+          90.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xa48d3132U, 0xbf800000U, 0xbf800000U, 0x248d3132U, 0x42910000U, 0x42910000U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x42910000U, 0x42910000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"true\" flipV=\"true\"><off x=\"9144000\" y=\"2.54cm\"/><ext cx=\"bad\" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, 72.000000000000000, 0.0000000000000000, 0.0000000000000000,
+          205.76130000000001, true, true,
+        ),
+      ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x44340000U, 0x42900000U,
+      ],
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0xbede86e4U, 0x3f668e8bU, 0x44340000U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-2700000\" flipH=\"true\" flipV=\"bad\"><off x=\"12700\" y=\" 3600 \"/><ext cx=\"-25400\" cy=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 0.28346456692913385, -2.0000000000000000, 0.28346456692913385,
+          -45.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0xbf4eacf5U, 0x3f841b52U,
+      ],
+      [
+        0x3f3504f3U, 0xbf3504f3U, 0x3f3504f3U, 0x3f3504f3U, 0x3f1b5cf1U, 0xbec3a684U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"on\" flipV=\"0\"><off x=\"bad\" y=\" 3600 \"/><ext cx=\"-25400\" cy=\"7.2pt\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.28346456692913385, -2.0000000000000000, 7.2000000000000002,
+          0.69999999999999996, true, false,
+        ),
+      ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0xbffa5c61U, 0x3e8b042dU,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0x3d33d761U, 0x3e9786caU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"bad\" flipV=\"on\"><off x=\" 3600 \" y=\"-25400\"/><ext cx=\"1in\" cy=\"12700\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, -2.0000000000000000, 72.000000000000000, 1.0000000000000000,
+          0.0000000000000000, false, true,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x3e912245U, 0xbf800000U,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x42909122U, 0xbf800000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"on\" flipV=\"on\"><off x=\"0\" y=\"9144000\"/><ext cx=\"2.54cm\" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 720.00000000000000, 72.000000000000000, 0.0000000000000000,
+          30.000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x42865a95U, 0x44388000U,
+      ],
+      [
+        0xbf5db3d7U, 0xbf000000U, 0x3f000000U, 0xbf5db3d7U, 0x42865a95U, 0x44388000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"-9876543\" flipH=\"1\" flipV=\"off\"><off x=\"0\" y=\"-25400\"/><ext cx=\"bad\" cy=\"7.2pt\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, -2.0000000000000000, 0.0000000000000000, 7.2000000000000002,
+          -164.60905000000000, true, false,
+        ),
+      ),
+      [
+        0x3f76d1b4U, 0x3e87e303U, 0x3e87e303U, 0xbf76d1b4U, 0xbf74989fU, 0x40a244c4U,
+      ],
+      [
+        0xbf76d1b4U, 0xbe87e303U, 0x3e87e303U, 0xbf76d1b4U, 0xbf74989fU, 0x40a244c4U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"on\" flipV=\"off\"><off x=\" 3600 \" y=\"bad\"/></xfrm>",
+      Some(
+        (
+          0.28346456692913385, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          33.127566666666667, true, false,
+        ),
+      ),
+      [
+        0xbf566382U, 0xbf0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x3e912245U, 0x00000000U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x3e912245U, 0x00000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"1\" flipV=\"0\"><off x=\"-25400\" y=\"7.2pt\"/><ext cx=\"7.2pt\" cy=\" 3600 \"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 7.2000000000000002, 7.2000000000000002, 0.28346456692913385,
+          90.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xa48d3132U, 0xbf800000U, 0xbf800000U, 0x248d3132U, 0x3fdef115U, 0x412f1156U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x3fdef115U, 0x406f788bU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"off\" flipV=\"on\"><off x=\"0\" y=\"bad\"/><ext cx=\"bad\" cy=\"12700\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 1.0000000000000000,
+          33.127566666666667, false, true,
+        ),
+      ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0xbe8be7c0U, 0x3f6b31c1U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0xbe8be7c0U, 0x3f6b31c1U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"1\" flipV=\"off\"><off x=\"9144000\" y=\"12700\"/><ext cx=\"0\" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, 1.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x44340000U, 0x3f800000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x44340000U, 0x3f800000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"false\" flipV=\"1\"><ext cx=\"12700\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 1.0000000000000000, -2.0000000000000000,
+          33.127566666666667, false, true,
+        ),
+      ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x3f20b5ffU, 0xc00715d8U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x3fbb8cc0U, 0xbfc837d1U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"on\" flipV=\"0\"><off x=\"bad\" y=\"0\"/><ext cx=\"1in\" cy=\"7.2pt\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 72.000000000000000, 7.2000000000000002,
+          30.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0xbf000000U, 0x3f5db3d7U, 0x4289f42eU, 0x4193dbc5U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x40d3f051U, 0xc18c243bU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"bad\" flipH=\"off\" flipV=\"off\"><off x=\"1in\" y=\" 3600 \"/><ext cx=\"12700\" cy=\" 3600 \"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 0.28346456692913385, 1.0000000000000000, 0.28346456692913385,
+          0.0000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42900000U, 0x3e912245U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x42900000U, 0x3e912245U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"off\" flipV=\"false\"><off x=\"-25400\" y=\"7.2pt\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 7.2000000000000002, 0.0000000000000000, 0.0000000000000000,
+          30.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0xc0000000U, 0x40e66666U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0xc0000000U, 0x40e66666U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1234.5\" flipH=\"off\" flipV=\"on\"><off x=\"bad\" y=\"bad\"/><ext cx=\"bad\" cy=\"0\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.020566666666666667, false, true,
+        ),
+      ),
+      [
+        0x3f7fffffU, 0x39bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x00000000U, 0x00000000U,
+      ],
+      [
+        0xbf7fffffU, 0xb9bc3244U, 0x39bc3244U, 0xbf7fffffU, 0x00000000U, 0x00000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"1\" flipV=\"0\"><off x=\"12700\" y=\"bad\"/><ext cx=\"12700\" cy=\"12700\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 0.0000000000000000, 1.0000000000000000, 1.0000000000000000,
+          205.76130000000001, true, false,
+        ),
+      ),
+      [
+        0x3f668e8bU, 0x3ede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x3f551701U, 0x3f3ba58dU,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x3fddd2c6U, 0x3f95747fU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1800000\" flipH=\"on\" flipV=\"bad\"><off x=\"9144000\" y=\"0\"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000,
+          30.000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf5db3d7U, 0xbf000000U, 0xbf000000U, 0x3f5db3d7U, 0x44340000U, 0x00000000U,
+      ],
+      [
+        0x3f5db3d7U, 0x3f000000U, 0xbf000000U, 0x3f5db3d7U, 0x44340000U, 0x00000000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"0\" flipV=\"false\"><off x=\"-25400\" y=\"9144000\"/><ext cx=\"2.54cm\" cy=\"12700\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 720.00000000000000, 72.000000000000000, 1.0000000000000000,
+          90.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x420a0000U, 0x442b2000U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x420a0000U, 0x442b2000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"false\" flipV=\"true\"><off x=\"-25400\" y=\"bad\"/><ext cx=\"0\" cy=\"-25400\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          -2.0000000000000000, 0.0000000000000000, 0.0000000000000000, -2.0000000000000000,
+          33.127566666666667, false, true,
+        ),
+      ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0xbfba0c20U, 0xbfeb31c1U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0xbfba0c20U, 0xbfeb31c1U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"bad\" flipV=\"false\"><off x=\"9144000\" y=\"bad\"/><ext cx=\"-25400\" cy=\"12700\"/></xfrm>",
+      Some(
+        (
+          720.00000000000000, 0.0000000000000000, -2.0000000000000000, 1.0000000000000000,
+          205.76130000000001, false, false,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x44337874U, 0x3f0403d4U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x44337874U, 0x3f0403d4U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"12345678\" flipH=\"false\" flipV=\"bad\"><off x=\"0\" y=\"bad\"/><ext cx=\"12700\" cy=\"-25400\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 1.0000000000000000, -2.0000000000000000,
+          205.76130000000001, false, false,
+        ),
+      ),
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x3fb1455cU, 0xbfd77669U,
+      ],
+      [
+        0xbf668e8bU, 0xbede86e4U, 0x3ede86e4U, 0xbf668e8bU, 0x3fb1455cU, 0xbfd77669U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"bad\" flipV=\"bad\"><off x=\"7.2pt\" y=\"1in\"/><ext cx=\"9144000\" cy=\"9144000\"/></xfrm>",
+      Some(
+        (
+          7.2000000000000002, 72.000000000000000, 720.00000000000000, 720.00000000000000,
+          33.127566666666667, false, false,
+        ),
+      ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x43833a95U, 0xc28473a9U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x43833a95U, 0xc28473a9U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"on\" flipV=\"true\"><ext cx=\"2.54cm\" cy=\"7.2pt\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          0.078661417322834645, 0.078661417322834645, 72.000000000000000, 7.2000000000000002,
+          0.0000000000000000, true, true,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0xbf800000U, 0x42902846U, 0x40e8eacbU,
+      ],
+      [
+        0xbf800000U, 0x250d3132U, 0xa50d3132U, 0xbf800000U, 0x42902846U, 0x40e8eacbU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"0\" flipV=\"0\"><off x=\"7.2pt\" y=\"9144000\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          7.2000000000000002, 720.00000000000000, 0.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, false, false,
+        ),
+      ),
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x40e66666U, 0x44340000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x40e66666U, 0x44340000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"5400000\" flipH=\"bad\" flipV=\"off\"><off x=\"7.2pt\" y=\"1in\"/><ext cx=\"1in\" cy=\"bad\"/></xfrm>",
+      Some(
+        (
+          7.2000000000000002, 72.000000000000000, 72.000000000000000, 0.0000000000000000,
+          90.000000000000000, false, false,
+        ),
+      ),
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x422ccccdU, 0x42100000U,
+      ],
+      [
+        0x248d3132U, 0x3f800000U, 0xbf800000U, 0x248d3132U, 0x422ccccdU, 0x42100000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"0\" flipH=\"1\" flipV=\"0\"><off x=\"12700\" y=\"1in\"/><ext cx=\"-25400\" cy=\"0\"/></xfrm>",
+      Some(
+        (
+          1.0000000000000000, 72.000000000000000, -2.0000000000000000, 0.0000000000000000,
+          0.0000000000000000, true, false,
+        ),
+      ),
+      [
+        0xbf800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0xbf800000U, 0x42900000U,
+      ],
+      [
+        0x3f800000U, 0x00000000U, 0x00000000U, 0x3f800000U, 0x3f800000U, 0x42900000U,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"0\" flipV=\"bad\"><off x=\"1in\" y=\"12700\"/><ext cx=\"1in\" cy=\"1in\"/><off x=\"999\" y=\"999\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 1.0000000000000000, 72.000000000000000, 72.000000000000000,
+          33.127566666666667, false, false,
+        ),
+      ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x42c30d31U, 0xc14d2954U,
+      ],
+      [
+        0x3f566382U, 0x3f0be7c0U, 0xbf0be7c0U, 0x3f566382U, 0x42c30d31U, 0xc14d2954U,
+      ],
+    ),
+    (
+      "<xfrm rot=\" 42000 \" flipH=\"on\" flipV=\"0\"><ext cx=\"0\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          0.0000000000000000, 0.0000000000000000, 0.0000000000000000, -2.0000000000000000,
+          0.69999999999999996, true, false,
+        ),
+      ),
+      [
+        0xbf7ffb1cU, 0xbc4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0xbc4829d1U, 0xb89c82dcU,
+      ],
+      [
+        0x3f7ffb1cU, 0x3c4829d1U, 0xbc4829d1U, 0x3f7ffb1cU, 0xbc4829d1U, 0xb89c82dcU,
+      ],
+    ),
+    (
+      "<xfrm rot=\"1987654\" flipH=\"0\" flipV=\"on\"><off x=\"2.54cm\" y=\"7.2pt\"/><ext cx=\"7.2pt\" cy=\"-25400\"/></xfrm>",
+      Some(
+        (
+          72.000000000000000, 7.2000000000000002, 7.2000000000000002, -2.0000000000000000,
+          33.127566666666667, false, true,
+        ),
+      ),
+      [
+        0x3f566382U, 0x3f0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x42924369U, 0x405949c0U,
+      ],
+      [
+        0xbf566382U, 0xbf0be7c0U, 0x3f0be7c0U, 0xbf566382U, 0x429e529cU, 0x40ea8f0cU,
+      ],
     ),
   ]
-  for (xml, expected) in cases {
-    let actual = match pptx_transform(xml) {
-      Some(xf) =>
+  for (xml, expected, graphics, text) in cases {
+    let xf = pptx_transform(xml)
+    let actual = match xf {
+      Some(value) =>
         Some(
-          (xf.x, xf.y, xf.width, xf.height, xf.rotation, xf.flip_h, xf.flip_v),
+          (
+            value.x,
+            value.y,
+            value.width,
+            value.height,
+            value.rotation,
+            value.flip_h,
+            value.flip_v,
+          ),
         )
       None => None
     }
     assert_eq(actual, expected, msg=xml)
+    match xf {
+      Some(value) => {
+        assert_eq(pptx_matrix_bits(value.matrix(false)), graphics, msg=xml)
+        assert_eq(pptx_matrix_bits(value.matrix(true)), text, msg=xml)
+      }
+      None => ()
+    }
   }
 }
