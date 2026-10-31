@@ -2128,3 +2128,131 @@ test "PPTX line charts draw a polyline and markers" {
   assert_eq(markers, 3, msg="PPTX line markers")
   assert_eq(text.to_string(), "ABC", msg="PPTX line categories")
 }
+
+///|
+fn pptx_pie_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/4VVCTTUax+eBZNwYywhslwXpZiybxn7bhBCZB1LxhgzczGWGEtUZI3skq3ulSjZ",
+  )
+  joined.write_string(
+    "p4nijrVyU65v7ql8mMElYWZs+cZX3/GZczv3/z/n/57nPf/3Oed5fr/3+TnagrlEAADAIYBAt493",
+  )
+  joined.write_string(
+    "9uJzBX4gANACAgCE2bsXTSPQeCQa7+NCwCBx3qox4ahGZ1tEH4yftKpS7VWvJQ1JdZySjpEi9rGA",
+  )
+  joined.write_string(
+    "bvMPhAgnRvsZy5FTckDJRYDSEIOZNxPbGu22CMvlJeUOteSBen4oXym1IP0qcz3shHLKMpknO8tA",
+  )
+  joined.write_string(
+    "luIa59R0RMgaNnn+x/Sy6SznGggejsygEcbT/y2LK9U6mXwlTeD+0P1OZz1W5rmjhN9zwhPSDVHh",
+  )
+  joined.write_string(
+    "Ysy442PGUM+8j1E8Ny9lpYo3vsohNEWRtmadpaRtghzEJe1quME1enQY+oqWzucK1lkKXrlCbsYS",
+  )
+  joined.write_string(
+    "k+l8JkhUGLqqiNroen2t4c5yVr8qrTHAZsNjeFItnE5mvSiGBRKscB5fokus171AhhgEbiMuWfXZ",
+  )
+  joined.write_string(
+    "sacypYhkmdnLsR0MaccD5mEdmJUtbHSabSAfe/XBIlE4NdW9b9bYyOFeGD/kUxfCCRtNNcj4rdPb",
+  )
+  joined.write_string(
+    "7J3rLLhAa+HqAsRelMkQQzgYxNh9HlOrQVdGBR3J1CAoVZ208aUVvM1XBz3YIcQBLKz1TgcvO5KT",
+  )
+  joined.write_string(
+    "ucIf3VPTGSqIDikDNWfqQGF1IjfL8iVf2ZyMhxcppWS71XlZ9KW4aIfmLA9ix6brgSODgeVigvre",
+  )
+  joined.write_string(
+    "wIWipN13V8QV05SalsS8NyM/quQiJQQUgXIKx+Wd0aRx80KitqZPwmQ34KC0lzFjz8fYyIotbW8X",
+  )
+  joined.write_string(
+    "g8GrYbBIHLs1/PChEei9xsjKQYSBzgi+WN4R8VvSjHyF7EJN2ApxRYQbwa2CqPAvudeqr8QGnDan",
+  )
+  joined.write_string(
+    "1bYxbxOMZkce6sYNONym9Mv6dQiSYbQQlI4Va/NfpChyQ4NvwQ3gT145vuok/nsICV5Tp1pFj1qu",
+  )
+  joined.write_string(
+    "+fzUjoLfcQ6xFk0hQsJX9Ur9GfddSo9s685JR6SGdFzQIh9R2IVA6ymX47M3aSoLQAqNdEdjygw2",
+  )
+  joined.write_string(
+    "IUwpLp88v/FmWJJ3pJO7cKtrWH8cIAP5EsycHlzz6J3CtkKrz5n7KDymdnaVWr7vGIgBHzQAXz64",
+  )
+  joined.write_string(
+    "9pCN5NgGyHwz4Gt9OW34Vu9mdr0Fed5T6w+1TT2WNqsJPSrUaZOQlOM15VuS6iWyxeCJdMRgtpdZ",
+  )
+  joined.write_string(
+    "T6dLlprdowas+vWBrk4g0/puLTQUI+EwZQizeR0a2mMKVIHi/6rTvXvrRHSIFtHdQor39vnDkFHr",
+  )
+  joined.write_string(
+    "kXarvXpr382+Yafbfw1y7wHW5FLRzM0BBPgPtfx1T/jizwIod/CXgK1IjcPZl6hiePoAr8NEyHBV",
+  )
+  joined.write_string(
+    "prAisIlV4WY+kdQmsLv5awLooNgW+VjbZjZSYIuV/SYWhwoNROK+af4vOPN/aof21HK/7PERCop4",
+  )
+  joined.write_string(
+    "ffi6VT7ajOY2D+GnrxFHUhSu78SBOx0xH7Cz2DGY6w5Mvet8Rv4jqM0lwI+/eGtPGvfWGjYyyf4m",
+  )
+  joined.write_string(
+    "Ux8WT1m7K5s0ur0pDrLrEB6gWBYKHfsp88RGiqBTdiAMO0eZrYl+5jsYIJ5qmfCC+LxOOUo+XrKK",
+  )
+  joined.write_string(
+    "ZDeBh5qMhxNbb9Qnot4y8+vujmubau3oyK1lyCEF++DWoLmmEX1lAo9xg028YX3FQbmpEUd7dNlS",
+  )
+  joined.write_string(
+    "a9mhJ3pQ7r7Q8jx7NFtjGtMwbSahGE6sc4KKmbtQXaxqIQ9R6e7XEzWiQtsTpMGnzU85XpDYGtk6",
+  )
+  joined.write_string(
+    "u5qHfbVwc1EhFmlvPnA3ExraLjqIUtls9qDOFbDImb7lmi3VcXR6NUnF+4O+cfUkq9f1scAzUUBF",
+  )
+  joined.write_string(
+    "m7O6UYtDSYOmmCbfSsZFjHKPBjGNJU99pjA0W1V8du2QXxucq6VJZ1LTaDe9so2/jzepDYAaV1Yt",
+  )
+  joined.write_string(
+    "Kkycbx8mJrfYXtxw00UsiAskLj//tIZOcf7hjVhxmKiP3DgdFaUWrB1m96CNKnkNKlru6P/xZ/PK",
+  )
+  joined.write_string(
+    "8SSMy67ne7I1t5cSQ2C+M9C8rGRNNEESUe+xTd6qhPK4MoiflI2Gg7NXjeea/coQn7dfAp9WTUsG",
+  )
+  joined.write_string(
+    "z+RxuxV1WzlBT11dWXEdzlup5hsFYIp5t/u567nkdpDr2ge9Hjh+tHWWjf4A7nsdEOKHxeO+Ll+9",
+  )
+  joined.write_string(
+    "zrVH98nuec1dkqD+RMX1FlLKNTc26YuUb6rSmTwgX0jJnyTf3ELVTvpVAlgmW9v/nc+w/OhiSpSb",
+  )
+  joined.write_string(
+    "SVcY/KEr+jVD4cNf63QG0CwjUMmzDMlbKeVr9Cf//QvqG6yWPP9cAxTtVqpuf6sl/+UgU785tyf0",
+  )
+  joined.write_string(
+    "RVr3ndueib2UccvPWnxR9rjsUl4R8GY6US7cr7uf4u/tFb9mVzoR374EYXTQ6PKjj61CALhKvCqD",
+  )
+  joined.write_string(
+    "arDa3ACuZbZtOSmce3RM7wl4Nu+t5gT8YtKSWpUKmRoBWGB+UuIp9HXHBhjyTZh+ZNLcdyksbkdb",
+  )
+  joined.write_string(
+    "IEgE/P3Z+78nCQj4+0nMScA5f/YJDIEHphHnQc503z8oDvr7rOdk4IzHfQYJ8D+GJScZZ/zsk/Fw",
+  )
+  joined.write_string(
+    "/XMYcbJx3u59tnWu79x1TgrOpt2n8OP5Tgs72nLz7P0CYb9U9rFYyB76D+a/hNFtCQAA",
+  )
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX pie charts draw one wedge per value" {
+  let result = convert(pptx_pie_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut wedges = 0
+  for command in commands {
+    match command {
+      @render.FillPath(_, _) => wedges += 1
+      _ => ()
+    }
+  }
+  assert_eq(wedges, 3, msg="PPTX pie wedges")
+}

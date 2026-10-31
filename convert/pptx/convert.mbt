@@ -803,6 +803,27 @@ fn pptx_line_path(
 }
 
 ///|
+fn pptx_pie_path(
+  cx : Double,
+  cy : Double,
+  radius : Double,
+  start : Double,
+  sweep : Double,
+) -> @core.Path {
+  let verbs : Array[Byte] = [0]
+  let coordinates : Array[Double] = [cx, cy]
+  let steps = 32
+  for index in 0..<(steps + 1) {
+    let angle = start + sweep * index.to_double() / steps.to_double()
+    verbs.push(1)
+    coordinates.push(cx + radius * @math.cos(angle))
+    coordinates.push(cy + radius * @math.sin(angle))
+  }
+  verbs.push(4)
+  { verbs: Bytes::from_array(verbs), coordinates, }
+}
+
+///|
 fn pptx_emit_chart(
   shape : PptxXmlNode,
   package : @ooxml.OoxmlPackage,
@@ -842,10 +863,16 @@ fn pptx_emit_chart(
   let plot_area = pptx_child(pptx_child(Some(root), "chart"), "plotArea")
   let bar = pptx_child(plot_area, "barChart")
   let line_chart = pptx_child(plot_area, "lineChart")
+  let pie_chart = pptx_child(plot_area, "pieChart")
   let is_line = bar is None && line_chart is Some(_)
+  let is_pie = bar is None && line_chart is None && pie_chart is Some(_)
   let chart = match bar {
     Some(value) => Some(value)
-    None => line_chart
+    None =>
+      match line_chart {
+        Some(value) => Some(value)
+        None => pie_chart
+      }
   }
   let series = pptx_children(chart)
   let values : Array[Double] = []
@@ -875,6 +902,29 @@ fn pptx_emit_chart(
     maximum = Double::max(maximum, value)
   }
   if maximum <= 0.0 {
+    return
+  }
+  if is_pie {
+    let total = values.fold(init=0.0, (sum, value) => sum + value)
+    if total <= 0.0 {
+      return
+    }
+    let cx = x + width / 2.0
+    let cy = y + height / 2.0
+    let radius = Double::min(width, height) / 2.0 - 20.0
+    let palette = [
+      0x4472c4ffU, 0xed7d31ffU, 0xa5a5a5ffU, 0xffc000ffU, 0x5b9bd5ffU,
+    ]
+    let mut start = -3.141592653589793 / 2.0
+    for index, value in values {
+      let sweep = 2.0 * 3.141592653589793 * value / total
+      let path = object.add_path(
+        @core.Inline(pptx_pie_path(cx, cy, radius, start, sweep)),
+      )
+      object.fill_color(palette[index % palette.length()])
+      object.fill_path(path, 0)
+      start += sweep
+    }
     return
   }
   let left = x + 20.0
