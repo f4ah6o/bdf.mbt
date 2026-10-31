@@ -16,6 +16,7 @@ fn pdf_graphics_document(
   data : Bytes,
   box~ : String = "crop",
   title~ : String = "",
+  no_text_index~ : Bool = false,
 ) -> Bytes raise PdfStreamError {
   if !["", "crop", "media", "bleed", "trim", "art"].contains(box) {
     raise InvalidStream("unknown PDF page box")
@@ -68,15 +69,45 @@ fn pdf_graphics_document(
   meta["source"] = Json::string("pdf")
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
   let output_pages : Array[Json] = []
+  let objects : Map[String, @core.ObjectResources] = Map([])
+  let index : Array[@core.IndexRun] = []
   for page in pages {
     let (geometry, object, children) = file.graphics_page_parts(page, box)
     for child in children {
-      ignore(writer.add_part("obj", child)) catch {
+      let hash = writer.add_part("obj", child) catch {
         _ => raise InvalidStream("PDF BDF child output failed")
+      }
+      if !no_text_index {
+        objects[hash] = @core.decode_object_resources(child) catch {
+          _ => raise InvalidStream("PDF BDF child decoding failed")
+        }
       }
     }
     let hash = writer.add_part("obj", object) catch {
       _ => raise InvalidStream("PDF BDF object output failed")
+    }
+    if !no_text_index {
+      let resources = @core.decode_object_resources(object) catch {
+        _ => raise InvalidStream("PDF BDF object decoding failed")
+      }
+      let content = @render.extract_text(resources, fn(child_hash) {
+        objects.get(child_hash)
+      }) catch {
+        _ => raise InvalidStream("PDF BDF text extraction failed")
+      }
+      for i, run in content.runs {
+        index.push({
+          a: output_pages.length(),
+          b: 0,
+          ordinal: run.ordinal,
+          separator: if i == 0 {
+            2
+          } else {
+            run.separator
+          },
+          text: run.text,
+        })
+      }
     }
     let width = Float::from_double(geometry.width)
     let height = Float::from_double(geometry.height)
@@ -95,6 +126,15 @@ fn pdf_graphics_document(
   let view : Map[String, Json] = {
     "id": Json::string("pages"),
     "kind": Json::string("fixed"),
+  }
+  if !no_text_index {
+    let encoded = @core.encode_text_index(index) catch {
+      _ => raise InvalidStream("PDF BDF text index encoding failed")
+    }
+    let hash = writer.add_part("idx", encoded) catch {
+      _ => raise InvalidStream("PDF BDF text index output failed")
+    }
+    view["textIndex"] = Json::string(hash)
   }
   if document_title != "" {
     view["title"] = Json::string(document_title)

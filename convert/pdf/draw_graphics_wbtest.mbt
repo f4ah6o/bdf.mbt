@@ -130,7 +130,7 @@ test "graphics-only PDF pages reject annotations" {
 
 ///|
 fn check_pdf_graphics_document(data : Bytes, expected : Bytes) -> Unit raise {
-  let actual = pdf_graphics_document(data)
+  let actual = pdf_graphics_document(data, no_text_index=true)
   let left = @core.single_to_split(actual)
   let right = @core.single_to_split(expected)
   assert_eq(left.manifest, right.manifest, msg="PDF BDF manifest")
@@ -148,11 +148,46 @@ fn check_pdf_graphics_document(data : Bytes, expected : Bytes) -> Unit raise {
 }
 
 ///|
+fn check_pdf_indexed_graphics_document(
+  data : Bytes,
+  expected : Bytes,
+) -> Unit raise {
+  let actual = pdf_graphics_document(data)
+  let left = @core.single_to_split(actual)
+  let right = @core.single_to_split(expected)
+  assert_eq(left.manifest, right.manifest, msg="PDF indexed BDF manifest")
+  assert_eq(
+    left.parts.length(),
+    right.parts.length(),
+    msg="PDF indexed BDF part count",
+  )
+  let actual_document = @core.open_single(actual)
+  let expected_document = @core.open_single(expected)
+  for i in 0..<left.parts.length() {
+    assert_eq(
+      left.parts[i].hash,
+      right.parts[i].hash,
+      msg="PDF indexed BDF part hash",
+    )
+    assert_eq(
+      actual_document.part(left.parts[i].hash),
+      expected_document.part(right.parts[i].hash),
+      msg="PDF indexed BDF part bytes",
+    )
+  }
+}
+
+///|
 fn check_pdf_graphics_document_options(
   data : Bytes,
   expected : Bytes,
 ) -> Unit raise {
-  let actual = pdf_graphics_document(data, box="media", title="Overridden")
+  let actual = pdf_graphics_document(
+    data,
+    box="media",
+    title="Overridden",
+    no_text_index=true,
+  )
   let left = @core.single_to_split(actual)
   let right = @core.single_to_split(expected)
   assert_eq(left.manifest, right.manifest)

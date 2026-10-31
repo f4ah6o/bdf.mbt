@@ -95,5 +95,14 @@ func TestCodexVerticalPages(t *testing.T) {
 			t.Fatal(e)
 		}
 		fmt.Fprintf(f, "///|\ntest \"PDF vertical document matches upstream Go %d\" {\n check_pdf_graphics_document(%s,%s)\n}\n", i, verticalBytes(b.Bytes()), verticalBytes(doc.Bytes()))
+		indexed, e := Convert(bytes.NewReader(b.Bytes()), &Options{NoSharePrefix: true})
+		if e != nil {
+			t.Fatal(e)
+		}
+		var indexDoc bytes.Buffer
+		if e = indexed.Doc.WriteSingle(&indexDoc); e != nil {
+			t.Fatal(e)
+		}
+		fmt.Fprintf(f, "///|\ntest \"PDF vertical index matches upstream Go %d\" {\n check_pdf_indexed_graphics_document(%s,%s)\n}\n", i, verticalBytes(b.Bytes()), verticalBytes(indexDoc.Bytes()))
 	}
 }

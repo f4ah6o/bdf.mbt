@@ -347,6 +347,17 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 			t.Fatal(err)
 		}
 		fmt.Fprintf(out, "///|\ntest \"PDF graphics document matches upstream Go %d\" {\n check_pdf_graphics_document(%s,%s)\n}\n", i, pageGraphicsBytes(data), pageGraphicsBytes(document.Bytes()))
+		if i == 0 || i >= 17 {
+			indexed, err := Convert(bytes.NewReader(data), &Options{NoSharePrefix: true})
+			if err != nil {
+				t.Fatal(err)
+			}
+			var indexDoc bytes.Buffer
+			if err = indexed.Doc.WriteSingle(&indexDoc); err != nil {
+				t.Fatal(err)
+			}
+			fmt.Fprintf(out, "///|\ntest \"PDF graphics indexed document matches upstream Go %d\" {\n check_pdf_indexed_graphics_document(%s,%s)\n}\n", i, pageGraphicsBytes(data), pageGraphicsBytes(indexDoc.Bytes()))
+		}
 		if i == 16 {
 			optionResult, err := Convert(bytes.NewReader(data), &Options{NoTextIndex: true, NoSharePrefix: true, Box: "media", Title: "Overridden"})
 			if err != nil {
@@ -390,6 +401,15 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Fprintf(out, "///|\ntest \"PDF font usage across pages matches upstream Go\" {\n check_pdf_graphics_document(%s,%s)\n}\n", pageGraphicsBytes(multi.Bytes()), pageGraphicsBytes(multiDocument.Bytes()))
+	indexedMulti, err := Convert(bytes.NewReader(multi.Bytes()), &Options{NoSharePrefix: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var indexedMultiDoc bytes.Buffer
+	if err = indexedMulti.Doc.WriteSingle(&indexedMultiDoc); err != nil {
+		t.Fatal(err)
+	}
+	fmt.Fprintf(out, "///|\ntest \"PDF index across pages matches upstream Go\" {\n check_pdf_indexed_graphics_document(%s,%s)\n}\n", pageGraphicsBytes(multi.Bytes()), pageGraphicsBytes(indexedMultiDoc.Bytes()))
 	var empty bytes.Buffer
 	empty.WriteString("%PDF-1.7\n%empty\n")
 	offsets := make([]int, 3)
@@ -412,5 +432,14 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Fprintf(out, "///|\ntest \"empty PDF graphics document matches upstream Go\" {\n check_pdf_graphics_document(%s,%s)\n}\n", pageGraphicsBytes(empty.Bytes()), pageGraphicsBytes(document.Bytes()))
+	indexedEmpty, err := Convert(bytes.NewReader(empty.Bytes()), &Options{NoSharePrefix: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var indexedEmptyDoc bytes.Buffer
+	if err = indexedEmpty.Doc.WriteSingle(&indexedEmptyDoc); err != nil {
+		t.Fatal(err)
+	}
+	fmt.Fprintf(out, "///|\ntest \"empty PDF index matches upstream Go\" {\n check_pdf_indexed_graphics_document(%s,%s)\n}\n", pageGraphicsBytes(empty.Bytes()), pageGraphicsBytes(indexedEmptyDoc.Bytes()))
 
 }
