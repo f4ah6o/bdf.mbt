@@ -275,6 +275,11 @@ fn PdfFile::graphics_page(
     Some(message) => raise InvalidStream(message)
     None => ()
   }
+  match self.page_deref(pdf_dict_get(page.dict, b"Annots")) {
+    PdfArray(values) if !values.is_empty() =>
+      raise InvalidStream("PDF annotations are not supported yet")
+    _ => ()
+  }
   let geometry = self.page_geometry(page, which)
   let content = self.page_content(page.dict)
   let graphics = PdfGraphics::new(

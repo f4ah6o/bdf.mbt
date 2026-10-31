@@ -36,7 +36,7 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer out.Close()
-	for i := 0; i < 16; i++ {
+	for i := 0; i < 17; i++ {
 		content := []byte("q 0.2 0.4 0.8 rg 10 20 100 60 re f Q 2 w 0 0 m 20 40 l S\n")
 		resources := ""
 		if i == 8 {
@@ -85,11 +85,15 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		var b bytes.Buffer
 		b.WriteString("%PDF-1.7\n%graphics\n")
 		count := 5
-		if profile != "" {
+		if profile != "" || i == 16 {
 			count = 6
 		}
 		offsets := make([]int, count)
-		objects := []string{"<< /Type /Catalog /Pages 2 0 R >>", fmt.Sprintf("<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 600 800] /CropBox [10 20 500 700] /Rotate %d %s >>", (i/2)*90, resources), "<< /Type /Page /Parent 2 0 R /Contents 4 0 R >>"}
+		catalog := "<< /Type /Catalog /Pages 2 0 R >>"
+		if i == 16 {
+			catalog = "<< /Type /Catalog /Pages 2 0 R /Lang (ja-JP) >>"
+		}
+		objects := []string{catalog, fmt.Sprintf("<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 600 800] /CropBox [10 20 500 700] /Rotate %d %s >>", (i/2)*90, resources), "<< /Type /Page /Parent 2 0 R /Contents 4 0 R >>"}
 		for j, object := range objects {
 			offsets[j+1] = b.Len()
 			fmt.Fprintf(&b, "%d 0 obj\n%s\nendobj\n", j+1, object)
@@ -102,12 +106,20 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 			offsets[5] = b.Len()
 			fmt.Fprintf(&b, "5 0 obj\n<< /Length 0 %s >>\nstream\n\nendstream\nendobj\n", profile)
 		}
+		if i == 16 {
+			offsets[5] = b.Len()
+			b.WriteString("5 0 obj\n<< /Title (Sample) /Author (Alice) /Subject (Description) /Keywords (first, second) /CreationDate (D:20241015123000+09'00') /ModDate (D:20241016) >>\nendobj\n")
+		}
 		xref := b.Len()
 		fmt.Fprintf(&b, "xref\n0 %d\n0000000000 65535 f \n", count)
 		for _, offset := range offsets[1:] {
 			fmt.Fprintf(&b, "%010d 00000 n \n", offset)
 		}
-		fmt.Fprintf(&b, "trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", count, xref)
+		info := ""
+		if i == 16 {
+			info = "/Info 5 0 R"
+		}
+		fmt.Fprintf(&b, "trailer\n<< /Size %d /Root 1 0 R %s >>\nstartxref\n%d\n%%%%EOF\n", count, info, xref)
 		data := b.Bytes()
 		ctx, e := api.ReadContext(context.Background(), bytes.NewReader(data), model.NewDefaultConfiguration())
 		if e != nil {
@@ -130,5 +142,49 @@ func TestCodexPDFGraphicsPages(t *testing.T) {
 		in.transform(page.base)
 		in.run(decoded)
 		fmt.Fprintf(out, "///|\ntest \"PDF graphics page matches upstream Go %d\" {\n check_pdf_graphics_page(%s,%#.17g,%#.17g,%s)\n}\n", i, pageGraphicsBytes(data), page.w, page.h, pageGraphicsBytes(obj.obj.Encode()))
+
+		result, err := Convert(bytes.NewReader(data), &Options{NoTextIndex: true, NoSharePrefix: true})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var document bytes.Buffer
+		if err = result.Doc.WriteSingle(&document); err != nil {
+			t.Fatal(err)
+		}
+		fmt.Fprintf(out, "///|\ntest \"PDF graphics document matches upstream Go %d\" {\n check_pdf_graphics_document(%s,%s)\n}\n", i, pageGraphicsBytes(data), pageGraphicsBytes(document.Bytes()))
+		if i == 16 {
+			optionResult, err := Convert(bytes.NewReader(data), &Options{NoTextIndex: true, NoSharePrefix: true, Box: "media", Title: "Overridden"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			var optionDocument bytes.Buffer
+			if err = optionResult.Doc.WriteSingle(&optionDocument); err != nil {
+				t.Fatal(err)
+			}
+			fmt.Fprintf(out, "///|\ntest \"PDF graphics document options match upstream Go\" {\n check_pdf_graphics_document_options(%s,%s)\n}\n", pageGraphicsBytes(data), pageGraphicsBytes(optionDocument.Bytes()))
+		}
 	}
+	var empty bytes.Buffer
+	empty.WriteString("%PDF-1.7\n%empty\n")
+	offsets := make([]int, 3)
+	for i, obj := range []string{"<< /Type /Catalog /Pages 2 0 R >>", "<< /Type /Pages /Count 0 /Kids [] >>"} {
+		offsets[i+1] = empty.Len()
+		fmt.Fprintf(&empty, "%d 0 obj\n%s\nendobj\n", i+1, obj)
+	}
+	xref := empty.Len()
+	empty.WriteString("xref\n0 3\n0000000000 65535 f \n")
+	for _, offset := range offsets[1:] {
+		fmt.Fprintf(&empty, "%010d 00000 n \n", offset)
+	}
+	fmt.Fprintf(&empty, "trailer\n<< /Size 3 /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", xref)
+	result, err := Convert(bytes.NewReader(empty.Bytes()), &Options{NoTextIndex: true, NoSharePrefix: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var document bytes.Buffer
+	if err = result.Doc.WriteSingle(&document); err != nil {
+		t.Fatal(err)
+	}
+	fmt.Fprintf(out, "///|\ntest \"empty PDF graphics document matches upstream Go\" {\n check_pdf_graphics_document(%s,%s)\n}\n", pageGraphicsBytes(empty.Bytes()), pageGraphicsBytes(document.Bytes()))
+
 }

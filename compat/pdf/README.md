@@ -76,3 +76,9 @@ from a UTF-8 BOM string is normalized to replacement characters for MoonBit's
 Unicode strings. Regenerate with `generate_metadata_text_test.go`,
 `generate_metadata_date_test.go` and `generate_metadata_test.go` beside the
 upstream PDF sources; the latter also needs `BDF_PDF_FIXTURES`.
+The page fixtures also compare complete graphics-only BDF documents, including
+metadata, page-boundary selection, title overrides and an empty page tree.
+They compare decoded manifests and part bytes; compressed manifest bytes can
+vary between the Go and MoonBit DEFLATE encoders. Unsupported PDF content,
+annotations, encryption, optional content and tagged structure are rejected by
+this internal path.

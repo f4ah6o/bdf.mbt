@@ -91,3 +91,75 @@ test "unsupported PDF soft masks fail closed" {
   }
   assert_true(rejected)
 }
+
+///|
+test "graphics-only PDF pages reject annotations" {
+  let file : PdfFile = {
+    data: b"",
+    entries: {},
+    objects: {},
+    loading: {},
+    object_streams: {},
+    trailers: [],
+    trailer: PdfNull,
+  }
+  let attrs : PdfPageAttrs = {
+    media: None,
+    crop: None,
+    rotate: 0,
+    resources: None,
+  }
+  let page : PdfPageLeaf = {
+    dict: PdfDict([(b"Annots", PdfArray([PdfDict([])]))]),
+    reference: None,
+    attrs,
+    error: None,
+  }
+  let rejected = try {
+    ignore(file.graphics_page(page, "crop"))
+    false
+  } catch {
+    _ => true
+  }
+  assert_true(rejected)
+}
+
+///|
+fn check_pdf_graphics_document(data : Bytes, expected : Bytes) -> Unit raise {
+  let actual = pdf_graphics_document(data)
+  let left = @core.single_to_split(actual)
+  let right = @core.single_to_split(expected)
+  assert_eq(left.manifest, right.manifest, msg="PDF BDF manifest")
+  assert_eq(left.parts.length(), right.parts.length(), msg="PDF BDF part count")
+  let actual_document = @core.open_single(actual)
+  let expected_document = @core.open_single(expected)
+  for i in 0..<left.parts.length() {
+    assert_eq(left.parts[i].hash, right.parts[i].hash, msg="PDF BDF part hash")
+    assert_eq(
+      actual_document.part(left.parts[i].hash),
+      expected_document.part(right.parts[i].hash),
+      msg="PDF BDF part bytes",
+    )
+  }
+}
+
+///|
+fn check_pdf_graphics_document_options(
+  data : Bytes,
+  expected : Bytes,
+) -> Unit raise {
+  let actual = pdf_graphics_document(data, box="media", title="Overridden")
+  let left = @core.single_to_split(actual)
+  let right = @core.single_to_split(expected)
+  assert_eq(left.manifest, right.manifest)
+  let actual_document = @core.open_single(actual)
+  let expected_document = @core.open_single(expected)
+  assert_eq(left.parts.length(), right.parts.length())
+  for i in 0..<left.parts.length() {
+    assert_eq(left.parts[i].hash, right.parts[i].hash)
+    assert_eq(
+      actual_document.part(left.parts[i].hash),
+      expected_document.part(right.parts[i].hash),
+    )
+  }
+}
