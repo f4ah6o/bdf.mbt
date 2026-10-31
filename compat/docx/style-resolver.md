@@ -16,5 +16,5 @@ Only the already supported paragraph and run properties can be resolved.
 Unsupported properties in an applied style are rejected; unused style
 properties are not applied. Numbering, table-style layers, theme colors,
 style-driven text rendering and document layout remain unsupported. The
-DOCX document-text reader's style, settings and numbering rejection remains
-in place and is not relaxed by this internal resolver.
+DOCX document-text reader uses the resolver and retains supported properties;
+it still rejects settings, numbering and unsupported formatting.

@@ -5,11 +5,13 @@ priv struct DocxTextItem {
   kind : String
   text : String
   clear : Bool
+  props : DocxRunProps
 } derive(Debug, Eq)
 
 ///|
 priv struct DocxTextParagraph {
   props : DocxParagraphProps
+  mark : DocxRunProps
   items : Array[DocxTextItem]
   section_index : Int32
 } derive(Debug, Eq)
@@ -23,6 +25,7 @@ priv struct DocxTextDocument {
 
 ///|
 priv struct DocxTextWalker {
+  styles : DocxStyles
   paragraphs : Array[DocxTextParagraph]
   mut section_index : Int32
 }
@@ -191,59 +194,86 @@ fn docx_text_push(
   items : Array[DocxTextItem],
   kind : String,
   text : String,
+  props : DocxRunProps,
   clear~ : Bool = false,
 ) -> Unit {
-  items.push({ kind, text, clear, })
+  items.push({ kind, text, clear, props, })
 }
 
 ///|
-fn docx_text_chars(items : Array[DocxTextItem], text : String) -> Unit {
+fn docx_text_chars(
+  items : Array[DocxTextItem],
+  text : String,
+  props : DocxRunProps,
+) -> Unit {
   for c in text {
     match c {
-      '\r' | '\n' => docx_text_push(items, "break", "\n")
-      '\t' => docx_text_push(items, "tab", "\t")
+      '\r' | '\n' => docx_text_push(items, "break", "\n", props)
+      '\t' => docx_text_push(items, "tab", "\t", props)
       '\u00ad' => ()
       _ => {
         let s = StringBuilder()
         s.write_char(c)
-        docx_text_push(items, "char", s.to_string())
+        docx_text_push(items, "char", s.to_string(), props)
       }
     }
   }
 }
 
 ///|
-fn docx_text_run(node : DocxXmlNode, items : Array[DocxTextItem]) -> Unit raise {
+fn docx_text_run(
+  node : DocxXmlNode,
+  items : Array[DocxTextItem],
+  styles : DocxStyles,
+  paragraph_style : String,
+) -> Unit raise {
+  let mut found_rpr = false
+  for child in node.children {
+    if child.name() == "rPr" {
+      if found_rpr {
+        docx_text_unsupported("duplicate rPr")
+      }
+      found_rpr = true
+    }
+  }
+  let props = styles.resolve_run(paragraph_style, node.child("rPr"))
+  if (props.toggles & (4 | 8 | 64)) != 0 {
+    docx_text_unsupported("run text case conversion or hidden text")
+  }
+  if props.tcy {
+    docx_text_unsupported("vertical combined text")
+  }
   for child in node.children {
     let name = child.name()
     if name != "rPr" && name != "t" && !child.children.is_empty() {
       docx_text_unsupported(name)
     }
     match name {
-      "rPr" => if !child.children.is_empty() { docx_text_unsupported(name) }
+      "rPr" => ()
       "t" => {
         if !child.children.is_empty() {
           docx_text_unsupported(name)
         }
-        docx_text_chars(items, child.text.to_string())
+        docx_text_chars(items, child.text.to_string(), props)
       }
-      "tab" | "ptab" => docx_text_push(items, "tab", "\t")
+      "tab" | "ptab" => docx_text_push(items, "tab", "\t", props)
       "br" => {
         let typ = docx_attribute(child.element, "type", "textWrapping")
         match typ {
-          "page" => docx_text_push(items, "page", "")
-          "column" => docx_text_push(items, "column", "")
+          "page" => docx_text_push(items, "page", "", props)
+          "column" => docx_text_push(items, "column", "", props)
           _ =>
             docx_text_push(
               items,
               "break",
               "\n",
+              props,
               clear=docx_attribute(child.element, "clear", "none") != "none",
             )
         }
       }
-      "cr" => docx_text_push(items, "break", "\n")
-      "noBreakHyphen" => docx_text_chars(items, "\u2011")
+      "cr" => docx_text_push(items, "break", "\n", props)
+      "noBreakHyphen" => docx_text_chars(items, "\u2011", props)
       "softHyphen" | "lastRenderedPageBreak" => ()
       other => docx_text_unsupported(other)
     }
@@ -254,19 +284,21 @@ fn docx_text_run(node : DocxXmlNode, items : Array[DocxTextItem]) -> Unit raise 
 fn docx_text_inlines(
   node : DocxXmlNode,
   items : Array[DocxTextItem],
+  styles : DocxStyles,
+  paragraph_style : String,
 ) -> Unit raise {
   for child in node.children {
     match child.name() {
       "pPr" => ()
-      "r" => docx_text_run(child, items)
+      "r" => docx_text_run(child, items, styles, paragraph_style)
       "smartTag" | "customXml" | "ins" | "moveTo" =>
-        docx_text_inlines(child, items)
+        docx_text_inlines(child, items, styles, paragraph_style)
       "sdt" => {
         let mut seen_content = false
         for sub in child.children {
           if sub.name() == "sdtContent" && !seen_content {
             seen_content = true
-            docx_text_inlines(sub, items)
+            docx_text_inlines(sub, items, styles, paragraph_style)
           } else {
             docx_text_unsupported(sub.name())
           }
@@ -290,9 +322,7 @@ fn DocxTextWalker::blocks(
     }
     match child.name() {
       "p" => {
-        let props = docx_default_paragraph_props()
         let items : Array[DocxTextItem] = []
-        let mut ends_section = false
         let mut seen_ppr = false
         for node in child.children {
           if node.name() == "pPr" {
@@ -302,16 +332,17 @@ fn DocxTextWalker::blocks(
             seen_ppr = true
           }
         }
-        match child.child("pPr") {
-          Some(ppr) => ends_section = docx_text_ppr(props, ppr)
-          None => ()
-        }
+        let direct = child.child("pPr")
+        let (paragraph_style, props) = self.styles.resolve_paragraph(direct)
+        let mark = self.styles.resolve_run(paragraph_style, None)
+        let ends_section = docx_style_child(direct, "sectPr") is Some(_)
         if ends_section && wrapped {
           docx_text_unsupported("wrapped paragraph section")
         }
-        docx_text_inlines(child, items)
+        docx_text_inlines(child, items, self.styles, paragraph_style)
         self.paragraphs.push({
           props,
+          mark,
           items,
           section_index: self.section_index,
         })
@@ -350,10 +381,20 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     Some(rel) => rel.target
     None => "word/document.xml"
   }
-  for typ in ["/styles", "/numbering", "/settings", "/footnotes", "/endnotes"] {
+  for typ in ["/numbering", "/settings", "/footnotes", "/endnotes"] {
     if package.relationship_of_type(part, typ) is Some(_) {
       docx_text_unsupported(typ)
     }
+  }
+  let styles = match package.relationship_of_type(part, "/styles") {
+    Some(rel) => {
+      if rel.external {
+        docx_text_unsupported("external styles")
+      }
+      let data = package.read(rel.target)
+      docx_styles_from_xml(@utf8.decode(data[:], ignore_bom=true))
+    }
+    None => docx_styles_from_xml("<styles/>")
   }
   let bytes = package.read(part)
   let xml = @utf8.decode(bytes[:], ignore_bom=true)
@@ -372,7 +413,7 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     }
     seen_body = true
   }
-  let walker : DocxTextWalker = { paragraphs: [], section_index: 0, }
+  let walker : DocxTextWalker = { styles, paragraphs: [], section_index: 0, }
   walker.blocks(body, false)
   let (section_part, sections) = docx_sections(data)
   if part != section_part || walker.section_index >= sections.length() {

@@ -72,13 +72,19 @@ test "DOCX unsupported content is rejected" {
     source in [
       "<body><tbl/></body>", "<body><p><r><drawing/></r></p></body>", "<body><p><r><fldChar fldCharType=\"begin\"/></r></p></body>",
       "<body><p><fldSimple instr=\"PAGE\"/></p></body>", "<body><p><r><rPr><vanish/></rPr><t>hidden</t></r></p></body>",
-      "<body><p><pPr><pStyle val=\"Heading1\"/></pPr><r><t>text</t></r></p></body>",
-      "<body><p><pPr><numPr><numId val=\"1\"/></numPr></pPr></p></body>", "<body><p><hyperlink><r><t>link</t></r></hyperlink></p></body>",
-      "<body><p><r><tab><drawing/></tab></r></p></body>", "<body><sdt><sdtContent><p><pPr><sectPr/></pPr></p></sdtContent></sdt></body>",
+      "<body><p><r><rPr><caps/></rPr><t>case</t></r></p></body>", "<body><p><r><rPr><smallCaps/></rPr><t>case</t></r></p></body>",
+      "<body><p><r><rPr><eastAsianLayout vert=\"1\"/></rPr><t>12</t></r></p></body>",
+      "<body><p><r><rPr/><rPr/></r></p></body>", "<body><p><pPr><numPr><numId val=\"1\"/></numPr></pPr></p></body>",
+      "<body><p><hyperlink><r><t>link</t></r></hyperlink></p></body>", "<body><p><r><tab><drawing/></tab></r></p></body>",
+      "<body><sdt><sdtContent><p><pPr><sectPr/></pPr></p></sdtContent></sdt></body>",
       "<body><sectPr><pgBorders/></sectPr></body>",
     ] {
     let root = docx_text_xml(source)
-    let walker : DocxTextWalker = { paragraphs: [], section_index: 0, }
+    let walker : DocxTextWalker = {
+      styles: docx_styles_from_xml("<styles/>"),
+      paragraphs: [],
+      section_index: 0,
+    }
     let rejected = try {
       walker.blocks(root, false)
       false
@@ -87,4 +93,50 @@ test "DOCX unsupported content is rejected" {
     }
     assert_true(rejected, msg=source)
   }
+}
+
+///|
+fn check_docx_styled_text(
+  chunks : Array[String],
+  expected : Array[
+    (
+      Int32,
+      String,
+      Double,
+      Double,
+      Double,
+      DocxRunProps,
+      Array[(String, String, Bool, DocxRunProps)],
+    ),
+  ],
+) -> Unit raise {
+  let document = docx_document_text(docx_text_fixture(chunks))
+  assert_eq(document.paragraphs.length(), expected.length())
+  for i in 0..<expected.length() {
+    let p = document.paragraphs[i]
+    let actual = (
+      p.section_index,
+      p.props.alignment,
+      p.props.left,
+      p.props.before,
+      p.props.after,
+      p.mark,
+      p.items.map(fn(item) { (item.kind, item.text, item.clear, item.props) }),
+    )
+    assert_eq(actual, expected[i], msg="styled paragraph \{i}")
+  }
+}
+
+///|
+test "DOCX resolved run properties are isolated between runs" {
+  let styles = docx_styles_from_xml(
+    "<styles><style type=\"paragraph\" styleId=\"p\" default=\"1\"><rPr><rFonts ascii=\"Parent\"/></rPr></style></styles>",
+  )
+  let body = docx_text_xml("<body><p><r><t>A</t></r><r><t>B</t></r></p></body>")
+  let walker : DocxTextWalker = { styles, paragraphs: [], section_index: 0, }
+  walker.blocks(body, false)
+  let items = walker.paragraphs[0].items
+  items[0].props.fonts[0] = "Changed"
+  assert_eq(items[1].props.fonts[0], "Parent")
+  assert_eq(walker.paragraphs[0].mark.fonts[0], "Parent")
 }

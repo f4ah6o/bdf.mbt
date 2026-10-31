@@ -12,8 +12,8 @@ To regenerate, copy the Go file without its build tag into upstream's
 upstream's `converter/docx/testdata`, then run `TestCodexDOCXRunProps`. Run
 the resulting MoonBit tests on JavaScript and wasm-gc.
 
-Colors, shading, underline colors, style references, and two-lines-in-one
-layout are rejected until their semantics are implemented. Other unsupported
-run-property elements are also rejected. The document-text reader continues
-to reject nonempty run properties and style, numbering and settings parts:
-this model alone does not resolve style inheritance or produce BDF output.
+The standalone parser rejects colors, shading, underline colors, style
+references, two-lines-in-one layout and other unsupported properties. The
+style resolver handles style references, and the document-text reader retains
+supported resolved properties. Numbering, settings, case conversion, hidden
+text and vertical combined text remain unsupported. No BDF output is produced.
