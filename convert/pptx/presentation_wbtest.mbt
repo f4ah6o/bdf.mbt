@@ -7,6 +7,7 @@ fn check_pptx_manifest(
   height : Double,
   first_slide : Int64,
   slides : Array[(String, Bool)],
+  contexts : Array[(String, String, Bool, Bool)],
 ) -> Unit raise {
   let joined = StringBuilder()
   for chunk in chunks {
@@ -15,6 +16,7 @@ fn check_pptx_manifest(
   let compressed = @base64.decode(joined.to_string()[:])
   let data = @gzip.decompress(compressed[:])
   let actual = pptx_presentation(data)
+  let package = @ooxml.open_ooxml(data)
   assert_eq(actual.part, part, msg=name)
   assert_eq(actual.width, width, msg=name)
   assert_eq(actual.height, height, msg=name)
@@ -22,6 +24,17 @@ fn check_pptx_manifest(
   assert_eq(actual.slides.length(), slides.length(), msg=name)
   for i in 0..<slides.length() {
     let (slide_part, hidden) = slides[i]
+    let context = pptx_slide_context(package, slide_part)
+    assert_eq(
+      (
+        context.layout_part,
+        context.master_part,
+        context.draw_layout,
+        context.draw_master,
+      ),
+      contexts[i],
+      msg="\{name} slide context \{i}",
+    )
     assert_eq(
       actual.slides[i],
       { part: slide_part, hidden, },

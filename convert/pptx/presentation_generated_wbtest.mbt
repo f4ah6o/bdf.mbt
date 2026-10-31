@@ -62,6 +62,32 @@ test "PPTX presentation matches upstream Go 0" {
       ("ppt/slides/slide5.xml", false),
       ("ppt/slides/slide6.xml", true),
     ],
+    [
+      (
+        "ppt/slideLayouts/slideLayout1.xml", "ppt/slideMasters/slideMaster1.xml",
+        true, true,
+      ),
+      (
+        "ppt/slideLayouts/slideLayout2.xml", "ppt/slideMasters/slideMaster1.xml",
+        true, true,
+      ),
+      (
+        "ppt/slideLayouts/slideLayout6.xml", "ppt/slideMasters/slideMaster1.xml",
+        true, true,
+      ),
+      (
+        "ppt/slideLayouts/slideLayout7.xml", "ppt/slideMasters/slideMaster1.xml",
+        true, true,
+      ),
+      (
+        "ppt/slideLayouts/slideLayout6.xml", "ppt/slideMasters/slideMaster1.xml",
+        true, true,
+      ),
+      (
+        "ppt/slideLayouts/slideLayout6.xml", "ppt/slideMasters/slideMaster1.xml",
+        true, true,
+      ),
+    ],
   )
 }
 
@@ -145,6 +171,28 @@ test "PPTX presentation matches upstream Go 1" {
       ("ppt/slides/slide4.xml", false),
       ("ppt/slides/slide5.xml", false),
     ],
+    [
+      (
+        "ppt/slideLayouts/slideLayout2.xml", "ppt/slideMasters/slideMaster1.xml",
+        true, true,
+      ),
+      (
+        "ppt/slideLayouts/slideLayout2.xml", "ppt/slideMasters/slideMaster1.xml",
+        true, true,
+      ),
+      (
+        "ppt/slideLayouts/slideLayout6.xml", "ppt/slideMasters/slideMaster1.xml",
+        true, true,
+      ),
+      (
+        "ppt/slideLayouts/slideLayout2.xml", "ppt/slideMasters/slideMaster1.xml",
+        true, true,
+      ),
+      (
+        "ppt/slideLayouts/slideLayout6.xml", "ppt/slideMasters/slideMaster1.xml",
+        true, true,
+      ),
+    ],
   )
 }
 
@@ -191,6 +239,12 @@ test "PPTX presentation matches upstream Go 2" {
     540.00000000000000,
     1L,
     [("ppt/slides/slide1.xml", false)],
+    [
+      (
+        "ppt/slideLayouts/slideLayout7.xml", "ppt/slideMasters/slideMaster1.xml",
+        true, true,
+      ),
+    ],
   )
 }
 
@@ -237,6 +291,12 @@ test "PPTX presentation matches upstream Go 3" {
     540.00000000000000,
     1L,
     [("ppt/slides/slide1.xml", false)],
+    [
+      (
+        "ppt/slideLayouts/slideLayout7.xml", "ppt/slideMasters/slideMaster1.xml",
+        true, true,
+      ),
+    ],
   )
 }
 
@@ -282,6 +342,12 @@ test "PPTX presentation matches upstream Go 4" {
     540.00000000000000,
     1L,
     [("ppt/slides/slide1.xml", false)],
+    [
+      (
+        "ppt/slideLayouts/slideLayout7.xml", "ppt/slideMasters/slideMaster1.xml",
+        true, true,
+      ),
+    ],
   )
 }
 
@@ -328,6 +394,12 @@ test "PPTX presentation matches upstream Go 5" {
     540.00000000000000,
     1L,
     [("ppt/slides/slide1.xml", false)],
+    [
+      (
+        "ppt/slideLayouts/slideLayout6.xml", "ppt/slideMasters/slideMaster1.xml",
+        true, true,
+      ),
+    ],
   )
 }
 
@@ -336,13 +408,17 @@ test "PPTX presentation matches upstream Go 6" {
   check_pptx_manifest(
     "synthetic.pptx",
     [
-      "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",
+      "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",
     ],
     "custom/pres.xml",
     720.00000000000000,
     425.19685039370080,
     7L,
     [("custom/slides/two.xml", true), ("custom/slides/one.xml", false)],
+    [
+      ("custom/layouts/one.xml", "custom/masters/one.xml", false, false),
+      ("custom/layouts/one.xml", "custom/masters/one.xml", true, false),
+    ],
   )
 }

@@ -36,8 +36,13 @@ func syntheticPPTX(t *testing.T) []byte {
 		{"_rels/.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="root" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="custom/pres.xml"/></Relationships>`},
 		{"custom/pres.xml", `<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://purl.oclc.org/ooxml/officeDocument/relationships" firstSlideNum="7.9"><p:sldIdLst><p:sldId id="1" r:id="b"/><p:sldId id="2" r:id="a"/><p:sldId id="3" r:id="missing"/></p:sldIdLst><p:sldSz cx="10in" cy="15cm"/></p:presentation>`},
 		{"custom/_rels/pres.xml.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="a" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/one.xml"/><Relationship Id="b" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/two.xml"/></Relationships>`},
+		{"custom/slides/_rels/one.xml.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="l1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../layouts/one.xml"/></Relationships>`},
+		{"custom/slides/_rels/two.xml.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="l1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../layouts/one.xml"/></Relationships>`},
+		{"custom/layouts/one.xml", `<p:sldLayout xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" showMasterSp="false"/>`},
+		{"custom/layouts/_rels/one.xml.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="m1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../masters/one.xml"/></Relationships>`},
+		{"custom/masters/one.xml", `<p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"/>`},
 		{"custom/slides/one.xml", `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"/>`},
-		{"custom/slides/two.xml", `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" show="off"/>`},
+		{"custom/slides/two.xml", `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" show="off" showMasterSp="false"/>`},
 	}
 	for _, f := range files {
 		w, e := z.Create(f.name)
@@ -98,13 +103,32 @@ func TestCodexPPTXManifest(t *testing.T) {
 		gz.Close()
 		fmt.Fprintf(out, "///|\ntest \"PPTX presentation matches upstream Go %d\" {\n check_pptx_manifest(%q,%s,%q,%#.17g,%#.17g,%dL,[\n", idx, name, manifestChunks(z.Bytes()), part, w, h, first)
 		count := 0
+		var contexts []string
 		for _, slide := range root.Path("sldIdLst").Children("sldId") {
 			if r, ok := p.Target(part, slide.RelID("id")); ok {
 				sn, e := p.XML(r.Target)
 				hidden := e == nil && !sn.AttrBool("show", true)
 				fmt.Fprintf(out, "(%q,%t),\n", r.Target, hidden)
+				layoutPart, masterPart := "", ""
+				var layout, master *ooxml.Node
+				if rel, ok := p.RelOfType(r.Target, "/slideLayout"); ok {
+					layoutPart = rel.Target
+					layout, _ = p.XML(rel.Target)
+				}
+				if layout != nil {
+					if rel, ok := p.RelOfType(layoutPart, "/slideMaster"); ok {
+						masterPart = rel.Target
+						master, _ = p.XML(rel.Target)
+					}
+				}
+				show := sn.AttrBool("showMasterSp", true)
+				contexts = append(contexts, fmt.Sprintf("(%q,%q,%t,%t),", layoutPart, masterPart, show && layout != nil, show && layout != nil && layout.AttrBool("showMasterSp", true) && master != nil))
 				count++
 			}
+		}
+		fmt.Fprintln(out, "],[")
+		for _, context := range contexts {
+			fmt.Fprintln(out, context)
 		}
 		fmt.Fprintln(out, "])\n}")
 		t.Logf("%s: %d slides", name, count)
