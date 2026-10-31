@@ -122,6 +122,11 @@ unchanged, that Flate-compressed programs are decoded, and that the page's font
 resource references the part hash. Type 1 `/FontFile` and bare CFF programs are
 rejected until their outline conversion is ported.
 
+The annotation test builds a page whose `/Annots` names a URI link. It checks
+that the page body contains a BDF link command with the annotation rectangle and
+target URL. Hidden and no-view annotations are skipped; other appearance
+streams are not drawn yet.
+
 The text-state fixtures compare text matrix, line movement, spacing, scaling,
 leading, rise and rendering-mode operators against upstream before glyph
 output. `generate_text_state_test.go` needs `BDF_PDF_FIXTURES` and

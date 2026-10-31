@@ -95,40 +95,6 @@ test "unsupported PDF soft masks fail closed" {
 }
 
 ///|
-test "graphics-only PDF pages reject annotations" {
-  let file : PdfFile = {
-    data: b"",
-    entries: {},
-    objects: {},
-    loading: {},
-    object_streams: {},
-    trailers: [],
-    trailer: PdfNull,
-    font_cache: Map([]),
-    default_font: None,
-  }
-  let attrs : PdfPageAttrs = {
-    media: None,
-    crop: None,
-    rotate: 0,
-    resources: None,
-  }
-  let page : PdfPageLeaf = {
-    dict: PdfDict([(b"Annots", PdfArray([PdfDict([])]))]),
-    reference: None,
-    attrs,
-    error: None,
-  }
-  let rejected = try {
-    ignore(file.graphics_page(page, "crop"))
-    false
-  } catch {
-    _ => true
-  }
-  assert_true(rejected)
-}
-
-///|
 fn check_pdf_graphics_document(data : Bytes, expected : Bytes) -> Unit raise {
   let actual = pdf_graphics_document(data, no_text_index=true)
   let left = @core.single_to_split(actual)

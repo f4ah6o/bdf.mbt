@@ -719,11 +719,6 @@ fn PdfFile::graphics_page_parts(
     Some(message) => raise InvalidStream(message)
     None => ()
   }
-  match self.page_deref(pdf_dict_get(page.dict, b"Annots")) {
-    PdfArray(values) if !values.is_empty() =>
-      raise InvalidStream("PDF annotations are not supported yet")
-    _ => ()
-  }
   let geometry = self.page_geometry(page, which)
   let content = self.page_content(page.dict)
   let graphics = PdfGraphics::new(
@@ -734,6 +729,7 @@ fn PdfFile::graphics_page_parts(
     resources=page.attrs.resources,
   )
   graphics.run(content)
+  graphics.draw_annotations(page.dict, geometry.matrix)
   let encoded = graphics.object.encode() catch {
     _ => raise InvalidStream("PDF graphics output failed")
   }

@@ -759,3 +759,41 @@ test "PDF Type1 font programs fail closed" {
   }
   assert_true(rejected)
 }
+
+///|
+test "PDF link annotations become link commands" {
+  let document = pdf_graphics_document(
+    pdf_test_pdf([
+      b"<< /Type /Catalog /Pages 2 0 R >>",
+      b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+      b"<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Annots [5 0 R] >>",
+      pdf_test_stream("", b""),
+      @utf8.encode(
+        "<< /Type /Annot /Subtype /Link /Rect [10 20 30 40] /A << /S /URI /URI (https://example.org/) >> >>",
+      ),
+    ]),
+    no_text_index=true,
+  )
+  let split = @core.single_to_split(document)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(document).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut found : (Double, Double, Double, Double, String)? = None
+  for command in commands {
+    match command {
+      @render.Link(x, y, width, height, url) =>
+        found = Some((x, y, width, height, url))
+      _ => ()
+    }
+  }
+  match found {
+    Some((x, y, width, height, url)) => {
+      assert_eq((x, y, width, height), (10.0, 20.0, 20.0, 20.0))
+      assert_eq(url, "https://example.org/")
+    }
+    None => fail("PDF link annotation is missing")
+  }
+}
