@@ -260,7 +260,11 @@ fn pptx_paragraph_defrpr(paragraph : PptxXmlNode) -> PptxXmlNode? {
 }
 
 ///|
-fn pptx_run_size(run : PptxXmlNode, paragraph : PptxXmlNode) -> Double {
+fn pptx_run_size(
+  run : PptxXmlNode,
+  paragraph : PptxXmlNode,
+  inherited : Double?,
+) -> Double {
   let rpr = pptx_child(Some(run), "rPr")
   match rpr {
     Some(value) =>
@@ -273,10 +277,10 @@ fn pptx_run_size(run : PptxXmlNode, paragraph : PptxXmlNode) -> Double {
   match pptx_paragraph_defrpr(paragraph) {
     Some(value) =>
       match pptx_attribute(value.element, "sz", "") {
-        "" => 18.0
+        "" => inherited.unwrap_or(18.0)
         text => (@string.parse_double(text) / 100.0) catch { _ => 18.0 }
       }
-    None => 18.0
+    None => inherited.unwrap_or(18.0)
   }
 }
 
@@ -425,6 +429,39 @@ fn pptx_placeholder_transforms(
 }
 
 ///|
+fn pptx_placeholder_sizes(root : PptxXmlNode) -> Map[String, Double] {
+  let result : Map[String, Double] = Map([])
+  let tree = pptx_child(pptx_child(Some(root), "cSld"), "spTree")
+  for shape in pptx_children(tree) {
+    let key = match pptx_placeholder_key(shape) {
+      Some(value) => value
+      None => continue
+    }
+    let body = match pptx_child(Some(shape), "txBody") {
+      Some(value) => value
+      None => continue
+    }
+    let paragraph = match pptx_child(Some(body), "p") {
+      Some(value) => value
+      None => continue
+    }
+    let rpr = pptx_child(pptx_child(Some(paragraph), "pPr"), "defRPr")
+    match rpr {
+      Some(value) =>
+        match pptx_attribute(value.element, "sz", "") {
+          "" => ()
+          text =>
+            result[key] = (@string.parse_double(text) / 100.0) catch {
+              _ => 18.0
+            }
+        }
+      None => ()
+    }
+  }
+  result
+}
+
+///|
 fn pptx_collect_shapes(
   node : PptxXmlNode,
   offset_x : Double,
@@ -536,6 +573,14 @@ fn pptx_render_slide(
     Some(value) => pptx_placeholder_transforms(value)
     None => Map([])
   }
+  let layout_sizes = match layout_root {
+    Some(value) => pptx_placeholder_sizes(value)
+    None => Map([])
+  }
+  let master_sizes = match master_root {
+    Some(value) => pptx_placeholder_sizes(value)
+    None => Map([])
+  }
   let shapes : Array[(PptxXmlNode, Double, Double)] = []
   for index in 0..<roots.length() {
     let tree = pptx_child(pptx_child(Some(roots[index]), "cSld"), "spTree")
@@ -567,6 +612,19 @@ fn pptx_render_slide(
     let transform = match transform {
       Some(value) => value
       None => continue
+    }
+    let mut inherited_size : Double? = None
+    match pptx_placeholder_key(shape) {
+      Some(key) =>
+        match layout_sizes.get(key) {
+          Some(value) => inherited_size = Some(value)
+          None =>
+            match master_sizes.get(key) {
+              Some(value) => inherited_size = Some(value)
+              None => ()
+            }
+        }
+      None => ()
     }
     if transform.width <= 0.0 || transform.height <= 0.0 {
       continue
@@ -711,7 +769,7 @@ fn pptx_render_slide(
             if text == "" {
               continue
             }
-            let size = pptx_run_size(child, paragraph)
+            let size = pptx_run_size(child, paragraph, inherited_size)
             let advance = pptx_text_width(text, size)
             if line.is_empty() {
               line_height = size * 1.2
