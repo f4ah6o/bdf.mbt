@@ -766,6 +766,37 @@ fn pptx_ellipse_path(
 }
 
 ///|
+fn pptx_rotated_rect_path(
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+  rotation : Double,
+) -> @core.Path {
+  let radians = rotation * 3.141592653589793 / 180.0
+  let sine = @math.sin(radians)
+  let cosine = @math.cos(radians)
+  let cx = x + width / 2.0
+  let cy = y + height / 2.0
+  let corners = [
+    (x, y),
+    (x + width, y),
+    (x + width, y + height),
+    (x, y + height),
+  ]
+  let verbs : Array[Byte] = [0, 1, 1, 1, 4]
+  let coordinates : Array[Double] = []
+  for corner in corners {
+    let (px, py) = corner
+    let dx = px - cx
+    let dy = py - cy
+    coordinates.push(cx + dx * cosine - dy * sine)
+    coordinates.push(cy + dx * sine + dy * cosine)
+  }
+  { verbs: Bytes::from_array(verbs), coordinates, }
+}
+
+///|
 fn pptx_round_rect_path(
   x : Double,
   y : Double,
@@ -1278,7 +1309,20 @@ fn pptx_render_slide(
           object.alpha(Float::from_double(fill_alpha.unwrap()))
         }
         object.fill_color(color)
-        if geometry == "ellipse" {
+        if geometry == "rect" && transform.rotation != 0.0 {
+          let path_index = object.add_path(
+            @core.Inline(
+              pptx_rotated_rect_path(
+                shape_x,
+                shape_y,
+                draw_width,
+                draw_height,
+                transform.rotation,
+              ),
+            ),
+          )
+          object.fill_path(path_index, 0)
+        } else if geometry == "ellipse" {
           let path_index = object.add_path(
             @core.Inline(
               pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
@@ -1322,7 +1366,22 @@ fn pptx_render_slide(
         Some(color) => color
         None => 0x000000ffU
       }
-      if geometry == "ellipse" {
+      if geometry == "rect" && transform.rotation != 0.0 {
+        let path_index = object.add_path(
+          @core.Inline(
+            pptx_rotated_rect_path(
+              shape_x,
+              shape_y,
+              draw_width,
+              draw_height,
+              transform.rotation,
+            ),
+          ),
+        )
+        object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
+        object.stroke_color(stroke_color)
+        object.stroke_path(path_index)
+      } else if geometry == "ellipse" {
         let path_index = object.add_path(
           @core.Inline(
             pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),

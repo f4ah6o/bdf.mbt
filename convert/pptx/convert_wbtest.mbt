@@ -2361,3 +2361,104 @@ test "PPTX group scaling applies to child shapes" {
   }
   assert_true(scaled, msg="PPTX group scale")
 }
+
+///|
+fn pptx_rotation_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GBYtSc+tm9SKtNPIM+UiYFBGEhHO+fnlaTmlcSHVBakFsfqVeTm",
+  )
+  joined.write_string(
+    "rA209j9sIHDvp+i061qFpxoEvC41Hufgeco+Z4530lX9n3dW/f0eM0mJUWuDQWT5/eDnVcUlYTIG",
+  )
+  joined.write_string(
+    "Ezn3TXy9aRLTXr65H52V72/zP7pWZMrB8oTm427zJjxZtnfV9uUdKhFvVk5MPvfRT/OSstUCI5cv",
+  )
+  joined.write_string(
+    "PV8ULU/YLHN0vWAtERAbfrX30sH0LztPTG7Pec3+JjF/c4XNpyrNSRcmiXznLjyVpXIko7ftzA6r",
+  )
+  joined.write_string(
+    "H++ivQr9NCItizNMJob5THiVdKjlj0zBtb0fUie9DNjjdOr8gxlLk85oqalcO3vnU/ly7lDn+9K9",
+  )
+  joined.write_string(
+    "sReqj0/6tHnm5vhjlxo/rrY/NeGpqu75X/tvn1knz3vlz+u31gEoIVXk933+JiBPl5GBgRtIxxel",
+  )
+  joined.write_string(
+    "5hTr64HI3vNnuQ4Z8LB/2O0fWFR+16bjxK5Ylxuhz5inmL1ue83uK/r9m5i/n02Fz6fz+kvy5pel",
+  )
+  joined.write_string(
+    "8feYVKov0PJKeDHl+mRjpnV/K6sZ3DytdNPfBxxoYsndvFLf4vSU8ow5TBt7LIQMlon0zZksddFL",
+  )
+  joined.write_string(
+    "q8Zhunpzf9iyGLfDzSHmmRPenyo6/3g549lTKXPFBKxjGV9Pb/h/o05CrVV9/Tux2F+Fj7Qnpkry",
+  )
+  joined.write_string(
+    "qjEqqsgpBeXtu+w6rdHcNL725h4GVK9dqDh/5DyQ5wH0Gki0oKBEv6AotRiYDhJLMvPzQKmgd4J/",
+  )
+  joined.write_string(
+    "NpOhwNH3f0US35kWXkzdnXPNW5AlP9fewSPtrsO/iZ2L6qqSdV1fLN3+fUal/bOzGyyrj/vNOHlM",
+  )
+  joined.write_string(
+    "IXGnwAGDFxk5Fh4/ft3ZV3ZgxYqEKd2MqjETEoz38az0l+R0DlyqFrmU5dXklp1TrhT7VbmtzxAU",
+  )
+  joined.write_string(
+    "brOanfRtVchs/j+Wz2XzWzJ2hpsd4Ff5zy60/GRWTf+vF9qvGU++2LfQ5LaLwTXhkzPn3gz+efWM",
+  )
+  joined.write_string(
+    "FOfZXazTfu8+Y32ZQZ79X/r3x6e+RB66XbRVaJGda7zKlru7ds92f7DzeAUzagCUzD31ZQOQpwgM",
+  )
+  joined.write_string(
+    "AHloAEDiFz0YoPG9ERjfAmwP7i7n2H57i6zLkkxxwV1etQ0TYm4nzGqJEfn9ja0woKDgz/sf+x/P",
+  )
+  joined.write_string(
+    "ercxouy4xzFrxtBAJufle8zyhAok/W7bGnhdyszc68yoLVTydpnl4qma5RlmjRFuMpwzgrnYz3me",
+  )
+  joined.write_string(
+    "3eEBim/zxf3dPpbHOtlXrityipv+tO+4P/Mt/clfoxzelPLmRDD/S/5daMLVH3dXrOTlcU6/axln",
+  )
+  joined.write_string(
+    "FvQIqzGu/zEvzPVaw3be/7/W1DKheva/6IudCkCPsgKzvCjUs8U5mSmpxRDKEBzdgWfzgEl633tN",
+  )
+  joined.write_string(
+    "pfsHWTeuXM0ho1a6nZP3G0PkZKelf0527vr0zTsqoSCar/Pte/W+zff43DbHBb6Y83TDDPEDU3Ln",
+  )
+  joined.write_string(
+    "vHkz8fD1hfOmHnASCeN6u+ZRQRjjttnLt65vmqbTmbvCpj24Z58Tz1lPScFn57Rnb7g2UdBwaYmL",
+  )
+  joined.write_string(
+    "v5aGtKuPuGTv6UUVjspW3OLCH+WFPR+pl35bcH9J3Ky9037y/HPw8g28l7v/u7WUpPzfvgh1S53G",
+  )
+  joined.write_string(
+    "yMRLwXaxr9w8D3DPW2mx8hjD+6+JNq6mW1Ikdp54WBn6hHXnq1vTeGXixFeHsJTta50RaOpyTaUi",
+  )
+  joined.write_string(
+    "UO+00eOzzIzq1898EXm0u6jtaQPzSjU/sYMv/a7NvZbsdPy9ue8a8VnOgVe+nn3e13Z9XqEU2z9f",
+  )
+  joined.write_string(
+    "9vXMhz+Km+8P8GZkEmHGXY7CQAMjA/ZSFd0A9OIFYYAWI0phg64RPfMiNIIiGFtWRjcBPfUjTGBj",
+  )
+  joined.write_string(
+    "JpgX0A1DT10Iwz4z40hrAd6sbCAlrEDoA9TqxgriAQDNdq2NqAYAAA==",
+  )
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX rotated rectangles use rotated paths" {
+  let result = convert(pptx_rotation_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut path = false
+  for command in commands {
+    match command {
+      @render.FillPath(_, _) => path = true
+      _ => ()
+    }
+  }
+  assert_true(path, msg="PPTX rotated rectangle")
+}
