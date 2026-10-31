@@ -34,10 +34,10 @@ npm run test:demo
 python3 -m http.server --directory _build/pages 8000
 ```
 
-The test serves the site under `/bdf.mbt/`, exercises all sample pages,
-search, navigation, downloading, CSV and SVG conversion, TTF and WOFF2 font
-specimens, view selection and saving, unsupported files,
-XLSX input, and mobile layout. An XLSX fixture is also rendered in Chromium
+The test serves the site under `/bdf.mbt/`, exercises all sample pages and the
+converter page, search, navigation, downloading, CSV and SVG conversion, TTF
+and WOFF2 font specimens, view selection and saving, unsupported files, XLSX
+input, and mobile layout. An XLSX fixture is also rendered in Chromium
 and each sheet is compared pixel-for-pixel with its upstream Go-generated BDF
 using the same viewer. This checks that fixture, not every Excel feature.
 The test requires Playwright Chromium. Run the `vlmkit` gates against the
