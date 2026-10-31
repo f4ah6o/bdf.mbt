@@ -125,8 +125,8 @@ The annotation test builds a page whose `/Annots` names a URI link. It checks
 that the page body contains a BDF link command with the annotation rectangle and
 target URL. Hidden and no-view annotations are skipped. Non-link annotations
 draw their normal `/AP` stream, mapped from the appearance BBox to the
-annotation rectangle; appearance state dictionaries and form-field actions are
-not handled yet.
+annotation rectangle. A state dictionary selects the `/AS` stream (falling back
+to the first state); form-field actions are not handled yet.
 
 The optional-content tests build a page with one OCG and a `/OC` marked-content
 sequence. They check that `/OFF` layers emit no fill and `/ON` layers do, and

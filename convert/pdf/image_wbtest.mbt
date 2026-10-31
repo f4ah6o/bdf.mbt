@@ -913,3 +913,41 @@ test "PDF colour key mask removes matching pixels" {
     msg="PDF colour key scanline",
   )
 }
+
+///|
+fn pdf_annotation_state_document(state : String) -> Bytes {
+  let annotation = "<< /Type /Annot /Subtype /Square /Rect [10 20 30 40] /AP << /N << /Off 6 0 R /On 7 0 R >> >> /AS /" +
+    state +
+    " >>"
+  pdf_test_pdf([
+    b"<< /Type /Catalog /Pages 2 0 R >>",
+    b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+    b"<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Annots [5 0 R] >>",
+    pdf_test_stream("", b""),
+    @utf8.encode(annotation),
+    pdf_test_stream(
+      "/Type /XObject /Subtype /Form /BBox [0 0 10 10] /Resources << >>", b"",
+    ),
+    pdf_test_stream(
+      "/Type /XObject /Subtype /Form /BBox [0 0 10 10] /Resources << >>", b"0 0 1 rg 0 0 10 10 re f",
+    ),
+  ])
+}
+
+///|
+test "PDF annotation appearance state selects the on stream" {
+  let document = pdf_graphics_document(
+    pdf_annotation_state_document("On"),
+    no_text_index=true,
+  )
+  assert_eq(pdf_test_fill_rects(document), 1, msg="PDF annotation on state")
+}
+
+///|
+test "PDF annotation appearance state selects the off stream" {
+  let document = pdf_graphics_document(
+    pdf_annotation_state_document("Off"),
+    no_text_index=true,
+  )
+  assert_eq(pdf_test_fill_rects(document), 0, msg="PDF annotation off state")
+}

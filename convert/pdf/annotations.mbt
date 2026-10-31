@@ -125,16 +125,11 @@ fn PdfGraphics::draw_annotations(
 }
 
 ///|
-fn pdf_annotation_appearance(
+fn pdf_load_appearance_stream(
   file : PdfFile,
-  dict : PdfObject,
+  object : PdfObject,
 ) -> (PdfObject, Bytes)? raise PdfStreamError {
-  let appearance = file.page_deref(pdf_dict_get(dict, b"AP"))
-  let normal = match pdf_dict_get(appearance, b"N") {
-    Some(value) => value
-    None => return None
-  }
-  match normal {
+  match object {
     PdfRef(number, _) => {
       let loaded = file.load(number, 0)
       let raw = match loaded.stream {
@@ -144,6 +139,46 @@ fn pdf_annotation_appearance(
       Some((loaded.value, raw))
     }
     _ => None
+  }
+}
+
+///|
+fn pdf_annotation_appearance(
+  file : PdfFile,
+  dict : PdfObject,
+) -> (PdfObject, Bytes)? raise PdfStreamError {
+  let appearance = file.page_deref(pdf_dict_get(dict, b"AP"))
+  let normal_object = match pdf_dict_get(appearance, b"N") {
+    Some(value) => value
+    None => return None
+  }
+  let normal = file.page_deref(Some(normal_object))
+  match normal {
+    PdfDict(_) if pdf_dict_get(normal, b"Subtype") is Some(PdfName(b"Form")) =>
+      pdf_load_appearance_stream(file, normal_object)
+    PdfDict(entries) => {
+      let state = match file.page_deref(pdf_dict_get(dict, b"AS")) {
+        PdfName(name) => Some(name)
+        _ => None
+      }
+      let mut selected : PdfObject? = None
+      match state {
+        Some(name) =>
+          match pdf_dict_get(normal, name) {
+            Some(value) => selected = Some(value)
+            None => ()
+          }
+        None => ()
+      }
+      if selected is None && !entries.is_empty() {
+        selected = Some(entries[0].1)
+      }
+      match selected {
+        Some(value) => pdf_load_appearance_stream(file, value)
+        None => None
+      }
+    }
+    _ => pdf_load_appearance_stream(file, normal_object)
   }
 }
 
