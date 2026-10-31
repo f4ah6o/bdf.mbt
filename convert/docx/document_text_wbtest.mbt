@@ -74,9 +74,8 @@ test "DOCX unsupported content is rejected" {
       "<body><p><fldSimple instr=\"PAGE\"/></p></body>", "<body><p><r><rPr><vanish/></rPr><t>hidden</t></r></p></body>",
       "<body><p><r><rPr><caps/></rPr><t>case</t></r></p></body>", "<body><p><r><rPr><smallCaps/></rPr><t>case</t></r></p></body>",
       "<body><p><r><rPr><eastAsianLayout vert=\"1\"/></rPr><t>12</t></r></p></body>",
-      "<body><p><r><rPr/><rPr/></r></p></body>", "<body><p><pPr><numPr><numId val=\"1\"/></numPr></pPr></p></body>",
-      "<body><p><hyperlink><r><t>link</t></r></hyperlink></p></body>", "<body><p><r><tab><drawing/></tab></r></p></body>",
-      "<body><sdt><sdtContent><p><pPr><sectPr/></pPr></p></sdtContent></sdt></body>",
+      "<body><p><r><rPr/><rPr/></r></p></body>", "<body><p><hyperlink><r><t>link</t></r></hyperlink></p></body>",
+      "<body><p><r><tab><drawing/></tab></r></p></body>", "<body><sdt><sdtContent><p><pPr><sectPr/></pPr></p></sdtContent></sdt></body>",
       "<body><sectPr><pgBorders/></sectPr></body>",
     ] {
     let root = docx_text_xml(source)

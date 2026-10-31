@@ -272,3 +272,93 @@ test "DOCX inline images are embedded" {
   assert_eq(images, 1, msg="DOCX image command")
   assert_eq(size, (72.0, 72.0), msg="DOCX image size")
 }
+
+///|
+fn docx_numbering_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GBo2REfmxIXcPYvkGfMxMAgDKSjnfPzSlLzSuJDKgtSi2P1KnJz",
+  )
+  joined.write_string(
+    "1k4863fYQKDlvU3r0+ypFgUOHKovG+crF2jwb7CYfeRQ/SerpbXVZrknGUV3FGxJ3zdzYuz68nNd",
+  )
+  joined.write_string(
+    "umpGB80/bVqzxGG9c/qfCyeun00uVGZN/SB748HGidUqO/P0X521U+JsszUtOmN5T8u1yoU9pK1j",
+  )
+  joined.write_string(
+    "3lQ7FfaZ/ZkBgl+seVasW/Uq6uUD418xTyydt321/WZwU0eurKZWZtKFSSLl7o/vXPXouCjFO7N0",
+  )
+  joined.write_string(
+    "69e726c9uhJgVPnhQobS2hsKV2+2Rf7c+eCI7efTKpcXVjROmX9go3dty5WVei9OGkb+kytOS39R",
+  )
+  joined.write_string(
+    "vbjw4fMtM5rclOqK0k+7Fib8ebVetq4of8aMP/8Vvb9c5yj98fmbcABKaO1sdCncAORpMTIwcAPp",
+  )
+  joined.write_string(
+    "+KLUnGJ9PRDZe96a75ABD9uDucEu9zKj2FoCJutxrNTWYu8QMu/NkPM6tHi7OjOzApvb7f32p3O/",
+  )
+  joined.write_string(
+    "bzDemehzzJrNN5TZUX2vkZ+xBf/xr3wepw5pGla384j5XPgYWn0o8smmyWrCQpod3jzL5hyed0lF",
+  )
+  joined.write_string(
+    "fYtSqN0C7ckX3bWLNBcvczzRfcHDvHTv0o93Gf4lTooz7Nib1cDjfaA+x77P7dHB06tdp9fP+eEl",
+  )
+  joined.write_string(
+    "EunSO/PgXXfXq6tjRcU08l8e7/7Dieox31v1TiCPKQI9JgOky/OLUvQhvkvJTy7NBaYIUFKA+nQj",
+  )
+  joined.write_string(
+    "1yEDAbYHd5dzbL99hU/p0pJujtildg4+63M37GxREf39LU2Ilf347sf/+/bnzStL4+e5aCG0Qdsr",
+  )
+  joined.write_string(
+    "wePW1zY3xuvv9tgydHsGrk9z10g4ytF754r4nNBTMy0k5SPdNLhmBH1yP7d43oVVERb9U/SbucOW",
+  )
+  joined.write_string(
+    "2rRNrF76PsslburTee3+zE+mn7wV55Dxmytie9Wf42WHE0zmzYnTCfr1selyUr5E0daeVQZJQh/i",
+  )
+  joined.write_string(
+    "RCOZ9bL/XfXZx4DqU+G2g7m3gLxUoE+FYD7NK81NSi3KzEsHeTI2YHfeYQOeO79FmRp7tj7hc010",
+  )
+  joined.write_string(
+    "OSem4L38C7NIpy+LxxRFzbJf35fOZb+kp1Jx3Fpux72YJAHlZ4+EMzOkWZlOqj1/ueJh9v7avwyB",
+  )
+  joined.write_string(
+    "qxTTnZSufGhmNft7uurVCxn+GZX+G1in5l0qWFX6YonOt5aLU9R4Pc7ULpfxfWoo/3TKJumiTRFc",
+  )
+  joined.write_string(
+    "2skT8r32ns6wcTw/71lAltm2unmLfxi/ncO2dU2LocHTnXcF+6ZrJy9OXMF6M/5w7mPmkoxak4de",
+  )
+  joined.write_string(
+    "G4v6p7Nvz5otOZ1745flm821N16xdP5t/+zc3d4rZ9vSZtb88v/PjRoSmZ7LLzIAQ4EJmPUFYSGB",
+  )
+  joined.write_string(
+    "HNtbA0/nHVYQ2PNdW+cd77anYRNFrbd72IasmvKNmUOgh0Wnqfful9fd8R+XXo/7ZrjZunna4Y+3",
+  )
+  joined.write_string(
+    "Z62ZrphVwKtZZnlyyWOFLcG8P3/Z2L73FJtoeZDH4uaE3T1PbtjJtkUx7I98aeDNpXfN2dnKJT5Y",
+  )
+  joined.write_string(
+    "qlJdt9v6wyXVd1wHjXxyA0oaFGoY9JJ92K5dMDofvzL11kQzzziHO8ffLP8geOxJXpnelpe+Zlds",
+  )
+  joined.write_string(
+    "jXlPcsbuMN+YdLTj4nGmWg0fxtuT+QTdJdSLJH+a79785MGR+XWBRXPS91r9VzlYsnuRzuqS3wvf",
+  )
+  joined.write_string(
+    "Bf3dtF7Me/29SA+NJv8K036WtVZ3bnErNN2tUl6vbW1f+HXx69aX36rf6gd4MzKJMOMuK2GggZEB",
+  )
+  joined.write_string(
+    "e8mJbgB68YEwQI8RpTBB14iePREa2ZnwZ1Z0k9CTP8Kkj0zYMgO6fvREg9D/mxlLEgrwZmUDSbMC",
+  )
+  joined.write_string("oTNQmxYriAcAFmctQ4MGAAA=")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "DOCX numbered paragraphs get decimal prefixes" {
+  let document = docx_document_text(docx_numbering_fixture())
+  assert_eq(document.paragraphs.length(), 2)
+  let first = document.paragraphs[0]
+  assert_eq(first.items[0].text, "1.")
+  assert_eq(first.items[1].kind, "tab")
+  let second = document.paragraphs[1]
+  assert_eq(second.items[0].text, "2.")
+}

@@ -145,6 +145,15 @@ fn docx_text_ppr(props : DocxParagraphProps, node : DocxXmlNode) -> Bool raise {
   for child in node.children {
     let name = child.name()
     match name {
+      "numPr" =>
+        for sub in child.children {
+          match sub.name() {
+            "numId" => props.number_id = docx_attribute(sub.element, "val", "")
+            "ilvl" =>
+              props.level = docx_props_number(sub.element, "val", 0.0).to_int()
+            other => docx_text_unsupported("numPr " + other)
+          }
+        }
       "sectPr" =>
         if !has_section {
           docx_text_section_check(child)
@@ -494,7 +503,7 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     Some(rel) => rel.target
     None => "word/document.xml"
   }
-  for typ in ["/numbering", "/settings", "/footnotes", "/endnotes"] {
+  for typ in ["/settings", "/footnotes", "/endnotes"] {
     if package.relationship_of_type(part, typ) is Some(_) {
       docx_text_unsupported(typ)
     }
@@ -532,5 +541,17 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
   if part != section_part || walker.section_index >= sections.length() {
     raise InvalidDocx("inconsistent DOCX sections")
   }
+  let numbering = match package.relationship_of_type(part, "/numbering") {
+    Some(rel) => {
+      if rel.external {
+        docx_text_unsupported("external numbering")
+      }
+      docx_numbering_from_xml(
+        @utf8.decode_lossy(package.read(rel.target)[:], ignore_bom=true),
+      )
+    }
+    None => docx_numbering_empty()
+  }
+  docx_apply_numbering(walker.paragraphs, numbering)
   { part, sections, paragraphs: walker.paragraphs, }
 }

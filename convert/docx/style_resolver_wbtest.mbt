@@ -60,7 +60,7 @@ test "DOCX style run copies isolate mutable arrays" {
 }
 
 ///|
-test "DOCX style resolver rejects unsupported applied properties" {
+test "DOCX style resolver rejects colour and applies numbering" {
   let sheet = docx_styles_from_xml(
     "<styles><style type=\"paragraph\" styleId=\"bad\"><rPr><color val=\"FF0000\"/></rPr></style><style type=\"paragraph\" styleId=\"num\"><pPr><numPr/></pPr></style><style type=\"paragraph\" styleId=\"good\" default=\"1\"/></styles>",
   )
@@ -86,5 +86,5 @@ test "DOCX style resolver rejects unsupported applied properties" {
   } catch {
     _ => true
   }
-  assert_true(reject_numbering)
+  assert_false(reject_numbering)
 }
