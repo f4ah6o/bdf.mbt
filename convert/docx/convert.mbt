@@ -193,6 +193,22 @@ fn docx_emit_story(
 }
 
 ///|
+fn docx_u32_be(data : Bytes, offset : Int32) -> Int32 {
+  (data[offset].to_int() << 24) |
+  (data[offset + 1].to_int() << 16) |
+  (data[offset + 2].to_int() << 8) |
+  data[offset + 3].to_int()
+}
+
+///|
+fn docx_png_size(data : Bytes) -> (Int32, Int32)? {
+  if data.length() < 24 || data[:8] != b"\x89PNG\r\n\x1a\n"[:] {
+    return None
+  }
+  Some((docx_u32_be(data, 16), docx_u32_be(data, 20)))
+}
+
+///|
 fn docx_render_document(
   document : DocxTextDocument,
   title : String,
@@ -452,34 +468,62 @@ fn docx_render_document(
             _ => raise DocxInvalid("DOCX image part is missing")
           }
           let hash = writer.add_part("img", bytes)
-          let width = if item.width > 0.0 { item.width } else { 72.0 }
-          let height = if item.height > 0.0 { item.height } else { 72.0 }
-          if item.anchored {
-            let index = object.add_image(hash)
-            object.image(
-              index,
-              Float::from_double(item.x),
-              Float::from_double(item.y),
-              Float::from_double(width),
-              Float::from_double(height),
-            )
-          } else {
-            let mut width = width
-            let mut height = height
+          let mut width = if item.width > 0.0 { item.width } else { 72.0 }
+          let mut height = if item.height > 0.0 { item.height } else { 72.0 }
+          let mut dx = item.x
+          let mut dy = item.y
+          if !item.anchored {
             let available = right - line_x
             if available > 0.0 && width > available {
               height = height * available / width
               width = available
             }
             ensure_page(height)
-            let index = object.add_image(hash)
+            dx = line_x
+            dy = y - height
+          }
+          let index = object.add_image(hash)
+          let mut cropped = false
+          if item.crop_left > 0.0 ||
+            item.crop_top > 0.0 ||
+            item.crop_right > 0.0 ||
+            item.crop_bottom > 0.0 {
+            match docx_png_size(bytes) {
+              Some((image_width, image_height)) => {
+                let sx = item.crop_left * image_width.to_double()
+                let sy = item.crop_top * image_height.to_double()
+                let sw = (1.0 - item.crop_left - item.crop_right) *
+                  image_width.to_double()
+                let sh = (1.0 - item.crop_top - item.crop_bottom) *
+                  image_height.to_double()
+                if sw > 0.0 && sh > 0.0 {
+                  object.image_sub(
+                    index,
+                    Float::from_double(sx),
+                    Float::from_double(sy),
+                    Float::from_double(sw),
+                    Float::from_double(sh),
+                    Float::from_double(dx),
+                    Float::from_double(dy),
+                    Float::from_double(width),
+                    Float::from_double(height),
+                  )
+                  cropped = true
+                }
+              }
+              None => ()
+            }
+          }
+          if !cropped {
             object.image(
               index,
-              Float::from_double(line_x),
-              Float::from_double(y - height),
+              Float::from_double(dx),
+              Float::from_double(dy),
               Float::from_double(width),
               Float::from_double(height),
             )
+          }
+          if !item.anchored {
             line_x += width
             line_width = line_x - left
             line_height = Double::max(line_height, height)

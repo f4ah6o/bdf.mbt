@@ -173,6 +173,10 @@ fn docx_apply_numbering(
         anchored: false,
         x: 0.0,
         y: 0.0,
+        crop_left: 0.0,
+        crop_top: 0.0,
+        crop_right: 0.0,
+        crop_bottom: 0.0,
       })
       paragraph.items.insert(1, {
         kind: "tab",
@@ -184,6 +188,10 @@ fn docx_apply_numbering(
         anchored: false,
         x: 0.0,
         y: 0.0,
+        crop_left: 0.0,
+        crop_top: 0.0,
+        crop_right: 0.0,
+        crop_bottom: 0.0,
       })
       paragraph.props.left += level.left
     }

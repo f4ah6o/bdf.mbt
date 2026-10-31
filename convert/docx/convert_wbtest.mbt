@@ -701,3 +701,102 @@ test "DOCX anchored images use page offsets" {
   }
   assert_true(placed, msg="DOCX anchored image")
 }
+
+///|
+fn docx_crop_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GDQ3Rsfu+h74o+fQN4DRgYGYSAd7ZyfV5KaVxIfUlmQWhyrV5Gb",
+  )
+  joined.write_string(
+    "UzvR14/ZkKf1+xylU2JnUxIaBV75iP/RaXS1bJhakbZIzW/KkqV7bf24Y0N0T//Ye/58n/jpueVJ",
+  )
+  joined.write_string(
+    "3Zq3HfbuybbWnFBiMG1ZXN3ae7PcNYsYjR4wJep/n/G0aEfkmm+CmxNmFOk/D3o0OSjy/AvF7YpK",
+  )
+  joined.write_string(
+    "G43aniz8YOyr1RR3uOXVvtdyU/hCJngFZ/Fb6sQVtPRqPyo9/vSxAmfstEc/M9ZE7m2RmHs1ICI8",
+  )
+  joined.write_string(
+    "2ihd82y+0+knByenS3/WlV6ya0bA1NeM13d6XJZMr7275trMHw/2+1xb8KMl5N7Bzev2ORudYtn7",
+  )
+  joined.write_string(
+    "8cyW/+zxN3R6Fl+teJS9fUbTsTk/Pe5tVT/avHR/79WHDof5A1BCamejS+EGIE8LGFLcQDq+KDWn",
+  )
+  joined.write_string(
+    "WF8PRPaet+Y7ZMDD9mBusMu9zCi2loDJehwrtbXYO4TMezPkvA4t3q7OzKzA5nZ7v/3p3O8bjHcm",
+  )
+  joined.write_string(
+    "+hyzZvMNZXZU32vkZ2zBf/wrn8epQ5qG1e08Yj4XPoZWH4p8smmymrCQZoc3z7I5h+ddUlHfohRq",
+  )
+  joined.write_string(
+    "t0B78kV37SLNxcscT3Rf8DAv3bv0412Gf4mT4gw79mY18HgfqM+x73N7dPD0atfp9XN+eIlEuvTO",
+  )
+  joined.write_string(
+    "PHjX3fXq6lhRMY38l8e7/3Ciemx1RkwwyGMKQI/JAOny/KIUfYjvUvKTS3OBqQGUDKA+3cjFZAj0",
+  )
+  joined.write_string(
+    "6d3lGjf3zmtSKrIVF4xxlVfYsjPu46xp27r27WUVZ2U/rvLnvv+uu4f9H/lp7j7AJebL3RTB/viG",
+  )
+  joined.write_string(
+    "1o45/J95O2Im8Po1eh6cbPTmV2T5Ik7vs08uHtXROhR5MMLrjtfMrx5yxcJKhXt5FCt1Sn3C3K6E",
+  )
+  joined.write_string(
+    "b1GZnrt72svLDf9Oi7gvVpA9y3Xkp+RLeWue5stb+H896zzdz/Wy5u06BTVv10b1xx/2xphM1D2x",
+  )
+  joined.write_string(
+    "b3J8/1d9VJ8ufCHvmQ/0pQszA4MgzKfIfpw7yTev2UCg9bst66d9kkITtVwdzAKX6GmF/rVsMGSO",
+  )
+  joined.write_string(
+    "MNqWaq368mW2s0dGeKDZM97keuPzj3Oq37h86T1WpFq8KeaIitPJkKOpkyevP//3cZvLtcDIwIUq",
+  )
+  joined.write_string(
+    "z560TMvpbl/jr32UT9ZLvLJpS+b8ydcs5zJFXEtyf+uUOcUuXPty4HPnyw7rfZb2JmWs1b/AGXH0",
+  )
+  joined.write_string(
+    "o3DJFG+jxC+6c05dqGP70X2392Snx3uGc9aX5tx1/LD8zsEHLIbbFUJii9t2f97bJ9PcZGUvfbso",
+  )
+  joined.write_string(
+    "1/Ph+70hVzVrSiN8Is4t3XtFc3qTt4yKXKwEv/WzJ5UzVTbK61rHmohI+ko7l56+6fNuxWLXZ7v5",
+  )
+  joined.write_string(
+    "97kHcq37HtOxQfvFiSU3pkY8PbIn5LVgCm+1+zOliZNLZforflRL6AX8COdN6z1whvnMmoMPRM9t",
+  )
+  joined.write_string(
+    "W7v+q1nF9bPH/a+0X98es1Yof6N/9Prrs1NeKOZULD32v/TU/jUJtjmGezLvmupMLV61+xjTa01u",
+  )
+  joined.write_string(
+    "54sr5Xyu81//Hv+HCTV2ojfM5HUG8jyBWBQWO7mpKZmJ+pm5iemphnoFeemveT4UP3866VFSQsKD",
+  )
+  joined.write_string(
+    "r18KOJku+SicYVT6HzczlGcJi02sjLPWM5X/FvUPGA4HsouxtZafqZ9uo8Gomfah5Gtx5PMpF1gY",
+  )
+  joined.write_string(
+    "ArwZmUSYcReBMNDAyIC9QEQ3AL1kQBgAEkEqJ9A1ouc8hEZmJvz5EN0k9JSNMOktE5Z0jq4dPegR",
+  )
+  joined.write_string("2rtZcEREgDcrG0gJKxC6AW1mZAXxAHTtOZ5dBgAA")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "DOCX image source rectangles are cropped" {
+  let result = convert(docx_crop_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut cropped = false
+  for command in commands {
+    match command {
+      @render.ImageSub(_, sx, _, sw, _, _, _, _, _) =>
+        if sx == 1.0 && sw == 1.0 {
+          cropped = true
+        }
+      _ => ()
+    }
+  }
+  assert_true(cropped, msg="DOCX image crop")
+}

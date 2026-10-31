@@ -11,6 +11,10 @@ priv struct DocxTextItem {
   anchored : Bool
   x : Double
   y : Double
+  crop_left : Double
+  crop_top : Double
+  crop_right : Double
+  crop_bottom : Double
 } derive(Debug, Eq)
 
 ///|
@@ -223,6 +227,10 @@ fn docx_text_push(
     anchored: false,
     x: 0.0,
     y: 0.0,
+    crop_left: 0.0,
+    crop_top: 0.0,
+    crop_right: 0.0,
+    crop_bottom: 0.0,
   })
 }
 
@@ -263,6 +271,14 @@ fn docx_attribute_any(
 ///|
 fn docx_emu(value : String) -> Double {
   (@string.parse_double(value.trim()) catch { _ => 0.0 }) / 12700.0
+}
+
+///|
+fn docx_crop(node : DocxXmlNode, name : String) -> Double {
+  (@string.parse_double(docx_attribute(node.element, name, "0")) catch {
+    _ => 0.0
+  }) /
+  100000.0
 }
 
 ///|
@@ -313,6 +329,23 @@ fn docx_text_drawing(
     docx_text_unsupported("drawing without an embedded image")
   }
   let anchored = node.child("inline") is None
+  let mut crop_left = 0.0
+  let mut crop_top = 0.0
+  let mut crop_right = 0.0
+  let mut crop_bottom = 0.0
+  let pending : Array[DocxXmlNode] = [container]
+  while !pending.is_empty() {
+    let value = pending.pop().unwrap()
+    if value.name() == "srcRect" {
+      crop_left = docx_crop(value, "l")
+      crop_top = docx_crop(value, "t")
+      crop_right = docx_crop(value, "r")
+      crop_bottom = docx_crop(value, "b")
+    }
+    for sub in value.children {
+      pending.push(sub)
+    }
+  }
   let mut x = 0.0
   let mut y = 0.0
   if anchored {
@@ -329,6 +362,10 @@ fn docx_text_drawing(
     anchored,
     x,
     y,
+    crop_left,
+    crop_top,
+    crop_right,
+    crop_bottom,
   })
 }
 
