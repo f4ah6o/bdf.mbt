@@ -752,6 +752,146 @@ fn pptx_round_rect_path(
 }
 
 ///|
+fn pptx_chart_values(node : PptxXmlNode?, child_name : String) -> Array[String] {
+  let cache = pptx_child(
+    pptx_child(pptx_child(node, child_name), "numRef"),
+    "numCache",
+  )
+  let cache = match cache {
+    Some(value) => Some(value)
+    None =>
+      pptx_child(pptx_child(pptx_child(node, child_name), "strRef"), "strCache")
+  }
+  let values : Array[String] = []
+  for point in pptx_children(cache) {
+    if point.element.name.local_name == "pt" {
+      match pptx_child(Some(point), "v") {
+        Some(value) => values.push(value.text.to_string())
+        None => values.push("")
+      }
+    }
+  }
+  values
+}
+
+///|
+fn pptx_emit_chart(
+  shape : PptxXmlNode,
+  package : @ooxml.OoxmlPackage,
+  part : String,
+  object : @core.ObjectBuilder,
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+  theme : Map[String, UInt32],
+  fonts : (String, String),
+) -> Unit raise {
+  let chart = pptx_child(
+    pptx_child(pptx_child(Some(shape), "graphic"), "graphicData"),
+    "chart",
+  )
+  let rel_id = match chart {
+    Some(value) => pptx_attribute_any(value.element, "id", "")
+    None => ""
+  }
+  if rel_id == "" {
+    return
+  }
+  let mut target = ""
+  for rel in package.relationships(part) {
+    if rel.id == rel_id {
+      target = rel.target
+    }
+  }
+  if target == "" {
+    return
+  }
+  let root = package.read(target) catch {
+    _ => raise PptxInvalid("PPTX chart part is missing")
+  }
+  let root = pptx_parse_xml(@utf8.decode_lossy(root[:], ignore_bom=true))
+  let bar = pptx_child(
+    pptx_child(pptx_child(Some(root), "chart"), "plotArea"),
+    "barChart",
+  )
+  let series = pptx_children(bar)
+  let values : Array[Double] = []
+  let categories : Array[String] = []
+  let mut fill = 0x4472c4ffU
+  for item in series {
+    if item.element.name.local_name != "ser" {
+      continue
+    }
+    for value in pptx_chart_values(Some(item), "val") {
+      values.push(@string.parse_double(value) catch { _ => 0.0 })
+    }
+    for value in pptx_chart_values(Some(item), "cat") {
+      categories.push(value)
+    }
+    match pptx_node_color(pptx_child(Some(item), "spPr"), "solidFill", theme) {
+      Some(color) => fill = color
+      None => ()
+    }
+    break
+  }
+  if values.is_empty() {
+    return
+  }
+  let mut maximum = 0.0
+  for value in values {
+    maximum = Double::max(maximum, value)
+  }
+  if maximum <= 0.0 {
+    return
+  }
+  let left = x + 20.0
+  let top = y + 20.0
+  let plot_width = Double::max(1.0, width - 40.0)
+  let plot_height = Double::max(1.0, height - 40.0)
+  let baseline = top + plot_height
+  object.line(1.0F, 0, 0, 8.0F)
+  object.stroke_color(0x000000ffU)
+  object.stroke_rect(
+    Float::from_double(left),
+    Float::from_double(top),
+    Float::from_double(plot_width),
+    Float::from_double(plot_height),
+  )
+  object.fill_color(fill)
+  let slot = plot_width / values.length().to_double()
+  let bar_width = slot * 0.6
+  for index, value in values {
+    let bar_height = plot_height * value / maximum
+    object.fill_rect(
+      Float::from_double(left + slot * index.to_double() + slot * 0.2),
+      Float::from_double(baseline - bar_height),
+      Float::from_double(bar_width),
+      Float::from_double(bar_height),
+    )
+  }
+  if !categories.is_empty() {
+    let (_, minor) = fonts
+    let font = object.add_font({
+      hash: None,
+      family: minor,
+      weight: 400,
+      style: 0,
+    })
+    object.font(font, 8.0F)
+    object.fill_color(0x000000ffU)
+    for index in 0..<Int32::min(categories.length(), values.length()) {
+      object.fill_text(
+        categories[index],
+        Float::from_double(left + slot * index.to_double()),
+        Float::from_double(baseline + 10.0),
+        Float::from_double(pptx_text_width(categories[index], 8.0)),
+      )
+    }
+  }
+}
+
+///|
 fn pptx_render_slide(
   package : @ooxml.OoxmlPackage,
   part : String,
@@ -887,7 +1027,22 @@ fn pptx_render_slide(
     let shape_x = transform.x + offset_x
     let shape_y = transform.y + offset_y
     if shape.element.name.local_name == "graphicFrame" {
-      pptx_emit_table(shape, object, shape_x, shape_y, theme_fonts)
+      if pptx_table_lines(shape).is_empty() {
+        pptx_emit_chart(
+          shape,
+          package,
+          part,
+          object,
+          shape_x,
+          shape_y,
+          transform.width,
+          transform.height,
+          theme,
+          theme_fonts,
+        )
+      } else {
+        pptx_emit_table(shape, object, shape_x, shape_y, theme_fonts)
+      }
       continue
     }
     if shape.element.name.local_name == "pic" {

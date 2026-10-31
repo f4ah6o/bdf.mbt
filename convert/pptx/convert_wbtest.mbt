@@ -1853,3 +1853,141 @@ test "PPTX fill alpha is applied" {
   }
   assert_true(alpha, msg="PPTX fill alpha")
 }
+
+///|
+fn pptx_chart_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/4VVCzSUaRieGZdBI4xL2Ky0U0gyJYZKSDLGZYaMKLeJcWuMMTNLQ3KPcr9scovc",
+  )
+  joined.write_string(
+    "hjbXkstEI0XjkqKUnZ09Yd1tUhjX2rFrjzVnO/v/5/zfeb//+55znud9z/NgLAQEZQAAgAigjuHq",
+  )
+  joined.write_string(
+    "nDzzFAYBAgC1IABAmrd7wcSfSMUTqa52NBKe4nzosh+hwtYC3QaHtHzWKHSi6yqBozFspcu7I9qW",
+  )
+  joined.write_string(
+    "gPZTlVI09Rfti7MBbBWg4gxAtWuRmzYaXBdkPwNPFW1J7apNAzXvzJvLOdNyT/nGJXW1qFmmcHLi",
+  )
+  joined.write_string(
+    "iT0sbIhNlYSUOXzw7A+xuSOJtsVgqhE+boLWH/v7HkqO7oHIqzHid7vuNtkeW0o4uYv2OsUvNNaA",
+  )
+  joined.write_string(
+    "4CfHDfm+1xh6Pm04UDjJJTFavuJVCq0qsGV1zHa3EsrTWl7RslhIoPjYJJx4VVfv0+2lIyyq2m2V",
+  )
+  joined.write_string(
+    "UTNSgu1hT1lp6Of9hGVG3/WyO7OJ7YcmKtxRy47dg1p+k8ylZ1lwDxqS4vglKNt8wQlkQEJTlkMi",
+  )
+  joined.write_string(
+    "D7V+91g5Bx2pPOYb3LiohNkmHtmam1/LqzR5Au7gra5kPIGidWjjm9jbI/YEDgF/ZKBtyEGcE3HP",
+  )
+  joined.write_string(
+    "m5xPv8OOCWToTl+bBlvJchfl0NYnLlt+6tUqJuYHekokHKWpFhxAuU1kvE3XBlWu00IAZ8yPaXrN",
+  )
+  joined.write_string(
+    "YpiRgn73y7X0ujKCvHNBNQl6UHipTFJuuuIr1IErRpmqUcn2pU5n2qLsED4ps53k3hE6sKfTI09O",
+  )
+  joined.write_string(
+    "8rgzcDoz/Ou7q/L7Y1SrPsg5rwQMa6TiFcT3A1Vg3++1Jbb0m96MQOi4hg4+Amyn9vJy79NeXoXk",
+  )
+  joined.write_string(
+    "UdvYJZGoWiQynsIbDRzVx5+4MRiJKehLoMOSz2bXZXAfdAJe4RmEAQspQX8/QyOkJ8foS+r1wqvB",
+  )
+  joined.write_string(
+    "7pqmEyX13Fs0w7Geav2QDutbrPY9uEZJJnzCm6CHXFr5tSWQWVbmlhEP3OeU4qbdAilHK4ia2JTs",
+  )
+  joined.write_string(
+    "dywRnEqPbsx4TbEOPlPlLSV97VjOxcW7djkSa/rjSv7R3o3ndJkSsK9gKJ3leyV5ZUJjGsiaaLlz",
+  )
+  joined.write_string(
+    "lH0aPiDNysobPLv8pltRtKdJ6OYqo/t4P0AZ/MWLO9I57/iETa6DFp40dYU94DQxcszeN3ZcFtgu",
+  )
+  joined.write_string(
+    "ADWvc76aV6nwBFDeFODv/vLLsNnvGl6/JYXfc+gi9ewHSqeLfXZJNaFCw1Oc2G7Z0U4yq4vCARgS",
+  )
+  joined.write_string(
+    "aW126fFI9ocah8AOZPtxINYGZEJ/pEuEkhSs2QZwVJ+PT7MJUANK/aNUv+gn9SBv3QiHM7tFb50V",
+  )
+  joined.write_string(
+    "A78w72lAbvQbUZQcb6nffh1cXkk+5ZI5mtSBFvhFK33hvNHMj+IEB4Ev7qsBR8WSXThy1MkOUesB",
+  )
+  joined.write_string(
+    "7+6CBOn9wKql2/amA+H14l9X7oWCtpOt3RtsUcOrYDyyezbJUgg+HnjKJue/isP/Ytu1wVboZbOr",
+  )
+  joined.write_string(
+    "lKd/n9gNZDrx9IT9FBgyOR/REwW7sR4i0IQhDZHHyL1w7Dpcm3E2Lv0+FOUC+OFnZ8Sg8ZMSgwou",
+  )
+  joined.write_string(
+    "8+Ip9tDMQXMHtVMV9m+yPC0bpTtYZjelvtuXoL4cJWmT7AEnj7PGioNa3Trd5aPNQp9FPC1VC9x7",
+  )
+  joined.write_string(
+    "RbGgxXKACj3V7xdRF08PI7zlppcW9SNMdNf1VObjVPCSbUbmoPGqnuNqNGHjMtQVA/rt7XSj/Xc1",
+  )
+  joined.write_string(
+    "6/OolvBMT3Y73S2ieWlWRB7HGK5BzGhollFEqQ1UztSOY4csAVcTYh1uhB0N9GkIVRLQND2IOaew",
+  )
+  joined.write_string(
+    "2rN65HMa+dV00gwsGG9l2lGUAPVpkO0kaKzUOHLGM5aYCW55OrWFIZOThS0azkPHjQsHl55gH4i3",
+  )
+  joined.write_string(
+    "ygJu19tqG9ZaZ5fpyOnsmIu7QFJrPhoRs7SX0wrrGivIOjIvgqs3Eqyt0hvUMfwam18PaRMNrwcQ",
+  )
+  joined.write_string(
+    "+tUOZd4Mm2rojoistbiwbK+PnpYXD5t9+nGeGGW7841c1iVZV5X+SUKglhfikmVlPUfxOlQ2D3Nx",
+  )
+  joined.write_string(
+    "+EfT/P5wkt3X8++Z5kJOqoviU00eprnZ87Khimi64xpzNR8qjF2M+Khm2O2V/Nl4vAaXi/609hL4",
+  )
+  joined.write_string(
+    "uGBE0Ws0Tcg+8xHSBnrw2twctjttrnDHCwApS3StXYguqLKOX0Bs1xr70M54L0/rx//S2t0bR6ZS",
+  )
+  joined.write_string(
+    "/l42tWb78iLm2ixXppX7cxqkXcQKtev5wrsh4OunVpCTuBBH7uJ9bbq5Qkm1hsUnrfX81HpG+nsW",
+  )
+  joined.write_string(
+    "MhGPugljF8Pu1GKV0kPNT/6Ws6qa5hBba1IJ02Qh6jzOcfzYhUovGxCJmlZrEJ/4h7AoShOg+g8j",
+  )
+  joined.write_string(
+    "oV8S++xWGEVHQHloK4m8Vi3DC6Tn/fNSpSqwncwwiORzWLlnrqR35a+/YSBzQCuDt5o6Q24cdYXU",
+  )
+  joined.write_string(
+    "TNg++E8L8VXuOFkv5za9fGi/si+xEO6XTbVti4GMefonPZZ78ajPPcF3PvlWuNOwVRTuebuv8rGO",
+  )
+  joined.write_string(
+    "cldG3Z74yPFLkSfEpiyA99bdWsO1b4WZ6f1Oj7tysqkzkzPc5T9nsDZ0YY33R0Q4QL/aRf4eQnR8",
+  )
+  joined.write_string(
+    "/cnKCNYQYwEEyQh8O7f/ecKBgP9OcX4A/uzaAjAAbksy/ov8ybB1UR703znBj8BvrVsICgL/a7T8",
+  )
+  joined.write_string(
+    "YPzWtQUmLPj/RsaPxu8MW2gLgt/wCX4I/oHfgsAJf2P8MRZCwhtHwLyXw7v6ELxR/Qkap/LWqQkA",
+  )
+  joined.write_string("AA==")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX bar charts draw bars and category labels" {
+  let result = convert(pptx_chart_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut bars = 0
+  let mut axis = false
+  let text = StringBuilder()
+  for command in commands {
+    match command {
+      @render.FillRect(_, _, _, _) => bars += 1
+      @render.StrokeRect(_, _, _, _) => axis = true
+      @render.FillText(value, _, _, _) => text.write_string(value)
+      _ => ()
+    }
+  }
+  assert_eq(bars, 3, msg="PPTX chart bars")
+  assert_true(axis, msg="PPTX chart axis")
+  assert_eq(text.to_string(), "ABC", msg="PPTX chart categories")
+}
