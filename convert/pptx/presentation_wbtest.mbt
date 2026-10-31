@@ -7,7 +7,7 @@ fn check_pptx_manifest(
   height : Double,
   first_slide : Int64,
   slides : Array[(String, Bool)],
-  contexts : Array[(String, String, Bool, Bool)],
+  contexts : Array[(String, String, Bool, Bool, Array[(String, String)])],
 ) -> Unit raise {
   let joined = StringBuilder()
   for chunk in chunks {
@@ -25,6 +25,17 @@ fn check_pptx_manifest(
   for i in 0..<slides.length() {
     let (slide_part, hidden) = slides[i]
     let context = pptx_slide_context(package, slide_part)
+    let (layout_part, master_part, draw_layout, draw_master, colors) = contexts[i]
+    assert_eq(context.color_map.length(), colors.length())
+    for (key, value) in colors {
+      let mut found = false
+      for (actual_key, actual_value) in context.color_map {
+        if key == actual_key && value == actual_value {
+          found = true
+        }
+      }
+      assert_true(found)
+    }
     assert_eq(
       (
         context.layout_part,
@@ -32,7 +43,7 @@ fn check_pptx_manifest(
         context.draw_layout,
         context.draw_master,
       ),
-      contexts[i],
+      (layout_part, master_part, draw_layout, draw_master),
       msg="\{name} slide context \{i}",
     )
     assert_eq(

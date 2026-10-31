@@ -13,6 +13,7 @@ import (
 	"github.com/shibukawa/bdf/converter/internal/ooxml"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -38,11 +39,11 @@ func syntheticPPTX(t *testing.T) []byte {
 		{"custom/_rels/pres.xml.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="a" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/one.xml"/><Relationship Id="b" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/two.xml"/></Relationships>`},
 		{"custom/slides/_rels/one.xml.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="l1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../layouts/one.xml"/></Relationships>`},
 		{"custom/slides/_rels/two.xml.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="l1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../layouts/one.xml"/></Relationships>`},
-		{"custom/layouts/one.xml", `<p:sldLayout xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" showMasterSp="false"/>`},
+		{"custom/layouts/one.xml", `<p:sldLayout xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" showMasterSp="false"><p:clrMapOvr><p:overrideClrMapping accent1="accent3"/></p:clrMapOvr></p:sldLayout>`},
 		{"custom/layouts/_rels/one.xml.rels", `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="m1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../masters/one.xml"/></Relationships>`},
-		{"custom/masters/one.xml", `<p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"/>`},
-		{"custom/slides/one.xml", `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"/>`},
-		{"custom/slides/two.xml", `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" show="off" showMasterSp="false"/>`},
+		{"custom/masters/one.xml", `<p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:clrMap bg1="lt1" tx1="dk1" accent1="accent2"/></p:sldMaster>`},
+		{"custom/slides/one.xml", `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:clrMapOvr><p:overrideClrMapping tx1="dk2"/></p:clrMapOvr></p:sld>`},
+		{"custom/slides/two.xml", `<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" show="off" showMasterSp="false"><p:clrMapOvr/><p:clrMapOvr><p:overrideClrMapping bg1="dk2"/></p:clrMapOvr></p:sld>`},
 	}
 	for _, f := range files {
 		w, e := z.Create(f.name)
@@ -122,7 +123,29 @@ func TestCodexPPTXManifest(t *testing.T) {
 					}
 				}
 				show := sn.AttrBool("showMasterSp", true)
-				contexts = append(contexts, fmt.Sprintf("(%q,%q,%t,%t),", layoutPart, masterPart, show && layout != nil, show && layout != nil && layout.AttrBool("showMasterSp", true) && master != nil))
+				colorMap := map[string]string{}
+				if cm := master.Child("clrMap"); cm != nil {
+					for _, a := range cm.Attrs {
+						colorMap[a.Name.Local] = a.Value
+					}
+				}
+				for _, src := range []*ooxml.Node{layout, sn} {
+					if ov := src.Path("clrMapOvr", "overrideClrMapping"); ov != nil {
+						for _, a := range ov.Attrs {
+							colorMap[a.Name.Local] = a.Value
+						}
+					}
+				}
+				keys := make([]string, 0, len(colorMap))
+				for key := range colorMap {
+					keys = append(keys, key)
+				}
+				sort.Strings(keys)
+				var colors strings.Builder
+				for _, key := range keys {
+					fmt.Fprintf(&colors, "(%q,%q),", key, colorMap[key])
+				}
+				contexts = append(contexts, fmt.Sprintf("(%q,%q,%t,%t,[%s]),", layoutPart, masterPart, show && layout != nil, show && layout != nil && layout.AttrBool("showMasterSp", true) && master != nil, colors.String()))
 				count++
 			}
 		}
