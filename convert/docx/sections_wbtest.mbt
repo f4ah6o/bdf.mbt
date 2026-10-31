@@ -6,6 +6,20 @@ fn check_docx_sections(
   expected : Array[
     (Double, Double, Double, Double, Double, Double, Double, Double, Bool, Bool),
   ],
+  layout : Array[
+    (
+      String,
+      Bool,
+      Int64,
+      String,
+      String,
+      Double,
+      Double,
+      Bool,
+      Bool,
+      Array[(Double, Double)],
+    ),
+  ],
 ) -> Unit raise {
   let joined = StringBuilder()
   for chunk in chunks {
@@ -29,20 +43,37 @@ fn check_docx_sections(
       top_exact,
       bottom_exact,
     ) = expected[i]
+    let item = sections[i]
     assert_eq(
-      sections[i],
-      {
-        width,
-        height,
-        top,
-        bottom,
-        left,
-        right,
-        header,
-        footer,
-        top_exact,
-        bottom_exact,
-      },
+      (
+        item.section_type,
+        item.title_page,
+        item.page_start,
+        item.page_format,
+        item.grid_type,
+        item.line_pitch,
+        item.char_space,
+        item.vertical,
+        item.column_sep,
+        item.columns,
+      ),
+      layout[i],
+      msg="\{name} layout \{i}",
+    )
+    assert_eq(
+      (
+        item.width,
+        item.height,
+        item.top,
+        item.bottom,
+        item.left,
+        item.right,
+        item.header,
+        item.footer,
+        item.top_exact,
+        item.bottom_exact,
+      ),
+      expected[i],
       msg="\{name} section \{i}",
     )
   }

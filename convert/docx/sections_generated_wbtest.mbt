@@ -49,6 +49,59 @@ test "DOCX sections match upstream Go 0" {
         false, false,
       ),
     ],
+    [
+      (
+        "nextPage",
+        false,
+        -1L,
+        "decimal",
+        "",
+        0.0000000000000000,
+        0.0000000000000000,
+        false,
+        false,
+        [(0.0000000000000000, 451.29999999999995)],
+      ),
+      (
+        "continuous",
+        false,
+        -1L,
+        "decimal",
+        "",
+        0.0000000000000000,
+        0.0000000000000000,
+        false,
+        false,
+        [
+          (0.0000000000000000, 215.02499999999998),
+          (236.27499999999998, 215.02499999999998),
+        ],
+      ),
+      (
+        "continuous",
+        false,
+        -1L,
+        "decimal",
+        "",
+        0.0000000000000000,
+        0.0000000000000000,
+        false,
+        false,
+        [(0.0000000000000000, 451.29999999999995)],
+      ),
+      (
+        "nextPage",
+        true,
+        -1L,
+        "decimal",
+        "",
+        0.0000000000000000,
+        0.0000000000000000,
+        false,
+        false,
+        [(0.0000000000000000, 697.89999999999998)],
+      ),
+    ],
   )
 }
 
@@ -76,6 +129,20 @@ test "DOCX sections match upstream Go 1" {
         false, false,
       ),
     ],
+    [
+      (
+        "nextPage",
+        false,
+        -1L,
+        "decimal",
+        "",
+        0.0000000000000000,
+        0.0000000000000000,
+        false,
+        false,
+        [(0.0000000000000000, 306.15000000000003)],
+      ),
+    ],
   )
 }
 
@@ -99,6 +166,20 @@ test "DOCX sections match upstream Go 2" {
         419.55000000000001, 595.29999999999995, 56.700000000000003, 56.700000000000003,
         56.700000000000003, 56.700000000000003, 25.000000000000000, 25.000000000000000,
         false, false,
+      ),
+    ],
+    [
+      (
+        "nextPage",
+        false,
+        -1L,
+        "decimal",
+        "",
+        0.0000000000000000,
+        0.0000000000000000,
+        false,
+        false,
+        [(0.0000000000000000, 306.15000000000003)],
       ),
     ],
   )
@@ -127,6 +208,20 @@ test "DOCX sections match upstream Go 3" {
         false, false,
       ),
     ],
+    [
+      (
+        "nextPage",
+        false,
+        -1L,
+        "decimal",
+        "",
+        0.0000000000000000,
+        0.0000000000000000,
+        false,
+        false,
+        [(0.0000000000000000, 451.29999999999995)],
+      ),
+    ],
   )
 }
 
@@ -151,6 +246,20 @@ test "DOCX sections match upstream Go 4" {
         595.29999999999995, 841.89999999999998, 99.250000000000000, 85.049999999999997,
         85.049999999999997, 85.049999999999997, 42.549999999999997, 49.600000000000001,
         false, false,
+      ),
+    ],
+    [
+      (
+        "nextPage",
+        false,
+        -1L,
+        "decimal",
+        "lines",
+        18.000000000000000,
+        0.0000000000000000,
+        false,
+        false,
+        [(0.0000000000000000, 425.19999999999993)],
       ),
     ],
   )
@@ -180,6 +289,20 @@ test "DOCX sections match upstream Go 5" {
         false, false,
       ),
     ],
+    [
+      (
+        "nextPage",
+        false,
+        -1L,
+        "decimal",
+        "",
+        0.0000000000000000,
+        0.0000000000000000,
+        false,
+        false,
+        [(0.0000000000000000, 451.29999999999995)],
+      ),
+    ],
   )
 }
 
@@ -203,6 +326,20 @@ test "DOCX sections match upstream Go 6" {
         595.29999999999995, 841.89999999999998, 85.049999999999997, 85.049999999999997,
         85.049999999999997, 85.049999999999997, 42.549999999999997, 49.600000000000001,
         false, false,
+      ),
+    ],
+    [
+      (
+        "nextPage",
+        false,
+        -1L,
+        "decimal",
+        "",
+        0.0000000000000000,
+        0.0000000000000000,
+        false,
+        false,
+        [(0.0000000000000000, 425.19999999999993)],
       ),
     ],
   )
@@ -237,6 +374,20 @@ test "DOCX sections match upstream Go 7" {
         false, false,
       ),
     ],
+    [
+      (
+        "nextPage",
+        false,
+        -1L,
+        "decimal",
+        "linesAndChars",
+        21.000000000000000,
+        0.19995117187500000,
+        true,
+        false,
+        [(0.0000000000000000, 657.60000000000002)],
+      ),
+    ],
   )
 }
 
@@ -245,7 +396,7 @@ test "DOCX sections match upstream Go 8" {
   check_docx_sections(
     "synthetic.docx",
     [
-      "H4sIAAAAAAAA/3SRb0iTARDGz/3H2Vg6ElvkyqzWn61Z08HIInMQr6whpczmBlsTWrM550vLaq1aLbLatE0YmsKgDHsZRNggiIqmULB0vCXZpuaGWG3mhwXlii0MIlt0HPfl7h4efo8MIZJYQAMaZBcdAFStWr2Jz1ua114JfBd35Fln7u2vBInBXEWuaXxUp+DkUrwjRhab+/hsfQP6IR3H90S4pzq6UEd1Y8yF2iYxBVOYCCjFXBd74PCW07j00+Vhu32alkmli+MT1o/BNr/WRjlhWZUid6PXz/vyGXf0qh8OQiQRl5TvE722GTvHhFIrbp1beUtJBBlCpbVPlbbaASABAP/3zwAADWpqMzTzjxo0PHOzXuEM6b5wmJdUpeYn4o2Zg4h2smIzK0WSa/LXxa5IW8ID/BGXc0pkWdNruuHHKGVbG0aDBYX9h8bVTYxcjmdC3e9jYeeiZbWBPtwdJXmizPVFPV3JAt7YgUXCWzH/sx9bu+uMu+hhrKS7E5tpp+NzJ292hHqS3he6ce98b2FLXbhqd+BrZblcQN7Oy9zeNlocqLk7PDsUNt8vOR56OSipCJLDVx/MU9lD3+qNG6IXvg8em10h5iKrRernSpLlyLPpWqFcuJDXR1zw6BzJdym5883epur4YnonyBAqbZNLoH4PAO4cABmSQ2DBHzrLudGzaP2VdfbjclHG7/tf/fQfyDKETFnaEIAAKABEcgAAfg4AegCghWcCAAA=",
+      "H4sIAAAAAAAA/3SSe0yqBRTAjyBIUmqGQnORla7IiVrpXJpOMUM/R7QVLhQxPl21eATKtAeJhOJEJZll03Kl+UyJOc1labI0lmgQupZTQ8MNEHUqw3bR6Z13u7te7+7Z2fnnPHa234+NYINJQAACXA8iAPBllcKqJPplbfkzxfBp8oPK7e/zsiBfUsvAFfGmOaWxofje36WkGNqMopgrd597V7I3aB9o9XLdyzxnh1y9OVoakbo3X5ZB64gZfOPZj1ZYu40LGo2DcBE4f9y7pvQsV09VqvHiT6IDuC/krfWGyLABIf9Mh9nY8+an5aavqqXttlSWckXpevjrMiywkRDCh//GyzQAsAcA9/8/DABQeVW1RJRUIUHptSJhqT5Htx4b0XDRvKAgm98UlSTkjXCHBzl/ift7HqCuM+fYlEI7n/8Ws3hNu32Er11yMahPv/6Hqu9A0KpFo4Xxx0+5Xhsrr/w4L/xAsNxiKmzWUaJ7UoqyvlFRJktGtxmO7KqESdTMoFrTeRb3lJXW8YSq90Wfxeugd2qz3jVPZxpU+/h9yq81NZKD7hu8RrpOXWbUDM4mrVuZao5RE/7bwENLcf8YfhDbLNwdw2LUTnCOUfH5809GrbVxI0Uy92lXo4E6nXnenp/c0DaBfCnwvfBoemKiX1dR9/d/zOc+Kz+VbQkLjDsvqckT4zOCXH+ie/gX525Oct9j81ZxYHwxwmIYf9/+Hcd0Yi1hTS4e7var9PselAjkwAj2GbtbTPOcCUbGbPN03WFGgQ95dSI0DXnk26/IJuKP6NioncI1C352Dfu36kyzpENnveQ9afeG8Rjf5Rjy/W9L+Cn0bfYJ9R10YJNX3Sn0opZVgsRDiys/UzQFvEeZrCE97hVzHRbYSAhB6m/ya4MAnBgANhKEIcEdkFcRE6+BvUvL64tXj4bdnr+Vc/f4wEZw+MsOBjAgBwANBgDg5gA+vwLgEgMAAA==",
     ],
     "custom/doc.xml",
     [
@@ -258,6 +409,39 @@ test "DOCX sections match upstream Go 8" {
         648.00000000000000, 864.00000000000000, 72.000000000000000, 72.000000000000000,
         56.692913385826770, 72.000000000000000, 36.000000000000000, 36.000000000000000,
         false, false,
+      ),
+    ],
+    [
+      (
+        "continuous",
+        true,
+        3L,
+        "upperRoman",
+        "linesAndChars",
+        18.000000000000000,
+        0.50000000000000000,
+        true,
+        true,
+        [
+          (0.0000000000000000, 100.00000000000000),
+          (112.00000000000000, 150.00000000000000),
+        ],
+      ),
+      (
+        "nextPage",
+        false,
+        -1L,
+        "decimal",
+        "",
+        0.0000000000000000,
+        0.0000000000000000,
+        false,
+        true,
+        [
+          (0.0000000000000000, 149.10236220472441),
+          (185.10236220472441, 149.10236220472441),
+          (370.20472440944883, 149.10236220472441),
+        ],
       ),
     ],
   )
