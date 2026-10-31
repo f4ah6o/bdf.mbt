@@ -1197,3 +1197,144 @@ test "PPTX placeholders inherit layout font sizes" {
   }
   assert_eq(size, 28.0, msg="PPTX placeholder font size")
 }
+
+///|
+fn pptx_placeholder_format_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/41VCTRb6R9NBEFVxa6lahlrEVVCixoqIkzQ0tJBKLELktirqGVqq1Rslap966C1",
+  )
+  joined.write_string(
+    "tGottcTS2KqMZnRh1DqYtkQtNfGf/o/KmTkz753z3rnfed89597f9+61MAWxCgAAAA6AbiPa/hi8",
+  )
+  joined.write_string(
+    "qO4QEADoZQEA+BmrPxr6YgkYLAFtFeKHwdurBPt4P0rtRXVAeeNWdGJnvNK1ZiJ5kSOgfk7gTx8A",
+  )
+  joined.write_string(
+    "0m6pNsEkSnl2PcUkwcrClmfGJXkWrWerAgsrnOABKbgptQ4cGhhCjsvTrLcDtoj2eDjEG/TKtmLj",
+  )
+  joined.write_string(
+    "ZidszahBXJfP1NVUcMX5E8yAuDQMmBko/IE8xgZSS87nP/7bMYK8SuIUEuEm/SqrSyF6fEb8MXSu",
+  )
+  joined.write_string(
+    "Z5k+HwrkLIuvpRlpBViLNY8jDczCqmupmRlLQ0S52Yp8h5Ar3wGF5Y6VUOls4Df40Dt5R11Ueaf4",
+  )
+  joined.write_string(
+    "s4r4Xhu/A134QH21PVvEX1blk97Z3dsuY3pdzPVTqRosb2lBWGRkPjXDORybrb1mzpoCbZQc+WP1",
+  )
+  joined.write_string(
+    "3GnTdTApK+LqDo/FAe9wKHpuDQMpM/w7xHijcRhvvKrK3jN5kMr1DMoNXm0yt8QFTerc7Gm0P/+L",
+  )
+  joined.write_string(
+    "9XtQmuZi3CL4B0H6upA5SifY7MOgahE2N9D1SNLpELk8RaTjXNo4SZ2laickDAA3OaPstmLRdoPV",
+  )
+  joined.write_string(
+    "p7ZcVas/Lcj9Lkt1khYftETg1l3S0WGk4jX9TLnolEsldvCOaCuYB3GlDzc4XQqk9rnkCPGetQcu",
+  )
+  joined.write_string(
+    "Zkbu/nJdRDZW7sGykP2m/5TSbYzoYVmgpMxxqQvY1hdGGVEwDXT4RDPgoLSh4MHOQQZCMKTtrfr5",
+  )
+  joined.write_string(
+    "EVT9cBg842Q4ETx8sXvnIplo7sWixtu1siPgtKzhP4xp8h4zhbD6+pzTR7hO6n+5HV9wPdRZ2Wiu",
+  )
+  joined.write_string(
+    "uJ6eFXLuPfWhdhgFldXbfcKpgbcNOufurYXY2Py1NbCtrMwxLRH4nR3RUb2Vu9xclNPQsljWtph1",
+  )
+  joined.write_string(
+    "gRTTkDaKR4XCH7hD+OPOkK+u37ciH9nWnhX3jXFvuKzZdkRmF8xX2ut5LWVzTmkR2DvXmn+adh46",
+  )
+  joined.write_string(
+    "xt97J2fi4ueXz49yUhvZMraanp99AZAAf3GjT/d9sn1Gwz3iK9AzQsvUTTY2kY3fNlCCQQcNIOT0",
+  )
+  joined.write_string(
+    "fXrIQJIMAyS+GvDXfJlt+Drvasa8ednfTpZy1NPqxM8XeQhDGpHhkUQ7mmN2jJ3A1jq7v4Wf3/bK",
+  )
+  joined.write_string(
+    "xtPp7OVqm0AKovss0NqSxbC0WRPL5yeKoulCkSMeHi2GQCU+wu8l2oXpCkHumlE2cDHOrItc4AET",
+  )
+  joined.write_string(
+    "6hPE3rxhhSmJZtrd8eDyKpyBQ+bMLYo56JUqae2K/lLAYW8b0BfnLf/TXCkOk0KEeQonasz9eV4S",
+  )
+  joined.write_string(
+    "vyzwwca9S0ZjkfWHdzcrwlkOik2QJeo9YiBNhtgTX8XivT1cMPivmv8H1L5R27KnFry6p5ZsxQbx",
+  )
+  joined.write_string(
+    "WJC68VZmE2CM84n24cNZLtHIwzeip8N3vtiFB6dEB1teFW6OS6/QJ8Laz7zxePIG1S/OMTCnzNNO",
+  )
+  joined.write_string(
+    "iosX4aEWtI5ENvzqtyKVeCN4bGhWjI6snvc4nyGZqkrSLILgFS6WSmWDA4vGrB9Zz9MiXV0Tal8S",
+  )
+  joined.write_string(
+    "BwJBU5pGmxQen0Vu8eiQW799TOHoiq4ltCvo4J3UAtI0EJ8nc5UrXeIBL0c917EfgQclO39ui9ti",
+  )
+  joined.write_string(
+    "oEaGZMGDkvfFJlu0e3ZAuVtWlJJWKmuOd3OYcJ3lDlSIDZTI67rCfxMjTT75eWvCpOMxTWUwY+11",
+  )
+  joined.write_string(
+    "7b370y5gjdSY1/6VEvTYS52V6rpvPHeuh0/qeglK1bS3q70MLclLoRrO9ENF0jvFkOhFFTiaJeax",
+  )
+  joined.write_string(
+    "dKLTio7/QviZapGLCrBVgyitq2YSE0Aeoz9YhcLGgvi3U+Ih20jSzjDMI2P9VNY19gjBgrWM25TE",
+  )
+  joined.write_string(
+    "c/3PtJLdLFvK175XgpMLmrXUvZ7A1I9c6lVczUmoNa9LMTPtU6iUe+E03ea7q4VpKnl26qOw6slw",
+  )
+  joined.write_string(
+    "9l5eMmwZsYmAV0Yp9jwQxXz/VASr+VA2MhfxsDgGs0aFHXRLU+PnShTDKS9GS0h+65aZU4hvAAH/",
+  )
+  joined.write_string(
+    "LfjLuQv92I4TvM10JV66a44xaZQrfhSpZ209WiShz4066aSvb9+ERgtRfEKVwIHDA895DpHtx+VH",
+  )
+  joined.write_string(
+    "kLNehaI5qFPIIpXksrU7w3Rn/6clneAqtstwU3jY/Dw2rL664fJULP29NFE+Pxwr2hLjiAegHVw6",
+  )
+  joined.write_string(
+    "djptyp0rT1W9kzw+KVpBclhoM/Qel8/CTPAddfAKFXy3C4HcioBHRGzQ5sp05KOGaYUkXI/f+O/t",
+  )
+  joined.write_string(
+    "y/YGzY/DjD3b5+7yUcnB+XLSoVzjUlOOedysYZL59ZBAAxuXQH8Ex08QUP2mntG9oHQvaPZ9qZ6s",
+  )
+  joined.write_string(
+    "ypon8vMR+LbGJRYFacfWazbKEAt45zShWgQAVWyX9/k4lO8sU1jskjmr6WPoK/lzfbDJbtecd3K2",
+  )
+  joined.write_string(
+    "XF2SoK+VcsKVcoLf7ItaXNFMwvBJpYTcDBhUZOaCJyWLOxnuKKK+PSDeXRpJRtfssFuYAlkEQP9c",
+  )
+  joined.write_string(
+    "2v+/IoGAv69wZgLm5ton0AEe6DHmjcy9sL9RmOXvW4KZgTlY9xlEQP8as8xkzMG1T8bG+u8xxszG",
+  )
+  joined.write_string(
+    "nAn7bBus/5AQzBTMP8o+hSz7f/htLEzZ2Pc+BzPueQZNLXgP/Qm2xGA0sgkAAA==",
+  )
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX placeholders inherit layout run formatting" {
+  let result = convert(pptx_placeholder_format_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut size = 0.0
+  let mut green = false
+  for command in commands {
+    match command {
+      @render.Font(_, value) => size = value
+      @render.FillColor(0x00ff00ff) => green = true
+      _ => ()
+    }
+  }
+  let mut bold = false
+  for font in resources.fonts {
+    if font.weight == 700 {
+      bold = true
+    }
+  }
+  assert_eq(size, 28.0, msg="PPTX inherited size")
+  assert_true(green, msg="PPTX inherited colour")
+  assert_true(bold, msg="PPTX inherited bold")
+}

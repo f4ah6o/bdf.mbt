@@ -24,6 +24,15 @@ priv struct PptxLineItem {
 }
 
 ///|
+priv struct PptxPlaceholderDefaults {
+  size : Double?
+  color : UInt32?
+  bold : Bool?
+  italic : Bool?
+  family : String?
+}
+
+///|
 fn pptx_hex_color(value : String) -> UInt32 {
   let text = value.trim().to_owned()
   if text.length() != 6 {
@@ -235,7 +244,11 @@ fn pptx_theme_fonts(package : @ooxml.OoxmlPackage) -> (String, String) {
 }
 
 ///|
-fn pptx_run_family(run : PptxXmlNode, fonts : (String, String)) -> String {
+fn pptx_run_family(
+  run : PptxXmlNode,
+  fonts : (String, String),
+  inherited : PptxPlaceholderDefaults?,
+) -> String {
   let (major, minor) = fonts
   let rpr = pptx_child(Some(run), "rPr")
   let latin = match rpr {
@@ -250,7 +263,15 @@ fn pptx_run_family(run : PptxXmlNode, fonts : (String, String)) -> String {
         "+mn-lt" => minor
         name => name
       }
-    None => minor
+    None =>
+      match inherited {
+        Some(value) =>
+          match value.family {
+            Some(name) => name
+            None => minor
+          }
+        None => minor
+      }
   }
 }
 
@@ -263,7 +284,7 @@ fn pptx_paragraph_defrpr(paragraph : PptxXmlNode) -> PptxXmlNode? {
 fn pptx_run_size(
   run : PptxXmlNode,
   paragraph : PptxXmlNode,
-  inherited : Double?,
+  inherited : PptxPlaceholderDefaults?,
 ) -> Double {
   let rpr = pptx_child(Some(run), "rPr")
   match rpr {
@@ -277,43 +298,78 @@ fn pptx_run_size(
   match pptx_paragraph_defrpr(paragraph) {
     Some(value) =>
       match pptx_attribute(value.element, "sz", "") {
-        "" => inherited.unwrap_or(18.0)
-        text => (@string.parse_double(text) / 100.0) catch { _ => 18.0 }
+        "" => ()
+        text => return (@string.parse_double(text) / 100.0) catch { _ => 18.0 }
       }
-    None => inherited.unwrap_or(18.0)
+    None => ()
+  }
+  match inherited {
+    Some(value) =>
+      match value.size {
+        Some(size) => size
+        None => 18.0
+      }
+    None => 18.0
   }
 }
 
 ///|
-fn pptx_run_bold(run : PptxXmlNode, paragraph : PptxXmlNode) -> Bool {
+fn pptx_toggle(
+  run : PptxXmlNode,
+  paragraph : PptxXmlNode,
+  key : String,
+  inherited : Bool?,
+) -> Bool {
   let rpr = pptx_child(Some(run), "rPr")
   match rpr {
     Some(value) =>
-      if pptx_attribute(value.element, "b", "") != "" {
-        return pptx_bool(value.element, "b", false)
+      if pptx_attribute(value.element, key, "") != "" {
+        return pptx_bool(value.element, key, false)
       }
     None => ()
   }
   match pptx_paragraph_defrpr(paragraph) {
-    Some(value) => pptx_bool(value.element, "b", false)
-    None => false
+    Some(value) =>
+      if pptx_attribute(value.element, key, "") != "" {
+        return pptx_bool(value.element, key, false)
+      }
+    None => ()
   }
+  inherited.unwrap_or(false)
 }
 
 ///|
-fn pptx_run_italic(run : PptxXmlNode, paragraph : PptxXmlNode) -> Bool {
-  let rpr = pptx_child(Some(run), "rPr")
-  match rpr {
-    Some(value) =>
-      if pptx_attribute(value.element, "i", "") != "" {
-        return pptx_bool(value.element, "i", false)
-      }
-    None => ()
-  }
-  match pptx_paragraph_defrpr(paragraph) {
-    Some(value) => pptx_bool(value.element, "i", false)
-    None => false
-  }
+fn pptx_run_bold(
+  run : PptxXmlNode,
+  paragraph : PptxXmlNode,
+  inherited : PptxPlaceholderDefaults?,
+) -> Bool {
+  pptx_toggle(
+    run,
+    paragraph,
+    "b",
+    match inherited {
+      Some(value) => value.bold
+      None => None
+    },
+  )
+}
+
+///|
+fn pptx_run_italic(
+  run : PptxXmlNode,
+  paragraph : PptxXmlNode,
+  inherited : PptxPlaceholderDefaults?,
+) -> Bool {
+  pptx_toggle(
+    run,
+    paragraph,
+    "i",
+    match inherited {
+      Some(value) => value.italic
+      None => None
+    },
+  )
 }
 
 ///|
@@ -321,6 +377,7 @@ fn pptx_run_color(
   run : PptxXmlNode,
   paragraph : PptxXmlNode,
   theme : Map[String, UInt32],
+  inherited : PptxPlaceholderDefaults?,
 ) -> UInt32 {
   let rpr = pptx_child(Some(run), "rPr")
   match pptx_node_color(rpr, "solidFill", theme) {
@@ -329,7 +386,15 @@ fn pptx_run_color(
       match
         pptx_node_color(pptx_paragraph_defrpr(paragraph), "solidFill", theme) {
         Some(value) => value
-        None => 0x000000ffU
+        None =>
+          match inherited {
+            Some(value) =>
+              match value.color {
+                Some(color) => color
+                None => 0x000000ffU
+              }
+            None => 0x000000ffU
+          }
       }
   }
 }
@@ -429,8 +494,11 @@ fn pptx_placeholder_transforms(
 }
 
 ///|
-fn pptx_placeholder_sizes(root : PptxXmlNode) -> Map[String, Double] {
-  let result : Map[String, Double] = Map([])
+fn pptx_placeholder_defaults(
+  root : PptxXmlNode,
+  theme : Map[String, UInt32],
+) -> Map[String, PptxPlaceholderDefaults] {
+  let result : Map[String, PptxPlaceholderDefaults] = Map([])
   let tree = pptx_child(pptx_child(Some(root), "cSld"), "spTree")
   for shape in pptx_children(tree) {
     let key = match pptx_placeholder_key(shape) {
@@ -441,21 +509,49 @@ fn pptx_placeholder_sizes(root : PptxXmlNode) -> Map[String, Double] {
       Some(value) => value
       None => continue
     }
-    let paragraph = match pptx_child(Some(body), "p") {
+    let mut rpr = match pptx_child(Some(body), "p") {
+      Some(paragraph) =>
+        pptx_child(pptx_child(Some(paragraph), "pPr"), "defRPr")
+      None => None
+    }
+    if rpr is None {
+      rpr = pptx_child(
+        pptx_child(pptx_child(Some(body), "lstStyle"), "lvl1pPr"),
+        "defRPr",
+      )
+    }
+    let rpr = match rpr {
       Some(value) => value
       None => continue
     }
-    let rpr = pptx_child(pptx_child(Some(paragraph), "pPr"), "defRPr")
-    match rpr {
+    let size = match pptx_attribute(rpr.element, "sz", "") {
+      "" => None
+      text => Some((@string.parse_double(text) / 100.0) catch { _ => 18.0 })
+    }
+    let bold = if pptx_attribute(rpr.element, "b", "") != "" {
+      Some(pptx_bool(rpr.element, "b", false))
+    } else {
+      None
+    }
+    let italic = if pptx_attribute(rpr.element, "i", "") != "" {
+      Some(pptx_bool(rpr.element, "i", false))
+    } else {
+      None
+    }
+    let family = match pptx_child(Some(rpr), "latin") {
       Some(value) =>
-        match pptx_attribute(value.element, "sz", "") {
-          "" => ()
-          text =>
-            result[key] = (@string.parse_double(text) / 100.0) catch {
-              _ => 18.0
-            }
+        match pptx_attribute(value.element, "typeface", "") {
+          "" => None
+          name => Some(name)
         }
-      None => ()
+      None => None
+    }
+    result[key] = {
+      size,
+      color: pptx_node_color(Some(rpr), "solidFill", theme),
+      bold,
+      italic,
+      family,
     }
   }
   result
@@ -573,12 +669,12 @@ fn pptx_render_slide(
     Some(value) => pptx_placeholder_transforms(value)
     None => Map([])
   }
-  let layout_sizes = match layout_root {
-    Some(value) => pptx_placeholder_sizes(value)
+  let layout_defaults = match layout_root {
+    Some(value) => pptx_placeholder_defaults(value, theme)
     None => Map([])
   }
-  let master_sizes = match master_root {
-    Some(value) => pptx_placeholder_sizes(value)
+  let master_defaults = match master_root {
+    Some(value) => pptx_placeholder_defaults(value, theme)
     None => Map([])
   }
   let shapes : Array[(PptxXmlNode, Double, Double)] = []
@@ -613,14 +709,14 @@ fn pptx_render_slide(
       Some(value) => value
       None => continue
     }
-    let mut inherited_size : Double? = None
+    let mut inherited : PptxPlaceholderDefaults? = None
     match pptx_placeholder_key(shape) {
       Some(key) =>
-        match layout_sizes.get(key) {
-          Some(value) => inherited_size = Some(value)
+        match layout_defaults.get(key) {
+          Some(value) => inherited = Some(value)
           None =>
-            match master_sizes.get(key) {
-              Some(value) => inherited_size = Some(value)
+            match master_defaults.get(key) {
+              Some(value) => inherited = Some(value)
               None => ()
             }
         }
@@ -769,7 +865,7 @@ fn pptx_render_slide(
             if text == "" {
               continue
             }
-            let size = pptx_run_size(child, paragraph, inherited_size)
+            let size = pptx_run_size(child, paragraph, inherited)
             let advance = pptx_text_width(text, size)
             if line.is_empty() {
               line_height = size * 1.2
@@ -786,19 +882,19 @@ fn pptx_render_slide(
             }
             line.push({
               text,
-              family: pptx_run_family(child, theme_fonts),
-              weight: if pptx_run_bold(child, paragraph) {
+              family: pptx_run_family(child, theme_fonts, inherited),
+              weight: if pptx_run_bold(child, paragraph, inherited) {
                 700
               } else {
                 400
               },
-              style: if pptx_run_italic(child, paragraph) {
+              style: if pptx_run_italic(child, paragraph, inherited) {
                 1
               } else {
                 0
               },
               size,
-              color: pptx_run_color(child, paragraph, theme),
+              color: pptx_run_color(child, paragraph, theme, inherited),
               x: item_x,
               advance,
             })
