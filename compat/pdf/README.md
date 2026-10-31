@@ -56,3 +56,10 @@ current points, against the upstream PDF interpreter. Generate them with
 `generate_draw_operators_test.go` additionally compares path operators and
 malformed operand lists with the upstream interpreter, using
 `BDF_PDF_FIXTURES` for the testdata directory.
+
+The graphics fixtures compare BDF object bytes produced from path painting,
+clipping, color, line and transform operators, and from complete synthetic PDF
+pages with Flate compression and all right-angle rotations. The internal
+renderer rejects operators it does not yet implement; it is not a complete
+PDF-to-BDF converter. Run `TestCodexPDFGraphics` and
+`TestCodexPDFGraphicsPages` using the corresponding generator files.

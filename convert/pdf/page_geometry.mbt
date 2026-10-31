@@ -1,4 +1,21 @@
 ///|
+fn pdf_matrix_mul(
+  m : (Double, Double, Double, Double, Double, Double),
+  n : (Double, Double, Double, Double, Double, Double),
+) -> (Double, Double, Double, Double, Double, Double) {
+  let (a, b, c, d, e, f) = m
+  let (g, h, i, j, k, l) = n
+  (
+    a * g + b * i,
+    a * h + b * j,
+    c * g + d * i,
+    c * h + d * j,
+    e * g + f * i + k,
+    e * h + f * j + l,
+  )
+}
+
+///|
 priv struct PdfPageGeometry {
   width : Double
   height : Double
@@ -92,11 +109,26 @@ fn PdfFile::page_geometry(
   let w = x1 - x0
   let h = y1 - y0
   let rotate = (page.attrs.rotate % 360 + 360) % 360
+  let base = (1.0, 0.0, 0.0, -1.0, -x0, y1)
   match rotate {
-    90 => { width: h, height: w, matrix: (0.0, 1.0, 1.0, 0.0, h - y1, -x0), }
+    90 =>
+      {
+        width: h,
+        height: w,
+        matrix: pdf_matrix_mul(base, (0.0, 1.0, -1.0, 0.0, h, 0.0)),
+      }
     180 =>
-      { width: w, height: h, matrix: (-1.0, 0.0, 0.0, 1.0, w + x0, h - y1), }
-    270 => { width: h, height: w, matrix: (0.0, -1.0, -1.0, 0.0, y1, w + x0), }
-    _ => { width: w, height: h, matrix: (1.0, 0.0, 0.0, -1.0, -x0, y1), }
+      {
+        width: w,
+        height: h,
+        matrix: pdf_matrix_mul(base, (-1.0, 0.0, 0.0, -1.0, w, h)),
+      }
+    270 =>
+      {
+        width: h,
+        height: w,
+        matrix: pdf_matrix_mul(base, (0.0, -1.0, 1.0, 0.0, 0.0, w)),
+      }
+    _ => { width: w, height: h, matrix: base, }
   }
 }
