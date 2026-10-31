@@ -348,3 +348,130 @@ test "PDF inline image mask becomes RGBA PNG" {
     msg="PDF inline mask scanline",
   )
 }
+
+///|
+fn pdf_test_rgba_scanline(
+  pixels : Array[(Int32, Int32, Int32, Int32)],
+) -> Bytes {
+  let out = @buffer.Buffer()
+  out.write_byte(0)
+  for pixel in pixels {
+    let (red, green, blue, alpha) = pixel
+    out.write_byte(red.to_byte())
+    out.write_byte(green.to_byte())
+    out.write_byte(blue.to_byte())
+    out.write_byte(alpha.to_byte())
+  }
+  out.to_bytes()
+}
+
+///|
+fn pdf_masked_image_test_document(
+  width : Int32,
+  height : Int32,
+  image_extra : String,
+  image_data : Bytes,
+  mask_dict : String,
+  mask_data : Bytes,
+) -> Bytes {
+  pdf_test_pdf([
+    b"<< /Type /Catalog /Pages 2 0 R >>",
+    b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+    b"<< /Type /Page /Parent 2 0 R /Resources << /XObject << /Im1 5 0 R >> >> /Contents 4 0 R >>",
+    pdf_test_stream("", b"q 100 0 0 100 10 20 cm /Im1 Do Q"),
+    pdf_test_stream(
+      "/Type /XObject /Subtype /Image /Width \{width} /Height \{height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode " +
+      image_extra,
+      image_data,
+    ),
+    pdf_test_stream(mask_dict, mask_data),
+  ])
+}
+
+///|
+test "PDF image soft mask supplies alpha" {
+  let document = pdf_graphics_document(
+    pdf_masked_image_test_document(
+      2,
+      1,
+      "/SMask 6 0 R",
+      @zlib.compress(b"\xff\x00\x00\x00\xff\x00"[:]),
+      "/Type /XObject /Subtype /Image /Width 2 /Height 1 /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode",
+      @zlib.compress(b"\x00\xff"[:]),
+    ),
+    no_text_index=true,
+  )
+  assert_eq(
+    pdf_test_image_rgba(document, 2, 1),
+    pdf_test_rgba_scanline([(255, 0, 0, 0), (0, 255, 0, 255)]),
+    msg="PDF soft mask scanline",
+  )
+}
+
+///|
+test "PDF image stencil mask removes painted pixels" {
+  let document = pdf_graphics_document(
+    pdf_masked_image_test_document(
+      1,
+      1,
+      "/Mask 6 0 R",
+      @zlib.compress(b"\xff\x00\x00"[:]),
+      "/Type /XObject /Subtype /Image /ImageMask true /Width 1 /Height 1 /BitsPerComponent 1 /Filter /FlateDecode",
+      @zlib.compress(b"\x00"[:]),
+    ),
+    no_text_index=true,
+  )
+  assert_eq(
+    pdf_test_image_rgba(document, 1, 1),
+    pdf_test_rgba_scanline([(255, 0, 0, 0)]),
+    msg="PDF stencil attachment scanline",
+  )
+}
+
+///|
+test "PDF colour key masks fail closed" {
+  let rejected = try {
+    ignore(
+      pdf_graphics_document(
+        pdf_masked_image_test_document(
+          1,
+          1,
+          "/Mask [0 0 0 0 0 0]",
+          @zlib.compress(b"\xff\x00\x00"[:]),
+          "",
+          b"",
+        ),
+        no_text_index=true,
+      ),
+    )
+    false
+  } catch {
+    InvalidStream(message) => message.contains("colour key")
+    _ => false
+  }
+  assert_true(rejected)
+}
+
+///|
+test "PDF encoded images with masks fail closed" {
+  let rejected = try {
+    ignore(
+      pdf_graphics_document(
+        pdf_masked_image_test_document(
+          1,
+          1,
+          "/Filter /DCTDecode /SMask 6 0 R",
+          b"\xff\xd8inline\xff\xd9",
+          "/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode",
+          @zlib.compress(b"\xff"[:]),
+        ),
+        no_text_index=true,
+      ),
+    )
+    false
+  } catch {
+    InvalidStream(message) => message.contains("encoded image data")
+    _ => false
+  }
+  assert_true(rejected)
+}

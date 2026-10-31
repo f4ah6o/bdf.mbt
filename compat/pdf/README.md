@@ -96,13 +96,14 @@ manifest field; decoded sizes, hashes and bytes are exact.
 The image tests build synthetic PDFs with image XObjects and inline images.
 JPEG `DCTDecode` bytes are stored unchanged, 8-bit Flate samples in
 DeviceGray, DeviceRGB and DeviceCMYK are converted to non-interlaced RGB PNG
-parts, and 1-bit stencil masks paint the current fill colour as RGBA PNGs.
+parts, 1-bit stencil masks paint the current fill colour as RGBA PNGs, and
+stencil `/Mask` or 8-bit grayscale `/SMask` attachments supply image alpha.
 They check the image part bytes, the page object's image resource, PNG
 dimensions, colour type and decoded scanlines. Upstream may re-encode sample
 images as WebP or AVIF, so these tests do not claim byte parity with its image
-payloads; the pixels are equivalent. `/SMask` and `/Mask` attachments,
-`Decode` arrays on colour images, JPX, JBIG2, CCITT and form XObjects are
-rejected by this internal path.
+payloads; the pixels are equivalent. Colour-key masks, encoded images with
+masks, `Decode` arrays on colour images, JPX, JBIG2, CCITT and form XObjects
+are rejected by this internal path.
 
 The text-state fixtures compare text matrix, line movement, spacing, scaling,
 leading, rise and rendering-mode operators against upstream before glyph

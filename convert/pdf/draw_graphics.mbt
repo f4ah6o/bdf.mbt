@@ -156,11 +156,13 @@ fn PdfGraphics::draw_image_xobject(
     PdfBool(value) => value
     _ => false
   }
-  for key in [b"SMask", b"Mask"] {
-    match pdf_dict_get(dict, key) {
-      Some(PdfNull) | None => ()
-      Some(_) => raise InvalidStream("PDF image masks are not supported yet")
-    }
+  let soft_mask = match pdf_dict_get(dict, b"SMask") {
+    Some(PdfNull) | None => None
+    Some(value) => Some(value)
+  }
+  let stencil_mask = match pdf_dict_get(dict, b"Mask") {
+    Some(PdfNull) | None => None
+    Some(value) => Some(value)
   }
   let decode : Array[Double] = match
     file.page_deref(pdf_dict_get(dict, b"Decode")) {
@@ -199,7 +201,44 @@ fn PdfGraphics::draw_image_xobject(
     false,
     1073741824L,
   )
-  self.draw_image_data(width, height, bpc, space, is_mask, invert, data, codec)
+  let has_attachment = match (soft_mask, stencil_mask) {
+    (Some(_), _) | (_, Some(_)) => true
+    _ => false
+  }
+  if !is_mask && has_attachment {
+    match codec {
+      Some(_) =>
+        raise InvalidStream(
+          "PDF image masks with encoded image data are not supported yet",
+        )
+      None => ()
+    }
+    if bpc != 8 {
+      raise InvalidStream(
+        "PDF image masks with this bit depth are not supported yet",
+      )
+    }
+    let space = match space {
+      Some(value) => value
+      None => raise InvalidStream("PDF image color space is missing")
+    }
+    let mask = match soft_mask {
+      Some(value) => pdf_load_soft_mask(file, value)
+      None =>
+        match stencil_mask {
+          Some(value) => pdf_load_stencil_mask(file, value)
+          None => raise InvalidStream("PDF image mask is missing")
+        }
+    }
+    let rgb = pdf_image_rgb_samples(width, height, space, data)
+    let rgba = pdf_image_rgba_from_rgb(width, height, rgb)
+    let masked = pdf_apply_image_mask(rgba, width, height, mask)
+    self.emit_image(pdf_png_encode_rgba(width, height, masked))
+  } else {
+    self.draw_image_data(
+      width, height, bpc, space, is_mask, invert, data, codec,
+    )
+  }
 }
 
 ///|
