@@ -81,6 +81,7 @@ fn pdf_image_rgb_samples(
     PdfGray => 1
     PdfRGB => 3
     PdfCMYK => 4
+    PdfPattern => raise InvalidStream("PDF image with a pattern colour space")
   }
   let needed = width * height * components
   if data.length() < needed {
@@ -101,6 +102,7 @@ fn pdf_image_rgb_samples(
         rgb.write_byte(data[i + 1])
         rgb.write_byte(data[i + 2])
       }
+      PdfPattern => raise InvalidStream("PDF image with a pattern colour space")
       PdfCMYK => {
         let c = data[i].to_int()
         let m = data[i + 1].to_int()

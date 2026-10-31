@@ -18,29 +18,44 @@ fn PdfGraphics::end_path(
   rule : Byte,
   stroke : Bool,
 ) -> Unit raise {
-  if self.path.bounds is Some(_) {
-    if fill || stroke || self.clip >= 0 {
-      let entry : @core.Path = {
-        verbs: Bytes::from_array(self.path.verbs),
-        coordinates: self.path.coordinates.copy(),
+  match self.path.bounds {
+    Some((x0, y0, x1, y1)) =>
+      if fill || stroke || self.clip >= 0 {
+        let entry : @core.Path = {
+          verbs: Bytes::from_array(self.path.verbs),
+          coordinates: self.path.coordinates.copy(),
+        }
+        let index = self.object.add_path(@core.Inline(entry))
+        if fill {
+          match self.state.fill_pattern {
+            Some(name) => {
+              self.pattern_fill(index, rule, name, (x0, y0, x1, y1))
+              self.emitted.fill = None
+            }
+            None => {
+              self.sync_fill()
+              self.sync_alpha(false)
+              self.object.fill_path(index, rule)
+            }
+          }
+        }
+        if stroke {
+          match self.state.stroke_pattern {
+            Some(_) =>
+              raise InvalidStream("PDF stroke patterns are not supported yet")
+            None => ()
+          }
+          self.sync_stroke()
+          self.sync_alpha(true)
+          self.object.stroke_path(index)
+        }
+        if self.clip >= 0 {
+          self.object.clip_path(index, self.clip.to_byte()) catch {
+            _ => raise InvalidStream("PDF clip output failed")
+          }
+        }
       }
-      let index = self.object.add_path(@core.Inline(entry))
-      if fill {
-        self.sync_fill()
-        self.sync_alpha(false)
-        self.object.fill_path(index, rule)
-      }
-      if stroke {
-        self.sync_stroke()
-        self.sync_alpha(true)
-        self.object.stroke_path(index)
-      }
-      if self.clip >= 0 {
-        self.object.clip_path(index, self.clip.to_byte())
-      }
-    }
-  } else if self.clip >= 0 {
-    self.object.clip_rect(0.0F, 0.0F, 0.0F, 0.0F)
+    None => if self.clip >= 0 { self.object.clip_rect(0.0F, 0.0F, 0.0F, 0.0F) }
   }
   let old = self.path
   self.path = PdfDrawPath::new()
@@ -463,9 +478,11 @@ fn PdfGraphics::execute(
       if operator == b"G" {
         self.state.stroke = color
         self.state.stroke_space = PdfGray
+        self.state.stroke_pattern = None
       } else {
         self.state.fill = color
         self.state.fill_space = PdfGray
+        self.state.fill_pattern = None
       }
     }
     b"rg" | b"RG" =>
@@ -478,9 +495,11 @@ fn PdfGraphics::execute(
         if operator == b"RG" {
           self.state.stroke = color
           self.state.stroke_space = PdfRGB
+          self.state.stroke_pattern = None
         } else {
           self.state.fill = color
           self.state.fill_space = PdfRGB
+          self.state.fill_pattern = None
         }
       }
     b"k" | b"K" =>
@@ -497,9 +516,11 @@ fn PdfGraphics::execute(
         if operator == b"K" {
           self.state.stroke = color
           self.state.stroke_space = PdfCMYK
+          self.state.stroke_pattern = None
         } else {
           self.state.fill = color
           self.state.fill_space = PdfCMYK
+          self.state.fill_pattern = None
         }
       }
     b"CS" | b"cs" =>
@@ -508,9 +529,11 @@ fn PdfGraphics::execute(
         if operator == b"CS" {
           self.state.stroke_space = space
           self.state.stroke = 0x000000ffU
+          self.state.stroke_pattern = None
         } else {
           self.state.fill_space = space
           self.state.fill = 0x000000ffU
+          self.state.fill_pattern = None
         }
       }
     b"SC" | b"SCN" | b"sc" | b"scn" => {
@@ -521,62 +544,100 @@ fn PdfGraphics::execute(
         self.state.fill_space
       }
       let values : Array[Double] = []
+      let mut pattern : Bytes? = None
       for arg in args {
         match arg {
           Integer(value) => values.push(value.to_double())
           Real(value) => values.push(value)
+          Name(name) => pattern = Some(name)
           _ => ()
         }
       }
-      let color = pdf_device_color(space, values)
-      if stroke {
-        self.state.stroke = color
-      } else {
-        self.state.fill = color
+      match pattern {
+        Some(name) => {
+          match space {
+            PdfPattern => ()
+            _ =>
+              raise InvalidStream(
+                "PDF pattern used outside a Pattern colour space",
+              )
+          }
+          if stroke {
+            self.state.stroke_pattern = Some(name)
+          } else {
+            self.state.fill_pattern = Some(name)
+          }
+        }
+        None => {
+          match space {
+            PdfPattern =>
+              raise InvalidStream(
+                "PDF Pattern colour space requires a pattern name",
+              )
+            _ => ()
+          }
+          let color = pdf_device_color(space, values)
+          if stroke {
+            self.state.stroke = color
+            self.state.stroke_pattern = None
+          } else {
+            self.state.fill = color
+            self.state.fill_pattern = None
+          }
+        }
       }
     }
     b"W" => self.clip = 0
     b"W*" => self.clip = 1
     b"S" =>
       self.end_path(false, 0, true) catch {
+        InvalidStream(message) => raise InvalidStream(message)
         _ => raise InvalidStream("PDF path output failed")
       }
     b"s" => {
       self.path.close()
       self.end_path(false, 0, true) catch {
+        InvalidStream(message) => raise InvalidStream(message)
         _ => raise InvalidStream("PDF path output failed")
       }
     }
     b"f" | b"F" =>
       self.end_path(true, 0, false) catch {
+        InvalidStream(message) => raise InvalidStream(message)
         _ => raise InvalidStream("PDF path output failed")
       }
     b"f*" =>
       self.end_path(true, 1, false) catch {
+        InvalidStream(message) => raise InvalidStream(message)
         _ => raise InvalidStream("PDF path output failed")
       }
     b"B" =>
       self.end_path(true, 0, true) catch {
+        InvalidStream(message) => raise InvalidStream(message)
         _ => raise InvalidStream("PDF path output failed")
       }
     b"B*" =>
       self.end_path(true, 1, true) catch {
+        InvalidStream(message) => raise InvalidStream(message)
         _ => raise InvalidStream("PDF path output failed")
       }
     b"b" => {
       self.path.close()
       self.end_path(true, 0, true) catch {
+        InvalidStream(message) => raise InvalidStream(message)
         _ => raise InvalidStream("PDF path output failed")
       }
     }
     b"b*" => {
       self.path.close()
       self.end_path(true, 1, true) catch {
+        InvalidStream(message) => raise InvalidStream(message)
         _ => raise InvalidStream("PDF path output failed")
       }
     }
     b"n" =>
       self.end_path(false, 0, false) catch {
+        InvalidStream(message) => raise InvalidStream(message)
         _ => raise InvalidStream("PDF path output failed")
       }
     b"ri" | b"i" => ()

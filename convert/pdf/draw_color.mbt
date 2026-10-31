@@ -3,6 +3,7 @@ priv enum PdfDeviceColorSpace {
   PdfGray
   PdfRGB
   PdfCMYK
+  PdfPattern
 }
 
 ///|
@@ -22,6 +23,7 @@ fn pdf_device_color_space(
     b"DeviceGray" | b"G" | b"CalGray" => PdfGray
     b"DeviceRGB" | b"RGB" | b"CalRGB" => PdfRGB
     b"DeviceCMYK" | b"CMYK" => PdfCMYK
+    b"Pattern" => PdfPattern
     _ => raise InvalidStream("unsupported PDF color space")
   }
 }
@@ -35,6 +37,7 @@ fn pdf_device_color(
     PdfGray => [0.0]
     PdfRGB => [0.0, 0.0, 0.0]
     PdfCMYK => [0.0, 0.0, 0.0, 1.0]
+    PdfPattern => [0.0]
   }
   let count = if values.length() < defaults.length() {
     values.length()
@@ -46,6 +49,7 @@ fn pdf_device_color(
   }
   match space {
     PdfGray => pdf_color(defaults[0], defaults[0], defaults[0])
+    PdfPattern => pdf_color(0.0, 0.0, 0.0)
     PdfRGB => pdf_color(defaults[0], defaults[1], defaults[2])
     PdfCMYK => {
       let c = Double::min(1.0, Double::max(0.0, defaults[0]))
@@ -108,6 +112,7 @@ fn PdfFile::resolve_device_color(
         b"DeviceGray" | b"G" | b"CalGray" => PdfGray
         b"DeviceRGB" | b"RGB" | b"CalRGB" => PdfRGB
         b"DeviceCMYK" | b"CMYK" => PdfCMYK
+        b"Pattern" => PdfPattern
         _ => raise InvalidStream("unsupported PDF color space")
       }
     PdfArray(values) if !values.is_empty() => {

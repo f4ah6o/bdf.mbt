@@ -253,6 +253,24 @@ fn pdf_transform_point(
 }
 
 ///|
+fn pdf_transform_rect(
+  matrix : (Double, Double, Double, Double, Double, Double),
+  rect : (Double, Double, Double, Double),
+) -> (Double, Double, Double, Double) {
+  let (x0, y0, x1, y1) = rect
+  let (ax, ay) = pdf_transform_point(matrix, x0, y0)
+  let (bx, by) = pdf_transform_point(matrix, x1, y0)
+  let (cx, cy) = pdf_transform_point(matrix, x0, y1)
+  let (dx, dy) = pdf_transform_point(matrix, x1, y1)
+  (
+    Double::min(Double::min(ax, bx), Double::min(cx, dx)),
+    Double::min(Double::min(ay, by), Double::min(cy, dy)),
+    Double::max(Double::max(ax, bx), Double::max(cx, dx)),
+    Double::max(Double::max(ay, by), Double::max(cy, dy)),
+  )
+}
+
+///|
 fn PdfGraphics::shading_area(
   self : PdfGraphics,
 ) -> (Double, Double, Double, Double) {
@@ -293,6 +311,7 @@ fn PdfGraphics::draw_shading(
   self : PdfGraphics,
   file : PdfFile,
   dict : PdfObject,
+  area : (Double, Double, Double, Double),
 ) -> Unit raise PdfStreamError {
   let kind = match file.page_num(pdf_dict_get(dict, b"ShadingType")) {
     Some(value) => value.to_int()
@@ -307,7 +326,6 @@ fn PdfGraphics::draw_shading(
   let start = if domain.length() > 0 { domain[0] } else { 0.0 }
   let end = if domain.length() > 1 { domain[1] } else { 1.0 }
   let coords = pdf_function_numbers(file, dict, b"Coords", [])
-  let area = self.shading_area()
   if area.2 <= area.0 || area.3 <= area.1 {
     return
   }
@@ -408,5 +426,69 @@ fn PdfGraphics::paint_shading(
     None => raise InvalidStream("PDF shading is missing")
   }
   let dict = file.page_deref(Some(object))
-  self.draw_shading(file, dict)
+  self.draw_shading(file, dict, self.shading_area())
+}
+
+///|
+fn PdfGraphics::pattern_fill(
+  self : PdfGraphics,
+  path_index : Int32,
+  rule : Byte,
+  name : Bytes,
+  bounds : (Double, Double, Double, Double),
+) -> Unit raise PdfStreamError {
+  let file = match self.file {
+    Some(value) => value
+    None => raise InvalidStream("PDF pattern resource missing")
+  }
+  let resources = match self.resources {
+    Some(value) => value
+    None => raise InvalidStream("PDF pattern resource missing")
+  }
+  let table = file.page_deref(pdf_dict_get(resources, b"Pattern"))
+  let object = match pdf_dict_get(table, name) {
+    Some(value) => value
+    None => raise InvalidStream("PDF pattern is missing")
+  }
+  let dict = file.page_deref(Some(object))
+  let pattern_type = match file.page_num(pdf_dict_get(dict, b"PatternType")) {
+    Some(value) => value.to_int()
+    None => 1
+  }
+  if pattern_type != 2 {
+    raise InvalidStream("PDF tiling patterns are not supported yet")
+  }
+  let shading_object = match pdf_dict_get(dict, b"Shading") {
+    Some(value) => value
+    None => raise InvalidStream("PDF shading pattern is missing")
+  }
+  let shading = file.page_deref(Some(shading_object))
+  let pattern_matrix = match pdf_form_numbers(file, dict, b"Matrix", 6) {
+    Some(values) =>
+      (values[0], values[1], values[2], values[3], values[4], values[5])
+    None => (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+  }
+  let inverse_ctm = match pdf_matrix_inverse(self.state.matrix) {
+    Some(value) => value
+    None => raise InvalidStream("PDF pattern transform is singular")
+  }
+  let inverse_pattern = match pdf_matrix_inverse(pattern_matrix) {
+    Some(value) => value
+    None => raise InvalidStream("PDF pattern transform is singular")
+  }
+  let page_rect = pdf_transform_rect(self.state.matrix, bounds)
+  let pattern_rect = pdf_transform_rect(inverse_pattern, page_rect)
+  let relative = pdf_matrix_mul(pattern_matrix, inverse_ctm)
+  let depth = self.stack.length()
+  self.save()
+  self.object.clip_path(path_index, rule) catch {
+    _ => raise InvalidStream("PDF pattern clip output failed")
+  }
+  self.transform(relative)
+  self.draw_shading(file, shading, pattern_rect)
+  self.finish_text()
+  while self.stack.length() > depth + 1 {
+    self.restore()
+  }
+  self.restore()
 }

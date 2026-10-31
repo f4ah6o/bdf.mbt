@@ -3,8 +3,10 @@ priv struct PdfDrawState {
   mut matrix : (Double, Double, Double, Double, Double, Double)
   mut fill : UInt32
   mut fill_space : PdfDeviceColorSpace
+  mut fill_pattern : Bytes?
   mut stroke : UInt32
   mut stroke_space : PdfDeviceColorSpace
+  mut stroke_pattern : Bytes?
   mut width : Double
   mut cap : Byte
   mut join : Byte
@@ -67,8 +69,10 @@ fn PdfDrawState::copy(self : PdfDrawState) -> PdfDrawState {
     matrix: self.matrix,
     fill: self.fill,
     fill_space: self.fill_space,
+    fill_pattern: self.fill_pattern,
     stroke: self.stroke,
     stroke_space: self.stroke_space,
+    stroke_pattern: self.stroke_pattern,
     width: self.width,
     cap: self.cap,
     join: self.join,
@@ -136,8 +140,10 @@ fn PdfGraphics::new(
       matrix: base,
       fill: 0x000000ffU,
       fill_space: PdfGray,
+      fill_pattern: None,
       stroke: 0x000000ffU,
       stroke_space: PdfGray,
+      stroke_pattern: None,
       width: 1.0,
       cap: 0,
       join: 0,

@@ -596,3 +596,76 @@ test "PDF function shading falls back to a flat colour" {
   )
   assert_eq(pdf_test_body_paints(document).length(), 0)
 }
+
+///|
+fn pdf_pattern_test_document(pattern : String, content : Bytes) -> Bytes {
+  pdf_test_pdf([
+    b"<< /Type /Catalog /Pages 2 0 R >>",
+    b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+    b"<< /Type /Page /Parent 2 0 R /Resources << /Pattern << /P1 5 0 R >> >> /Contents 4 0 R >>",
+    pdf_test_stream("", content),
+    @utf8.encode(pattern),
+    @utf8.encode(
+      "<< /ShadingType 2 /ColorSpace /DeviceRGB /Coords [0 0 100 0] /Function << /FunctionType 2 /Domain [0 1] /C0 [1 0 0] /C1 [0 0 1] /N 1 >> >>",
+    ),
+  ])
+}
+
+///|
+test "PDF shading pattern fills a path" {
+  let document = pdf_graphics_document(
+    pdf_pattern_test_document(
+      "<< /Type /Pattern /PatternType 2 /Shading 6 0 R /Matrix [1 0 0 1 0 0] >>",
+      b"q /Pattern cs /P1 scn 0 0 100 100 re f Q",
+    ),
+    no_text_index=true,
+  )
+  let paints = pdf_test_body_paints(document)
+  guard paints.length() == 1 else { fail("PDF pattern paint count") }
+  guard paints[0] is @core.Gradient(0, coords, stops) else {
+    fail("PDF pattern paint kind")
+  }
+  assert_eq(coords, [0.0, 0.0, 100.0, 0.0], msg="PDF pattern coords")
+  assert_eq(stops.length(), 2, msg="PDF pattern stops")
+  assert_eq(stops[0].color, 0xff0000ffU.reinterpret_as_int())
+  assert_eq(stops[1].color, 0x0000ffffU.reinterpret_as_int())
+}
+
+///|
+test "PDF tiling patterns fail closed" {
+  let rejected = try {
+    ignore(
+      pdf_graphics_document(
+        pdf_pattern_test_document(
+          "<< /Type /Pattern /PatternType 1 /XStep 10 /YStep 10 /BBox [0 0 10 10] >>",
+          b"q /Pattern cs /P1 scn 0 0 100 100 re f Q",
+        ),
+        no_text_index=true,
+      ),
+    )
+    false
+  } catch {
+    InvalidStream(message) => message.contains("tiling patterns")
+    _ => false
+  }
+  assert_true(rejected)
+}
+
+///|
+test "PDF pattern outside a Pattern colour space fails closed" {
+  let rejected = try {
+    ignore(
+      pdf_graphics_document(
+        pdf_pattern_test_document(
+          "<< /Type /Pattern /PatternType 2 /Shading 6 0 R >>", b"q /P1 scn 0 0 100 100 re f Q",
+        ),
+        no_text_index=true,
+      ),
+    )
+    false
+  } catch {
+    InvalidStream(message) => message.contains("Pattern colour space")
+    _ => false
+  }
+  assert_true(rejected)
+}

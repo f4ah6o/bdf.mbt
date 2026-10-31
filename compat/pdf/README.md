@@ -109,7 +109,9 @@ executed with their own resources, `/Matrix` and `/BBox` clip.
 The shading tests build synthetic PDFs with axial and radial shadings. They
 check the BDF gradient paint kind, coordinates, stop offsets and colours, and
 that stitching functions are sampled. Function-based shading types that are not
-ported yet fall back to a flat colour sampled at the domain midpoint.
+ported yet fall back to a flat colour sampled at the domain midpoint. Shading
+patterns are checked through a `/Pattern` colour space and path fill; tiling
+patterns are rejected.
 
 The text-state fixtures compare text matrix, line movement, spacing, scaling,
 leading, rise and rendering-mode operators against upstream before glyph
