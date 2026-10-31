@@ -109,6 +109,7 @@ fn docx_section_at(document : DocxTextDocument, index : Int32) -> DocxSection {
 fn docx_render_document(
   document : DocxTextDocument,
   title : String,
+  data : Bytes,
 ) -> DocxResult raise {
   let meta : Map[String, Json] = {
     "source": Json::string("docx"),
@@ -118,6 +119,9 @@ fn docx_render_document(
     meta["title"] = Json::string(title)
   }
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
+  let pkg = @ooxml.open_ooxml(data) catch {
+    _ => raise DocxInvalid("invalid DOCX package")
+  }
   let pages : Array[Json] = []
   let warnings : Array[String] = ["DOCX layout uses approximate text metrics"]
   let mut section = docx_section_at(document, 0)
@@ -294,6 +298,42 @@ fn docx_render_document(
           }
           line_x = left + next
         }
+        "image" => {
+          let mut target = ""
+          let mut external = false
+          for rel in pkg.relationships(document.part) {
+            if rel.id == item.text {
+              target = rel.target
+              external = rel.external
+            }
+          }
+          if target == "" || external {
+            raise DocxInvalid("DOCX image relationship is missing")
+          }
+          let bytes = pkg.read(target) catch {
+            _ => raise DocxInvalid("DOCX image part is missing")
+          }
+          let hash = writer.add_part("img", bytes)
+          let mut width = if item.width > 0.0 { item.width } else { 72.0 }
+          let mut height = if item.height > 0.0 { item.height } else { 72.0 }
+          let available = right - line_x
+          if available > 0.0 && width > available {
+            height = height * available / width
+            width = available
+          }
+          ensure_page(height)
+          let index = object.add_image(hash)
+          object.image(
+            index,
+            Float::from_double(line_x),
+            Float::from_double(y - height),
+            Float::from_double(width),
+            Float::from_double(height),
+          )
+          line_x += width
+          line_width = line_x - left
+          line_height = Double::max(line_height, height)
+        }
         _ => {
           let size = if item.props.size > 0.0 { item.props.size } else { 10.0 }
           let advance = docx_text_width(item.text, size)
@@ -377,7 +417,7 @@ pub fn convert(data : Bytes, title~ : String = "") -> DocxResult raise {
     InvalidDocx(message) => raise DocxInvalid(message)
     error => raise DocxInvalid(error.to_string())
   }
-  docx_render_document(document, title) catch {
+  docx_render_document(document, title, data) catch {
     InvalidDocx(message) => raise DocxInvalid(message)
     error => raise DocxInvalid(error.to_string())
   }

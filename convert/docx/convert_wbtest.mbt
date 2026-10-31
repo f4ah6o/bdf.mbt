@@ -171,3 +171,104 @@ test "DOCX table conversion places cells on tab stops" {
   }
   assert_eq((a_x, b_x), (72.0, 172.0), msg="DOCX table tab stops")
 }
+
+///|
+fn docx_image_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GDI3R4fu+h74o+fQN4DRgYGYSAd7ZyfV5KaVxIfUlmQWhyrV5Gb",
+  )
+  joined.write_string(
+    "UzvR14/ZkKf1+xylU2JnUxIaBV75iP/RaXS1bJhakbZIzW/KkqV7bf24Y0N0T//Ye/58n/jpueVJ",
+  )
+  joined.write_string(
+    "3Zq3HfbuybbWnFBiMG1ZXN3ae7PcNYsYjR4wJep/n/G0aEfkmm+CmxNmFOk/D3o0OSjy/AvF7YpK",
+  )
+  joined.write_string(
+    "G43aniz8YOyr1RR3uOXVvtdyU/hCJngFZ/Fb6sQVtPRqPyo9/vSxAmfstEc/M9ZE7m2RmHs1ICI8",
+  )
+  joined.write_string(
+    "2ihd82y+0+knByenS3/WlV6ya0bA1NeM13d6XJZMr7275trMHw/2+1xb8KMl5N7Bzev2ORudYtn7",
+  )
+  joined.write_string(
+    "8cyW/+zxN3R6Fl+teJS9fUbTsTk/Pe5tVT/avHR/79WHDof5A1BCamejS+EGIE8LGFLcQDq+KDWn",
+  )
+  joined.write_string(
+    "WF8PRPaet+Y7ZMDD9mBusMu9zCi2loDJehwrtbXYO4TMezPkvA4t3q7OzKzA5nZ7v/3p3O8bjHcm",
+  )
+  joined.write_string(
+    "+hyzZvMNZXZU32vkZ2zBf/wrn8epQ5qG1e08Yj4XPoZWH4p8smmymrCQZoc3z7I5h+ddUlHfohRq",
+  )
+  joined.write_string(
+    "t0B78kV37SLNxcscT3Rf8DAv3bv0412Gf4mT4gw79mY18HgfqM+x73N7dPD0atfp9XN+eIlEuvTO",
+  )
+  joined.write_string(
+    "PHjX3fXq6lhRMY38l8e7/3Ciemx1RkwwyGMKQI/JAOny/KIUfYjvUvKTS3OBqQGUDKA+3cjFZAj0",
+  )
+  joined.write_string(
+    "6d3lGjf3zmtSKrIVF4xxlVfYsjPu46xp27r27WUVZ2U/rvLnvv+uu4f9H/lp7j7AJebL3RTB/viG",
+  )
+  joined.write_string(
+    "1o45/J95O2Im8Po1eh6cbPTmV2T5Ik7vs08uHtXROhR5MMLrjtfMrx5yxcJKhXt5FCt1Sn3C3K6E",
+  )
+  joined.write_string(
+    "b1GZnrt72svLDf9Oi7gvVpA9y3Xkp+RLeWue5stb+H896zzdz/Wy5u06BTVv10b1xx/2xphM1D2x",
+  )
+  joined.write_string(
+    "b3J8/1d9VJ/ynVHcmwT0pR4zA4MgzKfIfpw7yTfvkIFA63db1ye1kg4LFwUKmXGs7PaaekvuQKFa",
+  )
+  joined.write_string(
+    "p+r/k2a8X75sZW68IJr0eM/Jnv0z063vyyzxqLtgtS7UUWyzpWeAYWzxVbEnv7O/71Hr/BxyNSSj",
+  )
+  joined.write_string(
+    "ldVykfLsT5rvN0dt3uvydLJDgN5r7kuV+UYMx62mXDm7xVG0qHfbpF8Ct8SqcrOTTZ2fOzFrJljO",
+  )
+  joined.write_string(
+    "39+wJGaiYPK7h1emfRM+oFtW7dXn8ouhwGriwzeMTjeefhdz79jLvnB2m/Gdeee/HtmosYK//LFV",
+  )
+  joined.write_string(
+    "nozm4Z3hu+yOre/s7j29s3SC2mOvgtbmI8391w/zsVbGLnlpE6NrHWcyxfJslLfv8ZsueSuXp8ot",
+  )
+  joined.write_string(
+    "69/nv0jozpsdAhu1Xh1J09Bew510/1Uoy8FcyZhth+31fKIOpUTNmNFwUHQOr1XKv+SCzFvn7y/p",
+  )
+  joined.write_string(
+    "f5+zMWbZQZ/5pY7rr71MUBPbEyz9r0r2XoCJpLdOvnU9r/bbvdOuRyQYpyVmWH1r/rjg4a9Lp+1R",
+  )
+  joined.write_string(
+    "IySQ/xaTA5DnCsSisAjJTU3JTNTPzE1MTzXUK8hLf83zofj500mPkhISHnz9UsDJdKlH4cxBFhX1",
+  )
+  joined.write_string(
+    "Kez3mYNs5un1KYoWT6qfY3/gwIEzJ04UfLq/5LtDIZt/uP30Uj9OX4YAb0YmEWbcRR4MNDAyYC8A",
+  )
+  joined.write_string(
+    "0Q1ALwkQBoBEkMoFdI3oOQ2hkZkJf75DNwk9JSNMesuEJV2ja0cPd4T2OhYcsRDgzcoGUsIKhG5A",
+  )
+  joined.write_string("mz+ygHgAEjKIJk0GAAA=")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "DOCX inline images are embedded" {
+  let result = convert(docx_image_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut images = 0
+  let mut size = (0.0, 0.0)
+  for command in commands {
+    match command {
+      @render.Image(_, x, y, w, h) => {
+        images += 1
+        size = (w, h)
+      }
+      _ => ()
+    }
+  }
+  assert_eq(images, 1, msg="DOCX image command")
+  assert_eq(size, (72.0, 72.0), msg="DOCX image size")
+}

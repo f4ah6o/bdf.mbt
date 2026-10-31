@@ -6,6 +6,8 @@ priv struct DocxTextItem {
   text : String
   clear : Bool
   props : DocxRunProps
+  width : Double
+  height : Double
 } derive(Debug, Eq)
 
 ///|
@@ -197,7 +199,7 @@ fn docx_text_push(
   props : DocxRunProps,
   clear~ : Bool = false,
 ) -> Unit {
-  items.push({ kind, text, clear, props, })
+  items.push({ kind, text, clear, props, width: 0.0, height: 0.0, })
 }
 
 ///|
@@ -218,6 +220,63 @@ fn docx_text_chars(
       }
     }
   }
+}
+
+///|
+fn docx_attribute_any(
+  element : @xml.NamespaceElement,
+  name : String,
+  default : String,
+) -> String {
+  for attr in element.attributes {
+    if attr.name.local_name == name {
+      return attr.value
+    }
+  }
+  default
+}
+
+///|
+fn docx_emu(value : String) -> Double {
+  (@string.parse_double(value.trim()) catch { _ => 0.0 }) / 12700.0
+}
+
+///|
+fn docx_text_drawing(
+  node : DocxXmlNode,
+  items : Array[DocxTextItem],
+  props : DocxRunProps,
+) -> Unit raise {
+  let container = match node.child("inline") {
+    Some(value) => Some(value)
+    None => node.child("anchor")
+  }
+  let container = match container {
+    Some(value) => value
+    None => return docx_text_unsupported("drawing")
+  }
+  let (width, height) = match container.child("extent") {
+    Some(value) =>
+      (
+        docx_emu(docx_attribute_any(value.element, "cx", "")),
+        docx_emu(docx_attribute_any(value.element, "cy", "")),
+      )
+    None => (0.0, 0.0)
+  }
+  let mut embed = ""
+  fn find_blip(value : DocxXmlNode) -> Unit {
+    if value.name() == "blip" {
+      embed = docx_attribute_any(value.element, "embed", "")
+    }
+    for child in value.children {
+      find_blip(child)
+    }
+  }
+  find_blip(container)
+  if embed == "" {
+    docx_text_unsupported("drawing without an embedded image")
+  }
+  items.push({ kind: "image", text: embed, clear: false, props, width, height, })
 }
 
 ///|
@@ -245,7 +304,10 @@ fn docx_text_run(
   }
   for child in node.children {
     let name = child.name()
-    if name != "rPr" && name != "t" && !child.children.is_empty() {
+    if name != "rPr" &&
+      name != "t" &&
+      name != "drawing" &&
+      !child.children.is_empty() {
       docx_text_unsupported(name)
     }
     match name {
@@ -275,6 +337,7 @@ fn docx_text_run(
       "cr" => docx_text_push(items, "break", "\n", props)
       "noBreakHyphen" => docx_text_chars(items, "\u2011", props)
       "softHyphen" | "lastRenderedPageBreak" => ()
+      "drawing" => docx_text_drawing(child, items, props)
       other => docx_text_unsupported(other)
     }
   }
