@@ -18,6 +18,7 @@ priv struct PdfSimpleFont {
   default_vertical : (Double, Double)
   collection : String
   embedded : Bytes?
+  fallback : Bool
 }
 
 ///|
@@ -159,7 +160,13 @@ fn PdfFile::simple_font(
       None => ""
     }
   }
-  let embedded = self.embedded_font(desc)
+  let mut fallback = false
+  let embedded = self.embedded_font(desc) catch {
+    _ => {
+      fallback = true
+      None
+    }
+  }
   let base_name = match self.page_deref(pdf_dict_get(dict, b"BaseFont")) {
     PdfName(value) => @utf8.decode_lossy(value[:])
     _ => ""
@@ -290,6 +297,7 @@ fn PdfFile::simple_font(
     default_vertical,
     collection,
     embedded,
+    fallback,
   }
   match key {
     Some(value) => self.font_cache[value] = font

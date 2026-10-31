@@ -76,6 +76,7 @@ fn pdf_default_simple_font() -> PdfSimpleFont {
     default_vertical: (880.0, -1000.0),
     collection: "",
     embedded: None,
+    fallback: false,
   }
 }
 
@@ -103,6 +104,14 @@ fn PdfGraphics::simple_font_resource(
         Some(cached) => cached
         None => {
           let font = file.simple_font(object)
+          if font.fallback {
+            let warning = "PDF font " +
+              font.family +
+              ": unsupported embedded font program; using a system font"
+            if !self.warnings.contains(warning) {
+              self.warnings.push(warning)
+            }
+          }
           let key = self.next_font_key
           self.next_font_key += 1
           self.fonts[(number, generation)] = (font, key)

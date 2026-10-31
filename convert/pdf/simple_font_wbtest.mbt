@@ -74,7 +74,7 @@ fn check_pdf_simple_font(
 }
 
 ///|
-test "embedded and unsupported composite PDF fonts fail closed" {
+test "unsupported embedded PDF fonts use the system-font fallback" {
   let file : PdfFile = {
     data: b"",
     entries: {},
@@ -105,14 +105,8 @@ test "embedded and unsupported composite PDF fonts fail closed" {
       ]),
     ),
   ])
-  assert_true(
-    try {
-      ignore(file.simple_font(composite_embedded))
-      false
-    } catch {
-      _ => true
-    },
-  )
+  let composite_font = file.simple_font(composite_embedded)
+  assert_true(composite_font.fallback)
   let vertical_cmap = PdfDict([
     (b"Subtype", PdfName(b"Type0")),
     (b"Encoding", PdfRef(2L, 0L)),
@@ -128,14 +122,8 @@ test "embedded and unsupported composite PDF fonts fail closed" {
     (b"Subtype", PdfName(b"Type0")),
     (b"Encoding", PdfName(b"Identity-V")),
   ])
-  assert_true(
-    try {
-      ignore(file.simple_font(embedded))
-      false
-    } catch {
-      _ => true
-    },
-  )
+  let fallback_font = file.simple_font(embedded)
+  assert_true(fallback_font.fallback)
   let vertical = file.simple_font(composite)
   assert_true(
     match vertical.composite_map {

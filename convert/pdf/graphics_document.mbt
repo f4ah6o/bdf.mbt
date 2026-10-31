@@ -95,13 +95,18 @@ fn pdf_graphics_document_full(
   }
   meta["source"] = Json::string("pdf")
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
+  let warnings : Array[String] = []
   let pending : Array[PdfPendingObject] = []
   let bodies : Array[Int32] = []
   let geometry : Array[PdfPageGeometry] = []
   for page in pages {
-    let (page_geometry, object, children, font_ids, images, fonts) = file.graphics_page_parts(
-      page, box,
-    )
+    let (page_geometry, object, children, font_ids, images, fonts, page_warnings
+    ) = file.graphics_page_parts(page, box)
+    for warning in page_warnings {
+      if !warnings.contains(warning) {
+        warnings.push(warning)
+      }
+    }
     for image in images {
       ignore(
         writer.add_part("img", image) catch {
@@ -149,7 +154,6 @@ fn pdf_graphics_document_full(
   let mut replaced : Map[Int32, Bool] = {}
   let mut shared_count = 0
   let mut shared_bytes = 0L
-  let warnings : Array[String] = []
   if !no_share_prefix && bodies.length() >= 2 {
     try {
       let (staged, selected, removed, count, saved) = pdf_plan_shared(

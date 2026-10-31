@@ -821,6 +821,7 @@ fn PdfFile::graphics_page_parts(
   Array[String],
   Array[Bytes],
   Array[Bytes],
+  Array[String],
 ) raise PdfStreamError {
   match page.error {
     Some(message) => raise InvalidStream(message)
@@ -863,6 +864,7 @@ fn PdfFile::graphics_page_parts(
     identities,
     graphics.images,
     graphics.font_parts,
+    graphics.warnings,
   )
 }
 
@@ -872,7 +874,7 @@ fn PdfFile::graphics_page(
   page : PdfPageLeaf,
   which : String,
 ) -> (PdfPageGeometry, Bytes) raise PdfStreamError {
-  let (geometry, encoded, children, _, images, fonts) = self.graphics_page_parts(
+  let (geometry, encoded, children, _, images, fonts, _) = self.graphics_page_parts(
     page, which,
   )
   if !children.is_empty() || !images.is_empty() || !fonts.is_empty() {

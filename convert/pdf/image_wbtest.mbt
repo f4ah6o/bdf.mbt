@@ -710,32 +710,30 @@ test "PDF embedded Flate font stream is decoded" {
 }
 
 ///|
-test "PDF Type1 font programs fail closed" {
-  let rejected = try {
-    ignore(
-      pdf_graphics_document(
-        pdf_test_pdf([
-          b"<< /Type /Catalog /Pages 2 0 R >>",
-          b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
-          b"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
-          pdf_test_stream("", b"BT /F1 12 Tf 10 10 Td (A) Tj ET"),
-          @utf8.encode(
-            "<< /Type /Font /Subtype /Type1 /BaseFont /Embedded /FirstChar 32 /LastChar 32 /Widths [600] /FontDescriptor 6 0 R /Encoding /WinAnsiEncoding >>",
-          ),
-          @utf8.encode(
-            "<< /Type /FontDescriptor /FontName /Embedded /Flags 32 /FontBBox [0 0 1000 1000] /ItalicAngle 0 /Ascent 800 /Descent -200 /CapHeight 700 /StemV 80 /FontFile 7 0 R >>",
-          ),
-          pdf_test_stream("", b"%!PS-AdobeFont-1.0"),
-        ]),
-        no_text_index=true,
+test "PDF Type1 font programs fall back to a system font" {
+  let (_, warnings) = pdf_graphics_document_result(
+    pdf_test_pdf([
+      b"<< /Type /Catalog /Pages 2 0 R >>",
+      b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+      b"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
+      pdf_test_stream("", b"BT /F1 12 Tf 10 10 Td (A) Tj ET"),
+      @utf8.encode(
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Embedded /FirstChar 32 /LastChar 32 /Widths [600] /FontDescriptor 6 0 R /Encoding /WinAnsiEncoding >>",
       ),
-    )
-    false
-  } catch {
-    InvalidStream(message) => message.contains("unsupported embedded PDF font")
-    _ => false
+      @utf8.encode(
+        "<< /Type /FontDescriptor /FontName /Embedded /Flags 32 /FontBBox [0 0 1000 1000] /ItalicAngle 0 /Ascent 800 /Descent -200 /CapHeight 700 /StemV 80 /FontFile 7 0 R >>",
+      ),
+      pdf_test_stream("", b"%!PS-AdobeFont-1.0"),
+    ]),
+    no_text_index=true,
+  )
+  let mut found = false
+  for warning in warnings {
+    if warning.contains("system font") {
+      found = true
+    }
   }
-  assert_true(rejected)
+  assert_true(found, msg="PDF font fallback warning")
 }
 
 ///|
