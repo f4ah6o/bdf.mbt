@@ -575,3 +575,123 @@ test "PPTX theme colour modifiers change luminance" {
   }
   assert_true(dark_red, msg="PPTX lumMod")
 }
+
+///|
+fn pptx_font_theme_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GAI2xkfu9H8nw07IwPDciYGBmGgaLRzfl5Jal5JfEhlQWpxrF5F",
+  )
+  joined.write_string(
+    "bs7aIGv/wwYC936KTruuVXiqQSDrUuNxDp6n7BHnVDe+ml5zfdXf7zGTlBi1ShqOXrtbqz93b5T8",
+  )
+  joined.write_string(
+    "HuHqExnJK55uWrOkISEp2zn+9PazwYXarJP41pYZOuj2NxTdjVlrdpxFY4bMhmnMgbuCuc4yxCVL",
+  )
+  joined.write_string(
+    "CrPMKzGs9o15Fqeau20Xe2lsqPmpIw4CKxYEOputZn/x5dzECpuCar5JBxeKfDcu+LJqqd/JyMWd",
+  )
+  joined.write_string(
+    "z7Pkb+XrHT25MOVZy8GDajEGDqs28z1+kt4s/L7VfHIu96PQ9Kpr8wK1VIM0mY3yD03brz23U2r3",
+  )
+  joined.write_string(
+    "OamMxTcrl02Zf3TP76Bpcbc37BBgkzUv3Dft/9y0oL1TGn7cTbT7L5cw6WdByGX77HuMASjhVuT3",
+  )
+  joined.write_string(
+    "ff4mIE8XGHbcQDq+KDWnWF8PRPaeP8t1yICH/cNu/8Ci8rs2HSd2xbrcCH3GPMXsddtrdl/R79/E",
+  )
+  joined.write_string(
+    "/P1sKnw+nddfkje/LI2/x6RSfYGWV8KLKdcnGzOt+1tZzeDmaaWb/j7gQBNL7uaV+hanp5RnzGHa",
+  )
+  joined.write_string(
+    "2GMhZLBMpG/OZKmLXlo1DtPVm/vDlsW4HW4OMc+c8P5U0fnHyxnPnkqZKyZgHcv4enrD/xt1Emqt",
+  )
+  joined.write_string(
+    "6uvficX+KnykPTFVkleNUVFFTikob99l12mN5qbxtTf3MKB67ULF+SPngTwPoNdAogUFJfoFRanF",
+  )
+  joined.write_string(
+    "wFSRWJKZnwdKE70T/LOZDAWOvv8rkvjOtPBi6u6ca96CLPm59g4eaXcd/k3sXFRXlazr+mLp9u8z",
+  )
+  joined.write_string(
+    "Ku2fnd1gWX3cb8bJYwqJOwUOGLzIyLHw+PHrzr6yAytWJEzpZlSNmZBgvI9npb8kp3PgUrXIpSyv",
+  )
+  joined.write_string(
+    "JrfsnHKl2K/KbX2GoHCb1eykb6tCZvP/sXwum9+SsTPc7AC/yn92oeUns2r6f73Qfs148sW+hSa3",
+  )
+  joined.write_string(
+    "XQyuCZ+cOfdm8M+rZ6Q4z+5infZ79xnrywzy7P/Svz8+9SXy0O2irUKL7FzjVbbc3bV7tvuDnccr",
+  )
+  joined.write_string(
+    "mFEDoGTuqS8bgDxFYADIQwMAEr/owQCN743A+BZge3B3Ocf221tkXZZkigvu8qptmBBzO2FWS4zI",
+  )
+  joined.write_string(
+    "729shQEFBX/e/9j/eNa7jRFlxz2OWTOGBjI5L99jlidUIOl329bA61Jm5l5nRm2hkrfLLBdP1SzP",
+  )
+  joined.write_string(
+    "MGuMcJPhnBHMxX7O8+wOD1B8my/u7/axPNbJvnJdkVPc9Kd9x/2Zb+lP/hrl8KaUNyeC+V/y70IT",
+  )
+  joined.write_string(
+    "rv64u2IlL49z+l3LOLOgR1iNcf2PeWGu1xq28/7/taaWCdWzN2X9pj0E8hYhxXZJRmpuKoQ0BHmz",
+  )
+  joined.write_string(
+    "doKj/xEFgdb3/7iMyqevY0+eta3a4Nuzk1/Ze6aU3Txw4UBK6f+9l92STN34Wszf7+V3Kv7BEReb",
+  )
+  joined.write_string(
+    "c0oviPt3LOupSZ3Ni1e2Xk+u/82gZXypwW5S7sMsY5lds9my7W4mTL2ief3Goc7KdVvPuR2bUV64",
+  )
+  joined.write_string(
+    "TeWeRLCD2Ew1W5Ua8ZwPv9atelfq4H5B9MLk6b0W+syPL3dHvmxxfGdz60y2UO/EM3WWz0z22v5a",
+  )
+  joined.write_string(
+    "ovci+sVvL7EX6y7OnnBvwrRTEp3/n7HZHL/SvZej/43Hx9JtylKetuKfu/8ry8j8vayTllnX/vWb",
+  )
+  joined.write_string(
+    "5eo/X7lTL6EHyQfzl9bWwOAIAJaJotAgKc7JTEkthlDgMOkNOuh32IBn72fRwHUZxebHGrLeqvDt",
+  )
+  joined.write_string(
+    "blTLrXHIuLQ2+LGLp0nUPjn1u2zOMjuO+M27/3nz1KObLutaaz2Xbmad32N8TiTMzWyH9o/bZaZV",
+  )
+  joined.write_string(
+    "T86wNwZtYQs9WP3056Y9kTfubJ8kKFmbx72P/+Azhn23tHX/3Ihobbl6LFPwxauyhLmfuJo5rnhs",
+  )
+  joined.write_string(
+    "Nzi7yTLjooJ9Z8f/Dg91uxM3Rfer6F9dNtWwanepF2+kzccdG7Ona8X1Zx+Xivygma5h0rvJSMKm",
+  )
+  joined.write_string(
+    "XViKO/HBEpa6TbVdSu+zlieblJ7d1WTvm7a5x+xafFDHildMqzn2zb5vf0Y5Llb0QCT7uUNm/Hc3",
+  )
+  joined.write_string(
+    "T6xV2R/sw+aS93jiL6tP7+xP/l7qrhEvZaLX1ary8p9eH7+urmzki7WrXF2b7786vIJXXTtvRs+X",
+  )
+  joined.write_string(
+    "Iw+ny6lwf3jL17b30PdFD/dUe8gv+gMMbUYmEWbcdRAMNDAyYK+R0A1AL4wRBlgwohTN6BrRizqE",
+  )
+  joined.write_string(
+    "RmEm7AUfugnoZQXCBBFmgiUHumHoeRFhGCML9pyJbgJ60kVyDiuOhBzgzcoGUsIGhH1ArU1gHgBl",
+  )
+  joined.write_string("v241JggAAA==")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX theme fonts resolve minor and +mj-lt runs" {
+  let result = convert(pptx_font_theme_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let mut minor = false
+  let mut major = false
+  for font in resources.fonts {
+    if font.family == "MinorFont" {
+      minor = true
+    }
+    if font.family == "MajorFont" {
+      major = true
+    }
+  }
+  assert_true(minor, msg="PPTX minor font")
+  assert_true(major, msg="PPTX major font")
+}

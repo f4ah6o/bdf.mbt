@@ -14,6 +14,7 @@ pub(all) struct PptxResult {
 ///|
 priv struct PptxLineItem {
   text : String
+  family : String
   weight : Int32
   style : Int32
   size : Double
@@ -202,6 +203,58 @@ fn pptx_theme_colors(package : @ooxml.OoxmlPackage) -> Map[String, UInt32] {
 }
 
 ///|
+fn pptx_theme_fonts(package : @ooxml.OoxmlPackage) -> (String, String) {
+  let part = match package.relationship_of_type("", "/theme") {
+    Some(rel) => rel.target
+    None => "ppt/theme/theme1.xml"
+  }
+  if !package.has(part) {
+    return ("sans-serif", "sans-serif")
+  }
+  let root = pptx_read_xml(package, part) catch {
+    _ => return ("sans-serif", "sans-serif")
+  }
+  let scheme = pptx_child(pptx_child(Some(root), "themeElements"), "fontScheme")
+  let major = match pptx_child(pptx_child(scheme, "majorFont"), "latin") {
+    Some(value) =>
+      match pptx_attribute(value.element, "typeface", "") {
+        "" => "sans-serif"
+        name => name
+      }
+    None => "sans-serif"
+  }
+  let minor = match pptx_child(pptx_child(scheme, "minorFont"), "latin") {
+    Some(value) =>
+      match pptx_attribute(value.element, "typeface", "") {
+        "" => "sans-serif"
+        name => name
+      }
+    None => "sans-serif"
+  }
+  (major, minor)
+}
+
+///|
+fn pptx_run_family(run : PptxXmlNode, fonts : (String, String)) -> String {
+  let (major, minor) = fonts
+  let rpr = pptx_child(Some(run), "rPr")
+  let latin = match rpr {
+    Some(value) => pptx_child(Some(value), "latin")
+    None => None
+  }
+  match latin {
+    Some(value) =>
+      match pptx_attribute(value.element, "typeface", "") {
+        "" => minor
+        "+mj-lt" => major
+        "+mn-lt" => minor
+        name => name
+      }
+    None => minor
+  }
+}
+
+///|
 fn pptx_run_size(run : PptxXmlNode) -> Double {
   let rpr = pptx_child(Some(run), "rPr")
   match rpr {
@@ -309,6 +362,7 @@ fn pptx_render_slide(
   height : Double,
   writer : @core.DocumentWriter,
   theme : Map[String, UInt32],
+  theme_fonts : (String, String),
 ) -> Json raise {
   let object = @core.ObjectBuilder::new()
   let fonts : Map[String, Int32] = Map([])
@@ -442,13 +496,17 @@ fn pptx_render_slide(
           }
         }
         for item in line {
-          let key = item.weight.to_string() + "|" + item.style.to_string()
+          let key = item.family +
+            "|" +
+            item.weight.to_string() +
+            "|" +
+            item.style.to_string()
           let index = match fonts.get(key) {
             Some(value) => value
             None => {
               let value = object.add_font({
                 hash: None,
-                family: "sans-serif",
+                family: item.family,
                 weight: item.weight,
                 style: item.style,
               })
@@ -501,6 +559,7 @@ fn pptx_render_slide(
             }
             line.push({
               text,
+              family: pptx_run_family(child, theme_fonts),
               weight: if pptx_run_bold(child) {
                 700
               } else {
@@ -575,6 +634,7 @@ pub fn convert(data : Bytes, title~ : String = "") -> PptxResult raise {
   }
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
   let theme = pptx_theme_colors(pkg)
+  let theme_fonts = pptx_theme_fonts(pkg)
   let pages : Array[Json] = []
   for slide in presentation.slides {
     if slide.hidden {
@@ -588,6 +648,7 @@ pub fn convert(data : Bytes, title~ : String = "") -> PptxResult raise {
         presentation.height,
         writer,
         theme,
+        theme_fonts,
       ),
     )
   }
