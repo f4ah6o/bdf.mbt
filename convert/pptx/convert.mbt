@@ -255,9 +255,22 @@ fn pptx_run_family(run : PptxXmlNode, fonts : (String, String)) -> String {
 }
 
 ///|
-fn pptx_run_size(run : PptxXmlNode) -> Double {
+fn pptx_paragraph_defrpr(paragraph : PptxXmlNode) -> PptxXmlNode? {
+  pptx_child(pptx_child(Some(paragraph), "pPr"), "defRPr")
+}
+
+///|
+fn pptx_run_size(run : PptxXmlNode, paragraph : PptxXmlNode) -> Double {
   let rpr = pptx_child(Some(run), "rPr")
   match rpr {
+    Some(value) =>
+      match pptx_attribute(value.element, "sz", "") {
+        "" => ()
+        text => return (@string.parse_double(text) / 100.0) catch { _ => 18.0 }
+      }
+    None => ()
+  }
+  match pptx_paragraph_defrpr(paragraph) {
     Some(value) =>
       match pptx_attribute(value.element, "sz", "") {
         "" => 18.0
@@ -268,29 +281,52 @@ fn pptx_run_size(run : PptxXmlNode) -> Double {
 }
 
 ///|
-fn pptx_run_bold(run : PptxXmlNode) -> Bool {
+fn pptx_run_bold(run : PptxXmlNode, paragraph : PptxXmlNode) -> Bool {
   let rpr = pptx_child(Some(run), "rPr")
   match rpr {
+    Some(value) =>
+      if pptx_attribute(value.element, "b", "") != "" {
+        return pptx_bool(value.element, "b", false)
+      }
+    None => ()
+  }
+  match pptx_paragraph_defrpr(paragraph) {
     Some(value) => pptx_bool(value.element, "b", false)
     None => false
   }
 }
 
 ///|
-fn pptx_run_italic(run : PptxXmlNode) -> Bool {
+fn pptx_run_italic(run : PptxXmlNode, paragraph : PptxXmlNode) -> Bool {
   let rpr = pptx_child(Some(run), "rPr")
   match rpr {
+    Some(value) =>
+      if pptx_attribute(value.element, "i", "") != "" {
+        return pptx_bool(value.element, "i", false)
+      }
+    None => ()
+  }
+  match pptx_paragraph_defrpr(paragraph) {
     Some(value) => pptx_bool(value.element, "i", false)
     None => false
   }
 }
 
 ///|
-fn pptx_run_color(run : PptxXmlNode, theme : Map[String, UInt32]) -> UInt32 {
+fn pptx_run_color(
+  run : PptxXmlNode,
+  paragraph : PptxXmlNode,
+  theme : Map[String, UInt32],
+) -> UInt32 {
   let rpr = pptx_child(Some(run), "rPr")
   match pptx_node_color(rpr, "solidFill", theme) {
     Some(value) => value
-    None => 0x000000ffU
+    None =>
+      match
+        pptx_node_color(pptx_paragraph_defrpr(paragraph), "solidFill", theme) {
+        Some(value) => value
+        None => 0x000000ffU
+      }
   }
 }
 
@@ -606,7 +642,7 @@ fn pptx_render_slide(
             if text == "" {
               continue
             }
-            let size = pptx_run_size(child)
+            let size = pptx_run_size(child, paragraph)
             let advance = pptx_text_width(text, size)
             if line.is_empty() {
               line_height = size * 1.2
@@ -624,18 +660,18 @@ fn pptx_render_slide(
             line.push({
               text,
               family: pptx_run_family(child, theme_fonts),
-              weight: if pptx_run_bold(child) {
+              weight: if pptx_run_bold(child, paragraph) {
                 700
               } else {
                 400
               },
-              style: if pptx_run_italic(child) {
+              style: if pptx_run_italic(child, paragraph) {
                 1
               } else {
                 0
               },
               size,
-              color: pptx_run_color(child, theme),
+              color: pptx_run_color(child, paragraph, theme),
               x: item_x,
               advance,
             })
