@@ -935,3 +935,136 @@ test "PPTX paragraph default run properties are inherited" {
   assert_eq(size, 32.0, msg="PPTX default font size")
   assert_true(green, msg="PPTX default colour")
 }
+
+///|
+fn pptx_placeholder_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/41VBzSc6RqeMWT03iKItkpcLXp3hCEzdhAk7Op9woyJGaKEtUaUaBNGCZHo5UqC",
+  )
+  joined.write_string(
+    "iNWFCIKMFjWzooQYJeTqLey4m3vEnN2z9//P9//n+c73Pec8z9ssYCBabgAAQA8Yr3dyuAApfMEE",
+  )
+  joined.write_string(
+    "BAC6aQAALsruz1f8UFgPFNbJOhjtgXGQD0L61qR0w9sV2aPXdO7O+6RpzEewQ4dAvQzAmHWAuFeK",
+  )
+  joined.write_string(
+    "bVBqV1lWbdfVe9YWdqzz7okLTnp28uqhBROsIBkv2ZY+pr4B6Jg0yeYw4ADvgIFw+ILe2z3ZjX2t",
+  )
+  joined.write_string(
+    "vmVcL6TLCfOE8ay5baob4lcGAfN9BT9mj9KBlBLzuITnLmCl5eNnoaZe4u8zO2RwY/NCvymS36zu",
+  )
+  joined.write_string(
+    "LIYAGUrjqknGGgE2gk1jUEOz0KpqYkb6ygBeauFJnmPwTz8A+aQuFBN36MBTmJAHuQLuCuyzXJmF",
+  )
+  joined.write_string(
+    "nB9MZkDX1onvDxcKuUqfIdNed3a3ScDCBT03S5TUc1eW+PiHFlPS3cJQWZpb5rTJig2iQ//5oq8C",
+  )
+  joined.write_string(
+    "2wanZv7i+pXV4ox3/vCdx88pSI7iHxPl7+Tv4YtRkD/5JvYTGV8pMoO/NJpb+t+e1Il90+BgNG7z",
+  )
+  joined.write_string(
+    "CURQW45eBv/Is7PNaw7XCTJb71coRD0O9GRLUAmWyr0EdSYTxlKVaZ59DQ4FQK5qyXmtWbRG0iKr",
+  )
+  joined.write_string(
+    "yxQ0egm3vR/SVCVocCoWcyc9TBUYhF66Y5AhhUu+XmwPacdZqyPwaz3+/R9LgMQe9xxedm0H4HJG",
+  )
+  joined.write_string(
+    "xPF4OL/kXamKVV6H/Vuzsvc9zrNIAkUlhMWuoVreGaf/qq7qFDbRBDgrbSCo/3U/BZlSpJ3sotFY",
+  )
+  joined.write_string(
+    "BbS/B4aSGS5YhB/qJC8S8eY+NErsHWtfuV1WVW8NejT6jsI4aP2Q+gamnpMGR/fj8sND3OSMyUW1",
+  )
+  joined.write_string(
+    "O5nB+p+IlZqhXfDM7k4Rl3r2VkWyt6+G6e7+7y2BraWlzoR44A/2eGflFuYy8/MMVyyLJO2KaJdS",
+  )
+  joined.write_string(
+    "o+oJwxh4CKTCm4MrWivbdfvf1tlsh5oLQn5R3vU31FrZJI7BnCXdN+8k75Nll4Hd5JY8FZKR4ihX",
+  )
+  joined.write_string(
+    "94OcCau9kbcCDMQGuvSDxrfa7wAXwUdeOx97Nu1ekfxrOPP1jJ0kXkw2NGabTNd3BYHOGoDN6dms",
+  )
+  joined.write_string(
+    "pCBRigEXvxnwZ3ypbfgW7ypKvNnPTU+W0NeSXggZFSL4OBqgYRF4e5JzVpQ998H2uVsWaPTh2u7L",
+  )
+  joined.write_string(
+    "j1mrVbaBXaad2kAbS5orJU1qKE70eThJVxE6hEA0XwHKcmI/F2sWpMnc9lb71RYiyJBpxQjuu0qs",
+  )
+  joined.write_string(
+    "Mz2Jt3pBcryZZmccuOyZv6FjxnxSlznovULq1k8GKwEsvragI7eDWyqMyY6TvNjFLgb4qPfb3AQu",
+  )
+  joined.write_string(
+    "SWDF7qPrxqMRtSzH+0/CaM6KvSeJ16uhIDWKWJFvYjG+CHcPzDfN/wVK36ltPlEL/nKiNtuajgOx",
+  )
+  joined.write_string(
+    "JBY5LbEPMPFH4pCc/pYrpOzBSNzHsK9H9mFBybggS1e+pui0JwZ49TatKUTdFLxXiL6PLMfalhod",
+  )
+  joined.write_string(
+    "x89KzG8Ziqj/Hb0mFh8ZNDqwILgDrVpEGKWLpiikqhVyYGSsSsSywIGFozY1NoukCE/Pe9Uj+L5A",
+  )
+  joined.write_string(
+    "0Kya8X4XK3KZWQgXnDS3kUzfgavGtsnoYFyUAgiqpnuTj+WeuscBRoZvbqM2gGcle0zY5IAocjso",
+  )
+  joined.write_string(
+    "i+es5FOxiZZt0NeK7M0HPC6rq8PGRlASHVskn934FshVGcVEVJHI+y28ORUbH7KxnuLyIVRZoYy1",
+  )
+  joined.write_string(
+    "WmjYSG9TfAxdK2vAUVuwuHetnbS3t81hHZuVKAwpFuBlRHujLt2IbpPmwEg7sDgkPDNiRppcj5kk",
+  )
+  joined.write_string(
+    "xxbtKIWUFxCOIvusRJK0ekS0p1ukhQeWHs3czD92c206IhCPyBcminRZJHPacnQHQ2Bv3nULhXk2",
+  )
+  joined.write_string(
+    "wU0qQqzahbl9ZC0fQaoBjtlxMeXuPHXwjg6Gz7qDRpq9GxJaKMHDzxcX3MesG8wOV4pgGa1e+JkZ",
+  )
+  joined.write_string(
+    "WPQUH92co69jnfiUyWWe4st5/eTnO59iffgPr8b87Pz25cAdqqqAdGjbsFAcG6cs0e9dM3MJ9gvA",
+  )
+  joined.write_string(
+    "Yr4Hfzp4v/dkdhjv3LmrGqq1iOPOl0yzrTQsvdYL5ichxDrYJiQlfumvQww/b2fqt8WsbiU0k9ga",
+  )
+  joined.write_string(
+    "3JrX82qKo+bFQMUJlc9VFzj1zP2S+1sN5yDrfQI2r0ppVspjcmQNpab2vF+KizNxMd4w5CqQZcd5",
+  )
+  joined.write_string(
+    "Ez65uORcti5/OqYzNPh4MJiHEKczFNDQbpM+XxrsM33z1bGbmO5x3tERWXbJVFD7gStaqmKYUDS5",
+  )
+  joined.write_string(
+    "aXL7C99sgX7QaA/naCvzmMpAeZr4dE2mxkOJ1FbVfyUlVVZE3ffPNYFq9DF/OIiBzXVYhObkP/VJ",
+  )
+  joined.write_string(
+    "5y5HQpjGg3qVRkbYH4g45+gjN2jpxRzTs4m00ytR1apw5Rmk6cOFzkaFsnBKBgJpuEF/P3v/90QA",
+  )
+  joined.write_string(
+    "AX89iakJqAfQKYEO8Mw4or5I3d5PL/LR/HWzp2ag7o+nDPygf+yW1GTU/eeUjI72n7sRNRt1aZ+y",
+  )
+  joined.write_string(
+    "7dL+TaFTU1Dn+SmF/Ln/I+stYHTnTo6DKe8ihSIEfIL+ANu80h55CQAA",
+  )
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX placeholders inherit layout transforms" {
+  let result = convert(pptx_placeholder_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut text = ""
+  let mut x = -1.0
+  for command in commands {
+    match command {
+      @render.FillText(value, text_x, _, _) => {
+        text = value
+        x = text_x
+      }
+      _ => ()
+    }
+  }
+  assert_eq(text, "Inherited")
+  assert_eq(x, 100.0, msg="PPTX placeholder transform")
+}

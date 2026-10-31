@@ -24,9 +24,10 @@ afterward; JavaScript and wasm-gc execute the same expectations.
 
 `convert/pptx` exposes `detect` and `convert` for a shape/text subset of
 PresentationML. It renders visible slides, solid slide backgrounds, embedded pictures, theme colour schemes with luminance/tint/shade modifiers, theme major/minor
-fonts, paragraph default run properties, layout/master backgrounds and
-non-placeholder decorations, translated
+fonts, paragraph default run properties, placeholder transform inheritance,
+layout/master backgrounds and non-placeholder decorations, translated
 group shapes, solid shape fills and paragraph/run text with approximate
-metrics. Placeholder inheritance, charts, tables and group rotation/scaling are not
-rendered yet; layout/master placeholder shapes are skipped. The native
+metrics. Placeholder text/style inheritance, charts, tables and group rotation/scaling
+are not rendered yet; layout/master placeholder shapes are skipped after their
+transforms are used for inheritance. The native
 converter Worker advertises the `pptx` format.

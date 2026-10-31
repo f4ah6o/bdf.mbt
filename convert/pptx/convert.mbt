@@ -378,6 +378,53 @@ fn pptx_has_placeholder(shape : PptxXmlNode) -> Bool {
 }
 
 ///|
+fn pptx_placeholder_key(shape : PptxXmlNode) -> String? {
+  let container = if shape.element.name.local_name == "pic" {
+    "nvPicPr"
+  } else {
+    "nvSpPr"
+  }
+  let placeholder = pptx_child(
+    pptx_child(pptx_child(Some(shape), container), "nvPr"),
+    "ph",
+  )
+  match placeholder {
+    Some(value) => {
+      let idx = pptx_attribute(value.element, "idx", "0")
+      let kind = pptx_attribute(value.element, "type", "body")
+      Some(idx + "|" + kind)
+    }
+    None => None
+  }
+}
+
+///|
+fn pptx_placeholder_transforms(
+  root : PptxXmlNode,
+) -> Map[String, PptxTransform] {
+  let result : Map[String, PptxTransform] = Map([])
+  let tree = pptx_child(pptx_child(Some(root), "cSld"), "spTree")
+  for shape in pptx_children(tree) {
+    let kind = shape.element.name.local_name
+    if kind != "sp" && kind != "pic" {
+      continue
+    }
+    let key = match pptx_placeholder_key(shape) {
+      Some(value) => value
+      None => continue
+    }
+    let transform = pptx_transform_node(
+      pptx_child(pptx_child(Some(shape), "spPr"), "xfrm"),
+    )
+    match transform {
+      Some(value) => result[key] = value
+      None => ()
+    }
+  }
+  result
+}
+
+///|
 fn pptx_collect_shapes(
   node : PptxXmlNode,
   offset_x : Double,
@@ -481,6 +528,14 @@ fn pptx_render_slide(
     None => ()
   }
   roots.push(root)
+  let layout_placeholders = match layout_root {
+    Some(value) => pptx_placeholder_transforms(value)
+    None => Map([])
+  }
+  let master_placeholders = match master_root {
+    Some(value) => pptx_placeholder_transforms(value)
+    None => Map([])
+  }
   let shapes : Array[(PptxXmlNode, Double, Double)] = []
   for index in 0..<roots.length() {
     let tree = pptx_child(pptx_child(Some(roots[index]), "cSld"), "spTree")
@@ -492,9 +547,23 @@ fn pptx_render_slide(
   }
   for shape_entry in shapes {
     let (shape, offset_x, offset_y) = shape_entry
-    let transform = pptx_transform_node(
+    let mut transform = pptx_transform_node(
       pptx_child(pptx_child(Some(shape), "spPr"), "xfrm"),
     )
+    if transform is None {
+      match pptx_placeholder_key(shape) {
+        Some(key) =>
+          match layout_placeholders.get(key) {
+            Some(value) => transform = Some(value)
+            None =>
+              match master_placeholders.get(key) {
+                Some(value) => transform = Some(value)
+                None => ()
+              }
+          }
+        None => ()
+      }
+    }
     let transform = match transform {
       Some(value) => value
       None => continue
