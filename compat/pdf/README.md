@@ -69,3 +69,10 @@ compares 512 pairs of dash values with `TestCodexPDFDashKeys` upstream.
 The synthetic page cases also cover inherited named and ICC-based color
 spaces, and extended graphics states for transparency, blending and line
 dashes. Nontrivial soft masks remain unsupported by this internal renderer.
+
+Metadata fixtures compare PDFDocEncoding, UTF-16BE and UTF-8 text, PDF date
+parsing, and document information fields against upstream. Malformed UTF-8
+from a UTF-8 BOM string is normalized to replacement characters for MoonBit's
+Unicode strings. Regenerate with `generate_metadata_text_test.go`,
+`generate_metadata_date_test.go` and `generate_metadata_test.go` beside the
+upstream PDF sources; the latter also needs `BDF_PDF_FIXTURES`.
