@@ -1,4 +1,14 @@
 ///|
+// Go's matrix multiplication fuses the first product and the second product's
+// rounded result. Preserve IEEE signed zero for zero products.
+fn pdf_matrix_fma(a : Double, b : Double, c : Double) -> Double {
+  if a == 0.0 || b == 0.0 {
+    return a * b + c
+  }
+  @core.fused_multiply_add(a, b, c)
+}
+
+///|
 fn pdf_matrix_mul(
   m : (Double, Double, Double, Double, Double, Double),
   n : (Double, Double, Double, Double, Double, Double),
@@ -6,12 +16,12 @@ fn pdf_matrix_mul(
   let (a, b, c, d, e, f) = m
   let (g, h, i, j, k, l) = n
   (
-    a * g + b * i,
-    a * h + b * j,
-    c * g + d * i,
-    c * h + d * j,
-    e * g + f * i + k,
-    e * h + f * j + l,
+    pdf_matrix_fma(a, g, b * i),
+    pdf_matrix_fma(a, h, b * j),
+    pdf_matrix_fma(c, g, d * i),
+    pdf_matrix_fma(c, h, d * j),
+    pdf_matrix_fma(e, g, f * i) + k,
+    pdf_matrix_fma(e, h, f * j) + l,
   )
 }
 

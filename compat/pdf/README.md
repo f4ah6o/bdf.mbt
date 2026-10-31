@@ -82,3 +82,9 @@ They compare decoded manifests and part bytes; compressed manifest bytes can
 vary between the Go and MoonBit DEFLATE encoders. Unsupported PDF content,
 annotations, encryption, optional content and tagged structure are rejected by
 this internal path.
+
+The text-state fixtures compare text matrix, line movement, spacing, scaling,
+leading, rise and rendering-mode operators against upstream before glyph
+output. `generate_text_state_test.go` needs `BDF_PDF_FIXTURES` and
+`BDF_REFERENCE_OUTPUT` and runs as `TestCodexPDFTextState` upstream. Text
+glyph decoding and drawing remain to be implemented.
