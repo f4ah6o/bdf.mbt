@@ -47,3 +47,9 @@ page-tree cycles and repeated leaves. These tests use the PDF files in upstream
 `converter/pdf/testdata`; each generator documents its output and dependencies.
 The file parser and page walker are internal components, not yet a complete
 PDF converter.
+
+The path fixtures compare 512 sequences of moves, lines, cubic curves, closes
+and rectangles (16,384 operations), including float32 coordinates, bounds and
+current points, against the upstream PDF interpreter. Generate them with
+`generate_draw_path_test.go` as `TestCodexPDFDrawPath` beside upstream
+`converter/pdf`, with `BDF_REFERENCE_OUTPUT` set to the generated test path.
