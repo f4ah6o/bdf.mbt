@@ -17,6 +17,10 @@ jobs:
       - run: moon update
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      - name: Test XLSX picture browser rendering
+        run: |
+          moon build --target js
+          node compat/xlsx/picture-visual-compare.mjs
       - run: npm run test:visual
       - uses: actions/upload-artifact@v4
         if: failure()
