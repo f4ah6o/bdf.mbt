@@ -1390,6 +1390,37 @@ fn pptx_render_slide(
         _ => raise PptxInvalid("PPTX picture part is missing")
       }
       let hash = writer.add_part("img", bytes)
+      let pic_rotation = transform.rotation + placement.rotation
+      let pic_rotated = pic_rotation != 0.0
+      let pic_cx = if placement.rotation != 0.0 {
+        placement.cx
+      } else {
+        shape_x + draw_width / 2.0
+      }
+      let pic_cy = if placement.rotation != 0.0 {
+        placement.cy
+      } else {
+        shape_y + draw_height / 2.0
+      }
+      if pic_rotated {
+        let radians = pic_rotation * 3.141592653589793 / 180.0
+        let sine = @math.sin(radians)
+        let cosine = @math.cos(radians)
+        object.save()
+        object.translate(Float::from_double(pic_cx), Float::from_double(pic_cy))
+        object.transform(
+          Float::from_double(cosine),
+          Float::from_double(sine),
+          Float::from_double(-sine),
+          Float::from_double(cosine),
+          0.0F,
+          0.0F,
+        )
+        object.translate(
+          Float::from_double(-pic_cx),
+          Float::from_double(-pic_cy),
+        )
+      }
       let alpha = pptx_picture_alpha(shape)
       if alpha is Some(_) {
         object.save()
@@ -1430,6 +1461,9 @@ fn pptx_render_slide(
         )
       }
       if alpha is Some(_) {
+        object.restore()
+      }
+      if pic_rotated {
         object.restore()
       }
       continue
