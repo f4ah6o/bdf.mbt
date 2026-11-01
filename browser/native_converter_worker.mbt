@@ -320,6 +320,29 @@ fn native_convert_csv(
 }
 
 ///|
+fn native_select_pages(
+  request : ConverterRequest,
+  bdf : Bytes,
+  count : Int32,
+) -> Bytes {
+  let spec = native_converter_param(request, "pages")
+  if spec == "" || count <= 0 {
+    return bdf
+  }
+  let spans = @convert.parse_pages(spec) catch { _ => return bdf }
+  let numbers = @convert.page_numbers(spans, count.to_int64()) catch {
+    _ => return bdf
+  }
+  match numbers {
+    Some(values) if !values.is_empty() =>
+      @core.select_pages(bdf, values) catch {
+        _ => bdf
+      }
+    _ => bdf
+  }
+}
+
+///|
 fn native_convert_pdf(request : ConverterRequest, data : Bytes) -> Unit {
   let result = @pdf.convert(
     data,
@@ -333,9 +356,10 @@ fn native_convert_pdf(request : ConverterRequest, data : Bytes) -> Unit {
       return
     }
   }
+  let bdf = native_select_pages(request, result.bdf, result.pages)
   native_converter_result(
     request,
-    result.bdf,
+    bdf,
     "pdf",
     result.summary,
     result.warnings,
@@ -358,9 +382,10 @@ fn native_convert_docx(request : ConverterRequest, data : Bytes) -> Unit {
       return
     }
   }
+  let bdf = native_select_pages(request, result.bdf, result.pages)
   native_converter_result(
     request,
-    result.bdf,
+    bdf,
     "docx",
     result.summary,
     result.warnings,
@@ -383,9 +408,10 @@ fn native_convert_pptx(request : ConverterRequest, data : Bytes) -> Unit {
       return
     }
   }
+  let bdf = native_select_pages(request, result.bdf, result.pages)
   native_converter_result(
     request,
-    result.bdf,
+    bdf,
     "pptx",
     result.summary,
     result.warnings,
