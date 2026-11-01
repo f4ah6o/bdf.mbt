@@ -730,6 +730,25 @@ fn pptx_table_lines(shape : PptxXmlNode) -> Array[String] {
 }
 
 ///|
+fn pptx_cell_color(cell : PptxXmlNode, theme : Map[String, UInt32]) -> UInt32 {
+  for paragraph in pptx_children(pptx_child(Some(cell), "txBody")) {
+    if paragraph.element.name.local_name != "p" {
+      continue
+    }
+    for run in pptx_children(Some(paragraph)) {
+      if run.element.name.local_name == "r" {
+        match
+          pptx_node_color(pptx_child(Some(run), "rPr"), "solidFill", theme) {
+          Some(color) => return color
+          None => ()
+        }
+      }
+    }
+  }
+  0x000000ffU
+}
+
+///|
 fn pptx_cell_text(cell : PptxXmlNode) -> String {
   let text = StringBuilder()
   for paragraph in pptx_children(pptx_child(Some(cell), "txBody")) {
@@ -778,7 +797,7 @@ fn pptx_emit_table(
     None => ()
   }
   let row_height = 14.4
-  let mut row_index = 0.0
+  let mut row_top = y
   for row in rows {
     if row.element.name.local_name != "tr" {
       continue
@@ -811,7 +830,7 @@ fn pptx_emit_table(
           object.fill_color(color)
           object.fill_rect(
             Float::from_double(cell_x),
-            Float::from_double(y + row_height * row_index),
+            Float::from_double(row_top),
             Float::from_double(column_width),
             Float::from_double(row_height),
           )
@@ -821,7 +840,7 @@ fn pptx_emit_table(
       cell_x += column_width
       cell_index += 1.0
     }
-    row_index += 1.0
+    row_top += row_height
   }
   let (_, minor) = fonts
   let index = object.add_font({
@@ -832,7 +851,7 @@ fn pptx_emit_table(
   })
   object.font(index, 12.0)
   object.fill_color(0x000000ffU)
-  let mut text_row = 0.0
+  let mut text_top = y
   for row in rows {
     if row.element.name.local_name != "tr" {
       continue
@@ -861,17 +880,18 @@ fn pptx_emit_table(
       }
       let text = pptx_cell_text(cell)
       if text != "" {
+        object.fill_color(pptx_cell_color(cell, theme))
         object.fill_text(
           text,
           Float::from_double(cell_x + 2.0),
-          Float::from_double(y + 12.0 + text_row * 14.4),
+          Float::from_double(text_top + 12.0),
           Float::from_double(pptx_text_width(text, 12.0)),
         )
       }
       cell_x += column_width
       cell_index += 1.0
     }
-    text_row += 1.0
+    text_top += row_height
   }
 }
 
