@@ -1,0 +1,20 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/crypto"
+
+// Values
+pub fn aes_key_unwrap(Bytes, Bytes) -> Bytes? raise
+
+pub fn aes_key_wrap(Bytes, Bytes) -> Bytes raise
+
+pub fn pbkdf2_sha256(Bytes, Bytes, Int32, Int32) -> Bytes
+
+// Errors
+pub suberror KeyWrapError {
+  InvalidKeyWrap
+}
+
+// Types and methods
+
+// Type aliases
+
+// Traits
