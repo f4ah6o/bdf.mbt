@@ -5380,3 +5380,106 @@ test "PPTX paragraph spacing is applied" {
   }
   assert_true(b_y > a_y + 30.0, msg="PPTX paragraph spacing")
 }
+
+///|
+fn pptx_line_spacing_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GDY45cY2zcpleknkGfKxMAgDKSjnfPzSlLzSuJDKgtSi2P1KnJz",
+  )
+  joined.write_string(
+    "1gZa+x82ELj3U3Tada3CUw0CXpcaj3PwPGWfM8c76ar+zzur/n6PmaTEqLXBILL8fvDzquKSMBmD",
+  )
+  joined.write_string(
+    "iZz7Jr7eNIlpL9/cj87K97f5H10rMuVgeULzcbd5E54s27tq+/IOlYg3Kycmn/vop3lJ2WqBkcuX",
+  )
+  joined.write_string(
+    "ni+Klidsljm6XrCWCIgNv9p76WD6l50nJrfnvGZ/k5i/ucLmU5XmpAuTRL5zF57KUjmS0dt2ZofV",
+  )
+  joined.write_string(
+    "j3fRXoV+GpGWxRkmE8N8JrxKOtTyR6bg2t4PqZNeBuxxOnX+wYylSWe01FSunb3zqXw5d6jzfene",
+  )
+  joined.write_string(
+    "2AvVxyd92jxzc/yxS40fV9ufmvBUVff8r/23z6yT573y5/Vb6wCUkCry+z5/E5Cny8jAwA2k44tS",
+  )
+  joined.write_string(
+    "c4r19UBk7/mzXIcMeNg/7PYPLCq/a9NxYlesy43QZ8xTzF63vWb3Ff3+Tczfz6bC59N5/SV588vS",
+  )
+  joined.write_string(
+    "+HtMKtUXaHklvJhyfbIx07q/ldUMbp5WuunvAw40seRuXqlvcXpKecYcpo09FkIGy0T65kyWuuil",
+  )
+  joined.write_string(
+    "VeMwXb25P2xZjNvh5hDzzAnvTxWdf7yc8eyplLliAtaxjK+nN/y/USeh1qq+/p1Y7K/CR9oTUyV5",
+  )
+  joined.write_string(
+    "1RgVVeSUgvL2XXad1mhuGl97cw8DqtcuVJw/ch7I8wB6DSRaUFCiX1CUWgxMB4klmfl5oFTQO8E/",
+  )
+  joined.write_string(
+    "m8lQ4Oj7vyKJ70wLL6buzrnmLciSn2vv4JF21+HfxM5FdVXJuq4vlm7/PqPS/tnZDZbVx/1mnDym",
+  )
+  joined.write_string(
+    "kLhT4IDBi4wcC48fv+7sKzuwYkXClG5G1ZgJCcb7eFb6S3I6By5Vi1zK8mpyy84pV4r9qtzWZwgK",
+  )
+  joined.write_string(
+    "t1nNTvq2KmQ2/x/L57L5LRk7w80O8Kv8ZxdafjKrpv/XC+3XjCdf7FtoctvF4JrwyZlzbwb/vHpG",
+  )
+  joined.write_string(
+    "ivPsLtZpv3efsb7MIM/+L/3741NfIg/dLtoqtMjONV5ly91du2e7P9h5vIIZNQBK5p76sgHIUwQG",
+  )
+  joined.write_string(
+    "gDw0ACDxix4M0PjeCIxvAbYHd5dzbL+9RdZlSaa44C6v2oYJMbcTZrXEiPz+xlYYUFDw5/2P/Y9n",
+  )
+  joined.write_string(
+    "vdsYUXbc45g1Y2ggk/PyPWZ5QgWSfrdtDbwuZWbudWbUFip5u8xy8VTN8gyzxgg3Gc4ZwVzs5zzP",
+  )
+  joined.write_string(
+    "7vAAxbf54v5uH8tjnewr1xU5xU1/2nfcn/mW/uSvUQ5vSnlzIpj/Jf8uNOHqj7srVvLyOKfftYwz",
+  )
+  joined.write_string(
+    "C3qE1RjX/5gX5nqtYTvv/19raplQPTvj+de3+kCPugGzvCjUs8U5mSmpxRDKEBzdQafzDisI7Pmu",
+  )
+  joined.write_string(
+    "LfA9ba7GqhhtCy8+27Bpb+oYWOdEPFJ1WPf3O+sblbVXnC3f6M2aezPx6EMLzU63h38STA7e9m2c",
+  )
+  joined.write_string(
+    "eOHMB8d4jn8v7s3z7qlZMCs4c4tChZic/OvlzWv3PNGYtHW9zsHrAjmsD26GarwyP8Ylu/Gehavz",
+  )
+  joined.write_string(
+    "nl3cEep7LjS2WXh43hA9yq1hlbGn68L/jgL3/Ys2x/+xqkpc+0Sz+ral4jQtV9tt2wp3Pq7NkZGy",
+  )
+  joined.write_string(
+    "OGjdYxL6UXPuDKY2UZ/aDQFFjPYn7dKjfPcGa87e5y58cP3tv/s6uGe/V1UxOaUk9jB3p/bpls0/",
+  )
+  joined.write_string(
+    "Cz0vmSvu0Lyt5ZN++PmRfz2W1gum+iry833VvOiktlvm7d5kU/XS7EitPam83BlLjOy2eaTP3VV2",
+  )
+  joined.write_string(
+    "YO6mrPn/L7S1q0ds4+z/eij38YT9jn95A7wZmUSYcRerMNDAyIC9kEU3AL20QRigxYhS9qBrRM/L",
+  )
+  joined.write_string(
+    "CI2sTNhzNroJ6JkBYQIbM8GsgW4YemJDGPaZGUfSC/BmZQMpYQVCH6DWUFYQDwAL0DA0twYAAA==",
+  )
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX line spacing is applied" {
+  let result = convert(pptx_line_spacing_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut a_y = 0.0
+  let mut b_y = 0.0
+  for command in commands {
+    match command {
+      @render.FillText("A", _, y, _) => a_y = y
+      @render.FillText("B", _, y, _) => b_y = y
+      _ => ()
+    }
+  }
+  assert_true(b_y > a_y + 40.0, msg="PPTX line spacing")
+}

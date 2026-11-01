@@ -831,6 +831,27 @@ fn pptx_cell_italic(cell : PptxXmlNode) -> Int32 {
 }
 
 ///|
+fn pptx_line_spacing(paragraph : PptxXmlNode) -> Double {
+  let spacing = pptx_child(pptx_child(Some(paragraph), "pPr"), "lnSpc")
+  match pptx_child(spacing, "spcPct") {
+    Some(value) =>
+      (@string.parse_double(pptx_attribute(value.element, "val", "100000")) catch {
+        _ => 100000.0
+      }) /
+      100000.0
+    None =>
+      match pptx_child(spacing, "spcPts") {
+        Some(value) =>
+          (@string.parse_double(pptx_attribute(value.element, "val", "0")) catch {
+            _ => 0.0
+          }) /
+          100.0
+        None => 0.0
+      }
+  }
+}
+
+///|
 fn pptx_paragraph_spacing(paragraph : PptxXmlNode, name : String) -> Double {
   let spacing = pptx_child(pptx_child(Some(paragraph), "pPr"), name)
   match pptx_child(spacing, "spcPts") {
@@ -2370,6 +2391,14 @@ fn pptx_render_slide(
             _ => "left"
           }
         None => "left"
+      }
+      let spacing_multiplier = pptx_line_spacing(paragraph)
+      if spacing_multiplier > 0.0 {
+        if spacing_multiplier > 10.0 {
+          line_height = spacing_multiplier
+        } else {
+          line_height = 21.6 * spacing_multiplier
+        }
       }
       let mut x = shape_x + left_inset
       if paragraph_index > 0 {
