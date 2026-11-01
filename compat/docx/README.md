@@ -26,7 +26,7 @@ font weight/style/size and the section page geometry. Table rows are flattened t
 Numbered paragraphs receive decimal or bullet prefixes from
 `numbering.xml` (level counters and left indents). Floating drawings, EMF/WMF
 images, numbering overrides, header images and fields are rejected by the
-reader or omitted. Default, first-page and even-page header/footer paragraph
+reader or omitted. The generated view includes a text index for search. Default, first-page and even-page header/footer paragraph
 text is drawn at the section header/footer distances; variants fall back to
 the default story. The native
 converter Worker advertises the `docx` format.

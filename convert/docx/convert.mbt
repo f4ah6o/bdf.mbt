@@ -265,6 +265,9 @@ fn docx_render_document(
     }
   }
 
+  let index_runs : Array[@core.IndexRun] = []
+  let index_budget = @render.TextExtractionBudget::new()
+
   fn emit_line(
     items : Array[DocxLineItem],
     align : String,
@@ -372,6 +375,27 @@ fn docx_render_document(
     )
     let encoded = object.encode()
     let hash = writer.add_part("obj", encoded)
+    let page_index = pages.length()
+    let content = @render.extract_text_with_budget(
+      @core.decode_object_resources(encoded),
+      fn(_) { None },
+      index_budget,
+    ) catch {
+      _ => { runs: [], links: [], nodes: [], }
+    }
+    for i, run in content.runs {
+      index_runs.push({
+        a: page_index,
+        b: 0,
+        ordinal: run.ordinal,
+        separator: if i == 0 {
+          2
+        } else {
+          run.separator
+        },
+        text: run.text,
+      })
+    }
     pages.push(
       Json::object({
         "w": Json::number(section.width, repr=section.width.to_string()),
@@ -674,6 +698,12 @@ fn docx_render_document(
   }
   if title != "" {
     view["title"] = Json::string(title)
+  }
+  if !index_runs.is_empty() {
+    let encoded = @core.encode_text_index(index_runs) catch { _ => b"" }
+    if encoded.length() > 0 {
+      view["textIndex"] = Json::string(writer.add_part("idx", encoded))
+    }
   }
   writer.add_view(Json::object(view))
   let bdf = writer.write_single()

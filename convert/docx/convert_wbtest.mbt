@@ -1292,3 +1292,21 @@ test "DOCX paragraph borders are stroked" {
   assert_true(red, msg="DOCX paragraph border colour")
   assert_true(stroke, msg="DOCX paragraph border")
 }
+
+///|
+test "DOCX conversion builds a text index" {
+  let result = convert(docx_paragraph_shade_fixture())
+  let document = @core.open_single(result.bdf)
+  let view = document.manifest.views[0]
+  let hash = match view.text_index {
+    Some(value) => value
+    None => ""
+  }
+  assert_true(hash != "", msg="DOCX text index")
+  let runs = @core.decode_text_index(document.part(hash))
+  let text = StringBuilder()
+  for run in runs {
+    text.write_string(run.text)
+  }
+  assert_true(text.to_string().contains("A"), msg="DOCX indexed text")
+}
