@@ -115,6 +115,11 @@ fn PdfGraphics::emit_image(
   data : Bytes,
 ) -> Unit raise PdfStreamError {
   let index = self.store_image(data)
+  // The page transform flips Y for page space. PDF image samples start at the
+  // top row, so flip the unit image square locally to keep row 0 at the top.
+  self.save()
+  defer self.restore()
+  self.transform((1.0, 0.0, 0.0, -1.0, 0.0, 1.0))
   self.object.image(index, 0.0F, 0.0F, 1.0F, 1.0F) catch {
     _ => raise InvalidStream("PDF image placement failed")
   }
