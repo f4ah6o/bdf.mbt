@@ -16,7 +16,6 @@ const bytes = value => Uint8Array.from(atob(value), character => character.charC
 const token = crypto.randomUUID();
 const mode = document.body.dataset.mode;
 window.bdfMode = mode;
-window.bdfRenderer = mode === 'moon' ? 'moon' : 'upstream';
 let barrier;
 try {
   barrier = await fetch(`./visual-wait?token=${token}`);
@@ -34,8 +33,10 @@ try {
     const surface = document.createElement('div'); surface.className = 'surface';
     section.append(title, surface); document.querySelector('#host').append(section);
     if (mode === 'moon') {
+      window.bdfRenderer = 'moon';
       await render_bdf_sheet_region_async(surface, data, 0, 0, 560, 115, 1);
     } else {
+      window.bdfRenderer = 'upstream';
       const doc = await BdfDocument.open(new BufferSource(data));
       const canvas = document.createElement('canvas'); canvas.width = 560; canvas.height = 115;
       surface.append(canvas);

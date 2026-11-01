@@ -1140,6 +1140,68 @@ test "PDF image formats keep the local Y flip" {
 }
 
 ///|
+test "PDF image flip is undone when the state limit suppresses save" {
+  let graphics = PdfGraphics::new(
+    200.0,
+    200.0,
+    (1.0, 0.0, 0.0, -1.0, 0.0, 200.0),
+  )
+  for _ in 0..<1024 {
+    graphics.save()
+  }
+  assert_eq(graphics.stack.length(), 1024, msg="PDF state limit setup")
+  assert_eq(graphics.unsaved, 0, msg="PDF state limit setup")
+  let before = graphics.state.matrix
+  let unsaved = graphics.unsaved
+  graphics.emit_image(b"\xff\xd8\xff\xd9")
+  assert_eq(graphics.unsaved, unsaved, msg="PDF suppressed image save")
+  assert_eq(
+    graphics.stack.length(),
+    1024,
+    msg="PDF suppressed image must not grow the state stack",
+  )
+  assert_eq(
+    graphics.state.matrix,
+    before,
+    msg="PDF suppressed image must restore the caller CTM",
+  )
+  let resources = @core.decode_object_resources(graphics.object.encode())
+  let commands = @render.compile_object(resources.object)
+  let mut image = -1
+  for i, command in commands {
+    match command {
+      @render.Image(_, _, _, _, _) => image = i
+      _ => ()
+    }
+  }
+  guard image >= 1 else { fail("PDF suppressed image command is missing") }
+  guard image + 1 < commands.length() else {
+    fail("PDF suppressed image wrapper is truncated")
+  }
+  guard commands[image - 1] is @render.Transform(a, b, c, d, e, f) else {
+    fail("PDF suppressed image is missing the local Y flip")
+  }
+  assert_eq(
+    (a, b, c, d, e, f),
+    (1.0, 0.0, 0.0, -1.0, 0.0, 1.0),
+    msg="PDF suppressed image local Y flip",
+  )
+  guard commands[image + 1] is @render.Transform(a, b, c, d, e, f) else {
+    fail("PDF suppressed image leaves an unmatched local Y flip")
+  }
+  assert_eq(
+    (a, b, c, d, e, f),
+    (1.0, 0.0, 0.0, -1.0, 0.0, 1.0),
+    msg="PDF suppressed image inverse Y flip",
+  )
+  assert_eq(
+    image + 2,
+    commands.length(),
+    msg="PDF suppressed image trailing commands",
+  )
+}
+
+///|
 fn pdf_rotated_image_test_document(rotate : Int32) -> Bytes {
   let rotation = if rotate == 0 { "" } else { " /Rotate \{rotate}" }
   pdf_test_pdf([

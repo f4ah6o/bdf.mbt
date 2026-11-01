@@ -52,6 +52,35 @@ try {
     assert.equal(failed.status, 'error');
     assert.equal(failed.count, 0, 'a failed capture must not retain partial colored output');
     await failing.close();
+    // A failing barrier must abort before any capture work and must never reach
+    // the server. If the barrier fetch sits outside the try/catch, bdfStatus
+    // stays unset and waitForFunction times out.
+    const barrierFailure = await browser.newPage();
+    try {
+      let intercepted = 0;
+      await barrierFailure.route('**/visual-wait*', route => {
+        intercepted++;
+        return route.fulfill({ status: 500, body: 'unavailable' });
+      });
+      await barrierFailure.goto(url, { waitUntil: 'domcontentloaded' });
+      await barrierFailure.waitForFunction(
+        () => window.bdfStatus === 'ready' || window.bdfStatus === 'error',
+        null,
+        { timeout: 15000 },
+      );
+      const barred = await barrierFailure.evaluate(() => ({
+        status: window.bdfStatus,
+        error: window.bdfError,
+        count: document.querySelectorAll('canvas').length,
+      }));
+      assert.equal(intercepted, 1, 'barrier request must be intercepted before it reaches the server');
+      assert.equal(barred.status, 'error');
+      assert.match(barred.error ?? '', /visual wait: HTTP 500/);
+      assert.equal(barred.count, 0, 'a failed barrier must not leave capture output');
+    } finally {
+      await barrierFailure.unroute('**/visual-wait*');
+      await barrierFailure.close();
+    }
   } finally { await browser.close(); }
 } finally { await new Promise(resolve => server.close(resolve)); }
 console.log('XLSX visual capture waits for rendering');

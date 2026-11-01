@@ -110,6 +110,11 @@ fn pdf_image_dimension(
 }
 
 ///|
+fn pdf_image_flip_matrix() -> (Double, Double, Double, Double, Double, Double) {
+  (1.0, 0.0, 0.0, -1.0, 0.0, 1.0)
+}
+
+///|
 fn PdfGraphics::emit_image(
   self : PdfGraphics,
   data : Bytes,
@@ -117,11 +122,24 @@ fn PdfGraphics::emit_image(
   let index = self.store_image(data)
   // The page transform flips Y for page space. PDF image samples start at the
   // top row, so flip the unit image square locally to keep row 0 at the top.
+  let unsaved = self.unsaved
   self.save()
   defer self.restore()
-  self.transform((1.0, 0.0, 0.0, -1.0, 0.0, 1.0))
+  // save() is suppressed at the 1024-state limit, so restore() cannot pop the
+  // local flip. Re-apply the self-inverse flip to keep the caller's CTM.
+  let suppressed = self.unsaved > unsaved
+  let flip = pdf_image_flip_matrix()
+  self.transform(flip)
   self.object.image(index, 0.0F, 0.0F, 1.0F, 1.0F) catch {
-    _ => raise InvalidStream("PDF image placement failed")
+    _ => {
+      if suppressed {
+        self.transform(flip)
+      }
+      raise InvalidStream("PDF image placement failed")
+    }
+  }
+  if suppressed {
+    self.transform(flip)
   }
 }
 
