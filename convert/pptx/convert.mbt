@@ -2365,6 +2365,8 @@ fn pptx_render_slide(
     let mut line_height = 21.6
     let left_inset = pptx_body_inset(body, "lIns")
     let top_inset = pptx_body_inset(body, "tIns")
+    let right_inset = pptx_body_inset(body, "rIns")
+    let bottom_inset = pptx_body_inset(body, "bIns")
     let mut paragraph_count = 0
     for paragraph in pptx_children(Some(body)) {
       if paragraph.element.name.local_name == "p" {
@@ -2470,12 +2472,13 @@ fn pptx_render_slide(
               line_height = size * 1.2
             }
             let item_x = x - shape_x
-            if x + advance > shape_x + draw_width && !line.is_empty() {
+            if x + advance > shape_x + draw_width - right_inset &&
+              !line.is_empty() {
               flush()
               y += line_height
-              x = shape_x
+              x = shape_x + left_inset
             }
-            if y > shape_y + draw_height {
+            if y > shape_y + draw_height - bottom_inset {
               flush()
               break
             }
