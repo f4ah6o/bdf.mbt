@@ -1,0 +1,8 @@
+import {
+  "f4ah6o/bdf/core",
+  "f4ah6o/bdf/font/db" @fontdb,
+  "f4ah6o/bdf/font/woff2" @woff2,
+  "moonbitlang/core/math",
+}
+
+supported_targets = "+js+wasm-gc"

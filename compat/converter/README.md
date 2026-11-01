@@ -20,3 +20,9 @@ upstream `@bdfkit/convert-all` Wasm. It checks page counts, page geometry,
 decoded image pixels, streamed pages, page selection and parameter errors.
 JPEG-compressed TIFF pages and the documented metafile subset are covered as
 explicit warnings.
+
+`phase5-test.mjs` compares the HP-GL/2 converter with the upstream
+`@bdfkit/convert-all` Wasm. It checks the format registration, page geometry,
+layer roles, text indexes, streamed pages, page selection and parameter
+errors for the upstream `hpgl1.plt` and `shapes.plt` fixtures. PCL/HP RTL
+raster jobs are a documented subset and are not part of the fixture set yet.

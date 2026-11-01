@@ -1,0 +1,95 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/canvas"
+
+import {
+  "f4ah6o/bdf/core",
+  "f4ah6o/bdf/font/db",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn choice_key(@db.Choice) -> String
+
+pub fn f32(Double) -> Float
+
+// Errors
+
+// Types and methods
+pub struct Canvas {
+  object : @core.ObjectBuilder
+  font_keys : Map[String, Int32]
+  images : Map[String, Int32]
+  children : Array[Canvas]
+  doc_lang : String
+  mut lang : String
+  mut drawn : Bool
+  mut encoded_hash : String?
+  // private fields
+}
+pub fn Canvas::add_paint(Self, @core.Paint) -> Int32
+pub fn Canvas::add_path(Self, @core.Path) -> Int32
+pub fn Canvas::child(Self, (Float, Float, Float, Float)) -> (Self, Int32)
+pub fn Canvas::clip_path(Self, @core.Path, Byte) -> Unit raise
+pub fn Canvas::drawn(Self) -> Bool
+pub fn Canvas::encode(Self, @core.DocumentWriter, Fonts, Array[String], no_woff2? : Bool) -> String raise
+pub fn Canvas::font(Self, @db.Choice, Array[Int32]) -> Int32
+pub fn Canvas::image(Self, String) -> Int32
+pub fn Canvas::lang(Self) -> String
+pub fn Canvas::new(doc_lang? : String) -> Self
+pub fn Canvas::object(Self) -> @core.ObjectBuilder
+pub fn Canvas::restore(Self) -> Unit
+pub fn Canvas::save(Self) -> Unit
+pub fn Canvas::scale(Self, Double, Double) -> Unit
+pub fn Canvas::set_drawn(Self) -> Unit
+pub fn Canvas::set_lang(Self, String) -> Unit
+pub fn Canvas::share(Self, Self, (Float, Float, Float, Float)) -> Int32
+pub fn Canvas::transform(Self, Matrix) -> Unit
+pub fn Canvas::translate(Self, Double, Double) -> Unit
+pub fn Canvas::used(Self, Self) -> Unit
+
+pub struct Fonts {
+  db : @db.Database
+  has_fonts : Bool
+  cache : Map[String, @db.Choice]
+  warned : Map[String, Bool]
+  warnings : Array[String]
+}
+pub fn Fonts::advance(Self, @db.Choice, Int32) -> Double
+pub fn Fonts::db(Self) -> @db.Database
+pub fn Fonts::face(Self, String, String, Int32, bold? : Bool, italic? : Bool) -> @db.Choice
+pub fn Fonts::font_record(Self, @db.Choice, String?) -> @core.Font
+pub fn Fonts::has_fonts(Self) -> Bool
+pub fn Fonts::measure(Self, String, String, Bool, Bool, String) -> Double
+pub fn Fonts::metrics(Self, @db.Choice) -> TextMetrics
+pub fn Fonts::new(@db.Database?) -> Self
+pub fn Fonts::program(Self, @db.Choice, Array[Int32]) -> (Bytes?, String?) raise
+pub fn Fonts::warnings(Self) -> Array[String]
+
+pub(all) struct Matrix {
+  a : Double
+  b : Double
+  c : Double
+  d : Double
+  e : Double
+  f : Double
+} derive(Eq, @debug.Debug)
+pub fn Matrix::apply(Self, Double, Double) -> (Double, Double)
+pub fn Matrix::identity() -> Self
+pub fn Matrix::is_translation(Self) -> Bool
+pub fn Matrix::mul(Self, Self) -> Self
+pub fn Matrix::rotate(Double) -> Self
+pub fn Matrix::scale(Double, Double) -> Self
+pub fn Matrix::scale_factor(Self) -> Double
+pub fn Matrix::translate(Double, Double) -> Self
+
+pub(all) struct TextMetrics {
+  asc : Double
+  desc : Double
+  cap : Double
+  ul_pos : Double
+  ul_thick : Double
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits

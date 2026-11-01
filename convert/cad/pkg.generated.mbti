@@ -1,0 +1,249 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/cad"
+
+import {
+  "f4ah6o/bdf/convert/canvas",
+  "f4ah6o/bdf/core",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub const CAP_BUTT : Byte = 0
+
+pub const CAP_ROUND : Byte = 1
+
+pub const CAP_SQUARE : Byte = 2
+
+pub const CLOSE_PATH : Byte = 4
+
+pub const CUBIC_TO : Byte = 3
+
+pub const JOIN_BEVEL : Byte = 2
+
+pub const JOIN_MITER : Byte = 0
+
+pub const JOIN_ROUND : Byte = 1
+
+pub const LINE_TO : Byte = 1
+
+pub const MAX_HATCH_LINES : Int32 = 20000
+
+pub const MOVE_TO : Byte = 0
+
+pub fn apply(@canvas.Matrix, Point) -> Point
+
+pub fn background_layer(@canvas.Canvas, Double, Double, UInt32, @core.DocumentWriter, @canvas.Fonts, Array[String]) -> String raise
+
+pub fn bulge_arc(Point, Point, Double) -> (Point, Double, Double, Double)
+
+pub fn dash_pattern(Array[Double]?) -> (Array[Double]?, Double)
+
+pub fn document_meta(String, title? : String) -> Map[String, Json]
+
+pub fn fixed_view(Array[Json], title? : String) -> Json
+
+pub fn flatten(CadPath, Int32) -> Array[Point]
+
+pub fn font_metrics(@canvas.Fonts, FontSpec) -> (Double, Double, Double)
+
+pub fn layer(String, String) -> Json
+
+pub fn measure(@canvas.Fonts, FontSpec, String) -> Double
+
+pub fn mm_to_pt(Double) -> Double
+
+pub fn page(Double, Double, Array[Json]) -> Json
+
+pub fn rounded_size(Double, Double) -> (Int32, Int32)
+
+pub fn rune_lang(Int32) -> String
+
+pub fn scale_of(@canvas.Matrix) -> Double
+
+pub fn script_of(String) -> String
+
+pub fn underline_metrics(@canvas.Fonts, FontSpec) -> (Double, Double)
+
+// Errors
+
+// Types and methods
+pub(all) enum Break {
+  BreakBox
+  BreakParagraph
+  BreakLine
+  BreakWrap
+  BreakNone
+} derive(Eq, @debug.Debug)
+
+pub(all) struct CadGradient {
+  radial : Bool
+  p0 : Point
+  p1 : Point
+  r0 : Double
+  r1 : Double
+  stops : Array[@core.ColorStop]
+}
+
+pub(all) struct CadImage {
+  image : String
+  width : Int32
+  height : Int32
+  m : @canvas.Matrix
+  smooth : Bool
+}
+
+pub(all) struct CadPath {
+  mut verbs : Array[Byte]
+  mut points : Array[Point]
+  mut current : Point
+  mut start : Point
+  mut open : Bool
+}
+pub fn CadPath::append(Self, Self) -> Unit
+pub fn CadPath::arc(Self, Point, Double, Double, Double) -> Unit
+pub fn CadPath::bounds(Self) -> Rect
+pub fn CadPath::bulge_to(Self, Point, Double) -> Unit
+pub fn CadPath::circle(Self, Point, Double) -> Unit
+pub fn CadPath::close(Self) -> Unit
+pub fn CadPath::continue_with(Self, Self) -> Unit
+pub fn CadPath::cubic_to(Self, Point, Point, Point) -> Unit
+pub fn CadPath::current(Self) -> Point
+pub fn CadPath::ellipse(Self, Point, Point, Double) -> Unit
+pub fn CadPath::ellipse_arc(Self, Point, Point, Double, Double, Double) -> Unit
+pub fn CadPath::ellipse_arc_axes(Self, Point, Point, Point, Double, Double) -> Unit
+pub fn CadPath::first(Self) -> Point
+pub fn CadPath::is_empty(Self) -> Bool
+pub fn CadPath::is_open(Self) -> Bool
+pub fn CadPath::line_to(Self, Double, Double) -> Unit
+pub fn CadPath::move_to(Self, Double, Double) -> Unit
+pub fn CadPath::new() -> Self
+pub fn CadPath::polyline(Self, Array[Point], Bool) -> Unit
+pub fn CadPath::size(Self) -> Int32
+pub fn CadPath::transform(Self, @canvas.Matrix) -> Self
+
+pub(all) struct CadPattern {
+  image : String
+  m : @canvas.Matrix
+  smooth : Bool
+}
+
+pub(all) struct CadStrokeText {
+  s : String
+  m : @canvas.Matrix
+  strokes : CadPath
+  pen : Pen
+  parts : Array[CadText]
+  line_break : Break
+}
+
+pub(all) struct CadText {
+  s : String
+  font : FontSpec
+  color : UInt32
+  m : @canvas.Matrix
+  advance : Double
+  cells : Array[Double]?
+  spacing : Double
+  asc : Double
+  desc : Double
+  cap : Double
+  underline : Bool
+  overline : Bool
+  strike : Bool
+  line_break : Break
+  vertical : Bool
+}
+pub fn CadText::bounds(Self) -> Rect
+pub fn CadText::new(String, @canvas.Matrix, font? : FontSpec, color? : UInt32, advance? : Double, cells? : Array[Double]?, spacing? : Double, asc? : Double, desc? : Double, cap? : Double, underline? : Bool, overline? : Bool, strike? : Bool, line_break? : Break, vertical? : Bool) -> Self
+
+pub struct Drawing {
+  mut points : Int32
+  // private fields
+}
+pub fn Drawing::append(Self, Self, @canvas.Matrix, CadPath?) -> Unit
+pub fn Drawing::begin(Self, CadPath?) -> Unit
+pub fn Drawing::bounds(Self) -> Rect
+pub fn Drawing::end(Self) -> Unit
+pub fn Drawing::fill(Self, CadPath, Fill, Bool) -> Unit
+pub fn Drawing::hatch(Self, CadPath, Array[PatternLine], Pen) -> Bool
+pub fn Drawing::image(Self, CadImage) -> Unit
+pub fn Drawing::is_empty(Self) -> Bool
+pub fn Drawing::item_count(Self) -> Int32
+pub fn Drawing::new() -> Self
+pub fn Drawing::points(Self) -> Int32
+pub fn Drawing::stroke(Self, CadPath, Pen) -> Unit
+pub fn Drawing::stroke_text(Self, CadStrokeText) -> Unit
+pub fn Drawing::text(Self, CadText) -> Unit
+pub fn Drawing::texts(Self) -> Array[(String, Rect)]
+
+pub(all) struct Fill {
+  color : UInt32
+  mut gradient : CadGradient?
+  mut pattern : CadPattern?
+}
+pub fn Fill::gradient(CadGradient) -> Self
+pub fn Fill::pattern(CadPattern) -> Self
+pub fn Fill::solid(UInt32) -> Self
+
+pub(all) struct FontSpec {
+  mut family : String
+  east_asian : String
+  bold : Bool
+  italic : Bool
+} derive(Eq, @debug.Debug)
+pub fn FontSpec::new(family? : String, east_asian? : String, bold? : Bool, italic? : Bool) -> Self
+
+pub(all) struct PatternLine {
+  angle : Double
+  base : Point
+  offset : Point
+  dash : Array[Double]?
+}
+
+pub(all) struct Pen {
+  color : UInt32
+  width : Double
+  mut world_width : Double
+  mut dash : Array[Double]?
+  mut dash_offset : Double
+  mut cap : Byte
+  mut join : Byte
+  mut miter : Double
+}
+pub fn Pen::new(color? : UInt32, width? : Double, world_width? : Double, dash? : Array[Double]?, dash_offset? : Double, cap? : Byte, join? : Byte, miter? : Double) -> Self
+
+pub(all) struct Plotter {
+  fonts : @canvas.Fonts
+  thin : Double
+}
+pub fn Plotter::fonts(Self) -> @canvas.Fonts
+pub fn Plotter::new(@canvas.Fonts, thin? : Double) -> Self
+pub fn Plotter::plot(Self, @canvas.Canvas, Drawing, @canvas.Matrix, Rect) -> Unit raise
+
+pub(all) struct Point {
+  x : Double
+  y : Double
+} derive(Eq, @debug.Debug)
+pub fn Point::add(Self, Self) -> Self
+pub fn Point::length(Self) -> Double
+pub fn Point::mul(Self, Double) -> Self
+pub fn Point::new(Double, Double) -> Self
+pub fn Point::sub(Self, Self) -> Self
+
+pub(all) struct Rect {
+  min : Point
+  max : Point
+  ok : Bool
+} derive(Eq, @debug.Debug)
+pub fn Rect::add(Self, Point) -> Self
+pub fn Rect::empty() -> Self
+pub fn Rect::h(Self) -> Double
+pub fn Rect::intersect(Self, Self) -> Self
+pub fn Rect::is_valid(Self) -> Bool
+pub fn Rect::transform(Self, @canvas.Matrix) -> Self
+pub fn Rect::union(Self, Self) -> Self
+pub fn Rect::w(Self) -> Double
+
+// Type aliases
+
+// Traits

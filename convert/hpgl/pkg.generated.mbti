@@ -1,12 +1,41 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "f4ah6o/bdf/convert/hpgl"
 
+import {
+  "f4ah6o/bdf/font/db",
+}
+
 // Values
+pub const HPGL_DEFAULT_HARD_H : Double = 8400.0
+
+pub const HPGL_DEFAULT_HARD_W : Double = 11880.0
+
+pub const HPGL_DEFAULT_WIDTH : Double = 0.35
+
+pub const HPGL_MAX_ITEMS : Int32 = 5000000
+
+pub const HPGL_MAX_PAGES : Int32 = 10000
+
+pub const HPGL_PAGE_MARGIN : Double = 200.0
+
+pub const HPGL_PLU : Double = 0.0708661417323
+
+pub fn convert(Bytes, title? : String, colors? : String, no_text_index? : Bool, db? : @db.Database?) -> HpglResult raise HpglError
+
 pub fn detect(Bytes) -> Bool
 
 // Errors
+pub suberror HpglError {
+  HpglInvalid(String)
+}
 
 // Types and methods
+pub(all) struct HpglResult {
+  bdf : Bytes
+  pages : Int32
+  summary : String
+  warnings : Array[String]
+}
 
 // Type aliases
 
