@@ -796,11 +796,14 @@ fn pptx_emit_table(
       }
     None => ()
   }
-  let row_height = 14.4
   let mut row_top = y
   for row in rows {
     if row.element.name.local_name != "tr" {
       continue
+    }
+    let row_height = match pptx_attribute(row.element, "h", "") {
+      "" => 14.4
+      value => (@string.parse_double(value) catch { _ => 182880.0 }) / 12700.0
     }
     let cells = pptx_children(Some(row))
     let mut cell_count = 0
@@ -855,6 +858,10 @@ fn pptx_emit_table(
   for row in rows {
     if row.element.name.local_name != "tr" {
       continue
+    }
+    let row_height = match pptx_attribute(row.element, "h", "") {
+      "" => 14.4
+      value => (@string.parse_double(value) catch { _ => 182880.0 }) / 12700.0
     }
     let cells = pptx_children(Some(row))
     let mut cell_count = 0
