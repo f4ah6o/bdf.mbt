@@ -735,11 +735,57 @@ fn pptx_emit_table(
   object : @core.ObjectBuilder,
   x : Double,
   y : Double,
+  width : Double,
+  theme : Map[String, UInt32],
   fonts : (String, String),
 ) -> Unit raise {
   let lines = pptx_table_lines(shape)
   if lines.is_empty() {
     return
+  }
+  let table = pptx_child(
+    pptx_child(pptx_child(Some(shape), "graphic"), "graphicData"),
+    "tbl",
+  )
+  let rows = pptx_children(table)
+  let row_height = 14.4
+  let mut row_index = 0.0
+  for row in rows {
+    if row.element.name.local_name != "tr" {
+      continue
+    }
+    let cells = pptx_children(Some(row))
+    let mut cell_count = 0
+    for cell in cells {
+      if cell.element.name.local_name == "tc" {
+        cell_count += 1
+      }
+    }
+    if cell_count == 0 {
+      continue
+    }
+    let cell_width = width / cell_count.to_double()
+    let mut cell_index = 0.0
+    for cell in cells {
+      if cell.element.name.local_name != "tc" {
+        continue
+      }
+      match
+        pptx_node_color(pptx_child(Some(cell), "tcPr"), "solidFill", theme) {
+        Some(color) => {
+          object.fill_color(color)
+          object.fill_rect(
+            Float::from_double(x + cell_width * cell_index),
+            Float::from_double(y + row_height * row_index),
+            Float::from_double(cell_width),
+            Float::from_double(row_height),
+          )
+        }
+        None => ()
+      }
+      cell_index += 1.0
+    }
+    row_index += 1.0
   }
   let (_, minor) = fonts
   let index = object.add_font({
@@ -1362,7 +1408,9 @@ fn pptx_render_slide(
           theme, theme_fonts,
         )
       } else {
-        pptx_emit_table(shape, object, shape_x, shape_y, theme_fonts)
+        pptx_emit_table(
+          shape, object, shape_x, shape_y, draw_width, theme, theme_fonts,
+        )
       }
       continue
     }

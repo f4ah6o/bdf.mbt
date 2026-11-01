@@ -27,7 +27,7 @@ PresentationML. It renders visible slides, solid slide backgrounds, embedded pic
 rounded-rectangle and ellipse fill/stroke with solid-fill alpha and
 shape rotation, theme colour schemes with luminance/tint/shade modifiers, theme major/minor
 fonts, paragraph default run properties, placeholder transform and default run-format inheritance, table text
-flattening, basic bar, line and pie charts, layout/master backgrounds and non-placeholder
+flattening with cell fills, basic bar, line and pie charts, layout/master backgrounds and non-placeholder
 decorations, translated
 group shapes, solid shape fills and paragraph/run text with approximate
 metrics. Chart types other than bar, line and pie charts are not rendered yet; group
