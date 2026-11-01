@@ -3910,3 +3910,105 @@ test "PPTX table cell text sizes are applied" {
   }
   assert_true(sized, msg="PPTX table text size")
 }
+
+///|
+fn pptx_table_alignment_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GCo9U6M7ZuUyvQTyDNlYmAQBtLRzvl5Jal5JfEhlQWpxbF6Fbk5",
+  )
+  joined.write_string(
+    "awOt/Q8bCNz7KTrtulbhqQYBr0uNxzl4nrLPmeOddFX/551Vf7/HTFJi1NpgEFl+P/h5VXFJmIzB",
+  )
+  joined.write_string(
+    "RM59E19vmsS0l2/uR2fl+9v8j64VmXKwPKH5uNu8CU+W7V21fXmHSsSblROTz33007ykbLXAyOVL",
+  )
+  joined.write_string(
+    "zxdFyxM2yxxdL1hLBMSGX+29dDD9y84Tk9tzXrO/SczfXGHzqUpz0oVJIt+5C09lqRzJ6G07s8Pq",
+  )
+  joined.write_string(
+    "x7tor0I/jUjL4gyTiWE+E14lHWr5I1Nwbe+H1EkvA/Y4nTr/YMbSpDNaairXzt75VL6cO9T5vnRv",
+  )
+  joined.write_string(
+    "7IXq45M+bZ65Of7YpcaPq+1PTXiqqnv+1/7bZ9bJ81758/qtdQBKSBX5fZ+/CcjTZWRg4AbS8UWp",
+  )
+  joined.write_string(
+    "OcX6eiCy9/xZrkMGPOwfdvsHFpXftek4sSvW5UboM+YpZq/bXrP7in7/JubvZ1Ph8+m8/pK8+WVp",
+  )
+  joined.write_string(
+    "/D0mleoLtLwSXky5PtmYad3fymoGN08r3fT3AQeaWHI3r9S3OD2lPGMO08YeCyGDZSJ9cyZLXfTS",
+  )
+  joined.write_string(
+    "qnGYrt7cH7Ysxu1wc4h55oT3p4rOP17OePZUylwxAetYxtfTG/7fqJNQa1Vf/04s9lfhI+2JqZK8",
+  )
+  joined.write_string(
+    "aoyKKnJKQXn7LrtOazQ3ja+9uYcB1WsXKs4fOQ/keQC9BhItKCjRLyhKLQamg8SSzPw8UCroneCf",
+  )
+  joined.write_string(
+    "zWQocPT9X5HEd6aFF1N351zzFmTJz7V38Ei76/BvYueiuqpkXdcXS7d/n1Fp/+zsBsvq434zTh5T",
+  )
+  joined.write_string(
+    "SNwpcMDgRUaOhcePX3f2lR1YsSJhSjejasyEBON9PCv9JTmdA5eqRS5leTW5ZeeUK8V+VW7rMwSF",
+  )
+  joined.write_string(
+    "26xmJ31bFTKb/4/lc9n8loyd4WYH+FX+swstP5lV0//rhfZrxpMv9i00ue1icE345My5N4N/Xj0j",
+  )
+  joined.write_string(
+    "xXl2F+u037vPWF9mkGf/l/798akvkYduF20VWmTnGq+y5e6u3bPdH+w8XsGMGgAlc0992QDkKQID",
+  )
+  joined.write_string(
+    "QB4aAJD4RQ8GaHxvBMa3ANuDu8s5tt/eIuuyJFNccJdXbcOEmNsJs1piRH5/YysMKCj48/7H/sez",
+  )
+  joined.write_string(
+    "3m2MKDvuccyaMTSQyXn5HrM8oQJJv9u2Bl6XMjP3OjNqC5W8XWa5eKpmeYZZY4SbDOeMYC72c55n",
+  )
+  joined.write_string(
+    "d3iA4tt8cX+3j+WxTvaV64qc4qY/7Tvuz3xLf/LXKIc3pbw5Ecz/kn8XmnD1x90VK3l5nNPvWsaZ",
+  )
+  joined.write_string(
+    "BT3Caozrf8wLc73WsJ33/681tUyonv3RszTGHejRhcAsLwr1bHFOZkpqMYQyBEf3pLN5wCR9/H11",
+  )
+  joined.write_string(
+    "l8b3h00XroRuyZBvut1i8o1hmaf3UpPOORynbuv77na8yLfbouzNf32/OVd3ZYtaexb1XrScf17o",
+  )
+  joined.write_string(
+    "3BK93oySuZ/X/31m+PRM5RWmqReNnou//LGrIuLmGc2DTRG7zzz782LvWYaYyim6u2ZuDGqPSV3h",
+  )
+  joined.write_string(
+    "Ku+06uCkkqDqLw8XhB1U8py34KjbZ8Gm/40ch4pf5CzSd9J/ulzo76s385a82TvrgtzsIucbxyLm",
+  )
+  joined.write_string(
+    "bzO3tu5a1X+5L0K5aN8Dn/a3c95/XKDSbmg99cCBTr4/vm+0srpF05atipj++fnPopkt4nv/7LqQ",
+  )
+  joined.write_string(
+    "nvo8UvLS55KJy2r3zRE5MNX43qNjte79tS/4s2K2XelYuEAw323jZ9E7h9VM5y3qdbi/V6rwpa20",
+  )
+  joined.write_string(
+    "bwVXSOkPlqXLF55fuKOic0LHooy3DbJfDRgSFxy+IXWnlMd8euPvjwdKiz4Y+3TYr/nBFuDNyCTC",
+  )
+  joined.write_string(
+    "jLu4hYEGRgbshS+6AeilEMIALUaUMgldI3oeR2hkZcKe49FNQM8kCBPYmAlmGXTD0BMhwrDPzDiS",
+  )
+  joined.write_string("ZIA3KxtICSsQ+gC15rKCeACBeXxBzwYAAA==")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX table cell text alignment is applied" {
+  let result = convert(pptx_table_alignment_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut centered = false
+  for command in commands {
+    match command {
+      @render.FillText("A", x, _, _) => if x > 50.0 { centered = true }
+      _ => ()
+    }
+  }
+  assert_true(centered, msg="PPTX table alignment")
+}

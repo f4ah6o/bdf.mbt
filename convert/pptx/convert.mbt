@@ -749,6 +749,25 @@ fn pptx_cell_color(cell : PptxXmlNode, theme : Map[String, UInt32]) -> UInt32 {
 }
 
 ///|
+fn pptx_cell_alignment(cell : PptxXmlNode) -> String {
+  for paragraph in pptx_children(pptx_child(Some(cell), "txBody")) {
+    if paragraph.element.name.local_name != "p" {
+      continue
+    }
+    match pptx_child(Some(paragraph), "pPr") {
+      Some(props) =>
+        match pptx_attribute(props.element, "algn", "") {
+          "ctr" => return "center"
+          "r" => return "right"
+          _ => ()
+        }
+      None => ()
+    }
+  }
+  "left"
+}
+
+///|
 fn pptx_cell_text_size(cell : PptxXmlNode) -> Double {
   for paragraph in pptx_children(pptx_child(Some(cell), "txBody")) {
     if paragraph.element.name.local_name != "p" {
@@ -955,11 +974,17 @@ fn pptx_emit_table(
         let size = pptx_cell_text_size(cell)
         object.font(index, Float::from_double(size))
         object.fill_color(pptx_cell_color(cell, theme))
+        let advance = pptx_text_width(text, size)
+        let text_x = match pptx_cell_alignment(cell) {
+          "center" => cell_x + (column_width - advance) / 2.0
+          "right" => cell_x + column_width - advance - 2.0
+          _ => cell_x + 2.0
+        }
         object.fill_text(
           text,
-          Float::from_double(cell_x + 2.0),
+          Float::from_double(text_x),
           Float::from_double(text_top + 12.0),
-          Float::from_double(pptx_text_width(text, size)),
+          Float::from_double(advance),
         )
       }
       cell_x += column_width
