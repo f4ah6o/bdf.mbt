@@ -799,6 +799,38 @@ fn pptx_cell_alignment(cell : PptxXmlNode) -> String {
 }
 
 ///|
+fn pptx_cell_bold(cell : PptxXmlNode) -> Int32 {
+  for paragraph in pptx_children(pptx_child(Some(cell), "txBody")) {
+    for run in pptx_children(Some(paragraph)) {
+      match pptx_child(Some(run), "rPr") {
+        Some(props) =>
+          if pptx_attribute(props.element, "b", "0") == "1" {
+            return 700
+          }
+        None => ()
+      }
+    }
+  }
+  400
+}
+
+///|
+fn pptx_cell_italic(cell : PptxXmlNode) -> Int32 {
+  for paragraph in pptx_children(pptx_child(Some(cell), "txBody")) {
+    for run in pptx_children(Some(paragraph)) {
+      match pptx_child(Some(run), "rPr") {
+        Some(props) =>
+          if pptx_attribute(props.element, "i", "0") == "1" {
+            return 1
+          }
+        None => ()
+      }
+    }
+  }
+  0
+}
+
+///|
 fn pptx_cell_text_size(cell : PptxXmlNode) -> Double {
   for paragraph in pptx_children(pptx_child(Some(cell), "txBody")) {
     if paragraph.element.name.local_name != "p" {
@@ -1017,7 +1049,13 @@ fn pptx_emit_table(
       let text = pptx_cell_text(cell)
       if text != "" {
         let size = pptx_cell_text_size(cell)
-        object.font(index, Float::from_double(size))
+        let cell_font = object.add_font({
+          hash: None,
+          family: minor,
+          weight: pptx_cell_bold(cell),
+          style: pptx_cell_italic(cell),
+        })
+        object.font(cell_font, Float::from_double(size))
         object.fill_color(pptx_cell_color(cell, theme))
         let advance = pptx_text_width(text, size)
         let margin_left = pptx_cell_margin(cell, "marL", 7.2)
