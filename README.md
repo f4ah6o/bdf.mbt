@@ -91,7 +91,7 @@ constructing this public record directly must provide the map; use
 1. ~~Complete the opset 1 Canvas command decoder and browser Canvas renderer, and safe resource loading.~~ Done: every opset 1 draw opcode decodes to a command, the browser renderer dispatches every command variant, and path/paint/font/image references are range-checked. `render` and `browser` unit tests cover decoding, dispatch, and rejected references.
 2. Cryptography support on non-JavaScript hosts.
 3. MoonBit converter engines and viewer openFile integration for streaming page conversion.
-4. DOM/OffscreenCanvas viewer, lazy page rendering, sheet support, search, accessibility and music playback.
+4. ~~DOM/OffscreenCanvas viewer, lazy page rendering, sheet support, search, accessibility and music playback.~~ Done: the DOM viewer renders through Canvas/OffscreenCanvas with lazy pages, live sheet viewports, text search, ARIA text/table layers and MIDI playback. Browser, sheet, search and MIDI unit tests plus the demo cover these paths.
 5. Replace or separately port TinyGo converter engines for the desired document formats.
 
 ## Browser demo
