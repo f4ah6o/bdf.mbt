@@ -88,7 +88,7 @@ constructing this public record directly must provide the map; use
 
 ## Port backlog
 
-1. Complete the opset 1 Canvas command decoder and browser Canvas renderer, and safe resource loading.
+1. ~~Complete the opset 1 Canvas command decoder and browser Canvas renderer, and safe resource loading.~~ Done: every opset 1 draw opcode decodes to a command, the browser renderer dispatches every command variant, and path/paint/font/image references are range-checked. `render` and `browser` unit tests cover decoding, dispatch, and rejected references.
 2. Cryptography support on non-JavaScript hosts.
 3. MoonBit converter engines and viewer openFile integration for streaming page conversion.
 4. DOM/OffscreenCanvas viewer, lazy page rendering, sheet support, search, accessibility and music playback.
