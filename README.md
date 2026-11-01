@@ -92,7 +92,7 @@ constructing this public record directly must provide the map; use
 2. Cryptography support on non-JavaScript hosts.
 3. MoonBit converter engines and viewer openFile integration for streaming page conversion.
 4. ~~DOM/OffscreenCanvas viewer, lazy page rendering, sheet support, search, accessibility and music playback.~~ Done: the DOM viewer renders through Canvas/OffscreenCanvas with lazy pages, live sheet viewports, text search, ARIA text/table layers and MIDI playback. Browser, sheet, search and MIDI unit tests plus the demo cover these paths.
-5. Replace or separately port TinyGo converter engines for the desired document formats.
+5. ~~Replace or separately port TinyGo converter engines for the desired document formats.~~ Done: MoonBit engines cover the demo format set—PDF, DOCX, PPTX, XLSX, CSV, image, font, MIDI/MML/MusicXML and HPGL—and the native converter Worker serves them without the TinyGo runtime. Upstream-only formats outside that set are not ported.
 
 ## Browser demo
 
