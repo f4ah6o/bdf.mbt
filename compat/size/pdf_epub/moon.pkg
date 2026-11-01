@@ -1,0 +1,8 @@
+import {
+  "f4ah6o/bdf/convert/epub",
+  "f4ah6o/bdf/convert/pdf",
+}
+
+supported_targets = "wasm-gc"
+
+pkgtype(kind: "executable")

@@ -1,0 +1,3 @@
+supported_targets = "wasm-gc"
+
+pkgtype(kind: "executable")
