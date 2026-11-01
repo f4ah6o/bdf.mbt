@@ -730,6 +730,25 @@ fn pptx_table_lines(shape : PptxXmlNode) -> Array[String] {
 }
 
 ///|
+fn pptx_cell_text(cell : PptxXmlNode) -> String {
+  let text = StringBuilder()
+  for paragraph in pptx_children(pptx_child(Some(cell), "txBody")) {
+    if paragraph.element.name.local_name != "p" {
+      continue
+    }
+    for run in pptx_children(Some(paragraph)) {
+      if run.element.name.local_name == "r" {
+        match pptx_child(Some(run), "t") {
+          Some(value) => text.write_string(value.text.to_string())
+          None => ()
+        }
+      }
+    }
+  }
+  text.to_string()
+}
+
+///|
 fn pptx_emit_table(
   shape : PptxXmlNode,
   object : @core.ObjectBuilder,
@@ -811,17 +830,48 @@ fn pptx_emit_table(
     weight: 400,
     style: 0,
   })
-  let mut baseline = y + 12.0
-  for line in lines {
-    object.font(index, 12.0)
-    object.fill_color(0x000000ffU)
-    object.fill_text(
-      line,
-      Float::from_double(x),
-      Float::from_double(baseline),
-      Float::from_double(pptx_text_width(line, 12.0)),
-    )
-    baseline += 14.4
+  object.font(index, 12.0)
+  object.fill_color(0x000000ffU)
+  let mut text_row = 0.0
+  for row in rows {
+    if row.element.name.local_name != "tr" {
+      continue
+    }
+    let cells = pptx_children(Some(row))
+    let mut cell_count = 0
+    for cell in cells {
+      if cell.element.name.local_name == "tc" {
+        cell_count += 1
+      }
+    }
+    if cell_count == 0 {
+      continue
+    }
+    let cell_width = width / cell_count.to_double()
+    let mut cell_index = 0.0
+    let mut cell_x = x
+    for cell in cells {
+      if cell.element.name.local_name != "tc" {
+        continue
+      }
+      let column_width = if grid.length() == cell_count {
+        grid[cell_index.to_int()]
+      } else {
+        cell_width
+      }
+      let text = pptx_cell_text(cell)
+      if text != "" {
+        object.fill_text(
+          text,
+          Float::from_double(cell_x + 2.0),
+          Float::from_double(y + 12.0 + text_row * 14.4),
+          Float::from_double(pptx_text_width(text, 12.0)),
+        )
+      }
+      cell_x += column_width
+      cell_index += 1.0
+    }
+    text_row += 1.0
   }
 }
 
