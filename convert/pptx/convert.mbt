@@ -749,6 +749,24 @@ fn pptx_cell_color(cell : PptxXmlNode, theme : Map[String, UInt32]) -> UInt32 {
 }
 
 ///|
+fn pptx_cell_margin(
+  cell : PptxXmlNode,
+  name : String,
+  default : Double,
+) -> Double {
+  match pptx_child(Some(cell), "tcPr") {
+    Some(props) =>
+      match pptx_attribute(props.element, name, "") {
+        "" => default
+        value =>
+          (@string.parse_double(value) catch { _ => default * 12700.0 }) /
+          12700.0
+      }
+    None => default
+  }
+}
+
+///|
 fn pptx_cell_vertical_anchor(cell : PptxXmlNode) -> String {
   match pptx_child(Some(cell), "tcPr") {
     Some(props) =>
@@ -988,10 +1006,13 @@ fn pptx_emit_table(
         object.font(index, Float::from_double(size))
         object.fill_color(pptx_cell_color(cell, theme))
         let advance = pptx_text_width(text, size)
+        let margin_left = pptx_cell_margin(cell, "marL", 7.2)
+        let margin_right = pptx_cell_margin(cell, "marR", 7.2)
+        let inner = column_width - margin_left - margin_right
         let text_x = match pptx_cell_alignment(cell) {
-          "center" => cell_x + (column_width - advance) / 2.0
-          "right" => cell_x + column_width - advance - 2.0
-          _ => cell_x + 2.0
+          "center" => cell_x + margin_left + (inner - advance) / 2.0
+          "right" => cell_x + column_width - margin_right - advance
+          _ => cell_x + margin_left
         }
         let text_y = match pptx_cell_vertical_anchor(cell) {
           "center" => text_top + row_height / 2.0 + size * 0.35
