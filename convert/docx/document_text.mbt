@@ -15,6 +15,9 @@ priv struct DocxTextItem {
   crop_top : Double
   crop_right : Double
   crop_bottom : Double
+  rotation : Double
+  flip_h : Bool
+  flip_v : Bool
 } derive(Debug, Eq)
 
 ///|
@@ -231,6 +234,9 @@ fn docx_text_push(
     crop_top: 0.0,
     crop_right: 0.0,
     crop_bottom: 0.0,
+    rotation: 0.0,
+    flip_h: false,
+    flip_v: false,
   })
 }
 
@@ -271,6 +277,29 @@ fn docx_attribute_any(
 ///|
 fn docx_emu(value : String) -> Double {
   (@string.parse_double(value.trim()) catch { _ => 0.0 }) / 12700.0
+}
+
+///|
+fn docx_picture_transform(node : DocxXmlNode) -> (Double, Bool, Bool) {
+  let pending : Array[DocxXmlNode] = [node]
+  while !pending.is_empty() {
+    let value = pending.pop().unwrap()
+    if value.name() == "xfrm" {
+      let rotation = (@string.parse_double(
+          docx_attribute(value.element, "rot", "0"),
+        ) catch {
+          _ => 0.0
+        }) /
+        60000.0
+      let flip_h = docx_attribute(value.element, "flipH", "") == "1"
+      let flip_v = docx_attribute(value.element, "flipV", "") == "1"
+      return (rotation, flip_h, flip_v)
+    }
+    for sub in value.children {
+      pending.push(sub)
+    }
+  }
+  (0.0, false, false)
 }
 
 ///|
@@ -328,6 +357,7 @@ fn docx_text_drawing(
   if embed == "" {
     docx_text_unsupported("drawing without an embedded image")
   }
+  let (rotation, flip_h, flip_v) = docx_picture_transform(container)
   let anchored = node.child("inline") is None
   let mut crop_left = 0.0
   let mut crop_top = 0.0
@@ -366,6 +396,9 @@ fn docx_text_drawing(
     crop_top,
     crop_right,
     crop_bottom,
+    rotation,
+    flip_h,
+    flip_v,
   })
 }
 

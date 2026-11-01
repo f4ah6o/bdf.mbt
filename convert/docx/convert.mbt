@@ -482,6 +482,47 @@ fn docx_render_document(
             dx = line_x
             dy = y - height
           }
+          let transformed = item.rotation != 0.0 || item.flip_h || item.flip_v
+          let center_x = dx + width / 2.0
+          let center_y = dy + height / 2.0
+          if transformed {
+            object.save()
+            object.translate(
+              Float::from_double(center_x),
+              Float::from_double(center_y),
+            )
+            if item.rotation != 0.0 {
+              let radians = item.rotation * 3.141592653589793 / 180.0
+              let sine = @math.sin(radians)
+              let cosine = @math.cos(radians)
+              object.transform(
+                Float::from_double(cosine),
+                Float::from_double(sine),
+                Float::from_double(-sine),
+                Float::from_double(cosine),
+                0.0F,
+                0.0F,
+              )
+            }
+            if item.flip_h || item.flip_v {
+              object.scale(
+                if item.flip_h {
+                  -1.0F
+                } else {
+                  1.0F
+                },
+                if item.flip_v {
+                  -1.0F
+                } else {
+                  1.0F
+                },
+              )
+            }
+            object.translate(
+              Float::from_double(-center_x),
+              Float::from_double(-center_y),
+            )
+          }
           let index = object.add_image(hash)
           let mut cropped = false
           if item.crop_left > 0.0 ||
@@ -522,6 +563,9 @@ fn docx_render_document(
               Float::from_double(width),
               Float::from_double(height),
             )
+          }
+          if transformed {
+            object.restore()
           }
           if !item.anchored {
             line_x += width

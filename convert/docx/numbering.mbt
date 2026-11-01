@@ -177,6 +177,9 @@ fn docx_apply_numbering(
         crop_top: 0.0,
         crop_right: 0.0,
         crop_bottom: 0.0,
+        rotation: 0.0,
+        flip_h: false,
+        flip_v: false,
       })
       paragraph.items.insert(1, {
         kind: "tab",
@@ -192,6 +195,9 @@ fn docx_apply_numbering(
         crop_top: 0.0,
         crop_right: 0.0,
         crop_bottom: 0.0,
+        rotation: 0.0,
+        flip_h: false,
+        flip_v: false,
       })
       paragraph.props.left += level.left
     }

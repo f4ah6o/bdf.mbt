@@ -800,3 +800,108 @@ test "DOCX image source rectangles are cropped" {
   }
   assert_true(cropped, msg="DOCX image crop")
 }
+
+///|
+fn docx_image_transform_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GDI9kyMXfQ98cdPIO8BIwODMJCOds7PK0nNK4kPqSxILY7Vq8jN",
+  )
+  joined.write_string(
+    "qZ3o68dsyNP6fY7SKbGzKQmNAq98xP/oNLpaNkytSFuk5jdlydK9tn7csSG6p3/sPX++T/z03PKk",
+  )
+  joined.write_string(
+    "bs3bDnv3ZFtrTigxmLYsrm7tvVnumkWMRg+YEvW/z3hatCNyzTfBzQkzivSfBz2aHBR5/oXidkWl",
+  )
+  joined.write_string(
+    "jUZtTxZ+MPbVaoo73PJq32u5KXwhE7yCs/gtdeIKWnq1H5Uef/pYgTN22qOfGWsi97ZIzL0aEBEe",
+  )
+  joined.write_string(
+    "bZSueTbf6fSTg5PTpT/rSi/ZNSNg6mvG6zs9Lkum195dc23mjwf7fa4t+NEScu/g5nX7nI1Osez9",
+  )
+  joined.write_string(
+    "eGbLf/b4Gzo9i69WPMrePqPp2JyfHve2qh9tXrq/9+pDh8P8ASghtbPRpXADkKcFDCluIB1flJpT",
+  )
+  joined.write_string(
+    "rK8HInvPW/MdMuBhezA32OVeZhRbS8BkPY6V2lrsHULmvRlyXocWb1dnZlZgc7u93/507vcNxjsT",
+  )
+  joined.write_string(
+    "fY5Zs/mGMjuq7zXyM7bgP/6Vz+PUIU3D6nYeMZ8LH0OrD0U+2TRZTVhIs8ObZ9mcw/MuqahvUQq1",
+  )
+  joined.write_string(
+    "W6A9+aK7dpHm4mWOJ7oveJiX7l368S7Dv8RJcYYde7MaeLwP1OfY97k9Onh6tev0+jk/vEQiXXpn",
+  )
+  joined.write_string(
+    "Hrzr7np1dayomEb+y+PdfzhRPbY6IyYY5DEFoMdkgHR5flGKPsR3KfnJpbnA1ABKBlCfbuRiMgT6",
+  )
+  joined.write_string(
+    "9O5yjZt75zUpFdmKC8a4yits2Rn3cda0bV379rKKs7IfV/lz33/X3cP+j/w0dx/gEvPlbopgf3xD",
+  )
+  joined.write_string(
+    "a8cc/s+8HTETeP0aPQ9ONnrzK7J8Eaf32ScXj+poHYo8GOF1x2vmVw+5YmGlwr08ipU6pT5hblfC",
+  )
+  joined.write_string(
+    "t6hMz9097eXlhn+nRdwXK8ie5TryU/KlvDVP8+Ut/L+edZ7u53pZ83adgpq3a6P64w97Y0wm6p7Y",
+  )
+  joined.write_string(
+    "Nzm+/6s+qk/95J/3TgX6cgEzA4MgzKfIfpwb7Jt/24Bn7/twiV3rS5pSXvTc2MtytEwiIOE2f0DK",
+  )
+  joined.write_string(
+    "LbEF+gGv5ry53r/p8bG7CzWqFnpOrHo/cQo/f3p2l71HYHV499lYTa6SU9tvfd364+/rj5/3aiRN",
+  )
+  joined.write_string(
+    "Wjf1mPWao6yLKzLsZI+t+vrq5iJvVuUdEb1bJYK4RB1CmKMk39c4HN95bvLUTudXiV+usH3iSk5h",
+  )
+  joined.write_string(
+    "yk6InhZ/wOvtESbhe82XJ8mEM6xP7C8ucpwizxCjzRVVy9CYvzT9EGvLPeaHu/20beKeWz0WkJpZ",
+  )
+  joined.write_string(
+    "YV54QbGr7Xndp7eq9c5mU85OnXU3IDN9y+GTR4tPvQ58HlVz902Z6vqw2LiaDL5NrzzbHFdPrZ7i",
+  )
+  joined.write_string(
+    "acYeNv/3vLmTLz4MlJ68elN8QOu3llzdF9W7zzt82KXjbmgTuK/g3QmxJ8G6385EpQnKitc93q5W",
+  )
+  joined.write_string(
+    "NK9aL0JBPn7T3JCNH8xDDvNUpc6tfOBq8Oc655pZLVdrEkzNZjzjuD7RLeRl5qzsF/X/dI/92WR+",
+  )
+  joined.write_string(
+    "+21fa8/VA//+1ZlznmS1V/mY+elP1uYDMU675C/p2vycsmfvUbbdqtzCLw+xn856+C3f9D8DahwG",
+  )
+  joined.write_string(
+    "8t9icgDyXIFYFBaHuakpmYn6mbmJ6amGegV56a95PhQ/fzrpUVJCwoOvXwo4mS71KJw5yKKiPoX9",
+  )
+  joined.write_string(
+    "PnOQzTy9PkXR4kn1c+wPHDhw5sSJgk/3l3x3KGTzD7efXurH6Qu0kpFJhBl3KQkDDYwM2MtMdAPQ",
+  )
+  joined.write_string(
+    "Cw+EASARpKIEXSN65kRoZGbCn1XRTUJP/AiT3jJhyQro2tHDHaF9IwuOWAjwZmUDKWEFQjegzSqs",
+  )
+  joined.write_string("IB4AadrWLoAGAAA=")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "DOCX images are rotated and flipped" {
+  let result = convert(docx_image_transform_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut transform = false
+  let mut flipped = false
+  let mut image = false
+  for command in commands {
+    match command {
+      @render.Transform(_, _, _, _, _, _) => transform = true
+      @render.Scale(x, y) => if x == -1.0 && y == 1.0 { flipped = true }
+      @render.Image(_, _, _, _, _) => image = true
+      _ => ()
+    }
+  }
+  assert_true(transform, msg="DOCX image rotation")
+  assert_true(flipped, msg="DOCX image flip")
+  assert_true(image, msg="DOCX image")
+}
