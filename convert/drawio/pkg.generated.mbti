@@ -1,0 +1,28 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/drawio"
+
+import {
+  "f4ah6o/bdf/font/db",
+}
+
+// Values
+pub fn convert(Bytes, title? : String, db? : @db.Database?) -> DrawioResult raise DrawioError
+
+pub fn detect(Bytes) -> Bool
+
+// Errors
+pub suberror DrawioError {
+  DrawioInvalid(String)
+}
+
+// Types and methods
+pub(all) struct DrawioResult {
+  bdf : Bytes
+  pages : Int32
+  summary : String
+  warnings : Array[String]
+}
+
+// Type aliases
+
+// Traits

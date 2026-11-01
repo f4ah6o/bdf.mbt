@@ -65,6 +65,8 @@ try {
       ['shapes.cgm', '/compat/cgm/fixtures/shapes.cgm'],
       ['features.gbr', '/compat/gerber/fixtures/features.gbr'],
       ['demo.kicad_pcb', '/compat/kicad/fixtures/demo.kicad_pcb'],
+      ['labels.drawio', '/compat/drawio/fixtures/labels.drawio'],
+      ['multipage.drawio', '/compat/drawio/fixtures/multipage.drawio'],
     ]) {
       const data = new Uint8Array(await (await fetch(base + path)).arrayBuffer());
       const a = await upstream.convert(data, { name });
@@ -109,9 +111,10 @@ try {
     const cgm = entry.name.endsWith('.cgm');
     const gerber = entry.name.endsWith('.gbr');
     const kicad = entry.name.endsWith('.kicad_pcb');
-    const tolerance = cgm ? 0.05 : dxf ? 0.06 : sxf ? 0.10 : 0.01;
+    const drawio = entry.name.endsWith('.drawio');
+    const tolerance = cgm ? 0.05 : dxf ? 0.06 : sxf ? 0.10 : drawio ? 0.15 : 0.01;
     for (let i = 0; i < entry.moon.pages.length; i++) {
-      if (!gerber && !kicad) {
+      if (!gerber && !kicad && !drawio) {
         assert.ok(Math.abs(entry.moon.pages[i].w - entry.upstream.pages[i].w) < entry.upstream.pages[i].w * tolerance, `${entry.name} page ${i + 1} width`);
         assert.ok(Math.abs(entry.moon.pages[i].h - entry.upstream.pages[i].h) < entry.upstream.pages[i].h * tolerance, `${entry.name} page ${i + 1} height`);
       }
@@ -119,7 +122,7 @@ try {
     }
     if (dxf || sxf || cgm) {
       assert.ok(entry.moon.text.length > 0, `${entry.name} text index`);
-    } else if (kicad) {
+    } else if (kicad || drawio) {
       assert.ok(entry.moon.text.length > 0, `${entry.name} text index`);
     } else if (!gerber) {
       assert.equal(entry.moon.text, entry.upstream.text, `${entry.name} text index`);
@@ -129,7 +132,7 @@ try {
   assert.equal(result.selected, 1);
   assert.ok(String(result.badColor).includes('not pens or mono'), 'colors parameter error');
   assert.ok(String(result.named).startsWith('hpgl:'), 'HP-GL detection');
-  console.log(`Phase 5/6 CAD, Gerber and KiCad: ${result.cases.length} fixtures convert with the expected layers and coverage; single-file Gerber pages are drawn 1:1 rather than with the upstream board scaling.`);
+  console.log(`Phase 5-7 CAD, Gerber, KiCad and draw.io: ${result.cases.length} fixtures convert with the expected layers and coverage; single-file Gerber and draw.io pages are fitted by this port, so their page sizes differ from the upstream board/auto-fit scaling.`);
 } finally {
   await browser.close();
   server.close();

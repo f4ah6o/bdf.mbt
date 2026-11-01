@@ -23,7 +23,7 @@
 - Done: viewer `openFile` integration and PDF/DOCX/PPTX page streams.
 - Done: DOM/OffscreenCanvas viewer, lazy pages, sheets, search, ARIA and MIDI.
 - Done: MoonBit converters for the demo format set (PDF, DOCX, PPTX, XLSX,
-  CSV, image, font, MIDI/MML/MusicXML, HP-GL/2, Jw_cad, DXF, SXF, CGM, Gerber, KiCad PCB), plus AI, TIFF, PSD, EMF/WMF,
+  CSV, image, font, MIDI/MML/MusicXML, HP-GL/2, Jw_cad, DXF, SXF, CGM, Gerber, KiCad PCB, draw.io), plus AI, TIFF, PSD, EMF/WMF,
   IDML and Visio VSDX.
 - Done: `convert/raster` PNG encoding and box scaling; the EMF/WMF metafile
   replay is also used by the DOCX and PPTX picture paths, with embedded
@@ -37,7 +37,10 @@
   are documented gaps. `convert/drawingml` provides the shared approximate
   line breaking, alignment and frame-to-frame text flow. Full font metrics,
   OpenType shaping, tables and the remaining Visio theme/picture features are
-  documented gaps.
+  documented gaps. draw.io's first uncompressed diagram is ported for basic
+  vertices, simple edges, colours and labels; compression, stencils, HTML/math
+  formatting, automatic wrapping/routing and page auto-fit are documented
+  gaps.
 - Phase 3: `convert/reader` provides the reader-mode block model and fixed A4 layout; `convert/epub` reads the container, manifest and spine; `convert/html` reads headings, paragraphs, lists, code, quotes, tables and images-as-alt-text; `convert/markdown` reads front matter, headings, lists, tasks, fences, quotes, rules, simple tables and inline links. Readability extraction, CSS, remote images, fixed-layout EPUB, MHTML, embedded fonts and exact CommonMark/GFM behavior are documented gaps.
 - Phase 4: `convert/audio` writes one-page cards for MP3, AAC (ADTS/M4A), FLAC, Ogg Vorbis/Opus, WAV and AIFF with tags, covers, lyrics, durations and an optional playable audio part. MP4/iTunes tags and covers, Ogg duration, synchronized lyrics, chapters and DRM are documented gaps.
 - Done: cryptography on non-JavaScript hosts. PBKDF2-HMAC-SHA-256,
@@ -85,7 +88,7 @@
   text; schematics, projects, back/layer views, zones and 3D models are
   documented gaps. PCL/HP RTL raster jobs are a documented gap: the escape
   sequences are skipped with a warning and only the HP-GL/2 instructions are
-  converted. The remaining CAD formats (SXF P21, clear-text CGM), Gerber board archives, KiCad schematics/back-layers and draw.io
+  converted. The remaining CAD formats (SXF P21, clear-text CGM), Gerber board archives, KiCad schematics/back-layers and full draw.io
   are not ported. Camera raw (DNG/CR2) is
   not an upstream converter and is outside the port. The subsets of the ported
   formats above are documented gaps, not claims of full parity.
