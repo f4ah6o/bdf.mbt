@@ -5178,3 +5178,102 @@ test "PPTX image slide backgrounds are drawn" {
   }
   assert_true(image, msg="PPTX image background")
 }
+
+///|
+fn pptx_text_anchor_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GDw8kuM7ZuUyvQTyDNlYmAQBtLRzvl5Jal5JfEhlQWpxbF6Fbk5",
+  )
+  joined.write_string(
+    "awOt/Q8bCNz7KTrtulbhqQYBr0uNxzl4nrLPmeOddFX/551Vf7/HTFJi1NpgEFl+P/h5VXFJmIzB",
+  )
+  joined.write_string(
+    "RM59E19vmsS0l2/uR2fl+9v8j64VmXKwPKH5uNu8CU+W7V21fXmHSsSblROTz33007ykbLXAyOVL",
+  )
+  joined.write_string(
+    "zxdFyxM2yxxdL1hLBMSGX+29dDD9y84Tk9tzXrO/SczfXGHzqUpz0oVJIt+5C09lqRzJ6G07s8Pq",
+  )
+  joined.write_string(
+    "x7tor0I/jUjL4gyTiWE+E14lHWr5I1Nwbe+H1EkvA/Y4nTr/YMbSpDNaairXzt75VL6cO9T5vnRv",
+  )
+  joined.write_string(
+    "7IXq45M+bZ65Of7YpcaPq+1PTXiqqnv+1/7bZ9bJ81758/qtdQBKSBX5fZ+/CcjTZWRg4AbS8UWp",
+  )
+  joined.write_string(
+    "OcX6eiCy9/xZrkMGPOwfdvsHFpXftek4sSvW5UboM+YpZq/bXrP7in7/JubvZ1Ph8+m8/pK8+WVp",
+  )
+  joined.write_string(
+    "/D0mleoLtLwSXky5PtmYad3fymoGN08r3fT3AQeaWHI3r9S3OD2lPGMO08YeCyGDZSJ9cyZLXfTS",
+  )
+  joined.write_string(
+    "qnGYrt7cH7Ysxu1wc4h55oT3p4rOP17OePZUylwxAetYxtfTG/7fqJNQa1Vf/04s9lfhI+2JqZK8",
+  )
+  joined.write_string(
+    "aoyKKnJKQXn7LrtOazQ3ja+9uYcB1WsXKs4fOQ/keQC9BhItKCjRLyhKLQamg8SSzPw8UCroneCf",
+  )
+  joined.write_string(
+    "zWQocPT9X5HEd6aFF1N351zzFmTJz7V38Ei76/BvYueiuqpkXdcXS7d/n1Fp/+zsBsvq434zTh5T",
+  )
+  joined.write_string(
+    "SNwpcMDgRUaOhcePX3f2lR1YsSJhSjejasyEBON9PCv9JTmdA5eqRS5leTW5ZeeUK8V+VW7rMwSF",
+  )
+  joined.write_string(
+    "26xmJ31bFTKb/4/lc9n8loyd4WYH+FX+swstP5lV0//rhfZrxpMv9i00ue1icE345My5N4N/Xj0j",
+  )
+  joined.write_string(
+    "xXl2F+u037vPWF9mkGf/l/798akvkYduF20VWmTnGq+y5e6u3bPdH+w8XsGMGgAlc0992QDkKQID",
+  )
+  joined.write_string(
+    "QB4aAJD4RQ8GaHxvBMa3ANuDu8s5tt/eIuuyJFNccJdXbcOEmNsJs1piRH5/YysMKCj48/7H/sez",
+  )
+  joined.write_string(
+    "3m2MKDvuccyaMTSQyXn5HrM8oQJJv9u2Bl6XMjP3OjNqC5W8XWa5eKpmeYZZY4SbDOeMYC72c55n",
+  )
+  joined.write_string(
+    "d3iA4tt8cX+3j+WxTvaV64qc4qY/7Tvuz3xLf/LXKIc3pbw5Ecz/kn8XmnD1x90VK3l5nNPvWsaZ",
+  )
+  joined.write_string(
+    "BT3Caozrf8wLc73WsJ33/681tUyontXZciRWFuhRNmCWF4V6tjgnMyW1GEIZgqN74vk8YJI+9r66",
+  )
+  joined.write_string(
+    "68T3h2ILV672ELR+Y6F4UE7BRDMk659GZ8TNy+c9NaW3x+a4z98fL5O+V/LrAb1T7fek+J4uYljm",
+  )
+  joined.write_string(
+    "k52a7ydjx//+vOgGgdaJSRvcCnesYpj9LPPtKwMPtzThrOMPZRavFnSuDotqaS09NeFa5HrXJYvt",
+  )
+  joined.write_string(
+    "F37W0hB2XdL9peH0ogpH3Spm844f/C5VH10n2/6QnrX0Lr/R0wd8cStXel2M+Zb3vPj48dTnkfqW",
+  )
+  joined.write_string(
+    "Oo2SC19qspu6HZg941fBpidM/2c5n1skZ70+eFvscTe+9U+zQi8cWvddaLJXxLVJMWGnV3lV/b7Q",
+  )
+  joined.write_string(
+    "YMyevmH14x9pT01n9k/JDEi8tfmrTJ/wpaUT3D+otOVXHf2760aOsHHapvMXU3/wHM2U/rFbbo55",
+  )
+  joined.write_string(
+    "20/p2fIB3oxMIsy4C1EYaGBkwF6kohuAXrYgDNBiRClp0DWi51yERlYm7PkY3QT0pI8wgY2ZYEZA",
+  )
+  joined.write_string("Nww9aSEM+8yMI6EFeLOygZSwAqEPUKszK4gHADisB42lBgAA")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX text box vertical anchors are applied" {
+  let result = convert(pptx_text_anchor_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut bottom = false
+  for command in commands {
+    match command {
+      @render.FillText("A", _, y, _) => if y > 120.0 { bottom = true }
+      _ => ()
+    }
+  }
+  assert_true(bottom, msg="PPTX text anchor")
+}

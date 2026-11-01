@@ -831,6 +831,19 @@ fn pptx_cell_italic(cell : PptxXmlNode) -> Int32 {
 }
 
 ///|
+fn pptx_body_anchor(body : PptxXmlNode) -> String {
+  match pptx_child(Some(body), "bodyPr") {
+    Some(props) =>
+      match pptx_attribute(props.element, "anchor", "") {
+        "ctr" => "center"
+        "b" => "bottom"
+        _ => "top"
+      }
+    None => "top"
+  }
+}
+
+///|
 fn pptx_body_inset(body : PptxXmlNode, name : String) -> Double {
   match pptx_child(Some(body), "bodyPr") {
     Some(props) =>
@@ -2318,7 +2331,19 @@ fn pptx_render_slide(
     let mut line_height = 21.6
     let left_inset = pptx_body_inset(body, "lIns")
     let top_inset = pptx_body_inset(body, "tIns")
-    let mut y = shape_y + top_inset + line_height
+    let mut paragraph_count = 0
+    for paragraph in pptx_children(Some(body)) {
+      if paragraph.element.name.local_name == "p" {
+        paragraph_count += 1
+      }
+    }
+    let text_span = paragraph_count.to_double() * 21.6
+    let anchor_offset = match pptx_body_anchor(body) {
+      "center" => Double::max(0.0, (draw_height - text_span) / 2.0)
+      "bottom" => Double::max(0.0, draw_height - text_span)
+      _ => 0.0
+    }
+    let mut y = shape_y + top_inset + anchor_offset + line_height
     let mut paragraph_index = 0
     for paragraph in pptx_children(Some(body)) {
       if paragraph.element.name.local_name != "p" {
