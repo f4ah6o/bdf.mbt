@@ -4316,3 +4316,21 @@ test "PPTX table cell bold is applied" {
   }
   assert_true(bold, msg="PPTX table bold")
 }
+
+///|
+test "PPTX conversion builds a text index" {
+  let result = convert(pptx_table_text_size_fixture())
+  let document = @core.open_single(result.bdf)
+  let view = document.manifest.views[0]
+  let hash = match view.text_index {
+    Some(value) => value
+    None => ""
+  }
+  assert_true(hash != "", msg="PPTX text index")
+  let runs = @core.decode_text_index(document.part(hash))
+  let text = StringBuilder()
+  for run in runs {
+    text.write_string(run.text)
+  }
+  assert_true(text.to_string().contains("A"), msg="PPTX indexed text")
+}

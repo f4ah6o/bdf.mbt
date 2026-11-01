@@ -1536,6 +1536,9 @@ fn pptx_render_slide(
   writer : @core.DocumentWriter,
   theme : Map[String, UInt32],
   theme_fonts : (String, String),
+  page_index : Int32,
+  index_runs : Array[@core.IndexRun],
+  index_budget : @render.TextExtractionBudget,
 ) -> Json raise {
   let object = @core.ObjectBuilder::new()
   let fonts : Map[String, Int32] = Map([])
@@ -2174,6 +2177,26 @@ fn pptx_render_slide(
   }
   let encoded = object.encode()
   let hash = writer.add_part("obj", encoded)
+  let content = @render.extract_text_with_budget(
+    @core.decode_object_resources(encoded),
+    fn(_) { None },
+    index_budget,
+  ) catch {
+    _ => { runs: [], links: [], nodes: [], }
+  }
+  for i, run in content.runs {
+    index_runs.push({
+      a: page_index,
+      b: 0,
+      ordinal: run.ordinal,
+      separator: if i == 0 {
+        2
+      } else {
+        run.separator
+      },
+      text: run.text,
+    })
+  }
   Json::object({
     "w": Json::number(width, repr=width.to_string()),
     "h": Json::number(height, repr=height.to_string()),
@@ -2223,10 +2246,13 @@ pub fn convert(data : Bytes, title~ : String = "") -> PptxResult raise {
   let theme = pptx_theme_colors(pkg)
   let theme_fonts = pptx_theme_fonts(pkg)
   let pages : Array[Json] = []
+  let index_runs : Array[@core.IndexRun] = []
+  let index_budget = @render.TextExtractionBudget::new()
   for slide in presentation.slides {
     if slide.hidden {
       continue
     }
+    let page_index = pages.length()
     pages.push(
       pptx_render_slide(
         pkg,
@@ -2236,6 +2262,9 @@ pub fn convert(data : Bytes, title~ : String = "") -> PptxResult raise {
         writer,
         theme,
         theme_fonts,
+        page_index,
+        index_runs,
+        index_budget,
       ),
     )
   }
@@ -2268,6 +2297,12 @@ pub fn convert(data : Bytes, title~ : String = "") -> PptxResult raise {
   }
   if title != "" {
     view["title"] = Json::string(title)
+  }
+  if !index_runs.is_empty() {
+    let encoded = @core.encode_text_index(index_runs) catch { _ => b"" }
+    if encoded.length() > 0 {
+      view["textIndex"] = Json::string(writer.add_part("idx", encoded))
+    }
   }
   writer.add_view(Json::object(view))
   let count = pages.length()

@@ -29,7 +29,7 @@ shape rotation, theme colour schemes with luminance/tint/shade modifiers, theme 
 fonts, paragraph default run properties, placeholder transform and default run-format inheritance, table cell text with cell fills, text colours/sizes/bold/italic/alignment, vertical anchors, margins, per-side borders, grid widths and row heights, basic bar, line and pie charts, layout/master backgrounds and non-placeholder
 decorations, translated
 group shapes, solid shape fills and paragraph/run text with approximate
-metrics. Chart types other than bar, line and pie charts are not rendered yet; group
+metrics. The generated view includes a text index for search. Chart types other than bar, line and pie charts are not rendered yet; group
 rotation applies to shape geometry and text; layout/master placeholder shapes are skipped after their
 transforms are used for inheritance. The native
 converter Worker advertises the `pptx` format.
