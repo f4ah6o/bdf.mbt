@@ -3801,7 +3801,7 @@ test "PPTX table cell borders are stroked" {
   for command in commands {
     match command {
       @render.StrokeColor(0x0000ffff) => blue = true
-      @render.StrokeRect(_, _, _, _) => stroke = true
+      @render.StrokePath(_) => stroke = true
       _ => ()
     }
   }

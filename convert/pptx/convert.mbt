@@ -842,12 +842,14 @@ fn pptx_cell_text(cell : PptxXmlNode) -> String {
 }
 
 ///|
-fn pptx_cell_border(
+fn pptx_cell_borders(
   cell : PptxXmlNode,
   theme : Map[String, UInt32],
-) -> (Double, UInt32)? {
+) -> Array[(Int32, Double, UInt32)] {
+  let result : Array[(Int32, Double, UInt32)] = []
   let props = pptx_child(Some(cell), "tcPr")
-  for name in ["lnL", "lnR", "lnT", "lnB"] {
+  let names = ["lnT", "lnR", "lnB", "lnL"]
+  for side, name in names {
     match pptx_child(props, name) {
       Some(line) => {
         let width = (@string.parse_double(
@@ -857,16 +859,16 @@ fn pptx_cell_border(
           }) /
           12700.0
         if width > 0.0 {
-          match pptx_node_color(Some(line), "solidFill", theme) {
-            Some(color) => return Some((width, color))
-            None => ()
-          }
+          let color = pptx_node_color(Some(line), "solidFill", theme).unwrap_or(
+            0x000000ffU,
+          )
+          result.push((side, width, color))
         }
       }
       None => ()
     }
   }
-  None
+  result
 }
 
 ///|
@@ -942,18 +944,30 @@ fn pptx_emit_table(
         }
         None => ()
       }
-      match pptx_cell_border(cell, theme) {
-        Some((border_width, border_color)) => {
-          object.line(Float::from_double(border_width), 0, 0, 8.0F)
-          object.stroke_color(border_color)
-          object.stroke_rect(
-            Float::from_double(cell_x),
-            Float::from_double(row_top),
-            Float::from_double(column_width),
-            Float::from_double(row_height),
-          )
+      for border in pptx_cell_borders(cell, theme) {
+        let (side, border_width, border_color) = border
+        let coordinates : Array[Double] = match side {
+          0 => [cell_x, row_top, cell_x + column_width, row_top]
+          1 =>
+            [
+              cell_x + column_width,
+              row_top,
+              cell_x + column_width,
+              row_top + row_height,
+            ]
+          2 =>
+            [
+              cell_x,
+              row_top + row_height,
+              cell_x + column_width,
+              row_top + row_height,
+            ]
+          _ => [cell_x, row_top, cell_x, row_top + row_height]
         }
-        None => ()
+        let path : @core.Path = { verbs: b"\x00\x01", coordinates, }
+        object.line(Float::from_double(border_width), 0, 0, 8.0F)
+        object.stroke_color(border_color)
+        object.stroke_path(object.add_path(@core.Inline(path)))
       }
       cell_x += column_width
       cell_index += 1.0
