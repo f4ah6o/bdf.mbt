@@ -1968,9 +1968,9 @@ fn pptx_render_slide(
       shape, shape_x, shape_y, draw_width, draw_height, theme,
     )
     let mut gradient_done = false
-    if geometry == "rect" {
-      match gradient {
-        Some(paint) => {
+    match gradient {
+      Some(paint) =>
+        if geometry == "rect" {
           object.fill_paint(object.add_paint(paint))
           object.fill_rect(
             Float::from_double(shape_x),
@@ -1979,9 +1979,46 @@ fn pptx_render_slide(
             Float::from_double(draw_height),
           )
           gradient_done = true
+        } else if geometry == "ellipse" {
+          object.fill_paint(object.add_paint(paint))
+          let mut path = pptx_rotate_path(
+            pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
+            shape_x + draw_width / 2.0,
+            shape_y + draw_height / 2.0,
+            transform.rotation,
+          )
+          if placement.rotation != 0.0 {
+            path = pptx_rotate_path(
+              path,
+              placement.cx,
+              placement.cy,
+              placement.rotation,
+            )
+          }
+          object.fill_path(object.add_path(@core.Inline(path)), 0)
+          gradient_done = true
+        } else if geometry == "roundRect" {
+          object.fill_paint(object.add_paint(paint))
+          let mut path = pptx_rotate_path(
+            pptx_round_rect_path(
+              shape_x, shape_y, draw_width, draw_height, corner_radius,
+            ),
+            shape_x + draw_width / 2.0,
+            shape_y + draw_height / 2.0,
+            transform.rotation,
+          )
+          if placement.rotation != 0.0 {
+            path = pptx_rotate_path(
+              path,
+              placement.cx,
+              placement.cy,
+              placement.rotation,
+            )
+          }
+          object.fill_path(object.add_path(@core.Inline(path)), 0)
+          gradient_done = true
         }
-        None => ()
-      }
+      None => ()
     }
     if !gradient_done {
       match fill {
