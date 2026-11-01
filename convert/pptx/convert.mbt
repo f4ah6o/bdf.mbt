@@ -29,6 +29,9 @@ priv struct PptxPlacement {
   sy : Double
   tx : Double
   ty : Double
+  rotation : Double
+  cx : Double
+  cy : Double
 }
 
 ///|
@@ -593,6 +596,9 @@ fn PptxPlacement::compose(
     sy: self.sy * child.sy,
     tx: self.tx + self.sx * child.tx,
     ty: self.ty + self.sy * child.ty,
+    rotation: self.rotation + child.rotation,
+    cx: self.tx + self.sx * child.cx,
+    cy: self.ty + self.sy * child.cy,
   }
 }
 
@@ -637,7 +643,21 @@ fn pptx_group_placement(shape : PptxXmlNode) -> PptxPlacement {
   }
   let sx = if ch_w > 0.0 && ext_x > 0.0 { ext_x / ch_w } else { 1.0 }
   let sy = if ch_h > 0.0 && ext_y > 0.0 { ext_y / ch_h } else { 1.0 }
-  { sx, sy, tx: off_x - ch_x * sx, ty: off_y - ch_y * sy, }
+  let rotation = match xfrm {
+    Some(value) =>
+      pptx_int64(pptx_attribute(value.element, "rot", ""), 0L).to_double() /
+      60000.0
+    None => 0.0
+  }
+  {
+    sx,
+    sy,
+    tx: off_x - ch_x * sx,
+    ty: off_y - ch_y * sy,
+    rotation,
+    cx: off_x + ext_x / 2.0,
+    cy: off_y + ext_y / 2.0,
+  }
 }
 
 ///|
@@ -766,18 +786,18 @@ fn pptx_ellipse_path(
 }
 
 ///|
-fn pptx_rotated_rect_path(
+fn pptx_rotated_rect_path_at(
   x : Double,
   y : Double,
   width : Double,
   height : Double,
   rotation : Double,
+  cx : Double,
+  cy : Double,
 ) -> @core.Path {
   let radians = rotation * 3.141592653589793 / 180.0
   let sine = @math.sin(radians)
   let cosine = @math.cos(radians)
-  let cx = x + width / 2.0
-  let cy = y + height / 2.0
   let corners = [
     (x, y),
     (x + width, y),
@@ -794,6 +814,25 @@ fn pptx_rotated_rect_path(
     coordinates.push(cy + dx * sine + dy * cosine)
   }
   { verbs: Bytes::from_array(verbs), coordinates, }
+}
+
+///|
+fn pptx_rotated_rect_path(
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+  rotation : Double,
+) -> @core.Path {
+  pptx_rotated_rect_path_at(
+    x,
+    y,
+    width,
+    height,
+    rotation,
+    x + width / 2.0,
+    y + height / 2.0,
+  )
 }
 
 ///|
@@ -1249,7 +1288,15 @@ fn pptx_render_slide(
     None => Map([])
   }
   let shapes : Array[(PptxXmlNode, PptxPlacement)] = []
-  let root_placement : PptxPlacement = { sx: 1.0, sy: 1.0, tx: 0.0, ty: 0.0, }
+  let root_placement : PptxPlacement = {
+    sx: 1.0,
+    sy: 1.0,
+    tx: 0.0,
+    ty: 0.0,
+    rotation: 0.0,
+    cx: 0.0,
+    cy: 0.0,
+  }
   for index in 0..<roots.length() {
     let tree = pptx_child(pptx_child(Some(roots[index]), "cSld"), "spTree")
     match tree {
@@ -1424,29 +1471,49 @@ fn pptx_render_slide(
           object.alpha(Float::from_double(fill_alpha.unwrap()))
         }
         object.fill_color(color)
-        if geometry == "rect" && transform.rotation != 0.0 {
+        if geometry == "rect" &&
+          (transform.rotation != 0.0 || placement.rotation != 0.0) {
+          let group = placement.rotation != 0.0
           let path_index = object.add_path(
             @core.Inline(
-              pptx_rotated_rect_path(
+              pptx_rotated_rect_path_at(
                 shape_x,
                 shape_y,
                 draw_width,
                 draw_height,
-                transform.rotation,
+                transform.rotation + placement.rotation,
+                if group {
+                  placement.cx
+                } else {
+                  shape_x + draw_width / 2.0
+                },
+                if group {
+                  placement.cy
+                } else {
+                  shape_y + draw_height / 2.0
+                },
               ),
             ),
           )
           object.fill_path(path_index, 0)
         } else if geometry == "ellipse" {
-          let path = pptx_rotate_path(
+          let mut path = pptx_rotate_path(
             pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
             shape_x + draw_width / 2.0,
             shape_y + draw_height / 2.0,
             transform.rotation,
           )
+          if placement.rotation != 0.0 {
+            path = pptx_rotate_path(
+              path,
+              placement.cx,
+              placement.cy,
+              placement.rotation,
+            )
+          }
           object.fill_path(object.add_path(@core.Inline(path)), 0)
         } else if geometry == "roundRect" {
-          let path = pptx_rotate_path(
+          let mut path = pptx_rotate_path(
             pptx_round_rect_path(
               shape_x, shape_y, draw_width, draw_height, corner_radius,
             ),
@@ -1454,6 +1521,14 @@ fn pptx_render_slide(
             shape_y + draw_height / 2.0,
             transform.rotation,
           )
+          if placement.rotation != 0.0 {
+            path = pptx_rotate_path(
+              path,
+              placement.cx,
+              placement.cy,
+              placement.rotation,
+            )
+          }
           object.fill_path(object.add_path(@core.Inline(path)), 0)
         } else {
           object.fill_rect(
@@ -1483,15 +1558,27 @@ fn pptx_render_slide(
         Some(color) => color
         None => 0x000000ffU
       }
-      if geometry == "rect" && transform.rotation != 0.0 {
+      if geometry == "rect" &&
+        (transform.rotation != 0.0 || placement.rotation != 0.0) {
+        let group = placement.rotation != 0.0
         let path_index = object.add_path(
           @core.Inline(
-            pptx_rotated_rect_path(
+            pptx_rotated_rect_path_at(
               shape_x,
               shape_y,
               draw_width,
               draw_height,
-              transform.rotation,
+              transform.rotation + placement.rotation,
+              if group {
+                placement.cx
+              } else {
+                shape_x + draw_width / 2.0
+              },
+              if group {
+                placement.cy
+              } else {
+                shape_y + draw_height / 2.0
+              },
             ),
           ),
         )
@@ -1499,17 +1586,25 @@ fn pptx_render_slide(
         object.stroke_color(stroke_color)
         object.stroke_path(path_index)
       } else if geometry == "ellipse" {
-        let path = pptx_rotate_path(
+        let mut path = pptx_rotate_path(
           pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
           shape_x + draw_width / 2.0,
           shape_y + draw_height / 2.0,
           transform.rotation,
         )
+        if placement.rotation != 0.0 {
+          path = pptx_rotate_path(
+            path,
+            placement.cx,
+            placement.cy,
+            placement.rotation,
+          )
+        }
         object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
         object.stroke_color(stroke_color)
         object.stroke_path(object.add_path(@core.Inline(path)))
       } else if geometry == "roundRect" {
-        let path = pptx_rotate_path(
+        let mut path = pptx_rotate_path(
           pptx_round_rect_path(
             shape_x, shape_y, draw_width, draw_height, corner_radius,
           ),
@@ -1517,6 +1612,14 @@ fn pptx_render_slide(
           shape_y + draw_height / 2.0,
           transform.rotation,
         )
+        if placement.rotation != 0.0 {
+          path = pptx_rotate_path(
+            path,
+            placement.cx,
+            placement.cy,
+            placement.rotation,
+          )
+        }
         object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
         object.stroke_color(stroke_color)
         object.stroke_path(object.add_path(@core.Inline(path)))
