@@ -26,7 +26,7 @@ afterward; JavaScript and wasm-gc execute the same expectations.
 PresentationML. It renders visible slides, solid, image and linear-gradient slide backgrounds, embedded pictures with alpha, source-rectangle cropping, rotation and flips, rectangle,
 rounded-rectangle and ellipse fill/stroke with solid-fill alpha,
 linear gradients on rectangles, ellipses and rounded rectangles, and shape rotation, theme colour schemes with luminance/tint/shade modifiers, theme major/minor
-fonts, paragraph default run properties, text-box insets and vertical anchors, placeholder transform and default run-format inheritance, table cell text with cell fills, text colours/sizes/bold/italic/alignment, vertical anchors, margins, per-side borders, grid widths/spans and row heights/spans, basic bar, line and pie charts, layout/master backgrounds and non-placeholder
+fonts, paragraph default run properties, paragraph spacing, text-box insets and vertical anchors, placeholder transform and default run-format inheritance, table cell text with cell fills, text colours/sizes/bold/italic/alignment, vertical anchors, margins, per-side borders, grid widths/spans and row heights/spans, basic bar, line and pie charts, layout/master backgrounds and non-placeholder
 decorations, translated
 group shapes, solid shape fills and paragraph/run text with approximate
 metrics. The generated view includes a text index for search. Chart types other than bar, line and pie charts are not rendered yet; group

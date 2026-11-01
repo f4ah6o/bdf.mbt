@@ -831,6 +831,19 @@ fn pptx_cell_italic(cell : PptxXmlNode) -> Int32 {
 }
 
 ///|
+fn pptx_paragraph_spacing(paragraph : PptxXmlNode, name : String) -> Double {
+  let spacing = pptx_child(pptx_child(Some(paragraph), "pPr"), name)
+  match pptx_child(spacing, "spcPts") {
+    Some(value) =>
+      (@string.parse_double(pptx_attribute(value.element, "val", "0")) catch {
+        _ => 0.0
+      }) /
+      100.0
+    None => 0.0
+  }
+}
+
+///|
 fn pptx_body_anchor(body : PptxXmlNode) -> String {
   match pptx_child(Some(body), "bodyPr") {
     Some(props) =>
@@ -2360,7 +2373,7 @@ fn pptx_render_slide(
       }
       let mut x = shape_x + left_inset
       if paragraph_index > 0 {
-        y += line_height
+        y += line_height + pptx_paragraph_spacing(paragraph, "spcBef")
       }
       paragraph_index += 1
       let flush = fn() raise {
@@ -2462,7 +2475,7 @@ fn pptx_render_slide(
         }
       }
       flush()
-      y += line_height
+      y += line_height + pptx_paragraph_spacing(paragraph, "spcAft")
     }
     if text_rotated {
       object.restore()
