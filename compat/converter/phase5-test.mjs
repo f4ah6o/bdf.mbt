@@ -57,6 +57,8 @@ try {
     for (const [name, path] of [
       ['hpgl1.plt', '/compat/hpgl/fixtures/hpgl1.plt'],
       ['shapes.plt', '/compat/hpgl/fixtures/shapes.plt'],
+      ['shapes.jww', '/compat/jww/fixtures/shapes.jww'],
+      ['old.jww', '/compat/jww/fixtures/old.jww'],
     ]) {
       const data = new Uint8Array(await (await fetch(base + path)).arrayBuffer());
       const a = await upstream.convert(data, { name });
@@ -107,7 +109,7 @@ try {
   assert.equal(result.selected, 1);
   assert.ok(String(result.badColor).includes('not pens or mono'), 'colors parameter error');
   assert.ok(String(result.named).startsWith('hpgl:'), 'HP-GL detection');
-  console.log(`Phase 5 HP-GL/2: ${result.cases.length} fixtures match upstream page geometry, layers and text.`);
+  console.log(`Phase 5 HP-GL/2 and Jw_cad: ${result.cases.length} fixtures match upstream page geometry, layers and text.`);
 } finally {
   await browser.close();
   server.close();
