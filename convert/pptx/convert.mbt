@@ -831,6 +831,18 @@ fn pptx_cell_italic(cell : PptxXmlNode) -> Int32 {
 }
 
 ///|
+fn pptx_body_inset(body : PptxXmlNode, name : String) -> Double {
+  match pptx_child(Some(body), "bodyPr") {
+    Some(props) =>
+      match pptx_attribute(props.element, name, "") {
+        "" => 0.0
+        value => (@string.parse_double(value) catch { _ => 0.0 }) / 12700.0
+      }
+    None => 0.0
+  }
+}
+
+///|
 fn pptx_cell_text_size(cell : PptxXmlNode) -> Double {
   for paragraph in pptx_children(pptx_child(Some(cell), "txBody")) {
     if paragraph.element.name.local_name != "p" {
@@ -2050,7 +2062,9 @@ fn pptx_render_slide(
     let line : Array[PptxLineItem] = []
     let mut line_width = 0.0
     let mut line_height = 21.6
-    let mut y = shape_y + line_height
+    let left_inset = pptx_body_inset(body, "lIns")
+    let top_inset = pptx_body_inset(body, "tIns")
+    let mut y = shape_y + top_inset + line_height
     let mut paragraph_index = 0
     for paragraph in pptx_children(Some(body)) {
       if paragraph.element.name.local_name != "p" {
@@ -2065,7 +2079,7 @@ fn pptx_render_slide(
           }
         None => "left"
       }
-      let mut x = shape_x
+      let mut x = shape_x + left_inset
       if paragraph_index > 0 {
         y += line_height
       }

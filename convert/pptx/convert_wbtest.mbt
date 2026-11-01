@@ -4334,3 +4334,107 @@ test "PPTX conversion builds a text index" {
   }
   assert_true(text.to_string().contains("A"), msg="PPTX indexed text")
 }
+
+///|
+fn pptx_text_inset_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GAw9E2M7ZuUyvQTyDNlYmAQBtLRzvl5Jal5JfEhlQWpxbF6Fbk5",
+  )
+  joined.write_string(
+    "awOt/Q8bCNz7KTrtulbhqQYBr0uNxzl4nrLPmeOddFX/551Vf7/HTFJi1NpgEFl+P/h5VXFJmIzB",
+  )
+  joined.write_string(
+    "RM59E19vmsS0l2/uR2fl+9v8j64VmXKwPKH5uNu8CU+W7V21fXmHSsSblROTz33007ykbLXAyOVL",
+  )
+  joined.write_string(
+    "zxdFyxM2yxxdL1hLBMSGX+29dDD9y84Tk9tzXrO/SczfXGHzqUpz0oVJIt+5C09lqRzJ6G07s8Pq",
+  )
+  joined.write_string(
+    "x7tor0I/jUjL4gyTiWE+E14lHWr5I1Nwbe+H1EkvA/Y4nTr/YMbSpDNaairXzt75VL6cO9T5vnRv",
+  )
+  joined.write_string(
+    "7IXq45M+bZ65Of7YpcaPq+1PTXiqqnv+1/7bZ9bJ81758/qtdQBKSBX5fZ+/CcjTZWRg4AbS8UWp",
+  )
+  joined.write_string(
+    "OcX6eiCy9/xZrkMGPOwfdvsHFpXftek4sSvW5UboM+YpZq/bXrP7in7/JubvZ1Ph8+m8/pK8+WVp",
+  )
+  joined.write_string(
+    "/D0mleoLtLwSXky5PtmYad3fymoGN08r3fT3AQeaWHI3r9S3OD2lPGMO08YeCyGDZSJ9cyZLXfTS",
+  )
+  joined.write_string(
+    "qnGYrt7cH7Ysxu1wc4h55oT3p4rOP17OePZUylwxAetYxtfTG/7fqJNQa1Vf/04s9lfhI+2JqZK8",
+  )
+  joined.write_string(
+    "aoyKKnJKQXn7LrtOazQ3ja+9uYcB1WsXKs4fOQ/keQC9BhItKCjRLyhKLQamg8SSzPw8UCroneCf",
+  )
+  joined.write_string(
+    "zWQocPT9X5HEd6aFF1N351zzFmTJz7V38Ei76/BvYueiuqpkXdcXS7d/n1Fp/+zsBsvq434zTh5T",
+  )
+  joined.write_string(
+    "SNwpcMDgRUaOhcePX3f2lR1YsSJhSjejasyEBON9PCv9JTmdA5eqRS5leTW5ZeeUK8V+VW7rMwSF",
+  )
+  joined.write_string(
+    "26xmJ31bFTKb/4/lc9n8loyd4WYH+FX+swstP5lV0//rhfZrxpMv9i00ue1icE345My5N4N/Xj0j",
+  )
+  joined.write_string(
+    "xXl2F+u037vPWF9mkGf/l/798akvkYduF20VWmTnGq+y5e6u3bPdH+w8XsGMGgAlc0992QDkKQID",
+  )
+  joined.write_string(
+    "QB4aAJD4RQ8GaHxvBMa3ANuDu8s5tt/eIuuyJFNccJdXbcOEmNsJs1piRH5/YysMKCj48/7H/sez",
+  )
+  joined.write_string(
+    "3m2MKDvuccyaMTSQyXn5HrM8oQJJv9u2Bl6XMjP3OjNqC5W8XWa5eKpmeYZZY4SbDOeMYC72c55n",
+  )
+  joined.write_string(
+    "d3iA4tt8cX+3j+WxTvaV64qc4qY/7Tvuz3xLf/LXKIc3pbw5Ecz/kn8XmnD1x90VK3l5nNPvWsaZ",
+  )
+  joined.write_string(
+    "BT3Caozrf8wLc73WsJ33/681tUyonr1VuuCJMtCj4sAsLwr1bHFOZkpqMYQyBEd34Om8ZgOBPd+1",
+  )
+  joined.write_string(
+    "de7PZnWJ7mIKrF5xxVtU8wtzTI6Qyp8JuYEvrpfnOl26U3WzPS09be+9d2qWEwIjrmeHXiyZHKAU",
+  )
+  joined.write_string(
+    "srpyfZ/o35x777i95qR3bXbUDrwYabFr9ftty0qY1T3C1pmI2lbmezFcn9eSkre4N6Cj9JbXs41b",
+  )
+  joined.write_string(
+    "3Q3CLBbafM5QYT8x6YmgymtR2+4N/zsKTu8r3Cxd17t7S3tj+xuf5NaIVQJXKwyqpdXtju1VtV2f",
+  )
+  joined.write_string(
+    "4daZJDT/UsfJYIvmRD4xL50H+jePnjm1crNRyt3SlFUvimc955TL2TdFIGCKqu6hzImirgduz2aM",
+  )
+  joined.write_string(
+    "KE0QNVs6P850PvNPbmM9qz3a5aYfNp6Wn7fp6uEWgfJNFm/rPkSK18fvZxGWX5vTo7Zrrd6GOezr",
+  )
+  joined.write_string(
+    "vjd9bRH4v/Ufa4A3I5MIM+6iFAYaGBmwF6zoBqCXMAgDtBhRyht0jej5F6GRlQl7bkY3AT0DIExg",
+  )
+  joined.write_string(
+    "YyaYHdANQ09gCMM+M+NIbgHerGwgJaxA6APU6skK4gEA5muV36sGAAA=",
+  )
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX text box insets are applied" {
+  let result = convert(pptx_text_inset_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut inset = false
+  for command in commands {
+    match command {
+      @render.FillText("A", x, y, _) =>
+        if x > 140.0 && y > 100.0 {
+          inset = true
+        }
+      _ => ()
+    }
+  }
+  assert_true(inset, msg="PPTX text inset")
+}
