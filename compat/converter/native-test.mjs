@@ -225,15 +225,38 @@ export async function verifyNativeConverter(browser, base) {
           let plotterError;
           try { await client.convert(new TextEncoder().encode('IN;SP1;PA0,0;PD100,200;')); } catch (e) { plotterError = e.code; }
           if (plotterError !== 'unknown-format') throw new Error(kind + ': plotter data was mistaken for CSV');
-          for (const [input, name] of [
-            ['IN;SP1;PA0,0;PD100,200;', 'plot.csv'],
-            ['%PDF-1.7\nname,value\nA,1\n', 'document.csv'],
-            ['name,value\nA,1\nB,2\n', 'score.musicxml'],
-          ]) {
-            let code;
-            try { await client.convert(new TextEncoder().encode(input), { name }); } catch (e) { code = e.code; }
-            if (code !== 'unknown-format') throw new Error(kind + ': unsupported format was mistaken for CSV');
-          }
+          // Content signatures must precede a misleading filename: HP-GL and
+          // unhandled MusicXML must not fall back to CSV, while a real PDF named
+          // .csv must convert as PDF.
+          let plotterNamedCsvError;
+          try { await client.convert(new TextEncoder().encode('IN;SP1;PA0,0;PD100,200;'), { name: 'plot.csv' }); } catch (e) { plotterNamedCsvError = e.code; }
+          if (plotterNamedCsvError !== 'unknown-format') throw new Error(kind + ': HP-GL named plot.csv was mistaken for CSV');
+          const minimalPdf = () => {
+            const stream = 'BT /F1 24 Tf 20 40 Td (Hello PDF) Tj ET';
+            const objects = [
+              '<< /Type /Catalog /Pages 2 0 R >>',
+              '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+              '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+              `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
+              '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+            ];
+            let body = '%PDF-1.4\n';
+            const offsets = [];
+            for (let index = 0; index < objects.length; index++) {
+              offsets.push(body.length);
+              body += `${index + 1} 0 obj\n${objects[index]}\nendobj\n`;
+            }
+            const xref = body.length;
+            body += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+            for (const offset of offsets) body += `${String(offset).padStart(10, '0')} 00000 n \n`;
+            body += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+            return new TextEncoder().encode(body);
+          };
+          const pdfNamedCsv = await client.convert(minimalPdf(), { name: 'document.csv' });
+          if (pdfNamedCsv.format !== 'pdf') throw new Error(kind + ': PDF signature must precede the CSV filename, got ' + pdfNamedCsv.format);
+          let musicXmlNamedError;
+          try { await client.convert(new TextEncoder().encode('name,value\nA,1\nB,2\n'), { name: 'score.musicxml' }); } catch (e) { musicXmlNamedError = e.code; }
+          if (musicXmlNamedError !== 'unknown-format') throw new Error(kind + ': unhandled MusicXML named score.musicxml was mistaken for CSV');
           const imageNamedCsv = await client.convert(toBytes(fixtures[0].input), { name: 'picture.csv' });
           if (imageNamedCsv.format !== fixtures[0].format) throw new Error(kind + ': image signature must precede the CSV filename');
           result.push({ converted, closed, missing, csvOutcomes });

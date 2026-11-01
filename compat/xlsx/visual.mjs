@@ -14,15 +14,17 @@ const bytes = value => Uint8Array.from(atob(value), character => character.charC
 // VLMKit captures in a separate browser from preflight. Keep its request open
 // until this page has completed all asynchronous conversion and rendering.
 const token = crypto.randomUUID();
-const barrier = await fetch(`./visual-wait?token=${token}`);
-if (!barrier.ok) throw new Error(`visual wait: HTTP ${barrier.status}`);
+const mode = document.body.dataset.mode;
+window.bdfMode = mode;
+let barrier;
 try {
+  barrier = await fetch(`./visual-wait?token=${token}`);
+  if (!barrier.ok) throw new Error(`visual wait: HTTP ${barrier.status}`);
   for (const [label, file, index] of cases) {
     const response = await fetch('./' + file);
     if (!response.ok) throw new Error(`${file}: HTTP ${response.status}`);
     const sample = (await response.json())[index];
     if (!sample) throw new Error(`${file}: missing case ${index}`);
-    const mode = document.body.dataset.mode;
     const data = mode === 'upstream' ? bytes(sample.bdf) :
       xlsx_render_basic(bytes(sample.input), sample.mode, sample.no_index);
     if (!data.length) throw new Error(`${label}: conversion failed`);
@@ -31,8 +33,10 @@ try {
     const surface = document.createElement('div'); surface.className = 'surface';
     section.append(title, surface); document.querySelector('#host').append(section);
     if (mode === 'moon') {
+      window.bdfRenderer = 'moon';
       await render_bdf_sheet_region_async(surface, data, 0, 0, 560, 115, 1);
     } else {
+      window.bdfRenderer = 'upstream';
       const doc = await BdfDocument.open(new BufferSource(data));
       const canvas = document.createElement('canvas'); canvas.width = 560; canvas.height = 115;
       surface.append(canvas);
@@ -46,7 +50,9 @@ try {
   document.querySelector('#host').replaceChildren();
   console.error(error);
 } finally {
-  const response = await fetch(`./visual-release?token=${token}`, { method: 'POST' });
-  if (!response.ok) throw new Error(`visual release: HTTP ${response.status}`);
-  await barrier.text();
+  if (barrier?.ok) {
+    const response = await fetch(`./visual-release?token=${token}`, { method: 'POST' });
+    if (!response.ok) throw new Error(`visual release: HTTP ${response.status}`);
+    await barrier.text();
+  }
 }

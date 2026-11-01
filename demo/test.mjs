@@ -11,6 +11,9 @@ import { PNG } from 'pngjs';
 
 const root = resolve(import.meta.dirname, '../_build/pages');
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.csv': 'text/csv; charset=utf-8', '.bdf': 'application/octet-stream', '.png': 'image/png', '.svg': 'image/svg+xml', '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
+// SHA-256 of the base64-decoded `input` from compat/xlsx/render/001.json. Update
+// this only when the four-sheet visual fixture is deliberately replaced.
+const FOUR_SHEET_FIXTURE_SHA256 = 'd3df5666380ffefead5bafce06c6670ed26fa7fbe1b16effff85bef748af643c';
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   if (!url.pathname.startsWith('/bdf.mbt/')) { res.writeHead(404).end(); return; }
@@ -171,14 +174,21 @@ try {
   const visualCases = JSON.parse(await readFile(resolve(import.meta.dirname, '../compat/xlsx/render/001.json')));
   // Select the four-sheet workbook by content so fixture reordering cannot
   // silently narrow this end-to-end test to a different input.
-  const visualCase = visualCases.find(item => createHash('sha256').update(Buffer.from(item.input, 'base64')).digest('hex') === 'd3df5666380ffefead5bafce06c6670ed26fa7fbe1b16effff85bef748af643c');
+  const visualCase = visualCases.find(item => createHash('sha256').update(Buffer.from(item.input, 'base64')).digest('hex') === FOUR_SHEET_FIXTURE_SHA256);
   assert.ok(visualCase, 'four-sheet XLSX visual fixture');
   assert.equal(visualCase.mode, '');
   assert.equal(visualCase.no_index, false);
   async function sheetImages(name, bytes) {
     await page.locator('#file').setInputFiles({ name, mimeType: 'application/octet-stream', buffer: Buffer.from(bytes, 'base64') });
-    await page.waitForFunction(n => document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled, name, { timeout: 60000 });
-    assert.equal(await page.locator('#status').evaluate(el => el.classList.contains('error')), false, name);
+    // Conversion failures may leave #document-name unchanged, so also stop
+    // waiting when #status reports an error and fail with that message below.
+    await page.waitForFunction(n => {
+      const status = document.querySelector('#status');
+      if (status?.classList.contains('error')) return true;
+      return document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled;
+    }, name, { timeout: 60000 });
+    const statusError = await page.locator('#status').evaluate(el => el.classList.contains('error') ? el.textContent.trim() : '');
+    assert.equal(statusError, '', `XLSX conversion failed for ${name}: ${statusError}`);
     const ids = await page.locator('#view option').evaluateAll(options => options.map(option => option.value));
     assert.deepEqual(ids, ['sheet1', 'sheet2', 'sheet3', 'sheet4'], `${name} sheet order`);
     const images = [];

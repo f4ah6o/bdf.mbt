@@ -14,6 +14,8 @@ function contains(haystack, needle) {
 // Keep VLMKit's screenshot from racing asynchronous decode and rendering.
 // The server holds this request open until the last conversion finishes.
 const token = crypto.randomUUID();
+const mode = document.body.dataset.mode;
+window.bdfMode = mode;
 let barrier;
 try {
   barrier = await fetch(`./visual-wait?token=${token}`);
@@ -35,7 +37,6 @@ try {
       if (image.naturalWidth !== picture.width || image.naturalHeight !== picture.height)
         throw new Error(`${picture.label}: decoded dimensions ${image.naturalWidth}x${image.naturalHeight}`);
     } finally { URL.revokeObjectURL(url); }
-    const mode = document.body.dataset.mode;
     const data = mode === 'upstream' ? bytes(sample.bdf) :
       xlsx_render_basic(bytes(sample.input), sample.mode, sample.no_index);
     if (!data.length || !contains(data, imageBytes)) throw new Error(`${picture.label}: missing embedded image bytes`);
@@ -44,8 +45,10 @@ try {
     const surface = document.createElement('div'); surface.className = 'surface';
     section.append(title, surface); document.querySelector('#host').append(section);
     if (mode === 'moon') {
+      window.bdfRenderer = 'moon';
       await render_bdf_sheet_region_async(surface, data, 0, 0, 560, 115, 1);
     } else {
+      window.bdfRenderer = 'upstream';
       const doc = await BdfDocument.open(new BufferSource(data));
       const canvas = document.createElement('canvas'); canvas.width = 560; canvas.height = 115;
       surface.append(canvas);

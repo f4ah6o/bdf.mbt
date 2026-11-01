@@ -1008,3 +1008,240 @@ test "PDF bare CFF fonts embed as OpenType" {
   }
   assert_false(fallback, msg="PDF CFF fallback")
 }
+
+///|
+// Checks that the image op is wrapped in a local Y flip about the unit square
+// and returns the index of the Image command.
+fn pdf_test_image_flip_wrapper(
+  commands : Array[@render.Command],
+) -> Int32 raise {
+  let mut image = -1
+  for i, command in commands {
+    match command {
+      @render.Image(_, _, _, _, _) => if image < 0 { image = i }
+      _ => ()
+    }
+  }
+  guard image >= 2 else { fail("PDF image command is missing") }
+  guard image + 1 < commands.length() else {
+    fail("PDF image wrapper is truncated")
+  }
+  guard commands[image - 2] is @render.Save else {
+    fail("PDF image wrapper is missing Save")
+  }
+  guard commands[image - 1] is @render.Transform(a, b, c, d, e, f) else {
+    fail("PDF image wrapper is missing Transform")
+  }
+  assert_eq(
+    (a, b, c, d, e, f),
+    (1.0, 0.0, 0.0, -1.0, 0.0, 1.0),
+    msg="PDF image local Y flip",
+  )
+  guard commands[image + 1] is @render.Restore else {
+    fail("PDF image wrapper is missing Restore")
+  }
+  match commands[image] {
+    @render.Image(_, x, y, width, height) =>
+      assert_eq(
+        (x, y, width, height),
+        (0.0, 0.0, 1.0, 1.0),
+        msg="PDF image unit square",
+      )
+    _ => fail("PDF image command")
+  }
+  image
+}
+
+///|
+// Checks that the first path fill after the image is emitted outside the local
+// flip wrapper.
+fn pdf_test_fill_after_image(
+  commands : Array[@render.Command],
+  image : Int32,
+) -> Unit raise {
+  let mut fill = -1
+  for i, command in commands {
+    if i > image + 1 {
+      match command {
+        @render.FillRect(_, _, _, _) | @render.FillPath(_, _) =>
+          if fill < 0 {
+            fill = i
+          }
+        _ => ()
+      }
+    }
+  }
+  guard fill > image + 1 else {
+    fail("PDF path fill is missing after the image wrapper")
+  }
+}
+
+///|
+test "PDF Flate RGB image is flipped into page orientation" {
+  let document = pdf_graphics_document(
+    pdf_xobject_test_document(
+      b"q 200 0 0 200 0 0 cm /Im1 Do Q\n0 0 40 40 re f",
+      "/Type /XObject /Subtype /Image /Width 2 /Height 2 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode",
+      @zlib.compress(b"\xff\x00\x00\xff\x00\x00\x00\x00\xff\x00\x00\xff"[:]),
+    ),
+    no_text_index=true,
+  )
+  let commands = pdf_test_body_commands(document)
+  guard commands[0] is @render.Transform(a, b, c, d, e, f) else {
+    fail("PDF page transform is missing")
+  }
+  assert_eq(
+    (a, b, c, d, e, f),
+    (1.0, 0.0, 0.0, -1.0, 0.0, 200.0),
+    msg="PDF page Y flip",
+  )
+  let image = pdf_test_image_flip_wrapper(commands)
+  pdf_test_fill_after_image(commands, image)
+}
+
+///|
+test "PDF image formats keep the local Y flip" {
+  let inline_flate = pdf_graphics_document(
+    pdf_inline_test_document(
+      pdf_inline_content(
+        "/W 2 /H 2 /CS /RGB /BPC 8 /F /FlateDecode",
+        @zlib.compress(b"\xff\x00\x00\xff\x00\x00\x00\x00\xff\x00\x00\xff"[:]),
+      ),
+    ),
+    no_text_index=true,
+  )
+  let inline_mask = pdf_graphics_document(
+    pdf_inline_test_document(
+      pdf_inline_mask_content(
+        "/W 8 /H 1 /IM true /BPC 1 /F /FlateDecode",
+        @zlib.compress(b"\x00"[:]),
+      ),
+    ),
+    no_text_index=true,
+  )
+  let xobject_mask = pdf_graphics_document(
+    pdf_xobject_test_document(
+      b"q 1 0 0 rg 100 0 0 100 10 20 cm /Im1 Do Q",
+      "/Type /XObject /Subtype /Image /ImageMask true /Width 8 /Height 1 /BitsPerComponent 1 /Filter /FlateDecode",
+      @zlib.compress(b"\x00"[:]),
+    ),
+    no_text_index=true,
+  )
+  let jpeg = pdf_graphics_document(
+    pdf_xobject_test_document(
+      b"q 100 0 0 100 10 20 cm /Im1 Do Q", "/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode",
+      b"\xff\xd8\xff\xd9",
+    ),
+    no_text_index=true,
+  )
+  for document in [inline_flate, inline_mask, xobject_mask, jpeg] {
+    ignore(pdf_test_image_flip_wrapper(pdf_test_body_commands(document)))
+  }
+}
+
+///|
+test "PDF image flip is undone when the state limit suppresses save" {
+  let graphics = PdfGraphics::new(
+    200.0,
+    200.0,
+    (1.0, 0.0, 0.0, -1.0, 0.0, 200.0),
+  )
+  for _ in 0..<1024 {
+    graphics.save()
+  }
+  assert_eq(graphics.stack.length(), 1024, msg="PDF state limit setup")
+  assert_eq(graphics.unsaved, 0, msg="PDF state limit setup")
+  let before = graphics.state.matrix
+  let unsaved = graphics.unsaved
+  graphics.emit_image(b"\xff\xd8\xff\xd9")
+  assert_eq(graphics.unsaved, unsaved, msg="PDF suppressed image save")
+  assert_eq(
+    graphics.stack.length(),
+    1024,
+    msg="PDF suppressed image must not grow the state stack",
+  )
+  assert_eq(
+    graphics.state.matrix,
+    before,
+    msg="PDF suppressed image must restore the caller CTM",
+  )
+  let resources = @core.decode_object_resources(graphics.object.encode())
+  let commands = @render.compile_object(resources.object)
+  let mut image = -1
+  for i, command in commands {
+    match command {
+      @render.Image(_, _, _, _, _) => image = i
+      _ => ()
+    }
+  }
+  guard image >= 1 else { fail("PDF suppressed image command is missing") }
+  guard image + 1 < commands.length() else {
+    fail("PDF suppressed image wrapper is truncated")
+  }
+  guard commands[image - 1] is @render.Transform(a, b, c, d, e, f) else {
+    fail("PDF suppressed image is missing the local Y flip")
+  }
+  assert_eq(
+    (a, b, c, d, e, f),
+    (1.0, 0.0, 0.0, -1.0, 0.0, 1.0),
+    msg="PDF suppressed image local Y flip",
+  )
+  guard commands[image + 1] is @render.Transform(a, b, c, d, e, f) else {
+    fail("PDF suppressed image leaves an unmatched local Y flip")
+  }
+  assert_eq(
+    (a, b, c, d, e, f),
+    (1.0, 0.0, 0.0, -1.0, 0.0, 1.0),
+    msg="PDF suppressed image inverse Y flip",
+  )
+  assert_eq(
+    image + 2,
+    commands.length(),
+    msg="PDF suppressed image trailing commands",
+  )
+}
+
+///|
+fn pdf_rotated_image_test_document(rotate : Int32) -> Bytes {
+  let rotation = if rotate == 0 { "" } else { " /Rotate \{rotate}" }
+  pdf_test_pdf([
+    b"<< /Type /Catalog /Pages 2 0 R >>",
+    b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+    @utf8.encode(
+      "<< /Type /Page /Parent 2 0 R" +
+      rotation +
+      " /Resources << /XObject << /Im1 5 0 R >> >> /Contents 4 0 R >>",
+    ),
+    pdf_test_stream("", b"q 200 0 0 200 0 0 cm /Im1 Do Q"),
+    pdf_test_stream(
+      "/Type /XObject /Subtype /Image /Width 2 /Height 2 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode",
+      @zlib.compress(b"\xff\x00\x00\xff\x00\x00\x00\x00\xff\x00\x00\xff"[:]),
+    ),
+  ])
+}
+
+///|
+test "PDF image flip stays local under page rotation" {
+  let cases : Array[(Int32, (Double, Double, Double, Double, Double, Double))] = [
+    (0, (1.0, 0.0, 0.0, -1.0, 0.0, 200.0)),
+    (90, (0.0, 1.0, 1.0, 0.0, 0.0, 0.0)),
+    (180, (-1.0, 0.0, 0.0, 1.0, 200.0, 0.0)),
+    (270, (0.0, -1.0, -1.0, 0.0, 200.0, 200.0)),
+  ]
+  for (rotate, expected) in cases {
+    let document = pdf_graphics_document(
+      pdf_rotated_image_test_document(rotate),
+      no_text_index=true,
+    )
+    let commands = pdf_test_body_commands(document)
+    guard commands[0] is @render.Transform(a, b, c, d, e, f) else {
+      fail("PDF rotated page transform is missing")
+    }
+    assert_eq(
+      (a, b, c, d, e, f),
+      expected,
+      msg="PDF rotated page transform \{rotate}",
+    )
+    ignore(pdf_test_image_flip_wrapper(commands))
+  }
+}

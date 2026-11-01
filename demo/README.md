@@ -44,11 +44,12 @@ upstream Go-generated BDF using the same viewer. This checks that fixture, not
 every Excel feature. The test requires Playwright Chromium. Run the `vlmkit`
 gates against the served URL for markup and accessibility checks.
 
-The `Demo pages` workflow builds and tests the site on pull requests, pushes to
-`main`, and manual runs. It deploys only from `main` if the repository's Pages source is already
-set to **GitHub Actions** and the `github-pages` environment already exists.
-It uses that environment and its protection rules without changing repository
-settings or creating an environment. If Pages is disabled, an administrator can choose **Settings →
+The `Demo pages` workflow builds and tests the site on pull requests and pushes
+to `main`; manual runs work from `main`. It deploys only from `main` if the
+repository's Pages source is already set to **GitHub Actions** and the
+`github-pages` environment already exists. It uses that environment and its
+protection rules without changing repository settings or creating an
+environment. If Pages is disabled, an administrator can choose **Settings →
 Pages → Build and deployment → Source → GitHub Actions**, then run the workflow
 again from the Actions tab. GitHub reports the resulting site URL in the
 workflow's deployment step. The expected default project URL is
