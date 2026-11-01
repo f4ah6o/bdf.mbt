@@ -1,6 +1,6 @@
 ///|
 test "bare CFF wraps into an OpenType font" {
-  let cff = b"\x01\x00\x04\x01"
+  let cff = b"\x01\x00\x04\x01\x00\x01\x01\x01\x05Test\x00\x01\x01\x01\x07\x1d\x00\x00\x00\x1c\x11\x00\x00\x00\x00\x00\x01\x01\x01\x02\x0e"
   let otf = from_cff(
     cff,
     1000,
@@ -22,4 +22,7 @@ test "bare CFF wraps into an OpenType font" {
     index += 1
   }
   assert_true(cff_tag, msg="CFF table tag")
+  let parsed = parse(otf)
+  assert_eq(parsed.metrics.glyph_count, 2)
+  assert_true(parsed.metrics.is_cff)
 }

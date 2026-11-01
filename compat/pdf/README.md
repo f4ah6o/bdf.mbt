@@ -118,7 +118,7 @@ patterns are rejected.
 The embedded-font tests build synthetic PDFs whose font descriptor carries a
 TrueType `/FontFile2` stream. They check that the font part bytes are stored
 unchanged, that Flate-compressed programs are decoded, and that the page's font
-resource references the part hash. Type 1 `/FontFile` and bare CFF programs use a system-font fallback and add a
+resource references the part hash. Type 1 `/FontFile` uses a system-font fallback and adds a
 warning until their outline conversion is ported.
 
 The annotation test builds a page whose `/Annots` names a URI link. It checks
@@ -142,8 +142,8 @@ leading, rise and rendering-mode operators against upstream before glyph
 output. `generate_text_state_test.go` needs `BDF_PDF_FIXTURES` and
 `BDF_REFERENCE_OUTPUT` and runs as `TestCodexPDFTextState` upstream. Text
 drawing is checked for simple fonts, composite CID fonts with encoding CMaps,
-vertical writing, spacing changes and rendering modes. Embedded Type1/CFF font programs and Type3 glyph procedures use the system-font
-fallback; unsupported text features fail closed.
+vertical writing, spacing changes and rendering modes. Embedded bare CFF programs are wrapped as OpenType; Type1 programs and Type3
+glyph procedures use the system-font fallback; unsupported text features fail closed.
 
 The simple-font fixtures compare the Standard, WinAnsi and MacRoman glyph
 names and Unicode values, encoding differences, system-font style selection

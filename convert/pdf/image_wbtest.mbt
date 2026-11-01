@@ -970,3 +970,41 @@ test "PDF Type3 fonts fall back to a system font" {
   }
   assert_true(found, msg="PDF Type3 fallback warning")
 }
+
+///|
+test "PDF bare CFF fonts embed as OpenType" {
+  let cff = b"\x01\x00\x04\x01\x00\x01\x01\x01\x05Test\x00\x01\x01\x01\x07\x1d\x00\x00\x00\x1c\x11\x00\x00\x00\x00\x00\x01\x01\x01\x02\x0e"
+  let data = pdf_test_pdf([
+    b"<< /Type /Catalog /Pages 2 0 R >>",
+    b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+    b"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
+    pdf_test_stream("", b"BT /F1 12 Tf 10 10 Td (A) Tj ET"),
+    b"<< /Type /Font /Subtype /Type1 /BaseFont /Minimal /FirstChar 65 /LastChar 65 /Widths [500] /Encoding /WinAnsiEncoding /FontDescriptor 6 0 R >>",
+    b"<< /Type /FontDescriptor /FontName /Minimal /Flags 4 /FontBBox [0 0 1000 1000] /ItalicAngle 0 /Ascent 800 /Descent -200 /CapHeight 700 /StemV 80 /FontFile3 7 0 R >>",
+    pdf_test_stream("/Subtype /Type1C", cff),
+  ])
+  let (document, warnings) = pdf_graphics_document_result(
+    data,
+    no_text_index=true,
+  )
+  let split = @core.single_to_split(document)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(document).part(body_hash),
+  )
+  let mut embedded = false
+  for font in resources.fonts {
+    if font.hash is Some(_) {
+      embedded = true
+    }
+  }
+  assert_true(embedded, msg="PDF CFF embedded font")
+  let mut fallback = false
+  for warning in warnings {
+    if warning.contains("system font") {
+      fallback = true
+    }
+  }
+  assert_false(fallback, msg="PDF CFF fallback")
+}

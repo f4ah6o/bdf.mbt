@@ -67,6 +67,32 @@ fn PdfFile::embedded_font_stream(
 }
 
 ///|
+fn PdfFile::embedded_cff_stream(
+  self : PdfFile,
+  number : Int64,
+) -> Bytes raise PdfStreamError {
+  let loaded = self.load(number, 0)
+  let raw = match loaded.stream {
+    Some(value) => value
+    None => raise InvalidStream("embedded CFF is not a stream")
+  }
+  let (data, codec) = pdf_decode_stream(
+    raw,
+    self.resolved_stream_filters(loaded.value),
+    268435456L,
+    false,
+    268435456L,
+  )
+  if codec is Some(_) {
+    raise InvalidStream("encoded embedded CFF is not supported")
+  }
+  if data.length() < 4 || data[0] != b'\x01' || data[1] != b'\x00' {
+    raise InvalidStream("unsupported embedded CFF format")
+  }
+  data
+}
+
+///|
 fn PdfFile::embedded_font(
   self : PdfFile,
   desc : PdfObject,
@@ -81,6 +107,8 @@ fn PdfFile::embedded_font(
       let loaded = self.load(number, 0)
       match self.page_deref(pdf_dict_get(loaded.value, b"Subtype")) {
         PdfName(b"OpenType") => return Some(self.embedded_font_stream(number))
+        PdfName(b"Type1C") | PdfName(b"CIDFontType0C") =>
+          return Some(self.embedded_cff_stream(number))
         _ => raise InvalidStream("unsupported embedded PDF font format")
       }
     }
@@ -90,6 +118,80 @@ fn PdfFile::embedded_font(
   match pdf_dict_get(desc, b"FontFile") {
     Some(_) => raise InvalidStream("unsupported embedded PDF font format")
     None => None
+  }
+}
+
+///|
+fn pdf_cff_width(
+  widths : Array[Double],
+  first : Int32,
+  missing_width : Double,
+  code : Int32,
+) -> Double {
+  let index = code.to_int64() - first.to_int64()
+  if index >= 0L && index < widths.length().to_int64() {
+    return widths[index.to_int()] / 1000.0
+  }
+  if missing_width > 0.0 || !widths.is_empty() {
+    return missing_width / 1000.0
+  }
+  0.5
+}
+
+///|
+fn pdf_cff_otf(
+  cff : Bytes,
+  encoding : PdfSimpleEncoding,
+  widths : Array[Double],
+  first : Int32,
+  missing_width : Double,
+) -> Bytes? {
+  let names = @cff.glyph_names(cff) catch { _ => return None }
+  if names.is_empty() {
+    return None
+  }
+  let units = 1000
+  let advances : Array[Int32] = []
+  for _ in names {
+    advances.push(units / 2)
+  }
+  let glyphs : Map[String, Int32] = Map([])
+  for index, name in names {
+    if !glyphs.contains(name) {
+      glyphs[name] = index
+    }
+  }
+  let cmap : Map[Int32, Int32] = Map([])
+  for code in 0..<256 {
+    let name = encoding.name(code)
+    match glyphs.get(name) {
+      Some(glyph) => {
+        advances[glyph] = (pdf_cff_width(widths, first, missing_width, code) *
+        units.to_double()).to_int()
+        let text = encoding.unicode(code)
+        if text != "" {
+          match text.get_char(0) {
+            Some(character) => cmap[character.to_int()] = glyph
+            None => ()
+          }
+        }
+      }
+      None => ()
+    }
+  }
+  Some(
+    @sfnt.from_cff(
+      cff,
+      units,
+      names.length(),
+      advances,
+      cmap,
+      "PDFCFF",
+      400,
+      false,
+    ),
+  ) catch {
+    _ => None
   }
 }
 
@@ -159,7 +261,7 @@ fn PdfFile::simple_font(
     }
   }
   let mut fallback = type3
-  let embedded = self.embedded_font(desc) catch {
+  let mut embedded = self.embedded_font(desc) catch {
     _ => {
       fallback = true
       None
@@ -277,12 +379,28 @@ fn PdfFile::simple_font(
     }
     _ => None
   }
+  let encoding = self.simple_encoding(pdf_dict_get(dict, b"Encoding"))
+  let first = self.font_number(pdf_dict_get(dict, b"FirstChar"), 0.0).to_int()
+  let missing_width = self.font_number(pdf_dict_get(desc, b"MissingWidth"), 0.0)
+  if embedded is Some(_) &&
+    embedded.unwrap().length() >= 2 &&
+    embedded.unwrap()[0] == b'\x01' &&
+    embedded.unwrap()[1] == b'\x00' {
+    match
+      pdf_cff_otf(embedded.unwrap(), encoding, widths, first, missing_width) {
+      Some(otf) => embedded = Some(otf)
+      None => {
+        embedded = None
+        fallback = true
+      }
+    }
+  }
   let font : PdfSimpleFont = {
-    encoding: self.simple_encoding(pdf_dict_get(dict, b"Encoding")),
+    encoding,
     to_unicode: cmap,
-    first: self.font_number(pdf_dict_get(dict, b"FirstChar"), 0.0).to_int(),
+    first,
     widths,
-    missing_width: self.font_number(pdf_dict_get(desc, b"MissingWidth"), 0.0),
+    missing_width,
     family,
     weight,
     style,
