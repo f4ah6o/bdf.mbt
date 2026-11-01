@@ -18,7 +18,7 @@ priv struct DocxTextItem {
   rotation : Double
   flip_h : Bool
   flip_v : Bool
-  shade : UInt32?
+  mut shade : UInt32?
   border_width : Double
   border_color : UInt32?
 } derive(Debug, Eq)
@@ -203,7 +203,8 @@ fn docx_text_ppr(props : DocxParagraphProps, node : DocxXmlNode) -> Bool raise {
       | "outlineLvl"
       | "jc"
       | "spacing"
-      | "ind" => {
+      | "ind"
+      | "shd" => {
         if !child.children.is_empty() {
           docx_text_unsupported(name)
         }
@@ -564,6 +565,13 @@ fn DocxTextWalker::blocks(
           docx_text_unsupported("wrapped paragraph section")
         }
         docx_text_inlines(child, items, self.styles, paragraph_style)
+        match docx_paragraph_shade(direct) {
+          Some(color) =>
+            for item in items {
+              item.shade = Some(color)
+            }
+          None => ()
+        }
         self.paragraphs.push({
           props,
           mark,
@@ -719,6 +727,30 @@ fn docx_table_cell_border(cell : DocxXmlNode) -> (Double, UInt32?) {
     }
   }
   (0.0, None)
+}
+
+///|
+fn docx_paragraph_shade(props : DocxXmlNode?) -> UInt32? {
+  let shd = match props {
+    Some(value) => value.child("shd")
+    None => None
+  }
+  match shd {
+    Some(value) => {
+      let fill = docx_attribute(value.element, "fill", "")
+      if fill.length() == 6 {
+        let number = @string.parse_int(fill, base=16) catch { _ => -1 }
+        if number >= 0 {
+          Some((number.to_uint() << 8) | 0xffU)
+        } else {
+          None
+        }
+      } else {
+        None
+      }
+    }
+    None => None
+  }
 }
 
 ///|

@@ -21,6 +21,7 @@ priv struct DocxLineItem {
   color : UInt32
   x : Double
   advance : Double
+  shade : UInt32?
 }
 
 ///|
@@ -278,6 +279,18 @@ fn docx_render_document(
       "right" => Double::max(0.0, end - start - width)
       "center" => Double::max(0.0, (end - start - width) / 2.0)
       _ => 0.0
+    }
+    match items[0].shade {
+      Some(color) => {
+        object.fill_color(color)
+        object.fill_rect(
+          Float::from_double(start + offset),
+          Float::from_double(y - items[0].size * 1.2),
+          Float::from_double(width),
+          Float::from_double(items[0].size * 1.2),
+        )
+      }
+      None => ()
     }
     for item in items {
       let index = ensure_font(object, item)
@@ -624,6 +637,7 @@ fn docx_render_document(
             color: docx_run_color(item.props),
             x: item_x,
             advance,
+            shade: item.shade,
           })
           line_x += advance
           line_width = line_x - left

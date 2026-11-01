@@ -1140,3 +1140,80 @@ test "DOCX text boxes are flattened into text" {
   }
   assert_true(found, msg="DOCX text box")
 }
+
+///|
+fn docx_paragraph_shade_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GAI8E6MPekvteE1kLeOkYFBGEhHO+fnlaTmlcSHVBakFsfqVeTm",
+  )
+  joined.write_string(
+    "1Abs9TtsIHCvkuu0dpeshICTp9UHYybnyobJtZ46bzY/Lfb+/c0i92UD1+O731evj37bJB595o3S",
+  )
+  joined.write_string(
+    "109uW4MUZmbI+u79E7Hf5HtQAeOmB8qJ+t9PFJnGlL6udRIL9blzeueULwtMZ0syb+jiXKmUfIbR",
+  )
+  joined.write_string(
+    "y/bzEuEZ/jMC7m97O9dsIldQ5qlHiu3vON1v/FCaV/61VmfSxc0i/e6PJl319jhpzbz0UZX3t3Cv",
+  )
+  joined.write_string(
+    "Yq+A0MoHH94IxYc3XREXFnvyvmHyu7V6k+e6fuTbucdphc5f0c1XzWb5rvD6uv9s67xCmbkHN9cV",
+  )
+  joined.write_string(
+    "eltKpaybzL7+nAeDu/3fr4nvHkoHoITNzkaXwg1AnhYwbLiBdHxRak6xvh6I7D1vzXfIgIftwdxg",
+  )
+  joined.write_string(
+    "l3uZUWwtAZP1OFZqa7F3CJn3Zsh5HVq8XZ2ZWYHN7fZ++9O53zcY70z0OWbN5hvK7Ki+18jP2IL/",
+  )
+  joined.write_string(
+    "+Fc+j1OHNA2r23nEfC58DK0+FPlk02Q1YSHNDm+eZXMOz7ukor5FKdRugfbki+7aRZqLlzme6L7g",
+  )
+  joined.write_string(
+    "YV66d+nHuwz/EifFGXbszWrg8T5Qn2Pf5/bo4OnVrtPr5/zwEol06Z158K6769XVsaJiGvkvj3f/",
+  )
+  joined.write_string(
+    "4UT1mMO6OK1XQF4O0GOCQLo8vyhFPyU/uTQXGPOgKHcNOJh3WIFn73ttge9TTU4t0/IKenspeqnn",
+  )
+  joined.write_string(
+    "bbsGNiElRrcHeq/31fEFivGZnX//MefynPo5qfetlnHWnO5vbzJ+Wx0wWT7639fKSrvCaQFVqroV",
+  )
+  joined.write_string(
+    "dz+1+/25Y2tavHbBfuu3Eyc2+3+9U9QskaUYlL9l8ksGx+pHbB1+SgctuiQXcQlWzRUyLQib4vpR",
+  )
+  joined.write_string(
+    "a84cm/cnPrG92vhkwuHqmCCjrrNfDSJvf+Keu+jBouwj9vOZy/K9OY0Fw63sr9mu22RQ92cSv2+l",
+  )
+  joined.write_string(
+    "zumubXOynb9PD576V+xgqNsqJZZV4atV/BYflL3HIHinb62cWdnczNfq22KP/PO/Kx/gzcgkwow7",
+  )
+  joined.write_string(
+    "P8BAAyMD9tyBbgB6okEYIMOIkoTQNaJHCkLjV0YsURTgzcoGkmYGwp1Amo8ZxAMAbkfnmt0DAAA=",
+  )
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "DOCX paragraph shading is drawn" {
+  let result = convert(docx_paragraph_shade_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut yellow = false
+  let mut fill = false
+  let mut text = false
+  for command in commands {
+    match command {
+      @render.FillColor(0xffff00ff) => yellow = true
+      @render.FillRect(_, _, _, _) => fill = true
+      @render.FillText("A", _, _, _) => text = true
+      _ => ()
+    }
+  }
+  assert_true(yellow, msg="DOCX paragraph shade colour")
+  assert_true(fill, msg="DOCX paragraph shade")
+  assert_true(text, msg="DOCX paragraph text")
+}
