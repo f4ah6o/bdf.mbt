@@ -1072,6 +1072,8 @@ fn pptx_emit_table(
         let advance = pptx_text_width(text, size)
         let margin_left = pptx_cell_margin(cell, "marL", 7.2)
         let margin_right = pptx_cell_margin(cell, "marR", 7.2)
+        let margin_top = pptx_cell_margin(cell, "marT", 3.6)
+        let margin_bottom = pptx_cell_margin(cell, "marB", 3.6)
         let inner = column_width - margin_left - margin_right
         let text_x = match pptx_cell_alignment(cell) {
           "center" => cell_x + margin_left + (inner - advance) / 2.0
@@ -1080,8 +1082,8 @@ fn pptx_emit_table(
         }
         let text_y = match pptx_cell_vertical_anchor(cell) {
           "center" => text_top + row_height / 2.0 + size * 0.35
-          "bottom" => text_top + row_height - 4.0
-          _ => text_top + 12.0
+          "bottom" => text_top + row_height - margin_bottom
+          _ => text_top + margin_top + 12.0
         }
         object.fill_text(
           text,
