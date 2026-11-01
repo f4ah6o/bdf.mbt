@@ -898,6 +898,58 @@ fn pptx_cell_row_span(cell : PptxXmlNode) -> Int32 {
 }
 
 ///|
+fn pptx_gradient_paint(
+  shape : PptxXmlNode,
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+  theme : Map[String, UInt32],
+) -> @core.Paint? {
+  let gradient = pptx_child(pptx_child(Some(shape), "spPr"), "gradFill")
+  let stops : Array[@core.ColorStop] = []
+  for stop in pptx_children(pptx_child(gradient, "gsLst")) {
+    match pptx_solid_color(Some(stop), theme) {
+      Some(color) => {
+        let offset = (@string.parse_double(
+            pptx_attribute(stop.element, "pos", "0"),
+          ) catch {
+            _ => 0.0
+          }) /
+          100000.0
+        stops.push({ offset, color: color.reinterpret_as_int(), })
+      }
+      None => ()
+    }
+  }
+  if stops.length() < 2 {
+    return None
+  }
+  let angle = match pptx_child(gradient, "lin") {
+    Some(value) =>
+      (@string.parse_double(pptx_attribute(value.element, "ang", "0")) catch {
+        _ => 0.0
+      }) /
+      60000.0 *
+      3.141592653589793 /
+      180.0
+    None => 0.0
+  }
+  let center_x = x + width / 2.0
+  let center_y = y + height / 2.0
+  let length = (width * width + height * height).sqrt() / 2.0
+  let dx = @math.cos(angle) * length
+  let dy = @math.sin(angle) * length
+  Some(
+    @core.Gradient(
+      0,
+      [center_x - dx, center_y - dy, center_x + dx, center_y + dy],
+      stops,
+    ),
+  )
+}
+
+///|
 fn pptx_cell_grid_span(cell : PptxXmlNode) -> Int32 {
   let span = @string.parse_int(pptx_attribute(cell.element, "gridSpan", "1")) catch {
     _ => 1
@@ -1912,82 +1964,103 @@ fn pptx_render_slide(
       pptx_child(Some(shape), "spPr"),
       "solidFill",
     )
-    match fill {
-      Some(color) => {
-        if fill_alpha is Some(_) {
-          object.save()
-          object.alpha(Float::from_double(fill_alpha.unwrap()))
-        }
-        object.fill_color(color)
-        if geometry == "rect" &&
-          (transform.rotation != 0.0 || placement.rotation != 0.0) {
-          let group = placement.rotation != 0.0
-          let path_index = object.add_path(
-            @core.Inline(
-              pptx_rotated_rect_path_at(
-                shape_x,
-                shape_y,
-                draw_width,
-                draw_height,
-                transform.rotation + placement.rotation,
-                if group {
-                  placement.cx
-                } else {
-                  shape_x + draw_width / 2.0
-                },
-                if group {
-                  placement.cy
-                } else {
-                  shape_y + draw_height / 2.0
-                },
-              ),
-            ),
-          )
-          object.fill_path(path_index, 0)
-        } else if geometry == "ellipse" {
-          let mut path = pptx_rotate_path(
-            pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
-            shape_x + draw_width / 2.0,
-            shape_y + draw_height / 2.0,
-            transform.rotation,
-          )
-          if placement.rotation != 0.0 {
-            path = pptx_rotate_path(
-              path,
-              placement.cx,
-              placement.cy,
-              placement.rotation,
-            )
-          }
-          object.fill_path(object.add_path(@core.Inline(path)), 0)
-        } else if geometry == "roundRect" {
-          let mut path = pptx_rotate_path(
-            pptx_round_rect_path(
-              shape_x, shape_y, draw_width, draw_height, corner_radius,
-            ),
-            shape_x + draw_width / 2.0,
-            shape_y + draw_height / 2.0,
-            transform.rotation,
-          )
-          if placement.rotation != 0.0 {
-            path = pptx_rotate_path(
-              path,
-              placement.cx,
-              placement.cy,
-              placement.rotation,
-            )
-          }
-          object.fill_path(object.add_path(@core.Inline(path)), 0)
-        } else {
+    let gradient = pptx_gradient_paint(
+      shape, shape_x, shape_y, draw_width, draw_height, theme,
+    )
+    let mut gradient_done = false
+    if geometry == "rect" {
+      match gradient {
+        Some(paint) => {
+          object.fill_paint(object.add_paint(paint))
           object.fill_rect(
             Float::from_double(shape_x),
             Float::from_double(shape_y),
             Float::from_double(draw_width),
             Float::from_double(draw_height),
           )
+          gradient_done = true
         }
+        None => ()
       }
-      None => ()
+    }
+    if !gradient_done {
+      match fill {
+        Some(color) => {
+          if fill_alpha is Some(_) {
+            object.save()
+            object.alpha(Float::from_double(fill_alpha.unwrap()))
+          }
+          object.fill_color(color)
+          if geometry == "rect" &&
+            (transform.rotation != 0.0 || placement.rotation != 0.0) {
+            let group = placement.rotation != 0.0
+            let path_index = object.add_path(
+              @core.Inline(
+                pptx_rotated_rect_path_at(
+                  shape_x,
+                  shape_y,
+                  draw_width,
+                  draw_height,
+                  transform.rotation + placement.rotation,
+                  if group {
+                    placement.cx
+                  } else {
+                    shape_x + draw_width / 2.0
+                  },
+                  if group {
+                    placement.cy
+                  } else {
+                    shape_y + draw_height / 2.0
+                  },
+                ),
+              ),
+            )
+            object.fill_path(path_index, 0)
+          } else if geometry == "ellipse" {
+            let mut path = pptx_rotate_path(
+              pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
+              shape_x + draw_width / 2.0,
+              shape_y + draw_height / 2.0,
+              transform.rotation,
+            )
+            if placement.rotation != 0.0 {
+              path = pptx_rotate_path(
+                path,
+                placement.cx,
+                placement.cy,
+                placement.rotation,
+              )
+            }
+            object.fill_path(object.add_path(@core.Inline(path)), 0)
+          } else if geometry == "roundRect" {
+            let mut path = pptx_rotate_path(
+              pptx_round_rect_path(
+                shape_x, shape_y, draw_width, draw_height, corner_radius,
+              ),
+              shape_x + draw_width / 2.0,
+              shape_y + draw_height / 2.0,
+              transform.rotation,
+            )
+            if placement.rotation != 0.0 {
+              path = pptx_rotate_path(
+                path,
+                placement.cx,
+                placement.cy,
+                placement.rotation,
+              )
+            }
+            object.fill_path(object.add_path(@core.Inline(path)), 0)
+          } else {
+            object.fill_rect(
+              Float::from_double(shape_x),
+              Float::from_double(shape_y),
+              Float::from_double(draw_width),
+              Float::from_double(draw_height),
+            )
+          }
+        }
+        None => ()
+      }
     }
     if fill_alpha is Some(_) {
       object.restore()

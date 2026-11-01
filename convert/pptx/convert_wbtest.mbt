@@ -4753,3 +4753,113 @@ test "PPTX table row spans heighten cells" {
   }
   assert_true(tall, msg="PPTX table row span")
 }
+
+///|
+fn pptx_gradient_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GDY65sY2zcpleknkGfKxMAgDKSjnfPzSlLzSuJDKgtSi2P1KnJz",
+  )
+  joined.write_string(
+    "1gZa+x82ELj3U3Tada3CUw0CXpcaj3PwPGWfM8c76ar+zzur/n6PmaTEqLXBILL8fvDzquKSMBmD",
+  )
+  joined.write_string(
+    "iZz7Jr7eNIlpL9/cj87K97f5H10rMuVgeULzcbd5E54s27tq+/IOlYg3Kycmn/vop3lJ2WqBkcuX",
+  )
+  joined.write_string(
+    "ni+Klidsljm6XrCWCIgNv9p76WD6l50nJrfnvGZ/k5i/ucLmU5XmpAuTRL5zF57KUjmS0dt2ZofV",
+  )
+  joined.write_string(
+    "j3fRXoV+GpGWxRkmE8N8JrxKOtTyR6bg2t4PqZNeBuxxOnX+wYylSWe01FSunb3zqXw5d6jzfene",
+  )
+  joined.write_string(
+    "2AvVxyd92jxzc/yxS40fV9ufmvBUVff8r/23z6yT573y5/Vb6wCUkCry+z5/E5Cny8jAwA2k44tS",
+  )
+  joined.write_string(
+    "c4r19UBk7/mzXIcMeNg/7PYPLCq/a9NxYlesy43QZ8xTzF63vWb3Ff3+Tczfz6bC59N5/SV588vS",
+  )
+  joined.write_string(
+    "+HtMKtUXaHklvJhyfbIx07q/ldUMbp5WuunvAw40seRuXqlvcXpKecYcpo09FkIGy0T65kyWuuil",
+  )
+  joined.write_string(
+    "VeMwXb25P2xZjNvh5hDzzAnvTxWdf7yc8eyplLliAtaxjK+nN/y/USeh1qq+/p1Y7K/CR9oTUyV5",
+  )
+  joined.write_string(
+    "1RgVVeSUgvL2XXad1mhuGl97cw8DqtcuVJw/ch7I8wB6DSRaUFCiX1CUWgxMB4klmfl5oFTQO8E/",
+  )
+  joined.write_string(
+    "m8lQ4Oj7vyKJ70wLL6buzrnmLciSn2vv4JF21+HfxM5FdVXJuq4vlm7/PqPS/tnZDZbVx/1mnDym",
+  )
+  joined.write_string(
+    "kLhT4IDBi4wcC48fv+7sKzuwYkXClG5G1ZgJCcb7eFb6S3I6By5Vi1zK8mpyy84pV4r9qtzWZwgK",
+  )
+  joined.write_string(
+    "t1nNTvq2KmQ2/x/L57L5LRk7w80O8Kv8ZxdafjKrpv/XC+3XjCdf7FtoctvF4JrwyZlzbwb/vHpG",
+  )
+  joined.write_string(
+    "ivPsLtZpv3efsb7MIM/+L/3741NfIg/dLtoqtMjONV5ly91du2e7P9h5vIIZNQBK5p76sgHIUwQG",
+  )
+  joined.write_string(
+    "gDw0ACDxix4M0PjeCIxvAbYHd5dzbL+9RdZlSaa44C6v2oYJMbcTZrXEiPz+xlYYUFDw5/2P/Y9n",
+  )
+  joined.write_string(
+    "vdsYUXbc45g1Y2ggk/PyPWZ5QgWSfrdtDbwuZWbudWbUFip5u8xy8VTN8gyzxgg3Gc4ZwVzs5zzP",
+  )
+  joined.write_string(
+    "7vAAxbf54v5uH8tjnewr1xU5xU1/2nfcn/mW/uSvUQ5vSnlzIpj/Jf8uNOHqj7srVvLyOKfftYwz",
+  )
+  joined.write_string(
+    "C3qE1RjX/5gX5nqtYTvv/19raplQPTtpXrCWLdCjicAsLwr1bHFOZkpqMYQyBEd30Om8ZgOBPd+1",
+  )
+  joined.write_string(
+    "1+w1z160YtEKP76pJ5auUlL9yyDO4/jJe5vryfvX21oEvl7qLj9zrqd96/2y5klLxM+VuxmfCBPp",
+  )
+  joined.write_string(
+    "uDB1pfVdox9WU89bCsjvWLfTJMpgBwf/7reXZ+vuWeMpkh0fwfZcIKfxxerNAXfW94hafZN6LMJf",
+  )
+  joined.write_string(
+    "+Dpqi1/FQmb+jwqqhb4vubXuZe6Y9eH/jCt9/4+k8P/KPRMkmzp31XZ19SMtl1b9Xmy7Y+LHm/Iy",
+  )
+  joined.write_string(
+    "L7PYshVmrf6hXX38tZ4b0x4hIXH1mxwFmQ+On+peWKgVetkkJeHDrFwzE763Rs4+sYYsQUfLpq3/",
+  )
+  joined.write_string(
+    "bPN1NTvTvdo1nxP1e5Q4DQoWcU12lX48de4U5W/ydj4NEY8lAzys3996X/7S47xq86YlJWX5fyfN",
+  )
+  joined.write_string(
+    "vbjxq/ukfdOeOjV1L05Zzum/PuHbHOaHuTIWvFLvJx+/nfrgh9O2/QHejEwizLgLWRhoYGTAXuSi",
+  )
+  joined.write_string(
+    "G4Be9iAM0GJEKYnQNaLnbIRGVibs+RzdBPSsgTCBjZlgRkE3DD3pIQz7zIwjIQZ4s7KBlLACoQ9Q",
+  )
+  joined.write_string("azIriAcA+iG36cUGAAA=")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX shape gradients are painted" {
+  let result = convert(pptx_gradient_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut paint = false
+  let mut gradient = false
+  for command in commands {
+    match command {
+      @render.FillPaint(_) => paint = true
+      _ => ()
+    }
+  }
+  for entry in resources.paints {
+    match entry {
+      @core.Gradient(_, _, _) => gradient = true
+      _ => ()
+    }
+  }
+  assert_true(paint, msg="PPTX gradient fill")
+  assert_true(gradient, msg="PPTX gradient paint")
+}
