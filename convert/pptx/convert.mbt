@@ -749,6 +749,30 @@ fn pptx_cell_color(cell : PptxXmlNode, theme : Map[String, UInt32]) -> UInt32 {
 }
 
 ///|
+fn pptx_cell_text_size(cell : PptxXmlNode) -> Double {
+  for paragraph in pptx_children(pptx_child(Some(cell), "txBody")) {
+    if paragraph.element.name.local_name != "p" {
+      continue
+    }
+    for run in pptx_children(Some(paragraph)) {
+      if run.element.name.local_name == "r" {
+        match pptx_child(Some(run), "rPr") {
+          Some(props) =>
+            match pptx_attribute(props.element, "sz", "") {
+              "" => ()
+              value =>
+                return (@string.parse_double(value) catch { _ => 1200.0 }) /
+                  100.0
+            }
+          None => ()
+        }
+      }
+    }
+  }
+  12.0
+}
+
+///|
 fn pptx_cell_text(cell : PptxXmlNode) -> String {
   let text = StringBuilder()
   for paragraph in pptx_children(pptx_child(Some(cell), "txBody")) {
@@ -928,12 +952,14 @@ fn pptx_emit_table(
       }
       let text = pptx_cell_text(cell)
       if text != "" {
+        let size = pptx_cell_text_size(cell)
+        object.font(index, Float::from_double(size))
         object.fill_color(pptx_cell_color(cell, theme))
         object.fill_text(
           text,
           Float::from_double(cell_x + 2.0),
           Float::from_double(text_top + 12.0),
-          Float::from_double(pptx_text_width(text, 12.0)),
+          Float::from_double(pptx_text_width(text, size)),
         )
       }
       cell_x += column_width
