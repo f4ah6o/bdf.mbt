@@ -1,10 +1,24 @@
 import assert from 'node:assert/strict';
+import { request } from 'node:http';
 import { chromium } from 'playwright';
 import { createVisualServer } from './visual-server.mjs';
 
 const server = createVisualServer(process.cwd());
 await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
 try {
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const nul = await fetch(origin + '/compat/xlsx/%00');
+  assert.equal(nul.status, 400, 'encoded NUL path must be rejected');
+  await nul.text();
+  const malformed = await new Promise((resolve, reject) => {
+    const req = request({ host: '127.0.0.1', port: server.address().port, path: 'http://[::1' }, response => {
+      response.resume();
+      resolve(response.statusCode);
+    });
+    req.once('error', reject);
+    req.end();
+  });
+  assert.equal(malformed, 400, 'malformed absolute URL must be rejected');
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage();

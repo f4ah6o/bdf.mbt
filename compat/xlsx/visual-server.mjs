@@ -9,7 +9,8 @@ export function createVisualServer(root) {
   const allowed = ['/compat/xlsx/', '/node_modules/@bdfkit/', '/_build/js/debug/build/compat/xlsx/', '/_build/js/debug/build/browser/'];
   const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json' };
   return createServer((request, response) => {
-    const url = new URL(request.url, 'http://localhost');
+    let url;
+    try { url = new URL(request.url, 'http://localhost'); } catch { response.writeHead(400).end(); return; }
     const token = url.searchParams.get('token');
     if (url.pathname === '/compat/xlsx/visual-wait' && request.method === 'GET' && token && !pending.has(token)) {
       pending.set(token, response);
@@ -28,11 +29,13 @@ export function createVisualServer(root) {
     }
     let pathname;
     try { pathname = decodeURIComponent(url.pathname); } catch { response.writeHead(400).end(); return; }
+    if (/[\u0000-\u001f\u007f]/.test(pathname)) { response.writeHead(400).end(); return; }
     const file = path.resolve(root, '.' + pathname);
     if (!allowed.some(prefix => file.startsWith(path.resolve(root, '.' + prefix) + path.sep))) {
       response.writeHead(403).end(); return;
     }
-    const stream = createReadStream(file);
+    let stream;
+    try { stream = createReadStream(file); } catch { response.writeHead(400).end(); return; }
     stream.once('error', () => { if (!response.headersSent) response.writeHead(404); response.end(); });
     response.setHeader('Content-Type', mime[path.extname(file)] ?? 'application/octet-stream');
     stream.pipe(response);

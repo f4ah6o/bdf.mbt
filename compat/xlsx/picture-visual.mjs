@@ -14,6 +14,9 @@ function contains(haystack, needle) {
 // Keep VLMKit's screenshot from racing asynchronous decode and rendering.
 // The server holds this request open until the last conversion finishes.
 const token = crypto.randomUUID();
+const mode = document.body.dataset.mode;
+window.bdfMode = mode;
+window.bdfRenderer = mode === 'moon' ? 'moon' : 'upstream';
 let barrier;
 try {
   barrier = await fetch(`./visual-wait?token=${token}`);
@@ -35,7 +38,6 @@ try {
       if (image.naturalWidth !== picture.width || image.naturalHeight !== picture.height)
         throw new Error(`${picture.label}: decoded dimensions ${image.naturalWidth}x${image.naturalHeight}`);
     } finally { URL.revokeObjectURL(url); }
-    const mode = document.body.dataset.mode;
     const data = mode === 'upstream' ? bytes(sample.bdf) :
       xlsx_render_basic(bytes(sample.input), sample.mode, sample.no_index);
     if (!data.length || !contains(data, imageBytes)) throw new Error(`${picture.label}: missing embedded image bytes`);

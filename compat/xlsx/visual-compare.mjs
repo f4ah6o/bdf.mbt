@@ -10,6 +10,11 @@ const root = process.cwd();
 const server = createVisualServer(root);
 await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
 const base = 'http://127.0.0.1:' + server.address().port + '/compat/xlsx/';
+const variants = {
+  'visual-baseline': { mode: 'upstream', renderer: 'upstream' },
+  'visual-converted': { mode: 'converted', renderer: 'upstream' },
+  'visual-moon': { mode: 'moon', renderer: 'moon' },
+};
 const run = args => new Promise((resolve, reject) => {
   const child = spawn(path.join(root, 'node_modules/.bin/vlmkit'), args, { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] });
   let output = '';
@@ -22,12 +27,20 @@ const run = args => new Promise((resolve, reject) => {
 try {
   const browser = await chromium.launch({ headless: true });
   try {
-    for (const name of ['visual-baseline', 'visual-converted', 'visual-moon']) {
+    for (const [name, expected] of Object.entries(variants)) {
       const page = await browser.newPage();
       await page.goto(base + name + '.html', { waitUntil: 'networkidle' });
       await page.waitForFunction(() => window.bdfStatus === 'ready' || window.bdfStatus === 'error');
-      const result = await page.evaluate(() => ({ status: window.bdfStatus, error: window.bdfError, count: document.querySelectorAll('canvas').length }));
+      const result = await page.evaluate(() => ({
+        status: window.bdfStatus,
+        error: window.bdfError,
+        count: document.querySelectorAll('canvas').length,
+        mode: window.bdfMode,
+        renderer: window.bdfRenderer,
+      }));
       assert.equal(result.status, 'ready', result.error);
+      assert.equal(result.mode, expected.mode, `${name}: expected mode ${expected.mode}, got ${result.mode}`);
+      assert.equal(result.renderer, expected.renderer, `${name}: expected renderer ${expected.renderer}, got ${result.renderer}`);
       assert.equal(result.count, 5);
       const colors = await page.locator('canvas').evaluateAll(canvases => canvases.map(canvas => {
         const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
