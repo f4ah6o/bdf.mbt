@@ -176,3 +176,65 @@ test "mount renders an upstream encoded object with gradients and a system font"
   assert_eq(pages, 1)
   assert_true(fixture_rendered(host))
 }
+
+///|
+extern "js" fn generic_context() -> CanvasContext =
+  #|() => {
+  #|  globalThis.Path2D = class { moveTo(){} lineTo(){} closePath(){} quadraticCurveTo(){} bezierCurveTo(){} rect(){} ellipse(){} arcTo(){} roundRect(){} };
+  #|  const calls = [];
+  #|  const target = {
+  #|    calls,
+  #|    getTransform: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }),
+  #|    measureText: () => ({ width: 10 })
+  #|  };
+  #|  return new Proxy(target, {
+  #|    get(t, p) {
+  #|      if (p in t) return t[p];
+  #|      return (...args) => { t.calls.push([String(p), ...args]); };
+  #|    },
+  #|    set(t, p, v) { t[p] = v; return true; }
+  #|  });
+  #|}
+
+///|
+extern "js" fn generic_context_called(ctx : CanvasContext) -> Bool =
+  #|(ctx) => ctx.calls.length > 0
+
+///|
+test "canvas dispatches every simple command" {
+  let ctx = generic_context()
+  let paths : Array[@core.Path] = [
+    { verbs: b"\x00\x01\x04", coordinates: [1.0, 2.0, 3.0, 4.0], },
+  ]
+  paint_commands(
+    ctx,
+    [
+      @render.Save,
+      @render.Restore,
+      @render.Transform(1.0, 0.0, 0.0, 1.0, 0.0, 0.0),
+      @render.Translate(1.0, 2.0),
+      @render.Scale(2.0, 3.0),
+      @render.ClipPath(0, 0),
+      @render.ClipRect(1.0, 2.0, 3.0, 4.0),
+      @render.FillColor(0x112233ff),
+      @render.StrokeColor(0x445566ff),
+      @render.Line(2.0, 1, 2, 3.0),
+      @render.Dash([1.0, 2.0], 0.0),
+      @render.Alpha(0.5),
+      @render.Blend(1),
+      @render.Shadow(0x11223344, 1.0, 2.0, 3.0),
+      @render.Filter("none"),
+      @render.Smoothing(true, 2),
+      @render.FillRect(1.0, 2.0, 3.0, 4.0),
+      @render.StrokeRect(1.0, 2.0, 3.0, 4.0),
+      @render.FillPath(0, 0),
+      @render.StrokePath(0),
+      @render.ClearRect(1.0, 2.0, 3.0, 4.0),
+      @render.Ext(b""),
+      @render.Link(1.0, 2.0, 3.0, 4.0, "https://example.com"),
+      @render.Mark(1, "m"),
+    ],
+    paths~,
+  )
+  assert_true(generic_context_called(ctx))
+}
