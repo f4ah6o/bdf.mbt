@@ -1731,30 +1731,69 @@ fn pptx_render_slide(
       "gradFill",
     )
   }
-  match background {
-    Some(color) => {
-      object.fill_color(color)
-      object.fill_rect(
-        0.0,
-        0.0,
-        Float::from_double(width),
-        Float::from_double(height),
-      )
-    }
-    None =>
-      match
-        pptx_gradient_node(background_gradient, 0.0, 0.0, width, height, theme) {
-        Some(paint) => {
-          object.fill_paint(object.add_paint(paint))
-          object.fill_rect(
-            0.0,
-            0.0,
-            Float::from_double(width),
-            Float::from_double(height),
-          )
+  let mut background_image = false
+  let slide_bg_pr = pptx_child(
+    pptx_child(pptx_child(Some(root), "cSld"), "bg"),
+    "bgPr",
+  )
+  let background_blip = pptx_child(pptx_child(slide_bg_pr, "blipFill"), "blip")
+  match background_blip {
+    Some(blip) => {
+      let embed = pptx_attribute_any(blip.element, "embed", "")
+      if embed != "" {
+        let mut target = ""
+        for rel in package.relationships(part) {
+          if rel.id == embed {
+            target = rel.target
+          }
         }
-        None => ()
+        if target != "" {
+          let bytes = package.read(target) catch { _ => b"" }
+          if bytes.length() > 0 {
+            let hash = writer.add_part("img", bytes)
+            let index = object.add_image(hash)
+            object.image(
+              index,
+              0.0,
+              0.0,
+              Float::from_double(width),
+              Float::from_double(height),
+            )
+            background_image = true
+          }
+        }
       }
+    }
+    None => ()
+  }
+  if !background_image {
+    match background {
+      Some(color) => {
+        object.fill_color(color)
+        object.fill_rect(
+          0.0,
+          0.0,
+          Float::from_double(width),
+          Float::from_double(height),
+        )
+      }
+      None =>
+        match
+          pptx_gradient_node(
+            background_gradient, 0.0, 0.0, width, height, theme,
+          ) {
+          Some(paint) => {
+            object.fill_paint(object.add_paint(paint))
+            object.fill_rect(
+              0.0,
+              0.0,
+              Float::from_double(width),
+              Float::from_double(height),
+            )
+          }
+          None => ()
+        }
+    }
   }
   let roots : Array[PptxXmlNode] = []
   match master_root {

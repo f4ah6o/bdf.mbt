@@ -5064,3 +5064,117 @@ test "PPTX gradient slide backgrounds are painted" {
   }
   assert_true(paint, msg="PPTX gradient background")
 }
+
+///|
+fn pptx_image_background_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GDQ80uMPczvfZWdkYEhnYmBQRgoGu2cn1eSmlcSH1JZkFocq1eR",
+  )
+  joined.write_string(
+    "m7M2yNv/sAHPvs/ai2ICZ/cxO614y2fTdyDxD4N26e2MSs1zy97ef7zNpynz8RHNTfb1/NErr7On",
+  )
+  joined.write_string(
+    "H5UTnvlAeqeWtuaF1xck7U0+FX+OsvFwlKxhN6vIeSLoue727KriHo+mk/OkLJ/JyE9Vsl3ErOXs",
+  )
+  joined.write_string(
+    "ct5DflLzmVSpEJa9rYxXY0PvasvWuM3vtsk8sa3umFyZWfd05u3TFTh1PT9u4fGL622RWHtxgmR4",
+  )
+  joined.write_string(
+    "9f25O0Xu86kaP5eU8l0SLTfh1aLDLTHmO85111k8ljTPNfs68+O57T7LnD8yau5vTI45OiPUx+PM",
+  )
+  joined.write_string(
+    "jKun9+/V1xH/dS/jTdM9y2VT7I/O+Rs6ja/Hfm2tLk9k3qVPa/5Zn11T5bXgWf2lOsYAlHAr8vs+",
+  )
+  joined.write_string(
+    "fxOQpwsMO24gHV+UmlOsrwcie8+f5TpkwMP+Ybd/YFH5XZuOE7tiXW6EPmOeYva67TW7r+j3b2L+",
+  )
+  joined.write_string(
+    "fjYVPp/O6y/Jm1+Wxt9jUqm+QMsr4cWU65ONmdb9raxmcPO00k1/H3CgiSV380p9i9NTyjPmMG3s",
+  )
+  joined.write_string(
+    "sRAyWCbSN2ey1EUvrRqH6erN/WHLYtwON4eYZ054f6ro/OPljGdPpcwVE7COZXw9veH/jToJtVb1",
+  )
+  joined.write_string(
+    "9e/EYn8VPtKemCrJq8aoqCKnFJS377LrtEZz0/jam3sYUL12oeL8kfNAngfQayDRgoIS/YKi1GJg",
+  )
+  joined.write_string(
+    "qkgsyczPA6WJ3gn+2UyGAkff/xVJfGdaeDF1d841b0GW/Fx7B4+0uw7/JnYuqqtK1nV9sXT79xmV",
+  )
+  joined.write_string(
+    "9s/ObrCsPu434+QxhcSdAgcMXmTkWHj8+HVnX9mBFSsSpnQzqsZMSDDex7PSX5LTOXCpWuRSlleT",
+  )
+  joined.write_string(
+    "W3ZOuVLsV+W2PkNQuM1qdtK3VSGz+f9YPpfNb8nYGW52gF/lP7vQ8pNZNf2/Xmi/Zjz5Yt9Ck9su",
+  )
+  joined.write_string(
+    "BteET86cezP459UzUpxnd7FO+737jPVlBnn2f+nfH5/6EnnodtFWoUV2rvEqW+7u2j3b/cHO4xXM",
+  )
+  joined.write_string(
+    "qAFQMvfUlw1AniIwAOShAQCJX/RggMb3RmB8C7A9uLucY/vtLbIuSzLFBXd51TZMiLmdMKslRuT3",
+  )
+  joined.write_string(
+    "N7bCgIKCP+9/7H88693GiLLjHsesGUMDmZyX7zHLEyqQ9Ltta+B1KTNzrzOjtlDJ22WWi6dqlmeY",
+  )
+  joined.write_string(
+    "NUa4yXDOCOZiP+d5docHKL7NF/d3+1ge62Rfua7IKW76077j/sy39Cd/jXJ4U8qbE8H8L/l3oQlX",
+  )
+  joined.write_string(
+    "f9xdsZKXxzn9rmWcWdAjrMa4/se8MNdrDdt5//9aU8uE6tllIuuUtgJ5ykDPKkA9W5yTmZJaDPUz",
+  )
+  joined.write_string(
+    "mGOI7NssZkMetge2/olbru9ikfKyiJ8mdCJqErvAtnPpVdN630579jb7xSSHtr5JP/bL9x6fv2NV",
+  )
+  joined.write_string(
+    "vp6piuGGq8waYrNjBPIfVFnu3dO4qvfIxVktvHd2HCq81SO/J+j1zF0tMaHuS6Qiok6zH8kS7wsp",
+  )
+  joined.write_string(
+    "PaXz12i50MqvGyvOpNifNH7Xltj/9F7Dy4Mh6ekL5tzVXnFa93P9G5PzBz9Vb4qfuNR25QGB6nL2",
+  )
+  joined.write_string(
+    "lRV5bFuOndC7cL9u9eaKA5lH2u8vi0f18tQT5/uuA3mtQC+LonoZ4dnegJN+Rwx49n4Wnfq+h1uI",
+  )
+  joined.write_string(
+    "wzX3eZPbo7YjHxgzH22buOkk3+37wlFahQ8MxN+//3nz7kfjH8/mRsR02d6RicrQmJUSO6e6wnb+",
+  )
+  joined.write_string(
+    "OvkFExctvmrn+uphN0vf4dDpUytuhxSITK2O8DrJFXjGyfG0YmrXVnNVvl1XpqSf8XHa+CJInLV/",
+  )
+  joined.write_string(
+    "e251v+Nujv0qv4SETv9arPWb//z0B5dNLJ37T+5pXZWqnPhptUZkjJjEq9RnR2/L25+bXfts4eWs",
+  )
+  joined.write_string(
+    "L3rz53yvvrNhkcGkt43z38g+uPDwvuKdiTuEPe2MBddNzWVdFy+zD60UC+S/xeQA5LkyILJ6bmpK",
+  )
+  joined.write_string(
+    "ZqJ+Zm5iOjAgCvLSX/N8KH7+dNKjpISEB1+/FHAyXepROHOQRUV9Cvt95iCbeXp9iqLFk+rn2B84",
+  )
+  joined.write_string(
+    "cODMiRMFn+4v+e5QyOYfbj+91I/TF1i4MDKJMOOucWCggZEBe/2DbgB60YswwIIRpSBG14hesCE0",
+  )
+  joined.write_string(
+    "CjNhL+bQTUAvGRAmiDATLCfQDUPPeQjDGFkI50N009ATNcK0Lyw4kji6EeipAWHEP1bsaSPAm5UN",
+  )
+  joined.write_string("pIIdCO8ALS4A8wDHWUKoYggAAA==")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX image slide backgrounds are drawn" {
+  let result = convert(pptx_image_background_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut image = false
+  for command in commands {
+    match command {
+      @render.Image(_, _, _, _, _) => image = true
+      _ => ()
+    }
+  }
+  assert_true(image, msg="PPTX image background")
+}
