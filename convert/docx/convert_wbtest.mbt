@@ -1062,3 +1062,81 @@ test "DOCX table cell borders are stroked" {
   assert_true(blue, msg="DOCX table border colour")
   assert_true(stroke, msg="DOCX table border")
 }
+
+///|
+fn docx_text_box_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GD46ZUYe9JfasNrIG8dIwODMJCOds7PK0nNK4kPqSxILY7Vq8jN",
+  )
+  joined.write_string(
+    "qQ3Y63fYQOBeJddp7S5ZCQEnT6sPxkzOlQ2Taz113mx+Wuz9+5tF7ssGrsd3v69eH/22STz6zBul",
+  )
+  joined.write_string(
+    "r5/ctgYpzMyQ9d37J2K/yfegAsZND5QT9b+fKDKNKX1d6yQW6nPn9M4pXxaYzpZk3tDFuVIp+Qyj",
+  )
+  joined.write_string(
+    "l+3nJcIz/GcE3N/2dq7ZRK6gzFOPFNvfcbrf+KE0r/xrrc6ki5tF+t0fTbrq7XHSmnnpoyrvb+Fe",
+  )
+  joined.write_string(
+    "xV4BoZUPPrwRig9vuiIuLPbkfcPkd2v1Js91/ci3c4/TCp2/opuvms3yXeH1df/Z1nmFMnMPbq4r",
+  )
+  joined.write_string(
+    "9LaUSlk3mX39OQ8Gd/u/XxPfPZQOQAmbnY0uhRuAPC1g2HAD6fii1JxifT0Q2Xvemu+QAQ/bg7nB",
+  )
+  joined.write_string(
+    "Lvcyo9haAibrcazU1mLvEDLvzZDzOrR4uzozswKb2+399qdzv28w3pnoc8yazTeU2VF9r5GfsQX/",
+  )
+  joined.write_string(
+    "8a98HqcOaRpWt/OI+Vz4GFp9KPLJpslqwkKaHd48y+YcnndJRX2LUqjdAu3JF921izQXL3M80X3B",
+  )
+  joined.write_string(
+    "w7x079KPdxn+JU6KM+zYm9XA432gPse+z+3RwdOrXafXz/nhJRLp0jvz4F1316urY0XFNPJfHu/+",
+  )
+  joined.write_string(
+    "w4nqsYNTNmcZAj2VyMTAIAgULc8vStFPyU8uzQXGPCjKeycd9DuiIND23s718N2luWGbM7fddek1",
+  )
+  joined.write_string(
+    "F558lT2hcZtKq6KB1/Xl4rvM3r46evqDf/vPf0Yb7HuqTtgt/czl49vl62eUacGRumvWnv229995",
+  )
+  joined.write_string(
+    "PJsoeZDNYJNa+suTC3febPdi+H/hUoIY57HwhWq2i9ZqfN0zfdZP3ojMpLWsyyWPXSk1aRC+xjj9",
+  )
+  joined.write_string(
+    "njuz7QWj8+9Xpp2aIJn8/7BgX6voA6nfJZp6Lv/ZV4qWP1h4lJfdd2Gu6HRh1U9df8Tf3zDW9hTu",
+  )
+  joined.write_string(
+    "r2Eq9Fvte3Dph8/Kgbe8ZjpKzlyyvsCmd+W8a+4GEs9L7nacZe4JepM5SXOX5i3NuNKLre7heiWp",
+  )
+  joined.write_string(
+    "+/L4p06XiVcXvi27f9OEdcs0TufuuRXwNfD+20XLpvPqnzm6nqPwzdFvm46uXHdc1ZZR6YWqfIp1",
+  )
+  joined.write_string(
+    "+MsUq98XKx1KKmXOmgd4MzKJMOPOVjDQwMiAPZOhG4Ce9hAGyDCipER0jehxi9D4lRFLTAd4s7KB",
+  )
+  joined.write_string("pJmBcCeQDmUG8QBN72nxJAQAAA==")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "DOCX text boxes are flattened into text" {
+  let result = convert(docx_text_box_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut found = false
+  for command in commands {
+    match command {
+      @render.FillText(value, _, _, _) =>
+        if value.contains("Boxed") {
+          found = true
+        }
+      _ => ()
+    }
+  }
+  assert_true(found, msg="DOCX text box")
+}

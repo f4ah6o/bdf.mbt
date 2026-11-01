@@ -361,6 +361,35 @@ fn docx_text_drawing(
   }
   find_blip(container)
   if embed == "" {
+    let mut box_text = ""
+    fn find_text_box(value : DocxXmlNode) -> Unit {
+      if value.name() == "txbxContent" {
+        let text = StringBuilder()
+        let mut first = true
+        fn collect(value : DocxXmlNode) -> Unit {
+          if value.name() == "t" {
+            if !first {
+              text.write_string(" ")
+            }
+            first = false
+            text.write_string(value.text.to_string())
+          }
+          for child in value.children {
+            collect(child)
+          }
+        }
+        collect(value)
+        box_text = text.to_string()
+      }
+      for child in value.children {
+        find_text_box(child)
+      }
+    }
+    find_text_box(container)
+    if box_text != "" {
+      docx_text_push(items, "text", box_text, props)
+      return
+    }
     docx_text_unsupported("drawing without an embedded image")
   }
   let (rotation, flip_h, flip_v) = docx_picture_transform(container)
