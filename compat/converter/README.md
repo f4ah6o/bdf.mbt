@@ -21,11 +21,11 @@ decoded image pixels, streamed pages, page selection and parameter errors.
 JPEG-compressed TIFF pages and the documented metafile subset are covered as
 explicit warnings.
 
-`phase5-test.mjs` compares the HP-GL/2, Jw_cad, DXF, SXF, CGM and Gerber converters with the upstream
+`phase5-test.mjs` compares the HP-GL/2, Jw_cad, DXF, SXF, CGM, Gerber and KiCad converters with the upstream
 `@bdfkit/convert-all` Wasm. It checks the format registration, page geometry,
 layer roles, text indexes, streamed pages, page selection and parameter
 errors for the upstream `hpgl1.plt`, `shapes.plt`, `shapes.jww` and `old.jww`
-fixtures. Single-file Gerber is checked for layer registration and non-empty pages, because its 1:1 page differs from the upstream board scaling. Binary CGM page geometry matches the picture descriptors; clear-text CGM is not in the fixture set. SXF SFC page geometry matches the upstream sheet; dimensions and hatches are omitted with warnings. DXF page geometry is checked within 6% because the subset omits
+fixtures. Single-file Gerber and the KiCad PCB front view are checked for layer registration and non-empty text/pages, because its 1:1 page differs from the upstream board scaling. Binary CGM page geometry matches the picture descriptors; clear-text CGM is not in the fixture set. SXF SFC page geometry matches the upstream sheet; dimensions and hatches are omitted with warnings. DXF page geometry is checked within 6% because the subset omits
 hatches and non-top OCS entities; its text index is checked for content rather
 than exact equality. PCL/HP RTL raster jobs are a documented subset and are not
 part of the fixture set yet.

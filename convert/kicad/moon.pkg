@@ -1,0 +1,11 @@
+import {
+  "f4ah6o/bdf/core",
+  "f4ah6o/bdf/convert/cad" @cad,
+  "f4ah6o/bdf/convert/canvas" @canvas,
+  "f4ah6o/bdf/font/db" @fontdb,
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/math",
+  "moonbitlang/core/string",
+}
+
+supported_targets = "+js+wasm-gc"
