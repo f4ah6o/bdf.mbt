@@ -1391,7 +1391,9 @@ fn pptx_render_slide(
       }
       let hash = writer.add_part("img", bytes)
       let pic_rotation = transform.rotation + placement.rotation
-      let pic_rotated = pic_rotation != 0.0
+      let pic_transformed = pic_rotation != 0.0 ||
+        transform.flip_h ||
+        transform.flip_v
       let pic_cx = if placement.rotation != 0.0 {
         placement.cx
       } else {
@@ -1402,7 +1404,7 @@ fn pptx_render_slide(
       } else {
         shape_y + draw_height / 2.0
       }
-      if pic_rotated {
+      if pic_transformed {
         let radians = pic_rotation * 3.141592653589793 / 180.0
         let sine = @math.sin(radians)
         let cosine = @math.cos(radians)
@@ -1416,6 +1418,20 @@ fn pptx_render_slide(
           0.0F,
           0.0F,
         )
+        if transform.flip_h || transform.flip_v {
+          object.scale(
+            if transform.flip_h {
+              -1.0F
+            } else {
+              1.0F
+            },
+            if transform.flip_v {
+              -1.0F
+            } else {
+              1.0F
+            },
+          )
+        }
         object.translate(
           Float::from_double(-pic_cx),
           Float::from_double(-pic_cy),
@@ -1463,7 +1479,7 @@ fn pptx_render_slide(
       if alpha is Some(_) {
         object.restore()
       }
-      if pic_rotated {
+      if pic_transformed {
         object.restore()
       }
       continue
