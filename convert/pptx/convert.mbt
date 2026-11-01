@@ -886,6 +886,18 @@ fn pptx_cell_text(cell : PptxXmlNode) -> String {
 }
 
 ///|
+fn pptx_cell_grid_span(cell : PptxXmlNode) -> Int32 {
+  let span = @string.parse_int(pptx_attribute(cell.element, "gridSpan", "1")) catch {
+    _ => 1
+  }
+  if span < 1 {
+    1
+  } else {
+    span
+  }
+}
+
+///|
 fn pptx_cell_borders(
   cell : PptxXmlNode,
   theme : Map[String, UInt32],
@@ -970,10 +982,17 @@ fn pptx_emit_table(
       if cell.element.name.local_name != "tc" {
         continue
       }
-      let column_width = if grid.length() == cell_count {
+      let span = pptx_cell_grid_span(cell)
+      let mut column_width = if grid.length() == cell_count {
         grid[cell_index.to_int()]
       } else {
         cell_width
+      }
+      if span > 1 && cell_index.to_int() + span <= grid.length() {
+        column_width = 0.0
+        for k in 0..<span {
+          column_width += grid[cell_index.to_int() + k]
+        }
       }
       match
         pptx_node_color(pptx_child(Some(cell), "tcPr"), "solidFill", theme) {
@@ -1014,7 +1033,7 @@ fn pptx_emit_table(
         object.stroke_path(object.add_path(@core.Inline(path)))
       }
       cell_x += column_width
-      cell_index += 1.0
+      cell_index += span.to_double()
     }
     row_top += row_height
   }
@@ -1053,10 +1072,17 @@ fn pptx_emit_table(
       if cell.element.name.local_name != "tc" {
         continue
       }
-      let column_width = if grid.length() == cell_count {
+      let span = pptx_cell_grid_span(cell)
+      let mut column_width = if grid.length() == cell_count {
         grid[cell_index.to_int()]
       } else {
         cell_width
+      }
+      if span > 1 && cell_index.to_int() + span <= grid.length() {
+        column_width = 0.0
+        for k in 0..<span {
+          column_width += grid[cell_index.to_int() + k]
+        }
       }
       let text = pptx_cell_text(cell)
       if text != "" {
@@ -1093,7 +1119,7 @@ fn pptx_emit_table(
         )
       }
       cell_x += column_width
-      cell_index += 1.0
+      cell_index += span.to_double()
     }
     text_top += row_height
   }
