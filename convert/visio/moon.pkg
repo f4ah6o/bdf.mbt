@@ -1,0 +1,13 @@
+import {
+  "f4ah6o/bdf/core",
+  "f4ah6o/bdf/convert/ooxml",
+  "moonbitlang/core/buffer",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/encoding/base64",
+  "moonbitlang/core/string",
+  "moonbitlang/core/math",
+  "Milky2018/xml",
+  "gaato/deflate/gzip",
+}
+
+supported_targets = "+js+wasm-gc"

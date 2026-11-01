@@ -2,7 +2,7 @@
 package "f4ah6o/bdf/convert/pdf"
 
 // Values
-pub fn convert(Bytes, box? : String, title? : String, no_text_index? : Bool, no_share_prefix? : Bool) -> PdfResult raise PdfError
+pub fn convert(Bytes, box? : String, title? : String, no_text_index? : Bool, no_share_prefix? : Bool, source? : String) -> PdfResult raise PdfError
 
 pub fn detect(Bytes) -> Bool
 

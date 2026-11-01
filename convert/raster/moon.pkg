@@ -1,0 +1,7 @@
+import {
+  "f4ah6o/bdf/core",
+  "moonbitlang/core/buffer",
+  "gaato/deflate/zlib",
+}
+
+supported_targets = "+js+wasm-gc"

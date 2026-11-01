@@ -38,6 +38,7 @@ pub fn convert(
   title~ : String = "",
   no_text_index~ : Bool = false,
   no_share_prefix~ : Bool = false,
+  source~ : String = "pdf",
 ) -> PdfResult raise PdfError {
   let (bdf, warnings, shared_prefixes, shared_bytes) = pdf_graphics_document_full(
     data,
@@ -45,6 +46,7 @@ pub fn convert(
     title~,
     no_text_index~,
     no_share_prefix~,
+    source~,
   ) catch {
     InvalidStream(message) => raise PdfFailure(message)
   }

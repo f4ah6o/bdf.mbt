@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/psd"
+
+// Values
+pub fn convert(Bytes, title? : String, artboards? : Bool) -> PsdResult raise PsdError
+
+pub fn detect(Bytes) -> Bool
+
+// Errors
+pub suberror PsdError {
+  PsdInvalid(String)
+}
+
+// Types and methods
+pub(all) struct PsdResult {
+  bdf : Bytes
+  pages : Int32
+  summary : String
+  warnings : Array[String]
+}
+
+// Type aliases
+
+// Traits

@@ -1977,7 +1977,6 @@ fn pptx_render_slide(
       let bytes = package.read(target) catch {
         _ => raise PptxInvalid("PPTX picture part is missing")
       }
-      let hash = writer.add_part("img", bytes)
       let pic_rotation = transform.rotation + placement.rotation
       let pic_transformed = pic_rotation != 0.0 ||
         transform.flip_h ||
@@ -2030,39 +2029,48 @@ fn pptx_render_slide(
         object.save()
         object.alpha(Float::from_double(alpha.unwrap()))
       }
-      let index = object.add_image(hash)
-      let mut cropped = false
-      match (pptx_png_size(bytes), pptx_src_rect(shape)) {
-        (Some((image_width, image_height)), Some((left, top, right, bottom))) => {
-          let sx = left * image_width.to_double()
-          let sy = top * image_height.to_double()
-          let sw = (1.0 - left - right) * image_width.to_double()
-          let sh = (1.0 - top - bottom) * image_height.to_double()
-          if sw > 0.0 && sh > 0.0 {
-            object.image_sub(
-              index,
-              Float::from_double(sx),
-              Float::from_double(sy),
-              Float::from_double(sw),
-              Float::from_double(sh),
-              Float::from_double(shape_x),
-              Float::from_double(shape_y),
-              Float::from_double(draw_width),
-              Float::from_double(draw_height),
-            )
-            cropped = true
-          }
-        }
-        _ => ()
-      }
-      if !cropped {
-        object.image(
-          index,
-          Float::from_double(shape_x),
-          Float::from_double(shape_y),
-          Float::from_double(draw_width),
-          Float::from_double(draw_height),
+      if @metafile.kind(bytes) != "" {
+        ignore(
+          @metafile.draw_into(
+            object, writer, bytes, shape_x, shape_y, draw_width, draw_height,
+          ) catch { _ => [] },
         )
+      } else {
+        let hash = writer.add_part("img", bytes)
+        let index = object.add_image(hash)
+        let mut cropped = false
+        match (pptx_png_size(bytes), pptx_src_rect(shape)) {
+          (Some((image_width, image_height)), Some((left, top, right, bottom))) => {
+            let sx = left * image_width.to_double()
+            let sy = top * image_height.to_double()
+            let sw = (1.0 - left - right) * image_width.to_double()
+            let sh = (1.0 - top - bottom) * image_height.to_double()
+            if sw > 0.0 && sh > 0.0 {
+              object.image_sub(
+                index,
+                Float::from_double(sx),
+                Float::from_double(sy),
+                Float::from_double(sw),
+                Float::from_double(sh),
+                Float::from_double(shape_x),
+                Float::from_double(shape_y),
+                Float::from_double(draw_width),
+                Float::from_double(draw_height),
+              )
+              cropped = true
+            }
+          }
+          _ => ()
+        }
+        if !cropped {
+          object.image(
+            index,
+            Float::from_double(shape_x),
+            Float::from_double(shape_y),
+            Float::from_double(draw_width),
+            Float::from_double(draw_height),
+          )
+        }
       }
       if alpha is Some(_) {
         object.restore()

@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/markdown"
+
+// Values
+pub fn convert(Bytes, title? : String) -> MarkdownResult raise MarkdownError
+
+pub fn detect(Bytes) -> Bool
+
+// Errors
+pub suberror MarkdownError {
+  MarkdownInvalid(String)
+}
+
+// Types and methods
+pub(all) struct MarkdownResult {
+  bdf : Bytes
+  pages : Int32
+  summary : String
+  warnings : Array[String]
+}
+
+// Type aliases
+
+// Traits

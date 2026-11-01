@@ -1,0 +1,12 @@
+import {
+  "f4ah6o/bdf/core",
+  "f4ah6o/bdf/convert/ooxml",
+  "f4ah6o/bdf/convert/html",
+  "f4ah6o/bdf/convert/reader",
+  "moonbitlang/core/string",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/encoding/base64",
+  "gaato/deflate/gzip",
+}
+
+supported_targets = "+js+wasm-gc"

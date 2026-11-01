@@ -1,0 +1,30 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/html"
+
+import {
+  "f4ah6o/bdf/convert/reader",
+}
+
+// Values
+pub fn convert(Bytes, title? : String) -> HtmlResult raise HtmlError
+
+pub fn detect(Bytes) -> Bool
+
+pub fn reader_document(Bytes, title? : String) -> @reader.ReaderDocument
+
+// Errors
+pub suberror HtmlError {
+  HtmlInvalid(String)
+}
+
+// Types and methods
+pub(all) struct HtmlResult {
+  bdf : Bytes
+  pages : Int32
+  summary : String
+  warnings : Array[String]
+}
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/ai"
+
+// Values
+pub fn convert(Bytes, box? : String, title? : String, no_text_index? : Bool, no_share_prefix? : Bool) -> AiResult raise AiError
+
+pub fn kind(Bytes) -> String
+
+// Errors
+pub suberror AiError {
+  AiInvalid(String)
+}
+
+// Types and methods
+pub(all) struct AiResult {
+  bdf : Bytes
+  pages : Int32
+  summary : String
+  warnings : Array[String]
+}
+
+// Type aliases
+
+// Traits

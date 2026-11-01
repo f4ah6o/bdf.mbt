@@ -516,7 +516,6 @@ fn docx_render_document(
           let bytes = pkg.read(target) catch {
             _ => raise DocxInvalid("DOCX image part is missing")
           }
-          let hash = writer.add_part("img", bytes)
           let mut width = if item.width > 0.0 { item.width } else { 72.0 }
           let mut height = if item.height > 0.0 { item.height } else { 72.0 }
           let mut dx = item.x
@@ -572,46 +571,61 @@ fn docx_render_document(
               Float::from_double(-center_y),
             )
           }
-          let index = object.add_image(hash)
-          let mut cropped = false
-          if item.crop_left > 0.0 ||
-            item.crop_top > 0.0 ||
-            item.crop_right > 0.0 ||
-            item.crop_bottom > 0.0 {
-            match docx_png_size(bytes) {
-              Some((image_width, image_height)) => {
-                let sx = item.crop_left * image_width.to_double()
-                let sy = item.crop_top * image_height.to_double()
-                let sw = (1.0 - item.crop_left - item.crop_right) *
-                  image_width.to_double()
-                let sh = (1.0 - item.crop_top - item.crop_bottom) *
-                  image_height.to_double()
-                if sw > 0.0 && sh > 0.0 {
-                  object.image_sub(
-                    index,
-                    Float::from_double(sx),
-                    Float::from_double(sy),
-                    Float::from_double(sw),
-                    Float::from_double(sh),
-                    Float::from_double(dx),
-                    Float::from_double(dy),
-                    Float::from_double(width),
-                    Float::from_double(height),
-                  )
-                  cropped = true
-                }
+          if @metafile.kind(bytes) != "" {
+            let meta_warnings = @metafile.draw_into(
+              object, writer, bytes, dx, dy, width, height,
+            ) catch {
+              _ => {
+                warnings.push("DOCX: an EMF/WMF drawing could not be replayed")
+                []
               }
-              None => ()
             }
-          }
-          if !cropped {
-            object.image(
-              index,
-              Float::from_double(dx),
-              Float::from_double(dy),
-              Float::from_double(width),
-              Float::from_double(height),
-            )
+            for message in meta_warnings {
+              warnings.push(message)
+            }
+          } else {
+            let hash = writer.add_part("img", bytes)
+            let index = object.add_image(hash)
+            let mut cropped = false
+            if item.crop_left > 0.0 ||
+              item.crop_top > 0.0 ||
+              item.crop_right > 0.0 ||
+              item.crop_bottom > 0.0 {
+              match docx_png_size(bytes) {
+                Some((image_width, image_height)) => {
+                  let sx = item.crop_left * image_width.to_double()
+                  let sy = item.crop_top * image_height.to_double()
+                  let sw = (1.0 - item.crop_left - item.crop_right) *
+                    image_width.to_double()
+                  let sh = (1.0 - item.crop_top - item.crop_bottom) *
+                    image_height.to_double()
+                  if sw > 0.0 && sh > 0.0 {
+                    object.image_sub(
+                      index,
+                      Float::from_double(sx),
+                      Float::from_double(sy),
+                      Float::from_double(sw),
+                      Float::from_double(sh),
+                      Float::from_double(dx),
+                      Float::from_double(dy),
+                      Float::from_double(width),
+                      Float::from_double(height),
+                    )
+                    cropped = true
+                  }
+                }
+                None => ()
+              }
+            }
+            if !cropped {
+              object.image(
+                index,
+                Float::from_double(dx),
+                Float::from_double(dy),
+                Float::from_double(width),
+                Float::from_double(height),
+              )
+            }
           }
           if transformed {
             object.restore()

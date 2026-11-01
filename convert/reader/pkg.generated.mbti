@@ -1,0 +1,47 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/reader"
+
+import {
+  "f4ah6o/bdf/core",
+}
+
+// Values
+pub fn render(ReaderDocument, @core.DocumentWriter) -> ReaderLayout
+
+// Errors
+pub suberror ReaderError {
+  ReaderInvalid(String)
+}
+
+// Types and methods
+pub(all) enum ReaderBlock {
+  Heading(Int32, String)
+  Paragraph(String)
+  ListItem(Int32, Bool, String)
+  Code(String)
+  Quote(String)
+  Rule
+}
+
+pub(all) struct ReaderDocument {
+  title : String
+  blocks : Array[ReaderBlock]
+}
+
+pub(all) struct ReaderLayout {
+  pages : Array[Json]
+  index_runs : Array[@core.IndexRun]
+  warnings : Array[String]
+}
+
+pub(all) struct ReaderOptions {
+  width : Double
+  height : Double
+  margin : Double
+  font_size : Double
+}
+pub fn ReaderOptions::new(width? : Double, height? : Double, margin? : Double, font_size? : Double) -> Self
+
+// Type aliases
+
+// Traits

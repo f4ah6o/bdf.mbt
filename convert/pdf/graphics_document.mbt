@@ -54,6 +54,7 @@ fn pdf_graphics_document_full(
   title~ : String = "",
   no_text_index~ : Bool = false,
   no_share_prefix~ : Bool = false,
+  source~ : String = "pdf",
 ) -> (Bytes, Array[String], Int32, Int64) raise PdfStreamError {
   if !["", "crop", "media", "bleed", "trim", "art"].contains(box) {
     raise InvalidStream("unknown PDF page box")
@@ -93,7 +94,7 @@ fn pdf_graphics_document_full(
   if !fields.is_empty() {
     meta["dc"] = Json::object(fields)
   }
-  meta["source"] = Json::string("pdf")
+  meta["source"] = Json::string(if source == "" { "pdf" } else { source })
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
   let warnings : Array[String] = []
   let pending : Array[PdfPendingObject] = []

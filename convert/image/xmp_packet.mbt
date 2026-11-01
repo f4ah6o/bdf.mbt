@@ -26,3 +26,13 @@ fn metadata_xmp(packet : Bytes) -> Map[String, Array[String]] raise {
     Map([])
   }
 }
+
+///|
+/// Read Dublin Core values from an XMP packet.
+pub fn xmp_dublin_core(
+  packet : Bytes,
+) -> Map[String, Array[String]] raise ImageError {
+  metadata_xmp(packet) catch {
+    error => raise ImageFailure(error.to_string())
+  }
+}

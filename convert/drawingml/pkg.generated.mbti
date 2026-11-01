@@ -1,0 +1,60 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/drawingml"
+
+// Values
+pub fn flow(TextBody, Array[TextRect]) -> (Array[Array[TextLine]], Bool)
+
+pub fn layout(TextBody, TextRect) -> (Array[TextLine], Bool)
+
+pub fn text_width(String, Double) -> Double
+
+pub fn wrap_runs(Array[TextRun], Double, Int32) -> Array[TextLine]
+
+// Errors
+pub suberror DrawingmlError {
+  DrawingmlInvalid(String)
+}
+
+// Types and methods
+pub(all) struct TextBody {
+  paragraphs : Array[TextParagraph]
+}
+
+pub(all) struct TextLine {
+  text : String
+  x : Double
+  y : Double
+  width : Double
+  style : TextStyle
+  align : Int32
+}
+
+pub(all) struct TextParagraph {
+  runs : Array[TextRun]
+  align : Int32
+}
+
+pub(all) struct TextRect {
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+}
+
+pub(all) struct TextRun {
+  text : String
+  style : TextStyle
+}
+
+pub(all) struct TextStyle {
+  family : String
+  size : Double
+  bold : Bool
+  italic : Bool
+  color : UInt32
+}
+pub fn TextStyle::new(family? : String, size? : Double, bold? : Bool, italic? : Bool, color? : UInt32) -> Self
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,36 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/raster"
+
+// Values
+pub fn encode_png(Int32, Int32, Bytes) -> Bytes raise RasterError
+
+pub fn fit_size(Int32, Int32, Double, Double, max_dpi? : Double, max_pixels? : Int64) -> (Int32, Int32)
+
+pub fn image_size(Bytes) -> (Int32, Int32)?
+
+pub fn resize_box(Bytes, Int32, Int32, Int32, Int32, bilevel? : Bool) -> Bytes raise RasterError
+
+pub fn write_document(Array[RasterPage], title? : String, source? : String, dc? : Map[String, Array[String]]) -> Bytes raise RasterError
+
+// Errors
+pub suberror RasterError {
+  InvalidRaster(String)
+}
+
+// Types and methods
+pub(all) struct RasterPage {
+  image : Bytes
+  format : String
+  width_px : Int32
+  height_px : Int32
+  draw_width : Double
+  draw_height : Double
+  page_width : Double
+  page_height : Double
+  transform : (Double, Double, Double, Double, Double, Double)?
+  alt : String
+}
+
+// Type aliases
+
+// Traits

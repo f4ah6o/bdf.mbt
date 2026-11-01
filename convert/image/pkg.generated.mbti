@@ -4,6 +4,8 @@ package "f4ah6o/bdf/convert/image"
 // Values
 pub fn convert(Bytes, title? : String, name? : String) -> ImageResult raise
 
+pub fn xmp_dublin_core(Bytes) -> Map[String, Array[String]] raise ImageError
+
 // Errors
 pub suberror ImageError {
   ImageFailure(String)

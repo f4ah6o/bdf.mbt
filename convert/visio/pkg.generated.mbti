@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/visio"
+
+// Values
+pub fn convert(Bytes, title? : String) -> VisioResult raise VisioError
+
+pub fn detect(Bytes) -> Bool
+
+// Errors
+pub suberror VisioError {
+  VisioInvalid(String)
+}
+
+// Types and methods
+pub(all) struct VisioResult {
+  bdf : Bytes
+  pages : Int32
+  summary : String
+  warnings : Array[String]
+}
+
+// Type aliases
+
+// Traits

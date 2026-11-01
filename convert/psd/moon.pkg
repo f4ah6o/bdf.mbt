@@ -1,0 +1,12 @@
+import {
+  "f4ah6o/bdf/core",
+  "f4ah6o/bdf/convert/raster",
+  "f4ah6o/bdf/convert/image",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/encoding/utf16",
+  "moonbitlang/core/encoding/base64",
+  "moonbitlang/core/math",
+  "gaato/deflate/zlib",
+}
+
+supported_targets = "+js+wasm-gc"

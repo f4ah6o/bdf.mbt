@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/idml"
+
+// Values
+pub fn convert(Bytes, title? : String) -> IdmlResult raise IdmlError
+
+pub fn detect(Bytes) -> Bool
+
+// Errors
+pub suberror IdmlError {
+  IdmlInvalid(String)
+}
+
+// Types and methods
+pub(all) struct IdmlResult {
+  bdf : Bytes
+  pages : Int32
+  summary : String
+  warnings : Array[String]
+}
+
+// Type aliases
+
+// Traits
