@@ -1638,6 +1638,37 @@ fn pptx_render_slide(
       Some(value) => value
       None => continue
     }
+    let text_rotation = transform.rotation + placement.rotation
+    let text_cx = if placement.rotation != 0.0 {
+      placement.cx
+    } else {
+      shape_x + draw_width / 2.0
+    }
+    let text_cy = if placement.rotation != 0.0 {
+      placement.cy
+    } else {
+      shape_y + draw_height / 2.0
+    }
+    let text_rotated = text_rotation != 0.0
+    if text_rotated {
+      let radians = text_rotation * 3.141592653589793 / 180.0
+      let sine = @math.sin(radians)
+      let cosine = @math.cos(radians)
+      object.save()
+      object.translate(Float::from_double(text_cx), Float::from_double(text_cy))
+      object.transform(
+        Float::from_double(cosine),
+        Float::from_double(sine),
+        Float::from_double(-sine),
+        Float::from_double(cosine),
+        0.0F,
+        0.0F,
+      )
+      object.translate(
+        Float::from_double(-text_cx),
+        Float::from_double(-text_cy),
+      )
+    }
     let line : Array[PptxLineItem] = []
     let mut line_width = 0.0
     let mut line_height = 21.6
@@ -1761,6 +1792,9 @@ fn pptx_render_slide(
       }
       flush()
       y += line_height
+    }
+    if text_rotated {
+      object.restore()
     }
   }
   let encoded = object.encode()

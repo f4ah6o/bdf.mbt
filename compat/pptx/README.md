@@ -31,6 +31,6 @@ flattening, basic bar, line and pie charts, layout/master backgrounds and non-pl
 decorations, translated
 group shapes, solid shape fills and paragraph/run text with approximate
 metrics. Chart types other than bar, line and pie charts are not rendered yet; group
-rotation applies to shape geometry, not glyphs; layout/master placeholder shapes are skipped after their
+rotation applies to shape geometry and text; layout/master placeholder shapes are skipped after their
 transforms are used for inheritance. The native
 converter Worker advertises the `pptx` format.
