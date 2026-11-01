@@ -9,13 +9,37 @@ import { PNG } from 'pngjs';
 const root = process.cwd();
 const allowed = ['/compat/xlsx/', '/node_modules/@bdfkit/', '/_build/js/debug/build/compat/xlsx/', '/_build/js/debug/build/browser/'];
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json' };
+const pending = new Map();
 const server = createServer((request, response) => {
-  const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
+  let url;
+  try { url = new URL(request.url, 'http://localhost'); } catch { response.writeHead(400).end(); return; }
+  const token = url.searchParams.get('token');
+  // Keep each capture's network request open until its own asynchronous render
+  // finishes. VLMKit waits for network idle before taking the screenshot.
+  if (url.pathname === '/compat/xlsx/visual-wait' && request.method === 'GET' && token && !pending.has(token)) {
+    pending.set(token, response);
+    response.once('close', () => { if (pending.get(token) === response) pending.delete(token); });
+    response.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' });
+    response.flushHeaders();
+    return;
+  }
+  if (url.pathname === '/compat/xlsx/visual-release' && request.method === 'POST') {
+    const waiting = pending.get(token);
+    if (!waiting) { response.writeHead(404).end(); return; }
+    pending.delete(token);
+    waiting.end('ready');
+    response.writeHead(204).end();
+    return;
+  }
+  let pathname;
+  try { pathname = decodeURIComponent(url.pathname); } catch { response.writeHead(400).end(); return; }
+  if (pathname.includes('\0')) { response.writeHead(400).end(); return; }
   const file = path.resolve(root, '.' + pathname);
   if (!allowed.some(prefix => file.startsWith(path.resolve(root, '.' + prefix) + path.sep))) {
     response.writeHead(403).end(); return;
   }
-  const stream = createReadStream(file);
+  let stream;
+  try { stream = createReadStream(file); } catch { response.writeHead(400).end(); return; }
   stream.once('error', () => { if (!response.headersSent) response.writeHead(404); response.end(); });
   response.setHeader('Content-Type', mime[path.extname(file)] ?? 'application/octet-stream');
   stream.pipe(response);
@@ -52,6 +76,22 @@ try {
       assert.ok(colors.every(count => count > 50), `${name}: missing colored picture: ${colors}`);
       await page.close();
     }
+    const barrierPage = await browser.newPage();
+    try {
+      // Simulate rendering that outlasts networkidle's 500 ms quiet window.
+      await barrierPage.addInitScript(() => {
+        const original = Response.prototype.json;
+        let paused = false;
+        Response.prototype.json = async function () {
+          const result = await original.call(this);
+          if (!paused) { paused = true; await new Promise(resolve => setTimeout(resolve, 1500)); }
+          return result;
+        };
+      });
+      await barrierPage.goto(base + 'picture-upstream.html', { waitUntil: 'networkidle' });
+      const status = await barrierPage.evaluate(() => ({ status: window.bdfStatus, error: window.bdfError }));
+      assert.equal(status.status, 'ready', status.error ?? 'network became idle before rendering completed');
+    } finally { await barrierPage.close(); }
   } finally { await browser.close(); }
   const rootOutput = path.join(root, '_build/visual-diff');
   mkdirSync(rootOutput, { recursive: true });

@@ -11,7 +11,13 @@ function contains(haystack, needle) {
   }
   return false;
 }
+// Keep VLMKit's screenshot from racing asynchronous decode and rendering.
+// The server holds this request open until the last conversion finishes.
+const token = crypto.randomUUID();
+let barrier;
 try {
+  barrier = await fetch(`./visual-wait?token=${token}`);
+  if (!barrier.ok) throw new Error(`visual wait: HTTP ${barrier.status}`);
   const [fixtures, media] = await Promise.all(['picture-formats.json', 'picture-visual-media.json'].map(async file => {
     const response = await fetch('./' + file);
     if (!response.ok) throw new Error(`${file}: HTTP ${response.status}`);
@@ -49,5 +55,13 @@ try {
   }
   window.bdfStatus = 'ready';
 } catch (error) {
-  window.bdfStatus = 'error'; window.bdfError = String(error?.stack ?? error); console.error(error);
+  window.bdfStatus = 'error'; window.bdfError = String(error?.stack ?? error);
+  document.querySelector('#host').replaceChildren();
+  console.error(error);
+} finally {
+  if (barrier?.ok) {
+    const response = await fetch(`./visual-release?token=${token}`, { method: 'POST' });
+    if (!response.ok) throw new Error(`visual release: HTTP ${response.status}`);
+    await barrier.text();
+  }
 }
