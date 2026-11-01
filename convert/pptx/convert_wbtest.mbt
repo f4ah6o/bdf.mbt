@@ -3384,3 +3384,111 @@ test "PPTX table cell fills are drawn" {
   assert_true(red, msg="PPTX table cell colour")
   assert_true(fill, msg="PPTX table cell fill")
 }
+
+///|
+fn pptx_table_grid_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GD46pEY2zcpleknkGfKxMAgDKSjnfPzSlLzSuJDKgtSi2P1KnJz",
+  )
+  joined.write_string(
+    "1gZa+x82ELj3U3Tada3CUw0CXpcaj3PwPGWfM8c76ar+zzur/n6PmaTEqLXBILL8fvDzquKSMBmD",
+  )
+  joined.write_string(
+    "iZz7Jr7eNIlpL9/cj87K97f5H10rMuVgeULzcbd5E54s27tq+/IOlYg3Kycmn/vop3lJ2WqBkcuX",
+  )
+  joined.write_string(
+    "ni+Klidsljm6XrCWCIgNv9p76WD6l50nJrfnvGZ/k5i/ucLmU5XmpAuTRL5zF57KUjmS0dt2ZofV",
+  )
+  joined.write_string(
+    "j3fRXoV+GpGWxRkmE8N8JrxKOtTyR6bg2t4PqZNeBuxxOnX+wYylSWe01FSunb3zqXw5d6jzfene",
+  )
+  joined.write_string(
+    "2AvVxyd92jxzc/yxS40fV9ufmvBUVff8r/23z6yT573y5/Vb6wCUkCry+z5/E5Cny8jAwA2k44tS",
+  )
+  joined.write_string(
+    "c4r19UBk7/mzXIcMeNg/7PYPLCq/a9NxYlesy43QZ8xTzF63vWb3Ff3+Tczfz6bC59N5/SV588vS",
+  )
+  joined.write_string(
+    "+HtMKtUXaHklvJhyfbIx07q/ldUMbp5WuunvAw40seRuXqlvcXpKecYcpo09FkIGy0T65kyWuuil",
+  )
+  joined.write_string(
+    "VeMwXb25P2xZjNvh5hDzzAnvTxWdf7yc8eyplLliAtaxjK+nN/y/USeh1qq+/p1Y7K/CR9oTUyV5",
+  )
+  joined.write_string(
+    "1RgVVeSUgvL2XXad1mhuGl97cw8DqtcuVJw/ch7I8wB6DSRaUFCiX1CUWgxMB4klmfl5oFTQO8E/",
+  )
+  joined.write_string(
+    "m8lQ4Oj7vyKJ70wLL6buzrnmLciSn2vv4JF21+HfxM5FdVXJuq4vlm7/PqPS/tnZDZbVx/1mnDym",
+  )
+  joined.write_string(
+    "kLhT4IDBi4wcC48fv+7sKzuwYkXClG5G1ZgJCcb7eFb6S3I6By5Vi1zK8mpyy84pV4r9qtzWZwgK",
+  )
+  joined.write_string(
+    "t1nNTvq2KmQ2/x/L57L5LRk7w80O8Kv8ZxdafjKrpv/XC+3XjCdf7FtoctvF4JrwyZlzbwb/vHpG",
+  )
+  joined.write_string(
+    "ivPsLtZpv3efsb7MIM/+L/3741NfIg/dLtoqtMjONV5ly91du2e7P9h5vIIZNQBK5p76sgHIUwQG",
+  )
+  joined.write_string(
+    "gDw0ACDxix4M0PjeCIxvAbYHd5dzbL+9RdZlSaa44C6v2oYJMbcTZrXEiPz+xlYYUFDw5/2P/Y9n",
+  )
+  joined.write_string(
+    "vdsYUXbc45g1Y2ggk/PyPWZ5QgWSfrdtDbwuZWbudWbUFip5u8xy8VTN8gyzxgg3Gc4ZwVzs5zzP",
+  )
+  joined.write_string(
+    "7vAAxbf54v5uH8tjnewr1xU5xU1/2nfcn/mW/uSvUQ5vSnlzIpj/Jf8uNOHqj7srVvLyOKfftYwz",
+  )
+  joined.write_string(
+    "C3qE1RjX/5gX5nqtYTvv/19raplQPWvhVrEhA+hRXWYGBlGoZ4tzMlNSiyGUITi6gw7mAZP03vfa",
+  )
+  joined.write_string(
+    "i+60cydvUIwymXEq10nqd8OFFiFN30UqWk/fT18muSWDvajgzY33P49+KroawnT1TMS6lK7ji1mU",
+  )
+  joined.write_string(
+    "1bhdd+oE/9l8fv59g019Hl4tk3SOiqd91KqOetUqKlK5YQv33EeTi6sYE7qFV3fIap5dcl526sqO",
+  )
+  joined.write_string(
+    "zws1HaXTZpYc+ek2tcFz0pkFSjGPPJzkFBe2zdm7idHuc1RXvuPt26/2Jq756uX8pVN8p2JoR+re",
+  )
+  joined.write_string(
+    "t3vf+DjUXrVutvD9yKL8cn7wHnX2gwZH3ggwyfoXPKg/9ixjVY6n2KsKF9+u+8cvZz5Sr9q560Ja",
+  )
+  joined.write_string(
+    "5OOAh5cfT/9Zce1ZtyPjnYpH+lXv1AuX8N51PJKdbfGWy+KuRuO5w2l7n798XSMUzTPhHIv0rR1p",
+  )
+  joined.write_string(
+    "a18s/VqSvcvnm6AAY3rTVVl3nTZtq1uxByJVLc7u5PBaq8kvnRjg69IlXP/JRuvl1IO8f/ZP+Ors",
+  )
+  joined.write_string(
+    "tOC38BHDg3e/LDCP2BEvuiNX8I+uWEvu+TrGAG9GJhFm3OUxDDQwMmAvndENQC+mEAZoMaIUWuga",
+  )
+  joined.write_string(
+    "0QsBhEZWJuxFAroJ6LkIYQIbM8E8hW4YeipFGPaZGUeaDfBmZQMpYQVCH6DWPlYQDwCYdZez8AYA",
+  )
+  joined.write_string("AA==")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX table cell fills use grid widths" {
+  let result = convert(pptx_table_grid_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut placed = false
+  for command in commands {
+    match command {
+      @render.FillRect(x, _, w, _) =>
+        if x == 144.0 && w == 36.0 {
+          placed = true
+        }
+      _ => ()
+    }
+  }
+  assert_true(placed, msg="PPTX table grid width")
+}

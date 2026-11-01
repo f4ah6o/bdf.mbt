@@ -748,6 +748,16 @@ fn pptx_emit_table(
     "tbl",
   )
   let rows = pptx_children(table)
+  let grid : Array[Double] = []
+  match pptx_child(table, "tblGrid") {
+    Some(value) =>
+      for column in pptx_children(Some(value)) {
+        if column.element.name.local_name == "gridCol" {
+          grid.push(pptx_measure(pptx_attribute(column.element, "w", ""), 0.0))
+        }
+      }
+    None => ()
+  }
   let row_height = 14.4
   let mut row_index = 0.0
   for row in rows {
@@ -766,23 +776,30 @@ fn pptx_emit_table(
     }
     let cell_width = width / cell_count.to_double()
     let mut cell_index = 0.0
+    let mut cell_x = x
     for cell in cells {
       if cell.element.name.local_name != "tc" {
         continue
+      }
+      let column_width = if grid.length() == cell_count {
+        grid[cell_index.to_int()]
+      } else {
+        cell_width
       }
       match
         pptx_node_color(pptx_child(Some(cell), "tcPr"), "solidFill", theme) {
         Some(color) => {
           object.fill_color(color)
           object.fill_rect(
-            Float::from_double(x + cell_width * cell_index),
+            Float::from_double(cell_x),
             Float::from_double(y + row_height * row_index),
-            Float::from_double(cell_width),
+            Float::from_double(column_width),
             Float::from_double(row_height),
           )
         }
         None => ()
       }
+      cell_x += column_width
       cell_index += 1.0
     }
     row_index += 1.0
