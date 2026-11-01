@@ -15,6 +15,7 @@
 - `npm run test:phase3-converter`
 - `npm run test:phase4-converter`
 - `npm run test:phase5-converter`
+- `npm run test:phase8-type1`
 - `npm run test:visual`
 
 ## README Port backlog
@@ -95,7 +96,9 @@
 
 ## Next steps
 
-1. Port Type1 font programs to CFF so `/FontFile` fonts embed natively.
+1. ~~Port Type1 font programs to CFF so `/FontFile` fonts embed natively.~~
+   Done: Type 1 charstrings are interpreted into Type 2 outlines and a
+   name-keyed CFF, then embedded through the existing CFF path.
 2. Port the deferred SXF, CGM, Gerber/Excellon and KiCad converters, then the
    draw.io converter.
 3. Port Parquet sheet input and the XLSX font-embedding mode.

@@ -21,6 +21,8 @@ decoded image pixels, streamed pages, page selection and parameter errors.
 JPEG-compressed TIFF pages and the documented metafile subset are covered as
 explicit warnings.
 
+`phase8-type1-test.mjs` checks the PDF Type 1 fixtures embed converted CFF font parts without fallback warnings.
+
 `phase5-test.mjs` compares the HP-GL/2, Jw_cad, DXF, SXF, CGM, Gerber, KiCad and draw.io converters with the upstream
 `@bdfkit/convert-all` Wasm. It checks the format registration, page geometry,
 layer roles, text indexes, streamed pages, page selection and parameter

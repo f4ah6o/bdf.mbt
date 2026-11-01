@@ -67,6 +67,8 @@ try {
       ['demo.kicad_pcb', '/compat/kicad/fixtures/demo.kicad_pcb'],
       ['labels.drawio', '/compat/drawio/fixtures/labels.drawio'],
       ['multipage.drawio', '/compat/drawio/fixtures/multipage.drawio'],
+      ['cairo-type1.pdf', '/compat/pdf/fixtures/cairo-type1.pdf'],
+      ['reportlab-type1.pdf', '/compat/pdf/fixtures/reportlab-type1.pdf'],
     ]) {
       const data = new Uint8Array(await (await fetch(base + path)).arrayBuffer());
       const a = await upstream.convert(data, { name });
@@ -132,7 +134,7 @@ try {
   assert.equal(result.selected, 1);
   assert.ok(String(result.badColor).includes('not pens or mono'), 'colors parameter error');
   assert.ok(String(result.named).startsWith('hpgl:'), 'HP-GL detection');
-  console.log(`Phase 5-7 CAD, Gerber, KiCad and draw.io: ${result.cases.length} fixtures convert with the expected layers and coverage; single-file Gerber and draw.io pages are fitted by this port, so their page sizes differ from the upstream board/auto-fit scaling.`);
+  console.log(`Phase 5-8 CAD, Gerber, KiCad, draw.io and PDF Type1: ${result.cases.length} fixtures convert with the expected layers and coverage; single-file Gerber and draw.io pages are fitted by this port, so their page sizes differ from the upstream board/auto-fit scaling.`);
 } finally {
   await browser.close();
   server.close();

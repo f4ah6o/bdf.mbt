@@ -67,6 +67,29 @@ fn PdfFile::embedded_font_stream(
 }
 
 ///|
+fn PdfFile::embedded_raw_stream(
+  self : PdfFile,
+  number : Int64,
+) -> Bytes raise PdfStreamError {
+  let loaded = self.load(number, 0)
+  let raw = match loaded.stream {
+    Some(value) => value
+    None => raise InvalidStream("embedded font is not a stream")
+  }
+  let (data, codec) = pdf_decode_stream(
+    raw,
+    self.resolved_stream_filters(loaded.value),
+    268435456L,
+    false,
+    268435456L,
+  )
+  if codec is Some(_) {
+    raise InvalidStream("encoded embedded PDF fonts are not supported")
+  }
+  data
+}
+
+///|
 fn PdfFile::embedded_cff_stream(
   self : PdfFile,
   number : Int64,
@@ -116,7 +139,14 @@ fn PdfFile::embedded_font(
     None => ()
   }
   match pdf_dict_get(desc, b"FontFile") {
-    Some(_) => raise InvalidStream("unsupported embedded PDF font format")
+    Some(PdfRef(number, _)) => {
+      let data = self.embedded_raw_stream(number)
+      match type1_to_cff(data) {
+        Some(cff) => Some(cff)
+        None => raise InvalidStream("unsupported Type 1 font program")
+      }
+    }
+    Some(_) => raise InvalidStream("invalid PDF FontFile")
     None => None
   }
 }
