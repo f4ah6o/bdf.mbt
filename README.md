@@ -90,7 +90,7 @@ constructing this public record directly must provide the map; use
 
 1. ~~Complete the opset 1 Canvas command decoder and browser Canvas renderer, and safe resource loading.~~ Done: every opset 1 draw opcode decodes to a command, the browser renderer dispatches every command variant, and path/paint/font/image references are range-checked. `render` and `browser` unit tests cover decoding, dispatch, and rejected references.
 2. Cryptography support on non-JavaScript hosts.
-3. MoonBit converter engines and viewer openFile integration for streaming page conversion.
+3. ~~MoonBit converter engines and viewer openFile integration for streaming page conversion.~~ Done: the viewer openFile path uses the converter stream API, and the native Worker now opens PDF/DOCX/PPTX conversions as page streams, returning one page BDF per `page` request. `core.select_pages` also supports explicit page selection.
 4. ~~DOM/OffscreenCanvas viewer, lazy page rendering, sheet support, search, accessibility and music playback.~~ Done: the DOM viewer renders through Canvas/OffscreenCanvas with lazy pages, live sheet viewports, text search, ARIA text/table layers and MIDI playback. Browser, sheet, search and MIDI unit tests plus the demo cover these paths.
 5. ~~Replace or separately port TinyGo converter engines for the desired document formats.~~ Done: MoonBit engines cover the demo format set—PDF, DOCX, PPTX, XLSX, CSV, image, font, MIDI/MML/MusicXML and HPGL—and the native converter Worker serves them without the TinyGo runtime. Upstream-only formats outside that set are not ported.
 

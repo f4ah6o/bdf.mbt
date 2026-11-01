@@ -44,8 +44,33 @@ extern "js" fn native_converter_error(
   #|(request,error,code) => self.postMessage({id:Number(request.id),ok:false,error,...(code?{code}:{})})
 
 ///|
+extern "js" fn native_converter_stream_open(
+  request : ConverterRequest,
+  bdf : Bytes,
+  format : String,
+  summary : String,
+  warnings : Array[String],
+  pages : Int32,
+) -> Unit =
+  #|(request,bdf,format,summary,warnings,pages) => {const result={bdf,format,summary,warnings,protected:false,pages,stream:{pages}};self.postMessage({id:Number(request.id),ok:true,result},[bdf.buffer])}
+
+///|
+extern "js" fn native_converter_request_page(
+  request : ConverterRequest,
+) -> Int32 =
+  #|(request) => Number(request.index)||0
+
+///|
+priv struct NativeStream {
+  bdf : Bytes
+  pages : Int32
+}
+
+///|
 priv struct NativeConverterState {
   mut ready : Bool
+  streams : Map[Int32, NativeStream]
+  mut next_stream : Int32
 }
 
 ///|
@@ -64,14 +89,31 @@ async fn NativeConverterState::dispatch(
     return
   }
   if kind == "close" {
+    let id = converter_request_stream(request)
+    self.streams.remove(id)
     converter_reply_value(request, converter_null_value())
     return
   }
-  if kind == "page" || kind == "finish" {
-    converter_reply_error(
-      request,
-      "no conversion " + converter_stream_name(request),
-    )
+  if kind == "finish" {
+    converter_reply_value(request, converter_null_value())
+    return
+  }
+  if kind == "page" {
+    let id = converter_request_stream(request)
+    match self.streams.get(id) {
+      Some(stream) => {
+        let index = native_converter_request_page(request).to_int64() + 1L
+        let bdf = @core.select_pages(stream.bdf, [index]) catch {
+          _ => stream.bdf
+        }
+        native_converter_result(request, bdf, "", "", [], false)
+      }
+      None =>
+        converter_reply_error(
+          request,
+          "no conversion " + converter_stream_name(request),
+        )
+    }
     return
   }
   if kind != "convert" && kind != "open" {
@@ -143,15 +185,15 @@ async fn NativeConverterState::dispatch(
     return
   }
   if format == "pdf" || (format == "" && @pdf.detect(data)) {
-    native_convert_pdf(request, data)
+    native_convert_pdf(self, request, data, kind == "open")
     return
   }
   if format == "docx" || (format == "" && @docx.detect(data)) {
-    native_convert_docx(request, data)
+    native_convert_docx(self, request, data, kind == "open")
     return
   }
   if format == "pptx" || (format == "" && @pptx.detect(data)) {
-    native_convert_pptx(request, data)
+    native_convert_pptx(self, request, data, kind == "open")
     return
   }
   if format == "xlsx" {
@@ -343,7 +385,12 @@ fn native_select_pages(
 }
 
 ///|
-fn native_convert_pdf(request : ConverterRequest, data : Bytes) -> Unit {
+fn native_convert_pdf(
+  state : NativeConverterState,
+  request : ConverterRequest,
+  data : Bytes,
+  opened : Bool,
+) -> Unit {
   let result = @pdf.convert(
     data,
     box=native_converter_param(request, "box"),
@@ -357,18 +404,39 @@ fn native_convert_pdf(request : ConverterRequest, data : Bytes) -> Unit {
     }
   }
   let bdf = native_select_pages(request, result.bdf, result.pages)
-  native_converter_result(
-    request,
-    bdf,
-    "pdf",
-    result.summary,
-    result.warnings,
-    false,
-  )
+  if opened &&
+    native_converter_param(request, "pages") == "" &&
+    result.pages > 0 {
+    let id = state.next_stream
+    state.next_stream += 1
+    state.streams[id] = { bdf, pages: result.pages, }
+    native_converter_stream_open(
+      request,
+      bdf,
+      "pdf",
+      result.summary,
+      result.warnings,
+      result.pages,
+    )
+  } else {
+    native_converter_result(
+      request,
+      bdf,
+      "pdf",
+      result.summary,
+      result.warnings,
+      false,
+    )
+  }
 }
 
 ///|
-fn native_convert_docx(request : ConverterRequest, data : Bytes) -> Unit {
+fn native_convert_docx(
+  state : NativeConverterState,
+  request : ConverterRequest,
+  data : Bytes,
+  opened : Bool,
+) -> Unit {
   let result = @docx.convert(
     data,
     title=native_converter_param(request, "title"),
@@ -383,18 +451,39 @@ fn native_convert_docx(request : ConverterRequest, data : Bytes) -> Unit {
     }
   }
   let bdf = native_select_pages(request, result.bdf, result.pages)
-  native_converter_result(
-    request,
-    bdf,
-    "docx",
-    result.summary,
-    result.warnings,
-    false,
-  )
+  if opened &&
+    native_converter_param(request, "pages") == "" &&
+    result.pages > 0 {
+    let id = state.next_stream
+    state.next_stream += 1
+    state.streams[id] = { bdf, pages: result.pages, }
+    native_converter_stream_open(
+      request,
+      bdf,
+      "docx",
+      result.summary,
+      result.warnings,
+      result.pages,
+    )
+  } else {
+    native_converter_result(
+      request,
+      bdf,
+      "docx",
+      result.summary,
+      result.warnings,
+      false,
+    )
+  }
 }
 
 ///|
-fn native_convert_pptx(request : ConverterRequest, data : Bytes) -> Unit {
+fn native_convert_pptx(
+  state : NativeConverterState,
+  request : ConverterRequest,
+  data : Bytes,
+  opened : Bool,
+) -> Unit {
   let result = @pptx.convert(
     data,
     title=native_converter_param(request, "title"),
@@ -409,14 +498,30 @@ fn native_convert_pptx(request : ConverterRequest, data : Bytes) -> Unit {
     }
   }
   let bdf = native_select_pages(request, result.bdf, result.pages)
-  native_converter_result(
-    request,
-    bdf,
-    "pptx",
-    result.summary,
-    result.warnings,
-    false,
-  )
+  if opened &&
+    native_converter_param(request, "pages") == "" &&
+    result.pages > 0 {
+    let id = state.next_stream
+    state.next_stream += 1
+    state.streams[id] = { bdf, pages: result.pages, }
+    native_converter_stream_open(
+      request,
+      bdf,
+      "pptx",
+      result.summary,
+      result.warnings,
+      result.pages,
+    )
+  } else {
+    native_converter_result(
+      request,
+      bdf,
+      "pptx",
+      result.summary,
+      result.warnings,
+      false,
+    )
+  }
 }
 
 ///|
@@ -703,7 +808,11 @@ extern "js" fn install_native_converter_listener(
 /// Install the MoonBit converter Worker for native image, CSV, font, MIDI and MML formats.
 #export_name("bdf_install_native_converter_worker")
 pub fn bdf_install_native_converter_worker() -> Unit {
-  let state : NativeConverterState = { ready: false, }
+  let state : NativeConverterState = {
+    ready: false,
+    streams: Map([]),
+    next_stream: 0,
+  }
   install_native_converter_listener(request => {
     @js_async.Promise::from_async(() => state.dispatch(request))
   })
