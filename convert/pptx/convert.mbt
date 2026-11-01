@@ -886,6 +886,18 @@ fn pptx_cell_text(cell : PptxXmlNode) -> String {
 }
 
 ///|
+fn pptx_cell_row_span(cell : PptxXmlNode) -> Int32 {
+  let span = @string.parse_int(pptx_attribute(cell.element, "rowSpan", "1")) catch {
+    _ => 1
+  }
+  if span < 1 {
+    1
+  } else {
+    span
+  }
+}
+
+///|
 fn pptx_cell_grid_span(cell : PptxXmlNode) -> Int32 {
   let span = @string.parse_int(pptx_attribute(cell.element, "gridSpan", "1")) catch {
     _ => 1
@@ -956,15 +968,25 @@ fn pptx_emit_table(
       }
     None => ()
   }
+  let row_heights : Array[Double] = []
+  for row in rows {
+    if row.element.name.local_name != "tr" {
+      continue
+    }
+    row_heights.push(
+      match pptx_attribute(row.element, "h", "") {
+        "" => 14.4
+        value => (@string.parse_double(value) catch { _ => 182880.0 }) / 12700.0
+      },
+    )
+  }
+  let mut row_index = 0
   let mut row_top = y
   for row in rows {
     if row.element.name.local_name != "tr" {
       continue
     }
-    let row_height = match pptx_attribute(row.element, "h", "") {
-      "" => 14.4
-      value => (@string.parse_double(value) catch { _ => 182880.0 }) / 12700.0
-    }
+    let row_height = row_heights[row_index]
     let cells = pptx_children(Some(row))
     let mut cell_count = 0
     for cell in cells {
@@ -994,6 +1016,14 @@ fn pptx_emit_table(
           column_width += grid[cell_index.to_int() + k]
         }
       }
+      let row_span = pptx_cell_row_span(cell)
+      let mut cell_height = row_height
+      if row_span > 1 && row_index + row_span <= row_heights.length() {
+        cell_height = 0.0
+        for k in 0..<row_span {
+          cell_height += row_heights[row_index + k]
+        }
+      }
       match
         pptx_node_color(pptx_child(Some(cell), "tcPr"), "solidFill", theme) {
         Some(color) => {
@@ -1002,7 +1032,7 @@ fn pptx_emit_table(
             Float::from_double(cell_x),
             Float::from_double(row_top),
             Float::from_double(column_width),
-            Float::from_double(row_height),
+            Float::from_double(cell_height),
           )
         }
         None => ()
@@ -1016,16 +1046,16 @@ fn pptx_emit_table(
               cell_x + column_width,
               row_top,
               cell_x + column_width,
-              row_top + row_height,
+              row_top + cell_height,
             ]
           2 =>
             [
               cell_x,
-              row_top + row_height,
+              row_top + cell_height,
               cell_x + column_width,
-              row_top + row_height,
+              row_top + cell_height,
             ]
-          _ => [cell_x, row_top, cell_x, row_top + row_height]
+          _ => [cell_x, row_top, cell_x, row_top + cell_height]
         }
         let path : @core.Path = { verbs: b"\x00\x01", coordinates, }
         object.line(Float::from_double(border_width), 0, 0, 8.0F)
@@ -1036,6 +1066,7 @@ fn pptx_emit_table(
       cell_index += span.to_double()
     }
     row_top += row_height
+    row_index += 1
   }
   let (_, minor) = fonts
   let index = object.add_font({
@@ -1046,15 +1077,13 @@ fn pptx_emit_table(
   })
   object.font(index, 12.0)
   object.fill_color(0x000000ffU)
+  let mut text_row = 0
   let mut text_top = y
   for row in rows {
     if row.element.name.local_name != "tr" {
       continue
     }
-    let row_height = match pptx_attribute(row.element, "h", "") {
-      "" => 14.4
-      value => (@string.parse_double(value) catch { _ => 182880.0 }) / 12700.0
-    }
+    let row_height = row_heights[text_row]
     let cells = pptx_children(Some(row))
     let mut cell_count = 0
     for cell in cells {
@@ -1122,6 +1151,7 @@ fn pptx_emit_table(
       cell_index += span.to_double()
     }
     text_top += row_height
+    text_row += 1
   }
 }
 

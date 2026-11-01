@@ -4648,3 +4648,108 @@ test "PPTX table grid spans widen cells" {
   }
   assert_true(widened, msg="PPTX table grid span")
 }
+
+///|
+fn pptx_table_rowspan_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GDo902M7ZuUyvQTyDNlYmAQBtLRzvl5Jal5JfEhlQWpxbF6Fbk5",
+  )
+  joined.write_string(
+    "awOt/Q8bCNz7KTrtulbhqQYBr0uNxzl4nrLPmeOddFX/551Vf7/HTFJi1NpgEFl+P/h5VXFJmIzB",
+  )
+  joined.write_string(
+    "RM59E19vmsS0l2/uR2fl+9v8j64VmXKwPKH5uNu8CU+W7V21fXmHSsSblROTz33007ykbLXAyOVL",
+  )
+  joined.write_string(
+    "zxdFyxM2yxxdL1hLBMSGX+29dDD9y84Tk9tzXrO/SczfXGHzqUpz0oVJIt+5C09lqRzJ6G07s8Pq",
+  )
+  joined.write_string(
+    "x7tor0I/jUjL4gyTiWE+E14lHWr5I1Nwbe+H1EkvA/Y4nTr/YMbSpDNaairXzt75VL6cO9T5vnRv",
+  )
+  joined.write_string(
+    "7IXq45M+bZ65Of7YpcaPq+1PTXiqqnv+1/7bZ9bJ81758/qtdQBKSBX5fZ+/CcjTZWRg4AbS8UWp",
+  )
+  joined.write_string(
+    "OcX6eiCy9/xZrkMGPOwfdvsHFpXftek4sSvW5UboM+YpZq/bXrP7in7/JubvZ1Ph8+m8/pK8+WVp",
+  )
+  joined.write_string(
+    "/D0mleoLtLwSXky5PtmYad3fymoGN08r3fT3AQeaWHI3r9S3OD2lPGMO08YeCyGDZSJ9cyZLXfTS",
+  )
+  joined.write_string(
+    "qnGYrt7cH7Ysxu1wc4h55oT3p4rOP17OePZUylwxAetYxtfTG/7fqJNQa1Vf/04s9lfhI+2JqZK8",
+  )
+  joined.write_string(
+    "aoyKKnJKQXn7LrtOazQ3ja+9uYcB1WsXKs4fOQ/keQC9BhItKCjRLyhKLQamg8SSzPw8UCroneCf",
+  )
+  joined.write_string(
+    "zWQocPT9X5HEd6aFF1N351zzFmTJz7V38Ei76/BvYueiuqpkXdcXS7d/n1Fp/+zsBsvq434zTh5T",
+  )
+  joined.write_string(
+    "SNwpcMDgRUaOhcePX3f2lR1YsSJhSjejasyEBON9PCv9JTmdA5eqRS5leTW5ZeeUK8V+VW7rMwSF",
+  )
+  joined.write_string(
+    "26xmJ31bFTKb/4/lc9n8loyd4WYH+FX+swstP5lV0//rhfZrxpMv9i00ue1icE345My5N4N/Xj0j",
+  )
+  joined.write_string(
+    "xXl2F+u037vPWF9mkGf/l/798akvkYduF20VWmTnGq+y5e6u3bPdH+w8XsGMGgAlc0992QDkKQID",
+  )
+  joined.write_string(
+    "QB4aAJD4RQ8GaHxvBMa3ANuDu8s5tt/eIuuyJFNccJdXbcOEmNsJs1piRH5/YysMKCj48/7H/sez",
+  )
+  joined.write_string(
+    "3m2MKDvuccyaMTSQyXn5HrM8oQJJv9u2Bl6XMjP3OjNqC5W8XWa5eKpmeYZZY4SbDOeMYC72c55n",
+  )
+  joined.write_string(
+    "d3iA4tt8cX+3j+WxTvaV64qc4qY/7Tvuz3xLf/LXKIc3pbw5Ecz/kn8XmnD1x90VK3l5nNPvWsaZ",
+  )
+  joined.write_string(
+    "BT3Caozrf8wLc73WsJ33/681tUyonvWU2iJRBvRoADMDgyjUs8U5mSmpxRDKEOTPqcG3sx4bCNS+",
+  )
+  joined.write_string(
+    "D+fYu/1xS1CQ8O4vTb+vLL3whVlt2iOOFM+elsd//p7aNNsilfu2+Nm3c4wXb9xT9yL6rJVnXGTw",
+  )
+  joined.write_string(
+    "h6O+x2aabBU9ZcL6/07Ide1zNQ7KAdHK3HVT5tlPCc+eXq0boSI9f3fTe+cCy4b13ze51ifPNdm4",
+  )
+  joined.write_string(
+    "bfOVpA5F0wceVZlMbTdWXN1wZpN1RqCkXeeD/x0ch5znvGmKPxb5il+X7fXdtiUye9ouvA2NFdym",
+  )
+  joined.write_string(
+    "aXb3tc5nv86vy6vVl7kcnD5n5gy9H2zbo4pmrJouIlE6ifl/2JvyK9Oyz7zNO/6r6b5+Xv7mHRcf",
+  )
+  joined.write_string(
+    "n2xdqPX7wKvInX1fj2btjOplsHjts33GTn2JAo7DYf7Ppk6RYPSyiT7L9zmtgJHzyLflWV5Xet48",
+  )
+  joined.write_string(
+    "PLxQsswgrW12wru1YYuCrEo/XsmZb7qRr/Tgaq3Tfo+MJeacXFi/6ZFFRZ7FsZifMxQ4PV6WKGcy",
+  )
+  joined.write_string(
+    "qf/LeLE8cbe5p+8fH+5/xbOX39/SmDn5Q+5Bg9u2NfW+BXUZH75+U/gr8DQ+wJuRSYQZd+kMAw2M",
+  )
+  joined.write_string(
+    "DNjLanQD0AsthAFajChFGLpG9CIBoZGVCXsBgW4Cep5CmMDGTDCHoRuGnmYRhn1mxpGCA7xZ2UBK",
+  )
+  joined.write_string("WIHQB6h1DiuIBwA+p3rl/gYAAA==")
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX table row spans heighten cells" {
+  let result = convert(pptx_table_rowspan_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut tall = false
+  for command in commands {
+    match command {
+      @render.FillRect(_, _, _, h) => if h == 144.0 { tall = true }
+      _ => ()
+    }
+  }
+  assert_true(tall, msg="PPTX table row span")
+}
