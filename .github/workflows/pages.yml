@@ -2,6 +2,7 @@ name: Demo pages
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -10,12 +11,12 @@ permissions:
   pages: read
 
 concurrency:
-  group: demo-pages
+  group: demo-pages-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
   cancel-in-progress: false
 
 jobs:
   build:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     outputs:
       pages_ready: ${{ steps.pages.outputs.ready }}
@@ -50,10 +51,12 @@ jobs:
           ./node_modules/.bin/vlmkit check interactions "$url" --no-ledger
           ./node_modules/.bin/vlmkit check breakpoints "$url" --sweep --no-ledger
       - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
         with:
           path: _build/pages
       - name: Check whether Pages is configured for Actions
         id: pages
+        if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -82,7 +85,7 @@ jobs:
 
   deploy:
     needs: build
-    if: needs.build.outputs.pages_ready == 'true'
+    if: github.event_name != 'pull_request' && needs.build.outputs.pages_ready == 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
