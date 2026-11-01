@@ -905,3 +905,83 @@ test "DOCX images are rotated and flipped" {
   assert_true(flipped, msg="DOCX image flip")
   assert_true(image, msg="DOCX image")
 }
+
+///|
+fn docx_table_shade_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GDo9UyMPekvteE1kLeOkYFBGEhHO+fnlaTmlcSHVBakFsfqVeTm",
+  )
+  joined.write_string(
+    "1Abs9TtsIHCvkuu0dpeshICTp9UHYybnyobJtZ46bzY/Lfb+/c0i92UD1+O731evj37bJB595o3S",
+  )
+  joined.write_string(
+    "109uW4MUZmbI+u79E7Hf5HtQAeOmB8qJ+t9PFJnGlL6udRIL9blzeueULwtMZ0syb+jiXKmUfIbR",
+  )
+  joined.write_string(
+    "y/bzEuEZ/jMC7m97O9dsIldQ5qlHiu3vON1v/FCaV/61VmfSxc0i/e6PJl319jhpzbz0UZX3t3Cv",
+  )
+  joined.write_string(
+    "Yq+A0MoHH94IxYc3XREXFnvyvmHyu7V6k+e6fuTbucdphc5f0c1XzWb5rvD6uv9s67xCmbkHN9cV",
+  )
+  joined.write_string(
+    "eltKpaybzL7+nAeDu/3fr4nvHkoHoITNzkaXwg1AnhYwbLiBdHxRak6xvh6I7D1vzXfIgIftwdxg",
+  )
+  joined.write_string(
+    "l3uZUWwtAZP1OFZqa7F3CJn3Zsh5HVq8XZ2ZWYHN7fZ++9O53zcY70z0OWbN5hvK7Ki+18jP2IL/",
+  )
+  joined.write_string(
+    "+Fc+j1OHNA2r23nEfC58DK0+FPlk02Q1YSHNDm+eZXMOz7ukor5FKdRugfbki+7aRZqLlzme6L7g",
+  )
+  joined.write_string(
+    "YV66d+nHuwz/EifFGXbszWrg8T5Qn2Pf5/bo4OnVrtPr5/zwEol06Z158K6769XVsaJiGvkvj3f/",
+  )
+  joined.write_string(
+    "4UT1mOiX4yuFgZ7iZ2JgEASKlucXpein5CeX5gJjHhzlgb7+RxQE9v7Wlnqnlxt89lbO7sDJX1OS",
+  )
+  joined.write_string(
+    "Fv1j4JoyicGZYe3r9dOnXXvlaHnmenV+W+Phj86r38y11j9osuLGU43HbUyT3UxefH1astN9Jv8R",
+  )
+  joined.write_string(
+    "g0UHPrDN3el+/Nsjg2s8L2Y/U0vZ2Pzx640FiizRyW9eHjD9aL3hjssa9uWeHSuFK1iOr2E+tbef",
+  )
+  joined.write_string(
+    "ecuh1Hnxyb5LHHNzbjJa+9uVZBXy+23SFLl4v/nUscxzvoGhlX0f7Bn+LeXL22Zyc7nlZ+buRXFa",
+  )
+  joined.write_string(
+    "VxcE28zOU7xxUiWx2prZ+E1atvira9/V/77Lt/LbfvC+d5XfYaMAm/pltl2b1jxy7/kq8Hh17dY3",
+  )
+  joined.write_string(
+    "WUeVCzdKHThWNVXDr0sxJ5NdseFe0dHfor6v137+8OtOxe9T37gDvBmZRJhxZxwYaGBkwJ6N0A1A",
+  )
+  joined.write_string(
+    "T10IA2QYUdIaukb02ENo/MqIJS4DvFnZQNLMQLgTSJszg3gAKMyxjgYEAAA=",
+  )
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "DOCX table cell shading is drawn" {
+  let result = convert(docx_table_shade_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut yellow = false
+  let mut fill = false
+  let mut text = false
+  for command in commands {
+    match command {
+      @render.FillColor(0xffff00ff) => yellow = true
+      @render.FillRect(_, _, _, _) => fill = true
+      @render.FillText("A", _, _, _) => text = true
+      _ => ()
+    }
+  }
+  assert_true(yellow, msg="DOCX table shade colour")
+  assert_true(fill, msg="DOCX table shade")
+  assert_true(text, msg="DOCX table text")
+}

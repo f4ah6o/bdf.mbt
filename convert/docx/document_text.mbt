@@ -18,6 +18,7 @@ priv struct DocxTextItem {
   rotation : Double
   flip_h : Bool
   flip_v : Bool
+  shade : UInt32?
 } derive(Debug, Eq)
 
 ///|
@@ -237,6 +238,7 @@ fn docx_text_push(
     rotation: 0.0,
     flip_h: false,
     flip_v: false,
+    shade: None,
   })
 }
 
@@ -399,6 +401,7 @@ fn docx_text_drawing(
     rotation,
     flip_h,
     flip_v,
+    shade: None,
   })
 }
 
@@ -555,6 +558,7 @@ fn DocxTextWalker::blocks(
           }
           let items : Array[DocxTextItem] = []
           let mut first = true
+          let mut cell_index = 0
           for cell in row.children {
             if cell.name() != "tc" {
               continue
@@ -563,6 +567,37 @@ fn DocxTextWalker::blocks(
               docx_text_push(items, "tab", "\t", docx_default_run_props())
             }
             first = false
+            let width = if cell_index < grid.length() {
+              grid[cell_index]
+            } else {
+              0.0
+            }
+            if width > 0.0 {
+              match docx_table_cell_shade(cell) {
+                Some(color) =>
+                  items.push({
+                    kind: "cell",
+                    text: "",
+                    clear: false,
+                    props: docx_default_run_props(),
+                    width,
+                    height: 0.0,
+                    anchored: false,
+                    x: 0.0,
+                    y: 0.0,
+                    crop_left: 0.0,
+                    crop_top: 0.0,
+                    crop_right: 0.0,
+                    crop_bottom: 0.0,
+                    rotation: 0.0,
+                    flip_h: false,
+                    flip_v: false,
+                    shade: Some(color),
+                  })
+                None => ()
+              }
+            }
+            cell_index += 1
             for part in cell.children {
               if part.name() == "p" {
                 docx_text_inlines(part, items, self.styles, "")
@@ -607,6 +642,31 @@ fn DocxTextWalker::blocks(
       }
       other => docx_text_unsupported(other)
     }
+  }
+}
+
+///|
+fn docx_table_cell_shade(cell : DocxXmlNode) -> UInt32? {
+  let props = cell.child("tcPr")
+  match props {
+    Some(value) =>
+      match value.child("shd") {
+        Some(shade) => {
+          let fill = docx_attribute(shade.element, "fill", "")
+          if fill.length() == 6 {
+            let number = @string.parse_int(fill, base=16) catch { _ => -1 }
+            if number >= 0 {
+              Some((number.to_uint() << 8) | 0xffU)
+            } else {
+              None
+            }
+          } else {
+            None
+          }
+        }
+        None => None
+      }
+    None => None
   }
 }
 

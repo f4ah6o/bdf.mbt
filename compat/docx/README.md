@@ -19,7 +19,7 @@ other section features, document content, and conversion are still to be added.
 `convert/docx` exposes `detect` and `convert` for a text-only subset of
 WordprocessingML. It lays out paragraphs with approximate character widths and
 supports explicit line/page breaks, tabs, paragraph spacing, alignment, basic
-font weight/style/size and the section page geometry. Table rows are flattened to tab-separated paragraphs with tab stops from
+font weight/style/size and the section page geometry. Table rows are flattened to tab-separated paragraphs with cell shading and tab stops from
 `tblGrid`. Inline drawings with an embedded PNG/JPEG part are placed at their
 `wp:extent`, honour `a:srcRect` crops and apply `a:xfrm` rotation/flips; anchored drawings use page-relative
 `wp:posOffset` coordinates.

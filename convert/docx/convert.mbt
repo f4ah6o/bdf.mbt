@@ -573,6 +573,24 @@ fn docx_render_document(
             line_height = Double::max(line_height, height)
           }
         }
+        "cell" => {
+          let height = 12.0
+          if line.is_empty() {
+            line_height = height
+          }
+          match item.shade {
+            Some(color) => {
+              object.fill_color(color)
+              object.fill_rect(
+                Float::from_double(line_x),
+                Float::from_double(y - height),
+                Float::from_double(item.width),
+                Float::from_double(height),
+              )
+            }
+            None => ()
+          }
+        }
         _ => {
           let size = if item.props.size > 0.0 { item.props.size } else { 10.0 }
           let advance = docx_text_width(item.text, size)
