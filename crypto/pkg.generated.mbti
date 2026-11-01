@@ -2,6 +2,10 @@
 package "f4ah6o/bdf/crypto"
 
 // Values
+pub fn aes_gcm_decrypt(Bytes, Bytes, Bytes, Bytes, Bytes) -> Bytes? raise
+
+pub fn aes_gcm_encrypt(Bytes, Bytes, Bytes, Bytes) -> (Bytes, Bytes) raise
+
 pub fn aes_key_unwrap(Bytes, Bytes) -> Bytes? raise
 
 pub fn aes_key_wrap(Bytes, Bytes) -> Bytes raise
