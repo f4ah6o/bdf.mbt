@@ -80,6 +80,8 @@
 ## Next steps
 
 1. Port Type1 font programs to CFF so `/FontFile` fonts embed natively.
-2. Close documented gaps in the ported formats only where a source fixture can
+2. Port the deferred SXF, CGM, Gerber/Excellon and KiCad converters, then the
+   draw.io converter.
+3. Port Parquet sheet input and the XLSX font-embedding mode.
+4. Close documented gaps in the ported formats only where a source fixture can
    be compared with upstream.
-3. Treat the deferred CAD and draw.io formats as a separate objective.

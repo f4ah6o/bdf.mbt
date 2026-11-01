@@ -117,7 +117,7 @@ try {
   assert.equal(result.selected, 1);
   assert.ok(String(result.badColor).includes('not pens or mono'), 'colors parameter error');
   assert.ok(String(result.named).startsWith('hpgl:'), 'HP-GL detection');
-  console.log(`Phase 5 HP-GL/2, Jw_cad and DXF: ${result.cases.length} fixtures match upstream page geometry, layers and text.`);
+  console.log(`Phase 5 HP-GL/2, Jw_cad and DXF: ${result.cases.length} fixtures convert with the expected page geometry, layers and text coverage.`);
 } finally {
   await browser.close();
   server.close();
