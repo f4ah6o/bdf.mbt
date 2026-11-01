@@ -19,8 +19,8 @@ priv struct DocxTextItem {
   flip_h : Bool
   flip_v : Bool
   mut shade : UInt32?
-  border_width : Double
-  border_color : UInt32?
+  mut border_width : Double
+  mut border_color : UInt32?
 } derive(Debug, Eq)
 
 ///|
@@ -169,6 +169,7 @@ fn docx_text_ppr(props : DocxParagraphProps, node : DocxXmlNode) -> Bool raise {
             other => docx_text_unsupported("numPr " + other)
           }
         }
+      "pBdr" => ()
       "sectPr" =>
         if !has_section {
           docx_text_section_check(child)
@@ -572,6 +573,13 @@ fn DocxTextWalker::blocks(
             }
           None => ()
         }
+        let (border_width, border_color) = docx_paragraph_border(direct)
+        if border_width > 0.0 {
+          for item in items {
+            item.border_width = border_width
+            item.border_color = border_color
+          }
+        }
         self.paragraphs.push({
           props,
           mark,
@@ -751,6 +759,50 @@ fn docx_paragraph_shade(props : DocxXmlNode?) -> UInt32? {
     }
     None => None
   }
+}
+
+///|
+fn docx_paragraph_border(props : DocxXmlNode?) -> (Double, UInt32?) {
+  let borders = match props {
+    Some(value) => value.child("pBdr")
+    None => None
+  }
+  for name in ["top", "left", "bottom", "right"] {
+    match borders {
+      Some(value) =>
+        match value.child(name) {
+          Some(border) => {
+            let width = (@string.parse_double(
+                docx_attribute(border.element, "sz", ""),
+              ) catch {
+                _ => 0.0
+              }) /
+              8.0
+            if width > 0.0 {
+              let color = docx_attribute(border.element, "color", "")
+              let parsed = if color.length() == 6 {
+                @string.parse_int(color, base=16) catch {
+                  _ => -1
+                }
+              } else {
+                -1
+              }
+              return (
+                width,
+                if parsed >= 0 {
+                  Some((parsed.to_uint() << 8) | 0xffU)
+                } else {
+                  Some(0x000000ffU)
+                },
+              )
+            }
+          }
+          None => ()
+        }
+      None => ()
+    }
+  }
+  (0.0, None)
 }
 
 ///|

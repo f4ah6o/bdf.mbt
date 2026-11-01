@@ -11,13 +11,13 @@ fn check_docx_ppr(
 }
 
 ///|
-test "DOCX paragraph props reject unresolved borders and accept shading" {
+test "DOCX paragraph props accept borders and shading" {
   let props = docx_default_paragraph_props()
   let border = try {
     props.apply_xml("<pPr><pBdr/></pPr>")
-    false
+    true
   } catch {
-    _ => true
+    _ => false
   }
   assert_true(border)
   let shading = try {

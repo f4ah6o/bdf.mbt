@@ -138,7 +138,7 @@ fn DocxParagraphProps::apply_element(
       }
     }
     "jc" => self.alignment = docx_paragraph_alignment(value)
-    "pBdr" => raise InvalidDocx("paragraph borders are not supported yet")
+    "pBdr" => ()
     "shd" => ()
     "spacing" => {
       if docx_has_attribute(element, "before") {

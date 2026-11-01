@@ -22,6 +22,8 @@ priv struct DocxLineItem {
   x : Double
   advance : Double
   shade : UInt32?
+  border_width : Double
+  border_color : UInt32?
 }
 
 ///|
@@ -279,6 +281,16 @@ fn docx_render_document(
       "right" => Double::max(0.0, end - start - width)
       "center" => Double::max(0.0, (end - start - width) / 2.0)
       _ => 0.0
+    }
+    if items[0].border_width > 0.0 {
+      object.line(Float::from_double(items[0].border_width), 0, 0, 8.0F)
+      object.stroke_color(items[0].border_color.unwrap_or(0x000000ffU))
+      object.stroke_rect(
+        Float::from_double(start + offset),
+        Float::from_double(y - items[0].size * 1.2),
+        Float::from_double(width),
+        Float::from_double(items[0].size * 1.2),
+      )
     }
     match items[0].shade {
       Some(color) => {
@@ -638,6 +650,8 @@ fn docx_render_document(
             x: item_x,
             advance,
             shade: item.shade,
+            border_width: item.border_width,
+            border_color: item.border_color,
           })
           line_x += advance
           line_width = line_x - left
