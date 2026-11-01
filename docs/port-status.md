@@ -23,7 +23,7 @@
 - Done: viewer `openFile` integration and PDF/DOCX/PPTX page streams.
 - Done: DOM/OffscreenCanvas viewer, lazy pages, sheets, search, ARIA and MIDI.
 - Done: MoonBit converters for the demo format set (PDF, DOCX, PPTX, XLSX,
-  CSV, image, font, MIDI/MML/MusicXML, HP-GL/2, Jw_cad), plus AI, TIFF, PSD, EMF/WMF,
+  CSV, image, font, MIDI/MML/MusicXML, HP-GL/2, Jw_cad, DXF), plus AI, TIFF, PSD, EMF/WMF,
   IDML and Visio VSDX.
 - Done: `convert/raster` PNG encoding and box scaling; the EMF/WMF metafile
   replay is also used by the DOCX and PPTX picture paths, with embedded
@@ -68,10 +68,12 @@
   glyph-indexed text are warnings or gaps.
 - HP-GL/2 and HP-GL plots are ported for vector instructions, labels, line
   types, fills, hatching and clip windows; Jw_cad drawings are ported for the
-  figures in the upstream fixture set. PCL/HP RTL raster jobs are a documented
-  gap: the escape sequences are skipped with a warning and only the HP-GL/2
-  instructions are converted. The remaining CAD formats (DXF, SXF, CGM),
-  Gerber, KiCad and draw.io are not ported. Camera raw (DNG/CR2) is
+  figures in the upstream fixture set. DXF model space is ported for ASCII
+  R12 to 2018 files, with HATCH, binary DXF, layouts and non-top OCS entities
+  as documented gaps. PCL/HP RTL raster jobs are a documented gap: the escape
+  sequences are skipped with a warning and only the HP-GL/2 instructions are
+  converted. The remaining CAD formats (SXF, CGM), Gerber, KiCad and draw.io
+  are not ported. Camera raw (DNG/CR2) is
   not an upstream converter and is outside the port. The subsets of the ported
   formats above are documented gaps, not claims of full parity.
 

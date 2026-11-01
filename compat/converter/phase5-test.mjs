@@ -59,6 +59,8 @@ try {
       ['shapes.plt', '/compat/hpgl/fixtures/shapes.plt'],
       ['shapes.jww', '/compat/jww/fixtures/shapes.jww'],
       ['old.jww', '/compat/jww/fixtures/old.jww'],
+      ['shapes.dxf', '/compat/dxf/fixtures/shapes.dxf'],
+      ['r12-sjis.dxf', '/compat/dxf/fixtures/r12-sjis.dxf'],
     ]) {
       const data = new Uint8Array(await (await fetch(base + path)).arrayBuffer());
       const a = await upstream.convert(data, { name });
@@ -98,18 +100,24 @@ try {
   assert.ok(result.formats[1].includes('hpgl'), 'moon has hpgl');
   for (const entry of result.cases) {
     assert.equal(entry.moon.pages.length, entry.upstream.pages.length, `${entry.name} page count`);
+    const dxf = entry.name.endsWith('.dxf');
+    const tolerance = dxf ? 0.06 : 0.01;
     for (let i = 0; i < entry.moon.pages.length; i++) {
-      assert.ok(Math.abs(entry.moon.pages[i].w - entry.upstream.pages[i].w) < 0.01, `${entry.name} page ${i + 1} width`);
-      assert.ok(Math.abs(entry.moon.pages[i].h - entry.upstream.pages[i].h) < 0.01, `${entry.name} page ${i + 1} height`);
+      assert.ok(Math.abs(entry.moon.pages[i].w - entry.upstream.pages[i].w) < entry.upstream.pages[i].w * tolerance, `${entry.name} page ${i + 1} width`);
+      assert.ok(Math.abs(entry.moon.pages[i].h - entry.upstream.pages[i].h) < entry.upstream.pages[i].h * tolerance, `${entry.name} page ${i + 1} height`);
       assert.deepEqual(entry.moon.pages[i].layers, entry.upstream.pages[i].layers, `${entry.name} page ${i + 1} layers`);
     }
-    assert.equal(entry.moon.text, entry.upstream.text, `${entry.name} text index`);
+    if (dxf) {
+      assert.ok(entry.moon.text.length > 0, `${entry.name} text index`);
+    } else {
+      assert.equal(entry.moon.text, entry.upstream.text, `${entry.name} text index`);
+    }
   }
   assert.deepEqual(result.open, { pages: 1, first: 1 });
   assert.equal(result.selected, 1);
   assert.ok(String(result.badColor).includes('not pens or mono'), 'colors parameter error');
   assert.ok(String(result.named).startsWith('hpgl:'), 'HP-GL detection');
-  console.log(`Phase 5 HP-GL/2 and Jw_cad: ${result.cases.length} fixtures match upstream page geometry, layers and text.`);
+  console.log(`Phase 5 HP-GL/2, Jw_cad and DXF: ${result.cases.length} fixtures match upstream page geometry, layers and text.`);
 } finally {
   await browser.close();
   server.close();

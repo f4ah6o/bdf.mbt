@@ -1,0 +1,28 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/dxf"
+
+import {
+  "f4ah6o/bdf/font/db",
+}
+
+// Values
+pub fn convert(Bytes, title? : String, views? : String, light? : Bool, no_text_index? : Bool, db? : @db.Database?) -> DxfResult raise DxfError
+
+pub fn detect(Bytes) -> Bool
+
+// Errors
+pub suberror DxfError {
+  DxfInvalid(String)
+}
+
+// Types and methods
+pub(all) struct DxfResult {
+  bdf : Bytes
+  pages : Int32
+  summary : String
+  warnings : Array[String]
+}
+
+// Type aliases
+
+// Traits

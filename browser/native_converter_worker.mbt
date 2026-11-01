@@ -22,7 +22,7 @@ extern "js" fn native_unsupported_named_format(name : String) -> Bool =
 
 ///|
 extern "js" fn native_converter_formats(request : ConverterRequest) -> Unit =
-  #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'csv',description:'CSV or TSV (comma-, tab-, semicolon- or bar-separated values)',extensions:['.csv','.tsv','.tab']},{name:'xlsx',description:'Excel workbook (limited worksheet subset)',extensions:['.xlsx']},{name:'docx',description:'Word document (limited text layout)',extensions:['.docx']},{name:'pptx',description:'PowerPoint presentation (limited shape and text layout)',extensions:['.pptx']},{name:'font',description:'Font file (TrueType, OpenType, WOFF)',extensions:['.ttf','.otf','.ttc','.otc','.woff','.woff2']},{name:'midi',description:'Standard MIDI File',extensions:['.mid','.midi','.smf','.kar','.rmi']},{name:'mml',description:'Music Macro Language (MML)',extensions:['.mml']},{name:'pdf',description:'PDF document',extensions:['.pdf']},{name:'image',description:'Image stored as it is: PNG, JPEG, GIF, WebP, AVIF, BMP, ICO or SVG',extensions:['.png','.apng','.jpg','.jpeg','.jpe','.jfif','.gif','.webp','.avif','.bmp','.ico','.svg']},{name:'ai',description:'Adobe Illustrator artwork',extensions:['.ai']},{name:'tiff',description:'TIFF image, one page or more',extensions:['.tif','.tiff']},{name:'psd',description:'Photoshop document',extensions:['.psd','.psb']},{name:'emf',description:'Windows metafile',extensions:['.emf','.wmf']},{name:'idml',description:'InDesign document (IDML)',extensions:['.idml']},{name:'visio',description:'Visio drawing',extensions:['.vsdx','.vsdm','.vstx','.vstm']},{name:'markdown',description:'Markdown document (reader mode)',extensions:['.md','.markdown','.mdown','.mkd','.mdx']},{name:'html',description:'HTML document (reader mode)',extensions:['.html','.htm','.xhtml']},{name:'epub',description:'EPUB publication (reader mode)',extensions:['.epub']},{name:'audio',description:'Audio file (MP3, AAC, M4A, FLAC, Ogg Vorbis/Opus, WAV, AIFF)',extensions:['.mp3','.m4a','.m4b','.m4p','.aac','.flac','.ogg','.oga','.opus','.spx','.wav','.wave','.aif','.aiff','.aifc']},{name:'hpgl',description:'HP-GL/2 plot file (HP-GL, HP RTL)',extensions:['.plt','.hpgl','.hgl','.hpg','.hp2','.rtl']},{name:'jww',description:'Jw_cad drawing',extensions:['.jww']}]})
+  #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'csv',description:'CSV or TSV (comma-, tab-, semicolon- or bar-separated values)',extensions:['.csv','.tsv','.tab']},{name:'xlsx',description:'Excel workbook (limited worksheet subset)',extensions:['.xlsx']},{name:'docx',description:'Word document (limited text layout)',extensions:['.docx']},{name:'pptx',description:'PowerPoint presentation (limited shape and text layout)',extensions:['.pptx']},{name:'font',description:'Font file (TrueType, OpenType, WOFF)',extensions:['.ttf','.otf','.ttc','.otc','.woff','.woff2']},{name:'midi',description:'Standard MIDI File',extensions:['.mid','.midi','.smf','.kar','.rmi']},{name:'mml',description:'Music Macro Language (MML)',extensions:['.mml']},{name:'pdf',description:'PDF document',extensions:['.pdf']},{name:'image',description:'Image stored as it is: PNG, JPEG, GIF, WebP, AVIF, BMP, ICO or SVG',extensions:['.png','.apng','.jpg','.jpeg','.jpe','.jfif','.gif','.webp','.avif','.bmp','.ico','.svg']},{name:'ai',description:'Adobe Illustrator artwork',extensions:['.ai']},{name:'tiff',description:'TIFF image, one page or more',extensions:['.tif','.tiff']},{name:'psd',description:'Photoshop document',extensions:['.psd','.psb']},{name:'emf',description:'Windows metafile',extensions:['.emf','.wmf']},{name:'idml',description:'InDesign document (IDML)',extensions:['.idml']},{name:'visio',description:'Visio drawing',extensions:['.vsdx','.vsdm','.vstx','.vstm']},{name:'markdown',description:'Markdown document (reader mode)',extensions:['.md','.markdown','.mdown','.mkd','.mdx']},{name:'html',description:'HTML document (reader mode)',extensions:['.html','.htm','.xhtml']},{name:'epub',description:'EPUB publication (reader mode)',extensions:['.epub']},{name:'audio',description:'Audio file (MP3, AAC, M4A, FLAC, Ogg Vorbis/Opus, WAV, AIFF)',extensions:['.mp3','.m4a','.m4b','.m4p','.aac','.flac','.ogg','.oga','.opus','.spx','.wav','.wave','.aif','.aiff','.aifc']},{name:'hpgl',description:'HP-GL/2 plot file (HP-GL, HP RTL)',extensions:['.plt','.hpgl','.hgl','.hpg','.hp2','.rtl']},{name:'jww',description:'Jw_cad drawing',extensions:['.jww']},{name:'dxf',description:'AutoCAD DXF drawing',extensions:['.dxf']}]})
 
 ///|
 extern "js" fn native_converter_result(
@@ -182,7 +182,8 @@ async fn NativeConverterState::dispatch(
     format != "epub" &&
     format != "audio" &&
     format != "hpgl" &&
-    format != "jww" {
+    format != "jww" &&
+    format != "dxf" {
     native_converter_error(request, "unknown format \"" + format + "\"", "")
     return
   }
@@ -251,6 +252,10 @@ async fn NativeConverterState::dispatch(
   }
   if format == "jww" || (format == "" && @jww.detect(data)) {
     native_convert_jww(request, data, kind == "open", database)
+    return
+  }
+  if format == "dxf" || (format == "" && @dxf.detect(data)) {
+    native_convert_dxf(request, data, kind == "open", database)
     return
   }
   let result = @image.convert(data, name~) catch {
@@ -330,6 +335,11 @@ async fn NativeConverterState::dispatch(
         }
         if lower.has_suffix(".idml") && !strong_other {
           native_convert_idml(self, request, data, kind == "open")
+          return
+        }
+        let dxf_named = lower.has_suffix(".dxf")
+        if dxf_named && !strong_other {
+          native_convert_dxf(request, data, kind == "open", database)
           return
         }
         let jww_named = lower.has_suffix(".jww")
@@ -865,6 +875,29 @@ fn native_convert_jww(
     }
   }
   native_converter_result(request, result.bdf, "jww", result.summary, result.warnings, opened)
+}
+
+///|
+fn native_convert_dxf(
+  request : ConverterRequest,
+  data : Bytes,
+  opened : Bool,
+  database : @fontdb.Database?,
+) -> Unit {
+  let result = @dxf.convert(
+    data,
+    title=native_converter_param(request, "title"),
+    views=native_converter_param(request, "views"),
+    light=native_converter_param(request, "light") == "true",
+    no_text_index=native_converter_param(request, "no_text_index") == "true",
+    db=database,
+  ) catch {
+    @dxf.DxfInvalid(message) => {
+      native_converter_error(request, message, "")
+      return
+    }
+  }
+  native_converter_result(request, result.bdf, "dxf", result.summary, result.warnings, opened)
 }
 
 ///|

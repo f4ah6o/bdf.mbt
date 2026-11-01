@@ -301,7 +301,7 @@ try {
   await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'people.csv' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
   await converterPage.getByRole('button', { name: 'BDF サンプルを開く' }).click();
   await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'upstream-demo.bdf' && !document.querySelector('#open-file').disabled, null, { timeout: 30000 });
-  for (const [sample, name] of [['csv', 'people.csv'], ['xlsx', 'sales.xlsx'], ['image', 'illustration.svg'], ['font', 'stix.ttf'], ['pdf', 'simple.pdf'], ['docx', 'simple.docx'], ['pptx', 'simple.pptx'], ['hpgl', 'hpgl1.plt'], ['jww', 'old.jww']]) {
+  for (const [sample, name] of [['csv', 'people.csv'], ['xlsx', 'sales.xlsx'], ['image', 'illustration.svg'], ['font', 'stix.ttf'], ['pdf', 'simple.pdf'], ['docx', 'simple.docx'], ['pptx', 'simple.pptx'], ['hpgl', 'hpgl1.plt'], ['jww', 'old.jww'], ['dxf', 'shapes.dxf']]) {
     await converterPage.locator('#file').setInputFiles(resolve(root, 'samples', name));
     await converterPage.waitForFunction(n => document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled, name, { timeout: 60000 });
     assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, `converter ${sample}`);
