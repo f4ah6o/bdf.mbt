@@ -23,7 +23,7 @@ afterward; JavaScript and wasm-gc execute the same expectations.
 ## Limited converter
 
 `convert/pptx` exposes `detect` and `convert` for a shape/text subset of
-PresentationML. It renders visible slides, solid slide backgrounds, embedded pictures with alpha, source-rectangle cropping, rotation and flips, rectangle,
+PresentationML. It renders visible slides, solid and linear-gradient slide backgrounds, embedded pictures with alpha, source-rectangle cropping, rotation and flips, rectangle,
 rounded-rectangle and ellipse fill/stroke with solid-fill alpha,
 linear gradients on rectangles, ellipses and rounded rectangles, and shape rotation, theme colour schemes with luminance/tint/shade modifiers, theme major/minor
 fonts, paragraph default run properties, text-box insets, placeholder transform and default run-format inheritance, table cell text with cell fills, text colours/sizes/bold/italic/alignment, vertical anchors, margins, per-side borders, grid widths/spans and row heights/spans, basic bar, line and pie charts, layout/master backgrounds and non-placeholder

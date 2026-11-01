@@ -898,15 +898,14 @@ fn pptx_cell_row_span(cell : PptxXmlNode) -> Int32 {
 }
 
 ///|
-fn pptx_gradient_paint(
-  shape : PptxXmlNode,
+fn pptx_gradient_node(
+  gradient : PptxXmlNode?,
   x : Double,
   y : Double,
   width : Double,
   height : Double,
   theme : Map[String, UInt32],
 ) -> @core.Paint? {
-  let gradient = pptx_child(pptx_child(Some(shape), "spPr"), "gradFill")
   let stops : Array[@core.ColorStop] = []
   for stop in pptx_children(pptx_child(gradient, "gsLst")) {
     match pptx_solid_color(Some(stop), theme) {
@@ -946,6 +945,25 @@ fn pptx_gradient_paint(
       [center_x - dx, center_y - dy, center_x + dx, center_y + dy],
       stops,
     ),
+  )
+}
+
+///|
+fn pptx_gradient_paint(
+  shape : PptxXmlNode,
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+  theme : Map[String, UInt32],
+) -> @core.Paint? {
+  pptx_gradient_node(
+    pptx_child(pptx_child(Some(shape), "spPr"), "gradFill"),
+    x,
+    y,
+    width,
+    height,
+    theme,
   )
 }
 
@@ -1697,6 +1715,22 @@ fn pptx_render_slide(
       theme,
     )
   }
+  let mut background_gradient = pptx_child(
+    pptx_child(pptx_child(pptx_child(Some(root), "cSld"), "bg"), "bgPr"),
+    "gradFill",
+  )
+  if background_gradient is None && layout_root is Some(value) {
+    background_gradient = pptx_child(
+      pptx_child(pptx_child(pptx_child(Some(value), "cSld"), "bg"), "bgPr"),
+      "gradFill",
+    )
+  }
+  if background_gradient is None && master_root is Some(value) {
+    background_gradient = pptx_child(
+      pptx_child(pptx_child(pptx_child(Some(value), "cSld"), "bg"), "bgPr"),
+      "gradFill",
+    )
+  }
   match background {
     Some(color) => {
       object.fill_color(color)
@@ -1707,7 +1741,20 @@ fn pptx_render_slide(
         Float::from_double(height),
       )
     }
-    None => ()
+    None =>
+      match
+        pptx_gradient_node(background_gradient, 0.0, 0.0, width, height, theme) {
+        Some(paint) => {
+          object.fill_paint(object.add_paint(paint))
+          object.fill_rect(
+            0.0,
+            0.0,
+            Float::from_double(width),
+            Float::from_double(height),
+          )
+        }
+        None => ()
+      }
   }
   let roots : Array[PptxXmlNode] = []
   match master_root {
