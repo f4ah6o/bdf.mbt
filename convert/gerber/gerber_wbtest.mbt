@@ -22,3 +22,17 @@ test "gerber rejects a non-Gerber input" {
   }
   assert_true(rejected)
 }
+
+///|
+test "excellon converts a drill file" {
+  let data = @utf8.encode("M48\nMETRIC\nT1C0.8\n%\nT1\nX1.0Y2.0\nX5.0Y6.0\nM30\n")
+  assert_true(detect(data))
+  let result = convert(data) catch {
+    GerberInvalid(message) => fail("Excellon fixture did not convert: " + message)
+  }
+  assert_eq(result.pages, 1)
+  let document = @core.open_single(result.bdf) catch {
+    _ => fail("Excellon BDF did not open")
+  }
+  assert_eq(document.manifest.views[0].pages.length(), 1)
+}

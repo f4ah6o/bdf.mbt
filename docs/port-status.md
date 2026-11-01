@@ -78,10 +78,11 @@
   and text; clear-text CGM, gzip, cell arrays, tiles and hatches are documented
   gaps. Single-file Gerber is ported for FS/MO/AD/AM, D01/D02/D03, linear and
   circular interpolation, regions, standard apertures and an approximate macro
-  aperture, drawn 1:1; board page scaling, zip archives, Excellon drill files,
-  clear polarity and exact macros are documented gaps. PCL/HP RTL raster jobs are a documented gap: the escape
+  aperture, drawn 1:1; simple Excellon drill files with METRIC/INCH tools are
+  also read. Board page scaling, zip archives, full Excellon headers, clear
+  polarity and exact macros are documented gaps. PCL/HP RTL raster jobs are a documented gap: the escape
   sequences are skipped with a warning and only the HP-GL/2 instructions are
-  converted. The remaining CAD formats (SXF P21, clear-text CGM), Gerber board archives/Excellon, KiCad and draw.io
+  converted. The remaining CAD formats (SXF P21, clear-text CGM), Gerber board archives and KiCad/draw.io
   are not ported. Camera raw (DNG/CR2) is
   not an upstream converter and is outside the port. The subsets of the ported
   formats above are documented gaps, not claims of full parity.

@@ -454,6 +454,85 @@ fn gerber_word(
 }
 
 ///|
+fn excellon_run(data : Bytes) -> (@cad.Drawing, Array[String]) {
+  let text = @utf8.decode_lossy(data)
+  let drawing = @cad.Drawing::new()
+  let warnings : Array[String] = []
+  let tools : Map[Int, Double] = Map([])
+  let mut unit = 1.0
+  let mut tool = 0
+  for raw in text.split("\n") {
+    let line = sfc_gerber_trim(raw)
+    if line == "" || line.has_prefix(";") || line == "M48" || line == "%" || line == "M30" {
+      continue
+    }
+    if line.has_prefix("METRIC") {
+      unit = 1.0
+      continue
+    }
+    if line.has_prefix("INCH") {
+      unit = 25.4
+      continue
+    }
+    if line.has_prefix("T") {
+      let rest = line[1:]
+      let c_at = rest.find("C")
+      match c_at {
+        Some(value) => {
+          let code = @string.parse_int(rest[:value]) catch { _ => 0 }
+          let diameter = @string.parse_double(rest[value + 1:]) catch { _ => 0.0 }
+          if diameter > 0.0 {
+            tools[code] = diameter * unit
+          }
+        }
+        None => {
+          tool = @string.parse_int(rest) catch { _ => 0 }
+        }
+      }
+      continue
+    }
+    if line.has_prefix("X") || line.has_prefix("Y") {
+      let mut x = 0.0
+      let mut y = 0.0
+      let mut index = 0
+      while index < line.length() {
+        let c = line[index].unsafe_to_char()
+        if c == 'X' || c == 'Y' {
+          let start = index + 1
+          let mut end = start
+          while end < line.length() {
+            let d = line[end].unsafe_to_char()
+            if (d >= '0' && d <= '9') || d == '.' || d == '-' || d == '+' {
+              end += 1
+            } else {
+              break
+            }
+          }
+          let raw_value = line[start:end]
+          let mut value = @string.parse_double(raw_value) catch { _ => 0.0 }
+          if !raw_value.contains(".") {
+            value = value / (if unit == 1.0 { 1000.0 } else { 10000.0 })
+          }
+          if c == 'X' { x = value * unit }
+          if c == 'Y' { y = value * unit }
+          index = end
+        } else {
+          index += 1
+        }
+      }
+      let diameter = match tools.get(tool) {
+        Some(value) => value
+        None => 0.8
+      }
+      let path = @cad.CadPath::new()
+      path.circle({ x, y }, diameter / 2.0)
+      drawing.fill(path, @cad.Fill::solid(0x202020ffU), false)
+    }
+  }
+  (drawing, warnings)
+}
+
+///|
 /// Convert a single Gerber file into a fixed-view BDF document.
 pub fn convert(
   data : Bytes,
@@ -463,9 +542,15 @@ pub fn convert(
   if data.length() > 1073741824 {
     raise GerberInvalid("gerber: the file is larger than 1073741824 bytes")
   }
-  let (drawing, warnings) = gerber_run(data) catch {
-    Failure(message) => raise GerberInvalid(message)
-    _ => raise GerberInvalid("gerber: not a Gerber file")
+  let head = @utf8.decode_lossy(data[:Int::min(data.length(), 8192)].to_owned())
+  let drill = head.contains("M48") || head.contains("M30") || head.contains("METRIC") || head.contains("INCH")
+  let (drawing, warnings) = if drill {
+    excellon_run(data)
+  } else {
+    gerber_run(data) catch {
+      Failure(message) => raise GerberInvalid(message)
+      _ => raise GerberInvalid("gerber: not a Gerber file")
+    }
   }
   let bounds = drawing.bounds()
   if !bounds.is_valid() {
