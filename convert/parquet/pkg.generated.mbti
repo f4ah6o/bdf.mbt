@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/parquet"
+
+// Values
+pub fn convert(Bytes, title? : String, no_text_index? : Bool) -> ParquetInputResult raise ParquetInputError
+
+pub fn detect(Bytes) -> Bool
+
+// Errors
+pub suberror ParquetInputError {
+  ParquetInputInvalid(String)
+}
+
+// Types and methods
+pub(all) struct ParquetInputResult {
+  bdf : Bytes
+  pages : Int32
+  summary : String
+  warnings : Array[String]
+}
+
+// Type aliases
+
+// Traits

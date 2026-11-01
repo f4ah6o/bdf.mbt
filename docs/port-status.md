@@ -24,7 +24,7 @@
 - Done: viewer `openFile` integration and PDF/DOCX/PPTX page streams.
 - Done: DOM/OffscreenCanvas viewer, lazy pages, sheets, search, ARIA and MIDI.
 - Done: MoonBit converters for the demo format set (PDF, DOCX, PPTX, XLSX,
-  CSV, image, font, MIDI/MML/MusicXML, HP-GL/2, Jw_cad, DXF, SXF, CGM, Gerber, KiCad PCB, draw.io), plus AI, TIFF, PSD, EMF/WMF,
+  CSV, image, font, MIDI/MML/MusicXML, HP-GL/2, Jw_cad, DXF, SXF, CGM, Gerber, KiCad PCB, draw.io, Parquet), plus AI, TIFF, PSD, EMF/WMF,
   IDML and Visio VSDX.
 - Done: `convert/raster` PNG encoding and box scaling; the EMF/WMF metafile
   replay is also used by the DOCX and PPTX picture paths, with embedded
@@ -41,7 +41,9 @@
   documented gaps. draw.io's first uncompressed diagram is ported for basic
   vertices, simple edges, colours and labels; compression, stencils, HTML/math
   formatting, automatic wrapping/routing and page auto-fit are documented
-  gaps.
+  gaps. Flat uncompressed Parquet tables with PLAIN or dictionary columns are
+  read as BDF sheets; Snappy/ZSTD, nested columns and some row-group features
+  are documented gaps.
 - Phase 3: `convert/reader` provides the reader-mode block model and fixed A4 layout; `convert/epub` reads the container, manifest and spine; `convert/html` reads headings, paragraphs, lists, code, quotes, tables and images-as-alt-text; `convert/markdown` reads front matter, headings, lists, tasks, fences, quotes, rules, simple tables and inline links. Readability extraction, CSS, remote images, fixed-layout EPUB, MHTML, embedded fonts and exact CommonMark/GFM behavior are documented gaps.
 - Phase 4: `convert/audio` writes one-page cards for MP3, AAC (ADTS/M4A), FLAC, Ogg Vorbis/Opus, WAV and AIFF with tags, covers, lyrics, durations and an optional playable audio part. MP4/iTunes tags and covers, Ogg duration, synchronized lyrics, chapters and DRM are documented gaps.
 - Done: cryptography on non-JavaScript hosts. PBKDF2-HMAC-SHA-256,
@@ -101,6 +103,8 @@
    name-keyed CFF, then embedded through the existing CFF path.
 2. Port the deferred SXF, CGM, Gerber/Excellon and KiCad converters, then the
    draw.io converter.
-3. Port Parquet sheet input and the XLSX font-embedding mode.
-4. Close documented gaps in the ported formats only where a source fixture can
+3. ~~Port Parquet sheet input.~~ Done for flat uncompressed tables with
+   PLAIN/dictionary columns; compressed and nested tables remain.
+4. Port the XLSX font-embedding mode.
+5. Close documented gaps in the ported formats only where a source fixture can
    be compared with upstream.

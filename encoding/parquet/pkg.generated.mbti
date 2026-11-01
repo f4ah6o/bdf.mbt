@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn decode(Bytes) -> Table raise
+
 pub fn encode(Table) -> Bytes raise
 
 // Errors

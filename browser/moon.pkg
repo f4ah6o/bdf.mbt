@@ -19,6 +19,7 @@ import {
   "f4ah6o/bdf/convert/gerber",
   "f4ah6o/bdf/convert/kicad",
   "f4ah6o/bdf/convert/drawio",
+  "f4ah6o/bdf/convert/parquet",
   "f4ah6o/bdf/convert/pdf",
   "f4ah6o/bdf/convert/pptx",
   "f4ah6o/bdf/convert/ai",
