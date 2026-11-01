@@ -10,6 +10,8 @@ pub fn decode_woff(Bytes) -> Bytes raise
 
 pub fn face_count(Bytes) -> Int32
 
+pub fn from_cff(Bytes, Int32, Int32, Array[Int32], Map[Int32, Int32], String, Int32, Bool) -> Bytes raise
+
 pub fn parse(Bytes, index? : Int32) -> Font raise
 
 // Errors
