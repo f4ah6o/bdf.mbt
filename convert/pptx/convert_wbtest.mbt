@@ -3701,3 +3701,110 @@ test "PPTX table row heights drive cell fills" {
   }
   assert_true(tall, msg="PPTX table row height")
 }
+
+///|
+fn pptx_table_border_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GC45JkY2zcpleknkGfKxMAgDKSjnfPzSlLzSuJDKgtSi2P1KnJz",
+  )
+  joined.write_string(
+    "1gZa+x82ELj3U3Tada3CUw0CXpcaj3PwPGWfM8c76ar+zzur/n6PmaTEqLXBILL8fvDzquKSMBmD",
+  )
+  joined.write_string(
+    "iZz7Jr7eNIlpL9/cj87K97f5H10rMuVgeULzcbd5E54s27tq+/IOlYg3Kycmn/vop3lJ2WqBkcuX",
+  )
+  joined.write_string(
+    "ni+Klidsljm6XrCWCIgNv9p76WD6l50nJrfnvGZ/k5i/ucLmU5XmpAuTRL5zF57KUjmS0dt2ZofV",
+  )
+  joined.write_string(
+    "j3fRXoV+GpGWxRkmE8N8JrxKOtTyR6bg2t4PqZNeBuxxOnX+wYylSWe01FSunb3zqXw5d6jzfene",
+  )
+  joined.write_string(
+    "2AvVxyd92jxzc/yxS40fV9ufmvBUVff8r/23z6yT573y5/Vb6wCUkCry+z5/E5Cny8jAwA2k44tS",
+  )
+  joined.write_string(
+    "c4r19UBk7/mzXIcMeNg/7PYPLCq/a9NxYlesy43QZ8xTzF63vWb3Ff3+Tczfz6bC59N5/SV588vS",
+  )
+  joined.write_string(
+    "+HtMKtUXaHklvJhyfbIx07q/ldUMbp5WuunvAw40seRuXqlvcXpKecYcpo09FkIGy0T65kyWuuil",
+  )
+  joined.write_string(
+    "VeMwXb25P2xZjNvh5hDzzAnvTxWdf7yc8eyplLliAtaxjK+nN/y/USeh1qq+/p1Y7K/CR9oTUyV5",
+  )
+  joined.write_string(
+    "1RgVVeSUgvL2XXad1mhuGl97cw8DqtcuVJw/ch7I8wB6DSRaUFCiX1CUWgxMB4klmfl5oFTQO8E/",
+  )
+  joined.write_string(
+    "m8lQ4Oj7vyKJ70wLL6buzrnmLciSn2vv4JF21+HfxM5FdVXJuq4vlm7/PqPS/tnZDZbVx/1mnDym",
+  )
+  joined.write_string(
+    "kLhT4IDBi4wcC48fv+7sKzuwYkXClG5G1ZgJCcb7eFb6S3I6By5Vi1zK8mpyy84pV4r9qtzWZwgK",
+  )
+  joined.write_string(
+    "t1nNTvq2KmQ2/x/L57L5LRk7w80O8Kv8ZxdafjKrpv/XC+3XjCdf7FtoctvF4JrwyZlzbwb/vHpG",
+  )
+  joined.write_string(
+    "ivPsLtZpv3efsb7MIM/+L/3741NfIg/dLtoqtMjONV5ly91du2e7P9h5vIIZNQBK5p76sgHIUwQG",
+  )
+  joined.write_string(
+    "gDw0ACDxix4M0PjeCIxvAbYHd5dzbL+9RdZlSaa44C6v2oYJMbcTZrXEiPz+xlYYUFDw5/2P/Y9n",
+  )
+  joined.write_string(
+    "vdsYUXbc45g1Y2ggk/PyPWZ5QgWSfrdtDbwuZWbudWbUFip5u8xy8VTN8gyzxgg3Gc4ZwVzs5zzP",
+  )
+  joined.write_string(
+    "7vAAxbf54v5uH8tjnewr1xU5xU1/2nfcn/mW/uSvUQ5vSnlzIpj/Jf8uNOHqj7srVvLyOKfftYwz",
+  )
+  joined.write_string(
+    "C3qE1RjX/5gX5nqtYTvv/19raplQPfulSXNjPNCjr4BZXhTq2eKczJTUYghlCI7uoNN5hxUE9nzX",
+  )
+  joined.write_string(
+    "FvieNlfjlTJX36yQc2u7rnxh7jjIJ8TGcqLw376Gu8f6qlbwn7ZLa4vd89r3useVotctYSzn0yXd",
+  )
+  joined.write_string(
+    "YqbO4gwV/lOqIxdvUDRPy21p2JwH2uUVk+3XnD3l2cYUuXOq4o83eyMZd3w6I/0q7VaBaNbUbbxf",
+  )
+  joined.write_string(
+    "FbeYSpyWDZ/3qyBQOXFiqv+FgIUfFJz+Kx/S2dtyTu2PzZegOi8x//S+aZ9fXJ02a7MGt/dskdVl",
+  )
+  joined.write_string(
+    "9qdkcpJqt7B3syhXNE7kymzq/6Ji2bbQaqnD+skyP6I3rs6ZvP6lV7joK466ufrTIysuvl7PvfGU",
+  )
+  joined.write_string(
+    "df+pwJ1zrjxUM+YxLLq/crnhF3VLmWrtCH6BnOWqu3y2qAnkT9atrvaYGHLbY6b+PGZltTnTmkSd",
+  )
+  joined.write_string(
+    "1GrTX1/2i7oS5Fkgtm+RRIq7gYfW39TmVe+3zYpdnL7oZfHP6CaVBb7Xvixh5KnNv2DOdXhCgbl1",
+  )
+  joined.write_string(
+    "zzzWd/+N74Qx1G1jurTq2f0Ab0YmEWbcxTAMNDAyYC+U0Q1AL50QBmgxopRV6BrR8z5CIysT9pIA",
+  )
+  joined.write_string(
+    "3QT0zIMwgY2ZYFZCNww9cSIM+8yMI6kGeLOygZSwAqEPUGsrK4gHAPUnnMDnBgAA",
+  )
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "PPTX table cell borders are stroked" {
+  let result = convert(pptx_table_border_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut blue = false
+  let mut stroke = false
+  for command in commands {
+    match command {
+      @render.StrokeColor(0x0000ffff) => blue = true
+      @render.StrokeRect(_, _, _, _) => stroke = true
+      _ => ()
+    }
+  }
+  assert_true(blue, msg="PPTX table border colour")
+  assert_true(stroke, msg="PPTX table border")
+}

@@ -768,6 +768,34 @@ fn pptx_cell_text(cell : PptxXmlNode) -> String {
 }
 
 ///|
+fn pptx_cell_border(
+  cell : PptxXmlNode,
+  theme : Map[String, UInt32],
+) -> (Double, UInt32)? {
+  let props = pptx_child(Some(cell), "tcPr")
+  for name in ["lnL", "lnR", "lnT", "lnB"] {
+    match pptx_child(props, name) {
+      Some(line) => {
+        let width = (@string.parse_double(
+            pptx_attribute(line.element, "w", "0"),
+          ) catch {
+            _ => 0.0
+          }) /
+          12700.0
+        if width > 0.0 {
+          match pptx_node_color(Some(line), "solidFill", theme) {
+            Some(color) => return Some((width, color))
+            None => ()
+          }
+        }
+      }
+      None => ()
+    }
+  }
+  None
+}
+
+///|
 fn pptx_emit_table(
   shape : PptxXmlNode,
   object : @core.ObjectBuilder,
@@ -832,6 +860,19 @@ fn pptx_emit_table(
         Some(color) => {
           object.fill_color(color)
           object.fill_rect(
+            Float::from_double(cell_x),
+            Float::from_double(row_top),
+            Float::from_double(column_width),
+            Float::from_double(row_height),
+          )
+        }
+        None => ()
+      }
+      match pptx_cell_border(cell, theme) {
+        Some((border_width, border_color)) => {
+          object.line(Float::from_double(border_width), 0, 0, 8.0F)
+          object.stroke_color(border_color)
+          object.stroke_rect(
             Float::from_double(cell_x),
             Float::from_double(row_top),
             Float::from_double(column_width),
