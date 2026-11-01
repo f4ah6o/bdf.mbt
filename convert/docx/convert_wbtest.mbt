@@ -1310,3 +1310,79 @@ test "DOCX conversion builds a text index" {
   }
   assert_true(text.to_string().contains("A"), msg="DOCX indexed text")
 }
+
+///|
+fn docx_table_gridspan_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GBI9UuMPekvteE1kLeOkYFBGEhHO+fnlaTmlcSHVBakFsfqVeTm",
+  )
+  joined.write_string(
+    "1Abs9TtsIHCvkuu0dpeshICTp9UHYybnyobJtZ46bzY/Lfb+/c0i92UD1+O731evj37bJB595o3S",
+  )
+  joined.write_string(
+    "109uW4MUZmbI+u79E7Hf5HtQAeOmB8qJ+t9PFJnGlL6udRIL9blzeueULwtMZ0syb+jiXKmUfIbR",
+  )
+  joined.write_string(
+    "y/bzEuEZ/jMC7m97O9dsIldQ5qlHiu3vON1v/FCaV/61VmfSxc0i/e6PJl319jhpzbz0UZX3t3Cv",
+  )
+  joined.write_string(
+    "Yq+A0MoHH94IxYc3XREXFnvyvmHyu7V6k+e6fuTbucdphc5f0c1XzWb5rvD6uv9s67xCmbkHN9cV",
+  )
+  joined.write_string(
+    "eltKpaybzL7+nAeDu/3fr4nvHkoHoITNzkaXwg1AnhYwbLiBdHxRak6xvh6I7D1vzXfIgIftwdxg",
+  )
+  joined.write_string(
+    "l3uZUWwtAZP1OFZqa7F3CJn3Zsh5HVq8XZ2ZWYHN7fZ++9O53zcY70z0OWbN5hvK7Ki+18jP2IL/",
+  )
+  joined.write_string(
+    "+Fc+j1OHNA2r23nEfC58DK0+FPlk02Q1YSHNDm+eZXMOz7ukor5FKdRugfbki+7aRZqLlzme6L7g",
+  )
+  joined.write_string(
+    "YV66d+nHuwz/EifFGXbszWrg8T5Qn2Pf5/bo4OnVrtPr5/zwEol06Z158K6769XVsaJiGvkvj3f/",
+  )
+  joined.write_string(
+    "4UT12EPraFcRoKfUmRgYBIGi5flFKfop+cmlucCYB0X53EBf/8MGPHs/a6+6E3lr1YLAtXMZOP08",
+  )
+  joined.write_string(
+    "PJrlJ6hFRml2Lj6ypife/5frww3c05/fOH/+3OTy3/6LJ0/+spA5emLO5EkuUXyLNq9Sep/vfz16",
+  )
+  joined.write_string(
+    "EktKmAFvWNgTHeab18N37xM5YN+zZcYRTrMpta5RLuFBUhXavNzSBZfc3nHcM+hZGb6FXX8Ou55z",
+  )
+  joined.write_string(
+    "B3fPsspZ94IOW3m/stjEWCinZFbFd36f8OHgoz84rF6225ZHBi7RXPhf8cX8jS/cnwjv++VaUXDG",
+  )
+  joined.write_string(
+    "7Wnny64n3TnP7jJMXrdPvnPiN+VdO0tlf+/++7DIeq6dc/0Z9pOFcSv44if36pzvrliwL+fx77To",
+  )
+  joined.write_string(
+    "M2FzqxLtwgRj1ogHd78P6c6+xaA0w/T6px0bJu9NlY8953Bd+Pr9AG9GJhFm3DkHBhoYGbDnI3QD",
+  )
+  joined.write_string(
+    "0JMXwgAZRpTEhq4RPfoQGr8yYonMAG9WNpA0MxDuBNIWzCAeAGkTF0gHBAAA",
+  )
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "DOCX table grid spans are accepted" {
+  let result = convert(docx_table_gridspan_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let text = StringBuilder()
+  for command in commands {
+    match command {
+      @render.FillText(value, _, _, _) => text.write_string(value)
+      _ => ()
+    }
+  }
+  let value = text.to_string()
+  assert_true(value.contains("A"), msg="DOCX table grid span A")
+  assert_true(value.contains("B"), msg="DOCX table grid span B")
+}

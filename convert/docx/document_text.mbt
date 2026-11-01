@@ -618,10 +618,15 @@ fn DocxTextWalker::blocks(
               docx_text_push(items, "tab", "\t", docx_default_run_props())
             }
             first = false
-            let width = if cell_index < grid.length() {
-              grid[cell_index]
-            } else {
-              0.0
+            let span = docx_table_cell_grid_span(cell)
+            let mut width = 0.0
+            if cell_index < grid.length() {
+              width = 0.0
+              let mut k = 0
+              while k < span && cell_index + k < grid.length() {
+                width += grid[cell_index + k]
+                k += 1
+              }
             }
             let shade = docx_table_cell_shade(cell)
             let (border_width, border_color) = docx_table_cell_border(cell)
@@ -648,13 +653,16 @@ fn DocxTextWalker::blocks(
                 border_color,
               })
             }
-            cell_index += 1
+            cell_index += span
             for part in cell.children {
               if part.name() == "p" {
                 docx_text_inlines(part, items, self.styles, "")
               } else if part.name() == "tbl" {
                 docx_text_unsupported("nested table")
               }
+            }
+            for _ in 1..<span {
+              docx_text_push(items, "tab", "\t", docx_default_run_props())
             }
           }
           docx_text_push(items, "break", "\n", docx_default_run_props())
@@ -803,6 +811,25 @@ fn docx_paragraph_border(props : DocxXmlNode?) -> (Double, UInt32?) {
     }
   }
   (0.0, None)
+}
+
+///|
+fn docx_table_cell_grid_span(cell : DocxXmlNode) -> Int32 {
+  let props = cell.child("tcPr")
+  let span = match props {
+    Some(value) =>
+      match value.child("gridSpan") {
+        Some(grid) => docx_attribute(grid.element, "val", "1")
+        None => "1"
+      }
+    None => "1"
+  }
+  let value = @string.parse_int(span) catch { _ => 1 }
+  if value < 1 {
+    1
+  } else {
+    value
+  }
 }
 
 ///|
