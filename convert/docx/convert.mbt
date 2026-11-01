@@ -590,6 +590,16 @@ fn docx_render_document(
             }
             None => ()
           }
+          if item.border_width > 0.0 {
+            object.line(Float::from_double(item.border_width), 0, 0, 8.0F)
+            object.stroke_color(item.border_color.unwrap_or(0x000000ffU))
+            object.stroke_rect(
+              Float::from_double(line_x),
+              Float::from_double(y - height),
+              Float::from_double(item.width),
+              Float::from_double(height),
+            )
+          }
         }
         _ => {
           let size = if item.props.size > 0.0 { item.props.size } else { 10.0 }

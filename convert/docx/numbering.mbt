@@ -181,6 +181,8 @@ fn docx_apply_numbering(
         flip_h: false,
         flip_v: false,
         shade: None,
+        border_width: 0.0,
+        border_color: None,
       })
       paragraph.items.insert(1, {
         kind: "tab",
@@ -200,6 +202,8 @@ fn docx_apply_numbering(
         flip_h: false,
         flip_v: false,
         shade: None,
+        border_width: 0.0,
+        border_color: None,
       })
       paragraph.props.left += level.left
     }

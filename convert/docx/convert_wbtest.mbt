@@ -985,3 +985,80 @@ test "DOCX table cell shading is drawn" {
   assert_true(fill, msg="DOCX table shade")
   assert_true(text, msg="DOCX table text")
 }
+
+///|
+fn docx_table_border_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAAAAAAAA/wvwZmYRYWBg4GBQ8EqMPekvteE1kLeOkYFBGEhHO+fnlaTmlcSHVBakFsfqVeTm",
+  )
+  joined.write_string(
+    "1Abs9TtsIHCvkuu0dpeshICTp9UHYybnyobJtZ46bzY/Lfb+/c0i92UD1+O731evj37bJB595o3S",
+  )
+  joined.write_string(
+    "109uW4MUZmbI+u79E7Hf5HtQAeOmB8qJ+t9PFJnGlL6udRIL9blzeueULwtMZ0syb+jiXKmUfIbR",
+  )
+  joined.write_string(
+    "y/bzEuEZ/jMC7m97O9dsIldQ5qlHiu3vON1v/FCaV/61VmfSxc0i/e6PJl319jhpzbz0UZX3t3Cv",
+  )
+  joined.write_string(
+    "Yq+A0MoHH94IxYc3XREXFnvyvmHyu7V6k+e6fuTbucdphc5f0c1XzWb5rvD6uv9s67xCmbkHN9cV",
+  )
+  joined.write_string(
+    "eltKpaybzL7+nAeDu/3fr4nvHkoHoITNzkaXwg1AnhYwbLiBdHxRak6xvh6I7D1vzXfIgIftwdxg",
+  )
+  joined.write_string(
+    "l3uZUWwtAZP1OFZqa7F3CJn3Zsh5HVq8XZ2ZWYHN7fZ++9O53zcY70z0OWbN5hvK7Ki+18jP2IL/",
+  )
+  joined.write_string(
+    "+Fc+j1OHNA2r23nEfC58DK0+FPlk02Q1YSHNDm+eZXMOz7ukor5FKdRugfbki+7aRZqLlzme6L7g",
+  )
+  joined.write_string(
+    "YV66d+nHuwz/EifFGXbszWrg8T5Qn2Pf5/bo4OnVrtPr5/zwEol06Z158K6769XVsaJiGvkvj3f/",
+  )
+  joined.write_string(
+    "4UT1GOemhyclgZ56D8SCQNHy/KIU/ZT85NJcYMyDojw0MNb/sIJI7fdwkz35F5bNujlFL8tovo/P",
+  )
+  joined.write_string(
+    "FfkDGtmzGbYzbsnbf8878/KJw38fyJ176FD7x9Tqd+A5/gTLk997Uk55ZbDfLvz0tfKWrMez5g1r",
+  )
+  joined.write_string(
+    "LySIqoc/Pblx5+rlq1h/5k7hlTSKiPed80WxR3Rp3LdTHPvbAyPnxB6QFNxQKjv3wNbFzCv3uDMu",
+  )
+  joined.write_string(
+    "zjx4g9k0acMSx1PGW67POByp//Iqb66O9Rn9BZs1X9k8Sz0psdDX939j0+zFPh9rX84LFP6r+k/g",
+  )
+  joined.write_string(
+    "gELn/sKmY8u8mtiOcx4utVrbc1twl2CvocqpZ5lyZ5LNjxc2Lntyrdt1S7iRDs/d47qSJ7oXpQTu",
+  )
+  joined.write_string(
+    "O/7rX8C5OKUHvhZ3eA0e1c1UyHvxa8PWk4euZZdGLn/5bbVc7PzJefFX/zAGeDMyiTDjzj4w0MDI",
+  )
+  joined.write_string(
+    "gD0zoRuAnsYQBsgwoqQ4dI3ocYjQ+JURS4wGeLOygaSZgXAnkLZlBvEAOL13gQwEAAA=",
+  )
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "DOCX table cell borders are stroked" {
+  let result = convert(docx_table_border_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut blue = false
+  let mut stroke = false
+  for command in commands {
+    match command {
+      @render.StrokeColor(0x0000ffff) => blue = true
+      @render.StrokeRect(_, _, _, _) => stroke = true
+      _ => ()
+    }
+  }
+  assert_true(blue, msg="DOCX table border colour")
+  assert_true(stroke, msg="DOCX table border")
+}

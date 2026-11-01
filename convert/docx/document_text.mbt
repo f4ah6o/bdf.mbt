@@ -19,6 +19,8 @@ priv struct DocxTextItem {
   flip_h : Bool
   flip_v : Bool
   shade : UInt32?
+  border_width : Double
+  border_color : UInt32?
 } derive(Debug, Eq)
 
 ///|
@@ -239,6 +241,8 @@ fn docx_text_push(
     flip_h: false,
     flip_v: false,
     shade: None,
+    border_width: 0.0,
+    border_color: None,
   })
 }
 
@@ -402,6 +406,8 @@ fn docx_text_drawing(
     flip_h,
     flip_v,
     shade: None,
+    border_width: 0.0,
+    border_color: None,
   })
 }
 
@@ -572,30 +578,30 @@ fn DocxTextWalker::blocks(
             } else {
               0.0
             }
-            if width > 0.0 {
-              match docx_table_cell_shade(cell) {
-                Some(color) =>
-                  items.push({
-                    kind: "cell",
-                    text: "",
-                    clear: false,
-                    props: docx_default_run_props(),
-                    width,
-                    height: 0.0,
-                    anchored: false,
-                    x: 0.0,
-                    y: 0.0,
-                    crop_left: 0.0,
-                    crop_top: 0.0,
-                    crop_right: 0.0,
-                    crop_bottom: 0.0,
-                    rotation: 0.0,
-                    flip_h: false,
-                    flip_v: false,
-                    shade: Some(color),
-                  })
-                None => ()
-              }
+            let shade = docx_table_cell_shade(cell)
+            let (border_width, border_color) = docx_table_cell_border(cell)
+            if width > 0.0 && (shade is Some(_) || border_width > 0.0) {
+              items.push({
+                kind: "cell",
+                text: "",
+                clear: false,
+                props: docx_default_run_props(),
+                width,
+                height: 0.0,
+                anchored: false,
+                x: 0.0,
+                y: 0.0,
+                crop_left: 0.0,
+                crop_top: 0.0,
+                crop_right: 0.0,
+                crop_bottom: 0.0,
+                rotation: 0.0,
+                flip_h: false,
+                flip_v: false,
+                shade,
+                border_width,
+                border_color,
+              })
             }
             cell_index += 1
             for part in cell.children {
@@ -643,6 +649,47 @@ fn DocxTextWalker::blocks(
       other => docx_text_unsupported(other)
     }
   }
+}
+
+///|
+fn docx_table_cell_border(cell : DocxXmlNode) -> (Double, UInt32?) {
+  let props = cell.child("tcPr")
+  let borders = match props {
+    Some(value) => value.child("tcBorders")
+    None => None
+  }
+  for name in ["top", "left", "bottom", "right"] {
+    match borders {
+      Some(value) =>
+        match value.child(name) {
+          Some(border) => {
+            let size = docx_attribute(border.element, "sz", "")
+            let width = (@string.parse_double(size) catch { _ => 0.0 }) / 8.0
+            if width > 0.0 {
+              let color = docx_attribute(border.element, "color", "")
+              let parsed = if color.length() == 6 {
+                @string.parse_int(color, base=16) catch {
+                  _ => -1
+                }
+              } else {
+                -1
+              }
+              return (
+                width,
+                if parsed >= 0 {
+                  Some((parsed.to_uint() << 8) | 0xffU)
+                } else {
+                  Some(0x000000ffU)
+                },
+              )
+            }
+          }
+          None => ()
+        }
+      None => ()
+    }
+  }
+  (0.0, None)
 }
 
 ///|
