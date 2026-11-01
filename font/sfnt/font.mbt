@@ -25,6 +25,12 @@ pub struct Font {
 }
 
 ///|
+/// The original font file bytes.
+pub fn Font::data(self : Font) -> Bytes {
+  self.source
+}
+
+///|
 /// Return the nonzero glyph index for a Unicode scalar, or None if absent.
 pub fn Font::glyph(self : Font, codepoint : Int32) -> Int32? {
   match self.cmap.get(codepoint) {

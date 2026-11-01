@@ -2029,10 +2029,48 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
 /// with base borders to 200,000 cells. External links support simple ASCII
 /// HTTP(S) and mailto URLs with simple ASCII authorities; other URL forms are
 /// rejected.
+///|
 pub fn convert_plain_no_fonts(
   data : Bytes,
   data_mode~ : String = "",
   no_text_index~ : Bool = false,
+) -> XlsxPlainResult raise {
+  convert_plain_impl(data, data_mode~, no_text_index~)
+}
+
+///|
+/// Convert worksheets with one explicitly supplied TrueType/OpenType font.
+/// The font is embedded as a BDF font part and used for cell advances and
+/// line metrics.
+pub fn convert_plain_with_font(
+  data : Bytes,
+  font_data : Bytes,
+  font_index~ : Int32 = 0,
+  no_subset~ : Bool = false,
+  no_woff2~ : Bool = false,
+  data_mode~ : String = "",
+  no_text_index~ : Bool = false,
+) -> XlsxPlainResult raise {
+  convert_plain_impl(
+    data,
+    data_mode~,
+    no_text_index~,
+    font_data=Some(font_data),
+    font_index~,
+    no_subset~,
+    no_woff2~,
+  )
+}
+
+///|
+fn convert_plain_impl(
+  data : Bytes,
+  data_mode~ : String = "",
+  no_text_index~ : Bool = false,
+  font_data~ : Bytes? = None,
+  font_index~ : Int32 = 0,
+  no_subset~ : Bool = false,
+  no_woff2~ : Bool = false,
 ) -> XlsxPlainResult raise {
   if data_mode != "" &&
     data_mode != "default" &&
@@ -2074,6 +2112,14 @@ pub fn convert_plain_no_fonts(
     meta["dc"] = Json::object(dc)
   }
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
+  let font_face = match font_data {
+    Some(bytes) => Some(@sfnt.parse(bytes, index=font_index))
+    None => None
+  }
+  let font_hash = match (font_face, font_data) {
+    (Some(_), Some(bytes)) => Some(writer.add_part("font", bytes))
+    _ => None
+  }
   let mode = if data_mode == "default" { "" } else { data_mode }
   let warnings = workbook.warnings.copy()
   let grids : Array[@sheet.NamedGrid] = []
@@ -2123,7 +2169,7 @@ pub fn convert_plain_no_fonts(
     )
     let (drawn, geo, missing_formula_values) = workbook.xlsx_draw_plain_sheet(
       ref, styles, locale, doc_language, theme_colors, shared_runs, table_events,
-      writer, children,
+      writer, children, font=font_face, hash=font_hash,
     )
     picture_children.push(children)
     counter = next
@@ -2211,6 +2257,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   table_events : Array[(String, String)],
   writer : @core.DocumentWriter,
   children : Array[(Int32, Int32, Bytes)],
+  font~ : @sfnt.Font? = None,
+  hash~ : String? = None,
 ) -> (@sheet.DrawnGrid, XlsxSheetGeometry, Int32) raise {
   let (parsed, rich_cells) = workbook.xlsx_read_sheet_cells_with_runs(
     ref.part,
@@ -3596,6 +3644,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         },
       ),
     ),
+    font~,
+    hash~,
   ) catch {
     @sheet.InvalidArgument(message) => raise InvalidXlsxInput(message)
     error => raise error

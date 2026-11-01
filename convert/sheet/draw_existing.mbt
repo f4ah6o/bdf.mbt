@@ -185,6 +185,8 @@ pub fn draw_sized_grid_no_fonts(
   picture_writer~ : @core.DocumentWriter? = None,
   picture_children~ : Array[(Int32, Int32, Bytes)]? = None,
   column_axis_default~ : Float? = None,
+  font~ : @sfnt.Font? = None,
+  hash~ : String? = None,
 ) -> DrawnGrid raise {
   let region_rows : Map[Int32, Map[Int32, GridMergeRegion]] = Map([])
   let mut region_room = 4194304L
@@ -426,9 +428,24 @@ pub fn draw_sized_grid_no_fonts(
         } else {
           original_size * (2.0 / 3.0)
         }
-        sized_fallback_advance(character, is_bold, initial_size) * scale
+        match font {
+          Some(face) =>
+            match face.glyph(character.to_int()) {
+              Some(glyph) => face.advance(glyph) * initial_size * scale
+              None => sized_fallback_advance(character, is_bold, initial_size) * scale
+            }
+          None => sized_fallback_advance(character, is_bold, initial_size) * scale
+        }
       }
-      let metrics = (_ : Char, _ : Bool) => (0.9 * line_size, 0.25 * line_size)
+      let metrics = (_ : Char, _ : Bool) =>
+        match font {
+          Some(face) =>
+            (
+              face.metrics.ascent * line_size,
+              -face.metrics.descent * line_size,
+            )
+          None => (0.9 * line_size, 0.25 * line_size)
+        }
       let wrap = match wraps.get(i) {
         Some(columns) => columns.get(column).unwrap_or(false)
         None => false
@@ -766,8 +783,8 @@ pub fn draw_sized_grid_no_fonts(
           bold,
           colors.get(column).unwrap_or(0x000000ffU),
           advance,
-          None,
-          None,
+          font,
+          hash,
           None,
           Map([]),
           size=draw_size,

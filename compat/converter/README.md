@@ -21,6 +21,9 @@ decoded image pixels, streamed pages, page selection and parameter errors.
 JPEG-compressed TIFF pages and the documented metafile subset are covered as
 explicit warnings.
 
+`phase8-xlsx-test.mjs` embeds a supplied font in the XLSX sheet and checks the
+font part.
+
 `phase8-parquet-test.mjs` converts the generated flat fixture and checks its
 sheet text and typed table.
 

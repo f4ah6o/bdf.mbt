@@ -64,6 +64,8 @@ pub fn xlsx_table_values(Bytes, String, String, String) -> Bytes
 
 pub fn xlsx_used(Bytes, String) -> String
 
+pub fn xlsx_with_font(Bytes, Bytes) -> String
+
 pub fn xlsx_workbook(Bytes) -> String
 
 // Errors

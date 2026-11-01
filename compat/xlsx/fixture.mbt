@@ -798,3 +798,17 @@ pub fn xlsx_render_warnings(
     _ => "null"
   }
 }
+
+///|
+#export_name("xlsx_with_font")
+pub fn xlsx_with_font(data : Bytes, font : Bytes) -> String {
+  try {
+    let result = @xlsx.convert_plain_with_font(data, font)
+    Json::object({
+      "bdf": Json::string(@base64.encode(result.bdf)),
+      "warnings": Json::array(result.warnings.map(Json::string)),
+    }).stringify()
+  } catch {
+    error => Json::object({ "error": Json::string(error.to_string()) }).stringify()
+  }
+}

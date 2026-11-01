@@ -1,6 +1,7 @@
 import {
   "f4ah6o/bdf/convert/ooxml",
   "f4ah6o/bdf/convert/sheet",
+  "f4ah6o/bdf/font/sfnt" @sfnt,
   "f4ah6o/bdf/core",
   "f4ah6o/bdf/encoding/parquet",
   "Milky2018/xml",

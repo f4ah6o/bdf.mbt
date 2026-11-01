@@ -10,6 +10,8 @@ import {
 // Values
 pub fn convert_plain_no_fonts(Bytes, data_mode? : String, no_text_index? : Bool) -> XlsxPlainResult raise
 
+pub fn convert_plain_with_font(Bytes, Bytes, font_index? : Int32, no_subset? : Bool, no_woff2? : Bool, data_mode? : String, no_text_index? : Bool) -> XlsxPlainResult raise
+
 pub fn detect_xlsx(Bytes, Bytes) -> Bool
 
 pub fn read_xlsx_workbook(Bytes) -> XlsxWorkbook raise XlsxInputError

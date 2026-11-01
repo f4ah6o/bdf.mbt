@@ -233,3 +233,7 @@ Swoosh arrow `adj1` and `adj2` accept 0–100,000. These guides work individuall
 or together; other adjustment guides remain unsupported.
 
 Conditional rules that reference absent differential styles leave formatting unchanged. Missing-style stopping rules follow priority for matched explicit cells. Stopping rules that match blanks remain unsupported when later formatting could be affected. Hexadecimal and underscored conditional style IDs, and unsupported priority representations in interacting stopping rules, are also rejected.
+
+`convert_plain_with_font` embeds one explicitly supplied TrueType/OpenType
+font and uses its advances and line metrics; the Worker uses the first face of
+a supplied font directory in this mode.

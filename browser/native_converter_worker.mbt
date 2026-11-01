@@ -229,7 +229,7 @@ async fn NativeConverterState::dispatch(
     return
   }
   if format == "xlsx" {
-    native_convert_xlsx(request, data, kind == "open")
+    native_convert_xlsx(request, data, kind == "open", database)
     return
   }
   if format == "csv" {
@@ -316,7 +316,7 @@ async fn NativeConverterState::dispatch(
         let strong_other = @hpgl.detect(head) ||
           @utf8.decode_lossy(head).contains("%PDF-")
         if lower.has_suffix(".xlsx") && !strong_other {
-          native_convert_xlsx(request, data, kind == "open")
+          native_convert_xlsx(request, data, kind == "open", database)
           return
         }
         if midi_named && !strong_other {
@@ -1239,8 +1239,18 @@ fn native_convert_xlsx(
   request : ConverterRequest,
   data : Bytes,
   opened : Bool,
+  database : @fontdb.Database?,
 ) -> Unit {
-  let result = @xlsx.convert_plain_no_fonts(data) catch {
+  let font_data = match database {
+    Some(db) if db.faces().length() > 0 => Some(db.face(0).unwrap().font.data())
+    _ => None
+  }
+  let result = try {
+    match font_data {
+      Some(font) => @xlsx.convert_plain_with_font(data, font)
+      None => @xlsx.convert_plain_no_fonts(data)
+    }
+  } catch {
     @xlsx.InvalidXlsxInput(message) => {
       native_converter_error(request, message, "")
       return

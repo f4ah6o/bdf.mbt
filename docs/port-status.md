@@ -16,6 +16,8 @@
 - `npm run test:phase4-converter`
 - `npm run test:phase5-converter`
 - `npm run test:phase8-type1`
+- `npm run test:phase8-parquet`
+- `npm run test:phase8-xlsx`
 - `npm run test:visual`
 
 ## README Port backlog
@@ -105,6 +107,8 @@
    draw.io converter.
 3. ~~Port Parquet sheet input.~~ Done for flat uncompressed tables with
    PLAIN/dictionary columns; compressed and nested tables remain.
-4. Port the XLSX font-embedding mode.
+4. ~~Port the XLSX font-embedding mode.~~ Done: `convert_plain_with_font`
+   embeds an explicit face and uses its advances/metrics; the Worker picks the
+   first face of a supplied font directory.
 5. Close documented gaps in the ported formats only where a source fixture can
    be compared with upstream.
