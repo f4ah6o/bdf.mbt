@@ -1,5 +1,6 @@
 import {
   "moonbitlang/x/crypto" @xcrypto,
+  "moonbitlang/core/bigint",
 }
 
 supported_targets = "+js+wasm-gc"

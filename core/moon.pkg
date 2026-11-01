@@ -5,6 +5,8 @@ import {
   "moonbitlang/core/buffer",
   "moonbitlang/core/string",
   "moonbitlang/core/bigint",
+  "f4ah6o/bdf/crypto",
+  "moonbitlang/core/encoding/base64",
   "moonbit-community/normalization",
   "moonbit-community/ucd" @unicode,
   "moonbit-community/ucd/data" @ucd,

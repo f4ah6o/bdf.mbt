@@ -45,6 +45,10 @@ pub fn normalize_query(String, case_sensitive? : Bool) -> String
 
 pub fn open_encrypted_single(Bytes) -> EncryptedSingle raise
 
+pub fn open_encrypted_with_ecdh(Bytes, Bytes) -> Document raise
+
+pub fn open_encrypted_with_password(Bytes, String) -> Document raise
+
 pub fn open_single(Bytes) -> Document raise
 
 pub fn open_split(Bytes, (String, Int32) -> Bytes raise) -> SplitDocument raise
