@@ -1,0 +1,5 @@
+import {
+  "moonbitlang/x/crypto" @xcrypto,
+}
+
+supported_targets = "+js+wasm-gc"

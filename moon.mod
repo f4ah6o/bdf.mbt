@@ -15,4 +15,5 @@ import {
   "LL728/moon_encoding@0.2.0",
   "gaato/brotli@0.4.1",
   "gaato/codec@0.1.0",
+  "moonbitlang/x@0.5.5",
 }
