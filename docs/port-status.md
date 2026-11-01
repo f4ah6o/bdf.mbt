@@ -23,7 +23,7 @@
 - Done: viewer `openFile` integration and PDF/DOCX/PPTX page streams.
 - Done: DOM/OffscreenCanvas viewer, lazy pages, sheets, search, ARIA and MIDI.
 - Done: MoonBit converters for the demo format set (PDF, DOCX, PPTX, XLSX,
-  CSV, image, font, MIDI/MML/MusicXML, HP-GL/2, Jw_cad, DXF, SXF, CGM), plus AI, TIFF, PSD, EMF/WMF,
+  CSV, image, font, MIDI/MML/MusicXML, HP-GL/2, Jw_cad, DXF, SXF, CGM, Gerber), plus AI, TIFF, PSD, EMF/WMF,
   IDML and Visio VSDX.
 - Done: `convert/raster` PNG encoding and box scaling; the EMF/WMF metafile
   replay is also used by the DOCX and PPTX picture paths, with embedded
@@ -76,9 +76,12 @@
   hatches are documented gaps. Binary CGM pictures are ported for VDC extents,
   metric scaling, lines, markers, polygons, rectangles, circles, arcs, ellipses
   and text; clear-text CGM, gzip, cell arrays, tiles and hatches are documented
-  gaps. PCL/HP RTL raster jobs are a documented gap: the escape
+  gaps. Single-file Gerber is ported for FS/MO/AD/AM, D01/D02/D03, linear and
+  circular interpolation, regions, standard apertures and an approximate macro
+  aperture, drawn 1:1; board page scaling, zip archives, Excellon drill files,
+  clear polarity and exact macros are documented gaps. PCL/HP RTL raster jobs are a documented gap: the escape
   sequences are skipped with a warning and only the HP-GL/2 instructions are
-  converted. The remaining CAD formats (SXF P21, clear-text CGM), Gerber, KiCad and draw.io
+  converted. The remaining CAD formats (SXF P21, clear-text CGM), Gerber board archives/Excellon, KiCad and draw.io
   are not ported. Camera raw (DNG/CR2) is
   not an upstream converter and is outside the port. The subsets of the ported
   formats above are documented gaps, not claims of full parity.

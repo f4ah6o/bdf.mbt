@@ -63,6 +63,7 @@ try {
       ['r12-sjis.dxf', '/compat/dxf/fixtures/r12-sjis.dxf'],
       ['shapes.sfc', '/compat/sxf/fixtures/shapes.sfc'],
       ['shapes.cgm', '/compat/cgm/fixtures/shapes.cgm'],
+      ['features.gbr', '/compat/gerber/fixtures/features.gbr'],
     ]) {
       const data = new Uint8Array(await (await fetch(base + path)).arrayBuffer());
       const a = await upstream.convert(data, { name });
@@ -105,15 +106,18 @@ try {
     const dxf = entry.name.endsWith('.dxf');
     const sxf = entry.name.endsWith('.sfc');
     const cgm = entry.name.endsWith('.cgm');
+    const gerber = entry.name.endsWith('.gbr');
     const tolerance = cgm ? 0.05 : dxf ? 0.06 : sxf ? 0.10 : 0.01;
     for (let i = 0; i < entry.moon.pages.length; i++) {
-      assert.ok(Math.abs(entry.moon.pages[i].w - entry.upstream.pages[i].w) < entry.upstream.pages[i].w * tolerance, `${entry.name} page ${i + 1} width`);
-      assert.ok(Math.abs(entry.moon.pages[i].h - entry.upstream.pages[i].h) < entry.upstream.pages[i].h * tolerance, `${entry.name} page ${i + 1} height`);
+      if (!gerber) {
+        assert.ok(Math.abs(entry.moon.pages[i].w - entry.upstream.pages[i].w) < entry.upstream.pages[i].w * tolerance, `${entry.name} page ${i + 1} width`);
+        assert.ok(Math.abs(entry.moon.pages[i].h - entry.upstream.pages[i].h) < entry.upstream.pages[i].h * tolerance, `${entry.name} page ${i + 1} height`);
+      }
       assert.deepEqual(entry.moon.pages[i].layers, entry.upstream.pages[i].layers, `${entry.name} page ${i + 1} layers`);
     }
     if (dxf || sxf || cgm) {
       assert.ok(entry.moon.text.length > 0, `${entry.name} text index`);
-    } else {
+    } else if (!gerber) {
       assert.equal(entry.moon.text, entry.upstream.text, `${entry.name} text index`);
     }
   }
@@ -121,7 +125,7 @@ try {
   assert.equal(result.selected, 1);
   assert.ok(String(result.badColor).includes('not pens or mono'), 'colors parameter error');
   assert.ok(String(result.named).startsWith('hpgl:'), 'HP-GL detection');
-  console.log(`Phase 5 HP-GL/2, Jw_cad, DXF, SXF and CGM: ${result.cases.length} fixtures convert with the expected page geometry, layers and text coverage.`);
+  console.log(`Phase 5 CAD and Gerber: ${result.cases.length} fixtures convert with the expected layers and coverage; single-file Gerber pages are drawn 1:1 rather than with the upstream board scaling.`);
 } finally {
   await browser.close();
   server.close();
