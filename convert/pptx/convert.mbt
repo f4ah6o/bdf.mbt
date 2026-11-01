@@ -933,6 +933,11 @@ fn pptx_cell_text(cell : PptxXmlNode) -> String {
 }
 
 ///|
+fn pptx_cell_is_vmerge(cell : PptxXmlNode) -> Bool {
+  pptx_attribute(cell.element, "vMerge", "0") == "1"
+}
+
+///|
 fn pptx_cell_row_span(cell : PptxXmlNode) -> Int32 {
   let span = @string.parse_int(pptx_attribute(cell.element, "rowSpan", "1")) catch {
     _ => 1
@@ -1118,7 +1123,7 @@ fn pptx_emit_table(
     let mut cell_index = 0.0
     let mut cell_x = x
     for cell in cells {
-      if cell.element.name.local_name != "tc" {
+      if cell.element.name.local_name != "tc" || pptx_cell_is_vmerge(cell) {
         continue
       }
       let span = pptx_cell_grid_span(cell)
@@ -1215,7 +1220,7 @@ fn pptx_emit_table(
     let mut cell_index = 0.0
     let mut cell_x = x
     for cell in cells {
-      if cell.element.name.local_name != "tc" {
+      if cell.element.name.local_name != "tc" || pptx_cell_is_vmerge(cell) {
         continue
       }
       let span = pptx_cell_grid_span(cell)

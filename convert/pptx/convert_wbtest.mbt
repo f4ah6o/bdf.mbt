@@ -5483,3 +5483,26 @@ test "PPTX line spacing is applied" {
   }
   assert_true(b_y > a_y + 40.0, msg="PPTX line spacing")
 }
+
+///|
+test "PPTX vertically merged continuation cells are skipped" {
+  let result = convert(pptx_table_rowspan_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut skipped = true
+  for command in commands {
+    match command {
+      @render.FillText(value, _, _, _) =>
+        if value.contains("B") {
+          skipped = false
+        }
+      _ => ()
+    }
+  }
+  assert_true(skipped, msg="PPTX vMerge continuation")
+}
