@@ -34,3 +34,17 @@ test "drawio reads every diagram and compressed pages" {
 test "drawio percent decoding" {
   assert_eq(drawio_percent_decode("%3Cmxfile%3E"), "<mxfile>")
 }
+
+///|
+test "drawio rich labels keep HTML runs" {
+  let lines = drawio_rich_lines(
+    "<b>Bold</b> <font color=\"#ff0000\">red</font><br>next",
+    12.0,
+    0x000000ffU,
+  )
+  assert_eq(lines.length(), 2)
+  assert_eq(lines[0][0].style.bold, true)
+  assert_eq(drawio_color("#ff0000", 0x000000ffU), 0xff0000ffU)
+  let red = drawio_rich_lines("<font color=\"#ff0000\">red</font>", 12.0, 0x000000ffU)
+  assert_eq(red[0][0].style.color, 0xff0000ffU)
+}

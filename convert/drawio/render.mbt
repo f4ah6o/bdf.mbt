@@ -150,6 +150,10 @@ fn drawio_label_runs(
   if text == "" {
     return
   }
+  if drawio_has_html(cell.value) {
+    drawio_rich_label(cell, x, y, w, h, font, drawing, labels)
+    return
+  }
   let size = drawio_num_from_style(style, "fontSize", 12.0)
   let em = size * 0.75
   let family = drawio_style(style, "fontFamily", "")

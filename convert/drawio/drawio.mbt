@@ -160,7 +160,19 @@ fn drawio_color(value : String, default : UInt32) -> UInt32 {
   if text.length() != 6 {
     return default
   }
-  let number = @string.parse_int("0x" + text) catch { _ => return default }
+  let mut number = 0
+  for character in text {
+    let digit = if character >= '0' && character <= '9' {
+      character.to_int() - 48
+    } else if character >= 'a' && character <= 'f' {
+      character.to_int() - 87
+    } else if character >= 'A' && character <= 'F' {
+      character.to_int() - 55
+    } else {
+      return default
+    }
+    number = (number << 4) | digit
+  }
   ((number << 8) | 255).to_uint()
 }
 
