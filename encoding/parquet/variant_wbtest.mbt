@@ -34,6 +34,7 @@ fn variant_test_node(
       { ..parquet_logical_none(), kind: logical_kind }
     },
     geo: false,
+    geo_kind: 0,
     def_level: 0,
     rep_level: 0,
     index,

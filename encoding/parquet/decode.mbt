@@ -29,6 +29,7 @@ priv struct ParquetSchemaNode {
   precision : Int
   logical : ParquetLogicalType
   geo : Bool
+  geo_kind : Int
   def_level : Int
   rep_level : Int
   index : Int
@@ -55,6 +56,7 @@ priv struct ParquetMetaColumn {
   max_def : Int
   logical : ParquetLogicalType
   geo : Bool
+  geo_kind : Int
 }
 
 ///|
@@ -306,6 +308,7 @@ fn parquet_schema_element(reader : ParquetCompact) -> ParquetSchemaNode {
     precision,
     logical,
     geo: false,
+    geo_kind: 0,
     def_level: 0,
     rep_level: 0,
     index: 0,
@@ -326,6 +329,7 @@ fn parquet_schema_placeholder() -> ParquetSchemaNode {
     precision: 0,
     logical: parquet_logical_none(),
     geo: false,
+    geo_kind: 0,
     def_level: 0,
     rep_level: 0,
     index: 0,
@@ -400,6 +404,7 @@ fn parquet_schema_leaves(
       max_def: node.def_level,
       logical,
       geo: node.geo,
+      geo_kind: node.geo_kind,
     })
   } else {
     for child in node.children {
@@ -481,6 +486,7 @@ fn parquet_column_metadata(reader : ParquetCompact) -> ParquetMetaColumn {
     max_def: 0,
     logical: parquet_logical_none(),
     geo: false,
+    geo_kind: 0,
   }
 }
 
@@ -506,6 +512,7 @@ fn parquet_column_chunk(reader : ParquetCompact) -> ParquetMetaColumn {
     max_def: 0,
     logical: parquet_logical_none(),
     geo: false,
+    geo_kind: 0,
   }
   let save = reader.last
   reader.last = 0
@@ -536,19 +543,25 @@ fn parquet_column_chunk(reader : ParquetCompact) -> ParquetMetaColumn {
 fn parquet_schema_mark_geo(
   node : ParquetSchemaNode,
   depth : Int,
-  geo : Map[String, Bool],
+  geo : Map[String, Int],
 ) -> ParquetSchemaNode {
-  let marked = if depth == 1 && node.num_children == 0 && node.physical == 6 &&
-    geo.get(node.name).unwrap_or(false) {
-    true
+  let names_kind = if depth == 1 && node.num_children == 0 && node.physical == 6 {
+    geo.get(node.name).unwrap_or(0)
   } else {
-    node.geo || node.logical.kind == 17 || node.logical.kind == 18
+    0
+  }
+  let kind = if names_kind != 0 {
+    names_kind
+  } else if node.logical.kind == 17 || node.logical.kind == 18 {
+    1
+  } else {
+    node.geo_kind
   }
   let children : Array[ParquetSchemaNode] = []
   for child in node.children {
     children.push(parquet_schema_mark_geo(child, depth + 1, geo))
   }
-  { ..node, geo: marked, children }
+  { ..node, geo: kind != 0, geo_kind: kind, children }
 }
 
 ///|
@@ -578,8 +591,8 @@ fn parquet_key_value(reader : ParquetCompact) -> (String, String) {
 /// The columns that GeoParquet metadata says hold WKB geometries: the "geo"
 /// key of the file's key-value metadata names them under "columns", each with
 /// an "encoding" of "WKB".
-fn parquet_geo_columns(values : Map[String, String]) -> Map[String, Bool] {
-  let result : Map[String, Bool] = Map([])
+fn parquet_geo_columns(values : Map[String, String]) -> Map[String, Int] {
+  let result : Map[String, Int] = Map([])
   let text = match values.get("geo") {
     Some(value) => value
     None => return result
@@ -602,8 +615,13 @@ fn parquet_geo_columns(values : Map[String, String]) -> Map[String, Bool] {
       Some(String(encoding)) => encoding
       _ => continue
     }
-    if encoding.to_lower() == "wkb" {
-      result[name] = true
+    let kind = match encoding.to_lower() {
+      "wkb" => 1
+      "wkt" => 2
+      _ => 0
+    }
+    if kind != 0 {
+      result[name] = kind
     }
   }
   result
@@ -705,6 +723,7 @@ fn parquet_footer(
           max_def: leaf.max_def,
           logical: leaf.logical,
           geo,
+          geo_kind: leaf.geo_kind,
         }
       }
     }

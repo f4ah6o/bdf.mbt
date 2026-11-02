@@ -23,8 +23,8 @@ unwritten row. The Go writer skips the rest of that 65,536-row block.
 `encoding/parquet/decode.mbt` reads flat and nested Parquet with all common
 codecs (uncompressed, Snappy, GZIP, Brotli, Zstandard, LZ4), Data Page v1/v2,
 multiple row groups, dictionary/RLE/delta/byte-stream-split encodings, logical
-dates/timestamps/decimals, JSON-style nested values, WKB→WKT geometry and
-Variant version 1 values. The source file is stored as the BDF table part.
-WKT-encoded geometry columns, encrypted Parquet, Variant metadata newer than
-version 1 and some timestamp fraction formatting are documented gaps.
+dates/timestamps/decimals, JSON-style nested values, WKB→WKT/WKT geometry
+and Variant version 1 values. The source file is stored as the BDF table part.
+Encrypted Parquet, Variant metadata newer than version 1 and some timestamp
+fraction formatting are documented gaps.
 Zstandard and LZ4 are decoded in pure MoonBit.

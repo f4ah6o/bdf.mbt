@@ -25,6 +25,7 @@ fn nested_test_node(
       { ..parquet_logical_none(), kind: logical_kind }
     },
     geo: false,
+    geo_kind: 0,
     def_level,
     rep_level,
     index,

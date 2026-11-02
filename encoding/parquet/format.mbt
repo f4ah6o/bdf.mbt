@@ -61,6 +61,7 @@ priv struct ParquetFormatSource {
   scale : Int
   logical : ParquetLogicalType
   geo : Bool
+  geo_kind : Int
 }
 
 ///|
@@ -72,6 +73,7 @@ fn parquet_format_source(meta : ParquetMetaColumn) -> ParquetFormatSource {
     scale: meta.scale,
     logical: meta.logical,
     geo: meta.geo,
+    geo_kind: meta.geo_kind,
   }
 }
 
@@ -129,7 +131,12 @@ fn parquet_format_logical(source : ParquetFormatSource) -> ParquetFormat? {
       } else {
         None
       }
-    17 | 18 => if bytes { Some(FormatGeometry) } else { None }
+    17 | 18 =>
+      if bytes {
+        Some(if source.geo_kind == 2 { FormatString } else { FormatGeometry })
+      } else {
+        None
+      }
     _ => None
   }
 }
@@ -139,7 +146,7 @@ fn parquet_format_converted(source : ParquetFormatSource) -> ParquetFormat {
   let physical = source.physical
   let bytes = parquet_is_bytes(physical)
   if source.geo && bytes {
-    return FormatGeometry
+    return if source.geo_kind == 2 { FormatString } else { FormatGeometry }
   }
   match source.converted {
     0 | 4 => if bytes { FormatString } else { parquet_format_physical(physical) }
@@ -226,6 +233,7 @@ fn parquet_node_format_source(node : ParquetSchemaNode) -> ParquetFormatSource {
     scale,
     logical: node.logical,
     geo: node.geo,
+    geo_kind: node.geo_kind,
   }
 }
 

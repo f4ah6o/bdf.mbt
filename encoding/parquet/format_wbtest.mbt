@@ -24,6 +24,7 @@ fn format_meta(
     max_def: 1,
     logical,
     geo: false,
+    geo_kind: 0,
   }
 }
 
@@ -196,5 +197,24 @@ test "parquet geometry format decodes WKT and keeps other binary" {
   assert_eq(
     parquet_scalar_value(FormatBinary, ScalarBytes(Bytes::from_array([0xff]))),
     StringValue("0xff"),
+  )
+}
+
+///|
+test "WKT GeoParquet columns stay text" {
+  let source : ParquetFormatSource = {
+    physical: 6,
+    converted: -1,
+    type_length: 0,
+    scale: 0,
+    logical: parquet_logical_none(),
+    geo: true,
+    geo_kind: 2,
+  }
+  let format = parquet_format(source)
+  assert_eq(format, FormatString)
+  assert_eq(
+    parquet_scalar_json(format, ScalarBytes(b"POINT (1 2)")),
+    "\"POINT (1 2)\"",
   )
 }

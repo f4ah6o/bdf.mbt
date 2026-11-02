@@ -106,10 +106,10 @@ test "GeoParquet metadata marks WKB columns" {
   values["geo"] =
     "{\"version\": \"1.0.0\", \"primary_column\": \"geometry\", \"columns\": {\"geometry\": {\"encoding\": \"WKB\", \"geometry_types\": []}}}"
   let columns = parquet_geo_columns(values)
-  assert_true(columns.get("geometry").unwrap_or(false))
+  assert_eq(columns.get("geometry").unwrap_or(0), 1)
   let other : Map[String, String] = Map([])
   other["geo"] = "{\"columns\": {\"shape\": {\"encoding\": \"WKT\"}}}"
-  assert_false(parquet_geo_columns(other).get("shape").unwrap_or(false))
+  assert_eq(parquet_geo_columns(other).get("shape").unwrap_or(0), 2)
 }
 
 ///|
