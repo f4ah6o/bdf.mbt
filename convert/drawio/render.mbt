@@ -355,6 +355,127 @@ fn DrawioModel::edge_label_anchor(
 }
 
 ///|
+/// The path of a polyline edge. Curved edges use a Catmull-Rom spline
+/// through the route points (the same points still anchor labels and
+/// arrowheads, so curved edges stay bounded by them).
+fn drawio_edge_path(points : Array[(Double, Double)], curved : Bool) -> @cad.CadPath {
+  let path = @cad.CadPath::new()
+  if points.length() < 2 {
+    return path
+  }
+  path.move_to(points[0].0, points[0].1)
+  if !curved || points.length() == 2 {
+    for index in 1..<points.length() {
+      path.line_to(points[index].0, points[index].1)
+    }
+    return path
+  }
+  for index in 0..<(points.length() - 1) {
+    let p0 = if index == 0 {
+      points[index]
+    } else {
+      points[index - 1]
+    }
+    let p1 = points[index]
+    let p2 = points[index + 1]
+    let p3 = if index + 2 < points.length() {
+      points[index + 2]
+    } else {
+      points[index + 1]
+    }
+    let c1 = (
+      p1.0 + (p2.0 - p0.0) / 6.0,
+      p1.1 + (p2.1 - p0.1) / 6.0,
+    )
+    let c2 = (
+      p2.0 - (p3.0 - p1.0) / 6.0,
+      p2.1 - (p3.1 - p1.1) / 6.0,
+    )
+    path.cubic_to(
+      @cad.Point::new(c1.0, c1.1),
+      @cad.Point::new(c2.0, c2.1),
+      @cad.Point::new(p2.0, p2.1),
+    )
+  }
+  path
+}
+
+///|
+/// Draw a start or end marker. `tip` is on the terminal point and `toward`
+/// is the next point of the route; the marker points back along that
+/// direction.
+fn drawio_edge_marker(
+  drawing : @cad.Drawing,
+  tip : (Double, Double),
+  toward : (Double, Double),
+  style : String,
+  key : String,
+  color : UInt32,
+) -> Unit {
+  let kind = drawio_style(style, key, "none")
+  if kind == "none" || kind == "" {
+    return
+  }
+  let dx = toward.0 - tip.0
+  let dy = toward.1 - tip.1
+  let length = (dx * dx + dy * dy).sqrt()
+  if length <= 0.0 {
+    return
+  }
+  let ux = dx / length
+  let uy = dy / length
+  let size = drawio_num_from_style(
+    style,
+    if key == "startArrow" { "startSize" } else { "endSize" },
+    8.0,
+  )
+  let bx = tip.0 + ux * size
+  let by = tip.1 + uy * size
+  let px = -uy * size * 0.45
+  let py = ux * size * 0.45
+  let fill_key = if key == "startArrow" { "startFill" } else { "endFill" }
+  let filled = drawio_style(style, fill_key, "1") != "0"
+  let path = @cad.CadPath::new()
+  if kind == "open" {
+    path.move_to(tip.0 + px, tip.1 + py)
+    path.line_to(tip.0, tip.1)
+    path.line_to(tip.0 - px, tip.1 - py)
+    drawing.stroke(path, @cad.Pen::new(color=color, width=1.0))
+  } else if kind == "oval" {
+    path.circle(@cad.Point::new(tip.0 + ux * size * 0.5, tip.1 + uy * size * 0.5), size * 0.5)
+    if filled {
+      drawing.fill(path, @cad.Fill::solid(color), false)
+    } else {
+      drawing.stroke(path, @cad.Pen::new(color=color, width=1.0))
+    }
+  } else if kind == "diamond" || kind.has_prefix("ER") {
+    let mx = tip.0 + ux * size * 0.5
+    let my = tip.1 + uy * size * 0.5
+    path.move_to(tip.0, tip.1)
+    path.line_to(mx + px, my + py)
+    path.line_to(bx, by)
+    path.line_to(mx - px, my - py)
+    path.close()
+    if filled {
+      drawing.fill(path, @cad.Fill::solid(color), false)
+    } else {
+      drawing.stroke(path, @cad.Pen::new(color=color, width=1.0))
+    }
+  } else {
+    // classic, block and unknown markers share the filled triangle.
+    path.move_to(tip.0, tip.1)
+    path.line_to(bx + px, by + py)
+    path.line_to(bx - px, by - py)
+    path.close()
+    if filled {
+      drawing.fill(path, @cad.Fill::solid(color), false)
+    } else {
+      drawing.stroke(path, @cad.Pen::new(color=color, width=1.0))
+    }
+  }
+}
+
+///|
 fn drawio_arrow(
   drawing : @cad.Drawing,
   from : (Double, Double),
@@ -362,33 +483,18 @@ fn drawio_arrow(
   style : String,
   color : UInt32,
 ) -> Unit {
-  let arrow = drawio_style(style, "endArrow", "classic")
-  if arrow == "none" || arrow == "" {
-    return
-  }
-  let dx = to.0 - from.0
-  let dy = to.1 - from.1
-  let length = (dx * dx + dy * dy).sqrt()
-  if length <= 0.0 {
-    return
-  }
-  let ux = dx / length
-  let uy = dy / length
-  let size = drawio_num_from_style(style, "endSize", 8.0)
-  let bx = to.0 - ux * size
-  let by = to.1 - uy * size
-  let px = -uy * size * 0.45
-  let py = ux * size * 0.45
-  let path = @cad.CadPath::new()
-  path.move_to(to.0, to.1)
-  path.line_to(bx + px, by + py)
-  path.line_to(bx - px, by - py)
-  path.close()
-  if drawio_style(style, "endFill", "1") != "0" {
-    drawing.fill(path, @cad.Fill::solid(color), false)
-  } else {
-    drawing.stroke(path, @cad.Pen::new(color=color, width=1.0))
-  }
+  drawio_edge_marker(drawing, to, from, style, "endArrow", color)
+}
+
+///|
+fn drawio_start_arrow(
+  drawing : @cad.Drawing,
+  from : (Double, Double),
+  toward : (Double, Double),
+  style : String,
+  color : UInt32,
+) -> Unit {
+  drawio_edge_marker(drawing, from, toward, style, "startArrow", color)
 }
 
 ///|
@@ -614,11 +720,8 @@ fn drawio_render_item(
       if points.length() < 2 {
         return
       }
-      let path = @cad.CadPath::new()
-      path.move_to(points[0].0, points[0].1)
-      for index in 1..<points.length() {
-        path.line_to(points[index].0, points[index].1)
-      }
+      let curved = drawio_style(cell.style, "curved", "0") == "1"
+      let path = drawio_edge_path(points, curved)
       let stroke = drawio_color(drawio_style(cell.style, "strokeColor", ""), 0x000000ffU)
       let width = drawio_num_from_style(cell.style, "strokeWidth", 1.0)
       let dash = if drawio_style(cell.style, "dashed", "") == "1" {
@@ -639,6 +742,13 @@ fn drawio_render_item(
           drawing,
           points[points.length() - 2],
           points[points.length() - 1],
+          cell.style,
+          stroke,
+        )
+        drawio_start_arrow(
+          drawing,
+          points[0],
+          points[1],
           cell.style,
           stroke,
         )

@@ -14,5 +14,6 @@ and wrapping, per-run HTML bold/italic/underline/colour/size, and best-effort
 LaTeX→Unicode conversion. Remaining gaps: the large AWS/Azure/GCP/Cisco
 stencil tables and their full XML geometry, a real formula/typesetting engine
 (stacked fractions, MathJax metrics), images, gradients/shadows/sketch
-styles, line jumps and curved/orthogonal routing. Unknown stencils are drawn
+styles, line jumps and orthogonal/elbow routing; curved edges and start/end
+marker variants are supported. Unknown stencils are drawn
 as labelled rectangles with a once-per-name warning.
