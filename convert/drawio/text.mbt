@@ -1,4 +1,5 @@
 ///|
+/// The style of a run of label text (draw.io's inline HTML formatting).
 priv struct DrawioRunStyle {
   bold : Bool
   italic : Bool
@@ -11,6 +12,21 @@ priv struct DrawioRunStyle {
 priv struct DrawioRun {
   text : String
   style : DrawioRunStyle
+}
+
+///|
+/// The rectangle a cell's label occupies, with the rotation it is drawn
+/// at. `anchor` is the point the rotation turns about.
+priv struct DrawioLabelBox {
+  x : Double
+  y : Double
+  w : Double
+  h : Double
+  rotation : Double
+  anchor_x : Double
+  anchor_y : Double
+  align : String
+  valign : String
 }
 
 ///|
@@ -93,7 +109,6 @@ fn drawio_apply_tag(
     underline = true
   } else if name == "font" {
     let value = drawio_tag_attr(tag, "color")
-    println("ATTR " + value)
     if value != "" {
       color = drawio_color(value, color)
     }
@@ -155,6 +170,11 @@ fn drawio_rich_lines(
     color: base_color,
     size: base_size,
   }]
+  // Lists: the kind of each open list (ul or ol) and the item count, and
+  // the marker owed to the line being built.
+  let list_kinds : Array[String] = []
+  let list_counts : Array[Int] = []
+  let pending_marker : Array[String?] = [None]
   let mut text = StringBuilder()
   let flush = fn() {
     let content = text.to_string()
@@ -173,9 +193,15 @@ fn drawio_rich_lines(
   let end_line = fn() {
     flush()
     if !current.is_empty() {
+      match pending_marker[0] {
+        Some(marker) =>
+          current.insert(0, { text: marker, style: current[0].style })
+        None => ()
+      }
       lines.push(current.copy())
       current.clear()
     }
+    pending_marker[0] = None
   }
   let mut index = 0
   while index < value.length() {
@@ -189,7 +215,40 @@ fn drawio_rich_lines(
           let closing = if tag.has_prefix("/") { true } else { false }
           if name == "br" {
             end_line()
-          } else if name == "li" || name == "p" || name == "div" || name == "h1" || name == "h2" {
+          } else if name == "ul" || name == "ol" {
+            if closing {
+              if !list_kinds.is_empty() {
+                list_kinds.pop() |> ignore
+                list_counts.pop() |> ignore
+              }
+              end_line()
+            } else {
+              if !current.is_empty() {
+                end_line()
+              }
+              list_kinds.push(name)
+              list_counts.push(0)
+            }
+          } else if name == "li" {
+            if closing {
+              end_line()
+            } else {
+              if !current.is_empty() {
+                end_line()
+              }
+              let index = list_counts.length() - 1
+              if index >= 0 {
+                list_counts[index] = list_counts[index] + 1
+                let ordered = list_kinds[index] == "ol"
+                let marker = if ordered {
+                  "  " + list_counts[index].to_string() + ". "
+                } else {
+                  "  • "
+                }
+                pending_marker[0] = Some(marker)
+              }
+            }
+          } else if name == "p" || name == "div" || name == "h1" || name == "h2" {
             if closing {
               end_line()
             } else if !current.is_empty() {
@@ -240,8 +299,225 @@ fn drawio_has_html(value : String) -> Bool {
 }
 
 ///|
-fn drawio_rich_label(
+/// Whether a character may be wrapped before or after itself: East Asian
+/// text breaks between characters, Latin text at spaces.
+fn drawio_is_east_asian(c : Char) -> Bool {
+  let code = c.to_int()
+  (code >= 0x2E80 && code <= 0x9FFF) ||
+  (code >= 0xAC00 && code <= 0xD7AF) ||
+  (code >= 0xF900 && code <= 0xFAFF) ||
+  (code >= 0x3040 && code <= 0x30FF) ||
+  (code >= 0x3000 && code <= 0x303F) ||
+  (code >= 0xFF00 && code <= 0xFFEF)
+}
+
+///|
+fn drawio_is_space(c : Char) -> Bool {
+  c == ' ' || c == '\t' || c == '\r'
+}
+
+///|
+fn drawio_run_em(style : DrawioRunStyle, base_size : Double) -> Double {
+  let size = if style.size > 0.0 { style.size } else { base_size }
+  size * 0.75
+}
+
+///|
+fn drawio_run_width(
+  text : String,
+  style : DrawioRunStyle,
+  font : @canvas.Fonts,
+  family : String,
+  base_bold : Bool,
+  base_italic : Bool,
+  base_size : Double,
+) -> Double {
+  let bold = base_bold || style.bold
+  let italic = base_italic || style.italic
+  font.measure(family, "", bold, italic, text) * drawio_run_em(style, base_size)
+}
+
+///|
+fn drawio_append_run(line : Array[DrawioRun], text : String, style : DrawioRunStyle) -> Unit {
+  if line.is_empty() {
+    line.push({ text, style })
+    return
+  }
+  let last = line.length() - 1
+  if line[last].style == style {
+    line[last] = { text: line[last].text + text, style }
+  } else {
+    line.push({ text, style })
+  }
+}
+
+///|
+/// Greedily wrap rich-text lines at spaces and between East Asian
+/// characters, keeping each token's run style. This is the safe subset of
+/// draw.io's CSS layout: no hyphenation, no shrink-to-fit, no margins.
+fn drawio_wrap_rich_lines(
+  lines : Array[Array[DrawioRun]],
+  max_width : Double,
+  font : @canvas.Fonts,
+  family : String,
+  base_bold : Bool,
+  base_italic : Bool,
+  base_size : Double,
+) -> Array[Array[DrawioRun]] {
+  let output : Array[Array[DrawioRun]] = []
+  for line in lines {
+    if line.is_empty() {
+      output.push([])
+      continue
+    }
+    let current : Array[DrawioRun] = []
+    let mut current_width = 0.0
+    let mut pending = StringBuilder()
+    let mut pending_style = line[0].style
+    let mut pending_space = false
+    let emit_pending = fn() {
+      let content = pending.to_string()
+      if content == "" {
+        return
+      }
+      let width = drawio_run_width(
+        content,
+        pending_style,
+        font,
+        family,
+        base_bold,
+        base_italic,
+        base_size,
+      )
+      if current_width > 0.0 && current_width + width > max_width && !current.is_empty() {
+        output.push(current.copy())
+        current.clear()
+        current_width = 0.0
+        if pending_space {
+          pending = StringBuilder()
+          return
+        }
+      }
+      drawio_append_run(current, content, pending_style)
+      current_width += width
+      pending = StringBuilder()
+    }
+    for run in line {
+      for character in run.text {
+        if drawio_is_space(character) {
+          emit_pending()
+          if !current.is_empty() {
+            drawio_append_run(current, " ", run.style)
+            current_width += drawio_run_width(
+              " ",
+              run.style,
+              font,
+              family,
+              base_bold,
+              base_italic,
+              base_size,
+            )
+          }
+        } else if drawio_is_east_asian(character) {
+          emit_pending()
+          pending_style = run.style
+          pending_space = false
+          pending.write_char(character)
+          emit_pending()
+          pending_style = run.style
+        } else {
+          if pending_space {
+            emit_pending()
+          }
+          if pending.to_string() == "" {
+            pending_style = run.style
+            pending_space = false
+          }
+          pending.write_char(character)
+        }
+      }
+      emit_pending()
+      pending_style = run.style
+    }
+    emit_pending()
+    output.push(current.copy())
+  }
+  output
+}
+
+///|
+/// The text matrix of a run: origin at the start of the baseline, scaled
+/// to ems and turned about the label's anchor when the label is rotated.
+fn drawio_text_matrix(
+  origin_x : Double,
+  baseline : Double,
+  em : Double,
+  box : DrawioLabelBox,
+) -> @canvas.Matrix {
+  let base = @canvas.Matrix::translate(origin_x, baseline).mul(
+    @canvas.Matrix::scale(em, -em),
+  )
+  if box.rotation == 0.0 {
+    return base
+  }
+  @canvas.Matrix::translate(box.anchor_x, box.anchor_y).mul(
+    @canvas.Matrix::rotate(box.rotation),
+  ).mul(@canvas.Matrix::translate(-box.anchor_x, -box.anchor_y)).mul(base)
+}
+
+///|
+/// The left edge of a line of label text in its box. A box wider than
+/// 1e8 is a label outside the shape (`labelPosition=left` or `right`),
+/// laid out at the label's own width.
+fn drawio_label_origin_x(
+  box : DrawioLabelBox,
+  text_width : Double,
+  spacing : Double,
+) -> Double {
+  if box.w >= 1.0e8 {
+    if box.align == "right" {
+      box.x - spacing - text_width
+    } else {
+      box.x + spacing
+    }
+  } else if box.align == "center" {
+    box.x + (box.w - text_width) / 2.0
+  } else if box.align == "right" {
+    box.x + box.w - spacing - text_width
+  } else {
+    box.x + spacing
+  }
+}
+
+///|
+/// The top of a label's text block. A box taller than 1e8 is a label
+/// outside the shape (`verticalLabelPosition=top` or `bottom`).
+fn drawio_label_block_top(
+  box : DrawioLabelBox,
+  total_height : Double,
+  spacing : Double,
+) -> Double {
+  if box.h >= 1.0e8 {
+    if box.valign == "bottom" {
+      box.y - spacing - total_height
+    } else {
+      box.y + spacing
+    }
+  } else if box.valign == "top" {
+    box.y + spacing
+  } else if box.valign == "bottom" {
+    box.y + box.h - spacing - total_height
+  } else {
+    box.y + (box.h - total_height) / 2.0
+  }
+}
+
+///|
+/// Lay out and draw a cell's label: plain or HTML runs, wrapped at the
+/// label box, turned for rotation and vertical labels.
+fn drawio_label_runs(
   cell : DrawioCell,
+  kind : DrawioShapeKind,
   x : Double,
   y : Double,
   w : Double,
@@ -249,6 +525,227 @@ fn drawio_rich_label(
   font : @canvas.Fonts,
   drawing : @cad.Drawing,
   labels : Array[String],
+  math_enabled : Bool,
+  warn : DrawioWarn,
+) -> Unit {
+  let style = cell.style
+  let raw = drawio_plain(cell.value)
+  if raw == "" {
+    return
+  }
+  if drawio_has_html(cell.value) {
+    drawio_rich_label(
+      cell,
+      kind,
+      x,
+      y,
+      w,
+      h,
+      font,
+      drawing,
+      labels,
+      math_enabled,
+      warn,
+    )
+    return
+  }
+  let box = drawio_label_box(kind, style, x, y, w, h)
+  let (text, converted) = drawio_math_text(raw, math_enabled, warn)
+  let size = drawio_num_from_style(style, "fontSize", 12.0)
+  let em = size * 0.75
+  let family = drawio_style(style, "fontFamily", "")
+  let font_style = drawio_num_from_style(style, "fontStyle", 0.0).to_int()
+  let bold = (font_style & 1) != 0
+  let italic = (font_style & 2) != 0
+  let color = drawio_color(drawio_style(style, "fontColor", ""), 0x000000ffU)
+  let wrap = drawio_label_wraps(style)
+  let spacing = drawio_num_from_style(style, "spacing", 2.0)
+  let max_width = if box.w > 0.0 && box.w < 1.0e8 { box.w - spacing * 2.0 } else { 1.0e9 }
+  let lines = if wrap {
+    drawio_wrap_text(text, max_width, font, family, bold, italic, em)
+  } else {
+    text.split("\n").map(fn(line) { sfc_drawio_trim(line) }).collect()
+  }
+  if converted {
+    labels.push(raw)
+  }
+  let line_height = em * 1.2
+  let count = lines.length()
+  let total = line_height * count.to_double()
+  let first_baseline = drawio_label_block_top(box, total, spacing) + em * 0.9
+  for index, line in lines {
+    if line == "" {
+      continue
+    }
+    labels.push(line)
+    let width_em = font.measure(family, "", bold, italic, line)
+    let origin_x = drawio_label_origin_x(box, width_em * em, spacing)
+    let baseline = first_baseline + line_height * index.to_double()
+    let choice = font.face(family, "", line[0].to_int(), bold~, italic~)
+    let metrics = font.metrics(choice)
+    drawing.text(@cad.CadText::new(
+      line,
+      drawio_text_matrix(origin_x, baseline, em, box),
+      color=color,
+      advance=width_em,
+      asc=metrics.asc,
+      desc=metrics.desc,
+      cap=metrics.cap,
+    ))
+  }
+}
+
+///|
+fn drawio_label_wraps(style : String) -> Bool {
+  drawio_style(style, "whiteSpace", "") == "wrap" ||
+    drawio_style(style, "html", "") == "1" ||
+    drawio_style(style, "whiteSpace", "") == "pre-wrap"
+}
+
+///|
+/// Where a cell's label is laid out and how it is turned. The label
+/// position styles move the box first; vertical labels (`horizontal=0`)
+/// swap its dimensions and turn it -90°; a swimlane's label lives in its
+/// header.
+fn drawio_label_box(
+  kind : DrawioShapeKind,
+  style : String,
+  x : Double,
+  y : Double,
+  w : Double,
+  h : Double,
+) -> DrawioLabelBox {
+  let (base_x, base_y, base_w, base_h) = drawio_shape_label_rect(kind, style, x, y, w, h)
+  let mut lx = base_x
+  let mut ly = base_y
+  let mut lw = base_w
+  let mut lh = base_h
+  let mut align = drawio_style(style, "align", "center")
+  let mut valign = drawio_style(style, "verticalAlign", "middle")
+  let label_position = drawio_style(style, "labelPosition", "center")
+  if label_position == "right" {
+    lx = x + w + 4.0
+    lw = 1.0e9
+    align = "left"
+  } else if label_position == "left" {
+    lx = x - 4.0
+    lw = 1.0e9
+    align = "right"
+  }
+  let vertical_position = drawio_style(style, "verticalLabelPosition", "middle")
+  if vertical_position == "bottom" {
+    ly = y + h + 2.0
+    lh = 1.0e9
+    valign = "top"
+  } else if vertical_position == "top" {
+    ly = y - 2.0
+    lh = 1.0e9
+    valign = "bottom"
+  }
+  let vertical = drawio_shape_vertical(style)
+  if vertical {
+    let cx = lx + lw / 2.0
+    let cy = ly + lh / 2.0
+    let swapped_w = lh
+    let swapped_h = lw
+    lx = cx - swapped_w / 2.0
+    ly = cy - swapped_h / 2.0
+    lw = swapped_w
+    lh = swapped_h
+  }
+  let rotation = drawio_shape_label_rotation(style, kind)
+  let anchor_x = if lw < 1.0e8 { lx + lw / 2.0 } else { x + w / 2.0 }
+  let anchor_y = if lh < 1.0e8 { ly + lh / 2.0 } else { y + h / 2.0 }
+  {
+    x: lx,
+    y: ly,
+    w: lw,
+    h: lh,
+    rotation,
+    anchor_x,
+    anchor_y,
+    align,
+    valign,
+  }
+}
+
+///|
+fn drawio_wrap_text(
+  text : String,
+  max_width : Double,
+  font : @canvas.Fonts,
+  family : String,
+  bold : Bool,
+  italic : Bool,
+  em : Double,
+) -> Array[String] {
+  let output : Array[String] = []
+  for line in text.split("\n") {
+    let value = sfc_drawio_trim(line)
+    if value == "" {
+      output.push("")
+      continue
+    }
+    let tokens : Array[String] = []
+    let pending = StringBuilder()
+    for character in value {
+      if drawio_is_space(character) {
+        let word = pending.to_string()
+        if word != "" {
+          tokens.push(word)
+          pending.reset()
+        }
+        tokens.push(" ")
+      } else if drawio_is_east_asian(character) {
+        let word = pending.to_string()
+        if word != "" {
+          tokens.push(word)
+          pending.reset()
+        }
+        tokens.push(character.to_string())
+      } else {
+        pending.write_char(character)
+      }
+    }
+    let word = pending.to_string()
+    if word != "" {
+      tokens.push(word)
+    }
+    let mut current = ""
+    for token in tokens {
+      if token == " " {
+        if current != "" {
+          current = current + token
+        }
+        continue
+      }
+      let candidate = current + token
+      let width = font.measure(family, "", bold, italic, candidate) * em
+      if current != "" && width > max_width {
+        output.push(sfc_drawio_trim(current))
+        current = token
+      } else {
+        current = candidate
+      }
+    }
+    output.push(sfc_drawio_trim(current))
+  }
+  output
+}
+
+///|
+fn drawio_rich_label(
+  cell : DrawioCell,
+  kind : DrawioShapeKind,
+  x : Double,
+  y : Double,
+  w : Double,
+  h : Double,
+  font : @canvas.Fonts,
+  drawing : @cad.Drawing,
+  labels : Array[String],
+  math_enabled : Bool,
+  warn : DrawioWarn,
 ) -> Unit {
   let style = cell.style
   let base_size = drawio_num_from_style(style, "fontSize", 12.0)
@@ -257,17 +754,46 @@ fn drawio_rich_label(
   let font_style = drawio_num_from_style(style, "fontStyle", 0.0).to_int()
   let base_bold = (font_style & 1) != 0
   let base_italic = (font_style & 2) != 0
-  let align = drawio_style(style, "align", "center")
-  let valign = drawio_style(style, "verticalAlign", "middle")
+  let box = drawio_label_box(kind, style, x, y, w, h)
   let spacing = drawio_num_from_style(style, "spacing", 2.0)
-  let lines = drawio_rich_lines(cell.value, base_size, base_color)
+  let mut lines = drawio_rich_lines(cell.value, base_size, base_color)
+  let mut converted = false
+  if math_enabled {
+    for line_index in 0..<lines.length() {
+      for run_index in 0..<lines[line_index].length() {
+        let run = lines[line_index][run_index]
+        let (text, changed) = drawio_math_text(run.text, math_enabled, warn)
+        if changed {
+          converted = true
+          lines[line_index][run_index] = { text, style: run.style }
+        }
+      }
+    }
+  }
+  if drawio_label_wraps(style) && box.w > 0.0 && box.w < 1.0e8 {
+    let max_width = box.w - spacing * 2.0
+    if max_width > 1.0 {
+      lines = drawio_wrap_rich_lines(
+        lines,
+        max_width,
+        font,
+        family,
+        base_bold,
+        base_italic,
+        base_size,
+      )
+    }
+  }
+  if converted {
+    labels.push(drawio_plain(cell.value))
+  }
   let line_heights : Array[Double] = []
   let line_widths : Array[Double] = []
   for line in lines {
     let mut width = 0.0
     let mut height = base_size * 0.75 * 1.2
     for run in line {
-      let em = (if run.style.size > 0.0 { run.style.size } else { base_size }) * 0.75
+      let em = drawio_run_em(run.style, base_size)
       let bold = base_bold || run.style.bold
       let italic = base_italic || run.style.italic
       width += font.measure(family, "", bold, italic, run.text) * em
@@ -280,27 +806,19 @@ fn drawio_rich_label(
   for height in line_heights {
     total += height
   }
-  let mut baseline = if valign == "top" {
-    y + spacing
-  } else if valign == "bottom" {
-    y + h - spacing - total
-  } else {
-    y + (h - total) / 2.0
-  }
+  let mut baseline = drawio_label_block_top(box, total, spacing)
   for line_index, line in lines {
     let width = line_widths[line_index]
-    let mut origin_x = x + spacing
-    if align == "center" {
-      origin_x = x + (w - width) / 2.0
-    } else if align == "right" {
-      origin_x = x + w - spacing - width
-    }
+    let mut origin_x = drawio_label_origin_x(box, width, spacing)
     let plain = line.map(fn(run) { run.text }).join("")
     if plain != "" {
       labels.push(plain)
     }
     for run in line {
-      let em = (if run.style.size > 0.0 { run.style.size } else { base_size }) * 0.75
+      if run.text == "" {
+        continue
+      }
+      let em = drawio_run_em(run.style, base_size)
       let bold = base_bold || run.style.bold
       let italic = base_italic || run.style.italic
       let run_width = font.measure(family, "", bold, italic, run.text)
@@ -308,9 +826,7 @@ fn drawio_rich_label(
       let metrics = font.metrics(choice)
       drawing.text(@cad.CadText::new(
         run.text,
-        @canvas.Matrix::translate(origin_x, baseline + em * 0.9).mul(
-          @canvas.Matrix::scale(em, em),
-        ),
+        drawio_text_matrix(origin_x, baseline + em * 0.9, em, box),
         color=run.style.color,
         advance=run_width,
         asc=metrics.asc,

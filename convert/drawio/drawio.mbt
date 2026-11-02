@@ -221,12 +221,13 @@ pub fn convert(
   }
   let fonts = @canvas.Fonts::new(db)
   let warnings : Array[String] = []
+  let warn = DrawioWarn::new()
   let meta = @cad.document_meta("drawio", title=title)
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
   let mut views = 0
   let used_ids : Map[String, Bool] = Map([])
   for page_info in diagrams {
-    let rendered = drawio_render_page(writer, page_info, fonts, warnings)
+    let rendered = drawio_render_page(writer, page_info, fonts, warnings, warn)
     match rendered {
       Some((view, view_id, _page_title, labels)) => {
         let mut id = if view_id == "" { "page" + (views + 1).to_string() } else { view_id }
@@ -265,6 +266,9 @@ pub fn convert(
     raise DrawioInvalid("drawio: no pages could be drawn")
   }
   for warning in fonts.warnings() {
+    warnings.push(warning)
+  }
+  for warning in warn.items {
     warnings.push(warning)
   }
   let bdf = writer.write_single() catch {

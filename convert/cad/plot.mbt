@@ -36,6 +36,30 @@ priv struct PlotState {
 }
 
 ///|
+/// A copy of the state, for save: `PlotState` holds mutable fields, so
+/// pushing `self.state` itself would let later changes rewrite the saved
+/// state and leave the plotter's cache out of step with the canvas.
+fn PlotState::copy(self : PlotState) -> PlotState {
+  {
+    fill: self.fill,
+    stroke: self.stroke,
+    fill_set: self.fill_set,
+    stroke_set: self.stroke_set,
+    width: self.width,
+    miter: self.miter,
+    cap: self.cap,
+    join: self.join,
+    line_set: self.line_set,
+    dash: self.dash,
+    dash_offset: self.dash_offset,
+    dash_set: self.dash_set,
+    font: self.font,
+    size: self.size,
+    font_set: self.font_set,
+  }
+}
+
+///|
 fn plot_state() -> PlotState {
   {
     fill: 0x000000ffU,
@@ -90,7 +114,7 @@ pub fn Plotter::plot(
 ///|
 fn PlotContext::save(self : PlotContext) -> Unit {
   self.canvas.save()
-  self.stack.push(self.state)
+  self.stack.push(self.state.copy())
 }
 
 ///|

@@ -44,8 +44,10 @@
   OpenType shaping, tables and the remaining Visio theme/picture features are
   documented gaps. draw.io reads uncompressed and compressed XML, SVG/PNG
   exports and every diagram as a fitted fixed view with layers, wrappers,
-  basic shapes, edges and labels; full stencil libraries, LaTeX math
-  typesetting, images, line jumps and complex routing are documented gaps. Parquet tables are read with uncompressed, Snappy, GZIP, Brotli,
+  a practical mxGraph/flowchart/UML/BPMN shape registry, perimeters for edge
+  attachment, edge labels and best-effort LaTeX→Unicode labels. Large
+  AWS/Azure/GCP/Cisco icon tables, a full formula typesetting engine, images,
+  line jumps and curved/orthogonal routing are documented gaps. Parquet tables are read with uncompressed, Snappy, GZIP, Brotli,
   Zstandard and LZ4 codecs, Data Page v1/v2, multiple row groups, dictionary/
   RLE/delta/byte-stream-split encodings, logical dates/timestamps/decimals,
   JSON-style nested values, WKB→WKT geometry and Variant values. Variant
@@ -99,8 +101,8 @@
   documented gaps. PCL/HP RTL raster jobs are a documented gap: the escape
   sequences are skipped with a warning and only the HP-GL/2 instructions are
   converted. The remaining CAD formats (SXF P21, clear-text CGM), Gerber board archives and KiCad schematics/back-layers are not
-  ported; draw.io stencils/math remain gaps, while Parquet WKB and Variant are
-  supported with the limits noted above. Camera raw (DNG/CR2) is
+  ported; draw.io large icon tables and full math typesetting remain gaps,
+  while Parquet WKB and Variant are supported with the limits noted above. Camera raw (DNG/CR2) is
   not an upstream converter and is outside the port. The subsets of the ported
   formats above are documented gaps, not claims of full parity.
 
@@ -110,7 +112,7 @@
    Done: Type 1 charstrings are interpreted into Type 2 outlines and a
    name-keyed CFF, then embedded through the existing CFF path.
 2. Port the deferred SXF, CGM, Gerber/Excellon and KiCad converters, then the
-   remaining draw.io stencil/math gaps.
+   remaining draw.io icon-table/math-typesetting gaps.
 3. ~~Port Parquet sheet input.~~ Done for flat and nested tables with common
    codecs, Data Page v1/v2, common encodings, WKB→WKT geometry and Variant
    version 1; WKT-encoded geometry, encryption and some logical formatting
