@@ -116,6 +116,66 @@ fn drawio_connection_point(
 }
 
 ///|
+/// Whether the edge style asks for an orthogonal or elbow route.
+fn drawio_edge_is_orthogonal(style : String) -> Bool {
+  let edge_style = drawio_style(style, "edgeStyle", "")
+  edge_style == "orthogonalEdgeStyle" || edge_style == "elbowEdgeStyle" ||
+    edge_style == "orthogonalLoop"
+}
+
+///|
+/// Turn a straight/waypoint route into an orthogonal route. Each segment
+/// gets one corner; the first segment follows the exit side and the last
+/// one the entry side, and other segments alternate. Zero-length segments
+/// are removed.
+fn drawio_orthogonal_route(
+  points : Array[(Double, Double)],
+  style : String,
+) -> Array[(Double, Double)] {
+  if points.length() < 2 {
+    return points
+  }
+  let exit_x = drawio_style(style, "exitX", "")
+  let exit_y = drawio_style(style, "exitY", "")
+  let entry_x = drawio_style(style, "entryX", "")
+  let entry_y = drawio_style(style, "entryY", "")
+  let first_horizontal = if exit_x != "" {
+    true
+  } else if exit_y != "" {
+    false
+  } else {
+    (points[1].0 - points[0].0).abs() >= (points[1].1 - points[0].1).abs()
+  }
+  let output : Array[(Double, Double)] = []
+  let add = fn(point : (Double, Double)) {
+    if output.is_empty() || output[output.length() - 1] != point {
+      output.push(point)
+    }
+  }
+  add(points[0])
+  for index in 0..<(points.length() - 1) {
+    let from = points[index]
+    let to = points[index + 1]
+    let horizontal = if index == 0 {
+      first_horizontal
+    } else if index == points.length() - 2 && entry_y != "" {
+      false
+    } else if index == points.length() - 2 && entry_x != "" {
+      true
+    } else {
+      index % 2 == 0
+    }
+    if horizontal {
+      add((to.0, from.1))
+    } else {
+      add((from.0, to.1))
+    }
+    add(to)
+  }
+  output
+}
+
+///|
 /// The route of an edge: fixed ends from exit/entry constraints (or the
 /// geometry's terminal points for a dangling end), the control points, and
 /// floating ends placed on the terminals' perimeters towards the next
@@ -262,7 +322,11 @@ fn DrawioModel::edge_route(
       None => ()
     }
   }
-  points
+  if drawio_edge_is_orthogonal(cell.style) {
+    drawio_orthogonal_route(points, cell.style)
+  } else {
+    points
+  }
 }
 
 ///|

@@ -282,3 +282,15 @@ test "drawio inline stencil definitions are reported once" {
   assert_eq(warn.items.length(), 1)
   assert_true(warn.items[0].contains("stencil"))
 }
+
+///|
+test "orthogonal edge routes add corners" {
+  let route = drawio_orthogonal_route(
+    [(0.0, 0.0), (10.0, 20.0)],
+    "edgeStyle=orthogonalEdgeStyle;",
+  )
+  assert_eq(route.length(), 3)
+  assert_eq(route[1], (0.0, 20.0))
+  assert_true(drawio_edge_is_orthogonal("edgeStyle=orthogonalEdgeStyle;"))
+  assert_false(drawio_edge_is_orthogonal("edgeStyle=entityRelationEdgeStyle;"))
+}

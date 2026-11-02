@@ -47,8 +47,9 @@
   a practical mxGraph/flowchart/UML/BPMN shape registry, perimeters for edge
   attachment, edge labels and best-effort LaTeX→Unicode labels. Large
   AWS/Azure/GCP/Cisco icon tables, a full formula typesetting engine, images,
-  line jumps and orthogonal/elbow routing are documented gaps; curved edges
-  and start/end marker variants are supported. Parquet tables are read with uncompressed, Snappy, GZIP, Brotli,
+  line jumps and obstacle-aware routing are documented gaps; straight/curved
+  edges, practical orthogonal/elbow routes and start/end marker variants are
+  supported. Parquet tables are read with uncompressed, Snappy, GZIP, Brotli,
   Zstandard and LZ4 codecs, Data Page v1/v2, multiple row groups, dictionary/
   RLE/delta/byte-stream-split encodings, logical dates/timestamps/decimals,
   JSON-style nested values, WKB→WKT and WKT geometry columns, and Variant
