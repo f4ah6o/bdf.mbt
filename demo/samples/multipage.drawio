@@ -1,0 +1,70 @@
+<mxfile host="test" modified="2026-09-26T03:00:00.000Z">
+  <diagram id="overview" name="Overview">
+    <mxGraphModel dx="800" dy="600" grid="1" gridSize="10" page="1" pageScale="1" pageWidth="827" pageHeight="1169">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="t" value="&lt;b&gt;System overview&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;fontSize=18;" vertex="1" parent="1">
+          <mxGeometry x="120" y="10" width="240" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="a" value="Client" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="120" height="60" as="geometry" />
+        </mxCell>
+        <UserObject label="API server&lt;br&gt;(see Details)" link="data:page/id,details" id="b">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+            <mxGeometry x="320" y="60" width="120" height="60" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="c" value="Database" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="340" y="180" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="HTTPS" style="html=1;endArrow=classic;" edge="1" parent="1" source="a" target="b">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="SQL" style="html=1;endArrow=classic;" edge="1" parent="1" source="b" target="c">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="details" name="Details">
+    <mxGraphModel dx="800" dy="600" grid="1" gridSize="10" page="1" pageScale="1" pageWidth="827" pageHeight="1169" background="#FFFDE7">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="h" value="&lt;h2&gt;API server&lt;/h2&gt;&lt;ul&gt;&lt;li&gt;REST endpoints&lt;/li&gt;&lt;li&gt;Authentication&lt;/li&gt;&lt;li&gt;日本語の説明も書けます&lt;/li&gt;&lt;/ul&gt;" style="text;html=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="260" height="140" as="geometry" />
+        </mxCell>
+        <UserObject label="Back to overview" link="data:page/id,overview" id="back">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;dashed=1;" vertex="1" parent="1">
+            <mxGeometry x="300" y="40" width="140" height="40" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <UserObject label="draw.io website" link="https://www.drawio.com/" id="web">
+          <mxCell style="text;html=1;fontColor=#0000EE;fontStyle=4;" vertex="1" parent="1">
+            <mxGeometry x="300" y="100" width="140" height="30" as="geometry" />
+          </mxCell>
+        </UserObject>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="layers" name="Layers">
+    <mxGraphModel dx="800" dy="600" grid="1" gridSize="10" page="1" pageScale="1" pageWidth="827" pageHeight="1169" shadow="1">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="L2" value="Annotations" parent="0" />
+        <mxCell id="L3" value="Hidden" parent="0" visible="0" />
+        <mxCell id="s1" value="Base layer" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="On top" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;" vertex="1" parent="L2">
+          <mxGeometry x="100" y="60" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" value="Hidden shape" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="L3">
+          <mxGeometry x="260" y="20" width="120" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

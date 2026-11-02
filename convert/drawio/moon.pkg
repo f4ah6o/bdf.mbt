@@ -6,6 +6,11 @@ import {
   "Milky2018/xml",
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/string",
+  "moonbitlang/core/math",
+  "moonbitlang/core/encoding/base64" @base64,
+  "moonbitlang/core/buffer" @buffer,
+  "gaato/deflate" @deflate,
+  "gaato/deflate/zlib" @zlib,
 }
 
 supported_targets = "+js+wasm-gc"

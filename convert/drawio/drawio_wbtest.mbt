@@ -17,3 +17,20 @@ test "drawio converts a minimal diagram" {
   }
   assert_eq(document.manifest.views[0].pages.length(), 1)
 }
+
+///|
+test "drawio reads every diagram and compressed pages" {
+  let data = @utf8.encode(
+    "<mxfile><diagram id=\"a\" name=\"A\"><mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"x\" value=\"A\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"0\" y=\"0\" width=\"10\" height=\"10\"/></mxCell></root></mxGraphModel></diagram>" +
+    "<diagram id=\"b\" name=\"B\"><mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"y\" value=\"B\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"0\" y=\"0\" width=\"10\" height=\"10\"/></mxCell></root></mxGraphModel></diagram></mxfile>",
+  )
+  let pages = drawio_read_file(data) catch { _ => fail("drawio pages failed") }
+  assert_eq(pages.length(), 2)
+  assert_eq(pages[0].name, "A")
+  assert_eq(pages[1].name, "B")
+}
+
+///|
+test "drawio percent decoding" {
+  assert_eq(drawio_percent_decode("%3Cmxfile%3E"), "<mxfile>")
+}

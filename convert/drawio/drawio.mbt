@@ -15,8 +15,14 @@ pub(all) struct DrawioResult {
 ///|
 /// Detect a draw.io XML document.
 pub fn detect(data : Bytes) -> Bool {
-  let head = @utf8.decode_lossy(data[:Int::min(data.length(), 8192)].to_owned())
-  head.contains("<mxfile") || head.contains("<mxGraphModel")
+  if data.has_prefix(b"\x89PNG\r\n\x1a\n") {
+    let text = @utf8.decode_lossy(data[:Int::min(data.length(), 262144)].to_owned())
+    return text.contains("mxGraphModel") || text.contains("mxfile")
+  }
+  let head = @utf8.decode_lossy(data[:Int::min(data.length(), 65536)].to_owned())
+  head.contains("<mxfile") || head.contains("<mxGraphModel") ||
+    ((head.contains("<svg") || head.contains("<?xml")) &&
+      (head.contains("&lt;mxfile") || head.contains("&lt;mxGraphModel")))
 }
 
 ///|
@@ -75,6 +81,10 @@ fn drawio_parse(content : String) -> DrawioNode raise {
       Text(value) | CData(value) =>
         if !stack.is_empty() {
           stack[stack.length() - 1].text.write_string(value)
+        }
+      End(_) =>
+        if !stack.is_empty() {
+          stack.pop() |> ignore
         }
       Eof => break
       _ => ()
@@ -181,180 +191,7 @@ fn drawio_plain(value : String) -> String {
 }
 
 ///|
-fn drawio_render_page(
-  writer : @core.DocumentWriter,
-  diagram : DrawioNode,
-  page_index : Int,
-  fonts : @canvas.Fonts,
-  warnings : Array[String],
-) -> (Json, Array[String])? {
-  let model = match drawio_find(diagram, "mxGraphModel") {
-    Some(value) => value
-    None => return None
-  }
-  let page_w = drawio_num(model, "pageWidth", 827.0) * 0.75
-  let page_h = drawio_num(model, "pageHeight", 1169.0) * 0.75
-  let cells : Array[DrawioNode] = []
-  drawio_all(model, "mxCell", cells)
-  let drawing = @cad.Drawing::new()
-  let labels : Array[String] = []
-  let vertices : Map[String, DrawioNode] = Map([])
-  for cell in cells {
-    if drawio_attr(cell, "vertex", "") == "1" {
-      vertices[drawio_attr(cell, "id", "")] = cell
-    }
-  }
-  for cell in cells {
-    let style = drawio_attr(cell, "style", "")
-    let geometry = match drawio_find(cell, "mxGeometry") {
-      Some(value) => value
-      None => continue
-    }
-    let x = drawio_num(geometry, "x", 0.0) * 0.75
-    let y = drawio_num(geometry, "y", 0.0) * 0.75
-    let w = drawio_num(geometry, "width", 0.0) * 0.75
-    let h = drawio_num(geometry, "height", 0.0) * 0.75
-    if drawio_attr(cell, "vertex", "") == "1" {
-      let text = drawio_plain(drawio_attr(cell, "value", ""))
-      let fill = drawio_color(drawio_style(style, "fillColor", ""), 0xffffffU)
-      let stroke = drawio_color(drawio_style(style, "strokeColor", ""), 0x000000ffU)
-      let is_text = drawio_style(style, "text", "") == "1" || style.has_prefix("text;")
-      let path = @cad.CadPath::new()
-      if drawio_style(style, "ellipse", "") == "1" || style.contains("shape=ellipse") {
-        path.ellipse({ x: x + w / 2.0, y: y + h / 2.0 }, { x: w / 2.0, y: 0.0 }, if w == 0.0 { 1.0 } else { h / w })
-      } else {
-        path.polyline([
-          { x, y },
-          { x: x + w, y },
-          { x: x + w, y: y + h },
-          { x, y: y + h },
-        ], true)
-      }
-      if !is_text {
-        drawing.fill(path, @cad.Fill::solid(fill), false)
-        drawing.stroke(path, @cad.Pen::new(color=stroke, width=0.75, cap=@cad.CAP_ROUND, join=@cad.JOIN_ROUND))
-      }
-      if text != "" {
-        let align = drawio_style(style, "align", "center")
-        let valign = drawio_style(style, "verticalAlign", "middle")
-        let size = drawio_num(geometry, "height", 60.0)
-        let font_size = {
-          let text_size = drawio_style(style, "fontSize", "")
-          if text_size == "" { 12.0 } else { @string.parse_double(text_size) catch { _ => 12.0 } }
-        }
-        let color = drawio_color(drawio_style(style, "fontColor", ""), 0x000000ffU)
-        let em = font_size * 0.75
-        let mut tx = x + w / 2.0
-        if align == "left" { tx = x + 4.0 }
-        if align == "right" { tx = x + w - 4.0 }
-        let mut ty = y + h / 2.0
-        if valign == "top" { ty = y + em }
-        if valign == "bottom" { ty = y + h - 4.0 }
-        let line_height = em * 1.2
-        let lines = text.split("\n").collect()
-        let mut line_index = 0
-        for line in lines {
-          let value = sfc_drawio_trim(line)
-          if value != "" {
-            labels.push(value)
-            let advance = value.length().to_double() * 0.55
-            let mut origin_x = tx
-            if align != "left" {
-              origin_x -= if align == "right" { advance * em } else { advance * em / 2.0 }
-            }
-            let matrix = @canvas.Matrix::translate(origin_x, ty - line_index.to_double() * line_height).mul(
-              @canvas.Matrix::scale(em, em),
-            )
-            let spec = @cad.FontSpec::new()
-            let choice = fonts.face(spec.family, spec.east_asian, value[0].to_int())
-            let metrics = fonts.metrics(choice)
-            drawing.text(@cad.CadText::new(
-              value,
-              matrix,
-              font=spec,
-              color=color,
-              advance=advance,
-              asc=metrics.asc,
-              desc=metrics.desc,
-              cap=metrics.cap,
-            ))
-          }
-          line_index += 1
-        }
-      }
-    } else if drawio_attr(cell, "edge", "") == "1" {
-      let source = drawio_attr(cell, "source", "")
-      let target = drawio_attr(cell, "target", "")
-      let mut from : @cad.Point = { x, y }
-      let mut to : @cad.Point = { x, y }
-      if source != "" {
-        match vertices.get(source) {
-          Some(vertex) => {
-            match drawio_find(vertex, "mxGeometry") {
-              Some(geo) => {
-                from = {
-                  x: (drawio_num(geo, "x", 0.0) + drawio_num(geo, "width", 0.0) / 2.0) * 0.75,
-                  y: (drawio_num(geo, "y", 0.0) + drawio_num(geo, "height", 0.0) / 2.0) * 0.75,
-                }
-              }
-              None => ()
-            }
-          }
-          None => ()
-        }
-      }
-      if target != "" {
-        match vertices.get(target) {
-          Some(vertex) => {
-            match drawio_find(vertex, "mxGeometry") {
-              Some(geo) => {
-                to = {
-                  x: (drawio_num(geo, "x", 0.0) + drawio_num(geo, "width", 0.0) / 2.0) * 0.75,
-                  y: (drawio_num(geo, "y", 0.0) + drawio_num(geo, "height", 0.0) / 2.0) * 0.75,
-                }
-              }
-              None => ()
-            }
-          }
-          None => ()
-        }
-      }
-      let path = @cad.CadPath::new()
-      path.move_to(from.x, from.y)
-      path.line_to(to.x, to.y)
-      let stroke = drawio_color(drawio_style(style, "strokeColor", ""), 0x000000ffU)
-      drawing.stroke(path, @cad.Pen::new(color=stroke, width=1.0, cap=@cad.CAP_ROUND, join=@cad.JOIN_ROUND))
-    }
-  }
-  let canvas = @canvas.Canvas::new()
-  canvas.object().set_bbox(0.0F, 0.0F, @canvas.f32(page_w), @canvas.f32(page_h))
-  canvas.object().fill_color(0xffffffffU)
-  canvas.object().fill_rect(0.0F, 0.0F, @canvas.f32(page_w), @canvas.f32(page_h))
-  canvas.set_drawn()
-  let matrix = @canvas.Matrix::identity()
-  let plotter = @cad.Plotter::new(fonts, thin=0.1)
-  plotter.plot(canvas, drawing, matrix, {
-    min: { x: 0.0, y: 0.0 },
-    max: { x: page_w, y: page_h },
-    ok: true,
-  }) catch {
-    error => {
-      warnings.push("drawio: " + error.to_string())
-      return None
-    }
-  }
-  let hash = canvas.encode(writer, fonts, warnings) catch {
-    error => {
-      warnings.push("drawio: " + error.to_string())
-      return None
-    }
-  }
-  let page = @cad.page(page_w, page_h, [@cad.layer("body", hash)])
-  Some((page, labels))
-}
-
-///|
-/// Convert a draw.io document into fixed-view BDF pages.
+/// Convert a draw.io document into fixed-view BDF views, one per diagram.
 pub fn convert(
   data : Bytes,
   title~ : String = "",
@@ -363,13 +200,10 @@ pub fn convert(
   if data.length() > 268435456 {
     raise DrawioInvalid("drawio: the file is larger than 268435456 bytes")
   }
-  let text = @utf8.decode_lossy(data)
-  let root = drawio_parse(text) catch {
+  let diagrams = drawio_read_file(data) catch {
     Failure(message) => raise DrawioInvalid(message)
-    _ => raise DrawioInvalid("drawio: invalid XML")
+    _ => raise DrawioInvalid("drawio: invalid draw.io file")
   }
-  let diagrams : Array[DrawioNode] = []
-  drawio_all(root, "diagram", diagrams)
   if diagrams.is_empty() {
     raise DrawioInvalid("drawio: the file has no diagrams")
   }
@@ -377,50 +211,57 @@ pub fn convert(
   let warnings : Array[String] = []
   let meta = @cad.document_meta("drawio", title=title)
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
-  let pages : Array[Json] = []
-  let runs : Array[@core.IndexRun] = []
-  let mut page_index = 0
-  for diagram in [diagrams[0]] {
-    let result = drawio_render_page(writer, diagram, page_index, fonts, warnings)
-    match result {
-      Some((page, labels)) => {
-        pages.push(page)
-        for label in labels {
-          runs.push({
-            a: page_index,
-            b: 0,
-            ordinal: runs.length(),
-            separator: 2,
-            text: label,
-          })
+  let mut views = 0
+  let used_ids : Map[String, Bool] = Map([])
+  for page_info in diagrams {
+    let rendered = drawio_render_page(writer, page_info, fonts, warnings)
+    match rendered {
+      Some((view, view_id, _page_title, labels)) => {
+        let mut id = if view_id == "" { "page" + (views + 1).to_string() } else { view_id }
+        while used_ids.contains(id) {
+          id = id + "_"
         }
+        used_ids[id] = true
+        let view_map = match view {
+          Json::Object(value) => value
+          _ => Map([])
+        }
+        view_map["id"] = Json::string(id)
+        if !labels.is_empty() {
+          let runs : Array[@core.IndexRun] = []
+          for label in labels {
+            runs.push({
+              a: 0,
+              b: 0,
+              ordinal: runs.length(),
+              separator: 2,
+              text: label,
+            })
+          }
+          let index_hash = writer.add_part("idx", @core.encode_text_index(runs)) catch {
+            error => raise DrawioInvalid("drawio: " + error.to_string())
+          }
+          view_map["textIndex"] = Json::string(index_hash)
+        }
+        writer.add_view(Json::object(view_map))
+        views += 1
       }
       None => ()
     }
-    page_index += 1
   }
-  if pages.is_empty() {
+  if views == 0 {
     raise DrawioInvalid("drawio: no pages could be drawn")
   }
-  let view_json = @cad.fixed_view(pages, title=title)
-  let view_map = match view_json {
-    Json::Object(value) => value
-    _ => Map([])
+  for warning in fonts.warnings() {
+    warnings.push(warning)
   }
-  if !runs.is_empty() {
-    let index_hash = writer.add_part("idx", @core.encode_text_index(runs)) catch {
-      error => raise DrawioInvalid("drawio: " + error.to_string())
-    }
-    view_map["textIndex"] = Json::string(index_hash)
-  }
-  writer.add_view(Json::object(view_map))
   let bdf = writer.write_single() catch {
     error => raise DrawioInvalid("drawio: " + error.to_string())
   }
   {
     bdf,
-    pages: pages.length(),
-    summary: "\{pages.length()} page(s)",
+    pages: views,
+    summary: "\{views} page(s)",
     warnings,
   }
 }
