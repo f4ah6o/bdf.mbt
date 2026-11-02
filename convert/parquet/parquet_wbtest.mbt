@@ -23,3 +23,12 @@ test "parquet input renders a table" {
   assert_eq(view.kind, "sheet")
   assert_true(view.tiles.length() > 0)
 }
+
+///|
+test "timestamp fraction digits follow the column" {
+  assert_eq(parquet_datetime_text(1704067200000L, digits=0), "2024-01-01 00:00:00")
+  assert_eq(
+    parquet_datetime_text(1704067200123L, digits=3),
+    "2024-01-01 00:00:00.123",
+  )
+}

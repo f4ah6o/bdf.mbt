@@ -25,6 +25,6 @@ codecs (uncompressed, Snappy, GZIP, Brotli, Zstandard, LZ4), Data Page v1/v2,
 multiple row groups, dictionary/RLE/delta/byte-stream-split encodings, logical
 dates/timestamps/decimals, JSON-style nested values, WKB→WKT/WKT geometry
 and Variant version 1 values. The source file is stored as the BDF table part.
-Encrypted Parquet, Variant metadata newer than version 1 and some timestamp
-fraction formatting are documented gaps.
+Encrypted Parquet and Variant metadata newer than version 1 are documented
+gaps.
 Zstandard and LZ4 are decoded in pure MoonBit.

@@ -87,7 +87,7 @@ fn parquet_date_text(days : Int64) -> String {
 }
 
 ///|
-fn parquet_datetime_text(millis : Int64) -> String {
+fn parquet_datetime_text(millis : Int64, digits~ : Int = 3) -> String {
   let days = parquet_floor_div(millis, 86400000L)
   let rest = millis - days * 86400000L
   let (year, month, day) = parquet_civil_from_days(days)
@@ -99,9 +99,14 @@ fn parquet_datetime_text(millis : Int64) -> String {
   while fraction.length() < 3 {
     fraction = "0" + fraction
   }
-  parquet_pad4(year) + "-" + parquet_pad2(month) + "-" + parquet_pad2(day) + " " +
-  parquet_pad2(hour) + ":" + parquet_pad2(minute) + ":" + parquet_pad2(second) + "." +
-  fraction
+  let base = parquet_pad4(year) + "-" + parquet_pad2(month) + "-" + parquet_pad2(day) +
+    " " + parquet_pad2(hour) + ":" + parquet_pad2(minute) + ":" +
+    parquet_pad2(second)
+  if digits <= 0 {
+    base
+  } else {
+    base + "." + fraction[:digits].to_owned()
+  }
 }
 
 ///|
@@ -142,7 +147,7 @@ fn parquet_number_text(number : Double) -> String {
 }
 
 ///|
-fn parquet_value_text(value : @parquet.Value) -> String {
+fn parquet_value_text(value : @parquet.Value, digits~ : Int = -1) -> String {
   match value {
     @parquet.Null => ""
     @parquet.StringValue(text) => text
@@ -150,12 +155,40 @@ fn parquet_value_text(value : @parquet.Value) -> String {
     @parquet.IntegerValue(number) => number.to_string()
     @parquet.BooleanValue(flag) => if flag { "true" } else { "false" }
     @parquet.DateValue(days) => parquet_date_text(days)
-    @parquet.DateTimeValue(millis) => parquet_datetime_text(millis)
+    @parquet.DateTimeValue(millis) =>
+      parquet_datetime_text(millis, digits=if digits < 0 { 3 } else { digits })
   }
 }
 
 ///|
+/// The fraction digits a millisecond timestamp column needs: whole seconds
+/// have none, other values use the millisecond precision.
+fn parquet_datetime_digits(millis : Int64) -> Int {
+  if millis % 1000L == 0L { 0 } else { 3 }
+}
+
+///|
+fn parquet_column_digits(table : @parquet.Table) -> Array[Int] {
+  let digits : Array[Int] = []
+  for column_index, _ in table.columns {
+    let mut used = 0
+    for row in table.rows {
+      if column_index < row.length() {
+        match row[column_index] {
+          @parquet.DateTimeValue(millis) =>
+            used = Int::max(used, parquet_datetime_digits(millis))
+          _ => ()
+        }
+      }
+    }
+    digits.push(used)
+  }
+  digits
+}
+
+///|
 fn parquet_to_csv(table : @parquet.Table) -> Bytes {
+  let digits = parquet_column_digits(table)
   let output = StringBuilder()
   for index, column in table.columns {
     if index > 0 {
@@ -169,7 +202,9 @@ fn parquet_to_csv(table : @parquet.Table) -> Bytes {
       if index > 0 {
         output.write_char(',')
       }
-      output.write_string(parquet_csv_field(parquet_value_text(value)))
+      output.write_string(
+        parquet_csv_field(parquet_value_text(value, digits=digits[index])),
+      )
     }
     output.write_char('\n')
   }
