@@ -62,7 +62,7 @@ try {
   for (const entry of result) {
     const want = expected[entry.name];
     assert.equal(entry.error, undefined, `${entry.name}: ${entry.error}`);
-    assert.match(entry.summary, new RegExp(`\\(${want.rows} rows × ${want.cols} columns\\)`), `${entry.name} shape`);
+    assert.match(entry.summary, new RegExp(`\\(${want.rows} rows × ${want.cols} columns`), `${entry.name} shape`);
     assert.ok(entry.tables > 0, `${entry.name} table part`);
     assert.equal(entry.tableData, true, `${entry.name} stores the source file`);
     for (const text of want.text) {

@@ -147,19 +147,35 @@ pub fn convert(
     raise ParquetInputInvalid("parquet: the table has no columns")
   }
   let csv = parquet_to_csv(table)
+  let info = @parquet.info(data) catch {
+    @parquet.InvalidTable(message) => raise ParquetInputInvalid(message)
+    _ => raise ParquetInputInvalid("parquet: invalid metadata")
+  }
   let result = @csv.convert_no_fonts(
     csv,
     name="table.parquet",
     title~,
     no_text_index~,
     table_data=Some(data),
+    table_columns=Some(table.columns.map(column => {
+      let kind = match column.kind {
+        @parquet.StringColumn => @csv.TextColumn
+        @parquet.NumberColumn => @csv.NumberColumn
+        @parquet.IntegerColumn => @csv.IntegerColumn
+        @parquet.BooleanColumn => @csv.BooleanColumn
+        @parquet.DateColumn => @csv.DateColumn
+        @parquet.DateTimeColumn => @csv.DateTimeColumn
+      }
+      @csv.TableColumn::{ name: column.name, kind }
+    })),
   ) catch {
     _ => raise ParquetInputInvalid("parquet: the table could not be drawn")
   }
+  let codecs = if info.codecs.is_empty() { "" } else { "; " + info.codecs.join(", ") }
   {
     bdf: result.bdf,
     pages: 1,
-    summary: "1 page (\{table.rows.length()} rows × \{table.columns.length()} columns)",
+    summary: "1 page (\{table.rows.length()} rows × \{table.columns.length()} columns; \{info.row_groups} row group(s)\{codecs})",
     warnings: result.warnings,
   }
 }

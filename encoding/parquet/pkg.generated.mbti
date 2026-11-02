@@ -10,6 +10,8 @@ pub fn decode(Bytes) -> Table raise
 
 pub fn encode(Table) -> Bytes raise
 
+pub fn info(Bytes) -> FileInfo raise
+
 // Errors
 pub suberror ParquetError {
   InvalidTable(String)
@@ -33,6 +35,14 @@ pub(all) enum ColumnType {
 } derive(Eq, @debug.Debug)
 
 type Compact
+
+pub(all) struct FileInfo {
+  rows : Int64
+  columns : Int32
+  row_groups : Int32
+  codecs : Array[String]
+  created_by : String
+}
 
 pub(all) struct Table {
   columns : Array[Column]

@@ -393,7 +393,9 @@ fn parquet_column_chunk(reader : ParquetCompact) -> ParquetMetaColumn {
 }
 
 ///|
-fn parquet_footer(data : Bytes) -> (ParquetSchemaNode, Array[ParquetMetaColumn], Int64) raise {
+fn parquet_footer(
+  data : Bytes,
+) -> (ParquetSchemaNode, Array[ParquetMetaColumn], Int64, Int, String) raise {
   if data.length() < 12 || !data.has_prefix(b"PAR1") || !data.has_suffix(b"PAR1") {
     raise Failure("parquet: not a Parquet file")
   }
@@ -409,6 +411,8 @@ fn parquet_footer(data : Bytes) -> (ParquetSchemaNode, Array[ParquetMetaColumn],
   let columns : Array[ParquetMetaColumn] = []
   let schema : Array[ParquetSchemaNode] = []
   let mut rows = 0L
+  let mut row_groups = 0
+  let mut created_by = ""
   while true {
     let (id, typ) = reader.field()
     if id == 0 {
@@ -424,6 +428,7 @@ fn parquet_footer(data : Bytes) -> (ParquetSchemaNode, Array[ParquetMetaColumn],
       rows = reader.zigzag()
     } else if id == 4 {
       let (groups, element) = reader.list_header()
+      row_groups += groups
       for _ in 0..<groups {
         let save = reader.last
         reader.last = 0
@@ -445,6 +450,8 @@ fn parquet_footer(data : Bytes) -> (ParquetSchemaNode, Array[ParquetMetaColumn],
         reader.last = save
       }
       let _ = element
+    } else if id == 6 {
+      created_by = @utf8.decode_lossy(reader.binary())
     } else {
       reader.skip(typ)
     }
@@ -471,7 +478,7 @@ fn parquet_footer(data : Bytes) -> (ParquetSchemaNode, Array[ParquetMetaColumn],
       }
     }
   }
-  (root, columns, rows)
+  (root, columns, rows, row_groups, created_by)
 }
 
 ///|
@@ -1052,7 +1059,7 @@ fn parquet_value_json(value : Value) -> String {
 ///|
 /// Decode a flat Parquet table.
 pub fn decode(data : Bytes) -> Table raise {
-  let (root, metadata, row_count) = try {
+  let (root, metadata, row_count, _, _) = try {
     parquet_footer(data)
   } catch {
     Failure(message) => raise InvalidTable(message)
@@ -1283,3 +1290,48 @@ fn parquet_byte_stream_split(data : Bytes, physical : Int, count : Int) -> Array
   output
 }
 
+
+///|
+pub(all) struct FileInfo {
+  rows : Int64
+  columns : Int
+  row_groups : Int
+  codecs : Array[String]
+  created_by : String
+}
+
+///|
+fn parquet_codec_name(codec : Int) -> String {
+  match codec {
+    0 => "uncompressed"
+    1 => "Snappy"
+    2 => "GZIP"
+    4 => "Brotli"
+    5 => "LZ4"
+    6 => "Zstandard"
+    7 => "LZ4_RAW"
+    _ => "codec" + codec.to_string()
+  }
+}
+
+///|
+pub fn info(data : Bytes) -> FileInfo raise {
+  let (root, metadata, rows, row_groups, created_by) = parquet_footer(data) catch {
+    Failure(message) => raise InvalidTable(message)
+    _ => raise InvalidTable("parquet: invalid metadata")
+  }
+  let codecs : Array[String] = []
+  for meta in metadata {
+    let name = parquet_codec_name(meta.codec)
+    if !codecs.contains(name) {
+      codecs.push(name)
+    }
+  }
+  {
+    rows,
+    columns: root.children.length(),
+    row_groups,
+    codecs,
+    created_by,
+  }
+}

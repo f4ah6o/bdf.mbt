@@ -17,6 +17,7 @@ pub fn store_table(
   view~ : String = "",
   mode~ : DataMode = DataDefault,
   data~ : Bytes? = None,
+  columns~ : Array[TableColumn]? = None,
 ) -> String? raise {
   if mode == DataNone {
     return None
@@ -32,7 +33,11 @@ pub fn store_table(
     )
   }
   let part = writer.add_part("table", data)
-  let columns = table.columns.map(column => {
+  let table_columns = match columns {
+    Some(value) => value
+    None => table.columns
+  }
+  let columns = table_columns.map(column => {
     let kind = match column.kind {
       TextColumn => "string"
       NumberColumn => "number"

@@ -9,7 +9,7 @@ import {
 }
 
 // Values
-pub fn convert_no_fonts(Bytes, name? : String, title? : String, charset? : String, delimiter? : Byte, quote? : Int32, header? : Header, data_mode? : DataMode, no_text_index? : Bool, table_style? : String, table_data? : Bytes?) -> NoFontResult raise
+pub fn convert_no_fonts(Bytes, name? : String, title? : String, charset? : String, delimiter? : Byte, quote? : Int32, header? : Header, data_mode? : DataMode, no_text_index? : Bool, table_style? : String, table_data? : Bytes?, table_columns? : Array[TableColumn]?) -> NoFontResult raise
 
 pub fn convert_with_font(Bytes, Bytes, font_index? : Int32, no_subset? : Bool, name? : String, title? : String, charset? : String, delimiter? : Byte, quote? : Int32, header? : Header, data_mode? : DataMode, no_text_index? : Bool, table_style? : String, ignore_embedding_restrictions? : Bool, system_fonts? : Bool, no_woff2? : Bool) -> NoFontResult raise
 
@@ -49,7 +49,7 @@ pub fn read_records(String, Dialect) -> Records raise
 
 pub fn sheet_name(String) -> String
 
-pub fn store_table(@core.DocumentWriter, Table, title? : String, view? : String, mode? : DataMode, data? : Bytes?) -> String? raise
+pub fn store_table(@core.DocumentWriter, Table, title? : String, view? : String, mode? : DataMode, data? : Bytes?, columns? : Array[TableColumn]?) -> String? raise
 
 pub fn summary(ParseResult) -> String
 

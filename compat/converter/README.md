@@ -37,3 +37,7 @@ fixtures. Single-file Gerber and the KiCad PCB front view and draw.io are checke
 hatches and non-top OCS entities; its text index is checked for content rather
 than exact equality. PCL/HP RTL raster jobs are a documented subset and are not
 part of the fixture set yet.
+
+`phase9-drawio-test.mjs` and `phase9-parquet-test.mjs` compare the expanded
+CAD-adjacent formats with upstream: draw.io views/pages/layers/text, and
+Parquet rows, columns, source table bytes, codecs, encodings and dates.
