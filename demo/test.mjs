@@ -301,12 +301,17 @@ try {
   await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'people.csv' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
   await converterPage.getByRole('button', { name: 'BDF サンプルを開く' }).click();
   await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'upstream-demo.bdf' && !document.querySelector('#open-file').disabled, null, { timeout: 30000 });
-  for (const [sample, name] of [['csv', 'people.csv'], ['xlsx', 'sales.xlsx'], ['image', 'illustration.svg'], ['font', 'stix.ttf'], ['pdf', 'simple.pdf'], ['type1', 'type1.pdf'], ['docx', 'simple.docx'], ['pptx', 'simple.pptx'], ['hpgl', 'hpgl1.plt'], ['jww', 'old.jww'], ['dxf', 'shapes.dxf'], ['sxf', 'shapes.sfc'], ['cgm', 'shapes.cgm'], ['gerber', 'features.gbr'], ['drill', 'drill.drl'], ['kicad', 'demo.kicad_pcb'], ['drawio', 'labels.drawio'], ['drawio-compressed', 'compressed.drawio'], ['drawio-multipage', 'multipage.drawio'], ['drawio-embedded', 'embedded.drawio.svg'], ['parquet', 'table.parquet'], ['parquet-basic', 'basic.parquet']]) {
+  for (const [sample, name] of [['csv', 'people.csv'], ['xlsx', 'sales.xlsx'], ['image', 'illustration.svg'], ['font', 'stix.ttf'], ['pdf', 'simple.pdf'], ['type1', 'type1.pdf'], ['docx', 'simple.docx'], ['pptx', 'simple.pptx'], ['hpgl', 'hpgl1.plt'], ['jww', 'old.jww'], ['dxf', 'shapes.dxf'], ['sxf', 'shapes.sfc'], ['cgm', 'shapes.cgm'], ['gerber', 'features.gbr'], ['drill', 'drill.drl'], ['kicad', 'demo.kicad_pcb'], ['drawio', 'labels.drawio'], ['drawio-compressed', 'compressed.drawio'], ['drawio-multipage', 'multipage.drawio'], ['drawio-embedded', 'embedded.drawio.svg'], ['drawio-showcase', 'showcase.drawio'], ['drawio-png', 'embedded.drawio.png'], ['parquet', 'table.parquet'], ['parquet-basic', 'basic.parquet']]) {
     await converterPage.locator('#file').setInputFiles(resolve(root, 'samples', name));
     await converterPage.waitForFunction(n => document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled, name, { timeout: 60000 });
     assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, `converter ${sample}`);
     await converterPage.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => canvas.width > 0 && canvas.height > 0), null, { timeout: 30000 });
     assert.equal(await converterPage.locator('#download').getAttribute('download'), name.replace(/\.[^.]+$/, '') + '.bdf');
+  }
+  for (const [sample, name] of [['drawio', 'labels.drawio'], ['parquet', 'table.parquet']]) {
+    await converterPage.locator(`[data-sample="${sample}"]`).click();
+    await converterPage.waitForFunction(n => document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled, name, { timeout: 60000 });
+    assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, `converter sample link ${sample}`);
   }
   await converterPage.locator('[data-sample="pptx"]').click();
   await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'simple.pptx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
@@ -352,7 +357,7 @@ try {
   await mobileConverter.waitForFunction(() => document.querySelector('#document-name').textContent === 'people.csv', null, { timeout: 60000 });
   assert.equal(await mobileConverter.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'mobile converter overflow');
   await mobileConverter.close();
-  console.log('Demo: all 20 upstream pages, search, navigation, download, CSV, SVG, font TTF/WOFF2, XLSX conversion, sheet switching, embedded PNG, BDF save/reload, warnings, replacement, errors and mobile subpath passed.');
+  console.log('Demo: all 20 upstream pages, search, navigation, download, CSV, SVG, font TTF/WOFF2, XLSX, draw.io, Parquet conversion, sheet switching, embedded PNG, BDF save/reload, warnings, replacement, errors and mobile subpath passed.');
 } finally {
   await browser.close();
   await new Promise(resolvePromise => server.close(resolvePromise));

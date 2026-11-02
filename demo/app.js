@@ -121,6 +121,8 @@ const samples = {
   pdf: ['./samples/simple.pdf', 'simple.pdf'],
   docx: ['./samples/simple.docx', 'simple.docx'],
   pptx: ['./samples/simple.pptx', 'simple.pptx'],
+  drawio: ['./samples/labels.drawio', 'labels.drawio'],
+  parquet: ['./samples/table.parquet', 'table.parquet'],
 };
 for (const link of document.querySelectorAll('[data-sample]')) {
   link.addEventListener('click', event => {
