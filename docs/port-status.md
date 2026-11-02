@@ -18,6 +18,8 @@
 - `npm run test:phase8-type1`
 - `npm run test:phase8-parquet`
 - `npm run test:phase8-xlsx`
+- `npm run test:phase9-drawio`
+- `npm run test:phase9-parquet`
 - `npm run test:visual`
 
 ## README Port backlog
@@ -40,12 +42,14 @@
   are documented gaps. `convert/drawingml` provides the shared approximate
   line breaking, alignment and frame-to-frame text flow. Full font metrics,
   OpenType shaping, tables and the remaining Visio theme/picture features are
-  documented gaps. draw.io's first uncompressed diagram is ported for basic
-  vertices, simple edges, colours and labels; compression, stencils, HTML/math
-  formatting, automatic wrapping/routing and page auto-fit are documented
-  gaps. Flat uncompressed Parquet tables with PLAIN or dictionary columns are
-  read as BDF sheets; Snappy/ZSTD, nested columns and some row-group features
-  are documented gaps.
+  documented gaps. draw.io reads uncompressed and compressed XML, SVG/PNG
+  exports and every diagram as a fitted fixed view with layers, wrappers,
+  basic shapes, edges and labels; full stencil libraries, LaTeX math
+  typesetting, images, line jumps and complex routing are documented gaps. Parquet tables are read with uncompressed, Snappy, GZIP, Brotli,
+  Zstandard and LZ4 codecs, Data Page v1/v2, multiple row groups, dictionary/
+  RLE/delta/byte-stream-split encodings, logical dates/timestamps/decimals and
+  JSON-style nested values; WKB geometry, Variant and some logical types are
+  documented gaps.
 - Phase 3: `convert/reader` provides the reader-mode block model and fixed A4 layout; `convert/epub` reads the container, manifest and spine; `convert/html` reads headings, paragraphs, lists, code, quotes, tables and images-as-alt-text; `convert/markdown` reads front matter, headings, lists, tasks, fences, quotes, rules, simple tables and inline links. Readability extraction, CSS, remote images, fixed-layout EPUB, MHTML, embedded fonts and exact CommonMark/GFM behavior are documented gaps.
 - Phase 4: `convert/audio` writes one-page cards for MP3, AAC (ADTS/M4A), FLAC, Ogg Vorbis/Opus, WAV and AIFF with tags, covers, lyrics, durations and an optional playable audio part. MP4/iTunes tags and covers, Ogg duration, synchronized lyrics, chapters and DRM are documented gaps.
 - Done: cryptography on non-JavaScript hosts. PBKDF2-HMAC-SHA-256,
@@ -93,8 +97,8 @@
   text; schematics, projects, back/layer views, zones and 3D models are
   documented gaps. PCL/HP RTL raster jobs are a documented gap: the escape
   sequences are skipped with a warning and only the HP-GL/2 instructions are
-  converted. The remaining CAD formats (SXF P21, clear-text CGM), Gerber board archives, KiCad schematics/back-layers and full draw.io
-  are not ported. Camera raw (DNG/CR2) is
+  converted. The remaining CAD formats (SXF P21, clear-text CGM), Gerber board archives and KiCad schematics/back-layers are not
+  ported; draw.io stencils/math and Parquet WKB/Variant remain gaps. Camera raw (DNG/CR2) is
   not an upstream converter and is outside the port. The subsets of the ported
   formats above are documented gaps, not claims of full parity.
 
@@ -104,9 +108,10 @@
    Done: Type 1 charstrings are interpreted into Type 2 outlines and a
    name-keyed CFF, then embedded through the existing CFF path.
 2. Port the deferred SXF, CGM, Gerber/Excellon and KiCad converters, then the
-   draw.io converter.
-3. ~~Port Parquet sheet input.~~ Done for flat uncompressed tables with
-   PLAIN/dictionary columns; compressed and nested tables remain.
+   remaining draw.io and Parquet gaps.
+3. ~~Port Parquet sheet input.~~ Done for flat and nested tables with common
+   codecs, Data Page v1/v2 and common encodings; WKB geometry and Variant
+   columns remain.
 4. ~~Port the XLSX font-embedding mode.~~ Done: `convert_plain_with_font`
    embeds an explicit face and uses its advances/metrics; the Worker picks the
    first face of a supplied font directory.

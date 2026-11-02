@@ -20,6 +20,7 @@ pub fn convert_no_fonts(
   data_mode~ : DataMode = DataDefault,
   no_text_index~ : Bool = false,
   table_style~ : String = "",
+  table_data~ : Bytes? = None,
 ) -> NoFontResult raise {
   convert_grid(
     data,
@@ -32,6 +33,7 @@ pub fn convert_no_fonts(
     data_mode~,
     no_text_index~,
     table_style~,
+    table_data~,
     font_data=None,
     font_index=0,
     no_subset=false,
@@ -77,6 +79,7 @@ pub fn convert_with_font(
     data_mode~,
     no_text_index~,
     table_style~,
+    table_data=None,
     font_data=Some(font_data),
     font_index~,
     no_subset~,
@@ -119,6 +122,7 @@ pub fn convert_with_fonts(
     data_mode~,
     no_text_index~,
     table_style~,
+    table_data=None,
     font_data=None,
     font_index=0,
     no_subset~,
@@ -141,6 +145,7 @@ fn convert_grid(
   data_mode~ : DataMode,
   no_text_index~ : Bool,
   table_style~ : String,
+  table_data~ : Bytes?,
   font_data~ : Bytes?,
   font_index~ : Int32,
   no_subset~ : Bool,
@@ -309,7 +314,7 @@ fn convert_grid(
     match values_table(parsed) {
       Some(table) =>
         match
-          store_table(writer, table, title=name, view="sheet1", mode=data_mode) {
+          store_table(writer, table, title=name, view="sheet1", mode=data_mode, data=table_data) {
           Some(warning) => warnings.push(warning)
           None => ()
         }

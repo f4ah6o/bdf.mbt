@@ -17,3 +17,13 @@ the MoonBit output with the Go writer byte for byte.
 The MoonBit writer deliberately fixes an upstream data loss bug: when a page
 reaches the 1 MiB value limit before 65,536 rows, it continues from the next
 unwritten row. The Go writer skips the rest of that 65,536-row block.
+
+## Input support
+
+`encoding/parquet/decode.mbt` reads flat and nested Parquet with all common
+codecs (uncompressed, Snappy, GZIP, Brotli, Zstandard, LZ4), Data Page v1/v2,
+multiple row groups, dictionary/RLE/delta/byte-stream-split encodings, logical
+dates/timestamps/decimals and JSON-style nested values. The source file is
+stored as the BDF table part. Geometry WKB, Variant columns and some logical
+types are still rendered as placeholders or raw values; Zstandard and LZ4 are
+decoded in pure MoonBit.

@@ -16,11 +16,15 @@ pub fn store_table(
   title~ : String = "",
   view~ : String = "",
   mode~ : DataMode = DataDefault,
+  data~ : Bytes? = None,
 ) -> String? raise {
   if mode == DataNone {
     return None
   }
-  let data = encode_table(table)
+  let data = match data {
+    Some(value) => value
+    None => encode_table(table)
+  }
   if mode == DataDefault &&
     (table.rows.length() > 1048576 || data.length() > 67108864) {
     return Some(
