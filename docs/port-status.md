@@ -47,9 +47,10 @@
   basic shapes, edges and labels; full stencil libraries, LaTeX math
   typesetting, images, line jumps and complex routing are documented gaps. Parquet tables are read with uncompressed, Snappy, GZIP, Brotli,
   Zstandard and LZ4 codecs, Data Page v1/v2, multiple row groups, dictionary/
-  RLE/delta/byte-stream-split encodings, logical dates/timestamps/decimals and
-  JSON-style nested values; WKB geometry, Variant and some logical types are
-  documented gaps.
+  RLE/delta/byte-stream-split encodings, logical dates/timestamps/decimals,
+  JSON-style nested values, WKB→WKT geometry and Variant values. Variant
+  metadata version 1, WKT-encoded geometry columns, encrypted files and some
+  timestamp fraction formatting are documented gaps.
 - Phase 3: `convert/reader` provides the reader-mode block model and fixed A4 layout; `convert/epub` reads the container, manifest and spine; `convert/html` reads headings, paragraphs, lists, code, quotes, tables and images-as-alt-text; `convert/markdown` reads front matter, headings, lists, tasks, fences, quotes, rules, simple tables and inline links. Readability extraction, CSS, remote images, fixed-layout EPUB, MHTML, embedded fonts and exact CommonMark/GFM behavior are documented gaps.
 - Phase 4: `convert/audio` writes one-page cards for MP3, AAC (ADTS/M4A), FLAC, Ogg Vorbis/Opus, WAV and AIFF with tags, covers, lyrics, durations and an optional playable audio part. MP4/iTunes tags and covers, Ogg duration, synchronized lyrics, chapters and DRM are documented gaps.
 - Done: cryptography on non-JavaScript hosts. PBKDF2-HMAC-SHA-256,
@@ -98,7 +99,8 @@
   documented gaps. PCL/HP RTL raster jobs are a documented gap: the escape
   sequences are skipped with a warning and only the HP-GL/2 instructions are
   converted. The remaining CAD formats (SXF P21, clear-text CGM), Gerber board archives and KiCad schematics/back-layers are not
-  ported; draw.io stencils/math and Parquet WKB/Variant remain gaps. Camera raw (DNG/CR2) is
+  ported; draw.io stencils/math remain gaps, while Parquet WKB and Variant are
+  supported with the limits noted above. Camera raw (DNG/CR2) is
   not an upstream converter and is outside the port. The subsets of the ported
   formats above are documented gaps, not claims of full parity.
 
@@ -108,10 +110,11 @@
    Done: Type 1 charstrings are interpreted into Type 2 outlines and a
    name-keyed CFF, then embedded through the existing CFF path.
 2. Port the deferred SXF, CGM, Gerber/Excellon and KiCad converters, then the
-   remaining draw.io and Parquet gaps.
+   remaining draw.io stencil/math gaps.
 3. ~~Port Parquet sheet input.~~ Done for flat and nested tables with common
-   codecs, Data Page v1/v2 and common encodings; WKB geometry and Variant
-   columns remain.
+   codecs, Data Page v1/v2, common encodings, WKB→WKT geometry and Variant
+   version 1; WKT-encoded geometry, encryption and some logical formatting
+   remain.
 4. ~~Port the XLSX font-embedding mode.~~ Done: `convert_plain_with_font`
    embeds an explicit face and uses its advances/metrics; the Worker picks the
    first face of a supplied font directory.

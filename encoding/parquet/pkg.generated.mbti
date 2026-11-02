@@ -8,6 +8,8 @@ import {
 // Values
 pub fn decode(Bytes) -> Table raise
 
+pub fn decode_with_warnings(Bytes) -> (Table, Array[String]) raise
+
 pub fn encode(Table) -> Bytes raise
 
 pub fn info(Bytes) -> FileInfo raise

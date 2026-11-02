@@ -71,9 +71,19 @@ fn parquet_pad2(value : Int64) -> String {
 }
 
 ///|
+fn parquet_pad4(value : Int64) -> String {
+  let text = value.to_string()
+  let mut padded = text
+  while padded.length() < 4 {
+    padded = "0" + padded
+  }
+  padded
+}
+
+///|
 fn parquet_date_text(days : Int64) -> String {
   let (year, month, day) = parquet_civil_from_days(days)
-  year.to_string() + "-" + parquet_pad2(month) + "-" + parquet_pad2(day)
+  parquet_pad4(year) + "-" + parquet_pad2(month) + "-" + parquet_pad2(day)
 }
 
 ///|
@@ -89,9 +99,46 @@ fn parquet_datetime_text(millis : Int64) -> String {
   while fraction.length() < 3 {
     fraction = "0" + fraction
   }
-  year.to_string() + "-" + parquet_pad2(month) + "-" + parquet_pad2(day) + " " +
+  parquet_pad4(year) + "-" + parquet_pad2(month) + "-" + parquet_pad2(day) + " " +
   parquet_pad2(hour) + ":" + parquet_pad2(minute) + ":" + parquet_pad2(second) + "." +
-  fraction + "000"
+  fraction
+}
+
+///|
+/// Normalize the exponent of a floating-point number to at least two digits,
+/// as Go writes it (1e-07 rather than 1e-7).
+fn parquet_normalize_exponent(text : String) -> String {
+  match text.find("e") {
+    Some(index) => {
+      let mantissa = text[:index].to_owned()
+      let rest = text[index + 1:].to_owned()
+      if rest.length() < 2 {
+        return text
+      }
+      let sign = rest[:1].to_owned()
+      let digits = rest[1:].to_owned()
+      if digits.length() >= 2 {
+        return text
+      }
+      mantissa + "e" + sign + "0" + digits
+    }
+    None => text
+  }
+}
+
+///|
+fn parquet_number_text(number : Double) -> String {
+  if number.is_nan() {
+    "NaN"
+  } else if number.is_inf() {
+    if number > 0.0 {
+      "Infinity"
+    } else {
+      "-Infinity"
+    }
+  } else {
+    parquet_normalize_exponent(number.to_string())
+  }
 }
 
 ///|
@@ -99,7 +146,7 @@ fn parquet_value_text(value : @parquet.Value) -> String {
   match value {
     @parquet.Null => ""
     @parquet.StringValue(text) => text
-    @parquet.NumberValue(number) => number.to_string()
+    @parquet.NumberValue(number) => parquet_number_text(number)
     @parquet.IntegerValue(number) => number.to_string()
     @parquet.BooleanValue(flag) => if flag { "true" } else { "false" }
     @parquet.DateValue(days) => parquet_date_text(days)
@@ -139,7 +186,7 @@ pub fn convert(
   if data.length() > 1073741824 {
     raise ParquetInputInvalid("parquet: the file is larger than 1073741824 bytes")
   }
-  let table = @parquet.decode(data) catch {
+  let (table, decode_warnings) = @parquet.decode_with_warnings(data) catch {
     @parquet.InvalidTable(message) => raise ParquetInputInvalid(message)
     _ => raise ParquetInputInvalid("parquet: invalid table")
   }
@@ -172,10 +219,17 @@ pub fn convert(
     _ => raise ParquetInputInvalid("parquet: the table could not be drawn")
   }
   let codecs = if info.codecs.is_empty() { "" } else { "; " + info.codecs.join(", ") }
+  let warnings : Array[String] = []
+  for warning in result.warnings {
+    warnings.push(warning)
+  }
+  for warning in decode_warnings {
+    warnings.push(warning)
+  }
   {
     bdf: result.bdf,
     pages: 1,
     summary: "1 page (\{table.rows.length()} rows × \{table.columns.length()} columns; \{info.row_groups} row group(s)\{codecs})",
-    warnings: result.warnings,
+    warnings,
   }
 }

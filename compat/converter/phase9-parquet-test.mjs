@@ -51,13 +51,53 @@ try {
   const expected = {
     basic: { rows: 8, cols: 11, text: ['1200.00', '2026-01-05', '["red", "blue"]'] },
     codecs: { rows: 200, cols: 6, text: ['value 1'] },
-    duckdb: { rows: 5, cols: 6, text: ['red'] },
+    duckdb: {
+      rows: 5,
+      cols: 6,
+      text: [
+        'red',
+        'POINT (1 2)',
+        'LINESTRING (0 0, 1 1)',
+        'POLYGON ((0 0, 4 0, 4 4, 0 0))',
+        'POINT EMPTY',
+        '{"a": 1, "b": [true, null]}',
+        '"text"',
+        '[1, "two", 3.5]',
+      ],
+    },
     encodings: { rows: 300, cols: 16, text: ['-50000'] },
-    geo: { rows: 9, cols: 2, text: ['point'] },
+    geo: {
+      rows: 9,
+      cols: 2,
+      text: [
+        'point',
+        'POINT (139.767 35.681)',
+        'LINESTRING (0 0, 1.5 2, 3 0)',
+        'POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0), (2 2, 3 2, 3 3, 2 2))',
+        'MULTIPOINT ((1 2), (3 4))',
+        'MULTIPOLYGON (((0 0, 1 0, 0 1, 0 0)))',
+        'GEOMETRYCOLLECTION (POINT (5 6), LINESTRING (7 8, 9 10))',
+        'POINT Z (1 2 3)',
+        'POINT EMPTY',
+      ],
+    },
     legacy: { rows: 3, cols: 2, text: ['2024-01-01'] },
     nested: { rows: 4, cols: 9, text: ['[1, 2]'] },
     types: { rows: 4, cols: 31, text: ['-128', '1970-01-01'] },
-    variant: { rows: 6, cols: 3, text: ['id'] },
+    variant: {
+      rows: 6,
+      cols: 3,
+      text: [
+        'id',
+        '{"a": 1, "b": "x"}',
+        '[1, 2]',
+        '{"a": 2, "b": "y", "c": true}',
+        '{"a": null, "b": "z"}',
+        '"not a list"',
+        '{"a": "text", "b": {"deep": [1.5]}}',
+        '[4, null]',
+      ],
+    },
   };
   for (const entry of result) {
     const want = expected[entry.name];
@@ -69,7 +109,7 @@ try {
       assert.ok(entry.text.includes(text), `${entry.name} text ${text}`);
     }
   }
-  console.log(`Phase 9 Parquet: ${result.length} upstream fixtures decode with codecs, encodings, nested values and dates.`);
+  console.log(`Phase 9 Parquet: ${result.length} upstream fixtures decode with codecs, encodings, nested values, WKT geometries and Variants.`);
 } finally {
   await browser.close();
   server.close();
