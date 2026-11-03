@@ -23,6 +23,31 @@ fn check_pdf_graphics(content : Bytes, expected : Bytes) -> Unit raise {
 }
 
 ///|
+test "PDF compatibility sections ignore unknown operators" {
+  let graphics = PdfGraphics::new(10.0, 10.0, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
+  let accepted = try {
+    graphics.run(b"BX /Unknown 1 2 op EX 0 0 10 10 re f")
+    true
+  } catch {
+    _ => false
+  }
+  assert_true(accepted, msg="PDF compatibility section")
+}
+
+///|
+test "unsupported PDF graphics operators name the operator" {
+  let graphics = PdfGraphics::new(10.0, 10.0, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
+  let named = try {
+    graphics.run(b"QX")
+    false
+  } catch {
+    InvalidStream(message) => message.contains("QX")
+    _ => false
+  }
+  assert_true(named, msg="PDF unsupported operator name")
+}
+
+///|
 test "unsupported PDF graphics commands fail closed" {
   let graphics = PdfGraphics::new(10.0, 10.0, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
   let rejected = try {

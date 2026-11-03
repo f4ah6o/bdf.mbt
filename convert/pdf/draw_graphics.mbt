@@ -675,6 +675,16 @@ fn PdfGraphics::execute(
   args : Array[ContentValue],
 ) -> Unit raise PdfStreamError {
   match operator {
+    b"BX" => {
+      self.compatibility += 1
+      return
+    }
+    b"EX" => {
+      if self.compatibility > 0 {
+        self.compatibility -= 1
+      }
+      return
+    }
     b"BDC" => {
       let count = args.length()
       if count >= 2 && !self.property_visible(args[count - 1]) {
@@ -718,7 +728,13 @@ fn PdfGraphics::execute(
       | b"k"
       | b"K" => self.flush_text()
       b"CS" | b"cs" | b"w" | b"J" | b"j" | b"M" | b"d" | b"ri" | b"i" => ()
-      _ => raise InvalidStream("unsupported operator in PDF text object")
+      _ =>
+        if self.compatibility == 0 {
+          raise InvalidStream(
+            "unsupported operator in PDF text object: " +
+            @utf8.decode_lossy(operator[:]),
+          )
+        }
     }
   }
   if self.path.execute(operator, args) {
@@ -964,7 +980,13 @@ fn PdfGraphics::execute(
         _ => raise InvalidStream("PDF path output failed")
       }
     b"ri" | b"i" => ()
-    _ => raise InvalidStream("unsupported PDF graphics operator")
+    _ =>
+      if self.compatibility == 0 {
+        raise InvalidStream(
+          "unsupported PDF graphics operator: " +
+          @utf8.decode_lossy(operator[:]),
+        )
+      }
   }
 }
 

@@ -43,6 +43,7 @@ priv struct PdfGraphics {
   mut form_depth : Int32
   optional_content : Map[Int64, Bool]
   mut hidden : Int32
+  mut compatibility : Int32
   warnings : Array[String]
   text : PdfLimitedText
   default_font : PdfSimpleFont
@@ -138,6 +139,7 @@ fn PdfGraphics::new(
     form_depth: 0,
     optional_content,
     hidden: 0,
+    compatibility: 0,
     warnings: [],
     text: PdfLimitedText::new(),
     default_font: match file {
