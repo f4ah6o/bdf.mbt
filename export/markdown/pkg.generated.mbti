@@ -1,0 +1,44 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/export/markdown"
+
+import {
+  "f4ah6o/bdf/core",
+}
+
+// Values
+pub fn write_bytes(Bytes, MarkdownOptions) -> MarkdownResult raise
+
+pub fn write_document(@core.Document, MarkdownOptions) -> MarkdownResult raise
+
+// Errors
+
+// Types and methods
+type ImagePlacement
+
+pub(all) struct MarkdownFile {
+  name : String
+  bytes : Bytes
+}
+
+pub(all) struct MarkdownOptions {
+  views : Array[String]
+  skip_roles : Array[String]
+  internal_links : Bool
+  keep_running : Bool
+  tables : String
+  images : String
+}
+pub fn MarkdownOptions::new() -> Self
+
+pub(all) struct MarkdownResult {
+  markdown : String
+  files : Array[MarkdownFile]
+  warnings : Array[String]
+  views : Int32
+  images : Int32
+  tables : Int32
+}
+
+// Type aliases
+
+// Traits

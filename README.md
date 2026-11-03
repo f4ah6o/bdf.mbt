@@ -102,6 +102,12 @@ constructing this public record directly must provide the map; use
 
 The [browser demo](https://f4ah6o.github.io/bdf.mbt/) ([source](demo/README.md)) displays the upstream 20-page sample
 and supports local BDF, CSV, XLSX, a limited DOCX text subset, a limited PPTX shape/text subset, image, font, AI, TIFF, PSD, EMF/WMF, IDML, Visio, EPUB, HTML, Markdown and a checked PDF subset including Type 1 font conversion using the MoonBit JavaScript build. The PDF section includes encrypted-password retry and a feature showcase for tiling patterns, JPX/JBIG2 images and Type3 glyphs; the encrypted sample password is `demo`.
+The same page now writes the displayed BDF back to PDF (embedded fonts and
+links), Markdown, and the upstream page-record JSON used by search, and indexes
+those records with MiniSearch. A [wasm-gc demo](https://f4ah6o.github.io/bdf.mbt/wasm-gc.html)
+runs PDF→BDF and the same exports in WebAssembly GC. The PDF writer approximates
+gradients with a solid stop and still omits masks, filters, images and tagged
+structure; those limits are reported as warnings in the page.
 The repository's Pages publishing source must be configured before the
 `Demo pages` workflow can publish it.
 

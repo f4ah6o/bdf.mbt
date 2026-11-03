@@ -11,6 +11,7 @@ const pdfRetry = $('#pdf-retry');
 const pdfUnlockStatus = $('#pdf-unlock-status');
 const converter = bdf_create_native_converter(new URL('./native_converter_worker.js', import.meta.url).href);
 const viewer = bdf_create_viewer($('#preview'), { workerUrl: new URL('./render_worker.js', import.meta.url).href, layout: 'single', find: false });
+window.bdfViewer = viewer;
 let currentPage = 0;
 let downloadUrl;
 let busy = false;
@@ -93,6 +94,13 @@ async function openBytes(name, input, retry = false) {
     $('#search-status').textContent = '';
     showViews(manifest);
     setDownload(bytes, name);
+    window.bdfDemo = {
+      name,
+      bytes: bytes.slice(),
+      viewer,
+      goToPage(page) { currentPage = page; updatePage(); viewer.scrollToPage(page); },
+    };
+    document.dispatchEvent(new CustomEvent('bdf:document', { detail: { name } }));
     say(warnings.length ? warnings.join(' · ') : `${name} を表示しています。`);
     if (isPdf) {
       lastOpen = null;

@@ -11,6 +11,7 @@
   <header class="topbar">
     <div class="brand"><span class="brand-mark" aria-hidden="true">B</span><div><strong>BDF viewer</strong><span>MoonBit demo</span></div></div>
     <p class="privacy">ファイルはブラウザ内で処理されます</p>
+    <a class="source-link" href="./wasm-gc.html">wasm-gc デモ <span aria-hidden="true">↗</span></a>
     <a class="source-link" href="https://github.com/f4ah6o/bdf.mbt">GitHub <span aria-hidden="true">↗</span></a>
   </header>
   <main>
@@ -35,6 +36,52 @@
       </div>
       <div id="preview" class="preview" aria-label="文書のプレビュー"></div>
       <div class="viewer-footer"><p id="status" role="status" aria-live="polite">サンプルを読み込んでいます…</p><button id="csv-sample" type="button" class="text-button">CSV サンプルを試す →</button></div>
+    </section>
+    <section id="exports" class="exports" aria-labelledby="exports-title">
+      <div class="section-heading"><div><p class="eyebrow">ROUND TRIP</p><h2 id="exports-title">BDF から描き戻す</h2><p>表示している BDF を、PDF・Markdown・検索用テキストに書き出します。変換はこのブラウザの中で動きます。</p></div><p class="export-document">対象: <strong data-export-document>文書を開いてください</strong></p></div>
+      <div class="export-card">
+        <div class="tabs" role="tablist" aria-label="書き出し形式">
+          <button type="button" role="tab" id="tab-pdf" aria-controls="panel-pdf" aria-selected="true">PDF</button>
+          <button type="button" role="tab" id="tab-md" aria-controls="panel-md" aria-selected="false" tabindex="-1">Markdown</button>
+          <button type="button" role="tab" id="tab-text" aria-controls="panel-text" aria-selected="false" tabindex="-1">テキスト</button>
+          <button type="button" role="tab" id="tab-find" aria-controls="panel-find" aria-selected="false" tabindex="-1">MiniSearch で検索</button>
+        </div>
+        <div class="panel" id="panel-pdf" role="tabpanel" aria-labelledby="tab-pdf">
+          <p class="about">ページを PDF ファイルに書き出します。文書のフォントを埋め込み、リンクも残します。グラデーションは近似し、マスク・フィルタ・画像・タグ付き構造は省略します。できたファイルはブラウザの PDF ビューアで下に表示します。</p>
+          <div class="row"><button type="button" class="button primary" data-export-run="pdf">PDF を書き出す</button><label class="check"><input type="checkbox" data-export-tagged> タグ付き（読み上げ用の構造）</label><span class="status" data-export-status role="status" aria-live="polite"></span></div>
+          <p class="links" data-export-links hidden><a class="button" data-export-pdf-open target="_blank" rel="noopener">新しいタブで開く</a> <a class="button" data-export-pdf-save>PDF を保存</a></p>
+          <iframe class="pdf-frame" data-export-frame hidden title="文書から書き出した PDF"></iframe>
+          <pre><code>bdf pdf demo.bdf demo-from-bdf.pdf</code></pre>
+        </div>
+        <div class="panel" id="panel-md" role="tabpanel" aria-labelledby="tab-md" hidden>
+          <p class="about">見出し・リスト・表を保ったまま Markdown に書き出します。図は zip に同梱するか、データ URL で埋め込むか、省けます。</p>
+          <div class="row"><button type="button" class="button primary" data-export-run="md">Markdown を書き出す</button><label>図 <select data-export-images><option value="zip">zip に同梱</option><option value="embed">本文に埋め込む</option><option value="none">省く</option></select></label><a class="button" data-export-md-save hidden>保存</a><span class="status" data-export-status role="status" aria-live="polite"></span></div>
+          <textarea class="output" data-export-markdown readonly spellcheck="false" aria-label="文書から書き出した Markdown"></textarea>
+          <pre><code>bdf markdown demo.bdf out/</code></pre>
+        </div>
+        <div class="panel" id="panel-text" role="tabpanel" aria-labelledby="tab-text" hidden>
+          <p class="about">ページごとのテキストと文書のメタデータを JSON に取り出します。1 ページが 1 レコードで、検索エンジンに渡せます。</p>
+          <div class="row"><button type="button" class="button primary" data-export-run="text">テキストを取り出す</button><a class="button" data-export-text-save hidden>保存</a><span class="status" data-export-status role="status" aria-live="polite"></span></div>
+          <pre class="output" data-export-text aria-label="文書から取り出したテキスト"></pre>
+          <pre><code>bdf text demo.bdf demo-text.json</code></pre>
+        </div>
+        <div class="panel" id="panel-find" role="tabpanel" aria-labelledby="tab-find" hidden>
+          <p class="about">同じレコードを MiniSearch でブラウザの中に索引づけします。1 ページが 1 レコード、日本語は隣り合う 2 文字の組（バイグラム）で索引づけます。ヒットを選ぶと上の文書がそのページを開きます。</p>
+          <div class="row" role="search"><input type="search" data-export-find placeholder="検索…（canvas、ぶらうざ など）" aria-label="MiniSearch で検索" autocomplete="off"><button type="button" class="button primary" data-export-find-run>検索</button><span class="status" data-export-status role="status" aria-live="polite"></span></div>
+          <div class="hits" data-export-hits aria-live="polite"></div>
+          <pre><code>import MiniSearch from "minisearch";</code></pre>
+        </div>
+      </div>
+    </section>
+    <section class="benchmarks" aria-labelledby="benchmark-title">
+      <div class="section-heading"><div><p class="eyebrow">BENCHMARKS</p><h2 id="benchmark-title">文書変換が速く、メモリと電力も少なく</h2><p>同じ Office ファイルを LibreOffice + Poppler と BDF の Go 変換器で処理した上流の参考値です。このページの書き出し時間は「このブラウザでの実測」に表示します。</p></div><a class="section-link" href="https://shibukawa.github.io/bdf/index.ja.html#benchmark-title">上流の計測 <span aria-hidden="true">↗</span></a></div>
+      <ul class="benchmark-highlights" aria-label="主な結果"><li><strong>94%</strong><span>文書あたりの推定 SoC エネルギーを削減</span></li><li><strong>470×</strong><span>合成 PPTX · 100 スライドの変換が高速</span></li><li><strong>47×</strong><span>合成 PPTX · 100 スライドの最大 RSS が少ない</span></li></ul>
+      <div class="benchmark-grid">
+        <figure class="benchmark-card"><h3>変換＋サムネイル作成の経過時間（中央値）</h3><div class="benchmark-case"><p>小さい DOCX</p><div class="benchmark-measure office"><span>LibreOffice + Poppler</span><span class="benchmark-track"><span style="width:100%"></span></span><strong>0.69 s</strong></div><div class="benchmark-measure bdf"><span>BDF（Go）</span><span class="benchmark-track"><span style="width:7.2%"></span></span><strong>0.05 s</strong></div></div><div class="benchmark-case"><p>小さい PPTX</p><div class="benchmark-measure office"><span>LibreOffice + Poppler</span><span class="benchmark-track"><span style="width:100%"></span></span><strong>1.01 s</strong></div><div class="benchmark-measure bdf"><span>BDF（Go）</span><span class="benchmark-track"><span style="width:3.0%"></span></span><strong>0.03 s</strong></div></div><div class="benchmark-case"><p>合成 PPTX · 100 スライド</p><div class="benchmark-measure office"><span>LibreOffice + Poppler</span><span class="benchmark-track"><span style="width:100%"></span></span><strong>56.38 s</strong></div><div class="benchmark-measure bdf"><span>BDF（Go）</span><span class="benchmark-track"><span style="width:0.21%"></span></span><strong>0.12 s</strong></div></div></figure>
+        <figure class="benchmark-card"><h3>最大 RSS（中央値）</h3><div class="benchmark-case"><p>小さい DOCX</p><div class="benchmark-measure office"><span>LibreOffice + Poppler</span><span class="benchmark-track"><span style="width:100%"></span></span><strong>161.8 MiB</strong></div><div class="benchmark-measure bdf"><span>BDF（Go）</span><span class="benchmark-track"><span style="width:26.8%"></span></span><strong>43.4 MiB</strong></div></div><div class="benchmark-case"><p>小さい PPTX</p><div class="benchmark-measure office"><span>LibreOffice + Poppler</span><span class="benchmark-track"><span style="width:100%"></span></span><strong>147.3 MiB</strong></div><div class="benchmark-measure bdf"><span>BDF（Go）</span><span class="benchmark-track"><span style="width:25.9%"></span></span><strong>38.2 MiB</strong></div></div><div class="benchmark-case"><p>合成 PPTX · 100 スライド</p><div class="benchmark-measure office"><span>LibreOffice + Poppler</span><span class="benchmark-track"><span style="width:100%"></span></span><strong>1,918.9 MiB</strong></div><div class="benchmark-measure bdf"><span>BDF（Go）</span><span class="benchmark-track"><span style="width:2.1%"></span></span><strong>40.8 MiB</strong></div></div></figure>
+        <figure class="benchmark-card"><h3>1 文書あたりの推定 SoC エネルギー</h3><p class="benchmark-sub">小さい DOCX・PPTX・XLSX の平均</p><div class="benchmark-case"><div class="benchmark-measure office"><span>LibreOffice + Poppler</span><span class="benchmark-track"><span style="width:100%"></span></span><strong>4.27 J</strong></div><div class="benchmark-measure bdf"><span>BDF（Go）</span><span class="benchmark-track"><span style="width:5.6%"></span></span><strong>0.24 J</strong></div></div><p class="benchmark-note">時間と最大 RSS は変換と先頭ページの 256 px サムネイル作成までを新規プロセスで計測した 5 回の中央値。エネルギーは 3 ラウンドの範囲から算出した推定値です。</p></figure>
+      </div>
+      <p class="benchmark-live">このブラウザでの実測: <span data-benchmark-live>まだ書き出していません</span></p>
     </section>
     <section class="gallery" aria-labelledby="gallery-title">
       <div class="section-heading"><div><p class="eyebrow">EXPLORE DOCUMENTS</p><h2 id="gallery-title">文書のかたちに合わせたプレビュー</h2><p>サンプルをビューアで開いて、表示や検索を試せます。</p></div><a class="section-link" href="./coverage.html">Porting coverage <span aria-hidden="true">↗</span></a></div>
@@ -61,9 +108,10 @@
         </article>
       </div>
     </section>
-    <section class="about" aria-labelledby="about-title"><div><h2 id="about-title">ブラウザで試す</h2><p>ファイルを開くかビューアにドロップすると、このブラウザ内で処理します。</p></div><div><h2>サンプルとライセンス</h2><p>文書サンプルの元データ: <a href="./licenses/BDF-MIT.txt">MIT ライセンス</a>。埋め込みフォント: <a href="./licenses/Liberation.txt">Liberation</a>、<a href="./licenses/IPA.txt">IPA</a>、<a href="./licenses/WenQuanYi-README.txt">WenQuanYi</a>。フォント見本: STIX Two Text（<a href="./licenses/STIX-OFL.txt">SIL Open Font License</a>）。Excel サンプル: <a href="./licenses/PROJECT-MIT.txt">MIT ライセンス</a>。</p></div></section>
+    <section class="about" aria-labelledby="about-title"><div><h2 id="about-title">ブラウザで試す</h2><p>ファイルを開くかビューアにドロップすると、このブラウザ内で処理します。</p></div><div><h2>サンプルとライセンス</h2><p>文書サンプルの元データ: <a href="./licenses/BDF-MIT.txt">MIT ライセンス</a>。埋め込みフォント: <a href="./licenses/Liberation.txt">Liberation</a>、<a href="./licenses/IPA.txt">IPA</a>、<a href="./licenses/WenQuanYi-README.txt">WenQuanYi</a>。フォント見本: STIX Two Text（<a href="./licenses/STIX-OFL.txt">SIL Open Font License</a>）。Excel サンプル: <a href="./licenses/PROJECT-MIT.txt">MIT ライセンス</a>。MiniSearch: <a href="./licenses/MiniSearch-MIT.txt">MIT ライセンス</a>。</p></div></section>
   </main>
   <footer class="page-footer"><p>shibukawa/bdf から独立して移植した非公式プロジェクトです。上流の公式提供・提携ではありません。</p><a href="https://github.com/f4ah6o/bdf.mbt">ソースコードを見る ↗</a></footer>
   <script type="module" src="./app.js"></script>
+  <script type="module" src="./export-page.js"></script>
 </body>
 </html>

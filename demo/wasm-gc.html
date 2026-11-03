@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>BDF · WebAssembly GC demo</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">B</span><div><strong>BDF · wasm-gc</strong><span>MoonBit WebAssembly demo</span></div></div>
+    <p class="privacy">ファイルはブラウザ内で処理されます</p>
+    <a class="source-link" href="./index.html">JS デモ <span aria-hidden="true">↗</span></a>
+    <a class="source-link" href="https://github.com/f4ah6o/bdf.mbt">GitHub <span aria-hidden="true">↗</span></a>
+  </header>
+  <main>
+    <section class="intro wasm-intro" aria-labelledby="intro-title">
+      <div><p class="eyebrow">WEBASSEMBLY GC · WASM-GC</p><h1 id="intro-title">BDF を、WebAssembly で。</h1><p class="description">同じ MoonBit の変換器を wasm-gc にコンパイルし、PDF の変換と BDF の PDF・Markdown・検索用テキストへの書き出しをブラウザ内で実行します。サーバーへは送りません。</p></div>
+      <div class="intro-actions"><button id="sample-bdf" class="button primary" type="button">サンプル BDF を開く</button><a class="button secondary" href="./index.html">JS デモに戻る</a></div>
+    </section>
+    <section class="convert-card" aria-labelledby="convert-title">
+      <div><p class="eyebrow">PDF → BDF</p><h2 id="convert-title">PDF を wasm-gc で変換</h2><p class="convert-note">暗号化 PDF はパスワードを入力してください。サンプルのパスワードは demo です。変換した BDF は、下の書き出しにもそのまま使えます。</p></div>
+      <div class="convert-actions"><input id="pdf-file" type="file" accept=".pdf,application/pdf" aria-label="PDF ファイル"><label>パスワード <input id="pdf-password" type="password" autocomplete="current-password" placeholder="任意"></label><button id="pdf-convert" class="button primary" type="button" disabled>BDF に変換</button><span id="wasm-status" class="wasm-status" role="status" aria-live="polite">wasm-gc を待っています…</span></div>
+    </section>
+    <section id="viewer" class="viewer-card" aria-label="ドキュメントビューア">
+      <div class="viewer-top"><div><span class="live-dot" aria-hidden="true"></span><strong id="document-name">デモ文書</strong><span id="document-meta" class="document-meta">wasm-gc</span></div><a id="download" class="download" download="document.bdf" hidden>BDF を保存 ↓</a></div>
+      <div class="toolbar" aria-label="表示">
+        <div class="page-nav" role="group" aria-label="ページ移動"><button id="previous" type="button" aria-label="前のページ">‹</button><span id="page-number" aria-live="polite">–</span><button id="next" type="button" aria-label="次のページ">›</button></div>
+        <span class="wasm-chip">wasm-gc</span>
+      </div>
+      <div id="preview" class="preview" aria-label="文書のプレビュー"></div>
+      <div class="viewer-footer"><p id="status" role="status" aria-live="polite">サンプル BDF を読み込んでいます…</p></div>
+    </section>
+    <section id="exports" class="exports" aria-labelledby="exports-title">
+      <div class="section-heading"><div><p class="eyebrow">ROUND TRIP</p><h2 id="exports-title">BDF から描き戻す</h2><p>表示している BDF を、PDF・Markdown・検索用テキストに書き出します。変換はこのブラウザの中で動きます。</p></div><p class="export-document">対象: <strong data-export-document>文書を開いてください</strong></p></div>
+      <div class="export-card">
+        <div class="tabs" role="tablist" aria-label="書き出し形式">
+          <button type="button" role="tab" id="tab-pdf" aria-controls="panel-pdf" aria-selected="true">PDF</button>
+          <button type="button" role="tab" id="tab-md" aria-controls="panel-md" aria-selected="false" tabindex="-1">Markdown</button>
+          <button type="button" role="tab" id="tab-text" aria-controls="panel-text" aria-selected="false" tabindex="-1">テキスト</button>
+          <button type="button" role="tab" id="tab-find" aria-controls="panel-find" aria-selected="false" tabindex="-1">MiniSearch で検索</button>
+        </div>
+        <div class="panel" id="panel-pdf" role="tabpanel" aria-labelledby="tab-pdf">
+          <p class="about">ページを PDF ファイルに書き出します。文書のフォントを埋め込み、リンクも残します。グラデーションは近似し、マスク・フィルタ・画像・タグ付き構造は省略します。できたファイルはブラウザの PDF ビューアで下に表示します。</p>
+          <div class="row"><button type="button" class="button primary" data-export-run="pdf">PDF を書き出す</button><label class="check"><input type="checkbox" data-export-tagged> タグ付き（読み上げ用の構造）</label><span class="status" data-export-status role="status" aria-live="polite"></span></div>
+          <p class="links" data-export-links hidden><a class="button" data-export-pdf-open target="_blank" rel="noopener">新しいタブで開く</a> <a class="button" data-export-pdf-save>PDF を保存</a></p>
+          <iframe class="pdf-frame" data-export-frame hidden title="文書から書き出した PDF"></iframe>
+          <pre><code>bdf pdf demo.bdf demo-from-bdf.pdf</code></pre>
+        </div>
+        <div class="panel" id="panel-md" role="tabpanel" aria-labelledby="tab-md" hidden>
+          <p class="about">見出し・リスト・表を保ったまま Markdown に書き出します。図は zip に同梱するか、データ URL で埋め込むか、省けます。</p>
+          <div class="row"><button type="button" class="button primary" data-export-run="md">Markdown を書き出す</button><label>図 <select data-export-images><option value="zip">zip に同梱</option><option value="embed">本文に埋め込む</option><option value="none">省く</option></select></label><a class="button" data-export-md-save hidden>保存</a><span class="status" data-export-status role="status" aria-live="polite"></span></div>
+          <textarea class="output" data-export-markdown readonly spellcheck="false" aria-label="文書から書き出した Markdown"></textarea>
+          <pre><code>bdf markdown demo.bdf out/</code></pre>
+        </div>
+        <div class="panel" id="panel-text" role="tabpanel" aria-labelledby="tab-text" hidden>
+          <p class="about">ページごとのテキストと文書のメタデータを JSON に取り出します。1 ページが 1 レコードで、検索エンジンに渡せます。</p>
+          <div class="row"><button type="button" class="button primary" data-export-run="text">テキストを取り出す</button><a class="button" data-export-text-save hidden>保存</a><span class="status" data-export-status role="status" aria-live="polite"></span></div>
+          <pre class="output" data-export-text aria-label="文書から取り出したテキスト"></pre>
+          <pre><code>bdf text demo.bdf demo-text.json</code></pre>
+        </div>
+        <div class="panel" id="panel-find" role="tabpanel" aria-labelledby="tab-find" hidden>
+          <p class="about">同じレコードを MiniSearch でブラウザの中に索引づけします。1 ページが 1 レコード、日本語は隣り合う 2 文字の組（バイグラム）で索引づけます。ヒットを選ぶと上の文書がそのページを開きます。</p>
+          <div class="row" role="search"><input type="search" data-export-find placeholder="検索…（canvas、ぶらうざ など）" aria-label="MiniSearch で検索" autocomplete="off"><button type="button" class="button primary" data-export-find-run>検索</button><span class="status" data-export-status role="status" aria-live="polite"></span></div>
+          <div class="hits" data-export-hits aria-live="polite"></div>
+          <pre><code>import MiniSearch from "minisearch";</code></pre>
+        </div>
+      </div>
+    </section>
+    <section class="about" aria-labelledby="about-title"><div><h2 id="about-title">wasm-gc 版について</h2><p>表示には JavaScript 版のビューアを使い、変換・書き出しは wasm-gc のモジュールで実行します。wasm-gc の文字列は JS の文字列と直接やり取りし、バイナリは Base64 で受け渡します。</p></div><div><h2>ライセンス</h2><p>サンプル文書と埋め込みフォントのライセンスは <a href="./licenses/BDF-MIT.txt">BDF-MIT</a>、各フォントのライセンス、<a href="./licenses/MiniSearch-MIT.txt">MiniSearch の MIT ライセンス</a>を参照してください。</p></div></section>
+  </main>
+  <footer class="page-footer"><p>shibukawa/bdf から独立して移植した非公式プロジェクトです。上流の公式提供・提携ではありません。</p><a href="https://github.com/f4ah6o/bdf.mbt">ソースコードを見る ↗</a></footer>
+  <script type="module" src="./wasm-gc-page.js"></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/export/pdf"
+
+import {
+  "f4ah6o/bdf/core",
+}
+
+// Values
+pub fn write_bytes(Bytes, PdfOptions) -> PdfResult raise
+
+pub fn write_document(@core.Document, PdfOptions) -> PdfResult raise
+
+// Errors
+
+// Types and methods
+type ContentState
+
+type PageContent
+
+type PageInfo
+
+type PdfFont
+
+type PdfGState
+
+pub(all) struct PdfOptions {
+  views : Array[String]
+  tagged : Bool
+  compress : Bool
+}
+pub fn PdfOptions::new() -> Self
+
+type PdfResources
+
+pub(all) struct PdfResult {
+  bytes : Bytes
+  pages : Int32
+  fonts : Int32
+  warnings : Array[String]
+}
+
+type PdfWriter
+
+// Type aliases
+
+// Traits

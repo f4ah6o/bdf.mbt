@@ -1,0 +1,20 @@
+import {
+  "f4ah6o/bdf/convert/pdf" @pdf_convert,
+  "f4ah6o/bdf/export/pdf" @export_pdf,
+  "f4ah6o/bdf/export/markdown" @export_md,
+  "f4ah6o/bdf/export/search" @export_search,
+  "moonbitlang/core/encoding/base64",
+}
+
+supported_targets = "+js+wasm-gc"
+
+pkgtype(kind: "foreign_library")
+
+options(
+  link: {
+    "wasm-gc": {
+      "use-js-builtin-string": true,
+      "imported-string-constants": "_",
+    },
+  },
+)

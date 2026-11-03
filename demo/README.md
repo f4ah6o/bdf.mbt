@@ -20,6 +20,21 @@ by the user are handled in the browser. The sample contains Liberation fonts
 ([OFL](licenses/Liberation.txt)), IPA Gothic ([IPA Font License](licenses/IPA.txt)),
 and WenQuanYi Zen Hei ([GPLv2](licenses/WenQuanYi.txt), with the font embedding
 exception and copyright notice in its [README](licenses/WenQuanYi-README.txt)).
+
+The page also has a round-trip section for the document currently in the
+viewer. **PDF** embeds the used fonts and keeps URI links; **Markdown** keeps
+headings, lists, tables and images; **テキスト** returns the same page records
+as the upstream search-text tool; **MiniSearch** indexes those records in the
+browser (MiniSearch is MIT licensed, see
+[licenses/MiniSearch-MIT.txt](licenses/MiniSearch-MIT.txt)). The PDF writer
+approximates gradients with their darkest stop and omits masks, filters and
+images; tagged PDF structure is not implemented yet. These limits are shown as
+warnings under the PDF result.
+
+The [wasm-gc page](wasm-gc.html) runs the same PDF→BDF and BDF→PDF/Markdown/
+text/MiniSearch operations in a WebAssembly GC module. It needs a browser with
+wasm-gc and JS string builtins (current Chrome or Edge). Files are still handled
+locally; the module is loaded only when a conversion or export starts.
 The STIX Two Text sample is from the existing `compat/font/fixtures/stix.ttf`
 fixture; copyright and SIL Open Font License 1.1 terms are included in
 [STIX-OFL.txt](licenses/STIX-OFL.txt). The demo tests TTF and WOFF2 input.
@@ -32,8 +47,9 @@ Build and test locally:
 moon update
 npm ci
 npx playwright install chromium
-npm run build:demo
+npm run build:demo   # JS build, wasm-gc export bridge, demo assets
 npm run test:demo
+npm run test:export   # export tabs and the wasm-gc page
 python3 -m http.server --directory _build/pages 8000
 ```
 
@@ -41,7 +57,9 @@ The test serves the site under `/bdf.mbt/`, exercises all sample pages and the
 converter page, search, navigation, downloading, CSV and SVG conversion, TTF
 and WOFF2 font specimens, PDF, encrypted PDF password retry, the PDF feature
 showcase, DOCX, PPTX, draw.io and Parquet conversion, view selection and
-saving, unsupported files, XLSX input, and mobile layout. An XLSX fixture is
+saving, unsupported files, XLSX input, and mobile layout. `test:export` checks
+the PDF/Markdown/text/MiniSearch tabs, the live benchmark timings, the wasm-gc
+page, PDF→BDF conversion in wasm-gc, and 375 px horizontal overflow. An XLSX fixture is
 also rendered in Chromium and each sheet is compared pixel-for-pixel with its
 upstream Go-generated BDF using the same viewer. This checks that fixture, not
 every Excel feature. The test requires Playwright Chromium. Run the `vlmkit`

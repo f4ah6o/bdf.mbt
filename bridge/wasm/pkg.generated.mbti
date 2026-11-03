@@ -1,0 +1,19 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/bridge/wasm"
+
+// Values
+pub fn wasm_export_pdf(String, Int32) -> String
+
+pub fn wasm_markdown(String, String) -> String
+
+pub fn wasm_pdf(String, String) -> String
+
+pub fn wasm_search_text(String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

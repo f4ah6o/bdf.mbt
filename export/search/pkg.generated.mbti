@@ -1,0 +1,25 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/export/search"
+
+import {
+  "f4ah6o/bdf/core",
+}
+
+// Values
+pub fn search_text(@core.Document) -> SearchTextResult raise
+
+pub fn search_text_bytes(Bytes) -> SearchTextResult raise
+
+// Errors
+
+// Types and methods
+pub(all) struct SearchTextResult {
+  json : String
+  plain : String
+  views : Int32
+  pages : Int32
+}
+
+// Type aliases
+
+// Traits

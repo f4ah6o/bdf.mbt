@@ -86,6 +86,24 @@ pub fn open_single(data : Bytes) -> Document raise {
 }
 
 ///|
+/// Parse the manifest JSON of a single-file BDF, including its metadata.
+pub fn manifest_json(data : Bytes) -> Json raise {
+  let header = parse_header(data)
+  let r = Reader::new(data)
+  r.skip(header.manifest_offset)
+  let stored = r.take(header.manifest_length)
+  let manifest_bytes = if header.manifest_encoding == 1 {
+    inflate_bounded(stored, 268435456)
+  } else {
+    stored
+  }
+  let json = @utf8.decode(manifest_bytes) catch {
+    _ => raise BadFormat("invalid UTF-8 manifest")
+  }
+  @json.parse(json)
+}
+
+///|
 pub(all) struct Document {
   manifest : Manifest
   header : Header
