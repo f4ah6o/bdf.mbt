@@ -57,11 +57,46 @@ fn ContentLexer::read_literal(self : ContentLexer) -> Bytes {
 }
 
 ///|
-// Match upstream's preference for a known length, falling back to the first
-// whitespace-delimited EI marker when the declared size does not fit.
-fn ContentLexer::read_inline_image(
+fn pdf_inline_data_valid(
+  data : Bytes,
+  filters : Array[PdfStreamFilter],
+) -> Bool {
+  if filters.is_empty() {
+    return true
+  }
+  let decoded = pdf_decode_stream(
+    data,
+    filters,
+    1073741824L,
+    false,
+    1073741824L,
+  ) catch {
+    _ => return false
+  }
+  match decoded.1 {
+    None => true
+    Some(b"DCTDecode") =>
+      data.length() >= 2 &&
+      data[data.length() - 2] == b'\xff' &&
+      data[data.length() - 1] == b'\xd9'
+    Some(b"JPXDecode") =>
+      (data.length() >= 2 &&
+        data[data.length() - 2] == b'\xff' &&
+        data[data.length() - 1] == b'\xd9') ||
+      (data.length() >= 12 &&
+        data[4] == b'j' &&
+        data[5] == b'P' &&
+        data[6] == b' ')
+    Some(b"JBIG2Decode") => true
+    Some(_) => true
+  }
+}
+
+///|
+fn ContentLexer::read_inline_image_with_filters(
   self : ContentLexer,
   length : Int32,
+  filters : Array[PdfStreamFilter],
 ) -> Bytes {
   if self.pos < self.data.length() && content_white(self.data[self.pos]) {
     self.pos += 1
@@ -78,17 +113,44 @@ fn ContentLexer::read_inline_image(
       return self.data[start:end].to_owned()
     }
   }
+  let mut first_end = -1
+  let mut first_data : Bytes = b""
   let mut p = start
   while p + 1 < self.data.length() {
     if self.inline_end(p) && (p == 0 || content_white(self.data[p - 1])) {
-      let end = Int32::max(p - 1, start)
-      self.pos = p + 2
-      return self.data[start:end].to_owned()
+      let end = if p > start && content_white(self.data[p - 1]) {
+        p - 1
+      } else {
+        p
+      }
+      let data = self.data[start:end].to_owned()
+      if first_end < 0 {
+        first_end = p
+        first_data = data
+      }
+      if pdf_inline_data_valid(data, filters) {
+        self.pos = p + 2
+        return data
+      }
     }
     p += 1
   }
+  if first_end >= 0 {
+    self.pos = first_end + 2
+    return first_data
+  }
   self.pos = self.data.length()
   self.data[start:].to_owned()
+}
+
+///|
+// Match upstream's preference for a known length. Without one, choose the
+// first IE-ending candidate whose filtered data actually decodes.
+fn ContentLexer::read_inline_image(
+  self : ContentLexer,
+  length : Int32,
+) -> Bytes {
+  self.read_inline_image_with_filters(length, [])
 }
 
 ///|

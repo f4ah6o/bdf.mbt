@@ -120,6 +120,50 @@ fn pdf_inline_filters(
 }
 
 ///|
+fn PdfGraphics::inline_raw_length(
+  self : PdfGraphics,
+  dict : Array[(Bytes, ContentValue)],
+) -> Int32 raise PdfStreamError {
+  let width = pdf_inline_int(dict, b"W", b"Width", 0)
+  let height = pdf_inline_int(dict, b"H", b"Height", 0)
+  if width <= 0 || height <= 0 {
+    return -1
+  }
+  let is_mask = pdf_inline_bool(dict, b"IM", b"ImageMask")
+  let bpc = if is_mask {
+    pdf_inline_int(dict, b"BPC", b"BitsPerComponent", 1)
+  } else {
+    pdf_inline_int(dict, b"BPC", b"BitsPerComponent", 8)
+  }
+  let components = if is_mask {
+    1
+  } else {
+    match pdf_inline_value(dict, b"CS", b"ColorSpace") {
+      Some(value) =>
+        match self.resolve_color_space(value) {
+          PdfGray => 1
+          PdfRGB => 3
+          PdfCMYK => 4
+          PdfPattern => 0
+        }
+      None => 1
+    }
+  }
+  if bpc <= 0 || components <= 0 {
+    return -1
+  }
+  let bits = width.to_int64() *
+    components.to_int64() *
+    bpc.to_int64()
+  let row_bytes = (bits + 7L) / 8L
+  let length = row_bytes * height.to_int64()
+  if length > 2147483647L {
+    return -1
+  }
+  length.to_int()
+}
+
+///|
 fn PdfGraphics::draw_inline_image(
   self : PdfGraphics,
   dict : Array[(Bytes, ContentValue)],
@@ -218,6 +262,12 @@ fn PdfGraphics::inline_image(
       _ => raise InvalidStream("invalid PDF inline image dictionary")
     }
   }
-  let data = lexer.read_inline_image(length)
+  let filters = pdf_inline_filters(entries)
+  let effective_length = if length < 0 && filters.is_empty() {
+    self.inline_raw_length(entries)
+  } else {
+    length
+  }
+  let data = lexer.read_inline_image_with_filters(effective_length, filters)
   self.draw_inline_image(entries, data)
 }

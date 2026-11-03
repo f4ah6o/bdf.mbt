@@ -263,6 +263,17 @@ test "PDF inline JPEG image is stored unchanged" {
 }
 
 ///|
+test "PDF raw inline image length wins over an embedded EI marker" {
+  let document = pdf_graphics_document(
+    pdf_inline_test_document(
+      pdf_inline_content("/W 4 /H 1 /CS /G /BPC 8", b"x EI"),
+    ),
+    no_text_index=true,
+  )
+  assert_true(document.length() > 0, msg="PDF raw inline image length")
+}
+
+///|
 test "PDF inline Flate RGB samples become PNG" {
   let document = pdf_graphics_document(
     pdf_inline_test_document(

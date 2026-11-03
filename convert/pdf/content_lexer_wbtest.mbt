@@ -57,6 +57,29 @@ test "inline image termination" {
 }
 
 ///|
+test "inline image filter validation skips a false EI marker" {
+  let lexer : ContentLexer = {
+    data: b"\xff\xd8xx EI yy\xff\xd9 EI Q",
+    pos: 0,
+  }
+  let filters : Array[PdfStreamFilter] = [
+    {
+      name: b"DCTDecode",
+      predictor: 1,
+      colors: 1,
+      bits: 8,
+      columns: 1,
+      early_change: 1,
+    },
+  ]
+  assert_eq(
+    lexer.read_inline_image_with_filters(-1, filters),
+    b"\xff\xd8xx EI yy\xff\xd9",
+  )
+  assert_eq(lexer.next(0), Operator(b"Q"))
+}
+
+///|
 test "string operand decoding" {
   assert_eq(content_literal_bytes(Literal(b"\x00\xff")), Some(b"\x00\xff"))
   assert_eq(content_literal_bytes(Hex(b"0041ff")), Some(b"\x00A\xff"))
