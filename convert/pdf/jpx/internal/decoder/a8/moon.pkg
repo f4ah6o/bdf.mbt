@@ -1,0 +1,9 @@
+// T.800-2015 Annex A.8 packet header parsing
+import {
+  "f4ah6o/bdf/convert/pdf/jpx/internal/core" @core,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/geometry" @geometry,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/input" @input,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/packet" @packet,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/subband" @subband,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/math" @math,
+}

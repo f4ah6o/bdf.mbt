@@ -455,8 +455,12 @@ fn PdfGraphics::pattern_fill(
     Some(value) => value.to_int()
     None => 1
   }
+  if pattern_type == 1 {
+    self.tiling_pattern_fill(path_index, rule, object, bounds)
+    return
+  }
   if pattern_type != 2 {
-    raise InvalidStream("PDF tiling patterns are not supported yet")
+    raise InvalidStream("unsupported PDF pattern type")
   }
   let shading_object = match pdf_dict_get(dict, b"Shading") {
     Some(value) => value

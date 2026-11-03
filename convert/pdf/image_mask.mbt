@@ -271,3 +271,45 @@ fn pdf_apply_image_alpha(
   }
   out.to_bytes()
 }
+
+///|
+// Encode a soft mask as an opaque grayscale image. BDF mask kind 1 takes its
+// luminosity over a black backdrop.
+fn pdf_soft_mask_rgb(mask : PdfImageMask) -> Bytes raise PdfStreamError {
+  if mask.width <= 0 || mask.height <= 0 {
+    raise InvalidStream("invalid PDF soft mask size")
+  }
+  let pixels = mask.width * mask.height
+  if mask.values.length() < pixels {
+    raise InvalidStream("PDF soft mask samples are truncated")
+  }
+  let rgb = @buffer.Buffer(size_hint=pixels * 3)
+  for i in 0..<pixels {
+    let value = mask.values[i]
+    rgb.write_byte(value)
+    rgb.write_byte(value)
+    rgb.write_byte(value)
+  }
+  rgb.to_bytes()
+}
+
+///|
+// Encode a stencil mask as white pixels whose alpha removes the painted
+// pixels of the image it is attached to.
+fn pdf_stencil_mask_rgba(mask : PdfImageMask) -> Bytes raise PdfStreamError {
+  if mask.width <= 0 || mask.height <= 0 {
+    raise InvalidStream("invalid PDF stencil mask size")
+  }
+  let pixels = mask.width * mask.height
+  if mask.values.length() < pixels {
+    raise InvalidStream("PDF stencil mask samples are truncated")
+  }
+  let rgba = @buffer.Buffer(size_hint=pixels * 4)
+  for i in 0..<pixels {
+    rgba.write_byte(0xff)
+    rgba.write_byte(0xff)
+    rgba.write_byte(0xff)
+    rgba.write_byte((255 - mask.values[i].to_int()).to_byte())
+  }
+  rgba.to_bytes()
+}

@@ -63,35 +63,86 @@ fn check_pdf_graphics_page(
 }
 
 ///|
-test "unsupported PDF soft masks fail closed" {
-  let file : PdfFile = {
-    data: b"",
-    entries: {},
-    objects: {},
-    loading: {},
-    object_streams: {},
-    trailers: [],
-    trailer: PdfNull,
-    font_cache: Map([]),
-    default_font: None,
-  }
-  let resources = PdfDict([
-    (b"ExtGState", PdfDict([(b"GS1", PdfDict([(b"SMask", PdfDict([]))]))])),
+fn pdf_soft_mask_test_document(subtype : String, extra : String) -> Bytes {
+  pdf_test_pdf([
+    b"<< /Type /Catalog /Pages 2 0 R >>",
+    b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+    b"<< /Type /Page /Parent 2 0 R /Resources << /ExtGState << /GS1 5 0 R >> >> /Contents 4 0 R >>",
+    pdf_test_stream("", b"q /GS1 gs 0 0 100 100 re f Q"),
+    @utf8.encode(
+      "<< /Type /ExtGState /SMask << /S /" +
+      subtype +
+      " " +
+      extra +
+      " /G 6 0 R >> >>",
+    ),
+    pdf_test_stream(
+      "/Type /XObject /Subtype /Form /BBox [0 0 100 100] /Resources << >>",
+      b"1 g 0 0 100 100 re f",
+    ),
   ])
-  let graphics = PdfGraphics::new(
-    10.0,
-    10.0,
-    (1.0, 0.0, 0.0, 1.0, 0.0, 0.0),
-    file=Some(file),
-    resources=Some(resources),
+}
+
+///|
+test "PDF ExtGState soft masks use BDF mask commands" {
+  let document = pdf_graphics_document(
+    pdf_soft_mask_test_document("Luminosity", ""),
+    no_text_index=true,
   )
-  let rejected = try {
-    graphics.run(b"/GS1 gs")
-    false
-  } catch {
-    _ => true
+  let commands = pdf_test_body_commands(document)
+  let mut groups = 0
+  let mut masks = 0
+  let mut mask_kind = -1
+  for command in commands {
+    match command {
+      @render.GroupBegin(_, _, _, _, _, _) => groups += 1
+      @render.MaskBegin(kind, _, _) => {
+        masks += 1
+        mask_kind = kind
+      }
+      _ => ()
+    }
   }
-  assert_true(rejected)
+  assert_eq(groups, 1, msg="PDF soft mask group count")
+  assert_eq(masks, 1, msg="PDF soft mask command count")
+  assert_eq(mask_kind, 1, msg="PDF luminosity soft mask kind")
+}
+
+///|
+test "PDF alpha soft masks use the alpha kind" {
+  let document = pdf_graphics_document(
+    pdf_soft_mask_test_document("Alpha", ""),
+    no_text_index=true,
+  )
+  let commands = pdf_test_body_commands(document)
+  let mut mask_kind = -1
+  for command in commands {
+    match command {
+      @render.MaskBegin(kind, _, _) => mask_kind = kind
+      _ => ()
+    }
+  }
+  assert_eq(mask_kind, 0, msg="PDF alpha soft mask kind")
+}
+
+///|
+test "PDF soft mask transfer functions become a table" {
+  let document = pdf_graphics_document(
+    pdf_soft_mask_test_document(
+      "Luminosity",
+      "/TR << /FunctionType 2 /Domain [0 1] /C0 [0] /C1 [1] /N 1 >>",
+    ),
+    no_text_index=true,
+  )
+  let commands = pdf_test_body_commands(document)
+  let mut transfer_length = -1
+  for command in commands {
+    match command {
+      @render.MaskBegin(_, _, transfer) => transfer_length = transfer.length()
+      _ => ()
+    }
+  }
+  assert_eq(transfer_length, 256, msg="PDF soft mask transfer table size")
 }
 
 ///|

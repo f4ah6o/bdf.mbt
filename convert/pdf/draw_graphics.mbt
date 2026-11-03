@@ -144,9 +144,9 @@ fn PdfGraphics::emit_image(
 }
 
 ///|
-// Image data keeps JPEG bytes as they are, encodes 8-bit samples as PNG and
-// turns 1-bit stencil masks into RGBA PNGs. Other codecs and sample formats
-// need decoders that are not ported yet.
+// Image data keeps JPEG bytes as they are, decodes CCITT fax data, encodes
+// 8-bit samples as PNG and turns 1-bit stencil masks into RGBA PNGs. Other
+// codecs and sample formats need decoders that are not ported yet.
 fn PdfGraphics::draw_image_data(
   self : PdfGraphics,
   width : Int32,
@@ -157,6 +157,7 @@ fn PdfGraphics::draw_image_data(
   invert : Bool,
   data : Bytes,
   codec : Bytes?,
+  ccitt : PdfCcittParams?,
 ) -> Unit raise PdfStreamError {
   match codec {
     Some(b"DCTDecode") => {
@@ -167,6 +168,69 @@ fn PdfGraphics::draw_image_data(
         raise InvalidStream("invalid PDF JPEG image")
       }
       self.emit_image(data)
+    }
+    Some(b"CCITTFaxDecode") => {
+      if bpc != 1 {
+        raise InvalidStream("PDF CCITT images must have one bit per component")
+      }
+      let params = match ccitt {
+        Some(value) => value
+        None => pdf_ccitt_default_params()
+      }
+      let bits = pdf_decode_ccitt(params, width, height, data)
+      if is_mask {
+        let rgba = pdf_ccitt_mask_rgba(
+          width,
+          height,
+          bits,
+          params.black_is1,
+          invert,
+          self.state.fill,
+        )
+        self.emit_image(pdf_png_encode_rgba(width, height, rgba))
+      } else {
+        match space {
+          Some(PdfGray) => ()
+          Some(_) =>
+            raise InvalidStream("PDF CCITT images require a gray colour space")
+          None => raise InvalidStream("PDF image color space is missing")
+        }
+        let rgb = pdf_ccitt_rgb(
+          width,
+          height,
+          bits,
+          params.black_is1,
+          invert,
+        )
+        self.emit_image(pdf_png_encode_rgb(width, height, rgb))
+      }
+    }
+    Some(b"JPXDecode") => {
+      if is_mask {
+        raise InvalidStream("PDF image masks cannot use JPEG 2000 data")
+      }
+      let (jpx_width, jpx_height, jpx_rgb) = pdf_jpx_rgb(data, space, invert)
+      self.emit_image(pdf_png_encode_rgb(jpx_width, jpx_height, jpx_rgb))
+    }
+    Some(b"JBIG2Decode") => {
+      if is_mask {
+        let (jbig2_width, jbig2_height, jbig2_bits) = pdf_jbig2_decode(data)
+        let rgba = pdf_image_mask_rgba(
+          jbig2_width,
+          jbig2_height,
+          !invert,
+          self.state.fill,
+          jbig2_bits,
+        )
+        self.emit_image(
+          pdf_png_encode_rgba(jbig2_width, jbig2_height, rgba),
+        )
+      } else {
+        let (jbig2_width, jbig2_height, jbig2_rgb) = pdf_jbig2_rgb(data, invert)
+        self.emit_image(
+          pdf_png_encode_rgb(jbig2_width, jbig2_height, jbig2_rgb),
+        )
+      }
     }
     Some(_) => raise InvalidStream("unsupported PDF image filter")
     None =>
@@ -199,6 +263,71 @@ fn PdfGraphics::draw_image_data(
 }
 
 ///|
+// Attach an encoded image and its mask through BDF group and mask commands,
+// so JPEG data stays compressed instead of being decoded for compositing.
+fn PdfGraphics::draw_encoded_masked_image(
+  self : PdfGraphics,
+  file : PdfFile,
+  width : Int32,
+  height : Int32,
+  bpc : Int32,
+  space : PdfDeviceColorSpace?,
+  invert : Bool,
+  data : Bytes,
+  codec : Bytes?,
+  soft_mask : PdfObject?,
+  stencil_mask : PdfObject?,
+) -> Unit raise PdfStreamError {
+  match codec {
+    Some(b"DCTDecode") | Some(b"JPXDecode") | Some(b"JBIG2Decode") => ()
+    Some(_) =>
+      raise InvalidStream(
+        "PDF image masks with encoded image data are not supported yet",
+      )
+    None => raise InvalidStream("PDF image masks with encoded image data are not supported yet")
+  }
+  self.object.group_begin(1.0F, 0, 0.0F, 0.0F, 1.0F, 1.0F)
+  self.draw_image_data(
+    width, height, bpc, space, false, invert, data, codec, None,
+  )
+  match soft_mask {
+    Some(value) => {
+      let mask = pdf_load_soft_mask(file, value)
+      self.object.mask_begin(1, 0x000000ffU, b"")
+      self.emit_image(
+        pdf_png_encode_rgb(
+          mask.width,
+          mask.height,
+          pdf_soft_mask_rgb(mask),
+        ),
+      )
+      self.object.mask_end()
+    }
+    None =>
+      match stencil_mask {
+        Some(PdfArray(_)) =>
+          raise InvalidStream(
+            "PDF encoded images with colour-key masks are not supported yet",
+          )
+        Some(value) => {
+          let mask = pdf_load_stencil_mask(file, value)
+          self.object.mask_begin(0, 0U, b"")
+          self.emit_image(
+            pdf_png_encode_rgba(
+              mask.width,
+              mask.height,
+              pdf_stencil_mask_rgba(mask),
+            ),
+          )
+          self.object.mask_end()
+        }
+        None => raise InvalidStream("PDF image mask is missing")
+      }
+  }
+  self.object.group_end()
+}
+
+///|
 fn PdfGraphics::draw_image_xobject(
   self : PdfGraphics,
   file : PdfFile,
@@ -210,11 +339,11 @@ fn PdfGraphics::draw_image_xobject(
     _ => false
   }
   let soft_mask = match pdf_dict_get(dict, b"SMask") {
-    Some(PdfNull) | None => None
+    Some(PdfNull) | Some(PdfName(b"None")) | None => None
     Some(value) => Some(value)
   }
   let stencil_mask = match pdf_dict_get(dict, b"Mask") {
-    Some(PdfNull) | None => None
+    Some(PdfNull) | Some(PdfName(b"None")) | None => None
     Some(value) => Some(value)
   }
   let decode : Array[Double] = match
@@ -229,14 +358,13 @@ fn PdfGraphics::draw_image_xobject(
       })
     _ => []
   }
-  if !is_mask && !decode.is_empty() {
-    raise InvalidStream("PDF image Decode arrays are not supported yet")
-  }
   let width = pdf_image_dimension(file, dict, b"Width", "width")
   let height = pdf_image_dimension(file, dict, b"Height", "height")
+  let filters = file.resolved_stream_filters(dict)
+  let ccitt_filter = pdf_ccitt_filter_index(filters) >= 0
   let bpc = match file.page_num(pdf_dict_get(dict, b"BitsPerComponent")) {
     Some(value) => value.to_int()
-    None => if is_mask { 1 } else { 8 }
+    None => if is_mask || ccitt_filter { 1 } else { 8 }
   }
   let space = if is_mask {
     None
@@ -249,22 +377,57 @@ fn PdfGraphics::draw_image_xobject(
   let invert = !decode.is_empty() && decode[0] == 1.0
   let (data, codec) = pdf_decode_stream(
     raw,
-    file.resolved_stream_filters(dict),
+    filters,
     1073741824L,
     false,
     1073741824L,
   )
+  let ccitt = match codec {
+    Some(b"CCITTFaxDecode") => Some(pdf_ccitt_params(file, dict))
+    _ => None
+  }
+  let ccitt_decode_array = match codec {
+    Some(b"CCITTFaxDecode") => decode.length() == 2
+    _ => false
+  }
+  let jpx_decode_array = match codec {
+    Some(b"JPXDecode") => decode.length() == 2
+    _ => false
+  }
+  let jbig2_decode_array = match codec {
+    Some(b"JBIG2Decode") => decode.length() == 2
+    _ => false
+  }
+  if !is_mask &&
+    !decode.is_empty() &&
+    !ccitt_decode_array &&
+    !jpx_decode_array &&
+    !jbig2_decode_array {
+    raise InvalidStream("PDF image Decode arrays are not supported yet")
+  }
   let has_attachment = match (soft_mask, stencil_mask) {
     (Some(_), _) | (_, Some(_)) => true
     _ => false
   }
   if !is_mask && has_attachment {
-    match codec {
-      Some(_) =>
-        raise InvalidStream(
-          "PDF image masks with encoded image data are not supported yet",
-        )
-      None => ()
+    let encoded = match codec {
+      Some(_) => true
+      None => false
+    }
+    if encoded {
+      self.draw_encoded_masked_image(
+        file,
+        width,
+        height,
+        bpc,
+        space,
+        invert,
+        data,
+        codec,
+        soft_mask,
+        stencil_mask,
+      )
+      return
     }
     if bpc != 8 {
       raise InvalidStream(
@@ -313,7 +476,7 @@ fn PdfGraphics::draw_image_xobject(
     self.emit_image(pdf_png_encode_rgba(width, height, masked))
   } else {
     self.draw_image_data(
-      width, height, bpc, space, is_mask, invert, data, codec,
+      width, height, bpc, space, is_mask, invert, data, codec, ccitt,
     )
   }
 }
@@ -452,6 +615,9 @@ fn PdfGraphics::draw_form_xobject(
   }
   self.run_ops(raw)
   self.finish_text()
+  if self.mask_group_active && self.mask_group_level > depth {
+    self.close_mask_group()
+  }
   while self.stack.length() > depth + 1 {
     self.restore()
   }
@@ -524,10 +690,14 @@ fn PdfGraphics::execute(
       return
     }
     b"MP" | b"DP" => return
+    b"d0" | b"d1" => return
     _ => ()
   }
   if self.hidden > 0 {
     return
+  }
+  if operator != b"Q" && operator != b"gs" && operator != b"q" {
+    self.ensure_mask_group()
   }
   if self.text_operator(operator, args) {
     return
@@ -559,7 +729,10 @@ fn PdfGraphics::execute(
     b"gs" =>
       if n >= 1 {
         match args[n - 1] {
-          Name(name) => self.apply_ext_state(name)
+          Name(name) => {
+            self.close_mask_group()
+            self.apply_ext_state(name)
+          }
           _ => ()
         }
       }
@@ -578,7 +751,12 @@ fn PdfGraphics::execute(
         }
       }
     b"q" => self.save()
-    b"Q" => self.restore()
+    b"Q" => {
+      if self.mask_group_active && self.stack.length() == self.mask_group_level {
+        self.close_mask_group()
+      }
+      self.restore()
+    }
     b"cm" =>
       if n >= 6 {
         self.transform(
@@ -825,6 +1003,7 @@ fn PdfGraphics::run(
 ) -> Unit raise PdfStreamError {
   self.run_ops(content)
   self.finish_text()
+  self.close_mask_group()
   while !self.stack.is_empty() {
     self.restore()
   }

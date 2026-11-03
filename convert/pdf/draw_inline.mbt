@@ -132,11 +132,12 @@ fn PdfGraphics::draw_inline_image(
     raise InvalidStream("PDF inline image size is invalid")
   }
   let decode = pdf_inline_decode(dict)
-  if !is_mask && !decode.is_empty() {
-    raise InvalidStream("PDF image Decode arrays are not supported yet")
-  }
+  let filters = pdf_inline_filters(dict)
+  let ccitt_filter = pdf_ccitt_filter_index(filters) >= 0
   let bpc = if is_mask {
     pdf_inline_int(dict, b"BPC", b"BitsPerComponent", 1)
+  } else if ccitt_filter && pdf_inline_value(dict, b"BPC", b"BitsPerComponent") is None {
+    1
   } else {
     pdf_inline_int(dict, b"BPC", b"BitsPerComponent", 8)
   }
@@ -153,13 +154,36 @@ fn PdfGraphics::draw_inline_image(
   let invert = !decode.is_empty() && decode[0] == 1.0
   let (decoded, codec) = pdf_decode_stream(
     data,
-    pdf_inline_filters(dict),
+    filters,
     1073741824L,
     false,
     1073741824L,
   )
+  let ccitt = match codec {
+    Some(b"CCITTFaxDecode") => Some(pdf_inline_ccitt_params(dict))
+    _ => None
+  }
+  let ccitt_decode_array = match codec {
+    Some(b"CCITTFaxDecode") => decode.length() == 2
+    _ => false
+  }
+  let jpx_decode_array = match codec {
+    Some(b"JPXDecode") => decode.length() == 2
+    _ => false
+  }
+  let jbig2_decode_array = match codec {
+    Some(b"JBIG2Decode") => decode.length() == 2
+    _ => false
+  }
+  if !is_mask &&
+    !decode.is_empty() &&
+    !ccitt_decode_array &&
+    !jpx_decode_array &&
+    !jbig2_decode_array {
+    raise InvalidStream("PDF image Decode arrays are not supported yet")
+  }
   self.draw_image_data(
-    width, height, bpc, space, is_mask, invert, decoded, codec,
+    width, height, bpc, space, is_mask, invert, decoded, codec, ccitt,
   )
 }
 

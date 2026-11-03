@@ -1,0 +1,58 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/layer"
+
+import {
+  "f4ah6o/bdf/convert/pdf/jpx/internal/core",
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/a8",
+}
+
+// Values
+pub fn decode_component_dwt_from_accumulated(Array[Array[AccumulatedCB]], Int32, Int32, Int32, Int32, Int32, @core.QcdMetadata, transformation? : Int32, tcx0? : Int32, tcy0? : Int32, roishift? : Int32, packet_audit? : Bool, audit_label? : String, audit_comp? : Int32) -> Result[Array[Int32], String]
+
+pub fn decode_component_dwt_from_accumulated_float(Array[Array[AccumulatedCB]], Int32, Int32, Int32, Int32, Int32, @core.QcdMetadata, transformation? : Int32, tcx0? : Int32, tcy0? : Int32, roishift? : Int32, packet_audit? : Bool, audit_label? : String, audit_comp? : Int32) -> Result[Array[Double], String]
+
+pub fn init_subband_layer_state(Int32, Int32, Int32, Int32, ncbx_override? : Int32, ncby_override? : Int32) -> SubbandLayerStateEntry
+
+pub fn init_zero_extent_layer_state() -> SubbandLayerStateEntry
+
+pub fn parse_layer_packet_header(Bytes, Int32, Int32, Array[(Int32, Int32, Int32)], Array[SubbandLayerStateEntry], Int32, Int32, sb_bounds? : Array[(Int32, Int32, Int32, Int32)]) -> Result[(Array[@a8.SubbandCodeBlockInfo], Int32), String]
+
+pub fn split_sod_accumulate_multi_layer(Bytes, Int32, Int32, Int32, Int32, Int32, Int32, Int32, cb_width? : Int32, cb_height? : Int32, comp_widths? : Array[Int32], comp_heights? : Array[Int32], comp_decomp_levels? : Array[Int32], comp_cb_widths? : Array[Int32], comp_cb_heights? : Array[Int32], comp_xrsizs? : Array[Int32], comp_yrsizs? : Array[Int32], comp_tcx0s? : Array[Int32], comp_tcy0s? : Array[Int32], comp_code_block_styles? : Array[Int32], comp_precinct_size_bytes? : Array[Array[Int32]], precinct_size_bytes? : Array[Int32], tcx0? : Int32, tcy0? : Int32, uses_sop? : Bool, uses_eph? : Bool, poc_entries? : Array[@core.PocMetadata], relocated_packet_headers? : Bytes, packet_audit? : Bool, audit_label? : String, packet_audit_limit? : Int32) -> Result[(Array[Array[Array[AccumulatedCB]]], Int32), String]
+
+// Errors
+
+// Types and methods
+pub(all) struct AccumulatedCB {
+  subband_index : Int32
+  sb_width : Int32
+  sb_height : Int32
+  cb_x_offset : Int32
+  cb_y_offset : Int32
+  cb_width : Int32
+  cb_height : Int32
+  zero_bit_planes : Int32
+  total_coding_passes : Int32
+  all_segment_lengths : Array[Int32]
+  per_segment_passes : Array[Int32]
+  codeword : Array[Byte]
+}
+
+pub(all) struct SubbandLayerStateEntry {
+  ncbx : Int32
+  ncby : Int32
+  incl_levels : Array[@a8.PktTagTreeLevel]
+  incl_low : Array[Int32]
+  incl_known : Array[Int32?]
+  zbp_levels : Array[@a8.PktTagTreeLevel]
+  zbp_low : Array[Int32]
+  zbp_known : Array[Int32?]
+  lblock_by_cb : Array[Int32]
+  cb_included : Array[Bool]
+  seg_numpasses_by_cb : Array[Int32]
+  seg_maxpasses_by_cb : Array[Int32]
+  seg_count_by_cb : Array[Int32]
+}
+
+// Type aliases
+
+// Traits

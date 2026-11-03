@@ -1,0 +1,4 @@
+// T.800-2015 Annex D: Tier-1 Coefficient Bit Modeling
+import {
+  "f4ah6o/bdf/convert/pdf/jpx/internal/math" @math,
+}

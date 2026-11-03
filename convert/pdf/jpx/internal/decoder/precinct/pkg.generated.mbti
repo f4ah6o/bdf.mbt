@@ -1,0 +1,37 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/precinct"
+
+// Values
+pub fn build_packet_order(Int32, Int32, Int32, Int32, Array[Int32], Array[Int32], Array[Array[(Int32, Int32)]], Array[Array[(Int32, Int32, Int32, Int32)]], Array[Array[Int32]], Int32, Int32, comp_xrsiz? : Array[Int32], comp_yrsiz? : Array[Int32]) -> Array[(Int32, Int32, Int32, Int32)]
+
+pub fn build_packet_order_with_poc(Int32, Int32, Int32, Int32, Array[Int32], Array[Int32], Array[Array[(Int32, Int32)]], Array[Array[(Int32, Int32, Int32, Int32)]], Array[Array[Int32]], Int32, Int32, Array[(Int32, Int32, Int32, Int32, Int32, Int32)], comp_xrsiz? : Array[Int32], comp_yrsiz? : Array[Int32]) -> Array[(Int32, Int32, Int32, Int32)]
+
+pub fn compute_cb_count_from_bounds(Int32, Int32, Int32, Int32, Int32, Int32) -> (Int32, Int32)
+
+pub fn compute_cb_geometry_from_bounds(Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32) -> (Int32, Int32, Int32, Int32)
+
+pub fn compute_num_precincts(Int32, Int32, Int32, Int32) -> (Int32, Int32)
+
+pub fn compute_num_precincts_with_origin(Int32, Int32, Int32, Int32, Int32, Int32) -> (Int32, Int32)
+
+pub fn compute_precinct_bounds_abs(Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32) -> (Int32, Int32, Int32, Int32)
+
+pub fn compute_precinct_codeblock_range(Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32) -> (Int32, Int32, Int32, Int32, Int32, Int32)
+
+pub fn compute_precinct_codeblock_range_abs(Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32) -> (Int32, Int32, Int32, Int32, Int32, Int32)
+
+pub fn compute_precinct_local_cb_geometry(Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32) -> (Int32, Int32, Int32, Int32)
+
+pub fn effective_cb_dim_for_res(Int32, Int32, Int32) -> Int32
+
+pub fn get_component_precinct_exponents(Array[Int32], Array[Array[Int32]], Int32, Int32) -> (Int32, Int32)
+
+pub fn get_precinct_exponents(Array[Int32], Int32) -> (Int32, Int32)
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

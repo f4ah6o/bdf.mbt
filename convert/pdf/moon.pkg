@@ -3,6 +3,7 @@ import {
   "f4ah6o/bdf/render",
   "f4ah6o/bdf/font/cff",
   "f4ah6o/bdf/font/sfnt",
+  "f4ah6o/bdf/convert/pdf/jpx" @jpx,
   "moonbitlang/core/bigint",
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/encoding/base64",
@@ -11,6 +12,7 @@ import {
   "gaato/deflate",
   "gaato/deflate/zlib",
   "moonbitlang/core/buffer",
+  "moonbitlang/x/crypto" @xcrypto,
 }
 
 supported_targets = "+js+wasm-gc"

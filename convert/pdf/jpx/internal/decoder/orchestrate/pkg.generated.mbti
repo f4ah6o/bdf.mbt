@@ -1,0 +1,57 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/orchestrate"
+
+// Values
+pub fn decode_samples_all_components(Bytes) -> Result[DecodeAllComponentsResult, String]
+
+pub fn decode_samples_all_components_impl(Bytes, packet_audit? : Bool, packet_audit_limit? : Int32) -> Result[DecodeAllComponentsResult, String]
+
+pub fn decode_samples_from_internal(DecodeSamplesInternalResult) -> DecodeSamplesResult
+
+pub fn decode_samples_impl(Bytes, packet_audit? : Bool, packet_audit_limit? : Int32, force_relocated_ppt? : Bool) -> Result[DecodeSamplesInternalResult, String]
+
+// Errors
+
+// Types and methods
+pub(all) struct DecodeAllComponentsResult {
+  num_components : Int32
+  sample_layout : String
+  components : Array[DecodeSamplesComponentResult]
+}
+
+pub(all) struct DecodeSamplesComponentResult {
+  component_index : Int32
+  width : Int32
+  height : Int32
+  bits_per_component : Int32
+  is_signed : Bool
+  sample_layout : String
+  samples : Bytes
+}
+
+pub(all) struct DecodeSamplesInternalResult {
+  samples : Bytes
+  bits_per_sample : Int32
+  signed_samples : Bool
+  num_points : Int32
+  width : Int32
+  height : Int32
+  components : Int32
+  layout : String
+}
+
+pub(all) struct DecodeSamplesResult {
+  width : Int32
+  height : Int32
+  num_components : Int32
+  bits_per_component : Int32
+  is_signed : Bool
+  sample_layout : String
+  samples : Bytes
+}
+
+type TileRelocatedHeaders
+
+// Type aliases
+
+// Traits

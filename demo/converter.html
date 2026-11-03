@@ -15,13 +15,19 @@
   </header>
   <main>
     <section class="intro" aria-labelledby="intro-title">
-      <div><p class="eyebrow">BDF CONVERTER</p><h1 id="intro-title">ファイルを BDF に変換</h1><p class="description">CSV・TSV、Excel（XLSX）、画像、フォント、AI、TIFF、Photoshop、EMF/WMF、InDesign（IDML）、Visio（VSDX）、EPUB、HTML、Markdown、HP-GL/2、Jw_cad、DXF、SXF（SFC）、CGM、Gerber、KiCad（PCB）、draw.io（非圧縮・圧縮 XML と SVG/PNG エクスポート）、Parquet（主要圧縮コーデック・ネスト列）、音声をブラウザ内で BDF に変換し、その場で表示・保存できます。<a href="./formats.html">対応形式の説明</a> · <a href="./coverage.html">Porting coverage</a></p></div>
+      <div><p class="eyebrow">BDF CONVERTER</p><h1 id="intro-title">ファイルを BDF に変換</h1><p class="description">CSV・TSV、Excel（XLSX）、PDF（暗号化・JPX/JBIG2・Type3・タイルパターン）、画像、フォント、AI、TIFF、Photoshop、EMF/WMF、InDesign（IDML）、Visio（VSDX）、EPUB、HTML、Markdown、HP-GL/2、Jw_cad、DXF、SXF（SFC）、CGM、Gerber、KiCad（PCB）、draw.io（非圧縮・圧縮 XML と SVG/PNG エクスポート）、Parquet（主要圧縮コーデック・ネスト列）、音声をブラウザ内で BDF に変換し、その場で表示・保存できます。<a href="./formats.html">対応形式の説明</a> · <a href="./coverage.html">Porting coverage</a></p></div>
       <div class="intro-actions"><button id="open-file" class="button primary" type="button">ファイルを選ぶ</button><input id="file" hidden type="file" accept=".bdf,.csv,.tsv,.tab,.xlsx,.docx,.pptx,.svg,.png,.jpg,.jpeg,.gif,.webp,.avif,.bmp,.ico,.ttf,.woff2,.pdf,.ai,.tif,.tiff,.psd,.psb,.emf,.wmf,.idml,.vsdx,.vsdm,.vstx,.vstm,.epub,.html,.htm,.xhtml,.md,.markdown,.plt,.hpgl,.hgl,.hpg,.hp2,.rtl,.jww,.dxf,.sfc,.p21,.p2z,.cgm,.cgz,.gbr,.ger,.gtl,.gbl,.drl,.xln,.kicad_pcb,.kicad_sch,.drawio,.dio,.drawio.svg,.drawio.png,.parquet,.parq,.pqt,.mp3,.m4a,.aac,.flac,.ogg,.opus,.wav,.aiff"><button id="sample" class="button secondary" type="button">BDF サンプルを開く</button></div>
     </section>
     <section class="converter-samples" aria-label="変換サンプル">
       <p>サンプルを変換:</p>
-      <div class="converter-sample-links"><a href="#viewer" data-sample="csv">CSV</a><a href="#viewer" data-sample="xlsx">Excel</a><a href="#viewer" data-sample="xlsx-picture">画像入り Excel</a><a href="#viewer" data-sample="image">SVG 画像</a><a href="#viewer" data-sample="font">フォント</a><a href="#viewer" data-sample="pdf">PDF</a><a href="#viewer" data-sample="docx">Word</a><a href="#viewer" data-sample="pptx">PowerPoint</a><a href="#viewer" data-sample="drawio">draw.io</a><a href="#viewer" data-sample="parquet">Parquet</a></div>
+      <div class="converter-sample-links"><a href="#viewer" data-sample="csv">CSV</a><a href="#viewer" data-sample="xlsx">Excel</a><a href="#viewer" data-sample="xlsx-picture">画像入り Excel</a><a href="#viewer" data-sample="image">SVG 画像</a><a href="#viewer" data-sample="font">フォント</a><a href="#viewer" data-sample="pdf">PDF</a><a href="#viewer" data-sample="pdf-features">PDF 新機能</a><a href="#viewer" data-sample="pdf-encrypted" data-password="demo">暗号化 PDF</a><a href="#viewer" data-sample="docx">Word</a><a href="#viewer" data-sample="pptx">PowerPoint</a><a href="#viewer" data-sample="drawio">draw.io</a><a href="#viewer" data-sample="parquet">Parquet</a></div>
     </section>
+    <form id="pdf-unlock" class="pdf-unlock" aria-label="PDF パスワード">
+      <label for="pdf-password">PDF パスワード（任意）</label>
+      <input id="pdf-password" type="password" autocomplete="current-password" placeholder="暗号化 PDF の場合">
+      <button id="pdf-retry" class="button secondary" type="submit" disabled>再変換</button>
+      <span id="pdf-unlock-status" class="pdf-unlock-status" role="status" aria-live="polite">暗号化 PDF はここに入力してください。サンプルのパスワードは demo です。</span>
+    </form>
     <section id="viewer" class="viewer-card" aria-label="変換結果のビューア">
       <div class="viewer-top"><div><span class="live-dot" aria-hidden="true"></span><strong id="document-name">変換結果</strong><span id="document-meta" class="document-meta"></span></div><a id="download" class="download" download="document.bdf" hidden>BDF を保存 ↓</a></div>
       <div class="toolbar" aria-label="表示と検索">

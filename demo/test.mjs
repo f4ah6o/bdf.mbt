@@ -82,6 +82,14 @@ try {
   await page.locator('#file').setInputFiles({ name: 'unsupported.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7\n') });
   await page.waitForFunction(() => document.querySelector('#status').classList.contains('error'), null, { timeout: 15000 });
   assert.match(await page.locator('#status').textContent(), /unsupported\.pdf/);
+  await page.locator('#file').setInputFiles(resolve(root, 'samples/pdf-encrypted.pdf'));
+  await page.waitForFunction(() => document.querySelector('#status').classList.contains('error') && !document.querySelector('#pdf-retry').disabled, null, { timeout: 30000 });
+  assert.match(await page.locator('#status').textContent(), /暗号化/);
+  await page.locator('#pdf-password').fill('demo');
+  await page.locator('#pdf-retry').click();
+  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'pdf-encrypted.pdf' && !document.querySelector('#open-file').disabled, null, { timeout: 30000 });
+  assert.equal(await page.locator('#status').evaluate(el => el.classList.contains('error')), false, 'encrypted PDF retry');
+  await page.waitForSelector('[data-bdf-page="0"] canvas[data-loaded="ready"]', { timeout: 30000 });
   await page.locator('#sample').press('Enter');
   await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'upstream-demo.bdf' && !document.querySelector('#status').classList.contains('error'), null, { timeout: 30000 });
   for (const [kind, name] of [['csv', 'people.csv'], ['image', 'illustration.svg'], ['bdf', 'upstream-demo.bdf'], ['font', 'stix.ttf']]) {
@@ -325,6 +333,23 @@ try {
   await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'simple.pdf' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
   assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, 'converter pdf sample');
   await converterPage.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => canvas.width > 0 && canvas.height > 0), null, { timeout: 30000 });
+  await converterPage.locator('[data-sample="pdf-features"]').click();
+  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'pdf-features.pdf' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, 'converter pdf feature sample');
+  await converterPage.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => canvas.width > 0 && canvas.height > 0), null, { timeout: 30000 });
+  await converterPage.locator('[data-sample="pdf-encrypted"]').click();
+  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'pdf-encrypted.pdf' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, 'converter encrypted pdf sample');
+  await converterPage.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => canvas.width > 0 && canvas.height > 0), null, { timeout: 30000 });
+  await converterPage.locator('#file').setInputFiles(resolve(root, 'samples/pdf-encrypted.pdf'));
+  await converterPage.waitForFunction(() => document.querySelector('#status').classList.contains('error') && !document.querySelector('#pdf-retry').disabled, null, { timeout: 30000 });
+  await converterPage.locator('#pdf-password').fill('wrong');
+  await converterPage.locator('#pdf-retry').click();
+  await converterPage.waitForFunction(() => document.querySelector('#status').classList.contains('error') && /正しくありません/.test(document.querySelector('#status').textContent), null, { timeout: 30000 });
+  await converterPage.locator('#pdf-password').fill('demo');
+  await converterPage.locator('#pdf-retry').click();
+  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'pdf-encrypted.pdf' && !document.querySelector('#open-file').disabled, null, { timeout: 30000 });
+  assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, 'converter encrypted pdf retry');
   await converterPage.locator('[data-sample="xlsx-picture"]').click();
   await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'field-guide.xlsx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
   await converterPage.waitForFunction(hasIllustration, null, { timeout: 30000 });

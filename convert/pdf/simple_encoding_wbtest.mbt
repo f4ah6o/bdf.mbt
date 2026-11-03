@@ -13,6 +13,7 @@ fn check_pdf_simple_encoding(
     trailer: PdfNull,
     font_cache: Map([]),
     default_font: None,
+    encryption: None,
   }
   let source : PdfObject? = match variant {
     0 => None

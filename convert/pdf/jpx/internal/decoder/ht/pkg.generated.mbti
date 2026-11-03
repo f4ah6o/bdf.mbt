@@ -1,0 +1,23 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/ht"
+
+// Values
+pub fn htj2k_apply_refinement_segment(Array[Int32], Array[Bool], Bytes, Int32, Int32, Int32, Int32, Int32) -> Result[Array[Int32], String]
+
+pub fn htj2k_decode_single_set_fixedpoint(Bytes, Int32, Array[Int32], Array[Int32], Int32, Int32, Int32, Int32, Int32) -> Result[Array[Int32], String]
+
+pub fn htj2k_select_active_set(Bytes, Array[Int32], Array[Int32], Int32) -> Result[HtSelectedSet, String]
+
+// Errors
+
+// Types and methods
+pub struct HtSelectedSet {
+  cleanup_segment : Bytes
+  refinement_segment : Bytes
+  z_blk : Int32
+  skipped_ht_sets : Int32
+}
+
+// Type aliases
+
+// Traits

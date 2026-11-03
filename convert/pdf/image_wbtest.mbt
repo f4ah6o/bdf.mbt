@@ -410,27 +410,68 @@ test "PDF image stencil mask removes painted pixels" {
 }
 
 ///|
-test "PDF encoded images with masks fail closed" {
-  let rejected = try {
-    ignore(
-      pdf_graphics_document(
-        pdf_masked_image_test_document(
-          1,
-          1,
-          "/Filter /DCTDecode /SMask 6 0 R",
-          b"\xff\xd8inline\xff\xd9",
-          "/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode",
-          @zlib.compress(b"\xff"[:]),
-        ),
-        no_text_index=true,
-      ),
-    )
-    false
-  } catch {
-    InvalidStream(message) => message.contains("encoded image data")
-    _ => false
+test "PDF encoded images with soft masks use BDF mask commands" {
+  let document = pdf_graphics_document(
+    pdf_masked_image_test_document(
+      1,
+      1,
+      "/Filter /DCTDecode /SMask 6 0 R",
+      b"\xff\xd8inline\xff\xd9",
+      "/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode",
+      @zlib.compress(b"\xff"[:]),
+    ),
+    no_text_index=true,
+  )
+  let commands = pdf_test_body_commands(document)
+  let mut groups = 0
+  let mut masks = 0
+  let mut mask_kind = -1
+  for command in commands {
+    match command {
+      @render.GroupBegin(_, _, _, _, _, _) => groups += 1
+      @render.MaskBegin(kind, _, _) => {
+        masks += 1
+        mask_kind = kind
+      }
+      _ => ()
+    }
   }
-  assert_true(rejected)
+  assert_eq(groups, 1, msg="PDF encoded mask group count")
+  assert_eq(masks, 1, msg="PDF encoded mask command count")
+  assert_eq(mask_kind, 1, msg="PDF encoded soft mask kind")
+  let split = @core.single_to_split(document)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let mut images = 0
+  for part in manifest.parts {
+    if part.kind == "img" {
+      images += 1
+    }
+  }
+  assert_eq(images, 2, msg="PDF encoded image and mask parts")
+}
+
+///|
+test "PDF encoded images with stencil masks use alpha masks" {
+  let document = pdf_graphics_document(
+    pdf_masked_image_test_document(
+      1,
+      1,
+      "/Filter /DCTDecode /Mask 6 0 R",
+      b"\xff\xd8inline\xff\xd9",
+      "/Type /XObject /Subtype /Image /ImageMask true /Width 1 /Height 1 /BitsPerComponent 1 /Filter /FlateDecode",
+      @zlib.compress(b"\x00"[:]),
+    ),
+    no_text_index=true,
+  )
+  let commands = pdf_test_body_commands(document)
+  let mut mask_kind = -1
+  for command in commands {
+    match command {
+      @render.MaskBegin(kind, _, _) => mask_kind = kind
+      _ => ()
+    }
+  }
+  assert_eq(mask_kind, 0, msg="PDF encoded stencil mask kind")
 }
 
 ///|
@@ -590,6 +631,25 @@ fn pdf_pattern_test_document(pattern : String, content : Bytes) -> Bytes {
 }
 
 ///|
+fn pdf_tiling_pattern_test_document(
+  pattern_extra : String,
+  pattern_content : Bytes,
+  page_content : Bytes,
+) -> Bytes {
+  pdf_test_pdf([
+    b"<< /Type /Catalog /Pages 2 0 R >>",
+    b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+    b"<< /Type /Page /Parent 2 0 R /Resources << /Pattern << /P1 5 0 R >> >> /Contents 4 0 R >>",
+    pdf_test_stream("", page_content),
+    pdf_test_stream(
+      "/Type /Pattern /PatternType 1 /PaintType 1 /TilingType 1 /BBox [0 0 10 10] /XStep 10 /YStep 10 /Matrix [1 0 0 1 0 0] /Resources << >> " +
+      pattern_extra,
+      pattern_content,
+    ),
+  ])
+}
+
+///|
 test "PDF shading pattern fills a path" {
   let document = pdf_graphics_document(
     pdf_pattern_test_document(
@@ -610,7 +670,41 @@ test "PDF shading pattern fills a path" {
 }
 
 ///|
-test "PDF tiling patterns fail closed" {
+test "PDF tiling pattern fills a path with repeated cells" {
+  let document = pdf_graphics_document(
+    pdf_tiling_pattern_test_document(
+      "",
+      b"1 0 0 rg 0 0 10 10 re f",
+      b"q /Pattern cs /P1 scn 0 0 20 20 re f Q",
+    ),
+    no_text_index=true,
+  )
+  assert_eq(
+    pdf_test_fill_rects(document),
+    4,
+    msg="PDF tiling pattern cell count",
+  )
+}
+
+///|
+test "PDF uncoloured tiling pattern uses the current fill" {
+  let document = pdf_graphics_document(
+    pdf_tiling_pattern_test_document(
+      "/PaintType 2",
+      b"0 0 10 10 re f",
+      b"q 1 0 0 rg /Pattern cs /P1 scn 0 0 20 20 re f Q",
+    ),
+    no_text_index=true,
+  )
+  assert_eq(
+    pdf_test_fill_rects(document),
+    4,
+    msg="PDF uncoloured tiling pattern cell count",
+  )
+}
+
+///|
+test "PDF non-stream tiling patterns fail closed" {
   let rejected = try {
     ignore(
       pdf_graphics_document(
@@ -623,7 +717,7 @@ test "PDF tiling patterns fail closed" {
     )
     false
   } catch {
-    InvalidStream(message) => message.contains("tiling patterns")
+    InvalidStream(message) => message.contains("not a stream")
     _ => false
   }
   assert_true(rejected)
@@ -771,6 +865,44 @@ test "PDF link annotations become link commands" {
       assert_eq(url, "https://example.org/")
     }
     None => fail("PDF link annotation is missing")
+  }
+}
+
+///|
+test "PDF widget field actions become link commands" {
+  let document = pdf_graphics_document(
+    pdf_test_pdf([
+      b"<< /Type /Catalog /Pages 2 0 R >>",
+      b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+      b"<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Annots [5 0 R] >>",
+      pdf_test_stream("", b""),
+      @utf8.encode(
+        "<< /Type /Annot /Subtype /Widget /Rect [15 25 45 55] /A << /S /URI /URI (https://example.org/field) >> >>",
+      ),
+    ]),
+    no_text_index=true,
+  )
+  let split = @core.single_to_split(document)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let resources = @core.decode_object_resources(
+    @core.open_single(document).part(body_hash),
+  )
+  let commands = @render.compile_object(resources.object)
+  let mut found : (Double, Double, Double, Double, String)? = None
+  for command in commands {
+    match command {
+      @render.Link(x, y, width, height, url) =>
+        found = Some((x, y, width, height, url))
+      _ => ()
+    }
+  }
+  match found {
+    Some((x, y, width, height, url)) => {
+      assert_eq((x, y, width, height), (15.0, 25.0, 30.0, 30.0))
+      assert_eq(url, "https://example.org/field")
+    }
+    None => fail("PDF widget field action is missing")
   }
 }
 

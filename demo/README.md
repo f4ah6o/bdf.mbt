@@ -10,9 +10,11 @@ go run ./cmd/bdf generate -q site/demo/demo.pdf upstream-demo.bdf
 
 The checked-in sample has SHA-256
 `e1cab46517eb3f0b1a4f2aeb4a5d0037e99161c4a1b77017f0c0903439608deb`.
-The 20-page sample is converted ahead of time; the demo also converts a small PDF
-in the browser. Rendering and CSV, XLSX, DOCX, PPTX, image, font specimen, PDF, draw.io and
-Parquet conversion in the demo use the
+The 20-page sample is converted ahead of time; the demo also converts PDFs
+in the browser, including an encrypted sample (password `demo`) and a feature
+showcase with tiling patterns, JPX/JBIG2 images, Type3 glyphs and a form-field
+URI action. Rendering and CSV, XLSX, DOCX, PPTX, image, font specimen, PDF,
+draw.io and Parquet conversion in the demo use the
 MoonBit JavaScript target, without a Go or WebAssembly runtime. Files chosen
 by the user are handled in the browser. The sample contains Liberation fonts
 ([OFL](licenses/Liberation.txt)), IPA Gothic ([IPA Font License](licenses/IPA.txt)),
@@ -37,7 +39,8 @@ python3 -m http.server --directory _build/pages 8000
 
 The test serves the site under `/bdf.mbt/`, exercises all sample pages and the
 converter page, search, navigation, downloading, CSV and SVG conversion, TTF
-and WOFF2 font specimens, PDF, DOCX, PPTX, draw.io and Parquet conversion, view selection and
+and WOFF2 font specimens, PDF, encrypted PDF password retry, the PDF feature
+showcase, DOCX, PPTX, draw.io and Parquet conversion, view selection and
 saving, unsupported files, XLSX input, and mobile layout. An XLSX fixture is
 also rendered in Chromium and each sheet is compared pixel-for-pixel with its
 upstream Go-generated BDF using the same viewer. This checks that fixture, not

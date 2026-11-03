@@ -19,6 +19,11 @@ priv struct PdfSimpleFont {
   collection : String
   embedded : Bytes?
   fallback : Bool
+  type3 : Bool
+  char_procs : PdfObject
+  font_matrix : (Double, Double, Double, Double, Double, Double)
+  font_bbox : (Double, Double, Double, Double)
+  font_resources : PdfObject
 }
 
 ///|
@@ -444,6 +449,24 @@ fn PdfFile::simple_font(
     collection,
     embedded,
     fallback,
+    type3,
+    char_procs: match pdf_dict_get(dict, b"CharProcs") {
+      Some(value) => value
+      None => PdfNull
+    },
+    font_matrix: match pdf_form_numbers(self, dict, b"FontMatrix", 6) {
+      Some(values) =>
+        (values[0], values[1], values[2], values[3], values[4], values[5])
+      None => (0.001, 0.0, 0.0, 0.001, 0.0, 0.0)
+    },
+    font_bbox: match pdf_form_numbers(self, dict, b"FontBBox", 4) {
+      Some(values) => (values[0], values[1], values[2], values[3])
+      None => (0.0, 0.0, 0.0, 0.0)
+    },
+    font_resources: match pdf_dict_get(dict, b"Resources") {
+      Some(value) => value
+      None => PdfNull
+    },
   }
   match key {
     Some(value) => self.font_cache[value] = font

@@ -1,0 +1,5 @@
+// Tile/component geometry and codec context resolution
+import {
+  "f4ah6o/bdf/convert/pdf/jpx/internal/core" @core,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/input" @input,
+}

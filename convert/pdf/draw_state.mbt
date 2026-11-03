@@ -19,6 +19,7 @@ priv struct PdfDrawState {
   mut font : PdfSimpleFont?
   mut font_key : Int32
   mut font_size : Double
+  mut soft_mask : PdfObject?
 }
 
 ///|
@@ -66,6 +67,11 @@ priv struct PdfGraphics {
   ]
   mut unsaved : Int32
   mut clip : Int32
+  page_width : Double
+  page_height : Double
+  mut mask_group_active : Bool
+  mut mask_group_level : Int32
+  mut mask_rendering : Int32
 }
 
 ///|
@@ -90,6 +96,7 @@ fn PdfDrawState::copy(self : PdfDrawState) -> PdfDrawState {
     font: self.font,
     font_key: self.font_key,
     font_size: self.font_size,
+    soft_mask: self.soft_mask,
   }
 }
 
@@ -167,6 +174,7 @@ fn PdfGraphics::new(
       font: None,
       font_key: 0,
       font_size: 0.0,
+      soft_mask: None,
     },
     emitted: {
       fill: None,
@@ -182,6 +190,11 @@ fn PdfGraphics::new(
     stack: [],
     unsaved: 0,
     clip: -1,
+    page_width: width,
+    page_height: height,
+    mask_group_active: false,
+    mask_group_level: 0,
+    mask_rendering: 0,
   }
   graphics.transform(base)
   graphics

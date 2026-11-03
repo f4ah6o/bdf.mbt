@@ -343,6 +343,15 @@ h1 {
 .converter-sample-links { display:flex; flex-wrap:wrap; gap:8px 16px; }
 .converter-sample-links a { color:#176443; font-weight:650; }
 .converter-sample-links a[aria-disabled="true"] { opacity:.5; cursor:not-allowed; }
+.pdf-unlock { display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; margin:0 0 18px; padding:12px 14px; border:1px solid #d4dfd6; border-radius:8px; background:#f6faf7; font-size:13px; }
+.pdf-unlock label { font-weight:700; color:#2b4d3b; }
+.pdf-unlock input { min-height:38px; min-width:190px; padding:0 10px; border:1px solid #aebfb3; border-radius:6px; background:#fff; color:#1e3328; font:inherit; }
+.pdf-unlock input:disabled { opacity:.6; }
+.pdf-unlock .button { min-height:38px; }
+.pdf-unlock .button:disabled { opacity:1; cursor:not-allowed; color:#51665a; background:#edf3ef; border-color:#b9c9be; }
+.toolbar .page-nav button:disabled { opacity:1; color:#60776b; }
+.pdf-unlock-status { color:#51665a; overflow-wrap:anywhere; }
+.pdf-unlock-status.error { color:#a42525; }
 .section-heading { display:flex; justify-content:space-between; align-items:end; gap:20px; margin-bottom:20px; }
 .section-heading h2 { margin:0; font-size:clamp(22px,3vw,30px); }
 .section-heading p:not(.eyebrow) { color:#51665a; font-size:14px; margin:8px 0 0; }

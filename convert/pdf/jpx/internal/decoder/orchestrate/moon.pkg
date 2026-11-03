@@ -1,0 +1,17 @@
+// Decode orchestration: single-component and all-components paths
+import {
+  "f4ah6o/bdf/convert/pdf/jpx/internal/core" @core,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/a8" @a8,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/codeblock" @codeblock,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/dwt" @dwt,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/geometry" @geometry,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/input" @input,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/layer" @layer,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/mct" @mct,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/mq" @mq,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/profile" @profile,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/quant" @quant,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/roi" @roi,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/t1" @t1,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/math" @math,
+}

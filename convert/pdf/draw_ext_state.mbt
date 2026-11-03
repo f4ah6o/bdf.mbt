@@ -41,8 +41,9 @@ fn PdfGraphics::apply_ext_state(
   match pdf_dict_get(state, b"SMask") {
     Some(value) =>
       match file.page_deref(Some(value)) {
-        PdfNull | PdfName(b"None") => ()
-        _ => raise InvalidStream("unsupported PDF soft mask")
+        PdfNull | PdfName(b"None") => self.state.soft_mask = None
+        PdfDict(_) => self.state.soft_mask = Some(value)
+        _ => self.state.soft_mask = None
       }
     None => ()
   }

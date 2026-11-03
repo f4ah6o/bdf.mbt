@@ -1,0 +1,29 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/pdf/jpx/internal/math"
+
+// Values
+pub fn ceil_div(Int32, Int32) -> Int32
+
+pub fn ceil_div_checked(Int32, Int32) -> Result[Int32, String]
+
+pub fn f32bits_hex(Double) -> String
+
+pub fn floor_log2(Int32) -> Int32
+
+pub fn grid_index_2d(Int32, Int32, Int32) -> Int32
+
+pub fn pow2_double(Int32) -> Double
+
+pub fn round_ties_even_f32(Double) -> Int32
+
+pub fn round_to_f32(Double) -> Double
+
+pub fn sum_ints(Array[Int32]) -> Int32
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

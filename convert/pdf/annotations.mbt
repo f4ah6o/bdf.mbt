@@ -25,14 +25,10 @@ fn pdf_annotation_rect(
 }
 
 ///|
-fn PdfGraphics::link_target(
-  self : PdfGraphics,
-  file : PdfFile,
-  dict : PdfObject,
-) -> String {
-  match file.page_deref(pdf_dict_get(dict, b"A")) {
+fn pdf_action_uri(file : PdfFile, action : PdfObject?) -> String {
+  match file.page_deref(action) {
     PdfDict(_) => {
-      let action = file.page_deref(pdf_dict_get(dict, b"A"))
+      let action = file.page_deref(action)
       match file.page_deref(pdf_dict_get(action, b"S")) {
         PdfName(b"URI") => file.metadata_text(pdf_dict_get(action, b"URI"))
         _ => ""
@@ -40,6 +36,31 @@ fn PdfGraphics::link_target(
     }
     _ => ""
   }
+}
+
+///|
+fn pdf_annotation_url(file : PdfFile, dict : PdfObject) -> String {
+  let mut current = dict
+  for _ in 0..<32 {
+    let url = pdf_action_uri(file, pdf_dict_get(current, b"A"))
+    if url != "" {
+      return url
+    }
+    let actions = file.page_deref(pdf_dict_get(current, b"AA"))
+    if actions is PdfDict(entries) {
+      for entry in entries {
+        let url = pdf_action_uri(file, Some(entry.1))
+        if url != "" {
+          return url
+        }
+      }
+    }
+    match file.page_deref(pdf_dict_get(current, b"Parent")) {
+      PdfDict(_) => current = file.page_deref(pdf_dict_get(current, b"Parent"))
+      _ => return ""
+    }
+  }
+  ""
 }
 
 ///|
@@ -66,21 +87,19 @@ fn PdfGraphics::emit_annotations(
       Some(value) => value
       None => continue
     }
+    let url = pdf_annotation_url(file, dict)
+    if url != "" {
+      let (x, y, width, height) = rect
+      self.object.link(
+        Float::from_double(x),
+        Float::from_double(y),
+        Float::from_double(width),
+        Float::from_double(height),
+        url,
+      )
+    }
     match subtype {
-      PdfName(b"Link") => {
-        let url = self.link_target(file, dict)
-        if url == "" {
-          continue
-        }
-        let (x, y, width, height) = rect
-        self.object.link(
-          Float::from_double(x),
-          Float::from_double(y),
-          Float::from_double(width),
-          Float::from_double(height),
-          url,
-        )
-      }
+      PdfName(b"Link") => continue
       _ =>
         match pdf_annotation_appearance(file, dict) {
           Some((appearance, raw)) =>

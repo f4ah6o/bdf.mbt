@@ -6,6 +6,9 @@ const status = $('#status');
 const view = $('#view');
 const pageNumber = $('#page-number');
 const download = $('#download');
+const pdfPassword = $('#pdf-password');
+const pdfRetry = $('#pdf-retry');
+const pdfUnlockStatus = $('#pdf-unlock-status');
 const converter = bdf_create_native_converter(new URL('./native_converter_worker.js', import.meta.url).href);
 const viewer = bdf_create_viewer($('#preview'), { workerUrl: new URL('./render_worker.js', import.meta.url).href, layout: 'single', find: false });
 let currentPage = 0;
@@ -13,6 +16,7 @@ let downloadUrl;
 let busy = false;
 let selection = 0;
 let scrollFrame = 0;
+let lastOpen = null;
 
 function say(message, error = false) {
   status.textContent = message;
@@ -24,6 +28,8 @@ function setBusy(value) {
   $('#open-file').disabled = value;
   $('#sample').disabled = value;
   $('#csv-sample').disabled = value;
+  if (pdfPassword) pdfPassword.disabled = value;
+  if (pdfRetry) pdfRetry.disabled = value || !lastOpen;
   for (const link of document.querySelectorAll('[data-sample]')) link.setAttribute('aria-disabled', String(value));
   view.disabled = value || !viewer.document;
 }
@@ -50,18 +56,30 @@ function showViews(manifest) {
   currentPage = 0;
   updatePage();
 }
-async function openBytes(name, input) {
+async function openBytes(name, input, retry = false) {
   if (busy) return;
+  if (!retry) {
+    lastOpen = null;
+    if (pdfRetry) pdfRetry.disabled = true;
+    if (pdfUnlockStatus) {
+      pdfUnlockStatus.textContent = '暗号化 PDF はここに入力してください。サンプルのパスワードは demo です。';
+      pdfUnlockStatus.classList.remove('error');
+    }
+  }
   setBusy(true);
   updatePage();
   say(`${name} を開いています…`);
+  const isPdf = name.toLowerCase().endsWith('.pdf');
   try {
     let bytes = input;
     let summary = '';
     let warnings = [];
     if (!name.toLowerCase().endsWith('.bdf')) {
       await converter.ready;
-      const result = await converter.convert(input, { name });
+      const options = { name };
+      const password = isPdf && pdfPassword ? pdfPassword.value : '';
+      if (password) options.params = { password };
+      const result = await converter.convert(input, options);
       bytes = result.bdf;
       summary = result.summary ?? '';
       warnings = result.warnings ?? [];
@@ -76,20 +94,50 @@ async function openBytes(name, input) {
     showViews(manifest);
     setDownload(bytes, name);
     say(warnings.length ? warnings.join(' · ') : `${name} を表示しています。`);
+    if (isPdf) {
+      lastOpen = null;
+      if (pdfRetry) pdfRetry.disabled = true;
+      if (pdfPassword) pdfPassword.value = '';
+      if (pdfUnlockStatus) {
+        pdfUnlockStatus.textContent = 'PDF を開きました。';
+        pdfUnlockStatus.classList.remove('error');
+      }
+    }
   } catch (error) {
-    say(`${name} を開けませんでした: ${error.message ?? error}`, true);
+    const message = String(error.message ?? error);
+    if (isPdf && /password|encrypted/i.test(message)) {
+      lastOpen = { name, input };
+      if (pdfRetry) pdfRetry.disabled = false;
+      if (pdfPassword) pdfPassword.focus();
+      if (pdfUnlockStatus) {
+        pdfUnlockStatus.textContent = /incorrect/i.test(message)
+          ? 'パスワードが正しくありません。確認して再変換してください。'
+          : 'この PDF は暗号化されています。パスワードを入力して再変換してください。';
+        pdfUnlockStatus.classList.add('error');
+      }
+      say(pdfUnlockStatus?.textContent ?? 'PDF のパスワードを入力してください。', true);
+    } else {
+      say(`${name} を開けませんでした: ${message}`, true);
+    }
   } finally {
     setBusy(false);
     updatePage();
   }
 }
-async function openSample(path, name) {
+async function openSample(path, name, password = '') {
   if (busy) return;
   const token = ++selection;
   try {
     const response = await fetch(new URL(path, import.meta.url));
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const bytes = new Uint8Array(await response.arrayBuffer());
+    if (pdfPassword) pdfPassword.value = password;
+    if (pdfUnlockStatus) {
+      pdfUnlockStatus.textContent = password
+        ? `サンプルのパスワード ${password} を使用します。`
+        : '暗号化 PDF はここに入力してください。サンプルのパスワードは demo です。';
+      pdfUnlockStatus.classList.remove('error');
+    }
     if (token === selection) await openBytes(name, bytes);
   } catch (error) { if (token === selection) say(`サンプルを読み込めませんでした: ${error.message ?? error}`, true); }
 }
@@ -119,6 +167,8 @@ const samples = {
   image: ['./samples/illustration.svg', 'illustration.svg'],
   font: ['./samples/stix.ttf', 'stix.ttf'],
   pdf: ['./samples/simple.pdf', 'simple.pdf'],
+  'pdf-features': ['./samples/pdf-features.pdf', 'pdf-features.pdf'],
+  'pdf-encrypted': ['./samples/pdf-encrypted.pdf', 'pdf-encrypted.pdf'],
   docx: ['./samples/simple.docx', 'simple.docx'],
   pptx: ['./samples/simple.pptx', 'simple.pptx'],
   drawio: ['./samples/labels.drawio', 'labels.drawio'],
@@ -128,8 +178,15 @@ for (const link of document.querySelectorAll('[data-sample]')) {
   link.addEventListener('click', event => {
     if (busy) { event.preventDefault(); return; }
     const sample = samples[link.dataset.sample];
-    if (sample) void openSample(...sample);
+    if (sample) void openSample(...sample, link.dataset.password ?? '');
   });
+}
+$('#pdf-unlock').addEventListener('submit', event => {
+  event.preventDefault();
+  if (lastOpen && !busy) void openBytes(lastOpen.name, lastOpen.input, true);
+});
+if (pdfPassword) {
+  pdfPassword.addEventListener('input', () => pdfUnlockStatus?.classList.remove('error'));
 }
 $('#sample').addEventListener('click', () => openSample('./samples/upstream-demo.bdf', 'upstream-demo.bdf'));
 $('#csv-sample').addEventListener('click', () => openSample('./samples/people.csv', 'people.csv'));

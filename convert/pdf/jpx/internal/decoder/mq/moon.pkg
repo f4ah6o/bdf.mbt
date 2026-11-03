@@ -1,0 +1,5 @@
+// T.800-2015 Annex C: MQ Arithmetic Coding
+import {
+  "f4ah6o/bdf/convert/pdf/jpx/internal/core" @core,
+  "f4ah6o/bdf/convert/pdf/jpx/internal/math" @math,
+}

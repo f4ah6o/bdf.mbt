@@ -77,6 +77,11 @@ fn pdf_default_simple_font() -> PdfSimpleFont {
     collection: "",
     embedded: None,
     fallback: false,
+    type3: false,
+    char_procs: PdfNull,
+    font_matrix: (0.001, 0.0, 0.0, 0.001, 0.0, 0.0),
+    font_bbox: (0.0, 0.0, 0.0, 0.0),
+    font_resources: PdfNull,
   }
 }
 
@@ -309,6 +314,17 @@ fn PdfGraphics::text_operator(
         self.state.font = Some(fallback)
         fallback
       }
+    }
+    if font.type3 {
+      if n > 0 {
+        let bytes = match args[n - 1] {
+          Literal(value) => value
+          Hex(value) => pdf_text_hex(value)
+          _ => b""
+        }
+        self.show_type3(font, bytes)
+      }
+      return true
     }
     let vertical = match font.composite_map {
       Some(map) => map.vertical

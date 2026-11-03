@@ -42,6 +42,7 @@ test "PDF metadata decodes text and separates keywords" {
     trailer: PdfNull,
     font_cache: Map([]),
     default_font: None,
+    encryption: None,
   }
   assert_eq(file.metadata(), {
     title: "T",

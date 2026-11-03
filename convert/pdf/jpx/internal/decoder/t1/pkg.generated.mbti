@@ -1,0 +1,71 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/t1"
+
+// Values
+pub fn tier1_apply_cleanup_pass_single(Tier1StagedPassState, Tier1StagedBitCursor) -> Result[(Tier1StagedPassState, Tier1StagedBitCursor), String]
+
+pub fn tier1_apply_magref_pass_single(Tier1StagedPassState, Tier1StagedBitCursor) -> Result[(Tier1StagedPassState, Tier1StagedBitCursor), String]
+
+pub fn tier1_apply_passes_normative_preview_single_coeff(Int32, Int32, Array[Int32]) -> Result[Tier1StagedPassState, String]
+
+pub fn tier1_apply_passes_single_coeff_with_sigprop_policy(Int32, Int32, Array[Int32], Bool) -> Result[Tier1StagedPassState, String]
+
+pub fn tier1_fixedpoint_sample_values_mini_block(Int32, Int32, Int32, Int32, Array[Int32], code_block_style? : Int32) -> Result[(Array[Int32], Int32), String]
+
+pub fn tier1_fixedpoint_sample_values_mini_block_pass_snapshots(Int32, Int32, Int32, Int32, Array[Int32], code_block_style? : Int32) -> Result[(Array[Array[Int32]], Int32), String]
+
+pub fn tier1_fixedpoint_sample_values_mini_block_target_pass_events(Int32, Int32, Int32, Int32, Array[Int32], Array[Int32], Int32, max_events? : Int32, code_block_style? : Int32) -> Result[(Array[String], Array[Int32], Int32), String]
+
+pub fn tier1_normative_pass_state_debug(Tier1StagedPassState) -> String
+
+pub fn tier1_normative_preview_sample_values(Int32, Tier1StagedPassState, Array[Int32]) -> Result[Array[Int32], String]
+
+pub fn tier1_normative_preview_sample_values_debug(Array[Int32]) -> String
+
+pub fn tier1_normative_preview_sample_values_mini_block(Int32, Int32, Int32, Int32, Array[Int32], code_block_style? : Int32) -> Result[(Array[Int32], Int32), String]
+
+pub fn tier1_normative_preview_state_debug(Tier1StagedPassState) -> String
+
+pub fn tier1_normative_single_coeff_debug(Tier1StagedPassState) -> String
+
+pub fn tier1_normative_single_coeff_value(Tier1StagedPassState) -> Int32
+
+pub fn tier1_staged_apply_passes(Int32, Int32, Array[Int32]) -> Result[Tier1StagedPassState, String]
+
+pub fn tier1_staged_pass_state_debug(Tier1StagedPassState) -> String
+
+pub fn tier1_staged_pass_trace(Int32, Int32) -> Result[String, String]
+
+// Errors
+
+// Types and methods
+pub struct Tier1MiniBlockState {
+  width : Int32
+  height : Int32
+  coeffs : Array[Tier1MiniCoeffState]
+  consumed_bits : Int32
+}
+
+pub struct Tier1MiniCoeffState {
+  significant : Bool
+  sign : Int32
+  magnitude : Int32
+}
+
+pub struct Tier1StagedBitCursor {
+  decisions : Array[Int32]
+  index : Int32
+}
+pub fn Tier1StagedBitCursor::new(Array[Int32], Int32) -> Self
+
+pub struct Tier1StagedPassState {
+  significant : Bool
+  sign : Int32
+  magnitude : Int32
+  consumed_bits : Int32
+}
+pub fn Tier1StagedPassState::new(Bool, Int32, Int32, Int32) -> Self
+
+// Type aliases
+
+// Traits

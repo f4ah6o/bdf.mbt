@@ -1,0 +1,23 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/pdf/jpx/internal/decoder"
+
+import {
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/orchestrate",
+}
+
+// Values
+pub fn decode_samples(Bytes) -> Result[@orchestrate.DecodeSamplesResult, String]
+
+pub fn decode_samples_all_components_audit(Bytes, packet_audit_limit? : Int32) -> Result[@orchestrate.DecodeAllComponentsResult, String]
+
+pub fn decode_samples_all_components_debug(Bytes) -> Result[@orchestrate.DecodeAllComponentsResult, String]
+
+pub fn decode_samples_audit(Bytes, packet_audit_limit? : Int32, force_relocated_ppt? : Bool) -> Result[@orchestrate.DecodeSamplesResult, String]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

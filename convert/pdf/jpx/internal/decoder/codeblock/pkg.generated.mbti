@@ -1,0 +1,42 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/codeblock"
+
+import {
+  "f4ah6o/bdf/convert/pdf/jpx/internal/core",
+  "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/a8",
+}
+
+// Values
+pub fn accumulate_multi_codeblock_packet_parts(Array[@a8.MultiCodeblockPacketParts]) -> Result[@a8.MultiCodeblockPacketParts, String]
+
+pub fn code_block_style_is_ht(Int32) -> Bool
+
+pub fn decode_multi_codeblock_coefficients(Array[@a8.MultiCodeblockPacketParts], Int32, Int32, Int32, Int32, Int32, Int32, Int32, Int32, subband_max_bit_planes? : Int32, quantization_style? : Int32, roishift? : Int32) -> Result[Array[Int32], String]
+
+pub fn decode_nodwt_ht_multi_codeblock_tile_bridge(@core.Codestream, Bytes, Int32, Int32, Int32, Bool, Int32, Int32, @core.CodMetadata, fallback_qcd? : @core.QcdMetadata?) -> Result[Array[Int32], String]
+
+pub fn decode_single_codeblock_coefficients(Bytes, Int32, Int32, Int32, Int32, Int32, Int32, segment_lengths? : Array[Int32], per_segment_passes? : Array[Int32], subband_max_bit_planes? : Int32, subband_type? : Int32, quantization_style? : Int32, roishift? : Int32, packet_audit? : Bool, audit_label? : String, audit_comp? : Int32, audit_res? : Int32, audit_sb? : Int32, audit_cbx? : Int32, audit_cby? : Int32) -> Result[Array[Int32], String]
+
+pub fn htj2k_accumulate_single_codeblock_packet_parts(Array[@a8.SingleCodeblockPacketParts]) -> Result[(Bytes, Int32, Int32, Array[Int32], Array[Int32]), String]
+
+pub fn htj2k_decode_not_supported_error(@core.Codestream) -> String
+
+pub fn htj2k_multi_codeblock_uses_staged_segments(Array[@a8.MultiCodeblockPacketParts]) -> Bool
+
+pub fn htj2k_roi_descaled_fixedpoint(Int32, Int32) -> Int32
+
+pub fn htj2k_single_codeblock_uses_staged_segments(Array[@a8.SingleCodeblockPacketParts]) -> Bool
+
+pub fn tier1_codeword_pass_segments(@a8.SingleCodeblockPacketParts) -> Result[Array[Bytes], String]
+
+pub fn tier1_lossy_positioned_bitplane_count(Int32, Int32, Int32, Int32, Int32) -> Int32
+
+pub fn tier1_merge_packet_contributions_into_final_segments(Array[Int32], Array[Int32], Int32) -> (Array[Int32], Array[Int32])
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

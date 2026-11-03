@@ -18,6 +18,7 @@ fn pdf_graphics_document(
   title~ : String = "",
   no_text_index~ : Bool = false,
   no_share_prefix~ : Bool = false,
+  password~ : String = "",
 ) -> Bytes raise PdfStreamError {
   let (document, _) = pdf_graphics_document_result(
     data,
@@ -25,6 +26,7 @@ fn pdf_graphics_document(
     title~,
     no_text_index~,
     no_share_prefix~,
+    password~,
   )
   document
 }
@@ -36,6 +38,7 @@ fn pdf_graphics_document_result(
   title~ : String = "",
   no_text_index~ : Bool = false,
   no_share_prefix~ : Bool = false,
+  password~ : String = "",
 ) -> (Bytes, Array[String]) raise PdfStreamError {
   let (data, warnings, _, _) = pdf_graphics_document_full(
     data,
@@ -43,6 +46,7 @@ fn pdf_graphics_document_result(
     title~,
     no_text_index~,
     no_share_prefix~,
+    password~,
   )
   (data, warnings)
 }
@@ -55,16 +59,13 @@ fn pdf_graphics_document_full(
   no_text_index~ : Bool = false,
   no_share_prefix~ : Bool = false,
   source~ : String = "pdf",
+  password~ : String = "",
 ) -> (Bytes, Array[String], Int32, Int64) raise PdfStreamError {
   if !["", "crop", "media", "bleed", "trim", "art"].contains(box) {
     raise InvalidStream("unknown PDF page box")
   }
   let file = pdf_open_file(data)
-  match file.trailer_entry(b"Encrypt") {
-    Some(value) if value != PdfNull =>
-      raise InvalidStream("encrypted PDF is not supported yet")
-    _ => ()
-  }
+  file.unlock(password)
   let catalog = file.page_deref(file.trailer_entry(b"Root"))
   let (pages, left) = file.page_leaves()
   if left != 0 {

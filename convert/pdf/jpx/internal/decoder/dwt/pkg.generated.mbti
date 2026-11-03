@@ -1,0 +1,41 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/dwt"
+
+import {
+  "f4ah6o/bdf/convert/pdf/jpx/internal/core",
+}
+
+// Values
+pub fn apply_inverse_dwt(Array[Int32], Int32, Int32, Int32, @core.QcdMetadata, Int32, transformation? : Int32, tcx0? : Int32, tcy0? : Int32) -> Result[Array[Int32], String]
+
+pub fn apply_inverse_dwt_53(Array[Int32], Int32, Int32, Int32, tcx0? : Int32, tcy0? : Int32) -> Result[Array[Int32], String]
+
+pub fn apply_inverse_dwt_float(Array[Int32], Int32, Int32, Int32, @core.QcdMetadata, Int32, transformation? : Int32, tcx0? : Int32, tcy0? : Int32, packet_audit? : Bool, audit_label? : String, audit_comp? : Int32) -> Result[Array[Double], String]
+
+pub fn extend_signal(Array[Int32], Int32, Int32, Int32) -> Int32
+
+pub fn extend_signal_double(Array[Double], Int32, Int32, Int32) -> Double
+
+pub fn idwt_53_1d(Array[Int32], Array[Int32], cas? : Int32) -> Array[Int32]
+
+pub fn idwt_53_1d_float(Array[Double], Array[Double], cas? : Int32) -> Array[Double]
+
+pub fn idwt_53_1d_spec(Array[Int32], Array[Int32], Int32) -> Array[Int32]
+
+pub fn ileft_53(Int32) -> Int32
+
+pub fn ileft_97(Int32) -> Int32
+
+pub fn iright_53(Int32) -> Int32
+
+pub fn iright_97(Int32) -> Int32
+
+pub fn pseo(Int32, Int32, Int32) -> Int32
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

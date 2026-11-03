@@ -17,6 +17,7 @@ priv struct PdfFile {
   mut trailer : PdfObject
   font_cache : Map[(Int64, Int64), PdfSimpleFont]
   mut default_font : PdfSimpleFont?
+  mut encryption : PdfEncryption?
 }
 
 ///|

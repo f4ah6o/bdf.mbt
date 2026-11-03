@@ -1099,12 +1099,17 @@ fn native_convert_pdf(
   data : Bytes,
   opened : Bool,
 ) -> Unit {
+  let password = match native_converter_param(request, "password") {
+    "" => native_converter_option(request, "password")
+    value => value
+  }
   let result = @pdf.convert(
     data,
     box=native_converter_param(request, "box"),
     title=native_converter_param(request, "title"),
     no_text_index=native_converter_param(request, "no_text_index") == "true",
     no_share_prefix=native_converter_param(request, "no_share_prefix") == "true",
+    password~,
   ) catch {
     @pdf.PdfFailure(message) => {
       native_converter_error(request, "pdf: " + message, "")

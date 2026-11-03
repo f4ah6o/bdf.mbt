@@ -1,0 +1,21 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/mct"
+
+// Values
+pub fn tier1_annex_g_inverse_ict_components(Array[Int32], Array[Int32], Array[Int32]) -> Result[(Array[Int32], Array[Int32], Array[Int32]), String]
+
+pub fn tier1_annex_g_inverse_ict_components_float(Array[Double], Array[Double], Array[Double]) -> Result[(Array[Double], Array[Double], Array[Double]), String]
+
+pub fn tier1_annex_g_inverse_ict_triplet(Int32, Int32, Int32) -> (Int32, Int32, Int32)
+
+pub fn tier1_annex_g_inverse_rct_components(Array[Int32], Array[Int32], Array[Int32]) -> Result[(Array[Int32], Array[Int32], Array[Int32]), String]
+
+pub fn tier1_annex_g_inverse_rct_triplet(Int32, Int32, Int32) -> (Int32, Int32, Int32)
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

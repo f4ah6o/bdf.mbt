@@ -63,8 +63,14 @@
 ## Converter gaps
 
 - PDF: Type1 `/FontFile` programs still use the system-font fallback; bare CFF
-  programs are wrapped as OpenType. Tiling patterns, JPX/JBIG2/CCITT images,
-  form-field actions and encrypted PDFs are not supported.
+  programs are wrapped as OpenType. Tiling patterns, encoded image masks with
+  ExtGState soft masks, JPX images, MMR-generic-region JBIG2 images, Type3 glyph
+  procedures, URI actions on form fields, and standard-security-handler
+  revisions 2, 3, 4 and 6 (RC4, AES-128 and AES-256) are supported. Revision 5
+  encryption, arithmetic-coded or symbol/text JBIG2 regions, encoded images
+  with colour-key masks, and CCITT/JBIG2/JPX masks combined with colour-key
+  masks remain explicit gaps; CCITT G3/G4 image XObjects and inline images are
+  decoded.
 - DOCX/PPTX: the converters intentionally implement the documented subsets.
   Unsupported features fail closed or are documented in `compat/docx` and
   `compat/pptx`.

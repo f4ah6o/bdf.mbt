@@ -1,0 +1,100 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/mq"
+
+// Values
+pub const TIER1_ANNEX_C_DEFAULT_CONTEXT_COUNT : Int32 = 19
+
+pub fn tier1_annex_c_bootstrap_debug(Tier1AnnexCBootstrap) -> String
+
+pub fn tier1_annex_c_bootstrap_from_codewords(Array[Bytes]) -> Result[Tier1AnnexCBootstrap, String]
+
+pub fn tier1_annex_c_context_trace_debug(Array[Int32], Array[Int32], Array[String]) -> String
+
+pub fn tier1_annex_c_decode_mini_block_pass_segments(Array[Bytes], Array[Tier1AnnexCContextState], Int32, Int32, Int32, Bool, code_block_style? : Int32, subband_type? : Int32, initial_bpno_plus_one? : Int32, roishift? : Int32) -> Result[(Array[Int32], Array[Int32], Array[String]), String]
+
+pub fn tier1_annex_c_decode_mini_block_passes(Tier1AnnexCBootstrap, Array[Bytes], Array[Tier1AnnexCContextState], Int32, Int32, Int32, Bool, code_block_style? : Int32, pass_segments? : Array[Bytes], pass_segment_starts? : Array[Bool], subband_type? : Int32, initial_bpno_plus_one? : Int32, roishift? : Int32, trace_target_pass? : Int32, trace_max_events? : Int32) -> Result[(Array[Int32], Array[Int32], Array[String]), String]
+
+pub fn tier1_annex_c_decode_single_coeff_pass_segments(Array[Bytes], Array[Tier1AnnexCContextState], Int32, Bool) -> Result[(Array[Int32], Array[Int32], Array[String]), String]
+
+pub fn tier1_annex_c_decode_single_coeff_passes(Tier1AnnexCBootstrap, Array[Bytes], Array[Tier1AnnexCContextState], Int32, Bool) -> Result[(Array[Int32], Array[Int32], Array[String]), String]
+
+pub fn tier1_annex_c_probe_debug(Tier1AnnexCDecisionProbe) -> String
+
+pub fn tier1_annex_c_probe_one_decision(Tier1AnnexCBootstrap, Array[Bytes], Array[Tier1AnnexCContextState]) -> Result[Tier1AnnexCDecisionProbe, String]
+
+pub fn tier1_annex_c_reset_contexts(Int32) -> Result[Array[Tier1AnnexCContextState], String]
+
+pub fn tier1_annex_c_restore_contexts(Array[Int32]) -> Result[Array[Tier1AnnexCContextState], String]
+
+pub fn tier1_annex_c_save_contexts(Array[Tier1AnnexCContextState]) -> Result[Array[Int32], String]
+
+pub fn tier1_mq_mini_block_bias_bucket(Int32) -> Int32
+
+pub fn tier1_mq_mini_block_cleanup_sig_context(Int32, Int32) -> Int32
+
+pub fn tier1_mq_mini_block_cleanup_sign_context(Int32, Int32) -> Int32
+
+pub fn tier1_mq_mini_block_cleanup_sign_score(Int32, Int32, Array[Int32], Int32, Int32) -> Int32
+
+pub fn tier1_mq_mini_block_neighbor_bucket(Int32) -> Int32
+
+pub fn tier1_mq_mini_block_sig_neighbor_count(Int32, Int32, Array[Bool], Int32, Int32) -> Int32
+
+pub fn tier1_mq_mini_block_sigprop_sig_context(Int32, Int32) -> Int32
+
+pub fn tier1_mq_mini_block_sigprop_sign_context(Int32, Int32) -> Int32
+
+pub fn tier1_mq_mini_block_sigprop_sign_score(Int32, Int32, Array[Int32], Int32, Int32) -> Int32
+
+pub fn tier1_mq_mini_block_weighted_sign_score(Int32, Int32, Array[Int32], Int32, Int32, Int32, Int32) -> Int32
+
+pub fn tier1_mq_sig_context_table_cleanup(Int32, Int32) -> Int32
+
+pub fn tier1_mq_sig_context_table_sigprop(Int32, Int32) -> Int32
+
+pub fn tier1_mq_sign_mode_table_cleanup(Int32, Int32) -> Int32
+
+pub fn tier1_mq_sign_mode_table_sigprop(Int32, Int32) -> Int32
+
+pub fn tier1_preview_hex(Array[Bytes], Int32) -> String
+
+// Errors
+
+// Types and methods
+pub struct Tier1AnnexCBootstrap {
+  non_empty_segments : Int32
+  preview_hex : String
+  a_init : Int32
+  c_init : Int32
+}
+
+pub struct Tier1AnnexCContextState {
+  state_index : Int32
+  mps : Int32
+}
+
+pub struct Tier1AnnexCDecisionProbe {
+  context_index : Int32
+  decision : Int32
+  kind : String
+}
+
+pub struct Tier1AnnexCDecoderState {
+  a : Int32
+  c : Int32
+  ct : Int32
+  byte_pos : Int32
+  prev_byte : Int32
+  source : Bytes
+}
+
+pub struct Tier1RawBitReader {
+  source : Bytes
+  mut byte_pos : Int32
+  mut c : Int32
+  mut ct : Int32
+}
+
+// Type aliases
+
+// Traits

@@ -115,6 +115,7 @@ test "PDF page tree inheritance, repeated pages and cycles" {
     trailer: PdfNull,
     font_cache: Map([]),
     default_font: None,
+    encryption: None,
   }
   let (pages, left) = file.page_leaves()
   assert_eq(pages.length(), 18)
@@ -145,6 +146,7 @@ test "PDF page content combines decoded streams and skips null references" {
     trailer: PdfNull,
     font_cache: Map([]),
     default_font: None,
+    encryption: None,
   }
   let page = PdfDict([
     (b"Contents", PdfArray([PdfRef(1L, 0L), PdfNull, PdfRef(2L, 0L)])),
@@ -180,6 +182,7 @@ test "PDF page stream accepts indirect filter names and parameters" {
     trailer: PdfNull,
     font_cache: Map([]),
     default_font: None,
+    encryption: None,
   }
   assert_eq(file.page_content(PdfDict([(b"Contents", PdfRef(1L, 0L))])), b"42")
 }
@@ -196,6 +199,7 @@ test "PDF page geometry clips boxes and rotates in page space" {
     trailer: PdfNull,
     font_cache: Map([]),
     default_font: None,
+    encryption: None,
   }
   let attrs : PdfPageAttrs = {
     media: Some((0.0, 0.0, 600.0, 800.0)),

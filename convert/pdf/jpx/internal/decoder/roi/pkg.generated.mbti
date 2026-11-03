@@ -1,0 +1,19 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/pdf/jpx/internal/decoder/roi"
+
+import {
+  "f4ah6o/bdf/convert/pdf/jpx/internal/core",
+}
+
+// Values
+pub fn extract_roi_shift_per_tile_component(@core.Codestream) -> Map[Int32, Map[Int32, Int32]]
+
+pub fn get_roi_shift(Map[Int32, Map[Int32, Int32]], Int32, Int32) -> Int32
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
