@@ -1,4 +1,12 @@
 ///|
+test "EPUB OPF accepts namespace prefixes and single-quoted attributes" {
+  let opf = "<?xml version='1.0'?><opf:package xmlns:opf='http://www.idpf.org/2007/opf'><opf:manifest><opf:item id='c1' href='Text/ch1.xhtml' media-type='application/xhtml+xml'/></opf:manifest><opf:spine><opf:itemref idref='c1'/></opf:spine></opf:package>"
+  let (spine, _, _, _) = epub_opf_parts(opf)
+  assert_eq(spine.length(), 1)
+  assert_eq(spine[0], "Text/ch1.xhtml")
+}
+
+///|
 test "EPUB spine is converted to reader pages" {
   let data = @gzip.decompress(
     @base64.decode(epub_basic_fixture[:], ignore_whitespace=true)[:],

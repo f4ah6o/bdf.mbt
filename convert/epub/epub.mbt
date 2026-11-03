@@ -23,78 +23,237 @@ pub fn detect(data : Bytes) -> Bool {
 }
 
 ///|
+fn epub_is_space(c : UInt16) -> Bool {
+  c == 0x20 || c == 0x09 || c == 0x0d || c == 0x0a
+}
+
+///|
+fn epub_local_name(name : String) -> String {
+  match name.find(":") {
+    Some(index) => name[index + 1:].to_owned()
+    None => name
+  }
+}
+
+///|
+fn epub_tag_end(text : String, from : Int32) -> Int32? {
+  let mut quote : UInt16 = 0
+  let mut i = from
+  while i < text.length() {
+    let c = text[i]
+    if quote != 0 {
+      if c == quote {
+        quote = 0
+      }
+    } else if c == 0x22 || c == 0x27 {
+      quote = c
+    } else if c == 0x3e {
+      return Some(i)
+    }
+    i += 1
+  }
+  None
+}
+
+///|
+fn epub_find_tag(
+  text : String,
+  from : Int32,
+  tag : String,
+) -> (Int32, Int32)? {
+  let mut pos = from
+  while pos < text.length() {
+    let tail = text[pos:].to_owned()
+    let relative = match tail.find("<") {
+      Some(value) => value
+      None => return None
+    }
+    let start = pos + relative
+    if start + 4 <= text.length() && text[start:start + 4] == "<!--" {
+      let rest = text[start + 4:].to_owned()
+      pos = match rest.find("-->") {
+        Some(value) => start + 4 + value + 3
+        None => return None
+      }
+      continue
+    }
+    if start + 9 <= text.length() && text[start:start + 9] == "<![CDATA[" {
+      let rest = text[start + 9:].to_owned()
+      pos = match rest.find("]]>") {
+        Some(value) => start + 9 + value + 3
+        None => return None
+      }
+      continue
+    }
+    if start + 2 <= text.length() && text[start:start + 2] == "<?" {
+      let rest = text[start + 2:].to_owned()
+      pos = match rest.find("?>") {
+        Some(value) => start + 2 + value + 2
+        None => return None
+      }
+      continue
+    }
+    if start + 2 <= text.length() && text[start:start + 2] == "<!" {
+      let end = match epub_tag_end(text, start + 2) {
+        Some(value) => value
+        None => return None
+      }
+      pos = end + 1
+      continue
+    }
+    let mut i = start + 1
+    let closing = i < text.length() && text[i] == 0x2f
+    while i < text.length() && (text[i] == 0x2f || epub_is_space(text[i])) {
+      i += 1
+    }
+    if i >= text.length() {
+      return None
+    }
+    let name_start = i
+    while i < text.length() &&
+          !epub_is_space(text[i]) &&
+          text[i] != 0x2f &&
+          text[i] != 0x3e {
+      i += 1
+    }
+    let local = epub_local_name(text[name_start:i].to_owned())
+    if local == tag && !closing {
+      let end = match epub_tag_end(text, i) {
+        Some(value) => value
+        None => return None
+      }
+      return Some((start, end))
+    }
+    pos = start + 1
+  }
+  None
+}
+
+///|
+fn epub_decode_entities(value : String) -> String {
+  value
+    .replace(old="&amp;", new="&")
+    .replace(old="&quot;", new="\"")
+    .replace(old="&apos;", new="'")
+    .replace(old="&lt;", new="<")
+    .replace(old="&gt;", new=">")
+}
+
+///|
+fn epub_attr_in_tag(tag : String, name : String) -> String {
+  let mut pos = 1
+  while pos < tag.length() &&
+        !epub_is_space(tag[pos]) &&
+        tag[pos] != 0x2f &&
+        tag[pos] != 0x3e {
+    pos += 1
+  }
+  while pos < tag.length() {
+    while pos < tag.length() &&
+          (epub_is_space(tag[pos]) || tag[pos] == 0x2f) {
+      pos += 1
+    }
+    if pos >= tag.length() || tag[pos] == 0x3e {
+      break
+    }
+    let key_start = pos
+    while pos < tag.length() &&
+          !epub_is_space(tag[pos]) &&
+          tag[pos] != 0x3d &&
+          tag[pos] != 0x2f &&
+          tag[pos] != 0x3e {
+      pos += 1
+    }
+    let key = tag[key_start:pos].to_owned()
+    while pos < tag.length() && epub_is_space(tag[pos]) {
+      pos += 1
+    }
+    if pos < tag.length() && tag[pos] == 0x3d {
+      pos += 1
+      while pos < tag.length() && epub_is_space(tag[pos]) {
+        pos += 1
+      }
+      let value = if pos < tag.length() &&
+        (tag[pos] == 0x22 || tag[pos] == 0x27) {
+        let quote = tag[pos]
+        pos += 1
+        let value_start = pos
+        while pos < tag.length() && tag[pos] != quote {
+          pos += 1
+        }
+        let value = tag[value_start:pos].to_owned()
+        if pos < tag.length() {
+          pos += 1
+        }
+        value
+      } else {
+        let value_start = pos
+        while pos < tag.length() &&
+              !epub_is_space(tag[pos]) &&
+              tag[pos] != 0x3e {
+          pos += 1
+        }
+        tag[value_start:pos].to_owned()
+      }
+      if key == name {
+        return epub_decode_entities(value)
+      }
+    }
+  }
+  ""
+}
+
+///|
 fn epub_attr(text : String, tag : String, name : String) -> String {
-  let mut search = 0
-  while true {
-    let at = text.find("<" + tag) catch { _ => None }
-    ignore(at)
-    break
+  match epub_find_tag(text, 0, tag) {
+    Some((start, end)) => epub_attr_in_tag(text[start:end + 1].to_owned(), name)
+    None => ""
   }
-  let marker = "<" + tag
-  let start = match text.find(marker) {
-    Some(value) => value
-    None => return ""
-  }
-  let tail = text[start:].to_owned()
-  let key = name + "=\""
-  let key_start = match tail.find(key) {
-    Some(value) => value
-    None => return ""
-  }
-  let value_start = key_start + key.length()
-  let rest = tail[value_start:].to_owned()
-  let end = match rest.find("\"") {
-    Some(value) => value
-    None => return ""
-  }
-  rest[:end].to_owned()
 }
 
 ///|
 fn epub_tag_text(text : String, tag : String) -> String {
-  let open = "<" + tag
-  let start = match text.find(open) {
-    Some(value) => value
-    None => return ""
+  match epub_find_tag(text, 0, tag) {
+    Some((_, end)) => {
+      let after = text[end + 1:].to_owned()
+      let close = match after.find("</") {
+        Some(value) => value
+        None => return ""
+      }
+      after[:close].to_owned().trim().to_string()
+    }
+    None => ""
   }
-  let after = text[start:].to_owned()
-  let gt = match after.find(">") {
-    Some(value) => value
-    None => return ""
+}
+
+///|
+fn epub_item_is_content(href : String, media : String) -> Bool {
+  if media != "" {
+    return media.contains("html") || media.contains("xhtml")
   }
-  let rest = after[gt + 1:].to_owned()
-  let close = "</" + tag + ">"
-  let end = match rest.find(close) {
-    Some(value) => value
-    None => return ""
-  }
-  rest[:end].to_owned().trim().to_string()
+  let lower = href.to_lower()
+  lower.has_suffix(".xhtml") ||
+  lower.has_suffix(".html") ||
+  lower.has_suffix(".htm")
 }
 
 ///|
 fn epub_opf_parts(opf : String) -> (Array[String], String, String, String) {
+  let manifest : Array[(String, String)] = []
   let ids : Map[String, String] = Map([])
-  let mut search = 0
+  let mut pos = 0
   while true {
-    let at = opf.find("<item ")
-    match at {
-      Some(index) => {
-        if index < search {
-          break
-        }
-        let rest = opf[index:].to_owned()
-        let gt = match rest.find(">") {
-          Some(value) => value
-          None => break
-        }
-        let tag = rest[:gt].to_owned()
-        let id = epub_attr("<item " + tag, "item", "id")
-        let href = epub_attr("<item " + tag, "item", "href")
-        let media = epub_attr("<item " + tag, "item", "media-type")
-        if href != "" && (media.contains("xhtml") || media.contains("html")) {
+    match epub_find_tag(opf, pos, "item") {
+      Some((start, end)) => {
+        let tag = opf[start:end + 1].to_owned()
+        let id = epub_attr_in_tag(tag, "id")
+        let href = epub_attr_in_tag(tag, "href")
+        let media = epub_attr_in_tag(tag, "media-type")
+        if id != "" && href != "" && epub_item_is_content(href, media) {
+          manifest.push((id, href))
           ids[id] = href
         }
-        search = index + gt + 1
+        pos = end + 1
       }
       None => break
     }
@@ -102,32 +261,30 @@ fn epub_opf_parts(opf : String) -> (Array[String], String, String, String) {
   let spine : Array[String] = []
   let mut spine_search = 0
   while true {
-    let tail = opf[spine_search:].to_owned()
-    let at = tail.find("<itemref")
-    match at {
-      Some(relative) => {
-        let index = spine_search + relative
-        let rest = opf[index:].to_owned()
-        let gt = match rest.find(">") {
-          Some(value) => value
-          None => break
-        }
-        let tag = rest[:gt].to_owned()
-        let idref = epub_attr("<itemref" + tag, "itemref", "idref")
+    match epub_find_tag(opf, spine_search, "itemref") {
+      Some((start, end)) => {
+        let tag = opf[start:end + 1].to_owned()
+        let idref = epub_attr_in_tag(tag, "idref")
         match ids.get(idref) {
           Some(href) => spine.push(href)
           None => ()
         }
-        spine_search = index + gt + 1
+        spine_search = end + 1
       }
       None => break
     }
   }
-  let title = epub_tag_text(opf, "dc:title")
-  let creator = epub_tag_text(opf, "dc:creator")
-  let language = epub_tag_text(opf, "dc:language")
+  if spine.is_empty() {
+    for entry in manifest {
+      spine.push(entry.1)
+    }
+  }
+  let title = epub_tag_text(opf, "title")
+  let creator = epub_tag_text(opf, "creator")
+  let language = epub_tag_text(opf, "language")
   (spine, title, creator, language)
 }
+
 
 ///|
 /// Convert the reflowable chapters of an EPUB publication into reader pages.
