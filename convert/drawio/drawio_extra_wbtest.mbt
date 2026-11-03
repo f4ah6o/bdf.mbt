@@ -202,6 +202,36 @@ test "drawio wraps East Asian text between characters" {
 }
 
 ///|
+test "drawio keeps Japanese closing punctuation off line starts" {
+  let font = @canvas.Fonts::new(None)
+  let text = "日本語のラベルは文字ごとに折り返されます。句読点は行頭に来ません。"
+  for i in 0..<12 {
+    let width = 40.0 + i.to_double() * 10.0
+    let lines = drawio_wrap_text(text, width, font, "", false, false, 9.0)
+    for line in lines {
+      assert_true(!line.has_prefix("。"), msg="plain line starts with punctuation")
+    }
+    let wrapped = drawio_wrap_rich_lines(
+      drawio_rich_lines(text, 12.0, 0x000000ffU),
+      width,
+      font,
+      "",
+      false,
+      false,
+      12.0,
+    )
+    for line in wrapped {
+      if !line.is_empty() {
+        assert_true(
+          !line[0].text.has_prefix("。"),
+          msg="rich line starts with punctuation",
+        )
+      }
+    }
+  }
+}
+
+///|
 test "drawio label boxes honor rotation and vertical labels" {
   let box = drawio_label_box(DkRect, "rotation=30;", 0.0, 0.0, 100.0, 50.0)
   assert_true((box.rotation - 30.0).abs() < 0.001)

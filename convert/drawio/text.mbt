@@ -312,6 +312,70 @@ fn drawio_is_east_asian(c : Char) -> Bool {
 }
 
 ///|
+fn drawio_is_line_start_forbidden(c : Char) -> Bool {
+  let code = c.to_int()
+  code == 0x3001 ||
+  code == 0x3002 ||
+  code == 0xFF0C ||
+  code == 0xFF0E ||
+  code == 0x30FB ||
+  code == 0xFF1A ||
+  code == 0xFF1B ||
+  code == 0xFF1F ||
+  code == 0xFF01 ||
+  code == 0xFF09 ||
+  code == 0xFF3D ||
+  code == 0xFF5D ||
+  code == 0x3015 ||
+  code == 0x3009 ||
+  code == 0x300B ||
+  code == 0x300D ||
+  code == 0x300F ||
+  code == 0x3011 ||
+  code == 0x3019 ||
+  code == 0x3017 ||
+  code == 0x301F ||
+  code == 0x2019 ||
+  code == 0x201D ||
+  code == 0xFF60 ||
+  code == 0x00BB ||
+  code == 0x30FC ||
+  code == 0x3041 ||
+  code == 0x3043 ||
+  code == 0x3045 ||
+  code == 0x3047 ||
+  code == 0x3049 ||
+  code == 0x3063 ||
+  code == 0x3083 ||
+  code == 0x3085 ||
+  code == 0x3087 ||
+  code == 0x308E ||
+  code == 0x30A1 ||
+  code == 0x30A3 ||
+  code == 0x30A5 ||
+  code == 0x30A7 ||
+  code == 0x30A9 ||
+  code == 0x30C3 ||
+  code == 0x30E3 ||
+  code == 0x30E5 ||
+  code == 0x30E7 ||
+  code == 0x30EE ||
+  code == 0x30F5 ||
+  code == 0x30F6
+}
+
+///|
+fn drawio_token_is_line_start_forbidden(token : String) -> Bool {
+  let mut count = 0
+  let mut forbidden = false
+  for character in token {
+    count += 1
+    forbidden = drawio_is_line_start_forbidden(character)
+  }
+  count == 1 && forbidden
+}
+
+///|
 fn drawio_is_space(c : Char) -> Bool {
   c == ' ' || c == '\t' || c == '\r'
 }
@@ -389,7 +453,10 @@ fn drawio_wrap_rich_lines(
         base_italic,
         base_size,
       )
-      if current_width > 0.0 && current_width + width > max_width && !current.is_empty() {
+      if current_width > 0.0 &&
+        current_width + width > max_width &&
+        !current.is_empty() &&
+        !drawio_token_is_line_start_forbidden(content) {
         output.push(current.copy())
         current.clear()
         current_width = 0.0
@@ -721,7 +788,9 @@ fn drawio_wrap_text(
       }
       let candidate = current + token
       let width = font.measure(family, "", bold, italic, candidate) * em
-      if current != "" && width > max_width {
+      if current != "" &&
+        width > max_width &&
+        !drawio_token_is_line_start_forbidden(token) {
         output.push(sfc_drawio_trim(current))
         current = token
       } else {
