@@ -144,6 +144,8 @@ fn PdfGraphics::inline_raw_length(
           PdfGray => 1
           PdfRGB => 3
           PdfCMYK => 4
+          PdfIndexed(_, _, _) | PdfSeparation(_, _) | PdfDeviceN(_, _) => 1
+          PdfLab => 3
           PdfPattern => 0
         }
       None => 1

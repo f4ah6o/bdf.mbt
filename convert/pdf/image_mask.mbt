@@ -227,6 +227,8 @@ fn pdf_color_key_alpha(
     PdfGray => 1
     PdfRGB => 3
     PdfCMYK => 4
+    PdfIndexed(_, _, _) | PdfSeparation(_, _) | PdfDeviceN(_, _) | PdfLab =>
+      raise InvalidStream("unsupported PDF image colour space")
     PdfPattern => raise InvalidStream("PDF image with a pattern colour space")
   }
   if key.length() != components * 2 {

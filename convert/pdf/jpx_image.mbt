@@ -134,6 +134,8 @@ fn pdf_jpx_rgb(
     Some(PdfRGB) => PdfRGB
     Some(PdfCMYK) => PdfCMYK
     Some(PdfPattern) => raise InvalidStream("PDF JPX image with a pattern colour space")
+    Some(PdfIndexed(_, _, _) | PdfSeparation(_, _) | PdfDeviceN(_, _) | PdfLab) =>
+      raise InvalidStream("unsupported PDF JPX image colour space")
     None =>
       if image.num_components == 1 {
         PdfGray

@@ -81,6 +81,8 @@ fn pdf_image_rgb_samples(
     PdfGray => 1
     PdfRGB => 3
     PdfCMYK => 4
+    PdfIndexed(_, _, _) | PdfSeparation(_, _) | PdfDeviceN(_, _) | PdfLab =>
+      raise InvalidStream("unsupported PDF image colour space")
     PdfPattern => raise InvalidStream("PDF image with a pattern colour space")
   }
   let needed = width * height * components
@@ -103,6 +105,8 @@ fn pdf_image_rgb_samples(
         rgb.write_byte(data[i + 2])
       }
       PdfPattern => raise InvalidStream("PDF image with a pattern colour space")
+      PdfIndexed(_, _, _) | PdfSeparation(_, _) | PdfDeviceN(_, _) | PdfLab =>
+        raise InvalidStream("unsupported PDF image colour space")
       PdfCMYK => {
         let c = data[i].to_int()
         let m = data[i + 1].to_int()

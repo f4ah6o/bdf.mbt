@@ -23,6 +23,43 @@ fn check_pdf_graphics(content : Bytes, expected : Bytes) -> Unit raise {
 }
 
 ///|
+test "PDF indexed and separation color spaces produce RGB" {
+  let indexed = PdfIndexed(
+    PdfBaseRGB,
+    1,
+    b"\xff\x00\x00\x00\xff\x00",
+  )
+  assert_eq(
+    pdf_device_color(indexed, [1.0]),
+    pdf_color(0.0, 1.0, 0.0),
+    msg="PDF indexed color",
+  )
+  let separation = PdfSeparation(PdfBaseRGB, pdf_default_function())
+  assert_eq(
+    pdf_device_color(separation, [0.5]),
+    pdf_color(0.5, 0.5, 0.5),
+    msg="PDF separation color",
+  )
+}
+
+///|
+test "PDF separation color space resources render" {
+  let document = pdf_graphics_document(
+    pdf_test_pdf([
+      b"<< /Type /Catalog /Pages 2 0 R >>",
+      b"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>",
+      b"<< /Type /Page /Parent 2 0 R /Resources << /ColorSpace << /CS0 5 0 R >> >> /Contents 4 0 R >>",
+      pdf_test_stream("", b"/CS0 cs 0.5 scn 0 0 10 10 re f"),
+      @utf8.encode(
+        "[/Separation /Spot /DeviceCMYK << /FunctionType 2 /Domain [0 1] /C0 [0 0 0 1] /C1 [1 0 0 0] /N 1 >>]",
+      ),
+    ]),
+    no_text_index=true,
+  )
+  assert_eq(pdf_test_fill_rects(document), 1, msg="PDF separation color fill")
+}
+
+///|
 test "PDF compatibility sections ignore unknown operators" {
   let graphics = PdfGraphics::new(10.0, 10.0, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
   let accepted = try {
