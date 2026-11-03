@@ -739,6 +739,7 @@ fn PdfGraphics::execute(
       | b"k"
       | b"K" => self.flush_text()
       b"CS" | b"cs" | b"w" | b"J" | b"j" | b"M" | b"d" | b"ri" | b"i" => ()
+      b"q" | b"Q" | b"cm" => ()
       _ =>
         if self.compatibility == 0 {
           raise InvalidStream(
@@ -766,14 +767,24 @@ fn PdfGraphics::execute(
     b"Do" =>
       if n >= 1 {
         match args[n - 1] {
-          Name(name) => self.draw_xobject(name)
+          Name(name) => {
+            let saved_in_text = self.text.state.in_text
+            self.text.state.in_text = false
+            self.draw_xobject(name)
+            self.text.state.in_text = saved_in_text
+          }
           _ => ()
         }
       }
     b"sh" =>
       if n >= 1 {
         match args[n - 1] {
-          Name(name) => self.paint_shading(name)
+          Name(name) => {
+            let saved_in_text = self.text.state.in_text
+            self.text.state.in_text = false
+            self.paint_shading(name)
+            self.text.state.in_text = saved_in_text
+          }
           _ => ()
         }
       }

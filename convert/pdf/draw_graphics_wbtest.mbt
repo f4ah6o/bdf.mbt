@@ -60,6 +60,18 @@ test "PDF separation color space resources render" {
 }
 
 ///|
+test "PDF text objects tolerate graphics-state operators" {
+  let graphics = PdfGraphics::new(10.0, 10.0, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
+  let accepted = try {
+    graphics.run(b"BT q 1 0 0 1 0 0 cm Q ET")
+    true
+  } catch {
+    _ => false
+  }
+  assert_true(accepted, msg="PDF graphics-state operator in text object")
+}
+
+///|
 test "PDF compatibility sections ignore unknown operators" {
   let graphics = PdfGraphics::new(10.0, 10.0, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
   let accepted = try {
