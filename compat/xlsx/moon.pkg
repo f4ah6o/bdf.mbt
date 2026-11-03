@@ -3,6 +3,7 @@ import {
   "f4ah6o/bdf/core",
   "f4ah6o/bdf/encoding/parquet",
   "moonbitlang/core/encoding/base64",
+  "moonbitlang/core/json",
 }
 
 supported_targets = "js"
