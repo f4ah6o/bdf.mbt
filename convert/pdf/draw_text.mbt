@@ -466,7 +466,7 @@ fn PdfGraphics::text_operator(
     operator == b"Tm" ||
     operator == b"T*" {
     if !text.vertical_glyphs.is_empty() || text.vertical_text.to_string() != "" {
-      raise InvalidStream("vertical PDF text positioning is not supported yet")
+      self.flush_vertical()
     }
     if (operator == b"Td" || operator == b"TD") && n < 2 {
       return true

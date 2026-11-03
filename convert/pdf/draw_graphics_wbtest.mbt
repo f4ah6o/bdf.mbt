@@ -330,16 +330,17 @@ test "PDF matrix scale matches upstream Go fused determinant" {
 }
 
 ///|
-test "unsupported positioning during vertical PDF text fails closed" {
+test "positioning flushes accumulated vertical PDF text" {
   let graphics = PdfGraphics::new(10.0, 10.0, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
   graphics.text.vertical_text.write_string("a")
-  let rejected = try {
+  let accepted = try {
     ignore(graphics.text_operator(b"Td", [Integer(0L), Integer(-12L)]))
-    false
+    true
   } catch {
-    _ => true
+    _ => false
   }
-  assert_true(rejected)
+  assert_true(accepted)
+  assert_eq(graphics.text.vertical_text.to_string(), "")
 }
 
 ///|
