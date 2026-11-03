@@ -144,6 +144,31 @@ fn PdfGraphics::emit_image(
 }
 
 ///|
+fn pdf_image_decode_samples(
+  data : Bytes,
+  space : PdfDeviceColorSpace,
+  decode : Array[Double],
+) -> Bytes {
+  let components = pdf_color_components(space)
+  if components <= 0 || decode.length() < components * 2 {
+    return data
+  }
+  let out = @buffer.Buffer(size_hint=data.length())
+  for i, byte in data {
+    let component = i % components
+    let low = decode[component * 2]
+    let high = decode[component * 2 + 1]
+    let value = low + byte.to_double() / 255.0 * (high - low)
+    let mapped = Double::min(
+      255.0,
+      Double::max(0.0, value * 255.0),
+    ).round().to_int().to_byte()
+    out.write_byte(mapped)
+  }
+  out.to_bytes()
+}
+
+///|
 // Image data keeps JPEG bytes as they are, decodes CCITT fax data, encodes
 // 8-bit samples as PNG and turns 1-bit stencil masks into RGBA PNGs. Other
 // codecs and sample formats need decoders that are not ported yet.
@@ -374,36 +399,31 @@ fn PdfGraphics::draw_image_xobject(
       None => None
     }
   }
-  let invert = !decode.is_empty() && decode[0] == 1.0
-  let (data, codec) = pdf_decode_stream(
+  let mut invert = !decode.is_empty() && decode[0] == 1.0
+  let (decoded_data, codec) = pdf_decode_stream(
     raw,
     filters,
     1073741824L,
     false,
     1073741824L,
   )
+  let mut data = decoded_data
   let ccitt = match codec {
     Some(b"CCITTFaxDecode") => Some(pdf_ccitt_params(file, dict))
     _ => None
   }
-  let ccitt_decode_array = match codec {
-    Some(b"CCITTFaxDecode") => decode.length() == 2
-    _ => false
-  }
-  let jpx_decode_array = match codec {
-    Some(b"JPXDecode") => decode.length() == 2
-    _ => false
-  }
-  let jbig2_decode_array = match codec {
-    Some(b"JBIG2Decode") => decode.length() == 2
-    _ => false
-  }
-  if !is_mask &&
-    !decode.is_empty() &&
-    !ccitt_decode_array &&
-    !jpx_decode_array &&
-    !jbig2_decode_array {
-    raise InvalidStream("PDF image Decode arrays are not supported yet")
+  if !is_mask && !decode.is_empty() && bpc == 8 {
+    match codec {
+      None =>
+        match space {
+          Some(value) => {
+            data = pdf_image_decode_samples(data, value, decode)
+            invert = false
+          }
+          None => ()
+        }
+      _ => ()
+    }
   }
   let has_attachment = match (soft_mask, stencil_mask) {
     (Some(_), _) | (_, Some(_)) => true

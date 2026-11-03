@@ -198,36 +198,31 @@ fn PdfGraphics::draw_inline_image(
       },
     )
   }
-  let invert = !decode.is_empty() && decode[0] == 1.0
-  let (decoded, codec) = pdf_decode_stream(
+  let mut invert = !decode.is_empty() && decode[0] == 1.0
+  let (decoded_data, codec) = pdf_decode_stream(
     data,
     filters,
     1073741824L,
     false,
     1073741824L,
   )
+  let mut decoded = decoded_data
   let ccitt = match codec {
     Some(b"CCITTFaxDecode") => Some(pdf_inline_ccitt_params(dict))
     _ => None
   }
-  let ccitt_decode_array = match codec {
-    Some(b"CCITTFaxDecode") => decode.length() == 2
-    _ => false
-  }
-  let jpx_decode_array = match codec {
-    Some(b"JPXDecode") => decode.length() == 2
-    _ => false
-  }
-  let jbig2_decode_array = match codec {
-    Some(b"JBIG2Decode") => decode.length() == 2
-    _ => false
-  }
-  if !is_mask &&
-    !decode.is_empty() &&
-    !ccitt_decode_array &&
-    !jpx_decode_array &&
-    !jbig2_decode_array {
-    raise InvalidStream("PDF image Decode arrays are not supported yet")
+  if !is_mask && !decode.is_empty() && bpc == 8 {
+    match codec {
+      None =>
+        match space {
+          Some(value) => {
+            decoded = pdf_image_decode_samples(decoded, value, decode)
+            invert = false
+          }
+          None => ()
+        }
+      _ => ()
+    }
   }
   self.draw_image_data(
     width, height, bpc, space, is_mask, invert, decoded, codec, ccitt,

@@ -251,6 +251,23 @@ test "PDF image bit depths other than 8 fail closed" {
 }
 
 ///|
+test "PDF image Decode arrays invert RGB samples" {
+  let document = pdf_graphics_document(
+    pdf_xobject_test_document(
+      b"q 10 0 0 10 0 0 cm /Im1 Do Q",
+      "/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Decode [1 0 1 0 1 0]",
+      b"\xff\x00\x00",
+    ),
+    no_text_index=true,
+  )
+  assert_eq(
+    pdf_test_image_rgb(document, 1, 1),
+    b"\x00\x00\xff\xff",
+    msg="PDF decoded RGB sample",
+  )
+}
+
+///|
 test "PDF Indexed image XObject uses its palette" {
   let document = pdf_graphics_document(
     pdf_xobject_test_document(
