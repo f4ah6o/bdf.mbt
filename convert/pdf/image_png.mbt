@@ -77,13 +77,9 @@ fn pdf_image_rgb_samples(
   space : PdfDeviceColorSpace,
   data : Bytes,
 ) -> Bytes raise PdfStreamError {
-  let components = match space {
-    PdfGray => 1
-    PdfRGB => 3
-    PdfCMYK => 4
-    PdfIndexed(_, _, _) | PdfSeparation(_, _) | PdfDeviceN(_, _) | PdfLab =>
-      raise InvalidStream("unsupported PDF image colour space")
-    PdfPattern => raise InvalidStream("PDF image with a pattern colour space")
+  let components = pdf_color_components(space)
+  if components <= 0 {
+    raise InvalidStream("PDF image with a pattern colour space")
   }
   let needed = width * height * components
   if data.length() < needed {
@@ -104,9 +100,6 @@ fn pdf_image_rgb_samples(
         rgb.write_byte(data[i + 1])
         rgb.write_byte(data[i + 2])
       }
-      PdfPattern => raise InvalidStream("PDF image with a pattern colour space")
-      PdfIndexed(_, _, _) | PdfSeparation(_, _) | PdfDeviceN(_, _) | PdfLab =>
-        raise InvalidStream("unsupported PDF image colour space")
       PdfCMYK => {
         let c = data[i].to_int()
         let m = data[i + 1].to_int()
@@ -116,6 +109,41 @@ fn pdf_image_rgb_samples(
         rgb.write_byte(((255 - m) * (255 - k) / 255).to_byte())
         rgb.write_byte(((255 - y) * (255 - k) / 255).to_byte())
       }
+      PdfIndexed(_, _, _) => {
+        let color = pdf_device_color(space, [data[i].to_double()])
+        rgb.write_byte(((color >> 24) & 0xffU).to_int().to_byte())
+        rgb.write_byte(((color >> 16) & 0xffU).to_int().to_byte())
+        rgb.write_byte(((color >> 8) & 0xffU).to_int().to_byte())
+      }
+      PdfSeparation(_, _) => {
+        let color = pdf_device_color(
+          space,
+          [data[i].to_double() / 255.0],
+        )
+        rgb.write_byte(((color >> 24) & 0xffU).to_int().to_byte())
+        rgb.write_byte(((color >> 16) & 0xffU).to_int().to_byte())
+        rgb.write_byte(((color >> 8) & 0xffU).to_int().to_byte())
+      }
+      PdfDeviceN(_, _, _) => {
+        let values : Array[Double] = []
+        for c in 0..<components {
+          values.push(data[i + c].to_double() / 255.0)
+        }
+        let color = pdf_device_color(space, values)
+        rgb.write_byte(((color >> 24) & 0xffU).to_int().to_byte())
+        rgb.write_byte(((color >> 16) & 0xffU).to_int().to_byte())
+        rgb.write_byte(((color >> 8) & 0xffU).to_int().to_byte())
+      }
+      PdfLab => {
+        let l = data[i].to_double() * 100.0 / 255.0
+        let a = -100.0 + data[i + 1].to_double() * 200.0 / 255.0
+        let b = -100.0 + data[i + 2].to_double() * 200.0 / 255.0
+        let color = pdf_device_color(space, [l, a, b])
+        rgb.write_byte(((color >> 24) & 0xffU).to_int().to_byte())
+        rgb.write_byte(((color >> 16) & 0xffU).to_int().to_byte())
+        rgb.write_byte(((color >> 8) & 0xffU).to_int().to_byte())
+      }
+      PdfPattern => raise InvalidStream("PDF image with a pattern colour space")
     }
     i += components
   }

@@ -251,6 +251,23 @@ test "PDF image bit depths other than 8 fail closed" {
 }
 
 ///|
+test "PDF Indexed image XObject uses its palette" {
+  let document = pdf_graphics_document(
+    pdf_xobject_test_document(
+      b"q 10 0 0 10 0 0 cm /Im1 Do Q",
+      "/Type /XObject /Subtype /Image /Width 2 /Height 1 /ColorSpace [/Indexed /DeviceRGB 1 <ff000000ff00>] /BitsPerComponent 8",
+      b"\x00\x01",
+    ),
+    no_text_index=true,
+  )
+  assert_eq(
+    pdf_test_image_rgb(document, 2, 1),
+    b"\x00\xff\x00\x00\x00\xff\x00",
+    msg="PDF Indexed image scanline",
+  )
+}
+
+///|
 test "PDF inline JPEG image is stored unchanged" {
   let jpeg = b"\xff\xd8inline\xff\xd9"
   let document = pdf_graphics_document(

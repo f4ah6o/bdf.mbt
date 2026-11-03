@@ -223,13 +223,9 @@ fn pdf_color_key_alpha(
   data : Bytes,
   key : Array[Double],
 ) -> Bytes raise PdfStreamError {
-  let components = match space {
-    PdfGray => 1
-    PdfRGB => 3
-    PdfCMYK => 4
-    PdfIndexed(_, _, _) | PdfSeparation(_, _) | PdfDeviceN(_, _) | PdfLab =>
-      raise InvalidStream("unsupported PDF image colour space")
-    PdfPattern => raise InvalidStream("PDF image with a pattern colour space")
+  let components = pdf_color_components(space)
+  if components <= 0 {
+    raise InvalidStream("PDF image with a pattern colour space")
   }
   if key.length() != components * 2 {
     raise InvalidStream("PDF colour key mask has the wrong size")

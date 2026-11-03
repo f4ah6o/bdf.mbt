@@ -13,7 +13,7 @@ priv enum PdfDeviceColorSpace {
   PdfPattern
   PdfIndexed(PdfColorBase, Int32, Bytes)
   PdfSeparation(PdfColorBase, PdfFunction)
-  PdfDeviceN(PdfColorBase, PdfFunction)
+  PdfDeviceN(PdfColorBase, PdfFunction, Int32)
   PdfLab
 }
 
@@ -163,7 +163,7 @@ fn pdf_device_color(
         pdf_color_from_base(base, converted)
       }
     }
-    PdfDeviceN(base, function) => {
+    PdfDeviceN(base, function, _) => {
       let tint = if values.length() > 0 {
         Double::min(1.0, Double::max(0.0, values[0]))
       } else {
@@ -191,7 +191,7 @@ fn pdf_color_components(space : PdfDeviceColorSpace) -> Int32 {
     PdfPattern => 0
     PdfIndexed(_, _, _) => 1
     PdfSeparation(_, _) => 1
-    PdfDeviceN(_, _) => 1
+    PdfDeviceN(_, _, count) => count
     PdfLab => 3
   }
 }
@@ -390,7 +390,15 @@ fn PdfFile::resolve_device_color(
         } else {
           pdf_default_function()
         }
-        PdfDeviceN(base, function)
+        let count = if values.length() > 1 {
+          match self.page_deref(Some(values[1])) {
+            PdfArray(names) => names.length()
+            _ => 1
+          }
+        } else {
+          1
+        }
+        PdfDeviceN(base, function, count)
       } else if family_name == b"Lab" {
         PdfLab
       } else {
