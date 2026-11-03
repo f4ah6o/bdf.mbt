@@ -207,6 +207,24 @@ test "PDF JPX all-component decode returns planar RGB samples" {
 }
 
 ///|
+test "PDF JPX images accept print colour spaces" {
+  let (width, height, rgb) = pdf_jpx_rgb(
+    pdf_jpx_color_test_sample(),
+    Some(PdfDeviceN(PdfBaseRGB, pdf_default_function(), 3)),
+    false,
+  )
+  assert_eq((width, height), (16, 16), msg="JPX DeviceN size")
+  assert_eq(rgb.length(), 16 * 16 * 3, msg="JPX DeviceN samples")
+  let (lab_width, lab_height, lab_rgb) = pdf_jpx_rgb(
+    pdf_jpx_color_test_sample(),
+    Some(PdfLab),
+    false,
+  )
+  assert_eq((lab_width, lab_height), (16, 16), msg="JPX Lab size")
+  assert_eq(lab_rgb.length(), 16 * 16 * 3, msg="JPX Lab samples")
+}
+
+///|
 fn pdf_jpx_test_u32(out : Array[Byte], value : Int) -> Unit {
   out.push(((value >> 24) & 0xff).to_byte())
   out.push(((value >> 16) & 0xff).to_byte())

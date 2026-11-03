@@ -134,8 +134,7 @@ fn pdf_jpx_rgb(
     Some(PdfRGB) => PdfRGB
     Some(PdfCMYK) => PdfCMYK
     Some(PdfPattern) => raise InvalidStream("PDF JPX image with a pattern colour space")
-    Some(PdfIndexed(_, _, _) | PdfSeparation(_, _) | PdfDeviceN(_, _, _) | PdfLab) =>
-      raise InvalidStream("unsupported PDF JPX image colour space")
+    Some(value) => value
     None =>
       if image.num_components == 1 {
         PdfGray
@@ -147,63 +146,82 @@ fn pdf_jpx_rgb(
         raise InvalidStream("unsupported PDF JPX component count")
       }
   }
-  if (match space {
-      PdfRGB => image.num_components < 3
-      PdfCMYK => image.num_components < 4
-      _ => false
-    }) {
+  let components = pdf_color_components(space)
+  if components <= 0 {
+    raise InvalidStream("PDF JPX image with a pattern colour space")
+  }
+  if image.num_components < components {
     raise InvalidStream("PDF JPX component count does not match its colour space")
   }
   let rgb = @buffer.Buffer(size_hint=pixels * 3)
   for pixel in 0..<pixels {
-    let first = pdf_jpx_value(
-      pdf_jpx_sample(image, 0, pixel, bytes_per, interleaved),
-      bits,
-      image.is_signed,
-      invert,
-    )
-    if (match space {
-      PdfGray => true
-      _ => false
-    }) {
-      rgb.write_byte(first.to_byte())
-      rgb.write_byte(first.to_byte())
-      rgb.write_byte(first.to_byte())
-    } else {
-      let second = pdf_jpx_value(
-        pdf_jpx_sample(image, 1, pixel, bytes_per, interleaved),
+    let values : Array[Double] = []
+    for component in 0..<components {
+      let value = pdf_jpx_value(
+        pdf_jpx_sample(image, component, pixel, bytes_per, interleaved),
         bits,
         image.is_signed,
         invert,
       )
-      let third = pdf_jpx_value(
-        pdf_jpx_sample(image, 2, pixel, bytes_per, interleaved),
-        bits,
-        image.is_signed,
-        invert,
-      )
-      if (match space {
-        PdfRGB => true
-        _ => false
-      }) {
-        rgb.write_byte(first.to_byte())
-        rgb.write_byte(second.to_byte())
-        rgb.write_byte(third.to_byte())
-      } else {
-        let fourth = pdf_jpx_value(
-          pdf_jpx_sample(image, 3, pixel, bytes_per, interleaved),
-          bits,
-          image.is_signed,
-          invert,
-        )
-        let c = first.to_double() / 255.0
-        let m = second.to_double() / 255.0
-        let y = third.to_double() / 255.0
-        let k = fourth.to_double() / 255.0
+      values.push(value.to_double())
+    }
+    match space {
+      PdfGray => {
+        let value = values[0].to_int().to_byte()
+        rgb.write_byte(value)
+        rgb.write_byte(value)
+        rgb.write_byte(value)
+      }
+      PdfRGB => {
+        rgb.write_byte(values[0].to_int().to_byte())
+        rgb.write_byte(values[1].to_int().to_byte())
+        rgb.write_byte(values[2].to_int().to_byte())
+      }
+      PdfCMYK => {
+        let c = values[0] / 255.0
+        let m = values[1] / 255.0
+        let y = values[2] / 255.0
+        let k = values[3] / 255.0
         rgb.write_byte(((1.0 - c) * (1.0 - k) * 255.0).round().to_int().to_byte())
         rgb.write_byte(((1.0 - m) * (1.0 - k) * 255.0).round().to_int().to_byte())
         rgb.write_byte(((1.0 - y) * (1.0 - k) * 255.0).round().to_int().to_byte())
       }
+      PdfIndexed(_, _, _) => {
+        let color = pdf_device_color(space, values)
+        rgb.write_byte(((color >> 24) & 0xffU).to_int().to_byte())
+        rgb.write_byte(((color >> 16) & 0xffU).to_int().to_byte())
+        rgb.write_byte(((color >> 8) & 0xffU).to_int().to_byte())
+      }
+      PdfSeparation(_, _) => {
+        let color = pdf_device_color(space, [values[0] / 255.0])
+        rgb.write_byte(((color >> 24) & 0xffU).to_int().to_byte())
+        rgb.write_byte(((color >> 16) & 0xffU).to_int().to_byte())
+        rgb.write_byte(((color >> 8) & 0xffU).to_int().to_byte())
+      }
+      PdfDeviceN(_, _, _) => {
+        let normalized : Array[Double] = []
+        for value in values {
+          normalized.push(value / 255.0)
+        }
+        let color = pdf_device_color(space, normalized)
+        rgb.write_byte(((color >> 24) & 0xffU).to_int().to_byte())
+        rgb.write_byte(((color >> 16) & 0xffU).to_int().to_byte())
+        rgb.write_byte(((color >> 8) & 0xffU).to_int().to_byte())
+      }
+      PdfLab => {
+        let color = pdf_device_color(
+          space,
+          [
+            values[0] * 100.0 / 255.0,
+            -100.0 + values[1] * 200.0 / 255.0,
+            -100.0 + values[2] * 200.0 / 255.0,
+          ],
+        )
+        rgb.write_byte(((color >> 24) & 0xffU).to_int().to_byte())
+        rgb.write_byte(((color >> 16) & 0xffU).to_int().to_byte())
+        rgb.write_byte(((color >> 8) & 0xffU).to_int().to_byte())
+      }
+      PdfPattern => raise InvalidStream("PDF JPX image with a pattern colour space")
     }
   }
   (image.width, image.height, rgb.to_bytes())
