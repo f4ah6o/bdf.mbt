@@ -82,6 +82,12 @@
         <figure class="benchmark-card"><h3>1 文書あたりの推定 SoC エネルギー</h3><p class="benchmark-sub">小さい DOCX・PPTX・XLSX の平均</p><div class="benchmark-case"><div class="benchmark-measure office"><span>LibreOffice + Poppler</span><span class="benchmark-track"><span style="width:100%"></span></span><strong>4.27 J</strong></div><div class="benchmark-measure bdf"><span>BDF（Go）</span><span class="benchmark-track"><span style="width:5.6%"></span></span><strong>0.24 J</strong></div></div><p class="benchmark-note">時間と最大 RSS は変換と先頭ページの 256 px サムネイル作成までを新規プロセスで計測した 5 回の中央値。エネルギーは 3 ラウンドの範囲から算出した推定値です。</p></figure>
       </div>
       <p class="benchmark-live">このブラウザでの実測: <span data-benchmark-live>まだ書き出していません</span></p>
+      <div class="benchmark-measured" data-benchmark-measured aria-labelledby="benchmark-measured-title">
+        <div class="benchmark-measured-head"><div><p class="eyebrow">MEASURED HERE</p><h3 id="benchmark-measured-title">この実装の計測</h3><p>同じ BDF と PDF を、JavaScript 版と wasm-gc 版の MoonBit 実装で処理した実測値です。入力は20ページの BDF と20ページの PDF、ウォームアップ2回の後に7回測った中央値です。</p></div><span class="benchmark-stamp" data-benchmark-stamp>読み込み中</span></div>
+        <div class="benchmark-table-wrap"><table class="benchmark-table" data-benchmark-table><caption class="visually-hidden">BDF と PDF の処理時間（JavaScript と wasm-gc）</caption><thead><tr><th scope="col">処理</th><th scope="col">JS</th><th scope="col">wasm-gc</th><th scope="col">対象</th></tr></thead><tbody><tr><td colspan="4">計測データを読み込んでいます…</td></tr></tbody></table></div>
+        <p class="benchmark-meta" data-benchmark-meta></p>
+        <p class="benchmark-note">数値はこの計測環境での参考値です。ブラウザ・CPU・入力サイズが変われば結果も変わります。MiniSearch は JavaScript の索引ライブラリなので wasm-gc 列は「—」です。</p>
+      </div>
     </section>
     <section class="gallery" aria-labelledby="gallery-title">
       <div class="section-heading"><div><p class="eyebrow">EXPLORE DOCUMENTS</p><h2 id="gallery-title">文書のかたちに合わせたプレビュー</h2><p>サンプルをビューアで開いて、表示や検索を試せます。</p></div><a class="section-link" href="./coverage.html">Porting coverage <span aria-hidden="true">↗</span></a></div>
@@ -113,5 +119,6 @@
   <footer class="page-footer"><p>shibukawa/bdf から独立して移植した非公式プロジェクトです。上流の公式提供・提携ではありません。</p><a href="https://github.com/f4ah6o/bdf.mbt">ソースコードを見る ↗</a></footer>
   <script type="module" src="./app.js"></script>
   <script type="module" src="./export-page.js"></script>
+  <script type="module" src="./benchmark-ui.js"></script>
 </body>
 </html>

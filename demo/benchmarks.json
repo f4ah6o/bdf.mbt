@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "measuredAt": "2026-11-03T23:10:21.668Z",
+  "environment": {
+    "browser": "Chromium 156.0.8078.4",
+    "platform": "MacIntel",
+    "cpu": "Apple M4",
+    "hardwareConcurrency": 10,
+    "deviceMemory": 16,
+    "node": "v26.13.0",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36"
+  },
+  "methodology": {
+    "inputBdf": "upstream-demo.bdf",
+    "inputPdf": "upstream-demo.pdf",
+    "iterations": 7,
+    "warmup": 2,
+    "statistic": "median",
+    "miniSearchQueries": 10,
+    "note": "BDF 20ページ、PDF 20ページ。JS と wasm-gc は同じ MoonBit 実装。値はこの環境での参考値。"
+  },
+  "results": [
+    {
+      "id": "bdf-pdf",
+      "label": "BDF → PDF",
+      "js": 140.2,
+      "wasm": 103.9,
+      "detail": "20ページ / 2.3MB"
+    },
+    {
+      "id": "bdf-markdown",
+      "label": "BDF → Markdown",
+      "js": 26.7,
+      "wasm": 14.5,
+      "detail": "31,488文字"
+    },
+    {
+      "id": "bdf-text",
+      "label": "BDF → 検索テキスト",
+      "js": 7.1,
+      "wasm": 5.3,
+      "detail": "20ページ"
+    },
+    {
+      "id": "pdf-bdf",
+      "label": "PDF → BDF",
+      "js": 316.7,
+      "wasm": 151.8,
+      "detail": "20ページ / 398KB"
+    },
+    {
+      "id": "minisearch-index",
+      "label": "MiniSearch 索引",
+      "js": 2.2,
+      "wasm": null,
+      "detail": "20ページ"
+    },
+    {
+      "id": "minisearch-search",
+      "label": "MiniSearch 検索（1回）",
+      "js": 0.03,
+      "wasm": null,
+      "detail": "10クエリの平均"
+    }
+  ],
+  "sizes": {
+    "bdfBytes": 401594,
+    "pdfBytes": 2405252,
+    "markdownChars": 31488,
+    "textChars": 32235,
+    "convertedBdfBytes": 407163
+  },
+  "details": {
+    "bdfPages": 20,
+    "pdfPages": 20,
+    "pdfToBdfPages": 20,
+    "markdownFiles": 0,
+    "textPages": 20,
+    "records": 20
+  }
+}

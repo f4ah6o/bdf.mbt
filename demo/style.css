@@ -452,3 +452,24 @@ textarea.output { min-height: 320px; }
   .wasm-chip { display:none; }
 }
 .export-warnings { margin: 10px 0 0; color: #6b5b2e; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+
+.visually-hidden { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+.benchmark-measured { margin-top:18px; padding:18px; border:1px solid #d4dfd6; border-radius:10px; background:#fff; }
+.benchmark-measured-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:14px; }
+.benchmark-measured-head h3 { margin:0; font-size:18px; }
+.benchmark-measured-head p:not(.eyebrow) { max-width:75ch; margin:8px 0 0; color:#51665a; font-size:13px; line-height:1.7; }
+.benchmark-stamp { flex:0 0 auto; padding:5px 9px; border-radius:999px; background:#edf3ef; color:#315d49; font-size:11px; font-weight:700; white-space:nowrap; }
+.benchmark-table-wrap { overflow-x:auto; }
+.benchmark-table { width:100%; border-collapse:collapse; font-size:13px; }
+.benchmark-table th, .benchmark-table td { padding:10px 12px; border-bottom:1px solid #e3ebe5; text-align:left; }
+.benchmark-table thead th { background:#f6faf7; color:#51665a; font-size:11px; font-weight:750; letter-spacing:.05em; }
+.benchmark-table tbody th { color:#172c27; font-weight:650; white-space:nowrap; }
+.benchmark-number { text-align:right !important; color:#155f43; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.benchmark-detail { color:#51665a; white-space:normal; }
+.benchmark-meta { margin:10px 0 0; color:#51665a; font-size:11px; line-height:1.6; overflow-wrap:anywhere; }
+.benchmark-error { color:#a42525; }
+@media(max-width:720px) {
+  .benchmark-measured { padding:14px; }
+  .benchmark-measured-head { flex-direction:column; }
+  .benchmark-table th, .benchmark-table td { padding:8px; }
+}

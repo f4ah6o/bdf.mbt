@@ -39,6 +39,11 @@ try {
   await page.waitForFunction(() => window.bdfDemo?.bytes && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
   await page.waitForFunction(() => document.querySelector('[data-export-document]').textContent === 'upstream-demo.bdf', null, { timeout: 30000 });
   assert.match(await page.locator('#exports h2').textContent(), /BDF から描き戻す/);
+  await page.waitForFunction(() => document.querySelectorAll('[data-benchmark-table] tbody tr').length >= 6, null, { timeout: 30000 });
+  const benchmarkText = await page.locator('[data-benchmark-table] tbody').innerText();
+  assert.match(benchmarkText, /BDF → PDF/);
+  assert.match(benchmarkText, /PDF → BDF/);
+  assert.match(benchmarkText, /ms/);
 
   await page.locator('#tab-pdf').click();
   assert.equal(await page.locator('#panel-pdf').isVisible(), true);

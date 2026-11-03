@@ -105,9 +105,11 @@ and supports local BDF, CSV, XLSX, a limited DOCX text subset, a limited PPTX sh
 The same page now writes the displayed BDF back to PDF (embedded fonts and
 links), Markdown, and the upstream page-record JSON used by search, and indexes
 those records with MiniSearch. A [wasm-gc demo](https://f4ah6o.github.io/bdf.mbt/wasm-gc.html)
-runs PDF→BDF and the same exports in WebAssembly GC. The PDF writer approximates
-gradients with a solid stop and still omits masks, filters, images and tagged
-structure; those limits are reported as warnings in the page.
+runs PDF→BDF and the same exports in WebAssembly GC. The benchmark section
+includes a checked-in table measured with `npm run bench:demo` (JavaScript and
+wasm-gc medians for the 20-page BDF and its 20-page source PDF). The PDF writer
+approximates gradients with a solid stop and still omits masks, filters, images
+and tagged structure; those limits are reported as warnings in the page.
 The repository's Pages publishing source must be configured before the
 `Demo pages` workflow can publish it.
 
