@@ -54,7 +54,7 @@
   RLE/delta/byte-stream-split encodings, logical dates/timestamps/decimals,
   JSON-style nested values, WKB→WKT and WKT geometry columns, and Variant
   values. Variant metadata version 1 and encrypted files are documented gaps.
-- Phase 3: `convert/reader` provides the reader-mode block model and fixed A4 layout; `convert/epub` reads the container, manifest and spine; `convert/html` reads headings, paragraphs, lists, code, quotes, tables and images-as-alt-text; `convert/markdown` reads front matter, headings, lists, tasks, fences, quotes, rules, simple tables and inline links. Readability extraction, CSS, remote images, fixed-layout EPUB, MHTML, embedded fonts and exact CommonMark/GFM behavior are documented gaps.
+- Phase 3: `convert/reader` provides the reader-mode block model (A4 pages for HTML/Markdown, A5 book pages for EPUB); `convert/epub` reads the container, manifest and spine; `convert/html` reads headings, paragraphs, lists, code, quotes, tables and images-as-alt-text; `convert/markdown` reads front matter, headings, lists, tasks, fences, quotes, rules, simple tables and inline links. Readability extraction, CSS, remote images, fixed-layout EPUB, MHTML, embedded fonts and exact CommonMark/GFM behavior are documented gaps.
 - Phase 4: `convert/audio` writes one-page cards for MP3, AAC (ADTS/M4A), FLAC, Ogg Vorbis/Opus, WAV and AIFF with tags, covers, lyrics, durations and an optional playable audio part. MP4/iTunes tags and covers, Ogg duration, synchronized lyrics, chapters and DRM are documented gaps.
 - Done: cryptography on non-JavaScript hosts. PBKDF2-HMAC-SHA-256,
   HKDF-SHA-256, AES-KW, AES-GCM and P-256 ECDH are in `crypto`, and encrypted

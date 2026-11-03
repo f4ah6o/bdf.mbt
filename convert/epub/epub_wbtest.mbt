@@ -15,6 +15,7 @@ test "EPUB spine is converted to reader pages" {
   let result = convert(data)
   assert_eq(result.pages > 0, true)
   let doc = @core.open_single(result.bdf)
+  assert_eq(doc.manifest.views[0].pages[0].width, 419.5, msg="EPUB A5 width")
   let index = @core.decode_text_index(doc.part(doc.manifest.views[0].text_index.unwrap()))
   let mut text = ""
   for run in index {

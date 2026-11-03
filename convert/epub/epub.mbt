@@ -366,7 +366,13 @@ pub fn convert(
     meta["dc"] = Json::object(dc)
   }
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
-  let layout = @reader.render(reader, writer)
+  let options = @reader.ReaderOptions::new(
+    width=419.5,
+    height=595.3,
+    margin=41.95,
+    font_size=12.0,
+  )
+  let layout = @reader.render(reader, writer, options~)
   for warning in layout.warnings {
     warnings.push(warning)
   }

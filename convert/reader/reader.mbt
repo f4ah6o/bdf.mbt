@@ -179,12 +179,12 @@ fn reader_lines(document : ReaderDocument, options : ReaderOptions) -> Array[Rea
 }
 
 ///|
-/// Lay out a reader document as fixed A4 pages.
+/// Lay out a reader document as fixed pages.
 pub fn render(
   document : ReaderDocument,
   writer : @core.DocumentWriter,
+  options~ : ReaderOptions = ReaderOptions::new(),
 ) -> ReaderLayout {
-  let options = ReaderOptions::new()
   let lines = reader_lines(document, options)
   let pages : Array[Json] = []
   let index_runs : Array[@core.IndexRun] = []
