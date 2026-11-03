@@ -564,6 +564,17 @@ fn PdfGraphics::draw_form_xobject(
       }
     None => None
   }
+  let (content, codec) = pdf_decode_stream(
+    raw,
+    file.resolved_stream_filters(dict),
+    1073741824L,
+    false,
+    1073741824L,
+  )
+  match codec {
+    Some(_) => raise InvalidStream("unsupported PDF form stream filter")
+    None => ()
+  }
   let old_resources = self.resources
   match pdf_dict_get(dict, b"Resources") {
     Some(value) => self.resources = Some(file.page_deref(Some(value)))
@@ -613,7 +624,7 @@ fn PdfGraphics::draw_form_xobject(
     }
     None => ()
   }
-  self.run_ops(raw)
+  self.run_ops(content)
   self.finish_text()
   if self.mask_group_active && self.mask_group_level > depth {
     self.close_mask_group()

@@ -1018,6 +1018,20 @@ fn pdf_annotation_appearance_document(with_appearance : Bool) -> Bytes {
 }
 
 ///|
+test "PDF compressed form XObject streams are decoded" {
+  let form = @zlib.compress(b"0 0 1 rg 0 0 10 10 re f"[:])
+  let document = pdf_graphics_document(
+    pdf_xobject_test_document(
+      b"q 10 0 0 10 0 0 cm /Im1 Do Q",
+      "/Type /XObject /Subtype /Form /BBox [0 0 10 10] /Resources << >> /Filter /FlateDecode",
+      form,
+    ),
+    no_text_index=true,
+  )
+  assert_eq(pdf_test_fill_rects(document), 1, msg="PDF compressed form XObject")
+}
+
+///|
 test "PDF annotation appearance streams are drawn" {
   let document = pdf_graphics_document(
     pdf_annotation_appearance_document(true),

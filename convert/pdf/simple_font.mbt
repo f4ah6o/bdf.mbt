@@ -39,6 +39,85 @@ fn PdfFile::font_number(
 }
 
 ///|
+fn pdf_sfnt_u16(data : Bytes, offset : Int32) -> Int32 {
+  (data[offset].to_int() << 8) | data[offset + 1].to_int()
+}
+
+///|
+fn pdf_sfnt_u32(data : Bytes, offset : Int32) -> Int64 {
+  (data[offset].to_int64() << 24) |
+  (data[offset + 1].to_int64() << 16) |
+  (data[offset + 2].to_int64() << 8) |
+  data[offset + 3].to_int64()
+}
+
+///|
+// Browsers run embedded TrueType through OTS, which rejects unsorted table
+// directories and fonts without the required cmap, name and OS/2 tables.
+fn pdf_truetype_usable(data : Bytes) -> Bool {
+  if data.length() < 12 {
+    return true
+  }
+  let count = pdf_sfnt_u16(data, 4)
+  if count <= 0 || 12 + count * 16 > data.length() {
+    return true
+  }
+  let mut previous = ""
+  let mut has_cmap = false
+  let mut has_name = false
+  let mut has_os2 = false
+  let mut has_head = false
+  let mut has_hhea = false
+  let mut has_hmtx = false
+  let mut has_maxp = false
+  let mut has_glyf = false
+  let mut has_loca = false
+  for i in 0..<count {
+    let offset = 12 + i * 16
+    let tag = @utf8.decode_lossy(data[offset:offset + 4])
+    if i > 0 && tag.compare(previous) < 0 {
+      return false
+    }
+    previous = tag
+    if tag == "cmap" {
+      has_cmap = true
+    } else if tag == "name" {
+      has_name = true
+    } else if tag == "OS/2" {
+      has_os2 = true
+    } else if tag == "head" {
+      has_head = true
+    } else if tag == "hhea" {
+      has_hhea = true
+    } else if tag == "hmtx" {
+      has_hmtx = true
+    } else if tag == "maxp" {
+      has_maxp = true
+    } else if tag == "glyf" {
+      has_glyf = true
+    } else if tag == "loca" {
+      has_loca = true
+    }
+    let table_offset = pdf_sfnt_u32(data, offset + 8)
+    let table_length = pdf_sfnt_u32(data, offset + 12)
+    if table_offset < 0L ||
+      table_length < 0L ||
+      table_offset + table_length > data.length().to_int64() {
+      return false
+    }
+  }
+  has_cmap &&
+  has_name &&
+  has_os2 &&
+  has_head &&
+  has_hhea &&
+  has_hmtx &&
+  has_maxp &&
+  has_glyf &&
+  has_loca
+}
+
+///|
 fn PdfFile::embedded_font_stream(
   self : PdfFile,
   number : Int64,
@@ -67,6 +146,11 @@ fn PdfFile::embedded_font_stream(
     magic == [b't', b'r', b'u', b'e']
   if !supported {
     raise InvalidStream("unsupported embedded PDF font format")
+  }
+  if (magic == [b'\x00', b'\x01', b'\x00', b'\x00'] ||
+    magic == [b't', b'r', b'u', b'e']) &&
+    !pdf_truetype_usable(data) {
+    raise InvalidStream("embedded PDF TrueType font is not browser-ready")
   }
   data
 }

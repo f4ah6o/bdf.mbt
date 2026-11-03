@@ -159,3 +159,45 @@ test "PDF simple font ToUnicode overrides its encoding" {
   assert_eq(font.unicode(65), "Ω")
   assert_eq(font.unicode(66), "B")
 }
+
+///|
+fn pdf_test_sfnt(tags : Array[String]) -> Bytes {
+  let out = @buffer.Buffer()
+  out.write_bytesview(b"\x00\x01\x00\x00"[:])
+  let count = tags.length()
+  out.write_byte(((count >> 8) & 0xff).to_byte())
+  out.write_byte((count & 0xff).to_byte())
+  for _ in 0..<6 {
+    out.write_byte(0)
+  }
+  for tag in tags {
+    out.write_bytesview(@utf8.encode(tag)[:])
+    for _ in 0..<12 {
+      out.write_byte(0)
+    }
+  }
+  out.to_bytes()
+}
+
+///|
+test "embedded TrueType fonts need browser-required tables and order" {
+  let complete = [
+    "OS/2", "cmap", "glyf", "head", "hhea", "hmtx", "loca", "maxp", "name",
+  ]
+  assert_true(pdf_truetype_usable(pdf_test_sfnt(complete)))
+  assert_true(
+    !pdf_truetype_usable(
+      pdf_test_sfnt([
+        "cmap", "glyf", "head", "hhea", "hmtx", "loca", "maxp", "name",
+      ]),
+    ),
+  )
+  assert_true(
+    !pdf_truetype_usable(
+      pdf_test_sfnt([
+        "cmap", "OS/2", "glyf", "head", "hhea", "hmtx", "loca", "maxp", "name",
+      ]),
+    ),
+  )
+}
+
