@@ -6,7 +6,7 @@ import {
 }
 
 // Values
-pub fn render(ReaderDocument, @core.DocumentWriter) -> ReaderLayout
+pub fn render(ReaderDocument, @core.DocumentWriter, options? : ReaderOptions) -> ReaderLayout
 
 // Errors
 pub suberror ReaderError {
