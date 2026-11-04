@@ -4587,6 +4587,16 @@ fn pptx_emit_chart(
     tick += step
   }
   // category labels
+  let category_axis_visible = match pptx_child(plot_area, "catAx") {
+    Some(value) =>
+      pptx_attribute(value.element, "delete", "0") != "1" &&
+      (match pptx_child(Some(value), "tickLblPos") {
+        Some(position) =>
+          pptx_attribute(position.element, "val", "nextTo") != "none"
+        None => true
+      })
+    None => true
+  }
   let cat_tick_skip = match pptx_child(cat_axis_node, "tickLblSkip") {
     Some(value) =>
       Double::max(
@@ -4606,7 +4616,7 @@ fn pptx_emit_chart(
     None => "none"
   }
   for index, category in categories {
-    if index % cat_tick_skip != 0 {
+    if !category_axis_visible || index % cat_tick_skip != 0 {
       continue
     }
     if horizontal {
@@ -4633,7 +4643,7 @@ fn pptx_emit_chart(
       )
     }
   }
-  if cat_tick_mark != "none" {
+  if category_axis_visible && cat_tick_mark != "none" {
     for index in 0..<categories.length() {
       let coordinates : Array[Double] = if horizontal {
         let base = plot_x
@@ -4666,7 +4676,7 @@ fn pptx_emit_chart(
       object.stroke_path(path)
     }
   }
-  if cat_minor_tick_mark != "none" {
+  if category_axis_visible && cat_minor_tick_mark != "none" {
     for index in 1..<categories.length() {
       let coordinates : Array[Double] = if horizontal {
         let base = plot_x
