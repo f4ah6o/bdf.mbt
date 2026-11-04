@@ -3476,7 +3476,7 @@ fn pptx_emit_chart(
         }
         let show_percent = match pptx_child(Some(labels), "showPercent") {
           Some(value) => pptx_attribute(value.element, "val", "1") != "0"
-          None => true
+          None => !show_val
         }
         let show_cat = match pptx_child(Some(labels), "showCatName") {
           Some(value) => pptx_attribute(value.element, "val", "0") != "0"
@@ -3568,21 +3568,20 @@ fn pptx_emit_chart(
       }
       object.fill_color(fill)
       object.fill_path(path, 0)
-      let mut label = if pie_labels.0 {
-        pptx_chart_format_number(value, label_format)
-      } else if pie_labels.1 {
-        (value / total * 100.0 + 0.5).to_int().to_string() + "%"
-      } else {
-        ""
+      let parts : Array[String] = []
+      if pie_labels.3 && series[0].name != "" {
+        parts.push(series[0].name)
       }
-      if label != "" &&
-        pie_labels.2 &&
-        index < series[0].categories.length() {
-        label = series[0].categories[index] + label_separator + label
+      if pie_labels.2 && index < series[0].categories.length() {
+        parts.push(series[0].categories[index])
       }
-      if label != "" && pie_labels.3 && series[0].name != "" {
-        label = series[0].name + label_separator + label
+      if pie_labels.0 {
+        parts.push(pptx_chart_format_number(value, label_format))
       }
+      if pie_labels.1 {
+        parts.push((value / total * 100.0 + 0.5).to_int().to_string() + "%")
+      }
+      let mut label = parts.join(label_separator)
       if index < custom_labels.length() && custom_labels[index] != "" {
         label = custom_labels[index]
       }
