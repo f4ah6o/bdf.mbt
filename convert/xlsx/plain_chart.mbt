@@ -773,6 +773,43 @@ fn XlsxWorkbook::xlsx_chart_svg(
       let cy = plot_top + plot_height / 2.0
       let radar_radius = Double::min(plot_width, plot_height) / 2.0
       let peak = Double::max(top, 0.000001)
+      for ring in [0.25, 0.5, 0.75, 1.0] {
+        let ring_points = StringBuilder()
+        for index in 0..<radar_count {
+          let angle = -3.141592653589793 / 2.0 +
+            2.0 * 3.141592653589793 * index.to_double() /
+            radar_count.to_double()
+          if index > 0 {
+            ring_points.write_string(" ")
+          }
+          ring_points.write_string(
+            (cx + @math.cos(angle) * radar_radius * ring).to_string() +
+            "," +
+            (cy + @math.sin(angle) * radar_radius * ring).to_string(),
+          )
+        }
+        svg.write_string(
+          "<polygon points=\"" +
+          ring_points.to_string() +
+          "\" fill=\"none\" stroke=\"#d9d9d9\"/>",
+        )
+      }
+      for index in 0..<radar_count {
+        let angle = -3.141592653589793 / 2.0 +
+          2.0 * 3.141592653589793 * index.to_double() /
+          radar_count.to_double()
+        svg.write_string(
+          "<line x1=\"" +
+          cx.to_string() +
+          "\" y1=\"" +
+          cy.to_string() +
+          "\" x2=\"" +
+          (cx + @math.cos(angle) * radar_radius).to_string() +
+          "\" y2=\"" +
+          (cy + @math.sin(angle) * radar_radius).to_string() +
+          "\" stroke=\"#d9d9d9\"/>",
+        )
+      }
       let points = StringBuilder()
       for index, value in model.values {
         let angle = -3.141592653589793 / 2.0 +
@@ -1407,6 +1444,51 @@ fn XlsxWorkbook::xlsx_chart_object(
       let cy = plot_top + plot_height / 2.0
       let radar_radius = Double::min(plot_width, plot_height) / 2.0
       let peak = Double::max(top, 0.000001)
+      for ring in [0.25, 0.5, 0.75, 1.0] {
+        let ring_coordinates : Array[Double] = []
+        for index in 0..<radar_count {
+          let angle = -3.141592653589793 / 2.0 +
+            2.0 * 3.141592653589793 * index.to_double() /
+            radar_count.to_double()
+          ring_coordinates.push(cx + @math.cos(angle) * radar_radius * ring)
+          ring_coordinates.push(cy + @math.sin(angle) * radar_radius * ring)
+        }
+        object.line(0.5F, 0, 0, 8.0F)
+        object.stroke_color(0xd9d9d9ffU)
+        let ring_verbs : Array[Byte] = [0]
+        for _ in 1..<radar_count {
+          ring_verbs.push(1)
+        }
+        ring_verbs.push(4)
+        object.stroke_path(
+          object.add_path(
+            @core.Inline({
+              verbs: Bytes::from_array(ring_verbs),
+              coordinates: ring_coordinates,
+            }),
+          ),
+        )
+      }
+      for index in 0..<radar_count {
+        let angle = -3.141592653589793 / 2.0 +
+          2.0 * 3.141592653589793 * index.to_double() /
+          radar_count.to_double()
+        object.line(0.5F, 0, 0, 8.0F)
+        object.stroke_color(0xd9d9d9ffU)
+        object.stroke_path(
+          object.add_path(
+            @core.Inline({
+              verbs: Bytes::from_array([0, 1]),
+              coordinates: [
+                cx,
+                cy,
+                cx + @math.cos(angle) * radar_radius,
+                cy + @math.sin(angle) * radar_radius,
+              ],
+            }),
+          ),
+        )
+      }
       let verbs : Array[Byte] = [0]
       let coordinates : Array[Double] = []
       for index, value in model.values {
