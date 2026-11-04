@@ -19,6 +19,7 @@ struct XlsxChartModel {
   label_position : String
   leader_lines : Bool
   first_slice_ang : Double
+  explosions : Array[Double]
   show_cat_name : Bool
   show_ser_name : Bool
   axis_min : Double
@@ -357,6 +358,34 @@ fn XlsxWorkbook::xlsx_chart_model(
   let mut label_position = "outEnd"
   let mut leader_lines = false
   let mut first_slice_ang = 0.0
+  let explosions : Array[Double] = []
+  for child in first.children {
+    if child.name != "dPt" {
+      continue
+    }
+    let idx_node = xlsx_draw_child(child, "idx")
+    let explosion_node = xlsx_draw_child(child, "explosion")
+    if idx_node is None || explosion_node is None {
+      continue
+    }
+    let index = @string.parse_int(
+      xlsx_draw_attr(idx_node.unwrap(), "val"),
+    ) catch {
+      _ => -1
+    }
+    if index < 0 {
+      continue
+    }
+    let value = @string.parse_double(
+      xlsx_draw_attr(explosion_node.unwrap(), "val"),
+    ) catch {
+      _ => 0.0
+    }
+    while explosions.length() <= index {
+      explosions.push(0.0)
+    }
+    explosions[index] = value
+  }
   match xlsx_draw_child(plot, "firstSliceAng") {
     Some(value) =>
       first_slice_ang = @string.parse_double(
@@ -454,6 +483,7 @@ fn XlsxWorkbook::xlsx_chart_model(
     label_position,
     leader_lines,
     first_slice_ang,
+    explosions,
     show_cat_name,
     show_ser_name,
     axis_min,
@@ -670,16 +700,24 @@ fn XlsxWorkbook::xlsx_chart_svg(
       for index, value in model.values {
         let sweep = 2.0 * 3.141592653589793 * value / total
         let end = angle + sweep
-        let x1 = cx + @math.cos(angle) * radius
-        let y1 = cy + @math.sin(angle) * radius
-        let x2 = cx + @math.cos(end) * radius
-        let y2 = cy + @math.sin(end) * radius
+        let mid = angle + sweep / 2.0
+        let explosion = if index < model.explosions.length() {
+          model.explosions[index] / 100.0 * radius
+        } else {
+          0.0
+        }
+        let sx = cx + @math.cos(mid) * explosion
+        let sy = cy + @math.sin(mid) * explosion
+        let x1 = sx + @math.cos(angle) * radius
+        let y1 = sy + @math.sin(angle) * radius
+        let x2 = sx + @math.cos(end) * radius
+        let y2 = sy + @math.sin(end) * radius
         let large = if sweep > 3.141592653589793 { 1 } else { 0 }
         svg.write_string(
           "<path d=\"M " +
-          cx.to_string() +
+          sx.to_string() +
           " " +
-          cy.to_string() +
+          sy.to_string() +
           " L " +
           x1.to_string() +
           " " +
@@ -877,18 +915,25 @@ fn XlsxWorkbook::xlsx_chart_svg(
     for index, value in model.values {
       let sweep = 2.0 * 3.141592653589793 * value / pie_total
       let mid = angle + sweep / 2.0
+      let explosion = if index < model.explosions.length() {
+        model.explosions[index] / 100.0 * radius
+      } else {
+        0.0
+      }
+      let sx = cx + @math.cos(mid) * explosion
+      let sy = cy + @math.sin(mid) * explosion
       let category_radius = match model.label_position {
         "ctr" | "inEnd" => radius * 0.75
         _ => radius * 1.12
       }
-      let x = cx + @math.cos(mid) * category_radius
-      let y = cy + @math.sin(mid) * category_radius
+      let x = sx + @math.cos(mid) * category_radius
+      let y = sy + @math.sin(mid) * category_radius
       if model.leader_lines && category_radius > radius {
         svg.write_string(
           "<line x1=\"" +
-          (cx + @math.cos(mid) * radius).to_string() +
+          (sx + @math.cos(mid) * radius).to_string() +
           "\" y1=\"" +
-          (cy + @math.sin(mid) * radius).to_string() +
+          (sy + @math.sin(mid) * radius).to_string() +
           "\" x2=\"" +
           x.to_string() +
           "\" y2=\"" +
@@ -914,8 +959,8 @@ fn XlsxWorkbook::xlsx_chart_svg(
         } else {
           radius * 0.55
         }
-        let inner_x = cx + @math.cos(mid) * data_radius
-        let inner_y = cy + @math.sin(mid) * data_radius
+        let inner_x = sx + @math.cos(mid) * data_radius
+        let inner_y = sy + @math.sin(mid) * data_radius
         svg.write_string(
           "<text x=\"" +
           inner_x.to_string() +
@@ -1251,18 +1296,26 @@ fn XlsxWorkbook::xlsx_chart_object(
       let mut angle = -3.141592653589793 / 2.0 + model.first_slice_ang * 3.141592653589793 / 180.0
       for index, value in model.values {
         let sweep = 2.0 * 3.141592653589793 * value / total
+        let mid = angle + sweep / 2.0
+        let explosion = if index < model.explosions.length() {
+          model.explosions[index] / 100.0 * radius
+        } else {
+          0.0
+        }
+        let sx = cx + @math.cos(mid) * explosion
+        let sy = cy + @math.sin(mid) * explosion
         let verbs : Array[Byte] = [0]
-        let coordinates : Array[Double] = [cx, cy]
+        let coordinates : Array[Double] = [sx, sy]
         let steps = 24
         for step in 0..<steps {
           let step_angle = angle + sweep * step.to_double() / steps.to_double()
           verbs.push(1)
-          coordinates.push(cx + @math.cos(step_angle) * radius)
-          coordinates.push(cy + @math.sin(step_angle) * radius)
+          coordinates.push(sx + @math.cos(step_angle) * radius)
+          coordinates.push(sy + @math.sin(step_angle) * radius)
         }
         verbs.push(1)
-        coordinates.push(cx + @math.cos(angle + sweep) * radius)
-        coordinates.push(cy + @math.sin(angle + sweep) * radius)
+        coordinates.push(sx + @math.cos(angle + sweep) * radius)
+        coordinates.push(sy + @math.sin(angle + sweep) * radius)
         verbs.push(4)
         object.fill_color(palette[index % palette.length()])
         let path = object.add_path(
@@ -1439,6 +1492,13 @@ fn XlsxWorkbook::xlsx_chart_object(
     for index, value in model.values {
       let sweep = 2.0 * 3.141592653589793 * value / pie_total
       let mid = angle + sweep / 2.0
+      let explosion = if index < model.explosions.length() {
+        model.explosions[index] / 100.0 * radius
+      } else {
+        0.0
+      }
+      let sx = cx + @math.cos(mid) * explosion
+      let sy = cy + @math.sin(mid) * explosion
       if index < model.categories.length() {
         let category = model.categories[index]
         let category_radius = match model.label_position {
@@ -1453,10 +1513,10 @@ fn XlsxWorkbook::xlsx_chart_object(
               @core.Inline({
                 verbs: Bytes::from_array([0, 1]),
                 coordinates: [
-                  cx + @math.cos(mid) * radius,
-                  cy + @math.sin(mid) * radius,
-                  cx + @math.cos(mid) * category_radius,
-                  cy + @math.sin(mid) * category_radius,
+                  sx + @math.cos(mid) * radius,
+                  sy + @math.sin(mid) * radius,
+                  sx + @math.cos(mid) * category_radius,
+                  sy + @math.sin(mid) * category_radius,
                 ],
               }),
             ),
@@ -1468,8 +1528,8 @@ fn XlsxWorkbook::xlsx_chart_object(
         }
         label(
           category,
-          cx + @math.cos(mid) * category_radius - advance / 2.0,
-          cy + @math.sin(mid) * category_radius + 3.0,
+          sx + @math.cos(mid) * category_radius - advance / 2.0,
+          sy + @math.sin(mid) * category_radius + 3.0,
           10.0,
           400,
         )
@@ -1487,8 +1547,8 @@ fn XlsxWorkbook::xlsx_chart_object(
         }
         label(
           label_text,
-          cx + @math.cos(mid) * data_radius - advance / 2.0,
-          cy + @math.sin(mid) * data_radius + 3.0,
+          sx + @math.cos(mid) * data_radius - advance / 2.0,
+          sy + @math.sin(mid) * data_radius + 3.0,
           10.0,
           400,
         )
