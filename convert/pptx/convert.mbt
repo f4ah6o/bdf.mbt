@@ -2495,6 +2495,22 @@ fn pptx_chart_data_label_size(chart_space : PptxXmlNode?) -> Double {
 }
 
 ///|
+fn pptx_chart_data_label_bold(chart_space : PptxXmlNode?) -> Bool {
+  let labels = pptx_child(chart_space, "dLbls")
+  let text = pptx_child(labels, "txPr")
+  let paragraph = pptx_child(text, "p")
+  let ppr = pptx_child(paragraph, "pPr")
+  let rpr = pptx_child(ppr, "defRPr")
+  match rpr {
+    Some(value) =>
+      ["1", "true", "on"].contains(
+        pptx_attribute(value.element, "b", "0"),
+      )
+    None => false
+  }
+}
+
+///|
 fn pptx_chart_data_label_color(
   chart_space : PptxXmlNode?,
   theme : Map[String, UInt32],
@@ -2705,6 +2721,11 @@ fn pptx_emit_chart(
     weight: 400,
     style: 0,
   })
+  let data_label_font = if pptx_chart_data_label_bold(chart_space) {
+    object.add_font({ hash: None, family: minor, weight: 700, style: 0 })
+  } else {
+    label_font
+  }
   let label_size = 8.0
   let black = 0x000000ffU
   // An explicit c:title wins; Office titles a one-series chart with its
@@ -3853,7 +3874,7 @@ fn pptx_emit_chart(
             )
           }
           pptx_chart_label(
-            object, label_font, data_label_size, data_label_color, text, label_x, label_y,
+            object, data_label_font, data_label_size, data_label_color, text, label_x, label_y,
           )
           used += value
         }
@@ -3889,7 +3910,7 @@ fn pptx_emit_chart(
             )
           }
           pptx_chart_label(
-            object, label_font, data_label_size, data_label_color, text, label_x, label_y,
+            object, data_label_font, data_label_size, data_label_color, text, label_x, label_y,
           )
         }
       }
