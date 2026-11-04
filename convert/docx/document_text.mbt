@@ -1365,13 +1365,31 @@ fn docx_text_table(
       }
     None => 0.0
   }
-  let borders = docx_border_sides(
+  let table_style = match props {
+    Some(value) =>
+      match value.child("tblStyle") {
+        Some(style) => docx_attribute(style.element, "val", "").to_lower()
+        None => ""
+      }
+    None => ""
+  }
+  let base_borders = docx_border_sides(
     match props {
       Some(value) => value.child("tblBorders")
       None => None
     },
     ["top", "left", "bottom", "right", "insideH", "insideV"],
   )
+  let borders = if table_style == "tablegrid" {
+    base_borders.map(fn(border) {
+      match border {
+        Some(value) => Some(value)
+        None => Some({ width: 0.5, color: 0x000000ffU })
+      }
+    })
+  } else {
+    base_borders
+  }
   let cell_mar = docx_margins(
     match props {
       Some(value) => value.child("tblCellMar")

@@ -1063,6 +1063,25 @@ fn docx_text_x(commands : Array[@render.Command], wanted : String) -> Double {
   0.0
 }
 
+test "DOCX TableGrid style supplies missing cell borders" {
+  let table = "<w:tbl><w:tblPr><w:tblStyle w:val=\"TableGrid\"/></w:tblPr>" +
+    "<w:tblGrid><w:gridCol w:w=\"2000\"/></w:tblGrid>" +
+    "<w:tr><w:tc><w:p><w:r><w:t>GRID</w:t></w:r></w:p></w:tc></w:tr></w:tbl>"
+  let result = convert(docx_test_docx(table, DOCX_TEST_SECTION, []))
+  let commands = docx_test_page_commands(result, "pages", 0, "body")
+  let mut black = false
+  let mut fills = 0
+  for command in commands {
+    match command {
+      FillColor(0x000000ff) => black = true
+      FillRect(_, _, _, _) => fills += 1
+      _ => ()
+    }
+  }
+  assert_true(black)
+  assert_true(fills > 0)
+}
+
 test "DOCX table width scales the grid columns" {
   let plain = convert(docx_table_width_fixture(false))
   let wide = convert(docx_table_width_fixture(true))
