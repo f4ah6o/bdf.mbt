@@ -273,6 +273,72 @@ fn md_html_dimension(value : String) -> Double {
 }
 
 ///|
+fn md_html_link_blocks(
+  html : String,
+  formulas : Array[String],
+  svgs : Array[MdSvg],
+  sprite : StringBuilder,
+) -> Array[MdBlock]? {
+  let lower = html.to_lower()
+  if !lower.contains("<a") {
+    return None
+  }
+  let runs : Array[MdRun] = []
+  let style = md_style()
+  let mut offset = 0
+  while offset < html.length() {
+    let relative = match lower[offset:].find("<a") {
+      Some(index) => index
+      None => break
+    }
+    let at = offset + relative
+    if at > offset {
+      let text = md_strip_html(html[offset:at].to_owned()).trim().to_string()
+      if text != "" {
+        md_push_text(text, style, "", runs, formulas, svgs, sprite)
+      }
+    }
+    let open_end = match lower[at:].find(">") {
+      Some(index) => at + index
+      None => break
+    }
+    if open_end + 1 > html.length() {
+      break
+    }
+    let tag = html[at + 2:open_end].to_owned()
+    let href = md_attr_in_tag(tag, "href")
+    let close_relative = match lower[open_end + 1:].find("</a>") {
+      Some(index) => open_end + 1 + index
+      None => break
+    }
+    let inner = md_strip_html(html[open_end + 1:close_relative].to_owned())
+    if inner != "" {
+      md_push_text(
+        inner,
+        style,
+        md_link_target(href),
+        runs,
+        formulas,
+        svgs,
+        sprite,
+      )
+    }
+    offset = close_relative + 4
+  }
+  if offset < html.length() {
+    let text = md_strip_html(html[offset:].to_owned()).trim().to_string()
+    if text != "" {
+      md_push_text(text, style, "", runs, formulas, svgs, sprite)
+    }
+  }
+  if runs.is_empty() {
+    None
+  } else {
+    Some([MdParagraph(runs)])
+  }
+}
+
+///|
 fn md_block_from_html(
   html : String,
   formulas : Array[String],
@@ -332,17 +398,25 @@ fn md_block_from_html(
   }
   match md_html_table(remaining, formulas, svgs, sprite, images) {
     Some(table) => blocks.push(table)
-    None => {
-      let text = md_strip_html(remaining)
-      for paragraph in text.split("\n") {
-        let value = paragraph.trim().to_string()
-        if value != "" {
-          let runs : Array[MdRun] = []
-          md_push_text(value, md_style(), "", runs, formulas, svgs, sprite)
-          blocks.push(MdParagraph(runs))
+    None =>
+      match md_html_link_blocks(remaining, formulas, svgs, sprite) {
+        Some(linked) => {
+          for block in linked {
+            blocks.push(block)
+          }
+        }
+        None => {
+          let text = md_strip_html(remaining)
+          for paragraph in text.split("\n") {
+            let value = paragraph.trim().to_string()
+            if value != "" {
+              let runs : Array[MdRun] = []
+              md_push_text(value, md_style(), "", runs, formulas, svgs, sprite)
+              blocks.push(MdParagraph(runs))
+            }
+          }
         }
       }
-    }
   }
   blocks
 }

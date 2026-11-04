@@ -292,6 +292,29 @@ test "Markdown raw HTML data images are embedded" {
 }
 
 ///|
+test "Markdown raw HTML anchors become link commands" {
+  let source = "<p><a href=\"https://example.com\">LINK</a></p>\n"
+  let result = convert(@utf8.encode(source))
+  let doc = @core.open_single(result.bdf)
+  let view = doc.manifest.views[0]
+  let mut linked = false
+  for page in view.pages {
+    for layer in page.layers {
+      for command in @render.decode_commands(doc.part(layer.object)) {
+        match command {
+          @render.Link(_, _, _, _, url) =>
+            if url == "https://example.com" {
+              linked = true
+            }
+          _ => ()
+        }
+      }
+    }
+  }
+  assert_true(linked)
+}
+
+///|
 test "Markdown heading links target the page" {
   let source = "# Heading\n\n[go](#heading)\n"
   let result = convert(@utf8.encode(source))
