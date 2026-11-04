@@ -84,6 +84,17 @@ test "Markdown inline SVG blocks, symbols and relative images" {
 }
 
 ///|
+test "Markdown borrows definitions from a multi-line sprite sheet" {
+  let source = "<svg style=\"display:none\">\n" +
+    "<symbol id=\"dot\" viewBox=\"0 0 16 16\"><circle cx=\"8\" cy=\"8\" r=\"6\" fill=\"currentColor\"/></symbol>\n" +
+    "</svg>\n\n" +
+    "<svg width=\"24\" height=\"24\" viewBox=\"0 0 16 16\" aria-label=\"Dot\"><use href=\"#dot\"/></svg>\n"
+  let result = convert(@utf8.encode(source))
+  let doc = @core.open_single(result.bdf)
+  assert_eq(markdown_image_parts(doc).length(), 1)
+  assert_eq(result.warnings.length(), 0)
+}
+
 test "Markdown data URI SVG image is drawn without its alternative text" {
   let source = "before ![a drawn mark](data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='40'%20height='20'%3E%3Crect%20width='40'%20height='20'%20fill='%230969da'/%3E%3C/svg%3E) after"
   let result = convert(@utf8.encode(source))

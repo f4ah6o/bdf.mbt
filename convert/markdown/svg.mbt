@@ -644,9 +644,17 @@ fn md_parse_svg_before(text : String, svgs : Array[MdSvg], sprite : StringBuilde
       i += 1
       continue
     }
-    out.write_string(md_inline_svg_line(line, svgs, sprite))
+    let mut markup = line
+    let mut consumed = i + 1
+    if markup.contains("<svg") && !markup.contains("</svg>") {
+      while consumed < lines.length() && !markup.contains("</svg>") {
+        markup += "\n" + lines[consumed].to_owned()
+        consumed += 1
+      }
+    }
+    out.write_string(md_inline_svg_line(markup, svgs, sprite))
     out.write_char('\n')
-    i += 1
+    i = consumed
   }
   out.to_string()
 }
