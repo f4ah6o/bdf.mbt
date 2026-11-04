@@ -66,3 +66,8 @@ fixtures in `compat/pdf/fixtures`: view id/kind, page counts and geometry and
 normalized text indexes, plus the `kind=flow` body rectangle, page selection
 and invalid-kind errors. The JBIG2 symbol/text-region fixture is exercised
 separately when the JBIG2 decoder supports those segment types.
+
+`phase15-pptx-test.mjs` compares the PPTX converter with upstream for the
+`basic`, `features` and `math` fixtures: the `slides` view, page sizes, layer
+role sequences, shared master/layout objects, summary, no-font warning,
+normalized text and OMML linearization.
