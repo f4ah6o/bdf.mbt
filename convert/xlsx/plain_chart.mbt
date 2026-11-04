@@ -6,6 +6,8 @@ struct XlsxChartModel {
   series_name : String
   values : Array[Double]
   categories : Array[String]
+  axis_min : Double
+  axis_max : Double
 }
 
 ///|
@@ -228,12 +230,49 @@ fn XlsxWorkbook::xlsx_chart_model(
   }
   let values = xlsx_chart_numbers(self, first, "val")
   let categories = xlsx_chart_series(self, first, "cat")
+  let mut axis_min = 0.0
+  let mut axis_max = 0.0
+  match xlsx_draw_child(plot, "valAx") {
+    Some(axis) =>
+      match xlsx_draw_child(axis, "scaling") {
+        Some(scaling) => {
+          match xlsx_draw_child(scaling, "min") {
+            Some(value) =>
+              axis_min = @string.parse_double(
+                xlsx_draw_attr(value, "val"),
+              ) catch {
+                _ => 0.0
+              }
+            None => ()
+          }
+          match xlsx_draw_child(scaling, "max") {
+            Some(value) =>
+              axis_max = @string.parse_double(
+                xlsx_draw_attr(value, "val"),
+              ) catch {
+                _ => 0.0
+              }
+            None => ()
+          }
+        }
+        None => ()
+      }
+    None => ()
+  }
   if categories.is_empty() {
     for index in 0..<values.length() {
       categories.push((index + 1).to_string())
     }
   }
-  Some({ title, kind, series_name, values, categories })
+  Some({
+    title,
+    kind,
+    series_name,
+    values,
+    categories,
+    axis_min,
+    axis_max,
+  })
 }
 
 ///|
@@ -328,6 +367,10 @@ fn XlsxWorkbook::xlsx_chart_svg(
     model.values.fold(init=0.0, (value, item) => Double::max(value, item)),
   )
   let top = ticks[ticks.length() - 1]
+  let axis_exists = model.axis_max > model.axis_min
+  let axis_top = if axis_exists { model.axis_max } else { top }
+  let axis_base = if axis_exists { model.axis_min } else { 0.0 }
+  let axis_range = Double::max(axis_top - axis_base, 0.000001)
   let left = 60.0
   let plot_top = 40.0
   let plot_width = Double::max(width - left - 140.0, 10.0)
@@ -365,7 +408,8 @@ fn XlsxWorkbook::xlsx_chart_svg(
     )
   }
   for tick in ticks {
-    let y = plot_top + plot_height - plot_height * tick / top
+    let y = plot_top + plot_height -
+      plot_height * (tick - axis_base) / axis_range
     svg.write_string(
       "<text x=\"" +
       (left - 8.0).to_string() +
@@ -435,7 +479,7 @@ fn XlsxWorkbook::xlsx_chart_svg(
   } else if model.kind == "barChart" {
     let slot = plot_width / Double::max(count.to_double(), 1.0)
     for index, value in model.values {
-      let bar_height = plot_height * value / top
+      let bar_height = plot_height * (value - axis_base) / axis_range
       svg.write_string(
         "<rect x=\"" +
         (left + slot * index.to_double() + slot * 0.2).to_string() +
@@ -456,7 +500,8 @@ fn XlsxWorkbook::xlsx_chart_svg(
       } else {
         left + plot_width * index.to_double() / (count - 1).to_double()
       }
-      let y = plot_top + plot_height - plot_height * value / top
+      let y = plot_top + plot_height -
+        plot_height * (value - axis_base) / axis_range
       path = path +
         (if index == 0 { "" } else { " L " }) +
         x.to_string() +
