@@ -465,7 +465,7 @@ fn docx_layout_paragraph(
       _ => {
         let size = if item.props.size > 0.0 { item.props.size } else { 10.0 }
         for c in item.text {
-          let advance = docx_char_width(c, size)
+          let advance = docx_char_width(c, size) + item.props.spacing
           if line_x + advance > right && line_started {
             if c == ' ' {
               // A space at the end of a line is not drawn.

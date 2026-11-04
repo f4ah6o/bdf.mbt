@@ -1227,6 +1227,24 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX character spacing widens text advances" {
+  let blocks = "<w:p><w:r><w:rPr><w:spacing w:val=\"120\"/></w:rPr><w:t>AB</w:t></w:r></w:p>"
+  let commands = docx_test_page_commands(
+    convert(docx_test_docx(blocks, DOCX_TEST_SECTION, [])), "pages", 0, "body",
+  )
+  let mut advance = 0.0
+  for command in commands {
+    match command {
+      FillText(value, _, _, width) =>
+        if value.contains("AB") {
+          advance = width
+        }
+      _ => ()
+    }
+  }
+  assert_true(advance > 8.0)
+}
+
 test "DOCX tab leaders fill the gap to the stop" {
   let blocks = "<w:p><w:pPr><w:tabs><w:tab w:val=\"left\" w:pos=\"1440\" w:leader=\"dot\"/></w:tabs></w:pPr>" +
     "<w:r><w:t xml:space=\"preserve\">A\tB</w:t></w:r></w:p>"
