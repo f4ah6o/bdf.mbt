@@ -3905,8 +3905,20 @@ fn pptx_emit_chart(
               ],
             }),
           )
-          object.line(0.75F, 0, 0, 8.0F)
-          object.stroke_color(0x808080ffU)
+          let leader_lines = pptx_child(chart_space, "leaderLines")
+          let leader_sp_pr = pptx_child(leader_lines, "spPr")
+          let (leader_color, leader_width) = pptx_chart_line_style(
+            leader_sp_pr, theme, 0x808080ffU, 0.75,
+          )
+          let leader_dash = match pptx_child(
+            pptx_child(leader_sp_pr, "ln"), "prstDash",
+          ) {
+            Some(value) => pptx_attribute(value.element, "val", "solid")
+            None => "solid"
+          }
+          object.line(Float::from_double(leader_width), 0, 0, 8.0F)
+          pptx_apply_chart_dash(object, leader_dash)
+          object.stroke_color(leader_color)
           object.stroke_path(path)
         }
         pptx_chart_label(

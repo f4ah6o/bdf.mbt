@@ -99,8 +99,8 @@ bar/line/radar/scatter value labels with optional category/series names
 and bar/line/scatter/radar `dLblPos` placement, point colours from
 `c:varyColors`, bubble `sizeRepresents`/`bubbleScale`/`showNegBubbles`,
 stacked segment labels and pie/doughnut combined value+percentage labels (`numFmt` decimals) with
-`dLblPos` (leader lines for
-outside labels, with optional
+`dLblPos` (leader lines for outside labels, using their `c:spPr` colour,
+width and dash, with optional
 category/series names, `c:numFmt`, `c:txPr` sizes/colours/bold/italic, `c:separator` and per-point `c:dLbl`
 text/delete)
 from `dLbls`, legends with colour swatches and `txPr` text styles, deleted entries and
