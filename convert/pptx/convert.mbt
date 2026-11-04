@@ -2475,13 +2475,22 @@ fn pptx_emit_chart(
   let legend = pptx_child(chart_space, "legend")
   if legend is Some(_) {
     let entries : Array[String] = []
+    let entry_colors : Array[UInt32] = []
     if is_pie {
-      for category in series[0].categories {
+      for index, category in series[0].categories {
         entries.push(category)
+        let point = if index < series[0].point_colors.length() &&
+          series[0].point_colors[index] != 0U {
+          series[0].point_colors[index]
+        } else {
+          palette[index % palette.length()]
+        }
+        entry_colors.push(point)
       }
     } else {
       for item in series {
         entries.push(item.name)
+        entry_colors.push(item.color)
       }
     }
     let position = match pptx_child(legend, "legendPos") {
@@ -2494,9 +2503,22 @@ fn pptx_emit_chart(
       })
       let mut legend_x = x + (width - width_sum) / 2.0
       let legend_y = if position == "b" { y + height - 8.0 } else { y + 12.0 }
-      for entry in entries {
+      for index, entry in entries {
+        object.fill_color(entry_colors[index])
+        object.fill_rect(
+          Float::from_double(legend_x),
+          Float::from_double(legend_y - 8.0),
+          8.0F,
+          8.0F,
+        )
         pptx_chart_label(
-          object, label_font, label_size, black, entry, legend_x, legend_y,
+          object,
+          label_font,
+          label_size,
+          black,
+          entry,
+          legend_x + 10.0,
+          legend_y,
         )
         legend_x += pptx_text_width(entry, label_size) + 18.0
       }
@@ -2505,9 +2527,22 @@ fn pptx_emit_chart(
       }
     } else if position == "l" {
       let mut legend_y = plot_y + 4.0
-      for entry in entries {
+      for index, entry in entries {
+        object.fill_color(entry_colors[index])
+        object.fill_rect(
+          Float::from_double(x + 2.0),
+          Float::from_double(legend_y - 8.0),
+          8.0F,
+          8.0F,
+        )
         pptx_chart_label(
-          object, label_font, label_size, black, entry, x + 2.0, legend_y,
+          object,
+          label_font,
+          label_size,
+          black,
+          entry,
+          x + 12.0,
+          legend_y,
         )
         legend_y += 12.0
       }
@@ -2515,14 +2550,21 @@ fn pptx_emit_chart(
       plot_width = Double::max(1.0, plot_width - 64.0)
     } else {
       let mut legend_y = plot_y + 4.0
-      for entry in entries {
+      for index, entry in entries {
+        object.fill_color(entry_colors[index])
+        object.fill_rect(
+          Float::from_double(x + width - 60.0),
+          Float::from_double(legend_y - 8.0),
+          8.0F,
+          8.0F,
+        )
         pptx_chart_label(
           object,
           label_font,
           label_size,
           black,
           entry,
-          x + width - 60.0,
+          x + width - 50.0,
           legend_y,
         )
         legend_y += 12.0

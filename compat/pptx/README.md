@@ -97,7 +97,8 @@ scatter, radar, pie and doughnut charts (with `firstSliceAng`, per-point `explos
 data-point fills) draw their series, axis titles,
 bar/line/radar/scatter value labels with optional category/series names,
 stacked segment labels and pie percentage/value labels (with optional
-category/series names) from `dLbls`, legends, category labels, value-axis ticks, explicit `c:majorUnit`/`c:minorUnit` and
+category/series names) from `dLbls`, legends with colour swatches, category
+labels, value-axis ticks, explicit `c:majorUnit`/`c:minorUnit` and
 major/minor gridlines. Office
 Math in `a14:m` is linearized to text (fractions, roots, scripts, n-ary
 operators, delimiters, matrices, accents and groups); the `mc:Choice` that
