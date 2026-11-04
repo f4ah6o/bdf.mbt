@@ -254,7 +254,8 @@ fills, line borders and linear text of the original subset it supports:
 - worksheet drawings that contain shapes with text, `mc:AlternateContent`
   choices with Office Math (`a14:m`), and chart frames: shapes are painted
   with their fill, outline and text, and embedded bar, line and pie charts are rendered as SVG
-  pictures (pie category legends and series legends are drawn, horizontal
+  pictures (chart titles use `c:title` 
+  `txPr` size/colour, pie category legends and series legends are drawn, horizontal
   value-axis gridlines are painted, line-series markers (circle/square/diamond/triangle/x/plus/star and size)
   are drawn on sheets and chart sheets, pie categories are placed around the slices,
   `showPercent` adds

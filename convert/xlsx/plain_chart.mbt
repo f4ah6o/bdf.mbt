@@ -2,6 +2,8 @@
 ///|
 struct XlsxChartModel {
   title : String
+  title_size : Double
+  title_color : String
   kind : String
   series_name : String
   values : Array[Double]
@@ -188,8 +190,54 @@ fn XlsxWorkbook::xlsx_chart_model(
     None => return None
   }
   let mut title = ""
+  let mut title_size = 14.0
+  let mut title_color = "#000000"
   match xlsx_draw_child(chart, "title") {
     Some(title_node) => title = xlsx_draw_all_text(title_node).trim().to_string()
+    None => ()
+  }
+  match xlsx_draw_child(chart, "title") {
+    Some(title_node) =>
+      match xlsx_draw_child(title_node, "tx") {
+        Some(tx) =>
+          match xlsx_draw_child(tx, "rich") {
+            Some(rich) =>
+              match xlsx_draw_child(rich, "p") {
+                Some(paragraph) =>
+                  match xlsx_draw_child(paragraph, "pPr") {
+                    Some(ppr) =>
+                      match xlsx_draw_child(ppr, "defRPr") {
+                        Some(rpr) => {
+                          let size = xlsx_draw_attr(rpr, "sz")
+                          if size != "" {
+                            title_size = (@string.parse_double(size) catch {
+                              _ => 1400.0
+                            }) / 100.0
+                          }
+                          match xlsx_draw_child(rpr, "solidFill") {
+                            Some(fill) =>
+                              match xlsx_draw_child(fill, "srgbClr") {
+                                Some(color) => {
+                                  let rgb = xlsx_draw_attr(color, "val")
+                                  if rgb.length() == 6 {
+                                    title_color = "#" + rgb.to_lower()
+                                  }
+                                }
+                                None => ()
+                              }
+                            None => ()
+                          }
+                        }
+                        None => ()
+                      }
+                    None => ()
+                  }
+                None => ()
+              }
+            None => ()
+          }
+        None => ()
+      }
     None => ()
   }
   let plot_area = match xlsx_draw_child(chart, "plotArea") {
@@ -333,6 +381,8 @@ fn XlsxWorkbook::xlsx_chart_model(
   }
   Some({
     title,
+    title_size,
+    title_color,
     kind,
     series_name,
     values,
@@ -489,7 +539,11 @@ fn XlsxWorkbook::xlsx_chart_svg(
     svg.write_string(
       "<text x=\"" +
       (width / 2.0).to_string() +
-      "\" y=\"20\" text-anchor=\"middle\" font-size=\"14\" font-weight=\"bold\" fill=\"#000000\">" +
+      "\" y=\"20\" text-anchor=\"middle\" font-size=\"" +
+      model.title_size.to_string() +
+      "\" font-weight=\"bold\" fill=\"" +
+      model.title_color +
+      "\">" +
       xlsx_chart_text(model.title) +
       "</text>",
     )
@@ -1021,10 +1075,18 @@ fn XlsxWorkbook::xlsx_chart_object(
   if model.title != "" {
     let mut advance = 0.0
     for character in model.title {
-      advance += @sheet.sized_fallback_advance(character, true, 14.0)
+      advance += @sheet.sized_fallback_advance(
+        character, true, model.title_size,
+      )
     }
-    label(
-      model.title, (width - advance) / 2.0, 20.0, 14.0, 700,
+    object.mark(2, "")
+    object.font(bold, Float::from_double(model.title_size))
+    object.fill_color(xlsx_chart_color_uint(model.title_color))
+    object.fill_text(
+      model.title,
+      Float::from_double((width - advance) / 2.0),
+      20.0F,
+      Float::from_double(advance),
     )
   }
   if model.series_name != "" {
