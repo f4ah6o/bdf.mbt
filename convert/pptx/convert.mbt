@@ -4264,6 +4264,10 @@ fn pptx_emit_chart(
     Some(value) => pptx_attribute(value.element, "val", "none")
     None => "none"
   }
+  let minor_tick_mode = match pptx_child(val_axis_node, "minorTickMark") {
+    Some(value) => pptx_attribute(value.element, "val", "none")
+    None => "none"
+  }
   let tick_lbl_skip = match pptx_child(val_axis_node, "tickLblSkip") {
     Some(value) =>
       Double::max(
@@ -4370,6 +4374,46 @@ fn pptx_emit_chart(
         @core.Inline({ verbs: Bytes::from_array([0, 1]), coordinates }),
       )
       object.stroke_path(mark_path)
+    }
+    if minor_tick_mode != "none" {
+      for minor_index in 1..<5 {
+        let minor_value = tick + minor_unit * minor_index.to_double()
+        if minor_value > axis_high + 1.0e-6 {
+          break
+        }
+        let minor_fraction = pptx_chart_fraction(
+          minor_value, axis_low, axis_high, axis_flip,
+        )
+        let mark_coordinates : Array[Double] = if horizontal {
+          let base = plot_y + plot_height
+          let end = match minor_tick_mode {
+            "in" => base - 2.0
+            "out" => base + 2.0
+            "cross" => base + 2.0
+            _ => base
+          }
+          let start = if minor_tick_mode == "cross" { base - 2.0 } else { base }
+          [plot_x + plot_width * minor_fraction, start,
+           plot_x + plot_width * minor_fraction, end]
+        } else {
+          let base = plot_x
+          let end = match minor_tick_mode {
+            "in" => base + 2.0
+            "out" => base - 2.0
+            "cross" => base + 2.0
+            _ => base
+          }
+          let start = if minor_tick_mode == "cross" { base - 2.0 } else { base }
+          [start, plot_y + plot_height - plot_height * minor_fraction,
+           end, plot_y + plot_height - plot_height * minor_fraction]
+        }
+        object.line(0.5F, 0, 0, 8.0F)
+        object.stroke_color(0x808080ffU)
+        let mark_path = object.add_path(
+          @core.Inline({ verbs: Bytes::from_array([0, 1]), coordinates: mark_coordinates }),
+        )
+        object.stroke_path(mark_path)
+      }
     }
     if tick_index % tick_lbl_skip == 0 {
     let display_tick = if axis_flip {
