@@ -181,6 +181,21 @@ test "DOCX table cell diagonal borders are drawn" {
   assert_true(strokes >= 2)
 }
 
+test "DOCX table cell spacing separates grid columns" {
+  let blocks = "<w:tbl><w:tblPr><w:tblCellSpacing w:w=\"120\"/></w:tblPr>" +
+    "<w:tblGrid><w:gridCol w:w=\"2000\"/><w:gridCol w:w=\"2000\"/></w:tblGrid>" +
+    "<w:tr><w:tc><w:p><w:r><w:t>A</w:t></w:r></w:p></w:tc>" +
+    "<w:tc><w:p><w:r><w:t>B</w:t></w:r></w:p></w:tc></w:tr></w:tbl>"
+  let table = docx_test_table(
+    docx_document_text(docx_test_docx(blocks, DOCX_TEST_SECTION, [])),
+  )
+  let layout = docx_layout_table(table, 468.0, 0.0)
+  let first = layout.rows[0].cells[0]
+  let second = layout.rows[0].cells[1]
+  assert_true(first.w < 100.0)
+  assert_true(second.x > 100.0)
+}
+
 test "DOCX table cell text wraps inside its grid column" {
   let cell_text = docx_test_repeat("word ", 40)
   let blocks = "<w:tbl><w:tblGrid><w:gridCol w:w=\"2000\"/><w:gridCol w:w=\"3000\"/></w:tblGrid>" +

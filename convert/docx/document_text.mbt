@@ -119,6 +119,7 @@ priv struct DocxTable {
   layout_type : String
   jc : String
   ind : Double
+  cell_spacing : Double
   borders : Array[DocxLineBorder?]
   cell_mar : DocxMargins
   shade : UInt32?
@@ -1627,6 +1628,15 @@ fn docx_text_table(
       }
     None => 0.0
   }
+  let cell_spacing = match props {
+    Some(value) =>
+      match value.child("tblCellSpacing") {
+        Some(spacing) =>
+          docx_measure(docx_attribute(spacing.element, "w", ""), 0.0)
+        None => 0.0
+      }
+    None => 0.0
+  }
   let table_style_id = match props {
     Some(value) =>
       match value.child("tblStyle") {
@@ -2101,6 +2111,7 @@ fn docx_text_table(
     layout_type,
     jc,
     ind,
+    cell_spacing,
     borders,
     cell_mar,
     shade,

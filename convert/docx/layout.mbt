@@ -1248,8 +1248,11 @@ fn docx_layout_table(
     for cell in row.cells {
       let start = Int32::min(cell.col, ncols)
       let end = Int32::min(cell.col + cell.span, ncols)
-      let x0 = col_x[start]
-      let x1 = col_x[end]
+      let spacing = table.cell_spacing
+      let x0 = col_x[start] +
+        (if start > 0 { spacing / 2.0 } else { 0.0 })
+      let x1 = col_x[end] -
+        (if end < ncols { spacing / 2.0 } else { 0.0 })
       let (mar_top, mar_left, mar_bottom, mar_right) = docx_table_cell_margins(
         table, cell,
       )
