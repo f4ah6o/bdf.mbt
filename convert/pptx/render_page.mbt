@@ -268,29 +268,56 @@ fn pptx_emit_shapes(
     }
     let inherited = pptx_shape_inheritance(ctx, shape)
     let geom = pptx_shape_geometry_node(shape, inherited)
-    let mut geometry_name = match geom {
-      Some(value) => pptx_attribute(value.element, "prst", "rect")
-      None => "rect"
-    }
-    if geometry_name == "" {
-      geometry_name = "rect"
-    }
-    let geometry = match
-      pptx_preset_geometry(
-        geometry_name,
-        pptx_preset_adjust(geom),
-        draw_width,
-        draw_height,
-      ) {
-      Some(value) => value
-      None => {
-        ctx.warn_once(
-          "prst:" + geometry_name,
-          "unknown preset shape \"" + geometry_name + "\" drawn as a rectangle",
-        )
-        geometry_name = "rect"
-        pptx_rect_geometry(draw_width, draw_height)
+    let mut preset_geom : PptxXmlNode? = None
+    let mut custom_geom : PptxXmlNode? = None
+    let mut geometry_name = "rect"
+    match geom {
+      Some(PptxPresetGeometry(node)) => {
+        preset_geom = Some(node)
+        geometry_name = pptx_attribute(node.element, "prst", "rect")
+        if geometry_name == "" {
+          geometry_name = "rect"
+        }
       }
+      Some(PptxCustomGeometry(node)) => {
+        custom_geom = Some(node)
+        geometry_name = ""
+      }
+      None => ()
+    }
+    let geometry = match custom_geom {
+      Some(node) =>
+        match pptx_custom_geometry(node, draw_width, draw_height) {
+          (Some(value), _) => value
+          (None, reason) => {
+            ctx.warn_once(
+              "custGeom:" + reason,
+              "malformed custom geometry (" + reason + ") drawn as a rectangle",
+            )
+            geometry_name = "rect"
+            pptx_rect_geometry(draw_width, draw_height)
+          }
+        }
+      None =>
+        match
+          pptx_preset_geometry(
+            geometry_name,
+            pptx_preset_adjust(preset_geom),
+            draw_width,
+            draw_height,
+          ) {
+          Some(value) => value
+          None => {
+            ctx.warn_once(
+              "prst:" + geometry_name,
+              "unknown preset shape \"" +
+              geometry_name +
+              "\" drawn as a rectangle",
+            )
+            geometry_name = "rect"
+            pptx_rect_geometry(draw_width, draw_height)
+          }
+        }
     }
     let paint = pptx_shape_paint(ctx, shape, inherited)
     let line = pptx_shape_line(ctx, shape, inherited)
@@ -389,7 +416,7 @@ fn pptx_emit_shapes(
         None => ()
       }
     } else if geometry_name == "roundRect" {
-      let radius = pptx_round_rect_radius(geom, draw_width, draw_height)
+      let radius = pptx_round_rect_radius(preset_geom, draw_width, draw_height)
       let path = pptx_rotate_path(
         pptx_round_rect_path(shape_x, shape_y, draw_width, draw_height, radius),
         path_center_x,
@@ -444,7 +471,7 @@ fn pptx_emit_shapes(
       match line {
         Some(value) =>
           for entry in geometry.paths {
-            if entry.stroke {
+            if entry.stroke && !entry.empty {
               let path = pptx_geometry_path_at(
                 entry.path,
                 shape_x,

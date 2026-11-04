@@ -37,6 +37,14 @@ priv struct PptxPresetDef {
 }
 
 ///|
+/// The geometry a shape or its placeholders name: a preset reference or an
+/// inline a:custGeom.
+priv enum PptxGeometryNode {
+  PptxPresetGeometry(PptxXmlNode)
+  PptxCustomGeometry(PptxXmlNode)
+}
+
+///|
 /// The guide values of one geometry evaluation.
 priv struct PptxGuideEnv {
   values : Map[String, Double]
@@ -137,6 +145,9 @@ fn PptxGuideEnv::eval(self : PptxGuideEnv, formula : String) -> Double {
 priv struct PptxGeometryPath {
   fill : String
   stroke : Bool
+  /// Whether the path has a line, curve or arc segment (a lone moveTo
+  /// draws nothing, like upstream's geomPath.empty).
+  empty : Bool
   path : @core.Path
 }
 
@@ -160,6 +171,7 @@ priv struct PptxPathBuilder {
   mut start_x : Double
   mut start_y : Double
   mut started : Bool
+  mut drawn : Bool
 }
 
 ///|
@@ -172,6 +184,7 @@ fn PptxPathBuilder::new() -> PptxPathBuilder {
     start_x: 0.0,
     start_y: 0.0,
     started: false,
+    drawn: false,
   }
 }
 
@@ -205,6 +218,7 @@ fn PptxPathBuilder::line(
   self.coordinates.push(y)
   self.x = x
   self.y = y
+  self.drawn = true
 }
 
 ///|
@@ -225,6 +239,7 @@ fn PptxPathBuilder::quad(
   self.coordinates.push(y)
   self.x = x
   self.y = y
+  self.drawn = true
 }
 
 ///|
@@ -249,6 +264,7 @@ fn PptxPathBuilder::cubic(
   self.coordinates.push(y)
   self.x = x
   self.y = y
+  self.drawn = true
 }
 
 ///|
@@ -288,6 +304,7 @@ fn PptxPathBuilder::arc(
       center_y + radius_y * @math.sin(a0),
     )
   }
+  self.drawn = true
   let total = a1 - a0
   let segments = (total.abs() / (3.141592653589793 / 2.0)).ceil().to_int()
   let count = if segments < 1 { 1 } else { segments }
@@ -317,7 +334,13 @@ fn PptxPathBuilder::finish(self : PptxPathBuilder) -> @core.Path {
 }
 
 ///|
-/// Build one path of a preset definition at the given shape size.
+fn PptxPathBuilder::has_segments(self : PptxPathBuilder) -> Bool {
+  self.drawn
+}
+
+///|
+/// Build one path of a preset or custom geometry definition at the given
+/// shape size.
 fn pptx_build_preset_path(
   env : PptxGuideEnv,
   def : PptxPresetPath,
@@ -357,23 +380,24 @@ fn pptx_build_preset_path(
       PptxClose => builder.close()
     }
   }
-  { fill: def.fill, stroke: def.stroke, path: builder.finish(), }
+  {
+    fill: def.fill,
+    stroke: def.stroke,
+    empty: !builder.has_segments(),
+    path: builder.finish(),
+  }
 }
 
 ///|
-/// Evaluate a preset geometry at width×height. adjust holds the shape's
-/// a:avLst overrides; nil when the preset is unknown, so that the caller can
-/// draw a rectangle and warn.
-fn pptx_preset_geometry(
-  name : String,
+/// Evaluate a geometry definition at width×height, as upstream evalGeometry
+/// does: adjust values, then guide overrides, then guides, then the text
+/// rectangle and the paths.
+fn pptx_eval_geometry(
+  def : PptxPresetDef,
   adjust : Array[(String, String)],
   width : Double,
   height : Double,
-) -> PptxShapeGeometry? {
-  let def = match pptx_presets.get(name) {
-    Some(value) => value
-    None => return None
-  }
+) -> PptxShapeGeometry {
   let env = pptx_guide_env(width, height)
   for (guide_name, formula) in def.av {
     env.values[guide_name] = env.eval(formula)
@@ -393,31 +417,213 @@ fn pptx_preset_geometry(
   for path in def.paths {
     paths.push(pptx_build_preset_path(env, path, width, height))
   }
-  Some({ text_left, text_top, text_right, text_bottom, paths, })
+  { text_left, text_top, text_right, text_bottom, paths, }
 }
 
 ///|
-/// Read the shape's a:avLst adjust overrides, if it has any.
-fn pptx_preset_adjust(geom : PptxXmlNode?) -> Array[(String, String)] {
+/// Evaluate a preset geometry at width×height. adjust holds the shape's
+/// a:avLst overrides; nil when the preset is unknown, so that the caller can
+/// draw a rectangle and warn.
+fn pptx_preset_geometry(
+  name : String,
+  adjust : Array[(String, String)],
+  width : Double,
+  height : Double,
+) -> PptxShapeGeometry? {
+  let def = match pptx_presets.get(name) {
+    Some(value) => value
+    None => return None
+  }
+  Some(pptx_eval_geometry(def, adjust, width, height))
+}
+
+///|
+/// The a:gd entries of an a:avLst or a:gdLst, in document order.
+fn pptx_guide_list(node : PptxXmlNode?) -> Array[(String, String)] {
   let out : Array[(String, String)] = []
-  match geom {
-    Some(node) =>
-      for guide in pptx_children(pptx_child(Some(node), "avLst")) {
-        out.push(
-          (
-            pptx_attribute(guide.element, "name", ""),
-            pptx_attribute(guide.element, "fmla", ""),
-          ),
-        )
-      }
-    None => ()
+  for guide in pptx_children(node) {
+    out.push(
+      (
+        pptx_attribute(guide.element, "name", ""),
+        pptx_attribute(guide.element, "fmla", ""),
+      ),
+    )
   }
   out
 }
 
 ///|
-/// The geometry of a shape with no preset: the whole box, filled and
-/// stroked in one path.
+/// Read the shape's a:avLst adjust overrides, if it has any.
+fn pptx_preset_adjust(geom : PptxXmlNode?) -> Array[(String, String)] {
+  pptx_guide_list(pptx_child(geom, "avLst"))
+}
+
+///|
+/// The a:pt children of a path command, as guide names or numbers.
+fn pptx_command_points(command : PptxXmlNode) -> Array[(String, String)] {
+  let points : Array[(String, String)] = []
+  for child in pptx_children(Some(command)) {
+    if child.element.name.local_name == "pt" {
+      points.push(
+        (
+          pptx_attribute(child.element, "x", "0"),
+          pptx_attribute(child.element, "y", "0"),
+        ),
+      )
+    }
+  }
+  points
+}
+
+///|
+/// Parse one a:path of an a:custGeom into the command form the preset
+/// evaluator uses. Malformed commands make the whole geometry unusable.
+fn pptx_parse_custom_path(path : PptxXmlNode) -> (PptxPresetPath?, String) {
+  let commands : Array[PptxPresetCommand] = []
+  for command in pptx_children(Some(path)) {
+    let name = command.element.name.local_name
+    if name == "close" {
+      commands.push(PptxClose)
+      continue
+    }
+    let points = pptx_command_points(command)
+    if name == "moveTo" {
+      if points.length() != 1 {
+        return (None, "a:moveTo needs one a:pt")
+      }
+      commands.push(PptxMove(points[0].0, points[0].1))
+    } else if name == "lnTo" {
+      if points.length() != 1 {
+        return (None, "a:lnTo needs one a:pt")
+      }
+      commands.push(PptxLine(points[0].0, points[0].1))
+    } else if name == "quadBezTo" {
+      if points.length() != 2 {
+        return (None, "a:quadBezTo needs two a:pt")
+      }
+      commands.push(
+        PptxQuad(points[0].0, points[0].1, points[1].0, points[1].1),
+      )
+    } else if name == "cubicBezTo" {
+      if points.length() != 3 {
+        return (None, "a:cubicBezTo needs three a:pt")
+      }
+      commands.push(
+        PptxCubic(
+          points[0].0,
+          points[0].1,
+          points[1].0,
+          points[1].1,
+          points[2].0,
+          points[2].1,
+        ),
+      )
+    } else if name == "arcTo" {
+      if !points.is_empty() {
+        return (None, "a:arcTo takes no a:pt")
+      }
+      commands.push(
+        PptxArc(
+          pptx_attribute(command.element, "wR", "0"),
+          pptx_attribute(command.element, "hR", "0"),
+          pptx_attribute(command.element, "stAng", "0"),
+          pptx_attribute(command.element, "swAng", "0"),
+        ),
+      )
+    } else {
+      return (None, "unsupported a:path command \"" + name + "\"")
+    }
+  }
+  if commands.is_empty() {
+    return (None, "a:path has no commands")
+  }
+  let width = @string.parse_double(
+    pptx_trim(pptx_attribute(path.element, "w", "")),
+  ) catch {
+    _ => 0.0
+  }
+  let height = @string.parse_double(
+    pptx_trim(pptx_attribute(path.element, "h", "")),
+  ) catch {
+    _ => 0.0
+  }
+  (
+    Some({
+      fill: pptx_attribute(path.element, "fill", "norm"),
+      stroke: pptx_bool(path.element, "stroke", true),
+      width,
+      height,
+      commands,
+    }),
+    "",
+  )
+}
+
+///|
+/// Parse an a:custGeom into the same definition shape as a preset:
+/// a:avLst, a:gdLst, a:rect and a:pathLst. The reason names the malformed
+/// part when the geometry cannot be drawn.
+fn pptx_custom_shape_def(node : PptxXmlNode) -> (PptxPresetDef?, String) {
+  let path_list = match pptx_child(Some(node), "pathLst") {
+    Some(value) => value
+    None => return (None, "missing a:pathLst")
+  }
+  let path_nodes : Array[PptxXmlNode] = []
+  for child in pptx_children(Some(path_list)) {
+    if child.element.name.local_name == "path" {
+      path_nodes.push(child)
+    }
+  }
+  if path_nodes.is_empty() {
+    return (None, "a:pathLst has no a:path")
+  }
+  let paths : Array[PptxPresetPath] = []
+  for path in path_nodes {
+    let (parsed, reason) = pptx_parse_custom_path(path)
+    match parsed {
+      Some(value) => paths.push(value)
+      None => return (None, reason)
+    }
+  }
+  let rect = match pptx_child(Some(node), "rect") {
+    Some(value) =>
+      (
+        pptx_attribute(value.element, "l", "l"),
+        pptx_attribute(value.element, "t", "t"),
+        pptx_attribute(value.element, "r", "r"),
+        pptx_attribute(value.element, "b", "b"),
+      )
+    None => ("", "", "", "")
+  }
+  (
+    Some({
+      av: pptx_guide_list(pptx_child(Some(node), "avLst")),
+      gd: pptx_guide_list(pptx_child(Some(node), "gdLst")),
+      rect,
+      paths,
+    }),
+    "",
+  )
+}
+
+///|
+/// Evaluate an a:custGeom at width×height. nil with the reason when its paths
+/// are missing or malformed, so that the caller can draw a rectangle and warn.
+fn pptx_custom_geometry(
+  node : PptxXmlNode,
+  width : Double,
+  height : Double,
+) -> (PptxShapeGeometry?, String) {
+  let (def, reason) = pptx_custom_shape_def(node)
+  match def {
+    Some(value) => (Some(pptx_eval_geometry(value, [], width, height)), "")
+    None => (None, reason)
+  }
+}
+
+///|
+/// The geometry of a shape with no preset and no custom geometry: the whole
+/// box, filled and stroked in one path.
 fn pptx_rect_geometry(width : Double, height : Double) -> PptxShapeGeometry {
   let builder = PptxPathBuilder::new()
   builder.move_to(0.0, 0.0)
@@ -430,7 +636,9 @@ fn pptx_rect_geometry(width : Double, height : Double) -> PptxShapeGeometry {
     text_top: 0.0,
     text_right: width,
     text_bottom: height,
-    paths: [{ fill: "norm", stroke: true, path: builder.finish(), }],
+    paths: [
+      { fill: "norm", stroke: true, empty: false, path: builder.finish(), },
+    ],
   }
 }
 

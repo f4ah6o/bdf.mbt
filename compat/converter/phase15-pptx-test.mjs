@@ -189,6 +189,49 @@ try {
       ['ppt/slideMasters/_rels/slideMaster1.xml.rels', relations([['t1', 'theme', '../theme/theme1.xml']])],
       ['ppt/theme/theme1.xml', presetTheme],
     ]);
+    // Custom geometry (a:custGeom): guides and adjust values, every path
+    // command, multiple sub-paths, fill modes, per-path strokes, a:rect and
+    // a themed p:style fill/line. The malformed fallback is converter
+    // specific (upstream draws nothing), so the MoonBit tests cover it.
+    const customShape = (id, name, x, y, w, h, geometry, fill, extra = '', text = '') =>
+      '<p:sp><p:nvSpPr><p:cNvPr id="' + id + '" name="' + name + '"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>' +
+      '<p:spPr><a:xfrm><a:off x="' + x + '" y="' + y + '"/><a:ext cx="' + w + '" cy="' + h + '"/></a:xfrm>' +
+      geometry + fill + extra + '</p:spPr>' +
+      (text ? '<p:txBody><a:bodyPr/><a:p><a:r><a:rPr sz="1800"/><a:t>' + text + '</a:t></a:r></a:p></p:txBody>' : '') +
+      '</p:sp>';
+    const customSlide =
+      '<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">' +
+      '<p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>' +
+      customShape('2', 'CustomTriangle', 914400, 457200, 2540000, 1270000,
+        '<a:custGeom><a:avLst/><a:gdLst><a:gd name="x1" fmla="*/ w 1 4"/></a:gdLst><a:rect l="x1" t="t" r="r" b="b"/><a:pathLst><a:path w="2" h="1"><a:moveTo><a:pt x="0" y="1"/></a:moveTo><a:lnTo><a:pt x="1" y="0"/></a:lnTo><a:lnTo><a:pt x="2" y="1"/></a:lnTo><a:close/></a:path></a:pathLst></a:custGeom>',
+        solid('00FF00'), '', 'Custom geometry') +
+      customShape('3', 'CustomCurves', 4572000, 457200, 2540000, 1270000,
+        '<a:custGeom><a:avLst/><a:gdLst/><a:rect l="l" t="t" r="r" b="b"/><a:pathLst><a:path w="4" h="2"><a:moveTo><a:pt x="0" y="0"/></a:moveTo><a:quadBezTo><a:pt x="1" y="0"/><a:pt x="2" y="1"/></a:quadBezTo><a:cubicBezTo><a:pt x="3" y="0"/><a:pt x="4" y="1"/><a:pt x="4" y="2"/></a:cubicBezTo><a:lnTo><a:pt x="0" y="2"/></a:lnTo><a:close/></a:path></a:pathLst></a:custGeom>',
+        solid('FF0000')) +
+      customShape('4', 'CustomFills', 914400, 2286000, 2540000, 1270000,
+        '<a:custGeom><a:avLst/><a:gdLst/><a:rect l="l" t="t" r="r" b="b"/><a:pathLst><a:path w="2" h="1" fill="lighten" stroke="0"><a:moveTo><a:pt x="0" y="1"/></a:moveTo><a:lnTo><a:pt x="1" y="0"/></a:lnTo><a:lnTo><a:pt x="2" y="1"/></a:lnTo><a:close/></a:path><a:path w="2" h="1" fill="darkenLess" stroke="0"><a:moveTo><a:pt x="1" y="1"/></a:moveTo><a:lnTo><a:pt x="2" y="1"/></a:lnTo><a:lnTo><a:pt x="2" y="0"/></a:lnTo><a:close/></a:path></a:pathLst></a:custGeom>',
+        solid('808080')) +
+      customShape('5', 'CustomArc', 4572000, 2286000, 2540000, 1270000,
+        '<a:custGeom><a:avLst/><a:gdLst/><a:rect l="l" t="t" r="r" b="b"/><a:pathLst><a:path w="100" h="100"><a:moveTo><a:pt x="100" y="50"/></a:moveTo><a:arcTo wR="50" hR="50" stAng="0" swAng="5400000"/><a:close/></a:path><a:path w="100" h="100" fill="none" stroke="0"><a:moveTo><a:pt x="50" y="50"/></a:moveTo><a:arcTo wR="50" hR="25" stAng="1800000" swAng="-2700000"/></a:path></a:pathLst></a:custGeom>',
+        solid('0000FF'), line('000000')) +
+      customShape('6', 'CustomGuides', 914400, 4114800, 2540000, 1270000,
+        '<a:custGeom><a:avLst><a:gd name="adj" fmla="val 25000"/></a:avLst><a:gdLst><a:gd name="x" fmla="*/ w adj 100000"/><a:gd name="y" fmla="*/ h adj 100000"/></a:gdLst><a:rect l="l" t="t" r="r" b="b"/><a:pathLst><a:path w="200" h="100"><a:moveTo><a:pt x="0" y="0"/></a:moveTo><a:lnTo><a:pt x="x" y="0"/></a:lnTo><a:lnTo><a:pt x="x" y="y"/></a:lnTo><a:lnTo><a:pt x="0" y="y"/></a:lnTo><a:close/></a:path></a:pathLst></a:custGeom>',
+        solid('FFFF00')) +
+      customShape('7', 'CustomTheme', 4572000, 4114800, 2540000, 1270000,
+        '<a:custGeom><a:avLst/><a:gdLst/><a:rect l="l" t="t" r="r" b="b"/><a:pathLst><a:path w="1" h="1"><a:moveTo><a:pt x="0" y="0"/></a:moveTo><a:lnTo><a:pt x="1" y="0"/></a:lnTo><a:lnTo><a:pt x="1" y="1"/></a:lnTo><a:lnTo><a:pt x="0" y="1"/></a:lnTo><a:close/></a:path></a:pathLst></a:custGeom>',
+        '',
+        '<p:style><a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="1"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style>') +
+      '</p:spTree></p:cSld></p:sld>';
+    const customDeck = storedZip([
+      ['_rels/.rels', relations([
+        ['root', 'officeDocument/2006/relationships/officeDocument', 'ppt/presentation.xml'],
+        ['theme', 'officeDocument/2006/relationships/theme', 'ppt/theme/theme1.xml'],
+      ])],
+      ['ppt/presentation.xml', '<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><p:sldIdLst><p:sldId id="256" r:id="rId1"/></p:sldIdLst><p:sldSz cx="9144000" cy="6858000"/></p:presentation>'],
+      ['ppt/_rels/presentation.xml.rels', relations([['rId1', 'slide', 'slides/slide1.xml']])],
+      ['ppt/slides/slide1.xml', customSlide],
+      ['ppt/theme/theme1.xml', presetTheme],
+    ]);
     // Compare the drawing commands of both documents after applying the
     // transform in effect: rects and polygon paths, their fills and outlines.
     const round = value => Math.round(value * 100) / 100;
@@ -218,24 +261,112 @@ try {
         const collection = decodePathCollection(await doc.part(entry.hash));
         return collection[entry.index];
       };
-      const placedPath = path => {
+      // The MoonBit converter flattens arcTo into cubic segments, while
+      // upstream keeps a Canvas ellipse verb (6). Flatten both the same way
+      // so the custom geometry outlines compare command by command.
+      const expandEllipses = path => {
         const verbs = Array.from(path.verbs);
-        const args = Array.from(path.args);
-        const points = [];
-        for (let i = 0, at = 0; i < verbs.length; i++) {
-          if (verbs[i] === 0 || verbs[i] === 1) {
-            const point = apply(args[at], args[at + 1]);
-            points.push(point);
+        if (!verbs.includes(6)) {
+          return { verbs, args: Array.from(path.args) };
+        }
+        const outVerbs = [];
+        const outArgs = [];
+        let at = 0;
+        let started = false;
+        for (const verb of verbs) {
+          if (verb === 0 || verb === 1) {
+            outVerbs.push(verb);
+            outArgs.push(path.args[at], path.args[at + 1]);
+            started = true;
             at += 2;
-          } else if (verbs[i] === 4 || verbs[i] === 5) {
-            at += verbs[i] === 5 ? 4 : 0;
+          } else if (verb === 2) {
+            outVerbs.push(verb);
+            outArgs.push(...path.args.slice(at, at + 4));
+            started = true;
+            at += 4;
+          } else if (verb === 3) {
+            outVerbs.push(verb);
+            outArgs.push(...path.args.slice(at, at + 6));
+            started = true;
+            at += 6;
+          } else if (verb === 4) {
+            outVerbs.push(4);
+          } else if (verb === 5) {
+            outVerbs.push(5);
+            outArgs.push(...path.args.slice(at, at + 4));
+            started = true;
+            at += 4;
+          } else if (verb === 6) {
+            const cx = path.args[at], cy = path.args[at + 1];
+            const rx = path.args[at + 2], ry = path.args[at + 3];
+            const a0 = path.args[at + 5], a1 = path.args[at + 6];
+            at += 8;
+            if (!started) {
+              outVerbs.push(0);
+              outArgs.push(cx + rx * Math.cos(a0), cy + ry * Math.sin(a0));
+              started = true;
+            }
+            const total = a1 - a0;
+            const count = Math.max(1, Math.ceil(Math.abs(total) / (Math.PI / 2) - 0.000001));
+            const step = total / count;
+            let from = a0;
+            for (let i = 0; i < count; i++) {
+              const to = from + step;
+              const kappa = 4 / 3 * Math.tan((to - from) / 4);
+              const sx = cx + rx * Math.cos(from);
+              const sy = cy + ry * Math.sin(from);
+              const tx = cx + rx * Math.cos(to);
+              const ty = cy + ry * Math.sin(to);
+              outVerbs.push(3);
+              outArgs.push(
+                sx - kappa * rx * Math.sin(from),
+                sy + kappa * ry * Math.cos(from),
+                tx + kappa * rx * Math.sin(to),
+                ty - kappa * ry * Math.cos(to),
+                tx, ty,
+              );
+              from = to;
+            }
           } else {
             return null;
           }
         }
+        return { verbs: outVerbs, args: outArgs };
+      };
+      const placedPath = path => {
+        const expanded = expandEllipses(path);
+        if (expanded === null) return null;
+        const verbs = Array.from(expanded.verbs);
+        const args = Array.from(expanded.args);
         if (verbs.length === 1 && verbs[0] === 5) {
           const [x, y] = apply(args[0], args[1]);
           return ['rect', round(x), round(y), round(args[2]), round(args[3])];
+        }
+        const points = [];
+        const coordinates = [];
+        for (let i = 0, at = 0; i < verbs.length; i++) {
+          if (verbs[i] === 0 || verbs[i] === 1) {
+            const point = apply(args[at], args[at + 1]);
+            points.push(point);
+            coordinates.push(round(point[0]), round(point[1]));
+            at += 2;
+          } else if (verbs[i] === 2) {
+            for (let k = 0; k < 2; k++) {
+              const point = apply(args[at + k * 2], args[at + k * 2 + 1]);
+              coordinates.push(round(point[0]), round(point[1]));
+            }
+            at += 4;
+          } else if (verbs[i] === 3) {
+            for (let k = 0; k < 3; k++) {
+              const point = apply(args[at + k * 2], args[at + k * 2 + 1]);
+              coordinates.push(round(point[0]), round(point[1]));
+            }
+            at += 6;
+          } else if (verbs[i] === 4) {
+            // no operands
+          } else {
+            return null;
+          }
         }
         if (verbs.length === 5 && verbs[4] === 4 &&
           verbs.slice(1, 4).every(verb => verb === 1) &&
@@ -244,10 +375,6 @@ try {
           const x = Math.min(points[0][0], points[1][0], points[2][0], points[3][0]);
           const y = Math.min(points[0][1], points[1][1], points[2][1], points[3][1]);
           return ['rect', round(x), round(y), round(points[2][0] - x), round(points[2][1] - y)];
-        }
-        const coordinates = [];
-        for (const point of points) {
-          coordinates.push(round(point[0]), round(point[1]));
         }
         return ['path', verbs.join(''), coordinates];
       };
@@ -384,8 +511,24 @@ try {
         ...(await inspect(presetMoon.bdf)),
       },
     };
+    const customUpstream = await upstream.convert(customDeck, { name: 'custom.pptx' });
+    const customMoon = await moon.convert(customDeck, { name: 'custom.pptx' });
+    const custom = {
+      upstream: {
+        summary: customUpstream.summary,
+        warnings: customUpstream.warnings,
+        drawing: await drawing(customUpstream.bdf),
+        ...(await inspect(customUpstream.bdf)),
+      },
+      moon: {
+        summary: customMoon.summary,
+        warnings: customMoon.warnings,
+        drawing: await drawing(customMoon.bdf),
+        ...(await inspect(customMoon.bdf)),
+      },
+    };
     moon.terminate();
-    return { cases, presets };
+    return { cases, presets, custom };
   }, base);
   const normalize = value => value.replace(/\\s+/g, '');
   const lcs = (a, b) => {
@@ -437,7 +580,15 @@ try {
   );
   assert.deepEqual(presets.moon.drawing, presets.upstream.drawing, 'presets: drawing commands');
   assert.equal(similarity(presets.upstream.text, presets.moon.text), 1, 'presets: text');
-  console.log('Phase 15 PPTX: slides view, layers, master sharing, text and OMML match upstream; preset geometry, theme fills and placeholder inheritance draw the same commands.');
+  const custom = result.custom;
+  assert.equal(custom.moon.pages, custom.upstream.pages, 'custom: page count');
+  assert.deepEqual(custom.moon.sizes, custom.upstream.sizes, 'custom: page sizes');
+  assert.deepEqual(custom.moon.roles, custom.upstream.roles, 'custom: layer roles');
+  assert.equal(custom.moon.summary, custom.upstream.summary, 'custom: summary');
+  assert.deepEqual(custom.moon.warnings, custom.upstream.warnings, 'custom: warnings');
+  assert.deepEqual(custom.moon.drawing, custom.upstream.drawing, 'custom: drawing commands');
+  assert.equal(similarity(custom.upstream.text, custom.moon.text), 1, 'custom: text');
+  console.log('Phase 15 PPTX: slides view, layers, master sharing, text and OMML match upstream; preset and custom geometry, theme fills and placeholder inheritance draw the same commands.');
 
 } finally {
   await browser.close();

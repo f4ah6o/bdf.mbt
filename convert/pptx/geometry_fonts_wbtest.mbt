@@ -233,6 +233,218 @@ test "PPTX preset shapes are drawn and unknown presets warn" {
 }
 
 ///|
+test "PPTX custom geometry evaluates guides, paths and arcs" {
+  let node_xml =
+    #|<a:custGeom xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:avLst/><a:gdLst><a:gd name="x1" fmla="*/ w 1 4"/><a:gd name="x2" fmla="*/ w 3 4"/></a:gdLst><a:rect l="x1" t="t" r="x2" b="b"/><a:pathLst><a:path w="4" h="2" fill="darken" stroke="0"><a:moveTo><a:pt x="0" y="2"/></a:moveTo><a:lnTo><a:pt x="1" y="0"/></a:lnTo><a:lnTo><a:pt x="2" y="2"/></a:lnTo><a:close/></a:path><a:path w="4" h="2"><a:moveTo><a:pt x="2" y="0"/></a:moveTo><a:quadBezTo><a:pt x="3" y="0"/><a:pt x="4" y="1"/></a:quadBezTo><a:cubicBezTo><a:pt x="3" y="2"/><a:pt x="2" y="2"/><a:pt x="2" y="1"/></a:cubicBezTo><a:arcTo wR="1" hR="1" stAng="0" swAng="5400000"/></a:path></a:pathLst></a:custGeom>
+  let node = pptx_parse_xml(node_xml)
+  let (geometry, reason) = pptx_custom_geometry(node, 200.0, 100.0)
+  assert_eq(reason, "")
+  let geometry = geometry.unwrap()
+  // the text rectangle comes from a:rect guide names
+  assert_eq(geometry.text_left, 50.0)
+  assert_eq(geometry.text_top, 0.0)
+  assert_eq(geometry.text_right, 150.0)
+  assert_eq(geometry.text_bottom, 100.0)
+  assert_eq(geometry.paths.length(), 2)
+  // path w/h scale its own coordinate space onto the shape box
+  let triangle = geometry.paths[0]
+  assert_eq(triangle.fill, "darken")
+  assert_false(triangle.stroke)
+  assert_false(triangle.empty)
+  assert_eq(triangle.path.coordinates, [0.0, 100.0, 50.0, 0.0, 100.0, 100.0])
+  assert_eq(triangle.path.verbs.length(), 4)
+  assert_eq(triangle.path.verbs[0].to_int(), 0)
+  assert_eq(triangle.path.verbs[1].to_int(), 1)
+  assert_eq(triangle.path.verbs[3].to_int(), 4)
+  // quadratic and cubic segments keep their verbs
+  let curves = geometry.paths[1]
+  assert_eq(curves.fill, "norm")
+  assert_true(curves.stroke)
+  assert_false(curves.empty)
+  assert_eq(curves.path.coordinates.length(), 18)
+  assert_eq(curves.path.verbs.length(), 4)
+  assert_eq(curves.path.verbs[0].to_int(), 0)
+  assert_eq(curves.path.verbs[1].to_int(), 2)
+  assert_eq(curves.path.verbs[2].to_int(), 3)
+  assert_eq(curves.path.verbs[3].to_int(), 3)
+  assert_eq(curves.path.coordinates[:12], [
+    100.0, 0.0, 150.0, 0.0, 200.0, 50.0, 150.0, 100.0, 100.0, 100.0, 100.0, 50.0,
+  ])
+  // arcTo turns its radii into shape units, and its quarter sweep into one
+  // cubic ending on the ellipse edge
+  let kappa = 4.0 / 3.0 * @math.tan(3.141592653589793 / 8.0) * 50.0
+  assert_true((curves.path.coordinates[12] - 100.0).abs() < 0.000001)
+  assert_true((curves.path.coordinates[13] - (50.0 + kappa)).abs() < 0.000001)
+  assert_true((curves.path.coordinates[14] - (50.0 + kappa)).abs() < 0.000001)
+  assert_true((curves.path.coordinates[15] - 100.0).abs() < 0.000001)
+  assert_true((curves.path.coordinates[16] - 50.0).abs() < 0.000001)
+  assert_true((curves.path.coordinates[17] - 100.0).abs() < 0.000001)
+}
+
+///|
+test "PPTX malformed custom geometry reports a precise reason" {
+  let no_paths_xml =
+    #|<a:custGeom xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:avLst/><a:rect l="l" t="t" r="r" b="b"/></a:custGeom>
+  let no_paths = pptx_parse_xml(no_paths_xml)
+  assert_true(
+    pptx_custom_geometry(no_paths, 100.0, 50.0) is (None, "missing a:pathLst"),
+  )
+  let no_path_xml =
+    #|<a:custGeom xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:pathLst/></a:custGeom>
+  let no_path = pptx_parse_xml(no_path_xml)
+  assert_true(
+    pptx_custom_geometry(no_path, 100.0, 50.0)
+    is (None, "a:pathLst has no a:path"),
+  )
+  let no_commands_xml =
+    #|<a:custGeom xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:pathLst><a:path/></a:pathLst></a:custGeom>
+  let no_commands = pptx_parse_xml(no_commands_xml)
+  assert_true(
+    pptx_custom_geometry(no_commands, 100.0, 50.0)
+    is (None, "a:path has no commands"),
+  )
+  let unknown_xml =
+    #|<a:custGeom xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:pathLst><a:path><a:moveTo><a:pt x="0" y="0"/></a:moveTo><a:foo/></a:path></a:pathLst></a:custGeom>
+  let unknown = pptx_parse_xml(unknown_xml)
+  assert_true(
+    pptx_custom_geometry(unknown, 100.0, 50.0)
+    is (None, "unsupported a:path command \"foo\""),
+  )
+  let short_quad_xml =
+    #|<a:custGeom xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:pathLst><a:path><a:moveTo><a:pt x="0" y="0"/></a:moveTo><a:quadBezTo><a:pt x="1" y="1"/></a:quadBezTo></a:path></a:pathLst></a:custGeom>
+  let short_quad = pptx_parse_xml(short_quad_xml)
+  assert_true(
+    pptx_custom_geometry(short_quad, 100.0, 50.0)
+    is (None, "a:quadBezTo needs two a:pt"),
+  )
+}
+
+///|
+test "PPTX custom geometry draws paths and falls back when malformed" {
+  let triangle =
+    #|<p:sp><p:nvSpPr><p:cNvPr id="2" name="Custom"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="914400" y="457200"/><a:ext cx="2540000" cy="1270000"/></a:xfrm><a:custGeom><a:avLst/><a:gdLst><a:gd name="x1" fmla="*/ w 1 4"/></a:gdLst><a:rect l="x1" t="t" r="r" b="b"/><a:pathLst><a:path w="2" h="1"><a:moveTo><a:pt x="0" y="1"/></a:moveTo><a:lnTo><a:pt x="1" y="0"/></a:lnTo><a:lnTo><a:pt x="2" y="1"/></a:lnTo><a:close/></a:path></a:pathLst></a:custGeom><a:solidFill><a:srgbClr val="00FF00"/></a:solidFill></p:spPr><p:txBody><a:bodyPr/><a:p><a:r><a:rPr sz="1800"/><a:t>Custom</a:t></a:r></a:p></p:txBody></p:sp>
+  let malformed =
+    #|<p:sp><p:nvSpPr><p:cNvPr id="3" name="Broken"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="914400" y="4114800"/><a:ext cx="1270000" cy="914400"/></a:xfrm><a:custGeom><a:avLst/><a:rect l="l" t="t" r="r" b="b"/></a:custGeom><a:solidFill><a:srgbClr val="999999"/></a:solidFill></p:spPr></p:sp>
+  let slide = pptx_test_slide_prefix +
+    triangle +
+    malformed +
+    pptx_test_slide_suffix
+  let result = convert(pptx_test_deck(slide, []))
+  assert_true(
+    result.warnings.contains(
+      "malformed custom geometry (missing a:pathLst) drawn as a rectangle",
+    ),
+  )
+  let paths = pptx_test_body_paths(result)
+  assert_eq(paths.length(), 1)
+  assert_eq(paths[0].coordinates, [72.0, 136.0, 172.0, 36.0, 272.0, 136.0])
+  assert_eq(paths[0].verbs.length(), 4)
+  let doc = @core.open_single(result.bdf)
+  let body = pptx_body_layer(doc.manifest).object
+  let resources = @core.decode_object_resources(doc.part(body))
+  let commands = @render.compile_object(resources.object)
+  let mut text_x = -1.0
+  let mut fallback_rect = false
+  let mut filled = false
+  for command in commands {
+    match command {
+      @render.FillText(_, x, _, _) => if text_x < 0.0 { text_x = x }
+      @render.FillRect(x, y, width, height) =>
+        if (x - 72.0).abs() < 0.000000001 &&
+          (y - 324.0).abs() < 0.000000001 &&
+          (width - 100.0).abs() < 0.000000001 &&
+          (height - 72.0).abs() < 0.000000001 {
+          fallback_rect = true
+        }
+      @render.FillPath(_, _) => filled = true
+      _ => ()
+    }
+  }
+  assert_true(filled, msg="PPTX custom geometry fill path")
+  assert_true(fallback_rect, msg="PPTX malformed custom geometry rectangle")
+  // the custom a:rect puts the text rectangle's left edge at w/4
+  assert_true((text_x - 129.2).abs() < 0.01, msg="PPTX custGeom text rectangle")
+}
+
+///|
+test "PPTX custom geometry paints fill modes and per-path strokes" {
+  let shape =
+    #|<p:sp><p:nvSpPr><p:cNvPr id="2" name="Paths"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="914400" y="457200"/><a:ext cx="2540000" cy="1270000"/></a:xfrm><a:custGeom><a:avLst/><a:gdLst/><a:rect l="l" t="t" r="r" b="b"/><a:pathLst><a:path w="2" h="1" fill="lighten" stroke="0"><a:moveTo><a:pt x="0" y="1"/></a:moveTo><a:lnTo><a:pt x="1" y="0"/></a:lnTo><a:lnTo><a:pt x="2" y="1"/></a:lnTo><a:close/></a:path><a:path w="2" h="1" fill="none"><a:moveTo><a:pt x="2" y="0"/></a:moveTo><a:lnTo><a:pt x="2" y="1"/></a:lnTo></a:path></a:pathLst></a:custGeom><a:solidFill><a:srgbClr val="808080"/></a:solidFill><a:ln w="12700"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln></p:spPr></p:sp>
+  let slide = pptx_test_slide_prefix + shape + pptx_test_slide_suffix
+  let result = convert(pptx_test_deck(slide, []))
+  let paths = pptx_test_body_paths(result)
+  assert_eq(paths.length(), 2)
+  assert_eq(paths[0].coordinates, [72.0, 136.0, 172.0, 36.0, 272.0, 136.0])
+  assert_eq(paths[1].coordinates, [272.0, 36.0, 272.0, 136.0])
+  let doc = @core.open_single(result.bdf)
+  let body = pptx_body_layer(doc.manifest).object
+  let resources = @core.decode_object_resources(doc.part(body))
+  let commands = @render.compile_object(resources.object)
+  let mut lighten = false
+  let mut fills = 0
+  let mut strokes = 0
+  for command in commands {
+    match command {
+      @render.FillColor(0xc0c0c0ff) => lighten = true
+      @render.FillPath(_, _) => fills += 1
+      @render.StrokePath(_) => strokes += 1
+      _ => ()
+    }
+  }
+  assert_true(lighten, msg="PPTX custGeom lighten fill mode")
+  assert_eq(fills, 1, msg="PPTX custGeom path fills")
+  assert_eq(strokes, 1, msg="PPTX custGeom per-path stroke")
+}
+
+///|
+test "PPTX path fill modes adjust the fill color" {
+  assert_eq(pptx_adjust_fill_color(0x808080ff, "lighten"), 0xc0c0c0ff)
+  assert_eq(pptx_adjust_fill_color(0x808080ff, "darken"), 0x656565ff)
+  assert_eq(pptx_adjust_fill_color(0x808080ff, "lightenLess"), 0xa4a4a4ff)
+  assert_eq(pptx_adjust_fill_color(0x808080ff, "darkenLess"), 0x737373ff)
+  assert_eq(pptx_adjust_fill_color(0x808080ff, "norm"), 0x808080ff)
+  assert_eq(pptx_adjust_fill_color(0x808080ff, "none"), 0x808080ff)
+}
+
+///|
+test "PPTX custom geometry uses theme fill and line style references" {
+  let theme =
+    #|<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Test"><a:themeElements><a:clrScheme name="Test"><a:dk1><a:srgbClr val="000000"/></a:dk1><a:lt1><a:srgbClr val="FFFFFF"/></a:lt1><a:accent1><a:srgbClr val="CC0000"/></a:accent1></a:clrScheme><a:fmtScheme name="Test"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst><a:lnStyleLst><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst></a:fmtScheme></a:themeElements></a:theme>
+  let shape =
+    #|<p:sp><p:nvSpPr><p:cNvPr id="2" name="Styled"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="914400" y="914400"/><a:ext cx="2540000" cy="1270000"/></a:xfrm><a:custGeom><a:avLst/><a:gdLst/><a:rect l="l" t="t" r="r" b="b"/><a:pathLst><a:path><a:moveTo><a:pt x="0" y="0"/></a:moveTo><a:lnTo><a:pt x="1" y="0"/></a:lnTo><a:lnTo><a:pt x="1" y="1"/></a:lnTo><a:close/></a:path></a:pathLst></a:custGeom></p:spPr><p:style><a:lnRef idx="1"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="1"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="minor"><a:schemeClr val="lt1"/></a:fontRef></p:style></p:sp>
+  let slide = pptx_test_slide_prefix + shape + pptx_test_slide_suffix
+  let root_rels =
+    #|<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="root" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/><Relationship Id="theme" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="ppt/theme/theme1.xml"/></Relationships>
+  let result = convert(
+    pptx_test_deck(slide, [
+      ("_rels/.rels", root_rels),
+      ("ppt/theme/theme1.xml", theme),
+    ]),
+  )
+  let doc = @core.open_single(result.bdf)
+  let body = pptx_body_layer(doc.manifest).object
+  let resources = @core.decode_object_resources(doc.part(body))
+  let commands = @render.compile_object(resources.object)
+  let mut filled = false
+  let mut stroked = false
+  let mut fill_path = false
+  let mut stroke_path = false
+  for command in commands {
+    match command {
+      @render.FillColor(0xcc0000ff) => filled = true
+      @render.StrokeColor(0xcc0000ff) => stroked = true
+      @render.FillPath(_, _) => fill_path = true
+      @render.StrokePath(_) => stroke_path = true
+      _ => ()
+    }
+  }
+  assert_true(filled, msg="PPTX custGeom theme fill")
+  assert_true(stroked, msg="PPTX custGeom theme line")
+  assert_true(fill_path, msg="PPTX custGeom theme fill path")
+  assert_true(stroke_path, msg="PPTX custGeom theme stroke path")
+}
+
+///|
 let pptx_test_master =
   #|<p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/><p:cSld><p:spTree><p:sp><p:nvSpPr><p:cNvPr id="2" name="Master"/><p:cNvSpPr/><p:nvPr><p:ph type="body"/></p:nvPr></p:nvSpPr><p:spPr><a:solidFill><a:srgbClr val="0000FF"/></a:solidFill><a:ln w="25400"><a:solidFill><a:srgbClr val="00FF00"/></a:solidFill></a:ln></p:spPr></p:sp></p:spTree></p:cSld></p:sldMaster>
 
