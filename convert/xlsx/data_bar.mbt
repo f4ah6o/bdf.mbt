@@ -82,7 +82,13 @@ fn XlsxWorkbook::xlsx_data_bar_rules(
           }
         } else if bar_depth >= 0 && depth == bar_depth + 1 {
           if name == "cfvo" {
-            let value = match xlsx_attr(element, "val", "") {
+            let raw = xlsx_attr(element, "val", "")
+            let cleaned = if raw.has_prefix("=") {
+              raw[1:].to_owned()
+            } else {
+              raw
+            }
+            let value = match cleaned {
               "" => 0.0
               value => @string.parse_double(value) catch { _ => 0.0 }
             }
@@ -132,6 +138,33 @@ fn XlsxWorkbook::xlsx_data_bar_rules(
 }
 
 ///|
+fn xlsx_data_bar_threshold(
+  stop : XlsxColorScaleStop,
+  min : Double,
+  max : Double,
+  values : Array[Double],
+) -> Double {
+  match stop.kind {
+    "min" => min
+    "max" => max
+    "num" | "formula" => stop.value
+    "percent" => min + (max - min) * stop.value / 100.0
+    "percentile" => {
+      let sorted = values.copy()
+      sorted.sort()
+      let p = Double::min(1.0, Double::max(0.0, stop.value / 100.0))
+      let position = p * (sorted.length() - 1).to_double()
+      let lower = position.to_int()
+      let fraction = position - lower.to_double()
+      let low = sorted[lower]
+      let high = if lower + 1 < sorted.length() { sorted[lower + 1] } else { low }
+      low + (high - low) * fraction
+    }
+    _ => min
+  }
+}
+
+///|
 fn XlsxWorkbook::xlsx_data_bars(
   self : XlsxWorkbook,
   part : String,
@@ -162,8 +195,14 @@ fn XlsxWorkbook::xlsx_data_bars(
     }
     let sorted = values.copy()
     sorted.sort()
-    let min = sorted[0]
-    let max = sorted[sorted.length() - 1]
+    let actual_min = sorted[0]
+    let actual_max = sorted[sorted.length() - 1]
+    let min = xlsx_data_bar_threshold(
+      rule.stops[0], actual_min, actual_max, values,
+    )
+    let max = xlsx_data_bar_threshold(
+      rule.stops[1], actual_min, actual_max, values,
+    )
     if (max - min).abs() < 0.0000001 {
       continue
     }
