@@ -106,7 +106,7 @@ text/delete)
 from `dLbls`, legends with colour swatches and `txPr` text styles, deleted entries and
 overlay mode, category labels and value-axis ticks with `txPr` text
 styles, explicit `c:majorUnit`/`c:minorUnit`, `c:scaling/c:min`/`c:max` (automatically extending below zero for negative
-values), reversed category axes (`c:orientation=maxMin`), negative bars and mixed-sign stacks drawn from a visible zero line, value-axis
+values), reversed category and value axes (`c:orientation=maxMin`), negative bars and mixed-sign stacks drawn from a visible zero line, value-axis
 `c:numFmt`, chart/plot-area `c:spPr` fills and borders, major/minor gridlines, and
 sparse point caches keep their `idx` positions, blank points draw no bars or
 scatter/radar markers,

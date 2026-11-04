@@ -2029,6 +2029,7 @@ fn pptx_line_path(
   values : Array[Double],
   maximum : Double,
   minimum : Double,
+  flip : Bool,
   blanks : Array[Bool],
   blanks_mode : String,
   left : Double,
@@ -2061,7 +2062,7 @@ fn pptx_line_path(
     } else {
       left + width * index.to_double() / (count - 1.0)
     }
-    let y = top + height - height * pptx_chart_fraction(value, minimum, maximum)
+    let y = top + height - height * pptx_chart_fraction(value, minimum, maximum, flip)
     coordinates.push(x)
     coordinates.push(y)
   }
@@ -2073,6 +2074,7 @@ fn pptx_area_path(
   values : Array[Double],
   maximum : Double,
   minimum : Double,
+  flip : Bool,
   blanks : Array[Bool],
   blanks_mode : String,
   left : Double,
@@ -2102,7 +2104,7 @@ fn pptx_area_path(
     } else {
       left + width * index.to_double() / (count - 1.0)
     }
-    let y = bottom - height * pptx_chart_fraction(value, minimum, maximum)
+    let y = bottom - height * pptx_chart_fraction(value, minimum, maximum, flip)
     if !started {
       verbs.push(0)
       coordinates.push(x)
@@ -2534,8 +2536,18 @@ fn pptx_chart_collect_text(node : PptxXmlNode, out : StringBuilder) -> Unit {
 }
 
 ///|
-fn pptx_chart_fraction(value : Double, low : Double, high : Double) -> Double {
-  if high <= low { 0.0 } else { (value - low) / (high - low) }
+fn pptx_chart_fraction(
+  value : Double,
+  low : Double,
+  high : Double,
+  flip : Bool,
+) -> Double {
+  if high <= low {
+    0.0
+  } else {
+    let fraction = (value - low) / (high - low)
+    if flip { 1.0 - fraction } else { fraction }
+  }
 }
 
 ///|
@@ -2868,6 +2880,14 @@ fn pptx_emit_chart(
   let is_pie = kind == "pieChart" || is_doughnut
   let vary_colors = match pptx_child(Some(chart), "varyColors") {
     Some(value) => pptx_attribute(value.element, "val", "0") != "0"
+    None => false
+  }
+  let axis_flip = match pptx_child(pptx_child(plot_area, "valAx"), "scaling") {
+    Some(scaling) =>
+      match pptx_child(Some(scaling), "orientation") {
+        Some(value) => pptx_attribute(value.element, "val", "minMax") == "maxMin"
+        None => false
+      }
     None => false
   }
   let reverse_categories = match pptx_child(
@@ -4045,7 +4065,7 @@ fn pptx_emit_chart(
     None => ()
   }
   if axis_low < 0.0 {
-    let zero = pptx_chart_fraction(0.0, axis_low, axis_high)
+    let zero = pptx_chart_fraction(0.0, axis_low, axis_high, axis_flip)
     object.fill_color(0x808080ffU)
     if horizontal {
       object.fill_rect(
@@ -4076,7 +4096,7 @@ fn pptx_emit_chart(
         object.fill_color(0xf2f2f2ffU)
         if horizontal {
           object.fill_rect(
-            Float::from_double(plot_x + plot_width * pptx_chart_fraction(value, axis_low, axis_high)),
+            Float::from_double(plot_x + plot_width * pptx_chart_fraction(value, axis_low, axis_high, axis_flip)),
             Float::from_double(plot_y),
             0.5F,
             Float::from_double(plot_height),
@@ -4085,7 +4105,7 @@ fn pptx_emit_chart(
           object.fill_rect(
             Float::from_double(plot_x),
             Float::from_double(
-              plot_y + plot_height - plot_height * pptx_chart_fraction(value, axis_low, axis_high),
+              plot_y + plot_height - plot_height * pptx_chart_fraction(value, axis_low, axis_high, axis_flip),
             ),
             Float::from_double(plot_width),
             0.5F,
@@ -4097,7 +4117,7 @@ fn pptx_emit_chart(
       object.fill_color(0xd9d9d9ffU)
       if horizontal {
         object.fill_rect(
-          Float::from_double(plot_x + plot_width * pptx_chart_fraction(tick, axis_low, axis_high)),
+          Float::from_double(plot_x + plot_width * pptx_chart_fraction(tick, axis_low, axis_high, axis_flip)),
           Float::from_double(plot_y),
           0.75F,
           Float::from_double(plot_height),
@@ -4106,14 +4126,19 @@ fn pptx_emit_chart(
         object.fill_rect(
           Float::from_double(plot_x),
           Float::from_double(
-            plot_y + plot_height - plot_height * pptx_chart_fraction(tick, axis_low, axis_high),
+            plot_y + plot_height - plot_height * pptx_chart_fraction(tick, axis_low, axis_high, axis_flip),
           ),
           Float::from_double(plot_width),
           0.75F,
         )
       }
     }
-    let text = pptx_chart_format_number(tick, axis_format)
+    let display_tick = if axis_flip {
+      axis_high + axis_low - tick
+    } else {
+      tick
+    }
+    let text = pptx_chart_format_number(display_tick, axis_format)
     if horizontal {
       pptx_chart_label(
         object,
@@ -4121,7 +4146,7 @@ fn pptx_emit_chart(
         tick_label_size,
         tick_label_color,
         text,
-        plot_x + plot_width * pptx_chart_fraction(tick, axis_low, axis_high) - 6.0,
+        plot_x + plot_width * pptx_chart_fraction(tick, axis_low, axis_high, axis_flip) - 6.0,
         y + height - 6.0,
       )
     } else {
@@ -4133,7 +4158,7 @@ fn pptx_emit_chart(
         tick_label_color,
         text,
         plot_x - label_width - 4.0,
-        plot_y + plot_height - plot_height * pptx_chart_fraction(tick, axis_low, axis_high),
+        plot_y + plot_height - plot_height * pptx_chart_fraction(tick, axis_low, axis_high, axis_flip),
       )
     }
     tick += step
@@ -4189,19 +4214,16 @@ fn pptx_emit_chart(
             let value = item.values[index]
             let start = if value >= 0.0 { positive } else { negative }
             let next = start + value
+            let start_fraction = pptx_chart_fraction(
+              start, axis_low, axis_high, axis_flip,
+            )
+            let next_fraction = pptx_chart_fraction(
+              next, axis_low, axis_high, axis_flip,
+            )
             let bar_width = plot_width *
-              (if value >= 0.0 {
-                pptx_chart_fraction(next, axis_low, axis_high) -
-                  pptx_chart_fraction(start, axis_low, axis_high)
-              } else {
-                pptx_chart_fraction(start, axis_low, axis_high) -
-                  pptx_chart_fraction(next, axis_low, axis_high)
-              })
-            let bar_x = if value >= 0.0 {
-              plot_x + plot_width * pptx_chart_fraction(start, axis_low, axis_high)
-            } else {
-              plot_x + plot_width * pptx_chart_fraction(next, axis_low, axis_high)
-            }
+              (next_fraction - start_fraction).abs()
+            let bar_x = plot_x +
+              plot_width * Double::min(start_fraction, next_fraction)
             object.fill_color(pptx_series_point_color(item, index))
             object.fill_rect(
               Float::from_double(bar_x),
@@ -4232,18 +4254,12 @@ fn pptx_emit_chart(
               continue
             }
             let value = item.values[index]
-            let zero = pptx_chart_fraction(0.0, axis_low, axis_high)
-            let fraction = pptx_chart_fraction(value, axis_low, axis_high)
-            let bar_x = if value >= 0.0 {
-              plot_x + plot_width * zero
-            } else {
-              plot_x + plot_width * fraction
-            }
-            let bar_width_value = if value >= 0.0 {
-              plot_width * (fraction - zero)
-            } else {
-              plot_width * (zero - fraction)
-            }
+            let zero = pptx_chart_fraction(0.0, axis_low, axis_high, axis_flip)
+            let fraction = pptx_chart_fraction(value, axis_low, axis_high, axis_flip)
+            let bar_x = plot_x +
+              plot_width * Double::min(fraction, zero)
+            let bar_width_value = plot_width *
+              (fraction - zero).abs()
             object.fill_color(pptx_series_point_color(item, index))
             object.fill_rect(
               Float::from_double(bar_x),
@@ -4272,21 +4288,16 @@ fn pptx_emit_chart(
           let value = item.values[index]
           let start = if value >= 0.0 { positive } else { negative }
           let next = start + value
+          let start_fraction = pptx_chart_fraction(
+            start, axis_low, axis_high, axis_flip,
+          )
+          let next_fraction = pptx_chart_fraction(
+            next, axis_low, axis_high, axis_flip,
+          )
           let bar_height = plot_height *
-            (if value >= 0.0 {
-              pptx_chart_fraction(next, axis_low, axis_high) -
-                pptx_chart_fraction(start, axis_low, axis_high)
-            } else {
-              pptx_chart_fraction(start, axis_low, axis_high) -
-                pptx_chart_fraction(next, axis_low, axis_high)
-            })
-          let bar_y = if value >= 0.0 {
-            plot_y + plot_height -
-            plot_height * pptx_chart_fraction(next, axis_low, axis_high)
-          } else {
-            plot_y + plot_height -
-            plot_height * pptx_chart_fraction(start, axis_low, axis_high)
-          }
+            (next_fraction - start_fraction).abs()
+          let bar_y = plot_y + plot_height -
+            plot_height * Double::max(start_fraction, next_fraction)
           object.fill_color(pptx_series_point_color(item, index))
           object.fill_rect(
             Float::from_double(
@@ -4317,6 +4328,7 @@ fn pptx_emit_chart(
             item.values,
             axis_high,
             axis_low,
+            axis_flip,
             item.blanks,
             blanks_mode,
             plot_x,
@@ -4334,6 +4346,7 @@ fn pptx_emit_chart(
             item.values,
             axis_high,
             axis_low,
+            axis_flip,
             item.blanks,
             blanks_mode,
             plot_x,
@@ -4359,6 +4372,7 @@ fn pptx_emit_chart(
             item.values,
             axis_high,
             axis_low,
+            axis_flip,
             item.blanks,
             blanks_mode,
             plot_x,
@@ -4380,7 +4394,7 @@ fn pptx_emit_chart(
         } else {
           plot_x + plot_width * index.to_double() / (value_count - 1.0)
         }
-        let py = plot_y + plot_height - plot_height * pptx_chart_fraction(value, axis_low, axis_high)
+        let py = plot_y + plot_height - plot_height * pptx_chart_fraction(value, axis_low, axis_high, axis_flip)
         pptx_draw_chart_marker(object, item, px, py)
       }
     }
@@ -4395,18 +4409,11 @@ fn pptx_emit_chart(
             continue
           }
           let value = item.values[index]
-          let zero = pptx_chart_fraction(0.0, axis_low, axis_high)
-          let fraction = pptx_chart_fraction(value, axis_low, axis_high)
-          let bar_height = if value >= 0.0 {
-            plot_height * (fraction - zero)
-          } else {
-            plot_height * (zero - fraction)
-          }
-          let bar_y = if value >= 0.0 {
-            plot_y + plot_height - plot_height * fraction
-          } else {
-            plot_y + plot_height - plot_height * zero
-          }
+          let zero = pptx_chart_fraction(0.0, axis_low, axis_high, axis_flip)
+          let fraction = pptx_chart_fraction(value, axis_low, axis_high, axis_flip)
+          let bar_height = plot_height * (fraction - zero).abs()
+          let bar_y = plot_y + plot_height -
+            plot_height * Double::max(fraction, zero)
           object.fill_color(pptx_series_point_color(item, index))
           object.fill_rect(
             Float::from_double(
@@ -4454,12 +4461,12 @@ fn pptx_emit_chart(
           let (label_x, label_y) = if horizontal {
             if value >= 0.0 {
               (
-                plot_x + plot_width * pptx_chart_fraction(next, axis_low, axis_high) + 2.0,
+                plot_x + plot_width * pptx_chart_fraction(next, axis_low, axis_high, axis_flip) + 2.0,
                 plot_y + slot * index.to_double() + slot * 0.3,
               )
             } else {
               (
-                plot_x + plot_width * pptx_chart_fraction(next, axis_low, axis_high) - label_width - 2.0,
+                plot_x + plot_width * pptx_chart_fraction(next, axis_low, axis_high, axis_flip) - label_width - 2.0,
                 plot_y + slot * index.to_double() + slot * 0.3,
               )
             }
@@ -4467,14 +4474,14 @@ fn pptx_emit_chart(
             (
               plot_x + slot * index.to_double() + slot * 0.5 - label_width / 2.0,
               plot_y + plot_height -
-              plot_height * pptx_chart_fraction(next, axis_low, axis_high) -
+              plot_height * pptx_chart_fraction(next, axis_low, axis_high, axis_flip) -
               9.0,
             )
           } else {
             (
               plot_x + slot * index.to_double() + slot * 0.5 - label_width / 2.0,
               plot_y + plot_height -
-              plot_height * pptx_chart_fraction(next, axis_low, axis_high) +
+              plot_height * pptx_chart_fraction(next, axis_low, axis_high, axis_flip) +
               2.0,
             )
           }
@@ -4507,8 +4514,8 @@ fn pptx_emit_chart(
             text = ""
           }
           let label_width = pptx_text_width(text, data_label_size)
-          let value_fraction = pptx_chart_fraction(value, axis_low, axis_high)
-          let zero_fraction = pptx_chart_fraction(0.0, axis_low, axis_high)
+          let value_fraction = pptx_chart_fraction(value, axis_low, axis_high, axis_flip)
+          let zero_fraction = pptx_chart_fraction(0.0, axis_low, axis_high, axis_flip)
           let (label_x, label_y) = if horizontal {
             let bar_x = if value >= 0.0 {
               match data_label_pos {
@@ -4540,7 +4547,7 @@ fn pptx_emit_chart(
               plot_width * index.to_double() /
               Double::max(1.0, (item.values.length() - 1).to_double())
             let py = plot_y + plot_height -
-              plot_height * pptx_chart_fraction(value, axis_low, axis_high)
+              plot_height * pptx_chart_fraction(value, axis_low, axis_high, axis_flip)
             if data_label_pos == "b" {
               (px - label_width / 2.0, py + 12.0)
             } else if data_label_pos == "l" {
