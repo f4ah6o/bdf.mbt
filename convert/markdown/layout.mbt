@@ -689,6 +689,7 @@ fn MdPainter::layout_table(
   if columns == 0 {
     return
   }
+  self.object.mark(9, "")
   let natural : Array[Double] = []
   for column in 0..<columns {
     let mut cell_width = 30.0
@@ -754,6 +755,7 @@ fn MdPainter::layout_table(
     }
     let mut cell_x = x
     for column in 0..<columns {
+      self.object.mark(2, md_cell_name(column, row_index + 1))
       let lines = cell_lines[column]
       let align = if column < alignments.length() { alignments[column] } else { 0 }
       let mut baseline = row_top + 15.0
@@ -818,7 +820,27 @@ fn MdPainter::layout_table(
       }),
     ),
   )
+  self.object.mark(11, "")
   self.y = row_top + 8.0
+}
+
+///|
+fn md_cell_name(column : Int, row : Int) -> String {
+  let letters = StringBuilder()
+  let mut value = column
+  while true {
+    letters.write_char(Char::from_int('A'.to_int() + value % 26))
+    value = value / 26 - 1
+    if value < 0 {
+      break
+    }
+  }
+  let out = StringBuilder()
+  for character in letters.to_string().rev() {
+    out.write_char(character)
+  }
+  out.write_string(row.to_string())
+  out.to_string()
 }
 
 ///|
@@ -860,8 +882,22 @@ fn md_render(
     page: 0,
     page_dirty: false,
   }
+  let mut list_open = false
   for block in blocks {
+    match block {
+      MdListItem(_, _, _) => if !list_open {
+        painter.object.mark(7, "")
+        list_open = true
+      }
+      _ => if list_open {
+        painter.object.mark(11, "")
+        list_open = false
+      }
+    }
     painter.layout_block(block, 0.0)
+  }
+  if list_open {
+    painter.object.mark(11, "")
   }
   if page_view {
     if painter.pages.is_empty() || painter.y > margin + 0.001 {

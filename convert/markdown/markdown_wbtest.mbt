@@ -265,6 +265,37 @@ test "Markdown emits heading, paragraph and figure marks" {
   assert_eq(ends, 1)
 }
 
+test "Markdown emits list and table marks" {
+  let source = "- one\n- two\n\n| A | B |\n| - | - |\n| 1 | 2 |\n"
+  let result = convert(@utf8.encode(source))
+  let doc = @core.open_single(result.bdf)
+  let view = doc.manifest.views[0]
+  let mut lists = 0
+  let mut items = 0
+  let mut tables = 0
+  let mut cells = 0
+  let mut ends = 0
+  for page in view.pages {
+    for layer in page.layers {
+      for command in @render.decode_commands(doc.part(layer.object)) {
+        match command {
+          Mark(7, _) => lists += 1
+          Mark(8, _) => items += 1
+          Mark(9, _) => tables += 1
+          Mark(2, _) => cells += 1
+          Mark(11, _) => ends += 1
+          _ => ()
+        }
+      }
+    }
+  }
+  assert_eq(lists, 1)
+  assert_eq(items, 2)
+  assert_eq(tables, 1)
+  assert_eq(cells, 4)
+  assert_eq(ends >= 2, true)
+}
+
 test "Markdown front matter maps Dublin Core terms" {
   let (body, meta) = md_front_matter(
     "---\nauthor:\n  - Alice\n  - name: Bob\ndate: 2026-09-26\ntags: [bdf, markdown]\n---\nbody",
