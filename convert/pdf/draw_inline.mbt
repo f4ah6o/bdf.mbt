@@ -225,7 +225,16 @@ fn PdfGraphics::draw_inline_image(
     }
   }
   self.draw_image_data(
-    width, height, bpc, space, is_mask, invert, decoded, codec, ccitt,
+    width,
+    height,
+    bpc,
+    space,
+    is_mask,
+    invert,
+    decoded,
+    codec,
+    ccitt,
+    b"",
   )
 }
 
