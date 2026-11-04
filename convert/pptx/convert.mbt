@@ -3477,10 +3477,26 @@ fn pptx_emit_chart(
       0.0
     }
     let hole_radius = radius * hole_size / 100.0
+    let label_pos = match pptx_child(
+      pptx_child(Some(chart), "dLbls"), "dLblPos",
+    ) {
+      Some(value) => pptx_attribute(value.element, "val", "bestFit")
+      None => "bestFit"
+    }
     let label_radius = if is_doughnut {
-      (radius + hole_radius) / 2.0
+      match label_pos {
+        "outEnd" => radius * 1.1
+        "inEnd" => hole_radius * 0.7
+        "ctr" => (radius + hole_radius) / 2.0
+        _ => (radius + hole_radius) / 2.0
+      }
     } else {
-      radius * 0.7
+      match label_pos {
+        "outEnd" => radius * 1.15
+        "inEnd" => radius * 0.45
+        "ctr" => radius * 0.6
+        _ => radius * 0.7
+      }
     }
     let first_angle = match pptx_child(Some(chart), "firstSliceAng") {
       Some(value) =>
