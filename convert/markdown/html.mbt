@@ -289,7 +289,18 @@ fn md_block_from_html(
     }
     let tag = remaining[at + 4:open_end].to_owned()
     let src = md_attr_in_tag(tag, "src")
-    if src != "" && !src.has_prefix("data:") {
+    if src != "" && src.has_prefix("data:") {
+      match md_resolve_image(src) {
+        Some(image) => {
+          let runs : Array[MdRun] = []
+          md_push_image(runs, image, md_style(), "")
+          if !runs.is_empty() {
+            blocks.push(MdParagraph(runs))
+          }
+        }
+        None => md_warn_image(warnings, src)
+      }
+    } else if src != "" {
       md_warn_image(warnings, src)
     }
     search = open_end + 1

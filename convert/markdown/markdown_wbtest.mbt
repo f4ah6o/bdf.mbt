@@ -271,6 +271,14 @@ test "Markdown definition lists indent their definitions" {
 }
 
 ///|
+test "Markdown raw HTML data images are embedded" {
+  let source = "<img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lv0nWQAAAABJRU5ErkJggg==\" alt=\"dot\">\n"
+  let result = convert(@utf8.encode(source))
+  let doc = @core.open_single(result.bdf)
+  assert_true(markdown_image_parts(doc).length() >= 1)
+}
+
+///|
 test "Markdown heading links target the page" {
   let source = "# Heading\n\n[go](#heading)\n"
   let result = convert(@utf8.encode(source))
