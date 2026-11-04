@@ -2456,6 +2456,22 @@ fn pptx_chart_data_label_size(chart_space : PptxXmlNode?) -> Double {
 }
 
 ///|
+fn pptx_chart_data_label_color(
+  chart_space : PptxXmlNode?,
+  theme : Map[String, UInt32],
+) -> UInt32 {
+  let labels = pptx_child(chart_space, "dLbls")
+  let text = pptx_child(labels, "txPr")
+  let paragraph = pptx_child(text, "p")
+  let ppr = pptx_child(paragraph, "pPr")
+  let rpr = pptx_child(ppr, "defRPr")
+  match pptx_node_color(rpr, "solidFill", theme) {
+    Some(value) => value
+    None => 0x000000ffU
+  }
+}
+
+///|
 fn pptx_chart_label(
   object : @core.ObjectBuilder,
   font : Int32,
@@ -2601,6 +2617,7 @@ fn pptx_emit_chart(
     None => ""
   }
   let data_label_size = pptx_chart_data_label_size(chart_space)
+  let data_label_color = pptx_chart_data_label_color(chart_space, theme)
   let palette = [
     0x4472c4ffU, 0xed7d31ffU, 0xa5a5a5ffU, 0xffc000ffU, 0x5b9bd5ffU, 0x70ad47ffU,
   ]
@@ -3774,7 +3791,7 @@ fn pptx_emit_chart(
             )
           }
           pptx_chart_label(
-            object, label_font, data_label_size, black, text, label_x, label_y,
+            object, label_font, data_label_size, data_label_color, text, label_x, label_y,
           )
           used += value
         }
@@ -3810,7 +3827,7 @@ fn pptx_emit_chart(
             )
           }
           pptx_chart_label(
-            object, label_font, data_label_size, black, text, label_x, label_y,
+            object, label_font, data_label_size, data_label_color, text, label_x, label_y,
           )
         }
       }
