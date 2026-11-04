@@ -6,6 +6,7 @@ import {
   "f4ah6o/bdf/font/db",
   "f4ah6o/bdf/font/sfnt",
   "moonbitlang/core/debug",
+  "moonbitlang/core/json",
 }
 
 // Values
@@ -19,7 +20,7 @@ pub fn draw_grid_with_font(Array[Array[Cell]], @sfnt.Font, hash? : String?, head
 
 pub fn draw_grid_with_font_usage(Array[Array[Cell]], @sfnt.Font, header_rows? : Int32, subheader? : Bool, language? : String, table_style? : String) -> (DrawnGrid, FontUsage) raise
 
-pub fn draw_sized_grid_no_fonts(Array[SizedGridRow], GridGeometry, Array[Run], String, String, verticals? : Map[Int32, Map[Int32, String]], horizontals? : Map[Int32, Map[Int32, String]], bolds? : Map[Int32, Map[Int32, Bool]], fills? : Map[Int32, Map[Int32, GridSolidFill]], sizes? : Map[Int32, Map[Int32, Double]], borders? : Map[Int32, Map[Int32, GridCellBorder]], spans? : Map[Int32, Map[Int32, Int32]], border_colors? : Map[Int32, Map[Int32, Array[UInt32]]], border_color_keys? : Map[Int32, Map[Int32, Array[String]]], diagonal_color_keys? : Map[Int32, Map[Int32, String]], merge_regions? : Array[GridMergeRegion], east_asian_fonts? : Map[Int32, Map[Int32, String]], wraps? : Map[Int32, Map[Int32, Bool]], diagonals? : Map[Int32, Map[Int32, GridCellDiagonal]], font_families? : Map[Int32, Map[Int32, String]], italics? : Map[Int32, Map[Int32, Bool]], decorations? : Map[Int32, Map[Int32, GridTextDecoration]], scripts? : Map[Int32, Map[Int32, String]], shrink_scales? : Map[Int32, Map[Int32, Double]], indents? : Map[Int32, Map[Int32, Double]], center_across? : Map[Int32, Map[Int32, Bool]], links? : Array[GridLink], auto_filter? : (Int32, Int32, Int32)?, notes? : Array[(Int32, Int32)], rich_colors? : Map[Int32, Map[Int32, Array[GridRichColorRun]]], rich_base_sizes? : Map[Int32, Map[Int32, Double]], table_headers? : Array[(Int32, Int32, Int32, Int32, Int32)], table_filters? : Array[(Int32, Int32)], pictures? : Array[GridPicture], hidden_pictures? : Array[Bool], shape_fills? : Array[UInt32?], shape_strokes? : Array[(UInt32, Double)?], shape_no_fills? : Array[Bool], shape_dashes? : Array[String], shape_geometries? : Array[String], shape_adjustments? : Array[Int64?], shape_extra_adjustments? : Array[Map[String, Int64]], picture_writer? : @core.DocumentWriter?, picture_children? : Array[(Int32, Int32, Bytes)]?, column_axis_default? : Float?, font? : @sfnt.Font?, hash? : String?) -> DrawnGrid raise
+pub fn draw_sized_grid_no_fonts(Array[SizedGridRow], GridGeometry, Array[Run], String, String, verticals? : Map[Int32, Map[Int32, String]], horizontals? : Map[Int32, Map[Int32, String]], bolds? : Map[Int32, Map[Int32, Bool]], fills? : Map[Int32, Map[Int32, GridSolidFill]], sizes? : Map[Int32, Map[Int32, Double]], borders? : Map[Int32, Map[Int32, GridCellBorder]], spans? : Map[Int32, Map[Int32, Int32]], border_colors? : Map[Int32, Map[Int32, Array[UInt32]]], border_color_keys? : Map[Int32, Map[Int32, Array[String]]], diagonal_color_keys? : Map[Int32, Map[Int32, String]], merge_regions? : Array[GridMergeRegion], east_asian_fonts? : Map[Int32, Map[Int32, String]], wraps? : Map[Int32, Map[Int32, Bool]], diagonals? : Map[Int32, Map[Int32, GridCellDiagonal]], font_families? : Map[Int32, Map[Int32, String]], italics? : Map[Int32, Map[Int32, Bool]], decorations? : Map[Int32, Map[Int32, GridTextDecoration]], scripts? : Map[Int32, Map[Int32, String]], shrink_scales? : Map[Int32, Map[Int32, Double]], indents? : Map[Int32, Map[Int32, Double]], rotations? : Map[Int32, Map[Int32, Int32]], center_across? : Map[Int32, Map[Int32, Bool]], links? : Array[GridLink], auto_filter? : (Int32, Int32, Int32)?, notes? : Array[(Int32, Int32)], rich_colors? : Map[Int32, Map[Int32, Array[GridRichColorRun]]], rich_base_sizes? : Map[Int32, Map[Int32, Double]], table_headers? : Array[(Int32, Int32, Int32, Int32, Int32)], table_filters? : Array[(Int32, Int32)], pictures? : Array[GridPicture], hidden_pictures? : Array[Bool], shape_fills? : Array[UInt32?], shape_strokes? : Array[(UInt32, Double)?], shape_no_fills? : Array[Bool], shape_dashes? : Array[String], shape_geometries? : Array[String], shape_adjustments? : Array[Int64?], shape_extra_adjustments? : Array[Map[String, Int64]], picture_writer? : @core.DocumentWriter?, picture_children? : Array[(Int32, Int32, Bytes)]?, column_axis_default? : Float?, font? : @sfnt.Font?, hash? : String?) -> DrawnGrid raise
 
 pub fn fallback_advance(Char, Bool) -> Double
 
@@ -43,9 +44,9 @@ pub fn sized_fallback_advance(Char, Bool, Double) -> Double
 
 pub fn store_grid(@core.DocumentWriter, DrawnGrid, id? : String, title? : String, text_index? : Bool) -> Unit raise
 
-pub fn store_grid_parts(@core.DocumentWriter, DrawnGrid, Array[(Int32, Int32, Bytes)]) -> Map[String, Json] raise
+pub fn store_grid_parts(@core.DocumentWriter, DrawnGrid, Array[(Int32, Int32, Bytes)]) -> Map[String, @json.Json] raise
 
-pub fn store_grid_views(@core.DocumentWriter, Array[NamedGrid], Array[Map[String, Json]], Bool) -> Unit raise
+pub fn store_grid_views(@core.DocumentWriter, Array[NamedGrid], Array[Map[String, @json.Json]], Bool) -> Unit raise
 
 pub fn store_grids(@core.DocumentWriter, Array[NamedGrid], Bool, picture_children? : Array[Array[(Int32, Int32, Bytes)]]) -> Unit raise
 
@@ -54,15 +55,17 @@ pub fn wrap_rich_text(Array[RichMeasureRun], Double, Double) -> Array[RichWrappe
 pub fn wrap_text(String, Double, bold? : Bool, advance? : (Char, Bool) -> Double) -> Array[WrappedLine]
 
 // Errors
+#derive(@debug.Debug)
 pub suberror SheetError {
   InvalidArgument(String)
-} derive(@debug.Debug)
+}
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) struct Cell {
   text : String
   number : Bool
-} derive(Eq, @debug.Debug)
+}
 
 pub(all) struct DrawnGrid {
   geometry : GridGeometry
@@ -99,11 +102,23 @@ pub(all) struct GridCellDiagonal {
   down : Bool
 }
 
+pub(all) struct GridFillPaint {
+  kind : Int32
+  degree : Double
+  left : Double
+  right : Double
+  top : Double
+  bottom : Double
+  stops : Array[@core.ColorStop]
+  image : String
+}
+
+#derive(Eq, @debug.Debug)
 pub(all) struct GridGeometry {
   columns : Array[Run]
   rows : Array[Run]
   frozen_rows : Int32
-} derive(Eq, @debug.Debug)
+}
 
 pub(all) struct GridLink {
   row_start : Int32
@@ -171,6 +186,7 @@ pub(all) struct GridRichColorRun {
 pub(all) struct GridSolidFill {
   key : String
   color : UInt32
+  paint : GridFillPaint?
 }
 
 pub(all) struct GridTextDecoration {
@@ -208,10 +224,11 @@ pub(all) struct RichWrappedLine {
   size : Double
 }
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Run {
   count : Int32
   size : Float
-} derive(Eq, @debug.Debug)
+}
 
 pub(all) struct SizedGridCell {
   column : Int32
@@ -227,13 +244,14 @@ pub(all) struct SizedGridRow {
   cells : Array[SizedGridCell]
 }
 
+#derive(@debug.Debug)
 pub(all) struct WrappedLine {
   text : String
   width : Double
   explicit : Bool
   wrapped : Bool
   cjk_wrap : Bool
-} derive(@debug.Debug)
+}
 
 // Type aliases
 

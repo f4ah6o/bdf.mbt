@@ -109,6 +109,8 @@ pub(all) struct XlsxCellFormat {
   alignment : XlsxAlignment
 }
 
+type XlsxChartModel
+
 pub(all) struct XlsxColor {
   kind : Int32
   rgb : UInt32
@@ -125,6 +127,8 @@ pub(all) struct XlsxColumn {
 }
 
 type XlsxConditionalValue
+
+type XlsxDrawNode
 
 pub(all) struct XlsxFill {
   mut pattern : String
@@ -219,6 +223,8 @@ pub(all) struct XlsxNumberLayout {
   mut fraction : Bool
   mut general : Bool
 }
+
+type XlsxPlainDrawing
 
 pub(all) struct XlsxPlainResult {
   bdf : Bytes

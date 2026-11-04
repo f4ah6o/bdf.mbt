@@ -38,6 +38,23 @@ pub(all) struct GridPicture {
 }
 
 ///|
+/// One styled text run drawn inside a shape.
+pub(all) struct GridShapeTextRun {
+  text : String
+  size : Double
+  bold : Bool
+  italic : Bool
+  color : UInt32
+}
+
+///|
+/// One line of text drawn inside a shape.
+pub(all) struct GridShapeTextLine {
+  runs : Array[GridShapeTextRun]
+  align : String
+}
+
+///|
 fn GridDrawContext::paint_picture(
   self : GridDrawContext,
   writer : @core.DocumentWriter,
@@ -55,6 +72,7 @@ fn GridDrawContext::paint_picture(
   shape_geometry~ : String = "rect",
   shape_adjustment~ : Int64? = None,
   shape_extra_adjustments~ : Map[String, Int64] = Map([]),
+  shape_text~ : Array[GridShapeTextLine] = [],
 ) -> Int32 raise {
   if picture.kind < 0 ||
     picture.kind > 2 ||
@@ -809,6 +827,61 @@ fn GridDrawContext::paint_picture(
       Float::from_double(x - tile.x.to_double() * 2048.0),
       Float::from_double(y - tile.y.to_double() * 2048.0),
     )
+    if !shape_text.is_empty() {
+      let ox = tile.x.to_double() * 2048.0
+      let oy = tile.y.to_double() * 2048.0
+      let mut total = 0.0
+      for line in shape_text {
+        let mut size = 11.0
+        for run in line.runs {
+          size = Double::max(size, run.size)
+        }
+        total += 1.15 * size
+      }
+      let mut ty = y + (draw_height - total) / 2.0 - oy
+      for line in shape_text {
+        if line.align == "chart" {
+          tile.object.mark(2, "")
+        }
+        let mut line_width = 0.0
+        let mut line_size = 11.0
+        for run in line.runs {
+          line_size = Double::max(line_size, run.size)
+          for character in run.text {
+            line_width += sized_fallback_advance(character, run.bold, run.size)
+          }
+        }
+        let tx_offset = match line.align {
+          "l" | "left" => 0.0
+          "r" | "right" => draw_width - line_width
+          _ => (draw_width - line_width) / 2.0
+        }
+        let mut tx = x - ox + tx_offset
+        for run in line.runs {
+          let mut width = 0.0
+          for character in run.text {
+            width += sized_fallback_advance(character, run.bold, run.size)
+          }
+          let weight = if run.bold { 700 } else { 400 }
+          let font = tile.object.add_font({
+            hash: None,
+            family: "Calibri, sans-serif",
+            weight,
+            style: if run.italic { 1 } else { 0 },
+          })
+          tile.object.font(font, Float::from_double(run.size))
+          tile.object.fill_color(run.color)
+          tile.object.fill_text(
+            run.text,
+            Float::from_double(tx),
+            Float::from_double(ty + 0.9 * line_size),
+            Float::from_double(width),
+          )
+          tx += width
+        }
+        ty += 1.15 * line_size
+      }
+    }
     tile.drawn = true
   }
   tile_count

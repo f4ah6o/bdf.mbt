@@ -67,6 +67,11 @@ normalized text indexes, plus the `kind=flow` body rectangle, page selection
 and invalid-kind errors. The JBIG2 symbol/text-region fixture is exercised
 separately when the JBIG2 decoder supports those segment types.
 
+`phase14-xlsx-test.mjs` compares the XLSX converter with upstream for the
+`basic`, `features`, `math` and `print` workbooks: sheet and chart-sheet view
+ids/kinds, page and tile counts, summaries, warnings and normalized text
+(including charts, shapes, tables, conditional formats and equation text).
+
 `phase15-pptx-test.mjs` compares the PPTX converter with upstream for the
 `basic`, `features` and `math` fixtures: the `slides` view, page sizes, layer
 role sequences, shared master/layout objects, summary, no-font warning,

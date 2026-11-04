@@ -180,6 +180,23 @@ fn DrawTile::emit_line(
   underline~ : String = "",
   strike~ : Bool = false,
 ) -> Unit raise {
+  if line.spread > 0.0 {
+    self.emit_spread_line(
+      line,
+      family,
+      bold,
+      color,
+      advance,
+      face,
+      hash,
+      size~,
+      east_asian~,
+      italic~,
+      underline~,
+      strike~,
+    )
+    return
+  }
   let mut chars = StringBuilder()
   let mut has_chars = false
   let mut cjk = false
@@ -280,6 +297,20 @@ fn DrawTile::emit_cell(
       Float::from_double(layout.x1 - layout.x0),
       Float::from_double(layout.y1 - layout.y0),
     )
+  }
+  match layout.matrix {
+    Some(m) => {
+      self.object.save()
+      self.object.transform(
+        Float::from_double(m[0]),
+        Float::from_double(m[1]),
+        Float::from_double(m[2]),
+        Float::from_double(m[3]),
+        Float::from_double(m[4]),
+        Float::from_double(m[5]),
+      )
+    }
+    None => ()
   }
   for i, line in layout.lines {
     if i > 0 {
@@ -412,6 +443,9 @@ fn DrawTile::emit_cell(
       }
     }
   }
+  if layout.matrix is Some(_) {
+    self.object.restore()
+  }
   if layout.clip {
     self.object.restore()
     self.has_font = was_has_font
@@ -420,6 +454,89 @@ fn DrawTile::emit_cell(
     self.has_color = was_has_color
     self.current_color = was_color
   }
+}
+
+///|
+// Draw a justified line: the words are placed at their spread positions and
+// the widened spaces are gaps, as in the upstream text index.
+fn DrawTile::emit_spread_line(
+  self : DrawTile,
+  line : DrawLine,
+  family : String,
+  bold : Bool,
+  color : UInt32,
+  advance : (Char, Bool) -> Double,
+  face : @sfnt.Font?,
+  hash : String?,
+  size~ : Double = 11.0,
+  east_asian~ : String = "",
+  italic~ : Bool = false,
+  underline~ : String = "",
+  strike~ : Bool = false,
+) -> Unit raise {
+  let mut spaces = 0
+  for character in line.text {
+    if character == ' ' || character == '\t' {
+      spaces += 1
+    }
+  }
+  let add = if spaces > 0 {
+    line.spread / spaces.to_double()
+  } else {
+    0.0
+  }
+  let gap = advance(' ', bold) + add
+  let mut word = StringBuilder()
+  let mut has_word = false
+  let mut word_width = 0.0
+  let mut x = line.x
+  let flush = () => {
+    if has_word {
+      let text = word.to_string()
+      let sub : DrawLine = {
+        text,
+        x,
+        baseline: line.baseline,
+        ascent: line.ascent,
+        descent: line.descent,
+        width: word_width,
+        cjk_wrap: false,
+        explicit: false,
+        spread: 0.0,
+      }
+      ignore(
+        self.emit_line(
+          sub,
+          family,
+          bold,
+          color,
+          advance,
+          face,
+          hash,
+          size~,
+          east_asian~,
+          italic~,
+          underline~,
+          strike~,
+        ),
+      )
+      x += word_width
+      word = StringBuilder()
+      has_word = false
+      word_width = 0.0
+    }
+  }
+  for character in line.text {
+    if character == ' ' || character == '\t' {
+      flush()
+      x += gap
+    } else {
+      word.write_char(character)
+      has_word = true
+      word_width += advance(character, bold)
+    }
+  }
+  flush()
 }
 
 ///|

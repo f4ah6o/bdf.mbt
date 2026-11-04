@@ -24,6 +24,7 @@ priv struct DrawLine {
   width : Double
   cjk_wrap : Bool
   explicit : Bool
+  spread : Double
 }
 
 ///|
@@ -36,6 +37,7 @@ priv struct DrawCell {
   lang : String
   lang_known : Bool
   lines : Array[DrawLine]
+  matrix : Array[Double]?
 }
 
 ///|
@@ -44,6 +46,7 @@ priv struct DrawTile {
   y : Int32
   object : @core.ObjectBuilder
   fonts : Map[String, Int32]
+  images : Map[String, Int32]
   mut has_font : Bool
   mut current_font : Int32
   mut current_size : Double
@@ -114,6 +117,7 @@ fn DrawTile::new(x : Int32, y : Int32, document_language : String) -> DrawTile {
     y,
     object,
     fonts: Map([]),
+    images: Map([]),
     has_font: false,
     current_font: 0,
     current_size: 0.0,

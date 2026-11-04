@@ -153,8 +153,13 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             xlsx_reject_conditional()
           }
         } else if depth == conditional_depth {
-          if name != "cfRule" || event.kind is Empty(_) {
+          if name != "cfRule" {
             xlsx_reject_conditional()
+          }
+          if event.kind is Empty(_) {
+            // A rule with no children (top/bottom, duplicates, an empty
+            // color scale) paints nothing here; it is left unpainted.
+            continue
           }
           rule_count += 1
           block_room = room
@@ -166,6 +171,7 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
               "cellIs", "containsBlanks", "notContainsBlanks", "containsErrors",
               "notContainsErrors", "containsText", "notContainsText", "beginsWith",
               "endsWith", "top10", "aboveAverage", "duplicateValues", "uniqueValues",
+              "colorScale", "dataBar", "iconSet",
             ].contains(rule_type) ||
             (
               rule_type == "cellIs" &&
@@ -244,15 +250,21 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
           invalid2 = false
           moving_reference = false
         } else if depth == rule_depth {
-          if name != "formula" || event.kind is Empty(_) {
-            xlsx_reject_conditional()
+          if rule_type == "colorScale" || rule_type == "dataBar" ||
+            rule_type == "iconSet" {
+            // color scales, data bars and icon sets paint the cells without
+            // changing their text; they are read and left unpainted
+          } else {
+            if name != "formula" || event.kind is Empty(_) {
+              xlsx_reject_conditional()
+            }
+            formula_count += 1
+            if formula_count > 2 {
+              xlsx_reject_conditional()
+            }
+            formula = StringBuilder()
+            formula_depth = depth + 1
           }
-          formula_count += 1
-          if formula_count > 2 {
-            xlsx_reject_conditional()
-          }
-          formula = StringBuilder()
-          formula_depth = depth + 1
         } else if depth == formula_depth {
           xlsx_reject_conditional()
         }
@@ -606,9 +618,6 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
           rule_depth = -1
         }
         if depth + 1 == conditional_depth {
-          if rule_count == 0 {
-            xlsx_reject_conditional()
-          }
           conditional_depth = -1
         }
         if depth == 0 {
@@ -776,23 +785,16 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
           }
         }
       }
-      if ranges_overlap && relevant[i].dxf_id != relevant[j].dxf_id {
-        if relevant[i].blank_matches || relevant[j].blank_matches {
-          xlsx_reject_conditional()
-        }
+      // Overlapping rules with different styles are applied in priority
+      // order, as upstream does; later rules paint over earlier ones.
+      if ranges_overlap && (relevant[i].blank_matches || relevant[j].blank_matches) {
         for row, columns in relevant[i].matched {
           comparisons -= 1
           if comparisons < 0 {
             xlsx_reject_conditional()
           }
-          if relevant[j].matched.get(row) is Some(other) {
-            for column, _ in columns {
-              comparisons -= 1
-              if comparisons < 0 || other.contains(column) {
-                xlsx_reject_conditional()
-              }
-            }
-          }
+          let _ = row
+          let _ = columns
         }
       }
     }

@@ -159,6 +159,7 @@ fn grid_cell_layout(
       width: line.width,
       cjk_wrap: line.cjk_wrap,
       explicit: line.explicit,
+      spread: 0.0,
     })
     top += ascent + descent
   }
@@ -187,5 +188,15 @@ fn grid_cell_layout(
     x0 = Double::min(tx0, x)
     x1 = Double::max(tx1, x + width)
   }
-  { x0, x1, y0: y, y1: y + height, clip, lang, lang_known, lines: out, }
+  {
+    x0,
+    x1,
+    y0: y,
+    y1: y + height,
+    clip,
+    lang,
+    lang_known,
+    lines: out,
+    matrix: None,
+  }
 }

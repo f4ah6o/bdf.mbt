@@ -237,3 +237,42 @@ Conditional rules that reference absent differential styles leave formatting unc
 `convert_plain_with_font` embeds one explicitly supplied TrueType/OpenType
 font and uses its advances and line metrics; the Worker uses the first face of
 a supplied font directory in this mode.
+
+## Real-workbook plain conversion
+
+`convert_plain_no_fonts` now accepts the four upstream testdata workbooks
+(`basic.xlsx`, `features.xlsx`, `math.xlsx`, `print.xlsx`). Besides the solid
+fills, line borders and linear text of the original subset it supports:
+
+- text rotation 1-90 (counterclockwise), 91-180 (clockwise) and 255 (stacked
+  upright characters), horizontal `justify`, `distributed` and `fill`
+  alignment;
+- patterned fills (the upstream 8x8 bitmaps, stored as PNG pattern paints) and
+  linear/path gradient fills;
+- number-format gap (`_`) and fill (`*`) pieces, approximated by their visible
+  text and accounting-style `#` overflow;
+- worksheet drawings that contain shapes with text, `mc:AlternateContent`
+  choices with Office Math (`a14:m`), and chart frames: shapes are painted
+  with their fill, outline and text, and embedded charts are rendered as SVG
+  pictures whose axis, category and series labels are added to the tile text
+  index as invisible runs;
+- chart sheets as one-page fixed views: the chart is drawn with its title,
+  legend, axis tick labels and categories, and the view's text index matches
+  the upstream run order;
+- Office Math is linearized with the upstream notation (`(a)/(b)`, `sqrt(x)`,
+  `b^2`) and drawn with the text font; the upstream "no font with a MATH
+  table" warning is reported;
+- empty conditional rules (top/bottom, duplicates) are read without painting,
+  and overlapping conditional rules with different differential styles are
+  applied in priority order instead of being rejected.
+
+The `compat/converter/phase14-xlsx-test.mjs` check compares all four workbooks
+with the upstream converter: sheet and chart-sheet views, tile counts, text
+similarity, summaries and warnings.
+
+Remaining gaps: color scales, data bars and icon sets are not painted; an
+embedded chart's labels are present in the text index but the chart itself is
+an SVG picture (the chart-sheet view is drawn as BDF); shape text does not
+wrap or inherit paragraph spacing; vertical `justify`/`distributed` alignment,
+row/column patterned fills or complex borders, and exact number-format gap and
+fill run segmentation are still unsupported.

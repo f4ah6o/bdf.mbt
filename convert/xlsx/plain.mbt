@@ -1373,6 +1373,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
   shape_geometries : Array[String],
   shape_adjustments : Array[Int64?],
   shape_extra_adjustments : Array[Map[String, Int64]],
+  shape_texts : Array[Array[@sheet.GridShapeTextLine]],
 ) -> (
   Array[@sheet.GridLink],
   Bool,
@@ -1396,6 +1397,7 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
       Int64,
     ),
   ],
+  Array[Array[@sheet.GridShapeTextLine]],
 ) raise {
   let data = self.package.read(part) catch {
     @ooxml.InvalidOoxml(message) => raise InvalidXlsxInput(message)
@@ -1700,16 +1702,61 @@ fn XlsxWorkbook::xlsx_check_plain_sheet(
               shape_adjustments.push(adjustment)
               shape_extra_adjustments.push(extra_adjustments)
             }
-          None =>
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support worksheet feature drawing",
-            )
+          None => {
+            let alphas = self.xlsx_shape_theme_alphas() catch { _ => None }
+            let theme_alphas = match alphas {
+              Some(value) => value
+              None => Map([])
+            }
+            match
+              self.xlsx_plain_drawing(
+                target, theme_colors, theme_alphas, table_events,
+              ) {
+              Some(extended) => {
+                for picture in extended.pictures {
+                  pictures.push(picture)
+                }
+                for value in extended.hidden {
+                  hidden_pictures.push(value)
+                }
+                for value in extended.fills {
+                  shape_fills.push(value)
+                }
+                for value in extended.strokes {
+                  shape_strokes.push(value)
+                }
+                for value in extended.no_fills {
+                  shape_no_fills.push(value)
+                }
+                for value in extended.dashes {
+                  shape_dashes.push(value)
+                }
+                for value in extended.geometries {
+                  shape_geometries.push(value)
+                }
+                for value in extended.adjustments {
+                  shape_adjustments.push(value)
+                }
+                for value in extended.extra_adjustments {
+                  shape_extra_adjustments.push(value)
+                }
+                for value in extended.texts {
+                  shape_texts.push(value)
+                }
+              }
+              None =>
+                raise InvalidXlsxInput(
+                  "xlsx: plain conversion does not support worksheet feature drawing",
+                )
+            }
+          }
         }
       }
     }
   }
   (
     links, has_conditional, auto_filter, table_filters, complex_rules, table_rules,
+    shape_texts,
   )
 }
 
@@ -1959,10 +2006,6 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
       styles.fills[format.fill].pattern != "" ||
       styles.fills[format.fill].gradient is Some(_)
     )
-  let solid_fill = format.fill >= 0 &&
-    format.fill < styles.fills.length() &&
-    styles.fills[format.fill].pattern == "solid" &&
-    styles.fills[format.fill].gradient is None
   let nondefault_border = if format.border >= 0 &&
     format.border < styles.borders.length() {
     let b = styles.borders[format.border]
@@ -1996,11 +2039,15 @@ fn xlsx_check_plain_style(styles : XlsxStyles, style : Int32) -> Unit raise {
       a.horizontal != "center" &&
       a.horizontal != "centerContinuous" &&
       a.horizontal != "left" &&
-      a.horizontal != "right"
+      a.horizontal != "right" &&
+      a.horizontal != "justify" &&
+      a.horizontal != "distributed" &&
+      a.horizontal != "fill"
     ) ||
     (a.vertical != "bottom" && a.vertical != "top" && a.vertical != "center") ||
-    a.rotation != 0 ||
-    (nondefault_fill && (index == 0 || !solid_fill)) ||
+    a.rotation < 0 ||
+    (a.rotation > 180 && a.rotation != 255) ||
+    (index == 0 && nondefault_fill) ||
     (index == 0 && nondefault_border) ||
     complex_border {
     raise InvalidXlsxInput(
@@ -2126,6 +2173,7 @@ fn convert_plain_impl(
   let picture_children : Array[Array[(Int32, Int32, Bytes)]] = []
   let mut counter = 0
   let mut warned_rtl = false
+  let chart_views : Array[(String, String, Double, Double, Bytes)] = []
   let warned_sheets : Map[String, Bool] = Map([])
   let warned_table_styles : Map[String, Bool] = Map([])
   let doc_language = metadata.language.get(0).unwrap_or("")
@@ -2149,9 +2197,21 @@ fn convert_plain_impl(
       continue
     }
     if ref.chart {
-      raise InvalidXlsxInput(
-        "xlsx: plain conversion does not support chart sheets",
+      let number = index + 1
+      let id = "sheet" + number.to_string()
+      let (width, height, chart_part) = workbook.xlsx_chart_sheet_parts(
+        ref.part,
       )
+      let object = match chart_part {
+        Some(target) => workbook.xlsx_chart_object(target, width, height)
+        None => {
+          let empty = @core.ObjectBuilder::new()
+          empty.set_bbox(0.0F, 0.0F, Float::from_double(width), Float::from_double(height))
+          empty
+        }
+      }
+      chart_views.push((id, ref.name, width, height, object.encode()))
+      continue
     }
     let number = index + 1
     let id = "sheet" + number.to_string()
@@ -2242,7 +2302,48 @@ fn convert_plain_impl(
   } else {
     @sheet.store_grids(writer, grids, !no_text_index, picture_children~)
   }
-  { bdf: writer.write_single(), warnings, sheets: grids.length(), }
+  for (id, title, width, height, encoded) in chart_views {
+    let hash = writer.add_part("obj", encoded)
+    let view : Map[String, Json] = {
+      "id": Json::string(id),
+      "kind": Json::string("fixed"),
+      "title": Json::string(title),
+      "pages": Json::array([
+        Json::object({
+          "w": Json::number(width),
+          "h": Json::number(height),
+          "layers": Json::array([
+            Json::object({
+              "role": Json::string("body"),
+              "obj": Json::string(hash),
+            }),
+          ]),
+        }),
+      ]),
+    }
+    if !no_text_index {
+      let runs : Array[@core.IndexRun] = []
+      let resources = @core.decode_object_resources(encoded)
+      let text = @render.extract_text(resources, _ => None)
+      for run in text.runs {
+        runs.push({
+          a: 0,
+          b: 0,
+          ordinal: run.ordinal,
+          separator: run.separator,
+          text: run.text,
+        })
+      }
+      let index_hash = writer.add_part("idx", @core.encode_text_index(runs))
+      view["textIndex"] = Json::string(index_hash)
+    }
+    writer.add_view(Json::object(view))
+  }
+  {
+    bdf: writer.write_single(),
+    warnings,
+    sheets: grids.length() + chart_views.length(),
+  }
 }
 
 ///|
@@ -2275,6 +2376,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let shape_geometries : Array[String] = []
   let shape_adjustments : Array[Int64?] = []
   let shape_extra_adjustments : Array[Map[String, Int64]] = []
+  let shape_texts : Array[Array[@sheet.GridShapeTextLine]] = []
   let (
     links,
     has_conditional,
@@ -2282,6 +2384,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     table_filters,
     complex_rules,
     table_rules,
+    shape_texts,
   ) = workbook.xlsx_check_plain_sheet(
     ref.part,
     ref.name,
@@ -2298,6 +2401,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     shape_geometries,
     shape_adjustments,
     shape_extra_adjustments,
+    shape_texts,
   )
   let mut styled_runs = false
   for _, columns in rich_cells {
@@ -2906,6 +3010,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let fills : Map[Int32, Map[Int32, @sheet.GridSolidFill]] = Map([])
   let sizes : Map[Int32, Map[Int32, Double]] = Map([])
   let wraps : Map[Int32, Map[Int32, Bool]] = Map([])
+  let rotations : Map[Int32, Map[Int32, Int32]] = Map([])
   let font_families : Map[Int32, Map[Int32, String]] = Map([])
   let east_asian_fonts : Map[Int32, Map[Int32, String]] = Map([])
   let theme = workbook.package.theme_fonts(workbook.part)
@@ -2918,6 +3023,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let format_cache : Map[Int32, Array[XlsxFormatSection]] = Map([])
   let color_cache : Map[Int32, UInt32] = Map([])
   let border_cache : Map[Int32, (@sheet.GridCellBorder, Array[XlsxRgb])] = Map([])
+  let fill_cache : Map[String, String] = Map([])
   for row in rows {
     if row.style >= 0 {
       let (fill, border) = xlsx_check_base_style(styles, row.style)
@@ -3007,7 +3113,23 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         row.index,
         cell.column,
       )
-      let wrap = styles.cell_formats[format_index].alignment.wrap
+      let rotation = styles.cell_formats[format_index].alignment.rotation
+      if rotation != 0 {
+        let columns = match rotations.get(row.index) {
+          Some(columns) => columns
+          None => {
+            let columns : Map[Int32, Int32] = Map([])
+            rotations[row.index] = columns
+            columns
+          }
+        }
+        columns[cell.column] = rotation
+      }
+      let alignment = styles.cell_formats[format_index].alignment
+      let wrap = (alignment.wrap ||
+        alignment.horizontal == "justify" ||
+        alignment.horizontal == "distributed") &&
+        rotation == 0
       let indent = xlsx_plain_indent(
         styles.cell_formats[format_index].alignment,
         cell.kind,
@@ -3108,9 +3230,11 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         )
       }
       let fill_index = styles.cell_formats[format_index].fill
-      if fill_index >= 0 && fill_index < styles.fills.length() {
-        let fill = styles.fills[fill_index]
-        if fill.pattern == "solid" {
+      match
+        xlsx_plain_grid_fill(
+          styles, fill_index, theme_colors, writer, fill_cache, table_events,
+        ) {
+        Some(fill) => {
           let columns = match fills.get(row.index) {
             Some(columns) => columns
             None => {
@@ -3119,14 +3243,9 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
               columns
             }
           }
-          let black : XlsxRgb = { red: 0.0, green: 0.0, blue: 0.0, }
-          columns[cell.column] = {
-            key: xlsx_solid_fill_key(fill),
-            color: styles
-            .resolve_color(fill.foreground, black, theme_colors)
-            .rgba(),
-          }
+          columns[cell.column] = fill
         }
+        None => ()
       }
       let formatted = if cell.kind == 1 {
         Some(
@@ -3159,13 +3278,8 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
         styles.format_cell(cell, workbook.date1904, locale.number_locale)
       }
       if formatted is Some(formatted) {
-        for piece in formatted.pieces {
-          if piece.kind != 0 {
-            raise InvalidXlsxInput(
-              "xlsx: plain conversion does not support format gaps or fills",
-            )
-          }
-        }
+        // Gap pieces advance without drawing and fill pieces pad the cell;
+        // the visible text leaves both out.
         let mut text = formatted.text()
         if styles.cell_formats[format_index].alignment.shrink &&
           !wrap &&
@@ -3258,18 +3372,51 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           for c in text {
             width += @sheet.sized_fallback_advance(c, false, drawn_size)
           }
+          // Gap pieces advance without drawing and a fill piece expands;
+          // both count toward the width the text asks for.
+          let mut extra_width = 0.0
+          let mut fill_index = -1
+          let mut item_index = 0
+          for piece in formatted.pieces {
+            if piece.kind == 1 {
+              for c in piece.text {
+                extra_width += @sheet.sized_fallback_advance(c, false, drawn_size)
+              }
+              item_index += piece.text.length()
+            } else if piece.kind == 2 {
+              if fill_index < 0 {
+                fill_index = item_index
+              }
+              extra_width += @sheet.sized_fallback_advance(' ', false, drawn_size)
+            } else {
+              item_index += piece.text.length()
+            }
+          }
           if cell.column >= 0 &&
             cell.column < widths.length() &&
             cell_width > 0.0 &&
-            width > cell_width - 3.75 - indent + 0.01 {
+            width + extra_width > cell_width - 3.75 - indent + 0.01 {
             let available = Double::max(cell_width - 3.75 - indent, 0.0)
             text = if formatted.general {
               xlsx_fit_plain_number(cell.number, available, drawn_size)
             } else {
-              "#".repeat(
-                (available /
-                @sheet.sized_fallback_advance('#', false, drawn_size)).to_int(),
+              let hash_width = @sheet.sized_fallback_advance(
+                '#', false, drawn_size,
               )
+              let hashes = (available / hash_width).to_int()
+              if fill_index >= 0 && hashes > 0 {
+                let space_width = @sheet.sized_fallback_advance(
+                  ' ', false, drawn_size,
+                )
+                let fills = ((available - hashes.to_double() * hash_width) /
+                  Double::max(space_width, 0.01)).to_int()
+                let position = Int32::min(fill_index, hashes)
+                "#".repeat(position) +
+                " ".repeat(Int32::max(fills, 0)) +
+                "#".repeat(hashes - position)
+              } else {
+                "#".repeat(hashes)
+              }
             }
           }
         }
@@ -3369,7 +3516,11 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
           }
           columns[cell.column] = vertical
         }
-        if horizontal == "left" || horizontal == "right" {
+        if horizontal == "left" ||
+          horizontal == "right" ||
+          horizontal == "justify" ||
+          horizontal == "distributed" ||
+          horizontal == "fill" {
           let columns = match horizontals.get(row.index) {
             Some(columns) => columns
             None => {
@@ -3611,6 +3762,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     scripts~,
     shrink_scales~,
     indents~,
+    rotations~,
     center_across~,
     links~,
     auto_filter=match filter_range {
@@ -3633,6 +3785,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     shape_geometries~,
     shape_adjustments~,
     shape_extra_adjustments~,
+    shape_texts~,
     picture_writer=Some(writer),
     picture_children=Some(children),
     column_axis_default=Some(
@@ -3759,6 +3912,7 @@ fn xlsx_plain_base_paint(
       columns[c] = {
         key: xlsx_solid_fill_key(fill),
         color: styles.resolve_color(fill.foreground, black, theme_colors).rgba(),
+        paint: None,
       }
     }
     match drawn_by_row.get(r) {
@@ -4705,6 +4859,167 @@ fn xlsx_solid_fill_key(fill : XlsxFill) -> String {
   bg.index.to_string() +
   ":" +
   bg.tint.to_string()
+}
+
+///|
+// The 8x8 bitmaps of the upstream pattern fills; a set bit uses the
+// foreground color.
+fn xlsx_plain_pattern_bits(name : String) -> Array[Byte]? {
+  match name {
+    "gray0625" => Some([0x80, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00])
+    "gray125" => Some([0x88, 0x00, 0x22, 0x00, 0x88, 0x00, 0x22, 0x00])
+    "lightGray" => Some([0x88, 0x22, 0x88, 0x22, 0x88, 0x22, 0x88, 0x22])
+    "mediumGray" => Some([0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55])
+    "darkGray" => Some([0x77, 0xDD, 0x77, 0xDD, 0x77, 0xDD, 0x77, 0xDD])
+    "darkHorizontal" => Some([0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00])
+    "lightHorizontal" => Some([0xFF, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00])
+    "darkVertical" => Some([0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC])
+    "lightVertical" => Some([0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88])
+    "darkDown" => Some([0xCC, 0x66, 0x33, 0x99, 0xCC, 0x66, 0x33, 0x99])
+    "darkUp" => Some([0x33, 0x66, 0xCC, 0x99, 0x33, 0x66, 0xCC, 0x99])
+    "lightDown" => Some([0x88, 0x44, 0x22, 0x11, 0x88, 0x44, 0x22, 0x11])
+    "lightUp" => Some([0x11, 0x22, 0x44, 0x88, 0x11, 0x22, 0x44, 0x88])
+    "darkGrid" => Some([0xFF, 0xFF, 0xCC, 0xCC, 0xFF, 0xFF, 0xCC, 0xCC])
+    "lightGrid" => Some([0xFF, 0x88, 0x88, 0x88, 0xFF, 0x88, 0x88, 0x88])
+    "darkTrellis" => Some([0x99, 0xFF, 0x66, 0xFF, 0x99, 0xFF, 0x66, 0xFF])
+    "lightTrellis" => Some([0x88, 0x55, 0x22, 0x55, 0x88, 0x55, 0x22, 0x55])
+    _ => None
+  }
+}
+
+///|
+fn xlsx_plain_pattern_png(
+  bits : Array[Byte],
+  foreground : XlsxRgb,
+  background : XlsxRgb,
+) -> Bytes? {
+  let rgba : Array[Byte] = Array::make(8 * 8 * 4, b'\x00')
+  let fg = foreground.rgba()
+  let bg = background.rgba()
+  for y in 0..<8 {
+    for x in 0..<8 {
+      let color = if (bits[y].to_int() & (0x80 >> x)) != 0 {
+        fg
+      } else {
+        bg
+      }
+      let offset = (y * 8 + x) * 4
+      rgba[offset] = (color >> 24).to_int().to_byte()
+      rgba[offset + 1] = (color >> 16).to_int().to_byte()
+      rgba[offset + 2] = (color >> 8).to_int().to_byte()
+      rgba[offset + 3] = b'\xff'
+    }
+  }
+  let png = @raster.encode_png(8, 8, Bytes::from_array(rgba)) catch {
+    _ => return None
+  }
+  Some(png)
+}
+
+///|
+// Build the fill of one cell format: a solid color, an 8x8 pattern image or
+// a linear or path gradient.
+fn xlsx_plain_grid_fill(
+  styles : XlsxStyles,
+  fill_index : Int32,
+  theme : Map[Int32, XlsxRgb],
+  writer : @core.DocumentWriter,
+  cache : Map[String, String],
+  events : Array[(String, String)],
+) -> @sheet.GridSolidFill? raise {
+  if fill_index < 0 || fill_index >= styles.fills.length() {
+    return None
+  }
+  let fill = styles.fills[fill_index]
+  let black : XlsxRgb = { red: 0.0, green: 0.0, blue: 0.0, }
+  let white : XlsxRgb = { red: 1.0, green: 1.0, blue: 1.0, }
+  match fill.gradient {
+    Some(gradient) => {
+      if gradient.stops.is_empty() {
+        return None
+      }
+      let stops : Array[@core.ColorStop] = gradient.stops.map(stop => {
+        let color = styles.resolve_color(stop.color, white, theme).rgba()
+        {
+          offset: Double::max(0.0, Double::min(1.0, stop.position)),
+          color: color.reinterpret_as_int(),
+        }
+      })
+      Some({
+        key: "",
+        color: 0U,
+        paint: Some({
+          kind: if gradient.path { 1 } else { 0 },
+          degree: gradient.degree,
+          left: gradient.left,
+          right: gradient.right,
+          top: gradient.top,
+          bottom: gradient.bottom,
+          stops,
+          image: "",
+        }),
+      })
+    }
+    None =>
+      if fill.pattern == "solid" {
+        Some({
+          key: xlsx_solid_fill_key(fill),
+          color: styles.resolve_color(fill.foreground, black, theme).rgba(),
+          paint: None,
+        })
+      } else if fill.pattern != "" {
+        let bits = match xlsx_plain_pattern_bits(fill.pattern) {
+          Some(bits) => bits
+          None => {
+            events.push(
+              (
+                "pattern:" + fill.pattern,
+                "pattern fill " + fill.pattern + " is drawn as 50% gray",
+              ),
+            )
+            xlsx_plain_pattern_bits("mediumGray").unwrap_or([])
+          }
+        }
+        let foreground = styles.resolve_color(fill.foreground, black, theme)
+        let background = styles.resolve_color(fill.background, white, theme)
+        let fg = foreground.rgba()
+        let bg = background.rgba()
+        let key = "pattern:" +
+          fill.pattern +
+          ":" +
+          fg.to_string() +
+          ":" +
+          bg.to_string()
+        let hash = match cache.get(key) {
+          Some(hash) => hash
+          None =>
+            match xlsx_plain_pattern_png(bits, foreground, background) {
+              Some(png) => {
+                let hash = writer.add_part("img", png)
+                cache[key] = hash
+                hash
+              }
+              None => return None
+            }
+        }
+        Some({
+          key,
+          color: fg,
+          paint: Some({
+            kind: 2,
+            degree: 0.0,
+            left: 0.0,
+            right: 0.0,
+            top: 0.0,
+            bottom: 0.0,
+            stops: [],
+            image: hash,
+          }),
+        })
+      } else {
+        None
+      }
+  }
 }
 
 ///|

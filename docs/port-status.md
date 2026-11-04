@@ -78,6 +78,14 @@
   with colour-key masks, and CCITT/JBIG2/JPX masks combined with colour-key
   masks remain explicit gaps; CCITT G3/G4 image XObjects and inline images are
   decoded.
+- XLSX: `convert/xlsx` renders styled worksheets with number formats, merges,
+  row/column geometry, print areas, conditional formats, tables, links,
+  pictures, drawings and charts, plus fixed chart-sheet pages, with upstream
+  text indexes, summaries and warnings. Color scales, data bars and icon sets
+  are not painted, embedded charts are SVG pictures (their labels are in the
+  text index), shape text does not wrap, and patterned fills, complex borders
+  and exact number-format run segmentation remain documented gaps in
+  `compat/xlsx`.
 - DOCX: `convert/docx` now emits the upstream `pages` (`flow`) and `scroll`
   views, with separate header/footer/body layers, page body rectangles,
   Dublin Core metadata, layer-aware text indexes, hyperlinks, fields,

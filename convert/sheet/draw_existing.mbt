@@ -17,10 +17,26 @@ pub(all) struct SizedGridRow {
 }
 
 ///|
+/// A gradient or image pattern fill of a cell.
+pub(all) struct GridFillPaint {
+  /// 0: linear gradient, 1: radial gradient, 2: image pattern.
+  kind : Int32
+  degree : Double
+  left : Double
+  right : Double
+  top : Double
+  bottom : Double
+  stops : Array[@core.ColorStop]
+  /// Image part hash of a pattern paint.
+  image : String
+}
+
+///|
 /// A solid fill and the key used to combine adjacent equal fills.
 pub(all) struct GridSolidFill {
   key : String
   color : UInt32
+  paint : GridFillPaint?
 }
 
 ///|
@@ -165,6 +181,7 @@ pub fn draw_sized_grid_no_fonts(
   scripts~ : Map[Int32, Map[Int32, String]] = Map([]),
   shrink_scales~ : Map[Int32, Map[Int32, Double]] = Map([]),
   indents~ : Map[Int32, Map[Int32, Double]] = Map([]),
+  rotations~ : Map[Int32, Map[Int32, Int32]] = Map([]),
   center_across~ : Map[Int32, Map[Int32, Bool]] = Map([]),
   links~ : Array[GridLink] = [],
   auto_filter~ : (Int32, Int32, Int32)? = None,
@@ -182,6 +199,7 @@ pub fn draw_sized_grid_no_fonts(
   shape_geometries~ : Array[String] = [],
   shape_adjustments~ : Array[Int64?] = [],
   shape_extra_adjustments~ : Array[Map[String, Int64]] = [],
+  shape_texts~ : Array[Array[GridShapeTextLine]] = [],
   picture_writer~ : @core.DocumentWriter? = None,
   picture_children~ : Array[(Int32, Int32, Bytes)]? = None,
   column_axis_default~ : Float? = None,
@@ -577,6 +595,7 @@ pub fn draw_sized_grid_no_fonts(
             width: line.width,
             cjk_wrap: line.cjk_wrap,
             explicit: line.explicit,
+            spread: 0.0,
           }
         })
         let mut x0 = col_positions[column]
@@ -625,6 +644,7 @@ pub fn draw_sized_grid_no_fonts(
           lang: initial.lang,
           lang_known: initial.lang_known,
           lines,
+          matrix: None,
         }
       } else {
         initial
@@ -651,25 +671,42 @@ pub fn draw_sized_grid_no_fonts(
         Some(columns) => columns.get(column).unwrap_or("bottom")
         None => "bottom"
       }
-      let layout = sized_grid_vertical_layout(
-        horizontal, y, height, vertical, line_size,
-      )
-      let shift = if script == "superscript" {
-        size * 0.33
-      } else if script == "subscript" {
-        -size * 0.15
-      } else {
-        0.0
+      let rotation = match rotations.get(i) {
+        Some(columns) => columns.get(column).unwrap_or(0)
+        None => 0
       }
-      let layout = if shift == 0.0 {
-        layout
+      let cell_width = col_positions[last + 1] - col_positions[column]
+      let layout = if rotation == 255 {
+        sized_grid_stacked_layout(
+          horizontal, horizontal_kind, vertical, col_positions[column], y, cell_width,
+          height,
+        )
+      } else if rotation > 0 {
+        sized_grid_rotated_layout(
+          horizontal, rotation, horizontal_kind, vertical, col_positions[column], y,
+          cell_width, height,
+        )
       } else {
-        {
-          ..layout,
-          lines: layout.lines.map(line => {
-            ..line,
-            baseline: line.baseline - shift,
-          }),
+        let layout = sized_grid_vertical_layout(
+          horizontal, y, height, vertical, line_size,
+        )
+        let shift = if script == "superscript" {
+          size * 0.33
+        } else if script == "subscript" {
+          -size * 0.15
+        } else {
+          0.0
+        }
+        if shift == 0.0 {
+          layout
+        } else {
+          {
+            ..layout,
+            lines: layout.lines.map(line => {
+              ..line,
+              baseline: line.baseline - shift,
+            }),
+          }
         }
       }
       if layout.x1 > col_positions[visible_columns] {
@@ -943,6 +980,9 @@ pub fn draw_sized_grid_no_fonts(
     shape_extra_adjustments.length() != pictures.length() {
     raise InvalidArgument("sheet: invalid extra shape adjustment list")
   }
+  if !shape_texts.is_empty() && shape_texts.length() != pictures.length() {
+    raise InvalidArgument("sheet: invalid shape text list")
+  }
   if !pictures.is_empty() {
     if pictures.length() > 128 {
       raise InvalidArgument("sheet: too many pictures")
@@ -982,6 +1022,11 @@ pub fn draw_sized_grid_no_fonts(
           Map([])
         } else {
           shape_extra_adjustments[index]
+        },
+        shape_text=if shape_texts.is_empty() {
+          []
+        } else {
+          shape_texts[index]
         },
         shape_geometry=if shape_geometries.is_empty() {
           "rect"
@@ -1269,13 +1314,89 @@ fn put_sized_borders(
 }
 
 ///|
+fn DrawTile::image_ref(self : DrawTile, hash : String) -> Int32 {
+  match self.images.get(hash) {
+    Some(index) => index
+    None => {
+      let index = self.object.add_image(hash)
+      self.images[hash] = index
+      index
+    }
+  }
+}
+
+///|
 fn GridDrawContext::sized_fill_rect(
   self : GridDrawContext,
   fill : GridFillRect,
-) -> Unit {
+) -> Unit raise {
   for tile in self.in_bounds(fill.x0, fill.y0, fill.x1, fill.y1) {
-    tile.fill_color(fill.fill.color)
-    tile.rectangle(fill.x0, fill.y0, fill.x1 - fill.x0, fill.y1 - fill.y0)
+    match fill.fill.paint {
+      Some(paint) =>
+        if paint.kind == 2 && paint.image != "" {
+          let image = tile.image_ref(paint.image)
+          let ox = tile.x.to_double() * 2048.0
+          let oy = tile.y.to_double() * 2048.0
+          let index = tile.object.add_paint(
+            @core.Pattern(image, 0, [0.75, 0.0, 0.0, 0.75, -ox, -oy]),
+          )
+          tile.object.fill_paint(index)
+          tile.has_color = false
+          tile.rectangle(fill.x0, fill.y0, fill.x1 - fill.x0, fill.y1 - fill.y0)
+        } else {
+          let ox = tile.x.to_double() * 2048.0
+          let oy = tile.y.to_double() * 2048.0
+          let (kind, coordinates) = grid_gradient_geometry(paint, fill, ox, oy)
+          let index = tile.object.add_paint(
+            @core.Gradient(kind, coordinates, paint.stops),
+          )
+          tile.object.fill_paint(index)
+          tile.has_color = false
+          tile.rectangle(fill.x0, fill.y0, fill.x1 - fill.x0, fill.y1 - fill.y0)
+        }
+      None => {
+        tile.fill_color(fill.fill.color)
+        tile.rectangle(fill.x0, fill.y0, fill.x1 - fill.x0, fill.y1 - fill.y0)
+      }
+    }
+  }
+}
+
+///|
+fn grid_gradient_geometry(
+  paint : GridFillPaint,
+  fill : GridFillRect,
+  ox : Double,
+  oy : Double,
+) -> (Int32, Array[Double]) {
+  let width = fill.x1 - fill.x0
+  let height = fill.y1 - fill.y0
+  if paint.kind == 1 {
+    let cx = fill.x0 + width * (paint.left + (1.0 - paint.right)) / 2.0
+    let cy = fill.y0 + height * (paint.top + (1.0 - paint.bottom)) / 2.0
+    let radius = @math.hypot(width, height) / 2.0
+    (
+      1,
+      [
+        cx - ox, cy - oy, 0.0, cx - ox, cy - oy, radius,
+      ],
+    )
+  } else {
+    let angle = paint.degree * @math.PI / 180.0
+    let cx = fill.x0 + width / 2.0
+    let cy = fill.y0 + height / 2.0
+    let dx = @math.cos(angle)
+    let dy = @math.sin(angle)
+    let half = (dx.abs() * width + dy.abs() * height) / 2.0
+    (
+      0,
+      [
+        cx - dx * half - ox,
+        cy - dy * half - oy,
+        cx + dx * half - ox,
+        cy + dy * half - oy,
+      ],
+    )
   }
 }
 
@@ -1289,7 +1410,7 @@ fn GridDrawContext::sized_grid_fills(
   columns : Array[Double],
   row_positions : Array[Double],
   visible_columns : Int32,
-) -> Unit {
+) -> Unit raise {
   let mut previous : Array[GridFillRect] = []
   for row in rows {
     let index = row.index
@@ -1416,6 +1537,118 @@ fn grid_span_contains(
 }
 
 ///|
+// Turn a laid-out line by the cell's text rotation: 1-90 counterclockwise,
+// 91-180 clockwise by the value less 90.
+fn sized_grid_rotated_layout(
+  layout : DrawCell,
+  rotation : Int32,
+  horizontal : String,
+  vertical : String,
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+) -> DrawCell {
+  let line = layout.lines[0]
+  let deg = if rotation > 90 {
+    -(rotation - 90).to_double()
+  } else {
+    rotation.to_double()
+  }
+  let radian = -deg * @math.PI / 180.0
+  let s = @math.sin(radian)
+  let c = @math.cos(radian)
+  let mut bx0 = 1.0e300
+  let mut by0 = 1.0e300
+  let mut bx1 = -1.0e300
+  let mut by1 = -1.0e300
+  for (px, py) in [
+    (0.0, -line.ascent),
+    (line.width, -line.ascent),
+    (0.0, line.descent),
+    (line.width, line.descent),
+  ] {
+    let tx = c * px - s * py
+    let ty = s * px + c * py
+    bx0 = Double::min(bx0, tx)
+    by0 = Double::min(by0, ty)
+    bx1 = Double::max(bx1, tx)
+    by1 = Double::max(by1, ty)
+  }
+  let tx = match horizontal {
+    "right" => x + width - 2.25 - bx1
+    "left" | "fill" | "justify" | "distributed" => x + 1.5 - bx0
+    _ => x + (width - (bx1 - bx0)) / 2.0 - bx0
+  }
+  let ty = match vertical {
+    "top" => y + 0.75 - by0
+    "center" | "justify" | "distributed" =>
+      y + (height - (by1 - by0)) / 2.0 - by0
+    _ => y + height - 0.75 - by1
+  }
+  let clipped = bx1 - bx0 > width + 0.01 || by1 - by0 > height + 0.01
+  let lines = [{ ..line, x: 0.0, baseline: 0.0, spread: 0.0 }]
+  {
+    ..layout,
+    x0: x,
+    x1: x + width,
+    y0: y,
+    y1: y + height,
+    clip: clipped,
+    lines,
+    matrix: Some([c, s, -s, c, tx, ty]),
+  }
+}
+
+///|
+// Lay text out as a column of upright characters (text rotation 255).
+fn sized_grid_stacked_layout(
+  layout : DrawCell,
+  horizontal : String,
+  vertical : String,
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+) -> DrawCell {
+  let total = layout.lines.fold(
+    init=0.0,
+    (sum, line) => sum + line.ascent + line.descent,
+  )
+  let mut top = match vertical {
+    "top" => y + 0.75
+    "center" | "justify" | "distributed" => y + (height - total) / 2.0
+    _ => y + height - 0.75 - total
+  }
+  let lines : Array[DrawLine] = []
+  for line in layout.lines {
+    let count = Double::max(line.text.length().to_double(), 1.0)
+    for character in line.text {
+      let advance = line.width / count
+      let lx = match horizontal {
+        "left" => x + 1.5
+        "right" => x + width - 2.25 - advance
+        _ => x + (width - advance) / 2.0
+      }
+      lines.push({
+        text: character.to_string(),
+        x: lx,
+        baseline: top + line.ascent,
+        ascent: line.ascent,
+        descent: line.descent,
+        width: advance,
+        cjk_wrap: lines.length() > 0,
+        explicit: false,
+        spread: 0.0,
+      })
+      top += line.ascent + line.descent
+    }
+  }
+  let clipped = total > height + 0.01
+  { ..layout, x0: x, x1: x + width, y0: y, y1: y + height, clip: clipped, lines }
+}
+
+///|
 fn sized_grid_horizontal_layout(
   layout : DrawCell,
   alignment : String,
@@ -1430,28 +1663,54 @@ fn sized_grid_horizontal_layout(
   allow_overflow : Bool,
   indent : Double,
 ) -> DrawCell {
-  if alignment != "left" && alignment != "right" {
+  let justified = alignment == "justify" || alignment == "distributed"
+  let filled = alignment == "fill"
+  if alignment != "left" && alignment != "right" && !justified && !filled {
     return layout
   }
   let left = positions[column]
   let right = positions[last + 1]
+  let available = Double::max(right - left - 3.75 - indent, 0.0)
   let lines = layout.lines.map(line => {
-    ..line,
-    x: if alignment == "left" {
-      left + 1.5 + indent
+    let (text, width) = if filled && line.width > 0.0 && line.width < available {
+      let count = (available / line.width).to_int()
+      if count > 1 {
+        (line.text.repeat(count), line.width * count.to_double())
+      } else {
+        (line.text, line.width)
+      }
     } else {
-      right - 2.25 - indent - line.width
-    },
+      (line.text, line.width)
+    }
+    {
+      ..line,
+      text,
+      width,
+      x: if alignment == "left" || justified || filled {
+        left + 1.5 + indent
+      } else {
+        right - 2.25 - indent - width
+      },
+    }
   })
   let mut tx0 = 1.0e300
   let mut tx1 = -1.0e300
-  for line in lines {
+  for i, line in lines {
+    let spread = if justified &&
+      (alignment == "distributed" ||
+        (i + 1 < lines.length() && !lines[i + 1].explicit)) {
+      Double::max(available - line.width, 0.0)
+    } else {
+      0.0
+    }
+    lines[i] = { ..line, spread, }
     tx0 = Double::min(tx0, line.x)
-    tx1 = Double::max(tx1, line.x + line.width)
+    tx1 = Double::max(tx1, line.x + line.width + spread)
   }
   let mut x0 = left
   let mut x1 = right
   if allow_overflow &&
+    !justified &&
     !cell.number &&
     !cell.text.contains("\n") &&
     !cell.text.contains("\r") {
