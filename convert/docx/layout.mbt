@@ -56,6 +56,7 @@ priv struct DocxParaLayout {
 priv struct DocxStoryLayout {
   lines : Array[DocxParaLine]
   tables : Array[DocxTableLayout]
+  anchors : Array[DocxPlacedImage]
   height : Double
 }
 
@@ -1722,11 +1723,13 @@ fn docx_flow_story_layout(
         None => []
       }
       let lines : Array[DocxParaLine] = []
+      let anchors : Array[DocxPlacedImage] = []
       let mut height = 0.0
       for paragraph in paragraphs {
         if paragraph.props.before > 0.0 {
           height += paragraph.props.before
         }
+        let para_top = height
         let mark_size = if paragraph.mark.size > 0.0 {
           paragraph.mark.size
         } else {
@@ -1744,6 +1747,9 @@ fn docx_flow_story_layout(
           lines.push(line)
           height += line.height
         }
+        for anchor in layout.anchors {
+          anchors.push({ ..anchor, y: para_top + anchor.y })
+        }
         if paragraph.props.after > 0.0 {
           height += paragraph.props.after
         }
@@ -1760,7 +1766,7 @@ fn docx_flow_story_layout(
         }
         tables.push(table_layout)
       }
-      let value = { lines, tables, height, }
+      let value = { lines, tables, anchors, height, }
       flow.stories[key] = value
       value
     }
@@ -1783,7 +1789,8 @@ fn docx_flow_emit_story(
     36.0,
   )
   let layout = docx_flow_story_layout(flow, part, width)
-  if layout.lines.is_empty() && layout.tables.is_empty() {
+  if layout.lines.is_empty() && layout.tables.is_empty() &&
+    layout.anchors.is_empty() {
     return (false, 0.0)
   }
   let object = if header { flow.header_object } else { flow.footer_object }
@@ -1792,6 +1799,7 @@ fn docx_flow_emit_story(
   } else {
     flow.section.height - flow.section.footer - layout.height
   }
+  let story_top = y
   let ctx : DocxEmitContext = {
     object,
     writer: flow.writer,
@@ -1832,6 +1840,20 @@ fn docx_flow_emit_story(
       false,
     )
     y += table_height
+  }
+  for anchor in layout.anchors {
+    docx_emit_image(
+      object,
+      flow.writer,
+      flow.package,
+      part,
+      anchor.item,
+      flow.section.left + anchor.x,
+      story_top + anchor.y,
+      anchor.width,
+      anchor.height,
+      flow.warnings,
+    )
   }
   (true, layout.height)
 }

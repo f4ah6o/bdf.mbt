@@ -1227,6 +1227,60 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX floating drawings in headers are drawn" {
+  let image = docx_test_float(
+    "distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\" behindDoc=\"0\" relativeHeight=\"1\"",
+    docx_test_float_in_column(),
+    "<wp:wrapNone/>",
+    "cx=\"914400\" cy=\"914400\"",
+  )
+  let header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+    "<w:hdr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" " +
+    "xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" " +
+    "xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\" " +
+    "xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" " +
+    "xmlns:pic=\"http://schemas.openxmlformats.org/drawingml/2006/picture\">" +
+    "<w:p>" + image + "</w:p></w:hdr>"
+  let header_rels = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+    "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">" +
+    "<Relationship Id=\"rIdImg\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"media/float.png\"/>" +
+    "</Relationships>"
+  let doc_rels = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+    "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">" +
+    "<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/header\" Target=\"header1.xml\"/>" +
+    "</Relationships>"
+  let content_types = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+    "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">" +
+    "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>" +
+    "<Default Extension=\"xml\" ContentType=\"application/xml\"/>" +
+    "<Default Extension=\"png\" ContentType=\"image/png\"/>" +
+    "<Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/>" +
+    "<Override PartName=\"/word/header1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml\"/>" +
+    "</Types>"
+  let section = "<w:sectPr><w:headerReference w:type=\"default\" r:id=\"rId1\"/>" +
+    "<w:pgSz w:w=\"12240\" w:h=\"15840\"/><w:pgMar w:top=\"1440\" w:right=\"1440\" w:bottom=\"1440\" w:left=\"1440\"/></w:sectPr>"
+  let data = docx_test_docx(
+    "<w:p><w:r><w:t>BODY</w:t></w:r></w:p>",
+    section,
+    [
+      ("[Content_Types].xml", @utf8.encode(content_types)),
+      ("word/header1.xml", @utf8.encode(header)),
+      ("word/_rels/header1.xml.rels", @utf8.encode(header_rels)),
+      ("word/_rels/document.xml.rels", @utf8.encode(doc_rels)),
+      ("word/media/float.png", b"not-a-real-png"),
+    ],
+  )
+  let commands = docx_test_page_commands(convert(data), "pages", 0, "header")
+  let mut images = 0
+  for command in commands {
+    match command {
+      @render.Image(_, _, _, _, _) => images += 1
+      _ => ()
+    }
+  }
+  assert_true(images > 0)
+}
+
 test "DOCX floating drawings inside table cells are drawn" {
   let image = docx_test_float(
     "distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\" behindDoc=\"0\" relativeHeight=\"1\"",
