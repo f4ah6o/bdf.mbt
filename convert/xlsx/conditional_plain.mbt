@@ -157,8 +157,14 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
             xlsx_reject_conditional()
           }
           if event.kind is Empty(_) {
-            // A rule with no children (top/bottom, duplicates, an empty
-            // color scale) paints nothing here; it is left unpainted.
+            let empty_type = xlsx_attr(element, "type", "")
+            if empty_type == "colorScale" ||
+              empty_type == "dataBar" ||
+              empty_type == "iconSet" {
+              xlsx_reject_conditional()
+            }
+            // A top/bottom or duplicate rule with no children paints
+            // nothing here; it is left unpainted.
             continue
           }
           rule_count += 1
