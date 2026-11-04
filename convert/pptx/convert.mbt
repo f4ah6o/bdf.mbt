@@ -2388,6 +2388,10 @@ fn pptx_emit_chart(
     }
   }
   if is_scatter {
+    let scatter_cat_axis = pptx_child(plot_area, "catAx")
+    let scatter_val_axis = pptx_child(plot_area, "valAx")
+    let scatter_cat_title = pptx_chart_title_text(scatter_cat_axis)
+    let scatter_val_title = pptx_chart_title_text(scatter_val_axis)
     let mut x_min = 1.0e300
     let mut x_max = -1.0e300
     let mut y_min = 1.0e300
@@ -2449,9 +2453,36 @@ fn pptx_emit_chart(
         }
       }
     }
+    if scatter_cat_title != "" {
+      let title_width = pptx_text_width(scatter_cat_title, 8.0)
+      pptx_chart_label(
+        object,
+        label_font,
+        8.0,
+        black,
+        scatter_cat_title,
+        x + width / 2.0 - title_width / 2.0,
+        y + height - 8.0,
+      )
+    }
+    if scatter_val_title != "" {
+      pptx_chart_label(
+        object,
+        label_font,
+        8.0,
+        black,
+        scatter_val_title,
+        x + 2.0,
+        plot_y + 2.0,
+      )
+    }
     return
   }
   if is_radar {
+    let radar_cat_axis = pptx_child(plot_area, "catAx")
+    let radar_val_axis = pptx_child(plot_area, "valAx")
+    let radar_cat_title = pptx_chart_title_text(radar_cat_axis)
+    let radar_val_title = pptx_chart_title_text(radar_val_axis)
     let categories = series[0].categories
     if categories.is_empty() {
       return
@@ -2534,6 +2565,29 @@ fn pptx_emit_chart(
         category,
         cx + @math.cos(angle) * (radius + 8.0) - width / 2.0,
         cy + @math.sin(angle) * (radius + 8.0),
+      )
+    }
+    if radar_cat_title != "" {
+      let title_width = pptx_text_width(radar_cat_title, 8.0)
+      pptx_chart_label(
+        object,
+        label_font,
+        8.0,
+        black,
+        radar_cat_title,
+        x + width / 2.0 - title_width / 2.0,
+        y + height - 8.0,
+      )
+    }
+    if radar_val_title != "" {
+      pptx_chart_label(
+        object,
+        label_font,
+        8.0,
+        black,
+        radar_val_title,
+        x + 2.0,
+        plot_y + 2.0,
       )
     }
     if pptx_child(chart_space, "dTable") is Some(_) {
