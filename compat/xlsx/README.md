@@ -272,8 +272,9 @@ similarity, summaries and warnings.
 
 Remaining gaps: color scales, data bars and icon sets are not painted; an
 embedded chart's labels are present in the text index but the chart itself is
-an SVG picture (the chart-sheet view is drawn as BDF); shape text does not
-wrap or inherit paragraph spacing; vertical `justify`/`distributed` alignment,
+an SVG picture (the chart-sheet view is drawn as BDF); shape text wraps to
+the shape box but does not inherit paragraph spacing; vertical
+`justify`/`distributed` alignment,
 row/column patterned fills or complex borders, and exact number-format gap and
 fill run segmentation are still unsupported. All conditional fixtures,
 including multi-rule, blank-stop, overlapping and moving-range permutations,

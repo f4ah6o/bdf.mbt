@@ -90,7 +90,7 @@
   pictures, drawings and charts, plus fixed chart-sheet pages, with upstream
   text indexes, summaries and warnings. Color scales, data bars and icon sets
   are not painted, embedded charts are SVG pictures (their labels are in the
-  text index), shape text does not wrap, and patterned fills, complex borders
+  text index), and shape text wraps to its box. Patterned fills, complex borders
   and exact number-format run segmentation remain documented gaps in
   `compat/xlsx`.
 - DOCX: `convert/docx` emits the upstream `pages` (`flow`) and `scroll`
