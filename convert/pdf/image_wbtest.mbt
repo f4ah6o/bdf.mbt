@@ -1436,3 +1436,23 @@ test "PDF image flip stays local under page rotation" {
     ignore(pdf_test_image_flip_wrapper(commands))
   }
 }
+
+///|
+test "PDF RGB colour-key alpha masks the keyed colour" {
+  let rgb = Bytes::from_array([
+    0, 0, 0,
+    255, 0, 0,
+    0, 255, 0,
+  ])
+  let alpha = pdf_color_key_alpha_rgb(
+    3, 1, PdfRGB, rgb, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+  ) catch {
+    _ => b""
+  }
+  let values = alpha.to_array()
+  assert_eq(values[0].to_int(), 0)
+  assert_eq(values[1].to_int(), 255)
+  assert_eq(values[2].to_int(), 255)
+  let rgba = pdf_rgb_to_rgba(rgb) catch { _ => b"" }
+  assert_eq(rgba.length(), 12)
+}

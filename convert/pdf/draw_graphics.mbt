@@ -320,6 +320,40 @@ fn PdfGraphics::draw_encoded_masked_image(
       )
     None => raise InvalidStream("PDF image masks with encoded image data are not supported yet")
   }
+  // JPX and JBIG2 are decoded before compositing, so a colour-key /Mask can
+  // become the image alpha without a second canvas pass.
+  match stencil_mask {
+    Some(PdfArray(values)) => {
+      let colour_space = match space {
+        Some(value) => value
+        _ => raise InvalidStream("PDF colour-key mask needs a colour space")
+      }
+      let (mask_width, mask_height, rgb) = match codec {
+        Some(b"JPXDecode") => pdf_jpx_rgb(data, space, invert)
+        Some(b"JBIG2Decode") =>
+          pdf_jbig2_rgb_with_globals(data, invert, jbig2_globals)
+        _ =>
+          raise InvalidStream(
+            "PDF encoded images with colour-key masks are not supported for this codec",
+          )
+      }
+      let key : Array[Double] = []
+      for value in values {
+        match file.page_num(Some(value)) {
+          Some(number) => key.push(number)
+          None => raise InvalidStream("invalid PDF colour key mask")
+        }
+      }
+      let alpha = pdf_color_key_alpha_rgb(
+        mask_width, mask_height, colour_space, rgb, key,
+      )
+      let rgba = pdf_rgb_to_rgba(rgb)
+      let masked = pdf_apply_image_alpha(rgba, alpha)
+      self.emit_image(pdf_png_encode_rgba(mask_width, mask_height, masked))
+      return
+    }
+    _ => ()
+  }
   self.object.group_begin(1.0F, 0, 0.0F, 0.0F, 1.0F, 1.0F)
   self.draw_image_data(
     width,

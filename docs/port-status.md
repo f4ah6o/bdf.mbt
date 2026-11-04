@@ -81,9 +81,10 @@
   MMR regions, symbol dictionaries, text regions, refinement, pattern
   dictionaries and halftone), Type3 glyph procedures, URI actions on form
   fields, and standard-security-handler revisions 2, 3, 4, 5 and 6 (RC4,
-  AES-128 and AES-256) are supported. Encoded images with colour-key masks,
-  tagged structure, and CCITT/JBIG2/JPX masks combined with colour-key masks
-  remain explicit gaps; CCITT G3/G4 image XObjects and inline images are
+  AES-128 and AES-256) are supported. JPX/JBIG2-encoded images with
+  colour-key masks are decoded and composited; DCT colour-key masks, tagged
+  structure, and CCITT/JBIG2/JPX masks combined with colour-key masks remain
+  explicit gaps; CCITT G3/G4 image XObjects and inline images are
   decoded.
 - XLSX: `convert/xlsx` renders styled worksheets with number formats, merges,
   row/column geometry, print areas, conditional formats, tables, links,

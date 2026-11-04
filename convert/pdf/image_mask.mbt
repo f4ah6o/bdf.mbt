@@ -251,6 +251,57 @@ fn pdf_color_key_alpha(
 }
 
 ///|
+/// Colour-key alpha for an image already decoded to RGB samples (JPX and
+/// JBIG2 take this path). Gray keys test the red channel.
+fn pdf_color_key_alpha_rgb(
+  width : Int32,
+  height : Int32,
+  space : PdfDeviceColorSpace,
+  rgb : Bytes,
+  key : Array[Double],
+) -> Bytes raise PdfStreamError {
+  let components = pdf_color_components(space)
+  if components != 1 && components != 3 {
+    raise InvalidStream("PDF colour key mask has an unsupported colour space")
+  }
+  if key.length() != components * 2 {
+    raise InvalidStream("PDF colour key mask has the wrong size")
+  }
+  if rgb.length() != width * height * 3 {
+    raise InvalidStream("PDF image samples are truncated")
+  }
+  let alpha = @buffer.Buffer(size_hint=width * height)
+  for pixel in 0..<(width * height) {
+    let mut masked = true
+    for component in 0..<components {
+      let value = rgb[pixel * 3 + component].to_double()
+      let low = key[component * 2] * 255.0
+      let high = key[component * 2 + 1] * 255.0
+      if value < low || value > high {
+        masked = false
+      }
+    }
+    alpha.write_byte(if masked { 0 } else { 0xff })
+  }
+  alpha.to_bytes()
+}
+
+///|
+fn pdf_rgb_to_rgba(rgb : Bytes) -> Bytes raise PdfStreamError {
+  if rgb.length() % 3 != 0 {
+    raise InvalidStream("invalid PDF RGB image")
+  }
+  let out = @buffer.Buffer(size_hint=rgb.length() / 3 * 4)
+  for offset in 0..<(rgb.length() / 3) {
+    out.write_byte(rgb[offset * 3])
+    out.write_byte(rgb[offset * 3 + 1])
+    out.write_byte(rgb[offset * 3 + 2])
+    out.write_byte(b'\xff')
+  }
+  out.to_bytes()
+}
+
+///|
 fn pdf_apply_image_alpha(
   rgba : Bytes,
   alpha : Bytes,
