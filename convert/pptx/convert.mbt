@@ -2866,6 +2866,10 @@ fn pptx_emit_chart(
   let is_radar = kind == "radarChart"
   let is_doughnut = kind == "doughnutChart"
   let is_pie = kind == "pieChart" || is_doughnut
+  let vary_colors = match pptx_child(Some(chart), "varyColors") {
+    Some(value) => pptx_attribute(value.element, "val", "0") != "0"
+    None => false
+  }
   let reverse_categories = match pptx_child(
     pptx_child(plot_area, "catAx"), "scaling",
   ) {
@@ -2983,8 +2987,21 @@ fn pptx_emit_chart(
       marker_size,
     })
   }
+  if vary_colors {
+    for item in series {
+      while item.point_colors.length() < item.values.length() {
+        item.point_colors.push(0U)
+      }
+      for index in 0..<item.values.length() {
+        if item.point_colors[index] == 0U {
+          item.point_colors[index] = palette[index % palette.length()]
+        }
+      }
+    }
+  }
   if reverse_categories && !is_scatter {
     for item in series {
+      pptx_reverse(item.point_colors)
       pptx_reverse(item.categories)
       pptx_reverse(item.values)
       pptx_reverse(item.blanks)
