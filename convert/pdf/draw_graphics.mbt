@@ -183,6 +183,7 @@ fn PdfGraphics::draw_image_data(
   data : Bytes,
   codec : Bytes?,
   ccitt : PdfCcittParams?,
+  jbig2_globals : Bytes,
 ) -> Unit raise PdfStreamError {
   match codec {
     Some(b"DCTDecode") => {
@@ -239,7 +240,10 @@ fn PdfGraphics::draw_image_data(
     }
     Some(b"JBIG2Decode") => {
       if is_mask {
-        let (jbig2_width, jbig2_height, jbig2_bits) = pdf_jbig2_decode(data)
+        let (jbig2_width, jbig2_height, jbig2_bits) = pdf_jbig2_decode_with_globals(
+          data,
+          jbig2_globals,
+        )
         let rgba = pdf_image_mask_rgba(
           jbig2_width,
           jbig2_height,
@@ -251,7 +255,11 @@ fn PdfGraphics::draw_image_data(
           pdf_png_encode_rgba(jbig2_width, jbig2_height, rgba),
         )
       } else {
-        let (jbig2_width, jbig2_height, jbig2_rgb) = pdf_jbig2_rgb(data, invert)
+        let (jbig2_width, jbig2_height, jbig2_rgb) = pdf_jbig2_rgb_with_globals(
+          data,
+          invert,
+          jbig2_globals,
+        )
         self.emit_image(
           pdf_png_encode_rgb(jbig2_width, jbig2_height, jbig2_rgb),
         )
@@ -302,6 +310,7 @@ fn PdfGraphics::draw_encoded_masked_image(
   codec : Bytes?,
   soft_mask : PdfObject?,
   stencil_mask : PdfObject?,
+  jbig2_globals : Bytes,
 ) -> Unit raise PdfStreamError {
   match codec {
     Some(b"DCTDecode") | Some(b"JPXDecode") | Some(b"JBIG2Decode") => ()
@@ -313,7 +322,16 @@ fn PdfGraphics::draw_encoded_masked_image(
   }
   self.object.group_begin(1.0F, 0, 0.0F, 0.0F, 1.0F, 1.0F)
   self.draw_image_data(
-    width, height, bpc, space, false, invert, data, codec, None,
+    width,
+    height,
+    bpc,
+    space,
+    false,
+    invert,
+    data,
+    codec,
+    None,
+    jbig2_globals,
   )
   match soft_mask {
     Some(value) => {
@@ -412,6 +430,10 @@ fn PdfGraphics::draw_image_xobject(
     Some(b"CCITTFaxDecode") => Some(pdf_ccitt_params(file, dict))
     _ => None
   }
+  let jbig2_globals = match codec {
+    Some(b"JBIG2Decode") => pdf_jbig2_globals(file, dict)
+    _ => b""
+  }
   if !is_mask && !decode.is_empty() && bpc == 8 {
     match codec {
       None =>
@@ -446,6 +468,7 @@ fn PdfGraphics::draw_image_xobject(
         codec,
         soft_mask,
         stencil_mask,
+        jbig2_globals,
       )
       return
     }
@@ -496,7 +519,16 @@ fn PdfGraphics::draw_image_xobject(
     self.emit_image(pdf_png_encode_rgba(width, height, masked))
   } else {
     self.draw_image_data(
-      width, height, bpc, space, is_mask, invert, data, codec, ccitt,
+      width,
+      height,
+      bpc,
+      space,
+      is_mask,
+      invert,
+      data,
+      codec,
+      ccitt,
+      jbig2_globals,
     )
   }
 }

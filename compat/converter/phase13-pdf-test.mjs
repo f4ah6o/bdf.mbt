@@ -71,8 +71,9 @@ try {
     const cases = [];
     for (const name of [
       'cairo-cff.pdf', 'cairo-type1.pdf', 'chrome-doc.pdf', 'chrome-masks.pdf',
-      'chrome-slides.pdf', 'cjk-cmaps.pdf', 'reportlab-master.pdf',
-      'reportlab-mixed.pdf', 'reportlab-type1.pdf', 'weasyprint-webfonts.pdf',
+      'chrome-slides.pdf', 'cjk-cmaps.pdf', 'images-jpx-jbig2.pdf',
+      'reportlab-master.pdf', 'reportlab-mixed.pdf', 'reportlab-type1.pdf',
+      'weasyprint-webfonts.pdf',
     ]) {
       const data = new Uint8Array(await (await fetch(base + '/compat/pdf/fixtures/' + name)).arrayBuffer());
       const a = await upstream.convert(data, { name });
