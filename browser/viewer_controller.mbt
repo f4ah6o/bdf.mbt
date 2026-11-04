@@ -102,7 +102,8 @@ fn ViewerController::set_view(self : ViewerController, id : String) -> Unit {
     Some(view) => view.id
     None => ""
   }
-  if old_id != new_id {
+  let other = old_id != new_id
+  if other {
     self.drop_find()
   }
   self.current = selected
@@ -113,6 +114,15 @@ fn ViewerController::set_view(self : ViewerController, id : String) -> Unit {
   }
   self.draw()
   viewer_dom_view_event(self.dom)
+  // the find bar goes on with its query in the view that came
+  if other && viewer_bar_shown(self.dom) {
+    let query = viewer_bar_query(self.dom)
+    if query != "" {
+      viewer_callback_ignore(
+        @js_async.Promise::from_async(() => self.find_background(query)),
+      )
+    }
+  }
 }
 
 ///|
