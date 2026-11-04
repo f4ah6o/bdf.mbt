@@ -2121,11 +2121,58 @@ fn pptx_chart_explosions(series : PptxXmlNode) -> Array[Double] {
 }
 
 ///|
+fn pptx_chart_point_colors(
+  series : PptxXmlNode,
+  theme : Map[String, UInt32],
+) -> Array[UInt32] {
+  let out : Array[UInt32] = []
+  for child in series.children {
+    if child.element.name.local_name != "dPt" {
+      continue
+    }
+    let index_node = pptx_child(Some(child), "idx")
+    if index_node is None {
+      continue
+    }
+    let index = @string.parse_int(
+      pptx_attribute(index_node.unwrap().element, "val", "0"),
+    ) catch {
+      _ => -1
+    }
+    if index < 0 {
+      continue
+    }
+    let color = match
+      pptx_node_color(pptx_child(Some(child), "spPr"), "solidFill", theme) {
+      Some(value) => value
+      None => 0U
+    }
+    while out.length() <= index {
+      out.push(0U)
+    }
+    if color != 0U {
+      out[index] = color
+    }
+  }
+  out
+}
+
+///|
+fn pptx_series_point_color(item : PptxChartSeries, index : Int) -> UInt32 {
+  if index < item.point_colors.length() && item.point_colors[index] != 0U {
+    item.point_colors[index]
+  } else {
+    item.color
+  }
+}
+
+///|
 priv struct PptxChartSeries {
   name : String
   categories : Array[String]
   values : Array[Double]
   explosions : Array[Double]
+  point_colors : Array[UInt32]
   color : UInt32
 }
 
@@ -2381,6 +2428,7 @@ fn pptx_emit_chart(
       categories,
       values,
       explosions: pptx_chart_explosions(item),
+      point_colors: pptx_chart_point_colors(item, theme),
       color,
     })
   }
@@ -2883,7 +2931,13 @@ fn pptx_emit_chart(
       let path = object.add_path(
         @core.Inline(pptx_pie_path(slice_cx, slice_cy, radius, start, sweep)),
       )
-      object.fill_color(palette[index % palette.length()])
+      let fill = if index < series[0].point_colors.length() &&
+        series[0].point_colors[index] != 0U {
+        series[0].point_colors[index]
+      } else {
+        palette[index % palette.length()]
+      }
+      object.fill_color(fill)
       object.fill_path(path, 0)
       let mut label = if pie_labels.0 {
         pptx_chart_tick_text(value)
@@ -3217,7 +3271,7 @@ fn pptx_emit_chart(
         for item in series {
           if index < item.values.length() {
             let bar_width = plot_width * item.values[index] / axis_high
-            object.fill_color(item.color)
+            object.fill_color(pptx_series_point_color(item, index))
             object.fill_rect(
               Float::from_double(plot_x + plot_width * used / axis_high),
               Float::from_double(
@@ -3239,7 +3293,7 @@ fn pptx_emit_chart(
       for index in 0..<categories.length() {
         for s, item in series {
           if index < item.values.length() {
-            object.fill_color(item.color)
+            object.fill_color(pptx_series_point_color(item, index))
             object.fill_rect(
               Float::from_double(plot_x),
               Float::from_double(
@@ -3261,7 +3315,7 @@ fn pptx_emit_chart(
       for item in series {
         if index < item.values.length() {
           let bar_height = plot_height * item.values[index] / axis_high
-          object.fill_color(item.color)
+          object.fill_color(pptx_series_point_color(item, index))
           object.fill_rect(
             Float::from_double(
               plot_x +
@@ -3358,7 +3412,7 @@ fn pptx_emit_chart(
       for s, item in series {
         if index < item.values.length() {
           let bar_height = plot_height * item.values[index] / axis_high
-          object.fill_color(item.color)
+          object.fill_color(pptx_series_point_color(item, index))
           object.fill_rect(
             Float::from_double(
               plot_x +
