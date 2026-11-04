@@ -511,6 +511,7 @@ fn docx_render_scroll(
             rise: 0.0,
             underline: "",
             strike: false,
+              shadow: false,
               emphasis: "",
             x: pad,
             advance: docx_text_width(text, 8.5),

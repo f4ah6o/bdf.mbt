@@ -200,6 +200,7 @@ fn docx_layout_paragraph(
       underline: item.props.underline,
       strike: (item.props.toggles & 16) != 0 ||
         (item.props.toggles & 32) != 0,
+      shadow: (item.props.toggles & 256) != 0,
       emphasis: item.props.emphasis,
       x: line_x,
       advance,
@@ -295,6 +296,7 @@ fn docx_layout_paragraph(
               rise: 0.0,
               underline: "",
               strike: false,
+              shadow: false,
               emphasis: "",
               x: line_x,
               advance,
@@ -395,6 +397,7 @@ fn docx_layout_paragraph(
             rise: 0.0,
             underline: "",
             strike: false,
+            shadow: false,
             emphasis: "",
             x: line_x,
             advance,
@@ -422,6 +425,7 @@ fn docx_layout_paragraph(
             rise: 0.0,
             underline: "",
             strike: false,
+            shadow: false,
             emphasis: "",
             x: line_x,
             advance,
@@ -447,6 +451,7 @@ fn docx_layout_paragraph(
           rise: 0.0,
           underline: "",
           strike: false,
+          shadow: false,
           emphasis: "",
           x: line_x,
           advance: 0.0,
@@ -474,6 +479,7 @@ fn docx_layout_paragraph(
           rise: 0.0,
           underline: "",
           strike: false,
+          shadow: false,
           emphasis: "",
           x: line_x,
           advance,
@@ -865,6 +871,15 @@ fn docx_emit_para_line(
       }
     }
     object.font(index, Float::from_double(item.size))
+    if item.shadow {
+      object.fill_color(0x808080ffU)
+      object.fill_text(
+        text,
+        Float::from_double(x_origin + offset + item.x + 1.0),
+        Float::from_double(top + baseline + 1.0 - item.rise),
+        Float::from_double(advance),
+      )
+    }
     object.fill_color(item.color)
     object.fill_text(
       text,

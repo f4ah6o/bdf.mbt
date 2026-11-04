@@ -1227,6 +1227,21 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX shadow runs draw a second offset glyph" {
+  let blocks = "<w:p><w:r><w:rPr><w:shadow/></w:rPr><w:t>S</w:t></w:r></w:p>"
+  let commands = docx_test_page_commands(
+    convert(docx_test_docx(blocks, DOCX_TEST_SECTION, [])), "pages", 0, "body",
+  )
+  let mut copies = 0
+  for command in commands {
+    match command {
+      FillText("S", _, _, _) => copies += 1
+      _ => ()
+    }
+  }
+  assert_eq(copies, 2)
+}
+
 test "DOCX highlight and run shading draw a background" {
   let blocks = "<w:p><w:r><w:rPr><w:highlight w:val=\"yellow\"/></w:rPr><w:t>H</w:t></w:r></w:p>"
   let commands = docx_test_page_commands(
