@@ -92,7 +92,7 @@ source-rectangle cropping, rotation and flips, and EMF/WMF metafiles are drawn.
 Tables render cell text with wrapped lines, cell fills, text
 colors/sizes/bold/italic/alignment, vertical anchors, margins, per-side borders,
 grid widths/spans, row heights/spans and vertical merges. Bar (clustered and
-stacked, horizontal and vertical), line, area, scatter, radar and pie charts draw their series, axis titles,
+stacked, horizontal and vertical), line, area, scatter, radar, pie and doughnut charts draw their series, axis titles,
 bar/line/radar/scatter value labels with optional category/series names,
 stacked segment labels and pie percentage/value labels (with optional
 category/series names) from `dLbls`, legends, category labels, value-axis ticks, explicit `c:majorUnit`/`c:minorUnit` and
@@ -122,7 +122,7 @@ converter flattens it to cubic Béziers (the same outline, and the phase 15
 comparison flattens both encodings before comparing); malformed custom
 geometry falls back to the shape rectangle where upstream silently draws
 nothing; SmartArt is reduced to its data-model text (the diagram layout is not
-drawn), and ink, 3-D or other non-bar/line/pie/area/scatter/radar charts are not
+drawn), and ink, 3-D or other non-bar/line/pie/doughnut/area/scatter/radar charts are not
 supported; chart titles use an explicit `c:title` or the single-series name,
 and bar/line/pie/radar/scatter charts with `c:dTable` draw a category/series/value table honouring the show and border flags; the built-in
 The 74 predefined table-style IDs resolve their whole-table, header, band and

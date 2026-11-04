@@ -2072,6 +2072,22 @@ fn pptx_pie_path(
 }
 
 ///|
+fn pptx_circle_path(cx : Double, cy : Double, radius : Double) -> @core.Path {
+  let verbs : Array[Byte] = [0]
+  let coordinates : Array[Double] = [cx, cy]
+  let steps = 64
+  for index in 0..<steps {
+    let angle = 2.0 * 3.141592653589793 * index.to_double() /
+      steps.to_double()
+    verbs.push(1)
+    coordinates.push(cx + radius * @math.cos(angle))
+    coordinates.push(cy + radius * @math.sin(angle))
+  }
+  verbs.push(4)
+  { verbs: Bytes::from_array(verbs), coordinates, }
+}
+
+///|
 priv struct PptxChartSeries {
   name : String
   categories : Array[String]
@@ -2231,6 +2247,7 @@ fn pptx_emit_chart(
   let scatter_chart = pptx_child(plot_area, "scatterChart")
   let radar_chart = pptx_child(plot_area, "radarChart")
   let pie_chart = pptx_child(plot_area, "pieChart")
+  let doughnut_chart = pptx_child(plot_area, "doughnutChart")
   let chart = match bar {
     Some(value) => value
     None =>
@@ -2240,7 +2257,10 @@ fn pptx_emit_chart(
           match pie_chart {
             Some(value) => value
             None =>
-              match area_chart {
+              match doughnut_chart {
+                Some(value) => value
+                None =>
+                  match area_chart {
                 Some(value) => value
                 None =>
                   match scatter_chart {
@@ -2251,6 +2271,7 @@ fn pptx_emit_chart(
                         None => return
                       }
                   }
+                }
               }
           }
       }
@@ -2260,7 +2281,8 @@ fn pptx_emit_chart(
   let is_area = kind == "areaChart"
   let is_scatter = kind == "scatterChart"
   let is_radar = kind == "radarChart"
-  let is_pie = kind == "pieChart"
+  let is_doughnut = kind == "doughnutChart"
+  let is_pie = kind == "pieChart" || is_doughnut
   let horizontal = is_bar &&
     (match pptx_child(Some(chart), "barDir") {
       Some(value) => pptx_attribute(value.element, "val", "col") == "bar"
@@ -2785,6 +2807,23 @@ fn pptx_emit_chart(
     let cx = x + width / 2.0
     let cy = y + height / 2.0 + 8.0
     let radius = Double::min(width, height) / 2.0 - 24.0
+    let hole_size = if is_doughnut {
+      match pptx_child(Some(chart), "holeSize") {
+        Some(value) =>
+          @string.parse_double(pptx_attribute(value.element, "val", "50")) catch {
+            _ => 50.0
+          }
+        None => 50.0
+      }
+    } else {
+      0.0
+    }
+    let hole_radius = radius * hole_size / 100.0
+    let label_radius = if is_doughnut {
+      (radius + hole_radius) / 2.0
+    } else {
+      radius * 0.7
+    }
     let mut start = -3.141592653589793 / 2.0
     for index, value in values {
       let sweep = 2.0 * 3.141592653589793 * value / total
@@ -2817,11 +2856,18 @@ fn pptx_emit_chart(
           label_size,
           black,
           label,
-          cx + @math.cos(mid) * radius * 0.7 - label_width / 2.0,
-          cy + @math.sin(mid) * radius * 0.7,
+          cx + @math.cos(mid) * label_radius - label_width / 2.0,
+          cy + @math.sin(mid) * label_radius,
         )
       }
       start += sweep
+    }
+    if is_doughnut && hole_radius > 0.0 {
+      let hole = object.add_path(
+        @core.Inline(pptx_circle_path(cx, cy, hole_radius)),
+      )
+      object.fill_color(0xffffffffU)
+      object.fill_path(hole, 0)
     }
     let categories = series[0].categories
     if pptx_child(chart_space, "dTable") is Some(_) && !categories.is_empty() {
