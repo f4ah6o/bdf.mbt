@@ -261,6 +261,71 @@ fn md_lines(text : String) -> Array[String] {
 }
 
 ///|
+fn md_scale_style(
+  style : @drawingml.TextStyle,
+  scale : Double,
+  font : String,
+  mono : String,
+) -> @drawingml.TextStyle {
+  let family = if style.family == "Courier New" {
+    if mono != "" {
+      mono
+    } else {
+      style.family
+    }
+  } else if font != "" {
+    font
+  } else {
+    style.family
+  }
+  { ..style, size: style.size * scale, family }
+}
+
+///|
+fn md_scale_runs(
+  runs : Array[MdRun],
+  scale : Double,
+  font : String,
+  mono : String,
+) -> Array[MdRun] {
+  runs.map(fn(run) {
+    { ..run, style: md_scale_style(run.style, scale, font, mono) }
+  })
+}
+
+///|
+fn md_scale_block(
+  block : MdBlock,
+  scale : Double,
+  font : String,
+  mono : String,
+) -> MdBlock {
+  match block {
+    MdHeading(level, runs) =>
+      MdHeading(level, md_scale_runs(runs, scale, font, mono))
+    MdParagraph(runs) => MdParagraph(md_scale_runs(runs, scale, font, mono))
+    MdListItem(level, marker, runs) =>
+      MdListItem(level, marker, md_scale_runs(runs, scale, font, mono))
+    MdCode(lines) => MdCode(lines)
+    MdQuote(children) =>
+      MdQuote(
+        children.map(fn(child) { md_scale_block(child, scale, font, mono) }),
+      )
+    MdRule => MdRule
+    MdTable(header, rows, alignments) =>
+      MdTable(
+        header.map(fn(cell) { md_scale_runs(cell, scale, font, mono) }),
+        rows.map(fn(row) {
+          row.map(fn(cell) { md_scale_runs(cell, scale, font, mono) })
+        }),
+        alignments,
+      )
+    MdImage(alt, url, title) => MdImage(alt, url, title)
+    MdMath(formula) => MdMath(formula)
+  }
+}
+
+///|
 fn md_parse(text : String) -> MdDocument {
   let (body, meta) = md_front_matter(text)
   let formulas : Array[String] = []

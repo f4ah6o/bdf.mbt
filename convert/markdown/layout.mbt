@@ -148,6 +148,9 @@ priv struct MdPainter {
   mut y : Double
   mut images : Int32
   warnings : Array[String]
+  content_width : Double
+  margin : Double
+  scale : Double
 }
 
 ///|
@@ -246,12 +249,12 @@ fn md_expand_tabs(line : String) -> String {
 }
 
 ///|
-fn md_heading_style(level : Int) -> @drawingml.TextStyle {
+fn md_heading_style(level : Int, scale : Double) -> @drawingml.TextStyle {
   match level {
-    1 => md_style(size=24.0, bold=true)
-    2 => md_style(size=20.0, bold=true)
-    3 => md_style(size=16.0, bold=true)
-    _ => md_style(size=14.0, bold=true)
+    1 => md_style(size=24.0 * scale, bold=true)
+    2 => md_style(size=20.0 * scale, bold=true)
+    3 => md_style(size=16.0 * scale, bold=true)
+    _ => md_style(size=14.0 * scale, bold=true)
   }
 }
 
@@ -261,13 +264,13 @@ fn MdPainter::layout_block(
   block : MdBlock,
   indent : Double,
 ) -> Unit raise {
-  let content_width = 432.0
-  let x = 36.0 + indent
+  let content_width = self.content_width
+  let x = self.margin + indent
   let width = Double::max(80.0, content_width - indent)
   match block {
     MdHeading(level, runs) => {
       self.y += if level == 1 { 14.0 } else { 10.0 }
-      let style = md_heading_style(level)
+      let style = md_heading_style(level, self.scale)
       let styled = runs.map(fn(run) { { ..run, style, } })
       for line in md_wrap_runs(styled, width) {
         self.draw_text(line, x, self.y + style.size * 1.2)
@@ -289,7 +292,7 @@ fn MdPainter::layout_block(
     }
     MdListItem(level, marker, runs) => {
       let item_indent = indent + 18.0 * (level + 1).to_double()
-      let item_x = 36.0 + item_indent
+      let item_x = self.margin + item_indent
       let item_width = Double::max(80.0, content_width - item_indent)
       let marker_style = if runs.is_empty() {
         md_style()
@@ -309,7 +312,7 @@ fn MdPainter::layout_block(
     }
     MdCode(lines) => {
       self.y += 7.0
-      let style = md_style(size=10.5, family="Courier New")
+      let style = md_style(size=10.5 * self.scale, family="Courier New")
       let code_x = x + 12.0
       for line in lines {
         let runs : Array[MdRun] = []
@@ -320,7 +323,7 @@ fn MdPainter::layout_block(
       self.y += 7.0
     }
     MdQuote(children) => {
-      let bar_x = 36.0 + indent + 4.0
+      let bar_x = self.margin + indent + 4.0
       self.object.fill_color(0xccccccffU)
       self.object.fill_rect(
         Float::from_double(bar_x),
@@ -347,7 +350,7 @@ fn MdPainter::layout_block(
     MdMath(formula) => {
       self.y += 8.0
       let text = md_latex_linear(formula)
-      let style = md_style(size=12.0, italic=true)
+      let style = md_style(size=12.0 * self.scale, italic=true)
       let runs : Array[MdRun] = []
       md_push_run(runs, text, style, "")
       for line in md_wrap_runs(runs, width) {
@@ -359,7 +362,7 @@ fn MdPainter::layout_block(
     MdImage(alt, url, _title) => {
       if alt != "" {
         let runs : Array[MdRun] = []
-        md_push_run(runs, alt, md_style(), "")
+        md_push_run(runs, alt, md_style(size=12.0 * self.scale), "")
         for line in md_wrap_runs(runs, width) {
           self.draw_text(line, x, self.y + 14.4)
           self.y += 18.6
@@ -597,24 +600,37 @@ fn MdPainter::layout_table(
 fn md_render(
   document : MdDocument,
   writer : @core.DocumentWriter,
+  size~ : Double = 12.0,
+  width~ : Double = 432.0,
+  font~ : String = "",
+  mono~ : String = "",
 ) -> (Json, Array[@core.IndexRun], Int, Array[String]) raise {
+  let margin = 36.0
+  let page_width = width + margin * 2.0
+  let scale = if size > 0.0 { size / 12.0 } else { 1.0 }
+  let blocks = document.blocks.map(fn(block) {
+    md_scale_block(block, scale, font, mono)
+  })
   let object = @core.ObjectBuilder::new()
   let painter : MdPainter = {
     object,
     writer,
     fonts: Map([]),
-    y: 36.0,
+    y: margin,
     images: 0,
     warnings: [],
+    content_width: width,
+    margin,
+    scale,
   }
-  for block in document.blocks {
+  for block in blocks {
     painter.layout_block(block, 0.0)
   }
-  let mut height = painter.y + 36.0
+  let mut height = painter.y + margin
   if height < 100.0 {
     height = 100.0
   }
-  painter.object.set_bbox(0.0F, 0.0F, 504.0F, Float::from_double(height))
+  painter.object.set_bbox(0.0F, 0.0F, Float::from_double(page_width), Float::from_double(height))
   let encoded = painter.object.encode()
   let hash = writer.add_part("obj", encoded)
   let index_runs : Array[@core.IndexRun] = []
@@ -636,7 +652,7 @@ fn md_render(
     })
   }
   let page = Json::object({
-    "w": Json::number(504.0, repr="504"),
+    "w": Json::number(page_width, repr=page_width.to_string()),
     "h": Json::number(height, repr=height.to_string()),
     "layers": Json::array([
       Json::object({

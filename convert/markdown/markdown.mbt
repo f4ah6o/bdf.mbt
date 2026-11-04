@@ -24,6 +24,10 @@ pub fn detect(_data : Bytes) -> Bool {
 pub fn convert(
   data : Bytes,
   title~ : String = "",
+  size~ : Double = 0.0,
+  width~ : Double = 0.0,
+  font~ : String = "",
+  mono~ : String = "",
 ) -> MarkdownResult raise MarkdownError {
   let text = @utf8.decode_lossy(data[:], ignore_bom=true)
   let document = md_parse(text)
@@ -53,7 +57,11 @@ pub fn convert(
     meta["dc"] = Json::object(dc)
   }
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
-  let (page, index_runs, image_count, layout_warnings) = md_render(document, writer) catch {
+  let text_size = if size > 0.0 { size } else { 12.0 }
+  let text_width = if width > 0.0 { width } else { 432.0 }
+  let (page, index_runs, image_count, layout_warnings) = md_render(
+    document, writer, size=text_size, width=text_width, font~, mono~,
+  ) catch {
     _ => raise MarkdownInvalid("Markdown document could not be laid out")
   }
   let warnings : Array[String] = []
