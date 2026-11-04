@@ -2518,6 +2518,20 @@ fn docx_flow_flush_page(flow : DocxFlow) -> Unit raise {
   // The floating objects in front of the text go over it, as upstream's
   // body layer draws them after the body ops.
   docx_flow_emit_front(flow)
+  if section.column_sep && section.columns.length() > 1 {
+    flow.body.fill_color(0x000000ffU)
+    for index in 1..<section.columns.length() {
+      let (x, width) = section.columns[index - 1]
+      let (next_x, _) = section.columns[index]
+      let separator_x = section.left + x + width + (next_x - x - width) / 2.0
+      flow.body.fill_rect(
+        Float::from_double(separator_x - 0.25),
+        Float::from_double(section.top),
+        0.5,
+        Float::from_double(section.height - section.top - section.bottom),
+      )
+    }
+  }
   flow.body.set_bbox(
     0.0F,
     0.0F,

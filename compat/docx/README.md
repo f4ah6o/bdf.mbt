@@ -57,7 +57,7 @@ reaches. Cell text wraps at the cell width; nested tables are laid out inside
 their cell. Table rows are no longer flattened to tab-separated paragraphs.
 
 Sections flow through `w:cols` columns (equal and unequal widths, column
-breaks and continuous sections). Sections with `w:textDirection` vertical
+breaks, continuous sections and separator rules). Sections with `w:textDirection` vertical
 text turn their page body by 90 degrees with upstream's matrix
 `(0,1,-1,0,page width-right margin,top margin)`; headers and footers stay
 upright and the scroll view is horizontal. `PAGE`, `NUMPAGES` and
@@ -98,8 +98,7 @@ are not drawn there), page-relative objects that would not fit are drawn
 clipped rather than moved, exact footnote separator/continuation
 indentation, upright CJK glyphs in vertical text (the whole body is turned,
 Latin and CJK alike), `PAGEREF`/`REF` field regeneration (cached results are used),
-per-section `SECTIONPAGES` (the document page count is used), column
-separator rules,
+per-section `SECTIONPAGES` (the document page count is used),
 table-style base, first/last row/column, banded and corner-cell parts
 (borders/shading/margins/text formatting and TableGrid are applied), and exact scroll strip
 counts (table widths are applied and autofit estimates text widths), footnotes referenced from table cells, sections

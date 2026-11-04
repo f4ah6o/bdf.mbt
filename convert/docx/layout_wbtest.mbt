@@ -1226,6 +1226,28 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX column separators are drawn between columns" {
+  let section = "<w:sectPr><w:cols w:num=\"2\" w:space=\"720\" w:sep=\"1\"/>" +
+    "<w:pgSz w:w=\"12240\" w:h=\"15840\"/><w:pgMar w:top=\"1440\" w:right=\"1440\" w:bottom=\"1440\" w:left=\"1440\"/></w:sectPr>"
+  let blocks = docx_test_repeat(
+    "<w:p><w:r><w:t>column text</w:t></w:r></w:p>", 8,
+  )
+  let commands = docx_test_page_commands(
+    convert(docx_test_docx(blocks, section, [])), "pages", 0, "body",
+  )
+  let mut separators = 0
+  for command in commands {
+    match command {
+      FillRect(_, _, width, _) =>
+        if (width - 0.5).abs() < 0.01 {
+          separators += 1
+        }
+      _ => ()
+    }
+  }
+  assert_true(separators > 0)
+}
+
 test "DOCX header tables are laid out" {
   let header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
     "<w:hdr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" " +
