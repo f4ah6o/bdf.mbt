@@ -2930,31 +2930,62 @@ fn pptx_emit_chart(
       }
     }
   }
-  if show_values && !is_pie && !is_scatter && !is_radar && !stacked {
-    for item in series {
-      for index, value in item.values {
-        let text = pptx_chart_tick_text(value)
-        let label_width = pptx_text_width(text, 7.0)
-        let (label_x, label_y) = if horizontal {
-          (
-            plot_x + plot_width * value / axis_high + 2.0,
-            plot_y + slot * index.to_double() + slot * 0.3,
+  if show_values && !is_pie && !is_scatter && !is_radar {
+    if stacked {
+      for index in 0..<categories.length() {
+        let mut used = 0.0
+        for item in series {
+          if index >= item.values.length() {
+            continue
+          }
+          let value = item.values[index]
+          let text = pptx_chart_tick_text(value)
+          let label_width = pptx_text_width(text, 7.0)
+          let (label_x, label_y) = if horizontal {
+            (
+              plot_x + plot_width * (used + value) / axis_high + 2.0,
+              plot_y + slot * index.to_double() + slot * 0.3,
+            )
+          } else {
+            (
+              plot_x + slot * index.to_double() + slot * 0.5 - label_width / 2.0,
+              plot_y + plot_height -
+              plot_height * (used + value) / axis_high -
+              9.0,
+            )
+          }
+          pptx_chart_label(
+            object, label_font, 7.0, black, text, label_x, label_y,
           )
-        } else if line_chart is Some(_) || is_area {
-          (
-            plot_x + plot_width * index.to_double() /
-            Double::max(1.0, (item.values.length() - 1).to_double()),
-            plot_y + plot_height - plot_height * value / axis_high - 9.0,
-          )
-        } else {
-          (
-            plot_x + slot * index.to_double() + slot * 0.5 - label_width / 2.0,
-            plot_y + plot_height - plot_height * value / axis_high - 9.0,
+          used += value
+        }
+      }
+    } else {
+      for item in series {
+        for index, value in item.values {
+          let text = pptx_chart_tick_text(value)
+          let label_width = pptx_text_width(text, 7.0)
+          let (label_x, label_y) = if horizontal {
+            (
+              plot_x + plot_width * value / axis_high + 2.0,
+              plot_y + slot * index.to_double() + slot * 0.3,
+            )
+          } else if line_chart is Some(_) || is_area {
+            (
+              plot_x + plot_width * index.to_double() /
+              Double::max(1.0, (item.values.length() - 1).to_double()),
+              plot_y + plot_height - plot_height * value / axis_high - 9.0,
+            )
+          } else {
+            (
+              plot_x + slot * index.to_double() + slot * 0.5 - label_width / 2.0,
+              plot_y + plot_height - plot_height * value / axis_high - 9.0,
+            )
+          }
+          pptx_chart_label(
+            object, label_font, 7.0, black, text, label_x, label_y,
           )
         }
-        pptx_chart_label(
-          object, label_font, 7.0, black, text, label_x, label_y,
-        )
       }
     }
   }
