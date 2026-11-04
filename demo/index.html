@@ -83,10 +83,10 @@
       </div>
       <p class="benchmark-live">このブラウザでの実測: <span data-benchmark-live>まだ書き出していません</span></p>
       <div class="benchmark-measured" data-benchmark-measured aria-labelledby="benchmark-measured-title">
-        <div class="benchmark-measured-head"><div><p class="eyebrow">MEASURED HERE</p><h3 id="benchmark-measured-title">この実装の計測</h3><p>同じ BDF と PDF を、JavaScript 版と wasm-gc 版の MoonBit 実装で処理した実測値です。入力は20ページの BDF と20ページの PDF、ウォームアップ2回の後に7回測った中央値です。</p></div><span class="benchmark-stamp" data-benchmark-stamp>読み込み中</span></div>
-        <div class="benchmark-table-wrap"><table class="benchmark-table" data-benchmark-table><caption class="visually-hidden">BDF と PDF の処理時間（JavaScript と wasm-gc）</caption><thead><tr><th scope="col">処理</th><th scope="col">JS</th><th scope="col">wasm-gc</th><th scope="col">対象</th></tr></thead><tbody><tr><td colspan="4">計測データを読み込んでいます…</td></tr></tbody></table></div>
+        <div class="benchmark-measured-head"><div><p class="eyebrow">SAME INPUT · UPSTREAM + BDF.MBT</p><h3 id="benchmark-measured-title">上流 BDF (Go) と bdf.mbt の計測</h3><p>同じ20ページの BDF と20ページの PDF を、上流 BDF (Go) と bdf.mbt の JavaScript / wasm-gc 実装で処理した実測値です。上流 Go は CLI のプロセス起動とファイル書き出し込み、bdf.mbt はブラウザ内のウォーム済み関数。ウォームアップ2回の後に7回測った中央値です。</p></div><span class="benchmark-stamp" data-benchmark-stamp>読み込み中</span></div>
+        <div class="benchmark-table-wrap"><table class="benchmark-table" data-benchmark-table><caption class="visually-hidden">同じ BDF と PDF の処理時間（上流 BDF Go、bdf.mbt JavaScript、bdf.mbt wasm-gc）</caption><thead><tr><th scope="col">処理</th><th scope="col">上流 BDF (Go)</th><th scope="col">bdf.mbt JS</th><th scope="col">bdf.mbt wasm-gc</th><th scope="col">対象</th></tr></thead><tbody><tr><td colspan="5">計測データを読み込んでいます…</td></tr></tbody></table></div>
         <p class="benchmark-meta" data-benchmark-meta></p>
-        <p class="benchmark-note">数値はこの計測環境での参考値です。ブラウザ・CPU・入力サイズが変われば結果も変わります。MiniSearch は JavaScript の索引ライブラリなので wasm-gc 列は「—」です。</p>
+        <p class="benchmark-note">上流の Office 変換カードは入力が異なるため、ここでは同じ BDF / PDF を使った上流 BDF (Go) CLI と比較しています。上流 Go は CLI 実行（起動込み）、bdf.mbt はブラウザ内のメモリ内処理です。PDF の圧縮・フォント埋め込み方式は異なるため、時間は実装と実行方法の目安です。MiniSearch は bdf.mbt の JavaScript 索引のみなので、上流と wasm-gc の列は「—」です。</p>
       </div>
     </section>
     <section class="gallery" aria-labelledby="gallery-title">

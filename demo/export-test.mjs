@@ -44,6 +44,9 @@ try {
   assert.match(benchmarkText, /BDF → PDF/);
   assert.match(benchmarkText, /PDF → BDF/);
   assert.match(benchmarkText, /ms/);
+  assert.match(await page.locator('[data-benchmark-table] thead').innerText(), /上流 BDF \(Go\)/);
+  assert.notEqual(await page.locator('[data-benchmark-table] tbody tr').first().locator('td').first().innerText(), '—');
+  assert.match(await page.locator('[data-benchmark-meta]').innerText(), /go1\.27\.0/);
 
   await page.locator('#tab-pdf').click();
   assert.equal(await page.locator('#panel-pdf').isVisible(), true);

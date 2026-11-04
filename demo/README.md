@@ -45,6 +45,21 @@ through both the JavaScript and wasm-gc bridges, measures a 2-run warm-up and
 shows the median times, input/output sizes and measurement environment. Re-run
 the harness after changing an export path and commit the updated JSON.
 
+The same table shows the upstream BDF Go implementation. Build the upstream
+CLI with Go 1.27 and point `bench:upstream` at the binary:
+
+```sh
+git clone https://github.com/shibukawa/bdf /tmp/shibukawa-bdf
+(cd /tmp/shibukawa-bdf && go build -o /tmp/bdf-go ./cmd/bdf)
+npm run bench:upstream -- --bdf /tmp/bdf-go --revision "$(git -C /tmp/shibukawa-bdf rev-parse --short HEAD)"
+```
+
+This measures the upstream CLI's `pdf`, `markdown`, `text` and `generate`
+commands on the same 20-page BDF/PDF and writes
+`demo/benchmarks-upstream.json`. Process startup and file output are included;
+the upstream values are therefore a CLI comparison, not an in-process
+microbenchmark.
+
 The STIX Two Text sample is from the existing `compat/font/fixtures/stix.ttf`
 fixture; copyright and SIL Open Font License 1.1 terms are included in
 [STIX-OFL.txt](licenses/STIX-OFL.txt). The demo tests TTF and WOFF2 input.
@@ -61,6 +76,7 @@ npm run build:demo   # JS build, wasm-gc export bridge, demo assets
 npm run test:demo
 npm run test:export   # export tabs, benchmark table and the wasm-gc page
 npm run bench:demo    # re-measure and rewrite demo/benchmarks.json
+npm run bench:upstream -- --bdf /tmp/bdf-go   # upstream Go column
 python3 -m http.server --directory _build/pages 8000
 ```
 
