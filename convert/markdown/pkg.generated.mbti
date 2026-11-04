@@ -2,7 +2,7 @@
 package "f4ah6o/bdf/convert/markdown"
 
 // Values
-pub fn convert(Bytes, title? : String, size? : Double, width? : Double, font? : String, mono? : String) -> MarkdownResult raise MarkdownError
+pub fn convert(Bytes, title? : String, size? : Double, width? : Double, font? : String, mono? : String, views? : String) -> MarkdownResult raise MarkdownError
 
 pub fn detect(Bytes) -> Bool
 

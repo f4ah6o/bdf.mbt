@@ -3,6 +3,7 @@ priv struct MdChar {
   c : Char
   style : @drawingml.TextStyle
   link : String
+  image : MdImage?
 }
 
 ///|
@@ -25,14 +26,20 @@ fn md_chars_width(chars : Array[MdChar]) -> Double {
 
 ///|
 fn md_char_width(ch : MdChar) -> Double {
-  @drawingml.text_width(ch.c.to_string(), ch.style.size)
+  match ch.image {
+    Some(image) => image.width
+    None => @drawingml.text_width(ch.c.to_string(), ch.style.size)
+  }
 }
 
 ///|
 fn md_chars_to_runs(chars : Array[MdChar]) -> Array[MdRun] {
   let runs : Array[MdRun] = []
   for ch in chars {
-    md_push_run(runs, ch.c.to_string(), ch.style, ch.link)
+    match ch.image {
+      Some(image) => md_push_image(runs, image, ch.style, ch.link)
+      None => md_push_run(runs, ch.c.to_string(), ch.style, ch.link)
+    }
   }
   runs
 }
@@ -41,8 +48,17 @@ fn md_chars_to_runs(chars : Array[MdChar]) -> Array[MdRun] {
 fn md_runs_to_chars(runs : Array[MdRun]) -> Array[MdChar] {
   let chars : Array[MdChar] = []
   for run in runs {
-    for c in run.text {
-      chars.push({ c, style: run.style, link: run.link })
+    match run.image {
+      Some(image) => chars.push({
+        c: '\uFFFC',
+        style: run.style,
+        link: run.link,
+        image: Some(image),
+      })
+      None =>
+        for c in run.text {
+          chars.push({ c, style: run.style, link: run.link, image: None })
+        }
     }
   }
   chars
@@ -142,15 +158,23 @@ fn md_wrap_runs(runs : Array[MdRun], width : Double) -> Array[Array[MdRun]] {
 
 ///|
 priv struct MdPainter {
-  object : @core.ObjectBuilder
+  mut object : @core.ObjectBuilder
   writer : @core.DocumentWriter
   fonts : Map[String, Int32]
   mut y : Double
-  mut images : Int32
+  images : Ref[Int]
+  image_seen : Map[String, Bool]
   warnings : Array[String]
   content_width : Double
   margin : Double
   scale : Double
+  // A positive page height lays the blocks out on pages instead of one strip.
+  page_width : Double
+  page_height : Double
+  pages : Array[Json]
+  index_runs : Array[@core.IndexRun]
+  mut page : Int32
+  mut page_dirty : Bool
 }
 
 ///|
@@ -177,6 +201,176 @@ fn MdPainter::font(self : MdPainter, style : @drawingml.TextStyle) -> Int32 rais
 }
 
 ///|
+fn md_fit_image(image : MdImage, width : Double) -> MdImage {
+  if width > 0.0 && image.width > width {
+    let height = if image.width > 0.0 {
+      image.height * width / image.width
+    } else {
+      image.height
+    }
+    { ..image, width, height, }
+  } else {
+    image
+  }
+}
+
+///|
+fn md_fit_runs(runs : Array[MdRun], width : Double) -> Array[MdRun] {
+  runs.map(fn(run) {
+    match run.image {
+      Some(image) => { ..run, image: Some(md_fit_image(image, width)) }
+      None => run
+    }
+  })
+}
+
+///|
+/// An SVG with only a view box fills a paragraph of its own.
+fn md_expand_fill_runs(runs : Array[MdRun], width : Double) -> Array[MdRun] {
+  if runs.length() != 1 {
+    return runs
+  }
+  match runs[0].image {
+    Some(image) if image.fill && image.width > 0.0 && image.height > 0.0 =>
+      [{
+        ..runs[0],
+        image: Some({
+          ..image,
+          width,
+          height: width * image.height / image.width,
+          fill: false,
+        }),
+      }]
+    _ => runs
+  }
+}
+
+///|
+fn md_line_image_height(runs : Array[MdRun]) -> Double {
+  let mut height = 0.0
+  for run in runs {
+    match run.image {
+      Some(image) => height = Double::max(height, image.height)
+      None => ()
+    }
+  }
+  height
+}
+
+///|
+fn md_line_metrics(runs : Array[MdRun]) -> (Double, Double) {
+  let mut size = 12.0
+  let mut image_height = 0.0
+  for run in runs {
+    size = Double::max(size, run.style.size)
+    match run.image {
+      Some(image) => image_height = Double::max(image_height, image.height)
+      None => ()
+    }
+  }
+  let baseline = Double::max(size * 1.2, image_height + 2.0)
+  let advance = Double::max(size * 1.7, image_height + 4.0)
+  (baseline, advance)
+}
+
+///|
+fn MdPainter::draw_image(
+  self : MdPainter,
+  image : MdImage,
+  x : Double,
+  bottom : Double,
+) -> Unit raise {
+  if image.width <= 0.0 || image.height <= 0.0 {
+    return
+  }
+  let hash = self.writer.add_part("img", image.data)
+  if !self.image_seen.contains(hash) {
+    self.image_seen[hash] = true
+    self.images.val += 1
+  }
+  let index = self.object.add_image(hash)
+  self.object.image(
+    index,
+    Float::from_double(x),
+    Float::from_double(bottom - image.height),
+    Float::from_double(image.width),
+    Float::from_double(image.height),
+  )
+}
+
+///|
+fn md_index_runs_for_object(encoded : Bytes, page : Int32) -> Array[@core.IndexRun] {
+  let index_runs : Array[@core.IndexRun] = []
+  let budget = @render.TextExtractionBudget::new()
+  let content = @render.extract_text_with_budget(
+    @core.decode_object_resources(encoded),
+    fn(_) { None },
+    budget,
+  ) catch {
+    _ => { runs: [], links: [], nodes: [], }
+  }
+  for i, run in content.runs {
+    index_runs.push({
+      a: page,
+      b: 0,
+      ordinal: run.ordinal,
+      separator: if i == 0 { 2 } else { run.separator },
+      text: run.text,
+    })
+  }
+  index_runs
+}
+
+///|
+fn MdPainter::flush_page(self : MdPainter) -> Unit raise {
+  if self.page_height <= 0.0 {
+    return
+  }
+  self.object.set_bbox(
+    0.0F,
+    0.0F,
+    Float::from_double(self.page_width),
+    Float::from_double(self.page_height),
+  )
+  let encoded = self.object.encode()
+  let hash = self.writer.add_part("obj", encoded) catch { _ => "" }
+  if hash != "" {
+    self.pages.push(
+      Json::object({
+        "w": Json::number(self.page_width, repr=self.page_width.to_string()),
+        "h": Json::number(self.page_height, repr=self.page_height.to_string()),
+        "layers": Json::array([
+          Json::object({
+            "role": Json::string("body"),
+            "obj": Json::string(hash),
+          }),
+        ]),
+      }),
+    )
+    for run in md_index_runs_for_object(encoded, self.page) {
+      self.index_runs.push(run)
+    }
+  }
+  self.object = @core.ObjectBuilder::new()
+  self.fonts.clear()
+  self.page += 1
+  self.page_dirty = false
+}
+
+///|
+fn MdPainter::ensure(self : MdPainter, height : Double) -> Unit raise {
+  if self.page_height <= 0.0 {
+    return
+  }
+  let bottom = self.page_height - self.margin
+  if self.y + height > bottom + 0.001 &&
+    (self.y > self.margin + 0.001 || self.page_dirty) {
+    self.flush_page()
+    self.y = self.margin
+  }
+}
+
+///|
 fn MdPainter::draw_text(
   self : MdPainter,
   runs : Array[MdRun],
@@ -185,6 +379,15 @@ fn MdPainter::draw_text(
 ) -> Unit raise {
   let mut cursor = x
   for run in runs {
+    match run.image {
+      Some(image) => {
+        self.draw_image(image, cursor, baseline)
+        cursor += image.width
+        self.page_dirty = true
+        continue
+      }
+      None => ()
+    }
     if run.text == "" {
       continue
     }
@@ -199,6 +402,7 @@ fn MdPainter::draw_text(
       Float::from_double(width),
     )
     cursor += width
+    self.page_dirty = true
   }
 }
 
@@ -206,7 +410,10 @@ fn MdPainter::draw_text(
 fn md_line_width(runs : Array[MdRun]) -> Double {
   let mut width = 0.0
   for run in runs {
-    width += @drawingml.text_width(run.text, run.style.size)
+    match run.image {
+      Some(image) => width += image.width
+      None => width += @drawingml.text_width(run.text, run.style.size)
+    }
   }
   width
 }
@@ -269,12 +476,26 @@ fn MdPainter::layout_block(
   let width = Double::max(80.0, content_width - indent)
   match block {
     MdHeading(level, runs) => {
-      self.y += if level == 1 { 14.0 } else { 10.0 }
+      let before = if level == 1 { 14.0 } else { 10.0 }
+      self.ensure(before + 24.0)
+      self.y += before
       let style = md_heading_style(level, self.scale)
       let styled = runs.map(fn(run) { { ..run, style, } })
       for line in md_wrap_runs(styled, width) {
-        self.draw_text(line, x, self.y + style.size * 1.2)
-        self.y += style.size * 1.45
+        let (measured_baseline, measured_advance) = md_line_metrics(line)
+        let baseline = if md_line_image_height(line) > 0.0 {
+          measured_baseline
+        } else {
+          style.size * 1.2
+        }
+        let advance = if md_line_image_height(line) > 0.0 {
+          measured_advance
+        } else {
+          style.size * 1.45
+        }
+        self.ensure(advance)
+        self.draw_text(line, x, self.y + baseline)
+        self.y += advance
       }
       self.y += 8.0
     }
@@ -283,10 +504,24 @@ fn MdPainter::layout_block(
         self.y += 12.0
         return
       }
-      let size = if runs.is_empty() { 12.0 } else { runs[0].style.size }
-      for line in md_wrap_runs(runs, width) {
-        self.draw_text(line, x, self.y + size * 1.2)
-        self.y += size * 1.7
+      let prepared = md_expand_fill_runs(runs, width)
+      let size = prepared[0].style.size
+      for line in md_wrap_runs(prepared, width) {
+        let (measured_baseline, measured_advance) = md_line_metrics(line)
+        let image_height = md_line_image_height(line)
+        let baseline = if image_height > 0.0 {
+          measured_baseline
+        } else {
+          size * 1.2
+        }
+        let advance = if image_height > 0.0 {
+          measured_advance
+        } else {
+          size * 1.7
+        }
+        self.ensure(advance)
+        self.draw_text(line, x, self.y + baseline)
+        self.y += advance
       }
       self.y += 7.0
     }
@@ -302,11 +537,26 @@ fn MdPainter::layout_block(
       let prefixed : Array[MdRun] = []
       md_push_run(prefixed, marker, marker_style, "")
       for run in runs {
-        md_push_run(prefixed, run.text, run.style, run.link)
+        match run.image {
+          Some(image) => md_push_image(prefixed, image, run.style, run.link)
+          None => md_push_run(prefixed, run.text, run.style, run.link)
+        }
       }
       for line in md_wrap_runs(prefixed, item_width) {
-        self.draw_text(line, item_x, self.y + marker_style.size * 1.2)
-        self.y += marker_style.size * 1.65
+        let (measured_baseline, measured_advance) = md_line_metrics(line)
+        let baseline = if md_line_image_height(line) > 0.0 {
+          measured_baseline
+        } else {
+          marker_style.size * 1.2
+        }
+        let advance = if md_line_image_height(line) > 0.0 {
+          measured_advance
+        } else {
+          marker_style.size * 1.65
+        }
+        self.ensure(advance)
+        self.draw_text(line, item_x, self.y + baseline)
+        self.y += advance
       }
       self.y += 2.0
     }
@@ -317,12 +567,14 @@ fn MdPainter::layout_block(
       for line in lines {
         let runs : Array[MdRun] = []
         md_push_run(runs, md_expand_tabs(line), style, "")
+        self.ensure(14.0)
         self.draw_text(runs, code_x, self.y + 10.5)
         self.y += 14.0
       }
       self.y += 7.0
     }
     MdQuote(children) => {
+      self.ensure(24.0)
       let bar_x = self.margin + indent + 4.0
       self.object.fill_color(0xccccccffU)
       self.object.fill_rect(
@@ -337,6 +589,7 @@ fn MdPainter::layout_block(
       self.y += 4.0
     }
     MdRule => {
+      self.ensure(17.8)
       self.y += 8.0
       self.object.fill_color(0xccccccffU)
       self.object.fill_rect(
@@ -348,115 +601,57 @@ fn MdPainter::layout_block(
       self.y += 9.0
     }
     MdMath(formula) => {
+      self.ensure(26.6)
       self.y += 8.0
       let text = md_latex_linear(formula)
       let style = md_style(size=12.0 * self.scale, italic=true)
       let runs : Array[MdRun] = []
       md_push_run(runs, text, style, "")
       for line in md_wrap_runs(runs, width) {
-        self.draw_aligned(line, x, width, self.y + 14.4, 1)
-        self.y += 18.6
+        let (measured_baseline, measured_advance) = md_line_metrics(line)
+        let baseline = if md_line_image_height(line) > 0.0 {
+          measured_baseline
+        } else {
+          14.4
+        }
+        let advance = if md_line_image_height(line) > 0.0 {
+          measured_advance
+        } else {
+          18.6
+        }
+        self.ensure(advance)
+        self.draw_aligned(line, x, width, self.y + baseline, 1)
+        self.y += advance
       }
       self.y += 8.0
     }
     MdImage(alt, url, _title) => {
-      if alt != "" {
-        let runs : Array[MdRun] = []
-        md_push_run(runs, alt, md_style(size=12.0 * self.scale), "")
-        for line in md_wrap_runs(runs, width) {
-          self.draw_text(line, x, self.y + 14.4)
-          self.y += 18.6
+      match md_resolve_image(url) {
+        Some(image) => {
+          let fitted = md_fit_image(image, width)
+          self.ensure(fitted.height + 6.0)
+          self.draw_image(fitted, x, self.y + fitted.height)
+          self.y += fitted.height + 6.0
+        }
+        None => {
+          if alt != "" {
+            let runs : Array[MdRun] = []
+            md_push_run(runs, alt, md_style(size=12.0 * self.scale), "")
+            for line in md_wrap_runs(runs, width) {
+              let (baseline, advance) = md_line_metrics(line)
+              self.ensure(advance)
+              self.draw_text(line, x, self.y + baseline)
+              self.y += advance
+            }
+          }
+          md_warn_image(self.warnings, url)
         }
       }
-      self.layout_image(url, alt, x, width)
     }
     MdTable(header, rows, alignments) => self.layout_table(header, rows, alignments, x, width)
   }
 }
 
-///|
-fn md_data_image(url : String) -> Bytes? {
-  if !url.has_prefix("data:") {
-    return None
-  }
-  let comma = url.find(",")
-  match comma {
-    Some(index) => {
-      let head = url[:index].to_owned()
-      if !head.contains(";base64") {
-        return None
-      }
-      let payload = url[index + 1:].to_owned()
-      let bytes = @base64.decode(payload[:], ignore_whitespace=true) catch {
-        _ => return None
-      }
-      Some(bytes)
-    }
-    None => None
-  }
-}
-
-///|
-fn md_png_size(data : Bytes) -> (Double, Double)? {
-  if data.length() < 24 || data[:8] != b"\x89PNG\r\n\x1a\n"[:] {
-    return None
-  }
-  let width = (data[16].to_int() << 24) |
-    (data[17].to_int() << 16) |
-    (data[18].to_int() << 8) |
-    data[19].to_int()
-  let height = (data[20].to_int() << 24) |
-    (data[21].to_int() << 16) |
-    (data[22].to_int() << 8) |
-    data[23].to_int()
-  if width <= 0 || height <= 0 {
-    None
-  } else {
-    Some((width.to_double(), height.to_double()))
-  }
-}
-
-///|
-fn MdPainter::layout_image(
-  self : MdPainter,
-  url : String,
-  alt : String,
-  x : Double,
-  width : Double,
-) -> Unit raise {
-  match md_data_image(url) {
-    Some(bytes) => {
-      let (image_width, image_height) = match md_png_size(bytes) {
-        Some(size) => size
-        None => (200.0, 150.0)
-      }
-      let mut draw_width = image_width
-      let mut draw_height = image_height
-      if draw_width > width {
-        draw_height = draw_height * width / draw_width
-        draw_width = width
-      }
-      let hash = self.writer.add_part("img", bytes)
-      let index = self.object.add_image(hash)
-      self.object.image(
-        index,
-        Float::from_double(x),
-        Float::from_double(self.y),
-        Float::from_double(draw_width),
-        Float::from_double(draw_height),
-      )
-      self.images += 1
-      self.y += draw_height + 6.0
-    }
-    None =>
-      if url != "" {
-        self.warnings.push(
-          "image " + url + ": relative reference with no directory to resolve it in",
-        )
-      }
-  }
-  ignore(alt)
-}
 
 ///|
 fn MdPainter::layout_table(
@@ -500,15 +695,15 @@ fn MdPainter::layout_table(
   for value in natural {
     column_widths.push(Double::max(24.0, value * scale))
   }
-  self.y += 6.0
-  let table_top = self.y
-  let mut row_top = self.y
   let all_rows : Array[Array[Array[MdRun]]] = []
   all_rows.push(header)
   for row in rows {
     all_rows.push(row)
   }
-  for row_index, row in all_rows {
+  let row_cells : Array[Array[Array[Array[MdRun]]]] = []
+  let row_heights : Array[Double] = []
+  let mut table_height = 14.0
+  for row in all_rows {
     let cell_lines : Array[Array[Array[MdRun]]] = []
     let mut row_height = 8.0
     for column in 0..<columns {
@@ -518,6 +713,20 @@ fn MdPainter::layout_table(
       row_height = Double::max(row_height, height)
       cell_lines.push(lines)
     }
+    row_cells.push(cell_lines)
+    row_heights.push(row_height)
+    table_height += row_height
+  }
+  if self.page_height > 0.0 {
+    let limit = self.page_height - self.margin * 2.0
+    self.ensure(Double::min(table_height, limit))
+  }
+  self.y += 6.0
+  let table_top = self.y
+  let mut row_top = self.y
+  for row_index, row in all_rows {
+    let cell_lines = row_cells[row_index]
+    let row_height = row_heights[row_index]
     if row_index == 0 {
       self.object.fill_color(0xf2f2f2ffU)
       self.object.fill_rect(
@@ -597,60 +806,69 @@ fn MdPainter::layout_table(
 }
 
 ///|
+priv struct MdRenderResult {
+  pages : Array[Json]
+  index_runs : Array[@core.IndexRun]
+  strips : Int
+}
+
+///|
 fn md_render(
-  document : MdDocument,
+  blocks : Array[MdBlock],
   writer : @core.DocumentWriter,
+  page_view~ : Bool,
+  warnings~ : Array[String],
+  image_seen~ : Map[String, Bool],
+  images~ : Ref[Int],
   size~ : Double = 12.0,
   width~ : Double = 432.0,
-  font~ : String = "",
-  mono~ : String = "",
-) -> (Json, Array[@core.IndexRun], Int, Array[String]) raise {
+) -> MdRenderResult raise {
   let margin = 36.0
   let page_width = width + margin * 2.0
   let scale = if size > 0.0 { size / 12.0 } else { 1.0 }
-  let blocks = document.blocks.map(fn(block) {
-    md_scale_block(block, scale, font, mono)
-  })
-  let object = @core.ObjectBuilder::new()
   let painter : MdPainter = {
-    object,
+    object: @core.ObjectBuilder::new(),
     writer,
     fonts: Map([]),
     y: margin,
-    images: 0,
-    warnings: [],
+    images,
+    image_seen,
+    warnings,
     content_width: width,
     margin,
     scale,
+    page_width,
+    page_height: if page_view { 769.9 } else { 0.0 },
+    pages: [],
+    index_runs: [],
+    page: 0,
+    page_dirty: false,
   }
   for block in blocks {
     painter.layout_block(block, 0.0)
+  }
+  if page_view {
+    if painter.pages.is_empty() || painter.y > margin + 0.001 {
+      painter.flush_page()
+    }
+    return {
+      pages: painter.pages,
+      index_runs: painter.index_runs,
+      strips: 0,
+    }
   }
   let mut height = painter.y + margin
   if height < 100.0 {
     height = 100.0
   }
-  painter.object.set_bbox(0.0F, 0.0F, Float::from_double(page_width), Float::from_double(height))
+  painter.object.set_bbox(
+    0.0F,
+    0.0F,
+    Float::from_double(page_width),
+    Float::from_double(height),
+  )
   let encoded = painter.object.encode()
   let hash = writer.add_part("obj", encoded)
-  let index_runs : Array[@core.IndexRun] = []
-  let budget = @render.TextExtractionBudget::new()
-  let content = @render.extract_text_with_budget(
-    @core.decode_object_resources(encoded),
-    fn(_) { None },
-    budget,
-  ) catch {
-    _ => { runs: [], links: [], nodes: [], }
-  }
-  for i, run in content.runs {
-    index_runs.push({
-      a: 0,
-      b: 0,
-      ordinal: run.ordinal,
-      separator: if i == 0 { 2 } else { run.separator },
-      text: run.text,
-    })
-  }
   let page = Json::object({
     "w": Json::number(page_width, repr=page_width.to_string()),
     "h": Json::number(height, repr=height.to_string()),
@@ -661,5 +879,6 @@ fn md_render(
       }),
     ]),
   })
-  (page, index_runs, painter.images, painter.warnings)
+  let index_runs = md_index_runs_for_object(encoded, 0)
+  { pages: [page], index_runs, strips: 1 }
 }

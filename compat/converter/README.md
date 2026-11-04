@@ -49,10 +49,15 @@ format registration, score and guitar TAB views, page geometry, text and play
 data for the upstream `minuet.musicxml` fixture.
 
 `phase11-markdown-test.mjs` compares the Markdown converter with upstream:
-scroll view id/kind/width, summary and text indexes for the upstream
-`basic.md`, `math.md` and `svg.md` fixtures, including GFM lists, tables,
-footnotes and LaTeX linearization. Whitespace is normalized and 88% text
-similarity is required because line breaks use estimated metrics.
+scroll view id/kind/width, summary, warnings, image parts and text indexes
+for the upstream `basic.md`, `math.md` and `svg.md` fixtures, including
+GFM lists, tables, footnotes and LaTeX linearization. The two inline SVG
+images of `svg.md` are stored as content-hashed image parts while the two
+relative image files keep their alternative text and warnings. Whitespace is
+normalized and 88% text similarity is required because line breaks use
+estimated metrics. The `pages` and `both` views are covered by the package's
+MoonBit tests until the native converter Worker forwards its `views`
+parameter.
 
 `phase12-docx-test.mjs` compares the DOCX converter with upstream for the
 `basic`, `styles`, `grid`, `vertical` and `math` fixtures: the `pages` (`flow`)
