@@ -17,6 +17,7 @@ struct XlsxChartModel {
   show_value : Bool
   label_separator : String
   label_position : String
+  leader_lines : Bool
   show_cat_name : Bool
   show_ser_name : Bool
   axis_min : Double
@@ -353,10 +354,15 @@ fn XlsxWorkbook::xlsx_chart_model(
   let mut show_value = false
   let mut label_separator = " "
   let mut label_position = "outEnd"
+  let mut leader_lines = false
   let mut show_cat_name = false
   let mut show_ser_name = false
   match xlsx_draw_child(plot, "dLbls") {
     Some(labels) => {
+      match xlsx_draw_child(labels, "showLeaderLines") {
+        Some(value) => leader_lines = xlsx_draw_attr(value, "val") != "0"
+        None => ()
+      }
       match xlsx_draw_child(labels, "dLblPos") {
         Some(position) => label_position = xlsx_draw_attr(position, "val")
         None => ()
@@ -435,6 +441,7 @@ fn XlsxWorkbook::xlsx_chart_model(
     show_value,
     label_separator,
     label_position,
+    leader_lines,
     show_cat_name,
     show_ser_name,
     axis_min,
@@ -864,6 +871,19 @@ fn XlsxWorkbook::xlsx_chart_svg(
       }
       let x = cx + @math.cos(mid) * category_radius
       let y = cy + @math.sin(mid) * category_radius
+      if model.leader_lines && category_radius > radius {
+        svg.write_string(
+          "<line x1=\"" +
+          (cx + @math.cos(mid) * radius).to_string() +
+          "\" y1=\"" +
+          (cy + @math.sin(mid) * radius).to_string() +
+          "\" x2=\"" +
+          x.to_string() +
+          "\" y2=\"" +
+          y.to_string() +
+          "\" stroke=\"#808080\"/>",
+        )
+      }
       if index < model.categories.length() {
         svg.write_string(
           "<text x=\"" +
@@ -1412,6 +1432,23 @@ fn XlsxWorkbook::xlsx_chart_object(
         let category_radius = match model.label_position {
           "ctr" | "inEnd" => radius * 0.75
           _ => radius * 1.12
+        }
+        if model.leader_lines && category_radius > radius {
+          object.line(0.75F, 0, 0, 8.0F)
+          object.stroke_color(0x808080ffU)
+          object.stroke_path(
+            object.add_path(
+              @core.Inline({
+                verbs: Bytes::from_array([0, 1]),
+                coordinates: [
+                  cx + @math.cos(mid) * radius,
+                  cy + @math.sin(mid) * radius,
+                  cx + @math.cos(mid) * category_radius,
+                  cy + @math.sin(mid) * category_radius,
+                ],
+              }),
+            ),
+          )
         }
         let mut advance = 0.0
         for character in category {
