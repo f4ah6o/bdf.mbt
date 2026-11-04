@@ -2788,6 +2788,12 @@ fn pptx_emit_chart(
   let data_label_color = pptx_chart_data_label_color(Some(chart), theme)
   let custom_labels = pptx_chart_custom_labels(Some(chart))
   let deleted_labels = pptx_chart_deleted_labels(Some(chart))
+  let data_label_pos = match pptx_child(
+    pptx_child(Some(chart), "dLbls"), "dLblPos",
+  ) {
+    Some(value) => pptx_attribute(value.element, "val", "bestFit")
+    None => "bestFit"
+  }
   let label_separator = match pptx_child(
     pptx_child(Some(chart), "dLbls"), "separator",
   ) {
@@ -4263,18 +4269,34 @@ fn pptx_emit_chart(
             text = ""
           }
           let label_width = pptx_text_width(text, data_label_size)
+          let value_fraction = pptx_chart_fraction(value, axis_low, axis_high)
+          let zero_fraction = pptx_chart_fraction(0.0, axis_low, axis_high)
           let (label_x, label_y) = if horizontal {
-            if value >= 0.0 {
-              (
-                plot_x + plot_width * pptx_chart_fraction(value, axis_low, axis_high) + 2.0,
-                plot_y + slot * index.to_double() + slot * 0.3,
-              )
+            let bar_x = if value >= 0.0 {
+              match data_label_pos {
+                "ctr" =>
+                  plot_x + plot_width *
+                  ((value_fraction + zero_fraction) / 2.0) -
+                  label_width / 2.0
+                "inEnd" =>
+                  plot_x + plot_width * value_fraction - label_width - 2.0
+                "inBase" => plot_x + plot_width * zero_fraction + 2.0
+                _ => plot_x + plot_width * value_fraction + 2.0
+              }
             } else {
-              (
-                plot_x + plot_width * pptx_chart_fraction(value, axis_low, axis_high) - label_width - 2.0,
-                plot_y + slot * index.to_double() + slot * 0.3,
-              )
+              match data_label_pos {
+                "ctr" =>
+                  plot_x + plot_width *
+                  ((value_fraction + zero_fraction) / 2.0) -
+                  label_width / 2.0
+                "inEnd" => plot_x + plot_width * value_fraction + 2.0
+                "inBase" =>
+                  plot_x + plot_width * zero_fraction - label_width - 2.0
+                _ =>
+                  plot_x + plot_width * value_fraction - label_width - 2.0
+              }
             }
+            (bar_x, plot_y + slot * index.to_double() + slot * 0.3)
           } else if line_chart is Some(_) || is_area {
             (
               plot_x + plot_width * index.to_double() /
@@ -4282,16 +4304,30 @@ fn pptx_emit_chart(
               plot_y + plot_height - plot_height * pptx_chart_fraction(value, axis_low, axis_high) - 9.0,
             )
           } else if value >= 0.0 {
+            let top = plot_y + plot_height - plot_height * value_fraction
+            let base = plot_y + plot_height - plot_height * zero_fraction
+            let y = match data_label_pos {
+              "ctr" => (top + base) / 2.0 - 4.0
+              "inEnd" => top + 2.0
+              "inBase" => base - 9.0
+              _ => top - 9.0
+            }
             (
               plot_x + slot * index.to_double() + slot * 0.5 - label_width / 2.0,
-              plot_y + plot_height - plot_height * pptx_chart_fraction(value, axis_low, axis_high) - 9.0,
+              y,
             )
           } else {
+            let bottom = plot_y + plot_height - plot_height * value_fraction
+            let base = plot_y + plot_height - plot_height * zero_fraction
+            let y = match data_label_pos {
+              "ctr" => (bottom + base) / 2.0 - 4.0
+              "inEnd" => bottom - 9.0
+              "inBase" => base + 2.0
+              _ => bottom + 2.0
+            }
             (
               plot_x + slot * index.to_double() + slot * 0.5 - label_width / 2.0,
-              plot_y + plot_height -
-              plot_height * pptx_chart_fraction(0.0, axis_low, axis_high) +
-              2.0,
+              y,
             )
           }
           pptx_chart_label(
