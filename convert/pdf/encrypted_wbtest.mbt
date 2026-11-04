@@ -81,6 +81,48 @@ test "PDF R6 AES-256 decryption opens with user and owner passwords" {
 }
 
 ///|
+test "PDF R5 AES-256 key recovery uses the revision 5 hash" {
+  let password = "secret"
+  let file_key = Bytes::make(32, 7)
+  let user_validation = b"01234567"
+  let user_key_salt = b"89abcdef"
+  let owner_validation = b"FEDCBA98"
+  let owner_key_salt = b"76543210"
+  let pw = pdf_encryption_password_short(password)
+  let user_hash = pdf_r5_hash(pw, user_validation, b"")
+  let user_key = pdf_r5_hash(pw, user_key_salt, b"")
+  let user = @buffer.Buffer(size_hint=64)
+  user.write_bytesview(user_hash[:])
+  user.write_bytesview(user_validation[:])
+  user.write_bytesview(user_key_salt[:])
+  let user_bytes = user.to_bytes()
+  let ue = @xcrypto.aes_cbc_encrypt(
+    user_key, Bytes::make(16, 0), file_key,
+  ) catch {
+    _ => b""
+  }
+  let owner_hash = pdf_r5_hash(pw, owner_validation, user_bytes)
+  let owner_key = pdf_r5_hash(pw, owner_key_salt, user_bytes)
+  let owner = @buffer.Buffer(size_hint=64)
+  owner.write_bytesview(owner_hash[:])
+  owner.write_bytesview(owner_validation[:])
+  owner.write_bytesview(owner_key_salt[:])
+  let owner_bytes = owner.to_bytes()
+  let oe = @xcrypto.aes_cbc_encrypt(
+    owner_key, Bytes::make(16, 0), file_key,
+  ) catch {
+    _ => b""
+  }
+  assert_eq(
+    pdf_r5_unlock(password, owner_bytes, user_bytes, oe, ue),
+    Some(file_key),
+  )
+  assert_eq(
+    pdf_r5_unlock("wrong", owner_bytes, user_bytes, oe, ue),
+    None,
+  )
+}
+
 test "PDF encrypted files report empty and wrong passwords" {
   let empty = try {
     ignore(convert(pdf_r2_encrypted(), no_text_index=true))

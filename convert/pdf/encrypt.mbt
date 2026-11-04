@@ -459,6 +459,59 @@ fn pdf_r6_hash(password : Bytes, salt : Bytes, user_key : Bytes) -> Bytes {
 }
 
 ///|
+fn pdf_r5_hash(password : Bytes, salt : Bytes, user_key : Bytes) -> Bytes {
+  let seed = @buffer.Buffer(
+    size_hint=password.length() + salt.length() + user_key.length(),
+  )
+  seed.write_bytesview(password[:])
+  seed.write_bytesview(salt[:])
+  seed.write_bytesview(user_key[:])
+  pdf_sha256_bytes(seed.to_bytes())
+}
+
+///|
+fn pdf_r5_unlock(
+  password : String,
+  owner : Bytes,
+  user : Bytes,
+  owner_encrypted : Bytes,
+  user_encrypted : Bytes,
+) -> Bytes? {
+  let password = pdf_encryption_password_short(password)
+  if user.length() < 48 {
+    return None
+  }
+  let user_hash = pdf_r5_hash(password, user[32:40].to_owned(), b"")
+  if user_hash == user[:32].to_owned() {
+    let key = pdf_r5_hash(password, user[40:48].to_owned(), b"")
+    let decrypted = pdf_aes_decrypt_no_padding(
+      key,
+      Bytes::make(16, 0),
+      user_encrypted,
+    ) catch {
+      _ => return None
+    }
+    return Some(decrypted)
+  }
+  if owner.length() < 48 {
+    return None
+  }
+  let owner_hash = pdf_r5_hash(password, owner[32:40].to_owned(), user)
+  if owner_hash == owner[:32].to_owned() {
+    let key = pdf_r5_hash(password, owner[40:48].to_owned(), user)
+    let decrypted = pdf_aes_decrypt_no_padding(
+      key,
+      Bytes::make(16, 0),
+      owner_encrypted,
+    ) catch {
+      _ => return None
+    }
+    return Some(decrypted)
+  }
+  None
+}
+
+///|
 fn pdf_r6_unlock(
   password : String,
   owner : Bytes,
@@ -556,7 +609,7 @@ fn PdfFile::unlock(self : PdfFile, password : String) -> Unit raise PdfStreamErr
   }
   let version = pdf_encryption_int(self, encrypt_object, b"V", 0)
   let revision = pdf_encryption_int(self, encrypt_object, b"R", 2)
-  if revision < 2 || revision == 5 || revision > 6 {
+  if revision < 2 || revision > 6 {
     raise InvalidStream(
       "unsupported PDF encryption revision " + revision.to_string(),
     )
@@ -614,7 +667,12 @@ fn PdfFile::unlock(self : PdfFile, password : String) -> Unit raise PdfStreamErr
       Some(value) => value
       None => raise InvalidStream("PDF encryption user key is missing")
     }
-    match pdf_r6_unlock(password, owner, user, owner_encrypted, user_encrypted) {
+    let unlocked = if revision == 5 {
+      pdf_r5_unlock(password, owner, user, owner_encrypted, user_encrypted)
+    } else {
+      pdf_r6_unlock(password, owner, user, owner_encrypted, user_encrypted)
+    }
+    match unlocked {
       Some(value) => value
       None => raise InvalidStream("PDF password is incorrect")
     }

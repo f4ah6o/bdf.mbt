@@ -80,11 +80,11 @@
   ExtGState soft masks, JPX images, full JBIG2 decoding (generic arithmetic and
   MMR regions, symbol dictionaries, text regions, refinement, pattern
   dictionaries and halftone), Type3 glyph procedures, URI actions on form
-  fields, and standard-security-handler revisions 2, 3, 4 and 6 (RC4, AES-128
-  and AES-256) are supported. Revision 5 encryption, encoded images with
-  colour-key masks, tagged structure, and CCITT/JBIG2/JPX masks combined with
-  colour-key masks remain explicit gaps; CCITT G3/G4 image XObjects and inline
-  images are decoded.
+  fields, and standard-security-handler revisions 2, 3, 4, 5 and 6 (RC4,
+  AES-128 and AES-256) are supported. Encoded images with colour-key masks,
+  tagged structure, and CCITT/JBIG2/JPX masks combined with colour-key masks
+  remain explicit gaps; CCITT G3/G4 image XObjects and inline images are
+  decoded.
 - XLSX: `convert/xlsx` renders styled worksheets with number formats, merges,
   row/column geometry, print areas, conditional formats, tables, links,
   pictures, drawings and charts, plus fixed chart-sheet pages, with upstream
