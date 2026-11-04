@@ -1241,7 +1241,13 @@ fn docx_text_inlines(
         }
       }
       "hyperlink" => {
-        let link = docx_attribute_any(child.element, "id", "")
+        let mut link = docx_attribute_any(child.element, "id", "")
+        if link == "" {
+          let anchor = docx_attribute(child.element, "anchor", "")
+          if anchor != "" {
+            link = "#anchor:" + anchor
+          }
+        }
         let old = walker.current_link
         if link != "" {
           walker.current_link = link

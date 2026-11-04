@@ -676,6 +676,7 @@ fn docx_emit_para_line(
   top : Double,
   available : Double,
   fonts : Map[String, Int32],
+  bookmark_pages : Map[String, Int32],
   field_value : (String, String) -> String,
   warnings : Array[String],
 ) -> Unit raise {
@@ -762,7 +763,15 @@ fn docx_emit_para_line(
       Float::from_double(advance),
     )
     if item.link != "" {
-      let url = docx_link_target(package, part, item.link)
+      let url = if item.link.has_prefix("#anchor:") {
+        let name = item.link[8:].to_owned()
+        match bookmark_pages.get(name) {
+          Some(page) => "#page=" + page.to_string()
+          None => ""
+        }
+      } else {
+        docx_link_target(package, part, item.link)
+      }
       if url != "" {
         object.link(
           Float::from_double(x_origin + offset + item.x),
@@ -1125,6 +1134,7 @@ priv struct DocxEmitContext {
   part : String
   fonts : Map[String, Int32]
   warnings : Array[String]
+  bookmark_pages : Map[String, Int32]
   field_value : (String, String) -> String
 }
 
@@ -1273,6 +1283,7 @@ fn docx_emit_table_lines(
             y_origin + top - cut0,
             cell_layout.w - cell_layout.mar_left - cell_layout.mar_right,
             ctx.fonts,
+            ctx.bookmark_pages,
             ctx.field_value,
             ctx.warnings,
           )
@@ -1839,6 +1850,7 @@ fn docx_flow_emit_story(
     part,
     fonts,
     warnings: flow.warnings,
+    bookmark_pages: flow.bookmark_pages,
     field_value: fn(typ, format) { docx_flow_field_value(flow, typ, format) },
   }
   for line in layout.lines {
@@ -1852,6 +1864,7 @@ fn docx_flow_emit_story(
       y,
       width,
       fonts,
+      ctx.bookmark_pages,
       ctx.field_value,
       flow.warnings,
     )
@@ -2817,6 +2830,7 @@ fn docx_flow_emit_paragraph(
     part: flow.document.part,
     fonts: flow.body_fonts,
     warnings: flow.warnings,
+    bookmark_pages: flow.bookmark_pages,
     field_value: fn(typ, format) { docx_flow_field_value(flow, typ, format) },
   }
   fn emit(line : DocxParaLine, x : Double, available : Double) -> Unit raise {
@@ -2835,6 +2849,7 @@ fn docx_flow_emit_paragraph(
       flow.y,
       available,
       flow.body_fonts,
+      ctx.bookmark_pages,
       ctx.field_value,
       flow.warnings,
     )
@@ -3045,6 +3060,7 @@ fn docx_flow_table_context(flow : DocxFlow) -> DocxEmitContext {
     part: flow.document.part,
     fonts: flow.body_fonts,
     warnings: flow.warnings,
+    bookmark_pages: flow.bookmark_pages,
     field_value: fn(typ, format) { docx_flow_field_value(flow, typ, format) },
   }
 }

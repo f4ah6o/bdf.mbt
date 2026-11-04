@@ -1227,6 +1227,25 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX bookmark hyperlinks point at the bookmark page" {
+  let blocks = "<w:p><w:bookmarkStart w:id=\"0\" w:name=\"Target\"/><w:r><w:t>TARGET</w:t></w:r><w:bookmarkEnd w:id=\"0\"/></w:p>" +
+    "<w:p><w:hyperlink w:anchor=\"Target\"><w:r><w:t>GO</w:t></w:r></w:hyperlink></w:p>"
+  let commands = docx_test_page_commands(
+    convert(docx_test_docx(blocks, DOCX_TEST_SECTION, [])), "pages", 0, "body",
+  )
+  let mut found = false
+  for command in commands {
+    match command {
+      @render.Link(_, _, _, _, url) =>
+        if url == "#page=1" {
+          found = true
+        }
+      _ => ()
+    }
+  }
+  assert_true(found)
+}
+
 test "DOCX external hyperlinks become link commands" {
   let rels = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
     "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">" +

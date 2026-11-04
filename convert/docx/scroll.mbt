@@ -66,6 +66,7 @@ fn docx_scroll_draw(
     part,
     fonts,
     warnings,
+    bookmark_pages: Map([]),
     field_value: fn(_, _) { "" },
   }
   let mut y = 0.0
