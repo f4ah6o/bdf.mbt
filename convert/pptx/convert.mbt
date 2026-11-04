@@ -1995,6 +1995,36 @@ fn pptx_line_path(
 }
 
 ///|
+fn pptx_area_path(
+  values : Array[Double],
+  maximum : Double,
+  left : Double,
+  top : Double,
+  width : Double,
+  height : Double,
+) -> @core.Path {
+  let verbs : Array[Byte] = [0]
+  let coordinates : Array[Double] = [left, top + height]
+  let count = values.length().to_double()
+  for index, value in values {
+    let x = if count <= 1.0 {
+      left + width / 2.0
+    } else {
+      left + width * index.to_double() / (count - 1.0)
+    }
+    let y = top + height - height * value / maximum
+    verbs.push(1)
+    coordinates.push(x)
+    coordinates.push(y)
+  }
+  verbs.push(1)
+  coordinates.push(left + width)
+  coordinates.push(top + height)
+  verbs.push(4)
+  { verbs: Bytes::from_array(verbs), coordinates, }
+}
+
+///|
 fn pptx_pie_path(
   cx : Double,
   cy : Double,
@@ -2159,6 +2189,7 @@ fn pptx_emit_chart(
   let plot_area = pptx_child(chart_space, "plotArea")
   let bar = pptx_child(plot_area, "barChart")
   let line_chart = pptx_child(plot_area, "lineChart")
+  let area_chart = pptx_child(plot_area, "areaChart")
   let pie_chart = pptx_child(plot_area, "pieChart")
   let chart = match bar {
     Some(value) => value
@@ -2168,12 +2199,17 @@ fn pptx_emit_chart(
         None =>
           match pie_chart {
             Some(value) => value
-            None => return
+            None =>
+              match area_chart {
+                Some(value) => value
+                None => return
+              }
           }
       }
   }
   let kind = chart.element.name.local_name
   let is_bar = kind == "barChart"
+  let is_area = kind == "areaChart"
   let is_pie = kind == "pieChart"
   let horizontal = is_bar &&
     (match pptx_child(Some(chart), "barDir") {
@@ -2520,6 +2556,41 @@ fn pptx_emit_chart(
           used += item.values[index]
         }
       }
+    }
+  } else if is_area {
+    for item in series {
+      if item.values.is_empty() {
+        continue
+      }
+      let area_path = object.add_path(
+        @core.Inline(
+          pptx_area_path(
+            item.values,
+            axis_high,
+            plot_x,
+            plot_y,
+            plot_width,
+            plot_height,
+          ),
+        ),
+      )
+      object.fill_color(item.color)
+      object.fill_path(area_path, 0)
+      let line_path = object.add_path(
+        @core.Inline(
+          pptx_line_path(
+            item.values,
+            axis_high,
+            plot_x,
+            plot_y,
+            plot_width,
+            plot_height,
+          ),
+        ),
+      )
+      object.line(2.0F, 0, 0, 8.0F)
+      object.stroke_color(item.color)
+      object.stroke_path(line_path)
     }
   } else if line_chart is Some(_) {
     for item in series {
