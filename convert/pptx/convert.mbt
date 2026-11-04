@@ -2471,12 +2471,18 @@ fn pptx_emit_chart(
           4.0,
         )
         if show_values {
+          let label_text = if show_label_categories &&
+            index < item.categories.length() {
+            item.categories[index] + " " + pptx_chart_tick_text(value)
+          } else {
+            pptx_chart_tick_text(value)
+          }
           pptx_chart_label(
             object,
             label_font,
             7.0,
             black,
-            pptx_chart_tick_text(value),
+            label_text,
             px + 3.0,
             py - 9.0,
           )
@@ -2627,12 +2633,18 @@ fn pptx_emit_chart(
           4.0,
         )
         if show_values {
+          let label_text = if show_label_categories &&
+            index < categories.length() {
+            categories[index] + " " + pptx_chart_tick_text(value)
+          } else {
+            pptx_chart_tick_text(value)
+          }
           pptx_chart_label(
             object,
             label_font,
             7.0,
             black,
-            pptx_chart_tick_text(value),
+            label_text,
             cx + @math.cos(angle) * distance + 3.0,
             cy + @math.sin(angle) * distance - 9.0,
           )

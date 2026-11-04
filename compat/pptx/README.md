@@ -93,8 +93,8 @@ Tables render cell text with wrapped lines, cell fills, text
 colors/sizes/bold/italic/alignment, vertical anchors, margins, per-side borders,
 grid widths/spans, row heights/spans and vertical merges. Bar (clustered and
 stacked, horizontal and vertical), line, area, scatter, radar and pie charts draw their series, axis titles,
-bar/line/radar/scatter value labels (with optional category names on bars),
-stacked segment labels and pie percentage/value labels from `dLbls`, legends, category labels and value-axis
+bar/line/radar/scatter value labels with optional category names, stacked
+segment labels and pie percentage/value labels from `dLbls`, legends, category labels and value-axis
 ticks. Office
 Math in `a14:m` is linearized to text (fractions, roots, scripts, n-ary
 operators, delimiters, matrices, accents and groups); the `mc:Choice` that
