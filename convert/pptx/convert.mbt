@@ -1957,9 +1957,22 @@ fn pptx_chart_values(node : PptxXmlNode?, child_name : String) -> Array[String] 
   let values : Array[String] = []
   for point in pptx_children(cache) {
     if point.element.name.local_name == "pt" {
-      match pptx_child(Some(point), "v") {
-        Some(value) => values.push(value.text.to_string())
-        None => values.push("")
+      let index = @string.parse_int(
+        pptx_attribute(point.element, "idx", "0"),
+      ) catch {
+        _ => -1
+      }
+      let text = match pptx_child(Some(point), "v") {
+        Some(value) => value.text.to_string()
+        None => ""
+      }
+      if index >= 0 {
+        while values.length() <= index {
+          values.push("")
+        }
+        values[index] = text
+      } else {
+        values.push(text)
       }
     }
   }

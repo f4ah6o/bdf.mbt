@@ -105,7 +105,8 @@ from `dLbls`, legends with colour swatches and `txPr` text styles, deleted entri
 overlay mode, category labels and value-axis ticks with `txPr` text
 styles, explicit `c:majorUnit`/`c:minorUnit`, `c:scaling/c:min`/`c:max` (automatically extending below zero for negative
 values), negative bars and mixed-sign stacks drawn from a visible zero line, value-axis
-`c:numFmt`, chart/plot-area `c:spPr` fills and borders, and major/minor gridlines. Office
+`c:numFmt`, chart/plot-area `c:spPr` fills and borders, major/minor gridlines, and
+sparse point caches keep their `idx` positions. Office
 Math in `a14:m` is linearized to text (fractions, roots, scripts, n-ary
 operators, delimiters, matrices, accents and groups); the `mc:Choice` that
 holds math is preferred over its `mc:Fallback` picture.
