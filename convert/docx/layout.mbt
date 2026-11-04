@@ -197,6 +197,9 @@ fn docx_layout_paragraph(
       size,
       color: docx_run_color(item.props),
       rise,
+      underline: item.props.underline,
+      strike: (item.props.toggles & 16) != 0 ||
+        (item.props.toggles & 32) != 0,
       x: line_x,
       advance,
       shade: item.shade,
@@ -289,6 +292,8 @@ fn docx_layout_paragraph(
               size,
               color: docx_run_color(item.props),
               rise: 0.0,
+              underline: "",
+              strike: false,
               x: line_x,
               advance,
               shade: None,
@@ -386,6 +391,8 @@ fn docx_layout_paragraph(
             size,
             color: 0x000000ffU,
             rise: 0.0,
+            underline: "",
+            strike: false,
             x: line_x,
             advance,
             shade: None,
@@ -410,6 +417,8 @@ fn docx_layout_paragraph(
             size,
             color: 0x000000ffU,
             rise: 0.0,
+            underline: "",
+            strike: false,
             x: line_x,
             advance,
             shade: None,
@@ -432,6 +441,8 @@ fn docx_layout_paragraph(
           size: 10.0,
           color: 0x000000ffU,
           rise: 0.0,
+          underline: "",
+          strike: false,
           x: line_x,
           advance: 0.0,
           shade: None,
@@ -456,6 +467,8 @@ fn docx_layout_paragraph(
           size,
           color: docx_run_color(item.props),
           rise: 0.0,
+          underline: "",
+          strike: false,
           x: line_x,
           advance,
           shade: item.shade,
@@ -870,6 +883,25 @@ fn docx_emit_para_line(
           url,
         )
       }
+    }
+    let draw_x = x_origin + offset + item.x
+    if item.underline != "" && item.underline != "none" {
+      object.fill_color(item.color)
+      object.fill_rect(
+        Float::from_double(draw_x),
+        Float::from_double(top + baseline + 1.5 - item.rise),
+        Float::from_double(advance),
+        0.6F,
+      )
+    }
+    if item.strike {
+      object.fill_color(item.color)
+      object.fill_rect(
+        Float::from_double(draw_x),
+        Float::from_double(top + baseline - item.size * 0.35 - item.rise),
+        Float::from_double(advance),
+        0.6F,
+      )
     }
   }
   for image in line.images {
