@@ -1009,6 +1009,47 @@ fn docx_keep_pages(result : DocxResult) -> Array[Int32] raise {
   pages
 }
 
+fn docx_keep_next_fixture(keep : Bool) -> Bytes raise {
+  let keep_prop = if keep { "<w:keepNext/>" } else { "" }
+  let props = "<w:pPr><w:spacing w:before=\"12360\"/>" + keep_prop +
+    "</w:pPr>"
+  let body = "<w:p>" + props +
+    "<w:r><w:rPr><w:sz w:val=\"40\"/></w:rPr><w:t>KEEPWITH</w:t></w:r></w:p>" +
+    "<w:p><w:r><w:t>" + docx_test_repeat("NEXTWORD ", 20) +
+    "</w:t></w:r></w:p>"
+  docx_test_docx(body, DOCX_TEST_SECTION, [])
+}
+
+///|
+fn docx_marker_pages(result : DocxResult, marker : String) -> Array[Int32] raise {
+  let doc = @core.open_single(result.bdf)
+  let view = doc.manifest.views[0]
+  let hash = match view.text_index {
+    Some(value) => value
+    None => return []
+  }
+  let pages : Array[Int32] = []
+  for run in @core.decode_text_index(doc.part(hash)) {
+    if run.text.contains(marker) && !pages.contains(run.a) {
+      pages.push(run.a)
+    }
+  }
+  pages
+}
+
+test "DOCX keepNext keeps the next paragraph on the page" {
+  let plain = convert(docx_keep_next_fixture(false))
+  let keep = convert(docx_keep_next_fixture(true))
+  let plain_first = docx_marker_pages(plain, "KEEPWITH")
+  let plain_next = docx_marker_pages(plain, "NEXTWORD")
+  let keep_first = docx_marker_pages(keep, "KEEPWITH")
+  let keep_next = docx_marker_pages(keep, "NEXTWORD")
+  assert_true(!plain_first.is_empty() && !plain_next.is_empty())
+  assert_true(plain_first[0] < plain_next[0])
+  assert_true(!keep_first.is_empty() && !keep_next.is_empty())
+  assert_eq(keep_first[0], keep_next[0])
+}
+
 test "DOCX keepLines does not split a paragraph across pages" {
   let plain = convert(docx_keep_lines_fixture(false))
   let keep = convert(docx_keep_lines_fixture(true))

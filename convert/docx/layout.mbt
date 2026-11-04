@@ -2463,6 +2463,7 @@ fn docx_flow_flush_page(flow : DocxFlow) -> Unit raise {
 fn docx_flow_emit_paragraph(
   flow : DocxFlow,
   paragraph : DocxTextParagraph,
+  next~ : DocxBlock? = None,
 ) -> Unit raise {
   let props = paragraph.props
   let mark_size = if paragraph.mark.size > 0.0 {
@@ -2483,6 +2484,30 @@ fn docx_flow_emit_paragraph(
   }
   if props.before > 0.0 {
     flow.y += props.before
+  }
+  if props.keep_next && !flow.vertical {
+    let mut current = 0.0
+    for line in layout.lines {
+      current += line.height
+    }
+    let next_height = match next {
+      Some(DocxParaBlock(value)) => {
+        let next_layout = docx_layout_paragraph(
+          value.items, value.props, flow.width, flow.line_pitch, 10.0, false,
+        )
+        if next_layout.lines.is_empty() {
+          0.0
+        } else {
+          next_layout.lines[0].height
+        }
+      }
+      Some(DocxTableBlock(_)) => 14.0
+      None => 0.0
+    }
+    let room = flow.bottom - flow.section.top
+    if current <= room && current + next_height > 0.0 {
+      docx_flow_ensure(flow, current + next_height)
+    }
   }
   if !flow.vertical &&
     (props.keep_lines || props.widow_control) &&
@@ -2945,7 +2970,7 @@ fn docx_layout_document(
     page_notes: [],
   }
   docx_flow_new_page(flow)
-  for block in document.blocks {
+  for i, block in document.blocks {
     let index = match block {
       DocxParaBlock(paragraph) => paragraph.section_index
       DocxTableBlock(table) => table.section_index
@@ -2953,8 +2978,13 @@ fn docx_layout_document(
     if index != flow.section_index {
       docx_flow_section(flow, index)
     }
+    let next = if i + 1 < document.blocks.length() {
+      Some(document.blocks[i + 1])
+    } else {
+      None
+    }
     match block {
-      DocxParaBlock(paragraph) => docx_flow_emit_paragraph(flow, paragraph)
+      DocxParaBlock(paragraph) => docx_flow_emit_paragraph(flow, paragraph, next~)
       DocxTableBlock(table) => docx_flow_emit_table(flow, table)
     }
   }
