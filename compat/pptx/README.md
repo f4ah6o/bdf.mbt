@@ -142,7 +142,7 @@ and bar/line/pie/radar/scatter charts with `c:dTable` draw a category/series/val
 honouring the show and border flags; the built-in
 The 74 predefined table-style IDs resolve their whole-table, header, band and
 last-row/edge-column fills, their header/body text colours and their family
-borders (the grid/rule sides are approximated per family);
+borders and cell diagonals (the grid/rule sides are approximated per family);
 `normAutofit` font scale and
 line-spacing reduction are applied, while advanced vertical
 glyph stacking is not implemented; chart label

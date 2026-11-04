@@ -1112,7 +1112,9 @@ fn pptx_cell_borders(
 ) -> Array[(Int32, Double, UInt32)] {
   let result : Array[(Int32, Double, UInt32)] = []
   let props = pptx_child(Some(cell), "tcPr")
-  let names = ["lnT", "lnR", "lnB", "lnL"]
+  let names = [
+    "lnT", "lnR", "lnB", "lnL", "lnTlToBr", "lnBlToTr",
+  ]
   for side, name in names {
     match pptx_child(props, name) {
       Some(line) => {
@@ -1641,7 +1643,21 @@ fn pptx_emit_table(
               cell_x + column_width,
               row_top + cell_height,
             ]
-          _ => [cell_x, row_top, cell_x, row_top + cell_height]
+          3 => [cell_x, row_top, cell_x, row_top + cell_height]
+          4 =>
+            [
+              cell_x,
+              row_top,
+              cell_x + column_width,
+              row_top + cell_height,
+            ]
+          _ =>
+            [
+              cell_x + column_width,
+              row_top,
+              cell_x,
+              row_top + cell_height,
+            ]
         }
         let path : @core.Path = { verbs: b"\x00\x01", coordinates, }
         object.line(Float::from_double(border_width), 0, 0, 8.0F)
