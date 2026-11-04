@@ -1127,15 +1127,16 @@ fn pptx_emit_table(
         continue
       }
       let span = pptx_cell_grid_span(cell)
-      let mut column_width = if grid.length() == cell_count {
-        grid[cell_index.to_int()]
+      let grid_index = cell_index.to_int()
+      let mut column_width = if grid_index >= 0 && grid_index < grid.length() {
+        grid[grid_index]
       } else {
         cell_width
       }
-      if span > 1 && cell_index.to_int() + span <= grid.length() {
+      if span > 1 && grid_index >= 0 && grid_index + span <= grid.length() {
         column_width = 0.0
         for k in 0..<span {
-          column_width += grid[cell_index.to_int() + k]
+          column_width += grid[grid_index + k]
         }
       }
       let row_span = pptx_cell_row_span(cell)
@@ -1224,15 +1225,16 @@ fn pptx_emit_table(
         continue
       }
       let span = pptx_cell_grid_span(cell)
-      let mut column_width = if grid.length() == cell_count {
-        grid[cell_index.to_int()]
+      let grid_index = cell_index.to_int()
+      let mut column_width = if grid_index >= 0 && grid_index < grid.length() {
+        grid[grid_index]
       } else {
         cell_width
       }
-      if span > 1 && cell_index.to_int() + span <= grid.length() {
+      if span > 1 && grid_index >= 0 && grid_index + span <= grid.length() {
         column_width = 0.0
         for k in 0..<span {
-          column_width += grid[cell_index.to_int() + k]
+          column_width += grid[grid_index + k]
         }
       }
       let text = pptx_cell_text(cell)

@@ -443,6 +443,263 @@ fn docx_text_drawing(
 }
 
 ///|
+fn docx_omml_attr(node : DocxXmlNode, name : String, default : String) -> String {
+  docx_attribute(node.element, name, default)
+}
+
+///|
+fn docx_omml_join(node : DocxXmlNode) -> String {
+  let out = StringBuilder()
+  for child in node.children {
+    let name = child.name()
+    if name == "rPr" ||
+      name == "ctrlPr" ||
+      name == "sdtPr" ||
+      name == "bookmarkStart" ||
+      name == "bookmarkEnd" {
+      continue
+    }
+    out.write_string(docx_omml_linear(child))
+  }
+  out.to_string()
+}
+
+///|
+fn docx_omml_wrap(text : String) -> String {
+  if text == "" {
+    return text
+  }
+  let mut simple = text.length() == 1
+  if text.length() > 1 {
+    simple = true
+    for c in text {
+      if c == ' ' ||
+        c == '+' ||
+        c == '-' ||
+        c == '=' ||
+        c == ',' ||
+        c == ';' ||
+        c == '/' ||
+        c == '*' ||
+        c == '<' ||
+        c == '>' ||
+        c == '\u2212' ||
+        c == '\u00b1' ||
+        c == '\u00d7' ||
+        c == '\u00f7' ||
+        c == '\u2211' ||
+        c == '\u222b' ||
+        c == '\u221a' ||
+        c == '\u00b7' ||
+        c == '\u2264' ||
+        c == '\u2265' ||
+        c == '\u2260' ||
+        c == '\u221e' ||
+        c == '\u03c0' {
+        simple = false
+        break
+      }
+    }
+  }
+  if simple {
+    text
+  } else if text.length() >= 2 &&
+    text[0] == '(' &&
+    text[text.length() - 1] == ')' {
+    text
+  } else {
+    "(" + text + ")"
+  }
+}
+
+///|
+fn docx_omml_paren(text : String) -> String {
+  if text.length() >= 2 && text[0] == '(' && text[text.length() - 1] == ')' {
+    text
+  } else {
+    "(" + text + ")"
+  }
+}
+
+///|
+fn docx_omml_node_text(node : DocxXmlNode?) -> String {
+  match node {
+    Some(value) => docx_omml_join(value)
+    None => ""
+  }
+}
+
+///|
+fn docx_omml_linear(node : DocxXmlNode) -> String {
+  let name = node.name()
+  match name {
+    "t" => node.text.to_string()
+    "r" | "e" | "num" | "den" | "sub" | "sup" | "deg" | "lim" | "fName" | "oMath" =>
+      docx_omml_join(node)
+    "f" => {
+      let num = docx_omml_node_text(node.child("num"))
+      let den = docx_omml_node_text(node.child("den"))
+      docx_omml_paren(num) + "/" + docx_omml_paren(den)
+    }
+    "rad" => {
+      let body = docx_omml_node_text(node.child("e"))
+      let degree = docx_omml_node_text(node.child("deg"))
+      if degree == "" {
+        "√(" + body + ")"
+      } else {
+        degree + "√(" + body + ")"
+      }
+    }
+    "sSup" => {
+      let base = docx_omml_node_text(node.child("e"))
+      let sup = docx_omml_node_text(node.child("sup"))
+      docx_omml_wrap(base) + "^" + docx_omml_wrap(sup)
+    }
+    "sSub" => {
+      let base = docx_omml_node_text(node.child("e"))
+      let sub = docx_omml_node_text(node.child("sub"))
+      docx_omml_wrap(base) + "_" + docx_omml_wrap(sub)
+    }
+    "sSubSup" => {
+      let base = docx_omml_node_text(node.child("e"))
+      let sub = docx_omml_node_text(node.child("sub"))
+      let sup = docx_omml_node_text(node.child("sup"))
+      docx_omml_wrap(base) +
+      "_" +
+      docx_omml_wrap(sub) +
+      "^" +
+      docx_omml_wrap(sup)
+    }
+    "sPre" => {
+      let base = docx_omml_node_text(node.child("e"))
+      let sub = docx_omml_node_text(node.child("sub"))
+      let sup = docx_omml_node_text(node.child("sup"))
+      "_" + docx_omml_wrap(sub) + "^" + docx_omml_wrap(sup) + docx_omml_wrap(base)
+    }
+    "nary" => {
+      let chr = match node.child("naryPr") {
+        Some(pr) => {
+          let value = docx_omml_attr(pr, "chr", "")
+          if value == "" {
+            "∫"
+          } else {
+            value
+          }
+        }
+        None => "∫"
+      }
+      let sub = docx_omml_node_text(node.child("sub"))
+      let sup = docx_omml_node_text(node.child("sup"))
+      let body = docx_omml_node_text(node.child("e"))
+      let mut out = chr
+      if sub != "" {
+        out += "_" + docx_omml_wrap(sub)
+      }
+      if sup != "" {
+        out += "^" + docx_omml_wrap(sup)
+      }
+      out + " " + body
+    }
+    "func" => {
+      let fname = docx_omml_node_text(node.child("fName"))
+      let body = docx_omml_node_text(node.child("e"))
+      fname + " " + body
+    }
+    "limLow" => {
+      let base = docx_omml_node_text(node.child("e"))
+      let lim = docx_omml_node_text(node.child("lim"))
+      docx_omml_wrap(base) + "_" + docx_omml_wrap(lim)
+    }
+    "limUpp" => {
+      let base = docx_omml_node_text(node.child("e"))
+      let lim = docx_omml_node_text(node.child("lim"))
+      docx_omml_wrap(base) + "^" + docx_omml_wrap(lim)
+    }
+    "d" => {
+      let pr = node.child("dPr")
+      let beg = match pr {
+        Some(value) => {
+          let attr = docx_omml_attr(value, "begChr", "")
+          if attr == "" {
+            "("
+          } else {
+            attr
+          }
+        }
+        None => "("
+      }
+      let end = match pr {
+        Some(value) => {
+          let attr = docx_omml_attr(value, "endChr", "")
+          if attr == "" {
+            ")"
+          } else {
+            attr
+          }
+        }
+        None => ")"
+      }
+      beg + docx_omml_node_text(node.child("e")) + end
+    }
+    "m" => {
+      let rows : Array[String] = []
+      for row in node.children {
+        if row.name() != "mr" {
+          continue
+        }
+        let cells : Array[String] = []
+        for cell in row.children {
+          if cell.name() == "e" {
+            cells.push(docx_omml_join(cell))
+          }
+        }
+        rows.push(cells.join(", "))
+      }
+      "(" + rows.join("; ") + ")"
+    }
+    "acc" | "bar" | "groupChr" | "box" | "borderBox" | "phant" =>
+      docx_omml_node_text(node.child("e"))
+    "eqArr" => {
+      let rows : Array[String] = []
+      for child in node.children {
+        if child.name() == "e" {
+          rows.push(docx_omml_join(child))
+        }
+      }
+      rows.join("; ")
+    }
+    _ => docx_omml_join(node)
+  }
+}
+
+///|
+fn docx_alternate_content(node : DocxXmlNode) -> DocxXmlNode? {
+  for child in node.children {
+    if child.name() == "Choice" {
+      return Some(child)
+    }
+  }
+  for child in node.children {
+    if child.name() == "Fallback" {
+      return Some(child)
+    }
+  }
+  None
+}
+
+///|
+fn docx_text_omml(
+  node : DocxXmlNode,
+  items : Array[DocxTextItem],
+  props : DocxRunProps,
+) -> Unit {
+  let text = docx_omml_linear(node)
+  if text != "" {
+    docx_text_chars(items, text, props)
+  }
+}
+
+///|
 fn docx_text_run(
   node : DocxXmlNode,
   items : Array[DocxTextItem],
@@ -459,11 +716,9 @@ fn docx_text_run(
     }
   }
   let props = styles.resolve_run(paragraph_style, node.child("rPr"))
-  if (props.toggles & (4 | 8 | 64)) != 0 {
-    docx_text_unsupported("run text case conversion or hidden text")
-  }
-  if props.tcy {
-    docx_text_unsupported("vertical combined text")
+  // Hidden text is not part of the visible document.
+  if (props.toggles & 64) != 0 {
+    return
   }
   for child in node.children {
     let name = child.name()
@@ -479,7 +734,13 @@ fn docx_text_run(
         if !child.children.is_empty() {
           docx_text_unsupported(name)
         }
-        docx_text_chars(items, child.text.to_string(), props)
+        let text = child.text.to_string()
+        let text = if (props.toggles & (4 | 8)) != 0 {
+          text.to_upper()
+        } else {
+          text
+        }
+        docx_text_chars(items, text, props)
       }
       "tab" | "ptab" => docx_text_push(items, "tab", "\t", props)
       "br" => {
@@ -501,6 +762,23 @@ fn docx_text_run(
       "noBreakHyphen" => docx_text_chars(items, "\u2011", props)
       "softHyphen" | "lastRenderedPageBreak" => ()
       "drawing" => docx_text_drawing(child, items, props)
+      "footnoteReference" | "endnoteReference" | "commentReference" => ()
+      "instrText" | "delText" | "fldChar" => ()
+      "sym" => {
+        let code = docx_attribute(child.element, "char", "")
+        let value = @string.parse_int(code, base=16) catch { _ => -1 }
+        if value > 0 && value <= 0x10ffff {
+          docx_text_chars(items, Char::from_int(value).to_string(), props)
+        }
+      }
+      "oMath" | "oMathPara" => docx_text_omml(child, items, props)
+      "AlternateContent" => {
+        match docx_alternate_content(child) {
+          Some(chosen) =>
+            docx_text_inlines(chosen, items, styles, paragraph_style)
+          None => ()
+        }
+      }
       other => docx_text_unsupported(other)
     }
   }
@@ -517,8 +795,20 @@ fn docx_text_inlines(
     match child.name() {
       "pPr" => ()
       "r" => docx_text_run(child, items, styles, paragraph_style)
-      "smartTag" | "customXml" | "ins" | "moveTo" =>
-        docx_text_inlines(child, items, styles, paragraph_style)
+      "hyperlink" | "smartTag" | "customXml" | "ins" | "moveTo" | "fldSimple" |
+      "dir" | "bdo" => docx_text_inlines(child, items, styles, paragraph_style)
+      "oMath" | "oMathPara" => {
+        let props = styles.resolve_run(paragraph_style, None)
+        docx_text_omml(child, items, props)
+      }
+      "bookmarkStart" | "bookmarkEnd" | "proofErr" | "commentRangeStart" |
+      "commentRangeEnd" | "permStart" | "permEnd" | "del" | "moveFrom" => ()
+      "AlternateContent" =>
+        match docx_alternate_content(child) {
+          Some(chosen) =>
+            docx_text_inlines(chosen, items, styles, paragraph_style)
+          None => ()
+        }
       "sdt" => {
         let mut seen_content = false
         for sub in child.children {
@@ -864,9 +1154,15 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     Some(rel) => rel.target
     None => "word/document.xml"
   }
-  for typ in ["/settings", "/footnotes", "/endnotes"] {
-    if package.relationship_of_type(part, typ) is Some(_) {
-      docx_text_unsupported(typ)
+  // Settings, footnotes and endnotes are read by later layout stages; a
+  // document that has them is not rejected here.
+  for typ in ["/footnotes", "/endnotes"] {
+    match package.relationship_of_type(part, typ) {
+      Some(rel) =>
+        if rel.external {
+          docx_text_unsupported("external " + typ)
+        }
+      None => ()
     }
   }
   let styles = match package.relationship_of_type(part, "/styles") {

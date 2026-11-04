@@ -60,7 +60,7 @@ test "DOCX style run copies isolate mutable arrays" {
 }
 
 ///|
-test "DOCX style resolver rejects colour and applies numbering" {
+test "DOCX style resolver applies colour and numbering" {
   let sheet = docx_styles_from_xml(
     "<styles><style type=\"paragraph\" styleId=\"bad\"><rPr><color val=\"FF0000\"/></rPr></style><style type=\"paragraph\" styleId=\"num\"><pPr><numPr/></pPr></style><style type=\"paragraph\" styleId=\"good\" default=\"1\"/></styles>",
   )
@@ -69,13 +69,9 @@ test "DOCX style resolver rejects colour and applies numbering" {
   let bad = sheet.resolve_paragraph(
     Some(docx_text_xml("<pPr><pStyle val=\"bad\"/></pPr>")),
   )
-  let reject_color = try {
-    ignore(sheet.resolve_run(bad.0, None))
-    false
-  } catch {
-    _ => true
-  }
-  assert_true(reject_color)
+  let resolved = sheet.resolve_run(bad.0, None)
+  assert_eq(resolved.color, 0xff0000ffU)
+  assert_false(resolved.auto_color)
   let reject_numbering = try {
     ignore(
       sheet.resolve_paragraph(

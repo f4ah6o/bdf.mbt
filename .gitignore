@@ -1,4 +1,15 @@
 _build/
+.upstream/
+.upstream-bin/
+.upstream-gomod/
+.upstream-gopath/
+.upstream-gocache/
+.tmp/
 .mooncakes/
 node_modules/
 .vlmkit/
+.moon-home/
+.moon-registry/
+.moon-deps/
+.npm-cache/
+.npm-logs/

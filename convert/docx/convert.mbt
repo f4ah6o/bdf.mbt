@@ -268,6 +268,43 @@ fn docx_render_document(
   let index_runs : Array[@core.IndexRun] = []
   let index_budget = @render.TextExtractionBudget::new()
 
+  fn same_line_style(a : DocxLineItem, b : DocxLineItem) -> Bool {
+    a.font == b.font &&
+    a.weight == b.weight &&
+    a.style == b.style &&
+    a.size == b.size &&
+    a.color == b.color &&
+    a.shade == b.shade &&
+    a.border_width == b.border_width &&
+    a.border_color == b.border_color
+  }
+
+  // One text object per run keeps the text index readable: a run of
+  // characters that shares a style is emitted as one fillText, not as one
+  // object per character.
+  fn merge_line_items(items : Array[DocxLineItem]) -> Array[DocxLineItem] {
+    let merged : Array[DocxLineItem] = []
+    for item in items {
+      let join = match merged.last() {
+        Some(last) =>
+          same_line_style(last, item) &&
+          (item.x - (last.x + last.advance)).abs() < 0.25
+        None => false
+      }
+      if join {
+        let last = merged[merged.length() - 1]
+        merged[merged.length() - 1] = {
+          ..last,
+          text: last.text + item.text,
+          advance: last.advance + item.advance,
+        }
+      } else {
+        merged.push(item)
+      }
+    }
+    merged
+  }
+
   fn emit_line(
     items : Array[DocxLineItem],
     align : String,
@@ -277,37 +314,36 @@ fn docx_render_document(
     if items.is_empty() {
       return
     }
-    let width = items[items.length() - 1].x +
-      items[items.length() - 1].advance -
-      start
+    let runs = merge_line_items(items)
+    let width = runs[runs.length() - 1].x + runs[runs.length() - 1].advance - start
     let offset = match align {
       "right" => Double::max(0.0, end - start - width)
       "center" => Double::max(0.0, (end - start - width) / 2.0)
       _ => 0.0
     }
-    if items[0].border_width > 0.0 {
-      object.line(Float::from_double(items[0].border_width), 0, 0, 8.0F)
-      object.stroke_color(items[0].border_color.unwrap_or(0x000000ffU))
+    if runs[0].border_width > 0.0 {
+      object.line(Float::from_double(runs[0].border_width), 0, 0, 8.0F)
+      object.stroke_color(runs[0].border_color.unwrap_or(0x000000ffU))
       object.stroke_rect(
         Float::from_double(start + offset),
-        Float::from_double(y - items[0].size * 1.2),
+        Float::from_double(y - runs[0].size * 1.2),
         Float::from_double(width),
-        Float::from_double(items[0].size * 1.2),
+        Float::from_double(runs[0].size * 1.2),
       )
     }
-    match items[0].shade {
+    match runs[0].shade {
       Some(color) => {
         object.fill_color(color)
         object.fill_rect(
           Float::from_double(start + offset),
-          Float::from_double(y - items[0].size * 1.2),
+          Float::from_double(y - runs[0].size * 1.2),
           Float::from_double(width),
-          Float::from_double(items[0].size * 1.2),
+          Float::from_double(runs[0].size * 1.2),
         )
       }
       None => ()
     }
-    for item in items {
+    for item in runs {
       let index = ensure_font(object, item)
       object.font(index, Float::from_double(item.size))
       object.fill_color(item.color)
@@ -333,26 +369,6 @@ fn docx_render_document(
     } else {
       "default"
     }
-    let header_part = docx_story_part(section, true, story_kind)
-    let header_lines = if header_part == "" {
-      []
-    } else {
-      match stories.get(header_part) {
-        Some(value) => value
-        None => {
-          let value = docx_story_text(pkg, header_part) catch { _ => [] }
-          stories[header_part] = value
-          value
-        }
-      }
-    }
-    docx_emit_story(
-      object,
-      header_lines,
-      section.left,
-      section.header + 10.0,
-      10.0,
-    )
     let footer_part = docx_story_part(section, false, story_kind)
     let footer_lines = if footer_part == "" {
       []
@@ -415,12 +431,41 @@ fn docx_render_document(
     flush_page()
     object = @core.ObjectBuilder::new()
     fonts.clear()
+    page_ordinal += 1
+    page_open = true
+    // The header comes before the body in the object stream, so the text
+    // index reads each page as header, body, footer.
+    let story_kind = if section.title_page && page_ordinal == 1 {
+      "first"
+    } else if page_ordinal % 2 == 0 {
+      "even"
+    } else {
+      "default"
+    }
+    let header_part = docx_story_part(section, true, story_kind)
+    let header_lines = if header_part == "" {
+      []
+    } else {
+      match stories.get(header_part) {
+        Some(value) => value
+        None => {
+          let value = docx_story_text(pkg, header_part) catch { _ => [] }
+          stories[header_part] = value
+          value
+        }
+      }
+    }
+    docx_emit_story(
+      object,
+      header_lines,
+      section.left,
+      section.header + 10.0,
+      10.0,
+    )
     y = section.top
     line_start = section.left
     line_x = section.left
     line_width = 0.0
-    page_ordinal += 1
-    page_open = true
   }
 
   fn ensure_page(height : Double) -> Unit raise {

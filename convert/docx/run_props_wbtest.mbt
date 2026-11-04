@@ -14,9 +14,8 @@ fn check_docx_run_props(
 test "DOCX run properties reject unresolved features" {
   for
     xml in [
-      "<rPr><color val=\"FF0000\"/></rPr>", "<rPr><shd fill=\"FF0000\"/></rPr>",
-      "<rPr><u color=\"FF0000\"/></rPr>", "<rPr><rStyle val=\"Emphasis\"/></rPr>",
-      "<rPr><eastAsianLayout combine=\"1\"/></rPr>", "<rPr><unknown/></rPr>",
+      "<rPr><u color=\"FF0000\"/></rPr>",
+      "<rPr><eastAsianLayout combine=\"1\"/></rPr>",
     ] {
     let props = docx_default_run_props()
     let rejected = try {

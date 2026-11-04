@@ -9,8 +9,8 @@ priv struct DocxRunProps {
   mut toggles : Int32
   mut specified : Int32
   mut size : Double
-  color : UInt32
-  auto_color : Bool
+  mut color : UInt32
+  mut auto_color : Bool
   shading : UInt32
   has_shading : Bool
   underline_color : UInt32
@@ -85,8 +85,16 @@ fn DocxRunProps::apply_node(
   for child in node.children {
     let element = child.element
     let name = child.name()
+    // Revision bookkeeping (rPrChange) carries a whole old property set;
+    // it does not describe the text that is drawn now.
+    if name == "rPrChange" {
+      continue
+    }
     if !child.children.is_empty() {
-      docx_text_unsupported(name)
+      match name {
+        "bdr" | "shd" => continue
+        _ => docx_text_unsupported(name)
+      }
     }
     let bit = docx_run_toggle(name)
     if bit != 0 {
@@ -119,12 +127,26 @@ fn DocxRunProps::apply_node(
           self.hint = docx_attribute(element, "hint", "")
         }
       }
-      "sz" => {
+      "sz" | "szCs" => {
         let v = docx_props_number(element, "val", 0.0)
-        if v > 0.0 {
+        if v > 0.0 && name == "sz" {
           self.size = v / 2.0
         }
       }
+      "color" => {
+        self.auto_color = docx_attribute(element, "val", "") == "auto"
+        if !self.auto_color {
+          let hex = docx_attribute(element, "val", "")
+          if hex.length() == 6 {
+            let parsed = @string.parse_int(hex, base=16) catch { _ => -1 }
+            if parsed >= 0 {
+              self.color = (parsed.to_uint() << 8) | 0xffU
+            }
+          }
+        }
+      }
+      "kern" | "noProof" | "snapToGrid" | "specVanish" | "oMath" | "cs" |
+      "bCs" | "iCs" | "effect" | "fitText" | "vanish" => ()
       "highlight" => self.highlight = docx_attribute(element, "val", "")
       "u" => {
         if docx_has_attribute(element, "color") ||
@@ -162,7 +184,9 @@ fn DocxRunProps::apply_node(
         self.tcy = docx_bool(element, "vert", false)
         self.tcy_fit = docx_bool(element, "vertCompress", false)
       }
-      other => docx_text_unsupported(other)
+      // Optional run formatting that does not change the text or its
+      // advances is ignored rather than rejected.
+      _ => ()
     }
   }
 }
