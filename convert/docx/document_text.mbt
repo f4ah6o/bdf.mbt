@@ -687,6 +687,9 @@ fn docx_text_drawing(
     y = anchor_y
     anchor = Some(parsed)
   }
+  let (picture_border_width, picture_border_color) = docx_picture_border(
+    container,
+  )
   items.push({
     kind: "image",
     text: embed,
@@ -715,9 +718,34 @@ fn docx_text_drawing(
     small_caps: false,
     field_format: "",
     shade: None,
-    border_width: 0.0,
-    border_color: None,
+    border_width: picture_border_width,
+    border_color: picture_border_color,
   })
+}
+
+///|
+fn docx_picture_border(node : DocxXmlNode) -> (Double, UInt32?) {
+  let pending : Array[DocxXmlNode] = [node]
+  while !pending.is_empty() {
+    let value = pending.pop().unwrap()
+    if value.name() == "spPr" {
+      match value.child("ln") {
+        Some(line) => {
+          let width = docx_emu(docx_attribute(line.element, "w", "0"))
+          let color = match line.child("solidFill") {
+            Some(fill) => docx_fill_color(fill.element)
+            None => None
+          }
+          return (width, color)
+        }
+        None => ()
+      }
+    }
+    for child in value.children {
+      pending.push(child)
+    }
+  }
+  (0.0, None)
 }
 
 ///|

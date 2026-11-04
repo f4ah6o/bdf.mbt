@@ -725,6 +725,21 @@ fn docx_emit_image(
       Float::from_double(height),
     )
   }
+  if item.border_width > 0.0 {
+    object.line(Float::from_double(item.border_width), 0, 0, 8.0F)
+    object.stroke_color(
+      match item.border_color {
+        Some(value) => value
+        None => 0x000000ffU
+      },
+    )
+    object.stroke_rect(
+      Float::from_double(dx),
+      Float::from_double(dy),
+      Float::from_double(width),
+      Float::from_double(height),
+    )
+  }
 }
 
 ///|

@@ -432,6 +432,41 @@ test "DOCX page fields are regenerated on each page" {
 }
 
 ///|
+test "DOCX picture borders are drawn around images" {
+  let header = docx_test_header(
+    "<w:p><w:r><w:drawing><wp:inline>" +
+    "<wp:extent cx=\"914400\" cy=\"914400\"/>" +
+    "<a:graphic><a:graphicData><pic:pic>" +
+    "<pic:spPr><a:ln w=\"12700\"><a:solidFill>" +
+    "<a:srgbClr val=\"FF0000\"/></a:solidFill></a:ln></pic:spPr>" +
+    "<pic:blipFill><a:blip r:embed=\"rIdImg\"/></pic:blipFill>" +
+    "</pic:pic></a:graphicData></a:graphic>" +
+    "</wp:inline></w:drawing></w:r></w:p>",
+  )
+  let rels = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+    "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">" +
+    "<Relationship Id=\"rIdImg\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"media/logo.png\"/>" +
+    "</Relationships>"
+  let extra : Array[(String, Bytes)] = [
+    ("word/_rels/header1.xml.rels", @utf8.encode(rels)),
+    ("word/media/logo.png", b"not-a-real-png"),
+  ]
+  let result = convert(
+    docx_test_header_document(
+      header, "<w:p><w:r><w:t>Body</w:t></w:r></w:p>", extra,
+    ),
+  )
+  let commands = docx_test_page_commands(result, "pages", 0, "header")
+  let mut strokes = 0
+  for command in commands {
+    match command {
+      StrokeRect(_, _, _, _) => strokes += 1
+      _ => ()
+    }
+  }
+  assert_true(strokes >= 1)
+}
+
 test "DOCX header images are drawn on the page" {
   let header = docx_test_header(
     "<w:p><w:r><w:drawing><wp:inline>" +
