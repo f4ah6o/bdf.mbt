@@ -237,6 +237,34 @@ test "Markdown unknown views are rejected" {
 }
 
 ///|
+test "Markdown emits heading, paragraph and figure marks" {
+  let source = "# Heading\n\nParagraph\n\n![Alt](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lv0nWQAAAABJRU5ErkJggg==)\n"
+  let result = convert(@utf8.encode(source))
+  let doc = @core.open_single(result.bdf)
+  let view = doc.manifest.views[0]
+  let mut headings = 0
+  let mut paragraphs = 0
+  let mut figures = 0
+  let mut ends = 0
+  for page in view.pages {
+    for layer in page.layers {
+      for command in @render.decode_commands(doc.part(layer.object)) {
+        match command {
+          Mark(6, _) => headings += 1
+          Mark(0, _) => paragraphs += 1
+          Mark(10, _) => figures += 1
+          Mark(11, _) => ends += 1
+          _ => ()
+        }
+      }
+    }
+  }
+  assert_eq(headings, 1)
+  assert_eq(paragraphs >= 1, true)
+  assert_eq(figures, 1)
+  assert_eq(ends, 1)
+}
+
 test "Markdown front matter maps Dublin Core terms" {
   let (body, meta) = md_front_matter(
     "---\nauthor:\n  - Alice\n  - name: Bob\ndate: 2026-09-26\ntags: [bdf, markdown]\n---\nbody",

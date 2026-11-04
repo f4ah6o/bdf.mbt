@@ -381,7 +381,9 @@ fn MdPainter::draw_text(
   for run in runs {
     match run.image {
       Some(image) => {
+        self.object.mark(10, run.text)
         self.draw_image(image, cursor, baseline)
+        self.object.mark(11, "")
         cursor += image.width
         self.page_dirty = true
         continue
@@ -489,6 +491,7 @@ fn MdPainter::layout_block(
       self.ensure(before + 24.0)
       self.y += before
       let style = md_heading_style(level, self.scale)
+      self.object.mark(6, level.to_string())
       let styled = runs.map(fn(run) { { ..run, style, } })
       for line in md_wrap_runs(styled, width) {
         let (measured_baseline, measured_advance) = md_line_metrics(line)
@@ -514,6 +517,7 @@ fn MdPainter::layout_block(
         return
       }
       let prepared = md_expand_fill_runs(runs, width)
+      self.object.mark(0, "")
       let size = prepared[0].style.size
       for line in md_wrap_runs(prepared, width) {
         let (measured_baseline, measured_advance) = md_line_metrics(line)
@@ -551,6 +555,7 @@ fn MdPainter::layout_block(
           None => md_push_run(prefixed, run.text, run.style, run.link)
         }
       }
+      self.object.mark(8, "")
       for line in md_wrap_runs(prefixed, item_width) {
         let (measured_baseline, measured_advance) = md_line_metrics(line)
         let baseline = if md_line_image_height(line) > 0.0 {
@@ -635,6 +640,7 @@ fn MdPainter::layout_block(
       self.y += 8.0
     }
     MdImage(alt, url, _title) => {
+      self.object.mark(10, alt)
       match md_resolve_image(url) {
         Some(image) => {
           let fitted = md_fit_image(image, width)
@@ -656,6 +662,7 @@ fn MdPainter::layout_block(
           md_warn_image(self.warnings, url)
         }
       }
+      self.object.mark(11, "")
     }
     MdTable(header, rows, alignments) => self.layout_table(header, rows, alignments, x, width)
   }
