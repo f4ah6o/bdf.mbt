@@ -2484,6 +2484,22 @@ fn docx_flow_emit_paragraph(
   if props.before > 0.0 {
     flow.y += props.before
   }
+  if !flow.vertical &&
+    (props.keep_lines || props.widow_control) &&
+    !layout.lines.is_empty() {
+    let mut keep = 0.0
+    if props.keep_lines {
+      for line in layout.lines {
+        keep += line.height
+      }
+    } else if layout.lines.length() > 1 {
+      keep = layout.lines[0].height + layout.lines[1].height
+    }
+    let room = flow.bottom - flow.section.top
+    if keep > 0.0 && keep <= room {
+      docx_flow_ensure(flow, keep)
+    }
+  }
   let ctx : DocxEmitContext = {
     object: flow.body,
     writer: flow.writer,

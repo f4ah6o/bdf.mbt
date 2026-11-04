@@ -100,7 +100,7 @@ indentation, upright CJK glyphs in vertical text (the whole body is turned,
 Latin and CJK alike), tables in headers/footers (their paragraphs are
 flattened), `PAGEREF`/`REF` field regeneration (cached results are used),
 per-section `SECTIONPAGES` (the document page count is used), column
-separator rules, `keepNext`/`keepLines`/`widowControl` chains,
+separator rules, `keepNext` chains (keepLines and widowControl are applied),
 table styles and autofit, footnotes referenced from table cells, sections
 that must start on an odd or even page, and exact scroll strip counts (the
 approximate metrics make the basic fixture 1 strip where upstream makes 2;

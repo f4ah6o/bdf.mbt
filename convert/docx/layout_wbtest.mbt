@@ -981,6 +981,44 @@ test "DOCX inline drawings stay in the line" {
 }
 
 ///|
+fn docx_keep_lines_fixture(keep : Bool) -> Bytes raise {
+  let mut body = ""
+  for _ in 0..<44 {
+    body += "<w:p><w:r><w:t>filler</w:t></w:r></w:p>"
+  }
+  let props = if keep { "<w:pPr><w:keepLines/></w:pPr>" } else { "" }
+  body += "<w:p>" + props + "<w:r><w:t>" +
+    docx_test_repeat("KEEPWORD ", 30) + "</w:t></w:r></w:p>"
+  docx_test_docx(body, DOCX_TEST_SECTION, [])
+}
+
+///|
+fn docx_keep_pages(result : DocxResult) -> Array[Int32] raise {
+  let doc = @core.open_single(result.bdf)
+  let view = doc.manifest.views[0]
+  let hash = match view.text_index {
+    Some(value) => value
+    None => return []
+  }
+  let pages : Array[Int32] = []
+  for run in @core.decode_text_index(doc.part(hash)) {
+    if run.text.contains("KEEPWORD") && !pages.contains(run.a) {
+      pages.push(run.a)
+    }
+  }
+  pages
+}
+
+test "DOCX keepLines does not split a paragraph across pages" {
+  let plain = convert(docx_keep_lines_fixture(false))
+  let keep = convert(docx_keep_lines_fixture(true))
+  let plain_pages = docx_keep_pages(plain)
+  let keep_pages = docx_keep_pages(keep)
+  assert_true(!keep_pages.is_empty())
+  assert_eq(keep_pages.length(), 1)
+  assert_true(keep_pages[0] >= plain_pages[0])
+}
+
 test "DOCX page borders are drawn in a background layer" {
   let section = "<w:sectPr><w:pgSz w:w=\"12240\" w:h=\"15840\"/>" +
     "<w:pgMar w:top=\"1440\" w:right=\"1440\" w:bottom=\"1440\" w:left=\"1440\"/>" +
