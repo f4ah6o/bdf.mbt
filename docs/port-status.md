@@ -119,8 +119,7 @@
   WOFF2 faces with real metrics. The 74 predefined table styles resolve
   fills, bands and header text; Medium-Style-2 also draws its grid/header
   borders. SmartArt/ink, 3D, other chart types, chart data tables/titles,
-  table-style borders for the other built-in styles, blip bullets and advanced
-  vertical stacking remain documented gaps
+  blip bullets and advanced vertical stacking remain documented gaps
   in `compat/pptx`.
 - AI: PDF-based Illustrator 9+ artwork only; PostScript files (Illustrator 8
   and earlier) and files saved without PDF content are explicit errors.

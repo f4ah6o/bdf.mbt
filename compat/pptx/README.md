@@ -121,9 +121,8 @@ nothing; SmartArt, ink and 3-D or non-bar/line/pie charts are not
 supported; chart titles are used only for single-series charts without an
 explicit `c:title`, and chart data tables are not emitted; the built-in
 The 74 predefined table-style IDs resolve their whole-table, header, band and
-last-row/edge-column fills and their header/body text colours; Medium-Style-2
-Accent 1 additionally draws its white grid/header/last-row borders, while the
-other families' borders are not applied;
+last-row/edge-column fills, their header/body text colours and their family
+borders (the grid/rule sides are approximated per family);
 `normAutofit` font scale and
 line-spacing reduction are applied, while blip bullets and advanced vertical
 glyph stacking are not implemented; chart label

@@ -1327,28 +1327,139 @@ fn pptx_table_style_text(
 }
 
 ///|
-/// Table-style borders for the built-in Medium-Style-2 Accent 1 style:
-/// a 1pt white grid around every cell and a 3pt white rule under the header.
+/// Table-style borders for a synthesized built-in style. The sides follow
+/// the same family definitions as the fills.
 fn pptx_table_style_borders(
+  theme : Map[String, UInt32],
   style_id : String,
   first_row : Bool,
   last_row : Bool,
+  first_col : Bool,
+  last_col : Bool,
   row_index : Int,
   row_count : Int,
+  col_index : Int,
+  col_count : Int,
 ) -> Array[(Int32, Double, UInt32)] {
   let borders : Array[(Int32, Double, UInt32)] = []
-  if style_id != "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}" {
-    return borders
+  let info = match pptx_table_style_family(style_id) {
+    Some(value) => value
+    None => return borders
   }
-  let white = 0xffffffffU
-  for side in 0..<4 {
-    borders.push((side, 1.0, white))
+  let (family, accent_index) = info
+  let accent = pptx_table_style_accent(theme, accent_index)
+  let lt1 = match theme.get("lt1") {
+    Some(value) => value
+    None => 0xffffffffU
   }
-  if first_row && row_index == 0 {
-    borders.push((2, 3.0, white))
+  let dk1 = match theme.get("dk1") {
+    Some(value) => value
+    None => 0x000000ffU
   }
-  if last_row && row_index == row_count - 1 {
-    borders.push((0, 3.0, white))
+  let add = fn(side : Int32, width : Double, color : UInt32) -> Unit {
+    borders.push((side, width, color))
+  }
+  let all = fn(width : Double, color : UInt32) -> Unit {
+    for side in 0..<4 {
+      add(side, width, color)
+    }
+  }
+  let header = first_row && row_index == 0
+  let final = last_row && row_index == row_count - 1
+  match family {
+    "Themed-Style-1" => {
+      all(1.0, accent)
+      if header {
+        add(2, 2.0, accent)
+      }
+      if final {
+        add(0, 2.0, accent)
+      }
+    }
+    "Themed-Style-2" => {
+      all(1.0, lt1)
+      if header {
+        add(2, 2.0, lt1)
+      }
+      if final {
+        add(0, 2.0, lt1)
+      }
+    }
+    "Light-Style-1" => {
+      if row_index == 0 {
+        add(0, 1.0, accent)
+      }
+      if row_index == row_count - 1 {
+        add(2, 1.0, accent)
+      }
+      if header {
+        add(2, 1.0, accent)
+      }
+    }
+    "Light-Style-2" => all(1.0, accent)
+    "Light-Style-3" => {
+      all(1.0, accent)
+      if header {
+        add(2, 2.0, accent)
+      }
+    }
+    "Medium-Style-1" => {
+      all(1.0, accent)
+      if header {
+        add(2, 2.0, accent)
+      }
+      if final {
+        add(0, 2.0, accent)
+      }
+    }
+    "Medium-Style-2" => {
+      all(1.0, lt1)
+      if header {
+        add(2, 3.0, lt1)
+      }
+      if final {
+        add(0, 3.0, lt1)
+      }
+    }
+    "Medium-Style-3" => {
+      if row_index == 0 {
+        add(0, 2.0, dk1)
+      }
+      if row_index == row_count - 1 {
+        add(2, 2.0, dk1)
+      }
+      if header {
+        add(2, 2.0, dk1)
+      }
+      if final {
+        add(0, 2.0, dk1)
+      }
+    }
+    "Medium-Style-4" => {
+      all(1.0, accent)
+      if final {
+        add(0, 2.0, accent)
+      }
+    }
+    "Dark-Style-1" => {
+      if header {
+        add(2, 2.0, lt1)
+      }
+      if final {
+        add(0, 2.0, lt1)
+      }
+      if first_col && col_index == 0 {
+        add(1, 2.0, lt1)
+      }
+      if last_col && col_index == col_count - 1 {
+        add(3, 2.0, lt1)
+      }
+    }
+    "Dark-Style-2" =>
+      if final {
+        add(0, 2.0, dk1)
+      }
+    _ => ()
   }
   borders
 }
@@ -1506,7 +1617,8 @@ fn pptx_emit_table(
       let explicit_borders = pptx_cell_borders(cell, theme)
       let borders = if explicit_borders.is_empty() {
         pptx_table_style_borders(
-          style_id, first_row, last_row, row_index, row_count,
+          theme, style_id, first_row, last_row, first_col, last_col,
+          row_index, row_count, grid_index, col_count,
         )
       } else {
         explicit_borders

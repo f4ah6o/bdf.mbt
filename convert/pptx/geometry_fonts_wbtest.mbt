@@ -170,9 +170,19 @@ test "PPTX built-in table style resolves header and band fills" {
 
 test "PPTX built-in table style adds grid and header borders" {
   let id = "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"
-  let header = pptx_table_style_borders(id, true, false, 0, 4)
-  let body = pptx_table_style_borders(id, true, false, 1, 4)
-  let last = pptx_table_style_borders(id, false, true, 3, 4)
+  let theme : Map[String, UInt32] = Map([])
+  theme["accent1"] = 0x4472c4ffU
+  theme["lt1"] = 0xffffffffU
+  theme["dk1"] = 0x000000ffU
+  let header = pptx_table_style_borders(
+    theme, id, true, false, false, false, 0, 4, 0, 2,
+  )
+  let body = pptx_table_style_borders(
+    theme, id, true, false, false, false, 1, 4, 0, 2,
+  )
+  let last = pptx_table_style_borders(
+    theme, id, false, true, false, false, 3, 4, 0, 2,
+  )
   assert_eq(header.length(), 5)
   assert_eq(body.length(), 4)
   assert_eq(last.length(), 5)
@@ -190,7 +200,12 @@ test "PPTX built-in table style adds grid and header borders" {
   }
   assert_eq(header_bottom, true)
   assert_eq(last_top, true)
-  assert_eq(pptx_table_style_borders("unknown", true, false, 0, 4).length(), 0)
+  assert_eq(
+    pptx_table_style_borders(
+      theme, "unknown", true, false, false, false, 0, 4, 0, 2,
+    ).length(),
+    0,
+  )
 }
 
 test "PPTX built-in table style families resolve fills and text" {
