@@ -2167,6 +2167,77 @@ fn pptx_series_point_color(item : PptxChartSeries, index : Int) -> UInt32 {
 }
 
 ///|
+fn pptx_series_line_width(item : PptxXmlNode) -> Double {
+  let line = match pptx_child(Some(item), "spPr") {
+    Some(sp_pr) => pptx_child(Some(sp_pr), "ln")
+    None => None
+  }
+  match line {
+    Some(value) =>
+      match pptx_attribute(value.element, "w", "") {
+        "" => 2.0
+        width => (@string.parse_double(width) catch { _ => 25400.0 }) /
+          12700.0
+      }
+    None => 2.0
+  }
+}
+
+///|
+fn pptx_series_marker(item : PptxXmlNode) -> (String, Double) {
+  let marker = pptx_child(Some(item), "marker")
+  let symbol = match pptx_child(marker, "symbol") {
+    Some(value) => pptx_attribute(value.element, "val", "square")
+    None => "square"
+  }
+  let size = match pptx_child(marker, "size") {
+    Some(value) =>
+      @string.parse_double(pptx_attribute(value.element, "val", "4")) catch {
+        _ => 4.0
+      }
+    None => 4.0
+  }
+  (symbol, size)
+}
+
+///|
+fn pptx_draw_chart_marker(
+  object : @core.ObjectBuilder,
+  item : PptxChartSeries,
+  px : Double,
+  py : Double,
+) -> Unit raise {
+  if item.marker_symbol == "none" {
+    return
+  }
+  let half = item.marker_size / 2.0
+  if item.marker_symbol == "circle" {
+    let path = object.add_path(
+      @core.Inline(pptx_circle_path(px, py, half)),
+    )
+    object.fill_path(path, 0)
+  } else if item.marker_symbol == "diamond" {
+    let path = object.add_path(
+      @core.Inline({
+        verbs: b"\x00\x01\x01\x01\x01\x04",
+        coordinates: [
+          px, py - half, px + half, py, px, py + half, px - half, py, px,
+          py - half,
+        ],
+      }),
+    )
+    object.fill_path(path, 0)
+  } else {
+    object.fill_rect(
+      Float::from_double(px - half),
+      Float::from_double(py - half),
+      Float::from_double(item.marker_size),
+      Float::from_double(item.marker_size),
+    )
+  }
+}
+
+///|
 priv struct PptxChartSeries {
   name : String
   categories : Array[String]
@@ -2174,6 +2245,9 @@ priv struct PptxChartSeries {
   explosions : Array[Double]
   point_colors : Array[UInt32]
   color : UInt32
+  line_width : Double
+  marker_symbol : String
+  marker_size : Double
 }
 
 ///|
@@ -2423,6 +2497,7 @@ fn pptx_emit_chart(
       Some(value) => value
       None => palette[series.length() % palette.length()]
     }
+    let (marker_symbol, marker_size) = pptx_series_marker(item)
     series.push({
       name: pptx_chart_series_name(item),
       categories,
@@ -2430,6 +2505,9 @@ fn pptx_emit_chart(
       explosions: pptx_chart_explosions(item),
       point_colors: pptx_chart_point_colors(item, theme),
       color,
+      line_width: pptx_series_line_width(item),
+      marker_symbol,
+      marker_size,
     })
   }
   if series.is_empty() {
@@ -2619,12 +2697,8 @@ fn pptx_emit_chart(
           (x - x_min) / (x_max - x_min) * plot_width
         let py = plot_y + plot_height -
           (value - y_min) / (y_max - y_min) * plot_height
-        object.fill_rect(
-          Float::from_double(px - 2.0),
-          Float::from_double(py - 2.0),
-          4.0,
-          4.0,
-        )
+        object.fill_color(pptx_series_point_color(item, index))
+        pptx_draw_chart_marker(object, item, px, py)
         if show_values {
           let mut label_text = if show_label_categories &&
             index < item.categories.length() {
@@ -2775,7 +2849,7 @@ fn pptx_emit_chart(
           pptx_radar_path(item.values, maximum, cx, cy, radius),
         ),
       )
-      object.line(2.0F, 0, 0, 8.0F)
+      object.line(Float::from_double(item.line_width), 0, 0, 8.0F)
       object.stroke_color(item.color)
       object.stroke_path(path)
       object.fill_color(item.color)
@@ -3419,7 +3493,7 @@ fn pptx_emit_chart(
           ),
         ),
       )
-      object.line(2.0F, 0, 0, 8.0F)
+      object.line(Float::from_double(item.line_width), 0, 0, 8.0F)
       object.stroke_color(item.color)
       object.stroke_path(line_path)
     }
@@ -3440,7 +3514,7 @@ fn pptx_emit_chart(
           ),
         ),
       )
-      object.line(2.0F, 0, 0, 8.0F)
+      object.line(Float::from_double(item.line_width), 0, 0, 8.0F)
       object.stroke_color(item.color)
       object.stroke_path(path)
       object.fill_color(item.color)
@@ -3452,12 +3526,7 @@ fn pptx_emit_chart(
           plot_x + plot_width * index.to_double() / (value_count - 1.0)
         }
         let py = plot_y + plot_height - plot_height * value / axis_high
-        object.fill_rect(
-          Float::from_double(px - 2.0),
-          Float::from_double(py - 2.0),
-          4.0,
-          4.0,
-        )
+        pptx_draw_chart_marker(object, item, px, py)
       }
     }
   } else {
