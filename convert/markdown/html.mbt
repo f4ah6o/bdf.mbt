@@ -273,6 +273,86 @@ fn md_html_dimension(value : String) -> Double {
 }
 
 ///|
+fn md_html_styled_runs(
+  html : String,
+  base : @drawingml.TextStyle,
+  link : String,
+  runs : Array[MdRun],
+  formulas : Array[String],
+  svgs : Array[MdSvg],
+  sprite : StringBuilder,
+) -> Unit {
+  let lower = html.to_lower()
+  let mut offset = 0
+  let mut bold = false
+  let mut italic = false
+  let text = StringBuilder()
+  while offset < html.length() {
+    let relative = match lower[offset:].find("<") {
+      Some(index) => index
+      None => break
+    }
+    let at = offset + relative
+    if at > offset {
+      text.write_string(html[offset:at].to_owned())
+    }
+    let close = match lower[at:].find(">") {
+      Some(index) => at + index
+      None => break
+    }
+    let tag = lower[at + 1:close].trim().to_owned()
+    let name = if tag.has_prefix("/") {
+      tag[1:].split(" ").to_array()[0].to_owned()
+    } else {
+      tag.split(" ").to_array()[0].to_owned()
+    }
+    if text.to_string() != "" {
+      let value = md_strip_html(text.to_string())
+      if value != "" {
+        md_push_text(
+          value,
+          md_inline_style(base, bold, italic),
+          link,
+          runs,
+          formulas,
+          svgs,
+          sprite,
+        )
+      }
+      text.reset()
+    }
+    match name {
+      "strong" | "b" => bold = !tag.has_prefix("/")
+      "em" | "i" => italic = !tag.has_prefix("/")
+      "br" =>
+        md_push_text(
+          "\n", md_inline_style(base, bold, italic), link, runs, formulas,
+          svgs, sprite,
+        )
+      _ => ()
+    }
+    offset = close + 1
+  }
+  if offset < html.length() {
+    text.write_string(html[offset:].to_owned())
+  }
+  if text.to_string() != "" {
+    let value = md_strip_html(text.to_string())
+    if value != "" {
+      md_push_text(
+        value,
+        md_inline_style(base, bold, italic),
+        link,
+        runs,
+        formulas,
+        svgs,
+        sprite,
+      )
+    }
+  }
+}
+
+///|
 fn md_html_link_blocks(
   html : String,
   formulas : Array[String],
@@ -311,9 +391,9 @@ fn md_html_link_blocks(
       Some(index) => open_end + 1 + index
       None => break
     }
-    let inner = md_strip_html(html[open_end + 1:close_relative].to_owned())
+    let inner = html[open_end + 1:close_relative].to_owned()
     if inner != "" {
-      md_push_text(
+      md_html_styled_runs(
         inner,
         style,
         md_link_target(href),
