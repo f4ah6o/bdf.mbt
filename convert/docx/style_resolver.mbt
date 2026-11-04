@@ -1,6 +1,12 @@
 ///|
 // A style retains its property nodes so unsupported formatting is checked only
 // when that style is actually used. Style selection here does not render text.
+priv struct DocxStyleCond {
+  tbl_pr : DocxXmlNode?
+  tc_pr : DocxXmlNode?
+}
+
+///|
 priv struct DocxStyle {
   id : String
   kind : String
@@ -9,6 +15,7 @@ priv struct DocxStyle {
   rpr : DocxXmlNode?
   tbl_pr : DocxXmlNode?
   tc_pr : DocxXmlNode?
+  conds : Map[String, DocxStyleCond]
 }
 
 ///|
@@ -66,6 +73,16 @@ fn docx_styles_from_xml(xml : String) -> DocxStyles raise {
     }
     let id = docx_attribute(node.element, "styleId", "")
     let kind = docx_attribute(node.element, "type", "paragraph")
+    let conds : Map[String, DocxStyleCond] = {}
+    for cond in node.children {
+      if cond.name() != "tblStylePr" {
+        continue
+      }
+      conds[docx_attribute(cond.element, "type", "")] = {
+        tbl_pr: cond.child("tblPr"),
+        tc_pr: cond.child("tcPr"),
+      }
+    }
     let style : DocxStyle = {
       id,
       kind,
@@ -74,6 +91,7 @@ fn docx_styles_from_xml(xml : String) -> DocxStyles raise {
       rpr: node.child("rPr"),
       tbl_pr: node.child("tblPr"),
       tc_pr: node.child("tcPr"),
+      conds,
     }
     if !styles.by_id.contains(id) {
       styles.by_id[id] = style

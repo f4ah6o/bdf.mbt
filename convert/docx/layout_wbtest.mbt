@@ -1117,6 +1117,52 @@ test "DOCX custom table style supplies borders and shading" {
   assert_true(fills > 0)
 }
 
+test "DOCX table style conditional first row and band shading" {
+  let styles = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+    "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">" +
+    "<w:style w:type=\"table\" w:styleId=\"BandStyle\"><w:tblPr/>" +
+    "<w:tblStylePr w:type=\"firstRow\"><w:tcPr><w:shd w:fill=\"FF0000\"/></w:tcPr></w:tblStylePr>" +
+    "<w:tblStylePr w:type=\"band1Horz\"><w:tcPr><w:shd w:fill=\"0000FF\"/></w:tcPr></w:tblStylePr>" +
+    "</w:style></w:styles>"
+  let rels = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+    "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">" +
+    "<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/>" +
+    "</Relationships>"
+  let content_types = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+    "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">" +
+    "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>" +
+    "<Default Extension=\"xml\" ContentType=\"application/xml\"/>" +
+    "<Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/>" +
+    "<Override PartName=\"/word/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml\"/>" +
+    "</Types>"
+  let table = "<w:tbl><w:tblPr><w:tblStyle w:val=\"BandStyle\"/>" +
+    "<w:tblLook w:firstRow=\"1\" w:lastRow=\"0\" w:firstColumn=\"0\" w:lastColumn=\"0\" w:noHBand=\"0\" w:noVBand=\"1\"/></w:tblPr>" +
+    "<w:tblGrid><w:gridCol w:w=\"4000\"/></w:tblGrid>" +
+    "<w:tr><w:tc><w:p><w:r><w:t>ONE</w:t></w:r></w:p></w:tc></w:tr>" +
+    "<w:tr><w:tc><w:p><w:r><w:t>TWO</w:t></w:r></w:p></w:tc></w:tr></w:tbl>"
+  let data = docx_test_docx(table, DOCX_TEST_SECTION, [
+    ("[Content_Types].xml", @utf8.encode(content_types)),
+    ("word/styles.xml", @utf8.encode(styles)),
+    ("word/_rels/document.xml.rels", @utf8.encode(rels)),
+  ])
+  let commands = docx_test_page_commands(convert(data), "pages", 0, "body")
+  let mut red = false
+  let mut blue = false
+  for command in commands {
+    match command {
+      FillColor(value) =>
+        if value.to_uint() == 0xff0000ffU {
+          red = true
+        } else if value.to_uint() == 0x0000ffffU {
+          blue = true
+        }
+      _ => ()
+    }
+  }
+  assert_true(red)
+  assert_true(blue)
+}
+
 test "DOCX TableGrid style supplies missing cell borders" {
   let table = "<w:tbl><w:tblPr><w:tblStyle w:val=\"TableGrid\"/></w:tblPr>" +
     "<w:tblGrid><w:gridCol w:w=\"2000\"/></w:tblGrid>" +

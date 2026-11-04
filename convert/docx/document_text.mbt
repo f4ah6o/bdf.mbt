@@ -1343,6 +1343,45 @@ fn docx_margins(node : DocxXmlNode?) -> DocxMargins {
 }
 
 ///|
+fn docx_table_conditions(
+  first_row : Bool,
+  last_row : Bool,
+  first_col : Bool,
+  last_col : Bool,
+  no_hband : Bool,
+  no_vband : Bool,
+  row_band : Int,
+  col_band : Int,
+  row : Int,
+  col : Int,
+  rows : Int,
+  cols : Int,
+) -> Array[String] {
+  let out : Array[String] = []
+  if !no_hband && row_band > 0 && row > 0 {
+    let band = ((row - 1) / row_band) % 2
+    out.push(if band == 0 { "band1Horz" } else { "band2Horz" })
+  }
+  if !no_vband && col_band > 0 && col > 0 {
+    let band = ((col - 1) / col_band) % 2
+    out.push(if band == 0 { "band1Vert" } else { "band2Vert" })
+  }
+  if first_row && row == 0 {
+    out.push("firstRow")
+  }
+  if last_row && row == rows - 1 {
+    out.push("lastRow")
+  }
+  if first_col && col == 0 {
+    out.push("firstColumn")
+  }
+  if last_col && col + 1 == cols {
+    out.push("lastColumn")
+  }
+  out
+}
+
+///|
 fn docx_text_table(
   walker : DocxTextWalker,
   node : DocxXmlNode,
@@ -1376,6 +1415,7 @@ fn docx_text_table(
   let table_style = table_style_id.to_lower()
   let mut style_tbl_pr : DocxXmlNode? = None
   let mut style_tc_pr : DocxXmlNode? = None
+  let cond_tc_prs : Map[String, Array[DocxXmlNode]] = {}
   if table_style_id != "" {
     for style in walker.styles.chain(table_style_id) {
       if style.kind != "table" {
@@ -1389,7 +1429,57 @@ fn docx_text_table(
         Some(value) => style_tc_pr = Some(value)
         None => ()
       }
+      for key, cond in style.conds {
+        match cond.tc_pr {
+          Some(node) =>
+            match cond_tc_prs.get(key) {
+              Some(list) => list.push(node)
+              None => cond_tc_prs[key] = [node]
+            }
+          None => ()
+        }
+      }
     }
+  }
+  let mut look_first_row = true
+  let mut look_last_row = false
+  let mut look_first_col = true
+  let mut look_last_col = false
+  let mut look_no_hband = false
+  let mut look_no_vband = false
+  let mut row_band = 1
+  let mut col_band = 1
+  match props {
+    Some(value) => {
+      match value.child("tblLook") {
+        Some(look) => {
+          look_first_row = docx_bool(look.element, "firstRow", true)
+          look_last_row = docx_bool(look.element, "lastRow", false)
+          look_first_col = docx_bool(look.element, "firstColumn", true)
+          look_last_col = docx_bool(look.element, "lastColumn", false)
+          look_no_hband = docx_bool(look.element, "noHBand", false)
+          look_no_vband = docx_bool(look.element, "noVBand", false)
+        }
+        None => ()
+      }
+      match value.child("tblStyleRowBandSize") {
+        Some(size) =>
+          row_band = docx_number(
+            docx_attribute(size.element, "val", "1"),
+            1.0,
+          ).to_int()
+        None => ()
+      }
+      match value.child("tblStyleColBandSize") {
+        Some(size) =>
+          col_band = docx_number(
+            docx_attribute(size.element, "val", "1"),
+            1.0,
+          ).to_int()
+        None => ()
+      }
+    }
+    None => ()
   }
   let base_borders = docx_border_sides(
     match props {
@@ -1473,7 +1563,7 @@ fn docx_text_table(
   let row_nodes : Array[DocxXmlNode] = []
   docx_collect_children(node, "tr", row_nodes)
   let rows : Array[DocxTableRow] = []
-  for row_node in row_nodes {
+  for row_index, row_node in row_nodes {
     let row_props = row_node.child("trPr")
     let mut height = 0.0
     let mut exact = false
@@ -1555,21 +1645,69 @@ fn docx_text_table(
         col += span
         continue
       }
+      let conditions = docx_table_conditions(
+        look_first_row,
+        look_last_row,
+        look_first_col,
+        look_last_col,
+        look_no_hband,
+        look_no_vband,
+        row_band,
+        col_band,
+        row_index,
+        col,
+        row_nodes.length(),
+        grid.length(),
+      )
+      let mut cond_tc_pr : DocxXmlNode? = None
+      for condition in conditions {
+        match cond_tc_prs.get(condition) {
+          Some(nodes) =>
+            for node in nodes {
+              cond_tc_pr = Some(node)
+            }
+          None => ()
+        }
+      }
       let cell_borders = docx_border_sides(
         match cell_props {
           Some(value) =>
             match value.child("tcBorders") {
               Some(node) => Some(node)
               None =>
+                match cond_tc_pr {
+                  Some(cond) =>
+                    match cond.child("tcBorders") {
+                      Some(node) => Some(node)
+                      None =>
+                        match style_tc_pr {
+                          Some(style) => style.child("tcBorders")
+                          None => None
+                        }
+                    }
+                  None =>
+                    match style_tc_pr {
+                      Some(style) => style.child("tcBorders")
+                      None => None
+                    }
+                }
+            }
+          None =>
+            match cond_tc_pr {
+              Some(cond) =>
+                match cond.child("tcBorders") {
+                  Some(node) => Some(node)
+                  None =>
+                    match style_tc_pr {
+                      Some(style) => style.child("tcBorders")
+                      None => None
+                    }
+                }
+              None =>
                 match style_tc_pr {
                   Some(style) => style.child("tcBorders")
                   None => None
                 }
-            }
-          None =>
-            match style_tc_pr {
-              Some(style) => style.child("tcBorders")
-              None => None
             }
         },
         ["top", "left", "bottom", "right"],
@@ -1580,15 +1718,39 @@ fn docx_text_table(
             match value.child("tcMar") {
               Some(node) => Some(node)
               None =>
+                match cond_tc_pr {
+                  Some(cond) =>
+                    match cond.child("tcMar") {
+                      Some(node) => Some(node)
+                      None =>
+                        match style_tc_pr {
+                          Some(style) => style.child("tcMar")
+                          None => None
+                        }
+                    }
+                  None =>
+                    match style_tc_pr {
+                      Some(style) => style.child("tcMar")
+                      None => None
+                    }
+                }
+            }
+          None =>
+            match cond_tc_pr {
+              Some(cond) =>
+                match cond.child("tcMar") {
+                  Some(node) => Some(node)
+                  None =>
+                    match style_tc_pr {
+                      Some(style) => style.child("tcMar")
+                      None => None
+                    }
+                }
+              None =>
                 match style_tc_pr {
                   Some(style) => style.child("tcMar")
                   None => None
                 }
-            }
-          None =>
-            match style_tc_pr {
-              Some(style) => style.child("tcMar")
-              None => None
             }
         },
       )
@@ -1602,6 +1764,9 @@ fn docx_text_table(
       }
       let blocks = docx_cell_blocks(cell_node, walker.styles)
       let mut cell_shade = docx_child_shade(cell_props)
+      if cell_shade is None {
+        cell_shade = docx_child_shade(cond_tc_pr)
+      }
       if cell_shade is None {
         cell_shade = docx_child_shade(style_tc_pr)
       }

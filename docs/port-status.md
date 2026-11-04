@@ -107,8 +107,9 @@
   movement; page borders are drawn in a background layer. Exact font
   metrics/shaping, tight/through contours and effect
   extents, exact footnote separators, upright CJK in vertical text, tables in
-  headers/footers, PAGEREF/REF, conditional table-style parts (base table
-  style borders/shading/margins and TableGrid are applied) and content autofit
+  headers/footers, PAGEREF/REF, table-style base, first/last row/column and
+  banded row/column parts (borders/shading/margins; TableGrid is applied) and
+  content autofit
   remain documented gaps in `compat/docx`.
 - PPTX: `convert/pptx` emits the upstream `slides` fixed view with
   background/layout/master/body layers, shared master objects, placeholder
