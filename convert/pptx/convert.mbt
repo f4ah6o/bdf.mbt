@@ -2407,6 +2407,45 @@ fn pptx_chart_collect_text(node : PptxXmlNode, out : StringBuilder) -> Unit {
 }
 
 ///|
+fn pptx_chart_tx_size(node : PptxXmlNode?, default : Double) -> Double {
+  let text = pptx_child(node, "txPr")
+  let paragraph = pptx_child(text, "p")
+  let ppr = pptx_child(paragraph, "pPr")
+  let rpr = pptx_child(ppr, "defRPr")
+  match rpr {
+    Some(value) =>
+      match pptx_attribute(value.element, "sz", "") {
+        "" => default
+        size => {
+          let parsed = (@string.parse_double(size) catch { _ => 0.0 }) / 100.0
+          if parsed >= 2.0 && parsed <= 72.0 {
+            parsed
+          } else {
+            default
+          }
+        }
+      }
+    None => default
+  }
+}
+
+///|
+fn pptx_chart_tx_color(
+  node : PptxXmlNode?,
+  theme : Map[String, UInt32],
+  default : UInt32,
+) -> UInt32 {
+  let text = pptx_child(node, "txPr")
+  let paragraph = pptx_child(text, "p")
+  let ppr = pptx_child(paragraph, "pPr")
+  let rpr = pptx_child(ppr, "defRPr")
+  match pptx_node_color(rpr, "solidFill", theme) {
+    Some(value) => value
+    None => default
+  }
+}
+
+///|
 fn pptx_chart_title_text(chart_space : PptxXmlNode?) -> String {
   match pptx_child(chart_space, "title") {
     Some(value) => {
@@ -2683,13 +2722,16 @@ fn pptx_emit_chart(
   let mut plot_width = Double::max(1.0, width - 40.0)
   let mut plot_height = Double::max(1.0, height - 40.0)
   if title != "" {
+    let title_node = pptx_child(chart_space, "title")
+    let title_size = pptx_chart_tx_size(title_node, 10.0)
+    let title_color = pptx_chart_tx_color(title_node, theme, black)
     pptx_chart_label(
       object,
       label_font,
-      10.0,
-      black,
+      title_size,
+      title_color,
       title,
-      x + width / 2.0 - pptx_text_width(title, 10.0) / 2.0,
+      x + width / 2.0 - pptx_text_width(title, title_size) / 2.0,
       y + 12.0,
     )
     plot_y += 16.0
