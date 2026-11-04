@@ -158,6 +158,16 @@ fn docx_line_box_height(
 }
 
 ///|
+fn docx_para_before(props : DocxParagraphProps) -> Double {
+  if props.contextual { 0.0 } else { props.before }
+}
+
+///|
+fn docx_para_after(props : DocxParagraphProps) -> Double {
+  if props.contextual { 0.0 } else { props.after }
+}
+
+///|
 fn docx_layout_paragraph(
   items : Array[DocxTextItem],
   props : DocxParagraphProps,
@@ -1258,8 +1268,8 @@ fn docx_layout_cell_blocks(
   for block in blocks {
     match block {
       DocxParaBlock(paragraph) => {
-        if paragraph.props.before > 0.0 {
-          y += paragraph.props.before
+        if docx_para_before(paragraph.props) > 0.0 {
+          y += docx_para_before(paragraph.props)
         }
         let mark_size = if paragraph.mark.size > 0.0 {
           paragraph.mark.size
@@ -1301,8 +1311,8 @@ fn docx_layout_cell_blocks(
             ),
           )
         }
-        if paragraph.props.after > 0.0 {
-          y += paragraph.props.after
+        if docx_para_after(paragraph.props) > 0.0 {
+          y += docx_para_after(paragraph.props)
         }
       }
       DocxTableBlock(table) => {
@@ -1678,8 +1688,8 @@ fn docx_story_part_height(
   }
   let mut height = 0.0
   for paragraph in paragraphs {
-    if paragraph.props.before > 0.0 {
-      height += paragraph.props.before
+    if docx_para_before(paragraph.props) > 0.0 {
+      height += docx_para_before(paragraph.props)
     }
     let mark_size = if paragraph.mark.size > 0.0 {
       paragraph.mark.size
@@ -1697,8 +1707,8 @@ fn docx_story_part_height(
     for line in layout.lines {
       height += line.height
     }
-    if paragraph.props.after > 0.0 {
-      height += paragraph.props.after
+    if docx_para_after(paragraph.props) > 0.0 {
+      height += docx_para_after(paragraph.props)
     }
   }
   for table in tables {
@@ -1973,8 +1983,8 @@ fn docx_flow_story_layout(
       let anchors : Array[DocxPlacedImage] = []
       let mut height = 0.0
       for paragraph in paragraphs {
-        if paragraph.props.before > 0.0 {
-          height += paragraph.props.before
+        if docx_para_before(paragraph.props) > 0.0 {
+          height += docx_para_before(paragraph.props)
         }
         let para_top = height
         let mark_size = if paragraph.mark.size > 0.0 {
@@ -1997,8 +2007,8 @@ fn docx_flow_story_layout(
         for anchor in layout.anchors {
           anchors.push({ ..anchor, y: para_top + anchor.y })
         }
-        if paragraph.props.after > 0.0 {
-          height += paragraph.props.after
+        if docx_para_after(paragraph.props) > 0.0 {
+          height += docx_para_after(paragraph.props)
         }
       }
       let tables : Array[DocxTableLayout] = []
@@ -2984,8 +2994,8 @@ fn docx_flow_emit_paragraph(
   if props.page_break_before && !docx_flow_at_top(flow) {
     docx_flow_new_page(flow)
   }
-  if props.before > 0.0 {
-    flow.y += props.before
+  if docx_para_before(props) > 0.0 {
+    flow.y += docx_para_before(props)
   }
   if props.keep_next && !flow.vertical {
     let mut current = 0.0
@@ -3250,8 +3260,8 @@ fn docx_flow_emit_paragraph(
   for note in layout.notes {
     docx_flow_add_note(flow, note.0, note.1)
   }
-  if props.after > 0.0 {
-    flow.y += props.after
+  if docx_para_after(props) > 0.0 {
+    flow.y += docx_para_after(props)
   }
 }
 

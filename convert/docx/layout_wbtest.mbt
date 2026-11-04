@@ -1227,6 +1227,25 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX contextual spacing suppresses paragraph spacing" {
+  let blocks = "<w:p><w:r><w:t>A</w:t></w:r></w:p>" +
+    "<w:p><w:pPr><w:contextualSpacing/><w:spacing w:before=\"240\"/></w:pPr><w:r><w:t>B</w:t></w:r></w:p>"
+  let commands = docx_test_page_commands(
+    convert(docx_test_docx(blocks, DOCX_TEST_SECTION, [])), "pages", 0, "body",
+  )
+  let mut a_y = -1.0
+  let mut b_y = -1.0
+  for command in commands {
+    match command {
+      FillText("A", _, y, _) => a_y = y
+      FillText("B", _, y, _) => b_y = y
+      _ => ()
+    }
+  }
+  assert_true(a_y >= 0.0 && b_y >= 0.0)
+  assert_true(b_y - a_y < 20.0)
+}
+
 test "DOCX shadow runs draw a second offset glyph" {
   let blocks = "<w:p><w:r><w:rPr><w:shadow/></w:rPr><w:t>S</w:t></w:r></w:p>"
   let commands = docx_test_page_commands(
