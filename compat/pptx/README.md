@@ -101,7 +101,8 @@ category/series names, `c:numFmt`, `c:txPr` sizes/colours/bold/italic, `c:separa
 text/delete)
 from `dLbls`, legends with colour swatches and `txPr` text styles, deleted entries and
 overlay mode, category labels and value-axis ticks with `txPr` text
-styles, explicit `c:majorUnit`/`c:minorUnit`, `c:scaling/c:min`/`c:max`, value-axis
+styles, explicit `c:majorUnit`/`c:minorUnit`, `c:scaling/c:min`/`c:max` (automatically extending below zero for negative
+values), negative bars drawn from the zero line, value-axis
 `c:numFmt`, chart/plot-area `c:spPr` fills and borders, and major/minor gridlines. Office
 Math in `a14:m` is linearized to text (fractions, roots, scripts, n-ary
 operators, delimiters, matrices, accents and groups); the `mc:Choice` that
