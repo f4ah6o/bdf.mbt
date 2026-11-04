@@ -22,6 +22,12 @@
 - `npm run test:phase8-xlsx`
 - `npm run test:phase9-drawio`
 - `npm run test:phase9-parquet`
+- `npm run test:phase11-markdown`
+- `npm run test:phase12-docx`
+- `npm run test:phase13-pdf`
+- `npm run test:phase14-xlsx`
+- `npm run test:phase15-pptx`
+- `npm run test:viewer`
 - `npm run test:visual`
 
 ## README Port backlog
