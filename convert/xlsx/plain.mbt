@@ -2964,6 +2964,11 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   } else {
     Map([])
   }
+  let hidden_values : Map[Int32, Map[Int32, Bool]] = if has_conditional {
+    workbook.xlsx_hidden_values(ref.part, rows)
+  } else {
+    Map([])
+  }
   let run_base_sizes = xlsx_rich_base_sizes(rows, styles, rich_cells)
   if styled_runs {
     rows = xlsx_apply_plain_run_fonts(rows, styles, rich_cells)
@@ -3761,6 +3766,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     fills~,
     data_bars~,
     data_icons~,
+    hidden_values~,
     sizes~,
     borders~,
     spans~,

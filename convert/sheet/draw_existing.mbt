@@ -186,6 +186,7 @@ pub fn draw_sized_grid_no_fonts(
   fills~ : Map[Int32, Map[Int32, GridSolidFill]] = Map([]),
   data_bars~ : Map[Int32, Map[Int32, GridDataBar]] = Map([]),
   data_icons~ : Map[Int32, Map[Int32, GridIcon]] = Map([]),
+  hidden_values~ : Map[Int32, Map[Int32, Bool]] = Map([]),
   sizes~ : Map[Int32, Map[Int32, Double]] = Map([]),
   borders~ : Map[Int32, Map[Int32, GridCellBorder]] = Map([]),
   spans~ : Map[Int32, Map[Int32, Int32]] = Map([]),
@@ -334,7 +335,15 @@ pub fn draw_sized_grid_no_fonts(
       } else {
         entry.cell
       }
-      render_cells[entry.column] = entry.cell
+      let hidden = match hidden_values.get(i) {
+        Some(columns) => columns.get(entry.column).unwrap_or(false)
+        None => false
+      }
+      render_cells[entry.column] = if hidden {
+        { text: "", number: entry.cell.number }
+      } else {
+        entry.cell
+      }
       colors[entry.column] = entry.color
       centered[entry.column] = entry.center
       visibility[entry.column] = entry.visible
