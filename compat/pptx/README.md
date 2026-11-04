@@ -127,8 +127,8 @@ comparison flattens both encodings before comparing); malformed custom
 geometry falls back to the shape rectangle where upstream silently draws
 nothing; SmartArt is reduced to its data-model text (the diagram layout is not
 drawn), and ink, 3-D or other non-bar/line/pie/doughnut/area/scatter/radar charts are not
-supported; chart titles use an explicit `c:title` (with its `txPr` size/colour) or the
-single-series name,
+supported; chart titles use an explicit `c:title` (with its `txPr` size/colour and
+`overlay`) or the single-series name unless `autoTitleDeleted` is set,
 and bar/line/pie/radar/scatter charts with `c:dTable` draw a category/series/value table with series names,
 honouring the show and border flags; the built-in
 The 74 predefined table-style IDs resolve their whole-table, header, band and

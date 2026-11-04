@@ -2754,9 +2754,16 @@ fn pptx_emit_chart(
   // An explicit c:title wins; Office titles a one-series chart with its
   // series name when the chart has no title of its own.
   let explicit_title = pptx_chart_title_text(chart_space)
+  let auto_title_deleted = match
+    pptx_child(chart_space, "autoTitleDeleted") {
+    Some(value) => pptx_attribute(value.element, "val", "0") != "0"
+    None => false
+  }
   let title = if explicit_title != "" {
     explicit_title
-  } else if series.length() == 1 && series[0].name != "" {
+  } else if !auto_title_deleted &&
+    series.length() == 1 &&
+    series[0].name != "" {
     series[0].name
   } else {
     ""
@@ -2778,8 +2785,14 @@ fn pptx_emit_chart(
       x + width / 2.0 - pptx_text_width(title, title_size) / 2.0,
       y + 12.0,
     )
-    plot_y += 16.0
-    plot_height = Double::max(1.0, plot_height - 16.0)
+    let title_overlay = match pptx_child(title_node, "overlay") {
+      Some(value) => pptx_attribute(value.element, "val", "0") != "0"
+      None => false
+    }
+    if !title_overlay {
+      plot_y += 16.0
+      plot_height = Double::max(1.0, plot_height - 16.0)
+    }
   }
   // legend
   let legend = pptx_child(chart_space, "legend")
