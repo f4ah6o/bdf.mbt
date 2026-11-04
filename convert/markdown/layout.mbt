@@ -175,6 +175,7 @@ priv struct MdPainter {
   index_runs : Array[@core.IndexRun]
   mut page : Int32
   mut page_dirty : Bool
+  quote_bars : Array[Double]
 }
 
 ///|
@@ -378,6 +379,21 @@ fn MdPainter::draw_text(
   baseline : Double,
 ) -> Unit raise {
   self.object.mark(1, "")
+  if !self.quote_bars.is_empty() {
+    let mut size = 12.0
+    for run in runs {
+      size = Double::max(size, run.style.size)
+    }
+    self.object.fill_color(0xccccccffU)
+    for bar_x in self.quote_bars {
+      self.object.fill_rect(
+        Float::from_double(bar_x),
+        Float::from_double(baseline - size * 1.1),
+        2.0F,
+        Float::from_double(size * 1.7),
+      )
+    }
+  }
   let mut cursor = x
   for run in runs {
     match run.image {
@@ -599,17 +615,11 @@ fn MdPainter::layout_block(
     }
     MdQuote(children) => {
       self.ensure(24.0)
-      let bar_x = self.margin + indent + 4.0
-      self.object.fill_color(0xccccccffU)
-      self.object.fill_rect(
-        Float::from_double(bar_x),
-        Float::from_double(self.y),
-        2.0F,
-        Float::from_double(24.0),
-      )
+      self.quote_bars.push(self.margin + indent + 4.0)
       for child in children {
         self.layout_block(child, indent + 24.0)
       }
+      ignore(self.quote_bars.pop())
       self.y += 4.0
     }
     MdRule => {
@@ -957,6 +967,7 @@ fn md_render(
     index_runs: [],
     page: 0,
     page_dirty: false,
+    quote_bars: [],
   }
   let mut list_open = false
   for block in blocks {
