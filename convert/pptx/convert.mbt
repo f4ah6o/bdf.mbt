@@ -2173,6 +2173,11 @@ fn pptx_chart_point_colors(
 }
 
 ///|
+fn pptx_series_blank(item : PptxChartSeries, index : Int) -> Bool {
+  index < item.blanks.length() && item.blanks[index]
+}
+
+///|
 fn pptx_series_point_color(item : PptxChartSeries, index : Int) -> UInt32 {
   if index < item.point_colors.length() && item.point_colors[index] != 0U {
     item.point_colors[index]
@@ -2284,6 +2289,7 @@ priv struct PptxChartSeries {
   name : String
   categories : Array[String]
   values : Array[Double]
+  blanks : Array[Bool]
   explosions : Array[Double]
   point_colors : Array[UInt32]
   color : UInt32
@@ -2825,10 +2831,12 @@ fn pptx_emit_chart(
       continue
     }
     let values : Array[Double] = []
+    let blanks : Array[Bool] = []
     for value in pptx_chart_values(
       Some(item),
       if is_scatter { "yVal" } else { "val" },
     ) {
+      blanks.push(value.trim() == "")
       values.push(@string.parse_double(value) catch { _ => 0.0 })
     }
     let categories = pptx_chart_values(
@@ -2845,6 +2853,7 @@ fn pptx_emit_chart(
       name: pptx_chart_series_name(item),
       categories,
       values,
+      blanks,
       explosions: pptx_chart_explosions(item),
       point_colors: pptx_chart_point_colors(item, theme),
       color,
@@ -4026,6 +4035,9 @@ fn pptx_emit_chart(
         let mut negative = 0.0
         for item in series {
           if index < item.values.length() {
+            if pptx_series_blank(item, index) {
+              continue
+            }
             let value = item.values[index]
             let start = if value >= 0.0 { positive } else { negative }
             let next = start + value
@@ -4068,6 +4080,9 @@ fn pptx_emit_chart(
       for index in 0..<categories.length() {
         for s, item in series {
           if index < item.values.length() {
+            if pptx_series_blank(item, index) {
+              continue
+            }
             let value = item.values[index]
             let zero = pptx_chart_fraction(0.0, axis_low, axis_high)
             let fraction = pptx_chart_fraction(value, axis_low, axis_high)
@@ -4103,6 +4118,9 @@ fn pptx_emit_chart(
       let mut negative = 0.0
       for item in series {
         if index < item.values.length() {
+          if pptx_series_blank(item, index) {
+            continue
+          }
           let value = item.values[index]
           let start = if value >= 0.0 { positive } else { negative }
           let next = start + value
@@ -4219,6 +4237,9 @@ fn pptx_emit_chart(
     for index in 0..<categories.length() {
       for s, item in series {
         if index < item.values.length() {
+          if pptx_series_blank(item, index) {
+            continue
+          }
           let value = item.values[index]
           let zero = pptx_chart_fraction(0.0, axis_low, axis_high)
           let fraction = pptx_chart_fraction(value, axis_low, axis_high)
