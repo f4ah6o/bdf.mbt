@@ -1670,20 +1670,27 @@ fn docx_draw_rule(
         ctx.object.line(Float::from_double(width), 0, 0, 8.0F)
         ctx.object.stroke_color(value.color)
         ctx.object.stroke_path(path)
+      } else if (value.style == "single" || value.style == "thick" ||
+        value.style == "") {
+        if (y0 - y1).abs() < 0.01 {
+          ctx.object.fill_rect(
+            Float::from_double(x0 - width / 2.0),
+            Float::from_double(y0 - width / 2.0),
+            Float::from_double(x1 - x0 + width),
+            Float::from_double(width),
+          )
+        } else {
+          ctx.object.fill_rect(
+            Float::from_double(x0 - width / 2.0),
+            Float::from_double(y0 - width / 2.0),
+            Float::from_double(width),
+            Float::from_double(y1 - y0 + width),
+          )
+        }
       } else if (y0 - y1).abs() < 0.01 {
-        ctx.object.fill_rect(
-          Float::from_double(x0 - width / 2.0),
-          Float::from_double(y0 - width / 2.0),
-          Float::from_double(x1 - x0 + width),
-          Float::from_double(width),
-        )
+        docx_stroke_border(ctx.object, [x0, y0, x1, y1], value)
       } else {
-        ctx.object.fill_rect(
-          Float::from_double(x0 - width / 2.0),
-          Float::from_double(y0 - width / 2.0),
-          Float::from_double(width),
-          Float::from_double(y1 - y0 + width),
-        )
+        docx_stroke_border(ctx.object, [x0, y0, x0, y1], value)
       }
     }
   }
