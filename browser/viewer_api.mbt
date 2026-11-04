@@ -23,7 +23,7 @@ extern "js" fn viewer_facade(
   #| api.setMusicMode=mode=>{if(mode==='piano-roll'&&typeof dom.options.music!=='function')throw new Error('piano roll requires @bdfkit/viewer/music');setMusic(mode)};
   #| api.find=(query,step=1)=>restore(find(query,step));api.clearFind=clearFind;api.openFind=openFind;
   #| api.show=()=>{if(dom.mode==='lightbox')dom.surface.style.display='block'};api.hide=()=>{if(dom.mode==='lightbox')dom.surface.style.display='none'};
-  #| api.scrollToPage=index=>dom.stage.querySelector(`[data-bdf-page="${index}"]`)?.scrollIntoView({block:'start'});api.destroy=destroy;return api;
+  #| api.scrollToPage=index=>{dom.stage.querySelector(`[data-bdf-page="${index}"]`)?.scrollIntoView({block:'start'})};api.destroy=destroy;return api;
   #|}
 
 ///|
@@ -105,18 +105,43 @@ pub fn bdf_create_viewer(
 }
 
 ///|
+/// Install the public methods and getters on the constructor's prototype.
+extern "js" fn viewer_install_class(
+  ctor : (BrowserHost, BrowserViewerOptions) -> BrowserViewer,
+) -> Unit =
+  #|(ctor) => {
+  #| const key=Symbol.for('f4ah6o.bdf.viewer.methods'),installed=Symbol.for('f4ah6o.bdf.viewer.prototype'),methods=['show','hide','open','openFile','setView','setLayout','setMusicMode','setZoom','scrollToPage','find','openFind','clearFind','destroy'],getters=['document','view','pageLayout'];
+  #| const impl={
+  #|  show:function show(){return this[key].methods.show()},
+  #|  hide:function hide(){return this[key].methods.hide()},
+  #|  open:function open(source,password){return this[key].methods.open(source,password)},
+  #|  openFile:function openFile(converter,data){return this[key].methods.openFile(converter,data,arguments[2])},
+  #|  setView:function setView(id){return this[key].methods.setView(id)},
+  #|  setLayout:function setLayout(layout){return this[key].methods.setLayout(layout)},
+  #|  setMusicMode:function setMusicMode(mode){return this[key].methods.setMusicMode(mode)},
+  #|  setZoom:function setZoom(zoom){return this[key].methods.setZoom(zoom)},
+  #|  scrollToPage:function scrollToPage(index){return this[key].methods.scrollToPage(index)},
+  #|  find:function find(query){return this[key].methods.find(query,arguments[1])},
+  #|  openFind:function openFind(){return this[key].methods.openFind()},
+  #|  clearFind:function clearFind(){return this[key].methods.clearFind()},
+  #|  destroy:function destroy(){return this[key].methods.destroy()}
+  #| };
+  #| if(!Object.hasOwn(ctor.prototype,installed)){
+  #|  Object.defineProperty(ctor.prototype,installed,{value:true});
+  #|  if(Object.getPrototypeOf(ctor.prototype)!==EventTarget.prototype)Object.setPrototypeOf(ctor.prototype,EventTarget.prototype);
+  #|  for(const name of methods)Object.defineProperty(ctor.prototype,name,{value:impl[name],writable:true,configurable:true});
+  #|  for(const name of getters)Object.defineProperty(ctor.prototype,name,{get:function(){return this[key].getters[name]()},configurable:true});
+  #| }
+  #| Object.defineProperty(ctor,'name',{value:'Viewer',configurable:true});Object.defineProperty(ctor,'length',{value:1,configurable:true})
+  #|}
+
+///|
 extern "js" fn viewer_class_prototype(
   api : BrowserViewer,
   ctor : (BrowserHost, BrowserViewerOptions) -> BrowserViewer,
 ) -> Unit =
   #|(api,ctor) => {
   #| const key=Symbol.for('f4ah6o.bdf.viewer.methods'),methods=['open','openFile','setView','setLayout','setZoom','setMusicMode','find','clearFind','openFind','show','hide','scrollToPage','destroy'],getters=['document','view','pageLayout'];
-  #| if(Object.getPrototypeOf(ctor.prototype)!==EventTarget.prototype)Object.setPrototypeOf(ctor.prototype,EventTarget.prototype);
-  #| if(!Object.hasOwn(ctor.prototype,key)){
-  #|   Object.defineProperty(ctor.prototype,key,{value:true});
-  #|   for(const name of methods)Object.defineProperty(ctor.prototype,name,{value:function(...args){return this[key].methods[name](...args)},writable:true,configurable:true});
-  #|   for(const name of getters)Object.defineProperty(ctor.prototype,name,{get:function(){return this[key].getters[name]()},configurable:true});
-  #| }
   #| const saved={methods:{},getters:{}};for(const name of methods){saved.methods[name]=api[name];delete api[name]}for(const name of getters){saved.getters[name]=Object.getOwnPropertyDescriptor(api,name).get;delete api[name]}Object.defineProperty(api,key,{value:saved});Object.setPrototypeOf(api,ctor.prototype)
   #|}
 
@@ -127,6 +152,7 @@ pub fn viewer_class(
   host : BrowserHost,
   options : BrowserViewerOptions,
 ) -> BrowserViewer {
+  viewer_install_class(viewer_class)
   let api = bdf_create_viewer(host, options)
   viewer_class_prototype(api, viewer_class)
   api

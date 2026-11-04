@@ -15,7 +15,7 @@ extern "js" fn viewer_find_bar(dom : ViewerDom, drop : () -> Unit) -> Unit =
   #| bar.append(input,status,button('▲',labels.previous,()=>step(-1)),button('▼',labels.next,()=>step(1)),button('✕',labels.close,close));dom.box.append(bar);
   #| const typed=()=>{clearTimeout(timer);if(!input.value)run('',0);else timer=setTimeout(()=>run(input.value,0),150)};input.addEventListener('input',e=>{if(!e.isComposing)typed()});input.addEventListener('compositionend',typed);
   #| bar.addEventListener('keydown',e=>{if(e.isComposing||e.keyCode===229)return;if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close()}else if(e.key==='Enter'&&e.target===input){e.preventDefault();step(e.shiftKey?-1:1)}});
-  #| dom.findOpen=()=>{bar.style.display='flex';input.focus({preventScroll:true});input.select()};dom.findReset=()=>{hide();input.value=''};dom.findQuery=()=>input.value;
+  #| dom.findOpen=()=>{bar.style.display='flex';input.focus({preventScroll:true});input.select()};dom.findReset=()=>{hide();input.value=''};dom.findQuery=()=>input.value;dom.findShown=()=>bar.style.display!=='none';
   #| dom.findReport=(state,hit,view)=>{if(!state||!state.query.trim()){status.textContent='';return}if(!state.total){status.textContent=labels.none;return}status.textContent=labels.count(state.index+1,state.total,!!state.more);if(hit){const d=document.createElement('span');d.style.cssText='position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap';const prefix=view.kind==='sheet'||view.kind==='scroll'?'':`page ${hit.segments[0].a+1}: `;d.textContent=' '+prefix+hit.context.replace(/ ⏎ /g,' ');status.append(d)}};
   #| const onkey=e=>{if(e.defaultPrevented||e.isComposing||e.altKey||!dom.view||dom.searchable===false||(dom.mode==='lightbox'&&dom.surface.style.display==='none'))return;const nav=navigator,apple=/mac|iphone|ipad|ipod/i.test(nav.userAgentData?.platform||nav.platform||nav.userAgent||'');let key='';if(e.key==='F3'&&!e.metaKey&&!e.ctrlKey)key=e.shiftKey?'previous':'next';else if(apple?e.metaKey&&!e.ctrlKey:e.ctrlKey&&!e.metaKey){const letter=/^[a-z]$/i.test(e.key)?e.key.toLowerCase():/^Key[A-Z]$/.test(e.code)&&!/^[\x20-\x7e]$/.test(e.key)?e.code[3].toLowerCase():'';if(letter==='f'&&!e.shiftKey)key='open';else if(letter==='g')key=e.shiftKey?'previous':'next'}if(key==='open'){if(bar.style.display!=='none'&&input.getRootNode().activeElement===input)return;e.preventDefault();dom.api.openFind()}else if(key&&bar.style.display!=='none'&&input.value){e.preventDefault();step(key==='next'?1:-1)}};
   #| const keys=setting==='page'?document:dom.surface;keys.addEventListener('keydown',onkey);dom.findDispose=()=>{clearTimeout(timer);keys.removeEventListener('keydown',onkey)};
@@ -32,6 +32,10 @@ extern "js" fn viewer_bar_reset(dom : ViewerDom) -> Unit =
 ///|
 extern "js" fn viewer_bar_query(dom : ViewerDom) -> String =
   #|(dom) => dom.findQuery?.()??''
+
+///|
+extern "js" fn viewer_bar_shown(dom : ViewerDom) -> Bool =
+  #|(dom) => dom.findShown?.()??false
 
 ///|
 extern "js" fn viewer_dom_searchable(dom : ViewerDom, value : Bool) -> Unit =
