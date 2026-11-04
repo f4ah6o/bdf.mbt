@@ -1152,7 +1152,13 @@ fn pptx_table_style_fill(
   style_id : String,
   first_row : Bool,
   band_row : Bool,
+  last_row : Bool,
+  first_col : Bool,
+  last_col : Bool,
   row_index : Int,
+  col_index : Int,
+  row_count : Int,
+  col_count : Int,
 ) -> UInt32? {
   if style_id != "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}" {
     return None
@@ -1161,7 +1167,10 @@ fn pptx_table_style_fill(
     Some(value) => value
     None => 0x4472c4ffU
   }
-  if first_row && row_index == 0 {
+  if (first_row && row_index == 0) ||
+    (last_row && row_index == row_count - 1) ||
+    (first_col && col_index == 0) ||
+    (last_col && col_index == col_count - 1) {
     return Some(accent)
   }
   let first = if first_row { 1 } else { 0 }
@@ -1178,7 +1187,9 @@ fn pptx_table_style_fill(
 fn pptx_table_style_borders(
   style_id : String,
   first_row : Bool,
+  last_row : Bool,
   row_index : Int,
+  row_count : Int,
 ) -> Array[(Int32, Double, UInt32)] {
   let borders : Array[(Int32, Double, UInt32)] = []
   if style_id != "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}" {
@@ -1190,6 +1201,9 @@ fn pptx_table_style_borders(
   }
   if first_row && row_index == 0 {
     borders.push((2, 3.0, white))
+  }
+  if last_row && row_index == row_count - 1 {
+    borders.push((0, 3.0, white))
   }
   borders
 }
@@ -1228,6 +1242,21 @@ fn pptx_emit_table(
     "bandRow",
     "0",
   ) == "1"
+  let last_row = pptx_attribute(
+    match table_props { Some(value) => value.element; None => shape.element },
+    "lastRow",
+    "0",
+  ) == "1"
+  let first_col = pptx_attribute(
+    match table_props { Some(value) => value.element; None => shape.element },
+    "firstCol",
+    "0",
+  ) == "1"
+  let last_col = pptx_attribute(
+    match table_props { Some(value) => value.element; None => shape.element },
+    "lastCol",
+    "0",
+  ) == "1"
   let rows = pptx_children(table)
   let grid : Array[Double] = []
   match pptx_child(table, "tblGrid") {
@@ -1251,6 +1280,8 @@ fn pptx_emit_table(
       },
     )
   }
+  let row_count = row_heights.length()
+  let col_count = if grid.length() > 0 { grid.length() } else { 1 }
   let mut row_index = 0
   let mut row_top = y
   for row in rows {
@@ -1300,7 +1331,8 @@ fn pptx_emit_table(
         pptx_child(Some(cell), "tcPr"), "solidFill", theme,
       )
       let style_fill = pptx_table_style_fill(
-        theme, style_id, first_row, band_row, row_index,
+        theme, style_id, first_row, band_row, last_row, first_col, last_col,
+        row_index, grid_index, row_count, col_count,
       )
       match explicit_fill {
         Some(color) => {
@@ -1328,7 +1360,9 @@ fn pptx_emit_table(
       }
       let explicit_borders = pptx_cell_borders(cell, theme)
       let borders = if explicit_borders.is_empty() {
-        pptx_table_style_borders(style_id, first_row, row_index)
+        pptx_table_style_borders(
+          style_id, first_row, last_row, row_index, row_count,
+        )
       } else {
         explicit_borders
       }
@@ -1412,7 +1446,10 @@ fn pptx_emit_table(
       let text = pptx_cell_text(cell)
       if text != "" {
         let size = pptx_cell_text_size(cell)
-        let header = first_row && text_row == 0
+        let header = (first_row && text_row == 0) ||
+          (last_row && text_row == row_count - 1) ||
+          (first_col && grid_index == 0) ||
+          (last_col && grid_index == col_count - 1)
         let bold = if header { 700 } else { pptx_cell_bold(cell) }
         let italic = pptx_cell_italic(cell)
         let color = if header {

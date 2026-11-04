@@ -137,28 +137,60 @@ test "PPTX built-in table style resolves header and band fills" {
   let theme : Map[String, UInt32] = Map([])
   theme["accent1"] = 0x4472c4ffU
   let id = "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"
-  let header = pptx_table_style_fill(theme, id, true, true, 0).unwrap()
-  let band = pptx_table_style_fill(theme, id, true, true, 1).unwrap()
-  let plain = pptx_table_style_fill(theme, id, true, true, 2).unwrap()
+  let header = pptx_table_style_fill(
+    theme, id, true, true, false, false, false, 0, 0, 4, 2,
+  ).unwrap()
+  let band = pptx_table_style_fill(
+    theme, id, true, true, false, false, false, 1, 0, 4, 2,
+  ).unwrap()
+  let plain = pptx_table_style_fill(
+    theme, id, true, true, false, false, false, 2, 0, 4, 2,
+  ).unwrap()
   assert_eq(header, 0x4472c4ffU)
   assert_eq(band != plain, true)
-  assert_eq(pptx_table_style_fill(theme, "unknown", true, true, 0), None)
+  assert_eq(
+    pptx_table_style_fill(
+      theme, id, true, false, true, false, false, 3, 0, 4, 2,
+    ),
+    Some(0x4472c4ffU),
+  )
+  assert_eq(
+    pptx_table_style_fill(
+      theme, id, false, false, false, true, false, 1, 0, 4, 2,
+    ),
+    Some(0x4472c4ffU),
+  )
+  assert_eq(
+    pptx_table_style_fill(
+      theme, "unknown", true, true, false, false, false, 0, 0, 4, 2,
+    ),
+    None,
+  )
 }
 
 test "PPTX built-in table style adds grid and header borders" {
   let id = "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"
-  let header = pptx_table_style_borders(id, true, 0)
-  let body = pptx_table_style_borders(id, true, 1)
+  let header = pptx_table_style_borders(id, true, false, 0, 4)
+  let body = pptx_table_style_borders(id, true, false, 1, 4)
+  let last = pptx_table_style_borders(id, false, true, 3, 4)
   assert_eq(header.length(), 5)
   assert_eq(body.length(), 4)
+  assert_eq(last.length(), 5)
   let mut header_bottom = false
   for (side, width, _) in header {
     if side == 2 && width == 3.0 {
       header_bottom = true
     }
   }
+  let mut last_top = false
+  for (side, width, _) in last {
+    if side == 0 && width == 3.0 {
+      last_top = true
+    }
+  }
   assert_eq(header_bottom, true)
-  assert_eq(pptx_table_style_borders("unknown", true, 0).length(), 0)
+  assert_eq(last_top, true)
+  assert_eq(pptx_table_style_borders("unknown", true, false, 0, 4).length(), 0)
 }
 
 test "PPTX arrowheads draw filled or stroked paths" {
