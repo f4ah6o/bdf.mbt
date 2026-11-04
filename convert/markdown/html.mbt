@@ -273,6 +273,91 @@ fn md_html_dimension(value : String) -> Double {
 }
 
 ///|
+fn md_html_hex_digit(ch : Char) -> Int {
+  let code = ch.to_int()
+  if code >= 48 && code <= 57 {
+    code - 48
+  } else if code >= 97 && code <= 102 {
+    code - 87
+  } else if code >= 65 && code <= 70 {
+    code - 55
+  } else {
+    -1
+  }
+}
+
+///|
+fn md_html_hex_color(value : String) -> UInt32? {
+  let text = value.trim().to_lower()
+  let digits = if text.has_prefix("#") {
+    text[1:].to_owned()
+  } else {
+    text.to_owned()
+  }
+  let expanded = if digits.length() == 3 {
+    let out = StringBuilder()
+    for ch in digits {
+      out.write_char(ch)
+      out.write_char(ch)
+    }
+    out.to_string()
+  } else {
+    digits
+  }
+  if expanded.length() != 6 {
+    return None
+  }
+  let mut value = 0U
+  for ch in expanded {
+    let digit = md_html_hex_digit(ch)
+    if digit < 0 {
+      return None
+    }
+    value = value * 16U + digit.to_uint()
+  }
+  Some((value << 8) | 0xffU)
+}
+
+///|
+fn md_html_style_color(tag : String) -> UInt32? {
+  let style = md_attr_in_tag(tag, "style").to_lower()
+  let at = match style.find("color:") {
+    Some(index) => index
+    None => return None
+  }
+  let rest = style[at + 6:].trim().to_owned()
+  let value = match rest.find(";") {
+    Some(index) => rest[:index].to_owned()
+    None => rest
+  }
+  match value.trim().to_owned() {
+    "red" => Some(0xff0000ffU)
+    "green" => Some(0x008000ffU)
+    "blue" => Some(0x0000ffffU)
+    "black" => Some(0x000000ffU)
+    "white" => Some(0xffffffffU)
+    "gray" | "grey" => Some(0x808080ffU)
+    other => md_html_hex_color(other)
+  }
+}
+
+///|
+fn md_html_segment_style(
+  base : @drawingml.TextStyle,
+  bold : Bool,
+  italic : Bool,
+  code : Bool,
+  color : UInt32?,
+) -> @drawingml.TextStyle {
+  let styled = md_inline_style(base, bold, italic)
+  let monospace = if code { { ..styled, family: "monospace" } } else { styled }
+  match color {
+    Some(value) => { ..monospace, color: value }
+    None => monospace
+  }
+}
+
+///|
 fn md_html_styled_runs(
   html : String,
   base : @drawingml.TextStyle,
@@ -287,6 +372,7 @@ fn md_html_styled_runs(
   let mut bold = false
   let mut italic = false
   let mut code = false
+  let mut color : UInt32? = None
   let text = StringBuilder()
   while offset < html.length() {
     let relative = match lower[offset:].find("<") {
@@ -312,11 +398,7 @@ fn md_html_styled_runs(
       if value != "" {
         md_push_text(
           value,
-          if code {
-            { ..md_inline_style(base, bold, italic), family: "monospace" }
-          } else {
-            md_inline_style(base, bold, italic)
-          },
+          md_html_segment_style(base, bold, italic, code, color),
           link,
           runs,
           formulas,
@@ -330,10 +412,12 @@ fn md_html_styled_runs(
       "strong" | "b" => bold = !tag.has_prefix("/")
       "em" | "i" => italic = !tag.has_prefix("/")
       "code" => code = !tag.has_prefix("/")
+      "span" =>
+        color = if tag.has_prefix("/") { None } else { md_html_style_color(tag) }
       "br" =>
         md_push_text(
-          "\n", md_inline_style(base, bold, italic), link, runs, formulas,
-          svgs, sprite,
+          "\n", md_html_segment_style(base, bold, italic, code, color), link,
+          runs, formulas, svgs, sprite,
         )
       _ => ()
     }
@@ -347,7 +431,7 @@ fn md_html_styled_runs(
     if value != "" {
       md_push_text(
         value,
-        md_inline_style(base, bold, italic),
+        md_html_segment_style(base, bold, italic, code, color),
         link,
         runs,
         formulas,

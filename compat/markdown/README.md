@@ -10,7 +10,7 @@ The converter builds the same CommonMark/GFM structure GitHub uses:
 headings, nested ordered/unordered lists and task items, block quotes,
 fenced and indented code, tables with alignments, raw HTML (including
 data: image tags and their width/height, anchors and inline
-strong/em/code/br), links (fragment
+strong/em/code/br and span colours), links (fragment
 links target the document page; relative links without a base URL are left
 out), images
 and their alternative text, footnotes, definition lists and YAML/TOML
