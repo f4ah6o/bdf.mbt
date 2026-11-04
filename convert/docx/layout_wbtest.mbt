@@ -1227,6 +1227,31 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX justified text spreads spaces to the margin" {
+  let text = docx_test_repeat("word ", 80)
+  let justified = "<w:p><w:pPr><jc w:val=\"both\"/></w:pPr><w:r><w:t xml:space=\"preserve\">" +
+    text + "</w:t></w:r></w:p>"
+  let left = "<w:p><w:r><w:t xml:space=\"preserve\">" + text +
+    "</w:t></w:r></w:p>"
+  fn max_right(blocks : String) -> Double raise {
+    let commands = docx_test_page_commands(
+      convert(docx_test_docx(blocks, DOCX_TEST_SECTION, [])), "pages", 0, "body",
+    )
+    let mut right = 0.0
+    for command in commands {
+      match command {
+        FillText(_, x, _, width) =>
+          if x + width > right {
+            right = x + width
+          }
+        _ => ()
+      }
+    }
+    right
+  }
+  assert_true(max_right(justified) > max_right(left))
+}
+
 test "DOCX contextual spacing suppresses paragraph spacing" {
   let blocks = "<w:p><w:r><w:t>A</w:t></w:r></w:p>" +
     "<w:p><w:pPr><w:contextualSpacing/><w:spacing w:before=\"240\"/></w:pPr><w:r><w:t>B</w:t></w:r></w:p>"

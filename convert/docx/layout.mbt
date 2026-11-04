@@ -43,6 +43,7 @@ priv struct DocxParaLine {
   images : Array[DocxPlacedImage]
   height : Double
   align : String
+  justify : Bool
   break_before : String
 }
 
@@ -241,6 +242,7 @@ fn docx_layout_paragraph(
       images: current_images.copy(),
       height,
       align,
+      justify: false,
       break_before: pending_break,
     })
     current.clear()
@@ -572,8 +574,14 @@ fn docx_layout_paragraph(
       images: [],
       height: Double::max(docx_line_box_height(natural, props, pitch), 1.0),
       align,
+      justify: false,
       break_before: "",
     })
+  }
+  if align == "both" && lines.length() > 1 {
+    for index in 0..<(lines.length() - 1) {
+      lines[index] = { ..lines[index], justify: true }
+    }
   }
   { lines, anchors, notes, trailing_break: pending_break, }
 }
@@ -806,7 +814,43 @@ fn docx_emit_para_line(
   field_value : (String, String) -> String,
   warnings : Array[String],
 ) -> Unit raise {
-  let runs = docx_merge_line_items(line.items)
+  let mut source_items = line.items
+  if line.justify && !line.items.is_empty() {
+    let first = line.items[0]
+    let last = line.items[line.items.length() - 1]
+    let natural = last.x + last.advance - first.x
+    let extra = available - natural
+    let mut spaces = 0
+    for item in line.items {
+      for ch in item.text {
+        if ch == ' ' {
+          spaces += 1
+        }
+      }
+    }
+    if spaces > 0 && extra > 0.0 {
+      let each = extra / spaces.to_double()
+      let adjusted : Array[DocxLineItem] = []
+      let mut shift = 0.0
+      for item in line.items {
+        let mut count = 0
+        for ch in item.text {
+          if ch == ' ' {
+            count += 1
+          }
+        }
+        let increase = each * count.to_double()
+        adjusted.push({
+          ..item,
+          x: item.x + shift,
+          advance: item.advance + increase,
+        })
+        shift += increase
+      }
+      source_items = adjusted
+    }
+  }
+  let runs = docx_merge_line_items(source_items)
   let mut width = 0.0
   if !runs.is_empty() {
     let last = runs[runs.length() - 1]
@@ -3101,6 +3145,7 @@ fn docx_flow_emit_paragraph(
     let mut images : Array[DocxPlacedImage] = []
     let mut height = last_height
     let mut align = last_align
+    let mut justify = false
     if index < layout.lines.length() {
       let base = layout.lines[index]
       if fresh && index > 0 {
@@ -3113,6 +3158,7 @@ fn docx_flow_emit_paragraph(
       images = base.images
       height = base.height
       align = base.align
+      justify = base.justify
       last_height = height
       last_align = align
       if fresh {
@@ -3154,7 +3200,7 @@ fn docx_flow_emit_paragraph(
       if !narrowed {
         if !items.is_empty() || !images.is_empty() {
           emit(
-            { items, images, height, align, break_before: "" },
+            { items, images, height, align, justify: justify, break_before: "" },
             flow.x0,
             flow.width,
           )
@@ -3184,7 +3230,7 @@ fn docx_flow_emit_paragraph(
           shifted.push({ ..image, x: image.x + shift, })
         }
         emit(
-          { items: rebased, images: shifted, height, align, break_before: "" },
+          { items: rebased, images: shifted, height, align, justify: false, break_before: "" },
           flow.x0 + left_edge,
           available,
         )
@@ -3202,7 +3248,7 @@ fn docx_flow_emit_paragraph(
         }
         let rebased = docx_line_rebase(items, 0.0)
         emit(
-          { items: rebased, images, height, align, break_before: "" },
+          { items: rebased, images, height, align, justify: false, break_before: "" },
           flow.x0 + left_edge,
           Double::max(available, 1.0),
         )
@@ -3238,6 +3284,7 @@ fn docx_flow_emit_paragraph(
           images: [],
           height,
           align,
+          justify: false,
           break_before: "",
         },
         flow.x0 + left_edge,
