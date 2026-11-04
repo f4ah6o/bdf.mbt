@@ -284,7 +284,10 @@ fn XlsxWorkbook::xlsx_chart_model(
   }
   let mut kind = ""
   let mut plot : XlsxDrawNode? = None
-  for name in ["barChart", "lineChart", "pieChart", "doughnutChart", "radarChart"] {
+  for name in [
+    "barChart", "lineChart", "pieChart", "doughnutChart", "radarChart",
+    "areaChart",
+  ] {
     match xlsx_draw_child(plot_area, name) {
       Some(value) => {
         kind = name
@@ -883,6 +886,38 @@ fn XlsxWorkbook::xlsx_chart_svg(
           "</text>",
         )
       }
+    }
+  } else if model.kind == "areaChart" {
+    let count = model.values.length()
+    if count > 0 {
+      let peak = Double::max(top, 0.000001)
+      let points = StringBuilder()
+      points.write_string(
+        left.to_string() + "," + (plot_top + plot_height).to_string(),
+      )
+      for index, value in model.values {
+        let x = if count <= 1 {
+          left + plot_width / 2.0
+        } else {
+          left + plot_width * index.to_double() / (count - 1).to_double()
+        }
+        let y = plot_top + plot_height -
+          plot_height * (value - axis_base) / axis_range
+        points.write_string(" " + x.to_string() + "," + y.to_string())
+      }
+      points.write_string(
+        " " + (left + plot_width).to_string() + "," +
+        (plot_top + plot_height).to_string(),
+      )
+      svg.write_string(
+        "<polygon points=\"" +
+        points.to_string() +
+        "\" fill=\"" +
+        model.color +
+        "\" fill-opacity=\"0.3\" stroke=\"" +
+        model.color +
+        "\" stroke-width=\"2\"/>",
+      )
     }
   } else {
     let mut path = "M "
@@ -1597,6 +1632,35 @@ fn XlsxWorkbook::xlsx_chart_object(
           400,
         )
       }
+    }
+  } else if model.kind == "areaChart" {
+    let count = model.values.length()
+    if count > 0 {
+      let verbs : Array[Byte] = [0]
+      let coordinates : Array[Double] = [left, plot_top + plot_height]
+      for index, value in model.values {
+        let x = if count <= 1 {
+          left + plot_width / 2.0
+        } else {
+          left + plot_width * index.to_double() / (count - 1).to_double()
+        }
+        let y = plot_top + plot_height -
+          plot_height * (value - axis_base) / axis_range
+        verbs.push(1)
+        coordinates.push(x)
+        coordinates.push(y)
+      }
+      verbs.push(1)
+      coordinates.push(left + plot_width)
+      coordinates.push(plot_top + plot_height)
+      verbs.push(4)
+      object.fill_color(series_color)
+      object.fill_path(
+        object.add_path(
+          @core.Inline({ verbs: Bytes::from_array(verbs), coordinates }),
+        ),
+        0,
+      )
     }
   } else {
     object.line(2.0F, 0, 0, 8.0F)

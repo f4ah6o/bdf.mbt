@@ -265,7 +265,8 @@ fills, line borders and linear text of the original subset it supports:
   `showLeaderLines` connects outside pie labels, `firstSliceAng` rotates the pie,
   `dPt/explosion` offsets slices, doughnut charts use `holeSize`, and radar
   charts draw concentric grid polygons, spokes, their value polygon, value
-  markers and category labels around the spokes),
+  markers and category labels around the spokes, and area charts fill under
+  their line),
   value-axis
   `scaling/min`/`max` are honoured and the series `solidFill` colour is used)
   whose axis, category and series labels are added to the tile text
