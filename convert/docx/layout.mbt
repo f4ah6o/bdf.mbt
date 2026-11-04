@@ -55,6 +55,7 @@ priv struct DocxParaLayout {
 ///|
 priv struct DocxStoryLayout {
   lines : Array[DocxParaLine]
+  tables : Array[DocxTableLayout]
   height : Double
 }
 
@@ -1373,7 +1374,14 @@ fn docx_story_part_height(
 ) -> Double {
   let paragraphs = match document.stories.get(part) {
     Some(value) => value
-    None => return 0.0
+    None => []
+  }
+  let tables = match document.story_tables.get(part) {
+    Some(value) => value
+    None => []
+  }
+  if paragraphs.is_empty() && tables.is_empty() {
+    return 0.0
   }
   let mut height = 0.0
   for paragraph in paragraphs {
@@ -1398,6 +1406,12 @@ fn docx_story_part_height(
     }
     if paragraph.props.after > 0.0 {
       height += paragraph.props.after
+    }
+  }
+  for table in tables {
+    let layout = docx_layout_table(table, width, pitch)
+    for row in layout.rows {
+      height += row.height
     }
   }
   height
@@ -1673,7 +1687,19 @@ fn docx_flow_story_layout(
           height += paragraph.props.after
         }
       }
-      let value = { lines, height, }
+      let tables : Array[DocxTableLayout] = []
+      let story_tables = match flow.document.story_tables.get(part) {
+        Some(value) => value
+        None => []
+      }
+      for table in story_tables {
+        let table_layout = docx_layout_table(table, width, flow.line_pitch)
+        for row in table_layout.rows {
+          height += row.height
+        }
+        tables.push(table_layout)
+      }
+      let value = { lines, tables, height, }
       flow.stories[key] = value
       value
     }
@@ -1696,7 +1722,7 @@ fn docx_flow_emit_story(
     36.0,
   )
   let layout = docx_flow_story_layout(flow, part, width)
-  if layout.lines.is_empty() {
+  if layout.lines.is_empty() && layout.tables.is_empty() {
     return (false, 0.0)
   }
   let object = if header { flow.header_object } else { flow.footer_object }
@@ -1729,6 +1755,22 @@ fn docx_flow_emit_story(
       flow.warnings,
     )
     y += line.height
+  }
+  for table_layout in layout.tables {
+    let mut table_height = 0.0
+    for row in table_layout.rows {
+      table_height += row.height
+    }
+    docx_emit_table_rows(
+      ctx,
+      table_layout,
+      flow.section.left,
+      y,
+      0.0,
+      table_height,
+      false,
+    )
+    y += table_height
   }
   (true, layout.height)
 }

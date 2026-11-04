@@ -1226,6 +1226,53 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX header tables are laid out" {
+  let header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+    "<w:hdr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" " +
+    "xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">" +
+    "<w:tbl><w:tblPr><w:tblBorders>" +
+    "<w:top w:val=\"single\" w:sz=\"8\" w:color=\"000000\"/>" +
+    "<w:left w:val=\"single\" w:sz=\"8\" w:color=\"000000\"/>" +
+    "<w:bottom w:val=\"single\" w:sz=\"8\" w:color=\"000000\"/>" +
+    "<w:right w:val=\"single\" w:sz=\"8\" w:color=\"000000\"/>" +
+    "</w:tblBorders></w:tblPr><w:tblGrid><w:gridCol w:w=\"4000\"/></w:tblGrid>" +
+    "<w:tr><w:tc><w:p><w:r><w:t>HEADCELL</w:t></w:r></w:p></w:tc></w:tr></w:tbl></w:hdr>"
+  let rels = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+    "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">" +
+    "<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/header\" Target=\"header1.xml\"/>" +
+    "</Relationships>"
+  let content_types = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+    "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">" +
+    "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>" +
+    "<Default Extension=\"xml\" ContentType=\"application/xml\"/>" +
+    "<Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/>" +
+    "<Override PartName=\"/word/header1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml\"/>" +
+    "</Types>"
+  let section = "<w:sectPr><w:headerReference w:type=\"default\" r:id=\"rId1\"/>" +
+    "<w:pgSz w:w=\"12240\" w:h=\"15840\"/><w:pgMar w:top=\"1440\" w:right=\"1440\" w:bottom=\"1440\" w:left=\"1440\"/></w:sectPr>"
+  let data = docx_test_docx(
+    "<w:p><w:r><w:t>BODY</w:t></w:r></w:p>",
+    section,
+    [
+      ("[Content_Types].xml", @utf8.encode(content_types)),
+      ("word/header1.xml", @utf8.encode(header)),
+      ("word/_rels/document.xml.rels", @utf8.encode(rels)),
+    ],
+  )
+  let commands = docx_test_page_commands(convert(data), "pages", 0, "header")
+  let text = StringBuilder()
+  let mut fills = 0
+  for command in commands {
+    match command {
+      FillText(value, _, _, _) => text.write_string(value)
+      FillRect(_, _, _, _) => fills += 1
+      _ => ()
+    }
+  }
+  assert_true(text.to_string().contains("HEADCELL"))
+  assert_true(fills > 0)
+}
+
 test "DOCX TableGrid style supplies missing cell borders" {
   let table = "<w:tbl><w:tblPr><w:tblStyle w:val=\"TableGrid\"/></w:tblPr>" +
     "<w:tblGrid><w:gridCol w:w=\"2000\"/></w:tblGrid>" +

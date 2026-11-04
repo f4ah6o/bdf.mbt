@@ -125,6 +125,7 @@ priv struct DocxTextDocument {
   blocks : Array[DocxBlock]
   paragraphs : Array[DocxTextParagraph]
   stories : Map[String, Array[DocxTextParagraph]]
+  story_tables : Map[String, Array[DocxTable]]
   footnotes : Map[String, Array[String]]
   endnotes : Map[String, Array[String]]
   even_odd : Bool
@@ -2200,17 +2201,26 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
   }
   docx_apply_numbering(walker.blocks, numbering)
   let stories : Map[String, Array[DocxTextParagraph]] = Map([])
+  let story_tables : Map[String, Array[DocxTable]] = Map([])
   for section in sections {
     for story in section.headers {
       let story_part = story.1
       if !stories.contains(story_part) {
-        stories[story_part] = docx_story_paragraphs(package, story_part, styles)
+        let (paragraphs, tables) = docx_story_content(
+          package, story_part, styles,
+        )
+        stories[story_part] = paragraphs
+        story_tables[story_part] = tables
       }
     }
     for story in section.footers {
       let story_part = story.1
       if !stories.contains(story_part) {
-        stories[story_part] = docx_story_paragraphs(package, story_part, styles)
+        let (paragraphs, tables) = docx_story_content(
+          package, story_part, styles,
+        )
+        stories[story_part] = paragraphs
+        story_tables[story_part] = tables
       }
     }
   }
@@ -2222,6 +2232,7 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     blocks: walker.blocks,
     paragraphs: walker.paragraphs,
     stories,
+    story_tables,
     footnotes,
     endnotes,
     even_odd: docx_even_odd(package, part),
@@ -2230,13 +2241,13 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
 }
 
 ///|
-fn docx_story_paragraphs(
+fn docx_story_content(
   package : @ooxml.OoxmlPackage,
   part : String,
   styles : DocxStyles,
-) -> Array[DocxTextParagraph] {
+) -> (Array[DocxTextParagraph], Array[DocxTable]) {
   if part == "" || !package.has(part) {
-    return []
+    return ([], [])
   }
   try {
     let root = docx_text_xml(
@@ -2250,24 +2261,17 @@ fn docx_story_paragraphs(
       fields: [],
     }
     walker.blocks(root, true)
-    let out : Array[DocxTextParagraph] = []
-    fn collect(blocks : Array[DocxBlock]) -> Unit {
-      for block in blocks {
-        match block {
-          DocxParaBlock(paragraph) => out.push(paragraph)
-          DocxTableBlock(table) =>
-            for row in table.rows {
-              for cell in row.cells {
-                collect(cell.blocks)
-              }
-            }
-        }
+    let paragraphs : Array[DocxTextParagraph] = []
+    let tables : Array[DocxTable] = []
+    for block in walker.blocks {
+      match block {
+        DocxParaBlock(paragraph) => paragraphs.push(paragraph)
+        DocxTableBlock(table) => tables.push(table)
       }
     }
-    collect(walker.blocks)
-    out
+    (paragraphs, tables)
   } catch {
-    _ => []
+    _ => ([], [])
   }
 }
 
