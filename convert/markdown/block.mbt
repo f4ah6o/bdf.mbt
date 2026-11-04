@@ -866,7 +866,11 @@ fn md_replace_footnotes(line : String, numbers : Map[String, Int]) -> String {
         match numbers.get(id) {
           Some(number) => {
             out.write_char(' ')
+            out.write_char('[')
             out.write_string(number.to_string())
+            out.write_string("](#fn-")
+            out.write_string(number.to_string())
+            out.write_char(')')
             i = close + 1
             continue
           }

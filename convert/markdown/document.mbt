@@ -535,7 +535,12 @@ fn md_parse(text : String) -> MdDocument {
   for definition in definitions {
     let (number, body) = definition
     let runs = md_inline_runs(
-      number.to_string() + ". " + body + "  ↑",
+      number.to_string() +
+      ". " +
+      body +
+      " [↑](#fnref-" +
+      number.to_string() +
+      ")",
       md_style(),
       formulas,
       images,

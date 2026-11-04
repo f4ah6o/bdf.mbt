@@ -42,7 +42,7 @@ try {
   await page.goto(base + '/blank.html');
   const result = await page.evaluate(async base => {
     const { Converter } = await import('/node_modules/@bdfkit/convert/dist/index.js');
-    const { BdfDocument, BufferSource, decodeTextIndex } = await import('/node_modules/@bdfkit/core/dist/index.js');
+    const { BdfDocument, BufferSource, decodeObject, decodeTextIndex, opHistogram } = await import('/node_modules/@bdfkit/core/dist/index.js');
     const { bdf_create_native_converter } = await import('/_build/js/debug/build/browser/browser.js');
     const upstream = new Converter(
       new Worker('/node_modules/@bdfkit/convert/dist/worker.js', { type: 'module' }),
@@ -56,6 +56,14 @@ try {
       const text = view.textIndex
         ? decodeTextIndex(await doc.part(view.textIndex)).map(run => run.text).join(' ')
         : '';
+      let links = 0;
+      for (const view of doc.manifest.views) {
+        for (const page of view.pages ?? []) {
+          for (const layer of page.layers ?? []) {
+            links += opHistogram(decodeObject(await doc.part(layer.obj))).link ?? 0;
+          }
+        }
+      }
       return {
         id: view.id,
         kind: view.kind,
@@ -63,6 +71,7 @@ try {
         width: view.pages[0]?.w,
         height: view.pages[0]?.h,
         images: doc.manifest.parts.filter(part => part.t === 'img').length,
+        links,
         meta: doc.manifest.meta,
         text,
       };
@@ -113,6 +122,7 @@ try {
     assert.equal(entry.moon.width, 504, `${entry.name}: scroll width`);
     assert.ok(entry.moon.summary.includes('scroll strip(s)'), `${entry.name}: summary`);
     assert.equal(entry.moon.images, expectedImages[entry.name], `${entry.name}: image parts`);
+    assert.equal(entry.moon.links, entry.upstream.links, `${entry.name}: link rectangles`);
     assert.deepEqual(entry.moon.meta.dc, entry.upstream.meta.dc, `${entry.name}: Dublin Core metadata`);
     assert.equal(entry.moon.warnings.length, expectedWarnings[entry.name], `${entry.name}: warnings`);
     if (entry.name === 'svg.md') {
