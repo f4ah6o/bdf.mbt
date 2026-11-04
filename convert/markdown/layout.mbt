@@ -377,6 +377,7 @@ fn MdPainter::draw_text(
   x : Double,
   baseline : Double,
 ) -> Unit raise {
+  self.object.mark(1, "")
   let mut cursor = x
   for run in runs {
     match run.image {
@@ -493,7 +494,10 @@ fn MdPainter::layout_block(
       let style = md_heading_style(level, self.scale)
       self.object.mark(6, level.to_string())
       let styled = runs.map(fn(run) { { ..run, style, } })
-      for line in md_wrap_runs(styled, width) {
+      for index, line in md_wrap_runs(styled, width) {
+        if index > 0 {
+          self.object.mark(5, "")
+        }
         let (measured_baseline, measured_advance) = md_line_metrics(line)
         let baseline = if md_line_image_height(line) > 0.0 {
           measured_baseline
@@ -519,7 +523,10 @@ fn MdPainter::layout_block(
       let prepared = md_expand_fill_runs(runs, width)
       self.object.mark(0, "")
       let size = prepared[0].style.size
-      for line in md_wrap_runs(prepared, width) {
+      for index, line in md_wrap_runs(prepared, width) {
+        if index > 0 {
+          self.object.mark(5, "")
+        }
         let (measured_baseline, measured_advance) = md_line_metrics(line)
         let image_height = md_line_image_height(line)
         let baseline = if image_height > 0.0 {
@@ -556,7 +563,10 @@ fn MdPainter::layout_block(
         }
       }
       self.object.mark(8, "")
-      for line in md_wrap_runs(prefixed, item_width) {
+      for index, line in md_wrap_runs(prefixed, item_width) {
+        if index > 0 {
+          self.object.mark(5, "")
+        }
         let (measured_baseline, measured_advance) = md_line_metrics(line)
         let baseline = if md_line_image_height(line) > 0.0 {
           measured_baseline

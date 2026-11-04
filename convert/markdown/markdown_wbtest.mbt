@@ -296,6 +296,31 @@ test "Markdown emits list and table marks" {
   assert_eq(ends >= 2, true)
 }
 
+test "Markdown emits line and wrap marks" {
+  let mut source = ""
+  for _ in 0..<20 {
+    source += "word word word word word word word word "
+  }
+  let result = convert(@utf8.encode(source))
+  let doc = @core.open_single(result.bdf)
+  let view = doc.manifest.views[0]
+  let mut lines = 0
+  let mut wraps = 0
+  for page in view.pages {
+    for layer in page.layers {
+      for command in @render.decode_commands(doc.part(layer.object)) {
+        match command {
+          Mark(1, _) => lines += 1
+          Mark(5, _) => wraps += 1
+          _ => ()
+        }
+      }
+    }
+  }
+  assert_eq(lines >= 2, true)
+  assert_eq(wraps >= 1, true)
+}
+
 test "Markdown front matter maps Dublin Core terms" {
   let (body, meta) = md_front_matter(
     "---\nauthor:\n  - Alice\n  - name: Bob\ndate: 2026-09-26\ntags: [bdf, markdown]\n---\nbody",
