@@ -53,6 +53,7 @@ priv struct DocxTextItem {
   flip_h : Bool
   flip_v : Bool
   mut link : String
+  mut small_caps : Bool
   field_format : String
   mut shade : UInt32?
   mut border_width : Double
@@ -378,6 +379,7 @@ fn docx_text_push(
     flip_h: false,
     flip_v: false,
     link: "",
+    small_caps: false,
     field_format: "",
     shade: None,
     border_width: 0.0,
@@ -708,6 +710,7 @@ fn docx_text_drawing(
     flip_h,
     flip_v,
     link: "",
+    small_caps: false,
     field_format: "",
     shade: None,
     border_width: 0.0,
@@ -1072,6 +1075,7 @@ fn docx_text_field(
     flip_h: false,
     flip_v: false,
     link: "",
+    small_caps: false,
     field_format: format,
     shade: None,
     border_width: 0.0,
@@ -1181,7 +1185,7 @@ fn docx_text_run(
             }
           None => {
             let text = child.text.to_string()
-            let text = if (props.toggles & (4 | 8)) != 0 {
+            let text = if (props.toggles & 4) != 0 {
               text.to_upper()
             } else {
               text
@@ -1253,6 +1257,8 @@ fn docx_text_run(
   }
   for index in first..<items.length() {
     items[index].link = walker.current_link
+    items[index].small_caps = (props.toggles & 8) != 0 &&
+      (props.toggles & 4) == 0
   }
 }
 

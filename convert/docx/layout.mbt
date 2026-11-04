@@ -477,7 +477,9 @@ fn docx_layout_paragraph(
           _ => (base_size, 0.0)
         }
         for c in item.text {
-          let advance = docx_char_width(c, size) + item.props.spacing
+          let small = item.small_caps && c >= 'a' && c <= 'z'
+          let char_size = if small { size * 0.8 } else { size }
+          let advance = docx_char_width(c, char_size) + item.props.spacing
           if line_x + advance > right && line_started {
             if c == ' ' {
               // A space at the end of a line is not drawn.
@@ -515,7 +517,12 @@ fn docx_layout_paragraph(
           }
           let text = StringBuilder()
           text.write_char(c)
-          push_text(text.to_string(), item, size, advance, rise)
+          let text = if small {
+            text.to_string().to_upper()
+          } else {
+            text.to_string()
+          }
+          push_text(text, item, char_size, advance, rise)
         }
       }
     }

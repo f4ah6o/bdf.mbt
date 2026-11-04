@@ -1227,6 +1227,32 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX small caps render lowercase as smaller capitals" {
+  let blocks = "<w:p><w:r><w:rPr><w:smallCaps/></w:rPr><w:t>Ab</w:t></w:r></w:p>"
+  let commands = docx_test_page_commands(
+    convert(docx_test_docx(blocks, DOCX_TEST_SECTION, [])), "pages", 0, "body",
+  )
+  let mut upper_width = 0.0
+  let mut small_width = 0.0
+  let text = StringBuilder()
+  for command in commands {
+    match command {
+      FillText(value, _, _, width) => {
+        text.write_string(value)
+        if value == "A" {
+          upper_width = width
+        }
+        if value == "B" {
+          small_width = width
+        }
+      }
+      _ => ()
+    }
+  }
+  assert_true(text.to_string().contains("AB"))
+  assert_true(small_width > 0.0 && small_width < upper_width)
+}
+
 test "DOCX superscript runs are raised and smaller" {
   let blocks = "<w:p><w:r><w:t>E</w:t></w:r>" +
     "<w:r><w:rPr><w:vertAlign w:val=\"superscript\"/></w:rPr><w:t>2</w:t></w:r></w:p>"
