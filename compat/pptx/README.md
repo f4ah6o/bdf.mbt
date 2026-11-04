@@ -120,8 +120,9 @@ geometry falls back to the shape rectangle where upstream silently draws
 nothing; SmartArt, ink and 3-D or non-bar/line/pie charts are not
 supported; chart titles are used only for single-series charts without an
 explicit `c:title`, and chart data tables are not emitted; the built-in
-Medium-Style-2 Accent 1 table style applies header/band fills and header text,
-but its borders and other built-in table styles are not applied; `normAutofit` font scale and
+Medium-Style-2 Accent 1 table style applies header/band fills, header text and
+its white grid/header borders, but other built-in table styles are not applied;
+`normAutofit` font scale and
 line-spacing reduction are applied, while blip bullets and advanced vertical
 glyph stacking are not implemented; chart label
 text keeps the estimated advance even when fonts are supplied, and the subsets

@@ -1173,6 +1173,28 @@ fn pptx_table_style_fill(
 }
 
 ///|
+/// Table-style borders for the built-in Medium-Style-2 Accent 1 style:
+/// a 1pt white grid around every cell and a 3pt white rule under the header.
+fn pptx_table_style_borders(
+  style_id : String,
+  first_row : Bool,
+  row_index : Int,
+) -> Array[(Int32, Double, UInt32)] {
+  let borders : Array[(Int32, Double, UInt32)] = []
+  if style_id != "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}" {
+    return borders
+  }
+  let white = 0xffffffffU
+  for side in 0..<4 {
+    borders.push((side, 1.0, white))
+  }
+  if first_row && row_index == 0 {
+    borders.push((2, 3.0, white))
+  }
+  borders
+}
+
+///|
 fn pptx_emit_table(
   shape : PptxXmlNode,
   object : @core.ObjectBuilder,
@@ -1304,7 +1326,13 @@ fn pptx_emit_table(
             None => ()
           }
       }
-      for border in pptx_cell_borders(cell, theme) {
+      let explicit_borders = pptx_cell_borders(cell, theme)
+      let borders = if explicit_borders.is_empty() {
+        pptx_table_style_borders(style_id, first_row, row_index)
+      } else {
+        explicit_borders
+      }
+      for border in borders {
         let (side, border_width, border_color) = border
         let coordinates : Array[Double] = match side {
           0 => [cell_x, row_top, cell_x + column_width, row_top]

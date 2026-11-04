@@ -145,6 +145,22 @@ test "PPTX built-in table style resolves header and band fills" {
   assert_eq(pptx_table_style_fill(theme, "unknown", true, true, 0), None)
 }
 
+test "PPTX built-in table style adds grid and header borders" {
+  let id = "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"
+  let header = pptx_table_style_borders(id, true, 0)
+  let body = pptx_table_style_borders(id, true, 1)
+  assert_eq(header.length(), 5)
+  assert_eq(body.length(), 4)
+  let mut header_bottom = false
+  for (side, width, _) in header {
+    if side == 2 && width == 3.0 {
+      header_bottom = true
+    }
+  }
+  assert_eq(header_bottom, true)
+  assert_eq(pptx_table_style_borders("unknown", true, 0).length(), 0)
+}
+
 test "PPTX arrowheads draw filled or stroked paths" {
   for kind in ["triangle", "stealth", "diamond", "oval", "arrow"] {
     let object = @core.ObjectBuilder::new()
