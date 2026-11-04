@@ -3064,19 +3064,38 @@ fn pptx_emit_chart(
     return
   }
   let minor = fonts.minor
-  match pptx_node_color(pptx_child(Some(root), "spPr"), "solidFill", theme) {
-    Some(color) => {
-      object.fill_color(color)
-      object.fill_rect(
-        Float::from_double(x),
-        Float::from_double(y),
-        Float::from_double(width),
-        Float::from_double(height),
-      )
-    }
+  let chart_sp_pr = pptx_child(Some(root), "spPr")
+  match pptx_fill_element(chart_sp_pr) {
+    Some(fill) =>
+      match pptx_resolve_paint(fill, theme, None) {
+        PptxPaintSolid(color, _) => {
+          object.fill_color(color)
+          object.fill_rect(
+            Float::from_double(x),
+            Float::from_double(y),
+            Float::from_double(width),
+            Float::from_double(height),
+          )
+        }
+        PptxPaintGradient(node, paint_theme) =>
+          match pptx_gradient_node(
+            Some(node), x, y, width, height, paint_theme,
+          ) {
+            Some(paint) => {
+              object.fill_paint(object.add_paint(paint))
+              object.fill_rect(
+                Float::from_double(x),
+                Float::from_double(y),
+                Float::from_double(width),
+                Float::from_double(height),
+              )
+            }
+            None => ()
+          }
+        PptxPaintNone => ()
+      }
     None => ()
   }
-  let chart_sp_pr = pptx_child(Some(root), "spPr")
   if pptx_child(chart_sp_pr, "ln") is Some(_) {
     let (border_color, border_width) = pptx_chart_line_style(
       chart_sp_pr, theme, 0x000000ffU, 1.0,

@@ -108,7 +108,8 @@ overlay mode, category labels and value-axis ticks with `txPr` text
 styles, explicit `c:majorUnit`/`c:minorUnit`, `c:scaling/c:min`/`c:max` (automatically extending below zero for negative
 values), reversed category and value axes (`c:orientation=maxMin`), negative bars, mixed-sign stacks and percent stacks drawn from a visible zero
 line, value-axis
-`c:numFmt`, chart/plot-area `c:spPr` fills and borders, major/minor gridlines, and
+`c:numFmt`, chart/plot-area `c:spPr` solid/gradient fills and borders,
+major/minor gridlines, and
 sparse point caches keep their `idx` positions, blank points draw no bars or
 scatter/radar markers,
 and line/area gaps honour `dispBlanksAs=gap|span|zero`. Office
