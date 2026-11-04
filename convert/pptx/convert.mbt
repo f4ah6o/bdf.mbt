@@ -2567,6 +2567,14 @@ fn pptx_emit_chart(
       }
     None => false
   }
+  let label_format = match pptx_child(Some(chart), "dLbls") {
+    Some(labels) =>
+      match pptx_child(Some(labels), "numFmt") {
+        Some(format) => pptx_attribute(format.element, "formatCode", "")
+        None => ""
+      }
+    None => ""
+  }
   let palette = [
     0x4472c4ffU, 0xed7d31ffU, 0xa5a5a5ffU, 0xffc000ffU, 0x5b9bd5ffU, 0x70ad47ffU,
   ]
@@ -2797,9 +2805,9 @@ fn pptx_emit_chart(
         if show_values {
           let mut label_text = if show_label_categories &&
             index < item.categories.length() {
-            item.categories[index] + " " + pptx_chart_tick_text(value)
+            item.categories[index] + " " + pptx_chart_format_number(value, label_format)
           } else {
-            pptx_chart_tick_text(value)
+            pptx_chart_format_number(value, label_format)
           }
           if show_label_series && item.name != "" {
             label_text = item.name + " " + label_text
@@ -2963,9 +2971,9 @@ fn pptx_emit_chart(
         if show_values {
           let mut label_text = if show_label_categories &&
             index < categories.length() {
-            categories[index] + " " + pptx_chart_tick_text(value)
+            categories[index] + " " + pptx_chart_format_number(value, label_format)
           } else {
-            pptx_chart_tick_text(value)
+            pptx_chart_format_number(value, label_format)
           }
           if show_label_series && item.name != "" {
             label_text = item.name + " " + label_text
@@ -3152,7 +3160,7 @@ fn pptx_emit_chart(
       object.fill_color(fill)
       object.fill_path(path, 0)
       let mut label = if pie_labels.0 {
-        pptx_chart_tick_text(value)
+        pptx_chart_format_number(value, label_format)
       } else if pie_labels.1 {
         (value / total * 100.0 + 0.5).to_int().to_string() + "%"
       } else {
@@ -3667,9 +3675,9 @@ fn pptx_emit_chart(
           let value = item.values[index]
           let mut text = if show_label_categories &&
             index < categories.length() {
-            categories[index] + " " + pptx_chart_tick_text(value)
+            categories[index] + " " + pptx_chart_format_number(value, label_format)
           } else {
-            pptx_chart_tick_text(value)
+            pptx_chart_format_number(value, label_format)
           }
           if show_label_series && item.name != "" {
             text = item.name + " " + text
@@ -3699,9 +3707,9 @@ fn pptx_emit_chart(
         for index, value in item.values {
           let mut text = if show_label_categories &&
             index < categories.length() {
-            categories[index] + " " + pptx_chart_tick_text(value)
+            categories[index] + " " + pptx_chart_format_number(value, label_format)
           } else {
-            pptx_chart_tick_text(value)
+            pptx_chart_format_number(value, label_format)
           }
           if show_label_series && item.name != "" {
             text = item.name + " " + text
