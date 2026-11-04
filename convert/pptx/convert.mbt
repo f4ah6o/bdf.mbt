@@ -4459,6 +4459,10 @@ fn pptx_emit_chart(
       ).to_int()
     None => 1
   }
+  let cat_tick_mark = match pptx_child(cat_axis_node, "majorTickMark") {
+    Some(value) => pptx_attribute(value.element, "val", "none")
+    None => "none"
+  }
   for index, category in categories {
     if index % cat_tick_skip != 0 {
       continue
@@ -4485,6 +4489,39 @@ fn pptx_emit_chart(
         plot_x + slot * index.to_double() + (slot - label_width) / 2.0,
         y + height - 4.0,
       )
+    }
+  }
+  if cat_tick_mark != "none" {
+    for index in 0..<categories.length() {
+      let coordinates : Array[Double] = if horizontal {
+        let base = plot_x
+        let center = plot_y + slot * index.to_double() + slot / 2.0
+        let end = match cat_tick_mark {
+          "in" => base + 3.0
+          "out" => base - 3.0
+          "cross" => base + 3.0
+          _ => base
+        }
+        let start = if cat_tick_mark == "cross" { base - 3.0 } else { base }
+        [start, center, end, center]
+      } else {
+        let base = plot_y + plot_height
+        let center = plot_x + slot * index.to_double() + slot / 2.0
+        let end = match cat_tick_mark {
+          "in" => base - 3.0
+          "out" => base + 3.0
+          "cross" => base + 3.0
+          _ => base
+        }
+        let start = if cat_tick_mark == "cross" { base - 3.0 } else { base }
+        [center, start, center, end]
+      }
+      object.line(0.75F, 0, 0, 8.0F)
+      object.stroke_color(0x808080ffU)
+      let path = object.add_path(
+        @core.Inline({ verbs: Bytes::from_array([0, 1]), coordinates }),
+      )
+      object.stroke_path(path)
     }
   }
   let (plot_border_color, plot_border_width) = pptx_chart_line_style(
