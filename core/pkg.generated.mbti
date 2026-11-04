@@ -7,6 +7,10 @@ import {
 }
 
 // Values
+pub const MAX_ECDH_SLOTS : Int32 = 16
+
+pub const MAX_ITERATIONS : Int32 = 10000000
+
 pub const MAX_MIDI_EVENTS : Int32 = 1048576
 
 pub fn audio_media_type(String) -> String

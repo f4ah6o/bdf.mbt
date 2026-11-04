@@ -35,14 +35,11 @@ Options:
 
 - PDF + EPUB: the same two converters as upstream, so this is the closest
   like-for-like comparison. The port does not cover every PDF feature.
-- Office: upstream's nine formats minus Parquet input, which this port does
-  not read. XLSX uses `convert_plain_no_fonts` because the font-embedding path
-  is not ported.
-- All: the 19 formats the native converter worker dispatches. Upstream's all
-  preset also includes CGM, draw.io, DXF, Gerber, HP-GL, Jw_cad, KiCad, Parquet
-  and SXF, which are not part of this port. MusicXML is parsed by
-  `convert/musicxml` but is not wired into the worker, so it is not in the all
-  probe.
+- Office: upstream's nine formats, including Parquet input and the
+  XLSX font-embedding entry point.
+- All: the 28 formats the native converter worker dispatches. Upstream's all
+  preset also includes MusicXML, which `convert/musicxml` parses but the worker
+  does not yet dispatch.
 
 ## Notes
 

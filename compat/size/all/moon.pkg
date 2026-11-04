@@ -18,6 +18,15 @@ import {
   "f4ah6o/bdf/convert/tiff",
   "f4ah6o/bdf/convert/visio",
   "f4ah6o/bdf/convert/xlsx",
+  "f4ah6o/bdf/convert/hpgl",
+  "f4ah6o/bdf/convert/jww",
+  "f4ah6o/bdf/convert/dxf",
+  "f4ah6o/bdf/convert/sxf",
+  "f4ah6o/bdf/convert/cgm",
+  "f4ah6o/bdf/convert/gerber",
+  "f4ah6o/bdf/convert/kicad",
+  "f4ah6o/bdf/convert/drawio",
+  "f4ah6o/bdf/convert/parquet",
   "f4ah6o/bdf/font/db" @fontdb,
 }
 

@@ -63,4 +63,31 @@ fn main {
   ignore(@xlsx.convert_plain_no_fonts(data)) catch {
     _ => ()
   }
+  ignore(@hpgl.convert(data)) catch {
+    _ => ()
+  }
+  ignore(@jww.convert(data)) catch {
+    _ => ()
+  }
+  ignore(@dxf.convert(data)) catch {
+    _ => ()
+  }
+  ignore(@sxf.convert(data)) catch {
+    _ => ()
+  }
+  ignore(@cgm.convert(data)) catch {
+    _ => ()
+  }
+  ignore(@gerber.convert(data)) catch {
+    _ => ()
+  }
+  ignore(@kicad.convert(data)) catch {
+    _ => ()
+  }
+  ignore(@drawio.convert(data)) catch {
+    _ => ()
+  }
+  ignore(@parquet.convert(data)) catch {
+    _ => ()
+  }
 }

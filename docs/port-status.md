@@ -15,6 +15,8 @@
 - `npm run test:phase3-converter`
 - `npm run test:phase4-converter`
 - `npm run test:phase5-converter`
+- `npm run test:converter-stream`
+- `npm run test:export`
 - `npm run test:phase8-type1`
 - `npm run test:phase8-parquet`
 - `npm run test:phase8-xlsx`
@@ -28,15 +30,17 @@
 - Done: viewer `openFile` integration and PDF/DOCX/PPTX page streams.
 - Done: DOM/OffscreenCanvas viewer, lazy pages, sheets, search, ARIA and MIDI.
 - Done: MoonBit converters for the demo format set (PDF, DOCX, PPTX, XLSX,
-  CSV, image, font, MIDI/MML/MusicXML, HP-GL/2, Jw_cad, DXF, SXF, CGM, Gerber, KiCad PCB, draw.io, Parquet), plus AI, TIFF, PSD, EMF/WMF,
-  IDML and Visio VSDX.
+  CSV, image, font, MIDI, MML, HP-GL/2, Jw_cad, text and binary DXF, SXF SFC,
+  CGM, Gerber, KiCad PCB, draw.io, Parquet, audio, and reflowable/fixed-layout
+  EPUB), plus AI, TIFF, PSD, EMF/WMF, IDML and Visio VSDX. MusicXML has a
+  parser but no BDF converter.
 - Done: `convert/raster` PNG encoding and box scaling; the EMF/WMF metafile
   replay is also used by the DOCX and PPTX picture paths, with embedded
   EMF fixtures covering both Office integrations.
 - Phase 2: `convert/idml` (complete with documented gaps) reads spreads, master spreads, layers, paths,
   colours, gradients (first stop), embedded images, stories and text indexes;
-  threaded story flow, linked images, page-number markers and table stories
-  are documented gaps. `convert/visio` reads VSDX page sheets, foreground and
+  threaded story flow is implemented; linked images, page-number markers and
+  table stories are documented gaps. `convert/visio` reads VSDX page sheets, foreground and
   background pages, masters, layers, ShapeSheet geometry, solid fills/strokes,
   text and text indexes; theme quick styles, shadows, hyperlinks and pictures
   are documented gaps. `convert/drawingml` provides the shared approximate
@@ -53,17 +57,21 @@
   Zstandard and LZ4 codecs, Data Page v1/v2, multiple row groups, dictionary/
   RLE/delta/byte-stream-split encodings, logical dates/timestamps/decimals,
   JSON-style nested values, WKB→WKT and WKT geometry columns, and Variant
-  values. Variant metadata version 1 and encrypted files are documented gaps.
-- Phase 3: `convert/reader` provides the reader-mode block model (A4 pages for HTML/Markdown, A5 book pages for EPUB); `convert/epub` reads the container, manifest and spine; `convert/html` reads headings, paragraphs, lists, code, quotes, tables and images-as-alt-text; `convert/markdown` reads front matter, headings, lists, tasks, fences, quotes, rules, simple tables and inline links. Readability extraction, CSS, remote images, fixed-layout EPUB, MHTML, embedded fonts and exact CommonMark/GFM behavior are documented gaps.
-- Phase 4: `convert/audio` writes one-page cards for MP3, AAC (ADTS/M4A), FLAC, Ogg Vorbis/Opus, WAV and AIFF with tags, covers, lyrics, durations and an optional playable audio part. MP4/iTunes tags and covers, Ogg duration, synchronized lyrics, chapters and DRM are documented gaps.
+  values. Variant metadata newer than version 1 and encrypted Parquet files
+  are documented gaps.
+- Phase 3: `convert/reader` provides the reader-mode block model (A4 pages for HTML/Markdown, A5 book pages for EPUB); `convert/epub` reads the container, manifest and spine and converts picture-only pre-paginated books page-for-page at their viewport size and reading direction; `convert/html` reads headings, paragraphs, lists, code, quotes, tables and images-as-alt-text; `convert/markdown` reads front matter, headings, lists, tasks, fences, quotes, rules, simple tables and inline links. Readability extraction, CSS, remote images, vertical writing, non-picture fixed layout, MHTML, embedded fonts and exact CommonMark/GFM behavior are documented gaps.
+- Phase 4: `convert/audio` writes one-page cards for MP3, AAC (ADTS/M4A), FLAC, Ogg Vorbis/Opus, WAV and AIFF with multi-value ID3 tags, synchronized lyrics and chapters, APIC/FLAC/Ogg pictures, MP4/iTunes metadata and cover art, Ogg granule durations, corrected AIFF 80-bit sample rates, Dublin Core metadata and an optional playable audio part. DRM handling,
+  ID3v2.2 tags, compressed ID3 frames, QuickTime `chpl` v1 chapters and Ogg
+  FLAC/Speex remain documented gaps.
 - Done: cryptography on non-JavaScript hosts. PBKDF2-HMAC-SHA-256,
   HKDF-SHA-256, AES-KW, AES-GCM and P-256 ECDH are in `crypto`, and encrypted
   BDF documents unlock with a password or P-256 private key through `core`.
 
 ## Converter gaps
 
-- PDF: Type1 `/FontFile` programs still use the system-font fallback; bare CFF
-  programs are wrapped as OpenType. Tiling patterns, encoded image masks with
+- PDF: Type1 `/FontFile` programs are interpreted into Type 2 outlines and a
+  name-keyed CFF, then embedded; unsupported programs fall back to system fonts
+  with a warning, and bare CFF programs are wrapped as OpenType. Tiling patterns, encoded image masks with
   ExtGState soft masks, JPX images, MMR-generic-region JBIG2 images, Type3 glyph
   procedures, URI actions on form fields, and standard-security-handler
   revisions 2, 3, 4 and 6 (RC4, AES-128 and AES-256) are supported. Revision 5
@@ -90,9 +98,9 @@
   glyph-indexed text are warnings or gaps.
 - HP-GL/2 and HP-GL plots are ported for vector instructions, labels, line
   types, fills, hatching and clip windows; Jw_cad drawings are ported for the
-  figures in the upstream fixture set. DXF model space is ported for ASCII
-  R12 to 2018 files, with HATCH, binary DXF, layouts and non-top OCS entities
-  as documented gaps. SXF SFC drawings are ported for sheets, layers, colours,
+  figures in the upstream fixture set. DXF model space is ported for text and
+  binary R12 to 2018 files, with HATCH, paper-space layouts and non-top OCS
+  entities as documented gaps. SXF SFC drawings are ported for sheets, layers, colours,
   line types, lines, polylines, circles, arcs, ellipses, text, markers,
   splines, clothoids and compound figures; P21/P2Z, dimensions, labels and
   hatches are documented gaps. Binary CGM pictures are ported for VDC extents,
@@ -118,13 +126,31 @@
 1. ~~Port Type1 font programs to CFF so `/FontFile` fonts embed natively.~~
    Done: Type 1 charstrings are interpreted into Type 2 outlines and a
    name-keyed CFF, then embedded through the existing CFF path.
-2. Port the deferred SXF, CGM, Gerber/Excellon and KiCad converters, then the
-   remaining draw.io icon-table/math-typesetting gaps.
+2. Close the remaining fixture-backed gaps, in this order:
+   - draw.io route/shape/stencil suites (the upstream `route`, `shapes`,
+     `shapes_basic`, `shapes_libs`, `shapes_aws4`, `stencil` and
+     `aws_legacy` fixtures; only the top-level files are exercised today).
+   - KiCad schematics, projects and drawing sheets (`demo.zip`, `demo/`,
+     `frame/`).
+   - SXF P21/P2Z (`shapes.p21`, `shapes.p2z`); the SFC path is complete.
+   - Reader-mode math and resources (`html/math.html`, `markdown/math.md`,
+     `markdown/svg.md`).
+   - EPUB vertical writing and non-picture fixed layout (`vertical.epub`).
+   - IDML `simpleidml/` packages, linked images and table stories.
+   - DOCX/PPTX OMML math and font directories (`math.docx`, `math.pptx`,
+     `testdata/fonts`).
+   - PSD layer compositing when a file has no composite, and TIFF
+     JPEG/YCbCr pages.
+   - The MusicXML to BDF converter (the parser exists but the Worker does not
+     dispatch it).
+   - The upstream class-shaped `BdfDocument`, `CanvasRenderer` and
+     `PageRenderer` APIs.
 3. ~~Port Parquet sheet input.~~ Done for flat and nested tables with common
    codecs, Data Page v1/v2, common encodings, WKB→WKT/WKT geometry and
    Variant version 1; encryption remains.
 4. ~~Port the XLSX font-embedding mode.~~ Done: `convert_plain_with_font`
    embeds an explicit face and uses its advances/metrics; the Worker picks the
    first face of a supplied font directory.
-5. Close documented gaps in the ported formats only where a source fixture can
-   be compared with upstream.
+5. Keep importing the remaining upstream test data for every ported format and
+   assert either parity or the exact documented warning; never skip a fixture
+   silently.

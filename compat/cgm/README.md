@@ -4,6 +4,12 @@ The fixtures are the upstream `converter/cgm/testdata` files at shibukawa/bdf
 `4f9af52dca60be1eb0daade39f7dc41d6a1fe431` (MIT license, see
 `licenses/Shibukawa-bdf.txt`).
 
+The fixtures `shapes.cgm`, `illustration.cgm` and `sjis.cgm` are
+exercised by `compat/converter/phase5-test.mjs`. `shapes-text.cgm` is
+clear-text CGM, which is an explicit error. The second picture of
+`illustration.cgm` has no metric scaling; this port sizes it from the VDC
+extent, so that page's geometry differs from upstream.
+
 `convert/cgm` currently ports the binary encoding: pictures, VDC extents,
 metric scaling, background colours, line and fill attributes, polylines,
 disjoint polylines, markers, polygons, rectangles, circles, arcs, ellipses,

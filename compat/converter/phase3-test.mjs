@@ -54,11 +54,25 @@ try {
     for (const [name, path, ext] of [
       ['html', '/compat/html/fixtures/article.html', '.html'],
       ['epub', '/compat/epub/fixtures/basic.epub', '.epub'],
+      ['fixed', '/compat/epub/fixtures/fixed.epub', '.epub'],
     ]) {
       const bytes = new Uint8Array(await (await fetch(base + path)).arrayBuffer());
       const converted = await moon.convert(bytes, { name: name + ext });
       const doc = await BdfDocument.open(new BufferSource(converted.bdf));
       const view = doc.manifest.views[0];
+      if (name === 'fixed') {
+        out.fixed = {
+          summary: converted.summary,
+          warnings: converted.warnings,
+          pages: view.pages.length,
+          kind: view.kind,
+          direction: view.direction,
+          title: view.title,
+          hasTextIndex: !!view.textIndex,
+          sizes: view.pages.map(page => [page.w, page.h]),
+        };
+        continue;
+      }
       const index = decodeTextIndex(await doc.part(view.textIndex));
       out[name] = { summary: converted.summary, pages: view.pages.length, text: index.map(run => run.text).join('') };
     }
@@ -79,7 +93,15 @@ try {
   assert.ok(result.html.text.includes('How Canvas Documents Load Quickly'));
   assert.ok(result.epub.pages > 0);
   assert.ok(result.epub.text.length > 20);
-  console.log('Phase 3 EPUB/HTML/Markdown: reader pages, metadata, text indexes and streamed pages are converted.');
+  assert.equal(result.fixed.pages, 6);
+  assert.equal(result.fixed.kind, 'fixed');
+  assert.equal(result.fixed.direction, 'rtl');
+  assert.equal(result.fixed.title, '固定レイアウトのテスト');
+  assert.equal(result.fixed.hasTextIndex, false);
+  assert.deepEqual(result.fixed.sizes, Array.from({ length: 6 }, () => [450, 600]));
+  assert.equal(result.fixed.warnings.length, 1);
+  assert.ok(result.fixed.warnings[0].includes('outside the reading order'));
+  console.log('Phase 3 EPUB/HTML/Markdown: reader pages, metadata, text indexes, fixed-layout picture pages and streamed pages are converted.');
 } finally {
   await browser.close();
   server.close();

@@ -1,8 +1,7 @@
 ///|
-/// The formats of the upstream `@bdfkit/convert-office` Wasm preset that this
-/// port converts (all of them but Parquet input). The conversion entry points
-/// are referenced from `main` so the linker keeps their code; the program is
-/// never run. See `compat/size/README.md`.
+/// The formats of the upstream `@bdfkit/convert-office` Wasm preset. The
+/// conversion entry points are referenced from `main` so the linker keeps
+/// their code; the program is never run. See `compat/size/README.md`.
 fn main {
   let data : Bytes = b""
   let database = @fontdb.Database::new()
@@ -28,6 +27,12 @@ fn main {
     _ => ()
   }
   ignore(@xlsx.convert_plain_no_fonts(data)) catch {
+    _ => ()
+  }
+  ignore(@xlsx.convert_plain_with_font(data, b"")) catch {
+    _ => ()
+  }
+  ignore(@parquet.convert(data)) catch {
     _ => ()
   }
 }

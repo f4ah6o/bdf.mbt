@@ -105,9 +105,158 @@ fn dxf_number(value : StringView) -> Double {
 }
 
 ///|
+fn dxf_binary_sentinel(data : Bytes) -> Bool {
+  data.length() >= 22 && data.has_prefix(b"AutoCAD Binary DXF") &&
+  data[18] == (13).to_byte() && data[19] == (10).to_byte() &&
+  data[20] == (26).to_byte() && data[21] == (0).to_byte()
+}
+
+///|
+fn dxf_u16_le(data : Bytes, offset : Int) -> Int raise {
+  if offset < 0 || offset + 2 > data.length() {
+    raise Failure("dxf: the binary DXF data ends in the middle of a value")
+  }
+  data[offset].to_int() | (data[offset + 1].to_int() << 8)
+}
+
+///|
+fn dxf_u64_le(data : Bytes, offset : Int) -> Int64 raise {
+  if offset < 0 || offset + 8 > data.length() {
+    raise Failure("dxf: the binary DXF data ends in the middle of a value")
+  }
+  let mut value = 0L
+  for i in 0..<8 {
+    value = value | (data[offset + i].to_int64() << (i * 8))
+  }
+  value
+}
+
+///|
+fn dxf_f64_le(data : Bytes, offset : Int) -> Double raise {
+  dxf_u64_le(data, offset).to_uint64().reinterpret_as_double()
+}
+
+///|
+fn dxf_cstring(data : Bytes, offset : Int) -> (String, Int) raise {
+  let mut end = offset
+  while end < data.length() && data[end] != (0).to_byte() {
+    end += 1
+  }
+  if end >= data.length() {
+    raise Failure("dxf: the binary DXF data ends in the middle of a value")
+  }
+  (@utf8.decode_lossy(data[offset:end].to_owned()), end + 1)
+}
+
+///|
+fn dxf_binary_codes_are_wide(data : Bytes) -> Bool {
+  // R12 binary files use one-byte group codes; later ones use two. The
+  // group code after "$ACADVER\0" is 01 in R12 and 01 00 in later files.
+  let limit = Int::min(data.length(), 1024)
+  let mut i = 22
+  while i + 9 <= limit {
+    if data[i] == (36).to_byte() && data[i + 1] == (65).to_byte() &&
+      data[i + 2] == (67).to_byte() && data[i + 3] == (65).to_byte() &&
+      data[i + 4] == (68).to_byte() && data[i + 5] == (86).to_byte() &&
+      data[i + 6] == (69).to_byte() && data[i + 7] == (82).to_byte() &&
+      data[i + 8] == (0).to_byte() {
+      return i + 10 < limit && data[i + 9] == (1).to_byte() &&
+        data[i + 10] == (0).to_byte()
+    }
+    i += 1
+  }
+  false
+}
+
+///|
+fn read_binary_tags(data : Bytes) -> Array[DxfTag] raise {
+  let wide = dxf_binary_codes_are_wide(data)
+  let tags : Array[DxfTag] = []
+  let mut offset = 22
+  while offset < data.length() {
+    let code = if wide {
+      let value = dxf_u16_le(data, offset)
+      offset += 2
+      value
+    } else {
+      let value = data[offset].to_int()
+      offset += 1
+      if value == 255 {
+        let extended = dxf_u16_le(data, offset)
+        offset += 2
+        extended
+      } else {
+        value
+      }
+    }
+    let kind = dxf_type(code)
+    let tag = match kind {
+      1 => {
+        let value = dxf_f64_le(data, offset)
+        offset += 8
+        { code, s: value.to_string(), f: value }
+      }
+      2 => {
+        let raw = dxf_u16_le(data, offset)
+        offset += 2
+        let value = if raw >= 32768 { raw - 65536 } else { raw }
+        { code, s: value.to_string(), f: value.to_double() }
+      }
+      3 => {
+        let low = dxf_u16_le(data, offset).to_int64()
+        let high = dxf_u16_le(data, offset + 2).to_int64()
+        offset += 4
+        let raw = (high << 16) | low
+        let value = if raw >= 2147483648L { raw - 4294967296L } else { raw }
+        { code, s: value.to_string(), f: value.to_double() }
+      }
+      4 => {
+        let value = dxf_u64_le(data, offset)
+        offset += 8
+        { code, s: value.to_string(), f: value.to_double() }
+      }
+      5 => {
+        if offset >= data.length() {
+          raise Failure("dxf: the binary DXF data ends in the middle of a value")
+        }
+        let value = data[offset].to_int()
+        offset += 1
+        { code, s: value.to_string(), f: value.to_double() }
+      }
+      6 => {
+        if offset >= data.length() {
+          raise Failure("dxf: the binary DXF data ends in the middle of a value")
+        }
+        let length = data[offset].to_int()
+        offset += 1
+        if offset + length > data.length() {
+          raise Failure("dxf: the binary DXF data ends in the middle of a value")
+        }
+        let value = @utf8.decode_lossy(data[offset:offset + length].to_owned())
+        offset += length
+        { code, s: value, f: 0.0 }
+      }
+      _ => {
+        let (value, next) = dxf_cstring(data, offset)
+        offset = next
+        { code, s: value, f: 0.0 }
+      }
+    }
+    tags.push(tag)
+    if code == 0 && tag.s == "EOF" {
+      break
+    }
+  }
+  if tags.is_empty() {
+    raise Failure("dxf: not a DXF file")
+  }
+  tags
+}
+
+///|
 fn read_tags(data : Bytes) -> Array[DxfTag] raise {
-  if data.has_prefix(b"AutoCAD Binary DXF") {
-    raise Failure("dxf: binary DXF files are not supported yet")
+  if dxf_binary_sentinel(data) {
+    return read_binary_tags(data)
   }
   let head = @utf8.decode_lossy(data[:Int::min(data.length(), 8192)].to_owned())
   let text = if head.to_lower().contains("ansi_932") || head.to_lower().contains("shift_jis") {

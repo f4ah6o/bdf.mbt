@@ -1,4 +1,60 @@
 ///|
+/// Iteration counts above this are refused, so a file cannot keep a reader
+/// busy for long; so is their sum over the key slots tried.
+pub const MAX_ITERATIONS : Int32 = 10000000
+
+///|
+/// At most this many ecdh key slots are tried: each costs a key agreement.
+pub const MAX_ECDH_SLOTS : Int32 = 16
+
+///|
+priv struct UnlockBudget {
+  mut spent : Int32
+  mut ecdh : Int32
+}
+
+///|
+fn UnlockBudget::new() -> UnlockBudget {
+  { spent: 0, ecdh: 0, }
+}
+
+///|
+fn UnlockBudget::password(
+  self : UnlockBudget,
+  kdf : String,
+  iterations : Int32,
+) -> Unit raise {
+  if kdf != "PBKDF2-SHA256" {
+    raise BadFormat("unknown key derivation " + kdf)
+  }
+  if iterations < 1 || iterations > MAX_ITERATIONS {
+    raise BadFormat("iteration count " + iterations.to_string() + " out of range")
+  }
+  self.spent += iterations
+  if self.spent > MAX_ITERATIONS {
+    raise BadFormat(
+      "the key slots take more than " + MAX_ITERATIONS.to_string() + " iterations",
+    )
+  }
+}
+
+///|
+fn UnlockBudget::ecdh(self : UnlockBudget, kdf : String, curve : String) -> Unit raise {
+  if curve != "P-256" {
+    raise BadFormat("unknown curve " + curve)
+  }
+  if kdf != "HKDF-SHA256" {
+    raise BadFormat("unknown key derivation " + kdf)
+  }
+  self.ecdh += 1
+  if self.ecdh > MAX_ECDH_SLOTS {
+    raise BadFormat(
+      "more than " + MAX_ECDH_SLOTS.to_string() + " ecdh key slots",
+    )
+  }
+}
+
+///|
 fn unlock_hex(value : String) -> Bytes raise {
   if value.length() % 2 != 0 {
     raise BadFormat("invalid hex")
@@ -119,12 +175,11 @@ pub fn open_encrypted_with_password(
 ) -> Document raise {
   let single = open_encrypted_single(data)
   let normalized = @normalization.nfkc(password)
+  let budget = UnlockBudget::new()
   for slot in single.metadata.keys {
     match slot {
       Password(kdf, iterations, salt, wrapped) => {
-        if kdf != "PBKDF2-SHA256" || iterations < 1 {
-          continue
-        }
+        budget.password(kdf, iterations)
         let salt_bytes = unlock_base64(salt) catch { _ => continue }
         let wrapped_bytes = unlock_base64(wrapped) catch { _ => continue }
         let kek = @crypto.pbkdf2_sha256(
@@ -154,12 +209,11 @@ pub fn open_encrypted_with_ecdh(
 ) -> Document raise {
   let single = open_encrypted_single(data)
   let public_key = @crypto.p256_public_key(private_key)
+  let budget = UnlockBudget::new()
   for slot in single.metadata.keys {
     match slot {
       Ecdh(kdf, curve, epk, wrapped) => {
-        if kdf != "HKDF-SHA256" || curve != "P-256" {
-          continue
-        }
+        budget.ecdh(kdf, curve)
         let epk_bytes = unlock_base64(epk) catch { _ => continue }
         let wrapped_bytes = unlock_base64(wrapped) catch { _ => continue }
         let shared = @crypto.p256_ecdh(private_key, epk_bytes) catch {

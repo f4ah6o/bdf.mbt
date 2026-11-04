@@ -10,7 +10,8 @@ The fixtures are the upstream `converter/hpgl/testdata` files at shibukawa/bdf
 - `job.plt`: a PJL/PCL job with HP-GL/2 and HP RTL raster images.
 
 `convert/hpgl/hpgl_wbtest.mbt` embeds the first two fixtures for the MoonBit
-unit tests. `compat/converter/phase5-test.mjs` compares the
-converted pages with the upstream converter. PCL/HP RTL raster jobs are a
-documented gap: the escape sequences are skipped with a warning and only the
-HP-GL/2 instructions are converted.
+unit tests. `compat/converter/phase5-test.mjs` compares the converted pages
+with the upstream converter. PCL/HP RTL raster jobs are a documented gap: the
+escape sequences are skipped with a warning and only the HP-GL/2 instructions
+are converted. For `job.plt`, upstream emits two pages (the HP-GL/2 page and
+a raster page); this port emits the one vector page and reports the warning.

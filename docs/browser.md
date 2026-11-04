@@ -51,8 +51,9 @@ The returned object provides `stage`, `surface`, `renderer`, document and view
 getters, and emits `documentchange`, `viewchange`, `findchange`, and conversion
 events. Supply an existing `renderer` to retain ownership of that client. A
 converter with `open`, `page`, `finish`, and `close` methods can be passed to
-`openFile` for incremental conversion. The viewer implementation is still
-being checked against the complete upstream API and edge cases.
+`openFile` for incremental conversion. The viewer exposes the upstream
+methods and events; remaining behavioral differences are tracked in
+[port status](port-status.md).
 
 Asynchronous page mounts use an `IntersectionObserver` with a 600-pixel
 margin to load and draw nearby pages. They release a page's Canvas backing
@@ -161,8 +162,9 @@ exposed sequence object are not reflected yet.
 
 ## Converter Worker
 
-The MoonBit converter can run BMP, ICO, JPEG, PNG, GIF, WebP and AVIF conversion without a Go runtime.
-Build with `moon build --target js` and serve the generated
+The MoonBit converter runs the full native converter set without a Go runtime:
+PDF, Office, image, music, reader-mode, audio, and CAD formats. Build with
+`moon build --target js` and serve the generated
 `native_converter_worker/native_converter_worker.js`:
 
 ```js
@@ -172,12 +174,16 @@ const result = await converter.convert(inputBytes, { name: 'picture.bmp' });
 converter.terminate();
 ```
 
-`open()` returns the complete document with `pages: 0` for these formats.
-The native Worker currently supports BMP, ICO, JPEG, PNG, GIF, WebP, AVIF and SVG, and rejects
-the `fonts` option. JPEG, PNG, WebP and AVIF support EXIF and XMP metadata, GIF supports
-XMP, SVG supports RDF metadata, and JPEG also supports IPTC. Some malformed SVG or XMP, other XML character encodings and PNG Creation Time timezone
-abbreviations are not yet supported. `bdf_converter_client`
-can also wrap its Worker; pass an empty Wasm URL. Other conversion engines remain to be ported.
+`open()` returns the complete document with `pages: 0` for single-page
+formats and a `stream` for multi-page formats; `page(stream, index)` returns one
+page and `finish(stream)` returns the whole document, as upstream does. The
+Worker advertises every format it dispatches (see `converter.ready`) and reads
+a `fonts` directory URL through `index.json` plus TrueType/OpenType files.
+JPEG, PNG, WebP and AVIF support EXIF and XMP metadata, GIF supports XMP, SVG
+supports RDF metadata, and JPEG also supports IPTC. Some malformed SVG or XMP,
+other XML character encodings and PNG Creation Time timezone abbreviations are
+not yet supported. `bdf_converter_client` can also wrap its Worker; pass an
+empty Wasm URL.
 
 The converter client can also run an existing compatible Go or TinyGo converter Wasm
 module in a dedicated Worker. Build with `moon build --target js` and serve the
@@ -321,4 +327,5 @@ search loads a stored index on demand, or rebuilds one from tile text when it
 is absent; it loads fonts only for hits being located. The synchronous
 `bdf_find` API remains available for fixed/flow views.
 Embedded fonts remain loaded until the host is unmounted, remounted, or removed
-from the document. Viewer navigation between views is not yet implemented.
+from the document. The viewer exposes `setView(id)` to switch views; the host
+owns the view tabs.

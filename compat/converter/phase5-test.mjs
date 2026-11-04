@@ -60,9 +60,12 @@ try {
       ['shapes.jww', '/compat/jww/fixtures/shapes.jww'],
       ['old.jww', '/compat/jww/fixtures/old.jww'],
       ['shapes.dxf', '/compat/dxf/fixtures/shapes.dxf'],
+      ['shapes-bin.dxf', '/compat/dxf/fixtures/shapes-bin.dxf'],
       ['r12-sjis.dxf', '/compat/dxf/fixtures/r12-sjis.dxf'],
       ['shapes.sfc', '/compat/sxf/fixtures/shapes.sfc'],
       ['shapes.cgm', '/compat/cgm/fixtures/shapes.cgm'],
+      ['illustration.cgm', '/compat/cgm/fixtures/illustration.cgm'],
+      ['sjis.cgm', '/compat/cgm/fixtures/sjis.cgm'],
       ['features.gbr', '/compat/gerber/fixtures/features.gbr'],
       ['demo.kicad_pcb', '/compat/kicad/fixtures/demo.kicad_pcb'],
       ['labels.drawio', '/compat/drawio/fixtures/labels.drawio'],
@@ -91,6 +94,13 @@ try {
       const selectedDoc = await BdfDocument.open(new BufferSource(selected.bdf));
       out.selected = selectedDoc.manifest.views[0].pages.length;
     }
+    {
+      const data = new Uint8Array(await (await fetch(base + '/compat/cgm/fixtures/shapes-text.cgm')).arrayBuffer());
+      try { await moon.convert(data, { name: 'shapes-text.cgm' }); out.clearText = 'accepted'; }
+      catch (error) { out.clearText = String(error?.message ?? error); }
+      try { await upstream.convert(data, { name: 'shapes-text.cgm' }); out.clearTextUpstream = 'accepted'; }
+      catch (error) { out.clearTextUpstream = String(error?.message ?? error); }
+    }
     try {
       const data = new Uint8Array(await (await fetch(base + '/compat/hpgl/fixtures/hpgl1.plt')).arrayBuffer());
       await moon.convert(data, { name: 'hpgl1.plt', params: { colors: 'bad' } });
@@ -100,6 +110,20 @@ try {
       await moon.convert(new TextEncoder().encode('not a plot'), { name: 'bad.plt' });
       out.named = 'accepted';
     } catch (error) { out.named = String(error?.message ?? error); }
+    {
+      const data = new Uint8Array(await (await fetch(base + '/compat/hpgl/fixtures/job.plt')).arrayBuffer());
+      const a = await upstream.convert(data, { name: 'job.plt' });
+      const m = await moon.convert(data, { name: 'job.plt' });
+      out.job = { upstreamPages: (await inspect(a.bdf)).length, moonPages: (await inspect(m.bdf)).length, moonWarnings: m.warnings, upstreamSummary: a.summary };
+    }
+    {
+      const data = new Uint8Array(await (await fetch(base + '/compat/dxf/fixtures/layout.dxf')).arrayBuffer());
+      const a = await upstream.convert(data, { name: 'layout.dxf' });
+      const m = await moon.convert(data, { name: 'layout.dxf' });
+      const aDoc = await BdfDocument.open(new BufferSource(a.bdf));
+      const mDoc = await BdfDocument.open(new BufferSource(m.bdf));
+      out.layout = { upstreamViews: aDoc.manifest.views.length, moonViews: mDoc.manifest.views.length, moonWarnings: m.warnings, moonPages: await inspect(m.bdf), upstreamPages: await inspect(a.bdf) };
+    }
     upstream.terminate();
     moon.terminate();
     return out;
@@ -114,11 +138,14 @@ try {
     const gerber = entry.name.endsWith('.gbr');
     const kicad = entry.name.endsWith('.kicad_pcb');
     const drawio = entry.name.endsWith('.drawio');
+    // The second picture of illustration.cgm has no metric scaling; this port
+    // sizes it from the VDC extent while upstream uses the picture descriptor.
+    const partialGeometry = entry.name === 'illustration.cgm';
     const tolerance = cgm ? 0.05 : dxf ? 0.06 : sxf ? 0.10 : drawio ? 0.15 : 0.01;
     for (let i = 0; i < entry.moon.pages.length; i++) {
-      if (!gerber && !kicad && !drawio) {
-        assert.ok(Math.abs(entry.moon.pages[i].w - entry.upstream.pages[i].w) < entry.upstream.pages[i].w * tolerance, `${entry.name} page ${i + 1} width`);
-        assert.ok(Math.abs(entry.moon.pages[i].h - entry.upstream.pages[i].h) < entry.upstream.pages[i].h * tolerance, `${entry.name} page ${i + 1} height`);
+      if (!gerber && !kicad && !drawio && !partialGeometry) {
+        assert.ok(Math.abs(entry.moon.pages[i].w - entry.upstream.pages[i].w) < entry.upstream.pages[i].w * tolerance, `${entry.name} page ${i + 1} width: moon ${entry.moon.pages[i].w}, upstream ${entry.upstream.pages[i].w}`);
+        assert.ok(Math.abs(entry.moon.pages[i].h - entry.upstream.pages[i].h) < entry.upstream.pages[i].h * tolerance, `${entry.name} page ${i + 1} height: moon ${entry.moon.pages[i].h}, upstream ${entry.upstream.pages[i].h}`);
       }
       assert.deepEqual(entry.moon.pages[i].layers, entry.upstream.pages[i].layers, `${entry.name} page ${i + 1} layers`);
     }
@@ -130,8 +157,23 @@ try {
       assert.equal(entry.moon.text, entry.upstream.text, `${entry.name} text index`);
     }
   }
+  {
+    const binary = result.cases.find(entry => entry.name === 'shapes-bin.dxf');
+    const ascii = result.cases.find(entry => entry.name === 'shapes.dxf');
+    assert.deepEqual(binary.moon.pages, ascii.moon.pages, 'binary and text DXF page geometry');
+    assert.equal(binary.moon.text, ascii.moon.text, 'binary and text DXF text index');
+  }
   assert.deepEqual(result.open, { pages: 1, first: 1 });
   assert.equal(result.selected, 1);
+  assert.ok(String(result.clearText).startsWith('cgm:'), 'clear-text CGM is an explicit gap');
+  assert.equal(result.clearTextUpstream, 'accepted', 'upstream converts clear-text CGM');
+  assert.equal(result.job.upstreamPages, 2, 'upstream job.plt has a raster page');
+  assert.equal(result.job.moonPages, 1, 'this port converts the HP-GL/2 page only');
+  assert.ok(result.job.moonWarnings.some(message => message.includes('PCL and HP RTL')), 'job.plt reports the PCL gap');
+  assert.equal(result.layout.upstreamViews, 2, 'upstream layout.dxf has model and paper space views');
+  assert.equal(result.layout.moonViews, 1, 'this port converts model space only');
+  assert.ok(result.layout.moonWarnings.some(message => message.includes('paper-space layouts')), 'layout.dxf reports the layout gap');
+  assert.ok(Math.abs(result.layout.moonPages[0].w - result.layout.upstreamPages[0].w) < result.layout.upstreamPages[0].w * 0.06, 'layout.dxf model page width');
   assert.ok(String(result.badColor).includes('not pens or mono'), 'colors parameter error');
   assert.ok(String(result.named).startsWith('hpgl:'), 'HP-GL detection');
   console.log(`Phase 5-8 CAD, Gerber, KiCad, draw.io and PDF Type1: ${result.cases.length} fixtures convert with the expected layers and coverage; single-file Gerber and draw.io pages are fitted by this port, so their page sizes differ from the upstream board/auto-fit scaling.`);

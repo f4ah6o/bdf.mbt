@@ -83,6 +83,15 @@ pub fn convert(
   if !fonts.has_fonts() {
     warnings.push("no fonts found; text is laid out with estimated metrics and not embedded")
   }
+  let mut has_paper_space = false
+  for name, _ in drawing.blocks {
+    if name.to_lower().has_prefix("*paper_space") {
+      has_paper_space = true
+    }
+  }
+  if has_paper_space && views.to_lower() != "model" {
+    warnings.push("paper-space layouts are not drawn yet")
+  }
   let drawing_out = @cad.Drawing::new()
   let context : DxfCtx = {
     drawing: drawing_out,

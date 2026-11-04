@@ -15,6 +15,11 @@ by these tests.
 MML fixtures compare complete upstream-generated documents, summaries, warnings,
 format detection and parameter errors for actual UTF-8 and Shift_JIS files.
 
+`stream-test.mjs` checks the upstream streaming contract on the native Worker:
+`open` reports the page count and stream, `page` returns one page with its
+warnings, `finish` returns the whole document with its format, summary and
+warnings, and `close` releases the stream (a later finish fails).
+
 `phase1-test.mjs` compares the AI, TIFF, PSD and EMF/WMF converters with the
 upstream `@bdfkit/convert-all` Wasm. It checks page counts, page geometry,
 decoded image pixels, streamed pages, page selection and parameter errors.
@@ -33,10 +38,8 @@ sheet text and typed table.
 `@bdfkit/convert-all` Wasm. It checks the format registration, page geometry,
 layer roles, text indexes, streamed pages, page selection and parameter
 errors for the upstream `hpgl1.plt`, `shapes.plt`, `shapes.jww` and `old.jww`
-fixtures. Single-file Gerber and the KiCad PCB front view and draw.io are checked for layer registration and non-empty text/pages, because its 1:1 page differs from the upstream board scaling. Binary CGM page geometry matches the picture descriptors; clear-text CGM is not in the fixture set. SXF SFC page geometry matches the upstream sheet; dimensions and hatches are omitted with warnings. DXF page geometry is checked within 6% because the subset omits
-hatches and non-top OCS entities; its text index is checked for content rather
-than exact equality. PCL/HP RTL raster jobs are a documented subset and are not
-part of the fixture set yet.
+fixtures. Single-file Gerber and the KiCad PCB front view and draw.io are checked for layer registration and non-empty text/pages, because its 1:1 page differs from the upstream board scaling. Binary CGM page geometry matches the picture descriptors except the unscaled second picture of `illustration.cgm`; `shapes-text.cgm` (clear-text CGM) is asserted as an explicit error. SXF SFC page geometry matches the upstream sheet; dimensions and hatches are omitted with warnings. DXF page geometry is checked within 6% because the subset omits
+hatches and non-top OCS entities; `shapes-bin.dxf` checks the binary reader, and `layout.dxf` asserts the model-space page plus the documented layout warning. PCL/HP RTL raster jobs are a documented subset: `job.plt` asserts the vector page and the PCL warning while upstream also emits a raster page.
 
 `phase9-drawio-test.mjs` and `phase9-parquet-test.mjs` compare the expanded
 CAD-adjacent formats with upstream: draw.io views/pages/layers/text, and

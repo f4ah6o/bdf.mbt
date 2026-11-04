@@ -11,8 +11,9 @@ to the generated MoonBit test file, and run `TestCodexDOCXSections`. Run
 `moon fmt convert/docx` afterward. Both JavaScript and wasm-gc execute the
 same expectations.
 
-This internal reader covers basic section geometry for direct body paragraphs;
-other section features, document content, and conversion are still to be added.
+This generated section suite covers basic section geometry for direct body
+paragraphs. The converter below is exercised separately by the DOCX unit
+tests and the native Worker.
 
 ## Limited converter
 

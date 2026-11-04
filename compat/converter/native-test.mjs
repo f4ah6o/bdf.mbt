@@ -222,15 +222,13 @@ export async function verifyNativeConverter(browser, base) {
           const boolOptions = await client.convert(new TextEncoder().encode('a,b\n1,2'), { format: 'csv', params: { header: true, data: 'none' } });
           const boolDoc = await BdfDocument.open(new BufferSource(boolOptions.bdf));
           if (boolDoc.manifest.tables?.length || boolDoc.manifest.views[0].freeze?.rows !== 1) throw new Error(kind + ': CSV boolean option failed');
-          let plotterError;
-          try { await client.convert(new TextEncoder().encode('IN;SP1;PA0,0;PD100,200;')); } catch (e) { plotterError = e.code; }
-          if (plotterError !== 'unknown-format') throw new Error(kind + ': plotter data was mistaken for CSV');
+          const plotter = await client.convert(new TextEncoder().encode('IN;SP1;PA0,0;PD100,200;'));
+          if (plotter.format !== 'hpgl') throw new Error(kind + ': plotter data was mistaken for CSV');
           // Content signatures must precede a misleading filename: HP-GL and
           // unhandled MusicXML must not fall back to CSV, while a real PDF named
           // .csv must convert as PDF.
-          let plotterNamedCsvError;
-          try { await client.convert(new TextEncoder().encode('IN;SP1;PA0,0;PD100,200;'), { name: 'plot.csv' }); } catch (e) { plotterNamedCsvError = e.code; }
-          if (plotterNamedCsvError !== 'unknown-format') throw new Error(kind + ': HP-GL named plot.csv was mistaken for CSV');
+          const plotterNamedCsv = await client.convert(new TextEncoder().encode('IN;SP1;PA0,0;PD100,200;'), { name: 'plot.csv' });
+          if (plotterNamedCsv.format !== 'hpgl') throw new Error(kind + ': HP-GL named plot.csv was mistaken for CSV');
           const minimalPdf = () => {
             const stream = 'BT /F1 24 Tf 20 40 Td (Hello PDF) Tj ET';
             const objects = [

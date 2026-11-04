@@ -287,7 +287,8 @@ fn epub_opf_parts(opf : String) -> (Array[String], String, String, String) {
 
 
 ///|
-/// Convert the reflowable chapters of an EPUB publication into reader pages.
+/// Convert an EPUB publication into reader pages, or into a fixed view of
+/// picture pages when it is a pre-paginated book of pictures.
 pub fn convert(
   data : Bytes,
   title~ : String = "",
@@ -320,11 +321,37 @@ pub fn convert(
     _ => raise EpubInvalid("EPUB: the package document is missing")
   }
   let (spine, opf_title, creator, language) = epub_opf_parts(opf)
+  let document_title = if title != "" {
+    title
+  } else {
+    opf_title
+  }
+  let warnings : Array[String] = []
+  if epub_is_pre_paginated(opf) {
+    match epub_fixed_pages(package, opf, directory) {
+      Some((pages, fixed_warnings)) => {
+        for warning in fixed_warnings {
+          warnings.push(warning)
+        }
+        return epub_write_fixed(
+          pages,
+          document_title,
+          creator,
+          language,
+          epub_spine_is_rtl(opf),
+          warnings,
+        )
+      }
+      None =>
+        warnings.push(
+          "EPUB: the fixed-layout pages hold more than a picture; the book is laid out as reflowable text",
+        )
+    }
+  }
   if spine.is_empty() {
     raise EpubInvalid("EPUB: the spine has no content documents")
   }
   let blocks : Array[@reader.ReaderBlock] = []
-  let warnings : Array[String] = []
   for href in spine {
     let path = if href.has_prefix("/") {
       href[1:].to_owned()
@@ -341,11 +368,6 @@ pub fn convert(
     for block in document.blocks {
       blocks.push(block)
     }
-  }
-  let document_title = if title != "" {
-    title
-  } else {
-    opf_title
   }
   let reader : @reader.ReaderDocument = { title: document_title, blocks }
   let meta : Map[String, Json] = {
