@@ -2959,6 +2959,11 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   } else {
     Map([])
   }
+  let data_icons : Map[Int32, Map[Int32, @sheet.GridIcon]] = if has_conditional {
+    workbook.xlsx_data_icons(ref.part, rows)
+  } else {
+    Map([])
+  }
   let run_base_sizes = xlsx_rich_base_sizes(rows, styles, rich_cells)
   if styled_runs {
     rows = xlsx_apply_plain_run_fonts(rows, styles, rich_cells)
@@ -3755,6 +3760,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     bolds~,
     fills~,
     data_bars~,
+    data_icons~,
     sizes~,
     borders~,
     spans~,

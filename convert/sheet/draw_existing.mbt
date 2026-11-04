@@ -52,6 +52,13 @@ pub(all) struct GridDataBar {
 }
 
 ///|
+/// An icon drawn at the left of a cell.
+pub(all) struct GridIcon {
+  set : String
+  index : Int32
+}
+
+///|
 /// Border weights on the four sides of a cell.
 pub(all) struct GridCellBorder {
   top : Int32
@@ -178,6 +185,7 @@ pub fn draw_sized_grid_no_fonts(
   bolds~ : Map[Int32, Map[Int32, Bool]] = Map([]),
   fills~ : Map[Int32, Map[Int32, GridSolidFill]] = Map([]),
   data_bars~ : Map[Int32, Map[Int32, GridDataBar]] = Map([]),
+  data_icons~ : Map[Int32, Map[Int32, GridIcon]] = Map([]),
   sizes~ : Map[Int32, Map[Int32, Double]] = Map([]),
   borders~ : Map[Int32, Map[Int32, GridCellBorder]] = Map([]),
   spans~ : Map[Int32, Map[Int32, Int32]] = Map([]),
@@ -295,6 +303,9 @@ pub fn draw_sized_grid_no_fonts(
   )
   context.sized_grid_data_bars(
     data_bars, region_rows, col_positions, row_positions, visible_columns,
+  )
+  context.sized_grid_icons(
+    data_icons, region_rows, col_positions, row_positions, visible_columns,
   )
   let mut text_columns = 0
   for sparse in rows {

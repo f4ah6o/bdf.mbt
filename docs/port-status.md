@@ -88,8 +88,8 @@
 - XLSX: `convert/xlsx` renders styled worksheets with number formats, merges,
   row/column geometry, print areas, conditional formats, tables, links,
   pictures, drawings and charts, plus fixed chart-sheet pages, with upstream
-  text indexes, summaries and warnings. Color scales and data bars are
-  painted; icon sets are not. Embedded charts are SVG pictures (their labels are in the
+  text indexes, summaries and warnings. Color scales, data bars and icon sets
+  are painted. Embedded charts are SVG pictures (their labels are in the
   text index), and shape text wraps to its box. Patterned fills, complex borders
   and exact number-format run segmentation remain documented gaps in
   `compat/xlsx`.

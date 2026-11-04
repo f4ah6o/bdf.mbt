@@ -274,7 +274,9 @@ Remaining gaps: color scales are painted (two or three colors, with min,
 max, num, percent and percentile thresholds; formula thresholds are skipped);
 data bars are painted for min/max thresholds using minLength/maxLength,
 including negative/axis bars, right-to-left direction and borders (gradient
-bars are not); icon sets are not painted; an
+bars are not); icon sets are painted with percent/num/percentile/min/max
+thresholds, `reverse` and custom `cfIcon` entries, though `showValue="0"`
+still leaves the cell value visible; an
 embedded chart's labels are present in the text index but the chart itself is
 an SVG picture (the chart-sheet view is drawn as BDF); shape text wraps to
 the shape box but does not inherit paragraph spacing, and a wrapped line uses
