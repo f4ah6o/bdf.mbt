@@ -969,18 +969,18 @@ fn docx_emit_para_line(
       let coordinates : Array[Double] = match index {
         0 =>
           if line.border_top {
-            [x_origin, top, x_origin + available, top]
+            [x_origin, top - value.space, x_origin + available, top - value.space]
           } else {
             []
           }
-        1 => [x_origin, top, x_origin, top + line.height]
+        1 => [x_origin - value.space, top, x_origin - value.space, top + line.height]
         2 =>
           if line.border_bottom {
-            [x_origin, top + line.height, x_origin + available, top + line.height]
+            [x_origin, top + line.height + value.space, x_origin + available, top + line.height + value.space]
           } else {
             []
           }
-        _ => [x_origin + available, top, x_origin + available, top + line.height]
+        _ => [x_origin + available + value.space, top, x_origin + available + value.space, top + line.height]
       }
       if coordinates.length() == 4 {
         object.stroke_color(value.color)

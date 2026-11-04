@@ -75,6 +75,7 @@ priv struct DocxTextParagraph {
 priv struct DocxLineBorder {
   width : Double
   color : UInt32
+  space : Double
 }
 
 ///|
@@ -1485,6 +1486,7 @@ fn docx_line_border(node : DocxXmlNode?) -> DocxLineBorder? {
       } else {
         -1
       }
+      let space = docx_measure(docx_attribute(value.element, "space", "0"), 0.0)
       Some({
         width,
         color: if parsed >= 0 {
@@ -1492,6 +1494,7 @@ fn docx_line_border(node : DocxXmlNode?) -> DocxLineBorder? {
         } else {
           0x000000ffU
         },
+        space,
       })
     }
     None => None
@@ -1769,7 +1772,7 @@ fn docx_text_table(
     base_borders.map(fn(border) {
       match border {
         Some(value) => Some(value)
-        None => Some({ width: 0.5, color: 0x000000ffU })
+        None => Some({ width: 0.5, color: 0x000000ffU, space: 0.0 })
       }
     })
   } else {
