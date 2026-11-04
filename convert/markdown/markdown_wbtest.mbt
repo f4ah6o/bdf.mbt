@@ -271,6 +271,26 @@ test "Markdown definition lists indent their definitions" {
 }
 
 ///|
+test "Markdown heading links target the page" {
+  let source = "# Heading\n\n[go](#heading)\n"
+  let result = convert(@utf8.encode(source))
+  let doc = @core.open_single(result.bdf)
+  let view = doc.manifest.views[0]
+  let mut target = ""
+  for page in view.pages {
+    for layer in page.layers {
+      for command in @render.decode_commands(doc.part(layer.object)) {
+        match command {
+          @render.Link(_, _, _, _, url) => target = url
+          _ => ()
+        }
+      }
+    }
+  }
+  assert_eq(target, "#page=1")
+}
+
+///|
 test "Markdown emits heading, paragraph and figure marks" {
   let source = "# Heading\n\nParagraph\n\n![Alt](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lv0nWQAAAABJRU5ErkJggg==)\n"
   let result = convert(@utf8.encode(source))

@@ -235,7 +235,15 @@ fn md_collect_inlines(
         )
       @mmtypes.Inline::Link(children, url, _) =>
         md_collect_inlines(
-          children, style, url, runs, formulas, images, svgs, sprite, warnings,
+          children,
+          style,
+          if url.has_prefix("#") { "#page=1" } else { url },
+          runs,
+          formulas,
+          images,
+          svgs,
+          sprite,
+          warnings,
         )
       @mmtypes.Inline::Image(alt, url, title) => {
         let alt_runs : Array[MdRun] = []
