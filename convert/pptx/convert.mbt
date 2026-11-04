@@ -2260,6 +2260,14 @@ fn pptx_emit_chart(
         pptx_attribute(value.element, "val", "clustered") == "stacked"
       None => false
     })
+  let show_values = match pptx_child(Some(chart), "dLbls") {
+    Some(labels) =>
+      match pptx_child(Some(labels), "showVal") {
+        Some(value) => pptx_attribute(value.element, "val", "1") != "0"
+        None => false
+      }
+    None => false
+  }
   let palette = [
     0x4472c4ffU, 0xed7d31ffU, 0xa5a5a5ffU, 0xffc000ffU, 0x5b9bd5ffU, 0x70ad47ffU,
   ]
@@ -2875,6 +2883,34 @@ fn pptx_emit_chart(
             Float::from_double(bar_height),
           )
         }
+      }
+    }
+  }
+  if show_values && !is_pie && !is_scatter && !is_radar && !stacked {
+    for item in series {
+      for index, value in item.values {
+        let text = pptx_chart_tick_text(value)
+        let label_width = pptx_text_width(text, 7.0)
+        let (label_x, label_y) = if horizontal {
+          (
+            plot_x + plot_width * value / axis_high + 2.0,
+            plot_y + slot * index.to_double() + slot * 0.3,
+          )
+        } else if line_chart is Some(_) || is_area {
+          (
+            plot_x + plot_width * index.to_double() /
+            Double::max(1.0, (item.values.length() - 1).to_double()),
+            plot_y + plot_height - plot_height * value / axis_high - 9.0,
+          )
+        } else {
+          (
+            plot_x + slot * index.to_double() + slot * 0.5 - label_width / 2.0,
+            plot_y + plot_height - plot_height * value / axis_high - 9.0,
+          )
+        }
+        pptx_chart_label(
+          object, label_font, 7.0, black, text, label_x, label_y,
+        )
       }
     }
   }
