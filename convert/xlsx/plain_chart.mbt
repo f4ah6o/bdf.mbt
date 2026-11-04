@@ -670,6 +670,56 @@ fn XlsxWorkbook::xlsx_chart_svg(
       )
     }
   }
+  let legend_x = width - 125.0
+  let mut legend_y = plot_top + 8.0
+  let legend_palette = [
+    "#4472c4", "#ed7d31", "#a5a5a5", "#ffc000", "#5b9bd5", "#70ad47",
+  ]
+  if model.kind == "pieChart" {
+    for index, category in model.categories {
+      if index >= 12 {
+        break
+      }
+      svg.write_string(
+        "<rect x=\"" +
+        legend_x.to_string() +
+        "\" y=\"" +
+        (legend_y - 8.0).to_string() +
+        "\" width=\"10\" height=\"10\" fill=\"" +
+        legend_palette[index % legend_palette.length()] +
+        "\"/>",
+      )
+      svg.write_string(
+        "<text x=\"" +
+        (legend_x + 14.0).to_string() +
+        "\" y=\"" +
+        legend_y.to_string() +
+        "\" font-size=\"10\" fill=\"#000000\">" +
+        xlsx_chart_text(category) +
+        "</text>",
+      )
+      legend_y += 16.0
+    }
+  } else if model.series_name != "" {
+    svg.write_string(
+      "<rect x=\"" +
+      legend_x.to_string() +
+      "\" y=\"" +
+      (legend_y - 8.0).to_string() +
+      "\" width=\"10\" height=\"10\" fill=\"" +
+      model.color +
+      "\"/>",
+    )
+    svg.write_string(
+      "<text x=\"" +
+      (legend_x + 14.0).to_string() +
+      "\" y=\"" +
+      legend_y.to_string() +
+      "\" font-size=\"10\" fill=\"#000000\">" +
+      xlsx_chart_text(model.series_name) +
+      "</text>",
+    )
+  }
   svg.write_string("</svg>")
   svg.to_string()
 }
