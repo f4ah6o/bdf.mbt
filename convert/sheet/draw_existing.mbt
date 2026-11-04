@@ -40,6 +40,13 @@ pub(all) struct GridSolidFill {
 }
 
 ///|
+/// A data bar drawn over part of a cell.
+pub(all) struct GridDataBar {
+  fraction : Double
+  color : UInt32
+}
+
+///|
 /// Border weights on the four sides of a cell.
 pub(all) struct GridCellBorder {
   top : Int32
@@ -165,6 +172,7 @@ pub fn draw_sized_grid_no_fonts(
   horizontals~ : Map[Int32, Map[Int32, String]] = Map([]),
   bolds~ : Map[Int32, Map[Int32, Bool]] = Map([]),
   fills~ : Map[Int32, Map[Int32, GridSolidFill]] = Map([]),
+  data_bars~ : Map[Int32, Map[Int32, GridDataBar]] = Map([]),
   sizes~ : Map[Int32, Map[Int32, Double]] = Map([]),
   borders~ : Map[Int32, Map[Int32, GridCellBorder]] = Map([]),
   spans~ : Map[Int32, Map[Int32, Int32]] = Map([]),
@@ -279,6 +287,9 @@ pub fn draw_sized_grid_no_fonts(
   let visible_columns = grid_positions(geometry.columns).length() - 1
   context.sized_grid_fills(
     rows, fills, region_rows, merge_regions, col_positions, row_positions, visible_columns,
+  )
+  context.sized_grid_data_bars(
+    data_bars, region_rows, col_positions, row_positions, visible_columns,
   )
   let mut text_columns = 0
   for sparse in rows {
@@ -1397,6 +1408,62 @@ fn grid_gradient_geometry(
         cy + dy * half - oy,
       ],
     )
+  }
+}
+
+///|
+fn GridDrawContext::sized_grid_data_bars(
+  self : GridDrawContext,
+  bars : Map[Int32, Map[Int32, GridDataBar]],
+  region_rows : Map[Int32, Map[Int32, GridMergeRegion]],
+  columns : Array[Double],
+  row_positions : Array[Double],
+  visible_columns : Int32,
+) -> Unit raise {
+  let row_keys : Array[Int32] = []
+  for row, _ in bars {
+    row_keys.push(row)
+  }
+  row_keys.sort()
+  for row in row_keys {
+    if row < 0 || row >= row_positions.length() - 1 {
+      continue
+    }
+    let y0 = row_positions[row]
+    let y1 = row_positions[row + 1]
+    if y0 >= y1 {
+      continue
+    }
+    let values = bars[row]
+    let column_keys : Array[Int32] = []
+    for column, _ in values {
+      column_keys.push(column)
+    }
+    column_keys.sort()
+    for column in column_keys {
+      if column < 0 || column >= visible_columns ||
+        column + 1 >= columns.length() {
+        continue
+      }
+      if grid_region_contains(region_rows, row, column) {
+        continue
+      }
+      let x0 = columns[column]
+      let x1 = columns[column + 1]
+      if x0 >= x1 {
+        continue
+      }
+      let bar = values[column]
+      let fraction = Double::min(1.0, Double::max(0.0, bar.fraction))
+      let width = (x1 - x0) * fraction
+      if width <= 0.0 {
+        continue
+      }
+      for tile in self.in_bounds(x0, y0, x0 + width, y1) {
+        tile.fill_color(bar.color)
+        tile.rectangle(x0, y0, width, y1 - y0)
+      }
+    }
   }
 }
 

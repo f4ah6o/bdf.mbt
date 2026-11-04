@@ -2954,6 +2954,11 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       ref.part, rows, styles, theme_colors,
     )
   }
+  let data_bars : Map[Int32, Map[Int32, @sheet.GridDataBar]] = if has_conditional {
+    workbook.xlsx_data_bars(ref.part, rows, styles, theme_colors)
+  } else {
+    Map([])
+  }
   let run_base_sizes = xlsx_rich_base_sizes(rows, styles, rich_cells)
   if styled_runs {
     rows = xlsx_apply_plain_run_fonts(rows, styles, rich_cells)
@@ -3749,6 +3754,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     horizontals~,
     bolds~,
     fills~,
+    data_bars~,
     sizes~,
     borders~,
     spans~,
