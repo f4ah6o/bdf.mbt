@@ -94,7 +94,8 @@ colors/sizes/bold/italic/alignment, vertical anchors, margins, per-side borders,
 grid widths/spans, row heights/spans and vertical merges. Bar (clustered and
 stacked, horizontal and vertical), line, area, scatter, radar and pie charts draw their series, axis titles,
 bar/line/radar/scatter value labels with optional category/series names,
-stacked segment labels and pie percentage/value labels from `dLbls`, legends, category labels and value-axis
+stacked segment labels and pie percentage/value labels (with optional
+category/series names) from `dLbls`, legends, category labels and value-axis
 ticks. Office
 Math in `a14:m` is linearized to text (fractions, roots, scripts, n-ary
 operators, delimiters, matrices, accents and groups); the `mc:Choice` that

@@ -2766,9 +2766,17 @@ fn pptx_emit_chart(
           Some(value) => pptx_attribute(value.element, "val", "1") != "0"
           None => true
         }
-        (show_val, show_percent)
+        let show_cat = match pptx_child(Some(labels), "showCatName") {
+          Some(value) => pptx_attribute(value.element, "val", "0") != "0"
+          None => false
+        }
+        let show_ser = match pptx_child(Some(labels), "showSerName") {
+          Some(value) => pptx_attribute(value.element, "val", "0") != "0"
+          None => false
+        }
+        (show_val, show_percent, show_cat, show_ser)
       }
-      None => (false, true)
+      None => (false, true, false, false)
     }
     let total = values.fold(init=0.0, (sum, value) => sum + value)
     if total <= 0.0 {
@@ -2786,12 +2794,20 @@ fn pptx_emit_chart(
       object.fill_color(palette[index % palette.length()])
       object.fill_path(path, 0)
       let mid = start + sweep / 2.0
-      let label = if pie_labels.0 {
+      let mut label = if pie_labels.0 {
         pptx_chart_tick_text(value)
       } else if pie_labels.1 {
         (value / total * 100.0 + 0.5).to_int().to_string() + "%"
       } else {
         ""
+      }
+      if label != "" &&
+        pie_labels.2 &&
+        index < series[0].categories.length() {
+        label = series[0].categories[index] + " " + label
+      }
+      if label != "" && pie_labels.3 && series[0].name != "" {
+        label = series[0].name + " " + label
       }
       if label != "" {
         let label_width = pptx_text_width(label, label_size)
