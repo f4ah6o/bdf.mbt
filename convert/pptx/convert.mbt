@@ -2522,6 +2522,37 @@ fn pptx_chart_data_label_size(chart_space : PptxXmlNode?) -> Double {
 }
 
 ///|
+fn pptx_chart_custom_labels(chart_space : PptxXmlNode?) -> Array[String] {
+  let labels = pptx_child(chart_space, "dLbls")
+  let out : Array[String] = []
+  for child in pptx_children(labels) {
+    if child.element.name.local_name != "dLbl" {
+      continue
+    }
+    let index_node = pptx_child(Some(child), "idx")
+    let tx = pptx_child(Some(child), "tx")
+    if index_node is None || tx is None {
+      continue
+    }
+    let index = @string.parse_int(
+      pptx_attribute(index_node.unwrap().element, "val", "0"),
+    ) catch {
+      _ => -1
+    }
+    if index < 0 {
+      continue
+    }
+    let text = StringBuilder()
+    pptx_chart_collect_text(tx.unwrap(), text)
+    while out.length() <= index {
+      out.push("")
+    }
+    out[index] = text.to_string()
+  }
+  out
+}
+
+///|
 fn pptx_chart_data_label_italic(chart_space : PptxXmlNode?) -> Bool {
   let labels = pptx_child(chart_space, "dLbls")
   let text = pptx_child(labels, "txPr")
@@ -2714,8 +2745,9 @@ fn pptx_emit_chart(
       }
     None => ""
   }
-  let data_label_size = pptx_chart_data_label_size(chart_space)
-  let data_label_color = pptx_chart_data_label_color(chart_space, theme)
+  let data_label_size = pptx_chart_data_label_size(Some(chart))
+  let data_label_color = pptx_chart_data_label_color(Some(chart), theme)
+  let custom_labels = pptx_chart_custom_labels(Some(chart))
   let palette = [
     0x4472c4ffU, 0xed7d31ffU, 0xa5a5a5ffU, 0xffc000ffU, 0x5b9bd5ffU, 0x70ad47ffU,
   ]
@@ -2790,8 +2822,8 @@ fn pptx_emit_chart(
     weight: 400,
     style: 0,
   })
-  let label_bold = pptx_chart_data_label_bold(chart_space)
-  let label_italic = pptx_chart_data_label_italic(chart_space)
+  let label_bold = pptx_chart_data_label_bold(Some(chart))
+  let label_italic = pptx_chart_data_label_italic(Some(chart))
   let data_label_font = if label_bold || label_italic {
     object.add_font({
       hash: None,
@@ -3042,6 +3074,10 @@ fn pptx_emit_chart(
           if show_label_series && item.name != "" {
             label_text = item.name + " " + label_text
           }
+          if index < custom_labels.length() &&
+            custom_labels[index] != "" {
+            label_text = custom_labels[index]
+          }
           pptx_chart_label(
             object,
             label_font,
@@ -3222,6 +3258,10 @@ fn pptx_emit_chart(
           }
           if show_label_series && item.name != "" {
             label_text = item.name + " " + label_text
+          }
+          if index < custom_labels.length() &&
+            custom_labels[index] != "" {
+            label_text = custom_labels[index]
           }
           pptx_chart_label(
             object,
@@ -3433,6 +3473,9 @@ fn pptx_emit_chart(
       }
       if label != "" && pie_labels.3 && series[0].name != "" {
         label = series[0].name + " " + label
+      }
+      if index < custom_labels.length() && custom_labels[index] != "" {
+        label = custom_labels[index]
       }
       if label != "" {
         let label_width = pptx_text_width(label, label_size)
@@ -3966,6 +4009,9 @@ fn pptx_emit_chart(
           if show_label_series && item.name != "" {
             text = item.name + " " + text
           }
+          if index < custom_labels.length() && custom_labels[index] != "" {
+            text = custom_labels[index]
+          }
           let label_width = pptx_text_width(text, data_label_size)
           let (label_x, label_y) = if horizontal {
             (
@@ -3997,6 +4043,9 @@ fn pptx_emit_chart(
           }
           if show_label_series && item.name != "" {
             text = item.name + " " + text
+          }
+          if index < custom_labels.length() && custom_labels[index] != "" {
+            text = custom_labels[index]
           }
           let label_width = pptx_text_width(text, data_label_size)
           let (label_x, label_y) = if horizontal {
