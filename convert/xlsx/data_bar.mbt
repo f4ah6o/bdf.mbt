@@ -4,8 +4,12 @@ priv struct XlsxDataBarRule {
   ranges : Array[XlsxRange]
   stops : Array[XlsxColorScaleStop]
   color : XlsxColor
+  negative_color : XlsxColor?
   min_length : Double
   max_length : Double
+  axis_position : Double?
+  right_to_left : Bool
+  border : Bool
 }
 
 ///|
@@ -27,8 +31,12 @@ fn XlsxWorkbook::xlsx_data_bar_rules(
   let mut sqref = ""
   let mut stops : Array[XlsxColorScaleStop] = []
   let mut color : XlsxColor = xlsx_default_color()
+  let mut negative_color : XlsxColor? = None
   let mut min_length = 10.0
   let mut max_length = 90.0
+  let mut axis_position : Double? = None
+  let mut right_to_left = false
+  let mut border = false
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -44,8 +52,12 @@ fn XlsxWorkbook::xlsx_data_bar_rules(
           rule_depth = depth
           stops = []
           color = xlsx_default_color()
+          negative_color = None
           min_length = 10.0
           max_length = 90.0
+          axis_position = None
+          right_to_left = false
+          border = false
         } else if rule_depth >= 0 &&
           depth == rule_depth + 1 &&
           name == "dataBar" {
@@ -54,6 +66,14 @@ fn XlsxWorkbook::xlsx_data_bar_rules(
           }
           min_length = (@string.parse_double(xlsx_attr(element, "minLength", "10")) catch { _ => 10.0 })
           max_length = (@string.parse_double(xlsx_attr(element, "maxLength", "90")) catch { _ => 90.0 })
+          right_to_left = xlsx_attr(element, "direction", "") == "rightToLeft"
+          border = ["1", "true"].contains(xlsx_attr(element, "border", ""))
+          let axis = xlsx_attr(element, "axisPosition", "")
+          if axis != "" {
+            axis_position = Some(
+              @string.parse_double(axis) catch { _ => 0.0 },
+            )
+          }
         } else if bar_depth >= 0 && depth == bar_depth + 1 {
           if name == "cfvo" {
             let value = match xlsx_attr(element, "val", "") {
@@ -63,6 +83,8 @@ fn XlsxWorkbook::xlsx_data_bar_rules(
             stops.push({ kind: xlsx_attr(element, "type", "min"), value })
           } else if name == "color" {
             color = xlsx_color(element)
+          } else if name == "negativeBarColor" {
+            negative_color = Some(xlsx_color(element))
           }
         }
         if event.kind is Start(_) {
@@ -82,7 +104,10 @@ fn XlsxWorkbook::xlsx_data_bar_rules(
               }
             }
             if !ranges.is_empty() {
-              out.push({ ranges, stops, color, min_length, max_length })
+              out.push({
+                ranges, stops, color, negative_color, min_length, max_length,
+                axis_position, right_to_left, border,
+              })
             }
           }
           bar_depth = -1
@@ -138,8 +163,25 @@ fn XlsxWorkbook::xlsx_data_bars(
     }
     let black = xlsx_rgb_from_uint(0x000000U)
     let color = styles.resolve_color(rule.color, black, theme_colors).rgba()
+    let negative_color = match rule.negative_color {
+      Some(value) => styles.resolve_color(value, black, theme_colors).rgba()
+      None => color
+    }
     let min_length = Double::min(100.0, Double::max(0.0, rule.min_length))
     let max_length = Double::min(100.0, Double::max(min_length, rule.max_length))
+    let axis = match rule.axis_position {
+      Some(value) => Double::min(1.0, Double::max(0.0, value))
+      None =>
+        if rule.right_to_left {
+          1.0
+        } else if max <= 0.0 {
+          1.0
+        } else if min < 0.0 {
+          (0.0 - min) / (max - min)
+        } else {
+          0.0
+        }
+    }
     for range in rule.ranges {
       for row in rows {
         if row.index.to_int64() < range.row_start ||
@@ -152,8 +194,23 @@ fn XlsxWorkbook::xlsx_data_bars(
             cell.column > range.column_end {
             continue
           }
-          let t = Double::min(1.0, Double::max(0.0, (cell.number - min) / (max - min)))
-          let length = min_length + (max_length - min_length) * t
+          let mut fraction = 0.0
+          let mut negative_fraction = 0.0
+          if cell.number < 0.0 && min < 0.0 {
+            let t = Double::min(
+              1.0, Double::max(0.0, (0.0 - cell.number) / (0.0 - min)),
+            )
+            let length = min_length + (max_length - min_length) * t
+            negative_fraction = length / 100.0
+          } else {
+            let t = if min < 0.0 && max > 0.0 {
+              Double::min(1.0, Double::max(0.0, cell.number / max))
+            } else {
+              Double::min(1.0, Double::max(0.0, (cell.number - min) / (max - min)))
+            }
+            let length = min_length + (max_length - min_length) * t
+            fraction = length / 100.0
+          }
           let columns = match result.get(row.index) {
             Some(value) => value
             None => {
@@ -162,7 +219,15 @@ fn XlsxWorkbook::xlsx_data_bars(
               value
             }
           }
-          columns[cell.column] = { fraction: length / 100.0, color }
+          columns[cell.column] = {
+            fraction,
+            negative_fraction,
+            color,
+            negative_color,
+            axis,
+            right_to_left: rule.right_to_left,
+            border: rule.border,
+          }
         }
       }
     }

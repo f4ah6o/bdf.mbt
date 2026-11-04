@@ -43,7 +43,12 @@ pub(all) struct GridSolidFill {
 /// A data bar drawn over part of a cell.
 pub(all) struct GridDataBar {
   fraction : Double
+  negative_fraction : Double
   color : UInt32
+  negative_color : UInt32
+  axis : Double
+  right_to_left : Bool
+  border : Bool
 }
 
 ///|
@@ -1454,14 +1459,47 @@ fn GridDrawContext::sized_grid_data_bars(
         continue
       }
       let bar = values[column]
-      let fraction = Double::min(1.0, Double::max(0.0, bar.fraction))
-      let width = (x1 - x0) * fraction
-      if width <= 0.0 {
-        continue
-      }
-      for tile in self.in_bounds(x0, y0, x0 + width, y1) {
-        tile.fill_color(bar.color)
-        tile.rectangle(x0, y0, width, y1 - y0)
+      let total_width = x1 - x0
+      let axis = Double::min(1.0, Double::max(0.0, bar.axis))
+      let axis_x = x0 + total_width * axis
+      let positive = Double::min(1.0, Double::max(0.0, bar.fraction)) * total_width
+      let negative = Double::min(1.0, Double::max(0.0, bar.negative_fraction)) * total_width
+      let positive_x = if bar.right_to_left { axis_x - positive } else { axis_x }
+      let negative_x = if bar.right_to_left { axis_x } else { axis_x - negative }
+      let height = y1 - y0
+      for tile in self.in_bounds(x0, y0, x1, y1) {
+        if positive > 0.0 {
+          tile.fill_color(bar.color)
+          tile.rectangle(positive_x, y0, positive, height)
+        }
+        if negative > 0.0 {
+          tile.fill_color(bar.negative_color)
+          tile.rectangle(negative_x, y0, negative, height)
+        }
+        if bar.border {
+          tile.object.stroke_color(bar.color)
+          tile.object.line(0.75F, 0, 0, 8.0F)
+          if positive > 0.0 {
+            let path : @core.Path = {
+              verbs: b"\x00\x01\x01\x01\x01",
+              coordinates: [
+                positive_x, y0, positive_x + positive, y0, positive_x + positive,
+                y1, positive_x, y1, positive_x, y0,
+              ],
+            }
+            tile.object.stroke_path(tile.object.add_path(@core.Inline(path)))
+          }
+          if negative > 0.0 {
+            let path : @core.Path = {
+              verbs: b"\x00\x01\x01\x01\x01",
+              coordinates: [
+                negative_x, y0, negative_x + negative, y0, negative_x + negative,
+                y1, negative_x, y1, negative_x, y0,
+              ],
+            }
+            tile.object.stroke_path(tile.object.add_path(@core.Inline(path)))
+          }
+        }
       }
     }
   }

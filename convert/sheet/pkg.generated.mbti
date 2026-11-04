@@ -104,7 +104,12 @@ pub(all) struct GridCellDiagonal {
 
 pub(all) struct GridDataBar {
   fraction : Double
+  negative_fraction : Double
   color : UInt32
+  negative_color : UInt32
+  axis : Double
+  right_to_left : Bool
+  border : Bool
 }
 
 pub(all) struct GridFillPaint {
