@@ -1060,5 +1060,36 @@ fn XlsxWorkbook::xlsx_chart_object(
       )
     }
   }
+  let legend_x = width - 120.0
+  let mut legend_y = plot_top + 10.0
+  let legend_palette = [
+    0x4472c4ffU, 0xed7d31ffU, 0xa5a5a5ffU, 0xffc000ffU, 0x5b9bd5ffU,
+    0x70ad47ffU,
+  ]
+  if model.kind == "pieChart" {
+    for index, category in model.categories {
+      if index >= 12 {
+        break
+      }
+      object.fill_color(legend_palette[index % legend_palette.length()])
+      object.fill_rect(
+        Float::from_double(legend_x),
+        Float::from_double(legend_y - 8.0),
+        10.0F,
+        10.0F,
+      )
+      label(category, legend_x + 14.0, legend_y, 10.0, 400)
+      legend_y += 16.0
+    }
+  } else if model.series_name != "" {
+    object.fill_color(series_color)
+    object.fill_rect(
+      Float::from_double(legend_x),
+      Float::from_double(legend_y - 8.0),
+      10.0F,
+      10.0F,
+    )
+    label(model.series_name, legend_x + 14.0, legend_y, 10.0, 400)
+  }
   object
 }
