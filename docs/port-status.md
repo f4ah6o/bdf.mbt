@@ -101,18 +101,22 @@
   laid out above the footer and appended to the scroll view. Real table cells
   wrap with grid/row spans, borders/fills, vertical alignment, row splitting
   and repeated header rows; columns, column breaks and vertical section
-  bodies are implemented. Exact font metrics/shaping, floating anchored wrap,
-  exact footnote separators, upright CJK in vertical text, tables in
+  bodies are implemented. Anchored drawings float left/right with square
+  wrap or above/below a band, with behind/in-front z-order and page-fit
+  movement. Exact font metrics/shaping, tight/through contours and effect
+  extents, exact footnote separators, upright CJK in vertical text, tables in
   headers/footers, PAGEREF/REF, page borders, keep/widow chains and table
   styles/autofit remain documented gaps in `compat/docx`.
 - PPTX: `convert/pptx` emits the upstream `slides` fixed view with
   background/layout/master/body layers, shared master objects, placeholder
   text inheritance, bullets and levels, tables, bar/line/pie charts and
-  linearized Office Math. Preset geometry uses the upstream 187-preset table,
-  placeholder fill/line inheritance follows slide → layout → master, and a
-  supplied font database embeds subset WOFF2 faces with real metrics. Custom
-  geometry, SmartArt/ink, 3D, other chart types, chart data tables/titles,
-  table style banding, blip bullets and advanced vertical stacking remain
+  linearized Office Math. Preset geometry uses the upstream 187-preset table
+  and custom `a:custGeom` paths are evaluated with the same guide engine
+  (arcTo is flattened to cubic Béziers), placeholder fill/line inheritance
+  follows slide → layout → master, and a supplied font database embeds subset
+  WOFF2 faces with real metrics. Shape flipping and stroked-path arrowheads,
+  SmartArt/ink, 3D, other chart types, chart data tables/titles, table style
+  banding, blip bullets and advanced vertical stacking remain
   documented gaps in `compat/pptx`.
 - AI: PDF-based Illustrator 9+ artwork only; PostScript files (Illustrator 8
   and earlier) and files saved without PDF content are explicit errors.
