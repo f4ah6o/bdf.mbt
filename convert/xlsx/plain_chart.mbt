@@ -20,10 +20,16 @@ struct XlsxChartModel {
   leader_lines : Bool
   first_slice_ang : Double
   explosions : Array[Double]
+  hole_size : Double
   show_cat_name : Bool
   show_ser_name : Bool
   axis_min : Double
   axis_max : Double
+}
+
+///|
+fn xlsx_chart_is_pie(kind : String) -> Bool {
+  kind == "pieChart" || kind == "doughnutChart"
 }
 
 ///|
@@ -278,7 +284,7 @@ fn XlsxWorkbook::xlsx_chart_model(
   }
   let mut kind = ""
   let mut plot : XlsxDrawNode? = None
-  for name in ["barChart", "lineChart", "pieChart"] {
+  for name in ["barChart", "lineChart", "pieChart", "doughnutChart"] {
     match xlsx_draw_child(plot_area, name) {
       Some(value) => {
         kind = name
@@ -358,6 +364,14 @@ fn XlsxWorkbook::xlsx_chart_model(
   let mut label_position = "outEnd"
   let mut leader_lines = false
   let mut first_slice_ang = 0.0
+  let mut hole_size = 50.0
+  match xlsx_draw_child(plot, "holeSize") {
+    Some(value) =>
+      hole_size = @string.parse_double(xlsx_draw_attr(value, "val")) catch {
+        _ => 50.0
+      }
+    None => ()
+  }
   let explosions : Array[Double] = []
   for child in first.children {
     if child.name != "dPt" {
@@ -484,6 +498,7 @@ fn XlsxWorkbook::xlsx_chart_model(
     leader_lines,
     first_slice_ang,
     explosions,
+    hole_size,
     show_cat_name,
     show_ser_name,
     axis_min,
@@ -687,7 +702,7 @@ fn XlsxWorkbook::xlsx_chart_svg(
     "\" stroke=\"#000000\"/>",
   )
   let count = model.values.length()
-  if model.kind == "pieChart" {
+  if xlsx_chart_is_pie(model.kind) {
     let total = model.values.fold(init=0.0, (sum, value) => sum + value)
     if total > 0.0 {
       let cx = left + plot_width / 2.0
@@ -738,6 +753,18 @@ fn XlsxWorkbook::xlsx_chart_svg(
         )
         angle = end
       }
+    }
+    if model.kind == "doughnutChart" {
+      svg.write_string(
+        "<circle cx=\"" +
+        (left + plot_width / 2.0).to_string() +
+        "\" cy=\"" +
+        (plot_top + plot_height / 2.0).to_string() +
+        "\" r=\"" +
+        (Double::min(plot_width, plot_height) / 2.0 *
+          model.hole_size / 100.0).to_string() +
+        "\" fill=\"#ffffff\"/>",
+      )
     }
   } else if model.kind == "barChart" {
     let slot = plot_width / Double::max(count.to_double(), 1.0)
@@ -907,7 +934,7 @@ fn XlsxWorkbook::xlsx_chart_svg(
   }
   let slot = plot_width / Double::max(count.to_double(), 1.0)
   let pie_total = model.values.fold(init=0.0, (sum, value) => sum + value)
-  if model.kind == "pieChart" && pie_total > 0.0 {
+  if xlsx_chart_is_pie(model.kind) && pie_total > 0.0 {
     let cx = left + plot_width / 2.0
     let cy = plot_top + plot_height / 2.0
     let radius = Double::min(plot_width, plot_height) / 2.0
@@ -987,7 +1014,7 @@ fn XlsxWorkbook::xlsx_chart_svg(
       )
     }
   }
-  if model.value_title != "" && model.kind != "pieChart" {
+  if model.value_title != "" && !xlsx_chart_is_pie(model.kind) {
     let axis_y = plot_top + plot_height / 2.0
     svg.write_string(
       "<text x=\"14\" y=\"" +
@@ -999,7 +1026,7 @@ fn XlsxWorkbook::xlsx_chart_svg(
       "</text>",
     )
   }
-  if model.category_title != "" && model.kind != "pieChart" {
+  if model.category_title != "" && !xlsx_chart_is_pie(model.kind) {
     svg.write_string(
       "<text x=\"" +
       (left + plot_width / 2.0).to_string() +
@@ -1015,7 +1042,7 @@ fn XlsxWorkbook::xlsx_chart_svg(
   let legend_palette = [
     "#4472c4", "#ed7d31", "#a5a5a5", "#ffc000", "#5b9bd5", "#70ad47",
   ]
-  if model.kind == "pieChart" {
+  if xlsx_chart_is_pie(model.kind) {
     for index, category in model.categories {
       if index >= 12 {
         break
@@ -1283,7 +1310,7 @@ fn XlsxWorkbook::xlsx_chart_object(
   let count = model.values.length()
   let slot = plot_width / Double::max(count.to_double(), 1.0)
   let series_color = xlsx_chart_color_uint(model.color)
-  if model.kind == "pieChart" {
+  if xlsx_chart_is_pie(model.kind) {
     let total = model.values.fold(init=0.0, (sum, value) => sum + value)
     if total > 0.0 {
       let cx = left + plot_width / 2.0
@@ -1323,6 +1350,22 @@ fn XlsxWorkbook::xlsx_chart_object(
         )
         object.fill_path(path, 0)
         angle += sweep
+      }
+      if model.kind == "doughnutChart" {
+        object.fill_color(0xffffffffU)
+        object.fill_path(
+          object.add_path(
+            @core.Inline(
+              xlsx_chart_circle_path(
+                left + plot_width / 2.0,
+                plot_top + plot_height / 2.0,
+                Double::min(plot_width, plot_height) / 2.0 *
+                model.hole_size / 100.0,
+              ),
+            ),
+          ),
+          0,
+        )
       }
     }
   } else if model.kind == "barChart" {
@@ -1484,7 +1527,7 @@ fn XlsxWorkbook::xlsx_chart_object(
     }
   }
   let pie_total = model.values.fold(init=0.0, (sum, value) => sum + value)
-  if model.kind == "pieChart" && pie_total > 0.0 {
+  if xlsx_chart_is_pie(model.kind) && pie_total > 0.0 {
     let cx = left + plot_width / 2.0
     let cy = plot_top + plot_height / 2.0
     let radius = Double::min(plot_width, plot_height) / 2.0
@@ -1570,10 +1613,10 @@ fn XlsxWorkbook::xlsx_chart_object(
       )
     }
   }
-  if model.value_title != "" && model.kind != "pieChart" {
+  if model.value_title != "" && !xlsx_chart_is_pie(model.kind) {
     label(model.value_title, 4.0, plot_top + plot_height / 2.0, 11.0, 400)
   }
-  if model.category_title != "" && model.kind != "pieChart" {
+  if model.category_title != "" && !xlsx_chart_is_pie(model.kind) {
     let mut advance = 0.0
     for character in model.category_title {
       advance += @sheet.sized_fallback_advance(character, false, 11.0)
