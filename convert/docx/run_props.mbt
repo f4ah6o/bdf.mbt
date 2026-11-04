@@ -2,6 +2,7 @@
 // Run properties are retained independently of the text reader until style
 // inheritance and rendering can consume them. Colors and shading are rejected
 // here until theme color resolution is available.
+#derive(Debug, Eq)
 priv struct DocxRunProps {
   fonts : Array[String]
   themes : Array[String]
@@ -27,7 +28,7 @@ priv struct DocxRunProps {
   mut rtl : Bool
   mut tcy : Bool
   mut tcy_fit : Bool
-} derive(Debug, Eq)
+}
 
 ///|
 fn docx_default_run_props() -> DocxRunProps {
@@ -145,8 +146,17 @@ fn DocxRunProps::apply_node(
           }
         }
       }
-      "kern" | "noProof" | "snapToGrid" | "specVanish" | "oMath" | "cs" |
-      "bCs" | "iCs" | "effect" | "fitText" | "vanish" => ()
+      "kern"
+      | "noProof"
+      | "snapToGrid"
+      | "specVanish"
+      | "oMath"
+      | "cs"
+      | "bCs"
+      | "iCs"
+      | "effect"
+      | "fitText"
+      | "vanish" => ()
       "highlight" => self.highlight = docx_attribute(element, "val", "")
       "u" => {
         if docx_has_attribute(element, "color") ||

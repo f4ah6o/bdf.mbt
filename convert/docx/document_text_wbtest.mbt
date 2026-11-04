@@ -70,17 +70,17 @@ fn reject_docx_document_text(chunks : Array[String]) -> Unit raise {
 test "DOCX unsupported content is rejected" {
   for
     source in [
-      "<body><p><r><drawing/></r></p></body>",
-      "<body><p><r><rPr/><rPr/></r></p></body>",
-      "<body><p><r><tab><drawing/></tab></r></p></body>",
-      "<body><sdt><sdtContent><p><pPr><sectPr/></pPr></p></sdtContent></sdt></body>",
+      "<body><p><r><drawing/></r></p></body>", "<body><p><r><rPr/><rPr/></r></p></body>",
+      "<body><p><r><tab><drawing/></tab></r></p></body>", "<body><sdt><sdtContent><p><pPr><sectPr/></pPr></p></sdtContent></sdt></body>",
       "<body><sectPr><pgBorders/></sectPr></body>",
     ] {
     let root = docx_text_xml(source)
     let walker : DocxTextWalker = {
       styles: docx_styles_from_xml("<styles/>"),
+      blocks: [],
       paragraphs: [],
       section_index: 0,
+      fields: [],
     }
     let rejected = try {
       walker.blocks(root, false)
@@ -130,7 +130,13 @@ test "DOCX resolved run properties are isolated between runs" {
     "<styles><style type=\"paragraph\" styleId=\"p\" default=\"1\"><rPr><rFonts ascii=\"Parent\"/></rPr></style></styles>",
   )
   let body = docx_text_xml("<body><p><r><t>A</t></r><r><t>B</t></r></p></body>")
-  let walker : DocxTextWalker = { styles, paragraphs: [], section_index: 0, }
+  let walker : DocxTextWalker = {
+    styles,
+    blocks: [],
+    paragraphs: [],
+    section_index: 0,
+    fields: [],
+  }
   walker.blocks(body, false)
   let items = walker.paragraphs[0].items
   items[0].props.fonts[0] = "Changed"

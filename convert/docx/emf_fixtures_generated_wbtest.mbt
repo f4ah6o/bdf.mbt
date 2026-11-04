@@ -1,4 +1,5 @@
 // Generated from compat/docx/fixtures/emf.docx.
+
 ///|
 let docx_emf_fixture : String = "H4sIAAAAAAAC/wvwZmYRYWBg4GC4sigxdtmiv1a/gLxHjAwMwkA62jk/ryQ1ryQ+pLIgtThWryI3p3biWb/DBgIt721an2p7yVgo" +
   "tEz6cuC8oMUU9gjL2UdW/X9S6v3r25roFwuzLG8Z3+87fnudWPpRPuGZD6wrw82DFlxPNKh79eT6r7VVU5qMfjDmfLhx0nZSzFfz" +

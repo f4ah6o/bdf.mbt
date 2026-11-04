@@ -1,0 +1,2400 @@
+///|
+// Page layout: paragraphs, tables, columns, vertical sections and the
+// header/footer stories are laid out here. The engine approximates font
+// metrics, so its page counts can differ from Word's.
+
+///|
+priv struct DocxPlacedImage {
+  item : DocxTextItem
+  x : Double
+  y : Double
+  width : Double
+  height : Double
+  anchored : Bool
+}
+
+///|
+priv struct DocxParaLine {
+  items : Array[DocxLineItem]
+  images : Array[DocxPlacedImage]
+  height : Double
+  align : String
+  break_before : String
+}
+
+///|
+priv struct DocxParaLayout {
+  lines : Array[DocxParaLine]
+  anchors : Array[DocxPlacedImage]
+  notes : Array[(String, String)]
+  trailing_break : String
+}
+
+///|
+priv struct DocxStoryLayout {
+  lines : Array[DocxParaLine]
+  height : Double
+}
+
+///|
+priv struct DocxTableCellLine {
+  y : Double
+  line : DocxParaLine
+}
+
+///|
+priv struct DocxCellNestedBlock {
+  y : Double
+  layout : DocxTableLayout
+  height : Double
+}
+
+///|
+priv enum DocxCellBlockLayout {
+  DocxCellLines(Array[DocxTableCellLine])
+  DocxCellNested(DocxCellNestedBlock)
+}
+
+///|
+priv struct DocxTableCellLayout {
+  x : Double
+  w : Double
+  height : Double
+  valign : String
+  mar_top : Double
+  mar_left : Double
+  mar_bottom : Double
+  mar_right : Double
+  blocks : Array[DocxCellBlockLayout]
+}
+
+///|
+priv struct DocxTableRowLayout {
+  mut height : Double
+  cells : Array[DocxTableCellLayout]
+}
+
+///|
+priv struct DocxTableLayout {
+  table : DocxTable
+  left : Double
+  total_width : Double
+  col_x : Array[Double]
+  rows : Array[DocxTableRowLayout]
+}
+
+///|
+fn docx_paragraph_natural(
+  items : Array[DocxLineItem],
+  images : Array[DocxPlacedImage],
+) -> Double {
+  let mut natural = 0.0
+  for item in items {
+    if item.kind != "field" && item.size * 1.2 > natural {
+      natural = item.size * 1.2
+    }
+    if item.kind == "field" && item.size * 1.2 > natural {
+      natural = item.size * 1.2
+    }
+  }
+  for image in images {
+    if image.height > natural {
+      natural = image.height
+    }
+  }
+  natural
+}
+
+///|
+fn docx_line_box_height(
+  natural : Double,
+  props : DocxParagraphProps,
+  pitch : Double,
+) -> Double {
+  let line = if props.line > 0.0 { props.line } else { 240.0 }
+  let grid = if props.snap_to_grid && pitch > 0.0 { pitch } else { 0.0 }
+  let gridded = if grid > 0.0 && natural > 0.0 {
+    Double::max(1.0, @math.ceil(natural / grid - 0.01)) * grid
+  } else {
+    natural
+  }
+  match props.line_rule {
+    "exact" => line / 20.0
+    "atLeast" => Double::max(line / 20.0, gridded)
+    _ => {
+      let mult = if line / 240.0 <= 0.0 { 1.0 } else { line / 240.0 }
+      gridded * mult
+    }
+  }
+}
+
+///|
+fn docx_layout_paragraph(
+  items : Array[DocxTextItem],
+  props : DocxParagraphProps,
+  width : Double,
+  pitch : Double,
+  mark_size : Double,
+  allow_notes : Bool,
+) -> DocxParaLayout {
+  let lines : Array[DocxParaLine] = []
+  let anchors : Array[DocxPlacedImage] = []
+  let notes : Array[(String, String)] = []
+  let start = props.left + props.first
+  let right = width - props.right
+  let current : Array[DocxLineItem] = []
+  let current_images : Array[DocxPlacedImage] = []
+  let mut line_x = start
+  let mut line_natural = 0.0
+  let align = props.alignment
+  let mut pending_break = ""
+  let mut line_started = false
+
+  fn push_text(
+    text : String,
+    item : DocxTextItem,
+    size : Double,
+    advance : Double,
+  ) -> Unit {
+    current.push({
+      kind: "text",
+      text,
+      field_format: "",
+      font: docx_font_family(item.props),
+      weight: docx_font_weight(item.props),
+      style: docx_font_style(item.props),
+      size,
+      color: docx_run_color(item.props),
+      x: line_x,
+      advance,
+      shade: item.shade,
+      border_width: item.border_width,
+      border_color: item.border_color,
+    })
+    line_x += advance
+    line_started = true
+    let natural = size * 1.2
+    if natural > line_natural {
+      line_natural = natural
+    }
+  }
+
+  fn flush() -> Unit {
+    if current.is_empty() && current_images.is_empty() && !line_started {
+      return
+    }
+    let natural = if line_natural <= 0.0 {
+      mark_size * 1.2
+    } else {
+      line_natural
+    }
+    let height = Double::max(docx_line_box_height(natural, props, pitch), 1.0)
+    lines.push({
+      items: current.copy(),
+      images: current_images.copy(),
+      height,
+      align,
+      break_before: pending_break,
+    })
+    current.clear()
+    current_images.clear()
+    line_x = props.left
+    line_natural = 0.0
+    pending_break = ""
+    line_started = false
+  }
+
+  for item in items {
+    match item.kind {
+      "page" | "column" => {
+        flush()
+        pending_break = item.kind
+      }
+      "break" => flush()
+      "tab" => {
+        let relative = line_x - props.left
+        let mut next = 0.0
+        for stop in props.tabs {
+          if stop.position > relative {
+            next = stop.position
+            break
+          }
+        }
+        if next == 0.0 {
+          next = docx_round_up(relative / 36.0) * 36.0
+          if next <= relative {
+            next += 36.0
+          }
+        }
+        line_x = props.left + next
+        line_started = true
+      }
+      "image" => {
+        let mut image_width = if item.width > 0.0 { item.width } else { 72.0 }
+        let mut image_height = if item.height > 0.0 {
+          item.height
+        } else {
+          72.0
+        }
+        if item.anchored {
+          anchors.push({
+            item,
+            x: item.x,
+            y: item.y,
+            width: image_width,
+            height: image_height,
+            anchored: true,
+          })
+        } else {
+          let available = right - line_x
+          if image_width > available && (line_started || !current.is_empty()) {
+            flush()
+          }
+          let available = right - line_x
+          if available > 0.0 && image_width > available {
+            image_height = image_height * available / image_width
+            image_width = available
+          }
+          current_images.push({
+            item,
+            x: line_x,
+            y: 0.0,
+            width: image_width,
+            height: image_height,
+            anchored: false,
+          })
+          line_x += image_width
+          line_started = true
+          if image_height > line_natural {
+            line_natural = image_height
+          }
+        }
+      }
+      "footnote" | "endnote" => {
+        let size = 7.5
+        let advance = docx_text_width(item.text, size)
+        if line_x + advance > right && line_started {
+          flush()
+        }
+        if allow_notes {
+          let mut known = false
+          for note in notes {
+            if note.0 == item.kind && note.1 == item.text {
+              known = true
+            }
+          }
+          if !known {
+            notes.push((item.kind, item.text))
+          }
+          current.push({
+            kind: "text",
+            text: item.text,
+            field_format: "",
+            font: "sans-serif",
+            weight: 400,
+            style: 0,
+            size,
+            color: 0x000000ffU,
+            x: line_x,
+            advance,
+            shade: None,
+            border_width: 0.0,
+            border_color: None,
+          })
+          line_x += advance
+          line_started = true
+          let natural = size * 1.2
+          if natural > line_natural {
+            line_natural = natural
+          }
+        } else {
+          current.push({
+            kind: "text",
+            text: item.text,
+            field_format: "",
+            font: "sans-serif",
+            weight: 400,
+            style: 0,
+            size,
+            color: 0x000000ffU,
+            x: line_x,
+            advance,
+            shade: None,
+            border_width: 0.0,
+            border_color: None,
+          })
+          line_x += advance
+          line_started = true
+        }
+      }
+      "field" => {
+        let size = if item.props.size > 0.0 { item.props.size } else { 10.0 }
+        let advance = size * 0.5
+        if line_x + advance > right && line_started {
+          flush()
+        }
+        current.push({
+          kind: "field",
+          text: item.text,
+          field_format: item.field_format,
+          font: docx_font_family(item.props),
+          weight: docx_font_weight(item.props),
+          style: docx_font_style(item.props),
+          size,
+          color: docx_run_color(item.props),
+          x: line_x,
+          advance,
+          shade: item.shade,
+          border_width: item.border_width,
+          border_color: item.border_color,
+        })
+        line_x += advance
+        line_started = true
+        let natural = size * 1.2
+        if natural > line_natural {
+          line_natural = natural
+        }
+      }
+      _ => {
+        let size = if item.props.size > 0.0 { item.props.size } else { 10.0 }
+        for c in item.text {
+          let advance = docx_char_width(c, size)
+          if line_x + advance > right && line_started {
+            if c == ' ' {
+              // A space at the end of a line is not drawn.
+              continue
+            }
+            let mut space_index = -1
+            for i in 0..<current.length() {
+              let candidate = current[i]
+              if candidate.kind == "text" && candidate.text == " " {
+                space_index = i
+              }
+            }
+            if space_index >= 0 && space_index < current.length() - 1 {
+              let moved : Array[DocxLineItem] = []
+              while current.length() > space_index + 1 {
+                moved.insert(0, current.pop().unwrap())
+              }
+              flush()
+              let mut next_x = props.left
+              for part in moved {
+                let part_width = part.advance
+                current.push({ ..part, x: next_x, })
+                next_x += part_width
+              }
+              line_x = next_x
+              line_started = true
+              for part in moved {
+                if part.size * 1.2 > line_natural {
+                  line_natural = part.size * 1.2
+                }
+              }
+            } else {
+              flush()
+            }
+          }
+          let text = StringBuilder()
+          text.write_char(c)
+          push_text(text.to_string(), item, size, advance)
+        }
+      }
+    }
+  }
+  flush()
+  if lines.is_empty() && pending_break == "" {
+    // An empty paragraph still occupies one line.
+    let natural = mark_size * 1.2
+    lines.push({
+      items: [],
+      images: [],
+      height: Double::max(docx_line_box_height(natural, props, pitch), 1.0),
+      align,
+      break_before: "",
+    })
+  }
+  { lines, anchors, notes, trailing_break: pending_break, }
+}
+
+///|
+fn docx_merge_line_items(items : Array[DocxLineItem]) -> Array[DocxLineItem] {
+  let merged : Array[DocxLineItem] = []
+  for item in items {
+    let join = match merged.last() {
+      Some(last) =>
+        last.kind == "text" &&
+        item.kind == "text" &&
+        last.font == item.font &&
+        last.weight == item.weight &&
+        last.style == item.style &&
+        last.size == item.size &&
+        last.color == item.color &&
+        last.shade == item.shade &&
+        last.border_width == item.border_width &&
+        last.border_color == item.border_color &&
+        (item.x - (last.x + last.advance)).abs() < 0.25
+      None => false
+    }
+    if join {
+      let last = merged[merged.length() - 1]
+      merged[merged.length() - 1] = {
+        ..last,
+        text: last.text + item.text,
+        advance: last.advance + item.advance,
+      }
+    } else {
+      merged.push(item)
+    }
+  }
+  merged
+}
+
+///|
+fn docx_emit_image(
+  object : @core.ObjectBuilder,
+  writer : @core.DocumentWriter,
+  package : @ooxml.OoxmlPackage,
+  part : String,
+  item : DocxTextItem,
+  dx : Double,
+  dy : Double,
+  width : Double,
+  height : Double,
+  warnings : Array[String],
+) -> Unit raise {
+  let mut target = ""
+  let mut external = false
+  for rel in package.relationships(part) {
+    if rel.id == item.text {
+      target = rel.target
+      external = rel.external
+    }
+  }
+  if target == "" || external {
+    raise DocxInvalid("DOCX image relationship is missing")
+  }
+  let bytes = package.read(target) catch {
+    _ => raise DocxInvalid("DOCX image part is missing")
+  }
+  if @metafile.kind(bytes) != "" {
+    let meta_warnings = @metafile.draw_into(
+      object, writer, bytes, dx, dy, width, height,
+    ) catch {
+      _ => {
+        warnings.push("DOCX: an EMF/WMF drawing could not be replayed")
+        []
+      }
+    }
+    for message in meta_warnings {
+      warnings.push(message)
+    }
+    return
+  }
+  let hash = writer.add_part("img", bytes)
+  let index = object.add_image(hash)
+  let mut cropped = false
+  if item.crop_left > 0.0 ||
+    item.crop_top > 0.0 ||
+    item.crop_right > 0.0 ||
+    item.crop_bottom > 0.0 {
+    match docx_png_size(bytes) {
+      Some((image_width, image_height)) => {
+        let sx = item.crop_left * image_width.to_double()
+        let sy = item.crop_top * image_height.to_double()
+        let sw = (1.0 - item.crop_left - item.crop_right) *
+          image_width.to_double()
+        let sh = (1.0 - item.crop_top - item.crop_bottom) *
+          image_height.to_double()
+        if sw > 0.0 && sh > 0.0 {
+          object.image_sub(
+            index,
+            Float::from_double(sx),
+            Float::from_double(sy),
+            Float::from_double(sw),
+            Float::from_double(sh),
+            Float::from_double(dx),
+            Float::from_double(dy),
+            Float::from_double(width),
+            Float::from_double(height),
+          )
+          cropped = true
+        }
+      }
+      None => ()
+    }
+  }
+  if !cropped {
+    object.image(
+      index,
+      Float::from_double(dx),
+      Float::from_double(dy),
+      Float::from_double(width),
+      Float::from_double(height),
+    )
+  }
+}
+
+///|
+fn docx_emit_placed_image(
+  object : @core.ObjectBuilder,
+  writer : @core.DocumentWriter,
+  package : @ooxml.OoxmlPackage,
+  part : String,
+  image : DocxPlacedImage,
+  x_origin : Double,
+  y_origin : Double,
+  warnings : Array[String],
+) -> Unit raise {
+  let item = image.item
+  let dx = if image.anchored { image.x } else { x_origin + image.x }
+  let dy = if image.anchored { image.y } else { y_origin + image.y }
+  let transformed = item.rotation != 0.0 || item.flip_h || item.flip_v
+  let center_x = dx + image.width / 2.0
+  let center_y = dy + image.height / 2.0
+  if transformed {
+    object.save()
+    object.translate(Float::from_double(center_x), Float::from_double(center_y))
+    if item.rotation != 0.0 {
+      let radians = item.rotation * 3.141592653589793 / 180.0
+      let sine = @math.sin(radians)
+      let cosine = @math.cos(radians)
+      object.transform(
+        Float::from_double(cosine),
+        Float::from_double(sine),
+        Float::from_double(-sine),
+        Float::from_double(cosine),
+        0.0F,
+        0.0F,
+      )
+    }
+    if item.flip_h || item.flip_v {
+      object.scale(
+        if item.flip_h {
+          -1.0F
+        } else {
+          1.0F
+        },
+        if item.flip_v {
+          -1.0F
+        } else {
+          1.0F
+        },
+      )
+    }
+    object.translate(
+      Float::from_double(-center_x),
+      Float::from_double(-center_y),
+    )
+  }
+  docx_emit_image(
+    object,
+    writer,
+    package,
+    part,
+    item,
+    dx,
+    dy,
+    image.width,
+    image.height,
+    warnings,
+  )
+  if transformed {
+    object.restore()
+  }
+}
+
+///|
+fn docx_emit_para_line(
+  object : @core.ObjectBuilder,
+  writer : @core.DocumentWriter,
+  package : @ooxml.OoxmlPackage,
+  part : String,
+  line : DocxParaLine,
+  x_origin : Double,
+  top : Double,
+  available : Double,
+  fonts : Map[String, Int32],
+  field_value : (String, String) -> String,
+  warnings : Array[String],
+) -> Unit raise {
+  let runs = docx_merge_line_items(line.items)
+  let mut width = 0.0
+  if !runs.is_empty() {
+    let last = runs[runs.length() - 1]
+    width = last.x + last.advance - runs[0].x
+  }
+  let offset = match line.align {
+    "right" => Double::max(0.0, available - width)
+    "center" => Double::max(0.0, (available - width) / 2.0)
+    _ => 0.0
+  }
+  if !runs.is_empty() &&
+    (runs[0].shade is Some(_) || runs[0].border_width > 0.0) {
+    match runs[0].shade {
+      Some(color) => {
+        object.fill_color(color)
+        object.fill_rect(
+          Float::from_double(x_origin + offset),
+          Float::from_double(top),
+          Float::from_double(width),
+          Float::from_double(line.height),
+        )
+      }
+      None => ()
+    }
+    if runs[0].border_width > 0.0 {
+      object.line(Float::from_double(runs[0].border_width), 0, 0, 8.0F)
+      object.stroke_color(runs[0].border_color.unwrap_or(0x000000ffU))
+      object.stroke_rect(
+        Float::from_double(x_origin + offset),
+        Float::from_double(top),
+        Float::from_double(width),
+        Float::from_double(line.height),
+      )
+    }
+  }
+  let mut baseline = 0.0
+  for item in runs {
+    if item.size > baseline {
+      baseline = item.size
+    }
+  }
+  for item in runs {
+    let text = if item.kind == "field" {
+      field_value(item.text, item.field_format)
+    } else {
+      item.text
+    }
+    let advance = if item.kind == "field" {
+      docx_text_width(text, item.size)
+    } else {
+      item.advance
+    }
+    let key = item.font +
+      "|" +
+      item.weight.to_string() +
+      "|" +
+      item.style.to_string()
+    let index = match fonts.get(key) {
+      Some(value) => value
+      None => {
+        let value = object.add_font({
+          hash: None,
+          family: item.font,
+          weight: item.weight,
+          style: item.style,
+        })
+        fonts[key] = value
+        value
+      }
+    }
+    object.font(index, Float::from_double(item.size))
+    object.fill_color(item.color)
+    object.fill_text(
+      text,
+      Float::from_double(x_origin + offset + item.x),
+      Float::from_double(top + baseline),
+      Float::from_double(advance),
+    )
+  }
+  for image in line.images {
+    docx_emit_placed_image(
+      object,
+      writer,
+      package,
+      part,
+      image,
+      x_origin + offset,
+      top,
+      warnings,
+    )
+  }
+}
+
+///|
+fn docx_para_line_available(line : DocxParaLine) -> Double {
+  let mut right = 0.0
+  for item in line.items {
+    if item.x + item.advance > right {
+      right = item.x + item.advance
+    }
+  }
+  right
+}
+
+///|
+fn docx_default_margin(value : Double?, fallback : Double) -> Double {
+  match value {
+    Some(inner) => inner
+    None => fallback
+  }
+}
+
+///|
+fn docx_table_cell_margins(
+  table : DocxTable,
+  cell : DocxTableCell,
+) -> (Double, Double, Double, Double) {
+  let top = docx_default_margin(
+    cell.mar.top,
+    docx_default_margin(table.cell_mar.top, 0.0),
+  )
+  let left = docx_default_margin(
+    cell.mar.left,
+    docx_default_margin(table.cell_mar.left, 5.4),
+  )
+  let bottom = docx_default_margin(
+    cell.mar.bottom,
+    docx_default_margin(table.cell_mar.bottom, 0.0),
+  )
+  let right = docx_default_margin(
+    cell.mar.right,
+    docx_default_margin(table.cell_mar.right, 5.4),
+  )
+  (top, left, bottom, right)
+}
+
+///|
+fn docx_table_grid_count(table : DocxTable) -> Int32 {
+  let mut count = 1
+  for row in table.rows {
+    for cell in row.cells {
+      let end = cell.col + cell.span
+      if end > count {
+        count = end
+      }
+    }
+  }
+  count
+}
+
+///|
+fn docx_layout_table(
+  table : DocxTable,
+  width : Double,
+  pitch : Double,
+) -> DocxTableLayout {
+  let ncols = docx_table_grid_count(table)
+  let grid : Array[Double] = table.grid.copy()
+  while grid.length() < ncols {
+    grid.push(0.0)
+  }
+  let mut total = 0.0
+  for column in grid {
+    total += column
+  }
+  if total <= 0.0 {
+    let each = width / ncols.to_double()
+    for i in 0..<grid.length() {
+      grid[i] = each
+    }
+    total = width
+  }
+  let col_x : Array[Double] = [0.0]
+  for column in grid {
+    col_x.push(col_x[col_x.length() - 1] + column)
+  }
+  let left = match table.jc {
+    "center" => (width - total) / 2.0
+    "right" => width - total
+    _ => table.ind
+  }
+  let rows : Array[DocxTableRowLayout] = []
+  for row in table.rows {
+    let cells : Array[DocxTableCellLayout] = []
+    let mut row_height = 0.0
+    for cell in row.cells {
+      let start = Int32::min(cell.col, ncols)
+      let end = Int32::min(cell.col + cell.span, ncols)
+      let x0 = col_x[start]
+      let x1 = col_x[end]
+      let (mar_top, mar_left, mar_bottom, mar_right) = docx_table_cell_margins(
+        table, cell,
+      )
+      if cell.vmerge == "continue" {
+        cells.push({
+          x: x0,
+          w: x1 - x0,
+          height: 0.0,
+          valign: cell.valign,
+          mar_top,
+          mar_left,
+          mar_bottom,
+          mar_right,
+          blocks: [],
+        })
+        continue
+      }
+      let inner = Double::max(x1 - x0 - mar_left - mar_right, 1.0)
+      let (blocks, content_height) = docx_layout_cell_blocks(
+        cell.blocks,
+        inner,
+        pitch,
+      )
+      let height = content_height + mar_top + mar_bottom
+      cells.push({
+        x: x0,
+        w: x1 - x0,
+        height,
+        valign: cell.valign,
+        mar_top,
+        mar_left,
+        mar_bottom,
+        mar_right,
+        blocks,
+      })
+      if cell.row_span == 1 && height > row_height {
+        row_height = height
+      }
+    }
+    if row.exact && row.height > 0.0 {
+      row_height = row.height
+    } else if row.height > row_height {
+      row_height = row.height
+    }
+    rows.push({ height: Double::max(row_height, 1.0), cells, })
+  }
+  // A merged cell taller than its rows stretches the last of them.
+  for row_index, row in table.rows {
+    for cell_index, cell in row.cells {
+      if cell.row_span <= 1 || cell.vmerge != "restart" {
+        continue
+      }
+      let last = Int32::min(row_index + cell.row_span, table.rows.length()) - 1
+      let mut sum = 0.0
+      for k in row_index..<=last {
+        sum += rows[k].height
+      }
+      let cell_layout = rows[row_index].cells[cell_index]
+      let need = cell_layout.height
+      if need > sum && !table.rows[last].exact {
+        rows[last].height += need - sum
+      }
+    }
+  }
+  { table, left, total_width: total, col_x, rows, }
+}
+
+///|
+fn docx_layout_cell_blocks(
+  blocks : Array[DocxBlock],
+  width : Double,
+  pitch : Double,
+) -> (Array[DocxCellBlockLayout], Double) {
+  let layout : Array[DocxCellBlockLayout] = []
+  let mut y = 0.0
+  for block in blocks {
+    match block {
+      DocxParaBlock(paragraph) => {
+        if paragraph.props.before > 0.0 {
+          y += paragraph.props.before
+        }
+        let mark_size = if paragraph.mark.size > 0.0 {
+          paragraph.mark.size
+        } else {
+          10.0
+        }
+        let para = docx_layout_paragraph(
+          paragraph.items,
+          paragraph.props,
+          width,
+          pitch,
+          mark_size,
+          false,
+        )
+        let lines : Array[DocxTableCellLine] = []
+        for line in para.lines {
+          lines.push({ y, line, })
+          y += line.height
+        }
+        if !lines.is_empty() {
+          layout.push(DocxCellLines(lines))
+        }
+        if paragraph.props.after > 0.0 {
+          y += paragraph.props.after
+        }
+      }
+      DocxTableBlock(table) => {
+        let nested = docx_layout_table(table, width, pitch)
+        let mut height = 0.0
+        for row in nested.rows {
+          height += row.height
+        }
+        layout.push(DocxCellNested({ y, layout: nested, height, }))
+        y += height
+      }
+    }
+  }
+  (layout, y)
+}
+
+///|
+priv struct DocxEmitContext {
+  object : @core.ObjectBuilder
+  writer : @core.DocumentWriter
+  package : @ooxml.OoxmlPackage
+  part : String
+  fonts : Map[String, Int32]
+  warnings : Array[String]
+  field_value : (String, String) -> String
+}
+
+///|
+fn docx_draw_rule(
+  ctx : DocxEmitContext,
+  border : DocxLineBorder?,
+  x0 : Double,
+  y0 : Double,
+  x1 : Double,
+  y1 : Double,
+) -> Unit {
+  match border {
+    None => ()
+    Some(value) => {
+      let width = value.width
+      ctx.object.fill_color(value.color)
+      if (y0 - y1).abs() < 0.01 {
+        ctx.object.fill_rect(
+          Float::from_double(x0 - width / 2.0),
+          Float::from_double(y0 - width / 2.0),
+          Float::from_double(x1 - x0 + width),
+          Float::from_double(width),
+        )
+      } else {
+        ctx.object.fill_rect(
+          Float::from_double(x0 - width / 2.0),
+          Float::from_double(y0 - width / 2.0),
+          Float::from_double(width),
+          Float::from_double(y1 - y0 + width),
+        )
+      }
+    }
+  }
+}
+
+///|
+fn docx_table_border_for(
+  layout : DocxTableLayout,
+  row_index : Int32,
+  cell : DocxTableCell,
+  side : Int32,
+) -> DocxLineBorder? {
+  match cell.borders[side] {
+    Some(value) => return Some(value)
+    None => ()
+  }
+  let table = layout.table
+  let rows = table.rows.length()
+  let ncols = layout.col_x.length() - 1
+  match side {
+    0 => if row_index == 0 { table.borders[0] } else { table.borders[4] }
+    1 => if cell.col == 0 { table.borders[1] } else { table.borders[5] }
+    2 =>
+      if row_index + cell.row_span >= rows {
+        table.borders[2]
+      } else {
+        table.borders[4]
+      }
+    3 =>
+      if cell.col + cell.span >= ncols {
+        table.borders[3]
+      } else {
+        table.borders[5]
+      }
+    _ => None
+  }
+}
+
+///|
+fn docx_table_safe_cut(
+  layout : DocxTableLayout,
+  row_index : Int32,
+  from : Double,
+  to : Double,
+) -> Double {
+  let mut y = to
+  for _ in 0..<20 {
+    let mut moved = false
+    let row = layout.table.rows[row_index]
+    let row_layout = layout.rows[row_index]
+    for cell_index, cell in row.cells {
+      if cell.vmerge == "continue" {
+        continue
+      }
+      let cell_layout = row_layout.cells[cell_index]
+      for block in cell_layout.blocks {
+        match block {
+          DocxCellLines(lines) =>
+            for positioned in lines {
+              let top = cell_layout.mar_top + positioned.y
+              let bottom = top + positioned.line.height
+              if top < y - 0.01 && bottom > y + 0.01 {
+                y = top
+                moved = true
+              }
+            }
+          DocxCellNested(nested) => {
+            let top = cell_layout.mar_top + nested.y
+            let bottom = top + nested.height
+            if top < y - 0.01 && bottom > y + 0.01 {
+              y = top
+              moved = true
+            }
+          }
+        }
+      }
+    }
+    if !moved {
+      break
+    }
+  }
+  if y <= from + 0.01 {
+    from
+  } else {
+    y
+  }
+}
+
+///|
+fn docx_emit_table_lines(
+  ctx : DocxEmitContext,
+  cell_layout : DocxTableCellLayout,
+  x_origin : Double,
+  y_origin : Double,
+  cut0 : Double,
+  cut1 : Double,
+  partial : Bool,
+) -> Unit raise {
+  for block in cell_layout.blocks {
+    match block {
+      DocxCellLines(lines) =>
+        for positioned in lines {
+          let top = cell_layout.mar_top + positioned.y
+          if partial && (top < cut0 - 0.01 || top >= cut1 - 0.01) {
+            continue
+          }
+          docx_emit_para_line(
+            ctx.object,
+            ctx.writer,
+            ctx.package,
+            ctx.part,
+            positioned.line,
+            x_origin,
+            y_origin + top - cut0,
+            cell_layout.w - cell_layout.mar_left - cell_layout.mar_right,
+            ctx.fonts,
+            ctx.field_value,
+            ctx.warnings,
+          )
+        }
+      DocxCellNested(nested) => {
+        let top = cell_layout.mar_top + nested.y
+        if partial && (top < cut0 - 0.01 || top + nested.height > cut1 + 0.01) {
+          continue
+        }
+        docx_emit_table_rows(
+          ctx,
+          nested.layout,
+          x_origin,
+          y_origin + top - cut0,
+          cut0,
+          cut1,
+          partial,
+        )
+      }
+    }
+  }
+}
+
+///|
+fn docx_emit_table_rows(
+  ctx : DocxEmitContext,
+  layout : DocxTableLayout,
+  x_origin : Double,
+  y_origin : Double,
+  cut0 : Double,
+  cut1 : Double,
+  partial : Bool,
+) -> Unit raise {
+  let mut y = y_origin
+  for row_index, row_layout in layout.rows {
+    docx_emit_table_row(
+      ctx,
+      layout,
+      row_index,
+      0.0,
+      row_layout.height,
+      x_origin,
+      y,
+    )
+    y += row_layout.height
+  }
+}
+
+///|
+fn docx_emit_table_row(
+  ctx : DocxEmitContext,
+  layout : DocxTableLayout,
+  row_index : Int32,
+  cut0 : Double,
+  cut1 : Double,
+  x_origin : Double,
+  y_top : Double,
+) -> Unit raise {
+  let table = layout.table
+  let row = table.rows[row_index]
+  let row_layout = layout.rows[row_index]
+  let partial = cut0 > 0.01 || cut1 < row_layout.height - 0.01
+  for cell_index, cell in row.cells {
+    if cell.vmerge == "continue" {
+      continue
+    }
+    let cell_layout = row_layout.cells[cell_index]
+    if cell_layout.w <= 0.0 {
+      continue
+    }
+    let mut height = cut1 - cut0
+    if cell.row_span > 1 && !partial {
+      let mut next = row_index + 1
+      let limit = row_index + cell.row_span
+      while next < limit && next < table.rows.length() {
+        height += layout.rows[next].height
+        next += 1
+      }
+    }
+    let bx = x_origin + layout.left + cell_layout.x
+    let shade = match cell.shade {
+      Some(color) => Some(color)
+      None => table.shade
+    }
+    match shade {
+      Some(color) => {
+        ctx.object.fill_color(color)
+        ctx.object.fill_rect(
+          Float::from_double(bx),
+          Float::from_double(y_top),
+          Float::from_double(cell_layout.w),
+          Float::from_double(height),
+        )
+      }
+      None => ()
+    }
+    let content_height = cell_layout.height -
+      cell_layout.mar_top -
+      cell_layout.mar_bottom
+    let mut voff = cell_layout.mar_top
+    if !partial {
+      match cell_layout.valign {
+        "center" =>
+          voff += (
+              height -
+              cell_layout.mar_top -
+              cell_layout.mar_bottom -
+              content_height
+            ) /
+            2.0
+        "bottom" =>
+          voff += height -
+            cell_layout.mar_top -
+            cell_layout.mar_bottom -
+            content_height
+        _ => ()
+      }
+    }
+    docx_emit_table_lines(
+      ctx,
+      cell_layout,
+      bx + cell_layout.mar_left,
+      y_top + voff,
+      cut0,
+      cut1,
+      partial,
+    )
+    let mut top_border = docx_table_border_for(layout, row_index, cell, 0)
+    if partial && cut0 > 0.01 {
+      top_border = table.borders[4]
+    }
+    let bottom_border = docx_table_border_for(layout, row_index, cell, 2)
+    let left_border = docx_table_border_for(layout, row_index, cell, 1)
+    let right_border = docx_table_border_for(layout, row_index, cell, 3)
+    docx_draw_rule(ctx, top_border, bx, y_top, bx + cell_layout.w, y_top)
+    docx_draw_rule(
+      ctx,
+      bottom_border,
+      bx,
+      y_top + height,
+      bx + cell_layout.w,
+      y_top + height,
+    )
+    docx_draw_rule(ctx, left_border, bx, y_top, bx, y_top + height)
+    docx_draw_rule(
+      ctx,
+      right_border,
+      bx + cell_layout.w,
+      y_top,
+      bx + cell_layout.w,
+      y_top + height,
+    )
+  }
+}
+
+///|
+fn docx_story_part_height(
+  document : DocxTextDocument,
+  part : String,
+  width : Double,
+  pitch : Double,
+) -> Double {
+  let paragraphs = match document.stories.get(part) {
+    Some(value) => value
+    None => return 0.0
+  }
+  let mut height = 0.0
+  for paragraph in paragraphs {
+    if paragraph.props.before > 0.0 {
+      height += paragraph.props.before
+    }
+    let mark_size = if paragraph.mark.size > 0.0 {
+      paragraph.mark.size
+    } else {
+      10.0
+    }
+    let layout = docx_layout_paragraph(
+      paragraph.items,
+      paragraph.props,
+      width,
+      pitch,
+      mark_size,
+      false,
+    )
+    for line in layout.lines {
+      height += line.height
+    }
+    if paragraph.props.after > 0.0 {
+      height += paragraph.props.after
+    }
+  }
+  height
+}
+
+///|
+priv struct DocxPageNote {
+  kind : String
+  id : String
+  lines : Array[String]
+  height : Double
+}
+
+///|
+priv struct DocxFlow {
+  document : DocxTextDocument
+  writer : @core.DocumentWriter
+  package : @ooxml.OoxmlPackage
+  total_pages : Int32
+  warnings : Array[String]
+  pages : Array[Json]
+  index_runs : Array[@core.IndexRun]
+  budget : @render.TextExtractionBudget
+  stories : Map[String, DocxStoryLayout]
+  mut body : @core.ObjectBuilder
+  mut header_object : @core.ObjectBuilder
+  mut footer_object : @core.ObjectBuilder
+  mut body_fonts : Map[String, Int32]
+  mut header_fonts : Map[String, Int32]
+  mut footer_fonts : Map[String, Int32]
+  mut has_header : Bool
+  mut page_open : Bool
+  mut page_index : Int32
+  mut page_number : Int32
+  mut page_in_section : Int32
+  mut next_number : Int32
+  mut section : DocxSection
+  mut section_index : Int32
+  mut section_start : Int32
+  mut story_kind : String
+  mut col : Int32
+  mut x0 : Double
+  mut y : Double
+  mut top : Double
+  mut bottom : Double
+  mut width : Double
+  mut line_pitch : Double
+  mut vertical : Bool
+  mut col_bottom : Double
+  mut note_height : Double
+  page_notes : Array[DocxPageNote]
+}
+
+///|
+fn docx_roman(number : Int32) -> String {
+  if number <= 0 || number > 3999 {
+    return number.to_string()
+  }
+  let values = [
+    (1000, "M"),
+    (900, "CM"),
+    (500, "D"),
+    (400, "CD"),
+    (100, "C"),
+    (90, "XC"),
+    (50, "L"),
+    (40, "XL"),
+    (10, "X"),
+    (9, "IX"),
+    (5, "V"),
+    (4, "IV"),
+    (1, "I"),
+  ]
+  let out = StringBuilder()
+  let mut rest = number
+  for pair in values {
+    let (value, digits) = pair
+    while rest >= value {
+      out.write_string(digits)
+      rest -= value
+    }
+  }
+  out.to_string()
+}
+
+///|
+fn docx_letters(number : Int32) -> String {
+  if number <= 0 {
+    return ""
+  }
+  let out = StringBuilder()
+  let mut rest = number
+  while rest > 0 {
+    let index = (rest - 1) % 26
+    out.write_char(Char::from_int('A'.to_int() + index))
+    rest = (rest - 1) / 26
+  }
+  // The letters are produced from right to left.
+  let text = out.to_string()
+  let reversed = StringBuilder()
+  for i in 0..<text.length() {
+    reversed.write_char(text.get_char(text.length() - 1 - i).unwrap())
+  }
+  reversed.to_string()
+}
+
+///|
+fn docx_full_width_digits(number : Int32) -> String {
+  let out = StringBuilder()
+  for c in number.to_string() {
+    if c >= '0' && c <= '9' {
+      out.write_char(Char::from_int(c.to_int() - '0'.to_int() + 0xff10))
+    } else {
+      out.write_char(c)
+    }
+  }
+  out.to_string()
+}
+
+///|
+fn docx_format_number(number : Int32, format : String) -> String {
+  match format {
+    "upperRoman" => docx_roman(number)
+    "lowerRoman" => docx_roman(number).to_lower()
+    "upperLetter" => docx_letters(number)
+    "lowerLetter" => docx_letters(number).to_lower()
+    "decimalZero" =>
+      if number >= 0 && number < 10 {
+        "0" + number.to_string()
+      } else {
+        number.to_string()
+      }
+    "decimalFullWidth" | "decimalFullWidth2" => docx_full_width_digits(number)
+    "decimalEnclosedCircle" | "decimalEnclosedCircleChinese" =>
+      if number >= 1 && number <= 20 {
+        Char::from_int(0x2460 + number - 1).to_string()
+      } else {
+        number.to_string()
+      }
+    "numberInDash" => "- " + number.to_string() + " -"
+    "none" => ""
+    _ => number.to_string()
+  }
+}
+
+///|
+fn docx_section_line_length(section : DocxSection) -> Double {
+  if section.vertical {
+    Double::max(section.height - section.top - section.bottom, 36.0)
+  } else {
+    Double::max(section.width - section.left - section.right, 36.0)
+  }
+}
+
+///|
+fn docx_section_column(
+  section : DocxSection,
+  index : Int32,
+) -> (Double, Double) {
+  let columns = section.columns
+  if columns.is_empty() {
+    return (0.0, docx_section_line_length(section))
+  }
+  let position = if index < 0 || index >= columns.length() {
+    columns.length() - 1
+  } else {
+    index
+  }
+  let (x, width) = columns[position]
+  if section.vertical {
+    (x, width)
+  } else {
+    (section.left + x, width)
+  }
+}
+
+///|
+fn docx_section_grid_pitch(section : DocxSection) -> Double {
+  match section.grid_type {
+    "lines" | "linesAndChars" | "snapToChars" => section.line_pitch
+    _ => 0.0
+  }
+}
+
+///|
+fn docx_section_same_geometry(a : DocxSection, b : DocxSection) -> Bool {
+  a.width == b.width &&
+  a.height == b.height &&
+  a.left == b.left &&
+  a.right == b.right &&
+  a.vertical == b.vertical
+}
+
+///|
+fn docx_story_kind(flow : DocxFlow) -> String {
+  let first = flow.page_in_section == 0
+  if first && flow.section.title_page {
+    "first"
+  } else if flow.document.even_odd && flow.page_number % 2 == 0 {
+    "even"
+  } else {
+    "default"
+  }
+}
+
+///|
+fn docx_flow_field_value(
+  flow : DocxFlow,
+  typ : String,
+  format : String,
+) -> String {
+  match typ {
+    "PAGE" => {
+      let page_format = if format != "" {
+        format
+      } else {
+        flow.section.page_format
+      }
+      docx_format_number(flow.page_number, page_format)
+    }
+    "NUMPAGES" => {
+      let page_format = if format != "" { format } else { "decimal" }
+      docx_format_number(flow.total_pages, page_format)
+    }
+    "SECTIONPAGES" => {
+      let page_format = if format != "" { format } else { "decimal" }
+      docx_format_number(flow.total_pages, page_format)
+    }
+    _ => ""
+  }
+}
+
+///|
+fn docx_flow_story_layout(
+  flow : DocxFlow,
+  part : String,
+  width : Double,
+) -> DocxStoryLayout {
+  let key = part + "|" + width.to_string() + "|" + flow.line_pitch.to_string()
+  match flow.stories.get(key) {
+    Some(value) => value
+    None => {
+      let paragraphs = match flow.document.stories.get(part) {
+        Some(value) => value
+        None => []
+      }
+      let lines : Array[DocxParaLine] = []
+      let mut height = 0.0
+      for paragraph in paragraphs {
+        if paragraph.props.before > 0.0 {
+          height += paragraph.props.before
+        }
+        let mark_size = if paragraph.mark.size > 0.0 {
+          paragraph.mark.size
+        } else {
+          10.0
+        }
+        let layout = docx_layout_paragraph(
+          paragraph.items,
+          paragraph.props,
+          width,
+          flow.line_pitch,
+          mark_size,
+          false,
+        )
+        for line in layout.lines {
+          lines.push(line)
+          height += line.height
+        }
+        if paragraph.props.after > 0.0 {
+          height += paragraph.props.after
+        }
+      }
+      let value = { lines, height, }
+      flow.stories[key] = value
+      value
+    }
+  }
+}
+
+///|
+fn docx_flow_emit_story(
+  flow : DocxFlow,
+  header : Bool,
+  kind : String,
+  fonts : Map[String, Int32],
+) -> (Bool, Double) raise {
+  let part = docx_story_part(flow.section, header, kind)
+  if part == "" {
+    return (false, 0.0)
+  }
+  let width = Double::max(
+    flow.section.width - flow.section.left - flow.section.right,
+    36.0,
+  )
+  let layout = docx_flow_story_layout(flow, part, width)
+  if layout.lines.is_empty() {
+    return (false, 0.0)
+  }
+  let object = if header { flow.header_object } else { flow.footer_object }
+  let mut y = if header {
+    flow.section.header
+  } else {
+    flow.section.height - flow.section.footer - layout.height
+  }
+  let ctx : DocxEmitContext = {
+    object,
+    writer: flow.writer,
+    package: flow.package,
+    part,
+    fonts,
+    warnings: flow.warnings,
+    field_value: fn(typ, format) { docx_flow_field_value(flow, typ, format) },
+  }
+  for line in layout.lines {
+    docx_emit_para_line(
+      object,
+      flow.writer,
+      flow.package,
+      part,
+      line,
+      flow.section.left,
+      y,
+      width,
+      fonts,
+      ctx.field_value,
+      flow.warnings,
+    )
+    y += line.height
+  }
+  (true, layout.height)
+}
+
+///|
+fn docx_flow_set_column(flow : DocxFlow) -> Unit {
+  let (x0, width) = docx_section_column(flow.section, flow.col)
+  flow.x0 = x0
+  flow.width = width
+}
+
+///|
+fn docx_flow_new_page(flow : DocxFlow) -> Unit raise {
+  if flow.page_open {
+    docx_flow_flush_page(flow)
+  }
+  flow.line_pitch = docx_section_grid_pitch(flow.section)
+  flow.vertical = flow.section.vertical
+  flow.body = @core.ObjectBuilder::new()
+  if flow.section.vertical {
+    flow.body.save()
+    flow.body.transform(
+      0.0F,
+      1.0F,
+      -1.0F,
+      0.0F,
+      Float::from_double(flow.section.width - flow.section.right),
+      Float::from_double(flow.section.top),
+    )
+  }
+  flow.header_object = @core.ObjectBuilder::new()
+  flow.footer_object = @core.ObjectBuilder::new()
+  flow.body_fonts = Map([])
+  flow.header_fonts = Map([])
+  flow.footer_fonts = Map([])
+  flow.has_header = false
+  flow.page_notes.clear()
+  flow.note_height = 0.0
+  flow.page_number = flow.next_number
+  flow.next_number = flow.next_number + 1
+  flow.story_kind = docx_story_kind(flow)
+  let (has_header, header_height) = docx_flow_emit_story(
+    flow,
+    true,
+    flow.story_kind,
+    flow.header_fonts,
+  )
+  flow.has_header = has_header
+  let footer_part = docx_story_part(flow.section, false, flow.story_kind)
+  let footer_height = if footer_part == "" {
+    0.0
+  } else {
+    let width = Double::max(
+      flow.section.width - flow.section.left - flow.section.right,
+      36.0,
+    )
+    docx_flow_story_layout(flow, footer_part, width).height
+  }
+  let mut top = flow.section.top
+  if !flow.section.top_exact && has_header {
+    let pushed = flow.section.header + header_height
+    if pushed > top {
+      top = pushed
+    }
+  }
+  let mut bottom = flow.section.height - flow.section.bottom
+  if !flow.section.bottom_exact && footer_height > 0.0 {
+    let pushed = flow.section.height - flow.section.footer - footer_height
+    if pushed < bottom {
+      bottom = pushed
+    }
+  }
+  flow.vertical = flow.section.vertical
+  flow.line_pitch = docx_section_grid_pitch(flow.section)
+  flow.col = 0
+  flow.col_bottom = top
+  if flow.vertical {
+    let text_width = Double::max(
+      flow.section.width - flow.section.left - flow.section.right,
+      36.0,
+    )
+    flow.top = 0.0
+    flow.bottom = text_width
+    flow.y = 0.0
+  } else {
+    flow.top = top
+    flow.bottom = bottom
+    flow.y = top
+  }
+  docx_flow_set_column(flow)
+  flow.page_in_section = flow.page_in_section + 1
+  flow.page_open = true
+}
+
+///|
+fn docx_flow_next_column(flow : DocxFlow) -> Unit raise {
+  if flow.col + 1 < flow.section.columns.length() {
+    if flow.y > flow.col_bottom {
+      flow.col_bottom = flow.y
+    }
+    flow.col = flow.col + 1
+    docx_flow_set_column(flow)
+    flow.y = flow.top
+  } else {
+    docx_flow_new_page(flow)
+  }
+}
+
+///|
+fn docx_flow_at_top(flow : DocxFlow) -> Bool {
+  flow.y <= flow.top + 0.01
+}
+
+///|
+fn docx_flow_limit(flow : DocxFlow) -> Double {
+  flow.bottom - flow.note_height
+}
+
+///|
+fn docx_flow_ensure(flow : DocxFlow, height : Double) -> Unit raise {
+  if flow.y + height <= docx_flow_limit(flow) + 0.01 {
+    return
+  }
+  if docx_flow_at_top(flow) {
+    return
+  }
+  docx_flow_next_column(flow)
+}
+
+///|
+fn docx_note_lines(
+  document : DocxTextDocument,
+  kind : String,
+  id : String,
+  width : Double,
+) -> Array[String] {
+  let source = if kind == "footnote" {
+    document.footnotes.get(id)
+  } else {
+    document.endnotes.get(id)
+  }
+  let note_lines = match source {
+    Some(value) => value
+    None => []
+  }
+  let out : Array[String] = []
+  let mut first = true
+  for text in note_lines {
+    let prefix = if first { id + ". " } else { "" }
+    first = false
+    for wrapped in docx_wrap_note(prefix + text, width, 8.5) {
+      out.push(wrapped)
+    }
+  }
+  out
+}
+
+///|
+fn docx_flow_add_note(flow : DocxFlow, kind : String, id : String) -> Unit {
+  for note in flow.page_notes {
+    if note.kind == kind && note.id == id {
+      return
+    }
+  }
+  let width = Double::max(flow.width, 36.0)
+  let lines = docx_note_lines(flow.document, kind, id, width)
+  let height = 4.0 + lines.length().to_double() * 10.2
+  flow.note_height += height
+  flow.page_notes.push({ kind, id, lines, height, })
+}
+
+///|
+fn docx_flow_emit_notes(flow : DocxFlow) -> Unit raise {
+  if flow.page_notes.is_empty() {
+    return
+  }
+  let width = Double::max(flow.width, 36.0)
+  let mut y = flow.bottom - flow.note_height
+  if y < flow.top {
+    y = flow.top
+  }
+  flow.body.fill_color(0x000000ffU)
+  flow.body.fill_rect(
+    Float::from_double(flow.x0),
+    Float::from_double(y - 2.0),
+    Float::from_double(width),
+    0.5F,
+  )
+  let font_key = "sans-serif|400|0"
+  let font = match flow.body_fonts.get(font_key) {
+    Some(value) => value
+    None => {
+      let value = flow.body.add_font({
+        hash: None,
+        family: "sans-serif",
+        weight: 400,
+        style: 0,
+      })
+      flow.body_fonts[font_key] = value
+      value
+    }
+  }
+  flow.body.font(font, 8.5F)
+  flow.body.fill_color(0x000000ffU)
+  for note in flow.page_notes {
+    y += 4.0
+    for text in note.lines {
+      flow.body.fill_text(
+        text,
+        Float::from_double(flow.x0),
+        Float::from_double(y + 8.5),
+        Float::from_double(width),
+      )
+      y += 10.2
+    }
+  }
+}
+
+///|
+fn docx_append_page_index(
+  flow : DocxFlow,
+  encoded : Bytes,
+  page_index : Int32,
+  layer_index : Int32,
+) -> Unit {
+  let content = @render.extract_text_with_budget(
+    @core.decode_object_resources(encoded),
+    fn(_) { None },
+    flow.budget,
+  ) catch {
+    _ => { runs: [], links: [], nodes: [], }
+  }
+  for i, run in content.runs {
+    flow.index_runs.push({
+      a: page_index,
+      b: layer_index,
+      ordinal: run.ordinal,
+      separator: if i == 0 {
+        2
+      } else {
+        run.separator
+      },
+      text: run.text,
+    })
+  }
+}
+
+///|
+fn docx_flow_flush_page(flow : DocxFlow) -> Unit raise {
+  if !flow.page_open {
+    return
+  }
+  docx_flow_emit_notes(flow)
+  let footer_part = docx_story_part(flow.section, false, flow.story_kind)
+  let mut has_footer = false
+  if footer_part != "" {
+    let (has, _) = docx_flow_emit_story(
+      flow,
+      false,
+      flow.story_kind,
+      flow.footer_fonts,
+    )
+    has_footer = has
+  }
+  let section = flow.section
+  if flow.vertical {
+    flow.body.restore()
+  }
+  flow.body.set_bbox(
+    0.0F,
+    0.0F,
+    Float::from_double(section.width),
+    Float::from_double(section.height),
+  )
+  flow.header_object.set_bbox(
+    0.0F,
+    0.0F,
+    Float::from_double(section.width),
+    Float::from_double(section.height),
+  )
+  flow.footer_object.set_bbox(
+    0.0F,
+    0.0F,
+    Float::from_double(section.width),
+    Float::from_double(section.height),
+  )
+  let encoded = flow.body.encode()
+  let hash = flow.writer.add_part("obj", encoded)
+  let page_index = flow.page_index
+  let layers : Array[Json] = []
+  let mut text_layer = 0
+  if flow.has_header {
+    let header_encoded = flow.header_object.encode()
+    let header_hash = flow.writer.add_part("obj", header_encoded)
+    layers.push(
+      Json::object({
+        "role": Json::string("header"),
+        "obj": Json::string(header_hash),
+      }),
+    )
+    docx_append_page_index(flow, header_encoded, page_index, text_layer)
+    text_layer += 1
+  }
+  if has_footer {
+    let footer_encoded = flow.footer_object.encode()
+    let footer_hash = flow.writer.add_part("obj", footer_encoded)
+    layers.push(
+      Json::object({
+        "role": Json::string("footer"),
+        "obj": Json::string(footer_hash),
+      }),
+    )
+    docx_append_page_index(flow, footer_encoded, page_index, text_layer)
+    text_layer += 1
+  }
+  layers.push(
+    Json::object({ "role": Json::string("body"), "obj": Json::string(hash) }),
+  )
+  docx_append_page_index(flow, encoded, page_index, text_layer)
+  flow.pages.push(
+    Json::object({
+      "page": Json::number((page_index + 1).to_double()),
+      "w": Json::number(section.width, repr=section.width.to_string()),
+      "h": Json::number(section.height, repr=section.height.to_string()),
+      "body": Json::object({
+        "x": Json::number(section.left, repr=section.left.to_string()),
+        "y": Json::number(section.top, repr=section.top.to_string()),
+        "w": Json::number(
+          section.width - section.left - section.right,
+          repr=(section.width - section.left - section.right).to_string(),
+        ),
+        "h": Json::number(
+          section.height - section.top - section.bottom,
+          repr=(section.height - section.top - section.bottom).to_string(),
+        ),
+      }),
+      "layers": Json::array(layers),
+    }),
+  )
+  flow.page_index = flow.page_index + 1
+  flow.page_open = false
+}
+
+///|
+fn docx_flow_emit_paragraph(
+  flow : DocxFlow,
+  paragraph : DocxTextParagraph,
+) -> Unit raise {
+  let props = paragraph.props
+  let mark_size = if paragraph.mark.size > 0.0 {
+    paragraph.mark.size
+  } else {
+    10.0
+  }
+  let layout = docx_layout_paragraph(
+    paragraph.items,
+    props,
+    flow.width,
+    flow.line_pitch,
+    mark_size,
+    true,
+  )
+  if props.page_break_before && !docx_flow_at_top(flow) {
+    docx_flow_new_page(flow)
+  }
+  if props.before > 0.0 {
+    flow.y += props.before
+  }
+  let ctx : DocxEmitContext = {
+    object: flow.body,
+    writer: flow.writer,
+    package: flow.package,
+    part: flow.document.part,
+    fonts: flow.body_fonts,
+    warnings: flow.warnings,
+    field_value: fn(typ, format) { docx_flow_field_value(flow, typ, format) },
+  }
+  for anchor in layout.anchors {
+    docx_emit_placed_image(
+      flow.body,
+      flow.writer,
+      flow.package,
+      flow.document.part,
+      anchor,
+      0.0,
+      0.0,
+      flow.warnings,
+    )
+  }
+  for line in layout.lines {
+    if line.break_before == "page" {
+      docx_flow_new_page(flow)
+    } else if line.break_before == "column" {
+      docx_flow_next_column(flow)
+    }
+    docx_flow_ensure(flow, line.height)
+    docx_emit_para_line(
+      flow.body,
+      flow.writer,
+      flow.package,
+      flow.document.part,
+      line,
+      flow.x0,
+      flow.y,
+      flow.width,
+      flow.body_fonts,
+      ctx.field_value,
+      flow.warnings,
+    )
+    flow.y += line.height
+  }
+  if layout.trailing_break == "page" {
+    docx_flow_new_page(flow)
+  } else if layout.trailing_break == "column" {
+    docx_flow_next_column(flow)
+  }
+  for note in layout.notes {
+    docx_flow_add_note(flow, note.0, note.1)
+  }
+  if props.after > 0.0 {
+    flow.y += props.after
+  }
+}
+
+///|
+fn docx_flow_table_context(flow : DocxFlow) -> DocxEmitContext {
+  {
+    object: flow.body,
+    writer: flow.writer,
+    package: flow.package,
+    part: flow.document.part,
+    fonts: flow.body_fonts,
+    warnings: flow.warnings,
+    field_value: fn(typ, format) { docx_flow_field_value(flow, typ, format) },
+  }
+}
+
+///|
+fn docx_flow_repeat_headers(
+  flow : DocxFlow,
+  layout : DocxTableLayout,
+  header_rows : Int32,
+  row_index : Int32,
+) -> Bool raise {
+  if row_index < header_rows {
+    return true
+  }
+  for index in 0..<header_rows {
+    let height = layout.rows[index].height
+    docx_flow_ensure(flow, height)
+    let ctx = docx_flow_table_context(flow)
+    docx_emit_table_row(ctx, layout, index, 0.0, height, flow.x0, flow.y)
+    flow.y += height
+  }
+  true
+}
+
+///|
+fn docx_flow_emit_table(flow : DocxFlow, table : DocxTable) -> Unit raise {
+  let layout = docx_layout_table(table, flow.width, flow.line_pitch)
+  let mut ctx = docx_flow_table_context(flow)
+  let mut header_rows = 0
+  while header_rows < table.rows.length() && table.rows[header_rows].header {
+    header_rows += 1
+  }
+  let mut row_index = 0
+  let mut cut = 0.0
+  let mut fresh = false
+  let mut steps = 0
+  while row_index < layout.rows.length() {
+    steps += 1
+    if steps > 100000 {
+      break
+    }
+    let row_height = layout.rows[row_index].height
+    let remaining = row_height - cut
+    let available = docx_flow_limit(flow) - flow.y
+
+    if remaining <= available + 0.01 {
+      docx_emit_table_row(
+        ctx,
+        layout,
+        row_index,
+        cut,
+        row_height,
+        flow.x0,
+        flow.y,
+      )
+      flow.y += remaining
+      row_index += 1
+      cut = 0.0
+      fresh = false
+      continue
+    }
+    let row = table.rows[row_index]
+    let may_split = !row.cant_split &&
+      !row.header &&
+      !fresh &&
+      !docx_flow_at_top(flow)
+    if may_split {
+      let candidate = docx_table_safe_cut(
+        layout,
+        row_index,
+        cut,
+        cut + Double::max(available, 0.0),
+      )
+      if candidate > cut + 1.0 {
+        docx_emit_table_row(
+          ctx,
+          layout,
+          row_index,
+          cut,
+          candidate,
+          flow.x0,
+          flow.y,
+        )
+        flow.y += candidate - cut
+        cut = candidate
+        docx_flow_next_column(flow)
+        fresh = docx_flow_repeat_headers(flow, layout, header_rows, row_index)
+        ctx = docx_flow_table_context(flow)
+        continue
+      }
+    }
+    if fresh || docx_flow_at_top(flow) {
+      docx_emit_table_row(
+        ctx,
+        layout,
+        row_index,
+        cut,
+        row_height,
+        flow.x0,
+        flow.y,
+      )
+      flow.y += remaining
+      row_index += 1
+      cut = 0.0
+      fresh = false
+      continue
+    }
+    docx_flow_next_column(flow)
+    fresh = docx_flow_repeat_headers(flow, layout, header_rows, row_index)
+    ctx = docx_flow_table_context(flow)
+  }
+  flow.y += 1.0
+}
+
+///|
+fn docx_flow_section(flow : DocxFlow, index : Int32) -> Unit raise {
+  let previous = flow.section
+  let section = docx_section_at(flow.document, index)
+  let continuous = section.section_type == "continuous" ||
+    section.section_type == "nextColumn"
+  if continuous && docx_section_same_geometry(previous, section) {
+    flow.section = section
+    flow.section_index = index
+    if section.page_start >= 0 {
+      flow.next_number = section.page_start.to_int()
+    }
+    let top = Double::max(flow.y, flow.col_bottom)
+    flow.vertical = section.vertical
+    flow.line_pitch = docx_section_grid_pitch(section)
+    flow.col = 0
+    if flow.vertical {
+      let text_width = Double::max(
+        section.width - section.left - section.right,
+        36.0,
+      )
+      flow.top = top
+      flow.bottom = text_width
+      flow.y = top
+    } else {
+      flow.top = top
+      flow.y = top
+    }
+    docx_flow_set_column(flow)
+  } else {
+    docx_flow_flush_page(flow)
+    flow.section = section
+    flow.section_index = index
+    let start = if section.page_start >= 0 {
+      section.page_start.to_int()
+    } else {
+      Int32::max(flow.next_number, 1)
+    }
+    flow.section_start = start
+    flow.next_number = start
+    flow.page_in_section = 0
+    flow.col_bottom = section.top
+    docx_flow_new_page(flow)
+  }
+}
+
+///|
+fn docx_layout_document(
+  document : DocxTextDocument,
+  total_pages : Int32,
+  writer : @core.DocumentWriter,
+  package : @ooxml.OoxmlPackage,
+) -> (Array[Json], Array[@core.IndexRun], Array[String]) raise {
+  let warnings : Array[String] = ["DOCX layout uses approximate text metrics"]
+  let section = docx_section_at(document, 0)
+  let start = if section.page_start >= 0 {
+    section.page_start.to_int()
+  } else {
+    1
+  }
+  let flow : DocxFlow = {
+    document,
+    writer,
+    package,
+    total_pages,
+    warnings,
+    pages: [],
+    index_runs: [],
+    budget: @render.TextExtractionBudget::new(),
+    stories: Map([]),
+    body: @core.ObjectBuilder::new(),
+    header_object: @core.ObjectBuilder::new(),
+    footer_object: @core.ObjectBuilder::new(),
+    body_fonts: Map([]),
+    header_fonts: Map([]),
+    footer_fonts: Map([]),
+    has_header: false,
+    page_open: false,
+    page_index: 0,
+    page_number: start,
+    page_in_section: 0,
+    next_number: start,
+    section,
+    section_index: 0,
+    section_start: start,
+    story_kind: "default",
+    col: 0,
+    x0: section.left,
+    y: section.top,
+    top: section.top,
+    bottom: section.height - section.bottom,
+    width: section.width - section.left - section.right,
+    line_pitch: docx_section_grid_pitch(section),
+    vertical: section.vertical,
+    col_bottom: section.top,
+    note_height: 0.0,
+    page_notes: [],
+  }
+  docx_flow_new_page(flow)
+  for block in document.blocks {
+    let index = match block {
+      DocxParaBlock(paragraph) => paragraph.section_index
+      DocxTableBlock(table) => table.section_index
+    }
+    if index != flow.section_index {
+      docx_flow_section(flow, index)
+    }
+    match block {
+      DocxParaBlock(paragraph) => docx_flow_emit_paragraph(flow, paragraph)
+      DocxTableBlock(table) => docx_flow_emit_table(flow, table)
+    }
+  }
+  docx_flow_flush_page(flow)
+  if flow.pages.is_empty() {
+    docx_flow_new_page(flow)
+    docx_flow_flush_page(flow)
+  }
+  (flow.pages, flow.index_runs, flow.warnings)
+}
+
+///|
+fn docx_render_meta(
+  package : @ooxml.OoxmlPackage,
+  title : String,
+) -> Map[String, Json] {
+  let core = package.core_properties()
+  let meta : Map[String, Json] = {
+    "source": Json::string("docx"),
+    "generator": Json::string("bdf-go/0.1"),
+  }
+  let dc : Map[String, Json] = Map([])
+  for
+    entry in [
+      ("title", core.title),
+      ("creator", core.creator),
+      ("subject", core.subject),
+      ("description", core.description),
+      ("identifier", core.identifier),
+      ("language", core.language),
+      ("created", core.created),
+      ("modified", core.modified),
+    ] {
+    let (key, values) = entry
+    if !values.is_empty() && values[0] != "" {
+      dc[key] = Json::string(values[0])
+    }
+  }
+  if title != "" {
+    dc["title"] = Json::string(title)
+  }
+  if !dc.is_empty() {
+    meta["dc"] = Json::object(dc)
+  }
+  meta
+}
+
+///|
+fn docx_render_document(
+  document : DocxTextDocument,
+  title : String,
+  data : Bytes,
+  views : String,
+) -> DocxResult raise {
+  let package = @ooxml.open_ooxml(data) catch {
+    _ => raise DocxInvalid("invalid DOCX package")
+  }
+  let meta = docx_render_meta(package, title)
+  let mut page_count = 0
+  if views != "scroll" {
+    let probe = @core.DocumentWriter::new(meta=Json::object(meta))
+    let (probe_pages, _, _) = docx_layout_document(document, 0, probe, package)
+    page_count = probe_pages.length()
+    if page_count == 0 {
+      page_count = 1
+    }
+  }
+  let writer = @core.DocumentWriter::new(meta=Json::object(meta))
+  let pages : Array[Json] = []
+  let mut index_runs : Array[@core.IndexRun] = []
+  let mut warnings : Array[String] = [
+    "DOCX layout uses approximate text metrics",
+  ]
+  if views != "scroll" {
+    let (rendered, runs, rendered_warnings) = docx_layout_document(
+      document, page_count, writer, package,
+    )
+    for page in rendered {
+      pages.push(page)
+    }
+    index_runs = runs
+    warnings = rendered_warnings
+    let view : Map[String, Json] = {
+      "id": Json::string("pages"),
+      "kind": Json::string("flow"),
+      "pages": Json::array(pages),
+    }
+    if title != "" {
+      view["title"] = Json::string(title)
+    }
+    if !index_runs.is_empty() {
+      let encoded = @core.encode_text_index(index_runs) catch { _ => b"" }
+      if encoded.length() > 0 {
+        view["textIndex"] = Json::string(writer.add_part("idx", encoded))
+      }
+    }
+    writer.add_view(Json::object(view))
+  }
+  let mut strips = 0
+  if views != "pages" {
+    let (scroll_pages, scroll_runs, strip_count) = docx_render_scroll(
+      document, writer, package,
+    )
+    strips = strip_count
+    if !scroll_pages.is_empty() {
+      let scroll_view : Map[String, Json] = {
+        "id": Json::string("scroll"),
+        "kind": Json::string("scroll"),
+        "pages": Json::array(scroll_pages),
+      }
+      if title != "" {
+        scroll_view["title"] = Json::string(title)
+      }
+      if !scroll_runs.is_empty() {
+        let encoded = @core.encode_text_index(scroll_runs) catch { _ => b"" }
+        if encoded.length() > 0 {
+          scroll_view["textIndex"] = Json::string(
+            writer.add_part("idx", encoded),
+          )
+        }
+      }
+      writer.add_view(Json::object(scroll_view))
+    }
+  }
+  let bdf = writer.write_single()
+  {
+    bdf,
+    pages: if views == "scroll" {
+      0
+    } else {
+      page_count
+    },
+    summary: "\{page_count} page" +
+    (if page_count == 1 { "" } else { "s" }) +
+    ", " +
+    strips.to_string() +
+    " scroll strip" +
+    (if strips == 1 { "" } else { "s" }),
+    warnings,
+  }
+}

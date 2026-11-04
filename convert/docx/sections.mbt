@@ -1,5 +1,6 @@
 ///|
 // Section geometry, columns, text grid, and story references for document layout.
+#derive(Debug, Eq)
 priv struct DocxSection {
   mut width : Double
   mut height : Double
@@ -31,9 +32,10 @@ priv struct DocxSection {
   mut border_from_text : Bool
   mut border_first : Bool
   mut border_not_first : Bool
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug, Eq)
 priv struct DocxBorder {
   style : String
   width : Double
@@ -42,7 +44,7 @@ priv struct DocxBorder {
   theme_color : String
   theme_tint : String
   theme_shade : String
-} derive(Debug, Eq)
+}
 
 ///|
 priv suberror DocxError {
@@ -499,4 +501,36 @@ fn docx_sections(data : Bytes) -> (String, Array[DocxSection]) raise {
     sections.push(current)
   }
   (part, sections)
+}
+
+///|
+/// Header and footer references carry over from the previous section when a
+/// section names none of its own.
+fn docx_inherit_section_stories(sections : Array[DocxSection]) -> Unit {
+  for i in 1..<sections.length() {
+    let previous = sections[i - 1]
+    let current = sections[i]
+    for story in previous.headers {
+      let mut found = false
+      for existing in current.headers {
+        if existing.0 == story.0 {
+          found = true
+        }
+      }
+      if !found {
+        current.headers.push(story)
+      }
+    }
+    for story in previous.footers {
+      let mut found = false
+      for existing in current.footers {
+        if existing.0 == story.0 {
+          found = true
+        }
+      }
+      if !found {
+        current.footers.push(story)
+      }
+    }
+  }
 }

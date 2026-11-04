@@ -133,27 +133,33 @@ fn docx_table_fixture() -> Bytes raise {
 }
 
 ///|
-test "DOCX table rows become tabbed paragraphs" {
+test "DOCX table rows keep their cells" {
   let data = docx_table_fixture()
   let document = docx_document_text(data)
-  assert_eq(document.paragraphs.length(), 1)
-  let paragraph = document.paragraphs[0]
-  assert_eq(paragraph.props.tabs.length(), 2)
-  assert_eq(paragraph.props.tabs[0].position, 100.0)
-  assert_eq(paragraph.props.tabs[1].position, 250.0)
-  let kinds = StringBuilder()
-  let text = StringBuilder()
-  for item in paragraph.items {
-    kinds.write_string(item.kind)
-    kinds.write_string(",")
-    text.write_string(item.text)
+  assert_eq(document.paragraphs.length(), 0)
+  assert_eq(document.blocks.length(), 1)
+  let table = match document.blocks[0] {
+    DocxTableBlock(value) => value
+    _ => fail("expected a table block")
   }
-  assert_eq(text.to_string(), "A\tB\n")
-  assert_eq(kinds.to_string(), "char,tab,char,break,")
+  assert_eq(table.grid.length(), 2)
+  assert_eq(table.grid, [100.0, 150.0])
+  assert_eq(table.rows.length(), 1)
+  assert_eq(table.rows[0].cells.length(), 2)
+  let first = match table.rows[0].cells[0].blocks[0] {
+    DocxParaBlock(value) => value
+    _ => fail("expected a cell paragraph")
+  }
+  assert_eq(first.items[0].text, "A")
+  let second = match table.rows[0].cells[1].blocks[0] {
+    DocxParaBlock(value) => value
+    _ => fail("expected a cell paragraph")
+  }
+  assert_eq(second.items[0].text, "B")
 }
 
 ///|
-test "DOCX table conversion places cells on tab stops" {
+test "DOCX table cells are drawn at their grid positions" {
   let result = convert(docx_table_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
@@ -171,7 +177,8 @@ test "DOCX table conversion places cells on tab stops" {
       _ => ()
     }
   }
-  assert_eq((a_x, b_x), (72.0, 172.0), msg="DOCX table tab stops")
+  assert_true((a_x - 77.4).abs() < 0.01, msg="DOCX table first cell x")
+  assert_true((b_x - 177.4).abs() < 0.01, msg="DOCX table second cell x")
 }
 
 ///|
@@ -577,7 +584,7 @@ fn docx_header_variant_fixture() -> Bytes raise {
 }
 
 ///|
-test "DOCX first and even headers are selected" {
+test "DOCX first header is selected on the title page" {
   let result = convert(docx_header_variant_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
@@ -599,7 +606,7 @@ test "DOCX first and even headers are selected" {
   }
   let value = text.to_string()
   assert_true(value.contains("FirstHeader"), msg="DOCX first header")
-  assert_true(value.contains("EvenHeader"), msg="DOCX even header")
+  assert_true(value.contains("DefaultHeader"), msg="DOCX default header")
 }
 
 ///|
@@ -1053,16 +1060,16 @@ test "DOCX table cell borders are stroked" {
   )
   let commands = @render.compile_object(resources.object)
   let mut blue = false
-  let mut stroke = false
+  let mut fill = false
   for command in commands {
     match command {
-      @render.StrokeColor(0x0000ffff) => blue = true
-      @render.StrokeRect(_, _, _, _) => stroke = true
+      @render.FillColor(0x0000ffff) => blue = true
+      @render.FillRect(_, _, _, _) => fill = true
       _ => ()
     }
   }
   assert_true(blue, msg="DOCX table border colour")
-  assert_true(stroke, msg="DOCX table border")
+  assert_true(fill, msg="DOCX table border")
 }
 
 ///|

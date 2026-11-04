@@ -1,6 +1,7 @@
 ///|
 // This is an internal, deliberately limited model. A rejected element is not
 // silently converted into plain text: later stages must add its semantics.
+#derive(Debug, Eq)
 priv struct DocxTextItem {
   kind : String
   text : String
@@ -18,33 +19,107 @@ priv struct DocxTextItem {
   rotation : Double
   flip_h : Bool
   flip_v : Bool
+  field_format : String
   mut shade : UInt32?
   mut border_width : Double
   mut border_color : UInt32?
-} derive(Debug, Eq)
+}
 
 ///|
+#derive(Debug, Eq)
 priv struct DocxTextParagraph {
   props : DocxParagraphProps
   mark : DocxRunProps
   items : Array[DocxTextItem]
   section_index : Int32
-} derive(Debug, Eq)
+}
+
+///|
+// A border width of zero means that the side is not drawn.
+#derive(Debug, Eq)
+priv struct DocxLineBorder {
+  width : Double
+  color : UInt32
+}
+
+///|
+#derive(Debug, Eq)
+priv struct DocxMargins {
+  top : Double?
+  left : Double?
+  bottom : Double?
+  right : Double?
+}
+
+///|
+priv struct DocxTableCell {
+  col : Int32
+  span : Int32
+  vmerge : String
+  mut row_span : Int32
+  borders : Array[DocxLineBorder?]
+  shade : UInt32?
+  mar : DocxMargins
+  valign : String
+  blocks : Array[DocxBlock]
+}
+
+///|
+priv struct DocxTableRow {
+  cells : Array[DocxTableCell]
+  height : Double
+  exact : Bool
+  cant_split : Bool
+  header : Bool
+  grid_before : Int32
+}
+
+///|
+priv struct DocxTable {
+  grid : Array[Double]
+  jc : String
+  ind : Double
+  borders : Array[DocxLineBorder?]
+  cell_mar : DocxMargins
+  shade : UInt32?
+  rows : Array[DocxTableRow]
+  section_index : Int32
+}
+
+///|
+priv enum DocxBlock {
+  DocxParaBlock(DocxTextParagraph)
+  DocxTableBlock(DocxTable)
+}
 
 ///|
 priv struct DocxTextDocument {
   part : String
   sections : Array[DocxSection]
+  blocks : Array[DocxBlock]
   paragraphs : Array[DocxTextParagraph]
+  stories : Map[String, Array[DocxTextParagraph]]
   footnotes : Map[String, Array[String]]
   endnotes : Map[String, Array[String]]
+  even_odd : Bool
+}
+
+///|
+priv struct DocxFieldState {
+  mut instr : String
+  mut result : Bool
+  mut typ : String
+  mut format : String
+  mut emitted : Bool
 }
 
 ///|
 priv struct DocxTextWalker {
   styles : DocxStyles
+  blocks : Array[DocxBlock]
   paragraphs : Array[DocxTextParagraph]
   mut section_index : Int32
+  fields : Array[DocxFieldState]
 }
 
 ///|
@@ -244,6 +319,7 @@ fn docx_text_push(
     rotation: 0.0,
     flip_h: false,
     flip_v: false,
+    field_format: "",
     shade: None,
     border_width: 0.0,
     border_color: None,
@@ -438,6 +514,7 @@ fn docx_text_drawing(
     rotation,
     flip_h,
     flip_v,
+    field_format: "",
     shade: None,
     border_width: 0.0,
     border_color: None,
@@ -445,7 +522,11 @@ fn docx_text_drawing(
 }
 
 ///|
-fn docx_omml_attr(node : DocxXmlNode, name : String, default : String) -> String {
+fn docx_omml_attr(
+  node : DocxXmlNode,
+  name : String,
+  default : String,
+) -> String {
   docx_attribute(node.element, name, default)
 }
 
@@ -536,8 +617,16 @@ fn docx_omml_linear(node : DocxXmlNode) -> String {
   let name = node.name()
   match name {
     "t" => node.text.to_string()
-    "r" | "e" | "num" | "den" | "sub" | "sup" | "deg" | "lim" | "fName" | "oMath" =>
-      docx_omml_join(node)
+    "r"
+    | "e"
+    | "num"
+    | "den"
+    | "sub"
+    | "sup"
+    | "deg"
+    | "lim"
+    | "fName"
+    | "oMath" => docx_omml_join(node)
     "f" => {
       let num = docx_omml_node_text(node.child("num"))
       let den = docx_omml_node_text(node.child("den"))
@@ -576,7 +665,11 @@ fn docx_omml_linear(node : DocxXmlNode) -> String {
       let base = docx_omml_node_text(node.child("e"))
       let sub = docx_omml_node_text(node.child("sub"))
       let sup = docx_omml_node_text(node.child("sup"))
-      "_" + docx_omml_wrap(sub) + "^" + docx_omml_wrap(sup) + docx_omml_wrap(base)
+      "_" +
+      docx_omml_wrap(sub) +
+      "^" +
+      docx_omml_wrap(sup) +
+      docx_omml_wrap(base)
     }
     "nary" => {
       let chr = match node.child("naryPr") {
@@ -702,12 +795,96 @@ fn docx_text_omml(
 }
 
 ///|
+
+///|
+fn docx_field_info(instr : String) -> (String, String) {
+  let tokens : Array[String] = []
+  let current = StringBuilder()
+  for c in instr {
+    if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
+      if current.to_string() != "" {
+        tokens.push(current.to_string())
+        current.reset()
+      }
+    } else {
+      current.write_char(c)
+    }
+  }
+  if current.to_string() != "" {
+    tokens.push(current.to_string())
+  }
+  if tokens.is_empty() {
+    return ("", "")
+  }
+  let typ = tokens[0].to_upper()
+  let mut format = ""
+  let mut i = 1
+  while i < tokens.length() {
+    if tokens[i] == "\\*" && i + 1 < tokens.length() {
+      format = tokens[i + 1]
+    }
+    i += 1
+  }
+  (typ, format)
+}
+
+///|
+fn docx_field_dynamic(typ : String) -> Bool {
+  typ == "PAGE" || typ == "NUMPAGES" || typ == "SECTIONPAGES"
+}
+
+///|
+fn docx_text_field(
+  items : Array[DocxTextItem],
+  props : DocxRunProps,
+  typ : String,
+  format : String,
+) -> Unit {
+  items.push({
+    kind: "field",
+    text: typ,
+    clear: false,
+    props,
+    width: 0.0,
+    height: 0.0,
+    anchored: false,
+    x: 0.0,
+    y: 0.0,
+    crop_left: 0.0,
+    crop_top: 0.0,
+    crop_right: 0.0,
+    crop_bottom: 0.0,
+    rotation: 0.0,
+    flip_h: false,
+    flip_v: false,
+    field_format: format,
+    shade: None,
+    border_width: 0.0,
+    border_color: None,
+  })
+}
+
+///|
+fn docx_dynamic_field(walker : DocxTextWalker) -> DocxFieldState? {
+  if walker.fields.is_empty() {
+    return None
+  }
+  let field = walker.fields[walker.fields.length() - 1]
+  if field.result && docx_field_dynamic(field.typ) {
+    Some(field)
+  } else {
+    None
+  }
+}
+
+///|
 fn docx_text_run(
+  walker : DocxTextWalker,
   node : DocxXmlNode,
   items : Array[DocxTextItem],
-  styles : DocxStyles,
   paragraph_style : String,
 ) -> Unit raise {
+  let styles = walker.styles
   let mut found_rpr = false
   for child in node.children {
     if child.name() == "rPr" {
@@ -732,17 +909,64 @@ fn docx_text_run(
     }
     match name {
       "rPr" => ()
+      "fldChar" => {
+        let kind = docx_attribute(child.element, "fldCharType", "")
+        match kind {
+          "begin" =>
+            walker.fields.push({
+              instr: "",
+              result: false,
+              typ: "",
+              format: "",
+              emitted: false,
+            })
+          "separate" =>
+            if !walker.fields.is_empty() {
+              let field = walker.fields[walker.fields.length() - 1]
+              if !field.result {
+                let (typ, format) = docx_field_info(field.instr)
+                field.typ = typ
+                field.format = format
+                field.result = true
+              }
+            }
+          "end" =>
+            if !walker.fields.is_empty() {
+              let field = walker.fields.pop().unwrap()
+              if docx_field_dynamic(field.typ) && !field.emitted {
+                docx_text_field(items, props, field.typ, field.format)
+              }
+            }
+          _ => ()
+        }
+      }
+      "instrText" =>
+        if !walker.fields.is_empty() {
+          let field = walker.fields[walker.fields.length() - 1]
+          if !field.result {
+            field.instr += child.text.to_string()
+          }
+        }
       "t" => {
         if !child.children.is_empty() {
           docx_text_unsupported(name)
         }
-        let text = child.text.to_string()
-        let text = if (props.toggles & (4 | 8)) != 0 {
-          text.to_upper()
-        } else {
-          text
+        match docx_dynamic_field(walker) {
+          Some(field) =>
+            if !field.emitted {
+              docx_text_field(items, props, field.typ, field.format)
+              field.emitted = true
+            }
+          None => {
+            let text = child.text.to_string()
+            let text = if (props.toggles & (4 | 8)) != 0 {
+              text.to_upper()
+            } else {
+              text
+            }
+            docx_text_chars(items, text, props)
+          }
         }
-        docx_text_chars(items, text, props)
       }
       "tab" | "ptab" => docx_text_push(items, "tab", "\t", props)
       "br" => {
@@ -779,7 +1003,7 @@ fn docx_text_run(
           props,
         )
       "commentReference" => ()
-      "instrText" | "delText" | "fldChar" => ()
+      "delText" => ()
       "sym" => {
         let code = docx_attribute(child.element, "char", "")
         let value = @string.parse_int(code, base=16) catch { _ => -1 }
@@ -788,41 +1012,71 @@ fn docx_text_run(
         }
       }
       "oMath" | "oMathPara" => docx_text_omml(child, items, props)
-      "AlternateContent" => {
+      "AlternateContent" =>
         match docx_alternate_content(child) {
           Some(chosen) =>
-            docx_text_inlines(chosen, items, styles, paragraph_style)
+            docx_text_inlines(walker, chosen, items, paragraph_style)
           None => ()
         }
-      }
       other => docx_text_unsupported(other)
+    }
+    if docx_dynamic_field(walker) is Some(field) {
+      // The cached result of a page field is not drawn; the field item
+      // stands in for it and the renderer substitutes the value.
+      if !field.emitted {
+        docx_text_field(items, props, field.typ, field.format)
+        field.emitted = true
+      }
     }
   }
 }
 
 ///|
 fn docx_text_inlines(
+  walker : DocxTextWalker,
   node : DocxXmlNode,
   items : Array[DocxTextItem],
-  styles : DocxStyles,
   paragraph_style : String,
 ) -> Unit raise {
   for child in node.children {
     match child.name() {
       "pPr" => ()
-      "r" => docx_text_run(child, items, styles, paragraph_style)
-      "hyperlink" | "smartTag" | "customXml" | "ins" | "moveTo" | "fldSimple" |
-      "dir" | "bdo" => docx_text_inlines(child, items, styles, paragraph_style)
+      "r" => docx_text_run(walker, child, items, paragraph_style)
+      "fldSimple" => {
+        let (typ, format) = docx_field_info(
+          docx_attribute(child.element, "instr", ""),
+        )
+        if docx_field_dynamic(typ) {
+          let props = walker.styles.resolve_run(paragraph_style, None)
+          docx_text_field(items, props, typ, format)
+        } else {
+          docx_text_inlines(walker, child, items, paragraph_style)
+        }
+      }
+      "hyperlink"
+      | "smartTag"
+      | "customXml"
+      | "ins"
+      | "moveTo"
+      | "dir"
+      | "bdo" => docx_text_inlines(walker, child, items, paragraph_style)
       "oMath" | "oMathPara" => {
-        let props = styles.resolve_run(paragraph_style, None)
+        let props = walker.styles.resolve_run(paragraph_style, None)
         docx_text_omml(child, items, props)
       }
-      "bookmarkStart" | "bookmarkEnd" | "proofErr" | "commentRangeStart" |
-      "commentRangeEnd" | "permStart" | "permEnd" | "del" | "moveFrom" => ()
+      "bookmarkStart"
+      | "bookmarkEnd"
+      | "proofErr"
+      | "commentRangeStart"
+      | "commentRangeEnd"
+      | "permStart"
+      | "permEnd"
+      | "del"
+      | "moveFrom" => ()
       "AlternateContent" =>
         match docx_alternate_content(child) {
           Some(chosen) =>
-            docx_text_inlines(chosen, items, styles, paragraph_style)
+            docx_text_inlines(walker, chosen, items, paragraph_style)
           None => ()
         }
       "sdt" => {
@@ -830,7 +1084,7 @@ fn docx_text_inlines(
         for sub in child.children {
           if sub.name() == "sdtContent" && !seen_content {
             seen_content = true
-            docx_text_inlines(sub, items, styles, paragraph_style)
+            docx_text_inlines(walker, sub, items, paragraph_style)
           } else {
             docx_text_unsupported(sub.name())
           }
@@ -839,6 +1093,351 @@ fn docx_text_inlines(
       other => docx_text_unsupported(other)
     }
   }
+}
+
+///|
+fn docx_collect_children(
+  node : DocxXmlNode,
+  name : String,
+  out : Array[DocxXmlNode],
+) -> Unit {
+  for child in node.children {
+    let child_name = child.name()
+    if child_name == name {
+      out.push(child)
+    } else if child_name == "sdt" {
+      match child.child("sdtContent") {
+        Some(content) => docx_collect_children(content, name, out)
+        None => ()
+      }
+    } else if child_name == "customXml" ||
+      child_name == "ins" ||
+      child_name == "moveTo" {
+      docx_collect_children(child, name, out)
+    }
+  }
+}
+
+///|
+fn docx_child_shade(node : DocxXmlNode?) -> UInt32? {
+  match node {
+    Some(value) =>
+      match value.child("shd") {
+        Some(shade) => docx_fill_color(shade.element)
+        None => None
+      }
+    None => None
+  }
+}
+
+///|
+fn docx_fill_color(element : @xml.NamespaceElement) -> UInt32? {
+  let fill = docx_attribute(element, "fill", "")
+  if fill.length() == 6 {
+    let number = @string.parse_int(fill, base=16) catch { _ => -1 }
+    if number >= 0 {
+      Some((number.to_uint() << 8) | 0xffU)
+    } else {
+      None
+    }
+  } else {
+    None
+  }
+}
+
+///|
+fn docx_line_border(node : DocxXmlNode?) -> DocxLineBorder? {
+  match node {
+    Some(value) => {
+      let style = docx_attribute(value.element, "val", "single")
+      if style == "nil" || style == "none" || style == "" {
+        return None
+      }
+      let size = docx_attribute(value.element, "sz", "4")
+      let width = Double::max(
+        (@string.parse_double(size) catch { _ => 4.0 }) / 8.0,
+        0.25,
+      )
+      let color = docx_attribute(value.element, "color", "auto")
+      let parsed = if color.length() == 6 {
+        @string.parse_int(color, base=16) catch {
+          _ => -1
+        }
+      } else {
+        -1
+      }
+      Some({
+        width,
+        color: if parsed >= 0 {
+          (parsed.to_uint() << 8) | 0xffU
+        } else {
+          0x000000ffU
+        },
+      })
+    }
+    None => None
+  }
+}
+
+///|
+fn docx_border_sides(
+  node : DocxXmlNode?,
+  names : Array[String],
+) -> Array[DocxLineBorder?] {
+  let sides : Array[DocxLineBorder?] = []
+  for name in names {
+    let found = match node {
+      Some(value) => value.child(name)
+      None => None
+    }
+    sides.push(docx_line_border(found))
+  }
+  sides
+}
+
+///|
+fn docx_margins(node : DocxXmlNode?) -> DocxMargins {
+  let margin = match node {
+    Some(value) => value
+    None => return { top: None, left: None, bottom: None, right: None, }
+  }
+  let one = fn(names : Array[String]) -> Double? {
+    for name in names {
+      match margin.child(name) {
+        Some(value) =>
+          return Some(docx_measure(docx_attribute(value.element, "w", ""), 0.0))
+        None => ()
+      }
+    }
+    None
+  }
+  {
+    top: one(["top"]),
+    left: one(["left", "start"]),
+    bottom: one(["bottom"]),
+    right: one(["right", "end"]),
+  }
+}
+
+///|
+fn docx_text_table(
+  walker : DocxTextWalker,
+  node : DocxXmlNode,
+) -> DocxTable raise {
+  let props = node.child("tblPr")
+  let jc = match props {
+    Some(value) =>
+      match value.child("jc") {
+        Some(align) => docx_attribute(align.element, "val", "left")
+        None => "left"
+      }
+    None => "left"
+  }
+  let ind = match props {
+    Some(value) =>
+      match value.child("tblInd") {
+        Some(indent) =>
+          docx_measure(docx_attribute(indent.element, "w", ""), 0.0)
+        None => 0.0
+      }
+    None => 0.0
+  }
+  let borders = docx_border_sides(
+    match props {
+      Some(value) => value.child("tblBorders")
+      None => None
+    },
+    ["top", "left", "bottom", "right", "insideH", "insideV"],
+  )
+  let cell_mar = docx_margins(
+    match props {
+      Some(value) => value.child("tblCellMar")
+      None => None
+    },
+  )
+  let shade = docx_child_shade(props)
+  let grid : Array[Double] = []
+  match node.child("tblGrid") {
+    Some(value) =>
+      for column in value.children {
+        if column.name() == "gridCol" {
+          grid.push(docx_measure(docx_attribute(column.element, "w", ""), 0.0))
+        }
+      }
+    None => ()
+  }
+  let row_nodes : Array[DocxXmlNode] = []
+  docx_collect_children(node, "tr", row_nodes)
+  let rows : Array[DocxTableRow] = []
+  for row_node in row_nodes {
+    let row_props = row_node.child("trPr")
+    let mut height = 0.0
+    let mut exact = false
+    let mut cant_split = false
+    let mut header = false
+    let mut grid_before = 0
+    match row_props {
+      Some(value) => {
+        match value.child("trHeight") {
+          Some(size) => {
+            height = docx_measure(docx_attribute(size.element, "val", ""), 0.0)
+            exact = docx_attribute(size.element, "hRule", "atLeast") == "exact"
+          }
+          None => ()
+        }
+        match value.child("cantSplit") {
+          Some(flag) => cant_split = docx_bool(flag.element, "val", true)
+          None => ()
+        }
+        match value.child("tblHeader") {
+          Some(flag) => header = docx_bool(flag.element, "val", true)
+          None => ()
+        }
+        match value.child("gridBefore") {
+          Some(count) =>
+            grid_before = docx_number(
+              docx_attribute(count.element, "val", "0"),
+              0.0,
+            ).to_int()
+          None => ()
+        }
+      }
+      None => ()
+    }
+    let cell_nodes : Array[DocxXmlNode] = []
+    docx_collect_children(row_node, "tc", cell_nodes)
+    let cells : Array[DocxTableCell] = []
+    let mut col = grid_before
+    for cell_node in cell_nodes {
+      let cell_props = cell_node.child("tcPr")
+      let span = match cell_props {
+        Some(value) =>
+          match value.child("gridSpan") {
+            Some(grid_span) => {
+              let number = @string.parse_int(
+                docx_attribute(grid_span.element, "val", "1"),
+              ) catch {
+                _ => 1
+              }
+              if number < 1 {
+                1
+              } else {
+                number
+              }
+            }
+            None => 1
+          }
+        None => 1
+      }
+      let vmerge = match cell_props {
+        Some(value) =>
+          match value.child("vMerge") {
+            Some(merge) => docx_attribute(merge.element, "val", "continue")
+            None => ""
+          }
+        None => ""
+      }
+      let hmerge = match cell_props {
+        Some(value) =>
+          match value.child("hMerge") {
+            Some(merge) => docx_attribute(merge.element, "val", "continue")
+            None => ""
+          }
+        None => ""
+      }
+      if hmerge == "continue" && !cells.is_empty() {
+        let previous = cells[cells.length() - 1]
+        cells[cells.length() - 1] = { ..previous, span: previous.span + span, }
+        col += span
+        continue
+      }
+      let cell_borders = docx_border_sides(
+        match cell_props {
+          Some(value) => value.child("tcBorders")
+          None => None
+        },
+        ["top", "left", "bottom", "right"],
+      )
+      let mar = docx_margins(
+        match cell_props {
+          Some(value) => value.child("tcMar")
+          None => None
+        },
+      )
+      let valign = match cell_props {
+        Some(value) =>
+          match value.child("vAlign") {
+            Some(align) => docx_attribute(align.element, "val", "top")
+            None => "top"
+          }
+        None => "top"
+      }
+      let blocks = docx_cell_blocks(cell_node, walker.styles)
+      cells.push({
+        col,
+        span,
+        vmerge,
+        row_span: 1,
+        borders: cell_borders,
+        shade: docx_child_shade(cell_props),
+        mar,
+        valign,
+        blocks,
+      })
+      col += span
+    }
+    rows.push({ cells, height, exact, cant_split, header, grid_before, })
+  }
+  // A vertical merge continues through the rows below it.
+  for row_index, row in rows {
+    for cell_index, cell in row.cells {
+      if cell.vmerge != "restart" {
+        continue
+      }
+      let mut span = 1
+      let mut below = row_index + 1
+      while below < rows.length() {
+        let mut continued = false
+        for candidate in rows[below].cells {
+          if candidate.col == cell.col && candidate.vmerge == "continue" {
+            continued = true
+          }
+        }
+        if !continued {
+          break
+        }
+        span += 1
+        below += 1
+      }
+      rows[row_index].cells[cell_index].row_span = span
+    }
+  }
+  {
+    grid,
+    jc,
+    ind,
+    borders,
+    cell_mar,
+    shade,
+    rows,
+    section_index: walker.section_index,
+  }
+}
+
+///|
+fn docx_cell_blocks(
+  cell : DocxXmlNode,
+  styles : DocxStyles,
+) -> Array[DocxBlock] raise {
+  let walker : DocxTextWalker = {
+    styles,
+    blocks: [],
+    paragraphs: [],
+    section_index: 0,
+    fields: [],
+  }
+  walker.blocks(cell, true)
+  walker.blocks
 }
 
 ///|
@@ -871,7 +1470,7 @@ fn DocxTextWalker::blocks(
         if ends_section && wrapped {
           docx_text_unsupported("wrapped paragraph section")
         }
-        docx_text_inlines(child, items, self.styles, paragraph_style)
+        docx_text_inlines(self, child, items, paragraph_style)
         match docx_paragraph_shade(direct) {
           Some(color) =>
             for item in items {
@@ -886,105 +1485,21 @@ fn DocxTextWalker::blocks(
             item.border_color = border_color
           }
         }
-        self.paragraphs.push({
+        let paragraph : DocxTextParagraph = {
           props,
           mark,
           items,
           section_index: self.section_index,
-        })
+        }
+        self.paragraphs.push(paragraph)
+        self.blocks.push(DocxParaBlock(paragraph))
         if ends_section {
           self.section_index += 1
         }
       }
       "tbl" => {
-        let grid : Array[Double] = []
-        match child.child("tblGrid") {
-          Some(value) =>
-            for column in value.children {
-              if column.name() == "gridCol" {
-                grid.push(
-                  docx_measure(docx_attribute(column.element, "w", ""), 0.0),
-                )
-              }
-            }
-          None => ()
-        }
-        for row in child.children {
-          if row.name() != "tr" {
-            continue
-          }
-          let items : Array[DocxTextItem] = []
-          let mut first = true
-          let mut cell_index = 0
-          for cell in row.children {
-            if cell.name() != "tc" {
-              continue
-            }
-            if !first {
-              docx_text_push(items, "tab", "\t", docx_default_run_props())
-            }
-            first = false
-            let span = docx_table_cell_grid_span(cell)
-            let mut width = 0.0
-            if cell_index < grid.length() {
-              width = 0.0
-              let mut k = 0
-              while k < span && cell_index + k < grid.length() {
-                width += grid[cell_index + k]
-                k += 1
-              }
-            }
-            let shade = docx_table_cell_shade(cell)
-            let (border_width, border_color) = docx_table_cell_border(cell)
-            if width > 0.0 && (shade is Some(_) || border_width > 0.0) {
-              items.push({
-                kind: "cell",
-                text: "",
-                clear: false,
-                props: docx_default_run_props(),
-                width,
-                height: 0.0,
-                anchored: false,
-                x: 0.0,
-                y: 0.0,
-                crop_left: 0.0,
-                crop_top: 0.0,
-                crop_right: 0.0,
-                crop_bottom: 0.0,
-                rotation: 0.0,
-                flip_h: false,
-                flip_v: false,
-                shade,
-                border_width,
-                border_color,
-              })
-            }
-            cell_index += span
-            for part in cell.children {
-              if part.name() == "p" {
-                docx_text_inlines(part, items, self.styles, "")
-              } else if part.name() == "tbl" {
-                docx_text_unsupported("nested table")
-              }
-            }
-            for _ in 1..<span {
-              docx_text_push(items, "tab", "\t", docx_default_run_props())
-            }
-          }
-          docx_text_push(items, "break", "\n", docx_default_run_props())
-          let props = docx_default_paragraph_props()
-          let mut position = 0.0
-          for width in grid {
-            position += width
-            props.tabs.push({ position, alignment: "left", leader: "none", })
-          }
-          self.paragraphs.push({
-            props,
-            mark: docx_default_run_props(),
-            items,
-            section_index: self.section_index,
-          })
-        }
+        let table = docx_text_table(self, child)
+        self.blocks.push(DocxTableBlock(table))
       }
       "sdt" => {
         let mut seen_content = false
@@ -1005,50 +1520,11 @@ fn DocxTextWalker::blocks(
         seen_final_section = true
         docx_text_section_check(child)
       }
+      "tcPr" | "trPr" | "tblPr" | "tblGrid" | "bookmarkStart" | "bookmarkEnd" =>
+        ()
       other => docx_text_unsupported(other)
     }
   }
-}
-
-///|
-fn docx_table_cell_border(cell : DocxXmlNode) -> (Double, UInt32?) {
-  let props = cell.child("tcPr")
-  let borders = match props {
-    Some(value) => value.child("tcBorders")
-    None => None
-  }
-  for name in ["top", "left", "bottom", "right"] {
-    match borders {
-      Some(value) =>
-        match value.child(name) {
-          Some(border) => {
-            let size = docx_attribute(border.element, "sz", "")
-            let width = (@string.parse_double(size) catch { _ => 0.0 }) / 8.0
-            if width > 0.0 {
-              let color = docx_attribute(border.element, "color", "")
-              let parsed = if color.length() == 6 {
-                @string.parse_int(color, base=16) catch {
-                  _ => -1
-                }
-              } else {
-                -1
-              }
-              return (
-                width,
-                if parsed >= 0 {
-                  Some((parsed.to_uint() << 8) | 0xffU)
-                } else {
-                  Some(0x000000ffU)
-                },
-              )
-            }
-          }
-          None => ()
-        }
-      None => ()
-    }
-  }
-  (0.0, None)
 }
 
 ///|
@@ -1120,50 +1596,6 @@ fn docx_paragraph_border(props : DocxXmlNode?) -> (Double, UInt32?) {
 }
 
 ///|
-fn docx_table_cell_grid_span(cell : DocxXmlNode) -> Int32 {
-  let props = cell.child("tcPr")
-  let span = match props {
-    Some(value) =>
-      match value.child("gridSpan") {
-        Some(grid) => docx_attribute(grid.element, "val", "1")
-        None => "1"
-      }
-    None => "1"
-  }
-  let value = @string.parse_int(span) catch { _ => 1 }
-  if value < 1 {
-    1
-  } else {
-    value
-  }
-}
-
-///|
-fn docx_table_cell_shade(cell : DocxXmlNode) -> UInt32? {
-  let props = cell.child("tcPr")
-  match props {
-    Some(value) =>
-      match value.child("shd") {
-        Some(shade) => {
-          let fill = docx_attribute(shade.element, "fill", "")
-          if fill.length() == 6 {
-            let number = @string.parse_int(fill, base=16) catch { _ => -1 }
-            if number >= 0 {
-              Some((number.to_uint() << 8) | 0xffU)
-            } else {
-              None
-            }
-          } else {
-            None
-          }
-        }
-        None => None
-      }
-    None => None
-  }
-}
-
-///|
 fn docx_note_map(
   package : @ooxml.OoxmlPackage,
   part : String,
@@ -1225,10 +1657,7 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
   // document that has them is not rejected here.
   for typ in ["/footnotes", "/endnotes"] {
     match package.relationship_of_type(part, typ) {
-      Some(rel) =>
-        if rel.external {
-          docx_text_unsupported("external " + typ)
-        }
+      Some(rel) => if rel.external { docx_text_unsupported("external " + typ) }
       None => ()
     }
   }
@@ -1259,9 +1688,16 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     }
     seen_body = true
   }
-  let walker : DocxTextWalker = { styles, paragraphs: [], section_index: 0, }
+  let walker : DocxTextWalker = {
+    styles,
+    blocks: [],
+    paragraphs: [],
+    section_index: 0,
+    fields: [],
+  }
   walker.blocks(body, false)
   let (section_part, sections) = docx_sections(data)
+  docx_inherit_section_stories(sections)
   if part != section_part || walker.section_index >= sections.length() {
     raise InvalidDocx("inconsistent DOCX sections")
   }
@@ -1276,8 +1712,100 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     }
     None => docx_numbering_empty()
   }
-  docx_apply_numbering(walker.paragraphs, numbering)
+  docx_apply_numbering(walker.blocks, numbering)
+  let stories : Map[String, Array[DocxTextParagraph]] = Map([])
+  for section in sections {
+    for story in section.headers {
+      let story_part = story.1
+      if !stories.contains(story_part) {
+        stories[story_part] = docx_story_paragraphs(package, story_part, styles)
+      }
+    }
+    for story in section.footers {
+      let story_part = story.1
+      if !stories.contains(story_part) {
+        stories[story_part] = docx_story_paragraphs(package, story_part, styles)
+      }
+    }
+  }
   let footnotes = docx_note_map(package, part, "/footnotes", "footnote")
   let endnotes = docx_note_map(package, part, "/endnotes", "endnote")
-  { part, sections, paragraphs: walker.paragraphs, footnotes, endnotes }
+  {
+    part,
+    sections,
+    blocks: walker.blocks,
+    paragraphs: walker.paragraphs,
+    stories,
+    footnotes,
+    endnotes,
+    even_odd: docx_even_odd(package, part),
+  }
+}
+
+///|
+fn docx_story_paragraphs(
+  package : @ooxml.OoxmlPackage,
+  part : String,
+  styles : DocxStyles,
+) -> Array[DocxTextParagraph] {
+  if part == "" || !package.has(part) {
+    return []
+  }
+  try {
+    let root = docx_text_xml(
+      @utf8.decode_lossy(package.read(part)[:], ignore_bom=true),
+    )
+    let walker : DocxTextWalker = {
+      styles,
+      blocks: [],
+      paragraphs: [],
+      section_index: 0,
+      fields: [],
+    }
+    walker.blocks(root, true)
+    let out : Array[DocxTextParagraph] = []
+    fn collect(blocks : Array[DocxBlock]) -> Unit {
+      for block in blocks {
+        match block {
+          DocxParaBlock(paragraph) => out.push(paragraph)
+          DocxTableBlock(table) =>
+            for row in table.rows {
+              for cell in row.cells {
+                collect(cell.blocks)
+              }
+            }
+        }
+      }
+    }
+    collect(walker.blocks)
+    out
+  } catch {
+    _ => []
+  }
+}
+
+///|
+fn docx_even_odd(package : @ooxml.OoxmlPackage, part : String) -> Bool {
+  match package.relationship_of_type(part, "/settings") {
+    Some(rel) =>
+      if rel.external || !package.has(rel.target) {
+        false
+      } else {
+        try {
+          let root = docx_text_xml(
+            @utf8.decode_lossy(package.read(rel.target)[:], ignore_bom=true),
+          )
+          let mut found = false
+          for child in root.children {
+            if child.name() == "evenAndOddHeaders" {
+              found = docx_bool(child.element, "val", true)
+            }
+          }
+          found
+        } catch {
+          _ => false
+        }
+      }
+    None => false
+  }
 }

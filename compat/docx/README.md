@@ -17,38 +17,76 @@ tests and the native Worker.
 
 ## Converter
 
-`convert/docx` exposes `detect` and `convert` for WordprocessingML. It emits
-the same pair of views as upstream:
+`convert/docx` exposes `detect` and `convert` for WordprocessingML.
+`convert(data, title?="", views?="both")` selects the views with `views`:
+`both` (the default), `pages` or `scroll`; any other value is rejected.
 
 - `pages` (`flow`) with `header`, `footer` and `body` layers and the body
-  rectangle of each page. Header/footer text is laid out at the section
-  distances; default, first-page and even-page stories are selected.
-- `scroll` with page-free body text cut into strips.
+  rectangle of each page. Header/footer paragraphs are laid out at the section
+  distances, with text, tabs, images and page fields; the default, first-page
+  and even-page stories follow `titlePg` and `settings.xml`'s
+  `evenAndOddHeaders`, and header/footer references carry over to sections
+  that name none of their own. A header or footer taller than its margin
+  pushes the body area in unless the margin is exact.
+- `scroll` with page-free body text cut into strips between lines; the
+  strips include the scroll margin and real table cells.
 
-Both views carry layer-aware text indexes. Dublin Core metadata (title,
-creator, subject, description, identifier, language, created, modified) is
-read from the OPC core properties and the title can be overridden by the
-caller.
+Both views carry layer-aware text indexes numbered by text layer (header,
+footer, body, skipping absent stories). Dublin Core metadata (title, creator,
+subject, description, identifier, language, created, modified) is read from
+the OPC core properties and the title can be overridden by the caller.
 
 The reader accepts `settings.xml`, `footnotes.xml` and `endnotes.xml`;
 footnote and endnote bodies are laid out above the footer on the page that
 refers to them and appended to the scroll view, with approximate superscript
-markers. It also reads hyperlinks, simple fields, symbols, tracked
+markers. It also reads hyperlinks, fields, symbols, tracked
 insertions/deletions, content controls, alternate content and revision
 metadata. Office Math (`m:oMath`/`m:oMathPara`) is linearized for search and
 layout. Paragraphs are laid out with approximate character widths and support
-explicit line/page/column breaks, tabs and leaders, paragraph spacing,
-alignment, keep-with-next, basic font weight/style/size/colour, shading,
-borders, caps/small caps, super/subscript, emphasis marks, hidden text, theme
-fonts, decimal/bullet numbering and section page geometry. Table rows are
-flattened to tab-separated paragraphs with cell shading, grid spans, borders,
-paragraph shading/borders and `tblGrid` tab stops. Inline drawings with an
-embedded PNG/JPEG/EMF/WMF part are placed at their `wp:extent`; text-box
-content is flattened; `a:srcRect` crops and `a:xfrm` rotation/flips are
-honoured; anchored drawings use page-relative `wp:posOffset` coordinates.
+word wrapping at spaces, explicit line/page/column breaks, tabs and leaders,
+paragraph spacing, alignment, keep-with-next, basic font
+weight/style/size/colour, shading, borders, caps/small caps, super/subscript,
+emphasis marks, hidden text, theme fonts, decimal/bullet numbering and section
+page geometry. Tables are real tables: a `tblGrid` (or equal columns when it
+is missing), grid spans, vertical merges with row spans, cell margins,
+borders and fills from cells and `tblBorders`, vertical alignment, row
+heights (`trHeight`, `cantSplit`, `tblHeader`), rows split between lines
+across columns and pages, and header rows repeated on every page a table
+reaches. Cell text wraps at the cell width; nested tables are laid out inside
+their cell. Table rows are no longer flattened to tab-separated paragraphs.
 
-Documented gaps: exact font metrics and OpenType shaping, real table cells and
-floating text wrapping, columns, vertical section layout, exact footnote
-separator/continuation placement, field result regeneration (cached
-`PAGE`/`NUMPAGES` values are used), header images, numbering overrides, and
-page counts that depend on those features. The native converter Worker advertises the `docx` format.
+Sections flow through `w:cols` columns (equal and unequal widths, column
+breaks and continuous sections). Sections with `w:textDirection` vertical
+text turn their page body by 90 degrees with upstream's matrix
+`(0,1,-1,0,page width-right margin,top margin)`; headers and footers stay
+upright and the scroll view is horizontal. `PAGE`, `NUMPAGES` and
+`SECTIONPAGES` fields regenerate their result per page (the layout is run
+twice so `NUMPAGES` knows the page count) instead of using the cached value;
+`PAGE` honours `pgNumType` `start` and `fmt` (decimal, roman, letters,
+full-width and enclosed digits). Numbering instances honour
+`lvlOverride`/`startOverride`. Inline drawings with an embedded
+PNG/JPEG/EMF/WMF part are placed at their `wp:extent`; text-box content is
+flattened; `a:srcRect` crops and `a:xfrm` rotation/flips are honoured;
+anchored drawings use page-relative `wp:posOffset` coordinates. The converter
+reaches the upstream page counts for the five `converter/docx/testdata`
+fixtures (basic 3, styles 1, grid 4, vertical 2, math 1) and repeats the grid
+table's header row on pages 2-4.
+
+The package's `layout_wbtest.mbt` builds small DOCX packages as stored ZIP
+archives so each test shows its WordprocessingML: cell wrapping and grid
+spans, vertical merges, repeated header rows, columns, vertical pages,
+regenerated page fields, header images, numbering overrides and the `views`
+selection.
+
+Documented gaps: exact font metrics and OpenType shaping, floating text
+wrapping around anchored drawings, exact footnote separator/continuation
+indentation, upright CJK glyphs in vertical text (the whole body is turned,
+Latin and CJK alike), tables in headers/footers (their paragraphs are
+flattened), `PAGEREF`/`REF` field regeneration (cached results are used),
+per-section `SECTIONPAGES` (the document page count is used), column
+separator rules, page borders, `keepNext`/`keepLines`/`widowControl` chains,
+table styles and autofit, footnotes referenced from table cells, sections
+that must start on an odd or even page, and exact scroll strip counts (the
+approximate metrics make the basic fixture 1 strip where upstream makes 2;
+the other fixtures match). The native converter Worker advertises the `docx`
+format.

@@ -1856,6 +1856,7 @@ test "DOCX styled text matches upstream Go 1" {
 }
 
 ///|
+
 ///|
 test "DOCX document text rejects unsupported numbering" {
   reject_docx_document_text([
@@ -1864,5 +1865,7 @@ test "DOCX document text rejects unsupported numbering" {
 }
 
 ///|
+
 ///|
+
 ///|
