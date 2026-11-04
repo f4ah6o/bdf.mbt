@@ -1227,6 +1227,25 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX run position raises the glyph baseline" {
+  let blocks = "<w:p><w:r><w:rPr><w:position w:val=\"120\"/></w:rPr><w:t>A</w:t></w:r>" +
+    "<w:r><w:t>B</w:t></w:r></w:p>"
+  let commands = docx_test_page_commands(
+    convert(docx_test_docx(blocks, DOCX_TEST_SECTION, [])), "pages", 0, "body",
+  )
+  let mut raised = -1.0
+  let mut normal = -1.0
+  for command in commands {
+    match command {
+      FillText("A", _, y, _) => raised = y
+      FillText("B", _, y, _) => normal = y
+      _ => ()
+    }
+  }
+  assert_true(raised >= 0.0 && normal >= 0.0)
+  assert_true(raised < normal)
+}
+
 test "DOCX emphasis marks are drawn above the text" {
   let blocks = "<w:p><w:r><w:rPr><w:em w:val=\"dot\"/></w:rPr><w:t>XX</w:t></w:r></w:p>"
   let commands = docx_test_page_commands(

@@ -495,6 +495,7 @@ fn docx_layout_paragraph(
           "subscript" => (base_size * 0.65, -base_size * 0.15)
           _ => (base_size, 0.0)
         }
+        let rise = rise + item.props.position
         for c in item.text {
           let small = item.small_caps && c >= 'a' && c <= 'z'
           let char_size = if small { size * 0.8 } else { size }
@@ -575,6 +576,7 @@ fn docx_merge_line_items(items : Array[DocxLineItem]) -> Array[DocxLineItem] {
         last.size == item.size &&
         last.color == item.color &&
         last.link == item.link &&
+        last.rise == item.rise &&
         last.shade == item.shade &&
         last.border_width == item.border_width &&
         last.border_color == item.border_color &&
