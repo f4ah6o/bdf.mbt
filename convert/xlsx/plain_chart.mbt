@@ -1407,5 +1407,21 @@ fn XlsxWorkbook::xlsx_chart_object(
       )
     }
   }
+  if model.value_title != "" && model.kind != "pieChart" {
+    label(model.value_title, 4.0, plot_top + plot_height / 2.0, 11.0, 400)
+  }
+  if model.category_title != "" && model.kind != "pieChart" {
+    let mut advance = 0.0
+    for character in model.category_title {
+      advance += @sheet.sized_fallback_advance(character, false, 11.0)
+    }
+    label(
+      model.category_title,
+      left + (plot_width - advance) / 2.0,
+      height - 6.0,
+      11.0,
+      400,
+    )
+  }
   object
 }
