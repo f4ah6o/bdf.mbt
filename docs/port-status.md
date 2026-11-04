@@ -58,7 +58,7 @@
   JSON-style nested values, WKB→WKT and WKT geometry columns, and Variant
   values. Variant metadata newer than version 1 and encrypted Parquet files
   are documented gaps.
-- Phase 3: `convert/reader` provides the reader-mode block model (A4 pages for HTML, A5 book pages for EPUB); `convert/epub` reads the container, manifest and spine and converts picture-only pre-paginated books page-for-page at their viewport size and reading direction; `convert/html` reads headings, paragraphs, lists, code, quotes, tables and images-as-alt-text. `convert/markdown` now uses a pure-MoonBit CommonMark/GFM parser and builds the upstream 504-point scroll view, with nested lists and tasks, quotes, fenced and indented code, aligned tables, raw HTML, links, image alternative text, footnotes, definition lists, YAML/TOML front matter and linearized `$...$`/`$$...$$`/math-fence formulas. Relative and remote images produce alternative text and warnings; inline SVG is not drawn. Readability extraction, CSS, remote images, vertical writing, non-picture fixed layout, MHTML, embedded fonts and exact HTML reader-mode parity are documented gaps.
+- Phase 3: `convert/reader` provides the reader-mode block model (A4 pages for HTML, A5 book pages for EPUB); `convert/epub` reads the container, manifest and spine and converts picture-only pre-paginated books page-for-page at their viewport size and reading direction; `convert/html` reads headings, paragraphs, lists, code, quotes, tables and images-as-alt-text. `convert/markdown` now uses a pure-MoonBit CommonMark/GFM parser and builds the upstream 504-point scroll view, with nested lists and tasks, quotes, fenced and indented code, aligned tables, raw HTML, links, image alternative text, footnotes, definition lists, YAML/TOML front matter and linearized `$...$`/`$$...$$`/math-fence formulas. Inline SVG and data-URI images are drawn as image parts, with sprite-sheet defs borrowing and alt-text warnings for unresolved relative/remote images; `views=pages|both` emits A4-like pages with per-page text indexes. Remote fetching, multi-line sprite borrowing, splitting tables taller than a page, repeated quote bars, MARK structure and exact metrics remain documented gaps. Readability extraction, CSS, vertical writing, non-picture fixed layout, MHTML, embedded fonts and exact HTML reader-mode parity are documented gaps.
 - Phase 4: `convert/audio` writes one-page cards for MP3, AAC (ADTS/M4A), FLAC, Ogg Vorbis/Opus, WAV and AIFF with multi-value ID3 tags, synchronized lyrics and chapters, APIC/FLAC/Ogg pictures, MP4/iTunes metadata and cover art, Ogg granule durations, corrected AIFF 80-bit sample rates, Dublin Core metadata and an optional playable audio part. DRM handling,
   ID3v2.2 tags, compressed ID3 frames, QuickTime `chpl` v1 chapters and Ogg
   FLAC/Speex remain documented gaps.
@@ -71,13 +71,14 @@
 - PDF: Type1 `/FontFile` programs are interpreted into Type 2 outlines and a
   name-keyed CFF, then embedded; unsupported programs fall back to system fonts
   with a warning, and bare CFF programs are wrapped as OpenType. Tiling patterns, encoded image masks with
-  ExtGState soft masks, JPX images, MMR-generic-region JBIG2 images, Type3 glyph
-  procedures, URI actions on form fields, and standard-security-handler
-  revisions 2, 3, 4 and 6 (RC4, AES-128 and AES-256) are supported. Revision 5
-  encryption, arithmetic-coded or symbol/text JBIG2 regions, encoded images
-  with colour-key masks, and CCITT/JBIG2/JPX masks combined with colour-key
-  masks remain explicit gaps; CCITT G3/G4 image XObjects and inline images are
-  decoded.
+  ExtGState soft masks, JPX images, full JBIG2 decoding (generic arithmetic and
+  MMR regions, symbol dictionaries, text regions, refinement, pattern
+  dictionaries and halftone), Type3 glyph procedures, URI actions on form
+  fields, and standard-security-handler revisions 2, 3, 4 and 6 (RC4, AES-128
+  and AES-256) are supported. Revision 5 encryption, encoded images with
+  colour-key masks, tagged structure, and CCITT/JBIG2/JPX masks combined with
+  colour-key masks remain explicit gaps; CCITT G3/G4 image XObjects and inline
+  images are decoded.
 - XLSX: `convert/xlsx` renders styled worksheets with number formats, merges,
   row/column geometry, print areas, conditional formats, tables, links,
   pictures, drawings and charts, plus fixed chart-sheet pages, with upstream
@@ -86,20 +87,27 @@
   text index), shape text does not wrap, and patterned fills, complex borders
   and exact number-format run segmentation remain documented gaps in
   `compat/xlsx`.
-- DOCX: `convert/docx` now emits the upstream `pages` (`flow`) and `scroll`
-  views, with separate header/footer/body layers, page body rectangles,
-  Dublin Core metadata, layer-aware text indexes, hyperlinks, fields,
-  Office Math and accepted settings/footnote/endnote parts. Footnote and
-  endnote bodies are laid out above the footer and appended to the scroll
-  view. Table cells, floating text wrapping, columns, vertical sections,
-  exact footnote separators and field regeneration remain documented gaps in
-  `compat/docx`.
+- DOCX: `convert/docx` emits the upstream `pages` (`flow`) and `scroll`
+  views (`views=both|pages|scroll`), with separate header/footer/body layers,
+  page body rectangles, Dublin Core metadata, layer-aware text indexes,
+  hyperlinks, regenerated PAGE/NUMPAGES fields, numbering overrides, Office
+  Math and settings/footnote/endnote parts. Footnote and endnote bodies are
+  laid out above the footer and appended to the scroll view. Real table cells
+  wrap with grid/row spans, borders/fills, vertical alignment, row splitting
+  and repeated header rows; columns, column breaks and vertical section
+  bodies are implemented. Exact font metrics/shaping, floating anchored wrap,
+  exact footnote separators, upright CJK in vertical text, tables in
+  headers/footers, PAGEREF/REF, page borders, keep/widow chains and table
+  styles/autofit remain documented gaps in `compat/docx`.
 - PPTX: `convert/pptx` emits the upstream `slides` fixed view with
   background/layout/master/body layers, shared master objects, placeholder
   text inheritance, bullets and levels, tables, bar/line/pie charts and
-  linearized Office Math. Other preset geometries, placeholder fill/line
-  inheritance, SmartArt/ink and other chart types remain documented gaps in
-  `compat/pptx`.
+  linearized Office Math. Preset geometry uses the upstream 187-preset table,
+  placeholder fill/line inheritance follows slide → layout → master, and a
+  supplied font database embeds subset WOFF2 faces with real metrics. Custom
+  geometry, SmartArt/ink, 3D, other chart types, chart data tables/titles,
+  table style banding, blip bullets and advanced vertical stacking remain
+  documented gaps in `compat/pptx`.
 - AI: PDF-based Illustrator 9+ artwork only; PostScript files (Illustrator 8
   and earlier) and files saved without PDF content are explicit errors.
 - TIFF: JPEG compression, YCbCr pages and DNG camera raw are not supported;

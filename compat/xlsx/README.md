@@ -275,4 +275,8 @@ embedded chart's labels are present in the text index but the chart itself is
 an SVG picture (the chart-sheet view is drawn as BDF); shape text does not
 wrap or inherit paragraph spacing; vertical `justify`/`distributed` alignment,
 row/column patterned fills or complex borders, and exact number-format gap and
-fill run segmentation are still unsupported.
+fill run segmentation are still unsupported. For multi-rule, blank-stop and
+moving conditional permutations that the old renderer rejected, the renderer
+now emits text and geometry; the exact fill color of some overlapping
+stop-rule permutations can still differ, so `verify-render.mjs` checks those
+known cases by text and geometry instead of exact object bytes.
