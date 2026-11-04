@@ -1,4 +1,26 @@
 ///|
+// A drawing anchored in a paragraph (wp:anchor). The object floats on the
+// page: wrap keeps the text out of its area and behind places it under the
+// text of the page. The offsets are the parsed wp:posOffset values; the
+// layout resolves them against the page, the margins, the column or the
+// paragraph.
+#derive(Debug, Eq)
+priv struct DocxAnchor {
+  h_rel : String
+  v_rel : String
+  h_align : String
+  v_align : String
+  wrap : String
+  side : String
+  dist_top : Double
+  dist_bottom : Double
+  dist_left : Double
+  dist_right : Double
+  behind : Bool
+  z : Int32
+}
+
+///|
 // This is an internal, deliberately limited model. A rejected element is not
 // silently converted into plain text: later stages must add its semantics.
 #derive(Debug, Eq)
@@ -10,6 +32,7 @@ priv struct DocxTextItem {
   width : Double
   height : Double
   anchored : Bool
+  anchor : DocxAnchor?
   x : Double
   y : Double
   crop_left : Double
@@ -311,6 +334,7 @@ fn docx_text_push(
     width: 0.0,
     height: 0.0,
     anchored: false,
+    anchor: None,
     x: 0.0,
     y: 0.0,
     crop_left: 0.0,
@@ -398,15 +422,99 @@ fn docx_crop(node : DocxXmlNode, name : String) -> Double {
 }
 
 ///|
-fn docx_anchor_offset(anchor : DocxXmlNode, name : String) -> Double? {
-  match anchor.child(name) {
-    Some(position) =>
-      match position.child("posOffset") {
-        Some(offset) => Some(docx_emu(offset.text.to_string()))
-        None => None
-      }
-    None => None
+fn docx_anchor_align(node : DocxXmlNode, name : String) -> String {
+  match node.child(name) {
+    Some(value) => value.text.to_string().trim().to_string()
+    None => ""
   }
+}
+
+///|
+fn docx_anchor_position(
+  anchor : DocxXmlNode,
+  name : String,
+  default_rel : String,
+) -> (String, String, Double) {
+  match anchor.child(name) {
+    Some(value) => {
+      let rel = docx_attribute(value.element, "relativeFrom", default_rel)
+      let align = docx_anchor_align(value, "align")
+      let offset = match value.child("posOffset") {
+        Some(offset) => docx_emu(offset.text.to_string())
+        None => 0.0
+      }
+      (rel, align, offset)
+    }
+    None => (default_rel, "", 0.0)
+  }
+}
+
+///|
+// docx_text_anchor reads a wp:anchor: where it is positioned (a page, a
+// margin, the column or the paragraph) and the area its wrap keeps the text
+// out of. A simple position (wp:simplePos) is relative to the page.
+fn docx_text_anchor(container : DocxXmlNode) -> (Double, Double, DocxAnchor) {
+  let mut x = 0.0
+  let mut y = 0.0
+  let mut h_rel = "column"
+  let mut v_rel = "paragraph"
+  let mut h_align = ""
+  let mut v_align = ""
+  if docx_attribute(container.element, "simplePos", "0") == "1" {
+    h_rel = "page"
+    v_rel = "page"
+    match container.child("simplePos") {
+      Some(value) => {
+        x = docx_emu(docx_attribute(value.element, "x", "0"))
+        y = docx_emu(docx_attribute(value.element, "y", "0"))
+      }
+      None => ()
+    }
+  } else {
+    let (h_relative, h_alignment, h_offset) = docx_anchor_position(
+      container, "positionH", "column",
+    )
+    h_rel = h_relative
+    h_align = h_alignment
+    x = h_offset
+    let (v_relative, v_alignment, v_offset) = docx_anchor_position(
+      container, "positionV", "paragraph",
+    )
+    v_rel = v_relative
+    v_align = v_alignment
+    y = v_offset
+  }
+  let mut wrap = "none"
+  let mut side = "bothSides"
+  for child in container.children {
+    match child.name() {
+      "wrapSquare" | "wrapTight" | "wrapThrough" => {
+        // Tight and through wrapping keep the text out of the object's
+        // box, as square wrapping does.
+        wrap = "square"
+        side = docx_attribute(child.element, "wrapText", "bothSides")
+      }
+      "wrapTopAndBottom" => wrap = "topAndBottom"
+      _ => ()
+    }
+  }
+  let anchor : DocxAnchor = {
+    h_rel: h_rel,
+    v_rel: v_rel,
+    h_align: h_align,
+    v_align: v_align,
+    wrap: wrap,
+    side: side,
+    dist_top: docx_emu(docx_attribute(container.element, "distT", "0")),
+    dist_bottom: docx_emu(docx_attribute(container.element, "distB", "0")),
+    dist_left: docx_emu(docx_attribute(container.element, "distL", "0")),
+    dist_right: docx_emu(docx_attribute(container.element, "distR", "0")),
+    behind: docx_attribute(container.element, "behindDoc", "0") == "1",
+    z: @string.parse_int(docx_attribute(container.element, "relativeHeight", "0")) catch {
+      _ => 0
+    },
+  }
+  (x, y, anchor)
 }
 
 ///|
@@ -494,9 +602,12 @@ fn docx_text_drawing(
   }
   let mut x = 0.0
   let mut y = 0.0
+  let mut anchor : DocxAnchor? = None
   if anchored {
-    x = docx_anchor_offset(container, "positionH").unwrap_or(0.0)
-    y = docx_anchor_offset(container, "positionV").unwrap_or(0.0)
+    let (anchor_x, anchor_y, parsed) = docx_text_anchor(container)
+    x = anchor_x
+    y = anchor_y
+    anchor = Some(parsed)
   }
   items.push({
     kind: "image",
@@ -506,6 +617,7 @@ fn docx_text_drawing(
     width,
     height,
     anchored,
+    anchor,
     x,
     y,
     crop_left,
@@ -849,6 +961,7 @@ fn docx_text_field(
     width: 0.0,
     height: 0.0,
     anchored: false,
+    anchor: None,
     x: 0.0,
     y: 0.0,
     crop_left: 0.0,
