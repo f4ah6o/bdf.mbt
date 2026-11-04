@@ -7,6 +7,7 @@ struct XlsxChartModel {
   values : Array[Double]
   categories : Array[String]
   color : String
+  marker : String
   show_percent : Bool
   show_value : Bool
   show_cat_name : Bool
@@ -236,6 +237,14 @@ fn XlsxWorkbook::xlsx_chart_model(
   let values = xlsx_chart_numbers(self, first, "val")
   let categories = xlsx_chart_series(self, first, "cat")
   let mut color = "#4472c4"
+  let marker = match xlsx_draw_child(first, "marker") {
+    Some(marker_node) =>
+      match xlsx_draw_child(marker_node, "symbol") {
+        Some(symbol) => xlsx_draw_attr(symbol, "val")
+        None => "none"
+      }
+    None => "none"
+  }
   match xlsx_draw_child(first, "spPr") {
     Some(sp_pr) =>
       match xlsx_draw_child(sp_pr, "solidFill") {
@@ -319,6 +328,7 @@ fn XlsxWorkbook::xlsx_chart_model(
     values,
     categories,
     color,
+    marker,
     show_percent,
     show_value,
     show_cat_name,
@@ -617,6 +627,17 @@ fn XlsxWorkbook::xlsx_chart_svg(
           "\" text-anchor=\"middle\" font-size=\"10\" fill=\"#000000\">" +
           xlsx_chart_text(label_text) +
           "</text>",
+        )
+      }
+      if model.marker != "none" {
+        svg.write_string(
+          "<circle cx=\"" +
+          x.to_string() +
+          "\" cy=\"" +
+          y.to_string() +
+          "\" r=\"3\" fill=\"" +
+          model.color +
+          "\"/>",
         )
       }
     }
@@ -1009,6 +1030,24 @@ fn XlsxWorkbook::xlsx_chart_object(
       @core.Inline({ verbs: Bytes::from_array(verbs), coordinates }),
     )
     object.stroke_path(path)
+    if model.marker != "none" {
+      object.fill_color(series_color)
+      for index, value in model.values {
+        let x = if count <= 1 {
+          left + plot_width / 2.0
+        } else {
+          left + plot_width * index.to_double() / (count - 1).to_double()
+        }
+        let y = plot_top + plot_height -
+          plot_height * (value - axis_base) / axis_range
+        object.fill_rect(
+          Float::from_double(x - 2.0),
+          Float::from_double(y - 2.0),
+          4.0F,
+          4.0F,
+        )
+      }
+    }
     for index, value in model.values {
       let label_text = xlsx_chart_data_label(model, index, value)
       if label_text != "" {
