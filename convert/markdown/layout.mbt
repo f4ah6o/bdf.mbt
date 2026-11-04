@@ -680,6 +680,89 @@ fn MdPainter::layout_block(
 
 
 ///|
+fn MdPainter::draw_table_row(
+  self : MdPainter,
+  x : Double,
+  width : Double,
+  row_top : Double,
+  row_height : Double,
+  cell_lines : Array[Array[Array[MdRun]]],
+  column_widths : Array[Double],
+  alignments : Array[Int],
+  row_index : Int,
+) -> Unit raise {
+  if row_index == 0 {
+    self.object.fill_color(0xf2f2f2ffU)
+    self.object.fill_rect(
+      Float::from_double(x),
+      Float::from_double(row_top),
+      Float::from_double(width),
+      Float::from_double(row_height),
+    )
+  }
+  let mut cell_x = x
+  for column in 0..<cell_lines.length() {
+    self.object.mark(2, md_cell_name(column, row_index + 1))
+    let lines = cell_lines[column]
+    let align = if column < alignments.length() { alignments[column] } else { 0 }
+    let mut baseline = row_top + 15.0
+    for line in lines {
+      self.draw_aligned(
+        line,
+        cell_x + 5.0,
+        column_widths[column] - 10.0,
+        baseline,
+        align,
+      )
+      baseline += 15.0
+    }
+    cell_x += column_widths[column]
+  }
+  self.object.stroke_color(0xccccccffU)
+  self.object.line(0.6F, 0, 0, 8.0F)
+  self.object.stroke_path(
+    self.object.add_path(
+      @core.Inline({
+        verbs: b"\x00\x01",
+        coordinates: [x, row_top + row_height, x + width, row_top + row_height],
+      }),
+    ),
+  )
+}
+
+///|
+fn MdPainter::draw_table_vertical(
+  self : MdPainter,
+  x : Double,
+  column_widths : Array[Double],
+  top : Double,
+  bottom : Double,
+) -> Unit raise {
+  let mut line_x = x
+  self.object.stroke_color(0xccccccffU)
+  self.object.line(0.6F, 0, 0, 8.0F)
+  for column_width in column_widths {
+    self.object.stroke_path(
+      self.object.add_path(
+        @core.Inline({
+          verbs: b"\x00\x01",
+          coordinates: [line_x, top, line_x, bottom],
+        }),
+      ),
+    )
+    line_x += column_width
+  }
+  self.object.stroke_path(
+    self.object.add_path(
+      @core.Inline({
+        verbs: b"\x00\x01",
+        coordinates: [line_x, top, line_x, bottom],
+      }),
+    ),
+  )
+}
+
+///|
 fn MdPainter::layout_table(
   self : MdPainter,
   header : Array[Array[MdRun]],
@@ -744,92 +827,75 @@ fn MdPainter::layout_table(
     row_heights.push(row_height)
     table_height += row_height
   }
+  let limit = if self.page_height > 0.0 {
+    self.page_height - self.margin * 2.0
+  } else {
+    0.0
+  }
   if self.page_height > 0.0 {
-    let limit = self.page_height - self.margin * 2.0
-    self.ensure(Double::min(table_height, limit))
+    let first_rows = row_heights[0] +
+      (if row_heights.length() > 1 { row_heights[1] } else { 0.0 }) +
+      6.0
+    self.ensure(
+      if table_height > limit {
+        Double::min(table_height, first_rows)
+      } else {
+        table_height
+      },
+    )
   }
   self.y += 6.0
-  let table_top = self.y
   let mut row_top = self.y
-  for row_index, row in all_rows {
-    let cell_lines = row_cells[row_index]
-    let row_height = row_heights[row_index]
-    if row_index == 0 {
-      self.object.fill_color(0xf2f2f2ffU)
-      self.object.fill_rect(
-        Float::from_double(x),
-        Float::from_double(row_top),
-        Float::from_double(width),
-        Float::from_double(row_height),
-      )
-    }
-    let mut cell_x = x
-    for column in 0..<columns {
-      self.object.mark(2, md_cell_name(column, row_index + 1))
-      let lines = cell_lines[column]
-      let align = if column < alignments.length() { alignments[column] } else { 0 }
-      let mut baseline = row_top + 15.0
-      for line in lines {
-        self.draw_aligned(
-          line,
-          cell_x + 5.0,
-          column_widths[column] - 10.0,
-          baseline,
-          align,
-        )
-        baseline += 15.0
+  if self.page_height > 0.0 && table_height > limit {
+    let page_bottom = self.margin + limit
+    let mut segment_top = row_top
+    let mut drawn = false
+    for row_index, _row in all_rows {
+      let row_height = row_heights[row_index]
+      if drawn &&
+        row_top + row_height > page_bottom + 0.001 &&
+        row_height <= limit {
+        self.draw_table_vertical(x, column_widths, segment_top, row_top)
+        self.object.mark(11, "")
+        self.y = row_top
+        self.flush_page()
+        self.y = self.margin
+        row_top = self.y
+        segment_top = self.y
+        drawn = false
+        self.object.mark(9, "")
+        if row_index > 1 &&
+          row_top + row_heights[0] + row_height <= page_bottom + 0.001 {
+          self.draw_table_row(
+            x, width, row_top, row_heights[0], row_cells[0], column_widths,
+            alignments, 0,
+          )
+          row_top += row_heights[0]
+          drawn = true
+        }
       }
-      cell_x += column_widths[column]
+      self.draw_table_row(
+        x, width, row_top, row_height, row_cells[row_index], column_widths,
+        alignments, row_index,
+      )
+      row_top += row_height
+      drawn = true
     }
+    self.draw_table_vertical(x, column_widths, segment_top, row_top)
+    self.object.mark(11, "")
+    self.y = row_top + 8.0
+    return
+  }
+  let table_top = row_top
+  for row_index, _row in all_rows {
+    let row_height = row_heights[row_index]
+    self.draw_table_row(
+      x, width, row_top, row_height, row_cells[row_index], column_widths,
+      alignments, row_index,
+    )
     row_top += row_height
-    self.object.stroke_color(0xccccccffU)
-    self.object.line(0.6F, 0, 0, 8.0F)
-    self.object.stroke_path(
-      self.object.add_path(
-        @core.Inline({
-          verbs: b"\x00\x01",
-          coordinates: [
-            x,
-            row_top,
-            x + width,
-            row_top,
-          ],
-        }),
-      ),
-    )
   }
-  let mut line_x = x
-  self.object.stroke_color(0xccccccffU)
-  self.object.line(0.6F, 0, 0, 8.0F)
-  for column_width in column_widths {
-    self.object.stroke_path(
-      self.object.add_path(
-        @core.Inline({
-          verbs: b"\x00\x01",
-          coordinates: [
-            line_x,
-            table_top,
-            line_x,
-            row_top,
-          ],
-        }),
-      ),
-    )
-    line_x += column_width
-  }
-  self.object.stroke_path(
-    self.object.add_path(
-      @core.Inline({
-        verbs: b"\x00\x01",
-        coordinates: [
-          line_x,
-          table_top,
-          line_x,
-          row_top,
-        ],
-      }),
-    ),
-  )
+  self.draw_table_vertical(x, column_widths, table_top, row_top)
   self.object.mark(11, "")
   self.y = row_top + 8.0
 }

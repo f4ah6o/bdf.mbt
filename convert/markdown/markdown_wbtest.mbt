@@ -321,6 +321,40 @@ test "Markdown emits line and wrap marks" {
   assert_eq(wraps >= 1, true)
 }
 
+test "Markdown pages split long tables and repeat headers" {
+  let mut source = "# Table\n\n| H1 | H2 |\n| --- | --- |\n"
+  for i in 0..<80 {
+    source += "| row" + i.to_string() + " | value" + i.to_string() + " |\n"
+  }
+  let result = convert(@utf8.encode(source), views="pages")
+  assert_eq(result.pages >= 2, true)
+  let doc = @core.open_single(result.bdf)
+  let view = doc.manifest.views[0]
+  assert_eq(view.kind, "fixed")
+  assert_eq(view.pages.length() >= 2, true)
+  let page_text = fn(page : @core.Page) -> String raise {
+    let mut text = ""
+    for layer in page.layers {
+      for command in @render.decode_commands(doc.part(layer.object)) {
+        match command {
+          FillText(value, _, _, _) => {
+            text += value
+            text += " "
+          }
+          _ => ()
+        }
+      }
+    }
+    text
+  }
+  let first = page_text(view.pages[0])
+  let second = page_text(view.pages[1])
+  assert_eq(first.contains("H1"), true)
+  assert_eq(first.contains("row0"), true)
+  assert_eq(second.contains("H1"), true)
+  assert_eq(second.contains("row"), true)
+}
+
 test "Markdown front matter maps Dublin Core terms" {
   let (body, meta) = md_front_matter(
     "---\nauthor:\n  - Alice\n  - name: Bob\ndate: 2026-09-26\ntags: [bdf, markdown]\n---\nbody",
