@@ -1984,6 +1984,22 @@ test "DOCX keepLines does not split a paragraph across pages" {
   assert_true(keep_pages[0] >= plain_pages[0])
 }
 
+test "DOCX paragraph shading fills the line" {
+  let blocks = "<w:p><w:pPr><w:shd w:val=\"clear\" w:fill=\"FFFF00\"/></w:pPr>" +
+    "<w:r><w:t>SHADE</w:t></w:r></w:p>"
+  let commands = docx_test_page_commands(
+    convert(docx_test_docx(blocks, DOCX_TEST_SECTION, [])), "pages", 0, "body",
+  )
+  let mut fills = 0
+  for command in commands {
+    match command {
+      FillRect(_, _, _, _) => fills += 1
+      _ => ()
+    }
+  }
+  assert_true(fills >= 1)
+}
+
 test "DOCX document background fills the page" {
   let data = docx_test_docx(
     "<w:p><w:r><w:t>BG</w:t></w:r></w:p>",

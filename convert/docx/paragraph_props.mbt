@@ -34,6 +34,7 @@ priv struct DocxParagraphProps {
   mut number_id : String
   mut level : Int32
   mut outline : Int32
+  mut shade : UInt32?
   mut tabs : Array[DocxTab]
   mut tabs_truncated : Bool
 }
@@ -80,6 +81,7 @@ fn docx_default_paragraph_props() -> DocxParagraphProps {
     number_id: "",
     level: 0,
     outline: -1,
+    shade: None,
     tabs: [],
     tabs_truncated: false,
   }
@@ -141,7 +143,20 @@ fn DocxParagraphProps::apply_element(
     }
     "jc" => self.alignment = docx_paragraph_alignment(value)
     "pBdr" => ()
-    "shd" => ()
+    "shd" => {
+      let fill = docx_attribute(element, "fill", "")
+      let val = docx_attribute(element, "val", "clear")
+      if val == "nil" || fill.length() != 6 {
+        self.shade = None
+      } else {
+        let number = @string.parse_int(fill, base=16) catch { _ => -1 }
+        self.shade = if number >= 0 {
+          Some((number.to_uint() << 8) | 0xffU)
+        } else {
+          None
+        }
+      }
+    }
     "spacing" => {
       if docx_has_attribute(element, "before") {
         self.before = docx_props_measure(element, "before")

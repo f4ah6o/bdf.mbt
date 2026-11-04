@@ -49,7 +49,8 @@ word wrapping at spaces, explicit line/page/column breaks, left/right/centre/
 decimal tabs, bar tabs and leaders,
 paragraph and character spacing (including contextual spacing), run position,
 left/centre/right/justified/distributed alignment, keep-with-next, basic font
-weight/style/size/colour, shading/highlight, text shadow, borders,
+weight/style/size/colour, paragraph/run shading, highlight, text shadow,
+borders,
 underline/strike,
 caps/small caps,
 super/subscript,
