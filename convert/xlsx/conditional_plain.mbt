@@ -645,186 +645,119 @@ fn XlsxWorkbook::xlsx_apply_plain_conditionals(
         xlsx_reject_conditional()
       }
     }
-    ordered.sort_by((a, b) => {
-      if a.1.priority == b.1.priority {
-        a.0.compare(b.0)
-      } else {
-        a.1.priority.compare(b.1.priority)
-      }
-    })
   }
-  let relevant : Array[XlsxConditionalBlock] = []
+  // Upstream evaluates every rule in ascending priority and keeps document
+  // order between equal priorities. A rule contributes only the properties
+  // no higher-priority rule has contributed yet.
+  ordered.sort_by((a, b) => {
+    if a.1.priority == b.1.priority {
+      a.0.compare(b.0)
+    } else {
+      a.1.priority.compare(b.1.priority)
+    }
+  })
+  let effective : Map[Int32, Map[Int32, XlsxConditionalStyle]] = Map([])
+  let blank_effective : Map[Int32, Map[Int32, XlsxConditionalStyle]] = Map([])
   let stopped : Map[Int32, Map[Int32, Bool]] = Map([])
   let stopped_blank_ranges : Array[XlsxRange] = []
-  let mut stop_comparisons = 4194304
   for entry in ordered {
     let block = entry.1
     let missing = block.dxf_id < 0 ||
       (dxf_count >= 0 && block.dxf_id >= dxf_count)
-    if missing {
-      if block.stop_if_true {
-        if block.blank_matches {
+    let style = if missing {
+      None
+    } else {
+      Some(self.xlsx_conditional_style(block.dxf_id))
+    }
+    for row, columns in block.matched {
+      for column, _ in columns {
+        if xlsx_conditional_was_stopped(stopped, row, column) {
+          continue
+        }
+        if style is Some(diff) {
+          xlsx_conditional_merge_into(effective, row, column, diff)
+        }
+      }
+    }
+    if block.blank_matches {
+      if style is Some(diff) {
+        if diff.fill is Some(_) || diff.border is Some(_) {
+          let blank_style = xlsx_conditional_blank_style(diff)
           if block.moving_reference {
             for row, columns in block.blank_positions {
-              let target = match stopped.get(row) {
-                Some(value) => value
-                None => {
-                  let value : Map[Int32, Bool] = Map([])
-                  stopped[row] = value
-                  value
-                }
-              }
               for column, _ in columns {
-                target[column] = true
+                if !xlsx_conditional_was_stopped(stopped, row, column) {
+                  xlsx_conditional_merge_into(
+                    blank_effective, row, column, blank_style,
+                  )
+                }
               }
             }
           } else {
-            for range in block.ranges {
-              stopped_blank_ranges.push(range)
+            if block.covered > 200000L {
+              xlsx_reject_conditional()
             }
-          }
-        }
-        for row, columns in block.matched {
-          let target = match stopped.get(row) {
-            Some(value) => value
-            None => {
-              let value : Map[Int32, Bool] = Map([])
-              stopped[row] = value
-              value
-            }
-          }
-          for column, _ in columns {
-            target[column] = true
-          }
-        }
-      }
-      continue
-    }
-    let paints_blanks = if block.blank_matches {
-      let style = self.xlsx_conditional_style(block.dxf_id)
-      style.fill is Some(_) || style.border is Some(_)
-    } else {
-      false
-    }
-    if paints_blanks {
-      for range in block.ranges {
-        for stopped_range in stopped_blank_ranges {
-          stop_comparisons -= 1
-          if stop_comparisons < 0 {
-            xlsx_reject_conditional()
-          }
-          if range.row_start <= stopped_range.row_end &&
-            stopped_range.row_start <= range.row_end &&
-            range.column_start <= stopped_range.column_end &&
-            stopped_range.column_start <= range.column_end {
-            xlsx_reject_conditional()
-          }
-        }
-        for row, columns in stopped {
-          stop_comparisons -= 1
-          if stop_comparisons < 0 {
-            xlsx_reject_conditional()
-          }
-          if row.to_int64() >= range.row_start &&
-            row.to_int64() <= range.row_end {
-            for column, _ in columns {
-              stop_comparisons -= 1
-              if stop_comparisons < 0 ||
-                (column >= range.column_start && column <= range.column_end) {
-                xlsx_reject_conditional()
-              }
-            }
+            xlsx_conditional_merge_blank_cells(
+              rows,
+              block.ranges,
+              row_count,
+              col_count,
+              stopped,
+              stopped_blank_ranges,
+              blank_style,
+              blank_effective,
+            )
           }
         }
       }
     }
-    if stopped.is_empty() {
-      relevant.push(block)
-      continue
-    }
-    let matched : Map[Int32, Map[Int32, Bool]] = Map([])
-    for row, columns in block.matched {
-      for column, _ in columns {
-        let blocked = match stopped.get(row) {
-          Some(value) => value.contains(column)
-          None => false
-        }
-        if !blocked {
-          let target = match matched.get(row) {
-            Some(value) => value
-            None => {
-              let value : Map[Int32, Bool] = Map([])
-              matched[row] = value
-              value
-            }
-          }
-          target[column] = true
-        }
+    if block.stop_if_true {
+      for row, columns in block.matched {
+        xlsx_conditional_mark_stopped(stopped, row, columns)
       }
-    }
-    if !matched.is_empty() || block.blank_matches {
-      relevant.push({ ..block, matched, })
-    }
-  }
-  // Bound pairwise range checks independently of the covered-cell budget.
-  let mut comparisons = 4194304
-  for i in 0..<relevant.length() {
-    for j in 0..<i {
-      let mut ranges_overlap = false
-      for a in relevant[i].ranges {
-        for b in relevant[j].ranges {
-          comparisons -= 1
-          if comparisons < 0 {
-            xlsx_reject_conditional()
-          }
-          if a.row_start <= b.row_end &&
-            b.row_start <= a.row_end &&
-            a.column_start <= b.column_end &&
-            b.column_start <= a.column_end {
-            ranges_overlap = true
-          }
-        }
-      }
-      // Overlapping rules with different styles are applied in priority
-      // order, as upstream does; later rules paint over earlier ones.
-      if ranges_overlap && (relevant[i].blank_matches || relevant[j].blank_matches) {
-        for row, columns in relevant[i].matched {
-          comparisons -= 1
-          if comparisons < 0 {
-            xlsx_reject_conditional()
-          }
-          let _ = row
-          let _ = columns
-        }
-      }
-    }
-  }
-  let mut result = rows
-  for block in relevant {
-    if block.dxf_id < 0 || (dxf_count >= 0 && block.dxf_id >= dxf_count) {
-      continue
-    }
-    let style = self.xlsx_conditional_style(block.dxf_id)
-    if block.blank_matches && (style.fill is Some(_) || style.border is Some(_)) {
-      if block.covered > 200000L {
-        xlsx_reject_conditional()
-      }
-      result = xlsx_materialize_conditional_blanks(
-        result,
-        geometry,
-        styles.cell_formats.length(),
-        block.ranges,
-        row_count,
-        col_count,
-        block.matched,
+      if block.blank_matches {
         if block.moving_reference {
-          Some(block.blank_positions)
+          for row, columns in block.blank_positions {
+            xlsx_conditional_mark_stopped(stopped, row, columns)
+          }
         } else {
-          None
-        },
-      )
+          for range in block.ranges {
+            stopped_blank_ranges.push(range)
+          }
+        }
+      }
     }
-    result = xlsx_apply_conditional_style(result, styles, block.matched, style)
+  }
+  let group_styles : Array[XlsxConditionalStyle] = []
+  let group_matches : Array[Map[Int32, Map[Int32, Bool]]] = []
+  xlsx_conditional_group_styles(effective, group_styles, group_matches)
+  let mut result = rows
+  if !blank_effective.is_empty() {
+    let wanted : Map[Int32, Map[Int32, Bool]] = Map([])
+    for row, columns in blank_effective {
+      for column, _ in columns {
+        let target = match wanted.get(row) {
+          Some(value) => value
+          None => {
+            let value : Map[Int32, Bool] = Map([])
+            wanted[row] = value
+            value
+          }
+        }
+        target[column] = true
+      }
+    }
+    result = xlsx_materialize_conditional_positions(
+      result,
+      geometry,
+      styles.cell_formats.length(),
+      col_count,
+      wanted,
+    )
+    xlsx_conditional_group_styles(blank_effective, group_styles, group_matches)
+  }
+  for i, style in group_styles {
+    result = xlsx_apply_conditional_style(result, styles, group_matches[i], style)
   }
   result
 }

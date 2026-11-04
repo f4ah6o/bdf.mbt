@@ -351,6 +351,145 @@ fn xlsx_apply_conditional_style(
   result
 }
 
+
+///|
+// First-rule-wins merge of differential properties, as upstream applies the
+// highest-priority rule that sets a property and lets lower-priority rules
+// fill in the properties it leaves unset.
+fn xlsx_merge_conditional_style(
+  first : XlsxConditionalStyle,
+  second : XlsxConditionalStyle,
+) -> XlsxConditionalStyle {
+  {
+    bold: match first.bold {
+      Some(value) => Some(value)
+      None => second.bold
+    },
+    italic: match first.italic {
+      Some(value) => Some(value)
+      None => second.italic
+    },
+    strike: match first.strike {
+      Some(value) => Some(value)
+      None => second.strike
+    },
+    underline: match first.underline {
+      Some(value) => Some(value)
+      None => second.underline
+    },
+    color: match first.color {
+      Some(value) => Some(value)
+      None => second.color
+    },
+    fill: match first.fill {
+      Some(value) => Some(value)
+      None => second.fill
+    },
+    border: match first.border {
+      Some(value) => Some(value)
+      None => second.border
+    },
+  }
+}
+
+///|
+// Blank cells show no text, so only their fill and border can change.
+fn xlsx_conditional_blank_style(
+  style : XlsxConditionalStyle,
+) -> XlsxConditionalStyle {
+  {
+    bold: None,
+    italic: None,
+    strike: None,
+    underline: None,
+    color: None,
+    fill: style.fill,
+    border: style.border,
+  }
+}
+
+///|
+fn xlsx_conditional_color_equal(a : XlsxColor, b : XlsxColor) -> Bool {
+  a.kind == b.kind &&
+  a.rgb == b.rgb &&
+  a.index == b.index &&
+  a.tint == b.tint
+}
+
+///|
+fn xlsx_conditional_side_equal(
+  a : XlsxBorderSide,
+  b : XlsxBorderSide,
+) -> Bool {
+  a.style == b.style && xlsx_conditional_color_equal(a.color, b.color)
+}
+
+///|
+fn xlsx_conditional_fill_equal(a : XlsxFill, b : XlsxFill) -> Bool {
+  a.pattern == b.pattern &&
+  xlsx_conditional_color_equal(a.foreground, b.foreground) &&
+  xlsx_conditional_color_equal(a.background, b.background) &&
+  (match (a.gradient, b.gradient) {
+    (None, None) => true
+    _ => false
+  })
+}
+
+///|
+fn xlsx_conditional_border_equal(a : XlsxBorder, b : XlsxBorder) -> Bool {
+  xlsx_conditional_side_equal(a.left, b.left) &&
+  xlsx_conditional_side_equal(a.right, b.right) &&
+  xlsx_conditional_side_equal(a.top, b.top) &&
+  xlsx_conditional_side_equal(a.bottom, b.bottom) &&
+  xlsx_conditional_side_equal(a.diagonal, b.diagonal) &&
+  a.diagonal_up == b.diagonal_up &&
+  a.diagonal_down == b.diagonal_down &&
+  xlsx_conditional_side_equal(a.vertical, b.vertical) &&
+  xlsx_conditional_side_equal(a.horizontal, b.horizontal)
+}
+
+///|
+// Structural equality of merged differential styles, used to group the cells
+// of a sheet so one conditional format is appended per distinct style.
+fn xlsx_conditional_style_equal(
+  a : XlsxConditionalStyle,
+  b : XlsxConditionalStyle,
+) -> Bool {
+  let bool_equal = fn(a : Bool?, b : Bool?) -> Bool {
+    match (a, b) {
+      (None, None) => true
+      (Some(x), Some(y)) => x == y
+      _ => false
+    }
+  }
+  let string_equal = fn(a : String?, b : String?) -> Bool {
+    match (a, b) {
+      (None, None) => true
+      (Some(x), Some(y)) => x == y
+      _ => false
+    }
+  }
+  bool_equal(a.bold, b.bold) &&
+  bool_equal(a.italic, b.italic) &&
+  bool_equal(a.strike, b.strike) &&
+  string_equal(a.underline, b.underline) &&
+  (match (a.color, b.color) {
+    (None, None) => true
+    (Some(x), Some(y)) => xlsx_conditional_color_equal(x, y)
+    _ => false
+  }) &&
+  (match (a.fill, b.fill) {
+    (None, None) => true
+    (Some(x), Some(y)) => xlsx_conditional_fill_equal(x, y)
+    _ => false
+  }) &&
+  (match (a.border, b.border) {
+    (None, None) => true
+    (Some(x), Some(y)) => xlsx_conditional_border_equal(x, y)
+    _ => false
+  })
+}
+
 ///|
 // Table styles ignore differential number formats and other nonvisual fields.
 fn XlsxWorkbook::xlsx_table_differential_style(
