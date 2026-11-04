@@ -530,6 +530,17 @@ fn XlsxWorkbook::xlsx_chart_svg(
         bar_height.to_string() +
         "\" fill=\"" + model.color + "\"/>",
       )
+      if model.show_value {
+        svg.write_string(
+          "<text x=\"" +
+          (left + slot * index.to_double() + slot * 0.5).to_string() +
+          "\" y=\"" +
+          (plot_top + plot_height - bar_height - 4.0).to_string() +
+          "\" text-anchor=\"middle\" font-size=\"10\" fill=\"#000000\">" +
+          xlsx_chart_number(value) +
+          "</text>",
+        )
+      }
     }
   } else {
     let mut path = "M "
@@ -546,6 +557,17 @@ fn XlsxWorkbook::xlsx_chart_svg(
         x.to_string() +
         " " +
         y.to_string()
+      if model.show_value {
+        svg.write_string(
+          "<text x=\"" +
+          x.to_string() +
+          "\" y=\"" +
+          (y - 4.0).to_string() +
+          "\" text-anchor=\"middle\" font-size=\"10\" fill=\"#000000\">" +
+          xlsx_chart_number(value) +
+          "</text>",
+        )
+      }
     }
     svg.write_string(
       "<path d=\"" +
@@ -575,6 +597,19 @@ fn XlsxWorkbook::xlsx_chart_svg(
           (y + 4.0).to_string() +
           "\" text-anchor=\"middle\" font-size=\"10\" fill=\"#000000\">" +
           xlsx_chart_text(model.categories[index]) +
+          "</text>",
+        )
+      }
+      if model.show_value {
+        let value_x = cx + @math.cos(mid) * radius * 0.82
+        let value_y = cy + @math.sin(mid) * radius * 0.82
+        svg.write_string(
+          "<text x=\"" +
+          value_x.to_string() +
+          "\" y=\"" +
+          (value_y + 4.0).to_string() +
+          "\" text-anchor=\"middle\" font-size=\"10\" fill=\"#000000\">" +
+          xlsx_chart_number(value) +
           "</text>",
         )
       }
@@ -837,6 +872,20 @@ fn XlsxWorkbook::xlsx_chart_object(
         Float::from_double(slot * 0.6),
         Float::from_double(bar_height),
       )
+      if model.show_value {
+        let text = xlsx_chart_number(value)
+        let mut advance = 0.0
+        for character in text {
+          advance += @sheet.sized_fallback_advance(character, false, 10.0)
+        }
+        label(
+          text,
+          left + slot * index.to_double() + slot * 0.5 - advance / 2.0,
+          plot_top + plot_height - bar_height - 14.0,
+          10.0,
+          400,
+        )
+      }
     }
   } else {
     object.line(2.0F, 0, 0, 8.0F)
@@ -861,6 +910,23 @@ fn XlsxWorkbook::xlsx_chart_object(
       @core.Inline({ verbs: Bytes::from_array(verbs), coordinates }),
     )
     object.stroke_path(path)
+    if model.show_value {
+      for index, value in model.values {
+        let x = if count <= 1 {
+          left + plot_width / 2.0
+        } else {
+          left + plot_width * index.to_double() / (count - 1).to_double()
+        }
+        let y = plot_top + plot_height -
+          plot_height * (value - axis_base) / axis_range
+        let text = xlsx_chart_number(value)
+        let mut advance = 0.0
+        for character in text {
+          advance += @sheet.sized_fallback_advance(character, false, 10.0)
+        }
+        label(text, x - advance / 2.0, y - 14.0, 10.0, 400)
+      }
+    }
   }
   let pie_total = model.values.fold(init=0.0, (sum, value) => sum + value)
   if model.kind == "pieChart" && pie_total > 0.0 {
@@ -881,6 +947,20 @@ fn XlsxWorkbook::xlsx_chart_object(
           category,
           cx + @math.cos(mid) * radius * 1.12 - advance / 2.0,
           cy + @math.sin(mid) * radius * 1.12 + 3.0,
+          10.0,
+          400,
+        )
+      }
+      if model.show_value {
+        let text = xlsx_chart_number(value)
+        let mut advance = 0.0
+        for character in text {
+          advance += @sheet.sized_fallback_advance(character, false, 10.0)
+        }
+        label(
+          text,
+          cx + @math.cos(mid) * radius * 0.82 - advance / 2.0,
+          cy + @math.sin(mid) * radius * 0.82 + 3.0,
           10.0,
           400,
         )
