@@ -2456,6 +2456,19 @@ fn pptx_chart_format_number(value : Double, code : String) -> String {
 }
 
 ///|
+fn pptx_chart_percent_text(
+  value : Double,
+  total : Double,
+  code : String,
+) -> String {
+  if total <= 0.0 {
+    return "0%"
+  }
+  let percent_code = if code.contains("%") { code } else { "0%" }
+  pptx_chart_format_number(value / total, percent_code)
+}
+
+///|
 fn pptx_chart_collect_text(node : PptxXmlNode, out : StringBuilder) -> Unit {
   let name = node.element.name.local_name
   if name == "t" || name == "v" {
@@ -3648,7 +3661,7 @@ fn pptx_emit_chart(
         parts.push(pptx_chart_format_number(value, label_format))
       }
       if pie_labels.1 {
-        parts.push((value / total * 100.0 + 0.5).to_int().to_string() + "%")
+        parts.push(pptx_chart_percent_text(value, total, label_format))
       }
       let mut label = parts.join(label_separator)
       if index < custom_labels.length() && custom_labels[index] != "" {
