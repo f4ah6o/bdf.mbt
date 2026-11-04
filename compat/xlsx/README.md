@@ -232,7 +232,7 @@ also supported. Wave `adj1` accepts 0–100,000 and `adj2` accepts -100,000–10
 Swoosh arrow `adj1` and `adj2` accept 0–100,000. These guides work individually
 or together; other adjustment guides remain unsupported.
 
-Conditional rules that reference absent differential styles leave formatting unchanged. Missing-style stopping rules follow priority for matched explicit cells. Stopping rules that match blanks remain unsupported when later formatting could be affected. Hexadecimal and underscored conditional style IDs, and unsupported priority representations in interacting stopping rules, are also rejected.
+Conditional rules that reference absent differential styles contribute no formatting but still stop later rules. Rules are evaluated in ascending priority, keeping document order for equal priorities; the first rule that sets a property wins it, and `stopIfTrue` keeps later rules from touching the cells a rule matched, including blank cells. The multi-rule, blank-stop, overlapping and moving-range fixtures therefore match the upstream converter exactly. Hexadecimal and underscored conditional style IDs, and unsupported priority representations in interacting stopping rules, are still rejected.
 
 `convert_plain_with_font` embeds one explicitly supplied TrueType/OpenType
 font and uses its advances and line metrics; the Worker uses the first face of
@@ -275,8 +275,8 @@ embedded chart's labels are present in the text index but the chart itself is
 an SVG picture (the chart-sheet view is drawn as BDF); shape text does not
 wrap or inherit paragraph spacing; vertical `justify`/`distributed` alignment,
 row/column patterned fills or complex borders, and exact number-format gap and
-fill run segmentation are still unsupported. For multi-rule, blank-stop and
-moving conditional permutations that the old renderer rejected, the renderer
-now emits text and geometry; the exact fill color of some overlapping
-stop-rule permutations can still differ, so `verify-render.mjs` checks those
-known cases by text and geometry instead of exact object bytes.
+fill run segmentation are still unsupported. All conditional fixtures,
+including multi-rule, blank-stop, overlapping and moving-range permutations,
+are checked by `verify-render.mjs` against the exact BDF objects; only the
+conditional inputs that use unsupported style or priority representations
+remain rejected.

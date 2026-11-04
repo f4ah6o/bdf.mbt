@@ -135,3 +135,74 @@ fn xlsx_materialize_conditional_blanks(
   }
   result
 }
+
+///|
+// Make the blank cells a conditional fill or border matched explicit for the
+// sparse painter, retaining the row or column style the cell would otherwise
+// take. The caller supplies the positions because rule ranges can be huge.
+fn xlsx_materialize_conditional_positions(
+  rows : Array[XlsxRow],
+  geometry : XlsxSheetGeometry,
+  format_count : Int32,
+  col_count : Int32,
+  wanted : Map[Int32, Map[Int32, Bool]],
+) -> Array[XlsxRow] {
+  let column_styles = Array::make(col_count, -1)
+  for column in geometry.columns {
+    let first = Int32::max(column.first, 0)
+    let last = Int32::min(column.last, col_count - 1)
+    if first <= last {
+      for c in first..<=last {
+        column_styles[c] = column.style
+      }
+    }
+  }
+  let by_row : Map[Int32, XlsxRow] = Map([])
+  for row in rows {
+    by_row[row.index] = row
+  }
+  let indices : Map[Int32, Bool] = Map([])
+  for r, _ in by_row {
+    indices[r] = true
+  }
+  for r, _ in wanted {
+    indices[r] = true
+  }
+  let sorted : Array[Int32] = [ for r, _ in indices => r ]
+  sorted.sort()
+  let result : Array[XlsxRow] = []
+  for r in sorted {
+    let row : XlsxRow = by_row
+      .get(r)
+      .unwrap_or({
+        index: r,
+        height: -1.0,
+        custom_height: false,
+        hidden: false,
+        style: -1,
+        cells: [],
+      })
+    let cells = row.cells.copy()
+    let explicit : Map[Int32, XlsxCell] = Map([])
+    for cell in row.cells {
+      explicit[cell.column] = cell
+    }
+    if wanted.get(r) is Some(columns) {
+      for c, _ in columns {
+        if explicit.get(c) is Some(cell) {
+          if cell.kind != 0 {
+            continue
+          }
+        } else {
+          let base = if row.style >= 0 { row.style } else { column_styles[c] }
+          let style = if base < 0 || base >= format_count { 0 } else { base }
+          cells.push({ column: c, style, kind: 0, number: 0.0, text: "", })
+        }
+      }
+    }
+    cells.sort_by((a, b) => a.column.compare(b.column))
+    result.push({ ..row, cells, })
+  }
+  result
+}
+
