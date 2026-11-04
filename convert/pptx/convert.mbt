@@ -3545,6 +3545,12 @@ fn pptx_emit_chart(
   if minor_unit <= 0.0 {
     minor_unit = step / 5.0
   }
+  let val_axis_node = pptx_child(plot_area, "valAx")
+  let cat_axis_node = pptx_child(plot_area, "catAx")
+  let tick_label_size = pptx_chart_tx_size(val_axis_node, label_size)
+  let tick_label_color = pptx_chart_tx_color(val_axis_node, theme, black)
+  let cat_label_size = pptx_chart_tx_size(cat_axis_node, label_size)
+  let cat_label_color = pptx_chart_tx_color(cat_axis_node, theme, black)
   let mut tick = 0.0
   while value_axis_visible && tick <= axis_high + step * 1.0e-6 {
     if minor_gridlines {
@@ -3598,19 +3604,19 @@ fn pptx_emit_chart(
       pptx_chart_label(
         object,
         label_font,
-        label_size,
-        black,
+        tick_label_size,
+        tick_label_color,
         text,
         plot_x + plot_width * tick / axis_high - 6.0,
         y + height - 6.0,
       )
     } else {
-      let label_width = pptx_text_width(text, label_size)
+      let label_width = pptx_text_width(text, tick_label_size)
       pptx_chart_label(
         object,
         label_font,
-        label_size,
-        black,
+        tick_label_size,
+        tick_label_color,
         text,
         plot_x - label_width - 4.0,
         plot_y + plot_height - plot_height * tick / axis_high,
@@ -3621,23 +3627,23 @@ fn pptx_emit_chart(
   // category labels
   for index, category in categories {
     if horizontal {
-      let label_width = pptx_text_width(category, label_size)
+      let label_width = pptx_text_width(category, cat_label_size)
       pptx_chart_label(
         object,
         label_font,
-        label_size,
-        black,
+        cat_label_size,
+        cat_label_color,
         category,
         plot_x - label_width - 4.0,
         plot_y + slot * index.to_double() + slot / 2.0,
       )
     } else {
-      let label_width = pptx_text_width(category, label_size)
+      let label_width = pptx_text_width(category, cat_label_size)
       pptx_chart_label(
         object,
         label_font,
-        label_size,
-        black,
+        cat_label_size,
+        cat_label_color,
         category,
         plot_x + slot * index.to_double() + (slot - label_width) / 2.0,
         y + height - 4.0,
