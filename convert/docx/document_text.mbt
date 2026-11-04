@@ -250,6 +250,13 @@ fn docx_text_section_check(section : DocxXmlNode) -> Unit raise {
             docx_text_unsupported(child.name())
           }
         }
+      "pgBorders" =>
+        for border in child.children {
+          if !["top", "left", "bottom", "right"].contains(border.name()) ||
+            !border.children.is_empty() {
+            docx_text_unsupported(child.name())
+          }
+        }
       other => docx_text_unsupported(other)
     }
   }

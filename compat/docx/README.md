@@ -47,7 +47,8 @@ word wrapping at spaces, explicit line/page/column breaks, tabs and leaders,
 paragraph spacing, alignment, keep-with-next, basic font
 weight/style/size/colour, shading, borders, caps/small caps, super/subscript,
 emphasis marks, hidden text, theme fonts, decimal/bullet numbering and section
-page geometry. Tables are real tables: a `tblGrid` (or equal columns when it
+page geometry. `w:pgBorders` rules are drawn on a page's background layer,
+honouring `offsetFrom` and the first/not-first display filters. Tables are real tables: a `tblGrid` (or equal columns when it
 is missing), grid spans, vertical merges with row spans, cell margins,
 borders and fills from cells and `tblBorders`, vertical alignment, row
 heights (`trHeight`, `cantSplit`, `tblHeader`), rows split between lines
@@ -99,7 +100,7 @@ indentation, upright CJK glyphs in vertical text (the whole body is turned,
 Latin and CJK alike), tables in headers/footers (their paragraphs are
 flattened), `PAGEREF`/`REF` field regeneration (cached results are used),
 per-section `SECTIONPAGES` (the document page count is used), column
-separator rules, page borders, `keepNext`/`keepLines`/`widowControl` chains,
+separator rules, `keepNext`/`keepLines`/`widowControl` chains,
 table styles and autofit, footnotes referenced from table cells, sections
 that must start on an odd or even page, and exact scroll strip counts (the
 approximate metrics make the basic fixture 1 strip where upstream makes 2;

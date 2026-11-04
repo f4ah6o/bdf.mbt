@@ -980,3 +980,40 @@ test "DOCX inline drawings stay in the line" {
   assert_true(same_line, msg="the line is not broken around the picture")
 }
 
+///|
+test "DOCX page borders are drawn in a background layer" {
+  let section = "<w:sectPr><w:pgSz w:w=\"12240\" w:h=\"15840\"/>" +
+    "<w:pgMar w:top=\"1440\" w:right=\"1440\" w:bottom=\"1440\" w:left=\"1440\"/>" +
+    "<w:pgBorders w:offsetFrom=\"text\">" +
+    "<w:top w:val=\"single\" w:sz=\"8\" w:space=\"4\" w:color=\"FF0000\"/>" +
+    "<w:left w:val=\"single\" w:sz=\"8\" w:space=\"4\" w:color=\"FF0000\"/>" +
+    "<w:bottom w:val=\"single\" w:sz=\"8\" w:space=\"4\" w:color=\"FF0000\"/>" +
+    "<w:right w:val=\"single\" w:sz=\"8\" w:space=\"4\" w:color=\"FF0000\"/>" +
+    "</w:pgBorders></w:sectPr>"
+  let data = docx_test_docx(
+    "<w:p><w:r><w:t>Border</w:t></w:r></w:p>", section, [],
+  )
+  let result = convert(data)
+  let doc = @core.open_single(result.bdf)
+  let view = doc.manifest.views[0]
+  let page = view.pages[0]
+  let mut background = ""
+  for layer in page.layers {
+    if layer.role == "background" {
+      background = layer.object
+    }
+  }
+  assert_true(background != "", msg="DOCX page border background layer")
+  let mut red = 0
+  let mut strokes = 0
+  for command in @render.decode_commands(doc.part(background)) {
+    match command {
+      StrokeColor(0xff0000ff) => red += 1
+      StrokePath(_) => strokes += 1
+      _ => ()
+    }
+  }
+  assert_eq(red, 4)
+  assert_eq(strokes, 4)
+}
+

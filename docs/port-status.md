@@ -103,10 +103,11 @@
   and repeated header rows; columns, column breaks and vertical section
   bodies are implemented. Anchored drawings float left/right with square
   wrap or above/below a band, with behind/in-front z-order and page-fit
-  movement. Exact font metrics/shaping, tight/through contours and effect
+  movement; page borders are drawn in a background layer. Exact font
+  metrics/shaping, tight/through contours and effect
   extents, exact footnote separators, upright CJK in vertical text, tables in
-  headers/footers, PAGEREF/REF, page borders, keep/widow chains and table
-  styles/autofit remain documented gaps in `compat/docx`.
+  headers/footers, PAGEREF/REF, keep/widow chains and table styles/autofit
+  remain documented gaps in `compat/docx`.
 - PPTX: `convert/pptx` emits the upstream `slides` fixed view with
   background/layout/master/body layers, shared master objects, placeholder
   text inheritance, bullets and levels, tables, bar/line/pie charts, line

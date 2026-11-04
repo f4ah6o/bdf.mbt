@@ -72,7 +72,7 @@ test "DOCX unsupported content is rejected" {
     source in [
       "<body><p><r><drawing/></r></p></body>", "<body><p><r><rPr/><rPr/></r></p></body>",
       "<body><p><r><tab><drawing/></tab></r></p></body>", "<body><sdt><sdtContent><p><pPr><sectPr/></pPr></p></sdtContent></sdt></body>",
-      "<body><sectPr><pgBorders/></sectPr></body>",
+      "<body><sectPr><bogus/></sectPr></body>",
     ] {
     let root = docx_text_xml(source)
     let walker : DocxTextWalker = {

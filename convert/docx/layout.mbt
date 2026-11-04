@@ -2233,6 +2233,122 @@ fn docx_append_page_index(
 }
 
 ///|
+fn docx_page_border_color(border : DocxBorder) -> UInt32 {
+  if border.color.length() == 6 {
+    let parsed = @string.parse_int(border.color, base=16) catch { _ => -1 }
+    if parsed >= 0 {
+      return (parsed.to_uint() << 8) | 0xffU
+    }
+  }
+  0x000000ffU
+}
+
+///|
+/// The page-background object for one page, holding the four `w:pgBorders`
+/// rules. None when the section has no visible border or the display rule
+/// excludes this page.
+fn docx_flow_page_borders(flow : DocxFlow) -> @core.ObjectBuilder? raise {
+  let section = flow.section
+  let mut visible = false
+  for border in section.borders {
+    match border {
+      Some(value) =>
+        if value.width > 0.0 && value.style != "nil" && value.style != "none" {
+          visible = true
+        }
+      None => ()
+    }
+  }
+  if !visible {
+    return None
+  }
+  let first = flow.page_in_section == 0
+  if section.border_first && !first {
+    return None
+  }
+  if section.border_not_first && first {
+    return None
+  }
+  let top = section.borders[0]
+  let left = section.borders[1]
+  let bottom = section.borders[2]
+  let right = section.borders[3]
+  let mut x0 = 0.0
+  let mut y0 = 0.0
+  let mut x1 = section.width
+  let mut y1 = section.height
+  if section.border_from_text {
+    x0 = section.left
+    y0 = section.top
+    x1 = section.width - section.right
+    y1 = section.height - section.bottom
+    match top {
+      Some(value) => y0 -= value.space
+      None => ()
+    }
+    match left {
+      Some(value) => x0 -= value.space
+      None => ()
+    }
+    match bottom {
+      Some(value) => y1 += value.space
+      None => ()
+    }
+    match right {
+      Some(value) => x1 += value.space
+      None => ()
+    }
+  } else {
+    match top {
+      Some(value) => y0 += value.space
+      None => ()
+    }
+    match left {
+      Some(value) => x0 += value.space
+      None => ()
+    }
+    match bottom {
+      Some(value) => y1 -= value.space
+      None => ()
+    }
+    match right {
+      Some(value) => x1 -= value.space
+      None => ()
+    }
+  }
+  let object = @core.ObjectBuilder::new()
+  object.set_bbox(
+    0.0F,
+    0.0F,
+    Float::from_double(section.width),
+    Float::from_double(section.height),
+  )
+  let sides = [top, left, bottom, right]
+  let coordinates = [
+    [x0, y0, x1, y0],
+    [x0, y0, x0, y1],
+    [x0, y1, x1, y1],
+    [x1, y0, x1, y1],
+  ]
+  for index, border in sides {
+    match border {
+      Some(value) =>
+        if value.width > 0.0 && value.style != "nil" && value.style != "none" {
+          object.stroke_color(docx_page_border_color(value))
+          object.line(Float::from_double(value.width), 0, 0, 8.0F)
+          object.stroke_path(
+            object.add_path(
+              @core.Inline({ verbs: b"\x00\x01", coordinates: coordinates[index] }),
+            ),
+          )
+        }
+      None => ()
+    }
+  }
+  Some(object)
+}
+
+///|
 fn docx_flow_flush_page(flow : DocxFlow) -> Unit raise {
   if !flow.page_open {
     return
@@ -2279,6 +2395,18 @@ fn docx_flow_flush_page(flow : DocxFlow) -> Unit raise {
   let page_index = flow.page_index
   let layers : Array[Json] = []
   let mut text_layer = 0
+  match docx_flow_page_borders(flow) {
+    Some(background) => {
+      let background_hash = flow.writer.add_part("obj", background.encode())
+      layers.push(
+        Json::object({
+          "role": Json::string("background"),
+          "obj": Json::string(background_hash),
+        }),
+      )
+    }
+    None => ()
+  }
   if flow.has_header {
     let header_encoded = flow.header_object.encode()
     let header_hash = flow.writer.add_part("obj", header_encoded)
