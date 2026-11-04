@@ -2330,6 +2330,72 @@ fn pptx_chart_tick_text(value : Double) -> String {
 }
 
 ///|
+fn pptx_chart_format_number(value : Double, code : String) -> String {
+  if code == "" {
+    return pptx_chart_tick_text(value)
+  }
+  let first = match code.find(";") {
+    Some(index) => code[:index].to_owned()
+    None => code
+  }
+  let percent = first.contains("%")
+  let money = first.contains("$")
+  let display = if percent { value * 100.0 } else { value }
+  let parts = first.split(".").to_array()
+  let mut decimals = 0
+  if parts.length() > 1 {
+    let decimal_part = parts[1]
+    for ch in decimal_part {
+      if ch == '0' || ch == '#' {
+        decimals += 1
+      } else {
+        break
+      }
+    }
+  }
+  if decimals > 6 {
+    decimals = 6
+  }
+  let mut scale = 1
+  for _ in 0..<decimals {
+    scale *= 10
+  }
+  let scaled = (display * scale.to_double() +
+    (if display >= 0.0 { 0.5 } else { -0.5 })).to_int()
+  let negative = scaled < 0
+  let absolute = if negative { -scaled } else { scaled }
+  let whole = absolute / scale
+  let fraction = absolute % scale
+  let whole_text = whole.to_string()
+  let text = StringBuilder()
+  if negative {
+    text.write_char('-')
+  }
+  if money {
+    text.write_char('$')
+  }
+  for index, ch in whole_text {
+    if index > 0 && (whole_text.length() - index) % 3 == 0 &&
+      first.contains("#,##") {
+      text.write_char(',')
+    }
+    text.write_char(ch)
+  }
+  if decimals > 0 {
+    text.write_char('.')
+    let fraction_text = fraction.to_string()
+    for _ in 0..<(decimals - fraction_text.length()) {
+      text.write_char('0')
+    }
+    text.write_string(fraction_text)
+  }
+  if percent {
+    text.write_char('%')
+  }
+  text.to_string()
+}
+
+///|
 fn pptx_chart_collect_text(node : PptxXmlNode, out : StringBuilder) -> Unit {
   let name = node.element.name.local_name
   if name == "t" || name == "v" {
@@ -3259,6 +3325,7 @@ fn pptx_emit_chart(
   let mut axis_high = nice_high
   let mut minor_unit = 0.0
   let mut minor_gridlines = false
+  let mut axis_format = ""
   // value axis labels
   let value_axis_visible = match pptx_child(plot_area, "valAx") {
     Some(value) =>
@@ -3295,6 +3362,10 @@ fn pptx_emit_chart(
             _ => 0.0
           }
         None => 0.0
+      }
+      axis_format = match pptx_child(Some(value), "numFmt") {
+        Some(format) => pptx_attribute(format.element, "formatCode", "")
+        None => ""
       }
       let scaling = pptx_child(Some(value), "scaling")
       match pptx_child(scaling, "max") {
@@ -3364,7 +3435,7 @@ fn pptx_emit_chart(
         )
       }
     }
-    let text = pptx_chart_tick_text(tick)
+    let text = pptx_chart_format_number(tick, axis_format)
     if horizontal {
       pptx_chart_label(
         object,
