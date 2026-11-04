@@ -2731,6 +2731,18 @@ fn pptx_emit_chart(
     return
   }
   let minor = fonts.minor
+  match pptx_node_color(pptx_child(Some(root), "spPr"), "solidFill", theme) {
+    Some(color) => {
+      object.fill_color(color)
+      object.fill_rect(
+        Float::from_double(x),
+        Float::from_double(y),
+        Float::from_double(width),
+        Float::from_double(height),
+      )
+    }
+    None => ()
+  }
   let label_font = object.add_font({
     hash: None,
     family: minor,
