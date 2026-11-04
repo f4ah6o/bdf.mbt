@@ -2657,8 +2657,34 @@ fn pptx_emit_chart(
   if legend is Some(_) {
     let entries : Array[String] = []
     let entry_colors : Array[UInt32] = []
+    let deleted : Array[Int] = []
+    for child in legend.unwrap().children {
+      if child.element.name.local_name == "legendEntry" {
+        let index = match pptx_child(Some(child), "idx") {
+          Some(value) =>
+            @string.parse_int(pptx_attribute(value.element, "val", "0")) catch {
+              _ => -1
+            }
+          None => -1
+        }
+        let remove = match pptx_child(Some(child), "delete") {
+          Some(value) => pptx_attribute(value.element, "val", "0") != "0"
+          None => false
+        }
+        if index >= 0 && remove {
+          deleted.push(index)
+        }
+      }
+    }
+    let overlay = match pptx_child(legend, "overlay") {
+      Some(value) => pptx_attribute(value.element, "val", "0") != "0"
+      None => false
+    }
     if is_pie {
       for index, category in series[0].categories {
+        if deleted.contains(index) {
+          continue
+        }
         entries.push(category)
         let point = if index < series[0].point_colors.length() &&
           series[0].point_colors[index] != 0U {
@@ -2669,7 +2695,10 @@ fn pptx_emit_chart(
         entry_colors.push(point)
       }
     } else {
-      for item in series {
+      for index, item in series {
+        if deleted.contains(index) {
+          continue
+        }
         entries.push(item.name)
         entry_colors.push(item.color)
       }
@@ -2703,7 +2732,7 @@ fn pptx_emit_chart(
         )
         legend_x += pptx_text_width(entry, label_size) + 18.0
       }
-      if position == "b" {
+      if position == "b" && !overlay {
         plot_height = Double::max(1.0, plot_height - 12.0)
       }
     } else if position == "l" {
@@ -2727,8 +2756,10 @@ fn pptx_emit_chart(
         )
         legend_y += 12.0
       }
-      plot_x += 64.0
-      plot_width = Double::max(1.0, plot_width - 64.0)
+      if !overlay {
+        plot_x += 64.0
+        plot_width = Double::max(1.0, plot_width - 64.0)
+      }
     } else {
       let mut legend_y = plot_y + 4.0
       for index, entry in entries {
@@ -2750,7 +2781,9 @@ fn pptx_emit_chart(
         )
         legend_y += 12.0
       }
-      plot_width = Double::max(1.0, plot_width - 64.0)
+      if !overlay {
+        plot_width = Double::max(1.0, plot_width - 64.0)
+      }
     }
   }
   if is_scatter {
