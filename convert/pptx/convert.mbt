@@ -3608,6 +3608,21 @@ fn pptx_emit_chart(
   let tick_label_color = pptx_chart_tx_color(val_axis_node, theme, black)
   let cat_label_size = pptx_chart_tx_size(cat_axis_node, label_size)
   let cat_label_color = pptx_chart_tx_color(cat_axis_node, theme, black)
+  let plot_fill = pptx_node_color(
+    pptx_child(plot_area, "spPr"), "solidFill", theme,
+  )
+  match plot_fill {
+    Some(color) => {
+      object.fill_color(color)
+      object.fill_rect(
+        Float::from_double(plot_x),
+        Float::from_double(plot_y),
+        Float::from_double(plot_width),
+        Float::from_double(plot_height),
+      )
+    }
+    None => ()
+  }
   let mut tick = 0.0
   while value_axis_visible && tick <= axis_high + step * 1.0e-6 {
     if minor_gridlines {

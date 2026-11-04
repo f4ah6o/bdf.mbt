@@ -100,7 +100,7 @@ stacked segment labels and pie percentage/value labels (with optional
 category/series names, `c:numFmt` and `c:txPr` sizes/colours/bold/italic) from `dLbls`, legends with colour swatches and `txPr` text styles, deleted entries and
 overlay mode, category labels and value-axis ticks with `txPr` text
 styles, explicit `c:majorUnit`/`c:minorUnit`, `c:scaling/c:max`, value-axis
-`c:numFmt` and major/minor gridlines. Office
+`c:numFmt`, plot-area `c:spPr` fills and major/minor gridlines. Office
 Math in `a14:m` is linearized to text (fractions, roots, scripts, n-ary
 operators, delimiters, matrices, accents and groups); the `mc:Choice` that
 holds math is preferred over its `mc:Fallback` picture.
