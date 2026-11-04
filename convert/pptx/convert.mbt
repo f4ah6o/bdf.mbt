@@ -2075,6 +2075,29 @@ fn pptx_chart_tick_text(value : Double) -> String {
 }
 
 ///|
+fn pptx_chart_collect_text(node : PptxXmlNode, out : StringBuilder) -> Unit {
+  let name = node.element.name.local_name
+  if name == "t" || name == "v" {
+    out.write_string(node.text.to_string())
+  }
+  for child in node.children {
+    pptx_chart_collect_text(child, out)
+  }
+}
+
+///|
+fn pptx_chart_title_text(chart_space : PptxXmlNode?) -> String {
+  match pptx_child(chart_space, "title") {
+    Some(value) => {
+      let out = StringBuilder()
+      pptx_chart_collect_text(value, out)
+      out.to_string().trim().to_owned()
+    }
+    None => ""
+  }
+}
+
+///|
 fn pptx_chart_label(
   object : @core.ObjectBuilder,
   font : Int32,
@@ -2200,15 +2223,15 @@ fn pptx_emit_chart(
   })
   let label_size = 8.0
   let black = 0x000000ffU
-  // chart title: Office titles a one-series chart with the series name
-  let title = match pptx_child(chart_space, "title") {
-    Some(_) => ""
-    None =>
-      if series.length() == 1 && series[0].name != "" {
-        series[0].name
-      } else {
-        ""
-      }
+  // An explicit c:title wins; Office titles a one-series chart with its
+  // series name when the chart has no title of its own.
+  let explicit_title = pptx_chart_title_text(chart_space)
+  let title = if explicit_title != "" {
+    explicit_title
+  } else if series.length() == 1 && series[0].name != "" {
+    series[0].name
+  } else {
+    ""
   }
   let plot_x = x + 20.0
   let mut plot_y = y + 20.0
