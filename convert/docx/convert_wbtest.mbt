@@ -57,7 +57,9 @@ test "DOCX text conversion emits a page and text" {
   assert_eq(result.pages, 1)
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  assert_eq(manifest.views.length(), 1)
+  assert_eq(manifest.views.length(), 2)
+  assert_eq(manifest.views[0].kind, "flow")
+  assert_eq(manifest.views[1].kind, "scroll")
   let body_hash = manifest.views[0].pages[0].layers[0].object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
@@ -456,16 +458,16 @@ test "DOCX headers and footers are rendered on each page" {
   let result = convert(docx_story_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
-  let resources = @core.decode_object_resources(
-    @core.open_single(result.bdf).part(body_hash),
-  )
-  let commands = @render.compile_object(resources.object)
+  let document = @core.open_single(result.bdf)
   let text = StringBuilder()
-  for command in commands {
-    match command {
-      @render.FillText(value, _, _, _) => text.write_string(value)
-      _ => ()
+  for layer in manifest.views[0].pages[0].layers {
+    let resources = @core.decode_object_resources(document.part(layer.object))
+    let commands = @render.compile_object(resources.object)
+    for command in commands {
+      match command {
+        @render.FillText(value, _, _, _) => text.write_string(value)
+        _ => ()
+      }
     }
   }
   let value = text.to_string()

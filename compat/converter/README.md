@@ -53,3 +53,10 @@ scroll view id/kind/width, summary and text indexes for the upstream
 `basic.md`, `math.md` and `svg.md` fixtures, including GFM lists, tables,
 footnotes and LaTeX linearization. Whitespace is normalized and 88% text
 similarity is required because line breaks use estimated metrics.
+
+`phase12-docx-test.mjs` compares the DOCX converter with upstream for the
+`basic`, `styles`, `grid`, `vertical` and `math` fixtures: the `pages` (`flow`)
+and `scroll` view kinds, page layer roles, body rectangles, strip counts,
+Dublin Core metadata and normalized page/scroll text. Page counts may differ
+because the MoonBit layout still uses approximate metrics and does not handle
+columns or floating text wrapping.

@@ -78,9 +78,14 @@
   with colour-key masks, and CCITT/JBIG2/JPX masks combined with colour-key
   masks remain explicit gaps; CCITT G3/G4 image XObjects and inline images are
   decoded.
-- DOCX/PPTX: the converters intentionally implement the documented subsets.
-  Unsupported features fail closed or are documented in `compat/docx` and
-  `compat/pptx`.
+- DOCX: `convert/docx` now emits the upstream `pages` (`flow`) and `scroll`
+  views, with separate header/footer/body layers, page body rectangles,
+  Dublin Core metadata, layer-aware text indexes, hyperlinks, fields,
+  Office Math and accepted settings/footnote/endnote parts. Table cells,
+  floating text wrapping, columns, vertical sections, footnote bodies and
+  field regeneration remain documented gaps in `compat/docx`.
+- PPTX: the converter intentionally implements the documented subset;
+  unsupported features fail closed or are documented in `compat/pptx`.
 - AI: PDF-based Illustrator 9+ artwork only; PostScript files (Illustrator 8
   and earlier) and files saved without PDF content are explicit errors.
 - TIFF: JPEG compression, YCbCr pages and DNG camera raw are not supported;
@@ -136,8 +141,8 @@
      the `math.md`/`svg.md` fixtures are ported.
    - EPUB vertical writing and non-picture fixed layout (`vertical.epub`).
    - IDML `simpleidml/` packages, linked images and table stories.
-   - DOCX/PPTX OMML math and font directories (`math.docx`, `math.pptx`,
-     `testdata/fonts`).
+   - PPTX OMML math and font directories (`math.pptx`, `testdata/fonts`);
+     DOCX OMML math is ported.
    - PSD layer compositing when a file has no composite, and TIFF
      JPEG/YCbCr pages.
    - ~~The MusicXML to BDF converter (the parser exists but the Worker does

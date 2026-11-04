@@ -212,26 +212,76 @@ fn docx_png_size(data : Bytes) -> (Int32, Int32)? {
 }
 
 ///|
+fn docx_append_index(
+  encoded : Bytes,
+  page_index : Int32,
+  layer_index : Int32,
+  index_runs : Array[@core.IndexRun],
+  budget : @render.TextExtractionBudget,
+) -> Unit {
+  let content = @render.extract_text_with_budget(
+    @core.decode_object_resources(encoded),
+    fn(_) { None },
+    budget,
+  ) catch {
+    _ => { runs: [], links: [], nodes: [], }
+  }
+  for i, run in content.runs {
+    index_runs.push({
+      a: page_index,
+      b: layer_index,
+      ordinal: run.ordinal,
+      separator: if i == 0 { 2 } else { run.separator },
+      text: run.text,
+    })
+  }
+}
+
+///|
 fn docx_render_document(
   document : DocxTextDocument,
   title : String,
   data : Bytes,
 ) -> DocxResult raise {
+  let pkg = @ooxml.open_ooxml(data) catch {
+    _ => raise DocxInvalid("invalid DOCX package")
+  }
+  let core = pkg.core_properties()
   let meta : Map[String, Json] = {
     "source": Json::string("docx"),
     "generator": Json::string("bdf-go/0.1"),
   }
+  let dc : Map[String, Json] = Map([])
+  for entry in [
+    ("title", core.title),
+    ("creator", core.creator),
+    ("subject", core.subject),
+    ("description", core.description),
+    ("identifier", core.identifier),
+    ("language", core.language),
+    ("created", core.created),
+    ("modified", core.modified),
+  ] {
+    let (key, values) = entry
+    if !values.is_empty() && values[0] != "" {
+      dc[key] = Json::string(values[0])
+    }
+  }
   if title != "" {
-    meta["title"] = Json::string(title)
+    dc["title"] = Json::string(title)
+  }
+  if !dc.is_empty() {
+    meta["dc"] = Json::object(dc)
   }
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
-  let pkg = @ooxml.open_ooxml(data) catch {
-    _ => raise DocxInvalid("invalid DOCX package")
-  }
   let pages : Array[Json] = []
   let warnings : Array[String] = ["DOCX layout uses approximate text metrics"]
   let mut section = docx_section_at(document, 0)
   let mut object = @core.ObjectBuilder::new()
+  let mut header_object = @core.ObjectBuilder::new()
+  let mut footer_object = @core.ObjectBuilder::new()
+  let mut has_header = false
+  let mut has_footer = false
   let fonts : Map[String, Int32] = Map([])
   let stories : Map[String, Array[String]] = Map([])
   let mut section_index = 0
@@ -382,46 +432,74 @@ fn docx_render_document(
         }
       }
     }
-    docx_emit_story(
-      object,
-      footer_lines,
-      section.left,
-      section.height - section.footer - footer_lines.length().to_double() * 12.0,
-      10.0,
-    )
+    if !footer_lines.is_empty() {
+      docx_emit_story(
+        footer_object,
+        footer_lines,
+        section.left,
+        section.height -
+        section.footer -
+        footer_lines.length().to_double() *
+        12.0,
+        10.0,
+      )
+      has_footer = true
+    }
     let encoded = object.encode()
     let hash = writer.add_part("obj", encoded)
     let page_index = pages.length()
-    let content = @render.extract_text_with_budget(
-      @core.decode_object_resources(encoded),
-      fn(_) { None },
-      index_budget,
-    ) catch {
-      _ => { runs: [], links: [], nodes: [], }
+    let layers : Array[Json] = []
+    if has_header {
+      let header_encoded = header_object.encode()
+      let header_hash = writer.add_part("obj", header_encoded)
+      layers.push(
+        Json::object({
+          "role": Json::string("header"),
+          "obj": Json::string(header_hash),
+        }),
+      )
+      docx_append_index(
+        header_encoded, page_index, 0, index_runs, index_budget,
+      )
     }
-    for i, run in content.runs {
-      index_runs.push({
-        a: page_index,
-        b: 0,
-        ordinal: run.ordinal,
-        separator: if i == 0 {
-          2
-        } else {
-          run.separator
-        },
-        text: run.text,
-      })
+    if has_footer {
+      let footer_encoded = footer_object.encode()
+      let footer_hash = writer.add_part("obj", footer_encoded)
+      layers.push(
+        Json::object({
+          "role": Json::string("footer"),
+          "obj": Json::string(footer_hash),
+        }),
+      )
+      docx_append_index(
+        footer_encoded, page_index, 1, index_runs, index_budget,
+      )
     }
+    layers.push(
+      Json::object({
+        "role": Json::string("body"),
+        "obj": Json::string(hash),
+      }),
+    )
+    docx_append_index(encoded, page_index, 2, index_runs, index_budget)
     pages.push(
       Json::object({
+        "page": Json::number((page_index + 1).to_double()),
         "w": Json::number(section.width, repr=section.width.to_string()),
         "h": Json::number(section.height, repr=section.height.to_string()),
-        "layers": Json::array([
-          Json::object({
-            "role": Json::string("body"),
-            "obj": Json::string(hash),
-          }),
-        ]),
+        "body": Json::object({
+          "x": Json::number(section.left, repr=section.left.to_string()),
+          "y": Json::number(section.top, repr=section.top.to_string()),
+          "w": Json::number(
+            section.width - section.left - section.right,
+            repr=(section.width - section.left - section.right).to_string(),
+          ),
+          "h": Json::number(
+            section.height - section.top - section.bottom,
+            repr=(section.height - section.top - section.bottom).to_string(),
+          ),
+        }),
+        "layers": Json::array(layers),
       }),
     )
     page_open = false
@@ -430,6 +508,10 @@ fn docx_render_document(
   fn new_page() -> Unit raise {
     flush_page()
     object = @core.ObjectBuilder::new()
+    header_object = @core.ObjectBuilder::new()
+    footer_object = @core.ObjectBuilder::new()
+    has_header = false
+    has_footer = false
     fonts.clear()
     page_ordinal += 1
     page_open = true
@@ -455,13 +537,16 @@ fn docx_render_document(
         }
       }
     }
-    docx_emit_story(
-      object,
-      header_lines,
-      section.left,
-      section.header + 10.0,
-      10.0,
-    )
+    if !header_lines.is_empty() {
+      docx_emit_story(
+        header_object,
+        header_lines,
+        section.left,
+        section.header + 10.0,
+        10.0,
+      )
+      has_header = true
+    }
     y = section.top
     line_start = section.left
     line_x = section.left
@@ -752,7 +837,7 @@ fn docx_render_document(
   }
   let view : Map[String, Json] = {
     "id": Json::string("pages"),
-    "kind": Json::string("fixed"),
+    "kind": Json::string("flow"),
     "pages": Json::array(pages),
   }
   if title != "" {
@@ -765,12 +850,35 @@ fn docx_render_document(
     }
   }
   writer.add_view(Json::object(view))
+  let (scroll_pages, scroll_runs, strips) = docx_render_scroll(document, writer)
+  if !scroll_pages.is_empty() {
+    let scroll_view : Map[String, Json] = {
+      "id": Json::string("scroll"),
+      "kind": Json::string("scroll"),
+      "pages": Json::array(scroll_pages),
+    }
+    if title != "" {
+      scroll_view["title"] = Json::string(title)
+    }
+    if !scroll_runs.is_empty() {
+      let encoded = @core.encode_text_index(scroll_runs) catch { _ => b"" }
+      if encoded.length() > 0 {
+        scroll_view["textIndex"] = Json::string(writer.add_part("idx", encoded))
+      }
+    }
+    writer.add_view(Json::object(scroll_view))
+  }
   let bdf = writer.write_single()
   let count = pages.length()
   {
     bdf,
     pages: count,
-    summary: "\{count} page" + (if count == 1 { "" } else { "s" }),
+    summary: "\{count} page" +
+      (if count == 1 { "" } else { "s" }) +
+      ", " +
+      strips.to_string() +
+      " scroll strip" +
+      (if strips == 1 { "" } else { "s" }),
     warnings,
   }
 }
