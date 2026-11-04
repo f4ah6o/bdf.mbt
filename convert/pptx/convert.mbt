@@ -2088,10 +2088,44 @@ fn pptx_circle_path(cx : Double, cy : Double, radius : Double) -> @core.Path {
 }
 
 ///|
+fn pptx_chart_explosions(series : PptxXmlNode) -> Array[Double] {
+  let out : Array[Double] = []
+  for child in series.children {
+    if child.element.name.local_name != "dPt" {
+      continue
+    }
+    let index_node = pptx_child(Some(child), "idx")
+    let explosion_node = pptx_child(Some(child), "explosion")
+    if index_node is None || explosion_node is None {
+      continue
+    }
+    let index = @string.parse_int(
+      pptx_attribute(index_node.unwrap().element, "val", "0"),
+    ) catch {
+      _ => -1
+    }
+    if index < 0 {
+      continue
+    }
+    let value = @string.parse_double(
+      pptx_attribute(explosion_node.unwrap().element, "val", "0"),
+    ) catch {
+      _ => 0.0
+    }
+    while out.length() <= index {
+      out.push(0.0)
+    }
+    out[index] = value
+  }
+  out
+}
+
+///|
 priv struct PptxChartSeries {
   name : String
   categories : Array[String]
   values : Array[Double]
+  explosions : Array[Double]
   color : UInt32
 }
 
@@ -2346,6 +2380,7 @@ fn pptx_emit_chart(
       name: pptx_chart_series_name(item),
       categories,
       values,
+      explosions: pptx_chart_explosions(item),
       color,
     })
   }
@@ -2833,14 +2868,23 @@ fn pptx_emit_chart(
     }
     let mut start = -3.141592653589793 / 2.0 +
       first_angle * 3.141592653589793 / 180.0
+    let explosions = series[0].explosions
     for index, value in values {
       let sweep = 2.0 * 3.141592653589793 * value / total
+      let mid = start + sweep / 2.0
+      let explosion = if index < explosions.length() {
+        explosions[index]
+      } else {
+        0.0
+      }
+      let offset = radius * explosion / 100.0
+      let slice_cx = cx + @math.cos(mid) * offset
+      let slice_cy = cy + @math.sin(mid) * offset
       let path = object.add_path(
-        @core.Inline(pptx_pie_path(cx, cy, radius, start, sweep)),
+        @core.Inline(pptx_pie_path(slice_cx, slice_cy, radius, start, sweep)),
       )
       object.fill_color(palette[index % palette.length()])
       object.fill_path(path, 0)
-      let mid = start + sweep / 2.0
       let mut label = if pie_labels.0 {
         pptx_chart_tick_text(value)
       } else if pie_labels.1 {
@@ -2864,8 +2908,8 @@ fn pptx_emit_chart(
           label_size,
           black,
           label,
-          cx + @math.cos(mid) * label_radius - label_width / 2.0,
-          cy + @math.sin(mid) * label_radius,
+          slice_cx + @math.cos(mid) * label_radius - label_width / 2.0,
+          slice_cy + @math.sin(mid) * label_radius,
         )
       }
       start += sweep

@@ -93,7 +93,7 @@ Tables render cell text with wrapped lines, cell fills, text
 colors/sizes/bold/italic/alignment, vertical anchors, margins, per-side borders,
 grid widths/spans, row heights/spans and vertical merges. Bar (clustered and
 stacked, horizontal and vertical, with `gapWidth`/`overlap`), line, area,
-scatter, radar, pie and doughnut charts (with `firstSliceAng`) draw their series, axis titles,
+scatter, radar, pie and doughnut charts (with `firstSliceAng` and per-point `explosion`) draw their series, axis titles,
 bar/line/radar/scatter value labels with optional category/series names,
 stacked segment labels and pie percentage/value labels (with optional
 category/series names) from `dLbls`, legends, category labels, value-axis ticks, explicit `c:majorUnit`/`c:minorUnit` and
