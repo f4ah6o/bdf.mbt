@@ -125,7 +125,7 @@ The 74 predefined table-style IDs resolve their whole-table, header, band and
 last-row/edge-column fills, their header/body text colours and their family
 borders (the grid/rule sides are approximated per family);
 `normAutofit` font scale and
-line-spacing reduction are applied, while blip bullets and advanced vertical
-glyph stacking are not implemented; chart label
+line-spacing reduction are applied, while advanced vertical
+glyph stacking is not implemented; chart label
 text keeps the estimated advance even when fonts are supplied, and the subsets
 are always embedded as WOFF2 without the `no_subset`/`no_woff2` options.

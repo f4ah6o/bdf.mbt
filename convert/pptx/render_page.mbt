@@ -701,6 +701,7 @@ fn pptx_build_tree_layer(
   let ctx : PptxShapeContext = {
     package,
     writer,
+    part,
     theme,
     theme_fonts,
     theme_fills,
@@ -816,6 +817,7 @@ fn pptx_render_page(
       let empty_ctx : PptxShapeContext = {
         package,
         writer,
+        part: "",
         theme,
         theme_fonts,
         theme_fills,
@@ -900,6 +902,7 @@ fn pptx_render_page(
   let body_ctx : PptxShapeContext = {
     package,
     writer,
+    part: slide_part,
     theme,
     theme_fonts,
     theme_fills,

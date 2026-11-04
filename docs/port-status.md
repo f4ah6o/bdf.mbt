@@ -123,8 +123,8 @@
   fills, bands and header text; Medium-Style-2 also draws its grid/header
   borders. SmartArt/ink, 3D and other chart types remain gaps; chart titles
   use `c:title` or the single-series name, and bar/line charts with `c:dTable`
-  draw a category/series/value table. Blip bullets and advanced vertical
-  stacking remain documented gaps in `compat/pptx`.
+  draw a category/series/value table. Advanced vertical stacking remains a
+  documented gap in `compat/pptx`.
 - AI: PDF-based Illustrator 9+ artwork only; PostScript files (Illustrator 8
   and earlier) and files saved without PDF content are explicit errors.
 - TIFF: JPEG compression, YCbCr pages and DNG camera raw are not supported;

@@ -5579,6 +5579,15 @@ test "PPTX bullet properties are inherited per paragraph level" {
 }
 
 ///|
+test "PPTX blip bullets keep their image relationship" {
+  let root = pptx_parse_xml(
+    "<a:pPr xmlns:a='http://schemas.openxmlformats.org/drawingml/2006/main' xmlns:r='http://schemas.openxmlformats.org/officeDocument/2006/relationships'><a:buBlip><a:blip r:embed='rId7'/></a:buBlip></a:pPr>",
+  )
+  let bullet = pptx_paragraph_bullet([root])
+  assert_eq(bullet.kind, "char")
+  assert_eq(bullet.blip, "rId7")
+}
+
 test "PPTX bullet colour and size overrides are parsed" {
   let root = pptx_parse_xml(
     "<a:pPr xmlns:a='http://schemas.openxmlformats.org/drawingml/2006/main'><a:buClr><a:srgbClr val='FFFFFF'/></a:buClr><a:buSzPct val='50000'/><a:buChar char='•'/></a:pPr>",

@@ -14,6 +14,7 @@ priv struct PptxThemeFonts {
 priv struct PptxShapeContext {
   package : @ooxml.OoxmlPackage
   writer : @core.DocumentWriter
+  part : String
   theme : Map[String, UInt32]
   theme_fonts : PptxThemeFonts
   theme_fills : Array[PptxXmlNode]
@@ -393,6 +394,7 @@ fn pptx_layout_paragraph(
   bullet_weight : Int32,
   bullet_style : Int32,
   bullet_color : UInt32,
+  bullet_blip : String,
   available : Double,
   fonts : PptxFontContext,
 ) -> PptxParagraphLayout {
@@ -531,6 +533,7 @@ fn pptx_layout_paragraph(
       color_node: None,
       size_pct: 0.0,
       size_pts: 0.0,
+      blip: bullet_blip,
     },
     bullet_x,
     bullet_width,
@@ -598,6 +601,23 @@ fn pptx_first_char(chars : Array[PptxStyledChar]) -> PptxStyledChar? {
   for c in chars {
     if !c.hard_break {
       return Some(c)
+    }
+  }
+  None
+}
+
+///|
+fn pptx_bullet_image(
+  ctx : PptxShapeContext,
+  blip : String,
+) -> Bytes? {
+  if blip == "" || ctx.part == "" {
+    return None
+  }
+  for rel in ctx.package.relationships(ctx.part) {
+    if rel.id == blip && !rel.external {
+      let bytes = ctx.package.read(rel.target) catch { _ => return None }
+      return Some(bytes)
     }
   }
   None
@@ -701,6 +721,7 @@ fn pptx_draw_shape_text(
       bullet_weight,
       bullet_style,
       bullet_color,
+      bullet.blip,
       available,
       ctx.font_ctx,
     )
@@ -750,7 +771,28 @@ fn pptx_draw_shape_text(
   for paragraph in paragraphs {
     line_y += paragraph.space_before
     object.mark(0, "")
-    if paragraph.bullet.text != "" {
+    let mut bullet_drawn = false
+    if paragraph.bullet.blip != "" {
+      match pptx_bullet_image(ctx, paragraph.bullet.blip) {
+        Some(bytes) => {
+          let hash = ctx.writer.add_part("img", bytes)
+          let index = object.add_image(hash)
+          let baseline = line_y +
+            paragraph.lines[0].height -
+            paragraph.lines[0].desc
+          object.image(
+            index,
+            Float::from_double(origin_x + paragraph.bullet_x),
+            Float::from_double(baseline - paragraph.bullet_size),
+            Float::from_double(paragraph.bullet_size),
+            Float::from_double(paragraph.bullet_size),
+          )
+          bullet_drawn = true
+        }
+        None => ()
+      }
+    }
+    if paragraph.bullet.text != "" && !bullet_drawn {
       let font = pptx_font_ref_text(
         ctx.font_ctx,
         object,

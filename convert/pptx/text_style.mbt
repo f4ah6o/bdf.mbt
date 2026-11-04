@@ -402,6 +402,7 @@ priv struct PptxBullet {
   color_node : PptxXmlNode?
   size_pct : Double
   size_pts : Double
+  blip : String
 }
 
 ///|
@@ -409,6 +410,14 @@ fn pptx_paragraph_bullet(chain : Array[PptxXmlNode]) -> PptxBullet {
   let node = pptx_chain_first_child(chain, [
     "buNone", "buAutoNum", "buChar", "buBlip",
   ])
+  let blip = match node {
+    Some(value) if value.element.name.local_name == "buBlip" =>
+      match pptx_child(Some(value), "blip") {
+        Some(child) => pptx_attribute_any(child.element, "embed", "")
+        None => ""
+      }
+    _ => ""
+  }
   let color_node = pptx_chain_first_child(chain, ["buClr"])
   let size_pct = (match pptx_chain_first_child(chain, ["buSzPct"]) {
     Some(value) =>
@@ -434,7 +443,7 @@ fn pptx_paragraph_bullet(chain : Array[PptxXmlNode]) -> PptxBullet {
       if kind == "buNone" {
         {
           kind: "none", text: "", start: 1, font: "", color_node, size_pct,
-          size_pts,
+          size_pts, blip,
         }
       } else if kind == "buAutoNum" {
         {
@@ -449,6 +458,7 @@ fn pptx_paragraph_bullet(chain : Array[PptxXmlNode]) -> PptxBullet {
           color_node,
           size_pct,
           size_pts,
+          blip,
         }
       } else {
         let text = if kind == "buChar" {
@@ -461,12 +471,12 @@ fn pptx_paragraph_bullet(chain : Array[PptxXmlNode]) -> PptxBullet {
           None => ""
         }
         {
-          kind: "char", text, start: 1, font, color_node, size_pct, size_pts,
+          kind: "char", text, start: 1, font, color_node, size_pct, size_pts, blip,
         }
       }
     }
     None => {
-      { kind: "none", text: "", start: 1, font: "", color_node, size_pct, size_pts, }
+      { kind: "none", text: "", start: 1, font: "", color_node, size_pct, size_pts, blip, }
     }
   }
 }

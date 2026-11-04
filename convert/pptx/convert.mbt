@@ -1748,7 +1748,7 @@ fn pptx_emit_table(
           color,
         )
         let layout = pptx_layout_paragraph(
-          chars, props, "", 0.0, minor, bold, italic, color, inner, font_ctx,
+          chars, props, "", 0.0, minor, bold, italic, color, "", inner, font_ctx,
         )
         let mut total = 0.0
         for line in layout.lines {
