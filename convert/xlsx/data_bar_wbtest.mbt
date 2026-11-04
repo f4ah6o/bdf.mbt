@@ -5,6 +5,7 @@ test "XLSX data bars draw proportional rects" {
   let result = convert_plain_no_fonts(data)
   let doc = @core.open_single(result.bdf)
   let widths : Array[Double] = []
+  let mut paints = 0
   for part in doc.manifest.parts {
     if part.kind != "obj" {
       continue
@@ -15,11 +16,13 @@ test "XLSX data bars draw proportional rects" {
     for command in @render.compile_object(resources.object) {
       match command {
         FillRect(_, _, width, _) => widths.push(width)
+        FillPaint(_) => paints += 1
         _ => ()
       }
     }
   }
   assert_eq(widths.length(), 4)
+  assert_eq(paints, 4)
   for index in 1..<widths.length() {
     assert_true(widths[index] > widths[index - 1])
   }

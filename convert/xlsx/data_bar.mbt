@@ -10,6 +10,7 @@ priv struct XlsxDataBarRule {
   axis_position : Double?
   right_to_left : Bool
   border : Bool
+  gradient : Bool
 }
 
 ///|
@@ -37,6 +38,7 @@ fn XlsxWorkbook::xlsx_data_bar_rules(
   let mut axis_position : Double? = None
   let mut right_to_left = false
   let mut border = false
+  let mut gradient = true
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -58,6 +60,7 @@ fn XlsxWorkbook::xlsx_data_bar_rules(
           axis_position = None
           right_to_left = false
           border = false
+          gradient = true
         } else if rule_depth >= 0 &&
           depth == rule_depth + 1 &&
           name == "dataBar" {
@@ -68,6 +71,9 @@ fn XlsxWorkbook::xlsx_data_bar_rules(
           max_length = (@string.parse_double(xlsx_attr(element, "maxLength", "90")) catch { _ => 90.0 })
           right_to_left = xlsx_attr(element, "direction", "") == "rightToLeft"
           border = ["1", "true"].contains(xlsx_attr(element, "border", ""))
+          gradient = !["0", "false", "off"].contains(
+            xlsx_attr(element, "gradient", "1"),
+          )
           let axis = xlsx_attr(element, "axisPosition", "")
           if axis != "" {
             axis_position = Some(
@@ -106,7 +112,7 @@ fn XlsxWorkbook::xlsx_data_bar_rules(
             if !ranges.is_empty() {
               out.push({
                 ranges, stops, color, negative_color, min_length, max_length,
-                axis_position, right_to_left, border,
+                axis_position, right_to_left, border, gradient,
               })
             }
           }
@@ -227,6 +233,7 @@ fn XlsxWorkbook::xlsx_data_bars(
             axis,
             right_to_left: rule.right_to_left,
             border: rule.border,
+            gradient: rule.gradient,
           }
         }
       }

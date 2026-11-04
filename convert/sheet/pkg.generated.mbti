@@ -110,6 +110,7 @@ pub(all) struct GridDataBar {
   axis : Double
   right_to_left : Bool
   border : Bool
+  gradient : Bool
 }
 
 pub(all) struct GridFillPaint {

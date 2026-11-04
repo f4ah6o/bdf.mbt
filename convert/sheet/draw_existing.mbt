@@ -49,6 +49,7 @@ pub(all) struct GridDataBar {
   axis : Double
   right_to_left : Bool
   border : Bool
+  gradient : Bool
 }
 
 ///|
@@ -1437,6 +1438,16 @@ fn grid_gradient_geometry(
 }
 
 ///|
+fn grid_data_bar_lighten(color : UInt32) -> UInt32 {
+  let channel = fn(shift : Int32) -> UInt32 {
+    let value = ((color >> shift) & 0xffU).to_double()
+    let mixed = value + (255.0 - value) * 0.9
+    mixed.to_uint() & 0xffU
+  }
+  (channel(24) << 24) | (channel(16) << 16) | (channel(8) << 8) | 0xffU
+}
+
+///|
 fn GridDrawContext::sized_grid_data_bars(
   self : GridDrawContext,
   bars : Map[Int32, Map[Int32, GridDataBar]],
@@ -1487,15 +1498,35 @@ fn GridDrawContext::sized_grid_data_bars(
       let positive_x = if bar.right_to_left { axis_x - positive } else { axis_x }
       let negative_x = if bar.right_to_left { axis_x } else { axis_x - negative }
       let height = y1 - y0
+      let bar_y = if height > 4.0 { y0 + 2.0 } else { y0 }
+      let bar_height = if height > 4.0 { height - 4.0 } else { height }
+      let draw_bar = fn(tile : DrawTile, x : Double, width : Double, color : UInt32) -> Unit raise {
+        if width <= 0.0 || bar_height <= 0.0 {
+          return
+        }
+        if bar.gradient {
+          let ox = tile.x.to_double() * 2048.0
+          let oy = tile.y.to_double() * 2048.0
+          let index = tile.object.add_paint(
+            @core.Gradient(
+              0,
+              [x - ox, 0.0, x + width - ox, 0.0],
+              [
+                { offset: 0.0, color: color.to_int() },
+                { offset: 1.0, color: grid_data_bar_lighten(color).to_int() },
+              ],
+            ),
+          )
+          tile.object.fill_paint(index)
+          tile.has_color = false
+        } else {
+          tile.fill_color(color)
+        }
+        tile.rectangle(x, bar_y, width, bar_height)
+      }
       for tile in self.in_bounds(x0, y0, x1, y1) {
-        if positive > 0.0 {
-          tile.fill_color(bar.color)
-          tile.rectangle(positive_x, y0, positive, height)
-        }
-        if negative > 0.0 {
-          tile.fill_color(bar.negative_color)
-          tile.rectangle(negative_x, y0, negative, height)
-        }
+        draw_bar(tile, positive_x, positive, bar.color)
+        draw_bar(tile, negative_x, negative, bar.negative_color)
         if bar.border {
           tile.object.stroke_color(bar.color)
           tile.object.line(0.75F, 0, 0, 8.0F)

@@ -273,8 +273,8 @@ similarity, summaries and warnings.
 Remaining gaps: color scales are painted (two or three colors, with min,
 max, num, percent and percentile thresholds; formula thresholds are skipped);
 data bars are painted for min/max thresholds using minLength/maxLength,
-including negative/axis bars, right-to-left direction and borders (gradient
-bars are not); icon sets are painted with percent/num/percentile/min/max
+including negative/axis bars, right-to-left direction, borders and gradients;
+icon sets are painted with percent/num/percentile/min/max
 thresholds, `reverse`, custom `cfIcon` entries and `showValue="0"` cell-value
 hiding; an
 embedded chart's labels are present in the text index but the chart itself is
