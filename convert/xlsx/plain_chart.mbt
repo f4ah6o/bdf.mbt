@@ -488,6 +488,17 @@ fn XlsxWorkbook::xlsx_chart_svg(
     let y = plot_top + plot_height -
       plot_height * (tick - axis_base) / axis_range
     svg.write_string(
+      "<line x1=\"" +
+      left.to_string() +
+      "\" y1=\"" +
+      y.to_string() +
+      "\" x2=\"" +
+      (left + plot_width).to_string() +
+      "\" y2=\"" +
+      y.to_string() +
+      "\" stroke=\"#e0e0e0\"/>",
+    )
+    svg.write_string(
       "<text x=\"" +
       (left - 8.0).to_string() +
       "\" y=\"" +
@@ -891,6 +902,16 @@ fn XlsxWorkbook::xlsx_chart_object(
   for tick in ticks {
     let y = plot_top + plot_height -
       plot_height * (tick - axis_base) / axis_range
+    object.line(0.5F, 0, 0, 8.0F)
+    object.stroke_color(0xe0e0e0ffU)
+    object.stroke_path(
+      object.add_path(
+        @core.Inline({
+          verbs: b"\x00\x01",
+          coordinates: [left, y, left + plot_width, y],
+        }),
+      ),
+    )
     label(
       xlsx_chart_number(tick), left - 40.0, y + 3.0, 10.0, 400,
     )
