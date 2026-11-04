@@ -2376,6 +2376,31 @@ fn pptx_series_marker_color(
 }
 
 ///|
+fn pptx_series_marker_border_width(item : PptxXmlNode) -> Double {
+  let marker = pptx_child(Some(item), "marker")
+  let line = pptx_child(pptx_child(marker, "spPr"), "ln")
+  match line {
+    Some(value) =>
+      match pptx_attribute(value.element, "w", "") {
+        "" => 0.0
+        raw =>
+          (@string.parse_double(raw) catch { _ => 0.0 }) / 12700.0
+      }
+    None => 0.0
+  }
+}
+
+///|
+fn pptx_series_marker_border_color(
+  item : PptxXmlNode,
+  theme : Map[String, UInt32],
+) -> UInt32 {
+  let marker = pptx_child(Some(item), "marker")
+  let line = pptx_child(pptx_child(marker, "spPr"), "ln")
+  pptx_node_color(line, "solidFill", theme).unwrap_or(0x000000ffU)
+}
+
+///|
 fn pptx_series_marker(item : PptxXmlNode) -> (String, Double) {
   let marker = pptx_child(Some(item), "marker")
   let symbol = match pptx_child(marker, "symbol") {
@@ -2406,12 +2431,19 @@ fn pptx_draw_chart_marker(
     Some(color) => object.fill_color(color)
     None => ()
   }
+  if item.marker_border_width > 0.0 {
+    object.line(Float::from_double(item.marker_border_width), 0, 0, 8.0F)
+    object.stroke_color(item.marker_border_color)
+  }
   let half = item.marker_size / 2.0
   if item.marker_symbol == "circle" {
     let path = object.add_path(
       @core.Inline(pptx_circle_path(px, py, half)),
     )
     object.fill_path(path, 0)
+    if item.marker_border_width > 0.0 {
+      object.stroke_path(path)
+    }
   } else if item.marker_symbol == "diamond" {
     let path = object.add_path(
       @core.Inline({
@@ -2423,6 +2455,9 @@ fn pptx_draw_chart_marker(
       }),
     )
     object.fill_path(path, 0)
+    if item.marker_border_width > 0.0 {
+      object.stroke_path(path)
+    }
   } else {
     object.fill_rect(
       Float::from_double(px - half),
@@ -2430,6 +2465,14 @@ fn pptx_draw_chart_marker(
       Float::from_double(item.marker_size),
       Float::from_double(item.marker_size),
     )
+    if item.marker_border_width > 0.0 {
+      object.stroke_rect(
+        Float::from_double(px - half),
+        Float::from_double(py - half),
+        Float::from_double(item.marker_size),
+        Float::from_double(item.marker_size),
+      )
+    }
   }
 }
 
@@ -2471,6 +2514,8 @@ priv struct PptxChartSeries {
   border_color : UInt32
   border_dash : String
   marker_color : UInt32?
+  marker_border_width : Double
+  marker_border_color : UInt32
   marker_symbol : String
   marker_size : Double
 }
@@ -3102,6 +3147,8 @@ fn pptx_emit_chart(
       border_color: pptx_series_border_color(item, theme),
       border_dash: pptx_series_border_dash(item),
       marker_color: pptx_series_marker_color(item, theme),
+      marker_border_width: pptx_series_marker_border_width(item),
+      marker_border_color: pptx_series_marker_border_color(item, theme),
       marker_symbol,
       marker_size,
     })

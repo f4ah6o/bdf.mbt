@@ -94,7 +94,7 @@ colors/sizes/bold/italic/alignment, vertical anchors, margins, per-side borders,
 grid widths/spans, row heights/spans and vertical merges. Bar (clustered and
 stacked, horizontal and vertical, with `gapWidth`/`overlap`), line, area,
 scatter, radar, pie and doughnut charts (with `firstSliceAng`, per-point `explosion` and
-data-point fills, series line widths, dash patterns and marker fills/colours)
+data-point fills, series line widths, dash patterns and marker fills/outlines)
 draw their series, axis titles with `txPr` sizes/colours,
 bar/line/radar/scatter value labels with optional category/series names
 and bar/line/scatter/radar `dLblPos` placement, point colours from
