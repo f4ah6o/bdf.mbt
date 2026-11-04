@@ -1,8 +1,12 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "f4ah6o/bdf/convert/pptx"
 
+import {
+  "f4ah6o/bdf/font/db",
+}
+
 // Values
-pub fn convert(Bytes, title? : String) -> PptxResult raise
+pub fn convert(Bytes, title? : String, db? : @db.Database?) -> PptxResult raise
 
 pub fn detect(Bytes) -> Bool
 
