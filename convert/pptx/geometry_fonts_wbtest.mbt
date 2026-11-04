@@ -187,13 +187,13 @@ test "PPTX built-in table style adds grid and header borders" {
   assert_eq(body.length(), 4)
   assert_eq(last.length(), 5)
   let mut header_bottom = false
-  for (side, width, _) in header {
+  for (side, width, _, _) in header {
     if side == 2 && width == 3.0 {
       header_bottom = true
     }
   }
   let mut last_top = false
-  for (side, width, _) in last {
+  for (side, width, _, _) in last {
     if side == 0 && width == 3.0 {
       last_top = true
     }

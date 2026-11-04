@@ -1109,8 +1109,8 @@ fn pptx_cell_grid_span(cell : PptxXmlNode) -> Int32 {
 fn pptx_cell_borders(
   cell : PptxXmlNode,
   theme : Map[String, UInt32],
-) -> Array[(Int32, Double, UInt32)] {
-  let result : Array[(Int32, Double, UInt32)] = []
+) -> Array[(Int32, Double, UInt32, String)] {
+  let result : Array[(Int32, Double, UInt32, String)] = []
   let props = pptx_child(Some(cell), "tcPr")
   let names = [
     "lnT", "lnR", "lnB", "lnL", "lnTlToBr", "lnBlToTr",
@@ -1128,7 +1128,11 @@ fn pptx_cell_borders(
           let color = pptx_node_color(Some(line), "solidFill", theme).unwrap_or(
             0x000000ffU,
           )
-          result.push((side, width, color))
+          let dash = match pptx_child(Some(line), "prstDash") {
+            Some(value) => pptx_attribute(value.element, "val", "solid")
+            None => "solid"
+          }
+          result.push((side, width, color, dash))
         }
       }
       None => ()
@@ -1342,8 +1346,8 @@ fn pptx_table_style_borders(
   row_count : Int,
   col_index : Int,
   col_count : Int,
-) -> Array[(Int32, Double, UInt32)] {
-  let borders : Array[(Int32, Double, UInt32)] = []
+) -> Array[(Int32, Double, UInt32, String)] {
+  let borders : Array[(Int32, Double, UInt32, String)] = []
   let info = match pptx_table_style_family(style_id) {
     Some(value) => value
     None => return borders
@@ -1359,7 +1363,7 @@ fn pptx_table_style_borders(
     None => 0x000000ffU
   }
   let add = fn(side : Int32, width : Double, color : UInt32) -> Unit {
-    borders.push((side, width, color))
+    borders.push((side, width, color, ""))
   }
   let all = fn(width : Double, color : UInt32) -> Unit {
     for side in 0..<4 {
@@ -1626,7 +1630,7 @@ fn pptx_emit_table(
         explicit_borders
       }
       for border in borders {
-        let (side, border_width, border_color) = border
+        let (side, border_width, border_color, border_dash) = border
         let coordinates : Array[Double] = match side {
           0 => [cell_x, row_top, cell_x + column_width, row_top]
           1 =>
@@ -1661,6 +1665,7 @@ fn pptx_emit_table(
         }
         let path : @core.Path = { verbs: b"\x00\x01", coordinates, }
         object.line(Float::from_double(border_width), 0, 0, 8.0F)
+        pptx_apply_chart_dash(object, border_dash)
         object.stroke_color(border_color)
         object.stroke_path(object.add_path(@core.Inline(path)))
       }
