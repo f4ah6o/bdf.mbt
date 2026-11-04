@@ -270,8 +270,10 @@ The `compat/converter/phase14-xlsx-test.mjs` check compares all four workbooks
 with the upstream converter: sheet and chart-sheet views, tile counts, text
 similarity, summaries and warnings.
 
-Remaining gaps: color scales, data bars and icon sets are not painted; an
-embedded chart's labels are present in the text index but the chart itself is
+Remaining gaps: color scales are painted (two or three colors, with min,
+max, num, percent and percentile thresholds; formula thresholds are skipped);
+data bars and icon sets are not
+painted; an embedded chart's labels are present in the text index but the chart itself is
 an SVG picture (the chart-sheet view is drawn as BDF); shape text wraps to
 the shape box but does not inherit paragraph spacing, and a wrapped line uses
 the style of the run that begins it; vertical

@@ -2950,6 +2950,9 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       row_count,
       col_count,
     )
+    rows = workbook.xlsx_apply_color_scales(
+      ref.part, rows, styles, theme_colors,
+    )
   }
   let run_base_sizes = xlsx_rich_base_sizes(rows, styles, rich_cells)
   if styled_runs {

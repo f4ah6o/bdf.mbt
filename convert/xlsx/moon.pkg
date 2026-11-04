@@ -9,6 +9,7 @@ import {
   "f4ah6o/bdf/encoding/parquet",
   "Milky2018/xml",
   "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/encoding/base64" @base64,
   "moonbitlang/core/string",
   "moonbitlang/core/bigint",
   "moonbitlang/core/math",
