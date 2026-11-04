@@ -3336,14 +3336,28 @@ fn pptx_emit_chart(
           if index < deleted_labels.length() && deleted_labels[index] {
             label_text = ""
           }
+          let px = cx + @math.cos(angle) * distance
+          let py = cy + @math.sin(angle) * distance
+          let label_width = pptx_text_width(label_text, data_label_size)
+          let (label_x, label_y) = if data_label_pos == "l" {
+            (px - label_width - 3.0, py - 9.0)
+          } else if data_label_pos == "t" {
+            (px - label_width / 2.0, py - 9.0)
+          } else if data_label_pos == "b" {
+            (px - label_width / 2.0, py + 12.0)
+          } else if data_label_pos == "ctr" {
+            (px - label_width / 2.0, py - 4.0)
+          } else {
+            (px + 3.0, py - 9.0)
+          }
           pptx_chart_label(
             object,
             label_font,
             data_label_size,
-            black,
+            data_label_color,
             label_text,
-            cx + @math.cos(angle) * distance + 3.0,
-            cy + @math.sin(angle) * distance - 9.0,
+            label_x,
+            label_y,
           )
         }
       }
