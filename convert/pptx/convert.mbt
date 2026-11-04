@@ -2953,8 +2953,36 @@ fn pptx_emit_chart(
       })
     None => false
   }
+  let gridlines = match pptx_child(plot_area, "valAx") {
+    Some(value) =>
+      match pptx_child(Some(value), "majorGridlines") {
+        Some(_) => true
+        None => false
+      }
+    None => false
+  }
   let mut tick = 0.0
   while value_axis_visible && tick <= axis_high + step * 1.0e-6 {
+    if gridlines {
+      object.fill_color(0xd9d9d9ffU)
+      if horizontal {
+        object.fill_rect(
+          Float::from_double(plot_x + plot_width * tick / axis_high),
+          Float::from_double(plot_y),
+          0.75F,
+          Float::from_double(plot_height),
+        )
+      } else {
+        object.fill_rect(
+          Float::from_double(plot_x),
+          Float::from_double(
+            plot_y + plot_height - plot_height * tick / axis_high,
+          ),
+          Float::from_double(plot_width),
+          0.75F,
+        )
+      }
+    }
     let text = pptx_chart_tick_text(tick)
     if horizontal {
       pptx_chart_label(
