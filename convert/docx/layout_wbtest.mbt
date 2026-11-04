@@ -1037,6 +1037,44 @@ fn docx_marker_pages(result : DocxResult, marker : String) -> Array[Int32] raise
   pages
 }
 
+fn docx_table_width_fixture(with_width : Bool) -> Bytes raise {
+  let width = if with_width {
+    "<w:tblPr><w:tblW w:w=\"5000\" w:type=\"dxa\"/></w:tblPr>"
+  } else {
+    "<w:tblPr/>"
+  }
+  let table = "<w:tbl>" + width +
+    "<w:tblGrid><w:gridCol w:w=\"1000\"/><w:gridCol w:w=\"1000\"/></w:tblGrid>" +
+    "<w:tr><w:tc><w:tcPr><w:tcW w:w=\"1000\" w:type=\"dxa\"/></w:tcPr><w:p><w:r><w:t>LEFT</w:t></w:r></w:p></w:tc>" +
+    "<w:tc><w:tcPr><w:tcW w:w=\"1000\" w:type=\"dxa\"/></w:tcPr><w:p><w:r><w:t>RIGHT</w:t></w:r></w:p></w:tc></w:tr></w:tbl>"
+  docx_test_docx(table, DOCX_TEST_SECTION, [])
+}
+
+///|
+fn docx_text_x(commands : Array[@render.Command], wanted : String) -> Double {
+  for command in commands {
+    match command {
+      FillText(text, x, _, _) => if text == wanted {
+        return x
+      }
+      _ => ()
+    }
+  }
+  0.0
+}
+
+test "DOCX table width scales the grid columns" {
+  let plain = convert(docx_table_width_fixture(false))
+  let wide = convert(docx_table_width_fixture(true))
+  let plain_commands = docx_test_page_commands(plain, "pages", 0, "body")
+  let wide_commands = docx_test_page_commands(wide, "pages", 0, "body")
+  let plain_gap = docx_text_x(plain_commands, "RIGHT") -
+    docx_text_x(plain_commands, "LEFT")
+  let wide_gap = docx_text_x(wide_commands, "RIGHT") -
+    docx_text_x(wide_commands, "LEFT")
+  assert_true(plain_gap > 0.0 && wide_gap > plain_gap + 20.0)
+}
+
 test "DOCX keepNext keeps the next paragraph on the page" {
   let plain = convert(docx_keep_next_fixture(false))
   let keep = convert(docx_keep_next_fixture(true))

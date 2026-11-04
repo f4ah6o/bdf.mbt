@@ -100,6 +100,8 @@ priv struct DocxTableRow {
 ///|
 priv struct DocxTable {
   grid : Array[Double]
+  width_type : String
+  width : Double
   jc : String
   ind : Double
   borders : Array[DocxLineBorder?]
@@ -1377,6 +1379,32 @@ fn docx_text_table(
     },
   )
   let shade = docx_child_shade(props)
+  let mut width_type = "auto"
+  let mut width = 0.0
+  match props {
+    Some(value) =>
+      match value.child("tblW") {
+        Some(size) => {
+          width_type = docx_attribute(size.element, "type", "auto")
+          let raw = (@string.parse_double(
+            docx_attribute(size.element, "w", "0"),
+          ) catch {
+            _ => 0.0
+          })
+          width = if width_type == "dxa" {
+            raw / 20.0
+          } else if width_type == "pct" {
+            raw / 50.0
+          } else if width_type == "nil" {
+            0.0
+          } else {
+            raw
+          }
+        }
+        None => ()
+      }
+    None => ()
+  }
   let grid : Array[Double] = []
   match node.child("tblGrid") {
     Some(value) =>
@@ -1535,6 +1563,8 @@ fn docx_text_table(
   }
   {
     grid,
+    width_type,
+    width,
     jc,
     ind,
     borders,

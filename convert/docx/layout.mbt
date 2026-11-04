@@ -791,15 +791,14 @@ fn docx_table_grid_count(table : DocxTable) -> Int32 {
 }
 
 ///|
-fn docx_layout_table(
-  table : DocxTable,
-  width : Double,
-  pitch : Double,
-) -> DocxTableLayout {
+fn docx_table_grid_widths(table : DocxTable, width : Double) -> Array[Double] {
   let ncols = docx_table_grid_count(table)
   let grid : Array[Double] = table.grid.copy()
   while grid.length() < ncols {
     grid.push(0.0)
+  }
+  if ncols <= 0 {
+    return grid
   }
   let mut total = 0.0
   for column in grid {
@@ -810,7 +809,33 @@ fn docx_layout_table(
     for i in 0..<grid.length() {
       grid[i] = each
     }
-    total = width
+    return grid
+  }
+  let target = match table.width_type {
+    "dxa" => table.width
+    "pct" => width * table.width / 100.0
+    _ => 0.0
+  }
+  if target > 0.0 {
+    let scale = Double::min(target, width) / total
+    for i in 0..<grid.length() {
+      grid[i] = grid[i] * scale
+    }
+  }
+  grid
+}
+
+///|
+fn docx_layout_table(
+  table : DocxTable,
+  width : Double,
+  pitch : Double,
+) -> DocxTableLayout {
+  let ncols = docx_table_grid_count(table)
+  let grid = docx_table_grid_widths(table, width)
+  let mut total = 0.0
+  for column in grid {
+    total += column
   }
   let col_x : Array[Double] = [0.0]
   for column in grid {
