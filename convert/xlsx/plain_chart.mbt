@@ -18,6 +18,7 @@ struct XlsxChartModel {
   label_separator : String
   label_position : String
   leader_lines : Bool
+  first_slice_ang : Double
   show_cat_name : Bool
   show_ser_name : Bool
   axis_min : Double
@@ -355,6 +356,16 @@ fn XlsxWorkbook::xlsx_chart_model(
   let mut label_separator = " "
   let mut label_position = "outEnd"
   let mut leader_lines = false
+  let mut first_slice_ang = 0.0
+  match xlsx_draw_child(plot, "firstSliceAng") {
+    Some(value) =>
+      first_slice_ang = @string.parse_double(
+        xlsx_draw_attr(value, "val"),
+      ) catch {
+        _ => 0.0
+      }
+    None => ()
+  }
   let mut show_cat_name = false
   let mut show_ser_name = false
   match xlsx_draw_child(plot, "dLbls") {
@@ -442,6 +453,7 @@ fn XlsxWorkbook::xlsx_chart_model(
     label_separator,
     label_position,
     leader_lines,
+    first_slice_ang,
     show_cat_name,
     show_ser_name,
     axis_min,
@@ -654,7 +666,7 @@ fn XlsxWorkbook::xlsx_chart_svg(
       let palette = [
         "#4472c4", "#ed7d31", "#a5a5a5", "#ffc000", "#5b9bd5", "#70ad47",
       ]
-      let mut angle = -3.141592653589793 / 2.0
+      let mut angle = -3.141592653589793 / 2.0 + model.first_slice_ang * 3.141592653589793 / 180.0
       for index, value in model.values {
         let sweep = 2.0 * 3.141592653589793 * value / total
         let end = angle + sweep
@@ -861,7 +873,7 @@ fn XlsxWorkbook::xlsx_chart_svg(
     let cx = left + plot_width / 2.0
     let cy = plot_top + plot_height / 2.0
     let radius = Double::min(plot_width, plot_height) / 2.0
-    let mut angle = -3.141592653589793 / 2.0
+    let mut angle = -3.141592653589793 / 2.0 + model.first_slice_ang * 3.141592653589793 / 180.0
     for index, value in model.values {
       let sweep = 2.0 * 3.141592653589793 * value / pie_total
       let mid = angle + sweep / 2.0
@@ -1236,7 +1248,7 @@ fn XlsxWorkbook::xlsx_chart_object(
         0x4472c4ffU, 0xed7d31ffU, 0xa5a5a5ffU, 0xffc000ffU, 0x5b9bd5ffU,
         0x70ad47ffU,
       ]
-      let mut angle = -3.141592653589793 / 2.0
+      let mut angle = -3.141592653589793 / 2.0 + model.first_slice_ang * 3.141592653589793 / 180.0
       for index, value in model.values {
         let sweep = 2.0 * 3.141592653589793 * value / total
         let verbs : Array[Byte] = [0]
@@ -1423,7 +1435,7 @@ fn XlsxWorkbook::xlsx_chart_object(
     let cx = left + plot_width / 2.0
     let cy = plot_top + plot_height / 2.0
     let radius = Double::min(plot_width, plot_height) / 2.0
-    let mut angle = -3.141592653589793 / 2.0
+    let mut angle = -3.141592653589793 / 2.0 + model.first_slice_ang * 3.141592653589793 / 180.0
     for index, value in model.values {
       let sweep = 2.0 * 3.141592653589793 * value / pie_total
       let mid = angle + sweep / 2.0
