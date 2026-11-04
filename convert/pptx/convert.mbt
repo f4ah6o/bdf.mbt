@@ -2518,6 +2518,20 @@ fn pptx_emit_chart(
   }
   if is_pie {
     let values = series[0].values
+    let pie_labels = match pptx_child(Some(chart), "dLbls") {
+      Some(labels) => {
+        let show_val = match pptx_child(Some(labels), "showVal") {
+          Some(value) => pptx_attribute(value.element, "val", "0") != "0"
+          None => false
+        }
+        let show_percent = match pptx_child(Some(labels), "showPercent") {
+          Some(value) => pptx_attribute(value.element, "val", "1") != "0"
+          None => true
+        }
+        (show_val, show_percent)
+      }
+      None => (false, true)
+    }
     let total = values.fold(init=0.0, (sum, value) => sum + value)
     if total <= 0.0 {
       return
@@ -2534,17 +2548,25 @@ fn pptx_emit_chart(
       object.fill_color(palette[index % palette.length()])
       object.fill_path(path, 0)
       let mid = start + sweep / 2.0
-      let label = (value / total * 100.0 + 0.5).to_int().to_string() + "%"
-      let label_width = pptx_text_width(label, label_size)
-      pptx_chart_label(
-        object,
-        label_font,
-        label_size,
-        black,
-        label,
-        cx + @math.cos(mid) * radius * 0.7 - label_width / 2.0,
-        cy + @math.sin(mid) * radius * 0.7,
-      )
+      let label = if pie_labels.0 {
+        pptx_chart_tick_text(value)
+      } else if pie_labels.1 {
+        (value / total * 100.0 + 0.5).to_int().to_string() + "%"
+      } else {
+        ""
+      }
+      if label != "" {
+        let label_width = pptx_text_width(label, label_size)
+        pptx_chart_label(
+          object,
+          label_font,
+          label_size,
+          black,
+          label,
+          cx + @math.cos(mid) * radius * 0.7 - label_width / 2.0,
+          cy + @math.sin(mid) * radius * 0.7,
+        )
+      }
       start += sweep
     }
     let categories = series[0].categories
