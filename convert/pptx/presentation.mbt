@@ -150,3 +150,24 @@ fn pptx_presentation(data : Bytes) -> PptxPresentation raise {
   let default_text_style = pptx_child(Some(root), "defaultTextStyle")
   { part, width, height, first_slide, slides, default_text_style, }
 }
+
+///|
+/// The language of text whose runs name no language: the presentation's
+/// default text style (`defPPr` or `lvl1pPr`, then `defRPr`).
+fn pptx_default_language(presentation : PptxPresentation) -> String {
+  for style in ["defPPr", "lvl1pPr"] {
+    let rpr = pptx_child(
+      pptx_child(presentation.default_text_style, style), "defRPr",
+    )
+    match rpr {
+      Some(node) => {
+        let language = pptx_attribute(node.element, "lang", "")
+        if language != "" {
+          return language
+        }
+      }
+      None => ()
+    }
+  }
+  ""
+}

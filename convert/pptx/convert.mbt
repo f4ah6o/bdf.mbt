@@ -2231,8 +2231,37 @@ pub fn convert(
     "source": Json::string("pptx"),
     "generator": Json::string("bdf-go/0.1"),
   }
+  let core = pkg.core_properties()
+  let dc : Map[String, Json] = Map([])
+  let put = (key : String, values : Array[String]) => {
+    if values.is_empty() {
+      return
+    }
+    if key == "subject" {
+      dc[key] = Json::array(values.map(Json::string))
+    } else {
+      dc[key] = Json::string(values[0])
+    }
+  }
+  put("title", core.title)
+  put("creator", core.creator)
+  put("subject", core.subject)
+  put("description", core.description)
+  put("identifier", core.identifier)
+  put("language", core.language)
+  put("created", core.created)
+  put("modified", core.modified)
+  if core.language.is_empty() {
+    let language = pptx_default_language(presentation)
+    if language != "" {
+      put("language", [language])
+    }
+  }
   if title != "" {
-    meta["title"] = Json::string(title)
+    dc["title"] = Json::string(title)
+  }
+  if !dc.is_empty() {
+    meta["dc"] = Json::object(dc)
   }
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
   let theme = pptx_theme_colors(pkg)

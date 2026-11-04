@@ -102,6 +102,7 @@ priv struct DocxTextDocument {
   footnotes : Map[String, Array[String]]
   endnotes : Map[String, Array[String]]
   even_odd : Bool
+  language : String
 }
 
 ///|
@@ -1739,6 +1740,7 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     footnotes,
     endnotes,
     even_odd: docx_even_odd(package, part),
+    language: docx_pick_language(styles, walker.paragraphs),
   }
 }
 
@@ -1807,5 +1809,42 @@ fn docx_even_odd(package : @ooxml.OoxmlPackage, part : String) -> Bool {
         }
       }
     None => false
+  }
+}
+
+///|
+/// The document language when the core properties name none: the default
+/// run language, East Asian when most characters are CJK.
+fn docx_pick_language(
+  styles : DocxStyles,
+  paragraphs : Array[DocxTextParagraph],
+) -> String {
+  let (latin, east_asian) = docx_style_language(styles)
+  let mut cjk = 0
+  let mut ascii = 0
+  for paragraph in paragraphs {
+    for item in paragraph.items {
+      for character in item.text {
+        let code = character.to_int()
+        if (code >= 0x3040 && code <= 0x30ff) ||
+          (code >= 0x3400 && code <= 0x4dbf) ||
+          (code >= 0x4e00 && code <= 0x9fff) ||
+          (code >= 0xac00 && code <= 0xd7af) ||
+          (code >= 0xf900 && code <= 0xfaff) ||
+          (code >= 0xff66 && code <= 0xff9d) {
+          cjk += 1
+        } else if (code >= 0x41 && code <= 0x5a) ||
+          (code >= 0x61 && code <= 0x7a) {
+          ascii += 1
+        }
+      }
+    }
+  }
+  if east_asian != "" && cjk > ascii {
+    east_asian
+  } else if latin != "" {
+    latin
+  } else {
+    east_asian
   }
 }

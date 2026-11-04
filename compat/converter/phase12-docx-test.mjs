@@ -127,6 +127,7 @@ try {
       entry.name + ': scroll strip count ' + moonScroll.pages + ' vs ' + upstreamScroll.pages,
     );
     assert.equal(moonPages.pages, upstreamPages.pages, entry.name + ': page count matches upstream');
+    assert.deepEqual(entry.moon.meta, entry.upstream.meta, entry.name + ': metadata');
     assert.ok(moonPages.body && moonPages.body.w > 0 && moonPages.body.h > 0, entry.name + ': body rectangle');
     assert.deepEqual(moonPages.roles, upstreamPages.roles, entry.name + ': layer roles on every page');
     assert.ok(moonScroll.size[0] > moonPages.body.w, entry.name + ': scroll width includes its margin');

@@ -63,6 +63,7 @@ try {
         sizes: view.pages.map(p => [p.w, p.h]),
         roles: view.pages.map(p => p.layers.map(l => l.role)),
         objects: view.pages.flatMap(p => p.layers.map(l => l.obj)),
+        meta: doc.manifest.meta,
         text,
       };
     };
@@ -411,6 +412,7 @@ try {
     assert.equal(entry.moon.pages, entry.upstream.pages, entry.name + ': page count');
     assert.deepEqual(entry.moon.sizes, entry.upstream.sizes, entry.name + ': page sizes');
     assert.deepEqual(entry.moon.roles, entry.upstream.roles, entry.name + ': layer roles');
+    assert.deepEqual(entry.moon.meta, entry.upstream.meta, entry.name + ': metadata');
     assert.equal(entry.moon.summary, entry.upstream.summary, entry.name + ': summary');
     assert.ok(entry.moon.warnings.some(w => w.includes('no fonts found')), entry.name + ': font warning');
     const ratio = similarity(entry.upstream.text, entry.moon.text);

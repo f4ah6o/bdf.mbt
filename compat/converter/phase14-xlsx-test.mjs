@@ -62,6 +62,7 @@ try {
           kind: view.kind,
           pages: view.pages?.length ?? 0,
           tiles: view.tiles ? Object.keys(view.tiles).length : 0,
+          meta: doc.manifest.meta,
           text,
         });
       }
@@ -104,6 +105,7 @@ try {
     assert.equal(entry.moon.views.length, entry.upstream.views.length, entry.name + ': view count');
     assert.equal(entry.moon.summary, entry.upstream.summary, entry.name + ': summary');
     assert.deepEqual(entry.moon.warnings, entry.upstream.warnings, entry.name + ': warnings');
+    assert.deepEqual(entry.moon.views[0]?.meta, entry.upstream.views[0]?.meta, entry.name + ': metadata');
     for (let i = 0; i < entry.upstream.views.length; i++) {
       const a = entry.upstream.views[i];
       const m = entry.moon.views[i];

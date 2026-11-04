@@ -243,3 +243,18 @@ fn DocxStyles::resolve_run(
   props.specified = 0
   props
 }
+
+///|
+/// The document's default language from `docDefaults/rPrDefault/rPr/lang`,
+/// used when the core properties do not name one.
+fn docx_style_language(styles : DocxStyles) -> (String, String) {
+  let language = docx_style_child(styles.doc_rpr, "lang")
+  match language {
+    Some(node) =>
+      (
+        docx_attribute(node.element, "val", ""),
+        docx_attribute(node.element, "eastAsia", ""),
+      )
+    None => ("", "")
+  }
+}

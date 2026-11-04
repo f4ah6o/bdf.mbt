@@ -2272,6 +2272,7 @@ fn docx_layout_document(
 fn docx_render_meta(
   package : @ooxml.OoxmlPackage,
   title : String,
+  language : String,
 ) -> Map[String, Json] {
   let core = package.core_properties()
   let meta : Map[String, Json] = {
@@ -2295,6 +2296,9 @@ fn docx_render_meta(
       dc[key] = Json::string(values[0])
     }
   }
+  if !dc.contains("language") && language != "" {
+    dc["language"] = Json::string(language)
+  }
   if title != "" {
     dc["title"] = Json::string(title)
   }
@@ -2314,7 +2318,7 @@ fn docx_render_document(
   let package = @ooxml.open_ooxml(data) catch {
     _ => raise DocxInvalid("invalid DOCX package")
   }
-  let meta = docx_render_meta(package, title)
+  let meta = docx_render_meta(package, title, document.language)
   let mut page_count = 0
   if views != "scroll" {
     let probe = @core.DocumentWriter::new(meta=Json::object(meta))

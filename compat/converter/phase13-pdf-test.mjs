@@ -63,6 +63,7 @@ try {
           pages: view.pages?.length ?? 0,
           sizes: (view.pages ?? []).map(p => [p.w, p.h]),
           body: view.pages?.[0]?.body ?? null,
+          meta: doc.manifest.meta,
           text,
         });
       }
@@ -128,6 +129,7 @@ try {
     assert.equal(m.kind, a.kind, entry.name + ': view kind');
     assert.equal(m.pages, a.pages, entry.name + ': page count');
     assert.deepEqual(m.sizes, a.sizes, entry.name + ': page sizes');
+    assert.deepEqual(m.meta, a.meta, entry.name + ': metadata');
     const ratio = similarity(a.text, m.text);
     assert.ok(ratio >= 0.95, entry.name + ': text similarity ' + ratio.toFixed(3));
   }
