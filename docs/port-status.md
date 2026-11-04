@@ -86,8 +86,12 @@
   view. Table cells, floating text wrapping, columns, vertical sections,
   exact footnote separators and field regeneration remain documented gaps in
   `compat/docx`.
-- PPTX: the converter intentionally implements the documented subset;
-  unsupported features fail closed or are documented in `compat/pptx`.
+- PPTX: `convert/pptx` emits the upstream `slides` fixed view with
+  background/layout/master/body layers, shared master objects, placeholder
+  text inheritance, bullets and levels, tables, bar/line/pie charts and
+  linearized Office Math. Other preset geometries, placeholder fill/line
+  inheritance, SmartArt/ink and other chart types remain documented gaps in
+  `compat/pptx`.
 - AI: PDF-based Illustrator 9+ artwork only; PostScript files (Illustrator 8
   and earlier) and files saved without PDF content are explicit errors.
 - TIFF: JPEG compression, YCbCr pages and DNG camera raw are not supported;
@@ -143,8 +147,8 @@
      the `math.md`/`svg.md` fixtures are ported.
    - EPUB vertical writing and non-picture fixed layout (`vertical.epub`).
    - IDML `simpleidml/` packages, linked images and table stories.
-   - PPTX OMML math and font directories (`math.pptx`, `testdata/fonts`);
-     DOCX OMML math is ported.
+   - PPTX font directories and non-rectangular preset geometries
+     (`testdata/fonts`); DOCX and PPTX OMML math are ported.
    - PSD layer compositing when a file has no composite, and TIFF
      JPEG/YCbCr pages.
    - ~~The MusicXML to BDF converter (the parser exists but the Worker does
