@@ -3908,10 +3908,13 @@ fn pptx_emit_chart(
   if horizontal {
     if stacked {
       for index in 0..<categories.length() {
-        let mut used = 0.0
+        let mut used = axis_low
         for item in series {
           if index < item.values.length() {
-            let bar_width = plot_width * pptx_chart_fraction(item.values[index], axis_low, axis_high)
+            let next_used = used + item.values[index]
+            let bar_width = plot_width *
+              (pptx_chart_fraction(next_used, axis_low, axis_high) -
+                pptx_chart_fraction(used, axis_low, axis_high))
             object.fill_color(pptx_series_point_color(item, index))
             object.fill_rect(
               Float::from_double(plot_x + plot_width * pptx_chart_fraction(used, axis_low, axis_high)),
@@ -3923,7 +3926,7 @@ fn pptx_emit_chart(
               Float::from_double(bar_width),
               Float::from_double(cluster_width),
             )
-            used += item.values[index]
+            used = next_used
           }
         }
       }
@@ -3952,10 +3955,13 @@ fn pptx_emit_chart(
     }
   } else if stacked {
     for index in 0..<categories.length() {
-      let mut used = 0.0
+      let mut used = axis_low
       for item in series {
         if index < item.values.length() {
-          let bar_height = plot_height * pptx_chart_fraction(item.values[index], axis_low, axis_high)
+          let next_used = used + item.values[index]
+          let bar_height = plot_height *
+            (pptx_chart_fraction(next_used, axis_low, axis_high) -
+              pptx_chart_fraction(used, axis_low, axis_high))
           object.fill_color(pptx_series_point_color(item, index))
           object.fill_rect(
             Float::from_double(
@@ -3964,12 +3970,13 @@ fn pptx_emit_chart(
               (slot - cluster_width) / 2.0,
             ),
             Float::from_double(
-              plot_y + plot_height - plot_height * pptx_chart_fraction(used, axis_low, axis_high) - bar_height,
+              plot_y + plot_height -
+              plot_height * pptx_chart_fraction(next_used, axis_low, axis_high),
             ),
             Float::from_double(cluster_width),
             Float::from_double(bar_height),
           )
-          used += item.values[index]
+          used = next_used
         }
       }
     }
@@ -4072,7 +4079,7 @@ fn pptx_emit_chart(
   if show_values && !is_pie && !is_scatter && !is_radar {
     if stacked {
       for index in 0..<categories.length() {
-        let mut used = 0.0
+        let mut used = axis_low
         for item in series {
           if index >= item.values.length() {
             continue
