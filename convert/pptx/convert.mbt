@@ -2025,6 +2025,32 @@ fn pptx_area_path(
 }
 
 ///|
+fn pptx_radar_path(
+  values : Array[Double],
+  maximum : Double,
+  cx : Double,
+  cy : Double,
+  radius : Double,
+) -> @core.Path {
+  let verbs : Array[Byte] = []
+  let coordinates : Array[Double] = []
+  let count = values.length()
+  if count == 0 {
+    return { verbs: Bytes::from_array([]), coordinates, }
+  }
+  for index, value in values {
+    let angle = -3.141592653589793 / 2.0 +
+      2.0 * 3.141592653589793 * index.to_double() / count.to_double()
+    let distance = radius * value / maximum
+    verbs.push(if index == 0 { 0 } else { 1 })
+    coordinates.push(cx + @math.cos(angle) * distance)
+    coordinates.push(cy + @math.sin(angle) * distance)
+  }
+  verbs.push(4)
+  { verbs: Bytes::from_array(verbs), coordinates, }
+}
+
+///|
 fn pptx_pie_path(
   cx : Double,
   cy : Double,
@@ -2191,6 +2217,7 @@ fn pptx_emit_chart(
   let line_chart = pptx_child(plot_area, "lineChart")
   let area_chart = pptx_child(plot_area, "areaChart")
   let scatter_chart = pptx_child(plot_area, "scatterChart")
+  let radar_chart = pptx_child(plot_area, "radarChart")
   let pie_chart = pptx_child(plot_area, "pieChart")
   let chart = match bar {
     Some(value) => value
@@ -2206,7 +2233,11 @@ fn pptx_emit_chart(
                 None =>
                   match scatter_chart {
                     Some(value) => value
-                    None => return
+                    None =>
+                      match radar_chart {
+                        Some(value) => value
+                        None => return
+                      }
                   }
               }
           }
@@ -2216,6 +2247,7 @@ fn pptx_emit_chart(
   let is_bar = kind == "barChart"
   let is_area = kind == "areaChart"
   let is_scatter = kind == "scatterChart"
+  let is_radar = kind == "radarChart"
   let is_pie = kind == "pieChart"
   let horizontal = is_bar &&
     (match pptx_child(Some(chart), "barDir") {
@@ -2397,6 +2429,82 @@ fn pptx_emit_chart(
           4.0,
         )
       }
+    }
+    return
+  }
+  if is_radar {
+    let categories = series[0].categories
+    if categories.is_empty() {
+      return
+    }
+    let mut maximum = 0.0
+    for item in series {
+      for value in item.values {
+        maximum = Double::max(maximum, value)
+      }
+    }
+    if maximum <= 0.0 {
+      maximum = 1.0
+    }
+    let cx = plot_x + plot_width / 2.0
+    let cy = plot_y + plot_height / 2.0
+    let radius = Double::min(plot_width, plot_height) / 2.0 - 12.0
+    object.line(0.5F, 0, 0, 8.0F)
+    object.stroke_color(0xbfbfbffFU)
+    for index, _ in categories {
+      let angle = -3.141592653589793 / 2.0 +
+        2.0 * 3.141592653589793 * index.to_double() /
+        categories.length().to_double()
+      let path = object.add_path(
+        @core.Inline({
+          verbs: Bytes::from_array([0, 1]),
+          coordinates: [
+            cx,
+            cy,
+            cx + @math.cos(angle) * radius,
+            cy + @math.sin(angle) * radius,
+          ],
+        }),
+      )
+      object.stroke_path(path)
+    }
+    for item in series {
+      let path = object.add_path(
+        @core.Inline(
+          pptx_radar_path(item.values, maximum, cx, cy, radius),
+        ),
+      )
+      object.line(2.0F, 0, 0, 8.0F)
+      object.stroke_color(item.color)
+      object.stroke_path(path)
+      object.fill_color(item.color)
+      for index, value in item.values {
+        let angle = -3.141592653589793 / 2.0 +
+          2.0 * 3.141592653589793 * index.to_double() /
+          item.values.length().to_double()
+        let distance = radius * value / maximum
+        object.fill_rect(
+          Float::from_double(cx + @math.cos(angle) * distance - 2.0),
+          Float::from_double(cy + @math.sin(angle) * distance - 2.0),
+          4.0,
+          4.0,
+        )
+      }
+    }
+    for index, category in categories {
+      let angle = -3.141592653589793 / 2.0 +
+        2.0 * 3.141592653589793 * index.to_double() /
+        categories.length().to_double()
+      let width = pptx_text_width(category, 7.0)
+      pptx_chart_label(
+        object,
+        label_font,
+        7.0,
+        black,
+        category,
+        cx + @math.cos(angle) * (radius + 8.0) - width / 2.0,
+        cy + @math.sin(angle) * (radius + 8.0),
+      )
     }
     return
   }

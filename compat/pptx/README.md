@@ -91,7 +91,7 @@ source-rectangle cropping, rotation and flips, and EMF/WMF metafiles are drawn.
 Tables render cell text with wrapped lines, cell fills, text
 colors/sizes/bold/italic/alignment, vertical anchors, margins, per-side borders,
 grid widths/spans, row heights/spans and vertical merges. Bar (clustered and
-stacked, horizontal and vertical), line, area, scatter and pie charts draw their series,
+stacked, horizontal and vertical), line, area, scatter, radar and pie charts draw their series,
 legend, category labels, value-axis ticks and pie percentage labels. Office
 Math in `a14:m` is linearized to text (fractions, roots, scripts, n-ary
 operators, delimiters, matrices, accents and groups); the `mc:Choice` that
@@ -117,7 +117,7 @@ Remaining gaps: upstream keeps `arcTo` as a Canvas ellipse verb while this
 converter flattens it to cubic Béziers (the same outline, and the phase 15
 comparison flattens both encodings before comparing); malformed custom
 geometry falls back to the shape rectangle where upstream silently draws
-nothing; SmartArt, ink and 3-D or radar/other non-bar/line/pie/area/scatter charts are not
+nothing; SmartArt, ink and 3-D or other non-bar/line/pie/area/scatter/radar charts are not
 supported; chart titles use an explicit `c:title` or the single-series name,
 and bar/line charts with `c:dTable` draw a category/series/value table honouring the show and border flags; the built-in
 The 74 predefined table-style IDs resolve their whole-table, header, band and
