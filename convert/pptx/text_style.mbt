@@ -399,6 +399,9 @@ priv struct PptxBullet {
   text : String
   start : Int32
   font : String
+  color_node : PptxXmlNode?
+  size_pct : Double
+  size_pts : Double
 }
 
 ///|
@@ -406,11 +409,33 @@ fn pptx_paragraph_bullet(chain : Array[PptxXmlNode]) -> PptxBullet {
   let node = pptx_chain_first_child(chain, [
     "buNone", "buAutoNum", "buChar", "buBlip",
   ])
+  let color_node = pptx_chain_first_child(chain, ["buClr"])
+  let size_pct = (match pptx_chain_first_child(chain, ["buSzPct"]) {
+    Some(value) =>
+      @string.parse_double(
+        pptx_attribute(value.element, "val", "100000"),
+      ) catch {
+        _ => 100000.0
+      }
+    None => 0.0
+  }) / 1000.0
+  let size_pts = (match pptx_chain_first_child(chain, ["buSzPts"]) {
+    Some(value) =>
+      @string.parse_double(
+        pptx_attribute(value.element, "val", "0"),
+      ) catch {
+        _ => 0.0
+      }
+    None => 0.0
+  }) / 100.0
   match node {
     Some(value) => {
       let kind = value.element.name.local_name
       if kind == "buNone" {
-        { kind: "none", text: "", start: 1, font: "", }
+        {
+          kind: "none", text: "", start: 1, font: "", color_node, size_pct,
+          size_pts,
+        }
       } else if kind == "buAutoNum" {
         {
           kind: "auto",
@@ -421,6 +446,9 @@ fn pptx_paragraph_bullet(chain : Array[PptxXmlNode]) -> PptxBullet {
             _ => 1
           },
           font: "",
+          color_node,
+          size_pct,
+          size_pts,
         }
       } else {
         let text = if kind == "buChar" {
@@ -432,10 +460,14 @@ fn pptx_paragraph_bullet(chain : Array[PptxXmlNode]) -> PptxBullet {
           Some(value) => pptx_attribute(value.element, "typeface", "")
           None => ""
         }
-        { kind: "char", text, start: 1, font, }
+        {
+          kind: "char", text, start: 1, font, color_node, size_pct, size_pts,
+        }
       }
     }
-    None => { kind: "none", text: "", start: 1, font: "", }
+    None => {
+      { kind: "none", text: "", start: 1, font: "", color_node, size_pct, size_pts, }
+    }
   }
 }
 

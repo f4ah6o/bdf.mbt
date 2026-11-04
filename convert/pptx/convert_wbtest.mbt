@@ -5579,6 +5579,21 @@ test "PPTX bullet properties are inherited per paragraph level" {
 }
 
 ///|
+test "PPTX bullet colour and size overrides are parsed" {
+  let root = pptx_parse_xml(
+    "<a:pPr xmlns:a='http://schemas.openxmlformats.org/drawingml/2006/main'><a:buClr><a:srgbClr val='FFFFFF'/></a:buClr><a:buSzPct val='50000'/><a:buChar char='•'/></a:pPr>",
+  )
+  let bullet = pptx_paragraph_bullet([root])
+  assert_eq(bullet.size_pct, 50.0)
+  assert_eq(bullet.size_pts, 0.0)
+  match bullet.color_node {
+    Some(node) =>
+      assert_eq(pptx_solid_color(Some(node), {}), Some(0xffffffffU))
+    None => fail("bullet colour is missing")
+  }
+}
+
+///|
 test "PPTX Office Math is linearized in place of its fallback" {
   let math = pptx_parse_xml(
     "<a14:m xmlns:a14='http://schemas.microsoft.com/office/drawing/2010/main' xmlns:m='http://schemas.openxmlformats.org/officeDocument/2006/math'><m:oMath><m:sSup><m:e><m:r><m:t>x</m:t></m:r></m:e><m:sup><m:r><m:t>2</m:t></m:r></m:sup></m:sSup></m:oMath></a14:m>",

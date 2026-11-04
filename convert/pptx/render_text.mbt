@@ -528,6 +528,9 @@ fn pptx_layout_paragraph(
       text: bullet_text,
       start: 1,
       font: "",
+      color_node: None,
+      size_pct: 0.0,
+      size_pts: 0.0,
     },
     bullet_x,
     bullet_width,
@@ -676,6 +679,18 @@ fn pptx_draw_shape_text(
         )
         (family, weight, style, size, color)
       }
+    }
+    let bullet_size = if bullet.size_pts > 0.0 {
+      bullet.size_pts
+    } else if bullet.size_pct > 0.0 {
+      bullet_size * bullet.size_pct / 100.0
+    } else {
+      bullet_size
+    }
+    let bullet_color = match bullet.color_node {
+      Some(node) =>
+        pptx_solid_color(Some(node), ctx.theme).unwrap_or(bullet_color)
+      None => bullet_color
     }
     let layout = pptx_layout_paragraph(
       chars,

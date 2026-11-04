@@ -61,7 +61,8 @@ paragraph's `pPr`, the shape's `lstStyle`, the layout/master placeholder list
 styles and paragraph defaults, and the master's `titleStyle`/`bodyStyle`/
 `otherStyle` (or the presentation's `defaultTextStyle` for ordinary shapes).
 This covers font family/size/bold/italic/color, bullets (`buChar` and
-`buAutoNum` numbering) with indentation levels, paragraph and line spacing,
+`buAutoNum` numbering, including `buClr` colours and `buSzPct`/`buSzPts`
+sizes) with indentation levels, paragraph and line spacing,
 text-box insets, vertical anchors and alignment. Text is wrapped at word and
 CJK boundaries with paragraph/line/wrap marks, so the text index reproduces the
 upstream reading order; vertical text is rotated.
