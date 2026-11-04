@@ -153,19 +153,30 @@ fn pptx_math_run_style(
 }
 
 ///|
-fn pptx_body_font_scale(body : PptxXmlNode) -> Double {
+fn pptx_body_autofit(body : PptxXmlNode) -> (Double, Double) {
   match pptx_child(Some(body), "bodyPr") {
     Some(props) =>
       match pptx_child(Some(props), "normAutofit") {
-        Some(fit) =>
-          match pptx_attribute(fit.element, "fontScale", "") {
+        Some(fit) => {
+          let scale = match pptx_attribute(fit.element, "fontScale", "") {
             "" => 1.0
             value =>
               (@string.parse_double(value) catch { _ => 100000.0 }) / 100000.0
           }
-        None => 1.0
+          let reduce = match pptx_attribute(
+            fit.element,
+            "lnSpcReduction",
+            "",
+          ) {
+            "" => 0.0
+            value =>
+              (@string.parse_double(value) catch { _ => 0.0 }) / 100000.0
+          }
+          (scale, reduce)
+        }
+        None => (1.0, 0.0)
       }
-    None => 1.0
+    None => (1.0, 0.0)
   }
 }
 
@@ -603,7 +614,7 @@ fn pptx_draw_shape_text(
   center_x : Double,
   center_y : Double,
 ) -> Unit raise {
-  let scale = pptx_body_font_scale(body)
+  let (scale, ln_reduce) = pptx_body_autofit(body)
   let mut left_inset = 7.2
   let mut top_inset = 3.6
   let mut right_inset = 7.2
@@ -647,6 +658,7 @@ fn pptx_draw_shape_text(
       ctx.is_body,
     )
     let props = pptx_paragraph_props(chain)
+    let props = { ..props, ln_pct: Double::max(props.ln_pct - ln_reduce, 0.1) }
     let bullet = pptx_paragraph_bullet(chain)
     let chars = pptx_paragraph_chars(ctx, shape, body, paragraph, scale)
     let has_text = pptx_chars_have_text(chars)

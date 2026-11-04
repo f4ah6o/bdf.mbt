@@ -124,6 +124,15 @@ fn pptx_test_body_paths(result : PptxResult) -> Array[@core.Path] raise {
 }
 
 ///|
+test "PPTX normAutofit returns font scale and line reduction" {
+  let body = pptx_parse_xml(
+    "<body><bodyPr><normAutofit fontScale=\"80000\" lnSpcReduction=\"20000\"/></bodyPr></body>",
+  )
+  let (scale, reduce) = pptx_body_autofit(body)
+  assert_eq(scale, 0.8)
+  assert_eq(reduce, 0.2)
+}
+
 test "PPTX arrowheads draw filled or stroked paths" {
   for kind in ["triangle", "stealth", "diamond", "oval", "arrow"] {
     let object = @core.ObjectBuilder::new()
