@@ -3112,6 +3112,16 @@ fn docx_flow_section(flow : DocxFlow, index : Int32) -> Unit raise {
     flow.next_number = start
     flow.page_in_section = 0
     flow.col_bottom = section.top
+    let needs_blank = (section.section_type == "oddPage" && start % 2 == 0) ||
+      (section.section_type == "evenPage" && start % 2 != 0)
+    let mut content_start = start
+    if needs_blank {
+      docx_flow_new_page(flow)
+      docx_flow_flush_page(flow)
+      content_start = start + 1
+    }
+    flow.section_start = content_start
+    flow.next_number = content_start
     docx_flow_new_page(flow)
   }
 }

@@ -1226,6 +1226,26 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX odd-page sections insert a blank page" {
+  let next_section = "<w:p><w:pPr><w:sectPr><w:type w:val=\"nextPage\"/>" +
+    "<w:pgSz w:w=\"12240\" w:h=\"15840\"/><w:pgMar w:top=\"1440\" w:right=\"1440\" w:bottom=\"1440\" w:left=\"1440\"/></w:sectPr></w:pPr></w:p>"
+  let odd_section = "<w:p><w:pPr><w:sectPr><w:type w:val=\"oddPage\"/>" +
+    "<w:pgSz w:w=\"12240\" w:h=\"15840\"/><w:pgMar w:top=\"1440\" w:right=\"1440\" w:bottom=\"1440\" w:left=\"1440\"/></w:sectPr></w:pPr></w:p>"
+  let blocks = "<w:p><w:r><w:t>FIRST</w:t></w:r></w:p>" + next_section +
+    "<w:p><w:r><w:t>SECOND</w:t></w:r></w:p>" + odd_section +
+    "<w:p><w:r><w:t>THIRD</w:t></w:r></w:p>"
+  let result = convert(docx_test_docx(blocks, DOCX_TEST_SECTION, []))
+  assert_eq(result.pages, 4)
+  let text = StringBuilder()
+  for command in docx_test_page_commands(result, "pages", 3, "body") {
+    match command {
+      FillText(value, _, _, _) => text.write_string(value)
+      _ => ()
+    }
+  }
+  assert_true(text.to_string().contains("THIRD"))
+}
+
 test "DOCX REF field uses the bookmark text" {
   let blocks = "<w:p><w:bookmarkStart w:id=\"0\" w:name=\"Target\"/><w:r><w:t>HELLO</w:t></w:r><w:bookmarkEnd w:id=\"0\"/></w:p>" +
     "<w:p><w:r><w:fldChar w:fldCharType=\"begin\"/></w:r>" +

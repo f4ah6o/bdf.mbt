@@ -57,12 +57,14 @@ reaches. Cell text wraps at the cell width; nested tables are laid out inside
 their cell. Table rows are no longer flattened to tab-separated paragraphs.
 
 Sections flow through `w:cols` columns (equal and unequal widths, column
-breaks, continuous sections and separator rules). Sections with `w:textDirection` vertical
+breaks, continuous sections, separator rules and odd/even-page starts with a
+blank page when the parity asks for one). Sections with `w:textDirection` vertical
 text turn their page body by 90 degrees with upstream's matrix
 `(0,1,-1,0,page width-right margin,top margin)`; headers and footers stay
 upright and the scroll view is horizontal. `PAGE`, `NUMPAGES` and
 `SECTIONPAGES` fields regenerate their result per page (the layout is run
-twice so `NUMPAGES` knows the page count) instead of using the cached value;
+twice so `NUMPAGES` knows the page count and `PAGEREF` knows bookmark pages)
+instead of using the cached value; `REF` uses the bookmark text;
 `PAGE` honours `pgNumType` `start` and `fmt` (decimal, roman, letters,
 full-width and enclosed digits). Numbering instances honour
 `lvlOverride`/`startOverride`. Inline drawings with an embedded
@@ -97,13 +99,11 @@ keep no space), floating drawings in table cells and headers/footers (they
 are not drawn there), page-relative objects that would not fit are drawn
 clipped rather than moved, exact footnote separator/continuation
 indentation, upright CJK glyphs in vertical text (the whole body is turned,
-Latin and CJK alike), `REF` and `PAGEREF` fields regenerate from bookmarks (bookmark text and
-probe-layout page numbers),
+Latin and CJK alike),
 per-section `SECTIONPAGES` (the document page count is used),
 table-style base, first/last row/column, banded and corner-cell parts
-(borders/shading/margins/text formatting and TableGrid are applied), and exact scroll strip
-counts (table widths are applied and autofit estimates text widths), footnotes referenced from table cells, sections
-that must start on an odd or even page, and exact scroll strip counts (the
-approximate metrics make the basic fixture 1 strip where upstream makes 2;
-the other fixtures match). The native converter Worker advertises the `docx`
+(borders/shading/margins/text formatting and TableGrid are applied), exact
+scroll strip counts (the approximate metrics make the basic fixture 1 strip
+where upstream makes 2; the other fixtures match), and footnotes referenced
+from table cells. The native converter Worker advertises the `docx`
 format.
