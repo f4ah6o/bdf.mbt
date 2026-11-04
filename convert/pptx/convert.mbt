@@ -2297,6 +2297,47 @@ fn pptx_apply_chart_dash(
 }
 
 ///|
+fn pptx_series_border_width(item : PptxXmlNode) -> Double {
+  let line = match pptx_child(Some(item), "spPr") {
+    Some(sp_pr) => pptx_child(Some(sp_pr), "ln")
+    None => None
+  }
+  match line {
+    Some(value) =>
+      match pptx_attribute(value.element, "w", "") {
+        "" => 0.0
+        raw =>
+          (@string.parse_double(raw) catch { _ => 0.0 }) / 12700.0
+      }
+    None => 0.0
+  }
+}
+
+///|
+fn pptx_series_border_color(
+  item : PptxXmlNode,
+  theme : Map[String, UInt32],
+) -> UInt32 {
+  let line = match pptx_child(Some(item), "spPr") {
+    Some(sp_pr) => pptx_child(Some(sp_pr), "ln")
+    None => None
+  }
+  pptx_node_color(line, "solidFill", theme).unwrap_or(0x000000ffU)
+}
+
+///|
+fn pptx_series_border_dash(item : PptxXmlNode) -> String {
+  let line = match pptx_child(Some(item), "spPr") {
+    Some(sp_pr) => pptx_child(Some(sp_pr), "ln")
+    None => None
+  }
+  match pptx_child(line, "prstDash") {
+    Some(value) => pptx_attribute(value.element, "val", "solid")
+    None => "solid"
+  }
+}
+
+///|
 fn pptx_series_line_width(item : PptxXmlNode) -> Double {
   let line = match pptx_child(Some(item), "spPr") {
     Some(sp_pr) => pptx_child(Some(sp_pr), "ln")
@@ -2380,6 +2421,28 @@ fn pptx_draw_chart_marker(
 }
 
 ///|
+fn pptx_draw_bar_border(
+  object : @core.ObjectBuilder,
+  item : PptxChartSeries,
+  x : Double,
+  y : Double,
+  width : Double,
+  height : Double,
+) -> Unit raise {
+  if item.border_width > 0.0 {
+    object.line(Float::from_double(item.border_width), 0, 0, 8.0F)
+    pptx_apply_chart_dash(object, item.border_dash)
+    object.stroke_color(item.border_color)
+    object.stroke_rect(
+      Float::from_double(x),
+      Float::from_double(y),
+      Float::from_double(width),
+      Float::from_double(height),
+    )
+  }
+}
+
+///|
 priv struct PptxChartSeries {
   name : String
   categories : Array[String]
@@ -2391,6 +2454,9 @@ priv struct PptxChartSeries {
   color : UInt32
   line_width : Double
   dash : String
+  border_width : Double
+  border_color : UInt32
+  border_dash : String
   marker_symbol : String
   marker_size : Double
 }
@@ -3018,6 +3084,9 @@ fn pptx_emit_chart(
       color,
       line_width: pptx_series_line_width(item),
       dash: pptx_series_dash(item),
+      border_width: pptx_series_border_width(item),
+      border_color: pptx_series_border_color(item, theme),
+      border_dash: pptx_series_border_dash(item),
       marker_symbol,
       marker_size,
     })
@@ -4611,15 +4680,17 @@ fn pptx_emit_chart(
             let bar_x = plot_x +
               plot_width * Double::min(start_fraction, next_fraction)
             object.fill_color(pptx_series_point_color(item, index))
+            let bar_y = plot_y +
+              slot * index.to_double() +
+              (slot - cluster_width) / 2.0
             object.fill_rect(
               Float::from_double(bar_x),
-              Float::from_double(
-                plot_y +
-                slot * index.to_double() +
-                (slot - cluster_width) / 2.0,
-              ),
+              Float::from_double(bar_y),
               Float::from_double(bar_width),
               Float::from_double(cluster_width),
+            )
+            pptx_draw_bar_border(
+              object, item, bar_x, bar_y, bar_width, cluster_width,
             )
             if value >= 0.0 {
               positive = next
@@ -4647,16 +4718,18 @@ fn pptx_emit_chart(
             let bar_width_value = plot_width *
               (fraction - zero).abs()
             object.fill_color(pptx_series_point_color(item, index))
+            let bar_y = plot_y +
+              slot * index.to_double() +
+              (slot - total) / 2.0 +
+              step * s.to_double()
             object.fill_rect(
               Float::from_double(bar_x),
-              Float::from_double(
-                plot_y +
-                slot * index.to_double() +
-                (slot - total) / 2.0 +
-                step * s.to_double(),
-              ),
+              Float::from_double(bar_y),
               Float::from_double(bar_width_value),
               Float::from_double(bar_width),
+            )
+            pptx_draw_bar_border(
+              object, item, bar_x, bar_y, bar_width_value, bar_width,
             )
           }
         }
@@ -4685,15 +4758,17 @@ fn pptx_emit_chart(
           let bar_y = plot_y + plot_height -
             plot_height * Double::max(start_fraction, next_fraction)
           object.fill_color(pptx_series_point_color(item, index))
+          let bar_x = plot_x +
+            slot * index.to_double() +
+            (slot - cluster_width) / 2.0
           object.fill_rect(
-            Float::from_double(
-              plot_x +
-              slot * index.to_double() +
-              (slot - cluster_width) / 2.0,
-            ),
+            Float::from_double(bar_x),
             Float::from_double(bar_y),
             Float::from_double(cluster_width),
             Float::from_double(bar_height),
+          )
+          pptx_draw_bar_border(
+            object, item, bar_x, bar_y, cluster_width, bar_height,
           )
           if value >= 0.0 {
             positive = next
@@ -4801,16 +4876,18 @@ fn pptx_emit_chart(
           let bar_y = plot_y + plot_height -
             plot_height * Double::max(fraction, zero)
           object.fill_color(pptx_series_point_color(item, index))
+          let bar_x = plot_x +
+            slot * index.to_double() +
+            (slot - total) / 2.0 +
+            step * s.to_double()
           object.fill_rect(
-            Float::from_double(
-              plot_x +
-              slot * index.to_double() +
-              (slot - total) / 2.0 +
-              step * s.to_double(),
-            ),
+            Float::from_double(bar_x),
             Float::from_double(bar_y),
             Float::from_double(bar_width),
             Float::from_double(bar_height),
+          )
+          pptx_draw_bar_border(
+            object, item, bar_x, bar_y, bar_width, bar_height,
           )
         }
       }
