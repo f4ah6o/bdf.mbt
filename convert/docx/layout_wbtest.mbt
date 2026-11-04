@@ -447,6 +447,38 @@ test "DOCX page fields are regenerated on each page" {
 }
 
 ///|
+test "DOCX right tabs align text to the stop" {
+  let blocks = "<w:p><w:pPr><w:tabs><w:tab w:val=\"right\" w:pos=\"720\"/></w:tabs></w:pPr>" +
+    "<w:r><w:t>A</w:t><w:tab/><w:t>BB</w:t></w:r></w:p>"
+  let commands = docx_test_page_commands(
+    convert(docx_test_docx(blocks, DOCX_TEST_SECTION, [])), "pages", 0, "body",
+  )
+  let mut right = -1.0
+  for command in commands {
+    match command {
+      FillText("BB", x, _, width) => right = x + width
+      _ => ()
+    }
+  }
+  assert_true(right >= 0.0 && (right - 108.0).abs() < 2.0)
+}
+
+test "DOCX centre tabs centre text on the stop" {
+  let blocks = "<w:p><w:pPr><w:tabs><w:tab w:val=\"center\" w:pos=\"720\"/></w:tabs></w:pPr>" +
+    "<w:r><w:t>A</w:t><w:tab/><w:t>BB</w:t></w:r></w:p>"
+  let commands = docx_test_page_commands(
+    convert(docx_test_docx(blocks, DOCX_TEST_SECTION, [])), "pages", 0, "body",
+  )
+  let mut center = -1.0
+  for command in commands {
+    match command {
+      FillText("BB", x, _, width) => center = x + width / 2.0
+      _ => ()
+    }
+  }
+  assert_true(center >= 0.0 && (center - 108.0).abs() < 2.0)
+}
+
 test "DOCX bar tabs draw a vertical rule" {
   let blocks = "<w:p><w:pPr><w:tabs><w:tab w:val=\"bar\" w:pos=\"720\"/></w:tabs></w:pPr>" +
     "<w:r><w:t>A</w:t><w:tab/><w:t>B</w:t></w:r></w:p>"

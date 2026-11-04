@@ -255,7 +255,7 @@ fn docx_layout_paragraph(
     line_started = false
   }
 
-  for item in items {
+  for item_index, item in items {
     match item.kind {
       "page" | "column" => {
         flush()
@@ -266,6 +266,7 @@ fn docx_layout_paragraph(
         let relative = line_x - props.left
         let mut next = 0.0
         let mut leader = "none"
+        let mut tab_alignment = "left"
         for stop in props.tabs {
           if stop.position > relative {
             if stop.alignment == "bar" {
@@ -294,7 +295,25 @@ fn docx_layout_paragraph(
             }
             next = stop.position
             leader = stop.leader
+            tab_alignment = stop.alignment
             break
+          }
+        }
+        if next > 0.0 && tab_alignment != "left" {
+          let width = docx_tab_width(
+            items, item_index + 1, tab_alignment == "decimal",
+          )
+          let aligned = if tab_alignment == "right" {
+            next - width
+          } else if tab_alignment == "center" {
+            next - width / 2.0
+          } else if tab_alignment == "decimal" {
+            next - width
+          } else {
+            next
+          }
+          if aligned > relative {
+            next = aligned
           }
         }
         if next == 0.0 {
@@ -650,6 +669,50 @@ fn docx_merge_line_items(items : Array[DocxLineItem]) -> Array[DocxLineItem] {
     }
   }
   merged
+}
+
+///|
+fn docx_tab_width(
+  items : Array[DocxTextItem],
+  start : Int,
+  before_decimal : Bool,
+) -> Double {
+  let mut width = 0.0
+  let mut index = start
+  while index < items.length() {
+    let item = items[index]
+    if item.kind == "tab" ||
+      item.kind == "break" ||
+      item.kind == "page" ||
+      item.kind == "column" ||
+      item.kind == "image" {
+      break
+    }
+    let text = if item.kind == "field" || item.kind == "text" || item.kind == "char" {
+      item.text
+    } else {
+      ""
+    }
+    if text != "" {
+      if before_decimal && item.kind == "text" {
+        match text.find(".") {
+          Some(position) => {
+            width += docx_text_width(text[:position].to_owned(), if item.props.size > 0.0 { item.props.size } else { 10.0 })
+            break
+          }
+          None => width += docx_text_width(text, if item.props.size > 0.0 { item.props.size } else { 10.0 })
+        }
+      } else {
+        width += if item.kind == "field" {
+          docx_text_width(text, if item.props.size > 0.0 { item.props.size } else { 10.0 })
+        } else {
+          docx_text_width(text, if item.props.size > 0.0 { item.props.size } else { 10.0 })
+        }
+      }
+    }
+    index += 1
+  }
+  width
 }
 
 ///|
