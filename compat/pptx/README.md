@@ -121,7 +121,8 @@ Remaining gaps: upstream keeps `arcTo` as a Canvas ellipse verb while this
 converter flattens it to cubic Béziers (the same outline, and the phase 15
 comparison flattens both encodings before comparing); malformed custom
 geometry falls back to the shape rectangle where upstream silently draws
-nothing; SmartArt, ink and 3-D or other non-bar/line/pie/area/scatter/radar charts are not
+nothing; SmartArt is reduced to its data-model text (the diagram layout is not
+drawn), and ink, 3-D or other non-bar/line/pie/area/scatter/radar charts are not
 supported; chart titles use an explicit `c:title` or the single-series name,
 and bar/line/pie/radar/scatter charts with `c:dTable` draw a category/series/value table honouring the show and border flags; the built-in
 The 74 predefined table-style IDs resolve their whole-table, header, band and

@@ -120,7 +120,7 @@
   follows slide → layout → master, and a supplied font database embeds subset
   WOFF2 faces with real metrics. The 74 predefined table styles resolve
   fills, bands and header text; Medium-Style-2 also draws its grid/header
-  borders. SmartArt/ink, 3D and other chart types remain gaps; chart titles
+  borders. SmartArt diagram layout (data-model text fallback), ink, 3D and other chart types remain gaps; chart titles
   use `c:title` or the single-series name, and bar/line charts with `c:dTable`
   draw a category/series/value table. Advanced vertical stacking remains a
   documented gap in `compat/pptx`.

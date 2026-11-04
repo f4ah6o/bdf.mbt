@@ -105,6 +105,18 @@ fn pptx_emit_shapes(
     let shape_x = placement.tx + transform.x * placement.sx
     let shape_y = placement.ty + transform.y * placement.sy
     if shape.element.name.local_name == "graphicFrame" {
+      if pptx_emit_smartart(
+        shape,
+        ctx.package,
+        part,
+        object,
+        shape_x,
+        shape_y,
+        draw_width,
+        draw_height,
+      ) {
+        continue
+      }
       if pptx_table_lines(shape).is_empty() {
         pptx_emit_chart(
           shape,
