@@ -4260,6 +4260,10 @@ fn pptx_emit_chart(
       )
     }
   }
+  let tick_mark_mode = match pptx_child(val_axis_node, "majorTickMark") {
+    Some(value) => pptx_attribute(value.element, "val", "none")
+    None => "none"
+  }
   let tick_lbl_skip = match pptx_child(val_axis_node, "tickLblSkip") {
     Some(value) =>
       Double::max(
@@ -4332,6 +4336,40 @@ fn pptx_emit_chart(
         @core.Inline({ verbs: Bytes::from_array([0, 1]), coordinates }),
       )
       object.stroke_path(path)
+    }
+    if tick_mark_mode != "none" {
+      let mark_fraction = pptx_chart_fraction(
+        tick, axis_low, axis_high, axis_flip,
+      )
+      let coordinates : Array[Double] = if horizontal {
+        let base = plot_y + plot_height
+        let end = match tick_mark_mode {
+          "in" => base - 3.0
+          "out" => base + 3.0
+          "cross" => base + 3.0
+          _ => base
+        }
+        let start = if tick_mark_mode == "cross" { base - 3.0 } else { base }
+        [plot_x + plot_width * mark_fraction, start,
+         plot_x + plot_width * mark_fraction, end]
+      } else {
+        let base = plot_x
+        let end = match tick_mark_mode {
+          "in" => base + 3.0
+          "out" => base - 3.0
+          "cross" => base + 3.0
+          _ => base
+        }
+        let start = if tick_mark_mode == "cross" { base - 3.0 } else { base }
+        [start, plot_y + plot_height - plot_height * mark_fraction,
+         end, plot_y + plot_height - plot_height * mark_fraction]
+      }
+      object.line(0.75F, 0, 0, 8.0F)
+      object.stroke_color(0x808080ffU)
+      let mark_path = object.add_path(
+        @core.Inline({ verbs: Bytes::from_array([0, 1]), coordinates }),
+      )
+      object.stroke_path(mark_path)
     }
     if tick_index % tick_lbl_skip == 0 {
     let display_tick = if axis_flip {
