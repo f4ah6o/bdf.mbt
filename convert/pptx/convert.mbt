@@ -2781,6 +2781,15 @@ fn pptx_emit_chart(
   let data_label_color = pptx_chart_data_label_color(Some(chart), theme)
   let custom_labels = pptx_chart_custom_labels(Some(chart))
   let deleted_labels = pptx_chart_deleted_labels(Some(chart))
+  let label_separator = match pptx_child(
+    pptx_child(Some(chart), "dLbls"), "separator",
+  ) {
+    Some(value) => {
+      let text = value.text.to_string()
+      if text == "" { " " } else { text }
+    }
+    None => " "
+  }
   let palette = [
     0x4472c4ffU, 0xed7d31ffU, 0xa5a5a5ffU, 0xffc000ffU, 0x5b9bd5ffU, 0x70ad47ffU,
   ]
@@ -3100,12 +3109,12 @@ fn pptx_emit_chart(
         if show_values {
           let mut label_text = if show_label_categories &&
             index < item.categories.length() {
-            item.categories[index] + " " + pptx_chart_format_number(value, label_format)
+            item.categories[index] + label_separator + pptx_chart_format_number(value, label_format)
           } else {
             pptx_chart_format_number(value, label_format)
           }
           if show_label_series && item.name != "" {
-            label_text = item.name + " " + label_text
+            label_text = item.name + label_separator + label_text
           }
           if index < custom_labels.length() &&
             custom_labels[index] != "" {
@@ -3288,12 +3297,12 @@ fn pptx_emit_chart(
         if show_values {
           let mut label_text = if show_label_categories &&
             index < categories.length() {
-            categories[index] + " " + pptx_chart_format_number(value, label_format)
+            categories[index] + label_separator + pptx_chart_format_number(value, label_format)
           } else {
             pptx_chart_format_number(value, label_format)
           }
           if show_label_series && item.name != "" {
-            label_text = item.name + " " + label_text
+            label_text = item.name + label_separator + label_text
           }
           if index < custom_labels.length() &&
             custom_labels[index] != "" {
@@ -3508,10 +3517,10 @@ fn pptx_emit_chart(
       if label != "" &&
         pie_labels.2 &&
         index < series[0].categories.length() {
-        label = series[0].categories[index] + " " + label
+        label = series[0].categories[index] + label_separator + label
       }
       if label != "" && pie_labels.3 && series[0].name != "" {
-        label = series[0].name + " " + label
+        label = series[0].name + label_separator + label
       }
       if index < custom_labels.length() && custom_labels[index] != "" {
         label = custom_labels[index]
@@ -4044,12 +4053,12 @@ fn pptx_emit_chart(
           let value = item.values[index]
           let mut text = if show_label_categories &&
             index < categories.length() {
-            categories[index] + " " + pptx_chart_format_number(value, label_format)
+            categories[index] + label_separator + pptx_chart_format_number(value, label_format)
           } else {
             pptx_chart_format_number(value, label_format)
           }
           if show_label_series && item.name != "" {
-            text = item.name + " " + text
+            text = item.name + label_separator + text
           }
           if index < custom_labels.length() && custom_labels[index] != "" {
             text = custom_labels[index]
@@ -4082,12 +4091,12 @@ fn pptx_emit_chart(
         for index, value in item.values {
           let mut text = if show_label_categories &&
             index < categories.length() {
-            categories[index] + " " + pptx_chart_format_number(value, label_format)
+            categories[index] + label_separator + pptx_chart_format_number(value, label_format)
           } else {
             pptx_chart_format_number(value, label_format)
           }
           if show_label_series && item.name != "" {
-            text = item.name + " " + text
+            text = item.name + label_separator + text
           }
           if index < custom_labels.length() && custom_labels[index] != "" {
             text = custom_labels[index]
