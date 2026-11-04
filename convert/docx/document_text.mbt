@@ -138,6 +138,7 @@ priv struct DocxFieldState {
   mut result : Bool
   mut typ : String
   mut format : String
+  mut arg : String
   mut emitted : Bool
 }
 
@@ -921,7 +922,7 @@ fn docx_text_omml(
 ///|
 
 ///|
-fn docx_field_info(instr : String) -> (String, String) {
+fn docx_field_info(instr : String) -> (String, String, String) {
   let tokens : Array[String] = []
   let current = StringBuilder()
   for c in instr {
@@ -938,23 +939,29 @@ fn docx_field_info(instr : String) -> (String, String) {
     tokens.push(current.to_string())
   }
   if tokens.is_empty() {
-    return ("", "")
+    return ("", "", "")
   }
   let typ = tokens[0].to_upper()
   let mut format = ""
+  let mut target = ""
   let mut i = 1
   while i < tokens.length() {
     if tokens[i] == "\\*" && i + 1 < tokens.length() {
       format = tokens[i + 1]
+    } else if target == "" && i == 1 {
+      target = tokens[i]
     }
     i += 1
   }
-  (typ, format)
+  (typ, format, target)
 }
 
 ///|
 fn docx_field_dynamic(typ : String) -> Bool {
-  typ == "PAGE" || typ == "NUMPAGES" || typ == "SECTIONPAGES"
+  typ == "PAGE" ||
+  typ == "NUMPAGES" ||
+  typ == "SECTIONPAGES" ||
+  typ == "PAGEREF"
 }
 
 ///|
@@ -963,10 +970,11 @@ fn docx_text_field(
   props : DocxRunProps,
   typ : String,
   format : String,
+  arg : String,
 ) -> Unit {
   items.push({
     kind: "field",
-    text: typ,
+    text: if typ == "PAGEREF" { typ + "\u{0001}" + arg } else { typ },
     clear: false,
     props,
     width: 0.0,
@@ -1043,15 +1051,17 @@ fn docx_text_run(
               result: false,
               typ: "",
               format: "",
+              arg: "",
               emitted: false,
             })
           "separate" =>
             if !walker.fields.is_empty() {
               let field = walker.fields[walker.fields.length() - 1]
               if !field.result {
-                let (typ, format) = docx_field_info(field.instr)
+                let (typ, format, arg) = docx_field_info(field.instr)
                 field.typ = typ
                 field.format = format
+                field.arg = arg
                 field.result = true
               }
             }
@@ -1059,7 +1069,9 @@ fn docx_text_run(
             if !walker.fields.is_empty() {
               let field = walker.fields.pop().unwrap()
               if docx_field_dynamic(field.typ) && !field.emitted {
-                docx_text_field(items, props, field.typ, field.format)
+                docx_text_field(
+                  items, props, field.typ, field.format, field.arg,
+                )
               }
             }
           _ => ()
@@ -1079,7 +1091,9 @@ fn docx_text_run(
         match docx_dynamic_field(walker) {
           Some(field) =>
             if !field.emitted {
-              docx_text_field(items, props, field.typ, field.format)
+              docx_text_field(
+                items, props, field.typ, field.format, field.arg,
+              )
               field.emitted = true
             }
           None => {
@@ -1149,7 +1163,7 @@ fn docx_text_run(
       // The cached result of a page field is not drawn; the field item
       // stands in for it and the renderer substitutes the value.
       if !field.emitted {
-        docx_text_field(items, props, field.typ, field.format)
+        docx_text_field(items, props, field.typ, field.format, field.arg)
         field.emitted = true
       }
     }
@@ -1168,12 +1182,12 @@ fn docx_text_inlines(
       "pPr" => ()
       "r" => docx_text_run(walker, child, items, paragraph_style)
       "fldSimple" => {
-        let (typ, format) = docx_field_info(
+        let (typ, format, arg) = docx_field_info(
           docx_attribute(child.element, "instr", ""),
         )
         if docx_field_dynamic(typ) {
           let props = walker.styles.resolve_run(paragraph_style, None)
-          docx_text_field(items, props, typ, format)
+          docx_text_field(items, props, typ, format, arg)
         } else {
           docx_text_inlines(walker, child, items, paragraph_style)
         }
@@ -1189,8 +1203,14 @@ fn docx_text_inlines(
         let props = walker.styles.resolve_run(paragraph_style, None)
         docx_text_omml(child, items, props)
       }
-      "bookmarkStart"
-      | "bookmarkEnd"
+      "bookmarkStart" => {
+        let name = docx_attribute(child.element, "name", "")
+        if name != "" && name != "_GoBack" {
+          let props = walker.styles.resolve_run(paragraph_style, None)
+          docx_text_push(items, "bookmark", name, props)
+        }
+      }
+      "bookmarkEnd"
       | "proofErr"
       | "commentRangeStart"
       | "commentRangeEnd"

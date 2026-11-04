@@ -97,7 +97,8 @@ keep no space), floating drawings in table cells and headers/footers (they
 are not drawn there), page-relative objects that would not fit are drawn
 clipped rather than moved, exact footnote separator/continuation
 indentation, upright CJK glyphs in vertical text (the whole body is turned,
-Latin and CJK alike), `PAGEREF`/`REF` field regeneration (cached results are used),
+Latin and CJK alike), `REF` field text regeneration (cached results are used; `PAGEREF` resolves
+bookmark pages from the probe layout),
 per-section `SECTIONPAGES` (the document page count is used),
 table-style base, first/last row/column, banded and corner-cell parts
 (borders/shading/margins/text formatting and TableGrid are applied), and exact scroll strip

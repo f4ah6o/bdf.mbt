@@ -1226,6 +1226,27 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX PAGEREF resolves the bookmark page" {
+  let blocks = "<w:p><w:bookmarkStart w:id=\"0\" w:name=\"Target\"/><w:r><w:t>TARGET</w:t></w:r></w:p>" +
+    "<w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>" +
+    "<w:p><w:r><w:fldChar w:fldCharType=\"begin\"/></w:r>" +
+    "<w:r><w:instrText xml:space=\"preserve\"> PAGEREF Target \\* MERGEFORMAT </w:instrText></w:r>" +
+    "<w:r><w:fldChar w:fldCharType=\"separate\"/></w:r>" +
+    "<w:r><w:t>9</w:t></w:r>" +
+    "<w:r><w:fldChar w:fldCharType=\"end\"/></w:r></w:p>"
+  let result = convert(docx_test_docx(blocks, DOCX_TEST_SECTION, []))
+  let commands = docx_test_page_commands(result, "pages", 1, "body")
+  let text = StringBuilder()
+  for command in commands {
+    match command {
+      FillText(value, _, _, _) => text.write_string(value)
+      _ => ()
+    }
+  }
+  assert_true(text.to_string().contains("1"))
+  assert_true(!text.to_string().contains("9"))
+}
+
 test "DOCX column separators are drawn between columns" {
   let section = "<w:sectPr><w:cols w:num=\"2\" w:space=\"720\" w:sep=\"1\"/>" +
     "<w:pgSz w:w=\"12240\" w:h=\"15840\"/><w:pgMar w:top=\"1440\" w:right=\"1440\" w:bottom=\"1440\" w:left=\"1440\"/></w:sectPr>"

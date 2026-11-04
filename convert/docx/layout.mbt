@@ -350,6 +350,23 @@ fn docx_layout_paragraph(
           line_started = true
         }
       }
+      "bookmark" => {
+        current.push({
+          kind: "bookmark",
+          text: item.text,
+          field_format: "",
+          font: "sans-serif",
+          weight: 400,
+          style: 0,
+          size: 10.0,
+          color: 0x000000ffU,
+          x: line_x,
+          advance: 0.0,
+          shade: None,
+          border_width: 0.0,
+          border_color: None,
+        })
+      }
       "field" => {
         let size = if item.props.size > 0.0 { item.props.size } else { 10.0 }
         let advance = size * 0.5
@@ -683,6 +700,9 @@ fn docx_emit_para_line(
     }
   }
   for item in runs {
+    if item.kind == "bookmark" {
+      continue
+    }
     let text = if item.kind == "field" {
       field_value(item.text, item.field_format)
     } else {
@@ -1436,6 +1456,7 @@ priv struct DocxFlow {
   index_runs : Array[@core.IndexRun]
   budget : @render.TextExtractionBudget
   stories : Map[String, DocxStoryLayout]
+  bookmark_pages : Map[String, Int32]
   mut body : @core.ObjectBuilder
   mut header_object : @core.ObjectBuilder
   mut footer_object : @core.ObjectBuilder
@@ -1622,9 +1643,14 @@ fn docx_story_kind(flow : DocxFlow) -> String {
 ///|
 fn docx_flow_field_value(
   flow : DocxFlow,
-  typ : String,
+  field : String,
   format : String,
 ) -> String {
+  let (typ, arg) = match field.find("\u{0001}") {
+    Some(index) =>
+      (field[:index].to_owned(), field[index + 1:].to_owned())
+    None => (field, "")
+  }
   match typ {
     "PAGE" => {
       let page_format = if format != "" {
@@ -1642,6 +1668,15 @@ fn docx_flow_field_value(
       let page_format = if format != "" { format } else { "decimal" }
       docx_format_number(flow.total_pages, page_format)
     }
+    "PAGEREF" =>
+      match flow.bookmark_pages.get(arg) {
+        Some(page) =>
+          docx_format_number(
+            page,
+            if format != "" { format } else { "decimal" },
+          )
+        None => ""
+      }
     _ => ""
   }
 }
@@ -2695,6 +2730,11 @@ fn docx_flow_emit_paragraph(
     field_value: fn(typ, format) { docx_flow_field_value(flow, typ, format) },
   }
   fn emit(line : DocxParaLine, x : Double, available : Double) -> Unit raise {
+    for item in line.items {
+      if item.kind == "bookmark" {
+        flow.bookmark_pages[item.text] = flow.page_number
+      }
+    }
     docx_emit_para_line(
       flow.body,
       flow.writer,
@@ -3081,7 +3121,8 @@ fn docx_layout_document(
   total_pages : Int32,
   writer : @core.DocumentWriter,
   package : @ooxml.OoxmlPackage,
-) -> (Array[Json], Array[@core.IndexRun], Array[String]) raise {
+  bookmarks~ : Map[String, Int32] = Map([]),
+) -> (Array[Json], Array[@core.IndexRun], Array[String], Map[String, Int32]) raise {
   let warnings : Array[String] = ["DOCX layout uses approximate text metrics"]
   let section = docx_section_at(document, 0)
   let start = if section.page_start >= 0 {
@@ -3099,6 +3140,7 @@ fn docx_layout_document(
     index_runs: [],
     budget: @render.TextExtractionBudget::new(),
     stories: Map([]),
+    bookmark_pages: bookmarks,
     body: @core.ObjectBuilder::new(),
     header_object: @core.ObjectBuilder::new(),
     footer_object: @core.ObjectBuilder::new(),
@@ -3153,7 +3195,7 @@ fn docx_layout_document(
     docx_flow_new_page(flow)
     docx_flow_flush_page(flow)
   }
-  (flow.pages, flow.index_runs, flow.warnings)
+  (flow.pages, flow.index_runs, flow.warnings, flow.bookmark_pages)
 }
 
 ///|
@@ -3208,9 +3250,13 @@ fn docx_render_document(
   }
   let meta = docx_render_meta(package, title, document.language)
   let mut page_count = 0
+  let mut bookmark_pages : Map[String, Int32] = Map([])
   if views != "scroll" {
     let probe = @core.DocumentWriter::new(meta=Json::object(meta))
-    let (probe_pages, _, _) = docx_layout_document(document, 0, probe, package)
+    let (probe_pages, _, _, probe_bookmarks) = docx_layout_document(
+      document, 0, probe, package,
+    )
+    bookmark_pages = probe_bookmarks
     page_count = probe_pages.length()
     if page_count == 0 {
       page_count = 1
@@ -3223,8 +3269,8 @@ fn docx_render_document(
     "DOCX layout uses approximate text metrics",
   ]
   if views != "scroll" {
-    let (rendered, runs, rendered_warnings) = docx_layout_document(
-      document, page_count, writer, package,
+    let (rendered, runs, rendered_warnings, _) = docx_layout_document(
+      document, page_count, writer, package, bookmarks=bookmark_pages,
     )
     for page in rendered {
       pages.push(page)
