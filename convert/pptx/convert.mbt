@@ -2321,7 +2321,7 @@ fn pptx_emit_chart(
   } else {
     ""
   }
-  let plot_x = x + 20.0
+  let mut plot_x = x + 20.0
   let mut plot_y = y + 20.0
   let mut plot_width = Double::max(1.0, width - 40.0)
   let mut plot_height = Double::max(1.0, height - 40.0)
@@ -2370,6 +2370,16 @@ fn pptx_emit_chart(
       if position == "b" {
         plot_height = Double::max(1.0, plot_height - 12.0)
       }
+    } else if position == "l" {
+      let mut legend_y = plot_y + 4.0
+      for entry in entries {
+        pptx_chart_label(
+          object, label_font, label_size, black, entry, x + 2.0, legend_y,
+        )
+        legend_y += 12.0
+      }
+      plot_x += 64.0
+      plot_width = Double::max(1.0, plot_width - 64.0)
     } else {
       let mut legend_y = plot_y + 4.0
       for entry in entries {
