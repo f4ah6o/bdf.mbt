@@ -600,7 +600,9 @@ fn XlsxWorkbook::xlsx_draw_shape(
   if dash != "" && fill is None && !no_fill {
     return
   }
-  let texts = xlsx_draw_shape_text(xlsx_draw_child(sp, "txBody"), events)
+  let texts = xlsx_draw_shape_text(
+    xlsx_draw_child(sp, "txBody"), width, events,
+  )
   drawing.pictures.push({
     kind, from_row, from_column, to_row, to_column,
     from_x_offset, from_y_offset, to_x_offset, to_y_offset,
@@ -730,6 +732,7 @@ fn xlsx_draw_run_style(rpr : XlsxDrawNode?) -> (Double, Bool, Bool, UInt32) rais
 ///|
 fn xlsx_draw_shape_text(
   tx_body : XlsxDrawNode?,
+  width : Double,
   events : Array[(String, String)],
 ) -> Array[@sheet.GridShapeTextLine] raise {
   let lines : Array[@sheet.GridShapeTextLine] = []
@@ -780,7 +783,41 @@ fn xlsx_draw_shape_text(
       }
     }
     if !runs.is_empty() {
-      lines.push({ runs, align })
+      if width > 10.0 {
+        let text_runs : Array[@drawingml.TextRun] = []
+        for run in runs {
+          text_runs.push({
+            text: run.text,
+            style: @drawingml.TextStyle::new(
+              size=run.size,
+              bold=run.bold,
+              italic=run.italic,
+              color=run.color,
+            ),
+          })
+        }
+        let wrapped = @drawingml.wrap_runs(text_runs, width - 10.0, 1)
+        if wrapped.is_empty() {
+          lines.push({ runs, align })
+        } else {
+          for line in wrapped {
+            lines.push({
+              runs: [
+                {
+                  text: line.text,
+                  size: line.style.size,
+                  bold: line.style.bold,
+                  italic: line.style.italic,
+                  color: line.style.color,
+                },
+              ],
+              align,
+            })
+          }
+        }
+      } else {
+        lines.push({ runs, align })
+      }
     }
   }
   lines

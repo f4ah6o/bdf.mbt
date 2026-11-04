@@ -1,6 +1,7 @@
 import {
   "f4ah6o/bdf/convert/ooxml",
   "f4ah6o/bdf/convert/sheet",
+  "f4ah6o/bdf/convert/drawingml" @drawingml,
   "f4ah6o/bdf/convert/raster" @raster,
   "f4ah6o/bdf/render" @render,
   "f4ah6o/bdf/font/sfnt" @sfnt,
