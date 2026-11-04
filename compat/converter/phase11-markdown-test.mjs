@@ -62,6 +62,7 @@ try {
         pages: view.pages.length,
         width: view.pages[0]?.w,
         height: view.pages[0]?.h,
+        images: doc.manifest.parts.filter(part => part.t === 'img').length,
         text,
       };
     };
@@ -98,6 +99,11 @@ try {
     'math.md': ['e^(iπ)+1=0', '√2≈1.414', 'x=(−b±√(b^2−4ac))/(2a)', '∑_(k=1)^n k=(n(n+1))/2', '∇⋅E=ρ/(ε_0)', 'A=(1, 2; 3, 4)'],
     'svg.md': ['Passing', 'Done', 'SVG images', 'sprite sheet'],
   };
+  // The inline svg chart and the symbol of the sprite sheet are stored as
+  // image parts; the two relative SVG files keep their alternative text and
+  // a warning, as upstream does when it has no directory to resolve them in.
+  const expectedImages = { 'basic.md': 0, 'math.md': 0, 'svg.md': 2 };
+  const expectedWarnings = { 'basic.md': 2, 'math.md': 0, 'svg.md': 2 };
   for (const entry of result) {
     assert.equal(entry.upstream.kind, 'scroll', `${entry.name}: upstream kind`);
     assert.equal(entry.moon.kind, 'scroll', `${entry.name}: moon kind`);
@@ -105,6 +111,13 @@ try {
     assert.equal(entry.moon.pages, 1, `${entry.name}: moon page count`);
     assert.equal(entry.moon.width, 504, `${entry.name}: scroll width`);
     assert.ok(entry.moon.summary.includes('scroll strip(s)'), `${entry.name}: summary`);
+    assert.equal(entry.moon.images, expectedImages[entry.name], `${entry.name}: image parts`);
+    assert.equal(entry.moon.warnings.length, expectedWarnings[entry.name], `${entry.name}: warnings`);
+    if (entry.name === 'svg.md') {
+      assert.ok(entry.moon.summary.includes('2 image(s)'), 'svg.md: summary images');
+      assert.ok(entry.moon.warnings.some(warning => warning.includes('images/badge.svg')), 'svg.md: badge warning');
+      assert.ok(entry.moon.warnings.some(warning => warning.includes('images/check.svg')), 'svg.md: check warning');
+    }
     for (const want of expectations[entry.name]) {
       assert.ok(normalize(entry.moon.text).includes(normalize(want)), `${entry.name}: text lacks ${want}`);
     }
@@ -113,7 +126,7 @@ try {
     const similarity = 2 * lcs(a, b) / (a.length + b.length);
     assert.ok(similarity >= 0.88, `${entry.name}: text similarity ${similarity.toFixed(3)}`);
   }
-  console.log('Phase 11 Markdown: scroll views, GFM structure, math linearization and text indexes match upstream.');
+  console.log('Phase 11 Markdown: scroll views, inline SVG image parts, GFM structure, math linearization and text indexes match upstream.');
 } finally {
   await browser.close();
   server.close();

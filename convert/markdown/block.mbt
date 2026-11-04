@@ -272,13 +272,16 @@ fn md_inline_runs(
   style : @drawingml.TextStyle,
   formulas : Array[String],
   images : Array[(String, String, String)],
+  svgs : Array[MdSvg],
+  sprite : StringBuilder,
+  warnings : Array[String],
 ) -> Array[MdRun] {
   let runs : Array[MdRun] = []
   let inlines = @mdinline.parse_inlines_with_options(
     text,
     @mmtypes.MarkdownOptions::gfm(),
   )
-  md_collect_inlines(inlines, style, "", runs, formulas, images)
+  md_collect_inlines(inlines, style, "", runs, formulas, images, svgs, sprite, warnings)
   runs
 }
 
@@ -288,11 +291,16 @@ priv struct MdParser {
   images : Array[(String, String, String)]
   warnings : Array[String]
   mut title : String
+  svgs : Array[MdSvg]
+  sprite : StringBuilder
 }
 
 ///|
 fn MdParser::paragraph(self : MdParser, text : String) -> MdBlock {
-  let runs = md_inline_runs(text, md_style(), self.formulas, self.images)
+  let runs = md_inline_runs(
+    text, md_style(), self.formulas, self.images, self.svgs, self.sprite,
+    self.warnings,
+  )
   MdParagraph(runs)
 }
 
@@ -303,6 +311,9 @@ fn MdParser::heading(self : MdParser, level : Int, text : String) -> MdBlock {
     md_style(size=md_heading_size(level), bold=true),
     self.formulas,
     self.images,
+    self.svgs,
+    self.sprite,
+    self.warnings,
   )
   if level == 1 && self.title == "" {
     self.title = md_runs_text(runs)
@@ -409,7 +420,10 @@ fn MdParser::parse_blocks(self : MdParser, lines : Array[String], level : Int) -
       let header : Array[Array[MdRun]] = []
       for cell in header_cells {
         header.push(
-          md_inline_runs(cell, md_style(bold=true), self.formulas, self.images),
+          md_inline_runs(
+            cell, md_style(bold=true), self.formulas, self.images, self.svgs,
+            self.sprite, self.warnings,
+          ),
         )
       }
       let rows : Array[Array[Array[MdRun]]] = []
@@ -420,7 +434,12 @@ fn MdParser::parse_blocks(self : MdParser, lines : Array[String], level : Int) -
         let cells = md_split_table_row(lines[i])
         let row : Array[Array[MdRun]] = []
         for cell in cells {
-          row.push(md_inline_runs(cell, md_style(), self.formulas, self.images))
+          row.push(
+            md_inline_runs(
+              cell, md_style(), self.formulas, self.images, self.svgs,
+              self.sprite, self.warnings,
+            ),
+          )
         }
         rows.push(row)
         i += 1
@@ -451,7 +470,10 @@ fn MdParser::parse_blocks(self : MdParser, lines : Array[String], level : Int) -
           break
         }
       }
-      for block in md_block_from_html(html_lines.join("\n"), self.formulas, self.warnings) {
+      for block in md_block_from_html(
+        html_lines.join("\n"), self.formulas, self.images, self.svgs, self.sprite,
+        self.warnings,
+      ) {
         out.push(block)
       }
       i = j
@@ -494,8 +516,22 @@ fn MdParser::parse_blocks(self : MdParser, lines : Array[String], level : Int) -
       }
       if next.has_prefix(": ") {
         out.push(self.paragraph(trimmed.to_string()))
-        out.push(self.paragraph(next[2:].to_owned().trim().to_string()))
-        i += 2
+        let mut j = i + 1
+        while j < lines.length() {
+          let current = lines[j].trim()
+          if current.has_prefix(": ") {
+            out.push(self.paragraph(current[2:].to_owned().trim().to_string()))
+            j += 1
+            continue
+          }
+          if current != "" && md_indent_of(lines[j]) > 0 {
+            out.push(self.paragraph(current.to_string()))
+            j += 1
+            continue
+          }
+          break
+        }
+        i = j
         continue
       }
     }
@@ -629,43 +665,163 @@ fn MdParser::parse_list(
 }
 
 ///|
-fn md_footnote_prepare(lines : Array[String]) -> (Array[String], Array[(Int, String)]) {
-  let numbers : Map[String, Int] = Map([])
-  let definitions : Array[(Int, String)] = []
-  let kept : Array[String] = []
+/// Read a footnote definition line: [^label]: body.
+fn md_footnote_definition(line : String) -> (String, String)? {
+  let trimmed = line.trim()
+  if !trimmed.has_prefix("[^") {
+    return None
+  }
+  let close = match trimmed.find("]:") {
+    Some(index) => index
+    None => return None
+  }
+  if close <= 2 {
+    return None
+  }
+  let id = trimmed[2:close].to_owned()
+  if id.contains("]") {
+    return None
+  }
+  let body = trimmed[close + 2:].to_owned().trim().to_string()
+  Some((id, body))
+}
+
+///|
+/// The first reference of every footnote of a line, in reading order, moves
+/// from defs into numbered. Code spans and escaped brackets are not
+/// references.
+fn md_number_footnotes(
+  line : String,
+  defs : Map[String, String],
+  numbers : Map[String, Int],
+  numbered : Array[String],
+) -> Unit {
+  let chars = line.to_array()
   let mut i = 0
-  while i < lines.length() {
-    let trimmed = lines[i].trim()
-    if trimmed.has_prefix("[^") && trimmed.contains("]:") {
-      let close = match trimmed.find("]:") {
-        Some(index) => index
-        None => 0
+  while i < chars.length() {
+    if chars[i] == '\\' && i + 1 < chars.length() {
+      i += 2
+      continue
+    }
+    if chars[i] == '\u0060' {
+      let mut ticks = 1
+      while i + ticks < chars.length() && chars[i + ticks] == '\u0060' {
+        ticks += 1
       }
-      if close > 2 {
-        let id = trimmed[2:close].to_owned()
-        let mut body = trimmed[close + 2:].to_owned().trim().to_string()
-        i += 1
-        while i < lines.length() &&
-          lines[i].trim() != "" &&
-          md_indent_of(lines[i]) > 0 {
-          if body != "" {
-            body += " "
-          }
-          body += lines[i].trim().to_string()
-          i += 1
+      let marker = String::from_array(chars[i:i + ticks])
+      let rest = String::from_array(chars[i + ticks:])
+      match rest.find(marker) {
+        Some(index) => i = i + ticks + index + ticks
+        None => i += ticks
+      }
+      continue
+    }
+    if chars[i] == '[' && i + 1 < chars.length() && chars[i + 1] == '^' {
+      let mut close = i + 2
+      while close < chars.length() && chars[close] != ']' {
+        close += 1
+      }
+      if close < chars.length() {
+        let id = String::from_array(chars[i + 2:close])
+        if defs.contains(id) && !numbers.contains(id) {
+          let number = numbered.length() + 1
+          numbers[id] = number
+          numbered.push(id)
         }
-        let number = numbers.size() + 1
-        numbers[id] = number
-        definitions.push((number, body))
+        i = close + 1
         continue
       }
     }
-    kept.push(lines[i])
     i += 1
+  }
+}
+
+///|
+fn md_footnote_prepare(lines : Array[String]) -> (Array[String], Array[(Int, String)]) {
+  let defs : Map[String, String] = Map([])
+  let kept : Array[String] = []
+  let mut fenced = false
+  let mut fence = ""
+  let mut i = 0
+  while i < lines.length() {
+    let line = lines[i]
+    let trimmed = line.trim()
+    if fenced {
+      kept.push(line)
+      if trimmed.has_prefix(fence) {
+        fenced = false
+      }
+      i += 1
+      continue
+    }
+    if trimmed.has_prefix("\u0060\u0060\u0060") || trimmed.has_prefix("~~~") {
+      fenced = true
+      fence = trimmed[:3].to_owned()
+      kept.push(line)
+      i += 1
+      continue
+    }
+    if md_indent_of(line) >= 4 {
+      kept.push(line)
+      i += 1
+      continue
+    }
+    match md_footnote_definition(line) {
+      Some(entry) => {
+        let (id, first) = entry
+        let mut body = first
+        i += 1
+        while i < lines.length() {
+          let current = lines[i]
+          if current.trim() == "" {
+            let mut j = i + 1
+            while j < lines.length() && lines[j].trim() == "" {
+              j += 1
+            }
+            if j < lines.length() && md_indent_of(lines[j]) > 0 {
+              if body != "" {
+                body += "\n"
+              }
+              i = j
+              continue
+            }
+            break
+          }
+          if md_indent_of(current) > 0 {
+            if body != "" {
+              body += " "
+            }
+            body += current.trim().to_string()
+            i += 1
+            continue
+          }
+          break
+        }
+        if !defs.contains(id) {
+          defs[id] = body
+        }
+        continue
+      }
+      None => ()
+    }
+    kept.push(line)
+    i += 1
+  }
+  let numbers : Map[String, Int] = Map([])
+  let numbered : Array[String] = []
+  for line in kept {
+    md_number_footnotes(line, defs, numbers, numbered)
   }
   let replaced : Array[String] = []
   for line in kept {
     replaced.push(md_replace_footnotes(line, numbers))
+  }
+  let definitions : Array[(Int, String)] = []
+  for id in numbered {
+    match defs.get(id) {
+      Some(body) => definitions.push((numbers[id], body))
+      None => ()
+    }
   }
   (replaced, definitions)
 }
@@ -676,6 +832,30 @@ fn md_replace_footnotes(line : String, numbers : Map[String, Int]) -> String {
   let chars = line.to_array()
   let mut i = 0
   while i < chars.length() {
+    if chars[i] == '\\' && i + 1 < chars.length() {
+      out.write_char(chars[i])
+      out.write_char(chars[i + 1])
+      i += 2
+      continue
+    }
+    if chars[i] == '\u0060' {
+      let mut ticks = 1
+      while i + ticks < chars.length() && chars[i + ticks] == '\u0060' {
+        ticks += 1
+      }
+      let marker = String::from_array(chars[i:i + ticks])
+      out.write_string(marker)
+      i += ticks
+      let rest = String::from_array(chars[i:])
+      match rest.find(marker) {
+        Some(index) => {
+          out.write_string(String::from_array(chars[i:i + index + ticks]))
+          i = i + index + ticks
+        }
+        None => ()
+      }
+      continue
+    }
     if chars[i] == '[' && i + 1 < chars.length() && chars[i + 1] == '^' {
       let mut close = i + 2
       while close < chars.length() && chars[close] != ']' {
