@@ -124,6 +124,44 @@ fn pptx_test_body_paths(result : PptxResult) -> Array[@core.Path] raise {
 }
 
 ///|
+test "PPTX arrowheads draw filled or stroked paths" {
+  for kind in ["triangle", "stealth", "diamond", "oval", "arrow"] {
+    let object = @core.ObjectBuilder::new()
+    object.set_bbox(0.0F, 0.0F, 200.0F, 200.0F)
+    let arrow : PptxArrow = { kind, w: 3.0, l: 3.0 }
+    let line : PptxLineStyle = {
+      width: 2.0,
+      color: 0xff0000ffU,
+      cap: 0,
+      join: 0,
+      miter: 8.0,
+      dash: [],
+      head: arrow,
+      tail: arrow,
+    }
+    try {
+      pptx_draw_arrow(object, line, arrow, 100.0, 100.0, 1.0, 0.0)
+    } catch {
+      error => println("arrow error: " + error.to_string())
+    }
+    let commands = @render.decode_commands(object.encode()) catch { _ => [] }
+    let mut fills = 0
+    let mut strokes = 0
+    for command in commands {
+      match command {
+        FillPath(_, _) => fills += 1
+        StrokePath(_) => strokes += 1
+        _ => ()
+      }
+    }
+    if kind == "arrow" {
+      assert_eq(strokes >= 1, true)
+    } else {
+      assert_eq(fills >= 1, true)
+    }
+  }
+}
+
 test "PPTX preset geometry evaluates adjust values and guides" {
   let triangle = pptx_preset_geometry("triangle", [], 200.0, 100.0).unwrap()
   assert_eq(triangle.text_left, 50.0)

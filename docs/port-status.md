@@ -109,13 +109,14 @@
   styles/autofit remain documented gaps in `compat/docx`.
 - PPTX: `convert/pptx` emits the upstream `slides` fixed view with
   background/layout/master/body layers, shared master objects, placeholder
-  text inheritance, bullets and levels, tables, bar/line/pie charts and
-  linearized Office Math. Preset geometry uses the upstream 187-preset table
+  text inheritance, bullets and levels, tables, bar/line/pie charts, line
+  arrowheads and linearized Office Math. Preset geometry uses the upstream
+  187-preset table
   and custom `a:custGeom` paths are evaluated with the same guide engine
   (arcTo is flattened to cubic Béziers), placeholder fill/line inheritance
   follows slide → layout → master, and a supplied font database embeds subset
-  WOFF2 faces with real metrics. Shape flipping and stroked-path arrowheads,
-  SmartArt/ink, 3D, other chart types, chart data tables/titles, table style
+  WOFF2 faces with real metrics. SmartArt/ink, 3D, other chart types, chart
+  data tables/titles, table style
   banding, blip bullets and advanced vertical stacking remain
   documented gaps in `compat/pptx`.
 - AI: PDF-based Illustrator 9+ artwork only; PostScript files (Illustrator 8

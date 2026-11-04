@@ -14,6 +14,13 @@ priv enum PptxPaint {
 
 ///|
 /// A resolved shape outline.
+priv struct PptxArrow {
+  kind : String
+  w : Double
+  l : Double
+}
+
+///|
 priv struct PptxLineStyle {
   width : Double
   color : UInt32
@@ -21,6 +28,8 @@ priv struct PptxLineStyle {
   join : Byte
   miter : Double
   dash : Array[Double]
+  head : PptxArrow
+  tail : PptxArrow
 }
 
 ///|
@@ -217,6 +226,25 @@ fn pptx_preset_dash(value : String) -> Array[Double] {
 /// Merge a:ln elements (most specific first) and the theme's line style a
 /// p:style lnRef names, as upstream resolveLine does. nil when the shape has
 /// no visible outline.
+fn pptx_arrow_size(value : String) -> Double {
+  match value {
+    "sm" => 2.0
+    "lg" => 5.0
+    _ => 3.0
+  }
+}
+
+///|
+fn pptx_parse_arrow(node : PptxXmlNode) -> PptxArrow {
+  let kind = pptx_attribute(node.element, "type", "none")
+  {
+    kind: if kind == "none" { "" } else { kind },
+    w: pptx_arrow_size(pptx_attribute(node.element, "w", "med")),
+    l: pptx_arrow_size(pptx_attribute(node.element, "len", "med")),
+  }
+}
+
+///|
 fn pptx_shape_line(
   ctx : PptxShapeContext,
   shape : PptxXmlNode,
@@ -273,6 +301,10 @@ fn pptx_shape_line(
   let mut miter = 8.0
   let mut dash : Array[Double] = []
   let mut have_dash = false
+  let mut head : PptxArrow = { kind: "", w: 3.0, l: 3.0 }
+  let mut tail : PptxArrow = { kind: "", w: 3.0, l: 3.0 }
+  let mut have_head = false
+  let mut have_tail = false
   let mut have_cap = false
   let mut have_join = false
   for i, line in lines {
@@ -358,6 +390,24 @@ fn pptx_shape_line(
           }
       }
     }
+    if !have_head {
+      match pptx_child(Some(line), "headEnd") {
+        Some(value) => {
+          head = pptx_parse_arrow(value)
+          have_head = true
+        }
+        None => ()
+      }
+    }
+    if !have_tail {
+      match pptx_child(Some(line), "tailEnd") {
+        Some(value) => {
+          tail = pptx_parse_arrow(value)
+          have_tail = true
+        }
+        None => ()
+      }
+    }
   }
   let color = match paint {
     PptxPaintSolid(color, _) => color
@@ -369,7 +419,7 @@ fn pptx_shape_line(
   if width == 0.0 {
     width = 0.5
   }
-  Some({ width, color, cap, join, miter, dash, })
+  Some({ width, color, cap, join, miter, dash, head, tail, })
 }
 
 ///|
@@ -496,6 +546,192 @@ fn pptx_fill_geometry_path(
 }
 
 ///|
+fn pptx_path_ends(
+  path : @core.Path,
+) -> ((Double, Double), (Double, Double), (Double, Double), (Double, Double))? {
+  let verbs = path.verbs.to_array()
+  let coordinates = path.coordinates
+  let mut index = 0
+  let mut first_x = 0.0
+  let mut first_y = 0.0
+  let mut prev_x = 0.0
+  let mut prev_y = 0.0
+  let mut start_dx = 0.0
+  let mut start_dy = 0.0
+  let mut end_dx = 0.0
+  let mut end_dy = 0.0
+  let mut have = false
+  let mut closed = false
+  for verb in verbs {
+    match verb.to_int() {
+      0 => {
+        if index + 1 < coordinates.length() {
+          prev_x = coordinates[index]
+          prev_y = coordinates[index + 1]
+          if !have {
+            first_x = prev_x
+            first_y = prev_y
+            have = true
+          }
+        }
+        index += 2
+      }
+      1 => {
+        if index + 1 < coordinates.length() {
+          let x = coordinates[index]
+          let y = coordinates[index + 1]
+          if start_dx == 0.0 && start_dy == 0.0 {
+            start_dx = x - prev_x
+            start_dy = y - prev_y
+          }
+          end_dx = x - prev_x
+          end_dy = y - prev_y
+          prev_x = x
+          prev_y = y
+        }
+        index += 2
+      }
+      2 => {
+        if index + 5 < coordinates.length() {
+          let c1x = coordinates[index]
+          let c1y = coordinates[index + 1]
+          let c2x = coordinates[index + 2]
+          let c2y = coordinates[index + 3]
+          let x = coordinates[index + 4]
+          let y = coordinates[index + 5]
+          if start_dx == 0.0 && start_dy == 0.0 {
+            start_dx = c1x - prev_x
+            start_dy = c1y - prev_y
+          }
+          end_dx = x - c2x
+          end_dy = y - c2y
+          prev_x = x
+          prev_y = y
+        }
+        index += 6
+      }
+      3 => {
+        if index + 3 < coordinates.length() {
+          let cx = coordinates[index]
+          let cy = coordinates[index + 1]
+          let x = coordinates[index + 2]
+          let y = coordinates[index + 3]
+          if start_dx == 0.0 && start_dy == 0.0 {
+            start_dx = cx - prev_x
+            start_dy = cy - prev_y
+          }
+          end_dx = x - cx
+          end_dy = y - cy
+          prev_x = x
+          prev_y = y
+        }
+        index += 4
+      }
+      4 => closed = true
+      5 => {
+        closed = true
+        index += 4
+      }
+      _ => ()
+    }
+  }
+  if !have || closed || (start_dx == 0.0 && start_dy == 0.0) {
+    None
+  } else {
+    Some(
+      ((first_x, first_y), (start_dx, start_dy), (prev_x, prev_y), (end_dx, end_dy)),
+    )
+  }
+}
+
+///|
+fn pptx_draw_arrow(
+  object : @core.ObjectBuilder,
+  line : PptxLineStyle,
+  arrow : PptxArrow,
+  x : Double,
+  y : Double,
+  dx : Double,
+  dy : Double,
+) -> Unit raise {
+  let length = (dx * dx + dy * dy).sqrt()
+  if arrow.kind == "" || length == 0.0 {
+    return
+  }
+  let ux = dx / length
+  let uy = dy / length
+  let px = -uy
+  let py = ux
+  let line_width = Double::max(line.width, 1.0)
+  let half_width = arrow.w * line_width / 2.0
+  let head_length = arrow.l * line_width
+  let point = fn(along : Double, across : Double) -> (Double, Double) {
+    (x + ux * along + px * across, y + uy * along + py * across)
+  }
+  object.fill_color(line.color)
+  object.stroke_color(line.color)
+  match arrow.kind {
+    "arrow" => {
+      let a = point(-head_length, half_width)
+      let b = point(-head_length, -half_width)
+      let path = @core.Inline({
+        verbs: b"\x00\x01\x01",
+        coordinates: [a.0, a.1, x, y, b.0, b.1],
+      })
+      pptx_set_line(object, line)
+      object.stroke_path(object.add_path(path))
+    }
+    "oval" => {
+      let rx = head_length / 2.0
+      let ry = half_width
+      let coordinates : Array[Double] = []
+      for i in 0..<8 {
+        let angle = 6.283185307179586 * i.to_double() / 8.0
+        let p = point(rx * @math.cos(angle), ry * @math.sin(angle))
+        coordinates.push(p.0)
+        coordinates.push(p.1)
+      }
+      let path = @core.Inline({
+        verbs: b"\x00\x01\x01\x01\x01\x01\x01\x01\x04",
+        coordinates,
+      })
+      object.fill_path(object.add_path(path), 0)
+    }
+    "diamond" => {
+      let tip = point(head_length / 2.0, 0.0)
+      let right = point(0.0, half_width)
+      let back = point(-head_length / 2.0, 0.0)
+      let left = point(0.0, -half_width)
+      let path = @core.Inline({
+        verbs: b"\x00\x01\x01\x01\x04",
+        coordinates: [tip.0, tip.1, right.0, right.1, back.0, back.1, left.0, left.1],
+      })
+      object.fill_path(object.add_path(path), 0)
+    }
+    "stealth" => {
+      let tip = (x, y)
+      let a = point(-head_length, half_width)
+      let mid = point(-head_length * 0.6, 0.0)
+      let b = point(-head_length, -half_width)
+      let path = @core.Inline({
+        verbs: b"\x00\x01\x01\x01\x04",
+        coordinates: [tip.0, tip.1, a.0, a.1, mid.0, mid.1, b.0, b.1],
+      })
+      object.fill_path(object.add_path(path), 0)
+    }
+    _ => {
+      let a = point(-head_length, half_width)
+      let b = point(-head_length, -half_width)
+      let path = @core.Inline({
+        verbs: b"\x00\x01\x01\x04",
+        coordinates: [x, y, a.0, a.1, b.0, b.1],
+      })
+      object.fill_path(object.add_path(path), 0)
+    }
+  }
+}
+
+///|
 fn pptx_stroke_geometry_path(
   object : @core.ObjectBuilder,
   line : PptxLineStyle,
@@ -503,6 +739,21 @@ fn pptx_stroke_geometry_path(
 ) -> Unit raise {
   pptx_set_line(object, line)
   object.stroke_path(object.add_path(@core.Inline(path)))
+  match pptx_path_ends(path) {
+    Some((start, start_dir, finish, end_dir)) => {
+      if line.head.kind != "" {
+        pptx_draw_arrow(
+          object, line, line.head, start.0, start.1, -start_dir.0, -start_dir.1,
+        )
+      }
+      if line.tail.kind != "" {
+        pptx_draw_arrow(
+          object, line, line.tail, finish.0, finish.1, end_dir.0, end_dir.1,
+        )
+      }
+    }
+    None => ()
+  }
 }
 
 ///|

@@ -108,6 +108,11 @@ and reports the `no fonts found` warning. A host that receives a font directory
 URL (the native converter worker's `fonts` option) must pass the resulting
 database to `convert(db=...)`.
 
+Line `a:headEnd`/`a:tailEnd` arrowheads are drawn for triangle, stealth,
+diamond, oval and open-arrow ends with the upstream width/length sizes; the
+oval end is an eight-sided approximation. Shape `flipH`/`flipV` mirroring is
+applied through the DrawingML transform.
+
 Remaining gaps: upstream keeps `arcTo` as a Canvas ellipse verb while this
 converter flattens it to cubic Béziers (the same outline, and the phase 15
 comparison flattens both encodings before comparing); malformed custom
