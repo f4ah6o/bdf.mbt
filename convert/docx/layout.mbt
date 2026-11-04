@@ -2957,15 +2957,31 @@ fn docx_flow_page_borders(flow : DocxFlow) -> @core.ObjectBuilder? raise {
       None => ()
     }
   }
-  if !visible {
-    return None
-  }
+  let background = flow.document.background
   let first = flow.page_in_section == 0
-  if section.border_first && !first {
-    return None
-  }
-  if section.border_not_first && first {
-    return None
+  let border_excluded = (section.border_first && !first) ||
+    (section.border_not_first && first)
+  if !visible || border_excluded {
+    match background {
+      Some(color) => {
+        let object = @core.ObjectBuilder::new()
+        object.set_bbox(
+          0.0F,
+          0.0F,
+          Float::from_double(section.width),
+          Float::from_double(section.height),
+        )
+        object.fill_color(color)
+        object.fill_rect(
+          0.0F,
+          0.0F,
+          Float::from_double(section.width),
+          Float::from_double(section.height),
+        )
+        return Some(object)
+      }
+      None => return None
+    }
   }
   let top = section.borders[0]
   let left = section.borders[1]
@@ -3021,6 +3037,18 @@ fn docx_flow_page_borders(flow : DocxFlow) -> @core.ObjectBuilder? raise {
     Float::from_double(section.width),
     Float::from_double(section.height),
   )
+  match background {
+    Some(color) => {
+      object.fill_color(color)
+      object.fill_rect(
+        0.0F,
+        0.0F,
+        Float::from_double(section.width),
+        Float::from_double(section.height),
+      )
+    }
+    None => ()
+  }
   let sides = [top, left, bottom, right]
   let coordinates = [
     [x0, y0, x1, y0],

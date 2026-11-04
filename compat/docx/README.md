@@ -96,8 +96,8 @@ table's header row on pages 2-4.
 The package's `layout_wbtest.mbt` builds small DOCX packages as stored ZIP
 archives so each test shows its WordprocessingML: cell wrapping and grid
 spans, vertical merges, repeated header rows, columns, vertical pages,
-regenerated page fields, header images and picture borders, numbering
-overrides, floating
+regenerated page fields, document background colour, page borders, header
+images and picture borders, numbering overrides, floating
 drawings with left/right/top-and-bottom wrapping and behind/in-front order,
 the `views` selection and inline-drawing regression. Floating drawings inside
 table cells and headers/footers are drawn at their anchor (without wrap).

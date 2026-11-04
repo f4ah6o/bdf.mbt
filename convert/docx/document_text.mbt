@@ -146,6 +146,7 @@ priv struct DocxTextDocument {
   endnotes : Map[String, Array[String]]
   even_odd : Bool
   language : String
+  background : UInt32?
 }
 
 ///|
@@ -2380,12 +2381,30 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     Some(body) => body
     None => raise InvalidDocx("missing document body")
   }
+  let background = match root.child("background") {
+    Some(node) => {
+      let color = docx_attribute(node.element, "color", "")
+      if color.length() == 6 {
+        let number = @string.parse_int(color, base=16) catch { _ => -1 }
+        if number >= 0 {
+          Some((number.to_uint() << 8) | 0xffU)
+        } else {
+          None
+        }
+      } else {
+        None
+      }
+    }
+    None => None
+  }
   let mut seen_body = false
   for child in root.children {
-    if child.name() != "body" || seen_body {
+    if (child.name() != "body" && child.name() != "background") || seen_body {
       docx_text_unsupported(child.name())
     }
-    seen_body = true
+    if child.name() == "body" {
+      seen_body = true
+    }
   }
   let walker : DocxTextWalker = {
     styles,
@@ -2457,6 +2476,7 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     endnotes,
     even_odd: docx_even_odd(package, part),
     language: docx_pick_language(styles, walker.paragraphs),
+    background,
   }
 }
 

@@ -82,6 +82,7 @@ fn docx_test_docx(
   blocks : String,
   section : String,
   extra : Array[(String, Bytes)],
+  background~ : String = "",
 ) -> Bytes {
   let document = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
     "<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"" +
@@ -89,6 +90,7 @@ fn docx_test_docx(
     " xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"" +
     " xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\"" +
     " xmlns:pic=\"http://schemas.openxmlformats.org/drawingml/2006/picture\">" +
+    background +
     "<w:body>" +
     blocks +
     section +
@@ -1980,6 +1982,24 @@ test "DOCX keepLines does not split a paragraph across pages" {
   assert_true(!keep_pages.is_empty())
   assert_eq(keep_pages.length(), 1)
   assert_true(keep_pages[0] >= plain_pages[0])
+}
+
+test "DOCX document background fills the page" {
+  let data = docx_test_docx(
+    "<w:p><w:r><w:t>BG</w:t></w:r></w:p>",
+    DOCX_TEST_SECTION,
+    [],
+    background="<w:background w:color=\"FF0000\"/>",
+  )
+  let commands = docx_test_page_commands(convert(data), "pages", 0, "background")
+  let mut fills = 0
+  for command in commands {
+    match command {
+      FillRect(_, _, _, _) => fills += 1
+      _ => ()
+    }
+  }
+  assert_true(fills >= 1)
 }
 
 test "DOCX page borders are drawn in a background layer" {
