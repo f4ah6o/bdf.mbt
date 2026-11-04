@@ -83,7 +83,7 @@ fn docx_scroll_draw(
     }
     for rule in line.rules {
       let (x0, ry0, x1, ry1, rule_width, color) = rule
-      let border : DocxLineBorder? = Some({ width: rule_width, color, space: 0.0 })
+      let border : DocxLineBorder? = Some({ width: rule_width, color, space: 0.0, style: "single" })
       docx_draw_rule(ctx, border, x0, y + ry0, x1, y + ry1)
     }
     let runs = docx_scroll_merge(line.items)

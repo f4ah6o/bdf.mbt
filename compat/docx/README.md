@@ -50,7 +50,7 @@ decimal tabs, bar tabs and leaders,
 paragraph and character spacing (including contextual spacing), run position,
 left/centre/right/justified/distributed alignment, keep-with-next, basic font
 weight/style/size/colour, paragraph/run shading, paragraph borders with
-spacing, highlight,
+spacing and single/double/triple/dashed/dotted styles, highlight,
 text shadow, borders,
 underline/strike,
 caps/small caps,

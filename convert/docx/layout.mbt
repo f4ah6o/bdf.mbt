@@ -933,6 +933,62 @@ fn docx_emit_placed_image(
 }
 
 ///|
+fn docx_stroke_border(
+  object : @core.ObjectBuilder,
+  coordinates : Array[Double],
+  border : DocxLineBorder,
+) -> Unit raise {
+  let parts = if border.style == "double" {
+    2
+  } else if border.style == "triple" {
+    3
+  } else {
+    1
+  }
+  let width = if parts > 1 { border.width / parts.to_double() } else { border.width }
+  for part in 0..<parts {
+    let offset = if parts == 1 {
+      0.0
+    } else {
+      (part.to_double() - (parts - 1).to_double() / 2.0) * border.width
+    }
+    let shifted : Array[Double] = if coordinates[1] == coordinates[3] {
+      [
+        coordinates[0],
+        coordinates[1] + offset,
+        coordinates[2],
+        coordinates[3] + offset,
+      ]
+    } else {
+      [
+        coordinates[0] + offset,
+        coordinates[1],
+        coordinates[2] + offset,
+        coordinates[3],
+      ]
+    }
+    object.line(Float::from_double(width), 0, 0, 8.0F)
+    let dash : Array[Float] = match border.style {
+      "dashed" | "dash" => [3.0F, 2.0F]
+      "dotted" | "dot" => [1.0F, 2.0F]
+      "dashDot" | "dotDash" => [3.0F, 2.0F, 1.0F, 2.0F]
+      "dashDotDot" => [3.0F, 2.0F, 1.0F, 2.0F, 1.0F, 2.0F]
+      "lgDash" => [6.0F, 2.0F]
+      _ => []
+    }
+    if !dash.is_empty() {
+      object.dash(dash, 0.0F)
+    }
+    object.stroke_color(border.color)
+    object.stroke_path(
+      object.add_path(
+        @core.Inline({ verbs: Bytes::from_array([0, 1]), coordinates: shifted }),
+      ),
+    )
+  }
+}
+
+///|
 fn docx_emit_para_line(
   object : @core.ObjectBuilder,
   writer : @core.DocumentWriter,
@@ -983,16 +1039,7 @@ fn docx_emit_para_line(
         _ => [x_origin + available + value.space, top, x_origin + available + value.space, top + line.height]
       }
       if coordinates.length() == 4 {
-        object.stroke_color(value.color)
-        object.line(Float::from_double(value.width), 0, 0, 8.0F)
-        object.stroke_path(
-          object.add_path(
-            @core.Inline({
-              verbs: Bytes::from_array([0, 1]),
-              coordinates,
-            }),
-          ),
-        )
+        docx_stroke_border(object, coordinates, value)
       }
     }
   }

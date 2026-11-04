@@ -76,6 +76,7 @@ priv struct DocxLineBorder {
   width : Double
   color : UInt32
   space : Double
+  style : String
 }
 
 ///|
@@ -1495,6 +1496,7 @@ fn docx_line_border(node : DocxXmlNode?) -> DocxLineBorder? {
           0x000000ffU
         },
         space,
+        style,
       })
     }
     None => None
@@ -1772,7 +1774,7 @@ fn docx_text_table(
     base_borders.map(fn(border) {
       match border {
         Some(value) => Some(value)
-        None => Some({ width: 0.5, color: 0x000000ffU, space: 0.0 })
+        None => Some({ width: 0.5, color: 0x000000ffU, space: 0.0, style: "single" })
       }
     })
   } else {
