@@ -4260,6 +4260,17 @@ fn pptx_emit_chart(
       )
     }
   }
+  let tick_lbl_skip = match pptx_child(val_axis_node, "tickLblSkip") {
+    Some(value) =>
+      Double::max(
+        1.0,
+        (@string.parse_double(pptx_attribute(value.element, "val", "1")) catch {
+          _ => 1.0
+        }),
+      ).to_int()
+    None => 1
+  }
+  let mut tick_index = 0
   let mut tick = axis_low
   while value_axis_visible && tick <= axis_high + step * 1.0e-6 {
     if minor_gridlines {
@@ -4322,6 +4333,7 @@ fn pptx_emit_chart(
       )
       object.stroke_path(path)
     }
+    if tick_index % tick_lbl_skip == 0 {
     let display_tick = if axis_flip {
       axis_high + axis_low - tick
     } else {
@@ -4350,6 +4362,8 @@ fn pptx_emit_chart(
         plot_y + plot_height - plot_height * pptx_chart_fraction(tick, axis_low, axis_high, axis_flip),
       )
     }
+    }
+    tick_index += 1
     tick += step
   }
   // category labels
