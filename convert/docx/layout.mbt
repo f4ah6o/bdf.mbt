@@ -1211,12 +1211,49 @@ fn docx_emit_para_line(
     let draw_x = x_origin + offset + item.x
     if item.underline != "" && item.underline != "none" {
       object.fill_color(item.color)
-      object.fill_rect(
-        Float::from_double(draw_x),
-        Float::from_double(top + baseline + 1.5 - item.rise),
-        Float::from_double(advance),
-        0.6F,
-      )
+      let underline_y = top + baseline + 1.5 - item.rise
+      if item.underline == "double" {
+        object.fill_rect(
+          Float::from_double(draw_x),
+          Float::from_double(underline_y),
+          Float::from_double(advance),
+          0.6F,
+        )
+        object.fill_rect(
+          Float::from_double(draw_x),
+          Float::from_double(underline_y + 1.6),
+          Float::from_double(advance),
+          0.6F,
+        )
+      } else if item.underline == "thick" {
+        object.fill_rect(
+          Float::from_double(draw_x),
+          Float::from_double(underline_y),
+          Float::from_double(advance),
+          1.5F,
+        )
+      } else if item.underline == "dotted" || item.underline == "dashed" {
+        let dash = if item.underline == "dotted" { 1.0 } else { 3.0 }
+        let gap = if item.underline == "dotted" { 1.5 } else { 2.0 }
+        let mut x = 0.0
+        while x < advance {
+          let width = Double::min(dash, advance - x)
+          object.fill_rect(
+            Float::from_double(draw_x + x),
+            Float::from_double(underline_y),
+            Float::from_double(width),
+            0.6F,
+          )
+          x += dash + gap
+        }
+      } else {
+        object.fill_rect(
+          Float::from_double(draw_x),
+          Float::from_double(underline_y),
+          Float::from_double(advance),
+          0.6F,
+        )
+      }
     }
     if item.strike {
       object.fill_color(item.color)

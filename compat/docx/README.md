@@ -54,7 +54,7 @@ paragraph/run shading, paragraph borders with
 spacing and single/double/triple/dashed/dotted styles (page borders too),
 highlight,
 text shadow, borders,
-underline/strike,
+underline (single/thick/double/dotted/dashed)/strike,
 caps/small caps,
 super/subscript,
 emphasis marks, hidden text, theme fonts, decimal/bullet numbering and section
