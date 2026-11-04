@@ -94,7 +94,7 @@ the `views` selection and inline-drawing regression. Floating drawings inside
 table cells and headers/footers are drawn at their anchor (without wrap).
 
 Documented gaps: exact font metrics and OpenType shaping, tight/through wrap
-contours (the object's box is used), `wp:effectExtent` room for shadows,
+contours (the object's box is used), inline `wp:effectExtent` room for shadows (anchored wrap areas include it),
 floating drawings in vertical text (they are drawn turned with the flow and
 keep no space), page-relative objects that would not fit are drawn
 clipped rather than moved, exact footnote separator/continuation

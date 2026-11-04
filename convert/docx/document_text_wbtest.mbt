@@ -127,6 +127,17 @@ fn check_docx_styled_text(
 }
 
 ///|
+test "DOCX anchor effect extents are parsed" {
+  let root = docx_text_xml(
+    "<wp:anchor xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\">" +
+    "<wp:effectExtent l=\"0\" t=\"0\" r=\"914400\" b=\"127000\"/></wp:anchor>",
+  )
+  let (_, _, anchor) = docx_text_anchor(root)
+  assert_eq(anchor.effect_right, 72.0)
+  assert_eq(anchor.effect_bottom, 10.0)
+}
+
+///|
 test "DOCX resolved run properties are isolated between runs" {
   let styles = docx_styles_from_xml(
     "<styles><style type=\"paragraph\" styleId=\"p\" default=\"1\"><rPr><rFonts ascii=\"Parent\"/></rPr></style></styles>",

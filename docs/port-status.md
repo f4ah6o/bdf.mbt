@@ -105,8 +105,7 @@
   bodies are implemented. Anchored drawings float left/right with square
   wrap or above/below a band, with behind/in-front z-order and page-fit
   movement; page borders are drawn in a background layer. Exact font
-  metrics/shaping, tight/through contours and effect
-  extents, exact footnote separators, upright CJK in vertical text, tables in
+  metrics/shaping, tight/through contours and inline effect extents, exact footnote separators, upright CJK in vertical text, tables in
   table-style base, first/last row/column,
   banded row/column and corner-cell parts (borders/shading/margins/text
   formatting; TableGrid is applied) remain documented gaps in `compat/docx`; autofit tables

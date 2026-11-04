@@ -16,6 +16,10 @@ priv struct DocxAnchor {
   dist_bottom : Double
   dist_left : Double
   dist_right : Double
+  effect_top : Double
+  effect_bottom : Double
+  effect_left : Double
+  effect_right : Double
   behind : Bool
   z : Int32
 }
@@ -521,6 +525,20 @@ fn docx_text_anchor(container : DocxXmlNode) -> (Double, Double, DocxAnchor) {
       _ => ()
     }
   }
+  let effect = container.child("effectExtent")
+  let mut effect_left = 0.0
+  let mut effect_top = 0.0
+  let mut effect_right = 0.0
+  let mut effect_bottom = 0.0
+  match effect {
+    Some(value) => {
+      effect_left = docx_emu(docx_attribute(value.element, "l", "0"))
+      effect_top = docx_emu(docx_attribute(value.element, "t", "0"))
+      effect_right = docx_emu(docx_attribute(value.element, "r", "0"))
+      effect_bottom = docx_emu(docx_attribute(value.element, "b", "0"))
+    }
+    None => ()
+  }
   let anchor : DocxAnchor = {
     h_rel: h_rel,
     v_rel: v_rel,
@@ -532,6 +550,10 @@ fn docx_text_anchor(container : DocxXmlNode) -> (Double, Double, DocxAnchor) {
     dist_bottom: docx_emu(docx_attribute(container.element, "distB", "0")),
     dist_left: docx_emu(docx_attribute(container.element, "distL", "0")),
     dist_right: docx_emu(docx_attribute(container.element, "distR", "0")),
+    effect_top,
+    effect_bottom,
+    effect_left,
+    effect_right,
     behind: docx_attribute(container.element, "behindDoc", "0") == "1",
     z: @string.parse_int(docx_attribute(container.element, "relativeHeight", "0")) catch {
       _ => 0

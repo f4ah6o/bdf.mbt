@@ -2142,19 +2142,28 @@ fn docx_flow_add_excl(
   match anchor.wrap {
     "square" | "tight" | "through" =>
       flow.floats.push({
-        x0: image.x - anchor.dist_left,
-        y0: image.y - anchor.dist_top,
-        x1: image.x + image.width + anchor.dist_right,
-        y1: image.y + image.height + anchor.dist_bottom,
+        x0: image.x - anchor.dist_left - anchor.effect_left,
+        y0: image.y - anchor.dist_top - anchor.effect_top,
+        x1: image.x +
+          image.width +
+          anchor.dist_right +
+          anchor.effect_right,
+        y1: image.y +
+          image.height +
+          anchor.dist_bottom +
+          anchor.effect_bottom,
         full: false,
         side: anchor.side,
       })
     "topAndBottom" =>
       flow.floats.push({
-        x0: image.x,
-        y0: image.y - anchor.dist_top,
-        x1: image.x + image.width,
-        y1: image.y + image.height + anchor.dist_bottom,
+        x0: image.x - anchor.effect_left,
+        y0: image.y - anchor.dist_top - anchor.effect_top,
+        x1: image.x + image.width + anchor.effect_right,
+        y1: image.y +
+          image.height +
+          anchor.dist_bottom +
+          anchor.effect_bottom,
         full: true,
         side: anchor.side,
       })
@@ -2191,7 +2200,8 @@ fn docx_flow_place_anchors(
             placements.push({ ..image, x: x, y: top })
             if anchor.v_rel == "paragraph" &&
               !moved &&
-              top + image.height > flow.bottom + 0.01 &&
+              top + image.height + anchor.effect_bottom >
+              flow.bottom + 0.01 &&
               !docx_flow_at_top(flow) {
               fits = false
             }
