@@ -506,24 +506,30 @@ fn pptx_stroke_geometry_path(
 }
 
 ///|
-/// The preset geometry a shape or the placeholder it inherits from names.
+/// The geometry a shape or the placeholder it inherits from names, as
+/// upstream shape.geometry reads it: the first spPr with a:prstGeom or
+/// a:custGeom, with the preset preferred inside one spPr.
 fn pptx_shape_geometry_node(
   shape : PptxXmlNode,
   inherited : Array[PptxXmlNode],
-) -> PptxXmlNode? {
+) -> PptxGeometryNode? {
   let own = shape.element.name.local_name
   let sp_pr = if own == "grpSp" || own == "wgp" {
     pptx_child(Some(shape), "grpSpPr")
   } else {
     pptx_child(Some(shape), "spPr")
   }
-  match pptx_child(sp_pr, "prstGeom") {
-    Some(value) => return Some(value)
-    None => ()
-  }
+  let properties : Array[PptxXmlNode?] = [sp_pr]
   for node in inherited {
-    match pptx_child(pptx_child(Some(node), "spPr"), "prstGeom") {
-      Some(value) => return Some(value)
+    properties.push(pptx_child(Some(node), "spPr"))
+  }
+  for sp in properties {
+    match pptx_child(sp, "prstGeom") {
+      Some(value) => return Some(PptxPresetGeometry(value))
+      None => ()
+    }
+    match pptx_child(sp, "custGeom") {
+      Some(value) => return Some(PptxCustomGeometry(value))
       None => ()
     }
   }

@@ -26,7 +26,13 @@ flowchart-decision presets, a themed `p:style` fill/line reference, a
 layout-inherited placeholder and an unknown preset. It converts it with both
 the upstream converter and this package, applies the draw transforms, and
 compares every fill, outline, color and path command; the unknown preset must
-draw as a rectangle with the upstream warning.
+draw as a rectangle with the upstream warning. A second synthetic deck covers
+custom geometry (`a:custGeom`): guides and adjust values, line, quadratic,
+cubic and arc paths, multiple sub-paths, fill modes, per-path strokes, an
+`a:rect` text rectangle and a themed `p:style` fill/line reference. Upstream
+keeps `arcTo` as a Canvas ellipse verb, so the comparison flattens both
+encodings to cubic Béziers; the malformed-geometry fallback is covered by the
+MoonBit tests.
 
 To regenerate the other fixtures, overlay `generate_placeholders_test.go` in
 `converter/pptx` or `generate_transforms_test.go` in
@@ -68,7 +74,16 @@ shapes, braces, scrolls and the rest), filled and outlined per path with the
 `lighten`/`darken` path fill modes. Arc segments are evaluated with the upstream
 guide formulas and flattened to cubic Béziers, so they draw the same outline in
 every renderer. Unknown presets fall back to a rectangle with the upstream
-warning. Shape fill and outline resolve through the shape's `spPr`, its layout
+warning. Custom geometry (`a:custGeom`) evaluates its `avLst`/`gdLst` guides,
+`a:rect` text rectangle and every `a:path` of the `a:pathLst`: `moveTo`,
+`lnTo`, `quadBezTo`, `cubicBezTo`, `arcTo` (with `wR`/`hR`/`stAng`/`swAng`
+guide tokens) and `close`, along with each path's own `w`/`h` coordinate
+space, `fill`/`stroke` attributes and multiple sub-paths. Custom paths use
+the same fill, outline, text-rectangle and group-transform pipeline as presets,
+including theme fills and line styles. Malformed custom geometry (a missing or
+empty `a:pathLst`, an unknown path command or a wrong point count) falls back
+to the rectangle with a precise warning. Shape fill and outline resolve through
+the shape's `spPr`, its layout
 and master placeholders (including an explicit `noFill`), and then its
 `p:style` `fillRef`/`lnRef` theme entries with `phClr` substitution. Shape
 rotation/flips, translated and rotated groups, embedded pictures with alpha,
@@ -93,8 +108,11 @@ and reports the `no fonts found` warning. A host that receives a font directory
 URL (the native converter worker's `fonts` option) must pass the resulting
 database to `convert(db=...)`.
 
-Remaining gaps: custom geometry (`a:custGeom`) is not evaluated and falls
-back to the shape box; SmartArt, ink and 3-D or non-bar/line/pie charts are not
+Remaining gaps: upstream keeps `arcTo` as a Canvas ellipse verb while this
+converter flattens it to cubic Béziers (the same outline, and the phase 15
+comparison flattens both encodings before comparing); malformed custom
+geometry falls back to the shape rectangle where upstream silently draws
+nothing; SmartArt, ink and 3-D or non-bar/line/pie charts are not
 supported; chart titles are used only for single-series charts without an
 explicit `c:title`, and chart data tables are not emitted; table style banding
 is not applied (only explicit cell properties); autofit line spacing, blip
