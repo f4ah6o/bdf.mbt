@@ -102,6 +102,7 @@ priv struct DocxTable {
   grid : Array[Double]
   width_type : String
   width : Double
+  layout_type : String
   jc : String
   ind : Double
   borders : Array[DocxLineBorder?]
@@ -1442,6 +1443,14 @@ fn docx_text_table(
     None => ""
   }
   let table_style = table_style_id.to_lower()
+  let layout_type = match props {
+    Some(value) =>
+      match value.child("tblLayout") {
+        Some(layout) => docx_attribute(layout.element, "type", "fixed")
+        None => "fixed"
+      }
+    None => "fixed"
+  }
   let mut style_tbl_pr : DocxXmlNode? = None
   let mut style_tc_pr : DocxXmlNode? = None
   let cond_tc_prs : Map[String, Array[DocxXmlNode]] = {}
@@ -1860,6 +1869,7 @@ fn docx_text_table(
     grid,
     width_type,
     width,
+    layout_type,
     jc,
     ind,
     borders,

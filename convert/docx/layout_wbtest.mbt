@@ -1051,6 +1051,19 @@ fn docx_table_width_fixture(with_width : Bool) -> Bytes raise {
 }
 
 ///|
+fn docx_text_x_prefix(commands : Array[@render.Command], wanted : String) -> Double {
+  for command in commands {
+    match command {
+      FillText(text, x, _, _) => if text.has_prefix(wanted) {
+        return x
+      }
+      _ => ()
+    }
+  }
+  0.0
+}
+
+///|
 fn docx_text_x(commands : Array[@render.Command], wanted : String) -> Double {
   for command in commands {
     match command {
@@ -1226,6 +1239,31 @@ test "DOCX TableGrid style supplies missing cell borders" {
   }
   assert_true(black)
   assert_true(fills > 0)
+}
+
+fn docx_table_autofit_fixture(autofit : Bool) -> Bytes raise {
+  let layout = if autofit {
+    "<w:tblLayout w:type=\"autofit\"/>"
+  } else {
+    ""
+  }
+  let table = "<w:tbl><w:tblPr>" + layout +
+    "</w:tblPr><w:tblGrid><w:gridCol w:w=\"1000\"/><w:gridCol w:w=\"1000\"/></w:tblGrid>" +
+    "<w:tr><w:tc><w:p><w:r><w:t>LEFTLEFTLEFTLEFTLEFTLEFT</w:t></w:r></w:p></w:tc>" +
+    "<w:tc><w:p><w:r><w:t>RIGHT</w:t></w:r></w:p></w:tc></w:tr></w:tbl>"
+  docx_test_docx(table, DOCX_TEST_SECTION, [])
+}
+
+test "DOCX autofit table distributes columns by content" {
+  let fixed = convert(docx_table_autofit_fixture(false))
+  let auto = convert(docx_table_autofit_fixture(true))
+  let fixed_commands = docx_test_page_commands(fixed, "pages", 0, "body")
+  let auto_commands = docx_test_page_commands(auto, "pages", 0, "body")
+  let fixed_gap = docx_text_x_prefix(fixed_commands, "R") -
+    docx_text_x_prefix(fixed_commands, "L")
+  let auto_gap = docx_text_x_prefix(auto_commands, "R") -
+    docx_text_x_prefix(auto_commands, "L")
+  assert_true(fixed_gap > 0.0 && auto_gap > fixed_gap + 20.0)
 }
 
 test "DOCX table width scales the grid columns" {

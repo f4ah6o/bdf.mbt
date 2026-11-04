@@ -790,6 +790,75 @@ fn docx_table_grid_count(table : DocxTable) -> Int32 {
   count
 }
 
+fn docx_estimated_text_width(item : DocxTextItem) -> Double {
+  if item.kind != "text" && item.kind != "char" {
+    return item.width
+  }
+  let size = if item.props.size > 0.0 { item.props.size } else { 10.0 }
+  let mut width = 0.0
+  for character in item.text {
+    let code = character.to_int()
+    let wide = (code >= 0x2e80 && code <= 0x9fff) ||
+      (code >= 0xac00 && code <= 0xd7af) ||
+      (code >= 0xf900 && code <= 0xfaff) ||
+      (code >= 0xff00 && code <= 0xffef)
+    width += if wide { size } else { size * 0.5 }
+  }
+  width
+}
+
+///|
+fn docx_table_natural_widths(
+  table : DocxTable,
+  available : Double,
+) -> Array[Double] {
+  let ncols = docx_table_grid_count(table)
+  if ncols <= 0 {
+    return []
+  }
+  let widths : Array[Double] = Array::make(ncols, 20.0)
+  for row in table.rows {
+    for cell in row.cells {
+      if cell.span != 1 || cell.col < 0 || cell.col >= ncols {
+        continue
+      }
+      let mut text_width = 0.0
+      for block in cell.blocks {
+        match block {
+          DocxParaBlock(paragraph) =>
+            for item in paragraph.items {
+              text_width += docx_estimated_text_width(item)
+            }
+          DocxTableBlock(_) => ()
+        }
+      }
+      let (_, left, _, right) = docx_table_cell_margins(table, cell)
+      widths[cell.col] = Double::max(
+        widths[cell.col], text_width + left + right,
+      )
+    }
+  }
+  let mut total = 0.0
+  for value in widths {
+    total += value
+  }
+  if total <= 0.0 {
+    return widths
+  }
+  let target = match table.width_type {
+    "dxa" => Double::min(table.width, available)
+    "pct" => Double::min(available * table.width / 100.0, available)
+    _ => Double::min(total, available)
+  }
+  if target > 0.0 {
+    let scale = target / total
+    for i in 0..<widths.length() {
+      widths[i] = widths[i] * scale
+    }
+  }
+  widths
+}
+
 ///|
 fn docx_table_grid_widths(table : DocxTable, width : Double) -> Array[Double] {
   let ncols = docx_table_grid_count(table)
@@ -799,6 +868,16 @@ fn docx_table_grid_widths(table : DocxTable, width : Double) -> Array[Double] {
   }
   if ncols <= 0 {
     return grid
+  }
+  if table.layout_type == "autofit" {
+    let natural = docx_table_natural_widths(table, width)
+    let mut natural_total = 0.0
+    for value in natural {
+      natural_total += value
+    }
+    if natural_total > 0.0 {
+      return natural
+    }
   }
   let mut total = 0.0
   for column in grid {
