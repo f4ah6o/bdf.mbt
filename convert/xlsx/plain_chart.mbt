@@ -4,6 +4,8 @@ struct XlsxChartModel {
   title : String
   title_size : Double
   title_color : String
+  value_title : String
+  category_title : String
   kind : String
   series_name : String
   values : Array[Double]
@@ -240,6 +242,31 @@ fn XlsxWorkbook::xlsx_chart_model(
       }
     None => ()
   }
+  let plot_area_node = xlsx_draw_child(chart, "plotArea")
+  let value_title = match plot_area_node {
+    Some(area) =>
+      match xlsx_draw_child(area, "valAx") {
+        Some(axis) =>
+          match xlsx_draw_child(axis, "title") {
+            Some(value) => xlsx_draw_all_text(value).trim().to_string()
+            None => ""
+          }
+        None => ""
+      }
+    None => ""
+  }
+  let category_title = match plot_area_node {
+    Some(area) =>
+      match xlsx_draw_child(area, "catAx") {
+        Some(axis) =>
+          match xlsx_draw_child(axis, "title") {
+            Some(value) => xlsx_draw_all_text(value).trim().to_string()
+            None => ""
+          }
+        None => ""
+      }
+    None => ""
+  }
   let plot_area = match xlsx_draw_child(chart, "plotArea") {
     Some(value) => value
     None => return None
@@ -383,6 +410,8 @@ fn XlsxWorkbook::xlsx_chart_model(
     title,
     title_size,
     title_color,
+    value_title,
+    category_title,
     kind,
     series_name,
     values,
@@ -846,6 +875,29 @@ fn XlsxWorkbook::xlsx_chart_svg(
         "</text>",
       )
     }
+  }
+  if model.value_title != "" && model.kind != "pieChart" {
+    let axis_y = plot_top + plot_height / 2.0
+    svg.write_string(
+      "<text x=\"14\" y=\"" +
+      axis_y.to_string() +
+      "\" transform=\"rotate(-90 14 " +
+      axis_y.to_string() +
+      ")\" text-anchor=\"middle\" font-size=\"11\" fill=\"#000000\">" +
+      xlsx_chart_text(model.value_title) +
+      "</text>",
+    )
+  }
+  if model.category_title != "" && model.kind != "pieChart" {
+    svg.write_string(
+      "<text x=\"" +
+      (left + plot_width / 2.0).to_string() +
+      "\" y=\"" +
+      (height - 6.0).to_string() +
+      "\" text-anchor=\"middle\" font-size=\"11\" fill=\"#000000\">" +
+      xlsx_chart_text(model.category_title) +
+      "</text>",
+    )
   }
   let legend_x = width - 125.0
   let mut legend_y = plot_top + 8.0
