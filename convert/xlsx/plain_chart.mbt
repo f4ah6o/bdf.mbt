@@ -834,6 +834,21 @@ fn XlsxWorkbook::xlsx_chart_svg(
         model.color +
         "\" stroke-width=\"2\"/>",
       )
+      for index, value in model.values {
+        let angle = -3.141592653589793 / 2.0 +
+          2.0 * 3.141592653589793 * index.to_double() /
+          radar_count.to_double()
+        let rr = radar_radius * Double::max(value, 0.0) / peak
+        svg.write_string(
+          "<circle cx=\"" +
+          (cx + @math.cos(angle) * rr).to_string() +
+          "\" cy=\"" +
+          (cy + @math.sin(angle) * rr).to_string() +
+          "\" r=\"3\" fill=\"" +
+          model.color +
+          "\"/>",
+        )
+      }
     }
   } else if model.kind == "barChart" {
     let slot = plot_width / Double::max(count.to_double(), 1.0)
@@ -1532,6 +1547,25 @@ fn XlsxWorkbook::xlsx_chart_object(
         ),
         0,
       )
+      for index, value in model.values {
+        let angle = -3.141592653589793 / 2.0 +
+          2.0 * 3.141592653589793 * index.to_double() /
+          radar_count.to_double()
+        let rr = radar_radius * Double::max(value, 0.0) / peak
+        object.fill_color(series_color)
+        object.fill_path(
+          object.add_path(
+            @core.Inline(
+              xlsx_chart_circle_path(
+                cx + @math.cos(angle) * rr,
+                cy + @math.sin(angle) * rr,
+                3.0,
+              ),
+            ),
+          ),
+          0,
+        )
+      }
     }
   } else if model.kind == "barChart" {
     object.fill_color(series_color)
