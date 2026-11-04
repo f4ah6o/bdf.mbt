@@ -39,7 +39,8 @@ the OPC core properties and the title can be overridden by the caller.
 The reader accepts `settings.xml`, `footnotes.xml` and `endnotes.xml`;
 footnote and endnote bodies are laid out above the footer on the page that
 refers to them and appended to the scroll view, with approximate superscript
-markers. It also reads hyperlinks, fields, symbols, tracked
+markers. External `w:hyperlink` relationships become link commands (internal
+`w:anchor` links are not resolved); it also reads fields, symbols, tracked
 insertions/deletions, content controls, alternate content and revision
 metadata. Office Math (`m:oMath`/`m:oMathPara`) is linearized for search and
 layout. Paragraphs are laid out with approximate character widths and support

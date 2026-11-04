@@ -500,6 +500,7 @@ fn docx_render_scroll(
           {
             kind: "text",
             text,
+            link: "",
             field_format: "",
             font: "sans-serif",
             weight: 400,

@@ -16,6 +16,7 @@ priv struct DocxLineItem {
   kind : String
   text : String
   field_format : String
+  link : String
   font : String
   weight : Int32
   style : Int32

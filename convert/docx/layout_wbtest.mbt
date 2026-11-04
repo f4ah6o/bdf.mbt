@@ -1227,6 +1227,29 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX external hyperlinks become link commands" {
+  let rels = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+    "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">" +
+    "<Relationship Id=\"rIdLink\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink\" Target=\"https://example.com/a\" TargetMode=\"External\"/>" +
+    "</Relationships>"
+  let blocks = "<w:p><w:hyperlink r:id=\"rIdLink\"><w:r><w:t>LINK</w:t></w:r></w:hyperlink></w:p>"
+  let data = docx_test_docx(
+    blocks, DOCX_TEST_SECTION, [("word/_rels/document.xml.rels", @utf8.encode(rels))],
+  )
+  let commands = docx_test_page_commands(convert(data), "pages", 0, "body")
+  let mut found = false
+  for command in commands {
+    match command {
+      @render.Link(_, _, _, _, url) =>
+        if url == "https://example.com/a" {
+          found = true
+        }
+      _ => ()
+    }
+  }
+  assert_true(found)
+}
+
 test "DOCX floating drawings in headers are drawn" {
   let image = docx_test_float(
     "distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\" behindDoc=\"0\" relativeHeight=\"1\"",

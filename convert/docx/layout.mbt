@@ -184,6 +184,7 @@ fn docx_layout_paragraph(
     current.push({
       kind: "text",
       text,
+      link: item.link,
       field_format: "",
       font: docx_font_family(item.props),
       weight: docx_font_weight(item.props),
@@ -314,6 +315,7 @@ fn docx_layout_paragraph(
           current.push({
             kind: "text",
             text: item.text,
+            link: item.link,
             field_format: "",
             font: "sans-serif",
             weight: 400,
@@ -336,6 +338,7 @@ fn docx_layout_paragraph(
           current.push({
             kind: "text",
             text: item.text,
+            link: item.link,
             field_format: "",
             font: "sans-serif",
             weight: 400,
@@ -356,6 +359,7 @@ fn docx_layout_paragraph(
         current.push({
           kind: "bookmark",
           text: item.text,
+          link: "",
           field_format: "",
           font: "sans-serif",
           weight: 400,
@@ -378,6 +382,7 @@ fn docx_layout_paragraph(
         current.push({
           kind: "field",
           text: item.text,
+          link: item.link,
           field_format: item.field_format,
           font: docx_font_family(item.props),
           weight: docx_font_weight(item.props),
@@ -471,6 +476,7 @@ fn docx_merge_line_items(items : Array[DocxLineItem]) -> Array[DocxLineItem] {
         last.style == item.style &&
         last.size == item.size &&
         last.color == item.color &&
+        last.link == item.link &&
         last.shade == item.shade &&
         last.border_width == item.border_width &&
         last.border_color == item.border_color &&
@@ -489,6 +495,20 @@ fn docx_merge_line_items(items : Array[DocxLineItem]) -> Array[DocxLineItem] {
     }
   }
   merged
+}
+
+///|
+fn docx_link_target(
+  package : @ooxml.OoxmlPackage,
+  part : String,
+  id : String,
+) -> String {
+  for rel in package.relationships(part) {
+    if rel.id == id && rel.external {
+      return rel.target
+    }
+  }
+  ""
 }
 
 ///|
@@ -741,6 +761,18 @@ fn docx_emit_para_line(
       Float::from_double(top + baseline),
       Float::from_double(advance),
     )
+    if item.link != "" {
+      let url = docx_link_target(package, part, item.link)
+      if url != "" {
+        object.link(
+          Float::from_double(x_origin + offset + item.x),
+          Float::from_double(top),
+          Float::from_double(advance),
+          Float::from_double(line.height),
+          url,
+        )
+      }
+    }
   }
   for image in line.images {
     docx_emit_placed_image(

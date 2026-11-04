@@ -46,6 +46,7 @@ priv struct DocxTextItem {
   rotation : Double
   flip_h : Bool
   flip_v : Bool
+  mut link : String
   field_format : String
   mut shade : UInt32?
   mut border_width : Double
@@ -156,6 +157,7 @@ priv struct DocxTextWalker {
   fields : Array[DocxFieldState]
   bookmarks : Map[String, StringBuilder]
   open_bookmarks : Array[String]
+  mut current_link : String
 }
 
 ///|
@@ -363,6 +365,7 @@ fn docx_text_push(
     rotation: 0.0,
     flip_h: false,
     flip_v: false,
+    link: "",
     field_format: "",
     shade: None,
     border_width: 0.0,
@@ -672,6 +675,7 @@ fn docx_text_drawing(
     rotation,
     flip_h,
     flip_v,
+    link: "",
     field_format: "",
     shade: None,
     border_width: 0.0,
@@ -1029,6 +1033,7 @@ fn docx_text_field(
     rotation: 0.0,
     flip_h: false,
     flip_v: false,
+    link: "",
     field_format: format,
     shade: None,
     border_width: 0.0,
@@ -1071,6 +1076,7 @@ fn docx_text_run(
   if (props.toggles & 64) != 0 {
     return
   }
+  let first = items.length()
   for child in node.children {
     let name = child.name()
     if name != "rPr" &&
@@ -1207,6 +1213,9 @@ fn docx_text_run(
       }
     }
   }
+  for index in first..<items.length() {
+    items[index].link = walker.current_link
+  }
 }
 
 ///|
@@ -1231,8 +1240,16 @@ fn docx_text_inlines(
           docx_text_inlines(walker, child, items, paragraph_style)
         }
       }
-      "hyperlink"
-      | "smartTag"
+      "hyperlink" => {
+        let link = docx_attribute_any(child.element, "id", "")
+        let old = walker.current_link
+        if link != "" {
+          walker.current_link = link
+        }
+        docx_text_inlines(walker, child, items, paragraph_style)
+        walker.current_link = old
+      }
+      "smartTag"
       | "customXml"
       | "ins"
       | "moveTo"
@@ -1990,6 +2007,7 @@ fn docx_cell_blocks(
     fields: [],
     bookmarks: Map([]),
     open_bookmarks: [],
+    current_link: "",
   }
   walker.blocks(cell, true)
   walker.blocks
@@ -2251,6 +2269,7 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     fields: [],
     bookmarks: Map([]),
     open_bookmarks: [],
+    current_link: "",
   }
   walker.blocks(body, false)
   let (section_part, sections) = docx_sections(data)
@@ -2336,6 +2355,7 @@ fn docx_story_content(
       fields: [],
       bookmarks: Map([]),
       open_bookmarks: [],
+      current_link: "",
     }
     walker.blocks(root, true)
     let paragraphs : Array[DocxTextParagraph] = []
