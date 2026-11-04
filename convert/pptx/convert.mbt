@@ -2824,7 +2824,15 @@ fn pptx_emit_chart(
     } else {
       radius * 0.7
     }
-    let mut start = -3.141592653589793 / 2.0
+    let first_angle = match pptx_child(Some(chart), "firstSliceAng") {
+      Some(value) =>
+        @string.parse_double(pptx_attribute(value.element, "val", "0")) catch {
+          _ => 0.0
+        }
+      None => 0.0
+    }
+    let mut start = -3.141592653589793 / 2.0 +
+      first_angle * 3.141592653589793 / 180.0
     for index, value in values {
       let sweep = 2.0 * 3.141592653589793 * value / total
       let path = object.add_path(
