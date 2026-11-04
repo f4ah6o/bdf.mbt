@@ -284,7 +284,7 @@ fn XlsxWorkbook::xlsx_chart_model(
   }
   let mut kind = ""
   let mut plot : XlsxDrawNode? = None
-  for name in ["barChart", "lineChart", "pieChart", "doughnutChart"] {
+  for name in ["barChart", "lineChart", "pieChart", "doughnutChart", "radarChart"] {
     match xlsx_draw_child(plot_area, name) {
       Some(value) => {
         kind = name
@@ -764,6 +764,38 @@ fn XlsxWorkbook::xlsx_chart_svg(
         (Double::min(plot_width, plot_height) / 2.0 *
           model.hole_size / 100.0).to_string() +
         "\" fill=\"#ffffff\"/>",
+      )
+    }
+  } else if model.kind == "radarChart" {
+    let radar_count = model.values.length()
+    if radar_count > 0 {
+      let cx = left + plot_width / 2.0
+      let cy = plot_top + plot_height / 2.0
+      let radar_radius = Double::min(plot_width, plot_height) / 2.0
+      let peak = Double::max(top, 0.000001)
+      let points = StringBuilder()
+      for index, value in model.values {
+        let angle = -3.141592653589793 / 2.0 +
+          2.0 * 3.141592653589793 * index.to_double() /
+          radar_count.to_double()
+        let rr = radar_radius * Double::max(value, 0.0) / peak
+        if index > 0 {
+          points.write_string(" ")
+        }
+        points.write_string(
+          (cx + @math.cos(angle) * rr).to_string() +
+          "," +
+          (cy + @math.sin(angle) * rr).to_string(),
+        )
+      }
+      svg.write_string(
+        "<polygon points=\"" +
+        points.to_string() +
+        "\" fill=\"" +
+        model.color +
+        "\" fill-opacity=\"0.3\" stroke=\"" +
+        model.color +
+        "\" stroke-width=\"2\"/>",
       )
     }
   } else if model.kind == "barChart" {
@@ -1367,6 +1399,33 @@ fn XlsxWorkbook::xlsx_chart_object(
           0,
         )
       }
+    }
+  } else if model.kind == "radarChart" {
+    let radar_count = model.values.length()
+    if radar_count > 0 {
+      let cx = left + plot_width / 2.0
+      let cy = plot_top + plot_height / 2.0
+      let radar_radius = Double::min(plot_width, plot_height) / 2.0
+      let peak = Double::max(top, 0.000001)
+      let verbs : Array[Byte] = [0]
+      let coordinates : Array[Double] = []
+      for index, value in model.values {
+        let angle = -3.141592653589793 / 2.0 +
+          2.0 * 3.141592653589793 * index.to_double() /
+          radar_count.to_double()
+        let rr = radar_radius * Double::max(value, 0.0) / peak
+        verbs.push(1)
+        coordinates.push(cx + @math.cos(angle) * rr)
+        coordinates.push(cy + @math.sin(angle) * rr)
+      }
+      verbs.push(4)
+      object.fill_color(series_color)
+      object.fill_path(
+        object.add_path(
+          @core.Inline({ verbs: Bytes::from_array(verbs), coordinates }),
+        ),
+        0,
+      )
     }
   } else if model.kind == "barChart" {
     object.fill_color(series_color)
