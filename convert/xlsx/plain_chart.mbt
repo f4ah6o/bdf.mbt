@@ -930,6 +930,25 @@ fn XlsxWorkbook::xlsx_chart_sheet_parts(
 }
 
 ///|
+fn xlsx_chart_circle_path(
+  cx : Double,
+  cy : Double,
+  radius : Double,
+) -> @core.Path {
+  let verbs : Array[Byte] = [0]
+  let coordinates : Array[Double] = [cx, cy]
+  let steps = 24
+  for index in 0..<steps {
+    let angle = 2.0 * 3.141592653589793 * index.to_double() / steps.to_double()
+    verbs.push(1)
+    coordinates.push(cx + @math.cos(angle) * radius)
+    coordinates.push(cy + @math.sin(angle) * radius)
+  }
+  verbs.push(4)
+  { verbs: Bytes::from_array(verbs), coordinates, }
+}
+
+///|
 fn xlsx_chart_color_uint(value : String) -> UInt32 {
   match xlsx_theme_hex(value) {
     Some(color) => {
@@ -1122,7 +1141,6 @@ fn XlsxWorkbook::xlsx_chart_object(
     )
     object.stroke_path(path)
     if model.marker != "none" {
-      object.fill_color(series_color)
       let marker_half = model.marker_size / 2.0
       for index, value in model.values {
         let x = if count <= 1 {
@@ -1132,12 +1150,75 @@ fn XlsxWorkbook::xlsx_chart_object(
         }
         let y = plot_top + plot_height -
           plot_height * (value - axis_base) / axis_range
-        object.fill_rect(
-          Float::from_double(x - marker_half),
-          Float::from_double(y - marker_half),
-          Float::from_double(model.marker_size),
-          Float::from_double(model.marker_size),
-        )
+        object.fill_color(series_color)
+        if model.marker == "diamond" || model.marker == "triangle" {
+          let coordinates : Array[Double] = if model.marker == "diamond" {
+            [
+              x, y - marker_half, x + marker_half, y, x, y + marker_half,
+              x - marker_half, y, x, y - marker_half,
+            ]
+          } else {
+            [
+              x, y - marker_half, x + marker_half, y + marker_half,
+              x - marker_half, y + marker_half, x, y - marker_half,
+            ]
+          }
+          object.fill_path(
+            object.add_path(
+              @core.Inline({
+                verbs: Bytes::from_array([0, 1, 1, 1, 1, 4]),
+                coordinates,
+              }),
+            ),
+            0,
+          )
+        } else if model.marker == "square" {
+          object.fill_rect(
+            Float::from_double(x - marker_half),
+            Float::from_double(y - marker_half),
+            Float::from_double(model.marker_size),
+            Float::from_double(model.marker_size),
+          )
+        } else if model.marker == "x" || model.marker == "plus" ||
+          model.marker == "star" {
+          object.line(1.5F, 0, 0, 8.0F)
+          object.stroke_color(series_color)
+          let segments : Array[Array[Double]] = if model.marker == "x" {
+            [
+              [x - marker_half, y - marker_half, x + marker_half, y + marker_half],
+              [x - marker_half, y + marker_half, x + marker_half, y - marker_half],
+            ]
+          } else if model.marker == "plus" {
+            [
+              [x, y - marker_half, x, y + marker_half],
+              [x - marker_half, y, x + marker_half, y],
+            ]
+          } else {
+            [
+              [x - marker_half, y - marker_half, x + marker_half, y + marker_half],
+              [x - marker_half, y + marker_half, x + marker_half, y - marker_half],
+              [x, y - marker_half, x, y + marker_half],
+              [x - marker_half, y, x + marker_half, y],
+            ]
+          }
+          for segment in segments {
+            object.stroke_path(
+              object.add_path(
+                @core.Inline({
+                  verbs: Bytes::from_array([0, 1]),
+                  coordinates: segment,
+                }),
+              ),
+            )
+          }
+        } else {
+          object.fill_path(
+            object.add_path(
+              @core.Inline(xlsx_chart_circle_path(x, y, marker_half)),
+            ),
+            0,
+          )
+        }
       }
     }
     for index, value in model.values {

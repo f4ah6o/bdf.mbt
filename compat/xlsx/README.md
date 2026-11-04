@@ -256,7 +256,7 @@ fills, line borders and linear text of the original subset it supports:
   with their fill, outline and text, and embedded bar, line and pie charts are rendered as SVG
   pictures (pie category legends and series legends are drawn, horizontal
   value-axis gridlines are painted, line-series markers (circle/square/diamond/triangle/x/plus/star and size)
-  are drawn, pie categories are placed around the slices,
+  are drawn on sheets and chart sheets, pie categories are placed around the slices,
   `showPercent` adds
   percentage labels, `showVal` adds value labels, `showCatName`/`showSerName`
   prefix category and series names, value-axis
