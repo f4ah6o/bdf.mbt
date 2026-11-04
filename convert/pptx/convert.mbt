@@ -1970,6 +1970,7 @@ fn pptx_chart_values(node : PptxXmlNode?, child_name : String) -> Array[String] 
 fn pptx_line_path(
   values : Array[Double],
   maximum : Double,
+  minimum : Double,
   left : Double,
   top : Double,
   width : Double,
@@ -1987,7 +1988,7 @@ fn pptx_line_path(
     } else {
       left + width * index.to_double() / (count - 1.0)
     }
-    let y = top + height - height * value / maximum
+    let y = top + height - height * pptx_chart_fraction(value, minimum, maximum)
     coordinates.push(x)
     coordinates.push(y)
   }
@@ -1998,6 +1999,7 @@ fn pptx_line_path(
 fn pptx_area_path(
   values : Array[Double],
   maximum : Double,
+  minimum : Double,
   left : Double,
   top : Double,
   width : Double,
@@ -2012,7 +2014,7 @@ fn pptx_area_path(
     } else {
       left + width * index.to_double() / (count - 1.0)
     }
-    let y = top + height - height * value / maximum
+    let y = top + height - height * pptx_chart_fraction(value, minimum, maximum)
     verbs.push(1)
     coordinates.push(x)
     coordinates.push(y)
@@ -2404,6 +2406,11 @@ fn pptx_chart_collect_text(node : PptxXmlNode, out : StringBuilder) -> Unit {
   for child in node.children {
     pptx_chart_collect_text(child, out)
   }
+}
+
+///|
+fn pptx_chart_fraction(value : Double, low : Double, high : Double) -> Double {
+  if high <= low { 0.0 } else { (value - low) / (high - low) }
 }
 
 ///|
@@ -3685,6 +3692,7 @@ fn pptx_emit_chart(
   )
   let mut step = nice_step
   let mut axis_high = nice_high
+  let mut axis_low = 0.0
   let mut minor_unit = 0.0
   let mut minor_gridlines = false
   let mut axis_format = ""
@@ -3730,6 +3738,19 @@ fn pptx_emit_chart(
         None => ""
       }
       let scaling = pptx_child(Some(value), "scaling")
+      match pptx_child(scaling, "min") {
+        Some(minimum_node) => {
+          let axis_min = @string.parse_double(
+            pptx_attribute(minimum_node.element, "val", "0"),
+          ) catch {
+            _ => 0.0
+          }
+          if axis_min < axis_high {
+            axis_low = axis_min
+          }
+        }
+        None => ()
+      }
       match pptx_child(scaling, "max") {
         Some(maximum_node) => {
           let axis_max = @string.parse_double(
@@ -3745,6 +3766,9 @@ fn pptx_emit_chart(
       }
     }
     None => ()
+  }
+  if axis_high <= axis_low {
+    axis_high = axis_low + 1.0
   }
   if minor_unit <= 0.0 {
     minor_unit = step / 5.0
@@ -3770,7 +3794,7 @@ fn pptx_emit_chart(
     }
     None => ()
   }
-  let mut tick = 0.0
+  let mut tick = axis_low
   while value_axis_visible && tick <= axis_high + step * 1.0e-6 {
     if minor_gridlines {
       for index in 1..<5 {
@@ -3781,7 +3805,7 @@ fn pptx_emit_chart(
         object.fill_color(0xf2f2f2ffU)
         if horizontal {
           object.fill_rect(
-            Float::from_double(plot_x + plot_width * value / axis_high),
+            Float::from_double(plot_x + plot_width * pptx_chart_fraction(value, axis_low, axis_high)),
             Float::from_double(plot_y),
             0.5F,
             Float::from_double(plot_height),
@@ -3790,7 +3814,7 @@ fn pptx_emit_chart(
           object.fill_rect(
             Float::from_double(plot_x),
             Float::from_double(
-              plot_y + plot_height - plot_height * value / axis_high,
+              plot_y + plot_height - plot_height * pptx_chart_fraction(value, axis_low, axis_high),
             ),
             Float::from_double(plot_width),
             0.5F,
@@ -3802,7 +3826,7 @@ fn pptx_emit_chart(
       object.fill_color(0xd9d9d9ffU)
       if horizontal {
         object.fill_rect(
-          Float::from_double(plot_x + plot_width * tick / axis_high),
+          Float::from_double(plot_x + plot_width * pptx_chart_fraction(tick, axis_low, axis_high)),
           Float::from_double(plot_y),
           0.75F,
           Float::from_double(plot_height),
@@ -3811,7 +3835,7 @@ fn pptx_emit_chart(
         object.fill_rect(
           Float::from_double(plot_x),
           Float::from_double(
-            plot_y + plot_height - plot_height * tick / axis_high,
+            plot_y + plot_height - plot_height * pptx_chart_fraction(tick, axis_low, axis_high),
           ),
           Float::from_double(plot_width),
           0.75F,
@@ -3826,7 +3850,7 @@ fn pptx_emit_chart(
         tick_label_size,
         tick_label_color,
         text,
-        plot_x + plot_width * tick / axis_high - 6.0,
+        plot_x + plot_width * pptx_chart_fraction(tick, axis_low, axis_high) - 6.0,
         y + height - 6.0,
       )
     } else {
@@ -3838,7 +3862,7 @@ fn pptx_emit_chart(
         tick_label_color,
         text,
         plot_x - label_width - 4.0,
-        plot_y + plot_height - plot_height * tick / axis_high,
+        plot_y + plot_height - plot_height * pptx_chart_fraction(tick, axis_low, axis_high),
       )
     }
     tick += step
@@ -3887,10 +3911,10 @@ fn pptx_emit_chart(
         let mut used = 0.0
         for item in series {
           if index < item.values.length() {
-            let bar_width = plot_width * item.values[index] / axis_high
+            let bar_width = plot_width * pptx_chart_fraction(item.values[index], axis_low, axis_high)
             object.fill_color(pptx_series_point_color(item, index))
             object.fill_rect(
-              Float::from_double(plot_x + plot_width * used / axis_high),
+              Float::from_double(plot_x + plot_width * pptx_chart_fraction(used, axis_low, axis_high)),
               Float::from_double(
                 plot_y +
                 slot * index.to_double() +
@@ -3919,7 +3943,7 @@ fn pptx_emit_chart(
                 (slot - total) / 2.0 +
                 step * s.to_double(),
               ),
-              Float::from_double(plot_width * item.values[index] / axis_high),
+              Float::from_double(plot_width * pptx_chart_fraction(item.values[index], axis_low, axis_high)),
               Float::from_double(bar_width),
             )
           }
@@ -3931,7 +3955,7 @@ fn pptx_emit_chart(
       let mut used = 0.0
       for item in series {
         if index < item.values.length() {
-          let bar_height = plot_height * item.values[index] / axis_high
+          let bar_height = plot_height * pptx_chart_fraction(item.values[index], axis_low, axis_high)
           object.fill_color(pptx_series_point_color(item, index))
           object.fill_rect(
             Float::from_double(
@@ -3940,7 +3964,7 @@ fn pptx_emit_chart(
               (slot - cluster_width) / 2.0,
             ),
             Float::from_double(
-              plot_y + plot_height - plot_height * used / axis_high - bar_height,
+              plot_y + plot_height - plot_height * pptx_chart_fraction(used, axis_low, axis_high) - bar_height,
             ),
             Float::from_double(cluster_width),
             Float::from_double(bar_height),
@@ -3959,6 +3983,7 @@ fn pptx_emit_chart(
           pptx_area_path(
             item.values,
             axis_high,
+            axis_low,
             plot_x,
             plot_y,
             plot_width,
@@ -3973,6 +3998,7 @@ fn pptx_emit_chart(
           pptx_line_path(
             item.values,
             axis_high,
+            axis_low,
             plot_x,
             plot_y,
             plot_width,
@@ -3995,6 +4021,7 @@ fn pptx_emit_chart(
           pptx_line_path(
             item.values,
             axis_high,
+            axis_low,
             plot_x,
             plot_y,
             plot_width,
@@ -4014,7 +4041,7 @@ fn pptx_emit_chart(
         } else {
           plot_x + plot_width * index.to_double() / (value_count - 1.0)
         }
-        let py = plot_y + plot_height - plot_height * value / axis_high
+        let py = plot_y + plot_height - plot_height * pptx_chart_fraction(value, axis_low, axis_high)
         pptx_draw_chart_marker(object, item, px, py)
       }
     }
@@ -4025,7 +4052,7 @@ fn pptx_emit_chart(
     for index in 0..<categories.length() {
       for s, item in series {
         if index < item.values.length() {
-          let bar_height = plot_height * item.values[index] / axis_high
+          let bar_height = plot_height * pptx_chart_fraction(item.values[index], axis_low, axis_high)
           object.fill_color(pptx_series_point_color(item, index))
           object.fill_rect(
             Float::from_double(
@@ -4069,14 +4096,14 @@ fn pptx_emit_chart(
           let label_width = pptx_text_width(text, data_label_size)
           let (label_x, label_y) = if horizontal {
             (
-              plot_x + plot_width * (used + value) / axis_high + 2.0,
+              plot_x + plot_width * pptx_chart_fraction(used + value, axis_low, axis_high) + 2.0,
               plot_y + slot * index.to_double() + slot * 0.3,
             )
           } else {
             (
               plot_x + slot * index.to_double() + slot * 0.5 - label_width / 2.0,
               plot_y + plot_height -
-              plot_height * (used + value) / axis_high -
+              plot_height * pptx_chart_fraction(used + value, axis_low, axis_high) -
               9.0,
             )
           }
@@ -4107,19 +4134,19 @@ fn pptx_emit_chart(
           let label_width = pptx_text_width(text, data_label_size)
           let (label_x, label_y) = if horizontal {
             (
-              plot_x + plot_width * value / axis_high + 2.0,
+              plot_x + plot_width * pptx_chart_fraction(value, axis_low, axis_high) + 2.0,
               plot_y + slot * index.to_double() + slot * 0.3,
             )
           } else if line_chart is Some(_) || is_area {
             (
               plot_x + plot_width * index.to_double() /
               Double::max(1.0, (item.values.length() - 1).to_double()),
-              plot_y + plot_height - plot_height * value / axis_high - 9.0,
+              plot_y + plot_height - plot_height * pptx_chart_fraction(value, axis_low, axis_high) - 9.0,
             )
           } else {
             (
               plot_x + slot * index.to_double() + slot * 0.5 - label_width / 2.0,
-              plot_y + plot_height - plot_height * value / axis_high - 9.0,
+              plot_y + plot_height - plot_height * pptx_chart_fraction(value, axis_low, axis_high) - 9.0,
             )
           }
           pptx_chart_label(
