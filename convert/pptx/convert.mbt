@@ -2280,6 +2280,14 @@ fn pptx_emit_chart(
       }
     None => false
   }
+  let show_label_categories = match pptx_child(Some(chart), "dLbls") {
+    Some(labels) =>
+      match pptx_child(Some(labels), "showCatName") {
+        Some(value) => pptx_attribute(value.element, "val", "0") != "0"
+        None => false
+      }
+    None => false
+  }
   let palette = [
     0x4472c4ffU, 0xed7d31ffU, 0xa5a5a5ffU, 0xffc000ffU, 0x5b9bd5ffU, 0x70ad47ffU,
   ]
@@ -3126,7 +3134,11 @@ fn pptx_emit_chart(
             continue
           }
           let value = item.values[index]
-          let text = pptx_chart_tick_text(value)
+          let text = if show_label_categories && index < categories.length() {
+            categories[index] + " " + pptx_chart_tick_text(value)
+          } else {
+            pptx_chart_tick_text(value)
+          }
           let label_width = pptx_text_width(text, 7.0)
           let (label_x, label_y) = if horizontal {
             (
@@ -3150,7 +3162,11 @@ fn pptx_emit_chart(
     } else {
       for item in series {
         for index, value in item.values {
-          let text = pptx_chart_tick_text(value)
+          let text = if show_label_categories && index < categories.length() {
+            categories[index] + " " + pptx_chart_tick_text(value)
+          } else {
+            pptx_chart_tick_text(value)
+          }
           let label_width = pptx_text_width(text, 7.0)
           let (label_x, label_y) = if horizontal {
             (
