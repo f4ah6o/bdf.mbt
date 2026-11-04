@@ -2385,6 +2385,7 @@ priv struct PptxChartSeries {
   categories : Array[String]
   values : Array[Double]
   blanks : Array[Bool]
+  bubble_sizes : Array[Double]
   explosions : Array[Double]
   point_colors : Array[UInt32]
   color : UInt32
@@ -2841,6 +2842,7 @@ fn pptx_emit_chart(
   let area_chart = pptx_child(plot_area, "areaChart")
   let scatter_chart = pptx_child(plot_area, "scatterChart")
   let radar_chart = pptx_child(plot_area, "radarChart")
+  let bubble_chart = pptx_child(plot_area, "bubbleChart")
   let pie_chart = pptx_child(plot_area, "pieChart")
   let doughnut_chart = pptx_child(plot_area, "doughnutChart")
   let chart = match bar {
@@ -2863,7 +2865,11 @@ fn pptx_emit_chart(
                     None =>
                       match radar_chart {
                         Some(value) => value
-                        None => return
+                        None =>
+                          match bubble_chart {
+                            Some(value) => value
+                            None => return
+                          }
                       }
                   }
                 }
@@ -2875,6 +2881,7 @@ fn pptx_emit_chart(
   let is_bar = kind == "barChart"
   let is_area = kind == "areaChart"
   let is_scatter = kind == "scatterChart"
+  let is_bubble = kind == "bubbleChart"
   let is_radar = kind == "radarChart"
   let is_doughnut = kind == "doughnutChart"
   let is_pie = kind == "pieChart" || is_doughnut
@@ -2979,14 +2986,20 @@ fn pptx_emit_chart(
     let blanks : Array[Bool] = []
     for value in pptx_chart_values(
       Some(item),
-      if is_scatter { "yVal" } else { "val" },
+      if is_scatter || is_bubble { "yVal" } else { "val" },
     ) {
       blanks.push(value.trim() == "")
       values.push(@string.parse_double(value) catch { _ => 0.0 })
     }
+    let bubble_sizes : Array[Double] = []
+    if is_bubble {
+      for value in pptx_chart_values(Some(item), "bubbleSize") {
+        bubble_sizes.push(@string.parse_double(value) catch { _ => 0.0 })
+      }
+    }
     let categories = pptx_chart_values(
       Some(item),
-      if is_scatter { "xVal" } else { "cat" },
+      if is_scatter || is_bubble { "xVal" } else { "cat" },
     )
     let color = match
       pptx_node_color(pptx_child(Some(item), "spPr"), "solidFill", theme) {
@@ -2999,6 +3012,7 @@ fn pptx_emit_chart(
       categories,
       values,
       blanks,
+      bubble_sizes,
       explosions: pptx_chart_explosions(item),
       point_colors: pptx_chart_point_colors(item, theme),
       color,
@@ -3038,7 +3052,7 @@ fn pptx_emit_chart(
       }
     }
   }
-  if reverse_categories && !is_scatter {
+  if reverse_categories && !is_scatter && !is_bubble {
     for item in series {
       pptx_reverse(item.point_colors)
       pptx_reverse(item.categories)
@@ -3275,7 +3289,7 @@ fn pptx_emit_chart(
       }
     }
   }
-  if is_scatter {
+  if is_scatter || is_bubble {
     let scatter_cat_axis = pptx_child(plot_area, "catAx")
     let scatter_val_axis = pptx_child(plot_area, "valAx")
     let scatter_cat_title = pptx_chart_title_text(scatter_cat_axis)
@@ -3301,6 +3315,21 @@ fn pptx_emit_chart(
       x_max = x_min + 1.0
       y_max = y_min + 1.0
     }
+    let mut max_bubble = 0.0
+    if is_bubble {
+      for item in series {
+        for size in item.bubble_sizes {
+          max_bubble = Double::max(max_bubble, size)
+        }
+      }
+    }
+    let bubble_scale = match pptx_child(Some(chart), "bubbleScale") {
+      Some(value) =>
+        @string.parse_double(pptx_attribute(value.element, "val", "100")) catch {
+          _ => 100.0
+        }
+      None => 100.0
+    }
     object.line(1.0F, 0, 0, 8.0F)
     object.stroke_color(0xbfbfbffFU)
     object.stroke_rect(
@@ -3324,7 +3353,27 @@ fn pptx_emit_chart(
         let py = plot_y + plot_height -
           (value - y_min) / (y_max - y_min) * plot_height
         object.fill_color(pptx_series_point_color(item, index))
-        pptx_draw_chart_marker(object, item, px, py)
+        if is_bubble {
+          let bubble_size = if index < item.bubble_sizes.length() {
+            item.bubble_sizes[index]
+          } else {
+            0.0
+          }
+          let radius = if max_bubble > 0.0 {
+            2.0 + (Double::max(bubble_size, 0.0) / max_bubble).sqrt() *
+              12.0 *
+              bubble_scale /
+              100.0
+          } else {
+            2.0
+          }
+          let path = object.add_path(
+            @core.Inline(pptx_circle_path(px, py, radius)),
+          )
+          object.fill_path(path, 0)
+        } else {
+          pptx_draw_chart_marker(object, item, px, py)
+        }
         if show_values {
           let mut label_text = if show_label_categories &&
             index < item.categories.length() {
@@ -4453,7 +4502,7 @@ fn pptx_emit_chart(
       }
     }
   }
-  if show_values && !is_pie && !is_scatter && !is_radar {
+  if show_values && !is_pie && !is_scatter && !is_bubble && !is_radar {
     if stacked {
       for index in 0..<categories.length() {
         let mut positive = 0.0

@@ -137,8 +137,8 @@ converter flattens it to cubic Béziers (the same outline, and the phase 15
 comparison flattens both encodings before comparing); malformed custom
 geometry falls back to the shape rectangle where upstream silently draws
 nothing; SmartArt is reduced to its data-model text (the diagram layout is not
-drawn), and ink, 3-D or other non-bar/line/pie/doughnut/area/scatter/radar charts are not
-supported; chart titles use an explicit `c:title` (with its `txPr` size/colour and
+drawn), and ink, 3-D or other non-bar/line/pie/doughnut/area/scatter/radar/bubble
+charts are not supported; chart titles use an explicit `c:title` (with its `txPr` size/colour and
 `overlay`) or the single-series name unless `autoTitleDeleted` is set,
 and bar/line/pie/radar/scatter charts with `c:dTable` draw a category/series/value table with series names,
 honouring the show and border flags; the built-in
