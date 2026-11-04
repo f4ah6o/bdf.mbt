@@ -388,7 +388,51 @@ fn XlsxWorkbook::xlsx_chart_svg(
     "\" stroke=\"#000000\"/>",
   )
   let count = model.values.length()
-  if model.kind == "barChart" || model.kind == "pieChart" {
+  if model.kind == "pieChart" {
+    let total = model.values.fold(init=0.0, (sum, value) => sum + value)
+    if total > 0.0 {
+      let cx = left + plot_width / 2.0
+      let cy = plot_top + plot_height / 2.0
+      let radius = Double::min(plot_width, plot_height) / 2.0
+      let palette = [
+        "#4472c4", "#ed7d31", "#a5a5a5", "#ffc000", "#5b9bd5", "#70ad47",
+      ]
+      let mut angle = -3.141592653589793 / 2.0
+      for index, value in model.values {
+        let sweep = 2.0 * 3.141592653589793 * value / total
+        let end = angle + sweep
+        let x1 = cx + @math.cos(angle) * radius
+        let y1 = cy + @math.sin(angle) * radius
+        let x2 = cx + @math.cos(end) * radius
+        let y2 = cy + @math.sin(end) * radius
+        let large = if sweep > 3.141592653589793 { 1 } else { 0 }
+        svg.write_string(
+          "<path d=\"M " +
+          cx.to_string() +
+          " " +
+          cy.to_string() +
+          " L " +
+          x1.to_string() +
+          " " +
+          y1.to_string() +
+          " A " +
+          radius.to_string() +
+          " " +
+          radius.to_string() +
+          " 0 " +
+          large.to_string() +
+          " 1 " +
+          x2.to_string() +
+          " " +
+          y2.to_string() +
+          " Z\" fill=\"" +
+          palette[index % palette.length()] +
+          "\"/>",
+        )
+        angle = end
+      }
+    }
+  } else if model.kind == "barChart" {
     let slot = plot_width / Double::max(count.to_double(), 1.0)
     for index, value in model.values {
       let bar_height = plot_height * value / top

@@ -253,7 +253,7 @@ fills, line borders and linear text of the original subset it supports:
   text and accounting-style `#` overflow;
 - worksheet drawings that contain shapes with text, `mc:AlternateContent`
   choices with Office Math (`a14:m`), and chart frames: shapes are painted
-  with their fill, outline and text, and embedded charts are rendered as SVG
+  with their fill, outline and text, and embedded bar, line and pie charts are rendered as SVG
   pictures whose axis, category and series labels are added to the tile text
   index as invisible runs;
 - chart sheets as one-page fixed views: the chart is drawn with its title,
