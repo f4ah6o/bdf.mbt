@@ -2407,6 +2407,33 @@ fn pptx_chart_collect_text(node : PptxXmlNode, out : StringBuilder) -> Unit {
 }
 
 ///|
+fn pptx_chart_line_style(
+  sp_pr : PptxXmlNode?,
+  theme : Map[String, UInt32],
+  default_color : UInt32,
+  default_width : Double,
+) -> (UInt32, Double) {
+  let line = pptx_child(sp_pr, "ln")
+  let color = match pptx_node_color(line, "solidFill", theme) {
+    Some(value) => value
+    None => default_color
+  }
+  let width = match line {
+    Some(value) =>
+      match pptx_attribute(value.element, "w", "") {
+        "" => default_width
+        raw => {
+          let parsed = (@string.parse_double(raw) catch { _ => 0.0 }) /
+            12700.0
+          if parsed > 0.0 { parsed } else { default_width }
+        }
+      }
+    None => default_width
+  }
+  (color, width)
+}
+
+///|
 fn pptx_chart_tx_size(node : PptxXmlNode?, default : Double) -> Double {
   let text = pptx_child(node, "txPr")
   let paragraph = pptx_child(text, "p")
@@ -2742,6 +2769,20 @@ fn pptx_emit_chart(
       )
     }
     None => ()
+  }
+  let chart_sp_pr = pptx_child(Some(root), "spPr")
+  if pptx_child(chart_sp_pr, "ln") is Some(_) {
+    let (border_color, border_width) = pptx_chart_line_style(
+      chart_sp_pr, theme, 0x000000ffU, 1.0,
+    )
+    object.line(Float::from_double(border_width), 0, 0, 8.0F)
+    object.stroke_color(border_color)
+    object.stroke_rect(
+      Float::from_double(x),
+      Float::from_double(y),
+      Float::from_double(width),
+      Float::from_double(height),
+    )
   }
   let label_font = object.add_font({
     hash: None,
@@ -3734,8 +3775,11 @@ fn pptx_emit_chart(
       )
     }
   }
-  object.line(1.0F, 0, 0, 8.0F)
-  object.stroke_color(0xbfbfbffFU)
+  let (plot_border_color, plot_border_width) = pptx_chart_line_style(
+    pptx_child(plot_area, "spPr"), theme, 0xbfbfbffFU, 1.0,
+  )
+  object.line(Float::from_double(plot_border_width), 0, 0, 8.0F)
+  object.stroke_color(plot_border_color)
   object.stroke_rect(
     Float::from_double(plot_x),
     Float::from_double(plot_y),
