@@ -261,7 +261,8 @@ fills, line borders and linear text of the original subset it supports:
   `showPercent` adds
   percentage labels, `showVal` adds value labels, `showCatName`/`showSerName`
   prefix category and series names (`c:separator` joins label parts,
-  `c:dLblPos` selects inside/centre/outside positions), value-axis
+  `c:dLblPos` selects inside/centre/outside positions, including pie labels),
+  value-axis
   `scaling/min`/`max` are honoured and the series `solidFill` colour is used)
   whose axis, category and series labels are added to the tile text
   index as invisible runs;

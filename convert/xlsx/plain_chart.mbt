@@ -858,8 +858,12 @@ fn XlsxWorkbook::xlsx_chart_svg(
     for index, value in model.values {
       let sweep = 2.0 * 3.141592653589793 * value / pie_total
       let mid = angle + sweep / 2.0
-      let x = cx + @math.cos(mid) * radius * 1.12
-      let y = cy + @math.sin(mid) * radius * 1.12
+      let category_radius = match model.label_position {
+        "ctr" | "inEnd" => radius * 0.75
+        _ => radius * 1.12
+      }
+      let x = cx + @math.cos(mid) * category_radius
+      let y = cy + @math.sin(mid) * category_radius
       if index < model.categories.length() {
         svg.write_string(
           "<text x=\"" +
@@ -873,8 +877,13 @@ fn XlsxWorkbook::xlsx_chart_svg(
       }
       let label_text = xlsx_chart_data_label(model, index, value)
       if label_text != "" {
-        let inner_x = cx + @math.cos(mid) * radius * 0.65
-        let inner_y = cy + @math.sin(mid) * radius * 0.65
+        let data_radius = if model.label_position == "outEnd" {
+          radius * 0.85
+        } else {
+          radius * 0.55
+        }
+        let inner_x = cx + @math.cos(mid) * data_radius
+        let inner_y = cy + @math.sin(mid) * data_radius
         svg.write_string(
           "<text x=\"" +
           inner_x.to_string() +
@@ -1400,28 +1409,37 @@ fn XlsxWorkbook::xlsx_chart_object(
       let mid = angle + sweep / 2.0
       if index < model.categories.length() {
         let category = model.categories[index]
+        let category_radius = match model.label_position {
+          "ctr" | "inEnd" => radius * 0.75
+          _ => radius * 1.12
+        }
         let mut advance = 0.0
         for character in category {
           advance += @sheet.sized_fallback_advance(character, false, 10.0)
         }
         label(
           category,
-          cx + @math.cos(mid) * radius * 1.12 - advance / 2.0,
-          cy + @math.sin(mid) * radius * 1.12 + 3.0,
+          cx + @math.cos(mid) * category_radius - advance / 2.0,
+          cy + @math.sin(mid) * category_radius + 3.0,
           10.0,
           400,
         )
       }
       let label_text = xlsx_chart_data_label(model, index, value)
       if label_text != "" {
+        let data_radius = if model.label_position == "outEnd" {
+          radius * 0.85
+        } else {
+          radius * 0.55
+        }
         let mut advance = 0.0
         for character in label_text {
           advance += @sheet.sized_fallback_advance(character, false, 10.0)
         }
         label(
           label_text,
-          cx + @math.cos(mid) * radius * 0.65 - advance / 2.0,
-          cy + @math.sin(mid) * radius * 0.65 + 3.0,
+          cx + @math.cos(mid) * data_radius - advance / 2.0,
+          cy + @math.sin(mid) * data_radius + 3.0,
           10.0,
           400,
         )
