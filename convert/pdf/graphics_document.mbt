@@ -15,6 +15,7 @@ fn pdf_dc_value(
 fn pdf_graphics_document(
   data : Bytes,
   box~ : String = "crop",
+  kind~ : String = "fixed",
   title~ : String = "",
   no_text_index~ : Bool = false,
   no_share_prefix~ : Bool = false,
@@ -23,6 +24,7 @@ fn pdf_graphics_document(
   let (document, _) = pdf_graphics_document_result(
     data,
     box~,
+    kind~,
     title~,
     no_text_index~,
     no_share_prefix~,
@@ -35,6 +37,7 @@ fn pdf_graphics_document(
 fn pdf_graphics_document_result(
   data : Bytes,
   box~ : String = "crop",
+  kind~ : String = "fixed",
   title~ : String = "",
   no_text_index~ : Bool = false,
   no_share_prefix~ : Bool = false,
@@ -43,6 +46,7 @@ fn pdf_graphics_document_result(
   let (data, warnings, _, _) = pdf_graphics_document_full(
     data,
     box~,
+    kind~,
     title~,
     no_text_index~,
     no_share_prefix~,
@@ -55,6 +59,7 @@ fn pdf_graphics_document_result(
 fn pdf_graphics_document_full(
   data : Bytes,
   box~ : String = "crop",
+  kind~ : String = "fixed",
   title~ : String = "",
   no_text_index~ : Bool = false,
   no_share_prefix~ : Bool = false,
@@ -63,6 +68,9 @@ fn pdf_graphics_document_full(
 ) -> (Bytes, Array[String], Int32, Int64) raise PdfStreamError {
   if !["", "crop", "media", "bleed", "trim", "art"].contains(box) {
     raise InvalidStream("unknown PDF page box")
+  }
+  if !["", "fixed", "flow"].contains(kind) {
+    raise InvalidStream("unknown PDF view kind")
   }
   let file = pdf_open_file(data)
   file.unlock(password)
@@ -197,17 +205,24 @@ fn pdf_graphics_document_full(
       "role": Json::string("body"),
       "obj": Json::string(item.hash),
     })
-    output_pages.push(
-      Json::object({
+    let page : Map[String, Json] = {
+      "w": Json::number(width.to_double(), repr=width.to_string()),
+      "h": Json::number(height.to_double(), repr=height.to_string()),
+      "layers": Json::array([layer]),
+    }
+    if kind == "flow" {
+      page["body"] = Json::object({
+        "x": Json::number(0.0, repr="0"),
+        "y": Json::number(0.0, repr="0"),
         "w": Json::number(width.to_double(), repr=width.to_string()),
         "h": Json::number(height.to_double(), repr=height.to_string()),
-        "layers": Json::array([layer]),
-      }),
-    )
+      })
+    }
+    output_pages.push(Json::object(page))
   }
   let view : Map[String, Json] = {
     "id": Json::string("pages"),
-    "kind": Json::string("fixed"),
+    "kind": Json::string(if kind == "" { "fixed" } else { kind }),
   }
   for
     warning in pdf_write_index(writer, view, index, index_error, no_text_index) {

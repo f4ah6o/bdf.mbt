@@ -35,6 +35,7 @@ pub fn detect(data : Bytes) -> Bool {
 pub fn convert(
   data : Bytes,
   box~ : String = "crop",
+  kind~ : String = "fixed",
   title~ : String = "",
   no_text_index~ : Bool = false,
   no_share_prefix~ : Bool = false,
@@ -44,6 +45,7 @@ pub fn convert(
   let (bdf, warnings, shared_prefixes, shared_bytes) = pdf_graphics_document_full(
     data,
     box~,
+    kind~,
     title~,
     no_text_index~,
     no_share_prefix~,
