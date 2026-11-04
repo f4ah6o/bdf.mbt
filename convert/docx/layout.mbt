@@ -3180,12 +3180,15 @@ fn docx_flow_page_borders(flow : DocxFlow) -> @core.ObjectBuilder? raise {
     match border {
       Some(value) =>
         if value.width > 0.0 && value.style != "nil" && value.style != "none" {
-          object.stroke_color(docx_page_border_color(value))
-          object.line(Float::from_double(value.width), 0, 0, 8.0F)
-          object.stroke_path(
-            object.add_path(
-              @core.Inline({ verbs: b"\x00\x01", coordinates: coordinates[index] }),
-            ),
+          docx_stroke_border(
+            object,
+            coordinates[index],
+            {
+              width: value.width,
+              color: docx_page_border_color(value),
+              space: 0.0,
+              style: value.style,
+            },
           )
         }
       None => ()
