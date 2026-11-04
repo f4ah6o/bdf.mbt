@@ -244,9 +244,11 @@ fn docx_layout_paragraph(
       "tab" => {
         let relative = line_x - props.left
         let mut next = 0.0
+        let mut leader = "none"
         for stop in props.tabs {
           if stop.position > relative {
             next = stop.position
+            leader = stop.leader
             break
           }
         }
@@ -254,6 +256,47 @@ fn docx_layout_paragraph(
           next = docx_round_up(relative / 36.0) * 36.0
           if next <= relative {
             next += 36.0
+          }
+        }
+        let leader_char = match leader {
+          "dot" => "."
+          "hyphen" => "-"
+          "underscore" => "_"
+          "heavy" => "_"
+          "middleDot" => "\u00b7"
+          _ => ""
+        }
+        if leader_char != "" && next > relative {
+          let size = if item.props.size > 0.0 { item.props.size } else { 10.0 }
+          let unit = docx_text_width(leader_char, size)
+          let count = ((next - relative) / unit).to_int()
+          if count > 0 {
+            let text = StringBuilder()
+            for _ in 0..<count {
+              text.write_string(leader_char)
+            }
+            let advance = unit * count.to_double()
+            current.push({
+              kind: "text",
+              text: text.to_string(),
+              link: item.link,
+              field_format: "",
+              font: docx_font_family(item.props),
+              weight: docx_font_weight(item.props),
+              style: docx_font_style(item.props),
+              size,
+              color: docx_run_color(item.props),
+              x: line_x,
+              advance,
+              shade: None,
+              border_width: 0.0,
+              border_color: None,
+            })
+            line_started = true
+            let natural = size * 1.2
+            if natural > line_natural {
+              line_natural = natural
+            }
           }
         }
         line_x = props.left + next

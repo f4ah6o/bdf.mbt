@@ -1227,6 +1227,22 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX tab leaders fill the gap to the stop" {
+  let blocks = "<w:p><w:pPr><w:tabs><w:tab w:val=\"left\" w:pos=\"1440\" w:leader=\"dot\"/></w:tabs></w:pPr>" +
+    "<w:r><w:t xml:space=\"preserve\">A\tB</w:t></w:r></w:p>"
+  let commands = docx_test_page_commands(
+    convert(docx_test_docx(blocks, DOCX_TEST_SECTION, [])), "pages", 0, "body",
+  )
+  let text = StringBuilder()
+  for command in commands {
+    match command {
+      FillText(value, _, _, _) => text.write_string(value)
+      _ => ()
+    }
+  }
+  assert_true(text.to_string().contains("...."))
+}
+
 test "DOCX footnote references inside table cells are laid out" {
   let footnotes = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
     "<w:footnotes xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">" +
