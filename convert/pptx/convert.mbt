@@ -3192,6 +3192,20 @@ fn pptx_emit_chart(
           }
         None => 0.0
       }
+      let scaling = pptx_child(Some(value), "scaling")
+      match pptx_child(scaling, "max") {
+        Some(maximum_node) => {
+          let axis_max = @string.parse_double(
+            pptx_attribute(maximum_node.element, "val", "0"),
+          ) catch {
+            _ => 0.0
+          }
+          if axis_max > 0.0 {
+            axis_high = axis_max
+          }
+        }
+        None => ()
+      }
     }
     None => ()
   }
