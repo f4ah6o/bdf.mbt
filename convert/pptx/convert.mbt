@@ -2436,6 +2436,17 @@ fn pptx_emit_chart(
           4.0,
           4.0,
         )
+        if show_values {
+          pptx_chart_label(
+            object,
+            label_font,
+            7.0,
+            black,
+            pptx_chart_tick_text(value),
+            px + 3.0,
+            py - 9.0,
+          )
+        }
       }
     }
     return
@@ -2497,6 +2508,17 @@ fn pptx_emit_chart(
           4.0,
           4.0,
         )
+        if show_values {
+          pptx_chart_label(
+            object,
+            label_font,
+            7.0,
+            black,
+            pptx_chart_tick_text(value),
+            cx + @math.cos(angle) * distance + 3.0,
+            cy + @math.sin(angle) * distance - 9.0,
+          )
+        }
       }
     }
     for index, category in categories {
