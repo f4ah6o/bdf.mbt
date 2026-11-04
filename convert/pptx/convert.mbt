@@ -2917,6 +2917,15 @@ fn pptx_emit_chart(
         if table_val {
           for row_index, item in series {
             let row_y = table_y + 12.0 * (row_index + 1).to_double()
+            pptx_chart_label(
+              object,
+              label_font,
+              7.0,
+              black,
+              item.name,
+              table_x + 2.0,
+              row_y + 1.0,
+            )
             for col, value in item.values {
               if col < categories.length() {
                 let text = pptx_chart_tick_text(value)
@@ -3092,6 +3101,15 @@ fn pptx_emit_chart(
       }
       for row_index, item in series {
         let row_y = table_y + 12.0 * (row_index + 1).to_double()
+        pptx_chart_label(
+          object,
+          label_font,
+          7.0,
+          black,
+          item.name,
+          table_x + 2.0,
+          row_y + 1.0,
+        )
         for col, value in item.values {
           if col < categories.length() {
             let text = pptx_chart_tick_text(value)
