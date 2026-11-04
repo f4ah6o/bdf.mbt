@@ -90,13 +90,14 @@ archives so each test shows its WordprocessingML: cell wrapping and grid
 spans, vertical merges, repeated header rows, columns, vertical pages,
 regenerated page fields, header images, numbering overrides, floating
 drawings with left/right/top-and-bottom wrapping and behind/in-front order,
-the `views` selection and inline-drawing regression.
+the `views` selection and inline-drawing regression. Floating drawings inside
+table cells are drawn at their anchor (without cell wrap).
 
 Documented gaps: exact font metrics and OpenType shaping, tight/through wrap
 contours (the object's box is used), `wp:effectExtent` room for shadows,
 floating drawings in vertical text (they are drawn turned with the flow and
-keep no space), floating drawings in table cells and headers/footers (they
-are not drawn there), page-relative objects that would not fit are drawn
+keep no space), floating drawings in headers/footers (they are not drawn
+there), page-relative objects that would not fit are drawn
 clipped rather than moved, exact footnote separator/continuation
 indentation, upright CJK glyphs in vertical text (the whole body is turned,
 Latin and CJK alike),

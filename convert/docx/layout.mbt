@@ -75,6 +75,7 @@ priv struct DocxCellNestedBlock {
 ///|
 priv enum DocxCellBlockLayout {
   DocxCellLines(Array[DocxTableCellLine])
+  DocxCellAnchors(Array[DocxPlacedImage])
   DocxCellNested(DocxCellNestedBlock)
 }
 
@@ -1049,6 +1050,7 @@ fn docx_layout_cell_blocks(
           mark_size,
           false,
         )
+        let para_top = y
         let lines : Array[DocxTableCellLine] = []
         for line in para.lines {
           lines.push({ y, line, })
@@ -1056,6 +1058,13 @@ fn docx_layout_cell_blocks(
         }
         if !lines.is_empty() {
           layout.push(DocxCellLines(lines))
+        }
+        if !para.anchors.is_empty() {
+          layout.push(
+            DocxCellAnchors(
+              para.anchors.map(fn(anchor) { { ..anchor, y: para_top + anchor.y } }),
+            ),
+          )
         }
         if paragraph.props.after > 0.0 {
           y += paragraph.props.after
@@ -1180,6 +1189,7 @@ fn docx_table_safe_cut(
                 moved = true
               }
             }
+          DocxCellAnchors(_) => ()
           DocxCellNested(nested) => {
             let top = cell_layout.mar_top + nested.y
             let bottom = top + nested.height
@@ -1231,6 +1241,21 @@ fn docx_emit_table_lines(
             cell_layout.w - cell_layout.mar_left - cell_layout.mar_right,
             ctx.fonts,
             ctx.field_value,
+            ctx.warnings,
+          )
+        }
+      DocxCellAnchors(anchors) =>
+        for anchor in anchors {
+          docx_emit_image(
+            ctx.object,
+            ctx.writer,
+            ctx.package,
+            ctx.part,
+            anchor.item,
+            x_origin + anchor.x,
+            y_origin + anchor.y,
+            anchor.width,
+            anchor.height,
             ctx.warnings,
           )
         }

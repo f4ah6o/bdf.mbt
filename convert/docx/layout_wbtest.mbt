@@ -182,6 +182,7 @@ test "DOCX table cell text wraps inside its grid column" {
   for block in first.blocks {
     match block {
       DocxCellLines(lines) => wrapped += lines.length()
+      DocxCellAnchors(_) => ()
       DocxCellNested(_) => ()
     }
   }
@@ -1224,6 +1225,28 @@ test "DOCX table style corner cells override row and column parts" {
   }
   assert_true(red)
   assert_true(green)
+}
+
+test "DOCX floating drawings inside table cells are drawn" {
+  let image = docx_test_float(
+    "distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\" behindDoc=\"0\" relativeHeight=\"1\"",
+    docx_test_float_in_column(),
+    "<wp:wrapNone/>",
+    "cx=\"914400\" cy=\"914400\"",
+  )
+  let table = "<w:tbl><w:tblPr/><w:tblGrid><w:gridCol w:w=\"4000\"/></w:tblGrid>" +
+    "<w:tr><w:tc><w:p>" + image + "</w:p></w:tc></w:tr></w:tbl>"
+  let commands = docx_test_page_commands(
+    convert(docx_test_float_docx(table)), "pages", 0, "body",
+  )
+  let mut images = 0
+  for command in commands {
+    match command {
+      @render.Image(_, _, _, _, _) => images += 1
+      _ => ()
+    }
+  }
+  assert_true(images > 0)
 }
 
 test "DOCX odd-page sections insert a blank page" {

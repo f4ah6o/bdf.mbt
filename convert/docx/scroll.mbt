@@ -231,6 +231,7 @@ fn docx_scroll_table_row(
               ),
             )
           }
+        DocxCellAnchors(_) => ()
         DocxCellNested(_) => ()
       }
     }
