@@ -1589,15 +1589,17 @@ fn pptx_emit_table(
           cell_height += row_heights[row_index + k]
         }
       }
-      let explicit_fill = pptx_node_color(
-        pptx_child(Some(cell), "tcPr"), "solidFill", theme,
-      )
+      let cell_props = pptx_child(Some(cell), "tcPr")
+      let explicit_paint = match pptx_fill_element(cell_props) {
+        Some(fill) => Some(pptx_resolve_paint(fill, theme, None))
+        None => None
+      }
       let style_fill = pptx_table_style_fill(
         theme, style_id, first_row, band_row, last_row, first_col, last_col,
         row_index, grid_index, row_count, col_count,
       )
-      match explicit_fill {
-        Some(color) => {
+      match explicit_paint {
+        Some(PptxPaintSolid(color, _)) => {
           object.fill_color(color)
           object.fill_rect(
             Float::from_double(cell_x),
@@ -1606,6 +1608,28 @@ fn pptx_emit_table(
             Float::from_double(cell_height),
           )
         }
+        Some(PptxPaintGradient(node, paint_theme)) => {
+          match pptx_gradient_node(
+            Some(node),
+            cell_x,
+            row_top,
+            column_width,
+            cell_height,
+            paint_theme,
+          ) {
+            Some(paint) => {
+              object.fill_paint(object.add_paint(paint))
+              object.fill_rect(
+                Float::from_double(cell_x),
+                Float::from_double(row_top),
+                Float::from_double(column_width),
+                Float::from_double(cell_height),
+              )
+            }
+            None => ()
+          }
+        }
+        Some(PptxPaintNone) => ()
         None =>
           match style_fill {
             Some(color) => {
