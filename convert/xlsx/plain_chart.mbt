@@ -662,6 +662,19 @@ fn XlsxWorkbook::xlsx_chart_sheet_parts(
 }
 
 ///|
+fn xlsx_chart_color_uint(value : String) -> UInt32 {
+  match xlsx_theme_hex(value) {
+    Some(color) => {
+      let red = (color.red * 255.0 + 0.5).to_int().to_uint()
+      let green = (color.green * 255.0 + 0.5).to_int().to_uint()
+      let blue = (color.blue * 255.0 + 0.5).to_int().to_uint()
+      (red << 24) | (green << 16) | (blue << 8) | 0xffU
+    }
+    None => 0x4472c4ffU
+  }
+}
+
+///|
 fn XlsxWorkbook::xlsx_chart_object(
   self : XlsxWorkbook,
   part : String,
@@ -677,9 +690,16 @@ fn XlsxWorkbook::xlsx_chart_object(
     None => return object
   }
   let (ticks, _) = xlsx_chart_ticks(
-    model.values.fold(init=0.0, (value, item) => Double::max(value, item)),
+    if model.axis_max > model.axis_min {
+      model.axis_max
+    } else {
+      model.values.fold(init=0.0, (value, item) => Double::max(value, item))
+    },
   )
   let top = ticks[ticks.length() - 1]
+  let axis_exists = model.axis_max > model.axis_min
+  let axis_base = if axis_exists { model.axis_min } else { 0.0 }
+  let axis_range = Double::max(top - axis_base, 0.000001)
   let left = 60.0
   let plot_top = 40.0
   let plot_width = Double::max(width - left - 140.0, 10.0)
@@ -724,7 +744,8 @@ fn XlsxWorkbook::xlsx_chart_object(
     label(model.series_name, width - 110.0, plot_top + 20.0, 11.0, 400)
   }
   for tick in ticks {
-    let y = plot_top + plot_height - plot_height * tick / top
+    let y = plot_top + plot_height -
+      plot_height * (tick - axis_base) / axis_range
     label(
       xlsx_chart_number(tick), left - 40.0, y + 3.0, 10.0, 400,
     )
@@ -739,10 +760,45 @@ fn XlsxWorkbook::xlsx_chart_object(
   )
   let count = model.values.length()
   let slot = plot_width / Double::max(count.to_double(), 1.0)
-  if model.kind == "barChart" {
-    object.fill_color(0x4472c4ffU)
+  let series_color = xlsx_chart_color_uint(model.color)
+  if model.kind == "pieChart" {
+    let total = model.values.fold(init=0.0, (sum, value) => sum + value)
+    if total > 0.0 {
+      let cx = left + plot_width / 2.0
+      let cy = plot_top + plot_height / 2.0
+      let radius = Double::min(plot_width, plot_height) / 2.0
+      let palette = [
+        0x4472c4ffU, 0xed7d31ffU, 0xa5a5a5ffU, 0xffc000ffU, 0x5b9bd5ffU,
+        0x70ad47ffU,
+      ]
+      let mut angle = -3.141592653589793 / 2.0
+      for index, value in model.values {
+        let sweep = 2.0 * 3.141592653589793 * value / total
+        let verbs : Array[Byte] = [0]
+        let coordinates : Array[Double] = [cx, cy]
+        let steps = 24
+        for step in 0..<steps {
+          let step_angle = angle + sweep * step.to_double() / steps.to_double()
+          verbs.push(1)
+          coordinates.push(cx + @math.cos(step_angle) * radius)
+          coordinates.push(cy + @math.sin(step_angle) * radius)
+        }
+        verbs.push(1)
+        coordinates.push(cx + @math.cos(angle + sweep) * radius)
+        coordinates.push(cy + @math.sin(angle + sweep) * radius)
+        verbs.push(4)
+        object.fill_color(palette[index % palette.length()])
+        let path = object.add_path(
+          @core.Inline({ verbs: Bytes::from_array(verbs), coordinates }),
+        )
+        object.fill_path(path, 0)
+        angle += sweep
+      }
+    }
+  } else if model.kind == "barChart" {
+    object.fill_color(series_color)
     for index, value in model.values {
-      let bar_height = plot_height * value / top
+      let bar_height = plot_height * (value - axis_base) / axis_range
       object.fill_rect(
         Float::from_double(left + slot * index.to_double() + slot * 0.2),
         Float::from_double(plot_top + plot_height - bar_height),
@@ -752,7 +808,7 @@ fn XlsxWorkbook::xlsx_chart_object(
     }
   } else {
     object.line(2.0F, 0, 0, 8.0F)
-    object.stroke_color(0x4472c4ffU)
+    object.stroke_color(series_color)
     let verbs : Array[Byte] = [0]
     let coordinates : Array[Double] = []
     for index, value in model.values {
@@ -764,7 +820,8 @@ fn XlsxWorkbook::xlsx_chart_object(
       } else {
         left + plot_width * index.to_double() / (count - 1).to_double()
       }
-      let y = plot_top + plot_height - plot_height * value / top
+      let y = plot_top + plot_height -
+        plot_height * (value - axis_base) / axis_range
       coordinates.push(x)
       coordinates.push(y)
     }
