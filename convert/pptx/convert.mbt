@@ -1984,17 +1984,32 @@ fn pptx_line_path(
   values : Array[Double],
   maximum : Double,
   minimum : Double,
+  blanks : Array[Bool],
+  blanks_mode : String,
   left : Double,
   top : Double,
   width : Double,
   height : Double,
 ) -> @core.Path {
-  let verbs : Array[Byte] = [0]
+  let verbs : Array[Byte] = []
   let coordinates : Array[Double] = []
   let count = values.length().to_double()
+  let mut started = false
   for index, value in values {
-    if index > 0 {
+    let blank = index < blanks.length() && blanks[index]
+    if blank {
+      if blanks_mode == "gap" {
+        started = false
+        continue
+      } else if blanks_mode == "span" {
+        continue
+      }
+    }
+    if started {
       verbs.push(1)
+    } else {
+      verbs.push(0)
+      started = true
     }
     let x = if count <= 1.0 {
       left + width / 2.0
@@ -2013,6 +2028,8 @@ fn pptx_area_path(
   values : Array[Double],
   maximum : Double,
   minimum : Double,
+  blanks : Array[Bool],
+  blanks_mode : String,
   left : Double,
   top : Double,
   width : Double,
@@ -2022,6 +2039,9 @@ fn pptx_area_path(
   let coordinates : Array[Double] = [left, top + height]
   let count = values.length().to_double()
   for index, value in values {
+    if index < blanks.length() && blanks[index] && blanks_mode != "zero" {
+      continue
+    }
     let x = if count <= 1.0 {
       left + width / 2.0
     } else {
@@ -2760,6 +2780,10 @@ fn pptx_emit_chart(
   let is_radar = kind == "radarChart"
   let is_doughnut = kind == "doughnutChart"
   let is_pie = kind == "pieChart" || is_doughnut
+  let blanks_mode = match pptx_child(Some(chart), "dispBlanksAs") {
+    Some(value) => pptx_attribute(value.element, "val", "zero")
+    None => "zero"
+  }
   let horizontal = is_bar &&
     (match pptx_child(Some(chart), "barDir") {
       Some(value) => pptx_attribute(value.element, "val", "col") == "bar"
@@ -4169,6 +4193,8 @@ fn pptx_emit_chart(
             item.values,
             axis_high,
             axis_low,
+            item.blanks,
+            blanks_mode,
             plot_x,
             plot_y,
             plot_width,
@@ -4184,6 +4210,8 @@ fn pptx_emit_chart(
             item.values,
             axis_high,
             axis_low,
+            item.blanks,
+            blanks_mode,
             plot_x,
             plot_y,
             plot_width,
@@ -4207,6 +4235,8 @@ fn pptx_emit_chart(
             item.values,
             axis_high,
             axis_low,
+            item.blanks,
+            blanks_mode,
             plot_x,
             plot_y,
             plot_width,
