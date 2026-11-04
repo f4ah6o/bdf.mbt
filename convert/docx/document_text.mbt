@@ -1454,6 +1454,7 @@ fn docx_text_table(
   let mut style_tbl_pr : DocxXmlNode? = None
   let mut style_tc_pr : DocxXmlNode? = None
   let cond_tc_prs : Map[String, Array[DocxXmlNode]] = {}
+  let cond_rprs : Map[String, Array[DocxXmlNode]] = {}
   if table_style_id != "" {
     for style in walker.styles.chain(table_style_id) {
       if style.kind != "table" {
@@ -1473,6 +1474,14 @@ fn docx_text_table(
             match cond_tc_prs.get(key) {
               Some(list) => list.push(node)
               None => cond_tc_prs[key] = [node]
+            }
+          None => ()
+        }
+        match cond.rpr {
+          Some(node) =>
+            match cond_rprs.get(key) {
+              Some(list) => list.push(node)
+              None => cond_rprs[key] = [node]
             }
           None => ()
         }
@@ -1716,11 +1725,19 @@ fn docx_text_table(
         grid.length(),
       )
       let mut cond_tc_pr : DocxXmlNode? = None
+      let mut cond_rpr : DocxXmlNode? = None
       for condition in conditions {
         match cond_tc_prs.get(condition) {
           Some(nodes) =>
             for node in nodes {
               cond_tc_pr = Some(node)
+            }
+          None => ()
+        }
+        match cond_rprs.get(condition) {
+          Some(nodes) =>
+            for node in nodes {
+              cond_rpr = Some(node)
             }
           None => ()
         }
@@ -1819,6 +1836,19 @@ fn docx_text_table(
         None => "top"
       }
       let blocks = docx_cell_blocks(cell_node, walker.styles)
+      match cond_rpr {
+        Some(rpr) =>
+          for block in blocks {
+            match block {
+              DocxParaBlock(paragraph) =>
+                for item in paragraph.items {
+                  item.props.apply_node(rpr)
+                }
+              DocxTableBlock(_) => ()
+            }
+          }
+        None => ()
+      }
       let mut cell_shade = docx_child_shade(cell_props)
       if cell_shade is None {
         cell_shade = docx_child_shade(cond_tc_pr)

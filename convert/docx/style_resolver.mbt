@@ -4,6 +4,7 @@
 priv struct DocxStyleCond {
   tbl_pr : DocxXmlNode?
   tc_pr : DocxXmlNode?
+  rpr : DocxXmlNode?
 }
 
 ///|
@@ -81,6 +82,7 @@ fn docx_styles_from_xml(xml : String) -> DocxStyles raise {
       conds[docx_attribute(cond.element, "type", "")] = {
         tbl_pr: cond.child("tblPr"),
         tc_pr: cond.child("tcPr"),
+        rpr: cond.child("rPr"),
       }
     }
     let style : DocxStyle = {

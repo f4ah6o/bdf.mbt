@@ -108,8 +108,8 @@
   metrics/shaping, tight/through contours and effect
   extents, exact footnote separators, upright CJK in vertical text, tables in
   headers/footers, PAGEREF/REF, table-style base, first/last row/column,
-  banded row/column and corner-cell parts (borders/shading/margins; TableGrid
-  is applied) remain documented gaps in `compat/docx`; autofit tables
+  banded row/column and corner-cell parts (borders/shading/margins/text
+  formatting; TableGrid is applied) remain documented gaps in `compat/docx`; autofit tables
   estimate text widths from run sizes.
 - PPTX: `convert/pptx` emits the upstream `slides` fixed view with
   background/layout/master/body layers, shared master objects, placeholder

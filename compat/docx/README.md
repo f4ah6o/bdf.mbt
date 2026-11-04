@@ -102,7 +102,7 @@ flattened), `PAGEREF`/`REF` field regeneration (cached results are used),
 per-section `SECTIONPAGES` (the document page count is used), column
 separator rules,
 table-style base, first/last row/column, banded and corner-cell parts
-(borders/shading/margins and TableGrid are applied), and exact scroll strip
+(borders/shading/margins/text formatting and TableGrid are applied), and exact scroll strip
 counts (table widths are applied and autofit estimates text widths), footnotes referenced from table cells, sections
 that must start on an odd or even page, and exact scroll strip counts (the
 approximate metrics make the basic fixture 1 strip where upstream makes 2;
