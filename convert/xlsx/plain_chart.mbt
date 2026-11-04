@@ -21,6 +21,7 @@ struct XlsxChartModel {
   first_slice_ang : Double
   explosions : Array[Double]
   hole_size : Double
+  gap_width : Double
   show_cat_name : Bool
   show_ser_name : Bool
   axis_min : Double
@@ -367,6 +368,14 @@ fn XlsxWorkbook::xlsx_chart_model(
   let mut label_position = "outEnd"
   let mut leader_lines = false
   let mut first_slice_ang = 0.0
+  let mut gap_width = 150.0
+  match xlsx_draw_child(plot, "gapWidth") {
+    Some(value) =>
+      gap_width = @string.parse_double(xlsx_draw_attr(value, "val")) catch {
+        _ => 150.0
+      }
+    None => ()
+  }
   let mut hole_size = 50.0
   match xlsx_draw_child(plot, "holeSize") {
     Some(value) =>
@@ -502,6 +511,7 @@ fn XlsxWorkbook::xlsx_chart_model(
     first_slice_ang,
     explosions,
     hole_size,
+    gap_width,
     show_cat_name,
     show_ser_name,
     axis_min,
@@ -855,15 +865,21 @@ fn XlsxWorkbook::xlsx_chart_svg(
     }
   } else if model.kind == "barChart" {
     let slot = plot_width / Double::max(count.to_double(), 1.0)
+    let bar_fraction = Double::min(
+      Double::max(1.0 / (1.0 + Double::max(model.gap_width, 0.0) / 100.0), 0.1),
+      0.95,
+    )
     for index, value in model.values {
       let bar_height = plot_height * (value - axis_base) / axis_range
+      let bar_width = slot * bar_fraction
+      let bar_x = left + slot * index.to_double() + (slot - bar_width) / 2.0
       svg.write_string(
         "<rect x=\"" +
-        (left + slot * index.to_double() + slot * 0.2).to_string() +
+        bar_x.to_string() +
         "\" y=\"" +
         (plot_top + plot_height - bar_height).to_string() +
         "\" width=\"" +
-        (slot * 0.6).to_string() +
+        bar_width.to_string() +
         "\" height=\"" +
         bar_height.to_string() +
         "\" fill=\"" + model.color + "\"/>",
@@ -1604,12 +1620,18 @@ fn XlsxWorkbook::xlsx_chart_object(
     }
   } else if model.kind == "barChart" {
     object.fill_color(series_color)
+    let bar_fraction = Double::min(
+      Double::max(1.0 / (1.0 + Double::max(model.gap_width, 0.0) / 100.0), 0.1),
+      0.95,
+    )
     for index, value in model.values {
       let bar_height = plot_height * (value - axis_base) / axis_range
+      let bar_width = slot * bar_fraction
+      let bar_x = left + slot * index.to_double() + (slot - bar_width) / 2.0
       object.fill_rect(
-        Float::from_double(left + slot * index.to_double() + slot * 0.2),
+        Float::from_double(bar_x),
         Float::from_double(plot_top + plot_height - bar_height),
-        Float::from_double(slot * 0.6),
+        Float::from_double(bar_width),
         Float::from_double(bar_height),
       )
       let label_text = xlsx_chart_data_label(model, index, value)
