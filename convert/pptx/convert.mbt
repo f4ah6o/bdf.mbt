@@ -2943,23 +2943,29 @@ fn pptx_emit_chart(
       }
     }
     if scatter_cat_title != "" {
-      let title_width = pptx_text_width(scatter_cat_title, 8.0)
+      let node = pptx_child(scatter_cat_axis, "title")
+      let size = pptx_chart_tx_size(node, 8.0)
+      let color = pptx_chart_tx_color(node, theme, black)
+      let title_width = pptx_text_width(scatter_cat_title, size)
       pptx_chart_label(
         object,
         label_font,
-        8.0,
-        black,
+        size,
+        color,
         scatter_cat_title,
         x + width / 2.0 - title_width / 2.0,
         y + height - 8.0,
       )
     }
     if scatter_val_title != "" {
+      let node = pptx_child(scatter_val_axis, "title")
+      let size = pptx_chart_tx_size(node, 8.0)
+      let color = pptx_chart_tx_color(node, theme, black)
       pptx_chart_label(
         object,
         label_font,
-        8.0,
-        black,
+        size,
+        color,
         scatter_val_title,
         x + 2.0,
         plot_y + 2.0,
@@ -3133,23 +3139,29 @@ fn pptx_emit_chart(
       )
     }
     if radar_cat_title != "" {
-      let title_width = pptx_text_width(radar_cat_title, 8.0)
+      let node = pptx_child(radar_cat_axis, "title")
+      let size = pptx_chart_tx_size(node, 8.0)
+      let color = pptx_chart_tx_color(node, theme, black)
+      let title_width = pptx_text_width(radar_cat_title, size)
       pptx_chart_label(
         object,
         label_font,
-        8.0,
-        black,
+        size,
+        color,
         radar_cat_title,
         x + width / 2.0 - title_width / 2.0,
         y + height - 8.0,
       )
     }
     if radar_val_title != "" {
+      let node = pptx_child(radar_val_axis, "title")
+      let size = pptx_chart_tx_size(node, 8.0)
+      let color = pptx_chart_tx_color(node, theme, black)
       pptx_chart_label(
         object,
         label_font,
-        8.0,
-        black,
+        size,
+        color,
         radar_val_title,
         x + 2.0,
         plot_y + 2.0,
@@ -3876,20 +3888,32 @@ fn pptx_emit_chart(
     }
   }
   if cat_axis_title != "" {
-    let width = pptx_text_width(cat_axis_title, 8.0)
+    let node = pptx_child(cat_axis, "title")
+    let size = pptx_chart_tx_size(node, 8.0)
+    let color = pptx_chart_tx_color(node, theme, black)
+    let width = pptx_text_width(cat_axis_title, size)
     pptx_chart_label(
       object,
       label_font,
-      8.0,
-      black,
+      size,
+      color,
       cat_axis_title,
       plot_x + plot_width / 2.0 - width / 2.0,
       y + height - 8.0,
     )
   }
   if val_axis_title != "" {
+    let node = pptx_child(val_axis, "title")
+    let size = pptx_chart_tx_size(node, 8.0)
+    let color = pptx_chart_tx_color(node, theme, black)
     pptx_chart_label(
-      object, label_font, 8.0, black, val_axis_title, x + 2.0, plot_y + 2.0,
+      object,
+      label_font,
+      size,
+      color,
+      val_axis_title,
+      x + 2.0,
+      plot_y + 2.0,
     )
   }
   if show_data_table {
