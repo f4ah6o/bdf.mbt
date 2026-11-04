@@ -2190,6 +2190,7 @@ fn pptx_emit_chart(
   let bar = pptx_child(plot_area, "barChart")
   let line_chart = pptx_child(plot_area, "lineChart")
   let area_chart = pptx_child(plot_area, "areaChart")
+  let scatter_chart = pptx_child(plot_area, "scatterChart")
   let pie_chart = pptx_child(plot_area, "pieChart")
   let chart = match bar {
     Some(value) => value
@@ -2202,7 +2203,11 @@ fn pptx_emit_chart(
             None =>
               match area_chart {
                 Some(value) => value
-                None => return
+                None =>
+                  match scatter_chart {
+                    Some(value) => value
+                    None => return
+                  }
               }
           }
       }
@@ -2210,6 +2215,7 @@ fn pptx_emit_chart(
   let kind = chart.element.name.local_name
   let is_bar = kind == "barChart"
   let is_area = kind == "areaChart"
+  let is_scatter = kind == "scatterChart"
   let is_pie = kind == "pieChart"
   let horizontal = is_bar &&
     (match pptx_child(Some(chart), "barDir") {
@@ -2231,10 +2237,16 @@ fn pptx_emit_chart(
       continue
     }
     let values : Array[Double] = []
-    for value in pptx_chart_values(Some(item), "val") {
+    for value in pptx_chart_values(
+      Some(item),
+      if is_scatter { "yVal" } else { "val" },
+    ) {
       values.push(@string.parse_double(value) catch { _ => 0.0 })
     }
-    let categories = pptx_chart_values(Some(item), "cat")
+    let categories = pptx_chart_values(
+      Some(item),
+      if is_scatter { "xVal" } else { "cat" },
+    )
     let color = match
       pptx_node_color(pptx_child(Some(item), "spPr"), "solidFill", theme) {
       Some(value) => value
@@ -2334,6 +2346,59 @@ fn pptx_emit_chart(
       }
       plot_width = Double::max(1.0, plot_width - 64.0)
     }
+  }
+  if is_scatter {
+    let mut x_min = 1.0e300
+    let mut x_max = -1.0e300
+    let mut y_min = 1.0e300
+    let mut y_max = -1.0e300
+    for item in series {
+      for index, value in item.values {
+        if index < item.categories.length() {
+          let x = @string.parse_double(item.categories[index]) catch {
+            _ => 0.0
+          }
+          x_min = Double::min(x_min, x)
+          x_max = Double::max(x_max, x)
+          y_min = Double::min(y_min, value)
+          y_max = Double::max(y_max, value)
+        }
+      }
+    }
+    if x_max <= x_min || y_max <= y_min {
+      x_max = x_min + 1.0
+      y_max = y_min + 1.0
+    }
+    object.line(1.0F, 0, 0, 8.0F)
+    object.stroke_color(0xbfbfbffFU)
+    object.stroke_rect(
+      Float::from_double(plot_x),
+      Float::from_double(plot_y),
+      Float::from_double(plot_width),
+      Float::from_double(plot_height),
+    )
+    for item in series {
+      object.fill_color(item.color)
+      for index, value in item.values {
+        if index >= item.categories.length() {
+          continue
+        }
+        let x = @string.parse_double(item.categories[index]) catch {
+          _ => 0.0
+        }
+        let px = plot_x +
+          (x - x_min) / (x_max - x_min) * plot_width
+        let py = plot_y + plot_height -
+          (value - y_min) / (y_max - y_min) * plot_height
+        object.fill_rect(
+          Float::from_double(px - 2.0),
+          Float::from_double(py - 2.0),
+          4.0,
+          4.0,
+        )
+      }
+    }
+    return
   }
   if is_pie {
     let values = series[0].values

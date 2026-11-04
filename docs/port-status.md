@@ -113,7 +113,7 @@
   estimate text widths from run sizes.
 - PPTX: `convert/pptx` emits the upstream `slides` fixed view with
   background/layout/master/body layers, shared master objects, placeholder
-  text inheritance, bullets and levels, tables, bar/line/pie/area charts, line
+  text inheritance, bullets and levels, tables, bar/line/pie/area/scatter charts, line
   arrowheads and linearized Office Math. Preset geometry uses the upstream
   187-preset table
   and custom `a:custGeom` paths are evaluated with the same guide engine
