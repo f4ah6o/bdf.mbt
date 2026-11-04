@@ -96,7 +96,7 @@ stacked, horizontal and vertical, with `gapWidth`/`overlap`), line, area,
 scatter, radar, pie and doughnut charts (with `firstSliceAng`, per-point `explosion` and
 data-point fills, series line widths, dash patterns and markers) draw their series, axis titles with `txPr` sizes/colours,
 bar/line/radar/scatter value labels with optional category/series names
-and bar/line `dLblPos` placement,
+and bar/line/scatter `dLblPos` placement,
 stacked segment labels and pie/doughnut percentage/value labels with `dLblPos` (with optional
 category/series names, `c:numFmt`, `c:txPr` sizes/colours/bold/italic, `c:separator` and per-point `c:dLbl`
 text/delete)
