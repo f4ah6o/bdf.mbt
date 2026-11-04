@@ -2367,6 +2367,15 @@ fn pptx_series_dash(item : PptxXmlNode) -> String {
 }
 
 ///|
+fn pptx_series_marker_color(
+  item : PptxXmlNode,
+  theme : Map[String, UInt32],
+) -> UInt32? {
+  let marker = pptx_child(Some(item), "marker")
+  pptx_node_color(pptx_child(marker, "spPr"), "solidFill", theme)
+}
+
+///|
 fn pptx_series_marker(item : PptxXmlNode) -> (String, Double) {
   let marker = pptx_child(Some(item), "marker")
   let symbol = match pptx_child(marker, "symbol") {
@@ -2392,6 +2401,10 @@ fn pptx_draw_chart_marker(
 ) -> Unit raise {
   if item.marker_symbol == "none" {
     return
+  }
+  match item.marker_color {
+    Some(color) => object.fill_color(color)
+    None => ()
   }
   let half = item.marker_size / 2.0
   if item.marker_symbol == "circle" {
@@ -2457,6 +2470,7 @@ priv struct PptxChartSeries {
   border_width : Double
   border_color : UInt32
   border_dash : String
+  marker_color : UInt32?
   marker_symbol : String
   marker_size : Double
 }
@@ -3087,6 +3101,7 @@ fn pptx_emit_chart(
       border_width: pptx_series_border_width(item),
       border_color: pptx_series_border_color(item, theme),
       border_dash: pptx_series_border_dash(item),
+      marker_color: pptx_series_marker_color(item, theme),
       marker_symbol,
       marker_size,
     })
