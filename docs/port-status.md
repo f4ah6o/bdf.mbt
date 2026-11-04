@@ -115,10 +115,11 @@
   and custom `a:custGeom` paths are evaluated with the same guide engine
   (arcTo is flattened to cubic Béziers), placeholder fill/line inheritance
   follows slide → layout → master, and a supplied font database embeds subset
-  WOFF2 faces with real metrics. SmartArt/ink, 3D, other chart types, chart
-  data tables/titles, table style
-  banding, blip bullets and advanced vertical stacking remain
-  documented gaps in `compat/pptx`.
+  WOFF2 faces with real metrics. Built-in Medium-Style-2 Accent 1 table
+  headers and banded rows are filled. SmartArt/ink, 3D, other chart types,
+  chart data tables/titles, table-style borders and other built-in table
+  styles, blip bullets and advanced vertical stacking remain documented gaps
+  in `compat/pptx`.
 - AI: PDF-based Illustrator 9+ artwork only; PostScript files (Illustrator 8
   and earlier) and files saved without PDF content are explicit errors.
 - TIFF: JPEG compression, YCbCr pages and DNG camera raw are not supported;
