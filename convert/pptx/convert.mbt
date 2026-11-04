@@ -4163,19 +4163,40 @@ fn pptx_emit_chart(
   let tick_label_color = pptx_chart_tx_color(val_axis_node, theme, black)
   let cat_label_size = pptx_chart_tx_size(cat_axis_node, label_size)
   let cat_label_color = pptx_chart_tx_color(cat_axis_node, theme, black)
-  let plot_fill = pptx_node_color(
-    pptx_child(plot_area, "spPr"), "solidFill", theme,
-  )
-  match plot_fill {
-    Some(color) => {
-      object.fill_color(color)
-      object.fill_rect(
-        Float::from_double(plot_x),
-        Float::from_double(plot_y),
-        Float::from_double(plot_width),
-        Float::from_double(plot_height),
-      )
-    }
+  match pptx_fill_element(pptx_child(plot_area, "spPr")) {
+    Some(fill) =>
+      match pptx_resolve_paint(fill, theme, None) {
+        PptxPaintSolid(color, _) => {
+          object.fill_color(color)
+          object.fill_rect(
+            Float::from_double(plot_x),
+            Float::from_double(plot_y),
+            Float::from_double(plot_width),
+            Float::from_double(plot_height),
+          )
+        }
+        PptxPaintGradient(node, paint_theme) =>
+          match pptx_gradient_node(
+            Some(node),
+            plot_x,
+            plot_y,
+            plot_width,
+            plot_height,
+            paint_theme,
+          ) {
+            Some(paint) => {
+              object.fill_paint(object.add_paint(paint))
+              object.fill_rect(
+                Float::from_double(plot_x),
+                Float::from_double(plot_y),
+                Float::from_double(plot_width),
+                Float::from_double(plot_height),
+              )
+            }
+            None => ()
+          }
+        PptxPaintNone => ()
+      }
     None => ()
   }
   if axis_low < 0.0 {
