@@ -1131,6 +1131,25 @@ fn docx_dynamic_field(walker : DocxTextWalker) -> DocxFieldState? {
 }
 
 ///|
+fn docx_theme_color(name : String) -> UInt32? {
+  match name {
+    "dark1" | "text1" => Some(0x000000ffU)
+    "light1" | "background1" => Some(0xffffffffU)
+    "dark2" | "text2" => Some(0x44546affU)
+    "light2" | "background2" => Some(0xe7e6e6ffU)
+    "accent1" => Some(0x4472c4ffU)
+    "accent2" => Some(0xed7d31ffU)
+    "accent3" => Some(0xa5a5a5ffU)
+    "accent4" => Some(0xffc000ffU)
+    "accent5" => Some(0x5b9bd5ffU)
+    "accent6" => Some(0x70ad47ffU)
+    "hyperlink" => Some(0x0563c1ffU)
+    "followedHyperlink" => Some(0x954f72ffU)
+    _ => None
+  }
+}
+
+///|
 fn docx_highlight_color(name : String) -> UInt32? {
   match name {
     "yellow" => Some(0xffff00ffU)
@@ -2397,7 +2416,8 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
           None
         }
       } else {
-        None
+        let theme = docx_attribute(node.element, "themeColor", "")
+        if theme != "" { docx_theme_color(theme) } else { None }
       }
     }
     None => None

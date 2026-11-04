@@ -49,7 +49,8 @@ word wrapping at spaces, explicit line/page/column breaks, left/right/centre/
 decimal tabs, bar tabs and leaders,
 paragraph and character spacing (including contextual spacing), run position,
 left/centre/right/justified/distributed alignment, keep-with-next, basic font
-weight/style/size/colour, paragraph/run shading, paragraph borders with
+weight/style/size/colour (theme colours use the Office default palette),
+paragraph/run shading, paragraph borders with
 spacing and single/double/triple/dashed/dotted styles (page borders too),
 highlight,
 text shadow, borders,

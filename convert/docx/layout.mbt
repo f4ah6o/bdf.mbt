@@ -3065,6 +3065,12 @@ fn docx_page_border_color(border : DocxBorder) -> UInt32 {
       return (parsed.to_uint() << 8) | 0xffU
     }
   }
+  if border.theme_color != "" {
+    match docx_theme_color(border.theme_color) {
+      Some(color) => return color
+      None => ()
+    }
+  }
   0x000000ffU
 }
 

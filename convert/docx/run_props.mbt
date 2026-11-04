@@ -135,13 +135,24 @@ fn DocxRunProps::apply_node(
         }
       }
       "color" => {
-        self.auto_color = docx_attribute(element, "val", "") == "auto"
-        if !self.auto_color {
-          let hex = docx_attribute(element, "val", "")
-          if hex.length() == 6 {
-            let parsed = @string.parse_int(hex, base=16) catch { _ => -1 }
-            if parsed >= 0 {
-              self.color = (parsed.to_uint() << 8) | 0xffU
+        let theme = docx_attribute(element, "themeColor", "")
+        if theme != "" {
+          match docx_theme_color(theme) {
+            Some(color) => {
+              self.color = color
+              self.auto_color = false
+            }
+            None => ()
+          }
+        } else {
+          self.auto_color = docx_attribute(element, "val", "") == "auto"
+          if !self.auto_color {
+            let hex = docx_attribute(element, "val", "")
+            if hex.length() == 6 {
+              let parsed = @string.parse_int(hex, base=16) catch { _ => -1 }
+              if parsed >= 0 {
+                self.color = (parsed.to_uint() << 8) | 0xffU
+              }
             }
           }
         }

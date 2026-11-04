@@ -159,15 +159,18 @@ fn DocxParagraphProps::apply_element(
     "shd" => {
       let fill = docx_attribute(element, "fill", "")
       let val = docx_attribute(element, "val", "clear")
-      if val == "nil" || fill.length() != 6 {
+      if val == "nil" {
         self.shade = None
-      } else {
+      } else if fill.length() == 6 {
         let number = @string.parse_int(fill, base=16) catch { _ => -1 }
         self.shade = if number >= 0 {
           Some((number.to_uint() << 8) | 0xffU)
         } else {
           None
         }
+      } else {
+        let theme = docx_attribute(element, "themeFill", "")
+        self.shade = if theme != "" { docx_theme_color(theme) } else { None }
       }
     }
     "spacing" => {
