@@ -142,7 +142,7 @@ test "PPTX arrowheads draw filled or stroked paths" {
     try {
       pptx_draw_arrow(object, line, arrow, 100.0, 100.0, 1.0, 0.0)
     } catch {
-      error => println("arrow error: " + error.to_string())
+      _ => ()
     }
     let commands = @render.decode_commands(object.encode()) catch { _ => [] }
     let mut fills = 0
