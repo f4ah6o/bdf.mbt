@@ -6,6 +6,7 @@ struct XlsxChartModel {
   series_name : String
   values : Array[Double]
   categories : Array[String]
+  color : String
   axis_min : Double
   axis_max : Double
 }
@@ -230,6 +231,24 @@ fn XlsxWorkbook::xlsx_chart_model(
   }
   let values = xlsx_chart_numbers(self, first, "val")
   let categories = xlsx_chart_series(self, first, "cat")
+  let mut color = "#4472c4"
+  match xlsx_draw_child(first, "spPr") {
+    Some(sp_pr) =>
+      match xlsx_draw_child(sp_pr, "solidFill") {
+        Some(fill) =>
+          match xlsx_draw_child(fill, "srgbClr") {
+            Some(value) => {
+              let rgb = xlsx_draw_attr(value, "val")
+              if rgb.length() == 6 {
+                color = "#" + rgb.to_lower()
+              }
+            }
+            None => ()
+          }
+        None => ()
+      }
+    None => ()
+  }
   let mut axis_min = 0.0
   let mut axis_max = 0.0
   match xlsx_draw_child(plot, "valAx") {
@@ -270,6 +289,7 @@ fn XlsxWorkbook::xlsx_chart_model(
     series_name,
     values,
     categories,
+    color,
     axis_min,
     axis_max,
   })
@@ -489,7 +509,7 @@ fn XlsxWorkbook::xlsx_chart_svg(
         (slot * 0.6).to_string() +
         "\" height=\"" +
         bar_height.to_string() +
-        "\" fill=\"#4472c4\"/>",
+        "\" fill=\"" + model.color + "\"/>",
       )
     }
   } else {
@@ -509,7 +529,11 @@ fn XlsxWorkbook::xlsx_chart_svg(
         y.to_string()
     }
     svg.write_string(
-      "<path d=\"" + path + "\" fill=\"none\" stroke=\"#4472c4\" stroke-width=\"2\"/>",
+      "<path d=\"" +
+      path +
+      "\" fill=\"none\" stroke=\"" +
+      model.color +
+      "\" stroke-width=\"2\"/>",
     )
   }
   let slot = plot_width / Double::max(count.to_double(), 1.0)
