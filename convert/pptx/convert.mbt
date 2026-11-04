@@ -2476,6 +2476,58 @@ fn pptx_emit_chart(
         plot_y + 2.0,
       )
     }
+    if pptx_child(chart_space, "dTable") is Some(_) {
+      let categories = series[0].categories
+      if !categories.is_empty() {
+        let table_height = (series.length() + 1).to_double() * 12.0 + 4.0
+        let table_x = plot_x
+        let table_y = y + height - table_height
+        let name_width = 60.0
+        let value_width = Double::max(
+          1.0,
+          (plot_width - name_width) / categories.length().to_double(),
+        )
+        object.fill_color(0xffffffffU)
+        object.fill_rect(
+          Float::from_double(table_x),
+          Float::from_double(table_y),
+          Float::from_double(plot_width),
+          Float::from_double(table_height),
+        )
+        for col, category in categories {
+          let width = pptx_text_width(category, 7.0)
+          pptx_chart_label(
+            object,
+            label_font,
+            7.0,
+            black,
+            category,
+            table_x + name_width + value_width * col.to_double() +
+            (value_width - width) / 2.0,
+            table_y + 1.0,
+          )
+        }
+        for row_index, item in series {
+          let row_y = table_y + 12.0 * (row_index + 1).to_double()
+          for col, value in item.values {
+            if col < categories.length() {
+              let text = pptx_chart_tick_text(value)
+              let width = pptx_text_width(text, 7.0)
+              pptx_chart_label(
+                object,
+                label_font,
+                7.0,
+                black,
+                text,
+                table_x + name_width + value_width * col.to_double() +
+                (value_width - width) / 2.0,
+                row_y + 1.0,
+              )
+            }
+          }
+        }
+      }
+    }
     return
   }
   if is_radar {
