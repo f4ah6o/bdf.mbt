@@ -2333,6 +2333,17 @@ fn pptx_emit_chart(
     return
   }
   let categories = series[0].categories
+  let data_table = pptx_child(chart_space, "dTable")
+  let show_data_table = data_table is Some && !categories.is_empty()
+  let table_rows = series.length() + 1
+  let table_height = if show_data_table {
+    table_rows.to_double() * 12.0 + 4.0
+  } else {
+    0.0
+  }
+  if show_data_table {
+    plot_height = Double::max(1.0, plot_height - table_height)
+  }
   let count = Double::max(1.0, categories.length().to_double())
   let slot = if horizontal { plot_height / count } else { plot_width / count }
   let mut maximum = 0.0
@@ -2546,6 +2557,80 @@ fn pptx_emit_chart(
             Float::from_double(plot_y + plot_height - bar_height),
             Float::from_double(sub_slot * 0.8),
             Float::from_double(bar_height),
+          )
+        }
+      }
+    }
+  }
+  if show_data_table {
+    let table_x = plot_x
+    let table_y = y + height - table_height
+    let name_width = 60.0
+    let value_width = Double::max(
+      1.0,
+      (plot_width - name_width) / count,
+    )
+    let row_height = 12.0
+    object.fill_color(0xffffffffU)
+    object.fill_rect(
+      Float::from_double(table_x),
+      Float::from_double(table_y),
+      Float::from_double(plot_width),
+      Float::from_double(table_height),
+    )
+    object.line(0.5F, 0, 0, 8.0F)
+    object.stroke_color(0x80808080U)
+    for row in 0..<table_rows {
+      for col in 0..<(categories.length() + 1) {
+        let cell_x = if col == 0 {
+          table_x
+        } else {
+          table_x + name_width + value_width * (col - 1).to_double()
+        }
+        let cell_w = if col == 0 { name_width } else { value_width }
+        object.stroke_rect(
+          Float::from_double(cell_x),
+          Float::from_double(table_y + row_height * row.to_double()),
+          Float::from_double(cell_w),
+          Float::from_double(row_height),
+        )
+      }
+    }
+    for col, category in categories {
+      let width = pptx_text_width(category, 7.0)
+      pptx_chart_label(
+        object,
+        label_font,
+        7.0,
+        black,
+        category,
+        table_x +
+        name_width +
+        value_width * col.to_double() +
+        (value_width - width) / 2.0,
+        table_y + 1.0,
+      )
+    }
+    for row_index, item in series {
+      let row_y = table_y + row_height * (row_index + 1).to_double()
+      pptx_chart_label(
+        object, label_font, 7.0, black, item.name, table_x + 2.0, row_y + 1.0,
+      )
+      for col, value in item.values {
+        if col < categories.length() {
+          let text = pptx_chart_tick_text(value)
+          let width = pptx_text_width(text, 7.0)
+          pptx_chart_label(
+            object,
+            label_font,
+            7.0,
+            black,
+            text,
+            table_x +
+            name_width +
+            value_width * col.to_double() +
+            (value_width - width) / 2.0,
+            row_y + 1.0,
           )
         }
       }

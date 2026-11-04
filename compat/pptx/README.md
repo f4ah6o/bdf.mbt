@@ -119,7 +119,7 @@ comparison flattens both encodings before comparing); malformed custom
 geometry falls back to the shape rectangle where upstream silently draws
 nothing; SmartArt, ink and 3-D or non-bar/line/pie charts are not
 supported; chart titles use an explicit `c:title` or the single-series name,
-and chart data tables are not emitted; the built-in
+and bar/line charts with `c:dTable` draw a category/series/value table; the built-in
 The 74 predefined table-style IDs resolve their whole-table, header, band and
 last-row/edge-column fills, their header/body text colours and their family
 borders (the grid/rule sides are approximated per family);
