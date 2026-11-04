@@ -44,6 +44,7 @@ priv struct DocxParaLine {
   height : Double
   align : String
   justify : Bool
+  distribute : Bool
   break_before : String
 }
 
@@ -243,6 +244,7 @@ fn docx_layout_paragraph(
       height,
       align,
       justify: false,
+      distribute: false,
       break_before: pending_break,
     })
     current.clear()
@@ -575,12 +577,17 @@ fn docx_layout_paragraph(
       height: Double::max(docx_line_box_height(natural, props, pitch), 1.0),
       align,
       justify: false,
+      distribute: false,
       break_before: "",
     })
   }
-  if align == "both" && lines.length() > 1 {
+  if (align == "both" || align == "distribute") && lines.length() > 1 {
     for index in 0..<(lines.length() - 1) {
-      lines[index] = { ..lines[index], justify: true }
+      lines[index] = {
+        ..lines[index],
+        justify: true,
+        distribute: align == "distribute",
+      }
     }
   }
   { lines, anchors, notes, trailing_break: pending_break, }
@@ -822,9 +829,13 @@ fn docx_emit_para_line(
     let extra = available - natural
     let mut spaces = 0
     for item in line.items {
-      for ch in item.text {
-        if ch == ' ' {
-          spaces += 1
+      if line.distribute {
+        spaces += item.text.length()
+      } else {
+        for ch in item.text {
+          if ch == ' ' {
+            spaces += 1
+          }
         }
       }
     }
@@ -834,9 +845,13 @@ fn docx_emit_para_line(
       let mut shift = 0.0
       for item in line.items {
         let mut count = 0
-        for ch in item.text {
-          if ch == ' ' {
-            count += 1
+        if line.distribute {
+          count = item.text.length()
+        } else {
+          for ch in item.text {
+            if ch == ' ' {
+              count += 1
+            }
           }
         }
         let increase = each * count.to_double()
@@ -3146,6 +3161,7 @@ fn docx_flow_emit_paragraph(
     let mut height = last_height
     let mut align = last_align
     let mut justify = false
+    let mut distribute = false
     if index < layout.lines.length() {
       let base = layout.lines[index]
       if fresh && index > 0 {
@@ -3159,6 +3175,7 @@ fn docx_flow_emit_paragraph(
       height = base.height
       align = base.align
       justify = base.justify
+      distribute = base.distribute
       last_height = height
       last_align = align
       if fresh {
@@ -3200,7 +3217,15 @@ fn docx_flow_emit_paragraph(
       if !narrowed {
         if !items.is_empty() || !images.is_empty() {
           emit(
-            { items, images, height, align, justify: justify, break_before: "" },
+            {
+              items,
+              images,
+              height,
+              align,
+              justify,
+              distribute,
+              break_before: "",
+            },
             flow.x0,
             flow.width,
           )
@@ -3230,7 +3255,7 @@ fn docx_flow_emit_paragraph(
           shifted.push({ ..image, x: image.x + shift, })
         }
         emit(
-          { items: rebased, images: shifted, height, align, justify: false, break_before: "" },
+          { items: rebased, images: shifted, height, align, justify: false, distribute: false, break_before: "" },
           flow.x0 + left_edge,
           available,
         )
@@ -3248,7 +3273,7 @@ fn docx_flow_emit_paragraph(
         }
         let rebased = docx_line_rebase(items, 0.0)
         emit(
-          { items: rebased, images, height, align, justify: false, break_before: "" },
+          { items: rebased, images, height, align, justify: false, distribute: false, break_before: "" },
           flow.x0 + left_edge,
           Double::max(available, 1.0),
         )
@@ -3285,6 +3310,7 @@ fn docx_flow_emit_paragraph(
           height,
           align,
           justify: false,
+          distribute: false,
           break_before: "",
         },
         flow.x0 + left_edge,
