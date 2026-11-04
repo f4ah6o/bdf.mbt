@@ -4298,11 +4298,22 @@ fn pptx_emit_chart(
             }
             (bar_x, plot_y + slot * index.to_double() + slot * 0.3)
           } else if line_chart is Some(_) || is_area {
-            (
-              plot_x + plot_width * index.to_double() /
-              Double::max(1.0, (item.values.length() - 1).to_double()),
-              plot_y + plot_height - plot_height * pptx_chart_fraction(value, axis_low, axis_high) - 9.0,
-            )
+            let px = plot_x +
+              plot_width * index.to_double() /
+              Double::max(1.0, (item.values.length() - 1).to_double())
+            let py = plot_y + plot_height -
+              plot_height * pptx_chart_fraction(value, axis_low, axis_high)
+            if data_label_pos == "b" {
+              (px - label_width / 2.0, py + 12.0)
+            } else if data_label_pos == "l" {
+              (px - label_width - 4.0, py + 4.0)
+            } else if data_label_pos == "r" {
+              (px + 4.0, py + 4.0)
+            } else if data_label_pos == "ctr" {
+              (px - label_width / 2.0, py + 4.0)
+            } else {
+              (px - label_width / 2.0, py - 9.0)
+            }
           } else if value >= 0.0 {
             let top = plot_y + plot_height - plot_height * value_fraction
             let base = plot_y + plot_height - plot_height * zero_fraction
