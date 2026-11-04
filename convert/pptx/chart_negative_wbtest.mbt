@@ -12,11 +12,17 @@ test "PPTX negative bars use positive rectangles from the zero line" {
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
+  let mut zero_lines = 0
   for command in @render.compile_object(resources.object) {
     match command {
-      @render.FillRect(_, _, width, height) =>
+      @render.FillRect(_, _, width, height) => {
         assert_true(width >= 0.0 && height >= 0.0)
+        if height == 1.0 && width > 100.0 {
+          zero_lines += 1
+        }
+      }
       _ => ()
     }
   }
+  assert_true(zero_lines >= 1)
 }

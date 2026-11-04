@@ -3802,6 +3802,27 @@ fn pptx_emit_chart(
     }
     None => ()
   }
+  if axis_low < 0.0 {
+    let zero = pptx_chart_fraction(0.0, axis_low, axis_high)
+    object.fill_color(0x808080ffU)
+    if horizontal {
+      object.fill_rect(
+        Float::from_double(plot_x + plot_width * zero - 0.5),
+        Float::from_double(plot_y),
+        1.0F,
+        Float::from_double(plot_height),
+      )
+    } else {
+      object.fill_rect(
+        Float::from_double(plot_x),
+        Float::from_double(
+          plot_y + plot_height - plot_height * zero - 0.5,
+        ),
+        Float::from_double(plot_width),
+        1.0F,
+      )
+    }
+  }
   let mut tick = axis_low
   while value_axis_visible && tick <= axis_high + step * 1.0e-6 {
     if minor_gridlines {
