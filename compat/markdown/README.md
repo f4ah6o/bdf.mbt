@@ -18,8 +18,10 @@ is linearized to searchable text with a small LaTeX converter.
 (432 points of text and 36-point margins). The pages view is a `fixed`
 view of 504 × 769.9-point pages with the same 432-point text column and
 36-point margins; its text index numbers runs with `a` set to the
-0-based page index. `both` emits the pages view first and the unchanged
-scroll view second.
+0-based page index. A table taller than a page splits between rows, repeats
+its header row on each page and keeps row borders on both pages; block-quote
+bars are drawn per line, so they repeat on every page a quote spans. `both`
+emits the pages view first and the unchanged scroll view second.
 
 ## Images and inline SVG
 
