@@ -283,6 +283,59 @@ fn md_trim_task_marker(runs : Array[MdRun]) -> Array[MdRun] {
 }
 
 ///|
+fn md_front_term(key : String) -> String {
+  match key {
+    "title" => "title"
+    "author" | "authors" | "creator" => "creator"
+    "contributor" | "contributors" => "contributor"
+    "date" | "published" | "created" | "publishdate" => "created"
+    "lastmod" | "updated" | "modified" => "modified"
+    "lang" | "language" | "locale" => "language"
+    "description" | "summary" | "abstract" | "excerpt" => "description"
+    "tags" | "keywords" | "categories" | "subject" => "subject"
+    "publisher" => "publisher"
+    "license" | "rights" | "copyright" => "rights"
+    "id" | "url" | "identifier" | "permalink" => "identifier"
+    _ => ""
+  }
+}
+
+///|
+fn md_front_unquote(value : String) -> String {
+  let trimmed = value.trim().to_string()
+  if trimmed.length() >= 2 &&
+    ((trimmed[0] == '"' && trimmed[trimmed.length() - 1] == '"') ||
+      (trimmed[0] == '\'' && trimmed[trimmed.length() - 1] == '\'')) {
+    trimmed[1:trimmed.length() - 1].to_owned()
+  } else {
+    match trimmed.find(" #") {
+      Some(at) => trimmed[:at].to_owned().trim().to_string()
+      None => trimmed
+    }
+  }
+}
+
+///|
+fn md_front_add(
+  meta : Map[String, Array[String]],
+  key : String,
+  value : String,
+) -> Unit {
+  if key == "" || value == "" {
+    return
+  }
+  let values = match meta.get(key) {
+    Some(values) => values
+    None => {
+      let values : Array[String] = []
+      meta[key] = values
+      values
+    }
+  }
+  values.push(value)
+}
+
+///|
 fn md_front_matter(text : String) -> (String, Map[String, Array[String]]) {
   let meta : Map[String, Array[String]] = Map([])
   let mut delimiter = ""
@@ -301,9 +354,27 @@ fn md_front_matter(text : String) -> (String, Map[String, Array[String]]) {
   match rest.find(needle) {
     Some(index) => {
       let head = rest[:index].to_owned()
+      let lines : Array[String] = []
       for line in head.split("\n") {
-        let trimmed = line.trim().to_string()
+        lines.push(line.to_owned())
+      }
+      let mut last_key = ""
+      let mut i = 0
+      while i < lines.length() {
+        let raw = lines[i]
+        i += 1
+        let trimmed = raw.trim().to_string()
         if trimmed == "" || trimmed.has_prefix("#") {
+          continue
+        }
+        if trimmed.has_prefix("- ") && last_key != "" {
+          let item = trimmed[2:].to_owned()
+          let value = match item.find(":") {
+            Some(at) if item[:at].trim().to_string() == "name" =>
+              item[at + 1:].to_owned()
+            _ => item
+          }
+          md_front_add(meta, last_key, md_front_unquote(value))
           continue
         }
         let separator = if delimiter == "+++" {
@@ -313,20 +384,43 @@ fn md_front_matter(text : String) -> (String, Map[String, Array[String]]) {
         }
         match separator {
           Some(at) => {
-            let key = trimmed[:at].to_owned().trim().to_string().to_lower()
-            let mut value = trimmed[at + 1:].to_owned().trim().to_string()
-            if value.length() >= 2 &&
-              ((value[0] == '"' && value[value.length() - 1] == '"') ||
-                (value[0] == '\'' && value[value.length() - 1] == '\'')) {
-              value = value[1:value.length() - 1].to_owned()
+            let raw_key = trimmed[:at].to_owned().trim().to_string().to_lower()
+            let key = md_front_term(raw_key)
+            let value = trimmed[at + 1:].to_owned().trim().to_string()
+            if key == "" {
+              last_key = ""
+              continue
             }
-            if value != "" {
-              let key = match key {
-                "author" | "authors" => "creator"
-                "lang" | "language" => "language"
-                _ => key
+            if value == "" {
+              last_key = key
+              continue
+            }
+            last_key = key
+            if value == "|" ||
+              value == ">" ||
+              value == "|-" ||
+              value == ">-" {
+              let parts : Array[String] = []
+              while i < lines.length() &&
+                (lines[i].trim().is_empty() ||
+                  lines[i].has_prefix(" ") ||
+                  lines[i].has_prefix("\t")) {
+                let part = lines[i].trim().to_string()
+                if part != "" {
+                  parts.push(part)
+                }
+                i += 1
               }
-              meta[key] = [value]
+              md_front_add(meta, key, parts.join(" "))
+              continue
+            }
+            if value.has_prefix("[") && value.has_suffix("]") {
+              let inner = value[1:value.length() - 1]
+              for item in inner.split(",") {
+                md_front_add(meta, key, md_front_unquote(item.to_owned()))
+              }
+            } else {
+              md_front_add(meta, key, md_front_unquote(value))
             }
           }
           None => ()

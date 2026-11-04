@@ -235,3 +235,20 @@ test "Markdown unknown views are rejected" {
   }
   assert_eq(failed, true)
 }
+
+///|
+test "Markdown front matter maps Dublin Core terms" {
+  let (body, meta) = md_front_matter(
+    "---\nauthor:\n  - Alice\n  - name: Bob\ndate: 2026-09-26\ntags: [bdf, markdown]\n---\nbody",
+  )
+  assert_eq(body, "body")
+  let creators = meta.get("creator").unwrap()
+  assert_eq(creators.length(), 2)
+  assert_eq(creators[0], "Alice")
+  assert_eq(creators[1], "Bob")
+  assert_eq(meta.get("created").unwrap()[0], "2026-09-26")
+  let subjects = meta.get("subject").unwrap()
+  assert_eq(subjects.length(), 2)
+  assert_eq(subjects[0], "bdf")
+  assert_eq(subjects[1], "markdown")
+}

@@ -79,14 +79,18 @@ pub fn convert(
     "generator": Json::string("bdf-go/0.1"),
   }
   let dc : Map[String, Json] = Map([])
+  for key, values in document.meta {
+    if values.is_empty() {
+      continue
+    }
+    if key == "subject" {
+      dc[key] = Json::array(values.map(Json::string))
+    } else {
+      dc[key] = Json::string(values[0])
+    }
+  }
   if document_title != "" {
     dc["title"] = Json::string(document_title)
-  }
-  for key in ["creator", "language", "description", "date"] {
-    match document.meta.get(key) {
-      Some(value) if !value.is_empty() => dc[key] = Json::string(value[0])
-      _ => ()
-    }
   }
   if !dc.is_empty() {
     meta["dc"] = Json::object(dc)

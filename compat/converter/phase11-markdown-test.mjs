@@ -63,6 +63,7 @@ try {
         width: view.pages[0]?.w,
         height: view.pages[0]?.h,
         images: doc.manifest.parts.filter(part => part.t === 'img').length,
+        meta: doc.manifest.meta,
         text,
       };
     };
@@ -112,6 +113,7 @@ try {
     assert.equal(entry.moon.width, 504, `${entry.name}: scroll width`);
     assert.ok(entry.moon.summary.includes('scroll strip(s)'), `${entry.name}: summary`);
     assert.equal(entry.moon.images, expectedImages[entry.name], `${entry.name}: image parts`);
+    assert.deepEqual(entry.moon.meta.dc, entry.upstream.meta.dc, `${entry.name}: Dublin Core metadata`);
     assert.equal(entry.moon.warnings.length, expectedWarnings[entry.name], `${entry.name}: warnings`);
     if (entry.name === 'svg.md') {
       assert.ok(entry.moon.summary.includes('2 image(s)'), 'svg.md: summary images');
