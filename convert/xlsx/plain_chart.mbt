@@ -16,6 +16,7 @@ struct XlsxChartModel {
   show_percent : Bool
   show_value : Bool
   label_separator : String
+  label_position : String
   show_cat_name : Bool
   show_ser_name : Bool
   axis_min : Double
@@ -351,10 +352,15 @@ fn XlsxWorkbook::xlsx_chart_model(
   let mut show_percent = false
   let mut show_value = false
   let mut label_separator = " "
+  let mut label_position = "outEnd"
   let mut show_cat_name = false
   let mut show_ser_name = false
   match xlsx_draw_child(plot, "dLbls") {
     Some(labels) => {
+      match xlsx_draw_child(labels, "dLblPos") {
+        Some(position) => label_position = xlsx_draw_attr(position, "val")
+        None => ()
+      }
       match xlsx_draw_child(labels, "separator") {
         Some(separator) => label_separator = xlsx_draw_all_text(separator)
         None => ()
@@ -428,6 +434,7 @@ fn XlsxWorkbook::xlsx_chart_model(
     show_percent,
     show_value,
     label_separator,
+    label_position,
     show_cat_name,
     show_ser_name,
     axis_min,
@@ -692,11 +699,17 @@ fn XlsxWorkbook::xlsx_chart_svg(
       )
       let label_text = xlsx_chart_data_label(model, index, value)
       if label_text != "" {
+        let label_y = match model.label_position {
+          "ctr" => plot_top + plot_height - bar_height / 2.0 + 4.0
+          "inEnd" => plot_top + plot_height - bar_height + 12.0
+          "inBase" => plot_top + plot_height - 4.0
+          _ => plot_top + plot_height - bar_height - 4.0
+        }
         svg.write_string(
           "<text x=\"" +
           (left + slot * index.to_double() + slot * 0.5).to_string() +
           "\" y=\"" +
-          (plot_top + plot_height - bar_height - 4.0).to_string() +
+          label_y.to_string() +
           "\" text-anchor=\"middle\" font-size=\"10\" fill=\"#000000\">" +
           xlsx_chart_text(label_text) +
           "</text>",
@@ -720,11 +733,16 @@ fn XlsxWorkbook::xlsx_chart_svg(
         y.to_string()
       let label_text = xlsx_chart_data_label(model, index, value)
       if label_text != "" {
+        let label_y = match model.label_position {
+          "ctr" => y + 4.0
+          "inBase" => y - 10.0
+          _ => y - 4.0
+        }
         svg.write_string(
           "<text x=\"" +
           x.to_string() +
           "\" y=\"" +
-          (y - 4.0).to_string() +
+          label_y.to_string() +
           "\" text-anchor=\"middle\" font-size=\"10\" fill=\"#000000\">" +
           xlsx_chart_text(label_text) +
           "</text>",
@@ -1229,10 +1247,16 @@ fn XlsxWorkbook::xlsx_chart_object(
         for character in label_text {
           advance += @sheet.sized_fallback_advance(character, false, 10.0)
         }
+        let label_y = match model.label_position {
+          "ctr" => plot_top + plot_height - bar_height / 2.0 + 3.0
+          "inEnd" => plot_top + plot_height - bar_height + 11.0
+          "inBase" => plot_top + plot_height - 3.0
+          _ => plot_top + plot_height - bar_height - 14.0
+        }
         label(
           label_text,
           left + slot * index.to_double() + slot * 0.5 - advance / 2.0,
-          plot_top + plot_height - bar_height - 14.0,
+          label_y,
           10.0,
           400,
         )
@@ -1356,7 +1380,12 @@ fn XlsxWorkbook::xlsx_chart_object(
         for character in label_text {
           advance += @sheet.sized_fallback_advance(character, false, 10.0)
         }
-        label(label_text, x - advance / 2.0, y - 14.0, 10.0, 400)
+        let label_y = match model.label_position {
+          "ctr" => y + 3.0
+          "inBase" => y - 11.0
+          _ => y - 14.0
+        }
+        label(label_text, x - advance / 2.0, label_y, 10.0, 400)
       }
     }
   }
