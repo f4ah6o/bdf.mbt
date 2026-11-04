@@ -10,6 +10,8 @@ priv struct DocxPlacedImage {
   y : Double
   width : Double
   height : Double
+  draw_width : Double
+  draw_height : Double
   anchored : Bool
 }
 
@@ -264,6 +266,10 @@ fn docx_layout_paragraph(
         } else {
           72.0
         }
+        let mut effect_left = item.effect_left
+        let mut effect_top = item.effect_top
+        let mut outer_width = image_width + effect_left + item.effect_right
+        let mut outer_height = image_height + effect_top + item.effect_bottom
         if item.anchored {
           anchors.push({
             item,
@@ -271,30 +277,39 @@ fn docx_layout_paragraph(
             y: item.y,
             width: image_width,
             height: image_height,
+            draw_width: image_width,
+            draw_height: image_height,
             anchored: true,
           })
         } else {
           let available = right - line_x
-          if image_width > available && (line_started || !current.is_empty()) {
+          if outer_width > available && (line_started || !current.is_empty()) {
             flush()
           }
           let available = right - line_x
-          if available > 0.0 && image_width > available {
-            image_height = image_height * available / image_width
-            image_width = available
+          if available > 0.0 && outer_width > available {
+            let scale = available / outer_width
+            image_width *= scale
+            image_height *= scale
+            effect_left *= scale
+            effect_top *= scale
+            outer_width = available
+            outer_height *= scale
           }
           current_images.push({
             item,
-            x: line_x,
-            y: 0.0,
-            width: image_width,
-            height: image_height,
+            x: line_x + effect_left,
+            y: effect_top,
+            width: outer_width,
+            height: outer_height,
+            draw_width: image_width,
+            draw_height: image_height,
             anchored: false,
           })
-          line_x += image_width
+          line_x += outer_width
           line_started = true
-          if image_height > line_natural {
-            line_natural = image_height
+          if outer_height > line_natural {
+            line_natural = outer_height
           }
         }
       }
@@ -612,9 +627,19 @@ fn docx_emit_placed_image(
   let item = image.item
   let dx = if image.anchored { image.x } else { x_origin + image.x }
   let dy = if image.anchored { image.y } else { y_origin + image.y }
+  let draw_width = if image.draw_width > 0.0 {
+    image.draw_width
+  } else {
+    image.width
+  }
+  let draw_height = if image.draw_height > 0.0 {
+    image.draw_height
+  } else {
+    image.height
+  }
   let transformed = item.rotation != 0.0 || item.flip_h || item.flip_v
-  let center_x = dx + image.width / 2.0
-  let center_y = dy + image.height / 2.0
+  let center_x = dx + draw_width / 2.0
+  let center_y = dy + draw_height / 2.0
   if transformed {
     object.save()
     object.translate(Float::from_double(center_x), Float::from_double(center_y))
@@ -658,8 +683,8 @@ fn docx_emit_placed_image(
     item,
     dx,
     dy,
-    image.width,
-    image.height,
+    draw_width,
+    draw_height,
     warnings,
   )
   if transformed {

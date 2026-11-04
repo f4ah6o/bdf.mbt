@@ -1284,6 +1284,20 @@ test "DOCX bookmark hyperlinks point at the bookmark page" {
   assert_true(found)
 }
 
+test "DOCX inline drawings keep effect extents outside the image" {
+  let drawing = "<w:r><w:drawing><wp:inline>" +
+    "<wp:extent cx=\"914400\" cy=\"914400\"/>" +
+    "<wp:effectExtent l=\"0\" t=\"0\" r=\"914400\" b=\"0\"/>" +
+    "<a:graphic><a:graphicData><pic:pic><pic:blipFill><a:blip r:embed=\"rIdImg\"/></pic:blipFill></pic:pic></a:graphicData></a:graphic>" +
+    "</wp:inline></w:drawing></w:r>"
+  let data = docx_test_float_docx("<w:p>" + drawing + "</w:p>")
+  let doc = docx_document_text(data)
+  let item = doc.paragraphs[0].items[0]
+  assert_eq(item.effect_right, 72.0)
+  assert_eq(item.draw_width, 72.0)
+  assert_eq(item.width, 72.0)
+}
+
 test "DOCX external hyperlinks become link commands" {
   let rels = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
     "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">" +

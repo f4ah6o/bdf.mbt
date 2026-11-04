@@ -35,6 +35,12 @@ priv struct DocxTextItem {
   props : DocxRunProps
   width : Double
   height : Double
+  draw_width : Double
+  draw_height : Double
+  effect_left : Double
+  effect_top : Double
+  effect_right : Double
+  effect_bottom : Double
   anchored : Bool
   anchor : DocxAnchor?
   x : Double
@@ -354,6 +360,12 @@ fn docx_text_push(
     props,
     width: 0.0,
     height: 0.0,
+    draw_width: 0.0,
+    draw_height: 0.0,
+    effect_left: 0.0,
+    effect_top: 0.0,
+    effect_right: 0.0,
+    effect_bottom: 0.0,
     anchored: false,
     anchor: None,
     x: 0.0,
@@ -648,6 +660,20 @@ fn docx_text_drawing(
       pending.push(sub)
     }
   }
+  let effect = container.child("effectExtent")
+  let mut effect_left = 0.0
+  let mut effect_top = 0.0
+  let mut effect_right = 0.0
+  let mut effect_bottom = 0.0
+  match effect {
+    Some(value) => {
+      effect_left = docx_emu(docx_attribute(value.element, "l", "0"))
+      effect_top = docx_emu(docx_attribute(value.element, "t", "0"))
+      effect_right = docx_emu(docx_attribute(value.element, "r", "0"))
+      effect_bottom = docx_emu(docx_attribute(value.element, "b", "0"))
+    }
+    None => ()
+  }
   let mut x = 0.0
   let mut y = 0.0
   let mut anchor : DocxAnchor? = None
@@ -664,6 +690,12 @@ fn docx_text_drawing(
     props,
     width,
     height,
+    draw_width: width,
+    draw_height: height,
+    effect_left,
+    effect_top,
+    effect_right,
+    effect_bottom,
     anchored,
     anchor,
     x,
@@ -1022,6 +1054,12 @@ fn docx_text_field(
     props,
     width: 0.0,
     height: 0.0,
+    draw_width: 0.0,
+    draw_height: 0.0,
+    effect_left: 0.0,
+    effect_top: 0.0,
+    effect_right: 0.0,
+    effect_bottom: 0.0,
     anchored: false,
     anchor: None,
     x: 0.0,
