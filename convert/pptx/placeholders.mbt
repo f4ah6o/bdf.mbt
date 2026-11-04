@@ -1,9 +1,10 @@
 ///|
 // Identity of a slide, layout, or master placeholder.
+#derive(Debug, Eq)
 priv struct PptxPlaceholder {
   kind : String
   index : String?
-} derive(Debug, Eq)
+}
 
 ///|
 fn pptx_master_placeholder_type(kind : String) -> String {
@@ -102,4 +103,83 @@ fn pptx_placeholders(
     }
   }
   result
+}
+
+///|
+// The p:ph element of a shape, or nil.
+fn pptx_placeholder_element(shape : PptxXmlNode) -> PptxXmlNode? {
+  for
+    name in ["nvSpPr", "nvPicPr", "nvGraphicFramePr", "nvGrpSpPr", "nvCxnSpPr"] {
+    match pptx_child(pptx_child(pptx_child(Some(shape), name), "nvPr"), "ph") {
+      Some(value) => return Some(value)
+      None => ()
+    }
+  }
+  None
+}
+
+///|
+// The placeholder identity of a shape, or nil when it is not a placeholder.
+fn pptx_placeholder_info(shape : PptxXmlNode) -> PptxPlaceholder? {
+  match pptx_placeholder_element(shape) {
+    Some(value) =>
+      Some({
+        kind: pptx_attribute(value.element, "type", "obj"),
+        index: pptx_placeholder_attribute(value.element, "idx"),
+      })
+    None => None
+  }
+}
+
+///|
+// The direct placeholder shapes of a layout or master, in tree order.
+fn pptx_placeholder_shapes(root : PptxXmlNode) -> Array[PptxXmlNode] {
+  let out : Array[PptxXmlNode] = []
+  let tree = pptx_child(pptx_child(Some(root), "cSld"), "spTree")
+  for shape in pptx_children(tree) {
+    if pptx_placeholder_element(shape) is Some(_) {
+      out.push(shape)
+    }
+  }
+  out
+}
+
+///|
+// Find the layout or master placeholder a placeholder inherits from.
+fn pptx_find_placeholder_shape(
+  list : Array[PptxXmlNode],
+  placeholder : PptxPlaceholder,
+  master : Bool,
+) -> PptxXmlNode? {
+  for i in 0..<list.length() {
+    match pptx_placeholder_info(list[i]) {
+      Some(info) => {
+        // match an entry of the list against the identity of placeholder
+        let matches = if master {
+          info.kind == pptx_master_placeholder_type(placeholder.kind)
+        } else {
+          match placeholder.index {
+            Some(index) => info.index == Some(index)
+            None => info.kind == placeholder.kind
+          }
+        }
+        if matches {
+          return Some(list[i])
+        }
+      }
+      None => ()
+    }
+  }
+  if !master && (placeholder.kind == "title" || placeholder.kind == "ctrTitle") {
+    for shape in list {
+      match pptx_placeholder_info(shape) {
+        Some(info) =>
+          if info.kind == "title" || info.kind == "ctrTitle" {
+            return Some(shape)
+          }
+        None => ()
+      }
+    }
+  }
+  None
 }

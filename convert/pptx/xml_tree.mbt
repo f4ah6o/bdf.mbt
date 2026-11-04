@@ -74,17 +74,31 @@ fn pptx_resolve_children(
       .has_suffix("markup-compatibility/2006") {
       let mut fallback : PptxXmlNode? = None
       let mut choice : PptxXmlNode? = None
+      let mut math_choice : PptxXmlNode? = None
       for branch in child.children {
         if branch.element.name.local_name == "Fallback" && fallback is None {
           fallback = Some(branch)
         }
-        if branch.element.name.local_name == "Choice" && choice is None {
-          choice = Some(branch)
+        if branch.element.name.local_name == "Choice" {
+          // Office Math is laid out from its formula, not drawn from the
+          // picture of its fallback (see ooxml.MathChoice upstream).
+          if math_choice is None &&
+            pptx_attribute(branch.element, "Requires", "") == "a14" &&
+            pptx_contains_office_math(branch) {
+            math_choice = Some(branch)
+          }
+          if choice is None {
+            choice = Some(branch)
+          }
         }
       }
-      let selected = match fallback {
+      let selected = match math_choice {
         Some(value) => Some(value)
-        None => choice
+        None =>
+          match fallback {
+            Some(value) => Some(value)
+            None => choice
+          }
       }
       match selected {
         Some(value) => {
@@ -129,4 +143,22 @@ fn pptx_read_xml(
 ) -> PptxXmlNode raise {
   let data = package.read(part)
   pptx_parse_xml(@utf8.decode_lossy(data[:], ignore_bom=true))
+}
+
+///|
+// Whether a subtree holds an Office Math (a14:m) element.
+fn pptx_contains_office_math(node : PptxXmlNode) -> Bool {
+  for child in node.children {
+    if child.element.name.local_name == "m" &&
+      (match child.element.name.namespace_uri {
+        Some(uri) => uri.has_suffix("office/drawing/2010/main")
+        None => false
+      }) {
+      return true
+    }
+    if pptx_contains_office_math(child) {
+      return true
+    }
+  }
+  false
 }

@@ -11,13 +11,15 @@ priv struct PptxPresentation {
   height : Double
   first_slide : Int64
   slides : Array[PptxSlide]
+  default_text_style : PptxXmlNode?
 }
 
 ///|
+#derive(Debug, Eq)
 priv struct PptxSlide {
   part : String
   hidden : Bool
-} derive(Debug, Eq)
+}
 
 ///|
 fn pptx_attribute(
@@ -145,5 +147,6 @@ fn pptx_presentation(data : Bytes) -> PptxPresentation raise {
   } else {
     (width, height)
   }
-  { part, width, height, first_slide, slides, }
+  let default_text_style = pptx_child(Some(root), "defaultTextStyle")
+  { part, width, height, first_slide, slides, default_text_style, }
 }

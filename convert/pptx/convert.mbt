@@ -237,6 +237,27 @@ fn pptx_theme_colors(package : @ooxml.OoxmlPackage) -> Map[String, UInt32] {
       None => ()
     }
   }
+  // The names a color scheme maps to (bg1 …) are the ones the parts use.
+  for
+    (alias, source) in [
+      ("bg1", "lt1"),
+      ("tx1", "dk1"),
+      ("bg2", "lt2"),
+      ("tx2", "dk2"),
+      ("accent1", "accent1"),
+      ("accent2", "accent2"),
+      ("accent3", "accent3"),
+      ("accent4", "accent4"),
+      ("accent5", "accent5"),
+      ("accent6", "accent6"),
+    ] {
+    if !colors.contains(alias) {
+      match colors.get(source) {
+        Some(value) => colors[alias] = value
+        None => ()
+      }
+    }
+  }
   colors
 }
 
@@ -625,21 +646,22 @@ fn pptx_group_placement(shape : PptxXmlNode) -> PptxPlacement {
     Some(value) => pptx_measure(pptx_attribute(value.element, "cy", ""), 0.0)
     None => 0.0
   }
+  // Without chOff/chExt the child rectangle is the group's own box.
   let ch_x = match ch_off {
-    Some(value) => pptx_measure(pptx_attribute(value.element, "x", ""), 0.0)
-    None => 0.0
+    Some(value) => pptx_measure(pptx_attribute(value.element, "x", ""), off_x)
+    None => off_x
   }
   let ch_y = match ch_off {
-    Some(value) => pptx_measure(pptx_attribute(value.element, "y", ""), 0.0)
-    None => 0.0
+    Some(value) => pptx_measure(pptx_attribute(value.element, "y", ""), off_y)
+    None => off_y
   }
   let ch_w = match ch_ext {
-    Some(value) => pptx_measure(pptx_attribute(value.element, "cx", ""), 0.0)
-    None => 0.0
+    Some(value) => pptx_measure(pptx_attribute(value.element, "cx", ""), ext_x)
+    None => ext_x
   }
   let ch_h = match ch_ext {
-    Some(value) => pptx_measure(pptx_attribute(value.element, "cy", ""), 0.0)
-    None => 0.0
+    Some(value) => pptx_measure(pptx_attribute(value.element, "cy", ""), ext_y)
+    None => ext_y
   }
   let sx = if ch_w > 0.0 && ext_x > 0.0 { ext_x / ch_w } else { 1.0 }
   let sy = if ch_h > 0.0 && ext_y > 0.0 { ext_y / ch_h } else { 1.0 }
@@ -910,7 +932,7 @@ fn pptx_cell_text_size(cell : PptxXmlNode) -> Double {
       }
     }
   }
-  12.0
+  18.0
 }
 
 ///|
@@ -1240,36 +1262,78 @@ fn pptx_emit_table(
       let text = pptx_cell_text(cell)
       if text != "" {
         let size = pptx_cell_text_size(cell)
-        let cell_font = object.add_font({
-          hash: None,
-          family: minor,
-          weight: pptx_cell_bold(cell),
-          style: pptx_cell_italic(cell),
-        })
-        object.font(cell_font, Float::from_double(size))
-        object.fill_color(pptx_cell_color(cell, theme))
-        let advance = pptx_text_width(text, size)
+        let bold = pptx_cell_bold(cell)
+        let italic = pptx_cell_italic(cell)
+        let color = pptx_cell_color(cell, theme)
         let margin_left = pptx_cell_margin(cell, "marL", 7.2)
         let margin_right = pptx_cell_margin(cell, "marR", 7.2)
         let margin_top = pptx_cell_margin(cell, "marT", 3.6)
         let margin_bottom = pptx_cell_margin(cell, "marB", 3.6)
-        let inner = column_width - margin_left - margin_right
-        let text_x = match pptx_cell_alignment(cell) {
-          "center" => cell_x + margin_left + (inner - advance) / 2.0
-          "right" => cell_x + column_width - margin_right - advance
-          _ => cell_x + margin_left
+        let inner = Double::max(1.0, column_width - margin_left - margin_right)
+        let align = match pptx_cell_alignment(cell) {
+          "center" => 1
+          "right" => 2
+          _ => 0
         }
-        let text_y = match pptx_cell_vertical_anchor(cell) {
-          "center" => text_top + row_height / 2.0 + size * 0.35
-          "bottom" => text_top + row_height - margin_bottom
-          _ => text_top + margin_top + 12.0
+        let props : PptxParagraphProps = {
+          level: 0,
+          align,
+          mar_l: 0.0,
+          indent: 0.0,
+          ln_pct: 1.0,
+          ln_pts: 0.0,
+          bef_pct: 0.0,
+          bef_pts: 0.0,
+          aft_pct: 0.0,
+          aft_pts: 0.0,
         }
-        object.fill_text(
-          text,
-          Float::from_double(text_x),
-          Float::from_double(text_y),
-          Float::from_double(advance),
+        let chars = pptx_char_to_styled(text, minor, bold, italic, size, color)
+        let layout = pptx_layout_paragraph(
+          chars, props, "", 0.0, minor, bold, italic, color, inner,
         )
+        let mut total = 0.0
+        for line in layout.lines {
+          total += line.height
+        }
+        let mut text_y = match pptx_cell_vertical_anchor(cell) {
+          "center" => text_top + (row_height - total) / 2.0
+          "bottom" => text_top + row_height - margin_bottom - total
+          _ => text_top + margin_top
+        }
+        object.mark(0, "")
+        let mut previous_wrap : Byte = 1
+        for i, line in layout.lines {
+          if i > 0 {
+            object.mark(previous_wrap, "")
+          }
+          previous_wrap = line.wrap
+          let mut offset = 0.0
+          match align {
+            1 => offset = Double::max(0.0, (inner - line.width) / 2.0)
+            2 => offset = Double::max(0.0, inner - line.width)
+            _ => ()
+          }
+          let baseline = text_y + line.height - line.max_size * 0.2
+          for item in line.items {
+            let font = object.add_font({
+              hash: None,
+              family: item.family,
+              weight: item.weight,
+              style: item.style,
+            })
+            object.font(font, Float::from_double(item.size))
+            object.fill_color(item.color)
+            object.fill_text(
+              item.text,
+              Float::from_double(
+                cell_x + margin_left + offset + line.start + item.x,
+              ),
+              Float::from_double(baseline),
+              Float::from_double(item.advance),
+            )
+          }
+          text_y += line.height
+        }
       }
       cell_x += column_width
       cell_index += span.to_double()
@@ -1489,6 +1553,86 @@ fn pptx_pie_path(
 }
 
 ///|
+priv struct PptxChartSeries {
+  name : String
+  categories : Array[String]
+  values : Array[Double]
+  color : UInt32
+}
+
+///|
+fn pptx_chart_series_name(series : PptxXmlNode) -> String {
+  let names = pptx_chart_values(Some(series), "tx")
+  if names.is_empty() {
+    ""
+  } else {
+    names[0]
+  }
+}
+
+///|
+fn pptx_chart_nice_axis(
+  maximum : Double,
+  axis_length : Double,
+) -> (Double, Double) {
+  if maximum <= 0.0 {
+    return (1.0, 1.0)
+  }
+  let mut max_steps = (axis_length / 40.0 + 0.5).to_int()
+  if max_steps < 2 {
+    max_steps = 2
+  }
+  if max_steps > 10 {
+    max_steps = 10
+  }
+  let mut hi = maximum * 1.05
+  let mut step = 1.0
+  let magnitude = @math.pow(
+    10.0,
+    @math.log10(hi / max_steps.to_double()).floor(),
+  )
+  for multiplier in [1.0, 2.0, 5.0, 10.0, 20.0, 50.0] {
+    step = multiplier * magnitude
+    if @math.ceil(hi / step - 1.0e-9) <= max_steps.to_double() {
+      break
+    }
+  }
+  hi = @math.ceil(hi / step - 1.0e-9) * step
+  (step, hi)
+}
+
+///|
+fn pptx_chart_tick_text(value : Double) -> String {
+  if (value - value.round()).abs() < 1.0e-9 {
+    value.to_int().to_string()
+  } else {
+    let rounded = (value * 10.0 + 0.5).to_int().to_double() / 10.0
+    rounded.to_string()
+  }
+}
+
+///|
+fn pptx_chart_label(
+  object : @core.ObjectBuilder,
+  font : Int32,
+  size : Double,
+  color : UInt32,
+  text : String,
+  x : Double,
+  y : Double,
+) -> Unit raise {
+  object.mark(0, "")
+  object.font(font, Float::from_double(size))
+  object.fill_color(color)
+  object.fill_text(
+    text,
+    Float::from_double(x),
+    Float::from_double(y),
+    Float::from_double(pptx_text_width(text, size)),
+  )
+}
+
+///|
 fn pptx_emit_chart(
   shape : PptxXmlNode,
   package : @ooxml.OoxmlPackage,
@@ -1525,61 +1669,159 @@ fn pptx_emit_chart(
     _ => raise PptxInvalid("PPTX chart part is missing")
   }
   let root = pptx_parse_xml(@utf8.decode_lossy(root[:], ignore_bom=true))
-  let plot_area = pptx_child(pptx_child(Some(root), "chart"), "plotArea")
+  let chart_space = pptx_child(Some(root), "chart")
+  let plot_area = pptx_child(chart_space, "plotArea")
   let bar = pptx_child(plot_area, "barChart")
   let line_chart = pptx_child(plot_area, "lineChart")
   let pie_chart = pptx_child(plot_area, "pieChart")
-  let is_line = bar is None && line_chart is Some(_)
-  let is_pie = bar is None && line_chart is None && pie_chart is Some(_)
   let chart = match bar {
-    Some(value) => Some(value)
+    Some(value) => value
     None =>
       match line_chart {
-        Some(value) => Some(value)
-        None => pie_chart
+        Some(value) => value
+        None =>
+          match pie_chart {
+            Some(value) => value
+            None => return
+          }
       }
   }
-  let series = pptx_children(chart)
-  let values : Array[Double] = []
-  let categories : Array[String] = []
-  let mut fill = 0x4472c4ffU
-  for item in series {
+  let kind = chart.element.name.local_name
+  let is_bar = kind == "barChart"
+  let is_pie = kind == "pieChart"
+  let horizontal = is_bar &&
+    (match pptx_child(Some(chart), "barDir") {
+      Some(value) => pptx_attribute(value.element, "val", "col") == "bar"
+      None => false
+    })
+  let stacked = is_bar &&
+    (match pptx_child(Some(chart), "grouping") {
+      Some(value) =>
+        pptx_attribute(value.element, "val", "clustered") == "stacked"
+      None => false
+    })
+  let palette = [
+    0x4472c4ffU, 0xed7d31ffU, 0xa5a5a5ffU, 0xffc000ffU, 0x5b9bd5ffU, 0x70ad47ffU,
+  ]
+  let series : Array[PptxChartSeries] = []
+  for item in pptx_children(Some(chart)) {
     if item.element.name.local_name != "ser" {
       continue
     }
+    let values : Array[Double] = []
     for value in pptx_chart_values(Some(item), "val") {
       values.push(@string.parse_double(value) catch { _ => 0.0 })
     }
-    for value in pptx_chart_values(Some(item), "cat") {
-      categories.push(value)
+    let categories = pptx_chart_values(Some(item), "cat")
+    let color = match
+      pptx_node_color(pptx_child(Some(item), "spPr"), "solidFill", theme) {
+      Some(value) => value
+      None => palette[series.length() % palette.length()]
     }
-    match pptx_node_color(pptx_child(Some(item), "spPr"), "solidFill", theme) {
-      Some(color) => fill = color
-      None => ()
-    }
-    break
+    series.push({
+      name: pptx_chart_series_name(item),
+      categories,
+      values,
+      color,
+    })
   }
-  if values.is_empty() {
+  if series.is_empty() {
     return
   }
-  let mut maximum = 0.0
-  for value in values {
-    maximum = Double::max(maximum, value)
+  let (_, minor) = fonts
+  let label_font = object.add_font({
+    hash: None,
+    family: minor,
+    weight: 400,
+    style: 0,
+  })
+  let label_size = 8.0
+  let black = 0x000000ffU
+  // chart title: Office titles a one-series chart with the series name
+  let title = match pptx_child(chart_space, "title") {
+    Some(_) => ""
+    None =>
+      if series.length() == 1 && series[0].name != "" {
+        series[0].name
+      } else {
+        ""
+      }
   }
-  if maximum <= 0.0 {
-    return
+  let plot_x = x + 20.0
+  let mut plot_y = y + 20.0
+  let mut plot_width = Double::max(1.0, width - 40.0)
+  let mut plot_height = Double::max(1.0, height - 40.0)
+  if title != "" {
+    pptx_chart_label(
+      object,
+      label_font,
+      10.0,
+      black,
+      title,
+      x + width / 2.0 - pptx_text_width(title, 10.0) / 2.0,
+      y + 12.0,
+    )
+    plot_y += 16.0
+    plot_height = Double::max(1.0, plot_height - 16.0)
+  }
+  // legend
+  let legend = pptx_child(chart_space, "legend")
+  if legend is Some(_) {
+    let entries : Array[String] = []
+    if is_pie {
+      for category in series[0].categories {
+        entries.push(category)
+      }
+    } else {
+      for item in series {
+        entries.push(item.name)
+      }
+    }
+    let position = match pptx_child(legend, "legendPos") {
+      Some(value) => pptx_attribute(value.element, "val", "r")
+      None => "r"
+    }
+    if ["b", "t"].contains(position) {
+      let width_sum = entries.fold(init=0.0, (sum, value) => {
+        sum + pptx_text_width(value, label_size) + 18.0
+      })
+      let mut legend_x = x + (width - width_sum) / 2.0
+      let legend_y = if position == "b" { y + height - 8.0 } else { y + 12.0 }
+      for entry in entries {
+        pptx_chart_label(
+          object, label_font, label_size, black, entry, legend_x, legend_y,
+        )
+        legend_x += pptx_text_width(entry, label_size) + 18.0
+      }
+      if position == "b" {
+        plot_height = Double::max(1.0, plot_height - 12.0)
+      }
+    } else {
+      let mut legend_y = plot_y + 4.0
+      for entry in entries {
+        pptx_chart_label(
+          object,
+          label_font,
+          label_size,
+          black,
+          entry,
+          x + width - 60.0,
+          legend_y,
+        )
+        legend_y += 12.0
+      }
+      plot_width = Double::max(1.0, plot_width - 64.0)
+    }
   }
   if is_pie {
+    let values = series[0].values
     let total = values.fold(init=0.0, (sum, value) => sum + value)
     if total <= 0.0 {
       return
     }
     let cx = x + width / 2.0
-    let cy = y + height / 2.0
-    let radius = Double::min(width, height) / 2.0 - 20.0
-    let palette = [
-      0x4472c4ffU, 0xed7d31ffU, 0xa5a5a5ffU, 0xffc000ffU, 0x5b9bd5ffU,
-    ]
+    let cy = y + height / 2.0 + 8.0
+    let radius = Double::min(width, height) / 2.0 - 24.0
     let mut start = -3.141592653589793 / 2.0
     for index, value in values {
       let sweep = 2.0 * 3.141592653589793 * value / total
@@ -1588,79 +1830,239 @@ fn pptx_emit_chart(
       )
       object.fill_color(palette[index % palette.length()])
       object.fill_path(path, 0)
+      let mid = start + sweep / 2.0
+      let label = (value / total * 100.0 + 0.5).to_int().to_string() + "%"
+      let label_width = pptx_text_width(label, label_size)
+      pptx_chart_label(
+        object,
+        label_font,
+        label_size,
+        black,
+        label,
+        cx + @math.cos(mid) * radius * 0.7 - label_width / 2.0,
+        cy + @math.sin(mid) * radius * 0.7,
+      )
       start += sweep
     }
     return
   }
-  let left = x + 20.0
-  let top = y + 20.0
-  let plot_width = Double::max(1.0, width - 40.0)
-  let plot_height = Double::max(1.0, height - 40.0)
-  let baseline = top + plot_height
-  object.line(1.0F, 0, 0, 8.0F)
-  object.stroke_color(0x000000ffU)
-  object.stroke_rect(
-    Float::from_double(left),
-    Float::from_double(top),
-    Float::from_double(plot_width),
-    Float::from_double(plot_height),
-  )
-  object.fill_color(fill)
-  let slot = plot_width / values.length().to_double()
-  let bar_width = slot * 0.6
-  if is_line {
-    let path = object.add_path(
-      @core.Inline(
-        pptx_line_path(values, maximum, left, top, plot_width, plot_height),
-      ),
-    )
-    object.line(2.0F, 0, 0, 8.0F)
-    object.stroke_color(fill)
-    object.stroke_path(path)
-    object.fill_color(fill)
-    let count = values.length().to_double()
-    for index, value in values {
-      let x = if count <= 1.0 {
-        left + plot_width / 2.0
-      } else {
-        left + plot_width * index.to_double() / (count - 1.0)
+  let categories = series[0].categories
+  let count = Double::max(1.0, categories.length().to_double())
+  let slot = if horizontal { plot_height / count } else { plot_width / count }
+  let mut maximum = 0.0
+  if stacked {
+    for index in 0..<categories.length() {
+      let mut sum = 0.0
+      for item in series {
+        if index < item.values.length() {
+          sum += item.values[index]
+        }
       }
-      let y = baseline - plot_height * value / maximum
-      object.fill_rect(
-        Float::from_double(x - 2.0),
-        Float::from_double(y - 2.0),
-        4.0,
-        4.0,
-      )
+      maximum = Double::max(maximum, sum)
     }
   } else {
-    for index, value in values {
-      let bar_height = plot_height * value / maximum
-      object.fill_rect(
-        Float::from_double(left + slot * index.to_double() + slot * 0.2),
-        Float::from_double(baseline - bar_height),
-        Float::from_double(bar_width),
-        Float::from_double(bar_height),
+    for item in series {
+      for value in item.values {
+        maximum = Double::max(maximum, value)
+      }
+    }
+  }
+  let (step, axis_high) = pptx_chart_nice_axis(
+    maximum,
+    if horizontal {
+      plot_width
+    } else {
+      plot_height
+    },
+  )
+  // value axis labels
+  let value_axis_visible = match pptx_child(plot_area, "valAx") {
+    Some(value) =>
+      pptx_attribute(value.element, "delete", "0") != "1" &&
+      (match pptx_child(Some(value), "tickLblPos") {
+        Some(position) =>
+          pptx_attribute(position.element, "val", "nextTo") != "none"
+        None => true
+      })
+    None => false
+  }
+  let mut tick = 0.0
+  while value_axis_visible && tick <= axis_high + step * 1.0e-6 {
+    let text = pptx_chart_tick_text(tick)
+    if horizontal {
+      pptx_chart_label(
+        object,
+        label_font,
+        label_size,
+        black,
+        text,
+        plot_x + plot_width * tick / axis_high - 6.0,
+        y + height - 6.0,
+      )
+    } else {
+      let label_width = pptx_text_width(text, label_size)
+      pptx_chart_label(
+        object,
+        label_font,
+        label_size,
+        black,
+        text,
+        plot_x - label_width - 4.0,
+        plot_y + plot_height - plot_height * tick / axis_high,
+      )
+    }
+    tick += step
+  }
+  // category labels
+  for index, category in categories {
+    if horizontal {
+      let label_width = pptx_text_width(category, label_size)
+      pptx_chart_label(
+        object,
+        label_font,
+        label_size,
+        black,
+        category,
+        plot_x - label_width - 4.0,
+        plot_y + slot * index.to_double() + slot / 2.0,
+      )
+    } else {
+      let label_width = pptx_text_width(category, label_size)
+      pptx_chart_label(
+        object,
+        label_font,
+        label_size,
+        black,
+        category,
+        plot_x + slot * index.to_double() + (slot - label_width) / 2.0,
+        y + height - 4.0,
       )
     }
   }
-  if !categories.is_empty() {
-    let (_, minor) = fonts
-    let font = object.add_font({
-      hash: None,
-      family: minor,
-      weight: 400,
-      style: 0,
-    })
-    object.font(font, 8.0F)
-    object.fill_color(0x000000ffU)
-    for index in 0..<Int32::min(categories.length(), values.length()) {
-      object.fill_text(
-        categories[index],
-        Float::from_double(left + slot * index.to_double()),
-        Float::from_double(baseline + 10.0),
-        Float::from_double(pptx_text_width(categories[index], 8.0)),
+  object.line(1.0F, 0, 0, 8.0F)
+  object.stroke_color(0xbfbfbffFU)
+  object.stroke_rect(
+    Float::from_double(plot_x),
+    Float::from_double(plot_y),
+    Float::from_double(plot_width),
+    Float::from_double(plot_height),
+  )
+  let series_count = series.length().to_double()
+  if horizontal {
+    if stacked {
+      for index in 0..<categories.length() {
+        let mut used = 0.0
+        for item in series {
+          if index < item.values.length() {
+            let bar_width = plot_width * item.values[index] / axis_high
+            object.fill_color(item.color)
+            object.fill_rect(
+              Float::from_double(plot_x + plot_width * used / axis_high),
+              Float::from_double(plot_y + slot * index.to_double() + slot * 0.1),
+              Float::from_double(bar_width),
+              Float::from_double(slot * 0.8),
+            )
+            used += item.values[index]
+          }
+        }
+      }
+    } else {
+      for index in 0..<categories.length() {
+        let sub_slot = slot / series_count
+        for s, item in series {
+          if index < item.values.length() {
+            object.fill_color(item.color)
+            object.fill_rect(
+              Float::from_double(plot_x),
+              Float::from_double(
+                plot_y +
+                slot * index.to_double() +
+                sub_slot * s.to_double() +
+                sub_slot * 0.1,
+              ),
+              Float::from_double(plot_width * item.values[index] / axis_high),
+              Float::from_double(sub_slot * 0.8),
+            )
+          }
+        }
+      }
+    }
+  } else if stacked {
+    for index in 0..<categories.length() {
+      let mut used = 0.0
+      for item in series {
+        if index < item.values.length() {
+          let bar_height = plot_height * item.values[index] / axis_high
+          object.fill_color(item.color)
+          object.fill_rect(
+            Float::from_double(plot_x + slot * index.to_double() + slot * 0.1),
+            Float::from_double(
+              plot_y + plot_height - plot_height * used / axis_high - bar_height,
+            ),
+            Float::from_double(slot * 0.8),
+            Float::from_double(bar_height),
+          )
+          used += item.values[index]
+        }
+      }
+    }
+  } else if line_chart is Some(_) {
+    for item in series {
+      if item.values.is_empty() {
+        continue
+      }
+      let path = object.add_path(
+        @core.Inline(
+          pptx_line_path(
+            item.values,
+            axis_high,
+            plot_x,
+            plot_y,
+            plot_width,
+            plot_height,
+          ),
+        ),
       )
+      object.line(2.0F, 0, 0, 8.0F)
+      object.stroke_color(item.color)
+      object.stroke_path(path)
+      object.fill_color(item.color)
+      let value_count = item.values.length().to_double()
+      for index, value in item.values {
+        let px = if value_count <= 1.0 {
+          plot_x + plot_width / 2.0
+        } else {
+          plot_x + plot_width * index.to_double() / (value_count - 1.0)
+        }
+        let py = plot_y + plot_height - plot_height * value / axis_high
+        object.fill_rect(
+          Float::from_double(px - 2.0),
+          Float::from_double(py - 2.0),
+          4.0,
+          4.0,
+        )
+      }
+    }
+  } else {
+    let sub_slot = slot / series_count
+    for index in 0..<categories.length() {
+      for s, item in series {
+        if index < item.values.length() {
+          let bar_height = plot_height * item.values[index] / axis_high
+          object.fill_color(item.color)
+          object.fill_rect(
+            Float::from_double(
+              plot_x +
+              slot * index.to_double() +
+              sub_slot * s.to_double() +
+              sub_slot * 0.1,
+            ),
+            Float::from_double(plot_y + plot_height - bar_height),
+            Float::from_double(sub_slot * 0.8),
+            Float::from_double(bar_height),
+          )
+        }
+      }
     }
   }
 }
@@ -1722,844 +2124,6 @@ fn pptx_picture_alpha(shape : PptxXmlNode) -> Double? {
 }
 
 ///|
-fn pptx_render_slide(
-  package : @ooxml.OoxmlPackage,
-  part : String,
-  width : Double,
-  height : Double,
-  writer : @core.DocumentWriter,
-  theme : Map[String, UInt32],
-  theme_fonts : (String, String),
-  page_index : Int32,
-  index_runs : Array[@core.IndexRun],
-  index_budget : @render.TextExtractionBudget,
-) -> Json raise {
-  let object = @core.ObjectBuilder::new()
-  let fonts : Map[String, Int32] = Map([])
-  let root = pptx_read_xml(package, part)
-  let mut layout_root : PptxXmlNode? = None
-  let mut master_root : PptxXmlNode? = None
-  match (Some(pptx_slide_context(package, part)) catch { _ => None }) {
-    Some(context) => {
-      if context.draw_master && context.master_part != "" {
-        master_root = Some(pptx_read_xml(package, context.master_part))
-      }
-      if context.draw_layout && context.layout_part != "" {
-        layout_root = Some(pptx_read_xml(package, context.layout_part))
-      }
-    }
-    None => ()
-  }
-  let mut background = pptx_node_color(
-    pptx_child(pptx_child(pptx_child(Some(root), "cSld"), "bg"), "bgPr"),
-    "solidFill",
-    theme,
-  )
-  if background is None && layout_root is Some(value) {
-    background = pptx_node_color(
-      pptx_child(pptx_child(pptx_child(Some(value), "cSld"), "bg"), "bgPr"),
-      "solidFill",
-      theme,
-    )
-  }
-  if background is None && master_root is Some(value) {
-    background = pptx_node_color(
-      pptx_child(pptx_child(pptx_child(Some(value), "cSld"), "bg"), "bgPr"),
-      "solidFill",
-      theme,
-    )
-  }
-  let mut background_gradient = pptx_child(
-    pptx_child(pptx_child(pptx_child(Some(root), "cSld"), "bg"), "bgPr"),
-    "gradFill",
-  )
-  if background_gradient is None && layout_root is Some(value) {
-    background_gradient = pptx_child(
-      pptx_child(pptx_child(pptx_child(Some(value), "cSld"), "bg"), "bgPr"),
-      "gradFill",
-    )
-  }
-  if background_gradient is None && master_root is Some(value) {
-    background_gradient = pptx_child(
-      pptx_child(pptx_child(pptx_child(Some(value), "cSld"), "bg"), "bgPr"),
-      "gradFill",
-    )
-  }
-  let mut background_image = false
-  let slide_bg_pr = pptx_child(
-    pptx_child(pptx_child(Some(root), "cSld"), "bg"),
-    "bgPr",
-  )
-  let background_blip = pptx_child(pptx_child(slide_bg_pr, "blipFill"), "blip")
-  match background_blip {
-    Some(blip) => {
-      let embed = pptx_attribute_any(blip.element, "embed", "")
-      if embed != "" {
-        let mut target = ""
-        for rel in package.relationships(part) {
-          if rel.id == embed {
-            target = rel.target
-          }
-        }
-        if target != "" {
-          let bytes = package.read(target) catch { _ => b"" }
-          if bytes.length() > 0 {
-            let hash = writer.add_part("img", bytes)
-            let index = object.add_image(hash)
-            object.image(
-              index,
-              0.0,
-              0.0,
-              Float::from_double(width),
-              Float::from_double(height),
-            )
-            background_image = true
-          }
-        }
-      }
-    }
-    None => ()
-  }
-  if !background_image {
-    match background {
-      Some(color) => {
-        object.fill_color(color)
-        object.fill_rect(
-          0.0,
-          0.0,
-          Float::from_double(width),
-          Float::from_double(height),
-        )
-      }
-      None =>
-        match
-          pptx_gradient_node(
-            background_gradient, 0.0, 0.0, width, height, theme,
-          ) {
-          Some(paint) => {
-            object.fill_paint(object.add_paint(paint))
-            object.fill_rect(
-              0.0,
-              0.0,
-              Float::from_double(width),
-              Float::from_double(height),
-            )
-          }
-          None => ()
-        }
-    }
-  }
-  let roots : Array[PptxXmlNode] = []
-  match master_root {
-    Some(value) => roots.push(value)
-    None => ()
-  }
-  match layout_root {
-    Some(value) => roots.push(value)
-    None => ()
-  }
-  roots.push(root)
-  let layout_placeholders = match layout_root {
-    Some(value) => pptx_placeholder_transforms(value)
-    None => Map([])
-  }
-  let master_placeholders = match master_root {
-    Some(value) => pptx_placeholder_transforms(value)
-    None => Map([])
-  }
-  let layout_defaults = match layout_root {
-    Some(value) => pptx_placeholder_defaults(value, theme)
-    None => Map([])
-  }
-  let master_defaults = match master_root {
-    Some(value) => pptx_placeholder_defaults(value, theme)
-    None => Map([])
-  }
-  let shapes : Array[(PptxXmlNode, PptxPlacement)] = []
-  let root_placement : PptxPlacement = {
-    sx: 1.0,
-    sy: 1.0,
-    tx: 0.0,
-    ty: 0.0,
-    rotation: 0.0,
-    cx: 0.0,
-    cy: 0.0,
-  }
-  for index in 0..<roots.length() {
-    let tree = pptx_child(pptx_child(Some(roots[index]), "cSld"), "spTree")
-    match tree {
-      Some(value) =>
-        pptx_collect_shapes(
-          value,
-          root_placement,
-          index + 1 < roots.length(),
-          shapes,
-        )
-      None => ()
-    }
-  }
-  for shape_entry in shapes {
-    let (shape, placement) = shape_entry
-    let mut transform = if shape.element.name.local_name == "graphicFrame" {
-      pptx_transform_node(pptx_child(Some(shape), "xfrm"))
-    } else {
-      pptx_transform_node(pptx_child(pptx_child(Some(shape), "spPr"), "xfrm"))
-    }
-    if transform is None {
-      match pptx_placeholder_key(shape) {
-        Some(key) =>
-          match layout_placeholders.get(key) {
-            Some(value) => transform = Some(value)
-            None =>
-              match master_placeholders.get(key) {
-                Some(value) => transform = Some(value)
-                None => ()
-              }
-          }
-        None => ()
-      }
-    }
-    let transform = match transform {
-      Some(value) => value
-      None => continue
-    }
-    let mut inherited : PptxPlaceholderDefaults? = None
-    match pptx_placeholder_key(shape) {
-      Some(key) =>
-        match layout_defaults.get(key) {
-          Some(value) => inherited = Some(value)
-          None =>
-            match master_defaults.get(key) {
-              Some(value) => inherited = Some(value)
-              None => ()
-            }
-        }
-      None => ()
-    }
-    let draw_width = transform.width * placement.sx
-    let draw_height = transform.height * placement.sy
-    if draw_width <= 0.0 || draw_height <= 0.0 {
-      continue
-    }
-    let shape_x = placement.tx + transform.x * placement.sx
-    let shape_y = placement.ty + transform.y * placement.sy
-    if shape.element.name.local_name == "graphicFrame" {
-      if pptx_table_lines(shape).is_empty() {
-        pptx_emit_chart(
-          shape, package, part, object, shape_x, shape_y, draw_width, draw_height,
-          theme, theme_fonts,
-        )
-      } else {
-        pptx_emit_table(
-          shape, object, shape_x, shape_y, draw_width, theme, theme_fonts,
-        )
-      }
-      continue
-    }
-    if shape.element.name.local_name == "pic" {
-      let blip = pptx_child(pptx_child(Some(shape), "blipFill"), "blip")
-      let embed = match blip {
-        Some(value) => pptx_attribute_any(value.element, "embed", "")
-        None => ""
-      }
-      if embed == "" {
-        raise PptxInvalid("PPTX picture has no embedded image")
-      }
-      let mut target = ""
-      let mut external = false
-      for rel in package.relationships(part) {
-        if rel.id == embed {
-          target = rel.target
-          external = rel.external
-        }
-      }
-      if target == "" || external {
-        raise PptxInvalid("PPTX picture relationship is missing")
-      }
-      let bytes = package.read(target) catch {
-        _ => raise PptxInvalid("PPTX picture part is missing")
-      }
-      let pic_rotation = transform.rotation + placement.rotation
-      let pic_transformed = pic_rotation != 0.0 ||
-        transform.flip_h ||
-        transform.flip_v
-      let pic_cx = if placement.rotation != 0.0 {
-        placement.cx
-      } else {
-        shape_x + draw_width / 2.0
-      }
-      let pic_cy = if placement.rotation != 0.0 {
-        placement.cy
-      } else {
-        shape_y + draw_height / 2.0
-      }
-      if pic_transformed {
-        let radians = pic_rotation * 3.141592653589793 / 180.0
-        let sine = @math.sin(radians)
-        let cosine = @math.cos(radians)
-        object.save()
-        object.translate(Float::from_double(pic_cx), Float::from_double(pic_cy))
-        object.transform(
-          Float::from_double(cosine),
-          Float::from_double(sine),
-          Float::from_double(-sine),
-          Float::from_double(cosine),
-          0.0F,
-          0.0F,
-        )
-        if transform.flip_h || transform.flip_v {
-          object.scale(
-            if transform.flip_h {
-              -1.0F
-            } else {
-              1.0F
-            },
-            if transform.flip_v {
-              -1.0F
-            } else {
-              1.0F
-            },
-          )
-        }
-        object.translate(
-          Float::from_double(-pic_cx),
-          Float::from_double(-pic_cy),
-        )
-      }
-      let alpha = pptx_picture_alpha(shape)
-      if alpha is Some(_) {
-        object.save()
-        object.alpha(Float::from_double(alpha.unwrap()))
-      }
-      if @metafile.kind(bytes) != "" {
-        ignore(
-          @metafile.draw_into(
-            object, writer, bytes, shape_x, shape_y, draw_width, draw_height,
-          ) catch { _ => [] },
-        )
-      } else {
-        let hash = writer.add_part("img", bytes)
-        let index = object.add_image(hash)
-        let mut cropped = false
-        match (pptx_png_size(bytes), pptx_src_rect(shape)) {
-          (Some((image_width, image_height)), Some((left, top, right, bottom))) => {
-            let sx = left * image_width.to_double()
-            let sy = top * image_height.to_double()
-            let sw = (1.0 - left - right) * image_width.to_double()
-            let sh = (1.0 - top - bottom) * image_height.to_double()
-            if sw > 0.0 && sh > 0.0 {
-              object.image_sub(
-                index,
-                Float::from_double(sx),
-                Float::from_double(sy),
-                Float::from_double(sw),
-                Float::from_double(sh),
-                Float::from_double(shape_x),
-                Float::from_double(shape_y),
-                Float::from_double(draw_width),
-                Float::from_double(draw_height),
-              )
-              cropped = true
-            }
-          }
-          _ => ()
-        }
-        if !cropped {
-          object.image(
-            index,
-            Float::from_double(shape_x),
-            Float::from_double(shape_y),
-            Float::from_double(draw_width),
-            Float::from_double(draw_height),
-          )
-        }
-      }
-      if alpha is Some(_) {
-        object.restore()
-      }
-      if pic_transformed {
-        object.restore()
-      }
-      continue
-    }
-    let geom = pptx_child(pptx_child(Some(shape), "spPr"), "prstGeom")
-    let geometry = match geom {
-      Some(value) => pptx_attribute(value.element, "prst", "rect")
-      None => "rect"
-    }
-    let corner_radius = if geometry == "roundRect" {
-      let fraction = match pptx_child(pptx_child(geom, "avLst"), "gd") {
-        Some(value) => {
-          let fmla = pptx_attribute(value.element, "fmla", "val 16667")
-          let token = match fmla.split(" ").last() {
-            Some(value) => value.to_string()
-            None => "16667"
-          }
-          (@string.parse_double(token) catch { _ => 16667.0 }) / 100000.0
-        }
-        None => 0.16667
-      }
-      fraction * Double::min(draw_width, draw_height)
-    } else {
-      0.0
-    }
-    let fill = pptx_node_color(
-      pptx_child(Some(shape), "spPr"),
-      "solidFill",
-      theme,
-    )
-    let fill_alpha = pptx_node_alpha(
-      pptx_child(Some(shape), "spPr"),
-      "solidFill",
-    )
-    let gradient = pptx_gradient_paint(
-      shape, shape_x, shape_y, draw_width, draw_height, theme,
-    )
-    let mut gradient_done = false
-    match gradient {
-      Some(paint) =>
-        if geometry == "rect" {
-          object.fill_paint(object.add_paint(paint))
-          object.fill_rect(
-            Float::from_double(shape_x),
-            Float::from_double(shape_y),
-            Float::from_double(draw_width),
-            Float::from_double(draw_height),
-          )
-          gradient_done = true
-        } else if geometry == "ellipse" {
-          object.fill_paint(object.add_paint(paint))
-          let mut path = pptx_rotate_path(
-            pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
-            shape_x + draw_width / 2.0,
-            shape_y + draw_height / 2.0,
-            transform.rotation,
-          )
-          if placement.rotation != 0.0 {
-            path = pptx_rotate_path(
-              path,
-              placement.cx,
-              placement.cy,
-              placement.rotation,
-            )
-          }
-          object.fill_path(object.add_path(@core.Inline(path)), 0)
-          gradient_done = true
-        } else if geometry == "roundRect" {
-          object.fill_paint(object.add_paint(paint))
-          let mut path = pptx_rotate_path(
-            pptx_round_rect_path(
-              shape_x, shape_y, draw_width, draw_height, corner_radius,
-            ),
-            shape_x + draw_width / 2.0,
-            shape_y + draw_height / 2.0,
-            transform.rotation,
-          )
-          if placement.rotation != 0.0 {
-            path = pptx_rotate_path(
-              path,
-              placement.cx,
-              placement.cy,
-              placement.rotation,
-            )
-          }
-          object.fill_path(object.add_path(@core.Inline(path)), 0)
-          gradient_done = true
-        }
-      None => ()
-    }
-    if !gradient_done {
-      match fill {
-        Some(color) => {
-          if fill_alpha is Some(_) {
-            object.save()
-            object.alpha(Float::from_double(fill_alpha.unwrap()))
-          }
-          object.fill_color(color)
-          if geometry == "rect" &&
-            (transform.rotation != 0.0 || placement.rotation != 0.0) {
-            let group = placement.rotation != 0.0
-            let path_index = object.add_path(
-              @core.Inline(
-                pptx_rotated_rect_path_at(
-                  shape_x,
-                  shape_y,
-                  draw_width,
-                  draw_height,
-                  transform.rotation + placement.rotation,
-                  if group {
-                    placement.cx
-                  } else {
-                    shape_x + draw_width / 2.0
-                  },
-                  if group {
-                    placement.cy
-                  } else {
-                    shape_y + draw_height / 2.0
-                  },
-                ),
-              ),
-            )
-            object.fill_path(path_index, 0)
-          } else if geometry == "ellipse" {
-            let mut path = pptx_rotate_path(
-              pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
-              shape_x + draw_width / 2.0,
-              shape_y + draw_height / 2.0,
-              transform.rotation,
-            )
-            if placement.rotation != 0.0 {
-              path = pptx_rotate_path(
-                path,
-                placement.cx,
-                placement.cy,
-                placement.rotation,
-              )
-            }
-            object.fill_path(object.add_path(@core.Inline(path)), 0)
-          } else if geometry == "roundRect" {
-            let mut path = pptx_rotate_path(
-              pptx_round_rect_path(
-                shape_x, shape_y, draw_width, draw_height, corner_radius,
-              ),
-              shape_x + draw_width / 2.0,
-              shape_y + draw_height / 2.0,
-              transform.rotation,
-            )
-            if placement.rotation != 0.0 {
-              path = pptx_rotate_path(
-                path,
-                placement.cx,
-                placement.cy,
-                placement.rotation,
-              )
-            }
-            object.fill_path(object.add_path(@core.Inline(path)), 0)
-          } else {
-            object.fill_rect(
-              Float::from_double(shape_x),
-              Float::from_double(shape_y),
-              Float::from_double(draw_width),
-              Float::from_double(draw_height),
-            )
-          }
-        }
-        None => ()
-      }
-    }
-    if fill_alpha is Some(_) {
-      object.restore()
-    }
-    let stroke = pptx_child(pptx_child(Some(shape), "spPr"), "ln")
-    let stroke_width = match stroke {
-      Some(value) =>
-        (@string.parse_double(pptx_attribute(value.element, "w", "0")) catch {
-          _ => 0.0
-        }) /
-        12700.0
-      None => 0.0
-    }
-    if stroke_width > 0.0 {
-      let stroke_color = match pptx_node_color(stroke, "solidFill", theme) {
-        Some(color) => color
-        None => 0x000000ffU
-      }
-      if geometry == "rect" &&
-        (transform.rotation != 0.0 || placement.rotation != 0.0) {
-        let group = placement.rotation != 0.0
-        let path_index = object.add_path(
-          @core.Inline(
-            pptx_rotated_rect_path_at(
-              shape_x,
-              shape_y,
-              draw_width,
-              draw_height,
-              transform.rotation + placement.rotation,
-              if group {
-                placement.cx
-              } else {
-                shape_x + draw_width / 2.0
-              },
-              if group {
-                placement.cy
-              } else {
-                shape_y + draw_height / 2.0
-              },
-            ),
-          ),
-        )
-        object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
-        object.stroke_color(stroke_color)
-        object.stroke_path(path_index)
-      } else if geometry == "ellipse" {
-        let mut path = pptx_rotate_path(
-          pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
-          shape_x + draw_width / 2.0,
-          shape_y + draw_height / 2.0,
-          transform.rotation,
-        )
-        if placement.rotation != 0.0 {
-          path = pptx_rotate_path(
-            path,
-            placement.cx,
-            placement.cy,
-            placement.rotation,
-          )
-        }
-        object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
-        object.stroke_color(stroke_color)
-        object.stroke_path(object.add_path(@core.Inline(path)))
-      } else if geometry == "roundRect" {
-        let mut path = pptx_rotate_path(
-          pptx_round_rect_path(
-            shape_x, shape_y, draw_width, draw_height, corner_radius,
-          ),
-          shape_x + draw_width / 2.0,
-          shape_y + draw_height / 2.0,
-          transform.rotation,
-        )
-        if placement.rotation != 0.0 {
-          path = pptx_rotate_path(
-            path,
-            placement.cx,
-            placement.cy,
-            placement.rotation,
-          )
-        }
-        object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
-        object.stroke_color(stroke_color)
-        object.stroke_path(object.add_path(@core.Inline(path)))
-      } else if geometry == "rect" || geometry == "" {
-        object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
-        object.stroke_color(stroke_color)
-        object.stroke_rect(
-          Float::from_double(shape_x),
-          Float::from_double(shape_y),
-          Float::from_double(draw_width),
-          Float::from_double(draw_height),
-        )
-      }
-    }
-    let body = match pptx_child(Some(shape), "txBody") {
-      Some(value) => value
-      None => continue
-    }
-    let text_rotation = transform.rotation + placement.rotation
-    let text_cx = if placement.rotation != 0.0 {
-      placement.cx
-    } else {
-      shape_x + draw_width / 2.0
-    }
-    let text_cy = if placement.rotation != 0.0 {
-      placement.cy
-    } else {
-      shape_y + draw_height / 2.0
-    }
-    let text_rotated = text_rotation != 0.0
-    if text_rotated {
-      let radians = text_rotation * 3.141592653589793 / 180.0
-      let sine = @math.sin(radians)
-      let cosine = @math.cos(radians)
-      object.save()
-      object.translate(Float::from_double(text_cx), Float::from_double(text_cy))
-      object.transform(
-        Float::from_double(cosine),
-        Float::from_double(sine),
-        Float::from_double(-sine),
-        Float::from_double(cosine),
-        0.0F,
-        0.0F,
-      )
-      object.translate(
-        Float::from_double(-text_cx),
-        Float::from_double(-text_cy),
-      )
-    }
-    let line : Array[PptxLineItem] = []
-    let mut line_width = 0.0
-    let mut line_height = 21.6
-    let left_inset = pptx_body_inset(body, "lIns")
-    let top_inset = pptx_body_inset(body, "tIns")
-    let right_inset = pptx_body_inset(body, "rIns")
-    let bottom_inset = pptx_body_inset(body, "bIns")
-    let mut paragraph_count = 0
-    for paragraph in pptx_children(Some(body)) {
-      if paragraph.element.name.local_name == "p" {
-        paragraph_count += 1
-      }
-    }
-    let text_span = paragraph_count.to_double() * 21.6
-    let anchor_offset = match pptx_body_anchor(body) {
-      "center" => Double::max(0.0, (draw_height - text_span) / 2.0)
-      "bottom" => Double::max(0.0, draw_height - text_span)
-      _ => 0.0
-    }
-    let mut y = shape_y + top_inset + anchor_offset + line_height
-    let mut paragraph_index = 0
-    for paragraph in pptx_children(Some(body)) {
-      if paragraph.element.name.local_name != "p" {
-        continue
-      }
-      let align = match pptx_child(Some(paragraph), "pPr") {
-        Some(ppr) =>
-          match pptx_attribute(ppr.element, "algn", "") {
-            "ctr" => "center"
-            "r" => "right"
-            _ => "left"
-          }
-        None => "left"
-      }
-      let spacing_multiplier = pptx_line_spacing(paragraph)
-      if spacing_multiplier > 0.0 {
-        if spacing_multiplier > 10.0 {
-          line_height = spacing_multiplier
-        } else {
-          line_height = 21.6 * spacing_multiplier
-        }
-      }
-      let mut x = shape_x + left_inset
-      if paragraph_index > 0 {
-        y += line_height + pptx_paragraph_spacing(paragraph, "spcBef")
-      }
-      paragraph_index += 1
-      let flush = fn() raise {
-        let mut offset = 0.0
-        if !line.is_empty() {
-          let total = line[line.length() - 1].x +
-            line[line.length() - 1].advance -
-            shape_x
-          match align {
-            "right" => offset = Double::max(0.0, draw_width - total)
-            "center" => offset = Double::max(0.0, (draw_width - total) / 2.0)
-            _ => ()
-          }
-        }
-        for item in line {
-          let key = item.family +
-            "|" +
-            item.weight.to_string() +
-            "|" +
-            item.style.to_string()
-          let index = match fonts.get(key) {
-            Some(value) => value
-            None => {
-              let value = object.add_font({
-                hash: None,
-                family: item.family,
-                weight: item.weight,
-                style: item.style,
-              })
-              fonts[key] = value
-              value
-            }
-          }
-          object.font(index, Float::from_double(item.size))
-          object.fill_color(item.color)
-          object.fill_text(
-            item.text,
-            Float::from_double(shape_x + offset + item.x),
-            Float::from_double(y),
-            Float::from_double(item.advance),
-          )
-          x += item.advance
-        }
-        line.clear()
-        line_width = 0.0
-      }
-      for child in pptx_children(Some(paragraph)) {
-        match child.element.name.local_name {
-          "br" => {
-            flush()
-            y += line_height
-            x = transform.x
-          }
-          "r" | "fld" => {
-            let text = match pptx_child(Some(child), "t") {
-              Some(value) => value.text.to_string()
-              None => ""
-            }
-            if text == "" {
-              continue
-            }
-            let size = pptx_run_size(child, paragraph, inherited)
-            let advance = pptx_text_width(text, size)
-            if line.is_empty() {
-              line_height = size * 1.2
-            }
-            let item_x = x - shape_x
-            if x + advance > shape_x + draw_width - right_inset &&
-              !line.is_empty() {
-              flush()
-              y += line_height
-              x = shape_x + left_inset
-            }
-            if y > shape_y + draw_height - bottom_inset {
-              flush()
-              break
-            }
-            line.push({
-              text,
-              family: pptx_run_family(child, theme_fonts, inherited),
-              weight: if pptx_run_bold(child, paragraph, inherited) {
-                700
-              } else {
-                400
-              },
-              style: if pptx_run_italic(child, paragraph, inherited) {
-                1
-              } else {
-                0
-              },
-              size,
-              color: pptx_run_color(child, paragraph, theme, inherited),
-              x: item_x,
-              advance,
-            })
-            x += advance
-            line_width = x - shape_x
-          }
-          _ => ()
-        }
-      }
-      flush()
-      y += line_height + pptx_paragraph_spacing(paragraph, "spcAft")
-    }
-    if text_rotated {
-      object.restore()
-    }
-  }
-  let encoded = object.encode()
-  let hash = writer.add_part("obj", encoded)
-  let content = @render.extract_text_with_budget(
-    @core.decode_object_resources(encoded),
-    fn(_) { None },
-    index_budget,
-  ) catch {
-    _ => { runs: [], links: [], nodes: [], }
-  }
-  for i, run in content.runs {
-    index_runs.push({
-      a: page_index,
-      b: 0,
-      ordinal: run.ordinal,
-      separator: if i == 0 {
-        2
-      } else {
-        run.separator
-      },
-      text: run.text,
-    })
-  }
-  Json::object({
-    "w": Json::number(width, repr=width.to_string()),
-    "h": Json::number(height, repr=height.to_string()),
-    "layers": Json::array([
-      Json::object({ "role": Json::string("body"), "obj": Json::string(hash) }),
-    ]),
-  })
-}
-
-///|
 /// Detect a PresentationML package.
 pub fn detect(data : Bytes) -> Bool {
   if data.length() < 4 || data[0] != b'P' || data[1] != b'K' {
@@ -2601,23 +2165,28 @@ pub fn convert(data : Bytes, title~ : String = "") -> PptxResult raise {
   let pages : Array[Json] = []
   let index_runs : Array[@core.IndexRun] = []
   let index_budget = @render.TextExtractionBudget::new()
+  let cache = pptx_new_render_cache()
   for slide in presentation.slides {
     if slide.hidden {
       continue
     }
     let page_index = pages.length()
+    let root = pptx_read_xml(pkg, slide.part)
     pages.push(
-      pptx_render_slide(
+      pptx_render_page(
         pkg,
-        slide.part,
-        presentation.width,
-        presentation.height,
         writer,
         theme,
         theme_fonts,
+        presentation.default_text_style,
+        slide.part,
+        root,
+        presentation.width,
+        presentation.height,
         page_index,
         index_runs,
         index_budget,
+        cache,
       ),
     )
   }
@@ -2644,7 +2213,7 @@ pub fn convert(data : Bytes, title~ : String = "") -> PptxResult raise {
     )
   }
   let view : Map[String, Json] = {
-    "id": Json::string("pages"),
+    "id": Json::string("slides"),
     "kind": Json::string("fixed"),
     "pages": Json::array(pages),
   }
@@ -2662,7 +2231,9 @@ pub fn convert(data : Bytes, title~ : String = "") -> PptxResult raise {
   {
     bdf: writer.write_single(),
     pages: count,
-    summary: "\{count} slide" + (if count == 1 { "" } else { "s" }),
-    warnings: ["PPTX rendering uses a limited shape and text subset"],
+    summary: "\{count} slide(s), 0 embedded font(s)",
+    warnings: [
+      "no fonts found; text is laid out with estimated metrics and not embedded",
+    ],
   }
 }

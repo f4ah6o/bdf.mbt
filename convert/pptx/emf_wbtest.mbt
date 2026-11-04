@@ -8,10 +8,12 @@ test "PPTX pictures stored as EMF are replayed" {
   let doc = @core.open_single(result.bdf)
   let mut found = false
   for page in doc.manifest.views[0].pages {
-    let object = @core.decode_object(doc.part(page.layers[0].object))
-    if object.strings.contains("EMF テキスト") {
-      found = true
-      assert_eq(object.images.length(), 1)
+    for layer in page.layers {
+      let object = @core.decode_object(doc.part(layer.object))
+      if object.strings.contains("EMF テキスト") {
+        found = true
+        assert_eq(object.images.length(), 1)
+      }
     }
   }
   assert_eq(found, true)

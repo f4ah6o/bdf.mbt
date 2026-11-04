@@ -81,6 +81,33 @@ fn pptx_convert_fixture() -> Bytes raise {
 }
 
 ///|
+fn pptx_body_layer(manifest : @core.Manifest) -> @core.Layer {
+  let layers = manifest.views[0].pages[0].layers
+  let mut body = layers[0]
+  for layer in layers {
+    if layer.role == "body" {
+      body = layer
+    }
+  }
+  body
+}
+
+///|
+fn pptx_page_commands(
+  doc : @core.Document,
+  page : @core.Page,
+) -> Array[@render.Command] raise {
+  let commands : Array[@render.Command] = []
+  for layer in page.layers {
+    let resources = @core.decode_object_resources(doc.part(layer.object))
+    for command in @render.compile_object(resources.object) {
+      commands.push(command)
+    }
+  }
+  commands
+}
+
+///|
 test "PPTX shape text conversion emits a slide" {
   let data = pptx_convert_fixture()
   assert_true(detect(data))
@@ -89,7 +116,7 @@ test "PPTX shape text conversion emits a slide" {
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
   assert_eq(manifest.views.length(), 1)
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -201,11 +228,10 @@ test "PPTX group shapes are translated and backgrounds are filled" {
   let result = convert(pptx_group_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
-  let resources = @core.decode_object_resources(
-    @core.open_single(result.bdf).part(body_hash),
+  let commands = pptx_page_commands(
+    @core.open_single(result.bdf),
+    manifest.views[0].pages[0],
   )
-  let commands = @render.compile_object(resources.object)
   let mut text = ""
   let mut x = -1.0
   let mut fills = 0
@@ -220,7 +246,7 @@ test "PPTX group shapes are translated and backgrounds are filled" {
     }
   }
   assert_eq(text, "Grouped")
-  assert_eq(x, 172.0, msg="PPTX group offset")
+  assert_true((x - 79.2).abs() < 0.01, msg="PPTX group offset")
   assert_eq(fills, 1, msg="PPTX background")
 }
 
@@ -328,7 +354,7 @@ test "PPTX pictures are embedded" {
   let result = convert(pptx_image_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -447,7 +473,7 @@ test "PPTX theme colours resolve scheme colours" {
   let result = convert(pptx_theme_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -561,7 +587,7 @@ test "PPTX theme colour modifiers change luminance" {
   let result = convert(pptx_color_modifier_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -678,7 +704,7 @@ test "PPTX theme fonts resolve minor and +mj-lt runs" {
   let result = convert(pptx_font_theme_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -810,11 +836,10 @@ test "PPTX layout backgrounds and decorations are rendered" {
   let result = convert(pptx_layout_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
-  let resources = @core.decode_object_resources(
-    @core.open_single(result.bdf).part(body_hash),
+  let commands = pptx_page_commands(
+    @core.open_single(result.bdf),
+    manifest.views[0].pages[0],
   )
-  let commands = @render.compile_object(resources.object)
   let mut green = false
   let mut blue = false
   let text = StringBuilder()
@@ -918,7 +943,7 @@ test "PPTX paragraph default run properties are inherited" {
   let result = convert(pptx_default_run_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -1049,7 +1074,7 @@ test "PPTX placeholders inherit layout transforms" {
   let result = convert(pptx_placeholder_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -1066,7 +1091,7 @@ test "PPTX placeholders inherit layout transforms" {
     }
   }
   assert_eq(text, "Inherited")
-  assert_eq(x, 100.0, msg="PPTX placeholder transform")
+  assert_true((x - 107.2).abs() < 0.01, msg="PPTX placeholder transform")
 }
 
 ///|
@@ -1183,7 +1208,7 @@ test "PPTX placeholders inherit layout font sizes" {
   let result = convert(pptx_placeholder_size_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -1314,7 +1339,7 @@ test "PPTX placeholders inherit layout run formatting" {
   let result = convert(pptx_placeholder_format_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -1425,7 +1450,7 @@ test "PPTX tables are flattened into text rows" {
   let result = convert(pptx_table_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -1528,7 +1553,7 @@ test "PPTX rectangle outlines are stroked" {
   let result = convert(pptx_outline_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -1632,7 +1657,7 @@ test "PPTX ellipses use paths for fill and stroke" {
   let result = convert(pptx_ellipse_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -1737,7 +1762,7 @@ test "PPTX rounded rectangles use paths" {
   let result = convert(pptx_round_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -1839,7 +1864,7 @@ test "PPTX fill alpha is applied" {
   let result = convert(pptx_alpha_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -1971,7 +1996,7 @@ test "PPTX bar charts draw bars and category labels" {
   let result = convert(pptx_chart_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -2108,7 +2133,7 @@ test "PPTX line charts draw a polyline and markers" {
   let result = convert(pptx_line_chart_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -2242,7 +2267,7 @@ test "PPTX pie charts draw one wedge per value" {
   let result = convert(pptx_pie_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -2344,7 +2369,7 @@ test "PPTX group scaling applies to child shapes" {
   let result = convert(pptx_group_scale_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -2448,7 +2473,7 @@ test "PPTX rotated rectangles use rotated paths" {
   let result = convert(pptx_rotation_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -2568,7 +2593,7 @@ test "PPTX picture alpha is applied" {
   let result = convert(pptx_picture_alpha_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -2691,7 +2716,7 @@ test "PPTX picture source rectangles are cropped" {
   let result = convert(pptx_crop_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -2793,7 +2818,7 @@ test "PPTX rotated ellipses rotate their path" {
   let result = convert(pptx_ellipse_rotation_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -2897,7 +2922,7 @@ test "PPTX group rotation rotates child geometry" {
   let result = convert(pptx_group_rotation_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -3016,22 +3041,22 @@ test "PPTX group rotation rotates text" {
   let result = convert(pptx_group_text_rotation_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
   let commands = @render.compile_object(resources.object)
   let mut transform = false
-  let mut text = false
+  let text = StringBuilder()
   for command in commands {
     match command {
       @render.Transform(_, _, _, _, _, _) => transform = true
-      @render.FillText("Rotated", _, _, _) => text = true
+      @render.FillText(value, _, _, _) => text.write_string(value)
       _ => ()
     }
   }
   assert_true(transform, msg="PPTX rotated text transform")
-  assert_true(text, msg="PPTX rotated text")
+  assert_eq(text.to_string(), "Rotated", msg="PPTX rotated text")
 }
 
 ///|
@@ -3139,7 +3164,7 @@ test "PPTX pictures are rotated" {
   let result = convert(pptx_picture_rotation_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -3262,7 +3287,7 @@ test "PPTX pictures are flipped" {
   let result = convert(pptx_picture_flip_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -3367,7 +3392,7 @@ test "PPTX table cell fills are drawn" {
   let result = convert(pptx_table_fill_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -3475,7 +3500,7 @@ test "PPTX table cell fills use grid widths" {
   let result = convert(pptx_table_grid_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -3582,7 +3607,7 @@ test "PPTX table cell text colours are applied" {
   let result = convert(pptx_table_text_color_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -3687,7 +3712,7 @@ test "PPTX table row heights drive cell fills" {
   let result = convert(pptx_table_row_height_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -3791,7 +3816,7 @@ test "PPTX table cell borders are stroked" {
   let result = convert(pptx_table_border_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -3896,7 +3921,7 @@ test "PPTX table cell text sizes are applied" {
   let result = convert(pptx_table_text_size_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -3998,7 +4023,7 @@ test "PPTX table cell text alignment is applied" {
   let result = convert(pptx_table_alignment_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -4100,7 +4125,7 @@ test "PPTX table cell vertical anchors are applied" {
   let result = convert(pptx_table_anchor_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -4202,7 +4227,7 @@ test "PPTX table cell margins are applied" {
   let result = convert(pptx_table_margin_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -4304,7 +4329,7 @@ test "PPTX table cell bold is applied" {
   let result = convert(pptx_table_bold_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -4421,7 +4446,7 @@ test "PPTX text box insets are applied" {
   let result = convert(pptx_text_inset_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -4526,7 +4551,7 @@ test "PPTX table cell vertical margins are applied" {
   let result = convert(pptx_table_vmargin_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -4631,7 +4656,7 @@ test "PPTX table grid spans widen cells" {
   let result = convert(pptx_table_gridspan_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -4739,7 +4764,7 @@ test "PPTX table row spans heighten cells" {
   let result = convert(pptx_table_rowspan_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -4841,7 +4866,7 @@ test "PPTX shape gradients are painted" {
   let result = convert(pptx_gradient_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -4951,7 +4976,7 @@ test "PPTX ellipse gradients are painted" {
   let result = convert(pptx_ellipse_gradient_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -5050,7 +5075,7 @@ test "PPTX gradient slide backgrounds are painted" {
   let result = convert(pptx_gradient_background_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -5164,7 +5189,7 @@ test "PPTX image slide backgrounds are drawn" {
   let result = convert(pptx_image_background_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -5263,7 +5288,7 @@ test "PPTX text box vertical anchors are applied" {
   let result = convert(pptx_text_anchor_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -5364,7 +5389,7 @@ test "PPTX paragraph spacing is applied" {
   let result = convert(pptx_paragraph_spacing_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -5467,7 +5492,7 @@ test "PPTX line spacing is applied" {
   let result = convert(pptx_line_spacing_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -5489,7 +5514,7 @@ test "PPTX vertically merged continuation cells are skipped" {
   let result = convert(pptx_table_rowspan_fixture())
   let split = @core.single_to_split(result.bdf)
   let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
-  let body_hash = manifest.views[0].pages[0].layers[0].object
+  let body_hash = pptx_body_layer(manifest).object
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
@@ -5505,4 +5530,66 @@ test "PPTX vertically merged continuation cells are skipped" {
     }
   }
   assert_true(skipped, msg="PPTX vMerge continuation")
+}
+
+///|
+test "PPTX pages have background, master and body layers" {
+  let result = convert(pptx_layout_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let page = manifest.views[0].pages[0]
+  assert_eq(page.layers.map(fn(layer) { layer.role }), [
+    "background", "master", "body",
+  ])
+  let doc = @core.open_single(result.bdf)
+  let master = @core.decode_object_resources(doc.part(page.layers[1].object))
+  let mut blue = false
+  for command in @render.compile_object(master.object) {
+    match command {
+      @render.FillColor(0x0000ffff) => blue = true
+      _ => ()
+    }
+  }
+  assert_true(blue, msg="PPTX master decoration")
+  let body = @core.decode_object_resources(doc.part(page.layers[2].object))
+  let text = StringBuilder()
+  for command in @render.compile_object(body.object) {
+    match command {
+      @render.FillText(value, _, _, _) => text.write_string(value)
+      _ => ()
+    }
+  }
+  assert_eq(text.to_string(), "Slide", msg="PPTX body text")
+}
+
+///|
+test "PPTX bullet properties are inherited per paragraph level" {
+  let root = pptx_parse_xml(
+    "<a:pPr xmlns:a='http://schemas.openxmlformats.org/drawingml/2006/main' marL='342900' indent='-342900'><a:buChar char='•'/><a:defRPr sz='2800'/></a:pPr>",
+  )
+  let chain = [root]
+  let bullet = pptx_paragraph_bullet(chain)
+  assert_eq(bullet.kind, "char")
+  assert_eq(bullet.text, "•")
+  let properties = pptx_paragraph_props(chain)
+  assert_eq(properties.mar_l, 27.0)
+  assert_eq(properties.indent, -27.0)
+  assert_eq(pptx_auto_number("arabicPeriod", 2), "2.")
+  assert_eq(pptx_auto_number("lowerLetterParenR", 3), "c)")
+}
+
+///|
+test "PPTX Office Math is linearized in place of its fallback" {
+  let math = pptx_parse_xml(
+    "<a14:m xmlns:a14='http://schemas.microsoft.com/office/drawing/2010/main' xmlns:m='http://schemas.openxmlformats.org/officeDocument/2006/math'><m:oMath><m:sSup><m:e><m:r><m:t>x</m:t></m:r></m:e><m:sup><m:r><m:t>2</m:t></m:r></m:sup></m:sSup></m:oMath></a14:m>",
+  )
+  assert_eq(pptx_omml_join(math), "x^2")
+  let alternatives = pptx_parse_xml(
+    "<x:root xmlns:x='urn:x' xmlns:mc='http://schemas.openxmlformats.org/markup-compatibility/2006' xmlns:p='http://schemas.openxmlformats.org/presentationml/2006/main' xmlns:a='http://schemas.openxmlformats.org/drawingml/2006/main' xmlns:a14='http://schemas.microsoft.com/office/drawing/2010/main' xmlns:m='http://schemas.openxmlformats.org/officeDocument/2006/math'><mc:AlternateContent><mc:Choice Requires='a14'><a14:m><m:oMath><m:sSup><m:e><m:r><m:t>x</m:t></m:r></m:e><m:sup><m:r><m:t>2</m:t></m:r></m:sup></m:sSup></m:oMath></a14:m></mc:Choice><mc:Fallback><p:sp><p:txBody><a:p><a:r><a:t>FALLBACK PICTURE</a:t></a:r></a:p></p:txBody></p:sp></mc:Fallback></mc:AlternateContent></x:root>",
+  )
+  let children = pptx_children(Some(alternatives))
+  assert_eq(children.length(), 1)
+  let text = pptx_omml_join(children[0])
+  assert_true(text.contains("x^2"), msg="PPTX math choice")
+  assert_false(text.contains("FALLBACK"), msg="PPTX math fallback")
 }
