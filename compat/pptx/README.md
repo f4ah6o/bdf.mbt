@@ -94,7 +94,7 @@ colors/sizes/bold/italic/alignment, vertical anchors, margins, per-side borders,
 grid widths/spans, row heights/spans and vertical merges. Bar (clustered and
 stacked, horizontal and vertical, with `gapWidth`/`overlap`), line, area,
 scatter, radar, pie and doughnut charts (with `firstSliceAng`, per-point `explosion` and
-data-point fills, series line widths and markers) draw their series, axis titles,
+data-point fills, series line widths, dash patterns and markers) draw their series, axis titles,
 bar/line/radar/scatter value labels with optional category/series names,
 stacked segment labels and pie percentage/value labels (with optional
 category/series names) from `dLbls`, legends with colour swatches, category

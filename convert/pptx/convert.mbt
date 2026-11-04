@@ -2167,6 +2167,21 @@ fn pptx_series_point_color(item : PptxChartSeries, index : Int) -> UInt32 {
 }
 
 ///|
+fn pptx_apply_chart_dash(
+  object : @core.ObjectBuilder,
+  dash : String,
+) -> Unit {
+  let segments : Array[Float] = match dash {
+    "dash" | "sysDash" => [4.0F, 3.0F]
+    "dot" | "sysDot" => [1.0F, 2.0F]
+    "dashDot" | "dashDotDot" => [4.0F, 2.0F, 1.0F, 2.0F]
+    "lgDash" | "lgDashDot" | "lgDashDotDot" => [8.0F, 3.0F]
+    _ => []
+  }
+  object.dash(segments, 0.0F)
+}
+
+///|
 fn pptx_series_line_width(item : PptxXmlNode) -> Double {
   let line = match pptx_child(Some(item), "spPr") {
     Some(sp_pr) => pptx_child(Some(sp_pr), "ln")
@@ -2180,6 +2195,18 @@ fn pptx_series_line_width(item : PptxXmlNode) -> Double {
           12700.0
       }
     None => 2.0
+  }
+}
+
+///|
+fn pptx_series_dash(item : PptxXmlNode) -> String {
+  let line = match pptx_child(Some(item), "spPr") {
+    Some(sp_pr) => pptx_child(Some(sp_pr), "ln")
+    None => None
+  }
+  match pptx_child(line, "prstDash") {
+    Some(value) => pptx_attribute(value.element, "val", "solid")
+    None => "solid"
   }
 }
 
@@ -2246,6 +2273,7 @@ priv struct PptxChartSeries {
   point_colors : Array[UInt32]
   color : UInt32
   line_width : Double
+  dash : String
   marker_symbol : String
   marker_size : Double
 }
@@ -2506,6 +2534,7 @@ fn pptx_emit_chart(
       point_colors: pptx_chart_point_colors(item, theme),
       color,
       line_width: pptx_series_line_width(item),
+      dash: pptx_series_dash(item),
       marker_symbol,
       marker_size,
     })
@@ -2851,6 +2880,7 @@ fn pptx_emit_chart(
       )
       object.line(Float::from_double(item.line_width), 0, 0, 8.0F)
       object.stroke_color(item.color)
+      pptx_apply_chart_dash(object, item.dash)
       object.stroke_path(path)
       object.fill_color(item.color)
       for index, value in item.values {
@@ -3495,6 +3525,7 @@ fn pptx_emit_chart(
       )
       object.line(Float::from_double(item.line_width), 0, 0, 8.0F)
       object.stroke_color(item.color)
+      pptx_apply_chart_dash(object, item.dash)
       object.stroke_path(line_path)
     }
   } else if line_chart is Some(_) {
@@ -3516,6 +3547,7 @@ fn pptx_emit_chart(
       )
       object.line(Float::from_double(item.line_width), 0, 0, 8.0F)
       object.stroke_color(item.color)
+      pptx_apply_chart_dash(object, item.dash)
       object.stroke_path(path)
       object.fill_color(item.color)
       let value_count = item.values.length().to_double()
