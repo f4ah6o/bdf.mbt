@@ -6,12 +6,27 @@ with the upstream Go converter. They use six upstream presentations and a
 synthetic package covering strict namespaces, missing relationships, universal
 measures, duplicate elements, and markup-compatibility alternatives.
 
+The preset geometry table is generated from the upstream DrawingML preset
+definitions: `generate_presets.py` reads
+`converter/internal/ooxml/drawingml/presets.xml.gz` and writes
+`convert/pptx/presets_generated.mbt`. Run `python3
+compat/pptx/generate_presets.py` from the repository root after the upstream
+table changes.
+
 To regenerate `presentation_generated_wbtest.mbt`, overlay
 `generate_manifest_test.go` without its build tag in upstream `converter/pptx`
 and `drawingml_transform_export.go` without its build tag in upstream
 `converter/internal/ooxml/drawingml`. Set `BDF_PPTX_FIXTURES` to the upstream
 PPTX testdata directory and `BDF_REFERENCE_OUTPUT` to the output file, then run
 `TestCodexPPTXManifest` with `-count=1`.
+
+The phase 15 converter test also builds a synthetic deck in the browser with
+triangle, diamond, right-arrow, star, hexagon, wedge-rectangle-callout and
+flowchart-decision presets, a themed `p:style` fill/line reference, a
+layout-inherited placeholder and an unknown preset. It converts it with both
+the upstream converter and this package, applies the draw transforms, and
+compares every fill, outline, color and path command; the unknown preset must
+draw as a rectangle with the upstream warning.
 
 To regenerate the other fixtures, overlay `generate_placeholders_test.go` in
 `converter/pptx` or `generate_transforms_test.go` in
@@ -47,23 +62,42 @@ upstream reading order; vertical text is rotated.
 
 Other supported DrawingML: solid, image and linear-gradient backgrounds with
 theme colors (`bg1`, `tx1`, accents and luminance/tint/shade modifiers),
-major/minor theme fonts, rectangles, rounded rectangles and ellipses with solid
-or gradient fill, solid-fill alpha and stroke, shape rotation/flips, translated
-and rotated groups, embedded pictures with alpha, source-rectangle cropping,
-rotation and flips, and EMF/WMF metafiles. Tables render cell text with wrapped
-lines, cell fills, text colors/sizes/bold/italic/alignment, vertical anchors,
-margins, per-side borders, grid widths/spans, row heights/spans and vertical
-merges. Bar (clustered and stacked, horizontal and vertical), line and pie
-charts draw their series, legend, category labels, value-axis ticks and pie
-percentage labels. Office Math in `a14:m` is linearized to text (fractions,
-roots, scripts, n-ary operators, delimiters, matrices, accents and groups); the
-`mc:Choice` that holds math is preferred over its `mc:Fallback` picture.
+major/minor theme fonts, the DrawingML preset geometries (the complete upstream
+preset table: triangles, diamonds, pentagons, stars, arrows, callouts, flowchart
+shapes, braces, scrolls and the rest), filled and outlined per path with the
+`lighten`/`darken` path fill modes. Arc segments are evaluated with the upstream
+guide formulas and flattened to cubic Béziers, so they draw the same outline in
+every renderer. Unknown presets fall back to a rectangle with the upstream
+warning. Shape fill and outline resolve through the shape's `spPr`, its layout
+and master placeholders (including an explicit `noFill`), and then its
+`p:style` `fillRef`/`lnRef` theme entries with `phClr` substitution. Shape
+rotation/flips, translated and rotated groups, embedded pictures with alpha,
+source-rectangle cropping, rotation and flips, and EMF/WMF metafiles are drawn.
+Tables render cell text with wrapped lines, cell fills, text
+colors/sizes/bold/italic/alignment, vertical anchors, margins, per-side borders,
+grid widths/spans, row heights/spans and vertical merges. Bar (clustered and
+stacked, horizontal and vertical), line and pie charts draw their series,
+legend, category labels, value-axis ticks and pie percentage labels. Office
+Math in `a14:m` is linearized to text (fractions, roots, scripts, n-ary
+operators, delimiters, matrices, accents and groups); the `mc:Choice` that
+holds math is preferred over its `mc:Fallback` picture.
 
-Remaining gaps: only the `rect`, `roundRect` and `ellipse` preset geometries
-are drawn (other presets use the rectangle path); SmartArt, ink and 3-D or
-non-bar/line/pie charts are not supported; chart titles are used only for
-single-series charts without an explicit `c:title`, and chart data tables are
-not emitted; table style banding is not applied (only explicit cell properties);
-font subsets are not embedded, so text is laid out with approximate metrics and
-no font parts are written; autofit scaling, blip bullets, advanced vertical
-glyph stacking and placeholder fill/line inheritance are not implemented.
+Fonts are host supplied, like the other converters: `convert` takes an optional
+`@fontdb.Database` (the contents of a PowerPoint font directory) and measures
+every run with the resolved face's advances and vertical metrics, falling back
+per glyph the way upstream `fontset` does. The faces used are subset and
+embedded as WOFF2 parts; the summary reports the embedded font count and a
+character no available font has is reported in the upstream warning. With no
+database the converter keeps upstream's estimated metrics, writes no font parts,
+and reports the `no fonts found` warning. A host that receives a font directory
+URL (the native converter worker's `fonts` option) must pass the resulting
+database to `convert(db=...)`.
+
+Remaining gaps: custom geometry (`a:custGeom`) is not evaluated and falls
+back to the shape box; SmartArt, ink and 3-D or non-bar/line/pie charts are not
+supported; chart titles are used only for single-series charts without an
+explicit `c:title`, and chart data tables are not emitted; table style banding
+is not applied (only explicit cell properties); autofit line spacing, blip
+bullets and advanced vertical glyph stacking are not implemented; chart label
+text keeps the estimated advance even when fonts are supplied, and the subsets
+are always embedded as WOFF2 without the `no_subset`/`no_woff2` options.

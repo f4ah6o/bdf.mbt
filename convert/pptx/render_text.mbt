@@ -2,11 +2,23 @@
 // Text layout and drawing for DrawingML shapes.
 
 ///|
+/// The theme's major and minor Latin and East Asian fonts.
+priv struct PptxThemeFonts {
+  major : String
+  minor : String
+  major_ea : String
+  minor_ea : String
+}
+
+///|
 priv struct PptxShapeContext {
   package : @ooxml.OoxmlPackage
   writer : @core.DocumentWriter
   theme : Map[String, UInt32]
-  theme_fonts : (String, String)
+  theme_fonts : PptxThemeFonts
+  theme_fills : Array[PptxXmlNode]
+  theme_bg_fills : Array[PptxXmlNode]
+  theme_lines : Array[PptxXmlNode]
   default_text_style : PptxXmlNode?
   layout_root : PptxXmlNode?
   master_root : PptxXmlNode?
@@ -14,6 +26,9 @@ priv struct PptxShapeContext {
   master_placeholders : Array[PptxXmlNode]
   is_body : Bool
   fonts : Map[String, Int32]
+  font_ctx : PptxFontContext
+  warnings : Array[String]
+  warned : Map[String, Bool]
 }
 
 ///|
@@ -30,6 +45,13 @@ priv struct PptxStyledChar {
   break_after : Bool
   hard_break : Bool
   mut no_break : Bool
+  face : String
+  choice : @fontdb.Choice?
+  record_family : String
+  record_weight : Int32
+  record_style : Int32
+  asc : Double
+  desc : Double
 }
 
 ///|
@@ -39,6 +61,8 @@ priv struct PptxTextLine {
   width : Double
   height : Double
   max_size : Double
+  asc : Double
+  desc : Double
   wrap : Byte
 }
 
@@ -59,11 +83,19 @@ priv struct PptxParagraphLayout {
 }
 
 ///|
-fn pptx_font_reference(name : String, fonts : (String, String)) -> String {
-  let (major, minor) = fonts
+fn pptx_font_reference(name : String, fonts : PptxThemeFonts) -> String {
   match name {
-    "" | "+mn-lt" => minor
-    "+mj-lt" => major
+    "" | "+mn-lt" => fonts.minor
+    "+mj-lt" => fonts.major
+    value => value
+  }
+}
+
+///|
+fn pptx_font_reference_ea(name : String, fonts : PptxThemeFonts) -> String {
+  match name {
+    "" | "+mn-ea" => fonts.minor_ea
+    "+mj-ea" => fonts.major_ea
     value => value
   }
 }
@@ -74,10 +106,17 @@ fn pptx_run_style(
   chain : Array[PptxXmlNode],
   run : PptxXmlNode,
   scale : Double,
-) -> (String, Int32, Int32, Double, UInt32) {
+) -> (String, String, Int32, Int32, Double, UInt32) {
   let rpr = pptx_child(Some(run), "rPr")
   let family = pptx_font_reference(
     match pptx_chain_run_child(chain, rpr, "latin") {
+      Some(value) => pptx_attribute(value.element, "typeface", "")
+      None => ""
+    },
+    ctx.theme_fonts,
+  )
+  let east_asian = pptx_font_reference_ea(
+    match pptx_chain_run_child(chain, rpr, "ea") {
       Some(value) => pptx_attribute(value.element, "typeface", "")
       None => ""
     },
@@ -96,7 +135,7 @@ fn pptx_run_style(
       pptx_solid_color(Some(value), ctx.theme).unwrap_or(0x000000ffU)
     None => 0x000000ffU
   }
-  (family, weight, style, size, color)
+  (family, east_asian, weight, style, size, color)
 }
 
 ///|
@@ -105,12 +144,12 @@ fn pptx_math_run_style(
   chain : Array[PptxXmlNode],
   node : PptxXmlNode,
   scale : Double,
-) -> (String, Int32, Int32, Double, UInt32) {
-  let (_, weight, _, default_size, color) = pptx_run_style(
+) -> (String, String, Int32, Int32, Double, UInt32) {
+  let (_, _, weight, _, default_size, color) = pptx_run_style(
     ctx, chain, node, 1.0,
   )
   let size = pptx_math_size(node).unwrap_or(default_size) * scale
-  ("Cambria Math", weight, 1, size, color)
+  ("Cambria Math", "", weight, 1, size, color)
 }
 
 ///|
@@ -132,8 +171,10 @@ fn pptx_body_font_scale(body : PptxXmlNode) -> Double {
 
 ///|
 fn pptx_char_to_styled(
+  fonts : PptxFontContext,
   text : String,
   family : String,
+  east_asian : String,
   weight : Int32,
   style : Int32,
   size : Double,
@@ -152,6 +193,9 @@ fn pptx_char_to_styled(
       c == '\u{3002}' ||
       c == '\u{ff0c}' ||
       c == '\u{ff0e}'
+    let metrics = pptx_font_metrics(
+      fonts, family, east_asian, weight, style, size, code,
+    )
     out.push({
       text: c.to_string(),
       family,
@@ -159,12 +203,19 @@ fn pptx_char_to_styled(
       style,
       size,
       color,
-      advance: pptx_char_width(c, size),
+      advance: metrics.advance,
       space,
       cjk,
       break_after,
       hard_break: false,
       no_break: false,
+      face: metrics.face,
+      choice: metrics.choice,
+      record_family: metrics.record_family,
+      record_weight: metrics.record_weight,
+      record_style: metrics.record_style,
+      asc: metrics.asc,
+      desc: metrics.desc,
     })
   }
   out
@@ -199,12 +250,19 @@ fn pptx_paragraph_chars(
         if text == "" {
           continue
         }
-        let (family, weight, style, size, color) = pptx_run_style(
+        let (family, east_asian, weight, style, size, color) = pptx_run_style(
           ctx, chain, child, scale,
         )
         for
           styled in pptx_char_to_styled(
-            text, family, weight, style, size, color,
+            ctx.font_ctx,
+            text,
+            family,
+            east_asian,
+            weight,
+            style,
+            size,
+            color,
           ) {
           chars.push(styled)
         }
@@ -214,11 +272,18 @@ fn pptx_paragraph_chars(
         if text == "" {
           continue
         }
-        let (family, weight, style, size, color) = pptx_math_run_style(
+        let (family, east_asian, weight, style, size, color) = pptx_math_run_style(
           ctx, chain, child, scale,
         )
         let formula = pptx_char_to_styled(
-          text, family, weight, style, size, color,
+          ctx.font_ctx,
+          text,
+          family,
+          east_asian,
+          weight,
+          style,
+          size,
+          color,
         )
         for styled in formula {
           styled.no_break = true
@@ -239,6 +304,13 @@ fn pptx_paragraph_chars(
           break_after: false,
           hard_break: true,
           no_break: false,
+          face: "",
+          choice: None,
+          record_family: "",
+          record_weight: 400,
+          record_style: 0,
+          asc: 0.0,
+          desc: 0.0,
         })
       _ => ()
     }
@@ -269,7 +341,11 @@ fn pptx_merge_line_items(
           chars[index].weight == first.weight &&
           chars[index].style == first.style &&
           chars[index].size == first.size &&
-          chars[index].color == first.color {
+          chars[index].color == first.color &&
+          chars[index].face == first.face &&
+          chars[index].record_family == first.record_family &&
+          chars[index].record_weight == first.record_weight &&
+          chars[index].record_style == first.record_style {
       text.write_string(chars[index].text)
       advance += chars[index].advance
       index += 1
@@ -283,6 +359,13 @@ fn pptx_merge_line_items(
       color: first.color,
       x: placed,
       advance,
+      face: first.face,
+      choice: first.choice,
+      record_family: first.record_family,
+      record_weight: first.record_weight,
+      record_style: first.record_style,
+      asc: first.asc,
+      desc: first.desc,
     })
     placed += advance
   }
@@ -300,11 +383,14 @@ fn pptx_layout_paragraph(
   bullet_style : Int32,
   bullet_color : UInt32,
   available : Double,
+  fonts : PptxFontContext,
 ) -> PptxParagraphLayout {
   let bullet_width = if bullet_text == "" {
     0.0
   } else {
-    pptx_text_width(bullet_text, bullet_size)
+    pptx_measure_text(
+      fonts, bullet_family, "", bullet_weight, bullet_style, bullet_size, bullet_text,
+    )
   }
   let mut first_start = Double::max(props.mar_l + props.indent, 0.0)
   let bullet_x = first_start
@@ -357,18 +443,32 @@ fn pptx_layout_paragraph(
     let items = pptx_merge_line_items(chars, segment_start, line_end)
     let mut line_width = 0.0
     let mut max_size = 0.0
+    let mut asc = 0.0
+    let mut desc = 0.0
     for item in items {
       line_width = Double::max(line_width, item.x + item.advance)
       max_size = Double::max(max_size, item.size)
+      asc = Double::max(asc, item.asc)
+      desc = Double::max(desc, item.desc)
     }
+    let natural = asc + desc
     let height = if props.ln_pts > 0.0 {
       props.ln_pts
-    } else if max_size > 0.0 {
-      max_size * 1.2 * (if props.ln_pct > 0.0 { props.ln_pct } else { 1.0 })
+    } else if natural > 0.0 {
+      natural * (if props.ln_pct > 0.0 { props.ln_pct } else { 1.0 })
     } else {
       14.0
     }
-    lines.push({ items, start, width: line_width, height, max_size, wrap, })
+    lines.push({
+      items,
+      start,
+      width: line_width,
+      height,
+      max_size,
+      asc,
+      desc,
+      wrap,
+    })
     if hard {
       segment_start = end + 1
     } else if line_end >= chars.length() {
@@ -391,12 +491,14 @@ fn pptx_layout_paragraph(
       width: 0.0,
       height: 14.0,
       max_size: 0.0,
+      asc: 14.0,
+      desc: 0.0,
       wrap: 1,
     })
   }
   let mut natural = 0.0
   for line in lines {
-    natural = Double::max(natural, line.max_size * 1.2)
+    natural = Double::max(natural, line.asc + line.desc)
   }
   if natural <= 0.0 {
     natural = 14.0
@@ -464,25 +566,6 @@ fn pptx_body_prop_double(
     "" => default
     value =>
       (@string.parse_double(value) catch { _ => default * 12700.0 }) / 12700.0
-  }
-}
-
-///|
-fn pptx_font_index(
-  object : @core.ObjectBuilder,
-  ctx : PptxShapeContext,
-  family : String,
-  weight : Int32,
-  style : Int32,
-) -> Int32 {
-  let key = family + "|" + weight.to_string() + "|" + style.to_string()
-  match ctx.fonts.get(key) {
-    Some(value) => value
-    None => {
-      let value = object.add_font({ hash: None, family, weight, style, })
-      ctx.fonts[key] = value
-      value
-    }
   }
 }
 
@@ -576,15 +659,23 @@ fn pptx_draw_shape_text(
       pptx_first_char(chars) {
       Some(c) => (c.family, c.weight, c.style, c.size, c.color)
       None => {
-        let (family, weight, style, size, color) = pptx_run_style(
+        let (family, _, weight, style, size, color) = pptx_run_style(
           ctx, chain, paragraph, scale,
         )
         (family, weight, style, size, color)
       }
     }
     let layout = pptx_layout_paragraph(
-      chars, props, bullet_text, bullet_size, bullet_family, bullet_weight, bullet_style,
-      bullet_color, available,
+      chars,
+      props,
+      bullet_text,
+      bullet_size,
+      bullet_family,
+      bullet_weight,
+      bullet_style,
+      bullet_color,
+      available,
+      ctx.font_ctx,
     )
     total += layout.space_before + layout.space_after
     for line in layout.lines {
@@ -633,18 +724,21 @@ fn pptx_draw_shape_text(
     line_y += paragraph.space_before
     object.mark(0, "")
     if paragraph.bullet.text != "" {
-      let font = pptx_font_index(
+      let font = pptx_font_ref_text(
+        ctx.font_ctx,
         object,
-        ctx,
         paragraph.bullet_family,
+        "",
         paragraph.bullet_weight,
         paragraph.bullet_style,
+        paragraph.bullet_size,
+        paragraph.bullet.text,
       )
       object.font(font, Float::from_double(paragraph.bullet_size))
       object.fill_color(paragraph.bullet_color)
       let baseline = line_y +
         paragraph.lines[0].height -
-        paragraph.lines[0].max_size * 0.2
+        paragraph.lines[0].desc
       object.fill_text(
         paragraph.bullet.text,
         Float::from_double(origin_x + paragraph.bullet_x),
@@ -669,14 +763,17 @@ fn pptx_draw_shape_text(
           _ => ()
         }
       }
-      let baseline = line_y + line.height - line.max_size * 0.2
+      let baseline = line_y + line.height - line.desc
       for item in line.items {
-        let font = pptx_font_index(
+        let font = pptx_font_ref(
+          ctx.font_ctx,
           object,
-          ctx,
-          item.family,
-          item.weight,
-          item.style,
+          item.face,
+          item.choice,
+          item.record_family,
+          item.record_weight,
+          item.record_style,
+          item.text,
         )
         object.font(font, Float::from_double(item.size))
         object.fill_color(item.color)
@@ -693,5 +790,17 @@ fn pptx_draw_shape_text(
   }
   if rotated {
     object.restore()
+  }
+}
+
+///|
+fn PptxShapeContext::warn_once(
+  self : PptxShapeContext,
+  key : String,
+  message : String,
+) -> Unit {
+  if !self.warned.contains(key) {
+    self.warned[key] = true
+    self.warnings.push(message)
   }
 }

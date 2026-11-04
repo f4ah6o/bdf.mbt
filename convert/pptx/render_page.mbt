@@ -12,11 +12,17 @@ priv struct PptxRenderCache {
   backgrounds : Map[String, PptxCachedLayer]
   masters : Map[String, PptxCachedLayer]
   layouts : Map[String, PptxCachedLayer]
+  mut embedded_fonts : Int32
 }
 
 ///|
 fn pptx_new_render_cache() -> PptxRenderCache {
-  { backgrounds: Map([]), masters: Map([]), layouts: Map([]), }
+  {
+    backgrounds: Map([]),
+    masters: Map([]),
+    layouts: Map([]),
+    embedded_fonts: 0,
+  }
 }
 
 ///|
@@ -121,6 +127,7 @@ fn pptx_emit_shapes(
           draw_width,
           ctx.theme,
           ctx.theme_fonts,
+          ctx.font_ctx,
         )
       }
       continue
@@ -259,163 +266,76 @@ fn pptx_emit_shapes(
       }
       continue
     }
-    let geom = pptx_child(pptx_child(Some(shape), "spPr"), "prstGeom")
-    let geometry = match geom {
+    let inherited = pptx_shape_inheritance(ctx, shape)
+    let geom = pptx_shape_geometry_node(shape, inherited)
+    let mut geometry_name = match geom {
       Some(value) => pptx_attribute(value.element, "prst", "rect")
       None => "rect"
     }
-    let corner_radius = if geometry == "roundRect" {
-      let fraction = match pptx_child(pptx_child(geom, "avLst"), "gd") {
-        Some(value) => {
-          let fmla = pptx_attribute(value.element, "fmla", "val 16667")
-          let token = match fmla.split(" ").last() {
-            Some(value) => value.to_string()
-            None => "16667"
-          }
-          (@string.parse_double(token) catch { _ => 16667.0 }) / 100000.0
-        }
-        None => 0.16667
+    if geometry_name == "" {
+      geometry_name = "rect"
+    }
+    let geometry = match
+      pptx_preset_geometry(
+        geometry_name,
+        pptx_preset_adjust(geom),
+        draw_width,
+        draw_height,
+      ) {
+      Some(value) => value
+      None => {
+        ctx.warn_once(
+          "prst:" + geometry_name,
+          "unknown preset shape \"" + geometry_name + "\" drawn as a rectangle",
+        )
+        geometry_name = "rect"
+        pptx_rect_geometry(draw_width, draw_height)
       }
-      fraction * Double::min(draw_width, draw_height)
+    }
+    let paint = pptx_shape_paint(ctx, shape, inherited)
+    let line = pptx_shape_line(ctx, shape, inherited)
+    let center_x = shape_x + draw_width / 2.0
+    let center_y = shape_y + draw_height / 2.0
+    let path_rotation = transform.rotation + placement.rotation
+    let path_center_x = if placement.rotation != 0.0 {
+      placement.cx
     } else {
-      0.0
+      center_x
     }
-    let fill = pptx_node_color(
-      pptx_child(Some(shape), "spPr"),
-      "solidFill",
-      ctx.theme,
-    )
-    let fill_alpha = pptx_node_alpha(
-      pptx_child(Some(shape), "spPr"),
-      "solidFill",
-    )
-    let gradient = pptx_gradient_paint(
-      shape,
-      shape_x,
-      shape_y,
-      draw_width,
-      draw_height,
-      ctx.theme,
-    )
-    let mut gradient_done = false
-    match gradient {
-      Some(paint) =>
-        if geometry == "rect" {
-          object.fill_paint(object.add_paint(paint))
-          object.fill_rect(
-            Float::from_double(shape_x),
-            Float::from_double(shape_y),
-            Float::from_double(draw_width),
-            Float::from_double(draw_height),
-          )
-          gradient_done = true
-        } else if geometry == "ellipse" {
-          object.fill_paint(object.add_paint(paint))
-          let mut path = pptx_rotate_path(
-            pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
-            shape_x + draw_width / 2.0,
-            shape_y + draw_height / 2.0,
-            transform.rotation,
-          )
-          if placement.rotation != 0.0 {
-            path = pptx_rotate_path(
-              path,
-              placement.cx,
-              placement.cy,
-              placement.rotation,
-            )
-          }
-          object.fill_path(object.add_path(@core.Inline(path)), 0)
-          gradient_done = true
-        } else if geometry == "roundRect" {
-          object.fill_paint(object.add_paint(paint))
-          let mut path = pptx_rotate_path(
-            pptx_round_rect_path(
-              shape_x, shape_y, draw_width, draw_height, corner_radius,
-            ),
-            shape_x + draw_width / 2.0,
-            shape_y + draw_height / 2.0,
-            transform.rotation,
-          )
-          if placement.rotation != 0.0 {
-            path = pptx_rotate_path(
-              path,
-              placement.cx,
-              placement.cy,
-              placement.rotation,
-            )
-          }
-          object.fill_path(object.add_path(@core.Inline(path)), 0)
-          gradient_done = true
-        }
-      None => ()
+    let path_center_y = if placement.rotation != 0.0 {
+      placement.cy
+    } else {
+      center_y
     }
-    if !gradient_done {
-      match fill {
-        Some(color) => {
-          if fill_alpha is Some(_) {
-            object.save()
-            object.alpha(Float::from_double(fill_alpha.unwrap()))
-          }
+    let gradient = match paint {
+      PptxPaintGradient(node, theme) =>
+        pptx_gradient_node(
+          Some(node),
+          shape_x,
+          shape_y,
+          draw_width,
+          draw_height,
+          theme,
+        )
+      _ => None
+    }
+    let fill_alpha = match paint {
+      PptxPaintSolid(_, alpha) => alpha
+      _ => None
+    }
+    if fill_alpha is Some(_) {
+      object.save()
+      object.alpha(Float::from_double(fill_alpha.unwrap()))
+    }
+    if geometry_name == "rect" {
+      match paint {
+        PptxPaintSolid(color, _) => {
           object.fill_color(color)
-          if geometry == "rect" &&
-            (transform.rotation != 0.0 || placement.rotation != 0.0) {
-            let group = placement.rotation != 0.0
-            let path_index = object.add_path(
-              @core.Inline(
-                pptx_rotated_rect_path_at(
-                  shape_x,
-                  shape_y,
-                  draw_width,
-                  draw_height,
-                  transform.rotation + placement.rotation,
-                  if group {
-                    placement.cx
-                  } else {
-                    shape_x + draw_width / 2.0
-                  },
-                  if group {
-                    placement.cy
-                  } else {
-                    shape_y + draw_height / 2.0
-                  },
-                ),
-              ),
+          if path_rotation != 0.0 {
+            let path = pptx_rotated_rect_path_at(
+              shape_x, shape_y, draw_width, draw_height, path_rotation, path_center_x,
+              path_center_y,
             )
-            object.fill_path(path_index, 0)
-          } else if geometry == "ellipse" {
-            let mut path = pptx_rotate_path(
-              pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
-              shape_x + draw_width / 2.0,
-              shape_y + draw_height / 2.0,
-              transform.rotation,
-            )
-            if placement.rotation != 0.0 {
-              path = pptx_rotate_path(
-                path,
-                placement.cx,
-                placement.cy,
-                placement.rotation,
-              )
-            }
-            object.fill_path(object.add_path(@core.Inline(path)), 0)
-          } else if geometry == "roundRect" {
-            let mut path = pptx_rotate_path(
-              pptx_round_rect_path(
-                shape_x, shape_y, draw_width, draw_height, corner_radius,
-              ),
-              shape_x + draw_width / 2.0,
-              shape_y + draw_height / 2.0,
-              transform.rotation,
-            )
-            if placement.rotation != 0.0 {
-              path = pptx_rotate_path(
-                path,
-                placement.cx,
-                placement.cy,
-                placement.rotation,
-              )
-            }
             object.fill_path(object.add_path(@core.Inline(path)), 0)
           } else {
             object.fill_rect(
@@ -426,105 +346,121 @@ fn pptx_emit_shapes(
             )
           }
         }
+        PptxPaintGradient(_, _) =>
+          match gradient {
+            Some(value) => {
+              object.fill_paint(object.add_paint(value))
+              if path_rotation != 0.0 {
+                let path = pptx_rotated_rect_path_at(
+                  shape_x, shape_y, draw_width, draw_height, path_rotation, path_center_x,
+                  path_center_y,
+                )
+                object.fill_path(object.add_path(@core.Inline(path)), 0)
+              } else {
+                object.fill_rect(
+                  Float::from_double(shape_x),
+                  Float::from_double(shape_y),
+                  Float::from_double(draw_width),
+                  Float::from_double(draw_height),
+                )
+              }
+            }
+            None => ()
+          }
+        PptxPaintNone => ()
+      }
+      match line {
+        Some(value) =>
+          if path_rotation != 0.0 {
+            let path = pptx_rotated_rect_path_at(
+              shape_x, shape_y, draw_width, draw_height, path_rotation, path_center_x,
+              path_center_y,
+            )
+            pptx_stroke_geometry_path(object, value, path)
+          } else {
+            pptx_set_line(object, value)
+            object.stroke_rect(
+              Float::from_double(shape_x),
+              Float::from_double(shape_y),
+              Float::from_double(draw_width),
+              Float::from_double(draw_height),
+            )
+          }
+        None => ()
+      }
+    } else if geometry_name == "roundRect" {
+      let radius = pptx_round_rect_radius(geom, draw_width, draw_height)
+      let path = pptx_rotate_path(
+        pptx_round_rect_path(shape_x, shape_y, draw_width, draw_height, radius),
+        path_center_x,
+        path_center_y,
+        path_rotation,
+      )
+      pptx_fill_geometry_path(object, paint, gradient, path)
+      match line {
+        Some(value) => pptx_stroke_geometry_path(object, value, path)
+        None => ()
+      }
+    } else if geometry_name == "ellipse" {
+      let path = pptx_rotate_path(
+        pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
+        path_center_x,
+        path_center_y,
+        path_rotation,
+      )
+      pptx_fill_geometry_path(object, paint, gradient, path)
+      match line {
+        Some(value) => pptx_stroke_geometry_path(object, value, path)
+        None => ()
+      }
+    } else {
+      for entry in geometry.paths {
+        if entry.fill != "none" {
+          let path = pptx_geometry_path_at(
+            entry.path,
+            shape_x,
+            shape_y,
+            path_rotation,
+            path_center_x,
+            path_center_y,
+          )
+          match paint {
+            PptxPaintSolid(color, _) => {
+              object.fill_color(pptx_adjust_fill_color(color, entry.fill))
+              object.fill_path(object.add_path(@core.Inline(path)), 0)
+            }
+            PptxPaintGradient(_, _) =>
+              match gradient {
+                Some(value) => {
+                  object.fill_paint(object.add_paint(value))
+                  object.fill_path(object.add_path(@core.Inline(path)), 0)
+                }
+                None => ()
+              }
+            PptxPaintNone => ()
+          }
+        }
+      }
+      match line {
+        Some(value) =>
+          for entry in geometry.paths {
+            if entry.stroke {
+              let path = pptx_geometry_path_at(
+                entry.path,
+                shape_x,
+                shape_y,
+                path_rotation,
+                path_center_x,
+                path_center_y,
+              )
+              pptx_stroke_geometry_path(object, value, path)
+            }
+          }
         None => ()
       }
     }
     if fill_alpha is Some(_) {
       object.restore()
-    }
-    let stroke = pptx_child(pptx_child(Some(shape), "spPr"), "ln")
-    let stroke_width = match stroke {
-      Some(value) =>
-        (@string.parse_double(pptx_attribute(value.element, "w", "0")) catch {
-          _ => 0.0
-        }) /
-        12700.0
-      None => 0.0
-    }
-    if stroke_width > 0.0 {
-      let stroke_color = match pptx_node_color(stroke, "solidFill", ctx.theme) {
-        Some(color) => color
-        None => 0x000000ffU
-      }
-      if geometry == "rect" &&
-        (transform.rotation != 0.0 || placement.rotation != 0.0) {
-        let group = placement.rotation != 0.0
-        let path_index = object.add_path(
-          @core.Inline(
-            pptx_rotated_rect_path_at(
-              shape_x,
-              shape_y,
-              draw_width,
-              draw_height,
-              transform.rotation + placement.rotation,
-              if group {
-                placement.cx
-              } else {
-                shape_x + draw_width / 2.0
-              },
-              if group {
-                placement.cy
-              } else {
-                shape_y + draw_height / 2.0
-              },
-            ),
-          ),
-        )
-        object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
-        object.stroke_color(stroke_color)
-        object.stroke_path(path_index)
-      } else if geometry == "ellipse" {
-        let mut path = pptx_rotate_path(
-          pptx_ellipse_path(shape_x, shape_y, draw_width, draw_height),
-          shape_x + draw_width / 2.0,
-          shape_y + draw_height / 2.0,
-          transform.rotation,
-        )
-        if placement.rotation != 0.0 {
-          path = pptx_rotate_path(
-            path,
-            placement.cx,
-            placement.cy,
-            placement.rotation,
-          )
-        }
-        object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
-        object.stroke_color(stroke_color)
-        object.stroke_path(object.add_path(@core.Inline(path)))
-      } else if geometry == "roundRect" {
-        let mut path = pptx_rotate_path(
-          pptx_round_rect_path(
-            shape_x, shape_y, draw_width, draw_height, corner_radius,
-          ),
-          shape_x + draw_width / 2.0,
-          shape_y + draw_height / 2.0,
-          transform.rotation,
-        )
-        if placement.rotation != 0.0 {
-          path = pptx_rotate_path(
-            path,
-            placement.cx,
-            placement.cy,
-            placement.rotation,
-          )
-        }
-        object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
-        object.stroke_color(stroke_color)
-        object.stroke_path(object.add_path(@core.Inline(path)))
-      } else if geometry == "rect" || geometry == "" {
-        object.line(Float::from_double(stroke_width), 0, 0, 8.0F)
-        object.stroke_color(stroke_color)
-        object.stroke_rect(
-          Float::from_double(shape_x),
-          Float::from_double(shape_y),
-          Float::from_double(draw_width),
-          Float::from_double(draw_height),
-        )
-      }
-    }
-    let body = match pptx_child(Some(shape), "txBody") {
-      Some(value) => value
-      None => continue
     }
     let text_rotation = transform.rotation + placement.rotation
     let text_cx = if placement.rotation != 0.0 {
@@ -537,8 +473,22 @@ fn pptx_emit_shapes(
     } else {
       shape_y + draw_height / 2.0
     }
+    let body = match pptx_child(Some(shape), "txBody") {
+      Some(value) => value
+      None => continue
+    }
+    let mut text_x = shape_x + geometry.text_left
+    let mut text_y = shape_y + geometry.text_top
+    let mut text_width = geometry.text_right - geometry.text_left
+    let mut text_height = geometry.text_bottom - geometry.text_top
+    if text_width <= 0.0 || text_height <= 0.0 {
+      text_x = shape_x
+      text_y = shape_y
+      text_width = draw_width
+      text_height = draw_height
+    }
     pptx_draw_shape_text(
-      ctx, object, shape, body, shape_x, shape_y, draw_width, draw_height, text_rotation,
+      ctx, object, shape, body, text_x, text_y, text_width, text_height, text_rotation,
       text_cx, text_cy,
     )
   }
@@ -709,16 +659,26 @@ fn pptx_build_tree_layer(
   package : @ooxml.OoxmlPackage,
   writer : @core.DocumentWriter,
   theme : Map[String, UInt32],
-  theme_fonts : (String, String),
+  theme_fonts : PptxThemeFonts,
+  theme_fills : Array[PptxXmlNode],
+  theme_bg_fills : Array[PptxXmlNode],
+  theme_lines : Array[PptxXmlNode],
   default_text_style : PptxXmlNode?,
   part : String,
   root : PptxXmlNode,
-) -> Bytes raise {
+  warnings : Array[String],
+  warned : Map[String, Bool],
+  fonts : @canvas.Fonts,
+  missing : Map[Int32, Bool],
+) -> (Bytes, Int32) raise {
   let ctx : PptxShapeContext = {
     package,
     writer,
     theme,
     theme_fonts,
+    theme_fills,
+    theme_bg_fills,
+    theme_lines,
     default_text_style,
     layout_root: None,
     master_root: None,
@@ -726,10 +686,14 @@ fn pptx_build_tree_layer(
     master_placeholders: [],
     is_body: false,
     fonts: Map([]),
+    warnings,
+    warned,
+    font_ctx: pptx_font_context(fonts, missing),
   }
   let object = @core.ObjectBuilder::new()
   pptx_emit_shapes(ctx, object, part, pptx_collect_tree_shapes(root, true))
-  object.encode()
+  let embedded = pptx_embed_fonts(ctx.font_ctx, object, writer, warnings)
+  (object.encode(), embedded)
 }
 
 ///|
@@ -777,7 +741,10 @@ fn pptx_render_page(
   package : @ooxml.OoxmlPackage,
   writer : @core.DocumentWriter,
   theme : Map[String, UInt32],
-  theme_fonts : (String, String),
+  theme_fonts : PptxThemeFonts,
+  theme_fills : Array[PptxXmlNode],
+  theme_bg_fills : Array[PptxXmlNode],
+  theme_lines : Array[PptxXmlNode],
   default_text_style : PptxXmlNode?,
   slide_part : String,
   slide_root : PptxXmlNode,
@@ -787,6 +754,10 @@ fn pptx_render_page(
   index_runs : Array[@core.IndexRun],
   index_budget : @render.TextExtractionBudget,
   cache : PptxRenderCache,
+  warnings : Array[String],
+  warned : Map[String, Bool],
+  fonts : @canvas.Fonts,
+  missing : Map[Int32, Bool],
 ) -> Json raise {
   let context = pptx_slide_context(package, slide_part)
   let layout_part = context.layout_part
@@ -820,6 +791,9 @@ fn pptx_render_page(
         writer,
         theme,
         theme_fonts,
+        theme_fills,
+        theme_bg_fills,
+        theme_lines,
         default_text_style,
         layout_root: None,
         master_root: None,
@@ -827,6 +801,9 @@ fn pptx_render_page(
         master_placeholders: [],
         is_body: false,
         fonts: Map([]),
+        warnings,
+        warned,
+        font_ctx: pptx_font_context(fonts, missing),
       }
       let data = pptx_build_background(
         empty_ctx, background, background_part, width, height,
@@ -844,10 +821,11 @@ fn pptx_render_page(
       let layer = match cache.masters.get(master_part) {
         Some(value) => value
         None => {
-          let data = pptx_build_tree_layer(
-            package, writer, theme, theme_fonts, default_text_style, master_part,
-            root,
+          let (data, embedded) = pptx_build_tree_layer(
+            package, writer, theme, theme_fonts, theme_fills, theme_bg_fills, theme_lines,
+            default_text_style, master_part, root, warnings, warned, fonts, missing,
           )
+          cache.embedded_fonts += embedded
           let layer = pptx_cached_layer(writer, data)
           cache.masters[master_part] = layer
           layer
@@ -866,10 +844,11 @@ fn pptx_render_page(
       let layer = match cache.layouts.get(layout_part) {
         Some(value) => value
         None => {
-          let data = pptx_build_tree_layer(
-            package, writer, theme, theme_fonts, default_text_style, layout_part,
-            root,
+          let (data, embedded) = pptx_build_tree_layer(
+            package, writer, theme, theme_fonts, theme_fills, theme_bg_fills, theme_lines,
+            default_text_style, layout_part, root, warnings, warned, fonts, missing,
           )
+          cache.embedded_fonts += embedded
           let layer = pptx_cached_layer(writer, data)
           cache.layouts[layout_part] = layer
           layer
@@ -896,6 +875,9 @@ fn pptx_render_page(
     writer,
     theme,
     theme_fonts,
+    theme_fills,
+    theme_bg_fills,
+    theme_lines,
     default_text_style,
     layout_root,
     master_root,
@@ -903,6 +885,9 @@ fn pptx_render_page(
     master_placeholders,
     is_body: true,
     fonts: Map([]),
+    warnings,
+    warned,
+    font_ctx: pptx_font_context(fonts, missing),
   }
   let body_object = @core.ObjectBuilder::new()
   pptx_emit_shapes(
@@ -910,6 +895,12 @@ fn pptx_render_page(
     body_object,
     slide_part,
     pptx_collect_tree_shapes(slide_root, false),
+  )
+  cache.embedded_fonts += pptx_embed_fonts(
+    body_ctx.font_ctx,
+    body_object,
+    writer,
+    warnings,
   )
   let body_data = body_object.encode()
   if !pptx_object_is_empty(body_data) {

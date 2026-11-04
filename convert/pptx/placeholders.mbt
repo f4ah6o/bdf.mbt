@@ -183,3 +183,36 @@ fn pptx_find_placeholder_shape(
   }
   None
 }
+
+///|
+// The layout and master placeholders a shape inherits properties from,
+// most specific first: its layout placeholder and that placeholder's master
+// counterpart.
+fn pptx_shape_inheritance(
+  ctx : PptxShapeContext,
+  shape : PptxXmlNode,
+) -> Array[PptxXmlNode] {
+  let out : Array[PptxXmlNode] = []
+  match pptx_placeholder_info(shape) {
+    Some(info) => {
+      let mut master_info = info
+      match pptx_find_placeholder_shape(ctx.layout_placeholders, info, false) {
+        Some(value) => {
+          out.push(value)
+          match pptx_placeholder_info(value) {
+            Some(layout_info) => master_info = layout_info
+            None => ()
+          }
+        }
+        None => ()
+      }
+      match
+        pptx_find_placeholder_shape(ctx.master_placeholders, master_info, true) {
+        Some(value) => out.push(value)
+        None => ()
+      }
+    }
+    None => ()
+  }
+  out
+}

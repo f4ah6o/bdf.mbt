@@ -21,6 +21,13 @@ priv struct PptxLineItem {
   color : UInt32
   x : Double
   advance : Double
+  face : String
+  choice : @fontdb.Choice?
+  record_family : String
+  record_weight : Int32
+  record_style : Int32
+  asc : Double
+  desc : Double
 }
 
 ///|
@@ -262,44 +269,83 @@ fn pptx_theme_colors(package : @ooxml.OoxmlPackage) -> Map[String, UInt32] {
 }
 
 ///|
-fn pptx_theme_fonts(package : @ooxml.OoxmlPackage) -> (String, String) {
+fn pptx_theme_fonts(package : @ooxml.OoxmlPackage) -> PptxThemeFonts {
+  let default : PptxThemeFonts = {
+    major: "sans-serif",
+    minor: "sans-serif",
+    major_ea: "",
+    minor_ea: "",
+  }
   let part = match package.relationship_of_type("", "/theme") {
     Some(rel) => rel.target
     None => "ppt/theme/theme1.xml"
   }
   if !package.has(part) {
-    return ("sans-serif", "sans-serif")
+    return default
   }
-  let root = pptx_read_xml(package, part) catch {
-    _ => return ("sans-serif", "sans-serif")
-  }
+  let root = pptx_read_xml(package, part) catch { _ => return default }
   let scheme = pptx_child(pptx_child(Some(root), "themeElements"), "fontScheme")
-  let major = match pptx_child(pptx_child(scheme, "majorFont"), "latin") {
-    Some(value) =>
-      match pptx_attribute(value.element, "typeface", "") {
-        "" => "sans-serif"
-        name => name
-      }
-    None => "sans-serif"
+  let typeface = fn(node : PptxXmlNode?, key : String) -> String {
+    match pptx_child(node, key) {
+      Some(value) =>
+        match pptx_attribute(value.element, "typeface", "") {
+          "" => "sans-serif"
+          name => name
+        }
+      None => "sans-serif"
+    }
   }
-  let minor = match pptx_child(pptx_child(scheme, "minorFont"), "latin") {
-    Some(value) =>
-      match pptx_attribute(value.element, "typeface", "") {
-        "" => "sans-serif"
-        name => name
-      }
-    None => "sans-serif"
+  let ea_typeface = fn(node : PptxXmlNode?, key : String) -> String {
+    match pptx_child(node, key) {
+      Some(value) => pptx_attribute(value.element, "typeface", "")
+      None => ""
+    }
   }
-  (major, minor)
+  let major = pptx_child(scheme, "majorFont")
+  let minor = pptx_child(scheme, "minorFont")
+  {
+    major: typeface(major, "latin"),
+    minor: typeface(minor, "latin"),
+    major_ea: ea_typeface(major, "ea"),
+    minor_ea: ea_typeface(minor, "ea"),
+  }
+}
+
+///|
+/// The theme's fill and line style matrices: a p:style fillRef or lnRef
+/// names an entry (1-based) of one of these lists.
+fn pptx_theme_style_lists(
+  package : @ooxml.OoxmlPackage,
+) -> (Array[PptxXmlNode], Array[PptxXmlNode], Array[PptxXmlNode]) {
+  let empty : (Array[PptxXmlNode], Array[PptxXmlNode], Array[PptxXmlNode]) = (
+    [],
+    [],
+    [],
+  )
+  let part = match package.relationship_of_type("", "/theme") {
+    Some(rel) => rel.target
+    None => "ppt/theme/theme1.xml"
+  }
+  if !package.has(part) {
+    return empty
+  }
+  let root = pptx_read_xml(package, part) catch { _ => return empty }
+  let fmt = pptx_child(pptx_child(Some(root), "themeElements"), "fmtScheme")
+  (
+    pptx_children(pptx_child(fmt, "fillStyleLst")),
+    pptx_children(pptx_child(fmt, "bgFillStyleLst")),
+    pptx_children(pptx_child(fmt, "lnStyleLst")),
+  )
 }
 
 ///|
 fn pptx_run_family(
   run : PptxXmlNode,
-  fonts : (String, String),
+  fonts : PptxThemeFonts,
   inherited : PptxPlaceholderDefaults?,
 ) -> String {
-  let (major, minor) = fonts
+  let major = fonts.major
+  let minor = fonts.minor
   let rpr = pptx_child(Some(run), "rPr")
   let latin = match rpr {
     Some(value) => pptx_child(Some(value), "latin")
@@ -450,15 +496,21 @@ fn pptx_run_color(
 }
 
 ///|
-fn pptx_char_width(c : Char, size : Double) -> Double {
-  let code = c.to_int()
-  if c == ' ' {
+fn pptx_char_width_code(code : Int32, size : Double) -> Double {
+  if code == 0x20 || code == 0xa0 {
     size * 0.25
   } else if code >= 0x2e80 {
     size
+  } else if code < 0x20 || code == 0x200b || code == 0xfeff {
+    0.0
   } else {
     size * 0.5
   }
+}
+
+///|
+fn pptx_char_width(c : Char, size : Double) -> Double {
+  pptx_char_width_code(c.to_int(), size)
 }
 
 ///|
@@ -1091,7 +1143,8 @@ fn pptx_emit_table(
   y : Double,
   width : Double,
   theme : Map[String, UInt32],
-  fonts : (String, String),
+  fonts : PptxThemeFonts,
+  font_ctx : PptxFontContext,
 ) -> Unit raise {
   let lines = pptx_table_lines(shape)
   if lines.is_empty() {
@@ -1213,7 +1266,7 @@ fn pptx_emit_table(
     row_top += row_height
     row_index += 1
   }
-  let (_, minor) = fonts
+  let minor = fonts.minor
   let index = object.add_font({
     hash: None,
     family: minor,
@@ -1287,9 +1340,18 @@ fn pptx_emit_table(
           aft_pct: 0.0,
           aft_pts: 0.0,
         }
-        let chars = pptx_char_to_styled(text, minor, bold, italic, size, color)
+        let chars = pptx_char_to_styled(
+          font_ctx,
+          text,
+          minor,
+          fonts.minor_ea,
+          bold,
+          italic,
+          size,
+          color,
+        )
         let layout = pptx_layout_paragraph(
-          chars, props, "", 0.0, minor, bold, italic, color, inner,
+          chars, props, "", 0.0, minor, bold, italic, color, inner, font_ctx,
         )
         let mut total = 0.0
         for line in layout.lines {
@@ -1313,14 +1375,18 @@ fn pptx_emit_table(
             2 => offset = Double::max(0.0, inner - line.width)
             _ => ()
           }
-          let baseline = text_y + line.height - line.max_size * 0.2
+          let baseline = text_y + line.height - line.desc
           for item in line.items {
-            let font = object.add_font({
-              hash: None,
-              family: item.family,
-              weight: item.weight,
-              style: item.style,
-            })
+            let font = pptx_font_ref(
+              font_ctx,
+              object,
+              item.face,
+              item.choice,
+              item.record_family,
+              item.record_weight,
+              item.record_style,
+              item.text,
+            )
             object.font(font, Float::from_double(item.size))
             object.fill_color(item.color)
             object.fill_text(
@@ -1643,7 +1709,7 @@ fn pptx_emit_chart(
   width : Double,
   height : Double,
   theme : Map[String, UInt32],
-  fonts : (String, String),
+  fonts : PptxThemeFonts,
 ) -> Unit raise {
   let chart = pptx_child(
     pptx_child(pptx_child(Some(shape), "graphic"), "graphicData"),
@@ -1728,7 +1794,7 @@ fn pptx_emit_chart(
   if series.is_empty() {
     return
   }
-  let (_, minor) = fonts
+  let minor = fonts.minor
   let label_font = object.add_font({
     hash: None,
     family: minor,
@@ -2144,7 +2210,16 @@ pub fn detect(data : Bytes) -> Bool {
 
 ///|
 /// Convert the supported PresentationML shape/text subset to BDF.
-pub fn convert(data : Bytes, title~ : String = "") -> PptxResult raise {
+///
+/// The host supplies the fonts it found (a PowerPoint font directory, for
+/// example) as `db`; with faces, text measures real glyphs and the faces it
+/// uses are embedded as subsets. With no database text keeps upstream's
+/// estimated metrics, no font parts are written, and one warning says so.
+pub fn convert(
+  data : Bytes,
+  title~ : String = "",
+  db~ : @fontdb.Database? = None,
+) -> PptxResult raise {
   let presentation = pptx_presentation(data) catch {
     InvalidPptx(message) => raise PptxInvalid(message)
     error => raise PptxInvalid(error.to_string())
@@ -2162,6 +2237,17 @@ pub fn convert(data : Bytes, title~ : String = "") -> PptxResult raise {
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
   let theme = pptx_theme_colors(pkg)
   let theme_fonts = pptx_theme_fonts(pkg)
+  let (theme_fills, theme_bg_fills, theme_lines) = pptx_theme_style_lists(pkg)
+  let warnings : Array[String] = []
+  let warned : Map[String, Bool] = Map([])
+  let fonts = @canvas.Fonts::new(db)
+  let has_fonts = fonts.has_fonts()
+  let missing : Map[Int32, Bool] = Map([])
+  if !has_fonts {
+    warnings.push(
+      "no fonts found; text is laid out with estimated metrics and not embedded",
+    )
+  }
   let pages : Array[Json] = []
   let index_runs : Array[@core.IndexRun] = []
   let index_budget = @render.TextExtractionBudget::new()
@@ -2178,6 +2264,9 @@ pub fn convert(data : Bytes, title~ : String = "") -> PptxResult raise {
         writer,
         theme,
         theme_fonts,
+        theme_fills,
+        theme_bg_fills,
+        theme_lines,
         presentation.default_text_style,
         slide.part,
         root,
@@ -2187,6 +2276,10 @@ pub fn convert(data : Bytes, title~ : String = "") -> PptxResult raise {
         index_runs,
         index_budget,
         cache,
+        warnings,
+        warned,
+        fonts,
+        missing,
       ),
     )
   }
@@ -2228,12 +2321,17 @@ pub fn convert(data : Bytes, title~ : String = "") -> PptxResult raise {
   }
   writer.add_view(Json::object(view))
   let count = pages.length()
+  let embedded_fonts = cache.embedded_fonts
+  if has_fonts {
+    match pptx_missing_glyph_warning(missing) {
+      Some(message) => warnings.push(message)
+      None => ()
+    }
+  }
   {
     bdf: writer.write_single(),
     pages: count,
-    summary: "\{count} slide(s), 0 embedded font(s)",
-    warnings: [
-      "no fonts found; text is laid out with estimated metrics and not embedded",
-    ],
+    summary: "\{count} slide(s), \{embedded_fonts} embedded font(s)",
+    warnings,
   }
 }
