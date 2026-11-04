@@ -6,6 +6,7 @@ _build/
 .upstream-gocache/
 .tmp/
 _scratch/
+.worktrees/
 .mooncakes/
 node_modules/
 .vlmkit/
