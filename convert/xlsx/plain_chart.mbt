@@ -660,6 +660,60 @@ fn XlsxWorkbook::xlsx_chart_svg(
             (x - half).to_string() + "," + (y + half).to_string() +
             "\" fill=\"" + model.color + "\"/>",
           )
+        } else if model.marker == "x" {
+          svg.write_string(
+            "<line x1=\"" + (x - half).to_string() +
+            "\" y1=\"" + (y - half).to_string() +
+            "\" x2=\"" + (x + half).to_string() +
+            "\" y2=\"" + (y + half).to_string() +
+            "\" stroke=\"" + model.color + "\" stroke-width=\"2\"/>",
+          )
+          svg.write_string(
+            "<line x1=\"" + (x - half).to_string() +
+            "\" y1=\"" + (y + half).to_string() +
+            "\" x2=\"" + (x + half).to_string() +
+            "\" y2=\"" + (y - half).to_string() +
+            "\" stroke=\"" + model.color + "\" stroke-width=\"2\"/>",
+          )
+        } else if model.marker == "plus" {
+          svg.write_string(
+            "<line x1=\"" + x.to_string() +
+            "\" y1=\"" + (y - half).to_string() +
+            "\" x2=\"" + x.to_string() +
+            "\" y2=\"" + (y + half).to_string() +
+            "\" stroke=\"" + model.color + "\" stroke-width=\"2\"/>",
+          )
+          svg.write_string(
+            "<line x1=\"" + (x - half).to_string() +
+            "\" y1=\"" + y.to_string() +
+            "\" x2=\"" + (x + half).to_string() +
+            "\" y2=\"" + y.to_string() +
+            "\" stroke=\"" + model.color + "\" stroke-width=\"2\"/>",
+          )
+        } else if model.marker == "star" {
+          for sx in [-1.0, 1.0] {
+            svg.write_string(
+              "<line x1=\"" + (x - half * sx).to_string() +
+              "\" y1=\"" + (y - half).to_string() +
+              "\" x2=\"" + (x + half * sx).to_string() +
+              "\" y2=\"" + (y + half).to_string() +
+              "\" stroke=\"" + model.color + "\" stroke-width=\"2\"/>",
+            )
+          }
+          svg.write_string(
+            "<line x1=\"" + (x - half).to_string() +
+            "\" y1=\"" + y.to_string() +
+            "\" x2=\"" + (x + half).to_string() +
+            "\" y2=\"" + y.to_string() +
+            "\" stroke=\"" + model.color + "\" stroke-width=\"2\"/>",
+          )
+          svg.write_string(
+            "<line x1=\"" + x.to_string() +
+            "\" y1=\"" + (y - half).to_string() +
+            "\" x2=\"" + x.to_string() +
+            "\" y2=\"" + (y + half).to_string() +
+            "\" stroke=\"" + model.color + "\" stroke-width=\"2\"/>",
+          )
         } else if model.marker == "square" {
           svg.write_string(
             "<rect x=\"" + (x - half).to_string() +
