@@ -2934,7 +2934,7 @@ fn pptx_emit_chart(
       }
     }
   }
-  let (step, axis_high) = pptx_chart_nice_axis(
+  let (nice_step, nice_high) = pptx_chart_nice_axis(
     maximum,
     if horizontal {
       plot_width
@@ -2942,6 +2942,10 @@ fn pptx_emit_chart(
       plot_height
     },
   )
+  let mut step = nice_step
+  let mut axis_high = nice_high
+  let mut minor_unit = 0.0
+  let mut minor_gridlines = false
   // value axis labels
   let value_axis_visible = match pptx_child(plot_area, "valAx") {
     Some(value) =>
@@ -2953,16 +2957,66 @@ fn pptx_emit_chart(
       })
     None => false
   }
-  let gridlines = match pptx_child(plot_area, "valAx") {
-    Some(value) =>
-      match pptx_child(Some(value), "majorGridlines") {
-        Some(_) => true
-        None => false
+  let mut gridlines = false
+  match pptx_child(plot_area, "valAx") {
+    Some(value) => {
+      gridlines = pptx_child(Some(value), "majorGridlines") is Some(_)
+      minor_gridlines = pptx_child(Some(value), "minorGridlines") is Some(_)
+      let major_unit = match pptx_child(Some(value), "majorUnit") {
+        Some(unit) =>
+          @string.parse_double(pptx_attribute(unit.element, "val", "0")) catch {
+            _ => 0.0
+          }
+        None => 0.0
       }
-    None => false
+      if major_unit > 0.0 {
+        step = major_unit
+        axis_high = @math.ceil(maximum / step - 1.0e-9) * step
+        if axis_high <= 0.0 {
+          axis_high = step
+        }
+      }
+      minor_unit = match pptx_child(Some(value), "minorUnit") {
+        Some(unit) =>
+          @string.parse_double(pptx_attribute(unit.element, "val", "0")) catch {
+            _ => 0.0
+          }
+        None => 0.0
+      }
+    }
+    None => ()
+  }
+  if minor_unit <= 0.0 {
+    minor_unit = step / 5.0
   }
   let mut tick = 0.0
   while value_axis_visible && tick <= axis_high + step * 1.0e-6 {
+    if minor_gridlines {
+      for index in 1..<5 {
+        let value = tick + minor_unit * index.to_double()
+        if value > axis_high + 1.0e-6 {
+          break
+        }
+        object.fill_color(0xf2f2f2ffU)
+        if horizontal {
+          object.fill_rect(
+            Float::from_double(plot_x + plot_width * value / axis_high),
+            Float::from_double(plot_y),
+            0.5F,
+            Float::from_double(plot_height),
+          )
+        } else {
+          object.fill_rect(
+            Float::from_double(plot_x),
+            Float::from_double(
+              plot_y + plot_height - plot_height * value / axis_high,
+            ),
+            Float::from_double(plot_width),
+            0.5F,
+          )
+        }
+      }
+    }
     if gridlines {
       object.fill_color(0xd9d9d9ffU)
       if horizontal {
