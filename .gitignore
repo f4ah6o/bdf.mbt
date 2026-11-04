@@ -11,6 +11,11 @@ _scratch/
 node_modules/
 .vlmkit/
 .moon-home/
+.moon-home
+.mooncakes
+.upstream
+.upstream-bin
+node_modules
 .moon-registry/
 .moon-deps/
 .npm-cache/
