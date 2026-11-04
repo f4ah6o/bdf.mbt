@@ -82,10 +82,10 @@ try {
   assert.ok(result.formats.includes('markdown'));
   assert.ok(result.formats.includes('html'));
   assert.ok(result.formats.includes('epub'));
-  assert.equal(result.markdown.summary.includes('page(s)'), true);
-  assert.ok(result.markdown.pages > 0);
-  assert.equal(result.markdown.kind, 'fixed');
-  for (const want of ['Markdown のテスト文書', '見出し', 'func main()', '完了したタスク']) {
+  assert.equal(result.markdown.summary.includes('scroll strip(s)'), true);
+  assert.equal(result.markdown.pages, 1);
+  assert.equal(result.markdown.kind, 'scroll');
+  for (const want of ['Markdown のテスト文書', 'リスト', 'func main()', '完了したタスク', 'リンク']) {
     assert.ok(result.markdown.text.includes(want), `Markdown text lacks ${want}`);
   }
   assert.deepEqual(result.open, { pages: result.markdown.pages, first: 1 });

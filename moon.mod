@@ -17,4 +17,5 @@ import {
   "gaato/codec@0.1.0",
   "moonbitlang/x@0.5.5",
   "gaato/zstd@0.3.1",
+  "oilleelssq-wq/moonmarkdown@0.2.0",
 }

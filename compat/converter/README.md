@@ -44,3 +44,12 @@ hatches and non-top OCS entities; `shapes-bin.dxf` checks the binary reader, and
 `phase9-drawio-test.mjs` and `phase9-parquet-test.mjs` compare the expanded
 CAD-adjacent formats with upstream: draw.io views/pages/layers/text, and
 Parquet rows, columns, source table bytes, codecs, encodings and dates.
+`phase10-musicxml-test.mjs` compares the MusicXML converter with upstream:
+format registration, score and guitar TAB views, page geometry, text and play
+data for the upstream `minuet.musicxml` fixture.
+
+`phase11-markdown-test.mjs` compares the Markdown converter with upstream:
+scroll view id/kind/width, summary and text indexes for the upstream
+`basic.md`, `math.md` and `svg.md` fixtures, including GFM lists, tables,
+footnotes and LaTeX linearization. Whitespace is normalized and 88% text
+similarity is required because line breaks use estimated metrics.

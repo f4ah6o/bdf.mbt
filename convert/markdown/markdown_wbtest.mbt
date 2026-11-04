@@ -12,8 +12,9 @@ test "Markdown reader pages and metadata" {
   assert_eq(result.pages > 0, true)
   let doc = @core.open_single(result.bdf)
   let view = doc.manifest.views[0]
-  assert_eq(view.kind, "fixed")
-  assert_eq(view.pages.length(), result.pages)
+  assert_eq(view.kind, "scroll")
+  assert_eq(view.pages.length(), 1)
+  assert_eq(result.pages, 1)
   assert_eq(view.text_index.is_empty(), false)
 }
 

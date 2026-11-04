@@ -32,8 +32,7 @@
 - Done: MoonBit converters for the demo format set (PDF, DOCX, PPTX, XLSX,
   CSV, image, font, MIDI, MML, HP-GL/2, Jw_cad, text and binary DXF, SXF SFC,
   CGM, Gerber, KiCad PCB, draw.io, Parquet, audio, and reflowable/fixed-layout
-  EPUB), plus AI, TIFF, PSD, EMF/WMF, IDML and Visio VSDX. MusicXML has a
-  parser but no BDF converter.
+  EPUB), plus AI, TIFF, PSD, EMF/WMF, IDML, Visio VSDX and MusicXML/MXL.
 - Done: `convert/raster` PNG encoding and box scaling; the EMF/WMF metafile
   replay is also used by the DOCX and PPTX picture paths, with embedded
   EMF fixtures covering both Office integrations.
@@ -59,7 +58,7 @@
   JSON-style nested values, WKB→WKT and WKT geometry columns, and Variant
   values. Variant metadata newer than version 1 and encrypted Parquet files
   are documented gaps.
-- Phase 3: `convert/reader` provides the reader-mode block model (A4 pages for HTML/Markdown, A5 book pages for EPUB); `convert/epub` reads the container, manifest and spine and converts picture-only pre-paginated books page-for-page at their viewport size and reading direction; `convert/html` reads headings, paragraphs, lists, code, quotes, tables and images-as-alt-text; `convert/markdown` reads front matter, headings, lists, tasks, fences, quotes, rules, simple tables and inline links. Readability extraction, CSS, remote images, vertical writing, non-picture fixed layout, MHTML, embedded fonts and exact CommonMark/GFM behavior are documented gaps.
+- Phase 3: `convert/reader` provides the reader-mode block model (A4 pages for HTML, A5 book pages for EPUB); `convert/epub` reads the container, manifest and spine and converts picture-only pre-paginated books page-for-page at their viewport size and reading direction; `convert/html` reads headings, paragraphs, lists, code, quotes, tables and images-as-alt-text. `convert/markdown` now uses a pure-MoonBit CommonMark/GFM parser and builds the upstream 504-point scroll view, with nested lists and tasks, quotes, fenced and indented code, aligned tables, raw HTML, links, image alternative text, footnotes, definition lists, YAML/TOML front matter and linearized `$...$`/`$$...$$`/math-fence formulas. Relative and remote images produce alternative text and warnings; inline SVG is not drawn. Readability extraction, CSS, remote images, vertical writing, non-picture fixed layout, MHTML, embedded fonts and exact HTML reader-mode parity are documented gaps.
 - Phase 4: `convert/audio` writes one-page cards for MP3, AAC (ADTS/M4A), FLAC, Ogg Vorbis/Opus, WAV and AIFF with multi-value ID3 tags, synchronized lyrics and chapters, APIC/FLAC/Ogg pictures, MP4/iTunes metadata and cover art, Ogg granule durations, corrected AIFF 80-bit sample rates, Dublin Core metadata and an optional playable audio part. DRM handling,
   ID3v2.2 tags, compressed ID3 frames, QuickTime `chpl` v1 chapters and Ogg
   FLAC/Speex remain documented gaps.
@@ -133,16 +132,17 @@
    - KiCad schematics, projects and drawing sheets (`demo.zip`, `demo/`,
      `frame/`).
    - SXF P21/P2Z (`shapes.p21`, `shapes.p2z`); the SFC path is complete.
-   - Reader-mode math and resources (`html/math.html`, `markdown/math.md`,
-     `markdown/svg.md`).
+   - Reader-mode resources (`html/math.html`). Markdown math, SVG text and
+     the `math.md`/`svg.md` fixtures are ported.
    - EPUB vertical writing and non-picture fixed layout (`vertical.epub`).
    - IDML `simpleidml/` packages, linked images and table stories.
    - DOCX/PPTX OMML math and font directories (`math.docx`, `math.pptx`,
      `testdata/fonts`).
    - PSD layer compositing when a file has no composite, and TIFF
      JPEG/YCbCr pages.
-   - The MusicXML to BDF converter (the parser exists but the Worker does not
-     dispatch it).
+   - ~~The MusicXML to BDF converter (the parser exists but the Worker does
+     not dispatch it).~~ Done: `convert/musicxml` builds the score and playback
+     sequence, and the native Worker dispatches `musicxml`/`mxl`.
    - The upstream class-shaped `BdfDocument`, `CanvasRenderer` and
      `PageRenderer` APIs.
 3. ~~Port Parquet sheet input.~~ Done for flat and nested tables with common

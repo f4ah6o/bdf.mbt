@@ -6,6 +6,8 @@ pub fn convert(Bytes, title? : String) -> MarkdownResult raise MarkdownError
 
 pub fn detect(Bytes) -> Bool
 
+pub fn md_latex_linear(String) -> String
+
 // Errors
 pub suberror MarkdownError {
   MarkdownInvalid(String)
