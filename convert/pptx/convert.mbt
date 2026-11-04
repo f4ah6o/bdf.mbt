@@ -4367,7 +4367,20 @@ fn pptx_emit_chart(
     tick += step
   }
   // category labels
+  let cat_tick_skip = match pptx_child(cat_axis_node, "tickLblSkip") {
+    Some(value) =>
+      Double::max(
+        1.0,
+        (@string.parse_double(pptx_attribute(value.element, "val", "1")) catch {
+          _ => 1.0
+        }),
+      ).to_int()
+    None => 1
+  }
   for index, category in categories {
+    if index % cat_tick_skip != 0 {
+      continue
+    }
     if horizontal {
       let label_width = pptx_text_width(category, cat_label_size)
       pptx_chart_label(
