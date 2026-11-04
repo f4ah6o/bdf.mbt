@@ -2431,6 +2431,31 @@ fn pptx_chart_table_show(chart_space : PptxXmlNode?) -> (Bool, Bool) {
 }
 
 ///|
+fn pptx_chart_data_label_size(chart_space : PptxXmlNode?) -> Double {
+  let labels = pptx_child(chart_space, "dLbls")
+  let text = pptx_child(labels, "txPr")
+  let paragraph = pptx_child(text, "p")
+  let ppr = pptx_child(paragraph, "pPr")
+  let rpr = pptx_child(ppr, "defRPr")
+  match rpr {
+    Some(value) =>
+      match pptx_attribute(value.element, "sz", "") {
+        "" => 7.0
+        size => {
+          let parsed = (@string.parse_double(size) catch { _ => 700.0 }) /
+            100.0
+          if parsed >= 2.0 && parsed <= 72.0 {
+            parsed
+          } else {
+            7.0
+          }
+        }
+      }
+    None => 7.0
+  }
+}
+
+///|
 fn pptx_chart_label(
   object : @core.ObjectBuilder,
   font : Int32,
@@ -2575,6 +2600,7 @@ fn pptx_emit_chart(
       }
     None => ""
   }
+  let data_label_size = pptx_chart_data_label_size(chart_space)
   let palette = [
     0x4472c4ffU, 0xed7d31ffU, 0xa5a5a5ffU, 0xffc000ffU, 0x5b9bd5ffU, 0x70ad47ffU,
   ]
@@ -2848,7 +2874,7 @@ fn pptx_emit_chart(
           pptx_chart_label(
             object,
             label_font,
-            7.0,
+            data_label_size,
             black,
             label_text,
             px + 3.0,
@@ -2901,11 +2927,11 @@ fn pptx_emit_chart(
         )
         if table_cat {
           for col, category in categories {
-            let width = pptx_text_width(category, 7.0)
+            let width = pptx_text_width(category, data_label_size)
             pptx_chart_label(
               object,
               label_font,
-              7.0,
+              data_label_size,
               black,
               category,
               table_x + name_width + value_width * col.to_double() +
@@ -2920,7 +2946,7 @@ fn pptx_emit_chart(
             pptx_chart_label(
               object,
               label_font,
-              7.0,
+              data_label_size,
               black,
               item.name,
               table_x + 2.0,
@@ -2929,11 +2955,11 @@ fn pptx_emit_chart(
             for col, value in item.values {
               if col < categories.length() {
                 let text = pptx_chart_tick_text(value)
-                let width = pptx_text_width(text, 7.0)
+                let width = pptx_text_width(text, data_label_size)
                 pptx_chart_label(
                   object,
                   label_font,
-                  7.0,
+                  data_label_size,
                   black,
                   text,
                   table_x + name_width + value_width * col.to_double() +
@@ -3023,7 +3049,7 @@ fn pptx_emit_chart(
           pptx_chart_label(
             object,
             label_font,
-            7.0,
+            data_label_size,
             black,
             label_text,
             cx + @math.cos(angle) * distance + 3.0,
@@ -3036,11 +3062,11 @@ fn pptx_emit_chart(
       let angle = -3.141592653589793 / 2.0 +
         2.0 * 3.141592653589793 * index.to_double() /
         categories.length().to_double()
-      let width = pptx_text_width(category, 7.0)
+      let width = pptx_text_width(category, data_label_size)
       pptx_chart_label(
         object,
         label_font,
-        7.0,
+        data_label_size,
         black,
         category,
         cx + @math.cos(angle) * (radius + 8.0) - width / 2.0,
@@ -3087,11 +3113,11 @@ fn pptx_emit_chart(
         Float::from_double(table_height),
       )
       for col, category in categories {
-        let width = pptx_text_width(category, 7.0)
+        let width = pptx_text_width(category, data_label_size)
         pptx_chart_label(
           object,
           label_font,
-          7.0,
+          data_label_size,
           black,
           category,
           table_x + name_width + value_width * col.to_double() +
@@ -3104,7 +3130,7 @@ fn pptx_emit_chart(
         pptx_chart_label(
           object,
           label_font,
-          7.0,
+          data_label_size,
           black,
           item.name,
           table_x + 2.0,
@@ -3113,11 +3139,11 @@ fn pptx_emit_chart(
         for col, value in item.values {
           if col < categories.length() {
             let text = pptx_chart_tick_text(value)
-            let width = pptx_text_width(text, 7.0)
+            let width = pptx_text_width(text, data_label_size)
             pptx_chart_label(
               object,
               label_font,
-              7.0,
+              data_label_size,
               black,
               text,
               table_x + name_width + value_width * col.to_double() +
@@ -3266,11 +3292,11 @@ fn pptx_emit_chart(
       )
       if table_cat {
         for col, category in categories {
-          let width = pptx_text_width(category, 7.0)
+          let width = pptx_text_width(category, data_label_size)
           pptx_chart_label(
             object,
             label_font,
-            7.0,
+            data_label_size,
             black,
             category,
             table_x + name_width + value_width * col.to_double() +
@@ -3285,11 +3311,11 @@ fn pptx_emit_chart(
           for col, value in item.values {
             if col < categories.length() {
               let text = pptx_chart_tick_text(value)
-              let width = pptx_text_width(text, 7.0)
+              let width = pptx_text_width(text, data_label_size)
               pptx_chart_label(
                 object,
                 label_font,
-                7.0,
+                data_label_size,
                 black,
                 text,
                 table_x + name_width + value_width * col.to_double() +
@@ -3733,7 +3759,7 @@ fn pptx_emit_chart(
           if show_label_series && item.name != "" {
             text = item.name + " " + text
           }
-          let label_width = pptx_text_width(text, 7.0)
+          let label_width = pptx_text_width(text, data_label_size)
           let (label_x, label_y) = if horizontal {
             (
               plot_x + plot_width * (used + value) / axis_high + 2.0,
@@ -3748,7 +3774,7 @@ fn pptx_emit_chart(
             )
           }
           pptx_chart_label(
-            object, label_font, 7.0, black, text, label_x, label_y,
+            object, label_font, data_label_size, black, text, label_x, label_y,
           )
           used += value
         }
@@ -3765,7 +3791,7 @@ fn pptx_emit_chart(
           if show_label_series && item.name != "" {
             text = item.name + " " + text
           }
-          let label_width = pptx_text_width(text, 7.0)
+          let label_width = pptx_text_width(text, data_label_size)
           let (label_x, label_y) = if horizontal {
             (
               plot_x + plot_width * value / axis_high + 2.0,
@@ -3784,7 +3810,7 @@ fn pptx_emit_chart(
             )
           }
           pptx_chart_label(
-            object, label_font, 7.0, black, text, label_x, label_y,
+            object, label_font, data_label_size, black, text, label_x, label_y,
           )
         }
       }
@@ -3852,11 +3878,11 @@ fn pptx_emit_chart(
     }
     if show_cat {
       for col, category in categories {
-        let width = pptx_text_width(category, 7.0)
+        let width = pptx_text_width(category, data_label_size)
         pptx_chart_label(
           object,
           label_font,
-          7.0,
+          data_label_size,
           black,
           category,
           table_x +
@@ -3874,7 +3900,7 @@ fn pptx_emit_chart(
         pptx_chart_label(
           object,
           label_font,
-          7.0,
+          data_label_size,
           black,
           item.name,
           table_x + 2.0,
@@ -3885,11 +3911,11 @@ fn pptx_emit_chart(
         for col, value in item.values {
           if col < categories.length() {
             let text = pptx_chart_tick_text(value)
-            let width = pptx_text_width(text, 7.0)
+            let width = pptx_text_width(text, data_label_size)
             pptx_chart_label(
               object,
               label_font,
-              7.0,
+              data_label_size,
               black,
               text,
               table_x +
