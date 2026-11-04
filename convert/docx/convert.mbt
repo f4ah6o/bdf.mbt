@@ -22,6 +22,7 @@ priv struct DocxLineItem {
   style : Int32
   size : Double
   color : UInt32
+  rise : Double
   x : Double
   advance : Double
   shade : UInt32?

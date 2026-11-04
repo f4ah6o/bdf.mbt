@@ -508,6 +508,7 @@ fn docx_render_scroll(
             style: 0,
             size: 8.5,
             color: 0x000000ffU,
+            rise: 0.0,
             x: pad,
             advance: docx_text_width(text, 8.5),
             shade: None,

@@ -1227,6 +1227,34 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX superscript runs are raised and smaller" {
+  let blocks = "<w:p><w:r><w:t>E</w:t></w:r>" +
+    "<w:r><w:rPr><w:vertAlign w:val=\"superscript\"/></w:rPr><w:t>2</w:t></w:r></w:p>"
+  let commands = docx_test_page_commands(
+    convert(docx_test_docx(blocks, DOCX_TEST_SECTION, [])), "pages", 0, "body",
+  )
+  let mut base_y = -1.0
+  let mut raised_y = -1.0
+  let mut base_width = 0.0
+  let mut raised_width = 0.0
+  for command in commands {
+    match command {
+      FillText("E", _, y, width) => {
+        base_y = y
+        base_width = width
+      }
+      FillText("2", _, y, width) => {
+        raised_y = y
+        raised_width = width
+      }
+      _ => ()
+    }
+  }
+  assert_true(base_y >= 0.0 && raised_y >= 0.0)
+  assert_true(raised_y < base_y)
+  assert_true(raised_width < base_width)
+}
+
 test "DOCX character spacing widens text advances" {
   let blocks = "<w:p><w:r><w:rPr><w:spacing w:val=\"120\"/></w:rPr><w:t>AB</w:t></w:r></w:p>"
   let commands = docx_test_page_commands(

@@ -184,6 +184,7 @@ fn docx_layout_paragraph(
     item : DocxTextItem,
     size : Double,
     advance : Double,
+    rise : Double,
   ) -> Unit {
     current.push({
       kind: "text",
@@ -195,6 +196,7 @@ fn docx_layout_paragraph(
       style: docx_font_style(item.props),
       size,
       color: docx_run_color(item.props),
+      rise,
       x: line_x,
       advance,
       shade: item.shade,
@@ -286,6 +288,7 @@ fn docx_layout_paragraph(
               style: docx_font_style(item.props),
               size,
               color: docx_run_color(item.props),
+              rise: 0.0,
               x: line_x,
               advance,
               shade: None,
@@ -382,6 +385,7 @@ fn docx_layout_paragraph(
             style: 0,
             size,
             color: 0x000000ffU,
+            rise: 0.0,
             x: line_x,
             advance,
             shade: None,
@@ -405,6 +409,7 @@ fn docx_layout_paragraph(
             style: 0,
             size,
             color: 0x000000ffU,
+            rise: 0.0,
             x: line_x,
             advance,
             shade: None,
@@ -426,6 +431,7 @@ fn docx_layout_paragraph(
           style: 0,
           size: 10.0,
           color: 0x000000ffU,
+          rise: 0.0,
           x: line_x,
           advance: 0.0,
           shade: None,
@@ -449,6 +455,7 @@ fn docx_layout_paragraph(
           style: docx_font_style(item.props),
           size,
           color: docx_run_color(item.props),
+          rise: 0.0,
           x: line_x,
           advance,
           shade: item.shade,
@@ -463,7 +470,12 @@ fn docx_layout_paragraph(
         }
       }
       _ => {
-        let size = if item.props.size > 0.0 { item.props.size } else { 10.0 }
+        let base_size = if item.props.size > 0.0 { item.props.size } else { 10.0 }
+        let (size, rise) = match item.props.vertical_align {
+          "superscript" => (base_size * 0.65, base_size * 0.4)
+          "subscript" => (base_size * 0.65, -base_size * 0.15)
+          _ => (base_size, 0.0)
+        }
         for c in item.text {
           let advance = docx_char_width(c, size) + item.props.spacing
           if line_x + advance > right && line_started {
@@ -503,7 +515,7 @@ fn docx_layout_paragraph(
           }
           let text = StringBuilder()
           text.write_char(c)
-          push_text(text.to_string(), item, size, advance)
+          push_text(text.to_string(), item, size, advance, rise)
         }
       }
     }
@@ -829,7 +841,7 @@ fn docx_emit_para_line(
     object.fill_text(
       text,
       Float::from_double(x_origin + offset + item.x),
-      Float::from_double(top + baseline),
+      Float::from_double(top + baseline - item.rise),
       Float::from_double(advance),
     )
     if item.link != "" {
