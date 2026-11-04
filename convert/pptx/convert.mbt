@@ -2592,6 +2592,10 @@ fn pptx_emit_chart(
     return
   }
   let categories = series[0].categories
+  let cat_axis = pptx_child(plot_area, "catAx")
+  let val_axis = pptx_child(plot_area, "valAx")
+  let cat_axis_title = pptx_chart_title_text(cat_axis)
+  let val_axis_title = pptx_chart_title_text(val_axis)
   let data_table = pptx_child(chart_space, "dTable")
   let show_data_table = data_table is Some && !categories.is_empty()
   let mut show_cat = true
@@ -2873,6 +2877,23 @@ fn pptx_emit_chart(
         }
       }
     }
+  }
+  if cat_axis_title != "" {
+    let width = pptx_text_width(cat_axis_title, 8.0)
+    pptx_chart_label(
+      object,
+      label_font,
+      8.0,
+      black,
+      cat_axis_title,
+      plot_x + plot_width / 2.0 - width / 2.0,
+      y + height - 8.0,
+    )
+  }
+  if val_axis_title != "" {
+    pptx_chart_label(
+      object, label_font, 8.0, black, val_axis_title, x + 2.0, plot_y + 2.0,
+    )
   }
   if show_data_table {
     let table_x = plot_x
