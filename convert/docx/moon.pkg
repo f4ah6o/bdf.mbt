@@ -11,4 +11,8 @@ import {
   "Milky2018/xml",
 }
 
+import {
+  "moonbitlang/core/buffer",
+} for "wbtest"
+
 supported_targets = "+js+wasm-gc"
