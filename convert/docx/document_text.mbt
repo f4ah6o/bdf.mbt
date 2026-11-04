@@ -126,6 +126,7 @@ priv struct DocxTextDocument {
   paragraphs : Array[DocxTextParagraph]
   stories : Map[String, Array[DocxTextParagraph]]
   story_tables : Map[String, Array[DocxTable]]
+  bookmark_text : Map[String, String]
   footnotes : Map[String, Array[String]]
   endnotes : Map[String, Array[String]]
   even_odd : Bool
@@ -149,6 +150,8 @@ priv struct DocxTextWalker {
   paragraphs : Array[DocxTextParagraph]
   mut section_index : Int32
   fields : Array[DocxFieldState]
+  bookmarks : Map[String, StringBuilder]
+  open_bookmarks : Array[String]
 }
 
 ///|
@@ -365,6 +368,7 @@ fn docx_text_push(
 
 ///|
 fn docx_text_chars(
+  walker : DocxTextWalker,
   items : Array[DocxTextItem],
   text : String,
   props : DocxRunProps,
@@ -377,7 +381,14 @@ fn docx_text_chars(
       _ => {
         let s = StringBuilder()
         s.write_char(c)
-        docx_text_push(items, "char", s.to_string(), props)
+        let text = s.to_string()
+        docx_text_push(items, "char", text, props)
+        for name in walker.open_bookmarks {
+          match walker.bookmarks.get(name) {
+            Some(buffer) => buffer.write_string(text)
+            None => ()
+          }
+        }
       }
     }
   }
@@ -909,13 +920,14 @@ fn docx_alternate_content(node : DocxXmlNode) -> DocxXmlNode? {
 
 ///|
 fn docx_text_omml(
+  walker : DocxTextWalker,
   node : DocxXmlNode,
   items : Array[DocxTextItem],
   props : DocxRunProps,
 ) -> Unit {
   let text = docx_omml_linear(node)
   if text != "" {
-    docx_text_chars(items, text, props)
+    docx_text_chars(walker, items, text, props)
   }
 }
 
@@ -961,7 +973,8 @@ fn docx_field_dynamic(typ : String) -> Bool {
   typ == "PAGE" ||
   typ == "NUMPAGES" ||
   typ == "SECTIONPAGES" ||
-  typ == "PAGEREF"
+  typ == "PAGEREF" ||
+  typ == "REF"
 }
 
 ///|
@@ -974,7 +987,11 @@ fn docx_text_field(
 ) -> Unit {
   items.push({
     kind: "field",
-    text: if typ == "PAGEREF" { typ + "\u{0001}" + arg } else { typ },
+    text: if typ == "PAGEREF" || typ == "REF" {
+      typ + "\u{0001}" + arg
+    } else {
+      typ
+    },
     clear: false,
     props,
     width: 0.0,
@@ -1103,7 +1120,7 @@ fn docx_text_run(
             } else {
               text
             }
-            docx_text_chars(items, text, props)
+            docx_text_chars(walker, items, text, props)
           }
         }
       }
@@ -1124,7 +1141,7 @@ fn docx_text_run(
         }
       }
       "cr" => docx_text_push(items, "break", "\n", props)
-      "noBreakHyphen" => docx_text_chars(items, "\u2011", props)
+      "noBreakHyphen" => docx_text_chars(walker, items, "\u2011", props)
       "softHyphen" | "lastRenderedPageBreak" => ()
       "drawing" => docx_text_drawing(child, items, props)
       "footnoteReference" =>
@@ -1147,10 +1164,10 @@ fn docx_text_run(
         let code = docx_attribute(child.element, "char", "")
         let value = @string.parse_int(code, base=16) catch { _ => -1 }
         if value > 0 && value <= 0x10ffff {
-          docx_text_chars(items, Char::from_int(value).to_string(), props)
+          docx_text_chars(walker, items, Char::from_int(value).to_string(), props)
         }
       }
-      "oMath" | "oMathPara" => docx_text_omml(child, items, props)
+      "oMath" | "oMathPara" => docx_text_omml(walker, child, items, props)
       "AlternateContent" =>
         match docx_alternate_content(child) {
           Some(chosen) =>
@@ -1201,17 +1218,24 @@ fn docx_text_inlines(
       | "bdo" => docx_text_inlines(walker, child, items, paragraph_style)
       "oMath" | "oMathPara" => {
         let props = walker.styles.resolve_run(paragraph_style, None)
-        docx_text_omml(child, items, props)
+        docx_text_omml(walker, child, items, props)
       }
       "bookmarkStart" => {
         let name = docx_attribute(child.element, "name", "")
         if name != "" && name != "_GoBack" {
           let props = walker.styles.resolve_run(paragraph_style, None)
           docx_text_push(items, "bookmark", name, props)
+          if !walker.bookmarks.contains(name) {
+            walker.bookmarks[name] = StringBuilder()
+          }
+          walker.open_bookmarks.push(name)
         }
       }
-      "bookmarkEnd"
-      | "proofErr"
+      "bookmarkEnd" =>
+        if !walker.open_bookmarks.is_empty() {
+          ignore(walker.open_bookmarks.pop())
+        }
+      "proofErr"
       | "commentRangeStart"
       | "commentRangeEnd"
       | "permStart"
@@ -1942,6 +1966,8 @@ fn docx_cell_blocks(
     paragraphs: [],
     section_index: 0,
     fields: [],
+    bookmarks: Map([]),
+    open_bookmarks: [],
   }
   walker.blocks(cell, true)
   walker.blocks
@@ -2201,6 +2227,8 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     paragraphs: [],
     section_index: 0,
     fields: [],
+    bookmarks: Map([]),
+    open_bookmarks: [],
   }
   walker.blocks(body, false)
   let (section_part, sections) = docx_sections(data)
@@ -2246,6 +2274,10 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
   }
   let footnotes = docx_note_map(package, part, "/footnotes", "footnote")
   let endnotes = docx_note_map(package, part, "/endnotes", "endnote")
+  let bookmark_text : Map[String, String] = {}
+  for name, text in walker.bookmarks {
+    bookmark_text[name] = text.to_string()
+  }
   {
     part,
     sections,
@@ -2253,6 +2285,7 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     paragraphs: walker.paragraphs,
     stories,
     story_tables,
+    bookmark_text,
     footnotes,
     endnotes,
     even_odd: docx_even_odd(package, part),
@@ -2279,6 +2312,8 @@ fn docx_story_content(
       paragraphs: [],
       section_index: 0,
       fields: [],
+      bookmarks: Map([]),
+      open_bookmarks: [],
     }
     walker.blocks(root, true)
     let paragraphs : Array[DocxTextParagraph] = []

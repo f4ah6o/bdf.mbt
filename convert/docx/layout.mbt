@@ -1668,6 +1668,7 @@ fn docx_flow_field_value(
       let page_format = if format != "" { format } else { "decimal" }
       docx_format_number(flow.total_pages, page_format)
     }
+    "REF" => flow.document.bookmark_text.get(arg).unwrap_or("")
     "PAGEREF" =>
       match flow.bookmark_pages.get(arg) {
         Some(page) =>

@@ -1226,6 +1226,26 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX REF field uses the bookmark text" {
+  let blocks = "<w:p><w:bookmarkStart w:id=\"0\" w:name=\"Target\"/><w:r><w:t>HELLO</w:t></w:r><w:bookmarkEnd w:id=\"0\"/></w:p>" +
+    "<w:p><w:r><w:fldChar w:fldCharType=\"begin\"/></w:r>" +
+    "<w:r><w:instrText xml:space=\"preserve\"> REF Target </w:instrText></w:r>" +
+    "<w:r><w:fldChar w:fldCharType=\"separate\"/></w:r>" +
+    "<w:r><w:t>WRONG</w:t></w:r>" +
+    "<w:r><w:fldChar w:fldCharType=\"end\"/></w:r></w:p>"
+  let result = convert(docx_test_docx(blocks, DOCX_TEST_SECTION, []))
+  let commands = docx_test_page_commands(result, "pages", 0, "body")
+  let text = StringBuilder()
+  for command in commands {
+    match command {
+      FillText(value, _, _, _) => text.write_string(value)
+      _ => ()
+    }
+  }
+  assert_true(text.to_string().contains("HELLO"))
+  assert_true(!text.to_string().contains("WRONG"))
+}
+
 test "DOCX PAGEREF resolves the bookmark page" {
   let blocks = "<w:p><w:bookmarkStart w:id=\"0\" w:name=\"Target\"/><w:r><w:t>TARGET</w:t></w:r></w:p>" +
     "<w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>" +
