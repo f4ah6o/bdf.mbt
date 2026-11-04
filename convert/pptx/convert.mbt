@@ -2257,6 +2257,15 @@ fn pptx_chart_point_colors(
 }
 
 ///|
+fn[T] pptx_reverse(values : Array[T]) -> Unit {
+  let copy = values.copy()
+  values.clear()
+  for index in 0..<copy.length() {
+    values.push(copy[copy.length() - 1 - index])
+  }
+}
+
+///|
 fn pptx_series_blank(item : PptxChartSeries, index : Int) -> Bool {
   index < item.blanks.length() && item.blanks[index]
 }
@@ -2857,6 +2866,16 @@ fn pptx_emit_chart(
   let is_radar = kind == "radarChart"
   let is_doughnut = kind == "doughnutChart"
   let is_pie = kind == "pieChart" || is_doughnut
+  let reverse_categories = match pptx_child(
+    pptx_child(plot_area, "catAx"), "scaling",
+  ) {
+    Some(scaling) =>
+      match pptx_child(Some(scaling), "orientation") {
+        Some(value) => pptx_attribute(value.element, "val", "minMax") == "maxMin"
+        None => false
+      }
+    None => false
+  }
   let blanks_mode = match pptx_child(Some(chart), "dispBlanksAs") {
     Some(value) => pptx_attribute(value.element, "val", "zero")
     None => "zero"
@@ -2963,6 +2982,13 @@ fn pptx_emit_chart(
       marker_symbol,
       marker_size,
     })
+  }
+  if reverse_categories && !is_scatter {
+    for item in series {
+      pptx_reverse(item.categories)
+      pptx_reverse(item.values)
+      pptx_reverse(item.blanks)
+    }
   }
   if series.is_empty() {
     return
