@@ -272,10 +272,23 @@ test "Markdown definition lists indent their definitions" {
 
 ///|
 test "Markdown raw HTML data images are embedded" {
-  let source = "<img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lv0nWQAAAABJRU5ErkJggg==\" alt=\"dot\">\n"
+  let source = "<img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lv0nWQAAAABJRU5ErkJggg==\" width=\"20\" height=\"10\" alt=\"dot\">\n"
   let result = convert(@utf8.encode(source))
   let doc = @core.open_single(result.bdf)
   assert_true(markdown_image_parts(doc).length() >= 1)
+  let view = doc.manifest.views[0]
+  let mut width = -1.0
+  for page in view.pages {
+    for layer in page.layers {
+      for command in @render.decode_commands(doc.part(layer.object)) {
+        match command {
+          @render.Image(_, _, _, w, _) => width = w
+          _ => ()
+        }
+      }
+    }
+  }
+  assert_true(width > 0.0 && (width - 20.0).abs() < 1.0)
 }
 
 ///|

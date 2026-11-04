@@ -262,6 +262,17 @@ fn md_html_table(
 }
 
 ///|
+fn md_html_dimension(value : String) -> Double {
+  let text = value.trim().to_lower()
+  let number = if text.has_suffix("px") {
+    text[:text.length() - 2].to_owned()
+  } else {
+    text.to_owned()
+  }
+  @string.parse_double(number) catch { _ => 0.0 }
+}
+
+///|
 fn md_block_from_html(
   html : String,
   formulas : Array[String],
@@ -292,8 +303,15 @@ fn md_block_from_html(
     if src != "" && src.has_prefix("data:") {
       match md_resolve_image(src) {
         Some(image) => {
+          let width = md_html_dimension(md_attr_in_tag(tag, "width"))
+          let height = md_html_dimension(md_attr_in_tag(tag, "height"))
+          let sized = {
+            ..image,
+            width: if width > 0.0 { width } else { image.width },
+            height: if height > 0.0 { height } else { image.height },
+          }
           let runs : Array[MdRun] = []
-          md_push_image(runs, image, md_style(), "")
+          md_push_image(runs, sized, md_style(), "")
           if !runs.is_empty() {
             blocks.push(MdParagraph(runs))
           }
