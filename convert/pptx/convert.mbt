@@ -3916,16 +3916,29 @@ fn pptx_emit_chart(
   if horizontal {
     if stacked {
       for index in 0..<categories.length() {
-        let mut used = axis_low
+        let mut positive = 0.0
+        let mut negative = 0.0
         for item in series {
           if index < item.values.length() {
-            let next_used = used + item.values[index]
+            let value = item.values[index]
+            let start = if value >= 0.0 { positive } else { negative }
+            let next = start + value
             let bar_width = plot_width *
-              (pptx_chart_fraction(next_used, axis_low, axis_high) -
-                pptx_chart_fraction(used, axis_low, axis_high))
+              (if value >= 0.0 {
+                pptx_chart_fraction(next, axis_low, axis_high) -
+                  pptx_chart_fraction(start, axis_low, axis_high)
+              } else {
+                pptx_chart_fraction(start, axis_low, axis_high) -
+                  pptx_chart_fraction(next, axis_low, axis_high)
+              })
+            let bar_x = if value >= 0.0 {
+              plot_x + plot_width * pptx_chart_fraction(start, axis_low, axis_high)
+            } else {
+              plot_x + plot_width * pptx_chart_fraction(next, axis_low, axis_high)
+            }
             object.fill_color(pptx_series_point_color(item, index))
             object.fill_rect(
-              Float::from_double(plot_x + plot_width * pptx_chart_fraction(used, axis_low, axis_high)),
+              Float::from_double(bar_x),
               Float::from_double(
                 plot_y +
                 slot * index.to_double() +
@@ -3934,7 +3947,11 @@ fn pptx_emit_chart(
               Float::from_double(bar_width),
               Float::from_double(cluster_width),
             )
-            used = next_used
+            if value >= 0.0 {
+              positive = next
+            } else {
+              negative = next
+            }
           }
         }
       }
@@ -3976,13 +3993,28 @@ fn pptx_emit_chart(
     }
   } else if stacked {
     for index in 0..<categories.length() {
-      let mut used = axis_low
+      let mut positive = 0.0
+      let mut negative = 0.0
       for item in series {
         if index < item.values.length() {
-          let next_used = used + item.values[index]
+          let value = item.values[index]
+          let start = if value >= 0.0 { positive } else { negative }
+          let next = start + value
           let bar_height = plot_height *
-            (pptx_chart_fraction(next_used, axis_low, axis_high) -
-              pptx_chart_fraction(used, axis_low, axis_high))
+            (if value >= 0.0 {
+              pptx_chart_fraction(next, axis_low, axis_high) -
+                pptx_chart_fraction(start, axis_low, axis_high)
+            } else {
+              pptx_chart_fraction(start, axis_low, axis_high) -
+                pptx_chart_fraction(next, axis_low, axis_high)
+            })
+          let bar_y = if value >= 0.0 {
+            plot_y + plot_height -
+            plot_height * pptx_chart_fraction(next, axis_low, axis_high)
+          } else {
+            plot_y + plot_height -
+            plot_height * pptx_chart_fraction(start, axis_low, axis_high)
+          }
           object.fill_color(pptx_series_point_color(item, index))
           object.fill_rect(
             Float::from_double(
@@ -3990,14 +4022,15 @@ fn pptx_emit_chart(
               slot * index.to_double() +
               (slot - cluster_width) / 2.0,
             ),
-            Float::from_double(
-              plot_y + plot_height -
-              plot_height * pptx_chart_fraction(next_used, axis_low, axis_high),
-            ),
+            Float::from_double(bar_y),
             Float::from_double(cluster_width),
             Float::from_double(bar_height),
           )
-          used = next_used
+          if value >= 0.0 {
+            positive = next
+          } else {
+            negative = next
+          }
         }
       }
     }
