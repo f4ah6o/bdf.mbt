@@ -14,6 +14,28 @@ priv struct DocxPlacedImage {
 }
 
 ///|
+// A floating object of the current page, waiting to be drawn in front of
+// the text (a behind object is drawn where it is placed, before the text
+// that follows it).
+priv struct DocxFloat {
+  image : DocxPlacedImage
+  z : Int32
+}
+
+///|
+// The area a floating object keeps the text out of. It is in page
+// coordinates; the layout moves it into the coordinates of the column when
+// it asks what a line has room for.
+priv struct DocxExcl {
+  x0 : Double
+  y0 : Double
+  x1 : Double
+  y1 : Double
+  full : Bool
+  side : String
+}
+
+///|
 priv struct DocxParaLine {
   items : Array[DocxLineItem]
   images : Array[DocxPlacedImage]
@@ -1323,6 +1345,8 @@ priv struct DocxFlow {
   mut col_bottom : Double
   mut note_height : Double
   page_notes : Array[DocxPageNote]
+  floats : Array[DocxExcl]
+  front : Array[DocxFloat]
 }
 
 ///|
@@ -1639,6 +1663,8 @@ fn docx_flow_new_page(flow : DocxFlow) -> Unit raise {
   flow.has_header = false
   flow.page_notes.clear()
   flow.note_height = 0.0
+  flow.floats.clear()
+  flow.front.clear()
   flow.page_number = flow.next_number
   flow.next_number = flow.next_number + 1
   flow.story_kind = docx_story_kind(flow)
@@ -1728,6 +1754,364 @@ fn docx_flow_ensure(flow : DocxFlow, height : Double) -> Unit raise {
     return
   }
   docx_flow_next_column(flow)
+}
+
+///|
+// docx_float_sort orders the floating objects by their relative height:
+// what stands higher is drawn last, over the objects below it.
+fn docx_float_sort(floats : Array[DocxFloat]) -> Unit {
+  let mut i = 1
+  while i < floats.length() {
+    let value = floats[i]
+    let mut j = i
+    while j > 0 && floats[j - 1].z > value.z {
+      floats[j] = floats[j - 1]
+      j -= 1
+    }
+    floats[j] = value
+    i += 1
+  }
+}
+
+///|
+// docx_flow_avail narrows the line area [left, right] of the flow to the
+// side of the floating objects beside a line at y of the given height. It
+// returns the narrowed left and right edges and the bottom of the lowest
+// object that took the space (0 when none did).
+fn docx_flow_avail(
+  flow : DocxFlow,
+  y : Double,
+  height : Double,
+  left : Double,
+  right : Double,
+) -> (Double, Double, Double) {
+  let mut l = left
+  let mut r = right
+  let mut until = 0.0
+  for excl in flow.floats {
+    if excl.y1 <= y + 0.01 || excl.y0 >= y + height - 0.01 {
+      continue
+    }
+    if excl.y1 > until {
+      until = excl.y1
+    }
+    if excl.full {
+      return (l, l, until)
+    }
+    let x0 = excl.x0 - flow.x0
+    let x1 = excl.x1 - flow.x0
+    if x1 <= l || x0 >= r {
+      continue
+    }
+    let left_width = x0 - l
+    let right_width = r - x1
+    match excl.side {
+      "left" => r = Double::min(r, x0)
+      "right" => l = Double::max(l, x1)
+      _ =>
+        if left_width >= right_width {
+          r = Double::min(r, x0)
+        } else {
+          l = Double::max(l, x1)
+        }
+    }
+  }
+  (l, r, until)
+}
+
+///|
+// docx_flow_float_bottom returns the lowest bottom of the floating objects
+// that cover y: a line that finds no room beside them goes below them.
+fn docx_flow_float_bottom(flow : DocxFlow, y : Double) -> Double {
+  let mut bottom = y
+  for excl in flow.floats {
+    if excl.y0 <= y + 0.01 && excl.y1 > bottom {
+      bottom = excl.y1
+    }
+  }
+  bottom
+}
+
+///|
+// docx_flow_float_pos returns the top left corner of a floating object
+// anchored in a paragraph whose first line is at y. Positions relative to
+// the page, the margins, the column or the paragraph are resolved here.
+fn docx_flow_float_pos(
+  flow : DocxFlow,
+  anchor : DocxAnchor,
+  image : DocxPlacedImage,
+  y : Double,
+) -> (Double, Double) {
+  let section = flow.section
+  let mut bx = flow.x0
+  let mut bw = flow.width
+  match anchor.h_rel {
+    "page" => {
+      bx = 0.0
+      bw = section.width
+    }
+    "margin" => {
+      bx = section.left
+      bw = section.width - section.left - section.right
+    }
+    "leftMargin" | "insideMargin" => {
+      bx = 0.0
+      bw = section.left
+    }
+    "rightMargin" | "outsideMargin" => {
+      bx = section.width - section.right
+      bw = section.right
+    }
+    _ => ()
+  }
+  let mut x = bx + image.item.x
+  match anchor.h_align {
+    "left" | "inside" => x = bx
+    "center" => x = bx + (bw - image.width) / 2.0
+    "right" | "outside" => x = bx + bw - image.width
+    _ => ()
+  }
+  let mut by = y
+  let mut bh = 0.0
+  match anchor.v_rel {
+    "page" => {
+      by = 0.0
+      bh = section.height
+    }
+    "margin" => {
+      by = flow.top
+      bh = flow.bottom - flow.top
+    }
+    "topMargin" | "insideMargin" => {
+      by = 0.0
+      bh = flow.top
+    }
+    "bottomMargin" | "outsideMargin" => {
+      by = flow.bottom
+      bh = section.height - flow.bottom
+    }
+    _ => ()
+  }
+  let mut top = by + image.item.y
+  match anchor.v_align {
+    "top" | "inside" => top = by
+    "center" => top = by + (bh - image.height) / 2.0
+    "bottom" | "outside" => top = by + bh - image.height
+    _ => ()
+  }
+  (x, top)
+}
+
+///|
+// docx_flow_add_excl records the area an anchored object keeps the text out
+// of. Tight and through wrapping are square wrapping, as in upstream.
+fn docx_flow_add_excl(
+  flow : DocxFlow,
+  anchor : DocxAnchor,
+  image : DocxPlacedImage,
+) -> Unit {
+  match anchor.wrap {
+    "square" | "tight" | "through" =>
+      flow.floats.push({
+        x0: image.x - anchor.dist_left,
+        y0: image.y - anchor.dist_top,
+        x1: image.x + image.width + anchor.dist_right,
+        y1: image.y + image.height + anchor.dist_bottom,
+        full: false,
+        side: anchor.side,
+      })
+    "topAndBottom" =>
+      flow.floats.push({
+        x0: image.x,
+        y0: image.y - anchor.dist_top,
+        x1: image.x + image.width,
+        y1: image.y + image.height + anchor.dist_bottom,
+        full: true,
+        side: anchor.side,
+      })
+    _ => ()
+  }
+}
+
+///|
+// docx_flow_place_anchors places the floating objects of a paragraph whose
+// first line is at y: behind objects under the text, the others in front of
+// it, and the areas they keep free for the lines that follow. A paragraph
+// whose paragraph-relative objects do not fit below the text of the page
+// moves to the next column with them.
+fn docx_flow_place_anchors(
+  flow : DocxFlow,
+  anchors : Array[DocxPlacedImage],
+  y : Double,
+) -> Unit raise {
+  if anchors.is_empty() {
+    return
+  }
+  let mut at = y
+  let mut moved = false
+  while true {
+    let placements : Array[DocxPlacedImage] = []
+    let mut fits = true
+    for image in anchors {
+      match image.item.anchor {
+        Some(anchor) =>
+          if flow.vertical {
+            placements.push(image)
+          } else {
+            let (x, top) = docx_flow_float_pos(flow, anchor, image, at)
+            placements.push({ ..image, x: x, y: top })
+            if anchor.v_rel == "paragraph" &&
+              !moved &&
+              top + image.height > flow.bottom + 0.01 &&
+              !docx_flow_at_top(flow) {
+              fits = false
+            }
+          }
+        None => placements.push(image)
+      }
+    }
+    if !fits {
+      moved = true
+      docx_flow_next_column(flow)
+      at = flow.y
+      continue
+    }
+    let behind : Array[DocxFloat] = []
+    let legacy : Array[DocxPlacedImage] = []
+    for index, image in anchors {
+      let placed = placements[index]
+      match image.item.anchor {
+        Some(anchor) =>
+          if flow.vertical {
+            docx_emit_placed_image(
+              flow.body,
+              flow.writer,
+              flow.package,
+              flow.document.part,
+              placed,
+              0.0,
+              0.0,
+              flow.warnings,
+            )
+          } else {
+            docx_flow_add_excl(flow, anchor, placed)
+            if anchor.behind {
+              behind.push({ image: placed, z: anchor.z })
+            } else {
+              flow.front.push({ image: placed, z: anchor.z })
+            }
+          }
+        None => legacy.push(placed)
+      }
+    }
+    docx_float_sort(behind)
+    for item in behind {
+      docx_emit_placed_image(
+        flow.body,
+        flow.writer,
+        flow.package,
+        flow.document.part,
+        item.image,
+        0.0,
+        0.0,
+        flow.warnings,
+      )
+    }
+    for image in legacy {
+      docx_emit_placed_image(
+        flow.body,
+        flow.writer,
+        flow.package,
+        flow.document.part,
+        image,
+        0.0,
+        0.0,
+        flow.warnings,
+      )
+    }
+    return
+  }
+}
+
+///|
+// docx_flow_emit_front draws the floating objects that stand in front of
+// the text of the page, once the text has been drawn.
+fn docx_flow_emit_front(flow : DocxFlow) -> Unit raise {
+  if flow.vertical {
+    flow.front.clear()
+    return
+  }
+  if flow.front.is_empty() {
+    return
+  }
+  docx_float_sort(flow.front)
+  for item in flow.front {
+    docx_emit_placed_image(
+      flow.body,
+      flow.writer,
+      flow.package,
+      flow.document.part,
+      item.image,
+      0.0,
+      0.0,
+      flow.warnings,
+    )
+  }
+  flow.front.clear()
+}
+
+///|
+// docx_line_width measures a line of items from its first to its last edge.
+fn docx_line_width(items : Array[DocxLineItem]) -> Double {
+  if items.is_empty() {
+    return 0.0
+  }
+  let mut right = items[0].x
+  for item in items {
+    if item.x + item.advance > right {
+      right = item.x + item.advance
+    }
+  }
+  right - items[0].x
+}
+
+///|
+// docx_line_rebase moves a line of items so that its first starts at start.
+fn docx_line_rebase(
+  items : Array[DocxLineItem],
+  start : Double,
+) -> Array[DocxLineItem] {
+  let out : Array[DocxLineItem] = []
+  let mut x = start
+  for item in items {
+    out.push({ ..item, x: x, })
+    x += item.advance
+  }
+  out
+}
+
+///|
+// docx_line_split returns the number of items of a line that fit in
+// available, breaking at the last space when there is one.
+fn docx_line_split(items : Array[DocxLineItem], available : Double) -> Int {
+  let mut x = 0.0
+  let mut fit = 0
+  let mut space = -1
+  for index, item in items {
+    if x + item.advance > available + 0.01 {
+      break
+    }
+    x += item.advance
+    fit = index + 1
+    if item.kind == "text" && item.text == " " && index > 0 {
+      space = index
+    }
+  }
+  if space > 0 {
+    space
+  } else {
+    fit
+  }
 }
 
 ///|
@@ -1869,6 +2253,9 @@ fn docx_flow_flush_page(flow : DocxFlow) -> Unit raise {
   if flow.vertical {
     flow.body.restore()
   }
+  // The floating objects in front of the text go over it, as upstream's
+  // body layer draws them after the body ops.
+  docx_flow_emit_front(flow)
   flow.body.set_bbox(
     0.0F,
     0.0F,
@@ -1978,39 +2365,204 @@ fn docx_flow_emit_paragraph(
     warnings: flow.warnings,
     field_value: fn(typ, format) { docx_flow_field_value(flow, typ, format) },
   }
-  for anchor in layout.anchors {
-    docx_emit_placed_image(
-      flow.body,
-      flow.writer,
-      flow.package,
-      flow.document.part,
-      anchor,
-      0.0,
-      0.0,
-      flow.warnings,
-    )
-  }
-  for line in layout.lines {
-    if line.break_before == "page" {
-      docx_flow_new_page(flow)
-    } else if line.break_before == "column" {
-      docx_flow_next_column(flow)
-    }
-    docx_flow_ensure(flow, line.height)
+  fn emit(line : DocxParaLine, x : Double, available : Double) -> Unit raise {
     docx_emit_para_line(
       flow.body,
       flow.writer,
       flow.package,
       flow.document.part,
       line,
-      flow.x0,
+      x,
       flow.y,
-      flow.width,
+      available,
       flow.body_fonts,
       ctx.field_value,
       flow.warnings,
     )
-    flow.y += line.height
+  }
+  // The floating objects of the paragraph stand beside its first line. A
+  // paragraph whose objects do not fit below the text of the page moves to
+  // the next column with them.
+  if !layout.lines.is_empty() {
+    let first = layout.lines[0]
+    if first.break_before == "page" {
+      docx_flow_new_page(flow)
+    } else if first.break_before == "column" {
+      docx_flow_next_column(flow)
+    }
+    docx_flow_ensure(flow, first.height)
+  }
+  docx_flow_place_anchors(flow, layout.anchors, flow.y)
+  let right_limit = flow.width - props.right
+  let mut pending : Array[DocxLineItem] = []
+  let mut index = 0
+  let mut last_height = if layout.lines.is_empty() {
+    12.0
+  } else {
+    layout.lines[0].height
+  }
+  let mut last_align = props.alignment
+  let mut steps = 0
+  while index < layout.lines.length() || !pending.is_empty() {
+    steps += 1
+    if steps > 100000 {
+      break
+    }
+    let fresh = pending.is_empty()
+    let mut items : Array[DocxLineItem] = []
+    let mut images : Array[DocxPlacedImage] = []
+    let mut height = last_height
+    let mut align = last_align
+    if index < layout.lines.length() {
+      let base = layout.lines[index]
+      if fresh && index > 0 {
+        if base.break_before == "page" {
+          docx_flow_new_page(flow)
+        } else if base.break_before == "column" {
+          docx_flow_next_column(flow)
+        }
+      }
+      images = base.images
+      height = base.height
+      align = base.align
+      last_height = height
+      last_align = align
+      if fresh {
+        items = base.items
+      } else {
+        let merged : Array[DocxLineItem] = []
+        for item in pending {
+          merged.push(item)
+        }
+        for item in base.items {
+          merged.push(item)
+        }
+        items = docx_line_rebase(merged, props.left)
+      }
+    } else {
+      items = pending
+    }
+    pending = []
+    // Place the line beside the floating objects, breaking it into more
+    // lines while a left or right object leaves it too little room.
+    let mut placed = false
+    let mut attempts = 0
+    while !placed {
+      attempts += 1
+      if attempts > 1000 {
+        break
+      }
+      docx_flow_ensure(flow, height)
+      let (left, right, until) = docx_flow_avail(
+        flow, flow.y, height, 0.0, flow.width,
+      )
+      // A band with no room beside it (top and bottom wrapping, or objects
+      // that leave less than a short word) pushes the line below it.
+      if right - left < Double::min(36.0, flow.width) && until > flow.y + 0.01 {
+        flow.y = until
+        continue
+      }
+      let narrowed = left > 0.01 || right < flow.width - 0.01
+      if !narrowed {
+        if !items.is_empty() || !images.is_empty() {
+          emit(
+            { items, images, height, align, break_before: "" },
+            flow.x0,
+            flow.width,
+          )
+        }
+        flow.y += height
+        index += 1
+        placed = true
+        continue
+      }
+      let start = if items.is_empty() { props.left } else { items[0].x }
+      let left_edge = Double::max(start, left)
+      let mut available = Double::min(right_limit, right) - left_edge
+      let natural = docx_line_width(items)
+      if available <= 1.0 && images.is_empty() {
+        let bottom = docx_flow_float_bottom(flow, flow.y)
+        if bottom > flow.y + 0.01 {
+          flow.y = bottom
+          continue
+        }
+        available = Double::max(right_limit - left_edge, 1.0)
+      }
+      if natural <= available + 0.01 || !images.is_empty() {
+        let shift = left_edge - start
+        let rebased = docx_line_rebase(items, 0.0)
+        let shifted : Array[DocxPlacedImage] = []
+        for image in images {
+          shifted.push({ ..image, x: image.x + shift, })
+        }
+        emit(
+          { items: rebased, images: shifted, height, align, break_before: "" },
+          flow.x0 + left_edge,
+          available,
+        )
+        flow.y += height
+        index += 1
+        placed = true
+        continue
+      }
+      let cut = docx_line_split(items, available)
+      if cut <= 0 {
+        let bottom = docx_flow_float_bottom(flow, flow.y)
+        if bottom > flow.y + 0.01 {
+          flow.y = bottom
+          continue
+        }
+        let rebased = docx_line_rebase(items, 0.0)
+        emit(
+          { items: rebased, images, height, align, break_before: "" },
+          flow.x0 + left_edge,
+          Double::max(available, 1.0),
+        )
+        flow.y += height
+        index += 1
+        placed = true
+        continue
+      }
+      let first_items : Array[DocxLineItem] = []
+      let rest : Array[DocxLineItem] = []
+      let mut position = 0
+      for item in items {
+        if position < cut {
+          first_items.push(item)
+        } else {
+          rest.push(item)
+        }
+        position += 1
+      }
+      // The space the line broke at does not open the next one.
+      let rest_items : Array[DocxLineItem] = []
+      let mut skipping = true
+      for item in rest {
+        if skipping && item.kind == "text" && item.text == " " {
+          continue
+        }
+        skipping = false
+        rest_items.push(item)
+      }
+      emit(
+        {
+          items: docx_line_rebase(first_items, 0.0),
+          images: [],
+          height,
+          align,
+          break_before: "",
+        },
+        flow.x0 + left_edge,
+        available,
+      )
+      flow.y += height
+      pending = docx_line_rebase(rest_items, props.left)
+      index += 1
+      placed = true
+    }
+    if attempts > 1000 {
+      break
+    }
   }
   if layout.trailing_break == "page" {
     docx_flow_new_page(flow)
@@ -2225,6 +2777,8 @@ fn docx_layout_document(
     header_fonts: Map([]),
     footer_fonts: Map([]),
     has_header: false,
+    floats: [],
+    front: [],
     page_open: false,
     page_index: 0,
     page_number: start,

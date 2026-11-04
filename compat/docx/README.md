@@ -66,8 +66,18 @@ twice so `NUMPAGES` knows the page count) instead of using the cached value;
 full-width and enclosed digits). Numbering instances honour
 `lvlOverride`/`startOverride`. Inline drawings with an embedded
 PNG/JPEG/EMF/WMF part are placed at their `wp:extent`; text-box content is
-flattened; `a:srcRect` crops and `a:xfrm` rotation/flips are honoured;
-anchored drawings use page-relative `wp:posOffset` coordinates. The converter
+flattened; `a:srcRect` crops and `a:xfrm` rotation/flips are honoured.
+Anchored drawings (`wp:anchor`) float: their position is resolved against the
+page, the margins, the column or the paragraph (including `wp:simplePos`),
+and their wrap keeps the text out of their area. Square, tight and through
+wrapping shorten the lines beside a left or right object as `wrapText` asks
+(`bothSides`, `left`, `right`, `largest`; tight and through use the
+object's box rather than its contour), top-and-bottom wrapping pushes the
+lines below the object, and the `distT/distB/distL/distR` distances are
+honoured. A paragraph whose paragraph-relative object does not fit below the
+text of the page moves to the next page with it. Objects with `behindDoc`
+are drawn before the text of the page, the others after it in
+`relativeHeight` order, all in the body layer. The converter
 reaches the upstream page counts for the five `converter/docx/testdata`
 fixtures (basic 3, styles 1, grid 4, vertical 2, math 1) and repeats the grid
 table's header row on pages 2-4.
@@ -75,11 +85,16 @@ table's header row on pages 2-4.
 The package's `layout_wbtest.mbt` builds small DOCX packages as stored ZIP
 archives so each test shows its WordprocessingML: cell wrapping and grid
 spans, vertical merges, repeated header rows, columns, vertical pages,
-regenerated page fields, header images, numbering overrides and the `views`
-selection.
+regenerated page fields, header images, numbering overrides, floating
+drawings with left/right/top-and-bottom wrapping and behind/in-front order,
+the `views` selection and inline-drawing regression.
 
-Documented gaps: exact font metrics and OpenType shaping, floating text
-wrapping around anchored drawings, exact footnote separator/continuation
+Documented gaps: exact font metrics and OpenType shaping, tight/through wrap
+contours (the object's box is used), `wp:effectExtent` room for shadows,
+floating drawings in vertical text (they are drawn turned with the flow and
+keep no space), floating drawings in table cells and headers/footers (they
+are not drawn there), page-relative objects that would not fit are drawn
+clipped rather than moved, exact footnote separator/continuation
 indentation, upright CJK glyphs in vertical text (the whole body is turned,
 Latin and CJK alike), tables in headers/footers (their paragraphs are
 flattened), `PAGEREF`/`REF` field regeneration (cached results are used),

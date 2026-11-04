@@ -645,3 +645,338 @@ test "DOCX text indexes number the stories of a page in order" {
   assert_true(footer_layers.contains(1), msg="footer-only body index")
   assert_eq(footer_layers.length(), 2)
 }
+
+///|
+// Floating drawings: a wp:anchor with a wrap; the tests below build the
+// packages they convert.
+fn docx_test_float_rels() -> String {
+  "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+  "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">" +
+  "<Relationship Id=\"rIdImg\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"media/float.png\"/>" +
+  "</Relationships>"
+}
+
+///|
+fn docx_test_float_docx(blocks : String) -> Bytes {
+  docx_test_docx(
+    blocks,
+    DOCX_TEST_SECTION,
+    [
+      ("word/_rels/document.xml.rels", @utf8.encode(docx_test_float_rels())),
+      ("word/media/float.png", b"not-a-real-png"),
+    ],
+  )
+}
+
+///|
+fn docx_test_float(
+  attrs : String,
+  position : String,
+  wrap : String,
+  extent : String,
+) -> String {
+  "<w:r><w:drawing><wp:anchor " +
+  attrs +
+  ">" +
+  "<wp:simplePos x=\"0\" y=\"0\"/>" +
+  position +
+  "<wp:extent " +
+  extent +
+  "/>" +
+  wrap +
+  "<a:graphic><a:graphicData><pic:pic><pic:blipFill>" +
+  "<a:blip r:embed=\"rIdImg\"/>" +
+  "</pic:blipFill></pic:pic></a:graphicData></a:graphic>" +
+  "</wp:anchor></w:drawing></w:r>"
+}
+
+///|
+fn docx_test_float_in_column() -> String {
+  "<wp:positionH relativeFrom=\"column\"><wp:align>left</wp:align></wp:positionH>" +
+  "<wp:positionV relativeFrom=\"paragraph\"><wp:posOffset>0</wp:posOffset></wp:positionV>"
+}
+
+///|
+fn docx_test_image_at(
+  commands : Array[@render.Command],
+  x : Double,
+  y : Double,
+) -> Bool {
+  for command in commands {
+    match command {
+      @render.Image(_, ix, iy, _, _) =>
+        if (ix - x).abs() < 0.01 && (iy - y).abs() < 0.01 {
+          return true
+        }
+      _ => ()
+    }
+  }
+  false
+}
+
+///|
+test "DOCX text wraps on the right of a left floating picture" {
+  let text = docx_test_repeat("word ", 120)
+  let blocks = "<w:p>" +
+    docx_test_float(
+      "distT=\"0\" distB=\"0\" distL=\"0\" distR=\"114300\" behindDoc=\"0\" relativeHeight=\"1\"",
+      docx_test_float_in_column(),
+      "<wp:wrapSquare wrapText=\"right\"/>",
+      "cx=\"914400\" cy=\"914400\"",
+    ) +
+    "<w:r><w:t xml:space=\"preserve\">" +
+    text +
+    "</w:t></w:r></w:p>"
+  let result = convert(docx_test_float_docx(blocks))
+  let commands = docx_test_page_commands(result, "pages", 0, "body")
+  assert_true(
+    docx_test_image_at(commands, 72.0, 72.0),
+    msg="left float sits at the column's left edge and the first line's top",
+  )
+  let mut first = -1.0
+  let mut wrapped = false
+  let mut below = false
+  for command in commands {
+    match command {
+      @render.FillText(_, x, y, _) => {
+        if first < 0.0 {
+          first = x
+        }
+        if (x - 153.0).abs() < 0.01 && y < 144.0 {
+          wrapped = true
+        }
+        if (x - 72.0).abs() < 0.01 && y > 144.0 {
+          below = true
+        }
+      }
+      _ => ()
+    }
+  }
+  assert_true(
+    (first - 153.0).abs() < 0.01,
+    msg="the first line starts after the picture and its right distance",
+  )
+  assert_true(wrapped, msg="lines beside the picture are shortened")
+  assert_true(below, msg="lines below the picture use the full column")
+  assert_eq(result.pages, 1)
+}
+
+///|
+test "DOCX text stops at the left of a right floating picture" {
+  let text = docx_test_repeat("word ", 120)
+  let blocks = "<w:p>" +
+    docx_test_float(
+      "distT=\"0\" distB=\"0\" distL=\"114300\" distR=\"0\" behindDoc=\"0\" relativeHeight=\"1\"",
+      "<wp:positionH relativeFrom=\"column\"><wp:align>right</wp:align></wp:positionH>" +
+      "<wp:positionV relativeFrom=\"paragraph\"><wp:posOffset>0</wp:posOffset></wp:positionV>",
+      "<wp:wrapSquare wrapText=\"left\"/>",
+      "cx=\"914400\" cy=\"914400\"",
+    ) +
+    "<w:r><w:t xml:space=\"preserve\">" +
+    text +
+    "</w:t></w:r></w:p>"
+  let result = convert(docx_test_float_docx(blocks))
+  let commands = docx_test_page_commands(result, "pages", 0, "body")
+  assert_true(
+    docx_test_image_at(commands, 468.0, 72.0),
+    msg="right float sits at the column's right edge",
+  )
+  let mut first = -1.0
+  let mut wrapped = false
+  let mut over = false
+  for command in commands {
+    match command {
+      @render.FillText(_, x, y, advance) => {
+        if first < 0.0 {
+          first = x
+        }
+        if y < 144.0 {
+          if x + advance > 459.01 {
+            over = true
+          }
+          if (x - 72.0).abs() < 0.01 && advance > 300.0 {
+            wrapped = true
+          }
+        }
+      }
+      _ => ()
+    }
+  }
+  assert_true(
+    (first - 72.0).abs() < 0.01,
+    msg="the first line starts at the column's left edge",
+  )
+  assert_true(wrapped, msg="lines beside the picture are shortened")
+  assert_false(over, msg="no line runs into the picture or its left distance")
+}
+
+///|
+test "DOCX text skips the band of a top-and-bottom floating picture" {
+  let text = docx_test_repeat("word ", 40)
+  let blocks = "<w:p>" +
+    docx_test_float(
+      "distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\" behindDoc=\"0\" relativeHeight=\"1\"",
+      "<wp:positionH relativeFrom=\"margin\"><wp:align>center</wp:align></wp:positionH>" +
+      "<wp:positionV relativeFrom=\"paragraph\"><wp:posOffset>0</wp:posOffset></wp:positionV>",
+      "<wp:wrapTopAndBottom/>",
+      "cx=\"2540000\" cy=\"635000\"",
+    ) +
+    "<w:r><w:t xml:space=\"preserve\">" +
+    text +
+    "</w:t></w:r></w:p>"
+  let result = convert(docx_test_float_docx(blocks))
+  let commands = docx_test_page_commands(result, "pages", 0, "body")
+  assert_true(
+    docx_test_image_at(commands, 206.0, 72.0),
+    msg="the picture is centered in the margins",
+  )
+  let mut first_y = -1.0
+  let mut inside = false
+  for command in commands {
+    match command {
+      @render.FillText(_, _, y, _) => {
+        if first_y < 0.0 {
+          first_y = y
+        }
+        if y > 72.0 && y < 122.0 {
+          inside = true
+        }
+      }
+      _ => ()
+    }
+  }
+  assert_true(
+    (first_y - 132.0).abs() < 0.01,
+    msg="the first line starts below the picture's band",
+  )
+  assert_false(inside, msg="no line is drawn inside the band")
+}
+
+///|
+test "DOCX behind-doc pictures are drawn under the text and in-front ones over it" {
+  let blocks = "<w:p>" +
+    docx_test_float(
+      "distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\" behindDoc=\"1\" relativeHeight=\"1\"",
+      "<wp:positionH relativeFrom=\"page\"><wp:posOffset>1270000</wp:posOffset></wp:positionH>" +
+      "<wp:positionV relativeFrom=\"page\"><wp:posOffset>1270000</wp:posOffset></wp:positionV>",
+      "<wp:wrapNone/>",
+      "cx=\"914400\" cy=\"914400\"",
+    ) +
+    docx_test_float(
+      "distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\" behindDoc=\"0\" relativeHeight=\"2\"",
+      "<wp:positionH relativeFrom=\"page\"><wp:posOffset>2540000</wp:posOffset></wp:positionH>" +
+      "<wp:positionV relativeFrom=\"page\"><wp:posOffset>2540000</wp:posOffset></wp:positionV>",
+      "<wp:wrapNone/>",
+      "cx=\"914400\" cy=\"914400\"",
+    ) +
+    "<w:r><w:t>OVERLAP</w:t></w:r></w:p>"
+  let result = convert(docx_test_float_docx(blocks))
+  let commands = docx_test_page_commands(result, "pages", 0, "body")
+  let mut behind = -1
+  let mut text = -1
+  let mut front = -1
+  for index, command in commands {
+    match command {
+      @render.Image(_, x, _, _, _) =>
+        if (x - 100.0).abs() < 0.01 {
+          behind = index
+        } else if (x - 200.0).abs() < 0.01 {
+          front = index
+        }
+      @render.FillText(_, _, _, _) =>
+        if text < 0 {
+          text = index
+        }
+      _ => ()
+    }
+  }
+  assert_true(behind >= 0, msg="behind-doc picture is drawn")
+  assert_true(front >= 0, msg="in-front picture is drawn")
+  assert_true(text > behind, msg="the behind-doc picture is drawn under the text")
+  assert_true(front > text, msg="the in-front picture is drawn over the text")
+}
+
+///|
+test "DOCX floating picture moves to the next page when it does not fit" {
+  let body = StringBuilder()
+  for i in 0..<47 {
+    body.write_string(
+      "<w:p><w:r><w:t>Filler " + i.to_string() + "</w:t></w:r></w:p>",
+    )
+  }
+  body.write_string(
+    "<w:p>" +
+    docx_test_float(
+      "distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\" behindDoc=\"0\" relativeHeight=\"1\"",
+      docx_test_float_in_column(),
+      "<wp:wrapSquare wrapText=\"right\"/>",
+      "cx=\"914400\" cy=\"3810000\"",
+    ) +
+    "<w:r><w:t>Floated paragraph</w:t></w:r></w:p>",
+  )
+  let result = convert(docx_test_float_docx(body.to_string()))
+  assert_eq(result.pages, 2)
+  let first = docx_test_page_commands(result, "pages", 0, "body")
+  let second = docx_test_page_commands(result, "pages", 1, "body")
+  assert_false(
+    docx_test_image_at(first, 72.0, 72.0),
+    msg="the picture is not left on the full page",
+  )
+  assert_false(
+    docx_test_commands_text(first).contains("Floated paragraph"),
+    msg="the paragraph goes with its picture",
+  )
+  assert_true(
+    docx_test_image_at(second, 72.0, 72.0),
+    msg="the picture stands at the top of the next page",
+  )
+  assert_true(
+    docx_test_commands_text(second).contains("Floated paragraph"),
+    msg="the paragraph is laid out beside its picture",
+  )
+}
+
+///|
+test "DOCX inline drawings stay in the line" {
+  let blocks = "<w:p>" +
+    "<w:r><w:t xml:space=\"preserve\">Before </w:t></w:r>" +
+    "<w:r><w:drawing><wp:inline>" +
+    "<wp:extent cx=\"457200\" cy=\"457200\"/>" +
+    "<a:graphic><a:graphicData><pic:pic><pic:blipFill>" +
+    "<a:blip r:embed=\"rIdImg\"/>" +
+    "</pic:blipFill></pic:pic></a:graphicData></a:graphic>" +
+    "</wp:inline></w:drawing></w:r>" +
+    "<w:r><w:t xml:space=\"preserve\"> after</w:t></w:r></w:p>"
+  let result = convert(docx_test_float_docx(blocks))
+  let commands = docx_test_page_commands(result, "pages", 0, "body")
+  assert_true(
+    docx_test_image_at(commands, 104.5, 72.0),
+    msg="the inline picture follows the text in the line",
+  )
+  let mut before = -1.0
+  let mut after = -1.0
+  let mut same_line = false
+  for command in commands {
+    match command {
+      @render.FillText(value, x, y, _) => {
+        if value == "Before " {
+          before = x
+        } else if value == " after" {
+          after = x
+          same_line = (y - 82.0).abs() < 0.01
+        }
+      }
+      _ => ()
+    }
+  }
+  assert_true(
+    (before - 72.0).abs() < 0.01,
+    msg="the text before the picture is at the line's start",
+  )
+  assert_true(
+    (after - 140.5).abs() < 0.01,
+    msg="the text after the picture continues in the line",
+  )
+  assert_true(same_line, msg="the line is not broken around the picture")
+}
+
