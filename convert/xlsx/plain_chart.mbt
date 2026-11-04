@@ -7,6 +7,8 @@ struct XlsxChartModel {
   values : Array[Double]
   categories : Array[String]
   color : String
+  show_percent : Bool
+  show_value : Bool
   axis_min : Double
   axis_max : Double
 }
@@ -249,6 +251,21 @@ fn XlsxWorkbook::xlsx_chart_model(
       }
     None => ()
   }
+  let mut show_percent = false
+  let mut show_value = false
+  match xlsx_draw_child(plot, "dLbls") {
+    Some(labels) => {
+      match xlsx_draw_child(labels, "showPercent") {
+        Some(value) => show_percent = xlsx_draw_attr(value, "val") != "0"
+        None => ()
+      }
+      match xlsx_draw_child(labels, "showVal") {
+        Some(value) => show_value = xlsx_draw_attr(value, "val") != "0"
+        None => ()
+      }
+    }
+    None => ()
+  }
   let mut axis_min = 0.0
   let mut axis_max = 0.0
   match xlsx_draw_child(plot, "valAx") {
@@ -290,6 +307,8 @@ fn XlsxWorkbook::xlsx_chart_model(
     values,
     categories,
     color,
+    show_percent,
+    show_value,
     axis_min,
     axis_max,
   })
@@ -557,6 +576,19 @@ fn XlsxWorkbook::xlsx_chart_svg(
           "\" text-anchor=\"middle\" font-size=\"10\" fill=\"#000000\">" +
           xlsx_chart_text(model.categories[index]) +
           "</text>",
+        )
+      }
+      if model.show_percent {
+        let inner_x = cx + @math.cos(mid) * radius * 0.65
+        let inner_y = cy + @math.sin(mid) * radius * 0.65
+        svg.write_string(
+          "<text x=\"" +
+          inner_x.to_string() +
+          "\" y=\"" +
+          (inner_y + 4.0).to_string() +
+          "\" text-anchor=\"middle\" font-size=\"10\" fill=\"#ffffff\">" +
+          (value / pie_total * 100.0 + 0.5).to_int().to_string() +
+          "%</text>",
         )
       }
       angle += sweep
@@ -849,6 +881,20 @@ fn XlsxWorkbook::xlsx_chart_object(
           category,
           cx + @math.cos(mid) * radius * 1.12 - advance / 2.0,
           cy + @math.sin(mid) * radius * 1.12 + 3.0,
+          10.0,
+          400,
+        )
+      }
+      if model.show_percent {
+        let text = (value / pie_total * 100.0 + 0.5).to_int().to_string() + "%"
+        let mut advance = 0.0
+        for character in text {
+          advance += @sheet.sized_fallback_advance(character, false, 10.0)
+        }
+        label(
+          text,
+          cx + @math.cos(mid) * radius * 0.65 - advance / 2.0,
+          cy + @math.sin(mid) * radius * 0.65 + 3.0,
           10.0,
           400,
         )
