@@ -9,6 +9,8 @@ struct XlsxChartModel {
   color : String
   show_percent : Bool
   show_value : Bool
+  show_cat_name : Bool
+  show_ser_name : Bool
   axis_min : Double
   axis_max : Double
 }
@@ -253,6 +255,8 @@ fn XlsxWorkbook::xlsx_chart_model(
   }
   let mut show_percent = false
   let mut show_value = false
+  let mut show_cat_name = false
+  let mut show_ser_name = false
   match xlsx_draw_child(plot, "dLbls") {
     Some(labels) => {
       match xlsx_draw_child(labels, "showPercent") {
@@ -261,6 +265,14 @@ fn XlsxWorkbook::xlsx_chart_model(
       }
       match xlsx_draw_child(labels, "showVal") {
         Some(value) => show_value = xlsx_draw_attr(value, "val") != "0"
+        None => ()
+      }
+      match xlsx_draw_child(labels, "showCatName") {
+        Some(value) => show_cat_name = xlsx_draw_attr(value, "val") != "0"
+        None => ()
+      }
+      match xlsx_draw_child(labels, "showSerName") {
+        Some(value) => show_ser_name = xlsx_draw_attr(value, "val") != "0"
         None => ()
       }
     }
@@ -309,9 +321,35 @@ fn XlsxWorkbook::xlsx_chart_model(
     color,
     show_percent,
     show_value,
+    show_cat_name,
+    show_ser_name,
     axis_min,
     axis_max,
   })
+}
+
+///|
+fn xlsx_chart_data_label(
+  model : XlsxChartModel,
+  index : Int,
+  value : Double,
+) -> String {
+  let parts : Array[String] = []
+  if model.show_ser_name && model.series_name != "" {
+    parts.push(model.series_name)
+  }
+  if model.show_cat_name && index < model.categories.length() {
+    parts.push(model.categories[index])
+  }
+  if model.show_value {
+    parts.push(xlsx_chart_number(value))
+  }
+  if model.show_percent {
+    let total = model.values.fold(init=0.0, (sum, item) => sum + item)
+    let percent = if total > 0.0 { value / total * 100.0 } else { 0.0 }
+    parts.push((percent + 0.5).to_int().to_string() + "%")
+  }
+  parts.join(" ")
 }
 
 ///|
@@ -530,14 +568,15 @@ fn XlsxWorkbook::xlsx_chart_svg(
         bar_height.to_string() +
         "\" fill=\"" + model.color + "\"/>",
       )
-      if model.show_value {
+      let label_text = xlsx_chart_data_label(model, index, value)
+      if label_text != "" {
         svg.write_string(
           "<text x=\"" +
           (left + slot * index.to_double() + slot * 0.5).to_string() +
           "\" y=\"" +
           (plot_top + plot_height - bar_height - 4.0).to_string() +
           "\" text-anchor=\"middle\" font-size=\"10\" fill=\"#000000\">" +
-          xlsx_chart_number(value) +
+          xlsx_chart_text(label_text) +
           "</text>",
         )
       }
@@ -557,14 +596,15 @@ fn XlsxWorkbook::xlsx_chart_svg(
         x.to_string() +
         " " +
         y.to_string()
-      if model.show_value {
+      let label_text = xlsx_chart_data_label(model, index, value)
+      if label_text != "" {
         svg.write_string(
           "<text x=\"" +
           x.to_string() +
           "\" y=\"" +
           (y - 4.0).to_string() +
           "\" text-anchor=\"middle\" font-size=\"10\" fill=\"#000000\">" +
-          xlsx_chart_number(value) +
+          xlsx_chart_text(label_text) +
           "</text>",
         )
       }
@@ -600,20 +640,8 @@ fn XlsxWorkbook::xlsx_chart_svg(
           "</text>",
         )
       }
-      if model.show_value {
-        let value_x = cx + @math.cos(mid) * radius * 0.82
-        let value_y = cy + @math.sin(mid) * radius * 0.82
-        svg.write_string(
-          "<text x=\"" +
-          value_x.to_string() +
-          "\" y=\"" +
-          (value_y + 4.0).to_string() +
-          "\" text-anchor=\"middle\" font-size=\"10\" fill=\"#000000\">" +
-          xlsx_chart_number(value) +
-          "</text>",
-        )
-      }
-      if model.show_percent {
+      let label_text = xlsx_chart_data_label(model, index, value)
+      if label_text != "" {
         let inner_x = cx + @math.cos(mid) * radius * 0.65
         let inner_y = cy + @math.sin(mid) * radius * 0.65
         svg.write_string(
@@ -622,8 +650,8 @@ fn XlsxWorkbook::xlsx_chart_svg(
           "\" y=\"" +
           (inner_y + 4.0).to_string() +
           "\" text-anchor=\"middle\" font-size=\"10\" fill=\"#ffffff\">" +
-          (value / pie_total * 100.0 + 0.5).to_int().to_string() +
-          "%</text>",
+          xlsx_chart_text(label_text) +
+          "</text>",
         )
       }
       angle += sweep
@@ -872,14 +900,14 @@ fn XlsxWorkbook::xlsx_chart_object(
         Float::from_double(slot * 0.6),
         Float::from_double(bar_height),
       )
-      if model.show_value {
-        let text = xlsx_chart_number(value)
+      let label_text = xlsx_chart_data_label(model, index, value)
+      if label_text != "" {
         let mut advance = 0.0
-        for character in text {
+        for character in label_text {
           advance += @sheet.sized_fallback_advance(character, false, 10.0)
         }
         label(
-          text,
+          label_text,
           left + slot * index.to_double() + slot * 0.5 - advance / 2.0,
           plot_top + plot_height - bar_height - 14.0,
           10.0,
@@ -910,8 +938,9 @@ fn XlsxWorkbook::xlsx_chart_object(
       @core.Inline({ verbs: Bytes::from_array(verbs), coordinates }),
     )
     object.stroke_path(path)
-    if model.show_value {
-      for index, value in model.values {
+    for index, value in model.values {
+      let label_text = xlsx_chart_data_label(model, index, value)
+      if label_text != "" {
         let x = if count <= 1 {
           left + plot_width / 2.0
         } else {
@@ -919,12 +948,11 @@ fn XlsxWorkbook::xlsx_chart_object(
         }
         let y = plot_top + plot_height -
           plot_height * (value - axis_base) / axis_range
-        let text = xlsx_chart_number(value)
         let mut advance = 0.0
-        for character in text {
+        for character in label_text {
           advance += @sheet.sized_fallback_advance(character, false, 10.0)
         }
-        label(text, x - advance / 2.0, y - 14.0, 10.0, 400)
+        label(label_text, x - advance / 2.0, y - 14.0, 10.0, 400)
       }
     }
   }
@@ -951,28 +979,14 @@ fn XlsxWorkbook::xlsx_chart_object(
           400,
         )
       }
-      if model.show_value {
-        let text = xlsx_chart_number(value)
+      let label_text = xlsx_chart_data_label(model, index, value)
+      if label_text != "" {
         let mut advance = 0.0
-        for character in text {
+        for character in label_text {
           advance += @sheet.sized_fallback_advance(character, false, 10.0)
         }
         label(
-          text,
-          cx + @math.cos(mid) * radius * 0.82 - advance / 2.0,
-          cy + @math.sin(mid) * radius * 0.82 + 3.0,
-          10.0,
-          400,
-        )
-      }
-      if model.show_percent {
-        let text = (value / pie_total * 100.0 + 0.5).to_int().to_string() + "%"
-        let mut advance = 0.0
-        for character in text {
-          advance += @sheet.sized_fallback_advance(character, false, 10.0)
-        }
-        label(
-          text,
+          label_text,
           cx + @math.cos(mid) * radius * 0.65 - advance / 2.0,
           cy + @math.sin(mid) * radius * 0.65 + 3.0,
           10.0,
