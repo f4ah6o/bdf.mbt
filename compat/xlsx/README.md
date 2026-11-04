@@ -262,7 +262,7 @@ fills, line borders and linear text of the original subset it supports:
   whose axis, category and series labels are added to the tile text
   index as invisible runs;
 - chart sheets as one-page fixed views: bar, line and pie charts are drawn
-  with their title, legend swatches, axis tick labels, series colour and
+  with their title, series name, axis tick labels, series colour and
   categories
   (pie categories are placed around the slices), and the view's text index
   matches the upstream run order;
