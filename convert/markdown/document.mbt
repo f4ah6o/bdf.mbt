@@ -200,6 +200,22 @@ fn md_push_text(
 }
 
 ///|
+fn md_link_target(url : String) -> String {
+  if url.has_prefix("#") {
+    return "#page=1"
+  }
+  if url.has_prefix("http://") ||
+    url.has_prefix("https://") ||
+    url.has_prefix("mailto:") ||
+    url.has_prefix("tel:") ||
+    url.has_prefix("data:") ||
+    url.has_prefix("/") {
+    return url
+  }
+  ""
+}
+
+///|
 fn md_collect_inlines(
   nodes : Array[@mmtypes.Inline],
   style : @drawingml.TextStyle,
@@ -237,7 +253,7 @@ fn md_collect_inlines(
         md_collect_inlines(
           children,
           style,
-          if url.has_prefix("#") { "#page=1" } else { url },
+          md_link_target(url),
           runs,
           formulas,
           images,

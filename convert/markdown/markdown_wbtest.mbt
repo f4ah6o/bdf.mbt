@@ -291,6 +291,29 @@ test "Markdown heading links target the page" {
 }
 
 ///|
+test "Markdown drops relative links without a base URL" {
+  let source = "[abs](https://example.com) [rel](page.md) [root](/root) [frag](#x)\n"
+  let result = convert(@utf8.encode(source))
+  let doc = @core.open_single(result.bdf)
+  let view = doc.manifest.views[0]
+  let links : Array[String] = []
+  for page in view.pages {
+    for layer in page.layers {
+      for command in @render.decode_commands(doc.part(layer.object)) {
+        match command {
+          @render.Link(_, _, _, _, url) => links.push(url)
+          _ => ()
+        }
+      }
+    }
+  }
+  assert_true(links.contains("https://example.com"))
+  assert_true(links.contains("/root"))
+  assert_true(links.contains("#page=1"))
+  assert_true(!links.contains("page.md"))
+}
+
+///|
 test "Markdown emits heading, paragraph and figure marks" {
   let source = "# Heading\n\nParagraph\n\n![Alt](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lv0nWQAAAABJRU5ErkJggg==)\n"
   let result = convert(@utf8.encode(source))

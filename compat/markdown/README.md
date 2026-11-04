@@ -9,7 +9,8 @@ read by `convert/markdown/fixtures_generated_wbtest.mbt` and by
 The converter builds the same CommonMark/GFM structure GitHub uses:
 headings, nested ordered/unordered lists and task items, block quotes,
 fenced and indented code, tables with alignments, raw HTML, links (fragment
-links target the document page), images
+links target the document page; relative links without a base URL are left
+out), images
 and their alternative text, footnotes, definition lists and YAML/TOML
 front matter. Math written as `$...$`, `$$...$$` or a ```math``` fence
 is linearized to searchable text with a small LaTeX converter.
