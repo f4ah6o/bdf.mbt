@@ -3323,6 +3323,14 @@ fn pptx_emit_chart(
         }
       }
     }
+    let bubble_size_rep = match pptx_child(Some(chart), "sizeRepresents") {
+      Some(value) => pptx_attribute(value.element, "val", "area")
+      None => "area"
+    }
+    let show_neg_bubbles = match pptx_child(Some(chart), "showNegBubbles") {
+      Some(value) => pptx_attribute(value.element, "val", "0") != "0"
+      None => false
+    }
     let bubble_scale = match pptx_child(Some(chart), "bubbleScale") {
       Some(value) =>
         @string.parse_double(pptx_attribute(value.element, "val", "100")) catch {
@@ -3352,26 +3360,41 @@ fn pptx_emit_chart(
           (x - x_min) / (x_max - x_min) * plot_width
         let py = plot_y + plot_height -
           (value - y_min) / (y_max - y_min) * plot_height
-        object.fill_color(pptx_series_point_color(item, index))
         if is_bubble {
-          let bubble_size = if index < item.bubble_sizes.length() {
+          let raw_size = if index < item.bubble_sizes.length() {
             item.bubble_sizes[index]
           } else {
             0.0
           }
+          if raw_size < 0.0 && !show_neg_bubbles {
+            continue
+          }
+          let bubble_size = raw_size.abs()
+          let ratio = if max_bubble > 0.0 {
+            bubble_size / max_bubble
+          } else {
+            0.0
+          }
           let radius = if max_bubble > 0.0 {
-            2.0 + (Double::max(bubble_size, 0.0) / max_bubble).sqrt() *
-              12.0 *
-              bubble_scale /
-              100.0
+            2.0 +
+            (if bubble_size_rep == "w" {
+              ratio
+            } else {
+              ratio.sqrt()
+            }) *
+            12.0 *
+            bubble_scale /
+            100.0
           } else {
             2.0
           }
+          object.fill_color(pptx_series_point_color(item, index))
           let path = object.add_path(
             @core.Inline(pptx_circle_path(px, py, radius)),
           )
           object.fill_path(path, 0)
         } else {
+          object.fill_color(pptx_series_point_color(item, index))
           pptx_draw_chart_marker(object, item, px, py)
         }
         if show_values {
