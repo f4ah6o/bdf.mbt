@@ -468,17 +468,43 @@ fn XlsxWorkbook::xlsx_chart_svg(
     )
   }
   let slot = plot_width / Double::max(count.to_double(), 1.0)
-  for index, category in model.categories {
-    let x = left + slot * index.to_double() + slot * 0.5
-    svg.write_string(
-      "<text x=\"" +
-      x.to_string() +
-      "\" y=\"" +
-      (plot_top + plot_height + 18.0).to_string() +
-      "\" text-anchor=\"middle\" font-size=\"10\" fill=\"#000000\">" +
-      xlsx_chart_text(category) +
-      "</text>",
-    )
+  let pie_total = model.values.fold(init=0.0, (sum, value) => sum + value)
+  if model.kind == "pieChart" && pie_total > 0.0 {
+    let cx = left + plot_width / 2.0
+    let cy = plot_top + plot_height / 2.0
+    let radius = Double::min(plot_width, plot_height) / 2.0
+    let mut angle = -3.141592653589793 / 2.0
+    for index, value in model.values {
+      let sweep = 2.0 * 3.141592653589793 * value / pie_total
+      let mid = angle + sweep / 2.0
+      let x = cx + @math.cos(mid) * radius * 1.12
+      let y = cy + @math.sin(mid) * radius * 1.12
+      if index < model.categories.length() {
+        svg.write_string(
+          "<text x=\"" +
+          x.to_string() +
+          "\" y=\"" +
+          (y + 4.0).to_string() +
+          "\" text-anchor=\"middle\" font-size=\"10\" fill=\"#000000\">" +
+          xlsx_chart_text(model.categories[index]) +
+          "</text>",
+        )
+      }
+      angle += sweep
+    }
+  } else {
+    for index, category in model.categories {
+      let x = left + slot * index.to_double() + slot * 0.5
+      svg.write_string(
+        "<text x=\"" +
+        x.to_string() +
+        "\" y=\"" +
+        (plot_top + plot_height + 18.0).to_string() +
+        "\" text-anchor=\"middle\" font-size=\"10\" fill=\"#000000\">" +
+        xlsx_chart_text(category) +
+        "</text>",
+      )
+    }
   }
   svg.write_string("</svg>")
   svg.to_string()
