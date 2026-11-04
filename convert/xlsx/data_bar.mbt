@@ -39,6 +39,9 @@ fn XlsxWorkbook::xlsx_data_bar_rules(
   let mut right_to_left = false
   let mut border = false
   let mut gradient = true
+  let mut last_stop = -1
+  let mut formula_depth = -1
+  let formula = StringBuilder()
   while true {
     let event = reader.read_event()
     match event.kind {
@@ -61,6 +64,9 @@ fn XlsxWorkbook::xlsx_data_bar_rules(
           right_to_left = false
           border = false
           gradient = true
+          last_stop = -1
+          formula_depth = -1
+          formula.reset()
         } else if rule_depth >= 0 &&
           depth == rule_depth + 1 &&
           name == "dataBar" {
@@ -92,12 +98,24 @@ fn XlsxWorkbook::xlsx_data_bar_rules(
               "" => 0.0
               value => @string.parse_double(value) catch { _ => 0.0 }
             }
-            stops.push({ kind: xlsx_attr(element, "type", "min"), value })
+            stops.push({
+              kind: xlsx_attr(element, "type", "min"),
+              value,
+              formula: "",
+            })
+            last_stop = stops.length() - 1
           } else if name == "color" {
             color = xlsx_color(element)
           } else if name == "negativeBarColor" {
             negative_color = Some(xlsx_color(element))
           }
+        } else if last_stop >= 0 &&
+          bar_depth >= 0 &&
+          depth == bar_depth + 2 &&
+          name == "f" &&
+          event.kind is Start(_) {
+          formula.reset()
+          formula_depth = depth + 1
         }
         if event.kind is Start(_) {
           depth += 1
@@ -105,7 +123,17 @@ fn XlsxWorkbook::xlsx_data_bar_rules(
           break
         }
       }
+      Text(value) =>
+        if formula_depth >= 0 && depth == formula_depth {
+          formula.write_string(value)
+        }
       End(_) => {
+        if formula_depth >= 0 && depth == formula_depth {
+          if last_stop >= 0 {
+            stops[last_stop].formula = formula.to_string()
+          }
+          formula_depth = -1
+        }
         if bar_depth >= 0 && depth == bar_depth {
           if stops.length() == 2 {
             let ranges : Array[XlsxRange] = []
@@ -147,7 +175,15 @@ fn xlsx_data_bar_threshold(
   match stop.kind {
     "min" => min
     "max" => max
-    "num" | "formula" => stop.value
+    "num" => stop.value
+    "formula" => {
+      let raw = if stop.formula.has_prefix("=") {
+        stop.formula[1:].to_owned()
+      } else {
+        stop.formula
+      }
+      @string.parse_double(raw) catch { _ => stop.value }
+    }
     "percent" => min + (max - min) * stop.value / 100.0
     "percentile" => {
       let sorted = values.copy()

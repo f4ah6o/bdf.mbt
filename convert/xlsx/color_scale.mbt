@@ -3,6 +3,7 @@
 priv struct XlsxColorScaleStop {
   kind : String
   value : Double
+  mut formula : String
 }
 
 ///|
@@ -61,7 +62,11 @@ fn XlsxWorkbook::xlsx_color_scales(
               "" => 0.0
               value => @string.parse_double(value) catch { _ => 0.0 }
             }
-            stops.push({ kind: xlsx_attr(element, "type", "min"), value })
+            stops.push({
+              kind: xlsx_attr(element, "type", "min"),
+              value,
+              formula: "",
+            })
           } else if name == "color" {
             colors.push(xlsx_color(element))
           }

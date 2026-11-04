@@ -61,7 +61,10 @@ fn XlsxWorkbook::xlsx_icon_set_rules(
               value => @string.parse_double(value) catch { _ => 0.0 }
             }
             let gte = !["0", "false", "off"].contains(xlsx_attr(element, "gte", "1"))
-            stops.push(({ kind: xlsx_attr(element, "type", "percent"), value }, gte))
+            stops.push((
+              { kind: xlsx_attr(element, "type", "percent"), value, formula: "" },
+              gte,
+            ))
           } else if name == "cfIcon" {
             let icon_set = xlsx_attr(element, "iconSet", set)
             let icon_id = @string.parse_int(xlsx_attr(element, "iconId", "0")) catch { _ => 0 }

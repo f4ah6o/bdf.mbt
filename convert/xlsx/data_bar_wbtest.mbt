@@ -2,26 +2,32 @@
 test "XLSX data bar thresholds support num, percent, percentile and formula" {
   let values = [1.0, 2.0, 3.0, 4.0]
   assert_eq(
-    xlsx_data_bar_threshold({ kind: "num", value: 2.0 }, 1.0, 4.0, values),
+    xlsx_data_bar_threshold({ kind: "num", value: 2.0, formula: "" }, 1.0, 4.0, values),
     2.0,
   )
   assert_eq(
     xlsx_data_bar_threshold(
-      { kind: "percent", value: 50.0 }, 1.0, 4.0, values,
+      { kind: "percent", value: 50.0, formula: "" }, 1.0, 4.0, values,
     ),
     2.5,
   )
   assert_eq(
     xlsx_data_bar_threshold(
-      { kind: "percentile", value: 50.0 }, 1.0, 4.0, values,
+      { kind: "percentile", value: 50.0, formula: "" }, 1.0, 4.0, values,
     ),
     2.5,
   )
   assert_eq(
     xlsx_data_bar_threshold(
-      { kind: "formula", value: 10.0 }, 1.0, 4.0, values,
+      { kind: "formula", value: 10.0, formula: "" }, 1.0, 4.0, values,
     ),
     10.0,
+  )
+  assert_eq(
+    xlsx_data_bar_threshold(
+      { kind: "formula", value: 0.0, formula: "=7" }, 1.0, 4.0, values,
+    ),
+    7.0,
   )
 }
 

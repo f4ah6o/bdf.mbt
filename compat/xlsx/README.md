@@ -273,9 +273,9 @@ similarity, summaries and warnings.
 Remaining gaps: color scales are painted (two or three colors, with min,
 max, num, percent and percentile thresholds; formula thresholds are skipped);
 data bars are painted for min/max/num/percent/percentile thresholds using
-minLength/maxLength (numeric formula `val` is accepted; `<f>` thresholds are
-not), including negative/axis bars, right-to-left direction, borders and
-gradients;
+minLength/maxLength (numeric formula `val` or `<f>` is accepted; non-numeric
+cell formulas are not), including negative/axis bars, right-to-left direction,
+borders and gradients;
 icon sets are painted with percent/num/percentile/min/max
 thresholds, `reverse`, custom `cfIcon` entries and `showValue="0"` cell-value
 hiding; an
