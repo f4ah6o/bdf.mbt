@@ -1069,6 +1069,30 @@ fn XlsxWorkbook::xlsx_chart_svg(
       }
       angle += sweep
     }
+  } else if model.kind == "radarChart" {
+    let radar_count = model.values.length()
+    if radar_count > 0 {
+      let cx = left + plot_width / 2.0
+      let cy = plot_top + plot_height / 2.0
+      let radar_radius = Double::min(plot_width, plot_height) / 2.0 * 1.12
+      for index, category in model.categories {
+        if index >= radar_count {
+          break
+        }
+        let angle = -3.141592653589793 / 2.0 +
+          2.0 * 3.141592653589793 * index.to_double() /
+          radar_count.to_double()
+        svg.write_string(
+          "<text x=\"" +
+          (cx + @math.cos(angle) * radar_radius).to_string() +
+          "\" y=\"" +
+          (cy + @math.sin(angle) * radar_radius + 4.0).to_string() +
+          "\" text-anchor=\"middle\" font-size=\"10\" fill=\"#000000\">" +
+          xlsx_chart_text(category) +
+          "</text>",
+        )
+      }
+    }
   } else {
     for index, category in model.categories {
       let x = left + slot * index.to_double() + slot * 0.5
@@ -1738,6 +1762,32 @@ fn XlsxWorkbook::xlsx_chart_object(
         )
       }
       angle += sweep
+    }
+  } else if model.kind == "radarChart" {
+    let radar_count = model.values.length()
+    if radar_count > 0 {
+      let cx = left + plot_width / 2.0
+      let cy = plot_top + plot_height / 2.0
+      let radar_radius = Double::min(plot_width, plot_height) / 2.0 * 1.12
+      for index, category in model.categories {
+        if index >= radar_count {
+          break
+        }
+        let angle = -3.141592653589793 / 2.0 +
+          2.0 * 3.141592653589793 * index.to_double() /
+          radar_count.to_double()
+        let mut advance = 0.0
+        for character in category {
+          advance += @sheet.sized_fallback_advance(character, false, 10.0)
+        }
+        label(
+          category,
+          cx + @math.cos(angle) * radar_radius - advance / 2.0,
+          cy + @math.sin(angle) * radar_radius + 3.0,
+          10.0,
+          400,
+        )
+      }
     }
   } else {
     for index, category in model.categories {
