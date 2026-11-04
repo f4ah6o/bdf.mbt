@@ -3100,7 +3100,14 @@ fn pptx_emit_chart(
     let (border_color, border_width) = pptx_chart_line_style(
       chart_sp_pr, theme, 0x000000ffU, 1.0,
     )
+    let chart_dash = match pptx_child(
+      pptx_child(chart_sp_pr, "ln"), "prstDash",
+    ) {
+      Some(value) => pptx_attribute(value.element, "val", "solid")
+      None => "solid"
+    }
     object.line(Float::from_double(border_width), 0, 0, 8.0F)
+    pptx_apply_chart_dash(object, chart_dash)
     object.stroke_color(border_color)
     object.stroke_rect(
       Float::from_double(x),
@@ -4564,7 +4571,14 @@ fn pptx_emit_chart(
   let (plot_border_color, plot_border_width) = pptx_chart_line_style(
     pptx_child(plot_area, "spPr"), theme, 0xbfbfbffFU, 1.0,
   )
+  let plot_border_dash = match pptx_child(
+    pptx_child(pptx_child(plot_area, "spPr"), "ln"), "prstDash",
+  ) {
+    Some(value) => pptx_attribute(value.element, "val", "solid")
+    None => "solid"
+  }
   object.line(Float::from_double(plot_border_width), 0, 0, 8.0F)
+  pptx_apply_chart_dash(object, plot_border_dash)
   object.stroke_color(plot_border_color)
   object.stroke_rect(
     Float::from_double(plot_x),
