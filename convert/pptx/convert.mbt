@@ -3530,6 +3530,12 @@ fn pptx_emit_chart(
         _ => radius * 0.7
       }
     }
+    let pie_leader_lines = match pptx_child(
+      pptx_child(Some(chart), "dLbls"), "showLeaderLines",
+    ) {
+      Some(value) => pptx_attribute(value.element, "val", "1") != "0"
+      None => true
+    }
     let first_angle = match pptx_child(Some(chart), "firstSliceAng") {
       Some(value) =>
         @string.parse_double(pptx_attribute(value.element, "val", "0")) catch {
@@ -3584,15 +3590,34 @@ fn pptx_emit_chart(
         label = ""
       }
       if label != "" {
-        let label_width = pptx_text_width(label, label_size)
+        let label_width = pptx_text_width(label, data_label_size)
+        let label_x = slice_cx +
+          @math.cos(mid) * label_radius - label_width / 2.0
+        let label_y = slice_cy + @math.sin(mid) * label_radius
+        if pie_leader_lines && label_radius > radius {
+          let path = object.add_path(
+            @core.Inline({
+              verbs: Bytes::from_array([0, 1, 4]),
+              coordinates: [
+                slice_cx + @math.cos(mid) * radius,
+                slice_cy + @math.sin(mid) * radius,
+                label_x + label_width / 2.0,
+                label_y,
+              ],
+            }),
+          )
+          object.line(0.75F, 0, 0, 8.0F)
+          object.stroke_color(0x808080ffU)
+          object.stroke_path(path)
+        }
         pptx_chart_label(
           object,
           label_font,
-          label_size,
-          black,
+          data_label_size,
+          data_label_color,
           label,
-          slice_cx + @math.cos(mid) * label_radius - label_width / 2.0,
-          slice_cy + @math.sin(mid) * label_radius,
+          label_x,
+          label_y,
         )
       }
       start += sweep

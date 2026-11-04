@@ -30,3 +30,22 @@ fn pptx_first_text_x(fixture : () -> Bytes raise) -> Double raise {
 test "PPTX pie labels honour dLblPos" {
   assert_true(pptx_first_text_x(pptx_pie_ctr_fixture) != pptx_first_text_x(pptx_pie_out_fixture))
 }
+
+///|
+test "PPTX outside pie labels draw leader lines" {
+  let result = convert(pptx_pie_out_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  let body_hash = pptx_body_layer(manifest).object
+  let resources = @core.decode_object_resources(
+    @core.open_single(result.bdf).part(body_hash),
+  )
+  let mut leaders = 0
+  for command in @render.compile_object(resources.object) {
+    match command {
+      @render.StrokePath(_) => leaders += 1
+      _ => ()
+    }
+  }
+  assert_true(leaders >= 1)
+}

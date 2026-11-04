@@ -97,7 +97,8 @@ scatter, radar, pie and doughnut charts (with `firstSliceAng`, per-point `explos
 data-point fills, series line widths, dash patterns and markers) draw their series, axis titles with `txPr` sizes/colours,
 bar/line/radar/scatter value labels with optional category/series names
 and bar/line/scatter/radar `dLblPos` placement,
-stacked segment labels and pie/doughnut percentage/value labels with `dLblPos` (with optional
+stacked segment labels and pie/doughnut percentage/value labels with `dLblPos` (leader lines for
+outside labels, with optional
 category/series names, `c:numFmt`, `c:txPr` sizes/colours/bold/italic, `c:separator` and per-point `c:dLbl`
 text/delete)
 from `dLbls`, legends with colour swatches and `txPr` text styles, deleted entries and
