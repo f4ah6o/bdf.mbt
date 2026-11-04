@@ -15,6 +15,7 @@ struct XlsxChartModel {
   marker_size : Double
   show_percent : Bool
   show_value : Bool
+  label_separator : String
   show_cat_name : Bool
   show_ser_name : Bool
   axis_min : Double
@@ -349,10 +350,15 @@ fn XlsxWorkbook::xlsx_chart_model(
   }
   let mut show_percent = false
   let mut show_value = false
+  let mut label_separator = " "
   let mut show_cat_name = false
   let mut show_ser_name = false
   match xlsx_draw_child(plot, "dLbls") {
     Some(labels) => {
+      match xlsx_draw_child(labels, "separator") {
+        Some(separator) => label_separator = xlsx_draw_all_text(separator)
+        None => ()
+      }
       match xlsx_draw_child(labels, "showPercent") {
         Some(value) => show_percent = xlsx_draw_attr(value, "val") != "0"
         None => ()
@@ -421,6 +427,7 @@ fn XlsxWorkbook::xlsx_chart_model(
     marker_size,
     show_percent,
     show_value,
+    label_separator,
     show_cat_name,
     show_ser_name,
     axis_min,
@@ -449,7 +456,7 @@ fn xlsx_chart_data_label(
     let percent = if total > 0.0 { value / total * 100.0 } else { 0.0 }
     parts.push((percent + 0.5).to_int().to_string() + "%")
   }
-  parts.join(" ")
+  parts.join(model.label_separator)
 }
 
 ///|
