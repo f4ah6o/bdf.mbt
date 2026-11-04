@@ -268,6 +268,30 @@ fn docx_layout_paragraph(
         let mut leader = "none"
         for stop in props.tabs {
           if stop.position > relative {
+            if stop.alignment == "bar" {
+              current.push({
+                kind: "bar",
+                text: "",
+                link: "",
+                field_format: "",
+                font: docx_font_family(item.props),
+                weight: docx_font_weight(item.props),
+                style: docx_font_style(item.props),
+                size: item.props.size,
+                color: 0x000000ffU,
+                rise: 0.0,
+                underline: "",
+                strike: false,
+                shadow: false,
+                emphasis: "",
+                x: props.left + stop.position,
+                advance: 0.0,
+                shade: None,
+                border_width: 0.0,
+                border_color: None,
+              })
+              continue
+            }
             next = stop.position
             leader = stop.leader
             break
@@ -924,6 +948,16 @@ fn docx_emit_para_line(
   }
   for item in runs {
     if item.kind == "bookmark" {
+      continue
+    }
+    if item.kind == "bar" {
+      object.fill_color(item.color)
+      object.fill_rect(
+        Float::from_double(x_origin + offset + item.x),
+        Float::from_double(top),
+        0.75F,
+        Float::from_double(line.height),
+      )
       continue
     }
     let text = if item.kind == "field" {

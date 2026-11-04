@@ -447,6 +447,25 @@ test "DOCX page fields are regenerated on each page" {
 }
 
 ///|
+test "DOCX bar tabs draw a vertical rule" {
+  let blocks = "<w:p><w:pPr><w:tabs><w:tab w:val=\"bar\" w:pos=\"720\"/></w:tabs></w:pPr>" +
+    "<w:r><w:t>A</w:t><w:tab/><w:t>B</w:t></w:r></w:p>"
+  let commands = docx_test_page_commands(
+    convert(docx_test_docx(blocks, DOCX_TEST_SECTION, [])), "pages", 0, "body",
+  )
+  let mut bars = 0
+  for command in commands {
+    match command {
+      FillRect(_, _, width, _) =>
+        if (width - 0.75).abs() < 0.01 {
+          bars += 1
+        }
+      _ => ()
+    }
+  }
+  assert_true(bars >= 1)
+}
+
 test "DOCX picture borders are drawn around images" {
   let header = docx_test_header(
     "<w:p><w:r><w:drawing><wp:inline>" +

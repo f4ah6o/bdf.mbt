@@ -45,7 +45,8 @@ tracked
 insertions/deletions, content controls, alternate content and revision
 metadata. Office Math (`m:oMath`/`m:oMathPara`) is linearized for search and
 layout. Paragraphs are laid out with approximate character widths and support
-word wrapping at spaces, explicit line/page/column breaks, tabs and leaders,
+word wrapping at spaces, explicit line/page/column breaks, tabs, bar tabs
+and leaders,
 paragraph and character spacing (including contextual spacing), run position,
 left/centre/right/justified/distributed alignment, keep-with-next, basic font
 weight/style/size/colour, shading/highlight, text shadow, borders,
