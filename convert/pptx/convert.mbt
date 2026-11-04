@@ -2909,12 +2909,13 @@ fn pptx_emit_chart(
       Some(value) => pptx_attribute(value.element, "val", "col") == "bar"
       None => false
     })
+  let grouping = match pptx_child(Some(chart), "grouping") {
+    Some(value) => pptx_attribute(value.element, "val", "clustered")
+    None => "clustered"
+  }
   let stacked = is_bar &&
-    (match pptx_child(Some(chart), "grouping") {
-      Some(value) =>
-        pptx_attribute(value.element, "val", "clustered") == "stacked"
-      None => false
-    })
+    (grouping == "stacked" || grouping == "percentStacked")
+  let percent_stacked = is_bar && grouping == "percentStacked"
   let show_values = match pptx_child(Some(chart), "dLbls") {
     Some(labels) =>
       match pptx_child(Some(labels), "showVal") {
@@ -3006,6 +3007,24 @@ fn pptx_emit_chart(
       marker_symbol,
       marker_size,
     })
+  }
+  if percent_stacked && !series.is_empty() {
+    let count = series[0].values.length()
+    for index in 0..<count {
+      let mut total = 0.0
+      for item in series {
+        if index < item.values.length() {
+          total += item.values[index]
+        }
+      }
+      if total > 0.0 {
+        for item in series {
+          if index < item.values.length() {
+            item.values[index] = item.values[index] / total * 100.0
+          }
+        }
+      }
+    }
   }
   if vary_colors {
     for item in series {
@@ -3946,6 +3965,10 @@ fn pptx_emit_chart(
         minimum = Double::min(minimum, value)
       }
     }
+  }
+  if percent_stacked {
+    maximum = 100.0
+    minimum = 0.0
   }
   let (nice_step, nice_high) = pptx_chart_nice_axis(
     maximum,
