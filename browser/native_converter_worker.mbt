@@ -1329,12 +1329,23 @@ fn native_convert_xlsx(
       return
     }
   }
+  let warnings : Array[String] = []
+  if font_data is None {
+    warnings.push(
+      "no fonts found; text is laid out with estimated metrics and not embedded",
+    )
+  }
+  for warning in result.warnings {
+    warnings.push(warning)
+  }
   native_converter_result(
     request,
     result.bdf,
     "xlsx",
-    "\{result.sheets} sheet(s)",
-    result.warnings,
+    "\{result.sheets} sheet(s), " +
+    (if font_data is None { "0" } else { "1" }) +
+    " embedded font(s)",
+    warnings,
     opened,
   )
 }
