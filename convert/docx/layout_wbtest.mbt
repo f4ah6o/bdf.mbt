@@ -1628,6 +1628,17 @@ test "DOCX footnote references inside table cells are laid out" {
     }
   }
   assert_true(text.to_string().contains("CELLNOTE"))
+  let mut separator = false
+  for command in commands {
+    match command {
+      FillRect(_, _, width, height) =>
+        if height == 0.5 && (width - 144.0).abs() < 0.1 {
+          separator = true
+        }
+      _ => ()
+    }
+  }
+  assert_true(separator)
 }
 
 test "DOCX bookmark hyperlinks point at the bookmark page" {

@@ -2859,7 +2859,7 @@ fn docx_flow_emit_notes(flow : DocxFlow) -> Unit raise {
   if flow.page_notes.is_empty() {
     return
   }
-  let width = Double::max(flow.width, 36.0)
+  let width = Double::min(Double::max(flow.width, 36.0), 144.0)
   let mut y = flow.bottom - flow.note_height
   if y < flow.top {
     y = flow.top

@@ -38,8 +38,8 @@ the OPC core properties and the title can be overridden by the caller.
 
 The reader accepts `settings.xml`, `footnotes.xml` and `endnotes.xml`;
 footnote and endnote bodies are laid out above the footer on the page that
-refers to them and appended to the scroll view, with approximate superscript
-markers. References inside table cells are collected onto the page as well. External `w:hyperlink` relationships become link commands and internal
+refers to them and appended to the scroll view, with a two-inch separator and
+approximate superscript markers. References inside table cells are collected onto the page as well. External `w:hyperlink` relationships become link commands and internal
 `w:anchor` links point at the bookmark page; it also reads fields, symbols,
 tracked
 insertions/deletions, content controls, alternate content and revision
