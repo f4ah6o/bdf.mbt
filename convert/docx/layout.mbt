@@ -1419,13 +1419,23 @@ fn docx_draw_rule(
   y0 : Double,
   x1 : Double,
   y1 : Double,
-) -> Unit {
+) -> Unit raise {
   match border {
     None => ()
     Some(value) => {
       let width = value.width
       ctx.object.fill_color(value.color)
-      if (y0 - y1).abs() < 0.01 {
+      if (y0 - y1).abs() > 0.01 && (x0 - x1).abs() > 0.01 {
+        let path = ctx.object.add_path(
+          @core.Inline({
+            verbs: Bytes::from_array([0, 1, 4]),
+            coordinates: [x0, y0, x1, y1],
+          }),
+        )
+        ctx.object.line(Float::from_double(width), 0, 0, 8.0F)
+        ctx.object.stroke_color(value.color)
+        ctx.object.stroke_path(path)
+      } else if (y0 - y1).abs() < 0.01 {
         ctx.object.fill_rect(
           Float::from_double(x0 - width / 2.0),
           Float::from_double(y0 - width / 2.0),
@@ -1722,6 +1732,22 @@ fn docx_emit_table_row(
       bx + cell_layout.w,
       y_top,
       bx + cell_layout.w,
+      y_top + height,
+    )
+    docx_draw_rule(
+      ctx,
+      cell.tl2br,
+      bx,
+      y_top,
+      bx + cell_layout.w,
+      y_top + height,
+    )
+    docx_draw_rule(
+      ctx,
+      cell.tr2bl,
+      bx + cell_layout.w,
+      y_top,
+      bx,
       y_top + height,
     )
   }

@@ -56,7 +56,8 @@ emphasis marks, hidden text, theme fonts, decimal/bullet numbering and section
 page geometry. `w:pgBorders` rules are drawn on a page's background layer,
 honouring `offsetFrom` and the first/not-first display filters. Tables are real tables: a `tblGrid` (or equal columns when it
 is missing), grid spans, vertical merges with row spans, cell margins,
-borders and fills from cells and `tblBorders`, vertical alignment, row
+borders (including cell diagonals) and fills from cells and `tblBorders`,
+vertical alignment, row
 heights (`trHeight`, `cantSplit`, `tblHeader`), rows split between lines
 across columns and pages, and header rows repeated on every page a table
 reaches. Cell text wraps at the cell width; nested tables are laid out inside

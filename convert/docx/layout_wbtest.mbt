@@ -162,6 +162,25 @@ fn docx_test_table(document : DocxTextDocument) -> DocxTable raise {
 }
 
 ///|
+test "DOCX table cell diagonal borders are drawn" {
+  let blocks = "<w:tbl><w:tblGrid><w:gridCol w:w=\"3000\"/></w:tblGrid>" +
+    "<w:tr><w:tc><w:tcPr><w:tcBorders>" +
+    "<w:tl2br w:val=\"single\" w:sz=\"8\" w:color=\"FF0000\"/>" +
+    "<w:tr2bl w:val=\"single\" w:sz=\"8\" w:color=\"FF0000\"/>" +
+    "</w:tcBorders></w:tcPr><w:p><w:r><w:t>X</w:t></w:r></w:p></w:tc></w:tr></w:tbl>"
+  let commands = docx_test_page_commands(
+    convert(docx_test_docx(blocks, DOCX_TEST_SECTION, [])), "pages", 0, "body",
+  )
+  let mut strokes = 0
+  for command in commands {
+    match command {
+      StrokePath(_) => strokes += 1
+      _ => ()
+    }
+  }
+  assert_true(strokes >= 2)
+}
+
 test "DOCX table cell text wraps inside its grid column" {
   let cell_text = docx_test_repeat("word ", 40)
   let blocks = "<w:tbl><w:tblGrid><w:gridCol w:w=\"2000\"/><w:gridCol w:w=\"3000\"/></w:tblGrid>" +

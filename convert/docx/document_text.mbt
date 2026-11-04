@@ -93,6 +93,8 @@ priv struct DocxTableCell {
   vmerge : String
   mut row_span : Int32
   borders : Array[DocxLineBorder?]
+  tl2br : DocxLineBorder?
+  tr2bl : DocxLineBorder?
   shade : UInt32?
   mar : DocxMargins
   valign : String
@@ -1905,7 +1907,7 @@ fn docx_text_table(
           None => ()
         }
       }
-      let cell_borders = docx_border_sides(
+      let all_borders = docx_border_sides(
         match cell_props {
           Some(value) =>
             match value.child("tcBorders") {
@@ -1946,8 +1948,12 @@ fn docx_text_table(
                 }
             }
         },
-        ["top", "left", "bottom", "right"],
+        ["top", "left", "bottom", "right", "tl2br", "tr2bl"],
       )
+      let side_borders : Array[DocxLineBorder?] = []
+      for index in 0..<4 {
+        side_borders.push(all_borders[index])
+      }
       let mar = docx_margins(
         match cell_props {
           Some(value) =>
@@ -2024,7 +2030,9 @@ fn docx_text_table(
         span,
         vmerge,
         row_span: 1,
-        borders: cell_borders,
+        borders: side_borders,
+        tl2br: all_borders[4],
+        tr2bl: all_borders[5],
         shade: cell_shade,
         mar,
         valign,
