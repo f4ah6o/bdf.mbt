@@ -1144,9 +1144,42 @@ fn pptx_tint_color(color : UInt32, fraction : Double) -> UInt32 {
   pptx_pack_color(channel(24), channel(16), channel(8))
 }
 
+fn pptx_some_or(first : UInt32?, second : UInt32?) -> UInt32? {
+  match first {
+    Some(value) => Some(value)
+    None => second
+  }
+}
+
 ///|
-/// The fill of a table cell under the built-in Medium-Style-2 Accent 1
-/// style, or None for an unknown style ID.
+fn pptx_table_style_accent(
+  theme : Map[String, UInt32],
+  accent : Int32,
+) -> UInt32 {
+  if accent == 0 {
+    return match theme.get("dk1") {
+      Some(value) => value
+      None => 0x000000ffU
+    }
+  }
+  let key = "accent" + accent.to_string()
+  match theme.get(key) {
+    Some(value) => value
+    None => 0x4472c4ffU
+  }
+}
+
+///|
+fn pptx_shade_color(color : UInt32, fraction : Double) -> UInt32 {
+  let channel = fn(shift : Int32) -> Double {
+    pptx_color_channel(color, shift) * fraction
+  }
+  pptx_pack_color(channel(24), channel(16), channel(8))
+}
+
+///|
+/// A cell fill from a synthesized built-in table style, or None for an
+/// unknown style ID.
 fn pptx_table_style_fill(
   theme : Map[String, UInt32],
   style_id : String,
@@ -1160,24 +1193,136 @@ fn pptx_table_style_fill(
   row_count : Int,
   col_count : Int,
 ) -> UInt32? {
-  if style_id != "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}" {
-    return None
-  }
-  let accent = match theme.get("accent1") {
+  let info = match pptx_table_style_family(style_id) {
     Some(value) => value
-    None => 0x4472c4ffU
+    None => return None
   }
-  if (first_row && row_index == 0) ||
-    (last_row && row_index == row_count - 1) ||
+  let (family, accent_index) = info
+  let accent = pptx_table_style_accent(theme, accent_index)
+  let lt1 = match theme.get("lt1") {
+    Some(value) => value
+    None => 0xffffffffU
+  }
+  let dk1 = match theme.get("dk1") {
+    Some(value) => value
+    None => 0x000000ffU
+  }
+  let pair = if accent_index > 0 {
+    pptx_table_style_accent(theme, accent_index % 6 + 1)
+  } else {
+    dk1
+  }
+  let whole = match family {
+    "Themed-Style-1" | "Light-Style-1" | "Light-Style-2" | "Light-Style-3" => None
+    "Themed-Style-2" => Some(accent)
+    "Medium-Style-1" | "Medium-Style-3" => Some(lt1)
+    "Medium-Style-2" | "Medium-Style-4" => Some(pptx_tint_color(accent, 0.2))
+    "Dark-Style-1" =>
+      Some(if accent_index == 0 {
+        pptx_tint_color(dk1, 0.75)
+      } else {
+        pptx_shade_color(accent, 0.2)
+      })
+    "Dark-Style-2" => Some(pptx_tint_color(accent, 0.2))
+    _ => None
+  }
+  let header = match family {
+    "Themed-Style-1" | "Light-Style-2" | "Medium-Style-1" |
+      "Medium-Style-2" | "Medium-Style-3" =>
+      Some(accent)
+    "Medium-Style-4" => Some(pptx_tint_color(accent, 0.2))
+    "Dark-Style-1" => Some(dk1)
+    "Dark-Style-2" => Some(pair)
+    _ => None
+  }
+  let band = match family {
+    "Themed-Style-1" => Some(pptx_tint_color(accent, 0.4))
+    "Themed-Style-2" => Some(pptx_tint_color(accent, 0.8))
+    "Light-Style-1" | "Light-Style-3" | "Medium-Style-1" =>
+      Some(pptx_tint_color(accent, 0.2))
+    "Medium-Style-2" | "Medium-Style-4" | "Dark-Style-2" =>
+      Some(pptx_tint_color(accent, 0.4))
+    "Medium-Style-3" => Some(pptx_tint_color(dk1, 0.2))
+    "Dark-Style-1" => Some(pptx_shade_color(accent, 0.4))
+    _ => None
+  }
+  if (last_row && row_index == row_count - 1) ||
     (first_col && col_index == 0) ||
     (last_col && col_index == col_count - 1) {
-    return Some(accent)
+    return Some(match family {
+      "Dark-Style-1" => if last_row && row_index == row_count - 1 {
+        pptx_shade_color(accent, 0.5)
+      } else {
+        pptx_shade_color(accent, 0.6)
+      }
+      "Medium-Style-4" => if last_row && row_index == row_count - 1 {
+        pptx_tint_color(accent, 0.2)
+      } else {
+        accent
+      }
+      _ => match header {
+        Some(value) => value
+        None => match whole {
+          Some(value) => value
+          None => lt1
+        }
+      }
+    })
+  }
+  if first_row && row_index == 0 {
+    return pptx_some_or(header, whole)
   }
   let first = if first_row { 1 } else { 0 }
   if band_row && row_index >= first && (row_index - first) % 2 == 0 {
-    Some(pptx_tint_color(accent, 0.4))
+    return pptx_some_or(band, whole)
+  }
+  whole
+}
+
+///|
+fn pptx_table_style_text(
+  theme : Map[String, UInt32],
+  style_id : String,
+  first_row : Bool,
+  last_row : Bool,
+  first_col : Bool,
+  last_col : Bool,
+  row_index : Int,
+  col_index : Int,
+  row_count : Int,
+  col_count : Int,
+) -> (UInt32, Bool)? {
+  let info = match pptx_table_style_family(style_id) {
+    Some(value) => value
+    None => return None
+  }
+  let (family, accent_index) = info
+  let accent = pptx_table_style_accent(theme, accent_index)
+  let lt1 = match theme.get("lt1") {
+    Some(value) => value
+    None => 0xffffffffU
+  }
+  let dk1 = match theme.get("dk1") {
+    Some(value) => value
+    None => 0x000000ffU
+  }
+  let header_text = match family {
+    "Light-Style-3" | "Medium-Style-4" => accent
+    "Dark-Style-1" => lt1
+    _ => lt1
+  }
+  let body_text = match family {
+    "Themed-Style-2" | "Dark-Style-1" => lt1
+    _ => dk1
+  }
+  let special = (first_row && row_index == 0) ||
+    (last_row && row_index == row_count - 1) ||
+    (first_col && col_index == 0) ||
+    (last_col && col_index == col_count - 1)
+  if special {
+    Some((header_text, true))
   } else {
-    Some(pptx_tint_color(accent, 0.2))
+    Some((body_text, false))
   }
 }
 
@@ -1446,16 +1591,17 @@ fn pptx_emit_table(
       let text = pptx_cell_text(cell)
       if text != "" {
         let size = pptx_cell_text_size(cell)
-        let header = (first_row && text_row == 0) ||
-          (last_row && text_row == row_count - 1) ||
-          (first_col && grid_index == 0) ||
-          (last_col && grid_index == col_count - 1)
-        let bold = if header { 700 } else { pptx_cell_bold(cell) }
         let italic = pptx_cell_italic(cell)
-        let color = if header {
-          0xffffffffU
-        } else {
-          pptx_cell_color(cell, theme)
+        let style_text = pptx_table_style_text(
+          theme, style_id, first_row, last_row, first_col, last_col,
+          text_row, grid_index, row_count, col_count,
+        )
+        let (bold, color) = match style_text {
+          Some((value, is_bold)) => (
+            if is_bold { 700 } else { pptx_cell_bold(cell) },
+            value,
+          )
+          None => (pptx_cell_bold(cell), pptx_cell_color(cell, theme))
         }
         let margin_left = pptx_cell_margin(cell, "marL", 7.2)
         let margin_right = pptx_cell_margin(cell, "marR", 7.2)

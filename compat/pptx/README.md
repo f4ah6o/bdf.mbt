@@ -120,9 +120,10 @@ geometry falls back to the shape rectangle where upstream silently draws
 nothing; SmartArt, ink and 3-D or non-bar/line/pie charts are not
 supported; chart titles are used only for single-series charts without an
 explicit `c:title`, and chart data tables are not emitted; the built-in
-Medium-Style-2 Accent 1 table style applies header, last-row, first/last-column
-and band fills, their text styling, and its white grid/header/last-row borders,
-but other built-in table styles are not applied;
+The 74 predefined table-style IDs resolve their whole-table, header, band and
+last-row/edge-column fills and their header/body text colours; Medium-Style-2
+Accent 1 additionally draws its white grid/header/last-row borders, while the
+other families' borders are not applied;
 `normAutofit` font scale and
 line-spacing reduction are applied, while blip bullets and advanced vertical
 glyph stacking are not implemented; chart label

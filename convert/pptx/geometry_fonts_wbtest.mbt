@@ -193,6 +193,34 @@ test "PPTX built-in table style adds grid and header borders" {
   assert_eq(pptx_table_style_borders("unknown", true, false, 0, 4).length(), 0)
 }
 
+test "PPTX built-in table style families resolve fills and text" {
+  let theme : Map[String, UInt32] = Map([])
+  theme["accent1"] = 0x4472c4ffU
+  theme["lt1"] = 0xffffffffU
+  theme["dk1"] = 0x000000ffU
+  let medium1 = "{B301B821-A1FF-4177-AEE7-76D212191A09}"
+  assert_eq(
+    pptx_table_style_family(medium1),
+    Some(("Medium-Style-1", 1)),
+  )
+  let header = pptx_table_style_fill(
+    theme, medium1, true, false, false, false, false, 0, 0, 4, 2,
+  )
+  let body = pptx_table_style_fill(
+    theme, medium1, true, false, false, false, false, 1, 0, 4, 2,
+  )
+  assert_eq(header, Some(0x4472c4ffU))
+  assert_eq(body, Some(0xffffffffU))
+  let light3 = "{BC89EF96-8CEA-46FF-86C4-4CE0E7609802}"
+  assert_eq(
+    pptx_table_style_text(
+      theme, light3, true, false, false, false, 0, 0, 4, 2,
+    ),
+    Some((0x4472c4ffU, true)),
+  )
+  assert_eq(pptx_table_style_family("unknown"), None)
+}
+
 test "PPTX arrowheads draw filled or stroked paths" {
   for kind in ["triangle", "stealth", "diamond", "oval", "arrow"] {
     let object = @core.ObjectBuilder::new()
