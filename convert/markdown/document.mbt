@@ -32,6 +32,7 @@ priv struct MdRun {
 priv enum MdBlock {
   MdHeading(Int, Array[MdRun])
   MdParagraph(Array[MdRun])
+  MdDefinition(Array[MdRun], Array[Array[MdRun]])
   MdListItem(Int, String, Array[MdRun])
   MdCode(Array[String])
   MdQuote(Array[MdBlock])
@@ -490,6 +491,13 @@ fn md_scale_block(
     MdHeading(level, runs) =>
       MdHeading(level, md_scale_runs(runs, scale, font, mono))
     MdParagraph(runs) => MdParagraph(md_scale_runs(runs, scale, font, mono))
+    MdDefinition(term, definitions) =>
+      MdDefinition(
+        md_scale_runs(term, scale, font, mono),
+        definitions.map(fn(runs) {
+          md_scale_runs(runs, scale, font, mono)
+        }),
+      )
     MdListItem(level, marker, runs) =>
       MdListItem(level, marker, md_scale_runs(runs, scale, font, mono))
     MdCode(lines) => MdCode(lines)

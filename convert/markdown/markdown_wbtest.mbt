@@ -248,6 +248,29 @@ test "Markdown unknown views are rejected" {
 }
 
 ///|
+test "Markdown definition lists indent their definitions" {
+  let source = "Term\n: Definition one\n: Definition two\n"
+  let result = convert(@utf8.encode(source))
+  let doc = @core.open_single(result.bdf)
+  let view = doc.manifest.views[0]
+  let mut term_x = -1.0
+  let mut definition_x = -1.0
+  for page in view.pages {
+    for layer in page.layers {
+      for command in @render.decode_commands(doc.part(layer.object)) {
+        match command {
+          @render.FillText("Term", x, _, _) => term_x = x
+          @render.FillText("Definition one", x, _, _) =>
+            definition_x = x
+          _ => ()
+        }
+      }
+    }
+  }
+  assert_true(term_x >= 0.0 && definition_x > term_x)
+}
+
+///|
 test "Markdown emits heading, paragraph and figure marks" {
   let source = "# Heading\n\nParagraph\n\n![Alt](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lv0nWQAAAABJRU5ErkJggg==)\n"
   let result = convert(@utf8.encode(source))

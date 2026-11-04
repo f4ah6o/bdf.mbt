@@ -600,6 +600,12 @@ fn MdPainter::layout_block(
       }
       self.y += 2.0
     }
+    MdDefinition(term, definitions) => {
+      self.layout_block(MdParagraph(term), indent)
+      for runs in definitions {
+        self.layout_block(MdParagraph(runs), indent + 24.0)
+      }
+    }
     MdCode(lines) => {
       self.y += 7.0
       let style = md_style(size=10.5 * self.scale, family="Courier New")

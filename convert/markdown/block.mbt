@@ -515,22 +515,38 @@ fn MdParser::parse_blocks(self : MdParser, lines : Array[String], level : Int) -
         }
       }
       if next.has_prefix(": ") {
-        out.push(self.paragraph(trimmed.to_string()))
+        let term = md_inline_runs(
+          trimmed.to_owned(), md_style(), self.formulas, self.images,
+          self.svgs, self.sprite, self.warnings,
+        )
+        let definitions : Array[Array[MdRun]] = []
         let mut j = i + 1
         while j < lines.length() {
           let current = lines[j].trim()
           if current.has_prefix(": ") {
-            out.push(self.paragraph(current[2:].to_owned().trim().to_string()))
+            definitions.push(
+              md_inline_runs(
+                current[2:].to_owned().trim().to_owned(), md_style(),
+                self.formulas, self.images, self.svgs, self.sprite,
+                self.warnings,
+              ),
+            )
             j += 1
             continue
           }
           if current != "" && md_indent_of(lines[j]) > 0 {
-            out.push(self.paragraph(current.to_string()))
+            definitions.push(
+              md_inline_runs(
+                current.to_owned(), md_style(), self.formulas, self.images,
+                self.svgs, self.sprite, self.warnings,
+              ),
+            )
             j += 1
             continue
           }
           break
         }
+        out.push(MdDefinition(term, definitions))
         i = j
         continue
       }
