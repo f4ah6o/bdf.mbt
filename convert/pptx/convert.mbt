@@ -3172,7 +3172,8 @@ fn pptx_emit_chart(
     for item in series {
       object.fill_color(item.color)
       for index, value in item.values {
-        if index >= item.categories.length() {
+        if index >= item.categories.length() ||
+          pptx_series_blank(item, index) {
           continue
         }
         let x = @string.parse_double(item.categories[index]) catch {
@@ -3374,6 +3375,9 @@ fn pptx_emit_chart(
       object.stroke_path(path)
       object.fill_color(item.color)
       for index, value in item.values {
+        if pptx_series_blank(item, index) {
+          continue
+        }
         let angle = -3.141592653589793 / 2.0 +
           2.0 * 3.141592653589793 * index.to_double() /
           item.values.length().to_double()
