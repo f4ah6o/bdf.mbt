@@ -47,7 +47,8 @@ metadata. Office Math (`m:oMath`/`m:oMathPara`) is linearized for search and
 layout. Paragraphs are laid out with approximate character widths and support
 word wrapping at spaces, explicit line/page/column breaks, tabs and leaders,
 paragraph and character spacing, run position, alignment, keep-with-next, basic font
-weight/style/size/colour, shading, borders, underline/strike, caps/small caps,
+weight/style/size/colour, shading/highlight, borders, underline/strike,
+caps/small caps,
 super/subscript,
 emphasis marks, hidden text, theme fonts, decimal/bullet numbering and section
 page geometry. `w:pgBorders` rules are drawn on a page's background layer,

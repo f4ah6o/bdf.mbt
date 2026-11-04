@@ -1097,6 +1097,29 @@ fn docx_dynamic_field(walker : DocxTextWalker) -> DocxFieldState? {
 }
 
 ///|
+fn docx_highlight_color(name : String) -> UInt32? {
+  match name {
+    "yellow" => Some(0xffff00ffU)
+    "green" => Some(0x00ff00ffU)
+    "cyan" => Some(0x00ffffffU)
+    "magenta" => Some(0xff00ffffU)
+    "blue" => Some(0x0000ffffU)
+    "red" => Some(0xff0000ffU)
+    "darkBlue" => Some(0x000080ffU)
+    "darkCyan" => Some(0x008080ffU)
+    "darkGreen" => Some(0x008000ffU)
+    "darkMagenta" => Some(0x800080ffU)
+    "darkRed" => Some(0x800000ffU)
+    "darkYellow" => Some(0x808000ffU)
+    "gray" => Some(0x808080ffU)
+    "lightGray" => Some(0xc0c0c0ffU)
+    "black" => Some(0x000000ffU)
+    "white" => Some(0xffffffffU)
+    _ => None
+  }
+}
+
+///|
 fn docx_text_run(
   walker : DocxTextWalker,
   node : DocxXmlNode,
@@ -1255,10 +1278,16 @@ fn docx_text_run(
       }
     }
   }
+  let highlight = docx_highlight_color(props.highlight)
   for index in first..<items.length() {
     items[index].link = walker.current_link
     items[index].small_caps = (props.toggles & 8) != 0 &&
       (props.toggles & 4) == 0
+    if props.has_shading {
+      items[index].shade = Some(props.shading)
+    } else if highlight is Some(color) {
+      items[index].shade = Some(color)
+    }
   }
 }
 

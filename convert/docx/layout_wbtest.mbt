@@ -1227,6 +1227,24 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX highlight and run shading draw a background" {
+  let blocks = "<w:p><w:r><w:rPr><w:highlight w:val=\"yellow\"/></w:rPr><w:t>H</w:t></w:r></w:p>"
+  let commands = docx_test_page_commands(
+    convert(docx_test_docx(blocks, DOCX_TEST_SECTION, [])), "pages", 0, "body",
+  )
+  let mut backgrounds = 0
+  for command in commands {
+    match command {
+      FillRect(_, _, width, height) =>
+        if width > 0.0 && height > 1.0 {
+          backgrounds += 1
+        }
+      _ => ()
+    }
+  }
+  assert_true(backgrounds > 0)
+}
+
 test "DOCX run position raises the glyph baseline" {
   let blocks = "<w:p><w:r><w:rPr><w:position w:val=\"120\"/></w:rPr><w:t>A</w:t></w:r>" +
     "<w:r><w:t>B</w:t></w:r></w:p>"
