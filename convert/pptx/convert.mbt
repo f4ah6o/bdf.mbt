@@ -2522,6 +2522,38 @@ fn pptx_chart_data_label_size(chart_space : PptxXmlNode?) -> Double {
 }
 
 ///|
+fn pptx_chart_deleted_labels(chart_space : PptxXmlNode?) -> Array[Bool] {
+  let labels = pptx_child(chart_space, "dLbls")
+  let out : Array[Bool] = []
+  for child in pptx_children(labels) {
+    if child.element.name.local_name != "dLbl" {
+      continue
+    }
+    let index_node = pptx_child(Some(child), "idx")
+    if index_node is None {
+      continue
+    }
+    let index = @string.parse_int(
+      pptx_attribute(index_node.unwrap().element, "val", "0"),
+    ) catch {
+      _ => -1
+    }
+    if index < 0 {
+      continue
+    }
+    let delete = match pptx_child(Some(child), "delete") {
+      Some(value) => pptx_attribute(value.element, "val", "0") != "0"
+      None => false
+    }
+    while out.length() <= index {
+      out.push(false)
+    }
+    out[index] = delete
+  }
+  out
+}
+
+///|
 fn pptx_chart_custom_labels(chart_space : PptxXmlNode?) -> Array[String] {
   let labels = pptx_child(chart_space, "dLbls")
   let out : Array[String] = []
@@ -2748,6 +2780,7 @@ fn pptx_emit_chart(
   let data_label_size = pptx_chart_data_label_size(Some(chart))
   let data_label_color = pptx_chart_data_label_color(Some(chart), theme)
   let custom_labels = pptx_chart_custom_labels(Some(chart))
+  let deleted_labels = pptx_chart_deleted_labels(Some(chart))
   let palette = [
     0x4472c4ffU, 0xed7d31ffU, 0xa5a5a5ffU, 0xffc000ffU, 0x5b9bd5ffU, 0x70ad47ffU,
   ]
@@ -3078,6 +3111,9 @@ fn pptx_emit_chart(
             custom_labels[index] != "" {
             label_text = custom_labels[index]
           }
+          if index < deleted_labels.length() && deleted_labels[index] {
+            label_text = ""
+          }
           pptx_chart_label(
             object,
             label_font,
@@ -3262,6 +3298,9 @@ fn pptx_emit_chart(
           if index < custom_labels.length() &&
             custom_labels[index] != "" {
             label_text = custom_labels[index]
+          }
+          if index < deleted_labels.length() && deleted_labels[index] {
+            label_text = ""
           }
           pptx_chart_label(
             object,
@@ -3476,6 +3515,9 @@ fn pptx_emit_chart(
       }
       if index < custom_labels.length() && custom_labels[index] != "" {
         label = custom_labels[index]
+      }
+      if index < deleted_labels.length() && deleted_labels[index] {
+        label = ""
       }
       if label != "" {
         let label_width = pptx_text_width(label, label_size)
@@ -4012,6 +4054,9 @@ fn pptx_emit_chart(
           if index < custom_labels.length() && custom_labels[index] != "" {
             text = custom_labels[index]
           }
+          if index < deleted_labels.length() && deleted_labels[index] {
+            text = ""
+          }
           let label_width = pptx_text_width(text, data_label_size)
           let (label_x, label_y) = if horizontal {
             (
@@ -4046,6 +4091,9 @@ fn pptx_emit_chart(
           }
           if index < custom_labels.length() && custom_labels[index] != "" {
             text = custom_labels[index]
+          }
+          if index < deleted_labels.length() && deleted_labels[index] {
+            text = ""
           }
           let label_width = pptx_text_width(text, data_label_size)
           let (label_x, label_y) = if horizontal {
