@@ -1365,17 +1365,43 @@ fn docx_text_table(
       }
     None => 0.0
   }
-  let table_style = match props {
+  let table_style_id = match props {
     Some(value) =>
       match value.child("tblStyle") {
-        Some(style) => docx_attribute(style.element, "val", "").to_lower()
+        Some(style) => docx_attribute(style.element, "val", "")
         None => ""
       }
     None => ""
   }
+  let table_style = table_style_id.to_lower()
+  let mut style_tbl_pr : DocxXmlNode? = None
+  let mut style_tc_pr : DocxXmlNode? = None
+  if table_style_id != "" {
+    for style in walker.styles.chain(table_style_id) {
+      if style.kind != "table" {
+        continue
+      }
+      match style.tbl_pr {
+        Some(value) => style_tbl_pr = Some(value)
+        None => ()
+      }
+      match style.tc_pr {
+        Some(value) => style_tc_pr = Some(value)
+        None => ()
+      }
+    }
+  }
   let base_borders = docx_border_sides(
     match props {
-      Some(value) => value.child("tblBorders")
+      Some(value) =>
+        match value.child("tblBorders") {
+          Some(node) => Some(node)
+          None =>
+            match style_tbl_pr {
+              Some(style) => style.child("tblBorders")
+              None => None
+            }
+        }
       None => None
     },
     ["top", "left", "bottom", "right", "insideH", "insideV"],
@@ -1392,11 +1418,22 @@ fn docx_text_table(
   }
   let cell_mar = docx_margins(
     match props {
-      Some(value) => value.child("tblCellMar")
+      Some(value) =>
+        match value.child("tblCellMar") {
+          Some(node) => Some(node)
+          None =>
+            match style_tbl_pr {
+              Some(style) => style.child("tblCellMar")
+              None => None
+            }
+        }
       None => None
     },
   )
-  let shade = docx_child_shade(props)
+  let mut shade = docx_child_shade(props)
+  if shade is None {
+    shade = docx_child_shade(style_tbl_pr)
+  }
   let mut width_type = "auto"
   let mut width = 0.0
   match props {
@@ -1520,15 +1557,39 @@ fn docx_text_table(
       }
       let cell_borders = docx_border_sides(
         match cell_props {
-          Some(value) => value.child("tcBorders")
-          None => None
+          Some(value) =>
+            match value.child("tcBorders") {
+              Some(node) => Some(node)
+              None =>
+                match style_tc_pr {
+                  Some(style) => style.child("tcBorders")
+                  None => None
+                }
+            }
+          None =>
+            match style_tc_pr {
+              Some(style) => style.child("tcBorders")
+              None => None
+            }
         },
         ["top", "left", "bottom", "right"],
       )
       let mar = docx_margins(
         match cell_props {
-          Some(value) => value.child("tcMar")
-          None => None
+          Some(value) =>
+            match value.child("tcMar") {
+              Some(node) => Some(node)
+              None =>
+                match style_tc_pr {
+                  Some(style) => style.child("tcMar")
+                  None => None
+                }
+            }
+          None =>
+            match style_tc_pr {
+              Some(style) => style.child("tcMar")
+              None => None
+            }
         },
       )
       let valign = match cell_props {
@@ -1540,13 +1601,17 @@ fn docx_text_table(
         None => "top"
       }
       let blocks = docx_cell_blocks(cell_node, walker.styles)
+      let mut cell_shade = docx_child_shade(cell_props)
+      if cell_shade is None {
+        cell_shade = docx_child_shade(style_tc_pr)
+      }
       cells.push({
         col,
         span,
         vmerge,
         row_span: 1,
         borders: cell_borders,
-        shade: docx_child_shade(cell_props),
+        shade: cell_shade,
         mar,
         valign,
         blocks,

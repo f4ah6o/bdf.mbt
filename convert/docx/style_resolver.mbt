@@ -7,6 +7,8 @@ priv struct DocxStyle {
   based_on : String
   ppr : DocxXmlNode?
   rpr : DocxXmlNode?
+  tbl_pr : DocxXmlNode?
+  tc_pr : DocxXmlNode?
 }
 
 ///|
@@ -70,6 +72,8 @@ fn docx_styles_from_xml(xml : String) -> DocxStyles raise {
       based_on: docx_style_value(node.child("basedOn")),
       ppr: node.child("pPr"),
       rpr: node.child("rPr"),
+      tbl_pr: node.child("tblPr"),
+      tc_pr: node.child("tcPr"),
     }
     if !styles.by_id.contains(id) {
       styles.by_id[id] = style

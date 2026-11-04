@@ -1063,6 +1063,60 @@ fn docx_text_x(commands : Array[@render.Command], wanted : String) -> Double {
   0.0
 }
 
+test "DOCX custom table style supplies borders and shading" {
+  let styles = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+    "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">" +
+    "<w:style w:type=\"table\" w:styleId=\"GridStyle\"><w:tblPr><w:tblBorders>" +
+    "<w:top w:val=\"single\" w:sz=\"8\" w:color=\"000000\"/>" +
+    "<w:left w:val=\"single\" w:sz=\"8\" w:color=\"000000\"/>" +
+    "<w:bottom w:val=\"single\" w:sz=\"8\" w:color=\"000000\"/>" +
+    "<w:right w:val=\"single\" w:sz=\"8\" w:color=\"000000\"/>" +
+    "<w:insideH w:val=\"single\" w:sz=\"8\" w:color=\"000000\"/>" +
+    "<w:insideV w:val=\"single\" w:sz=\"8\" w:color=\"000000\"/>" +
+    "</w:tblBorders></w:tblPr><w:tcPr><w:shd w:fill=\"EEEEEE\"/></w:tcPr></w:style>" +
+    "</w:styles>"
+  let rels = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+    "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">" +
+    "<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/>" +
+    "</Relationships>"
+  let table = "<w:tbl><w:tblPr><w:tblStyle w:val=\"GridStyle\"/></w:tblPr>" +
+    "<w:tblGrid><w:gridCol w:w=\"2000\"/></w:tblGrid>" +
+    "<w:tr><w:tc><w:p><w:r><w:t>STYLED</w:t></w:r></w:p></w:tc></w:tr></w:tbl>"
+  let content_types = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+    "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">" +
+    "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>" +
+    "<Default Extension=\"xml\" ContentType=\"application/xml\"/>" +
+    "<Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/>" +
+    "<Override PartName=\"/word/styles.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml\"/>" +
+    "</Types>"
+  let data = docx_test_docx(table, DOCX_TEST_SECTION, [
+    ("[Content_Types].xml", @utf8.encode(content_types)),
+    ("word/styles.xml", @utf8.encode(styles)),
+    ("word/_rels/document.xml.rels", @utf8.encode(rels)),
+  ])
+  let result = convert(data)
+  let commands = docx_test_page_commands(result, "pages", 0, "body")
+  let mut black = false
+  let mut grey = false
+  let mut fills = 0
+  for command in commands {
+    match command {
+      FillColor(value) => {
+        if value == 0x000000ff {
+          black = true
+        } else if value.to_uint() == 0xeeeeeeffU {
+          grey = true
+        }
+      }
+      FillRect(_, _, _, _) => fills += 1
+      _ => ()
+    }
+  }
+  assert_true(black)
+  assert_true(grey)
+  assert_true(fills > 0)
+}
+
 test "DOCX TableGrid style supplies missing cell borders" {
   let table = "<w:tbl><w:tblPr><w:tblStyle w:val=\"TableGrid\"/></w:tblPr>" +
     "<w:tblGrid><w:gridCol w:w=\"2000\"/></w:tblGrid>" +
