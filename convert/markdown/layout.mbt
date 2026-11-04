@@ -401,6 +401,15 @@ fn MdPainter::draw_text(
       Float::from_double(baseline),
       Float::from_double(width),
     )
+    if run.link != "" {
+      self.object.link(
+        Float::from_double(cursor),
+        Float::from_double(baseline - run.style.size * 0.9),
+        Float::from_double(width),
+        Float::from_double(run.style.size * 1.2),
+        run.link,
+      )
+    }
     cursor += width
     self.page_dirty = true
   }
