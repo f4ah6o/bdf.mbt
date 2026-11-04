@@ -2035,11 +2035,21 @@ fn pptx_area_path(
   width : Double,
   height : Double,
 ) -> @core.Path {
-  let verbs : Array[Byte] = [0]
-  let coordinates : Array[Double] = [left, top + height]
+  let verbs : Array[Byte] = []
+  let coordinates : Array[Double] = []
   let count = values.length().to_double()
+  let bottom = top + height
+  let mut started = false
+  let mut last_x = left
   for index, value in values {
     if index < blanks.length() && blanks[index] && blanks_mode != "zero" {
+      if blanks_mode == "gap" && started {
+        verbs.push(1)
+        coordinates.push(last_x)
+        coordinates.push(bottom)
+        verbs.push(4)
+        started = false
+      }
       continue
     }
     let x = if count <= 1.0 {
@@ -2047,15 +2057,24 @@ fn pptx_area_path(
     } else {
       left + width * index.to_double() / (count - 1.0)
     }
-    let y = top + height - height * pptx_chart_fraction(value, minimum, maximum)
+    let y = bottom - height * pptx_chart_fraction(value, minimum, maximum)
+    if !started {
+      verbs.push(0)
+      coordinates.push(x)
+      coordinates.push(bottom)
+      started = true
+    }
     verbs.push(1)
     coordinates.push(x)
     coordinates.push(y)
+    last_x = x
   }
-  verbs.push(1)
-  coordinates.push(left + width)
-  coordinates.push(top + height)
-  verbs.push(4)
+  if started {
+    verbs.push(1)
+    coordinates.push(last_x)
+    coordinates.push(bottom)
+    verbs.push(4)
+  }
   { verbs: Bytes::from_array(verbs), coordinates, }
 }
 
