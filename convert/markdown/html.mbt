@@ -286,6 +286,7 @@ fn md_html_styled_runs(
   let mut offset = 0
   let mut bold = false
   let mut italic = false
+  let mut code = false
   let text = StringBuilder()
   while offset < html.length() {
     let relative = match lower[offset:].find("<") {
@@ -311,7 +312,11 @@ fn md_html_styled_runs(
       if value != "" {
         md_push_text(
           value,
-          md_inline_style(base, bold, italic),
+          if code {
+            { ..md_inline_style(base, bold, italic), family: "monospace" }
+          } else {
+            md_inline_style(base, bold, italic)
+          },
           link,
           runs,
           formulas,
@@ -324,6 +329,7 @@ fn md_html_styled_runs(
     match name {
       "strong" | "b" => bold = !tag.has_prefix("/")
       "em" | "i" => italic = !tag.has_prefix("/")
+      "code" => code = !tag.has_prefix("/")
       "br" =>
         md_push_text(
           "\n", md_inline_style(base, bold, italic), link, runs, formulas,
