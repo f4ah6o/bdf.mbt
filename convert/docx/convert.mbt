@@ -25,6 +25,7 @@ priv struct DocxLineItem {
   rise : Double
   underline : String
   strike : Bool
+  emphasis : String
   x : Double
   advance : Double
   shade : UInt32?

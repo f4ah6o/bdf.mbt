@@ -200,6 +200,7 @@ fn docx_layout_paragraph(
       underline: item.props.underline,
       strike: (item.props.toggles & 16) != 0 ||
         (item.props.toggles & 32) != 0,
+      emphasis: item.props.emphasis,
       x: line_x,
       advance,
       shade: item.shade,
@@ -294,6 +295,7 @@ fn docx_layout_paragraph(
               rise: 0.0,
               underline: "",
               strike: false,
+              emphasis: "",
               x: line_x,
               advance,
               shade: None,
@@ -393,6 +395,7 @@ fn docx_layout_paragraph(
             rise: 0.0,
             underline: "",
             strike: false,
+            emphasis: "",
             x: line_x,
             advance,
             shade: None,
@@ -419,6 +422,7 @@ fn docx_layout_paragraph(
             rise: 0.0,
             underline: "",
             strike: false,
+            emphasis: "",
             x: line_x,
             advance,
             shade: None,
@@ -443,6 +447,7 @@ fn docx_layout_paragraph(
           rise: 0.0,
           underline: "",
           strike: false,
+          emphasis: "",
           x: line_x,
           advance: 0.0,
           shade: None,
@@ -469,6 +474,7 @@ fn docx_layout_paragraph(
           rise: 0.0,
           underline: "",
           strike: false,
+          emphasis: "",
           x: line_x,
           advance,
           shade: item.shade,
@@ -902,6 +908,29 @@ fn docx_emit_para_line(
         Float::from_double(advance),
         0.6F,
       )
+    }
+    if item.emphasis != "" {
+      let mark_size = Double::max(1.0, item.size * 0.12)
+      let step = Double::max(item.size * 0.6, 3.0)
+      let mark_y = if item.emphasis == "underDot" ||
+        item.emphasis == "comma" {
+        top + baseline + 2.0 - item.rise
+      } else {
+        top + 1.0 - item.rise
+      }
+      let mut count = (advance / step).to_int()
+      if count > 1000 {
+        count = 1000
+      }
+      object.fill_color(item.color)
+      for index in 0..<count {
+        object.fill_rect(
+          Float::from_double(draw_x + step * index.to_double()),
+          Float::from_double(mark_y),
+          Float::from_double(mark_size),
+          Float::from_double(mark_size),
+        )
+      }
     }
   }
   for image in line.images {

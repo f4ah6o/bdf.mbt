@@ -1227,6 +1227,24 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX emphasis marks are drawn above the text" {
+  let blocks = "<w:p><w:r><w:rPr><w:em w:val=\"dot\"/></w:rPr><w:t>XX</w:t></w:r></w:p>"
+  let commands = docx_test_page_commands(
+    convert(docx_test_docx(blocks, DOCX_TEST_SECTION, [])), "pages", 0, "body",
+  )
+  let mut marks = 0
+  for command in commands {
+    match command {
+      FillRect(_, _, width, height) =>
+        if width > 0.0 && width < 3.0 && (width - height).abs() < 0.01 {
+          marks += 1
+        }
+      _ => ()
+    }
+  }
+  assert_true(marks > 0)
+}
+
 test "DOCX underline and strike draw text rules" {
   let blocks = "<w:p><w:r><w:rPr><w:u w:val=\"single\"/><w:strike/></w:rPr><w:t>X</w:t></w:r></w:p>"
   let commands = docx_test_page_commands(
