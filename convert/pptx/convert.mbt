@@ -4175,6 +4175,34 @@ fn pptx_emit_chart(
   let tick_label_color = pptx_chart_tx_color(val_axis_node, theme, black)
   let cat_label_size = pptx_chart_tx_size(cat_axis_node, label_size)
   let cat_label_color = pptx_chart_tx_color(cat_axis_node, theme, black)
+  let (major_grid_color, major_grid_width) = pptx_chart_line_style(
+    pptx_child(pptx_child(val_axis_node, "majorGridlines"), "spPr"),
+    theme,
+    0xd9d9d9ffU,
+    0.75,
+  )
+  let major_grid_dash = match pptx_child(
+    pptx_child(
+      pptx_child(pptx_child(val_axis_node, "majorGridlines"), "spPr"), "ln",
+    ), "prstDash",
+  ) {
+    Some(value) => pptx_attribute(value.element, "val", "solid")
+    None => "solid"
+  }
+  let (minor_grid_color, minor_grid_width) = pptx_chart_line_style(
+    pptx_child(pptx_child(val_axis_node, "minorGridlines"), "spPr"),
+    theme,
+    0xf2f2f2ffU,
+    0.5,
+  )
+  let minor_grid_dash = match pptx_child(
+    pptx_child(
+      pptx_child(pptx_child(val_axis_node, "minorGridlines"), "spPr"), "ln",
+    ), "prstDash",
+  ) {
+    Some(value) => pptx_attribute(value.element, "val", "solid")
+    None => "solid"
+  }
   match pptx_fill_element(pptx_child(plot_area, "spPr")) {
     Some(fill) =>
       match pptx_resolve_paint(fill, theme, None) {
@@ -4240,45 +4268,59 @@ fn pptx_emit_chart(
         if value > axis_high + 1.0e-6 {
           break
         }
-        object.fill_color(0xf2f2f2ffU)
-        if horizontal {
-          object.fill_rect(
-            Float::from_double(plot_x + plot_width * pptx_chart_fraction(value, axis_low, axis_high, axis_flip)),
-            Float::from_double(plot_y),
-            0.5F,
-            Float::from_double(plot_height),
-          )
+        let grid_fraction = pptx_chart_fraction(
+          value, axis_low, axis_high, axis_flip,
+        )
+        let coordinates : Array[Double] = if horizontal {
+          [
+            plot_x + plot_width * grid_fraction,
+            plot_y,
+            plot_x + plot_width * grid_fraction,
+            plot_y + plot_height,
+          ]
         } else {
-          object.fill_rect(
-            Float::from_double(plot_x),
-            Float::from_double(
-              plot_y + plot_height - plot_height * pptx_chart_fraction(value, axis_low, axis_high, axis_flip),
-            ),
-            Float::from_double(plot_width),
-            0.5F,
-          )
+          [
+            plot_x,
+            plot_y + plot_height - plot_height * grid_fraction,
+            plot_x + plot_width,
+            plot_y + plot_height - plot_height * grid_fraction,
+          ]
         }
+        object.line(Float::from_double(minor_grid_width), 0, 0, 8.0F)
+        pptx_apply_chart_dash(object, minor_grid_dash)
+        object.stroke_color(minor_grid_color)
+        let path = object.add_path(
+          @core.Inline({ verbs: Bytes::from_array([0, 1]), coordinates }),
+        )
+        object.stroke_path(path)
       }
     }
     if gridlines {
-      object.fill_color(0xd9d9d9ffU)
-      if horizontal {
-        object.fill_rect(
-          Float::from_double(plot_x + plot_width * pptx_chart_fraction(tick, axis_low, axis_high, axis_flip)),
-          Float::from_double(plot_y),
-          0.75F,
-          Float::from_double(plot_height),
-        )
+      let grid_fraction = pptx_chart_fraction(
+        tick, axis_low, axis_high, axis_flip,
+      )
+      let coordinates : Array[Double] = if horizontal {
+        [
+          plot_x + plot_width * grid_fraction,
+          plot_y,
+          plot_x + plot_width * grid_fraction,
+          plot_y + plot_height,
+        ]
       } else {
-        object.fill_rect(
-          Float::from_double(plot_x),
-          Float::from_double(
-            plot_y + plot_height - plot_height * pptx_chart_fraction(tick, axis_low, axis_high, axis_flip),
-          ),
-          Float::from_double(plot_width),
-          0.75F,
-        )
+        [
+          plot_x,
+          plot_y + plot_height - plot_height * grid_fraction,
+          plot_x + plot_width,
+          plot_y + plot_height - plot_height * grid_fraction,
+        ]
       }
+      object.line(Float::from_double(major_grid_width), 0, 0, 8.0F)
+      pptx_apply_chart_dash(object, major_grid_dash)
+      object.stroke_color(major_grid_color)
+      let path = object.add_path(
+        @core.Inline({ verbs: Bytes::from_array([0, 1]), coordinates }),
+      )
+      object.stroke_path(path)
     }
     let display_tick = if axis_flip {
       axis_high + axis_low - tick

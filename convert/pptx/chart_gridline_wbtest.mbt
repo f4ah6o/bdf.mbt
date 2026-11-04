@@ -12,12 +12,12 @@ test "PPTX value axis major gridlines are drawn" {
   let resources = @core.decode_object_resources(
     @core.open_single(result.bdf).part(body_hash),
   )
-  let mut fills = 0
+  let mut strokes = 0
   for command in @render.compile_object(resources.object) {
     match command {
-      @render.FillRect(_, _, _, _) => fills += 1
+      @render.StrokePath(_) => strokes += 1
       _ => ()
     }
   }
-  assert_true(fills > 3)
+  assert_true(strokes > 2)
 }
