@@ -1227,6 +1227,44 @@ test "DOCX table style corner cells override row and column parts" {
   assert_true(green)
 }
 
+test "DOCX footnote references inside table cells are laid out" {
+  let footnotes = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+    "<w:footnotes xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">" +
+    "<w:footnote w:id=\"1\"><w:p><w:r><w:t>CELLNOTE</w:t></w:r></w:p></w:footnote>" +
+    "</w:footnotes>"
+  let content_types = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+    "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">" +
+    "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>" +
+    "<Default Extension=\"xml\" ContentType=\"application/xml\"/>" +
+    "<Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/>" +
+    "<Override PartName=\"/word/footnotes.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml\"/>" +
+    "</Types>"
+  let rels = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+    "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">" +
+    "<Relationship Id=\"rIdFn\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes\" Target=\"footnotes.xml\"/>" +
+    "</Relationships>"
+  let blocks = "<w:tbl><w:tblPr/><w:tblGrid><w:gridCol w:w=\"8000\"/></w:tblGrid>" +
+    "<w:tr><w:tc><w:p><w:r><w:t>CELL</w:t></w:r><w:r><w:footnoteReference w:id=\"1\"/></w:r></w:p></w:tc></w:tr></w:tbl>"
+  let data = docx_test_docx(
+    blocks,
+    DOCX_TEST_SECTION,
+    [
+      ("[Content_Types].xml", @utf8.encode(content_types)),
+      ("word/footnotes.xml", @utf8.encode(footnotes)),
+      ("word/_rels/document.xml.rels", @utf8.encode(rels)),
+    ],
+  )
+  let commands = docx_test_page_commands(convert(data), "pages", 0, "body")
+  let text = StringBuilder()
+  for command in commands {
+    match command {
+      FillText(value, _, _, _) => text.write_string(value)
+      _ => ()
+    }
+  }
+  assert_true(text.to_string().contains("CELLNOTE"))
+}
+
 test "DOCX bookmark hyperlinks point at the bookmark page" {
   let blocks = "<w:p><w:bookmarkStart w:id=\"0\" w:name=\"Target\"/><w:r><w:t>TARGET</w:t></w:r><w:bookmarkEnd w:id=\"0\"/></w:p>" +
     "<w:p><w:hyperlink w:anchor=\"Target\"><w:r><w:t>GO</w:t></w:r></w:hyperlink></w:p>"

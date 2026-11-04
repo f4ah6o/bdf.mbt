@@ -91,6 +91,7 @@ priv struct DocxTableCellLayout {
   mar_bottom : Double
   mar_right : Double
   blocks : Array[DocxCellBlockLayout]
+  notes : Array[(String, String)]
 }
 
 ///|
@@ -106,6 +107,7 @@ priv struct DocxTableLayout {
   total_width : Double
   col_x : Array[Double]
   rows : Array[DocxTableRowLayout]
+  notes : Array[(String, String)]
 }
 
 ///|
@@ -990,6 +992,7 @@ fn docx_layout_table(
     _ => table.ind
   }
   let rows : Array[DocxTableRowLayout] = []
+  let table_notes : Array[(String, String)] = []
   for row in table.rows {
     let cells : Array[DocxTableCellLayout] = []
     let mut row_height = 0.0
@@ -1012,15 +1015,27 @@ fn docx_layout_table(
           mar_bottom,
           mar_right,
           blocks: [],
+          notes: [],
         })
         continue
       }
       let inner = Double::max(x1 - x0 - mar_left - mar_right, 1.0)
-      let (blocks, content_height) = docx_layout_cell_blocks(
+      let (blocks, content_height, notes) = docx_layout_cell_blocks(
         cell.blocks,
         inner,
         pitch,
       )
+      for note in notes {
+        let mut known = false
+        for existing in table_notes {
+          if existing.0 == note.0 && existing.1 == note.1 {
+            known = true
+          }
+        }
+        if !known {
+          table_notes.push(note)
+        }
+      }
       let height = content_height + mar_top + mar_bottom
       cells.push({
         x: x0,
@@ -1032,6 +1047,7 @@ fn docx_layout_table(
         mar_bottom,
         mar_right,
         blocks,
+        notes,
       })
       if cell.row_span == 1 && height > row_height {
         row_height = height
@@ -1062,7 +1078,7 @@ fn docx_layout_table(
       }
     }
   }
-  { table, left, total_width: total, col_x, rows, }
+  { table, left, total_width: total, col_x, rows, notes: table_notes, }
 }
 
 ///|
@@ -1070,8 +1086,9 @@ fn docx_layout_cell_blocks(
   blocks : Array[DocxBlock],
   width : Double,
   pitch : Double,
-) -> (Array[DocxCellBlockLayout], Double) {
+) -> (Array[DocxCellBlockLayout], Double, Array[(String, String)]) {
   let layout : Array[DocxCellBlockLayout] = []
+  let notes : Array[(String, String)] = []
   let mut y = 0.0
   for block in blocks {
     match block {
@@ -1090,8 +1107,19 @@ fn docx_layout_cell_blocks(
           width,
           pitch,
           mark_size,
-          false,
+          true,
         )
+        for note in para.notes {
+          let mut known = false
+          for existing in notes {
+            if existing.0 == note.0 && existing.1 == note.1 {
+              known = true
+            }
+          }
+          if !known {
+            notes.push(note)
+          }
+        }
         let para_top = y
         let lines : Array[DocxTableCellLine] = []
         for line in para.lines {
@@ -1119,11 +1147,22 @@ fn docx_layout_cell_blocks(
           height += row.height
         }
         layout.push(DocxCellNested({ y, layout: nested, height, }))
+        for note in nested.notes {
+          let mut known = false
+          for existing in notes {
+            if existing.0 == note.0 && existing.1 == note.1 {
+              known = true
+            }
+          }
+          if !known {
+            notes.push(note)
+          }
+        }
         y += height
       }
     }
   }
-  (layout, y)
+  (layout, y, notes)
 }
 
 ///|
@@ -3088,6 +3127,9 @@ fn docx_flow_repeat_headers(
 ///|
 fn docx_flow_emit_table(flow : DocxFlow, table : DocxTable) -> Unit raise {
   let layout = docx_layout_table(table, flow.width, flow.line_pitch)
+  for note in layout.notes {
+    docx_flow_add_note(flow, note.0, note.1)
+  }
   let mut ctx = docx_flow_table_context(flow)
   let mut header_rows = 0
   while header_rows < table.rows.length() && table.rows[header_rows].header {

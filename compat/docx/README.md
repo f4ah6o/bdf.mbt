@@ -39,7 +39,7 @@ the OPC core properties and the title can be overridden by the caller.
 The reader accepts `settings.xml`, `footnotes.xml` and `endnotes.xml`;
 footnote and endnote bodies are laid out above the footer on the page that
 refers to them and appended to the scroll view, with approximate superscript
-markers. External `w:hyperlink` relationships become link commands and internal
+markers. References inside table cells are collected onto the page as well. External `w:hyperlink` relationships become link commands and internal
 `w:anchor` links point at the bookmark page; it also reads fields, symbols,
 tracked
 insertions/deletions, content controls, alternate content and revision
@@ -106,6 +106,5 @@ per-section `SECTIONPAGES` (the document page count is used),
 table-style base, first/last row/column, banded and corner-cell parts
 (borders/shading/margins/text formatting and TableGrid are applied), exact
 scroll strip counts (the approximate metrics make the basic fixture 1 strip
-where upstream makes 2; the other fixtures match), and footnotes referenced
-from table cells. The native converter Worker advertises the `docx`
-format.
+where upstream makes 2; the other fixtures match). The native converter Worker
+advertises the `docx` format.
