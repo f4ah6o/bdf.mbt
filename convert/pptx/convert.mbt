@@ -2765,6 +2765,8 @@ fn pptx_emit_chart(
       Some(value) => pptx_attribute(value.element, "val", "0") != "0"
       None => false
     }
+    let legend_size = pptx_chart_tx_size(legend, label_size)
+    let legend_color = pptx_chart_tx_color(legend, theme, black)
     if is_pie {
       for index, category in series[0].categories {
         if deleted.contains(index) {
@@ -2794,7 +2796,7 @@ fn pptx_emit_chart(
     }
     if ["b", "t"].contains(position) {
       let width_sum = entries.fold(init=0.0, (sum, value) => {
-        sum + pptx_text_width(value, label_size) + 18.0
+        sum + pptx_text_width(value, legend_size) + 18.0
       })
       let mut legend_x = x + (width - width_sum) / 2.0
       let legend_y = if position == "b" { y + height - 8.0 } else { y + 12.0 }
@@ -2809,13 +2811,13 @@ fn pptx_emit_chart(
         pptx_chart_label(
           object,
           label_font,
-          label_size,
-          black,
+          legend_size,
+          legend_color,
           entry,
           legend_x + 10.0,
           legend_y,
         )
-        legend_x += pptx_text_width(entry, label_size) + 18.0
+        legend_x += pptx_text_width(entry, legend_size) + 18.0
       }
       if position == "b" && !overlay {
         plot_height = Double::max(1.0, plot_height - 12.0)
@@ -2833,8 +2835,8 @@ fn pptx_emit_chart(
         pptx_chart_label(
           object,
           label_font,
-          label_size,
-          black,
+          legend_size,
+          legend_color,
           entry,
           x + 12.0,
           legend_y,
@@ -2858,8 +2860,8 @@ fn pptx_emit_chart(
         pptx_chart_label(
           object,
           label_font,
-          label_size,
-          black,
+          legend_size,
+          legend_color,
           entry,
           x + width - 50.0,
           legend_y,
