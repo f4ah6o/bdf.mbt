@@ -830,18 +830,45 @@ fn XlsxWorkbook::xlsx_chart_object(
     )
     object.stroke_path(path)
   }
-  for index, category in model.categories {
-    let mut advance = 0.0
-    for character in category {
-      advance += @sheet.sized_fallback_advance(character, false, 10.0)
+  let pie_total = model.values.fold(init=0.0, (sum, value) => sum + value)
+  if model.kind == "pieChart" && pie_total > 0.0 {
+    let cx = left + plot_width / 2.0
+    let cy = plot_top + plot_height / 2.0
+    let radius = Double::min(plot_width, plot_height) / 2.0
+    let mut angle = -3.141592653589793 / 2.0
+    for index, value in model.values {
+      let sweep = 2.0 * 3.141592653589793 * value / pie_total
+      let mid = angle + sweep / 2.0
+      if index < model.categories.length() {
+        let category = model.categories[index]
+        let mut advance = 0.0
+        for character in category {
+          advance += @sheet.sized_fallback_advance(character, false, 10.0)
+        }
+        label(
+          category,
+          cx + @math.cos(mid) * radius * 1.12 - advance / 2.0,
+          cy + @math.sin(mid) * radius * 1.12 + 3.0,
+          10.0,
+          400,
+        )
+      }
+      angle += sweep
     }
-    label(
-      category,
-      left + slot * index.to_double() + slot * 0.5 - advance / 2.0,
-      plot_top + plot_height + 14.0,
-      10.0,
-      400,
-    )
+  } else {
+    for index, category in model.categories {
+      let mut advance = 0.0
+      for character in category {
+        advance += @sheet.sized_fallback_advance(character, false, 10.0)
+      }
+      label(
+        category,
+        left + slot * index.to_double() + slot * 0.5 - advance / 2.0,
+        plot_top + plot_height + 14.0,
+        10.0,
+        400,
+      )
+    }
   }
   object
 }

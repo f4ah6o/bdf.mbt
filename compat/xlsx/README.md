@@ -259,8 +259,9 @@ fills, line borders and linear text of the original subset it supports:
   whose axis, category and series labels are added to the tile text
   index as invisible runs;
 - chart sheets as one-page fixed views: bar, line and pie charts are drawn
-  with their title, legend, axis tick labels, series colour and categories, and
-  the view's text index matches the upstream run order;
+  with their title, legend, axis tick labels, series colour and categories
+  (pie categories are placed around the slices), and the view's text index
+  matches the upstream run order;
 - Office Math is linearized with the upstream notation (`(a)/(b)`, `sqrt(x)`,
   `b^2`) and drawn with the text font; the upstream "no font with a MATH
   table" warning is reported;
