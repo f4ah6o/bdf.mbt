@@ -302,7 +302,7 @@ fn docx_text_ppr(props : DocxParagraphProps, node : DocxXmlNode) -> Bool raise {
             other => docx_text_unsupported("numPr " + other)
           }
         }
-      "pBdr" => ()
+      "pBdr" => props.apply_node(child)
       "sectPr" =>
         if !has_section {
           docx_text_section_check(child)
@@ -342,7 +342,7 @@ fn docx_text_ppr(props : DocxParagraphProps, node : DocxXmlNode) -> Bool raise {
         if !child.children.is_empty() {
           docx_text_unsupported(name)
         }
-        props.apply_element(child.element)
+        props.apply_node(child)
       }
       other => docx_text_unsupported(other)
     }

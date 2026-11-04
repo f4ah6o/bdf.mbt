@@ -47,6 +47,9 @@ priv struct DocxParaLine {
   distribute : Bool
   break_before : String
   mut shade : UInt32?
+  mut borders : Array[DocxLineBorder?]
+  mut border_top : Bool
+  mut border_bottom : Bool
 }
 
 ///|
@@ -248,6 +251,9 @@ fn docx_layout_paragraph(
       distribute: false,
       break_before: pending_break,
       shade: None,
+      borders: [],
+      border_top: false,
+      border_bottom: false,
     })
     current.clear()
     current_images.clear()
@@ -625,6 +631,9 @@ fn docx_layout_paragraph(
       distribute: false,
       break_before: "",
       shade: None,
+      borders: [],
+      border_top: false,
+      border_bottom: false,
     })
   }
   if (align == "both" || align == "distribute") && lines.length() > 1 {
@@ -635,6 +644,11 @@ fn docx_layout_paragraph(
         distribute: align == "distribute",
       }
     }
+  }
+  for index, line in lines {
+    line.borders = props.borders
+    line.border_top = index == 0
+    line.border_bottom = index == lines.length() - 1
   }
   match props.shade {
     Some(color) =>
@@ -944,6 +958,43 @@ fn docx_emit_para_line(
       )
     }
     None => ()
+  }
+  for index, border in line.borders {
+    let draw = match border {
+      Some(value) => value.width > 0.0
+      None => false
+    }
+    if draw {
+      let value = border.unwrap()
+      let coordinates : Array[Double] = match index {
+        0 =>
+          if line.border_top {
+            [x_origin, top, x_origin + available, top]
+          } else {
+            []
+          }
+        1 => [x_origin, top, x_origin, top + line.height]
+        2 =>
+          if line.border_bottom {
+            [x_origin, top + line.height, x_origin + available, top + line.height]
+          } else {
+            []
+          }
+        _ => [x_origin + available, top, x_origin + available, top + line.height]
+      }
+      if coordinates.length() == 4 {
+        object.stroke_color(value.color)
+        object.line(Float::from_double(value.width), 0, 0, 8.0F)
+        object.stroke_path(
+          object.add_path(
+            @core.Inline({
+              verbs: Bytes::from_array([0, 1]),
+              coordinates,
+            }),
+          ),
+        )
+      }
+    }
   }
   let mut source_items = line.items
   if line.justify && !line.items.is_empty() {
@@ -3353,6 +3404,10 @@ fn docx_flow_emit_paragraph(
     let mut align = last_align
     let mut justify = false
     let mut distribute = false
+    let mut line_shade : UInt32? = None
+    let mut line_borders : Array[DocxLineBorder?] = []
+    let mut line_border_top = false
+    let mut line_border_bottom = false
     if index < layout.lines.length() {
       let base = layout.lines[index]
       if fresh && index > 0 {
@@ -3367,6 +3422,10 @@ fn docx_flow_emit_paragraph(
       align = base.align
       justify = base.justify
       distribute = base.distribute
+      line_shade = base.shade
+      line_borders = base.borders
+      line_border_top = base.border_top
+      line_border_bottom = base.border_bottom
       last_height = height
       last_align = align
       if fresh {
@@ -3416,7 +3475,10 @@ fn docx_flow_emit_paragraph(
               justify,
               distribute,
               break_before: "",
-              shade: None,
+              shade: line_shade,
+              borders: line_borders,
+              border_top: line_border_top,
+              border_bottom: line_border_bottom,
             },
             flow.x0,
             flow.width,
@@ -3447,7 +3509,7 @@ fn docx_flow_emit_paragraph(
           shifted.push({ ..image, x: image.x + shift, })
         }
         emit(
-          { items: rebased, images: shifted, height, align, justify: false, distribute: false, break_before: "", shade: None },
+          { items: rebased, images: shifted, height, align, justify: false, distribute: false, break_before: "", shade: line_shade, borders: line_borders, border_top: line_border_top, border_bottom: line_border_bottom },
           flow.x0 + left_edge,
           available,
         )
@@ -3465,7 +3527,7 @@ fn docx_flow_emit_paragraph(
         }
         let rebased = docx_line_rebase(items, 0.0)
         emit(
-          { items: rebased, images, height, align, justify: false, distribute: false, break_before: "", shade: None },
+          { items: rebased, images, height, align, justify: false, distribute: false, break_before: "", shade: line_shade, borders: line_borders, border_top: line_border_top, border_bottom: line_border_bottom },
           flow.x0 + left_edge,
           Double::max(available, 1.0),
         )
@@ -3504,7 +3566,10 @@ fn docx_flow_emit_paragraph(
           justify: false,
           distribute: false,
           break_before: "",
-          shade: None,
+          shade: line_shade,
+          borders: line_borders,
+          border_top: line_border_top,
+          border_bottom: line_border_bottom,
         },
         flow.x0 + left_edge,
         available,

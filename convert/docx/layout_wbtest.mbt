@@ -1984,6 +1984,26 @@ test "DOCX keepLines does not split a paragraph across pages" {
   assert_true(keep_pages[0] >= plain_pages[0])
 }
 
+test "DOCX paragraph borders are stroked" {
+  let blocks = "<w:p><w:pPr><w:pBdr>" +
+    "<w:top w:val=\"single\" w:sz=\"8\" w:color=\"FF0000\"/>" +
+    "<w:left w:val=\"single\" w:sz=\"8\" w:color=\"FF0000\"/>" +
+    "<w:bottom w:val=\"single\" w:sz=\"8\" w:color=\"FF0000\"/>" +
+    "<w:right w:val=\"single\" w:sz=\"8\" w:color=\"FF0000\"/>" +
+    "</w:pBdr></w:pPr><w:r><w:t>BORDER</w:t></w:r></w:p>"
+  let commands = docx_test_page_commands(
+    convert(docx_test_docx(blocks, DOCX_TEST_SECTION, [])), "pages", 0, "body",
+  )
+  let mut strokes = 0
+  for command in commands {
+    match command {
+      StrokePath(_) => strokes += 1
+      _ => ()
+    }
+  }
+  assert_true(strokes >= 4)
+}
+
 test "DOCX paragraph shading fills the line" {
   let blocks = "<w:p><w:pPr><w:shd w:val=\"clear\" w:fill=\"FFFF00\"/></w:pPr>" +
     "<w:r><w:t>SHADE</w:t></w:r></w:p>"

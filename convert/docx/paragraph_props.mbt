@@ -35,6 +35,7 @@ priv struct DocxParagraphProps {
   mut level : Int32
   mut outline : Int32
   mut shade : UInt32?
+  mut borders : Array[DocxLineBorder?]
   mut tabs : Array[DocxTab]
   mut tabs_truncated : Bool
 }
@@ -82,6 +83,7 @@ fn docx_default_paragraph_props() -> DocxParagraphProps {
     level: 0,
     outline: -1,
     shade: None,
+    borders: [],
     tabs: [],
     tabs_truncated: false,
   }
@@ -111,6 +113,17 @@ fn docx_props_number(
   default : Double,
 ) -> Double {
   docx_number(docx_attribute(element, key, ""), default)
+}
+
+///|
+fn DocxParagraphProps::apply_node(self : DocxParagraphProps, node : DocxXmlNode) -> Unit raise {
+  if node.name() == "pBdr" {
+    self.borders = docx_border_sides(
+      Some(node), ["top", "left", "bottom", "right"],
+    )
+  } else {
+    self.apply_element(node.element)
+  }
 }
 
 ///|
