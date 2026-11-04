@@ -261,6 +261,70 @@ fn docx_render_scroll(
       lines[lines.length() - 1].height = props.after
     }
   }
+  let note_ids : Array[String] = []
+  for id, _lines in document.footnotes {
+    note_ids.push(id)
+  }
+  for id, _lines in document.endnotes {
+    note_ids.push(id)
+  }
+  for i in 1..<note_ids.length() {
+    let mut j = i
+    while j > 0 {
+      let left = @string.parse_int(note_ids[j]) catch { _ => 0 }
+      let right = @string.parse_int(note_ids[j - 1]) catch { _ => 0 }
+      if left < right {
+        let tmp = note_ids[j]
+        note_ids[j] = note_ids[j - 1]
+        note_ids[j - 1] = tmp
+        j -= 1
+      } else {
+        break
+      }
+    }
+  }
+  if !note_ids.is_empty() {
+    docx_scroll_push_line(lines, [], body_width, "left")
+    lines[lines.length() - 1].height = 8.0
+    for id in note_ids {
+      let source = match document.footnotes.get(id) {
+        Some(value) => Some(value)
+        None => document.endnotes.get(id)
+      }
+      let note_lines = match source {
+        Some(value) => value
+        None => []
+      }
+      let mut first = true
+      for line_text in note_lines {
+        let prefix = if first { id + ". " } else { "" }
+        first = false
+        for wrapped in docx_wrap_note(prefix + line_text, body_width, 8.5) {
+          let advance = docx_text_width(wrapped, 8.5)
+          docx_scroll_push_line(
+            lines,
+            [
+              {
+                text: wrapped,
+                font: "sans-serif",
+                weight: 400,
+                style: 0,
+                size: 8.5,
+                color: 0x000000ffU,
+                x: 0.0,
+                advance,
+                shade: None,
+                border_width: 0.0,
+                border_color: None,
+              },
+            ],
+            body_width,
+            "left",
+          )
+        }
+      }
+    }
+  }
   let pages : Array[Json] = []
   let index_runs : Array[@core.IndexRun] = []
   let strip : Array[DocxScrollLine] = []

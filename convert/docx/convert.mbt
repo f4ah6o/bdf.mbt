@@ -212,6 +212,27 @@ fn docx_png_size(data : Bytes) -> (Int32, Int32)? {
 }
 
 ///|
+fn docx_wrap_note(text : String, width : Double, size : Double) -> Array[String] {
+  let lines : Array[String] = []
+  let current = StringBuilder()
+  let mut current_width = 0.0
+  for c in text {
+    let advance = docx_text_width(c.to_string(), size)
+    if current_width + advance > width && current.to_string() != "" {
+      lines.push(current.to_string())
+      current.reset()
+      current_width = 0.0
+    }
+    current.write_char(c)
+    current_width += advance
+  }
+  if current.to_string() != "" {
+    lines.push(current.to_string())
+  }
+  lines
+}
+
+///|
 fn docx_append_index(
   encoded : Bytes,
   page_index : Int32,
@@ -317,6 +338,16 @@ fn docx_render_document(
 
   let index_runs : Array[@core.IndexRun] = []
   let index_budget = @render.TextExtractionBudget::new()
+  let page_notes : Array[(String, String)] = []
+
+  fn note_deferred(kind : String, id : String) -> Bool {
+    for note in page_notes {
+      if note.0 == kind && note.1 == id {
+        return true
+      }
+    }
+    false
+  }
 
   fn same_line_style(a : DocxLineItem, b : DocxLineItem) -> Bool {
     a.font == b.font &&
@@ -412,6 +443,62 @@ fn docx_render_document(
     }
     emit_line(line, "left", line_start, line_start + line_width)
     line.clear()
+    if !page_notes.is_empty() {
+      let note_width = section.width - section.left - section.right
+      let note_lines : Array[String] = []
+      for note in page_notes {
+        let (kind, id) = note
+        let source = if kind == "footnote" {
+          document.footnotes.get(id)
+        } else {
+          document.endnotes.get(id)
+        }
+        let lines = match source {
+          Some(value) => value
+          None => []
+        }
+        let mut first = true
+        for line_text in lines {
+          let prefix = if first { id + ". " } else { "" }
+          first = false
+          for wrapped in docx_wrap_note(prefix + line_text, note_width, 8.5) {
+            note_lines.push(wrapped)
+          }
+        }
+      }
+      if !note_lines.is_empty() {
+        let total = note_lines.length().to_double() * 10.2 + 4.0
+        let mut note_y = Double::max(
+          section.top + 20.0,
+          section.height - section.bottom - total,
+        )
+        object.fill_color(0x000000ffU)
+        object.fill_rect(
+          Float::from_double(section.left),
+          Float::from_double(note_y - 2.0),
+          Float::from_double(note_width),
+          0.5F,
+        )
+        let font = object.add_font({
+          hash: None,
+          family: "sans-serif",
+          weight: 400,
+          style: 0,
+        })
+        object.font(font, 8.5F)
+        object.fill_color(0x000000ffU)
+        for text in note_lines {
+          object.fill_text(
+            text,
+            Float::from_double(section.left),
+            Float::from_double(note_y + 8.5),
+            Float::from_double(note_width),
+          )
+          note_y += 10.2
+        }
+      }
+      page_notes.clear()
+    }
     let story_kind = if section.title_page && page_ordinal == 1 {
       "first"
     } else if page_ordinal % 2 == 0 {
@@ -793,6 +880,43 @@ fn docx_render_document(
               Float::from_double(height),
             )
           }
+        }
+        "footnote" | "endnote" => {
+          let kind = item.kind
+          let id = item.text
+          let note_lines = if kind == "footnote" {
+            document.footnotes.get(id)
+          } else {
+            document.endnotes.get(id)
+          }
+          let has_note = match note_lines {
+            Some(lines) => !lines.is_empty()
+            None => false
+          }
+          if has_note && !note_deferred(kind, id) {
+            page_notes.push((kind, id))
+          }
+          let size = 7.5
+          let advance = docx_text_width(id, size)
+          if line_x + advance > right && !line.is_empty() {
+            flush_line(current_align)
+          }
+          ensure_page(10.0)
+          line.push({
+            text: id,
+            font: "sans-serif",
+            weight: 400,
+            style: 0,
+            size,
+            color: 0x000000ffU,
+            x: line_x - left,
+            advance,
+            shade: None,
+            border_width: 0.0,
+            border_color: None,
+          })
+          line_x += advance
+          line_width = line_x - left
         }
         _ => {
           let size = if item.props.size > 0.0 { item.props.size } else { 10.0 }

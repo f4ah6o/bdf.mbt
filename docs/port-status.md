@@ -81,9 +81,11 @@
 - DOCX: `convert/docx` now emits the upstream `pages` (`flow`) and `scroll`
   views, with separate header/footer/body layers, page body rectangles,
   Dublin Core metadata, layer-aware text indexes, hyperlinks, fields,
-  Office Math and accepted settings/footnote/endnote parts. Table cells,
-  floating text wrapping, columns, vertical sections, footnote bodies and
-  field regeneration remain documented gaps in `compat/docx`.
+  Office Math and accepted settings/footnote/endnote parts. Footnote and
+  endnote bodies are laid out above the footer and appended to the scroll
+  view. Table cells, floating text wrapping, columns, vertical sections,
+  exact footnote separators and field regeneration remain documented gaps in
+  `compat/docx`.
 - PPTX: the converter intentionally implements the documented subset;
   unsupported features fail closed or are documented in `compat/pptx`.
 - AI: PDF-based Illustrator 9+ artwork only; PostScript files (Illustrator 8

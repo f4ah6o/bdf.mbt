@@ -30,8 +30,10 @@ creator, subject, description, identifier, language, created, modified) is
 read from the OPC core properties and the title can be overridden by the
 caller.
 
-The reader accepts `settings.xml`, `footnotes.xml` and `endnotes.xml` (their
-bodies are not laid out yet), hyperlinks, simple fields, symbols, tracked
+The reader accepts `settings.xml`, `footnotes.xml` and `endnotes.xml`;
+footnote and endnote bodies are laid out above the footer on the page that
+refers to them and appended to the scroll view, with approximate superscript
+markers. It also reads hyperlinks, simple fields, symbols, tracked
 insertions/deletions, content controls, alternate content and revision
 metadata. Office Math (`m:oMath`/`m:oMathPara`) is linearized for search and
 layout. Paragraphs are laid out with approximate character widths and support
@@ -46,7 +48,7 @@ content is flattened; `a:srcRect` crops and `a:xfrm` rotation/flips are
 honoured; anchored drawings use page-relative `wp:posOffset` coordinates.
 
 Documented gaps: exact font metrics and OpenType shaping, real table cells and
-floating text wrapping, columns, vertical section layout, footnote and endnote
-bodies, field result regeneration (cached `PAGE`/`NUMPAGES` values are used),
-header images, numbering overrides, and page counts that depend on those
-features. The native converter Worker advertises the `docx` format.
+floating text wrapping, columns, vertical section layout, exact footnote
+separator/continuation placement, field result regeneration (cached
+`PAGE`/`NUMPAGES` values are used), header images, numbering overrides, and
+page counts that depend on those features. The native converter Worker advertises the `docx` format.

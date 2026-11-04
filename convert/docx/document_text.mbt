@@ -36,6 +36,8 @@ priv struct DocxTextDocument {
   part : String
   sections : Array[DocxSection]
   paragraphs : Array[DocxTextParagraph]
+  footnotes : Map[String, Array[String]]
+  endnotes : Map[String, Array[String]]
 }
 
 ///|
@@ -762,7 +764,21 @@ fn docx_text_run(
       "noBreakHyphen" => docx_text_chars(items, "\u2011", props)
       "softHyphen" | "lastRenderedPageBreak" => ()
       "drawing" => docx_text_drawing(child, items, props)
-      "footnoteReference" | "endnoteReference" | "commentReference" => ()
+      "footnoteReference" =>
+        docx_text_push(
+          items,
+          "footnote",
+          docx_attribute(child.element, "id", ""),
+          props,
+        )
+      "endnoteReference" =>
+        docx_text_push(
+          items,
+          "endnote",
+          docx_attribute(child.element, "id", ""),
+          props,
+        )
+      "commentReference" => ()
       "instrText" | "delText" | "fldChar" => ()
       "sym" => {
         let code = docx_attribute(child.element, "char", "")
@@ -1148,6 +1164,57 @@ fn docx_table_cell_shade(cell : DocxXmlNode) -> UInt32? {
 }
 
 ///|
+fn docx_note_map(
+  package : @ooxml.OoxmlPackage,
+  part : String,
+  rel_type : String,
+  note_name : String,
+) -> Map[String, Array[String]] raise {
+  let notes : Map[String, Array[String]] = Map([])
+  match package.relationship_of_type(part, rel_type) {
+    Some(rel) => {
+      if rel.external {
+        docx_text_unsupported("external " + rel_type)
+      }
+      let root = docx_text_xml(
+        @utf8.decode_lossy(package.read(rel.target)[:], ignore_bom=true),
+      )
+      for child in root.children {
+        if child.name() != note_name {
+          continue
+        }
+        let id = docx_attribute(child.element, "id", "")
+        if id == "" || id == "-1" || id == "0" {
+          continue
+        }
+        let lines : Array[String] = []
+        for paragraph in child.children {
+          if paragraph.name() != "p" {
+            continue
+          }
+          let text = StringBuilder()
+          fn collect(node : DocxXmlNode) -> Unit {
+            if node.name() == "t" {
+              text.write_string(node.text.to_string())
+            }
+            for sub in node.children {
+              collect(sub)
+            }
+          }
+          collect(paragraph)
+          if text.to_string() != "" {
+            lines.push(text.to_string())
+          }
+        }
+        notes[id] = lines
+      }
+    }
+    None => ()
+  }
+  notes
+}
+
+///|
 fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
   let package = @ooxml.open_ooxml(data)
   let part = match package.relationship_of_type("", "/officeDocument") {
@@ -1210,5 +1277,7 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     None => docx_numbering_empty()
   }
   docx_apply_numbering(walker.paragraphs, numbering)
-  { part, sections, paragraphs: walker.paragraphs, }
+  let footnotes = docx_note_map(package, part, "/footnotes", "footnote")
+  let endnotes = docx_note_map(package, part, "/endnotes", "endnote")
+  { part, sections, paragraphs: walker.paragraphs, footnotes, endnotes }
 }
