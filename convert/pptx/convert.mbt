@@ -4459,6 +4459,10 @@ fn pptx_emit_chart(
       ).to_int()
     None => 1
   }
+  let cat_minor_tick_mark = match pptx_child(cat_axis_node, "minorTickMark") {
+    Some(value) => pptx_attribute(value.element, "val", "none")
+    None => "none"
+  }
   let cat_tick_mark = match pptx_child(cat_axis_node, "majorTickMark") {
     Some(value) => pptx_attribute(value.element, "val", "none")
     None => "none"
@@ -4517,6 +4521,39 @@ fn pptx_emit_chart(
         [center, start, center, end]
       }
       object.line(0.75F, 0, 0, 8.0F)
+      object.stroke_color(0x808080ffU)
+      let path = object.add_path(
+        @core.Inline({ verbs: Bytes::from_array([0, 1]), coordinates }),
+      )
+      object.stroke_path(path)
+    }
+  }
+  if cat_minor_tick_mark != "none" {
+    for index in 1..<categories.length() {
+      let coordinates : Array[Double] = if horizontal {
+        let base = plot_x
+        let center = plot_y + slot * index.to_double()
+        let end = match cat_minor_tick_mark {
+          "in" => base + 2.0
+          "out" => base - 2.0
+          "cross" => base + 2.0
+          _ => base
+        }
+        let start = if cat_minor_tick_mark == "cross" { base - 2.0 } else { base }
+        [start, center, end, center]
+      } else {
+        let base = plot_y + plot_height
+        let center = plot_x + slot * index.to_double()
+        let end = match cat_minor_tick_mark {
+          "in" => base - 2.0
+          "out" => base + 2.0
+          "cross" => base + 2.0
+          _ => base
+        }
+        let start = if cat_minor_tick_mark == "cross" { base - 2.0 } else { base }
+        [center, start, center, end]
+      }
+      object.line(0.5F, 0, 0, 8.0F)
       object.stroke_color(0x808080ffU)
       let path = object.add_path(
         @core.Inline({ verbs: Bytes::from_array([0, 1]), coordinates }),
