@@ -8,6 +8,7 @@ struct XlsxChartModel {
   categories : Array[String]
   color : String
   marker : String
+  marker_size : Double
   show_percent : Bool
   show_value : Bool
   show_cat_name : Bool
@@ -237,6 +238,15 @@ fn XlsxWorkbook::xlsx_chart_model(
   let values = xlsx_chart_numbers(self, first, "val")
   let categories = xlsx_chart_series(self, first, "cat")
   let mut color = "#4472c4"
+  let marker_size = match xlsx_draw_child(first, "marker") {
+    Some(marker_node) =>
+      match xlsx_draw_child(marker_node, "size") {
+        Some(size) =>
+          @string.parse_double(xlsx_draw_attr(size, "val")) catch { _ => 5.0 }
+        None => 5.0
+      }
+    None => 5.0
+  }
   let marker = match xlsx_draw_child(first, "marker") {
     Some(marker_node) =>
       match xlsx_draw_child(marker_node, "symbol") {
@@ -329,6 +339,7 @@ fn XlsxWorkbook::xlsx_chart_model(
     categories,
     color,
     marker,
+    marker_size,
     show_percent,
     show_value,
     show_cat_name,
@@ -630,15 +641,41 @@ fn XlsxWorkbook::xlsx_chart_svg(
         )
       }
       if model.marker != "none" {
-        svg.write_string(
-          "<circle cx=\"" +
-          x.to_string() +
-          "\" cy=\"" +
-          y.to_string() +
-          "\" r=\"3\" fill=\"" +
-          model.color +
-          "\"/>",
-        )
+        let size = model.marker_size
+        let half = size / 2.0
+        if model.marker == "diamond" {
+          svg.write_string(
+            "<polygon points=\"" +
+            x.to_string() + "," + (y - half).to_string() + " " +
+            (x + half).to_string() + "," + y.to_string() + " " +
+            x.to_string() + "," + (y + half).to_string() + " " +
+            (x - half).to_string() + "," + y.to_string() +
+            "\" fill=\"" + model.color + "\"/>",
+          )
+        } else if model.marker == "triangle" {
+          svg.write_string(
+            "<polygon points=\"" +
+            x.to_string() + "," + (y - half).to_string() + " " +
+            (x + half).to_string() + "," + (y + half).to_string() + " " +
+            (x - half).to_string() + "," + (y + half).to_string() +
+            "\" fill=\"" + model.color + "\"/>",
+          )
+        } else if model.marker == "square" {
+          svg.write_string(
+            "<rect x=\"" + (x - half).to_string() +
+            "\" y=\"" + (y - half).to_string() +
+            "\" width=\"" + size.to_string() +
+            "\" height=\"" + size.to_string() +
+            "\" fill=\"" + model.color + "\"/>",
+          )
+        } else {
+          svg.write_string(
+            "<circle cx=\"" + x.to_string() +
+            "\" cy=\"" + y.to_string() +
+            "\" r=\"" + half.to_string() +
+            "\" fill=\"" + model.color + "\"/>",
+          )
+        }
       }
     }
     svg.write_string(
@@ -1032,6 +1069,7 @@ fn XlsxWorkbook::xlsx_chart_object(
     object.stroke_path(path)
     if model.marker != "none" {
       object.fill_color(series_color)
+      let marker_half = model.marker_size / 2.0
       for index, value in model.values {
         let x = if count <= 1 {
           left + plot_width / 2.0
@@ -1041,10 +1079,10 @@ fn XlsxWorkbook::xlsx_chart_object(
         let y = plot_top + plot_height -
           plot_height * (value - axis_base) / axis_range
         object.fill_rect(
-          Float::from_double(x - 2.0),
-          Float::from_double(y - 2.0),
-          4.0F,
-          4.0F,
+          Float::from_double(x - marker_half),
+          Float::from_double(y - marker_half),
+          Float::from_double(model.marker_size),
+          Float::from_double(model.marker_size),
         )
       }
     }
