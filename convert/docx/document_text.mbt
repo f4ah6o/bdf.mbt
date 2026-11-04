@@ -1343,6 +1343,23 @@ fn docx_margins(node : DocxXmlNode?) -> DocxMargins {
 }
 
 ///|
+fn docx_look_bool(
+  element : @xml.NamespaceElement,
+  key : String,
+  bit : Int,
+  bits : Int,
+  default : Bool,
+) -> Bool {
+  if docx_attribute(element, key, "") != "" {
+    docx_bool(element, key, default)
+  } else if bits >= 0 {
+    (bits & bit) != 0
+  } else {
+    default
+  }
+}
+
+///|
 fn docx_table_conditions(
   first_row : Bool,
   last_row : Bool,
@@ -1377,6 +1394,18 @@ fn docx_table_conditions(
   }
   if last_col && col + 1 == cols {
     out.push("lastColumn")
+  }
+  if row == 0 && col == 0 {
+    out.push("nwCell")
+  }
+  if row == 0 && col + 1 == cols {
+    out.push("neCell")
+  }
+  if row == rows - 1 && col == 0 {
+    out.push("swCell")
+  }
+  if row == rows - 1 && col + 1 == cols {
+    out.push("seCell")
   }
   out
 }
@@ -1453,12 +1482,30 @@ fn docx_text_table(
     Some(value) => {
       match value.child("tblLook") {
         Some(look) => {
-          look_first_row = docx_bool(look.element, "firstRow", true)
-          look_last_row = docx_bool(look.element, "lastRow", false)
-          look_first_col = docx_bool(look.element, "firstColumn", true)
-          look_last_col = docx_bool(look.element, "lastColumn", false)
-          look_no_hband = docx_bool(look.element, "noHBand", false)
-          look_no_vband = docx_bool(look.element, "noVBand", false)
+          let raw = docx_attribute(look.element, "val", "").trim()
+          let bits = if raw == "" {
+            -1
+          } else {
+            @string.parse_int(raw, base=16) catch { _ => -1 }
+          }
+          look_first_row = docx_look_bool(
+            look.element, "firstRow", 0x20, bits, true,
+          )
+          look_last_row = docx_look_bool(
+            look.element, "lastRow", 0x40, bits, false,
+          )
+          look_first_col = docx_look_bool(
+            look.element, "firstColumn", 0x80, bits, true,
+          )
+          look_last_col = docx_look_bool(
+            look.element, "lastColumn", 0x100, bits, false,
+          )
+          look_no_hband = docx_look_bool(
+            look.element, "noHBand", 0x200, bits, false,
+          )
+          look_no_vband = docx_look_bool(
+            look.element, "noVBand", 0x400, bits, false,
+          )
         }
         None => ()
       }
