@@ -4145,12 +4145,15 @@ fn pptx_emit_chart(
   if show_values && !is_pie && !is_scatter && !is_radar {
     if stacked {
       for index in 0..<categories.length() {
-        let mut used = axis_low
+        let mut positive = 0.0
+        let mut negative = 0.0
         for item in series {
           if index >= item.values.length() {
             continue
           }
           let value = item.values[index]
+          let start = if value >= 0.0 { positive } else { negative }
+          let next = start + value
           let mut text = if show_label_categories &&
             index < categories.length() {
             categories[index] + label_separator + pptx_chart_format_number(value, label_format)
@@ -4168,22 +4171,40 @@ fn pptx_emit_chart(
           }
           let label_width = pptx_text_width(text, data_label_size)
           let (label_x, label_y) = if horizontal {
+            if value >= 0.0 {
+              (
+                plot_x + plot_width * pptx_chart_fraction(next, axis_low, axis_high) + 2.0,
+                plot_y + slot * index.to_double() + slot * 0.3,
+              )
+            } else {
+              (
+                plot_x + plot_width * pptx_chart_fraction(next, axis_low, axis_high) - label_width - 2.0,
+                plot_y + slot * index.to_double() + slot * 0.3,
+              )
+            }
+          } else if value >= 0.0 {
             (
-              plot_x + plot_width * pptx_chart_fraction(used + value, axis_low, axis_high) + 2.0,
-              plot_y + slot * index.to_double() + slot * 0.3,
+              plot_x + slot * index.to_double() + slot * 0.5 - label_width / 2.0,
+              plot_y + plot_height -
+              plot_height * pptx_chart_fraction(next, axis_low, axis_high) -
+              9.0,
             )
           } else {
             (
               plot_x + slot * index.to_double() + slot * 0.5 - label_width / 2.0,
               plot_y + plot_height -
-              plot_height * pptx_chart_fraction(used + value, axis_low, axis_high) -
-              9.0,
+              plot_height * pptx_chart_fraction(next, axis_low, axis_high) +
+              2.0,
             )
           }
           pptx_chart_label(
             object, data_label_font, data_label_size, data_label_color, text, label_x, label_y,
           )
-          used += value
+          if value >= 0.0 {
+            positive = next
+          } else {
+            negative = next
+          }
         }
       }
     } else {
