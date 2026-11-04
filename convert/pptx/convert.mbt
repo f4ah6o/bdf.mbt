@@ -1136,6 +1136,43 @@ fn pptx_cell_borders(
 }
 
 ///|
+fn pptx_tint_color(color : UInt32, fraction : Double) -> UInt32 {
+  let channel = fn(shift : Int32) -> Double {
+    let value = pptx_color_channel(color, shift)
+    value + (255.0 - value) * fraction
+  }
+  pptx_pack_color(channel(24), channel(16), channel(8))
+}
+
+///|
+/// The fill of a table cell under the built-in Medium-Style-2 Accent 1
+/// style, or None for an unknown style ID.
+fn pptx_table_style_fill(
+  theme : Map[String, UInt32],
+  style_id : String,
+  first_row : Bool,
+  band_row : Bool,
+  row_index : Int,
+) -> UInt32? {
+  if style_id != "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}" {
+    return None
+  }
+  let accent = match theme.get("accent1") {
+    Some(value) => value
+    None => 0x4472c4ffU
+  }
+  if first_row && row_index == 0 {
+    return Some(accent)
+  }
+  let first = if first_row { 1 } else { 0 }
+  if band_row && row_index >= first && (row_index - first) % 2 == 0 {
+    Some(pptx_tint_color(accent, 0.4))
+  } else {
+    Some(pptx_tint_color(accent, 0.2))
+  }
+}
+
+///|
 fn pptx_emit_table(
   shape : PptxXmlNode,
   object : @core.ObjectBuilder,
@@ -1154,6 +1191,21 @@ fn pptx_emit_table(
     pptx_child(pptx_child(Some(shape), "graphic"), "graphicData"),
     "tbl",
   )
+  let table_props = pptx_child(table, "tblPr")
+  let style_id = match pptx_child(table_props, "tableStyleId") {
+    Some(value) => value.text.to_string()
+    None => ""
+  }
+  let first_row = pptx_attribute(
+    match table_props { Some(value) => value.element; None => shape.element },
+    "firstRow",
+    "0",
+  ) == "1"
+  let band_row = pptx_attribute(
+    match table_props { Some(value) => value.element; None => shape.element },
+    "bandRow",
+    "0",
+  ) == "1"
   let rows = pptx_children(table)
   let grid : Array[Double] = []
   match pptx_child(table, "tblGrid") {
@@ -1222,8 +1274,13 @@ fn pptx_emit_table(
           cell_height += row_heights[row_index + k]
         }
       }
-      match
-        pptx_node_color(pptx_child(Some(cell), "tcPr"), "solidFill", theme) {
+      let explicit_fill = pptx_node_color(
+        pptx_child(Some(cell), "tcPr"), "solidFill", theme,
+      )
+      let style_fill = pptx_table_style_fill(
+        theme, style_id, first_row, band_row, row_index,
+      )
+      match explicit_fill {
         Some(color) => {
           object.fill_color(color)
           object.fill_rect(
@@ -1233,7 +1290,19 @@ fn pptx_emit_table(
             Float::from_double(cell_height),
           )
         }
-        None => ()
+        None =>
+          match style_fill {
+            Some(color) => {
+              object.fill_color(color)
+              object.fill_rect(
+                Float::from_double(cell_x),
+                Float::from_double(row_top),
+                Float::from_double(column_width),
+                Float::from_double(cell_height),
+              )
+            }
+            None => ()
+          }
       }
       for border in pptx_cell_borders(cell, theme) {
         let (side, border_width, border_color) = border
@@ -1315,9 +1384,14 @@ fn pptx_emit_table(
       let text = pptx_cell_text(cell)
       if text != "" {
         let size = pptx_cell_text_size(cell)
-        let bold = pptx_cell_bold(cell)
+        let header = first_row && text_row == 0
+        let bold = if header { 700 } else { pptx_cell_bold(cell) }
         let italic = pptx_cell_italic(cell)
-        let color = pptx_cell_color(cell, theme)
+        let color = if header {
+          0xffffffffU
+        } else {
+          pptx_cell_color(cell, theme)
+        }
         let margin_left = pptx_cell_margin(cell, "marL", 7.2)
         let margin_right = pptx_cell_margin(cell, "marR", 7.2)
         let margin_top = pptx_cell_margin(cell, "marT", 3.6)

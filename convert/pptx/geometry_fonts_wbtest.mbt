@@ -133,6 +133,18 @@ test "PPTX normAutofit returns font scale and line reduction" {
   assert_eq(reduce, 0.2)
 }
 
+test "PPTX built-in table style resolves header and band fills" {
+  let theme : Map[String, UInt32] = Map([])
+  theme["accent1"] = 0x4472c4ffU
+  let id = "{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"
+  let header = pptx_table_style_fill(theme, id, true, true, 0).unwrap()
+  let band = pptx_table_style_fill(theme, id, true, true, 1).unwrap()
+  let plain = pptx_table_style_fill(theme, id, true, true, 2).unwrap()
+  assert_eq(header, 0x4472c4ffU)
+  assert_eq(band != plain, true)
+  assert_eq(pptx_table_style_fill(theme, "unknown", true, true, 0), None)
+}
+
 test "PPTX arrowheads draw filled or stroked paths" {
   for kind in ["triangle", "stealth", "diamond", "oval", "arrow"] {
     let object = @core.ObjectBuilder::new()
