@@ -2962,6 +2962,21 @@ fn pptx_emit_chart(
   }
   let count = Double::max(1.0, categories.length().to_double())
   let slot = if horizontal { plot_height / count } else { plot_width / count }
+  let gap_width = match pptx_child(Some(chart), "gapWidth") {
+    Some(value) =>
+      @string.parse_double(pptx_attribute(value.element, "val", "150")) catch {
+        _ => 150.0
+      }
+    None => 150.0
+  }
+  let overlap = match pptx_child(Some(chart), "overlap") {
+    Some(value) =>
+      @string.parse_double(pptx_attribute(value.element, "val", "0")) catch {
+        _ => 0.0
+      }
+    None => 0.0
+  }
+  let cluster_width = slot * 100.0 / (100.0 + Double::max(gap_width, 0.0))
   let mut maximum = 0.0
   if stacked {
     for index in 0..<categories.length() {
@@ -3153,17 +3168,23 @@ fn pptx_emit_chart(
             object.fill_color(item.color)
             object.fill_rect(
               Float::from_double(plot_x + plot_width * used / axis_high),
-              Float::from_double(plot_y + slot * index.to_double() + slot * 0.1),
+              Float::from_double(
+                plot_y +
+                slot * index.to_double() +
+                (slot - cluster_width) / 2.0,
+              ),
               Float::from_double(bar_width),
-              Float::from_double(slot * 0.8),
+              Float::from_double(cluster_width),
             )
             used += item.values[index]
           }
         }
       }
     } else {
+      let bar_width = cluster_width / series_count
+      let step = bar_width * (1.0 - Double::min(overlap, 100.0) / 100.0)
+      let total = step * (series_count - 1.0) + bar_width
       for index in 0..<categories.length() {
-        let sub_slot = slot / series_count
         for s, item in series {
           if index < item.values.length() {
             object.fill_color(item.color)
@@ -3172,11 +3193,11 @@ fn pptx_emit_chart(
               Float::from_double(
                 plot_y +
                 slot * index.to_double() +
-                sub_slot * s.to_double() +
-                sub_slot * 0.1,
+                (slot - total) / 2.0 +
+                step * s.to_double(),
               ),
               Float::from_double(plot_width * item.values[index] / axis_high),
-              Float::from_double(sub_slot * 0.8),
+              Float::from_double(bar_width),
             )
           }
         }
@@ -3190,11 +3211,15 @@ fn pptx_emit_chart(
           let bar_height = plot_height * item.values[index] / axis_high
           object.fill_color(item.color)
           object.fill_rect(
-            Float::from_double(plot_x + slot * index.to_double() + slot * 0.1),
+            Float::from_double(
+              plot_x +
+              slot * index.to_double() +
+              (slot - cluster_width) / 2.0,
+            ),
             Float::from_double(
               plot_y + plot_height - plot_height * used / axis_high - bar_height,
             ),
-            Float::from_double(slot * 0.8),
+            Float::from_double(cluster_width),
             Float::from_double(bar_height),
           )
           used += item.values[index]
@@ -3274,7 +3299,9 @@ fn pptx_emit_chart(
       }
     }
   } else {
-    let sub_slot = slot / series_count
+    let bar_width = cluster_width / series_count
+    let step = bar_width * (1.0 - Double::min(overlap, 100.0) / 100.0)
+    let total = step * (series_count - 1.0) + bar_width
     for index in 0..<categories.length() {
       for s, item in series {
         if index < item.values.length() {
@@ -3284,11 +3311,11 @@ fn pptx_emit_chart(
             Float::from_double(
               plot_x +
               slot * index.to_double() +
-              sub_slot * s.to_double() +
-              sub_slot * 0.1,
+              (slot - total) / 2.0 +
+              step * s.to_double(),
             ),
             Float::from_double(plot_y + plot_height - bar_height),
-            Float::from_double(sub_slot * 0.8),
+            Float::from_double(bar_width),
             Float::from_double(bar_height),
           )
         }
