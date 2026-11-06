@@ -212,9 +212,10 @@ pub fn fill_overlay(
   let fields = read_fields(pdf_bytes)
   let (page_width, page_height) = overlay_page_size(pdf)
   let page_sizes = overlay_page_sizes(pdf)
+  let default_page_key = if page_sizes.is_empty() { 0 } else { page_sizes[0].0 }
   let page_keys : Array[Int] = []
   for field in fields {
-    let key = field.page_object.unwrap_or(0)
+    let key = field.page_object.unwrap_or(default_page_key)
     if !page_keys.contains(key) {
       page_keys.push(key)
     }
@@ -280,7 +281,7 @@ pub fn fill_overlay(
     fonts.push(font)
   }
   for field in fields {
-    let page_key = field.page_object.unwrap_or(0)
+    let page_key = field.page_object.unwrap_or(default_page_key)
     let mut page_index = 0
     for i, key in page_keys {
       if key == page_key {

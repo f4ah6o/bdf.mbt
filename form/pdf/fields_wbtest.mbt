@@ -351,3 +351,17 @@ test "pdf overlay spans multiple pages" {
   assert_true(second.object.strings.contains("Two"))
 }
 
+///|
+test "pdf overlay puts fields without a page on the first page" {
+  let pdf = @base64.decode(
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgL0Fjcm9Gb3JtIDw8IC9GaWVsZHMgWzMgMCBSXSA+PiA+PgplbmRvYmoKMiAwIG9iago8PCAvVHlwZSAvUGFnZXMgL0tpZHMgWzQgMCBSXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvQW5ub3QgL1N1YnR5cGUgL1dpZGdldCAvRlQgL1R4IC9UIChuYW1lKSAvViAoKSAvUmVjdCBbMTAgMjAgMTAwIDQwXSA+PgplbmRvYmoKNCAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDIwMCAxMDBdIC9Bbm5vdHMgWzMgMCBSXSA+PgplbmRvYmoKeHJlZgowIDUKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwOTAgMDAwMDAgbiAKMDAwMDAwMDE0NyAwMDAwMCBuIAowMDAwMDAwMjQzIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNSAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMzMwCiUlRU9GCg==",
+  )
+  let bdf = fill_overlay(pdf, @utf8.encode("{\"name\":\"Alice\"}"))
+  let document = @core.open_single(bdf)
+  let view = document.manifest.views[0]
+  assert_eq(view.pages.length(), 1)
+  assert_eq(view.pages[0].width, 200.0)
+  let resources = @core.decode_object_resources(document.part(view.pages[0].layers[0].object))
+  assert_true(resources.object.strings.contains("Alice"))
+}
+
