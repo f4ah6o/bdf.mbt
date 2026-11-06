@@ -130,7 +130,7 @@
 - `form/pdfme` fills a pdfme template (blank pages, text/line/rectangle/
   checkbox/radio-group (column/row)/table/text/QR/barcode/line and rectangle
   (solid/dashed, opacity)/image
-  (PNG/JPEG/SVG, stretch/contain/cover/none/scale-down, opacity)/signature
+  (PNG/JPEG/SVG, stretch/contain/cover/none/scale-down, opacity, borders)/signature
   fields, table column widths, horizontal/vertical text alignment, colors, backgrounds, alternate row colors, font sizes/families,
   cell/column/header padding, truncation, border colors/widths/styles and
   header styles,

@@ -522,6 +522,30 @@ fn jpeg_size(data : Bytes) -> (Double, Double)? {
 }
 
 ///|
+fn FieldPainter::draw_image_border(
+  self : FieldPainter,
+  field : Json,
+  x : Float,
+  y_top : Float,
+  width : Float,
+  height : Float,
+) -> Unit {
+  match json_field(field, "borderColor") {
+    Some(value) => {
+      self.builder.stroke_color(color_of(Some(value), 0x000000ff))
+      self.builder.line(
+        Float::from_double(pdfme_padding(number_of(json_field(field, "borderWidth"), 0.3), 0.3)),
+        0,
+        0,
+        0.0F,
+      )
+      self.builder.stroke_rect(x, y_top - height, width, height)
+    }
+    None => ()
+  }
+}
+
+///|
 fn FieldPainter::draw_image(
   self : FieldPainter,
   field : Json,
@@ -586,6 +610,7 @@ fn FieldPainter::draw_image(
         ) catch {
           _ => raise PdfmeError("pdfme: the image cannot be placed")
         }
+        self.draw_image_border(field, x, y_top, width, height)
         self.builder.restore()
         return
       }
@@ -652,6 +677,7 @@ fn FieldPainter::draw_image(
   self.builder.image(index, draw_x, draw_y - draw_height, draw_width, draw_height) catch {
     _ => raise PdfmeError("pdfme: the image cannot be placed")
   }
+  self.draw_image_border(field, x, y_top, width, height)
   self.builder.restore()
 }
 
