@@ -443,6 +443,18 @@ test "pdf overlay honors page rotation" {
   assert_eq(page.height, 200.0)
   let resources = @core.decode_object_resources(document.part(page.layers[0].object))
   assert_true(resources.object.strings.contains("Alice"))
+  let commands = @render.decode_commands(document.part(page.layers[0].object)) catch {
+    _ => fail("rotated commands cannot be decoded")
+  }
+  assert_true(
+    commands.any(fn(command) {
+      match command {
+        @render.Transform(a, b, c, d, e, f) =>
+          a == 0.0 && b == -1.0 && c == 1.0 && d == 0.0 && e == 0.0 && f == 200.0
+        _ => false
+      }
+    }),
+  )
 }
 
 ///|
@@ -457,6 +469,18 @@ test "pdf overlay rotates pages by 270 degrees" {
   assert_eq(page.height, 200.0)
   let resources = @core.decode_object_resources(document.part(page.layers[0].object))
   assert_true(resources.object.strings.contains("Alice"))
+  let commands = @render.decode_commands(document.part(page.layers[0].object)) catch {
+    _ => fail("rotated commands cannot be decoded")
+  }
+  assert_true(
+    commands.any(fn(command) {
+      match command {
+        @render.Transform(a, b, c, d, e, f) =>
+          a == 0.0 && b == 1.0 && c == -1.0 && d == 0.0 && e == 100.0 && f == 0.0
+        _ => false
+      }
+    }),
+  )
 }
 
 ///|
