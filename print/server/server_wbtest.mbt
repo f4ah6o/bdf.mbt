@@ -485,3 +485,19 @@ test "ipp server reports job copies" {
   assert_eq(copies, Some(2))
 }
 
+///|
+test "ipp server reports the job user" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  let response = server.handle(client.create_job("user", []))
+  let group = match response.group(@ipp.TAG_JOB) {
+    Some(group) => group
+    None => fail("missing job group")
+  }
+  let user = match group.get("job-originating-user-name") {
+    Some(attribute) => attribute.text()
+    None => ""
+  }
+  assert_eq(user, "alice")
+}
+
