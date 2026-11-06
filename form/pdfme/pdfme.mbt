@@ -1328,6 +1328,30 @@ fn FieldPainter::draw_qr(
 }
 
 ///|
+fn table_column_alignment(field : Json, index : Int, head : Bool) -> String {
+  if head {
+    match json_field(field, "headStyles") {
+      Some(Json::Object(styles)) => text_of(styles.get("alignment"), "left")
+      _ => "left"
+    }
+  } else {
+    match json_field(field, "columnStyles") {
+      Some(Json::Array(styles)) =>
+        if index < styles.length() {
+          match styles[index] {
+            Json::Object(style) => text_of(style.get("alignment"), "left")
+            _ => "left"
+          }
+        } else {
+          "left"
+        }
+      _ => "left"
+    }
+  }
+}
+
+///|
+///|
 fn FieldPainter::draw_table(
   self : FieldPainter,
   field : Json,
@@ -1402,13 +1426,22 @@ fn FieldPainter::draw_table(
     number_of(json_field(field, "rowHeight"), 6.0),
   )
   let mut y = y_top
-  let draw_row = fn(values : Array[String]) raise PdfmeError {
+  let draw_row = fn(values : Array[String], head_row : Bool) raise PdfmeError {
     for i in 0..<columns {
       let text = if i < values.length() { values[i] } else { "" }
       let advance = Float::from_double(
         text.length().to_double() * size.to_double() * 0.5,
       )
-      self.builder.fill_text(text, x + edges[i] + 1.0, y - size, advance)
+      let alignment = table_column_alignment(field, i, head_row)
+      let cell_width = edges[i + 1] - edges[i]
+      let start = if alignment == "center" {
+        x + edges[i] + (cell_width - advance) / 2.0
+      } else if alignment == "right" {
+        x + edges[i + 1] - advance - 1.0
+      } else {
+        x + edges[i] + 1.0
+      }
+      self.builder.fill_text(text, start, y - size, advance)
     }
     for i in 0..=columns {
       let line_x = x + edges[i]
@@ -1419,7 +1452,7 @@ fn FieldPainter::draw_table(
     y = y - row_height
   }
   if head.length() > 0 {
-    draw_row(head)
+    draw_row(head, true)
   }
   let mut drawn = 0
   let max_rows = Float::to_int(Float::floor(height / row_height))
@@ -1435,7 +1468,7 @@ fn FieldPainter::draw_table(
         cells.map(fn(cell) { text_of(Some(cell), "") })
       _ => []
     }
-    draw_row(values)
+    draw_row(values, false)
     drawn += 1
   }
 }
