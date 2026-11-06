@@ -272,6 +272,38 @@ fn add_need_appearances(body : String) -> String? {
 }
 
 ///|
+fn replace_pdf_name(body : String, key : String, value : String) -> String {
+  let at = match body.find(key) {
+    Some(index) => index
+    None => return body
+  }
+  let mut i = skip_spaces(body, at + key.length())
+  let end = if i < body.length() && body[i].to_char().unwrap() == '/' {
+    while i < body.length() && !is_space(body[i].to_char().unwrap()) &&
+      body[i].to_char().unwrap() != '>' && body[i].to_char().unwrap() != ']' {
+      i += 1
+    }
+    i
+  } else {
+    return body
+  }
+  body[:at + key.length()].to_owned() + " " + value + body[end:].to_owned()
+}
+
+///|
+fn data_button_state(data : Json, name : String) -> String? {
+  match data {
+    Json::Object(object) =>
+      match object.get(name) {
+        Some(Json::True) => Some("/Yes")
+        Some(Json::False) => Some("/Off")
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
 fn data_text(data : Json, name : String) -> String? {
   match data {
     Json::Object(object) =>
@@ -343,9 +375,21 @@ pub fn fill_pdf(pdf_bytes : Bytes, data_bytes : Bytes) -> Bytes raise PdfFillErr
       }
     }
     if name != "" {
-      match data_text(data, name) {
-        Some(value) => updates.push((number, generation, replace_pdf_value(body, value)))
-        None => ()
+      if body.contains("/Btn") {
+        match data_button_state(data, name) {
+          Some(state) =>
+            updates.push((
+              number,
+              generation,
+              replace_pdf_name(replace_pdf_name(body, "/V", state), "/AS", state),
+            ))
+          None => ()
+        }
+      } else {
+        match data_text(data, name) {
+          Some(value) => updates.push((number, generation, replace_pdf_value(body, value)))
+          None => ()
+        }
       }
     }
     pos = endobj + 6
