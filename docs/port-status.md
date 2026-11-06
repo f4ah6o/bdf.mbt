@@ -109,9 +109,10 @@
 - `form/ooxml` replaces `{{name}}` tags in OOXML XML parts, including tags
   split across runs (the run markup between them is removed), expands
   boolean `{{#name}}`/`{{^name}}` conditions, expands object-list
-  `{{#items}}`…`{{/items}}` sections item by item, and rebuilds stored
-  ZIPs (3 tests); `form/docx`, `form/pptx` and `form/xlsx` fill Office
-  documents and convert them (1 test each). Scalar list items are reported.
+  `{{#items}}`…`{{/items}}` sections item by item, fills header/footer
+  parts, and rebuilds stored ZIPs (4 tests); `form/docx`, `form/pptx` and
+  `form/xlsx` fill Office documents and convert them (1 test each). Scalar
+  list items are reported.
 - `form/pdfme` fills a pdfme template (blank pages, text/line/rectangle/
   checkbox/table/image fields, table column widths, alignment and header
   styles, static schema, multiVariableText variables, text backgrounds/borders,

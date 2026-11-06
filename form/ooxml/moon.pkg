@@ -1,0 +1,8 @@
+import {
+  "f4ah6o/bdf/encoding/zip" @zip,
+  "moonbitlang/core/json",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/string",
+}
+
+supported_targets = "+js+wasm-gc"
