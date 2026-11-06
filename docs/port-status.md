@@ -174,7 +174,9 @@
   builds and tests the demo, a parity workflow that converts the document
   fixtures with the upstream Wasm package and the MoonBit worker, and the
   full visual compatibility suite (converter, worker, font, XLSX, specimen
-  and demo fixtures). All workflows pass on MoonBit 0.1.20261104; the
+  and demo fixtures). Superseded runs for the same ref are cancelled by
+  workflow concurrency. All workflows passed on MoonBit 0.1.20261104 at
+  commit b76cf61; the
   compatibility JS exports use string/JSON values so they also work on the
   older 0.1.20261020 toolchain. The latest local full suite is js 2731/2731
   and wasm-gc 2715/2715; document parity is 12 pass / 40 diff.
