@@ -62,3 +62,26 @@ test "textform uses the front matter font" {
   assert_eq(resources.fonts[0].family, "Gen")
 }
 
+///|
+test "textform converts from data sources" {
+  let source : @data.Source = {
+    name: "",
+    file_name: "data.json",
+    data: @utf8.encode("{\"name\":\"Alice\"}"),
+  }
+  let result = convert_sources("Hello {{name}}", [source], "Source")
+  let document = @core.open_single(result.bdf)
+  let mut text = ""
+  for view in document.manifest.views {
+    match view.text_index {
+      Some(hash) => {
+        for run in @core.decode_text_index(document.part(hash)) {
+          text = text + run.text
+        }
+      }
+      None => ()
+    }
+  }
+  assert_true(text.contains("Hello Alice"), msg=text)
+}
+
