@@ -504,6 +504,16 @@ fn FieldPainter::draw_image(
       }
       None => (x, y_top, width, height)
     }
+  } else if fit == "none" {
+    match dimensions {
+      Some((image_width, image_height)) => (
+        x + Float::from_double((width.to_double() - image_width) / 2.0),
+        y_top - Float::from_double((height.to_double() - image_height) / 2.0),
+        Float::from_double(image_width),
+        Float::from_double(image_height),
+      )
+      None => (x, y_top, width, height)
+    }
   } else {
     (x, y_top, width, height)
   }
