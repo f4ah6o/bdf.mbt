@@ -1541,6 +1541,9 @@ fn FieldPainter::draw_table(
       Float::from_double(number_of(styles.get("height"), row_height.to_double()))
     _ => row_height
   }
+  let padding = Float::from_double(
+    number_of(json_field(field, "cellPadding"), 1.0),
+  )
   let mut y = y_top
   let draw_row = fn(values : Array[String], head_row : Bool) raise PdfmeError {
     let height = if head_row { head_height } else { row_height }
@@ -1577,7 +1580,7 @@ fn FieldPainter::draw_table(
       }
       let max_chars = Int::max(
         1,
-        ((cell_width.to_double() - 2.0) / (cell_size.to_double() * 0.5)).to_int(),
+        ((cell_width.to_double() - 2.0 * padding.to_double()) / (cell_size.to_double() * 0.5)).to_int(),
       )
       let text = if text.length() > max_chars {
         text[:max_chars].to_owned()
@@ -1600,9 +1603,9 @@ fn FieldPainter::draw_table(
       let start = if alignment == "center" {
         x + edges[i] + (cell_width - advance) / 2.0
       } else if alignment == "right" {
-        x + edges[i + 1] - advance - 1.0
+        x + edges[i + 1] - advance - padding
       } else {
-        x + edges[i] + 1.0
+        x + edges[i] + padding
       }
       let vertical = table_vertical_alignment(field, i, head_row)
       let baseline = if vertical == "middle" {

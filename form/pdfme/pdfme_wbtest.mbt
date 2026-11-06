@@ -44,7 +44,7 @@ test "pdfme fills text fields" {
 ///|
 test "pdfme fills a table" {
   let template =
-    #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item","qty"],"fontSize":9,"rowHeight":8}]]}
+    #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item","qty"],"fontSize":9,"rowHeight":8,"cellPadding":2}]]}
   let data = #|{"lines":[{"item":"Pen","qty":2},{"item":"Ink","qty":1}]}
   let result = fill(@utf8.encode(template), @utf8.encode(data))
   let text = pdfme_text(result.bdf)
@@ -346,7 +346,7 @@ test "pdfme draws a Code 93 barcode" {
 ///|
 test "pdfme uses table column widths" {
   let template =
-    #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item","qty","note"],"headWidthPercentages":[50,20,30],"fontSize":9,"rowHeight":8}]]}
+    #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item","qty","note"],"headWidthPercentages":[50,20,30],"fontSize":9,"rowHeight":8,"cellPadding":2}]]}
   let result = fill(@utf8.encode(template), @utf8.encode("{}"))
   assert_eq(result.warnings.length(), 0)
   let document = @core.open_single(result.bdf)
@@ -373,7 +373,7 @@ test "pdfme evaluates expression functions" {
 ///|
 test "pdfme aligns table columns" {
   let template =
-    #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item","qty"],"headStyles":{"alignment":"center","fontSize":12,"height":10,"backgroundColor":"#E6E6E6","fontColor":"#333333"},"columnStyles":[{"alignment":"center","fontColor":"#FF0000","backgroundColor":"#EEEEEE","fontSize":7,"fontName":"Courier","verticalAlign":"middle"},{"alignment":"right"}],"fontSize":9,"rowHeight":8}]]}
+    #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item","qty"],"headStyles":{"alignment":"center","fontSize":12,"height":10,"backgroundColor":"#E6E6E6","fontColor":"#333333"},"columnStyles":[{"alignment":"center","fontColor":"#FF0000","backgroundColor":"#EEEEEE","fontSize":7,"fontName":"Courier","verticalAlign":"middle"},{"alignment":"right"}],"fontSize":9,"rowHeight":8,"cellPadding":2}]]}
   let result = fill(
     @utf8.encode(template),
     @utf8.encode("{\"lines\":[{\"item\":\"apple\",\"qty\":\"2\"}]}"),
