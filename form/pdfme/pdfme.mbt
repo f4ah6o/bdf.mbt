@@ -1792,6 +1792,28 @@ fn pdfme_padding(value : Double, fallback : Double) -> Double {
 }
 
 ///|
+fn table_column_border_width(field : Json, index : Int, fallback : Float) -> Float {
+  match json_field(field, "columnStyles") {
+    Some(Json::Array(styles)) =>
+      if index < styles.length() {
+        match styles[index] {
+          Json::Object(style) =>
+            Float::from_double(
+              pdfme_padding(
+                number_of(style.get("borderWidth"), fallback.to_double()),
+                fallback.to_double(),
+              ),
+            )
+          _ => fallback
+        }
+      } else {
+        fallback
+      }
+    _ => fallback
+  }
+}
+
+///|
 fn table_column_border(field : Json, index : Int, fallback : UInt32) -> UInt32 {
   match json_field(field, "columnStyles") {
     Some(Json::Array(styles)) =>
@@ -2142,7 +2164,12 @@ fn FieldPainter::draw_table(
       let line_x = x + edges[i]
       let column = if i == 0 { 0 } else { i - 1 }
       self.builder.stroke_color(table_column_border(field, column, table_border))
-      self.builder.line(table_width, 0, 0, 0.0F)
+      self.builder.line(
+        table_column_border_width(field, column, table_width),
+        0,
+        0,
+        0.0F,
+      )
       stroke_segment(self.builder, line_x, y, line_x, y - height)
     }
     self.builder.stroke_color(table_border)
