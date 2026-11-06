@@ -290,6 +290,13 @@ pub fn fill_overlay(
         None => ()
       }
     }
+    builder.save()
+    builder.clip_rect(
+      Float::from_double(x1),
+      Float::from_double(y1),
+      Float::from_double(width),
+      Float::from_double(height),
+    )
     let lines = value.split("\n").collect()
     for i, line in lines {
       let advance = Float::from_double(
@@ -315,6 +322,7 @@ pub fn fill_overlay(
         advance,
       )
     }
+    builder.restore()
   }
   let writer = @core.DocumentWriter::new()
   let hash = writer.add_part("obj", builder.encode()) catch {

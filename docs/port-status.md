@@ -111,7 +111,7 @@
   pairs, control-character escapes, optional read-only skipping, escaped
   literals, UTF-16BE hex, buttons, appearance on-state names, referenced
   AcroForms and `/NeedAppearances`), and draws a blank-page value overlay
-  (checkbox `X`, maximum lengths, multi-line and wrapped values, MediaBox or CropBox sizing, optional
+  (checkbox `X`, maximum lengths, clipped multi-line and wrapped values, MediaBox or CropBox sizing, optional
   read-only skipping).
 - `form/ooxml` replaces `{{name}}` tags in OOXML XML parts, including tags
   split across runs (the run markup between them is removed), expands
