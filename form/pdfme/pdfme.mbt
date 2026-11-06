@@ -1770,6 +1770,10 @@ pub fn fill(template_bytes : Bytes, data_bytes : Bytes) -> FillResult raise Pdfm
       for warning in base_warnings {
         warnings.push(warning)
       }
+      if !document.manifest.views.is_empty() &&
+        document.manifest.views[0].pages.length() > pages.length() {
+        warnings.push("pdfme: extra base PDF pages have no schema")
+      }
       Some(document)
     }
     None => {
