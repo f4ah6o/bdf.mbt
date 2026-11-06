@@ -105,7 +105,7 @@
   choice options (both names kept, display values map to export values,
   multiple values become a PDF array and are read back),
   writes values into classic-xref or xref-stream PDFs with an incremental
-  update (23 tests, referenced appearance streams, missing-required reporting, maximum-length enforcement
+  update (24 tests, comb separators, referenced appearance streams, missing-required reporting, maximum-length enforcement
   in fills and overlays, hexadecimal field names, surrogate
   pairs, control-character escapes, optional read-only skipping, escaped
   literals, UTF-16BE hex, buttons, appearance on-state names, referenced

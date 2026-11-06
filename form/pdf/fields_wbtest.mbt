@@ -147,3 +147,19 @@ test "pdf overlay respects maximum lengths" {
   assert_true(!resources.object.strings.contains("Alice"))
 }
 
+///|
+test "pdf comb fields expose the flag and separators" {
+  let pdf = @base64.decode(
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgL0Fjcm9Gb3JtIDw8IC9GaWVsZHMgWzQgMCBSXSA+PiA+PgplbmRvYmoKMiAwIG9iago8PCAvVHlwZSAvUGFnZXMgL0tpZHMgWzMgMCBSXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDIwMCAxMDBdIC9Bbm5vdHMgWzQgMCBSXSA+PgplbmRvYmoKNCAwIG9iago8PCAvVHlwZSAvQW5ub3QgL1N1YnR5cGUgL1dpZGdldCAvRlQgL1R4IC9UIChjb2RlKSAvRmYgMTY3NzcyMTYgL01heExlbiAzIC9WIChBQkMpIC9SZWN0IFsxMCAyMCAxMDAgNDBdIC9QIDMgMCBSID4+CmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA5MCAwMDAwMCBuIAowMDAwMDAwMTQ3IDAwMDAwIG4gCjAwMDAwMDAyMzQgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgozNjUKJSVFT0YK",
+  )
+  let fields = read_fields(pdf)
+  assert_true(fields[0].comb)
+  assert_eq(fields[0].max_len, Some(3))
+  let bdf = fill_overlay(pdf, @utf8.encode("{\"code\":\"ABC\"}"))
+  let document = @core.open_single(bdf)
+  let resources = @core.decode_object_resources(
+    document.part(document.manifest.parts[0].hash),
+  )
+  assert_true(resources.object.ops.length() > 10)
+}
+

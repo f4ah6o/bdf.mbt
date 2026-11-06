@@ -213,6 +213,26 @@ pub fn fill_overlay(
       }
       None => ()
     }
+    if field.comb {
+      match field.max_len {
+        Some(limit) =>
+          if limit > 1 {
+            builder.fill_color(
+              field.border_color.unwrap_or(0x000000ff),
+            )
+            for i in 1..<limit {
+              let offset = width * i.to_double() / limit.to_double()
+              builder.fill_rect(
+                Float::from_double(x1 + offset),
+                Float::from_double(y1),
+                Float::from_double(0.5),
+                Float::from_double(height),
+              )
+            }
+          }
+        None => ()
+      }
+    }
     let size = if is_button {
       Float::from_double(Double::min(width, height) * 0.8)
     } else {

@@ -10,6 +10,7 @@ pub(all) struct Field {
   options : Array[String]
   read_only : Bool
   required : Bool
+  comb : Bool
   alternate_name : String
   max_len : Int?
   default_value : String
@@ -782,6 +783,10 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
         Some(value) => (value & 2) != 0
         None => false
       }
+      let comb = match flags {
+        Some(value) => (value & 16777216) != 0
+        None => false
+      }
       let field = {
         name,
         value,
@@ -792,6 +797,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
         options,
         read_only,
         required,
+        comb,
         alternate_name,
         max_len,
         default_value,
