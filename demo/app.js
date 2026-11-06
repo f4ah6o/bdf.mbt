@@ -11,6 +11,11 @@ const pdfRetry = $('#pdf-retry');
 const pdfUnlockStatus = $('#pdf-unlock-status');
 const converter = bdf_create_native_converter(new URL('./native_converter_worker.js', import.meta.url).href);
 const viewer = bdf_create_viewer($('#preview'), { workerUrl: new URL('./render_worker.js', import.meta.url).href, layout: 'single', find: false });
+converter.ready.then(formats => {
+  if (!Array.isArray(formats)) return;
+  const extensions = formats.flatMap(format => format.extensions ?? []);
+  if (extensions.length) file.accept = ['.bdf', ...extensions].join(',');
+}).catch(() => {});
 window.bdfViewer = viewer;
 let currentPage = 0;
 let downloadUrl;
@@ -118,7 +123,10 @@ async function openBytes(name, input, retry = false) {
       if (pdfRetry) pdfRetry.disabled = false;
       if (pdfPassword) pdfPassword.focus();
       if (pdfUnlockStatus) {
-        pdfUnlockStatus.textContent = /incorrect/i.test(message)
+        // The first attempt opens the file without a password: show the
+        // prompt even when the converter describes the empty password as
+        // incorrect. Only a retry can tell the user the password is wrong.
+        pdfUnlockStatus.textContent = retry && /incorrect|wrong/i.test(message)
           ? 'パスワードが正しくありません。確認して再変換してください。'
           : 'この PDF は暗号化されています。パスワードを入力して再変換してください。';
         pdfUnlockStatus.classList.add('error');
@@ -178,7 +186,9 @@ const samples = {
   'pdf-features': ['./samples/pdf-features.pdf', 'pdf-features.pdf'],
   'pdf-encrypted': ['./samples/pdf-encrypted.pdf', 'pdf-encrypted.pdf'],
   docx: ['./samples/simple.docx', 'simple.docx'],
-  pptx: ['./samples/simple.pptx', 'simple.pptx'],
+  'docx-rich': ['./samples/word.docx', 'word.docx'],
+  markdown: ['./samples/notes.md', 'notes.md'],
+  pptx: ['./samples/slides.pptx', 'slides.pptx'],
   drawio: ['./samples/labels.drawio', 'labels.drawio'],
   parquet: ['./samples/table.parquet', 'table.parquet'],
 };

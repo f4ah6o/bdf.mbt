@@ -23,6 +23,20 @@ by the user are handled in the browser. The sample contains Liberation fonts
 and WenQuanYi Zen Hei ([GPLv2](licenses/WenQuanYi.txt), with the font embedding
 exception and copyright notice in its [README](licenses/WenQuanYi-README.txt)).
 
+The gallery has a PowerPoint card that opens `samples/slides.pptx`, the
+upstream MIT-licensed `converter/pptx/testdata/basic.pptx` fixture (master
+and layout layers, text, a picture, a table and a hidden slide). The card
+preview `previews/pptx.png` was rendered from the upstream converter; the
+live card is converted by the MoonBit native converter Worker.
+
+The Word card opens `samples/word.docx`, an original synthetic document with a
+heading, bold text, a list and a bordered table (project MIT license), and
+the Markdown card opens `samples/notes.md`, copied from the
+upstream parity fixture `compat/parity/fixtures/markdown/basic.md` (lists,
+quotes, code, a table, links and footnotes). Their previews
+`previews/docx.png` and `previews/markdown.png` were rendered from the live
+MoonBit converter.
+
 The page also has a round-trip section for the document currently in the
 viewer. **PDF** embeds the used fonts and keeps URI links; **Markdown** keeps
 headings, lists, tables and images; **テキスト** returns the same page records

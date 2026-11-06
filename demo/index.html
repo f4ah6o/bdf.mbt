@@ -16,8 +16,8 @@
   </header>
   <main>
     <section class="intro" aria-labelledby="intro-title">
-      <div><p class="eyebrow">BROWSER DOCUMENT FORMAT</p><h1 id="intro-title">ドキュメントを、ブラウザで。</h1><p class="description">BDF の表示、検索、PDF（暗号化・JPX/JBIG2・Type3・タイルパターン）と CSV・Excel・画像・フォント・AI・TIFF・Photoshop・EMF/WMF の変換を試せます。ファイルをドロップするか、サンプルを開いてください。</p></div>
-      <div class="intro-actions"><button id="open-file" class="button primary" type="button">ファイルを開く</button><input id="file" hidden type="file" accept=".bdf,.csv,.tsv,.tab,.xlsx,.svg,.png,.jpg,.jpeg,.gif,.webp,.avif,.bmp,.ico,.ttf,.woff2,.pdf,.ai,.tif,.tiff,.psd,.psb,.emf,.wmf,.idml,.vsdx,.vsdm,.vstx,.vstm,.epub,.html,.htm,.xhtml,.md,.markdown,.mp3,.m4a,.aac,.flac,.ogg,.opus,.wav,.aiff"><button id="sample" class="button secondary" type="button">サンプルを開く</button><a class="button secondary" href="./converter.html">変換ページへ</a></div>
+      <div><p class="eyebrow">BROWSER DOCUMENT FORMAT</p><h1 id="intro-title">ドキュメントを、ブラウザで。</h1><p class="description">BDF の表示、検索、PDF（暗号化・JPX/JBIG2・Type3・タイルパターン）、Word・PowerPoint・Markdown・EPUB・CSV・Excel・画像・フォント・AI・TIFF・Photoshop・EMF/WMF の変換を試せます。ファイルをドロップするか、サンプルを開いてください。</p></div>
+      <div class="intro-actions"><button id="open-file" class="button primary" type="button">ファイルを開く</button><input id="file" hidden type="file" accept=".bdf,.csv,.tsv,.tab,.xlsx,.xlsm,.xltx,.xltm,.docx,.docm,.dotx,.dotm,.pptx,.pptm,.ppsx,.ppsm,.potx,.potm,.svg,.png,.jpg,.jpeg,.gif,.webp,.avif,.bmp,.ico,.ttf,.woff2,.pdf,.ai,.tif,.tiff,.psd,.psb,.emf,.wmf,.idml,.vsdx,.vsdm,.vstx,.vstm,.epub,.html,.htm,.xhtml,.md,.markdown,.mdown,.mkd,.mdx,.mp3,.m4a,.aac,.flac,.ogg,.opus,.wav,.aiff"><button id="sample" class="button secondary" type="button">サンプルを開く</button><a class="button secondary" href="./converter.html">変換ページへ</a></div>
     </section>
     <form id="pdf-unlock" class="pdf-unlock" aria-label="PDF パスワード">
       <label for="pdf-password">PDF パスワード（任意）</label>
@@ -103,6 +103,18 @@
         <article class="format-card">
           <img src="./previews/xlsx.png" alt="Excel シートのプレビュー" width="640" height="400" loading="lazy">
           <div class="card-body"><p class="card-kicker">SPREADSHEET</p><h3>Excel</h3><p>対応する売上表や画像入りのシートをブラウザ内で変換します。一部の機能には未対応です。</p><div class="card-links"><a href="#viewer" data-sample="xlsx">売上を開く <span aria-hidden="true">↗</span></a><a href="#viewer" data-sample="xlsx-picture">画像入りを開く <span aria-hidden="true">↗</span></a><a href="./formats.html#xlsx">形式の説明</a></div></div>
+        </article>
+        <article class="format-card">
+          <img src="./previews/docx.png" alt="Word 文書のプレビュー" width="640" height="400" loading="lazy">
+          <div class="card-body"><p class="card-kicker">DOCUMENT</p><h3>Word</h3><p>見出し・段落・表・リストを含む Word 文書をブラウザ内でページ表示します。</p><div class="card-links"><a href="#viewer" data-sample="docx-rich">文書を開く <span aria-hidden="true">↗</span></a><a href="./formats.html#docx">形式の説明</a></div></div>
+        </article>
+        <article class="format-card">
+          <img src="./previews/markdown.png" alt="Markdown 文書のプレビュー" width="640" height="400" loading="lazy">
+          <div class="card-body"><p class="card-kicker">DOCUMENT</p><h3>Markdown</h3><p>CommonMark/GFM の段落・リスト・表・数式を BDF のスクロール表示に変換します。</p><div class="card-links"><a href="#viewer" data-sample="markdown">文書を開く <span aria-hidden="true">↗</span></a><a href="./formats.html#reader">形式の説明</a></div></div>
+        </article>
+        <article class="format-card">
+          <img src="./previews/pptx.png" alt="PowerPoint スライドのプレビュー" width="640" height="400" loading="lazy">
+          <div class="card-body"><p class="card-kicker">PRESENTATION</p><h3>PowerPoint</h3><p>マスター／レイアウトのレイヤー、テーマ色、表、画像を含むスライドをブラウザ内で変換します。</p><div class="card-links"><a href="#viewer" data-sample="pptx">スライドを開く <span aria-hidden="true">↗</span></a><a href="./formats.html#pptx">形式の説明</a></div></div>
         </article>
         <article class="format-card">
           <img src="./previews/image.png" alt="画像のプレビュー" width="640" height="400" loading="lazy">

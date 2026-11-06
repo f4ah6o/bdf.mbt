@@ -76,6 +76,11 @@ try {
   await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'people.csv' && !document.querySelector('#open-file').disabled, null, { timeout: 30000 });
   await page.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(c => c.width > 0 && c.height > 0), null, { timeout: 15000 });
   assert.equal(await page.locator('#view').inputValue(), 'sheet1');
+  for (const [sample, name] of [['docx-rich', 'word.docx'], ['markdown', 'notes.md']]) {
+    await page.locator('[data-sample="' + sample + '"]').first().click();
+    await page.waitForFunction(n => document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled, name, { timeout: 30000 });
+    await page.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(c => c.dataset.loaded === 'ready'), null, { timeout: 15000 });
+  }
   await page.locator('#file').setInputFiles({ name: 'picture.svg', mimeType: 'image/svg+xml', buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="48"><rect width="64" height="48" fill="red"/></svg>') });
   await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'picture.svg' && !document.querySelector('#open-file').disabled, null, { timeout: 30000 });
   await page.waitForSelector('[data-bdf-page="0"] canvas[data-loaded="ready"]', { timeout: 15000 });
@@ -179,6 +184,18 @@ try {
     assert.equal(await page.locator('#search').inputValue(), '');
     await page.locator('#view').selectOption('sheet2');
   }
+  await page.locator('[data-sample="pptx"]').click();
+  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'slides.pptx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  assert.equal(await page.locator('#status').evaluate(el => el.classList.contains('error')), false, 'PowerPoint card');
+  assert.deepEqual(await page.locator('#view option').evaluateAll(options => options.map(option => option.value)), ['slides']);
+  await page.waitForFunction(() => /^[1-9]\d* \/ [1-9]\d*$/.test(document.querySelector('#page-number').textContent), null, { timeout: 30000 });
+  await page.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => {
+    if (!canvas.width || !canvas.height) return false;
+    const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+    let dark = 0;
+    for (let i = 0; i < pixels.length; i += 4) if (pixels[i + 3] > 0 && pixels[i] < 100 && ++dark > 100) return true;
+    return false;
+  }), null, { timeout: 30000 });
   const visualCases = JSON.parse(await readFile(resolve(import.meta.dirname, '../compat/xlsx/render/001.json')));
   // Select the four-sheet workbook by content so fixture reordering cannot
   // silently narrow this end-to-end test to a different input.
@@ -309,7 +326,7 @@ try {
   await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'people.csv' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
   await converterPage.getByRole('button', { name: 'BDF サンプルを開く' }).click();
   await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'upstream-demo.bdf' && !document.querySelector('#open-file').disabled, null, { timeout: 30000 });
-  for (const [sample, name] of [['csv', 'people.csv'], ['xlsx', 'sales.xlsx'], ['image', 'illustration.svg'], ['font', 'stix.ttf'], ['pdf', 'simple.pdf'], ['type1', 'type1.pdf'], ['docx', 'simple.docx'], ['pptx', 'simple.pptx'], ['hpgl', 'hpgl1.plt'], ['jww', 'old.jww'], ['dxf', 'shapes.dxf'], ['sxf', 'shapes.sfc'], ['cgm', 'shapes.cgm'], ['gerber', 'features.gbr'], ['drill', 'drill.drl'], ['kicad', 'demo.kicad_pcb'], ['drawio', 'labels.drawio'], ['drawio-compressed', 'compressed.drawio'], ['drawio-multipage', 'multipage.drawio'], ['drawio-embedded', 'embedded.drawio.svg'], ['drawio-showcase', 'showcase.drawio'], ['drawio-png', 'embedded.drawio.png'], ['parquet', 'table.parquet'], ['parquet-basic', 'basic.parquet']]) {
+  for (const [sample, name] of [['csv', 'people.csv'], ['xlsx', 'sales.xlsx'], ['image', 'illustration.svg'], ['font', 'stix.ttf'], ['pdf', 'simple.pdf'], ['type1', 'type1.pdf'], ['docx', 'simple.docx'], ['pptx', 'slides.pptx'], ['hpgl', 'hpgl1.plt'], ['jww', 'old.jww'], ['dxf', 'shapes.dxf'], ['sxf', 'shapes.sfc'], ['cgm', 'shapes.cgm'], ['gerber', 'features.gbr'], ['drill', 'drill.drl'], ['kicad', 'demo.kicad_pcb'], ['drawio', 'labels.drawio'], ['drawio-compressed', 'compressed.drawio'], ['drawio-multipage', 'multipage.drawio'], ['drawio-embedded', 'embedded.drawio.svg'], ['drawio-showcase', 'showcase.drawio'], ['drawio-png', 'embedded.drawio.png'], ['parquet', 'table.parquet'], ['parquet-basic', 'basic.parquet']]) {
     await converterPage.locator('#file').setInputFiles(resolve(root, 'samples', name));
     await converterPage.waitForFunction(n => document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled, name, { timeout: 60000 });
     assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, `converter ${sample}`);
@@ -322,7 +339,7 @@ try {
     assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, `converter sample link ${sample}`);
   }
   await converterPage.locator('[data-sample="pptx"]').click();
-  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'simple.pptx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'slides.pptx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
   assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, 'converter pptx sample');
   await converterPage.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => canvas.width > 0 && canvas.height > 0), null, { timeout: 30000 });
   await converterPage.locator('[data-sample="docx"]').click();
@@ -382,7 +399,7 @@ try {
   await mobileConverter.waitForFunction(() => document.querySelector('#document-name').textContent === 'people.csv', null, { timeout: 60000 });
   assert.equal(await mobileConverter.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'mobile converter overflow');
   await mobileConverter.close();
-  console.log('Demo: all 20 upstream pages, search, navigation, download, CSV, SVG, font TTF/WOFF2, XLSX, draw.io, Parquet conversion, sheet switching, embedded PNG, BDF save/reload, warnings, replacement, errors and mobile subpath passed.');
+  console.log('Demo: all 20 upstream pages, search, navigation, download, CSV, Word, Markdown, SVG, font TTF/WOFF2, XLSX, draw.io, Parquet conversion, sheet switching, embedded PNG, BDF save/reload, warnings, replacement, errors and mobile subpath passed.');
 } finally {
   await browser.close();
   await new Promise(resolvePromise => server.close(resolvePromise));
