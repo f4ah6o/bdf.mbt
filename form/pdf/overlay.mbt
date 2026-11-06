@@ -76,6 +76,78 @@ fn overlay_page_size(pdf : String) -> (Double, Double) {
 }
 
 ///|
+fn overlay_page_offsets(pdf : String) -> Array[(Int, Double, Double)] {
+  let offsets : Array[(Int, Double, Double)] = []
+  let mut pos = 0
+  while pos < pdf.length() {
+    let rest = pdf[pos:]
+    let at = match rest.find(" 0 obj") {
+      Some(index) => pos + index
+      None => break
+    }
+    let mut start = at
+    while start > 0 {
+      let c = pdf[start - 1].to_char().unwrap()
+      if c >= '0' && c <= '9' {
+        start -= 1
+      } else {
+        break
+      }
+    }
+    if start == at {
+      pos = at + 1
+      continue
+    }
+    let object = @string.parse_int(pdf[start:at].to_owned()) catch {
+      _ => {
+        pos = at + 1
+        continue
+      }
+    }
+    let tail = pdf[at:]
+    let end = match tail.find("endobj") {
+      Some(index) => at + index
+      None => pdf.length()
+    }
+    let segment = pdf[start:end]
+    if segment.contains("/Type /Page") && !segment.contains("/Type /Pages") {
+      let (box_at, key_length) = match segment.find("/MediaBox") {
+        Some(index) => (index, 9)
+        None =>
+          match segment.find("/CropBox") {
+            Some(index) => (index, 8)
+            None => {
+              pos = end + 6
+              continue
+            }
+          }
+      }
+      let mut i = box_at + key_length
+      while i < segment.length() && segment[i].to_char().unwrap() != '[' {
+        i += 1
+      }
+      let a = match overlay_f64(segment.to_owned(), i + 1) {
+        Some(value) => value
+        None => {
+          pos = end + 6
+          continue
+        }
+      }
+      let b = match overlay_f64(segment.to_owned(), a.1) {
+        Some(value) => value
+        None => {
+          pos = end + 6
+          continue
+        }
+      }
+      offsets.push((object, a.0, b.0))
+    }
+    pos = end + 6
+  }
+  offsets
+}
+
+///|
 fn overlay_page_sizes(pdf : String) -> Array[(Int, Double, Double)] {
   let sizes : Array[(Int, Double, Double)] = []
   let mut pos = 0
@@ -212,6 +284,7 @@ pub fn fill_overlay(
   let fields = read_fields(pdf_bytes)
   let (page_width, page_height) = overlay_page_size(pdf)
   let page_sizes = overlay_page_sizes(pdf)
+  let page_offsets = overlay_page_offsets(pdf)
   let default_page_key = if page_sizes.is_empty() { 0 } else { page_sizes[0].0 }
   let page_keys : Array[Int] = []
   for field in fields {
@@ -257,6 +330,8 @@ pub fn fill_overlay(
   }
   let page_widths : Array[Double] = []
   let page_heights : Array[Double] = []
+  let page_x : Array[Double] = []
+  let page_y : Array[Double] = []
   for key in page_keys {
     let mut width = page_width
     let mut height = page_height
@@ -266,8 +341,18 @@ pub fn fill_overlay(
         height = size.2
       }
     }
+    let mut offset_x = 0.0
+    let mut offset_y = 0.0
+    for offset in page_offsets {
+      if offset.0 == key {
+        offset_x = offset.1
+        offset_y = offset.2
+      }
+    }
     page_widths.push(width)
     page_heights.push(height)
+    page_x.push(offset_x)
+    page_y.push(offset_y)
   }
   let builders : Array[@core.ObjectBuilder] = []
   let fonts : Array[Int32] = []
@@ -341,10 +426,14 @@ pub fn fill_overlay(
     if value == "" {
       continue
     }
-    let (x1, y1, x2, y2) = match field.rect {
+    let (raw_x1, raw_y1, raw_x2, raw_y2) = match field.rect {
       Some(rect) => rect
       None => continue
     }
+    let x1 = raw_x1 - page_x[page_index]
+    let y1 = raw_y1 - page_y[page_index]
+    let x2 = raw_x2 - page_x[page_index]
+    let y2 = raw_y2 - page_y[page_index]
     let width = x2 - x1
     let height = y2 - y1
     if width <= 0.0 || height <= 0.0 {
