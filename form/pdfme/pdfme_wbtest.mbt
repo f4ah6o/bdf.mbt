@@ -521,7 +521,7 @@ test "pdfme falls back from a non-positive font size" {
 ///|
 test "pdfme falls back from non-positive table fonts" {
   let template =
-    #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item"],"fontSize":0,"columnStyles":[{"fontSize":0}],"rowHeight":8,"cellPadding":2}]]}
+    #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item"],"fontSize":0,"columnStyles":[{"fontSize":0}],"rowHeight":0,"cellPadding":2}]]}
   let data = #|{"lines":[{"item":"Pen"}]}
   let result = fill(@utf8.encode(template), @utf8.encode(data))
   assert_eq(result.warnings.length(), 0)

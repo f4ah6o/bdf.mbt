@@ -183,7 +183,10 @@ fn FieldPainter::draw_text(
   let raw_size = number_of(json_field(field, "fontSize"), 10.0)
   let size = Float::from_double(if raw_size > 0.0 { raw_size } else { 10.0 })
   let line_height = Float::from_double(
-    number_of(json_field(field, "lineHeight"), 1.2),
+    {
+      let raw = number_of(json_field(field, "lineHeight"), 1.2)
+      if raw > 0.0 { raw } else { 1.2 }
+    },
   ) * size
   let family = text_of(json_field(field, "fontName"), "Helvetica")
   let font = self.font(family)
@@ -1763,7 +1766,10 @@ fn FieldPainter::draw_table(
     0.0F,
   )
   let row_height = Float::from_double(
-    number_of(json_field(field, "rowHeight"), 6.0),
+    {
+      let raw = number_of(json_field(field, "rowHeight"), 6.0)
+      if raw > 0.0 { raw } else { 6.0 }
+    },
   )
   let head_height = match json_field(field, "headStyles") {
     Some(Json::Object(styles)) =>
