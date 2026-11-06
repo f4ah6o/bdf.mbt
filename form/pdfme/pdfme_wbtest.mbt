@@ -373,7 +373,7 @@ test "pdfme evaluates expression functions" {
 ///|
 test "pdfme aligns table columns" {
   let template =
-    #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item","qty"],"headStyles":{"alignment":"center"},"columnStyles":[{"alignment":"center"},{"alignment":"right"}],"fontSize":9,"rowHeight":8}]]}
+    #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item","qty"],"headStyles":{"alignment":"center","fontSize":12,"backgroundColor":"#E6E6E6"},"columnStyles":[{"alignment":"center"},{"alignment":"right"}],"fontSize":9,"rowHeight":8}]]}
   let result = fill(
     @utf8.encode(template),
     @utf8.encode("{\"lines\":[{\"item\":\"apple\",\"qty\":\"2\"}]}"),

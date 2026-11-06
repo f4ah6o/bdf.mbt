@@ -1415,6 +1415,16 @@ fn FieldPainter::draw_table(
     edges.push(edge)
   }
   let size = Float::from_double(number_of(json_field(field, "fontSize"), 8.0))
+  let head_size = match json_field(field, "headStyles") {
+    Some(Json::Object(styles)) =>
+      Float::from_double(number_of(styles.get("fontSize"), size.to_double()))
+    _ => size
+  }
+  let head_background = match json_field(field, "headStyles") {
+    Some(Json::Object(styles)) =>
+      color_of(styles.get("backgroundColor"), 0x00000000)
+    _ => 0x00000000
+  }
   let font = self.font(text_of(json_field(field, "fontName"), "Helvetica"))
   self.builder.font(font, size) catch {
     _ => raise PdfmeError("pdfme: a font cannot be set")
@@ -1427,10 +1437,19 @@ fn FieldPainter::draw_table(
   )
   let mut y = y_top
   let draw_row = fn(values : Array[String], head_row : Bool) raise PdfmeError {
+    let row_size = if head_row { head_size } else { size }
+    self.builder.font(font, row_size) catch {
+      _ => raise PdfmeError("pdfme: a font cannot be set")
+    }
+    if head_row && head_background != 0x00000000 {
+      self.builder.fill_color(head_background)
+      self.builder.fill_rect(x, y - row_height, width, row_height)
+      self.builder.fill_color(color_of(json_field(field, "fontColor"), 0x000000ff))
+    }
     for i in 0..<columns {
       let text = if i < values.length() { values[i] } else { "" }
       let advance = Float::from_double(
-        text.length().to_double() * size.to_double() * 0.5,
+        text.length().to_double() * row_size.to_double() * 0.5,
       )
       let alignment = table_column_alignment(field, i, head_row)
       let cell_width = edges[i + 1] - edges[i]
@@ -1441,7 +1460,7 @@ fn FieldPainter::draw_table(
       } else {
         x + edges[i] + 1.0
       }
-      self.builder.fill_text(text, start, y - size, advance)
+      self.builder.fill_text(text, start, y - row_size, advance)
     }
     for i in 0..=columns {
       let line_x = x + edges[i]
