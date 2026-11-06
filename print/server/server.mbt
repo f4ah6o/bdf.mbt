@@ -265,10 +265,21 @@ pub fn Server::handle_with_document(
     if requested.contains("all") || requested.contains("queued-job-count") {
       let queued = self.jobs.filter(fn(job) { !@ipp.job_state_done(job.state) })
       match response.group(@ipp.TAG_PRINTER) {
-        Some(group) =>
+        Some(group) => {
           group.attrs.push(
             @ipp.attr("queued-job-count", [@ipp.integer(queued.length())]),
           )
+          let processing = self.jobs.any(fn(job) { job.state == @ipp.JOB_PROCESSING })
+          let state = if processing { @ipp.PRINTER_PROCESSING } else { @ipp.PRINTER_IDLE }
+          for i, attribute in group.attrs {
+            if attribute.name == "printer-state" {
+              group.attrs[i] = @ipp.attr(
+                "printer-state",
+                [@ipp.enum_value(state)],
+              )
+            }
+          }
+        }
         None => ()
       }
     }

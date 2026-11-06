@@ -632,3 +632,22 @@ test "ipp server reports queued jobs" {
   assert_eq(queued, Some(1))
 }
 
+///|
+test "ipp server reports a processing printer" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  ignore(server.handle(client.create_job("active", [])))
+  let send = client.send_document(1, "part.pdf", "application/pdf", false)
+  ignore(server.handle_with_document(send, b"%PDF-1."))
+  let response = server.handle(client.get_printer_attributes(["all"]))
+  let group = match response.group(@ipp.TAG_PRINTER) {
+    Some(group) => group
+    None => fail("missing printer group")
+  }
+  let state = match group.get("printer-state") {
+    Some(attribute) => attribute.int()
+    None => None
+  }
+  assert_eq(state, Some(@ipp.PRINTER_PROCESSING))
+}
+
