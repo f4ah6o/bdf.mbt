@@ -233,3 +233,21 @@ test "ipp server accepts job URIs" {
   assert_eq(@ipp.make_job_status(canceled).state, @ipp.JOB_CANCELED)
 }
 
+///|
+test "ipp server counts URF pages" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  let page : @raster.Page = { ..@raster.Page::new(2, 1, 300, 300, @raster.SGRAY_8) }
+  let writer = @raster.Writer::new_urf(1)
+  writer.start_page(page)
+  writer.write_row(Bytes::from_array([1, 2]))
+  let urf = writer.close()
+  let response = server.handle_with_document(
+    client.print_job("urf", "image/urf", []),
+    urf,
+  )
+  let job = @ipp.make_job_status(response)
+  assert_eq(job.state, @ipp.JOB_COMPLETED)
+  assert_eq(job.impressions, 1)
+}
+

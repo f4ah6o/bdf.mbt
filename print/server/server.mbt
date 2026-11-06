@@ -177,8 +177,8 @@ pub fn Server::handle_with_document(
         Some(attribute) => attribute.text()
         None => ""
       }
-      if format.contains("pwg") || document.has_prefix(b"RaS2") {
-        let pages = @raster.read(document) catch {
+      let raster_pages = if format.contains("pwg") || document.has_prefix(b"RaS2") {
+        @raster.read(document) catch {
           _ => {
             job.state = @ipp.JOB_ABORTED
             job.impressions = 0
@@ -187,8 +187,22 @@ pub fn Server::handle_with_document(
             return response
           }
         }
+      } else if format.contains("urf") || document.has_prefix(b"UNIRAST") {
+        @raster.read_urf(document) catch {
+          _ => {
+            job.state = @ipp.JOB_ABORTED
+            job.impressions = 0
+            let response = response_for(request, @ipp.STATUS_OK)
+            response.add(@ipp.TAG_JOB, job_attrs(self, job))
+            return response
+          }
+        }
+      } else {
+        []
+      }
+      if raster_pages.length() > 0 {
         job.state = @ipp.JOB_COMPLETED
-        job.impressions = pages.length()
+        job.impressions = raster_pages.length()
       } else {
         job.state = @ipp.JOB_COMPLETED
         job.impressions = 1
