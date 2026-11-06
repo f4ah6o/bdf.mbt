@@ -204,7 +204,7 @@ fn pdf_jbig2_generic_region_segment(
   }
   let body = r.rest()
   if r.err {
-    raise InvalidStream("truncated JBIG2 generic region segment")
+    raise InvalidStream("jbig2: unexpected end of data")
   }
   if s.header.length == pdf_jbig2_unknown_length && data.length() >= 4 {
     // The data ends with the row count (7.2.7).

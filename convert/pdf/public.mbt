@@ -66,7 +66,7 @@ pub fn convert(
     bdf,
     format: "pdf",
     pages: count,
-    summary: "\{count} page(s) (PDF)",
+    summary: "\{count} page(s), \{shared_prefixes} shared prefix(es) saving \{shared_bytes} bytes",
     warnings,
     shared_prefixes,
     shared_bytes,

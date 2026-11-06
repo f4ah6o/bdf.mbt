@@ -226,3 +226,69 @@ fn pdf_jpx_rgb(
   }
   (image.width, image.height, rgb.to_bytes())
 }
+
+///|
+fn pdf_jpx_rgba(
+  data : Bytes,
+  invert : Bool,
+) -> (Int32, Int32, Bytes) raise PdfStreamError {
+  let codestream = pdf_jpx_codestream(data)
+  let (image, layout) = @jpx.decode_all_components(codestream) catch {
+    _ => raise InvalidStream("invalid PDF JPX image")
+  }
+  let bits = if image.bits_per_component <= 0 { 8 } else { image.bits_per_component }
+  let bytes_per = if bits > 8 { 2 } else { 1 }
+  let pixels = image.width * image.height
+  let plane = pixels * bytes_per
+  if image.num_components != 4 || image.data.length() < plane * 4 {
+    raise InvalidStream("PDF JPX image is not RGBA")
+  }
+  let interleaved = layout.contains("raster") &&
+    !layout.contains("planar") &&
+    image.data.length() >= plane * 4
+  let rgba = @buffer.Buffer(size_hint=pixels * 4)
+  for pixel in 0..<pixels {
+    for component in 0..<3 {
+      let value = pdf_jpx_value(
+        pdf_jpx_sample(image, component, pixel, bytes_per, interleaved),
+        bits,
+        image.is_signed,
+        invert,
+      )
+      rgba.write_byte(value.to_byte())
+    }
+    let alpha = pdf_jpx_value(
+      pdf_jpx_sample(image, 3, pixel, bytes_per, interleaved),
+      bits,
+      image.is_signed,
+      false,
+    )
+    rgba.write_byte(alpha.to_byte())
+  }
+  (image.width, image.height, rgba.to_bytes())
+}
+
+///|
+fn pdf_jpx_png(
+  data : Bytes,
+  space : PdfDeviceColorSpace?,
+  invert : Bool,
+) -> Bytes raise PdfStreamError {
+  let codestream = pdf_jpx_codestream(data)
+  let (image, _) = @jpx.decode_all_components(codestream) catch {
+    _ => raise InvalidStream("invalid PDF JPX image")
+  }
+  let rgba_space = image.num_components == 4 &&
+    (match space {
+      None | Some(PdfRGB) => true
+      _ => false
+    })
+  if rgba_space {
+    let (width, height, rgba) = pdf_jpx_rgba(data, invert)
+    pdf_png_encode_rgba(width, height, rgba)
+  } else {
+    let (width, height, rgb) = pdf_jpx_rgb(data, space, invert)
+    pdf_png_encode_rgb(width, height, rgb)
+  }
+}
+

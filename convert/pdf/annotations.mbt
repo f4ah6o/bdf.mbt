@@ -68,6 +68,7 @@ fn PdfGraphics::emit_annotations(
   self : PdfGraphics,
   file : PdfFile,
   values : Array[PdfObject],
+  correction~ : (Double, Double, Double, Double, Double, Double)? = None,
 ) -> Unit raise PdfStreamError {
   for value in values {
     let dict = file.page_deref(Some(value))
@@ -103,7 +104,16 @@ fn PdfGraphics::emit_annotations(
       _ =>
         match pdf_annotation_appearance(file, dict) {
           Some((appearance, raw)) =>
-            self.draw_annotation_appearance(file, appearance, raw, rect)
+            match correction {
+              Some(matrix) => {
+                self.save()
+                self.transform(matrix)
+                self.draw_annotation_appearance(file, appearance, raw, rect)
+                self.restore()
+              }
+              None =>
+                self.draw_annotation_appearance(file, appearance, raw, rect)
+            }
           None => ()
         }
     }
@@ -136,10 +146,11 @@ fn PdfGraphics::draw_annotations(
       Some(value) => value
       None => return
     }
-    self.save()
-    self.transform(pdf_matrix_mul(base, inverse))
-    self.emit_annotations(file, values)
-    self.restore()
+    // Links are in page space and need no transform; annotation appearances
+    // are drawn through the correction so they stay upright.
+    self.emit_annotations(
+      file, values, correction=Some(pdf_matrix_mul(base, inverse)),
+    )
   }
 }
 

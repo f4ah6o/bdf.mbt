@@ -224,6 +224,9 @@ fn pdf_graphics_document_full(
     "id": Json::string("pages"),
     "kind": Json::string(if kind == "" { "fixed" } else { kind }),
   }
+  if kind == "flow" {
+    view["continuous"] = Json::object({ "gap": Json::number(16.0) })
+  }
   for
     warning in pdf_write_index(writer, view, index, index_error, no_text_index) {
     warnings.push(warning)

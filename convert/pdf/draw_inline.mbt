@@ -276,5 +276,8 @@ fn PdfGraphics::inline_image(
     length
   }
   let data = lexer.read_inline_image_with_filters(effective_length, filters)
-  self.draw_inline_image(entries, data)
+  self.draw_inline_image(entries, data) catch {
+    InvalidStream(message) => self.warnings.push("image: " + message)
+    _ => self.warnings.push("image: the image could not be decoded")
+  }
 }

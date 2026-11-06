@@ -222,23 +222,22 @@ test "PDF CCITT inline image decodes" {
 }
 
 ///|
-test "PDF invalid JPX image reports a codec error" {
-  let rejected = try {
-    ignore(
-      pdf_graphics_document(
-        pdf_xobject_test_document(
-          b"q 100 0 0 100 10 20 cm /Im1 Do Q",
-          "/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /JPXDecode",
-          b"\x00",
-        ),
-        no_text_index=true,
-      ),
-    )
-    false
-  } catch {
-    InvalidStream(message) => message.contains("JPX")
+test "PDF invalid JPX image is warned and skipped" {
+  let (_, warnings) = pdf_graphics_document_result(
+    pdf_xobject_test_document(
+      b"q 100 0 0 100 10 20 cm /Im1 Do Q",
+      "/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /JPXDecode",
+      b"\x00",
+    ),
+    no_text_index=true,
+  )
+  let mut warned = false
+  for warning in warnings {
+    if warning.has_prefix("image: ") && warning.contains("JPX") {
+      warned = true
+    }
   }
-  assert_true(rejected, msg="PDF JPX error")
+  assert_true(warned, msg="PDF JPX warning")
 }
 
 ///|

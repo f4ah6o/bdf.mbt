@@ -115,6 +115,58 @@ fn pdf_image_flip_matrix() -> (Double, Double, Double, Double, Double, Double) {
 }
 
 ///|
+///|
+/// The pixel size of a PNG or JPEG image stream. PDF images are passed to the
+/// object unchanged when they are already compressed.
+fn pdf_image_pixel_size(data : Bytes) -> (Int32, Int32)? {
+  let n = data.length()
+  if n >= 24 &&
+    data[0] == b'\x89' &&
+    data[1] == b'P' &&
+    data[2] == b'N' &&
+    data[3] == b'G' {
+    let width = (data[16].to_int() << 24) |
+      (data[17].to_int() << 16) |
+      (data[18].to_int() << 8) |
+      data[19].to_int()
+    let height = (data[20].to_int() << 24) |
+      (data[21].to_int() << 16) |
+      (data[22].to_int() << 8) |
+      data[23].to_int()
+    return Some((width, height))
+  }
+  if n >= 4 && data[0] == b'\xff' && data[1] == b'\xd8' {
+    let mut i = 2
+    while i + 9 < n {
+      if data[i] != b'\xff' {
+        i += 1
+        continue
+      }
+      let marker = data[i + 1].to_int()
+      if marker == 0xd8 || marker == 0xd9 {
+        i += 2
+        continue
+      }
+      let length = (data[i + 2].to_int() << 8) | data[i + 3].to_int()
+      if marker >= 0xc0 &&
+        marker <= 0xcf &&
+        marker != 0xc4 &&
+        marker != 0xc8 &&
+        marker != 0xcc {
+        let height = (data[i + 5].to_int() << 8) | data[i + 6].to_int()
+        let width = (data[i + 7].to_int() << 8) | data[i + 8].to_int()
+        return Some((width, height))
+      }
+      if length < 2 {
+        break
+      }
+      i += 2 + length
+    }
+  }
+  None
+}
+
+///|
 fn PdfGraphics::emit_image(
   self : PdfGraphics,
   data : Bytes,
@@ -130,6 +182,21 @@ fn PdfGraphics::emit_image(
   let suppressed = self.unsaved > unsaved
   let flip = pdf_image_flip_matrix()
   self.transform(flip)
+  // Disable smoothing only when a small image is scaled up more than twice
+  // and does not ask for interpolation, as upstream does.
+  match pdf_image_pixel_size(data) {
+    Some((width, height)) =>
+      if width > 0 && height > 0 {
+        let (a, b, c, d, _, _) = self.state.matrix
+        let device_width = Double::abs(a) + Double::abs(c)
+        let device_height = Double::abs(b) + Double::abs(d)
+        if device_width > width.to_double() * 2.0 ||
+          device_height > height.to_double() * 2.0 {
+          self.object.smoothing(false, 0)
+        }
+      }
+    None => ()
+  }
   self.object.image(index, 0.0F, 0.0F, 1.0F, 1.0F) catch {
     _ => {
       if suppressed {
@@ -235,8 +302,7 @@ fn PdfGraphics::draw_image_data(
       if is_mask {
         raise InvalidStream("PDF image masks cannot use JPEG 2000 data")
       }
-      let (jpx_width, jpx_height, jpx_rgb) = pdf_jpx_rgb(data, space, invert)
-      self.emit_image(pdf_png_encode_rgb(jpx_width, jpx_height, jpx_rgb))
+      self.emit_image(pdf_jpx_png(data, space, invert))
     }
     Some(b"JBIG2Decode") => {
       if is_mask {
@@ -752,7 +818,10 @@ fn PdfGraphics::draw_xobject(
         Some(value) => value
         None => raise InvalidStream("PDF image stream is missing")
       }
-      self.draw_image_xobject(file, loaded.value, raw)
+      self.draw_image_xobject(file, loaded.value, raw) catch {
+        InvalidStream(message) => self.warnings.push("image: " + message)
+        _ => self.warnings.push("image: the image could not be decoded")
+      }
     }
     PdfName(b"Form") => {
       let raw = match loaded.stream {

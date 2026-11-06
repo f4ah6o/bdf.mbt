@@ -230,24 +230,21 @@ test "PDF Flate CMYK samples become RGB PNG" {
 }
 
 ///|
-test "PDF image bit depths other than 8 fail closed" {
-  let rejected = try {
-    ignore(
-      pdf_graphics_document(
-        pdf_xobject_test_document(
-          b"q 100 0 0 100 10 20 cm /Im1 Do Q",
-          "/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceGray /BitsPerComponent 1 /Filter /FlateDecode",
-          @zlib.compress(b"\x00"[:]),
-        ),
-        no_text_index=true,
-      ),
-    )
-    false
-  } catch {
-    InvalidStream(message) => message.contains("bit depths")
-    _ => false
-  }
-  assert_true(rejected)
+test "PDF image bit depths other than 8 are warned and skipped" {
+  let (_, warnings) = pdf_graphics_document_result(
+    pdf_xobject_test_document(
+      b"q 100 0 0 100 10 20 cm /Im1 Do Q",
+      "/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceGray /BitsPerComponent 1 /Filter /FlateDecode",
+      @zlib.compress(b"\x00"[:]),
+    ),
+    no_text_index=true,
+  )
+  assert_true(
+    warnings.contains(
+      "image: PDF image bit depths other than 8 are not supported yet",
+    ),
+    msg="PDF bit depth warning",
+  )
 }
 
 ///|
@@ -1217,11 +1214,18 @@ fn pdf_test_image_flip_wrapper(
   guard image + 1 < commands.length() else {
     fail("PDF image wrapper is truncated")
   }
-  guard commands[image - 2] is @render.Save else {
+  let smoothed = image >= 3 &&
+    (match commands[image - 1] {
+      @render.Smoothing(false, 0) => true
+      _ => false
+    })
+  let save_index = if smoothed { image - 3 } else { image - 2 }
+  guard commands[save_index] is @render.Save else {
     fail("PDF image wrapper is missing Save")
   }
-  guard commands[image - 1] is @render.Transform(a, b, c, d, e, f) else {
-    fail("PDF image wrapper is missing Transform")
+  let (a, b, c, d, e, f) = match commands[save_index + 1] {
+    @render.Transform(a, b, c, d, e, f) => (a, b, c, d, e, f)
+    _ => fail("PDF image wrapper is missing Transform")
   }
   assert_eq(
     (a, b, c, d, e, f),

@@ -84,8 +84,12 @@ fn PdfGraphics::flush_vertical(self : PdfGraphics) -> Unit raise PdfStreamError 
   let reference = match self.font_refs.get(self.state.font_key) {
     Some(value) => value
     None => {
+      let hash = match font.embedded {
+        Some(data) => Some(self.store_font(data))
+        None => None
+      }
       let value = self.object.add_font({
-        hash: None,
+        hash,
         family: font.family,
         weight: font.weight,
         style: font.style,
@@ -135,8 +139,12 @@ fn PdfGraphics::flush_vertical(self : PdfGraphics) -> Unit raise PdfStreamError 
   )
   let child = @core.ObjectBuilder::new()
   child.set_bbox(bbox.0, bbox.1, bbox.2, bbox.3)
+  let child_hash = match font.embedded {
+    Some(data) => Some(self.store_font(data))
+    None => None
+  }
   let child_font = child.add_font({
-    hash: None,
+    hash: child_hash,
     family: font.family,
     weight: font.weight,
     style: font.style,

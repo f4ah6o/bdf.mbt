@@ -15,15 +15,17 @@ pub fn decode_with_layout(Bytes) -> (ImageData, String) raise DecodeError
 pub fn parse(Bytes) -> @core.Codestream raise DecodeError
 
 // Errors
+#derive(Show)
 pub(all) suberror DecodeError {
   InvalidCodestream(String)
   UnsupportedFeature(String)
   DecodeFailed(String)
-} derive(Show)
+}
 
 // Types and methods
 type DecodeSamplesResult
 
+#derive(Eq, Show)
 pub(all) struct ImageData {
   width : Int32
   height : Int32
@@ -31,7 +33,7 @@ pub(all) struct ImageData {
   bits_per_component : Int32
   is_signed : Bool
   data : Bytes
-} derive(Eq, Show)
+}
 
 // Type aliases
 
