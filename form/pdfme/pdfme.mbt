@@ -1352,6 +1352,22 @@ fn table_column_alignment(field : Json, index : Int, head : Bool) -> String {
 
 ///|
 ///|
+fn table_column_background(field : Json, index : Int) -> UInt32 {
+  match json_field(field, "columnStyles") {
+    Some(Json::Array(styles)) =>
+      if index < styles.length() {
+        match styles[index] {
+          Json::Object(style) => color_of(style.get("backgroundColor"), 0x00000000)
+          _ => 0x00000000
+        }
+      } else {
+        0x00000000
+      }
+    _ => 0x00000000
+  }
+}
+
+///|
 fn table_column_color(field : Json, index : Int, fallback : UInt32) -> UInt32 {
   match json_field(field, "columnStyles") {
     Some(Json::Array(styles)) =>
@@ -1483,12 +1499,17 @@ fn FieldPainter::draw_table(
       let advance = Float::from_double(
         text.length().to_double() * row_size.to_double() * 0.5,
       )
+      let cell_width = edges[i + 1] - edges[i]
+      let background = if head_row { 0x00000000U } else { table_column_background(field, i) }
+      if background != 0x00000000U {
+        self.builder.fill_color(background)
+        self.builder.fill_rect(x + edges[i], y - height, cell_width, height)
+      }
       let base_color = color_of(json_field(field, "fontColor"), 0x000000ff)
       self.builder.fill_color(
         if head_row { head_color } else { table_column_color(field, i, base_color) },
       )
       let alignment = table_column_alignment(field, i, head_row)
-      let cell_width = edges[i + 1] - edges[i]
       let start = if alignment == "center" {
         x + edges[i] + (cell_width - advance) / 2.0
       } else if alignment == "right" {
