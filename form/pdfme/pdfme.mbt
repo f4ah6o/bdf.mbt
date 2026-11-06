@@ -1807,14 +1807,28 @@ fn FieldPainter::draw_radio_group(
   self.builder.font(font, size) catch {
     _ => raise PdfmeError("pdfme: a font cannot be set")
   }
-  self.builder.fill_color(0x000000ff)
-  self.builder.stroke_color(0x000000ff)
-  self.builder.line(0.6, 0, 0, 0.0F)
+  let background = json_field(field, "backgroundColor")
+  self.builder.fill_color(color_of(json_field(field, "fontColor"), 0x000000ff))
+  self.builder.stroke_color(color_of(json_field(field, "borderColor"), 0x000000ff))
+  self.builder.line(
+    Float::from_double(pdfme_padding(number_of(json_field(field, "borderWidth"), 0.6), 0.6)),
+    0,
+    0,
+    0.0F,
+  )
   let horizontal = text_of(json_field(field, "direction"), "column") == "row"
   if horizontal {
     let cell = width / Float::from_double(options.length().to_double())
     for i, option in options {
       let left = x + Float::from_double(i.to_double()) * cell
+      match background {
+        Some(value) => {
+          self.builder.fill_color(color_of(Some(value), 0xffffffff))
+          self.builder.fill_rect(left, y_top - size, size, size)
+          self.builder.fill_color(color_of(json_field(field, "fontColor"), 0x000000ff))
+        }
+        None => ()
+      }
       self.builder.stroke_rect(left, y_top - size, size, size)
       if option == selected {
         stroke_segment(self.builder, left, y_top - size, left + size, y_top)
@@ -1826,6 +1840,14 @@ fn FieldPainter::draw_radio_group(
     let row = height / Float::from_double(options.length().to_double())
     for i, option in options {
       let top = y_top - Float::from_double(i.to_double()) * row
+      match background {
+        Some(value) => {
+          self.builder.fill_color(color_of(Some(value), 0xffffffff))
+          self.builder.fill_rect(x, top - size, size, size)
+          self.builder.fill_color(color_of(json_field(field, "fontColor"), 0x000000ff))
+        }
+        None => ()
+      }
       self.builder.stroke_rect(x, top - size, size, size)
       if option == selected {
         stroke_segment(self.builder, x, top - size, x + size, top)
