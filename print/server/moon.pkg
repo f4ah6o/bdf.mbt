@@ -1,7 +1,9 @@
 import {
+  "f4ah6o/bdf/convert/pdf" @pdf,
   "f4ah6o/bdf/print/ipp" @ipp,
   "f4ah6o/bdf/print/raster" @raster,
   "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/encoding/base64" @base64,
   "moonbitlang/core/string",
 }
 

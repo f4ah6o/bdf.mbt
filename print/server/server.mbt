@@ -143,6 +143,14 @@ fn request_job_id(request : @ipp.Message) -> Int {
 }
 
 ///|
+fn pdf_page_count(data : Bytes) -> Int {
+  let result = @pdf.convert(data) catch {
+    _ => return 0
+  }
+  result.pages
+}
+
+///|
 /// Handle one IPP request for the server's printer.
 pub fn Server::handle_with_document(
   self : Server,
@@ -204,8 +212,14 @@ pub fn Server::handle_with_document(
         job.state = @ipp.JOB_COMPLETED
         job.impressions = raster_pages.length()
       } else {
+        let pdf_pages = if format.contains("pdf") ||
+          document.has_prefix(b"%PDF-") {
+          pdf_page_count(document)
+        } else {
+          0
+        }
         job.state = @ipp.JOB_COMPLETED
-        job.impressions = 1
+        job.impressions = if pdf_pages > 0 { pdf_pages } else { 1 }
       }
     }
     let response = response_for(request, @ipp.STATUS_OK)
