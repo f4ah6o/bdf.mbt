@@ -459,3 +459,30 @@ test "pdf overlay rotates pages by 270 degrees" {
   assert_true(resources.object.strings.contains("Alice"))
 }
 
+///|
+test "pdf overlay rotates page coordinates by 180 degrees" {
+  let pdf = @base64.decode(
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgL0Fjcm9Gb3JtIDw8IC9GaWVsZHMgWzMgMCBSXSA+PiA+PgplbmRvYmoKMiAwIG9iago8PCAvVHlwZSAvUGFnZXMgL0tpZHMgWzQgMCBSXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvQW5ub3QgL1N1YnR5cGUgL1dpZGdldCAvRlQgL1R4IC9UIChuYW1lKSAvViAoKSAvUmVjdCBbMjAgMzAgNTAgNDBdIC9QIDQgMCBSID4+CmVuZG9iago0IDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFswIDAgMjAwIDEwMF0gL1JvdGF0ZSAxODAgL0Fubm90cyBbMyAwIFJdID4+CmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA5MCAwMDAwMCBuIAowMDAwMDAwMTQ3IDAwMDAwIG4gCjAwMDAwMDAyNTEgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgozNTAKJSVFT0YK",
+  )
+  let bdf = fill_overlay(pdf, @utf8.encode("{\"name\":\"Alice\"}"))
+  let document = @core.open_single(bdf)
+  let page = document.manifest.views[0].pages[0]
+  assert_eq(page.width, 200.0)
+  assert_eq(page.height, 100.0)
+  let commands = @render.decode_commands(document.part(page.layers[0].object)) catch {
+    _ => fail("rotated overlay commands cannot be decoded")
+  }
+  let mut transformed = false
+  for command in commands {
+    match command {
+      @render.Transform(a, b, c, d, e, f) =>
+        if a == -1.0 && b == 0.0 && c == 0.0 && d == -1.0 && e == 200.0 &&
+          f == 100.0 {
+          transformed = true
+        }
+      _ => ()
+    }
+  }
+  assert_true(transformed)
+}
+
