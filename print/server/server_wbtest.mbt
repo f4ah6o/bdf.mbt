@@ -216,3 +216,20 @@ test "ipp server counts PWG pages" {
   )
 }
 
+///|
+test "ipp server accepts job URIs" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  let created = server.handle(client.create_job("report", []))
+  let job = @ipp.make_job_status(created)
+  let get_request = client.request(@ipp.OP_GET_JOB_ATTRIBUTES)
+  get_request.add(@ipp.TAG_OPERATION, [@ipp.attr("job-uri", [@ipp.uri(job.uri)])])
+  let got = server.handle(get_request)
+  assert_eq(got.code, @ipp.STATUS_OK)
+  assert_eq(@ipp.make_job_status(got).id, job.id)
+  let cancel_request = client.request(@ipp.OP_CANCEL_JOB)
+  cancel_request.add(@ipp.TAG_OPERATION, [@ipp.attr("job-uri", [@ipp.uri(job.uri)])])
+  let canceled = server.handle(cancel_request)
+  assert_eq(@ipp.make_job_status(canceled).state, @ipp.JOB_CANCELED)
+}
+

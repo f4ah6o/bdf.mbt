@@ -116,6 +116,33 @@ fn Server::create_job(self : Server, request : @ipp.Message) -> Job {
 }
 
 ///|
+fn request_job_id(request : @ipp.Message) -> Int {
+  match request.attr(@ipp.TAG_OPERATION, "job-id") {
+    Some(attribute) => attribute.int().unwrap_or(-1)
+    None =>
+      match request.attr(@ipp.TAG_OPERATION, "job-uri") {
+        Some(attribute) => {
+          let uri = attribute.text()
+          let mut start = 0
+          for i in 0..<uri.length() {
+            if uri[i].to_char().unwrap() == '/' {
+              start = i + 1
+            }
+          }
+          if start >= uri.length() {
+            -1
+          } else {
+            @string.parse_int(uri[start:].to_owned()) catch {
+              _ => -1
+            }
+          }
+        }
+        None => -1
+      }
+  }
+}
+
+///|
 /// Handle one IPP request for the server's printer.
 pub fn Server::handle_with_document(
   self : Server,
@@ -171,10 +198,7 @@ pub fn Server::handle_with_document(
     response.add(@ipp.TAG_JOB, job_attrs(self, job))
     response
   } else if request.code == @ipp.OP_GET_JOB_ATTRIBUTES {
-    let id = match request.attr(@ipp.TAG_OPERATION, "job-id") {
-      Some(attribute) => attribute.int().unwrap_or(-1)
-      None => -1
-    }
+    let id = request_job_id(request)
     match self.find_job(id) {
       Some(job) => {
         let response = response_for(request, @ipp.STATUS_OK)
@@ -184,10 +208,7 @@ pub fn Server::handle_with_document(
       None => response_for(request, @ipp.STATUS_CLIENT_ERROR_NOT_FOUND)
     }
   } else if request.code == @ipp.OP_CANCEL_JOB {
-    let id = match request.attr(@ipp.TAG_OPERATION, "job-id") {
-      Some(attribute) => attribute.int().unwrap_or(-1)
-      None => -1
-    }
+    let id = request_job_id(request)
     match self.find_job(id) {
       Some(job) => {
         if !@ipp.job_state_done(job.state) {

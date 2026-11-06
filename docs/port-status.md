@@ -161,8 +161,9 @@
   `print/server` answers Get-Printer-Attributes,
   Validate-Job, Create/Print-Job, Get-Job-Attributes, Cancel-Job and
   Get-Jobs in memory (which-jobs, my-jobs and limit filters), with an HTTP
-  request/response envelope, Print-Job documents stored on the job,
-  job-state-reasons, and PWG page counting/abort (7 tests). `print/ipp` now has the tags, the
+  request/response envelope, job-id/job-uri lookup, Print-Job documents
+  stored on the job, job-state-reasons, and PWG page counting/abort
+  (8 tests). `print/ipp` now has the tags, the
   message model and the binary request/response codec (integers, booleans,
   strings, languages, resolution, range, dateTime, octet strings and
   nested collections, with decode limits for bytes, attributes, values,
