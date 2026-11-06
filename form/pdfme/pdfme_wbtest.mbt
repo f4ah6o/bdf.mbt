@@ -529,3 +529,15 @@ test "pdfme falls back from non-positive table fonts" {
   assert_true(text.contains("Pen"), msg=text)
 }
 
+///|
+test "pdfme falls back from non-positive table widths" {
+  let template =
+    #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item","qty"],"headWidthPercentages":[-1,0],"fontSize":9,"rowHeight":8,"cellPadding":2}]]}
+  let data = #|{"lines":[{"item":"Pen","qty":2}]}
+  let result = fill(@utf8.encode(template), @utf8.encode(data))
+  assert_eq(result.warnings.length(), 0)
+  let text = pdfme_text(result.bdf)
+  assert_true(text.contains("Pen"), msg=text)
+  assert_true(text.contains("2"), msg=text)
+}
+

@@ -1721,7 +1721,7 @@ fn FieldPainter::draw_table(
     Some(values) =>
       if values.length() == columns {
         for value in values {
-          let number = number_of(Some(value), 0.0)
+          let number = Double::max(0.0, number_of(Some(value), 0.0))
           widths.push(Float::from_double(number))
           width_sum += number
         }
