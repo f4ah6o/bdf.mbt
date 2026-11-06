@@ -24,6 +24,8 @@ pub(all) struct Field {
   options : Array[String]
   read_only : Bool
   required : Bool
+  alternate_name : String
+  max_len : Int32?
 }
 
 // Type aliases
