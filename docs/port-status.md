@@ -98,12 +98,12 @@
   or lists (numbers/booleans/empty values, header rows, named values and
   dotted names, merging), with 5 tests.
 - `form/pdf` reads AcroForm field names, values (literal, hex, UTF-16BE,
-  name), types and rectangles, writes values into classic-xref PDFs with an
-  incremental update (13 tests, escaped literals, UTF-16BE hex, buttons,
-  appearance on-state names, referenced AcroForms and `/NeedAppearances`),
-  and draws a blank-page value overlay (checkbox `X`, multi-line values,
-  MediaBox or CropBox sizing). Fields also expose their page object
-  reference. 14 tests.
+  name), types, rectangles, page references, field flags and choice options,
+  writes values into classic-xref PDFs with an incremental update (13 tests,
+  escaped literals, UTF-16BE hex, buttons, appearance on-state names,
+  referenced AcroForms and `/NeedAppearances`), and draws a blank-page value
+  overlay (checkbox `X`, multi-line values, MediaBox or CropBox sizing).
+  14 tests.
 - `form/ooxml` replaces `{{name}}` tags in OOXML XML parts, including tags
   split across runs (the run markup between them is removed), expands
   boolean `{{#name}}`/`{{^name}}` conditions, expands object-list
