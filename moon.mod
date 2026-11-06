@@ -18,4 +18,6 @@ import {
   "moonbitlang/x@0.5.5",
   "gaato/zstd@0.3.1",
   "oilleelssq-wq/moonmarkdown@0.2.0",
+  "moonbit-community/yaml@0.0.8",
+    "allenli178/moon-qrcode@0.2.0",
 }
