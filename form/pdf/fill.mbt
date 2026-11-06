@@ -227,6 +227,51 @@ fn pdf_startxref(text : String) -> Int? {
 }
 
 ///|
+fn find_object_body(text : String, number : Int) -> String? {
+  let mut pos = 0
+  while pos < text.length() {
+    let at = match text[pos:].find(" obj") {
+      Some(index) => pos + index + 1
+      None => return None
+    }
+    let (found, _) = match object_header(text, at) {
+      Some(header) => header
+      None => {
+        pos = at + 3
+        continue
+      }
+    }
+    let body_start = at + 3
+    let endobj = match text[body_start:].find("endobj") {
+      Some(index) => body_start + index
+      None => return None
+    }
+    if found == number {
+      return Some(text[body_start:endobj].to_owned())
+    }
+    pos = endobj + 6
+  }
+  None
+}
+
+///|
+fn add_need_appearances(body : String) -> String? {
+  if body.contains("/NeedAppearances") {
+    return None
+  }
+  let at = match body.find("/AcroForm") {
+    Some(index) => index
+    None => return None
+  }
+  let rest = body[at + 9:]
+  let open = match rest.find("<<") {
+    Some(index) => at + 9 + index + 2
+    None => return None
+  }
+  Some(body[:open].to_owned() + " /NeedAppearances true " + body[open:].to_owned())
+}
+
+///|
 fn data_text(data : Json, name : String) -> String? {
   match data {
     Json::Object(object) =>
@@ -304,6 +349,14 @@ pub fn fill_pdf(pdf_bytes : Bytes, data_bytes : Bytes) -> Bytes raise PdfFillErr
       }
     }
     pos = endobj + 6
+  }
+  match find_object_body(text, root.0) {
+    Some(root_body) =>
+      match add_need_appearances(root_body) {
+        Some(updated) => updates.push((root.0, root.1, updated))
+        None => ()
+      }
+    None => ()
   }
   if updates.is_empty() {
     return pdf_bytes

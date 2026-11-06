@@ -99,7 +99,8 @@
   dotted names, merging), with 5 tests.
 - `form/pdf` reads AcroForm field names, values (literal, hex, UTF-16BE,
   name), types and rectangles, writes values into classic-xref PDFs with an
-  incremental update (6 tests, ASCII literals and UTF-16BE hex), and draws
+  incremental update (6 tests, ASCII literals, UTF-16BE hex and
+  `/NeedAppearances`), and draws
   a blank-page value overlay
   (multi-line values included) for preprinted forms.
 - `form/ooxml` replaces `{{name}}` tags in OOXML XML parts, including tags

@@ -12,6 +12,7 @@ test "fill_pdf writes a field value" {
   let text = @utf8.decode_lossy(filled[:])
   assert_true(text.contains("/V (Alice)"), msg=text)
   assert_true(text.contains("/Prev 342"), msg=text)
+  assert_true(text.contains("/NeedAppearances true"), msg=text)
   let fields = read_fields(filled)
   assert_eq(fields.length(), 1)
   assert_eq(fields[0].name, "name")
