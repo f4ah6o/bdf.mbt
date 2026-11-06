@@ -304,7 +304,10 @@ pub fn fill_overlay(
     let size = if is_button {
       Float::from_double(Double::min(width, height) * 0.8)
     } else {
-      Float::from_double(Double::min(12.0, height * 0.7))
+      match field.font_size {
+        Some(value) if value > 0.0 => Float::from_double(value)
+        _ => Float::from_double(Double::min(12.0, height * 0.7))
+      }
     }
     let field_font = if field.font_name == "" || field.font_name == "Helvetica" {
       font

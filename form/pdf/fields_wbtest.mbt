@@ -71,6 +71,14 @@ test "pdf overlay draws form values" {
       }
     }),
   )
+  assert_true(
+    commands.any(fn(command) {
+      match command {
+        @render.Font(_, size) => size == 8.0
+        _ => false
+      }
+    }),
+  )
   assert_true(text.contains("Alice"), msg=text)
   assert_true(text.contains("Bob"), msg=text)
   assert_true(text.contains("X"), msg=text)
