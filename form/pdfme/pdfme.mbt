@@ -1972,7 +1972,10 @@ fn FieldPainter::draw_table(
   )
   let head_height = match json_field(field, "headStyles") {
     Some(Json::Object(styles)) =>
-      Float::from_double(number_of(styles.get("height"), row_height.to_double()))
+      Float::from_double({
+        let raw = number_of(styles.get("height"), row_height.to_double())
+        if raw > 0.0 { raw } else { row_height.to_double() }
+      })
     _ => row_height
   }
   let padding = Float::from_double(

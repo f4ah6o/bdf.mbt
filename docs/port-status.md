@@ -143,7 +143,8 @@
   and other 1D formats are gaps; QR error-correction levels and version
   bounds, masks, modes (case-insensitive) and margins are honored and
   non-positive text/table font sizes, line
-  heights, row heights, cell padding, border widths and table widths fall
+  heights, header heights, row heights, cell padding, border widths and table
+  widths fall
   back to the defaults (35 tests).
 - `form/schema` writes the JSON Schema of the data of a template from its
   fields and a sample (objects, lists, conditions, pictures/codes, number
