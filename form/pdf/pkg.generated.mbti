@@ -6,6 +6,8 @@ pub fn fill_overlay(Bytes, Bytes, title? : String, skip_read_only? : Bool) -> By
 
 pub fn fill_pdf(Bytes, Bytes, skip_read_only? : Bool) -> Bytes raise PdfFillError
 
+pub fn missing_required(Bytes, Bytes) -> Array[String]
+
 pub fn read_fields(Bytes) -> Array[Field]
 
 // Errors

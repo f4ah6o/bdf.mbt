@@ -440,6 +440,30 @@ fn insert_pdf_name_after(body : String, key : String, value : String, name : Str
 }
 
 ///|
+fn ap_on_state(dict : String) -> String? {
+  let mut i = 0
+  while i < dict.length() {
+    if dict[i].to_char().unwrap() == '/' {
+      let begin = i
+      i += 1
+      while i < dict.length() && !is_space(dict[i].to_char().unwrap()) &&
+        dict[i].to_char().unwrap() != '>' {
+        i += 1
+      }
+      let name = dict[begin:i].to_owned()
+      if name != "/Off" && name != "/N" {
+        return Some(name)
+      }
+    } else if dict[i].to_char().unwrap() == '>' {
+      break
+    } else {
+      i += 1
+    }
+  }
+  None
+}
+
+///|
 fn button_on_state(body : String) -> String? {
   let ap = match body.find("/AP") {
     Some(index) => index
@@ -453,26 +477,40 @@ fn button_on_state(body : String) -> String? {
     Some(index) => n + index + 2
     None => return None
   }
-  let mut i = open
-  while i < body.length() {
-    if body[i].to_char().unwrap() == '/' {
+  ap_on_state(body[open:].to_owned())
+}
+
+///|
+fn button_on_state_full(body : String, text : String) -> String? {
+  match button_on_state(body) {
+    Some(state) => Some(state)
+    None => {
+      let ap = match body.find("/AP") {
+        Some(index) => index
+        None => return None
+      }
+      let n = match body[ap:].find("/N") {
+        Some(index) => ap + index
+        None => return None
+      }
+      let mut i = skip_spaces(body, n + 2)
       let begin = i
-      i += 1
-      while i < body.length() && !is_space(body[i].to_char().unwrap()) &&
-        body[i].to_char().unwrap() != '>' {
+      while i < body.length() && body[i].to_char().unwrap() >= '0' &&
+        body[i].to_char().unwrap() <= '9' {
         i += 1
       }
-      let name = body[begin:i].to_owned()
-      if name != "/Off" && name != "/N" {
-        return Some(name)
+      if i == begin {
+        return None
       }
-    } else if body[i].to_char().unwrap() == '>' {
-      break
-    } else {
-      i += 1
+      let number = @string.parse_int(body[begin:i].to_owned()) catch {
+        _ => return None
+      }
+      match find_object_body(text, number) {
+        Some(stream) => ap_on_state(stream)
+        None => None
+      }
     }
   }
-  None
 }
 
 ///|
@@ -618,7 +656,7 @@ pub fn fill_pdf(
     }
     if name != "" && !(skip_read_only && read_only) {
       if body.contains("/Btn") {
-        let on = match button_on_state(body) {
+        let on = match button_on_state_full(body, text) {
           Some(value) => value
           None => "/Yes"
         }

@@ -192,3 +192,14 @@ test "pdf reports missing required fields" {
   )
 }
 
+///|
+test "fill_pdf resolves appearance streams" {
+  let pdf = @base64.decode(
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgL0Fjcm9Gb3JtIDw8IC9GaWVsZHMgWzQgMCBSXSA+PiA+PgplbmRvYmoKMiAwIG9iago8PCAvVHlwZSAvUGFnZXMgL0tpZHMgWzMgMCBSXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDIwMCAxMDBdIC9Bbm5vdHMgWzQgMCBSXSA+PgplbmRvYmoKNCAwIG9iago8PCAvVHlwZSAvQW5ub3QgL1N1YnR5cGUgL1dpZGdldCAvRlQgL0J0biAvVCAoYWdyZWUpIC9WIC9PZmYgL0FTIC9PZmYgL0FQIDw8IC9OIDUgMCBSID4+IC9SZWN0IFsxMCAyMCAyMCAzMF0gL1AgMyAwIFIgPj4KZW5kb2JqCjUgMCBvYmoKPDwgL09uIDYgMCBSIC9PZmYgNyAwIFIgPj4KZW5kb2JqCjYgMCBvYmoKPDwgL0xlbmd0aCAwID4+CnN0cmVhbQoKZW5kc3RyZWFtCmVuZG9iago3IDAgb2JqCjw8IC9MZW5ndGggMCA+PgpzdHJlYW0KCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDgKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwOTAgMDAwMDAgbiAKMDAwMDAwMDE0NyAwMDAwMCBuIAowMDAwMDAwMjM0IDAwMDAwIG4gCjAwMDAwMDAzNzAgMDAwMDAgbiAKMDAwMDAwMDQxMiAwMDAwMCBuIAowMDAwMDAwNDYxIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgOCAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKNTEwCiUlRU9GCg==",
+  )
+  let filled = fill_pdf(pdf, @utf8.encode("{\"agree\":true}"))
+  let text = @utf8.decode_lossy(filled[:])
+  assert_true(text.contains("/V /On"), msg=text)
+  assert_true(text.contains("/AS /On"), msg=text)
+}
+
