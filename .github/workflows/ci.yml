@@ -14,6 +14,7 @@ jobs:
       matrix:
         target: [js, wasm-gc]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: hustcer/setup-moonbit@v1
@@ -25,6 +26,7 @@ jobs:
 
   demo:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
