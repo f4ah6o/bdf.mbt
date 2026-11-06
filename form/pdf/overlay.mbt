@@ -193,20 +193,10 @@ pub fn fill_overlay(
     if width <= 0.0 || height <= 0.0 {
       continue
     }
-    match field.border_color {
+    match field.background_color {
       Some(color) => {
-        builder.stroke_color(color)
-        let width = match field.border_width {
-          Some(width) => width
-          None => 0.5
-        }
-        if field.border_style == "D" {
-          builder.dash([3.0, 3.0], 0.0)
-        } else {
-          builder.dash([], 0.0)
-        }
-        builder.line(Float::from_double(width), 0, 0, 0.0F)
-        builder.stroke_rect(
+        builder.fill_color(color)
+        builder.fill_rect(
           Float::from_double(x1),
           Float::from_double(y1),
           Float::from_double(width),
@@ -215,10 +205,20 @@ pub fn fill_overlay(
       }
       None => ()
     }
-    match field.background_color {
+    let border_width = match field.border_width {
+      Some(width) => width
+      None => 0.5
+    }
+    match field.border_color {
       Some(color) => {
-        builder.fill_color(color)
-        builder.fill_rect(
+        builder.stroke_color(color)
+        if field.border_style == "D" {
+          builder.dash([3.0, 3.0], 0.0)
+        } else {
+          builder.dash([], 0.0)
+        }
+        builder.line(Float::from_double(border_width), 0, 0, 0.0F)
+        builder.stroke_rect(
           Float::from_double(x1),
           Float::from_double(y1),
           Float::from_double(width),
@@ -239,7 +239,7 @@ pub fn fill_overlay(
               builder.fill_rect(
                 Float::from_double(x1 + offset),
                 Float::from_double(y1),
-                Float::from_double(0.5),
+                Float::from_double(border_width),
                 Float::from_double(height),
               )
             }
