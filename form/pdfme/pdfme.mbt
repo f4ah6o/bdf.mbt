@@ -1721,7 +1721,32 @@ fn base_pdf_document(template : Json) -> (@core.Document, Array[String])? {
 }
 
 ///|
+fn pdfme_table_json(table : @core.Table) -> Json {
+  let columns : Array[Json] = []
+  for column in table.columns {
+    columns.push(
+      Json::object({
+        "name": Json::string(column.name),
+        "type": Json::string(column.kind),
+      }),
+    )
+  }
+  Json::object({
+    "id": Json::string(table.id),
+    "title": Json::string(table.title),
+    "part": Json::string(table.part),
+    "rows": Json::number(table.rows.to_double()),
+    "columns": Json::array(columns),
+    "view": Json::string(table.view),
+    "page": Json::number(table.page.to_double()),
+  })
+}
+
+///|
 fn copy_base_parts(base : @core.Document, writer : @core.DocumentWriter) -> Unit {
+  for table in base.manifest.tables {
+    writer.add_table(pdfme_table_json(table))
+  }
   for part in base.manifest.parts {
     if part.kind == "view" {
       continue
