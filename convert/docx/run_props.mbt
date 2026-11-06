@@ -2,7 +2,6 @@
 // Run properties are retained independently of the text reader until style
 // inheritance and rendering can consume them. Colors and shading are rejected
 // here until theme color resolution is available.
-#derive(Debug, Eq)
 priv struct DocxRunProps {
   fonts : Array[String]
   themes : Array[String]
@@ -28,7 +27,7 @@ priv struct DocxRunProps {
   mut rtl : Bool
   mut tcy : Bool
   mut tcy_fit : Bool
-}
+} derive(Debug, Eq)
 
 ///|
 fn docx_default_run_props() -> DocxRunProps {

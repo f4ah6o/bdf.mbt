@@ -27,6 +27,7 @@ priv struct DocxStyles {
   mut default_table : String
   doc_ppr : DocxXmlNode?
   doc_rpr : DocxXmlNode?
+  theme_fonts : @ooxml.OoxmlThemeFonts
 }
 
 ///|
@@ -46,7 +47,10 @@ fn docx_style_child(node : DocxXmlNode?, name : String) -> DocxXmlNode? {
 }
 
 ///|
-fn docx_styles_from_xml(xml : String) -> DocxStyles raise {
+fn docx_styles_from_xml(
+  xml : String,
+  theme_fonts~ : @ooxml.OoxmlThemeFonts = @ooxml.default_theme_fonts(),
+) -> DocxStyles raise {
   let root = docx_text_xml(xml)
   if root.name() != "styles" {
     raise InvalidDocx("expected DOCX styles")
@@ -67,6 +71,7 @@ fn docx_styles_from_xml(xml : String) -> DocxStyles raise {
     default_table: "",
     doc_ppr,
     doc_rpr,
+    theme_fonts,
   }
   for node in root.children {
     if node.name() != "style" {
@@ -234,6 +239,72 @@ fn DocxRunProps::copy(self : DocxRunProps) -> DocxRunProps {
 }
 
 ///|
+/// Turn a WordprocessingML theme font attribute ("minorHAnsi",
+/// "majorEastAsia", "minorBidi") into the OOXML typeface token
+/// ("+mn-lt", "+mj-ea", "+mn-cs").
+fn docx_theme_typeface(theme : String) -> String {
+  let major = theme.has_prefix("major")
+  let kind = if theme.contains("EastAsia") {
+    "-ea"
+  } else if theme.contains("Bidi") {
+    "-cs"
+  } else {
+    "-lt"
+  }
+  (if major { "+mj" } else { "+mn" }) + kind
+}
+
+///|
+/// The OOXML script tag for a Word language, used to pick a theme's
+/// East Asian typeface (Jpan, Hans, Hant, Hang).
+fn docx_language_script(language : String) -> String {
+  let lang = language.to_lower()
+  if lang.has_prefix("ja") {
+    "Jpan"
+  } else if lang.has_prefix("ko") {
+    "Hang"
+  } else if lang.has_prefix("zh") {
+    if lang.contains("tw") ||
+      lang.contains("hk") ||
+      lang.contains("mo") ||
+      lang.contains("hant") {
+      "Hant"
+    } else {
+      "Hans"
+    }
+  } else {
+    ""
+  }
+}
+
+///|
+fn DocxRunProps::resolve_theme_fonts(
+  self : DocxRunProps,
+  theme_fonts : @ooxml.OoxmlThemeFonts,
+) -> Unit {
+  let script = docx_language_script(self.languages[1])
+  for i in 0..<4 {
+    if self.themes[i] == "" {
+      continue
+    }
+    let resolved = theme_fonts.resolve(
+      docx_theme_typeface(self.themes[i]),
+      script,
+    )
+    if resolved != "" {
+      self.fonts[i] = resolved
+    }
+    self.themes[i] = ""
+  }
+  if self.fonts[2] == "" {
+    let east_asian = theme_fonts.resolve("+mn-ea", script)
+    if east_asian != "" {
+      self.fonts[2] = east_asian
+    }
+  }
+}
+
+///|
 fn DocxStyles::resolve_run(
   self : DocxStyles,
   paragraph_style : String,
@@ -265,6 +336,7 @@ fn DocxStyles::resolve_run(
   }
   docx_style_apply_rpr(props, direct)
   props.specified = 0
+  props.resolve_theme_fonts(self.theme_fonts)
   props
 }
 

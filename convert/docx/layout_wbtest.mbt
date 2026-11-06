@@ -1073,7 +1073,7 @@ test "DOCX inline drawings stay in the line" {
   let result = convert(docx_test_float_docx(blocks))
   let commands = docx_test_page_commands(result, "pages", 0, "body")
   assert_true(
-    docx_test_image_at(commands, 104.5, 72.0),
+    docx_test_image_at(commands, 107.5, 72.0),
     msg="the inline picture follows the text in the line",
   )
   let mut before = -1.0
@@ -1097,7 +1097,7 @@ test "DOCX inline drawings stay in the line" {
     msg="the text before the picture is at the line's start",
   )
   assert_true(
-    (after - 140.5).abs() < 0.01,
+    (after - 143.5).abs() < 0.01,
     msg="the text after the picture continues in the line",
   )
   assert_true(same_line, msg="the line is not broken around the picture")
@@ -2072,5 +2072,24 @@ test "DOCX page borders are drawn in a background layer" {
   }
   assert_eq(red, 4)
   assert_eq(strokes, 4)
+}
+
+///|
+test "DOCX paragraphs emit heading and paragraph marks" {
+  let blocks = "<w:p><w:pPr><w:outlineLvl w:val=\"0\"/></w:pPr>" +
+    "<w:r><w:t>Title</w:t></w:r></w:p>" +
+    "<w:p><w:r><w:t>Body</w:t></w:r></w:p>"
+  let commands = docx_test_page_commands(
+    convert(docx_test_docx(blocks, DOCX_TEST_SECTION, [])), "pages", 0, "body",
+  )
+  let marks : Array[(Int32, String)] = []
+  for command in commands {
+    match command {
+      @render.Mark(kind, payload) => marks.push((kind, payload))
+      _ => ()
+    }
+  }
+  assert_true(marks.contains((6, "1")), msg="heading mark")
+  assert_true(marks.contains((0, "")), msg="paragraph mark")
 }
 

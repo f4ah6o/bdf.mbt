@@ -1,10 +1,9 @@
 ///|
 // Identity of a slide, layout, or master placeholder.
-#derive(Debug, Eq)
 priv struct PptxPlaceholder {
   kind : String
   index : String?
-}
+} derive(Debug, Eq)
 
 ///|
 fn pptx_master_placeholder_type(kind : String) -> String {

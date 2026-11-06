@@ -17,6 +17,7 @@ priv struct DocxLineItem {
   text : String
   field_format : String
   link : String
+  language : String
   font : String
   weight : Int32
   style : Int32
@@ -35,16 +36,44 @@ priv struct DocxLineItem {
 }
 
 ///|
-fn docx_font_family(props : DocxRunProps) -> String {
-  let name = if props.fonts.is_empty() { "" } else { props.fonts[0] }
-  let lower = name.to_lower()
-  if lower.contains("courier") || lower.contains("mono") {
-    "monospace"
-  } else if lower.contains("times") || lower.contains("serif") {
-    "serif"
-  } else {
-    "sans-serif"
+///|
+/// The family of a FONT record: the requested family followed by the generic
+/// family, as upstream's fontset writes it when no face is embedded.
+fn docx_text_is_east_asian(text : String) -> Bool {
+  let mut seen = false
+  for c in text {
+    if c == ' ' || c == '\u{3000}' || c == '\t' || c == '\n' {
+      continue
+    }
+    seen = true
+    if !@fontdb.is_cjk(c.to_int()) {
+      return false
+    }
   }
+  seen
+}
+
+///|
+fn docx_item_language(props : DocxRunProps, text : String) -> String {
+  if text == "" {
+    return ""
+  }
+  if docx_text_is_east_asian(text) {
+    props.languages[1]
+  } else {
+    props.languages[0]
+  }
+}
+
+///|
+fn docx_font_family(props : DocxRunProps, text : String) -> String {
+  let mut name = if props.fonts.is_empty() { "" } else { props.fonts[0] }
+  if props.fonts.length() > 2 &&
+    props.fonts[2] != "" &&
+    docx_text_is_east_asian(text) {
+    name = props.fonts[2]
+  }
+  @fontdb.css_family(name)
 }
 
 ///|
@@ -82,7 +111,7 @@ fn docx_char_width(c : Char, size : Double) -> Double {
   } else if code >= 0x2e80 || c == '\u3000' {
     size
   } else {
-    size * 0.5
+    size * 0.55
   }
 }
 

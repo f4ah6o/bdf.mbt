@@ -15,11 +15,10 @@ priv struct PptxPresentation {
 }
 
 ///|
-#derive(Debug, Eq)
 priv struct PptxSlide {
   part : String
   hidden : Bool
-}
+} derive(Debug, Eq)
 
 ///|
 fn pptx_attribute(

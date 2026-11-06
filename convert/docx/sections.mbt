@@ -1,6 +1,5 @@
 ///|
 // Section geometry, columns, text grid, and story references for document layout.
-#derive(Debug, Eq)
 priv struct DocxSection {
   mut width : Double
   mut height : Double
@@ -32,10 +31,9 @@ priv struct DocxSection {
   mut border_from_text : Bool
   mut border_first : Bool
   mut border_not_first : Bool
-}
+} derive(Debug, Eq)
 
 ///|
-#derive(Debug, Eq)
 priv struct DocxBorder {
   style : String
   width : Double
@@ -44,7 +42,7 @@ priv struct DocxBorder {
   theme_color : String
   theme_tint : String
   theme_shade : String
-}
+} derive(Debug, Eq)
 
 ///|
 priv suberror DocxError {

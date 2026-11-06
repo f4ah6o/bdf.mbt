@@ -1,7 +1,6 @@
 ///|
 // The supported paragraph properties. Border and shading require the Office
 // theme, so applying either is rejected until that resolver is implemented.
-#derive(Debug, Eq)
 priv struct DocxParagraphProps {
   mut alignment : String
   mut left : Double
@@ -38,15 +37,14 @@ priv struct DocxParagraphProps {
   mut borders : Array[DocxLineBorder?]
   mut tabs : Array[DocxTab]
   mut tabs_truncated : Bool
-}
+} derive(Debug, Eq)
 
 ///|
-#derive(Debug, Eq)
 priv struct DocxTab {
   position : Double
   alignment : String
   leader : String
-}
+} derive(Debug, Eq)
 
 ///|
 fn docx_default_paragraph_props() -> DocxParagraphProps {

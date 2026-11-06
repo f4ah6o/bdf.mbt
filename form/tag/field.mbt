@@ -7,7 +7,6 @@ pub const FIELD_IMAGE : String = "image"
 ///|
 /// What the tags of a template say of a name: how a filler finds it, where
 /// it is in sections, and what a program that asks for it needs to know.
-#derive(Debug, Eq)
 pub(all) struct Field {
   name : String
   kind : String
@@ -26,7 +25,7 @@ pub(all) struct Field {
   mut default : Json
   mut max_len : Int
   mut multiline : Bool
-}
+} derive(Debug, Eq)
 
 ///|
 fn field_new(name : String, kind : String, in_sections : Array[String]) -> Field {

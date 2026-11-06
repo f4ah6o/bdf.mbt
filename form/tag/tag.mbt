@@ -1,7 +1,6 @@
 ///|
 // Tags of form templates: the text between double braces that a filler
 // replaces with data. Tags never run code; they name values and sections.
-#derive(Debug, Eq)
 pub(all) enum TagKind {
   Text
   Value
@@ -9,7 +8,7 @@ pub(all) enum TagKind {
   Inverted
   Close
   Image
-}
+} derive(Debug, Eq)
 
 ///|
 pub const MODE_ROWS : String = "rows"
@@ -36,7 +35,6 @@ pub suberror TagError {
 }
 
 ///|
-#derive(Debug, Eq)
 pub(all) struct TagToken {
   kind : TagKind
   mut text : String
@@ -56,7 +54,7 @@ pub(all) struct TagToken {
   mut has_quiet : Bool
   mut pos : Int
   mut end : Int
-}
+} derive(Debug, Eq)
 
 ///|
 fn tag_token(kind : TagKind) -> TagToken {

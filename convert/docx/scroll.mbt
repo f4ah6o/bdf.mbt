@@ -68,6 +68,8 @@ fn docx_scroll_draw(
     warnings,
     bookmark_pages: Map([]),
     field_value: fn(_, _) { "" },
+    doc_language: "",
+    language: Ref(""),
   }
   let mut y = 0.0
   for line in lines {
@@ -503,6 +505,7 @@ fn docx_render_scroll(
             text,
             link: "",
             field_format: "",
+            language: "",
             font: "sans-serif",
             weight: 400,
             style: 0,

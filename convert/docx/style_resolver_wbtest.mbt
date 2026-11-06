@@ -45,6 +45,25 @@ fn check_docx_style(
 }
 
 ///|
+test "DOCX language tags select the theme East Asian script" {
+  assert_eq(docx_language_script("ja-JP"), "Jpan")
+  assert_eq(docx_language_script("zh-CN"), "Hans")
+  assert_eq(docx_language_script("zh-TW"), "Hant")
+  assert_eq(docx_language_script("ko-KR"), "Hang")
+  assert_eq(docx_language_script("en-US"), "")
+}
+
+///|
+test "DOCX run language follows the script of the text" {
+  let props = docx_default_run_props()
+  props.languages[0] = "en-US"
+  props.languages[1] = "ja-JP"
+  assert_eq(docx_item_language(props, "Latin text"), "en-US")
+  assert_eq(docx_item_language(props, "日本語の文章"), "ja-JP")
+  assert_eq(docx_item_language(props, ""), "")
+}
+
+///|
 test "DOCX style run copies isolate mutable arrays" {
   let props = docx_default_run_props()
   props.fonts[0] = "First"

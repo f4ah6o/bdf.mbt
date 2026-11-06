@@ -207,7 +207,8 @@ fn docx_layout_paragraph(
       text,
       link: item.link,
       field_format: "",
-      font: docx_font_family(item.props),
+      language: docx_item_language(item.props, text),
+      font: docx_font_family(item.props, text),
       weight: docx_font_weight(item.props),
       style: docx_font_style(item.props),
       size,
@@ -283,7 +284,8 @@ fn docx_layout_paragraph(
                 text: "",
                 link: "",
                 field_format: "",
-                font: docx_font_family(item.props),
+                language: "",
+                font: docx_font_family(item.props, ""),
                 weight: docx_font_weight(item.props),
                 style: docx_font_style(item.props),
                 size: item.props.size,
@@ -353,7 +355,8 @@ fn docx_layout_paragraph(
               text: text.to_string(),
               link: item.link,
               field_format: "",
-              font: docx_font_family(item.props),
+              language: "",
+              font: docx_font_family(item.props, text.to_string()),
               weight: docx_font_weight(item.props),
               style: docx_font_style(item.props),
               size,
@@ -454,6 +457,7 @@ fn docx_layout_paragraph(
             text: item.text,
             link: item.link,
             field_format: "",
+            language: docx_item_language(item.props, item.text),
             font: "sans-serif",
             weight: 400,
             style: 0,
@@ -482,6 +486,7 @@ fn docx_layout_paragraph(
             text: item.text,
             link: item.link,
             field_format: "",
+            language: docx_item_language(item.props, item.text),
             font: "sans-serif",
             weight: 400,
             style: 0,
@@ -508,6 +513,7 @@ fn docx_layout_paragraph(
           text: item.text,
           link: "",
           field_format: "",
+          language: "",
           font: "sans-serif",
           weight: 400,
           style: 0,
@@ -536,7 +542,8 @@ fn docx_layout_paragraph(
           text: item.text,
           link: item.link,
           field_format: item.field_format,
-          font: docx_font_family(item.props),
+          language: docx_item_language(item.props, item.text),
+          font: docx_font_family(item.props, item.text),
           weight: docx_font_weight(item.props),
           style: docx_font_style(item.props),
           size,
@@ -989,6 +996,80 @@ fn docx_stroke_border(
 }
 
 ///|
+/// The MARK that starts a paragraph: a heading with its outline level, or a
+/// plain paragraph.
+fn docx_mark_paragraph_start(
+  object : @core.ObjectBuilder,
+  props : DocxParagraphProps,
+) -> Unit {
+  if props.outline >= 0 && props.outline < 6 && props.outline != 9 {
+    object.mark(
+      @core.MARK_HEADING,
+      (props.outline + 1).to_string(),
+    )
+  } else {
+    object.mark(@core.MARK_PARAGRAPH, "")
+  }
+}
+
+///|
+fn docx_break_space(c : Char) -> Bool {
+  c == ' ' ||
+  c == '\u{3000}' ||
+  c == '\u{2009}' ||
+  c == '\u{2002}' ||
+  c == '\u{2003}'
+}
+
+///|
+/// Whether two wrapped lines join without a space, as Word's line breaking
+/// does between East Asian characters.
+fn docx_lines_join(a : Char, b : Char) -> Bool {
+  a.to_int() != 0 &&
+  b.to_int() != 0 &&
+  !docx_break_space(a) &&
+  (@fontdb.is_cjk(a.to_int()) || @fontdb.is_cjk(b.to_int()))
+}
+
+///|
+fn docx_line_edges(line : DocxParaLine) -> (Char, Char) {
+  let mut first = '\u{0}'
+  let mut last = '\u{0}'
+  for item in line.items {
+    if item.kind != "text" || item.text == "" {
+      continue
+    }
+    for c in item.text {
+      if first == '\u{0}' {
+        first = c
+      }
+      last = c
+    }
+  }
+  (first, last)
+}
+
+///|
+/// The MARK before a line of a paragraph. The first line starts the
+/// paragraph (HEADING or PARAGRAPH); a continuation gets WRAP when the lines
+/// join without a space, and LINE otherwise.
+fn docx_mark_line(
+  object : @core.ObjectBuilder,
+  first : Bool,
+  previous_last : Char,
+  next_first : Char,
+  props : DocxParagraphProps,
+) -> Unit {
+  if first {
+    docx_mark_paragraph_start(object, props)
+  } else if docx_lines_join(previous_last, next_first) {
+    object.mark(@core.MARK_WRAP, "")
+  } else {
+    object.mark(@core.MARK_LINE, "")
+  }
+}
+
+///|
 fn docx_emit_para_line(
   object : @core.ObjectBuilder,
   writer : @core.DocumentWriter,
@@ -1002,6 +1083,8 @@ fn docx_emit_para_line(
   bookmark_pages : Map[String, Int32],
   field_value : (String, String) -> String,
   warnings : Array[String],
+  doc_language : String,
+  language : Ref[String],
 ) -> Unit raise {
   match line.shade {
     Some(color) => {
@@ -1152,6 +1235,16 @@ fn docx_emit_para_line(
       docx_text_width(text, item.size)
     } else {
       item.advance
+    }
+    if (item.kind == "text" || item.kind == "field") && text != "" {
+      let mut tag = item.language
+      if tag == doc_language {
+        tag = ""
+      }
+      if tag != language.val {
+        object.mark(@core.MARK_LANG, tag)
+        language.val = tag
+      }
     }
     let key = item.font +
       "|" +
@@ -1681,6 +1774,8 @@ priv struct DocxEmitContext {
   warnings : Array[String]
   bookmark_pages : Map[String, Int32]
   field_value : (String, String) -> String
+  doc_language : String
+  language : Ref[String]
 }
 
 ///|
@@ -1848,6 +1943,8 @@ fn docx_emit_table_lines(
             ctx.bookmark_pages,
             ctx.field_value,
             ctx.warnings,
+            ctx.doc_language,
+            ctx.language,
           )
         }
       DocxCellAnchors(anchors) =>
@@ -2120,6 +2217,7 @@ priv struct DocxFlow {
   mut section_index : Int32
   mut section_start : Int32
   mut story_kind : String
+  language : Ref[String]
   mut col : Int32
   mut x0 : Double
   mut y : Double
@@ -2405,6 +2503,7 @@ fn docx_flow_emit_story(
   if part == "" {
     return (false, 0.0)
   }
+  flow.language.val = ""
   let width = Double::max(
     flow.section.width - flow.section.left - flow.section.right,
     36.0,
@@ -2430,6 +2529,8 @@ fn docx_flow_emit_story(
     warnings: flow.warnings,
     bookmark_pages: flow.bookmark_pages,
     field_value: fn(typ, format) { docx_flow_field_value(flow, typ, format) },
+    doc_language: flow.document.language,
+    language: flow.language,
   }
   for line in layout.lines {
     docx_emit_para_line(
@@ -2445,6 +2546,8 @@ fn docx_flow_emit_story(
       ctx.bookmark_pages,
       ctx.field_value,
       flow.warnings,
+      ctx.doc_language,
+      ctx.language,
     )
     y += line.height
   }
@@ -2495,6 +2598,7 @@ fn docx_flow_new_page(flow : DocxFlow) -> Unit raise {
   }
   flow.line_pitch = docx_section_grid_pitch(flow.section)
   flow.vertical = flow.section.vertical
+  flow.language.val = ""
   flow.body = @core.ObjectBuilder::new()
   if flow.section.vertical {
     flow.body.save()
@@ -3291,18 +3395,8 @@ fn docx_flow_flush_page(flow : DocxFlow) -> Unit raise {
     Float::from_double(section.width),
     Float::from_double(section.height),
   )
-  flow.header_object.set_bbox(
-    0.0F,
-    0.0F,
-    Float::from_double(section.width),
-    Float::from_double(section.height),
-  )
-  flow.footer_object.set_bbox(
-    0.0F,
-    0.0F,
-    Float::from_double(section.width),
-    Float::from_double(section.height),
-  )
+  // The header and the footer keep the bounding box of what they draw;
+  // the body is the page's box.
   let encoded = flow.body.encode()
   let hash = flow.writer.add_part("obj", encoded)
   let page_index = flow.page_index
@@ -3447,13 +3541,21 @@ fn docx_flow_emit_paragraph(
     warnings: flow.warnings,
     bookmark_pages: flow.bookmark_pages,
     field_value: fn(typ, format) { docx_flow_field_value(flow, typ, format) },
+    doc_language: flow.document.language,
+    language: flow.language,
   }
+  let mut emitted = false
+  let mut previous_last = '\u{0}'
   fn emit(line : DocxParaLine, x : Double, available : Double) -> Unit raise {
     for item in line.items {
       if item.kind == "bookmark" {
         flow.bookmark_pages[item.text] = flow.page_number
       }
     }
+    let (next_first, next_last) = docx_line_edges(line)
+    docx_mark_line(flow.body, !emitted, previous_last, next_first, props)
+    previous_last = next_last
+    emitted = true
     docx_emit_para_line(
       flow.body,
       flow.writer,
@@ -3467,6 +3569,8 @@ fn docx_flow_emit_paragraph(
       ctx.bookmark_pages,
       ctx.field_value,
       flow.warnings,
+      ctx.doc_language,
+      ctx.language,
     )
   }
   // The floating objects of the paragraph stand beside its first line. A
@@ -3707,6 +3811,8 @@ fn docx_flow_table_context(flow : DocxFlow) -> DocxEmitContext {
     warnings: flow.warnings,
     bookmark_pages: flow.bookmark_pages,
     field_value: fn(typ, format) { docx_flow_field_value(flow, typ, format) },
+    doc_language: flow.document.language,
+    language: flow.language,
   }
 }
 
@@ -3923,6 +4029,7 @@ fn docx_layout_document(
     section_index: 0,
     section_start: start,
     story_kind: "default",
+    language: Ref(""),
     col: 0,
     x0: section.left,
     y: section.top,
@@ -4045,6 +4152,7 @@ fn docx_render_document(
       "id": Json::string("pages"),
       "kind": Json::string("flow"),
       "pages": Json::array(pages),
+      "continuous": Json::object({ "gap": Json::number(24.0) }),
     }
     if title != "" {
       view["title"] = Json::string(title)

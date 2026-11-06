@@ -4,7 +4,6 @@
 // text of the page. The offsets are the parsed wp:posOffset values; the
 // layout resolves them against the page, the margins, the column or the
 // paragraph.
-#derive(Debug, Eq)
 priv struct DocxAnchor {
   h_rel : String
   v_rel : String
@@ -22,12 +21,11 @@ priv struct DocxAnchor {
   effect_right : Double
   behind : Bool
   z : Int32
-}
+} derive(Debug, Eq)
 
 ///|
 // This is an internal, deliberately limited model. A rejected element is not
 // silently converted into plain text: later stages must add its semantics.
-#derive(Debug, Eq)
 priv struct DocxTextItem {
   kind : String
   text : String
@@ -58,35 +56,32 @@ priv struct DocxTextItem {
   mut shade : UInt32?
   mut border_width : Double
   mut border_color : UInt32?
-}
+} derive(Debug, Eq)
 
 ///|
-#derive(Debug, Eq)
 priv struct DocxTextParagraph {
   props : DocxParagraphProps
   mark : DocxRunProps
   items : Array[DocxTextItem]
   section_index : Int32
-}
+} derive(Debug, Eq)
 
 ///|
 // A border width of zero means that the side is not drawn.
-#derive(Debug, Eq)
 priv struct DocxLineBorder {
   width : Double
   color : UInt32
   space : Double
   style : String
-}
+} derive(Debug, Eq)
 
 ///|
-#derive(Debug, Eq)
 priv struct DocxMargins {
   top : Double?
   left : Double?
   bottom : Double?
   right : Double?
-}
+} derive(Debug, Eq)
 
 ///|
 priv struct DocxTableCell {
@@ -2385,15 +2380,18 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
       None => ()
     }
   }
+  let theme_fonts = package.theme_fonts(part)
   let styles = match package.relationship_of_type(part, "/styles") {
     Some(rel) => {
       if rel.external {
         docx_text_unsupported("external styles")
       }
       let data = package.read(rel.target)
-      docx_styles_from_xml(@utf8.decode(data[:], ignore_bom=true))
+      docx_styles_from_xml(
+        @utf8.decode(data[:], ignore_bom=true), theme_fonts~,
+      )
     }
-    None => docx_styles_from_xml("<styles/>")
+    None => docx_styles_from_xml("<styles/>", theme_fonts~)
   }
   let bytes = package.read(part)
   let xml = @utf8.decode(bytes[:], ignore_bom=true)
@@ -2605,3 +2603,6 @@ fn docx_pick_language(
     east_asian
   }
 }
+
+///|
+
