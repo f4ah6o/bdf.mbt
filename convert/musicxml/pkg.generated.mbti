@@ -2,10 +2,17 @@
 package "f4ah6o/bdf/convert/musicxml"
 
 import {
+  "f4ah6o/bdf/convert",
+  "f4ah6o/bdf/convert/midi",
   "f4ah6o/bdf/convert/music",
+  "f4ah6o/bdf/font/db",
 }
 
 // Values
+pub fn convert(Bytes, @db.Database, options? : @midi.MidiScoreOptions, guitar_tab? : Bool, page_ranges? : Array[@convert.PageSpan]?) -> @midi.MidiScoreResult raise
+
+pub fn detect(Bytes) -> Bool
+
 pub fn detect_musicxml(Bytes, Bytes) -> Bool
 
 pub fn detect_musicxml_text(Bytes) -> Bool
@@ -45,6 +52,10 @@ pub fn musicxml_utf16_order(Bytes) -> (Bool, Bool)
 pub fn read_musicxml_input(Bytes) -> Bytes raise MusicXmlInputError
 
 // Errors
+pub suberror MusicXmlConvertError {
+  MusicXmlInvalid(String)
+}
+
 pub suberror MusicXmlInputError {
   InvalidMusicXmlInput(String)
 }

@@ -267,6 +267,22 @@ async fn NativeConverterState::dispatch(
     native_convert_csv(request, data, name, kind == "open", database)
     return
   }
+  if format == "markdown" {
+    native_convert_markdown(self, request, data, kind == "open")
+    return
+  }
+  if format == "html" {
+    native_convert_html(self, request, data, kind == "open")
+    return
+  }
+  if format == "epub" {
+    native_convert_epub(self, request, data, kind == "open")
+    return
+  }
+  if format == "audio" {
+    native_convert_audio(request, data, kind == "open")
+    return
+  }
   if format == "font" || (format == "" && @font.detect(data)) {
     native_convert_font(request, data, kind == "open", database)
     return
@@ -1259,9 +1275,11 @@ fn native_convert_pptx(
   opened : Bool,
   database : @fontdb.Database?,
 ) -> Unit {
+  let pages_option = native_converter_option(request, "pages")
   let result = @pptx.convert(
     data,
     title=native_converter_param(request, "title"),
+    pages=pages_option,
     db=database,
   ) catch {
     @pptx.PptxInvalid(message) => {
@@ -1273,10 +1291,12 @@ fn native_convert_pptx(
       return
     }
   }
-  let bdf = native_select_pages(request, result.bdf, result.pages)
-  if opened &&
-    native_converter_option(request, "pages") == "" &&
-    result.pages > 0 {
+  let bdf = if pages_option == "" {
+    native_select_pages(request, result.bdf, result.pages)
+  } else {
+    result.bdf
+  }
+  if opened && pages_option == "" && result.pages > 0 {
     let id = state.next_stream
     state.next_stream += 1
     state.streams[id] = {

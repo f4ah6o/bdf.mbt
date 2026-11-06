@@ -1,10 +1,18 @@
 import {
+  "f4ah6o/bdf/convert",
   "f4ah6o/bdf/convert/csv",
+  "f4ah6o/bdf/convert/midi",
   "f4ah6o/bdf/convert/music",
   "f4ah6o/bdf/encoding/zip",
+  "f4ah6o/bdf/font/db",
   "Milky2018/xml",
   "moonbitlang/core/string",
   "moonbitlang/core/encoding/utf8",
 }
+
+import {
+  "f4ah6o/bdf/core",
+  "moonbitlang/core/encoding/base64",
+} for "wbtest"
 
 supported_targets = "+js+wasm-gc"
