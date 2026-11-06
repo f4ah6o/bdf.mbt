@@ -153,8 +153,9 @@
 - `convert/textform` lays the image out as a fixed BDF view: grid columns,
   baseline, paper/body layers, tall characters, paragraph/table/cell marks,
   the print image as the `text` part, a text index and the `pages` option;
-  `convert`/`convert_sources` fill and render in one step (4 tests). Font
-  embedding and the font options of the upstream converter remain.
+  `convert`/`convert_sources` fill and render in one step, using the front
+  matter font family (5 tests). Font embedding and the remaining font
+  options of the upstream converter remain.
 - Next are the textform font options, the form partials and the other
   per-format fillers.
 - CI runs `moon check/test/build` for js and wasm-gc, a demo job that
