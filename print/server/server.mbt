@@ -447,7 +447,15 @@ pub fn Server::handle_with_document(
     for job in self.jobs {
       let done = @ipp.job_state_done(job.state)
       let take = if which == "completed" {
-        done
+        job.state == @ipp.JOB_COMPLETED
+      } else if which == "aborted" {
+        job.state == @ipp.JOB_ABORTED
+      } else if which == "canceled" {
+        job.state == @ipp.JOB_CANCELED
+      } else if which == "pending" {
+        job.state == @ipp.JOB_PENDING
+      } else if which == "processing" {
+        job.state == @ipp.JOB_PROCESSING
       } else if which == "all" {
         true
       } else {

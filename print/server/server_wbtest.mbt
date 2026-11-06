@@ -501,3 +501,23 @@ test "ipp server reports the job user" {
   assert_eq(user, "alice")
 }
 
+///|
+test "ipp server lists aborted jobs" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  ignore(server.handle(client.create_job("aborted", [])))
+  server.jobs[0].state = @ipp.JOB_ABORTED
+  let request = client.request(@ipp.OP_GET_JOBS)
+  request.add(@ipp.TAG_OPERATION, [@ipp.attr("which-jobs", [@ipp.keyword("aborted")])])
+  let response = server.handle(request)
+  let group = match response.group(@ipp.TAG_JOB) {
+    Some(group) => group
+    None => fail("missing aborted job")
+  }
+  let name = match group.get("job-name") {
+    Some(attribute) => attribute.text()
+    None => ""
+  }
+  assert_eq(name, "aborted")
+}
+
