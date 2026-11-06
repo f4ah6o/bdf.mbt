@@ -120,6 +120,18 @@ fn overlay_mask(value : String) -> String {
 }
 
 ///|
+fn overlay_shade(color : UInt32, factor : Double) -> UInt32 {
+  let channel = fn(value : UInt32) -> UInt32 {
+    let scaled = value.to_double() * factor
+    (if scaled > 255.0 { 255 } else if scaled < 0.0 { 0 } else { scaled.to_int() }).to_uint()
+  }
+  (channel((color >> 24) & 0xffU) << 24) |
+  (channel((color >> 16) & 0xffU) << 16) |
+  (channel((color >> 8) & 0xffU) << 8) |
+  (color & 0xffU)
+}
+
+///|
 /// Draw the values of the AcroForm fields at their rectangles on blank
 /// pages, for printing onto preprinted forms. This does not fill the PDF.
 pub fn fill_overlay(
@@ -221,6 +233,36 @@ pub fn fill_overlay(
         }
         if field.border_style == "U" {
           builder.fill_color(color)
+          builder.fill_rect(
+            Float::from_double(x1),
+            Float::from_double(y1),
+            Float::from_double(width),
+            Float::from_double(border_width),
+          )
+        } else if field.border_style == "B" || field.border_style == "I" {
+          let beveled = field.border_style == "B"
+          let light = overlay_shade(color, if beveled { 1.35 } else { 0.55 })
+          let dark = overlay_shade(color, if beveled { 0.55 } else { 1.35 })
+          builder.fill_color(light)
+          builder.fill_rect(
+            Float::from_double(x1),
+            Float::from_double(y1 + height - border_width),
+            Float::from_double(width),
+            Float::from_double(border_width),
+          )
+          builder.fill_rect(
+            Float::from_double(x1),
+            Float::from_double(y1),
+            Float::from_double(border_width),
+            Float::from_double(height),
+          )
+          builder.fill_color(dark)
+          builder.fill_rect(
+            Float::from_double(x1 + width - border_width),
+            Float::from_double(y1),
+            Float::from_double(border_width),
+            Float::from_double(height),
+          )
           builder.fill_rect(
             Float::from_double(x1),
             Float::from_double(y1),
