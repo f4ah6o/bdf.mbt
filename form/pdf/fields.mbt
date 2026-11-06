@@ -305,8 +305,8 @@ fn find_options(text : String, start : Int, limit : Int) -> Array[String] {
     if c == ']' {
       break
     }
-    if c == '(' {
-      match literal_string(text, i) {
+    if c == '(' || c == '<' {
+      match field_name_string(text, i) {
         Some((value, end)) => {
           options.push(value)
           i = end
