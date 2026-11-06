@@ -571,7 +571,15 @@ pub fn missing_required(pdf_bytes : Bytes, data_bytes : Bytes) -> Array[String] 
         }
       _ => ""
     }
-    if value == "" {
+    let has_values = match data {
+      Json::Object(object) =>
+        match object.get(field.name) {
+          Some(Json::Array(items)) => items.length() > 0
+          _ => false
+        }
+      _ => false
+    }
+    if value == "" && !has_values {
       missing.push(field.name)
     }
   }

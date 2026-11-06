@@ -190,6 +190,10 @@ test "pdf reports missing required fields" {
     missing_required(pdf, @utf8.encode("{\"note\":\"Hello\"}")),
     [],
   )
+  assert_eq(
+    missing_required(pdf, @utf8.encode("{\"note\":[\"Hello\"]}")),
+    [],
+  )
 }
 
 ///|
