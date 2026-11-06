@@ -1440,8 +1440,14 @@ fn FieldPainter::draw_table(
   let row_height = Float::from_double(
     number_of(json_field(field, "rowHeight"), 6.0),
   )
+  let head_height = match json_field(field, "headStyles") {
+    Some(Json::Object(styles)) =>
+      Float::from_double(number_of(styles.get("height"), row_height.to_double()))
+    _ => row_height
+  }
   let mut y = y_top
   let draw_row = fn(values : Array[String], head_row : Bool) raise PdfmeError {
+    let height = if head_row { head_height } else { row_height }
     let row_size = if head_row { head_size } else { size }
     self.builder.font(font, row_size) catch {
       _ => raise PdfmeError("pdfme: a font cannot be set")
@@ -1449,7 +1455,7 @@ fn FieldPainter::draw_table(
     if head_row {
       if head_background != 0x00000000 {
         self.builder.fill_color(head_background)
-        self.builder.fill_rect(x, y - row_height, width, row_height)
+        self.builder.fill_rect(x, y - height, width, height)
       }
       self.builder.fill_color(head_color)
     } else {
@@ -1473,17 +1479,18 @@ fn FieldPainter::draw_table(
     }
     for i in 0..=columns {
       let line_x = x + edges[i]
-      stroke_segment(self.builder, line_x, y, line_x, y - row_height)
+      stroke_segment(self.builder, line_x, y, line_x, y - height)
     }
     stroke_segment(self.builder, x, y, x + width, y)
-    stroke_segment(self.builder, x, y - row_height, x + width, y - row_height)
-    y = y - row_height
+    stroke_segment(self.builder, x, y - height, x + width, y - height)
+    y = y - height
   }
   if head.length() > 0 {
     draw_row(head, true)
   }
   let mut drawn = 0
-  let max_rows = Float::to_int(Float::floor(height / row_height))
+  let header_height = if head.length() > 0 { head_height } else { 0.0F }
+  let max_rows = Float::to_int(Float::floor((height - header_height) / row_height))
   for row in rows {
     if drawn >= max_rows {
       self.warnings.push("pdfme: a table is cut at the page")
