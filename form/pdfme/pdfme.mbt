@@ -1506,6 +1506,13 @@ fn FieldPainter::draw_barcode(
   width : Float,
   height : Float,
 ) -> Unit raise PdfmeError {
+  match json_field(field, "backgroundColor") {
+    Some(value) => {
+      self.builder.fill_color(color_of(Some(value), 0xffffffff))
+      self.builder.fill_rect(x, y_top - height, width, height)
+    }
+    None => ()
+  }
   let format = text_of(json_field(field, "format"), "code39")
   if format == "ean13" {
     self.draw_ean13(field, data, x, y_top, width, height)
