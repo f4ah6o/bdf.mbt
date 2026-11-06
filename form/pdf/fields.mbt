@@ -47,6 +47,15 @@ fn hex_string(text : String, start : Int) -> (String, Int)? {
         let mut j = 2
         while j + 1 < data.length() {
           let code = (data[j].to_int() << 8) | data[j + 1].to_int()
+          if code >= 0xd800 && code <= 0xdbff && j + 3 < data.length() {
+            let low = (data[j + 2].to_int() << 8) | data[j + 3].to_int()
+            if low >= 0xdc00 && low <= 0xdfff {
+              let scalar = 0x10000 + ((code - 0xd800) << 10) + (low - 0xdc00)
+              out.write_char(scalar.unsafe_to_char())
+              j += 4
+              continue
+            }
+          }
           out.write_char(code.unsafe_to_char())
           j += 2
         }

@@ -152,5 +152,7 @@ test "fill_pdf reads hexadecimal field names" {
   let fields2 = read_fields(filled)
   assert_eq(fields2[0].value, "Alice")
   assert_true(@utf8.decode_lossy(filled[:]).contains("/V (Alice)"))
+  let emoji = fill_pdf(pdf, @utf8.encode("{\"あ\":\"😀\"}"))
+  assert_eq(read_fields(emoji)[0].value, "😀")
 }
 
