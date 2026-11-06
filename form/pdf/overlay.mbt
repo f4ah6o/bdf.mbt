@@ -150,6 +150,18 @@ pub fn fill_overlay(
     if width <= 0.0 || height <= 0.0 {
       continue
     }
+    match field.background_color {
+      Some(color) => {
+        builder.fill_color(color)
+        builder.fill_rect(
+          Float::from_double(x1),
+          Float::from_double(y1),
+          Float::from_double(width),
+          Float::from_double(height),
+        )
+      }
+      None => ()
+    }
     let size = if is_button {
       Float::from_double(Double::min(width, height) * 0.8)
     } else {

@@ -33,6 +33,7 @@ pub(all) struct Field {
   font_name : String
   quadding : Int32?
   values : Array[String]
+  background_color : UInt32?
 }
 
 // Type aliases

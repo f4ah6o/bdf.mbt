@@ -19,6 +19,7 @@ pub(all) struct Field {
   font_name : String
   quadding : Int?
   values : Array[String]
+  background_color : UInt32?
 }
 
 ///|
@@ -579,6 +580,45 @@ fn find_quadding(text : String, start : Int, limit : Int) -> Int? {
 }
 
 ///|
+fn find_background_color(text : String, start : Int, limit : Int) -> UInt32? {
+  let section = text[start:limit]
+  let mk = match section.find("/MK") {
+    Some(index) => start + index
+    None => return None
+  }
+  let bg = match text[mk:limit].find("/BG") {
+    Some(index) => mk + index
+    None => return None
+  }
+  let mut i = bg + 3
+  while i < limit && text[i].to_char().unwrap() != '[' {
+    i += 1
+  }
+  let values : Array[Double] = []
+  while i < limit && values.length() < 3 {
+    i += 1
+    let begin = i
+    while i < limit && (text[i].to_char().unwrap() >= '0' &&
+      text[i].to_char().unwrap() <= '9' || text[i].to_char().unwrap() == '.') {
+      i += 1
+    }
+    if i > begin {
+      let value = @string.parse_double(text[begin:i].to_owned()) catch {
+        _ => return None
+      }
+      values.push(value)
+    }
+  }
+  if values.length() < 3 {
+    return None
+  }
+  let r = (values[0] * 255.0).round().to_int()
+  let g = (values[1] * 255.0).round().to_int()
+  let b = (values[2] * 255.0).round().to_int()
+  Some(((r << 24) | (g << 16) | (b << 8) | 0xff).to_uint())
+}
+
+///|
 /// Read the names, values and types of the AcroForm fields of a PDF.
 pub fn read_fields(data : Bytes) -> Array[Field] {
   let text = @utf8.decode_lossy(data[:])
@@ -614,6 +654,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
         }
     }
     let values = find_values(text, after, next_t)
+    let background_color = find_background_color(text, after, next_t)
     let value = find_value(text, after, next_t)
     let typ = find_type(text, after, next_t)
     let rect = find_rect(text, after, next_t)
@@ -663,6 +704,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
         font_name,
         quadding,
         values,
+        background_color,
       }
       if found >= 0 {
         fields[found] = field
