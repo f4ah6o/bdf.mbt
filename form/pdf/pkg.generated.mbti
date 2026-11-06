@@ -30,6 +30,7 @@ pub(all) struct Field {
   option_values : Array[String]
   font_size : Double?
   font_color : UInt32?
+  font_name : String
 }
 
 // Type aliases

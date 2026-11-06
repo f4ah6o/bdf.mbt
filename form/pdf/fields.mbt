@@ -16,6 +16,7 @@ pub(all) struct Field {
   option_values : Array[String]
   font_size : Double?
   font_color : UInt32?
+  font_name : String
 }
 
 ///|
@@ -489,6 +490,36 @@ fn find_default_font_color(text : String, start : Int, limit : Int) -> UInt32? {
 }
 
 ///|
+fn find_default_font_name(text : String, start : Int, limit : Int) -> String {
+  let section = text[start:limit]
+  let at = match section.find("/DA") {
+    Some(index) => start + index
+    None => return ""
+  }
+  let value_at = skip_spaces(text, at + 3)
+  let da = match field_name_string(text, value_at) {
+    Some((value, _)) => value
+    None => return ""
+  }
+  let tokens : Array[String] = da.split(" ").map(fn(part) { part.to_owned() }).collect()
+  if tokens.length() == 0 || !tokens[0].has_prefix("/") {
+    return ""
+  }
+  let name = tokens[0][1:].to_owned()
+  if name == "Helv" {
+    "Helvetica"
+  } else if name == "TiRo" {
+    "Times-Roman"
+  } else if name == "Cour" {
+    "Courier"
+  } else if name == "Symb" {
+    "Symbol"
+  } else {
+    "Helvetica"
+  }
+}
+
+///|
 /// Read the names, values and types of the AcroForm fields of a PDF.
 pub fn read_fields(data : Bytes) -> Array[Field] {
   let text = @utf8.decode_lossy(data[:])
@@ -533,6 +564,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
     let option_values = option_pairs.map(fn(pair) { pair.1 })
     let font_size = find_default_font_size(text, after, next_t)
     let font_color = find_default_font_color(text, after, next_t)
+    let font_name = find_default_font_name(text, after, next_t)
     let alternate_name = find_alternate_name(text, after, next_t)
     let max_len = find_max_len(text, after, next_t)
     let default_value = find_default_value(text, after, next_t)
@@ -567,6 +599,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
         option_values,
         font_size,
         font_color,
+        font_name,
       }
       if found >= 0 {
         fields[found] = field

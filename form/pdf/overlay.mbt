@@ -155,7 +155,19 @@ pub fn fill_overlay(
     } else {
       Float::from_double(Double::min(12.0, height * 0.7))
     }
-    builder.font(font, size) catch {
+    let field_font = if field.font_name == "" || field.font_name == "Helvetica" {
+      font
+    } else {
+      builder.add_font({
+        hash: None,
+        family: field.font_name,
+        weight: 400,
+        style: 0,
+      }) catch {
+        _ => font
+      }
+    }
+    builder.font(field_font, size) catch {
       _ => raise PdfFillError("form/pdf: the font cannot be set")
     }
     builder.fill_color(0x000000ff)
