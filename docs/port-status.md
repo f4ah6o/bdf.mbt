@@ -163,7 +163,7 @@
   Get-Jobs in memory (which-jobs, my-jobs and limit filters), with an HTTP
   request/response envelope, job-id/job-uri lookup, Print-Job documents
   stored on the job, job-state-reasons, and PWG/URF/PDF page counting/abort
-  (10 tests). `print/ipp` now has the tags, the
+  (11 tests). `print/ipp` now has the tags, the
   message model and the binary request/response codec (integers, booleans,
   strings, languages, resolution, range, dateTime, octet strings and
   nested collections, with decode limits for bytes, attributes, values,
