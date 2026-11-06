@@ -8,6 +8,8 @@ pub(all) struct Field {
   page_object : Int?
   flags : Int?
   options : Array[String]
+  read_only : Bool
+  required : Bool
 }
 
 ///|
@@ -353,7 +355,25 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
           found = i
         }
       }
-      let field = { name, value, typ, rect, page_object, flags, options }
+      let read_only = match flags {
+        Some(value) => (value & 1) != 0
+        None => false
+      }
+      let required = match flags {
+        Some(value) => (value & 2) != 0
+        None => false
+      }
+      let field = {
+        name,
+        value,
+        typ,
+        rect,
+        page_object,
+        flags,
+        options,
+        read_only,
+        required,
+      }
       if found >= 0 {
         fields[found] = field
       } else {
