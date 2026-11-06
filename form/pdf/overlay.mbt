@@ -220,6 +220,23 @@ pub fn fill_overlay(
       page_keys.push(key)
     }
   }
+  let mut known_pages = true
+  for field in fields {
+    match field.page_object {
+      Some(key) =>
+        if !page_sizes.any(fn(size) { size.0 == key }) {
+          known_pages = false
+        }
+      None => ()
+    }
+  }
+  if !page_sizes.is_empty() && known_pages {
+    for size in page_sizes {
+      if !page_keys.contains(size.0) {
+        page_keys.push(size.0)
+      }
+    }
+  }
   if page_keys.is_empty() {
     page_keys.push(0)
   }

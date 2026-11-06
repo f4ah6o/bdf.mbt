@@ -365,3 +365,18 @@ test "pdf overlay puts fields without a page on the first page" {
   assert_true(resources.object.strings.contains("Alice"))
 }
 
+///|
+test "pdf overlay keeps pages without fields" {
+  let pdf = @base64.decode(
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgL0Fjcm9Gb3JtIDw8IC9GaWVsZHMgWzUgMCBSXSA+PiA+PgplbmRvYmoKMiAwIG9iago8PCAvVHlwZSAvUGFnZXMgL0tpZHMgWzMgMCBSIDQgMCBSXSAvQ291bnQgMiA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDIwMCAxMDBdID4+CmVuZG9iago0IDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFswIDAgMzAwIDE1MF0gL0Fubm90cyBbNSAwIFJdID4+CmVuZG9iago1IDAgb2JqCjw8IC9UeXBlIC9Bbm5vdCAvU3VidHlwZSAvV2lkZ2V0IC9GVCAvVHggL1QgKHNlY29uZCkgL1YgKCkgL1JlY3QgWzEwIDIwIDEwMCA0MF0gL1AgNCAwIFIgPj4KZW5kb2JqCnhyZWYKMCA2CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAwOSAwMDAwMCBuIAowMDAwMDAwMDkwIDAwMDAwIG4gCjAwMDAwMDAxNTMgMDAwMDAgbiAKMDAwMDAwMDIyNCAwMDAwMCBuIAowMDAwMDAwMzExIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNiAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKNDE4CiUlRU9GCg==",
+  )
+  let bdf = fill_overlay(pdf, @utf8.encode("{\"second\":\"Two\"}"))
+  let document = @core.open_single(bdf)
+  let view = document.manifest.views[0]
+  assert_eq(view.pages.length(), 2)
+  let first = @core.decode_object_resources(document.part(view.pages[0].layers[0].object))
+  let second = @core.decode_object_resources(document.part(view.pages[1].layers[0].object))
+  assert_eq(first.object.strings.length(), 0)
+  assert_true(second.object.strings.contains("Two"))
+}
+
