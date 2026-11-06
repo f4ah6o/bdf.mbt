@@ -140,3 +140,36 @@ test "form docx renders footer values" {
   assert_true(text.contains("Report footer"), msg=text)
 }
 
+///|
+test "form docx renders a filled table cell" {
+  let content_types =
+    #|<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>
+  let rels =
+    #|<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>
+  let document =
+    #|<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:tbl><w:tr><w:tc><w:p><w:r><w:t>{{cell}}</w:t></w:r></w:p></w:tc></w:tr></w:tbl><w:sectPr/></w:body></w:document>
+  let zipped = @ooxml.stored_zip([
+    ("[Content_Types].xml", @utf8.encode(content_types)),
+    ("_rels/.rels", @utf8.encode(rels)),
+    ("word/document.xml", @utf8.encode(document)),
+  ])
+  let result = fill(
+    zipped,
+    @utf8.encode("{\"cell\":\"Table value\"}"),
+    views="pages",
+  )
+  let document = @core.open_single(result.bdf)
+  let mut text = ""
+  for view in document.manifest.views {
+    match view.text_index {
+      Some(hash) => {
+        for run in @core.decode_text_index(document.part(hash)) {
+          text = text + run.text
+        }
+      }
+      None => ()
+    }
+  }
+  assert_true(text.contains("Table value"), msg=text)
+}
+
