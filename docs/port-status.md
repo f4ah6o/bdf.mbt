@@ -99,8 +99,8 @@
   dotted names, merging), with 5 tests.
 - `form/pdf` reads AcroForm field names, values (literal, hex, UTF-16BE,
   name), types, rectangles, page references, field flags, read-only/required
-  state, alternate names, maximum lengths and choice options, writes values
-  into classic-xref or xref-stream
+  state, alternate names, maximum lengths and display/export choice options,
+  writes values into classic-xref or xref-stream
   PDFs with an incremental update (18 tests, hexadecimal field names, surrogate
   pairs, control-character escapes, optional read-only skipping, escaped
   literals, UTF-16BE hex, buttons, appearance on-state names, referenced

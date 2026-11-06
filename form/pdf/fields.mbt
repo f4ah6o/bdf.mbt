@@ -313,6 +313,32 @@ fn find_options(text : String, start : Int, limit : Int) -> Array[String] {
         }
         None => break
       }
+    } else if c == '[' {
+      let mut j = i + 1
+      let mut chosen = ""
+      while j < limit {
+        let inner = text[j].to_char().unwrap()
+        if inner == ']' {
+          break
+        }
+        if inner == '(' || inner == '<' {
+          match field_name_string(text, j) {
+            Some((value, end)) => {
+              if chosen == "" {
+                chosen = value
+              }
+              j = end
+            }
+            None => break
+          }
+        } else {
+          j += 1
+        }
+      }
+      if chosen != "" {
+        options.push(chosen)
+      }
+      i = j + 1
     } else {
       i += 1
     }

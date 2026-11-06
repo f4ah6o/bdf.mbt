@@ -35,7 +35,7 @@ test "pdf overlay draws form values" {
   let pdf =
     #|%PDF-1.7
     #|1 0 obj << /Type /Page /MediaBox [0 0 200 100] >>
-    #|2 0 obj << /T (name) /V () /FT /Tx /Ff 3 /TU (Full Name) /MaxLen 20 /Opt [(Red) <FEFF30B0>] /Rect [10 20 100 40] /P 3 0 R >>
+    #|2 0 obj << /T (name) /V () /FT /Tx /Ff 3 /TU (Full Name) /MaxLen 20 /Opt [[(Red) (R)] [<FEFF30B0> (G)]] /Rect [10 20 100 40] /P 3 0 R >>
     #|3 0 obj << /T (agree) /V () /FT /Btn /Rect [110 20 130 40] /P 4 0 R >>
     #|%%EOF
   let bdf = fill_overlay(
@@ -65,7 +65,7 @@ test "pdf reads a button field" {
   let pdf =
     #|%PDF-1.7
     #|1 0 obj << /Type /Page /MediaBox [0 0 200 100] >>
-    #|2 0 obj << /T (name) /V () /FT /Tx /Ff 3 /TU (Full Name) /MaxLen 20 /Opt [(Red) <FEFF30B0>] /Rect [10 20 100 40] /P 3 0 R >>
+    #|2 0 obj << /T (name) /V () /FT /Tx /Ff 3 /TU (Full Name) /MaxLen 20 /Opt [[(Red) (R)] [<FEFF30B0> (G)]] /Rect [10 20 100 40] /P 3 0 R >>
     #|3 0 obj << /T (agree) /V () /FT /Btn /Rect [110 20 130 40] /P 4 0 R >>
     #|%%EOF
   let fields = read_fields(@utf8.encode(pdf))
