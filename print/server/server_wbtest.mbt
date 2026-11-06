@@ -396,3 +396,13 @@ test "ipp server filters created job attributes" {
   assert_eq(group.attrs[0].name, "job-state")
 }
 
+///|
+test "ipp server validates the document format" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  let good = server.handle(client.validate_job([], "application/pdf"))
+  assert_eq(good.code, @ipp.STATUS_OK)
+  let bad = server.handle(client.validate_job([], "image/tiff"))
+  assert_eq(bad.code, @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST)
+}
+

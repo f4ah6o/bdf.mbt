@@ -203,7 +203,26 @@ pub fn Server::handle_with_document(
     response.add(@ipp.TAG_PRINTER, filtered)
     response
   } else if request.code == @ipp.OP_VALIDATE_JOB {
-    response_for(request, @ipp.STATUS_OK)
+    let format = match request.attr(@ipp.TAG_OPERATION, "document-format") {
+      Some(attribute) => attribute.text()
+      None => ""
+    }
+    let supported = if format == "" {
+      true
+    } else {
+      match @ipp.find_attr(self.printer_attrs, "document-format-supported") {
+        Some(attribute) => attribute.has(format)
+        None => false
+      }
+    }
+    response_for(
+      request,
+      if supported {
+        @ipp.STATUS_OK
+      } else {
+        @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST
+      },
+    )
   } else if request.code == @ipp.OP_CREATE_JOB {
     let job = self.create_job(request)
     let response = response_for(request, @ipp.STATUS_OK)
