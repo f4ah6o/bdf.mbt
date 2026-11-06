@@ -328,7 +328,8 @@ pub fn Server::handle_with_document(
           Some(attribute) => attribute.text()
           None => ""
         }
-        if document.length() > 0 && !self.format_supported(format) {
+        if !self.copies_supported(request) ||
+          (document.length() > 0 && !self.format_supported(format)) {
           return response_for(request, @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST)
         }
         if document.length() > 0 {

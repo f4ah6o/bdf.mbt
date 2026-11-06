@@ -442,3 +442,15 @@ test "ipp server validates copies" {
   assert_eq(bad.code, @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST)
 }
 
+///|
+test "ipp server validates send-document copies" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  ignore(server.handle(client.create_job("bad-copies", [])))
+  let request = client.send_document(1, "bad.pdf", "application/pdf", true)
+  request.add(@ipp.TAG_JOB, [@ipp.attr("copies", [@ipp.integer(100)])])
+  let response = server.handle_with_document(request, b"%PDF-1.7")
+  assert_eq(response.code, @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST)
+  assert_eq(server.jobs[0].document.length(), 0)
+}
+
