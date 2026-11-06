@@ -604,3 +604,25 @@ test "pdfme honors the QR error correction level" {
   )
 }
 
+///|
+test "pdfme applies checkbox opacity" {
+  let template =
+    #|{"basePdf":{"width":60,"height":40},"schemas":[[{"name":"check","type":"checkbox","position":{"x":10,"y":10},"width":8,"height":8,"opacity":0.5}]]}
+  let result = fill(@utf8.encode(template), @utf8.encode("{\"check\":true}"))
+  assert_eq(result.warnings.length(), 0)
+  let document = @core.open_single(result.bdf)
+  let commands = @render.decode_commands(
+    document.part(document.manifest.parts[0].hash),
+  ) catch {
+    _ => fail("checkbox commands cannot be decoded")
+  }
+  assert_true(
+    commands.any(fn(command) {
+      match command {
+        @render.Alpha(value) => (value - 0.5).abs() < 0.001
+        _ => false
+      }
+    }),
+  )
+}
+
