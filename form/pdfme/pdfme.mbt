@@ -301,6 +301,9 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
     let baseline = y_top - size
     self.draw_text(field, data, x, baseline)
   } else if typ == "line" {
+    let opacity = Double::max(0.0, Double::min(1.0, number_of(json_field(field, "opacity"), 1.0)))
+    self.builder.save()
+    self.builder.alpha(Float::from_double(opacity))
     let width = Float::max(0.5, height)
     self.builder.stroke_color(color_of(json_field(field, "color"), 0x000000ff))
     if text_of(json_field(field, "borderStyle"), "solid") == "dashed" {
@@ -310,6 +313,7 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
     }
     self.builder.line(width, 0, 0, 0.0F)
     stroke_segment(self.builder, x, y_top, x + mm_to_pt(width_mm), y_top)
+    self.builder.restore()
   } else if typ == "rectangle" {
     let opacity = Double::max(0.0, Double::min(1.0, number_of(json_field(field, "opacity"), 1.0)))
     self.builder.save()
