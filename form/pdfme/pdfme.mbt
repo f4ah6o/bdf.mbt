@@ -562,6 +562,7 @@ fn FieldPainter::draw_image(
   let dimensions = if is_png { png_size(bytes) } else { jpeg_size(bytes) }
   let opacity = Double::max(0.0, Double::min(1.0, number_of(json_field(field, "opacity"), 1.0)))
   self.builder.save()
+  self.builder.clip_rect(x, y_top - height, width, height)
   self.builder.alpha(Float::from_double(opacity))
   if fit == "cover" {
     match dimensions {
