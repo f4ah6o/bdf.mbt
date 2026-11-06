@@ -182,8 +182,6 @@ priv struct MdPainter {
 fn MdPainter::font(self : MdPainter, style : @drawingml.TextStyle) -> Int32 raise {
   let key = style.family +
     "|" +
-    style.size.to_string() +
-    "|" +
     (if style.bold { "1" } else { "0" }) +
     (if style.italic { "1" } else { "0" })
   match self.fonts.get(key) {
@@ -340,6 +338,12 @@ fn MdPainter::flush_page(self : MdPainter) -> Unit raise {
       Json::object({
         "w": Json::number(self.page_width, repr=self.page_width.to_string()),
         "h": Json::number(self.page_height, repr=self.page_height.to_string()),
+        "body": Json::object({
+          "x": Json::number(self.margin),
+          "y": Json::number(self.margin),
+          "w": Json::number(self.content_width),
+          "h": Json::number(self.page_height - self.margin * 2.0),
+        }),
         "layers": Json::array([
           Json::object({
             "role": Json::string("body"),
@@ -953,8 +957,9 @@ fn md_render(
   size~ : Double = 12.0,
   width~ : Double = 432.0,
 ) -> MdRenderResult raise {
-  let margin = 36.0
-  let page_width = width + margin * 2.0
+  let margin = if page_view { 56.7 } else { 36.0 }
+  let content_width = if page_view { 481.9 } else { width }
+  let page_width = if page_view { 595.3 } else { width + 36.0 * 2.0 }
   let scale = if size > 0.0 { size / 12.0 } else { 1.0 }
   let painter : MdPainter = {
     object: @core.ObjectBuilder::new(),
@@ -964,11 +969,11 @@ fn md_render(
     images,
     image_seen,
     warnings,
-    content_width: width,
+    content_width: content_width,
     margin,
     scale,
     page_width,
-    page_height: if page_view { 769.9 } else { 0.0 },
+    page_height: if page_view { 841.9 } else { 0.0 },
     pages: [],
     index_runs: [],
     page: 0,

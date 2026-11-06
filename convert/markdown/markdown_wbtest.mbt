@@ -121,12 +121,12 @@ test "Markdown pages view paginates with page text indexes" {
   assert_eq(doc.manifest.views.length(), 1)
   let view = doc.manifest.views[0]
   assert_eq(view.id, "pages")
-  assert_eq(view.kind, "fixed")
+  assert_eq(view.kind, "flow")
   assert_eq(view.pages.length() > 1, true)
   assert_eq(result.pages, view.pages.length())
   for page in view.pages {
-    assert_eq(page.width, 504.0)
-    assert_eq(page.height, 769.9)
+    assert_eq(page.width, 595.3)
+    assert_eq(page.height, 841.9)
   }
   let runs = @core.decode_text_index(doc.part(view.text_index.unwrap()))
   let pages_seen : Map[Int32, Bool] = Map([])
@@ -147,7 +147,7 @@ test "Markdown both view keeps the scroll view and adds pages" {
   let doc = @core.open_single(result.bdf)
   assert_eq(doc.manifest.views.length(), 2)
   assert_eq(doc.manifest.views[0].id, "pages")
-  assert_eq(doc.manifest.views[0].kind, "fixed")
+  assert_eq(doc.manifest.views[0].kind, "flow")
   assert_eq(doc.manifest.views[1].id, "scroll")
   assert_eq(doc.manifest.views[1].kind, "scroll")
   assert_eq(doc.manifest.views[1].pages.length(), 1)
@@ -451,7 +451,7 @@ test "Markdown pages split long tables and repeat headers" {
   assert_eq(result.pages >= 2, true)
   let doc = @core.open_single(result.bdf)
   let view = doc.manifest.views[0]
-  assert_eq(view.kind, "fixed")
+  assert_eq(view.kind, "flow")
   assert_eq(view.pages.length() >= 2, true)
   let page_text = fn(page : @core.Page) -> String raise {
     let mut text = ""

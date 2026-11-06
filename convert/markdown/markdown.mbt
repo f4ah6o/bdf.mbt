@@ -147,7 +147,7 @@ pub fn convert(
   match page_layout {
     Some(layout) => {
       page_count = layout.pages.length()
-      md_add_view(writer, layout, "pages", "fixed", document_title)
+      md_add_view(writer, layout, "pages", "flow", document_title)
     }
     None => ()
   }
