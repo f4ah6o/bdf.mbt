@@ -382,9 +382,16 @@ fn FieldPainter::draw_image(
   let bytes = @base64.decode(payload) catch {
     _ => raise PdfmeError("pdfme: the image data is not base64")
   }
-  match png_size(bytes) {
-    Some(_) => ()
-    None => raise PdfmeError("pdfme: the image is not a PNG")
+  let is_png = png_size(bytes) is Some(_)
+  let is_jpeg = bytes.length() >= 2 && bytes[0] == b'\xff' && bytes[1] == b'\xd8'
+  let mut i = 0
+  while i < bytes.length() && (bytes[i] == b' ' || bytes[i] == b'\n' ||
+    bytes[i] == b'\r' || bytes[i] == b'\t') {
+    i += 1
+  }
+  let is_svg = i < bytes.length() && bytes[i] == b'<'
+  if !is_png && !is_jpeg && !is_svg {
+    raise PdfmeError("pdfme: the image is not PNG, JPEG or SVG")
   }
   let hash = self.writer.add_part("img", bytes) catch {
     _ => raise PdfmeError("pdfme: the image cannot be added")
