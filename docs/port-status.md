@@ -181,8 +181,8 @@
   request/response envelope, job-id/job-uri lookup, Print-Job/Send-Document
   documents stored on the job, Send-Document chunk appends, requested job
   attribute filtering for both Get-Job-Attributes and Get-Jobs, completed-job
-  Send-Document rejection, job-state reasons, and PWG/URF/PDF page
-  counting/abort (16 tests). `print/ipp` now has the tags, the
+  Send-Document/Cancel-Job rejection, job-state reasons, and PWG/URF/PDF page
+  counting/abort (17 tests). `print/ipp` now has the tags, the
   message model and the binary request/response codec (integers, booleans,
   strings, languages, resolution, range, dateTime, octet strings and
   nested collections, with decode limits for bytes, attributes, values,

@@ -365,3 +365,17 @@ test "ipp server rejects send-document on a completed job" {
   assert_eq(response.code, @ipp.STATUS_CLIENT_ERROR_NOT_POSSIBLE)
 }
 
+///|
+test "ipp server rejects cancel on a completed job" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  ignore(server.handle(client.create_job("done", [])))
+  let send = client.send_document(1, "done.pdf", "application/pdf", true)
+  ignore(server.handle_with_document(send, b"%PDF-1.7"))
+  let cancel = client.request(@ipp.OP_CANCEL_JOB)
+  cancel.add(@ipp.TAG_OPERATION, [@ipp.attr("job-id", [@ipp.integer(1)])])
+  let response = server.handle(cancel)
+  assert_eq(response.code, @ipp.STATUS_CLIENT_ERROR_NOT_POSSIBLE)
+  assert_eq(server.jobs[0].state, @ipp.JOB_COMPLETED)
+}
+
