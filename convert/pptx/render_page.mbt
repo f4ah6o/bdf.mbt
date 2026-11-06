@@ -526,10 +526,18 @@ fn pptx_emit_shapes(
       text_width = draw_width
       text_height = draw_height
     }
-    pptx_draw_shape_text(
-      ctx, object, shape, body, text_x, text_y, text_width, text_height, text_rotation,
-      text_cx, text_cy,
+    object.save()
+    object.translate(
+      Float::from_double(shape_x),
+      Float::from_double(shape_y),
     )
+    pptx_draw_shape_text(
+      ctx, object, shape, body,
+      text_x - shape_x, text_y - shape_y,
+      text_width, text_height, text_rotation,
+      text_cx - shape_x, text_cy - shape_y,
+    )
+    object.restore()
   }
 }
 

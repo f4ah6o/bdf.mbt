@@ -69,8 +69,8 @@ fn pptx_font_metrics(
       record_family: family,
       record_weight: weight,
       record_style: style,
-      asc: size,
-      desc: size * 0.2,
+      asc: size * 0.9,
+      desc: size * 0.25,
     }
   }
   let bold = weight >= 600
@@ -163,7 +163,12 @@ fn pptx_font_ref(
     None => {
       let record = match choice {
         Some(value) => ctx.fonts.font_record(value, None)
-        None => { hash: None, family, weight, style, }
+        None => {
+          hash: None,
+          family: @fontdb.css_family(family),
+          weight,
+          style,
+        }
       }
       let index = object.add_font(record)
       let codepoints : Map[Int32, Bool] = Map([])

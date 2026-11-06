@@ -1,6 +1,7 @@
 import {
   "f4ah6o/bdf/core",
   "f4ah6o/bdf/render",
+  "f4ah6o/bdf/convert",
   "moonbitlang/core/math",
   "f4ah6o/bdf/convert/ooxml",
   "f4ah6o/bdf/convert/canvas",

@@ -372,13 +372,9 @@ test "PPTX preset shapes are drawn and unknown presets warn" {
   let body = pptx_body_layer(doc.manifest).object
   let resources = @core.decode_object_resources(doc.part(body))
   let commands = @render.compile_object(resources.object)
-  let mut text_x = -1.0
-  for command in commands {
-    match command {
-      @render.FillText(_, x, _, _) => if text_x < 0.0 { text_x = x }
-      _ => ()
-    }
-  }
+  let positions = pptx_text_positions(commands)
+  guard !positions.is_empty() else { fail("PPTX preset text is missing") }
+  let text_x = positions[0].1
   assert_true((text_x - 129.2).abs() < 0.01, msg="PPTX preset text rectangle")
 }
 
@@ -493,12 +489,13 @@ test "PPTX custom geometry draws paths and falls back when malformed" {
   let body = pptx_body_layer(doc.manifest).object
   let resources = @core.decode_object_resources(doc.part(body))
   let commands = @render.compile_object(resources.object)
-  let mut text_x = -1.0
+  let positions = pptx_text_positions(commands)
+  guard !positions.is_empty() else { fail("PPTX custGeom text is missing") }
+  let text_x = positions[0].1
   let mut fallback_rect = false
   let mut filled = false
   for command in commands {
     match command {
-      @render.FillText(_, x, _, _) => if text_x < 0.0 { text_x = x }
       @render.FillRect(x, y, width, height) =>
         if (x - 72.0).abs() < 0.000000001 &&
           (y - 324.0).abs() < 0.000000001 &&

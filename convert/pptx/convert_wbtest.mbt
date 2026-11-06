@@ -108,6 +108,49 @@ fn pptx_page_commands(
 }
 
 ///|
+/// Apply the Save/Translate/Transform stack to text positions, as the
+/// renderer does, so tests can assert page coordinates after the local text
+/// transform.
+fn pptx_text_positions(
+  commands : Array[@render.Command],
+) -> Array[(String, Double, Double)] {
+  let out : Array[(String, Double, Double)] = []
+  let stack : Array[(Double, Double, Double, Double, Double, Double)] = []
+  let mut m = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+  for command in commands {
+    match command {
+      @render.Save => stack.push(m)
+      @render.Restore =>
+        if !stack.is_empty() {
+          m = stack.pop().unwrap()
+        }
+      @render.Translate(x, y) =>
+        m = (
+          m.0,
+          m.1,
+          m.2,
+          m.3,
+          m.0 * x + m.2 * y + m.4,
+          m.1 * x + m.3 * y + m.5,
+        )
+      @render.Transform(a, b, c, d, e, f) =>
+        m = (
+          m.0 * a + m.2 * b,
+          m.1 * a + m.3 * b,
+          m.0 * c + m.2 * d,
+          m.1 * c + m.3 * d,
+          m.0 * e + m.2 * f + m.4,
+          m.1 * e + m.3 * f + m.5,
+        )
+      @render.FillText(text, x, y, _) =>
+        out.push((text, m.0 * x + m.2 * y + m.4, m.1 * x + m.3 * y + m.5))
+      _ => ()
+    }
+  }
+  out
+}
+
+///|
 test "PPTX shape text conversion emits a slide" {
   let data = pptx_convert_fixture()
   assert_true(detect(data))
@@ -232,15 +275,13 @@ test "PPTX group shapes are translated and backgrounds are filled" {
     @core.open_single(result.bdf),
     manifest.views[0].pages[0],
   )
-  let mut text = ""
-  let mut x = -1.0
+  let positions = pptx_text_positions(commands)
+  guard !positions.is_empty() else { fail("PPTX group text is missing") }
+  let text = positions[0].0
+  let x = positions[0].1
   let mut fills = 0
   for command in commands {
     match command {
-      @render.FillText(value, text_x, _, _) => {
-        text = value
-        x = text_x
-      }
       @render.FillRect(_, _, _, _) => fills += 1
       _ => ()
     }
@@ -711,10 +752,10 @@ test "PPTX theme fonts resolve minor and +mj-lt runs" {
   let mut minor = false
   let mut major = false
   for font in resources.fonts {
-    if font.family == "MinorFont" {
+    if font.family == "\"MinorFont\", sans-serif" {
       minor = true
     }
-    if font.family == "MajorFont" {
+    if font.family == "\"MajorFont\", sans-serif" {
       major = true
     }
   }
@@ -1079,17 +1120,12 @@ test "PPTX placeholders inherit layout transforms" {
     @core.open_single(result.bdf).part(body_hash),
   )
   let commands = @render.compile_object(resources.object)
-  let mut text = ""
-  let mut x = -1.0
-  for command in commands {
-    match command {
-      @render.FillText(value, text_x, _, _) => {
-        text = value
-        x = text_x
-      }
-      _ => ()
-    }
+  let positions = pptx_text_positions(commands)
+  guard !positions.is_empty() else {
+    fail("PPTX placeholder text is missing")
   }
+  let text = positions[0].0
+  let x = positions[0].1
   assert_eq(text, "Inherited")
   assert_true((x - 107.2).abs() < 0.01, msg="PPTX placeholder transform")
 }
@@ -4452,13 +4488,9 @@ test "PPTX text box insets are applied" {
   )
   let commands = @render.compile_object(resources.object)
   let mut inset = false
-  for command in commands {
-    match command {
-      @render.FillText("A", x, y, _) =>
-        if x > 140.0 && y > 100.0 {
-          inset = true
-        }
-      _ => ()
+  for position in pptx_text_positions(commands) {
+    if position.0 == "A" && position.1 > 140.0 && position.2 > 100.0 {
+      inset = true
     }
   }
   assert_true(inset, msg="PPTX text inset")
@@ -5294,10 +5326,9 @@ test "PPTX text box vertical anchors are applied" {
   )
   let commands = @render.compile_object(resources.object)
   let mut bottom = false
-  for command in commands {
-    match command {
-      @render.FillText("A", _, y, _) => if y > 120.0 { bottom = true }
-      _ => ()
+  for position in pptx_text_positions(commands) {
+    if position.0 == "A" && position.2 > 120.0 {
+      bottom = true
     }
   }
   assert_true(bottom, msg="PPTX text anchor")

@@ -129,9 +129,13 @@ fn pptx_apply_color_modifiers(color : UInt32, node : PptxXmlNode) -> UInt32 {
       "tint" =>
         match factor {
           Some(value) => {
-            red += (255.0 - red) * value
-            green += (255.0 - green) * value
-            blue += (255.0 - blue) * value
+            let mix = fn(channel : Double) -> Double {
+              let linear = pptx_to_linear(channel / 255.0)
+              1.0 - (1.0 - linear) * value
+            }
+            red = pptx_from_linear(mix(red)) * 255.0
+            green = pptx_from_linear(mix(green)) * 255.0
+            blue = pptx_from_linear(mix(blue)) * 255.0
           }
           None => ()
         }
@@ -504,7 +508,7 @@ fn pptx_char_width_code(code : Int32, size : Double) -> Double {
   } else if code < 0x20 || code == 0x200b || code == 0xfeff {
     0.0
   } else {
-    size * 0.5
+    size * 0.55
   }
 }
 
@@ -1143,9 +1147,12 @@ fn pptx_cell_borders(
 
 ///|
 fn pptx_tint_color(color : UInt32, fraction : Double) -> UInt32 {
+  // Office mixes with white in linear RGB (upstream's tintRGB).
   let channel = fn(shift : Int32) -> Double {
-    let value = pptx_color_channel(color, shift)
-    value + (255.0 - value) * fraction
+    let value = pptx_color_channel(color, shift) / 255.0
+    let linear = pptx_to_linear(value)
+    let adjusted = 1.0 - (1.0 - linear) * fraction
+    pptx_from_linear(adjusted) * 255.0
   }
   pptx_pack_color(channel(24), channel(16), channel(8))
 }
@@ -5340,6 +5347,7 @@ pub fn detect(data : Bytes) -> Bool {
 pub fn convert(
   data : Bytes,
   title~ : String = "",
+  pages~ : String = "",
   db~ : @fontdb.Database? = None,
 ) -> PptxResult raise {
   let presentation = pptx_presentation(data) catch {
@@ -5399,17 +5407,34 @@ pub fn convert(
       "no fonts found; text is laid out with estimated metrics and not embedded",
     )
   }
-  let pages : Array[Json] = []
+  let output_pages : Array[Json] = []
   let index_runs : Array[@core.IndexRun] = []
   let index_budget = @render.TextExtractionBudget::new()
   let cache = pptx_new_render_cache()
+  let mut visible_count = 0L
+  for slide in presentation.slides {
+    if !slide.hidden {
+      visible_count += 1L
+    }
+  }
+  let selected = if pages == "" {
+    None
+  } else {
+    let spans = @convert.parse_pages(pages) catch { _ => None }
+    @convert.page_numbers(spans, visible_count)
+  }
+  let mut visible_index = 0L
   for slide in presentation.slides {
     if slide.hidden {
       continue
     }
-    let page_index = pages.length()
+    visible_index += 1L
+    if selected is Some(values) && !values.contains(visible_index) {
+      continue
+    }
+    let page_index = output_pages.length()
     let root = pptx_read_xml(pkg, slide.part)
-    pages.push(
+    output_pages.push(
       pptx_render_page(
         pkg,
         writer,
@@ -5434,10 +5459,10 @@ pub fn convert(
       ),
     )
   }
-  if pages.is_empty() {
+  if output_pages.is_empty() {
     let object = @core.ObjectBuilder::new()
     let hash = writer.add_part("obj", object.encode())
-    pages.push(
+    output_pages.push(
       Json::object({
         "w": Json::number(
           presentation.width,
@@ -5459,10 +5484,12 @@ pub fn convert(
   let view : Map[String, Json] = {
     "id": Json::string("slides"),
     "kind": Json::string("fixed"),
-    "pages": Json::array(pages),
+    "pages": Json::array(output_pages),
   }
   if title != "" {
     view["title"] = Json::string(title)
+  } else if !core.title.is_empty() {
+    view["title"] = Json::string(core.title[0])
   }
   if !index_runs.is_empty() {
     let encoded = @core.encode_text_index(index_runs) catch { _ => b"" }
@@ -5471,7 +5498,7 @@ pub fn convert(
     }
   }
   writer.add_view(Json::object(view))
-  let count = pages.length()
+  let count = output_pages.length()
   let embedded_fonts = cache.embedded_fonts
   if has_fonts {
     match pptx_missing_glyph_warning(missing) {

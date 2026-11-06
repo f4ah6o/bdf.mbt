@@ -422,7 +422,9 @@ fn pptx_layout_paragraph(
   while !done {
     let start = if first { first_start } else { props.mar_l }
     let mut end = segment_start
-    let mut width = start
+    // The left indent places the line; it does not shrink the text box width
+    // again (upstream lays the line out against the full content width).
+    let mut width = 0.0
     let mut last_break = -1
     let mut last_break_wrap : Byte = 1
     let mut hard = false
@@ -432,7 +434,7 @@ fn pptx_layout_paragraph(
         hard = true
         break
       }
-      if width + c.advance > available &&
+      if width + c.advance > available + 0.000001 &&
         end > segment_start &&
         (!c.no_break || !chars[end - 1].no_break) {
         break
@@ -638,11 +640,15 @@ fn pptx_draw_shape_text(
   center_y : Double,
 ) -> Unit raise {
   let (scale, ln_reduce) = pptx_body_autofit(body)
+  let title_placeholder = match pptx_placeholder_info(shape) {
+    Some(value) => value.kind == "title" || value.kind == "ctrTitle"
+    None => false
+  }
   let mut left_inset = 7.2
   let mut top_inset = 3.6
   let mut right_inset = 7.2
   let mut bottom_inset = 3.6
-  let mut anchor = "top"
+  let mut anchor = if title_placeholder { "center" } else { "top" }
   let mut vertical = ""
   match pptx_child(Some(body), "bodyPr") {
     Some(value) => {
@@ -650,10 +656,12 @@ fn pptx_draw_shape_text(
       top_inset = pptx_body_prop_double(value, "tIns", 3.6)
       right_inset = pptx_body_prop_double(value, "rIns", 7.2)
       bottom_inset = pptx_body_prop_double(value, "bIns", 3.6)
-      anchor = match pptx_attribute(value.element, "anchor", "") {
+      let anchor_name = pptx_attribute(value.element, "anchor", "")
+      anchor = match anchor_name {
         "ctr" => "center"
         "b" => "bottom"
-        _ => "top"
+        "t" => "top"
+        _ => if title_placeholder { "center" } else { "top" }
       }
       vertical = pptx_attribute(value.element, "vert", "")
     }
@@ -682,6 +690,7 @@ fn pptx_draw_shape_text(
     )
     let props = pptx_paragraph_props(chain)
     let props = { ..props, ln_pct: Double::max(props.ln_pct - ln_reduce, 0.1) }
+
     let bullet = pptx_paragraph_bullet(chain)
     let chars = pptx_paragraph_chars(ctx, shape, body, paragraph, scale)
     let has_text = pptx_chars_have_text(chars)
@@ -768,9 +777,27 @@ fn pptx_draw_shape_text(
     )
   }
   let mut line_y = top + anchor_offset
+  let mut emitted_font : Int32 = -1
+  let mut emitted_size = -1.0
+  let mut emitted_color : UInt32? = None
+  let heading = match pptx_placeholder_info(shape) {
+    Some(value) => value.kind == "title" || value.kind == "ctrTitle"
+    None => false
+  }
+  if !paragraphs.is_empty() {
+    object.mark(3, "")
+  }
+  let mut paragraph_index = 0
   for paragraph in paragraphs {
-    line_y += paragraph.space_before
-    object.mark(0, "")
+    if paragraph_index > 0 {
+      line_y += paragraph.space_before
+    }
+    if paragraph_index == 0 && heading {
+      object.mark(6, "1")
+    } else if paragraph_index > 0 {
+      object.mark(0, "")
+    }
+    paragraph_index += 1
     let mut bullet_drawn = false
     if paragraph.bullet.blip != "" {
       match pptx_bullet_image(ctx, paragraph.bullet.blip) {
@@ -805,6 +832,9 @@ fn pptx_draw_shape_text(
       )
       object.font(font, Float::from_double(paragraph.bullet_size))
       object.fill_color(paragraph.bullet_color)
+      emitted_font = font
+      emitted_size = paragraph.bullet_size
+      emitted_color = Some(paragraph.bullet_color)
       let baseline = line_y +
         paragraph.lines[0].height -
         paragraph.lines[0].desc
@@ -844,8 +874,15 @@ fn pptx_draw_shape_text(
           item.record_style,
           item.text,
         )
-        object.font(font, Float::from_double(item.size))
-        object.fill_color(item.color)
+        if font != emitted_font || item.size != emitted_size {
+          object.font(font, Float::from_double(item.size))
+          emitted_font = font
+          emitted_size = item.size
+        }
+        if emitted_color != Some(item.color) {
+          object.fill_color(item.color)
+          emitted_color = Some(item.color)
+        }
         object.fill_text(
           item.text,
           Float::from_double(origin_x + line.start + offset + item.x),
