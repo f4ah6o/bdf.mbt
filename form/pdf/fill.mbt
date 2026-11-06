@@ -512,6 +512,35 @@ fn data_text(data : Json, name : String) -> String? {
 }
 
 ///|
+/// Names of required fields whose data is missing or empty.
+pub fn missing_required(pdf_bytes : Bytes, data_bytes : Bytes) -> Array[String] {
+  let data = @json.parse(@utf8.decode_lossy(data_bytes[:])) catch {
+    _ => return []
+  }
+  let missing : Array[String] = []
+  for field in read_fields(pdf_bytes) {
+    if !field.required {
+      continue
+    }
+    let value = match data {
+      Json::Object(object) =>
+        match object.get(field.name) {
+          Some(Json::String(text)) => text
+          Some(Json::Number(number, ..)) => number.to_string()
+          Some(Json::True) => "true"
+          Some(Json::False) => "false"
+          _ => ""
+        }
+      _ => ""
+    }
+    if value == "" {
+      missing.push(field.name)
+    }
+  }
+  missing
+}
+
+///|
 /// Write field values into a classic PDF with an incremental update. The
 /// original bytes stay untouched; new object versions, an xref section and
 /// a trailer that points to the previous xref are appended.
