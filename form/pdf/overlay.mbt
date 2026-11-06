@@ -222,6 +222,21 @@ pub fn fill_overlay(
   if page_keys.is_empty() {
     page_keys.push(0)
   }
+  let ordered_keys : Array[Int] = []
+  for size in page_sizes {
+    if page_keys.contains(size.0) && !ordered_keys.contains(size.0) {
+      ordered_keys.push(size.0)
+    }
+  }
+  for key in page_keys {
+    if !ordered_keys.contains(key) {
+      ordered_keys.push(key)
+    }
+  }
+  page_keys.clear()
+  for key in ordered_keys {
+    page_keys.push(key)
+  }
   let page_widths : Array[Double] = []
   let page_heights : Array[Double] = []
   for key in page_keys {
