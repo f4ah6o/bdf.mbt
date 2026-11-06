@@ -303,6 +303,11 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
   } else if typ == "rectangle" {
     self.builder.fill_color(color_of(json_field(field, "color"), 0xffffffff))
     self.builder.stroke_color(color_of(json_field(field, "borderColor"), 0x000000ff))
+    if text_of(json_field(field, "borderStyle"), "solid") == "dashed" {
+      self.builder.dash([3.0, 3.0], 0.0)
+    } else {
+      self.builder.dash([], 0.0)
+    }
     self.builder.line(
       Float::from_double(number_of(json_field(field, "borderWidth"), 0.3)),
       0,
