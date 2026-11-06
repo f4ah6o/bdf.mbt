@@ -158,3 +158,13 @@ test "fill_pdf reads hexadecimal field names" {
   assert_eq(read_fields(emoji)[0].value, "😀")
 }
 
+///|
+test "fill_pdf maps choice display values" {
+  let pdf = @base64.decode(
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgL0Fjcm9Gb3JtIDw8IC9GaWVsZHMgWzQgMCBSXSA+PiA+PgplbmRvYmoKMiAwIG9iago8PCAvVHlwZSAvUGFnZXMgL0tpZHMgWzMgMCBSXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDIwMCAxMDBdIC9Bbm5vdHMgWzQgMCBSXSA+PgplbmRvYmoKNCAwIG9iago8PCAvVHlwZSAvQW5ub3QgL1N1YnR5cGUgL1dpZGdldCAvRlQgL0NoIC9UIChjb2xvcikgL09wdCBbWyhSZWQpIChSKV0gWyhHcmVlbikgKEcpXV0gL1JlY3QgWzEwIDIwIDEwMCA0MF0gL1AgMyAwIFIgPj4KZW5kb2JqCnhyZWYKMCA1CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAwOSAwMDAwMCBuIAowMDAwMDAwMDkwIDAwMDAwIG4gCjAwMDAwMDAxNDcgMDAwMDAgbiAKMDAwMDAwMDIzNCAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDUgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjM2NwolJUVPRgo=",
+  )
+  let filled = fill_pdf(pdf, @utf8.encode("{\"color\":\"Red\"}"))
+  let fields = read_fields(filled)
+  assert_eq(fields[0].value, "R")
+}
+

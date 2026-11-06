@@ -295,6 +295,16 @@ fn add_need_appearances_dict(body : String) -> String? {
 }
 
 ///|
+fn choice_export_value(body : String, value : String) -> String {
+  for pair in find_option_pairs(body, 0, body.length()) {
+    if pair.0 == value {
+      return pair.1
+    }
+  }
+  value
+}
+
+///|
 fn find_object_body(text : String, number : Int) -> String? {
   let mut pos = 0
   while pos < text.length() {
@@ -554,7 +564,14 @@ pub fn fill_pdf(
         }
       } else {
         match data_text(data, name) {
-          Some(value) => updates.push((number, generation, replace_pdf_value(body, value)))
+          Some(value) => {
+            let mapped = if body.contains("/Ch") {
+              choice_export_value(body, value)
+            } else {
+              value
+            }
+            updates.push((number, generation, replace_pdf_value(body, mapped)))
+          }
           None => ()
         }
       }
