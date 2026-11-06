@@ -253,6 +253,9 @@ pub fn Server::handle_with_document(
       },
     )
   } else if request.code == @ipp.OP_CREATE_JOB {
+    if !self.copies_supported(request) {
+      return response_for(request, @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST)
+    }
     let job = self.create_job(request)
     let response = response_for(request, @ipp.STATUS_OK)
     response.add(@ipp.TAG_JOB, requested_job_attrs(self, request, job))
