@@ -225,6 +225,61 @@ pub fn Server::handle_with_document(
     let response = response_for(request, @ipp.STATUS_OK)
     response.add(@ipp.TAG_JOB, job_attrs(self, job))
     response
+  } else if request.code == @ipp.OP_SEND_DOCUMENT {
+    let id = request_job_id(request)
+    match self.find_job(id) {
+      Some(job) => {
+        if document.length() > 0 {
+          job.document = document
+          let format = match request.attr(@ipp.TAG_OPERATION, "document-format") {
+            Some(attribute) => attribute.text()
+            None => ""
+          }
+          let raster_pages = if format.contains("pwg") ||
+            document.has_prefix(b"RaS2") {
+            @raster.read(document) catch {
+              _ => {
+                job.state = @ipp.JOB_ABORTED
+                job.impressions = 0
+                let response = response_for(request, @ipp.STATUS_OK)
+                response.add(@ipp.TAG_JOB, job_attrs(self, job))
+                return response
+              }
+            }
+          } else if format.contains("urf") ||
+            document.has_prefix(b"UNIRAST") {
+            @raster.read_urf(document) catch {
+              _ => {
+                job.state = @ipp.JOB_ABORTED
+                job.impressions = 0
+                let response = response_for(request, @ipp.STATUS_OK)
+                response.add(@ipp.TAG_JOB, job_attrs(self, job))
+                return response
+              }
+            }
+          } else {
+            []
+          }
+          if raster_pages.length() > 0 {
+            job.state = @ipp.JOB_COMPLETED
+            job.impressions = raster_pages.length()
+          } else {
+            let pdf_pages = if format.contains("pdf") ||
+              document.has_prefix(b"%PDF-") {
+              pdf_page_count(document)
+            } else {
+              0
+            }
+            job.state = @ipp.JOB_COMPLETED
+            job.impressions = if pdf_pages > 0 { pdf_pages } else { 1 }
+          }
+        }
+        let response = response_for(request, @ipp.STATUS_OK)
+        response.add(@ipp.TAG_JOB, job_attrs(self, job))
+        response
+      }
+      None => response_for(request, @ipp.STATUS_CLIENT_ERROR_NOT_FOUND)
+    }
   } else if request.code == @ipp.OP_GET_JOB_ATTRIBUTES {
     let id = request_job_id(request)
     match self.find_job(id) {

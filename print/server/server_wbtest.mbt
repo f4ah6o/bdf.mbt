@@ -283,3 +283,17 @@ test "ipp server counts multiple PDF pages" {
   assert_eq(job.impressions, 2)
 }
 
+///|
+test "ipp server accepts a send-document request" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  ignore(server.handle(client.create_job("report", [])))
+  let request = client.send_document(1, "report.pdf", "application/pdf", true)
+  let response = server.handle_with_document(request, b"%PDF-1.7")
+  let job = @ipp.make_job_status(response)
+  assert_eq(job.id, 1)
+  assert_eq(job.state, @ipp.JOB_COMPLETED)
+  assert_eq(job.impressions, 1)
+  assert_eq(server.jobs[0].document, b"%PDF-1.7")
+}
+
