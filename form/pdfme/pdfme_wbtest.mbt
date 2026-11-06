@@ -386,7 +386,7 @@ test "pdfme evaluates expression functions" {
 ///|
 test "pdfme aligns table columns" {
   let template =
-    #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item","qty"],"headStyles":{"alignment":"center","fontSize":12,"height":10,"backgroundColor":"#E6E6E6","fontColor":"#333333","cellPadding":4},"alternateBackgroundColor":"#F5F5F5","columnStyles":[{"alignment":"center","fontColor":"#FF0000","backgroundColor":"#EEEEEE","fontSize":7,"fontName":"Courier","verticalAlign":"middle"},{"alignment":"right"}],"fontSize":9,"rowHeight":8,"cellPadding":2,"borderColor":"#CC0000","borderWidth":0.8,"borderStyle":"dashed"}]]}
+    #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item","qty"],"headStyles":{"alignment":"center","fontSize":12,"height":10,"backgroundColor":"#E6E6E6","fontColor":"#333333","cellPadding":4,"borderColor":"#000000","borderWidth":1},"alternateBackgroundColor":"#F5F5F5","columnStyles":[{"alignment":"center","fontColor":"#FF0000","backgroundColor":"#EEEEEE","fontSize":7,"fontName":"Courier","verticalAlign":"middle"},{"alignment":"right"}],"fontSize":9,"rowHeight":8,"cellPadding":2,"borderColor":"#CC0000","borderWidth":0.8,"borderStyle":"dashed"}]]}
   let result = fill(
     @utf8.encode(template),
     @utf8.encode("{\"lines\":[{\"item\":\"apple\",\"qty\":\"2\"}]}"),
