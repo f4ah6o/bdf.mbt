@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { BdfDocument, BufferSource, SplitSource, parseHeader } from '@bdfkit/core';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { fixture, fixture_for_part, split_manifest, split_part, writer_split_manifest, writer_split_part, join_split } from '../../_build/js/debug/build/compat/writer/writer.js';
+import { fixture, fixture_for_part, split_manifest, split_part, writer_split_manifest, writer_split_parts, join_split } from '../../_build/js/debug/build/compat/writer/writer.js';
 
 const bytes = fixture();
 const header = parseHeader(bytes);
@@ -51,7 +51,10 @@ try {
   for (const sample of cases) {
     const manifestBytes = sample.direct ? writer_split_manifest() : split_manifest(sample.data);
     const manifest = JSON.parse(Buffer.from(manifestBytes).toString('utf8'));
-    const parts = manifest.parts.map((entry, index) => sample.direct ? writer_split_part(index) : split_part(sample.data, index));
+    const parts = sample.direct
+      ? writer_split_parts()
+      : manifest.parts.map((entry, index) => split_part(sample.data, index));
+    assert.equal(parts.length, manifest.parts.length, sample.name + ' part count');
     assert.ok(manifest.parts.every(entry => entry.off === 0), sample.name + ' split offsets');
     files.set('/' + sample.name + '/manifest.json', manifestBytes);
     for (const [index, entry] of manifest.parts.entries()) files.set('/' + sample.name + '/parts/' + entry.h, parts[index]);

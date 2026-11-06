@@ -57,6 +57,13 @@ pub fn writer_split_manifest() -> Bytes {
 }
 
 ///|
+#export_name("writer_split_parts")
+pub fn writer_split_parts() -> Array[Bytes] {
+  let output = try! sample_writer().write_split()
+  [ for part in output.parts => part.data ]
+}
+
+///|
 #export_name("writer_split_part")
 pub fn writer_split_part(index : Int32) -> Bytes {
   (try! sample_writer().write_split()).parts[index].data
