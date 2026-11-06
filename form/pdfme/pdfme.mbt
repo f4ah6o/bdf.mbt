@@ -1590,8 +1590,13 @@ fn FieldPainter::draw_table(
     _ => raise PdfmeError("pdfme: a font cannot be set")
   }
   self.builder.fill_color(color_of(json_field(field, "fontColor"), 0x000000ff))
-  self.builder.stroke_color(0x000000ff)
-  self.builder.line(0.4, 0, 0, 0.0F)
+  self.builder.stroke_color(color_of(json_field(field, "borderColor"), 0x000000ff))
+  self.builder.line(
+    Float::from_double(number_of(json_field(field, "borderWidth"), 0.4)),
+    0,
+    0,
+    0.0F,
+  )
   let row_height = Float::from_double(
     number_of(json_field(field, "rowHeight"), 6.0),
   )
