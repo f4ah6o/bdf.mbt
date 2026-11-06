@@ -110,7 +110,13 @@ pub fn fill_overlay(
     _ => raise PdfFillError("form/pdf: the font cannot be added")
   }
   for field in fields {
-    let value = overlay_value(data, field.name)
+    let raw = overlay_value(data, field.name)
+    let is_button = field.typ == "/Btn"
+    let value = if is_button {
+      if raw == "true" || raw == "Yes" || raw == "/Yes" { "X" } else { "" }
+    } else {
+      raw
+    }
     if value == "" {
       continue
     }
@@ -123,7 +129,11 @@ pub fn fill_overlay(
     if width <= 0.0 || height <= 0.0 {
       continue
     }
-    let size = Float::from_double(Double::min(12.0, height * 0.7))
+    let size = if is_button {
+      Float::from_double(Double::min(width, height) * 0.8)
+    } else {
+      Float::from_double(Double::min(12.0, height * 0.7))
+    }
     builder.font(font, size) catch {
       _ => raise PdfFillError("form/pdf: the font cannot be set")
     }
@@ -135,7 +145,9 @@ pub fn fill_overlay(
       )
       builder.fill_text(
         line.to_owned(),
-        Float::from_double(x1 + 1.0),
+        Float::from_double(
+          if is_button { x1 + (width - advance.to_double()) / 2.0 } else { x1 + 1.0 },
+        ),
         Float::from_double(
           y1 + (height - size.to_double()) / 2.0 -
           i.to_double() * size.to_double() * 1.2,

@@ -101,7 +101,7 @@
   name), types and rectangles, writes values into classic-xref PDFs with an
   incremental update (9 tests, ASCII literals, UTF-16BE hex, buttons,
   named appearance states and `/NeedAppearances`), and draws
-  a blank-page value overlay
+  a blank-page value overlay (checkbox `X`, multi-line values); 10 tests
   (multi-line values included) for preprinted forms.
 - `form/ooxml` replaces `{{name}}` tags in OOXML XML parts, including tags
   split across runs (the run markup between them is removed), expands

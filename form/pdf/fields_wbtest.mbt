@@ -36,10 +36,11 @@ test "pdf overlay draws form values" {
     #|%PDF-1.7
     #|1 0 obj << /Type /Page /MediaBox [0 0 200 100] >>
     #|2 0 obj << /T (name) /V () /FT /Tx /Rect [10 20 100 40] >>
+    #|3 0 obj << /T (agree) /V () /FT /Btn /Rect [110 20 130 40] >>
     #|%%EOF
   let bdf = fill_overlay(
     @utf8.encode(pdf),
-    @utf8.encode("{\"name\":\"Alice\\nBob\"}"),
+    @utf8.encode("{\"name\":\"Alice\\nBob\",\"agree\":true}"),
     title="overlay",
   )
   let document = @core.open_single(bdf)
@@ -56,5 +57,21 @@ test "pdf overlay draws form values" {
   }
   assert_true(text.contains("Alice"), msg=text)
   assert_true(text.contains("Bob"), msg=text)
+  assert_true(text.contains("X"), msg=text)
+}
+
+///|
+test "pdf reads a button field" {
+  let pdf =
+    #|%PDF-1.7
+    #|1 0 obj << /Type /Page /MediaBox [0 0 200 100] >>
+    #|2 0 obj << /T (name) /V () /FT /Tx /Rect [10 20 100 40] >>
+    #|3 0 obj << /T (agree) /V () /FT /Btn /Rect [110 20 130 40] >>
+    #|%%EOF
+  let fields = read_fields(@utf8.encode(pdf))
+  assert_eq(fields.length(), 2)
+  assert_eq(fields[1].name, "agree")
+  assert_eq(fields[1].typ, "/Btn")
+  assert_eq(fields[1].rect, Some((110.0, 20.0, 130.0, 40.0)))
 }
 
