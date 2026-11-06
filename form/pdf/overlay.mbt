@@ -93,15 +93,18 @@ fn overlay_value(data : Json, name : String) -> String {
 ///|
 fn overlay_lines(value : String, width : Double, size : Double) -> Array[String] {
   let lines : Array[String] = []
-  let chars = if size <= 0.0 { 1 } else { Int::max(1, (width / (size * 0.5)).to_int()) }
   for raw in value.split("\n") {
     let text = raw.to_owned()
-    if text.length() <= chars {
+    if size <= 0.0 || @drawingml.text_width(text, size) <= width {
       lines.push(text)
     } else {
       let mut start = 0
       while start < text.length() {
-        let end = Int::min(text.length(), start + chars)
+        let mut end = start + 1
+        while end < text.length() &&
+          @drawingml.text_width(text[start:end + 1].to_owned(), size) <= width {
+          end += 1
+        }
         lines.push(text[start:end].to_owned())
         start = end
       }
