@@ -1,6 +1,34 @@
 ///|
+fn parse_glyph_list(text : String) -> Array[Int32] {
+  let glyphs : Array[Int32] = []
+  let mut value = 0
+  let mut any = false
+  let mut negative = false
+  for ch in text {
+    if ch == ',' {
+      if any {
+        glyphs.push(if negative { -value } else { value })
+      }
+      value = 0
+      any = false
+      negative = false
+    } else if ch == '-' {
+      negative = true
+    } else if ch >= '0' && ch <= '9' {
+      value = value * 10 + ch.to_int() - '0'.to_int()
+      any = true
+    }
+  }
+  if any {
+    glyphs.push(if negative { -value } else { value })
+  }
+  glyphs
+}
+
+///|
 #export_name("inspect_gsub")
-pub fn inspect_gsub(data : Bytes, roots : Array[Int32]) -> String {
+pub fn inspect_gsub(data : Bytes, roots : String) -> String {
+  let roots = parse_glyph_list(roots)
   let (valid, result, truncated) = match @otlayout.parse_gsub(data[:]) {
     Some(gsub) => (true, gsub.reachable(roots), gsub.truncated())
     None => {
@@ -117,7 +145,8 @@ pub fn inspect_gdef(data : Bytes) -> String {
 
 ///|
 #export_name("inspect_gpos_pairs")
-pub fn inspect_gpos_pairs(data : Bytes, queries : Array[Int32]) -> String {
+pub fn inspect_gpos_pairs(data : Bytes, queries : String) -> String {
+  let queries = parse_glyph_list(queries)
   match @otlayout.parse_gpos(data[:]) {
     None => Json::object({ "valid": Json::boolean(false) }).stringify()
     Some(table) => {
