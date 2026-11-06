@@ -80,6 +80,7 @@ fn job_attrs(server : Server, job : Job) -> Array[@ipp.Attribute] {
     @ipp.attr("job-printer-uri", [@ipp.uri(server.printer_uri)]),
     @ipp.attr("job-originating-user-name", [@ipp.name(job.user)]),
     @ipp.attr("job-impressions-completed", [@ipp.integer(job.impressions)]),
+    @ipp.attr("job-impressions", [@ipp.integer(job.impressions * job.copies)]),
     @ipp.attr("copies", [@ipp.integer(job.copies)]),
   ]
 }

@@ -559,3 +559,24 @@ test "ipp server rejects a negative job limit" {
   assert_eq(response.code, @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST)
 }
 
+///|
+test "ipp server reports total job impressions" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  let create = client.create_job("two-copies", [
+    @ipp.attr("copies", [@ipp.integer(2)]),
+  ])
+  ignore(server.handle(create))
+  let send = client.send_document(1, "two.pdf", "application/pdf", true)
+  let response = server.handle_with_document(send, b"%PDF-1.7")
+  let group = match response.group(@ipp.TAG_JOB) {
+    Some(group) => group
+    None => fail("missing job group")
+  }
+  let impressions = match group.get("job-impressions") {
+    Some(attribute) => attribute.int()
+    None => None
+  }
+  assert_eq(impressions, Some(2))
+}
+
