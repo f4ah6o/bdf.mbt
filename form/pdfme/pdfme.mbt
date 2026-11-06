@@ -199,7 +199,7 @@ fn FieldPainter::draw_text(
   let lines = split_lines(text)
   for i, line in lines {
     let advance = Float::from_double(
-      line.length().to_double() * size.to_double() * 0.5,
+      @drawingml.text_width(line, size.to_double()),
     )
     let start = if alignment == "center" {
       x + (width - advance) / 2.0

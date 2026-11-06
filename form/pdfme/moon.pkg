@@ -2,6 +2,7 @@ import {
   "f4ah6o/bdf/core" @core,
   "f4ah6o/bdf/render" @render,
   "f4ah6o/bdf/convert/pdf" @pdf,
+  "f4ah6o/bdf/convert/drawingml" @drawingml,
   "allenli178/moon-qrcode/core" @qrcode,
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/utf8",
