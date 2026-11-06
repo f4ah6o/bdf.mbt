@@ -355,6 +355,10 @@ pub fn Server::handle_with_document(
       Some(attribute) => attribute.int().unwrap_or(0)
       None => 0
     }
+    let requested = match request.attr(@ipp.TAG_OPERATION, "requested-attributes") {
+      Some(attribute) => attribute.strings()
+      None => []
+    }
     let mut added = 0
     for job in self.jobs {
       let done = @ipp.job_state_done(job.state)
@@ -366,7 +370,7 @@ pub fn Server::handle_with_document(
         !done
       }
       if take && (!my_jobs || job.user == user) && (limit <= 0 || added < limit) {
-        response.add(@ipp.TAG_JOB, job_attrs(self, job))
+        response.add(@ipp.TAG_JOB, filter_job_attrs(job_attrs(self, job), requested))
         added += 1
       }
     }

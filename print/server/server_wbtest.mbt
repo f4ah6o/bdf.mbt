@@ -334,3 +334,22 @@ test "ipp server filters requested job attributes" {
   assert_eq(group.attrs[0].name, "job-state")
 }
 
+///|
+test "ipp server filters requested job list attributes" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  ignore(server.handle(client.create_job("listed", [])))
+  let request = client.request(@ipp.OP_GET_JOBS)
+  request.add(@ipp.TAG_OPERATION, [
+    @ipp.attr("which-jobs", [@ipp.keyword("all")]),
+    @ipp.attr("requested-attributes", [@ipp.keyword("job-name")]),
+  ])
+  let response = server.handle(request)
+  let group = match response.group(@ipp.TAG_JOB) {
+    Some(group) => group
+    None => fail("missing job group")
+  }
+  assert_eq(group.attrs.length(), 1)
+  assert_eq(group.attrs[0].name, "job-name")
+}
+
