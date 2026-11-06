@@ -1425,6 +1425,11 @@ fn FieldPainter::draw_table(
       color_of(styles.get("backgroundColor"), 0x00000000)
     _ => 0x00000000
   }
+  let head_color = match json_field(field, "headStyles") {
+    Some(Json::Object(styles)) =>
+      color_of(styles.get("fontColor"), color_of(json_field(field, "fontColor"), 0x000000ff))
+    _ => color_of(json_field(field, "fontColor"), 0x000000ff)
+  }
   let font = self.font(text_of(json_field(field, "fontName"), "Helvetica"))
   self.builder.font(font, size) catch {
     _ => raise PdfmeError("pdfme: a font cannot be set")
@@ -1441,9 +1446,13 @@ fn FieldPainter::draw_table(
     self.builder.font(font, row_size) catch {
       _ => raise PdfmeError("pdfme: a font cannot be set")
     }
-    if head_row && head_background != 0x00000000 {
-      self.builder.fill_color(head_background)
-      self.builder.fill_rect(x, y - row_height, width, row_height)
+    if head_row {
+      if head_background != 0x00000000 {
+        self.builder.fill_color(head_background)
+        self.builder.fill_rect(x, y - row_height, width, row_height)
+      }
+      self.builder.fill_color(head_color)
+    } else {
       self.builder.fill_color(color_of(json_field(field, "fontColor"), 0x000000ff))
     }
     for i in 0..<columns {
