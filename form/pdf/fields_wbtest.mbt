@@ -57,6 +57,20 @@ test "pdf overlay draws form values" {
       }
     }
   }
+  let expected_color = fields[0].font_color.unwrap().reinterpret_as_int()
+  let commands = @render.decode_commands(
+    document.part(document.manifest.views[0].pages[0].layers[0].object),
+  ) catch {
+    _ => fail("overlay commands cannot be decoded")
+  }
+  assert_true(
+    commands.any(fn(command) {
+      match command {
+        @render.FillColor(color) => color == expected_color
+        _ => false
+      }
+    }),
+  )
   assert_true(text.contains("Alice"), msg=text)
   assert_true(text.contains("Bob"), msg=text)
   assert_true(text.contains("X"), msg=text)
