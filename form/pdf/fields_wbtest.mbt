@@ -131,3 +131,19 @@ test "pdf overlay can skip read-only fields" {
   )
   assert_true(resources2.object.strings.contains("New"))
 }
+///|
+test "pdf overlay respects maximum lengths" {
+  let pdf =
+    #|%PDF-1.7
+    #|1 0 obj << /Type /Page /MediaBox [0 0 200 100] >>
+    #|2 0 obj << /T (name) /V () /FT /Tx /MaxLen 3 /Rect [10 20 100 40] >>
+    #|%%EOF
+  let bdf = fill_overlay(@utf8.encode(pdf), @utf8.encode("{\"name\":\"Alice\"}"))
+  let document = @core.open_single(bdf)
+  let resources = @core.decode_object_resources(
+    document.part(document.manifest.parts[0].hash),
+  )
+  assert_true(resources.object.strings.contains("Ali"))
+  assert_true(!resources.object.strings.contains("Alice"))
+}
+

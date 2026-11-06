@@ -158,6 +158,15 @@ pub fn fill_overlay(
     } else {
       raw
     }
+    let value = match field.max_len {
+      Some(limit) =>
+        if limit >= 0 && value.length() > limit {
+          value[:limit].to_owned()
+        } else {
+          value
+        }
+      None => value
+    }
     if value == "" {
       continue
     }
