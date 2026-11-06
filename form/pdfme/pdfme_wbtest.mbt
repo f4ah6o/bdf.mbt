@@ -573,12 +573,26 @@ test "pdfme falls back from a non-positive font size" {
 ///|
 test "pdfme falls back from non-positive table fonts" {
   let template =
-    #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item"],"fontSize":0,"columnStyles":[{"fontSize":0}],"rowHeight":0,"cellPadding":-2}]]}
+    #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item"],"fontSize":0,"columnStyles":[{"fontSize":0}],"rowHeight":0,"cellPadding":-2,"opacity":0.5}]]}
   let data = #|{"lines":[{"item":"Pen"}]}
   let result = fill(@utf8.encode(template), @utf8.encode(data))
   assert_eq(result.warnings.length(), 0)
   let text = pdfme_text(result.bdf)
   assert_true(text.contains("Pen"), msg=text)
+  let document = @core.open_single(result.bdf)
+  let commands = @render.decode_commands(
+    document.part(document.manifest.parts[0].hash),
+  ) catch {
+    _ => fail("table commands cannot be decoded")
+  }
+  assert_true(
+    commands.any(fn(command) {
+      match command {
+        @render.Alpha(value) => (value - 0.5).abs() < 0.001
+        _ => false
+      }
+    }),
+  )
 }
 
 ///|
