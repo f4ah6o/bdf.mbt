@@ -311,6 +311,9 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
     self.builder.line(width, 0, 0, 0.0F)
     stroke_segment(self.builder, x, y_top, x + mm_to_pt(width_mm), y_top)
   } else if typ == "rectangle" {
+    let opacity = Double::max(0.0, Double::min(1.0, number_of(json_field(field, "opacity"), 1.0)))
+    self.builder.save()
+    self.builder.alpha(Float::from_double(opacity))
     self.builder.fill_color(color_of(json_field(field, "color"), 0xffffffff))
     self.builder.stroke_color(color_of(json_field(field, "borderColor"), 0x000000ff))
     if text_of(json_field(field, "borderStyle"), "solid") == "dashed" {
@@ -326,6 +329,7 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
     )
     self.builder.fill_rect(x, y_top - height, width, height)
     self.builder.stroke_rect(x, y_top - height, width, height)
+    self.builder.restore()
   } else if typ == "qrcode" {
     self.draw_qr(field, data, x, y_top, width, height)
   } else if typ == "barcode" {
