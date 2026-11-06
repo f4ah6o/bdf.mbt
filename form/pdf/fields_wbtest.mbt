@@ -510,3 +510,17 @@ test "pdf overlay rotates page coordinates by 180 degrees" {
   assert_true(transformed)
 }
 
+///|
+test "pdf overlay combines rotation with a CropBox origin" {
+  let pdf = @base64.decode(
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgL0Fjcm9Gb3JtIDw8IC9GaWVsZHMgWzMgMCBSXSA+PiA+PgplbmRvYmoKMiAwIG9iago8PCAvVHlwZSAvUGFnZXMgL0tpZHMgWzQgMCBSXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvQW5ub3QgL1N1YnR5cGUgL1dpZGdldCAvRlQgL1R4IC9UIChuYW1lKSAvViAoKSAvUmVjdCBbMzAgNDAgNjAgNTBdIC9QIDQgMCBSID4+CmVuZG9iago0IDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL0Nyb3BCb3ggWzEwIDIwIDIxMCAxMjBdIC9Sb3RhdGUgOTAgL0Fubm90cyBbMyAwIFJdID4+CmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA5MCAwMDAwMCBuIAowMDAwMDAwMTQ3IDAwMDAwIG4gCjAwMDAwMDAyNTEgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgozNTAKJSVFT0YK",
+  )
+  let bdf = fill_overlay(pdf, @utf8.encode("{\"name\":\"Alice\"}"))
+  let document = @core.open_single(bdf)
+  let page = document.manifest.views[0].pages[0]
+  assert_eq(page.width, 100.0)
+  assert_eq(page.height, 200.0)
+  let resources = @core.decode_object_resources(document.part(page.layers[0].object))
+  assert_true(resources.object.strings.contains("Alice"))
+}
+
