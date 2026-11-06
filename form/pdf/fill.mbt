@@ -43,6 +43,15 @@ fn replace_pdf_value(body : String, value : String) -> String {
         Some(index) => index
         None => return body
       }
+      let name_at = skip_spaces(body, t_at + 2)
+      if name_at < body.length() && body[name_at].to_char().unwrap() == '(' {
+        match literal_string(body, name_at) {
+          Some((_, end)) =>
+            return body[:end].to_owned() + " /V (" + escaped + ")" +
+              body[end:].to_owned()
+          None => ()
+        }
+      }
       return body[:t_at].to_owned() + "/V (" + escaped + ") " + body[t_at:].to_owned()
     }
   }

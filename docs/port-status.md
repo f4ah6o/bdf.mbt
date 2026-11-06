@@ -72,6 +72,111 @@
   HKDF-SHA-256, AES-KW, AES-GCM and P-256 ECDH are in `crypto`, and encrypted
   BDF documents unlock with a password or P-256 private key through `core`.
 
+## Document parity harness
+
+- `npm run test:parity` converts the upstream document fixtures with the
+  upstream TinyGo Wasm converter and the MoonBit native Worker and compares
+  the canonical BDF, text index, MARK/LINK, summary and warnings. It is not a
+  green gate yet: the current baseline is 12 pass, 40 diff, 0 one-sided error
+  (see [docs/parity.md](parity.md)).
+- The target commit is `a5e4d7a`; fixtures live in
+  `compat/parity/fixtures`.
+- The program scope now includes `form/` (template filling) and `print/`
+  (IPP/CUPS), after the document converter parity gates.
+
+## Form and print
+
+- `form/tag` is ported: text and tags, values, sections, pictures, number
+  formats, modes, text columns and code options, plus scopes, JSON truthiness
+  and items, date parsing, value text, section variables and field collection,
+  with the upstream tag and scope tests as MoonBit tests (12 tests).
+- `form/textpart` is ported for the print image: width/cells/tall/rows, plain
+  text with margins/paper/CRLF, the version-1 JSON encode/decode with its
+  limits and checks, and the BDF part glue (`from_document`, `Image::add_to`)
+  with 6 tests.
+- `form/data` loads JSON, YAML, CSV/TSV/TXT and XLSX workbooks as objects
+  or lists (numbers/booleans/empty values, header rows, named values and
+  dotted names, merging), with 5 tests.
+- `form/pdf` reads AcroForm field names, values (literal, hex, UTF-16BE,
+  name), types and rectangles, writes values into classic-xref PDFs with an
+  incremental update (5 tests), and draws a blank-page value overlay
+  (multi-line values included) for preprinted forms.
+- `form/ooxml` replaces `{{name}}` tags in OOXML XML parts, including tags
+  split across runs (the run markup between them is removed), expands
+  boolean `{{#name}}`/`{{^name}}` conditions, expands object-list
+  `{{#items}}`…`{{/items}}` sections item by item, and rebuilds stored
+  ZIPs (3 tests); `form/docx`, `form/pptx` and `form/xlsx` fill Office
+  documents and convert them (1 test each). Scalar list items are reported.
+- `form/pdfme` fills a pdfme template (blank pages, text/line/rectangle/
+  checkbox/table/image fields, static schema, multiVariableText variables,
+  text backgrounds/borders, base-PDF MediaBox page size, QR codes, Code 39,
+  Code 128, EAN-13, EAN-8, UPC-A, ITF and NW-7 barcodes, arithmetic
+  expressions) into BDF; base PDF content and other 1D formats are gaps
+  (15 tests).
+- `form/schema` writes the JSON Schema of the data of a template from its
+  fields and a sample (objects, lists, conditions, pictures/codes, number
+  formats, options, defaults, slots and the `x-bdf` keyword), with 3 tests.
+- `form/textform` reads a plain-text template: the front matter (grid,
+  margins, skip/title, font, ambiguous width, comments, quoted scalars and
+  flow/block mappings), body lines and tags, page breaks, character/line
+  attribute sections (`_wide`, `_tall`, `_big`, `preprinted`), section
+  matching/modes and field collection. Filling covers values, inverted and
+  normal sections (rows/slots/pages), section variables, columns
+  (width/right/center/cut/wrap), combining marks, tabs, attribute ranges,
+  automatic pagination/title lines and the print image; strict data and a
+  number formatter are options (`fill_result_with`), and `fill_sources`
+  connects form/data's JSON/YAML/CSV sources; 17 tests.
+- `convert/textform` lays the image out as a fixed BDF view: grid columns,
+  baseline, paper/body layers, tall characters, paragraph/table/cell marks,
+  the print image as the `text` part, a text index and the `pages` option;
+  `convert`/`convert_sources` fill and render in one step (4 tests). Font
+  embedding and the font options of the upstream converter remain.
+- Next are the textform font options, the form partials and the other
+  per-format fillers.
+- CI runs `moon check/test/build` for js and wasm-gc, a demo job that
+  builds and tests the demo, and a parity workflow that converts the
+  document fixtures with the upstream Wasm package and the MoonBit worker
+  and uploads the report.
+- `print/raster` is started: the PWG Raster page header (1796 bytes,
+  PWG 5102.4), row compression (runs/literals), the stream writer with row
+  repetition, the reader, page fitting (print-scaling, orientation,
+  sheet-back mirrors), RGBA-to-gray/RGB/one-bit row conversion, and Apple
+  Raster headers/streams, a PCLm writer with RunLengthDecode and
+  FlateDecode strips, and one-page PWG/URF/PCLm encoders from RGBA pixels,
+  `PclmWriter::write_image_row` for RGBA rows, and bounded PWG reads,
+  with 19 tests.
+  `print/server` answers Get-Printer-Attributes,
+  Validate-Job, Create/Print-Job, Get-Job-Attributes, Cancel-Job and
+  Get-Jobs in memory (which-jobs, my-jobs and limit filters), with an HTTP
+  request/response envelope, Print-Job documents stored on the job,
+  job-state-reasons, and PWG page counting/abort (7 tests). `print/ipp` now has the tags, the
+  message model and the binary request/response codec (integers, booleans,
+  strings, languages, resolution, range, dateTime, octet strings and
+  nested collections, with decode limits for bytes, attributes, values,
+  value size and collection depth, and the group/attribute accessors
+  (strings, ints, booleans, collections, resolutions, ranges), plus printer
+  URL parsing (ipp/ipps/http/https, port 631, IPv6), requested-attributes,
+  attribute filtering, printer groups, job/printer states and JobStatus
+  parsing, the Printer model with media-col parsing, and DNS-SD TXT
+  records/services (formats, URLs), and the HTTP request/response
+  envelope around IPP messages, and a transport-agnostic Client that builds
+  printer/job requests, response status checks/StatusError, and a
+  transport-agnostic send over an HTTP post callback, and high-level
+  fetch-printer/validate/create/send/print/job/cancel/jobs operations, and
+  `print_pdf` sends a PDF after the Print-Job message, `print_data`
+  sends any format, `decode_prefix` leaves the document after the
+  message, `get_jobs` lists jobs, and `print_pwg`/`print_urf`/
+  `print_pclm` wrap the formats; 26 tests).
+  `print` exports a BDF document as PDF (`bdf_pdf`) and prints it
+  (`print_bdf`, 1 test). `print/dnssd` has the DNS wire format (queries,
+  responses, PTR/SRV/TXT/A/AAAA records, printer advertisement records,
+  discovery of services from responses, IPv4/IPv6 addresses, mDNS
+  probe/announce messages and browsing over a caller-supplied transport;
+  7 tests). `print/ipp_js` adds the browser/Node fetch transport and
+  `send_async`/`send_document_async`, `print_pdf_async` and
+  `get_jobs_async` (3 tests).
+  The CUPS client and the print server remain.
+
 ## Converter gaps
 
 - PDF: Type1 `/FontFile` programs are interpreted into Type 2 outlines and a
@@ -82,10 +187,12 @@
   dictionaries and halftone), Type3 glyph procedures, URI actions on form
   fields, and standard-security-handler revisions 2, 3, 4, 5 and 6 (RC4,
   AES-128 and AES-256) are supported. JPX/JBIG2-encoded images with
-  colour-key masks are decoded and composited; DCT colour-key masks, tagged
-  structure, and CCITT/JBIG2/JPX masks combined with colour-key masks remain
-  explicit gaps; CCITT G3/G4 image XObjects and inline images are
-  decoded.
+  colour-key masks are decoded and composited, and a 4-component JPX image
+  without a declared colour space is now treated as RGB with an alpha
+  component (the JPX fixture drops from 8 to 3 differences). DCT colour-key
+  masks, tagged structure, one RGB JP2 rounding difference and
+  CCITT/JBIG2/JPX masks combined with colour-key masks remain explicit gaps;
+  CCITT G3/G4 image XObjects and inline images are decoded.
 - XLSX: `convert/xlsx` renders styled worksheets with number formats, merges,
   row/column geometry, print areas, conditional formats, tables, links,
   pictures, drawings and charts, plus fixed chart-sheet pages, with upstream
@@ -197,3 +304,21 @@
 5. Keep importing the remaining upstream test data for every ported format and
    assert either parity or the exact documented warning; never skip a fixture
    silently.
+
+## Status at round 100
+
+- Full MoonBit tests: 2630/2630 pass on JS and 2614/2614 pass on wasm-gc.
+- Document parity harness: 12 pass, 40 diff, 0 one-sided errors, 0 both-error.
+- Demo: all 20 upstream pages plus search, navigation, download, CSV, SVG,
+  fonts, XLSX, draw.io, Parquet, sheet switching, embedded PNG, save/reload,
+  warnings, replacement, errors and the mobile path pass.
+- Form: textform, data (JSON/YAML/CSV/TSV/XLSX), OOXML value/condition/list
+  tags with DOCX/PPTX/XLSX wrappers, basic pdfme fields/QR/barcodes/
+  expressions, and PDF AcroForm reading plus an overlay.
+- Print: IPP client/server, PWG/URF/PCLm encoders and readers, PDF and
+  raster printing, DNS-SD records and browse over a supplied transport.
+- Not complete: upstream document parity is still 12/52; PDF form writing,
+  form partials, OOXML rows that cross table structure, pdfme base-PDF
+  content, BDF rasterization, real CUPS/UDP sockets and several documented
+  converter subsets remain gaps. This port is not claimed to be complete.
+
