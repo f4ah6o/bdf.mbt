@@ -320,6 +320,14 @@ fn data_button_state(data : Json, name : String) -> String? {
       match object.get(name) {
         Some(Json::True) => Some("/Yes")
         Some(Json::False) => Some("/Off")
+        Some(Json::String(text)) =>
+          if text == "" {
+            None
+          } else if text.has_prefix("/") {
+            Some(text)
+          } else {
+            Some("/" + text)
+          }
         _ => None
       }
     _ => None
