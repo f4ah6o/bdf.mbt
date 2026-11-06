@@ -7,6 +7,7 @@ pub(all) struct Job {
   mut state : Int
   mut document : Bytes
   mut impressions : Int
+  copies : Int
   attrs : Array[@ipp.Attribute]
 }
 
@@ -76,6 +77,7 @@ fn job_attrs(server : Server, job : Job) -> Array[@ipp.Attribute] {
     @ipp.attr("job-state-reasons", [@ipp.keyword(state_reason(job.state))]),
     @ipp.attr("job-printer-uri", [@ipp.uri(server.printer_uri)]),
     @ipp.attr("job-impressions-completed", [@ipp.integer(job.impressions)]),
+    @ipp.attr("copies", [@ipp.integer(job.copies)]),
   ]
 }
 
@@ -109,6 +111,7 @@ fn Server::create_job(self : Server, request : @ipp.Message) -> Job {
     state: @ipp.JOB_PENDING,
     document: Bytes::new(0),
     impressions: 0,
+    copies: request_copies(request),
     attrs: [],
   }
   self.jobs.push(job)
@@ -151,8 +154,8 @@ fn pdf_page_count(data : Bytes) -> Int {
 }
 
 ///|
-fn Server::copies_supported(self : Server, request : @ipp.Message) -> Bool {
-  let copies = match request.attr(@ipp.TAG_OPERATION, "copies") {
+fn request_copies(request : @ipp.Message) -> Int {
+  match request.attr(@ipp.TAG_OPERATION, "copies") {
     Some(attribute) => attribute.int().unwrap_or(1)
     None =>
       match request.attr(@ipp.TAG_JOB, "copies") {
@@ -160,6 +163,11 @@ fn Server::copies_supported(self : Server, request : @ipp.Message) -> Bool {
         None => 1
       }
   }
+}
+
+///|
+fn Server::copies_supported(self : Server, request : @ipp.Message) -> Bool {
+  let copies = request_copies(request)
   if copies <= 0 {
     return false
   }

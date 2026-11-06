@@ -466,3 +466,22 @@ test "ipp server validates create-job copies" {
   assert_eq(server.jobs.length(), 0)
 }
 
+///|
+test "ipp server reports job copies" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  let request = client.create_job("copies", [
+    @ipp.attr("copies", [@ipp.integer(2)]),
+  ])
+  let response = server.handle(request)
+  let group = match response.group(@ipp.TAG_JOB) {
+    Some(group) => group
+    None => fail("missing job group")
+  }
+  let copies = match group.get("copies") {
+    Some(attribute) => attribute.int()
+    None => None
+  }
+  assert_eq(copies, Some(2))
+}
+
