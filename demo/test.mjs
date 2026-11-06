@@ -278,7 +278,6 @@ try {
   assert.ok(warningCase, 'XLSX warning fixture');
   await page.locator('#file').setInputFiles({ name: 'rtl.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from(warningCase.input, 'base64') });
   await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'rtl.xlsx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
-  console.log('rtl status:', await page.locator('#status').textContent());
   await page.waitForFunction(() => /right-to-left sheets are drawn left to right/.test(document.querySelector('#status').textContent), null, { timeout: 30000 });
   const unsupported = JSON.parse(await readFile(resolve(import.meta.dirname, '../compat/xlsx/ignored-sheet-extensions-unsupported.json')));
   await page.locator('#file').setInputFiles({ name: 'unsupported.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from(unsupported[0], 'base64') });

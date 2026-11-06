@@ -33,7 +33,7 @@ extern "js" fn native_converter_result(
   warnings : Array[String],
   opened : Bool,
 ) -> Unit =
-  #|(request,bdf,format,summary,warnings,opened) => {const result={bdf,format,summary,warnings,protected:false};if(opened)result.pages=0;self.postMessage({id:Number(request.id),ok:true,result},[bdf.buffer])}
+  #|(request,bdf,format,summary,warnings,opened) => {const list=Array.isArray(warnings)?warnings:(warnings.buf??[]).slice(0,warnings.len??0);const result={bdf,format,summary,warnings:list,protected:false};if(opened)result.pages=0;self.postMessage({id:Number(request.id),ok:true,result},[bdf.buffer])}
 
 ///|
 extern "js" fn native_converter_error(
