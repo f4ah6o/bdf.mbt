@@ -531,3 +531,21 @@ test "ipp server rejects unknown which-jobs values" {
   assert_eq(response.code, @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST)
 }
 
+///|
+test "ipp server reports a processing job reason" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  ignore(server.handle(client.create_job("processing", [])))
+  let request = client.send_document(1, "part.pdf", "application/pdf", false)
+  let response = server.handle_with_document(request, b"%PDF-1.")
+  let group = match response.group(@ipp.TAG_JOB) {
+    Some(group) => group
+    None => fail("missing job group")
+  }
+  let reason = match group.get("job-state-reasons") {
+    Some(attribute) => attribute.text()
+    None => ""
+  }
+  assert_eq(reason, "job-printing")
+}
+

@@ -62,6 +62,8 @@ fn state_reason(state : Int) -> String {
     "job-canceled-by-user"
   } else if state == @ipp.JOB_ABORTED {
     "job-aborted-by-system"
+  } else if state == @ipp.JOB_PROCESSING {
+    "job-printing"
   } else {
     "none"
   }
