@@ -232,6 +232,13 @@ fn FieldPainter::draw_text(
   let width = mm_to_pt(number_of(json_field(field, "width"), 50.0))
   let alignment = text_of(json_field(field, "alignment"), "left")
   let lines = pdfme_wrap_text(text, size.to_double(), width.to_double())
+  let vertical = text_of(json_field(field, "verticalAlignment"), "top")
+  let mut first_y = y
+  if vertical == "middle" {
+    first_y -= Float::from_double(lines.length().to_double() - 1.0) * line_height / 2.0
+  } else if vertical == "bottom" {
+    first_y -= Float::from_double(lines.length().to_double() - 1.0) * line_height
+  }
   for i, line in lines {
     let advance = Float::from_double(
       @drawingml.text_width(line, size.to_double()),
@@ -243,7 +250,7 @@ fn FieldPainter::draw_text(
     } else {
       x
     }
-    self.builder.fill_text(line, start, y - Float::from_double(i.to_double()) * line_height, advance)
+    self.builder.fill_text(line, start, first_y - Float::from_double(i.to_double()) * line_height, advance)
   }
 }
 
