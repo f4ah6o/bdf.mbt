@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/form/pdf"
+
+// Values
+pub fn fill_overlay(Bytes, Bytes, title? : String) -> Bytes raise PdfFillError
+
+pub fn fill_pdf(Bytes, Bytes) -> Bytes raise PdfFillError
+
+pub fn read_fields(Bytes) -> Array[Field]
+
+// Errors
+pub suberror PdfFillError {
+  PdfFillError(String)
+}
+
+// Types and methods
+pub(all) struct Field {
+  name : String
+  value : String
+  typ : String
+  rect : (Double, Double, Double, Double)?
+}
+
+// Type aliases
+
+// Traits
