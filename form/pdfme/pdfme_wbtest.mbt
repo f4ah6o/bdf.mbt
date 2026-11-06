@@ -57,7 +57,7 @@ test "pdfme fills a table" {
 ///|
 test "pdfme fills an image" {
   let template =
-    #|{"basePdf":{"width":100,"height":50},"schemas":[[{"name":"logo","type":"image","position":{"x":10,"y":10},"width":20,"height":20,"opacity":0.5}]]}
+    #|{"basePdf":{"width":100,"height":50},"schemas":[[{"name":"logo","type":"image","position":{"x":10,"y":10},"width":20,"height":20,"opacity":0.5,"objectFit":"scale-down"}]]}
   let png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/l8ZkAAAAAElFTkSuQmCC"
   let data = "{\"logo\":\"data:image/png;base64," + png + "\"}"
   let result = fill(@utf8.encode(template), @utf8.encode(data))

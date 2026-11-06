@@ -569,6 +569,32 @@ fn FieldPainter::draw_image(
       )
       None => (x, y_top, width, height)
     }
+  } else if fit == "scale-down" {
+    match dimensions {
+      Some((image_width, image_height)) =>
+        if image_width <= width.to_double() && image_height <= height.to_double() {
+          (
+            x + Float::from_double((width.to_double() - image_width) / 2.0),
+            y_top - Float::from_double((height.to_double() - image_height) / 2.0),
+            Float::from_double(image_width),
+            Float::from_double(image_height),
+          )
+        } else {
+          let scale = Double::min(
+            width.to_double() / image_width,
+            height.to_double() / image_height,
+          )
+          let fitted_width = image_width * scale
+          let fitted_height = image_height * scale
+          (
+            x + Float::from_double((width.to_double() - fitted_width) / 2.0),
+            y_top - Float::from_double((height.to_double() - fitted_height) / 2.0),
+            Float::from_double(fitted_width),
+            Float::from_double(fitted_height),
+          )
+        }
+      None => (x, y_top, width, height)
+    }
   } else {
     (x, y_top, width, height)
   }
