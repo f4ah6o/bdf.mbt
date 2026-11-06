@@ -1092,6 +1092,108 @@ fn FieldPainter::draw_msi(
 }
 
 ///|
+fn code93_index(c : Char) -> Int? {
+  let code = c.to_int()
+  if code >= '0'.to_int() && code <= '9'.to_int() {
+    Some(code - '0'.to_int())
+  } else if code >= 'A'.to_int() && code <= 'Z'.to_int() {
+    Some(code - 'A'.to_int() + 10)
+  } else {
+    match c {
+      '-' => Some(36)
+      '.' => Some(37)
+      ' ' => Some(38)
+      '$' => Some(39)
+      '/' => Some(40)
+      '+' => Some(41)
+      '%' => Some(42)
+      _ => None
+    }
+  }
+}
+
+///|
+fn code93_patterns() -> Array[String] {
+  [
+    "100010100", "101001000", "101000100", "101000010", "100101000",
+    "100100100", "100100010", "101010000", "100010010", "100001010",
+    "110101000", "110100100", "110100010", "110010100", "110010010",
+    "110001010", "101101000", "101100100", "101100010", "100110100",
+    "100011010", "101011000", "101001100", "101000110", "100101100",
+    "100010110", "110110100", "110110010", "110101100", "110100110",
+    "110010110", "110011010", "101101100", "101100110", "100110110",
+    "100111010", "100101110", "111010100", "111010010", "111001010",
+    "101101110", "101110110", "110101110", "100100110", "111011010",
+    "111010110", "100110010", "101011110",
+  ]
+}
+
+///|
+fn code93_check(values : Array[Int]) -> Int {
+  let mut weight = 1
+  let mut sum = 0
+  for i in 0..<values.length() {
+    sum += values[values.length() - 1 - i] * weight
+    weight += 1
+    if weight > 20 {
+      weight = 1
+    }
+  }
+  sum % 47
+}
+
+///|
+fn FieldPainter::draw_code93(
+  self : FieldPainter,
+  field : Json,
+  data : Json,
+  x : Float,
+  y_top : Float,
+  width : Float,
+  height : Float,
+) -> Unit raise PdfmeError {
+  let value = field_text(field, data).to_upper()
+  if value == "" {
+    return
+  }
+  let values : Array[Int] = []
+  for c in value {
+    let index = match code93_index(c) {
+      Some(index) => index
+      None => raise PdfmeError("pdfme: Code 93 takes digits, A-Z and - . space $ / + %")
+    }
+    values.push(index)
+  }
+  let c_check = code93_check(values)
+  let k_values = values.copy()
+  k_values.push(c_check)
+  let k_check = code93_check(k_values)
+  let patterns = code93_patterns()
+  let bits = StringBuilder()
+  bits.write_string(patterns[47])
+  for index in values {
+    bits.write_string(patterns[index])
+  }
+  bits.write_string(patterns[c_check])
+  bits.write_string(patterns[k_check])
+  bits.write_string(patterns[47])
+  bits.write_char('1')
+  let text = bits.to_string()
+  let module = width / Float::from_double(text.length().to_double())
+  self.builder.fill_color(0x000000ff)
+  for i in 0..<text.length() {
+    if text[i] == '1' {
+      self.builder.fill_rect(
+        x + Float::from_double(i.to_double()) * module,
+        y_top - height,
+        module,
+        height,
+      )
+    }
+  }
+}
+
+///|
 fn FieldPainter::draw_barcode(
   self : FieldPainter,
   field : Json,
@@ -1120,6 +1222,10 @@ fn FieldPainter::draw_barcode(
   }
   if format == "msi" {
     self.draw_msi(field, data, x, y_top, width, height)
+    return
+  }
+  if format == "code93" {
+    self.draw_code93(field, data, x, y_top, width, height)
     return
   }
   if format == "code128" {

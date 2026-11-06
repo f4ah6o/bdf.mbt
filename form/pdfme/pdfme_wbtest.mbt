@@ -326,3 +326,20 @@ test "pdfme draws an MSI barcode" {
   assert_true(ops > 50)
 }
 
+///|
+test "pdfme draws a Code 93 barcode" {
+  let template =
+    #|{"basePdf":{"width":80,"height":50},"schemas":[[{"name":"code","type":"barcode","readOnly":true,"content":"ABC-123","format":"code93","position":{"x":10,"y":10},"width":60,"height":20}]]}
+  let result = fill(@utf8.encode(template), @utf8.encode("{}"))
+  assert_eq(result.warnings.length(), 0)
+  let document = @core.open_single(result.bdf)
+  let mut ops = 0
+  for part in document.manifest.parts {
+    if part.kind == "obj" {
+      let resources = @core.decode_object_resources(document.part(part.hash))
+      ops += resources.object.ops.length()
+    }
+  }
+  assert_true(ops > 50)
+}
+
