@@ -59,7 +59,7 @@ async fn RenderWorkerState::open_range(
   let range = render_range_new(source)
   let head = render_range_read(range, 0.0, 32).wait()
   let header = @core.parse_header_prefix(head) catch {
-    error => return render_error(error.to_string(), "")
+    error => return render_error(render_error_message(error), "")
   }
   let stored = render_range_read(
     range,
@@ -75,7 +75,7 @@ async fn RenderWorkerState::open_range(
     },
     268435456,
   ) catch {
-    error => return render_error(error.to_string(), "")
+    error => return render_error(render_error_message(error), "")
   }
   let encrypted = render_json_encrypted(raw)
   if (header.flags == 1) != encrypted {
@@ -91,7 +91,7 @@ async fn RenderWorkerState::open_range(
       _ => return render_error("invalid UTF-8 manifest", "")
     }
     let metadata = @core.parse_encrypted_manifest(text) catch {
-      error => return render_error(error.to_string(), "")
+      error => return render_error(render_error_message(error), "")
     }
     self.locked = Some({
       metadata,
@@ -103,10 +103,10 @@ async fn RenderWorkerState::open_range(
     _ => return render_error("invalid UTF-8 manifest", "")
   }
   let manifest = @core.parse_manifest(text) catch {
-    error => return render_error(error.to_string(), "")
+    error => return render_error(render_error_message(error), "")
   }
   let doc = new_render_split(raw, render_range_loader(range, header, manifest)) catch {
-    error => return render_error(error.to_string(), "")
+    error => return render_error(render_error_message(error), "")
   }
   self.install(doc)
   render_success(render_json_value(doc.raw))

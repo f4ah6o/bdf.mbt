@@ -249,10 +249,10 @@ async fn RenderWorkerState::unlock(
   ) catch {
     WrongPassword =>
       return render_error("bdf: wrong password", "wrong-password")
-    error => return render_error(error.to_string(), "")
+    error => return render_error(render_error_message(error), "")
   }
   let document = new_render_split(manifest, loader) catch {
-    error => return render_error(error.to_string(), "")
+    error => return render_error(render_error_message(error), "")
   }
   self.locked = None
   self.install(document)
@@ -311,19 +311,19 @@ async fn RenderWorkerState::open_source(
         _ => return render_error("invalid UTF-8 manifest", "")
       }
       let metadata = @core.parse_encrypted_manifest(text) catch {
-        error => return render_error(error.to_string(), "")
+        error => return render_error(render_error_message(error), "")
       }
       self.locked = Some({ metadata, loader, })
       return self.unlock(request)
     }
     let doc = new_render_split(bytes, loader) catch {
-      error => return render_error(error.to_string(), "")
+      error => return render_error(render_error_message(error), "")
     }
     self.install(doc)
     return render_success(render_json_value(doc.raw))
   }
   let header = @core.parse_header(bytes) catch {
-    error => return render_error(error.to_string(), "")
+    error => return render_error(render_error_message(error), "")
   }
   if header.flags == 1 {
     if replace {
@@ -332,7 +332,7 @@ async fn RenderWorkerState::open_source(
       )
     }
     let sealed = @core.open_encrypted_single(bytes) catch {
-      error => return render_error(error.to_string(), "")
+      error => return render_error(render_error_message(error), "")
     }
     let loader = make_split_loader((hash, _) => {
       @js_async.Promise::from_async(() => sealed.stored_part(hash))
@@ -341,7 +341,7 @@ async fn RenderWorkerState::open_source(
     return self.unlock(request)
   }
   let doc = new_render_single(bytes) catch {
-    error => return render_error(error.to_string(), "")
+    error => return render_error(render_error_message(error), "")
   }
   self.install(doc)
   render_success(render_json_value(doc.raw))
