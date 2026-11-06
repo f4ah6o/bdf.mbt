@@ -144,7 +144,7 @@
   bounds, masks and modes (case-insensitive) are honored and
   non-positive text/table font sizes, line
   heights, row heights, cell padding, border widths and table widths fall
-  back to the defaults (33 tests).
+  back to the defaults (35 tests).
 - `form/schema` writes the JSON Schema of the data of a template from its
   fields and a sample (objects, lists, conditions, pictures/codes, number
   formats, options, defaults, slots and the `x-bdf` keyword), with 3 tests.
