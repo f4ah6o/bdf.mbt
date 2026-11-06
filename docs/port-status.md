@@ -105,7 +105,7 @@
   choice options (both names kept, display values map to export values,
   multiple values become a PDF array and are read back),
   writes values into classic-xref or xref-stream PDFs with an incremental
-  update (20 tests, maximum-length enforcement, hexadecimal field names, surrogate
+  update (21 tests, maximum-length enforcement in fills and overlays, hexadecimal field names, surrogate
   pairs, control-character escapes, optional read-only skipping, escaped
   literals, UTF-16BE hex, buttons, appearance on-state names, referenced
   AcroForms and `/NeedAppearances`), and draws a blank-page value overlay

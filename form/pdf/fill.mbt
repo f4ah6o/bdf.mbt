@@ -617,6 +617,15 @@ pub fn fill_pdf(
         } else {
           match data_text(data, name) {
             Some(value) => {
+              let value = match find_max_len(body, 0, body.length()) {
+                Some(limit) =>
+                  if limit >= 0 && value.length() > limit {
+                    value[:limit].to_owned()
+                  } else {
+                    value
+                  }
+                None => value
+              }
               let mapped = if body.contains("/Ch") {
                 choice_export_value(body, value)
               } else {
