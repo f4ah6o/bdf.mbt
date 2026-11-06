@@ -163,3 +163,19 @@ test "pdf comb fields expose the flag and separators" {
   assert_true(resources.object.ops.length() > 10)
 }
 
+///|
+test "pdf password fields are masked in overlays" {
+  let pdf = @base64.decode(
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgL0Fjcm9Gb3JtIDw8IC9GaWVsZHMgWzQgMCBSXSA+PiA+PgplbmRvYmoKMiAwIG9iago8PCAvVHlwZSAvUGFnZXMgL0tpZHMgWzMgMCBSXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDIwMCAxMDBdIC9Bbm5vdHMgWzQgMCBSXSA+PgplbmRvYmoKNCAwIG9iago8PCAvVHlwZSAvQW5ub3QgL1N1YnR5cGUgL1dpZGdldCAvRlQgL1R4IC9UIChzZWNyZXQpIC9GZiA4MTkyIC9WIChoaWRkZW4pIC9SZWN0IFsxMCAyMCAxMDAgNDBdIC9QIDMgMCBSID4+CmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA5MCAwMDAwMCBuIAowMDAwMDAwMTQ3IDAwMDAwIG4gCjAwMDAwMDAyMzQgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgozNTYKJSVFT0YK",
+  )
+  let fields = read_fields(pdf)
+  assert_true(fields[0].password)
+  let bdf = fill_overlay(pdf, @utf8.encode("{\"secret\":\"hidden\"}"))
+  let document = @core.open_single(bdf)
+  let resources = @core.decode_object_resources(
+    document.part(document.manifest.parts[0].hash),
+  )
+  assert_true(resources.object.strings.contains("******"))
+  assert_true(!resources.object.strings.contains("hidden"))
+}
+

@@ -27,6 +27,7 @@ pub(all) struct Field {
   read_only : Bool
   required : Bool
   comb : Bool
+  password : Bool
   alternate_name : String
   max_len : Int32?
   default_value : String

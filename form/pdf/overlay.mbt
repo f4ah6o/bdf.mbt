@@ -111,6 +111,15 @@ fn overlay_lines(value : String, width : Double, size : Double) -> Array[String]
 }
 
 ///|
+fn overlay_mask(value : String) -> String {
+  let result = StringBuilder::new()
+  for _ in 0..<value.length() {
+    result.write_string("*")
+  }
+  result.to_string()
+}
+
+///|
 /// Draw the values of the AcroForm fields at their rectangles on blank
 /// pages, for printing onto preprinted forms. This does not fill the PDF.
 pub fn fill_overlay(
@@ -166,6 +175,11 @@ pub fn fill_overlay(
           value
         }
       None => value
+    }
+    let value = if field.password && !is_button {
+      overlay_mask(value)
+    } else {
+      value
     }
     if value == "" {
       continue
