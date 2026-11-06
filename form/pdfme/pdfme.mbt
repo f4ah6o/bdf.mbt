@@ -1493,15 +1493,29 @@ fn FieldPainter::draw_radio_group(
   self.builder.fill_color(0x000000ff)
   self.builder.stroke_color(0x000000ff)
   self.builder.line(0.6, 0, 0, 0.0F)
-  let row = height / Float::from_double(options.length().to_double())
-  for i, option in options {
-    let top = y_top - Float::from_double(i.to_double()) * row
-    self.builder.stroke_rect(x, top - size, size, size)
-    if option == selected {
-      stroke_segment(self.builder, x, top - size, x + size, top)
-      stroke_segment(self.builder, x, top, x + size, top - size)
+  let horizontal = text_of(json_field(field, "direction"), "column") == "row"
+  if horizontal {
+    let cell = width / Float::from_double(options.length().to_double())
+    for i, option in options {
+      let left = x + Float::from_double(i.to_double()) * cell
+      self.builder.stroke_rect(left, y_top - size, size, size)
+      if option == selected {
+        stroke_segment(self.builder, left, y_top - size, left + size, y_top)
+        stroke_segment(self.builder, left, y_top, left + size, y_top - size)
+      }
+      self.builder.fill_text(option, left + size + 3.0, y_top - size, cell - size - 3.0)
     }
-    self.builder.fill_text(option, x + size + 3.0, top - size, width - size - 3.0)
+  } else {
+    let row = height / Float::from_double(options.length().to_double())
+    for i, option in options {
+      let top = y_top - Float::from_double(i.to_double()) * row
+      self.builder.stroke_rect(x, top - size, size, size)
+      if option == selected {
+        stroke_segment(self.builder, x, top - size, x + size, top)
+        stroke_segment(self.builder, x, top, x + size, top - size)
+      }
+      self.builder.fill_text(option, x + size + 3.0, top - size, width - size - 3.0)
+    }
   }
 }
 
