@@ -82,13 +82,14 @@ pub(all) struct Metrics {
   subsettable : Bool
 }
 
+#derive(Eq, @debug.Debug)
 pub(all) enum OutlineCommand {
   Move(Double, Double)
   Line(Double, Double)
   Quad(Double, Double, Double, Double)
   Cubic(Double, Double, Double, Double, Double, Double)
   Close
-} derive(Eq, @debug.Debug)
+}
 
 type OutlineMatrix
 

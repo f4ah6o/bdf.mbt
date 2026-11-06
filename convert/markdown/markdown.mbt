@@ -31,6 +31,9 @@ fn md_add_view(
     "kind": Json::string(kind),
     "pages": Json::array(layout.pages),
   }
+  if kind == "flow" {
+    view["continuous"] = Json::object({ "gap": Json::number(24.0) })
+  }
   if title != "" {
     view["title"] = Json::string(title)
   }

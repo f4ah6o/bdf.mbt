@@ -16,11 +16,12 @@ pub suberror ViewerError {
 }
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) enum Layout {
   Single
   Spread
   Continuous
-} derive(Eq, @debug.Debug)
+}
 
 pub(all) struct Placement {
   index : Int32

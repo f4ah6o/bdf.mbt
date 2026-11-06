@@ -110,6 +110,8 @@
     "test:phase13-pdf": "node compat/converter/phase13-pdf-test.mjs",
     "test:phase14-xlsx": "node compat/converter/phase14-xlsx-test.mjs",
     "test:phase15-pptx": "node compat/converter/phase15-pptx-test.mjs",
+    "test:parity": "node compat/parity/verify.mjs",
+    "test:parity:strict": "node compat/parity/verify.mjs --strict",
     "test:viewer": "node compat/viewer/api-test.mjs"
   }
 }

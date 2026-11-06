@@ -60,13 +60,22 @@ pub(all) struct TextLine {
 }
 
 ///|
-/// A conservative advance estimate: CJK and full-width characters take one
-/// em, Latin characters half an em. DrawingML font metrics are not loaded.
+/// The upstream font fallback's advance in points: a space is a quarter em,
+/// East Asian characters one em, controls nothing and other characters
+/// 0.55 em. DrawingML font metrics are not loaded.
 pub fn text_width(text : String, size : Double) -> Double {
   let mut width = 0.0
   for ch in text {
     let code = ch.to_int()
-    width += if code > 0x2e80 || ch == '\u3000' { size } else { size * 0.5 }
+    width += if code == 0x20 || code == 0xa0 {
+      size * 0.25
+    } else if code > 0x2e80 || ch == '\u3000' {
+      size
+    } else if code < 0x20 || code == 0x200b || code == 0xfeff {
+      0.0
+    } else {
+      size * 0.55
+    }
   }
   width
 }

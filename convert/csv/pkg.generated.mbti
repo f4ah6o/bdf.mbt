@@ -63,6 +63,7 @@ pub suberror CsvError {
 }
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) enum ColumnType {
   TextColumn
   NumberColumn
@@ -70,49 +71,56 @@ pub(all) enum ColumnType {
   BooleanColumn
   DateColumn
   DateTimeColumn
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum DataMode {
   DataDefault
   DataAll
   DataNone
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct DecodedText {
   text : String
   charset : String
   bom : Bool
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Dialect {
   delimiter : Byte
   quote : Byte
   escape : Byte
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct DialectGuess {
   dialect : Dialect
   records : Int32
   fields : Int32
   score : Double
   numbers : Int32
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Grid {
   rows : Array[Array[GridCell]]
   header_rows : Int32
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct GridCell {
   text : String
   number : Bool
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Header {
   HeaderAuto
   HeaderYes
   HeaderNo
-} derive(Eq, @debug.Debug)
+}
 
 pub(all) struct NoFontResult {
   bdf : Bytes
@@ -129,6 +137,7 @@ pub(all) struct Params {
   table_style : String
 }
 
+#derive(Eq, @debug.Debug)
 pub(all) struct ParseResult {
   rows : Array[Array[String]]
   columns : Int32
@@ -137,25 +146,29 @@ pub(all) struct ParseResult {
   dialect : Dialect
   header : Bool
   warnings : Array[String]
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Records {
   rows : Array[Array[String]]
   bad_quotes : Int32
   quoted_fields : Int32
   unfinished_quote : Bool
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Table {
   columns : Array[TableColumn]
   rows : Array[Array[TableValue]]
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct TableColumn {
   name : String
   kind : ColumnType
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum TableValue {
   NullValue
   TextValue(String)
@@ -164,7 +177,7 @@ pub(all) enum TableValue {
   BooleanValue(Bool)
   DateValue(Int64)
   DateTimeValue(Int64)
-} derive(Eq, @debug.Debug)
+}
 
 // Type aliases
 

@@ -57,7 +57,7 @@ fn md_style(
   size~ : Double = 12.0,
   bold~ : Bool = false,
   italic~ : Bool = false,
-  family~ : String = "Arial",
+  family~ : String = "sans-serif",
   color~ : UInt32 = 0x000000ffU,
 ) -> @drawingml.TextStyle {
   @drawingml.TextStyle::new(size~, bold~, italic~, family~, color~)
@@ -232,7 +232,7 @@ fn md_collect_inlines(
       @mmtypes.Inline::Text(text) =>
         md_push_text(text, style, link, runs, formulas, svgs, sprite)
       @mmtypes.Inline::CodeSpan(text) => {
-        let code_style = { ..style, family: "Courier New", }
+        let code_style = { ..style, family: "monospace", }
         md_push_run(runs, text, code_style, link)
       }
       @mmtypes.Inline::Emphasis(children) =>
@@ -478,7 +478,7 @@ fn md_scale_style(
   font : String,
   mono : String,
 ) -> @drawingml.TextStyle {
-  let family = if style.family == "Courier New" {
+  let family = if style.family == "monospace" {
     if mono != "" {
       mono
     } else {

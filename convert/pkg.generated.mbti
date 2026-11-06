@@ -20,13 +20,14 @@ pub suberror ConvertError {
 }
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) enum Action {
   Convert
   Open
   Page(Int32, Int32)
   Finish(Int32)
   Close(Int32)
-} derive(Eq, @debug.Debug)
+}
 
 pub(all) struct Client {
   mut next_id : Int32
@@ -50,16 +51,18 @@ pub(all) struct ConvertOptions {
 }
 pub fn ConvertOptions::new() -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) struct PageSpan {
   from : Int64
   to : Int64
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum PendingStatus {
   Waiting
   Completed
   Failed(String)
-} derive(Eq, @debug.Debug)
+}
 
 pub(all) struct Request {
   id : Int32

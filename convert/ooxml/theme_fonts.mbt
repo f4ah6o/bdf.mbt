@@ -143,6 +143,12 @@ fn ooxml_read_theme_fonts(data : Bytes) -> OoxmlThemeFonts raise {
 }
 
 ///|
+/// The theme fonts Office uses when a package has no theme part.
+pub fn default_theme_fonts() -> OoxmlThemeFonts {
+  ooxml_default_theme_fonts()
+}
+
+///|
 /// Load theme fonts related to a workbook, presentation or document part.
 pub fn OoxmlPackage::theme_fonts(
   self : OoxmlPackage,

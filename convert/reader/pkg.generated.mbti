@@ -3,6 +3,7 @@ package "f4ah6o/bdf/convert/reader"
 
 import {
   "f4ah6o/bdf/core",
+  "moonbitlang/core/json",
 }
 
 // Values
@@ -29,7 +30,7 @@ pub(all) struct ReaderDocument {
 }
 
 pub(all) struct ReaderLayout {
-  pages : Array[Json]
+  pages : Array[@json.Json]
   index_runs : Array[@core.IndexRun]
   warnings : Array[String]
 }

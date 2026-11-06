@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn default_theme_fonts() -> OoxmlThemeFonts
+
 pub fn open_ooxml(Bytes) -> OoxmlPackage raise OoxmlError
 
 pub fn resolve_ooxml_part(String, String) -> String

@@ -15,18 +15,21 @@ pub fn encode(Table) -> Bytes raise
 pub fn info(Bytes) -> FileInfo raise
 
 // Errors
+#derive(@debug.Debug)
 pub suberror ParquetError {
   InvalidTable(String)
-} derive(@debug.Debug)
+}
 
 // Types and methods
 type Chunk
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Column {
   name : String
   kind : ColumnType
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum ColumnType {
   StringColumn
   NumberColumn
@@ -34,7 +37,7 @@ pub(all) enum ColumnType {
   BooleanColumn
   DateColumn
   DateTimeColumn
-} derive(Eq, @debug.Debug)
+}
 
 type Compact
 
@@ -46,11 +49,13 @@ pub(all) struct FileInfo {
   created_by : String
 }
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Table {
   columns : Array[Column]
   rows : Array[Array[Value]]
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Value {
   Null
   StringValue(String)
@@ -59,7 +64,7 @@ pub(all) enum Value {
   BooleanValue(Bool)
   DateValue(Int64)
   DateTimeValue(Int64)
-} derive(Eq, @debug.Debug)
+}
 
 // Type aliases
 

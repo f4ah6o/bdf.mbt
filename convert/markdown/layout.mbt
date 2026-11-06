@@ -608,7 +608,7 @@ fn MdPainter::layout_block(
     }
     MdCode(lines) => {
       self.y += 7.0
-      let style = md_style(size=10.5 * self.scale, family="Courier New")
+      let style = md_style(size=10.5 * self.scale, family="monospace")
       let code_x = x + 12.0
       for line in lines {
         let runs : Array[MdRun] = []
