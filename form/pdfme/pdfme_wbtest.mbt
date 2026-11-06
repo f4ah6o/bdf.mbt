@@ -419,3 +419,20 @@ test "pdfme draws base PDF content" {
   assert_true(pdfme_text(result.bdf).contains("Base"))
 }
 
+///|
+test "pdfme keeps base PDF pages" {
+  let base = "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUiA0IDAgUl0gL0NvdW50IDIgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvQ29udGVudHMgNSAwIFIgPj4KZW5kb2JqCjQgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAzMDAgMTUwXSAvQ29udGVudHMgNiAwIFIgPj4KZW5kb2JqCjUgMCBvYmoKPDwgL0xlbmd0aCAxOCA+PgpzdHJlYW0KMC41IDAuNSAxMCAxMCByZSBmCmVuZHN0cmVhbQplbmRvYmoKNiAwIG9iago8PCAvTGVuZ3RoIDE4ID4+CnN0cmVhbQowLjIgMC4yIDIwIDIwIHJlIGYKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTIxIDAwMDAwIG4gCjAwMDAwMDAyMDggMDAwMDAgbiAKMDAwMDAwMDI5NSAwMDAwMCBuIAowMDAwMDAwMzYzIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNyAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKNDMxCiUlRU9GCg=="
+  let template = "{\"basePdf\":\"data:application/pdf;base64," + base + "\",\"schemas\":[[{\"name\":\"a\",\"type\":\"text\",\"content\":\"One\",\"position\":{\"x\":1,\"y\":1},\"width\":20,\"height\":5}],[{\"name\":\"b\",\"type\":\"text\",\"content\":\"Two\",\"position\":{\"x\":1,\"y\":1},\"width\":20,\"height\":5}]]}"
+  let result = fill(@utf8.encode(template), @utf8.encode("{}"))
+  assert_eq(result.pages, 2)
+  let document = @core.open_single(result.bdf)
+  assert_eq(document.manifest.views[0].pages.length(), 2)
+  assert_eq(document.manifest.views[0].pages[0].width, 200.0)
+  assert_eq(document.manifest.views[0].pages[1].width, 300.0)
+  assert_eq(document.manifest.views[0].pages[0].layers.length(), 2)
+  assert_eq(document.manifest.views[0].pages[1].layers.length(), 2)
+  let text = pdfme_text(result.bdf)
+  assert_true(text.contains("One"), msg=text)
+  assert_true(text.contains("Two"), msg=text)
+}
+

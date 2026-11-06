@@ -1778,6 +1778,7 @@ pub fn fill(template_bytes : Bytes, data_bytes : Bytes) -> FillResult raise Pdfm
   }
   let mut page_count = 0
   let mut page_index = 0
+  let page_json : Array[Json] = []
   for page_fields in pages {
     let fields = match page_fields {
       Json::Array(fields) => fields
@@ -1845,21 +1846,22 @@ pub fn fill(template_bytes : Bytes, data_bytes : Bytes) -> FillResult raise Pdfm
         "obj": Json::string(hash),
       }),
     )
-    writer.add_view(
+    page_json.push(
       Json::object({
-        "id": Json::string("page" + page_count.to_string()),
-        "kind": Json::string("fixed"),
-        "pages": Json::array([
-          Json::object({
-            "w": Json::number(width_pt),
-            "h": Json::number(height_pt),
-            "layers": Json::array(layers),
-          }),
-        ]),
+        "w": Json::number(width_pt),
+        "h": Json::number(height_pt),
+        "layers": Json::array(layers),
       }),
     )
     page_index += 1
   }
+  writer.add_view(
+    Json::object({
+      "id": Json::string("pages"),
+      "kind": Json::string("fixed"),
+      "pages": Json::array(page_json),
+    }),
+  )
   let bdf = writer.write_single() catch {
     _ => raise PdfmeError("pdfme: the document cannot be written")
   }
