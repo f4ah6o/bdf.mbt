@@ -156,9 +156,12 @@
 - Next are the textform font options, the form partials and the other
   per-format fillers.
 - CI runs `moon check/test/build` for js and wasm-gc, a demo job that
-  builds and tests the demo, and a parity workflow that converts the
-  document fixtures with the upstream Wasm package and the MoonBit worker
-  and uploads the report.
+  builds and tests the demo, a parity workflow that converts the document
+  fixtures with the upstream Wasm package and the MoonBit worker, and the
+  full visual compatibility suite (converter, worker, font, XLSX, specimen
+  and demo fixtures). All workflows pass on MoonBit 0.1.20261104; the
+  compatibility JS exports use string/JSON values so they also work on the
+  older 0.1.20261020 toolchain.
 - `print/raster` is started: the PWG Raster page header (1796 bytes,
   PWG 5102.4), row compression (runs/literals), the stream writer with row
   repetition, the reader, page fitting (print-scaling, orientation,
