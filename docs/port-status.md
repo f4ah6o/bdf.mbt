@@ -121,7 +121,7 @@
   `{{#items}}`…`{{/items}}` sections item by item, fills header/footer
   parts, and rebuilds stored ZIPs (4 tests); `form/docx` fills headers and
   footers and rendered header values (4 tests), `form/xlsx` fills sheets and shared strings and renders the filled cell (3 tests), and
-  `form/pptx` fills slides and speaker notes (2 tests). Scalar
+  `form/pptx` fills slides and speaker notes and converts the filled deck (3 tests). Scalar
   list items are reported.
 - `form/pdfme` fills a pdfme template (blank pages, text/line/rectangle/
   checkbox/radio-group (column/row)/table/rectangle (solid/dashed)/image
