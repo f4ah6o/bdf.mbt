@@ -122,7 +122,7 @@
   `form/pptx` fills slides and speaker notes (2 tests). Scalar
   list items are reported.
 - `form/pdfme` fills a pdfme template (blank pages, text/line/rectangle/
-  checkbox/radio-group (column/row)/table/image (PNG/JPEG/SVG, contain)/signature
+  checkbox/radio-group (column/row)/table/image (PNG/JPEG/SVG, contain/cover)/signature
   fields, table column widths, alignment/vertical
   alignment, colors, backgrounds, alternate row colors, font sizes/families,
   cell/column/header padding, truncation, border colors/widths/styles and

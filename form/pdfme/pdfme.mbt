@@ -457,11 +457,37 @@ fn FieldPainter::draw_image(
     _ => raise PdfmeError("pdfme: the image cannot be added")
   }
   let index = self.builder.add_image(hash)
-  let (draw_x, draw_y, draw_width, draw_height) = if text_of(
-    json_field(field, "objectFit"),
-    "stretch",
-  ) == "contain" {
-    match (if is_png { png_size(bytes) } else { jpeg_size(bytes) }) {
+  let fit = text_of(json_field(field, "objectFit"), "stretch")
+  let dimensions = if is_png { png_size(bytes) } else { jpeg_size(bytes) }
+  if fit == "cover" {
+    match dimensions {
+      Some((image_width, image_height)) => {
+        let scale = Double::max(
+          width.to_double() / image_width,
+          height.to_double() / image_height,
+        )
+        let source_width = width.to_double() / scale
+        let source_height = height.to_double() / scale
+        self.builder.image_sub(
+          index,
+          Float::from_double((image_width - source_width) / 2.0),
+          Float::from_double((image_height - source_height) / 2.0),
+          Float::from_double(source_width),
+          Float::from_double(source_height),
+          x,
+          y_top - height,
+          width,
+          height,
+        ) catch {
+          _ => raise PdfmeError("pdfme: the image cannot be placed")
+        }
+        return
+      }
+      None => ()
+    }
+  }
+  let (draw_x, draw_y, draw_width, draw_height) = if fit == "contain" {
+    match dimensions {
       Some((image_width, image_height)) => {
         let scale = Double::min(
           width.to_double() / image_width,
