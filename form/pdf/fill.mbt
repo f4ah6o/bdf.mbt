@@ -439,7 +439,11 @@ fn data_text(data : Json, name : String) -> String? {
 /// Write field values into a classic PDF with an incremental update. The
 /// original bytes stay untouched; new object versions, an xref section and
 /// a trailer that points to the previous xref are appended.
-pub fn fill_pdf(pdf_bytes : Bytes, data_bytes : Bytes) -> Bytes raise PdfFillError {
+pub fn fill_pdf(
+  pdf_bytes : Bytes,
+  data_bytes : Bytes,
+  skip_read_only~ : Bool = false,
+) -> Bytes raise PdfFillError {
   let data = @json.parse(@utf8.decode_lossy(data_bytes[:])) catch {
     _ => raise PdfFillError("form/pdf: the data is not JSON")
   }
@@ -491,7 +495,11 @@ pub fn fill_pdf(pdf_bytes : Bytes, data_bytes : Bytes) -> Bytes raise PdfFillErr
         }
       }
     }
-    if name != "" {
+    let read_only = match find_flags(body, 0, body.length()) {
+      Some(value) => (value & 1) != 0
+      None => false
+    }
+    if name != "" && !(skip_read_only && read_only) {
       if body.contains("/Btn") {
         let on = match button_on_state(body) {
           Some(value) => value

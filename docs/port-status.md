@@ -100,11 +100,10 @@
 - `form/pdf` reads AcroForm field names, values (literal, hex, UTF-16BE,
   name), types, rectangles, page references, field flags, read-only/required
   state and choice options, writes values into classic-xref PDFs with an
-  incremental update (13 tests,
-  escaped literals, UTF-16BE hex, buttons, appearance on-state names,
-  referenced AcroForms and `/NeedAppearances`), and draws a blank-page value
-  overlay (checkbox `X`, multi-line values, MediaBox or CropBox sizing).
-  14 tests.
+  incremental update (15 tests, optional read-only skipping, escaped
+  literals, UTF-16BE hex, buttons, appearance on-state names, referenced
+  AcroForms and `/NeedAppearances`), and draws a blank-page value overlay
+  (checkbox `X`, multi-line values, MediaBox or CropBox sizing).
 - `form/ooxml` replaces `{{name}}` tags in OOXML XML parts, including tags
   split across runs (the run markup between them is removed), expands
   boolean `{{#name}}`/`{{^name}}` conditions, expands object-list

@@ -22,6 +22,8 @@ pub(all) struct Field {
   page_object : Int32?
   flags : Int32?
   options : Array[String]
+  read_only : Bool
+  required : Bool
 }
 
 // Type aliases
