@@ -13,6 +13,7 @@ pub fn printer_attributes() -> Array[String] {
     "printer-uuid",
     "printer-device-id",
     "printer-state",
+    "queued-job-count",
     "printer-state-reasons",
     "printer-state-message",
     "printer-is-accepting-jobs",
