@@ -353,9 +353,17 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
   } else if typ == "image" {
     self.draw_image(field, data, x, y_top, width, height)
   } else if typ == "table" {
+    let opacity = Double::max(0.0, Double::min(1.0, number_of(json_field(field, "opacity"), 1.0)))
+    self.builder.save()
+    self.builder.alpha(Float::from_double(opacity))
     self.draw_table(field, data, x, y_top, width, height)
+    self.builder.restore()
   } else if typ == "radioGroup" {
+    let opacity = Double::max(0.0, Double::min(1.0, number_of(json_field(field, "opacity"), 1.0)))
+    self.builder.save()
+    self.builder.alpha(Float::from_double(opacity))
     self.draw_radio_group(field, data, x, y_top, width, height)
+    self.builder.restore()
   } else if typ == "signature" {
     let value = field_text(field, data)
     if value != "" {
@@ -366,6 +374,9 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
       self.builder.stroke_rect(x, y_top - height, width, height)
     }
   } else if typ == "checkbox" {
+    let opacity = Double::max(0.0, Double::min(1.0, number_of(json_field(field, "opacity"), 1.0)))
+    self.builder.save()
+    self.builder.alpha(Float::from_double(opacity))
     let checked = match json_field(data, text_of(json_field(field, "name"), "")) {
       Some(Json::True) => true
     Some(Json::False) => false
@@ -378,6 +389,7 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
       stroke_segment(self.builder, x, y_top, x + width, y_top - height)
       stroke_segment(self.builder, x, y_top - height, x + width, y_top)
     }
+    self.builder.restore()
   } else {
     self.warnings.push("pdfme: the field type \"" + typ + "\" is not supported yet")
   }
