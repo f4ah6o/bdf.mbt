@@ -465,3 +465,14 @@ test "pdfme draws a signature box" {
   assert_true(resources.object.ops.length() > 5)
 }
 
+///|
+test "pdfme draws radio groups" {
+  let template =
+    #|{"basePdf":{"width":100,"height":50},"schemas":[[{"name":"choice","type":"radioGroup","options":["One","Two"],"position":{"x":10,"y":10},"width":60,"height":20}]]}
+  let result = fill(@utf8.encode(template), @utf8.encode("{\"choice\":\"Two\"}"))
+  assert_eq(result.warnings.length(), 0)
+  let text = pdfme_text(result.bdf)
+  assert_true(text.contains("One"), msg=text)
+  assert_true(text.contains("Two"), msg=text)
+}
+

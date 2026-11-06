@@ -319,6 +319,8 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
     self.draw_image(field, data, x, y_top, width, height)
   } else if typ == "table" {
     self.draw_table(field, data, x, y_top, width, height)
+  } else if typ == "radioGroup" {
+    self.draw_radio_group(field, data, x, y_top, width, height)
   } else if typ == "signature" {
     let value = field_text(field, data)
     if value != "" {
@@ -1459,6 +1461,47 @@ fn table_column_color(field : Json, index : Int, fallback : UInt32) -> UInt32 {
         fallback
       }
     _ => fallback
+  }
+}
+
+///|
+///|
+fn FieldPainter::draw_radio_group(
+  self : FieldPainter,
+  field : Json,
+  data : Json,
+  x : Float,
+  y_top : Float,
+  width : Float,
+  height : Float,
+) -> Unit raise PdfmeError {
+  let selected = field_text(field, data)
+  let options = match json_field(field, "options") {
+    Some(Json::Array(values)) => values.map(fn(value) { text_of(Some(value), "") })
+    _ => []
+  }
+  if options.length() == 0 {
+    return
+  }
+  let size = Float::from_double(
+    Double::min(10.0, height.to_double() / options.length().to_double() * 0.6),
+  )
+  let font = self.font(text_of(json_field(field, "fontName"), "Helvetica"))
+  self.builder.font(font, size) catch {
+    _ => raise PdfmeError("pdfme: a font cannot be set")
+  }
+  self.builder.fill_color(0x000000ff)
+  self.builder.stroke_color(0x000000ff)
+  self.builder.line(0.6, 0, 0, 0.0F)
+  let row = height / Float::from_double(options.length().to_double())
+  for i, option in options {
+    let top = y_top - Float::from_double(i.to_double()) * row
+    self.builder.stroke_rect(x, top - size, size, size)
+    if option == selected {
+      stroke_segment(self.builder, x, top - size, x + size, top)
+      stroke_segment(self.builder, x, top, x + size, top - size)
+    }
+    self.builder.fill_text(option, x + size + 3.0, top - size, width - size - 3.0)
   }
 }
 
