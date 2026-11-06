@@ -173,8 +173,8 @@
   full visual compatibility suite (converter, worker, font, XLSX, specimen
   and demo fixtures). All workflows pass on MoonBit 0.1.20261104; the
   compatibility JS exports use string/JSON values so they also work on the
-  older 0.1.20261020 toolchain. The latest local full suite is js 2721/2721
-  and wasm-gc 2705/2705; document parity is 12 pass / 40 diff.
+  older 0.1.20261020 toolchain. The latest local full suite is js 2725/2725
+  and wasm-gc 2709/2709; document parity is 12 pass / 40 diff.
 - `print/raster` is started: the PWG Raster page header (1796 bytes,
   PWG 5102.4), row compression (runs/literals), the stream writer with row
   repetition, the reader, page fitting (print-scaling, orientation,
