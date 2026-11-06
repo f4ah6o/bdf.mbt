@@ -77,7 +77,7 @@ extern "js" fn segment_ignore(promise : @js_async.Promise[Unit]) -> Unit =
 extern "js" fn segment_wait_all(
   promises : Array[@js_async.Promise[Int32]],
 ) -> @js_async.Promise[Array[Int32]] =
-  #|(promises) => Promise.all(promises)
+  #|(promises) => {const list = promises && promises.buf ? Array.from({length: promises.len}, (_, i) => promises.buf[i]) : promises; return Promise.all(list).then(values => {values.buf = values; values.len = values.length; return values;});}
 
 ///|
 extern "js" fn segment_same_promise(
@@ -165,10 +165,10 @@ async fn RenderSegmentLoader::fetch(
   }
   let s = match @core.parse_segment(text) {
     Some(s) => s
-    None => raise BadFormat("the server sent another segment")
+    None => raise BadFormat("bdf: the server sent another segment")
   }
   if (has_view && s.view != view) || s.from > page || page >= s.to {
-    raise BadFormat("the server sent another segment")
+    raise BadFormat("bdf: the server sent another segment")
   }
   Ok((doc, s))
 }

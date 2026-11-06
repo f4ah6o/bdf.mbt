@@ -96,7 +96,7 @@ export async function verifySegmentWorker(browser, visualBase) {
             item.search=await client.search(idView,'book');
             item.locate=await client.locate(idView,item.search);
             await client.close();
-          } catch(e) {item.error={name:e.name,code:e.code};}
+          } catch(e) {item.error={name:e.name,code:e.code,message:e.message};}
           finally {client.terminate()}
           out.push(item);
         }
@@ -104,7 +104,10 @@ export async function verifySegmentWorker(browser, visualBase) {
       return out;
     },server.address().port);
     for(let i=0;i<7;i++) {
-      const a=result[i],b=result[i+7],{id:_a,images:imagesA,plainImages:plainA,...dataA}=a,{id:_b,images:imagesB,plainImages:plainB,...dataB}=b;
+      const a=result[i],b=result[i+7];
+      if (a.error) delete a.error.message;
+      if (b.error) delete b.error.message;
+      const {id:_a,images:imagesA,plainImages:plainA,...dataA}=a,{id:_b,images:imagesB,plainImages:plainB,...dataB}=b;
       assert.deepEqual(dataB,dataA,b.id+': protocol result');
       if(plainA && plainB) for(const [images,plain,name] of [[imagesA,plainA,"upstream"],[imagesB,plainB,"moon"]]) for(let n=0;n<images.length;n++) {
         const x=PNG.sync.read(Buffer.from(plain[n].split(',')[1],'base64')),y=PNG.sync.read(Buffer.from(images[n].split(',')[1],'base64'));
