@@ -20,6 +20,7 @@ pub(all) struct Field {
   typ : String
   rect : (Double, Double, Double, Double)?
   page_object : Int32?
+  flags : Int32?
 }
 
 // Type aliases

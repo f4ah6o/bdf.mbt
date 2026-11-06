@@ -35,7 +35,7 @@ test "pdf overlay draws form values" {
   let pdf =
     #|%PDF-1.7
     #|1 0 obj << /Type /Page /MediaBox [0 0 200 100] >>
-    #|2 0 obj << /T (name) /V () /FT /Tx /Rect [10 20 100 40] /P 3 0 R >>
+    #|2 0 obj << /T (name) /V () /FT /Tx /Ff 1 /Rect [10 20 100 40] /P 3 0 R >>
     #|3 0 obj << /T (agree) /V () /FT /Btn /Rect [110 20 130 40] /P 4 0 R >>
     #|%%EOF
   let bdf = fill_overlay(
@@ -65,7 +65,7 @@ test "pdf reads a button field" {
   let pdf =
     #|%PDF-1.7
     #|1 0 obj << /Type /Page /MediaBox [0 0 200 100] >>
-    #|2 0 obj << /T (name) /V () /FT /Tx /Rect [10 20 100 40] /P 3 0 R >>
+    #|2 0 obj << /T (name) /V () /FT /Tx /Ff 1 /Rect [10 20 100 40] /P 3 0 R >>
     #|3 0 obj << /T (agree) /V () /FT /Btn /Rect [110 20 130 40] /P 4 0 R >>
     #|%%EOF
   let fields = read_fields(@utf8.encode(pdf))
@@ -74,6 +74,7 @@ test "pdf reads a button field" {
   assert_eq(fields[1].typ, "/Btn")
   assert_eq(fields[1].rect, Some((110.0, 20.0, 130.0, 40.0)))
   assert_eq(fields[0].page_object, Some(3))
+  assert_eq(fields[0].flags, Some(1))
   assert_eq(fields[1].page_object, Some(4))
 }
 
@@ -93,4 +94,3 @@ test "pdf overlay uses a CropBox" {
   assert_eq(document.manifest.views[0].pages[0].width, 300.0)
   assert_eq(document.manifest.views[0].pages[0].height, 150.0)
 }
-
