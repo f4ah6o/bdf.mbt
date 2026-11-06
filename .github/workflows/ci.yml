@@ -19,3 +19,19 @@ jobs:
       - run: moon check --target ${{ matrix.target }}
       - run: moon test --target ${{ matrix.target }}
       - run: moon build --target ${{ matrix.target }}
+
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: hustcer/setup-moonbit@v1
+      - run: moon update
+      - run: npm ci
+      - run: node demo/verify-samples.mjs
+      - run: npm run build:demo
+      - run: npm run test:demo
+

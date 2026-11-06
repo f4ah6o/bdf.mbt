@@ -32,7 +32,7 @@ card `basic.docx` and the Markdown card `basic.md`. The previews
 rendered from these upstream files by the MoonBit native converter Worker.
 
 Run `node demo/verify-samples.mjs` to check the SHA-256 of every upstream
-sample against the `.upstream` checkout.
+sample against the hashes recorded in the script.
 
 A sample whose subset the MoonBit converter does not support yet (for
 example the embedded fonts of `cairo-cff.pdf`) reports an explicit
