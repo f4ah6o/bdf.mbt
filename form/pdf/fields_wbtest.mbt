@@ -108,6 +108,26 @@ test "pdf overlay draws form values" {
     }
   }
   assert_true(wrapped_lines > 1, msg=wrapped_lines.to_string())
+  let words = fill_overlay(
+    @utf8.encode(wrap_pdf),
+    @utf8.encode("{\"name\":\"Hello world again and again\"}"),
+  )
+  let word_doc = @core.open_single(words)
+  let word_commands = @render.decode_commands(
+    word_doc.part(word_doc.manifest.views[0].pages[0].layers[0].object),
+  ) catch {
+    _ => fail("word overlay commands cannot be decoded")
+  }
+  let mut word_count = 0
+  for command in word_commands {
+    match command {
+      @render.FillText(value, _, _, _) => {
+        word_count += 1
+      }
+      _ => ()
+    }
+  }
+  assert_true(word_count > 1, msg=word_count.to_string())
 }
 
 ///|
