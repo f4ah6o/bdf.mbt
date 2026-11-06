@@ -31,6 +31,9 @@ card `basic.docx` and the Markdown card `basic.md`. The previews
 `previews/docx.png`, `previews/markdown.png` and `previews/pptx.png` were
 rendered from these upstream files by the MoonBit native converter Worker.
 
+Run `node demo/verify-samples.mjs` to check the SHA-256 of every upstream
+sample against the `.upstream` checkout.
+
 A sample whose subset the MoonBit converter does not support yet (for
 example the embedded fonts of `cairo-cff.pdf`) reports an explicit
 error instead of drawing a wrong page.
