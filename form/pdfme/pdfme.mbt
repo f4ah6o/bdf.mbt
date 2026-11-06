@@ -1368,6 +1368,23 @@ fn table_column_background(field : Json, index : Int) -> UInt32 {
 }
 
 ///|
+fn table_column_font_size(field : Json, index : Int, fallback : Float) -> Float {
+  match json_field(field, "columnStyles") {
+    Some(Json::Array(styles)) =>
+      if index < styles.length() {
+        match styles[index] {
+          Json::Object(style) =>
+            Float::from_double(number_of(style.get("fontSize"), fallback.to_double()))
+          _ => fallback
+        }
+      } else {
+        fallback
+      }
+    _ => fallback
+  }
+}
+
+///|
 fn table_column_color(field : Json, index : Int, fallback : UInt32) -> UInt32 {
   match json_field(field, "columnStyles") {
     Some(Json::Array(styles)) =>
@@ -1496,8 +1513,16 @@ fn FieldPainter::draw_table(
     }
     for i in 0..<columns {
       let text = if i < values.length() { values[i] } else { "" }
+      let cell_size = if head_row {
+        row_size
+      } else {
+        table_column_font_size(field, i, row_size)
+      }
+      self.builder.font(font, cell_size) catch {
+        _ => raise PdfmeError("pdfme: a font cannot be set")
+      }
       let advance = Float::from_double(
-        text.length().to_double() * row_size.to_double() * 0.5,
+        text.length().to_double() * cell_size.to_double() * 0.5,
       )
       let cell_width = edges[i + 1] - edges[i]
       let background = if head_row { 0x00000000U } else { table_column_background(field, i) }
@@ -1517,7 +1542,7 @@ fn FieldPainter::draw_table(
       } else {
         x + edges[i] + 1.0
       }
-      self.builder.fill_text(text, start, y - row_size, advance)
+      self.builder.fill_text(text, start, y - cell_size, advance)
     }
     for i in 0..=columns {
       let line_x = x + edges[i]
