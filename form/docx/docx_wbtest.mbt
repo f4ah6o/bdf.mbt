@@ -101,3 +101,42 @@ test "form docx renders header values" {
   assert_true(text.contains("Report title"), msg=text)
 }
 
+///|
+test "form docx renders footer values" {
+  let content_types =
+    #|<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>
+  let rels =
+    #|<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>
+  let document =
+    #|<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body><w:p><w:r><w:t>{{body}}</w:t></w:r></w:p><w:sectPr><w:footerReference w:type="default" r:id="rId1"/></w:sectPr></w:body></w:document>
+  let document_rels =
+    #|<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/></Relationships>
+  let footer =
+    #|<?xml version="1.0" encoding="UTF-8"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:r><w:t>{{title}}</w:t></w:r></w:p></w:ftr>
+  let zipped = @ooxml.stored_zip([
+    ("[Content_Types].xml", @utf8.encode(content_types)),
+    ("_rels/.rels", @utf8.encode(rels)),
+    ("word/document.xml", @utf8.encode(document)),
+    ("word/_rels/document.xml.rels", @utf8.encode(document_rels)),
+    ("word/footer1.xml", @utf8.encode(footer)),
+  ])
+  let result = fill(
+    zipped,
+    @utf8.encode("{\"body\":\"Body text\",\"title\":\"Report footer\"}"),
+    views="pages",
+  )
+  let document = @core.open_single(result.bdf)
+  let mut text = ""
+  for view in document.manifest.views {
+    match view.text_index {
+      Some(hash) => {
+        for run in @core.decode_text_index(document.part(hash)) {
+          text = text + run.text
+        }
+      }
+      None => ()
+    }
+  }
+  assert_true(text.contains("Report footer"), msg=text)
+}
+
