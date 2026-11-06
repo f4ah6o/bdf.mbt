@@ -46,6 +46,8 @@ pub fn xlsx_render_basic(Bytes, String, Bool) -> Bytes
 
 pub fn xlsx_render_error(Bytes, String, Bool) -> String
 
+pub fn xlsx_render_result(Bytes, String, Bool) -> String
+
 pub fn xlsx_render_warnings(Bytes, String, Bool) -> String
 
 pub fn xlsx_select_format(String, Double) -> String

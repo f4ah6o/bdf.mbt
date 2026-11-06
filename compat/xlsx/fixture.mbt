@@ -800,6 +800,29 @@ pub fn xlsx_render_warnings(
 }
 
 ///|
+/// Run the plain XLSX conversion once and report the rendered BDF (base64)
+/// and warnings, or the failure message, so callers do not pay for a second
+/// conversion just to collect diagnostics.
+#export_name("xlsx_render_result")
+pub fn xlsx_render_result(
+  data : Bytes,
+  mode : String,
+  no_text_index : Bool,
+) -> String {
+  try {
+    let result = @xlsx.convert_plain_no_fonts(data, data_mode=mode, no_text_index~)
+    Json::object({
+      "bdf": Json::string(@base64.encode(result.bdf)),
+      "warnings": Json::array(result.warnings.map(Json::string)),
+    }).stringify()
+  } catch {
+    @xlsx.InvalidXlsxInput(message) =>
+      Json::object({ "error": Json::string(message) }).stringify()
+    _ => Json::object({ "error": Json::string("other conversion error") }).stringify()
+  }
+}
+
+///|
 #export_name("xlsx_with_font")
 pub fn xlsx_with_font(data : Bytes, font : Bytes) -> String {
   try {

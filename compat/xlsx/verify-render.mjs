@@ -1,14 +1,29 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { BdfDocument, BufferSource } from '@bdfkit/core';
-import { xlsx_render_basic, xlsx_render_warnings, xlsx_render_error } from '../../_build/js/debug/build/compat/xlsx/xlsx.js';
+import { xlsx_render_result } from '../../_build/js/debug/build/compat/xlsx/xlsx.js';
 const index = JSON.parse(await readFile(new URL('./render/index.json', import.meta.url)));
 assert.ok(index.files.length > 0, 'XLSX rendering fixture list must not be empty');
 let i = 0;
+let checked = 0;
+const tick = () => {
+  checked++;
+  if (checked % 5000 === 0) console.error(`verify-render: ${checked} cases checked`);
+};
+const renderResult = (input, mode, noIndex) => JSON.parse(xlsx_render_result(input, mode, noIndex));
+function assertRejected(input, mode, noIndex, message, pattern) {
+  const result = renderResult(input, mode, noIndex);
+  tick();
+  assert.ok(!result.bdf, message);
+  if (pattern) assert.match(result.error ?? '', pattern);
+}
 async function verifyCase(c, label) {
   const expected = await BdfDocument.open(new BufferSource(Buffer.from(c.bdf, 'base64')));
-  const actual = await BdfDocument.open(new BufferSource(xlsx_render_basic(Buffer.from(c.input, 'base64'), c.mode, c.no_index)));
-  assert.deepEqual(JSON.parse(xlsx_render_warnings(Buffer.from(c.input, 'base64'), c.mode, c.no_index)), c.warnings ?? [], `XLSX warnings ${label}`);
+  const result = renderResult(Buffer.from(c.input, 'base64'), c.mode, c.no_index);
+  tick();
+  assert.ok(result.bdf, `XLSX conversion failed ${label}: ${result.error}`);
+  const actual = await BdfDocument.open(new BufferSource(Buffer.from(result.bdf, 'base64')));
+  assert.deepEqual(result.warnings ?? [], c.warnings ?? [], `XLSX warnings ${label}`);
   assert.deepEqual(actual.manifest.meta, expected.manifest.meta, `XLSX metadata ${label}`);
   assert.deepEqual(actual.manifest.views, expected.manifest.views, `XLSX view ${label}`);
   assert.deepEqual(actual.manifest.tables ?? [], expected.manifest.tables ?? [], `XLSX tables ${label}`);
@@ -39,43 +54,37 @@ const unsupportedAdjustableArcs = JSON.parse(await readFile(new URL('./adjustabl
 assert.equal(unsupportedAdjustableArcs.length, 36, 'unsupported adjustable arc fixture count');
 for (const c of unsupportedAdjustableArcs) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `unsupported adjustable arc ${c.label}`);
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing|picture/);
+  assertRejected(input, c.mode, c.no_index, `unsupported adjustable arc ${c.label}`, /drawing|picture/);
 }
 const unsupportedFlowchartArcs = JSON.parse(await readFile(new URL('./flowchart-arcs-unsupported.json', import.meta.url)));
 assert.equal(unsupportedFlowchartArcs.length, 4, 'unsupported flowchart arc fixture count');
 for (const c of unsupportedFlowchartArcs) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `unsupported flowchart arc ${c.label}`);
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing|picture/);
+  assertRejected(input, c.mode, c.no_index, `unsupported flowchart arc ${c.label}`, /drawing|picture/);
 }
 const unsupportedSwooshPresets = JSON.parse(await readFile(new URL('./swoosh-presets-unsupported.json', import.meta.url)));
 assert.equal(unsupportedSwooshPresets.length, 5, 'unsupported swoosh preset fixture count');
 for (const c of unsupportedSwooshPresets) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `unsupported swoosh preset ${c.label}`);
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing|picture/);
+  assertRejected(input, c.mode, c.no_index, `unsupported swoosh preset ${c.label}`, /drawing|picture/);
 }
 const unsupportedBezierPresets = JSON.parse(await readFile(new URL('./bezier-presets-unsupported.json', import.meta.url)));
 assert.equal(unsupportedBezierPresets.length, 4, 'unsupported bezier preset fixture count');
 for (const c of unsupportedBezierPresets) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `unsupported bezier preset ${c.label}`);
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing/);
+  assertRejected(input, c.mode, c.no_index, `unsupported bezier preset ${c.label}`, /drawing/);
 }
 const unsupportedMultiAdjustments = JSON.parse(await readFile(new URL('./formula-multi-adjustment-unsupported.json', import.meta.url)));
 assert.equal(unsupportedMultiAdjustments.length, 9, 'unsupported multi-adjustment fixture count');
 for (const c of unsupportedMultiAdjustments) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `unsupported multi-adjustment ${c.label}`);
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing/);
+  assertRejected(input, c.mode, c.no_index, `unsupported multi-adjustment ${c.label}`, /drawing/);
 }
 const unsupportedPictures = JSON.parse(await readFile(new URL('./simple-picture-unsupported.json', import.meta.url)));
 assert.equal(unsupportedPictures.length, 36, 'unsupported picture fixture count');
 for (const [j, c] of unsupportedPictures.entries()) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `unsupported picture must be rejected ${j}`);
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing|picture/);
+  assertRejected(input, c.mode, c.no_index, `unsupported picture must be rejected ${j}`, /drawing|picture/);
 }
 const previouslyUnsupportedFormulaPresets = JSON.parse(await readFile(new URL('./formula-previously-unsupported.json', import.meta.url)));
 assert.equal(previouslyUnsupportedFormulaPresets.length, 2, 'previously unsupported formula preset fixture count');
@@ -84,22 +93,19 @@ const invalidRectangles = JSON.parse(await readFile(new URL('./rectangle-invalid
 assert.equal(invalidRectangles.length, 60, 'unsupported rectangle fixture count');
 for (const c of invalidRectangles) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `unsupported rectangle ${c.label}`);
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing|picture/);
+  assertRejected(input, c.mode, c.no_index, `unsupported rectangle ${c.label}`, /drawing|picture/);
 }
 const invalidRectangleThemes = JSON.parse(await readFile(new URL('./rectangle-theme-unsupported.json', import.meta.url)));
 assert.equal(invalidRectangleThemes.length, 4, 'unsupported rectangle theme fixture count');
 for (const c of invalidRectangleThemes) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `unsupported rectangle theme ${c.label}`);
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing|picture/);
+  assertRejected(input, c.mode, c.no_index, `unsupported rectangle theme ${c.label}`, /drawing|picture/);
 }
 const picturePrecision = JSON.parse(await readFile(new URL('./simple-picture-precision.json', import.meta.url)));
 assert.equal(picturePrecision.length, 144, 'fractional-height picture fixture count');
 for (const [j, c] of picturePrecision.entries()) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `fractional-height picture must be rejected ${j}`);
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /fractional row heights/);
+  assertRejected(input, c.mode, c.no_index, `fractional-height picture must be rejected ${j}`, /fractional row heights/);
 }
 const pictureBatched = JSON.parse(await readFile(new URL('./picture-batched.json', import.meta.url)));
 assert.equal(pictureBatched.length, 16, 'batched picture fixture count');
@@ -120,8 +126,7 @@ const unsupportedPictureFormats = JSON.parse(await readFile(new URL('./picture-u
 assert.equal(unsupportedPictureFormats.length, 56, 'unsupported picture format fixture count');
 for (const [j, c] of unsupportedPictureFormats.entries()) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `unsupported picture format must be rejected ${j}`);
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing/);
+  assertRejected(input, c.mode, c.no_index, `unsupported picture format must be rejected ${j}`, /drawing/);
 }
 const pictureCountLimit = JSON.parse(await readFile(new URL('./picture-count-limit.json', import.meta.url)));
 assert.equal(pictureCountLimit.length, 2, 'picture count boundary fixture count');
@@ -130,8 +135,7 @@ simplePictureCount++;
 {
   const c = pictureCountLimit[1];
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, '129 pictures must be rejected');
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing/);
+  assertRejected(input, c.mode, c.no_index, '129 pictures must be rejected', /drawing/);
 }
 const columnExtent = JSON.parse(await readFile(new URL('./column-extent.json', import.meta.url)));
 assert.equal(columnExtent.length, 96, 'column extent fixture count');
@@ -140,50 +144,43 @@ const invalidPictures = JSON.parse(await readFile(new URL('./picture-invalid.jso
 assert.equal(invalidPictures.length, 11, 'invalid picture fixture count');
 for (const c of invalidPictures) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `invalid picture ${c.label}`);
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing|picture/);
+  assertRejected(input, c.mode, c.no_index, `invalid picture ${c.label}`, /drawing|picture/);
 }
 const invalidCrops = JSON.parse(await readFile(new URL('./picture-crop-invalid.json', import.meta.url)));
 assert.equal(invalidCrops.length, 23, 'invalid picture crop fixture count');
 for (const c of invalidCrops) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `invalid crop ${c.label}`);
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing|picture/);
+  assertRejected(input, c.mode, c.no_index, `invalid crop ${c.label}`, /drawing|picture/);
 }
 const invalidSvgCrops = JSON.parse(await readFile(new URL('./picture-crop-svg-invalid.json', import.meta.url)));
 assert.equal(invalidSvgCrops.length, 9, 'invalid SVG crop fixture count');
 for (const c of invalidSvgCrops) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `invalid SVG crop ${c.label}`);
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing|picture/);
+  assertRejected(input, c.mode, c.no_index, `invalid SVG crop ${c.label}`, /drawing|picture/);
 }
 const invalidFlips = JSON.parse(await readFile(new URL('./picture-flips-invalid.json', import.meta.url)));
 assert.equal(invalidFlips.length, 6, 'invalid picture transform fixture count');
 for (const c of invalidFlips) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `invalid picture transform ${c.label}`);
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing|picture/);
+  assertRejected(input, c.mode, c.no_index, `invalid picture transform ${c.label}`, /drawing|picture/);
 }
 const invalidTransformBounds = JSON.parse(await readFile(new URL('./picture-transform-bounds-invalid.json', import.meta.url)));
 assert.equal(invalidTransformBounds.length, 7, 'invalid picture transform bounds fixture count');
 for (const c of invalidTransformBounds) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `invalid picture transform bounds ${c.label}`);
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing|picture/);
+  assertRejected(input, c.mode, c.no_index, `invalid picture transform bounds ${c.label}`, /drawing|picture/);
 }
 const invalidQuarterTurns = JSON.parse(await readFile(new URL('./picture-quarter-turns-invalid.json', import.meta.url)));
 assert.equal(invalidQuarterTurns.length, 5, 'unsupported picture rotation fixture count');
 for (const c of invalidQuarterTurns) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `unsupported picture rotation ${c.label}`);
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing|picture/);
+  assertRejected(input, c.mode, c.no_index, `unsupported picture rotation ${c.label}`, /drawing|picture/);
 }
 const invalidAbsolutePictures = JSON.parse(await readFile(new URL('./picture-absolute-invalid.json', import.meta.url)));
 assert.equal(invalidAbsolutePictures.length, 6, 'invalid absolute picture position fixture count');
 for (const c of invalidAbsolutePictures) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, `invalid absolute picture position ${c.label}`);
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /drawing|picture/);
+  assertRejected(input, c.mode, c.no_index, `invalid absolute picture position ${c.label}`, /drawing|picture/);
 }
 const conditionalMissingDxfLegacy = JSON.parse(await readFile(new URL('./conditional-missing-dxf-legacy.json', import.meta.url)));
 assert.equal(conditionalMissingDxfLegacy.length, 60, 'previously unsupported missing conditional style fixtures');
@@ -264,8 +261,7 @@ const conditionalMissingDxfStopUnsafePriority = JSON.parse(await readFile(new UR
 assert.equal(conditionalMissingDxfStopUnsafePriority.length, 32, 'unsupported conditional priority fixtures');
 for (const c of conditionalMissingDxfStopUnsafePriority) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, 'unsupported conditional priorities must be rejected');
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /conditional formatting/);
+  assertRejected(input, c.mode, c.no_index, 'unsupported conditional priorities must be rejected', /conditional formatting/);
 }
 const conditionalDxfNumeric = JSON.parse(await readFile(new URL('./conditional-dxf-numeric.json', import.meta.url)));
 assert.equal(conditionalDxfNumeric.length, 32, 'numeric conditional style ID fixtures');
@@ -274,8 +270,7 @@ const conditionalDxfHex = JSON.parse(await readFile(new URL('./conditional-dxf-h
 assert.equal(conditionalDxfHex.length, 32, 'hexadecimal and underscored conditional style ID fixtures');
 for (const c of conditionalDxfHex) {
   const input = Buffer.from(c.input, 'base64');
-  assert.equal(xlsx_render_basic(input, c.mode, c.no_index).length, 0, 'hexadecimal and underscored conditional style IDs must be rejected');
-  assert.match(xlsx_render_error(input, c.mode, c.no_index), /conditional formatting/);
+  assertRejected(input, c.mode, c.no_index, 'hexadecimal and underscored conditional style IDs must be rejected', /conditional formatting/);
 }
 for (const file of index.files) {
   assert.match(file, /^\d{3}\.json$/, 'invalid XLSX rendering fixture name');
@@ -296,8 +291,7 @@ const unsupportedSheetExtensions = JSON.parse(await readFile(new URL('./ignored-
 assert.equal(unsupportedSheetExtensions.length, 8, 'unsupported sheet extension fixture count');
 for (const encoded of unsupportedSheetExtensions) {
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'extended conditional formats must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /extended conditional formatting/);
+  assertRejected(input, 'none', true, 'extended conditional formats must be rejected', /extended conditional formatting/);
 }
 const sheetAutoFilter = JSON.parse(await readFile(new URL('./sheet-autofilter.json', import.meta.url)));
 assert.equal(sheetAutoFilter.length, 256, 'sheet autofilter fixture count');
@@ -359,15 +353,13 @@ const alternateDrawingInputs = JSON.parse(await readFile(new URL('./drawing-alte
 assert.equal(alternateDrawingInputs.length, 2, 'alternate drawing fixture count');
 for (const encoded of alternateDrawingInputs) {
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'alternate drawings must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /worksheet feature drawing/);
+  assertRejected(input, 'none', true, 'alternate drawings must be rejected', /worksheet feature drawing/);
 }
 const populatedDrawingInputs = JSON.parse(await readFile(new URL('./empty-drawing-active-unsupported.json', import.meta.url)));
 assert.equal(populatedDrawingInputs.length, 6, 'populated drawing fixture count');
 for (const encoded of populatedDrawingInputs) {
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'populated drawings must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /worksheet feature drawing/);
+  assertRejected(input, 'none', true, 'populated drawings must be rejected', /worksheet feature drawing/);
 }
 const baseFills = JSON.parse(await readFile(new URL('./base-fill.json', import.meta.url)));
 assert.equal(baseFills.length, 240, 'row and column fill fixture count');
@@ -418,8 +410,7 @@ const unsupportedMultiColorRuns = JSON.parse(await readFile(new URL('./multi-col
 assert.equal(unsupportedMultiColorRuns.length, 0, 'unsupported multiple color run fixture count');
 for (const encoded of unsupportedMultiColorRuns) {
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported styled runs must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /styled rich text runs/);
+  assertRejected(input, 'none', true, 'unsupported styled runs must be rejected', /styled rich text runs/);
 }
 const multiFontRuns = JSON.parse(await readFile(new URL('./multi-font-runs.json', import.meta.url)));
 assert.equal(multiFontRuns.length, 320, 'multiple font run fixture count');
@@ -1567,8 +1558,7 @@ await verifyCase(fontStyleLegacy[0], 'plain-table-font-style-legacy');
 for (const [j, encoded] of effectiveStyleTables.entries()) {
   if (j === 0) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported custom styles must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /tableParts/);
+  assertRejected(input, 'none', true, 'unsupported custom styles must be rejected', /tableParts/);
 }
 const plainTableBuiltinLegacy = JSON.parse(await readFile(new URL('./plain-table-builtin-legacy.json', import.meta.url)));
 assert.equal(plainTableBuiltinLegacy.length, 1, 'previously unsupported built-in table style fixture count');
@@ -1652,8 +1642,7 @@ assert.equal(unsupportedConditionalDuplicate.length, 8, 'unsupported conditional
 for (const encoded of unsupportedConditionalDuplicate) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional duplicate must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional duplicate must be rejected', /conditional formatting/);
 }
 const conditionalLargeStdDev = JSON.parse(await readFile(new URL('./conditional-large-stddev.json', import.meta.url)));
 assert.equal(conditionalLargeStdDev.length, 433, 'large conditional standard deviation fixture count');
@@ -1687,64 +1676,56 @@ assert.equal(unsupportedConditionalNonfiniteAverage.length, 8, 'unsupported nonf
 for (const encoded of unsupportedConditionalNonfiniteAverage) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional average must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional average must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalOverflowMean = JSON.parse(await readFile(new URL('./conditional-overflow-mean-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalOverflowMean.length, 8, 'unsupported overflowed conditional mean fixture count');
 for (const encoded of unsupportedConditionalOverflowMean) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional average must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional average must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalLargeStdDev = JSON.parse(await readFile(new URL('./conditional-large-stddev-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalLargeStdDev.length, 8, 'unsupported large conditional standard deviation fixture count');
 for (const encoded of unsupportedConditionalLargeStdDev) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported large conditional standard deviation must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported large conditional standard deviation must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalStdDev = JSON.parse(await readFile(new URL('./conditional-stddev-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalStdDev.length, 8, 'unsupported conditional standard deviation fixture count');
 for (const encoded of unsupportedConditionalStdDev) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional standard deviation must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional standard deviation must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalAverage = JSON.parse(await readFile(new URL('./conditional-average-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalAverage.length, 8, 'unsupported conditional average fixture count');
 for (const encoded of unsupportedConditionalAverage) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional average must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional average must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalTop = JSON.parse(await readFile(new URL('./conditional-top-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalTop.length, 8, 'unsupported conditional top fixture count');
 for (const encoded of unsupportedConditionalTop) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional top must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional top must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalText = JSON.parse(await readFile(new URL('./conditional-text-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalText.length, 8, 'unsupported conditional text fixture count');
 for (const encoded of unsupportedConditionalText) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional text must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional text must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalPredicates = JSON.parse(await readFile(new URL('./conditional-predicates-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalPredicates.length, 8, 'unsupported conditional predicate fixture count');
 for (const encoded of unsupportedConditionalPredicates) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional predicates must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional predicates must be rejected', /conditional formatting/);
 }
 const conditionalNegativeString = JSON.parse(await readFile(new URL('./conditional-negative-string.json', import.meta.url)));
 assert.equal(conditionalNegativeString.length, 289, 'negative numeric string reference fixture count');
@@ -1754,56 +1735,49 @@ assert.equal(unsupportedConditionalNegativeString.length, 8, 'unsupported negati
 for (const encoded of unsupportedConditionalNegativeString) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported negative numeric string must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported negative numeric string must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalNegativeBlank = JSON.parse(await readFile(new URL('./conditional-negative-blank-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalNegativeBlank.length, 9, 'unsupported negative blank reference fixture count');
 for (const encoded of unsupportedConditionalNegativeBlank) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional references must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional references must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalNegativeRef = JSON.parse(await readFile(new URL('./conditional-negative-ref-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalNegativeRef.length, 8, 'unsupported negative conditional reference fixture count');
 for (const encoded of unsupportedConditionalNegativeRef) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional references must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional references must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalMovingRef = JSON.parse(await readFile(new URL('./conditional-moving-ref-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalMovingRef.length, 8, 'unsupported moving conditional reference fixture count');
 for (const encoded of unsupportedConditionalMovingRef) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional references must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional references must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalAxisRef = JSON.parse(await readFile(new URL('./conditional-axis-ref-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalAxisRef.length, 8, 'unsupported axis-aligned conditional reference fixture count');
 for (const encoded of unsupportedConditionalAxisRef) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional references must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional references must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalSingleRef = JSON.parse(await readFile(new URL('./conditional-single-ref-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalSingleRef.length, 8, 'unsupported single-cell conditional reference fixture count');
 for (const encoded of unsupportedConditionalSingleRef) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional references must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional references must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalAbsolute = JSON.parse(await readFile(new URL('./conditional-absolute-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalAbsolute.length, 8, 'unsupported conditional reference fixture count');
 for (const encoded of unsupportedConditionalAbsolute) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional references must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional references must be rejected', /conditional formatting/);
 }
 const conditionalLiteral = JSON.parse(await readFile(new URL('./conditional-literal.json', import.meta.url)));
 assert.equal(conditionalLiteral.length, 361, 'conditional literal fixture count');
@@ -1822,48 +1796,42 @@ assert.equal(unsupportedConditionalInvalidReference.length, 8, 'unsupported inva
 for (const encoded of unsupportedConditionalInvalidReference) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional reference must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional reference must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalTypedReference = JSON.parse(await readFile(new URL('./conditional-typed-reference-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalTypedReference.length, 8, 'unsupported typed conditional reference fixture count');
 for (const encoded of unsupportedConditionalTypedReference) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported typed conditional reference must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported typed conditional reference must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalMovingLiteral = JSON.parse(await readFile(new URL('./conditional-moving-literal-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalMovingLiteral.length, 8, 'unsupported moving conditional literal fixture count');
 for (const encoded of unsupportedConditionalMovingLiteral) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported moving conditional literal must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported moving conditional literal must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalLiteral = JSON.parse(await readFile(new URL('./conditional-literal-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalLiteral.length, 9, 'unsupported conditional literal fixture count');
 for (const encoded of unsupportedConditionalLiteral) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional literal must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional literal must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalEquals = JSON.parse(await readFile(new URL('./conditional-equals-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalEquals.length, 8, 'unsupported conditional formula prefix fixture count');
 for (const encoded of unsupportedConditionalEquals) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional formulas must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional formulas must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalBetween = JSON.parse(await readFile(new URL('./conditional-between-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalBetween.length, 8, 'unsupported conditional interval fixture count');
 for (const encoded of unsupportedConditionalBetween) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional intervals must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional intervals must be rejected', /conditional formatting/);
 }
 const conditionalBlank = JSON.parse(await readFile(new URL('./conditional-blank.json', import.meta.url)));
 assert.equal(conditionalBlank.length, 161, 'conditional blank-cell fixture count');
@@ -1876,63 +1844,58 @@ assert.equal(unsupportedConditionalPaintBlank.length, 9, 'unsupported conditiona
 for (const encoded of unsupportedConditionalPaintBlank) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional blank-cell paints must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional blank-cell paints must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalBlank = JSON.parse(await readFile(new URL('./conditional-blank-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalBlank.length, 8, 'unsupported conditional blank-cell fixture count');
 for (const encoded of unsupportedConditionalBlank) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional blank-cell styles must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional blank-cell styles must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalOps = JSON.parse(await readFile(new URL('./conditional-ops-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalOps.length, 8, 'unsupported conditional comparison fixture count');
 for (const encoded of unsupportedConditionalOps) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional fills must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional fills must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalBorder = JSON.parse(await readFile(new URL('./conditional-border-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalBorder.length, 8, 'unsupported conditional border fixture count');
 for (const encoded of unsupportedConditionalBorder) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional borders must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional borders must be rejected', /conditional formatting/);
 }
 const unsupportedConditionalFill = JSON.parse(await readFile(new URL('./conditional-fill-unsupported.json', import.meta.url)));
 assert.equal(unsupportedConditionalFill.length, 8, 'unsupported conditional fill fixture count');
 for (const encoded of unsupportedConditionalFill) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional fills must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional fills must be rejected', /conditional formatting/);
 }
 const unsupportedActiveCF = JSON.parse(await readFile(new URL('./active-cf-unsupported.json', import.meta.url)));
 assert.equal(unsupportedActiveCF.length, 8, 'unsupported conditional font fixture count');
 for (const encoded of unsupportedActiveCF) {
   if (supportedMissingDxfInputs.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional styles must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional styles must be rejected', /conditional formatting/);
 }
 const unsupportedCF = JSON.parse(await readFile(new URL('./inactive-cf-unsupported.json', import.meta.url)));
 assert.equal(unsupportedCF.length, 8, 'unsupported conditional format fixture count');
+// Fixtures 2 and 7 now convert successfully; the remaining entries must
+// still be rejected. Keep their positions because legacy fixtures index them.
+const supportedInactiveCF = new Set([unsupportedCF[2], unsupportedCF[7]]);
 for (const encoded of unsupportedCF) {
-  if (supportedMissingDxfInputs.has(encoded)) continue;
+  if (supportedMissingDxfInputs.has(encoded) || supportedInactiveCF.has(encoded)) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported conditional formats must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /conditional formatting/);
+  assertRejected(input, 'none', true, 'unsupported conditional formats must be rejected', /conditional formatting/);
 }
 const unsupportedLinks = JSON.parse(await readFile(new URL('./links-unsupported.json', import.meta.url)));
 assert.equal(unsupportedLinks.length, 3, 'unsupported hyperlink fixture count');
 for (const [j, encoded] of unsupportedLinks.entries()) {
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported links must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), j < 2 ? /unsupported hyperlink URL/ : /links exceed the supported tile budget/);
+  assertRejected(input, 'none', true, 'unsupported links must be rejected', j < 2 ? /unsupported hyperlink URL/ : /links exceed the supported tile budget/);
 }
 const unsupportedRuns = JSON.parse(await readFile(new URL('./plain-run-unsupported.json', import.meta.url)));
 assert.equal(unsupportedRuns.length, 6, 'unsupported rich-text run fixture count');
@@ -1950,24 +1913,22 @@ await verifyCase(largeFontLegacy[0], 'large-font-legacy');
 for (const [j, encoded] of unsupportedRuns.entries()) {
   if (j >= 2) continue;
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported rich-text runs must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /rich text/);
+  assertRejected(input, 'none', true, 'unsupported rich-text runs must be rejected', /rich text/);
 }
 const largeFill = Buffer.from(JSON.parse(await readFile(new URL('./base-fill-too-large.json', import.meta.url))), 'base64');
-assert.equal(xlsx_render_basic(largeFill, 'none', true).length, 0, 'oversized base fills must be rejected');
-assert.match(xlsx_render_error(largeFill, 'none', true), /row or column fill exceeds the supported view size/);
+assertRejected(largeFill, 'none', true, 'oversized base fills must be rejected', /row or column fill exceeds the supported view size/);
 const largeBorder = Buffer.from(JSON.parse(await readFile(new URL('./base-border-too-large.json', import.meta.url))), 'base64');
-assert.equal(xlsx_render_basic(largeBorder, 'none', true).length, 0, 'oversized base borders must be rejected');
-assert.match(xlsx_render_error(largeBorder, 'none', true), /row or column border exceeds the supported view size/);
+assertRejected(largeBorder, 'none', true, 'oversized base borders must be rejected', /row or column border exceeds the supported view size/);
+// cells.json[0] used to be rejected but its styles are supported now; the
+// remaining unsupported style fixtures below still assert rejection.
 const styled = JSON.parse(await readFile(new URL('./cells.json', import.meta.url)))[0];
-assert.equal(xlsx_render_basic(Buffer.from(styled.input, 'base64'), 'none', true).length, 0, 'unsupported styled workbook must be rejected');
+assert.ok(renderResult(Buffer.from(styled.input, 'base64'), 'none', true).bdf);
 const autoHeight = JSON.parse(await readFile(new URL('./auto-height.json', import.meta.url)));
-assert.ok(xlsx_render_basic(Buffer.from(autoHeight, 'base64'), 'none', true).length, 'nondefault font sizes on auto-height rows must convert');
+assert.ok(renderResult(Buffer.from(autoHeight, 'base64'), 'none', true).bdf, 'nondefault font sizes on auto-height rows must convert');
 const unsupportedBase = JSON.parse(await readFile(new URL('./base-style-unsupported.json', import.meta.url)));
 assert.equal(unsupportedBase.length, 4, 'row and column fill and border fixtures');
 for (const encoded of unsupportedBase) {
   const input = Buffer.from(encoded, 'base64');
-  assert.equal(xlsx_render_basic(input, 'none', true).length, 0, 'unsupported base styles must be rejected');
-  assert.match(xlsx_render_error(input, 'none', true), /row or column styles with (fills|complex borders)/);
+  assertRejected(input, 'none', true, 'unsupported base styles must be rejected', /row or column styles with (fills|complex borders)/);
 }
-console.log(`${i} basic XLSX renderings, ${ignoredSheetFeatures.length + ignoredSheetExtensions.length} ignored sheet feature cases, ${sheetAutoFilter.length + sheetAutoFilterTiles.length} autofilters, ${sheetNotes.length + sheetNotesFilter.length} notes, ${sheetMissingParts.length + emptyDrawingLegacy.length + emptyDrawingVariants.length + missingDrawingPart.length + missingDrawingRepeated.length + malformedDrawingPart.length + malformedDrawingRepeated.length + drawingEmptyRelationship.length + malformedDrawingBom.length + drawingForeignAlternate.length} missing part and empty drawing cases, ${baseFills.length} base fills, ${baseBorders.length + baseBorderTint.length} base borders, ${plainRuns.length + multiplePlainRuns.length + richRunLegacy.length + richRunData.length + richRunWrap.length + richRunIdentity.length + singleStyledRun.length + singleStyledRunConditional.length + singleStyledRunVariants.length + singleStyledRunLegacy.length + multiColorRuns.length + multiColorRunsGeometry.length + multiColorRunsConditional.length + multiFontRuns.length + multiFontRunsGeometry.length + multiFontRunsConditional.length + multiFontPrecision.length + multiFontLegacy.length + multiAlignRuns.length + multiAlignGeometry.length + multiAlignConditional.length + multiAlignPrecision.length + multiUnicodeRuns.length + multiUnicodeGeometry.length + multiUnicodeConditional.length + multiUnicodeAligned.length + multiUnicodeRepertoire.length + multiUnicodeLegacy.length + multiWrapRuns.length + multiNewlineRuns.length + multiWrapConditional.length + multiNewlineConditional.length + multiWrapSpaces.length + multiWrapLegacy.length + multiEqualFontRuns.length + multiEqualFontVariants.length + multiEqualFontConditional.length + multiBaseFontRuns.length + multiBaseFontConditional.length + multiBaseFontLegacy.length + multiWrapFuzz.length + multiShrinkRuns.length + multiShrinkBase.length + multiShrinkConditional.length + multiShrinkWrap.length + multiShrinkFuzz.length + multiEdgeSpacePlain.length + multiEdgeSpaceWrap.length + multiEdgeNewline.length + multiEmptyRuns.length + multiControlPlain.length + multiControlWrap.length + multiControlShrink.length + multiEdgeLegacy.length + multiFamilyRuns.length + multiFamilyTheme.length + multiFamilyConditional.length + multiFamilyShrink.length + multiFamilyGeneric.length + multiFamilyLegacy.length + multiUniformSize.length + multiUniformVariants.length + multiUniformShrink.length + multiUniformConditional.length + multiTruncatePlain.length + multiTruncateWrap.length + multiTruncateShrink.length + multiTruncateLegacy.length + multiVaryingSize.length + multiVaryingAligned.length + multiVaryingUnicode.length + multiVaryingUnicodeAligned.length + multiVaryingHeight.length + multiVaryingConditional.length + multiVaryingFuzz.length + multiInheritedSize.length + multiInheritedBase.length + multiInheritedConditional.length + multiInheritedHeight.length + multiInheritedLegacy.length + multiInheritedVaryingLegacy.length + multiVaryingWrapFit.length + multiVaryingWrapFitConditional.length + multiVaryingWrapFitHeight.length + realWrapExplicit.length + realWrapInherited.length + realWrapHeight.length + realWrapConditional.length + realWrapVertical.length + realWrapFuzz.length + realWrapShrink.length + realWrapControl.length + realWrapEdges.length + realWrapLong.length + realWrapLegacy.length + realWrapVaryingLegacy.length + varyingSpaces.length + varyingControl.length + varyingGhost.length + varyingLong.length + varyingControlLegacy.length + mixedShrinkBase.length + mixedShrinkControl.length + mixedShrinkFuzz.length + mixedShrinkConditional.length + mixedShrinkHeight.length + mixedShrinkGhost.length + mixedShrinkLong.length + mixedShrinkTiny.length + singleStyledShrinkTiny.length + realWrapGhost.length + scriptLegacy.length + scriptPlain.length + scriptShrink.length + scriptWrap.length + scriptConditional.length + scriptTiny.length + scriptUniformPlain.length + scriptUniformWrap.length + baseScriptWrap.length + baseScriptPlain.length + baseScriptShrink.length + baseScriptMixedWrap.length + baseScriptMixedShrink.length + baseScriptMixedConditional.length + baseScriptMixedTiny.length + repeatedPropsPlain.length + repeatedPropsWrap.length + repeatedPropsShrink.length + repeatedPropsBaseConditional.length + repeatedPropsBaseTiny.length + repeatedPropsBaseWrap.length + repeatedPropsLegacy.length + repeatedChildrenLegacy.length + repeatedChildrenPlain.length + repeatedChildrenWrap.length + repeatedChildrenShrink.length + repeatedChildrenBasePlain.length + repeatedChildrenBaseWrap.length + repeatedChildrenBaseShrink.length + largeFontPlain.length + largeFontWrap.length + largeFontShrink.length + singleLargeFont.length + largeFontLegacy.length} plain runs, ${plainTableExtentUnstyled.length + plainTableNoStyle.length + plainTableVariants.length + plainTableOverlaps.length + plainTableOutside.length + plainTableFilters.length + plainTableFiltersMerged.length + plainTableFiltersOverlaps.length + plainTableFilterIds.length + plainTableMerged.length + plainTableFilterLegacy.length + plainTableEmptyStyle.length + plainTableEmptyStyleDuplicates.length + plainTableEmptyStyleEncoded.length + plainTableNoopStyleIds.length + plainTableUnknownStyleElement.length + noopStyleLegacy.length + plainTableNoopDxf.length + plainTableNoopDxfVariants.length} unstyled tables, ${plainTableFontStyle.length + plainTableFontStyleConditional.length + plainTableFontStyleBase.length + plainTableFontStyleWrap.length + plainTableFontStyleShrink.length + plainTableFontStyleDuplicates.length + plainTableFontStyleNumberFormat.length + plainTableFontStyleMerged.length + fontStyleLegacy.length + plainTableMultiFontStyle.length + plainTableMultiFontStyleConditional.length + multiTableFontLegacy.length + plainTableFillStyle.length + plainTableFillStyleConditional.length + plainTableFillStyleBlanks.length + plainTableFillStyleColors.length + plainTableFillFontStyle.length + plainTableFillFontStylePlain.length + plainTableFillFontStyleBlanks.length + plainTableFillFontStyleBase.length + plainTableMultiFillStyle.length + plainTableMultiFillStyleConditional.length + plainTableMultiFillStyleMixed.length + fillFontLegacy.length + plainTableFillStyleMerged.length + plainTableMultiFillStyleMerged.length + plainTableFillStyleAxes.length + plainTableMultiFillStyleAxes.length + tableStyleAxesLegacy.length + plainTableFillStyleTall.length + plainTableFillStyleVeryTall.length + plainTableMultiFillStyleTall.length + plainTableHeaderStyle.length + plainTableHeaderStyleBounds.length + plainTableMultiHeaderStyle.length + plainTableMixedHeaderStyle.length + plainTableTotalStyle.length + plainTableTotalStyleMultiple.length + plainTableTotalStyleBounds.length + plainTableMultiTotalStyle.length + plainTableMixedTotalStyle.length + plainTableFirstColumnStyle.length + plainTableLastColumnStyle.length + plainTableMultiColumnStyle.length + plainTableFirstColumnStyleFlags.length + plainTableLastColumnStyleFlags.length + plainTableFirstHeaderCell.length + plainTableLastHeaderCell.length + plainTableFirstTotalCell.length + plainTableLastTotalCell.length + plainTableMultiCornerStyle.length + plainTableFirstHeaderFlags.length + plainTableLastTotalFlags.length + plainTableFirstRowStripe.length + plainTableFirstRowStripeWide.length + plainTableFirstRowStripeWidths.length + plainTableSecondRowStripe.length + plainTableSecondRowStripeWide.length + plainTableSecondRowStripeWidths.length + plainTableFirstColumnStripe.length + plainTableFirstColumnStripeWide.length + plainTableFirstColumnStripeWidths.length + plainTableSecondColumnStripe.length + plainTableSecondColumnStripeWide.length + plainTableSecondColumnStripeWidths.length + plainTableFirstRowStripeBounds.length + plainTableFirstRowStripeFlags.length + plainTableSecondColumnStripeBounds.length + plainTableSecondColumnStripeFlags.length + plainTableMultiStripe.length + plainTableFirstRowStripeActiveWidths.length + plainTableSecondColumnStripeActiveWidths.length + twoStripeElements.length + plainTablePairedRowStripe.length + plainTablePairedColumnStripe.length + plainTablePairedRowStripePlain.length + plainTablePairedColumnStripePlain.length + plainTablePairedRowStripeMixed.length + plainTableMultiPairedStripe.length + plainTablePairedRowStripeDuplicates.length + plainTablePairedRowStripeBounds.length + plainTablePairedRowStripeOffsets.length + plainTablePairedColumnStripeOffsets.length + wholeHeaderLegacy.length + plainTableWholeHeader.length + plainTableWholeHeaderPlain.length + plainTableWholeHeaderMixed.length + plainTableWholeHeaderReversed.length + plainTableWholeHeaderDuplicates.length + plainTableMultiWholeHeader.length + plainTableWholeHeaderBounds.length + plainTableWholeHeaderUnset.length + plainTableWholeTotal.length + plainTableWholeTotalPlain.length + plainTableWholeTotalMixed.length + plainTableWholeTotalReversed.length + plainTableWholeTotalDuplicates.length + plainTableWholeTotalBounds.length + plainTableMultiWholeTotal.length + plainTableHeaderTotal.length + plainTableHeaderTotalPlain.length + plainTableHeaderTotalMixed.length + plainTableHeaderTotalReversed.length + plainTableHeaderTotalDuplicates.length + plainTableHeaderTotalOverlap.length + plainTableHeaderTotalOverlapConditional.length + plainTableHeaderTotalOverlapMixed.length + plainTableHeaderTotalBounds.length + plainTableMultiHeaderTotal.length + plainTableThreeRegions.length + plainTableThreeRegionsConditional.length + plainTableThreeRegionsMixed.length + plainTableThreeRegionsBounds.length + plainTableMultiThreeRegions.length + plainTableThreeRegionsOrder1.length + plainTableThreeRegionsOrder2.length + plainTableThreeRegionsOrder3.length + plainTableThreeRegionsOrder4.length + plainTableThreeRegionsOrder5.length + plainTableThreeRegionsOrder6.length + plainTableWholeFirstRowStripe.length + plainTableWholeSecondRowStripe.length + plainTableWholeFirstColumnStripe.length + plainTableWholeSecondColumnStripe.length + plainTableWholeFirstRowStripeFontOnly.length + plainTableWholeFirstRowStripeFillOnly.length + plainTableWholeFirstRowStripeBounds.length + plainTableMultiWholeStripe.length + plainTableWholeFirstRowStripeReversed.length + plainTableWholeFirstRowStripeDuplicates.length + pairedWholeRow.length + pairedWholeRowPlain.length + pairedWholeRowFlags.length + pairedWholeRowMixed.length + pairedWholeRowOrder.length + pairedWholeColumn.length + pairedWholeColumnPlain.length + pairedWholeColumnFlags.length + pairedWholeColumnMixed.length + pairedWholeColumnOrder.length + pairedWholeRowBounds.length + pairedWholeRowDuplicates.length + pairedWholeMulti.length + plainTableComposite.length + plainTableCompositeMixed.length + plainTableCompositeBounds.length + plainTableCompositeFlags.length + plainTableCompositeCorners.length + plainTableCompositeConditional.length + plainTableCompositeOrder.length + plainTableCompositeDuplicates.length + plainTableCompositeTall.length + plainTableCompositeLarge.length + plainTableCompositeNoWhole.length + plainTableCompositeColumns.length + plainTableCompositeRows.length + plainTableCompositeMissing.length + plainTableCompositeMulti.length + plainTableCompositeMultiShared.length + plainTableExtentComposite.length + plainTableBorder.length + plainTableBorderBase.length + plainTableBorderMerged.length + plainTableBorderBorderOnly.length + plainTableBorderConditional.length + plainTableBorderSparse.length + plainTableBorderVeryTall.length + plainTableBorderColors.length + plainTableBorderEmpty.length + plainTableBorderBlank.length + plainTableBorderBlankLarge.length + plainTableMultiBorder.length + plainTableCompositeBorder.length + plainTableCompositeBorderFlags.length + plainTableCompositeBorderBounds.length + plainTableCompositeBorderBase.length + plainTableCompositeBorderMixed.length + plainTableCompositeBorderOrder.length + plainTableCompositeBorderDuplicates.length + plainTableCompositeBorderConditional.length + plainTableCompositeBorderWidths.length + plainTableCompositeBorderTall.length + plainTableCompositeBorderNoop.length + plainTableCompositeBorderAlignment.length + plainTableCompositeBorderEmpty.length + plainTableCompositeBorderFontExtra.length + plainTableCompositeBorderFontNested.length + plainTableCompositeBorderUnderlineAccounting.length + plainTableCompositeBorderUnderlineCustom.length + plainTableCompositeBorderDuplicateFont.length + plainTableCompositeBorderDuplicateFill.length + plainTableCompositeBorderDuplicateBorder.length + plainTableMultiCompositeBorder.length + plainTableBuiltinStyles.length + plainTableBuiltinStylesFlags.length + plainTableBuiltinStylesOverride.length + plainTableBuiltinStylesMissingStyles.length + plainTableBuiltinStylesTheme.length + plainTableBuiltinStylesThemeLarge.length + plainTableBuiltinStylesMerged.length + plainTableBuiltinStylesConditional.length + plainTableBuiltinStylesTall.length + plainTableMultiBuiltinStyles.length + plainTableMultiBorderQuantized.length + plainTableBuiltinLegacy.length + plainTableMultiBuiltinStylesTheme.length + plainTableMultiBorderTiny.length + plainTableMultiBorderThreshold.length + plainTableMultiBorderSubmicro.length + plainTableMultiUnknown.length + plainTableMultiUnknownMultisheet.length + plainTableMultiUnknownFormula.length + plainTableMultiUnknownEncoded.length + plainTableMultiUnknownRtl.length + plainTableMultiUnknownMissingStyles.length + plainTableBuiltinStylesBlank.length + plainTableUnknownLegacy.length + plainTableBudgetUnstyled.length + plainTableBudgetWarnings.length + plainTableBudgetCumulative.length + plainTableBudgetStyledLarge.length + plainTableBudgetExistingCells.length + plainTableBudgetMultisheet.length + plainTableBudgetExactLimit.length + plainTableInvalidRefs.length + plainTableInvalidRefsExpanded.length + plainTableMissingPart.length + plainTableMissingPartRepeated.length + plainTableInvalidLegacy.length + plainTableMalformedSupported.length + plainTableBudgetDuplicateCells.length + plainTableMalformedBom.length} styled tables, ${links.length + percentLinks.length} links, and ${inactiveCF.length + activeCF.length + conditionalFill.length + conditionalBorder.length + conditionalOps.length + conditionalBetween.length + conditionalEquals.length + conditionalLiteral.length + conditionalMovingLiteral.length + conditionalTypedReference.length + conditionalInvalidReference.length + conditionalAbsolute.length + conditionalSingleRef.length + conditionalAxisRef.length + conditionalMovingRef.length + conditionalNegativeRef.length + conditionalNegativeBlank.length + conditionalNegativeString.length + conditionalPredicates.length + conditionalText.length + conditionalTop.length + conditionalAverage.length + conditionalStdDev.length + conditionalLargeStdDev.length + conditionalOverflowMean.length + conditionalNonfiniteAverage.length + conditionalDisjoint.length + conditionalDisjointMoving.length + conditionalSameStyle.length + conditionalIdenticalBlocks.length + conditionalSameRuleStyle.length + conditionalDisjointMatches.length + conditionalDuplicate.length + conditionalBlank.length + conditionalPaintBlank.length + conditionalMissingDxfLegacy.length + conditionalMissingDxf.length + conditionalMissingDxfNoStyles.length + conditionalMissingDxfOverlap.length + conditionalDxfNumeric.length + conditionalMissingDxfStop.length + conditionalMissingDxfStopMulti.length + conditionalMissingDxfStopNumericPriority.length + conditionalMissingDxfBlank.length + conditionalMissingDxfStopBlank.length + conditionalMissingDxfStopBlankOverlap.length / 2 + conditionalMissingDxfStopDisjoint.length + conditionalMissingDxfStopBlankMatrix.length - unsupportedBlankStopMatrix.size + conditionalStopBlankDisjoint.length - unsupportedBlankDisjoint.size + conditionalStopNonblankDisjoint.length + conditionalStopBlankFont.length + conditionalStopBlankFontVariants.length + conditionalStopBlankFontMatrix.length - unsupportedBlankFontMatrix.size + conditionalMovingBlank.length - unsupportedMovingBlank.size + conditionalMovingPartial.length - unsupportedMovingPartial.size + conditionalMovingDuplicate.length - unsupportedMovingDuplicate.size + conditionalMovingMulti.length - unsupportedMovingMulti.size + conditionalMissingDxfStopStable.length + conditionalMissingDxfStopMatrix.length - unsupportedStopMatrix.size} conditional formats and ${simplePictureCount} pictures match upstream.`);
+console.log(`${checked} XLSX rendering cases checked against upstream.`);

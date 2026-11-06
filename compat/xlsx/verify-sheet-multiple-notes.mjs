@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { BdfDocument, BufferSource, decodeObject, walk } from '@bdfkit/core';
-import { xlsx_render_basic, xlsx_render_warnings } from '../../_build/js/debug/build/compat/xlsx/xlsx.js';
+import { xlsx_render_result } from '../../_build/js/debug/build/compat/xlsx/xlsx.js';
 function normalize(object) {
   let fill = 0;
   const operations = [], notes = [];
@@ -30,8 +30,9 @@ assert.equal(cases.length, count, `${file} fixture count`);
 for (const [j, c] of cases.entries()) {
   const input = Buffer.from(c.input, 'base64');
   const expected = await BdfDocument.open(new BufferSource(Buffer.from(c.bdf, 'base64')));
-  const actual = await BdfDocument.open(new BufferSource(xlsx_render_basic(input, c.mode, c.no_index)));
-  assert.deepEqual(JSON.parse(xlsx_render_warnings(input, c.mode, c.no_index)), c.warnings ?? [], `warnings ${j}`);
+  const result = JSON.parse(xlsx_render_result(input, c.mode, c.no_index));
+  const actual = await BdfDocument.open(new BufferSource(Buffer.from(result.bdf, 'base64')));
+  assert.deepEqual(result.warnings ?? [], c.warnings ?? [], `warnings ${j}`);
   assert.deepEqual(actual.manifest.meta, expected.manifest.meta, `metadata ${j}`);
   assert.deepEqual(actual.manifest.tables ?? [], expected.manifest.tables ?? [], `tables ${j}`);
   assert.equal(actual.manifest.parts.length, expected.manifest.parts.length, `part count ${j}`);
