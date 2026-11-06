@@ -248,6 +248,9 @@ pub fn Server::handle_with_document(
     let id = request_job_id(request)
     match self.find_job(id) {
       Some(job) => {
+        if @ipp.job_state_done(job.state) {
+          return response_for(request, @ipp.STATUS_CLIENT_ERROR_NOT_POSSIBLE)
+        }
         let last = match request.attr(@ipp.TAG_OPERATION, "last-document") {
           Some(attribute) => attribute.bool().unwrap_or(true)
           None => true

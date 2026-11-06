@@ -353,3 +353,15 @@ test "ipp server filters requested job list attributes" {
   assert_eq(group.attrs[0].name, "job-name")
 }
 
+///|
+test "ipp server rejects send-document on a completed job" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  ignore(server.handle(client.create_job("done", [])))
+  let first = client.send_document(1, "done.pdf", "application/pdf", true)
+  ignore(server.handle_with_document(first, b"%PDF-1.7"))
+  let again = client.send_document(1, "done.pdf", "application/pdf", true)
+  let response = server.handle_with_document(again, b"%PDF-1.7")
+  assert_eq(response.code, @ipp.STATUS_CLIENT_ERROR_NOT_POSSIBLE)
+}
+
