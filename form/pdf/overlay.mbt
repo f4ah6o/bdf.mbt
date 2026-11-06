@@ -113,7 +113,12 @@ pub fn fill_overlay(
     let raw = overlay_value(data, field.name)
     let is_button = field.typ == "/Btn"
     let value = if is_button {
-      if raw == "true" || raw == "Yes" || raw == "/Yes" { "X" } else { "" }
+      if raw == "true" || raw == "Yes" || raw == "/Yes" || raw == "On" ||
+        raw == "/On" {
+        "X"
+      } else {
+        ""
+      }
     } else {
       raw
     }

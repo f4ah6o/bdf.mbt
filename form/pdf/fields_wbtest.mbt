@@ -40,7 +40,7 @@ test "pdf overlay draws form values" {
     #|%%EOF
   let bdf = fill_overlay(
     @utf8.encode(pdf),
-    @utf8.encode("{\"name\":\"Alice\\nBob\",\"agree\":true}"),
+    @utf8.encode("{\"name\":\"Alice\\nBob\",\"agree\":\"On\"}"),
     title="overlay",
   )
   let document = @core.open_single(bdf)
