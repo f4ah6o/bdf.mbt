@@ -297,6 +297,13 @@ pub fn Server::handle_with_document(
           Some(attribute) => attribute.bool().unwrap_or(true)
           None => true
         }
+        let format = match request.attr(@ipp.TAG_OPERATION, "document-format") {
+          Some(attribute) => attribute.text()
+          None => ""
+        }
+        if document.length() > 0 && !self.format_supported(format) {
+          return response_for(request, @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST)
+        }
         if document.length() > 0 {
           job.document = append_document(job.document, document)
           if !last {
@@ -304,10 +311,6 @@ pub fn Server::handle_with_document(
             let response = response_for(request, @ipp.STATUS_OK)
             response.add(@ipp.TAG_JOB, requested_job_attrs(self, request, job))
             return response
-          }
-          let format = match request.attr(@ipp.TAG_OPERATION, "document-format") {
-            Some(attribute) => attribute.text()
-            None => ""
           }
           let raster_pages = if format.contains("pwg") ||
             job.document.has_prefix(b"RaS2") {

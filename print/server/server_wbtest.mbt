@@ -417,3 +417,14 @@ test "ipp server rejects unsupported print documents" {
   assert_eq(server.jobs.length(), 0)
 }
 
+///|
+test "ipp server rejects unsupported send-document formats" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  ignore(server.handle(client.create_job("bad", [])))
+  let request = client.send_document(1, "bad.tiff", "image/tiff", true)
+  let response = server.handle_with_document(request, b"II*\x00")
+  assert_eq(response.code, @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST)
+  assert_eq(server.jobs[0].document.length(), 0)
+}
+
