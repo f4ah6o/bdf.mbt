@@ -119,4 +119,3 @@ test "pdf overlay can skip read-only fields" {
   )
   assert_true(resources2.object.strings.contains("New"))
 }
-

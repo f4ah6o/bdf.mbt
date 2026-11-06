@@ -130,3 +130,13 @@ test "fill_pdf can skip read-only fields" {
   assert_eq(read_fields(filled)[0].value, "New")
 }
 
+///|
+test "fill_pdf updates files with xref streams" {
+  let pdf = @base64.decode(
+    "JVBERi0xLjUKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgL0Fjcm9Gb3JtIDw8IC9GaWVsZHMgWzQgMCBSXSA+PiA+PgplbmRvYmoKMiAwIG9iago8PCAvVHlwZSAvUGFnZXMgL0tpZHMgWzMgMCBSXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDIwMCAxMDBdIC9Bbm5vdHMgWzQgMCBSXSA+PgplbmRvYmoKNCAwIG9iago8PCAvVHlwZSAvQW5ub3QgL1N1YnR5cGUgL1dpZGdldCAvRlQgL1R4IC9UIChuYW1lKSAvViAoT2xkKSAvUmVjdCBbMTAgMjAgMTAwIDQwXSAvUCAzIDAgUiA+PgplbmRvYmoKNSAwIG9iago8PCAvVHlwZSAvWFJlZiAvU2l6ZSA2IC9Sb290IDEgMCBSIC9XIFsxIDIgMV0gL0luZGV4IFswIDZdIC9MZW5ndGggMjQgPj4Kc3RyZWFtCgAAAAABAAkAAQBaAAEAkwABAOoAAQFWAAplbmRzdHJlYW0KZW5kb2JqCnN0YXJ0eHJlZgozNDIKJSVFT0YK",
+  )
+  let filled = fill_pdf(pdf, @utf8.encode("{\"name\":\"Alice\"}"))
+  assert_eq(read_fields(filled)[0].value, "Alice")
+  assert_true(@utf8.decode_lossy(filled[:]).contains("/Prev 342"))
+}
+

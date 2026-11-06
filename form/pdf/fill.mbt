@@ -452,9 +452,19 @@ pub fn fill_pdf(
     Some(offset) => offset
     None => raise PdfFillError("form/pdf: the PDF has no startxref")
   }
-  if old_xref < 0 || old_xref + 4 > text.length() ||
-    text[old_xref:old_xref + 4] != "xref" {
-    raise PdfFillError("form/pdf: only classic xref PDFs are supported")
+  if old_xref < 0 || old_xref >= text.length() {
+    raise PdfFillError("form/pdf: the startxref offset is invalid")
+  }
+  let classic_xref = old_xref + 4 <= text.length() &&
+    text[old_xref:old_xref + 4] == "xref"
+  let tail_end = if old_xref + 512 < text.length() {
+    old_xref + 512
+  } else {
+    text.length()
+  }
+  let xref_stream = text[old_xref:tail_end].contains("/XRef")
+  if !classic_xref && !xref_stream {
+    raise PdfFillError("form/pdf: the PDF has no cross-reference section")
   }
   let root = match pdf_root(text) {
     Some(root) => root
