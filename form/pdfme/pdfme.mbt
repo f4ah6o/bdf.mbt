@@ -319,6 +319,15 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
     self.draw_image(field, data, x, y_top, width, height)
   } else if typ == "table" {
     self.draw_table(field, data, x, y_top, width, height)
+  } else if typ == "signature" {
+    let value = field_text(field, data)
+    if value != "" {
+      self.draw_image(field, data, x, y_top, width, height)
+    } else {
+      self.builder.stroke_color(0x000000ff)
+      self.builder.line(0.6, 0, 0, 0.0F)
+      self.builder.stroke_rect(x, y_top - height, width, height)
+    }
   } else if typ == "checkbox" {
     let checked = match json_field(data, text_of(json_field(field, "name"), "")) {
       Some(Json::True) => true

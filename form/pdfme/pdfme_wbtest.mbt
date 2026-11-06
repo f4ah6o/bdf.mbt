@@ -29,7 +29,7 @@ test "pdfme fills text fields" {
   assert_true(text.contains("Alice"), msg=text)
   assert_eq(result.warnings.length(), 0)
   let unsupported =
-    #|{"basePdf":{"width":100,"height":50},"schemas":[[{"name":"sig","type":"signature","position":{"x":5,"y":5},"width":50,"height":10}]]}
+    #|{"basePdf":{"width":100,"height":50},"schemas":[[{"name":"sig","type":"unsupported","position":{"x":5,"y":5},"width":50,"height":10}]]}
   let warned = fill(@utf8.encode(unsupported), @utf8.encode("{}"))
   assert_eq(warned.warnings.length(), 1)
   let bad = try {
@@ -450,5 +450,18 @@ test "pdfme places JPEG images" {
     }
   }
   assert_eq(images, 1)
+}
+
+///|
+test "pdfme draws a signature box" {
+  let template =
+    #|{"basePdf":{"width":100,"height":50},"schemas":[[{"name":"sig","type":"signature","position":{"x":5,"y":5},"width":50,"height":10}]]}
+  let result = fill(@utf8.encode(template), @utf8.encode("{}"))
+  assert_eq(result.warnings.length(), 0)
+  let document = @core.open_single(result.bdf)
+  let resources = @core.decode_object_resources(
+    document.part(document.manifest.parts[0].hash),
+  )
+  assert_true(resources.object.ops.length() > 5)
 }
 
