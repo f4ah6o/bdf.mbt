@@ -1352,6 +1352,23 @@ fn table_column_alignment(field : Json, index : Int, head : Bool) -> String {
 
 ///|
 ///|
+fn table_column_color(field : Json, index : Int, fallback : UInt32) -> UInt32 {
+  match json_field(field, "columnStyles") {
+    Some(Json::Array(styles)) =>
+      if index < styles.length() {
+        match styles[index] {
+          Json::Object(style) => color_of(style.get("fontColor"), fallback)
+          _ => fallback
+        }
+      } else {
+        fallback
+      }
+    _ => fallback
+  }
+}
+
+///|
+///|
 fn FieldPainter::draw_table(
   self : FieldPainter,
   field : Json,
@@ -1465,6 +1482,10 @@ fn FieldPainter::draw_table(
       let text = if i < values.length() { values[i] } else { "" }
       let advance = Float::from_double(
         text.length().to_double() * row_size.to_double() * 0.5,
+      )
+      let base_color = color_of(json_field(field, "fontColor"), 0x000000ff)
+      self.builder.fill_color(
+        if head_row { head_color } else { table_column_color(field, i, base_color) },
       )
       let alignment = table_column_alignment(field, i, head_row)
       let cell_width = edges[i + 1] - edges[i]
