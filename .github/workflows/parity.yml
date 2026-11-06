@@ -1,0 +1,32 @@
+name: Document parity
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: hustcer/setup-moonbit@v1
+      - run: moon update
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: moon build --target js
+      - name: Compare PDF/DOCX/XLSX/PPTX/Markdown with upstream
+        run: node compat/parity/verify.mjs --limit=100
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parity-report
+          path: |
+            _scratch/parity/report.json
+            _scratch/parity/canonical/
+          if-no-files-found: ignore

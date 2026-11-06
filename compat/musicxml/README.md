@@ -8,3 +8,9 @@ To regenerate the fixtures, copy each `generate_*_test.go` without its build tag
 into upstream `converter/musicxml` and run the corresponding `TestCodexMusicXML*`
 test with `BDF_FIXTURE_ROOT` set to this repository. The HTML entity table can
 be regenerated from Go’s standard library with `go run compat/musicxml/generate_entities.go convert/musicxml/html_entities.mbt`.
+`minuet.musicxml` is the upstream `converter/musicxml/testdata` fixture. The
+MoonBit converter test converts it to a score document and checks the title,
+page and view shape. `compat/converter/phase10-musicxml-test.mjs` runs the
+native Worker next to upstream `@bdfkit/convert-all` and compares the format
+registration, score and guitar TAB views, page geometry, text and play data
+for the same file.

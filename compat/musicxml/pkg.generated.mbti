@@ -2,6 +2,10 @@
 package "f4ah6o/bdf/compat/musicxml"
 
 // Values
+pub fn musicxml_convert(Bytes, Bool) -> String
+
+pub fn musicxml_convert_font(Bytes, Bytes, Bool) -> String
+
 pub fn musicxml_detect_text(Bytes) -> String
 
 pub fn musicxml_header(Bytes) -> String
