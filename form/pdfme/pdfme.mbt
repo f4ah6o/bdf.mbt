@@ -1577,8 +1577,10 @@ fn table_column_font_size(field : Json, index : Int, fallback : Float) -> Float 
     Some(Json::Array(styles)) =>
       if index < styles.length() {
         match styles[index] {
-          Json::Object(style) =>
-            Float::from_double(number_of(style.get("fontSize"), fallback.to_double()))
+          Json::Object(style) => {
+            let raw = number_of(style.get("fontSize"), fallback.to_double())
+            Float::from_double(if raw > 0.0 { raw } else { fallback.to_double() })
+          }
           _ => fallback
         }
       } else {
@@ -1727,7 +1729,10 @@ fn FieldPainter::draw_table(
   let size = Float::from_double(if raw_size > 0.0 { raw_size } else { 8.0 })
   let head_size = match json_field(field, "headStyles") {
     Some(Json::Object(styles)) =>
-      Float::from_double(number_of(styles.get("fontSize"), size.to_double()))
+      Float::from_double({
+        let raw = number_of(styles.get("fontSize"), size.to_double())
+        if raw > 0.0 { raw } else { size.to_double() }
+      })
     _ => size
   }
   let head_background = match json_field(field, "headStyles") {
