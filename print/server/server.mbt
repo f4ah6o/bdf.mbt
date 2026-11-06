@@ -151,6 +151,17 @@ fn pdf_page_count(data : Bytes) -> Int {
 }
 
 ///|
+fn append_document(current : Bytes, next : Bytes) -> Bytes {
+  if current.length() == 0 {
+    return next
+  }
+  let buffer = @buffer.Buffer()
+  buffer.write_bytes(current)
+  buffer.write_bytes(next)
+  buffer.to_bytes()
+}
+
+///|
 /// Handle one IPP request for the server's printer.
 pub fn Server::handle_with_document(
   self : Server,
@@ -229,15 +240,25 @@ pub fn Server::handle_with_document(
     let id = request_job_id(request)
     match self.find_job(id) {
       Some(job) => {
+        let last = match request.attr(@ipp.TAG_OPERATION, "last-document") {
+          Some(attribute) => attribute.bool().unwrap_or(true)
+          None => true
+        }
         if document.length() > 0 {
-          job.document = document
+          job.document = append_document(job.document, document)
+          if !last {
+            job.state = @ipp.JOB_PROCESSING
+            let response = response_for(request, @ipp.STATUS_OK)
+            response.add(@ipp.TAG_JOB, job_attrs(self, job))
+            return response
+          }
           let format = match request.attr(@ipp.TAG_OPERATION, "document-format") {
             Some(attribute) => attribute.text()
             None => ""
           }
           let raster_pages = if format.contains("pwg") ||
-            document.has_prefix(b"RaS2") {
-            @raster.read(document) catch {
+            job.document.has_prefix(b"RaS2") {
+            @raster.read(job.document) catch {
               _ => {
                 job.state = @ipp.JOB_ABORTED
                 job.impressions = 0
@@ -247,8 +268,8 @@ pub fn Server::handle_with_document(
               }
             }
           } else if format.contains("urf") ||
-            document.has_prefix(b"UNIRAST") {
-            @raster.read_urf(document) catch {
+            job.document.has_prefix(b"UNIRAST") {
+            @raster.read_urf(job.document) catch {
               _ => {
                 job.state = @ipp.JOB_ABORTED
                 job.impressions = 0
@@ -265,8 +286,8 @@ pub fn Server::handle_with_document(
             job.impressions = raster_pages.length()
           } else {
             let pdf_pages = if format.contains("pdf") ||
-              document.has_prefix(b"%PDF-") {
-              pdf_page_count(document)
+              job.document.has_prefix(b"%PDF-") {
+              pdf_page_count(job.document)
             } else {
               0
             }

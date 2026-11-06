@@ -179,8 +179,8 @@
   Validate-Job, Create/Print-Job, Send-Document, Get-Job-Attributes, Cancel-Job and
   Get-Jobs in memory (which-jobs, my-jobs and limit filters), with an HTTP
   request/response envelope, job-id/job-uri lookup, Print-Job/Send-Document
-  documents stored on the job, job-state-reasons, and PWG/URF/PDF page
-  counting/abort (12 tests). `print/ipp` now has the tags, the
+  documents stored on the job, Send-Document chunk appends, job-state-reasons,
+  and PWG/URF/PDF page counting/abort (13 tests). `print/ipp` now has the tags, the
   message model and the binary request/response codec (integers, booleans,
   strings, languages, resolution, range, dateTime, octet strings and
   nested collections, with decode limits for bytes, attributes, values,

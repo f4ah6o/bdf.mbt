@@ -297,3 +297,21 @@ test "ipp server accepts a send-document request" {
   assert_eq(server.jobs[0].document, b"%PDF-1.7")
 }
 
+///|
+test "ipp server appends send-document chunks" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  ignore(server.handle(client.create_job("chunks", [])))
+  let first = client.send_document(1, "report.pdf", "application/pdf", false)
+  let partial = server.handle_with_document(first, b"%PDF-1.")
+  let partial_job = @ipp.make_job_status(partial)
+  assert_eq(partial_job.state, @ipp.JOB_PROCESSING)
+  assert_eq(server.jobs[0].document, b"%PDF-1.")
+  let last = client.send_document(1, "report.pdf", "application/pdf", true)
+  let done = server.handle_with_document(last, b"7")
+  let job = @ipp.make_job_status(done)
+  assert_eq(job.state, @ipp.JOB_COMPLETED)
+  assert_eq(job.impressions, 1)
+  assert_eq(server.jobs[0].document, b"%PDF-1.7")
+}
+

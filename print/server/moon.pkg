@@ -4,6 +4,7 @@ import {
   "f4ah6o/bdf/print/raster" @raster,
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/encoding/base64" @base64,
+  "moonbitlang/core/buffer" @buffer,
   "moonbitlang/core/string",
 }
 
