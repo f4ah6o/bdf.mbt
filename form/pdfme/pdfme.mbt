@@ -1368,6 +1368,29 @@ fn table_column_background(field : Json, index : Int) -> UInt32 {
 }
 
 ///|
+fn table_column_font(field : Json, index : Int, head : Bool, fallback : String) -> String {
+  if head {
+    match json_field(field, "headStyles") {
+      Some(Json::Object(styles)) => text_of(styles.get("fontName"), fallback)
+      _ => fallback
+    }
+  } else {
+    match json_field(field, "columnStyles") {
+      Some(Json::Array(styles)) =>
+        if index < styles.length() {
+          match styles[index] {
+            Json::Object(style) => text_of(style.get("fontName"), fallback)
+            _ => fallback
+          }
+        } else {
+          fallback
+        }
+      _ => fallback
+    }
+  }
+}
+
+///|
 fn table_column_font_size(field : Json, index : Int, fallback : Float) -> Float {
   match json_field(field, "columnStyles") {
     Some(Json::Array(styles)) =>
@@ -1518,7 +1541,14 @@ fn FieldPainter::draw_table(
       } else {
         table_column_font_size(field, i, row_size)
       }
-      self.builder.font(font, cell_size) catch {
+      let family = table_column_font(
+        field,
+        i,
+        head_row,
+        text_of(json_field(field, "fontName"), "Helvetica"),
+      )
+      let cell_font = self.font(family)
+      self.builder.font(cell_font, cell_size) catch {
         _ => raise PdfmeError("pdfme: a font cannot be set")
       }
       let advance = Float::from_double(

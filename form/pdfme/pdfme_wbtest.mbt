@@ -373,7 +373,7 @@ test "pdfme evaluates expression functions" {
 ///|
 test "pdfme aligns table columns" {
   let template =
-    #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item","qty"],"headStyles":{"alignment":"center","fontSize":12,"height":10,"backgroundColor":"#E6E6E6","fontColor":"#333333"},"columnStyles":[{"alignment":"center","fontColor":"#FF0000","backgroundColor":"#EEEEEE","fontSize":7},{"alignment":"right"}],"fontSize":9,"rowHeight":8}]]}
+    #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item","qty"],"headStyles":{"alignment":"center","fontSize":12,"height":10,"backgroundColor":"#E6E6E6","fontColor":"#333333"},"columnStyles":[{"alignment":"center","fontColor":"#FF0000","backgroundColor":"#EEEEEE","fontSize":7,"fontName":"Courier"},{"alignment":"right"}],"fontSize":9,"rowHeight":8}]]}
   let result = fill(
     @utf8.encode(template),
     @utf8.encode("{\"lines\":[{\"item\":\"apple\",\"qty\":\"2\"}]}"),

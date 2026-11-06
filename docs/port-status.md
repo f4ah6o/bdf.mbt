@@ -116,8 +116,9 @@
   `form/pptx` fills slides and speaker notes (2 tests). Scalar
   list items are reported.
 - `form/pdfme` fills a pdfme template (blank pages, text/line/rectangle/
-  checkbox/table/image fields, table column widths, alignment and header
-  styles, static schema, multiVariableText variables, text backgrounds/borders,
+  checkbox/table/image fields, table column widths, alignment, colors,
+  backgrounds, font sizes/families and header styles, static schema,
+  multiVariableText variables, text backgrounds/borders,
   base-PDF MediaBox/CropBox page size, rotation, all pages and their content,
   QR codes, Code 39, Code 93, Code 128, GS1-128, EAN-13, EAN-8, UPC-A, UPC-E,
   ITF, NW-7 and MSI barcodes, arithmetic expressions with
