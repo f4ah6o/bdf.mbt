@@ -23,3 +23,9 @@ pub fn cups_job_uri(host : String, name : String, job : Int) -> String {
   cups_printer_uri(host, name) + "/jobs/" + job.to_string()
 }
 
+
+///|
+/// A transport-agnostic client for a CUPS printer queue.
+pub fn cups_client(host : String, name : String, user : String) -> Client raise IppError {
+  Client::new(cups_printer_uri(host, name), user)
+}
