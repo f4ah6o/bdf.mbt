@@ -291,6 +291,29 @@ fn replace_pdf_name(body : String, key : String, value : String) -> String {
 }
 
 ///|
+fn insert_pdf_name_after(body : String, key : String, value : String, name : String) -> String {
+  let at = match body.find(key) {
+    Some(index) => index
+    None => return body
+  }
+  let mut i = skip_spaces(body, at + key.length())
+  if i < body.length() && body[i].to_char().unwrap() == '(' {
+    match literal_string(body, i) {
+      Some((_, end)) => i = end
+      None => return body
+    }
+  } else if i < body.length() && body[i].to_char().unwrap() == '/' {
+    while i < body.length() && !is_space(body[i].to_char().unwrap()) &&
+      body[i].to_char().unwrap() != '>' && body[i].to_char().unwrap() != ']' {
+      i += 1
+    }
+  } else {
+    return body
+  }
+  body[:i].to_owned() + " " + name + " " + value + body[i:].to_owned()
+}
+
+///|
 fn data_button_state(data : Json, name : String) -> String? {
   match data {
     Json::Object(object) =>
@@ -381,7 +404,14 @@ pub fn fill_pdf(pdf_bytes : Bytes, data_bytes : Bytes) -> Bytes raise PdfFillErr
             updates.push((
               number,
               generation,
-              replace_pdf_name(replace_pdf_name(body, "/V", state), "/AS", state),
+              {
+                let with_v = replace_pdf_name(body, "/V", state)
+                if with_v.contains("/AS") {
+                  replace_pdf_name(with_v, "/AS", state)
+                } else {
+                  insert_pdf_name_after(with_v, "/V", state, "/AS")
+                }
+              },
             ))
           None => ()
         }

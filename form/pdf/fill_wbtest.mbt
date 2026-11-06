@@ -56,3 +56,16 @@ test "fill_pdf checks a button" {
   assert_eq(fields[0].value, "/Yes")
 }
 
+///|
+test "fill_pdf adds a button appearance state" {
+  let pdf = @base64.decode(
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgL0Fjcm9Gb3JtIDw8IC9GaWVsZHMgWzQgMCBSXSA+PiA+PgplbmRvYmoKMiAwIG9iago8PCAvVHlwZSAvUGFnZXMgL0tpZHMgWzMgMCBSXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDIwMCAxMDBdIC9Bbm5vdHMgWzQgMCBSXSA+PgplbmRvYmoKNCAwIG9iago8PCAvVHlwZSAvQW5ub3QgL1N1YnR5cGUgL1dpZGdldCAvRlQgL0J0biAvVCAoYWdyZWUpIC9WIC9PZmYgL1JlY3QgWzEwIDIwIDIwIDMwXSAvUCAzIDAgUiA+PgplbmRvYmoKeHJlZgowIDUKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwOTAgMDAwMDAgbiAKMDAwMDAwMDE0NyAwMDAwMCBuIAowMDAwMDAwMjM0IDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNSAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMzQyCiUlRU9GCg==",
+  )
+  let filled = fill_pdf(pdf, @utf8.encode("{\"agree\":true}"))
+  let text = @utf8.decode_lossy(filled[:])
+  assert_true(text.contains("/AS /Yes"), msg=text)
+  let fields = read_fields(filled)
+  assert_eq(fields.length(), 1)
+  assert_eq(fields[0].value, "/Yes")
+}
+
