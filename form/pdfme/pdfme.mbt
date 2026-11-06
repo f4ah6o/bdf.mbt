@@ -399,6 +399,19 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
     self.builder.save()
     self.builder.alpha(Float::from_double(opacity))
     self.draw_barcode(field, data, x, y_top, width, height)
+    match json_field(field, "borderColor") {
+      Some(value) => {
+        self.builder.stroke_color(color_of(Some(value), 0x000000ff))
+        self.builder.line(
+          Float::from_double(pdfme_padding(number_of(json_field(field, "borderWidth"), 0.4), 0.4)),
+          0,
+          0,
+          0.0F,
+        )
+        self.builder.stroke_rect(x, y_top - height, width, height)
+      }
+      None => ()
+    }
     self.builder.restore()
   } else if typ == "image" {
     self.draw_image(field, data, x, y_top, width, height)
