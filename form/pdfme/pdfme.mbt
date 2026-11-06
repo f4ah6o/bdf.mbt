@@ -1639,6 +1639,19 @@ fn FieldPainter::draw_qr(
       }
     }
   }
+  match json_field(field, "borderColor") {
+    Some(value) => {
+      self.builder.stroke_color(color_of(Some(value), 0x000000ff))
+      self.builder.line(
+        Float::from_double(pdfme_padding(number_of(json_field(field, "borderWidth"), 0.4), 0.4)),
+        0,
+        0,
+        0.0F,
+      )
+      self.builder.stroke_rect(x, y_top - height, width, height)
+    }
+    None => ()
+  }
 }
 
 ///|
