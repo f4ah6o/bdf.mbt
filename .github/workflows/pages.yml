@@ -11,6 +11,8 @@ permissions:
   pages: read
 
 concurrency:
+  # Never cancel a run that is already publishing: interrupting a Pages
+  # deployment mid-sync leaves the site stuck until the next successful run.
   group: demo-pages-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
   cancel-in-progress: false
 
@@ -97,12 +99,27 @@ jobs:
     timeout-minutes: 10
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outcome == 'success' && steps.deployment.outputs.page_url || steps.retry.outputs.page_url }}
     permissions:
       contents: read
       pages: write
       id-token: write
     steps:
+      # Pages occasionally reports "Deployment failed, try again later." after
+      # a transient stall in its file sync. One bounded retry recovers from
+      # that without masking a genuinely broken artifact.
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - name: Retry the Pages deployment
+        id: retry
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+      - name: Check the deployed site
+        env:
+          SITE_URL: ${{ steps.deployment.outcome == 'success' && steps.deployment.outputs.page_url || steps.retry.outputs.page_url }}
+        run: |
+          test -n "$SITE_URL" || { echo 'No deployed page URL was reported.' >&2; exit 1; }
+          curl -fsS --retry 5 --retry-delay 10 --retry-all-errors -o /dev/null "$SITE_URL"
+          curl -fsS --retry 5 --retry-delay 10 --retry-all-errors -o /dev/null "${SITE_URL%/}/wasm-gc.html"
