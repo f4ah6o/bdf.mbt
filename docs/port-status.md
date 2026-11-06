@@ -123,7 +123,8 @@
 - `form/pdfme` fills a pdfme template (blank pages, text/line/rectangle/
   checkbox/radio-group/table/image (PNG/JPEG/SVG)/signature fields, table column widths, alignment/vertical
   alignment, colors, backgrounds, alternate row colors, font sizes/families,
-  cell padding/truncation and header styles, static schema,
+  cell padding/truncation, border colors/widths/styles and header styles,
+  static schema,
   multiVariableText variables, text backgrounds/borders,
   base-PDF MediaBox/CropBox page size, rotation, all pages, content and tables,
   QR codes, Code 39, Code 93, Code 128, GS1-128, EAN-13, EAN-8, UPC-A, UPC-E,
