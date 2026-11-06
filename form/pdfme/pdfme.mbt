@@ -365,6 +365,9 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
     self.draw_radio_group(field, data, x, y_top, width, height)
     self.builder.restore()
   } else if typ == "signature" {
+    let opacity = Double::max(0.0, Double::min(1.0, number_of(json_field(field, "opacity"), 1.0)))
+    self.builder.save()
+    self.builder.alpha(Float::from_double(opacity))
     let value = field_text(field, data)
     if value != "" {
       self.draw_image(field, data, x, y_top, width, height)
@@ -373,6 +376,7 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
       self.builder.line(0.6, 0, 0, 0.0F)
       self.builder.stroke_rect(x, y_top - height, width, height)
     }
+    self.builder.restore()
   } else if typ == "checkbox" {
     let opacity = Double::max(0.0, Double::min(1.0, number_of(json_field(field, "opacity"), 1.0)))
     self.builder.save()
