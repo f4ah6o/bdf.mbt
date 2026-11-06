@@ -141,7 +141,7 @@
   ITF, NW-7 and MSI barcodes, arithmetic expressions with
   abs/round/floor/ceil/min/max) into BDF; extra base pages without a schema
   and other 1D formats are gaps; QR error-correction levels and version
-  bounds, masks and modes (case-insensitive) are honored and
+  bounds, masks, modes (case-insensitive) and margins are honored and
   non-positive text/table font sizes, line
   heights, row heights, cell padding, border widths and table widths fall
   back to the defaults (35 tests).

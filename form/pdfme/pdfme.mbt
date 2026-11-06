@@ -1570,15 +1570,19 @@ fn FieldPainter::draw_qr(
   if modules <= 0 {
     return
   }
-  let side = if width < height { width } else { height }
+  let margin = Float::max(0.0, Float::from_double(number_of(json_field(field, "margin"), 0.0)))
+  let mut side = if width < height { width } else { height }
+  side = Float::max(1.0, side - margin * 2.0)
   let cell = side / Float::from_double(modules.to_double())
+  let draw_x = x + margin
+  let draw_y = y_top - margin
   self.builder.fill_color(0x000000ff)
   for row in 0..<modules {
     for column in 0..<modules {
       if qr.get(column, row) {
         self.builder.fill_rect(
-          x + Float::from_double(column.to_double()) * cell,
-          y_top - Float::from_double((row + 1).to_double()) * cell,
+          draw_x + Float::from_double(column.to_double()) * cell,
+          draw_y - Float::from_double((row + 1).to_double()) * cell,
           cell,
           cell,
         )
