@@ -1551,8 +1551,13 @@ fn FieldPainter::draw_table(
   let padding = Float::from_double(
     number_of(json_field(field, "cellPadding"), 1.0),
   )
+  let alternate_background = color_of(
+    json_field(field, "alternateBackgroundColor"),
+    0x00000000,
+  )
+  let mut body_row = 0
   let mut y = y_top
-  let draw_row = fn(values : Array[String], head_row : Bool) raise PdfmeError {
+  let draw_row = fn(values : Array[String], head_row : Bool, alternate : Bool) raise PdfmeError {
     let height = if head_row { head_height } else { row_height }
     let row_size = if head_row { head_size } else { size }
     self.builder.font(font, row_size) catch {
@@ -1566,6 +1571,10 @@ fn FieldPainter::draw_table(
       self.builder.fill_color(head_color)
     } else {
       self.builder.fill_color(color_of(json_field(field, "fontColor"), 0x000000ff))
+    }
+    if alternate && alternate_background != 0x00000000 {
+      self.builder.fill_color(alternate_background)
+      self.builder.fill_rect(x, y - height, width, height)
     }
     for i in 0..<columns {
       let text = if i < values.length() { values[i] } else { "" }
@@ -1633,7 +1642,7 @@ fn FieldPainter::draw_table(
     y = y - height
   }
   if head.length() > 0 {
-    draw_row(head, true)
+    draw_row(head, true, false)
   }
   let mut drawn = 0
   let header_height = if head.length() > 0 { head_height } else { 0.0F }
@@ -1650,7 +1659,8 @@ fn FieldPainter::draw_table(
         cells.map(fn(cell) { text_of(Some(cell), "") })
       _ => []
     }
-    draw_row(values, false)
+    draw_row(values, false, body_row % 2 == 1)
+    body_row += 1
     drawn += 1
   }
 }
