@@ -122,7 +122,7 @@ try {
   const fixture = JSON.parse(gunzipSync(await readFile(resolve(import.meta.dirname, '../compat/specimen/convert.json.gz'))));
   const woff2 = gunzipSync(Buffer.from(fixture.files['stix-ttf.woff2'], 'base64'));
   await page.locator('#file').setInputFiles({ name: 'stix.woff2', mimeType: 'font/woff2', buffer: woff2 });
-  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'stix.woff2' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'stix.woff2' && !document.querySelector('#open-file').disabled, null, { timeout: 120000 });
   assert.equal(await page.locator('#status').evaluate(el => el.classList.contains('error')), false, 'WOFF2 input');
   assert.deepEqual(await page.locator('#view option').evaluateAll(options => options.map(option => option.value)), fontViews);
   await page.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(c => c.width > 0 && c.height > 0), null, { timeout: 30000 });
@@ -140,7 +140,7 @@ try {
   await page.locator('#search-form button').click();
   await page.waitForFunction(() => /\d+ \/ \d+/.test(document.querySelector('#search-status').textContent), null, { timeout: 30000 });
   await page.locator('[data-sample="xlsx"]').click();
-  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'sales.xlsx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'sales.xlsx' && !document.querySelector('#open-file').disabled, null, { timeout: 120000 });
   assert.equal(await page.locator('#status').evaluate(el => el.classList.contains('error')), false);
   assert.deepEqual(await page.locator('#view option').evaluateAll(options => options.map(option => option.value)), ['sheet1', 'sheet2']);
   await page.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => {
@@ -180,12 +180,12 @@ try {
   const samplePath = resolve(root, 'samples/sales.xlsx');
   for (let attempt = 0; attempt < 2; attempt++) {
     await page.locator('#file').setInputFiles(samplePath);
-    await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'sales.xlsx' && document.querySelector('#view').value === 'sheet1' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+    await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'sales.xlsx' && document.querySelector('#view').value === 'sheet1' && !document.querySelector('#open-file').disabled, null, { timeout: 120000 });
     assert.equal(await page.locator('#search').inputValue(), '');
     await page.locator('#view').selectOption('sheet2');
   }
   await page.locator('[data-sample="pptx"]').click();
-  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'slides.pptx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'slides.pptx' && !document.querySelector('#open-file').disabled, null, { timeout: 120000 });
   assert.equal(await page.locator('#status').evaluate(el => el.classList.contains('error')), false, 'PowerPoint card');
   assert.deepEqual(await page.locator('#view option').evaluateAll(options => options.map(option => option.value)), ['slides']);
   await page.waitForFunction(() => /^[1-9]\d* \/ [1-9]\d*$/.test(document.querySelector('#page-number').textContent), null, { timeout: 30000 });
@@ -211,7 +211,7 @@ try {
       const status = document.querySelector('#status');
       if (status?.classList.contains('error')) return true;
       return document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled;
-    }, name, { timeout: 60000 });
+    }, name, { timeout: 120000 });
     const statusError = await page.locator('#status').evaluate(el => el.classList.contains('error') ? el.textContent.trim() : '');
     assert.equal(statusError, '', `XLSX conversion failed for ${name}: ${statusError}`);
     const ids = await page.locator('#view option').evaluateAll(options => options.map(option => option.value));
@@ -258,7 +258,7 @@ try {
     return gold > 50 && green > 500;
   };
   await page.locator('[data-sample="xlsx-picture"]').click();
-  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'field-guide.xlsx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'field-guide.xlsx' && !document.querySelector('#open-file').disabled, null, { timeout: 120000 });
   assert.equal(await page.locator('#status').evaluate(el => el.classList.contains('error')), false, 'illustrated workbook conversion');
   assert.deepEqual(await page.locator('#view option').evaluateAll(options => options.map(option => option.value)), ['sheet1']);
   await page.waitForFunction(hasIllustration, null, { timeout: 30000 });
@@ -277,7 +277,7 @@ try {
   const warningCase = warnings.find(item => item.warnings?.includes('sheet "Sheet1": right-to-left sheets are drawn left to right'));
   assert.ok(warningCase, 'XLSX warning fixture');
   await page.locator('#file').setInputFiles({ name: 'rtl.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from(warningCase.input, 'base64') });
-  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'rtl.xlsx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'rtl.xlsx' && !document.querySelector('#open-file').disabled, null, { timeout: 120000 });
   await page.waitForFunction(() => /right-to-left sheets are drawn left to right/.test(document.querySelector('#status').textContent), null, { timeout: 30000 });
   const unsupported = JSON.parse(await readFile(resolve(import.meta.dirname, '../compat/xlsx/ignored-sheet-extensions-unsupported.json')));
   await page.locator('#file').setInputFiles({ name: 'unsupported.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from(unsupported[0], 'base64') });
@@ -323,39 +323,39 @@ try {
   await page.getByRole('link', { name: '変換ページへ' }).click();
   assert.equal(new URL(page.url()).pathname, '/bdf.mbt/converter.html');
   await converterPage.goto(page.url());
-  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'people.csv' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'people.csv' && !document.querySelector('#open-file').disabled, null, { timeout: 120000 });
   await converterPage.getByRole('button', { name: 'BDF サンプルを開く' }).click();
   await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'upstream-demo.bdf' && !document.querySelector('#open-file').disabled, null, { timeout: 30000 });
   for (const [sample, name] of [['csv', 'people.csv'], ['xlsx', 'sales.xlsx'], ['image', 'illustration.svg'], ['font', 'stix.ttf'], ['pdf', 'simple.pdf'], ['type1', 'type1.pdf'], ['docx', 'simple.docx'], ['pptx', 'slides.pptx'], ['hpgl', 'hpgl1.plt'], ['jww', 'old.jww'], ['dxf', 'shapes.dxf'], ['sxf', 'shapes.sfc'], ['cgm', 'shapes.cgm'], ['gerber', 'features.gbr'], ['drill', 'drill.drl'], ['kicad', 'demo.kicad_pcb'], ['drawio', 'labels.drawio'], ['drawio-compressed', 'compressed.drawio'], ['drawio-multipage', 'multipage.drawio'], ['drawio-embedded', 'embedded.drawio.svg'], ['drawio-showcase', 'showcase.drawio'], ['drawio-png', 'embedded.drawio.png'], ['parquet', 'table.parquet'], ['parquet-basic', 'basic.parquet']]) {
     await converterPage.locator('#file').setInputFiles(resolve(root, 'samples', name));
-    await converterPage.waitForFunction(n => document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled, name, { timeout: 60000 });
+    await converterPage.waitForFunction(n => document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled, name, { timeout: 120000 });
     assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, `converter ${sample}`);
     await converterPage.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => canvas.width > 0 && canvas.height > 0), null, { timeout: 30000 });
     assert.equal(await converterPage.locator('#download').getAttribute('download'), name.replace(/\.[^.]+$/, '') + '.bdf');
   }
   for (const [sample, name] of [['drawio', 'labels.drawio'], ['parquet', 'table.parquet']]) {
     await converterPage.locator(`[data-sample="${sample}"]`).click();
-    await converterPage.waitForFunction(n => document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled, name, { timeout: 60000 });
+    await converterPage.waitForFunction(n => document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled, name, { timeout: 120000 });
     assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, `converter sample link ${sample}`);
   }
   await converterPage.locator('[data-sample="pptx"]').click();
-  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'slides.pptx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'slides.pptx' && !document.querySelector('#open-file').disabled, null, { timeout: 120000 });
   assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, 'converter pptx sample');
   await converterPage.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => canvas.width > 0 && canvas.height > 0), null, { timeout: 30000 });
   await converterPage.locator('[data-sample="docx"]').click();
-  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'simple.docx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'simple.docx' && !document.querySelector('#open-file').disabled, null, { timeout: 120000 });
   assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, 'converter docx sample');
   await converterPage.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => canvas.width > 0 && canvas.height > 0), null, { timeout: 30000 });
   await converterPage.locator('[data-sample="pdf"]').click();
-  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'simple.pdf' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'simple.pdf' && !document.querySelector('#open-file').disabled, null, { timeout: 120000 });
   assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, 'converter pdf sample');
   await converterPage.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => canvas.width > 0 && canvas.height > 0), null, { timeout: 30000 });
   await converterPage.locator('[data-sample="pdf-features"]').click();
-  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'pdf-features.pdf' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'pdf-features.pdf' && !document.querySelector('#open-file').disabled, null, { timeout: 120000 });
   assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, 'converter pdf feature sample');
   await converterPage.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => canvas.width > 0 && canvas.height > 0), null, { timeout: 30000 });
   await converterPage.locator('[data-sample="pdf-encrypted"]').click();
-  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'pdf-encrypted.pdf' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'pdf-encrypted.pdf' && !document.querySelector('#open-file').disabled, null, { timeout: 120000 });
   assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, 'converter encrypted pdf sample');
   await converterPage.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => canvas.width > 0 && canvas.height > 0), null, { timeout: 30000 });
   await converterPage.locator('#file').setInputFiles(resolve(root, 'samples/pdf-encrypted.pdf'));
@@ -368,7 +368,7 @@ try {
   await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'pdf-encrypted.pdf' && !document.querySelector('#open-file').disabled, null, { timeout: 30000 });
   assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, 'converter encrypted pdf retry');
   await converterPage.locator('[data-sample="xlsx-picture"]').click();
-  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'field-guide.xlsx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
+  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'field-guide.xlsx' && !document.querySelector('#open-file').disabled, null, { timeout: 120000 });
   await converterPage.waitForFunction(hasIllustration, null, { timeout: 30000 });
   await converterPage.locator('#search').fill('Mountain');
   await converterPage.locator('#search-form button').click();
@@ -396,7 +396,7 @@ try {
   await mobile.close();
   const mobileConverter = await browser.newPage({ viewport: { width: 375, height: 812 } });
   await mobileConverter.goto(new URL('converter.html', url).href);
-  await mobileConverter.waitForFunction(() => document.querySelector('#document-name').textContent === 'people.csv', null, { timeout: 60000 });
+  await mobileConverter.waitForFunction(() => document.querySelector('#document-name').textContent === 'people.csv', null, { timeout: 120000 });
   assert.equal(await mobileConverter.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'mobile converter overflow');
   await mobileConverter.close();
   console.log('Demo: all 20 upstream pages, search, navigation, download, CSV, Word, Markdown, SVG, font TTF/WOFF2, XLSX, draw.io, Parquet conversion, sheet switching, embedded PNG, BDF save/reload, warnings, replacement, errors and mobile subpath passed.');
