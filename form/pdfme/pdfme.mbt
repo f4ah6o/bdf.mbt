@@ -1746,6 +1746,35 @@ fn static_schema(template : Json) -> Array[Json] {
 }
 
 ///|
+fn pdfme_page_json(
+  width : Double,
+  height : Double,
+  layers : Array[Json],
+  body : @core.PageRect?,
+) -> Json {
+  match body {
+    Some(rect) =>
+      Json::object({
+        "w": Json::number(width),
+        "h": Json::number(height),
+        "layers": Json::array(layers),
+        "body": Json::object({
+          "x": Json::number(rect.x),
+          "y": Json::number(rect.y),
+          "w": Json::number(rect.width),
+          "h": Json::number(rect.height),
+        }),
+      })
+    None =>
+      Json::object({
+        "w": Json::number(width),
+        "h": Json::number(height),
+        "layers": Json::array(layers),
+      })
+  }
+}
+
+///|
 /// Fill a pdfme template (JSON) with data (a JSON object).
 pub fn fill(template_bytes : Bytes, data_bytes : Bytes) -> FillResult raise PdfmeError {
   let template = @json.parse(@utf8.decode_lossy(template_bytes[:])) catch {
@@ -1853,13 +1882,11 @@ pub fn fill(template_bytes : Bytes, data_bytes : Bytes) -> FillResult raise Pdfm
         "obj": Json::string(hash),
       }),
     )
-    page_json.push(
-      Json::object({
-        "w": Json::number(width_pt),
-        "h": Json::number(height_pt),
-        "layers": Json::array(layers),
-      }),
-    )
+    let base_body = match base_page {
+      Some(page) => page.body
+      None => None
+    }
+    page_json.push(pdfme_page_json(width_pt, height_pt, layers, base_body))
     page_index += 1
   }
   writer.add_view(
