@@ -287,7 +287,7 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
       Some(value) => {
         self.builder.stroke_color(color_of(Some(value), 0x000000ff))
         self.builder.line(
-          Float::from_double(number_of(json_field(field, "borderWidth"), 0.3)),
+          Float::from_double(pdfme_padding(number_of(json_field(field, "borderWidth"), 0.3), 0.3)),
           0,
           0,
           0.0F,
@@ -1772,7 +1772,7 @@ fn FieldPainter::draw_table(
     self.builder.dash([], 0.0)
   }
   self.builder.line(
-    Float::from_double(number_of(json_field(field, "borderWidth"), 0.4)),
+    Float::from_double(pdfme_padding(number_of(json_field(field, "borderWidth"), 0.4), 0.4)),
     0,
     0,
     0.0F,

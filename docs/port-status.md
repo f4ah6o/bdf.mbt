@@ -138,8 +138,8 @@
   ITF, NW-7 and MSI barcodes, arithmetic expressions with
   abs/round/floor/ceil/min/max) into BDF; extra base pages without a schema
   and other 1D formats are gaps; non-positive text/table font sizes, line
-  heights, row heights, cell padding and table widths fall back to the
-  defaults (33 tests).
+  heights, row heights, cell padding, border widths and table widths fall
+  back to the defaults (33 tests).
 - `form/schema` writes the JSON Schema of the data of a template from its
   fields and a sample (objects, lists, conditions, pictures/codes, number
   formats, options, defaults, slots and the `x-bdf` keyword), with 3 tests.
