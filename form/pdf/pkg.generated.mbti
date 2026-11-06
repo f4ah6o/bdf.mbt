@@ -27,6 +27,7 @@ pub(all) struct Field {
   alternate_name : String
   max_len : Int32?
   default_value : String
+  option_values : Array[String]
 }
 
 // Type aliases

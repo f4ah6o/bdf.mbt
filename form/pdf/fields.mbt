@@ -13,6 +13,7 @@ pub(all) struct Field {
   alternate_name : String
   max_len : Int?
   default_value : String
+  option_values : Array[String]
 }
 
 ///|
@@ -286,8 +287,8 @@ fn find_flags(text : String, start : Int, limit : Int) -> Int? {
 }
 
 ///|
-fn find_options(text : String, start : Int, limit : Int) -> Array[String] {
-  let options : Array[String] = []
+fn find_option_pairs(text : String, start : Int, limit : Int) -> Array[(String, String)] {
+  let options : Array[(String, String)] = []
   let section = text[start:limit]
   let at = match section.find("/Opt") {
     Some(index) => start + index
@@ -309,7 +310,7 @@ fn find_options(text : String, start : Int, limit : Int) -> Array[String] {
     if c == '(' || c == '<' {
       match field_name_string(text, i) {
         Some((value, end)) => {
-          options.push(value)
+          options.push((value, value))
           i = end
         }
         None => break
@@ -317,6 +318,7 @@ fn find_options(text : String, start : Int, limit : Int) -> Array[String] {
     } else if c == '[' {
       let mut j = i + 1
       let mut chosen = ""
+      let mut exported = ""
       while j < limit {
         let inner = text[j].to_char().unwrap()
         if inner == ']' {
@@ -327,6 +329,8 @@ fn find_options(text : String, start : Int, limit : Int) -> Array[String] {
             Some((value, end)) => {
               if chosen == "" {
                 chosen = value
+              } else if exported == "" {
+                exported = value
               }
               j = end
             }
@@ -337,7 +341,10 @@ fn find_options(text : String, start : Int, limit : Int) -> Array[String] {
         }
       }
       if chosen != "" {
-        options.push(chosen)
+        if exported == "" {
+          exported = chosen
+        }
+        options.push((chosen, exported))
       }
       i = j + 1
     } else {
@@ -347,6 +354,7 @@ fn find_options(text : String, start : Int, limit : Int) -> Array[String] {
   options
 }
 
+///|
 ///|
 fn field_name_string(text : String, start : Int) -> (String, Int)? {
   if start < text.length() && text[start].to_char().unwrap() == '<' {
@@ -447,7 +455,9 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
     let rect = find_rect(text, after, next_t)
     let page_object = find_page_object(text, after, next_t)
     let flags = find_flags(text, after, next_t)
-    let options = find_options(text, after, next_t)
+    let option_pairs = find_option_pairs(text, after, next_t)
+    let options = option_pairs.map(fn(pair) { pair.0 })
+    let option_values = option_pairs.map(fn(pair) { pair.1 })
     let alternate_name = find_alternate_name(text, after, next_t)
     let max_len = find_max_len(text, after, next_t)
     let default_value = find_default_value(text, after, next_t)
@@ -479,6 +489,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
         alternate_name,
         max_len,
         default_value,
+        option_values,
       }
       if found >= 0 {
         fields[found] = field

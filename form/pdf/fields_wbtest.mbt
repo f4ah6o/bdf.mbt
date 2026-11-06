@@ -81,6 +81,7 @@ test "pdf reads a button field" {
   assert_eq(fields[0].max_len, Some(20))
   assert_eq(fields[0].default_value, "Initial")
   assert_eq(fields[0].options, ["Red", "グ"])
+  assert_eq(fields[0].option_values, ["R", "G"])
   assert_eq(fields[1].page_object, Some(4))
 }
 
