@@ -6,6 +6,17 @@ test "normalize family names using NFKC and Unicode lowercase" {
 }
 
 ///|
+test "css family lists quote and classify the requested family" {
+  assert_eq(@db.css_family("Calibri"), "\"Calibri\", sans-serif")
+  assert_eq(
+    @db.css_family("Times New Roman"),
+    "\"Times New Roman\", serif",
+  )
+  assert_eq(@db.css_family("sans-serif"), "sans-serif")
+  assert_eq(@db.css_family(""), "sans-serif")
+}
+
+///|
 test "empty font database has no resolved faces" {
   let db = @db.Database::new()
   assert_eq(db.faces().length(), 0)

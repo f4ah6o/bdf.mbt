@@ -9,6 +9,8 @@ import {
 // Values
 pub fn classify(String) -> String
 
+pub fn css_family(String) -> String
+
 pub fn is_cjk(Int32) -> Bool
 
 pub fn normalize(String) -> String
@@ -18,12 +20,13 @@ pub fn prepare_font_program(@sfnt.Font, Int32, Array[Int32], Bool, Bool) -> (Byt
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) struct Choice {
   resolved : Resolved
   requested : String
   bold : Bool
   italic : Bool
-} derive(Eq, @debug.Debug)
+}
 
 pub struct Database {
   // private fields
@@ -45,13 +48,14 @@ pub struct Face {
   font : @sfnt.Font
 }
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Resolved {
   face : Int32?
   synth_bold : Bool
   synth_italic : Bool
   exact : Bool
   generic : String
-} derive(Eq, @debug.Debug)
+}
 
 // Type aliases
 

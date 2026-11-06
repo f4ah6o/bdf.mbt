@@ -13,6 +13,41 @@ pub fn normalize(name : String) -> String {
 }
 
 ///|
+/// The CSS family list for a FONT record: the requested family followed by
+/// the generic family, as upstream's fontset writes it when no face is
+/// embedded.
+pub fn css_family(name : String) -> String {
+  let generic = if name == "" {
+    "sans-serif"
+  } else {
+    classify(name)
+  }
+  if name == "" || is_generic_family(name) {
+    return generic
+  }
+  let out = StringBuilder()
+  out.write_char('"')
+  for c in name {
+    if c == '"' || c == '\\' {
+      out.write_char('\\')
+    }
+    out.write_char(c)
+  }
+  out.write_char('"')
+  out.write_string(", ")
+  out.write_string(generic)
+  out.to_string()
+}
+
+///|
+fn is_generic_family(name : String) -> Bool {
+  [
+    "sans-serif", "serif", "monospace", "cursive", "fantasy", "system-ui",
+    "ui-sans-serif", "ui-serif", "ui-monospace",
+  ].contains(name.to_lower())
+}
+
+///|
 /// Guess the CSS generic family used for an unresolved family request.
 pub fn classify(name : String) -> String {
   let n = normalize(name)
