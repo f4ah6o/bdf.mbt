@@ -84,4 +84,26 @@ test "textform converts from data sources" {
   }
   assert_true(text.contains("Hello Alice"), msg=text)
 }
+///|
+test "textform converts from YAML sources" {
+  let source : @data.Source = {
+    name: "",
+    file_name: "data.yaml",
+    data: @utf8.encode("name: Alice\n"),
+  }
+  let result = convert_sources("Hello {{name}}", [source], "YAML")
+  let document = @core.open_single(result.bdf)
+  let mut text = ""
+  for view in document.manifest.views {
+    match view.text_index {
+      Some(hash) => {
+        for run in @core.decode_text_index(document.part(hash)) {
+          text = text + run.text
+        }
+      }
+      None => ()
+    }
+  }
+  assert_true(text.contains("Hello Alice"), msg=text)
+}
 
