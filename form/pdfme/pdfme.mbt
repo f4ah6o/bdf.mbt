@@ -422,8 +422,13 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
     if value != "" {
       self.draw_image(field, data, x, y_top, width, height)
     } else {
-      self.builder.stroke_color(0x000000ff)
-      self.builder.line(0.6, 0, 0, 0.0F)
+      self.builder.stroke_color(color_of(json_field(field, "borderColor"), 0x000000ff))
+      self.builder.line(
+        Float::from_double(pdfme_padding(number_of(json_field(field, "borderWidth"), 0.6), 0.6)),
+        0,
+        0,
+        0.0F,
+      )
       self.builder.stroke_rect(x, y_top - height, width, height)
     }
     self.builder.restore()

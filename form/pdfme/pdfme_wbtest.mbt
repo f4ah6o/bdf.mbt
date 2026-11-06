@@ -471,7 +471,7 @@ test "pdfme places JPEG images" {
 ///|
 test "pdfme draws a signature box" {
   let template =
-    #|{"basePdf":{"width":100,"height":50},"schemas":[[{"name":"sig","type":"signature","position":{"x":5,"y":5},"width":50,"height":10,"opacity":0.5}]]}
+    #|{"basePdf":{"width":100,"height":50},"schemas":[[{"name":"sig","type":"signature","position":{"x":5,"y":5},"width":50,"height":10,"opacity":0.5,"borderColor":"#000000","borderWidth":1}]]}
   let result = fill(@utf8.encode(template), @utf8.encode("{}"))
   assert_eq(result.warnings.length(), 0)
   let document = @core.open_single(result.bdf)
