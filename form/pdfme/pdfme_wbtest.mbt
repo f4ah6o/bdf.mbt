@@ -492,3 +492,16 @@ test "pdfme draws dashed rectangles" {
   assert_true(resources.object.ops.length() > 5)
 }
 
+///|
+test "pdfme draws dashed lines" {
+  let template =
+    #|{"basePdf":{"width":100,"height":50},"schemas":[[{"name":"line","type":"line","position":{"x":10,"y":10},"width":50,"height":1,"color":"#000000","borderStyle":"dashed"}]]}
+  let result = fill(@utf8.encode(template), @utf8.encode("{}"))
+  assert_eq(result.warnings.length(), 0)
+  let document = @core.open_single(result.bdf)
+  let resources = @core.decode_object_resources(
+    document.part(document.manifest.parts[0].hash),
+  )
+  assert_true(resources.object.ops.length() > 2)
+}
+
