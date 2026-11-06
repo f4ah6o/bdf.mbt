@@ -598,3 +598,20 @@ test "ipp server reports job size" {
   assert_eq(size, Some(1))
 }
 
+///|
+test "ipp server reports a job uuid" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  let response = server.handle(client.create_job("uuid", []))
+  let group = match response.group(@ipp.TAG_JOB) {
+    Some(group) => group
+    None => fail("missing job group")
+  }
+  let uuid = match group.get("job-uuid") {
+    Some(attribute) => attribute.text()
+    None => ""
+  }
+  assert_true(uuid.has_prefix("urn:uuid:"))
+  assert_eq(uuid.length(), 45)
+}
+

@@ -82,6 +82,7 @@ fn job_attrs(server : Server, job : Job) -> Array[@ipp.Attribute] {
     @ipp.attr("job-impressions-completed", [@ipp.integer(job.impressions)]),
     @ipp.attr("job-impressions", [@ipp.integer(job.impressions * job.copies)]),
     @ipp.attr("job-k-octets", [@ipp.integer((job.document.length() + 1023) / 1024)]),
+    @ipp.attr("job-uuid", [@ipp.uri(job_uuid(job.id))]),
     @ipp.attr("copies", [@ipp.integer(job.copies)]),
   ]
 }
@@ -156,6 +157,16 @@ fn pdf_page_count(data : Bytes) -> Int {
     _ => return 0
   }
   result.pages
+}
+
+///|
+fn job_uuid(id : Int) -> String {
+  let digits = id.to_string()
+  let mut padded = ""
+  for _ in 0..<(12 - digits.length()) {
+    padded += "0"
+  }
+  "urn:uuid:00000000-0000-0000-0000-" + padded + digits
 }
 
 ///|
