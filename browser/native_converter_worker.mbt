@@ -374,8 +374,19 @@ async fn NativeConverterState::dispatch(
           native_convert_music(request, data, kind == "open", database, true, false)
           return
         }
-        if (lower.has_suffix(".musicxml") || lower.has_suffix(".mxl")) &&
-          !strong_other {
+        if lower.has_suffix(".musicxml") && !strong_other {
+          if @musicxml.detect(data) {
+            native_convert_music(request, data, kind == "open", database, false, true)
+          } else {
+            native_converter_error(
+              request,
+              "unknown format \"musicxml\"",
+              "unknown-format",
+            )
+          }
+          return
+        }
+        if lower.has_suffix(".mxl") && !strong_other {
           native_convert_music(request, data, kind == "open", database, false, true)
           return
         }
