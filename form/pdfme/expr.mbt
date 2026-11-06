@@ -15,6 +15,40 @@ fn expr_lookup(values : Json, name : String) -> Json? {
 }
 
 ///|
+fn expr_function(name : String, args : Array[Double]) -> Double? {
+  if name == "abs" && args.length() == 1 {
+    Some(if args[0] < 0.0 { -args[0] } else { args[0] })
+  } else if (name == "floor" || name == "round" || name == "ceil") &&
+    args.length() == 1 {
+    if name == "floor" {
+      Some(@math.floor(args[0]))
+    } else if name == "ceil" {
+      Some(@math.ceil(args[0]))
+    } else {
+      Some(args[0].round())
+    }
+  } else if name == "min" && args.length() >= 1 {
+    let mut value = args[0]
+    for i in 1..<args.length() {
+      if args[i] < value {
+        value = args[i]
+      }
+    }
+    Some(value)
+  } else if name == "max" && args.length() >= 1 {
+    let mut value = args[0]
+    for i in 1..<args.length() {
+      if args[i] > value {
+        value = args[i]
+      }
+    }
+    Some(value)
+  } else {
+    None
+  }
+}
+
+///|
 struct ExprParser {
   chars : Array[Char]
   mut pos : Int
@@ -130,6 +164,35 @@ fn ExprParser::factor(self : ExprParser) -> Double? {
       Some(name) => name
       None => return None
     }
+    let after_name = self.pos
+    self.skip()
+    if self.pos < self.chars.length() && self.chars[self.pos] == '(' {
+      self.pos += 1
+      let args : Array[Double] = []
+      self.skip()
+      if self.pos < self.chars.length() && self.chars[self.pos] != ')' {
+        while true {
+          let value = match self.expr() {
+            Some(value) => value
+            None => return None
+          }
+          args.push(value)
+          self.skip()
+          if self.pos < self.chars.length() && self.chars[self.pos] == ',' {
+            self.pos += 1
+          } else {
+            break
+          }
+        }
+      }
+      self.skip()
+      if self.pos >= self.chars.length() || self.chars[self.pos] != ')' {
+        return None
+      }
+      self.pos += 1
+      return expr_function(name, args)
+    }
+    self.pos = after_name
     match expr_lookup(self.values, name) {
       Some(value) => expr_value(value)
       None => None

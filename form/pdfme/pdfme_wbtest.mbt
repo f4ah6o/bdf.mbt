@@ -357,3 +357,16 @@ test "pdfme uses table column widths" {
   assert_true(resources.object.ops.length() > 10)
 }
 
+///|
+test "pdfme evaluates expression functions" {
+  let template =
+    #|{"basePdf":{"width":100,"height":50},"schemas":[[{"name":"totals","type":"multiVariableText","position":{"x":10,"y":10},"width":80,"height":20,"fontSize":10,"text":"{max(round(total / 3), 10)}","variables":["total"]}]]}
+  let result = fill(@utf8.encode(template), @utf8.encode("{\"totals\":{\"total\":100}}"))
+  let text = pdfme_text(result.bdf)
+  assert_true(text.contains("33"), msg=text)
+  let template2 =
+    #|{"basePdf":{"width":100,"height":50},"schemas":[[{"name":"totals","type":"multiVariableText","position":{"x":10,"y":10},"width":80,"height":20,"fontSize":10,"text":"{abs(total - 120)}","variables":["total"]}]]}
+  let result2 = fill(@utf8.encode(template2), @utf8.encode("{\"totals\":{\"total\":100}}"))
+  assert_true(pdfme_text(result2.bdf).contains("20"))
+}
+
