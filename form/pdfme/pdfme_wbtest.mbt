@@ -407,3 +407,15 @@ test "pdfme rotates a base PDF page" {
   assert_eq(document.manifest.views[0].pages[0].height, 400.0)
 }
 
+///|
+test "pdfme draws base PDF content" {
+  let base = "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvQ29udGVudHMgNCAwIFIgPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCAxOCA+PgpzdHJlYW0KMC41IDAuNSAxMCAxMCByZSBmCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDUKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMjAyIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNSAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjcwCiUlRU9GCg=="
+  let template = "{\"basePdf\":\"data:application/pdf;base64," + base + "\",\"schemas\":[[{\"name\":\"title\",\"type\":\"text\",\"content\":\"Base\",\"position\":{\"x\":10,\"y\":10},\"width\":50,\"height\":10}]]}"
+  let result = fill(@utf8.encode(template), @utf8.encode("{}"))
+  assert_eq(result.warnings.length(), 0)
+  let document = @core.open_single(result.bdf)
+  assert_eq(document.manifest.views[0].pages[0].layers.length(), 2)
+  assert_eq(document.manifest.views[0].pages[0].width, 200.0)
+  assert_true(pdfme_text(result.bdf).contains("Base"))
+}
+

@@ -1676,6 +1676,36 @@ fn pdf_rotation(data : Bytes) -> Int {
 }
 
 ///|
+fn base_pdf_document(template : Json) -> @core.Document? {
+  let bytes = match base_pdf_bytes(template) {
+    Some(bytes) => bytes
+    None => return None
+  }
+  let result = @pdf.convert(bytes, no_share_prefix=true, title="base") catch {
+    _ => return None
+  }
+  let document = @core.open_single(result.bdf) catch {
+    _ => return None
+  }
+  Some(document)
+}
+
+///|
+fn copy_base_parts(base : @core.Document, writer : @core.DocumentWriter) -> Unit {
+  for part in base.manifest.parts {
+    if part.kind == "view" {
+      continue
+    }
+    let data = base.part(part.hash) catch {
+      _ => continue
+    }
+    let _ = writer.add_part(part.kind, data) catch {
+      _ => ""
+    }
+  }
+}
+
+///|
 fn page_size(template : Json) -> (Double, Double) {
   match json_field(template, "basePdf") {
     Some(Json::Object(base)) => (
@@ -1734,25 +1764,56 @@ pub fn fill(template_bytes : Bytes, data_bytes : Bytes) -> FillResult raise Pdfm
   let writer = @core.DocumentWriter::new()
   let static_fields = static_schema(template)
   let warnings : Array[String] = []
-  if base_pdf_bytes(template) is Some(_) {
-    warnings.push("pdfme: the base PDF content is not drawn")
+  let base = match base_pdf_document(template) {
+    Some(document) => {
+      copy_base_parts(document, writer)
+      Some(document)
+    }
+    None => {
+      if base_pdf_bytes(template) is Some(_) {
+        warnings.push("pdfme: the base PDF content is not drawn")
+      }
+      None
+    }
   }
   let mut page_count = 0
+  let mut page_index = 0
   for page_fields in pages {
     let fields = match page_fields {
       Json::Array(fields) => fields
       _ => []
     }
+    let base_page = match base {
+      Some(document) =>
+        if !document.manifest.views.is_empty() &&
+          page_index < document.manifest.views[0].pages.length() {
+          Some(document.manifest.views[0].pages[page_index])
+        } else {
+          None
+        }
+      None => None
+    }
+    let (width_pt, height_pt) = match base_page {
+      Some(page) => (page.width, page.height)
+      None => (page_width.to_double(), page_height.to_double())
+    }
     let builder = @core.ObjectBuilder::new()
-    builder.set_bbox(0.0, 0.0, page_width, page_height)
-    builder.fill_color(0xffffffff)
-    builder.fill_rect(0.0, 0.0, page_width, page_height)
+    builder.set_bbox(
+      0.0,
+      0.0,
+      Float::from_double(width_pt),
+      Float::from_double(height_pt),
+    )
+    if base_page is None {
+      builder.fill_color(0xffffffff)
+      builder.fill_rect(0.0, 0.0, Float::from_double(width_pt), Float::from_double(height_pt))
+    }
     let painter : FieldPainter = {
       builder,
       writer,
       fonts: Map([]),
       warnings,
-      page_height,
+      page_height: Float::from_double(height_pt),
       scale: 1.0,
     }
     for field in static_fields {
@@ -1765,24 +1826,39 @@ pub fn fill(template_bytes : Bytes, data_bytes : Bytes) -> FillResult raise Pdfm
       _ => raise PdfmeError("pdfme: a page cannot be encoded")
     }
     page_count += 1
+    let layers : Array[Json] = []
+    match base_page {
+      Some(page) =>
+        for layer in page.layers {
+          layers.push(
+            Json::object({
+              "role": Json::string(layer.role),
+              "obj": Json::string(layer.object),
+            }),
+          )
+        }
+      None => ()
+    }
+    layers.push(
+      Json::object({
+        "role": Json::string(""),
+        "obj": Json::string(hash),
+      }),
+    )
     writer.add_view(
       Json::object({
         "id": Json::string("page" + page_count.to_string()),
         "kind": Json::string("fixed"),
         "pages": Json::array([
           Json::object({
-            "w": Json::number(page_width.to_double()),
-            "h": Json::number(page_height.to_double()),
-            "layers": Json::array([
-              Json::object({
-                "role": Json::string(""),
-                "obj": Json::string(hash),
-              }),
-            ]),
+            "w": Json::number(width_pt),
+            "h": Json::number(height_pt),
+            "layers": Json::array(layers),
           }),
         ]),
       }),
     )
+    page_index += 1
   }
   let bdf = writer.write_single() catch {
     _ => raise PdfmeError("pdfme: the document cannot be written")
