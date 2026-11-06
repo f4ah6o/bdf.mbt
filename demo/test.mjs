@@ -351,7 +351,9 @@ try {
   assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, 'converter pdf sample');
   await converterPage.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => canvas.width > 0 && canvas.height > 0), null, { timeout: 30000 });
   await converterPage.locator('[data-sample="pdf-features"]').click();
-  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'pdf-features.pdf' && !document.querySelector('#open-file').disabled, null, { timeout: 120000 });
+  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'pdf-features.pdf' || document.querySelector('#status').classList.contains('error'), null, { timeout: 120000 });
+  console.log('pdf-features:', await converterPage.locator('#document-name').textContent(), '|', await converterPage.locator('#status').textContent());
+  assert.equal(await converterPage.locator('#document-name').textContent(), 'pdf-features.pdf');
   assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, 'converter pdf feature sample');
   await converterPage.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => canvas.width > 0 && canvas.height > 0), null, { timeout: 30000 });
   await converterPage.locator('[data-sample="pdf-encrypted"]').click();
