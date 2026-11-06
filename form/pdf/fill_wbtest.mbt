@@ -140,3 +140,17 @@ test "fill_pdf updates files with xref streams" {
   assert_true(@utf8.decode_lossy(filled[:]).contains("/Prev 342"))
 }
 
+///|
+test "fill_pdf reads hexadecimal field names" {
+  let pdf = @base64.decode(
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgL0Fjcm9Gb3JtIDw8IC9GaWVsZHMgWzQgMCBSXSA+PiA+PgplbmRvYmoKMiAwIG9iago8PCAvVHlwZSAvUGFnZXMgL0tpZHMgWzMgMCBSXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDIwMCAxMDBdIC9Bbm5vdHMgWzQgMCBSXSA+PgplbmRvYmoKNCAwIG9iago8PCAvVHlwZSAvQW5ub3QgL1N1YnR5cGUgL1dpZGdldCAvRlQgL1R4IC9UIDxGRUZGMzA0Mj4gL1JlY3QgWzEwIDIwIDEwMCA0MF0gL1AgMyAwIFIgPj4KZW5kb2JqCnhyZWYKMCA1CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAwOSAwMDAwMCBuIAowMDAwMDAwMDkwIDAwMDAwIG4gCjAwMDAwMDAxNDcgMDAwMDAgbiAKMDAwMDAwMDIzNCAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDUgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjMzNwolJUVPRgo=",
+  )
+  let fields = read_fields(pdf)
+  assert_eq(fields.length(), 1)
+  assert_eq(fields[0].name, "あ")
+  let filled = fill_pdf(pdf, @utf8.encode("{\"あ\":\"Alice\"}"))
+  let fields2 = read_fields(filled)
+  assert_eq(fields2[0].value, "Alice")
+  assert_true(@utf8.decode_lossy(filled[:]).contains("/V (Alice)"))
+}
+

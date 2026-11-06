@@ -84,7 +84,11 @@ fn last_index(text : String, needle : String) -> Int? {
 fn find_t(body : String) -> Int? {
   match body.find("/T (") {
     Some(index) => Some(index)
-    None => body.find("/T(")
+    None =>
+      match body.find("/T(") {
+        Some(index) => Some(index)
+        None => body.find("/T <")
+      }
   }
 }
 
@@ -99,8 +103,10 @@ fn replace_pdf_value(body : String, value : String) -> String {
         None => return body
       }
       let name_at = skip_spaces(body, t_at + 2)
-      if name_at < body.length() && body[name_at].to_char().unwrap() == '(' {
-        match literal_string(body, name_at) {
+      if name_at < body.length() &&
+        (body[name_at].to_char().unwrap() == '(' ||
+          body[name_at].to_char().unwrap() == '<') {
+        match field_name_string(body, name_at) {
           Some((_, end)) =>
             return body[:end].to_owned() + " /V " + escaped +
               body[end:].to_owned()
@@ -347,8 +353,9 @@ fn insert_pdf_name_after(body : String, key : String, value : String, name : Str
     None => return body
   }
   let mut i = skip_spaces(body, at + key.length())
-  if i < body.length() && body[i].to_char().unwrap() == '(' {
-    match literal_string(body, i) {
+  if i < body.length() &&
+    (body[i].to_char().unwrap() == '(' || body[i].to_char().unwrap() == '<') {
+    match field_name_string(body, i) {
       Some((_, end)) => i = end
       None => return body
     }
@@ -498,8 +505,10 @@ pub fn fill_pdf(
     let mut name = ""
     if t_at >= 0 {
       let name_at = skip_spaces(body, t_at + 2)
-      if name_at < body.length() && body[name_at].to_char().unwrap() == '(' {
-        name = match literal_string(body, name_at) {
+      if name_at < body.length() &&
+        (body[name_at].to_char().unwrap() == '(' ||
+          body[name_at].to_char().unwrap() == '<') {
+        name = match field_name_string(body, name_at) {
           Some((name, _)) => name
           None => ""
         }

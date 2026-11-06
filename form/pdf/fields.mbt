@@ -310,6 +310,15 @@ fn find_options(text : String, start : Int, limit : Int) -> Array[String] {
 }
 
 ///|
+fn field_name_string(text : String, start : Int) -> (String, Int)? {
+  if start < text.length() && text[start].to_char().unwrap() == '<' {
+    hex_string(text, start)
+  } else {
+    literal_string(text, start)
+  }
+}
+
+///|
 /// Read the names, values and types of the AcroForm fields of a PDF.
 pub fn read_fields(data : Bytes) -> Array[Field] {
   let text = @utf8.decode_lossy(data[:])
@@ -322,11 +331,13 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
       None => break
     }
     let name_at = skip_spaces(text, at + 2)
-    if name_at >= text.length() || text[name_at].to_char().unwrap() != '(' {
+    if name_at >= text.length() ||
+      (text[name_at].to_char().unwrap() != '(' &&
+        text[name_at].to_char().unwrap() != '<') {
       pos = at + 2
       continue
     }
-    let (name, after) = match literal_string(text, name_at) {
+    let (name, after) = match field_name_string(text, name_at) {
       Some(found) => found
       None => {
         pos = at + 2
