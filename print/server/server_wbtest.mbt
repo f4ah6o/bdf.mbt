@@ -580,3 +580,21 @@ test "ipp server reports total job impressions" {
   assert_eq(impressions, Some(2))
 }
 
+///|
+test "ipp server reports job size" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  ignore(server.handle(client.create_job("sized", [])))
+  let send = client.send_document(1, "sized.pdf", "application/pdf", true)
+  let response = server.handle_with_document(send, b"%PDF-1.7")
+  let group = match response.group(@ipp.TAG_JOB) {
+    Some(group) => group
+    None => fail("missing job group")
+  }
+  let size = match group.get("job-k-octets") {
+    Some(attribute) => attribute.int()
+    None => None
+  }
+  assert_eq(size, Some(1))
+}
+

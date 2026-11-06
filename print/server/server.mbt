@@ -81,6 +81,7 @@ fn job_attrs(server : Server, job : Job) -> Array[@ipp.Attribute] {
     @ipp.attr("job-originating-user-name", [@ipp.name(job.user)]),
     @ipp.attr("job-impressions-completed", [@ipp.integer(job.impressions)]),
     @ipp.attr("job-impressions", [@ipp.integer(job.impressions * job.copies)]),
+    @ipp.attr("job-k-octets", [@ipp.integer((job.document.length() + 1023) / 1024)]),
     @ipp.attr("copies", [@ipp.integer(job.copies)]),
   ]
 }
