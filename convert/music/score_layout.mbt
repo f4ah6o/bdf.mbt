@@ -158,20 +158,60 @@ pub fn layout_midi_score(
     }
     let bars : Array[MusicBarSpan] = []
     for col in system.columns {
+      let measure = if !score.parts.is_empty() &&
+        col.index >= 0 &&
+        col.index < score.parts[0].measures.length() {
+        Some(score.parts[0].measures[col.index])
+      } else {
+        None
+      }
       bars.push({
         x: col.x,
         width: col.width,
-        left: 1,
-        right: if col.index == score.timeline.measures.length() - 1 {
-          3
-        } else {
-          0
+        left: match measure {
+          Some(value) if value.repeat_start => 5
+          _ => 1
+        },
+        right: match measure {
+          Some(value) if value.repeat_end > 0 => 6
+          _ =>
+            if col.index == score.timeline.measures.length() - 1 {
+              3
+            } else {
+              0
+            }
         },
       })
     }
     let spanning = draw_spanning_system(parts, bars, system.first == 0, text => {
       measure_text(text, 2.2, false)
     })
+    if !score.parts.is_empty() {
+      for col in system.columns {
+        if col.index < 0 || col.index >= score.parts[0].measures.length() {
+          continue
+        }
+        match score.parts[0].measures[col.index].ending {
+          Some(numbers) if !numbers.is_empty() => {
+            let text = numbers
+              .map(fn(number) { number.to_string() + "." })
+              .join(",")
+            let metrics = measure_text(text, 1.6, false)
+            spanning.text(
+              text,
+              col.x + 0.4,
+              -0.8 - metrics.descent,
+              0,
+              metrics.width,
+              metrics.ascent,
+              metrics.descent,
+              size=1.6,
+            )
+          }
+          _ => ()
+        }
+      }
+    }
     result.push({
       system,
       placement: positions[i],

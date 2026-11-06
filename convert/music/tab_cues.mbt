@@ -6,6 +6,8 @@ pub fn guitar_tab_cues(
   tab : GuitarTabView,
   division : Int32,
   keep~ : Array[Bool]? = None,
+  repeat_order~ : Array[Int32]? = None,
+  repeat_starts~ : Array[Int64]? = None,
 ) -> (@core.Cues, Bool) {
   let page_map : Array[Int32] = []
   let mut next = 0
@@ -59,6 +61,20 @@ pub fn guitar_tab_cues(
       system: si.to_uint(),
       x: Float::from_double(point.x).to_double(),
     })
+  }
+  if repeat_order is Some(order) && repeat_starts is Some(starts) {
+    let (expanded, more) = expand_cue_repeats(
+      cues,
+      score.timeline.measures,
+      div,
+      order,
+      starts,
+    )
+    cues.clear()
+    for cue in expanded {
+      cues.push(cue)
+    }
+    truncated = truncated || more
   }
   let mut ordered = true
   for i in 1..<cues.length() {

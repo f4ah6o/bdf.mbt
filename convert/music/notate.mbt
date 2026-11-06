@@ -28,6 +28,9 @@ pub(all) struct Performance {
 pub(all) struct NotatedPartMeasure {
   key : KeySig?
   events : Array[ScoreEvent]
+  ending : Array[Int64]?
+  repeat_start : Bool
+  repeat_end : Int32
 }
 
 ///|
@@ -133,6 +136,9 @@ pub fn notate(
             measure.key
           },
           events: [],
+          ending: None,
+          repeat_start: false,
+          repeat_end: 0,
         })
       }
       let lyrics = snapped_lyrics(beats, track.lyrics)

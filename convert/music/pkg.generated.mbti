@@ -50,6 +50,8 @@ pub fn drum_of(Int32) -> DrumNotation
 
 pub fn estimate_key(Array[Double], Int32) -> KeySig
 
+pub fn expand_cue_repeats(Array[@core.Cue], Array[MeasureSpan], Int32, Array[Int32], Array[Int64]) -> (Array[@core.Cue], Bool)
+
 pub fn guitar_candidates(GuitarNote, Bool) -> Array[GuitarCandidate]
 
 pub fn guitar_presets() -> Array[GuitarPreset]
@@ -58,7 +60,7 @@ pub fn guitar_score_onsets(NotatedScore, Int32) -> GuitarScoreOnsets
 
 pub fn guitar_shapes(Array[GuitarNote], GuitarPreset, Bool) -> Array[GuitarShape]
 
-pub fn guitar_tab_cues(NotatedScore, GuitarTabView, Int32, keep? : Array[Bool]?) -> (@core.Cues, Bool)
+pub fn guitar_tab_cues(NotatedScore, GuitarTabView, Int32, keep? : Array[Bool]?, repeat_order? : Array[Int32]?, repeat_starts? : Array[Int64]?) -> (@core.Cues, Bool)
 
 pub fn key_alters(KeySig) -> Array[Int32]
 
@@ -70,7 +72,7 @@ pub fn layout_basic_staff(NotatedScore, PreparedScore, MusicSystem, Int32) -> Ba
 
 pub fn layout_midi_score(NotatedScore, MusicPageOptions, (String, Double, Bool) -> MusicTextMetrics) -> MusicScoreLayout?
 
-pub fn midi_score_cues(NotatedScore, MusicScoreLayout, Int32, keep? : Array[Bool]?) -> (@core.Cues, Bool)
+pub fn midi_score_cues(NotatedScore, MusicScoreLayout, Int32, keep? : Array[Bool]?, repeat_order? : Array[Int32]?, repeat_starts? : Array[Int64]?) -> (@core.Cues, Bool)
 
 pub fn music_bracket_width(Array[MusicPartSpan]) -> Double
 
@@ -196,10 +198,11 @@ pub(all) struct GuitarOnset {
   notes : Array[GuitarNote]
 }
 
+#derive(Eq, @debug.Debug)
 pub(all) struct GuitarPosition {
   string : Int32
   fret : Int32
-} derive(Eq, @debug.Debug)
+}
 
 pub(all) struct GuitarPreset {
   id : String
@@ -510,6 +513,9 @@ pub(all) struct NotatedPart {
 pub(all) struct NotatedPartMeasure {
   key : KeySig?
   events : Array[ScoreEvent]
+  ending : Array[Int64]?
+  repeat_start : Bool
+  repeat_end : Int32
 }
 
 pub(all) struct NotatedScore {
