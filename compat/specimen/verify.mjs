@@ -20,7 +20,7 @@ for (const sample of samples) {
     const actualReach = JSON.parse(reachable(input, sample.index, prune.text));
     assert.deepEqual(actualReach, prune.keep, sample.name + ' reachable glyphs ' + JSON.stringify(prune.text));
     if (prune.visual) assert.equal(hash(gunzipSync(Buffer.from(prune.visual, 'base64'))), prune.hash, sample.name + ' pruned visual baseline');
-    const actualPruned = Buffer.from(pruned_program(input, sample.index, prune.keep));
+    const actualPruned = Buffer.from(pruned_program(input, sample.index, prune.keep.join(",")));
     const automatic = Buffer.from(automatic_pruned(input, sample.index, prune.text));
     assert.equal(hash(automatic), prune.hash, sample.name + ' automatic sample ' + JSON.stringify(prune.text));
     assert.equal(actualPruned.length > 0, prune.ok, sample.name + ' pruned sample availability');

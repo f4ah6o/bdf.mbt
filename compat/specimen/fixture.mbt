@@ -23,12 +23,36 @@ pub fn sample_program(data : Bytes, index : Int32) -> Bytes {
 }
 
 ///|
+fn parse_glyph_list(text : String) -> Array[Int32] {
+  let glyphs : Array[Int32] = []
+  let mut value = 0
+  let mut any = false
+  for ch in text {
+    if ch == ',' {
+      if any {
+        glyphs.push(value)
+      }
+      value = 0
+      any = false
+    } else if ch >= '0' && ch <= '9' {
+      value = value * 10 + ch.to_int() - '0'.to_int()
+      any = true
+    }
+  }
+  if any {
+    glyphs.push(value)
+  }
+  glyphs
+}
+
+///|
 #export_name("pruned_program")
 pub fn pruned_program(
   data : Bytes,
   index : Int32,
-  glyphs : Array[Int32],
+  glyphs : String,
 ) -> Bytes {
+  let glyphs = parse_glyph_list(glyphs)
   let file = try! @font.load(data)
   for face in file.faces() {
     if face.index == index {

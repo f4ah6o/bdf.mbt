@@ -96,7 +96,7 @@ pub fn prepare_sample_painter(Bytes, Int32, Int32, String) -> GlyphPainterFixtur
 
 pub fn prepare_ui_painter(Bytes, String, String, String, UIFontFixture) -> UIPainterFixture
 
-pub fn pruned_program(Bytes, Int32, Array[Int32]) -> Bytes
+pub fn pruned_program(Bytes, Int32, String) -> Bytes
 
 pub fn reachable(Bytes, Int32, String) -> String
 
