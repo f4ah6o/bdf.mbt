@@ -26,6 +26,7 @@ pub(all) struct Field {
   required : Bool
   alternate_name : String
   max_len : Int32?
+  default_value : String
 }
 
 // Type aliases

@@ -12,6 +12,7 @@ pub(all) struct Field {
   required : Bool
   alternate_name : String
   max_len : Int?
+  default_value : String
 }
 
 ///|
@@ -393,6 +394,20 @@ fn find_max_len(text : String, start : Int, limit : Int) -> Int? {
 }
 
 ///|
+fn find_default_value(text : String, start : Int, limit : Int) -> String {
+  let section = text[start:limit]
+  let at = match section.find("/DV") {
+    Some(index) => start + index
+    None => return ""
+  }
+  let value_at = skip_spaces(text, at + 3)
+  match field_name_string(text, value_at) {
+    Some((value, _)) => value
+    None => ""
+  }
+}
+
+///|
 /// Read the names, values and types of the AcroForm fields of a PDF.
 pub fn read_fields(data : Bytes) -> Array[Field] {
   let text = @utf8.decode_lossy(data[:])
@@ -435,6 +450,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
     let options = find_options(text, after, next_t)
     let alternate_name = find_alternate_name(text, after, next_t)
     let max_len = find_max_len(text, after, next_t)
+    let default_value = find_default_value(text, after, next_t)
     if name != "" {
       let mut found = -1
       for i in 0..<fields.length() {
@@ -462,6 +478,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
         required,
         alternate_name,
         max_len,
+        default_value,
       }
       if found >= 0 {
         fields[found] = field
