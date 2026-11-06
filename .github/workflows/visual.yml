@@ -4,6 +4,9 @@ on:
     branches: ['**']
   pull_request:
   workflow_dispatch:
+concurrency:
+  group: visual-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   compare:
     runs-on: ubuntu-latest
