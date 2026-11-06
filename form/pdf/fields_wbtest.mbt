@@ -83,6 +83,31 @@ test "pdf overlay draws form values" {
   assert_true(text.contains("Alice"), msg=text)
   assert_true(text.contains("Bob"), msg=text)
   assert_true(text.contains("X"), msg=text)
+  let mut long = ""
+  for _ in 0..<100 {
+    long += "あ"
+  }
+  let wrap_pdf = pdf
+    .replace(old="/MaxLen 20", new="")
+    .replace(old="[10 20 100 40]", new="[10 20 30 40]")
+  let wrapped = fill_overlay(
+    @utf8.encode(wrap_pdf),
+    @utf8.encode("{\"name\":\"" + long + "\"}"),
+  )
+  let wrapped_doc = @core.open_single(wrapped)
+  let wrapped_commands = @render.decode_commands(
+    wrapped_doc.part(wrapped_doc.manifest.views[0].pages[0].layers[0].object),
+  ) catch {
+    _ => fail("wrapped overlay commands cannot be decoded")
+  }
+  let mut wrapped_lines = 0
+  for command in wrapped_commands {
+    match command {
+      @render.FillText(_, _, _, _) => wrapped_lines += 1
+      _ => ()
+    }
+  }
+  assert_true(wrapped_lines > 1, msg=wrapped_lines.to_string())
 }
 
 ///|

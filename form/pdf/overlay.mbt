@@ -354,13 +354,13 @@ pub fn fill_overlay(
       Float::from_double(width),
       Float::from_double(height),
     )
-    let lines = value.split("\n").collect()
+    let lines = overlay_lines(value, width, size.to_double())
     for i, line in lines {
       let advance = Float::from_double(
-        @drawingml.text_width(line.to_owned(), size.to_double()),
+        @drawingml.text_width(line, size.to_double()),
       )
       builder.fill_text(
-        line.to_owned(),
+        line,
         Float::from_double(
           if is_button {
           x1 + (width - advance.to_double()) / 2.0
