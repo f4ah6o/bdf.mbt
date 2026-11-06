@@ -213,7 +213,8 @@
   `print_pdf` sends a PDF after the Print-Job message, `print_data`
   sends any format, `decode_prefix` leaves the document after the
   message, `get_jobs` lists jobs, and `print_pwg`/`print_urf`/
-  `print_pclm` wrap the formats; 26 tests).
+  `print_pclm` wrap the formats, and CUPS printer/job URI helpers build
+  queue paths; 27 tests).
   `print` exports a BDF document as PDF (`bdf_pdf`) and prints it
   (`print_bdf`, 1 test). `print/dnssd` has the DNS wire format (queries,
   responses, PTR/SRV/TXT/A/AAAA records, printer advertisement records,
