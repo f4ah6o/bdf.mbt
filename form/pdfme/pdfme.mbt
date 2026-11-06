@@ -372,6 +372,55 @@ fn png_size(data : Bytes) -> (Double, Double)? {
 }
 
 ///|
+fn jpeg_size(data : Bytes) -> (Double, Double)? {
+  if data.length() < 4 || data[0].to_int() != 0xff || data[1].to_int() != 0xd8 {
+    return None
+  }
+  let mut i = 2
+  while i + 9 < data.length() {
+    if data[i].to_int() != 0xff {
+      i += 1
+      continue
+    }
+    while i < data.length() && data[i].to_int() == 0xff {
+      i += 1
+    }
+    if i >= data.length() {
+      return None
+    }
+    let marker = data[i].to_int()
+    i += 1
+    if marker == 0xd8 || marker == 0xd9 || marker == 0x01 ||
+      (marker >= 0xd0 && marker <= 0xd7) {
+      continue
+    }
+    if i + 2 > data.length() {
+      return None
+    }
+    let length = (data[i].to_int() << 8) | data[i + 1].to_int()
+    if marker == 0xc0 || marker == 0xc1 || marker == 0xc2 || marker == 0xc3 ||
+      marker == 0xc5 || marker == 0xc6 || marker == 0xc7 || marker == 0xc9 ||
+      marker == 0xca || marker == 0xcb || marker == 0xcd || marker == 0xce ||
+      marker == 0xcf {
+      if i + 7 > data.length() {
+        return None
+      }
+      let height = (data[i + 3].to_int() << 8) | data[i + 4].to_int()
+      let width = (data[i + 5].to_int() << 8) | data[i + 6].to_int()
+      if width > 0 && height > 0 {
+        return Some((width.to_double(), height.to_double()))
+      }
+      return None
+    }
+    if length < 2 {
+      return None
+    }
+    i += length
+  }
+  None
+}
+
+///|
 fn FieldPainter::draw_image(
   self : FieldPainter,
   field : Json,
@@ -408,7 +457,31 @@ fn FieldPainter::draw_image(
     _ => raise PdfmeError("pdfme: the image cannot be added")
   }
   let index = self.builder.add_image(hash)
-  self.builder.image(index, x, y_top - height, width, height) catch {
+  let (draw_x, draw_y, draw_width, draw_height) = if text_of(
+    json_field(field, "objectFit"),
+    "stretch",
+  ) == "contain" {
+    match (if is_png { png_size(bytes) } else { jpeg_size(bytes) }) {
+      Some((image_width, image_height)) => {
+        let scale = Double::min(
+          width.to_double() / image_width,
+          height.to_double() / image_height,
+        )
+        let fitted_width = image_width * scale
+        let fitted_height = image_height * scale
+        (
+          x + Float::from_double((width.to_double() - fitted_width) / 2.0),
+          y_top - Float::from_double((height.to_double() - fitted_height) / 2.0),
+          Float::from_double(fitted_width),
+          Float::from_double(fitted_height),
+        )
+      }
+      None => (x, y_top, width, height)
+    }
+  } else {
+    (x, y_top, width, height)
+  }
+  self.builder.image(index, draw_x, draw_y - draw_height, draw_width, draw_height) catch {
     _ => raise PdfmeError("pdfme: the image cannot be placed")
   }
 }
