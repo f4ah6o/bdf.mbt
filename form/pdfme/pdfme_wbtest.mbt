@@ -505,3 +505,16 @@ test "pdfme draws dashed lines" {
   assert_true(resources.object.ops.length() > 2)
 }
 
+///|
+test "pdfme falls back from a non-positive font size" {
+  let template =
+    #|{"basePdf":{"width":100,"height":50},"schemas":[[{"name":"text","type":"text","position":{"x":10,"y":10},"width":60,"height":10,"fontSize":0}]]}
+  let result = fill(@utf8.encode(template), @utf8.encode("{\"text\":\"Alice\"}"))
+  assert_eq(result.warnings.length(), 0)
+  let document = @core.open_single(result.bdf)
+  let resources = @core.decode_object_resources(
+    document.part(document.manifest.parts[0].hash),
+  )
+  assert_true(resources.object.strings.contains("Alice"))
+}
+

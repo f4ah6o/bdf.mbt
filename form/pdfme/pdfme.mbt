@@ -180,7 +180,8 @@ fn FieldPainter::draw_text(
   if text == "" {
     return
   }
-  let size = Float::from_double(number_of(json_field(field, "fontSize"), 10.0))
+  let raw_size = number_of(json_field(field, "fontSize"), 10.0)
+  let size = Float::from_double(if raw_size > 0.0 { raw_size } else { 10.0 })
   let line_height = Float::from_double(
     number_of(json_field(field, "lineHeight"), 1.2),
   ) * size
@@ -292,7 +293,8 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
       }
       None => ()
     }
-    let size = Float::from_double(number_of(json_field(field, "fontSize"), 10.0))
+    let raw_size = number_of(json_field(field, "fontSize"), 10.0)
+  let size = Float::from_double(if raw_size > 0.0 { raw_size } else { 10.0 })
     let baseline = y_top - size
     self.draw_text(field, data, x, baseline)
   } else if typ == "line" {
@@ -1721,7 +1723,8 @@ fn FieldPainter::draw_table(
     edge += width * value / Float::from_double(width_sum)
     edges.push(edge)
   }
-  let size = Float::from_double(number_of(json_field(field, "fontSize"), 8.0))
+  let raw_size = number_of(json_field(field, "fontSize"), 8.0)
+  let size = Float::from_double(if raw_size > 0.0 { raw_size } else { 8.0 })
   let head_size = match json_field(field, "headStyles") {
     Some(Json::Object(styles)) =>
       Float::from_double(number_of(styles.get("fontSize"), size.to_double()))
