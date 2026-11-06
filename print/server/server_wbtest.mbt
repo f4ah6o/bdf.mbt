@@ -549,3 +549,13 @@ test "ipp server reports a processing job reason" {
   assert_eq(reason, "job-printing")
 }
 
+///|
+test "ipp server rejects a negative job limit" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  let request = client.request(@ipp.OP_GET_JOBS)
+  request.add(@ipp.TAG_OPERATION, [@ipp.attr("limit", [@ipp.integer(-1)])])
+  let response = server.handle(request)
+  assert_eq(response.code, @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST)
+}
+

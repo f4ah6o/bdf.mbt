@@ -448,6 +448,9 @@ pub fn Server::handle_with_document(
       Some(attribute) => attribute.int().unwrap_or(0)
       None => 0
     }
+    if limit < 0 {
+      return response_for(request, @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST)
+    }
     let requested = match request.attr(@ipp.TAG_OPERATION, "requested-attributes") {
       Some(attribute) => attribute.strings()
       None => []
