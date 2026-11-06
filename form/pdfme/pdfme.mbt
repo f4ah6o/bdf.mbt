@@ -1509,9 +1509,9 @@ fn FieldPainter::draw_table(
 }
 
 ///|
-fn pdf_media_box(data : Bytes) -> (Double, Double)? {
+fn pdf_box(data : Bytes, key : String) -> (Double, Double)? {
   let text = @utf8.decode_lossy(data[:])
-  let start = match text.find("/MediaBox") {
+  let start = match text.find(key) {
     Some(index) => index
     None => return None
   }
@@ -1545,6 +1545,14 @@ fn pdf_media_box(data : Bytes) -> (Double, Double)? {
     Some((width, height))
   } else {
     None
+  }
+}
+
+///|
+fn pdf_media_box(data : Bytes) -> (Double, Double)? {
+  match pdf_box(data, "/MediaBox") {
+    Some(size) => Some(size)
+    None => pdf_box(data, "/CropBox")
   }
 }
 

@@ -113,12 +113,11 @@
   documents and convert them (1 test each). Scalar list items are reported.
 - `form/pdfme` fills a pdfme template (blank pages, text/line/rectangle/
   checkbox/table/image fields, table column widths, alignment and header
-  styles, static
-  schema, multiVariableText variables, text backgrounds/borders, base-PDF
-  MediaBox page size, QR codes, Code 39, Code 93, Code 128, GS1-128, EAN-13,
-  EAN-8, UPC-A, UPC-E, ITF, NW-7 and MSI barcodes, arithmetic expressions
-  with abs/round/floor/ceil/min/max) into BDF; base PDF content and other 1D
-  formats are gaps (21 tests).
+  styles, static schema, multiVariableText variables, text backgrounds/borders,
+  base-PDF MediaBox/CropBox page size, QR codes, Code 39, Code 93, Code 128,
+  GS1-128, EAN-13, EAN-8, UPC-A, UPC-E, ITF, NW-7 and MSI barcodes, arithmetic
+  expressions with abs/round/floor/ceil/min/max) into BDF; base PDF content
+  and other 1D formats are gaps (22 tests).
 - `form/schema` writes the JSON Schema of the data of a template from its
   fields and a sample (objects, lists, conditions, pictures/codes, number
   formats, options, defaults, slots and the `x-bdf` keyword), with 3 tests.
