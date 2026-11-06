@@ -1575,10 +1575,18 @@ fn FieldPainter::draw_table(
       self.builder.font(cell_font, cell_size) catch {
         _ => raise PdfmeError("pdfme: a font cannot be set")
       }
+      let max_chars = Int::max(
+        1,
+        ((cell_width.to_double() - 2.0) / (cell_size.to_double() * 0.5)).to_int(),
+      )
+      let text = if text.length() > max_chars {
+        text[:max_chars].to_owned()
+      } else {
+        text
+      }
       let advance = Float::from_double(
         text.length().to_double() * cell_size.to_double() * 0.5,
       )
-      let cell_width = edges[i + 1] - edges[i]
       let background = if head_row { 0x00000000U } else { table_column_background(field, i) }
       if background != 0x00000000U {
         self.builder.fill_color(background)
