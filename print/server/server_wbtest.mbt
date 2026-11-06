@@ -315,3 +315,22 @@ test "ipp server appends send-document chunks" {
   assert_eq(server.jobs[0].document, b"%PDF-1.7")
 }
 
+///|
+test "ipp server filters requested job attributes" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  ignore(server.handle(client.create_job("filtered", [])))
+  let request = client.request(@ipp.OP_GET_JOB_ATTRIBUTES)
+  request.add(@ipp.TAG_OPERATION, [
+    @ipp.attr("job-id", [@ipp.integer(1)]),
+    @ipp.attr("requested-attributes", [@ipp.keyword("job-state")]),
+  ])
+  let response = server.handle(request)
+  let group = match response.group(@ipp.TAG_JOB) {
+    Some(group) => group
+    None => fail("missing job group")
+  }
+  assert_eq(group.attrs.length(), 1)
+  assert_eq(group.attrs[0].name, "job-state")
+}
+

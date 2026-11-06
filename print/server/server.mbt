@@ -151,6 +151,14 @@ fn pdf_page_count(data : Bytes) -> Int {
 }
 
 ///|
+fn filter_job_attrs(attrs : Array[@ipp.Attribute], requested : Array[String]) -> Array[@ipp.Attribute] {
+  if requested.is_empty() || requested.contains("all") || requested.contains("job-template") {
+    return attrs
+  }
+  attrs.filter(fn(attribute) { requested.contains(attribute.name) })
+}
+
+///|
 fn append_document(current : Bytes, next : Bytes) -> Bytes {
   if current.length() == 0 {
     return next
@@ -305,8 +313,13 @@ pub fn Server::handle_with_document(
     let id = request_job_id(request)
     match self.find_job(id) {
       Some(job) => {
+        let attrs = job_attrs(self, job)
+        let requested = match request.attr(@ipp.TAG_OPERATION, "requested-attributes") {
+          Some(attribute) => attribute.strings()
+          None => []
+        }
         let response = response_for(request, @ipp.STATUS_OK)
-        response.add(@ipp.TAG_JOB, job_attrs(self, job))
+        response.add(@ipp.TAG_JOB, filter_job_attrs(attrs, requested))
         response
       }
       None => response_for(request, @ipp.STATUS_CLIENT_ERROR_NOT_FOUND)
