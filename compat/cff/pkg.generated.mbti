@@ -10,7 +10,7 @@ pub fn raw_order(Bytes, String) -> String
 
 pub fn raw_program(Bytes, String) -> Bytes
 
-pub fn raw_prune(Bytes, Array[Int32]) -> Bytes
+pub fn raw_prune(Bytes, String) -> Bytes
 
 pub fn sfnt_program(Bytes, String) -> Bytes
 

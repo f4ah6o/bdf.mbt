@@ -71,7 +71,30 @@ pub fn sfnt_program(data : Bytes, text : String) -> Bytes {
 }
 
 ///|
+fn parse_gids(text : String) -> Array[Int32] {
+  let glyphs : Array[Int32] = []
+  let mut value = 0
+  let mut any = false
+  for ch in text {
+    if ch == ',' {
+      if any {
+        glyphs.push(value)
+      }
+      value = 0
+      any = false
+    } else if ch >= '0' && ch <= '9' {
+      value = value * 10 + ch.to_int() - '0'.to_int()
+      any = true
+    }
+  }
+  if any {
+    glyphs.push(value)
+  }
+  glyphs
+}
+
+///|
 #export_name("raw_prune")
-pub fn raw_prune(data : Bytes, glyphs : Array[Int32]) -> Bytes {
-  try! @engine.prune(data, glyphs)
+pub fn raw_prune(data : Bytes, glyphs : String) -> Bytes {
+  try! @engine.prune(data, parse_gids(glyphs))
 }

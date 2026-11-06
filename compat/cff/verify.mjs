@@ -72,8 +72,8 @@ for (let i = 0; i < realFont.readUInt16BE(4); i++) {
 }
 for (const sample of prunes) {
   const input = sample.source === 'real' ? realCff : Buffer.from(synthetic.find(item => item.name === sample.name).data, 'base64');
-  if (sample.error) { assert.throws(() => raw_prune(input, sample.glyphs), sample.name); continue; }
-  const actual = Buffer.from(raw_prune(input, sample.glyphs));
+  if (sample.error) { assert.throws(() => raw_prune(input, sample.glyphs.join(",")), sample.name); continue; }
+  const actual = Buffer.from(raw_prune(input, sample.glyphs.join(",")));
   assert.equal(actual.length, sample.size, sample.name + ' retained glyph count size');
   assert.equal(createHash('sha256').update(actual).digest('hex'), sample.hash, sample.name + ' retained glyph numbers');
   if (sample.program) assert.deepEqual(actual, Buffer.from(sample.program, 'base64'));
