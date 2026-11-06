@@ -76,6 +76,57 @@ fn overlay_page_size(pdf : String) -> (Double, Double) {
 }
 
 ///|
+fn overlay_page_sizes(pdf : String) -> Array[(Int, Double, Double)] {
+  let sizes : Array[(Int, Double, Double)] = []
+  let mut pos = 0
+  while pos < pdf.length() {
+    let rest = pdf[pos:]
+    let at = match rest.find(" 0 obj") {
+      Some(index) => pos + index
+      None => break
+    }
+    let mut start = at
+    while start > 0 {
+      let c = pdf[start - 1].to_char().unwrap()
+      if c >= '0' && c <= '9' {
+        start -= 1
+      } else {
+        break
+      }
+    }
+    if start == at {
+      pos = at + 1
+      continue
+    }
+    let object = @string.parse_int(pdf[start:at].to_owned()) catch {
+      _ => {
+        pos = at + 1
+        continue
+      }
+    }
+    let tail = pdf[at:]
+    let end = match tail.find("endobj") {
+      Some(index) => at + index
+      None => pdf.length()
+    }
+    let segment = pdf[start:end]
+    if segment.contains("/Type /Page") && !segment.contains("/Type /Pages") {
+      let size = match overlay_box(segment.to_owned(), "/MediaBox") {
+        Some(value) => value
+        None =>
+          match overlay_box(segment.to_owned(), "/CropBox") {
+            Some(value) => value
+            None => (595.0, 842.0)
+          }
+      }
+      sizes.push((object, size.0, size.1))
+    }
+    pos = end + 6
+  }
+  sizes
+}
+
+///|
 fn overlay_value(data : Json, name : String) -> String {
   let value = match data {
     Json::Object(object) => object.get(name)
@@ -160,6 +211,7 @@ pub fn fill_overlay(
   }
   let fields = read_fields(pdf_bytes)
   let (page_width, page_height) = overlay_page_size(pdf)
+  let page_sizes = overlay_page_sizes(pdf)
   let page_keys : Array[Int] = []
   for field in fields {
     let key = field.page_object.unwrap_or(0)
@@ -170,22 +222,36 @@ pub fn fill_overlay(
   if page_keys.is_empty() {
     page_keys.push(0)
   }
+  let page_widths : Array[Double] = []
+  let page_heights : Array[Double] = []
+  for key in page_keys {
+    let mut width = page_width
+    let mut height = page_height
+    for size in page_sizes {
+      if size.0 == key {
+        width = size.1
+        height = size.2
+      }
+    }
+    page_widths.push(width)
+    page_heights.push(height)
+  }
   let builders : Array[@core.ObjectBuilder] = []
   let fonts : Array[Int32] = []
-  for _ in page_keys {
+  for i in 0..<page_keys.length() {
     let builder = @core.ObjectBuilder::new()
     builder.set_bbox(
       0.0,
       0.0,
-      Float::from_double(page_width),
-      Float::from_double(page_height),
+      Float::from_double(page_widths[i]),
+      Float::from_double(page_heights[i]),
     )
     builder.fill_color(0xffffffff)
     builder.fill_rect(
       0.0,
       0.0,
-      Float::from_double(page_width),
-      Float::from_double(page_height),
+      Float::from_double(page_widths[i]),
+      Float::from_double(page_heights[i]),
     )
     let font = builder.add_font({
       hash: None,
@@ -427,14 +493,14 @@ pub fn fill_overlay(
   }
   let writer = @core.DocumentWriter::new()
   let pages : Array[Json] = []
-  for builder in builders {
+  for i, builder in builders {
     let hash = writer.add_part("obj", builder.encode()) catch {
       _ => raise PdfFillError("form/pdf: the overlay cannot be encoded")
     }
     pages.push(
       Json::object({
-        "w": Json::number(page_width),
-        "h": Json::number(page_height),
+        "w": Json::number(page_widths[i]),
+        "h": Json::number(page_heights[i]),
         "layers": Json::array([
           Json::object({
             "role": Json::string(""),

@@ -107,7 +107,8 @@
   choice options (both names kept, display values map to export values,
   multiple values become a PDF array and are read back),
   writes values into classic-xref or xref-stream PDFs with an incremental
-  update (31 tests, multi-page overlays, centered comb characters, multiline
+  update (31 tests, multi-page overlays with per-page MediaBox sizes, centered
+  comb characters, multiline
   wrapping, masked password fields,
   referenced appearance streams, missing-required reporting, maximum-length enforcement
   in fills and overlays, hexadecimal field names, surrogate
