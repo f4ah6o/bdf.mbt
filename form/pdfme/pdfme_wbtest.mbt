@@ -476,3 +476,16 @@ test "pdfme draws radio groups" {
   assert_true(text.contains("Two"), msg=text)
 }
 
+///|
+test "pdfme draws dashed rectangles" {
+  let template =
+    #|{"basePdf":{"width":100,"height":50},"schemas":[[{"name":"box","type":"rectangle","position":{"x":10,"y":10},"width":50,"height":20,"borderColor":"#000000","borderWidth":0.5,"borderStyle":"dashed"}]]}
+  let result = fill(@utf8.encode(template), @utf8.encode("{}"))
+  assert_eq(result.warnings.length(), 0)
+  let document = @core.open_single(result.bdf)
+  let resources = @core.decode_object_resources(
+    document.part(document.manifest.parts[0].hash),
+  )
+  assert_true(resources.object.ops.length() > 5)
+}
+
