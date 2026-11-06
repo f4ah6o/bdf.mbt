@@ -159,6 +159,19 @@ fn filter_job_attrs(attrs : Array[@ipp.Attribute], requested : Array[String]) ->
 }
 
 ///|
+fn requested_job_attrs(
+  server : Server,
+  request : @ipp.Message,
+  job : Job,
+) -> Array[@ipp.Attribute] {
+  let requested = match request.attr(@ipp.TAG_OPERATION, "requested-attributes") {
+    Some(attribute) => attribute.strings()
+    None => []
+  }
+  filter_job_attrs(job_attrs(server, job), requested)
+}
+
+///|
 fn append_document(current : Bytes, next : Bytes) -> Bytes {
   if current.length() == 0 {
     return next
@@ -194,7 +207,7 @@ pub fn Server::handle_with_document(
   } else if request.code == @ipp.OP_CREATE_JOB {
     let job = self.create_job(request)
     let response = response_for(request, @ipp.STATUS_OK)
-    response.add(@ipp.TAG_JOB, job_attrs(self, job))
+    response.add(@ipp.TAG_JOB, requested_job_attrs(self, request, job))
     response
   } else if request.code == @ipp.OP_PRINT_JOB {
     let job = self.create_job(request)
@@ -210,7 +223,7 @@ pub fn Server::handle_with_document(
             job.state = @ipp.JOB_ABORTED
             job.impressions = 0
             let response = response_for(request, @ipp.STATUS_OK)
-            response.add(@ipp.TAG_JOB, job_attrs(self, job))
+            response.add(@ipp.TAG_JOB, requested_job_attrs(self, request, job))
             return response
           }
         }
@@ -220,7 +233,7 @@ pub fn Server::handle_with_document(
             job.state = @ipp.JOB_ABORTED
             job.impressions = 0
             let response = response_for(request, @ipp.STATUS_OK)
-            response.add(@ipp.TAG_JOB, job_attrs(self, job))
+            response.add(@ipp.TAG_JOB, requested_job_attrs(self, request, job))
             return response
           }
         }
@@ -242,7 +255,7 @@ pub fn Server::handle_with_document(
       }
     }
     let response = response_for(request, @ipp.STATUS_OK)
-    response.add(@ipp.TAG_JOB, job_attrs(self, job))
+    response.add(@ipp.TAG_JOB, requested_job_attrs(self, request, job))
     response
   } else if request.code == @ipp.OP_SEND_DOCUMENT {
     let id = request_job_id(request)
@@ -260,7 +273,7 @@ pub fn Server::handle_with_document(
           if !last {
             job.state = @ipp.JOB_PROCESSING
             let response = response_for(request, @ipp.STATUS_OK)
-            response.add(@ipp.TAG_JOB, job_attrs(self, job))
+            response.add(@ipp.TAG_JOB, requested_job_attrs(self, request, job))
             return response
           }
           let format = match request.attr(@ipp.TAG_OPERATION, "document-format") {
@@ -274,7 +287,7 @@ pub fn Server::handle_with_document(
                 job.state = @ipp.JOB_ABORTED
                 job.impressions = 0
                 let response = response_for(request, @ipp.STATUS_OK)
-                response.add(@ipp.TAG_JOB, job_attrs(self, job))
+                response.add(@ipp.TAG_JOB, requested_job_attrs(self, request, job))
                 return response
               }
             }
@@ -285,7 +298,7 @@ pub fn Server::handle_with_document(
                 job.state = @ipp.JOB_ABORTED
                 job.impressions = 0
                 let response = response_for(request, @ipp.STATUS_OK)
-                response.add(@ipp.TAG_JOB, job_attrs(self, job))
+                response.add(@ipp.TAG_JOB, requested_job_attrs(self, request, job))
                 return response
               }
             }
@@ -307,7 +320,7 @@ pub fn Server::handle_with_document(
           }
         }
         let response = response_for(request, @ipp.STATUS_OK)
-        response.add(@ipp.TAG_JOB, job_attrs(self, job))
+        response.add(@ipp.TAG_JOB, requested_job_attrs(self, request, job))
         response
       }
       None => response_for(request, @ipp.STATUS_CLIENT_ERROR_NOT_FOUND)
@@ -316,13 +329,8 @@ pub fn Server::handle_with_document(
     let id = request_job_id(request)
     match self.find_job(id) {
       Some(job) => {
-        let attrs = job_attrs(self, job)
-        let requested = match request.attr(@ipp.TAG_OPERATION, "requested-attributes") {
-          Some(attribute) => attribute.strings()
-          None => []
-        }
         let response = response_for(request, @ipp.STATUS_OK)
-        response.add(@ipp.TAG_JOB, filter_job_attrs(attrs, requested))
+        response.add(@ipp.TAG_JOB, requested_job_attrs(self, request, job))
         response
       }
       None => response_for(request, @ipp.STATUS_CLIENT_ERROR_NOT_FOUND)
@@ -336,7 +344,7 @@ pub fn Server::handle_with_document(
         }
         job.state = @ipp.JOB_CANCELED
         let response = response_for(request, @ipp.STATUS_OK)
-        response.add(@ipp.TAG_JOB, job_attrs(self, job))
+        response.add(@ipp.TAG_JOB, requested_job_attrs(self, request, job))
         response
       }
       None => response_for(request, @ipp.STATUS_CLIENT_ERROR_NOT_FOUND)

@@ -379,3 +379,20 @@ test "ipp server rejects cancel on a completed job" {
   assert_eq(server.jobs[0].state, @ipp.JOB_COMPLETED)
 }
 
+///|
+test "ipp server filters created job attributes" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  let request = client.create_job("filtered", [])
+  request.add(@ipp.TAG_OPERATION, [
+    @ipp.attr("requested-attributes", [@ipp.keyword("job-state")]),
+  ])
+  let response = server.handle(request)
+  let group = match response.group(@ipp.TAG_JOB) {
+    Some(group) => group
+    None => fail("missing job group")
+  }
+  assert_eq(group.attrs.length(), 1)
+  assert_eq(group.attrs[0].name, "job-state")
+}
+
