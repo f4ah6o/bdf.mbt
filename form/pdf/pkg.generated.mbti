@@ -34,6 +34,7 @@ pub(all) struct Field {
   quadding : Int32?
   values : Array[String]
   background_color : UInt32?
+  border_color : UInt32?
 }
 
 // Type aliases

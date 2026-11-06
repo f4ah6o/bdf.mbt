@@ -35,7 +35,7 @@ test "pdf overlay draws form values" {
   let pdf =
     #|%PDF-1.7
     #|1 0 obj << /Type /Page /MediaBox [0 0 200 100] >>
-    #|2 0 obj << /T (name) /V () /FT /Tx /Ff 3 /TU (Full Name) /MaxLen 20 /DV (Initial) /DA (/TiRo 8 Tf 0.5 g) /Q 1 /MK << /BG [0.9 0.9 0.9] >> /Opt [[(Red) (R)] [<FEFF30B0> (G)]] /Rect [10 20 100 40] /P 3 0 R >>
+    #|2 0 obj << /T (name) /V () /FT /Tx /Ff 3 /TU (Full Name) /MaxLen 20 /DV (Initial) /DA (/TiRo 8 Tf 0.5 g) /Q 1 /MK << /BG [0.9 0.9 0.9] /BC [1 0 0] >> /Opt [[(Red) (R)] [<FEFF30B0> (G)]] /Rect [10 20 100 40] /P 3 0 R >>
     #|3 0 obj << /T (agree) /V () /FT /Btn /Rect [110 20 130 40] /P 4 0 R >>
     #|%%EOF
   let bdf = fill_overlay(
@@ -65,7 +65,7 @@ test "pdf reads a button field" {
   let pdf =
     #|%PDF-1.7
     #|1 0 obj << /Type /Page /MediaBox [0 0 200 100] >>
-    #|2 0 obj << /T (name) /V () /FT /Tx /Ff 3 /TU (Full Name) /MaxLen 20 /DV (Initial) /DA (/TiRo 8 Tf 0.5 g) /Q 1 /MK << /BG [0.9 0.9 0.9] >> /Opt [[(Red) (R)] [<FEFF30B0> (G)]] /Rect [10 20 100 40] /P 3 0 R >>
+    #|2 0 obj << /T (name) /V () /FT /Tx /Ff 3 /TU (Full Name) /MaxLen 20 /DV (Initial) /DA (/TiRo 8 Tf 0.5 g) /Q 1 /MK << /BG [0.9 0.9 0.9] /BC [1 0 0] >> /Opt [[(Red) (R)] [<FEFF30B0> (G)]] /Rect [10 20 100 40] /P 3 0 R >>
     #|3 0 obj << /T (agree) /V () /FT /Btn /Rect [110 20 130 40] /P 4 0 R >>
     #|%%EOF
   let fields = read_fields(@utf8.encode(pdf))
@@ -85,6 +85,7 @@ test "pdf reads a button field" {
   assert_eq(fields[0].font_name, "Times-Roman")
   assert_eq(fields[0].quadding, Some(1))
   assert_eq(fields[0].background_color, Some(0xE6E6E6ff))
+  assert_eq(fields[0].border_color, Some(0xFF0000ff))
   assert_eq(fields[0].options, ["Red", "グ"])
   assert_eq(fields[0].option_values, ["R", "G"])
   assert_eq(fields[1].page_object, Some(4))

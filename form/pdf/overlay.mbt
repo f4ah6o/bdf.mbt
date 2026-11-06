@@ -150,6 +150,19 @@ pub fn fill_overlay(
     if width <= 0.0 || height <= 0.0 {
       continue
     }
+    match field.border_color {
+      Some(color) => {
+        builder.stroke_color(color)
+        builder.line(0.5, 0, 0, 0.0F)
+        builder.stroke_rect(
+          Float::from_double(x1),
+          Float::from_double(y1),
+          Float::from_double(width),
+          Float::from_double(height),
+        )
+      }
+      None => ()
+    }
     match field.background_color {
       Some(color) => {
         builder.fill_color(color)
