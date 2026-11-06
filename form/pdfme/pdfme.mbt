@@ -1368,6 +1368,29 @@ fn table_column_background(field : Json, index : Int) -> UInt32 {
 }
 
 ///|
+fn table_vertical_alignment(field : Json, index : Int, head : Bool) -> String {
+  if head {
+    match json_field(field, "headStyles") {
+      Some(Json::Object(styles)) => text_of(styles.get("verticalAlign"), "top")
+      _ => "top"
+    }
+  } else {
+    match json_field(field, "columnStyles") {
+      Some(Json::Array(styles)) =>
+        if index < styles.length() {
+          match styles[index] {
+            Json::Object(style) => text_of(style.get("verticalAlign"), "top")
+            _ => "top"
+          }
+        } else {
+          "top"
+        }
+      _ => "top"
+    }
+  }
+}
+
+///|
 fn table_column_font(field : Json, index : Int, head : Bool, fallback : String) -> String {
   if head {
     match json_field(field, "headStyles") {
@@ -1572,7 +1595,15 @@ fn FieldPainter::draw_table(
       } else {
         x + edges[i] + 1.0
       }
-      self.builder.fill_text(text, start, y - cell_size, advance)
+      let vertical = table_vertical_alignment(field, i, head_row)
+      let baseline = if vertical == "middle" {
+        y - (height + cell_size) / 2.0
+      } else if vertical == "bottom" {
+        y - height + cell_size
+      } else {
+        y - cell_size
+      }
+      self.builder.fill_text(text, start, baseline, advance)
     }
     for i in 0..=columns {
       let line_x = x + edges[i]
