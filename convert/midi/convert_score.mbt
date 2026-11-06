@@ -143,6 +143,8 @@ pub fn render_music_performance(
   sequence~ : Bytes? = None,
   guitar_tab~ : Bool = true,
   page_ranges~ : Array[@convert.PageSpan]? = None,
+  cue_order~ : Array[Int32]? = None,
+  cue_starts~ : Array[Int64]? = None,
 ) -> MidiScoreResult raise {
   let title = if options.page.title == "" {
     score.title
@@ -337,6 +339,8 @@ pub fn render_music_performance(
       rendered.layout,
       performance.division,
       keep=Some(keep),
+      repeat_order=cue_order,
+      repeat_starts=cue_starts,
     )
     if truncated {
       warnings.push(
@@ -354,6 +358,8 @@ pub fn render_music_performance(
         tab.rendered.view,
         performance.division,
         keep=Some(tab.keep),
+        repeat_order=cue_order,
+        repeat_starts=cue_starts,
       )
       if truncated {
         warnings.push(
