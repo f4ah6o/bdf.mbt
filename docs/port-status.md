@@ -102,8 +102,8 @@
   incremental update (13 tests, escaped literals, UTF-16BE hex, buttons,
   appearance on-state names, referenced AcroForms and `/NeedAppearances`),
   and draws a blank-page value overlay (checkbox `X`, multi-line values,
-  MediaBox or CropBox sizing); 14 tests.
-  (multi-line values included) for preprinted forms.
+  MediaBox or CropBox sizing). Fields also expose their page object
+  reference. 14 tests.
 - `form/ooxml` replaces `{{name}}` tags in OOXML XML parts, including tags
   split across runs (the run markup between them is removed), expands
   boolean `{{#name}}`/`{{^name}}` conditions, expands object-list

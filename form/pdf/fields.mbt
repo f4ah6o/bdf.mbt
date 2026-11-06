@@ -5,6 +5,7 @@ pub(all) struct Field {
   value : String
   typ : String
   rect : (Double, Double, Double, Double)?
+  page_object : Int?
 }
 
 ///|
@@ -217,6 +218,32 @@ fn find_rect(
 }
 
 ///|
+fn find_page_object(text : String, start : Int, limit : Int) -> Int? {
+  let section = text[start:limit]
+  let at = match section.find("/P ") {
+    Some(index) => start + index
+    None => return None
+  }
+  let mut i = at + 3
+  while i < limit && text[i].to_char().unwrap() == ' ' {
+    i += 1
+  }
+  let begin = i
+  while i < limit && text[i].to_char().unwrap() >= '0' &&
+    text[i].to_char().unwrap() <= '9' {
+    i += 1
+  }
+  if i == begin {
+    return None
+  }
+  try {
+    Some(@string.parse_int(text[begin:i].to_owned()))
+  } catch {
+    _ => None
+  }
+}
+
+///|
 /// Read the names, values and types of the AcroForm fields of a PDF.
 pub fn read_fields(data : Bytes) -> Array[Field] {
   let text = @utf8.decode_lossy(data[:])
@@ -252,6 +279,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
     let value = find_value(text, after, next_t)
     let typ = find_type(text, after, next_t)
     let rect = find_rect(text, after, next_t)
+    let page_object = find_page_object(text, after, next_t)
     if name != "" {
       let mut found = -1
       for i in 0..<fields.length() {
@@ -259,7 +287,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
           found = i
         }
       }
-      let field = { name, value, typ, rect }
+      let field = { name, value, typ, rect, page_object }
       if found >= 0 {
         fields[found] = field
       } else {
