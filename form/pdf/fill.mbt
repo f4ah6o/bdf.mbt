@@ -105,8 +105,31 @@ fn find_t(body : String) -> Int? {
 }
 
 ///|
-fn replace_pdf_value(body : String, value : String) -> String {
-  let escaped = pdf_value_repr(value)
+fn data_values(data : Json, name : String) -> Array[String] {
+  let values : Array[String] = []
+  match data {
+    Json::Object(object) =>
+      match object.get(name) {
+        Some(Json::Array(items)) =>
+          for item in items {
+            let text = match item {
+              Json::String(text) => text
+              Json::Number(number, ..) => number.to_string()
+              Json::True => "true"
+              Json::False => "false"
+              _ => ""
+            }
+            values.push(text)
+          }
+        _ => ()
+      }
+    _ => ()
+  }
+  values
+}
+
+///|
+fn replace_pdf_repr(body : String, escaped : String) -> String {
   let v_at = match body.find("/V") {
     Some(index) => index
     None => {
@@ -139,6 +162,11 @@ fn replace_pdf_value(body : String, value : String) -> String {
       Some(index) => i + index + 1
       None => return body
     }
+  } else if i < body.length() && body[i].to_char().unwrap() == '[' {
+    match body[i:].find("]") {
+      Some(index) => i + index + 1
+      None => return body
+    }
   } else if i < body.length() && body[i].to_char().unwrap() == '/' {
     while i < body.length() && !is_space(body[i].to_char().unwrap()) {
       i += 1
@@ -148,6 +176,25 @@ fn replace_pdf_value(body : String, value : String) -> String {
     return body
   }
   body[:v_at + 2].to_owned() + " " + escaped + body[end:].to_owned()
+}
+
+///|
+fn pdf_array_repr(values : Array[String]) -> String {
+  let out = StringBuilder()
+  out.write_char('[')
+  for i, value in values {
+    if i > 0 {
+      out.write_char(' ')
+    }
+    out.write_string(pdf_value_repr(value))
+  }
+  out.write_char(']')
+  out.to_string()
+}
+
+///|
+fn replace_pdf_value(body : String, value : String) -> String {
+  replace_pdf_repr(body, pdf_value_repr(value))
 }
 
 ///|
@@ -563,16 +610,22 @@ pub fn fill_pdf(
           None => ()
         }
       } else {
-        match data_text(data, name) {
-          Some(value) => {
-            let mapped = if body.contains("/Ch") {
-              choice_export_value(body, value)
-            } else {
-              value
+        let values = data_values(data, name)
+        if body.contains("/Ch") && values.length() > 0 {
+          let mapped = values.map(fn(value) { choice_export_value(body, value) })
+          updates.push((number, generation, replace_pdf_repr(body, pdf_array_repr(mapped))))
+        } else {
+          match data_text(data, name) {
+            Some(value) => {
+              let mapped = if body.contains("/Ch") {
+                choice_export_value(body, value)
+              } else {
+                value
+              }
+              updates.push((number, generation, replace_pdf_value(body, mapped)))
             }
-            updates.push((number, generation, replace_pdf_value(body, mapped)))
+            None => ()
           }
-          None => ()
         }
       }
     }
