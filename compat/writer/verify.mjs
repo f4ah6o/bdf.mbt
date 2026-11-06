@@ -54,7 +54,7 @@ try {
     const parts = sample.direct
       ? writer_split_parts()
       : manifest.parts.map((entry, index) => split_part(sample.data, index));
-    assert.equal(parts.length, manifest.parts.length, sample.name + ' part count');
+    assert.equal(parts.length, manifest.parts.length, `${sample.name} part count: got ${parts.length}, manifest ${manifest.parts.length}`);
     assert.ok(manifest.parts.every(entry => entry.off === 0), sample.name + ' split offsets');
     files.set('/' + sample.name + '/manifest.json', manifestBytes);
     for (const [index, entry] of manifest.parts.entries()) files.set('/' + sample.name + '/parts/' + entry.h, parts[index]);
