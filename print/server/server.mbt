@@ -151,6 +151,32 @@ fn pdf_page_count(data : Bytes) -> Int {
 }
 
 ///|
+fn Server::copies_supported(self : Server, request : @ipp.Message) -> Bool {
+  let copies = match request.attr(@ipp.TAG_OPERATION, "copies") {
+    Some(attribute) => attribute.int().unwrap_or(1)
+    None =>
+      match request.attr(@ipp.TAG_JOB, "copies") {
+        Some(attribute) => attribute.int().unwrap_or(1)
+        None => 1
+      }
+  }
+  if copies <= 0 {
+    return false
+  }
+  match @ipp.find_attr(self.printer_attrs, "copies-supported") {
+    Some(attribute) => {
+      let ranges = attribute.ranges()
+      if ranges.is_empty() {
+        true
+      } else {
+        ranges.any(fn(range) { copies >= range.0 && copies <= range.1 })
+      }
+    }
+    None => true
+  }
+}
+
+///|
 fn Server::format_supported(self : Server, format : String) -> Bool {
   if format == "" {
     return true
@@ -220,7 +246,7 @@ pub fn Server::handle_with_document(
     }
     response_for(
       request,
-      if self.format_supported(format) {
+      if self.format_supported(format) && self.copies_supported(request) {
         @ipp.STATUS_OK
       } else {
         @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST
@@ -236,7 +262,8 @@ pub fn Server::handle_with_document(
       Some(attribute) => attribute.text()
       None => ""
     }
-    if document.length() > 0 && !self.format_supported(format) {
+    if !self.copies_supported(request) ||
+      (document.length() > 0 && !self.format_supported(format)) {
       return response_for(request, @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST)
     }
     let job = self.create_job(request)

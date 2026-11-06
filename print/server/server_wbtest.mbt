@@ -428,3 +428,17 @@ test "ipp server rejects unsupported send-document formats" {
   assert_eq(server.jobs[0].document.length(), 0)
 }
 
+///|
+test "ipp server validates copies" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  let good = server.handle(client.validate_job([
+    @ipp.attr("copies", [@ipp.integer(2)]),
+  ], "application/pdf"))
+  assert_eq(good.code, @ipp.STATUS_OK)
+  let bad = server.handle(client.validate_job([
+    @ipp.attr("copies", [@ipp.integer(100)]),
+  ], "application/pdf"))
+  assert_eq(bad.code, @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST)
+}
+
