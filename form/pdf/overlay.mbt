@@ -101,12 +101,23 @@ fn overlay_lines(value : String, width : Double, size : Double) -> Array[String]
       let mut start = 0
       while start < text.length() {
         let mut end = start + 1
+        let mut last_space = -1
         while end < text.length() &&
           @drawingml.text_width(text[start:end + 1].to_owned(), size) <= width {
+          if text[end].to_char().unwrap() == ' ' {
+            last_space = end
+          }
           end += 1
         }
-        lines.push(text[start:end].to_owned())
-        start = end
+        let mut cut = end
+        if cut < text.length() && last_space > start {
+          cut = last_space
+        }
+        lines.push(text[start:cut].to_owned())
+        start = cut
+        while start < text.length() && text[start].to_char().unwrap() == ' ' {
+          start += 1
+        }
       }
     }
   }
