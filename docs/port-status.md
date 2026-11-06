@@ -121,8 +121,8 @@
   list items are reported.
 - `form/pdfme` fills a pdfme template (blank pages, text/line/rectangle/
   checkbox/table/image fields, table column widths, alignment/vertical
-  alignment, colors, backgrounds, font sizes/families and header styles,
-  static schema,
+  alignment, colors, backgrounds, font sizes/families, cell truncation and
+  header styles, static schema,
   multiVariableText variables, text backgrounds/borders,
   base-PDF MediaBox/CropBox page size, rotation, all pages, content and tables,
   QR codes, Code 39, Code 93, Code 128, GS1-128, EAN-13, EAN-8, UPC-A, UPC-E,

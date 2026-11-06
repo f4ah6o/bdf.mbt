@@ -1559,6 +1559,7 @@ fn FieldPainter::draw_table(
     }
     for i in 0..<columns {
       let text = if i < values.length() { values[i] } else { "" }
+      let cell_width = edges[i + 1] - edges[i]
       let cell_size = if head_row {
         row_size
       } else {
