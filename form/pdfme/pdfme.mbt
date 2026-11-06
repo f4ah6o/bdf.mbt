@@ -1690,7 +1690,13 @@ fn FieldPainter::draw_table(
         _ => raise PdfmeError("pdfme: a font cannot be set")
       }
       let cell_padding = if head_row {
-        padding
+        match json_field(field, "headStyles") {
+          Some(Json::Object(styles)) =>
+            Float::from_double(
+              number_of(styles.get("cellPadding"), padding.to_double()),
+            )
+          _ => padding
+        }
       } else {
         table_column_padding(field, i, padding)
       }
