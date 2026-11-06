@@ -112,7 +112,8 @@
   boolean `{{#name}}`/`{{^name}}` conditions, expands object-list
   `{{#items}}`…`{{/items}}` sections item by item, fills header/footer
   parts, and rebuilds stored ZIPs (4 tests); `form/docx` fills headers as well
-  (2 tests), and `form/pptx` / `form/xlsx` fill and convert (1 test each). Scalar
+  (2 tests), `form/xlsx` fills sheets and shared strings (2 tests), and
+  `form/pptx` fills and converts (1 test). Scalar
   list items are reported.
 - `form/pdfme` fills a pdfme template (blank pages, text/line/rectangle/
   checkbox/table/image fields, table column widths, alignment and header
