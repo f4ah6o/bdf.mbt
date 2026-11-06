@@ -145,7 +145,9 @@
   non-positive text/table font sizes, line
   heights, header heights, row heights, cell padding, border widths and table
   widths fall
-  back to the defaults (35 tests).
+  back to the defaults; text wraps/clips with vertical alignment, and images,
+  checkboxes, radio groups, QR codes and barcodes honor colors, borders and
+  opacity, with per-column table border colors/widths/styles (36 tests).
 - `form/schema` writes the JSON Schema of the data of a template from its
   fields and a sample (objects, lists, conditions, pictures/codes, number
   formats, options, defaults, slots and the `x-bdf` keyword), with 3 tests.
