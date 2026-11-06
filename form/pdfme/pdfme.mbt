@@ -154,6 +154,41 @@ fn substitute_variables(template : String, values : Json) -> String {
   out.to_string()
 }
 
+///|
+fn pdfme_wrap_text(text : String, size : Double, width : Double) -> Array[String] {
+  let out : Array[String] = []
+  for raw in split_lines(text) {
+    let line = raw
+    if width <= 0.0 || @drawingml.text_width(line, size) <= width {
+      out.push(line)
+      continue
+    }
+    let mut start = 0
+    while start < line.length() {
+      let mut end = start + 1
+      let mut last_space = -1
+      while end < line.length() &&
+        @drawingml.text_width(line[start:end + 1].to_owned(), size) <= width {
+        if line[end].to_char().unwrap() == ' ' {
+          last_space = end
+        }
+        end += 1
+      }
+      let mut cut = end
+      if cut < line.length() && last_space > start {
+        cut = last_space
+      }
+      out.push(line[start:cut].to_owned())
+      start = cut
+      while start < line.length() && line[start].to_char().unwrap() == ' ' {
+        start += 1
+      }
+    }
+  }
+  out
+}
+
+///|
 fn FieldPainter::draw_text(
   self : FieldPainter,
   field : Json,
@@ -196,7 +231,7 @@ fn FieldPainter::draw_text(
   self.builder.fill_color(color_of(json_field(field, "fontColor"), 0x000000ff))
   let width = mm_to_pt(number_of(json_field(field, "width"), 50.0))
   let alignment = text_of(json_field(field, "alignment"), "left")
-  let lines = split_lines(text)
+  let lines = pdfme_wrap_text(text, size.to_double(), width.to_double())
   for i, line in lines {
     let advance = Float::from_double(
       @drawingml.text_width(line, size.to_double()),

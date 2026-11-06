@@ -652,3 +652,26 @@ test "pdfme applies checkbox opacity" {
   )
 }
 
+///|
+test "pdfme wraps text to the field width" {
+  let template =
+    #|{"basePdf":{"width":80,"height":80},"schemas":[[{"name":"text","type":"text","position":{"x":10,"y":10},"width":20,"height":30,"fontSize":10}]]}
+  let data = #|{"text":"word word word word word word word word"}
+  let result = fill(@utf8.encode(template), @utf8.encode(data))
+  assert_eq(result.warnings.length(), 0)
+  let document = @core.open_single(result.bdf)
+  let commands = @render.decode_commands(
+    document.part(document.manifest.parts[0].hash),
+  ) catch {
+    _ => fail("text commands cannot be decoded")
+  }
+  let mut lines = 0
+  for command in commands {
+    match command {
+      @render.FillText(_, _, _, _) => lines += 1
+      _ => ()
+    }
+  }
+  assert_true(lines > 1, msg=lines.to_string())
+}
+
