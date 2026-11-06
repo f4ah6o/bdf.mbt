@@ -17,6 +17,7 @@ pub(all) struct Field {
   font_size : Double?
   font_color : UInt32?
   font_name : String
+  quadding : Int?
 }
 
 ///|
@@ -520,6 +521,29 @@ fn find_default_font_name(text : String, start : Int, limit : Int) -> String {
 }
 
 ///|
+fn find_quadding(text : String, start : Int, limit : Int) -> Int? {
+  let section = text[start:limit]
+  let at = match section.find("/Q") {
+    Some(index) => start + index
+    None => return None
+  }
+  let mut i = skip_spaces(text, at + 2)
+  let begin = i
+  while i < limit && text[i].to_char().unwrap() >= '0' &&
+    text[i].to_char().unwrap() <= '9' {
+    i += 1
+  }
+  if i == begin {
+    return None
+  }
+  try {
+    Some(@string.parse_int(text[begin:i].to_owned()))
+  } catch {
+    _ => None
+  }
+}
+
+///|
 /// Read the names, values and types of the AcroForm fields of a PDF.
 pub fn read_fields(data : Bytes) -> Array[Field] {
   let text = @utf8.decode_lossy(data[:])
@@ -565,6 +589,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
     let font_size = find_default_font_size(text, after, next_t)
     let font_color = find_default_font_color(text, after, next_t)
     let font_name = find_default_font_name(text, after, next_t)
+    let quadding = find_quadding(text, after, next_t)
     let alternate_name = find_alternate_name(text, after, next_t)
     let max_len = find_max_len(text, after, next_t)
     let default_value = find_default_value(text, after, next_t)
@@ -600,6 +625,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
         font_size,
         font_color,
         font_name,
+        quadding,
       }
       if found >= 0 {
         fields[found] = field

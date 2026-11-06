@@ -179,7 +179,15 @@ pub fn fill_overlay(
       builder.fill_text(
         line.to_owned(),
         Float::from_double(
-          if is_button { x1 + (width - advance.to_double()) / 2.0 } else { x1 + 1.0 },
+          if is_button {
+          x1 + (width - advance.to_double()) / 2.0
+        } else {
+          match field.quadding {
+            Some(1) => x1 + (width - advance.to_double()) / 2.0
+            Some(2) => x1 + width - advance.to_double()
+            _ => x1 + 1.0
+          }
+        },
         ),
         Float::from_double(
           y1 + (height - size.to_double()) / 2.0 -

@@ -31,6 +31,7 @@ pub(all) struct Field {
   font_size : Double?
   font_color : UInt32?
   font_name : String
+  quadding : Int32?
 }
 
 // Type aliases
