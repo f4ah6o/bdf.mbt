@@ -192,8 +192,9 @@
   Print-Job and Send-Document, completed-job Send-Document/Cancel-Job
   rejection, job copies and originating user, completed/aborted/canceled/
   pending/processing job filters with unknown-value rejection, job-state
-  reasons including processing, job impressions, size and UUID, negative
-  job-limit rejection, and PWG/URF/PDF page counting/abort (33 tests). `print/ipp` now has the tags, the
+  reasons including processing, job impressions, size and UUID, queued-job
+  counts, negative job-limit rejection, and PWG/URF/PDF page counting/abort
+  (34 tests). `print/ipp` now has the tags, the
   message model and the binary request/response codec (integers, booleans,
   strings, languages, resolution, range, dateTime, octet strings and
   nested collections, with decode limits for bytes, attributes, values,

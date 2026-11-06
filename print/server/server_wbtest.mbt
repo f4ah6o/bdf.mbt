@@ -615,3 +615,20 @@ test "ipp server reports a job uuid" {
   assert_eq(uuid.length(), 45)
 }
 
+///|
+test "ipp server reports queued jobs" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  ignore(server.handle(client.create_job("queued", [])))
+  let response = server.handle(client.get_printer_attributes(["all"]))
+  let group = match response.group(@ipp.TAG_PRINTER) {
+    Some(group) => group
+    None => fail("missing printer group")
+  }
+  let queued = match group.get("queued-job-count") {
+    Some(attribute) => attribute.int()
+    None => None
+  }
+  assert_eq(queued, Some(1))
+}
+

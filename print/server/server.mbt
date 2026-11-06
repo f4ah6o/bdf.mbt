@@ -262,6 +262,16 @@ pub fn Server::handle_with_document(
       @ipp.printer_groups(self.printer_attrs),
     )
     response.add(@ipp.TAG_PRINTER, filtered)
+    if requested.contains("all") || requested.contains("queued-job-count") {
+      let queued = self.jobs.filter(fn(job) { !@ipp.job_state_done(job.state) })
+      match response.group(@ipp.TAG_PRINTER) {
+        Some(group) =>
+          group.attrs.push(
+            @ipp.attr("queued-job-count", [@ipp.integer(queued.length())]),
+          )
+        None => ()
+      }
+    }
     response
   } else if request.code == @ipp.OP_VALIDATE_JOB {
     let format = match request.attr(@ipp.TAG_OPERATION, "document-format") {
