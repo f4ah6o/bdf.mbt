@@ -321,7 +321,7 @@ pub fn fill_overlay(
     builder.font(field_font, size) catch {
       _ => raise PdfFillError("form/pdf: the font cannot be set")
     }
-    builder.fill_color(0x000000ff)
+    builder.fill_color(field.font_color.unwrap_or(0x000000ff))
     if field.comb {
       match field.max_len {
         Some(limit) =>
