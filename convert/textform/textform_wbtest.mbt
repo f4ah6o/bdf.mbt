@@ -50,3 +50,15 @@ test "textform renders paper and tall lines" {
   assert_eq(back.pages[0].lines[1].text, "big")
   assert_eq(back.pages[0].lines[1].size[0].size, @textpart.SIZE_BIG)
 }
+///|
+test "textform uses the front matter font" {
+  let template = "---\nfont: \"Gen\"\n---\nHello\n"
+  let image = @textform.fill_image(Map([]), template)
+  let bytes = render(image, "")
+  let document = @core.open_single(bytes)
+  let page = document.manifest.views[0].pages[0]
+  let resources = @core.decode_object_resources(document.part(page.layers[0].object))
+  assert_eq(resources.fonts.length(), 1)
+  assert_eq(resources.fonts[0].family, "Gen")
+}
+
