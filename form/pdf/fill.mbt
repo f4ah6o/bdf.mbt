@@ -227,6 +227,56 @@ fn pdf_startxref(text : String) -> Int? {
 }
 
 ///|
+fn acroform_reference(body : String) -> (Int, Int)? {
+  let at = match body.find("/AcroForm") {
+    Some(index) => index
+    None => return None
+  }
+  let mut i = skip_spaces(body, at + 9)
+  let begin = i
+  while i < body.length() && body[i].to_char().unwrap() >= '0' &&
+    body[i].to_char().unwrap() <= '9' {
+    i += 1
+  }
+  if i == begin {
+    return None
+  }
+  let first = @string.parse_int(body[begin:i].to_owned()) catch {
+    _ => return None
+  }
+  i = skip_spaces(body, i)
+  let second_begin = i
+  while i < body.length() && body[i].to_char().unwrap() >= '0' &&
+    body[i].to_char().unwrap() <= '9' {
+    i += 1
+  }
+  if i == second_begin {
+    return None
+  }
+  let second = @string.parse_int(body[second_begin:i].to_owned()) catch {
+    _ => return None
+  }
+  i = skip_spaces(body, i)
+  if i < body.length() && body[i].to_char().unwrap() == 'R' {
+    Some((first, second))
+  } else {
+    None
+  }
+}
+
+///|
+fn add_need_appearances_dict(body : String) -> String? {
+  if body.contains("/NeedAppearances") {
+    return None
+  }
+  let open = match body.find("<<") {
+    Some(index) => index + 2
+    None => return None
+  }
+  Some(body[:open].to_owned() + " /NeedAppearances true " + body[open:].to_owned())
+}
+
+///|
 fn find_object_body(text : String, number : Int) -> String? {
   let mut pos = 0
   while pos < text.length() {
@@ -434,9 +484,21 @@ pub fn fill_pdf(pdf_bytes : Bytes, data_bytes : Bytes) -> Bytes raise PdfFillErr
   }
   match find_object_body(text, root.0) {
     Some(root_body) =>
-      match add_need_appearances(root_body) {
-        Some(updated) => updates.push((root.0, root.1, updated))
-        None => ()
+      match acroform_reference(root_body) {
+        Some((number, generation)) =>
+          match find_object_body(text, number) {
+            Some(acro_body) =>
+              match add_need_appearances_dict(acro_body) {
+                Some(updated) => updates.push((number, generation, updated))
+                None => ()
+              }
+            None => ()
+          }
+        None =>
+          match add_need_appearances(root_body) {
+            Some(updated) => updates.push((root.0, root.1, updated))
+            None => ()
+          }
       }
     None => ()
   }

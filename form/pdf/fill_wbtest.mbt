@@ -79,3 +79,16 @@ test "fill_pdf selects a named button state" {
   assert_true(text.contains("/V /Yes"), msg=text)
 }
 
+///|
+test "fill_pdf updates a referenced AcroForm" {
+  let pdf = @base64.decode(
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgL0Fjcm9Gb3JtIDUgMCBSID4+CmVuZG9iagoyIDAgb2JqCjw8IC9UeXBlIC9QYWdlcyAvS2lkcyBbMyAwIFJdIC9Db3VudCAxID4+CmVuZG9iagozIDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFswIDAgMjAwIDEwMF0gL0Fubm90cyBbNCAwIFJdID4+CmVuZG9iago0IDAgb2JqCjw8IC9UeXBlIC9Bbm5vdCAvU3VidHlwZSAvV2lkZ2V0IC9GVCAvVHggL1QgKG5hbWUpIC9WIChPbGQpIC9SZWN0IFsxMCAyMCAxMDAgNDBdIC9QIDMgMCBSID4+CmVuZG9iago1IDAgb2JqCjw8IC9GaWVsZHMgWzQgMCBSXSA+PgplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNzQgMDAwMDAgbiAKMDAwMDAwMDEzMSAwMDAwMCBuIAowMDAwMDAwMjE4IDAwMDAwIG4gCjAwMDAwMDAzMjYgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA2IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgozNjMKJSVFT0YK",
+  )
+  let filled = fill_pdf(pdf, @utf8.encode("{\"name\":\"Alice\"}"))
+  let text = @utf8.decode_lossy(filled[:])
+  assert_true(text.contains("/NeedAppearances true"), msg=text)
+  let fields = read_fields(filled)
+  assert_eq(fields.length(), 1)
+  assert_eq(fields[0].value, "Alice")
+}
+
