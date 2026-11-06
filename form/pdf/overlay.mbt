@@ -29,37 +29,49 @@ fn overlay_f64(text : String, start : Int) -> (Double, Int)? {
 }
 
 ///|
-fn overlay_page_size(pdf : String) -> (Double, Double) {
-  let at = match pdf.find("/MediaBox") {
+fn overlay_box(pdf : String, key : String) -> (Double, Double)? {
+  let at = match pdf.find(key) {
     Some(index) => index
-    None => return (595.0, 842.0)
+    None => return None
   }
-  let mut i = at + 9
+  let mut i = at + key.length()
   while i < pdf.length() && pdf[i].to_char().unwrap() != '[' {
     i += 1
   }
   let a = match overlay_f64(pdf, i + 1) {
     Some((value, next)) => (value, next)
-    None => return (595.0, 842.0)
+    None => return None
   }
   let b = match overlay_f64(pdf, a.1) {
     Some((value, next)) => (value, next)
-    None => return (595.0, 842.0)
+    None => return None
   }
   let c = match overlay_f64(pdf, b.1) {
     Some((value, next)) => (value, next)
-    None => return (595.0, 842.0)
+    None => return None
   }
   let d = match overlay_f64(pdf, c.1) {
     Some((value, next)) => (value, next)
-    None => return (595.0, 842.0)
+    None => return None
   }
   let width = c.0 - a.0
   let height = d.0 - b.0
   if width > 0.0 && height > 0.0 {
-    (width, height)
+    Some((width, height))
   } else {
-    (595.0, 842.0)
+    None
+  }
+}
+
+///|
+fn overlay_page_size(pdf : String) -> (Double, Double) {
+  match overlay_box(pdf, "/MediaBox") {
+    Some(size) => size
+    None =>
+      match overlay_box(pdf, "/CropBox") {
+        Some(size) => size
+        None => (595.0, 842.0)
+      }
   }
 }
 
