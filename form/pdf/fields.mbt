@@ -15,6 +15,7 @@ pub(all) struct Field {
   default_value : String
   option_values : Array[String]
   font_size : Double?
+  font_color : UInt32?
 }
 
 ///|
@@ -431,7 +432,7 @@ fn find_default_font_size(text : String, start : Int, limit : Int) -> Double? {
   let tokens = da.split(" ").collect()
   for i in 1..<tokens.length() {
     if tokens[i] == "Tf" {
-      let size = @string.parse_double(tokens[i - 1].to_owned()) catch {
+      let size = @string.parse_double(tokens[i - 1]) catch {
         _ => return None
       }
       if size > 0.0 {
@@ -440,6 +441,51 @@ fn find_default_font_size(text : String, start : Int, limit : Int) -> Double? {
     }
   }
   None
+}
+
+///|
+fn da_color(tokens : Array[String]) -> UInt32? {
+  for i in 0..<tokens.length() {
+    if tokens[i] == "g" && i >= 1 {
+      let gray = @string.parse_double(tokens[i - 1]) catch {
+        _ => return None
+      }
+      let value = (gray * 255.0).round().to_int()
+      return Some(((value << 24) | (value << 16) | (value << 8) | 0xff).to_uint())
+    }
+    if tokens[i] == "rg" && i >= 3 {
+      let r = @string.parse_double(tokens[i - 3]) catch {
+        _ => return None
+      }
+      let g = @string.parse_double(tokens[i - 2]) catch {
+        _ => return None
+      }
+      let b = @string.parse_double(tokens[i - 1]) catch {
+        _ => return None
+      }
+      let ri = (r * 255.0).round().to_int()
+      let gi = (g * 255.0).round().to_int()
+      let bi = (b * 255.0).round().to_int()
+      return Some(((ri << 24) | (gi << 16) | (bi << 8) | 0xff).to_uint())
+    }
+  }
+  None
+}
+
+///|
+fn find_default_font_color(text : String, start : Int, limit : Int) -> UInt32? {
+  let section = text[start:limit]
+  let at = match section.find("/DA") {
+    Some(index) => start + index
+    None => return None
+  }
+  let value_at = skip_spaces(text, at + 3)
+  let da = match field_name_string(text, value_at) {
+    Some((value, _)) => value
+    None => return None
+  }
+  let tokens : Array[String] = da.split(" ").map(fn(part) { part.to_owned() }).collect()
+  da_color(tokens)
 }
 
 ///|
@@ -486,6 +532,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
     let options = option_pairs.map(fn(pair) { pair.0 })
     let option_values = option_pairs.map(fn(pair) { pair.1 })
     let font_size = find_default_font_size(text, after, next_t)
+    let font_color = find_default_font_color(text, after, next_t)
     let alternate_name = find_alternate_name(text, after, next_t)
     let max_len = find_max_len(text, after, next_t)
     let default_value = find_default_value(text, after, next_t)
@@ -519,6 +566,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
         default_value,
         option_values,
         font_size,
+        font_color,
       }
       if found >= 0 {
         fields[found] = field
