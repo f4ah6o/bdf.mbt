@@ -13,6 +13,7 @@ pub(all) struct Field {
   comb : Bool
   password : Bool
   multiline : Bool
+  no_export : Bool
   alternate_name : String
   max_len : Int?
   default_value : String
@@ -797,6 +798,10 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
         Some(value) => (value & 4096) != 0
         None => false
       }
+      let no_export = match flags {
+        Some(value) => (value & 4) != 0
+        None => false
+      }
       let field = {
         name,
         value,
@@ -810,6 +815,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
         comb,
         password,
         multiline,
+        no_export,
         alternate_name,
         max_len,
         default_value,
