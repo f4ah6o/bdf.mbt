@@ -127,7 +127,7 @@
   `form/pptx` fills slides and speaker notes, converts the filled deck and renders shape text through a slide layout (4 tests). Scalar
   list items are reported.
 - `form/pdfme` fills a pdfme template (blank pages, text/line/rectangle/
-  checkbox/radio-group (column/row)/table/text/line and rectangle
+  checkbox/radio-group (column/row)/table/text/QR/barcode/line and rectangle
   (solid/dashed, opacity)/image
   (PNG/JPEG/SVG, stretch/contain/cover/none, opacity)/signature
   fields, table column widths, alignment/vertical

@@ -339,9 +339,17 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
     self.builder.stroke_rect(x, y_top - height, width, height)
     self.builder.restore()
   } else if typ == "qrcode" {
+    let opacity = Double::max(0.0, Double::min(1.0, number_of(json_field(field, "opacity"), 1.0)))
+    self.builder.save()
+    self.builder.alpha(Float::from_double(opacity))
     self.draw_qr(field, data, x, y_top, width, height)
+    self.builder.restore()
   } else if typ == "barcode" {
+    let opacity = Double::max(0.0, Double::min(1.0, number_of(json_field(field, "opacity"), 1.0)))
+    self.builder.save()
+    self.builder.alpha(Float::from_double(opacity))
     self.draw_barcode(field, data, x, y_top, width, height)
+    self.builder.restore()
   } else if typ == "image" {
     self.draw_image(field, data, x, y_top, width, height)
   } else if typ == "table" {

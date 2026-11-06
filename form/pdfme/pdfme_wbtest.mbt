@@ -584,10 +584,23 @@ test "pdfme falls back from non-positive table widths" {
 ///|
 test "pdfme honors the QR error correction level" {
   let template =
-    #|{"basePdf":{"width":80,"height":80},"schemas":[[{"name":"code","type":"qrcode","readOnly":true,"content":"HELLO","errorCorrectionLevel":"H","minVersion":5,"maxVersion":5,"mask":3,"mode":"Byte","position":{"x":10,"y":10},"width":30,"height":30}]]}
+    #|{"basePdf":{"width":80,"height":80},"schemas":[[{"name":"code","type":"qrcode","readOnly":true,"content":"HELLO","errorCorrectionLevel":"H","minVersion":5,"maxVersion":5,"mask":3,"mode":"Byte","opacity":0.5,"position":{"x":10,"y":10},"width":30,"height":30}]]}
   let result = fill(@utf8.encode(template), @utf8.encode("{}"))
   assert_eq(result.warnings.length(), 0)
   let document = @core.open_single(result.bdf)
   assert_true(document.manifest.parts.length() > 0)
+  let commands = @render.decode_commands(
+    document.part(document.manifest.parts[0].hash),
+  ) catch {
+    _ => fail("QR commands cannot be decoded")
+  }
+  assert_true(
+    commands.any(fn(command) {
+      match command {
+        @render.Alpha(value) => (value - 0.5).abs() < 0.001
+        _ => false
+      }
+    }),
+  )
 }
 
