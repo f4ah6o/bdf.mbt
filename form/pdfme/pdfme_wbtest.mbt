@@ -450,6 +450,9 @@ test "pdfme places JPEG images" {
     }
   }
   assert_eq(images, 1)
+  let native = template.replace(old="\"objectFit\":\"cover\"", new="\"objectFit\":\"none\"")
+  let native_result = fill(@utf8.encode(native), @utf8.encode("{}"))
+  assert_eq(native_result.warnings.length(), 0)
 }
 
 ///|
