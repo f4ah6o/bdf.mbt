@@ -71,15 +71,11 @@ pub fn writer_split_part(index : Int32) -> Bytes {
 
 ///|
 #export_name("join_split")
-pub fn join_split(manifest : Bytes, parts : Array[Bytes]) -> Bytes {
-  let mut index = 0
-  try! @core.split_to_single(manifest, (hash, _) => {
-    if index >= parts.length() {
-      println("join_split missing part \{hash} at \{index} of \{parts.length()}")
-      return Bytes::new(0)
-    }
-    let part = parts[index]
-    index += 1
-    part
+pub fn join_split(manifest : Bytes, all_parts : Bytes) -> Bytes {
+  let mut offset = 0
+  try! @core.split_to_single(manifest, (_, length) => {
+    let start = offset
+    offset += length
+    all_parts[start:offset].to_owned()
   })
 }

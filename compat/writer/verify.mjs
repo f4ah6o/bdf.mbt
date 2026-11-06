@@ -60,8 +60,7 @@ try {
     for (const [index, entry] of manifest.parts.entries()) files.set('/' + sample.name + '/parts/' + entry.h, parts[index]);
     const original = await BdfDocument.open(new BufferSource(sample.data), sample.options);
     const split = await BdfDocument.open(new SplitSource(`http://127.0.0.1:${server.address().port}/${sample.name}/`), sample.options);
-    console.log(sample.name, 'parts', parts.length, manifest.parts.length);
-    const joinedBytes = join_split(manifestBytes, parts);
+    const joinedBytes = join_split(manifestBytes, new Uint8Array(Buffer.concat(parts)));
     const joined = await BdfDocument.open(new BufferSource(joinedBytes), sample.options);
     for (const actual of [split, joined]) {
       assert.deepEqual(actual.manifest.views, original.manifest.views, sample.name + ' views');
@@ -71,14 +70,14 @@ try {
       }
     }
     const extended = { ...manifest, customExtension: { value: 'preserved' } };
-    const withExtension = join_split(Buffer.from(JSON.stringify(extended)), parts);
+    const withExtension = join_split(Buffer.from(JSON.stringify(extended)), new Uint8Array(Buffer.concat(parts)));
     const outputManifest = JSON.parse(Buffer.from(split_manifest(withExtension)).toString('utf8'));
     assert.deepEqual(outputManifest.customExtension, extended.customExtension);
     const identity = manifest.parts.findIndex((entry, index) => entry.enc === 'identity' && parts[index].length);
     if (identity >= 0) {
       const corrupt = parts.map(part => Uint8Array.from(part));
       corrupt[identity][0] ^= 1;
-      assert.throws(() => join_split(manifestBytes, corrupt), undefined, sample.name + ' corrupt part');
+      assert.throws(() => join_split(manifestBytes, new Uint8Array(Buffer.concat(corrupt))), undefined, sample.name + ' corrupt part');
     }
   }
   for (const sample of cases.slice(1)) {
@@ -89,7 +88,7 @@ try {
     const manifest = JSON.parse(manifestBytes);
     const parts = await Promise.all(manifest.parts.map(entry => readFile(new URL('parts/' + entry.h, directory))));
     const original = await BdfDocument.open(new BufferSource(sample.data), sample.options);
-    const joined = await BdfDocument.open(new BufferSource(join_split(manifestBytes, parts)), sample.options);
+    const joined = await BdfDocument.open(new BufferSource(join_split(manifestBytes, new Uint8Array(Buffer.concat(parts)))), sample.options);
     assert.deepEqual(joined.manifest.views, original.manifest.views, sample.name + ' upstream split views');
     for (const entry of original.manifest.parts) {
       assert.deepEqual(Buffer.from(await joined.part(entry.h)), Buffer.from(await original.part(entry.h)), sample.name + ' upstream split part');
