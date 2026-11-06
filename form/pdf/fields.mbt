@@ -12,6 +12,7 @@ pub(all) struct Field {
   required : Bool
   comb : Bool
   password : Bool
+  multiline : Bool
   alternate_name : String
   max_len : Int?
   default_value : String
@@ -792,6 +793,10 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
         Some(value) => (value & 8192) != 0
         None => false
       }
+      let multiline = match flags {
+        Some(value) => (value & 4096) != 0
+        None => false
+      }
       let field = {
         name,
         value,
@@ -804,6 +809,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
         required,
         comb,
         password,
+        multiline,
         alternate_name,
         max_len,
         default_value,

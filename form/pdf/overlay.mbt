@@ -178,6 +178,8 @@ pub fn fill_overlay(
     }
     let value = if field.password && !is_button {
       overlay_mask(value)
+    } else if !field.multiline && !is_button {
+      value.replace(old="\n", new=" ")
     } else {
       value
     }
