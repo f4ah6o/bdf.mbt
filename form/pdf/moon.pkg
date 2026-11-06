@@ -1,5 +1,6 @@
 import {
   "f4ah6o/bdf/core" @core,
+  "f4ah6o/bdf/convert/drawingml" @drawingml,
   "f4ah6o/bdf/render" @render,
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/string",

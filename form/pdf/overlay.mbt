@@ -331,10 +331,10 @@ pub fn fill_overlay(
           if limit > 0 {
             let cell = width / limit.to_double()
             let count = Int::min(value.length(), limit)
-            let advance = size.to_double() * 0.5
             let baseline = y1 + (height - size.to_double()) / 2.0 + size.to_double() * 0.2
             for i in 0..<count {
               let ch = value[i:i + 1].to_owned()
+              let advance = @drawingml.text_width(ch, size.to_double())
               builder.fill_text(
                 ch,
                 Float::from_double(x1 + i.to_double() * cell + (cell - advance) / 2.0),
@@ -357,7 +357,7 @@ pub fn fill_overlay(
     let lines = value.split("\n").collect()
     for i, line in lines {
       let advance = Float::from_double(
-        line.length().to_double() * size.to_double() * 0.5,
+        @drawingml.text_width(line.to_owned(), size.to_double()),
       )
       builder.fill_text(
         line.to_owned(),
