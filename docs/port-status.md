@@ -221,7 +221,8 @@
   7 tests). `print/ipp_js` adds the browser/Node fetch transport and
   `send_async`/`send_document_async`, `print_pdf_async` and
   `get_jobs_async` (3 tests).
-  The CUPS client and the print server remain.
+  The print server is implemented on top of this client; a dedicated CUPS
+  client and real UDP/socket transports remain.
 
 ## Converter gaps
 
