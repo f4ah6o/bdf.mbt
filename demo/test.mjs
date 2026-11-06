@@ -278,11 +278,11 @@ try {
   assert.ok(warningCase, 'XLSX warning fixture');
   await page.locator('#file').setInputFiles({ name: 'rtl.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from(warningCase.input, 'base64') });
   await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'rtl.xlsx' && !document.querySelector('#open-file').disabled, null, { timeout: 60000 });
-  assert.match(await page.locator('#status').textContent(), /right-to-left sheets are drawn left to right/);
+  await page.waitForFunction(() => /right-to-left sheets are drawn left to right/.test(document.querySelector('#status').textContent), null, { timeout: 30000 });
   const unsupported = JSON.parse(await readFile(resolve(import.meta.dirname, '../compat/xlsx/ignored-sheet-extensions-unsupported.json')));
   await page.locator('#file').setInputFiles({ name: 'unsupported.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: Buffer.from(unsupported[0], 'base64') });
   await page.waitForFunction(() => document.querySelector('#status').classList.contains('error'), null, { timeout: 30000 });
-  assert.match(await page.locator('#status').textContent(), /extended conditional formatting/);
+  await page.waitForFunction(() => /extended conditional formatting/.test(document.querySelector('#status').textContent), null, { timeout: 30000 });
   assert.equal(await page.locator('#document-name').textContent(), 'rtl.xlsx');
   await page.locator('#file').setInputFiles({ name: 'picture.xlsx', mimeType: 'image/svg+xml', buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="48"><rect width="64" height="48" fill="red"/></svg>') });
   await page.waitForFunction(() => document.querySelector('#document-name').textContent === 'picture.xlsx' && !document.querySelector('#open-file').disabled, null, { timeout: 30000 });
