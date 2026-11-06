@@ -521,3 +521,13 @@ test "ipp server lists aborted jobs" {
   assert_eq(name, "aborted")
 }
 
+///|
+test "ipp server rejects unknown which-jobs values" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  let request = client.request(@ipp.OP_GET_JOBS)
+  request.add(@ipp.TAG_OPERATION, [@ipp.attr("which-jobs", [@ipp.keyword("bogus")])])
+  let response = server.handle(request)
+  assert_eq(response.code, @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST)
+}
+

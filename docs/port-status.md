@@ -184,8 +184,8 @@
   document-format and copies validation for Validate-Job, Create-Job,
   Print-Job and Send-Document, completed-job Send-Document/Cancel-Job
   rejection, job copies and originating user, completed/aborted/canceled/
-  pending/processing job filters, job-state reasons, and PWG/URF/PDF page
-  counting/abort (27 tests). `print/ipp` now has the tags, the
+  pending/processing job filters with unknown-value rejection, job-state
+  reasons, and PWG/URF/PDF page counting/abort (28 tests). `print/ipp` now has the tags, the
   message model and the binary request/response codec (integers, booleans,
   strings, languages, resolution, range, dateTime, octet strings and
   nested collections, with decode limits for bytes, attributes, values,

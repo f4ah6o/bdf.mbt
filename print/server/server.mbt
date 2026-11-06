@@ -427,6 +427,13 @@ pub fn Server::handle_with_document(
       Some(attribute) => attribute.text()
       None => "not-completed"
     }
+    let valid_which = [
+      "all", "completed", "not-completed", "aborted", "canceled", "pending",
+      "processing",
+    ]
+    if !valid_which.contains(which) {
+      return response_for(request, @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST)
+    }
     let my_jobs = match request.attr(@ipp.TAG_OPERATION, "my-jobs") {
       Some(attribute) => attribute.bool().unwrap_or(false)
       None => false
