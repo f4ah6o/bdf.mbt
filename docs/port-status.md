@@ -102,7 +102,7 @@
   state, no-export, alternate names, maximum lengths, default values,
   default font
   sizes/colors/fonts, backgrounds/borders/widths/styles (solid, dashed,
-  underline, bevel, inset), alignment and
+  underline, bevel, inset; negative widths clamp to zero), alignment and
   display/export
   choice options (both names kept, display values map to export values,
   multiple values become a PDF array and are read back),

@@ -234,7 +234,7 @@ pub fn fill_overlay(
       None => ()
     }
     let border_width = match field.border_width {
-      Some(width) => width
+      Some(width) => Double::max(0.0, width)
       None => 0.5
     }
     match field.border_color {
