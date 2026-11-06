@@ -254,6 +254,28 @@ pub fn fill_overlay(
       _ => raise PdfFillError("form/pdf: the font cannot be set")
     }
     builder.fill_color(0x000000ff)
+    if field.comb {
+      match field.max_len {
+        Some(limit) =>
+          if limit > 0 {
+            let cell = width / limit.to_double()
+            let count = Int::min(value.length(), limit)
+            let advance = size.to_double() * 0.5
+            let baseline = y1 + (height - size.to_double()) / 2.0 + size.to_double() * 0.2
+            for i in 0..<count {
+              let ch = value[i:i + 1].to_owned()
+              builder.fill_text(
+                ch,
+                Float::from_double(x1 + i.to_double() * cell + (cell - advance) / 2.0),
+                Float::from_double(baseline),
+                Float::from_double(cell),
+              )
+            }
+            continue
+          }
+        None => ()
+      }
+    }
     let lines = value.split("\n").collect()
     for i, line in lines {
       let advance = Float::from_double(
