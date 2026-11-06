@@ -350,6 +350,7 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
     }
     let opacity = Double::max(0.0, Double::min(1.0, number_of(json_field(field, "opacity"), 1.0)))
     self.builder.save()
+    self.builder.clip_rect(x, y_top - height, width, height)
     self.builder.alpha(Float::from_double(opacity))
     self.draw_text(field, data, x, baseline)
     self.builder.restore()
