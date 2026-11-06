@@ -1619,6 +1619,13 @@ fn FieldPainter::draw_qr(
   let cell = side / Float::from_double(modules.to_double())
   let draw_x = x + margin
   let draw_y = y_top - margin
+  match json_field(field, "backgroundColor") {
+    Some(value) => {
+      self.builder.fill_color(color_of(Some(value), 0xffffffff))
+      self.builder.fill_rect(x, y_top - height, width, height)
+    }
+    None => ()
+  }
   self.builder.fill_color(0x000000ff)
   for row in 0..<modules {
     for column in 0..<modules {
