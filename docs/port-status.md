@@ -100,7 +100,8 @@
 - `form/pdf` reads AcroForm field names, values (literal, hex, UTF-16BE,
   name), types, rectangles, page references, field flags, read-only/required
   state and choice options, writes values into classic-xref or xref-stream
-  PDFs with an incremental update (17 tests, optional read-only skipping, escaped
+  PDFs with an incremental update (18 tests, hexadecimal field names, surrogate
+  pairs, control-character escapes, optional read-only skipping, escaped
   literals, UTF-16BE hex, buttons, appearance on-state names, referenced
   AcroForms and `/NeedAppearances`), and draws a blank-page value overlay
   (checkbox `X`, multi-line values, MediaBox or CropBox sizing, optional

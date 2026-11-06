@@ -4,8 +4,20 @@ fn pdf_escape_value(text : String) -> String {
   for c in text {
     if c == '\\' || c == '(' || c == ')' {
       out.write_char('\\')
+      out.write_char(c)
+    } else if c == '\n' {
+      out.write_string("\\n")
+    } else if c == '\r' {
+      out.write_string("\\r")
+    } else if c == '\t' {
+      out.write_string("\\t")
+    } else if c == '\b' {
+      out.write_string("\\b")
+    } else if c == '\f' {
+      out.write_string("\\f")
+    } else {
+      out.write_char(c)
     }
-    out.write_char(c)
   }
   out.to_string()
 }
