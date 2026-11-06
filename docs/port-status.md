@@ -101,7 +101,7 @@
   name), types, rectangles, page references, field flags, read-only/required
   state, alternate names, maximum lengths, default values, default font
   sizes/colors/fonts, alignment and display/export choice options (both names kept, display values
-  map to export values, multiple values become a PDF array),
+  map to export values, multiple values become a PDF array and are read back),
   writes values into classic-xref or xref-stream PDFs with an incremental
   update (19 tests, hexadecimal field names, surrogate
   pairs, control-character escapes, optional read-only skipping, escaped

@@ -18,6 +18,7 @@ pub(all) struct Field {
   font_color : UInt32?
   font_name : String
   quadding : Int?
+  values : Array[String]
 }
 
 ///|
@@ -181,6 +182,40 @@ fn find_value(text : String, start : Int, limit : Int) -> String {
   } else {
     ""
   }
+}
+
+///|
+fn find_values(text : String, start : Int, limit : Int) -> Array[String] {
+  let values : Array[String] = []
+  let end = if limit < start + 512 { limit } else { start + 512 }
+  let section = text[start:end]
+  let at = match section.find("/V") {
+    Some(index) => start + index
+    None => return values
+  }
+  let mut i = skip_spaces(text, at + 2)
+  if i >= end || text[i].to_char().unwrap() != '[' {
+    return values
+  }
+  i += 1
+  while i < end {
+    let c = text[i].to_char().unwrap()
+    if c == ']' {
+      break
+    }
+    if c == '(' || c == '<' {
+      match field_name_string(text, i) {
+        Some((value, next)) => {
+          values.push(value)
+          i = next
+        }
+        None => break
+      }
+    } else {
+      i += 1
+    }
+  }
+  values
 }
 
 ///|
@@ -578,6 +613,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
           None => text.length()
         }
     }
+    let values = find_values(text, after, next_t)
     let value = find_value(text, after, next_t)
     let typ = find_type(text, after, next_t)
     let rect = find_rect(text, after, next_t)
@@ -626,6 +662,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
         font_color,
         font_name,
         quadding,
+        values,
       }
       if found >= 0 {
         fields[found] = field

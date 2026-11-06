@@ -168,5 +168,6 @@ test "fill_pdf maps choice display values" {
   assert_eq(fields[0].value, "R")
   let multi = fill_pdf(pdf, @utf8.encode("{\"color\":[\"Red\",\"Green\"]}"))
   assert_true(@utf8.decode_lossy(multi[:]).contains("[(R) (G)]"))
+  assert_eq(read_fields(multi)[0].values, ["R", "G"])
 }
 
