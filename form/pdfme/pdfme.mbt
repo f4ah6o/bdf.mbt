@@ -1501,7 +1501,10 @@ fn table_column_padding(field : Json, index : Int, fallback : Float) -> Float {
         match styles[index] {
           Json::Object(style) =>
             Float::from_double(
-              number_of(style.get("cellPadding"), fallback.to_double()),
+              pdfme_padding(
+                number_of(style.get("cellPadding"), fallback.to_double()),
+                fallback.to_double(),
+              ),
             )
           _ => fallback
         }
@@ -1571,6 +1574,15 @@ fn table_column_font(field : Json, index : Int, head : Bool, fallback : String) 
         }
       _ => fallback
     }
+  }
+}
+
+///|
+fn pdfme_padding(value : Double, fallback : Double) -> Double {
+  if value >= 0.0 {
+    value
+  } else {
+    fallback
   }
 }
 
@@ -1777,7 +1789,7 @@ fn FieldPainter::draw_table(
     _ => row_height
   }
   let padding = Float::from_double(
-    number_of(json_field(field, "cellPadding"), 1.0),
+    pdfme_padding(number_of(json_field(field, "cellPadding"), 1.0), 1.0),
   )
   let alternate_background = color_of(
     json_field(field, "alternateBackgroundColor"),
@@ -1826,7 +1838,10 @@ fn FieldPainter::draw_table(
         match json_field(field, "headStyles") {
           Some(Json::Object(styles)) =>
             Float::from_double(
-              number_of(styles.get("cellPadding"), padding.to_double()),
+              pdfme_padding(
+                number_of(styles.get("cellPadding"), padding.to_double()),
+                padding.to_double(),
+              ),
             )
           _ => padding
         }
