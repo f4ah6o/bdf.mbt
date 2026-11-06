@@ -882,6 +882,164 @@ fn FieldPainter::draw_upca(
 }
 
 ///|
+fn upce_expand(body : String, number_system : Int) -> Array[Int] {
+  let d : Array[Int] = []
+  for c in body {
+    d.push(c.to_int() - '0'.to_int())
+  }
+  if d.length() != 6 {
+    return []
+  }
+  let manufacturer : Array[Int] = []
+  let product : Array[Int] = []
+  match d[5] {
+    0 | 1 | 2 => {
+      manufacturer.push(d[0])
+      manufacturer.push(d[1])
+      manufacturer.push(d[5])
+      manufacturer.push(0)
+      manufacturer.push(0)
+      product.push(0)
+      product.push(0)
+      product.push(d[2])
+      product.push(d[3])
+      product.push(d[4])
+    }
+    3 => {
+      manufacturer.push(d[0])
+      manufacturer.push(d[1])
+      manufacturer.push(d[2])
+      manufacturer.push(0)
+      manufacturer.push(0)
+      product.push(0)
+      product.push(0)
+      product.push(0)
+      product.push(d[3])
+      product.push(d[4])
+    }
+    4 => {
+      manufacturer.push(d[0])
+      manufacturer.push(d[1])
+      manufacturer.push(d[2])
+      manufacturer.push(d[3])
+      manufacturer.push(0)
+      product.push(0)
+      product.push(0)
+      product.push(0)
+      product.push(0)
+      product.push(d[4])
+    }
+    _ => {
+      for i in 0..<5 {
+        manufacturer.push(d[i])
+      }
+      product.push(0)
+      product.push(0)
+      product.push(0)
+      product.push(0)
+      product.push(d[5])
+    }
+  }
+  let all : Array[Int] = [number_system]
+  for digit in manufacturer {
+    all.push(digit)
+  }
+  for digit in product {
+    all.push(digit)
+  }
+  all
+}
+
+///|
+fn upce_bits(value : String) -> String raise PdfmeError {
+  let digits : Array[Int] = []
+  for c in value {
+    if c < '0' || c > '9' {
+      raise PdfmeError("pdfme: UPC-E takes digits only")
+    }
+    digits.push(c.to_int() - '0'.to_int())
+  }
+  let (number_system, body, check) = if digits.length() == 6 {
+    (0, value, -1)
+  } else if digits.length() == 7 {
+    (digits[0], value[1:].to_owned(), -1)
+  } else if digits.length() == 8 {
+    (digits[0], value[1:7].to_owned(), digits[7])
+  } else {
+    raise PdfmeError("pdfme: UPC-E takes 6, 7 or 8 digits")
+  }
+  if number_system != 0 && number_system != 1 {
+    raise PdfmeError("pdfme: UPC-E takes number system 0 or 1")
+  }
+  let expanded = upce_expand(body, number_system)
+  if expanded.length() != 11 {
+    raise PdfmeError("pdfme: UPC-E takes 6 digits")
+  }
+  let mut sum = 0
+  for i, digit in expanded {
+    sum += if i % 2 == 0 { digit * 3 } else { digit }
+  }
+  let computed = (10 - sum % 10) % 10
+  let check_digit = if check >= 0 { check } else { computed }
+  let parity = [
+    "EEEOOO", "EEOEOO", "EEOOEO", "EEOOOE", "EOEEOO", "EOOEEO", "EOOOEE",
+    "EOEOEO", "EOEOOE", "EOOEOE",
+  ]
+  let left = [
+    "0001101", "0011001", "0010011", "0111101", "0100011", "0110001",
+    "0101111", "0111011", "0110111", "0001011",
+  ]
+  let out = StringBuilder()
+  out.write_string("101")
+  let parity_text = parity[check_digit]
+  for i in 0..<6 {
+    let digit = body[i].to_char().unwrap().to_int() - '0'.to_int()
+    let l = left[digit]
+    if parity_text[i] == 'E' {
+      out.write_string(l)
+    } else {
+      let reversed = StringBuilder()
+      for j in 0..<l.length() {
+        let bit = l[l.length() - 1 - j]
+        reversed.write_char(if bit == '1' { '0' } else { '1' })
+      }
+      out.write_string(reversed.to_string())
+    }
+  }
+  out.write_string("010101")
+  out.to_string()
+}
+
+///|
+fn FieldPainter::draw_upce(
+  self : FieldPainter,
+  field : Json,
+  data : Json,
+  x : Float,
+  y_top : Float,
+  width : Float,
+  height : Float,
+) -> Unit raise PdfmeError {
+  let value = field_text(field, data)
+  if value == "" {
+    return
+  }
+  let bits = upce_bits(value)
+  let module = width / Float::from_double(bits.length().to_double())
+  self.builder.fill_color(0x000000ff)
+  for i in 0..<bits.length() {
+    if bits[i] == '1' {
+      self.builder.fill_rect(
+        x + Float::from_double(i.to_double()) * module,
+        y_top - height,
+        module,
+        height,
+      )
+    }
+  }
+}
+
+///|
 fn FieldPainter::draw_barcode(
   self : FieldPainter,
   field : Json,
@@ -902,6 +1060,10 @@ fn FieldPainter::draw_barcode(
   }
   if format == "upca" {
     self.draw_upca(field, data, x, y_top, width, height)
+    return
+  }
+  if format == "upce" {
+    self.draw_upce(field, data, x, y_top, width, height)
     return
   }
   if format == "code128" {
