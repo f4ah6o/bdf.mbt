@@ -436,8 +436,20 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
     Some(Json::False) => false
       _ => false
     }
-    self.builder.stroke_color(0x000000ff)
-    self.builder.line(0.8, 0, 0, 0.0F)
+    match json_field(field, "backgroundColor") {
+      Some(value) => {
+        self.builder.fill_color(color_of(Some(value), 0xffffffff))
+        self.builder.fill_rect(x, y_top - height, width, height)
+      }
+      None => ()
+    }
+    self.builder.stroke_color(color_of(json_field(field, "borderColor"), 0x000000ff))
+    self.builder.line(
+      Float::from_double(pdfme_padding(number_of(json_field(field, "borderWidth"), 0.8), 0.8)),
+      0,
+      0,
+      0.0F,
+    )
     self.builder.stroke_rect(x, y_top - height, width, height)
     if checked {
       stroke_segment(self.builder, x, y_top, x + width, y_top - height)
