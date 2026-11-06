@@ -36,6 +36,7 @@ pub(all) struct Field {
   background_color : UInt32?
   border_color : UInt32?
   border_width : Double?
+  border_style : String
 }
 
 // Type aliases

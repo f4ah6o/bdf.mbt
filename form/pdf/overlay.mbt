@@ -157,6 +157,11 @@ pub fn fill_overlay(
           Some(width) => width
           None => 0.5
         }
+        if field.border_style == "D" {
+          builder.dash([3.0, 3.0], 0.0)
+        } else {
+          builder.dash([], 0.0)
+        }
         builder.line(Float::from_double(width), 0, 0, 0.0F)
         builder.stroke_rect(
           Float::from_double(x1),
