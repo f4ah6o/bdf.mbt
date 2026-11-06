@@ -1040,6 +1040,58 @@ fn FieldPainter::draw_upce(
 }
 
 ///|
+fn msi_digit_bits(c : Char) -> String? {
+  let patterns = [
+    "100100100100", "100100100110", "100100110100", "100100110110",
+    "100110100100", "100110100110", "100110110100", "100110110110",
+    "101100100100", "101100100110",
+  ]
+  if c < '0' || c > '9' {
+    return None
+  }
+  Some(patterns[c.to_int() - '0'.to_int()])
+}
+
+///|
+fn FieldPainter::draw_msi(
+  self : FieldPainter,
+  field : Json,
+  data : Json,
+  x : Float,
+  y_top : Float,
+  width : Float,
+  height : Float,
+) -> Unit raise PdfmeError {
+  let value = field_text(field, data)
+  if value == "" {
+    return
+  }
+  let bits = StringBuilder()
+  bits.write_string("110")
+  for c in value {
+    let pattern = match msi_digit_bits(c) {
+      Some(pattern) => pattern
+      None => raise PdfmeError("pdfme: MSI takes digits only")
+    }
+    bits.write_string(pattern)
+  }
+  bits.write_string("1001")
+  let text = bits.to_string()
+  let module = width / Float::from_double(text.length().to_double())
+  self.builder.fill_color(0x000000ff)
+  for i in 0..<text.length() {
+    if text[i] == '1' {
+      self.builder.fill_rect(
+        x + Float::from_double(i.to_double()) * module,
+        y_top - height,
+        module,
+        height,
+      )
+    }
+  }
+}
+
+///|
 fn FieldPainter::draw_barcode(
   self : FieldPainter,
   field : Json,
@@ -1064,6 +1116,10 @@ fn FieldPainter::draw_barcode(
   }
   if format == "upce" {
     self.draw_upce(field, data, x, y_top, width, height)
+    return
+  }
+  if format == "msi" {
+    self.draw_msi(field, data, x, y_top, width, height)
     return
   }
   if format == "code128" {
