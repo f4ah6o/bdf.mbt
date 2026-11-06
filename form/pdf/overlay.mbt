@@ -97,6 +97,7 @@ pub fn fill_overlay(
   pdf_bytes : Bytes,
   data_bytes : Bytes,
   title~ : String = "",
+  skip_read_only~ : Bool = false,
 ) -> Bytes raise PdfFillError {
   let pdf = @utf8.decode_lossy(pdf_bytes[:])
   let data = @json.parse(@utf8.decode_lossy(data_bytes[:])) catch {
@@ -122,6 +123,9 @@ pub fn fill_overlay(
     _ => raise PdfFillError("form/pdf: the font cannot be added")
   }
   for field in fields {
+    if skip_read_only && field.read_only {
+      continue
+    }
     let raw = overlay_value(data, field.name)
     let is_button = field.typ == "/Btn"
     let value = if is_button {

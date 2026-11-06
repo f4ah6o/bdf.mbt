@@ -97,3 +97,26 @@ test "pdf overlay uses a CropBox" {
   assert_eq(document.manifest.views[0].pages[0].width, 300.0)
   assert_eq(document.manifest.views[0].pages[0].height, 150.0)
 }
+///|
+test "pdf overlay can skip read-only fields" {
+  let pdf = @base64.decode(
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgL0Fjcm9Gb3JtIDw8IC9GaWVsZHMgWzQgMCBSXSA+PiA+PgplbmRvYmoKMiAwIG9iago8PCAvVHlwZSAvUGFnZXMgL0tpZHMgWzMgMCBSXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDIwMCAxMDBdIC9Bbm5vdHMgWzQgMCBSXSA+PgplbmRvYmoKNCAwIG9iago8PCAvVHlwZSAvQW5ub3QgL1N1YnR5cGUgL1dpZGdldCAvRlQgL1R4IC9UIChuYW1lKSAvViAoT2xkKSAvRmYgMSAvUmVjdCBbMTAgMjAgMTAwIDQwXSAvUCAzIDAgUiA+PgplbmRvYmoKeHJlZgowIDUKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwOTAgMDAwMDAgbiAKMDAwMDAwMDE0NyAwMDAwMCBuIAowMDAwMDAwMjM0IDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNSAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMzQ4CiUlRU9GCg==",
+  )
+  let skipped = fill_overlay(
+    pdf,
+    @utf8.encode("{\"name\":\"New\"}"),
+    skip_read_only=true,
+  )
+  let document = @core.open_single(skipped)
+  let resources = @core.decode_object_resources(
+    document.part(document.manifest.parts[0].hash),
+  )
+  assert_true(!resources.object.strings.contains("New"))
+  let filled = fill_overlay(pdf, @utf8.encode("{\"name\":\"New\"}"))
+  let document2 = @core.open_single(filled)
+  let resources2 = @core.decode_object_resources(
+    document2.part(document2.manifest.parts[0].hash),
+  )
+  assert_true(resources2.object.strings.contains("New"))
+}
+

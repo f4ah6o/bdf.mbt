@@ -2,9 +2,9 @@
 package "f4ah6o/bdf/form/pdf"
 
 // Values
-pub fn fill_overlay(Bytes, Bytes, title? : String) -> Bytes raise PdfFillError
+pub fn fill_overlay(Bytes, Bytes, title? : String, skip_read_only? : Bool) -> Bytes raise PdfFillError
 
-pub fn fill_pdf(Bytes, Bytes) -> Bytes raise PdfFillError
+pub fn fill_pdf(Bytes, Bytes, skip_read_only? : Bool) -> Bytes raise PdfFillError
 
 pub fn read_fields(Bytes) -> Array[Field]
 
