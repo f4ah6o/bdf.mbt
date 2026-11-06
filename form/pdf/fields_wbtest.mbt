@@ -431,3 +431,17 @@ test "pdf overlay uses the CropBox" {
   assert_true(found)
 }
 
+///|
+test "pdf overlay honors page rotation" {
+  let pdf = @base64.decode(
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgL0Fjcm9Gb3JtIDw8IC9GaWVsZHMgWzMgMCBSXSA+PiA+PgplbmRvYmoKMiAwIG9iago8PCAvVHlwZSAvUGFnZXMgL0tpZHMgWzQgMCBSXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvQW5ub3QgL1N1YnR5cGUgL1dpZGdldCAvRlQgL1R4IC9UIChuYW1lKSAvViAoKSAvUmVjdCBbMjAgMzAgNTAgNDBdIC9QIDQgMCBSID4+CmVuZG9iago0IDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFswIDAgMjAwIDEwMF0gL1JvdGF0ZSA5MCAvQW5ub3RzIFszIDAgUl0gPj4KZW5kb2JqCnhyZWYKMCA1CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAwOSAwMDAwMCBuIAowMDAwMDAwMDkwIDAwMDAwIG4gCjAwMDAwMDAxNDcgMDAwMDAgbiAKMDAwMDAwMDI1MSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDUgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjM0OQolJUVPRgo=",
+  )
+  let bdf = fill_overlay(pdf, @utf8.encode("{\"name\":\"Alice\"}"))
+  let document = @core.open_single(bdf)
+  let page = document.manifest.views[0].pages[0]
+  assert_eq(page.width, 100.0)
+  assert_eq(page.height, 200.0)
+  let resources = @core.decode_object_resources(document.part(page.layers[0].object))
+  assert_true(resources.object.strings.contains("Alice"))
+}
+

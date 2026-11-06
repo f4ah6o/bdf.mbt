@@ -76,6 +76,85 @@ fn overlay_page_size(pdf : String) -> (Double, Double) {
 }
 
 ///|
+fn overlay_apply_rotation(
+  builder : @core.ObjectBuilder,
+  rotation : Int,
+  width : Double,
+  height : Double,
+) -> Unit {
+  if rotation == 90 {
+    builder.transform(0.0, -1.0, 1.0, 0.0, 0.0, Float::from_double(width))
+  } else if rotation == 180 {
+    builder.transform(
+      -1.0,
+      0.0,
+      0.0,
+      -1.0,
+      Float::from_double(width),
+      Float::from_double(height),
+    )
+  } else if rotation == 270 {
+    builder.transform(0.0, 1.0, -1.0, 0.0, Float::from_double(height), 0.0)
+  }
+}
+
+///|
+fn overlay_page_rotations(pdf : String) -> Array[(Int, Int)] {
+  let rotations : Array[(Int, Int)] = []
+  let mut pos = 0
+  while pos < pdf.length() {
+    let rest = pdf[pos:]
+    let at = match rest.find(" 0 obj") {
+      Some(index) => pos + index
+      None => break
+    }
+    let mut start = at
+    while start > 0 {
+      let c = pdf[start - 1].to_char().unwrap()
+      if c >= '0' && c <= '9' {
+        start -= 1
+      } else {
+        break
+      }
+    }
+    if start == at {
+      pos = at + 1
+      continue
+    }
+    let object = @string.parse_int(pdf[start:at].to_owned()) catch {
+      _ => {
+        pos = at + 1
+        continue
+      }
+    }
+    let tail = pdf[at:]
+    let end = match tail.find("endobj") {
+      Some(index) => at + index
+      None => pdf.length()
+    }
+    let segment = pdf[start:end].to_owned()
+    if segment.contains("/Type /Page") && !segment.contains("/Type /Pages") {
+      let rotate = match segment.find("/Rotate") {
+        Some(index) => {
+          let found = overlay_f64(segment, index + 7)
+          match found {
+            Some(value) => {
+              let raw = value.0.to_int()
+              if raw % 90 == 0 { ((raw % 360) + 360) % 360 } else { 0 }
+            }
+            None => 0
+          }
+        }
+        None => 0
+      }
+      rotations.push((object, rotate))
+    }
+    pos = end + 6
+  }
+  rotations
+}
+
+///|
 fn overlay_page_offsets(pdf : String) -> Array[(Int, Double, Double)] {
   let offsets : Array[(Int, Double, Double)] = []
   let mut pos = 0
@@ -285,6 +364,7 @@ pub fn fill_overlay(
   let (page_width, page_height) = overlay_page_size(pdf)
   let page_sizes = overlay_page_sizes(pdf)
   let page_offsets = overlay_page_offsets(pdf)
+  let page_ranges = overlay_page_rotations(pdf)
   let default_page_key = if page_sizes.is_empty() { 0 } else { page_sizes[0].0 }
   let page_keys : Array[Int] = []
   for field in fields {
@@ -330,6 +410,9 @@ pub fn fill_overlay(
   }
   let page_widths : Array[Double] = []
   let page_heights : Array[Double] = []
+  let page_in_widths : Array[Double] = []
+  let page_in_heights : Array[Double] = []
+  let page_rotations : Array[Int] = []
   let page_x : Array[Double] = []
   let page_y : Array[Double] = []
   for key in page_keys {
@@ -341,6 +424,12 @@ pub fn fill_overlay(
         height = size.2
       }
     }
+    let mut rotation = 0
+    for value in page_ranges {
+      if value.0 == key {
+        rotation = value.1
+      }
+    }
     let mut offset_x = 0.0
     let mut offset_y = 0.0
     for offset in page_offsets {
@@ -349,8 +438,16 @@ pub fn fill_overlay(
         offset_y = offset.2
       }
     }
-    page_widths.push(width)
-    page_heights.push(height)
+    page_in_widths.push(width)
+    page_in_heights.push(height)
+    page_rotations.push(rotation)
+    if rotation == 90 || rotation == 270 {
+      page_widths.push(height)
+      page_heights.push(width)
+    } else {
+      page_widths.push(width)
+      page_heights.push(height)
+    }
     page_x.push(offset_x)
     page_y.push(offset_y)
   }
@@ -364,12 +461,18 @@ pub fn fill_overlay(
       Float::from_double(page_widths[i]),
       Float::from_double(page_heights[i]),
     )
+    overlay_apply_rotation(
+      builder,
+      page_rotations[i],
+      page_in_widths[i],
+      page_in_heights[i],
+    )
     builder.fill_color(0xffffffff)
     builder.fill_rect(
       0.0,
       0.0,
-      Float::from_double(page_widths[i]),
-      Float::from_double(page_heights[i]),
+      Float::from_double(page_in_widths[i]),
+      Float::from_double(page_in_heights[i]),
     )
     let font = builder.add_font({
       hash: None,
