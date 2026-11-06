@@ -16,3 +16,29 @@ test "form docx fills tags" {
   assert_true(result.bdf.length() > 0)
   assert_true(result.warnings.length() <= 1, msg=result.warnings.join(";"))
 }
+///|
+test "form docx fills header tags" {
+  let document =
+    #|<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>{{body}}</w:t></w:r></w:p></w:body></w:document>
+  let header =
+    #|<?xml version="1.0"?><w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:r><w:t>{{title}}</w:t></w:r></w:p></w:hdr>
+  let zipped = @ooxml.stored_zip([
+    ("word/document.xml", @utf8.encode(document)),
+    ("word/header1.xml", @utf8.encode(header)),
+  ])
+  let filled = fill_bytes(
+    zipped,
+    @utf8.encode("{\"body\":\"Hello\",\"title\":\"Report\"}"),
+  )
+  let archive = @zip.open_zip(filled) catch {
+    _ => fail("the filled package cannot be opened")
+  }
+  let mut value = ""
+  for entry in archive.entries {
+    if entry.name == "word/header1.xml" {
+      value = @utf8.decode_lossy(archive.read(entry, 4096)[:])
+    }
+  }
+  assert_true(value.contains("Report"), msg=value)
+}
+

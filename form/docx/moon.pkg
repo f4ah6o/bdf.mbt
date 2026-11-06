@@ -1,6 +1,7 @@
 import {
   "f4ah6o/bdf/convert/docx" @docx,
   "f4ah6o/bdf/form/ooxml" @ooxml,
+  "f4ah6o/bdf/encoding/zip" @zip,
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/utf8",
 }
