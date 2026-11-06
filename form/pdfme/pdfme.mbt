@@ -1576,6 +1576,39 @@ fn base_pdf_bytes(template : Json) -> Bytes? {
 }
 
 ///|
+fn pdf_rotation(data : Bytes) -> Int {
+  let text = @utf8.decode_lossy(data[:])
+  let at = match text.find("/Rotate") {
+    Some(index) => index
+    None => return 0
+  }
+  let mut i = at + 7
+  while i < text.length() && text[i].to_char().unwrap() == ' ' {
+    i += 1
+  }
+  let begin = i
+  if i < text.length() && text[i].to_char().unwrap() == '-' {
+    i += 1
+  }
+  while i < text.length() && text[i].to_char().unwrap() >= '0' &&
+    text[i].to_char().unwrap() <= '9' {
+    i += 1
+  }
+  if i == begin {
+    return 0
+  }
+  let value = @string.parse_int(text[begin:i].to_owned()) catch {
+    _ => return 0
+  }
+  let normalized = value % 360
+  if normalized < 0 {
+    normalized + 360
+  } else {
+    normalized
+  }
+}
+
+///|
 fn page_size(template : Json) -> (Double, Double) {
   match json_field(template, "basePdf") {
     Some(Json::Object(base)) => (
@@ -1586,7 +1619,15 @@ fn page_size(template : Json) -> (Double, Double) {
       match base_pdf_bytes(template) {
         Some(bytes) =>
           match pdf_media_box(bytes) {
-            Some((width, height)) => (width * 25.4 / 72.0, height * 25.4 / 72.0)
+            Some((width, height)) => {
+              let rotation = pdf_rotation(bytes)
+              let (width, height) = if rotation == 90 || rotation == 270 {
+                (height, width)
+              } else {
+                (width, height)
+              }
+              (width * 25.4 / 72.0, height * 25.4 / 72.0)
+            }
             None => (210.0, 297.0)
           }
         None => (210.0, 297.0)

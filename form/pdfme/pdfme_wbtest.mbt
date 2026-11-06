@@ -397,3 +397,13 @@ test "pdfme reads a base PDF CropBox" {
   assert_eq(document.manifest.views[0].pages[0].height, 200.0)
 }
 
+///|
+test "pdfme rotates a base PDF page" {
+  let base = "JVBERi0xLjQKMSAwIG9iajw8L1R5cGUvUGFnZS9Dcm9wQm94WzAgMCA0MDAgMjAwXS9Sb3RhdGUgOTA+PgplbmRvYmoKJSVFT0YK"
+  let template = "{\"basePdf\":\"data:application/pdf;base64," + base + "\",\"schemas\":[[{\"name\":\"title\",\"type\":\"text\",\"content\":\"Base\",\"position\":{\"x\":10,\"y\":10},\"width\":50,\"height\":10}]]}"
+  let result = fill(@utf8.encode(template), @utf8.encode("{}"))
+  let document = @core.open_single(result.bdf)
+  assert_eq(document.manifest.views[0].pages[0].width, 200.0)
+  assert_eq(document.manifest.views[0].pages[0].height, 400.0)
+}
+
