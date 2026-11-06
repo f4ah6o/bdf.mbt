@@ -139,7 +139,8 @@
   QR codes, Code 39, Code 93, Code 128, GS1-128, EAN-13, EAN-8, UPC-A, UPC-E,
   ITF, NW-7 and MSI barcodes, arithmetic expressions with
   abs/round/floor/ceil/min/max) into BDF; extra base pages without a schema
-  and other 1D formats are gaps; non-positive text/table font sizes, line
+  and other 1D formats are gaps; QR error-correction levels are honored and
+  non-positive text/table font sizes, line
   heights, row heights, cell padding, border widths and table widths fall
   back to the defaults (33 tests).
 - `form/schema` writes the JSON Schema of the data of a template from its

@@ -541,3 +541,13 @@ test "pdfme falls back from non-positive table widths" {
   assert_true(text.contains("2"), msg=text)
 }
 
+///|
+test "pdfme honors the QR error correction level" {
+  let template =
+    #|{"basePdf":{"width":80,"height":80},"schemas":[[{"name":"code","type":"qrcode","readOnly":true,"content":"HELLO","errorCorrectionLevel":"H","position":{"x":10,"y":10},"width":30,"height":30}]]}
+  let result = fill(@utf8.encode(template), @utf8.encode("{}"))
+  assert_eq(result.warnings.length(), 0)
+  let document = @core.open_single(result.bdf)
+  assert_true(document.manifest.parts.length() > 0)
+}
+
