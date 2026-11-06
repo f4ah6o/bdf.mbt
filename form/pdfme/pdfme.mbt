@@ -2164,6 +2164,21 @@ fn FieldPainter::draw_table(
       let line_x = x + edges[i]
       let column = if i == 0 { 0 } else { i - 1 }
       self.builder.stroke_color(table_column_border(field, column, table_border))
+      let column_style = match json_field(field, "columnStyles") {
+        Some(Json::Array(styles)) =>
+          if column < styles.length() { Some(styles[column]) } else { None }
+        _ => None
+      }
+      let dashed = match column_style {
+        Some(Json::Object(style)) =>
+          text_of(style.get("borderStyle"), "solid") == "dashed"
+        _ => false
+      }
+      if dashed {
+        self.builder.dash([3.0, 3.0], 0.0)
+      } else {
+        self.builder.dash([], 0.0)
+      }
       self.builder.line(
         table_column_border_width(field, column, table_width),
         0,
@@ -2172,6 +2187,7 @@ fn FieldPainter::draw_table(
       )
       stroke_segment(self.builder, line_x, y, line_x, y - height)
     }
+    self.builder.dash([], 0.0)
     self.builder.stroke_color(table_border)
     self.builder.line(table_width, 0, 0, 0.0F)
     stroke_segment(self.builder, x, y, x + width, y)
