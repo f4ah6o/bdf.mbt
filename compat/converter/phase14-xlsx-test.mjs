@@ -70,7 +70,7 @@ try {
     };
     const cases = [];
     for (const name of ['basic', 'features', 'math', 'print']) {
-      const data = new Uint8Array(await (await fetch(base + '/.upstream/converter/xlsx/testdata/' + name + '.xlsx')).arrayBuffer());
+      const data = new Uint8Array(await (await fetch(base + '/compat/converter/xlsx-fixtures/' + name + '.xlsx')).arrayBuffer());
       const a = await upstream.convert(data, { name: name + '.xlsx' });
       const m = await moon.convert(data, { name: name + '.xlsx' });
       cases.push({

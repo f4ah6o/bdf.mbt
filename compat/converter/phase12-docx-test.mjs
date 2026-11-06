@@ -77,7 +77,7 @@ try {
     };
     const cases = [];
     for (const name of ['basic', 'styles', 'grid', 'vertical', 'math']) {
-      const data = new Uint8Array(await (await fetch(base + '/.upstream/converter/docx/testdata/' + name + '.docx')).arrayBuffer());
+      const data = new Uint8Array(await (await fetch(base + '/compat/converter/docx-fixtures/' + name + '.docx')).arrayBuffer());
       const a = await upstream.convert(data, { name: name + '.docx' });
       const m = await moon.convert(data, { name: name + '.docx' });
       cases.push({

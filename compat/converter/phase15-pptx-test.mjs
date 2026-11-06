@@ -486,7 +486,7 @@ try {
     };
     const cases = [];
     for (const name of ['basic', 'features', 'math']) {
-      const data = new Uint8Array(await (await fetch(base + '/.upstream/converter/pptx/testdata/' + name + '.pptx')).arrayBuffer());
+      const data = new Uint8Array(await (await fetch(base + '/compat/converter/pptx-fixtures/' + name + '.pptx')).arrayBuffer());
       const a = await upstream.convert(data, { name: name + '.pptx' });
       const m = await moon.convert(data, { name: name + '.pptx' });
       cases.push({
