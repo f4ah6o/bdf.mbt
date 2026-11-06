@@ -474,6 +474,9 @@ fn FieldPainter::draw_image(
   let index = self.builder.add_image(hash)
   let fit = text_of(json_field(field, "objectFit"), "stretch")
   let dimensions = if is_png { png_size(bytes) } else { jpeg_size(bytes) }
+  let opacity = Double::max(0.0, Double::min(1.0, number_of(json_field(field, "opacity"), 1.0)))
+  self.builder.save()
+  self.builder.alpha(Float::from_double(opacity))
   if fit == "cover" {
     match dimensions {
       Some((image_width, image_height)) => {
@@ -496,6 +499,7 @@ fn FieldPainter::draw_image(
         ) catch {
           _ => raise PdfmeError("pdfme: the image cannot be placed")
         }
+        self.builder.restore()
         return
       }
       None => ()
@@ -535,6 +539,7 @@ fn FieldPainter::draw_image(
   self.builder.image(index, draw_x, draw_y - draw_height, draw_width, draw_height) catch {
     _ => raise PdfmeError("pdfme: the image cannot be placed")
   }
+  self.builder.restore()
 }
 
 ///|

@@ -1,5 +1,6 @@
 import {
   "f4ah6o/bdf/core" @core,
+  "f4ah6o/bdf/render" @render,
   "f4ah6o/bdf/convert/pdf" @pdf,
   "allenli178/moon-qrcode/core" @qrcode,
   "moonbitlang/core/json",

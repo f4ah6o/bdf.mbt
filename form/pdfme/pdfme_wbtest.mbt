@@ -57,7 +57,7 @@ test "pdfme fills a table" {
 ///|
 test "pdfme fills an image" {
   let template =
-    #|{"basePdf":{"width":100,"height":50},"schemas":[[{"name":"logo","type":"image","position":{"x":10,"y":10},"width":20,"height":20}]]}
+    #|{"basePdf":{"width":100,"height":50},"schemas":[[{"name":"logo","type":"image","position":{"x":10,"y":10},"width":20,"height":20,"opacity":0.5}]]}
   let png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/l8ZkAAAAAElFTkSuQmCC"
   let data = "{\"logo\":\"data:image/png;base64," + png + "\"}"
   let result = fill(@utf8.encode(template), @utf8.encode(data))
@@ -71,6 +71,19 @@ test "pdfme fills an image" {
   }
   assert_eq(images, 1)
   assert_eq(result.warnings.length(), 0)
+  let commands = @render.decode_commands(
+    document.part(document.manifest.views[0].pages[0].layers[0].object),
+  ) catch {
+    _ => fail("image commands cannot be decoded")
+  }
+  assert_true(
+    commands.any(fn(command) {
+      match command {
+        @render.Alpha(value) => (value - 0.5).abs() < 0.001
+        _ => false
+      }
+    }),
+  )
 }
 
 
