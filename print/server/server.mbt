@@ -151,6 +151,17 @@ fn pdf_page_count(data : Bytes) -> Int {
 }
 
 ///|
+fn Server::format_supported(self : Server, format : String) -> Bool {
+  if format == "" {
+    return true
+  }
+  match @ipp.find_attr(self.printer_attrs, "document-format-supported") {
+    Some(attribute) => attribute.has(format)
+    None => false
+  }
+}
+
+///|
 fn filter_job_attrs(attrs : Array[@ipp.Attribute], requested : Array[String]) -> Array[@ipp.Attribute] {
   if requested.is_empty() || requested.contains("all") || requested.contains("job-template") {
     return attrs
@@ -207,17 +218,9 @@ pub fn Server::handle_with_document(
       Some(attribute) => attribute.text()
       None => ""
     }
-    let supported = if format == "" {
-      true
-    } else {
-      match @ipp.find_attr(self.printer_attrs, "document-format-supported") {
-        Some(attribute) => attribute.has(format)
-        None => false
-      }
-    }
     response_for(
       request,
-      if supported {
+      if self.format_supported(format) {
         @ipp.STATUS_OK
       } else {
         @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST
@@ -229,6 +232,13 @@ pub fn Server::handle_with_document(
     response.add(@ipp.TAG_JOB, requested_job_attrs(self, request, job))
     response
   } else if request.code == @ipp.OP_PRINT_JOB {
+    let format = match request.attr(@ipp.TAG_OPERATION, "document-format") {
+      Some(attribute) => attribute.text()
+      None => ""
+    }
+    if document.length() > 0 && !self.format_supported(format) {
+      return response_for(request, @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST)
+    }
     let job = self.create_job(request)
     if document.length() > 0 {
       job.document = document

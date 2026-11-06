@@ -9,6 +9,7 @@ fn test_server() -> Server {
       @ipp.attr("document-format-supported", [
         @ipp.mime_type("application/pdf"),
         @ipp.mime_type("image/pwg-raster"),
+        @ipp.mime_type("image/urf"),
       ]),
       @ipp.attr("copies-supported", [@ipp.range(1, 99)]),
       @ipp.attr("copies-default", [@ipp.integer(1)]),
@@ -404,5 +405,15 @@ test "ipp server validates the document format" {
   assert_eq(good.code, @ipp.STATUS_OK)
   let bad = server.handle(client.validate_job([], "image/tiff"))
   assert_eq(bad.code, @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST)
+}
+
+///|
+test "ipp server rejects unsupported print documents" {
+  let server = test_server()
+  let client = @ipp.Client::new("ipp://printer.local/ipp/print", "alice")
+  let request = client.print_job("bad", "image/tiff", [])
+  let response = server.handle_with_document(request, b"II*\x00")
+  assert_eq(response.code, @ipp.STATUS_CLIENT_ERROR_BAD_REQUEST)
+  assert_eq(server.jobs.length(), 0)
 }
 
