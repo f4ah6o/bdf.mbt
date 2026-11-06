@@ -217,13 +217,23 @@ pub fn fill_overlay(
         } else {
           builder.dash([], 0.0)
         }
-        builder.line(Float::from_double(border_width), 0, 0, 0.0F)
-        builder.stroke_rect(
-          Float::from_double(x1),
-          Float::from_double(y1),
-          Float::from_double(width),
-          Float::from_double(height),
-        )
+        if field.border_style == "U" {
+          builder.fill_color(color)
+          builder.fill_rect(
+            Float::from_double(x1),
+            Float::from_double(y1),
+            Float::from_double(width),
+            Float::from_double(border_width),
+          )
+        } else {
+          builder.line(Float::from_double(border_width), 0, 0, 0.0F)
+          builder.stroke_rect(
+            Float::from_double(x1),
+            Float::from_double(y1),
+            Float::from_double(width),
+            Float::from_double(height),
+          )
+        }
       }
       None => ()
     }
