@@ -113,6 +113,8 @@ test "fill_pdf escapes literal parentheses" {
   let fields = read_fields(filled)
   assert_eq(fields.length(), 1)
   assert_eq(fields[0].value, value)
+  let control = fill_pdf(pdf, @utf8.encode("{\"name\":\"A\\nB\\tC\"}"))
+  assert_eq(read_fields(control)[0].value, "A\nB\tC")
 }
 
 ///|
