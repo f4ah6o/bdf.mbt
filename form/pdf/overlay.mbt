@@ -65,10 +65,10 @@ fn overlay_box(pdf : String, key : String) -> (Double, Double)? {
 
 ///|
 fn overlay_page_size(pdf : String) -> (Double, Double) {
-  match overlay_box(pdf, "/MediaBox") {
+  match overlay_box(pdf, "/CropBox") {
     Some(size) => size
     None =>
-      match overlay_box(pdf, "/CropBox") {
+      match overlay_box(pdf, "/MediaBox") {
         Some(size) => size
         None => (595.0, 842.0)
       }
@@ -111,11 +111,11 @@ fn overlay_page_offsets(pdf : String) -> Array[(Int, Double, Double)] {
     }
     let segment = pdf[start:end]
     if segment.contains("/Type /Page") && !segment.contains("/Type /Pages") {
-      let (box_at, key_length) = match segment.find("/MediaBox") {
-        Some(index) => (index, 9)
+      let (box_at, key_length) = match segment.find("/CropBox") {
+        Some(index) => (index, 8)
         None =>
-          match segment.find("/CropBox") {
-            Some(index) => (index, 8)
+          match segment.find("/MediaBox") {
+            Some(index) => (index, 9)
             None => {
               pos = end + 6
               continue
@@ -183,10 +183,10 @@ fn overlay_page_sizes(pdf : String) -> Array[(Int, Double, Double)] {
     }
     let segment = pdf[start:end]
     if segment.contains("/Type /Page") && !segment.contains("/Type /Pages") {
-      let size = match overlay_box(segment.to_owned(), "/MediaBox") {
+      let size = match overlay_box(segment.to_owned(), "/CropBox") {
         Some(value) => value
         None =>
-          match overlay_box(segment.to_owned(), "/CropBox") {
+          match overlay_box(segment.to_owned(), "/MediaBox") {
             Some(value) => value
             None => (595.0, 842.0)
           }

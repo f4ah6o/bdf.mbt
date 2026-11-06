@@ -405,3 +405,29 @@ test "pdf overlay shifts fields by the MediaBox origin" {
   assert_true(found)
 }
 
+///|
+test "pdf overlay uses the CropBox" {
+  let pdf = @base64.decode(
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgL0Fjcm9Gb3JtIDw8IC9GaWVsZHMgWzMgMCBSXSA+PiA+PgplbmRvYmoKMiAwIG9iago8PCAvVHlwZSAvUGFnZXMgL0tpZHMgWzQgMCBSXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvQW5ub3QgL1N1YnR5cGUgL1dpZGdldCAvRlQgL1R4IC9UIChuYW1lKSAvViAoKSAvUmVjdCBbMjAgMzAgNTAgNDBdIC9QIDQgMCBSID4+CmVuZG9iago0IDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFswIDAgMjAwIDEwMF0gL0Nyb3BCb3ggWzEwIDIwIDExMCA4MF0gL0Fubm90cyBbMyAwIFJdID4+CmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA5MCAwMDAwMCBuIAowMDAwMDAwMTQ3IDAwMDAwIG4gCjAwMDAwMDAyNTEgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgozNjIKJSVFT0YK",
+  )
+  let bdf = fill_overlay(pdf, @utf8.encode("{\"name\":\"Alice\"}"))
+  let document = @core.open_single(bdf)
+  let page = document.manifest.views[0].pages[0]
+  assert_eq(page.width, 100.0)
+  assert_eq(page.height, 60.0)
+  let commands = @render.decode_commands(document.part(page.layers[0].object)) catch {
+    _ => fail("overlay commands cannot be decoded")
+  }
+  let mut found = false
+  for command in commands {
+    match command {
+      @render.FillText(value, x, _, _) if value == "Alice" => {
+        assert_true(x > 10.0 && x < 12.0, msg=x.to_string())
+        found = true
+      }
+      _ => ()
+    }
+  }
+  assert_true(found)
+}
+
