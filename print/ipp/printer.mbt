@@ -25,6 +25,7 @@ pub(all) struct Printer {
   mut uuid : String
   mut device_id : String
   mut state : Int
+  mut queued : Int
   mut reasons : Array[String]
   mut state_message : String
   mut accepting_jobs : Bool
@@ -139,6 +140,7 @@ pub fn parse_printer(message : Message) -> Printer {
     uuid: "",
     device_id: "",
     state: 0,
+    queued: 0,
     reasons: [],
     state_message: "",
     accepting_jobs: false,
@@ -242,6 +244,7 @@ pub fn parse_printer(message : Message) -> Printer {
   printer.uuid = text("printer-uuid")
   printer.device_id = text("printer-device-id")
   printer.state = int("printer-state")
+  printer.queued = int("queued-job-count")
   printer.reasons = strings("printer-state-reasons")
   printer.state_message = text("printer-state-message")
   printer.accepting_jobs = bool("printer-is-accepting-jobs")

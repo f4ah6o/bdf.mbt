@@ -6,6 +6,7 @@ test "parse printer attributes" {
     attr("printer-make-and-model", [text("BDF Printer")]),
     attr("printer-info", [text("third floor")]),
     attr("printer-state", [enum_value(PRINTER_IDLE)]),
+    attr("queued-job-count", [integer(2)]),
     attr("printer-state-reasons", [keyword("none")]),
     attr("printer-is-accepting-jobs", [boolean(true)]),
     attr("ipp-versions-supported", [keyword("2.0")]),
@@ -42,6 +43,7 @@ test "parse printer attributes" {
   assert_eq(printer.make_model, "BDF Printer")
   assert_eq(printer.info, "third floor")
   assert_eq(printer.state, PRINTER_IDLE)
+  assert_eq(printer.queued, 2)
   assert_true(printer.accepting_jobs)
   assert_true(printer.supports("APPLICATION/PDF"))
   assert_true(printer.supports("image/pwg-raster"))

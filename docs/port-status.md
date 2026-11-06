@@ -203,7 +203,7 @@
   (strings, ints, booleans, collections, resolutions, ranges), plus printer
   URL parsing (ipp/ipps/http/https, port 631, IPv6), requested-attributes,
   attribute filtering, printer groups, job/printer states and JobStatus
-  parsing, the Printer model with media-col parsing, and DNS-SD TXT
+  parsing, the Printer model with queued job counts and media-col parsing, and DNS-SD TXT
   records/services (formats, URLs), and the HTTP request/response
   envelope around IPP messages, and a transport-agnostic Client that builds
   printer/job requests, response status checks/StatusError, and a
