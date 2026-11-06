@@ -92,3 +92,14 @@ test "fill_pdf updates a referenced AcroForm" {
   assert_eq(fields[0].value, "Alice")
 }
 
+///|
+test "fill_pdf uses the appearance on state" {
+  let pdf = @base64.decode(
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgL0Fjcm9Gb3JtIDw8IC9GaWVsZHMgWzQgMCBSXSA+PiA+PgplbmRvYmoKMiAwIG9iago8PCAvVHlwZSAvUGFnZXMgL0tpZHMgWzMgMCBSXSAvQ291bnQgMSA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDIwMCAxMDBdIC9Bbm5vdHMgWzQgMCBSXSA+PgplbmRvYmoKNCAwIG9iago8PCAvVHlwZSAvQW5ub3QgL1N1YnR5cGUgL1dpZGdldCAvRlQgL0J0biAvVCAoYWdyZWUpIC9WIC9PZmYgL0FTIC9PZmYgL0FQIDw8IC9OIDw8IC9PbiA2IDAgUiAvT2ZmIDcgMCBSID4+ID4+IC9SZWN0IFsxMCAyMCAyMCAzMF0gL1AgMyAwIFIgPj4KZW5kb2JqCjUgMCBvYmoKPDwgPj4KZW5kb2JqCjYgMCBvYmoKPDwgPj4KZW5kb2JqCnhyZWYKMCA3CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAwOSAwMDAwMCBuIAowMDAwMDAwMDkwIDAwMDAwIG4gCjAwMDAwMDAxNDcgMDAwMDAgbiAKMDAwMDAwMDIzNCAwMDAwMCBuIAowMDAwMDAwMzkxIDAwMDAwIG4gCjAwMDAwMDA0MTIgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA3IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MzMKJSVFT0YK",
+  )
+  let filled = fill_pdf(pdf, @utf8.encode("{\"agree\":true}"))
+  let text = @utf8.decode_lossy(filled[:])
+  assert_true(text.contains("/V /On"), msg=text)
+  assert_true(text.contains("/AS /On"), msg=text)
+}
+

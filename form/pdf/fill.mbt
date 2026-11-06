@@ -364,11 +364,47 @@ fn insert_pdf_name_after(body : String, key : String, value : String, name : Str
 }
 
 ///|
-fn data_button_state(data : Json, name : String) -> String? {
+fn button_on_state(body : String) -> String? {
+  let ap = match body.find("/AP") {
+    Some(index) => index
+    None => return None
+  }
+  let n = match body[ap:].find("/N") {
+    Some(index) => ap + index
+    None => return None
+  }
+  let open = match body[n:].find("<<") {
+    Some(index) => n + index + 2
+    None => return None
+  }
+  let mut i = open
+  while i < body.length() {
+    if body[i].to_char().unwrap() == '/' {
+      let begin = i
+      i += 1
+      while i < body.length() && !is_space(body[i].to_char().unwrap()) &&
+        body[i].to_char().unwrap() != '>' {
+        i += 1
+      }
+      let name = body[begin:i].to_owned()
+      if name != "/Off" && name != "/N" {
+        return Some(name)
+      }
+    } else if body[i].to_char().unwrap() == '>' {
+      break
+    } else {
+      i += 1
+    }
+  }
+  None
+}
+
+///|
+fn data_button_state(data : Json, name : String, on : String) -> String? {
   match data {
     Json::Object(object) =>
       match object.get(name) {
-        Some(Json::True) => Some("/Yes")
+        Some(Json::True) => Some(on)
         Some(Json::False) => Some("/Off")
         Some(Json::String(text)) =>
           if text == "" {
@@ -457,7 +493,11 @@ pub fn fill_pdf(pdf_bytes : Bytes, data_bytes : Bytes) -> Bytes raise PdfFillErr
     }
     if name != "" {
       if body.contains("/Btn") {
-        match data_button_state(data, name) {
+        let on = match button_on_state(body) {
+          Some(value) => value
+          None => "/Yes"
+        }
+        match data_button_state(data, name, on) {
           Some(state) =>
             updates.push((
               number,
