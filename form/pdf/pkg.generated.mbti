@@ -35,6 +35,7 @@ pub(all) struct Field {
   values : Array[String]
   background_color : UInt32?
   border_color : UInt32?
+  border_width : Double?
 }
 
 // Type aliases

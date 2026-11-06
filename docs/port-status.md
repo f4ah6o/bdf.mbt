@@ -100,7 +100,7 @@
 - `form/pdf` reads AcroForm field names, values (literal, hex, UTF-16BE,
   name), types, rectangles, page references, field flags, read-only/required
   state, alternate names, maximum lengths, default values, default font
-  sizes/colors/fonts, backgrounds/borders, alignment and display/export
+  sizes/colors/fonts, backgrounds/borders/widths, alignment and display/export
   choice options (both names kept, display values map to export values,
   multiple values become a PDF array and are read back),
   writes values into classic-xref or xref-stream PDFs with an incremental

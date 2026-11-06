@@ -153,7 +153,11 @@ pub fn fill_overlay(
     match field.border_color {
       Some(color) => {
         builder.stroke_color(color)
-        builder.line(0.5, 0, 0, 0.0F)
+        let width = match field.border_width {
+          Some(width) => width
+          None => 0.5
+        }
+        builder.line(Float::from_double(width), 0, 0, 0.0F)
         builder.stroke_rect(
           Float::from_double(x1),
           Float::from_double(y1),

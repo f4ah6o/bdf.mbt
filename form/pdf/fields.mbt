@@ -21,6 +21,7 @@ pub(all) struct Field {
   values : Array[String]
   background_color : UInt32?
   border_color : UInt32?
+  border_width : Double?
 }
 
 ///|
@@ -659,6 +660,33 @@ fn find_border_color(text : String, start : Int, limit : Int) -> UInt32? {
 }
 
 ///|
+fn find_border_width(text : String, start : Int, limit : Int) -> Double? {
+  let section = text[start:limit]
+  let bs = match section.find("/BS") {
+    Some(index) => start + index
+    None => return None
+  }
+  let w = match text[bs:limit].find("/W") {
+    Some(index) => bs + index
+    None => return None
+  }
+  let mut i = skip_spaces(text, w + 2)
+  let begin = i
+  while i < limit && (text[i].to_char().unwrap() >= '0' &&
+    text[i].to_char().unwrap() <= '9' || text[i].to_char().unwrap() == '.') {
+    i += 1
+  }
+  if i == begin {
+    return None
+  }
+  try {
+    Some(@string.parse_double(text[begin:i].to_owned()))
+  } catch {
+    _ => None
+  }
+}
+
+///|
 /// Read the names, values and types of the AcroForm fields of a PDF.
 pub fn read_fields(data : Bytes) -> Array[Field] {
   let text = @utf8.decode_lossy(data[:])
@@ -696,6 +724,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
     let values = find_values(text, after, next_t)
     let background_color = find_background_color(text, after, next_t)
     let border_color = find_border_color(text, after, next_t)
+    let border_width = find_border_width(text, after, next_t)
     let value = find_value(text, after, next_t)
     let typ = find_type(text, after, next_t)
     let rect = find_rect(text, after, next_t)
@@ -747,6 +776,7 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
         values,
         background_color,
         border_color,
+        border_width,
       }
       if found >= 0 {
         fields[found] = field
