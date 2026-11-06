@@ -40,11 +40,14 @@ pub fn pruned_program(
 
 ///|
 #export_name("reachable")
-pub fn reachable(data : Bytes, index : Int32, text : String) -> Array[Int32] {
+pub fn reachable(data : Bytes, index : Int32, text : String) -> String {
   let file = try! @font.load(data)
   for face in file.faces() {
     if face.index == index {
-      return face.font.specimen_reachable(text)
+      let glyphs = face.font.specimen_reachable(text)
+      return Json::array(
+        glyphs.map(glyph => Json::number(glyph.to_double())),
+      ).stringify()
     }
   }
   abort("missing font face")

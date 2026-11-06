@@ -98,7 +98,7 @@ pub fn prepare_ui_painter(Bytes, String, String, String, UIFontFixture) -> UIPai
 
 pub fn pruned_program(Bytes, Int32, Array[Int32]) -> Bytes
 
-pub fn reachable(Bytes, Int32, String) -> Array[Int32]
+pub fn reachable(Bytes, Int32, String) -> String
 
 pub fn record_ui_text(TexterFixture, String, Double, Bool) -> Unit
 

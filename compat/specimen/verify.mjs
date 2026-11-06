@@ -17,7 +17,7 @@ for (const sample of samples) {
   assert.equal(actualSample.length, sample.sampleSize, sample.name + ' sample size');
   assert.equal(hash(actualSample), sample.sampleHash, sample.name + ' whole sample');
   for (const prune of sample.pruned) {
-    const actualReach = reachable(input, sample.index, prune.text);
+    const actualReach = JSON.parse(reachable(input, sample.index, prune.text));
     assert.deepEqual(actualReach, prune.keep, sample.name + ' reachable glyphs ' + JSON.stringify(prune.text));
     if (prune.visual) assert.equal(hash(gunzipSync(Buffer.from(prune.visual, 'base64'))), prune.hash, sample.name + ' pruned visual baseline');
     const actualPruned = Buffer.from(pruned_program(input, sample.index, prune.keep));
