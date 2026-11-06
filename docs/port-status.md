@@ -112,7 +112,7 @@
 - `form/pdfme` fills a pdfme template (blank pages, text/line/rectangle/
   checkbox/table/image fields, static schema, multiVariableText variables,
   text backgrounds/borders, base-PDF MediaBox page size, QR codes, Code 39,
-  Code 128, EAN-13, EAN-8, UPC-A, ITF and NW-7 barcodes, arithmetic
+  Code 128, GS1-128, EAN-13, EAN-8, UPC-A, ITF and NW-7 barcodes, arithmetic
   expressions) into BDF; base PDF content and other 1D formats are gaps
   (15 tests).
 - `form/schema` writes the JSON Schema of the data of a template from its

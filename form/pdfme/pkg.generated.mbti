@@ -1,0 +1,25 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/form/pdfme"
+
+// Values
+pub fn fill(Bytes, Bytes) -> FillResult raise PdfmeError
+
+// Errors
+pub suberror PdfmeError {
+  PdfmeError(String)
+}
+
+// Types and methods
+type ExprParser
+
+type FieldPainter
+
+pub(all) struct FillResult {
+  bdf : Bytes
+  pages : Int32
+  warnings : Array[String]
+}
+
+// Type aliases
+
+// Traits
