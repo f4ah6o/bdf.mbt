@@ -124,7 +124,8 @@
 - `form/pdfme` fills a pdfme template (blank pages, text/line/rectangle/
   checkbox/radio-group (column/row)/table/image (PNG/JPEG/SVG)/signature fields, table column widths, alignment/vertical
   alignment, colors, backgrounds, alternate row colors, font sizes/families,
-  cell padding/truncation, border colors/widths/styles and header styles,
+  cell/column padding, truncation, border colors/widths/styles and header
+  styles,
   static schema,
   multiVariableText variables, text backgrounds/borders,
   base-PDF MediaBox/CropBox page size, rotation, all pages, content and tables,

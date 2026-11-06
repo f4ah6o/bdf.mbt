@@ -1370,6 +1370,25 @@ fn table_column_alignment(field : Json, index : Int, head : Bool) -> String {
 
 ///|
 ///|
+fn table_column_padding(field : Json, index : Int, fallback : Float) -> Float {
+  match json_field(field, "columnStyles") {
+    Some(Json::Array(styles)) =>
+      if index < styles.length() {
+        match styles[index] {
+          Json::Object(style) =>
+            Float::from_double(
+              number_of(style.get("cellPadding"), fallback.to_double()),
+            )
+          _ => fallback
+        }
+      } else {
+        fallback
+      }
+    _ => fallback
+  }
+}
+
+///|
 fn table_column_background(field : Json, index : Int) -> UInt32 {
   match json_field(field, "columnStyles") {
     Some(Json::Array(styles)) =>
@@ -1670,9 +1689,15 @@ fn FieldPainter::draw_table(
       self.builder.font(cell_font, cell_size) catch {
         _ => raise PdfmeError("pdfme: a font cannot be set")
       }
+      let cell_padding = if head_row {
+        padding
+      } else {
+        table_column_padding(field, i, padding)
+      }
       let max_chars = Int::max(
         1,
-        ((cell_width.to_double() - 2.0 * padding.to_double()) / (cell_size.to_double() * 0.5)).to_int(),
+        ((cell_width.to_double() - 2.0 * cell_padding.to_double()) /
+          (cell_size.to_double() * 0.5)).to_int(),
       )
       let text = if text.length() > max_chars {
         text[:max_chars].to_owned()
@@ -1695,9 +1720,9 @@ fn FieldPainter::draw_table(
       let start = if alignment == "center" {
         x + edges[i] + (cell_width - advance) / 2.0
       } else if alignment == "right" {
-        x + edges[i + 1] - advance - padding
+        x + edges[i + 1] - advance - cell_padding
       } else {
-        x + edges[i] + padding
+        x + edges[i] + cell_padding
       }
       let vertical = table_vertical_alignment(field, i, head_row)
       let baseline = if vertical == "middle" {
