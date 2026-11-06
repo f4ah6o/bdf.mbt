@@ -25,14 +25,14 @@ exception and copyright notice in its [README](licenses/WenQuanYi-README.txt)).
 
 The gallery samples are the upstream MIT-licensed files, byte for byte:
 `samples/basic.docx`, `basic.pptx`, `basic.xlsx`, `features.xlsx`,
-`basic.csv`, `basic.md`, `reportlab-master.pdf` and
+`basic.csv`, `basic.md`, `cairo-cff.pdf` and
 `images-jpx-jbig2.pdf`. The PowerPoint card opens `basic.pptx`, the Word
 card `basic.docx` and the Markdown card `basic.md`. The previews
 `previews/docx.png`, `previews/markdown.png` and `previews/pptx.png` were
 rendered from these upstream files by the MoonBit native converter Worker.
 
 A sample whose subset the MoonBit converter does not support yet (for
-example the embedded fonts of `reportlab-master.pdf`) reports an explicit
+example the embedded fonts of `cairo-cff.pdf`) reports an explicit
 error instead of drawing a wrong page.
 
 The page also has a round-trip section for the document currently in the

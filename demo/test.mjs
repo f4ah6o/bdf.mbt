@@ -326,7 +326,7 @@ try {
   await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'basic.csv' && !document.querySelector('#open-file').disabled, null, { timeout: 120000 });
   await converterPage.getByRole('button', { name: 'BDF サンプルを開く' }).click();
   await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'upstream-demo.bdf' && !document.querySelector('#open-file').disabled, null, { timeout: 30000 });
-  for (const [sample, name] of [['csv', 'basic.csv'], ['xlsx', 'basic.xlsx'], ['image', 'drawing.svg'], ['font', 'stix.ttf'], ['pdf', 'reportlab-master.pdf'], ['type1', 'cairo-type1.pdf'], ['docx', 'basic.docx'], ['pptx', 'basic.pptx'], ['hpgl', 'hpgl1.plt'], ['jww', 'old.jww'], ['dxf', 'shapes.dxf'], ['sxf', 'shapes.sfc'], ['cgm', 'shapes.cgm'], ['gerber', 'features.gbr'], ['kicad', 'demo.kicad_pcb'], ['drawio', 'labels.drawio'], ['drawio-multipage', 'multipage.drawio'], ['drawio-embedded', 'embedded.drawio.svg'], ['drawio-showcase', 'showcase.drawio'], ['drawio-png', 'embedded.drawio.png'], ['parquet', 'nested.parquet'], ['parquet-basic', 'basic.parquet']]) {
+  for (const [sample, name] of [['csv', 'basic.csv'], ['xlsx', 'basic.xlsx'], ['image', 'drawing.svg'], ['font', 'stix.ttf'], ['pdf', 'cairo-cff.pdf'], ['type1', 'cairo-type1.pdf'], ['docx', 'basic.docx'], ['pptx', 'basic.pptx'], ['hpgl', 'hpgl1.plt'], ['jww', 'old.jww'], ['dxf', 'shapes.dxf'], ['sxf', 'shapes.sfc'], ['cgm', 'shapes.cgm'], ['gerber', 'features.gbr'], ['kicad', 'demo.kicad_pcb'], ['drawio', 'labels.drawio'], ['drawio-multipage', 'multipage.drawio'], ['drawio-embedded', 'embedded.drawio.svg'], ['drawio-showcase', 'showcase.drawio'], ['drawio-png', 'embedded.drawio.png'], ['parquet', 'nested.parquet'], ['parquet-basic', 'basic.parquet']]) {
     await converterPage.locator('#file').setInputFiles(resolve(root, 'samples', name));
     await converterPage.waitForFunction(n => document.querySelector('#document-name').textContent === n && !document.querySelector('#open-file').disabled, name, { timeout: 120000 });
     const convError = await converterPage.locator('#status').evaluate(el => el.classList.contains('error'));
@@ -348,7 +348,7 @@ try {
   assert.equal(await converterPage.locator('#status').evaluate(el => el.classList.contains('error')), false, 'converter docx sample');
   await converterPage.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => canvas.width > 0 && canvas.height > 0), null, { timeout: 30000 });
   await converterPage.locator('[data-sample="pdf"]').click();
-  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'reportlab-master.pdf' && !document.querySelector('#open-file').disabled, null, { timeout: 120000 });
+  await converterPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'cairo-cff.pdf' && !document.querySelector('#open-file').disabled, null, { timeout: 120000 });
   const pdfError = await converterPage.locator('#status').evaluate(el => el.classList.contains('error'));
   if (!pdfError) await converterPage.waitForFunction(() => [...document.querySelectorAll('#preview canvas')].some(canvas => canvas.width > 0 && canvas.height > 0), null, { timeout: 30000 });
   await converterPage.locator('[data-sample="pdf-features"]').click();

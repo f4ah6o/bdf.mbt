@@ -182,7 +182,7 @@ const samples = {
   'xlsx-picture': ['./samples/features.xlsx', 'features.xlsx'],
   image: ['./samples/drawing.svg', 'drawing.svg'],
   font: ['./samples/stix.ttf', 'stix.ttf'],
-  pdf: ['./samples/reportlab-master.pdf', 'reportlab-master.pdf'],
+  pdf: ['./samples/cairo-cff.pdf', 'cairo-cff.pdf'],
   'pdf-features': ['./samples/images-jpx-jbig2.pdf', 'images-jpx-jbig2.pdf'],
   'pdf-encrypted': ['./samples/pdf-encrypted.pdf', 'pdf-encrypted.pdf'],
   docx: ['./samples/basic.docx', 'basic.docx'],
