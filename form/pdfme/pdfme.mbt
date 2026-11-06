@@ -1357,7 +1357,39 @@ fn FieldPainter::draw_table(
   } else {
     1
   }
-  let column_width = width / Float::from_double(columns.to_double())
+  let percentage_values = match json_field(field, "headWidthPercentages") {
+    Some(Json::Array(values)) => Some(values)
+    _ =>
+      match json_field(field, "widthPercentages") {
+        Some(Json::Array(values)) => Some(values)
+        _ => None
+      }
+  }
+  let widths : Array[Float] = []
+  let mut width_sum = 0.0
+  match percentage_values {
+    Some(values) =>
+      if values.length() == columns {
+        for value in values {
+          let number = number_of(Some(value), 0.0)
+          widths.push(Float::from_double(number))
+          width_sum += number
+        }
+      }
+    None => ()
+  }
+  if width_sum <= 0.0 || widths.length() != columns {
+    widths.clear()
+    for _ in 0..<columns {
+      widths.push(1.0)
+    }
+  }
+  let edges : Array[Float] = [0.0F]
+  let mut edge = 0.0F
+  for value in widths {
+    edge += width * value / Float::from_double(width_sum)
+    edges.push(edge)
+  }
   let size = Float::from_double(number_of(json_field(field, "fontSize"), 8.0))
   let font = self.font(text_of(json_field(field, "fontName"), "Helvetica"))
   self.builder.font(font, size) catch {
@@ -1376,10 +1408,10 @@ fn FieldPainter::draw_table(
       let advance = Float::from_double(
         text.length().to_double() * size.to_double() * 0.5,
       )
-      self.builder.fill_text(text, x + Float::from_double(i.to_double()) * column_width + 1.0, y - size, advance)
+      self.builder.fill_text(text, x + edges[i] + 1.0, y - size, advance)
     }
     for i in 0..=columns {
-      let line_x = x + Float::from_double(i.to_double()) * column_width
+      let line_x = x + edges[i]
       stroke_segment(self.builder, line_x, y, line_x, y - row_height)
     }
     stroke_segment(self.builder, x, y, x + width, y)

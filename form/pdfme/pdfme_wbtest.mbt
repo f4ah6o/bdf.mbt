@@ -343,3 +343,17 @@ test "pdfme draws a Code 93 barcode" {
   assert_true(ops > 50)
 }
 
+///|
+test "pdfme uses table column widths" {
+  let template =
+    #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item","qty","note"],"headWidthPercentages":[50,20,30],"fontSize":9,"rowHeight":8}]]}
+  let result = fill(@utf8.encode(template), @utf8.encode("{}"))
+  assert_eq(result.warnings.length(), 0)
+  let document = @core.open_single(result.bdf)
+  let resources = @core.decode_object_resources(
+    document.part(document.manifest.parts[0].hash),
+  )
+  assert_true(resources.object.strings.contains("item"))
+  assert_true(resources.object.ops.length() > 10)
+}
+
