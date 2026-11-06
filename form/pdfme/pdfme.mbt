@@ -298,7 +298,14 @@ fn FieldPainter::draw_field(self : FieldPainter, field : Json, data : Json) -> U
     }
     let raw_size = number_of(json_field(field, "fontSize"), 10.0)
   let size = Float::from_double(if raw_size > 0.0 { raw_size } else { 10.0 })
-    let baseline = y_top - size
+    let vertical = text_of(json_field(field, "verticalAlignment"), "top")
+    let baseline = if vertical == "middle" {
+      y_top - height / 2.0 + size / 2.0
+    } else if vertical == "bottom" {
+      y_top - height + size * 0.2
+    } else {
+      y_top - size
+    }
     let opacity = Double::max(0.0, Double::min(1.0, number_of(json_field(field, "opacity"), 1.0)))
     self.builder.save()
     self.builder.alpha(Float::from_double(opacity))

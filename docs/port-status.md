@@ -131,8 +131,7 @@
   checkbox/radio-group (column/row)/table/text/QR/barcode/line and rectangle
   (solid/dashed, opacity)/image
   (PNG/JPEG/SVG, stretch/contain/cover/none/scale-down, opacity)/signature
-  fields, table column widths, alignment/vertical
-  alignment, colors, backgrounds, alternate row colors, font sizes/families,
+  fields, table column widths, horizontal/vertical text alignment, colors, backgrounds, alternate row colors, font sizes/families,
   cell/column/header padding, truncation, border colors/widths/styles and
   header styles,
   static schema,
