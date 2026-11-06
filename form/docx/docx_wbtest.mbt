@@ -42,3 +42,23 @@ test "form docx fills header tags" {
   assert_true(value.contains("Report"), msg=value)
 }
 
+///|
+test "form docx fills footer tags" {
+  let footer =
+    #|<?xml version="1.0"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:r><w:t>{{footer}}</w:t></w:r></w:p></w:ftr>
+  let zipped = @ooxml.stored_zip([
+    ("word/footer1.xml", @utf8.encode(footer)),
+  ])
+  let filled = fill_bytes(zipped, @utf8.encode("{\"footer\":\"Page\"}"))
+  let archive = @zip.open_zip(filled) catch {
+    _ => fail("the filled package cannot be opened")
+  }
+  let mut value = ""
+  for entry in archive.entries {
+    if entry.name == "word/footer1.xml" {
+      value = @utf8.decode_lossy(archive.read(entry, 4096)[:])
+    }
+  }
+  assert_true(value.contains("Page"), msg=value)
+}
+

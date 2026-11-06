@@ -111,8 +111,8 @@
   split across runs (the run markup between them is removed), expands
   boolean `{{#name}}`/`{{^name}}` conditions, expands object-list
   `{{#items}}`…`{{/items}}` sections item by item, fills header/footer
-  parts, and rebuilds stored ZIPs (4 tests); `form/docx` fills headers as well
-  (2 tests), `form/xlsx` fills sheets and shared strings (2 tests), and
+  parts, and rebuilds stored ZIPs (4 tests); `form/docx` fills headers and
+  footers (3 tests), `form/xlsx` fills sheets and shared strings (2 tests), and
   `form/pptx` fills slides and speaker notes (2 tests). Scalar
   list items are reported.
 - `form/pdfme` fills a pdfme template (blank pages, text/line/rectangle/
