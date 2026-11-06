@@ -1676,7 +1676,7 @@ fn pdf_rotation(data : Bytes) -> Int {
 }
 
 ///|
-fn base_pdf_document(template : Json) -> @core.Document? {
+fn base_pdf_document(template : Json) -> (@core.Document, Array[String])? {
   let bytes = match base_pdf_bytes(template) {
     Some(bytes) => bytes
     None => return None
@@ -1687,7 +1687,7 @@ fn base_pdf_document(template : Json) -> @core.Document? {
   let document = @core.open_single(result.bdf) catch {
     _ => return None
   }
-  Some(document)
+  Some((document, result.warnings))
 }
 
 ///|
@@ -1765,8 +1765,11 @@ pub fn fill(template_bytes : Bytes, data_bytes : Bytes) -> FillResult raise Pdfm
   let static_fields = static_schema(template)
   let warnings : Array[String] = []
   let base = match base_pdf_document(template) {
-    Some(document) => {
+    Some((document, base_warnings)) => {
       copy_base_parts(document, writer)
+      for warning in base_warnings {
+        warnings.push(warning)
+      }
       Some(document)
     }
     None => {
