@@ -177,20 +177,20 @@ file.addEventListener('change', async () => {
 });
 const samples = {
   bdf: ['./samples/upstream-demo.bdf', 'upstream-demo.bdf'],
-  csv: ['./samples/people.csv', 'people.csv'],
-  xlsx: ['./samples/sales.xlsx', 'sales.xlsx'],
-  'xlsx-picture': ['./samples/field-guide.xlsx', 'field-guide.xlsx'],
-  image: ['./samples/illustration.svg', 'illustration.svg'],
+  csv: ['./samples/basic.csv', 'basic.csv'],
+  xlsx: ['./samples/basic.xlsx', 'basic.xlsx'],
+  'xlsx-picture': ['./samples/features.xlsx', 'features.xlsx'],
+  image: ['./samples/drawing.svg', 'drawing.svg'],
   font: ['./samples/stix.ttf', 'stix.ttf'],
-  pdf: ['./samples/simple.pdf', 'simple.pdf'],
-  'pdf-features': ['./samples/pdf-features.pdf', 'pdf-features.pdf'],
+  pdf: ['./samples/reportlab-master.pdf', 'reportlab-master.pdf'],
+  'pdf-features': ['./samples/images-jpx-jbig2.pdf', 'images-jpx-jbig2.pdf'],
   'pdf-encrypted': ['./samples/pdf-encrypted.pdf', 'pdf-encrypted.pdf'],
-  docx: ['./samples/simple.docx', 'simple.docx'],
-  'docx-rich': ['./samples/word.docx', 'word.docx'],
-  markdown: ['./samples/notes.md', 'notes.md'],
-  pptx: ['./samples/slides.pptx', 'slides.pptx'],
+  docx: ['./samples/basic.docx', 'basic.docx'],
+  'docx-rich': ['./samples/basic.docx', 'basic.docx'],
+  markdown: ['./samples/basic.md', 'basic.md'],
+  pptx: ['./samples/basic.pptx', 'basic.pptx'],
   drawio: ['./samples/labels.drawio', 'labels.drawio'],
-  parquet: ['./samples/table.parquet', 'table.parquet'],
+  parquet: ['./samples/nested.parquet', 'nested.parquet'],
 };
 for (const link of document.querySelectorAll('[data-sample]')) {
   link.addEventListener('click', event => {
@@ -207,7 +207,7 @@ if (pdfPassword) {
   pdfPassword.addEventListener('input', () => pdfUnlockStatus?.classList.remove('error'));
 }
 $('#sample').addEventListener('click', () => openSample('./samples/upstream-demo.bdf', 'upstream-demo.bdf'));
-$('#csv-sample').addEventListener('click', () => openSample('./samples/people.csv', 'people.csv'));
+$('#csv-sample').addEventListener('click', () => openSample('./samples/basic.csv', 'basic.csv'));
 view.addEventListener('change', () => { $('#search-status').textContent = ''; viewer.setView(view.value); viewer.stage.scrollTop = 0; viewer.stage.scrollLeft = 0; currentPage = 0; updatePage(); });
 $('#layout').addEventListener('change', event => { viewer.setLayout(event.target.value); viewer.scrollToPage(currentPage); updatePage(); });
 $('#zoom').addEventListener('change', event => { viewer.setZoom(Number(event.target.value)); viewer.scrollToPage(currentPage); });

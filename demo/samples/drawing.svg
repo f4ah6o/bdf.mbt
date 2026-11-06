@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Shapes whose edges show whether an SVG image is drawn sharply when zoomed -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"
+     width="320" height="240" viewBox="0 0 80 60" xml:lang="en">
+  <title>Shapes</title>
+  <desc>A gradient card with a circle, a star and hairlines</desc>
+  <metadata>
+    <rdf:RDF>
+      <cc:Work rdf:about="">
+        <dc:title>Shapes and hairlines</dc:title>
+        <dc:creator><cc:Agent><dc:title>Hanako Sato</dc:title></cc:Agent></dc:creator>
+        <dc:subject><rdf:Bag><rdf:li>test</rdf:li><rdf:li>vector</rdf:li></rdf:Bag></dc:subject>
+        <dc:date>2026-09-26</dc:date>
+        <dc:rights><cc:Agent><dc:title>CC0</dc:title></cc:Agent></dc:rights>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e88e5"/>
+      <stop offset="1" stop-color="#43a047"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="76" height="56" rx="5" fill="url(#card)"/>
+  <circle cx="22" cy="30" r="13" fill="#fff" fill-opacity="0.85"/>
+  <path d="M58 12 L62.7 25.5 L77 25.8 L65.6 34.4 L69.8 48.2 L58 40 L46.2 48.2 L50.4 34.4 L39 25.8 L53.3 25.5 Z"
+        fill="#fdd835" stroke="#6d4c41" stroke-width="0.6" stroke-linejoin="round"/>
+  <g stroke="#fff" stroke-width="0.15">
+    <path d="M6 54 H74 M6 56 H74"/>
+    <path d="M22 17 V43 M9 30 H35"/>
+  </g>
+</svg>

@@ -108,11 +108,11 @@ try {
   await wasmPage.locator('[data-export-find-run]').click();
   await wasmPage.waitForFunction(() => document.querySelectorAll('[data-export-hits] .hit').length > 0, null, { timeout: 120000 });
 
-  await wasmPage.locator('#pdf-file').setInputFiles(resolve(root, 'samples/simple.pdf'));
+  await wasmPage.locator('#pdf-file').setInputFiles(resolve(root, 'samples/reportlab-master.pdf'));
   await wasmPage.locator('#pdf-convert').click();
-  await wasmPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'simple.bdf', null, { timeout: 120000 });
-  assert.match(await wasmPage.locator('#wasm-status').textContent(), /1 ページ/);
-  assert.equal(await wasmPage.locator('#page-number').textContent(), '1 / 1');
+  await wasmPage.waitForFunction(() => document.querySelector('#document-name').textContent === 'reportlab-master.bdf', null, { timeout: 120000 });
+  assert.match(await wasmPage.locator('#wasm-status').textContent(), /3 ページ/);
+  assert.equal(await wasmPage.locator('#page-number').textContent(), '1 / 3');
 
   assert.deepEqual(errors, []);
   assert.deepEqual(wasmErrors, []);

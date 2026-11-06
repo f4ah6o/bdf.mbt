@@ -1,0 +1,13 @@
+﻿ID,Product,Category,Price,Quantity,Discount,Released,Code,Note
+1,Notebook,Stationery,$4.50,1200,5%,2024-01-15,0012,"Plain, A5"
+2,Fountain pen,Stationery,$129.00,35,0%,2023-11-02,0107,"Nib sizes ""F"" and ""M"""
+3,Desk lamp,Lighting,"$1,249.99",8,(10%),2024/3/1,1003,"Two lines:
+warm and cool"
+4,Stapler,Office,$18.25,-3,,1/5/2024,0020,Returned: the count is negative
+5,Paper clips (box of 100),Office,$1.10,"12,500",15%,2024-02-29,0021,
+6,Monitor arm,Office,$89.00,42,,2024-04-01 09:30,2001,A long note that runs on past the edge of its column into the empty cells to the right of it
+7,Whiteboard,Office,$230.00,6,20%,,2002,See https://example.com/whiteboard
+8,Label printer,Office,$75.40,1.5e3,,2024-05-20T14:05:00Z,2003,sales@example.com
+9,Cable ties,,$3.99,700,,,0999,"Quoted field, with ""quotes"", commas and a line
+break"
+10,Chair,Furniture,$349.00,14,12.5%,2024-06-30,3001,TRUE
