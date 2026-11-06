@@ -11,6 +11,61 @@ fn pdf_escape_value(text : String) -> String {
 }
 
 ///|
+fn pdf_hex_value(text : String) -> String {
+  let out = StringBuilder()
+  out.write_string("<FEFF")
+  for c in text {
+    let code = c.to_int()
+    if code <= 0xFFFF {
+      let hi = (code >> 12) & 0xF
+      let h2 = (code >> 8) & 0xF
+      let h3 = (code >> 4) & 0xF
+      let h4 = code & 0xF
+      out.write_char(hex_char(hi))
+      out.write_char(hex_char(h2))
+      out.write_char(hex_char(h3))
+      out.write_char(hex_char(h4))
+    } else {
+      let value = code - 0x10000
+      let high = 0xD800 + (value >> 10)
+      let low = 0xDC00 + (value & 0x3FF)
+      for unit in [high, low] {
+        out.write_char(hex_char((unit >> 12) & 0xF))
+        out.write_char(hex_char((unit >> 8) & 0xF))
+        out.write_char(hex_char((unit >> 4) & 0xF))
+        out.write_char(hex_char(unit & 0xF))
+      }
+    }
+  }
+  out.write_char('>')
+  out.to_string()
+}
+
+///|
+fn hex_char(value : Int) -> Char {
+  if value < 10 {
+    Char::from_int('0'.to_int() + value)
+  } else {
+    Char::from_int('A'.to_int() + value - 10)
+  }
+}
+
+///|
+fn pdf_value_repr(text : String) -> String {
+  let mut ascii = true
+  for c in text {
+    if c.to_int() > 0x7F {
+      ascii = false
+    }
+  }
+  if ascii {
+    "(" + pdf_escape_value(text) + ")"
+  } else {
+    pdf_hex_value(text)
+  }
+}
+
+///|
 fn last_index(text : String, needle : String) -> Int? {
   let mut found : Int? = None
   let mut from = 0
@@ -35,7 +90,7 @@ fn find_t(body : String) -> Int? {
 
 ///|
 fn replace_pdf_value(body : String, value : String) -> String {
-  let escaped = pdf_escape_value(value)
+  let escaped = pdf_value_repr(value)
   let v_at = match body.find("/V") {
     Some(index) => index
     None => {
@@ -47,12 +102,12 @@ fn replace_pdf_value(body : String, value : String) -> String {
       if name_at < body.length() && body[name_at].to_char().unwrap() == '(' {
         match literal_string(body, name_at) {
           Some((_, end)) =>
-            return body[:end].to_owned() + " /V (" + escaped + ")" +
+            return body[:end].to_owned() + " /V " + escaped +
               body[end:].to_owned()
           None => ()
         }
       }
-      return body[:t_at].to_owned() + "/V (" + escaped + ") " + body[t_at:].to_owned()
+      return body[:t_at].to_owned() + "/V " + escaped + " " + body[t_at:].to_owned()
     }
   }
   let mut i = skip_spaces(body, v_at + 2)
@@ -74,7 +129,7 @@ fn replace_pdf_value(body : String, value : String) -> String {
   } else {
     return body
   }
-  body[:v_at + 2].to_owned() + " (" + escaped + ")" + body[end:].to_owned()
+  body[:v_at + 2].to_owned() + " " + escaped + body[end:].to_owned()
 }
 
 ///|
