@@ -1,0 +1,31 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/form/schema"
+
+import {
+  "f4ah6o/bdf/form/tag",
+  "moonbitlang/core/json",
+}
+
+// Values
+pub const MAX_SCHEMA_DEPTH : Int32 = 256
+
+pub const MAX_SCHEMA_NODES : Int32 = 65536
+
+pub const SCHEMA_DIALECT : String = "https://json-schema.org/draft/2020-12/schema"
+
+pub const SCHEMA_KEYWORD : String = "x-bdf"
+
+pub fn schema(Array[@tag.Field], @json.Json?) -> @json.Json raise SchemaError
+
+pub fn schema_text(Array[@tag.Field], @json.Json?) -> String raise SchemaError
+
+// Errors
+pub suberror SchemaError {
+  SchemaError(String)
+}
+
+// Types and methods
+
+// Type aliases
+
+// Traits

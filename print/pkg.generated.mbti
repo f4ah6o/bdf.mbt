@@ -1,0 +1,20 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/print"
+
+import {
+  "f4ah6o/bdf/export/pdf",
+  "f4ah6o/bdf/print/ipp",
+}
+
+// Values
+pub fn bdf_pdf(Bytes) -> @pdf.PdfResult raise
+
+pub fn print_bdf(@ipp.Client, Bytes, String, (Bytes) -> Bytes?) -> @ipp.JobStatus raise @ipp.IppError
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

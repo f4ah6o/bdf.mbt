@@ -1,0 +1,9 @@
+import {
+  "f4ah6o/bdf/encoding/zip" @zip,
+  "f4ah6o/bdf/convert/xlsx" @xlsx,
+  "f4ah6o/bdf/form/ooxml" @ooxml,
+  "moonbitlang/core/json",
+  "moonbitlang/core/encoding/utf8",
+}
+
+supported_targets = "+js+wasm-gc"

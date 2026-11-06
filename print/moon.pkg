@@ -1,0 +1,8 @@
+import {
+  "f4ah6o/bdf/core",
+  "f4ah6o/bdf/export/pdf" @pdf,
+  "f4ah6o/bdf/print/ipp" @ipp,
+  "moonbitlang/core/encoding/utf8",
+}
+
+supported_targets = "+js+wasm-gc"

@@ -1,0 +1,72 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/form/textform"
+
+import {
+  "f4ah6o/bdf/form/data",
+  "f4ah6o/bdf/form/textpart",
+  "moonbitlang/core/json",
+}
+
+// Values
+pub const MAX_COLUMNS : Int32 = 4096
+
+pub const MAX_LINES : Int32 = 4096
+
+pub fn default_grid() -> Grid
+
+pub fn fill_image(Map[String, @json.Json], String) -> @textpart.Image raise TextFormError
+
+pub fn fill_result(Map[String, @json.Json], String) -> TextFormResult raise TextFormError
+
+pub fn fill_result_with(TextTemplateData, String) -> TextFormResult raise TextFormError
+
+pub fn fill_sources(String, Array[@data.Source]) -> TextFormResult raise TextFormError
+
+pub fn is_template(Bytes) -> Bool
+
+pub fn is_text(Bytes) -> Bool
+
+pub fn parse_front_matter(Array[String], Array[String]) -> Grid raise TextFormError
+
+pub fn split_front_matter(String) -> (Array[String], String, Int32, Bool)
+
+pub fn strip_comment(String) -> String
+
+pub fn unquote(String) -> String
+
+// Errors
+pub suberror TextFormError {
+  TextFormError(String)
+}
+
+// Types and methods
+pub(all) struct Grid {
+  mut cpi : Double
+  mut lpi : Double
+  mut columns : Int32
+  mut lines : Int32
+  mut left : Int32
+  mut top : Int32
+  mut skip : Int32
+  mut title : Int32
+  mut font : String
+  mut ambiguous_wide : Bool
+}
+pub fn Grid::rows(Self) -> Int32
+pub fn Grid::width(Self) -> Int32
+
+pub(all) struct TextFormResult {
+  image : @textpart.Image
+  tables : Array[Array[Int32]]
+}
+
+pub(all) struct TextTemplateData {
+  data : Map[String, @json.Json]
+  strict : Bool
+  format : ((@json.Json, String) -> String)?
+}
+pub fn TextTemplateData::new(Map[String, @json.Json]) -> Self
+
+// Type aliases
+
+// Traits

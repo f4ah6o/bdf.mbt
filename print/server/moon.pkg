@@ -1,0 +1,8 @@
+import {
+  "f4ah6o/bdf/print/ipp" @ipp,
+  "f4ah6o/bdf/print/raster" @raster,
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/string",
+}
+
+supported_targets = "+js+wasm-gc"

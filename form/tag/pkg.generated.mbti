@@ -1,0 +1,143 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/form/tag"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/core/json",
+}
+
+// Values
+pub const ALIGN_CENTER : String = "center"
+
+pub const ALIGN_LEFT : String = "left"
+
+pub const ALIGN_RIGHT : String = "right"
+
+pub const FIELD_IMAGE : String = "image"
+
+pub const FIELD_SECTION : String = "section"
+
+pub const FIELD_VALUE : String = "value"
+
+pub const FIT_CONTAIN : String = "contain"
+
+pub const FIT_COVER : String = "cover"
+
+pub const FIT_STRETCH : String = "stretch"
+
+pub const INPUT_SEAL : String = "seal"
+
+pub const INPUT_SIGNATURE : String = "signature"
+
+pub const MAX_TAG_LEN : Int32 = 1024
+
+pub const MAX_WIDTH : Int32 = 4096
+
+pub const MODE_PAGES : String = "pages"
+
+pub const MODE_ROWS : String = "rows"
+
+pub const MODE_SLOTS : String = "slots"
+
+pub const OVERFLOW_CUT : String = "cut"
+
+pub const OVERFLOW_KEEP : String = ""
+
+pub const OVERFLOW_WRAP : String = "wrap"
+
+pub fn fields(Array[TagToken]) -> Array[Field] raise TagError
+
+pub fn has(String) -> Bool
+
+pub fn items(@json.Json) -> Array[@json.Json]
+
+pub fn normalize(@json.Json) -> @json.Json
+
+pub fn parse(String) -> Array[TagToken] raise TagError
+
+pub fn parse_date(String) -> String?
+
+pub fn parse_text(String) -> Array[TagToken] raise TagError
+
+pub fn truthy(@json.Json) -> Bool
+
+pub fn value_text(@json.Json, String, ((@json.Json, String) -> String)?) -> String
+
+pub fn vars(Int32, Int32, Bool) -> Map[String, @json.Json]
+
+// Errors
+pub suberror TagError {
+  TagError(String, Int32)
+}
+
+// Types and methods
+#derive(Eq, @debug.Debug)
+pub(all) struct Field {
+  name : String
+  kind : String
+  mut in_sections : Array[String]
+  mut format : String
+  mut mode : String
+  mut slots : Int32
+  mut inverted : Bool
+  mut code : String
+  mut input : String
+  mut at : Array[String]
+  mut value_type : String
+  mut options : Array[String]
+  mut labels : Array[String]
+  mut label : String
+  mut default : @json.Json
+  mut max_len : Int32
+  mut multiline : Bool
+}
+
+pub struct Scope {
+  parent : Scope?
+  value : @json.Json
+  vars : Map[String, @json.Json]
+  blank : Bool
+}
+pub fn Scope::blank_scope(Self, Map[String, @json.Json]) -> Self
+pub fn Scope::is_blank(Self) -> Bool
+pub fn Scope::item(Self, @json.Json, Map[String, @json.Json]) -> Self
+pub fn Scope::lookup(Self, Array[String]) -> @json.Json?
+pub fn Scope::new(@json.Json) -> Self
+pub fn Scope::value(Self) -> @json.Json
+
+#derive(Eq, @debug.Debug)
+pub(all) enum TagKind {
+  Text
+  Value
+  Open
+  Inverted
+  Close
+  Image
+}
+
+#derive(Eq, @debug.Debug)
+pub(all) struct TagToken {
+  kind : TagKind
+  mut text : String
+  mut name : String
+  mut path : Array[String]
+  mut format : String
+  mut has_format : Bool
+  mut width : Int32
+  mut align : String
+  mut overflow : String
+  mut mode : String
+  mut fit : String
+  mut input : String
+  mut code : String
+  mut level : String
+  mut quiet : Int32
+  mut has_quiet : Bool
+  mut pos : Int32
+  mut end : Int32
+}
+
+// Type aliases
+pub type Formatter = (@json.Json, String) -> String
+
+// Traits

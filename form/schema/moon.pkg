@@ -1,0 +1,5 @@
+import {
+  "f4ah6o/bdf/form/tag" @tag,
+}
+
+supported_targets = "+js+wasm-gc"

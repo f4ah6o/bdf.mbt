@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/form/data"
+
+import {
+  "moonbitlang/core/json",
+}
+
+// Values
+pub const MAX_DATA_SIZE : Int32 = 268435456
+
+pub fn load_data(Array[Source]) -> Map[String, @json.Json] raise DataError
+
+// Errors
+pub suberror DataError {
+  DataError(String)
+}
+
+// Types and methods
+pub(all) struct Source {
+  name : String
+  file_name : String
+  data : Bytes
+}
+
+// Type aliases
+
+// Traits

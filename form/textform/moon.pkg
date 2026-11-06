@@ -1,0 +1,9 @@
+import {
+  "f4ah6o/bdf/form/tag" @tag,
+  "f4ah6o/bdf/form/data" @data,
+  "f4ah6o/bdf/form/textpart" @textpart,
+  "moonbitlang/core/string",
+  "moonbitlang/core/encoding/utf8",
+}
+
+supported_targets = "+js+wasm-gc"

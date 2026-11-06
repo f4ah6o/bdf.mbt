@@ -1,0 +1,486 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/print/ipp"
+
+// Values
+pub const JOB_ABORTED : Int32 = 8
+
+pub const JOB_CANCELED : Int32 = 7
+
+pub const JOB_COMPLETED : Int32 = 9
+
+pub const JOB_PENDING : Int32 = 3
+
+pub const JOB_PENDING_HELD : Int32 = 4
+
+pub const JOB_PROCESSING : Int32 = 5
+
+pub const JOB_PROCESSING_STOPPED : Int32 = 6
+
+pub const OP_CANCEL_JOB : Int32 = 0x0008
+
+pub const OP_CREATE_JOB : Int32 = 0x0005
+
+pub const OP_GET_JOBS : Int32 = 0x000a
+
+pub const OP_GET_JOB_ATTRIBUTES : Int32 = 0x0009
+
+pub const OP_GET_PRINTER_ATTRIBUTES : Int32 = 0x000b
+
+pub const OP_GET_PRINTER_SUPPORTED_VALUES : Int32 = 0x0015
+
+pub const OP_PRINT_JOB : Int32 = 0x0002
+
+pub const OP_PRINT_URI : Int32 = 0x0003
+
+pub const OP_SEND_DOCUMENT : Int32 = 0x0006
+
+pub const OP_SEND_URI : Int32 = 0x0007
+
+pub const OP_VALIDATE_JOB : Int32 = 0x0004
+
+pub const PRINTER_IDLE : Int32 = 3
+
+pub const PRINTER_PROCESSING : Int32 = 4
+
+pub const PRINTER_STOPPED : Int32 = 5
+
+pub const STATUS_CLIENT_ERROR_BAD_REQUEST : Int32 = 0x0400
+
+pub const STATUS_CLIENT_ERROR_FORBIDDEN : Int32 = 0x0401
+
+pub const STATUS_CLIENT_ERROR_NOT_FOUND : Int32 = 0x0406
+
+pub const STATUS_CLIENT_ERROR_NOT_POSSIBLE : Int32 = 0x040b
+
+pub const STATUS_OK : Int32 = 0x0000
+
+pub const STATUS_OK_IGNORED_OR_SUBSTITUTED : Int32 = 0x0001
+
+pub const STATUS_SERVER_ERROR_INTERNAL : Int32 = 0x0500
+
+pub const STATUS_SERVER_ERROR_OPERATION_NOT_SUPPORTED : Int32 = 0x0501
+
+pub const TAG_ADMIN_DEFINE : Byte = 0x17
+
+pub const TAG_BEGIN_COLLECTION : Byte = 0x34
+
+pub const TAG_BOOLEAN : Byte = 0x22
+
+pub const TAG_CHARSET : Byte = 0x47
+
+pub const TAG_DATE_TIME : Byte = 0x31
+
+pub const TAG_DEFAULT : Byte = 0x11
+
+pub const TAG_DELETE_ATTRIBUTE : Byte = 0x16
+
+pub const TAG_DOCUMENT : Byte = 0x09
+
+pub const TAG_END : Byte = 0x03
+
+pub const TAG_END_COLLECTION : Byte = 0x37
+
+pub const TAG_ENUM : Byte = 0x23
+
+pub const TAG_EVENT_NOTIFICATION : Byte = 0x07
+
+pub const TAG_EXTENSION : Byte = 0x7f
+
+pub const TAG_INTEGER : Byte = 0x21
+
+pub const TAG_JOB : Byte = 0x02
+
+pub const TAG_KEYWORD : Byte = 0x44
+
+pub const TAG_LANGUAGE : Byte = 0x48
+
+pub const TAG_MEMBER_NAME : Byte = 0x4a
+
+pub const TAG_MIME_TYPE : Byte = 0x49
+
+pub const TAG_NAME : Byte = 0x42
+
+pub const TAG_NAME_LANG : Byte = 0x36
+
+pub const TAG_NOT_SETTABLE : Byte = 0x15
+
+pub const TAG_NO_VALUE : Byte = 0x13
+
+pub const TAG_OCTET_STRING : Byte = 0x30
+
+pub const TAG_OPERATION : Byte = 0x01
+
+pub const TAG_PRINTER : Byte = 0x04
+
+pub const TAG_RANGE : Byte = 0x33
+
+pub const TAG_RESERVED_STRING : Byte = 0x43
+
+pub const TAG_RESOLUTION : Byte = 0x32
+
+pub const TAG_RESOURCE : Byte = 0x08
+
+pub const TAG_SUBSCRIPTION : Byte = 0x06
+
+pub const TAG_SYSTEM : Byte = 0x0a
+
+pub const TAG_TEXT : Byte = 0x41
+
+pub const TAG_TEXT_LANG : Byte = 0x35
+
+pub const TAG_UNKNOWN : Byte = 0x12
+
+pub const TAG_UNSUPPORTED : Byte = 0x10
+
+pub const TAG_UNSUPPORTED_GROUP : Byte = 0x05
+
+pub const TAG_URI : Byte = 0x45
+
+pub const TAG_URI_SCHEME : Byte = 0x46
+
+pub fn attr(String, Array[Value]) -> Attribute
+
+pub fn boolean(Bool) -> Value
+
+pub fn charset(String) -> Value
+
+pub fn check_response(Message) -> Unit raise StatusError
+
+pub fn collection(Array[Attribute]) -> Value
+
+pub fn date_time(Bytes) -> Value
+
+pub fn decode(Bytes) -> Message raise IppError
+
+pub fn decode_prefix(Bytes) -> (Message, Int32) raise IppError
+
+pub fn decode_txt(Bytes) -> Map[String, String] raise IppError
+
+pub fn decode_with(Bytes, Limits) -> Message raise IppError
+
+pub fn default_limits() -> Limits
+
+pub fn encode_txt(Array[(String, String)]) -> Bytes raise IppError
+
+pub fn enum_value(Int32) -> Value
+
+pub fn enums(Array[Int32]) -> Array[Value]
+
+pub fn fail(String) -> Unit raise IppError
+
+pub fn filter(Array[Attribute], Array[String], Map[String, Array[String]]) -> Array[Attribute]
+
+pub fn find_attr(Array[Attribute], String) -> Attribute?
+
+pub fn http_request(String, Bytes) -> HttpRequest raise IppError
+
+pub fn integer(Int32) -> Value
+
+pub fn job_attributes_requested() -> Array[Value]
+
+pub fn job_state_done(Int32) -> Bool
+
+pub fn job_state_name(Int32) -> String
+
+pub fn job_status(Array[Attribute]) -> JobStatus
+
+pub fn job_template_attrs() -> Array[String]
+
+pub fn jobs_from_response(Message) -> Array[JobStatus]
+
+pub fn keyword(String) -> Value
+
+pub fn keywords(Array[String]) -> Array[Value]
+
+pub fn language(String) -> Value
+
+pub fn make_job_status(Message) -> JobStatus
+
+pub fn message_status_text(Message) -> String
+
+pub fn mime_type(String) -> Value
+
+pub fn mime_types(Array[String]) -> Array[Value]
+
+pub fn name(String) -> Value
+
+pub fn name_lang(String, String) -> Value
+
+pub fn new_request(Int32, Int32, String, String) -> Message
+
+pub fn new_response(Int32, Int32, String, String) -> Message
+
+pub fn octet_string(Bytes) -> Value
+
+pub fn out_of_band(Byte) -> Value
+
+pub fn parse_http_response(Bytes) -> HttpResponse raise IppError
+
+pub fn parse_media(Array[Attribute]) -> Media
+
+pub fn parse_printer(Message) -> Printer
+
+pub fn parse_url(String) -> (String, String) raise IppError
+
+pub fn printer_attributes() -> Array[String]
+
+pub fn printer_groups(Array[Attribute]) -> Map[String, Array[String]]
+
+pub fn printer_state_name(Int32) -> String
+
+pub fn range(Int32, Int32) -> Value
+
+pub fn requested(Group, Array[String]) -> Array[String]
+
+pub fn resolution(Int32, Int32, Int32) -> Value
+
+pub fn service_url(Service) -> String
+
+pub fn status_is_client_error(Int32) -> Bool
+
+pub fn status_is_server_error(Int32) -> Bool
+
+pub fn status_is_success(Int32) -> Bool
+
+pub fn status_name(Int32) -> String
+
+pub fn tag_is_group(Byte) -> Bool
+
+pub fn tag_is_out_of_band(Byte) -> Bool
+
+pub fn tag_is_string(Byte) -> Bool
+
+pub fn tag_name(Byte) -> String
+
+pub fn text(String) -> Value
+
+pub fn text_lang(String, String) -> Value
+
+pub fn uri(String) -> Value
+
+pub fn uri_scheme(String) -> Value
+
+// Errors
+pub suberror IppError {
+  IppError(String)
+}
+
+pub suberror StatusError {
+  StatusError(Int32, String)
+}
+
+// Types and methods
+pub(all) struct Attribute {
+  name : String
+  values : Array[Value]
+}
+pub fn Attribute::bool(Self) -> Bool?
+pub fn Attribute::collections(Self) -> Array[Array[Self]]
+pub fn Attribute::first(Self) -> Value?
+pub fn Attribute::has(Self, String) -> Bool
+pub fn Attribute::int(Self) -> Int32?
+pub fn Attribute::ints(Self) -> Array[Int32]
+pub fn Attribute::out_of_band(Self) -> Byte?
+pub fn Attribute::ranges(Self) -> Array[(Int32, Int32)]
+pub fn Attribute::resolutions(Self) -> Array[(Int32, Int32, Int32)]
+pub fn Attribute::strings(Self) -> Array[String]
+pub fn Attribute::text(Self) -> String
+
+pub(all) struct Client {
+  http_url : String
+  printer_uri : String
+  user_name : String
+  language : String
+  major : Int32
+  minor : Int32
+  mut next_id : Int32
+}
+pub fn Client::cancel(Self, Int32, (Bytes) -> Bytes?) -> Unit raise IppError
+pub fn Client::create(Self, String, Array[Attribute], (Bytes) -> Bytes?) -> JobStatus raise IppError
+pub fn Client::create_job(Self, String, Array[Attribute]) -> Message
+pub fn Client::fetch_printer(Self, (Bytes) -> Bytes?) -> Printer raise IppError
+pub fn Client::get_jobs(Self, String, Bool, (Bytes) -> Bytes?) -> Array[JobStatus] raise IppError
+pub fn Client::get_printer_attributes(Self, Array[String]) -> Message
+pub fn Client::job(Self, Int32, (Bytes) -> Bytes?) -> JobStatus raise IppError
+pub fn Client::jobs(Self, (Bytes) -> Bytes?) -> Array[JobStatus] raise IppError
+pub fn Client::new(String, String) -> Self raise IppError
+pub fn Client::print(Self, String, String, Array[Attribute], (Bytes) -> Bytes?) -> JobStatus raise IppError
+pub fn Client::print_data(Self, String, String, Bytes, (Bytes) -> Bytes?) -> JobStatus raise IppError
+pub fn Client::print_job(Self, String, String, Array[Attribute]) -> Message
+pub fn Client::print_pclm(Self, String, Bytes, (Bytes) -> Bytes?) -> JobStatus raise IppError
+pub fn Client::print_pdf(Self, String, Bytes, (Bytes) -> Bytes?) -> JobStatus raise IppError
+pub fn Client::print_pwg(Self, String, Bytes, (Bytes) -> Bytes?) -> JobStatus raise IppError
+pub fn Client::print_urf(Self, String, Bytes, (Bytes) -> Bytes?) -> JobStatus raise IppError
+pub fn Client::request(Self, Int32) -> Message
+pub fn Client::send(Self, Message, (Bytes) -> Bytes?) -> Message raise IppError
+pub fn Client::send_document(Self, Int32, String, String, Bool) -> Message
+pub fn Client::send_document_to(Self, Int32, String, String, Bool, (Bytes) -> Bytes?) -> JobStatus raise IppError
+pub fn Client::send_with_document(Self, Message, Bytes, (Bytes) -> Bytes?) -> Message raise IppError
+pub fn Client::validate(Self, Array[Attribute], String, (Bytes) -> Bytes?) -> Unit raise IppError
+pub fn Client::validate_job(Self, Array[Attribute], String) -> Message
+
+pub(all) struct Group {
+  tag : Byte
+  attrs : Array[Attribute]
+}
+pub fn Group::get(Self, String) -> Attribute?
+
+pub(all) struct HttpRequest {
+  method : String
+  target : String
+  host : String
+  body : Bytes
+}
+pub fn HttpRequest::encode(Self) -> Bytes
+
+pub(all) struct HttpResponse {
+  status : Int32
+  reason : String
+  headers : Array[(String, String)]
+  body : Bytes
+}
+
+pub(all) struct JobStatus {
+  id : Int32
+  uri : String
+  name : String
+  state : Int32
+  reasons : Array[String]
+  message : String
+  impressions : Int32
+  attrs : Array[Attribute]
+  unsupported : Array[Attribute]
+}
+pub fn JobStatus::to_string(Self) -> String
+
+pub(all) struct Limits {
+  max_bytes : Int32
+  max_attributes : Int32
+  max_value_bytes : Int32
+  max_values : Int32
+  max_depth : Int32
+}
+
+pub(all) struct Media {
+  size_name : String
+  x : Int32
+  y : Int32
+  source : String
+  typ : String
+  color : String
+  left : Int32
+  right : Int32
+  top : Int32
+  bottom : Int32
+}
+
+pub(all) struct Message {
+  mut major : Int32
+  mut minor : Int32
+  code : Int32
+  request_id : Int32
+  groups : Array[Group]
+}
+pub fn Message::add(Self, Byte, Array[Attribute]) -> Unit
+pub fn Message::attr(Self, Byte, String) -> Attribute?
+pub fn Message::encode(Self) -> Bytes raise IppError
+pub fn Message::group(Self, Byte) -> Group?
+
+pub(all) struct Printer {
+  mut uri : String
+  mut uris : Array[String]
+  mut auth : Array[String]
+  mut security : Array[String]
+  mut name : String
+  mut info : String
+  mut make_model : String
+  mut location : String
+  mut uuid : String
+  mut device_id : String
+  mut state : Int32
+  mut reasons : Array[String]
+  mut state_message : String
+  mut accepting_jobs : Bool
+  mut versions : Array[String]
+  mut operations : Array[Int32]
+  mut config_change_time : Int32
+  mut formats : Array[String]
+  mut default_format : String
+  mut pdf_versions : Array[String]
+  mut media : Array[String]
+  mut media_ready : Array[String]
+  mut media_default : String
+  mut media_sources : Array[String]
+  mut media_types : Array[String]
+  mut media_col : Bool
+  mut media_col_db : Array[Media]
+  mut sides : Array[String]
+  mut sides_default : String
+  mut color_modes : Array[String]
+  mut color_mode_default : String
+  mut qualities : Array[Int32]
+  mut quality_default : Int32
+  mut resolutions : Array[(Int32, Int32, Int32)]
+  mut resolution_default : (Int32, Int32, Int32)?
+  mut copies : (Int32, Int32)
+  mut page_ranges : Bool
+  mut scaling : Array[String]
+  mut scaling_default : String
+  mut number_up : Array[Int32]
+  mut orientations : Array[Int32]
+  mut document_handling : Array[String]
+  mut finishings : Array[Int32]
+  mut finishings_default : Array[Int32]
+  mut output_bins : Array[String]
+  mut output_bin_default : String
+  mut pwg_raster_resolutions : Array[(Int32, Int32, Int32)]
+  mut pwg_raster_types : Array[String]
+  mut pwg_raster_sheet_back : String
+  mut urf : Array[String]
+  mut pclm : Bool
+  mut pclm_strip_height : Int32
+  mut pclm_back_side : String
+  mut pclm_resolutions : Array[(Int32, Int32, Int32)]
+  mut pclm_compression : Array[String]
+  mut job_password : Int32
+  mut job_password_encryption : Array[String]
+  mut job_account_id : Bool
+  mut job_accounting_user_id : Bool
+  mut identify_actions : Array[String]
+  mut job_creation_attrs : Array[String]
+  mut attrs : Array[Attribute]
+}
+pub fn Printer::has(Self, String) -> Attribute?
+pub fn Printer::sorted_formats(Self) -> Array[String]
+pub fn Printer::summary(Self) -> Array[String]
+pub fn Printer::supports(Self, String) -> Bool
+pub fn Printer::supports_op(Self, Int32) -> Bool
+
+pub(all) struct Service {
+  name : String
+  host : String
+  port : Int32
+  txt : Map[String, String]
+  secure : Bool
+  local_printer : Bool
+  url : String
+}
+pub fn Service::formats(Self) -> Array[String]
+
+pub(all) struct Value {
+  tag : Byte
+  int : Int32
+  str : String
+  lang : String
+  raw : Bytes
+  time : Bytes
+  res : (Int32, Int32, Int32)?
+  range : (Int32, Int32)?
+  coll : Array[Attribute]?
+}
+pub fn Value::bool(Self) -> Bool
+
+// Type aliases
+pub type Tag = Byte
+
+// Traits

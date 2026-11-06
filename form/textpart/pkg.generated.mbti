@@ -1,0 +1,99 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/form/textpart"
+
+import {
+  "f4ah6o/bdf/core",
+}
+
+// Values
+pub const MAX_COLUMNS : Int32 = 4096
+
+pub const MAX_LINES : Int32 = 4096
+
+pub const MAX_PAGES : Int32 = 100000
+
+pub const MAX_PAGE_LINES : Int32 = 1048576
+
+pub const MAX_SIZE : Int32 = 67108864
+
+pub const SIZE_BIG : String = "big"
+
+pub const SIZE_TALL : String = "tall"
+
+pub const SIZE_WIDE : String = "wide"
+
+pub const VERSION : Int32 = 1
+
+pub fn decode(String) -> Image raise TextPartError
+
+pub fn from_document(Bytes) -> Image raise TextPartError
+
+pub fn width(Char, Bool) -> Int32
+
+// Errors
+pub suberror TextPartError {
+  TextPartError(String)
+  TextPartNone
+}
+
+// Types and methods
+pub(all) struct Cell {
+  mut text : String
+  col : Int32
+  cols : Int32
+  size : String
+  paper : Bool
+}
+
+pub(all) struct Image {
+  version : Int32
+  cpi : Double
+  lpi : Double
+  columns : Int32
+  lines : Int32
+  margin : Margin
+  skip : Int32
+  ambiguous_wide : Bool
+  font : String
+  pages : Array[Page]
+}
+pub fn Image::add_to(Self, @core.DocumentWriter) -> String raise TextPartError
+pub fn Image::cells(Self, Line) -> Array[Cell]
+pub fn Image::encode(Self) -> String raise TextPartError
+pub fn Image::new() -> Self
+pub fn Image::rows(Self, Page) -> Int32
+pub fn Image::text(Self, TextOptions) -> String
+
+pub(all) struct Line {
+  text : String
+  paper : Array[Range]
+  size : Array[Range]
+}
+pub fn Line::new(String) -> Self
+pub fn Line::tall(Self) -> Bool
+
+pub(all) struct Margin {
+  left : Int32
+  top : Int32
+}
+
+pub(all) struct Page {
+  lines : Array[Line]
+}
+
+pub(all) struct Range {
+  col : Int32
+  cols : Int32
+  size : String
+}
+pub fn Range::new(Int32, Int32, String) -> Self
+
+pub(all) struct TextOptions {
+  margins : Bool
+  no_paper : Bool
+  crlf : Bool
+}
+
+// Type aliases
+
+// Traits

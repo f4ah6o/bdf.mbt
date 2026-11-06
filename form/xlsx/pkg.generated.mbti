@@ -1,0 +1,18 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/form/xlsx"
+
+// Values
+pub fn fill(Bytes, Bytes, data_mode? : String, no_text_index? : Bool) -> @f4ah6o/bdf/convert/xlsx.XlsxPlainResult raise
+
+pub fn fill_bytes(Bytes, Bytes) -> Bytes raise
+
+// Errors
+pub suberror XlsxFormError {
+  XlsxFormError(String)
+}
+
+// Types and methods
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,319 @@
+///|
+pub(all) struct Job {
+  id : Int
+  uri : String
+  name : String
+  user : String
+  mut state : Int
+  mut document : Bytes
+  mut impressions : Int
+  attrs : Array[@ipp.Attribute]
+}
+
+///|
+pub(all) struct Server {
+  printer_name : String
+  printer_uri : String
+  printer_attrs : Array[@ipp.Attribute]
+  jobs : Array[Job]
+  mut next_job : Int
+}
+
+///|
+pub fn Server::new(
+  printer_uri : String,
+  printer_attrs : Array[@ipp.Attribute],
+) -> Server {
+  let name = match @ipp.find_attr(printer_attrs, "printer-name") {
+    Some(attribute) => attribute.text()
+    None => "bdf"
+  }
+  {
+    printer_name: name,
+    printer_uri,
+    printer_attrs,
+    jobs: [],
+    next_job: 1,
+  }
+}
+
+///|
+fn response_for(request : @ipp.Message, status : Int) -> @ipp.Message {
+  let charset = match request.attr(@ipp.TAG_OPERATION, "attributes-charset") {
+    Some(attribute) => attribute.text()
+    None => "utf-8"
+  }
+  let language = match request.attr(@ipp.TAG_OPERATION, "attributes-natural-language") {
+    Some(attribute) => attribute.text()
+    None => "en"
+  }
+  let response = @ipp.new_response(status, request.request_id, charset, language)
+  response.major = request.major
+  response.minor = request.minor
+  response
+}
+
+///|
+fn state_reason(state : Int) -> String {
+  if state == @ipp.JOB_COMPLETED {
+    "job-completed-successfully"
+  } else if state == @ipp.JOB_CANCELED {
+    "job-canceled-by-user"
+  } else if state == @ipp.JOB_ABORTED {
+    "job-aborted-by-system"
+  } else {
+    "none"
+  }
+}
+
+///|
+fn job_attrs(server : Server, job : Job) -> Array[@ipp.Attribute] {
+  [
+    @ipp.attr("job-id", [@ipp.integer(job.id)]),
+    @ipp.attr("job-uri", [@ipp.uri(job.uri)]),
+    @ipp.attr("job-name", [@ipp.name(job.name)]),
+    @ipp.attr("job-state", [@ipp.enum_value(job.state)]),
+    @ipp.attr("job-state-reasons", [@ipp.keyword(state_reason(job.state))]),
+    @ipp.attr("job-printer-uri", [@ipp.uri(server.printer_uri)]),
+    @ipp.attr("job-impressions-completed", [@ipp.integer(job.impressions)]),
+  ]
+}
+
+///|
+fn Server::find_job(self : Server, id : Int) -> Job? {
+  for job in self.jobs {
+    if job.id == id {
+      return Some(job)
+    }
+  }
+  None
+}
+
+///|
+fn Server::create_job(self : Server, request : @ipp.Message) -> Job {
+  let id = self.next_job
+  self.next_job += 1
+  let name = match request.attr(@ipp.TAG_OPERATION, "job-name") {
+    Some(attribute) => attribute.text()
+    None => "job-" + id.to_string()
+  }
+  let user = match request.attr(@ipp.TAG_OPERATION, "requesting-user-name") {
+    Some(attribute) => attribute.text()
+    None => ""
+  }
+  let job : Job = {
+    id,
+    uri: self.printer_uri + "/jobs/" + id.to_string(),
+    name,
+    user,
+    state: @ipp.JOB_PENDING,
+    document: Bytes::new(0),
+    impressions: 0,
+    attrs: [],
+  }
+  self.jobs.push(job)
+  job
+}
+
+///|
+/// Handle one IPP request for the server's printer.
+pub fn Server::handle_with_document(
+  self : Server,
+  request : @ipp.Message,
+  document : Bytes,
+) -> @ipp.Message {
+  if request.code == @ipp.OP_GET_PRINTER_ATTRIBUTES {
+    let response = response_for(request, @ipp.STATUS_OK)
+    let requested = match request.attr(@ipp.TAG_OPERATION, "requested-attributes") {
+      Some(attribute) => attribute.strings()
+      None => ["all"]
+    }
+    let filtered = @ipp.filter(
+      self.printer_attrs,
+      requested,
+      @ipp.printer_groups(self.printer_attrs),
+    )
+    response.add(@ipp.TAG_PRINTER, filtered)
+    response
+  } else if request.code == @ipp.OP_VALIDATE_JOB {
+    response_for(request, @ipp.STATUS_OK)
+  } else if request.code == @ipp.OP_CREATE_JOB {
+    let job = self.create_job(request)
+    let response = response_for(request, @ipp.STATUS_OK)
+    response.add(@ipp.TAG_JOB, job_attrs(self, job))
+    response
+  } else if request.code == @ipp.OP_PRINT_JOB {
+    let job = self.create_job(request)
+    if document.length() > 0 {
+      job.document = document
+      let format = match request.attr(@ipp.TAG_OPERATION, "document-format") {
+        Some(attribute) => attribute.text()
+        None => ""
+      }
+      if format.contains("pwg") || document.has_prefix(b"RaS2") {
+        let pages = @raster.read(document) catch {
+          _ => {
+            job.state = @ipp.JOB_ABORTED
+            job.impressions = 0
+            let response = response_for(request, @ipp.STATUS_OK)
+            response.add(@ipp.TAG_JOB, job_attrs(self, job))
+            return response
+          }
+        }
+        job.state = @ipp.JOB_COMPLETED
+        job.impressions = pages.length()
+      } else {
+        job.state = @ipp.JOB_COMPLETED
+        job.impressions = 1
+      }
+    }
+    let response = response_for(request, @ipp.STATUS_OK)
+    response.add(@ipp.TAG_JOB, job_attrs(self, job))
+    response
+  } else if request.code == @ipp.OP_GET_JOB_ATTRIBUTES {
+    let id = match request.attr(@ipp.TAG_OPERATION, "job-id") {
+      Some(attribute) => attribute.int().unwrap_or(-1)
+      None => -1
+    }
+    match self.find_job(id) {
+      Some(job) => {
+        let response = response_for(request, @ipp.STATUS_OK)
+        response.add(@ipp.TAG_JOB, job_attrs(self, job))
+        response
+      }
+      None => response_for(request, @ipp.STATUS_CLIENT_ERROR_NOT_FOUND)
+    }
+  } else if request.code == @ipp.OP_CANCEL_JOB {
+    let id = match request.attr(@ipp.TAG_OPERATION, "job-id") {
+      Some(attribute) => attribute.int().unwrap_or(-1)
+      None => -1
+    }
+    match self.find_job(id) {
+      Some(job) => {
+        if !@ipp.job_state_done(job.state) {
+          job.state = @ipp.JOB_CANCELED
+        }
+        let response = response_for(request, @ipp.STATUS_OK)
+        response.add(@ipp.TAG_JOB, job_attrs(self, job))
+        response
+      }
+      None => response_for(request, @ipp.STATUS_CLIENT_ERROR_NOT_FOUND)
+    }
+  } else if request.code == @ipp.OP_GET_JOBS {
+    let response = response_for(request, @ipp.STATUS_OK)
+    let which = match request.attr(@ipp.TAG_OPERATION, "which-jobs") {
+      Some(attribute) => attribute.text()
+      None => "not-completed"
+    }
+    let my_jobs = match request.attr(@ipp.TAG_OPERATION, "my-jobs") {
+      Some(attribute) => attribute.bool().unwrap_or(false)
+      None => false
+    }
+    let user = match request.attr(@ipp.TAG_OPERATION, "requesting-user-name") {
+      Some(attribute) => attribute.text()
+      None => ""
+    }
+    let limit = match request.attr(@ipp.TAG_OPERATION, "limit") {
+      Some(attribute) => attribute.int().unwrap_or(0)
+      None => 0
+    }
+    let mut added = 0
+    for job in self.jobs {
+      let done = @ipp.job_state_done(job.state)
+      let take = if which == "completed" {
+        done
+      } else if which == "all" {
+        true
+      } else {
+        !done
+      }
+      if take && (!my_jobs || job.user == user) && (limit <= 0 || added < limit) {
+        response.add(@ipp.TAG_JOB, job_attrs(self, job))
+        added += 1
+      }
+    }
+    response
+  } else {
+    response_for(request, @ipp.STATUS_SERVER_ERROR_OPERATION_NOT_SUPPORTED)
+  }
+}
+
+///|
+fn server_http_body(data : Bytes) -> Bytes raise @ipp.IppError {
+  let text = @utf8.decode_lossy(data)
+  let head_end = match text.find("\r\n\r\n") {
+    Some(index) => index
+    None => {
+      @ipp.fail("server: an HTTP request without a header end")
+      0
+    }
+  }
+  let head = text[:head_end]
+  let mut length = -1
+  for line in head.split("\r\n") {
+    let lower = line.to_lower()
+    if lower.has_prefix("content-length:") {
+      length = @string.parse_int(line[15:].trim()) catch {
+        _ => -1
+      }
+    }
+  }
+  let body = data[head_end + 4:]
+  if length >= 0 && body.length() != length {
+    @ipp.fail("server: the HTTP body does not match Content-Length")
+  }
+  body.to_bytes()
+}
+
+///|
+fn server_reason(status : Int) -> String {
+  if status == @ipp.STATUS_OK {
+    "OK"
+  } else if @ipp.status_is_client_error(status) {
+    "Bad Request"
+  } else {
+    "Internal Server Error"
+  }
+}
+
+///|
+/// Handle an HTTP request that carries one IPP request, and return the
+/// HTTP response that carries the answer.
+pub fn Server::handle(self : Server, request : @ipp.Message) -> @ipp.Message {
+  self.handle_with_document(request, Bytes::new(0))
+}
+
+///|
+/// Handle an HTTP request that carries one IPP request, and return the
+/// HTTP response that carries the answer.
+pub fn Server::handle_http(self : Server, request_bytes : Bytes) -> Bytes raise @ipp.IppError {
+  let body = server_http_body(request_bytes)
+  let (request, consumed) = @ipp.decode_prefix(body)
+  let document = if consumed < body.length() {
+    body[consumed:].to_owned()
+  } else {
+    Bytes::new(0)
+  }
+  let response = self.handle_with_document(request, document)
+  let response_body = response.encode()
+  let http_status = if @ipp.status_is_success(response.code) {
+    200
+  } else if @ipp.status_is_client_error(response.code) {
+    400
+  } else {
+    500
+  }
+  let head = "HTTP/1.1 " +
+    http_status.to_string() +
+    " " +
+    server_reason(response.code) +
+    "\r\nContent-Type: application/ipp\r\nContent-Length: " +
+    response_body.length().to_string() +
+    "\r\nConnection: close\r\n\r\n"
+  let out = @utf8.encode(head).to_array()
+  for byte in response_body {
+    out.push(byte)
+  }
+  Bytes::from_array(out)
+}
+

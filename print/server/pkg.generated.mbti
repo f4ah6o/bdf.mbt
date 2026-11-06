@@ -1,0 +1,38 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/print/server"
+
+import {
+  "f4ah6o/bdf/print/ipp",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) struct Job {
+  id : Int32
+  uri : String
+  name : String
+  user : String
+  mut state : Int32
+  mut document : Bytes
+  mut impressions : Int32
+  attrs : Array[@ipp.Attribute]
+}
+
+pub(all) struct Server {
+  printer_name : String
+  printer_uri : String
+  printer_attrs : Array[@ipp.Attribute]
+  jobs : Array[Job]
+  mut next_job : Int32
+}
+pub fn Server::handle(Self, @ipp.Message) -> @ipp.Message
+pub fn Server::handle_http(Self, Bytes) -> Bytes raise @ipp.IppError
+pub fn Server::handle_with_document(Self, @ipp.Message, Bytes) -> @ipp.Message
+pub fn Server::new(String, Array[@ipp.Attribute]) -> Self
+
+// Type aliases
+
+// Traits

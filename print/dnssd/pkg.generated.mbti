@@ -1,0 +1,103 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/print/dnssd"
+
+// Values
+pub const CLASS_FLUSH : Int32 = 0x8001
+
+pub const CLASS_IN : Int32 = 1
+
+pub const TYPE_A : Int32 = 1
+
+pub const TYPE_AAAA : Int32 = 28
+
+pub const TYPE_ANY : Int32 = 255
+
+pub const TYPE_PTR : Int32 = 12
+
+pub const TYPE_SRV : Int32 = 33
+
+pub const TYPE_TXT : Int32 = 16
+
+pub fn advertisement_records(Advertisement) -> Array[Record] raise DnsError
+
+pub fn announce_message(Int32, Advertisement) -> Bytes raise DnsError
+
+pub fn browse(String, (Bytes) -> Bytes?) -> Array[FoundService] raise DnsError
+
+pub fn browse_with_id(Int32, String, (Bytes) -> Bytes?) -> Array[FoundService] raise DnsError
+
+pub fn decode(Bytes) -> Message raise DnsError
+
+pub fn discover(Message, String) -> Array[FoundService]
+
+pub fn encode_query(Int32, Array[Question]) -> Bytes raise DnsError
+
+pub fn encode_response(Int32, Array[Question], Array[Record]) -> Bytes raise DnsError
+
+pub fn instance_name(String, String) -> String
+
+pub fn probe_message(Int32, Advertisement) -> Bytes raise DnsError
+
+pub fn probe_questions(Advertisement) -> Array[Question]
+
+pub fn service_question(String) -> Question
+
+// Errors
+pub suberror DnsError {
+  DnsError(String)
+}
+
+// Types and methods
+pub(all) struct Advertisement {
+  instance : String
+  service_type : String
+  port : Int32
+  host : String
+  addresses : Array[String]
+  txt : Array[(String, String)]
+  subtypes : Array[String]
+}
+
+pub(all) struct FoundService {
+  name : String
+  host : String
+  port : Int32
+  addresses : Array[String]
+  txt : Map[String, String]
+  secure : Bool
+  url : String
+}
+
+pub(all) struct Message {
+  id : Int32
+  flags : Int32
+  questions : Array[Question]
+  answers : Array[Record]
+}
+
+pub(all) struct Question {
+  name : String
+  typ : Int32
+  class_ : Int32
+}
+
+pub(all) struct Record {
+  name : String
+  typ : Int32
+  class_ : Int32
+  ttl : Int32
+  data : RecordData
+}
+
+pub(all) enum RecordData {
+  A(Bytes)
+  Aaaa(Bytes)
+  Ptr(String)
+  Srv(Int32, Int32, Int32, String)
+  Txt(Array[Bytes])
+  Raw(Bytes)
+}
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,18 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/form/pptx"
+
+// Values
+pub fn fill(Bytes, Bytes, title? : String, pages? : String) -> @f4ah6o/bdf/convert/pptx.PptxResult raise
+
+pub fn fill_bytes(Bytes, Bytes) -> Bytes raise
+
+// Errors
+pub suberror PptxFormError {
+  PptxFormError(String)
+}
+
+// Types and methods
+
+// Type aliases
+
+// Traits

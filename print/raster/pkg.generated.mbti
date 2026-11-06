@@ -1,0 +1,176 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/print/raster"
+
+// Values
+pub const BLACK_1 : String = "black_1"
+
+pub const HEADER_SIZE : Int32 = 1796
+
+pub const ORIENT_AUTO : Int32 = 0
+
+pub const ORIENT_LANDSCAPE : Int32 = 4
+
+pub const ORIENT_PORTRAIT : Int32 = 3
+
+pub const ORIENT_REVERSE_LANDSCAPE : Int32 = 5
+
+pub const ORIENT_REVERSE_PORTRAIT : Int32 = 6
+
+pub const SCALE_AUTO : String = "auto"
+
+pub const SCALE_AUTO_FIT : String = "auto-fit"
+
+pub const SCALE_FILL : String = "fill"
+
+pub const SCALE_FIT : String = "fit"
+
+pub const SCALE_NONE : String = "none"
+
+pub const SGRAY_1 : String = "sgray_1"
+
+pub const SGRAY_8 : String = "sgray_8"
+
+pub const SRGB_8 : String = "srgb_8"
+
+pub const SYNC : String = "RaS2"
+
+pub const URF_HEADER_SIZE : Int32 = 32
+
+pub const URF_SYNC : String = "UNIRAST\x00"
+
+pub fn back(String, Bool) -> (Int32, Int32) raise RasterError
+
+pub fn encode_line(Bytes, Int32) -> Bytes raise RasterError
+
+pub fn encode_line_repeat(Bytes, Int32, Byte) -> Bytes raise RasterError
+
+pub fn encode_pclm(Page, RasterImage, PclmOptions) -> Bytes raise RasterError
+
+pub fn encode_pwg(Page, RasterImage) -> Bytes raise RasterError
+
+pub fn encode_urf(Page, RasterImage) -> Bytes raise RasterError
+
+pub fn fit(Double, Double, Sheet, String, Int32) -> Place raise RasterError
+
+pub fn mirror(Place, Int32, Int32) -> Place
+
+pub fn read(Bytes) -> Array[RasterPage] raise RasterError
+
+pub fn read_limited(Bytes, Int32, Int32) -> Array[RasterPage] raise RasterError
+
+pub fn read_urf(Bytes) -> Array[RasterPage] raise RasterError
+
+pub fn row_bytes(RasterImage, Int32, String) -> Bytes raise RasterError
+
+pub fn urf_header(Page) -> Bytes raise RasterError
+
+// Errors
+pub suberror RasterError {
+  RasterError(String)
+}
+
+// Types and methods
+pub(all) struct Page {
+  width : Int32
+  height : Int32
+  xdpi : Int32
+  ydpi : Int32
+  typ : String
+  page_width : Int32
+  page_height : Int32
+  page_size_name : String
+  media_type : String
+  media_color : String
+  duplex : Bool
+  tumble : Bool
+  cross_feed : Int32
+  feed : Int32
+  copies : Int32
+  total_pages : Int32
+  quality : Int32
+  media_position : Int32
+}
+pub fn Page::header(Self) -> Bytes raise RasterError
+pub fn Page::new(Int32, Int32, Int32, Int32, String) -> Self
+
+pub(all) struct PclmOptions {
+  strip_height : Int32
+  compression : String
+}
+pub fn PclmOptions::new() -> Self
+
+pub(all) struct PclmWriter {
+  out : Array[Byte]
+  offsets : Array[Int32]
+  pages : Array[Int32]
+  mut page : Page?
+  mut rows : Int32
+  mut unit : Int32
+  mut strip : Array[Byte]
+  mut in_strip : Int32
+  mut strips : Array[Int32]
+  mut heights : Array[Int32]
+  strip_height : Int32
+  compression : String
+}
+pub fn PclmWriter::close(Self) -> Bytes raise RasterError
+pub fn PclmWriter::end_page(Self) -> Unit raise RasterError
+pub fn PclmWriter::new(PclmOptions) -> Self raise RasterError
+pub fn PclmWriter::start_page(Self, Page) -> Unit raise RasterError
+pub fn PclmWriter::write_image_row(Self, RasterImage, Int32) -> Unit raise RasterError
+pub fn PclmWriter::write_row(Self, Bytes) -> Unit raise RasterError
+
+pub(all) struct Place {
+  w : Int32
+  h : Int32
+  scale : Double
+  turns : Int32
+  x : Double
+  y : Double
+  mirror_x : Bool
+  mirror_y : Bool
+}
+
+pub(all) struct RasterImage {
+  width : Int32
+  height : Int32
+  rgba : Bytes
+}
+pub fn RasterImage::new(Int32, Int32, Bytes) -> Self raise RasterError
+
+pub(all) struct RasterPage {
+  page : Page
+  rows : Array[Bytes]
+}
+
+pub(all) struct Sheet {
+  width : Double
+  height : Double
+  dpi : Int32
+}
+pub fn Sheet::new(Double, Double, Int32) -> Self
+pub fn Sheet::pixels(Self) -> (Int32, Int32)
+
+pub(all) struct Writer {
+  out : Array[Byte]
+  mut started : Bool
+  mut page : Page?
+  mut bpp : Int32
+  mut line_size : Int32
+  mut rows : Int32
+  mut held : Bool
+  mut repeat : Int32
+  mut prev : Bytes
+  mut urf : Bool
+  mut urf_pages : Int32
+}
+pub fn Writer::close(Self) -> Bytes raise RasterError
+pub fn Writer::new() -> Self
+pub fn Writer::new_urf(Int32) -> Self
+pub fn Writer::start_page(Self, Page) -> Unit raise RasterError
+pub fn Writer::write_image_row(Self, RasterImage, Int32) -> Unit raise RasterError
+pub fn Writer::write_row(Self, Bytes) -> Unit raise RasterError
+
+// Type aliases
+
+// Traits

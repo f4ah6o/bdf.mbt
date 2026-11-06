@@ -1,0 +1,25 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/print/ipp_js"
+
+import {
+  "f4ah6o/bdf/print/ipp",
+}
+
+// Values
+pub async fn fetch_printer_async(@ipp.Client) -> @ipp.Printer raise @ipp.IppError
+
+pub async fn get_jobs_async(@ipp.Client, String, Bool) -> Array[@ipp.JobStatus] raise @ipp.IppError
+
+pub async fn print_pdf_async(@ipp.Client, String, Bytes) -> @ipp.JobStatus raise @ipp.IppError
+
+pub async fn send_async(@ipp.Client, @ipp.Message) -> @ipp.Message raise @ipp.IppError
+
+pub async fn send_document_async(@ipp.Client, @ipp.Message, Bytes) -> @ipp.Message raise @ipp.IppError
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,6 @@
+import {
+  "gaato/deflate/zlib" @zlib,
+  "moonbitlang/core/encoding/utf8",
+}
+
+supported_targets = "+js+wasm-gc"

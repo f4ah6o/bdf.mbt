@@ -1,0 +1,32 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/textform"
+
+import {
+  "f4ah6o/bdf/form/data",
+  "f4ah6o/bdf/form/textpart",
+  "moonbitlang/core/json",
+}
+
+// Values
+pub fn convert(String, Map[String, @json.Json], String, pages? : String) -> TextFormResult raise
+
+pub fn convert_sources(String, Array[@data.Source], String, pages? : String) -> TextFormResult raise
+
+pub fn render(@textpart.Image, String) -> Bytes raise
+
+pub fn render_with_tables(@textpart.Image, Array[Array[Int32]], String, pages? : String) -> Bytes raise
+
+// Errors
+pub suberror TextFormError {
+  TextFormError(String)
+}
+
+// Types and methods
+pub(all) struct TextFormResult {
+  bdf : Bytes
+  image : @textpart.Image
+}
+
+// Type aliases
+
+// Traits
