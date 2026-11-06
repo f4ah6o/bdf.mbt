@@ -325,3 +325,25 @@ test "pdf inset borders are drawn" {
   assert_true(resources.object.ops.length() > 10)
 }
 
+///|
+test "pdf overlay spans multiple pages" {
+  let pdf = @base64.decode(
+    "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgL0Fjcm9Gb3JtIDw8IC9GaWVsZHMgWzUgMCBSIDYgMCBSXSA+PiA+PgplbmRvYmoKMiAwIG9iago8PCAvVHlwZSAvUGFnZXMgL0tpZHMgWzMgMCBSIDQgMCBSXSAvQ291bnQgMiA+PgplbmRvYmoKMyAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDIwMCAxMDBdIC9Bbm5vdHMgWzUgMCBSXSA+PgplbmRvYmoKNCAwIG9iago8PCAvVHlwZSAvUGFnZSAvUGFyZW50IDIgMCBSIC9NZWRpYUJveCBbMCAwIDIwMCAxMDBdIC9Bbm5vdHMgWzYgMCBSXSA+PgplbmRvYmoKNSAwIG9iago8PCAvVHlwZSAvQW5ub3QgL1N1YnR5cGUgL1dpZGdldCAvRlQgL1R4IC9UIChmaXJzdCkgL1YgKCkgL1JlY3QgWzEwIDIwIDEwMCA0MF0gL1AgMyAwIFIgPj4KZW5kb2JqCjYgMCBvYmoKPDwgL1R5cGUgL0Fubm90IC9TdWJ0eXBlIC9XaWRnZXQgL0ZUIC9UeCAvVCAoc2Vjb25kKSAvViAoKSAvUmVjdCBbMTAgMjAgMTAwIDQwXSAvUCA0IDAgUiA+PgplbmRvYmoKeHJlZgowIDcKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwOTYgMDAwMDAgbiAKMDAwMDAwMDE1OSAwMDAwMCBuIAowMDAwMDAwMjQ2IDAwMDAwIG4gCjAwMDAwMDAzMzMgMDAwMDAgbiAKMDAwMDAwMDQzOSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDcgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjU0NgolJUVPRgo=",
+  )
+  let bdf = fill_overlay(
+    pdf,
+    @utf8.encode("{\"first\":\"One\",\"second\":\"Two\"}"),
+  )
+  let document = @core.open_single(bdf)
+  let view = document.manifest.views[0]
+  assert_eq(view.pages.length(), 2)
+  let first = @core.decode_object_resources(
+    document.part(view.pages[0].layers[0].object),
+  )
+  let second = @core.decode_object_resources(
+    document.part(view.pages[1].layers[0].object),
+  )
+  assert_true(first.object.strings.contains("One"))
+  assert_true(second.object.strings.contains("Two"))
+}
+

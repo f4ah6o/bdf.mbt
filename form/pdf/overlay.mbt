@@ -160,24 +160,54 @@ pub fn fill_overlay(
   }
   let fields = read_fields(pdf_bytes)
   let (page_width, page_height) = overlay_page_size(pdf)
-  let builder = @core.ObjectBuilder::new()
-  builder.set_bbox(0.0, 0.0, Float::from_double(page_width), Float::from_double(page_height))
-  builder.fill_color(0xffffffff)
-  builder.fill_rect(
-    0.0,
-    0.0,
-    Float::from_double(page_width),
-    Float::from_double(page_height),
-  )
-  let font = builder.add_font({
-    hash: None,
-    family: "Helvetica",
-    weight: 400,
-    style: 0,
-  }) catch {
-    _ => raise PdfFillError("form/pdf: the font cannot be added")
+  let page_keys : Array[Int] = []
+  for field in fields {
+    let key = field.page_object.unwrap_or(0)
+    if !page_keys.contains(key) {
+      page_keys.push(key)
+    }
+  }
+  if page_keys.is_empty() {
+    page_keys.push(0)
+  }
+  let builders : Array[@core.ObjectBuilder] = []
+  let fonts : Array[Int32] = []
+  for _ in page_keys {
+    let builder = @core.ObjectBuilder::new()
+    builder.set_bbox(
+      0.0,
+      0.0,
+      Float::from_double(page_width),
+      Float::from_double(page_height),
+    )
+    builder.fill_color(0xffffffff)
+    builder.fill_rect(
+      0.0,
+      0.0,
+      Float::from_double(page_width),
+      Float::from_double(page_height),
+    )
+    let font = builder.add_font({
+      hash: None,
+      family: "Helvetica",
+      weight: 400,
+      style: 0,
+    }) catch {
+      _ => raise PdfFillError("form/pdf: the font cannot be added")
+    }
+    builders.push(builder)
+    fonts.push(font)
   }
   for field in fields {
+    let page_key = field.page_object.unwrap_or(0)
+    let mut page_index = 0
+    for i, key in page_keys {
+      if key == page_key {
+        page_index = i
+      }
+    }
+    let builder = builders[page_index]
+    let font = fonts[page_index]
     if skip_read_only && field.read_only {
       continue
     }
@@ -396,26 +426,30 @@ pub fn fill_overlay(
     builder.restore()
   }
   let writer = @core.DocumentWriter::new()
-  let hash = writer.add_part("obj", builder.encode()) catch {
-    _ => raise PdfFillError("form/pdf: the overlay cannot be encoded")
+  let pages : Array[Json] = []
+  for builder in builders {
+    let hash = writer.add_part("obj", builder.encode()) catch {
+      _ => raise PdfFillError("form/pdf: the overlay cannot be encoded")
+    }
+    pages.push(
+      Json::object({
+        "w": Json::number(page_width),
+        "h": Json::number(page_height),
+        "layers": Json::array([
+          Json::object({
+            "role": Json::string(""),
+            "obj": Json::string(hash),
+          }),
+        ]),
+      }),
+    )
   }
   writer.add_view(
     Json::object({
       "id": Json::string("form"),
       "kind": Json::string("fixed"),
       "title": Json::string(title),
-      "pages": Json::array([
-        Json::object({
-          "w": Json::number(page_width),
-          "h": Json::number(page_height),
-          "layers": Json::array([
-            Json::object({
-              "role": Json::string(""),
-              "obj": Json::string(hash),
-            }),
-          ]),
-        }),
-      ]),
+      "pages": Json::array(pages),
     }),
   )
   writer.write_single() catch {
