@@ -64,6 +64,7 @@ pub fn convert(
     warnings,
     warned: Map([]),
     unknown: Map([]),
+    last_text: None,
   }
   for element in elements {
     interp.element(element)

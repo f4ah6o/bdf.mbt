@@ -10,6 +10,7 @@
 - `moon build --target wasm-gc`
 - `npm run build:demo`
 - `npm run test:demo`
+- `npm run test:previews` (gallery thumbnails are current; upstream sample hashes)
 - `npm run test:phase1-converter`
 - `npm run test:phase2-converter`
 - `npm run test:phase3-converter`
@@ -306,9 +307,10 @@
   entities as documented gaps. SXF SFC drawings are ported for sheets, layers, colours,
   line types, lines, polylines, circles, arcs, ellipses, text, markers,
   splines, clothoids and compound figures; P21/P2Z, dimensions, labels and
-  hatches are documented gaps. Binary CGM pictures are ported for VDC extents,
-  metric scaling, lines, markers, polygons, rectangles, circles, arcs, ellipses
-  and text; clear-text CGM, gzip, cell arrays, tiles and hatches are documented
+  hatches are documented gaps. Binary and clear-text CGM pictures are ported
+  for VDC extents, metric scaling, the colour table, lines, markers, polygons,
+  rectangles, circles, arcs, ellipses and text with its character height,
+  path and alignment; gzip, cell arrays, tiles and hatches are documented
   gaps. Single-file Gerber is ported for FS/MO/AD/AM, D01/D02/D03, linear and
   circular interpolation, regions, standard apertures and an approximate macro
   aperture, drawn 1:1; simple Excellon drill files with METRIC/INCH tools are

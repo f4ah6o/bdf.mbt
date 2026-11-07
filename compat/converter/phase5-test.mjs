@@ -165,7 +165,7 @@ try {
   }
   assert.deepEqual(result.open, { pages: 1, first: 1 });
   assert.equal(result.selected, 1);
-  assert.ok(String(result.clearText).startsWith('cgm:'), 'clear-text CGM is an explicit gap');
+  assert.equal(result.clearText, 'accepted', 'this port converts clear-text CGM');
   assert.equal(result.clearTextUpstream, 'accepted', 'upstream converts clear-text CGM');
   assert.equal(result.job.upstreamPages, 2, 'upstream job.plt has a raster page');
   assert.equal(result.job.moonPages, 1, 'this port converts the HP-GL/2 page only');

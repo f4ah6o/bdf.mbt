@@ -20,6 +20,12 @@ priv struct CgmState {
   mut text_path : Int
   mut char_expansion : Double
   mut char_spacing : Double
+  mut char_height : Double
+  mut color_precision : Int
+  mut color_mode : Int
+  mut color_table : Array[UInt32]
+  mut edge_visible : Bool
+  mut fill_visible : Bool
 }
 
 ///|
@@ -43,8 +49,14 @@ fn cgm_state() -> CgmState {
     text_align_h: 0,
     text_align_v: 0,
     text_path: 0,
+    char_height: 0.0,
     char_expansion: 1.0,
     char_spacing: 0.0,
+    color_precision: 8,
+    color_mode: 1,
+    color_table: cgm_default_colors(),
+    edge_visible: true,
+    fill_visible: true,
   }
 }
 
@@ -68,6 +80,7 @@ priv struct CgmInterp {
   warnings : Array[String]
   warned : Map[String, Bool]
   unknown : Map[String, Int]
+  mut last_text : @cad.CadText?
 }
 
 ///|
@@ -79,17 +92,79 @@ fn CgmInterp::warn_once(self : CgmInterp, key : String, message : String) -> Uni
 }
 
 ///|
-fn cgm_color(index : Int) -> UInt32 {
-  let table : Array[UInt32] = [
+/// The CGM default colour table: eight direct RGB entries.
+fn cgm_default_colors() -> Array[UInt32] {
+  [
     0xffffffffU, 0x000000ffU, 0xff0000ffU, 0x00ff00ffU,
     0x0000ffffU, 0xffff00ffU, 0x00ffffffU, 0xff00ffffU,
   ]
-  if index >= 0 && index < table.length() { table[index] } else { 0x000000ffU }
 }
 
 ///|
 fn CgmInterp::color(self : CgmInterp, index : Int) -> UInt32 {
-  cgm_color(index)
+  let table = self.state.color_table
+  if index >= 0 && index < table.length() {
+    table[index]
+  } else if index >= 0 && index < 256 {
+    // A colour index past the table is the direct RGB value.
+    cgm_direct_color(index, 8)
+  } else {
+    0x000000ffU
+  }
+}
+
+///|
+/// A direct (mode 2) colour value as RGBA: the low `precision` bits are blue,
+/// the next `precision` bits green and the next `precision` bits red.
+fn cgm_direct_color(value : Int, precision : Int) -> UInt32 {
+  let bits = if precision <= 0 || precision > 8 { 8 } else { precision }
+  let mask = (1 << bits) - 1
+  let scale = value => {
+    let v = value & mask
+    (v * 255 + mask / 2) / mask
+  }
+  let blue = scale(value)
+  let green = scale(value >> bits)
+  let red = scale(value >> (bits * 2))
+  ((red << 24) | (green << 16) | (blue << 8) | 255).reinterpret_as_uint()
+}
+
+///|
+/// Decode one colour table entry (direct or indexed) into RGBA.
+fn CgmInterp::color_entry(self : CgmInterp, direct : Bool, value : Int) -> UInt32 {
+  if direct || self.state.color_mode == 2 {
+    cgm_direct_color(value, self.state.color_precision)
+  } else {
+    self.color(value)
+  }
+}
+
+///|
+/// Read a COLOUR TABLE. Upstream writes the entries as bare values (direct
+/// RGB when the colour mode is direct, otherwise an index); some writers
+/// prefix every entry with a direct flag. The first entry decides which.
+fn CgmInterp::read_color_table(self : CgmInterp, params : CgmParams) -> Array[UInt32] {
+  let values : Array[Int] = []
+  while params.more() {
+    values.push(params.u16_value())
+  }
+  let flagged = values.length() % 2 == 0 &&
+    values.length() > 0 &&
+    (values[0] == 0 || values[0] == 1) &&
+    values.length() / 2 >= 2
+  let entries : Array[UInt32] = []
+  if flagged {
+    let mut index = 0
+    while index + 1 < values.length() {
+      entries.push(self.color_entry(values[index] == 1, values[index + 1]))
+      index += 2
+    }
+  } else {
+    for value in values {
+      entries.push(self.color_entry(self.state.color_mode == 2, value))
+    }
+  }
+  entries
 }
 
 ///|
@@ -141,10 +216,21 @@ fn cgm_points(params : CgmParams) -> Array[@cad.Point] {
 
 ///|
 fn CgmInterp::paint(self : CgmInterp, path : @cad.CadPath, matrix : @canvas.Matrix, fill : Bool) -> Unit {
+  if path.is_empty() {
+    return
+  }
   let transformed = path.transform(matrix)
+  // FILL VISIBILITY hides the interior of a primitive; EDGE VISIBILITY hides
+  // its outline. A filled primitive only draws its outline when the edge is
+  // visible.
   if fill && self.state.interior == 1 {
-    self.drawing.fill(transformed, self.fill(), false)
-  } else {
+    if self.state.fill_visible {
+      self.drawing.fill(transformed, self.fill(), false)
+    }
+    if self.state.edge_visible {
+      self.drawing.stroke(transformed, self.line_pen())
+    }
+  } else if self.state.edge_visible {
     self.drawing.stroke(transformed, self.line_pen())
   }
 }
@@ -153,9 +239,17 @@ fn CgmInterp::paint(self : CgmInterp, path : @cad.CadPath, matrix : @canvas.Matr
 fn CgmInterp::begin_picture(self : CgmInterp) -> Unit {
   let vdc_bits = self.state.vdc_bits
   let vdc_real = self.state.vdc_real
+  // The colour table and the colour precision are metafile defaults, not
+  // picture defaults, so a picture keeps them.
+  let color_table = self.state.color_table
+  let color_precision = self.state.color_precision
+  let color_mode = self.state.color_mode
   self.state = cgm_state()
   self.state.vdc_bits = vdc_bits
   self.state.vdc_real = vdc_real
+  self.state.color_table = color_table
+  self.state.color_precision = color_precision
+  self.state.color_mode = color_mode
   let picture : CgmPicture = {
     number: self.pictures.length() + 1,
     drawing: @cad.Drawing::new(),
@@ -251,30 +345,132 @@ fn CgmInterp::text(self : CgmInterp, params : CgmParams, restricted : Bool) -> U
   if text == "" {
     return
   }
-  let height = self.state.text_height
-  if height <= 0.0 {
+  let spec = @cad.FontSpec::new()
+  let placed = self.text_placement(text, spec, point.x, point.y)
+  match placed {
+    Some(placed) => {
+      self.drawing.text(placed)
+      self.last_text = Some(placed)
+    }
+    None => ()
+  }
+}
+
+///|
+/// The text item for `text` at VDC `x`, `y`, honouring TEXT PATH and TEXT
+/// ALIGNMENT. Returns None when the text has no size.
+fn CgmInterp::text_placement(
+  self : CgmInterp,
+  text : String,
+  spec : @cad.FontSpec,
+  x : Double,
+  y : Double,
+) -> @cad.CadText? {
+  let size = self.text_size(text, spec)
+  match size {
+    None => None
+    Some((advance, height, metrics)) => {
+      // TEXT PATH: 0 right, 1 left, 2 up, 3 down (degrees clockwise in the
+      // y-down canvas space). Other values are left as right.
+      let rotation = match self.state.text_path {
+        1 => 180.0
+        2 => 90.0
+        3 => -90.0
+        _ => 0.0
+      }
+      // TEXT ALIGNMENT: horizontal 0 left, 1 centre, 2 right, 3 normal,
+      // 4 continuous; vertical 0 base, 1 bottom, 2 centre, 3 top, 4 cap,
+      // 5 half-cap. The origin moves so the text lands on the given point.
+      let dx = match self.state.text_align_h {
+        1 => -advance / 2.0
+        2 => -advance
+        4 => -advance
+        _ => 0.0
+      }
+      let dy = match self.state.text_align_v {
+        1 => -metrics.desc
+        2 => (metrics.asc - metrics.desc) / 2.0
+        3 => metrics.asc
+        4 => metrics.cap
+        5 => metrics.cap / 2.0
+        _ => 0.0
+      }
+      let matrix = self.current_matrix().mul(@canvas.Matrix::translate(x, y)).mul(
+        @canvas.Matrix::rotate(rotation),
+      ).mul(@canvas.Matrix::translate(dx, dy)).mul(
+        @canvas.Matrix::scale(height, height),
+      )
+      Some(@cad.CadText::new(
+        text,
+        matrix,
+        font=spec,
+        color=self.color(self.state.text_color),
+        advance=advance,
+        asc=metrics.asc,
+        desc=metrics.desc,
+        cap=metrics.cap,
+      ))
+    }
+  }
+}
+
+///|
+/// APPEND TEXT draws a continuation of the last text at its end point.
+fn CgmInterp::append_text(self : CgmInterp, text : String) -> Unit {
+  if text == "" {
     return
   }
-  let matrix = self.current_matrix().mul(@canvas.Matrix::translate(point.x, point.y)).mul(
-    @canvas.Matrix::scale(height, height),
-  )
-  let spec = @cad.FontSpec::new()
-  let choice = self.fonts.face(spec.family, spec.east_asian, text[0].to_int())
-  let metrics = self.fonts.metrics(choice)
-  let mut advance = 0.0
-  for character in text {
-    advance += if character.to_int() >= 0x2e80 { 1.0 } else { 0.5 }
+  let last = match self.last_text {
+    Some(last) => last
+    None => return
   }
-  self.drawing.text(@cad.CadText::new(
-    text,
-    matrix,
-    font=spec,
-    color=self.color(self.state.text_color),
-    advance=advance,
-    asc=metrics.asc,
-    desc=metrics.desc,
-    cap=metrics.cap,
-  ))
+  // The continuation starts where the previous text ended, in the previous
+  // text's own space, and keeps its placement.
+  let end = last.m.mul(@canvas.Matrix::translate(last.advance, 0.0))
+  let (x, y) = end.apply(0.0, 0.0)
+  let spec = @cad.FontSpec::new()
+  let placed = self.text_placement(text, spec, x, y)
+  match placed {
+    Some(placed) => {
+      self.drawing.text(placed)
+      self.last_text = Some(placed)
+    }
+    None => ()
+  }
+}
+
+///|
+/// The advance, height and metrics of `text` in text-space units (em = 1).
+/// The character height (element 5/16) sets the em when it is positive;
+/// otherwise the text height does. Character expansion and spacing scale the
+/// advance.
+fn CgmInterp::text_size(
+  self : CgmInterp,
+  text : String,
+  spec : @cad.FontSpec,
+) -> (Double, Double, @canvas.TextMetrics)? {
+  let height = if self.state.char_height > 0.0 {
+    self.state.char_height
+  } else {
+    self.state.text_height
+  }
+  if height <= 0.0 {
+    return None
+  }
+  let mut width = 0.0
+  for character in text {
+    let choice = self.fonts.face(spec.family, spec.east_asian, character.to_int())
+    width += self.fonts.advance(choice, character.to_int()) *
+      self.state.char_expansion +
+      self.state.char_spacing
+  }
+  if width <= 0.0 {
+    return None
+  }
+  let metrics = self.fonts.metrics(
+    self.fonts.face(spec.family, spec.east_asian, text[0].to_int()),
+  )
+  Some((width, height, metrics))
 }
 
 ///|
@@ -315,7 +511,40 @@ fn CgmInterp::element(self : CgmInterp, element : CgmElement) -> Unit {
       let r = params.u8()
       let g = params.u8()
       let b = params.u8()
-      self.state.background = ((r << 24) | (g << 16) | (b << 8) | 255).to_uint()
+      self.state.background = ((r << 24) | (g << 16) | (b << 8) | 255).reinterpret_as_uint()
+    }
+    (2, 3) => {
+      let precision = params.i16()
+      if precision > 0 && precision <= 8 {
+        self.state.color_precision = precision
+      }
+    }
+    (2, 4) => {
+      let mode = params.i16()
+      if mode >= 0 && mode <= 6 {
+        self.state.color_mode = mode
+      }
+    }
+    (2, 5) => {
+      let colors = self.read_color_table(params)
+      if !colors.is_empty() {
+        self.state.color_table = colors
+      }
+    }
+    (5, 29) => {
+      let value = params.i16()
+      self.state.edge_visible = value != 0
+    }
+    (5, 30) => {
+      let value = params.i16()
+      self.state.fill_visible = value != 0
+    }
+    (5, 34) => {
+      let colors = self.read_color_table(params)
+      if !colors.is_empty() {
+        self.state.color_table = colors
+      }
+
     }
     (3, 1) => {
       let bits = params.i16()
@@ -338,8 +567,13 @@ fn CgmInterp::element(self : CgmInterp, element : CgmElement) -> Unit {
     (5, 13) => self.state.char_spacing = params.real()
     (5, 14) => self.state.text_color = params.i16()
     (5, 15) => {
+      // TEXT HEIGHT is a real (f32) value in VDC units.
       let value = params.real()
       if value > 0.0 { self.state.text_height = value }
+    }
+    (5, 16) => {
+      let value = params.real()
+      if value > 0.0 { self.state.char_height = value }
     }
     (5, 17) => self.state.text_path = params.i16()
     (5, 18) => {
@@ -375,9 +609,10 @@ fn CgmInterp::element(self : CgmInterp, element : CgmElement) -> Unit {
     (4, 4) => self.text(params, false)
     (4, 5) => self.text(params, true)
     (4, 6) => {
+      // APPEND TEXT continues the previous text's origin.
       ignore(params.i16())
       let text = cgm_decode_text(params.string())
-      let _ = text
+      self.append_text(text)
     }
     (4, 7) => {
       let path = @cad.CadPath::new()

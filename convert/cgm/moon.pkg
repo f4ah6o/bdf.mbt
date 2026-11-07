@@ -6,6 +6,7 @@ import {
   "LL728/moon_encoding" @encoding,
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/math",
+  "moonbitlang/core/string" @string,
 }
 
 supported_targets = "+js+wasm-gc"
