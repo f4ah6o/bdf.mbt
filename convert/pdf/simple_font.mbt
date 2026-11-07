@@ -386,6 +386,35 @@ fn PdfFile::simple_font(
       None
     }
   }
+  // Chrome rejects some TrueType programs a PDF ships as they are (the point
+  // flags of their glyph data); rewriting the face through the shared sfnt
+  // writer produces a program Canvas 2D accepts.
+  match embedded {
+    Some(data) =>
+      if data.length() >= 4 &&
+        (data[0] == b'\x00' && data[1] == b'\x01' ||
+          data[0] == b't' && data[1] == b'r' && data[2] == b'u' && data[3] == b'e') {
+        // Only a face with outlines can be rewritten: a program without
+        // glyph data is stored exactly as the PDF ships it.
+        let rewritten = try Some(@sfnt.parse(data)) catch {
+          _ => None
+        }
+        match rewritten {
+          Some(face) =>
+            if face.metrics.glyph_count > 0 {
+              let program = try Some(face.canvas_program()) catch {
+                _ => None
+              }
+              match program {
+                Some(value) => embedded = Some(value)
+                None => ()
+              }
+            }
+          None => ()
+        }
+      }
+    None => ()
+  }
   let base_name = match self.page_deref(pdf_dict_get(dict, b"BaseFont")) {
     PdfName(value) => @utf8.decode_lossy(value[:])
     _ => ""

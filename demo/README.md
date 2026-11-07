@@ -38,12 +38,12 @@ and `samples/features.pptx` (`converter/pptx/testdata`). They are
 known-gap samples: the converter draws them, but tagged structure and some
 masks still differ from upstream, as recorded in `docs/parity.md`.
 
-`samples/upstream-report.pdf` (`examples/sample-files`),
-`reportlab-master.pdf`, `reportlab-mixed.pdf` and `reportlab-type1.pdf`
-are checked in and hash-pinned, but no card opens them yet: the converter
-embeds their fonts as raw TrueType, which Chrome's `FontFace` rejects
-(`Invalid font data in ArrayBuffer`), so the viewer cannot draw them.
-Upstream embeds the same faces as WOFF2.
+`samples/upstream-report.pdf` (`examples/sample-files`) and
+`reportlab-master.pdf` open too. Their PDFs ship a TrueType program that
+Chrome's `FontFace` rejects as it is, so the converter rewrites an embedded
+face through the shared sfnt writer before storing it as a BDF font part.
+`reportlab-mixed.pdf` and `reportlab-type1.pdf` are checked in and
+hash-pinned without a card.
 
 Run `node demo/verify-samples.mjs` to check the SHA-256 of every upstream
 sample against the hashes recorded in the script.

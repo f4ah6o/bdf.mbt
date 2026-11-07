@@ -191,6 +191,8 @@ const samples = {
   pptx: ['./samples/basic.pptx', 'basic.pptx'],
   drawio: ['./samples/labels.drawio', 'labels.drawio'],
   parquet: ['./samples/nested.parquet', 'nested.parquet'],
+  'pdf-report': ['./samples/upstream-report.pdf', 'upstream-report.pdf'],
+  'pdf-reportlab': ['./samples/reportlab-master.pdf', 'reportlab-master.pdf'],
   'pdf-chrome-doc': ['./samples/chrome-doc.pdf', 'chrome-doc.pdf'],
   'pdf-chrome-slides': ['./samples/chrome-slides.pdf', 'chrome-slides.pdf'],
   'pdf-chrome-masks': ['./samples/chrome-masks.pdf', 'chrome-masks.pdf'],

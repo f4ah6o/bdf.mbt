@@ -815,6 +815,7 @@ fn pdf_test_font_part(document : Bytes) -> (String, Bytes) raise {
 
 ///|
 test "PDF embedded TrueType font is stored unchanged" {
+  // A face the sfnt writer cannot parse is stored as the PDF ships it.
   let font_data = b"\x00\x01\x00\x00embedded-true-type"
   let document = pdf_graphics_document(
     pdf_embedded_font_test_document(font_data, ""),
