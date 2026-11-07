@@ -40,4 +40,7 @@ jobs:
       - run: npm run build:demo
       - run: npx playwright install --with-deps chromium
       - run: npm run test:demo
+      # The gallery thumbnails are checked in: fail when they no longer match
+      # what the built demo renders for the card's sample.
+      - run: npm run test:previews
 

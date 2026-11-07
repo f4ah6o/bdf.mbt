@@ -27,9 +27,29 @@ The gallery samples are the upstream MIT-licensed files, byte for byte:
 `samples/basic.docx`, `basic.pptx`, `basic.xlsx`, `features.xlsx`,
 `basic.csv`, `basic.md`, `cairo-cff.pdf` and
 `images-jpx-jbig2.pdf`. The PowerPoint card opens `basic.pptx`, the Word
-card `basic.docx` and the Markdown card `basic.md`. The previews
-`previews/docx.png`, `previews/markdown.png` and `previews/pptx.png` were
-rendered from these upstream files by the MoonBit native converter Worker.
+card `basic.docx` and the Markdown card `basic.md`. Every card image in
+`previews/` is rendered from the sample that card's links open, by the
+MoonBit native converter Worker and the render Worker (see below).
+
+The gallery thumbnails are checked in and generated, not drawn by hand.
+`node demo/make-previews.mjs` (or `npm run previews:demo`) reads the cards
+from `index.html`: the image name comes from the card's
+`<img src="./previews/NAME.png">`, and the sample from the card's first
+`<a data-sample="ID">` link, resolved through the `data-sample` map in
+`app.js`. A card that opens several documents marks the one its image shows
+with `data-preview` (the upstream PDF card shows `chrome-slides.pdf`). The
+script opens each sample through the public viewer API on a blank page served
+from `_build/pages`, so a preview is what the demo draws: the first page of a
+`fixed` or `flow` view, the top of a `scroll` view (Markdown, font specimen)
+through the continuous request, and a 900×560 region of a `sheet` view
+(CSV, XLSX). It composes a 640×400 card on `#e9ecef`, refuses to write a
+blank image, and fails when a card shares its preview file with a card that
+opens a different sample. `--only name[,name]` regenerates a subset,
+`--out DIR` writes elsewhere, and `--check` renders without writing and
+exits 1 when a checked-in preview differs. `npm run test:previews` runs
+`--check` and the sample hashes; CI runs it after `build:demo`, so a
+converter or viewer change that alters a card image fails until the previews
+are regenerated and committed.
 
 The upstream sample card and the converter page also open the upstream PDF
 fixtures verbatim: `chrome-doc.pdf`, `chrome-slides.pdf`, `chrome-masks.pdf`,
@@ -110,6 +130,8 @@ npx playwright install chromium
 npm run build:demo   # JS build, wasm-gc export bridge, demo assets
 npm run test:demo
 npm run test:export   # export tabs, benchmark table and the wasm-gc page
+npm run previews:demo # rewrite demo/previews/*.png from the gallery cards
+npm run test:previews # card previews are current and samples match upstream
 npm run bench:demo    # re-measure and rewrite demo/benchmarks.json
 npm run bench:upstream -- --bdf /tmp/bdf-go   # upstream Go column
 python3 -m http.server --directory _build/pages 8000

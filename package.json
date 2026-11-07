@@ -80,6 +80,8 @@
     "test:layout": "node compat/gsub/verify-layout.mjs && node compat/gsub/verify-context.mjs",
     "test:gdef": "node compat/gsub/verify-gdef.mjs",
     "build:demo": "moon build --target js --release && moon build bridge/wasm --target wasm-gc --release && node demo/build.mjs",
+    "previews:demo": "node demo/make-previews.mjs",
+    "test:previews": "node demo/make-previews.mjs --check && node demo/verify-samples.mjs",
     "bench:demo": "node demo/benchmark.mjs",
     "bench:upstream": "node demo/benchmark-upstream.mjs",
     "test:demo": "node demo/test.mjs",
