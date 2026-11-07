@@ -31,6 +31,20 @@ card `basic.docx` and the Markdown card `basic.md`. The previews
 `previews/docx.png`, `previews/markdown.png` and `previews/pptx.png` were
 rendered from these upstream files by the MoonBit native converter Worker.
 
+The upstream sample card and the converter page also open the upstream PDF
+fixtures verbatim: `chrome-doc.pdf`, `chrome-slides.pdf`, `chrome-masks.pdf`,
+`cjk-cmaps.pdf` and `weasyprint-webfonts.pdf` (`converter/pdf/testdata`),
+and `samples/features.pptx` (`converter/pptx/testdata`). They are
+known-gap samples: the converter draws them, but tagged structure and some
+masks still differ from upstream, as recorded in `docs/parity.md`.
+
+`samples/upstream-report.pdf` (`examples/sample-files`),
+`reportlab-master.pdf`, `reportlab-mixed.pdf` and `reportlab-type1.pdf`
+are checked in and hash-pinned, but no card opens them yet: the converter
+embeds their fonts as raw TrueType, which Chrome's `FontFace` rejects
+(`Invalid font data in ArrayBuffer`), so the viewer cannot draw them.
+Upstream embeds the same faces as WOFF2.
+
 Run `node demo/verify-samples.mjs` to check the SHA-256 of every upstream
 sample against the hashes recorded in the script.
 

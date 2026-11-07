@@ -17,6 +17,16 @@ const samples = {
   'images-jpx-jbig2.pdf': '5c9df9c1a5cbdd2688e8096ffde40e3fc2dfe1c9d645a58df67a141712d61997',
   'nested.parquet': '3b642efb30ba4c8bd1c3a87d8d096140d2cbc68e4b1cc2efa8afd5407d44c831',
   'upstream-demo.pdf': 'cfc050de090a06bfcc30640e20465c54f890000c59b922ad8ef5902a721654f2',
+  'chrome-doc.pdf': '8e538a95dc830054c968a1a059e8f4764c348888dbb8d3e5ce2a5955035dd86c',
+  'chrome-masks.pdf': 'a9bd53b97fc465704465408a3b65d91420de826f37f016bd7c5514e9ddb16425',
+  'chrome-slides.pdf': '15a6f265311cd66599d8696b6edaae0a00352bed0f606e7a6b970c7cc5803719',
+  'cjk-cmaps.pdf': '9e293b63d9fdc83bc2d73c93b48e1f1fa104093a3adb604bd83d851298852ac5',
+  'weasyprint-webfonts.pdf': '74be05c8eebc333b9f0704d6da21780b729ce488b050ca3ee9cdd2fbaf4b4ed5',
+  'reportlab-master.pdf': 'dc7ae25da14ee13bbeada8c0b81bef2591778c945efa00a0fc9fd40fd5834869',
+  'reportlab-mixed.pdf': '2634b25f58e77866be1843f96b4e317428e3ba346f305a256f5a714b03c9358f',
+  'reportlab-type1.pdf': '69f8fa4f6e935300eb5ada89333740f02041aaf95929bcd44947ebb27c8d2f49',
+  'features.pptx': 'e813bdd7cf7e896b5c4176dc5dfb53965d06197e66d3e9bfcd142826ef9cdc88',
+  'upstream-report.pdf': 'dc7ae25da14ee13bbeada8c0b81bef2591778c945efa00a0fc9fd40fd5834869',
 };
 const root = resolve(import.meta.dirname, '..');
 for (const [name, expected] of Object.entries(samples)) {

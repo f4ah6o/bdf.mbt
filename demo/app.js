@@ -191,6 +191,12 @@ const samples = {
   pptx: ['./samples/basic.pptx', 'basic.pptx'],
   drawio: ['./samples/labels.drawio', 'labels.drawio'],
   parquet: ['./samples/nested.parquet', 'nested.parquet'],
+  'pdf-chrome-doc': ['./samples/chrome-doc.pdf', 'chrome-doc.pdf'],
+  'pdf-chrome-slides': ['./samples/chrome-slides.pdf', 'chrome-slides.pdf'],
+  'pdf-chrome-masks': ['./samples/chrome-masks.pdf', 'chrome-masks.pdf'],
+  'pdf-cjk': ['./samples/cjk-cmaps.pdf', 'cjk-cmaps.pdf'],
+  'pdf-webfonts': ['./samples/weasyprint-webfonts.pdf', 'weasyprint-webfonts.pdf'],
+  'pptx-features': ['./samples/features.pptx', 'features.pptx'],
 };
 for (const link of document.querySelectorAll('[data-sample]')) {
   link.addEventListener('click', event => {
