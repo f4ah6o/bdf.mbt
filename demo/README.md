@@ -62,6 +62,12 @@ approximates gradients with their darkest stop and omits masks, filters and
 images; tagged PDF structure is not implemented yet. These limits are shown as
 warnings under the PDF result.
 
+The viewer draws a radial gradient (PDF shading type 3) inside a group as a
+flat disc: Canvas 2D loses the inner colour of a radial gradient created on a
+scaled group canvas. The BDF paint and its coordinates match upstream, so this
+is a viewer limitation, not a conversion one; `chrome-slides.pdf` shows it on
+its first slide. See `docs/parity.md`.
+
 The [wasm-gc page](wasm-gc.html) runs the same PDF→BDF and BDF→PDF/Markdown/
 text/MiniSearch operations in a WebAssembly GC module. It needs a browser with
 wasm-gc and JS string builtins (current Chrome or Edge). Files are still handled
