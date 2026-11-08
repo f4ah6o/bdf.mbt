@@ -13,7 +13,7 @@ permissions:
 concurrency:
   # Never cancel a run that is already publishing: interrupting a Pages
   # deployment mid-sync leaves the site stuck until the next successful run.
-  group: site-pages-${ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }
+  group: site-pages-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
   cancel-in-progress: false
 
 jobs:
@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     outputs:
-      pages_ready: ${ steps.pages.outputs.ready }
+      pages_ready: ${{ steps.pages.outputs.ready }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -82,9 +82,9 @@ jobs:
         id: pages
         if: github.event_name != 'pull_request'
         env:
-          GH_TOKEN: ${ github.token }
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if source=$(gh api "repos/${ github.repository }/pages" --jq '.build_type // ""' 2>"$RUNNER_TEMP/pages-check.err"); then
+          if source=$(gh api "repos/${{ github.repository }}/pages" --jq '.build_type // ""' 2>"$RUNNER_TEMP/pages-check.err"); then
             :
           else
             case "$(cat "$RUNNER_TEMP/pages-check.err")" in
@@ -95,7 +95,7 @@ jobs:
           if [ "$source" != workflow ]; then
             echo 'ready=false' >> "$GITHUB_OUTPUT"
             echo 'Pages deployment skipped: configure Settings > Pages > Source as GitHub Actions, then run this workflow again.'
-          elif gh api "repos/${ github.repository }/environments/github-pages" >/dev/null 2>"$RUNNER_TEMP/environment-check.err"; then
+          elif gh api "repos/${{ github.repository }}/environments/github-pages" >/dev/null 2>"$RUNNER_TEMP/environment-check.err"; then
             echo 'ready=true' >> "$GITHUB_OUTPUT"
           else
             case "$(cat "$RUNNER_TEMP/environment-check.err")" in
@@ -114,7 +114,7 @@ jobs:
     timeout-minutes: 10
     environment:
       name: github-pages
-      url: ${ steps.deployment.outcome == 'success' && steps.deployment.outputs.page_url || steps.retry.outputs.page_url }
+      url: ${{ steps.deployment.outcome == 'success' && steps.deployment.outputs.page_url || steps.retry.outputs.page_url }}
     permissions:
       contents: read
       pages: write
@@ -133,9 +133,9 @@ jobs:
         uses: actions/deploy-pages@v4
       - name: Check the deployed site
         env:
-          SITE_URL: ${ steps.deployment.outcome == 'success' && steps.deployment.outputs.page_url || steps.retry.outputs.page_url }
+          SITE_URL: ${{ steps.deployment.outcome == 'success' && steps.deployment.outputs.page_url || steps.retry.outputs.page_url }}
         run: |
           test -n "$SITE_URL" || { echo 'No deployed page URL was reported.' >&2; exit 1; }
           for path in "" "viewer/" "thumbnail/" "text/" "docs/index.html" "docs/licenses.html" "wasm-gc.html"; do
-            curl -fsS --retry 5 --retry-delay 10 --retry-all-errors -o /dev/null "${ SITE_URL }/${ path }"
+            curl -fsS --retry 5 --retry-delay 10 --retry-all-errors -o /dev/null "${SITE_URL}/${path}"
           done
