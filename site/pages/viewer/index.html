@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../site.css">
+<meta name="description" content="BDF.mbt のビューア。手元のファイルをブラウザの中で BDF に変換して表示します。アップロードはしません。">
+<title>ビューア – BDF.mbt</title>
+</head>
+<body class="tool">
+<a class="skip" href="#content">本文へ移動</a>
+<header class="bar">
+<nav aria-label="サイト">
+<a class="home" href="../index.html">BDF.mbt</a>
+<ul>
+<li><a href="./" aria-current="page">ビューア</a></li>
+<li><a href="../thumbnail/">サムネイル</a></li>
+<li><a href="../text/">検索テキスト</a></li>
+<li><a href="../docs/index.html">ドキュメント</a></li>
+<li><a href="https://github.com/f4ah6o/bdf.mbt">GitHub</a></li>
+</ul>
+</nav>
+</header>
+<main id="content" class="wrap" tabindex="-1">
+<h1>ビューア</h1>
+<p class="lead">ファイルをドロップすると、ブラウザの中で BDF に変換して表示します。PDF・Word・PowerPoint・Excel・CSV・Markdown・EPUB・画像・フォント・CAD などに対応し、ファイルはどこにも送られません。</p>
+<div class="drop" id="drop">
+<p>ここにファイルをドロップするか、<button id="open-file" class="button primary" type="button">ファイルを開く</button> を押してください。<input id="file" type="file" hidden></p>
+<p class="samples" id="samples"></p>
+</div>
+<div class="options">
+<label>ビュー <select id="view" aria-label="ビュー" disabled><option>読み込み中</option></select></label>
+<label>表示 <select id="layout" aria-label="表示">
+<option value="single" selected>1 ページずつ</option>
+<option value="spread">見開き</option>
+<option value="continuous">スクロール</option>
+</select></label>
+<label>倍率 <select id="zoom" aria-label="倍率">
+<option value="0.5">50%</option>
+<option value="0.75">75%</option>
+<option value="1" selected>100%</option>
+<option value="1.25">125%</option>
+<option value="1.5">150%</option>
+<option value="2">200%</option>
+</select></label>
+<span class="pager" role="group" aria-label="ページ"><button id="previous" type="button" aria-label="前のページ">‹</button><span id="page-number" aria-live="polite">–</span><button id="next" type="button" aria-label="次のページ">›</button></span>
+<form id="search-form" role="search"><label for="search">検索</label> <input id="search" type="search" placeholder="文書内を検索" aria-label="文書内を検索"> <button type="submit">検索</button> <span id="search-status" aria-live="polite"></span></form>
+</div>
+<p class="status" id="status" role="status" aria-live="polite">サンプルを読み込んでいます…</p>
+<form id="pdf-unlock" class="options" aria-label="PDF パスワード">
+<label for="pdf-password">PDF パスワード（任意）</label>
+<input id="pdf-password" type="password" autocomplete="current-password" placeholder="暗号化 PDF の場合">
+<button id="pdf-retry" class="button" type="submit" disabled>再変換</button>
+<span id="pdf-unlock-status" class="status" role="status" aria-live="polite">暗号化 PDF はここに入力してください。サンプルのパスワードは demo です。</span>
+</form>
+<div class="demo">
+<div class="tools">
+<span class="name" id="document-name">文書を開いてください</span>
+<span class="note" id="document-meta"></span>
+<span class="pager"><a id="download" class="button" download="document.bdf" hidden>BDF を保存</a></span>
+</div>
+<div class="view bdf-host" id="preview" role="region" aria-label="文書のプレビュー" tabindex="0"></div>
+</div>
+<section class="wrap" aria-labelledby="exports-title" style="padding: 0; margin-top: 2rem;">
+<h2 id="exports-title">BDF から描き戻す</h2>
+<p class="lead">開いている BDF を、PDF・Markdown・検索用テキストに書き出します。書き出しは wasm-gc にコンパイルした MoonBit のコードが行います。</p>
+<div class="back" id="exports">
+<div class="tabs" role="tablist" aria-label="書き出し形式">
+<button type="button" role="tab" id="tab-pdf" aria-controls="panel-pdf" aria-selected="true">PDF</button>
+<button type="button" role="tab" id="tab-md" aria-controls="panel-md" aria-selected="false" tabindex="-1">Markdown</button>
+<button type="button" role="tab" id="tab-text" aria-controls="panel-text" aria-selected="false" tabindex="-1">検索用テキスト</button>
+<button type="button" role="tab" id="tab-find" aria-controls="panel-find" aria-selected="false" tabindex="-1">MiniSearch で検索</button>
+</div>
+<div class="panel" id="panel-pdf" role="tabpanel" aria-labelledby="tab-pdf">
+<p class="about">ページを PDF ファイルに書き出します。文書のフォントを埋め込み、タグ付きにすれば見出しや表の構造も残ります。できたファイルは、ブラウザ自身の PDF ビューアで下に表示します。</p>
+<div class="row"><button type="button" class="button primary" data-export-run="pdf">PDF を書き出す</button>
+<label><input type="checkbox" data-export-tagged> タグ付き（読み上げ用の構造）</label>
+<span class="status" data-export-status role="status"></span></div>
+<p class="links" data-export-links hidden><a class="button" data-export-pdf-open target="_blank" rel="noopener">新しいタブで開く</a> <a class="button" data-export-pdf-save>PDF を保存</a></p>
+<iframe data-export-frame hidden title="文書から書き出した PDF（ブラウザの PDF ビューア）"></iframe>
+</div>
+<div class="panel" id="panel-md" role="tabpanel" aria-labelledby="tab-md" hidden>
+<p class="about">文書を Markdown に書き出します。見出し・リスト・表はそのまま。図は zip にファイルとして同梱するか、データ URL で本文に埋め込むか、省きます。</p>
+<div class="row"><button type="button" class="button primary" data-export-run="md">Markdown を書き出す</button>
+<label>図 <select data-export-images><option value="zip">ファイルにして zip に</option><option value="embed">本文に埋め込む</option><option value="none">省く</option></select></label>
+<span class="status" data-export-status role="status"></span></div>
+<textarea class="output" data-export-markdown readonly spellcheck="false" aria-label="文書から書き出した Markdown"></textarea>
+<p class="links" data-export-links hidden><button type="button" class="button" data-export-md-copy>コピー</button> <a class="button" data-export-md-save>保存</a></p>
+</div>
+<div class="panel" id="panel-text" role="tabpanel" aria-labelledby="tab-text" hidden>
+<p class="about">ページごとのテキストと文書のメタデータを JSON に取り出します。サーバーが検索エンジンに渡すものと同じ形で、1 ページが 1 レコードです。</p>
+<div class="row"><button type="button" class="button primary" data-export-run="text">テキストを取り出す</button>
+<label>表示 <select data-export-shape><option value="json">JSON（サーバーが受け取る形）</option><option value="plain">テキストだけ</option></select></label>
+<span class="status" data-export-status role="status"></span></div>
+<textarea class="output" data-export-text readonly spellcheck="false" aria-label="検索エンジン向けの文書のテキスト"></textarea>
+<p class="links" data-export-links hidden><button type="button" class="button" data-export-text-copy>コピー</button> <a class="button" data-export-text-save>保存</a></p>
+</div>
+<div class="panel" id="panel-find" role="tabpanel" aria-labelledby="tab-find" hidden>
+<p class="about">同じレコードを MiniSearch で索引づけし、ヒットからそのページを開きます。</p>
+<div class="row" role="search"><input type="search" data-export-find placeholder="検索…" aria-label="検索" autocomplete="off">
+<button type="button" class="button" data-export-find-run>検索</button>
+<span class="status" data-export-status role="status"></span></div>
+<ol class="results" data-export-hits aria-label="ヒット"></ol>
+</div>
+</div>
+</section>
+</main>
+<footer class="wrap foot">bdf.mbt（MoonBit 実装）· <a href="../docs/licenses.html">フォントとライセンス</a> · <a href="https://github.com/f4ah6o/bdf.mbt">GitHub</a></footer>
+<script type="module" src="../viewer.js"></script>
+</body>
+</html>

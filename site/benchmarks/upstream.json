@@ -1,0 +1,321 @@
+{
+  "source": {
+    "repository": "https://github.com/shibukawa/bdf",
+    "path": "docs/benchmarks/latest.json",
+    "commit": "a5e4d7a6b202cfe73de44b0be51f6fb86cd8ee22",
+    "url": "https://raw.githubusercontent.com/shibukawa/bdf/main/docs/benchmarks/latest.json",
+    "fetchedAt": "2026-11-08T01:40:44.329Z"
+  },
+  "process": {
+    "created_utc": "2026-10-06T04:35:02.722270+00:00",
+    "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "rounds": 5,
+    "versions": {
+      "soffice": "LibreOfficeDev 26.8.0.0.alpha0 2c87e51eeaa2b413ff4ae097b2705eea1995d8e5",
+      "pdftoppm": "pdftoppm version 26.05.0\nCopyright 2005-2026 The Poppler Developers - http://poppler.freedesktop.org\nCopyright 1996-2011, 2022 Glyph & Cog, LLC",
+      "go": "go version go1.27.0 darwin/arm64"
+    },
+    "bdf_binary": {
+      "bytes": 25813410,
+      "sha256": "bf32acb60594dad9315b699fe042c2d61aa0a854b165cda57d7210ce7ee352a7"
+    },
+    "power_source_start": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=37027939)\t98%; charging; 0:16 remaining present: true",
+    "power_source_end": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=37027939)\t99%; finishing charge; 0:08 remaining present: true",
+    "inputs": [
+      {
+        "bytes": 17167,
+        "sha256": "f4830cd362996f3e07b9b370a4f118de8617e98daff42c3d475efeb7b6eef335",
+        "name": "basic.docx"
+      },
+      {
+        "bytes": 41023,
+        "sha256": "2c471caddae2b9a32318fa1e87626e060db68f700d54a6b11250690b25dc6e56",
+        "name": "basic.pptx"
+      },
+      {
+        "bytes": 14205,
+        "sha256": "75d6011ad3dce051b341d7829e48a399f77eec1c35e5b830f74454bddd5662a1",
+        "name": "basic.xlsx"
+      },
+      {
+        "bytes": 574825,
+        "sha256": "cee608516772c6813a28c2b5676f0d0919fd673f66ffd3cf23cd5a5b8629b5e9",
+        "name": "many-sheets.xlsx"
+      },
+      {
+        "bytes": 215949,
+        "sha256": "aa5817cdba20877d4e939d258401bdefa8360ec91cbffca5a90b1443d9db35f6",
+        "name": "many-slides.pptx"
+      }
+    ],
+    "results": {
+      "basic.docx": {
+        "libreoffice": {
+          "max_rss_bytes": 169639936,
+          "peak_footprint_bytes": 97731496,
+          "elapsed_seconds": 0.69,
+          "cpu_seconds": 0.67
+        },
+        "bdf": {
+          "max_rss_bytes": 45531136,
+          "peak_footprint_bytes": 28820176,
+          "elapsed_seconds": 0.05,
+          "cpu_seconds": 0.06
+        }
+      },
+      "basic.pptx": {
+        "libreoffice": {
+          "max_rss_bytes": 154468352,
+          "peak_footprint_bytes": 84902800,
+          "elapsed_seconds": 1.01,
+          "cpu_seconds": 1.02
+        },
+        "bdf": {
+          "max_rss_bytes": 40091648,
+          "peak_footprint_bytes": 24920784,
+          "elapsed_seconds": 0.03,
+          "cpu_seconds": 0.04
+        }
+      },
+      "basic.xlsx": {
+        "libreoffice": {
+          "max_rss_bytes": 129712128,
+          "peak_footprint_bytes": 55690128,
+          "elapsed_seconds": 0.65,
+          "cpu_seconds": 0.63
+        },
+        "bdf": {
+          "max_rss_bytes": 37699584,
+          "peak_footprint_bytes": 22839992,
+          "elapsed_seconds": 0.04,
+          "cpu_seconds": 0.04
+        }
+      },
+      "many-sheets.xlsx": {
+        "libreoffice": {
+          "max_rss_bytes": 302333952,
+          "peak_footprint_bytes": 220791816,
+          "elapsed_seconds": 1.55,
+          "cpu_seconds": 1.62
+        },
+        "bdf": {
+          "max_rss_bytes": 51085312,
+          "peak_footprint_bytes": 37339808,
+          "elapsed_seconds": 0.23,
+          "cpu_seconds": 0.3
+        }
+      },
+      "many-slides.pptx": {
+        "libreoffice": {
+          "max_rss_bytes": 2012135424,
+          "peak_footprint_bytes": 4314222576,
+          "elapsed_seconds": 56.38,
+          "cpu_seconds": 68.3
+        },
+        "bdf": {
+          "max_rss_bytes": 42811392,
+          "peak_footprint_bytes": 28246664,
+          "elapsed_seconds": 0.12,
+          "cpu_seconds": 0.19
+        }
+      }
+    },
+    "bdf_remeasured": {
+      "created_utc": "2026-10-09T11:46:52.087247+00:00",
+      "git_revision": "da90bcc6ef8570d2964ac78764685ebbb29f19fd",
+      "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+      "power_source_start": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=37027939)\t100%; charged; 0:00 remaining present: true",
+      "power_source_end": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=37027939)\t100%; charged; 0:00 remaining present: true",
+      "inputs_regenerated": [
+        "many-sheets.xlsx",
+        "many-slides.pptx"
+      ]
+    }
+  },
+  "power": {
+    "created_utc": "2026-10-06T05:28:34.906944+00:00",
+    "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "rounds": 3,
+    "method": "weighted power samples integrated over their reported durations; subtract idle mean times work sampling duration; divide by completed documents",
+    "work_seconds_target": 60,
+    "power_source_start": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=37027939)\t100%; charged; 0:00 remaining present: true",
+    "power_source_end": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=37027939)\t100%; charged; 0:00 remaining present: true",
+    "bdf_binary": {
+      "bytes": 25813410,
+      "sha256": "bf32acb60594dad9315b699fe042c2d61aa0a854b165cda57d7210ce7ee352a7"
+    },
+    "pairs": [
+      {
+        "round": 1,
+        "workflow": "libreoffice",
+        "documents": 63,
+        "estimated_incremental_soc_w": 6.227415,
+        "estimated_soc_j_per_document": 7.155304,
+        "idle": "round1-libreoffice-idle",
+        "work": "round1-libreoffice-work"
+      },
+      {
+        "round": 2,
+        "workflow": "libreoffice",
+        "documents": 72,
+        "estimated_incremental_soc_w": 3.277639,
+        "estimated_soc_j_per_document": 3.295192,
+        "idle": "round2-libreoffice-idle",
+        "work": "round2-libreoffice-work"
+      },
+      {
+        "round": 3,
+        "workflow": "libreoffice",
+        "documents": 72,
+        "estimated_incremental_soc_w": 4.24616,
+        "estimated_soc_j_per_document": 4.267438,
+        "idle": "round3-libreoffice-idle",
+        "work": "round3-libreoffice-work"
+      },
+      {
+        "round": 1,
+        "workflow": "bdf",
+        "documents": 1323,
+        "estimated_incremental_soc_w": 4.530474,
+        "estimated_soc_j_per_document": 0.247933,
+        "idle": "round1-bdf-idle",
+        "work": "round1-bdf-work"
+      },
+      {
+        "round": 2,
+        "workflow": "bdf",
+        "documents": 1332,
+        "estimated_incremental_soc_w": 4.45371,
+        "estimated_soc_j_per_document": 0.241977,
+        "idle": "round2-bdf-idle",
+        "work": "round2-bdf-work"
+      },
+      {
+        "round": 3,
+        "workflow": "bdf",
+        "documents": 1335,
+        "estimated_incremental_soc_w": 4.437036,
+        "estimated_soc_j_per_document": 0.240731,
+        "idle": "round3-bdf-idle",
+        "work": "round3-bdf-work"
+      }
+    ],
+    "median_estimated_soc_j_per_document": {
+      "libreoffice": 4.267438,
+      "bdf": 0.241977
+    },
+    "range_estimated_soc_j_per_document": {
+      "libreoffice": [
+        3.295192,
+        7.155304
+      ],
+      "bdf": [
+        0.240731,
+        0.247933
+      ]
+    },
+    "inputs": [
+      "basic.docx",
+      "basic.pptx",
+      "basic.xlsx"
+    ],
+    "phases": [
+      {
+        "name": "round1-libreoffice-idle",
+        "samples": 72,
+        "mean_soc_w": 0.44195,
+        "sampled_seconds": 72.85203,
+        "sampled_soc_j": 32.196968
+      },
+      {
+        "name": "round1-libreoffice-work",
+        "samples": 72,
+        "mean_soc_w": 6.669365,
+        "sampled_seconds": 72.38705,
+        "sampled_soc_j": 482.775633,
+        "work_seconds": 61.051
+      },
+      {
+        "name": "round2-libreoffice-idle",
+        "samples": 72,
+        "mean_soc_w": 1.148641,
+        "sampled_seconds": 72.79874,
+        "sampled_soc_j": 83.619622
+      },
+      {
+        "name": "round2-libreoffice-work",
+        "samples": 72,
+        "mean_soc_w": 4.42628,
+        "sampled_seconds": 72.38559,
+        "sampled_soc_j": 320.398857,
+        "work_seconds": 61.305
+      },
+      {
+        "name": "round3-libreoffice-idle",
+        "samples": 72,
+        "mean_soc_w": 0.93174,
+        "sampled_seconds": 72.8257,
+        "sampled_soc_j": 67.854651
+      },
+      {
+        "name": "round3-libreoffice-work",
+        "samples": 72,
+        "mean_soc_w": 5.1779,
+        "sampled_seconds": 72.36081,
+        "sampled_soc_j": 374.677033,
+        "work_seconds": 62.921
+      },
+      {
+        "name": "round1-bdf-idle",
+        "samples": 72,
+        "mean_soc_w": 0.412267,
+        "sampled_seconds": 72.80783,
+        "sampled_soc_j": 30.016238
+      },
+      {
+        "name": "round1-bdf-work",
+        "samples": 72,
+        "mean_soc_w": 4.942741,
+        "sampled_seconds": 72.40203,
+        "sampled_soc_j": 357.864477,
+        "work_seconds": 60.099
+      },
+      {
+        "name": "round2-bdf-idle",
+        "samples": 72,
+        "mean_soc_w": 0.404016,
+        "sampled_seconds": 72.82546,
+        "sampled_soc_j": 29.422669
+      },
+      {
+        "name": "round2-bdf-work",
+        "samples": 72,
+        "mean_soc_w": 4.857726,
+        "sampled_seconds": 72.36975,
+        "sampled_soc_j": 351.552444,
+        "work_seconds": 60.091
+      },
+      {
+        "name": "round3-bdf-idle",
+        "samples": 72,
+        "mean_soc_w": 0.413955,
+        "sampled_seconds": 72.86685,
+        "sampled_soc_j": 30.163588
+      },
+      {
+        "name": "round3-bdf-work",
+        "samples": 72,
+        "mean_soc_w": 4.850991,
+        "sampled_seconds": 72.43039,
+        "sampled_soc_j": 351.359206,
+        "work_seconds": 60.085
+      }
+    ],
+    "bdf_remeasured": {
+      "created_utc": "2026-10-09T11:47:37.013843+00:00",
+      "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+      "power_source_start": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=37027939)\t100%; charged; 0:00 remaining present: true",
+      "power_source_end": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=37027939)\t100%; charged; 0:00 remaining present: true"
+    }
+  }
+}

@@ -8,8 +8,8 @@
 - `moon check --target wasm-gc`
 - `moon test --target wasm-gc`
 - `moon build --target wasm-gc`
-- `npm run build:demo`
-- `npm run test:demo`
+- `npm run build:site`
+- `npm run test:site` (Playwright over the built site, then the link checker)
 - `npm run test:previews` (gallery thumbnails are current; upstream sample hashes)
 - `npm run test:phase1-converter`
 - `npm run test:phase2-converter`
@@ -17,7 +17,7 @@
 - `npm run test:phase4-converter`
 - `npm run test:phase5-converter`
 - `npm run test:converter-stream`
-- `npm run test:export`
+- `npm run test:export` (alias of `test:site`, which covers the export tabs)
 - `npm run test:phase8-type1`
 - `npm run test:phase8-parquet`
 - `npm run test:phase8-xlsx`
@@ -72,6 +72,15 @@
 - Done: cryptography on non-JavaScript hosts. PBKDF2-HMAC-SHA-256,
   HKDF-SHA-256, AES-KW, AES-GCM and P-256 ECDH are in `crypto`, and encrypted
   BDF documents unlock with a password or P-256 private key through `core`.
+
+## Site
+
+- The published site is the upstream BDF site in Japanese only, rebuilt on bdf.mbt; the retired bdf.mbt demo (top page, `converter.html`, `coverage.html`, `formats.html`) is gone.
+- Pages: `/` (20-page sample, exports, MiniSearch, benchmarks, gallery), `/viewer/`, `/thumbnail/`, `/text/`, `/wasm-gc.html`, `/docs/` (35 pages).
+- JavaScript and wasm-gc: the viewer, the converter Worker and the thumbnail page run the JavaScript build; PDF→BDF, BDF→PDF, BDF→Markdown and BDF→search text run in both builds (`export.js` and `wasm-gc.wasm`). Drawing cannot move to wasm-gc because it calls Canvas 2D.
+- Documentation: `site/docs-src/*.md` is copied from upstream at the commit in `site/docs-src/UPSTREAM-COMMIT`; `api.md` and `licenses.md` are written for bdf.mbt. Pages whose steps are Go-specific carry a note, and every page names its source.
+- Not ported: upstream's `form/` page (it needs the Go form template engine), upstream's font set (the browser build has no font directory and lays out Office text with estimated metrics), and upstream's English pages.
+- Benchmarks keep upstream's published LibreOffice/Poppler-vs-Go numbers and append bdf.mbt's measured in Chromium (`site/benchmark.mjs`); the memory and energy charts stay upstream's, because a browser tab cannot measure what they mean.
 
 ## Document parity harness
 

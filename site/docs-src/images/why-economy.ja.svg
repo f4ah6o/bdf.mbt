@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="368" viewBox="0 0 760 368" role="img" aria-labelledby="title description">
+<title id="title">AC電源での比較ベンチ</title>
+<desc id="description">ピークRSS: LibreOffice + Poppler 147.312 MiB, BDF (Go) 38.234 MiB; 経過時間: LibreOffice + Poppler 1.010 s, BDF (Go) 0.030 s; CPU時間 (user + system): LibreOffice + Poppler 1.020 s, BDF (Go) 0.040 s; 推定SoC電力量: LibreOffice + Poppler 4.267 J/doc, BDF (Go) 0.242 J/doc</desc>
+<rect width="760" height="368" fill="#fff"/>
+<g font-family="-apple-system, BlinkMacSystemFont, Arial, sans-serif">
+<text x="24" y="33" font-size="22" font-weight="700" fill="#182337">AC電源での比較ベンチ</text>
+<text x="24" y="57" font-size="13" font-weight="400" fill="#52627a">Apple M3 · Go 2026-10-09 · LibreOffice 2026-10-06 · 時間・メモリ: 小さいPPTX</text>
+<rect x="24" y="76" width="346" height="116" rx="8" fill="#f7f9fc" stroke="#e5eaf0"/>
+<text x="36" y="101" font-size="15" font-weight="700" fill="#182337">ピークRSS</text>
+<text x="36" y="140" font-size="11" font-weight="400" fill="#52627a">LO + Poppler</text>
+<rect x="147" y="128" width="108.00" height="16" rx="3" fill="#667892"/>
+<text x="266" y="140" font-size="12" font-weight="600" fill="#182337">147.3</text>
+<text x="36" y="166" font-size="11" font-weight="400" fill="#52627a">Go</text>
+<rect x="147" y="154" width="28.03" height="16" rx="3" fill="#087d66"/>
+<text x="266" y="166" font-size="12" font-weight="600" fill="#182337">38.2</text>
+<text x="36" y="186" font-size="10" font-weight="400" fill="#52627a">MiB · 中央値</text>
+<rect x="390" y="76" width="346" height="116" rx="8" fill="#f7f9fc" stroke="#e5eaf0"/>
+<text x="402" y="101" font-size="15" font-weight="700" fill="#182337">経過時間</text>
+<text x="402" y="140" font-size="11" font-weight="400" fill="#52627a">LO + Poppler</text>
+<rect x="513" y="128" width="108.00" height="16" rx="3" fill="#667892"/>
+<text x="632" y="140" font-size="12" font-weight="600" fill="#182337">1.01</text>
+<text x="402" y="166" font-size="11" font-weight="400" fill="#52627a">Go</text>
+<rect x="513" y="154" width="3.21" height="16" rx="3" fill="#087d66"/>
+<text x="632" y="166" font-size="12" font-weight="600" fill="#182337">0.03</text>
+<text x="402" y="186" font-size="10" font-weight="400" fill="#52627a">s · 中央値</text>
+<rect x="24" y="204" width="346" height="116" rx="8" fill="#f7f9fc" stroke="#e5eaf0"/>
+<text x="36" y="229" font-size="15" font-weight="700" fill="#182337">CPU時間 (user + system)</text>
+<text x="36" y="268" font-size="11" font-weight="400" fill="#52627a">LO + Poppler</text>
+<rect x="147" y="256" width="108.00" height="16" rx="3" fill="#667892"/>
+<text x="266" y="268" font-size="12" font-weight="600" fill="#182337">1.02</text>
+<text x="36" y="294" font-size="11" font-weight="400" fill="#52627a">Go</text>
+<rect x="147" y="282" width="4.24" height="16" rx="3" fill="#087d66"/>
+<text x="266" y="294" font-size="12" font-weight="600" fill="#182337">0.04</text>
+<text x="36" y="314" font-size="10" font-weight="400" fill="#52627a">s · 中央値</text>
+<rect x="390" y="204" width="346" height="116" rx="8" fill="#f7f9fc" stroke="#e5eaf0"/>
+<text x="402" y="229" font-size="15" font-weight="700" fill="#182337">推定SoC電力量</text>
+<text x="402" y="268" font-size="11" font-weight="400" fill="#52627a">LO + Poppler</text>
+<rect x="513" y="256" width="108.00" height="16" rx="3" fill="#667892"/>
+<text x="632" y="268" font-size="12" font-weight="600" fill="#182337">4.267</text>
+<text x="402" y="294" font-size="11" font-weight="400" fill="#52627a">Go</text>
+<rect x="513" y="282" width="6.12" height="16" rx="3" fill="#087d66"/>
+<text x="632" y="294" font-size="12" font-weight="600" fill="#182337">0.242</text>
+<text x="402" y="314" font-size="10" font-weight="400" fill="#52627a">J/doc · 中央値</text>
+<text x="24" y="347" font-size="11" font-weight="400" fill="#52627a">電力量: CPU + GPU + ANE の推定値。ラウンド範囲は本文を参照。</text>
+</g>
+</svg>

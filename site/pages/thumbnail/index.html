@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../site.css">
+<meta name="description" content="BDF.mbt のサムネイル。文書の 1 ページ目から、いくつかの大きさの PNG を作ります。">
+<title>サムネイル – BDF.mbt</title>
+</head>
+<body class="tool">
+<a class="skip" href="#content">本文へ移動</a>
+<header class="bar">
+<nav aria-label="サイト">
+<a class="home" href="../index.html">BDF.mbt</a>
+<ul>
+<li><a href="../viewer/">ビューア</a></li>
+<li><a href="./" aria-current="page">サムネイル</a></li>
+<li><a href="../text/">検索テキスト</a></li>
+<li><a href="../docs/index.html">ドキュメント</a></li>
+<li><a href="https://github.com/f4ah6o/bdf.mbt">GitHub</a></li>
+</ul>
+</nav>
+</header>
+<main id="content" class="wrap" tabindex="-1">
+<h1>サムネイル</h1>
+<p class="lead">文書の 1 ページ目から、いくつかの大きさの PNG を作ります。変換も描画もブラウザの中で、bdf.mbt が行います。ファイルはどこにも送られません。</p>
+<div class="drop" id="drop">
+<p>ここにファイルをドロップするか、<button id="open-file" class="button primary" type="button">ファイルを開く</button> を押してください。<input id="file" type="file" hidden></p>
+<p class="samples" id="samples"></p>
+</div>
+<div class="options">
+<label>作り方 <select id="mode" aria-label="作り方">
+<option value="auto" selected>自動（形式に合わせる）</option>
+<option value="crop">切り出す（左上から正方形）</option>
+<option value="fit">収める（長い辺を指定の大きさに）</option>
+</select></label>
+<label>大きさ <input id="size" type="number" min="16" max="1024" step="16" value="256" aria-label="大きさ（px）"> px</label>
+<span class="hint">96・160・256・480 px の 4 つをまとめて作ります。</span>
+</div>
+<p class="status" id="status" role="status" aria-live="polite">ファイルを選んでください。</p>
+<ul class="thumbs" id="thumbs"></ul>
+<details class="how">
+<summary>仕組み</summary>
+<p>BDF をブラウザの中で描き、そのページの左上から正方形に切り出すか（crop）、長い辺が指定の大きさになるように縮めて（fit）、canvas の PNG として保存します。変換は bdf.mbt の変換 Worker、描画は bdf.mbt のレンダラです。切り出しと縮小はブラウザの canvas に任せています。</p>
+</details>
+</main>
+<footer class="wrap foot">bdf.mbt（MoonBit 実装）· <a href="../docs/licenses.html">フォントとライセンス</a> · <a href="https://github.com/f4ah6o/bdf.mbt">GitHub</a></footer>
+<script type="module" src="../thumbnail.js"></script>
+</body>
+</html>

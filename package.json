@@ -11,6 +11,7 @@
     "@bdfkit/viewer": "0.2.1",
     "@mizchi/actrun": "0.32.0",
     "@mizchi/vlmkit": "0.23.2",
+    "marked": "^15.0.12",
     "minisearch": "^7.1.2",
     "playwright": "1.64.1",
     "pngjs": "7.0.0"
@@ -79,12 +80,12 @@
     "test:font-convert-visual": "node compat/specimen/convert-visual-compare.mjs",
     "test:layout": "node compat/gsub/verify-layout.mjs && node compat/gsub/verify-context.mjs",
     "test:gdef": "node compat/gsub/verify-gdef.mjs",
-    "build:demo": "moon build --target js --release && moon build bridge/wasm --target wasm-gc --release && node demo/build.mjs",
-    "previews:demo": "node demo/make-previews.mjs",
-    "test:previews": "node demo/make-previews.mjs --check && node demo/verify-samples.mjs",
-    "bench:demo": "node demo/benchmark.mjs",
-    "bench:upstream": "node demo/benchmark-upstream.mjs",
-    "test:demo": "node demo/test.mjs",
+    "build:demo": "npm run build:site",
+    "previews:demo": "npm run previews:site",
+    "test:previews": "node site/make-previews.mjs --check && node site/verify-samples.mjs",
+    "bench:demo": "npm run bench:site",
+    "bench:upstream": "node site/benchmark-upstream.mjs",
+    "test:demo": "npm run test:site",
     "test:gpos": "node compat/gsub/verify-gpos.mjs && node compat/gsub/verify-position-values.mjs && node compat/gsub/verify-pairs.mjs && node compat/gsub/verify-attachments.mjs && node compat/specimen/verify-kerning.mjs",
     "test:music-notation": "node compat/musicnotation/verify.mjs && node compat/musicnotation/verify-timeline.mjs && node compat/musicnotation/verify-quantize.mjs && node compat/musicnotation/verify-staff.mjs && node compat/musicnotation/verify-values.mjs && node compat/musicnotation/verify-voices.mjs && node compat/musicnotation/verify-events.mjs && node compat/musicnotation/verify-glyphs.mjs && node compat/musicnotation/verify-positions.mjs && node compat/musicnotation/verify-prepare.mjs && node compat/musicnotation/verify-columns.mjs && node compat/musicnotation/verify-systems.mjs && node compat/musicnotation/verify-primitives.mjs && node compat/musicnotation/verify-headers.mjs && node compat/musicnotation/verify-rests.mjs && node compat/musicnotation/verify-notes.mjs && node compat/musicnotation/verify-beams.mjs && node compat/musicnotation/verify-basic-staff.mjs && node compat/musicnotation/verify-staff-marks.mjs && node compat/musicnotation/verify-staff-lyrics.mjs && node compat/musicnotation/verify-system-marks.mjs && node compat/musicnotation/verify-pagination.mjs && node compat/musicnotation/verify-barlines.mjs && node compat/musicnotation/verify-spanning.mjs && node compat/musicnotation/verify-score-layout.mjs && node compat/musicnotation/verify-painter.mjs && node compat/musicnotation/verify-text.mjs && node compat/musicnotation/verify-text-fonts.mjs && node compat/musicnotation/verify-text-painter.mjs && node compat/musicnotation/verify-render-pages.mjs && node compat/musicnotation/verify-render-pages-fonts.mjs && node compat/musicnotation/verify-cues.mjs && node compat/musicnotation/verify-tab-shapes.mjs && node compat/musicnotation/verify-tab-fingering.mjs && node compat/musicnotation/verify-tab-score.mjs && node compat/musicnotation/verify-tab-views.mjs && node compat/musicnotation/verify-tab-cues.mjs && node compat/musicnotation/verify-params.mjs",
     "test:midi-input": "node compat/midiinput/verify.mjs && node compat/midiinput/verify-tracks.mjs && node compat/midiinput/verify-notes.mjs && node compat/midiinput/verify-files.mjs && node compat/midiinput/verify-meta.mjs && node compat/midiinput/verify-text.mjs && node compat/midiinput/verify-credits.mjs && node compat/midiinput/verify-performance.mjs && node compat/midiinput/verify-lyrics.mjs && node compat/midiinput/verify-score.mjs && node compat/midiinput/verify-smf.mjs && node compat/midiinput/verify-document.mjs && node compat/midiinput/verify-document-tab.mjs && node compat/midiinput/verify-document-tab-fonts.mjs && node compat/midiinput/verify-options.mjs",
@@ -105,7 +106,7 @@
     "test:phase8-xlsx": "node compat/converter/phase8-xlsx-test.mjs",
     "test:phase9-drawio": "node compat/converter/phase9-drawio-test.mjs",
     "test:phase9-parquet": "node compat/converter/phase9-parquet-test.mjs",
-    "test:export": "node demo/export-test.mjs",
+    "test:export": "node site/test.mjs",
     "test:phase10-musicxml": "node compat/converter/phase10-musicxml-test.mjs",
     "test:phase11-markdown": "node compat/converter/phase11-markdown-test.mjs",
     "test:phase12-docx": "node compat/converter/phase12-docx-test.mjs",
@@ -114,6 +115,10 @@
     "test:phase15-pptx": "node compat/converter/phase15-pptx-test.mjs",
     "test:parity": "node compat/parity/verify.mjs",
     "test:parity:strict": "node compat/parity/verify.mjs --strict",
-    "test:viewer": "node compat/viewer/api-test.mjs"
+    "test:viewer": "node compat/viewer/api-test.mjs",
+    "build:site": "moon build --target js --release && moon build bridge/wasm --target wasm-gc --release && node site/build.mjs",
+    "previews:site": "node site/make-previews.mjs",
+    "test:site": "node site/test.mjs && node site/check-links.mjs",
+    "bench:site": "node site/benchmark.mjs"
   }
 }

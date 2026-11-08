@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "measuredAt": "2026-11-08T01:33:01.610Z",
+  "environment": {
+    "browser": "Chromium 149.0.7827.55",
+    "platform": "MacIntel",
+    "cpu": "Apple M4",
+    "hardwareConcurrency": 10,
+    "deviceMemory": 16,
+    "node": "v26.13.0",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/149.0.7827.55 Safari/537.36"
+  },
+  "methodology": {
+    "inputBdf": "demo.bdf",
+    "inputPdf": "demo.pdf",
+    "officeInputs": [
+      "basic.docx",
+      "basic.pptx",
+      "basic.xlsx"
+    ],
+    "iterations": 7,
+    "warmup": 2,
+    "statistic": "median",
+    "miniSearchQueries": 10,
+    "note": "bdf.mbt（MoonBit）をブラウザのタブの中で測った。Office 文書は変換 Worker（JS）で、BDF→PDF・Markdown・テキストと PDF→BDF は JS と wasm-gc の両方で測った。サムネイルは canvas で描くため含まない。"
+  },
+  "office": [
+    {
+      "input": "basic.docx",
+      "js": {
+        "ms": 23.2
+      },
+      "wasm": null,
+      "bytes": 19006,
+      "pages": 3
+    },
+    {
+      "input": "basic.pptx",
+      "js": {
+        "ms": 22.3
+      },
+      "wasm": null,
+      "bytes": 11807,
+      "pages": null
+    },
+    {
+      "input": "basic.xlsx",
+      "js": {
+        "ms": 45.4
+      },
+      "wasm": null,
+      "bytes": 18898,
+      "pages": null
+    }
+  ],
+  "roundtrip": [
+    {
+      "id": "bdf-pdf",
+      "label": "BDF → PDF",
+      "js": 176.7,
+      "wasm": 105.2,
+      "detail": "20ページ / 2.3MB"
+    },
+    {
+      "id": "bdf-markdown",
+      "label": "BDF → Markdown",
+      "js": 29.9,
+      "wasm": 15.2,
+      "detail": "31,488文字"
+    },
+    {
+      "id": "bdf-text",
+      "label": "BDF → 検索テキスト",
+      "js": 8,
+      "wasm": 5.5,
+      "detail": "20ページ"
+    },
+    {
+      "id": "pdf-bdf",
+      "label": "PDF → BDF",
+      "js": 376,
+      "wasm": 157.9,
+      "detail": "20ページ / 396KB"
+    },
+    {
+      "id": "minisearch-index",
+      "label": "MiniSearch 索引",
+      "js": 2.1,
+      "wasm": null,
+      "detail": "20ページ"
+    },
+    {
+      "id": "minisearch-search",
+      "label": "MiniSearch 検索（1回）",
+      "js": 0.04,
+      "wasm": null,
+      "detail": "10 クエリの平均"
+    }
+  ],
+  "sizes": {
+    "bdfBytes": 401594,
+    "pdfBytes": 2405252,
+    "markdownChars": 31488,
+    "textChars": 32235,
+    "convertedBdfBytes": 405888
+  },
+  "details": {
+    "pdfPages": 20,
+    "pdfToBdfPages": 20,
+    "markdownFiles": 0,
+    "textPages": 20,
+    "records": 20
+  }
+}

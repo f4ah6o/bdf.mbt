@@ -1,4 +1,4 @@
-name: Demo pages
+name: Site pages
 on:
   push:
     branches: [main]
@@ -13,16 +13,16 @@ permissions:
 concurrency:
   # Never cancel a run that is already publishing: interrupting a Pages
   # deployment mid-sync leaves the site stuck until the next successful run.
-  group: demo-pages-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
+  group: site-pages-${ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }
   cancel-in-progress: false
 
 jobs:
   build:
     if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     outputs:
-      pages_ready: ${{ steps.pages.outputs.ready }}
+      pages_ready: ${ steps.pages.outputs.ready }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -33,16 +33,16 @@ jobs:
       - run: moon update
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Build the JavaScript demo
-        id: build_demo
-        run: npm run build:demo
-      - name: Test the demo
-        id: smoke_test
-        run: npm run test:demo
-      - name: Test the export UI and the wasm-gc demo
-        id: export_test
-        run: npm run test:export
-      - name: Validate demo UI with vlmkit
+      - name: Build the site (bdf.mbt in JavaScript and wasm-gc)
+        id: build_site
+        run: npm run build:site
+      - name: Test the site
+        id: site_test
+        run: npm run test:site
+      - name: Check the gallery previews and the sample checksums
+        id: preview_test
+        run: npm run test:previews
+      - name: Validate the site with vlmkit
         id: ui_gates
         run: |
           python3 -m http.server --directory _build/pages 8771 --bind 127.0.0.1 >/dev/null 2>&1 &
@@ -51,11 +51,16 @@ jobs:
           sleep 1
           url=http://127.0.0.1:8771/
           ./node_modules/.bin/vlmkit check integrity "$url" --no-ledger
-          ./node_modules/.bin/vlmkit check copy "$url" --manifest demo/copy.txt --no-ledger
+          ./node_modules/.bin/vlmkit check copy "$url" --manifest site/copy.txt --no-ledger
           ./node_modules/.bin/vlmkit scan scroll "$url" --no-ledger
           ./node_modules/.bin/vlmkit scan handlers "$url" --no-ledger
           ./node_modules/.bin/vlmkit check interactions "$url" --no-ledger
           ./node_modules/.bin/vlmkit check breakpoints "$url" --sweep --no-ledger
+          ./node_modules/.bin/vlmkit check integrity "$url/viewer/" --no-ledger
+          ./node_modules/.bin/vlmkit scan scroll "$url/viewer/" --no-ledger
+          ./node_modules/.bin/vlmkit check breakpoints "$url/viewer/" --sweep --no-ledger
+          ./node_modules/.bin/vlmkit check integrity "$url/docs/index.html" --no-ledger
+          ./node_modules/.bin/vlmkit check breakpoints "$url/docs/index.html" --sweep --no-ledger
           ./node_modules/.bin/vlmkit check integrity "$url/wasm-gc.html" --no-ledger
           ./node_modules/.bin/vlmkit scan scroll "$url/wasm-gc.html" --no-ledger
           ./node_modules/.bin/vlmkit check breakpoints "$url/wasm-gc.html" --sweep --no-ledger
@@ -67,9 +72,9 @@ jobs:
         id: pages
         if: github.event_name != 'pull_request'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${ github.token }
         run: |
-          if source=$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.build_type // ""' 2>"$RUNNER_TEMP/pages-check.err"); then
+          if source=$(gh api "repos/${ github.repository }/pages" --jq '.build_type // ""' 2>"$RUNNER_TEMP/pages-check.err"); then
             :
           else
             case "$(cat "$RUNNER_TEMP/pages-check.err")" in
@@ -80,7 +85,7 @@ jobs:
           if [ "$source" != workflow ]; then
             echo 'ready=false' >> "$GITHUB_OUTPUT"
             echo 'Pages deployment skipped: configure Settings > Pages > Source as GitHub Actions, then run this workflow again.'
-          elif gh api "repos/${GITHUB_REPOSITORY}/environments/github-pages" >/dev/null 2>"$RUNNER_TEMP/environment-check.err"; then
+          elif gh api "repos/${ github.repository }/environments/github-pages" >/dev/null 2>"$RUNNER_TEMP/environment-check.err"; then
             echo 'ready=true' >> "$GITHUB_OUTPUT"
           else
             case "$(cat "$RUNNER_TEMP/environment-check.err")" in
@@ -99,7 +104,7 @@ jobs:
     timeout-minutes: 10
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outcome == 'success' && steps.deployment.outputs.page_url || steps.retry.outputs.page_url }}
+      url: ${ steps.deployment.outcome == 'success' && steps.deployment.outputs.page_url || steps.retry.outputs.page_url }
     permissions:
       contents: read
       pages: write
@@ -118,8 +123,9 @@ jobs:
         uses: actions/deploy-pages@v4
       - name: Check the deployed site
         env:
-          SITE_URL: ${{ steps.deployment.outcome == 'success' && steps.deployment.outputs.page_url || steps.retry.outputs.page_url }}
+          SITE_URL: ${ steps.deployment.outcome == 'success' && steps.deployment.outputs.page_url || steps.retry.outputs.page_url }
         run: |
           test -n "$SITE_URL" || { echo 'No deployed page URL was reported.' >&2; exit 1; }
-          curl -fsS --retry 5 --retry-delay 10 --retry-all-errors -o /dev/null "$SITE_URL"
-          curl -fsS --retry 5 --retry-delay 10 --retry-all-errors -o /dev/null "${SITE_URL%/}/wasm-gc.html"
+          for path in "" "viewer/" "thumbnail/" "text/" "docs/index.html" "docs/licenses.html" "wasm-gc.html"; do
+            curl -fsS --retry 5 --retry-delay 10 --retry-all-errors -o /dev/null "${ SITE_URL }/${ path }"
+          done

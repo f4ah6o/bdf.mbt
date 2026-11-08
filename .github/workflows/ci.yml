@@ -36,7 +36,7 @@ jobs:
       - uses: hustcer/setup-moonbit@v1
       - run: moon update
       - run: npm ci
-      - run: node demo/verify-samples.mjs
+      - run: node site/verify-samples.mjs
       - run: npm run build:demo
       - run: npx playwright install --with-deps chromium
       - run: npm run test:demo

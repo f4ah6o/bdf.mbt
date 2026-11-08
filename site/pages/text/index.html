@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../site.css">
+<meta name="description" content="BDF.mbt の検索用テキスト。文書のページごとのテキストとメタデータを JSON で取り出します。">
+<title>検索用テキスト – BDF.mbt</title>
+</head>
+<body class="tool">
+<a class="skip" href="#content">本文へ移動</a>
+<header class="bar">
+<nav aria-label="サイト">
+<a class="home" href="../index.html">BDF.mbt</a>
+<ul>
+<li><a href="../viewer/">ビューア</a></li>
+<li><a href="../thumbnail/">サムネイル</a></li>
+<li><a href="./" aria-current="page">検索テキスト</a></li>
+<li><a href="../docs/index.html">ドキュメント</a></li>
+<li><a href="https://github.com/f4ah6o/bdf.mbt">GitHub</a></li>
+</ul>
+</nav>
+</header>
+<main id="content" class="wrap" tabindex="-1">
+<h1>検索用テキスト</h1>
+<p class="lead">文書のページごとのテキストとメタデータを JSON で取り出します。検索エンジンに渡す形（1 ページが 1 レコード）で、サーバーが行うのと同じ処理をブラウザの中で行います。</p>
+<div class="drop" id="drop">
+<p>ここにファイルをドロップするか、<button id="open-file" class="button primary" type="button">ファイルを開く</button> を押してください。<input id="file" type="file" hidden></p>
+<p class="samples" id="samples"></p>
+</div>
+<div class="options">
+<label>表示 <select id="shape" aria-label="表示">
+<option value="json" selected>JSON（サーバーが受け取る形）</option>
+<option value="plain">テキストだけ</option>
+</select></label>
+<span class="hint">wasm-gc にコンパイルした bdf.mbt が取り出します。</span>
+</div>
+<p class="status" id="status" role="status" aria-live="polite">ファイルを選んでください。</p>
+<textarea class="output" id="output" readonly spellcheck="false" aria-label="検索エンジン向けの文書のテキスト"></textarea>
+<p class="links" id="links" hidden><button type="button" class="button" id="copy">コピー</button> <a class="button" id="save" download="search-text.json">保存</a></p>
+<details class="how">
+<summary>仕組み</summary>
+<p>まず bdf.mbt の変換 Worker でファイルを BDF にし、その BDF のテキスト索引を <code>bdf_wasm_search_text</code>（wasm-gc）で取り出します。1 ページが 1 レコードで、ビューアの検索と同じ正規化を済ませた形です。</p>
+</details>
+</main>
+<footer class="wrap foot">bdf.mbt（MoonBit 実装）· <a href="../docs/licenses.html">フォントとライセンス</a> · <a href="https://github.com/f4ah6o/bdf.mbt">GitHub</a></footer>
+<script type="module" src="../text.js"></script>
+</body>
+</html>

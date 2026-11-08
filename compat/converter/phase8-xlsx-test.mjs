@@ -5,8 +5,8 @@ import { BdfDocument, BufferSource, decodeTextIndex } from '@bdfkit/core';
 import { xlsx_with_font } from '../../_build/js/debug/build/compat/xlsx/xlsx.js';
 
 const root = resolve(import.meta.dirname, '../..');
-const data = new Uint8Array(await readFile(resolve(root, 'demo/samples/basic.xlsx')));
-const font = new Uint8Array(await readFile(resolve(root, 'demo/samples/stix.ttf')));
+const data = new Uint8Array(await readFile(resolve(root, 'site/samples/basic.xlsx')));
+const font = new Uint8Array(await readFile(resolve(root, 'site/samples/stix.ttf')));
 const out = JSON.parse(xlsx_with_font(data, font));
 assert.equal(out.error, undefined, out.error);
 assert.ok(out.warnings.every(w => w.includes('no calculated value')), 'XLSX font conversion warnings: ' + JSON.stringify(out.warnings));
