@@ -53,6 +53,7 @@ jobs:
           trap 'kill "$server_pid"' EXIT
           sleep 1
           url=http://127.0.0.1:8771/
+          node .github/probe-overflow.mjs "$url"
           ./node_modules/.bin/vlmkit check integrity "$url" --no-ledger
           ./node_modules/.bin/vlmkit check copy "$url" --manifest site/copy.txt --no-ledger
           ./node_modules/.bin/vlmkit scan scroll "$url" --no-ledger
