@@ -123,3 +123,25 @@ pub fn wasm_search_text(input : String) -> String {
     "pages": Json::number(result.pages.to_double()),
   }).stringify()
 }
+
+///|
+/// Convert a file of any supported format (base64) into BDF. When the
+/// format is empty the format is detected the same way the browser
+/// converter detects it. The result names the converter that ran.
+#export_name("bdf_wasm_convert")
+pub fn wasm_convert(input : String, name : String, format : String) -> String {
+  let data = match decode_input(input) {
+    Some(data) => data
+    None => return error_json("base64 を読み取れませんでした")
+  }
+  let result = @all.convert(data, format=format, name=name) catch {
+    @all.AllFailure(message) => return error_json(message)
+  }
+  Json::object({
+    "ok": Json::boolean(true),
+    "format": Json::string(result.format),
+    "summary": Json::string(result.summary),
+    "warnings": warnings_json(result.warnings),
+    "bdf": Json::string(@base64.encode(result.bdf)),
+  }).stringify()
+}

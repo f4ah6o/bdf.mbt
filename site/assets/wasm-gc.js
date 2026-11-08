@@ -44,5 +44,8 @@ export async function createWasm(url) {
     searchText(base64) {
       return JSON.parse(call('bdf_wasm_search_text', base64));
     },
+    convertAny(base64, name, format = '') {
+      return JSON.parse(call('bdf_wasm_convert', base64, name, format));
+    },
   };
 }

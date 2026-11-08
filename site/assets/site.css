@@ -212,9 +212,9 @@ th:not([align]) { text-align: start; }
 .drop { padding: 1.25rem; border: 2px dashed var(--border); border-radius: 10px; }
 .drop p { margin: 0 0 .75rem; }
 .drop p:last-child { margin-bottom: 0; }
-.drop .samples { display: flex; flex-wrap: wrap; gap: .35rem; }
-.drop .samples button { padding: .1rem .6rem; color: var(--fg); background: var(--subtle); border: 1px solid var(--border); border-radius: 999px; font-size: .8125rem; cursor: pointer; }
-.drop .samples button:hover { border-color: var(--muted); }
+.drop .samples, .options .samples { display: flex; flex-wrap: wrap; gap: .35rem; }
+.drop .samples button, .options .samples button { padding: .1rem .6rem; color: var(--fg); background: var(--subtle); border: 1px solid var(--border); border-radius: 999px; font-size: .8125rem; cursor: pointer; }
+.drop .samples button:hover, .options .samples button:hover { border-color: var(--muted); }
 body.dragging .drop { border-color: var(--focus); background: color-mix(in srgb, var(--focus) 10%, transparent); }
 .options { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; align-items: center; margin: 1.25rem 0 .5rem; }
 .options label { display: inline-flex; gap: .4rem; align-items: center; }

@@ -94,22 +94,48 @@ $('#pdf-file').addEventListener('change', () => {
 });
 $('#pdf-convert').addEventListener('click', async () => {
   const file = $('#pdf-file').files?.[0];
-  if (!file) return say('PDF ファイルを選んでください', true);
+  if (!file) return say('ファイルを選んでください', true);
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const wasm = await getWasm();
   $('#pdf-convert').disabled = true;
-  say('PDF を wasm-gc で変換しています…');
   try {
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    const wasm = await getWasm();
-    const result = wasm.convertPdf(bytesToBase64(bytes), $('#pdf-password').value);
-    if (!result.ok) throw new Error(result.error ?? 'PDF を変換できませんでした');
-    await openBdf(file.name.replace(/\.pdf$/i, '.bdf'), base64ToBytes(result.bdf));
-    say(file.name + ' → BDF（' + result.pages + ' ページ）');
+    // PDF はパスワードを渡せる専用の入り口へ。それ以外は、対応する形式の
+    // 判別を wasm-gc 側の変換に任せて選ばせる。
+    const isPdf = /\.pdf$/i.test(file.name);
+    const result = isPdf
+      ? wasm.convertPdf(bytesToBase64(bytes), $('#pdf-password').value)
+      : wasm.convertAny(bytesToBase64(bytes), file.name);
+    if (!result.ok) throw new Error(result.error ?? '変換できませんでした');
+    await openBdf(file.name.replace(/\.[^.]+$/, '.bdf'), base64ToBytes(result.bdf));
+    say(file.name + ' → BDF（' + (result.summary || result.format) + '）');
   } catch (error) {
     say(String(error.message ?? error), true);
   } finally {
     $('#pdf-convert').disabled = !$('#pdf-file').files?.length;
   }
 });
+
+function loadSampleFile(name) {
+  return async () => {
+    say(name + ' を読み込んでいます…');
+    try {
+      const response = await fetch('./samples/' + name);
+      if (!response.ok) throw new Error('サンプルを読み込めませんでした: HTTP ' + response.status);
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      const wasm = await getWasm();
+      const result = wasm.convertAny(bytesToBase64(bytes), name);
+      if (!result.ok) throw new Error(result.error ?? '変換できませんでした');
+      await openBdf(name.replace(/\.[^.]+$/, '.bdf'), base64ToBytes(result.bdf));
+      say(name + ' → BDF（' + (result.summary || result.format) + '）');
+    } catch (error) {
+      say(String(error.message ?? error), true);
+    }
+  };
+}
+
+for (const button of document.querySelectorAll('[data-wasm-sample]')) {
+  button.addEventListener('click', () => { void loadSampleFile(button.dataset.wasmSample)().catch(error => say(String(error.message ?? error), true)); });
+}
 
 $('#previous').addEventListener('click', () => { currentPage -= 1; updatePage(); viewer.scrollToPage(currentPage); });
 $('#next').addEventListener('click', () => { currentPage += 1; updatePage(); viewer.scrollToPage(currentPage); });

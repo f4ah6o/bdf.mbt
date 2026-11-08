@@ -6,7 +6,7 @@
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="site.css">
-<meta name="description" content="BDF.mbt の wasm-gc デモ。WebAssembly にコンパイルした同じ MoonBit のコードで、PDF の変換と BDF の書き出しを行います。">
+<meta name="description" content="BDF.mbt の wasm-gc デモ。WebAssembly にコンパイルした同じ MoonBit のコードで、PDF や Office 文書などの変換と BDF の書き出しを行います。">
 <title>wasm-gc デモ – BDF.mbt</title>
 </head>
 <body class="tool">
@@ -27,9 +27,10 @@
 <h1>wasm-gc デモ</h1>
 <p class="lead">ビューアと同じ MoonBit の実装を WebAssembly（wasm-gc）にコンパイルし、PDF の変換と、BDF の PDF・Markdown・検索用テキストへの書き出しをブラウザの中で行います。サーバーへは送りません。</p>
 <div class="options">
-<label>PDF <input id="pdf-file" type="file" accept=".pdf,application/pdf" aria-label="PDF ファイル"></label>
+<label>ファイル <input id="pdf-file" type="file" accept=".pdf,.docx,.pptx,.xlsx,.csv,.tsv,.md,.markdown,.html,.htm,.epub,.svg,.png,.jpg,.jpeg,.ttf,.otf,.woff,.woff2,.mid,.midi,.kar,.mml,.drawio,.dxf,.jww,.sfc,.p21,.cgm,.plt,.hpgl,.gbr,.drl,.parquet,.ai,.tif,.psd,.emf,.wmf,.vsdx,.idml" aria-label="変換するファイル"></label>
 <label>パスワード <input id="pdf-password" type="password" autocomplete="current-password" placeholder="任意"></label>
 <button id="pdf-convert" class="button primary" type="button" disabled>BDF に変換</button>
+<span class="samples" id="wasm-samples"><button type="button" class="button" data-wasm-sample="basic.docx">Word</button><button type="button" class="button" data-wasm-sample="features.xlsx">Excel</button><button type="button" class="button" data-wasm-sample="basic.csv">CSV</button><button type="button" class="button" data-wasm-sample="basic.md">Markdown</button><button type="button" class="button" data-wasm-sample="drawing.svg">SVG</button></span>
 <button id="sample-bdf" class="button" type="button">サンプル BDF を開く</button>
 <span class="hint" id="wasm-status" role="status" aria-live="polite">wasm-gc を待っています…</span>
 </div>
@@ -88,7 +89,7 @@
 </section>
 <details class="how">
 <summary>このページについて</summary>
-<p>このページの変換（PDF → BDF）と書き出し（PDF・Markdown・検索用テキスト）は、WebAssembly のインスタンス（<code>wasm-gc.wasm</code>）が行います。描画だけは canvas を使うため、ビューアと同じ JS のレンダラが担当します（wasm-gc は canvas を呼べません）。PDF 以外の入力形式は、<a href="viewer/">ビューア</a>の JavaScript の変換 Worker が担当します。</p>
+<p>このページの変換（PDF → BDF、Word・Excel・PowerPoint・CSV・Markdown・SVG・フォントなども）と、BDF の書き出し（PDF・Markdown・検索用テキスト）は、WebAssembly のインスタンス（<code>wasm-gc.wasm</code>）が行います。描画だけは canvas を使うため、ビューアと同じ JS のレンダラが担当します（wasm-gc は canvas を呼べません）。</p>
 </details>
 </main>
 <footer class="wrap foot">bdf.mbt（MoonBit 実装）· <a href="docs/licenses.html">フォントとライセンス</a> · <a href="https://github.com/f4ah6o/bdf.mbt">GitHub</a></footer>

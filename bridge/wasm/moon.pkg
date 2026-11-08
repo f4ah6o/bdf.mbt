@@ -1,4 +1,5 @@
 import {
+  "f4ah6o/bdf/convert/all",
   "f4ah6o/bdf/convert/pdf" @pdf_convert,
   "f4ah6o/bdf/export/pdf" @export_pdf,
   "f4ah6o/bdf/export/markdown" @export_md,

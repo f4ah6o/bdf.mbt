@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/all"
+
+import {
+  "f4ah6o/bdf/font/db",
+}
+
+// Values
+pub fn convert(Bytes, format? : String, name? : String, database? : @db.Database) -> Outcome raise AllError
+
+// Errors
+pub suberror AllError {
+  AllFailure(String)
+}
+
+// Types and methods
+pub(all) struct Outcome {
+  bdf : Bytes
+  format : String
+  summary : String
+  warnings : Array[String]
+}
+
+// Type aliases
+
+// Traits
