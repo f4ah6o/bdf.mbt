@@ -99,6 +99,51 @@ function frame(source) {
   return out;
 }
 
+/**
+ * 比較は 16×10 の区画の平均色で行う。字形やにじみは OS のフォントで変わる
+ * ので、画素そのものではなく区画の明るさで見る。しきい値は区画あたりの
+ * 1 段。真っ白・真っ黒・別の文書といった違いはこれで弾ける。
+ */
+const CELLS = 16 * 10;
+const TOLERANCE = 48;
+
+/** 区画ごとの平均色。戻り値は RGB の並びで cells × 3。 */
+function signature(image) {
+  const cellW = Math.max(1, Math.floor(image.width / 16));
+  const cellH = Math.max(1, Math.floor(image.height / 10));
+  const sums = new Float64Array(CELLS * 3);
+  const counts = new Float64Array(CELLS);
+  for (let y = 0; y < image.height; y += 1) {
+    const row = Math.min(9, Math.floor(y / cellH));
+    for (let x = 0; x < image.width; x += 1) {
+      const column = Math.min(15, Math.floor(x / cellW));
+      const cell = row * 16 + column;
+      const at = (y * image.width + x) * 4;
+      sums[cell * 3] += image.data[at];
+      sums[cell * 3 + 1] += image.data[at + 1];
+      sums[cell * 3 + 2] += image.data[at + 2];
+      counts[cell] += 1;
+    }
+  }
+  const out = new Array(CELLS * 3);
+  for (let cell = 0; cell < CELLS; cell += 1) {
+    const count = Math.max(1, counts[cell]);
+    out[cell * 3] = sums[cell * 3] / count;
+    out[cell * 3 + 1] = sums[cell * 3 + 1] / count;
+    out[cell * 3 + 2] = sums[cell * 3 + 2] / count;
+  }
+  return out;
+}
+
+/** 区画の平均色が、台形ごとに誤差 TOLERANCE 以内で揃っているか。 */
+function sameShape(left, right) {
+  if (left.length !== right.length) return false;
+  for (let index = 0; index < left.length; index += 1) {
+    if (Math.abs(left[index] - right[index]) > TOLERANCE) return false;
+  }
+  return true;
+}
+
 const browser = await chromium.launch({ headless: true, ...(process.env.BDF_CHROMIUM ? { executablePath: process.env.BDF_CHROMIUM } : {}) });
 let stale = 0;
 try {
@@ -117,8 +162,7 @@ try {
       try {
         const existing = PNG.sync.read(await readFile(target));
         same = existing.width === rendered.width && existing.height === rendered.height &&
-          existing.data.length === rendered.data.length &&
-          existing.data.every((value, index) => Math.abs(value - rendered.data[index]) <= 12);
+          sameShape(signature(existing), signature(rendered));
       } catch {
         same = false;
       }
