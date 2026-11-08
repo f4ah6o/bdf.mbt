@@ -349,7 +349,7 @@ dialog.password .buttons { display: flex; justify-content: flex-end; gap: .5rem;
 .back [hidden] { display: none; }
 
 /* --- bdf.mbt: the viewer hosts its own scroll area (browser/viewer_dom.mbt) --- */
-.demo .view.bdf-host { overflow: hidden; padding: 0; display: block; }
+.demo .view.bdf-host { overflow: clip; padding: 0; display: block; }
 .demo .view.bdf-host > div { height: 100%; }
 .samples-row { display: flex; flex-wrap: wrap; gap: .35rem; margin: .75rem 0 0; padding: 0; list-style: none; }
 .samples-row button { padding: .1rem .6rem; color: var(--fg); background: var(--subtle); border: 1px solid var(--border); border-radius: 999px; font-size: .8125rem; cursor: pointer; }
