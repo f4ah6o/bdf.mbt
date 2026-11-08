@@ -125,9 +125,8 @@ pub fn wasm_search_text(input : String) -> String {
 }
 
 ///|
-/// Convert a file of any supported format (base64) into BDF. When the
-/// format is empty the format is detected the same way the browser
-/// converter detects it. The result names the converter that ran.
+/// Convert a file of any supported format (base64) into BDF. The format is
+/// detected the same way the browser converter detects it when format is empty.
 #export_name("bdf_wasm_convert")
 pub fn wasm_convert(input : String, name : String, format : String) -> String {
   let data = match decode_input(input) {
