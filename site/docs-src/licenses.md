@@ -39,7 +39,7 @@ bdf.mbt は [shibukawa/bdf](https://github.com/shibukawa/bdf)（BDF）の MoonBi
 - \`site.css\`（このサイトの \`site.css\`）: 上流 \`site/site.css\`、MIT。
 - 文書の文章: 上流 \`docs/*.ja.md\`、MIT。各ページの末尾に出典を書いています。
 
-上流のサイトが配っている \`lib/bdf-*.wasm\`（Go のビルド）は含めていません。このサイトの変換と描画は、すべて bdf.mbt の JS と wasm-gc のビルドです。
+上流のサイトが配っている \`lib/bdf-*.wasm\`（Go のビルド）と、それを動かす \`wasm_exec.js\` は含めていません。このサイトの変換と描画は、すべて bdf.mbt の JS と wasm-gc のビルドです。上流の \`wasm_exec.js\` に付いている Emscripten の表示も、それを同梱しないこのサイトには関係しません。出典と変更点の一覧は、リポジトリの \`licenses/THIRD-PARTY.md\` にまとめています。
 
 ## サンプル文書
 

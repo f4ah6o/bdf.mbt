@@ -20,3 +20,5 @@ node_modules
 .moon-deps/
 .npm-cache/
 .npm-logs/
+.agents/
+.devin/

@@ -267,6 +267,12 @@ try {
       console.log("no previous benchmark to compare; run without --check");
       process.exit(0);
     }
+    // 記録と違う CPU（CI のランナーなど）では、同じ 3 倍の枠で比べても意味が
+    // ない。数値の比較は飛ばして、測定が壊れていないことだけ確かめる。
+    if ((previous.environment?.cpu ?? "unknown") !== (payload.environment.cpu ?? "unknown")) {
+      console.log("benchmark ok (recorded on " + (previous.environment?.cpu ?? "unknown CPU") + "; this machine differs, so only the shape was checked)");
+      process.exit(0);
+    }
     const before = new Map((previous.roundtrip ?? []).map((row) => [row.id, row]));
     let failed = 0;
     for (const row of payload.roundtrip) {

@@ -42,6 +42,9 @@ jobs:
       - name: Check the gallery previews and the sample checksums
         id: preview_test
         run: npm run test:previews
+      - name: Check the committed benchmarks still hold
+        id: bench_check
+        run: npm run bench:site -- --check
       - name: Validate the site with vlmkit
         id: ui_gates
         run: |
@@ -61,6 +64,12 @@ jobs:
           ./node_modules/.bin/vlmkit check breakpoints "$url/viewer/" --sweep --no-ledger
           ./node_modules/.bin/vlmkit check integrity "$url/docs/index.html" --no-ledger
           ./node_modules/.bin/vlmkit check breakpoints "$url/docs/index.html" --sweep --no-ledger
+          ./node_modules/.bin/vlmkit check integrity "$url/thumbnail/" --no-ledger
+          ./node_modules/.bin/vlmkit scan scroll "$url/thumbnail/" --no-ledger
+          ./node_modules/.bin/vlmkit check breakpoints "$url/thumbnail/" --sweep --no-ledger
+          ./node_modules/.bin/vlmkit check integrity "$url/text/" --no-ledger
+          ./node_modules/.bin/vlmkit scan scroll "$url/text/" --no-ledger
+          ./node_modules/.bin/vlmkit check breakpoints "$url/text/" --sweep --no-ledger
           ./node_modules/.bin/vlmkit check integrity "$url/wasm-gc.html" --no-ledger
           ./node_modules/.bin/vlmkit scan scroll "$url/wasm-gc.html" --no-ledger
           ./node_modules/.bin/vlmkit check breakpoints "$url/wasm-gc.html" --sweep --no-ledger

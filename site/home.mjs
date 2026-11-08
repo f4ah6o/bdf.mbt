@@ -278,6 +278,11 @@ ${gallerySection()}
 </section>
 </main>
 ${footer()}
+<script>
+// 上流のトップページと同じ振る舞い: 旧いリンク (?src=&layout=&range=) は
+// ビューアの URL にそのまま引き継ぐ（上流 site/home.mjs と同じ）。
+if (/[?&](src|layout|range)\\b/.test(location.search)) location.replace("viewer/" + location.search + location.hash);
+</script>
 <script type="module" src="home.js"></script>
 </body>
 </html>`;

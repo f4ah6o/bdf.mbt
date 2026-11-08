@@ -39,6 +39,7 @@ export function head({ base = "", title, description, body = "", styles = [] } =
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
+<link rel="icon" href="${base}favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="${base}site.css">
 ${styles.map((href) => `<link rel="stylesheet" href="${base}${href}">`).join("\n")}
 <meta name="description" content="${esc(description)}">

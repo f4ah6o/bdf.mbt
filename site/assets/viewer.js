@@ -331,7 +331,17 @@ createExportUI({
   },
 });
 
-const requested = new URL(location.href).searchParams.get("file");
+const params = new URL(location.href).searchParams;
+const requested = params.get("file") ?? params.get("src");
+// 上流のビューアが URL の layout で受け取る名前を、このビューアの 3 つに直す。
+const LAYOUTS = { pages: "single", single: "single", spread: "spread", "spread-rtl": "spread", scroll: "continuous" };
+const initialLayout = LAYOUTS[params.get("layout") ?? ""];
+if (initialLayout) {
+  $("#layout").value = initialLayout;
+  viewer.setLayout(initialLayout);
+}
+// range は上流のビューアが受け取るパラメーター。bdf.mbt のビューアはまだ
+// 開く範囲を絞れないので、いまは全ページを開く。
 if (requested) {
   const name = requested.split("/").pop();
   void openSample(name, name);

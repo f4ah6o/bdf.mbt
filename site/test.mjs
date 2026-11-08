@@ -146,6 +146,14 @@ try {
     assert.match(html, /bdf\.mbt の往復/);
   });
 
+  await step("top page forwards the old ?src= links to the viewer", async () => {
+    await fresh();
+    await page.goto(base + "?src=" + encodeURIComponent("samples/demo.pdf") + "&layout=scroll", { waitUntil: "domcontentloaded" });
+    assert.match(page.url(), /\/viewer\/\?src=/);
+    await page.waitForFunction(() => /^1 \/ \d+$/.test(document.querySelector("#page-number")?.textContent ?? ""), null, { timeout: 120000 });
+    assert.equal(await page.locator("#layout").inputValue(), "continuous");
+  });
+
   await step("viewer opens the demo PDF", async () => {
     await fresh();
     await page.goto(base + "viewer/", { waitUntil: "domcontentloaded" });
