@@ -41,9 +41,40 @@ try {
     for (const offender of report.offenders) {
       console.log("  " + JSON.stringify(offender));
     }
-    if (overflow > 0) failures += 1;
+    if (overflow > 0) {
+      failures += 1;
+      const result = await bisect(page);
+      console.log('  removing any ONE of these clears it:');
+      for (const culprit of result.culprits.slice(0, 12)) console.log('    ' + JSON.stringify(culprit));
+    }
   }
 } finally {
   await browser.close();
 }
+
+// どの子を消すと横スクロールが消えるか、ひとつずつ確かめる。
+async function bisect(page) {
+  return page.evaluate(async () => {
+    const de = document.documentElement;
+    const wide = () => de.scrollWidth - de.clientWidth;
+    if (wide() <= 0) return { overflowing: false, culprits: [] };
+    const culprits = [];
+    const saved = new Map();
+    const candidates = [...document.body.querySelectorAll('*')];
+    for (const element of candidates) {
+      saved.set(element, element.style.display);
+      element.style.display = 'none';
+      if (wide() <= 0) {
+        culprits.push({
+          selector: element.tagName.toLowerCase() + (element.id ? '#' + element.id : '') +
+            (element.className && typeof element.className === 'string' ? '.' + element.className.trim().split(/\s+/).join('.') : ''),
+          ownWidth: Math.round(element.getBoundingClientRect().width),
+        });
+      }
+      element.style.display = saved.get(element) || '';
+    }
+    return { overflowing: true, culprits };
+  });
+}
+
 process.exit(failures ? 1 : 0);
