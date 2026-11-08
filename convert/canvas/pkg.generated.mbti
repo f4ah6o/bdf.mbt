@@ -65,7 +65,6 @@ pub fn Fonts::new(@db.Database?) -> Self
 pub fn Fonts::program(Self, @db.Choice, Array[Int32]) -> (Bytes?, String?) raise
 pub fn Fonts::warnings(Self) -> Array[String]
 
-#derive(Eq, @debug.Debug)
 pub(all) struct Matrix {
   a : Double
   b : Double
@@ -73,7 +72,7 @@ pub(all) struct Matrix {
   d : Double
   e : Double
   f : Double
-}
+} derive(Eq, @debug.Debug)
 pub fn Matrix::apply(Self, Double, Double) -> (Double, Double)
 pub fn Matrix::identity() -> Self
 pub fn Matrix::is_translation(Self) -> Bool
@@ -83,14 +82,13 @@ pub fn Matrix::scale(Double, Double) -> Self
 pub fn Matrix::scale_factor(Self) -> Double
 pub fn Matrix::translate(Double, Double) -> Self
 
-#derive(Eq, @debug.Debug)
 pub(all) struct TextMetrics {
   asc : Double
   desc : Double
   cap : Double
   ul_pos : Double
   ul_thick : Double
-}
+} derive(Eq, @debug.Debug)
 
 // Type aliases
 

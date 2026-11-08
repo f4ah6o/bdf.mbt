@@ -5,7 +5,6 @@ import {
   "f4ah6o/bdf/convert/canvas",
   "f4ah6o/bdf/core",
   "moonbitlang/core/debug",
-  "moonbitlang/core/json",
 }
 
 // Values
@@ -39,21 +38,21 @@ pub fn bulge_arc(Point, Point, Double) -> (Point, Double, Double, Double)
 
 pub fn dash_pattern(Array[Double]?) -> (Array[Double]?, Double)
 
-pub fn document_meta(String, title? : String) -> Map[String, @json.Json]
+pub fn document_meta(String, title? : String) -> Map[String, Json]
 
-pub fn fixed_view(Array[@json.Json], title? : String) -> @json.Json
+pub fn fixed_view(Array[Json], title? : String) -> Json
 
 pub fn flatten(CadPath, Int32) -> Array[Point]
 
 pub fn font_metrics(@canvas.Fonts, FontSpec) -> (Double, Double, Double)
 
-pub fn layer(String, String) -> @json.Json
+pub fn layer(String, String) -> Json
 
 pub fn measure(@canvas.Fonts, FontSpec, String) -> Double
 
 pub fn mm_to_pt(Double) -> Double
 
-pub fn page(Double, Double, Array[@json.Json]) -> @json.Json
+pub fn page(Double, Double, Array[Json]) -> Json
 
 pub fn rounded_size(Double, Double) -> (Int32, Int32)
 
@@ -68,14 +67,13 @@ pub fn underline_metrics(@canvas.Fonts, FontSpec) -> (Double, Double)
 // Errors
 
 // Types and methods
-#derive(Eq, @debug.Debug)
 pub(all) enum Break {
   BreakBox
   BreakParagraph
   BreakLine
   BreakWrap
   BreakNone
-}
+} derive(Eq, @debug.Debug)
 
 pub(all) struct CadGradient {
   radial : Bool
@@ -187,13 +185,12 @@ pub fn Fill::gradient(CadGradient) -> Self
 pub fn Fill::pattern(CadPattern) -> Self
 pub fn Fill::solid(UInt32) -> Self
 
-#derive(Eq, @debug.Debug)
 pub(all) struct FontSpec {
   mut family : String
   east_asian : String
   bold : Bool
   italic : Bool
-}
+} derive(Eq, @debug.Debug)
 pub fn FontSpec::new(family? : String, east_asian? : String, bold? : Bool, italic? : Bool) -> Self
 
 pub(all) struct PatternLine {
@@ -223,23 +220,21 @@ pub fn Plotter::fonts(Self) -> @canvas.Fonts
 pub fn Plotter::new(@canvas.Fonts, thin? : Double) -> Self
 pub fn Plotter::plot(Self, @canvas.Canvas, Drawing, @canvas.Matrix, Rect) -> Unit raise
 
-#derive(Eq, @debug.Debug)
 pub(all) struct Point {
   x : Double
   y : Double
-}
+} derive(Eq, @debug.Debug)
 pub fn Point::add(Self, Self) -> Self
 pub fn Point::length(Self) -> Double
 pub fn Point::mul(Self, Double) -> Self
 pub fn Point::new(Double, Double) -> Self
 pub fn Point::sub(Self, Self) -> Self
 
-#derive(Eq, @debug.Debug)
 pub(all) struct Rect {
   min : Point
   max : Point
   ok : Bool
-}
+} derive(Eq, @debug.Debug)
 pub fn Rect::add(Self, Point) -> Self
 pub fn Rect::empty() -> Self
 pub fn Rect::h(Self) -> Double

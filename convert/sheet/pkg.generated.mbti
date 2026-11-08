@@ -6,7 +6,6 @@ import {
   "f4ah6o/bdf/font/db",
   "f4ah6o/bdf/font/sfnt",
   "moonbitlang/core/debug",
-  "moonbitlang/core/json",
 }
 
 // Values
@@ -44,9 +43,9 @@ pub fn sized_fallback_advance(Char, Bool, Double) -> Double
 
 pub fn store_grid(@core.DocumentWriter, DrawnGrid, id? : String, title? : String, text_index? : Bool) -> Unit raise
 
-pub fn store_grid_parts(@core.DocumentWriter, DrawnGrid, Array[(Int32, Int32, Bytes)]) -> Map[String, @json.Json] raise
+pub fn store_grid_parts(@core.DocumentWriter, DrawnGrid, Array[(Int32, Int32, Bytes)]) -> Map[String, Json] raise
 
-pub fn store_grid_views(@core.DocumentWriter, Array[NamedGrid], Array[Map[String, @json.Json]], Bool) -> Unit raise
+pub fn store_grid_views(@core.DocumentWriter, Array[NamedGrid], Array[Map[String, Json]], Bool) -> Unit raise
 
 pub fn store_grids(@core.DocumentWriter, Array[NamedGrid], Bool, picture_children? : Array[Array[(Int32, Int32, Bytes)]]) -> Unit raise
 
@@ -55,17 +54,15 @@ pub fn wrap_rich_text(Array[RichMeasureRun], Double, Double) -> Array[RichWrappe
 pub fn wrap_text(String, Double, bold? : Bool, advance? : (Char, Bool) -> Double) -> Array[WrappedLine]
 
 // Errors
-#derive(@debug.Debug)
 pub suberror SheetError {
   InvalidArgument(String)
-}
+} derive(@debug.Debug)
 
 // Types and methods
-#derive(Eq, @debug.Debug)
 pub(all) struct Cell {
   text : String
   number : Bool
-}
+} derive(Eq, @debug.Debug)
 
 pub(all) struct DrawnGrid {
   geometry : GridGeometry
@@ -124,12 +121,11 @@ pub(all) struct GridFillPaint {
   image : String
 }
 
-#derive(Eq, @debug.Debug)
 pub(all) struct GridGeometry {
   columns : Array[Run]
   rows : Array[Run]
   frozen_rows : Int32
-}
+} derive(Eq, @debug.Debug)
 
 pub(all) struct GridIcon {
   set : String
@@ -253,11 +249,10 @@ pub(all) struct RichWrappedLine {
   size : Double
 }
 
-#derive(Eq, @debug.Debug)
 pub(all) struct Run {
   count : Int32
   size : Float
-}
+} derive(Eq, @debug.Debug)
 
 pub(all) struct SizedGridCell {
   column : Int32
@@ -273,14 +268,13 @@ pub(all) struct SizedGridRow {
   cells : Array[SizedGridCell]
 }
 
-#derive(@debug.Debug)
 pub(all) struct WrappedLine {
   text : String
   width : Double
   explicit : Bool
   wrapped : Bool
   cjk_wrap : Bool
-}
+} derive(@debug.Debug)
 
 // Type aliases
 

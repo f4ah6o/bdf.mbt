@@ -198,11 +198,10 @@ pub(all) struct GuitarOnset {
   notes : Array[GuitarNote]
 }
 
-#derive(Eq, @debug.Debug)
 pub(all) struct GuitarPosition {
   string : Int32
   fret : Int32
-}
+} derive(Eq, @debug.Debug)
 
 pub(all) struct GuitarPreset {
   id : String

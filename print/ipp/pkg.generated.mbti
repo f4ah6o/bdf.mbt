@@ -148,6 +148,12 @@ pub fn check_response(Message) -> Unit raise StatusError
 
 pub fn collection(Array[Attribute]) -> Value
 
+pub fn cups_client(String, String, String) -> Client raise IppError
+
+pub fn cups_job_uri(String, String, Int32) -> String
+
+pub fn cups_printer_uri(String, String) -> String
+
 pub fn date_time(Bytes) -> Value
 
 pub fn decode(Bytes) -> Message raise IppError
@@ -398,6 +404,7 @@ pub(all) struct Printer {
   mut uuid : String
   mut device_id : String
   mut state : Int32
+  mut queued : Int32
   mut reasons : Array[String]
   mut state_message : String
   mut accepting_jobs : Bool

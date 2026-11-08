@@ -4,7 +4,6 @@ package "f4ah6o/bdf/core"
 import {
   "moonbitlang/core/buffer",
   "moonbitlang/core/debug",
-  "moonbitlang/core/json",
 }
 
 // Values
@@ -74,7 +73,7 @@ pub fn fused_multiply_add(Double, Double, Double) -> Double
 
 pub fn index_plain_text(Array[IndexRun]) -> String
 
-pub fn manifest_json(Bytes) -> @json.Json raise
+pub fn manifest_json(Bytes) -> Json raise
 
 pub fn normalize_nfkc(String) -> String
 
@@ -138,27 +137,24 @@ pub(all) struct ColorStop {
   color : Int32
 }
 
-#derive(Eq, @debug.Debug)
 pub(all) struct Cue {
   tick : UInt32
   system : UInt32
   x : Double
-}
+} derive(Eq, @debug.Debug)
 
-#derive(Eq, @debug.Debug)
 pub(all) struct CueSystem {
   page : UInt32
   x : Double
   y : Double
   width : Double
   height : Double
-}
+} derive(Eq, @debug.Debug)
 
-#derive(Eq, @debug.Debug)
 pub(all) struct Cues {
   systems : Array[CueSystem]
   cues : Array[Cue]
-}
+} derive(Eq, @debug.Debug)
 
 pub(all) struct Document {
   manifest : Manifest
@@ -171,14 +167,14 @@ pub fn Document::play(Self, View) -> MusicData? raise
 
 pub struct DocumentWriter {
   parts : Array[WriterPart]
-  views : Array[@json.Json]
-  tables : Array[@json.Json]
-  meta : @json.Json
+  views : Array[Json]
+  tables : Array[Json]
+  meta : Json
 }
 pub fn DocumentWriter::add_part(Self, String, Bytes) -> String raise
-pub fn DocumentWriter::add_table(Self, @json.Json) -> Unit
-pub fn DocumentWriter::add_view(Self, @json.Json) -> Unit
-pub fn DocumentWriter::new(meta? : @json.Json) -> Self
+pub fn DocumentWriter::add_table(Self, Json) -> Unit
+pub fn DocumentWriter::add_view(Self, Json) -> Unit
+pub fn DocumentWriter::new(meta? : Json) -> Self
 pub fn DocumentWriter::write_single(Self) -> Bytes raise
 pub fn DocumentWriter::write_split(Self) -> SplitOutput raise
 
@@ -211,7 +207,6 @@ pub(all) struct Header {
   manifest_encoding : Int32
 }
 
-#derive(Eq, @debug.Debug)
 pub(all) struct HitSegment {
   run : Int32
   a : Int32
@@ -219,16 +214,15 @@ pub(all) struct HitSegment {
   ordinal : Int32
   start : Int32
   mut end : Int32
-}
+} derive(Eq, @debug.Debug)
 
-#derive(Eq, @debug.Debug)
 pub(all) struct IndexRun {
   a : Int32
   b : Int32
   ordinal : Int32
   separator : Int32
   text : String
-}
+} derive(Eq, @debug.Debug)
 
 pub(all) enum KeySlot {
   Password(String, Int32, String, String)
@@ -247,15 +241,13 @@ pub(all) struct Manifest {
   tables : Array[Table]
 }
 
-#derive(Eq, @debug.Debug)
 pub(all) struct MidiEvent {
   tick : Double
   time : Double
   track : Int32
   mut message : MidiMessage
-}
+} derive(Eq, @debug.Debug)
 
-#derive(Eq, @debug.Debug)
 pub(all) enum MidiMessage {
   Note(channel~ : Int32, key~ : Int32, velocity~ : Int32, duration~ : Double, end_tick~ : Double)
   Program(channel~ : Int32, program~ : Int32)
@@ -264,9 +256,8 @@ pub(all) enum MidiMessage {
   Tempo(Int32)
   TimeSignature(numerator~ : Int32, denominator~ : Int32)
   KeySignature(key~ : Int32, minor~ : Bool)
-}
+} derive(Eq, @debug.Debug)
 
-#derive(Eq, @debug.Debug)
 pub(all) struct MidiSequence {
   format : Int32
   division : Double
@@ -276,7 +267,7 @@ pub(all) struct MidiSequence {
   tempos : Array[TempoPoint]
   ticks : Double
   duration : Double
-}
+} derive(Eq, @debug.Debug)
 
 pub(all) struct MusicData {
   seq : Bytes
@@ -382,13 +373,12 @@ pub(all) struct Page {
   layers : Array[Layer]
 }
 
-#derive(Eq, @debug.Debug)
 pub(all) struct PageRect {
   x : Double
   y : Double
   width : Double
   height : Double
-}
+} derive(Eq, @debug.Debug)
 
 pub(all) enum Paint {
   Gradient(Int32, Array[Double], Array[ColorStop])
@@ -414,13 +404,12 @@ pub(all) enum PathEntry {
   External(String, Int32)
 }
 
-#derive(Eq, @debug.Debug)
 pub(all) struct Play {
   seq : String?
   audio : String?
   media_type : String
   cues : String?
-}
+} derive(Eq, @debug.Debug)
 
 pub(all) struct Reader {
   data : Bytes
@@ -448,23 +437,21 @@ pub struct SealingPlan {
   manifest : Bytes
   parts : Array[SplitPart]
 }
-pub fn SealingPlan::finish(Self, Array[Bytes], SealingManifest, Bytes, Array[@json.Json]) -> SplitOutput raise
+pub fn SealingPlan::finish(Self, Array[Bytes], SealingManifest, Bytes, Array[Json]) -> SplitOutput raise
 pub fn SealingPlan::inner_manifest(Self, Array[Bytes]) -> SealingManifest raise
 pub fn SealingPlan::parts(Self) -> Array[SplitPart]
 
-#derive(Eq, @debug.Debug)
 pub(all) struct SearchHit {
   segments : Array[HitSegment]
   text : String
   context : String
-}
+} derive(Eq, @debug.Debug)
 
-#derive(Eq, @debug.Debug)
 pub(all) struct Segment {
   view : String
   from : Int32
   to : Int32
-}
+} derive(Eq, @debug.Debug)
 
 pub struct Sha256Stream {
   state : FixedArray[UInt32]
@@ -476,11 +463,10 @@ pub fn Sha256Stream::digest(Self) -> String
 pub fn Sha256Stream::new() -> Self
 pub fn Sha256Stream::write(Self, BytesView) -> Unit
 
-#derive(Eq, @debug.Debug)
 pub(all) struct SheetRun {
   count : Int32
   size : Double
-}
+} derive(Eq, @debug.Debug)
 
 pub struct SplitDocument {
   manifest : Manifest
@@ -501,7 +487,6 @@ pub(all) struct SplitPart {
   data : Bytes
 }
 
-#derive(Eq, @debug.Debug)
 pub(all) struct Table {
   id : String
   title : String
@@ -510,20 +495,18 @@ pub(all) struct Table {
   columns : Array[TableColumn]
   view : String
   page : Int64
-}
+} derive(Eq, @debug.Debug)
 
-#derive(Eq, @debug.Debug)
 pub(all) struct TableColumn {
   name : String
   kind : String
-}
+} derive(Eq, @debug.Debug)
 
-#derive(Eq, @debug.Debug)
 pub(all) struct TempoPoint {
   tick : Double
   time : Double
   tempo : Int32
-}
+} derive(Eq, @debug.Debug)
 
 pub struct TextSearch {
   runs : Array[IndexRun]
@@ -538,12 +521,11 @@ pub fn TextSearch::new(Array[IndexRun], case_sensitive? : Bool) -> Self
 pub fn TextSearch::search(Self, String, limit? : Int32, context? : Int32) -> Array[SearchHit]
 pub fn TextSearch::text(Self) -> String
 
-#derive(Eq, @debug.Debug)
 pub(all) struct Tile {
   x : Int32
   y : Int32
   object : String
-}
+} derive(Eq, @debug.Debug)
 
 pub(all) struct View {
   id : String

@@ -28,6 +28,8 @@ pub(all) struct Field {
   required : Bool
   comb : Bool
   password : Bool
+  multiline : Bool
+  no_export : Bool
   alternate_name : String
   max_len : Int32?
   default_value : String

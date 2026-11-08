@@ -4,11 +4,10 @@ package "f4ah6o/bdf/convert/textform"
 import {
   "f4ah6o/bdf/form/data",
   "f4ah6o/bdf/form/textpart",
-  "moonbitlang/core/json",
 }
 
 // Values
-pub fn convert(String, Map[String, @json.Json], String, pages? : String) -> TextFormResult raise
+pub fn convert(String, Map[String, Json], String, pages? : String) -> TextFormResult raise
 
 pub fn convert_sources(String, Array[@data.Source], String, pages? : String) -> TextFormResult raise
 

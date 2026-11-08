@@ -67,16 +67,14 @@ pub fn validate_sop_nsop_sequence(Array[SopMetadata]) -> Result[Unit, String]
 // Errors
 
 // Types and methods
-#derive(Eq, Show)
 pub struct CocMetadata {
   component : Int32
   scoc : Int32
   parameters : Array[Int32]
   in_main_header : Bool
   tile_index : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct CodMetadata {
   scod : Int32
   progression_order : Int32
@@ -91,23 +89,20 @@ pub struct CodMetadata {
   uses_sop : Bool
   uses_eph : Bool
   precinct_size_bytes : Array[Int32]
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct CodeBlockResolutionMetadata {
   resolution : Int32
   nominal_width : Int32
   nominal_height : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct Codestream {
   segments : Array[MarkerSegment]
   metadata : CodestreamMetadata
   trailing_bytes : Bytes
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct CodestreamMetadata {
   siz : SizMetadata?
   cod : CodMetadata?
@@ -132,35 +127,30 @@ pub struct CodestreamMetadata {
   packet_headers_ppt : Array[PacketHeaderMetadata]
   tile_cod : Array[TileCodMetadata]
   tile_qcd : Array[TileQcdMetadata]
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct ComMetadata {
   rcom : Int32
   ccom : Array[Int32]
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct ComponentGeometryMetadata {
   component : Int32
   xrsiz : Int32
   yrsiz : Int32
   width : Int32
   height : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct CrgComponentMetadata {
   xcrg : Int32
   ycrg : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct CrgMetadata {
   components : Array[CrgComponentMetadata]
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub enum MarkerClass {
   Delimiting
   FixedInformation
@@ -169,16 +159,14 @@ pub enum MarkerClass {
   InBitStream
   Informational
   Unknown
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct MarkerSegment {
   code : Int32
   payload : Bytes
   position : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct OrderingCodingMetadata {
   decomposition_levels : Int32
   resolution_count : Int32
@@ -186,9 +174,8 @@ pub struct OrderingCodingMetadata {
   precincts : Array[PrecinctResolutionMetadata]
   code_blocks : Array[CodeBlockResolutionMetadata]
   packets : Array[PacketUnitMetadata]
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct OrderingMetadata {
   reference_grid : ReferenceGridMetadata
   tiles_x : Int32
@@ -196,9 +183,8 @@ pub struct OrderingMetadata {
   components : Array[ComponentGeometryMetadata]
   tiles : Array[TileGeometryMetadata]
   tile_components : Array[TileComponentGeometryMetadata]
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct PacketHeaderCodeBlockMetadata {
   code_block_index : Int32
   included : Bool
@@ -208,16 +194,14 @@ pub struct PacketHeaderCodeBlockMetadata {
   lblock_increment : Int32?
   segment_lengths : Array[Int32]
   segment_passes : Array[Int32]
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct PacketHeaderMetadata {
   zero_length : Bool
   code_blocks : Array[PacketHeaderCodeBlockMetadata]
   consumed_bits : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct PacketUnitMetadata {
   tile_index : Int32
   component : Int32
@@ -227,27 +211,23 @@ pub struct PacketUnitMetadata {
   packets_per_layer : Int32
   layers : Int32
   packets_total : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct PlmChunkMetadata {
   nplm : Int32
   packet_lengths : Array[Int32]
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct PlmMetadata {
   zplm : Int32
   chunks : Array[PlmChunkMetadata]
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct PltMetadata {
   zplt : Int32
   packet_lengths : Array[Int32]
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct PocMetadata {
   rspoc : Int32
   cspoc : Int32
@@ -256,53 +236,46 @@ pub struct PocMetadata {
   cepoc : Int32
   ppoc : Int32
   in_main_header : Bool
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct PpmChunkMetadata {
   nppm : Int32
   ippm : Array[Int32]
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct PpmMetadata {
   zppm : Int32
   chunks : Array[PpmChunkMetadata]
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct PptMetadata {
   zppt : Int32
   data : Array[Int32]
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct PrecinctResolutionMetadata {
   resolution : Int32
   ppx : Int32
   ppy : Int32
   precinct_width : Int32
   precinct_height : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct ProgressionMetadata {
   order_code : Int32
   volumes : Array[ProgressionVolumeMetadata]
   steps : Array[ProgressionStepMetadata]
   total_packets : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct ProgressionStepMetadata {
   order_index : Int32
   layer : Int32
   resolution : Int32
   component : Int32
   packet_count : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct ProgressionVolumeMetadata {
   source_poc_index : Int32
   order_code : Int32
@@ -312,50 +285,44 @@ pub struct ProgressionVolumeMetadata {
   resolution_end : Int32
   component_start : Int32
   component_end : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct QccMetadata {
   component : Int32
   sqcc : Int32
   parameters : Array[Int32]
   in_main_header : Bool
   tile_index : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct QcdMetadata {
   sqcd : Int32
   guard_bits : Int32
   quantization_style : Int32
   parameters : Array[Int32]
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct ReferenceGridMetadata {
   x0 : Int32
   y0 : Int32
   x1 : Int32
   y1 : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct RgnMetadata {
   component : Int32
   style : Int32
   shift : Int32
   in_main_header : Bool
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct SizComponentMetadata {
   precision_bits : Int32
   is_signed : Bool
   xrsiz : Int32
   yrsiz : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct SizMetadata {
   rsiz : Int32
   xsiz : Int32
@@ -369,28 +336,24 @@ pub struct SizMetadata {
   csiz : Int32
   tile_count : Int32
   components : Array[SizComponentMetadata]
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct SopMetadata {
   nsop : Int32
   position : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct TagTreeLevelMetadata {
   width : Int32
   height : Int32
   offset : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct TileCodMetadata {
   tile_index : Int32
   cod : CodMetadata
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct TileComponentGeometryMetadata {
   tile_index : Int32
   component : Int32
@@ -400,9 +363,8 @@ pub struct TileComponentGeometryMetadata {
   y1 : Int32
   width : Int32
   height : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct TileGeometryMetadata {
   tile_index : Int32
   tx : Int32
@@ -411,26 +373,23 @@ pub struct TileGeometryMetadata {
   y0 : Int32
   x1 : Int32
   y1 : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct TileQcdMetadata {
   tile_index : Int32
   qcd : QcdMetadata
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct TlmEntryMetadata {
   tile : Int32?
   length : Int32
-}
+} derive(Eq, Show)
 
-#derive(Eq, Show)
 pub struct TlmMetadata {
   ztlm : Int32
   stlm : Int32
   entries : Array[TlmEntryMetadata]
-}
+} derive(Eq, Show)
 
 // Type aliases
 

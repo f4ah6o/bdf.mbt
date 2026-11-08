@@ -18,6 +18,7 @@ pub(all) struct Job {
   mut state : Int32
   mut document : Bytes
   mut impressions : Int32
+  copies : Int32
   attrs : Array[@ipp.Attribute]
 }
 

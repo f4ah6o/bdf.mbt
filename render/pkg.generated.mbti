@@ -85,30 +85,26 @@ pub suberror RenderError {
 }
 
 // Types and methods
-#derive(Eq, @debug.Debug)
 pub(all) struct CellClipboard {
   text : String
   html : String
-}
+} derive(Eq, @debug.Debug)
 
-#derive(Eq, @debug.Debug)
 pub(all) struct CellRange {
   row0 : Int32
   col0 : Int32
   row1 : Int32
   col1 : Int32
-}
+} derive(Eq, @debug.Debug)
 
-#derive(Eq, @debug.Debug)
 pub(all) struct CellRef {
   row : Int32
   col : Int32
   rows : Int32
   cols : Int32
   scope : String?
-}
+} derive(Eq, @debug.Debug)
 
-#derive(Eq, @debug.Debug)
 pub(all) struct CellText {
   row : Int32
   col : Int32
@@ -116,9 +112,8 @@ pub(all) struct CellText {
   cols : Int32
   text : String
   scope : String?
-}
+} derive(Eq, @debug.Debug)
 
-#derive(Eq, @debug.Debug)
 pub(all) struct ChannelState {
   mut program : Int32
   mut volume : Int32
@@ -127,9 +122,8 @@ pub(all) struct ChannelState {
   mut duty : Int32
   mut sustain : Bool
   mut bend : Int32
-}
+} derive(Eq, @debug.Debug)
 
-#derive(@debug.Debug)
 pub(all) enum Command {
   Save
   Restore
@@ -171,23 +165,20 @@ pub(all) enum Command {
   Link(Double, Double, Double, Double, String)
   Mark(Int32, String)
   Ext(Bytes)
-}
+} derive(@debug.Debug)
 
-#derive(Eq, @debug.Debug)
 pub(all) struct ContinuousBand {
   index : Int32
   offset : Double
   body : @core.PageRect
-}
+} derive(Eq, @debug.Debug)
 
-#derive(@debug.Debug)
 pub(all) struct ContinuousLayout {
   offsets : Array[Double]
   width : Double
   height : Double
-}
+} derive(@debug.Debug)
 
-#derive(Eq, @debug.Debug)
 pub(all) struct HitRect {
   a : Int32
   b : Int32
@@ -195,9 +186,8 @@ pub(all) struct HitRect {
   y : Double
   width : Double
   height : Double
-}
+} derive(Eq, @debug.Debug)
 
-#derive(Eq, @debug.Debug)
 pub(all) struct MusicCursor {
   page : UInt32
   system : UInt32
@@ -205,14 +195,13 @@ pub(all) struct MusicCursor {
   y : Double
   height : Double
   width : Double?
-}
+} derive(Eq, @debug.Debug)
 
-#derive(@debug.Debug)
 pub(all) struct PathPlacement {
   path : Int32
   x : Double
   y : Double
-}
+} derive(@debug.Debug)
 
 pub(all) struct PrefixPlan {
   source : Int32
@@ -237,15 +226,13 @@ pub(all) struct PrefixSource {
   child_bounds : Array[(Float, Float, Float, Float)]
 }
 
-#derive(Eq, @debug.Debug)
 pub(all) struct SheetViewport {
   x : Double
   y : Double
   width : Double
   height : Double
-}
+} derive(Eq, @debug.Debug)
 
-#derive(Eq, @debug.Debug)
 pub(all) struct SynthPatch {
   wave : String
   gain : Double
@@ -254,7 +241,7 @@ pub(all) struct SynthPatch {
   sustain : Double
   release : Double
   filter : (Double, Double)?
-}
+} derive(Eq, @debug.Debug)
 
 pub(all) struct TextContent {
   runs : Array[TextRun]
@@ -296,13 +283,12 @@ pub(all) struct TextNode {
   list : String?
 }
 
-#derive(Eq, @debug.Debug)
 pub(all) struct TextRect {
   x : Double
   y : Double
   width : Double
   height : Double
-}
+} derive(Eq, @debug.Debug)
 
 pub(all) struct TextRun {
   text : String
@@ -320,13 +306,12 @@ pub(all) struct TextRun {
   node : Int32
 }
 
-#derive(Eq, @debug.Debug)
 pub(all) struct TileRange {
   x0 : Double
   y0 : Double
   x1 : Double
   y1 : Double
-}
+} derive(Eq, @debug.Debug)
 
 // Type aliases
 pub type Matrix = (Double, Double, Double, Double, Double, Double)

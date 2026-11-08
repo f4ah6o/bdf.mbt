@@ -3,7 +3,6 @@ package "f4ah6o/bdf/form/schema"
 
 import {
   "f4ah6o/bdf/form/tag",
-  "moonbitlang/core/json",
 }
 
 // Values
@@ -15,9 +14,9 @@ pub const SCHEMA_DIALECT : String = "https://json-schema.org/draft/2020-12/schem
 
 pub const SCHEMA_KEYWORD : String = "x-bdf"
 
-pub fn schema(Array[@tag.Field], @json.Json?) -> @json.Json raise SchemaError
+pub fn schema(Array[@tag.Field], Json?) -> Json raise SchemaError
 
-pub fn schema_text(Array[@tag.Field], @json.Json?) -> String raise SchemaError
+pub fn schema_text(Array[@tag.Field], Json?) -> String raise SchemaError
 
 // Errors
 pub suberror SchemaError {
