@@ -401,7 +401,7 @@ fn idml_draw_text(
       line,
       Float::from_double(left),
       Float::from_double(y),
-      Float::from_double((right - left).max(1.0)),
+      0.0F,
     )
     y += line_height
     count += 1

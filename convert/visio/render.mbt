@@ -236,7 +236,7 @@ fn visio_draw_text(
         String::from_array(chars[offset:end]),
         Float::from_double(left + 1.0),
         Float::from_double(y),
-        Float::from_double(width),
+        0.0F,
       )
       y += size * 1.25
       offset = end

@@ -2692,7 +2692,7 @@ pub fn convert(
     object.fill_rect(0.0F, 0.0F, Float::from_double(width), 40.0F)
     object.fill_color(0x777777ffU)
     object.font(font, 20.0F) catch { _ => () }
-    object.fill_text("♪ Audio", 18.0, 28.0, Float::from_double(width - 36.0))
+    object.fill_text("♪ Audio", 18.0, 28.0, 0.0F)
     y = 60.0
   }
   let index_text = StringBuilder()
@@ -2707,7 +2707,7 @@ pub fn convert(
       text,
       18.0,
       Float::from_double(y + size),
-      Float::from_double(width - 36.0),
+      0.0F,
     )
     index_text.write_string(text)
     index_text.write_char('\n')

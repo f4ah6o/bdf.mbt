@@ -270,7 +270,7 @@ pub fn render(
       line.text,
       Float::from_double(options.margin + line.indent),
       Float::from_double(y + line.size),
-      Float::from_double(options.width - options.margin * 2.0 - line.indent),
+      0.0F,
     )
     page_lines.push(line.text)
     y += line.before + line.size * 1.5 + line.after
