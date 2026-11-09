@@ -2093,3 +2093,44 @@ test "DOCX paragraphs emit heading and paragraph marks" {
   assert_true(marks.contains((0, "")), msg="paragraph mark")
 }
 
+///|
+test "DOCX header paragraphs emit paragraph and line marks" {
+  let header = docx_test_header(
+    "<w:p><w:r><w:t>Header</w:t></w:r></w:p>" +
+    "<w:p><w:pPr><w:outlineLvl w:val=\"0\"/></w:pPr>" +
+    "<w:r><w:t>Title</w:t></w:r></w:p>" +
+    "<w:p><w:r><w:t>One</w:t></w:r><w:r><w:br/></w:r>" +
+    "<w:r><w:t>Two</w:t></w:r></w:p>",
+  )
+  let result = convert(
+    docx_test_header_document(
+      header, "<w:p><w:r><w:t>Body</w:t></w:r></w:p>", [],
+    ),
+  )
+  let commands = docx_test_page_commands(result, "pages", 0, "header")
+  let marks : Array[(Int32, String)] = []
+  let mut first_mark = -1
+  let mut first_text = -1
+  for index, command in commands {
+    match command {
+      @render.Mark(kind, payload) => {
+        if first_mark < 0 {
+          first_mark = index
+        }
+        marks.push((kind, payload))
+      }
+      @render.FillText(_, _, _, _) =>
+        if first_text < 0 {
+          first_text = index
+        }
+      _ => ()
+    }
+  }
+  assert_true(marks.contains((0, "")), msg="header paragraph mark")
+  assert_true(marks.contains((6, "1")), msg="header heading mark")
+  assert_true(marks.contains((1, "")), msg="header line mark")
+  assert_true(
+    first_mark >= 0 && first_mark < first_text,
+    msg="the header paragraph mark comes before its text",
+  )
+}

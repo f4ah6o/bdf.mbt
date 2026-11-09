@@ -63,6 +63,8 @@ priv struct DocxParaLayout {
 ///|
 priv struct DocxStoryLayout {
   lines : Array[DocxParaLine]
+  starts : Array[Int]
+  props : Array[DocxParagraphProps]
   tables : Array[DocxTableLayout]
   anchors : Array[DocxPlacedImage]
   height : Double
@@ -2442,6 +2444,8 @@ fn docx_flow_story_layout(
         None => []
       }
       let lines : Array[DocxParaLine] = []
+      let starts : Array[Int] = []
+      let props : Array[DocxParagraphProps] = []
       let anchors : Array[DocxPlacedImage] = []
       let mut height = 0.0
       for paragraph in paragraphs {
@@ -2462,6 +2466,10 @@ fn docx_flow_story_layout(
           mark_size,
           false,
         )
+        if !layout.lines.is_empty() {
+          starts.push(lines.length())
+          props.push(paragraph.props)
+        }
         for line in layout.lines {
           lines.push(line)
           height += line.height
@@ -2485,7 +2493,7 @@ fn docx_flow_story_layout(
         }
         tables.push(table_layout)
       }
-      let value = { lines, tables, anchors, height, }
+      let value = { lines, starts, props, tables, anchors, height, }
       flow.stories[key] = value
       value
     }
@@ -2532,7 +2540,26 @@ fn docx_flow_emit_story(
     doc_language: flow.document.language,
     language: flow.language,
   }
-  for line in layout.lines {
+  let mut paragraph = 0
+  let mut first = true
+  let mut previous_last = '\u{0}'
+  for index, line in layout.lines {
+    if paragraph < layout.starts.length() &&
+      layout.starts[paragraph] == index {
+      paragraph += 1
+      first = true
+      previous_last = '\u{0}'
+    }
+    let (next_first, next_last) = docx_line_edges(line)
+    docx_mark_line(
+      object,
+      first,
+      previous_last,
+      next_first,
+      layout.props[paragraph - 1],
+    )
+    first = false
+    previous_last = next_last
     docx_emit_para_line(
       object,
       flow.writer,
