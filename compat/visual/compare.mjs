@@ -1105,8 +1105,9 @@ try {
     const target=path.join(output,`continuous-${kind}-${name}`);mkdirSync(target);
     const capture=['diff','html','--url',`${continuousBase}${kind}-baseline.html`,'--current-url',`${continuousBase}${kind}-${name}.html`,'--output-dir',target,'--no-paint-tree'];
     const baselinePng=viewport=>path.join(target,`compat_continuous_${kind}-baseline-${viewport}.png`);
+    const variantPng=viewport=>path.join(target,`compat_continuous_${kind}-${name}-${viewport}.png`);
     const reportPath=path.join(target,'diff-report.json');
-    const report=await captureWithRecapture({capture,reportPath,baselinePng,run,label:`continuous ${kind}-${name}`});
+    const report=await captureWithRecapture({capture,reportPath,baselinePng,variantPng,run,label:`continuous ${kind}-${name}`});
     for(const result of report.results){
       const reference=PNG.sync.read(readFileSync(path.join(target,`compat_continuous_${kind}-baseline-${result.viewport}.png`)));
       const actual=PNG.sync.read(readFileSync(path.join(target,`compat_continuous_${kind}-${name}-${result.viewport}.png`)));
