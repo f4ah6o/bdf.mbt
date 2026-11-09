@@ -27,6 +27,7 @@ import {
   "f4ah6o/bdf/convert/tiff",
   "f4ah6o/bdf/convert/psd",
   "f4ah6o/bdf/convert/emf",
+  "f4ah6o/bdf/convert/xdw",
   "f4ah6o/bdf/convert/idml",
   "f4ah6o/bdf/convert/visio",
   "f4ah6o/bdf/convert/markdown",

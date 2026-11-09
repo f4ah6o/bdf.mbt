@@ -22,7 +22,7 @@ extern "js" fn native_unsupported_named_format(name : String) -> Bool =
 
 ///|
 extern "js" fn native_converter_formats(request : ConverterRequest) -> Unit =
-  #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'csv',description:'CSV or TSV (comma-, tab-, semicolon- or bar-separated values)',extensions:['.csv','.tsv','.tab']},{name:'xlsx',description:'Excel workbook (styled worksheets, drawings, charts and chart sheets)',extensions:['.xlsx']},{name:'docx',description:'Word document (flow and scroll views, tables, columns)',extensions:['.docx']},{name:'pptx',description:'PowerPoint presentation (slides, master/layout layers, charts, Office Math)',extensions:['.pptx']},{name:'font',description:'Font file (TrueType, OpenType, WOFF)',extensions:['.ttf','.otf','.ttc','.otc','.woff','.woff2']},{name:'midi',description:'Standard MIDI File',extensions:['.mid','.midi','.smf','.kar','.rmi']},{name:'mml',description:'Music Macro Language (MML)',extensions:['.mml']},{name:'musicxml',description:'MusicXML score',extensions:['.musicxml','.mxl']},{name:'pdf',description:'PDF document (checked subset)',extensions:['.pdf']},{name:'image',description:'Image stored as it is: PNG, JPEG, GIF, WebP, AVIF, BMP, ICO or SVG',extensions:['.png','.apng','.jpg','.jpeg','.jpe','.jfif','.gif','.webp','.avif','.bmp','.ico','.svg']},{name:'ai',description:'Adobe Illustrator artwork',extensions:['.ai']},{name:'tiff',description:'TIFF image, one page or more',extensions:['.tif','.tiff']},{name:'psd',description:'Photoshop document',extensions:['.psd','.psb']},{name:'emf',description:'Windows metafile',extensions:['.emf','.wmf']},{name:'idml',description:'InDesign document (IDML)',extensions:['.idml']},{name:'visio',description:'Visio drawing',extensions:['.vsdx','.vsdm','.vstx','.vstm']},{name:'markdown',description:'Markdown document (CommonMark/GFM scroll and pages views)',extensions:['.md','.markdown','.mdown','.mkd','.mdx']},{name:'html',description:'HTML document (reader mode)',extensions:['.html','.htm','.xhtml']},{name:'epub',description:'EPUB publication (reader mode)',extensions:['.epub']},{name:'audio',description:'Audio file (MP3, AAC, M4A, FLAC, Ogg Vorbis/Opus, WAV, AIFF)',extensions:['.mp3','.m4a','.m4b','.m4p','.aac','.flac','.ogg','.oga','.opus','.spx','.wav','.wave','.aif','.aiff','.aifc']},{name:'hpgl',description:'HP-GL/2 plot file (PCL/HP RTL raster not supported)',extensions:['.plt','.hpgl','.hgl','.hpg','.hp2','.rtl']},{name:'jww',description:'Jw_cad drawing',extensions:['.jww']},{name:'dxf',description:'AutoCAD DXF drawing (text and binary; model space)',extensions:['.dxf']},{name:'sxf',description:'SXF drawing (SFC; P21/P2Z not yet supported)',extensions:['.sfc','.p21','.p2z']},{name:'cgm',description:'Computer Graphics Metafile (binary)',extensions:['.cgm','.cgz']},{name:'gerber',description:'Gerber / Excellon fabrication data (single files)',extensions:['.gbr','.ger','.gtl','.gbl','.gto','.gbo','.gts','.gbs','.gtp','.gbp','.gko','.drl','.drd','.xln','.exc']},{name:'kicad',description:'KiCad board front view (schematics not yet supported)',extensions:['.kicad_pcb','.kicad_sch']},{name:'drawio',description:'draw.io diagram (practical shape subset)',extensions:['.drawio','.dio','.drawio.svg','.drawio.png']},{name:'parquet',description:'Apache Parquet table',extensions:['.parquet','.parq','.pqt']}]})
+  #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'csv',description:'CSV or TSV (comma-, tab-, semicolon- or bar-separated values)',extensions:['.csv','.tsv','.tab']},{name:'xlsx',description:'Excel workbook (styled worksheets, drawings, charts and chart sheets)',extensions:['.xlsx']},{name:'docx',description:'Word document (flow and scroll views, tables, columns)',extensions:['.docx']},{name:'pptx',description:'PowerPoint presentation (slides, master/layout layers, charts, Office Math)',extensions:['.pptx']},{name:'font',description:'Font file (TrueType, OpenType, WOFF)',extensions:['.ttf','.otf','.ttc','.otc','.woff','.woff2']},{name:'midi',description:'Standard MIDI File',extensions:['.mid','.midi','.smf','.kar','.rmi']},{name:'mml',description:'Music Macro Language (MML)',extensions:['.mml']},{name:'musicxml',description:'MusicXML score',extensions:['.musicxml','.mxl']},{name:'pdf',description:'PDF document (checked subset)',extensions:['.pdf']},{name:'image',description:'Image stored as it is: PNG, JPEG, GIF, WebP, AVIF, BMP, ICO or SVG',extensions:['.png','.apng','.jpg','.jpeg','.jpe','.jfif','.gif','.webp','.avif','.bmp','.ico','.svg']},{name:'ai',description:'Adobe Illustrator artwork',extensions:['.ai']},{name:'tiff',description:'TIFF image, one page or more',extensions:['.tif','.tiff']},{name:'psd',description:'Photoshop document',extensions:['.psd','.psb']},{name:'emf',description:'Windows metafile',extensions:['.emf','.wmf']},{name:'xdw',description:'DocuWorks document (vector and scanned pages with annotations; binder .xbd)',extensions:['.xdw','.xbd']},{name:'idml',description:'InDesign document (IDML)',extensions:['.idml']},{name:'visio',description:'Visio drawing',extensions:['.vsdx','.vsdm','.vstx','.vstm']},{name:'markdown',description:'Markdown document (CommonMark/GFM scroll and pages views)',extensions:['.md','.markdown','.mdown','.mkd','.mdx']},{name:'html',description:'HTML document (reader mode)',extensions:['.html','.htm','.xhtml']},{name:'epub',description:'EPUB publication (reader mode)',extensions:['.epub']},{name:'audio',description:'Audio file (MP3, AAC, M4A, FLAC, Ogg Vorbis/Opus, WAV, AIFF)',extensions:['.mp3','.m4a','.m4b','.m4p','.aac','.flac','.ogg','.oga','.opus','.spx','.wav','.wave','.aif','.aiff','.aifc']},{name:'hpgl',description:'HP-GL/2 plot file (PCL/HP RTL raster not supported)',extensions:['.plt','.hpgl','.hgl','.hpg','.hp2','.rtl']},{name:'jww',description:'Jw_cad drawing',extensions:['.jww']},{name:'dxf',description:'AutoCAD DXF drawing (text and binary; model space)',extensions:['.dxf']},{name:'sxf',description:'SXF drawing (SFC; P21/P2Z not yet supported)',extensions:['.sfc','.p21','.p2z']},{name:'cgm',description:'Computer Graphics Metafile (binary)',extensions:['.cgm','.cgz']},{name:'gerber',description:'Gerber / Excellon fabrication data (single files)',extensions:['.gbr','.ger','.gtl','.gbl','.gto','.gbo','.gts','.gbs','.gtp','.gbp','.gko','.drl','.drd','.xln','.exc']},{name:'kicad',description:'KiCad board front view (schematics not yet supported)',extensions:['.kicad_pcb','.kicad_sch']},{name:'drawio',description:'draw.io diagram (practical shape subset)',extensions:['.drawio','.dio','.drawio.svg','.drawio.png']},{name:'parquet',description:'Apache Parquet table',extensions:['.parquet','.parq','.pqt']}]})
 
 ///|
 extern "js" fn native_converter_result(
@@ -201,6 +201,7 @@ async fn NativeConverterState::dispatch(
     format != "tiff" &&
     format != "psd" &&
     format != "emf" &&
+    format != "xdw" &&
     format != "idml" &&
     format != "visio" &&
     format != "markdown" &&
@@ -297,6 +298,10 @@ async fn NativeConverterState::dispatch(
   }
   if format == "emf" || (format == "" && @emf.detect(data)) {
     native_convert_emf(request, data, kind == "open")
+    return
+  }
+  if format == "xdw" || (format == "" && @xdw.xdw_detect(data)) {
+    native_convert_xdw(request, data, kind == "open")
     return
   }
   if format == "hpgl" || (format == "" && @hpgl.detect(head)) {
@@ -943,6 +948,23 @@ fn native_convert_emf(
   }
   native_converter_result(
     request, result.bdf, "emf", result.summary, result.warnings, opened,
+  )
+}
+
+///|
+fn native_convert_xdw(
+  request : ConverterRequest,
+  data : Bytes,
+  opened : Bool,
+) -> Unit {
+  let result = @xdw.xdw_convert(data) catch {
+    e => {
+      native_converter_error(request, e.to_string(), "")
+      return
+    }
+  }
+  native_converter_result(
+    request, result.bdf, "xdw", result.summary, result.warnings, opened,
   )
 }
 

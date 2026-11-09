@@ -26,6 +26,8 @@ export const GALLERY = [
     text: "ページに分断されずスクロールできるシート。CSV・TSV・Parquet も同じ見た目で表示します。" },
   { shot: "docx.png", sample: "basic.docx", doc: "formats/document", title: "Word",
     text: "紙面のページでも、一続きのスクロールでも。見出し・段落・表・リストを含む文書。" },
+  { shot: "xdw.png", sample: "demo.xdw", doc: "formats/xdw", title: "DocuWorks",
+    text: "富士フイルム DocuWorks の .xdw・.xbd。ベクタのページに付箋・日付印・蛍光ペンの注釈もそえたまま。" },
   { shot: "drawio.png", sample: "multipage.drawio", doc: "formats/diagram", title: "draw.io",
     text: "ページはタブで切り替え。図形・コネクタ・ラベルの書式をそのまま描画。Visio の図面も。" },
   { shot: "dxf.png", sample: "layout.dxf", doc: "formats/cad", title: "DXF",

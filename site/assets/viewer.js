@@ -28,6 +28,7 @@ const SAMPLES = [
   ["basic.md", "Markdown"],
   ["drawing.svg", "SVG"],
   ["labels.drawio", "draw.io"],
+  ["demo.xdw", "DocuWorks"],
   ["multipage.drawio", "draw.io（複数ページ）"],
   ["shapes.dxf", "DXF"],
   ["layout.dxf", "DXF（レイアウト）"],

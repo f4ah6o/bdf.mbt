@@ -38,7 +38,8 @@ fn XdwDocument::drawing_of(self : XdwDocument, record : Int) -> XdwDrawing? rais
       data => Some({ kind, data })
     }
   } else {
-    // the drawing's body inline: `80` kind, `86` data
+    // the drawing's body inline: `80` kind, `81` expanded size, `86` data,
+    // `8a` compression flag
     let items = tlv_list(attr.value, 0, attr.value.length()) catch {
       e => {
         ignore(e)
@@ -49,10 +50,21 @@ fn XdwDocument::drawing_of(self : XdwDocument, record : Int) -> XdwDrawing? rais
       Some(k) => k
       None => return None
     }
-    match tlv_find(items, 0x86) {
-      Some(t) => Some({ kind, data: t.bytes(attr.value) })
-      None => None
+    let raw = match tlv_find(items, 0x86) {
+      Some(t) => t.bytes(attr.value)
+      None => return None
     }
+    let expanded = xdw_expanded_size(
+      Some(kind),
+      tlv_find_uint(items, attr.value, 0x8a),
+      tlv_find_uint(items, attr.value, 0x81),
+      raw.length(),
+    )
+    let data = match expanded {
+      Some(n) => lzh_decompress(raw, n, self.limits)
+      None => raw
+    }
+    Some({ kind, data })
   }
 }
 

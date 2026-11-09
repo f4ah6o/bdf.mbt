@@ -25,6 +25,7 @@ res, err := converter.ConvertFile("in.pdf", "", &converter.Options{}) // "" で�
 | 図 | Visio（.vsdx）、draw.io | [Visio・draw.io](diagram.ja.md) |
 | CAD の図面とプロット | AutoCAD DXF、Jw_cad（.jww）、SXF、CGM、HP-GL/2 | [CAD の図面とプロット](cad.ja.md) |
 | 電子回路 | Gerber・Excellon（プリント基板）、KiCad | [プリント基板・KiCad](electronics.ja.md) |
+| 紙の文書 | DocuWorks(`.xdw`)・バインダー(`.xbd`) | [DocuWorks](xdw.ja.md) |
 | 本 | EPUB | [EPUB](ebook.ja.md) |
 | 音楽 | MML、MIDI、MusicXML | [楽譜](music.ja.md) |
 | 音声 | MP3、AAC（M4A、ADTS）、FLAC、Ogg Vorbis・Opus、WAV、AIFF | [音声ファイル](audio.ja.md) |
@@ -44,6 +45,7 @@ res, err := converter.ConvertFile("in.pdf", "", &converter.Options{}) // "" で�
 | Apache Parquet | `converter/parquet` | .parquet, .parq, .pqt |
 | Word | `converter/docx` | .docx, .docm, .dotx, .dotm |
 | Visio | `converter/visio` | .vsdx, .vsdm, .vstx, .vstm |
+| DocuWorks | `converter/xdw` | .xdw, .xbd |
 | InDesign | `converter/idml` | .idml |
 | draw.io | `converter/drawio` | .drawio, .dio, .drawio.svg, .drawio.png |
 | AutoCAD DXF | `converter/dxf` | .dxf |
