@@ -13,16 +13,19 @@ pub struct ObjectBuilder {
   mut bbox : (Float, Float, Float, Float)
   mut auto_bbox : Bool
   mut has_bbox : Bool
-  // The font and fill colour the program has already set, so that a run of
-  // text that keeps its style emits the state once, as the upstream
-  // converters do. Both are cleared whenever an op can change the state
-  // behind the builder's back.
+  // The font and fill colour the program has already set. They are only
+  // read when `dedupe_state` is on, and are cleared whenever an op can
+  // change the state behind the builder's back.
+  dedupe_state : Bool
   mut last_font : (Int32, Float)?
   mut last_fill_color : UInt32?
 }
 
 ///|
-pub fn ObjectBuilder::new() -> ObjectBuilder {
+/// Create a builder that preserves every requested drawing-state instruction.
+/// Set `dedupe_state=true` for emitters that intentionally suppress repeated
+/// font and solid-fill state, such as DOCX and Markdown word processing.
+pub fn ObjectBuilder::new(dedupe_state~ : Bool = false) -> ObjectBuilder {
   {
     strings: [],
     string_index: Map([]),
@@ -36,6 +39,7 @@ pub fn ObjectBuilder::new() -> ObjectBuilder {
     bbox: (0.0F, 0.0F, 0.0F, 0.0F),
     auto_bbox: true,
     has_bbox: false,
+    dedupe_state,
     last_font: None,
     last_fill_color: None,
   }

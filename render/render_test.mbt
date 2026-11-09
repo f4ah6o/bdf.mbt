@@ -240,7 +240,7 @@ fn state_op_names(commands : Array[Command]) -> Array[String] {
 
 ///|
 fn state_op_builder() -> (@core.ObjectBuilder, Int32) {
-  let builder = @core.ObjectBuilder::new()
+  let builder = @core.ObjectBuilder::new(dedupe_state=true)
   let font = builder.add_font({
     hash: None,
     family: "Example",
@@ -337,7 +337,7 @@ test "an invalid font reference is rejected even when the state repeats" {
 
 ///|
 fn paint_builder() -> (@core.ObjectBuilder, Int32, Int32) {
-  let builder = @core.ObjectBuilder::new()
+  let builder = @core.ObjectBuilder::new(dedupe_state=true)
   let gradient = builder.add_paint(
     Gradient(0, [0.0, 0.0, 10.0, 0.0], [
       { offset: 0.0, color: 0x0000ffff },
@@ -443,4 +443,26 @@ test "stroke state does not disturb the fill and font dedupe" {
   builder.fill_color(0xff0000ffU)
   let commands = decode_commands(builder.encode())
   assert_eq(state_op_names(commands), ["font", "fillColor"])
+}
+
+///|
+test "the default builder writes repeated state for the upstream emitters" {
+  let builder = @core.ObjectBuilder::new()
+  let font = builder.add_font({
+    hash: None,
+    family: "Example",
+    weight: 400,
+    style: 0,
+  })
+  builder.font(font, 14.0F)
+  builder.fill_color(0x000000ffU)
+  builder.fill_text("a", 0.0F, 0.0F, 1.0F)
+  builder.font(font, 14.0F)
+  builder.fill_color(0x000000ffU)
+  builder.fill_text("b", 0.0F, 10.0F, 1.0F)
+  let commands = decode_commands(builder.encode())
+  assert_eq(
+    state_op_names(commands),
+    ["font", "fillColor", "fillText", "font", "fillColor", "fillText"],
+  )
 }

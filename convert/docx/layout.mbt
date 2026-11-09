@@ -2626,7 +2626,7 @@ fn docx_flow_new_page(flow : DocxFlow) -> Unit raise {
   flow.line_pitch = docx_section_grid_pitch(flow.section)
   flow.vertical = flow.section.vertical
   flow.language.val = ""
-  flow.body = @core.ObjectBuilder::new()
+  flow.body = docx_object()
   if flow.section.vertical {
     flow.body.save()
     flow.body.transform(
@@ -2638,8 +2638,8 @@ fn docx_flow_new_page(flow : DocxFlow) -> Unit raise {
       Float::from_double(flow.section.top),
     )
   }
-  flow.header_object = @core.ObjectBuilder::new()
-  flow.footer_object = @core.ObjectBuilder::new()
+  flow.header_object = docx_object()
+  flow.footer_object = docx_object()
   flow.body_fonts = Map([])
   flow.header_fonts = Map([])
   flow.footer_fonts = Map([])
@@ -3265,7 +3265,7 @@ fn docx_flow_page_borders(flow : DocxFlow) -> @core.ObjectBuilder? raise {
   if !visible || border_excluded {
     match background {
       Some(color) => {
-        let object = @core.ObjectBuilder::new()
+        let object = docx_object()
         object.set_bbox(
           0.0F,
           0.0F,
@@ -3331,7 +3331,7 @@ fn docx_flow_page_borders(flow : DocxFlow) -> @core.ObjectBuilder? raise {
       None => ()
     }
   }
-  let object = @core.ObjectBuilder::new()
+  let object = docx_object()
   object.set_bbox(
     0.0F,
     0.0F,
@@ -3376,6 +3376,14 @@ fn docx_flow_page_borders(flow : DocxFlow) -> @core.ObjectBuilder? raise {
     }
   }
   Some(object)
+}
+
+///|
+/// An object the word processor draws into. Upstream's `wordproc` emitter
+/// writes `font` and `fillColor` only when the value changes, so the
+/// builder dedupes the state for these objects and for no others.
+fn docx_object() -> @core.ObjectBuilder {
+  @core.ObjectBuilder::new(dedupe_state=true)
 }
 
 ///|
@@ -4038,9 +4046,9 @@ fn docx_layout_document(
     budget: @render.TextExtractionBudget::new(),
     stories: Map([]),
     bookmark_pages: bookmarks,
-    body: @core.ObjectBuilder::new(),
-    header_object: @core.ObjectBuilder::new(),
-    footer_object: @core.ObjectBuilder::new(),
+    body: docx_object(),
+    header_object: docx_object(),
+    footer_object: docx_object(),
     body_fonts: Map([]),
     header_fonts: Map([]),
     footer_fonts: Map([]),

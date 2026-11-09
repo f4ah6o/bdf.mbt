@@ -322,7 +322,7 @@ pub fn ObjectBuilder::link(Self, Float, Float, Float, Float, String) -> Unit
 pub fn ObjectBuilder::mark(Self, Byte, String) -> Unit
 pub fn ObjectBuilder::mask_begin(Self, Byte, UInt32, Bytes) -> Unit
 pub fn ObjectBuilder::mask_end(Self) -> Unit
-pub fn ObjectBuilder::new() -> Self
+pub fn ObjectBuilder::new(dedupe_state? : Bool) -> Self
 pub fn ObjectBuilder::restore(Self) -> Unit
 pub fn ObjectBuilder::save(Self) -> Unit
 pub fn ObjectBuilder::scale(Self, Float, Float) -> Unit

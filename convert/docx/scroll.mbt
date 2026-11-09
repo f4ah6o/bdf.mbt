@@ -51,7 +51,7 @@ fn docx_scroll_draw(
   strip_index : Int32,
   index_runs : Array[@core.IndexRun],
 ) -> Json raise {
-  let object = @core.ObjectBuilder::new()
+  let object = docx_object()
   object.set_bbox(
     0.0F,
     0.0F,

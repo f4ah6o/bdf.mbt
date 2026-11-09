@@ -50,10 +50,12 @@ pub fn ObjectBuilder::clip_rect(
 
 ///|
 pub fn ObjectBuilder::fill_color(self : ObjectBuilder, color : UInt32) -> Unit {
-  if self.last_fill_color == Some(color) {
-    return
+  if self.dedupe_state {
+    if self.last_fill_color == Some(color) {
+      return
+    }
+    self.last_fill_color = Some(color)
   }
-  self.last_fill_color = Some(color)
   self.ops.write_byte(0x10)
   self.ops.write_uint_le(color)
 }
@@ -67,10 +69,12 @@ pub fn ObjectBuilder::font(
   if index < 0 || index >= self.fonts.length() {
     raise BadFormat("invalid font reference")
   }
-  if self.last_font == Some((index, size)) {
-    return
+  if self.dedupe_state {
+    if self.last_font == Some((index, size)) {
+      return
+    }
+    self.last_font = Some((index, size))
   }
-  self.last_font = Some((index, size))
   self.ops.write_byte(0x1a)
   self.ops.write_leb128(index.reinterpret_as_uint())
   self.ops.write_float_le(size)

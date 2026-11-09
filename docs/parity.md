@@ -29,9 +29,10 @@ remain. See `compat/parity/README.md` for selectors and the canonical form.
 ## Baseline (2026-11-09)
 
 52 cases: **12 pass, 40 diff, 0 one-sided error, 0 both-error**, with
-57,953 canonical-form differences in total. The pass set is unchanged from
+58,664 canonical-form differences in total. The pass set is unchanged from
 the 2026-11-05 baseline; the difference count fell from 63,745 after the
-object builder stopped repeating drawing state (see below). The count is a
+DOCX and Markdown builders opted into suppressing repeated drawing state
+(see below). The count is a
 structural measure: it says how many values of the canonical form differ,
 not how far the rendered pages are from upstream.
 
@@ -104,21 +105,25 @@ Progress made since the first baseline:
 - PPTX applies the `pages` option while converting (so summary, page count
   and text index describe only the selected slides) and falls back to the
   deck's core title for the view title.
-- The object builder writes `font` and `fillColor` only when the value
-  changes, and forgets the value it wrote after `restore`, `clipRect`,
+- The object builder preserves every requested `font` and `fillColor` by
+  default. DOCX and Markdown explicitly opt into `dedupe_state=true` to
+  match upstream's `wordproc` emitter (`setFont`, `setColor`, `invalidate`).
+  In this mode it forgets cached state after `restore`, `clipRect`,
   `clipPath`, `groupBegin`, `groupEnd`, `maskBegin`, `maskEnd`, `use`,
-  `useAt` and `ext`. A `fillPaint` forgets the fill colour it replaced, so
-  a solid fill that follows a gradient or pattern is written again.
-  Upstream's `wordproc` emitter does the same in `setFont`, `setColor` and
-  `invalidate`, so a run of text that keeps its style now emits the state
-  once. The structural difference count fell from 63,745 to 57,953
-  (DOCX 26,371 → 22,696, Markdown 6,263 → 4,857, PPTX 11,995 → 11,369,
-  XLSX 16,189 → 16,104, PDF unchanged); no passing case regressed.
-  This is a count of canonical-form differences, not a measure of
-  rendering quality. `docx/grid#default` and `docx/form-rows#default`
-  report a few more differences because the shorter program shifts the
-  element-wise alignment; whether their drawing is unchanged has not been
-  checked against rendered images.
+  `useAt` and `ext`. A `fillPaint` forgets only the fill colour it replaced,
+  so a solid fill that follows a gradient or pattern is written again.
+  XLSX and other callers retain their sequential-emission contract.
+  Four focused XLSX fixtures assert exact warnings, metadata, views,
+  tables and every BDF part byte (`node compat/xlsx/emission-test.mjs`).
+  The structural difference count fell from 63,745 at `2c7872f` to 58,664
+  (DOCX 26,371 → 22,696, Markdown 6,263 → 4,857; PPTX 11,995,
+  XLSX 16,189 and PDF 2,927 unchanged); the passing case set is unchanged.
+  The earlier global optimization's 57,953 count is superseded because it
+  violated the XLSX byte-emission contract. These are counts of
+  canonical-form differences, not measures of rendering quality.
+  `docx/grid#default` and `docx/form-rows#default` report a few more
+  differences because the shorter program shifts element-wise alignment;
+  whether their drawing is unchanged has not been checked against images.
 
 ## Next gates
 

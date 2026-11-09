@@ -321,6 +321,14 @@ fn md_index_runs_for_object(encoded : Bytes, page : Int32) -> Array[@core.IndexR
 }
 
 ///|
+/// An object the Markdown painter draws into. Upstream's `wordproc` emitter
+/// writes `font` and `fillColor` only when the value changes, so the
+/// builder dedupes the state for these objects and for no others.
+fn md_object() -> @core.ObjectBuilder {
+  @core.ObjectBuilder::new(dedupe_state=true)
+}
+
+///|
 fn MdPainter::flush_page(self : MdPainter) -> Unit raise {
   if self.page_height <= 0.0 {
     return
@@ -356,7 +364,7 @@ fn MdPainter::flush_page(self : MdPainter) -> Unit raise {
       self.index_runs.push(run)
     }
   }
-  self.object = @core.ObjectBuilder::new()
+  self.object = md_object()
   self.fonts.clear()
   self.page += 1
   self.page_dirty = false
@@ -962,7 +970,7 @@ fn md_render(
   let page_width = if page_view { 595.3 } else { width + 36.0 * 2.0 }
   let scale = if size > 0.0 { size / 12.0 } else { 1.0 }
   let painter : MdPainter = {
-    object: @core.ObjectBuilder::new(),
+    object: md_object(),
     writer,
     fonts: Map([]),
     y: margin,
