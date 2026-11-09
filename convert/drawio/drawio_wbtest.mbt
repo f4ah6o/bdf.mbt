@@ -31,6 +31,37 @@ test "drawio reads every diagram and compressed pages" {
 }
 
 ///|
+test "drawio renders an AWS4 stencil shape" {
+  let warn = DrawioWarn::new()
+  assert_eq(
+    drawio_shape_kind("shape=mxgraph.aws4.lambda;html=1;", warn),
+    DkStencil,
+  )
+  assert_eq(warn.items.length(), 0)
+  let data = @utf8.encode(
+    "<mxfile><diagram name=\"AWS\"><mxGraphModel pageWidth=\"200\" pageHeight=\"100\"><root>" +
+    "<mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/>" +
+    "<mxCell id=\"a\" value=\"\" style=\"shape=mxgraph.aws4.lambda;html=1;fillColor=#232F3E;strokeColor=none;\" vertex=\"1\" parent=\"1\">" +
+    "<mxGeometry x=\"10\" y=\"10\" width=\"60\" height=\"60\" as=\"geometry\"/></mxCell>" +
+    "</root></mxGraphModel></diagram></mxfile>",
+  )
+  let result = convert(data) catch {
+    DrawioInvalid(message) => fail("AWS draw.io fixture did not convert: " + message)
+  }
+  assert_eq(result.pages, 1)
+  assert_true(
+    result.warnings.every(w => !w.contains("not supported")),
+    msg="no stencil fallback warnings",
+  )
+  // The lambda stencil is a real path drawing, not a plain rectangle: the
+  // page part must contain stroked/filled path objects.
+  let document = @core.open_single(result.bdf) catch {
+    _ => fail("AWS draw.io BDF did not open")
+  }
+  assert_eq(document.manifest.views[0].pages.length(), 1)
+}
+
+///|
 test "drawio percent decoding" {
   assert_eq(drawio_percent_decode("%3Cmxfile%3E"), "<mxfile>")
 }

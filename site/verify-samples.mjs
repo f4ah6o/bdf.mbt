@@ -6,6 +6,8 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const samples = {
+  'aws.drawio': '18b91cb3554f47f6963650f2b058737bfb85cb726d363a3e7f1d9013b531e203',
+  'vertical.epub': 'dd543c9b5bfb591dbd93de29d54ec1616565e7e3b7894c2b94617b6729d30e25',
   'basic.csv': '1ba65cc6eef6ca7888b432928fc93c953f6eca6e928dfb6ca6ba81fe090e32e8',
   'basic.docx': 'f4830cd362996f3e07b9b370a4f118de8617e98daff42c3d475efeb7b6eef335',
   'basic.md': '6c79a9aec05d29164223e76d719ea3a3ee0ed3444cfd95afd650c2503536b32e',

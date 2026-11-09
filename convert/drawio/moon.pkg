@@ -11,6 +11,7 @@ import {
   "moonbitlang/core/buffer" @buffer,
   "gaato/deflate" @deflate,
   "gaato/deflate/zlib" @zlib,
+  "gaato/deflate/gzip" @gzip,
 }
 
 supported_targets = "+js+wasm-gc"

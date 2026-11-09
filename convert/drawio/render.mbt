@@ -722,6 +722,9 @@ fn drawio_render_item(
     Shape(cell, kind, x, y, w, h) => {
       let style = cell.style
       if !drawio_shape_is_text(kind) {
+        if kind == DkStencil {
+          drawio_stencil_render(cell, drawing, warn, x, y, w, h) |> ignore
+        }
         let paint = drawio_shape_paint(kind, style, x, y, w, h)
         let rotation = drawio_num_from_style(style, "rotation", 0.0)
         let turn = if rotation != 0.0 {

@@ -29,11 +29,11 @@ test "drawio shape registry covers common boxes and stencils" {
 ///|
 test "drawio unknown stencils warn once and fall back to a rectangle" {
   let warn = DrawioWarn::new()
-  let style = "shape=mxgraph.aws4.lambda;html=1;"
+  let style = "shape=mxgraph.awslambda.nonexistent_icon;html=1;"
   assert_eq(drawio_shape_kind(style, warn), DkRect)
   assert_eq(drawio_shape_kind(style, warn), DkRect)
   assert_eq(warn.items.length(), 1)
-  assert_true(warn.items[0].contains("mxgraph.aws4.lambda"))
+  assert_true(warn.items[0].contains("mxgraph.awslambda.nonexistent_icon"))
   assert_true(warn.items[0].contains("not supported"))
   // A plain mxGraph name that is not a stencil is not reported.
   let quiet = DrawioWarn::new()

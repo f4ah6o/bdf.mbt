@@ -66,7 +66,7 @@ fn drawio_shape_paint(
   let stroke = @cad.CadPath::new()
   let w = Double::max(w, 0.0)
   let h = Double::max(h, 0.0)
-  if kind == DkText {
+  if kind == DkText || kind == DkStencil {
     return { fill, stroke, has_fill: false, has_stroke: false }
   }
   if kind == DkPartialRect {

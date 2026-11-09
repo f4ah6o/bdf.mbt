@@ -44,6 +44,8 @@ priv enum DrawioShapeKind {
   DkOctagon
   DkCross
   DkStar
+  ///| A `mxgraph.*` stencil drawn from the embedded stencil library.
+  DkStencil
   DkText
 } derive(Eq, Debug)
 
@@ -441,7 +443,11 @@ fn drawio_shape_kind(style : String, warn : DrawioWarn) -> DrawioShapeKind {
     Some(kind) => Some(kind)
     None =>
       if drawio_is_stencil_name(name) {
-        drawio_stencil_kind(name)
+        if drawio_stencil_lookup(name) is Some(_) {
+          Some(DkStencil)
+        } else {
+          drawio_stencil_kind(name)
+        }
       } else {
         None
       }
