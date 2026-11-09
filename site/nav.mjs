@@ -31,6 +31,7 @@ export const SECTIONS = [
       page("formats/spreadsheet", "Excel・CSV・Parquet"),
       page("formats/diagram", "Visio・draw.io"),
       page("formats/cad", "CAD の図面とプロット"),
+      page("formats/xdw", "DocuWorks"),
       page("formats/electronics", "プリント基板・KiCad"),
       page("formats/ebook", "EPUB"),
       page("formats/music", "楽譜"),
