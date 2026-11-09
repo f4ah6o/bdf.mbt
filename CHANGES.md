@@ -6,8 +6,11 @@
 
 - DocuWorks (`.xdw`) documents now carry a text index, so body text and
   annotation text are searchable in the converted BDF.
-- `include_hidden` keeps text that a later opaque fill covers. The CLI accepts
-  it as `-param include_hidden=1`; the default leaves covered text out.
+- `include_hidden` keeps text that a later opaque fill covers; the default
+  leaves covered text out. It is reachable as `xdw_convert(include_hidden=)`,
+  as `convert(..., params={"include_hidden": "1"})`, and through the browser
+  worker's existing `request.options.params.include_hidden`. There is no CLI
+  flag for it yet.
 
 ### Changed
 

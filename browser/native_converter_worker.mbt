@@ -952,12 +952,34 @@ fn native_convert_emf(
 }
 
 ///|
+/// The DocuWorks options a request asks for.
+///
+/// `native_converter_param` turns a missing value into "", which
+/// `parse_params` reads as the default, so a request that does not mention
+/// `include_hidden` keeps covered text out of the index.
+fn native_xdw_options(request : ConverterRequest) -> @xdw.Params raise @xdw.XdwError {
+  let params : Map[String, String] = Map([])
+  params["include_hidden"] = native_converter_param(request, "include_hidden")
+  @xdw.parse_params(params)
+}
+
+///|
 fn native_convert_xdw(
   request : ConverterRequest,
   data : Bytes,
   opened : Bool,
 ) -> Unit {
-  let result = @xdw.xdw_convert(data) catch {
+  let options = native_xdw_options(request) catch {
+    @xdw.XdwInvalidParam(message) => {
+      native_converter_error(request, message, "")
+      return
+    }
+    error => {
+      native_converter_error(request, error.to_string(), "")
+      return
+    }
+  }
+  let result = @xdw.xdw_convert(data, include_hidden=options.include_hidden) catch {
     e => {
       native_converter_error(request, e.to_string(), "")
       return
