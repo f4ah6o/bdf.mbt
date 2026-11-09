@@ -10,6 +10,6 @@ import {
 
 import {
   "f4ah6o/bdf/render",
-} for "wbtest"
+}
 
 supported_targets = "+js+wasm-gc+native"

@@ -358,8 +358,16 @@ fn XdwDocument::xdw_draw_body(
 
 ///|
 /// Convert a whole DocuWorks document into a single-file BDF.
-pub fn xdw_convert(data : Bytes, title~ : String = "") -> XdwResult raise {
+///
+/// `include_hidden` keeps text that a later opaque fill covers completely in
+/// the text index; by default such text is left out.
+pub fn xdw_convert(
+  data : Bytes,
+  title~ : String = "",
+  include_hidden~ : Bool = false,
+) -> XdwResult raise {
   let doc = xdw_open_with(data, Limits::default())
+  doc.include_hidden = include_hidden
   let meta : Map[String, Json] = {
     "source": Json::string("xdw"),
     "generator": Json::string("bdf-moonbit/0.1"),
@@ -371,6 +379,7 @@ pub fn xdw_convert(data : Bytes, title~ : String = "") -> XdwResult raise {
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
   let warnings : Array[String] = []
   let pages : Array[Json] = []
+  let index_runs : Array[@core.IndexRun] = []
   for i in 0..<doc.pages.length() {
     let page = doc.pages[i]
     let width = page.w.to_double() * xdw_px2pt
@@ -386,6 +395,17 @@ pub fn xdw_convert(data : Bytes, title~ : String = "") -> XdwResult raise {
     let hash = writer.add_part("obj", encoded) catch {
       error => raise XdwCorrupt("a page could not be stored: " + error.to_string())
     }
+    // The page's own command stream carries every string it draws, body text
+    // and annotation text alike, so the index is read back from it.
+    let runs = xdw_page_text_runs(encoded) catch {
+      error => {
+        warnings.push("page \{i + 1}: the text index was not readable: " + error.to_string())
+        []
+      }
+    }
+    index_runs.append(
+      xdw_index_runs(runs, i, 0, doc.include_hidden),
+    )
     pages.push(
       Json::object({
         "w": Json::number(width, repr=width.to_string()),
@@ -408,6 +428,12 @@ pub fn xdw_convert(data : Bytes, title~ : String = "") -> XdwResult raise {
   }
   if final_title != "" {
     view["title"] = Json::string(final_title)
+  }
+  if !index_runs.is_empty() {
+    let index_hash = writer.add_part("idx", @core.encode_text_index(index_runs)) catch {
+      error => raise XdwCorrupt("the text index could not be stored: " + error.to_string())
+    }
+    view["textIndex"] = Json::string(index_hash)
   }
   writer.add_view(Json::object(view))
   let bdf = writer.write_single() catch {

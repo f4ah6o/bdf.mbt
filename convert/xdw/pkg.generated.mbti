@@ -50,7 +50,7 @@ pub const T_HEADER : Int32 = 0x60
 
 pub fn lzh_decompress(Bytes, Int32, Limits) -> Bytes raise XdwError
 
-pub fn xdw_convert(Bytes, title? : String) -> XdwResult raise
+pub fn xdw_convert(Bytes, title? : String, include_hidden? : Bool) -> XdwResult raise
 
 pub fn xdw_detect(Bytes) -> Bool
 
