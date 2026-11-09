@@ -6,9 +6,11 @@ import {
 }
 
 // Values
+pub fn dib_body_split(Bytes) -> (Bytes, Bytes, Int32, Int32)?
+
 pub fn dib_to_png(Bytes, Bytes?) -> Bytes?
 
-pub fn draw_into(@core.ObjectBuilder, @core.DocumentWriter, Bytes, Double, Double, Double, Double, pics? : Array[Bytes]) -> Array[String] raise MetafileError
+pub fn draw_into(@core.ObjectBuilder, @core.DocumentWriter, Bytes, Double, Double, Double, Double, annotation? : Bool, pics? : Array[Bytes]) -> Array[String] raise MetafileError
 
 pub fn kind(Bytes) -> String
 

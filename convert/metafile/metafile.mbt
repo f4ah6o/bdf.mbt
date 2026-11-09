@@ -458,10 +458,15 @@ fn Gdi::bezier(self : Gdi, points : Array[(Double, Double)], to : Bool) -> Unit 
   let coordinates : Array[Double] = []
   let mut i = 0
   if to {
-    let (x, y) = m.apply(self.state.cur.0, self.state.cur.1)
-    verbs.write_byte(0)
-    coordinates.push(x)
-    coordinates.push(y)
+    // POLYBEZIERTO continues the current figure. Inside a path a move
+    // would start a new subpath, and a following CLOSEFIGURE would close
+    // that one instead of the figure the curve belongs to.
+    if not(self.path_active) {
+      let (x, y) = m.apply(self.state.cur.0, self.state.cur.1)
+      verbs.write_byte(0)
+      coordinates.push(x)
+      coordinates.push(y)
+    }
   } else {
     if points.length() < 4 {
       return
@@ -714,16 +719,27 @@ fn mask_channel(value : Int32, mask : Int32) -> Int32 {
   if mask == 0 {
     return 0
   }
+  // the masks are unsigned bit patterns: a mask in the high byte would
+  // sign-extend through an Int32 shift, so work in Int64
+  let u_value = value.to_int64() & 0xffffffffL
+  let u_mask = mask.to_int64() & 0xffffffffL
   let mut shift = 0
-  let mut m = mask
-  while (m & 1) == 0 && shift < 32 {
-    m = m >> 1
+  while shift < 32 && (u_mask & (1L << shift)) == 0L {
     shift += 1
   }
-  if m == 0 {
+  if shift >= 32 {
     return 0
   }
-  (((value & mask) >> shift) * 255 / m).min(255)
+  let mut width = 0
+  while width < 32 - shift && (u_mask & (1L << (shift + width))) != 0L {
+    width += 1
+  }
+  if width == 0 {
+    return 0
+  }
+  let max = (1L << width) - 1L
+  let channel = (u_value >> shift) & max
+  ((channel * 255L / max).to_int()).min(255)
 }
 
 ///|
@@ -794,14 +810,14 @@ fn dib_decode(data : Bytes, bits_data : Bytes?) -> Dib? {
       let mut alpha = 255
       match bpp {
         1 => {
-          let bit = (data[row_offset + x / 8].to_int() >> (7 - x % 8)) & 1
+          let bit = (bits[row_offset + x / 8].to_int() >> (7 - x % 8)) & 1
           let at = palette + bit * palette_entry
           blue = data[at].to_int()
           green = data[at + 1].to_int()
           red = data[at + 2].to_int()
         }
         4 => {
-          let value = data[row_offset + x / 2].to_int()
+          let value = bits[row_offset + x / 2].to_int()
           let index = if x % 2 == 0 { value >> 4 } else { value & 0xf }
           let at = palette + index * palette_entry
           blue = data[at].to_int()
@@ -809,7 +825,7 @@ fn dib_decode(data : Bytes, bits_data : Bytes?) -> Dib? {
           red = data[at + 2].to_int()
         }
         8 => {
-          let index = data[row_offset + x].to_int()
+          let index = bits[row_offset + x].to_int()
           let at = palette + index * palette_entry
           blue = data[at].to_int()
           green = data[at + 1].to_int()
@@ -817,7 +833,7 @@ fn dib_decode(data : Bytes, bits_data : Bytes?) -> Dib? {
         }
         16 => {
           let at = row_offset + x * 2
-          let value = data[at].to_int() | (data[at + 1].to_int() << 8)
+          let value = bits[at].to_int() | (bits[at + 1].to_int() << 8)
           if compression == 3 {
             let masks_at = 40
             red = mask_channel(value, le32(data, masks_at).to_int())
@@ -831,16 +847,16 @@ fn dib_decode(data : Bytes, bits_data : Bytes?) -> Dib? {
         }
         24 => {
           let at = row_offset + x * 3
-          blue = data[at].to_int()
-          green = data[at + 1].to_int()
-          red = data[at + 2].to_int()
+          blue = bits[at].to_int()
+          green = bits[at + 1].to_int()
+          red = bits[at + 2].to_int()
         }
         32 => {
           let at = row_offset + x * 4
-          let value = data[at].to_int() |
-            (data[at + 1].to_int() << 8) |
-            (data[at + 2].to_int() << 16) |
-            (data[at + 3].to_int() << 24)
+          let value = bits[at].to_int() |
+            (bits[at + 1].to_int() << 8) |
+            (bits[at + 2].to_int() << 16) |
+            (bits[at + 3].to_int() << 24)
           if compression == 3 {
             let masks_at = 40
             red = mask_channel(value, le32(data, masks_at).to_int())
@@ -853,10 +869,10 @@ fn dib_decode(data : Bytes, bits_data : Bytes?) -> Dib? {
               }
             }
           } else {
-            blue = data[at].to_int()
-            green = data[at + 1].to_int()
-            red = data[at + 2].to_int()
-            alpha = data[at + 3].to_int()
+            blue = bits[at].to_int()
+            green = bits[at + 1].to_int()
+            red = bits[at + 2].to_int()
+            alpha = bits[at + 3].to_int()
             if alpha == 0 {
               alpha = 255
             }
