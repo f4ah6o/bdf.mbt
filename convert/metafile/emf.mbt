@@ -352,6 +352,7 @@ fn Gdi::play_emf(
           Float::from_double((x1 - x0).abs()),
           Float::from_double((y1 - y0).abs()),
         )
+        self.clip_active = true
       }
       33 => self.save_state()
       34 => self.restore_state(le32(record, 8).to_int())

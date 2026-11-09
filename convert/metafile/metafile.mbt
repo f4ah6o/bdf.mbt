@@ -122,10 +122,10 @@ priv struct Gdi {
   path_verbs : @buffer.Buffer
   path_coords : Array[Double]
   mut path_active : Bool
-  /// Whether a SELECTCLIPPATH has already narrowed the clip. The object
-  /// format only carries a cumulative clip, so a later RGN_COPY cannot
-  /// replace it.
-  mut clip_path_active : Bool
+  /// Whether a record has already narrowed the clip, by a path or by a
+  /// rectangle. The object format only carries a cumulative clip and the
+  /// converter emits no clip restore, so a later RGN_COPY cannot replace it.
+  mut clip_active : Bool
 }
 
 ///|
@@ -386,13 +386,13 @@ fn Gdi::path_clip_mode(self : Gdi, mode : Int32) -> Unit {
     self.warn(
       "metafile SELECTCLIPPATH has an unknown RegionMode " + mode.to_string(),
     )
-  } else if mode != 1 && !(mode == 5 && !self.clip_path_active) {
+  } else if mode != 1 && !(mode == 5 && !self.clip_active) {
     // RGN_AND is what a cumulative clip already does, and a first RGN_COPY
     // only intersects with the page bounds.
     self.warn("metafile SELECTCLIPPATH " + name + " is applied as RGN_AND")
   }
   self.path_clip()
-  self.clip_path_active = true
+  self.clip_active = true
 }
 
 ///|
@@ -1091,7 +1091,7 @@ pub fn draw_into(
     path_verbs: @buffer.Buffer(),
     path_coords: [],
     path_active: false,
-    clip_path_active: false,
+    clip_active: false,
     dw_path: [],
   }
   object.save()

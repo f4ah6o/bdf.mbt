@@ -470,3 +470,59 @@ test "selectclippath reports the region modes it cannot apply" {
     abort("RGN_DIFF was not reported: \{diff_warnings.join(",")}")
   }
 }
+
+///|
+test "selectclippath reports RGN_COPY over a rectangle clip" {
+  // INTERSECTCLIPRECT narrows the clip, so a following RGN_COPY has to
+  // replace that region. The object format only carries a cumulative clip,
+  // so the mode cannot be applied and must be reported.
+  let records = [
+    t_record(30, t_i32s([0, 0, 100, 100])), // INTERSECTCLIPRECT
+    t_record(59, b""), // BEGINPATH
+    t_record(27, t_i32s([0, 0])), // MOVETOEX
+    t_record(54, t_i32s([100, 0])), // LINETO
+    t_record(54, t_i32s([100, 100])),
+    t_record(60, b""), // ENDPATH
+    t_record(67, t_i32s([5])), // SELECTCLIPPATH RGN_COPY
+    t_record(14, t_i32s([0, 0, 0])),
+  ]
+  let (_, warnings) = t_draw(
+    t_emf([0, 0, 2540, 2540], [96, 96], [25, 25], records), 72.0, 72.0, false,
+  )
+  guard warnings.length() == 1 && warnings[0].contains("RGN_COPY") else {
+    abort(
+      "RGN_COPY over a rectangle clip was not reported: \{warnings.join(",")}",
+    )
+  }
+}
+
+///|
+test "a saved and restored clip keeps the copy warning" {
+  // The converter emits no clip restore for SAVEDC/RESTOREDC, so the emitted
+  // clip stays narrowed and a later RGN_COPY still cannot replace it.
+  let records = [
+    t_record(33, b""), // SAVEDC
+    t_record(59, b""), // BEGINPATH
+    t_record(27, t_i32s([0, 0])), // MOVETOEX
+    t_record(54, t_i32s([100, 0])), // LINETO
+    t_record(54, t_i32s([100, 100])),
+    t_record(60, b""), // ENDPATH
+    t_record(67, t_i32s([1])), // SELECTCLIPPATH RGN_AND
+    t_record(34, t_i32s([-1])), // RESTOREDC
+    t_record(59, b""), // BEGINPATH
+    t_record(27, t_i32s([0, 0])), // MOVETOEX
+    t_record(54, t_i32s([50, 0])), // LINETO
+    t_record(54, t_i32s([50, 50])),
+    t_record(60, b""), // ENDPATH
+    t_record(67, t_i32s([5])), // SELECTCLIPPATH RGN_COPY
+    t_record(14, t_i32s([0, 0, 0])),
+  ]
+  let (_, warnings) = t_draw(
+    t_emf([0, 0, 2540, 2540], [96, 96], [25, 25], records), 72.0, 72.0, false,
+  )
+  guard warnings.length() == 1 && warnings[0].contains("RGN_COPY") else {
+    abort(
+      "RGN_COPY after a restored clip was not reported: \{warnings.join(",")}",
+    )
+  }
+}
