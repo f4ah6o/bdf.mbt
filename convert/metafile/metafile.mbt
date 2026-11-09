@@ -122,6 +122,10 @@ priv struct Gdi {
   path_verbs : @buffer.Buffer
   path_coords : Array[Double]
   mut path_active : Bool
+  /// Whether a SELECTCLIPPATH has already narrowed the clip. The object
+  /// format only carries a cumulative clip, so a later RGN_COPY cannot
+  /// replace it.
+  mut clip_path_active : Bool
 }
 
 ///|
@@ -361,6 +365,37 @@ fn Gdi::path_clip(self : Gdi) -> Unit {
 }
 
 ///|
+/// SELECTCLIPPATH combines the path with the current clipping region using
+/// RegionMode. The object format only carries a cumulative clip, which is
+/// RGN_AND, so the modes it cannot express are reported instead of being
+/// silently applied as an intersection.
+fn Gdi::path_clip_mode(self : Gdi, mode : Int32) -> Unit {
+  if self.path_coords.is_empty() {
+    self.path_clear()
+    return
+  }
+  let name = match mode {
+    1 => "RGN_AND"
+    2 => "RGN_OR"
+    3 => "RGN_XOR"
+    4 => "RGN_DIFF"
+    5 => "RGN_COPY"
+    _ => ""
+  }
+  if name == "" {
+    self.warn(
+      "metafile SELECTCLIPPATH has an unknown RegionMode " + mode.to_string(),
+    )
+  } else if mode != 1 && !(mode == 5 && !self.clip_path_active) {
+    // RGN_AND is what a cumulative clip already does, and a first RGN_COPY
+    // only intersects with the page bounds.
+    self.warn("metafile SELECTCLIPPATH " + name + " is applied as RGN_AND")
+  }
+  self.path_clip()
+  self.clip_path_active = true
+}
+
+///|
 fn Gdi::draw_path(
   self : Gdi,
   verbs : Bytes,
@@ -489,7 +524,11 @@ fn Gdi::bezier(self : Gdi, points : Array[(Double, Double)], to : Bool) -> Unit 
   if coordinates.length() < 4 {
     return
   }
-  self.state.cur = points[points.length() - 1]
+  if to {
+    // PolyBezierTo moves the current position to the end of the last curve.
+    // PolyBezier neither uses nor updates it.
+    self.state.cur = points[points.length() - 1]
+  }
   let v = verbs.to_bytes()
   if self.path_active {
     self.path_append(v, coordinates)
@@ -1052,6 +1091,7 @@ pub fn draw_into(
     path_verbs: @buffer.Buffer(),
     path_coords: [],
     path_active: false,
+    clip_path_active: false,
     dw_path: [],
   }
   object.save()

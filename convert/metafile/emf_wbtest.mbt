@@ -380,3 +380,93 @@ test "widenpath is reported as unsupported" {
     abort("WIDENPATH was dropped without a warning: \{warnings.join(",")}")
   }
 }
+
+///|
+/// The first point of the last stroked path, in device units.
+fn t_last_stroke_start(encoded : Bytes) -> (Double, Double) {
+  let resources = @core.decode_object_resources(encoded) catch {
+    e => abort("decode failed: " + e.to_string())
+  }
+  let mut start = (0.0, 0.0)
+  for c in t_commands(encoded) {
+    match c {
+      @render.StrokePath(index) =>
+        match resources.paths[index] {
+          @core.Inline(path) =>
+            if path.coordinates.length() >= 2 {
+              start = (path.coordinates[0], path.coordinates[1])
+            }
+          _ => ()
+        }
+      _ => ()
+    }
+  }
+  start
+}
+
+///|
+test "polybezier leaves the current position alone" {
+  // PolyBezier neither uses nor updates the current position, so the LINETO
+  // after it must start where MOVETOEX left the pen, not at the last Bezier
+  // point. The same records without the Bezier give the expected start.
+  let move = t_record(27, t_i32s([10, 10])) // MOVETOEX
+  let bezier = t_record(
+    2,
+    t_i32s([0, 0, 100, 100, 4, 100, 100, 200, 100, 200, 200, 100, 200]),
+  ) // POLYBEZIER
+  let line = t_record(54, t_i32s([300, 300])) // LINETO
+  let eof = t_record(14, t_i32s([0, 0, 0]))
+  let plain = t_emf([0, 0, 2540, 2540], [96, 96], [25, 25], [move, line, eof])
+  let curved = t_emf(
+    [0, 0, 2540, 2540], [96, 96], [25, 25], [move, bezier, line, eof],
+  )
+  let (plain_encoded, _) = t_draw(plain, 72.0, 72.0, false)
+  let (curved_encoded, _) = t_draw(curved, 72.0, 72.0, false)
+  let (plain_x, plain_y) = t_last_stroke_start(plain_encoded)
+  let (curved_x, curved_y) = t_last_stroke_start(curved_encoded)
+  guard t_close(plain_x, curved_x) && t_close(plain_y, curved_y) else {
+    abort(
+      "the line after POLYBEZIER starts at (\{curved_x}, \{curved_y}) instead of (\{plain_x}, \{plain_y})",
+    )
+  }
+}
+
+///|
+test "selectclippath reports the region modes it cannot apply" {
+  let frame = [0, 0, 2540, 2540]
+  let device = [96, 96]
+  let mm = [25, 25]
+  let eof = t_record(14, t_i32s([0, 0, 0]))
+  let clip = fn(mode : Int32) -> Array[Bytes] {
+    [
+      t_record(59, b""), // BEGINPATH
+      t_record(27, t_i32s([0, 0])), // MOVETOEX
+      t_record(54, t_i32s([100, 0])), // LINETO
+      t_record(54, t_i32s([100, 100])),
+      t_record(60, b""), // ENDPATH
+      t_record(67, t_i32s([mode])), // SELECTCLIPPATH
+      eof,
+    ]
+  }
+  // RGN_AND is what a cumulative clip already does.
+  let (_, and_warnings) = t_draw(
+    t_emf(frame, device, mm, clip(1)), 72.0, 72.0, false,
+  )
+  guard and_warnings.is_empty() else {
+    abort("RGN_AND warned: \{and_warnings.join(",")}")
+  }
+  // RGN_COPY with no path clip yet is the same as intersecting with nothing.
+  let (_, copy_warnings) = t_draw(
+    t_emf(frame, device, mm, clip(5)), 72.0, 72.0, false,
+  )
+  guard copy_warnings.is_empty() else {
+    abort("a first RGN_COPY warned: \{copy_warnings.join(",")}")
+  }
+  // RGN_DIFF cannot be expressed by a cumulative clip.
+  let (_, diff_warnings) = t_draw(
+    t_emf(frame, device, mm, clip(4)), 72.0, 72.0, false,
+  )
+  guard diff_warnings.length() == 1 && diff_warnings[0].contains("RGN_DIFF") else {
+    abort("RGN_DIFF was not reported: \{diff_warnings.join(",")}")
+  }
+}

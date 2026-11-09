@@ -493,7 +493,7 @@ fn Gdi::play_emf(
       67 => {
         // SELECTCLIPPATH
         self.path_active = false
-        self.path_clip()
+        self.path_clip_mode(le32(record, 8).to_int())
       }
       68 => {
         // ABORTPATH
