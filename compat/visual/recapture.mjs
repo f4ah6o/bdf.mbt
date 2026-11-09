@@ -28,39 +28,67 @@ const belongsToViewport = (name, viewport) =>
 
 const filesFor = (dir, viewport) => readdirSync(dir).filter(name => belongsToViewport(name, viewport));
 
-// Per-viewport lists appear either directly (`heatmapRegions[].perViewport`) or under `result`
-// (`computedStyleDiffPerViewport[].result.byViewport`). Both merge the same way: the first capture
-// wins for the viewports that painted, the retry supplies the ones that were blank.
-const mergePerViewport = (firstList = [], retryList = [], blankViewports) => {
-  const firstByViewport = new Map(firstList.map(item => [item.viewport, item]));
-  const retryByViewport = new Map(retryList.map(item => [item.viewport, item]));
-  return [...new Set([...firstByViewport.keys(), ...retryByViewport.keys()])]
-    .map(viewport => blankViewports.has(viewport) ? retryByViewport.get(viewport) : firstByViewport.get(viewport))
-    .filter(Boolean);
+// Only these report fields are independent viewport records. Omission in a capture means
+// that capture supplied no record; it must never revive a record from the other capture.
+const viewportSections = {
+  heatmapRegions: 'perViewport',
+  paletteDiffs: 'perViewport',
+  textRowShifts: 'perViewport',
+  componentBboxDiffs: 'perViewport',
+  shiftOrigins: 'perViewport',
+  shiftAccumulations: 'perViewport',
+  gridSuggestions: 'suggestions',
+};
+const countSections = ['computedStyleDiffPerViewport', 'authoredStyleDiffPerViewport', 'domPositionDiffPerViewport'];
+const metadataKeys = ['dir', 'baseline', 'variants', 'viewports', 'strict', 'approvalPath', 'reportPath'];
+
+const mergePerViewport = (firstList = [], retryList = [], blankViewports) => [
+  ...firstList.filter(item => !blankViewports.has(item.viewport)),
+  ...retryList.filter(item => blankViewports.has(item.viewport)),
+];
+
+const variants = (firstList = [], retryList = []) => {
+  const first = new Map(firstList.map(entry => [entry.variantFile, entry]));
+  const retry = new Map(retryList.map(entry => [entry.variantFile, entry]));
+  return [...new Set([...first.keys(), ...retry.keys()])].map(variantFile => ({ variantFile, first: first.get(variantFile), retry: retry.get(variantFile) }));
 };
 
-// The report has to describe the evidence that is actually judged, so every per-viewport list is
-// merged viewport by viewport. The cross-viewport rollups inside `result` (`bySelectorProperty`,
-// `samples`, `entries`) are not re-derived; they stay as the first capture recorded them.
-const mergeReport = (first, retried, blankViewports) => {
+// A mixed capture has no truthful whole-capture summary. In particular, vlmkit truncates some
+// entries/samples to 100/200 records, so recomputing selector/property totals from them can invent
+// a clean result. Keep original JSON reports, expose adopted per-viewport counts separately, and
+// omit incomplete aggregate sections instead of emitting a partial standard vlmkit schema.
+// Unknown future fields are also omitted and named, rather than copied from the wrong capture.
+const mergeReport = (first, retried, blankViewports, originalReports) => {
   const retriedResults = new Map(retried.results.map(result => [result.viewport, result]));
-  const merged = {
-    ...first,
-    results: first.results.map(result => blankViewports.has(result.viewport) ? retriedResults.get(result.viewport) : result),
-  };
-  for (const key of ['heatmapRegions', 'computedStyleDiffPerViewport', 'authoredStyleDiffPerViewport', 'domPositionDiffPerViewport']) {
-    if (!Array.isArray(first[key])) continue;
-    const retriedByVariant = new Map((retried[key] ?? []).map(entry => [entry.variantFile, entry]));
-    merged[key] = first[key].map(entry => {
-      const retryEntry = retriedByVariant.get(entry.variantFile);
-      if (!retryEntry) return entry;
-      if (key === 'heatmapRegions') {
-        return { ...entry, perViewport: mergePerViewport(entry.perViewport, retryEntry.perViewport, blankViewports) };
-      }
-      const byViewport = mergePerViewport(entry.result?.byViewport, retryEntry.result?.byViewport, blankViewports);
-      return { ...entry, result: { ...entry.result, byViewport, totalDiffs: byViewport.reduce((sum, item) => sum + (item.count ?? 0), 0) } };
+  const merged = Object.fromEntries(metadataKeys.filter(key => key in first).map(key => [key, first[key]]));
+  merged.results = first.results.map(result => blankViewports.has(result.viewport) ? retriedResults.get(result.viewport) : result);
+  const known = new Set([...metadataKeys, 'results', ...Object.keys(viewportSections)]);
+  const unavailableFields = [...new Set([...Object.keys(first), ...Object.keys(retried)])].filter(key => !known.has(key)).sort();
+  for (const [key, listKey] of Object.entries(viewportSections)) {
+    if (!(key in first) && !(key in retried)) continue;
+    merged[key] = variants(first[key], retried[key]).map(entry => ({
+      variantFile: entry.variantFile,
+      [listKey]: mergePerViewport(entry.first?.[listKey], entry.retry?.[listKey], blankViewports),
+    })).filter(entry => entry[listKey].length > 0);
+  }
+  const viewportCounts = {};
+  const expectedViewports = first.results.map(result => result.viewport);
+  for (const key of countSections) {
+    if (!(key in first) && !(key in retried)) continue;
+    viewportCounts[key] = variants(first[key], retried[key]).map(entry => {
+      const byViewport = mergePerViewport(entry.first?.result?.byViewport, entry.retry?.result?.byViewport, blankViewports);
+      const missingViewports = expectedViewports.filter(viewport => !byViewport.some(item => item.viewport === viewport && Number.isSafeInteger(item.count) && item.count >= 0));
+      const countsComplete = missingViewports.length === 0 && byViewport.length === expectedViewports.length;
+      return { variantFile: entry.variantFile, byViewport, countsComplete, ...(countsComplete ? { totalDiffs: byViewport.reduce((sum, item) => sum + item.count, 0) } : { missingViewports }) };
     });
   }
+  merged.recapture = {
+    adoptedCaptureByViewport: Object.fromEntries(expectedViewports.map(viewport => [viewport, blankViewports.has(viewport) ? 'retry' : 'first'])),
+    originalReports,
+    unavailableFields,
+    viewportCounts,
+    note: 'Whole-capture diagnostics were not recomputed. Missing diagnostics are unavailable, not evidence of no difference. Original JSON reports are retained; their artifact paths refer to the capture directory, not immutable image archives.',
+  };
   return merged;
 };
 
@@ -84,6 +112,9 @@ export async function captureWithRecapture({ capture, reportPath, baselinePng, v
   if (blank.length === 0) return first;
 
   const blankViewports = new Set(blank.map(result => result.viewport));
+  const reportName = path.parse(reportPath).name;
+  const originalReports = { first: `${reportName}.first.json`, retry: `${reportName}.retry.json` };
+  writeFileSync(path.join(target, originalReports.first), JSON.stringify(first, null, 2));
 
   // Keep every artifact of the viewports that painted, and drop the blank ones so a retry that
   // writes no heatmap leaves none behind.
@@ -99,6 +130,10 @@ export async function captureWithRecapture({ capture, reportPath, baselinePng, v
   log(`${label}: baseline capture was blank at ${[...blankViewports].join(', ')} — recapturing`);
   await run(capture);
   const retried = JSON.parse(readFileSync(reportPath, 'utf8'));
+  writeFileSync(path.join(target, originalReports.retry), JSON.stringify(retried, null, 2));
+  for (const viewport of blankViewports) {
+    if (!retried.results.some(result => result.viewport === viewport)) throw new Error(`${label}: retry report is missing viewport ${viewport}`);
+  }
 
   const stillBlank = retried.results.filter(result => blankViewports.has(result.viewport) && blankCapture(baselinePng(result.viewport)));
   if (stillBlank.length > 0) {
@@ -112,7 +147,22 @@ export async function captureWithRecapture({ capture, reportPath, baselinePng, v
     for (const [name, buffer] of files) writeFileSync(path.join(target, name), buffer);
   }
 
-  const merged = mergeReport(first, retried, blankViewports);
+  const merged = mergeReport(first, retried, blankViewports, originalReports);
+  log(`${label}: whole-capture diagnostics unavailable after mixed capture (${merged.recapture.unavailableFields.join(', ') || 'none supplied'}); see original reports ${originalReports.first} and ${originalReports.retry}`);
   writeFileSync(reportPath, JSON.stringify(merged, null, 2));
   return merged;
+}
+
+// vlmkit's human formatter does not understand our unavailable-field metadata and infers
+// "image-only mode" from omitted DOM sections. Do not ask it for a whole-capture narrative
+// after mixing evidence. Keep normal captures on the existing formatter path.
+export async function summarizeCapture({ report, reportPath, run, log = console.log }) {
+  if (!report.recapture) {
+    await run(['diff', 'agent', reportPath, '--no-history']);
+    return;
+  }
+  const evidence = report.recapture;
+  log(`Mixed capture: adopted viewport results are in ${reportPath}; whole-capture diagnostic analysis is unavailable. The diff agent narrative is omitted because it cannot represent this limitation.`);
+  log(`Adopted evidence: ${Object.entries(evidence.adoptedCaptureByViewport).map(([viewport, capture]) => `${viewport}=${capture}`).join(', ')}.`);
+  log(`Unavailable fields: ${evidence.unavailableFields.join(', ') || 'none supplied'}. Original JSON reports: ${evidence.originalReports.first}, ${evidence.originalReports.retry}. Missing diagnostics do not mean no difference.`);
 }

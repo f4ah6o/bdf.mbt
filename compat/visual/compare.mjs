@@ -25,7 +25,7 @@ import { verifyViewerMusic } from '../continuous/viewer-music-test.mjs';
 import { verifyPiano } from '../music/piano-test.mjs';
 import { verifyLazyPages } from '../continuous/lazy-test.mjs';
 import { verifySheetZoom } from '../sheet/zoom-test.mjs';
-import { captureWithRecapture } from './recapture.mjs';
+import { captureWithRecapture, summarizeCapture } from './recapture.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const outputRoot = path.join(root, '_build/visual-diff');
@@ -1116,7 +1116,7 @@ try {
       console.log(`continuous ${kind}-${name} ${result.viewport}: ${changed} pixels changed (${(changed/area*100).toFixed(4)}%)`);
       assert.ok(changed/area<=0.0005,`${kind}-${name} ${result.viewport}: continuous visual difference exceeds 0.05%`);
     }
-    await run(['diff','agent',reportPath,'--no-history']);
+    await summarizeCapture({ report, reportPath, run });
   }
   {
     const musicBase=`http://127.0.0.1:${server.address().port}/compat/music/`,target=path.join(output,'piano');mkdirSync(target);
