@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { PNG } from 'pngjs';
 
 // `vlmkit diff html` screenshots each page straight after `networkidle` and never settles it, so a
@@ -23,19 +23,43 @@ export const blankCapture = file => {
 // retry painted: a retry that is still blank means the page never rendered, which the pixel
 // comparison cannot judge, so it fails loudly instead of reporting a 100% visual difference.
 //
-// The retry re-captures both sides, so it cannot hide a real difference: the returned report is the
-// one the caller judges, and a variant that genuinely differs still differs after the retry.
-export async function captureWithRecapture({ capture, reportPath, baselinePng, run, label, log = console.log }) {
+// The retry re-captures every viewport, so the first capture is kept for the viewports that painted
+// and only the blank ones are replaced. Without that, a real difference seen on the first pass is
+// overwritten by a clean retry and the comparison passes on evidence the run never had.
+export async function captureWithRecapture({ capture, reportPath, baselinePng, variantPng, run, label, log = console.log }) {
   await run(capture);
-  let report = JSON.parse(readFileSync(reportPath, 'utf8'));
-  const blank = report.results.filter(result => blankCapture(baselinePng(result.viewport)));
-  if (blank.length === 0) return report;
-  log(`${label}: baseline capture was blank at ${blank.map(result => result.viewport).join(', ')} — recapturing`);
+  const first = JSON.parse(readFileSync(reportPath, 'utf8'));
+  const blank = first.results.filter(result => blankCapture(baselinePng(result.viewport)));
+  if (blank.length === 0) return first;
+
+  const blankViewports = new Set(blank.map(result => result.viewport));
+  const kept = new Map();
+  for (const result of first.results) {
+    if (blankViewports.has(result.viewport)) continue;
+    kept.set(result.viewport, {
+      baseline: readFileSync(baselinePng(result.viewport)),
+      variant: readFileSync(variantPng(result.viewport)),
+    });
+  }
+
+  log(`${label}: baseline capture was blank at ${[...blankViewports].join(', ')} — recapturing`);
   await run(capture);
-  report = JSON.parse(readFileSync(reportPath, 'utf8'));
-  const stillBlank = report.results.filter(result => blankCapture(baselinePng(result.viewport)));
+  const retried = JSON.parse(readFileSync(reportPath, 'utf8'));
+
+  const stillBlank = retried.results.filter(result => blankViewports.has(result.viewport) && blankCapture(baselinePng(result.viewport)));
   if (stillBlank.length > 0) {
     throw new Error(`${label}: baseline capture is still blank at ${stillBlank.map(result => result.viewport).join(', ')} after a retry — the page never painted, so the pixel comparison cannot judge it`);
   }
-  return report;
+
+  for (const [viewport, pngs] of kept) {
+    writeFileSync(baselinePng(viewport), pngs.baseline);
+    writeFileSync(variantPng(viewport), pngs.variant);
+  }
+  const retriedByViewport = new Map(retried.results.map(result => [result.viewport, result]));
+  const merged = {
+    ...first,
+    results: first.results.map(result => blankViewports.has(result.viewport) ? retriedByViewport.get(result.viewport) : result),
+  };
+  writeFileSync(reportPath, JSON.stringify(merged, null, 2));
+  return merged;
 }

@@ -38,7 +38,7 @@ const harness = ({ baseline, variant }) => {
   let calls = 0;
   const run = async () => {
     const step = calls++;
-    writeFileSync(reportPath, JSON.stringify({ results: viewports.map(viewport => ({ viewport })) }));
+    writeFileSync(reportPath, JSON.stringify({ results: viewports.map(viewport => ({ viewport, pass: step })) }));
     for (const viewport of viewports) {
       writePng(baselinePng(viewport), 8, 8, baseline(step, viewport));
       writePng(variantPng(viewport), 8, 8, variant(step, viewport));
@@ -55,6 +55,12 @@ const worstRatio = h => {
     worst = Math.max(worst, changedPixels(a, b) / (a.width * a.height));
   }
   return worst;
+};
+
+const ratioFor = (h, viewport) => {
+  const a = PNG.sync.read(readFileSync(h.baselinePng(viewport)));
+  const b = PNG.sync.read(readFileSync(h.variantPng(viewport)));
+  return changedPixels(a, b) / (a.width * a.height);
 };
 
 // 1. An all-white capture is blank.
@@ -123,4 +129,26 @@ console.log('ok 2 - a mostly white page with one painted pixel is not blank');
   console.log('ok 6 - a genuine difference still fails after a retry');
 }
 
-console.log('\nrecapture: 6 pass, 0 fail');
+// 7. A retry must replace only the viewport that was blank. The first pass sees a real 3.125%
+//    difference at wide and a blank baseline at mobile; the retry paints every viewport and its
+//    wide capture matches its baseline. Keeping the retry's wide images would turn a real
+//    difference into a pass, so the first wide capture has to survive.
+{
+  const painted = (x, y) => (x === 0 && y === 0 ? ink : white);
+  const wideVariant = (x, y) => (x <= 2 && y === 0 ? ink : white); // two pixels more than the baseline
+  const h = harness({
+    baseline: (step, viewport) => (step === 0 && viewport === 'mobile' ? () => white : painted),
+    variant: (step, viewport) => (step === 0 && viewport === 'wide' ? wideVariant : painted),
+  });
+  const report = await captureWithRecapture(h);
+  assert.equal(h.calls(), 2, 'the blank mobile baseline was recaptured');
+  assert.equal(ratioFor(h, 'wide'), 2 / 64, 'the first wide capture is kept, so its 3.125% difference survives');
+  assert.ok(ratioFor(h, 'wide') > 0.0005, 'the real wide difference still fails the pixel assertion');
+  assert.equal(blankCapture(h.baselinePng('mobile')), false, 'the blank mobile viewport was replaced by the retry');
+  assert.equal(ratioFor(h, 'mobile'), 0, 'the recovered mobile viewport matches');
+  assert.equal(report.results.find(result => result.viewport === 'wide').pass, 0, 'the report keeps the first wide result');
+  assert.equal(report.results.find(result => result.viewport === 'mobile').pass, 1, 'the report takes the recovered mobile result');
+  console.log('ok 7 - a retry replaces only the blank viewport and keeps a real difference elsewhere');
+}
+
+console.log('\nrecapture: 7 pass, 0 fail');
