@@ -4,4 +4,4 @@ import {
   "moonbit-community/ucd" @unicode,
 }
 
-supported_targets = "+js+wasm-gc"
+supported_targets = "+js+wasm-gc+native"
