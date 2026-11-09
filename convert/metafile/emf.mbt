@@ -252,6 +252,8 @@ fn Gdi::play_emf(
       17 => self.state.map_mode = le32(record, 8).to_int()
       18 => self.state.bk_opaque = le32(record, 8).to_int() == 2
       19 => () // polygon fill mode
+      20 => self.state.rop2 = le32(record, 8).to_int()
+      70 => self.dw(record)
       22 => self.state.text_align = le32(record, 8).to_int()
       24 => self.state.text_color = colorref(le32(record, 8))
       25 => self.state.bk_color = colorref(le32(record, 8))

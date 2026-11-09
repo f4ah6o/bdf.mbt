@@ -30,6 +30,7 @@ import {
   "f4ah6o/bdf/convert/sxf",
   "f4ah6o/bdf/convert/tiff",
   "f4ah6o/bdf/convert/visio",
+  "f4ah6o/bdf/convert/xdw",
   "f4ah6o/bdf/convert/xlsx",
   "f4ah6o/bdf/font/db" @fontdb,
   "moonbitlang/core/encoding/utf8",

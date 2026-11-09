@@ -52,11 +52,16 @@ pub const T_HEADER : Int32 = 0x60
 
 pub fn lzh_decompress(Bytes, Int32, Limits) -> Bytes raise XdwError
 
+pub fn xdw_convert(Bytes, title? : String) -> XdwResult raise
+
+pub fn xdw_detect(Bytes) -> Bool
+
 pub fn xdw_i64_be_bytes(Int64) -> Bytes
 
 pub fn xdw_kind_name(Int64) -> String
 
 // Errors
+#derive(Show)
 pub suberror XdwError {
   XdwNotFile(String)
   XdwCorrupt(String)
@@ -72,6 +77,13 @@ pub(all) struct Limits {
   max_pages : Int32
 }
 pub fn Limits::default() -> Self
+
+pub(all) struct XdwResult {
+  bdf : Bytes
+  pages : Int32
+  summary : String
+  warnings : Array[String]
+}
 
 // Type aliases
 

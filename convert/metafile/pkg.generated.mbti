@@ -6,7 +6,9 @@ import {
 }
 
 // Values
-pub fn draw_into(@core.ObjectBuilder, @core.DocumentWriter, Bytes, Double, Double, Double, Double) -> Array[String] raise MetafileError
+pub fn dib_to_png(Bytes, Bytes?) -> Bytes?
+
+pub fn draw_into(@core.ObjectBuilder, @core.DocumentWriter, Bytes, Double, Double, Double, Double, pics? : Array[Bytes]) -> Array[String] raise MetafileError
 
 pub fn kind(Bytes) -> String
 

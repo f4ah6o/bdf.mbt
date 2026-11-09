@@ -303,6 +303,19 @@ fn run_psd(data : Bytes) -> Outcome raise AllError {
 }
 
 ///|
+fn run_xdw(data : Bytes) -> Outcome raise AllError {
+  let result = @xdw.xdw_convert(data) catch {
+    e => raise AllFailure(e.to_string())
+  }
+  {
+    bdf: result.bdf,
+    format: "xdw",
+    summary: result.summary,
+    warnings: result.warnings,
+  }
+}
+
+///|
 fn run_emf(data : Bytes) -> Outcome raise AllError {
   let result = @emf.convert(data) catch {
     @emf.EmfInvalid(message) => raise AllFailure(message)
@@ -515,6 +528,7 @@ fn reject_format(format : String) -> Bool {
   format != "tiff" &&
   format != "psd" &&
   format != "emf" &&
+  format != "xdw" &&
   format != "idml" &&
   format != "visio" &&
   format != "markdown" &&
@@ -640,6 +654,9 @@ fn run_by_name(
   if named(lower, [".psd", ".psb"]) && !strong_other {
     return run_psd(data)
   }
+  if named(lower, [".xdw", ".xbd"]) && !strong_other {
+    return run_xdw(data)
+  }
   if named(lower, [".emf", ".wmf"]) && !strong_other {
     return run_emf(data)
   }
@@ -728,6 +745,9 @@ pub fn convert(
   }
   if format == "emf" || (format == "" && @emf.detect(data)) {
     return run_emf(data)
+  }
+  if format == "xdw" || (format == "" && @xdw.xdw_detect(data)) {
+    return run_xdw(data)
   }
   if format == "hpgl" || (format == "" && @hpgl.detect(head)) {
     return run_hpgl(data, database)

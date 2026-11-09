@@ -81,6 +81,8 @@ priv struct GdiState {
   mut bk_opaque : Bool
   mut text_align : Int32
   mut map_mode : Int32
+  /// The binary raster operation of fills (R2_MASKPEN = 9 multiplies).
+  mut rop2 : Int32
   mut win_org : (Double, Double)
   mut win_ext : (Double, Double)
   mut vp_org : (Double, Double)
@@ -103,6 +105,15 @@ priv struct Gdi {
   warned : Map[String, Bool]
   fonts : Map[String, Int32]
   images : Map[String, Int32]
+  /// DocuWorks driver pictures (attributes 301…) for the DWb records.
+  dw_pics : Array[Bytes]
+  mut dw_pic : Int
+  /// The picture a DWc record draws: bmi + bits, a JPEG, and the DIB's
+  /// bottom-up orientation.
+  mut dw_dib : (Bytes, Bytes?)
+  mut dw_jpeg : Bytes?
+  /// A DW path accumulated by the DW02/DW-record point sequences.
+  dw_path : Array[(Double, Double)]
 }
 
 ///|
@@ -128,6 +139,7 @@ fn gdi_state() -> GdiState {
     bk_color: 0xffffffffU,
     bk_opaque: true,
     text_align: 0,
+    rop2: 13,
     map_mode: 1,
     win_org: (0.0, 0.0),
     win_ext: (1.0, 1.0),
@@ -817,7 +829,12 @@ pub fn draw_into(
   y : Double,
   w : Double,
   h : Double,
+  pics? : Array[Bytes],
 ) -> Array[String] raise MetafileError {
+  let pics : Array[Bytes] = match pics {
+    Some(v) => v
+    None => []
+  }
   let file_kind = kind(data)
   if file_kind == "" {
     raise MetafileInvalid("metafile: not an EMF or WMF file")
@@ -838,6 +855,12 @@ pub fn draw_into(
     warned: Map([]),
     fonts: Map([]),
     images: Map([]),
+    dw_pics: pics,
+    dw_pic: 0,
+    dw_dib: (Bytes::from_array(FixedArray::make(1, b'\x00')), None),
+
+    dw_jpeg: None,
+    dw_path: [],
   }
   object.save()
   object.clip_rect(
