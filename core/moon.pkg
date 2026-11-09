@@ -12,4 +12,4 @@ import {
   "moonbit-community/ucd/data" @ucd,
 }
 
-supported_targets = "+js+wasm-gc"
+supported_targets = "+js+wasm-gc+native"

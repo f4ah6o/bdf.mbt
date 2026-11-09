@@ -4,7 +4,7 @@ version = "0.1.0"
 
 preferred_target = "js"
 
-supported_targets = "+js+wasm-gc"
+supported_targets = "+js+wasm-gc+native"
 
 import {
   "gaato/deflate@0.1.0",
