@@ -518,6 +518,12 @@ fn dw_jpeg_size(d : Bytes) -> (Int, Int)? {
       continue
     }
     let len = (d[i + 2].to_int() << 8) | d[i + 3].to_int()
+    // the segment must be fully inside the file, and a SOF frame needs its
+    // first five bytes (precision, then height and width); without either,
+    // the file is truncated and the caller just does not learn a size
+    if len < 2 || i + 2 + len > d.length() {
+      return None
+    }
     if m >= 0xc0 && m <= 0xcf && m != 0xc4 && m != 0xc8 && m != 0xcc {
       let h = (d[i + 5].to_int() << 8) | d[i + 6].to_int()
       let w = (d[i + 7].to_int() << 8) | d[i + 8].to_int()
@@ -619,5 +625,27 @@ fn Gdi::dw_draw_picture(
   }
   if rop == 0x8800c6 {
     self.object.blend(0)
+  }
+}
+
+///|
+test "dw_jpeg_size does not read past a truncated SOF" {
+  // the announcement of a SOF frame at the very end of the file: the old
+  // code read the height/width bytes unguarded
+  let truncated = Bytes::from_array(
+    FixedArray::from_array([0xff, 0xd8, 0xff, 0xc0, 0x00, 0x0b, 0xaa, 0xbb].map((v) => v.to_byte())),
+  )
+  guard dw_jpeg_size(truncated) is None else {
+    abort("a size came out of a truncated frame")
+  }
+  // a healthy SOF0 still reports its size
+  let healthy = Bytes::from_array(
+    FixedArray::from_array(
+      [0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x00, 0x10, 0x00, 0x20, 0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01]
+      .map((v) => v.to_byte()),
+    ),
+  )
+  guard dw_jpeg_size(healthy) == Some((32, 16)) else {
+    abort("a healthy SOF0 did not report 32x16")
   }
 }
