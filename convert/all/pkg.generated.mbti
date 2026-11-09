@@ -6,7 +6,7 @@ import {
 }
 
 // Values
-pub fn convert(Bytes, format? : String, name? : String, database? : @db.Database) -> Outcome raise AllError
+pub fn convert(Bytes, format? : String, name? : String, database? : @db.Database, params? : Map[String, String]) -> Outcome raise AllError
 
 // Errors
 pub suberror AllError {

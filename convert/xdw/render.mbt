@@ -380,6 +380,12 @@ pub fn xdw_convert(
   let warnings : Array[String] = []
   let pages : Array[Json] = []
   let index_runs : Array[@core.IndexRun] = []
+  // Whether any page drew text at all, and whether a page's text could not be
+  // read back. An index that is present but empty must still be written: the
+  // reader rebuilds a missing index from the object stream, which would bring
+  // back exactly the text this index leaves out.
+  let mut saw_text = false
+  let mut index_failed = false
   for i in 0..<doc.pages.length() {
     let page = doc.pages[i]
     let width = page.w.to_double() * xdw_px2pt
@@ -396,16 +402,22 @@ pub fn xdw_convert(
       error => raise XdwCorrupt("a page could not be stored: " + error.to_string())
     }
     // The page's own command stream carries every string it draws, body text
-    // and annotation text alike, so the index is read back from it.
-    let runs = xdw_page_text_runs(encoded) catch {
+    // and annotation text alike. The index is built from the renderer's runs so
+    // that its ordinals and separators are the ones the viewer draws with; the
+    // command stream only says which of those runs a later opaque fill hides.
+    let (runs, drew_text) = xdw_page_index_runs(encoded, i, 0, doc.include_hidden) catch {
       error => {
-        warnings.push("page \{i + 1}: the text index was not readable: " + error.to_string())
-        []
+        warnings.push(
+          "page \{i + 1}: the text index was not readable: " + error.to_string(),
+        )
+        index_failed = true
+        ([], false)
       }
     }
-    index_runs.append(
-      xdw_index_runs(runs, i, 0, doc.include_hidden),
-    )
+    if drew_text {
+      saw_text = true
+    }
+    index_runs.append(runs)
     pages.push(
       Json::object({
         "w": Json::number(width, repr=width.to_string()),
@@ -429,7 +441,7 @@ pub fn xdw_convert(
   if final_title != "" {
     view["title"] = Json::string(final_title)
   }
-  if !index_runs.is_empty() {
+  if xdw_index_part_needed(saw_text, index_failed) {
     let index_hash = writer.add_part("idx", @core.encode_text_index(index_runs)) catch {
       error => raise XdwCorrupt("the text index could not be stored: " + error.to_string())
     }

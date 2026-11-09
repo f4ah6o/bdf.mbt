@@ -33,6 +33,7 @@ import {
   "f4ah6o/bdf/convert/xdw",
   "f4ah6o/bdf/convert/xlsx",
   "f4ah6o/bdf/font/db" @fontdb,
+  "moonbitlang/core/encoding/base64",
   "moonbitlang/core/encoding/utf8",
 }
 

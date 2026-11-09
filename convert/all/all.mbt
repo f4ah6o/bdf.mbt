@@ -303,8 +303,12 @@ fn run_psd(data : Bytes) -> Outcome raise AllError {
 }
 
 ///|
-fn run_xdw(data : Bytes) -> Outcome raise AllError {
-  let result = @xdw.xdw_convert(data) catch {
+fn run_xdw(data : Bytes, params : Map[String, String]) -> Outcome raise AllError {
+  let options = @xdw.parse_params(params) catch {
+    @xdw.XdwInvalidParam(message) => raise AllFailure(message)
+    error => raise AllFailure(error.to_string())
+  }
+  let result = @xdw.xdw_convert(data, include_hidden=options.include_hidden) catch {
     e => raise AllFailure(e.to_string())
   }
   {
@@ -558,6 +562,7 @@ fn run_by_name(
   database : @fontdb.Database?,
   head : Bytes,
   image_message : String,
+  params : Map[String, String],
 ) -> Outcome raise AllError {
   let lower = name.to_lower()
   // Worker がクライアント側の素性検査に使う拡張子の一覧。これに当たる名前
@@ -655,7 +660,7 @@ fn run_by_name(
     return run_psd(data)
   }
   if named(lower, [".xdw", ".xbd"]) && !strong_other {
-    return run_xdw(data)
+    return run_xdw(data, params)
   }
   if named(lower, [".emf", ".wmf"]) && !strong_other {
     return run_emf(data)
@@ -682,9 +687,11 @@ pub fn convert(
   format? : String,
   name? : String,
   database? : @fontdb.Database,
+  params? : Map[String, String],
 ) -> Outcome raise AllError {
   let format = format.unwrap_or("")
   let name = name.unwrap_or("")
+  let params = params.unwrap_or(Map([]))
   if reject_format(format) {
     raise AllFailure("unknown format \"" + format + "\"")
   }
@@ -747,7 +754,7 @@ pub fn convert(
     return run_emf(data)
   }
   if format == "xdw" || (format == "" && @xdw.xdw_detect(data)) {
-    return run_xdw(data)
+    return run_xdw(data, params)
   }
   if format == "hpgl" || (format == "" && @hpgl.detect(head)) {
     return run_hpgl(data, database)
@@ -781,7 +788,7 @@ pub fn convert(
   let result = @image.convert(data, name~) catch {
     @image.ImageFailure(message) => {
       if format == "" && image_not_supported(message) {
-        return run_by_name(data, name, database, head, message)
+        return run_by_name(data, name, database, head, message, params)
       }
       raise AllFailure(message)
     }

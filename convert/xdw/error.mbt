@@ -10,6 +10,8 @@ pub suberror XdwError {
   /// The document is protected (password or certificate); its entries and
   /// properties are encrypted.
   XdwProtected
+  /// A conversion parameter has a value the converter cannot use.
+  XdwInvalidParam(String)
 } derive(Show)
 
 ///|
@@ -20,5 +22,6 @@ fn XdwError::to_string(self : XdwError) -> String {
     XdwTooLarge(s) => "too large or damaged: " + s
     XdwProtected =>
       "protected: the document is encrypted (password or certificate); remove the protection in DocuWorks first"
+    XdwInvalidParam(s) => s
   }
 }

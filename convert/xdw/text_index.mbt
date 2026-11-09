@@ -1,28 +1,34 @@
 ///|
-/// The text index of a DocuWorks page.
+/// Which text of a DocuWorks page a later opaque fill hides.
 ///
 /// DocuWorks draws a page as one metafile, so the page's object stream already
 /// holds every string in drawing order: body text and annotation text alike.
-/// Reading the stream back is enough to index the text, and it is also what
-/// makes covered text detectable — a run is hidden when a later opaque fill
-/// covers its box completely.
+/// The index itself is built from the renderer's own text runs, so its ordinals
+/// and separators are exactly the ones the viewer draws with. This module only
+/// answers which of those runs are hidden.
+///
+/// The walk is deliberately conservative: a run stays visible unless a fill
+/// provably covers it. Hiding text that is still visible loses a search hit,
+/// which is worse than indexing text that a reader cannot see.
 
 ///|
 /// A text run found in a page's command stream: the box it occupies in page
 /// points, and whether a later opaque fill covers it completely.
 priv struct XdwTextRun {
-  text : String
+  ordinal : Int32
   x : Double
   y : Double
   w : Double
   h : Double
   /// Position in the command stream, so only later fills can cover the run.
   order : Int
+  /// Whether the box is trustworthy enough to test for coverage at all.
+  provable : Bool
   mut covered : Bool
 }
 
 ///|
-/// An opaque fill that may cover text drawn before it.
+/// A fill that may hide text drawn before it.
 priv struct XdwCover {
   order : Int
   x : Double
@@ -86,85 +92,277 @@ fn XdwMatrix::box(
 }
 
 ///|
+/// Whether `self` maps every axis-aligned rectangle to an axis-aligned
+/// rectangle, so that `box` is the shape itself and not a larger hull.
+///
+/// A rotation by a multiple of 90° qualifies: it swaps the extents but keeps
+/// the edges axis-aligned. Any other rotation or skew does not, and a fill
+/// drawn under one cannot prove coverage from its box alone.
+fn XdwMatrix::axis_aligned(self : XdwMatrix) -> Bool {
+  let eps = 1.0e-9
+  (self.b.abs() <= eps && self.c.abs() <= eps) ||
+  (self.a.abs() <= eps && self.d.abs() <= eps)
+}
+
+///|
 /// Whether `inner` lies completely inside `outer`. A partial overlap leaves
 /// the text visible, which is what the upstream reader does too.
 fn xdw_box_contains(
   outer : (Double, Double, Double, Double),
   inner : (Double, Double, Double, Double),
 ) -> Bool {
+  let eps = 1.0e-9
   let (ox, oy, ow, oh) = outer
   let (ix, iy, iw, ih) = inner
-  ix >= ox && iy >= oy && ix + iw <= ox + ow && iy + ih <= oy + oh
+  ix >= ox - eps &&
+  iy >= oy - eps &&
+  ix + iw <= ox + ow + eps &&
+  iy + ih <= oy + oh + eps
 }
 
 ///|
-/// The text runs of a page's object stream, in drawing order, with the runs a
-/// later opaque fill covers completely marked.
-fn xdw_page_text_runs(encoded : Bytes) -> Array[XdwTextRun] raise {
+/// The drawing state that decides whether a fill can hide text.
+priv struct XdwState {
+  matrix : XdwMatrix
+  size : Double
+  /// Global alpha. `Alpha` sets it, as the PDF export does.
+  alpha : Double
+  /// The fill colour's own alpha, 0…1.
+  fill_alpha : Double
+  /// A `FillPaint` is active, so the fill's opacity is not provable.
+  paint : Bool
+  /// The clip in page space; `None` means the page is unclipped.
+  clip : (Double, Double, Double, Double)?
+  /// A `ClipPath` is active, so the clip's exact shape is not provable.
+  clip_unknown : Bool
+}
+
+///|
+fn xdw_state_initial() -> XdwState {
+  {
+    matrix: xdw_matrix_identity(),
+    size: 10.0,
+    alpha: 1.0,
+    fill_alpha: 1.0,
+    paint: false,
+    clip: None,
+    clip_unknown: false,
+  }
+}
+
+///|
+/// The page-space box a fill of `(x, y, w, h)` in user space covers, or `None`
+/// when that cannot be proven.
+///
+/// The fill is clipped, so the box is intersected with the active clip. A
+/// `ClipPath` makes the clip's shape unknown, and a rotated or skewed fill has
+/// a box larger than the shape, so neither can prove coverage.
+fn XdwState::cover_box(
+  self : XdwState,
+  x : Double,
+  y : Double,
+  w : Double,
+  h : Double,
+) -> (Double, Double, Double, Double)? {
+  if self.clip_unknown || !self.matrix.axis_aligned() {
+    return None
+  }
+  let (bx, by, bw, bh) = self.matrix.box(x, y, w, h)
+  match self.clip {
+    None => Some((bx, by, bw, bh))
+    Some((cx, cy, cw, ch)) => {
+      let left = bx.max(cx)
+      let top = by.max(cy)
+      let right = (bx + bw).min(cx + cw)
+      let bottom = (by + bh).min(cy + ch)
+      if right <= left || bottom <= top {
+        None
+      } else {
+        Some((left, top, right - left, bottom - top))
+      }
+    }
+  }
+}
+
+///|
+/// The rectangle a path draws, when the path is exactly one axis-aligned
+/// rectangle.
+///
+/// A curve, a rotated rectangle, or a path with several subpaths returns
+/// `None`: its box would not prove that the fill hides what is under it. Real
+/// EMF and WMF rectangles reach the object stream as a single rect verb, so
+/// this is the shape that matters in practice.
+fn xdw_rect_path(
+  paths : Array[@core.PathEntry],
+  index : Int32,
+) -> (Double, Double, Double, Double)? {
+  if index < 0 || index >= paths.length() {
+    return None
+  }
+  let path = match paths[index] {
+    @core.Inline(path) => path
+    @core.External(_, _) => return None
+  }
+  if path.verbs.length() != 1 || path.verbs[0].to_int() != 5 {
+    return None
+  }
+  let coordinates = path.coordinates
+  if coordinates.length() < 4 {
+    return None
+  }
+  if coordinates[2] <= 0.0 || coordinates[3] <= 0.0 {
+    return None
+  }
+  Some((coordinates[0], coordinates[1], coordinates[2], coordinates[3]))
+}
+
+///|
+/// A DocuWorks page object is self-contained: it never references another
+/// object, so text extraction never has to resolve one.
+fn xdw_no_external_object(_ : String) -> @core.ObjectResources? raise {
+  None
+}
+
+///|
+/// The ordinals of the text runs a later opaque fill hides completely.
+///
+/// Images are never covers: a decoded image can carry transparent pixels, so
+/// its box does not prove opacity. A `FillPaint` is never a cover, because a
+/// gradient or a pattern can be translucent. A fill under an unknown clip is
+/// never a cover, because the clip may cut it away from the run.
+fn xdw_covered_ordinals(
+  encoded : Bytes,
+  resources : @core.ObjectResources,
+) -> Array[Int32] raise {
   let commands = @render.decode_commands(encoded)
   let runs : Array[XdwTextRun] = []
   let covers : Array[XdwCover] = []
-  let stack : Array[(XdwMatrix, Double, Double, Double)] = []
-  let mut matrix = xdw_matrix_identity()
-  let mut size = 12.0
-  let mut alpha = 1.0
-  let mut fill_alpha = 1.0
+  let stack : Array[XdwState] = []
+  let mut state = xdw_state_initial()
+  let mut ordinal = 0
   for order, command in commands {
     match command {
-      Save => stack.push((matrix, size, alpha, fill_alpha))
+      Save => stack.push(state)
       Restore =>
         match stack.pop() {
-          Some((m, s, a, fa)) => {
-            matrix = m
-            size = s
-            alpha = a
-            fill_alpha = fa
-          }
+          Some(previous) => state = previous
           None => ()
         }
       Transform(a, b, c, d, e, f) =>
-        matrix = matrix.compose({ a, b, c, d, e, f })
+        state = { ..state, matrix: state.matrix.compose({ a, b, c, d, e, f }) }
       Translate(x, y) =>
-        matrix = matrix.compose({ a: 1.0, b: 0.0, c: 0.0, d: 1.0, e: x, f: y })
+        state = {
+          ..state,
+          matrix: state.matrix.compose({
+            a: 1.0,
+            b: 0.0,
+            c: 0.0,
+            d: 1.0,
+            e: x,
+            f: y,
+          }),
+        }
       Scale(x, y) =>
-        matrix = matrix.compose({ a: x, b: 0.0, c: 0.0, d: y, e: 0.0, f: 0.0 })
-      Font(_, s) => size = s
-      Alpha(a) => alpha = a
+        state = {
+          ..state,
+          matrix: state.matrix.compose({
+            a: x,
+            b: 0.0,
+            c: 0.0,
+            d: y,
+            e: 0.0,
+            f: 0.0,
+          }),
+        }
+      Font(_, size) => state = { ..state, size, }
+      Alpha(value) => state = { ..state, alpha: value, }
       // The colour is 0xRRGGBBAA, so the low byte is the fill's own alpha.
-      FillColor(c) => fill_alpha = (c & 0xff).to_double() / 255.0
+      FillColor(colour) =>
+        state = {
+          ..state,
+          fill_alpha: (colour & 0xff).to_double() / 255.0,
+          paint: false,
+        }
+      FillPaint(_) => state = { ..state, paint: true, }
+      ClipRect(x, y, w, h) => {
+        let (bx, by, bw, bh) = state.matrix.box(x, y, w, h)
+        let clipped = match state.clip {
+          None => Some((bx, by, bw, bh))
+          Some((cx, cy, cw, ch)) => {
+            let left = bx.max(cx)
+            let top = by.max(cy)
+            let right = (bx + bw).min(cx + cw)
+            let bottom = (by + bh).min(cy + ch)
+            if right <= left || bottom <= top {
+              Some((left, top, 0.0, 0.0))
+            } else {
+              Some((left, top, right - left, bottom - top))
+            }
+          }
+        }
+        state = { ..state, clip: clipped, }
+      }
+      ClipPath(_, _) => state = { ..state, clip_unknown: true, }
       FillRect(x, y, w, h) =>
-        if alpha * fill_alpha >= 0.999 {
-          let (bx, by, bw, bh) = matrix.box(x, y, w, h)
-          covers.push({ order, x: bx, y: by, w: bw, h: bh })
+        if state.alpha * state.fill_alpha >= 0.999 && !state.paint {
+          match state.cover_box(x, y, w, h) {
+            Some((bx, by, bw, bh)) =>
+              covers.push({ order, x: bx, y: by, w: bw, h: bh })
+            None => ()
+          }
         }
+      // `ClearRect` erases what is under it, so the text is gone either way.
       ClearRect(x, y, w, h) =>
-        if alpha >= 0.999 {
-          let (bx, by, bw, bh) = matrix.box(x, y, w, h)
-          covers.push({ order, x: bx, y: by, w: bw, h: bh })
+        match state.cover_box(x, y, w, h) {
+          Some((bx, by, bw, bh)) =>
+            covers.push({ order, x: bx, y: by, w: bw, h: bh })
+          None => ()
         }
-      Image(_, x, y, w, h) =>
-        if alpha >= 0.999 {
-          let (bx, by, bw, bh) = matrix.box(x, y, w, h)
-          covers.push({ order, x: bx, y: by, w: bw, h: bh })
+      FillPath(index, _) =>
+        if state.alpha * state.fill_alpha >= 0.999 && !state.paint {
+          match xdw_rect_path(resources.paths, index) {
+            Some((x, y, w, h)) =>
+              match state.cover_box(x, y, w, h) {
+                Some((bx, by, bw, bh)) =>
+                  covers.push({ order, x: bx, y: by, w: bw, h: bh })
+                None => ()
+              }
+            None => ()
+          }
         }
-      FillText(text, x, y, advance) => {
+      FillText(_, x, y, advance) => {
         // `y` is the baseline; the run reaches 0.8 em above it, the same
-        // offset the metafile writer uses for top-aligned text.
-        let (bx, by, bw, bh) = matrix.box(x, y - size * 0.8, advance, size)
+        // offset the metafile writer uses for top-aligned text. A run with no
+        // advance or no size has no trustworthy box, so it is never covered.
+        let (bx, by, bw, bh) = state.matrix.box(
+          x,
+          y - state.size * 0.8,
+          advance,
+          state.size,
+        )
         runs.push({
-          text,
+          ordinal,
           x: bx,
           y: by,
           w: bw,
           h: bh,
           order,
+          provable: advance > 0.0 && state.size > 0.0,
           covered: false,
         })
+        ordinal += 1
       }
+      // The renderer indexes stroke text too, so it takes an ordinal, but a
+      // stroke does not fill its box, so it is never treated as covered.
+      StrokeText(_, _, _, _) => ordinal += 1
       _ => ()
     }
   }
+  let covered : Array[Int32] = []
   for run in runs {
+    if !run.provable {
+      continue
+    }
     for cover in covers {
       if cover.order > run.order &&
         xdw_box_contains((cover.x, cover.y, cover.w, cover.h), (run.x, run.y, run.w, run.h)) {
@@ -172,55 +370,55 @@ fn xdw_page_text_runs(encoded : Bytes) -> Array[XdwTextRun] raise {
         break
       }
     }
+    if run.covered {
+      covered.push(run.ordinal)
+    }
   }
-  runs
+  covered
 }
 
 ///|
-/// The separator to put before `run`, given the run drawn before it: a new
-/// line when the baseline moved, a space when the runs are apart on the same
-/// line, nothing when they continue each other.
-fn xdw_separator(prev : XdwTextRun, run : XdwTextRun) -> Int32 {
-  let size = if prev.h > 0.0 { prev.h } else { 10.0 }
-  if (run.y - prev.y).abs() > size * 0.5 {
-    2
-  } else if run.x - (prev.x + prev.w) > size * 0.2 {
-    1
-  } else {
-    0
-  }
-}
-
-///|
-/// Turn a page's runs into index runs. Covered runs are dropped unless
-/// `include_hidden` keeps them.
-fn xdw_index_runs(
-  runs : Array[XdwTextRun],
+/// The index runs of one page object, and whether the page drew any text.
+///
+/// The runs come from the renderer, so their ordinals and separators are the
+/// ones the viewer draws with — a run keeps its ordinal even when an earlier
+/// run is left out, because the viewer locates a hit by that ordinal. Only the
+/// runs a later opaque fill hides are dropped, and only when the caller did not
+/// ask for them.
+fn xdw_page_index_runs(
+  encoded : Bytes,
   page : Int,
   layer : Int,
   include_hidden : Bool,
-) -> Array[@core.IndexRun] {
+) -> (Array[@core.IndexRun], Bool) raise {
+  let resources = @core.decode_object_resources(encoded)
+  let covered = xdw_covered_ordinals(encoded, resources)
+  let content = @render.extract_text(resources, xdw_no_external_object)
   let out : Array[@core.IndexRun] = []
-  let mut prev : XdwTextRun? = None
-  for run in runs {
-    if run.text == "" {
+  for run_index, run in content.runs {
+    if !include_hidden && covered.contains(run.ordinal) {
       continue
-    }
-    if run.covered && !include_hidden {
-      continue
-    }
-    let separator = match prev {
-      Some(p) => xdw_separator(p, run)
-      None => 2
     }
     out.push({
       a: page,
       b: layer,
-      ordinal: out.length(),
-      separator,
+      ordinal: run.ordinal,
+      separator: if run_index == 0 { 2 } else { run.separator },
       text: run.text,
     })
-    prev = Some(run)
   }
-  out
+  (out, content.runs.length() > 0)
+}
+
+///|
+/// Whether the document needs an `idx` part.
+///
+/// An index that is present but empty is not the same as a missing one: the
+/// reader rebuilds a missing index from the object stream, which would bring
+/// back exactly the text the index leaves out. So the part is written whenever
+/// a page drew text, even when every run was filtered away. A page whose text
+/// could not be read back is the one case that falls back, because a partial
+/// index would silently drop that page's text.
+fn xdw_index_part_needed(saw_text : Bool, index_failed : Bool) -> Bool {
+  saw_text && !index_failed
 }
