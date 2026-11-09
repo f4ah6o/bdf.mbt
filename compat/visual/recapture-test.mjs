@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { PNG } from 'pngjs';
@@ -29,22 +29,42 @@ const changedPixels = (a, b) => {
 };
 
 // A fake `vlmkit diff html`: each call rewrites the report and both screenshots for every viewport,
-// so a test can decide what the first capture and the retry each produce.
+// plus the heatmap and triptych it emits for a viewport that differs, so a test can decide what the
+// first capture and the retry each produce.
 const harness = ({ baseline, variant }) => {
   const target = mkdtempSync(path.join(dir, 'target-'));
-  const reportPath = path.join(target, 'diff-report.json');
   const baselinePng = viewport => path.join(target, `baseline-${viewport}.png`);
   const variantPng = viewport => path.join(target, `variant-${viewport}.png`);
+  const heatmapPng = viewport => path.join(target, `variant-${viewport}_heatmap.png`);
+  const triptychPng = viewport => path.join(target, `variant-${viewport}-triptych.png`);
   let calls = 0;
   const run = async () => {
     const step = calls++;
-    writeFileSync(reportPath, JSON.stringify({ results: viewports.map(viewport => ({ viewport, pass: step })) }));
+    const results = [];
+    const perViewport = [];
     for (const viewport of viewports) {
-      writePng(baselinePng(viewport), 8, 8, baseline(step, viewport));
-      writePng(variantPng(viewport), 8, 8, variant(step, viewport));
+      const baselinePixel = baseline(step, viewport);
+      const variantPixel = variant(step, viewport);
+      writePng(path.join(target, `baseline-${viewport}.png`), 8, 8, baselinePixel);
+      writePng(path.join(target, `variant-${viewport}.png`), 8, 8, variantPixel);
+      let differs = false;
+      for (let y = 0; y < 8 && !differs; y++) for (let x = 0; x < 8 && !differs; x++) {
+        const a = baselinePixel(x, y), b = variantPixel(x, y);
+        if (a[0] !== b[0] || a[1] !== b[1] || a[2] !== b[2] || a[3] !== b[3]) differs = true;
+      }
+      if (differs) {
+        writePng(path.join(target, `variant-${viewport}_heatmap.png`), 8, 8, () => ink);
+        writePng(path.join(target, `variant-${viewport}-triptych.png`), 8, 8, () => ink);
+        perViewport.push({ viewport, regions: [{ top: 0, left: 0, width: 8, height: 8, area: 64 }] });
+      }
+      results.push({ viewport, pass: step });
     }
+    writeFileSync(path.join(target, 'diff-report.json'), JSON.stringify({
+      results,
+      heatmapRegions: [{ variantFile: 'variant.html', perViewport }],
+    }));
   };
-  return { capture: ['diff', 'html'], reportPath, baselinePng, variantPng, run, label: 'test', log: () => {}, calls: () => calls };
+  return { capture: ['diff', 'html', '--output-dir', target], reportPath: path.join(target, 'diff-report.json'), target, baselinePng, variantPng, heatmapPng, triptychPng, run, label: 'test', log: () => {}, calls: () => calls };
 };
 
 const worstRatio = h => {
@@ -151,4 +171,31 @@ console.log('ok 2 - a mostly white page with one painted pixel is not blank');
   console.log('ok 7 - a retry replaces only the blank viewport and keeps a real difference elsewhere');
 }
 
-console.log('\nrecapture: 7 pass, 0 fail');
+// 8. The diagnostics have to follow the evidence. The first pass sees a real 3.125% difference at
+//    wide and a blank baseline at mobile, so it writes a heatmap, a triptych and a heatmap region
+//    for both. The retry paints every viewport and differs nowhere, so it writes none. The adopted
+//    wide evidence is the first capture, so its diagnostics must survive; the adopted mobile
+//    evidence is the retry, so the first capture's diagnostics must not.
+{
+  const painted = (x, y) => (x === 0 && y === 0 ? ink : white);
+  const wideVariant = (x, y) => (x <= 2 && y === 0 ? ink : white);
+  const h = harness({
+    baseline: (step, viewport) => (step === 0 && viewport === 'mobile' ? () => white : painted),
+    variant: (step, viewport) => (step === 0 && viewport === 'wide' ? wideVariant : painted),
+  });
+  const report = await captureWithRecapture(h);
+  const regions = report.heatmapRegions[0].perViewport.map(item => item.viewport);
+  assert.equal(h.calls(), 2, 'the blank mobile baseline was recaptured');
+  assert.equal(ratioFor(h, 'wide'), 2 / 64, 'the adopted wide evidence is the first capture');
+  assert.ok(existsSync(h.heatmapPng('wide')), 'the wide heatmap belongs to the adopted evidence');
+  assert.ok(existsSync(h.triptychPng('wide')), 'the wide triptych belongs to the adopted evidence');
+  assert.deepEqual(regions, ['wide'], 'the heatmap regions describe the adopted evidence');
+  assert.equal(existsSync(h.heatmapPng('mobile')), false, 'the blank capture\'s mobile heatmap is gone');
+  assert.equal(existsSync(h.triptychPng('mobile')), false, 'the blank capture\'s mobile triptych is gone');
+  assert.equal(ratioFor(h, 'mobile'), 0, 'the adopted mobile evidence is the retry');
+  assert.equal(report.results.find(result => result.viewport === 'wide').pass, 0, 'the report keeps the first wide result');
+  assert.equal(report.results.find(result => result.viewport === 'mobile').pass, 1, 'the report takes the recovered mobile result');
+  console.log('ok 8 - heatmap, triptych and heatmap regions follow the adopted capture');
+}
+
+console.log('\nrecapture: 8 pass, 0 fail');
