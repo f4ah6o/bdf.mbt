@@ -73,15 +73,28 @@ must keep passing on every target.
 | PR | Branch | State | What it changes |
 |---|---|---|---|
 | #6 | `vibe/xdw-conversion-accuracy` | open, mergeable; parity, test and demo green, build and compare running | `convert/xdw` accuracy (path records, rotation, annotation windows, scanned strips) and `convert/metafile` EMF path records |
+| #8 | `feat/20261109-native-target` | open, not merged | the M1 native flip, the CI matrix and the native conversion gate |
 
 PR #6 touches `convert/metafile`, which `convert/docx`, `convert/pptx` and
 `convert/emf` import for embedded pictures. Re-measure the parity baseline
 after it lands: the M3 numbers in `docs/parity.md` predate it.
 
 PR #6 also adds `import { "f4ah6o/bdf/render" } for "wbtest"` to
-`convert/metafile/moon.pkg` and `convert/xdw/moon.pkg`. When the native flip
-lands on top of it, keep both the test import and the `native` declaration in
-those two files.
+`convert/metafile/moon.pkg` and `convert/xdw/moon.pkg`. PR #8 changes the
+`supported_targets` line in those same two files. The merged result must keep
+both:
+
+```text
+import {
+  "f4ah6o/bdf/render",
+} for "wbtest"
+
+supported_targets = "+js+wasm-gc+native"
+```
+
+That combination was verified on all three targets: 6/6 for
+`convert/metafile` and `convert/xdw`. PR #8 does not carry #6's changes, so
+whichever lands second resolves the two files by hand.
 
 The remaining `convert/xdw` gaps are tracked separately from the upstream
 milestones, in `20261109-xdw-remaining-gaps`.
@@ -101,7 +114,7 @@ wasm-gc exports; native has no consumer for it, so it stays `+js+wasm-gc`.
 
 Browser-only packages stay `js`-only by design: `browser`, `print/ipp_js`,
 `converter_worker`, `render_worker`, `native_converter_worker` and
-`compat/*`.
+`compat/*`, except `compat/size/*`, which is `wasm-gc`-only.
 
 ## Milestones
 
@@ -113,18 +126,45 @@ that cap. The recon (2026-11-09) flipped `moon.mod` and 73 `moon.pkg` files to
 
 | Gate | Result |
 |---|---|
-| `moon check --target native` | 0 errors, 295 tasks |
+| `moon check --target native` | 0 errors |
 | `moon test --target native` | 2730 / 2730 pass |
-| `moon build --target native` | 0 errors, 145 tasks |
+| `moon build --target native` | 0 errors |
 
-So M1 is a declaration flip, not a code port. The remaining work is:
+So M1 is a declaration flip, not a code port. It landed in PR #8 as six
+commits ordered by the dependency graph:
 
-1. Land the flip in review-sized slices: `crypto`/`core`/`encoding`/`font`,
-   then `convert`/`export`, then `print`/`form`.
-2. Add `native` to the CI matrix.
-3. Add the native conversion gate: a fixture converts to BDF through a native
-   binary. Compilation alone does not prove the converters run.
-4. Locate the 3 `js`-only tests that the 16-test gap does not explain.
+| Commit | Packages |
+|---|---|
+| 1 | `core`, `crypto` |
+| 2 | `encoding/parquet`, `encoding/zip`, `font/{cff,otlayout,woff2,sfnt,db}` |
+| 3 | `render`, `viewer`, `form/*`, `convert/*`, `export/*` |
+| 4 | `print`, `print/{dnssd,ipp,raster,server}` |
+| 5 | CI matrix and the empty-run guard |
+| 6 | the native conversion gate |
+
+The graph forces the grouping. `export/search` needs `render`,
+`convert/textform` needs `form/data`, and `print/server` needs `convert/pdf`,
+so a slice cannot be verified until its dependencies are native too.
+
+Final state, measured on the branch:
+
+| Target | Tests |
+|---|---|
+| `native` | 2733 / 2733 |
+| `js` | 2749 / 2749 |
+| `wasm-gc` | 2733 / 2733 |
+
+The 16-test gap between `js` and `native` is `browser` (13) and
+`print/ipp_js` (3), both `js`-only by design. Nothing is unexplained.
+
+The conversion gate lives in `convert/all/fixture_file_wbtest.mbt`: three
+tests read `compat/pdf/fixtures/*.pdf` and `compat/html/fixtures/article.html`
+through `moonbitlang/x/fs` and run them through `convert`. A missing fixture
+fails the test instead of skipping it. `moon test` runs the binary from the
+module root, so the paths are relative to it.
+
+`moon test` exits 0 when it runs no tests, so the CI job captures the output,
+requires the summary line, and fails below 2700 tests or on any failure.
 
 ### M2 — missing packages
 
@@ -172,37 +212,38 @@ One issue is one branch and one worktree. Up to two run at once, because
 
 ## Issue index
 
-| Milestone | Issue | Upstream lines |
-|---|---|---|
-| M1 | `20261109-native-recon` | — |
-| M1 | `20261109-native-crypto-core-encoding-font` | — |
-| M1 | `20261109-native-convert-export` | — |
-| M1 | `20261109-native-print-form-ci` | — |
-| M2 A | `20261109-vector-pdfbdf` | 4,801 + 750 |
-| M2 A | `20261109-vector-psbdf` | 2,083 |
-| M2 B | `20261109-image-barcode-rowenc` | 2,286 |
-| M2 B | `20261109-image-svg-formula` | 1,440 |
-| M2 B | `20261109-text-markdownbdf` | 1,542 |
-| M2 C | `20261109-thumbnail-segment` | 537 |
-| M2 C | `20261109-sign` | 736 |
-| M2 C | `20261109-encoding-htmlro` | 5,278 |
-| M2 C | `20261109-conformance-fixture` | 1,073 |
-| M3 | `20261109-parity-fontset-metrics` | — |
-| M3 | `20261109-parity-mark-emission` | — |
-| M3 | `20261109-parity-chart-renderer` | — |
-| M3 | `20261109-parity-pdf-structure` | — |
-| M3 | `20261109-parity-xlsx-print-view` | — |
-| M3 | `20261109-parity-markdown-reader` | — |
-| M3 | `20261109-parity-remaining` | — |
-| XDW | `20261109-xdw-remaining-gaps` | — |
+| Milestone | Issue | Upstream lines | Status |
+|---|---|---|---|
+| M1 | `20261109-native-recon` | — | reference only, not merged |
+| M1 | `20261109-native-crypto-core-encoding-font` | — | landed in #8 |
+| M1 | `20261109-native-convert-export` | — | landed in #8 |
+| M1 | `20261109-native-print-form-ci` | — | landed in #8 |
+| M2 A | `20261109-vector-pdfbdf` | 4,801 + 750 | open |
+| M2 A | `20261109-vector-psbdf` | 2,083 | open |
+| M2 B | `20261109-image-barcode-rowenc` | 2,286 | open |
+| M2 B | `20261109-image-svg-formula` | 1,440 | open |
+| M2 B | `20261109-text-markdownbdf` | 1,542 | open |
+| M2 C | `20261109-thumbnail-segment` | 537 | open |
+| M2 C | `20261109-sign` | 736 | open |
+| M2 C | `20261109-encoding-htmlro` | 5,278 | open |
+| M2 C | `20261109-conformance-fixture` | 1,073 | open |
+| M3 | `20261109-parity-fontset-metrics` | — | open |
+| M3 | `20261109-parity-mark-emission` | — | open |
+| M3 | `20261109-parity-chart-renderer` | — | open |
+| M3 | `20261109-parity-pdf-structure` | — | open |
+| M3 | `20261109-parity-xlsx-print-view` | — | open |
+| M3 | `20261109-parity-markdown-reader` | — | open |
+| M3 | `20261109-parity-remaining` | — | open |
+| XDW | `20261109-xdw-remaining-gaps` | — | open |
 
 ## Risks
 
-- **Native is cheaper than expected, but the gate is still weak.**
+- **Native is a declaration flip, and the gate now proves it runs.**
   `moon check --target native` passes by skipping packages that do not declare
-  `native`. The recon flipped every declaration and found no failures, so the
-  remaining risk is not compilation but whether the converters actually run on
-  native. The conversion gate is what proves it.
+  `native`, so it was never evidence on its own. PR #8 flipped every
+  declaration and added a conversion gate that reads real fixtures from disk.
+  The remaining risk is coverage, not compilation: three fixtures run on
+  native, and the rest of the checked-in corpus still only runs on `js`.
 - **`encoding/htmlro` is the largest single gap** at 5,278 lines and depends
   on the reader-mode block model in `convert/reader`. It may need to split.
 - **Parity is a moving target.** The harness compares against
