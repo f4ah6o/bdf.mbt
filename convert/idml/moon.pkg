@@ -12,4 +12,4 @@ import {
   "Milky2018/xml",
 }
 
-supported_targets = "+js+wasm-gc"
+supported_targets = "+js+wasm-gc+native"

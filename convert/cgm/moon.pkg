@@ -9,4 +9,4 @@ import {
   "moonbitlang/core/string" @string,
 }
 
-supported_targets = "+js+wasm-gc"
+supported_targets = "+js+wasm-gc+native"
