@@ -26,6 +26,13 @@ The run writes `_scratch/parity/report.json`. `--strict` exits 1 on a
 difference; the default exits 0 so the report can be generated while gaps
 remain. See `compat/parity/README.md` for selectors and the canonical form.
 
+## Baseline (2026-11-09)
+
+52 cases: **12 pass, 40 diff, 0 one-sided error, 0 both-error**, with
+57,953 differences in total. The pass set is unchanged from the 2026-11-05
+baseline; the difference count fell from 63,745 after the object builder
+stopped repeating drawing state (see below).
+
 ## Baseline (2026-11-05)
 
 52 cases: **12 pass, 40 diff, 0 one-sided error, 0 both-error**.
@@ -95,6 +102,17 @@ Progress made since the first baseline:
 - PPTX applies the `pages` option while converting (so summary, page count
   and text index describe only the selected slides) and falls back to the
   deck's core title for the view title.
+- The object builder writes `font` and `fillColor` only when the value
+  changes, and forgets the value it wrote after `restore`, `clipRect`,
+  `clipPath`, `groupBegin`, `groupEnd`, `maskBegin`, `maskEnd`, `use` and
+  `useAt`. Upstream's `wordproc` emitter does the same in `setFont`,
+  `setColor` and `invalidate`, so a run of text that keeps its style now
+  emits the state once. The difference count fell from 63,745 to 57,953
+  (DOCX 26,371 → 22,696, Markdown 6,263 → 4,857, PPTX 11,995 → 11,369,
+  XLSX 16,189 → 16,104, PDF unchanged); no passing case regressed.
+  `docx/grid#default` and `docx/form-rows#default` report a few more
+  differences because the shorter program shifts the element-wise
+  alignment, not because the drawing changed.
 
 ## Next gates
 

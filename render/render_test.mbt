@@ -216,3 +216,119 @@ test "mask rejects truncated transfer data" {
   }
   assert_true(rejected)
 }
+
+///|
+fn state_op_names(commands : Array[Command]) -> Array[String] {
+  let names : Array[String] = []
+  for command in commands {
+    match command {
+      Font(_, _) => names.push("font")
+      FillColor(_) => names.push("fillColor")
+      FillText(_, _, _, _) => names.push("fillText")
+      Save => names.push("save")
+      Restore => names.push("restore")
+      ClipRect(_, _, _, _) => names.push("clipRect")
+      GroupBegin(_, _, _, _, _, _) => names.push("groupBegin")
+      GroupEnd => names.push("groupEnd")
+      _ => ()
+    }
+  }
+  names
+}
+
+///|
+fn state_op_builder() -> (@core.ObjectBuilder, Int32) {
+  let builder = @core.ObjectBuilder::new()
+  let font = builder.add_font({
+    hash: None,
+    family: "Example",
+    weight: 400,
+    style: 0,
+  })
+  (builder, font)
+}
+
+///|
+test "repeated font and fill colour state is written once" {
+  let (builder, font) = state_op_builder()
+  builder.font(font, 12.0F)
+  builder.fill_color(0x000000ffU)
+  builder.fill_text("a", 0.0F, 0.0F, 1.0F)
+  builder.font(font, 12.0F)
+  builder.fill_color(0x000000ffU)
+  builder.fill_text("b", 0.0F, 0.0F, 1.0F)
+  let commands = decode_commands(builder.encode())
+  assert_eq(
+    state_op_names(commands),
+    ["font", "fillColor", "fillText", "fillText"],
+  )
+}
+
+///|
+test "changed font and fill colour state is written again" {
+  let (builder, font) = state_op_builder()
+  builder.font(font, 12.0F)
+  builder.fill_color(0x000000ffU)
+  builder.fill_text("a", 0.0F, 0.0F, 1.0F)
+  builder.font(font, 14.0F)
+  builder.fill_color(0xff0000ffU)
+  builder.fill_text("b", 0.0F, 0.0F, 1.0F)
+  let commands = decode_commands(builder.encode())
+  assert_eq(
+    state_op_names(commands),
+    ["font", "fillColor", "fillText", "font", "fillColor", "fillText"],
+  )
+}
+
+///|
+test "restore forgets the state the program has set" {
+  let (builder, font) = state_op_builder()
+  builder.font(font, 12.0F)
+  builder.fill_color(0x000000ffU)
+  builder.save()
+  builder.restore()
+  builder.font(font, 12.0F)
+  builder.fill_color(0x000000ffU)
+  let commands = decode_commands(builder.encode())
+  assert_eq(
+    state_op_names(commands),
+    ["font", "fillColor", "save", "restore", "font", "fillColor"],
+  )
+}
+
+///|
+test "clip and group ops forget the state the program has set" {
+  let (builder, font) = state_op_builder()
+  builder.font(font, 12.0F)
+  builder.fill_color(0x000000ffU)
+  builder.clip_rect(0.0F, 0.0F, 10.0F, 10.0F)
+  builder.font(font, 12.0F)
+  builder.fill_color(0x000000ffU)
+  builder.group_begin(1.0F, 0, 0.0F, 0.0F, 10.0F, 10.0F)
+  builder.font(font, 12.0F)
+  builder.fill_color(0x000000ffU)
+  builder.group_end()
+  builder.font(font, 12.0F)
+  builder.fill_color(0x000000ffU)
+  let commands = decode_commands(builder.encode())
+  assert_eq(
+    state_op_names(commands),
+    [
+      "font", "fillColor", "clipRect", "font", "fillColor", "groupBegin", "font",
+      "fillColor", "groupEnd", "font", "fillColor",
+    ],
+  )
+}
+
+///|
+test "an invalid font reference is rejected even when the state repeats" {
+  let (builder, font) = state_op_builder()
+  builder.font(font, 12.0F)
+  let rejected = try {
+    builder.font(7, 12.0F)
+    false
+  } catch {
+    _ => true
+  }
+  assert_eq(rejected, true)
+}

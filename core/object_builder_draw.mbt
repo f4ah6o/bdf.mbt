@@ -6,6 +6,7 @@ pub fn ObjectBuilder::save(self : ObjectBuilder) -> Unit {
 ///|
 pub fn ObjectBuilder::restore(self : ObjectBuilder) -> Unit {
   self.ops.write_byte(0x02)
+  self.invalidate_state()
 }
 
 ///|
@@ -44,10 +45,15 @@ pub fn ObjectBuilder::clip_rect(
   h : Float,
 ) -> Unit {
   self.rect_op(0x07, x, y, w, h)
+  self.invalidate_state()
 }
 
 ///|
 pub fn ObjectBuilder::fill_color(self : ObjectBuilder, color : UInt32) -> Unit {
+  if self.last_fill_color == Some(color) {
+    return
+  }
+  self.last_fill_color = Some(color)
   self.ops.write_byte(0x10)
   self.ops.write_uint_le(color)
 }
@@ -61,6 +67,10 @@ pub fn ObjectBuilder::font(
   if index < 0 || index >= self.fonts.length() {
     raise BadFormat("invalid font reference")
   }
+  if self.last_font == Some((index, size)) {
+    return
+  }
+  self.last_font = Some((index, size))
   self.ops.write_byte(0x1a)
   self.ops.write_leb128(index.reinterpret_as_uint())
   self.ops.write_float_le(size)

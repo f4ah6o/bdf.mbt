@@ -13,6 +13,12 @@ pub struct ObjectBuilder {
   mut bbox : (Float, Float, Float, Float)
   mut auto_bbox : Bool
   mut has_bbox : Bool
+  // The font and fill colour the program has already set, so that a run of
+  // text that keeps its style emits the state once, as the upstream
+  // converters do. Both are cleared whenever an op can change the state
+  // behind the builder's back.
+  mut last_font : (Int32, Float)?
+  mut last_fill_color : UInt32?
 }
 
 ///|
@@ -30,7 +36,17 @@ pub fn ObjectBuilder::new() -> ObjectBuilder {
     bbox: (0.0F, 0.0F, 0.0F, 0.0F),
     auto_bbox: true,
     has_bbox: false,
+    last_font: None,
+    last_fill_color: None,
   }
+}
+
+///|
+/// Forget the drawing state the program has set, so the next `font` or
+/// `fill_color` is written even when it repeats the previous one.
+fn ObjectBuilder::invalidate_state(self : ObjectBuilder) -> Unit {
+  self.last_font = None
+  self.last_fill_color = None
 }
 
 ///|

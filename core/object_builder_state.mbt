@@ -51,6 +51,7 @@ pub fn ObjectBuilder::clip_path(
   self.ops.write_byte(0x06)
   self.ops.write_leb128(index.reinterpret_as_uint())
   self.ops.write_byte(rule)
+  self.invalidate_state()
 }
 
 ///|

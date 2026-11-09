@@ -287,6 +287,8 @@ pub struct ObjectBuilder {
   mut bbox : (Float, Float, Float, Float)
   mut auto_bbox : Bool
   mut has_bbox : Bool
+  mut last_font : (Int32, Float)?
+  mut last_fill_color : UInt32?
 }
 pub fn ObjectBuilder::add_font(Self, Font) -> Int32
 pub fn ObjectBuilder::add_image(Self, String) -> Int32

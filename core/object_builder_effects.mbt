@@ -34,6 +34,7 @@ pub fn ObjectBuilder::use_object(
   self.grow(x, y, w, h)
   self.ops.write_byte(0x50)
   self.ops.write_leb128(index.reinterpret_as_uint())
+  self.invalidate_state()
 }
 
 ///|
@@ -52,6 +53,7 @@ pub fn ObjectBuilder::use_object_at(
   self.ops.write_leb128(index.reinterpret_as_uint())
   self.ops.write_float_le(x)
   self.ops.write_float_le(y)
+  self.invalidate_state()
 }
 
 ///|
@@ -70,11 +72,13 @@ pub fn ObjectBuilder::group_begin(
   for value in [x, y, w, h] {
     self.ops.write_float_le(value)
   }
+  self.invalidate_state()
 }
 
 ///|
 pub fn ObjectBuilder::group_end(self : ObjectBuilder) -> Unit {
   self.ops.write_byte(0x53)
+  self.invalidate_state()
 }
 
 ///|
@@ -89,11 +93,13 @@ pub fn ObjectBuilder::mask_begin(
   self.ops.write_uint_le(backdrop)
   self.ops.write_leb128(transfer.length().reinterpret_as_uint())
   self.ops.write_bytes(transfer)
+  self.invalidate_state()
 }
 
 ///|
 pub fn ObjectBuilder::mask_end(self : ObjectBuilder) -> Unit {
   self.ops.write_byte(0x55)
+  self.invalidate_state()
 }
 
 ///|
