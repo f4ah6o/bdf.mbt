@@ -27,7 +27,7 @@ extern "js" fn viewer_renderer_content(
   view : String,
   page : Int32,
 ) -> @js_async.Promise[RenderValue] =
-  #|(renderer,view,page) => renderer.content(view,page)
+  #|(renderer,view,page) => typeof renderer.content==='function' ? renderer.content(view,page) : Promise.resolve(null)
 
 ///|
 extern "js" fn viewer_dom_set_layout(dom : ViewerDom, layout : String) -> Unit =
