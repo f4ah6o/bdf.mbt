@@ -7,4 +7,9 @@ import {
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/encoding/utf16",
 }
+
+import {
+  "f4ah6o/bdf/render",
+} for "wbtest"
+
 supported_targets = "+js+wasm-gc"

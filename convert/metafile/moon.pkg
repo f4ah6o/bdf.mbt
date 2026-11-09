@@ -7,4 +7,8 @@ import {
   "LL728/moon_encoding" @encoding,
 }
 
+import {
+  "f4ah6o/bdf/render",
+} for "wbtest"
+
 supported_targets = "+js+wasm-gc"

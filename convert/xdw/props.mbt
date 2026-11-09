@@ -158,6 +158,20 @@ fn xdw_num(b : Bytes) -> Int64 {
   acc
 }
 
+///|
+/// A little-endian number (attribute 300 stores its picture count that
+/// way, unlike the big-endian numbers elsewhere).
+fn xdw_le_num(b : Bytes) -> Int64 {
+  let mut acc = 0L
+  let mut i = 0
+  while i < b.length() && i < 8 {
+    acc = acc | (b[i].to_int64() << (8 * i))
+    i += 1
+  }
+  acc
+}
+
+///|
 /// The lossy UTF-8 text of `b` (text values are stored as they are).
 fn xdw_lossy(b : Bytes) -> String {
   @utf8.decode_lossy(b)
