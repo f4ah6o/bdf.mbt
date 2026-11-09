@@ -36,4 +36,8 @@ import {
   "moonbitlang/core/encoding/utf8",
 }
 
+import {
+  "moonbitlang/x/fs",
+} for "wbtest"
+
 supported_targets = "+js+wasm-gc+native"
