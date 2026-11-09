@@ -16,6 +16,7 @@ const SAMPLES = [
   ["cairo-cff.pdf", "CFF"],
   ["cairo-type1.pdf", "Type1"],
   ["pdf-encrypted.pdf", "暗号化 PDF（demo）"],
+  ["basic.epub", "EPUB"],
   ["basic.docx", "Word"],
   ["basic.pptx", "PowerPoint"],
   ["features.pptx", "PowerPoint（機能）"],
@@ -29,12 +30,15 @@ const SAMPLES = [
   ["labels.drawio", "draw.io"],
   ["multipage.drawio", "draw.io（複数ページ）"],
   ["shapes.dxf", "DXF"],
+  ["layout.dxf", "DXF（レイアウト）"],
   ["demo.kicad_pcb", "KiCad"],
   ["features.gbr", "Gerber"],
   ["hpgl1.plt", "HP-GL/2"],
   ["old.jww", "Jw_cad"],
   ["shapes.sfc", "SXF"],
   ["shapes.cgm", "CGM"],
+  ["minuet.musicxml", "楽譜（MusicXML）"],
+  ["synced.mp3", "音声（同期歌詞つき MP3）"],
   ["stix.ttf", "フォント"],
 ];
 

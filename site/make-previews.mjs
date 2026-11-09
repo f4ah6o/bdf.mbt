@@ -36,6 +36,12 @@ const types = {
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ".epub": "application/epub+zip",
+  ".drawio": "application/xml",
+  ".dxf": "application/dxf",
+  ".kicad_pcb": "application/octet-stream",
+  ".musicxml": "application/vnd.recordare.musicxml+xml",
+  ".mp3": "audio/mpeg",
 };
 const server = createServer(async (request, response) => {
   const url = new URL(request.url, "http://localhost");
