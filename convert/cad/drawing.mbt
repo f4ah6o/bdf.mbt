@@ -112,16 +112,16 @@ priv enum ItemKind {
 ///|
 priv struct Item {
   kind : ItemKind
-  mut path : CadPath?
-  mut pen : Pen?
-  mut fill : Fill?
+  path : CadPath?
+  pen : Pen?
+  fill : Fill?
   even_odd : Bool
-  mut text : CadText?
-  mut stroke_text : CadStrokeText?
-  mut image : CadImage?
-  mut clip : CadPath?
-  mut items : Array[Item]
-  mut bounds : Rect
+  text : CadText?
+  stroke_text : CadStrokeText?
+  image : CadImage?
+  clip : CadPath?
+  items : Array[Item]
+  bounds : Rect
 }
 
 ///|
@@ -388,132 +388,140 @@ pub fn Drawing::append(
 }
 
 ///|
+/// A copy of `item` with `matrix` applied. The source is left untouched:
+/// callers reuse drawings (the stencil cache), so mutating in place would
+/// apply the transform again on the next append.
 fn transform_item(item : Item, matrix : @canvas.Matrix, scale : Double) -> Item {
-  let output = item
-  match item.path {
-    Some(path) => {
-      output.path = Some(path.transform(matrix))
-    }
-    None => ()
+  let path = match item.path {
+    Some(value) => Some(value.transform(matrix))
+    None => None
   }
-  match item.clip {
-    Some(path) => {
-      output.clip = Some(path.transform(matrix))
-    }
-    None => ()
+  let clip = match item.clip {
+    Some(value) => Some(value.transform(matrix))
+    None => None
   }
-  output.bounds = item.bounds.transform(matrix)
+  let pen = match item.pen {
+    Some(pen) => {
+      let dash = match pen.dash {
+        Some(values) => {
+          let scaled : Array[Double] = []
+          for value in values {
+            scaled.push(value * scale)
+          }
+          Some(scaled)
+        }
+        None => None
+      }
+      Some({
+        color: pen.color,
+        width: pen.width,
+        world_width: pen.world_width * scale,
+        dash,
+        dash_offset: pen.dash_offset * scale,
+        cap: pen.cap,
+        join: pen.join,
+        miter: pen.miter,
+      })
+    }
+    None => None
+  }
+  let fill = match item.fill {
+    Some(fill) => {
+      let gradient = match fill.gradient {
+        Some(gradient) => {
+          Some({
+            radial: gradient.radial,
+            p0: apply(matrix, gradient.p0),
+            p1: apply(matrix, gradient.p1),
+            r0: gradient.r0 * scale,
+            r1: gradient.r1 * scale,
+            stops: gradient.stops,
+          })
+        }
+        None => None
+      }
+      let pattern = match fill.pattern {
+        Some(pattern) => {
+          Some({
+            image: pattern.image,
+            m: matrix.mul(pattern.m),
+            smooth: pattern.smooth,
+          })
+        }
+        None => None
+      }
+      Some({ color: fill.color, gradient, pattern })
+    }
+    None => None
+  }
+  let text = match item.text {
+    Some(text) => {
+      Some({
+        s: text.s,
+        font: text.font,
+        color: text.color,
+        m: matrix.mul(text.m),
+        advance: text.advance,
+        cells: text.cells,
+        spacing: text.spacing,
+        asc: text.asc,
+        desc: text.desc,
+        cap: text.cap,
+        underline: text.underline,
+        overline: text.overline,
+        strike: text.strike,
+        line_break: text.line_break,
+        vertical: text.vertical,
+      })
+    }
+    None => None
+  }
+  let stroke_text = match item.stroke_text {
+    Some(text) => {
+      Some({
+        s: text.s,
+        m: matrix.mul(text.m),
+        strokes: text.strokes,
+        pen: text.pen,
+        parts: text.parts,
+        line_break: text.line_break,
+      })
+    }
+    None => None
+  }
+  let image = match item.image {
+    Some(image) => {
+      Some({
+        image: image.image,
+        width: image.width,
+        height: image.height,
+        m: matrix.mul(image.m),
+        smooth: image.smooth,
+      })
+    }
+    None => None
+  }
+  let children : Array[Item] = []
   match item.kind {
-    StrokeItem =>
-      match item.pen {
-        Some(pen) => {
-          let new_pen = pen
-          new_pen.world_width = pen.world_width * scale
-          new_pen.dash_offset = pen.dash_offset * scale
-          match pen.dash {
-            Some(dash) => {
-              let scaled : Array[Double] = []
-              for value in dash {
-                scaled.push(value * scale)
-              }
-              new_pen.dash = Some(scaled)
-            }
-            None => ()
-          }
-          output.pen = Some(new_pen)
-        }
-        None => ()
-      }
-    FillItem =>
-      match item.fill {
-        Some(fill) => {
-          let new_fill = fill
-          match fill.gradient {
-            Some(gradient) => {
-              new_fill.gradient = Some({
-                radial: gradient.radial,
-                p0: apply(matrix, gradient.p0),
-                p1: apply(matrix, gradient.p1),
-                r0: gradient.r0 * scale,
-                r1: gradient.r1 * scale,
-                stops: gradient.stops,
-              })
-            }
-            None => ()
-          }
-          match fill.pattern {
-            Some(pattern) => {
-              new_fill.pattern = Some({
-                image: pattern.image,
-                m: matrix.mul(pattern.m),
-                smooth: pattern.smooth,
-              })
-            }
-            None => ()
-          }
-          output.fill = Some(new_fill)
-        }
-        None => ()
-      }
-    ImageItem =>
-      match item.image {
-        Some(image) => {
-          output.image = Some({
-            image: image.image,
-            width: image.width,
-            height: image.height,
-            m: matrix.mul(image.m),
-            smooth: image.smooth,
-          })
-        }
-        None => ()
-      }
-    TextItem =>
-      match item.text {
-        Some(text) => {
-          output.text = Some({
-            s: text.s,
-            font: text.font,
-            color: text.color,
-            m: matrix.mul(text.m),
-            advance: text.advance,
-            cells: text.cells,
-            spacing: text.spacing,
-            asc: text.asc,
-            desc: text.desc,
-            cap: text.cap,
-            underline: text.underline,
-            overline: text.overline,
-            strike: text.strike,
-            line_break: text.line_break,
-            vertical: text.vertical,
-          })
-        }
-        None => ()
-      }
-    StrokeTextItem =>
-      match item.stroke_text {
-        Some(text) => {
-          output.stroke_text = Some({
-            s: text.s,
-            m: matrix.mul(text.m),
-            strokes: text.strokes,
-            pen: text.pen,
-            parts: text.parts,
-            line_break: text.line_break,
-          })
-        }
-        None => ()
-      }
-    GroupItem => {
-      let children : Array[Item] = []
+    GroupItem =>
       for child in item.items {
         children.push(transform_item(child, matrix, scale))
       }
-      output.items = children
-    }
+    _ => ()
   }
-  output
+  {
+    kind: item.kind,
+    path,
+    pen,
+    fill,
+    even_odd: item.even_odd,
+    text,
+    stroke_text,
+    image,
+    clip,
+    items: children,
+    bounds: item.bounds.transform(matrix),
+  }
 }
 
 ///|

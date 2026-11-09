@@ -112,7 +112,7 @@ fn drawio_stencil_collect(node : DrawioNode, out : Map[String, DrawioStencil]) -
     if shape_name == "" {
       continue
     }
-    let registry = pkg + shape_name.to_lower().replace(old=" ", new="_")
+    let registry = pkg + shape_name.to_lower().replace_all(old=" ", new="_")
     let mut w0 = 100.0
     let mut h0 = 100.0
     if drawio_attr(child, "w", "") != "" {
@@ -167,9 +167,14 @@ fn drawio_stencil_render(
   if !name.has_prefix("mxgraph.") {
     return false
   }
-  let st = match drawio_stencil_lookup(name) {
-    Some(value) => value
-    None => return false
+  let composite = drawio_aws4_is_composite(name)
+  let st = if composite {
+    None
+  } else {
+    match drawio_stencil_lookup(name) {
+      Some(value) => Some(value)
+      None => return false
+    }
   }
   if w <= 0.0 || h <= 0.0 {
     return true
@@ -189,32 +194,16 @@ fn drawio_stencil_render(
     outline: drawio_style(cell.style, "outline", "0") == "1",
     warn,
   }
+  if composite {
+    return drawio_aws4_composite(cell, drawing, ctx, x, y, w, h)
+  }
+  let st = match st {
+    Some(value) => value
+    None => return false
+  }
   let baked = drawio_stencil_bake(st, name, ctx)
   // computeAspect: the transform from stencil coordinates into the cell.
-  let direction = drawio_style(cell.style, "direction", "")
-  let inverse = direction == "north" || direction == "south"
-  let mut x0 = x
-  let mut y0 = y
-  let mut sx = w / st.w0
-  let mut sy = h / st.h0
-  if inverse {
-    sy = w / st.h0
-    sx = h / st.w0
-    let delta = (w - h) / 2.0
-    x0 += delta
-    y0 -= delta
-  }
-  if st.aspect == "fixed" {
-    sy = Double::min(sx, sy)
-    sx = sy
-    if inverse {
-      x0 += (h - st.w0 * sx) / 2.0
-      y0 += (w - st.h0 * sy) / 2.0
-    } else {
-      x0 += (w - st.w0 * sx) / 2.0
-      y0 += (h - st.h0 * sy) / 2.0
-    }
-  }
+  let (x0, y0, sx, sy) = drawio_stencil_aspect(st, ctx.style, x, y, w, h)
   // The cell's rotation and flips about its center (mxShape paint).
   let cx = x + w / 2.0
   let cy = y + h / 2.0
@@ -464,8 +453,16 @@ fn drawio_stencil_path_d(c : DrawioStencilCanvas, d : String) -> Unit {
         i += 1
       }
       let start = i
-      while i < d.length() && d[i].unsafe_to_char() != ' ' &&
-        d[i].unsafe_to_char() != '\t' && d[i].unsafe_to_char() != '\n' {
+      // Numbers end at whitespace or the next command letter; 'e'/'E' stay
+      // inside numbers (exponents) and are never path commands.
+      while i < d.length() {
+        let ch = d[i].unsafe_to_char()
+        if ch == ' ' || ch == '\t' || ch == '\n' {
+          break
+        }
+        if ch.is_ascii_alphabetic() && ch != 'e' && ch != 'E' {
+          break
+        }
         i += 1
       }
       args.push(drawio_number_js(d[start:i].to_owned()))

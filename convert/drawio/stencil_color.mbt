@@ -64,7 +64,7 @@ fn drawio_parse_color(text : String) -> UInt32? {
     let close = low.find(")")
     match (open, close) {
       (Some(o), Some(c)) if c > o => {
-        let inner = low[o + 1:c].to_string().replace(old="/", new=",")
+        let inner = low[o + 1:c].to_string().replace_all(old="/", new=",")
         let args = drawio_split_args(inner)
         if args.length() < 3 {
           return None

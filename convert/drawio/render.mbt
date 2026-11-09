@@ -1212,6 +1212,7 @@ fn drawio_render_page(
   warn : DrawioWarn,
 ) -> (Json, String, String, Array[String])? {
   let model = drawio_model(page_info.model)
+  ignore(drawio_aws_legacy_substitute(model, warn))
   let math_enabled = drawio_attr(page_info.model, "math", "") == "1"
   let (min_x, min_y, bounds_w, bounds_h, found) = drawio_page_bounds(
     model,

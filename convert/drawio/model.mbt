@@ -2,7 +2,7 @@
 priv struct DrawioCell {
   id : String
   value : String
-  style : String
+  mut style : String
   vertex : Bool
   edge : Bool
   parent : String

@@ -442,8 +442,8 @@ fn drawio_shape_kind(style : String, warn : DrawioWarn) -> DrawioShapeKind {
   let resolved = match drawio_core_shape_kind(name) {
     Some(kind) => Some(kind)
     None =>
-      if drawio_is_stencil_name(name) {
-        if drawio_stencil_lookup(name) is Some(_) {
+      if drawio_is_stencil_name(name) || drawio_aws4_is_composite(name) {
+        if drawio_stencil_lookup(name) is Some(_) || drawio_aws4_is_composite(name) {
           Some(DkStencil)
         } else {
           drawio_stencil_kind(name)

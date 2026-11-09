@@ -131,7 +131,7 @@ fn drawio_zlib_inflate(data : Bytes, max : Int) -> Bytes raise {
 
 ///|
 fn drawio_base64(text : String) -> Bytes raise {
-  let cleaned = drawio_trim(text).replace(old="\n", new="").replace(old="\r", new="").replace(old="\t", new="").replace(old=" ", new="")
+  let cleaned = drawio_trim(text).replace_all(old="\n", new="").replace_all(old="\r", new="").replace_all(old="\t", new="").replace_all(old=" ", new="")
   let raw = @base64.decode(cleaned[:], ignore_whitespace=true) catch {
     _ => {
       let mut value = cleaned
