@@ -92,14 +92,23 @@ The port supports `js`, `wasm-gc` and `native`. Browser-only packages stay
 ### M1 — native target
 
 `moon.mod` caps the whole module at `+js+wasm-gc`, so every package inherits
-that cap. Flipping `moon.mod`, `crypto` and `core` to `+js+wasm-gc+native`
-already gives `moon test --target native core` 81/81. The work is the rest of
-the graph, in dependency order.
+that cap. The recon (2026-11-09) flipped `moon.mod` and 73 `moon.pkg` files to
+`+js+wasm-gc+native` and changed no source file. Every gate passed:
 
-1. Recon: flip everything on a throwaway branch and list the failures.
-2. `crypto`, `core`, `encoding`, `font`.
-3. `convert`, `export`.
-4. `print`, `form`, then the CI matrix.
+| Gate | Result |
+|---|---|
+| `moon check --target native` | 0 errors, 295 tasks |
+| `moon test --target native` | 2730 / 2730 pass |
+| `moon build --target native` | 0 errors, 145 tasks |
+
+So M1 is a declaration flip, not a code port. The remaining work is:
+
+1. Land the flip in review-sized slices: `crypto`/`core`/`encoding`/`font`,
+   then `convert`/`export`, then `print`/`form`.
+2. Add `native` to the CI matrix.
+3. Add the native conversion gate: a fixture converts to BDF through a native
+   binary. Compilation alone does not prove the converters run.
+4. Locate the 3 `js`-only tests that the 16-test gap does not explain.
 
 ### M2 — missing packages
 
@@ -172,9 +181,11 @@ One issue is one branch and one worktree. Up to two run at once, because
 
 ## Risks
 
-- **Native is not free.** `moon check --target native` passes today only
-  because unsupported packages are skipped. The recon issue exists to replace
-  that false green with a real failure list before any estimate is trusted.
+- **Native is cheaper than expected, but the gate is still weak.**
+  `moon check --target native` passes by skipping packages that do not declare
+  `native`. The recon flipped every declaration and found no failures, so the
+  remaining risk is not compilation but whether the converters actually run on
+  native. The conversion gate is what proves it.
 - **`encoding/htmlro` is the largest single gap** at 5,278 lines and depends
   on the reader-mode block model in `convert/reader`. It may need to split.
 - **Parity is a moving target.** The harness compares against
