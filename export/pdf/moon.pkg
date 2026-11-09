@@ -11,4 +11,4 @@ import {
   "f4ah6o/bdf/convert/pdf",
 } for "wbtest"
 
-supported_targets = "+js+wasm-gc"
+supported_targets = "+js+wasm-gc+native"

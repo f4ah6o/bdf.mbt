@@ -13,4 +13,4 @@ import {
   "f4ah6o/bdf/convert/hpgl",
 }
 
-supported_targets = "+js+wasm-gc"
+supported_targets = "+js+wasm-gc+native"

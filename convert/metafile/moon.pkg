@@ -7,4 +7,4 @@ import {
   "LL728/moon_encoding" @encoding,
 }
 
-supported_targets = "+js+wasm-gc"
+supported_targets = "+js+wasm-gc+native"

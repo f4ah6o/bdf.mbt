@@ -7,4 +7,4 @@ import {
   "f4ah6o/bdf/font/db" @fontdb,
 }
 
-supported_targets = "+js+wasm-gc"
+supported_targets = "+js+wasm-gc+native"
