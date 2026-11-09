@@ -94,6 +94,42 @@ priv struct GdiState {
 }
 
 ///|
+/// Snapshot every DC field; all member values are immutable.
+fn GdiState::snapshot(self : GdiState) -> GdiState {
+  {
+    pen_width: self.pen_width,
+    pen_color: self.pen_color,
+    pen_style: self.pen_style,
+    pen_null: self.pen_null,
+    pen_cosmetic: self.pen_cosmetic,
+    brush_color: self.brush_color,
+    brush_null: self.brush_null,
+    brush_hatch: self.brush_hatch,
+    font_height: self.font_height,
+    font_weight: self.font_weight,
+    font_italic: self.font_italic,
+    font_underline: self.font_underline,
+    font_strike: self.font_strike,
+    font_face: self.font_face,
+    font_escapement: self.font_escapement,
+    font_charset: self.font_charset,
+    text_color: self.text_color,
+    bk_color: self.bk_color,
+    bk_opaque: self.bk_opaque,
+    text_align: self.text_align,
+    map_mode: self.map_mode,
+    rop2: self.rop2,
+    poly_fill: self.poly_fill,
+    win_org: self.win_org,
+    win_ext: self.win_ext,
+    vp_org: self.vp_org,
+    vp_ext: self.vp_ext,
+    world: self.world,
+    cur: self.cur,
+  }
+}
+
+///|
 priv struct Gdi {
   object : @core.ObjectBuilder
   writer : @core.DocumentWriter

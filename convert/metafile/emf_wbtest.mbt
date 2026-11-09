@@ -624,9 +624,9 @@ test "a DW clip alone stays silent" {
 }
 
 ///|
-fn t_ansi_font(charset : Int32) -> Bytes {
+fn t_ansi_font(charset : Int32, handle? : Int32 = 1) -> Bytes {
   let b = @buffer.Buffer()
-  for v in [1, 12, 0, 0, 0, 400] {
+  for v in [handle, 12, 0, 0, 0, 400] {
     t_u32(b, v)
   }
   b.write_bytes(b"\x00\x00\x00")
@@ -718,4 +718,135 @@ test "WMF Shift_JIS text still uses selected font charset" {
     }
   }
   assert_eq(texts, ["日"])
+}
+
+///|
+test "EMF restores font charset through nested DC snapshots" {
+  for
+    (first, bytes, expected, second, other, other_text) in [
+      (128, b"\x93\xfa", "日", 0, b"\xc3\xa9", "é"),
+      (0, b"\xc3\xa9", "é", 128, b"\x93\xfa", "日"),
+    ] {
+    let emf = t_emf([0, 0, 2500, 2500], [96, 96], [25, 25], [
+      t_ansi_font(first),
+      t_ansi_font(second, handle=2),
+      t_record(37, t_i32s([1])),
+      t_ansi_record(bytes, []),
+      t_record(33, b""), // Save first charset.
+      t_record(37, t_i32s([2])),
+      t_record(33, b""), // Save second charset independently.
+      t_record(37, t_i32s([1])),
+      t_record(34, t_i32s([-1])),
+      t_ansi_record(other, []),
+      t_record(37, t_i32s([2])),
+      t_record(34, t_i32s([1])), // Restore absolute first level.
+      t_ansi_record(bytes, []),
+      t_record(14, t_i32s([0, 0, 0])),
+    ])
+    let (encoded, warnings) = t_draw(emf, 96.0, 96.0, false)
+    assert_true(warnings.is_empty())
+    let texts : Array[String] = []
+    for command in t_commands(encoded) {
+      if command is @render.FillText(text, _, _, _) {
+        texts.push(text)
+      }
+    }
+    assert_eq(texts, [expected, other_text, expected])
+  }
+}
+
+///|
+test "EMF stock fonts reset Shift_JIS to the existing ANSI fallback" {
+  for stock in [10, 11, 12, 13, 14, 16, 17] {
+    let emf = t_emf([0, 0, 2500, 2500], [96, 96], [25, 25], [
+      t_ansi_font(128),
+      t_record(37, t_i32s([1])),
+      t_ansi_record(b"\x93\xfa", []),
+      t_record(37, t_i32s([0x80000000 | stock])),
+      t_ansi_record(b"\xc3\xa9", []),
+      t_record(14, t_i32s([0, 0, 0])),
+    ])
+    let (encoded, warnings) = t_draw(emf, 96.0, 96.0, false)
+    assert_true(warnings.is_empty())
+    let texts : Array[String] = []
+    for command in t_commands(encoded) {
+      if command is @render.FillText(text, _, _, advance) {
+        texts.push(text)
+        if text == "é" {
+          assert_true(t_close(advance, 6.0))
+        }
+      }
+    }
+    assert_eq(texts, ["日", "é"])
+  }
+}
+
+///|
+test "GDI snapshots isolate every saved DC field" {
+  let state = gdi_state()
+  let saved = state.snapshot()
+  let expected = gdi_state()
+  state.pen_width = 73.0
+  state.pen_color = 0x12345678U
+  state.pen_style = 73
+  state.pen_null = !state.pen_null
+  state.pen_cosmetic = !state.pen_cosmetic
+  state.brush_color = 0x12345678U
+  state.brush_null = !state.brush_null
+  state.brush_hatch = 73
+  state.font_height = 73.0
+  state.font_weight = 73
+  state.font_italic = !state.font_italic
+  state.font_underline = !state.font_underline
+  state.font_strike = !state.font_strike
+  state.font_face = "changed"
+  state.font_escapement = 73.0
+  state.font_charset = 73
+  state.text_color = 0x12345678U
+  state.bk_color = 0x12345678U
+  state.bk_opaque = !state.bk_opaque
+  state.text_align = 73
+  state.map_mode = 73
+  state.rop2 = 73
+  state.poly_fill = 73
+  state.win_org = (73.0, 97.0)
+  state.win_ext = (73.0, 97.0)
+  state.vp_org = (73.0, 97.0)
+  state.vp_ext = (73.0, 97.0)
+  state.world = mat_translate(73.0, 97.0)
+  state.cur = (73.0, 97.0)
+  assert_eq(saved.pen_width, expected.pen_width)
+  assert_eq(saved.pen_color, expected.pen_color)
+  assert_eq(saved.pen_style, expected.pen_style)
+  assert_eq(saved.pen_null, expected.pen_null)
+  assert_eq(saved.pen_cosmetic, expected.pen_cosmetic)
+  assert_eq(saved.brush_color, expected.brush_color)
+  assert_eq(saved.brush_null, expected.brush_null)
+  assert_eq(saved.brush_hatch, expected.brush_hatch)
+  assert_eq(saved.font_height, expected.font_height)
+  assert_eq(saved.font_weight, expected.font_weight)
+  assert_eq(saved.font_italic, expected.font_italic)
+  assert_eq(saved.font_underline, expected.font_underline)
+  assert_eq(saved.font_strike, expected.font_strike)
+  assert_eq(saved.font_face, expected.font_face)
+  assert_eq(saved.font_escapement, expected.font_escapement)
+  assert_eq(saved.font_charset, expected.font_charset)
+  assert_eq(saved.text_color, expected.text_color)
+  assert_eq(saved.bk_color, expected.bk_color)
+  assert_eq(saved.bk_opaque, expected.bk_opaque)
+  assert_eq(saved.text_align, expected.text_align)
+  assert_eq(saved.map_mode, expected.map_mode)
+  assert_eq(saved.rop2, expected.rop2)
+  assert_eq(saved.poly_fill, expected.poly_fill)
+  assert_eq(saved.win_org, expected.win_org)
+  assert_eq(saved.win_ext, expected.win_ext)
+  assert_eq(saved.vp_org, expected.vp_org)
+  assert_eq(saved.vp_ext, expected.vp_ext)
+  assert_eq(saved.world.a, expected.world.a)
+  assert_eq(saved.world.b, expected.world.b)
+  assert_eq(saved.world.c, expected.world.c)
+  assert_eq(saved.world.d, expected.world.d)
+  assert_eq(saved.world.e, expected.world.e)
+  assert_eq(saved.world.f, expected.world.f)
+  assert_eq(saved.cur, expected.cur)
 }

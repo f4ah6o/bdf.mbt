@@ -92,7 +92,7 @@ fn emf_stock_object(index : Int64) -> GdiObject? {
     7 => Some(Pen(1.0, 0x000000ffU, 0, false, true))
     8 => Some(Pen(1.0, 0, 0, true, false))
     10 | 11 | 16 =>
-      Some(Font(12.0, 400, false, false, false, "Courier New", 0.0, 128))
+      Some(Font(12.0, 400, false, false, false, "Courier New", 0.0, 0))
     12 | 13 | 14 | 17 =>
       Some(Font(12.0, 400, false, false, false, "Arial", 0.0, 0))
     18 => Some(Brush(0xffffffffU, false, -1))
@@ -143,7 +143,7 @@ fn Gdi::save_state(self : Gdi) -> Unit {
     self.warn("a metafile saves too many states")
     return
   }
-  self.stack.push(self.state)
+  self.stack.push(self.state.snapshot())
 }
 
 ///|
