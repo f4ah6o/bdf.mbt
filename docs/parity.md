@@ -29,9 +29,11 @@ remain. See `compat/parity/README.md` for selectors and the canonical form.
 ## Baseline (2026-11-09)
 
 52 cases: **12 pass, 40 diff, 0 one-sided error, 0 both-error**, with
-57,953 differences in total. The pass set is unchanged from the 2026-11-05
-baseline; the difference count fell from 63,745 after the object builder
-stopped repeating drawing state (see below).
+57,953 canonical-form differences in total. The pass set is unchanged from
+the 2026-11-05 baseline; the difference count fell from 63,745 after the
+object builder stopped repeating drawing state (see below). The count is a
+structural measure: it says how many values of the canonical form differ,
+not how far the rendered pages are from upstream.
 
 ## Baseline (2026-11-05)
 
@@ -104,15 +106,19 @@ Progress made since the first baseline:
   deck's core title for the view title.
 - The object builder writes `font` and `fillColor` only when the value
   changes, and forgets the value it wrote after `restore`, `clipRect`,
-  `clipPath`, `groupBegin`, `groupEnd`, `maskBegin`, `maskEnd`, `use` and
-  `useAt`. Upstream's `wordproc` emitter does the same in `setFont`,
-  `setColor` and `invalidate`, so a run of text that keeps its style now
-  emits the state once. The difference count fell from 63,745 to 57,953
+  `clipPath`, `groupBegin`, `groupEnd`, `maskBegin`, `maskEnd`, `use`,
+  `useAt` and `ext`. A `fillPaint` forgets the fill colour it replaced, so
+  a solid fill that follows a gradient or pattern is written again.
+  Upstream's `wordproc` emitter does the same in `setFont`, `setColor` and
+  `invalidate`, so a run of text that keeps its style now emits the state
+  once. The structural difference count fell from 63,745 to 57,953
   (DOCX 26,371 → 22,696, Markdown 6,263 → 4,857, PPTX 11,995 → 11,369,
   XLSX 16,189 → 16,104, PDF unchanged); no passing case regressed.
-  `docx/grid#default` and `docx/form-rows#default` report a few more
-  differences because the shorter program shifts the element-wise
-  alignment, not because the drawing changed.
+  This is a count of canonical-form differences, not a measure of
+  rendering quality. `docx/grid#default` and `docx/form-rows#default`
+  report a few more differences because the shorter program shifts the
+  element-wise alignment; whether their drawing is unchanged has not been
+  checked against rendered images.
 
 ## Next gates
 

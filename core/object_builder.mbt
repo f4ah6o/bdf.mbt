@@ -50,6 +50,14 @@ fn ObjectBuilder::invalidate_state(self : ObjectBuilder) -> Unit {
 }
 
 ///|
+/// Forget the fill colour the program has set. A fill paint replaces it, so
+/// the next `fill_color` has to be written even when it repeats the colour
+/// that was set before the paint.
+fn ObjectBuilder::invalidate_fill_color(self : ObjectBuilder) -> Unit {
+  self.last_fill_color = None
+}
+
+///|
 /// Fix the object bounding box, disabling automatic bounds.
 pub fn ObjectBuilder::set_bbox(
   self : ObjectBuilder,

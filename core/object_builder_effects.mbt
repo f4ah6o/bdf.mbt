@@ -120,4 +120,7 @@ pub fn ObjectBuilder::ext(self : ObjectBuilder, payload : Bytes) -> Unit {
   self.ops.write_byte(0xff)
   self.ops.write_uint_le(payload.length().reinterpret_as_uint())
   self.ops.write_bytes(payload)
+  // An extension op carries an opaque payload, so the builder cannot know
+  // whether it changed the drawing state.
+  self.invalidate_state()
 }

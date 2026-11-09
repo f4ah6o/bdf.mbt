@@ -62,6 +62,7 @@ pub fn ObjectBuilder::fill_paint(
   self.paint_reference(index)
   self.ops.write_byte(0x11)
   self.ops.write_leb128(index.reinterpret_as_uint())
+  self.invalidate_fill_color()
 }
 
 ///|

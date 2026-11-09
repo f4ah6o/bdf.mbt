@@ -224,6 +224,8 @@ fn state_op_names(commands : Array[Command]) -> Array[String] {
     match command {
       Font(_, _) => names.push("font")
       FillColor(_) => names.push("fillColor")
+      FillPaint(_) => names.push("fillPaint")
+      FillRect(_, _, _, _) => names.push("fillRect")
       FillText(_, _, _, _) => names.push("fillText")
       Save => names.push("save")
       Restore => names.push("restore")
@@ -331,4 +333,114 @@ test "an invalid font reference is rejected even when the state repeats" {
     _ => true
   }
   assert_eq(rejected, true)
+}
+
+///|
+fn paint_builder() -> (@core.ObjectBuilder, Int32, Int32) {
+  let builder = @core.ObjectBuilder::new()
+  let gradient = builder.add_paint(
+    Gradient(0, [0.0, 0.0, 10.0, 0.0], [
+      { offset: 0.0, color: 0x0000ffff },
+      { offset: 1.0, color: 0x00ff00ff },
+    ]),
+  )
+  let pattern = builder.add_paint(Pattern(1, 0, [1.0, 0.0, 0.0, 1.0, 0.0, 0.0]))
+  (builder, gradient, pattern)
+}
+
+///|
+test "a fill paint forgets the fill colour it replaced" {
+  let (builder, gradient, _) = paint_builder()
+  builder.fill_color(0xff0000ffU)
+  builder.fill_rect(0.0F, 0.0F, 10.0F, 10.0F)
+  builder.fill_paint(gradient)
+  builder.fill_rect(10.0F, 0.0F, 10.0F, 10.0F)
+  builder.fill_color(0xff0000ffU)
+  builder.fill_rect(20.0F, 0.0F, 10.0F, 10.0F)
+  let commands = decode_commands(builder.encode())
+  assert_eq(
+    state_op_names(commands),
+    ["fillColor", "fillRect", "fillPaint", "fillRect", "fillColor", "fillRect"],
+  )
+}
+
+///|
+test "solid, gradient and pattern fills each write their state" {
+  let (builder, gradient, pattern) = paint_builder()
+  builder.fill_color(0xff0000ffU)
+  builder.fill_rect(0.0F, 0.0F, 10.0F, 10.0F)
+  builder.fill_paint(gradient)
+  builder.fill_rect(10.0F, 0.0F, 10.0F, 10.0F)
+  builder.fill_color(0xff0000ffU)
+  builder.fill_rect(20.0F, 0.0F, 10.0F, 10.0F)
+  builder.fill_paint(pattern)
+  builder.fill_rect(30.0F, 0.0F, 10.0F, 10.0F)
+  builder.fill_color(0xff0000ffU)
+  builder.fill_rect(40.0F, 0.0F, 10.0F, 10.0F)
+  let commands = decode_commands(builder.encode())
+  assert_eq(
+    state_op_names(commands),
+    [
+      "fillColor", "fillRect", "fillPaint", "fillRect", "fillColor", "fillRect",
+      "fillPaint", "fillRect", "fillColor", "fillRect",
+    ],
+  )
+}
+
+///|
+test "a repeated fill colour is still written once" {
+  let (builder, _, _) = paint_builder()
+  builder.fill_color(0xff0000ffU)
+  builder.fill_rect(0.0F, 0.0F, 10.0F, 10.0F)
+  builder.fill_color(0xff0000ffU)
+  builder.fill_rect(10.0F, 0.0F, 10.0F, 10.0F)
+  let commands = decode_commands(builder.encode())
+  assert_eq(state_op_names(commands), ["fillColor", "fillRect", "fillRect"])
+}
+
+///|
+test "a fill paint keeps the font state it does not change" {
+  let (builder, gradient, _) = paint_builder()
+  let font = builder.add_font({
+    hash: None,
+    family: "Example",
+    weight: 400,
+    style: 0,
+  })
+  builder.font(font, 12.0F)
+  builder.fill_paint(gradient)
+  builder.font(font, 12.0F)
+  let commands = decode_commands(builder.encode())
+  assert_eq(state_op_names(commands), ["font", "fillPaint"])
+}
+
+///|
+test "an extension op forgets the state it may have changed" {
+  let (builder, font) = state_op_builder()
+  builder.font(font, 12.0F)
+  builder.fill_color(0xff0000ffU)
+  builder.ext(b"\x01")
+  builder.font(font, 12.0F)
+  builder.fill_color(0xff0000ffU)
+  let commands = decode_commands(builder.encode())
+  assert_eq(
+    state_op_names(commands),
+    ["font", "fillColor", "font", "fillColor"],
+  )
+}
+
+///|
+test "stroke state does not disturb the fill and font dedupe" {
+  let (builder, font) = state_op_builder()
+  builder.font(font, 12.0F)
+  builder.fill_color(0xff0000ffU)
+  builder.stroke_color(0x00ff00ffU)
+  builder.line(1.0F, 0, 0, 10.0F)
+  builder.dash([2.0F, 1.0F], 0.0F)
+  builder.alpha(0.5F)
+  builder.blend(0)
+  builder.font(font, 12.0F)
+  builder.fill_color(0xff0000ffU)
+  let commands = decode_commands(builder.encode())
+  assert_eq(state_op_names(commands), ["font", "fillColor"])
 }
