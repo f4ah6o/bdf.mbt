@@ -78,18 +78,6 @@ fn wmf_box(data : Bytes) -> WmfBox? {
 }
 
 ///|
-fn wmf_ansi_text(data : Bytes, charset : Int32) -> String {
-  if charset == 128 {
-    match @encoding.decode(data, "shift_jis") {
-      Ok(text) => text
-      Err(_) => @utf8.decode_lossy(data)
-    }
-  } else {
-    @utf8.decode_lossy(data)
-  }
-}
-
-///|
 fn Gdi::add_slot(self : Gdi, object : GdiObject) -> Unit {
   for i in 0..<self.slots.length() {
     if self.slots[i] is None {
@@ -258,7 +246,7 @@ fn Gdi::play_wmf(
               break
             }
           }
-          face = wmf_ansi_text(name[:end].to_owned(), charset)
+          face = ansi_text(name[:end].to_owned(), charset)
         }
         self.add_slot(
           Font(
@@ -342,7 +330,7 @@ fn Gdi::play_wmf(
         if 2 + count > args.length() || offset < 0 {
           continue
         }
-        let text = wmf_ansi_text(
+        let text = ansi_text(
           args[2:2 + count].to_owned(),
           self.state.font_charset,
         )
@@ -370,7 +358,7 @@ fn Gdi::play_wmf(
         if count <= 0 || offset + count > args.length() {
           continue
         }
-        let text = wmf_ansi_text(
+        let text = ansi_text(
           args[offset:offset + count].to_owned(),
           self.state.font_charset,
         )

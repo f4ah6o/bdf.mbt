@@ -131,6 +131,7 @@ fn Gdi::select_object(self : Gdi, handle : Int64) -> Unit {
       self.state.font_strike = strike
       self.state.font_face = face
       self.state.font_escapement = escapement
+      self.state.font_charset = charset
     }
     None => ()
   }
@@ -575,7 +576,11 @@ fn Gdi::play_emf(
           record.length() > 34 && record[34] != 0,
           face,
           lei32(record, 20),
-          0,
+          if record.length() > 35 {
+            record[35].to_int()
+          } else {
+            0
+          },
         )
       }
       83 | 84 => {
@@ -597,7 +602,11 @@ fn Gdi::play_emf(
         let text = if kind == 84 {
           utf16_text(record[offset:].to_owned(), count)
         } else {
-          ansi_text(record[offset:].to_owned(), count)
+          let length = count.min(record.length() - offset)
+          ansi_text(
+            record[offset:offset + length].to_owned(),
+            self.state.font_charset,
+          )
         }
         let dx_offset = le32(record, 72).to_int()
         let advances : Array[Double] = []

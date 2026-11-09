@@ -622,3 +622,100 @@ test "a DW clip alone stays silent" {
     abort("a DW clip warned: \{warnings.join(",")}")
   }
 }
+
+///|
+fn t_ansi_font(charset : Int32) -> Bytes {
+  let b = @buffer.Buffer()
+  for v in [1, 12, 0, 0, 0, 400] {
+    t_u32(b, v)
+  }
+  b.write_bytes(b"\x00\x00\x00")
+  b.write_byte(charset.to_byte())
+  for _ in 0..<68 {
+    b.write_byte(0)
+  }
+  t_record(82, b.to_bytes())
+}
+
+///|
+fn t_ansi_record(text : Bytes, dx : Array[Int32]) -> Bytes {
+  let b = @buffer.Buffer()
+  // nChars is a byte count for EXTTEXTOUTA, not a decoded character count.
+  for v in [0, 0, 100, 100, 1, 0, 0, 0, 0, text.length(), 76, 0, 0, 0, 100, 100] {
+    t_u32(b, v)
+  }
+  let padded = (text.length() + 3) / 4 * 4
+  t_u32(b, if dx.is_empty() { 0 } else { 76 + padded })
+  b.write_bytes(text)
+  for _ in text.length()..<padded {
+    b.write_byte(0)
+  }
+  for v in dx {
+    t_u32(b, v)
+  }
+  t_record(83, b.to_bytes())
+}
+
+///|
+test "EMF ANSI charset keeps byte advances and ASCII unchanged" {
+  for
+    (charset, bytes, expected, dx, width) in [
+      (128, b"\x93\xfaA", "日A", [3, 5, 7], 15.0),
+      (128, b"\x93\xfaA", "日A", [], 18.0),
+      (0, b"ABC", "ABC", [3, 5, 7], 15.0),
+    ] {
+    let emf = t_emf([0, 0, 2500, 2500], [96, 96], [25, 25], [
+      t_ansi_font(charset),
+      t_record(37, t_i32s([1])),
+      t_ansi_record(bytes, dx),
+      t_record(14, t_i32s([0, 0, 0])),
+    ])
+    let (encoded, warnings) = t_draw(emf, 96.0, 96.0, false)
+    assert_true(warnings.is_empty())
+    let mut count = 0
+    for command in t_commands(encoded) {
+      if command is @render.FillText(text, _, _, advance) {
+        assert_eq(text, expected)
+        assert_true(t_close(advance, width))
+        count += 1
+      }
+    }
+    assert_eq(count, 1)
+  }
+}
+
+///|
+fn t_wmf_record(b : @buffer.Buffer, kind : Int32, args : Bytes) -> Unit {
+  t_u32(b, 3 + args.length() / 2)
+  t_u16(b, kind)
+  b.write_bytes(args)
+}
+
+///|
+test "WMF Shift_JIS text still uses selected font charset" {
+  let b = @buffer.Buffer()
+  t_u16(b, 1)
+  t_u16(b, 9)
+  t_u16(b, 0x300)
+  for _ in 0..<12 {
+    b.write_byte(0)
+  }
+  let font = @buffer.Buffer()
+  for v in [12, 0, 0, 0, 400] {
+    t_u16(font, v)
+  }
+  font.write_bytes(b"\x00\x00\x00\x80\x00\x00\x00\x00Arial\x00")
+  t_wmf_record(b, 0x02fb, font.to_bytes())
+  t_wmf_record(b, 0x012d, b"\x00\x00")
+  t_wmf_record(b, 0x0521, b"\x02\x00\x93\xfa\x00\x00\x00\x00")
+  t_wmf_record(b, 0, b"")
+  let (encoded, warnings) = t_draw(b.to_bytes(), 100.0, 100.0, false)
+  assert_true(warnings.is_empty())
+  let texts : Array[String] = []
+  for command in t_commands(encoded) {
+    if command is @render.FillText(text, _, _, _) {
+      texts.push(text)
+    }
+  }
+  assert_eq(texts, ["日"])
+}

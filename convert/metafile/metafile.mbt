@@ -290,9 +290,15 @@ fn utf16_text(data : Bytes, count : Int32) -> String {
 }
 
 ///|
-fn ansi_text(data : Bytes, count : Int32) -> String {
-  let length = if count > data.length() { data.length() } else { count }
-  @utf8.decode_lossy(data[:length])
+fn ansi_text(data : Bytes, charset : Int32) -> String {
+  if charset == 128 {
+    match @encoding.decode(data, "shift_jis") {
+      Ok(text) => text
+      Err(_) => @utf8.decode_lossy(data)
+    }
+  } else {
+    @utf8.decode_lossy(data)
+  }
 }
 
 ///|

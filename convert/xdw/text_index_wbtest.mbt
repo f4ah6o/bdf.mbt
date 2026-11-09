@@ -393,7 +393,9 @@ test "body text of a real document reaches the index" {
     e => abort("convert failed: " + e.to_string())
   }
   let runs = xdw_document_index(result.bdf)
+  assert_eq(runs.length(), 224)
   let text = @core.index_plain_text(runs)
+  assert_false(text.contains("\u{FFFD}"))
   assert_true(text.contains("要介護認定調査委託完了届"))
   // Every run belongs to a page that exists.
   for run in runs {
@@ -493,4 +495,29 @@ test "include_hidden keeps covered text and changes nothing else" {
   assert_eq(@core.index_plain_text(plain_runs), @core.index_plain_text(hidden_runs))
   // The drawing itself is the same either way.
   assert_eq(plain.bdf.length(), hidden.bdf.length())
+}
+
+///|
+/// `okinawa-pref_61` draws its body with `EXTTEXTOUTA` and `lfCharSet` 128
+/// (Shift_JIS). The EMF reader has to decode those bytes with the charset the
+/// selected font carries, not as UTF-8.
+test "EMF ANSI text decodes with the font charset" {
+  let b = xdw_fixture_bytes("okinawa-pref_61").unwrap()
+  let result = xdw_convert(b) catch {
+    e => abort("convert failed: " + e.to_string())
+  }
+  let runs = xdw_document_index(result.bdf)
+  assert_eq(runs.length(), 33)
+  let text = @core.index_plain_text(runs)
+  let search = @core.TextSearch::new(runs)
+  for
+    phrase in [
+      "環境白書の発行に当たって", "沖縄県知事", "翁長雄志",
+    ] {
+    assert_true(search.search(phrase).length() > 0)
+  }
+  assert_true(text.contains("環境白書の発行に当たって"))
+  assert_true(text.contains("沖縄県知事"))
+  assert_true(text.contains("翁長雄志"))
+  assert_false(text.contains("\u{FFFD}"))
 }

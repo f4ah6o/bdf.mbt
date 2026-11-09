@@ -16,6 +16,9 @@
 
 ### Fixed
 
+- EMF text with a Shift_JIS font charset now preserves Japanese characters,
+  including searchable body text in DocuWorks documents.
+
 - Covered text is left out of the DocuWorks index only when a fill provably
   hides it. A fill clipped away from the run, a translucent fill, a gradient or
   pattern fill, and an image no longer count as covers.
