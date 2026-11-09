@@ -55,6 +55,7 @@ try {
       ['html', '/compat/html/fixtures/article.html', '.html'],
       ['epub', '/compat/epub/fixtures/basic.epub', '.epub'],
       ['fixed', '/compat/epub/fixtures/fixed.epub', '.epub'],
+      ['vertical', '/compat/epub/fixtures/vertical.epub', '.epub'],
     ]) {
       const bytes = new Uint8Array(await (await fetch(base + path)).arrayBuffer());
       const converted = await moon.convert(bytes, { name: name + ext });
@@ -74,7 +75,7 @@ try {
         continue;
       }
       const index = decodeTextIndex(await doc.part(view.textIndex));
-      out[name] = { summary: converted.summary, pages: view.pages.length, text: index.map(run => run.text).join('') };
+      out[name] = { summary: converted.summary, pages: view.pages.length, text: index.map(run => run.text).join(''), warnings: converted.warnings };
     }
     moon.terminate();
     return out;
@@ -93,6 +94,11 @@ try {
   assert.ok(result.html.text.includes('How Canvas Documents Load Quickly'));
   assert.ok(result.epub.pages > 0);
   assert.ok(result.epub.text.length > 20);
+  assert.ok(result.vertical.pages > 0);
+  for (const want of ['縦書き', '縦中横', '傍点', '漢字', '右寄せの行', '縦書きのテスト']) {
+    assert.ok(result.vertical.text.includes(want), `vertical EPUB text lacks ${want}`);
+  }
+  assert.ok(!result.vertical.text.includes('かんじ'), 'ruby annotation must not be reader text');
   assert.equal(result.fixed.pages, 6);
   assert.equal(result.fixed.kind, 'fixed');
   assert.equal(result.fixed.direction, 'rtl');
