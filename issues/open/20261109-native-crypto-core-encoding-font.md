@@ -12,7 +12,7 @@ Branch: feat/20261109-native-crypto-core-encoding-font
 
 ## 背景
 
-偵察 Issue の結果を前提とする。`crypto` と `core` は flip だけで 81/81 pass することを 2026-11-09 に確認済み。
+偵察（2026-11-09）で、`moon.mod` と全パッケージを flip すると `moon check`、`moon test`、`moon build` が native で全て通ることが判明した。`moon test --target native` は 2730/2730 pass。この Issue は flip をレビュー可能な単位に切るためのもので、コード変更は不要。
 
 ## 問題
 

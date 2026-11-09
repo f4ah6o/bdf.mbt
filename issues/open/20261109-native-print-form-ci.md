@@ -12,7 +12,7 @@ Branch: feat/20261109-native-print-form-ci
 
 ## 背景
 
-前段までで convert と export まで native 化済み。
+前段までで convert と export まで native 化済み。偵察で flip だけで通ることは確認済み。残るのは CI matrix と実変換ゲート。
 
 ## 問題
 

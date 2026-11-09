@@ -12,7 +12,7 @@ Branch: feat/20261109-native-convert-export
 
 ## 背景
 
-前段の Issue で `crypto`、`core`、`encoding`、`font` が native 化済み。
+前段の Issue で `crypto`、`core`、`encoding`、`font` が native 化済み。偵察で flip だけで通ることは確認済みなので、この Issue もコード変更を伴わない見込み。
 
 ## 問題
 
