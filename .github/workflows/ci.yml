@@ -1,7 +1,10 @@
 name: moonbit
 on:
+  # A branch push and its pull_request both fire, so every PR ran twice.
+  # Restrict push to main: PRs (same repo and forks) are covered by
+  # pull_request, and main is covered by push.
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
   workflow_dispatch:
 concurrency:
