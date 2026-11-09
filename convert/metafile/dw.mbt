@@ -518,18 +518,27 @@ fn dw_jpeg_size(d : Bytes) -> (Int, Int)? {
       continue
     }
     let len = (d[i + 2].to_int() << 8) | d[i + 3].to_int()
-    // the segment must be fully inside the file, and a SOF frame needs its
-    // first five bytes (precision, then height and width); without either,
-    // the file is truncated and the caller just does not learn a size
-    if len < 2 || i + 2 + len > d.length() {
+    // the segment must be fully inside the file; past it the file is
+    // truncated and the caller just does not learn a size
+    if i + 2 + len > d.length() {
       return None
     }
     if m >= 0xc0 && m <= 0xcf && m != 0xc4 && m != 0xc8 && m != 0xcc {
+      // a SOF frame is at least 8 bytes long (precision, height, width,
+      // then the component list): refuse shorter ones instead of reading
+      // the height/width bytes past the segment
+      if len < 8 {
+        return None
+      }
       let h = (d[i + 5].to_int() << 8) | d[i + 6].to_int()
       let w = (d[i + 7].to_int() << 8) | d[i + 8].to_int()
       if w > 0 && h > 0 {
         return Some((w, h))
       }
+      return None
+    }
+    // a short non-SOF segment only shortens the scan
+    if len < 2 {
       return None
     }
     i += 2 + len
@@ -637,6 +646,14 @@ test "dw_jpeg_size does not read past a truncated SOF" {
   )
   guard dw_jpeg_size(truncated) is None else {
     abort("a size came out of a truncated frame")
+  }
+  // a segment that announces a SOF with no payload (len = 2)
+  // never reads the height and width bytes
+  let short = Bytes::from_array(
+    FixedArray::from_array([0xff, 0xd8, 0xff, 0xc0, 0x00, 0x02].map((v) => v.to_byte())),
+  )
+  guard dw_jpeg_size(short) is None else {
+    abort("a size came out of a two-byte SOF segment")
   }
   // a healthy SOF0 still reports its size
   let healthy = Bytes::from_array(
