@@ -57,6 +57,24 @@ Everything already ported stays in scope for parity.
 `internal/` (14,975 lines) is not listed separately: its packages are ported
 under `convert/*` and `font/*` as their consumers need them.
 
+`convert/xdw` is not an upstream converter. It is a port of
+`ezpzfile/ezpzfile-xdw` v0.3 (MIT) that this repository added in PR #5, so it
+is outside the definition of done. It stays in the supported format set and
+must keep passing on every target.
+
+## Work in flight
+
+| PR | Branch | State | What it changes |
+|---|---|---|---|
+| #6 | `vibe/xdw-conversion-accuracy` | open, mergeable; parity, test and demo green, build and compare running | `convert/xdw` accuracy (path records, rotation, annotation windows, scanned strips) and `convert/metafile` EMF path records |
+
+PR #6 touches `convert/metafile`, which `convert/docx`, `convert/pptx` and
+`convert/emf` import for embedded pictures. Re-measure the parity baseline
+after it lands: the M3 numbers in `docs/parity.md` predate it.
+
+The remaining `convert/xdw` gaps are tracked separately from the upstream
+milestones, in `20261109-xdw-remaining-gaps`.
+
 ## Targets
 
 `moon --target` accepts `wasm`, `wasm-gc`, `js`, `native` and `llvm`. The
@@ -150,6 +168,7 @@ One issue is one branch and one worktree. Up to two run at once, because
 | M3 | `20261109-parity-xlsx-print-view` | — |
 | M3 | `20261109-parity-markdown-reader` | — |
 | M3 | `20261109-parity-remaining` | — |
+| XDW | `20261109-xdw-remaining-gaps` | — |
 
 ## Risks
 
@@ -165,3 +184,9 @@ One issue is one branch and one worktree. Up to two run at once, because
   the interpreter to share with `vector/pdfbdf`.
 - **`sign` needs CMS and X.509.** `crypto` has the primitives but no ASN.1
   encoder. That is new surface, not a port of existing code.
+- **PR #6 moves the parity baseline.** Its `convert/metafile` changes reach
+  DOCX and PPTX pictures. Land it before M3 starts, or re-run the harness on
+  top of it, so the 40 diffs are counted against one reference.
+- **`convert/xdw` is outside the upstream scope but inside the test suite.**
+  Its remaining gaps must not be counted as upstream parity, and its fixtures
+  must keep passing on `js`, `wasm-gc` and `native`.
