@@ -110,26 +110,8 @@ fn tlv_find_uint(items : Array[Tlv], b : Bytes, tag : Int) -> Int64? {
 }
 
 ///|
-/// One element at `at`, whose length may run past the end of the file.
-fn tlv_read_clamped(b : Bytes, at : Int) -> Tlv raise XdwError {
-  let t = tlv_read(b, at, 0x7ffffff)
-  let clen = t.len.min(b.length() - t.value)
-  { tag: t.tag, start: t.start, value: t.value, len: clen }
-}
-
-///|
 fn tlv_try_read(b : Bytes, at : Int, limit : Int) -> Tlv? {
   try Some(tlv_read(b, at, limit)) catch {
-    e => {
-      ignore(e)
-      None
-    }
-  }
-}
-
-///|
-fn tlv_try_read_clamped(b : Bytes, at : Int) -> Tlv? {
-  try Some(tlv_read_clamped(b, at)) catch {
     e => {
       ignore(e)
       None

@@ -139,9 +139,10 @@ pub(all) struct XdwResult {
 }
 
 ///|
-/// Detect a DocuWorks file: the header tag 0x60.
+/// Detect a DocuWorks file: the header tag 0x60 and an ASN.1-style long
+/// length behind it.
 pub fn xdw_detect(data : Bytes) -> Bool {
-  data.length() >= 24 && data[0].to_int() == T_HEADER
+  data.length() >= 24 && data[0].to_int() == T_HEADER && data[1].to_int() == 0x0e && data[2].to_int() == 0x82
 }
 
 ///|
@@ -171,16 +172,26 @@ fn XdwDocument::xdw_draw_object(
   let data = pic.data
   let file_kind = @metafile.kind(data)
   if file_kind != "" {
-    let warns = @metafile.draw_into(
-      object,
-      writer,
-      data,
-      body_x,
-      body_y,
-      w,
-      h,
-      pics?=Some(self.pictures(obj.record)),
-    )
+    if w <= 0.0 || h <= 0.0 {
+      // a degenerate object box: nothing to draw
+      warnings.push(kind_name_ + ": the object box is empty")
+      return
+    }
+    let warns = try @metafile.draw_into(
+        object,
+        writer,
+        data,
+        body_x,
+        body_y,
+        w,
+        h,
+        pics=self.pictures(obj.record),
+      ) catch {
+      @metafile.MetafileInvalid(message) => {
+        warnings.push(kind_name_ + ": " + message)
+        []
+      }
+    }
     for w2 in warns {
       warnings.push(kind_name_ + ": " + w2)
     }

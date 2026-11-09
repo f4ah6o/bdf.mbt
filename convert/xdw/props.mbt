@@ -30,7 +30,7 @@ priv struct PropAttr {
   /// "constructed" bit 0x20 as stored.
   class : Int
   tag : Int
-  mut value : Bytes
+  value : Bytes
 }
 
 ///|
@@ -114,15 +114,6 @@ fn PropRecord::named(self : PropRecord, name : String) -> PropAttr? {
 }
 
 ///|
-fn PropRecord::named_tag(self : PropRecord, name : String) -> Int? {
-  for d in self.defs() {
-    if d.name == name {
-      return Some(d.tag)
-    }
-  }
-  None
-}
-
 ///|
 /// The numbers stored in attribute `tag`.
 fn PropRecord::ints(self : PropRecord, tag : Int) -> Array[Int64] {
@@ -154,22 +145,6 @@ fn PropRecord::named_ints(self : PropRecord, name : String) -> Array[Int64] {
 }
 
 ///|
-fn PropRecord::set(
-  self : PropRecord,
-  class : Int,
-  tag : Int,
-  value : Bytes,
-) -> Unit {
-  for a in self.attrs {
-    if a.tag == tag {
-      a.value = value
-      return
-    }
-  }
-  self.attrs.push({ class, tag, value })
-}
-
-///|
 /// A big-endian two's-complement number.
 fn xdw_num(b : Bytes) -> Int64 {
   if b.is_empty() || b.length() > 8 {
@@ -183,34 +158,6 @@ fn xdw_num(b : Bytes) -> Int64 {
   acc
 }
 
-///|
-/// The shortest two's-complement bytes of `v`.
-fn xdw_num_bytes(v : Int64) -> Bytes {
-  let bytes = xdw_i64_be_bytes(v)
-  let mut k = 0
-  while k < 7 {
-    let a = bytes[k].to_int()
-    let c = bytes[k + 1].to_int()
-    if (a == 0 && (c & 0x80) == 0) || (a == 0xff && (c & 0x80) != 0) {
-      k += 1
-    } else {
-      break
-    }
-  }
-  bytes[k : 8].to_owned()
-}
-
-///|
-/// The 8 big-endian bytes of an Int64.
-pub fn xdw_i64_be_bytes(v : Int64) -> Bytes {
-  let arr : FixedArray[Byte] = FixedArray::make(8, b'\x00')
-  for k in 0..<8 {
-    arr[k] = (v >> (56 - k * 8) & 0xffL).to_byte()
-  }
-  Bytes::from_array(arr)
-}
-
-///|
 /// The lossy UTF-8 text of `b` (text values are stored as they are).
 fn xdw_lossy(b : Bytes) -> String {
   @utf8.decode_lossy(b)
@@ -261,28 +208,6 @@ fn xdw_value_ints(v : Bytes) -> Array[Int64] {
 
 ///|
 /// Encode numbers as length-prefixed items.
-fn xdw_value_ints_bytes(vs : Array[Int64]) -> Bytes {
-  let bytes : Array[Byte] = []
-  for v in vs {
-    let b = xdw_num_bytes(v)
-    bytes.push(b.length().to_byte())
-    for x in b {
-      bytes.push(x)
-    }
-  }
-  let pairs : FixedArray[Byte] = FixedArray::make(bytes.length(), b'\x00')
-  for i, x in bytes {
-    pairs[i] = x
-  }
-  Bytes::from_array(pairs)
-}
-
-///|
-fn xdw_bad(at : Int) -> XdwError {
-  XdwCorrupt("properties: bad element at \{at}")
-}
-
-///|
 /// One element as stored: (class byte, tag number, value offset,
 /// length, end).
 fn xdw_element5(b : Bytes, at : Int, end : Int) -> (Int, Int, Int, Int, Int) raise XdwError {
@@ -315,6 +240,10 @@ fn xdw_element5(b : Bytes, at : Int, end : Int) -> (Int, Int, Int, Int, Int) rai
 }
 
 ///|
+fn xdw_bad(at : Int) -> XdwError {
+  XdwCorrupt("properties: bad element at \{at}")
+}
+
 fn xdw_read_len(b : Bytes, i : Int) -> (Int, Int) raise XdwError {
   let n = match b.get(i) {
     Some(v) => v.to_int()

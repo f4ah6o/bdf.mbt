@@ -144,13 +144,6 @@ fn xdw_doc_name(rec : PropRecord) -> String {
 }
 
 ///|
-/// Marks our see-through picture: an embedded OLE picture (800f, an
-/// Enhanced Metafile, as DocuWorks keeps a pasted metafile) whose drawing is
-/// one STRETCHDIBITS with SRCAND, so the picture multiplies the page (white
-/// shows what is under it).
-pub const PICTURE_MARK : String = "%ezpz_picture"
-
-///|
 /// What kind of thing an object is, in words.
 pub fn xdw_kind_name(k : Int64) -> String {
   match k {
@@ -360,40 +353,6 @@ fn XdwDocument::entry_expanded(self : XdwDocument, n : Int) -> Bytes? raise {
 }
 
 ///|
-/// An object's drawing reference: attribute 7.
-fn XdwDocument::drawing(self : XdwDocument, record : Int) -> (Int, Int)? {
-  if record < 0 || record >= self.records.length() {
-    return None
-  }
-  let a = self.records[record].get(7)
-  match a {
-    None => None
-    Some(attr) =>
-      if (attr.class & 0xc0) == 0xc0 {
-        // a reference: (entry index, offset)
-        let pairs = xdw_value_ints(attr.value)
-        if pairs.length() >= 2 {
-          Some((pairs[0].to_int(), pairs[1].to_int()))
-        } else {
-          None
-        }
-      } else {
-        // the drawing's body: inline
-        let v = attr.value
-        let items = xdw_value_items(v)
-        if items.length() >= 2 {
-          let n = xdw_num(items[0]).to_int()
-          let at = xdw_num(items[1]).to_int()
-          Some((n, at))
-        } else {
-          // entry reference with generated counts
-          None
-        }
-      }
-  }
-}
-
-///|
 /// UTF-16LE text, lossy; trailing NULs are cut.
 fn xdw_utf16(v : Bytes) -> String {
   let s = try @utf16.decode(v, ignore_bom=true, endianness=@utf16.Little) catch {
@@ -458,8 +417,6 @@ fn XdwDocument::binder_docs(self : XdwDocument) -> Array[(Int, String, Int, Int)
       Some(f) => f
       None => {
         let mut carry = 0
-        let mutable = false
-        ignore(mutable)
         if out.length() > 0 {
           let last = out[out.length() - 1]
           carry = last.2 + last.3

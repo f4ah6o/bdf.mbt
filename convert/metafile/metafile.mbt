@@ -112,8 +112,9 @@ priv struct Gdi {
   /// bottom-up orientation.
   mut dw_dib : (Bytes, Bytes?)
   mut dw_jpeg : Bytes?
-  /// A DW path accumulated by the DW02/DW-record point sequences.
-  dw_path : Array[(Double, Double)]
+  /// A DW path accumulated by the DW02/DW-record point sequences, as
+  /// drawn segments (moves, lines, cubic Béziers, closes) in page space.
+  dw_path : Array[DwSeg]
 }
 
 ///|

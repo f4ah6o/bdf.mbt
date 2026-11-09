@@ -17,7 +17,6 @@
 pub const T_HEADER : Int = 0x60
 
 ///|
-const T_SEGMENT : Int = 0x61
 
 ///|
 const T_PROPERTIES : Int = 0x63
@@ -62,19 +61,6 @@ priv struct Trailer {
   fields : Array[(Int, Bytes)]
 }
 
-///|
-priv struct Segment {
-  at : Int
-  /// Declared end of the segment.
-  mut end : Int
-  /// Entries stored in this segment (offsets of their tags).
-  entries : Array[Int]
-  /// The properties block: (value offset, length).
-  mut props : (Int, Int)?
-  mut trailer : Int?
-}
-
-///|
 /// How an entry stores its data.
 priv enum Body {
   /// `0x82 { 0x80 kind, …, 0x86 data }`: kind, every field as
@@ -137,6 +123,7 @@ fn Entry::expanded(self : Entry, b : Bytes, limits : Limits) -> Bytes raise XdwE
   match xdw_expanded_size(self.kind(), self.field(0x8a), self.field(0x81), d.length()) {
     Some(n) => lzh_decompress(d, n, limits)
     None => d
+
   }
 }
 ///|
@@ -145,7 +132,6 @@ priv struct XdwContainer {
   generation : Int64?
   /// The header's raw value.
   header : (Int, Int)
-  segments : Array[Segment]
   trailer : Trailer
 }
 
@@ -161,12 +147,10 @@ fn xdw_container_parse(b : Bytes, limits : Limits) -> XdwContainer raise XdwErro
   if xdw_is_protected(b, trailer) {
     raise XdwProtected
   }
-  let segments = xdw_scan_segments(b, header.end())
   {
     size: b.length(),
     generation,
     header: (header.value, header.len),
-    segments,
     trailer,
   }
 }
@@ -384,73 +368,6 @@ fn xdw_parse_trailer(b : Bytes, t : Tlv) -> Trailer raise XdwError {
   }
 }
 
-///|
-/// The segments, read leniently (for inspection only).
-fn xdw_scan_segments(b : Bytes, start : Int) -> Array[Segment] {
-  let out : Array[Segment] = []
-  let mut i = start
-  while i + 2 <= b.length() {
-    let t : Tlv = match tlv_try_read(b, i, 0x7ffffff) {
-      Some(t) => t
-      None =>
-        match tlv_try_read_clamped(b, i) {
-          Some(t) => t
-          None => break
-        }
-    }
-    if t.tag != T_SEGMENT {
-      if t.len == 0 && t.tag == 0 {
-        break
-      }
-      i = t.end()
-      continue
-    }
-    let seg : Segment = {
-      at: t.start,
-      end: t.end(),
-      entries: [],
-      props: None,
-      trailer: None,
-    }
-    let mut j = t.value
-    let mut last_end = j
-    while j < b.length() {
-      let c : Tlv = match tlv_try_read(b, j, b.length()) {
-        Some(c) => c
-        None => {
-          match tlv_try_read_clamped(b, j) {
-            Some(c) => c
-            None => {
-              ignore(0)
-              break
-            }
-          }
-        }
-      }
-      match c.tag {
-        tag if tag == T_ENTRY => seg.entries.push(c.start)
-        tag if tag == T_PROPERTIES => seg.props = Some((c.value, c.len))
-        tag if tag == T_TRAILER || tag == T_TRAILER_OLD => seg.trailer = Some(c.start)
-        _ => break
-      }
-      j = c.end()
-      last_end = j
-      if (c.tag == T_TRAILER || c.tag == T_TRAILER_OLD) || j >= t.end() {
-        break
-      }
-    }
-    i = if last_end > t.end().min(b.length()) {
-      last_end
-    } else {
-      t.end().min(b.length())
-    }
-    if seg.end < last_end {
-      seg.end = last_end
-    }
-    out.push(seg)
-  }
-  out
-}
 
 ///|
 fn xdw_parse_entry(b : Bytes, at : Int, limits : Limits) -> Entry raise XdwError {
