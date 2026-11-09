@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [js, wasm-gc]
+        target: [js, wasm-gc, native]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -21,7 +21,31 @@ jobs:
       - run: moon update
       - run: moon version --all
       - run: moon check --target ${{ matrix.target }}
-      - run: moon test --target ${{ matrix.target }}
+      - name: moon test
+        run: |
+          set -o pipefail
+          moon test --target ${{ matrix.target }} | tee "$RUNNER_TEMP/moon-test.log"
+      # `moon test` exits 0 when it runs no tests at all, so a green run is not
+      # proof that anything was exercised. Require the summary line and a floor
+      # on the count; the floor is a canary for silently dropped tests.
+      - name: assert the test run was not empty
+        run: |
+          summary=$(grep -E '^Total tests: [0-9]+, passed: [0-9]+, failed: [0-9]+\.$' "$RUNNER_TEMP/moon-test.log" | tail -1)
+          if [ -z "$summary" ]; then
+            echo "no test summary line; the run produced no tests" >&2
+            exit 1
+          fi
+          total=$(sed -E 's/^Total tests: ([0-9]+),.*/\1/' <<<"$summary")
+          failed=$(sed -E 's/.*failed: ([0-9]+)\.$/\1/' <<<"$summary")
+          echo "total=$total failed=$failed"
+          if [ "$total" -lt 2700 ]; then
+            echo "expected at least 2700 tests, got $total" >&2
+            exit 1
+          fi
+          if [ "$failed" -ne 0 ]; then
+            echo "$failed tests failed" >&2
+            exit 1
+          fi
       - run: moon build --target ${{ matrix.target }}
 
   demo:
