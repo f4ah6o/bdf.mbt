@@ -307,3 +307,76 @@ test "annotation emfs fit their window to the box" {
   }
   guard checked else { abort("the rectangle was not filled") }
 }
+
+///|
+test "polybezierto inside a path closes the figure it continues" {
+  // BEGINPATH, MOVETOEX (0,0), one cubic from the current point,
+  // CLOSEFIGURE, ENDPATH, FILLPATH
+  let records = [
+    t_record(59, b""), // BEGINPATH
+    t_record(27, t_i32s([0, 0])), // MOVETOEX
+    t_record(5, t_i32s([0, 0, 100, 100, 3, 100, 0, 100, 100, 0, 100])), // POLYBEZIERTO
+    t_record(61, b""), // CLOSEFIGURE
+    t_record(60, b""), // ENDPATH
+    t_record(62, b""), // FILLPATH
+    t_record(14, t_i32s([0, 0, 0])), // EOF
+  ]
+  let emf = t_emf([0, 0, 2540, 2540], [96, 96], [25, 25], records)
+  let (encoded, warnings) = t_draw(emf, 72.0, 72.0, false)
+  guard warnings.is_empty() else {
+    abort("unexpected warnings: \{warnings.join(",")}")
+  }
+  let commands = t_commands(encoded)
+  let mut index = -1
+  for c in commands {
+    match c {
+      @render.FillPath(i, _) => index = i
+      _ => ()
+    }
+  }
+  guard index >= 0 else { abort("the path was not filled") }
+  let resources = @core.decode_object_resources(encoded) catch {
+    e => abort("decode failed: " + e.to_string())
+  }
+  let path = match resources.paths[index] {
+    @core.Inline(value) => value
+    _ => abort("the fill did not use an inline path")
+  }
+  let mut moves = 0
+  let mut closes = 0
+  for verb in path.verbs {
+    if verb.to_int() == 0 {
+      moves += 1
+    } else if verb.to_int() == 4 {
+      closes += 1
+    }
+  }
+  guard moves == 1 else {
+    abort("POLYBEZIERTO started \{moves} subpaths inside the path, not 1")
+  }
+  guard closes == 1 else { abort("the figure was not closed") }
+}
+
+///|
+test "widenpath is reported as unsupported" {
+  let records = [
+    t_record(59, b""), // BEGINPATH
+    t_record(27, t_i32s([0, 0])), // MOVETOEX
+    t_record(54, t_i32s([100, 0])), // LINETO
+    t_record(60, b""), // ENDPATH
+    t_record(66, b""), // WIDENPATH
+    t_record(64, b""), // STROKEPATH
+    t_record(14, t_i32s([0, 0, 0])), // EOF
+  ]
+  let emf = t_emf([0, 0, 2540, 2540], [96, 96], [25, 25], records)
+  let (_, warnings) = t_draw(emf, 72.0, 72.0, false)
+  let mut widened = false
+  for w in warnings {
+    if w.contains("WIDENPATH") {
+      widened = true
+    }
+  }
+  guard widened else {
+    abort("WIDENPATH was dropped without a warning: \{warnings.join(",")}")
+  }
+}

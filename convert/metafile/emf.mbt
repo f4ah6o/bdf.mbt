@@ -488,7 +488,8 @@ fn Gdi::play_emf(
         self.path_active = false
         self.path_flush(false, true)
       }
-      65 | 66 => () // FLATTENPATH, WIDENPATH: the path is already flat
+      65 => () // FLATTENPATH: the path is already flat
+      66 => self.warn("metafile WIDENPATH is not supported") // WIDENPATH
       67 => {
         // SELECTCLIPPATH
         self.path_active = false
