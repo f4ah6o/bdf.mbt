@@ -17,6 +17,20 @@ pub fn dib_to_png(data : Bytes, bits : Bytes?) -> Bytes? {
 }
 
 ///|
+/// Split a kind 7 DIB body: the BITMAPINFO, then the stored bits behind a
+/// 16-byte trailer (u32 1, stored size, expanded size, rows). The bits are
+/// LZH-compressed when the expanded size differs from the stored size.
+pub fn dib_body_split(data : Bytes) -> (Bytes, Bytes, Int32, Int32)? {
+  let n = dib_bits_offset(data)
+  if n <= 0 || n + 16 > data.length() {
+    return None
+  }
+  let stored = le32(data, n + 4).to_int()
+  let expanded = le32(data, n + 8).to_int()
+  Some((data[0:n].to_owned(), data[n + 16:].to_owned(), stored, expanded))
+}
+
+///|
 fn i8le(p : Bytes, at : Int) -> Double {
   if at < p.length() {
     let v = p[at].to_int()
@@ -575,21 +589,9 @@ fn Gdi::dw_draw_picture(
   let jpeg = self.dw_jpeg
   match jpeg {
     Some(by) => {
-      // the picture is one JPEG part; a partial source rectangle would
-      // need a decoder side crop, which the drawing does not do (the
-      // driver draws whole pictures)
-      let cropped = srcx != 0.0 ||
-        srcy != 0.0 ||
-        srcw < 0.0 ||
-        srch < 0.0 ||
-        {
-          let full = dw_jpeg_size(by)
-          full is Some((pw, ph)) &&
-          (srcw > 0.0 && srcw < pw.to_double() || srch > 0.0 && srch < ph.to_double())
-        }
-      if cropped {
-        self.warn("a DW picture draws a cropped JPEG, which is not supported")
-      }
+      // The picture is one JPEG part. A scanned page draws it in strips:
+      // each DWc carries a source rectangle, so the part is cropped with
+      // image_sub instead of being squeezed into the strip.
       let hash = self.writer.add_part("img", by) catch {
         error => {
           self.warn("a picture could not be stored: " + error.to_string())
@@ -610,14 +612,76 @@ fn Gdi::dw_draw_picture(
       let m = self.matrix()
       let (x0, y0) = m.apply(dstx, dsty)
       let (x1, y1) = m.apply(dstx + dstw, dsty + dsth)
-      self.object.image(
-        index,
-        Float::from_double(if x0 < x1 { x0 } else { x1 }),
-        Float::from_double(if y0 < y1 { y0 } else { y1 }),
-        Float::from_double((x1 - x0).abs()),
-        Float::from_double((y1 - y0).abs()),
-      ) catch {
-        error => self.warn("a picture could not be drawn: " + error.to_string())
+      let dx = if x0 < x1 { x0 } else { x1 }
+      let dy = if y0 < y1 { y0 } else { y1 }
+      let dw = (x1 - x0).abs()
+      let dh = (y1 - y0).abs()
+      let full = dw_jpeg_size(by)
+      let sx = srcx
+      let sy = srcy
+      let mut sw = srcw
+      let mut sh = srch
+      if sw <= 0.0 || sh <= 0.0 {
+        match full {
+          Some((pw, ph)) => {
+            if sw <= 0.0 {
+              sw = pw.to_double() - sx
+            }
+            if sh <= 0.0 {
+              sh = ph.to_double() - sy
+            }
+          }
+          None => ()
+        }
+      }
+      let cropped = sx > 0.0 ||
+        sy > 0.0 ||
+        (match full {
+          Some((pw, ph)) => sw < pw.to_double() || sh < ph.to_double()
+          None => false
+        })
+      if cropped {
+        match full {
+          Some(_) =>
+            self.object.image_sub(
+              index,
+              Float::from_double(sx),
+              Float::from_double(sy),
+              Float::from_double(sw),
+              Float::from_double(sh),
+              Float::from_double(dx),
+              Float::from_double(dy),
+              Float::from_double(dw),
+              Float::from_double(dh),
+            ) catch {
+              error =>
+                self.warn("a picture could not be drawn: " + error.to_string())
+            }
+          None => {
+            self.warn("a DW picture draws a cropped JPEG of unknown size")
+            self.object.image(
+              index,
+              Float::from_double(dx),
+              Float::from_double(dy),
+              Float::from_double(dw),
+              Float::from_double(dh),
+            ) catch {
+              error =>
+                self.warn("a picture could not be drawn: " + error.to_string())
+            }
+          }
+        }
+      } else {
+        self.object.image(
+          index,
+          Float::from_double(dx),
+          Float::from_double(dy),
+          Float::from_double(dw),
+          Float::from_double(dh),
+        ) catch {
+          error =>
+            self.warn("a picture could not be drawn: " + error.to_string())
+        }
       }
     }
     None => {

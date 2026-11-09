@@ -5,6 +5,9 @@
 ///|
 priv struct XdwDrawing {
   kind : Int64
+  /// Entry field 0x8d = 1: an annotation drawing, whose EMF window (not
+  /// its frame) is fitted to the object box.
+  annotation : Bool
   data : Bytes
 }
 
@@ -35,7 +38,7 @@ fn XdwDocument::drawing_of(self : XdwDocument, record : Int) -> XdwDrawing? rais
       None => return None
     }
     match e.expanded(self.b, self.limits) {
-      data => Some({ kind, data })
+      data => Some({ kind, data, annotation: e.field(0x8d) == Some(1L) })
     }
   } else {
     // the drawing's body inline: `80` kind, `81` expanded size, `86` data,
@@ -64,7 +67,11 @@ fn XdwDocument::drawing_of(self : XdwDocument, record : Int) -> XdwDrawing? rais
       Some(n) => lzh_decompress(raw, n, self.limits)
       None => raw
     }
-    Some({ kind, data })
+    Some({
+      kind,
+      data,
+      annotation: tlv_find_uint(items, attr.value, 0x8d) == Some(1L),
+    })
   }
 }
 
@@ -93,7 +100,7 @@ fn XdwDocument::pictures(self : XdwDocument, record : Int) -> Array[Bytes] {
   }
   let rec = self.records[record]
   let n = match rec.get(300) {
-    Some(a) => xdw_num(a.value).to_int()
+    Some(a) => xdw_le_num(a.value).to_int()
     None => return out
   }
   let defs = self.defs(record)
@@ -140,6 +147,25 @@ fn XdwDocument::pictures(self : XdwDocument, record : Int) -> Array[Bytes] {
 ///|
 /// 1/100 mm to points.
 let xdw_px2pt : Double = 72.0 / 2540.0
+///|
+/// The transform that turns an object's drawing clockwise by `rotation`
+/// degrees inside its box, and the drawing's natural size. The box is the
+/// rotated size, so a quarter turn swaps width and height.
+fn xdw_rotation(
+  rotation : Int64,
+  x : Double,
+  y : Double,
+  w : Double,
+  h : Double,
+) -> (Double, Double, Double, Double, Double, Double, Double, Double) {
+  let r = (rotation % 360L + 360L) % 360L
+  match r {
+    90L => (h, w, 0.0, 1.0, -1.0, 0.0, x + w, y)
+    180L => (w, h, -1.0, 0.0, 0.0, -1.0, x + w, y + h)
+    270L => (h, w, 0.0, -1.0, 1.0, 0.0, x, y + h)
+    _ => (w, h, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+  }
+}
 
 ///|
 /// A DocuWorks conversion result.
@@ -159,6 +185,18 @@ pub(all) struct XdwResult {
 pub fn xdw_detect(data : Bytes) -> Bool {
   data.length() >= 24 && data[0].to_int() == T_HEADER &&
   data[1].to_int() < 0x80 && (data[2].to_int() & 0xc0) == 0x80
+}
+
+///|
+/// Whether `b` starts with a JPEG SOI marker.
+fn xdw_is_jpeg(b : Bytes) -> Bool {
+  b.length() > 2 && b[0].to_int() == 0xff && b[1].to_int() == 0xd8
+}
+
+///|
+/// Whether `b` carries a JPEG SOI marker at `at`.
+fn xdw_is_jpeg_at(b : Bytes, at : Int) -> Bool {
+  b.length() > at + 2 && b[at].to_int() == 0xff && b[at + 1].to_int() == 0xd8
 }
 
 ///|
@@ -183,25 +221,66 @@ fn XdwDocument::xdw_draw_object(
   let y = obj.y.to_double() * scale
   let w = obj.w.to_double() * scale
   let h = obj.h.to_double() * scale
-  let body_x = if obj.kind == K_CONTENT { 0.0 } else { x }
-  let body_y = if obj.kind == K_CONTENT { 0.0 } else { y }
+  if w <= 0.0 || h <= 0.0 {
+    // a degenerate object box: nothing to draw
+    warnings.push(kind_name_ + ": the object box is empty")
+    return
+  }
+  // attribute 61 turns the drawing clockwise inside its box; the box is
+  // the rotated size, so the drawing's own width and height swap
+  let (nw, nh, ta, tb, tc, td, te, tf) = xdw_rotation(obj.rotation, x, y, w, h)
+  let rotated = ta != 1.0 || tb != 0.0 || tc != 0.0 || td != 1.0
+  if rotated {
+    object.save()
+    object.transform(
+      Float::from_double(ta),
+      Float::from_double(tb),
+      Float::from_double(tc),
+      Float::from_double(td),
+      Float::from_double(te),
+      Float::from_double(tf),
+    )
+  }
+  let body_x = if rotated || obj.kind == K_CONTENT { 0.0 } else { x }
+  let body_y = if rotated || obj.kind == K_CONTENT { 0.0 } else { y }
+  let body_w = if rotated { nw } else { w }
+  let body_h = if rotated { nh } else { h }
+  self.xdw_draw_body(
+    obj, pic, kind_name_, body_x, body_y, body_w, body_h, object, writer, warnings,
+  )
+  if rotated {
+    object.restore()
+  }
+}
+
+///|
+/// Draw one drawing into the box `x,y,w,h` (page points).
+fn XdwDocument::xdw_draw_body(
+  self : XdwDocument,
+  obj : XdwObject,
+  pic : XdwDrawing,
+  kind_name_ : String,
+  x : Double,
+  y : Double,
+  w : Double,
+  h : Double,
+  object : @core.ObjectBuilder,
+  writer : @core.DocumentWriter,
+  warnings : Array[String],
+) -> Unit raise {
   let data = pic.data
   let file_kind = @metafile.kind(data)
   if file_kind != "" {
-    if w <= 0.0 || h <= 0.0 {
-      // a degenerate object box: nothing to draw
-      warnings.push(kind_name_ + ": the object box is empty")
-      return
-    }
     let warns = try @metafile.draw_into(
         object,
         writer,
         data,
-        body_x,
-        body_y,
+        x,
+        y,
         w,
         h,
         pics=self.pictures(obj.record),
+        annotation=pic.annotation,
       ) catch {
       @metafile.MetafileInvalid(message) => {
         warnings.push(kind_name_ + ": " + message)
@@ -211,11 +290,12 @@ fn XdwDocument::xdw_draw_object(
     for w2 in warns {
       warnings.push(kind_name_ + ": " + w2)
     }
-  } else if pic.kind == 5 ||
-    (data.length() > 18 && data[16].to_int() == 0xff && data[17].to_int() == 0xd8) ||
-    (data.length() > 4 && data[0].to_int() == 0xff && data[1].to_int() == 0xd8) {
-    // a picture page: the body's data is a JPEG
-    let jpeg = if data.length() > 18 && data[16].to_int() == 0xff && data[17].to_int() == 0xd8 {
+  } else if pic.kind == 5 || xdw_is_jpeg(data) || xdw_is_jpeg_at(data, 16) {
+    // a picture page: the body's data is a JPEG, behind a 16-byte header
+    // (size, 0, width, height) when the entry stores one
+    let jpeg = if xdw_is_jpeg(data) {
+      data
+    } else if xdw_is_jpeg_at(data, 16) {
       data[16:].to_owned()
     } else {
       data
@@ -229,32 +309,44 @@ fn XdwDocument::xdw_draw_object(
     let index = object.add_image(hash)
     object.image(
       index,
-      Float::from_double(body_x),
-      Float::from_double(body_y),
+      Float::from_double(x),
+      Float::from_double(y),
       Float::from_double(w),
       Float::from_double(h),
     ) catch {
       error => warnings.push(kind_name_ + ": " + error.to_string())
     }
   } else if pic.kind == 7 {
-    // a bitmap: a DIB
-    match @metafile.dib_to_png(data, None) {
-      Some(png) => {
-        let hash = writer.add_part("img", png) catch {
-          error => {
-            warnings.push(kind_name_ + ": " + error.to_string())
-            return
+    // a bitmap: a DIB behind a 16-byte trailer, its bits LZH-compressed
+    match @metafile.dib_body_split(data) {
+      Some((bmi, stored, stored_len, expanded_len)) => {
+        let bits = if expanded_len > 0 && expanded_len != stored_len {
+          lzh_decompress(stored, expanded_len, self.limits) catch {
+            _ => stored
           }
+        } else {
+          stored
         }
-        let index = object.add_image(hash)
-        object.image(
-          index,
-          Float::from_double(body_x),
-          Float::from_double(body_y),
-          Float::from_double(w),
-          Float::from_double(h),
-        ) catch {
-          error => warnings.push(kind_name_ + ": " + error.to_string())
+        match @metafile.dib_to_png(bmi, Some(bits)) {
+          Some(png) => {
+            let hash = writer.add_part("img", png) catch {
+              error => {
+                warnings.push(kind_name_ + ": " + error.to_string())
+                return
+              }
+            }
+            let index = object.add_image(hash)
+            object.image(
+              index,
+              Float::from_double(x),
+              Float::from_double(y),
+              Float::from_double(w),
+              Float::from_double(h),
+            ) catch {
+              error => warnings.push(kind_name_ + ": " + error.to_string())
+            }
+          }
+          None => warnings.push(kind_name_ + ": a bitmap page was not readable")
         }
       }
       None => warnings.push(kind_name_ + ": a bitmap page was not readable")

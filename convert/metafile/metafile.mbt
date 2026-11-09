@@ -83,6 +83,8 @@ priv struct GdiState {
   mut map_mode : Int32
   /// The binary raster operation of fills (R2_MASKPEN = 9 multiplies).
   mut rop2 : Int32
+  /// GDI polygon fill mode: 1 alternate (even-odd), 2 winding.
+  mut poly_fill : Int32
   mut win_org : (Double, Double)
   mut win_ext : (Double, Double)
   mut vp_org : (Double, Double)
@@ -115,6 +117,11 @@ priv struct Gdi {
   /// A DW path accumulated by the DW02/DW-record point sequences, as
   /// drawn segments (moves, lines, cubic Béziers, closes) in page space.
   dw_path : Array[DwSeg]
+  /// The EMF path bracket: verbs and coordinates collected between
+  /// BEGINPATH and ENDPATH instead of being drawn.
+  path_verbs : @buffer.Buffer
+  path_coords : Array[Double]
+  mut path_active : Bool
 }
 
 ///|
@@ -140,6 +147,7 @@ fn gdi_state() -> GdiState {
     bk_color: 0xffffffffU,
     bk_opaque: true,
     text_align: 0,
+    poly_fill: 1,
     rop2: 13,
     map_mode: 1,
     win_org: (0.0, 0.0),
@@ -294,6 +302,65 @@ fn text_advance(text : String, size : Double) -> Double {
 }
 
 ///|
+/// The BDF fill rule for the current GDI polygon fill mode: alternate
+/// (1) is even-odd, winding (2) is non-zero.
+fn Gdi::fill_rule(self : Gdi) -> Byte {
+  if self.state.poly_fill == 2 {
+    0
+  } else {
+    1
+  }
+}
+
+///|
+/// Collect a path fragment instead of drawing it.
+fn Gdi::path_append(
+  self : Gdi,
+  verbs : Bytes,
+  coordinates : Array[Double],
+) -> Unit {
+  self.path_verbs.write_bytes(verbs)
+  for value in coordinates {
+    self.path_coords.push(value)
+  }
+}
+
+///|
+fn Gdi::path_clear(self : Gdi) -> Unit {
+  self.path_verbs.reset()
+  self.path_coords.clear()
+}
+
+///|
+/// Draw the collected path with the current pen and brush, then discard it.
+fn Gdi::path_flush(self : Gdi, fill : Bool, stroke : Bool) -> Unit {
+  if self.path_coords.is_empty() {
+    self.path_clear()
+    return
+  }
+  let verbs = self.path_verbs.to_bytes()
+  let coordinates = self.path_coords.copy()
+  self.path_clear()
+  self.draw_path(verbs, coordinates, fill, stroke)
+}
+
+///|
+/// Clip to the collected path, then discard it.
+fn Gdi::path_clip(self : Gdi) -> Unit {
+  if self.path_coords.is_empty() {
+    self.path_clear()
+    return
+  }
+  let verbs = self.path_verbs.to_bytes()
+  let coordinates = self.path_coords.copy()
+  self.path_clear()
+  let index = self.object.add_path(@core.Inline({ verbs, coordinates, }))
+  self.object.clip_path(index, self.fill_rule()) catch {
+    error => self.warn("a path could not clip: " + error.to_string())
+  }
+}
+
+///|
 fn Gdi::draw_path(
   self : Gdi,
   verbs : Bytes,
@@ -314,7 +381,7 @@ fn Gdi::draw_path(
       self.warn("metafile hatch brushes are approximated")
     }
     self.object.fill_color(self.state.brush_color)
-    self.object.fill_path(index, 1) catch {
+    self.object.fill_path(index, self.fill_rule()) catch {
       error =>
         self.warn("a metafile path could not be filled: " + error.to_string())
     }
@@ -373,7 +440,57 @@ fn Gdi::polyline(
   if closed {
     verbs.write_byte(4)
   }
-  self.draw_path(verbs.to_bytes(), coordinates, fill, true)
+  let v = verbs.to_bytes()
+  if self.path_active {
+    self.path_append(v, coordinates)
+  } else {
+    self.draw_path(v, coordinates, fill, true)
+  }
+}
+
+///|
+/// A POLYBEZIER (from its first point) or POLYBEZIERTO (from the current
+/// point) record: a move, then cubic segments in groups of three control
+/// points.
+fn Gdi::bezier(self : Gdi, points : Array[(Double, Double)], to : Bool) -> Unit {
+  let m = self.matrix()
+  let verbs = @buffer.Buffer()
+  let coordinates : Array[Double] = []
+  let mut i = 0
+  if to {
+    let (x, y) = m.apply(self.state.cur.0, self.state.cur.1)
+    verbs.write_byte(0)
+    coordinates.push(x)
+    coordinates.push(y)
+  } else {
+    if points.length() < 4 {
+      return
+    }
+    let (x, y) = m.apply(points[0].0, points[0].1)
+    verbs.write_byte(0)
+    coordinates.push(x)
+    coordinates.push(y)
+    i = 1
+  }
+  while i + 2 < points.length() {
+    for k in 0..<3 {
+      let (x, y) = m.apply(points[i + k].0, points[i + k].1)
+      coordinates.push(x)
+      coordinates.push(y)
+    }
+    verbs.write_byte(3)
+    i += 3
+  }
+  if coordinates.length() < 4 {
+    return
+  }
+  self.state.cur = points[points.length() - 1]
+  let v = verbs.to_bytes()
+  if self.path_active {
+    self.path_append(v, coordinates)
+  } else {
+    self.draw_path(v, coordinates, false, true)
+  }
 }
 
 ///|
@@ -392,7 +509,12 @@ fn Gdi::rectangle(
   let (x0, y0) = m.apply(x, y)
   let (x1, y1) = m.apply(x + width, y + height)
   let verbs = b"\x05"
-  self.draw_path(verbs, [x0, y0, x1 - x0, y1 - y0], true, true)
+  let coordinates = [x0, y0, x1 - x0, y1 - y0]
+  if self.path_active {
+    self.path_append(verbs, coordinates)
+  } else {
+    self.draw_path(verbs, coordinates, true, true)
+  }
 }
 
 ///|
@@ -409,12 +531,13 @@ fn Gdi::ellipse(
   let (sx, sy) = m.apply(left, top)
   let rx = ((ex - sx) / 2.0).abs()
   let ry = ((ey - sy) / 2.0).abs()
-  self.draw_path(
-    b"\x06",
-    [cx, cy, rx, ry, 0.0, 0.0, 2.0 * 3.141592653589793, 0.0],
-    true,
-    true,
-  )
+  let verbs = b"\x06"
+  let coordinates = [cx, cy, rx, ry, 0.0, 0.0, 2.0 * 3.141592653589793, 0.0]
+  if self.path_active {
+    self.path_append(verbs, coordinates)
+  } else {
+    self.draw_path(verbs, coordinates, true, true)
+  }
 }
 
 ///|
@@ -436,7 +559,13 @@ fn Gdi::round_rect(
   let (x1, y1) = m.apply(x + w, y + h)
   let radius = (width.abs().min(w) / 2.0).min(height.abs().min(h) / 2.0)
   let scaled_radius = radius * m.scale()
-  self.draw_path(b"\x08", [x0, y0, x1 - x0, y1 - y0, scaled_radius], true, true)
+  let verbs = b"\x08"
+  let coordinates = [x0, y0, x1 - x0, y1 - y0, scaled_radius]
+  if self.path_active {
+    self.path_append(verbs, coordinates)
+  } else {
+    self.draw_path(verbs, coordinates, true, true)
+  }
 }
 
 ///|
@@ -503,8 +632,13 @@ fn Gdi::text(
   } else if (self.state.text_align & 6) == 2 {
     px = px - advance
   }
-  if (self.state.text_align & 8) != 0 {
-    py = py + size * 0.2
+  // TA_TOP (0) puts the reference point at the top of the text, TA_BOTTOM
+  // (8) at the bottom, TA_BASELINE (24) on the baseline itself.
+  let valign = self.state.text_align & 24
+  if valign == 24 {
+    // the reference point is already the baseline
+  } else if valign == 8 {
+    py = py - size * 0.2
   } else {
     py = py + size * 0.8
   }
@@ -571,6 +705,25 @@ fn dib_bits_offset(data : Bytes) -> Int32 {
   let colors = if bpp <= 8 { if used > 0 { used } else { 1 << bpp } } else { 0 }
   let masks = if compression == 3 && header == 40 { 12 } else { 0 }
   header + masks + colors * 4
+}
+
+///|
+/// One channel of a bitfield pixel: shift the mask down to bit 0, then
+/// scale its range to 0…255.
+fn mask_channel(value : Int32, mask : Int32) -> Int32 {
+  if mask == 0 {
+    return 0
+  }
+  let mut shift = 0
+  let mut m = mask
+  while (m & 1) == 0 && shift < 32 {
+    m = m >> 1
+    shift += 1
+  }
+  if m == 0 {
+    return 0
+  }
+  (((value & mask) >> shift) * 255 / m).min(255)
 }
 
 ///|
@@ -666,13 +819,10 @@ fn dib_decode(data : Bytes, bits_data : Bytes?) -> Dib? {
           let at = row_offset + x * 2
           let value = data[at].to_int() | (data[at + 1].to_int() << 8)
           if compression == 3 {
-            let masks_at = if header >= 52 { 40 } else { 40 }
-            let red_mask = le32(data, masks_at).to_int()
-            let green_mask = le32(data, masks_at + 4).to_int()
-            let blue_mask = le32(data, masks_at + 8).to_int()
-            red = ((value & red_mask) * 255 / red_mask.max(1)).min(255)
-            green = ((value & green_mask) * 255 / green_mask.max(1)).min(255)
-            blue = ((value & blue_mask) * 255 / blue_mask.max(1)).min(255)
+            let masks_at = 40
+            red = mask_channel(value, le32(data, masks_at).to_int())
+            green = mask_channel(value, le32(data, masks_at + 4).to_int())
+            blue = mask_channel(value, le32(data, masks_at + 8).to_int())
           } else {
             red = ((value >> 10) & 0x1f) * 255 / 31
             green = ((value >> 5) & 0x1f) * 255 / 31
@@ -687,12 +837,29 @@ fn dib_decode(data : Bytes, bits_data : Bytes?) -> Dib? {
         }
         32 => {
           let at = row_offset + x * 4
-          blue = data[at].to_int()
-          green = data[at + 1].to_int()
-          red = data[at + 2].to_int()
-          alpha = data[at + 3].to_int()
-          if alpha == 0 {
-            alpha = 255
+          let value = data[at].to_int() |
+            (data[at + 1].to_int() << 8) |
+            (data[at + 2].to_int() << 16) |
+            (data[at + 3].to_int() << 24)
+          if compression == 3 {
+            let masks_at = 40
+            red = mask_channel(value, le32(data, masks_at).to_int())
+            green = mask_channel(value, le32(data, masks_at + 4).to_int())
+            blue = mask_channel(value, le32(data, masks_at + 8).to_int())
+            if header >= 56 {
+              let alpha_mask = le32(data, masks_at + 12).to_int()
+              if alpha_mask != 0 {
+                alpha = mask_channel(value, alpha_mask)
+              }
+            }
+          } else {
+            blue = data[at].to_int()
+            green = data[at + 1].to_int()
+            red = data[at + 2].to_int()
+            alpha = data[at + 3].to_int()
+            if alpha == 0 {
+              alpha = 255
+            }
           }
         }
         _ => return None
@@ -830,11 +997,16 @@ pub fn draw_into(
   y : Double,
   w : Double,
   h : Double,
+  annotation? : Bool,
   pics? : Array[Bytes],
 ) -> Array[String] raise MetafileError {
   let pics : Array[Bytes] = match pics {
     Some(v) => v
     None => []
+  }
+  let annotation : Bool = match annotation {
+    Some(v) => v
+    None => false
   }
   let file_kind = kind(data)
   if file_kind == "" {
@@ -861,6 +1033,9 @@ pub fn draw_into(
     dw_dib: (Bytes::from_array(FixedArray::make(1, b'\x00')), None),
 
     dw_jpeg: None,
+    path_verbs: @buffer.Buffer(),
+    path_coords: [],
+    path_active: false,
     dw_path: [],
   }
   object.save()
@@ -871,7 +1046,7 @@ pub fn draw_into(
     Float::from_double(h),
   )
   if file_kind == "emf" {
-    g.play_emf(data, x, y, w, h)
+    g.play_emf(data, x, y, w, h, annotation~)
   } else {
     g.play_wmf(data, x, y, w, h)
   }

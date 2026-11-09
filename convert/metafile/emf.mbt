@@ -158,25 +158,78 @@ fn Gdi::restore_state(self : Gdi, level : Int32) -> Unit {
 }
 
 ///|
+/// The window an EMF sets before drawing: (extent x, extent y, origin x,
+/// origin y, map mode). Annotation drawings fit this window to their box;
+/// their frame is not reliable.
+fn emf_window(data : Bytes) -> (Double, Double, Double, Double, Int32)? {
+  let mut position = 0
+  let mut records = 0
+  let mut extent : (Double, Double)? = None
+  let mut origin : (Double, Double) = (0.0, 0.0)
+  let mut mode = 1
+  while position + 8 <= data.length() && records < 1000000 {
+    let kind = le32(data, position).to_int()
+    let size = le32(data, position + 4).to_int()
+    if size < 8 || position + size > data.length() {
+      break
+    }
+    match kind {
+      9 =>
+        extent = Some((lei32(data, position + 8), lei32(data, position + 12)))
+      10 => origin = (lei32(data, position + 8), lei32(data, position + 12))
+      17 => mode = le32(data, position + 8).to_int()
+      14 => break
+      _ => ()
+    }
+    position += size
+    records += 1
+  }
+  match extent {
+    Some((ex, ey)) => Some((ex, ey, origin.0, origin.1, mode))
+    None => None
+  }
+}
+
+///|
 fn Gdi::play_emf(
   self : Gdi,
   data : Bytes,
   x : Double,
   y : Double,
   w : Double,
+  annotation~ : Bool,
   h : Double,
 ) -> Unit {
-  let frame = match emf_frame(data) {
-    Some(value) => value
-    None => return
+  let frame = emf_frame(data)
+  let window = if annotation { emf_window(data) } else { None }
+  let use_window = match window {
+    Some((ex, ey, _, _, mode)) => ex > 0.0 && ey > 0.0 && mode == 1
+    None => false
   }
-  self.pxmm = frame.pxmm_x
-  let box_width = frame.right - frame.left
-  let box_height = frame.bottom - frame.top
-  self.out = mat_mul(
-    mat_mul(mat_translate(x, y), mat_scale(w / box_width, h / box_height)),
-    mat_translate(-frame.left, -frame.top),
-  )
+  if use_window {
+    // the viewer fits the annotation's window to its box
+    let (ex, ey, _, _, _) = match window {
+      Some(value) => value
+      None => (0.0, 0.0, 0.0, 0.0, 1)
+    }
+    self.out = mat_mul(mat_translate(x, y), mat_scale(w / ex, h / ey))
+    match frame {
+      Some(value) => self.pxmm = value.pxmm_x
+      None => ()
+    }
+  } else {
+    let frame = match frame {
+      Some(value) => value
+      None => return
+    }
+    self.pxmm = frame.pxmm_x
+    let box_width = frame.right - frame.left
+    let box_height = frame.bottom - frame.top
+    self.out = mat_mul(
+      mat_mul(mat_translate(x, y), mat_scale(w / box_width, h / box_height)),
+      mat_translate(-frame.left, -frame.top),
+    )
+  }
   let mut position = 0
   let mut records = 0
   while position + 8 <= data.length() && records < 1000000 {
@@ -201,9 +254,13 @@ fn Gdi::play_emf(
         if points.is_empty() {
           continue
         }
-        let closed = base == 3
-        let fill = closed
-        self.polyline(points, closed, fill)
+        if base == 2 {
+          // POLYBEZIER: the first point is the start, then cubic triples
+          self.bezier(points, false)
+        } else {
+          let closed = base == 3
+          self.polyline(points, closed, closed)
+        }
       }
       5 | 6 | 88 | 89 => {
         let short = kind >= 88
@@ -211,12 +268,31 @@ fn Gdi::play_emf(
         if points.is_empty() {
           continue
         }
-        let all : Array[(Double, Double)] = [self.state.cur]
-        for point in points {
-          all.push(point)
+        if kind == 5 || kind == 88 {
+          // POLYBEZIERTO: cubic triples from the current point
+          self.bezier(points, true)
+        } else {
+          if self.path_active {
+            // LINETO inside a path extends the current figure
+            let m = self.matrix()
+            let verbs = @buffer.Buffer()
+            let coordinates : Array[Double] = []
+            for point in points {
+              let (x, y) = m.apply(point.0, point.1)
+              verbs.write_byte(1)
+              coordinates.push(x)
+              coordinates.push(y)
+            }
+            self.path_append(verbs.to_bytes(), coordinates)
+          } else {
+            let all : Array[(Double, Double)] = [self.state.cur]
+            for point in points {
+              all.push(point)
+            }
+            self.polyline(all, false, false)
+          }
+          self.state.cur = points[points.length() - 1]
         }
-        self.polyline(all, false, false)
-        self.state.cur = points[points.length() - 1]
       }
       7 | 8 | 90 | 91 => {
         let short = kind >= 90
@@ -251,13 +327,21 @@ fn Gdi::play_emf(
       12 => self.state.vp_org = (lei32(record, 8), lei32(record, 12))
       17 => self.state.map_mode = le32(record, 8).to_int()
       18 => self.state.bk_opaque = le32(record, 8).to_int() == 2
-      19 => () // polygon fill mode
+      19 => self.state.poly_fill = le32(record, 8).to_int()
       20 => self.state.rop2 = le32(record, 8).to_int()
-      70 => self.dw(record)
       22 => self.state.text_align = le32(record, 8).to_int()
       24 => self.state.text_color = colorref(le32(record, 8))
       25 => self.state.bk_color = colorref(le32(record, 8))
-      27 => self.state.cur = (lei32(record, 8), lei32(record, 12))
+      27 => {
+        let point = (lei32(record, 8), lei32(record, 12))
+        if self.path_active {
+          let (x, y) = self.pt(point.0, point.1)
+          let verbs = @buffer.Buffer()
+          verbs.write_byte(0)
+          self.path_append(verbs.to_bytes(), [x, y])
+        }
+        self.state.cur = point
+      }
       30 => {
         let m = self.matrix()
         let (x0, y0) = m.apply(lei32(record, 8), lei32(record, 12))
@@ -366,11 +450,55 @@ fn Gdi::play_emf(
         )
       54 => {
         let point = (lei32(record, 8), lei32(record, 12))
-        self.polyline([self.state.cur, point], false, false)
+        if self.path_active {
+          let (x, y) = self.pt(point.0, point.1)
+          let verbs = @buffer.Buffer()
+          verbs.write_byte(1)
+          self.path_append(verbs.to_bytes(), [x, y])
+        } else {
+          self.polyline([self.state.cur, point], false, false)
+        }
         self.state.cur = point
       }
-      59 | 60 | 61 | 62 | 63 | 64 | 68 =>
-        self.warn("metafile path records are approximated")
+      59 => {
+        // BEGINPATH: the drawing records that follow collect a path
+        self.path_clear()
+        self.path_active = true
+      }
+      60 => self.path_active = false // ENDPATH: keep the path for a fill/stroke
+      61 =>
+        // CLOSEFIGURE
+        if self.path_active {
+          let verbs = @buffer.Buffer()
+          verbs.write_byte(4)
+          self.path_append(verbs.to_bytes(), [])
+        }
+      62 => {
+        // FILLPATH
+        self.path_active = false
+        self.path_flush(true, false)
+      }
+      63 => {
+        // STROKEANDFILLPATH
+        self.path_active = false
+        self.path_flush(true, true)
+      }
+      64 => {
+        // STROKEPATH
+        self.path_active = false
+        self.path_flush(false, true)
+      }
+      65 | 66 => () // FLATTENPATH, WIDENPATH: the path is already flat
+      67 => {
+        // SELECTCLIPPATH
+        self.path_active = false
+        self.path_clip()
+      }
+      68 => {
+        // ABORTPATH
+        self.path_active = false
+        self.path_clear()
+      }
       76 | 77 => {
         let dx = lei32(record, 24)
         let dy = lei32(record, 28)
@@ -505,6 +633,8 @@ fn Gdi::play_emf(
           le16(record, 16) == 0x4001 &&
           (le16(record, 18) & 1) == 0 {
           self.warn("EMF+ only metafiles are not supported")
+        } else {
+          self.dw(record)
         }
       _ => ()
     }
