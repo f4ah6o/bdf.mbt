@@ -1,23 +1,55 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { BdfDocument, BufferSource } from '@bdfkit/core';
 import { xlsx_render_result } from '../../_build/js/debug/build/compat/xlsx/xlsx.js';
+import { CaseTracker, parseArgs, runSharded } from './shard.mjs';
+const options = parseArgs(process.argv.slice(2));
+// Without --shard and without --list this process is the aggregator: it
+// enumerates the case IDs, runs the shards, and checks their union.
+if (!options.shard && !options.list) {
+  let code = 0;
+  try {
+    await runSharded(fileURLToPath(import.meta.url));
+  } catch (error) {
+    process.stderr.write(`${error.message}\n`);
+    code = 1;
+  }
+  // stderr is a pipe in CI, so wait for the queued lines to drain before
+  // exiting; otherwise the summary can be lost.
+  await new Promise((resolve) => process.stderr.write('', resolve));
+  process.exit(code);
+}
+const tracker = new CaseTracker(options);
 const index = JSON.parse(await readFile(new URL('./render/index.json', import.meta.url)));
 assert.ok(index.files.length > 0, 'XLSX rendering fixture list must not be empty');
 let i = 0;
 let checked = 0;
 const tick = () => {
   checked++;
-  if (checked % 5000 === 0) console.error(`verify-render: ${checked} cases checked`);
+  if (checked % 5000 === 0) {
+    const shard = options.shard ? ` shard=${options.shard.index}/${options.shard.count}` : '';
+    // stderr is synchronous for files and terminals, so progress survives a
+    // pipe and a stalled case is visible instead of buffered away.
+    process.stderr.write(`verify-render:${shard} ${checked} cases checked\n`);
+  }
 };
 const renderResult = (input, mode, noIndex) => JSON.parse(xlsx_render_result(input, mode, noIndex));
-function assertRejected(input, mode, noIndex, message, pattern) {
+// The same rejection message covers a whole fixture array, so the default ID
+// pairs it with a digest of the fixture bytes: stable when fixtures are added
+// or reordered, and distinct for every distinct input.
+const caseId = (message, input) =>
+  `${message} ${createHash('sha256').update(input).digest('hex').slice(0, 8)}`;
+function assertRejected(input, mode, noIndex, message, pattern, id = caseId(message, input)) {
+  if (!tracker.enter(id)) return;
   const result = renderResult(input, mode, noIndex);
   tick();
   assert.ok(!result.bdf, message);
   if (pattern) assert.match(result.error ?? '', pattern);
 }
 async function verifyCase(c, label) {
+  if (!tracker.enter(label)) return;
   const expected = await BdfDocument.open(new BufferSource(Buffer.from(c.bdf, 'base64')));
   const result = renderResult(Buffer.from(c.input, 'base64'), c.mode, c.no_index);
   tick();
@@ -275,8 +307,8 @@ for (const c of conditionalDxfHex) {
 for (const file of index.files) {
   assert.match(file, /^\d{3}\.json$/, 'invalid XLSX rendering fixture name');
   const cases = JSON.parse(await readFile(new URL(`./render/${file}`, import.meta.url)));
-  for (const c of cases) {
-    await verifyCase(c, i);
+  for (const [j, c] of cases.entries()) {
+    await verifyCase(c, `${file} ${j}`);
     i++;
   }
 }
@@ -1931,4 +1963,6 @@ for (const encoded of unsupportedBase) {
   const input = Buffer.from(encoded, 'base64');
   assertRejected(input, 'none', true, 'unsupported base styles must be rejected', /row or column styles with (fills|complex borders)/);
 }
+tracker.writeIds();
+process.stderr.write(`${tracker.summary()}\n`);
 console.log(`${checked} XLSX rendering cases checked against upstream.`);
