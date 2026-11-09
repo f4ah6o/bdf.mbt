@@ -76,8 +76,8 @@ must keep passing on every target.
 | #8 | `feat/20261109-native-target` | open, not merged | the M1 native flip, the CI matrix and the native conversion gate |
 
 PR #6 touches `convert/metafile`, which `convert/docx`, `convert/pptx` and
-`convert/emf` import for embedded pictures. Re-measure the parity baseline
-after it lands: the M3 numbers in `docs/parity.md` predate it.
+`convert/emf` import for embedded pictures. Measured on the combined tree, it
+does not move the parity baseline: no parity fixture embeds a metafile.
 
 PR #6 also adds `import { "f4ah6o/bdf/render" } for "wbtest"` to
 `convert/metafile/moon.pkg` and `convert/xdw/moon.pkg`. PR #8 changes the
@@ -92,9 +92,13 @@ import {
 supported_targets = "+js+wasm-gc+native"
 ```
 
-That combination was verified on all three targets: 6/6 for
-`convert/metafile` and `convert/xdw`. PR #8 does not carry #6's changes, so
-whichever lands second resolves the two files by hand.
+The combination was verified on a fixed tree: #8 at `eb8cf94` with the #6 diff
+(`origin/main...7db0a5b`) applied as a patch, giving `2fcca8c`. Only those two
+files conflicted. On that tree `check`, `test` and `build` pass on `js` (2763
+tests), `wasm-gc` (2747) and `native` (2747); the XLSX picture visual compare
+reports 0.00% diff; and document parity reports 12 pass and 40 diff, the same
+as #8 alone. PR #8 does not carry #6's changes, so whichever lands second
+resolves the two files by hand.
 
 The remaining `convert/xdw` gaps are tracked separately from the upstream
 milestones, in `20261109-xdw-remaining-gaps`.
@@ -248,14 +252,22 @@ One issue is one branch and one worktree. Up to two run at once, because
   on the reader-mode block model in `convert/reader`. It may need to split.
 - **Parity is a moving target.** The harness compares against
   `@bdfkit/convert-all` 0.2.1. A reference upgrade can change the baseline.
-- **`vector/psbdf` needs a PostScript interpreter.** The upstream package is
-  small because it reuses `vector/internal`; the port must decide how much of
-  the interpreter to share with `vector/pdfbdf`.
+- **`vector/psbdf` needs a rasterizer, not an interpreter.** Upstream
+  `psbdf.Write(w io.Writer, doc *bdf.Document, opts *Options)` writes BDF as
+  PostScript; it never reads PostScript, so there is no interpreter to port.
+  What it does need is `vector/internal/flatten`, which draws the regions
+  PostScript cannot express (alpha, blend modes, groups, soft masks, shadows,
+  filters) as pictures through `raster/imagebdf`. `raster` is out of scope, so
+  the port must either bring a minimal rasterizer or accept that those regions
+  degrade to vectors.
 - **`sign` needs CMS and X.509.** `crypto` has the primitives but no ASN.1
   encoder. That is new surface, not a port of existing code.
-- **PR #6 moves the parity baseline.** Its `convert/metafile` changes reach
-  DOCX and PPTX pictures. Land it before M3 starts, or re-run the harness on
-  top of it, so the 40 diffs are counted against one reference.
+- **PR #6 does not move the parity baseline, measured.** The harness covers 52
+  cases (pdf 15, docx 12, pptx 8, xlsx 11, markdown 6). Running it on #8 alone
+  and on #8 + #6 gives the same 12 pass / 40 diff, and no case changes status,
+  because no parity DOCX or PPTX fixture embeds an EMF or WMF picture. The
+  metafile path is exercised by the `convert/metafile` and `convert/xdw` tests
+  instead. Re-measure if a parity fixture gains an embedded metafile.
 - **`convert/xdw` is outside the upstream scope but inside the test suite.**
   Its remaining gaps must not be counted as upstream parity, and its fixtures
   must keep passing on `js`, `wasm-gc` and `native`.
