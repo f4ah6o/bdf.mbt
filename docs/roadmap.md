@@ -26,10 +26,10 @@ Upstream is `shibukawa/bdf` at commit
 
 | Upstream | Lines | MoonBit | State |
 |---|---|---|---|
-| `vector/pdfbdf` | 4,801 | — | missing |
+| `vector/pdfbdf` | 4,801 | `export/pdf` (1,717) | partial: gradients, tiling patterns, SMask, JPEG passthrough, SVG and shadows are missing |
+| `vector/psbdf` | 2,083 | — | missing |
 | `vector/internal` | 750 | — | missing, shared by both vector packages |
 | `encoding/htmlro` | 5,278 | — | missing |
-| `vector/psbdf` | 2,083 | — | missing |
 | `text/markdownbdf` | 1,542 | — | missing |
 | `image/barcode` | 1,356 | — | missing |
 | `image/svg` | 937 | — | missing |
@@ -42,6 +42,12 @@ Upstream is `shibukawa/bdf` at commit
 | `segment` | 180 | — | missing |
 
 Everything already ported stays in scope for parity.
+
+`vector/pdfbdf` and `vector/psbdf` both write BDF out; neither reads a new
+input format. `vector/pdfbdf` is the upstream PDF writer, the same direction
+as `export/pdf`. `vector/psbdf` writes PostScript and has no MoonBit
+counterpart. `convert/pdf` is the opposite direction (it reads PDF) and is a
+different package.
 
 ### Out of scope
 
@@ -72,6 +78,11 @@ PR #6 touches `convert/metafile`, which `convert/docx`, `convert/pptx` and
 `convert/emf` import for embedded pictures. Re-measure the parity baseline
 after it lands: the M3 numbers in `docs/parity.md` predate it.
 
+PR #6 also adds `import { "f4ah6o/bdf/render" } for "wbtest"` to
+`convert/metafile/moon.pkg` and `convert/xdw/moon.pkg`. When the native flip
+lands on top of it, keep both the test import and the `native` declaration in
+those two files.
+
 The remaining `convert/xdw` gaps are tracked separately from the upstream
 milestones, in `20261109-xdw-remaining-gaps`.
 
@@ -82,8 +93,13 @@ package manifest's `supported_targets` accepts `js`, `wasm-gc` and `native`;
 `wasm` resolves to an empty set, so it is out of scope. `llvm` is not a
 package target.
 
-The port supports `js`, `wasm-gc` and `native`. Browser-only packages stay
-`js`-only by design: `browser`, `viewer`, `print/ipp_js`, `bridge/wasm`,
+The port supports `js`, `wasm-gc` and `native`.
+
+`viewer` is a 253-line model layer that imports only `core` and has no JS
+externs, so it joins `native`. `bridge/wasm` is a `foreign_library` for the
+wasm-gc exports; native has no consumer for it, so it stays `+js+wasm-gc`.
+
+Browser-only packages stay `js`-only by design: `browser`, `print/ipp_js`,
 `converter_worker`, `render_worker`, `native_converter_worker` and
 `compat/*`.
 
@@ -114,8 +130,9 @@ So M1 is a declaration flip, not a code port. The remaining work is:
 
 Three tracks that can run in parallel.
 
-- **Track A** — `vector/pdfbdf`, `vector/psbdf`. The largest and the highest
-  user value: two new input formats.
+- **Track A** — `vector/pdfbdf` (close the gap in `export/pdf`) and
+  `vector/psbdf` (a new BDF → PostScript writer). Both write BDF out; neither
+  reads a new input format.
 - **Track B** — `image/{barcode,svg,rowenc,formula}`, `text/markdownbdf`.
   Converter features on top of `convert/image`.
 - **Track C** — `thumbnail`, `segment`, `sign`, `encoding/htmlro`,
@@ -161,7 +178,7 @@ One issue is one branch and one worktree. Up to two run at once, because
 | M1 | `20261109-native-crypto-core-encoding-font` | — |
 | M1 | `20261109-native-convert-export` | — |
 | M1 | `20261109-native-print-form-ci` | — |
-| M2 A | `20261109-vector-pdfbdf` | 5,551 |
+| M2 A | `20261109-vector-pdfbdf` | 4,801 + 750 |
 | M2 A | `20261109-vector-psbdf` | 2,083 |
 | M2 B | `20261109-image-barcode-rowenc` | 2,286 |
 | M2 B | `20261109-image-svg-formula` | 1,440 |
