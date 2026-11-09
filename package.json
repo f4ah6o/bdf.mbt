@@ -119,6 +119,9 @@
     "build:site": "moon build --target js --release && moon build bridge/wasm --target wasm-gc --release && node site/build.mjs",
     "previews:site": "node site/make-previews.mjs",
     "test:site": "node site/test.mjs && node site/check-links.mjs",
-    "bench:site": "node site/benchmark.mjs"
+    "bench:site": "node site/benchmark.mjs",
+    "test:pages-local": "actrun workflow run .github/workflows/pages.yml --tmp --include-dirty --skip-action actions/checkout@v4 --skip-action hustcer/setup-moonbit@v1 --no-nix",
+    "test:parity-local": "actrun workflow run .github/workflows/parity.yml --tmp --include-dirty --skip-action actions/checkout@v4 --skip-action hustcer/setup-moonbit@v1 --no-nix",
+    "test:prepush": "moon check --target js && moon check --target wasm-gc && moon test --target js && moon test --target wasm-gc && npm run build:site && npm run test:site && npm run test:previews && npm run bench:site -- --check && npm run test:parity"
   }
 }
