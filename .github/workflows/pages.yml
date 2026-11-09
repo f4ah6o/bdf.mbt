@@ -54,13 +54,13 @@ jobs:
           sleep 1
           url=http://127.0.0.1:8771/
           node .github/probe-overflow.mjs "$url"
-          ./node_modules/.bin/vlmkit check integrity "$url" --no-ledger
+          ./node_modules/.bin/vlmkit check integrity "$url" --no-ledger --allow "invisible-text@#demo;text-layer spans are transparent by design (selection overlay)"
           ./node_modules/.bin/vlmkit check copy "$url" --manifest site/copy.txt --no-ledger
           ./node_modules/.bin/vlmkit scan scroll "$url" --no-ledger
           ./node_modules/.bin/vlmkit scan handlers "$url" --no-ledger
           ./node_modules/.bin/vlmkit check interactions "$url" --no-ledger
           ./node_modules/.bin/vlmkit check breakpoints "$url" --sweep --no-ledger
-          ./node_modules/.bin/vlmkit check integrity "$url/viewer/" --no-ledger
+          ./node_modules/.bin/vlmkit check integrity "$url/viewer/" --no-ledger --allow "invisible-text@#preview;text-layer spans are transparent by design (selection overlay)"
           ./node_modules/.bin/vlmkit scan scroll "$url/viewer/" --no-ledger
           ./node_modules/.bin/vlmkit check breakpoints "$url/viewer/" --sweep --no-ledger
           ./node_modules/.bin/vlmkit check integrity "$url/docs/index.html" --no-ledger
