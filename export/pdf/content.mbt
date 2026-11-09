@@ -529,7 +529,7 @@ fn draw_text_command(
   }
   state.op("BT")
   state.op("/" + name + " " + num(state.gs.font_size) + " Tf")
-  state.op("1 0 0 1 " + num(aligned_x) + " " + num(y) + " Tm")
+  state.op("1 0 0 -1 " + num(aligned_x) + " " + num(y) + " Tm")
   state.op(encoded + " Tj")
   state.op("ET")
   let suffix = state.alpha_suffix()
