@@ -372,11 +372,17 @@ fn Gdi::dw_set_clip_rect(self : Gdi, ax0 : Double, ay0 : Double, ax1 : Double, a
     y0 = y1
     y1 = t
   }
+  // the four corners go through the current transform, like the
+  // upstream's poly_path(rect_points(r), true)
+  let (ax, ay) = self.pt(x0, y0)
+  let (bx, by) = self.pt(x1, y0)
+  let (cx, cy) = self.pt(x1, y1)
+  let (dx, dy) = self.pt(x0, y1)
   let path : Array[DwSeg] = [
-    DwMove(x0, y0),
-    DwLine(x1, y0),
-    DwLine(x1, y1),
-    DwLine(x0, y1),
+    DwMove(ax, ay),
+    DwLine(bx, by),
+    DwLine(cx, cy),
+    DwLine(dx, dy),
     DwClose,
   ]
   let verbs = @buffer.Buffer()
@@ -426,6 +432,14 @@ fn Gdi::dw_extend(self : Gdi, pts : Array[(Double, Double)], op : Int) -> Unit {
   let start = (op & 1) != 0
   let bez = (op & 0x10) != 0
   let close = (op & 2) != 0
+  // a figure that does not start with a move continues from the last
+  // point; seed one before the body when there is none
+  if !start && self.dw_path.is_empty() {
+    if pts.length() > 0 {
+      let (x, y) = self.pt(pts[0].0, pts[0].1)
+      self.dw_path.push(DwMove(x, y))
+    }
+  }
   let mut body = pts
   if start {
     body = []
@@ -455,14 +469,6 @@ fn Gdi::dw_extend(self : Gdi, pts : Array[(Double, Double)], op : Int) -> Unit {
   if close {
     self.dw_path.push(DwClose)
   }
-  // a figure that does not start with a move continues from the last
-  // point; start one if there is none
-  if !start && self.dw_path.is_empty() {
-    if pts.length() > 0 {
-      let (x, y) = self.pt(pts[0].0, pts[0].1)
-      self.dw_path.push(DwMove(x, y))
-    }
-  }
 }
 
 ///|
@@ -487,6 +493,42 @@ fn Gdi::dw_external_picture(self : Gdi, d : Bytes) -> Unit {
   }
   self.dw_dib = (d, None)
   self.dw_jpeg = None
+}
+
+///|
+/// The width and height a JPEG's SOF frame keeps, when the file carries
+/// them.
+fn dw_jpeg_size(d : Bytes) -> (Int, Int)? {
+  if d.length() < 4 || d[0].to_int() != 0xff || d[1].to_int() != 0xd8 {
+    return None
+  }
+  let mut i = 2
+  while i + 4 <= d.length() {
+    if d[i].to_int() != 0xff {
+      i += 1
+      continue
+    }
+    let m = d[i + 1].to_int()
+    if m == 0xff {
+      i += 1
+      continue
+    }
+    if m == 0xd8 || (m >= 0xd0 && m <= 0xd7) || m == 0x01 {
+      i += 2
+      continue
+    }
+    let len = (d[i + 2].to_int() << 8) | d[i + 3].to_int()
+    if m >= 0xc0 && m <= 0xcf && m != 0xc4 && m != 0xc8 && m != 0xcc {
+      let h = (d[i + 5].to_int() << 8) | d[i + 6].to_int()
+      let w = (d[i + 7].to_int() << 8) | d[i + 8].to_int()
+      if w > 0 && h > 0 {
+        return Some((w, h))
+      }
+      return None
+    }
+    i += 2 + len
+  }
+  None
 }
 
 ///|
@@ -521,7 +563,16 @@ fn Gdi::dw_draw_picture(
       // the picture is one JPEG part; a partial source rectangle would
       // need a decoder side crop, which the drawing does not do (the
       // driver draws whole pictures)
-      if srcx != 0.0 || srcy != 0.0 {
+      let cropped = srcx != 0.0 ||
+        srcy != 0.0 ||
+        srcw < 0.0 ||
+        srch < 0.0 ||
+        {
+          let full = dw_jpeg_size(by)
+          full is Some((pw, ph)) &&
+          (srcw > 0.0 && srcw < pw.to_double() || srch > 0.0 && srch < ph.to_double())
+        }
+      if cropped {
         self.warn("a DW picture draws a cropped JPEG, which is not supported")
       }
       let hash = self.writer.add_part("img", by) catch {

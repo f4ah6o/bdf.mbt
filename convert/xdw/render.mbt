@@ -139,10 +139,14 @@ pub(all) struct XdwResult {
 }
 
 ///|
-/// Detect a DocuWorks file: the header tag 0x60 and an ASN.1-style long
-/// length behind it.
+/// Detect a DocuWorks file: the header tag 0x60, its length, and the
+/// first field of the header behind them (the 0x80 context class that
+/// carries the generation and its friends). Only the tag classes are
+/// checked, so the header may grow behind them without breaking the
+/// detection.
 pub fn xdw_detect(data : Bytes) -> Bool {
-  data.length() >= 24 && data[0].to_int() == T_HEADER && data[1].to_int() == 0x0e && data[2].to_int() == 0x82
+  data.length() >= 24 && data[0].to_int() == T_HEADER &&
+  data[1].to_int() < 0x80 && (data[2].to_int() & 0xc0) == 0x80
 }
 
 ///|
