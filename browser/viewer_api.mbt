@@ -101,6 +101,7 @@ pub fn bdf_create_viewer(
   )
   viewer_find_bar(dom, () => controller.drop_find())
   viewer_resize_observer(dom)
+  install_copy_handler(viewer_dom_host(dom))
   api
 }
 

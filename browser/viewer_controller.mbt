@@ -22,6 +22,14 @@ extern "js" fn viewer_renderer_page(
   #|(renderer,view,page,scale) => renderer.page(view,page,scale)
 
 ///|
+extern "js" fn viewer_renderer_content(
+  renderer : BrowserRenderClient,
+  view : String,
+  page : Int32,
+) -> @js_async.Promise[RenderValue] =
+  #|(renderer,view,page) => renderer.content(view,page)
+
+///|
 extern "js" fn viewer_dom_set_layout(dom : ViewerDom, layout : String) -> Unit =
   #|(dom,layout) => {dom.layout=layout}
 
@@ -238,7 +246,31 @@ async fn ViewerController::render_page(
         self.viewer.zoom * viewer_pixel_ratio(),
       ),
     ).wait()
-    viewer_canvas_finish(canvas, bitmap, request, generation == self.generation)
+    let valid = generation == self.generation
+    viewer_canvas_finish(canvas, bitmap, request, valid)
+    if valid {
+      let content = viewer_remember(
+        self.dom,
+        viewer_renderer_content(self.renderer, view.id, index),
+      ).wait() catch {
+        _ => render_null()
+      }
+      let data = text_layer_from_content(content)
+      if view.pages.get(index) is Some(page) {
+        let zoom = self.viewer.zoom
+        viewer_canvas_mount_text(canvas, data, frame => {
+          render_text_layer(
+            frame,
+            data,
+            0.0,
+            0.0,
+            page.width * zoom,
+            page.height * zoom,
+            zoom,
+          )
+        })
+      }
+    }
   } catch {
     error => {
       viewer_canvas_error(canvas)

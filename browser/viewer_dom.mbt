@@ -153,11 +153,23 @@ extern "js" fn viewer_dom_page(
   #|(dom,row,index,width,height) => {const frame=document.createElement('div');frame.dataset.bdfPage=String(index);frame.style.cssText=`position:relative;flex:none;width:${width}px;height:${height}px;background:white;`;const canvas=document.createElement('canvas');canvas.style.cssText='display:block;width:100%;height:100%';frame.append(canvas);row.append(frame);dom.observer.observe(frame)}
 
 ///|
+extern "js" fn viewer_dom_host(dom : ViewerDom) -> BrowserHost =
+  #|(dom) => dom.host
+
+///|
+extern "js" fn viewer_canvas_mount_text(
+  canvas : ViewerCanvas,
+  data : TextLayerData,
+  mount : (BrowserHost) -> Unit,
+) -> Unit =
+  #|(canvas,data,mount) => {const frame=canvas.parentElement;if(!frame||!canvas.isConnected)return;if(!data.runs.length&&!data.links.length)return;frame.querySelector('.bdfTextLayer')?.remove();mount(frame)}
+
+///|
 extern "js" fn viewer_dom_observe(
   dom : ViewerDom,
   visible : (Int32, ViewerCanvas) -> Unit,
 ) -> Unit =
-  #|(dom,visible) => {dom.observer=new IntersectionObserver(entries=>{for(const entry of entries){const frame=entry.target,canvas=frame.querySelector('canvas'),index=Number(frame.dataset.bdfPage);if(entry.isIntersecting){dom.near.add(frame);visible(index,canvas)}else{dom.near.delete(frame);if(canvas.width){canvas.width=canvas.height=0;canvas.dataset.loaded=''}frame.querySelector('[data-bdf-hits]')?.remove()}}},{root:dom.stage,rootMargin:'600px'})}
+  #|(dom,visible) => {dom.observer=new IntersectionObserver(entries=>{for(const entry of entries){const frame=entry.target,canvas=frame.querySelector('canvas'),index=Number(frame.dataset.bdfPage);if(entry.isIntersecting){dom.near.add(frame);visible(index,canvas)}else{dom.near.delete(frame);if(canvas.width){canvas.width=canvas.height=0;canvas.dataset.loaded=''}frame.querySelector('[data-bdf-hits]')?.remove();frame.querySelector('.bdfTextLayer')?.remove()}}},{root:dom.stage,rootMargin:'600px'})}
 
 ///|
 extern "js" fn viewer_canvas_start(canvas : ViewerCanvas) -> Int32 =

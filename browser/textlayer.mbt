@@ -230,6 +230,25 @@ fn append_text_content(
 ///|
 // DOM operations stay at the JS boundary; extraction and document structure
 // are computed by MoonBit on both supported targets.
+///|
+/// Adapt a render-worker `content` result ({runs,nodes,links}) to the
+/// text-layer data shape consumed by `render_text_layer`.
+extern "js" fn text_layer_from_content(
+  content : RenderValue,
+) -> TextLayerData =
+  #|(content) => {
+  #| const out={nodes:[],runs:[],links:[]};
+  #| for(const n of content?.nodes??[]){
+  #|  out.nodes.push({kind:n.kind,parent:n.parent??-1,level:n.level??0,row:n.row??-1,col:n.col??-1,rows:n.rows??1,cols:n.cols??1,scope:n.scope??'',alt:n.alt??'',bounds:n.bounds??null});
+  #| }
+  #| for(const r of content?.runs??[]){
+  #|  const f=r.font,m=r.matrix??[1,0,0,1,0,0],hash=f&&f.kind===0?f.hash:undefined;
+  #|  out.runs.push({text:r.text??'',x:r.x??0,y:r.y??0,advance:r.advance??0,size:r.size??0,align:r.align??0,a:m[0],b:m[1],c:m[2],d:m[3],sep:r.sep??0,ordinal:r.ordinal??0,alt:!!r.altText,lang:r.lang??'',node:r.node??-1,hasFont:!!f,family:hash?`"bdf-${hash}"${f.family?', '+f.family:''}`:(f?.family||'sans-serif'),weight:f?.weight??400,style:f?.style??0});
+  #| }
+  #| for(const l of content?.links??[])out.links.push({x:l.x,y:l.y,w:l.w,h:l.h,url:l.url??'',after:l.after??-1,node:l.node??-1});
+  #| return out;
+  #|}
+
 extern "js" fn render_text_layer(
   host : BrowserHost,
   data : TextLayerData,
