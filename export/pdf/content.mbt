@@ -522,10 +522,10 @@ fn draw_text_command(
   }
   if stroke {
     state.op(color_text(state.gs.stroke_color) + " RG")
-    state.op("Tr 1")
+    state.op("1 Tr")
   } else {
     state.op(color_text(state.gs.fill_color) + " rg")
-    state.op("Tr 0")
+    state.op("0 Tr")
   }
   state.op("BT")
   state.op("/" + name + " " + num(state.gs.font_size) + " Tf")
@@ -810,6 +810,8 @@ fn page_content(
     masking: 0,
   }
   state.op("q")
+  state.op("1 0 0 -1 0 " + num(height) + " cm")
+  state.gs.matrix = pdf_mul(state.gs.matrix, (1.0, 0.0, 0.0, -1.0, 0.0, height))
   for layer in page.layers {
     let layer_resources = @core.decode_object_resources(
       document.part(layer.object),

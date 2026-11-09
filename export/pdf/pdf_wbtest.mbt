@@ -38,6 +38,7 @@ test "pdf writes a readable one-page document" {
   assert_eq(result.pages, 1)
   assert_true(result.bytes.has_prefix(b"%PDF-1.7"))
   assert_true(result.bytes.to_string().contains("%%EOF"))
+  assert_true(result.bytes.to_string().contains("1 0 0 -1 0 200 cm"))
   let parsed = @pdf.convert(result.bytes) catch {
     _ => {
       assert_true(false)
