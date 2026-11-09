@@ -25,6 +25,7 @@ import { verifyViewerMusic } from '../continuous/viewer-music-test.mjs';
 import { verifyPiano } from '../music/piano-test.mjs';
 import { verifyLazyPages } from '../continuous/lazy-test.mjs';
 import { verifySheetZoom } from '../sheet/zoom-test.mjs';
+import { captureWithRecapture } from './recapture.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const outputRoot = path.join(root, '_build/visual-diff');
@@ -1102,8 +1103,10 @@ try {
   await run(['check','interactions',`${continuousBase}viewer-find-moon.html`,'--reference',`${continuousBase}viewer-find-baseline.html`,'--handlers','--no-ledger']);
   for(const [kind,name,width,height] of [['region','moon',200,200],['region','split',200,200],['region','encrypted',200,200],['region','encrypted-split',200,200],['viewer','moon',200,200],['spread','moon',376,120],['zoom','moon',376,120]]){
     const target=path.join(output,`continuous-${kind}-${name}`);mkdirSync(target);
-    await run(['diff','html','--url',`${continuousBase}${kind}-baseline.html`,'--current-url',`${continuousBase}${kind}-${name}.html`,'--output-dir',target,'--no-paint-tree']);
-    const reportPath=path.join(target,'diff-report.json'),report=JSON.parse(readFileSync(reportPath,'utf8'));
+    const capture=['diff','html','--url',`${continuousBase}${kind}-baseline.html`,'--current-url',`${continuousBase}${kind}-${name}.html`,'--output-dir',target,'--no-paint-tree'];
+    const baselinePng=viewport=>path.join(target,`compat_continuous_${kind}-baseline-${viewport}.png`);
+    const reportPath=path.join(target,'diff-report.json');
+    const report=await captureWithRecapture({capture,reportPath,baselinePng,run,label:`continuous ${kind}-${name}`});
     for(const result of report.results){
       const reference=PNG.sync.read(readFileSync(path.join(target,`compat_continuous_${kind}-baseline-${result.viewport}.png`)));
       const actual=PNG.sync.read(readFileSync(path.join(target,`compat_continuous_${kind}-${name}-${result.viewport}.png`)));
