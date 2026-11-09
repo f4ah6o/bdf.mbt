@@ -1,0 +1,78 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/convert/xdw"
+
+// Values
+pub const A_DEFS : Int32 = 51
+
+pub const K_CONTENT : Int64 = 0x8010
+
+pub const K_CUSTOM : Int64 = 0x8045
+
+pub const K_DOCUMENT : Int64 = 0x1303
+
+pub const K_ELLIPSE : Int64 = 0x803e
+
+pub const K_FUSEN : Int64 = 0x801a
+
+pub const K_LINE : Int64 = 0x803c
+
+pub const K_LINK : Int64 = 0xc02f
+
+pub const K_MARKER : Int64 = 0x801b
+
+pub const K_OLE : Int64 = 0x800f
+
+pub const K_PAGE : Int64 = 0x1301
+
+pub const K_PAGEFORM : Int64 = 0x802e
+
+pub const K_PICTURE : Int64 = 0x803f
+
+pub const K_PLACE : Int64 = 0x1302
+
+pub const K_POLYGON : Int64 = 0x8042
+
+pub const K_RECEIVED : Int64 = 0x8040
+
+pub const K_RECT : Int64 = 0x803d
+
+pub const K_ROOT : Int64 = 0xc013
+
+pub const K_SIGNATURE : Int64 = 0x8043
+
+pub const K_STAMP : Int64 = 0x8033
+
+pub const K_TEXT : Int64 = 0x8011
+
+pub const PICTURE_MARK : String = "%ezpz_picture"
+
+pub const T_ENTRY : Int32 = 0x64
+
+pub const T_HEADER : Int32 = 0x60
+
+pub fn lzh_decompress(Bytes, Int32, Limits) -> Bytes raise XdwError
+
+pub fn xdw_i64_be_bytes(Int64) -> Bytes
+
+pub fn xdw_kind_name(Int64) -> String
+
+// Errors
+pub suberror XdwError {
+  XdwNotFile(String)
+  XdwCorrupt(String)
+  XdwTooLarge(String)
+  XdwProtected
+}
+
+// Types and methods
+pub(all) struct Limits {
+  max_bytes : Int64
+  max_expand : Int64
+  max_ratio : Int64
+  max_pages : Int32
+}
+pub fn Limits::default() -> Self
+
+// Type aliases
+
+// Traits
