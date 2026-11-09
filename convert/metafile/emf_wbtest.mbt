@@ -526,3 +526,99 @@ test "a saved and restored clip keeps the copy warning" {
     )
   }
 }
+
+///|
+/// An EMR_COMMENT carrying a DW record: "DW", the two op bytes, then payload.
+fn t_dw(a : Int32, b : Int32, payload : Bytes) -> Bytes {
+  let body = @buffer.Buffer()
+  body.write_bytes(b"DW")
+  body.write_byte(a.to_byte())
+  body.write_byte(b.to_byte())
+  body.write_bytes(payload)
+  let data = body.to_bytes()
+  let head = @buffer.Buffer()
+  t_u32(head, data.length())
+  head.write_bytes(data)
+  t_record(70, head.to_bytes())
+}
+
+///|
+/// A point-encoded DW shape record: count, then i16 x/y pairs.
+fn t_dw_points(a : Int32, enc : Int32, points : Array[Int32]) -> Bytes {
+  let p = @buffer.Buffer()
+  t_u32(p, points.length() / 2)
+  for v in points {
+    t_u16(p, v)
+  }
+  t_dw(a, enc, p.to_bytes())
+}
+
+///|
+test "selectclippath reports RGN_COPY over a DW rectangle clip" {
+  // DW06 narrows the clip through a comment record, so a following RGN_COPY
+  // has to replace that region just like an EMF rectangle clip.
+  let records = [
+    t_dw(48, 54, t_i32s([0, 0, 100, 100])), // DW06 clip rect
+    t_record(59, b""), // BEGINPATH
+    t_record(27, t_i32s([0, 0])), // MOVETOEX
+    t_record(54, t_i32s([100, 0])), // LINETO
+    t_record(54, t_i32s([100, 100])),
+    t_record(60, b""), // ENDPATH
+    t_record(67, t_i32s([5])), // SELECTCLIPPATH RGN_COPY
+    t_record(14, t_i32s([0, 0, 0])),
+  ]
+  let (_, warnings) = t_draw(
+    t_emf([0, 0, 2540, 2540], [96, 96], [25, 25], records), 72.0, 72.0, false,
+  )
+  guard warnings.length() == 1 && warnings[0].contains("RGN_COPY") else {
+    abort(
+      "RGN_COPY over a DW rectangle clip was not reported: \{warnings.join(",")}",
+    )
+  }
+}
+
+///|
+test "selectclippath reports RGN_COPY over a DW path clip" {
+  // DW03 clips to the accumulated DW path, which is a clip of its own.
+  let records = [
+    t_dw_points(1, 32, [0, 0, 100, 100]), // DW shape: move then line
+    t_dw(48, 51, b""), // DW03 clip to the path
+    t_record(59, b""), // BEGINPATH
+    t_record(27, t_i32s([0, 0])), // MOVETOEX
+    t_record(54, t_i32s([100, 0])), // LINETO
+    t_record(54, t_i32s([100, 100])),
+    t_record(60, b""), // ENDPATH
+    t_record(67, t_i32s([5])), // SELECTCLIPPATH RGN_COPY
+    t_record(14, t_i32s([0, 0, 0])),
+  ]
+  let (_, warnings) = t_draw(
+    t_emf([0, 0, 2540, 2540], [96, 96], [25, 25], records), 72.0, 72.0, false,
+  )
+  guard warnings.length() == 1 && warnings[0].contains("RGN_COPY") else {
+    abort(
+      "RGN_COPY over a DW path clip was not reported: \{warnings.join(",")}",
+    )
+  }
+}
+
+///|
+test "a DW clip alone stays silent" {
+  // Tracking a DW clip must not add warnings to metafiles that only use
+  // RGN_AND, which a cumulative clip already applies.
+  let records = [
+    t_dw(48, 54, t_i32s([0, 0, 100, 100])), // DW06 clip rect
+    t_record(59, b""), // BEGINPATH
+    t_record(27, t_i32s([0, 0])), // MOVETOEX
+    t_record(54, t_i32s([100, 0])), // LINETO
+    t_record(54, t_i32s([100, 100])),
+    t_record(60, b""), // ENDPATH
+    t_record(67, t_i32s([1])), // SELECTCLIPPATH RGN_AND
+    t_record(14, t_i32s([0, 0, 0])),
+  ]
+  let (_, warnings) = t_draw(
+    t_emf([0, 0, 2540, 2540], [96, 96], [25, 25], records), 72.0, 72.0, false,
+  )
+  guard warnings.is_empty() else {
+    abort("a DW clip warned: \{warnings.join(",")}")
+  }
+}

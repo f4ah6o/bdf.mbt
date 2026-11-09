@@ -257,6 +257,7 @@ fn Gdi::dw_set_clip(self : Gdi) -> Unit {
   self.object.clip_path(index, 1) catch {
     error => self.warn("a path could not clip: " + error.to_string())
   }
+  self.clip_active = true
 }
 
 ///|
@@ -408,6 +409,7 @@ fn Gdi::dw_set_clip_rect(self : Gdi, ax0 : Double, ay0 : Double, ax1 : Double, a
   self.object.clip_path(index, 1) catch {
     error => self.warn("a clip rectangle could not be set: " + error.to_string())
   }
+  self.clip_active = true
 }
 
 ///|
