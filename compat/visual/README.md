@@ -25,3 +25,63 @@ go run /absolute/path/to/bdf.mbt/compat/visual/generate_fixture.go /absolute/pat
 
 The snapshot covers only the fixture's operations. Additional fixtures are
 needed to establish parity for other document features and real input formats.
+
+## Continuous capture retries and diagnostic provenance
+
+`recapture.mjs` retries an all-opaque-white continuous baseline once. It keeps
+first-pass screenshots, results, heatmaps and triptychs for viewports that
+already painted; only blank viewports use the retry. A genuine difference in a
+valid first-pass viewport must still fail. The current screenshot path does not
+wait for a render-ready signal. Retrying is a limited mitigation, not a readiness
+fix, and a second blank capture fails.
+
+When a retry occurs, independent viewport records in `heatmapRegions`,
+`paletteDiffs`, `textRowShifts`, `componentBboxDiffs`, `shiftOrigins`,
+`shiftAccumulations` and `gridSuggestions` follow those same adoption choices.
+A field or variant omitted by the adopted capture contributes no record. Newly
+reported retry entries are included only for retried viewports. Multiple grid
+suggestions for one viewport are retained.
+
+Whole-capture summaries cannot always be recomputed from vlmkit's saved JSON:
+selector/property lists, samples and entries may have already been truncated.
+The mixed report therefore omits aggregate and unsupported diagnostic sections,
+rather than copying stale values or emitting a partial standard vlmkit schema.
+This includes computed/authored style and DOM-position aggregates, DOM
+fingerprints, responsive geometry, state/region diagnostics and unknown future
+fields. Their omission is **unavailable diagnostics**, not a clean result.
+
+The `recapture` metadata records:
+
+- `adoptedCaptureByViewport`: whether each viewport uses the first or retry pass.
+- `originalReports`: the `diff-report.first.json` and `diff-report.retry.json`
+  source JSON files. These are JSON snapshots, not complete immutable image
+  archives; paths in them still refer to the shared capture output directory.
+- `unavailableFields`: top-level fields not merged into the mixed report.
+- `viewportCounts`: adopted counts from the three `*DiffPerViewport` sections.
+  `totalDiffs` is present only when every expected viewport has one valid count.
+  Otherwise `countsComplete` is false and `missingViewports` is recorded. Missing
+  counts are never converted to zero. No selector/property aggregate is inferred
+  from truncated samples.
+
+The retry logs this limitation. For mixed captures, `compare.mjs` prints the
+adopted viewports, unavailable fields and original-report references instead of
+requesting a whole-capture `diff agent` narrative. That formatter does not
+understand the unavailability metadata and could otherwise mislabel the report
+as image-only mode. It must not be used to infer whole-capture conclusions from
+a mixed report. Ordinary captures that do not retry retain their
+original report unchanged. Artifact preservation currently recognizes the
+viewport screenshot, `_heatmap.png` and `-triptych.png` filename conventions;
+additional artifact types need explicit support before being treated as adopted
+capture evidence.
+
+Run the core and diagnostic regressions with:
+
+```sh
+node compat/visual/recapture-test.mjs
+```
+
+This command is already part of `npm run test:visual`. The diagnostic cases cover
+omitted/new fields and variants, empty arrays, multiple records per viewport,
+missing counts, original-report provenance, no-retry behavior and a missing
+retry viewport. The pixel regressions retain a first-pass 3.125% wide difference
+while replacing a blank mobile capture.

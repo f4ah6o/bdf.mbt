@@ -198,4 +198,5 @@ console.log('ok 2 - a mostly white page with one painted pixel is not blank');
   console.log('ok 8 - heatmap, triptych and heatmap regions follow the adopted capture');
 }
 
-console.log('\nrecapture: 8 pass, 0 fail');
+const { diagnosticChecks } = await import('./recapture-diagnostics-test.mjs');
+console.log(`\nrecapture: ${8 + diagnosticChecks} pass, 0 fail`);
