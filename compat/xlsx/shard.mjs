@@ -33,6 +33,9 @@ export function parseArgs(argv) {
       if (!match) throw new Error(`--shard wants i/n, got ${JSON.stringify(value)}`);
       const index = Number(match[1]);
       const count = Number(match[2]);
+      if (!Number.isSafeInteger(index) || !Number.isSafeInteger(count)) {
+        throw new Error(`--shard ${value} is not a safe integer pair`);
+      }
       if (count < 1 || index < 0 || index >= count) {
         throw new Error(`--shard ${value} is out of range`);
       }
@@ -62,11 +65,26 @@ export class CaseTracker {
   /// A fixture that repeats verbatim under the same message gets an
   /// occurrence suffix instead of being dropped, so every execution keeps
   /// its own ID and the case count stays what it was before sharding.
+  ///
+  /// IDs are stable for unique labels and for duplicates whose generated
+  /// suffix does not collide with a literal label. If a literal label already
+  /// occupies a generated suffix, the later occurrence advances to the next
+  /// free suffix; adding or removing such a literal can change that
+  /// occurrence's ID. No execution is dropped.
   enter(id) {
-    const occurrence = this.occurrences.get(id) ?? 0;
-    this.occurrences.set(id, occurrence + 1);
+    const key = String(id);
+    const occurrence = this.occurrences.get(key) ?? 0;
+    this.occurrences.set(key, occurrence + 1);
     if (occurrence > 0) this.repeats++;
-    const unique = occurrence === 0 ? id : `${id} #${occurrence + 1}`;
+    let suffix = occurrence + 1;
+    let unique = occurrence === 0 ? key : `${key} #${suffix}`;
+    // A literal ID can already look like an occurrence suffix (`a #2`). Keep
+    // advancing until the ID is free so every execution keeps its own record
+    // instead of silently collapsing two cases into one.
+    while (this.seen.has(unique)) {
+      suffix++;
+      unique = `${key} #${suffix}`;
+    }
     this.seen.add(unique);
     if (this.options.list) return false;
     if (
@@ -103,7 +121,7 @@ export function shardCount() {
   const raw = process.env.VERIFY_RENDER_SHARDS;
   if (raw === undefined || raw === '') return Math.min(8, availableParallelism());
   const count = Number(raw);
-  if (!Number.isInteger(count) || count < 1) {
+  if (!Number.isSafeInteger(count) || count < 1) {
     throw new Error(`VERIFY_RENDER_SHARDS wants a positive integer, got ${JSON.stringify(raw)}`);
   }
   return count;
@@ -181,6 +199,8 @@ async function runShard(scriptPath, index, count, dir, timeoutMs, totalCases) {
     problems.push(`${label} printed no summary line`);
   } else if (summary[1] !== `${index}/${count}`) {
     problems.push(`${label} reported shard=${summary[1]}`);
+  } else if (Number(summary[2]) !== totalCases) {
+    problems.push(`${label} reported seen=${summary[2]} but enumerated ${totalCases} cases`);
   }
   let ids = [];
   try {
@@ -191,7 +211,8 @@ async function runShard(scriptPath, index, count, dir, timeoutMs, totalCases) {
   if (summary && Number(summary[3]) !== ids.length) {
     problems.push(`${label} reported ran=${summary[3]} but wrote ${ids.length} IDs`);
   }
-  if (ids.length === 0 && count <= totalCases) problems.push(`${label} ran no cases`);
+  // An empty shard is legitimate: hashing can put every case in another
+  // bucket. The union check below is what proves no case was lost.
   return { index, ids, problems };
 }
 
@@ -211,7 +232,13 @@ export async function runSharded(scriptPath) {
         `verify-render --list failed (${describeExit(listed)})\n${listed.stderr.trim()}`,
       );
     }
-    const allIds = readIds(allPath);
+    const allIds = (() => {
+      try {
+        return readIds(allPath);
+      } catch {
+        throw new Error('verify-render --list wrote no ID file');
+      }
+    })();
     if (allIds.length === 0) throw new Error('verify-render --list produced no case IDs');
     const allSet = new Set(allIds);
     if (allSet.size !== allIds.length) {

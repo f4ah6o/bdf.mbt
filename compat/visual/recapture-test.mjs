@@ -199,4 +199,5 @@ console.log('ok 2 - a mostly white page with one painted pixel is not blank');
 }
 
 const { diagnosticChecks } = await import('./recapture-diagnostics-test.mjs');
-console.log(`\nrecapture: ${8 + diagnosticChecks} pass, 0 fail`);
+const { recapturePbtChecks, recaptureGeneratedCases } = await import('./recapture-pbt-test.mjs');
+console.log(`\nrecapture: ${8 + diagnosticChecks + recapturePbtChecks} pass, 0 fail (${recaptureGeneratedCases} generated cases)`);

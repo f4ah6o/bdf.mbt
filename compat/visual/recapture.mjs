@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { PNG } from 'pngjs';
 
@@ -23,10 +23,27 @@ export const blankCapture = file => {
 // The per-viewport artifacts `vlmkit diff html` writes: the two screenshots plus the diagnostics it
 // emits for a viewport that differs. A retry only replaces the viewports that were blank, so these
 // are the files that have to move with them.
-const belongsToViewport = (name, viewport) =>
-  name.endsWith(`-${viewport}.png`) || name.endsWith(`-${viewport}_heatmap.png`) || name.endsWith(`-${viewport}-triptych.png`);
+//
+// The caller's baselinePng/variantPng callbacks are the authoritative filename contract. Derive the
+// heatmap and triptych names from the variant path instead of suffix-matching directory entries: a
+// suffix match makes `wide` own `...-ultra-wide.png`, so restoring the painted `wide` capture would
+// overwrite the recovered `ultra-wide` one even though the merged report says `ultra-wide` came from
+// the retry. Deriving exact paths also preserves arbitrary prefixes such as
+// `compat_continuous_region-baseline-wide.png`.
+const artifactPaths = (viewport, baselinePng, variantPng) => {
+  const baseline = baselinePng(viewport);
+  const variant = variantPng(viewport);
+  const withSuffix = suffix => (variant.endsWith('.png') ? `${variant.slice(0, -'.png'.length)}${suffix}.png` : `${variant}${suffix}`);
+  return {
+    baseline,
+    variant,
+    heatmap: withSuffix('_heatmap'),
+    triptych: withSuffix('-triptych'),
+  };
+};
 
-const filesFor = (dir, viewport) => readdirSync(dir).filter(name => belongsToViewport(name, viewport));
+const existingArtifacts = (viewport, baselinePng, variantPng) =>
+  Object.entries(artifactPaths(viewport, baselinePng, variantPng)).filter(([, file]) => existsSync(file));
 
 // Only these report fields are independent viewport records. Omission in a capture means
 // that capture supplied no record; it must never revive a record from the other capture.
@@ -121,10 +138,10 @@ export async function captureWithRecapture({ capture, reportPath, baselinePng, v
   const kept = new Map();
   for (const result of first.results) {
     if (blankViewports.has(result.viewport)) continue;
-    kept.set(result.viewport, new Map(filesFor(target, result.viewport).map(name => [name, readFileSync(path.join(target, name))])));
+    kept.set(result.viewport, new Map(existingArtifacts(result.viewport, baselinePng, variantPng).map(([, file]) => [file, readFileSync(file)])));
   }
   for (const viewport of blankViewports) {
-    for (const name of filesFor(target, viewport)) rmSync(path.join(target, name), { force: true });
+    for (const [, file] of existingArtifacts(viewport, baselinePng, variantPng)) rmSync(file, { force: true });
   }
 
   log(`${label}: baseline capture was blank at ${[...blankViewports].join(', ')} — recapturing`);
@@ -143,8 +160,8 @@ export async function captureWithRecapture({ capture, reportPath, baselinePng, v
   // Put the kept viewports back exactly as the first capture left them: the retry re-captured every
   // viewport, so its screenshots and diagnostics must not stand in for evidence it did not produce.
   for (const [viewport, files] of kept) {
-    for (const name of filesFor(target, viewport)) rmSync(path.join(target, name), { force: true });
-    for (const [name, buffer] of files) writeFileSync(path.join(target, name), buffer);
+    for (const [, file] of existingArtifacts(viewport, baselinePng, variantPng)) rmSync(file, { force: true });
+    for (const [file, buffer] of files) writeFileSync(file, buffer);
   }
 
   const merged = mergeReport(first, retried, blankViewports, originalReports);
