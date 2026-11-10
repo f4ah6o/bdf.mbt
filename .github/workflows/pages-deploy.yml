@@ -1,0 +1,56 @@
+name: Deploy site pages
+# The only workflow in this repository that GitHub can run. It has a
+# workflow_dispatch trigger and nothing else, so it starts only when a
+# maintainer dispatches it, and only after the deployment is separately
+# authorized. Local verification never runs it and never publishes the site.
+#
+# The other workflows in this directory are inert on GitHub (push with
+# branches-ignore ['**']). Keep this file free of tests and quality checks: it
+# builds the site and deploys it, nothing else. Run `npm run verify:local`
+# before dispatching.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Never cancel a deployment that is already publishing: interrupting a Pages
+  # sync leaves the site stuck until the next successful run.
+  group: pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: setup MoonBit
+        uses: hustcer/setup-moonbit@v1
+      - name: moon update
+        run: moon update
+      - name: npm ci
+        run: npm ci
+      - name: Build the site (bdf.mbt in JavaScript and wasm-gc)
+        run: npm run build:site
+      - name: upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _build/pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

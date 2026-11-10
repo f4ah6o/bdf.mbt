@@ -1,13 +1,13 @@
 name: Document parity
-
+# Local verification definition. GitHub never runs this workflow: the push
+# trigger ignores every branch and there is no manual trigger. `npm run
+# verify:local` runs it through actrun, which ignores branch filters.
+#
+# Keep the file in .github/workflows: actrun uses the workflow's directory as
+# the workspace, and only .github/workflows resolves to the repository root.
 on:
-  # A branch push and its pull_request both fire, so every PR ran twice.
-  # Restrict push to main: PRs (same repo and forks) are covered by
-  # pull_request, and main is covered by push.
   push:
-    branches: [main]
-  pull_request:
-  workflow_dispatch:
+    branches-ignore: ['**']
 
 concurrency:
   group: parity-${{ github.ref }}
@@ -18,19 +18,35 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: checkout
+        uses: actions/checkout@v4
+        if: ${{ !env.ACTRUN_LOCAL }}
+      - name: setup Node.js
+        uses: actions/setup-node@v4
+        if: ${{ !env.ACTRUN_LOCAL }}
         with:
           node-version: '24'
           cache: npm
-      - uses: hustcer/setup-moonbit@v1
-      - run: moon update
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: moon build --target js
-      - name: Compare PDF/DOCX/XLSX/PPTX/Markdown with upstream
+      - name: setup MoonBit
+        uses: hustcer/setup-moonbit@v1
+        if: ${{ !env.ACTRUN_LOCAL }}
+      - name: moon update
+        if: ${{ !env.ACTRUN_LOCAL }}
+        run: moon update
+      - name: npm ci
+        if: ${{ !env.ACTRUN_LOCAL }}
+        run: npm ci
+      - name: install Playwright Chromium
+        if: ${{ !env.ACTRUN_LOCAL }}
+        run: npx playwright install --with-deps chromium
+      # Retained packages only: a bare `moon build --target js` would also
+      # build the dormant PCB/KiCad, score and EPUB packages.
+      - name: build JavaScript target
+        run: node compat/retained-test.mjs --mode build js
+      - name: compare with upstream
         run: node compat/parity/verify.mjs --limit=100
-      - uses: actions/upload-artifact@v4
+      - name: upload parity report
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: parity-report

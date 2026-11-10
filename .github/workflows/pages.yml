@@ -1,38 +1,51 @@
 name: Site pages
+# Local verification definition. GitHub never runs this workflow: the push
+# trigger ignores every branch and there is no manual trigger. `npm run
+# verify:local` runs the build job through actrun, which ignores branch filters.
+#
+# Keep the file in .github/workflows: actrun uses the workflow's directory as
+# the workspace, and only .github/workflows resolves to the repository root.
+#
+# This workflow only builds and checks the site. It has no deployment job and
+# never uploads a Pages artifact; deployment is the separate manual workflow in
+# pages-deploy.yml.
 on:
   push:
-    branches: [main]
-  pull_request:
-  workflow_dispatch:
+    branches-ignore: ['**']
 
 permissions:
-  actions: read
   contents: read
-  pages: read
 
 concurrency:
-  # Never cancel a run that is already publishing: interrupting a Pages
-  # deployment mid-sync leaves the site stuck until the next successful run.
-  group: site-pages-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
+  group: site-pages
   cancel-in-progress: false
 
 jobs:
   build:
-    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 40
-    outputs:
-      pages_ready: ${{ steps.pages.outputs.ready }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: checkout
+        uses: actions/checkout@v4
+        if: ${{ !env.ACTRUN_LOCAL }}
+      - name: setup Node.js
+        uses: actions/setup-node@v4
+        if: ${{ !env.ACTRUN_LOCAL }}
         with:
           node-version: '24'
           cache: npm
-      - uses: hustcer/setup-moonbit@v1
-      - run: moon update
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - name: setup MoonBit
+        uses: hustcer/setup-moonbit@v1
+        if: ${{ !env.ACTRUN_LOCAL }}
+      - name: moon update
+        if: ${{ !env.ACTRUN_LOCAL }}
+        run: moon update
+      - name: npm ci
+        if: ${{ !env.ACTRUN_LOCAL }}
+        run: npm ci
+      - name: install Playwright Chromium
+        if: ${{ !env.ACTRUN_LOCAL }}
+        run: npx playwright install --with-deps chromium
       - name: Build the site (bdf.mbt in JavaScript and wasm-gc)
         id: build_site
         run: npm run build:site
@@ -48,12 +61,33 @@ jobs:
       - name: Validate the site with vlmkit
         id: ui_gates
         run: |
-          python3 -m http.server --directory _build/pages 8771 --bind 127.0.0.1 >/dev/null 2>&1 &
+          set -euo pipefail
+          set -x
+          # Bind an ephemeral port. A fixed port can already be taken by an
+          # unrelated server, and the checks would then measure that site
+          # instead of _build/pages.
+          port=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')
+          server_log=$(mktemp)
+          python3 -m http.server --directory _build/pages "$port" --bind 127.0.0.1 >"$server_log" 2>&1 &
           server_pid=$!
-          trap 'kill "$server_pid"' EXIT
-          sleep 1
-          url=http://127.0.0.1:8771/
-          node .github/probe-overflow.mjs "$url"
+          cleanup() {
+            kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+            rm -f "$server_log"
+          }
+          trap cleanup EXIT
+          url=http://127.0.0.1:$port
+          ready=0
+          for _ in $(seq 1 50); do
+            if curl -fsS "$url/" >/dev/null 2>&1; then ready=1; break; fi
+            sleep 0.2
+          done
+          if [ "$ready" -ne 1 ] || ! kill -0 "$server_pid" 2>/dev/null; then
+            echo "the local site server did not come up on port $port" >&2
+            cat "$server_log" >&2
+            exit 1
+          fi
+          node .github/probe-overflow.mjs "$url/"
           ./node_modules/.bin/vlmkit check integrity "$url" --no-ledger --allow "invisible-text@#demo;text-layer spans are transparent by design (selection overlay)"
           ./node_modules/.bin/vlmkit check copy "$url" --manifest site/copy.txt --no-ledger
           ./node_modules/.bin/vlmkit scan scroll "$url" --no-ledger
@@ -74,68 +108,10 @@ jobs:
           ./node_modules/.bin/vlmkit check integrity "$url/wasm-gc.html" --no-ledger --allow "invisible-text@#preview;text-layer spans are transparent by design (selection overlay)"
           ./node_modules/.bin/vlmkit scan scroll "$url/wasm-gc.html" --no-ledger
           ./node_modules/.bin/vlmkit check breakpoints "$url/wasm-gc.html" --sweep --no-ledger
-      - uses: actions/upload-pages-artifact@v3
-        if: github.event_name != 'pull_request'
-        with:
-          path: _build/pages
-      - name: Check whether Pages is configured for Actions
-        id: pages
-        if: github.event_name != 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if source=$(gh api "repos/${{ github.repository }}/pages" --jq '.build_type // ""' 2>"$RUNNER_TEMP/pages-check.err"); then
-            :
-          else
-            case "$(cat "$RUNNER_TEMP/pages-check.err")" in
-              *"(HTTP 404)"*) source='' ;;
-              *) cat "$RUNNER_TEMP/pages-check.err" >&2; exit 1 ;;
-            esac
+          # A server that died mid-run would leave the checks talking to
+          # whatever else answers on the port, so fail instead of trusting them.
+          if ! kill -0 "$server_pid" 2>/dev/null; then
+            echo "the local site server exited before the checks finished; the results above may describe another server" >&2
+            cat "$server_log" >&2
+            exit 1
           fi
-          if [ "$source" != workflow ]; then
-            echo 'ready=false' >> "$GITHUB_OUTPUT"
-            echo 'Pages deployment skipped: configure Settings > Pages > Source as GitHub Actions, then run this workflow again.'
-          elif gh api "repos/${{ github.repository }}/environments/github-pages" >/dev/null 2>"$RUNNER_TEMP/environment-check.err"; then
-            echo 'ready=true' >> "$GITHUB_OUTPUT"
-          else
-            case "$(cat "$RUNNER_TEMP/environment-check.err")" in
-              *"(HTTP 404)"*)
-                echo 'ready=false' >> "$GITHUB_OUTPUT"
-                echo 'Pages deployment skipped: the github-pages environment does not exist.'
-                ;;
-              *) cat "$RUNNER_TEMP/environment-check.err" >&2; exit 1 ;;
-            esac
-          fi
-
-  deploy:
-    needs: build
-    if: github.event_name != 'pull_request' && needs.build.outputs.pages_ready == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outcome == 'success' && steps.deployment.outputs.page_url || steps.retry.outputs.page_url }}
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    steps:
-      # Pages occasionally reports "Deployment failed, try again later." after
-      # a transient stall in its file sync. One bounded retry recovers from
-      # that without masking a genuinely broken artifact.
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-        continue-on-error: true
-      - name: Retry the Pages deployment
-        id: retry
-        if: steps.deployment.outcome == 'failure'
-        uses: actions/deploy-pages@v4
-      - name: Check the deployed site
-        env:
-          SITE_URL: ${{ steps.deployment.outcome == 'success' && steps.deployment.outputs.page_url || steps.retry.outputs.page_url }}
-        run: |
-          test -n "$SITE_URL" || { echo 'No deployed page URL was reported.' >&2; exit 1; }
-          for path in "" "viewer/" "thumbnail/" "text/" "docs/index.html" "docs/licenses.html" "wasm-gc.html"; do
-            curl -fsS --retry 5 --retry-delay 10 --retry-all-errors -o /dev/null "${SITE_URL}/${path}"
-          done

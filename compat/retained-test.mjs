@@ -1,14 +1,24 @@
-// Run `moon test` for the packages that remain in the maintained porting
-// scope.
+// Run `moon test`, `moon check` or `moon build` for the packages that remain in
+// the maintained porting scope.
 //
 // PCB (Gerber/Excellon, KiCad), score (MIDI, MML, MusicXML) and EPUB were
 // dropped from the scope. Their converters, compat harnesses and fixtures stay
-// in the tree as dormant assets, so a bare `moon test` still builds and runs
-// them. CI should require this selection instead, and treat the dormant
+// in the tree as dormant assets, so a bare `moon test`/`moon check`/`moon build`
+// still covers them. CI requires this selection instead, and treats the dormant
 // packages as unmaintained rather than as covered.
 //
-//   node compat/retained-test.mjs            # js, wasm-gc and native
-//   node compat/retained-test.mjs js         # one target
+//   node compat/retained-test.mjs                     # test, js + wasm-gc + native
+//   node compat/retained-test.mjs js                  # test, one target
+//   node compat/retained-test.mjs --mode check js     # moon check
+//   node compat/retained-test.mjs --mode build --release js
+//   node compat/retained-test.mjs --list js           # print the selection
+//
+// `moon test` selects packages by name (`-p`), while `moon check` and
+// `moon build` take package directory paths. Both forms are built here.
+//
+// Selection is not isolation: a retained package that imports a dormant one
+// still compiles it. `dormantDependents()` reports those packages so the gap is
+// visible instead of being mistaken for full exclusion.
 import { spawnSync } from "node:child_process";
 import { lstatSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -34,6 +44,9 @@ export const DORMANT = [
 
 /** Every target this module builds for. */
 export const TARGETS = ["js", "wasm-gc", "native"];
+
+/** The commands this selector can run. */
+export const MODES = ["test", "check", "build"];
 
 /** Directories that never hold a package of this module. */
 const SKIP = new Set(["node_modules"]);
@@ -89,16 +102,53 @@ export function supportedTargets(path) {
   return [...set];
 }
 
-/** Retained packages that build for `target`. */
-export function retainedPackages(target) {
+/** Retained package directories that build for `target`. */
+export function retainedPaths(target) {
   return packages()
     .filter((path) => !DORMANT.includes(path))
     .filter((path) => target === undefined || supportedTargets(path).includes(target))
-    .sort()
-    .map((path) => "f4ah6o/bdf/" + path);
+    .sort();
 }
 
-const PREFIX = "f4ah6o/bdf/";
+/** Retained packages that build for `target`, as `-p` package names. */
+export function retainedPackages(target) {
+  return retainedPaths(target).map((path) => "f4ah6o/bdf/" + path);
+}
+
+/**
+ * The `moon` arguments for one mode and target. `test` selects by package name,
+ * `check` and `build` by package directory path.
+ */
+export function moonArgs({ mode = "test", target, release = false } = {}) {
+  if (!MODES.includes(mode)) throw new Error(`unknown mode: ${mode}`);
+  if (!TARGETS.includes(target)) throw new Error(`unknown target: ${target}`);
+  const args = [mode, "--target", target];
+  if (release) args.push("--release");
+  if (mode === "test") {
+    for (const name of retainedPackages(target)) args.push("-p", name);
+  } else {
+    args.push(...retainedPaths(target));
+  }
+  return args;
+}
+
+/**
+ * Retained packages that import a dormant one. Their compilation still covers
+ * the dormant package, so the selection cannot hide a broken out-of-scope
+ * feature that a retained package depends on.
+ */
+export function dormantDependents() {
+  const dormant = new Set(DORMANT);
+  const found = [];
+  for (const path of retainedPaths()) {
+    const text = readFileSync(join(root, path, "moon.pkg"), "utf8");
+    const imports = [...text.matchAll(/"f4ah6o\/bdf\/([^"]+)"/g)]
+      .map((match) => match[1])
+      .filter((name) => dormant.has(name));
+    if (imports.length > 0) found.push({ package: path, imports: [...new Set(imports)].sort() });
+  }
+  return found;
+}
 
 /**
  * Check that the selection is complete before anything runs: every package in
@@ -112,8 +162,7 @@ export function verify(targets = TARGETS) {
   const retained = all.filter((path) => !dormant.has(path));
   const covered = new Set();
   for (const target of targets) {
-    for (const name of retainedPackages(target)) {
-      const path = name.slice(PREFIX.length);
+    for (const path of retainedPaths(target)) {
       if (dormant.has(path)) throw new Error(`dormant package selected for ${target}: ${path}`);
       covered.add(path);
     }
@@ -129,28 +178,53 @@ export function verify(targets = TARGETS) {
   return { total: all.length, dormant: DORMANT.length, retained: retained.length };
 }
 
+/** Parse the CLI arguments. Unknown flags are an error, not a silent default. */
+export function parseArgs(argv) {
+  const options = { mode: "test", release: false, list: false, targets: [] };
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === "--list") {
+      options.list = true;
+    } else if (arg === "--release") {
+      options.release = true;
+    } else if (arg === "--mode") {
+      index += 1;
+      const mode = argv[index];
+      if (!MODES.includes(mode)) throw new Error(`--mode must be one of ${MODES.join(", ")}`);
+      options.mode = mode;
+    } else if (arg.startsWith("--")) {
+      throw new Error(`unknown option: ${arg}`);
+    } else {
+      if (!TARGETS.includes(arg)) throw new Error(`unknown target: ${arg}`);
+      options.targets.push(arg);
+    }
+  }
+  return options;
+}
+
 function main() {
-  const args = process.argv.slice(2);
-  const list = args.includes("--list");
-  const targets = args.filter((arg) => !arg.startsWith("--"));
-  const selected = targets.length > 0 ? targets : TARGETS;
+  const options = parseArgs(process.argv.slice(2));
+  const selected = options.targets.length > 0 ? options.targets : TARGETS;
   const counts = verify();
-  if (list) {
+  if (options.list) {
     for (const target of selected) {
-      for (const name of retainedPackages(target)) console.log(`${target} ${name}`);
+      for (const path of retainedPaths(target)) console.log(`${target} f4ah6o/bdf/${path}`);
     }
     return;
   }
-  console.log(
-    `${counts.total} packages: ${counts.retained} retained, ${counts.dormant} dormant`,
-  );
+  console.log(`${counts.total} packages: ${counts.retained} retained, ${counts.dormant} dormant`);
+  const dependents = dormantDependents();
+  if (dependents.length > 0) {
+    console.log(
+      `note: ${dependents.length} retained package(s) import dormant packages and still compile them: ` +
+        dependents.map((entry) => entry.package).join(", "),
+    );
+  }
   for (const target of selected) {
-    const packages = retainedPackages(target);
-    if (packages.length === 0) throw new Error(`no retained packages for ${target}`);
-    const moonArgs = ["test", "--target", target];
-    for (const name of packages) moonArgs.push("-p", name);
-    console.log(`moon test --target ${target} over ${packages.length} retained packages`);
-    const result = spawnSync("moon", moonArgs, { cwd: root, stdio: "inherit" });
+    const args = moonArgs({ mode: options.mode, target, release: options.release });
+    const count = options.mode === "test" ? retainedPackages(target).length : retainedPaths(target).length;
+    console.log(`moon ${args[0]} --target ${target} over ${count} retained packages`);
+    const result = spawnSync("moon", args, { cwd: root, stdio: "inherit" });
     if (result.error) throw result.error;
     if (result.status !== 0) process.exit(result.status ?? 1);
   }

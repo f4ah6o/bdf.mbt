@@ -4,6 +4,18 @@
 
 ### Added
 
+- `npm run verify:local` runs the self-test, lint, CI, demo, parity, visual and
+  site gates through `actrun` in the current worktree and writes a manifest,
+  logs and actrun run records under `_scratch/local-verify/`. Per-workflow
+  shortcuts are `verify:local:self`, `verify:local:lint`, `verify:local:ci`,
+  `verify:local:parity`, `verify:local:visual` and `verify:local:site`;
+  `verify:local:plan` is a dry run.
+- `npm run test:local-verify` runs the deterministic runner tests: status
+  aggregation, empty and skipped steps, missing prerequisites, the
+  retained-scope marker and the site server checks.
+- `.github/local/moon-test.mjs` runs the retained packages using
+  `compat/retained-test.mjs`; if the selector is missing, it reports
+  `retained-scope: pending` rather than claiming retained coverage.
 - DocuWorks (`.xdw`) documents now carry a text index, so body text and
   annotation text are searchable in the converted BDF.
 - `include_hidden` keeps text that a later opaque fill covers; the default
@@ -38,6 +50,10 @@
   are unchanged.
 - The viewer no longer offers those formats in its file picker, sample
   shortcuts or gallery, and the site no longer publishes their format pages.
+- The four verification workflows run locally through `actrun` and cannot be
+  triggered on GitHub. Pages deployment remains available separately through
+  the manual `.github/workflows/pages-deploy.yml`; local verification never
+  dispatches it or publishes the site.
 
 ### Fixed
 
@@ -71,3 +87,9 @@
   through the Worker need another converter for those files. The packages,
   sources and fixtures stay in the tree as dormant assets, but they are not
   maintained and are not part of the required verification.
+- Run `npm run verify:local` before pushing. GitHub no longer runs the checks.
+  Once separately authorized, Pages can be published by manually dispatching
+  `.github/workflows/pages-deploy.yml`. Branch protection may still require the
+  old check names. The local flow uses existing `node_modules`, `.mooncakes` and
+  Playwright Chromium and does not run `npm ci`, `moon update` or
+  `npx playwright install`.

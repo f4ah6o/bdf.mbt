@@ -1,12 +1,13 @@
 name: moonbit
+# Local verification definition. GitHub never runs this workflow: the push
+# trigger ignores every branch and there is no manual trigger. `npm run
+# verify:local` runs it through actrun, which ignores branch filters.
+#
+# Keep the file in .github/workflows: actrun uses the workflow's directory as
+# the workspace, and only .github/workflows resolves to the repository root.
 on:
-  # A branch push and its pull_request both fire, so every PR ran twice.
-  # Restrict push to main: PRs (same repo and forks) are covered by
-  # pull_request, and main is covered by push.
   push:
-    branches: [main]
-  pull_request:
-  workflow_dispatch:
+    branches-ignore: ['**']
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -19,19 +20,44 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: hustcer/setup-moonbit@v1
-      - run: moon update
-      - run: moon version --all
-      - run: moon check --target ${{ matrix.target }}
-      - name: moon test
+      - name: checkout
+        uses: actions/checkout@v4
+        if: ${{ !env.ACTRUN_LOCAL }}
+      - name: setup MoonBit
+        uses: hustcer/setup-moonbit@v1
+        if: ${{ !env.ACTRUN_LOCAL }}
+      - name: moon update
+        if: ${{ !env.ACTRUN_LOCAL }}
+        run: moon update
+      - name: moon version
+        run: moon version --all
+      # `moon check` and `moon build` take package directory paths, so the
+      # retained selection is passed explicitly. A bare invocation would also
+      # check and build the dormant PCB/KiCad, score and EPUB packages, which
+      # are out of scope and must not be able to fail required verification.
+      - name: moon check (${{ matrix.target }})
+        run: node compat/retained-test.mjs --mode check ${{ matrix.target }}
+      - name: moon test (${{ matrix.target }})
         run: |
           set -o pipefail
-          moon test --target ${{ matrix.target }} | tee "$RUNNER_TEMP/moon-test.log"
+          node .github/local/moon-test.mjs ${{ matrix.target }} | tee "$RUNNER_TEMP/moon-test.log"
       # `moon test` exits 0 when it runs no tests at all, so a green run is not
       # proof that anything was exercised. Require the summary line and a floor
       # on the count; the floor is a canary for silently dropped tests.
-      - name: assert the test run was not empty
+      #
+      # The floor is not an exact count. Measured on 2026-11-10 with the
+      # retained-format scope (PCB/KiCad, musical score and EPUB excluded):
+      # js 2750, wasm-gc 2728, native 2728. The full pre-narrowing totals were
+      # 2817/2795/2795; the dropped packages contributed 67 tests per target.
+      # Keep the 2700 floor as a canary for lost coverage; re-measure it when
+      # the retained test inventory changes.
+      #
+      # .github/local/moon-test.mjs runs the retained packages only once
+      # compat/retained-test.mjs is present, and says so in the log. A tree
+      # without the selector falls back to the full suite and prints
+      # `retained-scope: pending`, which the local runner records instead of
+      # claiming retained coverage.
+      - name: assert the test run was not empty (${{ matrix.target }})
         run: |
           summary=$(grep -E '^Total tests: [0-9]+, passed: [0-9]+, failed: [0-9]+\.$' "$RUNNER_TEMP/moon-test.log" | tail -1)
           if [ -z "$summary" ]; then
@@ -49,25 +75,41 @@ jobs:
             echo "$failed tests failed" >&2
             exit 1
           fi
-      - run: moon build --target ${{ matrix.target }}
+      - name: moon build (${{ matrix.target }})
+        run: node compat/retained-test.mjs --mode build ${{ matrix.target }}
 
   demo:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: checkout
+        uses: actions/checkout@v4
+        if: ${{ !env.ACTRUN_LOCAL }}
+      - name: setup Node.js
+        uses: actions/setup-node@v4
+        if: ${{ !env.ACTRUN_LOCAL }}
         with:
           node-version: '24'
           cache: npm
-      - uses: hustcer/setup-moonbit@v1
-      - run: moon update
-      - run: npm ci
-      - run: node site/verify-samples.mjs
-      - run: npm run build:demo
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:demo
+      - name: setup MoonBit
+        uses: hustcer/setup-moonbit@v1
+        if: ${{ !env.ACTRUN_LOCAL }}
+      - name: moon update
+        if: ${{ !env.ACTRUN_LOCAL }}
+        run: moon update
+      - name: npm ci
+        if: ${{ !env.ACTRUN_LOCAL }}
+        run: npm ci
+      - name: verify samples
+        run: node site/verify-samples.mjs
+      - name: build demo
+        run: npm run build:demo
+      - name: install Playwright Chromium
+        if: ${{ !env.ACTRUN_LOCAL }}
+        run: npx playwright install --with-deps chromium
+      - name: test demo
+        run: npm run test:demo
       # The gallery thumbnails are checked in: fail when they no longer match
       # what the built demo renders for the card's sample.
-      - run: npm run test:previews
-
+      - name: test previews
+        run: npm run test:previews

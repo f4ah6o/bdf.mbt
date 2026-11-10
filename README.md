@@ -127,7 +127,13 @@ The benchmark section keeps upstream's published measurements (LibreOffice + Pop
 
 `site/docs-src/` holds the Japanese pages taken from upstream (`*.md`, MIT, listed with their commit in `site/docs-src/UPSTREAM-COMMIT`) and the two pages written for bdf.mbt (`api.md`, `licenses.md`). `site/build.mjs` renders them to `_build/pages/docs/`; each page names its source and says where bdf.mbt differs. `site/home.mjs` builds the top page, `site/nav.mjs` the sidebar, and `site/assets/` the stylesheet (upstream's, MIT) and the page scripts.
 
-The repository's Pages publishing source must be configured before the `Site pages` workflow can publish it.
+Publishing is a separate manual workflow: `.github/workflows/pages-deploy.yml`.
+It is `workflow_dispatch` only, has no test or quality-check steps, and runs
+only when a maintainer dispatches it after the deployment is separately
+authorized. The local verification flow never runs it, never uploads a Pages
+artifact and never publishes the site. Branch protection may still require the
+old check names, so a pull request can stay blocked until the protection rules
+are updated.
 
 ## Compatibility checks
 
@@ -139,14 +145,64 @@ of the visible document area. The tests also compare text extraction expectation
 ```sh
 npm ci
 npx playwright install chromium
-npm run test:visual
-npm run test:ci-local
+npm run verify:local
 ```
 
-The last command uses `actrun` to execute the MoonBit workflow in a temporary
-workspace. It skips checkout and MoonBit setup and uses the locally installed
-`moon`; the GitHub Actions setup steps and hosted Linux environment are not
-validated by that local run. See [visual fixtures](compat/visual/README.md).
+`npm run verify:local` runs the CI, demo, parity, visual and site gates through
+`actrun` in the current worktree. It uses the installed Node, MoonBit,
+Playwright and Python toolchains and the existing `node_modules`, `.mooncakes`
+and Chromium; it does not run `npm ci`, `moon update` or
+`npx playwright install`. Missing prerequisites block the affected gate instead
+of being skipped silently.
+
+The flow writes a manifest, a summary, per-gate logs, actrun run records and the
+exact git state under `_scratch/local-verify/<utc>-<sha>[-dirty]/`. The manifest
+records the fixed commit, the dirty-tree diff hashes, every command and the true
+exit code. Exit codes are 0 for a passing run, 1 for a failed gate and 2 for a
+blocked or incomplete run. A successful selected subset is `partial-pass`, not
+a full pass. `npm run verify:local:plan` is a dry run: it writes a
+`dry-run` manifest and never reports success.
+
+GitHub never runs the four verification workflows. Their only trigger is `push` with
+`branches-ignore: ['**']`, which matches no branch, and there is no
+`workflow_dispatch`, `pull_request` or `schedule` trigger, so neither a push nor
+a manual dispatch can start them. actrun 0.32.0 only accepts a `push` trigger
+and ignores branch filters, so the local flow still runs them. The files stay in
+`.github/workflows` because actrun uses the workflow's directory as the
+workspace, and only `.github/workflows` resolves to the repository root. The
+hosted runner image, `actions/checkout`,
+`actions/setup-node`, `hustcer/setup-moonbit`, `npm ci`, `moon update`,
+`npx playwright install --with-deps`, the Pages artifact upload and the Pages
+deployment are not exercised locally. They are reported as hosted-only, not as
+passes. The deployment workflow is the only workflow GitHub can run; the four
+verification workflows are inert.
+
+The porting scope excludes PCB/KiCad (KiCad PCB, Gerber, Excellon), musical
+score (MIDI score, MML, MusicXML, music notation) and EPUB. Audio cards and
+non-PCB CAD remain in scope. The excluded formats are no longer registered in
+the converter Worker or included in the visual aggregate. Their source files
+and fixtures are preserved as dormant assets.
+
+The `ci/test` gate runs `.github/local/moon-test.mjs` and the tracked
+`compat/retained-test.mjs` selector for retained packages. If the selector is
+missing, the wrapper reports `retained-scope: pending` instead of claiming
+retained coverage. The min-test-count floor is 2700. A bare `moon test` also
+collects dormant packages. See [verification scope](docs/verification-scope.md)
+for the format matrix, gate boundaries and measurement history.
+
+Per-workflow shortcuts: `npm run verify:local:ci`, `verify:local:parity`,
+`verify:local:visual`, `verify:local:site`, `verify:local:lint`,
+`verify:local:self`. The `self-test` gate runs
+`node --test .github/local/verify.test.mjs compat/retained-test.test.mjs`,
+which covers package selection and status aggregation,
+empty and skipped steps, missing prerequisites, the retained-scope marker and
+the site server checks without running actrun or a browser. The older
+`test:ci-local`, `test:pages-local`, `test:parity-local` and
+`test:visual-local` names are aliases for the same gates. `npm run test:prepush`
+now runs the full local flow; `npm run test:prepush:quick` keeps the previous
+subset.
+
+See [visual fixtures](compat/visual/README.md).
 
 ### Rendering Worker
 
