@@ -14,7 +14,7 @@ Branch: research/20261110-consumer-feedback
 
 報告は `bdf.mbt` `6f2918f` に対する匿名の下流観測で、入力サンプルと実行環境は提供されていない。数値から原因を推測しない。
 
-この worktree で実行した結果:
+`6f2918f` の worktree で実行した結果（historical な固定 head の測定。main `b05cd93` では再実行していない）:
 
 ```sh
 MOON_HOME=$PWD/.moon-home moon build --target js        # exit 0
