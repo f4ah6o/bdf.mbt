@@ -607,3 +607,82 @@ test "ooxml refuses a prefixed drawing when a section repeats rows" {
   assert_true(message.contains("prefixed"), msg=message)
   assert_true(message.contains("drawing"), msg=message)
 }
+
+///|
+test "ooxml refuses unsupported worksheet elements when a section repeats rows" {
+  for name in [
+    "oleObject",
+    "control",
+    "sortState",
+    "protectedRange",
+    "ignoredError",
+  ] {
+    for prefix in ["", "x:"] {
+      let body = refs_list_sheet("") + "<" + prefix + name + " ref=\"A2\"/>"
+      let tpl = refs_xlsx(
+        [("Sheet1", body)],
+        "",
+        ns=" xmlns:x=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"",
+      )
+      let message = refs_fill_error(tpl, refs_items())
+      assert_true(
+        message.contains("<" + name + ">"),
+        msg=prefix + name + ": " + message,
+      )
+    }
+  }
+}
+
+///|
+test "ooxml refuses workbook cell watches and custom sheet views when a section repeats rows" {
+  for name in ["cellWatch", "customSheetView"] {
+    for prefix in ["", "x:"] {
+      let tpl = refs_xlsx([("Sheet1", refs_list_sheet(""))], "")
+      let workbook =
+        "<?xml version=\"1.0\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:x=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheets><sheet name=\"Sheet1\" sheetId=\"1\" r:id=\"rId1\"/></sheets><" +
+        prefix +
+        name +
+        " r=\"A1\"/></workbook>"
+      let with_part = xml_add_part(tpl, "xl/workbook.xml", workbook)
+      let message = refs_fill_error(with_part, refs_items())
+      assert_true(
+        message.contains("<" + name + ">"),
+        msg=prefix + name + ": " + message,
+      )
+    }
+  }
+}
+
+///|
+test "ooxml refuses opaque workbook parts when a section repeats rows" {
+  for part in [
+    "xl/metadata.xml",
+    "xl/model/item.xml",
+    "customXml/item1.xml",
+    "xl/vbaProject.bin",
+  ] {
+    let tpl = refs_xlsx([("Sheet1", refs_list_sheet(""))], "")
+    let with_part = xml_add_part(tpl, part, "<x/>")
+    let message = refs_fill_error(with_part, refs_items())
+    assert_true(message.contains(part), msg=part + ": " + message)
+  }
+}
+
+///|
+test "ooxml keeps unsupported elements and opaque parts when no section repeats rows" {
+  let body = refs_sheet(refs_row(1, refs_cell("A1", "one"))) +
+    "<oleObject ref=\"A1\"/><control ref=\"A1\"/><sortState ref=\"A1\"/>" +
+    "<protectedRange sqref=\"A1\"/><ignoredError sqref=\"A1\"/>"
+  let tpl = refs_xlsx([("Sheet1", body)], "")
+  let workbook =
+    "<?xml version=\"1.0\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><sheets><sheet name=\"Sheet1\" sheetId=\"1\" r:id=\"rId1\"/></sheets><cellWatch r=\"A1\"/><customSheetView guid=\"1\"/></workbook>"
+  let tpl = xml_add_part(tpl, "xl/workbook.xml", workbook)
+  let tpl = xml_add_part(tpl, "xl/metadata.xml", "<metadata/>")
+  let tpl = xml_add_part(tpl, "customXml/item1.xml", "<root/>")
+  let tpl = xml_add_part(tpl, "xl/vbaProject.bin", "macro")
+  let filled = refs_fill(tpl, refs_empty())
+  assert_eq(
+    refs_part(filled, "xl/worksheets/sheet1.xml"),
+    refs_part(tpl, "xl/worksheets/sheet1.xml"),
+  )
+}

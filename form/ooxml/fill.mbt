@@ -2106,9 +2106,14 @@ fn ooxml_check_workbook_parts(
 }
 
 ///|
-// Whether `xml` has a prefixed element whose local name is `name`, such as
-// `<x:mergeCell>`. The unprefixed form is handled by the fill.
-fn ooxml_has_prefixed_element(xml : String, name : String) -> Bool {
+// Whether `xml` has an element whose local name is `name`, such as `<row>` or
+// `<x:row>`. `prefixed_only` keeps the check to the namespaced form, whose
+// unprefixed form the fill handles itself.
+fn ooxml_has_element(
+  xml : String,
+  name : String,
+  prefixed_only : Bool,
+) -> Bool {
   let chars = xml.to_array()
   let mut pos = 0
   while pos < chars.length() {
@@ -2125,14 +2130,15 @@ fn ooxml_has_prefixed_element(xml : String, name : String) -> Bool {
       end += 1
     }
     let full = String::from_array(chars[start:end])
-    match full.find(":") {
-      Some(index) =>
-        if full[index + 1:].to_owned() == name &&
-          end < chars.length() &&
-          ooxml_name_end(xml[end:]) {
-          return true
-        }
-      None => ()
+    let local = match full.find(":") {
+      Some(index) => full[index + 1:].to_owned()
+      None => full
+    }
+    if local == name &&
+      (!prefixed_only || local != full) &&
+      end < chars.length() &&
+      ooxml_name_end(xml[end:]) {
+      return true
     }
     pos += 1
   }
@@ -2140,13 +2146,15 @@ fn ooxml_has_prefixed_element(xml : String, name : String) -> Bool {
 }
 
 ///|
-// A prefixed reference element that the fill does not move. When a section
-// repeats rows, leaving it untouched would be a stale reference, so the fill
-// refuses the workbook instead of writing a wrong cell.
-fn ooxml_check_prefixed_refs(
+// Elements that carry row or cell references the fill does not move, and
+// parts whose contents it cannot inspect. When a section repeats rows, a
+// workbook that holds one of them is refused instead of written with a stale
+// reference. A workbook whose rows do not move is left alone.
+fn ooxml_check_unsupported_refs(
   texts : Map[String, String],
   by_part : Map[String, String],
   maps : Map[String, RowMap],
+  parts : Array[String],
 ) -> Unit raise OoxmlError {
   let mut changed = false
   for _, rows in maps {
@@ -2175,7 +2183,7 @@ fn ooxml_check_prefixed_refs(
       "drawing",
       "legacyDrawing",
     ] {
-      if ooxml_has_prefixed_element(text, name) {
+      if ooxml_has_element(text, name, true) {
         raise OoxmlError(
           "ooxml: the worksheet " +
           part +
@@ -2185,13 +2193,30 @@ fn ooxml_check_prefixed_refs(
         )
       }
     }
+    for name in [
+      "oleObject",
+      "control",
+      "sortState",
+      "protectedRange",
+      "ignoredError",
+    ] {
+      if ooxml_has_element(text, name, false) {
+        raise OoxmlError(
+          "ooxml: the worksheet " +
+          part +
+          " has a <" +
+          name +
+          "> element and a section repeats rows; its references are not moved when rows are repeated",
+        )
+      }
+    }
   }
   let workbook = match texts.get("xl/workbook.xml") {
     Some(value) => value
     None => ""
   }
   for name in ["sheet", "definedName"] {
-    if ooxml_has_prefixed_element(workbook, name) {
+    if ooxml_has_element(workbook, name, true) {
       raise OoxmlError(
         "ooxml: the workbook has a prefixed <" +
         name +
@@ -2199,13 +2224,34 @@ fn ooxml_check_prefixed_refs(
       )
     }
   }
+  for name in ["customSheetView", "cellWatch"] {
+    if ooxml_has_element(workbook, name, false) {
+      raise OoxmlError(
+        "ooxml: the workbook has a <" +
+        name +
+        "> element and a section repeats rows; its references are not moved when rows are repeated",
+      )
+    }
+  }
   for part, text in texts {
     if part.has_suffix(".rels") &&
-      ooxml_has_prefixed_element(text, "Relationship") {
+      ooxml_has_element(text, "Relationship", true) {
       raise OoxmlError(
         "ooxml: the relationships part " +
         part +
         " has a prefixed <Relationship> element and a section repeats rows; prefixed references are not moved when rows are repeated",
+      )
+    }
+  }
+  for part in parts {
+    if part == "xl/metadata.xml" ||
+      part.has_prefix("xl/model/") ||
+      part.has_prefix("customXml/") ||
+      part.has_suffix("vbaProject.bin") {
+      raise OoxmlError(
+        "ooxml: the workbook has the part " +
+        part +
+        " and a section repeats rows; its references are opaque and are not moved when rows are repeated",
       )
     }
   }
@@ -2217,11 +2263,12 @@ fn ooxml_check_prefixed_refs(
 fn ooxml_check_references(
   texts : Map[String, String],
   maps : Map[String, RowMap],
+  parts : Array[String],
 ) -> Unit raise OoxmlError {
   let (by_name, by_part) = ooxml_sheet_parts(texts)
   ooxml_check_drawings(texts, by_part, maps)
   ooxml_check_related_parts(texts, by_part, maps)
-  ooxml_check_prefixed_refs(texts, by_part, maps)
+  ooxml_check_unsupported_refs(texts, by_part, maps, parts)
   ooxml_check_workbook_parts(texts, maps)
   ooxml_check_cross_sheet_formulas(texts, by_part, maps)
   ooxml_check_chart_refs(texts, by_part, maps)

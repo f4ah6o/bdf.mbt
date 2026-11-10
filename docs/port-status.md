@@ -165,7 +165,15 @@
   `<x:dimension>`, `<x:rowBreaks>`, `<x:brk>`, `<x:hyperlink>`,
   `<x:dataValidation>`, `<x:conditionalFormatting>`, `<x:autoFilter>`,
   `<x:tablePart>`, `<x:drawing>`, `<x:legacyDrawing>`, `<x:sheet>`,
-  `<x:definedName>` or `<x:Relationship>`).
+  `<x:definedName>` or `<x:Relationship>`). An `<oleObject>`, `<control>`,
+  `<sortState>`, `<protectedRange>`, `<ignoredError>`, `<cellWatch>` or
+  `<customSheetView>` element, prefixed or not, is an error too, and so is an
+  opaque part whose references the fill cannot read (`xl/metadata.xml`,
+  `xl/model/`, `customXml/`, `vbaProject.bin`); macros are never executed, so
+  a workbook with a macro project is refused instead of filled with
+  references the fill cannot check. An extension type outside this list may
+  still need support before a row-expanding workbook that uses it can be
+  filled.
   A section that starts in a table row and ends outside it is an error, a
   section of `| slots` is an error (write `| rows`), and a picture tag
   (`{{%name}}`) is reported and left empty.

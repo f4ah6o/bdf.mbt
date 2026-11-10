@@ -245,7 +245,11 @@ pub fn fill_zip(
       entries.push((entry.name, raw))
     }
   }
-  ooxml_check_references(texts, maps) catch {
+  let parts : Array[String] = []
+  for entry in entries {
+    parts.push(entry.0)
+  }
+  ooxml_check_references(texts, maps, parts) catch {
     OoxmlError(message) => raise OoxmlError(message)
   }
   for name, at in index {

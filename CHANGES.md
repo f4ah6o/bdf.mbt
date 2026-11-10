@@ -91,8 +91,15 @@
   `<x:dataValidation>`, `<x:conditionalFormatting>`, `<x:autoFilter>`,
   `<x:tablePart>`, `<x:drawing>`, `<x:legacyDrawing>`, `<x:sheet>`,
   `<x:definedName>` or `<x:Relationship>`) is an error when a section repeats
-  rows, instead of a stale reference. A sheet whose rows do not move keeps
-  every reference untouched.
+  rows, instead of a stale reference. So is an `<oleObject>`, `<control>`,
+  `<sortState>`, `<protectedRange>`, `<ignoredError>`, `<cellWatch>` or
+  `<customSheetView>` element, prefixed or not, and an opaque part whose
+  references the fill cannot read (`xl/metadata.xml`, `xl/model/`,
+  `customXml/`, `vbaProject.bin`). Macros are never executed, so a workbook
+  with a macro project is refused rather than filled with references the fill
+  cannot check. A sheet whose rows do not move keeps every reference
+  untouched. An extension type outside this list may still need support
+  before a row-expanding workbook that uses it can be filled.
 - The options of a tag are applied by the fill of an OOXML document:
   `{{total | fmt:"#,##0.00"}}` writes the number in its format instead of
   warning that the data has no `total | fmt:"#,##0.00"` and leaving the cell
