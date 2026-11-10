@@ -66,7 +66,7 @@ test "ooxml repeats the row of a list across rows" {
 }
 
 ///|
-test "ooxml repeats the row of a list inside one row" {
+test "ooxml fills a list inside one cell" {
   let sheet = ooxml_test_sheet([
     ooxml_test_row(1, "{{#items}}{{_index}} {{name}} {{/items}}"),
   ])
@@ -363,7 +363,7 @@ test "ooxml numbers the rows of a worksheet" {
     ooxml_test_row(4, "end"),
   ])
   let (filled, _) = fill_part(sheet, ooxml_test_items(), false, 1, true)
-  let numbered = ooxml_renumber_rows(filled)
+  let numbered = ooxml_renumber_rows(sheet, filled)
   assert_true(numbered.contains("<row r=\"2\">"), msg=numbered)
   assert_true(numbered.contains("<row r=\"3\">"), msg=numbered)
   assert_true(numbered.contains("<row r=\"4\">"), msg=numbered)

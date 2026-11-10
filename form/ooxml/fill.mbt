@@ -32,6 +32,7 @@ priv struct Sec {
   path : Array[String]
   mode : String
   inverted : Bool
+  mut inline : Bool
   mut row_level : Bool
   mut b0 : Int
   mut b1 : Int
@@ -46,10 +47,12 @@ priv struct Sec {
 
 ///|
 priv struct Layout {
+  kind : Int
   blocks : Array[Block]
   rows : Array[Block]
   row_of : Array[Int]
   block_of_tok : Array[Int]
+  container_of_tok : Array[Int]
 }
 
 ///|
@@ -317,6 +320,28 @@ fn ooxml_layout(xml : String, kind : Int, tokens : Array[Tok]) -> (Layout, Array
       _ => ()
     }
   }
+  let container_tag = match kind {
+    1 => "c"
+    2 => "w:p"
+    3 => "p:sp"
+    _ => ""
+  }
+  let containers = if container_tag == "" {
+    []
+  } else {
+    ooxml_elements(xml, container_tag, 0, xml.length())
+  }
+  let container_of_tok : Array[Int] = Array::make(tokens.length(), -1)
+  let mut container = 0
+  for i in 0..<tokens.length() {
+    while container < containers.length() && offsets[i] >= containers[container].1 {
+      container += 1
+    }
+    if container < containers.length() &&
+      offsets[i] >= containers[container].0 {
+      container_of_tok[i] = container
+    }
+  }
   let rows : Array[Block] = []
   let row_of : Array[Int] = Array::make(ranges.length(), -1)
   for element in rows_elements {
@@ -344,7 +369,7 @@ fn ooxml_layout(xml : String, kind : Int, tokens : Array[Tok]) -> (Layout, Array
       marker_only: marker,
     })
   }
-  ({ blocks, rows, row_of, block_of_tok }, tokens)
+  ({ kind, blocks, rows, row_of, block_of_tok, container_of_tok }, tokens)
 }
 
 ///|
@@ -403,8 +428,11 @@ fn ooxml_tokenize(
 ///|
 fn ooxml_body_range(sec : Sec, layout : Layout) -> (Int, Int) {
   let blocks = if sec.row_level { layout.rows } else { layout.blocks }
-  if sec.b0 == sec.b1 {
+  if sec.inline {
     return (sec.open_tok + 1, sec.close_tok - 1)
+  }
+  if sec.b0 == sec.b1 {
+    return (blocks[sec.b0].start_tok, blocks[sec.b0].end_tok)
   }
   let mut start = blocks[sec.b0].start_tok
   let mut end = blocks[sec.b1].end_tok
@@ -449,6 +477,7 @@ fn ooxml_sections(
           path: t.token.path,
           mode: t.token.mode,
           inverted: t.token.kind == @tag.TagKind::Inverted,
+          inline: false,
           row_level: false,
           b0: b,
           b1: b,
@@ -479,6 +508,9 @@ fn ooxml_sections(
         }
         sec.b1 = layout.block_of_tok[i]
         sec.close_tok = i
+        let c0 = layout.container_of_tok[sec.open_tok]
+        sec.inline = layout.kind == 0 ||
+          (c0 >= 0 && c0 == layout.container_of_tok[i])
       }
       _ => ()
     }
@@ -510,9 +542,12 @@ fn ooxml_sections(
   for index in 0..<sections.length() {
     let sec = sections[index]
     let blocks = if sec.row_level { layout.rows } else { layout.blocks }
-    if sec.b0 == sec.b1 {
+    if sec.inline {
       sec.enter_tok = sec.open_tok
       sec.exit_tok = sec.close_tok
+    } else if sec.b0 == sec.b1 {
+      sec.enter_tok = blocks[sec.b0].start_tok
+      sec.exit_tok = blocks[sec.b0].end_tok
     } else {
       sec.enter_tok = blocks[sec.b0].start_tok
       sec.exit_tok = blocks[sec.b1].end_tok
@@ -796,7 +831,222 @@ fn ooxml_renumber_cells(body : String, number : Int) -> String {
 }
 
 ///|
-fn ooxml_update_dimension(xml : String, last : Int) -> String {
+/// The numbers of the rows of a worksheet, in the order of the document. A
+/// row without a number takes the number after the one before it.
+fn ooxml_row_numbers(xml : String) -> Array[Int] {
+  let out : Array[Int] = []
+  let mut pos = 0
+  let mut implied = 0
+  while pos < xml.length() {
+    let start = match xml[pos:].find("<row") {
+      Some(index) => pos + index
+      None => break
+    }
+    let after = start + 4
+    if after > xml.length() || !ooxml_name_end(xml[after:]) {
+      pos = after
+      continue
+    }
+    let end = match xml[after:].find(">") {
+      Some(index) => after + index
+      None => break
+    }
+    let number = ooxml_row_number(xml[start:end + 1].to_owned())
+    implied = if number < 0 { implied + 1 } else { number }
+    out.push(implied)
+    pos = end + 1
+  }
+  out
+}
+
+///|
+/// The number of a row of a worksheet, or -1 when it has none.
+fn ooxml_row_number(tag : String) -> Int {
+  let needle = " r=\""
+  let at = match tag.find(needle) {
+    Some(index) => index + needle.length()
+    None => return -1
+  }
+  let end = match tag[at:].find("\"") {
+    Some(index) => at + index
+    None => return -1
+  }
+  @string.parse_int(tag[at:end].to_owned()) catch { _ => -1 }
+}
+
+///|
+/// The new number of each row of a filled worksheet: the rows of the template
+/// keep their gaps, a row that a section repeats takes the next number, and a
+/// row that a section drops leaves no gap.
+fn ooxml_row_numbers_after(
+  before : Array[Int],
+  after : Array[Int],
+) -> (Array[Int], Map[Int, Array[Int]]) {
+  let present : Map[Int, Bool] = Map([])
+  for number in after {
+    present[number] = true
+  }
+  let dropped : Map[Int, Bool] = Map([])
+  for number in before {
+    if !present.contains(number) {
+      dropped[number] = true
+    }
+  }
+  let numbers : Array[Int] = []
+  let map : Map[Int, Array[Int]] = Map([])
+  let mut previous_source = -1
+  let mut previous_new = 0
+  for source in after {
+    let number = if previous_source < 0 {
+      source
+    } else if source == previous_source {
+      previous_new + 1
+    } else if source > previous_source {
+      let mut gap = source - previous_source
+      for skipped in (previous_source + 1)..<source {
+        if dropped.contains(skipped) {
+          gap -= 1
+        }
+      }
+      previous_new + (if gap < 1 { 1 } else { gap })
+    } else {
+      previous_new + 1
+    }
+    numbers.push(number)
+    match map.get(source) {
+      Some(list) => list.push(number)
+      None => map[source] = [number]
+    }
+    previous_source = source
+    previous_new = number
+  }
+  (numbers, map)
+}
+
+///|
+/// The parts of a cell reference: the letters and the row.
+fn ooxml_ref_parts(ref : String) -> (String, Int) {
+  let chars = ref.to_array()
+  let mut cut = chars.length()
+  while cut > 0 && chars[cut - 1].to_int() >= 48 && chars[cut - 1].to_int() <= 57 {
+    cut -= 1
+  }
+  let row = @string.parse_int(String::from_array(chars[cut:])) catch { _ => -1 }
+  (String::from_array(chars[:cut]), row)
+}
+
+///|
+/// A cell reference with its row moved to the row of the fill. A row that a
+/// section repeats makes a range that covers it ambiguous, which is an error.
+fn ooxml_map_ref(
+  ref : String,
+  map : Map[Int, Array[Int]],
+) -> String raise OoxmlError {
+  let out : Array[String] = []
+  for part in ref.split(":") {
+    let piece = part.to_owned()
+    let (letters, row) = ooxml_ref_parts(piece)
+    if row < 0 {
+      out.push(piece)
+      continue
+    }
+    match map.get(row) {
+      Some(numbers) =>
+        if numbers.length() > 1 {
+          raise OoxmlError(
+            "ooxml: the merged cells " +
+            ref +
+            " cover row " +
+            row.to_string() +
+            ", which a section repeats; merged cells across a repeated row are not supported",
+          )
+        } else {
+          out.push(letters + numbers[0].to_string())
+        }
+      None => out.push(piece)
+    }
+  }
+  out.join(":")
+}
+
+///|
+/// A range with its first row moved to the first row of the fill and its last
+/// row to the last, so that a range over a repeated row covers every copy.
+fn ooxml_map_span(ref : String, map : Map[Int, Array[Int]]) -> String {
+  let parts = ref.split(":")
+  let out : Array[String] = []
+  for index, part in parts {
+    let piece = part.to_owned()
+    let (letters, row) = ooxml_ref_parts(piece)
+    if row < 0 {
+      out.push(piece)
+      continue
+    }
+    match map.get(row) {
+      Some(numbers) => {
+        let number = if index == 0 {
+          numbers[0]
+        } else {
+          numbers[numbers.length() - 1]
+        }
+        out.push(letters + number.to_string())
+      }
+      None => out.push(piece)
+    }
+  }
+  out.join(":")
+}
+
+///|
+fn ooxml_rewrite_merges(
+  xml : String,
+  map : Map[Int, Array[Int]],
+) -> String raise OoxmlError {
+  let out = StringBuilder()
+  let mut pos = 0
+  while pos < xml.length() {
+    let start = match xml[pos:].find("<mergeCell ") {
+      Some(index) => pos + index
+      None => {
+        out.write_string(xml[pos:].to_owned())
+        break
+      }
+    }
+    out.write_string(xml[pos:start].to_owned())
+    let end = match xml[start:].find(">") {
+      Some(index) => start + index
+      None => {
+        out.write_string(xml[start:].to_owned())
+        break
+      }
+    }
+    let tag = xml[start:end + 1].to_owned()
+    let needle = "ref=\""
+    let at = match tag.find(needle) {
+      Some(index) => index + needle.length()
+      None => {
+        out.write_string(tag)
+        pos = end + 1
+        continue
+      }
+    }
+    let value_end = match tag[at:].find("\"") {
+      Some(index) => at + index
+      None => {
+        out.write_string(tag)
+        pos = end + 1
+        continue
+      }
+    }
+    let mapped = ooxml_map_ref(tag[at:value_end].to_owned(), map)
+    out.write_string(tag[:at].to_owned() + mapped + tag[value_end:].to_owned())
+    pos = end + 1
+  }
+  out.to_string()
+}
+
+///|
+fn ooxml_rewrite_dimension(xml : String, map : Map[Int, Array[Int]]) -> String {
   let start = match xml.find("<dimension") {
     Some(index) => index
     None => return xml
@@ -808,46 +1058,26 @@ fn ooxml_update_dimension(xml : String, last : Int) -> String {
   let tag = xml[start:end + 1].to_owned()
   let needle = "ref=\""
   let at = match tag.find(needle) {
-    Some(index) => index
+    Some(index) => index + needle.length()
     None => return xml
   }
-  let value_start = at + needle.length()
-  let value_end = match tag[value_start:].find("\"") {
-    Some(index) => value_start + index
+  let value_end = match tag[at:].find("\"") {
+    Some(index) => at + index
     None => return xml
   }
-  let value = tag[value_start:value_end].to_owned()
-  let colon = match value.find(":") {
-    Some(index) => index
-    None => return xml
-  }
-  let chars = value[colon + 1:].to_owned().to_array()
-  let mut cut = chars.length()
-  while cut > 0 && chars[cut - 1].to_int() >= 48 && chars[cut - 1].to_int() <= 57 {
-    cut -= 1
-  }
-  let letters = String::from_array(chars[:cut])
-  let new_value = value[:colon].to_owned() + ":" + letters + last.to_string()
+  let mapped = ooxml_map_span(tag[at:value_end].to_owned(), map)
   xml[:start].to_owned() +
-  tag[:value_start].to_owned() +
-  new_value +
+  tag[:at].to_owned() +
+  mapped +
   tag[value_end:].to_owned() +
   xml[end + 1:].to_owned()
 }
 
 ///|
-/// Number the rows of a worksheet in the order of the document, keeping the
-/// gaps of the template and giving a repeated row the next number, and number
-/// the cells of each row with it, so that repeated rows keep a valid sheet.
-fn ooxml_renumber_rows(xml : String) -> String {
-  if !xml.contains("<row") {
-    return xml
-  }
+fn ooxml_rewrite_rows(xml : String, numbers : Array[Int]) -> String {
   let out = StringBuilder()
   let mut pos = 0
-  let mut number = 0
-  let mut previous_original = -1
-  let mut previous_new = 0
+  let mut index = 0
   while pos < xml.length() {
     let start = match xml[pos:].find("<row") {
       Some(index) => pos + index
@@ -870,16 +1100,13 @@ fn ooxml_renumber_rows(xml : String) -> String {
         break
       }
     }
-    let tag = xml[start:end + 1].to_owned()
-    let original = ooxml_row_number(tag)
-    number = if previous_original < 0 {
-      if original < 0 { 1 } else { original }
-    } else {
-      previous_new + 1
+    let number = if index < numbers.length() { numbers[index] } else { 0 }
+    index += 1
+    out.write_string(ooxml_replace_row_attr(xml[start:end + 1].to_owned(), number))
+    if xml[end - 1:].has_prefix("/") {
+      pos = end + 1
+      continue
     }
-    previous_original = if original < 0 { previous_original } else { original }
-    previous_new = number
-    out.write_string(ooxml_replace_row_attr(tag, number))
     let close = match xml[end + 1:].find("</row>") {
       Some(index) => end + 1 + index
       None => {
@@ -893,20 +1120,46 @@ fn ooxml_renumber_rows(xml : String) -> String {
     out.write_string("</row>")
     pos = close + 6
   }
-  ooxml_update_dimension(out.to_string(), number)
+  out.to_string()
 }
 
 ///|
-/// The number of a row of a worksheet, or -1 when it has none.
-fn ooxml_row_number(tag : String) -> Int {
-  let needle = " r=\""
-  let at = match tag.find(needle) {
-    Some(index) => index + needle.length()
-    None => return -1
+/// Number the rows of a filled worksheet: a sheet that no section repeats is
+/// left as it is, and a sheet that a section repeats keeps the gaps of its
+/// template, moves the rows after a repeated row, and moves the cell
+/// references, the merged cells and the dimension with them. A formula or a
+/// reference that the fill cannot move is an error, never a wrong cell.
+fn ooxml_renumber_rows(
+  template : String,
+  filled : String,
+) -> String raise OoxmlError {
+  let before = ooxml_row_numbers(template)
+  let after = ooxml_row_numbers(filled)
+  if before == after {
+    return filled
   }
-  let end = match tag[at:].find("\"") {
-    Some(index) => at + index
-    None => return -1
+  let (numbers, map) = ooxml_row_numbers_after(before, after)
+  if filled.contains("<f>") || filled.contains("<f ") {
+    raise OoxmlError(
+      "ooxml: the sheet has a formula and a section repeats rows; formulas are not moved when rows are repeated",
+    )
   }
-  @string.parse_int(tag[at:end].to_owned()) catch { _ => -1 }
+  for name in [
+    "<hyperlink ",
+    "<dataValidation ",
+    "<conditionalFormatting ",
+    "<autoFilter ",
+    "<tablePart ",
+  ] {
+    if filled.contains(name) {
+      raise OoxmlError(
+        "ooxml: the sheet has " +
+        name.trim().to_owned() +
+        " and a section repeats rows; its references are not moved when rows are repeated",
+      )
+    }
+  }
+  let out = ooxml_rewrite_rows(filled, numbers)
+  let out = ooxml_rewrite_merges(out, map)
+  ooxml_rewrite_dimension(out, map)
 }

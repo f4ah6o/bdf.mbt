@@ -143,9 +143,14 @@
   (23 tests); `form/docx` fills headers and
   footers, rendered header/footer values and filled table cells (6 tests), `form/xlsx` fills sheets, shared strings and inline strings and renders the filled cell (4 tests), and
   `form/pptx` fills slides and speaker notes, converts the filled deck and renders shape text through a slide layout (4 tests).
-  A section repeats the blocks it covers; a block that holds only control
-  tags is dropped, so a list that spans rows fills to one row per item. A
-  section that starts in a table row and ends outside it is an error, a
+  A section that opens and closes in one cell or paragraph fills in place; a
+  section that spans cells, paragraphs or rows repeats the blocks it covers,
+  and a block that holds only control tags is dropped, so a list that spans
+  rows fills to one row per item. A sheet that no section repeats is left as
+  it is; a sheet that a section repeats keeps the gaps of its rows, moves the
+  rows after a repeated row and the cell references, merged cells and
+  dimension with them, and refuses a formula or a reference it cannot move.
+  A section that starts in a table row and ends outside it is an error, a
   section of `| slots` is an error (write `| rows`), and a picture tag
   (`{{%name}}`) is reported and left empty.
 - `form/pdfme` fills a pdfme template (blank pages, text/line/rectangle/

@@ -63,8 +63,16 @@
   it covers instead of the raw XML between its tags, so a list that spans
   rows of a workbook or a table of a document fills to one row per item
   instead of a sheet with duplicate row numbers or a table with broken rows.
-  A block that holds only control tags is dropped, and the rows of a filled
+  A section that opens and closes in one cell or paragraph fills in place. A
+  block that holds only control tags is dropped, and the rows of a filled
   worksheet are numbered again in the order of the document.
+- A worksheet that no section repeats keeps its rows and cell references as
+  they are, and a worksheet that a section repeats keeps the gaps of its
+  rows: a template with rows 1 and 10 still has rows 1 and 10, and a row
+  after a repeated row moves by the number of rows the section added. The
+  merged cells and the dimension move with the rows; a formula, a hyperlink,
+  a data validation, a conditional format, an auto filter or a table part
+  that the fill cannot move is an error instead of a wrong cell.
 - The options of a tag are applied by the fill of an OOXML document:
   `{{total | fmt:"#,##0.00"}}` writes the number in its format instead of
   warning that the data has no `total | fmt:"#,##0.00"` and leaving the cell
@@ -117,13 +125,15 @@
 
 ### Migration
 
-- A section of an OOXML template that spans rows or paragraphs repeats the
-  blocks it covers, and a block that holds only control tags is dropped. A
-  template that relied on the raw span between the tags, which produced
-  malformed XML, now fills to a valid document. A section that starts in a
-  table row and ends outside it is an error, a section of `| slots` is an
-  error (write `| rows`), and a picture tag (`{{%name}}`) is reported and
-  left empty.
+- A section of an OOXML template that spans cells, paragraphs or rows
+  repeats the blocks it covers, and a block that holds only control tags is
+  dropped. A template that relied on the raw span between the tags, which
+  produced malformed XML, now fills to a valid document. A section that
+  opens and closes in one cell or paragraph still fills in place. A sheet
+  that a section repeats is renumbered, and a formula or a reference that
+  the fill cannot move is an error. A section that starts in a table row and
+  ends outside it is an error, a section of `| slots` is an error (write
+  `| rows`), and a picture tag (`{{%name}}`) is reported and left empty.
 
 - `form/pdf.read_fields` now reports the type of a field whose writer puts
   `/FT` before `/T`. A caller that treated an empty type as a text field sees

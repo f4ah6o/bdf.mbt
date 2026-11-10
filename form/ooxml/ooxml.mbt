@@ -225,7 +225,13 @@ pub fn fill_zip(
       for warning in part_warnings {
         warnings.push(entry.name + ": " + warning)
       }
-      let out = if kind == 1 { ooxml_renumber_rows(filled) } else { filled }
+      let out = if kind == 1 {
+        ooxml_renumber_rows(text, filled) catch {
+          OoxmlError(message) => raise OoxmlError(entry.name + ": " + message)
+        }
+      } else {
+        filled
+      }
       entries.push((entry.name, @utf8.encode(out)))
     } else {
       entries.push((entry.name, raw))
