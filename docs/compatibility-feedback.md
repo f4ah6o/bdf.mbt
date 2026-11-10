@@ -3,8 +3,8 @@
 The feedback was recorded against `77204ba7fe572759af7a64bf717d18393d9b4126`.
 Its original inputs and execution environment were not provided, so the
 reported percentages are not reproduced or attributed to a specific cause.
-The changes below are local integration commits; they have not been confirmed
-on `main` and must not trigger a downstream notification yet.
+The fixes below are included in `302b0d3d1367e5d64145749d3ed697d106aa8a7a`,
+which was confirmed as the remote `main` HEAD after publication on 2026-11-10.
 
 ## Office extensions and other names
 
