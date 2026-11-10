@@ -87,4 +87,5 @@ const sparse = await run({}, { VERIFY_RENDER_SHARDS: '50' });
 assert.equal(sparse.total, ids.length, 'sparse sharding must still cover every case');
 
 rmSync(dir, { recursive: true, force: true });
-console.log('shard aggregator failure detection verified.');
+const { shardPbtChecks } = await import('./shard-pbt-test.mjs');
+console.log(`shard aggregator failure detection verified; ${shardPbtChecks} generated/regression checks pass.`);
