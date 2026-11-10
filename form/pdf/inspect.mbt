@@ -40,20 +40,32 @@ fn pdf_reference_after(body : String, key : String) -> Int? {
 }
 
 ///|
-/// The object numbers of the kids of a page tree node.
-fn pdf_page_kids(body : String) -> Array[Int] {
+/// The most nodes of a page tree that a PDF may have for its fields to name
+/// their pages.
+const PDF_MAX_PAGE_NODES : Int = 1 << 20
+
+///|
+/// The most entries of the `/Kids` arrays of a page tree that a PDF may
+/// have for its fields to name their pages.
+const PDF_MAX_PAGE_ENTRIES : Int = 1 << 20
+
+///|
+/// The kids of a page tree node: `None` when the node has no `/Kids` (a
+/// page), `Some(kids)` when it has one (a node of the tree; empty when the
+/// array cannot be read, which is no page).
+fn pdf_page_kids(body : String) -> Array[Int]? {
   let out : Array[Int] = []
   let at = match body.find("/Kids") {
     Some(index) => index
-    None => return out
+    None => return None
   }
-  let open = match body[at:].find("[") {
-    Some(index) => at + index
-    None => return out
+  let open = skip_spaces(body, at + 5)
+  if open >= body.length() || body[open].to_char().unwrap() != '[' {
+    return Some(out)
   }
   let close = match body[open:].find("]") {
     Some(index) => open + index
-    None => return out
+    None => return Some(out)
   }
   let inner = body[open + 1:close]
   let pending : Array[Int] = []
@@ -82,30 +94,51 @@ fn pdf_page_kids(body : String) -> Array[Int] {
       i += 1
     }
   }
-  out
+  Some(out)
 }
 
 ///|
-fn pdf_collect_pages(
-  text : String,
-  number : Int,
-  out : Array[Int],
-  depth : Int,
-) -> Unit {
-  if depth > 64 {
-    return
-  }
-  let body = match find_object_body(text, number) {
-    Some(value) => value
-    None => return
-  }
-  let kids = pdf_page_kids(body)
-  if kids.is_empty() {
-    out.push(number)
-    return
-  }
-  for kid in kids {
-    pdf_collect_pages(text, kid, out, depth + 1)
+/// The object numbers of the pages of a page tree, in the order of the
+/// tree: each node once, so that a cycle or a shared node neither repeats
+/// a page nor makes the walk grow. A node whose `/Kids` cannot be read is
+/// no page, and a walk that reaches its bound stops without claiming the
+/// nodes it did not visit.
+fn pdf_collect_pages(text : String, root : Int, out : Array[Int]) -> Unit {
+  let visited : Map[Int, Bool] = Map([])
+  let stack : Array[Int] = [root]
+  let mut nodes = 0
+  let mut entries = 0
+  while stack.length() > 0 {
+    let number = stack.pop().unwrap()
+    if visited.contains(number) {
+      continue
+    }
+    if nodes >= PDF_MAX_PAGE_NODES {
+      return
+    }
+    visited[number] = true
+    nodes += 1
+    let body = match find_object_body(text, number) {
+      Some(value) => value
+      None => continue
+    }
+    match pdf_page_kids(body) {
+      None => out.push(number)
+      Some(kids) => {
+        let mut i = kids.length() - 1
+        while i >= 0 {
+          if entries >= PDF_MAX_PAGE_ENTRIES {
+            return
+          }
+          entries += 1
+          let kid = kids[i]
+          if !visited.contains(kid) {
+            stack.push(kid)
+          }
+          i -= 1
+        }
+      }
+    }
   }
 }
 
@@ -125,7 +158,7 @@ fn pdf_page_order(text : String) -> Array[Int] {
     None => return []
   }
   let out : Array[Int] = []
-  pdf_collect_pages(text, pages, out, 0)
+  pdf_collect_pages(text, pages, out)
   out
 }
 

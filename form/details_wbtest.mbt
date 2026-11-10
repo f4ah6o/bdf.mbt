@@ -148,6 +148,92 @@ test "details pdf field at second page" {
 }
 
 ///|
+test "details pdf page tree self cycle" {
+  let tpl = form_test_pdf([
+    "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [3 0 R] >> >>",
+    "<< /Type /Pages /Kids [2 0 R] /Count 1 >>",
+    "<< /Type /Annot /Subtype /Widget /FT /Tx /T (name) /Rect [10 20 100 40] /F 4 /P 2 0 R /DA (/Helv 11 Tf 0 g) /V () >>",
+  ])
+  let fields = @pdf.inspect(tpl)
+  assert_eq(fields[0].at.join(","), "")
+}
+
+///|
+test "details pdf page tree two child self cycle" {
+  let tpl = form_test_pdf([
+    "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [3 0 R] >> >>",
+    "<< /Type /Pages /Kids [2 0 R 2 0 R] /Count 1 >>",
+    "<< /Type /Annot /Subtype /Widget /FT /Tx /T (name) /Rect [10 20 100 40] /F 4 /P 2 0 R /DA (/Helv 11 Tf 0 g) /V () >>",
+  ])
+  let fields = @pdf.inspect(tpl)
+  assert_eq(fields[0].at.join(","), "")
+}
+
+///|
+test "details pdf page tree multi node cycle" {
+  let tpl = form_test_pdf([
+    "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [5 0 R] >> >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Pages /Kids [4 0 R] /Count 1 >>",
+    "<< /Type /Pages /Kids [2 0 R] /Count 1 >>",
+    "<< /Type /Annot /Subtype /Widget /FT /Tx /T (name) /Rect [10 20 100 40] /F 4 /P 3 0 R /DA (/Helv 11 Tf 0 g) /V () >>",
+  ])
+  let fields = @pdf.inspect(tpl)
+  assert_eq(fields[0].at.join(","), "")
+}
+
+///|
+test "details pdf page tree duplicate shared child" {
+  let tpl = form_test_pdf([
+    "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [5 0 R] >> >>",
+    "<< /Type /Pages /Kids [3 0 R 3 0 R 4 0 R] /Count 2 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Annots [] >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Annots [5 0 R] >>",
+    "<< /Type /Annot /Subtype /Widget /FT /Tx /T (name) /Rect [10 20 100 40] /F 4 /P 4 0 R /DA (/Helv 11 Tf 0 g) /V () >>",
+  ])
+  let fields = @pdf.inspect(tpl)
+  assert_eq(fields[0].at.join(","), "page 2")
+}
+
+///|
+test "details pdf page tree valid nested" {
+  let tpl = form_test_pdf([
+    "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [7 0 R] >> >>",
+    "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 3 >>",
+    "<< /Type /Pages /Kids [5 0 R 6 0 R] /Count 2 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Annots [] >>",
+    "<< /Type /Page /Parent 3 0 R /MediaBox [0 0 200 100] /Annots [] >>",
+    "<< /Type /Page /Parent 3 0 R /MediaBox [0 0 200 100] /Annots [7 0 R] >>",
+    "<< /Type /Annot /Subtype /Widget /FT /Tx /T (name) /Rect [10 20 100 40] /F 4 /P 6 0 R /DA (/Helv 11 Tf 0 g) /V () >>",
+  ])
+  let fields = @pdf.inspect(tpl)
+  assert_eq(fields[0].at.join(","), "page 2")
+}
+
+///|
+test "details pdf page tree unreadable kids" {
+  let tpl = form_test_pdf([
+    "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 0 R] >> >>",
+    "<< /Type /Pages /Kids 3 0 R /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Annots [] >>",
+    "<< /Type /Annot /Subtype /Widget /FT /Tx /T (name) /Rect [10 20 100 40] /F 4 /P 2 0 R /DA (/Helv 11 Tf 0 g) /V () >>",
+  ])
+  let fields = @pdf.inspect(tpl)
+  assert_eq(fields[0].at.join(","), "")
+}
+
+///|
+test "details pdf page tree empty kids" {
+  let tpl = form_test_pdf([
+    "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [3 0 R] >> >>",
+    "<< /Type /Pages /Kids [] /Count 0 >>",
+    "<< /Type /Annot /Subtype /Widget /FT /Tx /T (name) /Rect [10 20 100 40] /F 4 /P 2 0 R /DA (/Helv 11 Tf 0 g) /V () >>",
+  ])
+  let fields = @pdf.inspect(tpl)
+  assert_eq(fields[0].at.join(","), "")
+}
+
+///|
 test "details pdf strict checkbox" {
   let tpl = form_test_pdf([
     "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 0 R] >> >>",
