@@ -335,3 +335,236 @@ test "a BITMAPINFOHEADER with a huge biClrUsed is refused without a read" {
     abort("a huge biClrUsed split")
   }
 }
+
+///|
+/// A 40-byte BITMAPINFOHEADER with a palette of (red, green, blue) entries.
+fn dw_band_bmi_paletted(
+  width : Int32,
+  height : Int32,
+  bpp : Int32,
+  palette : Array[(Int32, Int32, Int32)],
+) -> @buffer.Buffer {
+  let b = @buffer.Buffer()
+  dw_band_u32(b, 40) // biSize
+  dw_band_u32(b, width) // biWidth
+  dw_band_u32(b, height) // biHeight
+  dw_band_u16(b, 1) // biPlanes
+  dw_band_u16(b, bpp) // biBitCount
+  dw_band_u32(b, 0) // biCompression
+  dw_band_u32(b, 0) // biSizeImage
+  dw_band_u32(b, 0) // biXPelsPerMeter
+  dw_band_u32(b, 0) // biYPelsPerMeter
+  dw_band_u32(b, palette.length()) // biClrUsed
+  dw_band_u32(b, 0) // biClrImportant
+  for (red, green, blue) in palette {
+    b.write_byte(blue.to_byte())
+    b.write_byte(green.to_byte())
+    b.write_byte(red.to_byte())
+    b.write_byte(0)
+  }
+  b
+}
+
+///|
+/// One RGBA pixel of a decoded DIB.
+fn dw_band_pixel(dib : Dib, x : Int32, y : Int32) -> (Int32, Int32, Int32, Int32) {
+  let at = (y * dib.width + x) * 4
+  (
+    dib.rgba[at].to_int(),
+    dib.rgba[at + 1].to_int(),
+    dib.rgba[at + 2].to_int(),
+    dib.rgba[at + 3].to_int(),
+  )
+}
+
+///|
+fn dw_band_expect(
+  dib : Dib,
+  x : Int32,
+  y : Int32,
+  red : Int32,
+  green : Int32,
+  blue : Int32,
+) -> Unit {
+  let (r, g, b, a) = dw_band_pixel(dib, x, y)
+  guard r == red && g == green && b == blue && a == 255 else {
+    abort(
+      "pixel (\{x},\{y}) is (\{r},\{g},\{b},\{a}), not (\{red},\{green},\{blue},255)",
+    )
+  }
+}
+
+///|
+/// Two 24-bit rows: red on top, blue below, as a kind 7 body stores them.
+fn dw_band_red_blue_bits() -> Bytes {
+  b"\x00\x00\xff\x00\x00\xff\x00\x00\xff\x00\x00\xff\x00\x00\x00\x00"[:].to_owned()
+}
+
+///|
+test "kind 7 top-down reads a positive height as stored rows" {
+  let bmi = dw_band_bmi(2, 2).to_bytes()
+  let bits = dw_band_red_blue_bits()
+  let bmi_before = bmi[0:bmi.length()].to_owned()
+  let bits_before = bits[0:bits.length()].to_owned()
+  let top = match dib_decode_top_down(bmi, Some(bits)) {
+    Some(value) => value
+    None => abort("the kind 7 DIB did not decode top-down")
+  }
+  dw_band_expect(top, 0, 0, 255, 0, 0)
+  dw_band_expect(top, 1, 0, 255, 0, 0)
+  dw_band_expect(top, 0, 1, 0, 0, 255)
+  dw_band_expect(top, 1, 1, 0, 0, 255)
+  // the generic reading still treats a positive height as bottom-up
+  let generic = match dib_decode(bmi, Some(bits)) {
+    Some(value) => value
+    None => abort("the generic DIB did not decode")
+  }
+  dw_band_expect(generic, 0, 0, 0, 0, 255)
+  dw_band_expect(generic, 0, 1, 255, 0, 0)
+  guard bmi == bmi_before && bits == bits_before else {
+    abort("decoding changed the input bytes")
+  }
+}
+
+///|
+test "kind 7 top-down keeps a negative height top-down" {
+  let bmi = dw_band_bmi(2, -2).to_bytes()
+  let bits = dw_band_red_blue_bits()
+  let top = match dib_decode_top_down(bmi, Some(bits)) {
+    Some(value) => value
+    None => abort("the negative-height kind 7 DIB did not decode")
+  }
+  dw_band_expect(top, 0, 0, 255, 0, 0)
+  dw_band_expect(top, 0, 1, 0, 0, 255)
+  // a negative height already means top-down for the generic reading too
+  let generic = match dib_decode(bmi, Some(bits)) {
+    Some(value) => value
+    None => abort("the negative-height generic DIB did not decode")
+  }
+  dw_band_expect(generic, 0, 0, 255, 0, 0)
+  dw_band_expect(generic, 0, 1, 0, 0, 255)
+}
+
+///|
+test "kind 7 top-down reads a paletted positive height as stored rows" {
+  let bmi = dw_band_bmi_paletted(
+    2,
+    2,
+    8,
+    [(0, 0, 0), (0, 255, 0), (255, 0, 0)],
+  ).to_bytes()
+  // row 0 index 1 (green), row 1 index 2 (red), each padded to 4 bytes
+  let bits = b"\x01\x01\x00\x00\x02\x02\x00\x00"[:].to_owned()
+  let top = match dib_decode_top_down(bmi, Some(bits)) {
+    Some(value) => value
+    None => abort("the paletted kind 7 DIB did not decode top-down")
+  }
+  dw_band_expect(top, 0, 0, 0, 255, 0)
+  dw_band_expect(top, 1, 0, 0, 255, 0)
+  dw_band_expect(top, 0, 1, 255, 0, 0)
+  dw_band_expect(top, 1, 1, 255, 0, 0)
+  let generic = match dib_decode(bmi, Some(bits)) {
+    Some(value) => value
+    None => abort("the paletted generic DIB did not decode")
+  }
+  dw_band_expect(generic, 0, 0, 255, 0, 0)
+  dw_band_expect(generic, 0, 1, 0, 255, 0)
+}
+
+///|
+test "kind 7 top-down refuses malformed and out-of-range DIBs" {
+  let bmi = dw_band_bmi(2, 2).to_bytes()
+  // one row short
+  guard dib_decode_top_down(bmi, Some(Bytes::make(6, b'\x00'))) is None else {
+    abort("a truncated kind 7 DIB decoded")
+  }
+  // a palette index outside the declared table
+  let paletted = dw_band_bmi_paletted(
+    2,
+    2,
+    8,
+    [(0, 0, 0), (0, 255, 0), (255, 0, 0)],
+  ).to_bytes()
+  guard dib_decode_top_down(
+    paletted,
+    Some(b"\x03\x03\x00\x00\x00\x00\x00\x00"[:].to_owned()),
+  ) is None else {
+    abort("an out-of-range palette index decoded")
+  }
+  // zero and oversized heights
+  guard dib_decode_top_down(dw_band_bmi(2, 0).to_bytes(), Some(Bytes::make(12, b'\x00'))) is None else {
+    abort("a zero height decoded")
+  }
+  guard dib_decode_top_down(dw_band_bmi(2, 100001).to_bytes(), Some(Bytes::make(12, b'\x00'))) is None else {
+    abort("an oversized height decoded")
+  }
+  guard dib_decode_top_down(dw_band_bmi(2, -100001).to_bytes(), Some(Bytes::make(12, b'\x00'))) is None else {
+    abort("an oversized negative height decoded")
+  }
+  // an unsupported bit depth
+  guard dib_decode_top_down(dw_band_bmi_paletted(2, 2, 7, []).to_bytes(), Some(Bytes::make(12, b'\x00'))) is None else {
+    abort("a 7-bit DIB decoded")
+  }
+}
+
+///|
+test "the generic DIB reading keeps bottom-up rows and the kind 7 reading differs" {
+  let bmi = dw_band_bmi(2, 2).to_bytes()
+  let bits = dw_band_red_blue_bits()
+  let bottom_up = Bytes::from_array(
+    FixedArray::from_array([
+      0, 0, 255, 255, 0, 0, 255, 255, // row 0 blue
+      255, 0, 0, 255, 255, 0, 0, 255, // row 1 red
+    ].map((v) => v.to_byte())),
+  )
+  let top_down = Bytes::from_array(
+    FixedArray::from_array([
+      255, 0, 0, 255, 255, 0, 0, 255, // row 0 red
+      0, 0, 255, 255, 0, 0, 255, 255, // row 1 blue
+    ].map((v) => v.to_byte())),
+  )
+  let generic = match dib_to_png(bmi, Some(bits)) {
+    Some(value) => value
+    None => abort("the generic DIB did not encode")
+  }
+  let expected_generic = @raster.encode_png(2, 2, bottom_up) catch {
+    _ => abort("the bottom-up reference did not encode")
+  }
+  guard generic == expected_generic else {
+    abort("the generic DIB reading changed")
+  }
+  let kind7 = match dib_to_png_top_down(bmi, Some(bits)) {
+    Some(value) => value
+    None => abort("the kind 7 DIB did not encode")
+  }
+  let expected_kind7 = @raster.encode_png(2, 2, top_down) catch {
+    _ => abort("the top-down reference did not encode")
+  }
+  guard kind7 == expected_kind7 else {
+    abort("the kind 7 DIB is not top-down")
+  }
+  guard kind7 != generic else {
+    abort("the kind 7 and generic readings are the same")
+  }
+}
+
+///|
+test "kind 7 top-down leaves BI_RLE8 orientation alone" {
+  let data = rle8_dib(
+    2,
+    2,
+    [(0, 0, 0), (255, 0, 0), (0, 255, 0)],
+    [0x02, 0x01, 0x00, 0x00, 0x02, 0x02, 0x00, 0x01],
+  )
+  let generic = match dib_to_png(data, None) {
+    Some(value) => value
+    None => abort("the RLE8 DIB did not encode")
+  }
+  let kind7 = match dib_to_png_top_down(data, None) {
+    Some(value) => value
+    None => abort("the RLE8 kind 7 DIB did not encode")
+  }
+  guard kind7 == generic else {
+    abort("the kind 7 reading changed BI_RLE8 orientation")
+  }
+}

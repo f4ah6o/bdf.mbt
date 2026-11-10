@@ -14,3 +14,23 @@ DOCX and PPTX.
 The replay is a documented subset: path records, non-rectangular clipping,
 EMF+ only files and glyph-indexed text are warnings or gaps, and hatch brushes
 fall back to their foreground colour.
+
+## Clip replacement
+
+DocuWorks writes `DW06` (rectangle) and `DW03` (path) clips that replace the
+current clip region, like `SelectClipPath(RGN_COPY)`. The object format only
+carries a cumulative clip, so `convert/metafile` brackets the replay with a
+clip base: a replacing record restores to that base (which keeps the page
+bounds clip) and saves a fresh one before applying its region. `RGN_AND`,
+`INTERSECTCLIPRECT` and other GDI clips stay cumulative.
+
+`compat/emf/clip-replace-test.mjs` builds synthetic metafiles in memory and
+checks the rendered canvas pixels: two disjoint `DW06` or `DW03` clips keep
+both draws visible, `INTERSECTCLIPRECT` still hides the disjoint draw, and an
+image lands at its destination rectangle. It needs `moon build --target js
+browser native_converter_worker` first.
+
+Known gap, separate from clip replacement: `SAVEDC`/`RESTOREDC` still restore
+only the converter's `GdiState` and emit no object `save`/`restore`, so a clip
+set inside a saved DC is not restored on the canvas. The private document that
+motivated the replacement work has no `SAVEDC`/`RESTOREDC` records.

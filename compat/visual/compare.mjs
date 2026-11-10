@@ -22,6 +22,7 @@ import { verifyViewerSheet } from '../sheet/viewer-api-test.mjs';
 import { verifyViewerErrors } from '../continuous/viewer-error-test.mjs';
 import { verifyLazyPages } from '../continuous/lazy-test.mjs';
 import { verifySheetZoom } from '../sheet/zoom-test.mjs';
+import { verifyKind7Browser } from '../../convert/xdw/kind7_browser_test.mjs';
 import { captureWithRecapture, summarizeCapture } from './recapture.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -438,6 +439,7 @@ try {
     await verifyAudioBrowser(browser,base);
     await verifyConverterBrowser(browser,base);
     await verifyNativeConverter(browser,base);
+    await verifyKind7Browser(browser,base);
     await verifyRenderWorker(browser,base);
     await verifyRangeWorker(browser,base);
     await verifySegmentWorker(browser,base);

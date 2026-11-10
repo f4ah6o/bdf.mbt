@@ -472,59 +472,20 @@ test "selectclippath reports the region modes it cannot apply" {
 }
 
 ///|
-test "selectclippath reports RGN_COPY over a rectangle clip" {
-  // INTERSECTCLIPRECT narrows the clip, so a following RGN_COPY has to
-  // replace that region. The object format only carries a cumulative clip,
-  // so the mode cannot be applied and must be reported.
-  let records = [
-    t_record(30, t_i32s([0, 0, 100, 100])), // INTERSECTCLIPRECT
-    t_record(59, b""), // BEGINPATH
-    t_record(27, t_i32s([0, 0])), // MOVETOEX
-    t_record(54, t_i32s([100, 0])), // LINETO
-    t_record(54, t_i32s([100, 100])),
-    t_record(60, b""), // ENDPATH
-    t_record(67, t_i32s([5])), // SELECTCLIPPATH RGN_COPY
-    t_record(14, t_i32s([0, 0, 0])),
-  ]
-  let (_, warnings) = t_draw(
-    t_emf([0, 0, 2540, 2540], [96, 96], [25, 25], records), 72.0, 72.0, false,
-  )
-  guard warnings.length() == 1 && warnings[0].contains("RGN_COPY") else {
-    abort(
-      "RGN_COPY over a rectangle clip was not reported: \{warnings.join(",")}",
-    )
+/// Count the save/restore/clip commands a replay emitted.
+fn t_clip_ops(encoded : Bytes) -> (Int, Int, Int) {
+  let mut saves = 0
+  let mut restores = 0
+  let mut clips = 0
+  for command in t_commands(encoded) {
+    match command {
+      @render.Save => saves += 1
+      @render.Restore => restores += 1
+      @render.ClipPath(_, _) | @render.ClipRect(_, _, _, _) => clips += 1
+      _ => ()
+    }
   }
-}
-
-///|
-test "a saved and restored clip keeps the copy warning" {
-  // The converter emits no clip restore for SAVEDC/RESTOREDC, so the emitted
-  // clip stays narrowed and a later RGN_COPY still cannot replace it.
-  let records = [
-    t_record(33, b""), // SAVEDC
-    t_record(59, b""), // BEGINPATH
-    t_record(27, t_i32s([0, 0])), // MOVETOEX
-    t_record(54, t_i32s([100, 0])), // LINETO
-    t_record(54, t_i32s([100, 100])),
-    t_record(60, b""), // ENDPATH
-    t_record(67, t_i32s([1])), // SELECTCLIPPATH RGN_AND
-    t_record(34, t_i32s([-1])), // RESTOREDC
-    t_record(59, b""), // BEGINPATH
-    t_record(27, t_i32s([0, 0])), // MOVETOEX
-    t_record(54, t_i32s([50, 0])), // LINETO
-    t_record(54, t_i32s([50, 50])),
-    t_record(60, b""), // ENDPATH
-    t_record(67, t_i32s([5])), // SELECTCLIPPATH RGN_COPY
-    t_record(14, t_i32s([0, 0, 0])),
-  ]
-  let (_, warnings) = t_draw(
-    t_emf([0, 0, 2540, 2540], [96, 96], [25, 25], records), 72.0, 72.0, false,
-  )
-  guard warnings.length() == 1 && warnings[0].contains("RGN_COPY") else {
-    abort(
-      "RGN_COPY after a restored clip was not reported: \{warnings.join(",")}",
-    )
-  }
+  (saves, restores, clips)
 }
 
 ///|
@@ -554,7 +515,36 @@ fn t_dw_points(a : Int32, enc : Int32, points : Array[Int32]) -> Bytes {
 }
 
 ///|
-test "selectclippath reports RGN_COPY over a DW rectangle clip" {
+test "selectclippath RGN_COPY replaces a rectangle clip" {
+  // INTERSECTCLIPRECT narrows the clip, so a following RGN_COPY has to
+  // replace that region. The clip base expresses the replacement.
+  let records = [
+    t_record(30, t_i32s([0, 0, 100, 100])), // INTERSECTCLIPRECT
+    t_record(59, b""), // BEGINPATH
+    t_record(27, t_i32s([0, 0])), // MOVETOEX
+    t_record(54, t_i32s([100, 0])), // LINETO
+    t_record(54, t_i32s([100, 100])),
+    t_record(60, b""), // ENDPATH
+    t_record(67, t_i32s([5])), // SELECTCLIPPATH RGN_COPY
+    t_record(14, t_i32s([0, 0, 0])),
+  ]
+  let (encoded, warnings) = t_draw(
+    t_emf([0, 0, 2540, 2540], [96, 96], [25, 25], records), 72.0, 72.0, false,
+  )
+  guard warnings.is_empty() else {
+    abort("RGN_COPY over a rectangle clip warned: \{warnings.join(",")}")
+  }
+  let (saves, restores, clips) = t_clip_ops(encoded)
+  // The page bounds clip, the clip base, and the replacement's fresh base.
+  guard saves == 3 && restores == 3 && clips == 3 else {
+    abort(
+      "RGN_COPY did not replace the clip: saves=\{saves} restores=\{restores} clips=\{clips}",
+    )
+  }
+}
+
+///|
+test "selectclippath RGN_COPY replaces a DW rectangle clip" {
   // DW06 narrows the clip through a comment record, so a following RGN_COPY
   // has to replace that region just like an EMF rectangle clip.
   let records = [
@@ -567,18 +557,22 @@ test "selectclippath reports RGN_COPY over a DW rectangle clip" {
     t_record(67, t_i32s([5])), // SELECTCLIPPATH RGN_COPY
     t_record(14, t_i32s([0, 0, 0])),
   ]
-  let (_, warnings) = t_draw(
+  let (encoded, warnings) = t_draw(
     t_emf([0, 0, 2540, 2540], [96, 96], [25, 25], records), 72.0, 72.0, false,
   )
-  guard warnings.length() == 1 && warnings[0].contains("RGN_COPY") else {
+  guard warnings.is_empty() else {
+    abort("RGN_COPY over a DW rectangle clip warned: \{warnings.join(",")}")
+  }
+  let (saves, restores, clips) = t_clip_ops(encoded)
+  guard saves == 4 && restores == 4 && clips == 3 else {
     abort(
-      "RGN_COPY over a DW rectangle clip was not reported: \{warnings.join(",")}",
+      "RGN_COPY did not replace the DW clip: saves=\{saves} restores=\{restores} clips=\{clips}",
     )
   }
 }
 
 ///|
-test "selectclippath reports RGN_COPY over a DW path clip" {
+test "selectclippath RGN_COPY replaces a DW path clip" {
   // DW03 clips to the accumulated DW path, which is a clip of its own.
   let records = [
     t_dw_points(1, 32, [0, 0, 100, 100]), // DW shape: move then line
@@ -591,12 +585,16 @@ test "selectclippath reports RGN_COPY over a DW path clip" {
     t_record(67, t_i32s([5])), // SELECTCLIPPATH RGN_COPY
     t_record(14, t_i32s([0, 0, 0])),
   ]
-  let (_, warnings) = t_draw(
+  let (encoded, warnings) = t_draw(
     t_emf([0, 0, 2540, 2540], [96, 96], [25, 25], records), 72.0, 72.0, false,
   )
-  guard warnings.length() == 1 && warnings[0].contains("RGN_COPY") else {
+  guard warnings.is_empty() else {
+    abort("RGN_COPY over a DW path clip warned: \{warnings.join(",")}")
+  }
+  let (saves, restores, clips) = t_clip_ops(encoded)
+  guard saves == 4 && restores == 4 && clips == 3 else {
     abort(
-      "RGN_COPY over a DW path clip was not reported: \{warnings.join(",")}",
+      "RGN_COPY did not replace the DW path clip: saves=\{saves} restores=\{restores} clips=\{clips}",
     )
   }
 }
@@ -620,6 +618,140 @@ test "a DW clip alone stays silent" {
   )
   guard warnings.is_empty() else {
     abort("a DW clip warned: \{warnings.join(",")}")
+  }
+}
+
+///|
+test "sequential disjoint DW06 clips replace instead of intersecting" {
+  // Two DW06 rectangles that do not overlap. A cumulative clip would leave
+  // an empty region and hide the second fill; replacement keeps both.
+  let records = [
+    t_dw(48, 54, t_i32s([0, 0, 100, 100])), // DW06 first clip
+    t_record(43, t_i32s([0, 0, 100, 100])), // RECTANGLE inside it
+    t_dw(48, 54, t_i32s([200, 200, 300, 300])), // DW06 disjoint replacement
+    t_record(43, t_i32s([200, 200, 300, 300])), // RECTANGLE inside it
+    t_record(14, t_i32s([0, 0, 0])),
+  ]
+  let (encoded, warnings) = t_draw(
+    t_emf([0, 0, 2540, 2540], [96, 96], [25, 25], records), 72.0, 72.0, false,
+  )
+  guard warnings.is_empty() else {
+    abort("disjoint DW06 clips warned: \{warnings.join(",")}")
+  }
+  let (saves, restores, clips) = t_clip_ops(encoded)
+  // Page bounds, clip base, one replacement base: three saves. The two
+  // restores are the replacement and the closing base.
+  guard saves == 4 && restores == 4 && clips == 3 else {
+    abort(
+      "DW06 did not replace: saves=\{saves} restores=\{restores} clips=\{clips}",
+    )
+  }
+  // The second clip must follow a restore, not nest under the first.
+  let commands = t_commands(encoded)
+  let mut seen_restore = false
+  let mut replaced = false
+  for command in commands {
+    match command {
+      @render.Restore => seen_restore = true
+      @render.ClipPath(_, _) => if seen_restore { replaced = true }
+      _ => ()
+    }
+  }
+  guard replaced else { abort("the second DW06 clip was not a replacement") }
+}
+
+///|
+test "sequential disjoint DW03 clips replace instead of intersecting" {
+  let records = [
+    t_dw_points(1, 32, [0, 0, 100, 100]), // DW shape
+    t_dw(48, 51, b""), // DW03 first clip
+    t_record(43, t_i32s([0, 0, 100, 100])),
+    t_dw_points(1, 32, [200, 200, 300, 300]), // disjoint DW shape
+    t_dw(48, 51, b""), // DW03 replacement
+    t_record(43, t_i32s([200, 200, 300, 300])),
+    t_record(14, t_i32s([0, 0, 0])),
+  ]
+  let (encoded, warnings) = t_draw(
+    t_emf([0, 0, 2540, 2540], [96, 96], [25, 25], records), 72.0, 72.0, false,
+  )
+  guard warnings.is_empty() else {
+    abort("disjoint DW03 clips warned: \{warnings.join(",")}")
+  }
+  let (saves, restores, clips) = t_clip_ops(encoded)
+  guard saves == 4 && restores == 4 && clips == 3 else {
+    abort(
+      "DW03 did not replace: saves=\{saves} restores=\{restores} clips=\{clips}",
+    )
+  }
+}
+
+///|
+test "repeated DW06 replacement keeps one clip base" {
+  let records = [
+    t_dw(48, 54, t_i32s([0, 0, 100, 100])),
+    t_dw(48, 54, t_i32s([200, 200, 300, 300])),
+    t_dw(48, 54, t_i32s([400, 400, 500, 500])),
+    t_record(14, t_i32s([0, 0, 0])),
+  ]
+  let (encoded, warnings) = t_draw(
+    t_emf([0, 0, 2540, 2540], [96, 96], [25, 25], records), 72.0, 72.0, false,
+  )
+  guard warnings.is_empty() else {
+    abort("repeated DW06 clips warned: \{warnings.join(",")}")
+  }
+  let (saves, restores, clips) = t_clip_ops(encoded)
+  // Each replacement restores and saves, so the depth stays at one base.
+  guard saves == 5 && restores == 5 && clips == 4 else {
+    abort(
+      "repeated DW06 replacement leaked a base: saves=\{saves} restores=\{restores} clips=\{clips}",
+    )
+  }
+}
+
+///|
+test "INTERSECTCLIPRECT stays cumulative" {
+  // Normal GDI clipping must keep intersecting: no clip base is restored.
+  let records = [
+    t_record(30, t_i32s([0, 0, 100, 100])), // INTERSECTCLIPRECT
+    t_record(30, t_i32s([50, 50, 150, 150])), // INTERSECTCLIPRECT
+    t_record(14, t_i32s([0, 0, 0])),
+  ]
+  let (encoded, warnings) = t_draw(
+    t_emf([0, 0, 2540, 2540], [96, 96], [25, 25], records), 72.0, 72.0, false,
+  )
+  guard warnings.is_empty() else {
+    abort("INTERSECTCLIPRECT warned: \{warnings.join(",")}")
+  }
+  let (saves, restores, clips) = t_clip_ops(encoded)
+  guard saves == 2 && restores == 2 && clips == 3 else {
+    abort(
+      "INTERSECTCLIPRECT stopped intersecting: saves=\{saves} restores=\{restores} clips=\{clips}",
+    )
+  }
+}
+
+///|
+test "nested save and restore around a replacing clip stays balanced" {
+  // SAVEDC/RESTOREDC do not emit object save/restore yet (a separate gap),
+  // so a DW06 replacement must still leave the clip base balanced.
+  let records = [
+    t_record(33, b""), // SAVEDC
+    t_dw(48, 54, t_i32s([0, 0, 100, 100])), // DW06
+    t_record(34, t_i32s([-1])), // RESTOREDC
+    t_dw(48, 54, t_i32s([200, 200, 300, 300])), // DW06 replacement
+    t_record(14, t_i32s([0, 0, 0])),
+  ]
+  let (encoded, warnings) = t_draw(
+    t_emf([0, 0, 2540, 2540], [96, 96], [25, 25], records), 72.0, 72.0, false,
+  )
+  guard warnings.is_empty() else {
+    abort("nested DW06 clips warned: \{warnings.join(",")}")
+  }
+  let (saves, restores, clips) = t_clip_ops(encoded)
+  guard saves == 4 && restores == 4 && clips == 3 else {
+    abort(
+      "nested DW06 replacement unbalanced: saves=\{saves} restores=\{restores} clips=\{clips}",
+    )
   }
 }
 

@@ -159,8 +159,8 @@ priv struct Gdi {
   path_coords : Array[Double]
   mut path_active : Bool
   /// Whether a record has already narrowed the clip, by a path or by a
-  /// rectangle. The object format only carries a cumulative clip and the
-  /// converter emits no clip restore, so a later RGN_COPY cannot replace it.
+  /// rectangle. The object format only carries a cumulative clip, so a
+  /// replacing record first restores to the metafile's clip base.
   mut clip_active : Bool
 }
 
@@ -407,10 +407,32 @@ fn Gdi::path_clip(self : Gdi) -> Unit {
 }
 
 ///|
+/// The object format's clip is cumulative. Restore to the metafile's clip
+/// base, which keeps the page bounds clip, then save a fresh base so a later
+/// replacing record can reset again. Coordinates are already in page space
+/// and every draw re-emits its own paint, so only the clip changes.
+fn Gdi::clip_replace(self : Gdi) -> Unit {
+  self.object.restore()
+  self.object.save()
+}
+
+///|
+/// Replace the clip with the collected path, then discard it.
+fn Gdi::path_clip_replace(self : Gdi) -> Unit {
+  if self.path_coords.is_empty() {
+    self.path_clear()
+    return
+  }
+  self.clip_replace()
+  self.path_clip()
+}
+
+///|
 /// SELECTCLIPPATH combines the path with the current clipping region using
-/// RegionMode. The object format only carries a cumulative clip, which is
-/// RGN_AND, so the modes it cannot express are reported instead of being
-/// silently applied as an intersection.
+/// RegionMode. RGN_COPY replaces the region, which the clip base expresses.
+/// RGN_AND is what a cumulative clip already does. The modes the object
+/// format cannot express are reported instead of being silently applied as
+/// an intersection.
 fn Gdi::path_clip_mode(self : Gdi, mode : Int32) -> Unit {
   if self.path_coords.is_empty() {
     self.path_clear()
@@ -428,12 +450,14 @@ fn Gdi::path_clip_mode(self : Gdi, mode : Int32) -> Unit {
     self.warn(
       "metafile SELECTCLIPPATH has an unknown RegionMode " + mode.to_string(),
     )
-  } else if mode != 1 && !(mode == 5 && !self.clip_active) {
-    // RGN_AND is what a cumulative clip already does, and a first RGN_COPY
-    // only intersects with the page bounds.
+  } else if mode != 1 && mode != 5 {
     self.warn("metafile SELECTCLIPPATH " + name + " is applied as RGN_AND")
   }
-  self.path_clip()
+  if mode == 5 {
+    self.path_clip_replace()
+  } else {
+    self.path_clip()
+  }
   self.clip_active = true
 }
 
@@ -1078,6 +1102,24 @@ fn dib_decode_rle8(
 
 ///|
 fn dib_decode(data : Bytes, bits_data : Bytes?) -> Dib? {
+  dib_decode_oriented(data, bits_data, false)
+}
+
+///|
+/// Decode a DIB whose uncompressed rows are stored top-to-bottom even when
+/// `biHeight` is positive. A negative height already means top-down, so it
+/// keeps the same reading; BI_RLE8 keeps its own orientation because its
+/// stream is not a row array. The decoder has no separate BI_RLE4 path.
+fn dib_decode_top_down(data : Bytes, bits_data : Bytes?) -> Dib? {
+  dib_decode_oriented(data, bits_data, true)
+}
+
+///|
+fn dib_decode_oriented(
+  data : Bytes,
+  bits_data : Bytes?,
+  force_top_down : Bool,
+) -> Dib? {
   let header = match dib_header(data) {
     Some(value) => value
     None => return None
@@ -1099,8 +1141,12 @@ fn dib_decode(data : Bytes, bits_data : Bytes?) -> Dib? {
     height64 < -100000L {
     return None
   }
-  let top_down = height64 < 0L
-  let rows = (if top_down { -height64 } else { height64 }).to_int()
+  // A kind 7 annotation stores its expanded rows top-to-bottom even when
+  // the header says positive; BI_RLE8 is a stream, not a row array, so it
+  // keeps the height's own meaning. The decoder has no separate BI_RLE4
+  // path.
+  let top_down = height64 < 0L || (force_top_down && compression != 1)
+  let rows = (if height64 < 0L { -height64 } else { height64 }).to_int()
   // The RGBA buffer is width * rows * 4 bytes. Bound the pixel count before
   // the multiplication so a large header cannot overflow Int32 or allocate an
   // unbounded buffer; this applies to compressed and uncompressed DIBs.
@@ -1427,11 +1473,15 @@ pub fn draw_into(
     Float::from_double(w),
     Float::from_double(h),
   )
+  // A clip base below the metafile's own clips but above the page bounds:
+  // a replacing record restores here, so it never wipes the page clip.
+  object.save()
   if file_kind == "emf" {
     g.play_emf(data, x, y, w, h, annotation~)
   } else {
     g.play_wmf(data, x, y, w, h)
   }
+  object.restore()
   object.restore()
   g.warnings
 }
