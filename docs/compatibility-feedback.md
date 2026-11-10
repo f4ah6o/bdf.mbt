@@ -97,9 +97,9 @@ What is reproducible at this commit:
   formats and 14 Office extensions converted by content, explicit format and
   name. The downstream report also states that a synthetic DOCM neither executed
   nor embedded VBA; this worktree did not independently rerun that case.
-- `convert/pdf/file_stream_wbtest.mbt` holds 12 stream-length tests. The
-  reported `/Length 39` case is the 38-byte stream declared as 39 at
-  `file_stream_wbtest.mbt:50`. Recovery covers 1-8 bytes of overlap with
+- `convert/pdf/file_stream_wbtest.mbt` holds 12 stream-length tests. The reported 38-byte stream declared as 39 was verified downstream;
+  `file_stream_wbtest.mbt:50` covers the same one-byte overlap using a
+  different 33-byte body. Recovery covers 1-8 bytes of overlap with
   `endstream`; a declared length that swallows the whole nine-byte marker is
   deliberately not recovered and is only asserted as such
   (`file_stream_wbtest.mbt:81`). Whether a real file needs that case remains

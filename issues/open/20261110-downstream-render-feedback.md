@@ -68,7 +68,7 @@ node compat/converter/office-extensions-test.mjs
 grep -c '^test ' convert/pdf/file_stream_wbtest.mbt   # 12
 ```
 
-`convert/pdf/file_stream_wbtest.mbt:50` が報告と同じ形（38 バイトのストリームを 39 と宣言、キーワード前に改行なし）を再現している。`convert/pdf/file_stream.mbt:92` は宣言末尾から 1〜8 バイト戻った位置で `endstream` を探し、見つかった分だけ長さを縮める。
+利用側は 38 バイトのストリームを 39 と宣言したケースの表示成功を報告した。`convert/pdf/file_stream_wbtest.mbt:50` は同じ 1 バイト重なりを、別の 33 バイトのストリームで検証する。`convert/pdf/file_stream.mbt:92` は宣言末尾から 1〜8 バイト戻った位置で `endstream` を探し、見つかった分だけ長さを縮める。
 
 マーカー全体（9 バイト）を含む宣言は回復しない。`file_stream_wbtest.mbt:81` は「回復しない」ことだけを assert しており、その入力が実在するか、回復したほうがよいかは評価していない。これが報告の「full-marker-overlap remains unassessed」に対応する。
 
