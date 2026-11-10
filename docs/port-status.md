@@ -160,7 +160,12 @@
   other, without a duplicate attribute. A `>` inside a quoted attribute value
   does not end the tag, and a namespaced `<x:row>`/`<x:c>` is renumbered like
   an unprefixed one. A calculation chain, a form control, a rich value or a
-  web extension in a workbook whose rows move is an error too.
+  web extension in a workbook whose rows move is an error too, and so is a
+  prefixed reference element that the fill does not move (`<x:mergeCell>`,
+  `<x:dimension>`, `<x:rowBreaks>`, `<x:brk>`, `<x:hyperlink>`,
+  `<x:dataValidation>`, `<x:conditionalFormatting>`, `<x:autoFilter>`,
+  `<x:tablePart>`, `<x:drawing>`, `<x:legacyDrawing>`, `<x:sheet>`,
+  `<x:definedName>` or `<x:Relationship>`).
   A section that starts in a table row and ends outside it is an error, a
   section of `| slots` is an error (write `| rows`), and a picture tag
   (`{{%name}}`) is reported and left empty.

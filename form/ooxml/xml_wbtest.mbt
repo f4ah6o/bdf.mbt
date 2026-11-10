@@ -463,3 +463,147 @@ test "ooxml renumbers a row with a greater-than before the row number" {
     msg=sheet,
   )
 }
+
+///|
+test "ooxml refuses a prefixed merge when a section repeats rows" {
+  let body = refs_list_sheet("") +
+    "<x:mergeCells count=\"1\"><x:mergeCell ref=\"A2:B2\"/></x:mergeCells>"
+  let tpl = refs_xlsx(
+    [("Sheet1", body)],
+    "",
+    ns=" xmlns:x=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"",
+  )
+  let message = refs_fill_error(tpl, refs_items())
+  assert_true(message.contains("prefixed"), msg=message)
+  assert_true(message.contains("mergeCell"), msg=message)
+}
+
+///|
+test "ooxml refuses a prefixed dimension when a section repeats rows" {
+  let body = "<x:dimension ref=\"A1:B3\"/>" + refs_list_sheet("")
+  let tpl = refs_xlsx(
+    [("Sheet1", body)],
+    "",
+    ns=" xmlns:x=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"",
+  )
+  let message = refs_fill_error(tpl, refs_items())
+  assert_true(message.contains("prefixed"), msg=message)
+  assert_true(message.contains("dimension"), msg=message)
+}
+
+///|
+test "ooxml refuses a prefixed row break when a section repeats rows" {
+  let body = refs_list_sheet("") +
+    "<x:rowBreaks count=\"1\"><x:brk id=\"3\" max=\"16383\" man=\"1\"/></x:rowBreaks>"
+  let tpl = refs_xlsx(
+    [("Sheet1", body)],
+    "",
+    ns=" xmlns:x=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"",
+  )
+  let message = refs_fill_error(tpl, refs_items())
+  assert_true(message.contains("prefixed"), msg=message)
+  assert_true(message.contains("rowBreaks"), msg=message)
+}
+
+///|
+test "ooxml refuses a prefixed sheet when a section repeats rows" {
+  let tpl = refs_xlsx([("Sheet1", refs_list_sheet(""))], "")
+  let workbook =
+    "<?xml version=\"1.0\"?><x:workbook xmlns:x=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><x:sheets><x:sheet name=\"Sheet1\" sheetId=\"1\" r:id=\"rId1\"/></x:sheets></x:workbook>"
+  let with_prefixed = xml_add_part(tpl, "xl/workbook.xml", workbook)
+  let message = refs_fill_error(with_prefixed, refs_items())
+  assert_true(message.contains("prefixed"), msg=message)
+  assert_true(message.contains("<sheet>"), msg=message)
+}
+
+///|
+test "ooxml refuses a prefixed defined name when a section repeats rows" {
+  let tpl = refs_xlsx([("Sheet1", refs_list_sheet(""))], "")
+  let workbook =
+    "<?xml version=\"1.0\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:x=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheets><sheet name=\"Sheet1\" sheetId=\"1\" r:id=\"rId1\"/></sheets><x:definedNames><x:definedName name=\"tail\">Sheet1!$A$3</x:definedName></x:definedNames></workbook>"
+  let with_prefixed = xml_add_part(tpl, "xl/workbook.xml", workbook)
+  let message = refs_fill_error(with_prefixed, refs_items())
+  assert_true(message.contains("prefixed"), msg=message)
+  assert_true(message.contains("definedName"), msg=message)
+}
+
+///|
+test "ooxml refuses a prefixed relationship when a section repeats rows" {
+  let tpl = refs_xlsx([("Sheet1", refs_list_sheet(""))], "")
+  let rels =
+    "<?xml version=\"1.0\"?><x:Relationships xmlns:x=\"http://schemas.openxmlformats.org/package/2006/relationships\"><x:Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet1.xml\"/></x:Relationships>"
+  let with_prefixed = xml_add_part(tpl, "xl/_rels/workbook.xml.rels", rels)
+  let message = refs_fill_error(with_prefixed, refs_items())
+  assert_true(message.contains("prefixed"), msg=message)
+  assert_true(message.contains("Relationship"), msg=message)
+}
+
+///|
+test "ooxml keeps prefixed worksheet references when no section repeats rows" {
+  let body = "<x:dimension ref=\"A1:B1\"/>" +
+    refs_sheet(
+      "<x:row r=\"1\"><x:c r=\"A1\" t=\"inlineStr\"><is><t>one</t></is></x:c></x:row>",
+    ) +
+    "<x:mergeCells count=\"1\"><x:mergeCell ref=\"A1:B1\"/></x:mergeCells>" +
+    "<x:rowBreaks count=\"1\"><x:brk id=\"1\" max=\"16383\" man=\"1\"/></x:rowBreaks>"
+  let tpl = refs_xlsx(
+    [("Sheet1", body)],
+    "",
+    ns=" xmlns:x=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"",
+  )
+  let filled = refs_fill(tpl, refs_empty())
+  assert_eq(
+    refs_part(filled, "xl/worksheets/sheet1.xml"),
+    refs_part(tpl, "xl/worksheets/sheet1.xml"),
+  )
+}
+
+///|
+test "ooxml keeps a prefixed workbook and rels when no section repeats rows" {
+  let tpl = refs_xlsx(
+    [("Sheet1", refs_sheet(refs_row(1, refs_cell("A1", "one"))))],
+    "",
+  )
+  let workbook =
+    "<?xml version=\"1.0\"?><x:workbook xmlns:x=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><x:sheets><x:sheet name=\"Sheet1\" sheetId=\"1\" r:id=\"rId1\"/></x:sheets></x:workbook>"
+  let rels =
+    "<?xml version=\"1.0\"?><x:Relationships xmlns:x=\"http://schemas.openxmlformats.org/package/2006/relationships\"><x:Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet1.xml\"/></x:Relationships>"
+  let with_prefixed = xml_add_part(tpl, "xl/workbook.xml", workbook)
+  let with_prefixed = xml_add_part(
+    with_prefixed,
+    "xl/_rels/workbook.xml.rels",
+    rels,
+  )
+  let filled = refs_fill(with_prefixed, refs_empty())
+  assert_eq(
+    refs_part(filled, "xl/workbook.xml"),
+    refs_part(with_prefixed, "xl/workbook.xml"),
+  )
+}
+
+///|
+test "ooxml refuses a prefixed hyperlink when a section repeats rows" {
+  let body = refs_list_sheet("") +
+    "<x:hyperlinks><x:hyperlink ref=\"A2\" r:id=\"rId9\"/></x:hyperlinks>"
+  let tpl = refs_xlsx(
+    [("Sheet1", body)],
+    "",
+    ns=" xmlns:x=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"",
+  )
+  let message = refs_fill_error(tpl, refs_items())
+  assert_true(message.contains("prefixed"), msg=message)
+  assert_true(message.contains("hyperlink"), msg=message)
+}
+
+///|
+test "ooxml refuses a prefixed drawing when a section repeats rows" {
+  let body = refs_list_sheet("") + "<x:drawing r:id=\"rId9\"/>"
+  let tpl = refs_xlsx(
+    [("Sheet1", body)],
+    "",
+    ns=" xmlns:x=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"",
+  )
+  let message = refs_fill_error(tpl, refs_items())
+  assert_true(message.contains("prefixed"), msg=message)
+  assert_true(message.contains("drawing"), msg=message)
+}
