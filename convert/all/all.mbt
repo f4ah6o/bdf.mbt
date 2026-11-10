@@ -484,16 +484,23 @@ fn run_by_name(
 ) -> Outcome raise AllError {
   let lower = name.to_lower()
   // Worker がクライアント側の素性検査に使う拡張子の一覧。これに当たる名前
-  // は、CSV と画像のどちらにも読ませない。
+  // は、CSV と画像のどちらにも読ませない。移植の対象から外した形式の拡張子も
+  // ここに残す。CSV に見える `score.musicxml` は変換できない楽譜であって表では
+  // ない。登録も変換もしないが、名前だけは CSV に取られないようにする。
   let known_named = named(
     lower,
     [
-      ".xlsx", ".xlsm", ".xltx", ".xltm", ".dxf", ".drawio", ".dio", ".docx",
-      ".docm", ".dotx", ".dotm", ".cgm", ".cgz", ".pptx", ".pptm", ".ppsx",
-      ".ppsm", ".potx", ".potm", ".plt", ".hpgl", ".hgl", ".hpg", ".hp2",
-      ".rtl", ".p21", ".p2z", ".sfc", ".jww", ".pdf", ".mhtml", ".mht",
-      ".parquet", ".parq", ".pqt", ".ttf", ".otf", ".ttc", ".otc", ".woff",
-      ".woff2", ".zip",
+      ".mid", ".midi", ".smf", ".kar", ".rmi", ".xlsx", ".xlsm", ".xltx",
+      ".xltm", ".dxf", ".drawio", ".dio", ".docx", ".docm", ".dotx", ".dotm",
+      ".cgm", ".cgz", ".pptx", ".pptm", ".ppsx", ".ppsm", ".potx",
+      ".potm", ".plt", ".hpgl", ".hgl", ".hpg", ".hp2", ".rtl", ".p21",
+      ".p2z", ".sfc", ".jww", ".kicad_sch", ".kicad_pcb", ".kicad_pro",
+      ".pdf", ".mhtml", ".mht", ".parquet", ".parq", ".pqt", ".ttf", ".otf",
+      ".ttc", ".otc", ".woff", ".woff2", ".musicxml", ".mxl", ".mml", ".epub",
+      ".gbr", ".ger", ".gtl", ".gbl", ".gto", ".gbo", ".gts", ".gbs", ".gtp",
+      ".gbp", ".gko", ".gml", ".gm1", ".g1", ".g2", ".g3", ".g4", ".gp1",
+      ".gp2", ".pho", ".art", ".cmp", ".sol", ".plc", ".pls", ".stc", ".sts",
+      ".crc", ".crs", ".drl", ".drd", ".xln", ".exc", ".zip",
     ],
   )
   let strong_other = @hpgl.detect(head) || @utf8.decode_lossy(head).contains("%PDF-")

@@ -64,6 +64,9 @@
 
 ### Fixed
 
+- Files named for excluded formats no longer fall through to CSV detection,
+  while the excluded converters remain unregistered.
+
 - CSV visual checks now wait for each page to finish rendering before capture,
   while retaining the nonblank and exact pixel comparisons.
 

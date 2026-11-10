@@ -17,8 +17,14 @@ extern "js" fn native_converter_param(
   #|(request,name) => {const v=request.options?.params?.[name];return ['string','number','boolean'].includes(typeof v)?String(v):''}
 
 ///|
-extern "js" fn native_unsupported_named_format(name : String) -> Bool =
-  #|(name) => /\.(?:xlsx|xlsm|xltx|xltm|dxf|drawio|dio|docx|docm|dotx|dotm|cgm|cgz|pptx|pptm|ppsx|ppsm|potx|potm|plt|hpgl|hgl|hpg|hp2|rtl|p21|p2z|sfc|jww|pdf|mhtml|mht|parquet|parq|pqt|ttf|otf|ttc|otc|woff|woff2|zip)$/i.test(name)
+/// Whether a file name carries the extension of a format the Worker knows
+/// about, dispatched or not. CSV content detection must not claim such a name:
+/// a CSV-looking file called `score.musicxml` is a MusicXML file the Worker
+/// cannot convert, not a table. The extensions of the formats dropped from the
+/// porting scope stay here for that reason alone; they are neither registered
+/// nor dispatched.
+extern "js" fn native_known_named_format(name : String) -> Bool =
+  #|(name) => /\.(?:mid|midi|smf|kar|rmi|xlsx|xlsm|xltx|xltm|dxf|drawio|dio|docx|docm|dotx|dotm|cgm|cgz|pptx|pptm|ppsx|ppsm|potx|potm|plt|hpgl|hgl|hpg|hp2|rtl|p21|p2z|sfc|jww|kicad_sch|kicad_pcb|kicad_pro|pdf|mhtml|mht|parquet|parq|pqt|ttf|otf|ttc|otc|woff|woff2|musicxml|mxl|mml|epub|gbr|ger|gtl|gbl|gto|gbo|gts|gbs|gtp|gbp|gko|gml|gm1|g1|g2|g3|g4|gp1|gp2|pho|art|cmp|sol|plc|pls|stc|sts|crc|crs|drl|drd|xln|exc|zip)$/i.test(name)
 
 ///|
 /// The format a file name's extension names, for the inputs no detector
@@ -465,7 +471,7 @@ async fn NativeConverterState::dispatch(
           return
         }
         let csv_detected = if csv_named ||
-          native_unsupported_named_format(name) ||
+          native_known_named_format(name) ||
           strong_other {
           false
         } else {

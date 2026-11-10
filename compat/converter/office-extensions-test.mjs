@@ -260,7 +260,6 @@ for (const [name, body] of [
   ['book.epub', 'not a zip'],
   ['song.mid', 'not midi'],
   ['tune.mml', 'r4'],
-  ['score.musicxml', 'name,value\nA,1\nB,2\n'],
   ['board.kicad_pcb', '(kicad_pcb (version 20240108))'],
   ['board.gbr', 'G04 dropped*\n%FSLAX46Y46*%\n'],
 ]) {
@@ -271,6 +270,36 @@ for (const [name, body] of [
     format = 'error';
   }
   assert.ok(!['html', 'epub', 'midi', 'mml', 'musicxml', 'kicad', 'gerber'].includes(format), `${name} reached ${format}`);
+}
+
+// A CSV-looking file whose name carries the extension of a format dropped from
+// the porting scope is not a table. The name keeps CSV detection away and the
+// Worker reports the format it cannot convert, as upstream's detectNamed does;
+// the dropped converters stay unreachable and unadvertised.
+const csvBytes = encoder.encode('name,value\nA,1\nB,2\n');
+for (const name of [
+  'score.musicxml', 'score.mxl', 'song.mid', 'song.midi', 'song.smf', 'song.kar',
+  'song.rmi', 'tune.mml', 'book.epub', 'board.gbr', 'board.gtl', 'board.drl',
+  'board.kicad_pcb', 'board.kicad_sch', 'board.kicad_pro',
+]) {
+  const reply = await convert(csvBytes, { name });
+  assert.equal(reply.ok, false, `${name} was converted as ${reply.result?.format}`);
+  assert.equal(reply.code, 'unknown-format', `${name} reported ${reply.error}`);
+}
+
+// The same bytes with a CSV name, or with no name at all, still make a sheet.
+for (const options of [{ name: 'memo.csv' }, { name: 'memo.tsv' }, { name: 'memo.tab' }, {}]) {
+  const reply = await convert(csvBytes, options);
+  assert.equal(reply.ok, true, `${JSON.stringify(options)}: ${reply.error}`);
+  assert.equal(reply.result.format, 'csv', `${JSON.stringify(options)} was detected as ${reply.result.format}`);
+}
+
+// An Office name keeps its own converter: the CSV bytes are not a table, and
+// the failure names the format the extension promises.
+for (const [name, format] of [['sample.xlsm', 'xlsx'], ['sample.docm', 'docx'], ['sample.pptm', 'pptx']]) {
+  const reply = await convert(csvBytes, { name });
+  assert.equal(reply.ok, false, `${name} was converted as ${reply.result?.format}`);
+  assert.ok(reply.error.startsWith(format + ': '), `${name} reported ${reply.error}`);
 }
 
 console.log(

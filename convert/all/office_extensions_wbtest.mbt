@@ -168,3 +168,57 @@ test "落とした形式の拡張子は名前からも変換しない" {
     }
   }
 }
+
+///|
+/// A CSV-looking file whose name carries the extension of a format dropped
+/// from the porting scope is not a table. The name keeps CSV detection away,
+/// so the conversion fails as an unsupported image instead of producing a
+/// sheet, and the dropped converters stay unreachable.
+test "落とした形式の名前は CSV に見える内容でも表にしない" {
+  let csv = @utf8.encode("name,value\nA,1\nB,2\n")
+  for name in [
+    "score.musicxml", "score.mxl", "song.mid", "song.midi", "song.smf",
+    "song.kar", "song.rmi", "tune.mml", "book.epub", "board.gbr", "board.gtl",
+    "board.drl", "board.kicad_pcb", "board.kicad_sch", "board.kicad_pro",
+  ] {
+    let message = try {
+      ignore(convert(csv, name~))
+      ""
+    } catch {
+      AllFailure(message) => message
+    }
+    assert_eq(
+      message,
+      "image: input is not a supported BMP, ICO, JPEG, PNG, GIF, WebP, AVIF or SVG image",
+      msg=name,
+    )
+  }
+}
+
+///|
+/// The same bytes with a CSV name, or with no name at all, still make a sheet.
+test "本物の CSV は名前でも内容でも表にする" {
+  let csv = @utf8.encode("name,value\nA,1\nB,2\n")
+  assert_eq(convert(csv, name="memo.csv").format, "csv")
+  assert_eq(convert(csv, name="memo.tsv").format, "csv")
+  assert_eq(convert(csv, name="memo.tab").format, "csv")
+  assert_eq(convert(csv).format, "csv")
+}
+
+///|
+/// An Office name keeps its own converter: the CSV bytes are not a table, and
+/// the failure names the format the extension promises.
+test "Office の名前は CSV に見える内容でも CSV にしない" {
+  let csv = @utf8.encode("name,value\nA,1\nB,2\n")
+  for (name, format) in [
+    ("sample.xlsm", "xlsx"), ("sample.docm", "docx"), ("sample.pptm", "pptx"),
+  ] {
+    let message = try {
+      ignore(convert(csv, name~))
+      ""
+    } catch {
+      AllFailure(message) => message
+    }
+    assert_true(message.has_prefix(format + ": "), msg=name + " reported " + message)
+  }
+}

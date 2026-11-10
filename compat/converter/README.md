@@ -93,4 +93,6 @@ convert as its plain counterpart: the VBA project is not executed, its bytes
 do not reach the BDF, and the input archive is unchanged. The test also holds
 the line on what is not supported: HTML does not advertise `.mhtml`/`.mht`
 (the MHTML reader is not ported), and the dropped PCB, score and EPUB
-extensions reach no converter.
+extensions reach no converter. CSV-looking bytes under one of those names must
+fail with `unknown-format` rather than become a sheet, while the same bytes
+under `.csv`, `.tsv`, `.tab` or no name still convert.
