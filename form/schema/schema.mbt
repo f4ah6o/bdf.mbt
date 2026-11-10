@@ -514,12 +514,12 @@ fn schema_of(node : SchemaNode) -> Json {
 }
 
 ///|
-/// The JSON Schema of the data of a template: an object with a property
-/// for each name its tags look up, in the order of the template.
-pub fn schema(
+/// The tree of the names of the data of a template: the fields placed by
+/// the sections they are in, with the sample that tells what they are.
+fn schema_root(
   fields : Array[@tag.Field],
   sample : Json?,
-) -> Json raise SchemaError {
+) -> SchemaNode raise SchemaError {
   if fields.length() > MAX_SCHEMA_NODES {
     raise SchemaError("form: the schema has more than 65536 fields")
   }
@@ -546,6 +546,17 @@ pub fn schema(
     }
     schema_place(root, fields[i], in_sections, i)
   }
+  root
+}
+
+///|
+/// The JSON Schema of the data of a template: an object with a property
+/// for each name its tags look up, in the order of the template.
+pub fn schema(
+  fields : Array[@tag.Field],
+  sample : Json?,
+) -> Json raise SchemaError {
+  let root = schema_root(fields, sample)
   let output : Map[String, Json] = Map([])
   output["$schema"] = Json::string(SCHEMA_DIALECT)
   let object = schema_object(root)

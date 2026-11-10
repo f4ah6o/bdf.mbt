@@ -9,7 +9,7 @@ pub const FIELD_IMAGE : String = "image"
 /// it is in sections, and what a program that asks for it needs to know.
 pub(all) struct Field {
   name : String
-  kind : String
+  mut kind : String
   mut in_sections : Array[String]
   mut format : String
   mut mode : String
@@ -63,11 +63,16 @@ fn field_key(field : Field) -> String {
 }
 
 ///|
-fn field_put(out : Array[Field], index : Map[String, Int], field : Field) -> Unit {
+fn field_put(
+  out : Array[Field],
+  index : Map[String, Int],
+  field : Field,
+  at : String,
+) -> Unit {
   let key = field_key(field)
   match index.get(key) {
-    Some(at) => {
-      let old = out[at]
+    Some(i) => {
+      let old = out[i]
       if old.format == "" {
         old.format = field.format
       }
@@ -81,9 +86,15 @@ fn field_put(out : Array[Field], index : Map[String, Int], field : Field) -> Uni
         old.input = field.input
       }
       old.inverted = old.inverted || field.inverted
+      if at != "" && old.at.length() < 16 && !old.at.contains(at) {
+        old.at.push(at)
+      }
     }
     None => {
       index[key] = out.length()
+      if at != "" {
+        field.at.push(at)
+      }
       out.push(field)
     }
   }
@@ -94,10 +105,22 @@ fn field_put(out : Array[Field], index : Map[String, Int], field : Field) -> Uni
 /// Sections name the fields inside them, and a close must close the
 /// innermost section.
 pub fn fields(tokens : Array[TagToken]) -> Array[Field] raise TagError {
+  fields_at(tokens, [])
+}
+
+///|
+/// Collect the fields of the tags of a template, with where each tag is:
+/// `at[i]` is where `tokens[i]` is ("" for a tag without a place). A field
+/// that several tags name keeps up to 16 places.
+pub fn fields_at(
+  tokens : Array[TagToken],
+  at : Array[String],
+) -> Array[Field] raise TagError {
   let out : Array[Field] = []
   let index : Map[String, Int] = Map([])
   let stack : Array[FieldFrame] = []
-  for token in tokens {
+  for i, token in tokens {
+    let place = if i < at.length() { at[i] } else { "" }
     match token.kind {
       TagKind::Text => ()
       TagKind::Open | TagKind::Inverted => {
@@ -105,7 +128,7 @@ pub fn fields(tokens : Array[TagToken]) -> Array[Field] raise TagError {
         let field = field_new(token.name, FIELD_SECTION, in_sections)
         field.mode = token.mode
         field.inverted = token.kind == TagKind::Inverted
-        field_put(out, index, field)
+        field_put(out, index, field, place)
         stack.push({
           name: token.name,
           mode: token.mode,
@@ -142,7 +165,7 @@ pub fn fields(tokens : Array[TagToken]) -> Array[Field] raise TagError {
         field.format = token.format
         field.code = token.code
         field.input = token.input
-        field_put(out, index, field)
+        field_put(out, index, field, place)
       }
     }
   }

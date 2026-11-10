@@ -113,7 +113,8 @@ packages.
 - `form/tag` is ported: text and tags, values, sections, pictures, number
   formats, modes, text columns and code options, plus scopes, JSON truthiness
   and items, date parsing, value text, section variables and field collection,
-  with the upstream tag and scope tests as MoonBit tests (12 tests).
+  with the location of each tag and the JSON form of a field, with the
+  upstream tag and scope tests as MoonBit tests (12 tests).
 - `form/textpart` is ported for the print image: width/cells/tall/rows, plain
   text with margins/paper/CRLF, the version-1 JSON encode/decode with its
   limits and checks, and the BDF part glue (`from_document`, `Image::add_to`)
@@ -140,17 +141,64 @@ packages.
   in fills and overlays, hexadecimal field names, surrogate
   pairs, control-character escapes, optional read-only skipping, escaped
   literals, UTF-16BE hex, buttons, appearance on-state names, referenced
-  AcroForms and `/NeedAppearances`), and draws a blank-page value overlay
+  AcroForms and `/NeedAppearances`; the type of a field is read from the
+  whole object that holds its name, so a writer that puts `/FT` before `/T`
+  is read right), and draws a blank-page value overlay
   (checkbox `X`, multiline flags, maximum lengths, clipped wrapped values, MediaBox or CropBox sizing, optional
   read-only skipping).
 - `form/ooxml` replaces `{{name}}` tags in OOXML XML parts, including tags
-  split across runs (the run markup between them is removed), expands
-  boolean `{{#name}}`/`{{^name}}` conditions, expands object-list
-  `{{#items}}`…`{{/items}}` sections item by item, fills header/footer
-  parts, and rebuilds stored ZIPs (4 tests); `form/docx` fills headers and
+  split across runs (the run markup between them is removed), applies the
+  options of a tag (`fmt:` through the XLSX number formats), expands
+  `{{#name}}`/`{{^name}}` sections over the rows of a worksheet, the
+  paragraphs and table rows of a Word part and the shapes of a slide, fills
+  `_index`/`_count`/`_first`/`_last` and `_page`/`_pages`, fills a list of
+  values through `{{.}}`, drops comment tags, fills header/footer parts,
+  numbers the rows of a filled worksheet again, and rebuilds stored ZIPs
+  (23 tests); `form/docx` fills headers and
   footers, rendered header/footer values and filled table cells (6 tests), `form/xlsx` fills sheets, shared strings and inline strings and renders the filled cell (4 tests), and
-  `form/pptx` fills slides and speaker notes, converts the filled deck and renders shape text through a slide layout (4 tests). Scalar
-  list items are reported.
+  `form/pptx` fills slides and speaker notes, converts the filled deck and renders shape text through a slide layout (4 tests).
+  A section that opens and closes in one cell or paragraph fills in place; a
+  section that spans cells, paragraphs or rows repeats the blocks it covers,
+  and a block that holds only control tags is dropped, so a list that spans
+  rows fills to one row per item. A sheet that no section repeats is left as
+  it is; a sheet that a section repeats keeps the gaps of its rows, moves the
+  rows after a repeated row and the cell references, merged cells and
+  dimension with them, and refuses a formula or a reference it cannot move.
+  A defined name and a row break move with the row they name; a merge over a
+  dropped row, a drawing, a chart, a pivot table or a formula of another
+  sheet that names a sheet whose rows move is an error instead of a stale
+  reference, and a self-closing `<f/>` counts as a formula. A comment, a VML
+  drawing, a slicer, a sparkline, an external link or a drawing that anchors
+  to a sheet whose rows move is an error too. A row or a cell written across
+  lines, with spaces around `=` or with single quotes is renumbered like any
+  other, without a duplicate attribute. A `>` inside a quoted attribute value
+  does not end the tag, and a namespaced `<x:row>`/`<x:c>` is renumbered like
+  an unprefixed one. A `<sheet>` or `<Relationship>` written across lines,
+  with tabs or with single quotes is read like any other, so the guards that
+  need the sheet name still run; a worksheet whose rows move but whose name
+  cannot be resolved from the workbook and its relationships is an error
+  instead of a skipped guard. A close tag with a space, a tab or a newline
+  before the `>`, as in `</rowBreaks >`, ends the block it closes, so a row
+  break and a defined name still move; a block that is not closed at all is an
+  error instead of a reference left behind. A calculation chain, a form
+  control, a rich value or a web extension in a workbook whose rows move is an
+  error too, and so is a
+  prefixed reference element that the fill does not move (`<x:mergeCell>`,
+  `<x:dimension>`, `<x:rowBreaks>`, `<x:brk>`, `<x:hyperlink>`,
+  `<x:dataValidation>`, `<x:conditionalFormatting>`, `<x:autoFilter>`,
+  `<x:tablePart>`, `<x:drawing>`, `<x:legacyDrawing>`, `<x:sheet>`,
+  `<x:definedName>` or `<x:Relationship>`). An `<oleObject>`, `<control>`,
+  `<sortState>`, `<protectedRange>`, `<ignoredError>`, `<cellWatch>` or
+  `<customSheetView>` element, prefixed or not, is an error too, and so is an
+  opaque part whose references the fill cannot read (`xl/metadata.xml`,
+  `xl/model/`, `customXml/`, `vbaProject.bin`); macros are never executed, so
+  a workbook with a macro project is refused instead of filled with
+  references the fill cannot check. An extension type outside this list may
+  still need support before a row-expanding workbook that uses it can be
+  filled.
+  A section that starts in a table row and ends outside it is an error, a
+  section of `| slots` is an error (write `| rows`), and a picture tag
+  (`{{%name}}`) is reported and left empty.
 - `form/pdfme` fills a pdfme template (blank pages, text/line/rectangle/
   checkbox/radio-group (column/row)/table/text/QR/barcode/line and rectangle
   (solid/dashed, opacity)/image
@@ -174,7 +222,10 @@ packages.
   opacity, with per-column table border colors/widths/styles (36 tests).
 - `form/schema` writes the JSON Schema of the data of a template from its
   fields and a sample (objects, lists, conditions, pictures/codes, number
-  formats, options, defaults, slots and the `x-bdf` keyword), with 3 tests.
+  formats, options, defaults, slots and the `x-bdf` keyword), and names the
+  data of a template (`names`), checks a name that a fill may leave open
+  (`has_name`) and writes the schema of the names that a fill leaves open
+  (`schema_open`), with 3 tests.
 - `form/textform` reads a plain-text template: the front matter (grid,
   margins, skip/title, font, ambiguous width, comments, quoted scalars and
   flow/block mappings), body lines and tags, page breaks, character/line
@@ -192,18 +243,51 @@ packages.
   matter font family and converts from JSON/YAML form/data sources (7 tests). Font
   embedding and the remaining font
   options of the upstream converter remain.
-- Next are the textform font options, the form partials and the other
-  per-format fillers.
-- CI runs `moon check/test/build` for js and wasm-gc, a demo job that
-  builds and tests the demo, a parity workflow that converts the document
-  fixtures with the upstream Wasm package and the MoonBit worker, and the
-  full visual compatibility suite (converter, worker, font, XLSX, specimen
-  and demo fixtures). Superseded runs for the same ref are cancelled by
-  workflow concurrency. All workflows passed on MoonBit 0.1.20261104 at
-  commit b76cf61; the
-  compatibility JS exports use string/JSON values so they also work on the
-  older 0.1.20261020 toolchain. The latest local full suite is js 2731/2731
-  and wasm-gc 2715/2715; document parity is 12 pass / 40 diff.
+- `form` is the entry point of template filling, as upstream's `form`
+  package. `compile` checks a template and makes a `.bdft` that holds it with
+  the names its tags look up, the JSON Schema of its data and an optional
+  sample; `fill` fills a template or a compiled template and returns the
+  document, the warnings, the fields and the format; `fields`, `describe` and
+  `schema_of` read a template without filling it. The formats are xlsx, docx,
+  pptx, pdf, pdfme and text, and the fields of each are read without filling
+  it (`inspect`), with the location of each tag: the cell of a workbook
+  (`Sheet1!B5`), the part of an OOXML document, the line and column of a text
+  template, the AcroForm field of a PDF. `Options::strict` makes a name that
+  the data does not have an error in every format, as upstream's `Strict`
+  does: a name inside a branch that is not taken is not asked for, a name of
+  a list is asked for in each item, `null` is a value (an empty one), and the
+  name of a condition is asked for before the branch is chosen. Without it
+  the fill warns `the data has no "name"; it is left empty` and leaves the
+  tag empty; a PDF field keeps what the file has. A fill that leaves names of
+  the data open (`Options::open`, `OPEN_ALL`) makes a partly filled form
+  (`.bdff`) of the values it holds, which another fill completes into the
+  document that the template filled with all of the data at once, and turns
+  strict off as upstream does; the description of a compiled template is the
+  `tpl` part of upstream (version 1, the `source`/`from`/`digest` hashes,
+  `filled`, `open`, `signed`), and `read_template` checks its version, its
+  hashes and the 256 MiB template and 64 MiB description limits. A compiled
+  template without a sample shows the template with its tags, as upstream
+  does, and `fill` reports the fields of the template it filled. 74 tests.
+  Not ported: signing (`Sign`, `Signed`, `Values`, `VerifyValues`; the
+  `signed` values of a description are kept as they are read, and no fill
+  makes or checks a signature), inlining pictures from the file system into
+  the data (`data:` URLs pass through), and the `at` of a docx/pptx field is
+  the part name, not the paragraph or slide label of upstream. PDF form
+  values are written into the PDF, but `convert/pdf` does not draw them into
+  the page content, so they are not in the text index. Strict is not
+  complete everywhere: `form/pdf` reports no warning per field without it
+  (the field keeps what the file has), its `skip_read_only` also leaves
+  read-only fields out of the strict check, and `form/pdfme` does not check
+  the names that only an expression of a template uses (upstream does). A
+  `radioGroup` of a pdfme template is a string with its options, not the
+  boolean that upstream's `isMark` makes it, because the painter draws its
+  options.
+- Next are the textform font options, form signing and picture inlining, the
+  `at` of OOXML fields, and the pictures and barcodes of the OOXML fills.
+- Local verification runs retained tests on js, wasm-gc and native, plus demo,
+  document parity, visual and site checks through `actrun`. See
+  `docs/verification-scope.md` for the retained scope and recorded results.
+  Pages deployment remains a separate manual GitHub workflow.
 - `print/raster` is started: the PWG Raster page header (1796 bytes,
   PWG 5102.4), row compression (runs/literals), the stream writer with row
   repetition, the reader, page fitting (print-scaling, orientation,
@@ -399,7 +483,8 @@ packages.
 - Print: IPP client/server, PWG/URF/PCLm encoders and readers, PDF and
   raster printing, DNS-SD records and browse over a supplied transport.
 - Not complete: upstream document parity is still 12/52; PDF form writing,
-  form partials, OOXML rows that cross table structure, pdfme base-PDF
-  content, BDF rasterization, real CUPS/UDP sockets and several documented
-  converter subsets remain gaps. This port is not claimed to be complete.
+  form signing and picture inlining, OOXML rows that cross table structure,
+  pdfme base-PDF content, BDF rasterization, real CUPS/UDP sockets and
+  several documented converter subsets remain gaps. This port is not claimed
+  to be complete.
 

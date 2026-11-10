@@ -100,3 +100,16 @@ fn sha256(data : BytesView) -> String {
   }
   out.to_string()
 }
+
+///|
+/// The SHA-256 of `data` in lowercase hex.
+pub fn sha256_hex(data : Bytes) -> String {
+  sha256(data)
+}
+
+///|
+/// The hash of a part of a BDF document: the first 128 bits of its SHA-256,
+/// in lowercase hex, as the manifest names it.
+pub fn hash_of(data : Bytes) -> String {
+  sha256_hex(data).unsafe_substring(start=0, end=32)
+}

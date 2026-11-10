@@ -29,7 +29,11 @@ test "ooxml expands conditions" {
   assert_eq(list_warnings.length(), 0)
   let (missing, missing_warnings) = expand_controls("A{{#none}}B{{/none}}C", true_values)
   assert_eq(missing, "AC")
-  assert_eq(missing_warnings.length(), 0)
+  assert_eq(missing_warnings.length(), 1)
+  assert_eq(
+    missing_warnings[0],
+    "the data has no \"none\"; it is left empty",
+  )
 }
 ///|
 test "ooxml fills header parts" {

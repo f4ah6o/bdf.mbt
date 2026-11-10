@@ -1,8 +1,17 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "f4ah6o/bdf/form/pdfme"
 
+import {
+  "f4ah6o/bdf/form/tag",
+  "moonbitlang/core/json",
+}
+
 // Values
-pub fn fill(Bytes, Bytes) -> FillResult raise PdfmeError
+pub fn defaults(Bytes) -> @json.Json raise PdfmeError
+
+pub fn fill(Bytes, Bytes, strict? : Bool) -> FillResult raise PdfmeError
+
+pub fn inspect(Bytes) -> Array[@tag.Field] raise PdfmeError
 
 // Errors
 pub suberror PdfmeError {

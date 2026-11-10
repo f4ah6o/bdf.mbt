@@ -17,19 +17,28 @@ pub fn fill(
   data : Bytes,
   data_mode~ : String = "",
   no_text_index~ : Bool = false,
+  strict~ : Bool = false,
 ) -> @xlsx.XlsxPlainResult raise {
   let values = form_values(data)
-  let (filled, _) = @ooxml.fill_zip(template, values) catch {
+  let (filled, warnings) = @ooxml.fill_zip(template, values, strict~) catch {
     @ooxml.OoxmlError(message) => raise XlsxFormError(message)
   }
-  @xlsx.convert_plain_no_fonts(filled, data_mode~, no_text_index~)
+  let result = @xlsx.convert_plain_no_fonts(filled, data_mode~, no_text_index~)
+  for warning in warnings {
+    result.warnings.push(warning)
+  }
+  result
 }
 
 ///|
 /// Fill a workbook and return the filled .xlsx.
-pub fn fill_bytes(template : Bytes, data : Bytes) -> Bytes raise {
+pub fn fill_bytes(
+  template : Bytes,
+  data : Bytes,
+  strict~ : Bool = false,
+) -> Bytes raise {
   let values = form_values(data)
-  let (filled, _) = @ooxml.fill_zip(template, values) catch {
+  let (filled, _) = @ooxml.fill_zip(template, values, strict~) catch {
     @ooxml.OoxmlError(message) => raise XlsxFormError(message)
   }
   filled

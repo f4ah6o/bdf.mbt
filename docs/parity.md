@@ -184,8 +184,10 @@ writes the JSON Schema with 3 more, and `form/textform` reads the front
 matter, body tags, sections, filling/pagination/options/sources with 17 more, workbook sources, OOXML
 value tags and a basic pdfme filler, and
 `convert/textform` lays the result out as a fixed BDF view (tables and
-page selection included) with 4 more; the textform font options, form
-partial fill, other fillers and most print packages remain. `print/raster`
+page selection included) with 4 more, and `form` compiles templates and
+fills them in steps through partly filled forms with 23 more; the textform
+font options, form signing and picture inlining, other fillers and most
+print packages remain. `print/raster`
 now has the PWG Raster header, row compression, the stream writer/reader,
 page fitting, RGBA row conversion, Apple Raster, PCLm, one-page raster
 encoders and the IPP message codec (collections, decode limits, attribute

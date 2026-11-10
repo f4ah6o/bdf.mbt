@@ -1,10 +1,16 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "f4ah6o/bdf/form/pdf"
 
+import {
+  "f4ah6o/bdf/form/tag",
+}
+
 // Values
 pub fn fill_overlay(Bytes, Bytes, title? : String, skip_read_only? : Bool) -> Bytes raise PdfFillError
 
-pub fn fill_pdf(Bytes, Bytes, skip_read_only? : Bool) -> Bytes raise PdfFillError
+pub fn fill_pdf(Bytes, Bytes, skip_read_only? : Bool, strict? : Bool) -> Bytes raise PdfFillError
+
+pub fn inspect(Bytes) -> Array[@tag.Field] raise PdfFillError
 
 pub fn missing_required(Bytes, Bytes) -> Array[String]
 

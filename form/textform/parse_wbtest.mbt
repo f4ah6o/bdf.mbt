@@ -108,3 +108,33 @@ test "textform text detection" {
   assert_true(is_template(@utf8.encode("hello {{name}}")), msg="a tag")
   assert_false(is_template(@utf8.encode("hello")), msg="plain text")
 }
+
+///|
+test "textform detection reads a character that the end of a sample cuts" {
+  let a = @utf8.encode("あ")
+  assert_eq(a.length(), 3)
+  // a character cut by the end of the sample is not a mistake
+  assert_true(is_text(@utf8.encode("x") + a[:2].to_owned()), msg="a cut 3-byte character")
+  assert_true(is_text(@utf8.encode("x") + a[:1].to_owned()), msg="a cut 3-byte character, one byte")
+  assert_true(
+    is_template(@utf8.encode("{{name}}") + a[:2].to_owned()),
+    msg="a tag and a cut character",
+  )
+  let emoji = @utf8.encode("😀")
+  assert_eq(emoji.length(), 4)
+  assert_true(is_text(@utf8.encode("x") + emoji[:3].to_owned()), msg="a cut 4-byte character")
+  assert_true(
+    is_template(@utf8.encode("{{name}}") + emoji[:1].to_owned()),
+    msg="a tag and a cut 4-byte character",
+  )
+  // a sample that holds nothing but a cut character has no text to read
+  assert_false(is_text(a[:2].to_owned()), msg="only a cut character")
+  // bytes that are not UTF-8 at all are still a mistake
+  assert_false(is_text(b"\xff\xfe"), msg="not UTF-8")
+  assert_false(is_text(b"\x80\x80"), msg="continuation bytes alone")
+  assert_false(is_text(@utf8.encode("x") + b"\xff"), msg="text and a bad byte")
+  assert_false(is_template(b"\xff{{name}}"), msg="not UTF-8 with a tag")
+  assert_false(is_template(@utf8.encode("{{name}}") + b"\x80"), msg="a tag and a bad byte")
+  // NUL is still a mistake
+  assert_false(is_text(@utf8.encode("x") + a[:2].to_owned() + b"\x00"), msg="NUL")
+}

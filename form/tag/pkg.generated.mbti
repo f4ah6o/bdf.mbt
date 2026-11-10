@@ -3,6 +3,7 @@ package "f4ah6o/bdf/form/tag"
 
 import {
   "moonbitlang/core/debug",
+  "moonbitlang/core/json",
 }
 
 // Values
@@ -46,11 +47,13 @@ pub const OVERFLOW_WRAP : String = "wrap"
 
 pub fn fields(Array[TagToken]) -> Array[Field] raise TagError
 
+pub fn fields_at(Array[TagToken], Array[String]) -> Array[Field] raise TagError
+
 pub fn has(String) -> Bool
 
-pub fn items(Json) -> Array[Json]
+pub fn items(@json.Json) -> Array[@json.Json]
 
-pub fn normalize(Json) -> Json
+pub fn normalize(@json.Json) -> @json.Json
 
 pub fn parse(String) -> Array[TagToken] raise TagError
 
@@ -58,11 +61,11 @@ pub fn parse_date(String) -> String?
 
 pub fn parse_text(String) -> Array[TagToken] raise TagError
 
-pub fn truthy(Json) -> Bool
+pub fn truthy(@json.Json) -> Bool
 
-pub fn value_text(Json, String, ((Json, String) -> String)?) -> String
+pub fn value_text(@json.Json, String, ((@json.Json, String) -> String)?) -> String
 
-pub fn vars(Int32, Int32, Bool) -> Map[String, Json]
+pub fn vars(Int32, Int32, Bool) -> Map[String, @json.Json]
 
 // Errors
 pub suberror TagError {
@@ -70,9 +73,10 @@ pub suberror TagError {
 }
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) struct Field {
   name : String
-  kind : String
+  mut kind : String
   mut in_sections : Array[String]
   mut format : String
   mut mode : String
@@ -85,24 +89,27 @@ pub(all) struct Field {
   mut options : Array[String]
   mut labels : Array[String]
   mut label : String
-  mut default : Json
+  mut default : @json.Json
   mut max_len : Int32
   mut multiline : Bool
-} derive(Eq, @debug.Debug)
+}
+pub fn Field::from_json(@json.Json) -> Self raise TagError
+pub fn Field::to_json(Self) -> @json.Json
 
 pub struct Scope {
   parent : Scope?
-  value : Json
-  vars : Map[String, Json]
+  value : @json.Json
+  vars : Map[String, @json.Json]
   blank : Bool
 }
-pub fn Scope::blank_scope(Self, Map[String, Json]) -> Self
+pub fn Scope::blank_scope(Self, Map[String, @json.Json]) -> Self
 pub fn Scope::is_blank(Self) -> Bool
-pub fn Scope::item(Self, Json, Map[String, Json]) -> Self
-pub fn Scope::lookup(Self, Array[String]) -> Json?
-pub fn Scope::new(Json) -> Self
-pub fn Scope::value(Self) -> Json
+pub fn Scope::item(Self, @json.Json, Map[String, @json.Json]) -> Self
+pub fn Scope::lookup(Self, Array[String]) -> @json.Json?
+pub fn Scope::new(@json.Json) -> Self
+pub fn Scope::value(Self) -> @json.Json
 
+#derive(Eq, @debug.Debug)
 pub(all) enum TagKind {
   Text
   Value
@@ -110,8 +117,9 @@ pub(all) enum TagKind {
   Inverted
   Close
   Image
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct TagToken {
   kind : TagKind
   mut text : String
@@ -131,9 +139,9 @@ pub(all) struct TagToken {
   mut has_quiet : Bool
   mut pos : Int32
   mut end : Int32
-} derive(Eq, @debug.Debug)
+}
 
 // Type aliases
-pub type Formatter = (Json, String) -> String
+pub type Formatter = (@json.Json, String) -> String
 
 // Traits

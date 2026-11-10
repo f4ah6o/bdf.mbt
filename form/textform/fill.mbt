@@ -142,9 +142,9 @@ fn TextFiller::lookup(
       if scope.is_blank() {
         Json::null()
       } else if self.td.strict {
-        raise TextFormError("text: " + at + ": the data has no " + name)
+        raise TextFormError("text: " + at + ": the data has no \"" + name + "\"")
       } else {
-        let warning = at + ": the data has no " + name + "; it is left empty"
+        let warning = at + ": the data has no \"" + name + "\"; it is left empty"
         if !self.warnings.contains(warning) {
           self.warnings.push(warning)
         }
@@ -259,6 +259,23 @@ fn TextFiller::section(
     self.lines(section, section.a, section.b, item_scope)
   }
   self.table = saved_table
+}
+
+///|
+/// Emit a line as it is, with its tags.
+fn TextFiller::emit_raw(self : TextFiller, template : TextLine) -> Unit {
+  if template.brk {
+    self.out.push({ cells: [], brk: true, table: 0, no: 0 })
+    return
+  }
+  let builder : TextLineBuilder = { cells: [], cols: 0, conts: [] }
+  self.text(builder, template.src, template.attrs)
+  self.out.push({
+    cells: text_trim(builder.cells),
+    brk: false,
+    table: 0,
+    no: template.no,
+  })
 }
 
 ///|
@@ -746,11 +763,37 @@ fn TextFiller::image(self : TextFiller, pages : Array[TextPage]) -> @textpart.Im
 }
 
 ///|
-/// A filled text form: the print image and the table of each line of each
-/// page (0 for none; a tall line takes two entries).
+/// A filled text form: the print image, the table of each line of each page
+/// (0 for none; a tall line takes two entries), and what the fill warns of
+/// (a name that the data has not, a value wider than its columns).
 pub(all) struct TextFormResult {
   image : @textpart.Image
   tables : Array[Array[Int]]
+  warnings : Array[String]
+}
+
+///|
+/// Show a text template as it is: its lines with their tags, on the pages of
+/// its paper (Show of converter/textform of upstream).
+pub fn show_result(template : String) -> TextFormResult raise TextFormError {
+  let tpl = parse_template(@utf8.encode(template))
+  let filler = text_filler(tpl, TextTemplateData::new(Map([])))
+  for line in tpl.lines {
+    filler.emit_raw(line)
+  }
+  let pages = filler.paginate()
+  let tables : Array[Array[Int]] = []
+  for page in pages {
+    let rows : Array[Int] = []
+    for i, line in page.lines {
+      rows.push(page.tables[i])
+      if line.tall() {
+        rows.push(page.tables[i])
+      }
+    }
+    tables.push(rows)
+  }
+  { image: filler.image(pages), tables, warnings: filler.warnings }
 }
 
 ///|
@@ -779,7 +822,7 @@ pub fn fill_result_with(
     }
     tables.push(rows)
   }
-  { image: filler.image(pages), tables }
+  { image: filler.image(pages), tables, warnings: filler.warnings }
 }
 
 ///|
