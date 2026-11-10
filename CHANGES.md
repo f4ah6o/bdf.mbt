@@ -131,7 +131,14 @@
 
 ### Fixed
 
-- Metafile pen widths now follow the logical-to-page transform, correcting overly thick DocuWorks shape outlines. Cosmetic pen widths remain approximate across browser zoom.
+- Metafile pen widths now follow the logical-to-page transform, correcting
+  overly thick DocuWorks shape outlines: a geometric pen emits
+  `width * matrix.scale()` page points, and a cosmetic pen emits a fixed
+  0.75pt hairline instead of dividing by the scale. The hairline is a
+  96dpi-inspired approximation of one pixel, not a guarantee of one output
+  device pixel, and browser zoom scales it. An anisotropic matrix uses the
+  geometric mean of its axes, which approximates GDI's elliptical pen. A
+  positive geometric width below one page point is left unclamped.
 
 - DocuWorks image annotations with kind 7 bitmap bands now retain their
   stored top-to-bottom row order. Ordinary page DIBs and RLE8 keep their

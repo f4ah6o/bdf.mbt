@@ -1011,7 +1011,7 @@ test "emf pen widths are logical widths mapped to page points" {
   assert_true(t_close(stroke(40, []), 2.9528))
   // A legitimately wide pen stays wide.
   assert_true(t_close(stroke(200, []), 14.7638))
-  // A cosmetic pen is a fixed hairline in page space, not a logical width.
+  // A cosmetic pen is a fixed 96dpi-inspired hairline, not a logical width.
   assert_true(t_close(stroke(0, []), 0.75))
   // An anisotropic viewport halves y: the geometric mean of the axes.
   let anisotropic = [
@@ -1020,4 +1020,165 @@ test "emf pen widths are logical widths mapped to page points" {
     t_record(11, t_i32s([2540, 1270])), // SETVIEWPORTEXTEX
   ]
   assert_true(t_close(stroke(40, anisotropic), 2.0879))
+}
+
+///|
+fn t_line_width(encoded : Bytes) -> Double {
+  let mut found = -1.0
+  for command in t_commands(encoded) {
+    if command is @render.Line(value, _, _, _) {
+      found = value
+    }
+  }
+  found
+}
+
+///|
+fn t_dashes(encoded : Bytes) -> Array[Double] {
+  let mut found : Array[Double] = []
+  for command in t_commands(encoded) {
+    if command is @render.Dash(segments, _) {
+      found = segments.copy()
+    }
+  }
+  found
+}
+
+///|
+/// A DW 0x40 polyline: a stroked path on its own, through fill_or_stroke.
+fn t_dw_polyline(points : Array[(Int32, Int32)]) -> Bytes {
+  let data = @buffer.Buffer()
+  data.write_bytes(b"DW")
+  data.write_byte(b'\x40')
+  data.write_byte(b'\x20')
+  t_u32(data, points.length())
+  for point in points {
+    t_u16(data, point.0)
+    t_u16(data, point.1)
+  }
+  let bytes = data.to_bytes()
+  let record = @buffer.Buffer()
+  t_u32(record, bytes.length())
+  record.write_bytes(bytes)
+  t_record(70, record.to_bytes())
+}
+
+///|
+/// The dash pattern a pen style emits, in page points. The pattern is a
+/// multiple of the page width, so a transformed width scales the dashes too.
+test "emf pen dashes follow the page width" {
+  let stroke = fn(
+    width : Int32,
+    style : Int32,
+    device : Int32,
+  ) -> (Double, Array[Double]) {
+    let records = [
+      t_record(38, t_i32s([1, style, width, 0, 0])), // CREATEPEN
+      t_record(37, t_i32s([1])), // SELECTOBJECT
+      t_record(27, t_i32s([100, 480])), // MOVETOEX
+      t_record(54, t_i32s([860, 480])), // LINETO
+      t_record(14, t_i32s([0, 0, 0])), // EOF
+    ]
+    let emf = t_emf([0, 0, 2540, 2540], [device, device], [25, 25], records)
+    let (encoded, _) = t_draw(emf, 72.0, 72.0, false)
+    (t_line_width(encoded), t_dashes(encoded))
+  }
+  let patterns : Array[Array[Double]] = [
+    [3.0, 1.0],
+    [1.0, 1.0],
+    [3.0, 1.0, 1.0, 1.0],
+    [3.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+  ]
+  let styles : Array[Int32] = [1, 2, 3, 4]
+  for i, pattern in patterns {
+    let style = styles[i]
+    let (width, dashes) = stroke(40, style, 960)
+    assert_true(t_close(width, 2.9528))
+    assert_eq(dashes.length(), pattern.length())
+    for j, segment in pattern {
+      assert_true(t_close(dashes[j], segment * width * 2.0))
+    }
+    // Half the device dpi doubles the page width, and the dashes with it.
+    let (wide, wide_dashes) = stroke(40, style, 480)
+    assert_true(t_close(wide, 5.9055))
+    for j, segment in pattern {
+      assert_true(t_close(wide_dashes[j], segment * wide * 2.0))
+    }
+  }
+  // PS_SOLID emits an empty pattern.
+  let (_, solid) = stroke(40, 0, 960)
+  assert_eq(solid.length(), 0)
+}
+
+///|
+/// The same dash rule on the DocuWorks stroke path (fill_or_stroke).
+test "dw pen dashes follow the page width" {
+  let stroke = fn(width : Int32, style : Int32) -> (Double, Array[Double]) {
+    let records = [
+      t_record(38, t_i32s([1, style, width, 0, 0])), // CREATEPEN
+      t_record(37, t_i32s([1])), // SELECTOBJECT
+      t_dw_polyline([(100, 480), (860, 480)]),
+      t_record(14, t_i32s([0, 0, 0])), // EOF
+    ]
+    let emf = t_emf([0, 0, 2540, 2540], [960, 960], [25, 25], records)
+    let (encoded, _) = t_draw(emf, 72.0, 72.0, false)
+    (t_line_width(encoded), t_dashes(encoded))
+  }
+  let patterns : Array[Array[Double]] = [
+    [3.0, 1.0],
+    [1.0, 1.0],
+    [3.0, 1.0, 1.0, 1.0],
+    [3.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+  ]
+  let styles : Array[Int32] = [1, 2, 3, 4]
+  for i, pattern in patterns {
+    let (width, dashes) = stroke(40, styles[i])
+    assert_true(t_close(width, 2.9528))
+    assert_eq(dashes.length(), pattern.length())
+    for j, segment in pattern {
+      assert_true(t_close(dashes[j], segment * width * 2.0))
+    }
+  }
+}
+
+///|
+/// EXTCREATEPEN carries PS_COSMETIC (0) or PS_GEOMETRIC (0x10000) in
+/// elpPenStyle; the width is a Double there.
+test "extcreatepen cosmetic and geometric flags" {
+  let stroke = fn(style : Int32, width : Double) -> Double {
+    let records = [
+      t_record(
+        95,
+        t_i32s([1, 0, 0, 0, 0, style, width.to_int(), 0, 0, 0, 0]),
+      ), // EXTCREATEPEN
+      t_record(37, t_i32s([1])), // SELECTOBJECT
+      t_record(27, t_i32s([100, 480])), // MOVETOEX
+      t_record(54, t_i32s([860, 480])), // LINETO
+      t_record(14, t_i32s([0, 0, 0])), // EOF
+    ]
+    let emf = t_emf([0, 0, 2540, 2540], [960, 960], [25, 25], records)
+    let (encoded, _) = t_draw(emf, 72.0, 72.0, false)
+    t_line_width(encoded)
+  }
+  // PS_COSMETIC: a 96dpi-inspired hairline, not the logical width.
+  assert_true(t_close(stroke(0, 40.0), 0.75))
+  // PS_GEOMETRIC: the logical width through the matrix.
+  assert_true(t_close(stroke(0x10000, 40.0), 2.9528))
+}
+
+///|
+/// A singular world transform has no page scale; the stroke falls back to the
+/// hairline instead of emitting a zero or NaN width.
+test "a singular pen matrix falls back to the hairline" {
+  let records = [
+    t_record(38, t_i32s([1, 0, 40, 0, 0])), // CREATEPEN
+    t_record(37, t_i32s([1])), // SELECTOBJECT
+    t_record(35, t_i32s([0, 0, 0, 0, 0, 0])), // SETWORLDTRANSFORM, det 0
+    t_record(27, t_i32s([100, 480])), // MOVETOEX
+    t_record(54, t_i32s([860, 480])), // LINETO
+    t_record(14, t_i32s([0, 0, 0])), // EOF
+  ]
+  let emf = t_emf([0, 0, 2540, 2540], [960, 960], [25, 25], records)
+  let (encoded, _) = t_draw(emf, 72.0, 72.0, false)
+  assert_true(t_close(t_line_width(encoded), 0.75))
 }

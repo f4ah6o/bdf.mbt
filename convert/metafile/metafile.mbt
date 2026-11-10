@@ -261,9 +261,17 @@ fn Gdi::matrix(self : Gdi) -> Mat {
 ///|
 /// The pen width in page points. A geometric pen's width is a logical width,
 /// so the matrix maps it to page space. A cosmetic pen (width 0) is one
-/// device pixel on the output, which the object format can only express as a
-/// fixed hairline in page space. An anisotropic matrix has no single page
-/// width; the geometric mean of its axes is used, as for the hairline.
+/// device pixel on the output, which the object format cannot express: it
+/// carries no cosmetic flag, so the stroke is a fixed 0.75pt hairline. That
+/// value is a 96dpi-inspired approximation of one pixel, not a guarantee of
+/// one output device pixel; browser zoom scales it like any page width.
+///
+/// An anisotropic matrix has no single page width, so the geometric mean of
+/// its axes is used. That is an approximation: GDI draws an elliptical pen.
+///
+/// A positive geometric width below one page point is emitted as it is. The
+/// renderer antialiases it, and GDI has no minimum for a geometric pen, so a
+/// clamp would invent semantics the source does not have.
 fn Gdi::pen_page_width(self : Gdi) -> Double {
   let width = self.state.pen_width
   if width <= 0.0 || self.state.pen_cosmetic {

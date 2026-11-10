@@ -8,18 +8,23 @@
 // Cases:
 //   geometric            40 units at 960dpi -> 2.95px
 //   wide                200 units at 960dpi -> 14.76px (a legitimate wide pen)
-//   cosmetic              0 units at 960dpi -> 0.75px hairline
+//   cosmetic              0 units at 960dpi -> 0.75px hairline (a
+//                         96dpi-inspired approximation, not one device pixel)
 //   anisotropic          40 units, viewport y halved -> geometric mean 2.09px
 //   pageScale2           40 units at 480dpi -> 5.91px (half the device dpi)
 //   cosmeticPageScale2    0 units at 480dpi -> 0.75px (the hairline does not
 //                         follow the page scale)
 //   subunit               1 unit at 240dpi -> 0.30px (a positive geometric pen
 //                         below one page point is scaled, not a hairline)
-//   zoom                  the geometric case at zoom 2 -> twice the zoom-1 ink
+//   zoom                  the geometric and cosmetic cases at zoom 2 -> twice
+//                         the zoom-1 ink (the hairline is a page width, so
+//                         browser zoom scales it; it is not pinned to one
+//                         output device pixel)
 //
-// The anisotropic case is an approximation: the object format carries one
-// isotropic width per stroke, so the geometric mean of the matrix axes is
-// used. GDI would draw an elliptical pen (1.48px for this horizontal line).
+// The anisotropic case is an approximation, not exact GDI: the object format
+// carries one isotropic width per stroke, so the geometric mean of the matrix
+// axes is used. GDI would draw an elliptical pen (1.48px for this horizontal
+// line, against the 2.09px the geometric mean predicts).
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -170,33 +175,42 @@ try {
       unmount_bdf(host);
       host.remove();
     }
-    // Zoom: the same geometric page through the viewer at zoom 2.
-    const bdf = await convert('geometric', cases.geometric);
-    const host = document.createElement('div');
-    document.body.append(host);
-    const viewer = bdf_create_viewer(host, {
-      workerUrl: '/_build/js/debug/build/render_worker/render_worker.js',
-      find: false,
-    });
-    await viewer.open({ kind: 'buffer', buffer: bdf.slice().buffer });
-    const waitFor = async (test, label) => {
-      for (let i = 0; i < 200; i += 1) {
-        const canvas = host.querySelector('canvas');
-        if (canvas && test(canvas)) return canvas;
-        await new Promise(done => setTimeout(done, 25));
-      }
-      throw new Error(`zoom: ${label} did not render`);
+    // Zoom: the same page through the viewer at zoom 1 and zoom 2.
+    const zoomed = async (name, bytes) => {
+      const bdf = await convert(name, bytes);
+      const host = document.createElement('div');
+      document.body.append(host);
+      const viewer = bdf_create_viewer(host, {
+        workerUrl: '/_build/js/debug/build/render_worker/render_worker.js',
+        find: false,
+      });
+      await viewer.open({ kind: 'buffer', buffer: bdf.slice().buffer });
+      const waitFor = async (test, label) => {
+        for (let i = 0; i < 200; i += 1) {
+          const canvas = host.querySelector('canvas');
+          if (canvas && test(canvas)) return canvas;
+          await new Promise(done => setTimeout(done, 25));
+        }
+        throw new Error(`${name}: ${label} did not render`);
+      };
+      const first = await waitFor(canvas => measure(canvas).ink > 0, 'zoom 1');
+      const one = measure(first);
+      viewer.setZoom(2);
+      const second = await waitFor(
+        canvas => canvas.width >= first.width * 2 && measure(canvas).ink > 0,
+        'zoom 2',
+      );
+      const two = measure(second);
+      viewer.destroy();
+      host.remove();
+      return { one, two };
     };
-    const zoom1 = await waitFor(canvas => measure(canvas).ink > 0, 'zoom 1');
-    out.zoom1 = measure(zoom1);
-    viewer.setZoom(2);
-    const zoom2 = await waitFor(
-      canvas => canvas.width >= zoom1.width * 2 && measure(canvas).ink > 0,
-      'zoom 2',
-    );
-    out.zoom2 = measure(zoom2);
-    viewer.destroy();
-    host.remove();
+    const geometricZoom = await zoomed('geometric', cases.geometric);
+    out.zoom1 = geometricZoom.one;
+    out.zoom2 = geometricZoom.two;
+    const cosmeticZoom = await zoomed('cosmetic', cases.cosmetic);
+    out.cosmeticZoom1 = cosmeticZoom.one;
+    out.cosmeticZoom2 = cosmeticZoom.two;
     converter.terminate();
     return out;
   }, { cases: Object.fromEntries(Object.entries(cases).map(([k, v]) => [k, [...v]])) });
@@ -230,6 +244,11 @@ try {
   }
   if (!near(results.zoom2.ink / results.zoom1.ink, 2, 0.25)) {
     failures.push(`zoom: ink must double at zoom 2: ${results.zoom1.ink.toFixed(2)} -> ${results.zoom2.ink.toFixed(2)}`);
+  }
+  // The hairline is a page width, so browser zoom scales it. This is the
+  // documented limitation, not a cosmetic pen pinned to one device pixel.
+  if (!near(results.cosmeticZoom2.ink / results.cosmeticZoom1.ink, 2, 0.3)) {
+    failures.push(`cosmetic zoom: the hairline must scale with zoom: ${results.cosmeticZoom1.ink.toFixed(2)} -> ${results.cosmeticZoom2.ink.toFixed(2)}`);
   }
   assert.deepEqual(failures, [], 'pen width');
   console.log('EMF pen widths: geometric, wide, cosmetic, anisotropic, page scale, sub-unit and zoom ink measured.');
