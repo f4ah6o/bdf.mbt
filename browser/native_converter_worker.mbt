@@ -223,29 +223,19 @@ async fn NativeConverterState::dispatch(
       }
       seen_names[name] = true
       let bytes = native_font_files_bytes(font_files, index)
-      let face_count = @sfnt.face_count(bytes)
-      let mut usable = false
-      // `Database::add_file` refuses collections above 256 faces; mirror that
-      // bound so a malformed header cannot drive a long validation loop.
-      for face_index in 0..<(if face_count > 256 { 0 } else { face_count }) {
-        match (Some(@sfnt.parse(bytes, index=face_index)) catch { _ => None }) {
-          Some(_) => {
-            usable = true
-            break
-          }
-          None => ()
-        }
-      }
-      if !usable {
+      // `Database::add_file` refuses collections above 256 faces. Check the
+      // header first so the caller gets a specific diagnostic instead of the
+      // generic "no usable font face" that a zero result would produce.
+      if @sfnt.face_count(bytes) > 256 {
         native_converter_error(
           request,
-          "fontFiles[" + index.to_string() + "]: no usable font face",
+          "fontFiles[" + index.to_string() + "]: collection has more than 256 faces",
           "",
         )
         return
       }
-      // Every distinct file must contribute at least one named face. A file
-      // whose faces all lack a family name is not silently skipped.
+      // `add_file` parses every face and ignores unnamed ones. A zero result
+      // means this distinct file contributed no usable named face.
       if db.add_file(name, bytes) == 0 {
         native_converter_error(
           request,

@@ -62,6 +62,18 @@ try {
       }
       return copy;
     })();
+    // A TTC header claiming 257 faces, all pointing at the same valid SFNT.
+    const manyFaces = (() => {
+      const count = 257, header = 12 + count * 4;
+      const out = new Uint8Array(header + ttf.length);
+      const view = new DataView(out.buffer);
+      out.set([0x74, 0x74, 0x63, 0x66], 0);
+      view.setUint32(4, 0x00010000);
+      view.setUint32(8, count);
+      for (let index = 0; index < count; index++) view.setUint32(12 + index * 4, header);
+      out.set(ttf, header);
+      return out;
+    })();
     const csv = new TextEncoder().encode('name,value\nAlpha,42\nBeta,7\n');
     const noFonts = 'no fonts found; text is laid out with estimated metrics and not embedded';
     const fontParts = async bdf => {
@@ -75,7 +87,13 @@ try {
       const plain = await client.convert(csv, { format: 'csv' });
       if (!plain.warnings.includes(noFonts)) throw new Error('CSV without fonts must warn');
       if ((await fontParts(plain.bdf)).length !== 0) throw new Error('CSV without fonts must not embed a font');
+      for (const fontFiles of [null, []]) {
+        const absent = await client.convert(csv, { format: 'csv', fontFiles });
+        if (!absent.warnings.includes(noFonts) || (await fontParts(absent.bdf)).length !== 0) throw new Error('null/empty fontFiles must behave as absent');
+      }
       const withTtf = await client.convert(csv, { format: 'csv', fontFiles: [{ name: 'stix.ttf', bytes: ttf }] });
+      const nonStringUrl = await client.convert(csv, { format: 'csv', fonts: 123, fontFiles: [{ name: 'stix.ttf', bytes: ttf }] });
+      if ((await fontParts(nonStringUrl.bdf))[0] !== (await fontParts(withTtf.bdf))[0]) throw new Error('non-string fonts must stay absent in byte mode');
       if (withTtf.warnings.includes(noFonts)) throw new Error('CSV with fontFiles must not warn about missing fonts');
       const ttfParts = await fontParts(withTtf.bdf);
       if (ttfParts.length !== 1) throw new Error('CSV with fontFiles must embed one font, got ' + ttfParts.length);
@@ -114,6 +132,7 @@ try {
         [{ fontFiles: [{ name: 'dup.ttf', bytes: ttf }, { name: 'dup.ttf', bytes: otf }] }, 'fontFiles[1]: duplicate name'],
         [{ fontFiles: [{ name: 'nofamily.ttf', bytes: noFamily }] }, 'fontFiles[0]: no usable font face'],
         [{ fontFiles: [{ name: 'stix.ttf', bytes: ttf }, { name: 'nofamily.ttf', bytes: noFamily }] }, 'fontFiles[1]: no usable font face'],
+        [{ fontFiles: [{ name: 'many.ttc', bytes: manyFaces }] }, 'fontFiles[0]: collection has more than 256 faces'],
         [{ fontFiles: [{ name: 'secret-name.ttf', bytes: new Uint8Array([1, 2, 3]) }] }, 'fontFiles[0]: no usable font face'],
         [{ fontFiles: [{ name: 'a.ttf', bytes: new Uint8Array(32 * 1024 * 1024 + 1) }] }, 'fontFiles[0]: bytes exceed the 33554432 byte per-file limit'],
         [{ fonts: '/fonts/', fontFiles: [{ name: 'stix.ttf', bytes: ttf }] }, 'fonts: options.fonts and options.fontFiles cannot both be set'],
@@ -148,7 +167,7 @@ try {
   assert.notEqual(result.hashes.ttf, result.hashes.otf);
   assert.equal(result.hashes.ttc.length, 2);
   assert.ok(!result.hashes.ttc.includes(result.hashes.ttf));
-  assert.equal(result.errors.length, 14);
+  assert.equal(result.errors.length, 15);
   assert.ok(result.pdfBytes > 0);
   assert.ok(requests.includes('/fonts/index.json'), 'URL mode must fetch the directory');
   const byteModeRequests = requests.filter(name => name.startsWith('/fonts/'));

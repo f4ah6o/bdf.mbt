@@ -26,8 +26,11 @@ await converter.convert(data, {
   an `ArrayBuffer`. Other views, strings, blobs and URLs are rejected.
 - A missing or `null` `fontFiles` means "no byte-mode fonts". An empty array is
   accepted and behaves like no byte-mode fonts.
-- `options.fonts` and a non-empty `options.fontFiles` are mutually exclusive.
-  Supplying both is an error; the Worker does not choose one silently.
+- `options.fonts` and a non-empty `options.fontFiles` are mutually exclusive
+  only when `options.fonts` is a non-empty string. Supplying both is an error;
+  the Worker does not choose one silently. A non-string `options.fonts` value
+  keeps the legacy behaviour of being treated as absent, so it does not
+  conflict with `fontFiles`.
 - Byte mode never fetches. The supplied files are the whole font database for
   that request. URL mode keeps the existing `index.json` directory loader and
   its per-URL cache.
@@ -41,6 +44,11 @@ then copies each accepted byte range once more before parsing, so the font
 database does not alias the cloned message. The database is built per request
 and dropped when the request finishes; no byte-mode font is cached or shared
 between requests. URL mode keeps its existing global directory cache.
+
+A caller that passes an already detached `ArrayBuffer` or `Uint8Array` fails
+inside the client's `postMessage` structured clone, before the request reaches
+the Worker. That is a caller-side clone error; the Worker cannot return an
+indexed `fontFiles[i]` diagnostic for it.
 
 ## Validation and limits
 
@@ -60,12 +68,17 @@ The Worker rejects, before conversion starts:
 | no face parses | `fontFiles[i]: no usable font face` |
 | a file adds no named face | `fontFiles[i]: no usable font face` |
 | a name repeats an earlier entry | `fontFiles[i]: duplicate name` |
-| URL and bytes together | `fonts: options.fonts and options.fontFiles cannot both be set` |
+| a collection claims more than 256 faces | `fontFiles[i]: collection has more than 256 faces` |
+| nonempty string URL and bytes together | `fonts: options.fonts and options.fontFiles cannot both be set` |
 
 Diagnostics use the array index only. They never repeat a supplied name, a
 family name, a URL or font data, and the Worker does not log any of these.
 
 ## Database contents
+
+Supported byte inputs are SFNT TrueType/OpenType (`.ttf`, `.otf`) and SFNT
+collections (`.ttc`, `.otc`). WOFF and WOFF2 are not supported and are rejected
+as `fontFiles[i]: no usable font face`.
 
 Every accepted file is passed to `@fontdb.Database::add_file`, which loads all
 readable faces of an SFNT file or collection (TTC/OTC). Names must be unique:
@@ -90,13 +103,18 @@ the actual baseline, not a claim that every format uses fonts:
 | JWW | Receives the database. |
 | HPGL, DXF, SXF, CGM, draw.io | Receive the database (existing behaviour). |
 | XLSX | Uses only the first face of the database. |
-| PDF | Does not receive the database. |
-| DOCX | Does not receive the database. |
+| PDF | Does not use the database, but the supplied bytes are still validated and parsed into a per-request database before dispatch. |
+| DOCX | Does not use the database, but the supplied bytes are still validated and parsed into a per-request database before dispatch. |
 | Image, AI, TIFF, PSD, EMF, XDW, IDML, Visio, Markdown, HTML, audio, Parquet | Do not receive the database. |
 
-PDF and DOCX therefore ignore `fontFiles`; they do not silently use it. XLSX
-embeds at most one face even when several are supplied. Formats that do not
-receive the database keep their existing no-font behaviour and warnings.
+PDF and DOCX do not use `fontFiles` for layout or embedding, but they do not
+ignore the option either: every supplied file is validated and parsed before
+dispatch, so invalid bytes still fail and valid bytes still cost CPU and memory
+for that request. XLSX embeds at most one face even when several are supplied.
+Formats that do not receive the database keep their existing no-font behaviour
+and warnings. The cost is bounded by the 64-file, 32 MiB per-file, 64 MiB total
+and 256-faces-per-collection limits, but a request that supplies fonts to a
+format that does not use them still pays the parse cost.
 
 ## Tests
 
@@ -107,9 +125,11 @@ Chromium and checks, through the public `bdf_create_native_converter` client:
 - a two-face TTC loading both faces;
 - `ArrayBuffer` input and a typed-array slice with a non-zero offset
   producing the same embedded face;
-- duplicate names rejected for identical and different valid files, and a
-  valid SFNT with an empty name table rejected as unusable both alone and
-  after a usable file;
+- `null` and empty `fontFiles` behaving as absent, and a non-string legacy
+  `fonts` value not conflicting with byte mode;
+- duplicate names rejected for identical and different valid files, a valid
+  SFNT with an empty name table rejected as unusable both alone and after a
+  usable file, and a 257-face TTC rejected with the collection limit;
 - caller buffers staying attached and unchanged;
 - `open` accepting `fontFiles`;
 - per-request isolation (a later request without `fontFiles` warns again);
