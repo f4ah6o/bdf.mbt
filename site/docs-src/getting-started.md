@@ -39,7 +39,7 @@ npm run demo
 # http://127.0.0.1:8765/examples/viewer/.out/?src=/out.bdf
 ```
 
-`examples/viewer` はデモサイトと同じビューアです（検索、テキスト選択、本のようにめくれるページ、演奏できる楽譜）。`?src=` でリポジトリ内の任意の `.bdf` を開けます。`npm run site:serve` は、ブラウザ内変換つきのフルのデモサイトを手元で動かします。[GitHub Pages で公開しているもの](https://shibukawa.github.io/bdf/)と同じ体験を、手元のチェックアウトから再現できます。
+`examples/viewer` はデモサイトと同じビューアです（検索、テキスト選択、本のようにめくれるページ、演奏できる文書）。`?src=` でリポジトリ内の任意の `.bdf` を開けます。`npm run site:serve` は、ブラウザ内変換つきのフルのデモサイトを手元で動かします。[GitHub Pages で公開しているもの](https://shibukawa.github.io/bdf/)と同じ体験を、手元のチェックアウトから再現できます。
 
 ## Go のコードから
 

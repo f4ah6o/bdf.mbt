@@ -44,7 +44,7 @@ err = png.Encode(w, img)
 ```
 
 - `Page` は fixed・flow View のページ、`Region` はページの一部、scroll View の連続した範囲、シートの範囲を描きます。
-- 名前で参照するフォント（HTML・Markdown・EPUB）と、埋め込みフォントにない字は `Options` の `FontFS`・`FontDirs` とシステムのフォントから探します。
+- 名前で参照するフォント（HTML・Markdown）と、埋め込みフォントにない字は `Options` の `FontFS`・`FontDirs` とシステムのフォントから探します。
 - 描けなかったものは `ren.Warnings()` に入ります。サムネイルなら [`thumbnail`](api.md#go-サムネイルとページの画像thumbnailimagebdf) が切り抜き方まで決めます。
 
 コマンドなら `bdf render -page 1 -scale 2 report.bdf page1.png` です。
@@ -190,7 +190,7 @@ await renderer.renderPage(canvas.getContext("2d")!, page, { scale });
 
 ## 数式を描く
 
-`github.com/shibukawa/bdf/image/formula` は、LaTeX か MathML の数式を組み、**パスだけの Object**（グリフの輪郭、分数や根号の線）にします。フォントを参照しないので、パスを描ける描き手ならどれでも描けます。変換器が Word・PowerPoint・Excel・HTML・EPUB・Markdown・draw.io の数式を組むのと同じエンジンです。
+`github.com/shibukawa/bdf/image/formula` は、LaTeX か MathML の数式を組み、**パスだけの Object**（グリフの輪郭、分数や根号の線）にします。フォントを参照しないので、パスを描ける描き手ならどれでも描けます。変換器が Word・PowerPoint・Excel・HTML・Markdown・draw.io の数式を組むのと同じエンジンです。
 
 ```go
 import (
@@ -327,4 +327,4 @@ await new PageRenderer(doc, {}, document.fonts).renderPage(canvas.getContext("2d
 
 ## 文書の中の数式
 
-Word・PowerPoint・Excel の Office Math、HTML・EPUB の MathML、Markdown・draw.io の LaTeX は、変換器が同じエンジンで組んで文書に入れます。こちらはパスではなく、埋め込んだ数式フォントのテキストとして描きます（文書全体でグリフを共有するため）。書き方のサンプルは[対応形式](formats/index.ja.md)の各ページ、仕組みは[変換と出力 → 数式](architecture/conversion.ja.md#数式)にあります。
+Word・PowerPoint・Excel の Office Math、HTML の MathML、Markdown・draw.io の LaTeX は、変換器が同じエンジンで組んで文書に入れます。こちらはパスではなく、埋め込んだ数式フォントのテキストとして描きます（文書全体でグリフを共有するため）。書き方のサンプルは[対応形式](formats/index.ja.md)の各ページ、仕組みは[変換と出力 → 数式](architecture/conversion.ja.md#数式)にあります。

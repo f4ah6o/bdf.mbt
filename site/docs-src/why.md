@@ -24,11 +24,11 @@
 
 Office のファイルをブラウザでプレビューするには、サーバーで LibreOffice や OpenOffice をヘッドレスで動かして PDF にするのが定番です。プロセスの起動・維持・隔離も必要で、壊れたファイル 1 つでプロセスが詰まることもあります。
 
-BDF の変換器は cgo も外部プログラムも使わない Go のパッケージで、[下の表](#対応形式)の多くの形式を 1 つのバイナリで変換します。同じコードを WebAssembly にすればブラウザの中でも変換でき（PDF 用が gzip で約 7.3 MB、Office 系・draw.io・CAD・KiCad・フォント用が約 7.8 MB）、ファイルをアップロードする必要すらありません。サムネイルと検索用のテキストも同じプロセスで作れます。ページを描くのは純 Go のラスタライザで、サーバー側にもブラウザは要りません。
+BDF の変換器は cgo も外部プログラムも使わない Go のパッケージで、[下の表](#対応形式)の多くの形式を 1 つのバイナリで変換します。同じコードを WebAssembly にすればブラウザの中でも変換でき（PDF 用が gzip で約 7.3 MB、Office 系・draw.io・CAD・フォント用が約 7.8 MB）、ファイルをアップロードする必要すらありません。サムネイルと検索用のテキストも同じプロセスで作れます。ページを描くのは純 Go のラスタライザで、サーバー側にもブラウザは要りません。
 
 ## 必要な変換器だけを選んで組み込める
 
-形式はたくさんありますが、全部を抱える必要はありません。変換器は形式ごとに独立した Go のパッケージで、import されたときに自分の形式を登録します。PDF と Office の文書だけを扱うサービスなら `converter/pdf`、`converter/docx`、`converter/xlsx`、`converter/pptx` だけを import すれば、バイナリにリンクされるのもそれだけです（全部入りは `converter/all`）。ブラウザ用の WebAssembly も、PDF 用、Office 系・CAD・KiCad・音楽・フォント用、HTML・Markdown・EPUB 用、画像と音声ファイル用とビルドタグで分かれていて、ページは開いたファイルに要るモジュールだけを取得します。
+形式はたくさんありますが、全部を抱える必要はありません。変換器は形式ごとに独立した Go のパッケージで、import されたときに自分の形式を登録します。PDF と Office の文書だけを扱うサービスなら `converter/pdf`、`converter/docx`、`converter/xlsx`、`converter/pptx` だけを import すれば、バイナリにリンクされるのもそれだけです（全部入りは `converter/all`）。ブラウザ用の WebAssembly も、PDF 用、Office 系・CAD・フォント用、HTML・Markdown 用、画像と音声ファイル用とビルドタグで分かれていて、ページは開いたファイルに要るモジュールだけを取得します。
 
 ## 内容に合った形で見せる
 
@@ -40,7 +40,7 @@ BDF は内容の種類ごとに、3 つのレイアウトモデルを使い分�
 - **無限平面** — ワークシート。タイルで描き、ウィンドウ枠の固定、行・列見出し、枠線がつきます。シートが印刷ページに切り分けられることはありません。
 - **フロー** — ワープロ文書。ページとしても一続きのスクロールとしても読め、本文の幅で 1 本の長い列に組み直した、ページのない表示も持てます。
 
-1 つの文書は複数の View を持てます。ブックのシート、draw.io の図のページ、DXF のモデル空間とレイアウト、KiCad の回路図のシートと基板の各層はそれぞれ 1 つの View になり、ビューアは表計算ソフトのシートタブのようなタブで切り替えます。文書から別の View へのリンク（`#view=ID`）も張れます。draw.io のページから別のページへ、KiCad の階層シートから親シートへ、といった具合です。
+1 つの文書は複数の View を持てます。ブックのシート、draw.io の図のページ、DXF のモデル空間とレイアウトはそれぞれ 1 つの View になり、ビューアは表計算ソフトのシートタブのようなタブで切り替えます。文書から別の View へのリンク（`#view=ID`）も張れます。draw.io のページから別のページへ、といった具合です。
 
 ## 対応形式
 
@@ -48,16 +48,14 @@ BDF は内容の種類ごとに、3 つのレイアウトモデルを使い分�
 
 | 形式と主な拡張子 | 表示 | 特徴 |
 |---|---|---|
-| **文書と本**<br>[PDF](formats/pdf.ja.md)、[EPUB](formats/ebook.ja.md)<br><small>.pdf、.epub</small> | ページ。本は見開きで開いてめくる | PDF は埋め込みフォントとタグ付き PDF の構造を保つ。EPUB はリフロー型（和文の縦書きも）を本のページに組み、固定レイアウトのマンガは 1 枚ずつのページに |
+| **文書**<br>[PDF](formats/pdf.ja.md)<br><small>.pdf</small> | ページ | PDF は埋め込みフォントとタグ付き PDF の構造を保つ |
 | **文章**<br>[Word、HTML、Markdown](formats/document.ja.md)<br><small>.docx、.html、.mhtml、.md</small> | ページ、または一続きのスクロール | 1 つの組版エンジンで組む。縦書き、数式。HTML はリーダー表示 |
 | **スライド**<br>[PowerPoint](formats/presentation.ja.md)<br><small>.pptx</small> | ページ | マスターとレイアウト、表、グラフ、SmartArt、数式 |
 | **表**<br>[Excel、CSV・TSV、Apache Parquet](formats/spreadsheet.ja.md)<br><small>.xlsx、.csv、.tsv、.parquet</small> | シート（無限平面）。シートはタブで | ウィンドウ枠の固定、行・列見出し、条件付き書式。セルを選んで表計算ソフトに貼り付けられる |
 | **ページレイアウト**<br>[InDesign](formats/layout.ja.md)<br><small>.idml</small> | ページ。綴じ方向どおりに見開きで開く | 連結したフレームをページをまたいで流れるストーリー、マスターページ、和文の縦書き。配置画像は文書と一緒に渡す |
 | **図**<br>[Visio、draw.io](formats/diagram.ja.md)<br><small>.vsdx、.drawio（図を埋め込んだ .svg、.png も）</small> | ページ。ページはタブで | 背景ページとレイヤー、ページ間のリンク、AWS などのアイコン |
 | **CAD の図面とプロット**<br>[AutoCAD DXF、Jw_cad、SXF、CGM、HP-GL/2](formats/cad.ja.md)<br><small>.dxf、.jww、.p21、.sfc、.cgm、.plt</small> | ページ。モデル空間とレイアウトはタブで | 画層・線種・線の太さをプロッタが描くとおりに |
-| **電子回路**<br>[KiCad、Gerber・Excellon](formats/electronics.ja.md)<br><small>.kicad_sch、.kicad_pcb、.kicad_pro、.gbr、.drl、それらの ZIP</small> | ページ。回路図のシート、基板の表・裏・各層はタブで | 基板は基材・銅箔・マスク・シルク・穴の実物の見た目で。階層シートのリンク |
 | **デザインと画像**<br>[Illustrator](formats/pdf.ja.md)、[Photoshop、TIFF、Windows メタファイル、画像](formats/image.ja.md)<br><small>.ai、.psd、.psb、.tif、.emf、.wmf、.png、.jpg、.svg など</small> | ページ。アートボードごとに 1 ページ | 画像はデコードせずそのまま格納。SVG は拡大してもぼけない |
-| **楽譜**<br>[MML、MIDI、MusicXML](formats/music.ja.md)<br><small>.mml、.mid、.kar、.musicxml、.mxl</small> | ページ（五線譜） | ビューアで演奏し、演奏している段をカーソルで追う |
 | **音声**<br>[MP3、M4A、FLAC、Ogg、WAV、AIFF](formats/audio.ja.md)<br><small>.mp3、.m4a、.aac、.flac、.ogg、.opus、.wav、.aiff</small> | 再生できる 1 ページのカード | カバーアート、タグ、歌詞と章。ビューアで再生し、歌っている行を示す。サムネイルはカバー、タグはメタデータに |
 | **フォント**<br>[TrueType、OpenType、WOFF](formats/font.ja.md)<br><small>.ttf、.otf、.ttc、.woff、.woff2</small> | スクロール。概要・文字・グリフ・フィーチャーはタブで | 文字とグリフの一覧、OpenType フィーチャーが実際にすること |
 
@@ -67,7 +65,7 @@ BDF は内容の種類ごとに、3 つのレイアウトモデルを使い分�
 
 デモビューアはページをスクロールで並べるほか、1 ページずつ、または見開き（左開き・右開き）で表示して、本のようにめくれます。ページは、キー、ページボタン、タップ（綴じ目の先なら次へ、手前なら前へ）、ページの角や外側の端のドラッグでめくれ、めくる動きは WebGL で描きます（前後のページを先にテクスチャとして描いておきます）。システムが視差効果を減らす設定なら、アニメーションなしで切り替わります。めくる途中でなければ、ページの中のテキストはいつでも選択できます。
 
-右綴じの本（`direction: "rtl"`。縦書きの日本語、右から読むマンガ）は右から左へめくり、EPUB は最初から見開きで開きます（`?layout=pages`・`single`・`spread`・`spread-rtl` で最初からその表示にできます）。楽譜はビューアで演奏でき、演奏している段にカーソルを示して、それに合わせてページをめくり、スクロールします。
+右綴じの本（`direction: "rtl"`。縦書きの日本語、右から読むマンガ）は右から左へめくります（`?layout=pages`・`single`・`spread`・`spread-rtl` で最初からその表示にできます）。音声ファイルと、BDF に演奏データが入っている文書はビューアで再生でき、再生位置にカーソルを示します。
 
 ## 検索と選択
 
@@ -80,7 +78,7 @@ BDF は内容の種類ごとに、3 つのレイアウトモデルを使い分�
 
 ## アクセシビリティ
 
-構造の層が、見出し・リスト・表・代替テキスト付きの図・リンク・言語をスクリーンリーダーに伝えます。これはタグ付き PDF、PowerPoint と Word の構造、Excel・CSV・Parquet のセルと表の見出し、HTML・Markdown・EPUB の要素から変換したものです。Windows のハイコントラスト表示でも透明な文字が描画に重ならず、ページはキーボードでめくれます。
+構造の層が、見出し・リスト・表・代替テキスト付きの図・リンク・言語をスクリーンリーダーに伝えます。これはタグ付き PDF、PowerPoint と Word の構造、Excel・CSV・Parquet のセルと表の見出し、HTML・Markdown の要素から変換したものです。Windows のハイコントラスト表示でも透明な文字が描画に重ならず、ページはキーボードでめくれます。
 
 ## ブラウザ表示に特化している
 

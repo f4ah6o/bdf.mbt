@@ -27,7 +27,7 @@
 <h1>wasm-gc デモ</h1>
 <p class="lead">ビューアと同じ MoonBit の実装を WebAssembly（wasm-gc）にコンパイルし、PDF の変換と、BDF の PDF・Markdown・検索用テキストへの書き出しをブラウザの中で行います。サーバーへは送りません。</p>
 <div class="options">
-<label>ファイル <input id="pdf-file" type="file" accept=".pdf,.docx,.pptx,.xlsx,.csv,.tsv,.md,.markdown,.html,.htm,.epub,.svg,.png,.jpg,.jpeg,.ttf,.otf,.woff,.woff2,.mid,.midi,.kar,.mml,.drawio,.dxf,.jww,.sfc,.p21,.cgm,.plt,.hpgl,.gbr,.drl,.parquet,.ai,.tif,.psd,.emf,.wmf,.vsdx,.idml" aria-label="変換するファイル"></label>
+<label>ファイル <input id="pdf-file" type="file" accept=".pdf,.docx,.pptx,.xlsx,.csv,.tsv,.md,.markdown,.html,.htm,.svg,.png,.jpg,.jpeg,.ttf,.otf,.woff,.woff2,.drawio,.dxf,.jww,.sfc,.p21,.cgm,.plt,.hpgl,.parquet,.ai,.tif,.psd,.emf,.wmf,.vsdx,.idml" aria-label="変換するファイル"></label>
 <label>パスワード <input id="pdf-password" type="password" autocomplete="current-password" placeholder="任意"></label>
 <button id="pdf-convert" class="button primary" type="button" disabled>BDF に変換</button>
 <span class="samples" id="wasm-samples"><button type="button" class="button" data-wasm-sample="basic.docx">Word</button><button type="button" class="button" data-wasm-sample="features.xlsx">Excel</button><button type="button" class="button" data-wasm-sample="basic.csv">CSV</button><button type="button" class="button" data-wasm-sample="basic.md">Markdown</button><button type="button" class="button" data-wasm-sample="drawing.svg">SVG</button></span>

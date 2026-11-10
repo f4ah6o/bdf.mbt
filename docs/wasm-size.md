@@ -12,6 +12,12 @@ modules below are linked for measurement (see
 Measured with `moon 0.1.20261029` and upstream `@bdfkit` 0.2.1 (TinyGo 0.42.0).
 Compression is gzip level 9 and brotli quality 11 from Node's zlib.
 
+The numbers below predate the scope reduction. The `all` and `office` probes no
+longer link the dormant PCB/KiCad, musical-score and EPUB packages, so
+re-measuring them will report a smaller module and the `office` row no longer
+matches upstream's nine-format preset. The `pdf-epub` probe still links
+`compat/size/pdf_epub` unchanged, so its row still includes EPUB.
+
 | Preset | bdf.mbt raw | bdf.mbt gzip | bdf.mbt brotli | upstream raw | upstream gzip | upstream brotli | raw ratio | gzip ratio |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | PDF + EPUB | 1,543,654 B (1.47 MiB) | 618,808 B (604.3 KiB) | 477,769 B (466.6 KiB) | 8,089,066 B (7.71 MiB) | 3,034,462 B (2.89 MiB) | 2,210,739 B (2.11 MiB) | 0.19x | 0.20x |
@@ -20,8 +26,8 @@ Compression is gzip level 9 and brotli quality 11 from Node's zlib.
 
 The ratio is bdf.mbt divided by upstream. The closest like-for-like row is
 PDF + EPUB: the module is 5.2 times smaller raw and 4.9 times smaller with
-gzip. The Office row covers the same nine formats; the All row omits only
-MusicXML (see [Scope](#scope)).
+gzip. The Office row covers the same nine formats; the All row was measured
+before the scope reduction and still includes the dormant packages.
 
 The `name` custom section, which `tinygo build -no-debug` still emits, is
 303,219 B (PDF + EPUB), 362,241 B (Office) and 648,101 B (All) in the upstream

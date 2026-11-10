@@ -51,38 +51,19 @@ try {
       out.open = { pages: opened.pages, first: firstDoc.manifest.views[0].pages.length };
       await moon.close(opened.stream);
     }
-    for (const [name, path, ext] of [
-      ['html', '/compat/html/fixtures/article.html', '.html'],
-      ['epub', '/compat/epub/fixtures/basic.epub', '.epub'],
-      ['fixed', '/compat/epub/fixtures/fixed.epub', '.epub'],
-      ['vertical', '/compat/epub/fixtures/vertical.epub', '.epub'],
-    ]) {
-      const bytes = new Uint8Array(await (await fetch(base + path)).arrayBuffer());
-      const converted = await moon.convert(bytes, { name: name + ext });
+    {
+      const bytes = new Uint8Array(await (await fetch(base + '/compat/html/fixtures/article.html')).arrayBuffer());
+      const converted = await moon.convert(bytes, { name: 'html.html' });
       const doc = await BdfDocument.open(new BufferSource(converted.bdf));
       const view = doc.manifest.views[0];
-      if (name === 'fixed') {
-        out.fixed = {
-          summary: converted.summary,
-          warnings: converted.warnings,
-          pages: view.pages.length,
-          kind: view.kind,
-          direction: view.direction,
-          title: view.title,
-          hasTextIndex: !!view.textIndex,
-          sizes: view.pages.map(page => [page.w, page.h]),
-        };
-        continue;
-      }
       const index = decodeTextIndex(await doc.part(view.textIndex));
-      out[name] = { summary: converted.summary, pages: view.pages.length, text: index.map(run => run.text).join(''), warnings: converted.warnings };
+      out.html = { summary: converted.summary, pages: view.pages.length, text: index.map(run => run.text).join(''), warnings: converted.warnings };
     }
     moon.terminate();
     return out;
   }, base);
   assert.ok(result.formats.includes('markdown'));
   assert.ok(result.formats.includes('html'));
-  assert.ok(result.formats.includes('epub'));
   assert.equal(result.markdown.summary.includes('scroll strip(s)'), true);
   assert.equal(result.markdown.pages, 1);
   assert.equal(result.markdown.kind, 'scroll');
@@ -92,22 +73,8 @@ try {
   assert.deepEqual(result.open, { pages: result.markdown.pages, first: 1 });
   assert.ok(result.html.pages > 0);
   assert.ok(result.html.text.includes('How Canvas Documents Load Quickly'));
-  assert.ok(result.epub.pages > 0);
-  assert.ok(result.epub.text.length > 20);
-  assert.ok(result.vertical.pages > 0);
-  for (const want of ['縦書き', '縦中横', '傍点', '漢字', '右寄せの行', '縦書きのテスト']) {
-    assert.ok(result.vertical.text.includes(want), `vertical EPUB text lacks ${want}`);
-  }
-  assert.ok(!result.vertical.text.includes('かんじ'), 'ruby annotation must not be reader text');
-  assert.equal(result.fixed.pages, 6);
-  assert.equal(result.fixed.kind, 'fixed');
-  assert.equal(result.fixed.direction, 'rtl');
-  assert.equal(result.fixed.title, '固定レイアウトのテスト');
-  assert.equal(result.fixed.hasTextIndex, false);
-  assert.deepEqual(result.fixed.sizes, Array.from({ length: 6 }, () => [450, 600]));
-  assert.equal(result.fixed.warnings.length, 1);
-  assert.ok(result.fixed.warnings[0].includes('outside the reading order'));
-  console.log('Phase 3 EPUB/HTML/Markdown: reader pages, metadata, text indexes, fixed-layout picture pages and streamed pages are converted.');
+  assert.ok(!result.formats.includes('epub'), 'EPUB is out of the maintained porting scope');
+  console.log('Phase 3 HTML/Markdown: reader pages, metadata, text indexes and streamed pages are converted.');
 } finally {
   await browser.close();
   server.close();

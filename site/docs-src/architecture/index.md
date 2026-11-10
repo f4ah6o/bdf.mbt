@@ -4,7 +4,7 @@
 
 ```mermaid
 flowchart TB
-    SRC["PDF・Excel・CSV・Parquet・PowerPoint・Word・Visio・draw.io・DXF・Jw_cad・SXF・CGM・HP-GL/2・Gerber・KiCad・TIFF<br/>Illustrator・Photoshop・HTML・Markdown・EPUB・MML・MIDI・MusicXML・フォント・画像・音声"]
+    SRC["PDF・Excel・CSV・Parquet・PowerPoint・Word・Visio・draw.io・DXF・Jw_cad・SXF・CGM・HP-GL/2・TIFF<br/>Illustrator・Photoshop・HTML・Markdown・フォント・画像・音声"]
 
     subgraph SERVER["Go サーバープロセス"]
         direction TB
@@ -59,6 +59,6 @@ PDF はページ単位で変換します（`converter.OpenStream`）。ビュー
 - **[フォルダ構成](layout.ja.md)** — 各ディレクトリに何が入っているか
 - **[bdf コマンド](cli.ja.md)** — CLI のサブコマンドを順に説明
 - **[ブラウザ側](browser.ja.md)** — Worker、ビューア、wasm の変換モジュール
-- **[変換と出力](conversion.ja.md)** — 数式、楽譜と演奏、メタデータ、サーバー側のサムネイルと検索用テキスト
+- **[変換と出力](conversion.ja.md)** — 数式、演奏のカーソル、メタデータ、サーバー側のサムネイルと検索用テキスト
 - **[パスワードと保護モード](protection.ja.md)** — パスワード付きの入力と暗号化、ログインした読者に数ページずつ封印して渡す保護モード
 - **[ビルドとテスト](development.ja.md)** — Go・TypeScript のテストの実行、フィクスチャの再生成

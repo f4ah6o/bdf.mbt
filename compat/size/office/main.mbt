@@ -11,9 +11,6 @@ fn main {
   ignore(@docx.convert(data)) catch {
     _ => ()
   }
-  ignore(@epub.convert(data)) catch {
-    _ => ()
-  }
   ignore(@idml.convert(data)) catch {
     _ => ()
   }

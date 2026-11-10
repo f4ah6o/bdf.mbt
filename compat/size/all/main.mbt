@@ -21,9 +21,6 @@ fn main {
   ignore(@emf.convert(data)) catch {
     _ => ()
   }
-  ignore(@epub.convert(data)) catch {
-    _ => ()
-  }
   ignore(@font.convert(data, database)) catch {
     _ => ()
   }
@@ -37,12 +34,6 @@ fn main {
     _ => ()
   }
   ignore(@markdown.convert(data)) catch {
-    _ => ()
-  }
-  ignore(@midi.convert(data, database)) catch {
-    _ => ()
-  }
-  ignore(@mml.convert(data, database)) catch {
     _ => ()
   }
   ignore(@pdf.convert(data)) catch {
@@ -76,12 +67,6 @@ fn main {
     _ => ()
   }
   ignore(@cgm.convert(data)) catch {
-    _ => ()
-  }
-  ignore(@gerber.convert(data)) catch {
-    _ => ()
-  }
-  ignore(@kicad.convert(data)) catch {
     _ => ()
   }
   ignore(@drawio.convert(data)) catch {

@@ -1,5 +1,7 @@
 # 楽譜
 
+> **このページは公開していません。** 楽譜（MML・MIDI・MusicXML）の変換は、この移植の保守対象から外しました。`converter/mml`、`converter/midi`、`converter/musicxml` と共通の組版エンジンのソース、フィクスチャはリポジトリに残していますが、変換 Worker の一覧にもサイトのナビゲーションにも含めていません。音声ファイルの再生は引き続き対象です。以下の記述は外す前の説明です。
+
 MML・MIDI・MusicXML は、いずれも共通の組版エンジン（`converter/internal/music`）が SMuFL のフォント Bravura で A4 のページに五線譜として組む。各 View はその音楽を Standard MIDI File として持つので、デモビューアで演奏できる。演奏の仕組みは[変換と出力 → 楽譜と演奏](../architecture/conversion.ja.md#楽譜と演奏)を参照してほしい。共通なのはそこまでで、MML と MIDI は演奏データから記譜そのものを組み立て直す必要があるのに対し、MusicXML はすでに書かれた記譜をそのまま読む。
 
 ## ギターTABの運指候補

@@ -4,13 +4,12 @@ Go の `converter` は、import された形式の変換器だけを登録しま
 
 ## 必要な形式を選ぶ
 
-例えば PDF、EPUB、Word、CSV/TSV だけを扱うサーバーなら、次の import にします。TSV は `converter/csv` が扱います。
+例えば PDF、Word、CSV/TSV だけを扱うサーバーなら、次の import にします。TSV は `converter/csv` が扱います。
 
 ```go
 import (
     "github.com/shibukawa/bdf/converter"
     _ "github.com/shibukawa/bdf/converter/pdf"
-    _ "github.com/shibukawa/bdf/converter/epub"
     _ "github.com/shibukawa/bdf/converter/docx"
     _ "github.com/shibukawa/bdf/converter/csv"
 )
@@ -18,7 +17,7 @@ import (
 
 PowerPoint は `converter/pptx`、Excel は `converter/xlsx`、Visio は `converter/visio`、Parquet は `converter/parquet` を追加します。全形式を選ぶ場合は個別の空 import の代わりに `converter/all` を使います。名前は[対応形式](formats/index.ja.md)と [`converter/`](../converter/) の各ディレクトリを参照してください。
 
-音楽変換が不要なら `converter/mml`、`converter/midi`、`converter/musicxml` を import しません。BDF への変換だけを行うサーバーには描画用の `imagebdf` や `thumbnail` の import も不要です。
+BDF への変換だけを行うサーバーには描画用の `imagebdf` や `thumbnail` の import も不要です。
 
 ## HTTP で受け取って変換する
 
@@ -37,7 +36,6 @@ import (
     "github.com/shibukawa/bdf/converter"
     _ "github.com/shibukawa/bdf/converter/csv"
     _ "github.com/shibukawa/bdf/converter/docx"
-    _ "github.com/shibukawa/bdf/converter/epub"
     _ "github.com/shibukawa/bdf/converter/pdf"
 )
 
@@ -78,4 +76,4 @@ curl --data-binary @report.pdf 'http://localhost:8080/convert?name=report.pdf' -
 
 変換結果を再利用するなら、`result.Doc.WriteSingle(file)` で `.bdf` ファイルに保存し、`http.FileServer` などで GET 配信します。単一ファイルは Range リクエストに対応する配信方法を使うと、ビューアが必要な部分から読みます。CDN やオブジェクトストレージに展開するなら `result.Doc.WriteSplit(dir)` で分割形式を生成し、フロントエンドで `{ kind: "split", base: "..." }` を指定します。
 
-サーバー上のファイルを直接変換する場合は `converter.ConvertFile(path, "", &converter.Options{})` が便利です。HTML の画像や KiCad の別シートなど、元ファイルから参照するファイルも読む形式では、`ConvertFile` が入力ディレクトリを `Options.Dir` に設定します。アップロードで複数ファイルを受け取るなら `Options.Files` に渡します。キャッシュと配信を含む実例は [preview-server](examples/preview-server.ja.md) を参照してください。
+サーバー上のファイルを直接変換する場合は `converter.ConvertFile(path, "", &converter.Options{})` が便利です。HTML の画像など、元ファイルから参照するファイルも読む形式では、`ConvertFile` が入力ディレクトリを `Options.Dir` に設定します。アップロードで複数ファイルを受け取るなら `Options.Files` に渡します。キャッシュと配信を含む実例は [preview-server](examples/preview-server.ja.md) を参照してください。

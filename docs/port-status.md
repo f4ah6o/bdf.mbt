@@ -1,5 +1,19 @@
 # Port status
 
+## Scope
+
+PCB/KiCad (Gerber, Excellon), musical-score (MML, MIDI, MusicXML) and EPUB
+conversion are outside the maintained porting scope. Their packages, sources
+and fixtures stay in the tree as dormant assets, but they are not registered
+with the converter Worker, not offered in the viewer, and not part of the
+required verification. Audio playback and non-PCB CAD (DXF, Jw_cad, SXF, CGM,
+HP-GL/2) remain in scope.
+
+The phase entries below are a historical log and still describe the work done
+on the dormant packages. `moon test` without `-p` still collects their tests;
+`npm run test:retained` is the selection that covers only the retained
+packages.
+
 ## Green gates
 
 - `moon check --target js`

@@ -1,7 +1,6 @@
 import {
   "f4ah6o/bdf/convert/csv",
   "f4ah6o/bdf/convert/docx",
-  "f4ah6o/bdf/convert/epub",
   "f4ah6o/bdf/convert/idml",
   "f4ah6o/bdf/convert/pdf",
   "f4ah6o/bdf/convert/pptx",

@@ -38,8 +38,8 @@ viewer.scrollToPage(2);           // 0 始まり
 
 | 入力形式 | パッケージ | 生成関数 |
 |---|---|---|
-| PDF、EPUB | `@bdfkit/convert-pdf-epub` | `createPdfEpubConverter()` |
-| Word、Excel、PowerPoint、Visio、CSV/TSV、Parquet、PDF、EPUB | `@bdfkit/convert-office` | `createOfficeConverter()` |
+| PDF | `@bdfkit/convert-pdf-epub` | `createPdfEpubConverter()` |
+| Word、Excel、PowerPoint、Visio、CSV/TSV、Parquet、PDF | `@bdfkit/convert-office` | `createOfficeConverter()` |
 | 全形式 | `@bdfkit/convert-all` | `createAllConverter()` |
 
 ```sh

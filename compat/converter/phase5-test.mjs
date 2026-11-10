@@ -66,8 +66,6 @@ try {
       ['shapes.cgm', '/compat/cgm/fixtures/shapes.cgm'],
       ['illustration.cgm', '/compat/cgm/fixtures/illustration.cgm'],
       ['sjis.cgm', '/compat/cgm/fixtures/sjis.cgm'],
-      ['features.gbr', '/compat/gerber/fixtures/features.gbr'],
-      ['demo.kicad_pcb', '/compat/kicad/fixtures/demo.kicad_pcb'],
       ['labels.drawio', '/compat/drawio/fixtures/labels.drawio'],
       ['multipage.drawio', '/compat/drawio/fixtures/multipage.drawio'],
       ['cairo-type1.pdf', '/compat/pdf/fixtures/cairo-type1.pdf'],
@@ -135,25 +133,21 @@ try {
     const dxf = entry.name.endsWith('.dxf');
     const sxf = entry.name.endsWith('.sfc');
     const cgm = entry.name.endsWith('.cgm');
-    const gerber = entry.name.endsWith('.gbr');
-    const kicad = entry.name.endsWith('.kicad_pcb');
     const drawio = entry.name.endsWith('.drawio');
     // The second picture of illustration.cgm has no metric scaling; this port
     // sizes it from the VDC extent while upstream uses the picture descriptor.
     const partialGeometry = entry.name === 'illustration.cgm';
     const tolerance = cgm ? 0.05 : dxf ? 0.06 : sxf ? 0.10 : drawio ? 0.15 : 0.01;
     for (let i = 0; i < entry.moon.pages.length; i++) {
-      if (!gerber && !kicad && !drawio && !partialGeometry) {
+      if (!drawio && !partialGeometry) {
         assert.ok(Math.abs(entry.moon.pages[i].w - entry.upstream.pages[i].w) < entry.upstream.pages[i].w * tolerance, `${entry.name} page ${i + 1} width: moon ${entry.moon.pages[i].w}, upstream ${entry.upstream.pages[i].w}`);
         assert.ok(Math.abs(entry.moon.pages[i].h - entry.upstream.pages[i].h) < entry.upstream.pages[i].h * tolerance, `${entry.name} page ${i + 1} height: moon ${entry.moon.pages[i].h}, upstream ${entry.upstream.pages[i].h}`);
       }
       assert.deepEqual(entry.moon.pages[i].layers, entry.upstream.pages[i].layers, `${entry.name} page ${i + 1} layers`);
     }
-    if (dxf || sxf || cgm) {
+    if (dxf || sxf || cgm || drawio) {
       assert.ok(entry.moon.text.length > 0, `${entry.name} text index`);
-    } else if (kicad || drawio) {
-      assert.ok(entry.moon.text.length > 0, `${entry.name} text index`);
-    } else if (!gerber) {
+    } else {
       assert.equal(entry.moon.text, entry.upstream.text, `${entry.name} text index`);
     }
   }
@@ -176,7 +170,7 @@ try {
   assert.ok(Math.abs(result.layout.moonPages[0].w - result.layout.upstreamPages[0].w) < result.layout.upstreamPages[0].w * 0.06, 'layout.dxf model page width');
   assert.ok(String(result.badColor).includes('not pens or mono'), 'colors parameter error');
   assert.ok(String(result.named).startsWith('hpgl:'), 'HP-GL detection');
-  console.log(`Phase 5-8 CAD, Gerber, KiCad, draw.io and PDF Type1: ${result.cases.length} fixtures convert with the expected layers and coverage; single-file Gerber and draw.io pages are fitted by this port, so their page sizes differ from the upstream board/auto-fit scaling.`);
+  console.log(`Phase 5-8 CAD, draw.io and PDF Type1: ${result.cases.length} fixtures convert with the expected layers and coverage; draw.io pages are fitted by this port, so their page sizes differ from the upstream auto-fit scaling.`);
 } finally {
   await browser.close();
   server.close();

@@ -13,8 +13,6 @@ export async function verifyNativeConverter(browser, base) {
       const specimenPacked = await (await fetch('/compat/specimen/convert.json.gz')).arrayBuffer();
       const unzip = async data => new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
       const specimen = JSON.parse(new TextDecoder().decode(await unzip(specimenPacked)));
-      const midiCases = JSON.parse(new TextDecoder().decode(await unzip(await (await fetch('/compat/midiinput/worker.json.gz')).arrayBuffer())));
-      const mmlCases = JSON.parse(new TextDecoder().decode(await unzip(await (await fetch('/compat/mml/worker.json.gz')).arrayBuffer())));
       const fontCase = specimen.cases.find(c => c.name === 'stix.ttf' && !c.system && !c.uiFont && !c.noIndex && !c.noSubset);
       const fontBytes = await unzip(Uint8Array.from(atob(specimen.files['stix.ttf']), c => c.charCodeAt(0)));
       const toBytes = encoded => Uint8Array.from(atob(encoded), c => c.charCodeAt(0));
@@ -35,67 +33,35 @@ export async function verifyNativeConverter(browser, base) {
         try {
           const formats = await client.ready;
           if (!formats.some(f => f.name === 'image' && ['.bmp', '.ico', '.jpg', '.png', '.gif', '.webp', '.avif', '.svg'].every(ext => f.extensions.includes(ext)))) throw new Error(`${kind}: missing image formats ${JSON.stringify(formats)}`);
-          const midiFormat = formats.find(f => f.name === 'midi');
-          if (midiFormat?.description !== 'Standard MIDI File' || JSON.stringify(midiFormat.extensions) !== JSON.stringify(['.mid','.midi','.smf','.kar','.rmi'])) throw new Error(kind + ': missing MIDI format');
-          for (const sample of midiCases) {
-            const params = {};
-            if (sample.time) params.time = sample.time;
-            if (sample.key) params.key = sample.key;
-            if (sample.tab) params.tab = sample.tab;
-            const opts = {name: sample.name, pages: sample.pages, params};
-            const expected = await BdfDocument.open(new BufferSource(toBytes(sample.bdf)));
-            for (const [method, format] of [['convert', 'midi'], ['open', '']]) {
-              const result = await client[method](toBytes(sample.input), {...opts, format});
-              const actual = await BdfDocument.open(new BufferSource(result.bdf));
-              if (result.format !== 'midi' || result.summary !== sample.summary || JSON.stringify(result.warnings) !== JSON.stringify(sample.warnings)) throw new Error(kind + ': MIDI report differs for ' + sample.name + ': ' + JSON.stringify({summary:result.summary, expected:sample.summary,warnings:result.warnings}));
-              if (method === 'open' && (result.pages !== 0 || result.stream !== undefined)) throw new Error(kind + ': MIDI open did not return a complete document');
-              for (const field of ['meta','views']) if (JSON.stringify(stable(actual.manifest[field] ?? [])) !== JSON.stringify(stable(expected.manifest[field] ?? []))) throw new Error(kind + ': MIDI ' + field + ' differs for ' + sample.name);
-              const parts = actual.manifest.parts.map(p => [p.t,p.h]);
-              const expectedParts = expected.manifest.parts.map(p => [p.t,p.h]);
-              if (JSON.stringify(parts) !== JSON.stringify(expectedParts)) throw new Error(kind + ': MIDI parts differ for ' + sample.name);
-            }
+          // Formats dropped from the porting scope must not be registered or
+          // dispatched. Their private converters and fixtures stay in the tree
+          // as dormant assets, but the Worker no longer reaches them.
+          for (const name of ['midi', 'mml', 'musicxml', 'epub', 'gerber', 'kicad']) {
+            if (formats.some(f => f.name === name)) throw new Error(kind + ': dropped format is still registered: ' + name);
+            let message;
+            try { await client.convert(new TextEncoder().encode('x'), { format: name }); } catch (e) { message = e.message; }
+            if (message !== 'unknown format "' + name + '"') throw new Error(kind + ': dropped format is still dispatched: ' + name + ' (' + message + ')');
           }
-          for (const [params, expected] of [
-            [{tab:'maybe'}, 'parameter tab: "maybe" is not a boolean'],
-            [{time:'bad'}, 'parameter time: "bad" is not a time signature such as 3/4'],
-            [{key:'bad'}, 'parameter key: "bad" is not a key such as G, Bb or F#m'],
+          let namedGerber;
+          try { namedGerber = await client.convert(new TextEncoder().encode('G04 dropped*\n%FSLAX46Y46*%\n'), { name: 'board.gbr' }); } catch (e) { namedGerber = { format: 'error', message: e.message }; }
+          if (namedGerber.format === 'gerber') throw new Error(kind + ': dropped Gerber extension is still dispatched');
+          let namedKicad;
+          try { namedKicad = await client.convert(new TextEncoder().encode('(kicad_pcb (version 20240108))'), { name: 'board.kicad_pcb' }); } catch (e) { namedKicad = { format: 'error', message: e.message }; }
+          if (namedKicad.format === 'kicad') throw new Error(kind + ': dropped KiCad extension is still dispatched');
+          // The remaining dropped extensions must not reach a converter either.
+          for (const [name, body] of [
+            ['score.musicxml', 'name,value\nA,1\nB,2\n'],
+            ['song.mid', 'not midi'],
+            ['tune.mml', 'r4'],
+            ['book.epub', 'not a zip'],
           ]) {
-            let error; try { await client.convert(toBytes(midiCases[0].input), {format:'midi',params}); } catch (e) { error = e.message; }
-            if (error !== expected) throw new Error(kind + ': MIDI parameter error ' + error);
+            let format;
+            try { format = (await client.convert(new TextEncoder().encode(body), { name })).format; } catch { format = 'error'; }
+            if (['musicxml', 'midi', 'mml', 'epub'].includes(format)) throw new Error(kind + ': dropped extension is still dispatched: ' + name + ' -> ' + format);
           }
-          let namedMidiError;
-          try { await client.convert(new TextEncoder().encode('not midi'), {name:'bad.mid'}); } catch (e) { namedMidiError = e.message; }
-          if (namedMidiError !== 'midi: not a Standard MIDI File') throw new Error(kind + ': MIDI extension detection failed: ' + namedMidiError);
-          const mmlFormat = formats.find(f => f.name === 'mml');
-          if (mmlFormat?.description !== 'Music Macro Language (MML)' || JSON.stringify(mmlFormat.extensions) !== JSON.stringify(['.mml'])) throw new Error(kind + ': missing MML format');
-          for (const sample of mmlCases) {
-            const params = Object.fromEntries(['dialect', 'octave', 'program', 'time', 'key', 'tab'].filter(k => sample[k]).map(k => [k, sample[k]]));
-            const opts = { name: sample.name, pages: sample.pages, params };
-            const expected = await BdfDocument.open(new BufferSource(toBytes(sample.bdf)));
-            for (const [method, format] of [['convert', 'mml'], ['open', '']]) {
-              const result = await client[method](toBytes(sample.input), {...opts, format});
-              const actual = await BdfDocument.open(new BufferSource(result.bdf));
-              if (result.format !== 'mml' || result.summary !== sample.summary || JSON.stringify(result.warnings) !== JSON.stringify(sample.warnings)) throw new Error(kind + ': MML report differs for ' + sample.name + ': ' + JSON.stringify({summary:result.summary, expected:sample.summary,warnings:result.warnings, expectedWarnings:sample.warnings}));
-              if (method === 'open' && (result.pages !== 0 || result.stream !== undefined)) throw new Error(kind + ': MML open did not return a complete document');
-              for (const field of ['meta', 'views']) if (JSON.stringify(stable(actual.manifest[field] ?? [])) !== JSON.stringify(stable(expected.manifest[field] ?? []))) throw new Error(kind + ': MML ' + field + ' differs for ' + sample.name);
-              if (JSON.stringify(actual.manifest.parts.map(p => [p.t,p.h])) !== JSON.stringify(expected.manifest.parts.map(p => [p.t,p.h]))) throw new Error(kind + ': MML parts differ for ' + sample.name);
-            }
-          }
-          for (const [params, expected] of [
-            [{dialect:'bad'}, 'mml: parameter dialect: "bad" is not auto, generic, mabinogi or ppmck'],
-            [{octave:'bad'}, 'mml: parameter octave: "bad" is not auto, normal or reverse'],
-            [{program:'-1'}, 'mml: parameter program: "-1" is not a number 0–127'],
-            [{time:'bad'}, 'mml: parameter time: "bad" is not a time signature such as 3/4'],
-            [{key:'bad'}, 'mml: parameter key: "bad" is not a key such as G, Bb or F#m'],
-            [{tab:'maybe'}, 'parameter tab: "maybe" is not a boolean'],
-          ]) {
-            let error; try { await client.convert(toBytes(mmlCases[0].input), {format:'mml', params}); } catch (e) { error = e.message; }
-            if (error !== expected) throw new Error(kind + ': MML parameter error ' + error + ', expected ' + expected);
-          }
-          const detectedMml = await client.convert(new TextEncoder().encode('MML@c4,d4;'));
-          if (detectedMml.format !== 'mml') throw new Error(kind + ': MML content detection failed');
-          let namedMmlError; try { await client.convert(new TextEncoder().encode('r4'), {name:'empty.mml'}); } catch (e) { namedMmlError = e.message; }
-          if (namedMmlError !== 'mml: no notes') throw new Error(kind + ': MML extension detection failed: ' + namedMmlError);
+          let musicXmlNamedError;
+          try { await client.convert(new TextEncoder().encode('name,value\nA,1\nB,2\n'), { name: 'score.musicxml' }); } catch (e) { musicXmlNamedError = e.code; }
+          if (musicXmlNamedError !== 'unknown-format') throw new Error(kind + ': unhandled MusicXML named score.musicxml was mistaken for CSV');
           const fontFormat = formats.find(f => f.name === 'font');
           if (fontFormat?.description !== 'Font file (TrueType, OpenType, WOFF)' || JSON.stringify(fontFormat.extensions) !== JSON.stringify(['.ttf','.otf','.ttc','.otc','.woff','.woff2'])) throw new Error(kind + ': missing font format');
           for (const options of [{params:{examples:'5'}}, {format:'font', name:'anything.csv', params:{examples:'5'}}]) {
@@ -224,9 +190,9 @@ export async function verifyNativeConverter(browser, base) {
           if (boolDoc.manifest.tables?.length || boolDoc.manifest.views[0].freeze?.rows !== 1) throw new Error(kind + ': CSV boolean option failed');
           const plotter = await client.convert(new TextEncoder().encode('IN;SP1;PA0,0;PD100,200;'));
           if (plotter.format !== 'hpgl') throw new Error(kind + ': plotter data was mistaken for CSV');
-          // Content signatures must precede a misleading filename: HP-GL and
-          // unhandled MusicXML must not fall back to CSV, while a real PDF named
-          // .csv must convert as PDF.
+          // Content signatures must precede a misleading filename: HP-GL must
+          // not fall back to CSV, while a real PDF named .csv must convert as
+          // PDF.
           const plotterNamedCsv = await client.convert(new TextEncoder().encode('IN;SP1;PA0,0;PD100,200;'), { name: 'plot.csv' });
           if (plotterNamedCsv.format !== 'hpgl') throw new Error(kind + ': HP-GL named plot.csv was mistaken for CSV');
           const minimalPdf = () => {
@@ -252,9 +218,6 @@ export async function verifyNativeConverter(browser, base) {
           };
           const pdfNamedCsv = await client.convert(minimalPdf(), { name: 'document.csv' });
           if (pdfNamedCsv.format !== 'pdf') throw new Error(kind + ': PDF signature must precede the CSV filename, got ' + pdfNamedCsv.format);
-          let musicXmlNamedError;
-          try { await client.convert(new TextEncoder().encode('name,value\nA,1\nB,2\n'), { name: 'score.musicxml' }); } catch (e) { musicXmlNamedError = e.code; }
-          if (musicXmlNamedError !== 'unknown-format') throw new Error(kind + ': unhandled MusicXML named score.musicxml was mistaken for CSV');
           const imageNamedCsv = await client.convert(toBytes(fixtures[0].input), { name: 'picture.csv' });
           if (imageNamedCsv.format !== fixtures[0].format) throw new Error(kind + ': image signature must precede the CSV filename');
           result.push({ converted, closed, missing, csvOutcomes });

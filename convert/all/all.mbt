@@ -209,60 +209,6 @@ fn run_font(
 }
 
 ///|
-fn run_music(
-  data : Bytes,
-  database : @fontdb.Database?,
-  is_mml : Bool,
-  is_musicxml : Bool,
-) -> Outcome raise AllError {
-  let options : @midi.MidiScoreOptions = {
-    page: { width: 0.0, height: 0.0, staff_space: 0.0, title: "" },
-    pages: None,
-    time: None,
-    key: None,
-    no_play: false,
-    no_text_index: false,
-    system_fonts: false,
-    no_subset: false,
-    ignore_restrictions: false,
-    no_woff2: true,
-  }
-  let db = database.unwrap_or(@fontdb.Database::new())
-  let result = try {
-    if is_mml {
-      @mml.convert(
-        data,
-        db,
-        options~,
-        dialect="",
-        octave=0,
-        program=-1,
-        guitar_tab=false,
-        page_ranges=None,
-      )
-    } else if is_musicxml {
-      @musicxml.convert(data, db, options~, guitar_tab=false, page_ranges=None)
-    } else {
-      @midi.convert(data, db, options~, guitar_tab=false, page_ranges=None)
-    }
-  } catch {
-    @mml.InvalidMmlInput(message) => raise AllFailure(message)
-    @midi.InvalidMidiInput(message) => raise AllFailure(message)
-    @musicxml.MusicXmlInvalid(message) => raise AllFailure(message)
-    @music.InvalidMusicScore(message) => raise AllFailure(message)
-    error => raise AllFailure(error.to_string())
-  }
-  let format = if is_mml {
-    "mml"
-  } else if is_musicxml {
-    "musicxml"
-  } else {
-    "midi"
-  }
-  { bdf: result.bdf, format, summary: result.summary(), warnings: result.warnings }
-}
-
-///|
 fn run_ai(data : Bytes) -> Outcome raise AllError {
   let result = @ai.convert(data) catch {
     @ai.AiInvalid(message) => raise AllFailure(message)
@@ -349,14 +295,6 @@ fn run_html(data : Bytes) -> Outcome raise AllError {
 }
 
 ///|
-fn run_epub(data : Bytes) -> Outcome raise AllError {
-  let result = @epub.convert(data) catch {
-    @epub.EpubInvalid(message) => raise AllFailure(message)
-  }
-  { bdf: result.bdf, format: "epub", summary: result.summary, warnings: result.warnings }
-}
-
-///|
 fn run_audio(data : Bytes, name : String) -> Outcome raise AllError {
   let result = @audio.convert(data, file_name=name) catch {
     @audio.AudioInvalid(message) => raise AllFailure(message)
@@ -430,38 +368,6 @@ fn run_cgm(
 }
 
 ///|
-fn run_gerber(
-  data : Bytes,
-  database : @fontdb.Database?,
-) -> Outcome raise AllError {
-  let result = @gerber.convert(data, db=database) catch {
-    @gerber.GerberInvalid(message) => raise AllFailure(message)
-  }
-  {
-    bdf: result.bdf,
-    format: "gerber",
-    summary: result.summary,
-    warnings: result.warnings,
-  }
-}
-
-///|
-fn run_kicad(
-  data : Bytes,
-  database : @fontdb.Database?,
-) -> Outcome raise AllError {
-  let result = @kicad.convert(data, db=database) catch {
-    @kicad.KicadInvalid(message) => raise AllFailure(message)
-  }
-  {
-    bdf: result.bdf,
-    format: "kicad",
-    summary: result.summary,
-    warnings: result.warnings,
-  }
-}
-
-///|
 fn run_drawio(
   data : Bytes,
   database : @fontdb.Database?,
@@ -525,8 +431,6 @@ fn reject_format(format : String) -> Bool {
   format != "docx" &&
   format != "pptx" &&
   format != "font" &&
-  format != "midi" &&
-  format != "mml" &&
   format != "pdf" &&
   format != "ai" &&
   format != "tiff" &&
@@ -537,18 +441,14 @@ fn reject_format(format : String) -> Bool {
   format != "visio" &&
   format != "markdown" &&
   format != "html" &&
-  format != "epub" &&
   format != "audio" &&
   format != "hpgl" &&
   format != "jww" &&
   format != "dxf" &&
   format != "sxf" &&
   format != "cgm" &&
-  format != "gerber" &&
-  format != "kicad" &&
   format != "drawio" &&
-  format != "parquet" &&
-  format != "musicxml"
+  format != "parquet"
 }
 
 ///|
@@ -570,46 +470,23 @@ fn run_by_name(
   let known_named = named(
     lower,
     [
-      ".mid", ".midi", ".smf", ".kar", ".rmi", ".xlsx", ".xlsm", ".xltx",
-      ".xltm", ".dxf", ".drawio", ".dio", ".docx", ".docm", ".dotx", ".dotm",
-      ".cgm", ".cgz", ".pptx", ".pptm", ".ppsx", ".ppsm", ".potx",
-      ".potm", ".plt", ".hpgl", ".hgl", ".hpg", ".hp2", ".rtl", ".p21",
-      ".p2z", ".sfc", ".jww", ".kicad_sch", ".kicad_pcb", ".kicad_pro",
-      ".pdf", ".mhtml", ".mht", ".parquet", ".parq", ".pqt", ".ttf", ".otf",
-      ".ttc", ".otc", ".woff", ".woff2", ".musicxml", ".mxl", ".mml", ".gbr",
-      ".ger", ".gtl", ".gbl", ".gto", ".gbo", ".gts", ".gbs", ".gtp", ".gbp",
-      ".gko", ".gml", ".gm1", ".g1", ".g2", ".g3", ".g4", ".gp1", ".gp2",
-      ".pho", ".art", ".cmp", ".sol", ".plc", ".pls", ".stc", ".sts", ".crc",
-      ".crs", ".drl", ".drd", ".xln", ".exc", ".zip",
+      ".xlsx", ".xlsm", ".xltx", ".xltm", ".dxf", ".drawio", ".dio", ".docx",
+      ".docm", ".dotx", ".dotm", ".cgm", ".cgz", ".pptx", ".pptm", ".ppsx",
+      ".ppsm", ".potx", ".potm", ".plt", ".hpgl", ".hgl", ".hpg", ".hp2",
+      ".rtl", ".p21", ".p2z", ".sfc", ".jww", ".pdf", ".mhtml", ".mht",
+      ".parquet", ".parq", ".pqt", ".ttf", ".otf", ".ttc", ".otc", ".woff",
+      ".woff2", ".zip",
     ],
   )
   let strong_other = @hpgl.detect(head) || @utf8.decode_lossy(head).contains("%PDF-")
   if lower.has_suffix(".xlsx") && !strong_other {
     return run_xlsx(data, database)
   }
-  if named(lower, [".mid", ".midi", ".smf", ".kar", ".rmi"]) && !strong_other {
-    return run_music(data, database, false, false)
-  }
-  if lower.has_suffix(".mml") && !strong_other {
-    return run_music(data, database, true, false)
-  }
-  if lower.has_suffix(".musicxml") && !strong_other {
-    if @musicxml.detect(data) {
-      return run_music(data, database, false, true)
-    }
-    raise AllFailure("unknown format \"musicxml\"")
-  }
-  if lower.has_suffix(".mxl") && !strong_other {
-    return run_music(data, database, false, true)
-  }
   if named(lower, [".ttf", ".otf", ".ttc", ".otc", ".woff", ".woff2"]) && !strong_other {
     return run_font(data, database)
   }
   if audio_named(lower) && !strong_other {
     return run_audio(data, name)
-  }
-  if lower.has_suffix(".epub") && !strong_other {
-    return run_epub(data)
   }
   if named(lower, [".html", ".htm", ".xhtml"]) && !strong_other {
     return run_html(data)
@@ -628,12 +505,6 @@ fn run_by_name(
   }
   if named(lower, [".drawio", ".dio", ".drawio.svg", ".drawio.png"]) && !strong_other {
     return run_drawio(data, database)
-  }
-  if named(lower, [".kicad_pcb", ".kicad_sch"]) && !strong_other {
-    return run_kicad(data, database)
-  }
-  if named(lower, [".gbr", ".ger", ".gtl", ".gbl", ".drl", ".xln"]) && !strong_other {
-    return run_gerber(data, database)
   }
   if named(lower, [".cgm", ".cgz"]) && !strong_other {
     return run_cgm(data, database)
@@ -696,15 +567,6 @@ pub fn convert(
     raise AllFailure("unknown format \"" + format + "\"")
   }
   let head = head_bytes(data)
-  if format == "midi" || (format == "" && @midi.detect(data)) {
-    return run_music(data, database, false, false)
-  }
-  if format == "mml" || (format == "" && @mml.detect_mml(head)) {
-    return run_music(data, database, true, false)
-  }
-  if format == "musicxml" || (format == "" && @musicxml.detect(data)) {
-    return run_music(data, database, false, true)
-  }
   if format == "ai" || (format == "" && @ai.kind(data) != "") {
     return run_ai(data)
   }
@@ -734,9 +596,6 @@ pub fn convert(
   }
   if format == "html" {
     return run_html(data)
-  }
-  if format == "epub" {
-    return run_epub(data)
   }
   if format == "audio" {
     return run_audio(data, name)
@@ -770,12 +629,6 @@ pub fn convert(
   }
   if format == "cgm" || (format == "" && @cgm.detect(data)) {
     return run_cgm(data, database)
-  }
-  if format == "gerber" || (format == "" && @gerber.detect(data)) {
-    return run_gerber(data, database)
-  }
-  if format == "kicad" || (format == "" && @kicad.detect(data)) {
-    return run_kicad(data, database)
   }
   if format == "drawio" || (format == "" && @drawio.detect(data)) {
     return run_drawio(data, database)

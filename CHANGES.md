@@ -18,6 +18,9 @@
   worker's existing `request.options.pages`. The page count, summary and text
   index describe the selected pages, and a link to a page left out is dropped.
   An invalid selection is an error, as upstream's `ParsePages` makes it.
+- `npm run test:retained` and `npm run test:retained:js` run the MoonBit tests
+  of the retained packages only, per target. A bare `moon test` still collects
+  the dormant packages.
 
 ### Changed
 
@@ -27,6 +30,14 @@
   them can reveal body text excluded from search unless `include_hidden` is set.
 - DOCX view titles use the document title when no title is supplied, and
   conversion summaries and font warnings follow the upstream wording.
+- The converter Worker no longer registers or dispatches PCB/KiCad (Gerber,
+  Excellon, `.kicad_pcb`), musical-score (MML, MIDI, MusicXML/MXL) or EPUB
+  conversions. A request for one of those formats fails with
+  `unknown format "<name>"`, and their filename extensions are no longer
+  detected. Audio playback and non-PCB CAD (DXF, Jw_cad, SXF, CGM, HP-GL/2)
+  are unchanged.
+- The viewer no longer offers those formats in its file picker, sample
+  shortcuts or gallery, and the site no longer publishes their format pages.
 
 ### Fixed
 
@@ -48,6 +59,15 @@
 
 ### Removed
 
+- The `test:visual` aggregate no longer requires the dropped-format suites.
+  Their individual scripts stay defined so the dormant packages can still be
+  run by hand.
+
 ### Security
 
 ### Migration
+
+- Callers that converted Gerber/Excellon, KiCad, MML, MIDI, MusicXML or EPUB
+  through the Worker need another converter for those files. The packages,
+  sources and fixtures stay in the tree as dormant assets, but they are not
+  maintained and are not part of the required verification.

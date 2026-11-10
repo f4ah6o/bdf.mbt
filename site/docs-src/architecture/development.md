@@ -28,14 +28,12 @@ npm run test:browser    # ブラウザで描画・選択・検索・アクセシ
 
 ## フィクスチャの再生成
 
-`npm run testdata` は各 `converter/*/testdata/` のソースファイルから `testdata/` 以下をすべて作り直します（Go が必要）。CI はその結果をコミット済みのものとバイト単位で照合します。各形式のサンプル*入力*（`.pptx`・`.dxf`・`.epub` などのファイル自体）は形式ごとのスクリプトが生成し、多くは Python が要ります。
+`npm run testdata` は各 `converter/*/testdata/` のソースファイルから `testdata/` 以下をすべて作り直します（Go が必要）。CI はその結果をコミット済みのものとバイト単位で照合します。各形式のサンプル*入力*（`.pptx`・`.dxf` などのファイル自体）は形式ごとのスクリプトが生成し、多くは Python が要ります。
 
 ```sh
 npm run test:pptx:gen      # python-pptx, msoffcrypto-tool
 npm run test:xlsx:gen      # openpyxl
 npm run test:dxf:gen       # ezdxf
-npm run test:kicad:gen
-npm run test:musicxml:gen  # (converter/musicxml/testdata から実行)
 npm run test:audio:gen     # ffmpeg、mutagen
 # … 形式ごとに 1 つ。全一覧は package.json の scripts を参照
 ```

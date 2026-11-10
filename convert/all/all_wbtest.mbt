@@ -104,3 +104,73 @@ test "xdw 以外の形式は include_hidden の影響を受けない" {
   assert_eq(with_param.format, "markdown")
   assert_eq(plain.bdf.length(), with_param.bdf.length())
 }
+
+///|
+/// PCB (Gerber/Excellon, KiCad), score (MIDI, MML, MusicXML) and EPUB are out
+/// of the maintained porting scope. Their converters stay in the tree as
+/// dormant assets, but the public entry point must not accept them.
+test "dropped formats are rejected by name" {
+  for format in ["gerber", "kicad", "epub", "midi", "mml", "musicxml"] {
+    let message = try {
+      ignore(convert(b"", format~))
+      ""
+    } catch {
+      AllFailure(message) => message
+    }
+    assert_eq(message, "unknown format \"" + format + "\"")
+  }
+}
+
+///|
+test "dropped extensions no longer reach a converter" {
+  let dropped = ["gerber", "kicad", "epub", "midi", "mml", "musicxml"]
+  for name in [
+    "board.gbr", "board.kicad_pcb", "book.epub", "song.mid", "song.mml",
+    "score.musicxml",
+  ] {
+    let format = try {
+      Some(convert(b"G04 dropped*\n", name~).format)
+    } catch {
+      AllFailure(_) => None
+    }
+    match format {
+      Some(format) => assert_false(dropped.contains(format))
+      None => ()
+    }
+  }
+}
+
+///|
+test "retained formats still dispatch" {
+  let hpgl = convert(b"IN;SP1;PA0,0;PD100,200;")
+  assert_eq(hpgl.format, "hpgl")
+  let drawio = convert(
+    @utf8.encode(
+      "<mxfile><diagram name=\"T\"><mxGraphModel pageWidth=\"200\" pageHeight=\"100\"><root>" +
+      "<mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/></root></mxGraphModel></diagram></mxfile>",
+    ),
+  )
+  assert_eq(drawio.format, "drawio")
+  let markdown = convert(@utf8.encode("# 見出し\n\n本文\n"), name="memo.md")
+  assert_eq(markdown.format, "markdown")
+  let html = convert(
+    @utf8.encode("<html><body><p>hi</p></body></html>"),
+    name="page.html",
+  )
+  assert_eq(html.format, "html")
+  let csv = convert(@utf8.encode("a,b\n1,2\n"), name="memo.csv")
+  assert_eq(csv.format, "csv")
+}
+
+///|
+/// Audio playback is retained: the audio converter still answers for audio
+/// extensions, and only the score converters were dropped.
+test "audio stays in scope" {
+  let message = try {
+    ignore(convert(b"", name="track.mp3"))
+    ""
+  } catch {
+    AllFailure(message) => message
+  }
+  assert_eq(message, "audio: unsupported audio file")
+}
