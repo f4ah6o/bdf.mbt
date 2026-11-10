@@ -237,10 +237,21 @@ async fn NativeConverterState::dispatch(
         )
         return
       }
+      // A collection header must actually contain one offset per claimed
+      // face. Reject a truncated header before parsing any face.
+      if bytes.has_prefix(b"ttcf") && 12 + face_count * 4 > bytes.length() {
+        native_converter_error(
+          request,
+          "fontFiles[" + index.to_string() + "]: malformed font collection",
+          "",
+        )
+        return
+      }
       let selector = native_font_files_postscript_name(font_files, index)
       if selector == "" {
         // No selector: keep the explicit file-mode behaviour of loading every
         // readable face in the file or collection.
+        let before = db.faces().length()
         if db.add_file(name, bytes) == 0 {
           native_converter_error(
             request,
@@ -248,6 +259,23 @@ async fn NativeConverterState::dispatch(
             "",
           )
           return
+        }
+        let faces = db.faces()
+        for new_index in before..<faces.length() {
+          let candidate = faces[new_index]
+          for old_index in 0..<before {
+            let existing = faces[old_index]
+            if existing.index == candidate.index &&
+              existing.font.data().length() == candidate.font.data().length() &&
+              existing.font.data() == candidate.font.data() {
+              native_converter_error(
+                request,
+                "fontFiles[" + index.to_string() + "]: face already added",
+                "",
+              )
+              return
+            }
+          }
         }
       } else {
         font_selected = true
@@ -290,8 +318,21 @@ async fn NativeConverterState::dispatch(
           )
           return
         }
+        let font = matched.unwrap()
+        for existing in db.faces() {
+          if existing.index == matched_index &&
+            existing.font.data().length() == font.data().length() &&
+            existing.font.data() == font.data() {
+            native_converter_error(
+              request,
+              "fontFiles[" + index.to_string() + "]: face already added",
+              "",
+            )
+            return
+          }
+        }
         let before = db.faces().length()
-        db.add(name, matched_index, matched.unwrap())
+        db.add(name, matched_index, font)
         if db.faces().length() == before {
           native_converter_error(
             request,

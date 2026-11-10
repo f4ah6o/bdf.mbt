@@ -62,6 +62,16 @@ try {
       }
       return copy;
     })();
+    // A TTC header claiming two faces but containing only one offset.
+    const truncatedTtc = (() => {
+      const out = new Uint8Array(16);
+      const view = new DataView(out.buffer);
+      out.set([0x74, 0x74, 0x63, 0x66], 0);
+      view.setUint32(4, 0x00010000);
+      view.setUint32(8, 2);
+      view.setUint32(12, 16);
+      return out;
+    })();
     // A TTC header claiming 257 faces, all pointing at the same valid SFNT.
     const manyFaces = (() => {
       const count = 257, header = 12 + count * 4;
@@ -266,6 +276,9 @@ try {
         [{ fontFiles: [{ name: 'bold.ttc', bytes: ttc, postscriptName: 5 }] }, 'fontFiles[0]: postscriptName must be a non-empty string'],
         [{ fontFiles: [{ name: 'bold.ttc', bytes: ttc, postscriptName: 'NoSuchFace' }] }, 'fontFiles[0]: postscriptName matches no face'],
         [{ fontFiles: [{ name: 'a.ttc', bytes: ttc, postscriptName: ttcNames[0] }, { name: 'b.ttc', bytes: ttc, postscriptName: ttcNames[0] }] }, 'fontFiles[1]: duplicate postscriptName'],
+        [{ fontFiles: [{ name: 'whole.ttc', bytes: ttc }, { name: 'selected.ttc', bytes: ttc, postscriptName: ttcNames[0] }] }, 'fontFiles[1]: face already added'],
+        [{ fontFiles: [{ name: 'selected.ttc', bytes: ttc, postscriptName: ttcNames[0] }, { name: 'whole.ttc', bytes: ttc }] }, 'fontFiles[1]: face already added'],
+        [{ fontFiles: [{ name: 'truncated.ttc', bytes: truncatedTtc }] }, 'fontFiles[0]: malformed font collection'],
         [{ fontFiles: [{ name: 'secret-name.ttf', bytes: new Uint8Array([1, 2, 3]) }] }, 'fontFiles[0]: no usable font face'],
         [{ fontFiles: [{ name: 'a.ttf', bytes: new Uint8Array(32 * 1024 * 1024 + 1) }] }, 'fontFiles[0]: bytes exceed the 33554432 byte per-file limit'],
         [{ fonts: '/fonts/', fontFiles: [{ name: 'stix.ttf', bytes: ttf }] }, 'fonts: options.fonts and options.fontFiles cannot both be set'],
@@ -300,7 +313,7 @@ try {
   assert.notEqual(result.hashes.ttf, result.hashes.otf);
   assert.equal(result.hashes.ttc.length, 2);
   assert.ok(!result.hashes.ttc.includes(result.hashes.ttf));
-  assert.equal(result.errors.length, 19);
+  assert.equal(result.errors.length, 22);
   assert.ok(result.pdfBytes > 0);
   assert.ok(requests.includes('/fonts/index.json'), 'URL mode must fetch the directory');
   const byteModeRequests = requests.filter(name => name.startsWith('/fonts/'));

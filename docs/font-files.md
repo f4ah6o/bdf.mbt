@@ -81,6 +81,8 @@ The Worker rejects, before conversion starts:
 | no face has that PostScript name | `fontFiles[i]: postscriptName matches no face` |
 | more than one face has that PostScript name | `fontFiles[i]: postscriptName matches multiple faces` |
 | the same selector appears twice | `fontFiles[i]: duplicate postscriptName` |
+| a face is already registered by an earlier entry | `fontFiles[i]: face already added` |
+| a collection header is shorter than its claimed face count | `fontFiles[i]: malformed font collection` |
 | nonempty string URL and bytes together | `fonts: options.fonts and options.fontFiles cannot both be set` |
 
 Diagnostics use the array index only. They never repeat a supplied name, a
@@ -125,7 +127,9 @@ the actual baseline, not a claim that every format uses fonts:
 PDF and DOCX do not use `fontFiles` for layout or embedding, but they do not
 ignore the option either: every supplied file is validated and parsed before
 dispatch, so invalid bytes still fail and valid bytes still cost CPU and memory
-for that request. XLSX embeds at most one face even when several are supplied.
+for that request. Bypassing validation for these formats would change the
+error semantics and require format detection before the database is built, so
+the current behaviour is kept. XLSX embeds at most one face even when several are supplied.
 Formats that do not receive the database keep their existing no-font behaviour
 and warnings. The cost is bounded by the 64-file, 32 MiB per-file, 64 MiB total
 and 256-faces-per-collection limits, but a request that supplies fonts to a
