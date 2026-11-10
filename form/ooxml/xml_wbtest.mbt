@@ -795,3 +795,72 @@ test "ooxml moves a pretty-printed defined name" {
   let workbook = refs_part(filled, "xl/workbook.xml")
   assert_true(workbook.contains("Sheet1!$A$4"), msg=workbook)
 }
+
+///|
+test "ooxml moves a defined name whose close tag has whitespace" {
+  for space in [" ", "\t", "\n"] {
+    let tpl = refs_xlsx(
+      [("Sheet1", refs_list_sheet(""))],
+      "<definedNames><definedName name=\"tail\">Sheet1!$A$3</definedName" +
+      space +
+      "></definedNames>",
+    )
+    let filled = refs_fill(tpl, refs_items())
+    let workbook = refs_part(filled, "xl/workbook.xml")
+    assert_true(workbook.contains("Sheet1!$A$4"), msg=space + ": " + workbook)
+  }
+}
+
+///|
+test "ooxml moves a row break whose close tag has whitespace" {
+  for space in [" ", "\t", "\n"] {
+    let body = refs_list_sheet(
+      "<rowBreaks count=\"1\"><brk id=\"3\" max=\"16383\" man=\"1\"/></rowBreaks" +
+      space +
+      ">",
+    )
+    let tpl = refs_xlsx([("Sheet1", body)], "")
+    let filled = refs_fill(tpl, refs_items())
+    let sheet = refs_part(filled, "xl/worksheets/sheet1.xml")
+    assert_true(sheet.contains("id=\"4\""), msg=space + ": " + sheet)
+  }
+}
+
+///|
+test "ooxml keeps a defined name and row break with close-tag whitespace when no section repeats rows" {
+  let body = refs_sheet(refs_row(1, refs_cell("A1", "one"))) +
+    "<rowBreaks count=\"1\"><brk id=\"1\" max=\"16383\" man=\"1\"/></rowBreaks >"
+  let tpl = refs_xlsx(
+    [("Sheet1", body)],
+    "<definedNames><definedName name=\"tail\">Sheet1!$A$1</definedName ></definedNames>",
+  )
+  let filled = refs_fill(tpl, refs_empty())
+  assert_eq(
+    refs_part(filled, "xl/worksheets/sheet1.xml"),
+    refs_part(tpl, "xl/worksheets/sheet1.xml"),
+  )
+  assert_eq(
+    refs_part(filled, "xl/workbook.xml"),
+    refs_part(tpl, "xl/workbook.xml"),
+  )
+}
+
+///|
+test "ooxml refuses an unclosed row break block when a section repeats rows" {
+  let body = refs_list_sheet(
+    "<rowBreaks count=\"1\"><brk id=\"3\" max=\"16383\" man=\"1\"/>",
+  )
+  let tpl = refs_xlsx([("Sheet1", body)], "")
+  let message = refs_fill_error(tpl, refs_items())
+  assert_true(message.contains("no close tag"), msg=message)
+}
+
+///|
+test "ooxml refuses an unclosed defined name when a section repeats rows" {
+  let tpl = refs_xlsx(
+    [("Sheet1", refs_list_sheet(""))],
+    "<definedNames><definedName name=\"tail\">Sheet1!$A$3</definedNames>",
+  )
+  let message = refs_fill_error(tpl, refs_items())
+  assert_true(message.contains("no close tag"), msg=message)
+}

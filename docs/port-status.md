@@ -163,8 +163,12 @@
   with tabs or with single quotes is read like any other, so the guards that
   need the sheet name still run; a worksheet whose rows move but whose name
   cannot be resolved from the workbook and its relationships is an error
-  instead of a skipped guard. A calculation chain, a form control, a rich value or a
-  web extension in a workbook whose rows move is an error too, and so is a
+  instead of a skipped guard. A close tag with a space, a tab or a newline
+  before the `>`, as in `</rowBreaks >`, ends the block it closes, so a row
+  break and a defined name still move; a block that is not closed at all is an
+  error instead of a reference left behind. A calculation chain, a form
+  control, a rich value or a web extension in a workbook whose rows move is an
+  error too, and so is a
   prefixed reference element that the fill does not move (`<x:mergeCell>`,
   `<x:dimension>`, `<x:rowBreaks>`, `<x:brk>`, `<x:hyperlink>`,
   `<x:dataValidation>`, `<x:conditionalFormatting>`, `<x:autoFilter>`,

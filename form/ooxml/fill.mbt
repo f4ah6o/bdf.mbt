@@ -1001,7 +1001,8 @@ fn ooxml_find_element(xml : String, name : String, from : Int) -> Int? {
 
 ///|
 // The index of the close tag of `name` at or after `from`, so `</row>` and
-/// `</x:row>` are both found.
+/// `</x:row>` are both found. XML allows whitespace before the `>`, as in
+/// `</rowBreaks >`.
 fn ooxml_find_close_chars(
   chars : Array[Char],
   name : String,
@@ -1014,10 +1015,15 @@ fn ooxml_find_close_chars(
       continue
     }
     match ooxml_name_matches(chars, pos, name) {
-      Some(end) =>
-        if end < chars.length() && chars[end] == '>' {
+      Some(end) => {
+        let mut at = end
+        while at < chars.length() && ooxml_is_space(chars[at]) {
+          at += 1
+        }
+        if at < chars.length() && chars[at] == '>' {
           return Some(pos)
         }
+      }
       None => ()
     }
     pos += 1
@@ -1725,13 +1731,24 @@ fn ooxml_rewrite_breaks(
   xml : String,
   rows : RowMap,
 ) -> String raise OoxmlError {
-  let start = match ooxml_find_element(xml, "rowBreaks", 0) {
+  let chars = xml.to_array()
+  let start = match ooxml_find_element_chars(chars, xml, "rowBreaks", 0) {
     Some(index) => index
     None => return xml
   }
-  let end = match xml[start:].find("</rowBreaks>") {
-    Some(index) => start + index
+  let open_end = match ooxml_tag_end_chars(chars, start) {
+    Some(index) => index
     None => return xml
+  }
+  if chars[open_end - 1] == '/' {
+    return xml
+  }
+  let end = match ooxml_find_close_chars(chars, "rowBreaks", open_end + 1) {
+    Some(index) => index
+    None =>
+      raise OoxmlError(
+        "ooxml: the <rowBreaks> element of a sheet whose rows move has no close tag; its row breaks are not moved when rows are repeated",
+      )
   }
   let body = xml[start:end].to_owned()
   let out = StringBuilder()
@@ -1938,12 +1955,19 @@ fn ooxml_map_defined_names(
       pos = open_end + 1
       continue
     }
-    let close = match workbook[open_end + 1:].find("</definedName>") {
-      Some(index) => open_end + 1 + index
-      None => {
-        out.write_string(workbook[at:].to_owned())
-        break
-      }
+    let close = match ooxml_find_close_chars(chars, "definedName", open_end + 1) {
+      Some(index) => index
+      None =>
+        raise OoxmlError(
+          "ooxml: a <definedName> element of a workbook whose rows move has no close tag; its reference is not moved when rows are repeated",
+        )
+    }
+    let close_end = match ooxml_tag_end_chars(chars, close) {
+      Some(index) => index
+      None =>
+        raise OoxmlError(
+          "ooxml: a <definedName> element of a workbook whose rows move has no close tag; its reference is not moved when rows are repeated",
+        )
     }
     let mut body = workbook[open_end + 1:close].to_owned()
     for name, part in by_name {
@@ -1957,8 +1981,8 @@ fn ooxml_map_defined_names(
     }
     out.write_string(open)
     out.write_string(body)
-    out.write_string("</definedName>")
-    pos = close + "</definedName>".length()
+    out.write_string(workbook[close:close_end + 1].to_owned())
+    pos = close_end + 1
   }
   out.to_string()
 }
