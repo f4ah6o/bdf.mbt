@@ -67,13 +67,12 @@ const localFontsAnchor = document.createComment("local-fonts");
 localFontsRoot?.parentNode?.insertBefore(localFontsAnchor, localFontsRoot);
 let firstChoiceDone = false;
 let firstChoice = null;
-let skipFontsOnce = false;
 
 // 最初の「自分のファイル」を表示する前に一度だけ聞く。組み込みのデモや
 // 同じページでの 2 回目以降は聞かない。queryLocalFonts はこの中の
 // ボタン（直接の操作）からしか呼ばない。
 function askFirstFontChoice() {
-  if (!localFontsRoot || firstChoiceDone) return Promise.resolve();
+  if (!localFontsRoot || firstChoiceDone) return Promise.resolve(true);
   // 開いている間の選択は同じ Promise を待つ。完了は閉じたときだけ。
   if (firstChoice) return firstChoice;
   firstChoice = new Promise((resolve) => {
@@ -106,14 +105,13 @@ function askFirstFontChoice() {
     const finish = (withFonts) => {
       if (settled) return;
       settled = true;
-      skipFontsOnce = !withFonts;
       dialog.close();
       dialog.remove();
       if (localFontsAnchor.parentNode) {
         localFontsAnchor.parentNode.insertBefore(localFontsRoot, localFontsAnchor.nextSibling);
       }
       firstChoiceDone = true;
-      resolve();
+      resolve(withFonts);
     };
     skip.addEventListener("click", () => finish(false));
     use.addEventListener("click", () => finish(true));
@@ -121,7 +119,20 @@ function askFirstFontChoice() {
       event.preventDefault();
       finish(false);
     });
-    dialog.showModal();
+    // close() がボタン以外（Escape の既定動作や外からの close）でも必ず解決する。
+    dialog.addEventListener("close", () => finish(false));
+    try {
+      dialog.showModal();
+    } catch {
+      // モーダルを開けない環境でも、選択済みの書体で変換を続ける。
+      dialog.remove();
+      if (localFontsAnchor.parentNode) {
+        localFontsAnchor.parentNode.insertBefore(localFontsRoot, localFontsAnchor.nextSibling);
+      }
+      firstChoiceDone = true;
+      resolve(true);
+      return;
+    }
     localFontsRoot.querySelector("button")?.focus();
   });
   return firstChoice;
@@ -187,7 +198,7 @@ function showViews(manifest) {
   updatePage();
 }
 
-async function openBytes(name, input, retry = false) {
+async function openBytes(name, input, retry = false, useFonts = true) {
   if (busy) return;
   if (!retry) {
     lastOpen = null;
@@ -204,8 +215,6 @@ async function openBytes(name, input, retry = false) {
   updatePage();
   say(name + " を開いています…");
   const isPdf = name.toLowerCase().endsWith(".pdf");
-  const useFonts = !skipFontsOnce;
-  skipFontsOnce = false;
   let usedFonts = null;
   try {
     let bytes = input;
@@ -256,7 +265,7 @@ async function openBytes(name, input, retry = false) {
   } catch (error) {
     const message = String(error.message ?? error);
     if (isPdf && /password|encrypted/i.test(message)) {
-      lastOpen = { name, input };
+      lastOpen = { name, input, useFonts };
       if (pdfRetry) pdfRetry.disabled = false;
       if (pdfPassword) pdfPassword.focus();
       if (pdfUnlockStatus) {
@@ -314,8 +323,10 @@ async function openLocal(selected) {
   try {
     const bytes = new Uint8Array(await selected.arrayBuffer());
     if (token !== selection) return;
-    await askFirstFontChoice();
-    if (token === selection) await openBytes(selected.name, bytes);
+    const withFonts = await askFirstFontChoice();
+    // 待っている間に別のファイルが選ばれたら、この選択では変換しない。
+    if (token !== selection || busy) return;
+    await openBytes(selected.name, bytes, false, withFonts);
   } catch (error) {
     if (token === selection) say(selected.name + " を読み込めませんでした: " + (error.message ?? error), true);
   }
@@ -347,7 +358,7 @@ file.addEventListener("change", async () => {
 
 $("#pdf-unlock").addEventListener("submit", (event) => {
   event.preventDefault();
-  if (lastOpen && !busy) void openBytes(lastOpen.name, lastOpen.input, true);
+  if (lastOpen && !busy) void openBytes(lastOpen.name, lastOpen.input, true, lastOpen.useFonts);
 });
 view.addEventListener("change", () => {
   $("#search-status").textContent = "";

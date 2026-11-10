@@ -34,7 +34,11 @@ working.
   a direct click. "フォントなしで続ける" and Escape fall back to a conversion
   without fonts; unsupported or denied access leaves the same fallback. The
   built-in demo and later conversions in the same page do not ask again, and
-  the picker stays available for later changes.
+  the picker stays available for later changes. The use/skip result belongs to
+  the file that opened the dialog; it is not a page-wide flag. Closing the
+  dialog by any route settles the shared promise, and a throwing `showModal`
+  falls back to conversion. Concurrent selections share the same promise and
+  only the newest file converts.
 - Before calling `queryLocalFonts()` the UI checks `isSecureContext` and that
   `queryLocalFonts` is a function. Unsupported and insecure contexts get a
   message and no call.
@@ -76,7 +80,8 @@ at 255 UTF-16 units including the suffix and extension without splitting a
 surrogate pair, and are made distinct when two PostScript names sanitize to the
 same value. Each actual `postscriptName` is validated before any `blob()` read:
 it must be nonempty, at most 255 UTF-16 code units, free of C0/DEL characters,
-and unique across the selected faces. A failure uses a generic no-name message,
+free of leading or trailing whitespace (the raw value is never trimmed), and
+unique across the selected faces. A failure uses a generic no-name message,
 keeps the previous selection, and never reports success; the value is never
 logged.
 

@@ -429,6 +429,17 @@ try {
     assert.deepEqual(files, ["SyntheticTest-Regular.ttf"]);
   });
 
+  await step("rejects a postscriptName with surrounding whitespace before reading", async () => {
+    await open({ faces: [{ ...FACES[0], postscriptName: " SyntheticTest-Regular " }] });
+    await page.click("#local-fonts button:has-text('ローカルフォントを選ぶ')");
+    await page.waitForSelector("#local-fonts-face-0");
+    await page.check("#local-fonts-face-0");
+    await page.click("#local-fonts button:has-text('選択した書体を使う')");
+    await page.waitForFunction(() => /PostScript 名を確認できない/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    assert.deepEqual((await calls()).blob, []);
+    assert.equal(await page.evaluate(() => window.__ui.getFontFiles()), null);
+  });
+
   await step("rejects an overlong postscriptName before reading", async () => {
     await open({ faces: [{ ...FACES[0], postscriptName: "A".repeat(300) }] });
     await page.click("#local-fonts button:has-text('ローカルフォントを選ぶ')");

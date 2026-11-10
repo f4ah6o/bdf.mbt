@@ -300,6 +300,7 @@ export function createLocalFontsUI({ root, scope = globalThis, onChange = () => 
       const postscriptName = postscriptNameOf(face);
       if (
         !postscriptName ||
+        postscriptName !== postscriptName.trim() ||
         postscriptName.length > 255 ||
         /[\u0000-\u001f\u007f]/.test(postscriptName) ||
         seenNames.has(postscriptName)

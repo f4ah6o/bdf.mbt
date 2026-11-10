@@ -281,6 +281,85 @@ try {
     assert.deepEqual(names, ["basic.docx"]);
   });
 
+  await step("closing the first choice settles it and converts without fonts", async () => {
+    await fresh();
+    await page.addInitScript(() => {
+      window.__posted = [];
+      const post = Worker.prototype.postMessage;
+      Worker.prototype.postMessage = function (message, transfer) {
+        if (message?.type === "convert") window.__posted.push(message.options);
+        return post.call(this, message, transfer);
+      };
+    });
+    await page.goto(base + "viewer/", { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => /^1 \/ 20$/.test(document.querySelector("#page-number")?.textContent ?? ""), null, { timeout: 120000 });
+    await page.setInputFiles("#file", { name: "basic.csv", mimeType: "text/csv", buffer: csvSample });
+    await page.waitForSelector("dialog.first-font-choice");
+    await page.evaluate(() => document.querySelector("dialog.first-font-choice").close());
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.csv", null, { timeout: 180000 });
+    assert.equal(await page.locator("dialog.first-font-choice").count(), 0);
+    assert.equal((await page.evaluate(() => window.__posted.at(-1))).fontFiles, undefined);
+  });
+
+  await step("a throwing showModal falls back to conversion", async () => {
+    await fresh();
+    await page.addInitScript(() => {
+      HTMLDialogElement.prototype.showModal = function () { throw new Error("modal blocked"); };
+      window.__posted = [];
+      const post = Worker.prototype.postMessage;
+      Worker.prototype.postMessage = function (message, transfer) {
+        if (message?.type === "convert") window.__posted.push(message.options);
+        return post.call(this, message, transfer);
+      };
+    });
+    await page.goto(base + "viewer/", { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => /^1 \/ 20$/.test(document.querySelector("#page-number")?.textContent ?? ""), null, { timeout: 120000 });
+    await page.setInputFiles("#file", { name: "basic.csv", mimeType: "text/csv", buffer: csvSample });
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.csv", null, { timeout: 180000 });
+    assert.equal(await page.locator("dialog.first-font-choice").count(), 0);
+    assert.equal((await page.evaluate(() => window.__posted.at(-1))).fontFiles, undefined);
+  });
+
+  await step("a skipped first file does not skip fonts for the next file", async () => {
+    await fresh();
+    await page.addInitScript((base64) => {
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+      window.queryLocalFonts = async () => [{
+        postscriptName: "STIXTwoText",
+        fullName: "STIX Two Text",
+        family: "STIX Two Text",
+        style: "Regular",
+        blob: async () => new Blob([bytes], { type: "font/ttf" }),
+      }];
+      window.__posted = [];
+      const post = Worker.prototype.postMessage;
+      Worker.prototype.postMessage = function (message, transfer) {
+        if (message?.type === "convert") window.__posted.push(message.options);
+        return post.call(this, message, transfer);
+      };
+    }, stixBase64);
+    await page.goto(base + "viewer/", { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => /^1 \/ 20$/.test(document.querySelector("#page-number")?.textContent ?? ""), null, { timeout: 120000 });
+    await page.setInputFiles("#file", { name: "basic.csv", mimeType: "text/csv", buffer: csvSample });
+    await page.waitForSelector("dialog.first-font-choice");
+    await page.click("dialog.first-font-choice button:has-text('フォントなしで続ける')");
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.csv", null, { timeout: 180000 });
+    assert.equal((await page.evaluate(() => window.__posted.at(-1))).fontFiles, undefined);
+    await page.click("#local-fonts button:has-text('ローカルフォントを選ぶ')");
+    await page.waitForSelector("#local-fonts-face-0");
+    await page.check("#local-fonts-face-0");
+    await page.click("#local-fonts button:has-text('選択した書体を使う')");
+    await page.waitForFunction(() => /1 書体を読み込みました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    await page.setInputFiles("#file", { name: "basic.docx", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", buffer: docxSample });
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.docx", null, { timeout: 180000 });
+    assert.equal(await page.locator("dialog.first-font-choice").count(), 0, "the next file does not prompt");
+    const posted = await page.evaluate(() => window.__posted.at(-1));
+    assert.equal(posted.fontFiles.length, 1);
+    assert.equal(posted.fontFiles[0].postscriptName, "STIXTwoText");
+  });
+
   await step("viewer converts Word, Excel, CSV and fonts", async () => {
     // シート（Excel・CSV）はページではなくシートとして開くので、ページ数は「–」のまま。
     for (const [label, file, kind] of [
