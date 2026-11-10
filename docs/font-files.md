@@ -18,12 +18,19 @@ await converter.convert(data, {
 });
 ```
 
-- `fontFiles` is an array of `{ name: string, bytes: Uint8Array | ArrayBuffer }`.
+- `fontFiles` is an array of
+  `{ name: string, bytes: Uint8Array | ArrayBuffer, postscriptName?: string }`.
 - `name` is a non-empty label of at most 255 characters without control
   characters. It labels the font database entry; it is not a path and is never
   fetched.
 - `bytes` is a `Uint8Array` (including a view with a non-zero `byteOffset`) or
   an `ArrayBuffer`. Other views, strings, blobs and URLs are rejected.
+- `postscriptName` is optional. When absent, the file's readable faces are all
+  loaded, preserving explicit file-mode behaviour. When present, it must be a
+  non-empty string of at most 255 characters without control characters, and
+  exactly one face in that file must have that SFNT name ID 6 (PostScript
+  name). Only that face is added to the database. Zero or multiple matches are
+  rejected; the Worker never falls back to face 0.
 - A missing or `null` `fontFiles` means "no byte-mode fonts". An empty array is
   accepted and behaves like no byte-mode fonts.
 - `options.fonts` and a non-empty `options.fontFiles` are mutually exclusive
@@ -69,6 +76,11 @@ The Worker rejects, before conversion starts:
 | a file adds no named face | `fontFiles[i]: no usable font face` |
 | a name repeats an earlier entry | `fontFiles[i]: duplicate name` |
 | a collection claims more than 256 faces | `fontFiles[i]: collection has more than 256 faces` |
+| `postscriptName` is not a non-empty string | `fontFiles[i]: postscriptName must be a non-empty string` |
+| `postscriptName` is too long or has control characters | `fontFiles[i]: postscriptName must be at most 255 characters without control characters` |
+| no face has that PostScript name | `fontFiles[i]: postscriptName matches no face` |
+| more than one face has that PostScript name | `fontFiles[i]: postscriptName matches multiple faces` |
+| the same selector appears twice | `fontFiles[i]: duplicate postscriptName` |
 | nonempty string URL and bytes together | `fonts: options.fonts and options.fontFiles cannot both be set` |
 
 Diagnostics use the array index only. They never repeat a supplied name, a
@@ -80,8 +92,10 @@ Supported byte inputs are SFNT TrueType/OpenType (`.ttf`, `.otf`) and SFNT
 collections (`.ttc`, `.otc`). WOFF and WOFF2 are not supported and are rejected
 as `fontFiles[i]: no usable font face`.
 
-Every accepted file is passed to `@fontdb.Database::add_file`, which loads all
-readable faces of an SFNT file or collection (TTC/OTC). Names must be unique:
+Without a selector, every accepted file is passed to
+`@fontdb.Database::add_file`, which loads all readable faces of an SFNT file or
+collection (TTC/OTC). With a selector, the Worker parses the faces, matches
+name ID 6 exactly, and adds only the matched face. Names must be unique:
 the database keys faces by source name, so a repeated name would silently drop
 the later file. The Worker rejects the later entry with
 `fontFiles[i]: duplicate name` instead of choosing one, even when the bytes are
@@ -102,7 +116,7 @@ the actual baseline, not a claim that every format uses fonts:
 | PPTX | Receives the database. |
 | JWW | Receives the database. |
 | HPGL, DXF, SXF, CGM, draw.io | Receive the database (existing behaviour). |
-| XLSX | Uses only the first face of the database. |
+| XLSX | Uses only the first face of the database. A selected face from a TTC/OTC is reconstructed as a standalone single-face SFNT before embedding; if that reconstruction fails, the request is rejected with `xlsx: selected collection face cannot be embedded as a standalone font` before conversion. It never embeds the whole collection for a selected face. |
 | PDF | Does not use the database, but the supplied bytes are still validated and parsed into a per-request database before dispatch. |
 | DOCX | Does not use the database, but the supplied bytes are still validated and parsed into a per-request database before dispatch. |
 | Image, AI, TIFF, PSD, EMF, XDW, IDML, Visio, Markdown, HTML, audio, Parquet | Do not receive the database. |
@@ -127,6 +141,12 @@ Chromium and checks, through the public `bdf_create_native_converter` client:
   producing the same embedded face;
 - `null` and empty `fontFiles` behaving as absent, and a non-string legacy
   `fonts` value not conflicting with byte mode;
+- selecting each face of `bold.ttc` by its real PostScript name, checking the
+  embedded font part's name and that only one face is embedded;
+- a wrong selector, an empty/non-string selector and duplicate selectors;
+- XLSX with a selected TTC face embedding a standalone SFNT whose PostScript
+  name is the selected one, and XLSX without a selector keeping the existing
+  whole-collection behaviour;
 - duplicate names rejected for identical and different valid files, a valid
   SFNT with an empty name table rejected as unusable both alone and after a
   usable file, and a 257-face TTC rejected with the collection limit;

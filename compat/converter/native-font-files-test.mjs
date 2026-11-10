@@ -25,7 +25,7 @@ const server = createServer((request, response) => {
     createReadStream('compat/font/fixtures/stix.ttf').pipe(response);
     return;
   }
-  if (!url.pathname.startsWith('/_build/js/debug/build/') && !url.pathname.startsWith('/node_modules/@bdfkit/') && !url.pathname.startsWith('/compat/font/fixtures/')) {
+  if (!url.pathname.startsWith('/_build/js/debug/build/') && !url.pathname.startsWith('/node_modules/@bdfkit/') && !url.pathname.startsWith('/compat/font/fixtures/') && !url.pathname.startsWith('/compat/converter/xlsx-fixtures/')) {
     response.writeHead(404).end();
     return;
   }
@@ -75,10 +75,58 @@ try {
       return out;
     })();
     const csv = new TextEncoder().encode('name,value\nAlpha,42\nBeta,7\n');
+    const postscriptNames = data => {
+      const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+      const collection = data[0] === 0x74 && data[1] === 0x74 && data[2] === 0x63 && data[3] === 0x66;
+      const count = collection ? view.getUint32(8) : 1;
+      const names = [];
+      for (let face = 0; face < count; face++) {
+        const base = collection ? view.getUint32(12 + face * 4) : 0;
+        let nameOffset = -1;
+        for (let index = 0; index < view.getUint16(base + 4); index++) {
+          const record = base + 12 + index * 16;
+          if (String.fromCharCode(data[record], data[record + 1], data[record + 2], data[record + 3]) === 'name') {
+            nameOffset = view.getUint32(record + 8);
+            break;
+          }
+        }
+        let name = '';
+        if (nameOffset >= 0) {
+          const countNames = view.getUint16(nameOffset + 2), stringOffset = view.getUint16(nameOffset + 4);
+          for (let index = 0; index < countNames; index++) {
+            const record = nameOffset + 6 + index * 12;
+            const platform = view.getUint16(record), encoding = view.getUint16(record + 2), id = view.getUint16(record + 6);
+            if (id !== 6) continue;
+            const size = view.getUint16(record + 8), start = nameOffset + stringOffset + view.getUint16(record + 10);
+            if (start + size > data.length) continue;
+            let text = '';
+            if (platform === 3 || platform === 0) for (let i = 0; i < size; i += 2) text += String.fromCharCode(view.getUint16(start + i));
+            else if (platform === 1 && encoding === 0) for (let i = 0; i < size; i++) text += String.fromCharCode(data[start + i]);
+            else continue;
+            if (text) { name = text; break; }
+          }
+        }
+        names.push(name);
+      }
+      return names;
+    };
     const noFonts = 'no fonts found; text is laid out with estimated metrics and not embedded';
     const fontParts = async bdf => {
       const doc = await BdfDocument.open(new BufferSource(bdf));
       return doc.manifest.parts.filter(part => part.t === 'font').map(part => part.h);
+    };
+    const fontPartBytes = async bdf => {
+      const doc = await BdfDocument.open(new BufferSource(bdf));
+      const part = doc.manifest.parts.find(part => part.t === 'font');
+      return part ? new Uint8Array(await doc.part(part.h)) : null;
+    };
+    const fontPartNames = async bdf => {
+      const doc = await BdfDocument.open(new BufferSource(bdf));
+      const names = [];
+      for (const part of doc.manifest.parts.filter(part => part.t === 'font')) {
+        names.push(postscriptNames(new Uint8Array(await doc.part(part.h)))[0]);
+      }
+      return names;
     };
     const client = bdf_create_native_converter('/_build/js/debug/build/native_converter_worker/native_converter_worker.js');
     const out = { errors: [], hashes: {}, requests: [] };
@@ -106,6 +154,33 @@ try {
       const ttcParts = await fontParts(withTtc.bdf);
       if (ttcParts.length !== 2 || new Set(ttcParts).size !== 2) throw new Error('TTC byte input must load both collection faces: ' + JSON.stringify(ttcParts));
       out.hashes.ttc = ttcParts;
+      const ttcNames = postscriptNames(ttc);
+      if (ttcNames.length !== 2 || ttcNames.some(name => !name) || ttcNames[0] === ttcNames[1]) throw new Error('bold.ttc must expose two distinct PostScript names');
+      const selectedHashes = [];
+      for (const postscriptName of ttcNames) {
+        const selected = await client.convert(csv, { format: 'csv', fontFiles: [{ name: 'bold.ttc', bytes: ttc, postscriptName }] });
+        const parts = await fontParts(selected.bdf);
+        const names = await fontPartNames(selected.bdf);
+        if (parts.length !== 1 || names.length !== 1 || names[0] !== postscriptName) throw new Error('selected TTC face must embed exactly that face');
+        selectedHashes.push(parts[0]);
+      }
+      if (new Set(selectedHashes).size !== 2) throw new Error('each TTC selector must select a different face');
+      const ttfName = postscriptNames(ttf)[0];
+      const selectedTtf = await client.convert(csv, { format: 'csv', fontFiles: [{ name: 'stix.ttf', bytes: ttf, postscriptName: ttfName }] });
+      if ((await fontPartNames(selectedTtf.bdf))[0] !== ttfName) throw new Error('selected single-face font must embed that face');
+      const xlsx = new Uint8Array(await (await fetch('/compat/converter/xlsx-fixtures/basic.xlsx')).arrayBuffer());
+      const xlsxAll = await client.convert(xlsx, { format: 'xlsx', fontFiles: [{ name: 'bold.ttc', bytes: ttc }] });
+      const allBytes = await fontPartBytes(xlsxAll.bdf);
+      if (!allBytes || allBytes[0] !== 0x74 || allBytes[1] !== 0x74 || allBytes[2] !== 0x63 || allBytes[3] !== 0x66) throw new Error('unselected TTC must keep the existing whole-collection XLSX behaviour');
+      const xlsxSelected = await client.convert(xlsx, { format: 'xlsx', fontFiles: [{ name: 'bold.ttc', bytes: ttc, postscriptName: ttcNames[0] }] });
+      const selectedBytes = await fontPartBytes(xlsxSelected.bdf);
+      if (!selectedBytes) throw new Error('selected TTC XLSX must embed a font');
+      if (selectedBytes[0] === 0x74 && selectedBytes[1] === 0x74 && selectedBytes[2] === 0x63 && selectedBytes[3] === 0x66) throw new Error('XLSX embedded the whole TTC for a selected face');
+      if (selectedBytes.length >= ttc.length) throw new Error('XLSX selected face must be a standalone SFNT');
+      if (postscriptNames(selectedBytes)[0] !== ttcNames[0]) throw new Error('XLSX selected face must be the requested face');
+      const xlsxTtf = await client.convert(xlsx, { format: 'xlsx', fontFiles: [{ name: 'stix.ttf', bytes: ttf, postscriptName: ttfName }] });
+      const ttfBytes = await fontPartBytes(xlsxTtf.bdf);
+      if (!ttfBytes || ttfBytes.length !== ttf.length || ttfBytes.some((value, index) => value !== ttf[index])) throw new Error('XLSX selected single-face font must embed that face');
       const arrayBuffer = await client.convert(csv, { format: 'csv', fontFiles: [{ name: 'stix.ttf', bytes: ttf.buffer.slice(0) }] });
       if ((await fontParts(arrayBuffer.bdf))[0] !== ttfParts[0]) throw new Error('ArrayBuffer bytes must match Uint8Array bytes');
       const wrapped = new Uint8Array(ttf.length + 6);
@@ -133,6 +208,10 @@ try {
         [{ fontFiles: [{ name: 'nofamily.ttf', bytes: noFamily }] }, 'fontFiles[0]: no usable font face'],
         [{ fontFiles: [{ name: 'stix.ttf', bytes: ttf }, { name: 'nofamily.ttf', bytes: noFamily }] }, 'fontFiles[1]: no usable font face'],
         [{ fontFiles: [{ name: 'many.ttc', bytes: manyFaces }] }, 'fontFiles[0]: collection has more than 256 faces'],
+        [{ fontFiles: [{ name: 'bold.ttc', bytes: ttc, postscriptName: '' }] }, 'fontFiles[0]: postscriptName must be a non-empty string'],
+        [{ fontFiles: [{ name: 'bold.ttc', bytes: ttc, postscriptName: 5 }] }, 'fontFiles[0]: postscriptName must be a non-empty string'],
+        [{ fontFiles: [{ name: 'bold.ttc', bytes: ttc, postscriptName: 'NoSuchFace' }] }, 'fontFiles[0]: postscriptName matches no face'],
+        [{ fontFiles: [{ name: 'a.ttc', bytes: ttc, postscriptName: ttcNames[0] }, { name: 'b.ttc', bytes: ttc, postscriptName: ttcNames[0] }] }, 'fontFiles[1]: duplicate postscriptName'],
         [{ fontFiles: [{ name: 'secret-name.ttf', bytes: new Uint8Array([1, 2, 3]) }] }, 'fontFiles[0]: no usable font face'],
         [{ fontFiles: [{ name: 'a.ttf', bytes: new Uint8Array(32 * 1024 * 1024 + 1) }] }, 'fontFiles[0]: bytes exceed the 33554432 byte per-file limit'],
         [{ fonts: '/fonts/', fontFiles: [{ name: 'stix.ttf', bytes: ttf }] }, 'fonts: options.fonts and options.fontFiles cannot both be set'],
@@ -140,7 +219,7 @@ try {
       for (const [options, expected] of cases) {
         let message;
         try { await client.convert(csv, { format: 'csv', ...options }); } catch (error) { message = error.message; }
-        if (message !== expected) throw new Error('wrong error for ' + JSON.stringify(options) + ': ' + message);
+        if (message !== expected) throw new Error('wrong error for ' + JSON.stringify(options.fontFiles?.map(file => ({ name: file.name, postscriptName: file.postscriptName }))) + ': ' + message);
         if (message.includes('secret-name')) throw new Error('error leaked a supplied name');
         out.errors.push(message);
       }
@@ -167,7 +246,7 @@ try {
   assert.notEqual(result.hashes.ttf, result.hashes.otf);
   assert.equal(result.hashes.ttc.length, 2);
   assert.ok(!result.hashes.ttc.includes(result.hashes.ttf));
-  assert.equal(result.errors.length, 15);
+  assert.equal(result.errors.length, 19);
   assert.ok(result.pdfBytes > 0);
   assert.ok(requests.includes('/fonts/index.json'), 'URL mode must fetch the directory');
   const byteModeRequests = requests.filter(name => name.startsWith('/fonts/'));

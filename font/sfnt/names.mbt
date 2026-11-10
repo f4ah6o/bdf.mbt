@@ -182,3 +182,53 @@ pub fn Font::family_names(self : Font) -> Array[String] {
     []
   }
 }
+
+///|
+/// The face's PostScript name (name ID 6), or "" when absent.
+pub fn Font::postscript_name(self : Font) -> String {
+  let names = sfnt_table(self.source, self.tables, "name")
+  if names.length() < 6 || names.length() > 1048576 {
+    return ""
+  }
+  let count = u16(names, 2)
+  let string_offset = u16(names, 4)
+  let mut chosen = ""
+  let mut chosen_english = false
+  for i in 0..<count {
+    let rec = 6 + i * 12
+    if rec > names.length() - 12 {
+      break
+    }
+    let platform = u16(names, rec)
+    let encoding = u16(names, rec + 2)
+    let lang = u16(names, rec + 4)
+    let id = u16(names, rec + 6)
+    if id != 6 {
+      continue
+    }
+    let size = u16(names, rec + 8)
+    let start = string_offset + u16(names, rec + 10)
+    if start > names.length() || size > names.length() - start {
+      continue
+    }
+    let raw = names[start:start + size]
+    let (name, english) = if (
+        platform == 3 && (encoding == 1 || encoding == 10 || encoding == 0)
+      ) ||
+      platform == 0 {
+      (trim_name(decode_name_utf16(raw)), lang == 0x0409)
+    } else if platform == 1 && encoding == 0 {
+      (trim_name(@utf8.decode_lossy(raw)), true)
+    } else {
+      continue
+    }
+    if name == "" {
+      continue
+    }
+    if chosen == "" || (english && !chosen_english) {
+      chosen = name
+      chosen_english = english
+    }
+  }
+  chosen
+}

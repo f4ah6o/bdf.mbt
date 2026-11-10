@@ -223,3 +223,14 @@ fn build_tables(
   }
   Bytes::from_array(out)
 }
+
+///|
+/// Build a standalone SFNT containing only this face's tables. The source may
+/// be a collection; the result is a single-face font.
+pub fn Font::standalone_program(self : Font) -> Bytes raise {
+  let tables : Map[String, Array[Byte]] = Map([])
+  for tag, _ in self.tables {
+    tables[tag] = sfnt_table(self.source, self.tables, tag).to_owned().to_array()
+  }
+  build_tables(tables, self.metrics.is_cff)
+}

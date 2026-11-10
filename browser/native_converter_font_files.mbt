@@ -31,6 +31,13 @@ extern "js" fn native_font_files_read(
   #|   const name=entry.name;
   #|   if(typeof name!=='string'||name.length===0)return {count:0,error:`fontFiles[${i}]: name must be a non-empty string`};
   #|   if(name.length>255||/[\u0000-\u001f\u007f]/.test(name))return {count:0,error:`fontFiles[${i}]: name must be at most 255 characters without control characters`};
+  #|   const selector=entry.postscriptName;
+  #|   let postscriptName='';
+  #|   if(selector!==undefined&&selector!==null){
+  #|     if(typeof selector!=='string'||selector.length===0)return {count:0,error:`fontFiles[${i}]: postscriptName must be a non-empty string`};
+  #|     if(selector.length>255||/[\u0000-\u001f\u007f]/.test(selector))return {count:0,error:`fontFiles[${i}]: postscriptName must be at most 255 characters without control characters`};
+  #|     postscriptName=selector;
+  #|   }
   #|   const bytes=entry.bytes;
   #|   let view;
   #|   if(bytes instanceof ArrayBuffer)view=new Uint8Array(bytes);
@@ -40,7 +47,7 @@ extern "js" fn native_font_files_read(
   #|   if(view.byteLength>maxFileBytes)return {count:0,error:`fontFiles[${i}]: bytes exceed the ${maxFileBytes} byte per-file limit`};
   #|   total+=view.byteLength;
   #|   if(total>maxTotalBytes)return {count:0,error:`fontFiles: total bytes exceed the ${maxTotalBytes} byte limit`};
-  #|   files.push({name,copy:new Uint8Array(view)});
+  #|   files.push({name,copy:new Uint8Array(view),postscriptName});
   #| }
   #| return {count:files.length,error:'',files};
   #|}
@@ -59,6 +66,13 @@ extern "js" fn native_font_files_name(
   index : Int32,
 ) -> String =
   #|(files,index) => files.files[index].name
+
+///|
+extern "js" fn native_font_files_postscript_name(
+  files : NativeFontFiles,
+  index : Int32,
+) -> String =
+  #|(files,index) => files.files[index].postscriptName
 
 ///|
 extern "js" fn native_font_files_bytes(

@@ -206,9 +206,11 @@ async fn NativeConverterState::dispatch(
   }
   // Byte mode never fetches: the supplied files are the whole font database.
   // URL mode keeps the existing directory loader and its cache.
+  let mut font_selected = false
   let database = if font_file_count > 0 {
     let db = @fontdb.Database::new()
     let seen_names : Map[String, Bool] = Map([])
+    let seen_selectors : Map[String, Bool] = Map([])
     for index in 0..<font_file_count {
       let name = native_font_files_name(font_files, index)
       // The database keys faces by source name, so a repeated name would
@@ -223,10 +225,11 @@ async fn NativeConverterState::dispatch(
       }
       seen_names[name] = true
       let bytes = native_font_files_bytes(font_files, index)
+      let face_count = @sfnt.face_count(bytes)
       // `Database::add_file` refuses collections above 256 faces. Check the
       // header first so the caller gets a specific diagnostic instead of the
       // generic "no usable font face" that a zero result would produce.
-      if @sfnt.face_count(bytes) > 256 {
+      if face_count > 256 {
         native_converter_error(
           request,
           "fontFiles[" + index.to_string() + "]: collection has more than 256 faces",
@@ -234,15 +237,69 @@ async fn NativeConverterState::dispatch(
         )
         return
       }
-      // `add_file` parses every face and ignores unnamed ones. A zero result
-      // means this distinct file contributed no usable named face.
-      if db.add_file(name, bytes) == 0 {
-        native_converter_error(
-          request,
-          "fontFiles[" + index.to_string() + "]: no usable font face",
-          "",
-        )
-        return
+      let selector = native_font_files_postscript_name(font_files, index)
+      if selector == "" {
+        // No selector: keep the explicit file-mode behaviour of loading every
+        // readable face in the file or collection.
+        if db.add_file(name, bytes) == 0 {
+          native_converter_error(
+            request,
+            "fontFiles[" + index.to_string() + "]: no usable font face",
+            "",
+          )
+          return
+        }
+      } else {
+        font_selected = true
+        if seen_selectors.contains(selector) {
+          native_converter_error(
+            request,
+            "fontFiles[" + index.to_string() + "]: duplicate postscriptName",
+            "",
+          )
+          return
+        }
+        seen_selectors[selector] = true
+        let mut matched : @sfnt.Font? = None
+        let mut matched_index = -1
+        let mut matches = 0
+        for face_index in 0..<face_count {
+          match (Some(@sfnt.parse(bytes, index=face_index)) catch { _ => None }) {
+            Some(font) =>
+              if font.postscript_name() == selector {
+                matches += 1
+                matched = Some(font)
+                matched_index = face_index
+              }
+            None => ()
+          }
+        }
+        if matches == 0 {
+          native_converter_error(
+            request,
+            "fontFiles[" + index.to_string() + "]: postscriptName matches no face",
+            "",
+          )
+          return
+        }
+        if matches > 1 {
+          native_converter_error(
+            request,
+            "fontFiles[" + index.to_string() + "]: postscriptName matches multiple faces",
+            "",
+          )
+          return
+        }
+        let before = db.faces().length()
+        db.add(name, matched_index, matched.unwrap())
+        if db.faces().length() == before {
+          native_converter_error(
+            request,
+            "fontFiles[" + index.to_string() + "]: no usable font face",
+            "",
+          )
+          return
+        }
       }
     }
     Some(db)
@@ -326,7 +383,7 @@ async fn NativeConverterState::dispatch(
     return
   }
   if format == "xlsx" || (format == "" && @xlsx.detect_xlsx(head, data)) {
-    native_convert_xlsx(request, data, kind == "open", database)
+    native_convert_xlsx(request, data, kind == "open", database, font_selected)
     return
   }
   if format == "csv" {
@@ -417,7 +474,7 @@ async fn NativeConverterState::dispatch(
           @utf8.decode_lossy(head).contains("%PDF-")
         let office_named = native_named_office_format(lower)
         if office_named == "xlsx" && !strong_other {
-          native_convert_xlsx(request, data, kind == "open", database)
+          native_convert_xlsx(request, data, kind == "open", database, font_selected)
           return
         }
         if office_named == "docx" && !strong_other {
@@ -1343,9 +1400,29 @@ fn native_convert_xlsx(
   data : Bytes,
   opened : Bool,
   database : @fontdb.Database?,
+  selected : Bool,
 ) -> Unit {
   let font_data = match database {
-    Some(db) if db.faces().length() > 0 => Some(db.face(0).unwrap().font.data())
+    Some(db) if db.faces().length() > 0 => {
+      let font = db.face(0).unwrap().font
+      // A selected face from a collection must be embedded as a standalone
+      // SFNT. Never hand the whole collection to XLSX, which would embed the
+      // unselected faces too.
+      if selected && font.data().has_prefix(b"ttcf") {
+        Some(font.standalone_program() catch {
+          _ => {
+            native_converter_error(
+              request,
+              "xlsx: selected collection face cannot be embedded as a standalone font",
+              "",
+            )
+            return
+          }
+        })
+      } else {
+        Some(font.data())
+      }
+    }
     _ => None
   }
   let result = try {
