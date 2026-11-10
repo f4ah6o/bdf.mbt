@@ -271,3 +271,195 @@ test "ooxml keeps the other attributes of a row and a cell" {
   assert_true(sheet.contains("<row r=\"3\" spans=\"1:2\">"), msg=sheet)
   assert_true(sheet.contains("<c r=\"A3\" s=\"1\" t=\"inlineStr\">"), msg=sheet)
 }
+
+///|
+test "ooxml renumbers a row and a cell with a greater-than in a double-quoted attribute" {
+  let body = refs_sheet(
+    "<row r=\"1\" custom=\"a>b\">" +
+    refs_cell("A1", "{{#items}}{{name}}") +
+    refs_cell("B1", "{{/items}}") +
+    "</row>" +
+    "<row r=\"2\" custom=\"a>b\"><c r=\"A2\" custom=\"a>b\" t=\"inlineStr\"><is><t>tail</t></is></c></row>",
+  )
+  let tpl = refs_xlsx([("Sheet1", body)], "")
+  let filled = refs_fill(tpl, refs_items())
+  let sheet = refs_part(filled, "xl/worksheets/sheet1.xml")
+  assert_true(sheet.contains("<row r=\"3\" custom=\"a>b\">"), msg=sheet)
+  assert_true(
+    sheet.contains("<c r=\"A3\" custom=\"a>b\" t=\"inlineStr\">"),
+    msg=sheet,
+  )
+  assert_true(!sheet.contains("<c r=\"A2\" custom=\"a>b\""), msg=sheet)
+}
+
+///|
+test "ooxml renumbers a row and a cell with a greater-than in a single-quoted attribute" {
+  let body = refs_sheet(
+    "<row r='1' custom='a>b'>" +
+    refs_cell("A1", "{{#items}}{{name}}") +
+    refs_cell("B1", "{{/items}}") +
+    "</row>" +
+    "<row r='2' custom='a>b'><c r='A2' custom='a>b' t='inlineStr'><is><t>tail</t></is></c></row>",
+  )
+  let tpl = refs_xlsx([("Sheet1", body)], "")
+  let filled = refs_fill(tpl, refs_items())
+  let sheet = refs_part(filled, "xl/worksheets/sheet1.xml")
+  assert_true(sheet.contains("<row r='3' custom='a>b'>"), msg=sheet)
+  assert_true(
+    sheet.contains("<c r='A3' custom='a>b' t='inlineStr'>"),
+    msg=sheet,
+  )
+}
+
+///|
+test "ooxml moves a merge with a greater-than in an attribute" {
+  let body = refs_sheet(
+    refs_row(
+      1,
+      refs_cell("A1", "{{#items}}{{name}}") + refs_cell("B1", "{{/items}}"),
+    ) +
+    refs_row(2, refs_cell("A2", "tail")),
+  ) +
+    "<mergeCells count=\"1\"><mergeCell ref=\"A2:B2\" custom=\"a>b\"/></mergeCells>"
+  let tpl = refs_xlsx([("Sheet1", body)], "")
+  let filled = refs_fill(tpl, refs_items())
+  let sheet = refs_part(filled, "xl/worksheets/sheet1.xml")
+  assert_true(
+    sheet.contains("<mergeCell ref=\"A3:B3\" custom=\"a>b\"/>"),
+    msg=sheet,
+  )
+}
+
+///|
+test "ooxml keeps a greater-than attribute when no section repeats rows" {
+  let body = refs_sheet(
+    "<row r=\"1\" custom=\"a>b\"><c r=\"A1\" custom='a>b' t=\"inlineStr\"><is><t>one</t></is></c></row>",
+  )
+  let tpl = refs_xlsx([("Sheet1", body)], "")
+  let filled = refs_fill(tpl, refs_empty())
+  assert_eq(
+    refs_part(filled, "xl/worksheets/sheet1.xml"),
+    refs_part(tpl, "xl/worksheets/sheet1.xml"),
+  )
+}
+
+///|
+test "ooxml renumbers namespaced rows and cells" {
+  let body = refs_sheet(
+    "<x:row r=\"1\">" +
+    "<x:c r=\"A1\" t=\"inlineStr\"><is><t>{{#items}}{{name}}</t></is></x:c>" +
+    "<x:c r=\"B1\" t=\"inlineStr\"><is><t>{{/items}}</t></is></x:c>" +
+    "</x:row>" +
+    "<x:row r=\"2\"><x:c r=\"A2\" t=\"inlineStr\"><is><t>tail</t></is></x:c></x:row>",
+  )
+  let tpl = refs_xlsx(
+    [("Sheet1", body)],
+    "",
+    ns=" xmlns:x=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"",
+  )
+  let filled = refs_fill(tpl, refs_items())
+  let sheet = refs_part(filled, "xl/worksheets/sheet1.xml")
+  assert_true(sheet.contains("<x:row r=\"3\">"), msg=sheet)
+  assert_true(sheet.contains("<x:c r=\"A3\""), msg=sheet)
+  assert_true(!sheet.contains("{{"), msg=sheet)
+}
+
+///|
+test "ooxml keeps a namespaced sheet when no section repeats rows" {
+  let body = refs_sheet(
+    "<x:row r=\"1\"><x:c r=\"A1\" t=\"inlineStr\"><is><t>one</t></is></x:c></x:row>",
+  )
+  let tpl = refs_xlsx(
+    [("Sheet1", body)],
+    "",
+    ns=" xmlns:x=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"",
+  )
+  let filled = refs_fill(tpl, refs_empty())
+  assert_eq(
+    refs_part(filled, "xl/worksheets/sheet1.xml"),
+    refs_part(tpl, "xl/worksheets/sheet1.xml"),
+  )
+}
+
+///|
+test "ooxml refuses a calculation chain when a section repeats rows" {
+  let tpl = refs_xlsx([("Sheet1", refs_list_sheet(""))], "")
+  let with_chain = xml_add_part(
+    tpl,
+    "xl/calcChain.xml",
+    #|<?xml version="1.0"?><calcChain xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><c r="A1" i="1"/></calcChain>
+  )
+  let message = refs_fill_error(with_chain, refs_items())
+  assert_true(message.contains("calculation chain"), msg=message)
+}
+
+///|
+test "ooxml refuses a form control when a section repeats rows" {
+  let tpl = refs_xlsx([("Sheet1", refs_list_sheet(""))], "")
+  let with_control = xml_add_part(
+    tpl,
+    "xl/worksheets/_rels/sheet1.xml.rels",
+    xml_rels("ctrlProp", "../ctrlProps/ctrlProp1.xml"),
+  )
+  let message = refs_fill_error(with_control, refs_items())
+  assert_true(message.contains("form control"), msg=message)
+}
+
+///|
+test "ooxml refuses a rich value when a section repeats rows" {
+  let tpl = refs_xlsx([("Sheet1", refs_list_sheet(""))], "")
+  let with_rich = xml_add_part(
+    tpl,
+    "xl/worksheets/_rels/sheet1.xml.rels",
+    xml_rels("richValueRel", "../richData/richValueRel.xml"),
+  )
+  let message = refs_fill_error(with_rich, refs_items())
+  assert_true(message.contains("rich value"), msg=message)
+}
+
+///|
+test "ooxml refuses a web extension when a section repeats rows" {
+  let tpl = refs_xlsx([("Sheet1", refs_list_sheet(""))], "")
+  let with_web = xml_add_part(
+    tpl,
+    "xl/worksheets/_rels/sheet1.xml.rels",
+    xml_rels("webextension", "../webextensions/webextension1.xml"),
+  )
+  let message = refs_fill_error(with_web, refs_items())
+  assert_true(message.contains("web extension"), msg=message)
+}
+
+///|
+test "ooxml keeps a calculation chain when no section repeats rows" {
+  let body = refs_sheet(refs_row(1, refs_cell("A1", "one")))
+  let tpl = refs_xlsx([("Sheet1", body)], "")
+  let with_chain = xml_add_part(
+    tpl,
+    "xl/calcChain.xml",
+    #|<?xml version="1.0"?><calcChain xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><c r="A1" i="1"/></calcChain>
+  )
+  let filled = refs_fill(with_chain, refs_empty())
+  assert_eq(
+    refs_part(filled, "xl/worksheets/sheet1.xml"),
+    refs_part(tpl, "xl/worksheets/sheet1.xml"),
+  )
+}
+
+///|
+test "ooxml renumbers a row with a greater-than before the row number" {
+  let body = refs_sheet(
+    "<row custom=\"a>b\" r=\"1\">" +
+    refs_cell("A1", "{{#items}}{{name}}") +
+    refs_cell("B1", "{{/items}}") +
+    "</row>" +
+    "<row custom='a>b' r='2'><c custom=\"a>b\" r=\"A2\" t=\"inlineStr\"><is><t>tail</t></is></c></row>",
+  )
+  let tpl = refs_xlsx([("Sheet1", body)], "")
+  let filled = refs_fill(tpl, refs_items())
+  let sheet = refs_part(filled, "xl/worksheets/sheet1.xml")
+  assert_true(sheet.contains("<row custom='a>b' r='3'>"), msg=sheet)
+  assert_true(
+    sheet.contains("<c custom=\"a>b\" r=\"A3\" t=\"inlineStr\">"),
+    msg=sheet,
+  )
+}

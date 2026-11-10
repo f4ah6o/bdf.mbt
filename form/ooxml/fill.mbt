@@ -82,6 +82,44 @@ fn ooxml_is_space(c : Char) -> Bool {
 }
 
 ///|
+// The index of the `>` that closes the tag that starts at `at` (a `<`), or
+// `None` when the tag is not closed. A `>` inside a quoted attribute value is
+// part of the value, not the end of the tag.
+fn ooxml_tag_end_at_chars(chars : Array[Char], at : Int) -> Int? {
+  let mut pos = at
+  let mut quote = 0
+  while pos < chars.length() {
+    let c = chars[pos]
+    if quote != 0 {
+      if c.to_int() == quote {
+        quote = 0
+      }
+    } else if c == '"' || c == '\'' {
+      quote = c.to_int()
+    } else if c == '>' {
+      return Some(pos)
+    }
+    pos += 1
+  }
+  None
+}
+
+///|
+fn ooxml_tag_end_chars(chars : Array[Char], at : Int) -> Int? {
+  ooxml_tag_end_at_chars(chars, at + 1)
+}
+
+///|
+fn ooxml_tag_end_at(xml : String, at : Int) -> Int? {
+  ooxml_tag_end_at_chars(xml.to_array(), at)
+}
+
+///|
+fn ooxml_tag_end(xml : String, at : Int) -> Int? {
+  ooxml_tag_end_chars(xml.to_array(), at)
+}
+
+///|
 priv struct XmlAttr {
   name : String
   value : String
@@ -193,24 +231,18 @@ fn ooxml_elements(
   to : Int,
 ) -> Array[(Int, Int)] {
   let out : Array[(Int, Int)] = []
-  let open_needle = "<" + tag
-  let close_needle = "</" + tag
+  let chars = xml.to_array()
   let mut pos = from
   while pos < to {
-    let start = match xml[pos:to].find(open_needle) {
-      Some(index) => pos + index
+    let start = match ooxml_find_element_chars(chars, xml, tag, pos) {
+      Some(index) => index
       None => break
     }
-    let after = start + open_needle.length()
-    if after > to || !ooxml_name_end(xml[after:to]) {
-      pos = after
-      continue
-    }
-    let gt = match xml[after:to].find(">") {
-      Some(index) => after + index
+    let gt = match ooxml_tag_end_chars(chars, start) {
+      Some(index) => index
       None => break
     }
-    if xml[gt - 1:].has_prefix("/") {
+    if chars[gt - 1] == '/' {
       out.push((start, gt + 1))
       pos = gt + 1
       continue
@@ -219,33 +251,27 @@ fn ooxml_elements(
     let mut scan = gt + 1
     let mut end = -1
     while scan < to {
-      let next_open = xml[scan:to].find(open_needle)
-      let next_close = xml[scan:to].find(close_needle)
+      let next_open = ooxml_find_element_chars(chars, xml, tag, scan)
+      let next_close = ooxml_find_close_chars(chars, tag, scan)
       let (index, is_open) = match (next_open, next_close) {
-        (Some(a), Some(b)) => if a < b { (scan + a, true) } else { (scan + b, false) }
-        (Some(a), None) => (scan + a, true)
-        (None, Some(b)) => (scan + b, false)
+        (Some(a), Some(b)) => if a < b { (a, true) } else { (b, false) }
+        (Some(a), None) => (a, true)
+        (None, Some(b)) => (b, false)
         (None, None) => break
       }
       if is_open {
-        let a = index + open_needle.length()
-        if a <= to && ooxml_name_end(xml[a:to]) {
-          let g = match xml[a:to].find(">") {
-            Some(i) => a + i
-            None => break
-          }
-          if !xml[g - 1:].has_prefix("/") {
-            depth += 1
-          }
-          scan = g + 1
-        } else {
-          scan = a
+        let g = match ooxml_tag_end_chars(chars, index) {
+          Some(i) => i
+          None => break
         }
+        if chars[g - 1] != '/' {
+          depth += 1
+        }
+        scan = g + 1
       } else {
         depth -= 1
-        let a = index + close_needle.length()
-        let g = match xml[a:to].find(">") {
-          Some(i) => a + i
+        let g = match ooxml_tag_end_chars(chars, index) {
+          Some(i) => i
           None => break
         }
         if depth == 0 {
@@ -880,24 +906,19 @@ fn ooxml_rewrite_cell_ref(tag : String, number : Int) -> String {
 ///|
 fn ooxml_renumber_cells(body : String, number : Int) -> String {
   let out = StringBuilder()
+  let chars = body.to_array()
   let mut pos = 0
   while pos < body.length() {
-    let start = match body[pos:].find("<c") {
-      Some(index) => pos + index
+    let start = match ooxml_find_element_chars(chars, body, "c", pos) {
+      Some(index) => index
       None => {
         out.write_string(body[pos:].to_owned())
         break
       }
     }
-    let after = start + 2
-    if after > body.length() || !ooxml_name_end(body[after:]) {
-      out.write_string(body[pos:after].to_owned())
-      pos = after
-      continue
-    }
     out.write_string(body[pos:start].to_owned())
-    let end = match body[start:].find(">") {
-      Some(index) => start + index
+    let end = match ooxml_tag_end_chars(chars, start) {
+      Some(index) => index
       None => {
         out.write_string(body[start:].to_owned())
         break
@@ -912,24 +933,113 @@ fn ooxml_renumber_cells(body : String, number : Int) -> String {
 }
 
 ///|
+// Whether the element that starts at `at` (a `<`) has the name `tag`, and the
+// index after its name. A tag without a prefix matches the local name, so
+// `row` matches `<row>` and `<x:row>`; a tag with a prefix matches the full
+// name, so `w:p` matches only `<w:p>`.
+fn ooxml_name_matches(chars : Array[Char], at : Int, tag : String) -> Int? {
+  let mut start = at + 1
+  if start < chars.length() && chars[start] == '/' {
+    start += 1
+  }
+  let mut end = start
+  while end < chars.length() && ooxml_is_name_char(chars[end]) {
+    end += 1
+  }
+  let name = String::from_array(chars[start:end])
+  let matched = if tag.contains(":") {
+    name == tag
+  } else {
+    let local = match name.find(":") {
+      Some(index) => name[index + 1:].to_owned()
+      None => name
+    }
+    local == tag
+  }
+  if matched {
+    Some(end)
+  } else {
+    None
+  }
+}
+
+///|
+// The index of the next `<` at or after `from` whose element local name is
+// `name`, so `<row>` and `<x:row>` are both found.
+fn ooxml_find_element_chars(
+  chars : Array[Char],
+  xml : String,
+  name : String,
+  from : Int,
+) -> Int? {
+  let mut pos = from
+  while pos < chars.length() {
+    if chars[pos] != '<' {
+      pos += 1
+      continue
+    }
+    if pos + 1 < chars.length() && chars[pos + 1] == '/' {
+      pos += 1
+      continue
+    }
+    match ooxml_name_matches(chars, pos, name) {
+      Some(end) =>
+        if end < chars.length() && ooxml_name_end(xml[end:]) {
+          return Some(pos)
+        }
+      None => ()
+    }
+    pos += 1
+  }
+  None
+}
+
+///|
+fn ooxml_find_element(xml : String, name : String, from : Int) -> Int? {
+  ooxml_find_element_chars(xml.to_array(), xml, name, from)
+}
+
+///|
+// The index of the close tag of `name` at or after `from`, so `</row>` and
+/// `</x:row>` are both found.
+fn ooxml_find_close_chars(
+  chars : Array[Char],
+  name : String,
+  from : Int,
+) -> Int? {
+  let mut pos = from
+  while pos < chars.length() {
+    if chars[pos] != '<' || pos + 1 >= chars.length() || chars[pos + 1] != '/' {
+      pos += 1
+      continue
+    }
+    match ooxml_name_matches(chars, pos, name) {
+      Some(end) =>
+        if end < chars.length() && chars[end] == '>' {
+          return Some(pos)
+        }
+      None => ()
+    }
+    pos += 1
+  }
+  None
+}
+
+///|
 /// The numbers of the rows of a worksheet, in the order of the document. A
 /// row without a number takes the number after the one before it.
 fn ooxml_row_numbers(xml : String) -> Array[Int] {
   let out : Array[Int] = []
+  let chars = xml.to_array()
   let mut pos = 0
   let mut implied = 0
   while pos < xml.length() {
-    let start = match xml[pos:].find("<row") {
-      Some(index) => pos + index
+    let start = match ooxml_find_element_chars(chars, xml, "row", pos) {
+      Some(index) => index
       None => break
     }
-    let after = start + 4
-    if after > xml.length() || !ooxml_name_end(xml[after:]) {
-      pos = after
-      continue
-    }
-    let end = match xml[after:].find(">") {
-      Some(index) => after + index
+    let end = match ooxml_tag_end_chars(chars, start) {
+      Some(index) => index
       None => break
     }
     let number = ooxml_row_number(xml[start:end + 1].to_owned())
@@ -1105,8 +1215,8 @@ fn ooxml_rewrite_merges(
       continue
     }
     out.write_string(xml[pos:start].to_owned())
-    let end = match xml[start:].find(">") {
-      Some(index) => start + index
+    let end = match ooxml_tag_end(xml, start) {
+      Some(index) => index
       None => {
         out.write_string(xml[start:].to_owned())
         break
@@ -1131,8 +1241,8 @@ fn ooxml_rewrite_dimension(xml : String, map : Map[Int, Array[Int]]) -> String {
     Some(index) => index
     None => return xml
   }
-  let end = match xml[start:].find(">") {
-    Some(index) => start + index
+  let end = match ooxml_tag_end(xml, start) {
+    Some(index) => index
     None => return xml
   }
   let tag = xml[start:end + 1].to_owned()
@@ -1149,25 +1259,20 @@ fn ooxml_rewrite_dimension(xml : String, map : Map[Int, Array[Int]]) -> String {
 ///|
 fn ooxml_rewrite_rows(xml : String, numbers : Array[Int]) -> String {
   let out = StringBuilder()
+  let chars = xml.to_array()
   let mut pos = 0
   let mut index = 0
   while pos < xml.length() {
-    let start = match xml[pos:].find("<row") {
-      Some(index) => pos + index
+    let start = match ooxml_find_element_chars(chars, xml, "row", pos) {
+      Some(index) => index
       None => {
         out.write_string(xml[pos:].to_owned())
         break
       }
     }
-    let after = start + 4
-    if after > xml.length() || !ooxml_name_end(xml[after:]) {
-      out.write_string(xml[pos:after].to_owned())
-      pos = after
-      continue
-    }
     out.write_string(xml[pos:start].to_owned())
-    let end = match xml[after:].find(">") {
-      Some(index) => after + index
+    let end = match ooxml_tag_end_chars(chars, start) {
+      Some(index) => index
       None => {
         out.write_string(xml[start:].to_owned())
         break
@@ -1175,13 +1280,22 @@ fn ooxml_rewrite_rows(xml : String, numbers : Array[Int]) -> String {
     }
     let number = if index < numbers.length() { numbers[index] } else { 0 }
     index += 1
-    out.write_string(ooxml_replace_row_attr(xml[start:end + 1].to_owned(), number))
-    if xml[end - 1:].has_prefix("/") {
+    out.write_string(
+      ooxml_replace_row_attr(xml[start:end + 1].to_owned(), number),
+    )
+    if chars[end - 1] == '/' {
       pos = end + 1
       continue
     }
-    let close = match xml[end + 1:].find("</row>") {
-      Some(index) => end + 1 + index
+    let close = match ooxml_find_close_chars(chars, "row", end + 1) {
+      Some(index) => index
+      None => {
+        out.write_string(xml[end + 1:].to_owned())
+        break
+      }
+    }
+    let close_end = match ooxml_tag_end_chars(chars, close) {
+      Some(index) => index
       None => {
         out.write_string(xml[end + 1:].to_owned())
         break
@@ -1190,8 +1304,8 @@ fn ooxml_rewrite_rows(xml : String, numbers : Array[Int]) -> String {
     out.write_string(
       ooxml_renumber_cells(xml[end + 1:close].to_owned(), number),
     )
-    out.write_string("</row>")
-    pos = close + 6
+    out.write_string(xml[close:close_end + 1].to_owned())
+    pos = close_end + 1
   }
   out.to_string()
 }
@@ -1301,12 +1415,9 @@ fn ooxml_formula_texts(xml : String) -> Array[String] {
       pos += 1
       continue
     }
-    let mut gt = end
-    while gt < chars.length() && chars[gt] != '>' {
-      gt += 1
-    }
-    if gt >= chars.length() {
-      break
+    let gt = match ooxml_tag_end_chars(chars, pos) {
+      Some(index) => index
+      None => break
     }
     if chars[gt - 1] == '/' {
       pos = gt + 1
@@ -1521,8 +1632,8 @@ fn ooxml_rel_target(rels : String, id : String) -> String {
       Some(index) => pos + index
       None => return ""
     }
-    let end = match rels[at:].find(">") {
-      Some(index) => at + index
+    let end = match ooxml_tag_end(rels, at) {
+      Some(index) => index
       None => return ""
     }
     let tag = rels[at:end + 1].to_owned()
@@ -1556,8 +1667,8 @@ fn ooxml_sheet_parts(
       Some(index) => pos + index
       None => break
     }
-    let end = match workbook[at:].find(">") {
-      Some(index) => at + index
+    let end = match ooxml_tag_end(workbook, at) {
+      Some(index) => index
       None => break
     }
     let tag = workbook[at:end + 1].to_owned()
@@ -1637,8 +1748,8 @@ fn ooxml_rewrite_breaks(
       }
     }
     out.write_string(body[pos:at].to_owned())
-    let gt = match body[at:].find(">") {
-      Some(index) => at + index
+    let gt = match ooxml_tag_end(body, at) {
+      Some(index) => index
       None => {
         out.write_string(body[at:].to_owned())
         break
@@ -1815,8 +1926,8 @@ fn ooxml_map_defined_names(
       }
     }
     out.write_string(workbook[pos:at].to_owned())
-    let open_end = match workbook[at:].find(">") {
-      Some(index) => at + index
+    let open_end = match ooxml_tag_end(workbook, at) {
+      Some(index) => index
       None => {
         out.write_string(workbook[at:].to_owned())
         break
@@ -1900,8 +2011,8 @@ fn ooxml_check_related_parts(
         Some(index) => pos + index
         None => break
       }
-      let end = match rels[at:].find(">") {
-        Some(index) => at + index
+      let end = match ooxml_tag_end(rels, at) {
+        Some(index) => index
         None => break
       }
       let tag = rels[at:end + 1].to_owned()
@@ -1920,6 +2031,12 @@ fn ooxml_check_related_parts(
         "a pivot table"
       } else if kind.has_suffix("/queryTable") {
         "a query table"
+      } else if kind.has_suffix("/ctrlProp") {
+        "a form control"
+      } else if kind.has_suffix("/richValueRel") {
+        "a rich value"
+      } else if kind.has_suffix("/webextension") {
+        "a web extension"
       } else {
         ""
       }
@@ -1953,6 +2070,11 @@ fn ooxml_check_workbook_parts(
   if !changed {
     return
   }
+  if texts.contains("xl/calcChain.xml") {
+    raise OoxmlError(
+      "ooxml: the workbook has a calculation chain and a section repeats rows; the chain's cell references are not moved when rows are repeated",
+    )
+  }
   let rels = match texts.get("xl/_rels/workbook.xml.rels") {
     Some(text) => text
     None => return
@@ -1963,8 +2085,8 @@ fn ooxml_check_workbook_parts(
       Some(index) => pos + index
       None => break
     }
-    let end = match rels[at:].find(">") {
-      Some(index) => at + index
+    let end = match ooxml_tag_end(rels, at) {
+      Some(index) => index
       None => break
     }
     let tag = rels[at:end + 1].to_owned()

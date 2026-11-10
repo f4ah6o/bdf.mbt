@@ -38,6 +38,7 @@ fn refs_sheet(body : String) -> String {
 fn refs_xlsx(
   sheets : Array[(String, String)],
   defined_names : String,
+  ns~ : String = "",
 ) -> Bytes raise {
   let content_types = StringBuilder()
   content_types.write_string(
@@ -76,7 +77,9 @@ fn refs_xlsx(
     entries.push((
       part,
       @utf8.encode(
-        "<?xml version=\"1.0\"?><worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">" +
+        "<?xml version=\"1.0\"?><worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"" +
+        ns +
+        ">" +
         body +
         "</worksheet>",
       ),

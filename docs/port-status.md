@@ -157,7 +157,10 @@
   drawing, a slicer, a sparkline, an external link or a drawing that anchors
   to a sheet whose rows move is an error too. A row or a cell written across
   lines, with spaces around `=` or with single quotes is renumbered like any
-  other, without a duplicate attribute.
+  other, without a duplicate attribute. A `>` inside a quoted attribute value
+  does not end the tag, and a namespaced `<x:row>`/`<x:c>` is renumbered like
+  an unprefixed one. A calculation chain, a form control, a rich value or a
+  web extension in a workbook whose rows move is an error too.
   A section that starts in a table row and ends outside it is an error, a
   section of `| slots` is an error (write `| rows`), and a picture tag
   (`{{%name}}`) is reported and left empty.

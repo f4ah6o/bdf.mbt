@@ -82,8 +82,11 @@
   slicer, a sparkline, an external link or a drawing that anchors to a sheet
   whose rows move is an error too. A row or a cell written across lines, with
   spaces around `=` or with single quotes is renumbered like any other,
-  without a duplicate attribute. A sheet whose rows do not move keeps every
-  reference untouched.
+  without a duplicate attribute. A `>` inside a quoted attribute value does
+  not end the tag, and a namespaced `<x:row>`/`<x:c>` is renumbered like an
+  unprefixed one. A calculation chain, a form control, a rich value or a web
+  extension in a workbook whose rows move is an error too. A sheet whose rows
+  do not move keeps every reference untouched.
 - The options of a tag are applied by the fill of an OOXML document:
   `{{total | fmt:"#,##0.00"}}` writes the number in its format instead of
   warning that the data has no `total | fmt:"#,##0.00"` and leaving the cell
