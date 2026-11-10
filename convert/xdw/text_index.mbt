@@ -24,7 +24,6 @@ priv struct XdwTextRun {
   order : Int
   /// Whether the box is trustworthy enough to test for coverage at all.
   provable : Bool
-  mut covered : Bool
 }
 
 ///|
@@ -224,16 +223,23 @@ fn xdw_no_external_object(_ : String) -> @core.ObjectResources? raise {
 }
 
 ///|
-/// The ordinals of the text runs a later opaque fill hides completely.
+/// The text runs and opaque fills of one object stream, in drawing order.
+priv struct XdwCoverScan {
+  runs : Array[XdwTextRun]
+  covers : Array[XdwCover]
+}
+
+///|
+/// The text runs and opaque fills of one object stream.
 ///
 /// Images are never covers: a decoded image can carry transparent pixels, so
 /// its box does not prove opacity. A `FillPaint` is never a cover, because a
 /// gradient or a pattern can be translucent. A fill under an unknown clip is
 /// never a cover, because the clip may cut it away from the run.
-fn xdw_covered_ordinals(
+fn xdw_scan_covers(
   encoded : Bytes,
   resources : @core.ObjectResources,
-) -> Array[Int32] raise {
+) -> XdwCoverScan raise {
   let commands = @render.decode_commands(encoded)
   let runs : Array[XdwTextRun] = []
   let covers : Array[XdwCover] = []
@@ -348,7 +354,6 @@ fn xdw_covered_ordinals(
           h: bh,
           order,
           provable: advance > 0.0 && state.size > 0.0,
-          covered: false,
         })
         ordinal += 1
       }
@@ -358,19 +363,51 @@ fn xdw_covered_ordinals(
       _ => ()
     }
   }
+  { runs, covers, }
+}
+
+///|
+/// The page-space boxes of the opaque fills in a scan.
+fn xdw_cover_boxes(scan : XdwCoverScan) -> Array[(Double, Double, Double, Double)] {
+  scan.covers.map(fn(cover) { (cover.x, cover.y, cover.w, cover.h) })
+}
+
+///|
+/// The ordinals of the text runs a later opaque fill hides completely.
+///
+/// `extra_covers` are fills from a layer drawn above this one. The viewer
+/// draws that layer later, so its fills hide this layer's text exactly as a
+/// fill in the same stream would. The body layer passes the annotation layer,
+/// so the default index matches the default view, where annotations are
+/// visible. A viewer that hides the annotation layer reveals body text that
+/// this static index leaves out; the index cannot represent both views.
+fn xdw_covered_ordinals(
+  scan : XdwCoverScan,
+  extra_covers : Array[(Double, Double, Double, Double)],
+) -> Array[Int32] {
   let covered : Array[Int32] = []
-  for run in runs {
+  for run in scan.runs {
     if !run.provable {
       continue
     }
-    for cover in covers {
+    let box = (run.x, run.y, run.w, run.h)
+    let mut hidden = false
+    for cover in scan.covers {
       if cover.order > run.order &&
-        xdw_box_contains((cover.x, cover.y, cover.w, cover.h), (run.x, run.y, run.w, run.h)) {
-        run.covered = true
+        xdw_box_contains((cover.x, cover.y, cover.w, cover.h), box) {
+        hidden = true
         break
       }
     }
-    if run.covered {
+    if !hidden {
+      for cover in extra_covers {
+        if xdw_box_contains(cover, box) {
+          hidden = true
+          break
+        }
+      }
+    }
+    if hidden {
       covered.push(run.ordinal)
     }
   }
@@ -378,21 +415,36 @@ fn xdw_covered_ordinals(
 }
 
 ///|
-/// The index runs of one page object, and whether the page drew any text.
+/// The index runs of one page layer, and how many runs the layer drew.
 ///
 /// The runs come from the renderer, so their ordinals and separators are the
 /// ones the viewer draws with — a run keeps its ordinal even when an earlier
 /// run is left out, because the viewer locates a hit by that ordinal. Only the
 /// runs a later opaque fill hides are dropped, and only when the caller did not
-/// ask for them.
+/// ask for them. The drawn count includes the hidden runs, so a run added
+/// later can take an ordinal past every drawn one.
+///
+/// `covers_from` is a layer drawn above this one: its opaque fills hide this
+/// layer's text, because the viewer draws it later. The body layer passes the
+/// annotation layer, so a fill on an annotation still hides the body text it
+/// covers, exactly as it did when both were one stream.
 fn xdw_page_index_runs(
   encoded : Bytes,
   page : Int,
   layer : Int,
   include_hidden : Bool,
-) -> (Array[@core.IndexRun], Bool) raise {
+  covers_from : Bytes?,
+) -> (Array[@core.IndexRun], Int32) raise {
   let resources = @core.decode_object_resources(encoded)
-  let covered = xdw_covered_ordinals(encoded, resources)
+  let scan = xdw_scan_covers(encoded, resources)
+  let extra_covers = match covers_from {
+    Some(above) => {
+      let above_resources = @core.decode_object_resources(above)
+      xdw_cover_boxes(xdw_scan_covers(above, above_resources))
+    }
+    None => []
+  }
+  let covered = xdw_covered_ordinals(scan, extra_covers)
   let content = @render.extract_text(resources, xdw_no_external_object)
   let out : Array[@core.IndexRun] = []
   for run_index, run in content.runs {
@@ -407,7 +459,7 @@ fn xdw_page_index_runs(
       text: run.text,
     })
   }
-  (out, content.runs.length() > 0)
+  (out, content.runs.length())
 }
 
 ///|

@@ -109,7 +109,7 @@ fn xdw_encode(object : @core.ObjectBuilder) -> Bytes {
 
 ///|
 fn xdw_index_of(encoded : Bytes, include_hidden : Bool) -> Array[@core.IndexRun] {
-  let (runs, _) = xdw_page_index_runs(encoded, 0, 0, include_hidden) catch {
+  let (runs, _) = xdw_page_index_runs(encoded, 0, 0, include_hidden, None) catch {
     e => abort("index failed: " + e.to_string())
   }
   runs
@@ -120,9 +120,10 @@ fn xdw_covered_of(encoded : Bytes) -> Array[Int32] {
   let resources = @core.decode_object_resources(encoded) catch {
     e => abort("decode failed: " + e.to_string())
   }
-  xdw_covered_ordinals(encoded, resources) catch {
+  let scan = xdw_scan_covers(encoded, resources) catch {
     e => abort("coverage failed: " + e.to_string())
   }
+  xdw_covered_ordinals(scan, [])
 }
 
 ///|
@@ -162,6 +163,50 @@ test "a fill drawn before the text does not hide it" {
   let encoded = xdw_text_stream("visible", [(0.0F, 0.0F, 100.0F, 100.0F)], [])
   assert_eq(xdw_covered_of(encoded).length(), 0)
   assert_eq(xdw_index_of(encoded, false).length(), 1)
+}
+
+///|
+/// An object stream with one opaque fill and no text.
+fn xdw_fill_stream(x : Float, y : Float, w : Float, h : Float) -> Bytes {
+  let object = @core.ObjectBuilder::new()
+  object.set_bbox(0.0F, 0.0F, 200.0F, 200.0F)
+  object.fill_color(0x000000ffU)
+  object.fill_rect(x, y, w, h)
+  xdw_encode(object)
+}
+
+///|
+test "an annotation fill hides body text by default and keeps it with include_hidden" {
+  // The default view draws the annotation layer after the body, so an opaque
+  // annotation fill hides the body text it covers. The index follows the
+  // default view; include_hidden keeps the text.
+  let body = xdw_text_stream("covered", [], [])
+  let annotation = xdw_fill_stream(0.0F, 0.0F, 100.0F, 100.0F)
+  let (plain, _) = xdw_page_index_runs(body, 0, 0, false, Some(annotation)) catch {
+    e => abort("index failed: " + e.to_string())
+  }
+  assert_eq(plain.length(), 0)
+  let (kept, _) = xdw_page_index_runs(body, 0, 0, true, Some(annotation)) catch {
+    e => abort("index failed: " + e.to_string())
+  }
+  assert_eq(kept.length(), 1)
+  assert_eq(kept[0].text, "covered")
+  // Without the layer above it, the same body text stays visible.
+  let (alone, _) = xdw_page_index_runs(body, 0, 0, false, None) catch {
+    e => abort("index failed: " + e.to_string())
+  }
+  assert_eq(alone.length(), 1)
+}
+
+///|
+test "a body fill does not hide annotation text" {
+  // The body is drawn first, so its fills are under every annotation run.
+  let annotation = xdw_text_stream("visible", [], [])
+  let (runs, _) = xdw_page_index_runs(annotation, 0, 1, false, None) catch {
+    e => abort("index failed: " + e.to_string())
+  }
+  assert_eq(runs.length(), 1)
+  assert_eq(runs[0].b, 1)
 }
 
 ///|
@@ -300,11 +345,11 @@ test "an index whose every run is hidden is still written" {
   // A missing index makes the reader rebuild one from the object stream, which
   // would bring back exactly the text the index leaves out.
   let encoded = xdw_text_stream("covered", [], [(0.0F, 0.0F, 100.0F, 100.0F)])
-  let (runs, drew_text) = xdw_page_index_runs(encoded, 0, 0, false) catch {
+  let (runs, drawn) = xdw_page_index_runs(encoded, 0, 0, false, None) catch {
     e => abort("index failed: " + e.to_string())
   }
   assert_eq(runs.length(), 0)
-  assert_eq(drew_text, true)
+  assert_eq(drawn, 1)
 }
 
 ///|

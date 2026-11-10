@@ -470,16 +470,26 @@ fn xdw_find_pages(doc : XdwDocument) -> Array[XdwPage] {
             let tidx : Int? = if kind == K_TEXT {
               Some(k)
             } else if kind == K_FUSEN {
+              // The note's own text is its direct child. A deeper text belongs
+              // to something the note contains, so it is only a fallback.
               let mut m = k + 1
-              let mut found : Int? = None
+              let mut direct : Int? = None
+              let mut deeper : Int? = None
               while m < r.length() && r[m].depth > r[k].depth {
                 if r[m].kind_num() == K_TEXT {
-                  found = Some(m)
-                  break
+                  if r[m].depth == r[k].depth + 1 {
+                    direct = Some(m)
+                    break
+                  } else if deeper is None {
+                    deeper = Some(m)
+                  }
                 }
                 m += 1
               }
-              found
+              match direct {
+                Some(t) => Some(t)
+                None => deeper
+              }
             } else {
               None
             }

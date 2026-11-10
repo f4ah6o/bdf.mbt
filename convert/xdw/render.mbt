@@ -200,20 +200,73 @@ fn xdw_is_jpeg_at(b : Bytes, at : Int) -> Bool {
 }
 
 ///|
+/// The advance of a fallback text, estimated from its characters: half a size
+/// for ASCII, a full size for everything else.
+fn xdw_fallback_text_advance(text : String, size : Double) -> Double {
+  let mut advance = 0.0
+  for ch in text {
+    advance += if ch.to_int() < 0x80 { size * 0.5 } else { size }
+  }
+  advance
+}
+
+///|
+/// Draw a stored annotation text that the annotation's own drawing does not
+/// carry.
+///
+/// The text is transparent: it is there for the text layer, the index, and
+/// copy, but it does not change what the page looks like. It is drawn after
+/// the annotation's own drawing, so the drawing's own fills do not hide it
+/// from the index.
+fn xdw_draw_fallback_text(
+  object : @core.ObjectBuilder,
+  text : String,
+  x : Double,
+  y : Double,
+  w : Double,
+  h : Double,
+) -> Unit {
+  let size = (h * 0.2).max(4.0).min(24.0)
+  let font = object.add_font({
+    hash: None,
+    family: "sans-serif",
+    weight: 400,
+    style: 0,
+  })
+  object.fill_color(0x00000000U)
+  object.font(font, Float::from_double(size)) catch {
+    _ => return
+  }
+  let advance = xdw_fallback_text_advance(text, size).min(w).max(size)
+  object.fill_text(
+    text,
+    Float::from_double(x),
+    Float::from_double(y + size),
+    Float::from_double(advance),
+  )
+}
+
+///|
 /// Draw object `obj`'s drawing into the page. Kinds: 4 an EMF (with the
 /// DocuWorks driver's DW comment records), 1 the WMF records of an old
 /// page, 5 a picture page (a JPEG behind a 16-byte header), 7 a bitmap
 /// page (a DIB).
+///
+/// `fallback_text` is a stored annotation text that the drawing does not
+/// carry; it is drawn transparently so the text layer and the index have a
+/// real run to point at. It is drawn even when the object has no drawing at
+/// all, as long as its box is non-empty.
 fn XdwDocument::xdw_draw_object(
   self : XdwDocument,
   obj : XdwObject,
   object : @core.ObjectBuilder,
   writer : @core.DocumentWriter,
   warnings : Array[String],
+  fallback_text~ : String? = None,
 ) -> Unit raise {
-  let pic = match self.drawing_of(obj.record) {
-    Some(pic) => pic
-    None => return
+  let pic = self.drawing_of(obj.record)
+  if pic is None && fallback_text is None {
+    return
   }
   let kind_name_ = xdw_kind_name(obj.kind)
   let scale = xdw_px2pt
@@ -245,9 +298,20 @@ fn XdwDocument::xdw_draw_object(
   let body_y = if rotated || obj.kind == K_CONTENT { 0.0 } else { y }
   let body_w = if rotated { nw } else { w }
   let body_h = if rotated { nh } else { h }
-  self.xdw_draw_body(
-    obj, pic, kind_name_, body_x, body_y, body_w, body_h, object, writer, warnings,
-  )
+  match pic {
+    Some(pic) =>
+      self.xdw_draw_body(
+        obj, pic, kind_name_, body_x, body_y, body_w, body_h, object, writer, warnings,
+      )
+    None => ()
+  }
+  match fallback_text {
+    Some(text) =>
+      if text != "" {
+        xdw_draw_fallback_text(object, text, body_x, body_y, body_w, body_h)
+      }
+    None => ()
+  }
   if rotated {
     object.restore()
   }
@@ -357,6 +421,156 @@ fn XdwDocument::xdw_draw_body(
 }
 
 ///|
+/// One page's layers and the index runs they carry.
+priv struct XdwPageLayers {
+  layers : Array[Json]
+  runs : Array[@core.IndexRun]
+  /// Whether the page drew text or carries annotation text, so the index part
+  /// has to be written even when every run was filtered away.
+  saw_text : Bool
+  /// Whether a layer's text could not be read back.
+  index_failed : Bool
+}
+
+///|
+/// Index one layer, reporting a failure instead of aborting the page.
+fn xdw_index_layer(
+  encoded : Bytes,
+  page : Int,
+  layer : Int,
+  include_hidden : Bool,
+  covers_from : Bytes?,
+  warnings : Array[String],
+) -> (Array[@core.IndexRun], Int32, Bool) {
+  try {
+    let (runs, drawn) = xdw_page_index_runs(
+      encoded, page, layer, include_hidden, covers_from,
+    )
+    (runs, drawn, false)
+  } catch {
+    error => {
+      warnings.push(
+        "page \{page + 1}: the text index was not readable: " + error.to_string(),
+      )
+      ([], 0, true)
+    }
+  }
+}
+
+///|
+/// Build a page's body and annotation layers and index each one.
+///
+/// The body is the page content; annotations are drawn on a layer of their
+/// own, so a viewer can show or hide them. The body is indexed with the
+/// annotation layer's fills as covers: the viewer draws the annotation layer
+/// after the body, so a fill there still hides the body text it covers. That
+/// matches the default view, where annotations are visible. A viewer that
+/// hides the annotation layer reveals body text the static index leaves out;
+/// the index cannot represent both views.
+fn XdwDocument::xdw_page_layers(
+  self : XdwDocument,
+  page : XdwPage,
+  index : Int,
+  writer : @core.DocumentWriter,
+  warnings : Array[String],
+) -> XdwPageLayers raise {
+  let width = page.w.to_double() * xdw_px2pt
+  let height = page.h.to_double() * xdw_px2pt
+  let body = @core.ObjectBuilder::new()
+  body.set_bbox(0.0F, 0.0F, Float::from_double(width), Float::from_double(height))
+  let annotation = @core.ObjectBuilder::new()
+  annotation.set_bbox(
+    0.0F, 0.0F, Float::from_double(width), Float::from_double(height),
+  )
+  let mut has_annotation = false
+  for obj in page.objects {
+    if xdw_is_annotation(obj.kind) {
+      has_annotation = true
+      let fallback = match obj.text {
+        Some(text) => {
+          let text = xdw_annotation_text(text)
+          if text == "" {
+            None
+          } else {
+            // A drawing that cannot be read back is treated as carrying no
+            // text, so the stored text is drawn rather than lost.
+            let drawn = try self.xdw_annotation_drawn_text(obj) catch {
+              _ => ""
+            }
+            if drawn == "" {
+              Some(text)
+            } else {
+              None
+            }
+          }
+        }
+        None => None
+      }
+      self.xdw_draw_object(
+        obj, annotation, writer, warnings, fallback_text=fallback,
+      )
+    } else {
+      self.xdw_draw_object(obj, body, writer, warnings)
+    }
+  }
+  let body_encoded = body.encode() catch {
+    error => raise XdwCorrupt("a page could not be built: " + error.to_string())
+  }
+  let body_hash = writer.add_part("obj", body_encoded) catch {
+    error => raise XdwCorrupt("a page could not be stored: " + error.to_string())
+  }
+  let annotation_encoded : Bytes? = if has_annotation {
+    Some(
+      annotation.encode() catch {
+        error => raise XdwCorrupt("a page could not be built: " + error.to_string())
+      },
+    )
+  } else {
+    None
+  }
+  let annotation_hash : String? = match annotation_encoded {
+    Some(encoded) =>
+      Some(
+        writer.add_part("obj", encoded) catch {
+          error => raise XdwCorrupt("a page could not be stored: " + error.to_string())
+        },
+      )
+    None => None
+  }
+  let (body_runs, body_drawn, body_failed) = xdw_index_layer(
+    body_encoded, index, 0, self.include_hidden, annotation_encoded, warnings,
+  )
+  let annotation_index : (Array[@core.IndexRun], Int32, Bool) = match annotation_encoded {
+    Some(encoded) =>
+      xdw_index_layer(encoded, index, 1, self.include_hidden, None, warnings)
+    None => ([], 0, false)
+  }
+  let (annotation_runs, annotation_drawn, annotation_failed) = annotation_index
+  let runs : Array[@core.IndexRun] = []
+  runs.append(body_runs)
+  runs.append(annotation_runs)
+  let layers : Array[Json] = [
+    Json::object({ "role": Json::string("body"), "obj": Json::string(body_hash) }),
+  ]
+  match annotation_hash {
+    Some(hash) =>
+      layers.push(
+        Json::object({
+          "role": Json::string("annotation"),
+          "obj": Json::string(hash),
+        }),
+      )
+    None => ()
+  }
+  {
+    layers,
+    runs,
+    saw_text: body_drawn > 0 || annotation_drawn > 0,
+    index_failed: body_failed || annotation_failed,
+  }
+}
+
+///|
 /// Convert a whole DocuWorks document into a single-file BDF.
 ///
 /// `include_hidden` keeps text that a later opaque fill covers completely in
@@ -380,56 +594,29 @@ pub fn xdw_convert(
   let warnings : Array[String] = []
   let pages : Array[Json] = []
   let index_runs : Array[@core.IndexRun] = []
-  // Whether any page drew text at all, and whether a page's text could not be
-  // read back. An index that is present but empty must still be written: the
-  // reader rebuilds a missing index from the object stream, which would bring
-  // back exactly the text this index leaves out.
+  // Whether any page drew text or carries annotation text, and whether a
+  // page's text could not be read back. An index that is present but empty
+  // must still be written: the reader rebuilds a missing index from the object
+  // stream, which would bring back exactly the text this index leaves out.
   let mut saw_text = false
   let mut index_failed = false
   for i in 0..<doc.pages.length() {
     let page = doc.pages[i]
     let width = page.w.to_double() * xdw_px2pt
     let height = page.h.to_double() * xdw_px2pt
-    let object = @core.ObjectBuilder::new()
-    object.set_bbox(0.0F, 0.0F, Float::from_double(width), Float::from_double(height))
-    for o in page.objects {
-      doc.xdw_draw_object(o, object, writer, warnings)
-    }
-    let encoded = object.encode() catch {
-      error => raise XdwCorrupt("a page could not be built: " + error.to_string())
-    }
-    let hash = writer.add_part("obj", encoded) catch {
-      error => raise XdwCorrupt("a page could not be stored: " + error.to_string())
-    }
-    // The page's own command stream carries every string it draws, body text
-    // and annotation text alike. The index is built from the renderer's runs so
-    // that its ordinals and separators are the ones the viewer draws with; the
-    // command stream only says which of those runs a later opaque fill hides.
-    let (runs, drew_text) = xdw_page_index_runs(encoded, i, 0, doc.include_hidden) catch {
-      error => {
-        warnings.push(
-          "page \{i + 1}: the text index was not readable: " + error.to_string(),
-        )
-        index_failed = true
-        ([], false)
-      }
-    }
-    if drew_text {
+    let built = doc.xdw_page_layers(page, i, writer, warnings)
+    if built.saw_text {
       saw_text = true
     }
-    index_runs.append(runs)
+    if built.index_failed {
+      index_failed = true
+    }
+    index_runs.append(built.runs)
     pages.push(
       Json::object({
         "w": Json::number(width, repr=width.to_string()),
         "h": Json::number(height, repr=height.to_string()),
-        "layers": Json::array(
-          [
-            Json::object({
-              "role": Json::string("body"),
-              "obj": Json::string(hash),
-            }),
-          ],
-        ),
+        "layers": Json::array(built.layers),
       }),
     )
   }
