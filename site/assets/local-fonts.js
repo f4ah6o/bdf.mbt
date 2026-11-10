@@ -49,20 +49,37 @@ export function faceName(face) {
   return postscript || "font";
 }
 
+function postscriptNameOf(face) {
+  const value = typeof face?.postscriptName === "string" ? face.postscriptName : "";
+  return value.trim() === "" ? null : value;
+}
+
 function fileStem(face) {
-  return faceName(face).replace(/[\\/:*?"<>|\u0000-\u001f]+/g, "_");
+  const stem = faceName(face).replace(/[\\/:*?"<>|\u0000-\u001f\u007f-\u009f]+/g, "_");
+  return stem === "" ? "font" : stem;
 }
 
 function extension(type) {
   return EXTENSIONS[type] ?? ".ttf";
 }
 
+/** 255 UTF-16 単位に収める。サロゲートペアは割らない。 */
+function fitName(base, suffix, ext) {
+  const room = Math.max(0, 255 - suffix.length - ext.length);
+  let stem = base.slice(0, room);
+  if (/[\uD800-\uDBFF]$/.test(stem)) stem = stem.slice(0, -1);
+  return (stem || "font") + suffix + ext;
+}
+
 /** 同じ名前に潰れた書体でも、内部名が重ならないようにする。 */
 function uniqueName(base, ext, used) {
-  let name = base + ext;
-  for (let index = 2; used.has(name); index += 1) name = base + "-" + index + ext;
-  used.add(name);
-  return name;
+  for (let index = 1; ; index += 1) {
+    const name = fitName(base, index === 1 ? "" : "-" + index, ext);
+    if (!used.has(name)) {
+      used.add(name);
+      return name;
+    }
+  }
 }
 
 function formatBytes(bytes) {
@@ -266,9 +283,19 @@ export function createLocalFontsUI({ root, scope = globalThis, onChange = () => 
       say("書体が選ばれていません。一覧から使う書体を選んでください。", true);
       return;
     }
+    const keep = () => (selected ? "前の選択をそのまま使います。" : "書体は選ばれていません。");
     if (chosen.length > caps.maxFiles) {
-      say("選べる書体は " + caps.maxFiles + " までです（" + chosen.length + " 書体が選ばれています）。前の選択をそのまま使います。", true);
+      say("選べる書体は " + caps.maxFiles + " までです（" + chosen.length + " 書体が選ばれています）。" + keep(), true);
       return;
+    }
+    const postscriptNames = [];
+    for (const face of chosen) {
+      const postscriptName = postscriptNameOf(face);
+      if (!postscriptName) {
+        say("「" + faceLabel(face) + "」の PostScript 名が取得できないため読み込めません。" + keep(), true);
+        return;
+      }
+      postscriptNames.push(postscriptName);
     }
     const token = ++generation;
     setBusy(true);
@@ -280,32 +307,45 @@ export function createLocalFontsUI({ root, scope = globalThis, onChange = () => 
       for (const face of chosen) {
         const blob = await face.blob();
         if (token !== generation) return;
+        if (blob.size === 0) {
+          say("「" + faceLabel(face) + "」のデータが空のため読み込めません。" + keep(), true);
+          return;
+        }
         if (blob.size > caps.maxFileBytes) {
-          say("「" + faceLabel(face) + "」は 1 書体 " + formatBytes(caps.maxFileBytes) + " を超えるため読み込めません。前の選択をそのまま使います。", true);
+          say("「" + faceLabel(face) + "」は 1 書体 " + formatBytes(caps.maxFileBytes) + " を超えるため読み込めません。" + keep(), true);
           return;
         }
         blobs.push({ face, blob });
       }
       const declared = blobs.reduce((sum, item) => sum + item.blob.size, 0);
       if (declared > caps.maxTotalBytes) {
-        say("選んだ書体の合計が " + formatBytes(caps.maxTotalBytes) + " を超えるため読み込めません。前の選択をそのまま使います。", true);
+        say("選んだ書体の合計が " + formatBytes(caps.maxTotalBytes) + " を超えるため読み込めません。" + keep(), true);
         return;
       }
       const used = new Set();
       let actual = 0;
-      for (const { face, blob } of blobs) {
+      for (let index = 0; index < blobs.length; index += 1) {
+        const { face, blob } = blobs[index];
         const bytes = new Uint8Array(await blob.arrayBuffer());
         if (token !== generation) return;
+        if (bytes.byteLength === 0) {
+          say("「" + faceLabel(face) + "」のデータが空のため読み込めません。" + keep(), true);
+          return;
+        }
         if (bytes.byteLength > caps.maxFileBytes) {
-          say("「" + faceLabel(face) + "」の実体が 1 書体 " + formatBytes(caps.maxFileBytes) + " を超えるため読み込めません。前の選択をそのまま使います。", true);
+          say("「" + faceLabel(face) + "」の実体が 1 書体 " + formatBytes(caps.maxFileBytes) + " を超えるため読み込めません。" + keep(), true);
           return;
         }
         actual += bytes.byteLength;
         if (actual > caps.maxTotalBytes) {
-          say("選んだ書体の実体の合計が " + formatBytes(caps.maxTotalBytes) + " を超えるため読み込めません。前の選択をそのまま使います。", true);
+          say("選んだ書体の実体の合計が " + formatBytes(caps.maxTotalBytes) + " を超えるため読み込めません。" + keep(), true);
           return;
         }
-        loaded.push({ name: uniqueName(fileStem(face), extension(blob.type), used), bytes });
+        loaded.push({
+          name: uniqueName(fileStem(face), extension(blob.type), used),
+          postscriptName: postscriptNames[index],
+          bytes,
+        });
       }
       selected = loaded;
       showSummary();
@@ -338,7 +378,11 @@ export function createLocalFontsUI({ root, scope = globalThis, onChange = () => 
   /** 変換に渡す配列。選択が無ければ null。呼ぶたびに複製を返す。 */
   function getFontFiles() {
     if (!selected || selected.length === 0) return null;
-    return selected.map((item) => ({ name: item.name, bytes: item.bytes.slice() }));
+    return selected.map((item) => ({
+      name: item.name,
+      postscriptName: item.postscriptName,
+      bytes: item.bytes.slice(),
+    }));
   }
 
   queryButton.addEventListener("click", () => void query());

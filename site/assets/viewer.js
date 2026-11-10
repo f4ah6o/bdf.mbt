@@ -58,7 +58,11 @@ const viewer = bdf_create_viewer($("#preview"), {
 });
 // ローカルフォントは、利用者が選んだときだけ読む。選択が無ければ
 // これまでどおり options.fonts も fontFiles も付けない。
-const localFonts = createLocalFontsUI({ root: $("#local-fonts") });
+// 古い HTML がキャッシュされていて置き場所が無いときも、変換は止めない。
+const localFontsRoot = $("#local-fonts");
+const localFonts = localFontsRoot
+  ? createLocalFontsUI({ root: localFontsRoot })
+  : { getFontFiles: () => null, clear: () => {} };
 
 let currentPage = 0;
 let downloadUrl = null;

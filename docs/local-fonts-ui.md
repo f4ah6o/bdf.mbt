@@ -10,7 +10,11 @@ in `site/assets/local-fonts.js`; the viewer mounts it in
 `converter.convert(bytes, options)` accepts either:
 
 - `options.fonts`: a URL of a font directory (unchanged), or
-- `options.fontFiles`: an array of `{ name: string, bytes: Uint8Array | ArrayBuffer }`.
+- `options.fontFiles`: an array of
+  `{ name: string, postscriptName: string, bytes: Uint8Array | ArrayBuffer }`.
+  `postscriptName` is the face's SFNT name ID 6, sent verbatim so the Worker can
+  select exactly one face from a collection. `name` is a sanitized, unique
+  internal file name and is not the selector.
 
 The two are mutually exclusive. The viewer never sets `options.fonts`; it adds
 `options.fontFiles` only when the visitor has selected at least one face. With
@@ -48,15 +52,22 @@ working.
 ## Output limitations
 
 Selected fonts may be embedded in exported files. PDF and DOCX do not reflect
-the selected fonts. XLSX uses only the first face. CSV, PPTX and JWW use the
-selected fonts. The viewer states this next to the control, and repeats the
+the selected fonts. XLSX uses only the first face. A face selected from a TTC
+collection may not be safely embeddable in XLSX, so the Worker may reject that
+conversion; the UI does not claim that only one TTC face is embedded. CSV,
+PPTX and JWW use the selected fonts. The viewer states this next to the control, and repeats the
 embedding note in the status line after a conversion that used fonts.
 
 The UI enforces the Worker limits before allocating: at most 64 files, at most
 32 MiB per file and at most 64 MiB in total. It checks `blob.size` first, then
-the actual `byteLength` after reading. A rejected batch keeps the previous
-selection and says why. Generated internal names are made distinct when two
-PostScript names sanitize to the same value.
+the actual `byteLength` after reading. Empty blobs and zero-byte reads are
+rejected. A rejected batch keeps the previous selection and says why.
+
+Generated internal names replace control characters (including DEL), are capped
+at 255 UTF-16 units including the suffix and extension without splitting a
+surrogate pair, and are made distinct when two PostScript names sanitize to the
+same value. A missing or empty `postscriptName` fails the batch before any bytes
+are read; the value is never logged.
 
 ## Tests
 

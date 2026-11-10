@@ -208,7 +208,7 @@ try {
       const bytes = new Uint8Array(binary.length);
       for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
       window.queryLocalFonts = async () => [{
-        postscriptName: "STIXTwoText",
+        postscriptName: "STIXTwoText-Regular",
         fullName: "STIX Two Text",
         family: "STIX Two Text",
         style: "Regular",
@@ -237,7 +237,8 @@ try {
     const posted = await page.evaluate(() => window.__posted.at(-1));
     assert.equal(posted.fonts, undefined, "the URL option is not combined with fontFiles");
     assert.equal(posted.fontFiles.length, 1);
-    assert.equal(posted.fontFiles[0].name, "STIXTwoText.ttf");
+    assert.equal(posted.fontFiles[0].name, "STIXTwoText-Regular.ttf");
+    assert.equal(posted.fontFiles[0].postscriptName, "STIXTwoText-Regular");
     assert.equal(posted.fontFiles[0].bytes.byteLength, stix.length);
     const status = await page.locator("#status").textContent();
     assert.doesNotMatch(status, /no fonts found/, "the selected font replaces the missing-font warning");
