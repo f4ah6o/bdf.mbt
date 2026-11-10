@@ -19,6 +19,7 @@ const stix = await readFile(resolve(import.meta.dirname, "../compat/font/fixture
 const stixBase64 = stix.toString("base64");
 const csvSample = await readFile(resolve(import.meta.dirname, "../site/samples/basic.csv"));
 const docxSample = await readFile(resolve(import.meta.dirname, "../site/samples/basic.docx"));
+const pptxSample = await readFile(resolve(import.meta.dirname, "../site/samples/basic.pptx"));
 const types = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -352,8 +353,8 @@ try {
     await page.check("#local-fonts-face-0");
     await page.click("#local-fonts button:has-text('選択した書体を使う')");
     await page.waitForFunction(() => /1 書体を読み込みました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
-    await page.setInputFiles("#file", { name: "basic.docx", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", buffer: docxSample });
-    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.docx", null, { timeout: 180000 });
+    await page.setInputFiles("#file", { name: "basic.pptx", mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation", buffer: pptxSample });
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.pptx", null, { timeout: 180000 });
     assert.equal(await page.locator("dialog.first-font-choice").count(), 0, "the next file does not prompt");
     const posted = await page.evaluate(() => window.__posted.at(-1));
     assert.equal(posted.fontFiles.length, 1);
@@ -429,6 +430,51 @@ try {
     await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.docx", null, { timeout: 180000 });
     const after = await page.evaluate(() => window.__posted.at(-1));
     assert.equal(after.fontFiles, undefined, "a cleared selection is not sent");
+  });
+
+  await step("selected fonts are not sent for PDF or Word aliases but are sent for CSV", async () => {
+    await fresh();
+    await page.addInitScript((base64) => {
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+      window.queryLocalFonts = async () => [{
+        postscriptName: "STIXTwoText",
+        fullName: "STIX Two Text",
+        family: "STIX Two Text",
+        style: "Regular",
+        blob: async () => new Blob([bytes], { type: "font/ttf" }),
+      }];
+      window.__posted = [];
+      const post = Worker.prototype.postMessage;
+      Worker.prototype.postMessage = function (message, transfer) {
+        if (message?.type === "convert") window.__posted.push(message.options);
+        return post.call(this, message, transfer);
+      };
+    }, stixBase64);
+    await page.goto(base + "viewer/", { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => /^1 \/ 20$/.test(document.querySelector("#page-number")?.textContent ?? ""), null, { timeout: 120000 });
+    await page.click("#local-fonts button:has-text('ローカルフォントを選ぶ')");
+    await page.waitForSelector("#local-fonts-face-0");
+    await page.check("#local-fonts-face-0");
+    await page.click("#local-fonts button:has-text('選択した書体を使う')");
+    await page.waitForFunction(() => /1 書体を読み込みました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    await page.click('#samples button:text-is("PDF（20 ページ）")');
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "demo.pdf", null, { timeout: 180000 });
+    assert.equal((await page.evaluate(() => window.__posted.at(-1))).fontFiles, undefined, "PDF gets no fontFiles");
+    await page.click('#samples button:text-is("Word")');
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.docx", null, { timeout: 180000 });
+    assert.equal((await page.evaluate(() => window.__posted.at(-1))).fontFiles, undefined, "DOCX gets no fontFiles");
+    await page.setInputFiles("#file", { name: "basic.docm", mimeType: "application/vnd.ms-word.document.macroEnabled.12", buffer: docxSample });
+    await page.waitForSelector("dialog.first-font-choice");
+    await page.click("dialog.first-font-choice button:has-text('この設定で続ける')");
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.docm", null, { timeout: 180000 });
+    assert.equal((await page.evaluate(() => window.__posted.at(-1))).fontFiles, undefined, "DOCM alias gets no fontFiles");
+    await page.click('#samples button:text-is("CSV")');
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.csv", null, { timeout: 180000 });
+    const posted = await page.evaluate(() => window.__posted.at(-1));
+    assert.equal(posted.fontFiles.length, 1, "CSV still receives the retained selection");
+    assert.equal(posted.fontFiles[0].postscriptName, "STIXTwoText");
   });
 
   await step("viewer searches and saves the BDF", async () => {

@@ -198,6 +198,14 @@ function showViews(manifest) {
   updatePage();
 }
 
+// 選択した書体を使えない拡張子には fontFiles を送らない。直接 API は
+// 明示的に渡された fontFiles を検証するが、ビューアはファイル名で判断できる。
+const FONT_FREE_EXTENSIONS = [".pdf", ".docx", ".docm", ".dotx", ".dotm"];
+function sendsSelectedFonts(name) {
+  const lower = name.toLowerCase();
+  return !FONT_FREE_EXTENSIONS.some((extension) => lower.endsWith(extension));
+}
+
 async function openBytes(name, input, retry = false, useFonts = true) {
   if (busy) return;
   if (!retry) {
@@ -226,7 +234,7 @@ async function openBytes(name, input, retry = false, useFonts = true) {
       const password = isPdf && pdfPassword ? pdfPassword.value : "";
       if (password) options.params = { password };
       // 選択した書体だけを渡す。options.fonts（URL）とは併用しない。
-      const fontFiles = useFonts ? localFonts.getFontFiles() : null;
+      const fontFiles = useFonts && sendsSelectedFonts(name) ? localFonts.getFontFiles() : null;
       if (fontFiles) {
         options.fontFiles = fontFiles;
         usedFonts = fontFiles;

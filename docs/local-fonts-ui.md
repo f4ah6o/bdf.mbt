@@ -61,8 +61,10 @@ working.
 
 ## Output limitations
 
-The selection is passed to and validated by the converter, but PDF and DOCX do
-not use the selected font database. For supported source formats, the generated
+The viewer does not send `fontFiles` for `.pdf`, `.docx`, `.docm`, `.dotx` or
+`.dotm` (case-insensitive), because those formats cannot use the selection. The
+direct Worker API still validates explicitly supplied `fontFiles`; the viewer
+just avoids sending them. The selection is retained for later supported files. For supported source formats, the generated
 BDF, or a PDF later produced from that BDF, may embed the selected font data.
 XLSX uses only the first face. A face selected from a TTC
 collection may not be safely embeddable in XLSX, so the Worker may reject that
