@@ -57,6 +57,36 @@ test "cad drawing groups and text accessors" {
 }
 
 ///|
+test "cad plot keeps the pen cap and join" {
+  let canvas = @canvas.Canvas::new()
+  let drawing = Drawing::new()
+  let path = CadPath::new()
+  path.move_to(0.0, 0.0)
+  path.line_to(10.0, 10.0)
+  drawing.stroke(path, Pen::new(cap=CAP_ROUND, join=JOIN_ROUND))
+  let plotter = Plotter::new(@canvas.Fonts::new(None))
+  plotter.plot(canvas, drawing, @canvas.Matrix::identity(), Rect::empty())
+  let encoded = canvas.object().encode() catch {
+    e => abort("encode failed: " + e.to_string())
+  }
+  let commands = @render.decode_commands(encoded) catch {
+    e => abort("decode failed: " + e.to_string())
+  }
+  let mut found = false
+  for command in commands {
+    match command {
+      @render.Line(_, cap, join, _) => {
+        found = true
+        assert_eq(cap, CAP_ROUND.to_int())
+        assert_eq(join, JOIN_ROUND.to_int())
+      }
+      _ => ()
+    }
+  }
+  assert_true(found)
+}
+
+///|
 fn rings(drawing : Drawing) -> Int {
   if drawing.is_empty() { 0 } else { 1 }
 }

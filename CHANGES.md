@@ -4,6 +4,10 @@
 
 ### Added
 
+- `compat/parity/render-diff.mjs` compares fixed fixtures through upstream and
+  MoonBit converters and renderers independently, recording environment and
+  input hashes.
+
 - `npm run verify:local` runs the self-test, lint, CI, demo, parity, visual and
   site gates through `actrun` in the current worktree and writes a manifest,
   logs and actrun run records under `_scratch/local-verify/`. Per-workflow
@@ -56,6 +60,8 @@
   dispatches it or publishes the site.
 
 ### Fixed
+
+- CAD paths now retain the pen line cap, including round caps on Jw_cad paths.
 
 - PDF streams whose `/Length` runs 1–8 bytes into the `endstream` marker are
   read up to that marker, preserving the reported content stream and binary

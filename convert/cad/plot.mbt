@@ -220,6 +220,7 @@ fn PlotContext::stroke_item(
   }
   let mut dash : Array[Double]? = None
   let mut offset = 0.0
+  let mut cap = pen.cap
   match pen.dash {
     Some(values) if !values.is_empty() => {
       let scaled : Array[Double] = []
@@ -240,14 +241,13 @@ fn PlotContext::stroke_item(
         offset = pen.dash_offset * scale
         if dots {
           // A dot is drawn as a round cap of zero length.
-          self.state.cap = CAP_ROUND
+          cap = CAP_ROUND
         }
       }
     }
     _ => ()
   }
   self.set_stroke(pen.color)
-  let cap = self.state.cap
   self.set_line(width, cap, pen.join, pen.miter)
   self.set_dash(dash, offset)
   let object = self.canvas.object()
