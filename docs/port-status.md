@@ -153,7 +153,11 @@
   A defined name and a row break move with the row they name; a merge over a
   dropped row, a drawing, a chart, a pivot table or a formula of another
   sheet that names a sheet whose rows move is an error instead of a stale
-  reference, and a self-closing `<f/>` counts as a formula.
+  reference, and a self-closing `<f/>` counts as a formula. A comment, a VML
+  drawing, a slicer, a sparkline, an external link or a drawing that anchors
+  to a sheet whose rows move is an error too. A row or a cell written across
+  lines, with spaces around `=` or with single quotes is renumbered like any
+  other, without a duplicate attribute.
   A section that starts in a table row and ends outside it is an error, a
   section of `| slots` is an error (write `| rows`), and a picture tag
   (`{{%name}}`) is reported and left empty.

@@ -77,6 +77,114 @@ fn ooxml_name_end(rest : StringView) -> Bool {
 }
 
 ///|
+fn ooxml_is_space(c : Char) -> Bool {
+  c == ' ' || c == '\t' || c == '\r' || c == '\n'
+}
+
+///|
+priv struct XmlAttr {
+  name : String
+  value : String
+  start : Int
+  end : Int
+}
+
+///|
+// The attributes of a start tag, with the indexes of the quotes around each
+// value. Whitespace around `=` and single or double quotes are accepted, so a
+// tag written across lines or with single quotes is read like any other.
+fn ooxml_attrs(tag : String) -> Array[XmlAttr] {
+  let chars = tag.to_array()
+  let out : Array[XmlAttr] = []
+  let mut pos = 1
+  while pos < chars.length() && ooxml_is_name_char(chars[pos]) {
+    pos += 1
+  }
+  while pos < chars.length() {
+    while pos < chars.length() && ooxml_is_space(chars[pos]) {
+      pos += 1
+    }
+    if pos >= chars.length() || chars[pos] == '>' || chars[pos] == '/' {
+      break
+    }
+    let name_start = pos
+    while pos < chars.length() && ooxml_is_name_char(chars[pos]) {
+      pos += 1
+    }
+    if pos == name_start {
+      break
+    }
+    let name = String::from_array(chars[name_start:pos])
+    while pos < chars.length() && ooxml_is_space(chars[pos]) {
+      pos += 1
+    }
+    if pos >= chars.length() || chars[pos] != '=' {
+      continue
+    }
+    pos += 1
+    while pos < chars.length() && ooxml_is_space(chars[pos]) {
+      pos += 1
+    }
+    if pos >= chars.length() || (chars[pos] != '"' && chars[pos] != '\'') {
+      continue
+    }
+    let quote = chars[pos]
+    let value_start = pos + 1
+    let mut value_end = value_start
+    while value_end < chars.length() && chars[value_end] != quote {
+      value_end += 1
+    }
+    if value_end >= chars.length() {
+      break
+    }
+    out.push({
+      name,
+      value: String::from_array(chars[value_start:value_end]),
+      start: pos,
+      end: value_end,
+    })
+    pos = value_end + 1
+  }
+  out
+}
+
+///|
+fn ooxml_attr_value(tag : String, name : String) -> String {
+  for attr in ooxml_attrs(tag) {
+    if attr.name == name {
+      return attr.value
+    }
+  }
+  ""
+}
+
+///|
+// Replace the value of an attribute, or add it before the closing `>` or
+// `/>`. The quote style of an existing attribute is kept.
+fn ooxml_set_attr(tag : String, name : String, value : String) -> String {
+  for attr in ooxml_attrs(tag) {
+    if attr.name == name {
+      return tag[:attr.start + 1].to_owned() +
+        value +
+        tag[attr.end:].to_owned()
+    }
+  }
+  let chars = tag.to_array()
+  let mut at = tag.length() - 1
+  if at > 0 && chars[at - 1] == '/' {
+    at -= 1
+  }
+  let prefix = if at > 0 && ooxml_is_space(chars[at - 1]) { "" } else { " " }
+  tag[:at].to_owned() +
+  prefix +
+  name +
+  "=\"" +
+  value +
+  "\"" +
+  tag[at:].to_owned()
+}
+
+///|
 /// The byte ranges of the elements of a tag, in the order of the document.
 fn ooxml_elements(
   xml : String,
@@ -751,57 +859,22 @@ fn fill_part(
 
 ///|
 fn ooxml_replace_row_attr(tag : String, number : Int) -> String {
-  let needle = " r=\""
-  match tag.find(needle) {
-    Some(index) => {
-      let start = index + needle.length()
-      let end = match tag[start:].find("\"") {
-        Some(i) => start + i
-        None => return tag
-      }
-      tag[:index].to_owned() +
-      " r=\"" +
-      number.to_string() +
-      "\"" +
-      tag[end + 1:].to_owned()
-    }
-    None => {
-      let mut at = tag.length() - 1
-      if at > 0 && tag[at - 1:].has_prefix("/") {
-        at -= 1
-      }
-      tag[:at].to_owned() + " r=\"" + number.to_string() + "\"" + tag[at:].to_owned()
-    }
-  }
+  ooxml_set_attr(tag, "r", number.to_string())
 }
 
 ///|
 fn ooxml_rewrite_cell_ref(tag : String, number : Int) -> String {
-  let needle = " r=\""
-  match tag.find(needle) {
-    Some(index) => {
-      let start = index + needle.length()
-      let end = match tag[start:].find("\"") {
-        Some(i) => start + i
-        None => return tag
-      }
-      let chars = tag[start:end].to_owned().to_array()
-      let mut cut = chars.length()
-      while cut > 0 &&
-        chars[cut - 1].to_int() >= 48 &&
-        chars[cut - 1].to_int() <= 57 {
-        cut -= 1
-      }
-      let letters = String::from_array(chars[:cut])
-      tag[:index].to_owned() +
-      " r=\"" +
-      letters +
-      number.to_string() +
-      "\"" +
-      tag[end + 1:].to_owned()
-    }
-    None => tag
+  let ref = ooxml_attr_value(tag, "r")
+  if ref == "" {
+    return tag
   }
+  let chars = ref.to_array()
+  let mut cut = chars.length()
+  while cut > 0 && ooxml_is_digit(chars[cut - 1]) {
+    cut -= 1
+  }
+  let letters = String::from_array(chars[:cut])
+  ooxml_set_attr(tag, "r", letters + number.to_string())
 }
 
 ///|
@@ -809,12 +882,18 @@ fn ooxml_renumber_cells(body : String, number : Int) -> String {
   let out = StringBuilder()
   let mut pos = 0
   while pos < body.length() {
-    let start = match body[pos:].find("<c ") {
+    let start = match body[pos:].find("<c") {
       Some(index) => pos + index
       None => {
         out.write_string(body[pos:].to_owned())
         break
       }
+    }
+    let after = start + 2
+    if after > body.length() || !ooxml_name_end(body[after:]) {
+      out.write_string(body[pos:after].to_owned())
+      pos = after
+      continue
     }
     out.write_string(body[pos:start].to_owned())
     let end = match body[start:].find(">") {
@@ -824,7 +903,9 @@ fn ooxml_renumber_cells(body : String, number : Int) -> String {
         break
       }
     }
-    out.write_string(ooxml_rewrite_cell_ref(body[start:end + 1].to_owned(), number))
+    out.write_string(
+      ooxml_rewrite_cell_ref(body[start:end + 1].to_owned(), number),
+    )
     pos = end + 1
   }
   out.to_string()
@@ -862,16 +943,11 @@ fn ooxml_row_numbers(xml : String) -> Array[Int] {
 ///|
 /// The number of a row of a worksheet, or -1 when it has none.
 fn ooxml_row_number(tag : String) -> Int {
-  let needle = " r=\""
-  let at = match tag.find(needle) {
-    Some(index) => index + needle.length()
-    None => return -1
+  let value = ooxml_attr_value(tag, "r")
+  if value == "" {
+    return -1
   }
-  let end = match tag[at:].find("\"") {
-    Some(index) => at + index
-    None => return -1
-  }
-  @string.parse_int(tag[at:end].to_owned()) catch { _ => -1 }
+  @string.parse_int(value) catch { _ => -1 }
 }
 
 ///|
@@ -1015,12 +1091,18 @@ fn ooxml_rewrite_merges(
   let out = StringBuilder()
   let mut pos = 0
   while pos < xml.length() {
-    let start = match xml[pos:].find("<mergeCell ") {
+    let start = match xml[pos:].find("<mergeCell") {
       Some(index) => pos + index
       None => {
         out.write_string(xml[pos:].to_owned())
         break
       }
+    }
+    let after = start + 10
+    if after > xml.length() || !ooxml_name_end(xml[after:]) {
+      out.write_string(xml[pos:after].to_owned())
+      pos = after
+      continue
     }
     out.write_string(xml[pos:start].to_owned())
     let end = match xml[start:].find(">") {
@@ -1031,29 +1113,13 @@ fn ooxml_rewrite_merges(
       }
     }
     let tag = xml[start:end + 1].to_owned()
-    let needle = "ref=\""
-    let at = match tag.find(needle) {
-      Some(index) => index + needle.length()
-      None => {
-        out.write_string(tag)
-        pos = end + 1
-        continue
-      }
+    let ref = ooxml_attr_value(tag, "ref")
+    if ref == "" {
+      out.write_string(tag)
+    } else {
+      let mapped = ooxml_map_ref(ref, rows.map, rows.dropped)
+      out.write_string(ooxml_set_attr(tag, "ref", mapped))
     }
-    let value_end = match tag[at:].find("\"") {
-      Some(index) => at + index
-      None => {
-        out.write_string(tag)
-        pos = end + 1
-        continue
-      }
-    }
-    let mapped = ooxml_map_ref(
-      tag[at:value_end].to_owned(),
-      rows.map,
-      rows.dropped,
-    )
-    out.write_string(tag[:at].to_owned() + mapped + tag[value_end:].to_owned())
     pos = end + 1
   }
   out.to_string()
@@ -1070,20 +1136,13 @@ fn ooxml_rewrite_dimension(xml : String, map : Map[Int, Array[Int]]) -> String {
     None => return xml
   }
   let tag = xml[start:end + 1].to_owned()
-  let needle = "ref=\""
-  let at = match tag.find(needle) {
-    Some(index) => index + needle.length()
-    None => return xml
+  let ref = ooxml_attr_value(tag, "ref")
+  if ref == "" {
+    return xml
   }
-  let value_end = match tag[at:].find("\"") {
-    Some(index) => at + index
-    None => return xml
-  }
-  let mapped = ooxml_map_span(tag[at:value_end].to_owned(), map)
+  let mapped = ooxml_map_span(ref, map)
   xml[:start].to_owned() +
-  tag[:at].to_owned() +
-  mapped +
-  tag[value_end:].to_owned() +
+  ooxml_set_attr(tag, "ref", mapped) +
   xml[end + 1:].to_owned()
 }
 
@@ -1451,16 +1510,7 @@ fn ooxml_map_defined_name(
 
 ///|
 fn ooxml_attr(tag : String, name : String) -> String {
-  let needle = " " + name + "=\""
-  let at = match tag.find(needle) {
-    Some(index) => index + needle.length()
-    None => return ""
-  }
-  let end = match tag[at:].find("\"") {
-    Some(index) => at + index
-    None => return ""
-  }
-  tag[at:end].to_owned()
+  ooxml_attr_value(tag, name)
 }
 
 ///|
@@ -1532,16 +1582,11 @@ fn ooxml_sheet_parts(
 
 ///|
 fn ooxml_map_break(tag : String, rows : RowMap) -> String raise OoxmlError {
-  let needle = "id=\""
-  let at = match tag.find(needle) {
-    Some(index) => index + needle.length()
-    None => return tag
+  let value = ooxml_attr_value(tag, "id")
+  if value == "" {
+    return tag
   }
-  let end = match tag[at:].find("\"") {
-    Some(index) => at + index
-    None => return tag
-  }
-  let number = @string.parse_int(tag[at:end].to_owned()) catch { _ => -1 }
+  let number = @string.parse_int(value) catch { _ => -1 }
   if number < 0 {
     return tag
   }
@@ -1561,7 +1606,7 @@ fn ooxml_map_break(tag : String, rows : RowMap) -> String raise OoxmlError {
           ", which a section repeats; row breaks across a repeated row are not supported",
         )
       } else {
-        tag[:at].to_owned() + numbers[0].to_string() + tag[end:].to_owned()
+        ooxml_set_attr(tag, "id", numbers[0].to_string())
       }
     None => tag
   }
@@ -1613,6 +1658,11 @@ fn ooxml_renumber_rows(
   let rows = ooxml_row_map(template, filled)
   if !rows.changed {
     return (filled, rows)
+  }
+  if filled.contains("<x14:sparkline") || filled.contains("<xm:f>") {
+    raise OoxmlError(
+      "ooxml: the sheet has a sparkline and a section repeats rows; sparkline references are not moved when rows are repeated",
+    )
   }
   if ooxml_has_formula(filled) {
     raise OoxmlError(
@@ -1804,6 +1854,136 @@ fn ooxml_map_defined_names(
 }
 
 ///|
+// The relationships part of a part: `xl/worksheets/sheet1.xml` becomes
+// `xl/worksheets/_rels/sheet1.xml.rels`.
+fn ooxml_part_rels(part : String) -> String {
+  let chars = part.to_array()
+  let mut slash = -1
+  for i in 0..<chars.length() {
+    if chars[i] == '/' {
+      slash = i
+    }
+  }
+  if slash < 0 {
+    return ""
+  }
+  part[:slash].to_owned() +
+  "/_rels/" +
+  part[slash + 1:].to_owned() +
+  ".rels"
+}
+
+///|
+// A sheet whose rows move must not carry a part that anchors to its cells:
+// a comment, a VML drawing, a drawing or a slicer. Their anchors are not
+// moved, so the fill refuses the sheet instead of leaving them stale.
+fn ooxml_check_related_parts(
+  texts : Map[String, String],
+  by_part : Map[String, String],
+  maps : Map[String, RowMap],
+) -> Unit raise OoxmlError {
+  for part, name in by_part {
+    let changed = match maps.get(part) {
+      Some(rows) => rows.changed
+      None => false
+    }
+    if !changed {
+      continue
+    }
+    let rels = match texts.get(ooxml_part_rels(part)) {
+      Some(text) => text
+      None => continue
+    }
+    let mut pos = 0
+    while pos < rels.length() {
+      let at = match rels[pos:].find("<Relationship ") {
+        Some(index) => pos + index
+        None => break
+      }
+      let end = match rels[at:].find(">") {
+        Some(index) => at + index
+        None => break
+      }
+      let tag = rels[at:end + 1].to_owned()
+      let kind = ooxml_attr_value(tag, "Type")
+      let label = if kind.has_suffix("/comments") {
+        "a comment"
+      } else if kind.has_suffix("/threadedComment") {
+        "a threaded comment"
+      } else if kind.has_suffix("/vmlDrawing") {
+        "a VML drawing"
+      } else if kind.has_suffix("/drawing") {
+        "a drawing"
+      } else if kind.has_suffix("/slicer") {
+        "a slicer"
+      } else if kind.has_suffix("/pivotTable") {
+        "a pivot table"
+      } else if kind.has_suffix("/queryTable") {
+        "a query table"
+      } else {
+        ""
+      }
+      if label != "" {
+        raise OoxmlError(
+          "ooxml: the sheet " +
+          name +
+          " has " +
+          label +
+          " and a section repeats rows; its anchors are not moved when rows are repeated",
+        )
+      }
+      pos = end + 1
+    }
+  }
+}
+
+///|
+// A workbook whose rows move must not carry an external link or a slicer
+// cache: their cached rows and anchors are not moved.
+fn ooxml_check_workbook_parts(
+  texts : Map[String, String],
+  maps : Map[String, RowMap],
+) -> Unit raise OoxmlError {
+  let mut changed = false
+  for _, rows in maps {
+    if rows.changed {
+      changed = true
+    }
+  }
+  if !changed {
+    return
+  }
+  let rels = match texts.get("xl/_rels/workbook.xml.rels") {
+    Some(text) => text
+    None => return
+  }
+  let mut pos = 0
+  while pos < rels.length() {
+    let at = match rels[pos:].find("<Relationship ") {
+      Some(index) => pos + index
+      None => break
+    }
+    let end = match rels[at:].find(">") {
+      Some(index) => at + index
+      None => break
+    }
+    let tag = rels[at:end + 1].to_owned()
+    let kind = ooxml_attr_value(tag, "Type")
+    if kind.has_suffix("/externalLink") {
+      raise OoxmlError(
+        "ooxml: the workbook has an external link and a section repeats rows; external link references are not moved when rows are repeated",
+      )
+    }
+    if kind.has_suffix("/slicerCache") {
+      raise OoxmlError(
+        "ooxml: the workbook has a slicer and a section repeats rows; slicer references are not moved when rows are repeated",
+      )
+    }
+    pos = end + 1
+  }
+}
+
+///|
 // Check and move the references that live outside the worksheet a section
 // repeats: defined names, formulas of other sheets, drawings and charts.
 fn ooxml_check_references(
@@ -1812,6 +1992,8 @@ fn ooxml_check_references(
 ) -> Unit raise OoxmlError {
   let (by_name, by_part) = ooxml_sheet_parts(texts)
   ooxml_check_drawings(texts, by_part, maps)
+  ooxml_check_related_parts(texts, by_part, maps)
+  ooxml_check_workbook_parts(texts, maps)
   ooxml_check_cross_sheet_formulas(texts, by_part, maps)
   ooxml_check_chart_refs(texts, by_part, maps)
   match texts.get("xl/workbook.xml") {

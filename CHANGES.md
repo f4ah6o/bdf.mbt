@@ -78,8 +78,12 @@
   with the row they name, a merge that covers a dropped row is an error, and
   a drawing, a chart, a pivot table or a formula of another sheet that names
   a sheet whose rows move is an error instead of a stale reference. A
-  self-closing `<f/>` counts as a formula. A sheet whose rows do not move
-  keeps every reference untouched.
+  self-closing `<f/>` counts as a formula. A comment, a VML drawing, a
+  slicer, a sparkline, an external link or a drawing that anchors to a sheet
+  whose rows move is an error too. A row or a cell written across lines, with
+  spaces around `=` or with single quotes is renumbered like any other,
+  without a duplicate attribute. A sheet whose rows do not move keeps every
+  reference untouched.
 - The options of a tag are applied by the fill of an OOXML document:
   `{{total | fmt:"#,##0.00"}}` writes the number in its format instead of
   warning that the data has no `total | fmt:"#,##0.00"` and leaving the cell
