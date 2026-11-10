@@ -78,6 +78,8 @@ async function step(name, fn) {
         status: document.querySelector("#status")?.textContent ?? null,
         error: document.querySelector("#status")?.classList.contains("error") ?? null,
         page: document.querySelector("#page-number")?.textContent ?? null,
+        pageNum: document.querySelector("#pageNum")?.textContent ?? null,
+        pages: document.querySelectorAll("#demo div[data-bdf-page]").length,
         chips: [...document.querySelectorAll("#samples button")].map((node) => node.textContent).slice(0, 6),
       }));
       console.log("     state: " + JSON.stringify(state));
@@ -116,8 +118,21 @@ try {
     await page.goto(base + "index.html", { waitUntil: "domcontentloaded" });
     await page.waitForSelector("#demo canvas", { timeout: 120000 });
     await page.waitForFunction(() => /^1 \/ \d+$/.test(document.querySelector("#pageNum")?.textContent ?? ""), null, { timeout: 120000 });
-    const total = await page.locator("#demo [data-bdf-page]").count();
+    // The text layer adds internal-link anchors that also carry data-bdf-page.
+    // Count page frames, and wait until every page frame is present.
+    await page.waitForFunction(() => document.querySelectorAll("#demo div[data-bdf-page]").length === 20, null, { timeout: 120000 });
+    const total = await page.locator("#demo div[data-bdf-page]").count();
     assert.equal(total, 20);
+  });
+
+  await step("top page counts page frames, not text-layer links", async () => {
+    // Internal-link anchors in the text layer also carry data-bdf-page. Wait
+    // until they exist, then prove the page count is the frame count.
+    await page.waitForFunction(() => document.querySelectorAll("#demo a[data-bdf-page]").length > 0, null, { timeout: 120000 });
+    const frames = await page.locator("#demo div[data-bdf-page]").count();
+    const all = await page.locator("#demo [data-bdf-page]").count();
+    assert.equal(frames, 20);
+    assert.ok(all > frames, "text-layer link anchors also carry data-bdf-page");
   });
 
   await step("top page searches the document", async () => {
