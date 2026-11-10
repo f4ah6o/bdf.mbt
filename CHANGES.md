@@ -123,6 +123,14 @@
 
 ### Fixed
 
+- DocuWorks kind 7 bitmap annotations with more than one band now decode every
+  band and join them in order, instead of reading only the first. The band
+  count, each band's stored and expanded sizes, and the joined output and
+  stored copies are checked against the bytes that are really there and the
+  picture caps, so a truncated or oversized body is refused rather than read
+  past. The bitmap offset and band-header bounds use subtraction, so a crafted
+  header cannot wrap a check and read out of bounds.
+
 - Files named for excluded formats no longer fall through to CSV detection,
   while the excluded converters remain unregistered.
 

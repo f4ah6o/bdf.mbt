@@ -381,17 +381,31 @@ fn XdwDocument::xdw_draw_body(
       error => warnings.push(kind_name_ + ": " + error.to_string())
     }
   } else if pic.kind == 7 {
-    // a bitmap: a DIB behind a 16-byte trailer, its bits LZH-compressed
-    match @metafile.dib_body_split(data) {
-      Some((bmi, stored, stored_len, expanded_len)) => {
-        let bits = if expanded_len > 0 && expanded_len != stored_len {
-          lzh_decompress(stored, expanded_len, self.limits) catch {
-            _ => stored
+    // a bitmap: a DIB behind a band count and one or more band headers,
+    // each band's bits LZH-compressed
+    match @metafile.dib_body_bands(data) {
+      Some((bmi, bands)) => {
+        let bits = @buffer.Buffer()
+        let mut readable = true
+        for band in bands {
+          let (stored, expanded_len) = band
+          let part = if expanded_len > 0 && expanded_len != stored.length() {
+            lzh_decompress(stored, expanded_len, self.limits) catch {
+              _ => {
+                readable = false
+                stored
+              }
+            }
+          } else {
+            stored
           }
-        } else {
-          stored
+          bits.write_bytes(part)
         }
-        match @metafile.dib_to_png(bmi, Some(bits)) {
+        if !readable {
+          warnings.push(kind_name_ + ": a bitmap page was not readable")
+          return
+        }
+        match @metafile.dib_to_png(bmi, Some(bits.to_bytes())) {
           Some(png) => {
             let hash = writer.add_part("img", png) catch {
               error => {

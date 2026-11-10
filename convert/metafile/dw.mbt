@@ -17,17 +17,113 @@ pub fn dib_to_png(data : Bytes, bits : Bytes?) -> Bytes? {
 }
 
 ///|
-/// Split a kind 7 DIB body: the BITMAPINFO, then the stored bits behind a
-/// 16-byte trailer (u32 1, stored size, expanded size, rows). The bits are
-/// LZH-compressed when the expanded size differs from the stored size.
-pub fn dib_body_split(data : Bytes) -> (Bytes, Bytes, Int32, Int32)? {
+/// The most bands a kind 7 DIB body may carry. A real picture uses one band
+/// per strip; the cap keeps a crafted count from allocating an array.
+const MAX_DIB_BANDS : Int = 4096
+
+///|
+/// The largest number of bytes one picture may contribute, for one band and
+/// for all bands together. It is the bits of the largest image the PNG
+/// encoder accepts (67108864 pixels at 32 bits), so a picture that could be
+/// drawn is never refused, while a crafted body cannot make the reader copy
+/// or join more than this.
+const MAX_DIB_BAND_BYTES : Int64 = 256L << 20
+
+///|
+/// The bytes a band contributes to the joined DIB: the expanded size when
+/// the band is LZH-compressed, otherwise the stored bytes as they are. A
+/// zero expanded size means the band is stored, not compressed.
+fn dib_band_output_size(stored : Int64, expanded : Int64) -> Int64 {
+  if expanded > 0L && expanded != stored {
+    expanded
+  } else {
+    stored
+  }
+}
+
+///|
+/// Whether a band fits the caps: its joined output and its stored copy,
+/// against the running totals. The subtraction keeps a crafted size from
+/// overflowing the sum.
+fn dib_band_sizes_ok(
+  output : Int64,
+  stored : Int64,
+  output_total : Int64,
+  stored_total : Int64,
+) -> Bool {
+  output <= MAX_DIB_BAND_BYTES - output_total &&
+  stored <= MAX_DIB_BAND_BYTES - stored_total
+}
+
+///|
+/// Split a kind 7 DIB body into its BITMAPINFO and its bands.
+///
+/// The body is the BITMAPINFO, then a u32 band count, then for each band a
+/// 12-byte header (stored size, expanded size, rows) and the stored bytes.
+/// A band's bits are LZH-compressed when its expanded size differs from its
+/// stored size; a zero expanded size means the band is stored as it is.
+/// Every length is checked against the bytes that are really there, and the
+/// joined output and the stored copies are capped, so a truncated or
+/// oversized body is refused instead of read past.
+pub fn dib_body_bands(data : Bytes) -> (Bytes, Array[(Bytes, Int32)])? {
   let n = dib_bits_offset(data)
-  if n <= 0 || n + 16 > data.length() {
+  // `dib_bits_offset` works in Int32 on untrusted sizes, so `n` can be a
+  // large positive value; compare by subtraction so `n + 4` cannot wrap
+  if n <= 0 || n > data.length() - 4 {
     return None
   }
-  let stored = le32(data, n + 4).to_int()
-  let expanded = le32(data, n + 8).to_int()
-  Some((data[0:n].to_owned(), data[n + 16:].to_owned(), stored, expanded))
+  let count = le32(data, n)
+  if count <= 0L || count > MAX_DIB_BANDS.to_int64() {
+    return None
+  }
+  // every band needs its 12-byte header, so the count is also bounded by
+  // the bytes that are really there
+  if count > ((data.length() - n - 4) / 12).to_int64() {
+    return None
+  }
+  let bands : Array[(Bytes, Int32)] = []
+  let mut at = n + 4
+  let mut output_total = 0L
+  let mut stored_total = 0L
+  for _ in 0..<count.to_int() {
+    // subtraction, not `at + 12`, so a crafted offset cannot wrap
+    if at > data.length() - 12 {
+      return None
+    }
+    let stored = le32(data, at)
+    let expanded = le32(data, at + 4)
+    if stored > (data.length() - at - 12).to_int64() {
+      return None
+    }
+    let output = dib_band_output_size(stored, expanded)
+    if !dib_band_sizes_ok(output, stored, output_total, stored_total) {
+      return None
+    }
+    output_total += output
+    stored_total += stored
+    let start = at + 12
+    let end = start + stored.to_int()
+    bands.push((data[start:end].to_owned(), expanded.to_int()))
+    at = end
+  }
+  Some((data[0:n].to_owned(), bands))
+}
+
+///|
+/// Split a kind 7 DIB body into its BITMAPINFO and its first band: the
+/// stored bits and the size they expand to. A body with several bands is
+/// read by [`dib_body_bands`]; this keeps the single-band shape.
+pub fn dib_body_split(data : Bytes) -> (Bytes, Bytes, Int32, Int32)? {
+  match dib_body_bands(data) {
+    Some((bmi, bands)) =>
+      if bands.is_empty() {
+        None
+      } else {
+        let (stored, expanded) = bands[0]
+        Some((bmi, stored, stored.length(), expanded))
+      }
+    None => None
+  }
 }
 
 ///|
