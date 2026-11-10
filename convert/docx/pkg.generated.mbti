@@ -2,7 +2,7 @@
 package "f4ah6o/bdf/convert/docx"
 
 // Values
-pub fn convert(Bytes, title? : String, views? : String) -> DocxResult raise
+pub fn convert(Bytes, title? : String, views? : String, pages? : String) -> DocxResult raise
 
 pub fn detect(Bytes) -> Bool
 

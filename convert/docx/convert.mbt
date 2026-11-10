@@ -222,21 +222,32 @@ pub fn detect(data : Bytes) -> Bool {
 
 ///|
 /// Convert the supported WordprocessingML text subset to BDF. `views` selects
-/// the views to make: `both` (the default), `pages` or `scroll`.
+/// the views to make: `both` (the default), `pages` or `scroll`. `pages`
+/// selects 1-based pages of the page view, as `1-3,5,8-`; an empty selection
+/// keeps every page, and the scroll view always holds the whole document.
 pub fn convert(
   data : Bytes,
   title~ : String = "",
   views~ : String = "both",
+  pages~ : String = "",
 ) -> DocxResult raise {
   let views = if views == "" { "both" } else { views }
   if views != "both" && views != "pages" && views != "scroll" {
     raise DocxInvalid("invalid views: " + views)
   }
+  let selection = if pages == "" {
+    None
+  } else {
+    @convert.parse_pages(pages) catch {
+      @convert.InvalidInput(message) => raise DocxInvalid(message)
+      error => raise DocxInvalid(error.to_string())
+    }
+  }
   let document = docx_document_text(data) catch {
     InvalidDocx(message) => raise DocxInvalid(message)
     error => raise DocxInvalid(error.to_string())
   }
-  docx_render_document(document, title, data, views) catch {
+  docx_render_document(document, title, data, views, selection) catch {
     InvalidDocx(message) => raise DocxInvalid(message)
     DocxInvalid(message) => raise DocxInvalid(message)
     error => raise DocxInvalid(error.to_string())

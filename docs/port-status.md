@@ -269,7 +269,9 @@
   views (`views=both|pages|scroll`), with separate header/footer/body layers,
   page body rectangles, Dublin Core metadata, layer-aware text indexes,
   hyperlinks, regenerated PAGE/NUMPAGES fields, numbering overrides, Office
-  Math and settings/footnote/endnote parts. Footnote and endnote bodies are
+  Math and settings/footnote/endnote parts. A `pages` selection keeps the
+  named pages of the page view, in document order, and renumbers them; the
+  scroll view keeps the whole document. Footnote and endnote bodies are
   laid out above the footer and appended to the scroll view. Real table cells
   wrap with grid/row spans, borders/fills, vertical alignment, row splitting
   and repeated header rows; columns, column breaks and vertical section

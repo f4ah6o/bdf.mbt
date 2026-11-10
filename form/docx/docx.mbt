@@ -5,12 +5,14 @@ pub suberror DocxFormError {
 
 ///|
 /// Fill {{name}} tags in a Word document and convert it to BDF. Tags split
-/// by markup and control tags are reported, not filled.
+/// by markup and control tags are reported, not filled. `pages` selects
+/// 1-based pages of the page view, as `1-3,5,8-`.
 pub fn fill(
   template : Bytes,
   data : Bytes,
   title~ : String = "",
   views~ : String = "both",
+  pages~ : String = "",
 ) -> @docx.DocxResult raise {
   let values = @json.parse(@utf8.decode_lossy(data[:])) catch {
     _ => raise DocxFormError("form/docx: the data is not JSON")
@@ -18,7 +20,7 @@ pub fn fill(
   let (filled, warnings) = @ooxml.fill_zip(template, values) catch {
     @ooxml.OoxmlError(message) => raise DocxFormError(message)
   }
-  let result = @docx.convert(filled, title~, views~)
+  let result = @docx.convert(filled, title~, views~, pages~)
   for warning in warnings {
     result.warnings.push(warning)
   }

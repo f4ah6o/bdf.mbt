@@ -44,6 +44,7 @@ import {
 import {
   "moonbitlang/async",
   "moonbitlang/core/encoding/base64",
+  "f4ah6o/bdf/form/ooxml" @ooxml,
 } for "wbtest"
 
 supported_targets = "js"

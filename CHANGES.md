@@ -11,6 +11,13 @@
   as `convert(..., params={"include_hidden": "1"})`, and through the browser
   worker's existing `request.options.params.include_hidden`. There is no CLI
   flag for it yet.
+- Word (`.docx`) conversions accept a `pages` selection such as `1-3,5,8-`
+  and keep only those pages of the page view, in document order; the scroll
+  view still holds the whole document. It is reachable as
+  `docx_convert(pages=)`, as `form/docx.fill(pages=)`, and through the browser
+  worker's existing `request.options.pages`. The page count, summary and text
+  index describe the selected pages, and a link to a page left out is dropped.
+  An invalid selection is an error, as upstream's `ParsePages` makes it.
 
 ### Changed
 

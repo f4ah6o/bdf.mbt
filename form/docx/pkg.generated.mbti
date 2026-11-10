@@ -2,7 +2,7 @@
 package "f4ah6o/bdf/form/docx"
 
 // Values
-pub fn fill(Bytes, Bytes, title? : String, views? : String) -> @f4ah6o/bdf/convert/docx.DocxResult raise
+pub fn fill(Bytes, Bytes, title? : String, views? : String, pages? : String) -> @f4ah6o/bdf/convert/docx.DocxResult raise
 
 pub fn fill_bytes(Bytes, Bytes) -> Bytes raise
 

@@ -67,6 +67,7 @@ fn docx_scroll_draw(
     fonts,
     warnings,
     bookmark_pages: Map([]),
+    view_pages: Map([]),
     field_value: fn(_, _) { "" },
     doc_language: "",
     language: Ref(""),

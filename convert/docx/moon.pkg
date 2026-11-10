@@ -1,5 +1,6 @@
 import {
   "f4ah6o/bdf/core",
+  "f4ah6o/bdf/convert",
   "f4ah6o/bdf/convert/ooxml",
   "f4ah6o/bdf/convert/metafile",
   "f4ah6o/bdf/font/db" @fontdb,
@@ -14,6 +15,7 @@ import {
 
 import {
   "moonbitlang/core/buffer",
+  "moonbitlang/core/json",
 } for "wbtest"
 
 supported_targets = "+js+wasm-gc+native"

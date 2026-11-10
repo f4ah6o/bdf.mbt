@@ -1082,7 +1082,8 @@ fn docx_emit_para_line(
   top : Double,
   available : Double,
   fonts : Map[String, Int32],
-  bookmark_pages : Map[String, Int32],
+  bookmark_pages : Map[String, DocxBookmarkPage],
+  view_pages : Map[Int32, Int32],
   field_value : (String, String) -> String,
   warnings : Array[String],
   doc_language : String,
@@ -1287,7 +1288,12 @@ fn docx_emit_para_line(
       let url = if item.link.has_prefix("#anchor:") {
         let name = item.link[8:].to_owned()
         match bookmark_pages.get(name) {
-          Some(page) => "#page=" + page.to_string()
+          Some(page) =>
+            // A link to a page the selection left out has no target.
+            match view_pages.get(page.index) {
+              Some(view) => "#page=" + view.to_string()
+              None => ""
+            }
           None => ""
         }
       } else {
@@ -1767,6 +1773,15 @@ fn docx_layout_cell_blocks(
 }
 
 ///|
+/// The page a bookmark landed on: the number the document shows, which
+/// PAGEREF fields print, and the index of the page among those laid out,
+/// which a link resolves through the page selection.
+priv struct DocxBookmarkPage {
+  number : Int32
+  index : Int32
+}
+
+///|
 priv struct DocxEmitContext {
   object : @core.ObjectBuilder
   writer : @core.DocumentWriter
@@ -1774,7 +1789,8 @@ priv struct DocxEmitContext {
   part : String
   fonts : Map[String, Int32]
   warnings : Array[String]
-  bookmark_pages : Map[String, Int32]
+  bookmark_pages : Map[String, DocxBookmarkPage]
+  view_pages : Map[Int32, Int32]
   field_value : (String, String) -> String
   doc_language : String
   language : Ref[String]
@@ -1943,6 +1959,7 @@ fn docx_emit_table_lines(
             cell_layout.w - cell_layout.mar_left - cell_layout.mar_right,
             ctx.fonts,
             ctx.bookmark_pages,
+            ctx.view_pages,
             ctx.field_value,
             ctx.warnings,
             ctx.doc_language,
@@ -2202,7 +2219,13 @@ priv struct DocxFlow {
   index_runs : Array[@core.IndexRun]
   budget : @render.TextExtractionBudget
   stories : Map[String, DocxStoryLayout]
-  bookmark_pages : Map[String, Int32]
+  bookmark_pages : Map[String, DocxBookmarkPage]
+  // The pages the selection keeps, by index among those laid out; empty
+  // keeps every page.
+  keep : Array[Bool]
+  // The page view's number for each kept page, by index among those laid
+  // out. Links resolve through it, so a link to a page left out is dropped.
+  view_pages : Map[Int32, Int32]
   mut body : @core.ObjectBuilder
   mut header_object : @core.ObjectBuilder
   mut footer_object : @core.ObjectBuilder
@@ -2212,6 +2235,7 @@ priv struct DocxFlow {
   mut has_header : Bool
   mut page_open : Bool
   mut page_index : Int32
+  mut page_physical : Int32
   mut page_number : Int32
   mut page_in_section : Int32
   mut next_number : Int32
@@ -2420,7 +2444,7 @@ fn docx_flow_field_value(
       match flow.bookmark_pages.get(arg) {
         Some(page) =>
           docx_format_number(
-            page,
+            page.number,
             if format != "" { format } else { "decimal" },
           )
         None => ""
@@ -2536,6 +2560,7 @@ fn docx_flow_emit_story(
     fonts,
     warnings: flow.warnings,
     bookmark_pages: flow.bookmark_pages,
+    view_pages: flow.view_pages,
     field_value: fn(typ, format) { docx_flow_field_value(flow, typ, format) },
     doc_language: flow.document.language,
     language: flow.language,
@@ -2571,6 +2596,7 @@ fn docx_flow_emit_story(
       width,
       fonts,
       ctx.bookmark_pages,
+      ctx.view_pages,
       ctx.field_value,
       flow.warnings,
       ctx.doc_language,
@@ -3387,8 +3413,24 @@ fn docx_object() -> @core.ObjectBuilder {
 }
 
 ///|
+/// Whether the page selection keeps the page at `index` among those laid
+/// out. An empty selection keeps every page.
+fn docx_flow_page_kept(flow : DocxFlow, index : Int32) -> Bool {
+  flow.keep.is_empty() ||
+  (index >= 0 && index < flow.keep.length() && flow.keep[index])
+}
+
+///|
 fn docx_flow_flush_page(flow : DocxFlow) -> Unit raise {
   if !flow.page_open {
+    return
+  }
+  let physical = flow.page_physical
+  flow.page_physical = flow.page_physical + 1
+  flow.page_open = false
+  // A page the selection leaves out is laid out, so the pages after it keep
+  // their place, but it is not drawn and takes no part in the view.
+  if !docx_flow_page_kept(flow, physical) {
     return
   }
   docx_flow_emit_notes(flow)
@@ -3498,7 +3540,6 @@ fn docx_flow_flush_page(flow : DocxFlow) -> Unit raise {
     }),
   )
   flow.page_index = flow.page_index + 1
-  flow.page_open = false
 }
 
 ///|
@@ -3575,6 +3616,7 @@ fn docx_flow_emit_paragraph(
     fonts: flow.body_fonts,
     warnings: flow.warnings,
     bookmark_pages: flow.bookmark_pages,
+    view_pages: flow.view_pages,
     field_value: fn(typ, format) { docx_flow_field_value(flow, typ, format) },
     doc_language: flow.document.language,
     language: flow.language,
@@ -3584,7 +3626,10 @@ fn docx_flow_emit_paragraph(
   fn emit(line : DocxParaLine, x : Double, available : Double) -> Unit raise {
     for item in line.items {
       if item.kind == "bookmark" {
-        flow.bookmark_pages[item.text] = flow.page_number
+        flow.bookmark_pages[item.text] = {
+          number: flow.page_number,
+          index: flow.page_physical,
+        }
       }
     }
     let (next_first, next_last) = docx_line_edges(line)
@@ -3602,6 +3647,7 @@ fn docx_flow_emit_paragraph(
       available,
       flow.body_fonts,
       ctx.bookmark_pages,
+      ctx.view_pages,
       ctx.field_value,
       flow.warnings,
       ctx.doc_language,
@@ -3845,6 +3891,7 @@ fn docx_flow_table_context(flow : DocxFlow) -> DocxEmitContext {
     fonts: flow.body_fonts,
     warnings: flow.warnings,
     bookmark_pages: flow.bookmark_pages,
+    view_pages: flow.view_pages,
     field_value: fn(typ, format) { docx_flow_field_value(flow, typ, format) },
     doc_language: flow.document.language,
     language: flow.language,
@@ -4026,8 +4073,15 @@ fn docx_layout_document(
   total_pages : Int32,
   writer : @core.DocumentWriter,
   package : @ooxml.OoxmlPackage,
-  bookmarks~ : Map[String, Int32] = Map([]),
-) -> (Array[Json], Array[@core.IndexRun], Array[String], Map[String, Int32]) raise {
+  bookmarks~ : Map[String, DocxBookmarkPage] = Map([]),
+  keep~ : Array[Bool] = [],
+  view_pages~ : Map[Int32, Int32] = Map([]),
+) -> (
+  Array[Json],
+  Array[@core.IndexRun],
+  Array[String],
+  Map[String, DocxBookmarkPage],
+) raise {
   let warnings : Array[String] = ["DOCX layout uses approximate text metrics"]
   let section = docx_section_at(document, 0)
   let start = if section.page_start >= 0 {
@@ -4046,6 +4100,8 @@ fn docx_layout_document(
     budget: @render.TextExtractionBudget::new(),
     stories: Map([]),
     bookmark_pages: bookmarks,
+    keep,
+    view_pages,
     body: docx_object(),
     header_object: docx_object(),
     footer_object: docx_object(),
@@ -4057,6 +4113,7 @@ fn docx_layout_document(
     front: [],
     page_open: false,
     page_index: 0,
+    page_physical: 0,
     page_number: start,
     page_in_section: 0,
     next_number: start,
@@ -4097,7 +4154,9 @@ fn docx_layout_document(
     }
   }
   docx_flow_flush_page(flow)
-  if flow.pages.is_empty() {
+  // A document with no page at all still gets one; a selection that keeps
+  // none of the pages it laid out gets none.
+  if flow.page_physical == 0 {
     docx_flow_new_page(flow)
     docx_flow_flush_page(flow)
   }
@@ -4145,18 +4204,50 @@ fn docx_render_meta(
 }
 
 ///|
+/// The pages a selection keeps, by index among those laid out, and the page
+/// view's number for each. An empty `keep` keeps every page.
+fn docx_page_selection(
+  selection : Array[@convert.PageSpan]?,
+  count : Int32,
+) -> (Array[Bool], Map[Int32, Int32]) {
+  let keep : Array[Bool] = []
+  let view_pages : Map[Int32, Int32] = Map([])
+  match @convert.page_numbers(selection, count.to_int64()) {
+    None =>
+      for index in 0..<count {
+        view_pages[index] = index + 1
+      }
+    Some(values) => {
+      for _ in 0..<count {
+        keep.push(false)
+      }
+      let mut view = 0
+      for index in 0..<count {
+        if values.contains(index.to_int64() + 1L) {
+          keep[index] = true
+          view += 1
+          view_pages[index] = view
+        }
+      }
+    }
+  }
+  (keep, view_pages)
+}
+
+///|
 fn docx_render_document(
   document : DocxTextDocument,
   title : String,
   data : Bytes,
   views : String,
+  selection : Array[@convert.PageSpan]?,
 ) -> DocxResult raise {
   let package = @ooxml.open_ooxml(data) catch {
     _ => raise DocxInvalid("invalid DOCX package")
   }
   let meta = docx_render_meta(package, title, document.language)
   let mut page_count = 0
-  let mut bookmark_pages : Map[String, Int32] = Map([])
+  let mut bookmark_pages : Map[String, DocxBookmarkPage] = Map([])
   if views != "scroll" {
     let probe = @core.DocumentWriter::new(meta=Json::object(meta))
     let (probe_pages, _, _, probe_bookmarks) = docx_layout_document(
@@ -4168,6 +4259,7 @@ fn docx_render_document(
       page_count = 1
     }
   }
+  let (keep, view_pages) = docx_page_selection(selection, page_count)
   let writer = @core.DocumentWriter::new(meta=Json::object(meta))
   let pages : Array[Json] = []
   let mut index_runs : Array[@core.IndexRun] = []
@@ -4176,7 +4268,13 @@ fn docx_render_document(
   ]
   if views != "scroll" {
     let (rendered, runs, rendered_warnings, _) = docx_layout_document(
-      document, page_count, writer, package, bookmarks=bookmark_pages,
+      document,
+      page_count,
+      writer,
+      package,
+      bookmarks=bookmark_pages,
+      keep~,
+      view_pages~,
     )
     for page in rendered {
       pages.push(page)
@@ -4227,15 +4325,16 @@ fn docx_render_document(
     }
   }
   let bdf = writer.write_single()
+  let kept = pages.length()
   {
     bdf,
     pages: if views == "scroll" {
       0
     } else {
-      page_count
+      kept
     },
-    summary: "\{page_count} page" +
-    (if page_count == 1 { "" } else { "s" }) +
+    summary: "\{kept} page" +
+    (if kept == 1 { "" } else { "s" }) +
     ", " +
     strips.to_string() +
     " scroll strip" +

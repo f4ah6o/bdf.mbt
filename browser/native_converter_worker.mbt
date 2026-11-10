@@ -1274,10 +1274,12 @@ fn native_convert_docx(
   data : Bytes,
   opened : Bool,
 ) -> Unit {
+  let pages_option = native_converter_option(request, "pages")
   let result = @docx.convert(
     data,
     title=native_converter_param(request, "title"),
     views=native_converter_param(request, "views"),
+    pages=pages_option,
   ) catch {
     @docx.DocxInvalid(message) => {
       native_converter_error(request, "docx: " + message, "")
@@ -1288,10 +1290,12 @@ fn native_convert_docx(
       return
     }
   }
-  let bdf = native_select_pages(request, result.bdf, result.pages)
-  if opened &&
-    native_converter_option(request, "pages") == "" &&
-    result.pages > 0 {
+  let bdf = if pages_option == "" {
+    native_select_pages(request, result.bdf, result.pages)
+  } else {
+    result.bdf
+  }
+  if opened && pages_option == "" && result.pages > 0 {
     let id = state.next_stream
     state.next_stream += 1
     state.streams[id] = {
