@@ -81,3 +81,16 @@ ids/kinds, page and tile counts, summaries, warnings and normalized text
 `basic`, `features` and `math` fixtures: the `slides` view, page sizes, layer
 role sequences, shared master/layout objects, summary, no-font warning,
 normalized text and OMML linearization.
+
+`office-extensions-test.mjs` runs the native Worker in Node with the `self` it
+expects and drives the client protocol directly, so no browser is needed. It
+checks the format notification against the extensions upstream registers on
+`converter/xlsx`, `converter/docx` and `converter/pptx` (`.xlsm`, `.xltx`,
+`.xltm`, `.docm`, `.dotx`, `.dotm`, `.pptm`, `.ppsx`, `.ppsm`, `.potx`,
+`.potm`), and converts a synthetic package under each of them by content, by
+explicit format and by name fallback. A macro-enabled document is checked to
+convert as its plain counterpart: the VBA project is not executed, its bytes
+do not reach the BDF, and the input archive is unchanged. The test also holds
+the line on what is not supported: HTML does not advertise `.mhtml`/`.mht`
+(the MHTML reader is not ported), and the dropped PCB, score and EPUB
+extensions reach no converter.

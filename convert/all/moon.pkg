@@ -32,6 +32,7 @@ import {
 
 import {
   "moonbitlang/x/fs",
+  "f4ah6o/bdf/form/ooxml" @ooxml,
 } for "wbtest"
 
 supported_targets = "+js+wasm-gc+native"

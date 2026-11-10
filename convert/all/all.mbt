@@ -452,6 +452,24 @@ fn reject_format(format : String) -> Bool {
 }
 
 ///|
+/// The format a file name's extension names, for the inputs no detector
+/// claims. Upstream registers these extensions on the Office converters, so a
+/// macro-enabled or template package keeps converting when its content is not
+/// recognized. The extensions of the formats dropped from the porting scope
+/// are deliberately absent.
+fn office_named(lower : String) -> String {
+  if named(lower, [".xlsx", ".xlsm", ".xltx", ".xltm"]) {
+    "xlsx"
+  } else if named(lower, [".docx", ".docm", ".dotx", ".dotm"]) {
+    "docx"
+  } else if named(lower, [".pptx", ".pptm", ".ppsx", ".ppsm", ".potx", ".potm"]) {
+    "pptx"
+  } else {
+    ""
+  }
+}
+
+///|
 /// 名前の拡張子から形式を決め直す。画像として読めなかったものが対象。
 /// 順番も、PDF や HP-GL の強い兆しがあるときに飛ばす判断も、ブラウザの
 /// 変換 Worker と同じにしてある。どれにも当てはまらなければ、画像の失敗
@@ -479,8 +497,15 @@ fn run_by_name(
     ],
   )
   let strong_other = @hpgl.detect(head) || @utf8.decode_lossy(head).contains("%PDF-")
-  if lower.has_suffix(".xlsx") && !strong_other {
+  let office = office_named(lower)
+  if office == "xlsx" && !strong_other {
     return run_xlsx(data, database)
+  }
+  if office == "docx" && !strong_other {
+    return run_docx(data)
+  }
+  if office == "pptx" && !strong_other {
+    return run_pptx(data, database)
   }
   if named(lower, [".ttf", ".otf", ".ttc", ".otc", ".woff", ".woff2"]) && !strong_other {
     return run_font(data, database)
@@ -585,7 +610,7 @@ pub fn convert(
   if format == "pptx" || (format == "" && @pptx.detect(data)) {
     return run_pptx(data, database)
   }
-  if format == "xlsx" {
+  if format == "xlsx" || (format == "" && @xlsx.detect_xlsx(head, data)) {
     return run_xlsx(data, database)
   }
   if format == "csv" {

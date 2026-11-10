@@ -57,6 +57,17 @@
 
 ### Fixed
 
+- The converter Worker advertises the Office extensions upstream registers on
+  the workbook, word-processing and presentation converters (`.xlsm`, `.xltx`,
+  `.xltm`, `.docm`, `.dotx`, `.dotm`, `.pptm`, `.ppsx`, `.ppsm`, `.potx`,
+  `.potm`), so a client's file picker offers them. A macro-enabled or template
+  package is the same OPC package as its plain counterpart: macros are never
+  executed and a VBA project is not carried into the BDF.
+- A workbook is detected by its content like a document or a presentation, so
+  a macro-enabled or template workbook converts under any name. A name with one
+  of those extensions falls back to its converter when no detector claims the
+  content, as upstream's `detectNamed` does, instead of failing as an
+  unsupported image.
 - JPEG 2000 sample conversion now uses float32 rounding and clamps extreme
   values before integer conversion, matching upstream for common precisions.
 - DOCX formula warnings now include formulas in tables, headers and footers.
