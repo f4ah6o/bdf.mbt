@@ -982,4 +982,3 @@ test "GDI snapshots isolate every saved DC field" {
   assert_eq(saved.world.f, expected.world.f)
   assert_eq(saved.cur, expected.cur)
 }
-
