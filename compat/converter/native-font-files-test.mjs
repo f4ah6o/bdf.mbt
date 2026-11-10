@@ -1,0 +1,160 @@
+import assert from 'node:assert/strict';
+import { createReadStream, readFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import path from 'node:path';
+import { chromium } from 'playwright';
+
+const root = process.cwd();
+const requests = [];
+const server = createServer((request, response) => {
+  const url = new URL(request.url, 'http://localhost');
+  requests.push(url.pathname);
+  if (url.pathname === '/') {
+    response.setHeader('Content-Type', 'text/html');
+    response.end('<!doctype html><meta charset="utf-8"><title>fontFiles</title><script type="importmap">{"imports":{"@bdfkit/core":"/node_modules/@bdfkit/core/dist/index.js"}}</script>');
+    return;
+  }
+  if (url.pathname === '/fonts/index.json') {
+    const size = readFileSync('compat/font/fixtures/stix.ttf').length;
+    response.setHeader('Content-Type', 'application/json');
+    response.end(JSON.stringify([{ name: 'stix.ttf', size, url: '/fonts/stix.ttf' }]));
+    return;
+  }
+  if (url.pathname === '/fonts/stix.ttf') {
+    response.setHeader('Content-Type', 'font/ttf');
+    createReadStream('compat/font/fixtures/stix.ttf').pipe(response);
+    return;
+  }
+  if (!url.pathname.startsWith('/_build/js/debug/build/') && !url.pathname.startsWith('/node_modules/@bdfkit/') && !url.pathname.startsWith('/compat/font/fixtures/')) {
+    response.writeHead(404).end();
+    return;
+  }
+  const file = path.resolve(root, '.' + decodeURIComponent(url.pathname));
+  const stream = createReadStream(file);
+  stream.once('error', () => { if (!response.headersSent) response.writeHead(404); response.end(); });
+  response.setHeader('Content-Type', url.pathname.endsWith('.json') ? 'application/json' : 'text/javascript');
+  stream.pipe(response);
+});
+await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+const base = `http://127.0.0.1:${server.address().port}`;
+const browser = await chromium.launch();
+try {
+  const page = await browser.newPage();
+  await page.goto(base + '/', { waitUntil: 'networkidle' });
+  const result = await page.evaluate(async () => {
+    const { bdf_create_native_converter } = await import('/_build/js/debug/build/browser/browser.js');
+    const { BdfDocument, BufferSource } = await import('@bdfkit/core');
+    const load = async name => new Uint8Array(await (await fetch('/compat/font/fixtures/' + name)).arrayBuffer());
+    const ttf = await load('stix.ttf');
+    const otf = await load('stix.otf');
+    const ttc = await load('bold.ttc');
+    // A valid SFNT whose name table has no records: it parses, but the
+    // database cannot register a family name for it.
+    const noFamily = (() => {
+      const copy = ttf.slice();
+      const view = new DataView(copy.buffer);
+      for (let index = 0; index < view.getUint16(4); index++) {
+        const record = 12 + index * 16;
+        if (String.fromCharCode(copy[record], copy[record + 1], copy[record + 2], copy[record + 3]) === 'name') {
+          view.setUint16(view.getUint32(record + 8) + 2, 0);
+          break;
+        }
+      }
+      return copy;
+    })();
+    const csv = new TextEncoder().encode('name,value\nAlpha,42\nBeta,7\n');
+    const noFonts = 'no fonts found; text is laid out with estimated metrics and not embedded';
+    const fontParts = async bdf => {
+      const doc = await BdfDocument.open(new BufferSource(bdf));
+      return doc.manifest.parts.filter(part => part.t === 'font').map(part => part.h);
+    };
+    const client = bdf_create_native_converter('/_build/js/debug/build/native_converter_worker/native_converter_worker.js');
+    const out = { errors: [], hashes: {}, requests: [] };
+    try {
+      await client.ready;
+      const plain = await client.convert(csv, { format: 'csv' });
+      if (!plain.warnings.includes(noFonts)) throw new Error('CSV without fonts must warn');
+      if ((await fontParts(plain.bdf)).length !== 0) throw new Error('CSV without fonts must not embed a font');
+      const withTtf = await client.convert(csv, { format: 'csv', fontFiles: [{ name: 'stix.ttf', bytes: ttf }] });
+      if (withTtf.warnings.includes(noFonts)) throw new Error('CSV with fontFiles must not warn about missing fonts');
+      const ttfParts = await fontParts(withTtf.bdf);
+      if (ttfParts.length !== 1) throw new Error('CSV with fontFiles must embed one font, got ' + ttfParts.length);
+      out.hashes.ttf = ttfParts[0];
+      const withOtf = await client.convert(csv, { format: 'csv', fontFiles: [{ name: 'stix.otf', bytes: otf }] });
+      const otfParts = await fontParts(withOtf.bdf);
+      if (otfParts.length !== 1 || otfParts[0] === ttfParts[0]) throw new Error('OTF byte input must embed a different font');
+      out.hashes.otf = otfParts[0];
+      const withTtc = await client.convert(csv, { format: 'csv', fontFiles: [{ name: 'bold.ttc', bytes: ttc }] });
+      const ttcParts = await fontParts(withTtc.bdf);
+      if (ttcParts.length !== 2 || new Set(ttcParts).size !== 2) throw new Error('TTC byte input must load both collection faces: ' + JSON.stringify(ttcParts));
+      out.hashes.ttc = ttcParts;
+      const arrayBuffer = await client.convert(csv, { format: 'csv', fontFiles: [{ name: 'stix.ttf', bytes: ttf.buffer.slice(0) }] });
+      if ((await fontParts(arrayBuffer.bdf))[0] !== ttfParts[0]) throw new Error('ArrayBuffer bytes must match Uint8Array bytes');
+      const wrapped = new Uint8Array(ttf.length + 6);
+      wrapped.set(ttf, 3);
+      const view = wrapped.subarray(3, 3 + ttf.length);
+      const sliced = await client.convert(csv, { format: 'csv', fontFiles: [{ name: 'stix.ttf', bytes: view }] });
+      if ((await fontParts(sliced.bdf))[0] !== ttfParts[0]) throw new Error('typed-array slice must match its bytes');
+      if (wrapped.length !== ttf.length + 6 || wrapped[0] !== 0 || wrapped[3] !== ttf[0]) throw new Error('caller buffer was detached or modified');
+      const opened = await client.open(csv, { format: 'csv', fontFiles: [{ name: 'stix.ttf', bytes: ttf }] });
+      if (opened.pages !== 0 || opened.stream !== undefined || (await fontParts(opened.bdf))[0] !== ttfParts[0]) throw new Error('open must accept fontFiles');
+      const isolated = await client.convert(csv, { format: 'csv' });
+      if (!isolated.warnings.includes(noFonts) || (await fontParts(isolated.bdf)).length !== 0) throw new Error('fontFiles leaked into a later request');
+      const urlMode = await client.convert(csv, { format: 'csv', fonts: '/fonts/' });
+      if ((await fontParts(urlMode.bdf))[0] !== ttfParts[0]) throw new Error('URL font mode must keep working');
+      const cases = [
+        [{ fontFiles: 'x' }, 'fontFiles: expected an array of {name, bytes}'],
+        [{ fontFiles: [null] }, 'fontFiles[0]: expected an object with name and bytes'],
+        [{ fontFiles: [{}] }, 'fontFiles[0]: name must be a non-empty string'],
+        [{ fontFiles: [{ name: '', bytes: ttf }] }, 'fontFiles[0]: name must be a non-empty string'],
+        [{ fontFiles: [{ name: 'a.ttf', bytes: 'x' }] }, 'fontFiles[0]: bytes must be a Uint8Array or ArrayBuffer'],
+        [{ fontFiles: [{ name: 'a.ttf', bytes: new Uint8Array() }] }, 'fontFiles[0]: bytes must not be empty'],
+        [{ fontFiles: [{ name: 'a.ttf', bytes: new Uint8Array([1, 2, 3]) }] }, 'fontFiles[0]: no usable font face'],
+        [{ fontFiles: [{ name: 'dup.ttf', bytes: ttf }, { name: 'dup.ttf', bytes: ttf }] }, 'fontFiles[1]: duplicate name'],
+        [{ fontFiles: [{ name: 'dup.ttf', bytes: ttf }, { name: 'dup.ttf', bytes: otf }] }, 'fontFiles[1]: duplicate name'],
+        [{ fontFiles: [{ name: 'nofamily.ttf', bytes: noFamily }] }, 'fontFiles[0]: no usable font face'],
+        [{ fontFiles: [{ name: 'stix.ttf', bytes: ttf }, { name: 'nofamily.ttf', bytes: noFamily }] }, 'fontFiles[1]: no usable font face'],
+        [{ fontFiles: [{ name: 'secret-name.ttf', bytes: new Uint8Array([1, 2, 3]) }] }, 'fontFiles[0]: no usable font face'],
+        [{ fontFiles: [{ name: 'a.ttf', bytes: new Uint8Array(32 * 1024 * 1024 + 1) }] }, 'fontFiles[0]: bytes exceed the 33554432 byte per-file limit'],
+        [{ fonts: '/fonts/', fontFiles: [{ name: 'stix.ttf', bytes: ttf }] }, 'fonts: options.fonts and options.fontFiles cannot both be set'],
+      ];
+      for (const [options, expected] of cases) {
+        let message;
+        try { await client.convert(csv, { format: 'csv', ...options }); } catch (error) { message = error.message; }
+        if (message !== expected) throw new Error('wrong error for ' + JSON.stringify(options) + ': ' + message);
+        if (message.includes('secret-name')) throw new Error('error leaked a supplied name');
+        out.errors.push(message);
+      }
+      const pdf = () => {
+        const stream = 'BT /F1 24 Tf 20 40 Td (Hello PDF) Tj ET';
+        const objects = ['<< /Type /Catalog /Pages 2 0 R >>', '<< /Type /Pages /Kids [3 0 R] /Count 1 >>', '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>', `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'];
+        let body = '%PDF-1.4\n';
+        const offsets = [];
+        for (let index = 0; index < objects.length; index++) { offsets.push(body.length); body += `${index + 1} 0 obj\n${objects[index]}\nendobj\n`; }
+        const xref = body.length;
+        body += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+        for (const offset of offsets) body += `${String(offset).padStart(10, '0')} 00000 n \n`;
+        body += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+        return new TextEncoder().encode(body);
+      };
+      const pdfPlain = await client.convert(pdf(), { format: 'pdf' });
+      const pdfWithFonts = await client.convert(pdf(), { format: 'pdf', fontFiles: [{ name: 'stix.ttf', bytes: ttf }] });
+      if (pdfPlain.bdf.length !== pdfWithFonts.bdf.length || pdfPlain.bdf.some((value, index) => value !== pdfWithFonts.bdf[index])) throw new Error('PDF must not receive the font database');
+      out.pdfBytes = pdfPlain.bdf.length;
+      return out;
+    } finally { client.terminate(); }
+  });
+  assert.equal(result.hashes.ttf.length > 0, true);
+  assert.notEqual(result.hashes.ttf, result.hashes.otf);
+  assert.equal(result.hashes.ttc.length, 2);
+  assert.ok(!result.hashes.ttc.includes(result.hashes.ttf));
+  assert.equal(result.errors.length, 14);
+  assert.ok(result.pdfBytes > 0);
+  assert.ok(requests.includes('/fonts/index.json'), 'URL mode must fetch the directory');
+  const byteModeRequests = requests.filter(name => name.startsWith('/fonts/'));
+  assert.deepEqual(byteModeRequests, ['/fonts/index.json', '/fonts/stix.ttf'], 'only URL mode may fetch fonts: ' + JSON.stringify(byteModeRequests));
+  console.log(JSON.stringify({ hashes: result.hashes, pdfBytes: result.pdfBytes, errors: result.errors }, null, 2));
+} finally {
+  await browser.close();
+  await new Promise(resolve => server.close(resolve));
+}

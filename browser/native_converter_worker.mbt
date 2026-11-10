@@ -189,7 +189,74 @@ async fn NativeConverterState::dispatch(
     }
   }
   let url = native_converter_option(request, "fonts")
-  let database = if url == "" {
+  let font_files = native_font_files_read(request)
+  let font_files_error = native_font_files_error(font_files)
+  if font_files_error != "" {
+    native_converter_error(request, font_files_error, "")
+    return
+  }
+  let font_file_count = native_font_files_count(font_files)
+  if url != "" && font_file_count > 0 {
+    native_converter_error(
+      request,
+      "fonts: options.fonts and options.fontFiles cannot both be set",
+      "",
+    )
+    return
+  }
+  // Byte mode never fetches: the supplied files are the whole font database.
+  // URL mode keeps the existing directory loader and its cache.
+  let database = if font_file_count > 0 {
+    let db = @fontdb.Database::new()
+    let seen_names : Map[String, Bool] = Map([])
+    for index in 0..<font_file_count {
+      let name = native_font_files_name(font_files, index)
+      // The database keys faces by source name, so a repeated name would
+      // silently drop the later file. Reject it instead of choosing one.
+      if seen_names.contains(name) {
+        native_converter_error(
+          request,
+          "fontFiles[" + index.to_string() + "]: duplicate name",
+          "",
+        )
+        return
+      }
+      seen_names[name] = true
+      let bytes = native_font_files_bytes(font_files, index)
+      let face_count = @sfnt.face_count(bytes)
+      let mut usable = false
+      // `Database::add_file` refuses collections above 256 faces; mirror that
+      // bound so a malformed header cannot drive a long validation loop.
+      for face_index in 0..<(if face_count > 256 { 0 } else { face_count }) {
+        match (Some(@sfnt.parse(bytes, index=face_index)) catch { _ => None }) {
+          Some(_) => {
+            usable = true
+            break
+          }
+          None => ()
+        }
+      }
+      if !usable {
+        native_converter_error(
+          request,
+          "fontFiles[" + index.to_string() + "]: no usable font face",
+          "",
+        )
+        return
+      }
+      // Every distinct file must contribute at least one named face. A file
+      // whose faces all lack a family name is not silently skipped.
+      if db.add_file(name, bytes) == 0 {
+        native_converter_error(
+          request,
+          "fontFiles[" + index.to_string() + "]: no usable font face",
+          "",
+        )
+        return
+      }
+    }
+    Some(db)
+  } else if url == "" {
     None
   } else {
     let directory = native_font_directory(url).wait()

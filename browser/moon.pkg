@@ -8,6 +8,7 @@ import {
   "f4ah6o/bdf/convert/font",
   "moonbitlang/core/string",
   "f4ah6o/bdf/font/db" @fontdb,
+  "f4ah6o/bdf/font/sfnt" @sfnt,
   "f4ah6o/bdf/convert/hpgl",
   "f4ah6o/bdf/convert/jww",
   "f4ah6o/bdf/convert/dxf",
