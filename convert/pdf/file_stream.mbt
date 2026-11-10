@@ -72,6 +72,37 @@ fn pdf_file_filters(
 }
 
 ///|
+// A stream's /Length may run into the `endstream` keyword that follows it. An
+// older writer of this project counted the line end before the keyword, so a
+// 38-byte stream was declared as 39 and the keyword's `e` became stream data.
+// When the declared end lands inside the keyword, the keyword bounds the data.
+//
+// The check compares the nine bytes from each candidate start, so it reads at
+// most eight bytes past the declared end and never past the file. A correct
+// length never matches: the byte after the data is a line end or the keyword's
+// first byte, and a keyword shifted by one byte is not the keyword. A stream
+// whose data merely contains `endstream` keeps its declared length, so binary
+// and filtered payloads are preserved.
+fn pdf_stream_data_length(
+  data : Bytes,
+  start : Int,
+  length : Int,
+) -> Int {
+  let end = start + length
+  let marker = b"endstream"
+  for taken in 1..=8 {
+    let at = end - taken
+    if at < start || at + marker.length() > data.length() {
+      continue
+    }
+    if data[at:at + marker.length()] == marker[:] {
+      return length - taken
+    }
+  }
+  length
+}
+
+///|
 // Read a cross-reference stream whose /Length is a direct integer. Indirect
 // lengths require the general object resolver.
 fn PdfFile::read_direct_stream(
@@ -111,7 +142,12 @@ fn PdfFile::read_direct_stream(
   if length < 0L || length > (self.data.length() - reader.pos).to_int64() {
     raise InvalidStream("PDF stream exceeds file")
   }
-  let data = self.data[reader.pos:reader.pos + length.to_int()].to_owned()
+  let length = pdf_stream_data_length(
+    self.data,
+    reader.pos,
+    length.to_int(),
+  )
+  let data = self.data[reader.pos:reader.pos + length].to_owned()
   (dictionary, data)
 }
 

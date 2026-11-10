@@ -73,11 +73,16 @@ fn PdfFile::load_at(
       if length < 0L || length > (self.data.length() - reader.pos).to_int64() {
         raise InvalidStream("PDF stream exceeds file")
       }
+      let length = pdf_stream_data_length(
+        self.data,
+        reader.pos,
+        length.to_int(),
+      )
       let (value, stream) = self.decrypt_loaded(
         number,
         generation,
         value,
-        Some(self.data[reader.pos:reader.pos + length.to_int()].to_owned()),
+        Some(self.data[reader.pos:reader.pos + length].to_owned()),
       )
       return { value, stream }
     }

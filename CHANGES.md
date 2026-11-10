@@ -57,6 +57,10 @@
 
 ### Fixed
 
+- PDF streams whose `/Length` runs 1–8 bytes into the `endstream` marker are
+  read up to that marker, preserving the reported content stream and binary
+  payloads whose correct length does not overlap the marker.
+
 - The converter Worker advertises the Office extensions upstream registers on
   the workbook, word-processing and presentation converters (`.xlsm`, `.xltx`,
   `.xltm`, `.docm`, `.dotx`, `.dotm`, `.pptm`, `.ppsx`, `.ppsm`, `.potx`,
