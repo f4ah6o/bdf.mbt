@@ -207,6 +207,12 @@ fn build_tables(
       out[record + j] = c.to_int().to_byte()
       j += 1
     }
+    // The head table's checkSumAdjustment is zeroed before the global
+    // checksum is computed, so the directory checksum must cover the zeroed
+    // head bytes, not the source face's adjustment.
+    if tag == "head" && bytes.length() >= 12 {
+      put32(bytes, 8, 0U)
+    }
     put32(out, record + 4, checksum(bytes))
     put32(out, record + 8, offset.reinterpret_as_uint())
     put32(out, record + 12, bytes.length().reinterpret_as_uint())

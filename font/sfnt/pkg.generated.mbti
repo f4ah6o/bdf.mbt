@@ -57,6 +57,7 @@ pub fn Font::glyph_names(Self) -> Array[String]
 pub fn Font::glyph_program(Self) -> Bytes raise
 pub fn Font::mapped_program(Self, Array[Int32]) -> Bytes raise
 pub fn Font::outline_truetype(Self, Int32) -> (Bool, Array[OutlineCommand])
+pub fn Font::postscript_name(Self) -> String
 pub fn Font::specimen_glyph_key(Self) -> String
 pub fn Font::specimen_pruned(Self, Array[Int32], Int64) -> Bytes? raise
 pub fn Font::specimen_pruned_truetype(Self, Array[Int32], Int64) -> Bytes? raise
@@ -64,6 +65,7 @@ pub fn Font::specimen_reachable(Self, String) -> Array[Int32]
 pub fn Font::specimen_sample(Self, String, Int64) -> Bytes? raise
 pub fn Font::specimen_sample_truetype(Self, String, Int64) -> Bytes? raise
 pub fn Font::specimen_whole_sample(Self, Int64) -> Bytes? raise
+pub fn Font::standalone_program(Self) -> Bytes raise
 pub fn Font::standalone_size(Self) -> Int64
 pub fn Font::subset_program(Self, Array[Int32]) -> Bytes? raise
 pub fn Font::table(Self, String) -> Bytes?

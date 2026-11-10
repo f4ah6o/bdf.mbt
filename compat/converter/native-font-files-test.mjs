@@ -111,6 +111,50 @@ try {
       return names;
     };
     const noFonts = 'no fonts found; text is laid out with estimated metrics and not embedded';
+    const tableDirectory = (data, base) => {
+      const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+      const tables = new Map();
+      for (let index = 0; index < view.getUint16(base + 4); index++) {
+        const record = base + 12 + index * 16;
+        const tag = String.fromCharCode(data[record], data[record + 1], data[record + 2], data[record + 3]);
+        tables.set(tag, { offset: view.getUint32(record + 8), length: view.getUint32(record + 12), checksum: view.getUint32(record + 4) });
+      }
+      return tables;
+    };
+    const faceBase = (data, faceIndex) => data[0] === 0x74 && data[1] === 0x74 && data[2] === 0x63 && data[3] === 0x66
+      ? new DataView(data.buffer, data.byteOffset, data.byteLength).getUint32(12 + faceIndex * 4) : 0;
+    const tableBytes = (data, table) => data.slice(table.offset, table.offset + table.length);
+    const checksum = bytes => {
+      let sum = 0;
+      for (let index = 0; index < bytes.length; index += 4) {
+        let word = 0;
+        for (let offset = 0; offset < 4; offset++) word = (word << 8) | (index + offset < bytes.length ? bytes[index + offset] : 0);
+        sum = (sum + word) >>> 0;
+      }
+      return sum >>> 0;
+    };
+    const validateStandalone = async (standalone, source, faceIndex) => {
+      if (standalone[0] === 0x74 && standalone[1] === 0x74 && standalone[2] === 0x63 && standalone[3] === 0x66) throw new Error('standalone is still a TTC');
+      const sourceTables = tableDirectory(source, faceBase(source, faceIndex));
+      const standaloneTables = tableDirectory(standalone, 0);
+      if (sourceTables.size !== standaloneTables.size) throw new Error('standalone table count differs');
+      for (const [tag, table] of standaloneTables) {
+        const sourceTable = sourceTables.get(tag);
+        if (!sourceTable) throw new Error('standalone has an unselected table ' + tag);
+        const actual = tableBytes(standalone, table);
+        const expected = tableBytes(source, sourceTable);
+        if (actual.length !== expected.length) throw new Error('table length differs: ' + tag);
+        for (let index = 0; index < actual.length; index++) {
+          if (tag === 'head' && index >= 8 && index < 12) continue;
+          if (actual[index] !== expected[index]) throw new Error('table differs: ' + tag);
+        }
+        const checkBytes = actual.slice();
+        if (tag === 'head') checkBytes.fill(0, 8, 12);
+        if (checksum(checkBytes) !== table.checksum) throw new Error('table checksum differs: ' + tag);
+      }
+      if (checksum(standalone) !== 0xB1B0AFBA) throw new Error('global checksum differs');
+      await new FontFace('bdf-standalone-' + faceIndex, standalone).load();
+    };
     const fontParts = async bdf => {
       const doc = await BdfDocument.open(new BufferSource(bdf));
       return doc.manifest.parts.filter(part => part.t === 'font').map(part => part.h);
@@ -156,9 +200,14 @@ try {
       out.hashes.ttc = ttcParts;
       const ttcNames = postscriptNames(ttc);
       if (ttcNames.length !== 2 || ttcNames.some(name => !name) || ttcNames[0] === ttcNames[1]) throw new Error('bold.ttc must expose two distinct PostScript names');
+      const mutatedTtc = ttc.slice();
+      for (let faceIndex = 0; faceIndex < 2; faceIndex++) {
+        const head = tableDirectory(mutatedTtc, faceBase(mutatedTtc, faceIndex)).get('head');
+        new DataView(mutatedTtc.buffer).setUint32(head.offset + 8, 0xDEADBEEF);
+      }
       const selectedHashes = [];
       for (const postscriptName of ttcNames) {
-        const selected = await client.convert(csv, { format: 'csv', fontFiles: [{ name: 'bold.ttc', bytes: ttc, postscriptName }] });
+        const selected = await client.convert(csv, { format: 'csv', fontFiles: [{ name: 'bold.ttc', bytes: mutatedTtc, postscriptName }] });
         const parts = await fontParts(selected.bdf);
         const names = await fontPartNames(selected.bdf);
         if (parts.length !== 1 || names.length !== 1 || names[0] !== postscriptName) throw new Error('selected TTC face must embed exactly that face');
@@ -172,12 +221,17 @@ try {
       const xlsxAll = await client.convert(xlsx, { format: 'xlsx', fontFiles: [{ name: 'bold.ttc', bytes: ttc }] });
       const allBytes = await fontPartBytes(xlsxAll.bdf);
       if (!allBytes || allBytes[0] !== 0x74 || allBytes[1] !== 0x74 || allBytes[2] !== 0x63 || allBytes[3] !== 0x66) throw new Error('unselected TTC must keep the existing whole-collection XLSX behaviour');
-      const xlsxSelected = await client.convert(xlsx, { format: 'xlsx', fontFiles: [{ name: 'bold.ttc', bytes: ttc, postscriptName: ttcNames[0] }] });
-      const selectedBytes = await fontPartBytes(xlsxSelected.bdf);
-      if (!selectedBytes) throw new Error('selected TTC XLSX must embed a font');
-      if (selectedBytes[0] === 0x74 && selectedBytes[1] === 0x74 && selectedBytes[2] === 0x63 && selectedBytes[3] === 0x66) throw new Error('XLSX embedded the whole TTC for a selected face');
-      if (selectedBytes.length >= ttc.length) throw new Error('XLSX selected face must be a standalone SFNT');
-      if (postscriptNames(selectedBytes)[0] !== ttcNames[0]) throw new Error('XLSX selected face must be the requested face');
+      const standaloneByFace = [];
+      for (let faceIndex = 0; faceIndex < 2; faceIndex++) {
+        const xlsxSelected = await client.convert(xlsx, { format: 'xlsx', fontFiles: [{ name: 'bold.ttc', bytes: mutatedTtc, postscriptName: ttcNames[faceIndex] }] });
+        const selectedBytes = await fontPartBytes(xlsxSelected.bdf);
+        if (!selectedBytes) throw new Error('selected TTC XLSX must embed a font');
+        if (selectedBytes.length >= mutatedTtc.length) throw new Error('XLSX selected face must be a standalone SFNT');
+        if (postscriptNames(selectedBytes)[0] !== ttcNames[faceIndex]) throw new Error('XLSX selected face must be the requested face');
+        await validateStandalone(selectedBytes, mutatedTtc, faceIndex);
+        standaloneByFace.push(selectedBytes);
+      }
+      if (standaloneByFace[0].length === standaloneByFace[1].length && standaloneByFace[0].every((value, index) => value === standaloneByFace[1][index])) throw new Error('both selected faces produced the same standalone font');
       const xlsxTtf = await client.convert(xlsx, { format: 'xlsx', fontFiles: [{ name: 'stix.ttf', bytes: ttf, postscriptName: ttfName }] });
       const ttfBytes = await fontPartBytes(xlsxTtf.bdf);
       if (!ttfBytes || ttfBytes.length !== ttf.length || ttfBytes.some((value, index) => value !== ttf[index])) throw new Error('XLSX selected single-face font must embed that face');
