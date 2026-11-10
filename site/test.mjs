@@ -439,7 +439,7 @@ try {
       const bytes = new Uint8Array(binary.length);
       for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
       window.queryLocalFonts = async () => [{
-        postscriptName: "STIXTwoText",
+        postscriptName: "STIXTwoText-Regular",
         fullName: "STIX Two Text",
         family: "STIX Two Text",
         style: "Regular",
@@ -474,7 +474,7 @@ try {
     await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.csv", null, { timeout: 180000 });
     const posted = await page.evaluate(() => window.__posted.at(-1));
     assert.equal(posted.fontFiles.length, 1, "CSV still receives the retained selection");
-    assert.equal(posted.fontFiles[0].postscriptName, "STIXTwoText");
+    assert.equal(posted.fontFiles[0].postscriptName, "STIXTwoText-Regular");
   });
 
   await step("viewer searches and saves the BDF", async () => {
