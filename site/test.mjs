@@ -191,7 +191,7 @@ try {
       window.queryLocalFonts = async () => {
         window.__fontQueryCalls += 1;
         return [{
-          postscriptName: "STIXTwoText",
+          postscriptName: "STIXTwoText-Regular",
           fullName: "STIX Two Text",
           family: "STIX Two Text",
           style: "Regular",
@@ -220,7 +220,7 @@ try {
     await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.csv", null, { timeout: 180000 });
     const posted = await page.evaluate(() => window.__posted.at(-1));
     assert.equal(posted.fontFiles.length, 1);
-    assert.equal(posted.fontFiles[0].postscriptName, "STIXTwoText");
+    assert.equal(posted.fontFiles[0].postscriptName, "STIXTwoText-Regular");
     assert.equal(await page.locator("dialog.first-font-choice").count(), 0);
   });
 
