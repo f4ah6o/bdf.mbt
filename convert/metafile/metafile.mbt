@@ -1078,6 +1078,24 @@ fn dib_decode_rle8(
 
 ///|
 fn dib_decode(data : Bytes, bits_data : Bytes?) -> Dib? {
+  dib_decode_oriented(data, bits_data, false)
+}
+
+///|
+/// Decode a DIB whose uncompressed rows are stored top-to-bottom even when
+/// `biHeight` is positive. A negative height already means top-down, so it
+/// keeps the same reading; BI_RLE8 keeps its own orientation because its
+/// stream is not a row array. The decoder has no separate BI_RLE4 path.
+fn dib_decode_top_down(data : Bytes, bits_data : Bytes?) -> Dib? {
+  dib_decode_oriented(data, bits_data, true)
+}
+
+///|
+fn dib_decode_oriented(
+  data : Bytes,
+  bits_data : Bytes?,
+  force_top_down : Bool,
+) -> Dib? {
   let header = match dib_header(data) {
     Some(value) => value
     None => return None
@@ -1099,8 +1117,12 @@ fn dib_decode(data : Bytes, bits_data : Bytes?) -> Dib? {
     height64 < -100000L {
     return None
   }
-  let top_down = height64 < 0L
-  let rows = (if top_down { -height64 } else { height64 }).to_int()
+  // A kind 7 annotation stores its expanded rows top-to-bottom even when
+  // the header says positive; BI_RLE8 is a stream, not a row array, so it
+  // keeps the height's own meaning. The decoder has no separate BI_RLE4
+  // path.
+  let top_down = height64 < 0L || (force_top_down && compression != 1)
+  let rows = (if height64 < 0L { -height64 } else { height64 }).to_int()
   // The RGBA buffer is width * rows * 4 bytes. Bound the pixel count before
   // the multiplication so a large header cannot overflow Int32 or allocate an
   // unbounded buffer; this applies to compressed and uncompressed DIBs.

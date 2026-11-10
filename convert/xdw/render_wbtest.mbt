@@ -99,6 +99,19 @@ fn x_drawing_value(kind : Int32, data : Bytes, annotation : Bool) -> Bytes {
 }
 
 ///|
+/// A record kind as the minimal big-endian two's-complement bytes: a kind
+/// with the high bit set needs a leading zero to stay positive.
+fn x_kind_bytes(kind : Int64) -> Bytes {
+  let hi = (kind >> 8).to_int()
+  let lo = (kind & 0xff).to_int()
+  if (hi & 0x80) != 0 {
+    Bytes::from_array(FixedArray::from_array([0, hi.to_byte(), lo.to_byte()]))
+  } else {
+    Bytes::from_array(FixedArray::from_array([hi.to_byte(), lo.to_byte()]))
+  }
+}
+
+///|
 fn x_record_with_drawing(
   kind : Int64,
   drawing_kind : Int32,
@@ -107,9 +120,7 @@ fn x_record_with_drawing(
 ) -> PropRecord {
   {
     depth: 4,
-    kind: Bytes::from_array(
-      FixedArray::from_array([(kind >> 8).to_byte(), (kind & 0xff).to_byte()]),
-    ),
+    kind: x_kind_bytes(kind),
     attrs: [
       {
         class: 0x80,

@@ -405,7 +405,15 @@ fn XdwDocument::xdw_draw_body(
           warnings.push(kind_name_ + ": a bitmap page was not readable")
           return
         }
-        match @metafile.dib_to_png(bmi, Some(bits.to_bytes())) {
+        // a kind 7 annotation stores its expanded rows top-to-bottom even
+        // when biHeight is positive; page content and header/footer bodies
+        // keep the generic DIB reading
+        let decoded = if xdw_is_annotation(obj.kind) {
+          @metafile.dib_to_png_top_down(bmi, Some(bits.to_bytes()))
+        } else {
+          @metafile.dib_to_png(bmi, Some(bits.to_bytes()))
+        }
+        match decoded {
           Some(png) => {
             let hash = writer.add_part("img", png) catch {
               error => {

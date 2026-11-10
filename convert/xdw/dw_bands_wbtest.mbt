@@ -153,7 +153,7 @@ test "a kind 7 body with two bands draws the joined pixels" {
   let joined = @buffer.Buffer()
   joined.write_bytes(row0)
   joined.write_bytes(row1)
-  let expected = match @metafile.dib_to_png(dw_band_bmi(), Some(joined.to_bytes())) {
+  let expected = match @metafile.dib_to_png_top_down(dw_band_bmi(), Some(joined.to_bytes())) {
     Some(value) => value
     None => abort("the joined bands did not encode")
   }
@@ -269,7 +269,7 @@ test "a kind 7 body with two compressed bands draws the joined pixels" {
   let joined = @buffer.Buffer()
   joined.write_bytes(row0)
   joined.write_bytes(row1)
-  let expected = match @metafile.dib_to_png(dw_band_bmi(), Some(joined.to_bytes())) {
+  let expected = match @metafile.dib_to_png_top_down(dw_band_bmi(), Some(joined.to_bytes())) {
     Some(value) => value
     None => abort("the joined bands did not encode")
   }
@@ -295,11 +295,128 @@ test "a kind 7 body with zero-expanded bands draws the stored bytes" {
   let joined = @buffer.Buffer()
   joined.write_bytes(row0)
   joined.write_bytes(row1)
-  let expected = match @metafile.dib_to_png(dw_band_bmi(), Some(joined.to_bytes())) {
+  let expected = match @metafile.dib_to_png_top_down(dw_band_bmi(), Some(joined.to_bytes())) {
     Some(value) => value
     None => abort("the joined bands did not encode")
   }
   guard image == expected else {
     abort("the zero-expanded bands did not join")
+  }
+}
+
+///|
+/// The first image command of an encoded page: (hash, x, y, w, h).
+fn dw_band_image_command(
+  encoded : Bytes,
+) -> (String, Double, Double, Double, Double)? {
+  let commands = @render.decode_commands(encoded) catch {
+    e => abort("decode failed: " + e.to_string())
+  }
+  for c in commands {
+    match c {
+      @render.Image(hash, x, y, w, h) => return Some((hash, x, y, w, h))
+      _ => ()
+    }
+  }
+  None
+}
+
+///|
+/// The same object box as `x_object`, with the object kind under test.
+fn x_object_kind(kind : Int64, rotation : Int64) -> XdwObject {
+  let obj = x_object(rotation)
+  {
+    place: obj.place,
+    record: obj.record,
+    kind,
+    x: obj.x,
+    y: obj.y,
+    w: obj.w,
+    h: obj.h,
+    rotation: obj.rotation,
+    text: obj.text,
+  }
+}
+
+///|
+test "a kind 7 body draws its bands top-down at the annotation box" {
+  // two 2-pixel rows: red on top, blue below, as the kind 7 body stores them
+  let row0 = b"\x00\x00\xff\x00\x00\xff\x00\x00"[:].to_owned()
+  let row1 = b"\xff\x00\x00\xff\x00\x00\x00\x00"[:].to_owned()
+  let body = dw_band_dib([(row0, 8, 1), (row1, 8, 1)])
+  let doc = x_doc([x_record_with_drawing(K_PICTURE, 7, body, true)], [])
+  let (encoded, warnings, parts) = dw_band_draw(doc, x_object_kind(K_PICTURE, 0L))
+  guard warnings.is_empty() else {
+    abort("unexpected warnings: \{warnings.join(",")}")
+  }
+  let (hash, x, y, w, h) = match dw_band_image_command(encoded) {
+    Some(value) => value
+    None => abort("the annotation body drew no image")
+  }
+  // the object is at 100,200 with a 300x400 box at 1/100 mm
+  guard x_close(x, 2.8346) && x_close(y, 5.6693) && x_close(w, 8.5039) && x_close(h, 11.3386) else {
+    abort("the image is placed at \{x},\{y} size \{w}x\{h}")
+  }
+  let image = match dw_band_image(encoded, parts) {
+    Some(value) => value
+    None => abort("the image part is missing")
+  }
+  let joined = @buffer.Buffer()
+  joined.write_bytes(row0)
+  joined.write_bytes(row1)
+  let expected = match @metafile.dib_to_png_top_down(dw_band_bmi(), Some(joined.to_bytes())) {
+    Some(value) => value
+    None => abort("the joined bands did not encode")
+  }
+  guard image == expected else {
+    abort("the drawn image is not the top-down joined bands")
+  }
+  // the generic reading would flip these asymmetric rows
+  let flipped = match @metafile.dib_to_png(dw_band_bmi(), Some(joined.to_bytes())) {
+    Some(value) => value
+    None => abort("the generic joined bands did not encode")
+  }
+  guard image != flipped else {
+    abort("the kind 7 image still uses the generic bottom-up reading")
+  }
+  ignore(hash)
+}
+
+///|
+test "a kind 7 page content body keeps the generic bottom-up reading" {
+  // the same asymmetric rows: red on top, blue below, as the body stores them
+  let row0 = b"\x00\x00\xff\x00\x00\xff\x00\x00"[:].to_owned()
+  let row1 = b"\xff\x00\x00\xff\x00\x00\x00\x00"[:].to_owned()
+  let body = dw_band_dib([(row0, 8, 1), (row1, 8, 1)])
+  let joined = @buffer.Buffer()
+  joined.write_bytes(row0)
+  joined.write_bytes(row1)
+  let generic = match @metafile.dib_to_png(dw_band_bmi(), Some(joined.to_bytes())) {
+    Some(value) => value
+    None => abort("the generic joined bands did not encode")
+  }
+  let top_down = match @metafile.dib_to_png_top_down(dw_band_bmi(), Some(joined.to_bytes())) {
+    Some(value) => value
+    None => abort("the top-down joined bands did not encode")
+  }
+  guard generic != top_down else {
+    abort("the two readings are the same")
+  }
+  for kind in [K_CONTENT, K_PAGEFORM] {
+    let doc = x_doc([x_record_with_drawing(kind, 7, body, false)], [])
+    let (encoded, warnings, parts) = dw_band_draw(doc, x_object_kind(kind, 0L))
+    guard warnings.is_empty() else {
+      abort("unexpected warnings: \{warnings.join(",")}")
+    }
+    let image = match dw_band_image(encoded, parts) {
+      Some(value) => value
+      None => abort("the page body drew no image")
+    }
+    guard image == generic else {
+      abort("a kind 7 page body did not keep the generic bottom-up reading")
+    }
+    guard image != top_down else {
+      abort("a kind 7 page body used the annotation top-down reading")
+    }
   }
 }

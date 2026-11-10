@@ -17,6 +17,21 @@ pub fn dib_to_png(data : Bytes, bits : Bytes?) -> Bytes? {
 }
 
 ///|
+/// The DIB `data` as PNG bytes, reading its uncompressed rows top-to-bottom
+/// even when `biHeight` is positive. A kind 7 annotation body stores its
+/// expanded rows that way; ordinary metafile DIBs and kind 7 page content
+/// keep [`dib_to_png`]'s bottom-up reading.
+pub fn dib_to_png_top_down(data : Bytes, bits : Bytes?) -> Bytes? {
+  match dib_decode_top_down(data, bits) {
+    Some(dib) =>
+      try Some(@raster.encode_png(dib.width, dib.height, dib.rgba)) catch {
+        _ => None
+      }
+    None => None
+  }
+}
+
+///|
 /// The most bands a kind 7 DIB body may carry. A real picture uses one band
 /// per strip; the cap keeps a crafted count from allocating an array.
 const MAX_DIB_BANDS : Int = 4096

@@ -84,6 +84,8 @@ assert.match(compare, /import \{ verifyAudioBrowser \} from '\.\.\/music\/audio-
 assert.match(compare, /await verifyAudioBrowser\(browser,base\);/);
 assert.match(compare, /import \{ verifyNativeConverter \} from '\.\.\/converter\/native-test\.mjs';/);
 assert.match(compare, /await verifyNativeConverter\(browser,base\);/);
+assert.match(compare, /import \{ verifyKind7Browser \} from '\.\.\/\.\.\/convert\/xdw\/kind7_browser_test\.mjs';/);
+assert.match(compare, /await verifyKind7Browser\(browser,base\);/);
 for (const dropped of ['verifyPiano', 'verifyMusicBrowser', 'verifyViewerMusic']) {
   assert.ok(!compare.includes(dropped), `compat/visual/compare.mjs still references ${dropped}`);
 }
