@@ -243,6 +243,13 @@ body.dragging .drop { border-color: var(--focus); background: color-mix(in srgb,
 .local-fonts .local-font-actions .button { padding: .3rem .9rem; font-size: .9375rem; }
 .local-fonts .local-font-actions .button:disabled { opacity: .5; cursor: default; }
 .local-fonts .local-font-summary { flex-basis: 100%; margin: 0; overflow-wrap: anywhere; }
+.first-font-choice { width: min(42rem, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); padding: 1.25rem; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; }
+.first-font-choice::backdrop { background: rgb(0 0 0 / .45); }
+.first-font-choice h2 { margin: 0 0 .5rem; font-size: 1.15rem; }
+.first-font-choice .first-font-choice-picker { margin: .75rem 0; }
+.first-font-choice .first-font-choice-picker .local-fonts { margin: 0; padding: 0; border: 0; }
+.first-font-choice .first-font-choice-picker .local-fonts h2 { display: none; }
+.first-font-choice .first-font-choice-actions { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; margin-top: .75rem; }
 .thumbs { display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: flex-end; margin: 0 0 1.5rem; padding: 0; list-style: none; }
 .thumbs figure { margin: 0; }
 /* thumbnails are shown at their size: one image pixel a CSS pixel, scaling

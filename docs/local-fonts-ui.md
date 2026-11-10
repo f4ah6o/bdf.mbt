@@ -29,6 +29,12 @@ working.
 - Nothing is enumerated on page load. The list is requested only from the
   "ローカルフォントを選ぶ" button, inside the click handler, so the permission
   prompt has a user gesture.
+- Before the first conversion of a file the visitor opens, a modal asks whether
+  to use local fonts. It embeds the same picker, so the query still starts from
+  a direct click. "フォントなしで続ける" and Escape fall back to a conversion
+  without fonts; unsupported or denied access leaves the same fallback. The
+  built-in demo and later conversions in the same page do not ask again, and
+  the picker stays available for later changes.
 - Before calling `queryLocalFonts()` the UI checks `isSecureContext` and that
   `queryLocalFonts` is a function. Unsupported and insecure contexts get a
   message and no call.

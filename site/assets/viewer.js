@@ -63,6 +63,69 @@ const localFontsRoot = $("#local-fonts");
 const localFonts = localFontsRoot
   ? createLocalFontsUI({ root: localFontsRoot })
   : { getFontFiles: () => null, clear: () => {} };
+const localFontsAnchor = document.createComment("local-fonts");
+localFontsRoot?.parentNode?.insertBefore(localFontsAnchor, localFontsRoot);
+let firstChoiceDone = false;
+let firstChoice = null;
+let skipFontsOnce = false;
+
+// 最初の「自分のファイル」を表示する前に一度だけ聞く。組み込みのデモや
+// 同じページでの 2 回目以降は聞かない。queryLocalFonts はこの中の
+// ボタン（直接の操作）からしか呼ばない。
+function askFirstFontChoice() {
+  if (!localFontsRoot || firstChoiceDone) return Promise.resolve();
+  // 開いている間の選択は同じ Promise を待つ。完了は閉じたときだけ。
+  if (firstChoice) return firstChoice;
+  firstChoice = new Promise((resolve) => {
+    let settled = false;
+    const dialog = document.createElement("dialog");
+    dialog.className = "first-font-choice";
+    dialog.setAttribute("aria-labelledby", "first-font-choice-title");
+    const title = document.createElement("h2");
+    title.id = "first-font-choice-title";
+    title.textContent = "最初の表示にローカルフォントを使いますか？";
+    const note = document.createElement("p");
+    note.className = "note";
+    note.textContent = "この端末の書体を選べます。選ばなくても、これまでどおり変換できます。";
+    const host = document.createElement("div");
+    host.className = "first-font-choice-picker";
+    host.append(localFontsRoot);
+    const actions = document.createElement("div");
+    actions.className = "first-font-choice-actions";
+    const skip = document.createElement("button");
+    skip.type = "button";
+    skip.className = "button";
+    skip.textContent = "フォントなしで続ける";
+    const use = document.createElement("button");
+    use.type = "button";
+    use.className = "button primary";
+    use.textContent = "この設定で続ける";
+    actions.append(skip, use);
+    dialog.append(title, note, host, actions);
+    document.body.append(dialog);
+    const finish = (withFonts) => {
+      if (settled) return;
+      settled = true;
+      skipFontsOnce = !withFonts;
+      dialog.close();
+      dialog.remove();
+      if (localFontsAnchor.parentNode) {
+        localFontsAnchor.parentNode.insertBefore(localFontsRoot, localFontsAnchor.nextSibling);
+      }
+      firstChoiceDone = true;
+      resolve();
+    };
+    skip.addEventListener("click", () => finish(false));
+    use.addEventListener("click", () => finish(true));
+    dialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      finish(false);
+    });
+    dialog.showModal();
+    localFontsRoot.querySelector("button")?.focus();
+  });
+  return firstChoice;
+}
 
 let currentPage = 0;
 let downloadUrl = null;
@@ -141,6 +204,8 @@ async function openBytes(name, input, retry = false) {
   updatePage();
   say(name + " を開いています…");
   const isPdf = name.toLowerCase().endsWith(".pdf");
+  const useFonts = !skipFontsOnce;
+  skipFontsOnce = false;
   let usedFonts = null;
   try {
     let bytes = input;
@@ -152,7 +217,7 @@ async function openBytes(name, input, retry = false) {
       const password = isPdf && pdfPassword ? pdfPassword.value : "";
       if (password) options.params = { password };
       // 選択した書体だけを渡す。options.fonts（URL）とは併用しない。
-      const fontFiles = localFonts.getFontFiles();
+      const fontFiles = useFonts ? localFonts.getFontFiles() : null;
       if (fontFiles) {
         options.fontFiles = fontFiles;
         usedFonts = fontFiles;
@@ -248,6 +313,8 @@ async function openLocal(selected) {
   const token = ++selection;
   try {
     const bytes = new Uint8Array(await selected.arrayBuffer());
+    if (token !== selection) return;
+    await askFirstFontChoice();
     if (token === selection) await openBytes(selected.name, bytes);
   } catch (error) {
     if (token === selection) say(selected.name + " を読み込めませんでした: " + (error.message ?? error), true);
