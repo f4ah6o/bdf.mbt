@@ -17,7 +17,6 @@ const root = resolve(import.meta.dirname, "../_build/pages");
 // 再配布できる同梱の書体を、FontData の代わりに使う（ホストのフォントは読まない）。
 const stix = await readFile(resolve(import.meta.dirname, "../compat/font/fixtures/stix.ttf"));
 const stixBase64 = stix.toString("base64");
-const workerSupportsFontFiles = (await readFile(resolve(import.meta.dirname, "../browser/native_converter_worker.mbt"), "utf8")).includes("fontFiles");
 const types = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -241,11 +240,7 @@ try {
     assert.equal(posted.fontFiles[0].name, "STIXTwoText.ttf");
     assert.equal(posted.fontFiles[0].bytes.byteLength, stix.length);
     const status = await page.locator("#status").textContent();
-    if (workerSupportsFontFiles) {
-      assert.doesNotMatch(status, /no fonts found/, "the selected font replaces the missing-font warning");
-    } else {
-      console.log("     PENDING: worker does not consume fontFiles yet; CSV still reports no fonts found");
-    }
+    assert.doesNotMatch(status, /no fonts found/, "the selected font replaces the missing-font warning");
     await page.click("#local-fonts button:has-text('選択を解除')");
     await page.waitForFunction(() => /選択を解除しました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
     await page.click('#samples button:text-is("Word")');

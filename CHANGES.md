@@ -4,6 +4,15 @@
 
 ### Added
 
+- The viewer can ask for access to local fonts and use selected faces during
+  conversion. The request begins only when the user selects the control; font
+  data stays local, while the generated BDF or PDF may embed selected faces.
+  The picker is optional and unavailable in browsers without Local Font Access.
+- The native converter Worker accepts `options.fontFiles`, named font byte
+  arrays, in addition to the existing `options.fonts` directory URL. Byte
+  input is copied, validated and isolated per request. PDF and DOCX do not
+  use the supplied database, and XLSX uses only its first face.
+
 - `compat/parity/render-diff.mjs` compares fixed fixtures through upstream and
   MoonBit converters and renderers independently, recording environment and
   input hashes.
