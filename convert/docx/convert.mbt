@@ -247,6 +247,19 @@ pub fn convert(
     InvalidDocx(message) => raise DocxInvalid(message)
     error => raise DocxInvalid(error.to_string())
   }
+  // Upstream titles both views with the package's Dublin Core title unless
+  // the caller passes one.
+  let title = if title != "" {
+    title
+  } else {
+    let package = @ooxml.open_ooxml(data) catch {
+      _ => raise DocxInvalid("invalid DOCX package")
+    }
+    match package.core_properties().title {
+      [first, ..] => first
+      [] => ""
+    }
+  }
   docx_render_document(document, title, data, views, selection) catch {
     InvalidDocx(message) => raise DocxInvalid(message)
     DocxInvalid(message) => raise DocxInvalid(message)

@@ -84,6 +84,7 @@ test "DOCX unsupported content is rejected" {
       bookmarks: Map([]),
       open_bookmarks: [],
       current_link: "",
+      has_math: false,
     }
     let rejected = try {
       walker.blocks(root, false)
@@ -153,6 +154,7 @@ test "DOCX resolved run properties are isolated between runs" {
     bookmarks: Map([]),
     open_bookmarks: [],
     current_link: "",
+    has_math: false,
   }
   walker.blocks(body, false)
   let items = walker.paragraphs[0].items

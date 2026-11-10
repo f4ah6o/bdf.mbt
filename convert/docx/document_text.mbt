@@ -144,6 +144,7 @@ priv struct DocxTextDocument {
   even_odd : Bool
   language : String
   background : UInt32?
+  has_math : Bool
 }
 
 ///|
@@ -166,6 +167,9 @@ priv struct DocxTextWalker {
   bookmarks : Map[String, StringBuilder]
   open_bookmarks : Array[String]
   mut current_link : String
+  // Set when this walker parses an OMML formula, so the converter can report
+  // that no font with a MATH table was available to lay it out.
+  mut has_math : Bool
 }
 
 ///|
@@ -1015,6 +1019,7 @@ fn docx_text_omml(
   items : Array[DocxTextItem],
   props : DocxRunProps,
 ) -> Unit {
+  walker.has_math = true
   let text = docx_omml_linear(node)
   if text != "" {
     docx_text_chars(walker, items, text, props)
@@ -2062,7 +2067,10 @@ fn docx_text_table(
           }
         None => "top"
       }
-      let blocks = docx_cell_blocks(cell_node, walker.styles)
+      let (blocks, cell_math) = docx_cell_blocks(cell_node, walker.styles)
+      if cell_math {
+        walker.has_math = true
+      }
       match cond_rpr {
         Some(rpr) =>
           for block in blocks {
@@ -2144,7 +2152,7 @@ fn docx_text_table(
 fn docx_cell_blocks(
   cell : DocxXmlNode,
   styles : DocxStyles,
-) -> Array[DocxBlock] raise {
+) -> (Array[DocxBlock], Bool) raise {
   let walker : DocxTextWalker = {
     styles,
     blocks: [],
@@ -2154,9 +2162,10 @@ fn docx_cell_blocks(
     bookmarks: Map([]),
     open_bookmarks: [],
     current_link: "",
+    has_math: false,
   }
   walker.blocks(cell, true)
-  walker.blocks
+  (walker.blocks, walker.has_math)
 }
 
 ///|
@@ -2438,8 +2447,13 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     bookmarks: Map([]),
     open_bookmarks: [],
     current_link: "",
+    has_math: false,
   }
   walker.blocks(body, false)
+  // Formulas in table cells and in header or footer stories are parsed by
+  // their own walkers, so the document holds a formula when any of them saw
+  // one.
+  let mut has_math = walker.has_math
   let (section_part, sections) = docx_sections(data)
   docx_inherit_section_stories(sections)
   if part != section_part || walker.section_index >= sections.length() {
@@ -2463,9 +2477,12 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     for story in section.headers {
       let story_part = story.1
       if !stories.contains(story_part) {
-        let (paragraphs, tables) = docx_story_content(
+        let (paragraphs, tables, story_math) = docx_story_content(
           package, story_part, styles,
         )
+        if story_math {
+          has_math = true
+        }
         stories[story_part] = paragraphs
         story_tables[story_part] = tables
       }
@@ -2473,9 +2490,12 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     for story in section.footers {
       let story_part = story.1
       if !stories.contains(story_part) {
-        let (paragraphs, tables) = docx_story_content(
+        let (paragraphs, tables, story_math) = docx_story_content(
           package, story_part, styles,
         )
+        if story_math {
+          has_math = true
+        }
         stories[story_part] = paragraphs
         story_tables[story_part] = tables
       }
@@ -2500,6 +2520,7 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     even_odd: docx_even_odd(package, part),
     language: docx_pick_language(styles, walker.paragraphs),
     background,
+    has_math,
   }
 }
 
@@ -2508,9 +2529,9 @@ fn docx_story_content(
   package : @ooxml.OoxmlPackage,
   part : String,
   styles : DocxStyles,
-) -> (Array[DocxTextParagraph], Array[DocxTable]) {
+) -> (Array[DocxTextParagraph], Array[DocxTable], Bool) {
   if part == "" || !package.has(part) {
-    return ([], [])
+    return ([], [], false)
   }
   try {
     let root = docx_text_xml(
@@ -2525,6 +2546,7 @@ fn docx_story_content(
       bookmarks: Map([]),
       open_bookmarks: [],
       current_link: "",
+      has_math: false,
     }
     walker.blocks(root, true)
     let paragraphs : Array[DocxTextParagraph] = []
@@ -2535,9 +2557,9 @@ fn docx_story_content(
         DocxTableBlock(table) => tables.push(table)
       }
     }
-    (paragraphs, tables)
+    (paragraphs, tables, walker.has_math)
   } catch {
-    _ => ([], [])
+    _ => ([], [], false)
   }
 }
 

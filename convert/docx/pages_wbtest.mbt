@@ -109,7 +109,7 @@ test "DOCX page selection keeps the requested pages" {
   assert_eq(one.pages, 1)
   assert_eq(docx_pages_texts(one, "pages"), ["Two"])
   assert_eq(docx_pages_numbers(one, "pages"), [1])
-  assert_true(one.summary.has_prefix("1 page, "), msg=one.summary)
+  assert_true(one.summary.has_prefix("1 page(s), "), msg=one.summary)
 }
 
 ///|
@@ -139,7 +139,7 @@ test "DOCX page selection skips pages past the end" {
   let none = convert(docx_pages_fixture(), pages="9")
   assert_eq(none.pages, 0)
   assert_eq(docx_pages_texts(none, "pages"), [])
-  assert_true(none.summary.has_prefix("0 pages, "), msg=none.summary)
+  assert_true(none.summary.has_prefix("0 page(s), "), msg=none.summary)
 }
 
 ///|

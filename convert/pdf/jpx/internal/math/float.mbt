@@ -38,6 +38,23 @@ fn round_ties_even_int(v : Double) -> Int {
 }
 
 ///|
+// Round to the nearest integer with ties away from zero, on the float32
+// domain. The upstream decoder's `store` rounds this way (`int32(v + 0.5)`
+// for non-negative values, `-int32(0.5 - v)` otherwise), so an exact half
+// goes up in magnitude instead of to the even neighbour. The sum is formed in
+// float32 as well: `float32(0.49999997 + 0.5)` is exactly 1.0, so the float32
+// immediately below 0.5 rounds up to 1.
+pub fn round_half_away_f32(v : Double) -> Int {
+  let vf = Float::from_double(v)
+  let half : Float = 0.5
+  if vf >= 0.0 {
+    (vf + half).floor().to_int()
+  } else {
+    -((half - vf).floor().to_int())
+  }
+}
+
+///|
 // Mirror lrintf() behavior by rounding on float32 domain
 // with ties-to-even. Snaps to float32 first, then applies exact ties-to-even.
 pub fn round_ties_even_f32(v : Double) -> Int {

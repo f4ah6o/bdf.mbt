@@ -155,12 +155,26 @@ fn clamp_float_component_output(
   is_signed : Bool,
 ) -> Array[Int] {
   let dc_offset = if is_signed { 0 } else { 1 << (bits_per_component - 1) }
+  // Upstream `store` clamps the float32 sample to [lo - shift, hi - shift]
+  // before rounding. That range is [-2^(prec-1), 2^(prec-1) - 1] for both
+  // signednesses, and `!(v >= lo)` maps NaN to the lower bound.
+  let half = 1 << (bits_per_component - 1)
+  let lo_f = Float::from_double((-half).to_double())
+  let hi_f = Float::from_double((half - 1).to_double())
   let output : Array[Int] = []
   for value in values {
-    let rounded = @math.round_ties_even_f32(value)
+    let mut vf = Float::from_double(value)
+    if !(vf >= lo_f) {
+      vf = lo_f
+    } else if vf > hi_f {
+      vf = hi_f
+    }
+    // The clamp above bounds the sample up to 24-bit precision. Above that
+    // float32(2^(prec-1) - 1) rounds up and upstream emits one past the
+    // maximum, so the final clamp keeps the sample in range.
     output.push(
       clamp_sample_for_signedness(
-        rounded + dc_offset,
+        @math.round_half_away_f32(vf.to_double()) + dc_offset,
         is_signed,
         precision_bits=bits_per_component,
       ),

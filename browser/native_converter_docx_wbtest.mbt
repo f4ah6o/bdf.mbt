@@ -77,7 +77,7 @@ test "the worker converts every DOCX page by default" {
   let text = docx_test_page_text(docx_test_capture_bdf())
   docx_test_capture_stop()
   assert_true(posted.contains("\"format\":\"docx\""), msg=posted)
-  assert_true(posted.contains("\"summary\":\"2 pages, "), msg=posted)
+  assert_true(posted.contains("\"summary\":\"2 page(s), "), msg=posted)
   assert_true(text.contains("One"), msg=text)
   assert_true(text.contains("Two"), msg=text)
 }
@@ -91,8 +91,8 @@ test "the worker keeps the selected DOCX pages" {
   let text = docx_test_page_text(docx_test_capture_bdf())
   docx_test_capture_stop()
   assert_true(posted.contains("\"format\":\"docx\""), msg=posted)
-  assert_true(posted.contains("\"summary\":\"1 page, "), msg=posted)
-  assert_true(!posted.contains("\"summary\":\"2 pages, "), msg=posted)
+  assert_true(posted.contains("\"summary\":\"1 page(s), "), msg=posted)
+  assert_true(!posted.contains("\"summary\":\"2 page(s), "), msg=posted)
   // The posted bytes hold the selected page alone, so the worker did not
   // select the pages a second time.
   assert_true(text.contains("Two"), msg=text)

@@ -21,8 +21,18 @@
 
 ### Changed
 
+- DocuWorks annotations use a separate `annotation` layer, which renderers can
+  show or hide. Stored annotation text is indexed even when its drawing has no
+  text or is missing. The static index reflects visible annotations: hiding
+  them can reveal body text excluded from search unless `include_hidden` is set.
+- DOCX view titles use the document title when no title is supplied, and
+  conversion summaries and font warnings follow the upstream wording.
+
 ### Fixed
 
+- JPEG 2000 sample conversion now uses float32 rounding and clamps extreme
+  values before integer conversion, matching upstream for common precisions.
+- DOCX formula warnings now include formulas in tables, headers and footers.
 - EMF text with a Shift_JIS font charset now preserves Japanese characters,
   including searchable body text in DocuWorks documents.
 

@@ -29,10 +29,11 @@ remain. See `compat/parity/README.md` for selectors and the canonical form.
 ## Baseline (2026-11-09)
 
 52 cases: **12 pass, 40 diff, 0 one-sided error, 0 both-error**, with
-58,664 canonical-form differences in total. The pass set is unchanged from
+58,622 canonical-form differences in total. The pass set is unchanged from
 the 2026-11-05 baseline; the difference count fell from 63,745 after the
-DOCX and Markdown builders opted into suppressing repeated drawing state
-(see below). The count is a
+DOCX and Markdown builders opted into suppressing repeated drawing state,
+and from 58,664 after DOCX took upstream's view title, summary and warning
+wording (see below). The count is a
 structural measure: it says how many values of the canonical form differ,
 not how far the rendered pages are from upstream.
 
@@ -124,6 +125,24 @@ Progress made since the first baseline:
   `docx/grid#default` and `docx/form-rows#default` report a few more
   differences because the shorter program shifts element-wise alignment;
   whether their drawing is unchanged has not been checked against images.
+- DOCX titles both views with the package's Dublin Core title, as upstream's
+  `wordproc` does (`c.doc.Meta.DC.Title.First()`), and an explicit `title`
+  still wins. Its summary uses upstream's `register.go` wording
+  (`N page(s), M scroll strip(s), K embedded font(s)`) and its warnings use
+  the `wordproc` text (`no fonts found; text is laid out with estimated
+  metrics and not embedded`), plus the `internal/mathlayout` MATH-table
+  warning when the document holds an OMML formula. The twelve DOCX cases
+  fell by 42 differences in total (58,664 → 58,622); no case changed status.
+  The scroll strip count still differs on `docx/basic#default` and
+  `docx/basic#scroll` (upstream 2, MoonBit 1), and `docx/grid#page-1` still
+  reports 4 pages where upstream reports 1 because the `pages` option is not
+  implemented for DOCX.
+- The JPX decoder's component output now rounds half away from zero, as
+  upstream's `store` does (`int32(v + 0.5)` / `-int32(0.5 - v)`), instead of
+  ties-to-even. `pdf/images-jpx-jbig2` still differs by three values: one
+  180×120 image decodes to 23 samples that are one level off, because the
+  9/7 inverse wavelet transform runs in `Double` here and in `float32`
+  upstream. That is a decoder-precision gap, not a rounding-mode one.
 
 ## Next gates
 

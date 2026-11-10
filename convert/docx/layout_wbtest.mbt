@@ -89,7 +89,8 @@ fn docx_test_docx(
     " xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"" +
     " xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"" +
     " xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\"" +
-    " xmlns:pic=\"http://schemas.openxmlformats.org/drawingml/2006/picture\">" +
+    " xmlns:pic=\"http://schemas.openxmlformats.org/drawingml/2006/picture\"" +
+    " xmlns:m=\"http://schemas.openxmlformats.org/officeDocument/2006/math\">" +
     background +
     "<w:body>" +
     blocks +
@@ -416,7 +417,8 @@ fn docx_test_header(root : String) -> String {
   " xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"" +
   " xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"" +
   " xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\"" +
-  " xmlns:pic=\"http://schemas.openxmlformats.org/drawingml/2006/picture\">" +
+  " xmlns:pic=\"http://schemas.openxmlformats.org/drawingml/2006/picture\"" +
+  " xmlns:m=\"http://schemas.openxmlformats.org/officeDocument/2006/math\">" +
   root +
   "</w:hdr>"
 }
@@ -619,7 +621,7 @@ test "DOCX views selects the views to build" {
   assert_eq(pages_manifest.views.length(), 1)
   assert_eq(pages_manifest.views[0].id, "pages")
   assert_eq(pages.pages, 1)
-  assert_true(pages.summary.contains("1 page, 0 scroll strips"))
+  assert_true(pages.summary.contains("1 page(s), 0 scroll strip(s)"))
   let scroll = convert(data, views="scroll")
   let scroll_split = @core.single_to_split(scroll.bdf)
   let scroll_manifest = @core.parse_manifest(
@@ -628,7 +630,7 @@ test "DOCX views selects the views to build" {
   assert_eq(scroll_manifest.views.length(), 1)
   assert_eq(scroll_manifest.views[0].id, "scroll")
   assert_eq(scroll.pages, 0)
-  assert_true(scroll.summary.contains("0 pages, 1 scroll strip"))
+  assert_true(scroll.summary.contains("0 page(s), 1 scroll strip(s)"))
   let rejected = try {
     ignore(convert(data, views="slides"))
     false

@@ -1395,3 +1395,109 @@ test "DOCX table grid spans are accepted" {
   assert_true(value.contains("A"), msg="DOCX table grid span A")
   assert_true(value.contains("B"), msg="DOCX table grid span B")
 }
+///|
+fn docx_metadata_fixture() -> Bytes raise {
+  let joined = StringBuilder()
+  joined.write_string(
+    "H4sIAOda8moC/wvwZmYRYWBg4GCY7JoVu8BC2ZaFkYFBgYmBQRgoGu2cn1eSmlcSH1JZkFocq1eRmzM18KTfYQOBvZ9Fp60P",
+  )
+  joined.write_string(
+    "fXSAUfHKEvZpyl8C7BJS/IW48z/tWPq3Wi33JONUL5m321+dLdr63e+NweTehVO3lyqzssn28jpr25utv9osEqIgUWCYoM3v",
+  )
+  joined.write_string(
+    "UXT1ro55e4tKhMyKqcmaLwM1LylXLbBS4+n5Ylit8edMs9cC+0SH0usm372OBxhMWeUjtynaLpk/OvzI6Xn7/V2NrCY9euky",
+  )
+  joined.write_string(
+    "Z1MUp6bl6oUG68oO/vFaeY7TVLtfRip3Eavwkl0zDBTr2eeUvt/js43tqFRRJfN5na+imwPVXq1NT629+8zp/I3vYY/XzL8T",
+  )
+  joined.write_string(
+    "1CfVWVH0/pXkx4TDj7z41dYV+xwpTvtT3z9/r1rpUV6hZ0mFcT6y/HdqmQNQAq2mZ972K0DebmDAcQPp+KLUnGJ9PRDZO8Hb",
+  )
+  joined.write_string(
+    "m9mRp+H9vy7F73nbbDs80qsFF5pP/MV8yKesvOD5QZ+aL/elXY56tcp9/vVJ9fbd6pgz2tfFijZteFdlMCfmm6Kv2Dy+76ul",
+  )
+  joined.write_string(
+    "DXw1KqOKkrjd8zZIr9vWv2fCC5/ZzpluiisjZ7ie0k0qNnbPitWbs8XomZSnyRphsaLzJoZ5v/5Jvc5n41H32fxd7NW99Qdl",
+  )
+  joined.write_string(
+    "+lr1E58X8vS931TdOefJmS57Wa9lVhsjKk5fXfzfq7yL1SZ/8847z/57G26aoK5YsvPTqpC564S+bLR3evVpwctvNz/qtqjb",
+  )
+  joined.write_string(
+    "y9sxoHq+LcywcBOQ9x+IBYE4JT85oCi/oFg/Ob8oFZReUs/Z5h024GF9YLtcYMfxLdYirYrW0c94TjJydJW2vOAXEjbZ3i8t",
+  )
+  joined.write_string(
+    "EmdlZ/fo8Ob2+RJnnLM+W/oalNhKeM6Z63+aZfrnwv+syzRV3RXVZz7Q5OX7fK5I0jLc8mrMklXT08I0tk48zRJ+1UjJbJ/X",
+  )
+  joined.write_string(
+    "kmtr5TN19xf3Lslewy32SFq3Sb72f2fgFBnNh/o79Gdz1C953KvzXepeQ/IUhcBJZjK7GBO39bl/lUqxC/z6y+R9QqF19J/t",
+  )
+  joined.write_string(
+    "lXWMqB6Mb73Zwg6M2ROMEA+W5xel6AN9WZoLzBcgD/YG+voDPbj3s/aiOzN3Zy1YmbX7sNqRVCbOCTvSMn8pqhZOkdj18bXn",
+  )
+  joined.write_string(
+    "rmmxO/f8uKl/vi/43Tm3zflPDzdse/Q69NjMTUKzD5aJ/q+o33W/SMzjhlvGllWPxEV/rNunfXyR48/UKapisjkax7q+u6xj",
+  )
+  joined.write_string(
+    "4NgU7tYiapWavNY1n8X1lbXERfNzi0MUj7C5Oc9L7U84kvAzJ/lfcnOutUfpDPYInxXPS+e8bjmrOlev0d/h6+ZLUjcfpv6P",
+  )
+  joined.write_string(
+    "dHrE+bclb9ospv6Liqx2jFefC51RmWv0QT1Cj1X1Zemn8ru3+aUvs12r3NcpLdNtd4z/tsTh0AIRuzTO2DP564TsS2zvvuDs",
+  )
+  joined.write_string(
+    "vHBnR9jboNaVLy/xT1M/9Jb/VXyANyOTCDPuogQGGhgZsBcs6AagZyuEAaaMKJkMXSN6kkRoNGLCkkDRtaNHOEK7MDOW6A/w",
+  )
+  joined.write_string(
+    "ZmUDSbMA4Q8g7ckC4gEA3ln/RFcFAAA=",
+  )
+  @gzip.decompress(@base64.decode(joined.to_string()[:])[:])
+}
+
+///|
+test "DOCX titles both views with the package core title" {
+  let result = convert(docx_metadata_fixture())
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  assert_eq(manifest.views.length(), 2)
+  for view in manifest.views {
+    assert_eq(view.title, "Parity title")
+  }
+}
+
+///|
+test "an explicit DOCX title wins over the package core title" {
+  let result = convert(docx_metadata_fixture(), title="Caller title")
+  let split = @core.single_to_split(result.bdf)
+  let manifest = @core.parse_manifest(@utf8.decode(split.manifest))
+  for view in manifest.views {
+    assert_eq(view.title, "Caller title")
+  }
+}
+
+///|
+test "DOCX summary and warnings use the upstream wording" {
+  let result = convert(docx_metadata_fixture())
+  assert_eq(
+    result.summary,
+    "\{result.pages} page(s), 1 scroll strip(s), 0 embedded font(s)",
+  )
+  assert_eq(
+    result.warnings,
+    [
+      "no fonts found; text is laid out with estimated metrics and not embedded",
+      "no font with a MATH table (such as STIX Two Math or Cambria Math) is available; formulas are laid out with the text font",
+    ],
+  )
+}
+
+///|
+test "a DOCX without a formula omits the MATH-table warning" {
+  let result = convert(docx_convert_fixture())
+  assert_eq(
+    result.warnings,
+    ["no fonts found; text is laid out with estimated metrics and not embedded"],
+  )
+  assert_eq(
+    result.summary,
+    "\{result.pages} page(s), 1 scroll strip(s), 0 embedded font(s)",
+  )
+}

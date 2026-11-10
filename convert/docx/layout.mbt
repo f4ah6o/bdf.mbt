@@ -4082,7 +4082,14 @@ fn docx_layout_document(
   Array[String],
   Map[String, DocxBookmarkPage],
 ) raise {
-  let warnings : Array[String] = ["DOCX layout uses approximate text metrics"]
+  let warnings : Array[String] = [
+    "no fonts found; text is laid out with estimated metrics and not embedded",
+  ]
+  if document.has_math {
+    warnings.push(
+      "no font with a MATH table (such as STIX Two Math or Cambria Math) is available; formulas are laid out with the text font",
+    )
+  }
   let section = docx_section_at(document, 0)
   let start = if section.page_start >= 0 {
     section.page_start.to_int()
@@ -4264,8 +4271,13 @@ fn docx_render_document(
   let pages : Array[Json] = []
   let mut index_runs : Array[@core.IndexRun] = []
   let mut warnings : Array[String] = [
-    "DOCX layout uses approximate text metrics",
+    "no fonts found; text is laid out with estimated metrics and not embedded",
   ]
+  if document.has_math {
+    warnings.push(
+      "no font with a MATH table (such as STIX Two Math or Cambria Math) is available; formulas are laid out with the text font",
+    )
+  }
   if views != "scroll" {
     let (rendered, runs, rendered_warnings, _) = docx_layout_document(
       document,
@@ -4333,12 +4345,7 @@ fn docx_render_document(
     } else {
       kept
     },
-    summary: "\{kept} page" +
-    (if kept == 1 { "" } else { "s" }) +
-    ", " +
-    strips.to_string() +
-    " scroll strip" +
-    (if strips == 1 { "" } else { "s" }),
+    summary: "\{kept} page(s), \{strips} scroll strip(s), 0 embedded font(s)",
     warnings,
   }
 }
