@@ -8,12 +8,16 @@
 // 検索テキスト・wasm-gc・ドキュメントを実際に動かして確かめる。
 import assert from "node:assert/strict";
 import { createReadStream } from "node:fs";
-import { stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, resolve } from "node:path";
 import { chromium } from "playwright";
 
 const root = resolve(import.meta.dirname, "../_build/pages");
+// 再配布できる同梱の書体を、FontData の代わりに使う（ホストのフォントは読まない）。
+const stix = await readFile(resolve(import.meta.dirname, "../compat/font/fixtures/stix.ttf"));
+const stixBase64 = stix.toString("base64");
+const workerSupportsFontFiles = (await readFile(resolve(import.meta.dirname, "../browser/native_converter_worker.mbt"), "utf8")).includes("fontFiles");
 const types = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -196,6 +200,58 @@ try {
         await page.waitForFunction(() => /^\d+ \/ \d+$/.test(document.querySelector("#page-number")?.textContent ?? ""), null, { timeout: 60000 });
       }
     }
+  });
+
+  await step("viewer passes the selected local font to the real Worker (CSV)", async () => {
+    await fresh();
+    await page.addInitScript((base64) => {
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+      window.queryLocalFonts = async () => [{
+        postscriptName: "STIXTwoText",
+        fullName: "STIX Two Text",
+        family: "STIX Two Text",
+        style: "Regular",
+        blob: async () => new Blob([bytes], { type: "font/ttf" }),
+      }];
+      window.__posted = [];
+      const post = Worker.prototype.postMessage;
+      Worker.prototype.postMessage = function (message, transfer) {
+        if (message?.type === "convert") window.__posted.push(message.options);
+        return post.call(this, message, transfer);
+      };
+    }, stixBase64);
+    await page.goto(base + "viewer/", { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => /^1 \/ 20$/.test(document.querySelector("#page-number")?.textContent ?? ""), null, { timeout: 120000 });
+    const before = await page.evaluate(() => window.__posted[0]);
+    assert.equal(before.fontFiles, undefined, "no selection keeps the old options");
+    assert.equal(before.fonts, undefined);
+    await page.click("#local-fonts button:has-text('ローカルフォントを選ぶ')");
+    await page.waitForSelector("#local-fonts-face-0");
+    await page.check("#local-fonts-face-0");
+    await page.click("#local-fonts button:has-text('選択した書体を使う')");
+    await page.waitForFunction(() => /1 書体を読み込みました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    await page.click('#samples button:text-is("CSV")');
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.csv", null, { timeout: 180000 });
+    await page.waitForFunction(() => /basic\.csv を表示しています|警告/.test(document.querySelector("#status")?.textContent ?? ""), null, { timeout: 60000 });
+    const posted = await page.evaluate(() => window.__posted.at(-1));
+    assert.equal(posted.fonts, undefined, "the URL option is not combined with fontFiles");
+    assert.equal(posted.fontFiles.length, 1);
+    assert.equal(posted.fontFiles[0].name, "STIXTwoText.ttf");
+    assert.equal(posted.fontFiles[0].bytes.byteLength, stix.length);
+    const status = await page.locator("#status").textContent();
+    if (workerSupportsFontFiles) {
+      assert.doesNotMatch(status, /no fonts found/, "the selected font replaces the missing-font warning");
+    } else {
+      console.log("     PENDING: worker does not consume fontFiles yet; CSV still reports no fonts found");
+    }
+    await page.click("#local-fonts button:has-text('選択を解除')");
+    await page.waitForFunction(() => /選択を解除しました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    await page.click('#samples button:text-is("Word")');
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.docx", null, { timeout: 180000 });
+    const after = await page.evaluate(() => window.__posted.at(-1));
+    assert.equal(after.fontFiles, undefined, "a cleared selection is not sent");
   });
 
   await step("viewer searches and saves the BDF", async () => {

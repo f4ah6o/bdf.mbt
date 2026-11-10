@@ -2,6 +2,7 @@
 // 開いた BDF を wasm-gc の書き出し（PDF・Markdown・検索テキスト）に渡す。
 import { bdf_create_native_converter, bdf_create_viewer } from "./browser.js";
 import { createExportUI } from "./export-ui.js";
+import { createLocalFontsUI } from "./local-fonts.js";
 
 const $ = (selector) => document.querySelector(selector);
 const SAMPLES = [
@@ -55,6 +56,9 @@ const viewer = bdf_create_viewer($("#preview"), {
   workerUrl: new URL("./render_worker.js", import.meta.url).href,
   layout: "single",
 });
+// ローカルフォントは、利用者が選んだときだけ読む。選択が無ければ
+// これまでどおり options.fonts も fontFiles も付けない。
+const localFonts = createLocalFontsUI({ root: $("#local-fonts") });
 
 let currentPage = 0;
 let downloadUrl = null;
@@ -133,6 +137,7 @@ async function openBytes(name, input, retry = false) {
   updatePage();
   say(name + " を開いています…");
   const isPdf = name.toLowerCase().endsWith(".pdf");
+  let usedFonts = null;
   try {
     let bytes = input;
     let summary = "";
@@ -142,6 +147,12 @@ async function openBytes(name, input, retry = false) {
       const options = { name };
       const password = isPdf && pdfPassword ? pdfPassword.value : "";
       if (password) options.params = { password };
+      // 選択した書体だけを渡す。options.fonts（URL）とは併用しない。
+      const fontFiles = localFonts.getFontFiles();
+      if (fontFiles) {
+        options.fontFiles = fontFiles;
+        usedFonts = fontFiles;
+      }
       const result = await converter.convert(input, options);
       bytes = result.bdf;
       summary = result.summary ?? "";
@@ -158,7 +169,12 @@ async function openBytes(name, input, retry = false) {
     setDownload(bytes, name);
     openDocument = { name, bytes: bytes.slice() };
     document.dispatchEvent(new CustomEvent("bdf:document", { detail: { name } }));
-    say(warnings.length ? "表示しました（警告: " + warnings.join(" · ") + "）" : name + " を表示しています。");
+    say(
+      (warnings.length ? "表示しました（警告: " + warnings.join(" · ") + "）" : name + " を表示しています。") +
+        (usedFonts
+          ? " 選択したローカルフォント " + usedFonts.length + " 書体を変換に渡しました。書き出した PDF などに埋め込まれることがあります。"
+          : ""),
+    );
     if (isPdf) {
       lastOpen = null;
       if (pdfRetry) pdfRetry.disabled = true;
@@ -353,6 +369,7 @@ if (requested) {
 
 window.addEventListener("pagehide", (event) => {
   if (event.persisted) return;
+  localFonts.clear({ announce: false });
   viewer.destroy();
   converter.terminate();
   if (downloadUrl) URL.revokeObjectURL(downloadUrl);
