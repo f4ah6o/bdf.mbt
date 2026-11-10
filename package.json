@@ -21,7 +21,7 @@
     "test:xlsx-compat": "node compat/xlsx/emission-test.mjs && node compat/xlsx/shard-test.mjs && node compat/xlsx/verify-all.mjs",
     "test:xlsx-visual": "node compat/xlsx/visual-barrier-test.mjs && node compat/xlsx/visual-compare.mjs",
     "test:object-compat": "node compat/object/verify.mjs",
-    "test:csv-visual": "node compat/csv/visual-compare.mjs",
+    "test:csv-visual": "node compat/csv/visual-barrier-test.mjs && node compat/csv/visual-compare.mjs",
     "test:sheet-compat": "node compat/sheet/generate-style-source.mjs --check && node compat/sheet/generate-style-test.mjs --check && node compat/sheet/verify.mjs && node compat/sheet/verify-styled.mjs",
     "test:parquet-compat": "node compat/parquet/verify.mjs",
     "test:csv-compat": "node compat/csv/verify.mjs && node compat/csv/verify-pairs.mjs && node compat/csv/verify-table.mjs && node compat/csv/verify-detect.mjs && node compat/csv/verify-convert.mjs",

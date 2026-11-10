@@ -64,6 +64,9 @@
 
 ### Fixed
 
+- CSV visual checks now wait for each page to finish rendering before capture,
+  while retaining the nonblank and exact pixel comparisons.
+
 - CAD paths now retain the pen line cap, including round caps on Jw_cad paths.
 
 - PDF streams whose `/Length` runs 1–8 bytes into the `endstream` marker are

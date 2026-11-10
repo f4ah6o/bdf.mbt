@@ -23,4 +23,8 @@ BDF_CSV_DETECT_FIXTURE=/path/to/bdf.mbt/compat/csv/detect.json go test ./convert
 
 After `moon build --target js`, run `npm run test:csv-compat` in this module.
 `npm run test:csv-visual` compares the rendered upstream and MoonBit documents
-with vlmkit and checks the reference is not blank.
+with vlmkit and checks the reference is not blank. The page keeps a
+`visual-wait` request open until its asynchronous conversion and rendering have
+finished, so vlmkit's `networkidle` capture cannot screenshot a blank page;
+`visual-barrier-test.mjs` proves the wait under an artificial render delay and
+checks that a failed wait aborts before any capture work.
