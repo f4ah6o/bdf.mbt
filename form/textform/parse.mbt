@@ -119,10 +119,62 @@ fn column_of(value : String, pos : Int) -> Int {
 }
 
 ///|
+/// The length of the prefix of `data` that ends at a character boundary: a
+/// character that the end of the data cuts is left out, so that a sample of
+/// a file that ends inside a character is still read as text. Bytes that are
+/// not UTF-8 at all are kept, for the decoder to reject.
+fn utf8_prefix_len(data : Bytes) -> Int {
+  let n = data.length()
+  let mut start = n
+  let mut back = 0
+  while start > 0 && back < 3 {
+    let byte = data[start - 1].to_int()
+    if (byte & 0xC0) == 0x80 {
+      // (a continuation byte: the character starts further back)
+      start -= 1
+      back += 1
+      continue
+    }
+    let need = if (byte & 0x80) == 0 {
+      1
+    } else if (byte & 0xE0) == 0xC0 {
+      2
+    } else if (byte & 0xF0) == 0xE0 {
+      3
+    } else if (byte & 0xF8) == 0xF0 {
+      4
+    } else {
+      0
+    }
+    if need == 0 {
+      return n
+    }
+    if n - (start - 1) < need {
+      return start - 1
+    }
+    return n
+  }
+  n
+}
+
+///|
+/// The text of a sample of a file: the bytes up to the last character that
+/// the end of the sample does not cut, or none when they are not UTF-8.
+fn sample_text(head : Bytes) -> String? {
+  let text = @utf8.decode(head[:utf8_prefix_len(head)]) catch {
+    _ => return None
+  }
+  Some(text)
+}
+
+///|
 /// Whether the start of a file is UTF-8 text without NUL bytes (the last
 /// character may be cut by the end of the start).
 pub fn is_text(head : Bytes) -> Bool {
-  let text = @utf8.decode(head) catch { _ => return false }
+  let text = match sample_text(head) {
+    Some(text) => text
+    None => return false
+  }
   text != "" && !text.contains("\u{0}")
 }
 
@@ -130,7 +182,10 @@ pub fn is_text(head : Bytes) -> Bool {
 /// Whether a file looks like a text template: UTF-8 that starts with front
 /// matter or has a tag.
 pub fn is_template(head : Bytes) -> Bool {
-  let text = @utf8.decode(head) catch { _ => return false }
+  let text = match sample_text(head) {
+    Some(text) => text
+    None => return false
+  }
   text.has_prefix("---\n") || text.has_prefix("---\r\n") || @tag.has(text)
 }
 

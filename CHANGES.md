@@ -59,6 +59,11 @@
 
 ### Fixed
 
+- A text template whose UTF-8 character is cut by the 1024-byte or the
+  `MAX_TEXT_HEAD` sample that detection reads is still read as a text
+  template, instead of being refused as a file that is not one. Bytes that
+  are not UTF-8 at all, and NUL bytes, are still refused, and the detection
+  of ZIP and PDF templates is unchanged.
 - `form.compile` without sample data shows the template with its tags instead
   of filling it with an empty object, which replaced every tag with nothing.
   A template of pdfme keeps what its designer left in its fields as its
@@ -103,6 +108,8 @@
   `/Tx` instead.
 - A partly filled form (`.bdff`) is completed with `form.fill`; `form.compile`
   refuses it, as it refuses a compiled template (`.bdft`).
+- A text template that is not UTF-8 is an error (`text: the template is not
+  text of UTF-8`) instead of being filled with replacement characters.
 - `form.fill` reads the fields of the template before it fills it, so a PDF
   without form fields is an error even without `Options::open`, as upstream's
   `ErrNoForm` makes it.

@@ -148,6 +148,15 @@ fn form_source(data : Bytes) -> (String, Bytes, Template?) raise FormError {
 }
 
 ///|
+/// The text of a template of text, or the mistake in its UTF-8: a template
+/// that is not UTF-8 is refused, not filled with replacement characters.
+fn form_text(source : Bytes) -> String raise FormError {
+  @utf8.decode(source[:]) catch {
+    _ => raise FormError("text: the template is not text of UTF-8")
+  }
+}
+
+///|
 /// The fields of the tags of a template, read without filling it.
 fn fields_of(format : String, source : Bytes) -> Array[@tag.Field] raise FormError {
   match format {
@@ -259,7 +268,7 @@ fn fill_format(
       }
     }
     FORMAT_TEXT => {
-      let text = @utf8.decode_lossy(source[:])
+      let text = form_text(source)
       let values = match data {
         Json::Object(values) => values
         _ => raise FormError("form: the data of a text template is an object")
@@ -344,7 +353,7 @@ fn show_format(format : String, source : Bytes) -> Result raise FormError {
       }
     }
     FORMAT_TEXT => {
-      let text = @utf8.decode_lossy(source[:])
+      let text = form_text(source)
       let result = @textform.show_result(text) catch {
         @textform.TextFormError(message) => raise FormError(message)
       }
