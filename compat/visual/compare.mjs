@@ -9,7 +9,6 @@ import { chromium } from 'playwright';
 import { PNG } from 'pngjs';
 import { verifyPageControls } from '../continuous/controls-test.mjs';
 import { verifyAudioBrowser } from '../music/audio-browser-test.mjs';
-import { verifyMusicBrowser } from '../music/player-browser-test.mjs';
 import { verifyConverterBrowser } from '../converter/browser-test.mjs';
 import { verifyNativeConverter } from '../converter/native-test.mjs';
 import { verifyRenderWorker } from '../render_worker/browser-test.mjs';
@@ -21,8 +20,6 @@ import { verifyViewerFile } from '../continuous/viewer-file-test.mjs';
 import { verifyViewerFind } from '../continuous/viewer-find-test.mjs';
 import { verifyViewerSheet } from '../sheet/viewer-api-test.mjs';
 import { verifyViewerErrors } from '../continuous/viewer-error-test.mjs';
-import { verifyViewerMusic } from '../continuous/viewer-music-test.mjs';
-import { verifyPiano } from '../music/piano-test.mjs';
 import { verifyLazyPages } from '../continuous/lazy-test.mjs';
 import { verifySheetZoom } from '../sheet/zoom-test.mjs';
 import { captureWithRecapture, summarizeCapture } from './recapture.mjs';
@@ -438,9 +435,7 @@ try {
     assert.equal(resized.attachedLeft,150,'a document mounted while detached centers when attached');assert.equal(resized.disposed,true,'the layout observer is disposed when its host is removed');
     await verifyPageControls(browser,continuousBase,interactiveBase,base);
     await verifyLazyPages(browser,continuousBase);
-    await verifyPiano(browser,base);
     await verifyAudioBrowser(browser,base);
-    await verifyMusicBrowser(browser,base);
     await verifyConverterBrowser(browser,base);
     await verifyNativeConverter(browser,base);
     await verifyRenderWorker(browser,base);
@@ -452,7 +447,6 @@ try {
     await verifyViewerFind(browser,base);
     await verifyViewerSheet(browser,base);
     await verifyViewerErrors(browser,base);
-    await verifyViewerMusic(browser,base);
     for (const name of ['baseline','moon']) {
       const page=await browser.newPage();
       await page.goto(`${continuousBase}viewer-worker-${name}.html`,{waitUntil:'networkidle'});
@@ -477,7 +471,6 @@ try {
     await page.close();
   }
 
-    for(const name of ['baseline','moon']){const page=await browser.newPage();await page.goto(`http://127.0.0.1:${server.address().port}/compat/music/piano-${name}.html`,{waitUntil:'networkidle'});assert.equal(await page.evaluate(()=>window.bdfStatus),'ready',`piano ${name}: ${await page.evaluate(()=>window.bdfError)}`);assert.ok(await page.locator('canvas[aria-label^="Piano roll with"]').count());await page.close()}
     const sheetBase=`http://127.0.0.1:${server.address().port}/compat/sheet/`;
     const cellFixtures={};
     for(const name of ['cells-baseline','cells-moon']){
@@ -1117,18 +1110,6 @@ try {
       assert.ok(changed/area<=0.0005,`${kind}-${name} ${result.viewport}: continuous visual difference exceeds 0.05%`);
     }
     await summarizeCapture({ report, reportPath, run });
-  }
-  {
-    const musicBase=`http://127.0.0.1:${server.address().port}/compat/music/`,target=path.join(output,'piano');mkdirSync(target);
-    await run(['diff','html','--url',`${musicBase}piano-baseline.html`,'--current-url',`${musicBase}piano-moon.html`,'--output-dir',target,'--no-paint-tree']);
-    const reportPath=path.join(target,'diff-report.json'),report=JSON.parse(readFileSync(reportPath,'utf8'));
-    assert.equal(report.results.length,3,'expected three piano viewports');
-    for(const result of report.results){
-      const a=PNG.sync.read(readFileSync(path.join(target,`compat_music_piano-baseline-${result.viewport}.png`))),b=PNG.sync.read(readFileSync(path.join(target,`compat_music_piano-moon-${result.viewport}.png`)));
-      let changed=0;for(let i=0;i<a.data.length;i+=4)if(a.data[i]!==b.data[i]||a.data[i+1]!==b.data[i+1]||a.data[i+2]!==b.data[i+2]||a.data[i+3]!==b.data[i+3])changed++;
-      assert.ok(changed/(a.width*Math.min(a.height,400))<=0.0005,`${result.viewport}: piano visual difference exceeds 0.05%`);
-    }
-    await run(['diff','agent',reportPath,'--no-history']);
   }
   await run(['scan','scroll',`${continuousBase}viewer-moon.html`,'--no-ledger']);
   await run(['check','scroll',`${continuousBase}viewer-moon.html`,'--no-ledger']);

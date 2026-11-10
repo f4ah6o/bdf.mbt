@@ -36,11 +36,46 @@ score format; the audio cue and embedded-recording paths stay.
 | `ci/test` | `.github/workflows/ci.yml` / `test` | retained-package `moon check`, `moon test` and `moon build` for `js`, `wasm-gc` and `native`, with the min-test-count assertion |
 | `ci/demo` | `.github/workflows/ci.yml` / `demo` | `site/verify-samples.mjs`, `build:demo`, `test:demo`, `test:previews` |
 | `parity` | `.github/workflows/parity.yml` / `parity` | retained-package JS build, `compat/parity/verify.mjs --limit=100` (PDF/DOCX/XLSX/PPTX/Markdown) |
-| `visual` | `.github/workflows/visual.yml` / `compare` | `compat/xlsx/picture-visual-compare.mjs`, `npm run test:visual` |
+| `visual` | `.github/workflows/visual.yml` / `compare` | `compat/xlsx/picture-visual-compare.mjs`, `npm run test:visual` (retained formats, audio playback and the dropped-format dispatch guard) |
 | `site` | `.github/workflows/pages.yml` / `build` | `build:site`, `test:site`, `test:previews`, `bench:site --check`, the vlmkit checks |
 
-The `visual` gate's exact command set is owned by `package.json`; its aggregate
-excludes the dropped-format suites, whose individual scripts remain available.
+The `visual` gate's exact command set is owned by `package.json`. Its aggregate
+excludes the dropped score, PCB/KiCad and EPUB suites; their individual scripts
+remain available for manual verification. See "Visual aggregate scope" below.
+
+## Visual aggregate scope
+
+`npm run test:visual` is the required visual aggregate. It runs
+`node compat/visual/aggregate-scope-test.mjs` first, then the retained checks.
+The dropped-format suites are not part of it:
+
+- `test:music-compat` is not run. It bundles `compat/music/verify.mjs` (SMF and
+  score parsing) and `compat/music/player-test.mjs` (MIDI score playback), both
+  dropped. The aggregate runs `node compat/music/audio-test.mjs` instead, which
+  covers the retained audio transport, callbacks, errors, speed and audio cues.
+- `compat/visual/compare.mjs` no longer imports or calls `verifyPiano`,
+  `verifyMusicBrowser` or `verifyViewerMusic`, and no longer captures the
+  `piano-baseline.html` / `piano-moon.html` fixtures. Those checks used an MML
+  BDF and score/piano-roll views, which are dropped.
+- `compat/visual/compare.mjs` keeps `verifyAudioBrowser`, which exercises the
+  retained audio card and embedded-recording playback. It uses
+  `compat/music/fixtures/ode-mml.bdf` only as a source document and replaces
+  its play data with a WAV part, so it does not test score rendering.
+- `compat/visual/compare.mjs` keeps `verifyNativeConverter`, whose negative
+  guard proves that `midi`, `mml`, `musicxml`, `epub`, `gerber` and `kicad` are
+  not registered or dispatched, including by file extension.
+
+The dropped individual scripts (`test:music-compat`, `test:midi-input`,
+`test:midi-visual`, `test:mml-input`, `test:mml-document`, `test:mml-visual`,
+`test:musicxml-input`, `test:music-notation`, `test:phase10-musicxml`) and their
+sources, tests and fixtures stay in the tree. They are dormant assets, not
+required checks.
+
+`compat/visual/aggregate-scope-test.mjs` enforces this deterministically: it
+expands `test:visual` through nested `npm run` references, rejects every
+dropped entry point and script, requires the retained audio test, and checks
+that `compat/visual/compare.mjs` keeps the audio and negative-guard calls while
+dropping the score calls.
 
 ## Verification workflows do not run on GitHub
 

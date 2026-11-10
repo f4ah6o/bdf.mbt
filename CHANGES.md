@@ -40,6 +40,9 @@
 
 ### Changed
 
+- Required visual verification excludes musical-score and piano-roll suites;
+  audio playback and excluded-format rejection checks remain required.
+
 - The site marks upstream MHTML documentation as unsupported by bdf.mbt and
   identifies the excluded porting formats.
 
