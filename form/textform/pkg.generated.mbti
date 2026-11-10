@@ -63,6 +63,7 @@ pub fn Grid::width(Self) -> Int32
 pub(all) struct TextFormResult {
   image : @textpart.Image
   tables : Array[Array[Int32]]
+  warnings : Array[String]
 }
 
 pub(all) struct TextTemplateData {

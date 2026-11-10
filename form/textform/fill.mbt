@@ -142,9 +142,9 @@ fn TextFiller::lookup(
       if scope.is_blank() {
         Json::null()
       } else if self.td.strict {
-        raise TextFormError("text: " + at + ": the data has no " + name)
+        raise TextFormError("text: " + at + ": the data has no \"" + name + "\"")
       } else {
-        let warning = at + ": the data has no " + name + "; it is left empty"
+        let warning = at + ": the data has no \"" + name + "\"; it is left empty"
         if !self.warnings.contains(warning) {
           self.warnings.push(warning)
         }
@@ -763,11 +763,13 @@ fn TextFiller::image(self : TextFiller, pages : Array[TextPage]) -> @textpart.Im
 }
 
 ///|
-/// A filled text form: the print image and the table of each line of each
-/// page (0 for none; a tall line takes two entries).
+/// A filled text form: the print image, the table of each line of each page
+/// (0 for none; a tall line takes two entries), and what the fill warns of
+/// (a name that the data has not, a value wider than its columns).
 pub(all) struct TextFormResult {
   image : @textpart.Image
   tables : Array[Array[Int]]
+  warnings : Array[String]
 }
 
 ///|
@@ -791,7 +793,7 @@ pub fn show_result(template : String) -> TextFormResult raise TextFormError {
     }
     tables.push(rows)
   }
-  { image: filler.image(pages), tables }
+  { image: filler.image(pages), tables, warnings: filler.warnings }
 }
 
 ///|
@@ -820,7 +822,7 @@ pub fn fill_result_with(
     }
     tables.push(rows)
   }
-  { image: filler.image(pages), tables }
+  { image: filler.image(pages), tables, warnings: filler.warnings }
 }
 
 ///|

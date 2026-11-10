@@ -23,6 +23,15 @@ pub const PART_TEMPLATE : String = "tpl"
 pub const PART_SOURCE : String = "src"
 
 ///|
+/// The type of the part that is the record of a completed form whose
+/// values were signed.
+pub const PART_FILL : String = "fill"
+
+///|
+/// The version of the record of a completed form.
+pub const RECORD_VERSION : Int = 1
+
+///|
 /// A compiled template: the template it holds, the names that its tags
 /// look up, the schema of its data, and, for a partly filled form, the
 /// values it holds and the names it leaves open.
@@ -52,7 +61,8 @@ pub(all) struct Template {
   /// the form was made of ("" for a template that was not compiled).
   from : String
   /// The signatures of the values of a partly filled form, as base64. This
-  /// port does not make signatures; it keeps those that it reads.
+  /// port does not make signatures; it keeps those that it reads, and
+  /// writes them into the record of a completed form.
   signed : Array[String]
   /// The SHA-256 (in hex) of the description as it was read ("" for a
   /// description that was not read).

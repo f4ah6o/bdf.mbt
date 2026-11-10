@@ -157,6 +157,62 @@ fn form_text(source : Bytes) -> String raise FormError {
 }
 
 ///|
+/// The number formats of the tags of a text template are those of Excel, as
+/// upstream's form.fill passes xlsx.Formatter() to every format: a number in
+/// its format code, a text that is a date in a date format, and a text in
+/// the text section of a format.
+fn form_text_format(value : Json, format : String) -> String {
+  if format == "" {
+    match value {
+      Json::Number(number, ..) =>
+        if number.is_nan() || number.is_inf() {
+          ""
+        } else {
+          @xlsx_convert.xlsx_format_general(number, 11)
+        }
+      _ => @tag.value_text(value, "", None)
+    }
+  } else {
+    let sections = @xlsx_convert.xlsx_parse_number_format(
+      format,
+      @xlsx_convert.xlsx_default_palette(),
+    )
+    match value {
+      Json::Number(number, ..) =>
+        if number.is_nan() || number.is_inf() {
+          ""
+        } else {
+          @xlsx_convert.xlsx_format_number(sections, number, false).text()
+        }
+      Json::String(text) => {
+        let date = sections.length() > 0 && sections[0].date
+        let mut text_section = false
+        for i, section in sections {
+          text_section = text_section || section.text || i == 3
+        }
+        if date {
+          match @xlsx_convert.xlsx_iso_serial(text, false) {
+            Some(serial) =>
+              @xlsx_convert.xlsx_format_number(sections, serial, false).text()
+            None =>
+              if text_section {
+                @xlsx_convert.xlsx_format_text(sections, text).text()
+              } else {
+                text
+              }
+          }
+        } else if text_section {
+          @xlsx_convert.xlsx_format_text(sections, text).text()
+        } else {
+          text
+        }
+      }
+      _ => @tag.value_text(value, "", None)
+    }
+  }
+}
+
+///|
 /// The fields of the tags of a template, read without filling it.
 fn fields_of(format : String, source : Bytes) -> Array[@tag.Field] raise FormError {
   match format {
@@ -276,7 +332,7 @@ fn fill_format(
       let template_data : @textform.TextTemplateData = {
         data: values,
         strict,
-        format: None,
+        format: Some(form_text_format),
       }
       let result = @textform.fill_result_with(template_data, text) catch {
         @textform.TextFormError(message) => raise FormError(message)
@@ -289,7 +345,7 @@ fn fill_format(
         @textform_convert.TextFormError(message) => raise FormError(message)
         _ => raise FormError("form: the text cannot be laid out")
       }
-      { bdf, warnings: [], fields: [], format, partial: None }
+      { bdf, warnings: result.warnings, fields: [], format, partial: None }
     }
     _ =>
       raise FormError(
@@ -365,7 +421,7 @@ fn show_format(format : String, source : Bytes) -> Result raise FormError {
         @textform_convert.TextFormError(message) => raise FormError(message)
         _ => raise FormError("form: the text cannot be laid out")
       }
-      { bdf, warnings: [], fields: [], format, partial: None }
+      { bdf, warnings: result.warnings, fields: [], format, partial: None }
     }
     _ =>
       raise FormError(
@@ -477,7 +533,16 @@ pub fn fill(data : Bytes, options : Options) -> Result raise FormError {
         None => ""
       }
       if plan.open.is_empty() {
-        return { bdf: result.bdf, warnings, fields, format, partial: None }
+        let signed = match def {
+          Some(template) => template.signed
+          None => []
+        }
+        let bdf = if signed.is_empty() {
+          result.bdf
+        } else {
+          record_fill(result.bdf, format, source, from, plan.filled, signed)
+        }
+        return { bdf, warnings, fields, format, partial: None }
       }
       let (bdf, template) = partly_filled(
         result.bdf,

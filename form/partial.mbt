@@ -323,3 +323,29 @@ fn partly_filled(
   ])
   (bdf, template)
 }
+
+///|
+/// Make the document of a completed form whose values were signed: the
+/// record of its values, with the signatures that the partly filled form
+/// held (form/values.go of upstream).
+fn record_fill(
+  bdf : Bytes,
+  format : String,
+  source : Bytes,
+  from : String,
+  filled : Json,
+  signed : Array[String],
+) -> Bytes raise FormError {
+  let record : Map[String, Json] = Map([])
+  record["version"] = Json::number(RECORD_VERSION.to_double())
+  record["format"] = Json::string(format)
+  record["source"] = Json::string(@core.hash_of(source))
+  if from != "" {
+    record["from"] = Json::string(from)
+  }
+  record["filled"] = filled
+  record["signed"] = Json::array(signed.map(Json::string))
+  document_with_parts(bdf, [
+    (PART_FILL, @utf8.encode(Json::object(record).stringify())),
+  ])
+}

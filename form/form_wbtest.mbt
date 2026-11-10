@@ -407,7 +407,7 @@ test "form fills a text template strictly" {
     tpl,
     Options::new(data=form_test_json("{}"), strict=true),
   )
-  assert_true(message.contains("the data has no no"), msg=message)
+  assert_true(message.contains("the data has no \"no\""), msg=message)
 }
 
 ///|

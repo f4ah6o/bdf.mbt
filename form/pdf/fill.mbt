@@ -572,7 +572,7 @@ pub fn missing_required(pdf_bytes : Bytes, data_bytes : Bytes) -> Array[String] 
   }
   let missing : Array[String] = []
   for field in read_fields(pdf_bytes) {
-    if !field.required {
+    if !field.required || pdf_pushbutton(field) {
       continue
     }
     let value = match data {
@@ -616,7 +616,7 @@ pub fn fill_pdf(
   }
   if strict {
     for field in read_fields(pdf_bytes) {
-      if field.typ == "/Btn" || (skip_read_only && field.read_only) {
+      if pdf_pushbutton(field) || (skip_read_only && field.read_only) {
         continue
       }
       if pdf_lookup(data, field.name) is None {
@@ -684,11 +684,13 @@ pub fn fill_pdf(
         }
       }
     }
-    let read_only = match find_flags(body, 0, body.length()) {
+    let flags = find_flags(body, 0, body.length())
+    let read_only = match flags {
       Some(value) => (value & 1) != 0
       None => false
     }
-    if name != "" && !(skip_read_only && read_only) {
+    if name != "" && !(skip_read_only && read_only) &&
+      !(body.contains("/Btn") && pdf_flags_pushbutton(flags)) {
       if body.contains("/Btn") {
         let on = match button_on_state_full(body, text) {
           Some(value) => value

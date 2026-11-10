@@ -9,7 +9,7 @@ test "textform fill options" {
     ignore(fill_result_with(strict, "{{name}}\n"))
     false
   } catch {
-    TextFormError(message) => message.contains("the data has no name")
+    TextFormError(message) => message.contains("the data has no \"name\"")
   }
   assert_true(missing, msg="strict data")
   let formatted : TextTemplateData = {

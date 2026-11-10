@@ -25,9 +25,13 @@ pub const MAX_TEMPLATE_SIZE : Int32 = 268435456
 
 pub const OPEN_ALL : String = "*"
 
+pub const PART_FILL : String = "fill"
+
 pub const PART_SOURCE : String = "src"
 
 pub const PART_TEMPLATE : String = "tpl"
+
+pub const RECORD_VERSION : Int32 = 1
 
 pub const TEMPLATE_VERSION : Int32 = 1
 

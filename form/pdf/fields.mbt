@@ -30,6 +30,21 @@ pub(all) struct Field {
 }
 
 ///|
+/// Whether the flags of a field make it a button that is only pressed: a
+/// pushbutton (bit 17 of `/Ff`), which is no name of the data.
+fn pdf_flags_pushbutton(flags : Int?) -> Bool {
+  match flags {
+    Some(value) => (value & 65536) != 0
+    None => false
+  }
+}
+
+///|
+fn pdf_pushbutton(field : Field) -> Bool {
+  field.typ == "/Btn" && pdf_flags_pushbutton(field.flags)
+}
+
+///|
 fn hex_digit(c : Char) -> Int? {
   if c >= '0' && c <= '9' {
     Some(c.to_int() - '0'.to_int())
@@ -772,26 +787,31 @@ pub fn read_fields(data : Bytes) -> Array[Field] {
           None => text.length()
         }
     }
-    let values = find_values(text, after, next_t)
-    let background_color = find_background_color(text, after, next_t)
-    let border_color = find_border_color(text, after, next_t)
-    let border_width = find_border_width(text, after, next_t)
-    let border_style = find_border_style(text, after, next_t)
-    let value = find_value(text, after, next_t)
-    let typ = find_type(text, after, next_t)
-    let rect = find_rect(text, after, next_t)
-    let page_object = find_page_object(text, after, next_t)
-    let flags = find_flags(text, after, next_t)
-    let option_pairs = find_option_pairs(text, after, next_t)
+    // (the keys of a field may come before its /T: read the object)
+    let object_start = match last_index_before(text, " obj", at) {
+      Some(index) => index + 4
+      None => after
+    }
+    let values = find_values(text, object_start, next_t)
+    let background_color = find_background_color(text, object_start, next_t)
+    let border_color = find_border_color(text, object_start, next_t)
+    let border_width = find_border_width(text, object_start, next_t)
+    let border_style = find_border_style(text, object_start, next_t)
+    let value = find_value(text, object_start, next_t)
+    let typ = find_type(text, object_start, next_t)
+    let rect = find_rect(text, object_start, next_t)
+    let page_object = find_page_object(text, object_start, next_t)
+    let flags = find_flags(text, object_start, next_t)
+    let option_pairs = find_option_pairs(text, object_start, next_t)
     let options = option_pairs.map(fn(pair) { pair.0 })
     let option_values = option_pairs.map(fn(pair) { pair.1 })
-    let font_size = find_default_font_size(text, after, next_t)
-    let font_color = find_default_font_color(text, after, next_t)
-    let font_name = find_default_font_name(text, after, next_t)
-    let quadding = find_quadding(text, after, next_t)
-    let alternate_name = find_alternate_name(text, after, next_t)
-    let max_len = find_max_len(text, after, next_t)
-    let default_value = find_default_value(text, after, next_t)
+    let font_size = find_default_font_size(text, object_start, next_t)
+    let font_color = find_default_font_color(text, object_start, next_t)
+    let font_name = find_default_font_name(text, object_start, next_t)
+    let quadding = find_quadding(text, object_start, next_t)
+    let alternate_name = find_alternate_name(text, object_start, next_t)
+    let max_len = find_max_len(text, object_start, next_t)
+    let default_value = find_default_value(text, object_start, next_t)
     if name != "" {
       let mut found = -1
       for i in 0..<fields.length() {
