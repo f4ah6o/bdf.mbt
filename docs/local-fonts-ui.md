@@ -51,8 +51,10 @@ working.
 
 ## Output limitations
 
-Selected fonts may be embedded in exported files. PDF and DOCX do not reflect
-the selected fonts. XLSX uses only the first face. A face selected from a TTC
+The selection is passed to and validated by the converter, but PDF and DOCX do
+not use the selected font database. For supported source formats, the generated
+BDF, or a PDF later produced from that BDF, may embed the selected font data.
+XLSX uses only the first face. A face selected from a TTC
 collection may not be safely embeddable in XLSX, so the Worker may reject that
 conversion; the UI does not claim that only one TTC face is embedded. CSV,
 PPTX and JWW use the selected fonts. The viewer states this next to the control, and repeats the
@@ -66,8 +68,11 @@ rejected. A rejected batch keeps the previous selection and says why.
 Generated internal names replace control characters (including DEL), are capped
 at 255 UTF-16 units including the suffix and extension without splitting a
 surrogate pair, and are made distinct when two PostScript names sanitize to the
-same value. A missing or empty `postscriptName` fails the batch before any bytes
-are read; the value is never logged.
+same value. Each actual `postscriptName` is validated before any `blob()` read:
+it must be nonempty, at most 255 UTF-16 code units, free of C0/DEL characters,
+and unique across the selected faces. A failure uses a generic no-name message,
+keeps the previous selection, and never reports success; the value is never
+logged.
 
 ## Tests
 

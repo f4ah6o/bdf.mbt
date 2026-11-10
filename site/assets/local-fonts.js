@@ -59,6 +59,12 @@ function fileStem(face) {
   return stem === "" ? "font" : stem;
 }
 
+/** 内部ファイル名だけを作る（セレクターの検証とは別）。 */
+export function sanitizeFileName(value, type = "font/ttf") {
+  const stem = String(value ?? "").replace(/[\\/:*?"<>|\u0000-\u001f\u007f-\u009f]+/g, "_");
+  return fitName(stem === "" ? "font" : stem, "", extension(type));
+}
+
 function extension(type) {
   return EXTENSIONS[type] ?? ".ttf";
 }
@@ -289,12 +295,19 @@ export function createLocalFontsUI({ root, scope = globalThis, onChange = () => 
       return;
     }
     const postscriptNames = [];
+    const seenNames = new Set();
     for (const face of chosen) {
       const postscriptName = postscriptNameOf(face);
-      if (!postscriptName) {
-        say("「" + faceLabel(face) + "」の PostScript 名が取得できないため読み込めません。" + keep(), true);
+      if (
+        !postscriptName ||
+        postscriptName.length > 255 ||
+        /[\u0000-\u001f\u007f]/.test(postscriptName) ||
+        seenNames.has(postscriptName)
+      ) {
+        say("選んだ書体の PostScript 名を確認できないため読み込めません。" + keep(), true);
         return;
       }
+      seenNames.add(postscriptName);
       postscriptNames.push(postscriptName);
     }
     const token = ++generation;

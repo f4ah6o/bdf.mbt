@@ -51,7 +51,7 @@
 <p class="status" id="status" role="status" aria-live="polite">サンプルを読み込んでいます…</p>
 <section class="local-fonts" id="local-fonts" aria-labelledby="local-fonts-title">
 <h2 id="local-fonts-title">ローカルフォント</h2>
-<p class="note" id="local-fonts-note">この端末にインストールされた書体を、変換した BDF の描画に使えます。ボタンを押すまで書体の一覧は読みません。選んだ書体の元の名前とバイト列はこのページのメモリの中だけに置き、アップロードも別途保存もしません。書き出した BDF や PDF には、選んだ書体のデータが埋め込まれることがあります。選択を解除しても、すでに書き出した文書から書体データは消えません。PDF・DOCX は選択した書体を反映しません。XLSX は最初の 1 書体だけを使います。TTC（書体コレクション）から選んだ書体は、XLSX では安全に埋め込めず変換が失敗することがあります。CSV・PPTX・JWW は選択した書体を使えます。許可しなくても、フォントなしでこれまでどおり変換できます。</p>
+<p class="note" id="local-fonts-note">この端末にインストールされた書体を、変換した BDF の描画に使えます。ボタンを押すまで書体の一覧は読みません。選んだ書体の元の名前とバイト列はこのページのメモリの中だけに置き、アップロードも別途保存もしません。選択した書体は変換に渡され検証されますが、PDF・DOCX はその書体データベースを使いません。対応する元形式では、書き出した BDF や、その BDF から後で作る PDF に書体データが埋め込まれることがあります。選択を解除しても、すでに書き出した文書から書体データは消えません。XLSX は最初の 1 書体だけを使います。TTC（書体コレクション）から選んだ書体は、XLSX では安全に埋め込めず変換が失敗することがあります。CSV・PPTX・JWW は選択した書体を使えます。許可しなくても、フォントなしでこれまでどおり変換できます。</p>
 </section>
 <form id="pdf-unlock" class="options" aria-label="PDF パスワード">
 <label for="pdf-password">PDF パスワード（任意）</label>

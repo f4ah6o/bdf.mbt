@@ -52,8 +52,8 @@ const HARNESS = `<!doctype html>
 </section>
 </main>
 <script type="module">
-import { createLocalFontsUI, localFontsSupport, faceLabel } from "/assets/local-fonts.js";
-window.__module = { createLocalFontsUI, localFontsSupport, faceLabel };
+import { createLocalFontsUI, localFontsSupport, faceLabel, sanitizeFileName } from "/assets/local-fonts.js";
+window.__module = { createLocalFontsUI, localFontsSupport, faceLabel, sanitizeFileName };
 window.__ui = createLocalFontsUI({ root: document.querySelector("#local-fonts") });
 window.__insecureCalls = 0;
 window.__insecure = createLocalFontsUI({
@@ -248,6 +248,7 @@ try {
     await page.click("#local-fonts button:has-text('選択した書体を使う')");
     await page.waitForFunction(() => /1 書体を読み込みました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
     await page.click("#local-fonts button:has-text('ローカルフォントを選ぶ')");
+    await page.waitForFunction(() => /書体が見つかりました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
     await page.waitForSelector("#local-fonts-face-1");
     await page.check("#local-fonts-face-1");
     await page.click("#local-fonts button:has-text('選択した書体を使う')");
@@ -358,6 +359,7 @@ try {
     await page.click("#limits button:has-text('選択した書体を使う')");
     await page.waitForFunction(() => /1 書体を読み込みました/.test(document.querySelector("#limits .status")?.textContent ?? ""));
     await page.click("#limits button:has-text('ローカルフォントを選ぶ')");
+    await page.waitForFunction(() => /書体が見つかりました/.test(document.querySelector("#limits .status")?.textContent ?? ""));
     await page.waitForSelector("#limits-face-1");
     await page.check("#limits-face-1");
     await page.click("#limits button:has-text('選択した書体を使う')");
@@ -402,7 +404,7 @@ try {
     await page.waitForSelector("#local-fonts-face-0");
     await page.check("#local-fonts-face-0");
     await page.click("#local-fonts button:has-text('選択した書体を使う')");
-    await page.waitForFunction(() => /PostScript 名が取得できない/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    await page.waitForFunction(() => /PostScript 名を確認できない/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
     assert.deepEqual((await calls()).blob, []);
     assert.equal(await page.evaluate(() => window.__ui.getFontFiles()), null);
     assert.match(await statusText(), /書体は選ばれていません/);
@@ -416,39 +418,83 @@ try {
     await page.click("#local-fonts button:has-text('選択した書体を使う')");
     await page.waitForFunction(() => /1 書体を読み込みました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
     await page.click("#local-fonts button:has-text('ローカルフォントを選ぶ')");
+    await page.waitForFunction(() => /書体が見つかりました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
     await page.waitForSelector("#local-fonts-face-1");
+    await page.check("#local-fonts-face-0");
     await page.check("#local-fonts-face-1");
     await page.click("#local-fonts button:has-text('選択した書体を使う')");
-    await page.waitForFunction(() => /PostScript 名が取得できない/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    await page.waitForFunction(() => /PostScript 名を確認できない/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
     assert.match(await statusText(), /前の選択をそのまま使います/);
     const files = await page.evaluate(() => window.__ui.getFontFiles().map((file) => file.name));
     assert.deepEqual(files, ["SyntheticTest-Regular.ttf"]);
   });
 
-  await step("caps long names at 255 units without splitting surrogate pairs", async () => {
-    await open({ faces: [{ ...FACES[0], postscriptName: "A".repeat(300) }, { ...FACES[1], postscriptName: "A".repeat(250) + "😀" + "B".repeat(10) }] });
+  await step("rejects an overlong postscriptName before reading", async () => {
+    await open({ faces: [{ ...FACES[0], postscriptName: "A".repeat(300) }] });
     await page.click("#local-fonts button:has-text('ローカルフォントを選ぶ')");
     await page.waitForSelector("#local-fonts-face-0");
     await page.check("#local-fonts-face-0");
-    await page.check("#local-fonts-face-1");
     await page.click("#local-fonts button:has-text('選択した書体を使う')");
-    await page.waitForFunction(() => /2 書体を読み込みました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
-    const names = await page.evaluate(() => window.__ui.getFontFiles().map((file) => file.name));
-    assert.equal(names[0].length, 255);
-    assert.match(names[0], /\.ttf$/);
-    assert.ok(names[1].length <= 255);
-    assert.equal(await page.evaluate((name) => name.isWellFormed(), names[1]), true);
+    await page.waitForFunction(() => /PostScript 名を確認できない/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    assert.deepEqual((await calls()).blob, []);
+    assert.equal(await page.evaluate(() => window.__ui.getFontFiles()), null);
+    assert.match(await statusText(), /書体は選ばれていません/);
   });
 
-  await step("replaces DEL and control characters in file names", async () => {
+  await step("rejects DEL and control characters in postscriptName before reading", async () => {
     await open({ faces: [{ ...FACES[0], postscriptName: "Bad\u007fName\u0001X" }] });
     await page.click("#local-fonts button:has-text('ローカルフォントを選ぶ')");
     await page.waitForSelector("#local-fonts-face-0");
     await page.check("#local-fonts-face-0");
     await page.click("#local-fonts button:has-text('選択した書体を使う')");
+    await page.waitForFunction(() => /PostScript 名を確認できない/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    assert.deepEqual((await calls()).blob, []);
+    assert.equal(await page.evaluate(() => window.__ui.getFontFiles()), null);
+  });
+
+  await step("rejects duplicate postscriptName selectors before reading", async () => {
+    await open({ faces: [{ ...FACES[0], postscriptName: "SameName" }, { ...FACES[1], postscriptName: "SameName" }] });
+    await page.click("#local-fonts button:has-text('ローカルフォントを選ぶ')");
+    await page.waitForSelector("#local-fonts-face-0");
+    await page.check("#local-fonts-face-0");
+    await page.check("#local-fonts-face-1");
+    await page.click("#local-fonts button:has-text('選択した書体を使う')");
+    await page.waitForFunction(() => /PostScript 名を確認できない/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    assert.deepEqual((await calls()).blob, []);
+    assert.equal(await page.evaluate(() => window.__ui.getFontFiles()), null);
+  });
+
+  await step("keeps the previous selection when a duplicate selector is added", async () => {
+    await open({ faces: [FACES[0], { ...FACES[1], postscriptName: "SyntheticTest-Regular" }] });
+    await page.click("#local-fonts button:has-text('ローカルフォントを選ぶ')");
+    await page.waitForSelector("#local-fonts-face-0");
+    await page.check("#local-fonts-face-0");
+    await page.click("#local-fonts button:has-text('選択した書体を使う')");
     await page.waitForFunction(() => /1 書体を読み込みました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
-    const files = await page.evaluate(() => window.__ui.getFontFiles().map((file) => ({ name: file.name, postscriptName: file.postscriptName })));
-    assert.deepEqual(files, [{ name: "Bad_Name_X.ttf", postscriptName: "Bad\u007fName\u0001X" }]);
+    await page.click("#local-fonts button:has-text('ローカルフォントを選ぶ')");
+    await page.waitForFunction(() => /書体が見つかりました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    await page.waitForSelector("#local-fonts-face-1");
+    await page.check("#local-fonts-face-0");
+    await page.check("#local-fonts-face-1");
+    await page.click("#local-fonts button:has-text('選択した書体を使う')");
+    await page.waitForFunction(() => /PostScript 名を確認できない/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    assert.match(await statusText(), /前の選択をそのまま使います/);
+    const files = await page.evaluate(() => window.__ui.getFontFiles().map((file) => file.name));
+    assert.deepEqual(files, ["SyntheticTest-Regular.ttf"]);
+  });
+
+  await step("sanitizes internal names separately from the selector", async () => {
+    await open();
+    const names = await page.evaluate(() => ({
+      long: window.__module.sanitizeFileName("A".repeat(300), "font/ttf"),
+      control: window.__module.sanitizeFileName("Bad\u007fName\u0001X", "font/ttf"),
+      surrogate: window.__module.sanitizeFileName("A".repeat(250) + "😀" + "B".repeat(10), "font/ttf"),
+    }));
+    assert.equal(names.long.length, 255);
+    assert.match(names.long, /\.ttf$/);
+    assert.equal(names.control, "Bad_Name_X.ttf");
+    assert.ok(names.surrogate.length <= 255);
+    assert.equal(await page.evaluate((name) => name.isWellFormed(), names.surrogate), true);
   });
 
   await step("rejects an empty blob before reading", async () => {
