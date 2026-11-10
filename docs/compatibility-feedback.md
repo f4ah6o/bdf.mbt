@@ -62,3 +62,58 @@ PDF/Office/CAD tests passed on each of `js`, `wasm-gc` and `native`; 22 browser
 tests, the Office extension matrix and the strict BDF render control also
 passed. The detailed commands, logs and exit codes are in the orchestration
 workspace under `logs/integration/compat-*`.
+
+## Downstream observations at `6f2918f`
+
+A second, anonymized downstream report was recorded against `6f2918f`. It
+supplied one sample per format, Chromium 1200x850 at DPR 1, and no input
+files, harness or organization data. The percentages are therefore reported
+values, not reproduced measurements, and they are not attributed to a cause.
+
+| Target | Reported pixel difference |
+| --- | ---: |
+| PDF | 0.321% |
+| Excel | 20.694% |
+| Word | 10.262% |
+| PowerPoint | 2.028% |
+| JWW | 0% |
+| BDF | 0% |
+| Reference redraw (control) | 0% |
+| Threshold | 0.05% |
+
+The same report said the JWW text-layer comparison failed despite the 0%
+pixel difference, and that the Word reference had four detected page
+elements against three in the current build. Neither is reproduced here:
+`compat/converter/phase5-test.mjs` passes its JWW text-index assertion, and
+`compat/parity/verify.mjs --format=docx` shows no page-count difference for
+the eight DOCX fixtures (the only count difference is the documented
+`docx/basic#scroll` strip count, upstream 2 against 1). The two
+investigations are tracked in `issues/open/20261110-jww-text-index-sample.md`
+and `issues/open/20261110-docx-page-count-sample.md`.
+
+What is reproducible at this commit:
+
+- `node compat/converter/office-extensions-test.mjs` reports 24 advertised
+  formats and 14 Office extensions converted by content, explicit format and
+  name. The downstream report also states that a synthetic DOCM neither executed
+  nor embedded VBA; this worktree did not independently rerun that case.
+- `convert/pdf/file_stream_wbtest.mbt` holds 12 stream-length tests. The
+  reported `/Length 39` case is the 38-byte stream declared as 39 at
+  `file_stream_wbtest.mbt:50`. Recovery covers 1-8 bytes of overlap with
+  `endstream`; a declared length that swallows the whole nine-byte marker is
+  deliberately not recovered and is only asserted as such
+  (`file_stream_wbtest.mbt:81`). Whether a real file needs that case remains
+  unassessed.
+- `html` advertises `.html`, `.htm` and `.xhtml` only; `.mht` and `.mhtml`
+  stay unregistered because the MIME/MHTML reader is not ported. They remain
+  in the name-only list in `convert/all/all.mbt:498` so CSV and image
+  detection do not claim them.
+- The excluded formats (`epub`, `gerber`, `kicad`, `midi`, `mml`,
+  `musicxml`) are asserted as unregistered in
+  `office-extensions-test.mjs:33`. They are not reintroduced.
+
+The reported 48 extension-list differences cannot be reconciled: the upstream
+registry dump used for the comparison was not supplied. This repository's own
+counts are 24 advertised formats, 14 Office extensions, 87 name-only
+extensions and 6 excluded formats. The bounded record is
+`issues/open/20261110-downstream-render-feedback.md`.
