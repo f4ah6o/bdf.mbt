@@ -48,8 +48,9 @@ test "PDF stream length matching the data keeps every byte" {
 
 ///|
 test "PDF stream length one past the data trims the endstream keyword" {
-  // The reported file: a 38-byte stream declared as 39 with no line end before
-  // the keyword, so the keyword's `e` used to become an operator.
+  // The same one-byte overlap as the reported 38-byte stream declared as 39.
+  // This synthetic body is 33 bytes; its declared length is 34, with no line
+  // end before the keyword, so `e` used to become an operator.
   let body = b"BT /F1 12 Tf 20 100 Td (Hello) Tj"
   let data = pdf_stream_length_document(body, body.length() + 1, false, false)
   assert_eq(
