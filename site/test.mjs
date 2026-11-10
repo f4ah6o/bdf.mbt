@@ -327,7 +327,7 @@ try {
       const bytes = new Uint8Array(binary.length);
       for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
       window.queryLocalFonts = async () => [{
-        postscriptName: "STIXTwoText",
+        postscriptName: "STIXTwoText-Regular",
         fullName: "STIX Two Text",
         family: "STIX Two Text",
         style: "Regular",
@@ -357,7 +357,7 @@ try {
     assert.equal(await page.locator("dialog.first-font-choice").count(), 0, "the next file does not prompt");
     const posted = await page.evaluate(() => window.__posted.at(-1));
     assert.equal(posted.fontFiles.length, 1);
-    assert.equal(posted.fontFiles[0].postscriptName, "STIXTwoText");
+    assert.equal(posted.fontFiles[0].postscriptName, "STIXTwoText-Regular");
   });
 
   await step("viewer converts Word, Excel, CSV and fonts", async () => {
