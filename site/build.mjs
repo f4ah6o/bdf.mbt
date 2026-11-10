@@ -71,13 +71,16 @@ for (const name of await readdir(join(site, "pages"))) {
 
 /** 上流の文書のうち、Go 固有の手順を含むページの冒頭に置く断り書き。 */
 const NOTES = {
+  "formats/index": "bdf.mbt は MHTML（<code>.mht</code>、<code>.mhtml</code>）に未対応です。基板、楽譜、EPUB の形式は移植対象から除外しています。",
+  "formats/document": "bdf.mbt は MHTML（<code>.mht</code>、<code>.mhtml</code>）に未対応です。",
+  why: "bdf.mbt は MHTML（<code>.mht</code>、<code>.mhtml</code>）に未対応です。基板、楽譜、EPUB の形式は移植対象から除外しています。",
   "getting-started": "bdf.mbt では、ビルドは <code>moon build</code>、変換はブラウザの変換 Worker か wasm-gc の入口から呼びます。<code>bdf</code> コマンドはありません。",
   "integrating-to-frontend": "bdf.mbt では <code>@bdfkit/*</code> の代わりに、このリポジトリの <code>browser</code> パッケージ（<code>browser.js</code> と <code>render_worker.js</code>）を使います。API の形は上流と同じです。",
   "integrate-to-server": "bdf.mbt に Go のサーバー実装はありません。サーバーで変換するときは上流 BDF の Go 実装を使ってください。このサイトの変換はブラウザと wasm-gc で行います。",
   rendering: "bdf.mbt は描画をブラウザの Canvas に任せます。Go の <code>image.Image</code> や Ebitengine に当たるものはありません。",
   "build-wasm-runtime": "bdf.mbt の wasm-gc は <code>moon build bridge/wasm --target wasm-gc --release</code> で作ります。TinyGo や Go は使いません。",
   "architecture/cli": "bdf.mbt には <code>bdf</code> コマンドがありません。ビルドと実行の入口は「bdf.mbt の API」にまとめています。",
-  "architecture/layout": "bdf.mbt のフォルダ構成は MoonBit のパッケージ構成です（<code>core</code>、<code>render</code>、<code>convert/*</code>、<code>browser</code>、<code>export/*</code>、<code>bridge/wasm</code>）。",
+  "architecture/layout": "bdf.mbt のフォルダ構成は MoonBit のパッケージ構成です（<code>core</code>、<code>render</code>、<code>convert/*</code>、<code>browser</code>、<code>export/*</code>、<code>bridge/wasm</code>）。MHTML（<code>.mht</code>、<code>.mhtml</code>）は未対応です。基板、楽譜、EPUB の形式は移植対象から除外しています。",
   "architecture/development": "bdf.mbt のテストは <code>moon test</code> と <code>node site/test.mjs</code> です。",
   "examples/index": "この構成のサンプルは Go のサーバーで作られています。bdf.mbt では、ブラウザ内の変換（<code>viewer/</code>）で置き換えられます。",
   "examples/light-server": "この構成のサンプルは Go のサーバーで作られています。bdf.mbt では、ブラウザ内の変換（<code>viewer/</code>）で置き換えられます。",

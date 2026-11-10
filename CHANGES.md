@@ -40,6 +40,9 @@
 
 ### Changed
 
+- The site marks upstream MHTML documentation as unsupported by bdf.mbt and
+  identifies the excluded porting formats.
+
 - DocuWorks annotations use a separate `annotation` layer, which renderers can
   show or hide. Stored annotation text is indexed even when its drawing has no
   text or is missing. The static index reflects visible annotations: hiding
