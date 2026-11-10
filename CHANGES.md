@@ -73,8 +73,7 @@
 - `core` gains `sha256_hex` and `hash_of` for the hashes that a compiled
   template names its parts by.
 
-- A fill without `strict` tells the names that the data has not, in every
-  format: `the data has no "name"; it is left empty` for a tag of an OOXML
+- A fill without `strict` reports missing names for OOXML and pdfme: `the data has no "name"; it is left empty` for a tag of an OOXML
   document and for a field of a pdfme template. `form/xlsx` and `form/pptx`
   now keep the warnings of the fill instead of dropping them.
 
@@ -130,6 +129,21 @@
   picture caps, so a truncated or oversized body is refused rather than read
   past. The bitmap offset and band-header bounds use subtraction, so a crafted
   header cannot wrap a check and read out of bounds.
+
+- DocuWorks body images compressed as BI_RLE8 now decode with their palette,
+  bottom-up or top-down row orientation, encoded and absolute runs,
+  end-of-line/end-of-bitmap and delta escapes, and absolute-run padding.
+  Truncated records, out-of-range palette indices, runs or deltas outside the
+  bitmap, end-of-line escapes past the last row, streams without an
+  end-of-bitmap escape, and bitmaps above 64 Mi pixels (256 MiB of RGBA) are
+  rejected instead of being read as uncompressed rows. DIB headers are
+  validated before their palette offset is used: an undersized, oversized or
+  wrapped biSize, and a biClrUsed above the 2^bpp table (256 for 8 bpp), are
+  rejected. The pixel limit applies to uncompressed DIBs too, so a header that
+  would previously overflow the RGBA size now fails explicitly; a 600 dpi A4
+  scan (about 34.8 Mi pixels) stays below it. Unsupported bit depths are
+  rejected before the stride calculation, so an untrusted biBitCount cannot
+  overflow it.
 
 - Files named for excluded formats no longer fall through to CSV detection,
   while the excluded converters remain unregistered.

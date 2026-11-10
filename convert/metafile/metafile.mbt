@@ -772,25 +772,102 @@ priv struct Dib {
 }
 
 ///|
-fn dib_bits_offset(data : Bytes) -> Int32 {
+/// The largest DIB header this decoder accepts. Known headers are 12, 40, 52,
+/// 56, 64, 108 and 124 bytes; the cap rejects absurd sizes that would
+/// otherwise be used as a palette offset.
+const MAX_DIB_HEADER_SIZE : Int64 = 65536L
+
+///|
+/// A DIB header whose size, colour count and palette bounds have been
+/// validated. `None` means the header or its colour table is malformed.
+priv struct DibHeader {
+  header_size : Int32
+  width : Int32
+  height : Int32
+  bpp : Int32
+  compression : Int32
+  palette_offset : Int32
+  palette_entry : Int32
+  colors : Int32
+  bits_offset : Int32
+}
+
+///|
+fn dib_header(data : Bytes) -> DibHeader? {
   if data.length() < 12 {
-    return 0
+    return None
   }
-  let header = le32(data, 0).to_int()
-  if header == 12 {
+  let header = le32(data, 0)
+  if header == 12L {
+    let width = le16(data, 4)
+    let height = le16(data, 6)
     let bpp = le16(data, 10)
     let colors = if bpp <= 8 { 1 << bpp } else { 0 }
-    return 12 + colors * 3
+    let bits_offset = 12 + colors * 3
+    if bits_offset > data.length() {
+      return None
+    }
+    return Some({
+      header_size: 12,
+      width,
+      height,
+      bpp,
+      compression: 0,
+      palette_offset: 12,
+      palette_entry: 3,
+      colors,
+      bits_offset,
+    })
   }
-  if data.length() < 40 {
-    return 0
+  if header < 40L ||
+    header > MAX_DIB_HEADER_SIZE ||
+    header > data.length().to_int64() {
+    return None
   }
+  let width = lei32(data, 4).to_int()
+  let height = lei32(data, 8).to_int()
   let bpp = le16(data, 14)
   let compression = le32(data, 16).to_int()
-  let used = le32(data, 32).to_int()
-  let colors = if bpp <= 8 { if used > 0 { used } else { 1 << bpp } } else { 0 }
-  let masks = if compression == 3 && header == 40 { 12 } else { 0 }
-  header + masks + colors * 4
+  let used = le32(data, 32)
+  let colors = if bpp <= 8 {
+    if used > 0L {
+      // biClrUsed is unsigned: a value above the 2^bpp table would make the
+      // palette offset wrap when it is multiplied by the entry size.
+      if used > (1L << bpp) {
+        return None
+      }
+      used.to_int()
+    } else {
+      1 << bpp
+    }
+  } else {
+    0
+  }
+  let masks = if compression == 3 && header == 40L { 12 } else { 0 }
+  let palette_offset = header.to_int() + masks
+  let palette_end = palette_offset.to_int64() + colors.to_int64() * 4L
+  if palette_end > data.length().to_int64() {
+    return None
+  }
+  Some({
+    header_size: header.to_int(),
+    width,
+    height,
+    bpp,
+    compression,
+    palette_offset,
+    palette_entry: 4,
+    colors,
+    bits_offset: palette_end.to_int(),
+  })
+}
+
+///|
+fn dib_bits_offset(data : Bytes) -> Int32 {
+  match dib_header(data) {
+    Some(header) => header.bits_offset
+    None => 0
+  }
 }
 
 ///|
@@ -824,45 +901,213 @@ fn mask_channel(value : Int32, mask : Int32) -> Int32 {
 }
 
 ///|
-fn dib_decode(data : Bytes, bits_data : Bytes?) -> Dib? {
-  if data.length() < 12 {
+/// The largest DIB this decoder expands: 64 Mi pixels, 256 MiB of RGBA. A
+/// 600 dpi A4 scan is about 34.8 Mi pixels, so it stays below the limit.
+const MAX_DIB_PIXELS : Int64 = 67108864L
+
+///|
+/// One palette entry as (red, green, blue), or None when the index is outside
+/// the declared colour table or the table is truncated.
+fn rle8_palette_color(
+  data : Bytes,
+  palette : Int32,
+  palette_entry : Int32,
+  index : Int32,
+  colors : Int32,
+) -> (Int32, Int32, Int32)? {
+  if index < 0 || index >= colors {
     return None
   }
-  let header = le32(data, 0).to_int()
-  let mut width = 0
-  let mut height = 0
-  let mut bpp = 0
-  let mut compression = 0
-  let mut palette_offset = 0
-  let mut palette_entry = 4
-  if header == 12 {
-    width = le16(data, 4)
-    height = le16(data, 6)
-    bpp = le16(data, 10)
-    palette_offset = 12
-    palette_entry = 3
-  } else {
-    if data.length() < 40 {
+  let at = palette.to_int64() + index.to_int64() * palette_entry.to_int64()
+  if at < 0L || at + 2L >= data.length().to_int64() {
+    return None
+  }
+  let at = at.to_int()
+  Some((data[at + 2].to_int(), data[at + 1].to_int(), data[at].to_int()))
+}
+
+///|
+/// Decode a BI_RLE8 stream into top-down RGBA. The stream starts at the
+/// lower-left for a bottom-up DIB and at the upper-left for a top-down DIB.
+/// Pixels the stream does not cover keep palette index 0.
+fn dib_decode_rle8(
+  data : Bytes,
+  bits : Bytes,
+  width : Int32,
+  rows : Int32,
+  total : Int32,
+  top_down : Bool,
+  palette : Int32,
+  palette_entry : Int32,
+  colors : Int32,
+) -> Bytes? {
+  if total <= 0 || bits.length() == 0 {
+    return None
+  }
+  let rgba : FixedArray[Byte] = FixedArray::make(total * 4, (0).to_byte())
+  let background = match rle8_palette_color(
+    data,
+    palette,
+    palette_entry,
+    0,
+    colors,
+  ) {
+    Some(value) => value
+    None => return None
+  }
+  let (bg_red, bg_green, bg_blue) = background
+  for p in 0..<total {
+    let at = p * 4
+    rgba[at] = bg_red.to_byte()
+    rgba[at + 1] = bg_green.to_byte()
+    rgba[at + 2] = bg_blue.to_byte()
+    rgba[at + 3] = (255).to_byte()
+  }
+  let n = bits.length()
+  let mut i = 0
+  let mut x = 0
+  let mut stored_row = 0
+  let mut ended = false
+  while i < n {
+    let count = bits[i].to_int()
+    i += 1
+    if i >= n {
       return None
     }
-    width = lei32(data, 4).to_int()
-    height = lei32(data, 8).to_int()
-    bpp = le16(data, 14)
-    compression = le32(data, 16).to_int()
-    palette_offset = header
-    if compression == 3 && header == 40 {
-      palette_offset += 12
+    let value = bits[i].to_int()
+    i += 1
+    if count > 0 {
+      if x + count > width || stored_row >= rows {
+        return None
+      }
+      let color = match rle8_palette_color(
+        data,
+        palette,
+        palette_entry,
+        value,
+        colors,
+      ) {
+        Some(value) => value
+        None => return None
+      }
+      let (red, green, blue) = color
+      let visual_row = if top_down { stored_row } else { rows - 1 - stored_row }
+      let base = (visual_row * width + x) * 4
+      for k in 0..<count {
+        let at = base + k * 4
+        rgba[at] = red.to_byte()
+        rgba[at + 1] = green.to_byte()
+        rgba[at + 2] = blue.to_byte()
+        rgba[at + 3] = (255).to_byte()
+      }
+      x += count
+    } else {
+      match value {
+        0 => {
+          x = 0
+          stored_row += 1
+          // the end of line after the last row is allowed when end of bitmap
+          // follows, but a further line is outside the image
+          if stored_row > rows {
+            return None
+          }
+        }
+        1 => {
+          ended = true
+          break
+        }
+        2 => {
+          if n - i < 2 {
+            return None
+          }
+          let dx = bits[i].to_int()
+          let dy = bits[i + 1].to_int()
+          i += 2
+          x += dx
+          stored_row += dy
+          if x > width || stored_row >= rows {
+            return None
+          }
+        }
+        _ => {
+          let run = value
+          if n - i < run {
+            return None
+          }
+          if x + run > width || stored_row >= rows {
+            return None
+          }
+          let visual_row = if top_down { stored_row } else { rows - 1 - stored_row }
+          let base = (visual_row * width + x) * 4
+          for k in 0..<run {
+            let index = bits[i + k].to_int()
+            let color = match rle8_palette_color(
+              data,
+              palette,
+              palette_entry,
+              index,
+              colors,
+            ) {
+              Some(value) => value
+              None => return None
+            }
+            let (red, green, blue) = color
+            let at = base + k * 4
+            rgba[at] = red.to_byte()
+            rgba[at + 1] = green.to_byte()
+            rgba[at + 2] = blue.to_byte()
+            rgba[at + 3] = (255).to_byte()
+          }
+          i += run
+          if run % 2 == 1 {
+            if i >= n {
+              return None
+            }
+            i += 1
+          }
+          x += run
+        }
+      }
     }
   }
-  if width <= 0 || height == 0 || width > 100000 || height.abs() > 100000 {
+  if !ended {
     return None
   }
-  let top_down = height < 0
-  let rows = if top_down { -height } else { height }
-  if rows <= 0 || rows > 100000 {
+  Some(Bytes::from_array(rgba))
+}
+
+///|
+fn dib_decode(data : Bytes, bits_data : Bytes?) -> Dib? {
+  let header = match dib_header(data) {
+    Some(value) => value
+    None => return None
+  }
+  let header_size = header.header_size
+  let width = header.width
+  let height = header.height
+  let bpp = header.bpp
+  let compression = header.compression
+  let palette_offset = header.palette_offset
+  let palette_entry = header.palette_entry
+  let colors = header.colors
+  let bits_offset = header.bits_offset
+  let height64 = height.to_int64()
+  if width <= 0 ||
+    height64 == 0L ||
+    width > 100000 ||
+    height64 > 100000L ||
+    height64 < -100000L {
     return None
   }
-  let bits_offset = dib_bits_offset(data)
+  let top_down = height64 < 0L
+  let rows = (if top_down { -height64 } else { height64 }).to_int()
+  // The RGBA buffer is width * rows * 4 bytes. Bound the pixel count before
+  // the multiplication so a large header cannot overflow Int32 or allocate an
+  // unbounded buffer; this applies to compressed and uncompressed DIBs.
+  let total = width.to_int64() * rows.to_int64()
+  if total <= 0L || total > MAX_DIB_PIXELS {
+    return None
+  }
   let bits = match bits_data {
     Some(value) =>
       if value.length() > 0 {
@@ -872,12 +1117,42 @@ fn dib_decode(data : Bytes, bits_data : Bytes?) -> Dib? {
       }
     None => data[bits_offset:].to_owned()
   }
-  let stride = (width * bpp + 31) / 32 * 4
-  if stride <= 0 || bits.length() < stride * rows {
+  if compression == 1 {
+    if bpp != 8 {
+      return None
+    }
+    let rgba = dib_decode_rle8(
+      data,
+      bits,
+      width,
+      rows,
+      total.to_int(),
+      top_down,
+      palette_offset,
+      palette_entry,
+      colors,
+    )
+    match rgba {
+      Some(value) => return Some({ width, height: rows, rgba: value, bits_offset })
+      None => return None
+    }
+  }
+  // Only the bit depths the pixel loop below handles may reach the stride
+  // calculation; bpp is an untrusted u16 and width * bpp would otherwise
+  // overflow before the match rejects it.
+  if bpp != 1 && bpp != 4 && bpp != 8 && bpp != 16 && bpp != 24 && bpp != 32 {
+    return None
+  }
+  let stride64 = (width.to_int64() * bpp.to_int64() + 31L) / 32L * 4L
+  if stride64 <= 0L || stride64 > 2147483647L {
+    return None
+  }
+  let stride = stride64.to_int()
+  if bits.length().to_int64() < stride64 * rows.to_int64() {
     return None
   }
   let rgba : FixedArray[Byte] = FixedArray::make(
-    width * rows * 4,
+    total.to_int() * 4,
     (0).to_byte(),
   )
   let palette = palette_offset
@@ -892,6 +1167,9 @@ fn dib_decode(data : Bytes, bits_data : Bytes?) -> Dib? {
       match bpp {
         1 => {
           let bit = (bits[row_offset + x / 8].to_int() >> (7 - x % 8)) & 1
+          if bit >= colors {
+            return None
+          }
           let at = palette + bit * palette_entry
           blue = data[at].to_int()
           green = data[at + 1].to_int()
@@ -900,6 +1178,9 @@ fn dib_decode(data : Bytes, bits_data : Bytes?) -> Dib? {
         4 => {
           let value = bits[row_offset + x / 2].to_int()
           let index = if x % 2 == 0 { value >> 4 } else { value & 0xf }
+          if index >= colors {
+            return None
+          }
           let at = palette + index * palette_entry
           blue = data[at].to_int()
           green = data[at + 1].to_int()
@@ -907,6 +1188,9 @@ fn dib_decode(data : Bytes, bits_data : Bytes?) -> Dib? {
         }
         8 => {
           let index = bits[row_offset + x].to_int()
+          if index >= colors {
+            return None
+          }
           let at = palette + index * palette_entry
           blue = data[at].to_int()
           green = data[at + 1].to_int()
@@ -943,7 +1227,7 @@ fn dib_decode(data : Bytes, bits_data : Bytes?) -> Dib? {
             red = mask_channel(value, le32(data, masks_at).to_int())
             green = mask_channel(value, le32(data, masks_at + 4).to_int())
             blue = mask_channel(value, le32(data, masks_at + 8).to_int())
-            if header >= 56 {
+            if header_size >= 56 {
               let alpha_mask = le32(data, masks_at + 12).to_int()
               if alpha_mask != 0 {
                 alpha = mask_channel(value, alpha_mask)
