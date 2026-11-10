@@ -59,6 +59,20 @@
 
 ### Fixed
 
+- A section of an OOXML template repeats the rows, paragraphs or table rows
+  it covers instead of the raw XML between its tags, so a list that spans
+  rows of a workbook or a table of a document fills to one row per item
+  instead of a sheet with duplicate row numbers or a table with broken rows.
+  A block that holds only control tags is dropped, and the rows of a filled
+  worksheet are numbered again in the order of the document.
+- The options of a tag are applied by the fill of an OOXML document:
+  `{{total | fmt:"#,##0.00"}}` writes the number in its format instead of
+  warning that the data has no `total | fmt:"#,##0.00"` and leaving the cell
+  empty. `fmt:` uses the XLSX number formats, as upstream's `Formatter` does.
+- A list of an OOXML template fills `_index`, `_count`, `_first`, `_last`
+  and, for a section of pages, `_page` and `_pages`; a list of values fills
+  `{{.}}`; and a comment tag `{{! ... }}` leaves nothing instead of warning
+  that the control tag is not supported.
 - A text template whose UTF-8 character is cut by the 1024-byte or the
   `MAX_TEXT_HEAD` sample that detection reads is still read as a text
   template, instead of being refused as a file that is not one. Bytes that
@@ -102,6 +116,14 @@
 ### Security
 
 ### Migration
+
+- A section of an OOXML template that spans rows or paragraphs repeats the
+  blocks it covers, and a block that holds only control tags is dropped. A
+  template that relied on the raw span between the tags, which produced
+  malformed XML, now fills to a valid document. A section that starts in a
+  table row and ends outside it is an error, a section of `| slots` is an
+  error (write `| rows`), and a picture tag (`{{%name}}`) is reported and
+  left empty.
 
 - `form/pdf.read_fields` now reports the type of a field whose writer puts
   `/FT` before `/T`. A caller that treated an empty type as a text field sees

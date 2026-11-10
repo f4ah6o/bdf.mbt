@@ -133,13 +133,21 @@
   (checkbox `X`, multiline flags, maximum lengths, clipped wrapped values, MediaBox or CropBox sizing, optional
   read-only skipping).
 - `form/ooxml` replaces `{{name}}` tags in OOXML XML parts, including tags
-  split across runs (the run markup between them is removed), expands
-  boolean `{{#name}}`/`{{^name}}` conditions, expands object-list
-  `{{#items}}`…`{{/items}}` sections item by item, fills header/footer
-  parts, and rebuilds stored ZIPs (4 tests); `form/docx` fills headers and
+  split across runs (the run markup between them is removed), applies the
+  options of a tag (`fmt:` through the XLSX number formats), expands
+  `{{#name}}`/`{{^name}}` sections over the rows of a worksheet, the
+  paragraphs and table rows of a Word part and the shapes of a slide, fills
+  `_index`/`_count`/`_first`/`_last` and `_page`/`_pages`, fills a list of
+  values through `{{.}}`, drops comment tags, fills header/footer parts,
+  numbers the rows of a filled worksheet again, and rebuilds stored ZIPs
+  (23 tests); `form/docx` fills headers and
   footers, rendered header/footer values and filled table cells (6 tests), `form/xlsx` fills sheets, shared strings and inline strings and renders the filled cell (4 tests), and
-  `form/pptx` fills slides and speaker notes, converts the filled deck and renders shape text through a slide layout (4 tests). Scalar
-  list items are reported.
+  `form/pptx` fills slides and speaker notes, converts the filled deck and renders shape text through a slide layout (4 tests).
+  A section repeats the blocks it covers; a block that holds only control
+  tags is dropped, so a list that spans rows fills to one row per item. A
+  section that starts in a table row and ends outside it is an error, a
+  section of `| slots` is an error (write `| rows`), and a picture tag
+  (`{{%name}}`) is reported and left empty.
 - `form/pdfme` fills a pdfme template (blank pages, text/line/rectangle/
   checkbox/radio-group (column/row)/table/text/QR/barcode/line and rectangle
   (solid/dashed, opacity)/image
@@ -208,7 +216,7 @@
   `filled`, `open`, `signed`), and `read_template` checks its version, its
   hashes and the 256 MiB template and 64 MiB description limits. A compiled
   template without a sample shows the template with its tags, as upstream
-  does, and `fill` reports the fields of the template it filled. 55 tests.
+  does, and `fill` reports the fields of the template it filled. 74 tests.
   Not ported: signing (`Sign`, `Signed`, `Values`, `VerifyValues`; the
   `signed` values of a description are kept as they are read, and no fill
   makes or checks a signature), inlining pictures from the file system into
@@ -224,8 +232,7 @@
   boolean that upstream's `isMark` makes it, because the painter draws its
   options.
 - Next are the textform font options, form signing and picture inlining, the
-  `at` of OOXML fields, and the number formats, pictures and barcodes of the
-  OOXML fills.
+  `at` of OOXML fields, and the pictures and barcodes of the OOXML fills.
 - CI runs `moon check/test/build` for js and wasm-gc, a demo job that
   builds and tests the demo, a parity workflow that converts the document
   fixtures with the upstream Wasm package and the MoonBit worker, and the

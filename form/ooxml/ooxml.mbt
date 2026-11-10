@@ -105,38 +105,6 @@ pub fn stored_zip(entries : Array[(String, Bytes)]) -> Bytes raise OoxmlError {
 }
 
 ///|
-fn json_field(value : Json, name : String) -> Json? {
-  match value {
-    Json::Object(object) => object.get(name)
-    _ => None
-  }
-}
-
-///|
-fn lookup(values : Json, name : String) -> Json? {
-  let mut current = values
-  for part in name.split(".") {
-    current = match json_field(current, part.to_owned()) {
-      Some(value) => value
-      None => return None
-    }
-  }
-  Some(current)
-}
-
-///|
-fn value_text(value : Json) -> String? {
-  match value {
-    Json::String(text) => Some(text)
-    Json::Number(number, ..) => Some(number.to_string())
-    Json::True => Some("true")
-    Json::False => Some("false")
-    Json::Null => Some("")
-    _ => None
-  }
-}
-
-///|
 fn xml_escape(text : String) -> String {
   let out = StringBuilder()
   for c in text {
@@ -174,54 +142,6 @@ fn visible_tag(inner : StringView) -> String {
 }
 
 ///|
-fn truthy(value : Json) -> Bool {
-  match value {
-    Json::Null => false
-    Json::True => true
-    Json::False => false
-    Json::Number(number, ..) => number != 0.0
-    Json::String(text) => text != ""
-    Json::Array(values) => values.length() > 0
-    Json::Object(values) => values.size() > 0
-  }
-}
-
-///|
-fn next_control(xml : String, pos : Int) -> (Int, Bool)? {
-  let rest = xml[pos:]
-  let hash = rest.find("{{#")
-  let caret = rest.find("{{^")
-  match (hash, caret) {
-    (Some(a), Some(b)) =>
-      if a <= b {
-        Some((pos + a, true))
-      } else {
-        Some((pos + b, false))
-      }
-    (Some(a), None) => Some((pos + a, true))
-    (None, Some(b)) => Some((pos + b, false))
-    (None, None) => None
-  }
-}
-
-///|
-fn merge_context(root : Json, item : Json) -> Json {
-  match (root, item) {
-    (Json::Object(base), Json::Object(overlay)) => {
-      let merged : Map[String, Json] = Map([])
-      for key, value in base {
-        merged[key] = value
-      }
-      for key, value in overlay {
-        merged[key] = value
-      }
-      Json::object(merged)
-    }
-    _ => item
-  }
-}
-
-///|
 /// Report a name the data does not have: an error in strict mode, a warning
 /// that the tag is left empty otherwise.
 fn missing_name(
@@ -236,159 +156,39 @@ fn missing_name(
 }
 
 ///|
-/// Expand {{#name}}…{{/name}} and {{^name}}…{{/name}} conditions.
+/// Expand {{#name}}…{{/name}} and {{^name}}…{{/name}} sections and fill the
+/// tags inside them.
 pub fn expand_controls(
   xml : String,
   values : Json,
   strict~ : Bool = false,
 ) -> (String, Array[String]) raise OoxmlError {
-  let warnings : Array[String] = []
-  let out = StringBuilder()
-  let mut pos = 0
-  while pos < xml.length() {
-    let (start, positive) = match next_control(xml, pos) {
-      Some(found) => found
-      None => {
-        out.write_string(xml[pos:].to_owned())
-        break
-      }
-    }
-    out.write_string(xml[pos:start].to_owned())
-    let after = xml[start + 3:]
-    let end = match after.find("}}") {
-      Some(index) => start + 3 + index
-      None => {
-        warnings.push("ooxml: a control tag has no closing braces")
-        out.write_string(xml[start:].to_owned())
-        break
-      }
-    }
-    let name = xml[start + 3:end].trim().to_owned()
-    let close_marker = "{{/" + name + "}}"
-    let close = match xml[end + 2:].find(close_marker) {
-      Some(index) => end + 2 + index
-      None => {
-        warnings.push("ooxml: the control tag {{" + name + "}} has no end")
-        out.write_string(xml[start:end + 2].to_owned())
-        pos = end + 2
-        continue
-      }
-    }
-    let inner = xml[end + 2:close]
-    let value = match lookup(values, name) {
-      Some(value) => Some(value)
-      None => {
-        missing_name(name, strict, warnings)
-        None
-      }
-    }
-    let items = match value {
-      Some(Json::Array(items)) => Some(items)
-      _ => None
-    }
-    if positive && items is Some(items) {
-      for item in items {
-        if item is Json::Object(_) {
-          let context = merge_context(values, item)
-          let (expanded, inner_warnings) = expand_controls(
-            inner.to_owned(),
-            context,
-            strict~,
-          )
-          let (filled, tag_warnings) = fill_tags(expanded, context, strict~)
-          out.write_string(filled)
-          for warning in inner_warnings {
-            warnings.push(warning)
-          }
-          for warning in tag_warnings {
-            warnings.push(warning)
-          }
-        } else {
-          warnings.push("ooxml: a list item is not an object")
-        }
-      }
-      pos = close + close_marker.length()
-      continue
-    }
-    let condition = match value {
-      Some(value) => truthy(value)
-      None => false
-    }
-    let keep = if positive { condition } else { !condition }
-    if keep {
-      let (expanded, inner_warnings) = expand_controls(
-        inner.to_owned(),
-        values,
-        strict~,
-      )
-      out.write_string(expanded)
-      for warning in inner_warnings {
-        warnings.push(warning)
-      }
-    }
-    pos = close + close_marker.length()
-  }
-  (out.to_string(), warnings)
+  fill_part(xml, values, strict, 0, true)
 }
 
 ///|
 /// Replace {{name}} tags that stay inside one XML text node. Tags split by
-/// markup and control tags are reported and left as they are.
+/// markup are one tag; control tags are reported and left as they are.
 pub fn fill_tags(
   xml : String,
   values : Json,
   strict~ : Bool = false,
 ) -> (String, Array[String]) raise OoxmlError {
-  let warnings : Array[String] = []
-  let out = StringBuilder()
-  let mut pos = 0
-  while pos < xml.length() {
-    let rest = xml[pos:]
-    let start = match rest.find("{{") {
-      Some(index) => pos + index
-      None => {
-        out.write_string(rest.to_owned())
-        break
-      }
-    }
-    out.write_string(xml[pos:start].to_owned())
-    let after = xml[start + 2:]
-    let end = match after.find("}}") {
-      Some(index) => start + 2 + index
-      None => {
-        warnings.push("ooxml: a tag has no closing braces")
-        out.write_string(xml[start:].to_owned())
-        break
-      }
-    }
-    let inner = xml[start + 2:end]
-    let name = visible_tag(inner)
-    if name.has_prefix("#") || name.has_prefix("/") || name.has_prefix("^") ||
-      name.has_prefix("!") {
-      warnings.push(
-        "ooxml: the control tag {{" + name + "}} is not supported",
-      )
-      out.write_string(xml[start:end + 2].to_owned())
-    } else if name == "" {
-      warnings.push("ooxml: a tag has no name")
-      out.write_string(xml[start:end + 2].to_owned())
-    } else {
-      let value = match lookup(values, name) {
-        Some(value) =>
-          match value_text(value) {
-            Some(text) => text
-            None => ""
-          }
-        None => {
-          missing_name(name, strict, warnings)
-          ""
-        }
-      }
-      out.write_string(xml_escape(value))
-    }
-    pos = end + 2
+  fill_part(xml, values, strict, 0, false)
+}
+
+///|
+/// What a section of a part repeats, from the name of the part.
+fn part_kind(name : String) -> Int {
+  if name.has_prefix("xl/worksheets/") && name.has_suffix(".xml") {
+    1
+  } else if name.has_prefix("word/") && name.has_suffix(".xml") {
+    2
+  } else if name.has_prefix("ppt/slides/") && name.has_suffix(".xml") {
+    3
+  } else {
+    0
   }
-  (out.to_string(), warnings)
 }
 
 ///|
@@ -412,19 +212,21 @@ pub fn fill_zip(
     }
     if entry.name.has_suffix(".xml") || entry.name.has_suffix(".rels") {
       let text = @utf8.decode_lossy(raw[:])
-      let (expanded, control_warnings) = expand_controls(text, values, strict~) catch {
+      let kind = part_kind(entry.name)
+      let (filled, part_warnings) = fill_part(
+        text,
+        values,
+        strict,
+        kind,
+        true,
+      ) catch {
         OoxmlError(message) => raise OoxmlError(entry.name + ": " + message)
       }
-      let (filled, tag_warnings) = fill_tags(expanded, values, strict~) catch {
-        OoxmlError(message) => raise OoxmlError(entry.name + ": " + message)
-      }
-      for warning in control_warnings {
+      for warning in part_warnings {
         warnings.push(entry.name + ": " + warning)
       }
-      for warning in tag_warnings {
-        warnings.push(entry.name + ": " + warning)
-      }
-      entries.push((entry.name, @utf8.encode(filled)))
+      let out = if kind == 1 { ooxml_renumber_rows(filled) } else { filled }
+      entries.push((entry.name, @utf8.encode(out)))
     } else {
       entries.push((entry.name, raw))
     }
