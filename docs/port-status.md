@@ -159,7 +159,11 @@
   lines, with spaces around `=` or with single quotes is renumbered like any
   other, without a duplicate attribute. A `>` inside a quoted attribute value
   does not end the tag, and a namespaced `<x:row>`/`<x:c>` is renumbered like
-  an unprefixed one. A calculation chain, a form control, a rich value or a
+  an unprefixed one. A `<sheet>` or `<Relationship>` written across lines,
+  with tabs or with single quotes is read like any other, so the guards that
+  need the sheet name still run; a worksheet whose rows move but whose name
+  cannot be resolved from the workbook and its relationships is an error
+  instead of a skipped guard. A calculation chain, a form control, a rich value or a
   web extension in a workbook whose rows move is an error too, and so is a
   prefixed reference element that the fill does not move (`<x:mergeCell>`,
   `<x:dimension>`, `<x:rowBreaks>`, `<x:brk>`, `<x:hyperlink>`,

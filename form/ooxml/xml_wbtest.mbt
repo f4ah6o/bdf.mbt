@@ -686,3 +686,112 @@ test "ooxml keeps unsupported elements and opaque parts when no section repeats 
     refs_part(tpl, "xl/worksheets/sheet1.xml"),
   )
 }
+
+///|
+test "ooxml guards a drawing when the workbook and rels are pretty-printed" {
+  let tpl = refs_xlsx(
+    [("Sheet1", refs_list_sheet("<drawing r:id=\"rId1\"/>"))],
+    "",
+  )
+  let workbook =
+    "<?xml version=\"1.0\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><sheets><sheet\n  name=\"Sheet1\" sheetId=\"1\" r:id=\"rId1\"/></sheets></workbook>"
+  let rels =
+    "<?xml version=\"1.0\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship\n  Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet1.xml\"/></Relationships>"
+  let tpl = xml_add_part(tpl, "xl/workbook.xml", workbook)
+  let tpl = xml_add_part(tpl, "xl/_rels/workbook.xml.rels", rels)
+  let message = refs_fill_error(tpl, refs_items())
+  assert_true(message.contains("drawing"), msg=message)
+}
+
+///|
+test "ooxml guards a drawing when the workbook uses tabs and single quotes" {
+  let tpl = refs_xlsx(
+    [("Sheet1", refs_list_sheet("<drawing r:id=\"rId1\"/>"))],
+    "",
+  )
+  let workbook =
+    "<?xml version=\"1.0\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><sheets><sheet\tname='Sheet1' sheetId='1' r:id='rId1'/></sheets></workbook>"
+  let rels =
+    "<?xml version=\"1.0\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship\tId='rId1' Type='http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet' Target='worksheets/sheet1.xml'/></Relationships>"
+  let tpl = xml_add_part(tpl, "xl/workbook.xml", workbook)
+  let tpl = xml_add_part(tpl, "xl/_rels/workbook.xml.rels", rels)
+  let message = refs_fill_error(tpl, refs_items())
+  assert_true(message.contains("drawing"), msg=message)
+}
+
+///|
+test "ooxml refuses an expanding sheet whose name cannot be resolved" {
+  let tpl = refs_xlsx([("Sheet1", refs_list_sheet(""))], "")
+  let workbook =
+    "<?xml version=\"1.0\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheets><sheet name=\"Sheet1\" sheetId=\"1\"/></sheets></workbook>"
+  let tpl = xml_add_part(tpl, "xl/workbook.xml", workbook)
+  let message = refs_fill_error(tpl, refs_items())
+  assert_true(message.contains("cannot be resolved"), msg=message)
+}
+
+///|
+test "ooxml keeps a pretty-printed workbook when no section repeats rows" {
+  let tpl = refs_xlsx(
+    [("Sheet1", refs_sheet(refs_row(1, refs_cell("A1", "one"))))],
+    "",
+  )
+  let workbook =
+    "<?xml version=\"1.0\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><sheets><sheet\n  name=\"Sheet1\" sheetId=\"1\" r:id=\"rId1\"/></sheets></workbook>"
+  let rels =
+    "<?xml version=\"1.0\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship\n  Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet1.xml\"/></Relationships>"
+  let tpl = xml_add_part(tpl, "xl/workbook.xml", workbook)
+  let tpl = xml_add_part(tpl, "xl/_rels/workbook.xml.rels", rels)
+  let filled = refs_fill(tpl, refs_empty())
+  assert_eq(
+    refs_part(filled, "xl/worksheets/sheet1.xml"),
+    refs_part(tpl, "xl/worksheets/sheet1.xml"),
+  )
+}
+
+///|
+test "ooxml keeps an unresolvable workbook when no section repeats rows" {
+  let tpl = refs_xlsx(
+    [("Sheet1", refs_sheet(refs_row(1, refs_cell("A1", "one"))))],
+    "",
+  )
+  let workbook =
+    "<?xml version=\"1.0\"?><workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheets><sheet name=\"Sheet1\" sheetId=\"1\"/></sheets></workbook>"
+  let tpl = xml_add_part(tpl, "xl/workbook.xml", workbook)
+  let filled = refs_fill(tpl, refs_empty())
+  assert_eq(
+    refs_part(filled, "xl/worksheets/sheet1.xml"),
+    refs_part(tpl, "xl/worksheets/sheet1.xml"),
+  )
+}
+
+///|
+test "ooxml moves pretty-printed merges, dimensions and row breaks" {
+  let body = "<dimension\n  ref=\"A1:B3\"/>" +
+    refs_sheet(
+      refs_row(
+        1,
+        refs_cell("A1", "{{#items}}{{name}}") + refs_cell("B1", "{{/items}}"),
+      ) +
+      refs_row(2, refs_cell("A2", "x")) +
+      refs_row(3, refs_cell("A3", "tail")),
+    ) +
+    "<mergeCells count=\"1\"><mergeCell\n  ref=\"A3:B3\"/></mergeCells>" +
+    "<rowBreaks count=\"1\"><brk\n  id=\"3\" max=\"16383\" man=\"1\"/></rowBreaks>"
+  let tpl = refs_xlsx([("Sheet1", body)], "")
+  let filled = refs_fill(tpl, refs_items())
+  let sheet = refs_part(filled, "xl/worksheets/sheet1.xml")
+  assert_true(sheet.contains("ref=\"A1:B4\""), msg=sheet)
+  assert_true(sheet.contains("ref=\"A4:B4\""), msg=sheet)
+  assert_true(sheet.contains("id=\"4\""), msg=sheet)
+}
+
+///|
+test "ooxml moves a pretty-printed defined name" {
+  let tpl = refs_xlsx(
+    [("Sheet1", refs_list_sheet(""))],
+    "<definedNames><definedName\n  name=\"tail\">Sheet1!$A$3</definedName></definedNames>",
+  )
+  let filled = refs_fill(tpl, refs_items())
+  let workbook = refs_part(filled, "xl/workbook.xml")
+  assert_true(workbook.contains("Sheet1!$A$4"), msg=workbook)
+}

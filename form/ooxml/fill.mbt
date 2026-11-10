@@ -1199,20 +1199,15 @@ fn ooxml_rewrite_merges(
   rows : RowMap,
 ) -> String raise OoxmlError {
   let out = StringBuilder()
+  let chars = xml.to_array()
   let mut pos = 0
   while pos < xml.length() {
-    let start = match xml[pos:].find("<mergeCell") {
-      Some(index) => pos + index
+    let start = match ooxml_find_element_chars(chars, xml, "mergeCell", pos) {
+      Some(index) => index
       None => {
         out.write_string(xml[pos:].to_owned())
         break
       }
-    }
-    let after = start + 10
-    if after > xml.length() || !ooxml_name_end(xml[after:]) {
-      out.write_string(xml[pos:after].to_owned())
-      pos = after
-      continue
     }
     out.write_string(xml[pos:start].to_owned())
     let end = match ooxml_tag_end(xml, start) {
@@ -1237,7 +1232,7 @@ fn ooxml_rewrite_merges(
 
 ///|
 fn ooxml_rewrite_dimension(xml : String, map : Map[Int, Array[Int]]) -> String {
-  let start = match xml.find("<dimension") {
+  let start = match ooxml_find_element(xml, "dimension", 0) {
     Some(index) => index
     None => return xml
   }
@@ -1626,10 +1621,11 @@ fn ooxml_attr(tag : String, name : String) -> String {
 
 ///|
 fn ooxml_rel_target(rels : String, id : String) -> String {
+  let chars = rels.to_array()
   let mut pos = 0
   while pos < rels.length() {
-    let at = match rels[pos:].find("<Relationship ") {
-      Some(index) => pos + index
+    let at = match ooxml_find_element_chars(chars, rels, "Relationship", pos) {
+      Some(index) => index
       None => return ""
     }
     let end = match ooxml_tag_end(rels, at) {
@@ -1661,10 +1657,11 @@ fn ooxml_sheet_parts(
     Some(text) => text
     None => return (by_name, by_part)
   }
+  let chars = workbook.to_array()
   let mut pos = 0
   while pos < workbook.length() {
-    let at = match workbook[pos:].find("<sheet ") {
-      Some(index) => pos + index
+    let at = match ooxml_find_element_chars(chars, workbook, "sheet", pos) {
+      Some(index) => index
       None => break
     }
     let end = match ooxml_tag_end(workbook, at) {
@@ -1728,7 +1725,7 @@ fn ooxml_rewrite_breaks(
   xml : String,
   rows : RowMap,
 ) -> String raise OoxmlError {
-  let start = match xml.find("<rowBreaks") {
+  let start = match ooxml_find_element(xml, "rowBreaks", 0) {
     Some(index) => index
     None => return xml
   }
@@ -1738,10 +1735,11 @@ fn ooxml_rewrite_breaks(
   }
   let body = xml[start:end].to_owned()
   let out = StringBuilder()
+  let body_chars = body.to_array()
   let mut pos = 0
   while pos < body.length() {
-    let at = match body[pos:].find("<brk ") {
-      Some(index) => pos + index
+    let at = match ooxml_find_element_chars(body_chars, body, "brk", pos) {
+      Some(index) => index
       None => {
         out.write_string(body[pos:].to_owned())
         break
@@ -1916,10 +1914,11 @@ fn ooxml_map_defined_names(
   maps : Map[String, RowMap],
 ) -> String raise OoxmlError {
   let out = StringBuilder()
+  let chars = workbook.to_array()
   let mut pos = 0
   while pos < workbook.length() {
-    let at = match workbook[pos:].find("<definedName ") {
-      Some(index) => pos + index
+    let at = match ooxml_find_element_chars(chars, workbook, "definedName", pos) {
+      Some(index) => index
       None => {
         out.write_string(workbook[pos:].to_owned())
         break
@@ -2005,10 +2004,11 @@ fn ooxml_check_related_parts(
       Some(text) => text
       None => continue
     }
+    let chars = rels.to_array()
     let mut pos = 0
     while pos < rels.length() {
-      let at = match rels[pos:].find("<Relationship ") {
-        Some(index) => pos + index
+      let at = match ooxml_find_element_chars(chars, rels, "Relationship", pos) {
+        Some(index) => index
         None => break
       }
       let end = match ooxml_tag_end(rels, at) {
@@ -2079,10 +2079,11 @@ fn ooxml_check_workbook_parts(
     Some(text) => text
     None => return
   }
+  let chars = rels.to_array()
   let mut pos = 0
   while pos < rels.length() {
-    let at = match rels[pos:].find("<Relationship ") {
-      Some(index) => pos + index
+    let at = match ooxml_find_element_chars(chars, rels, "Relationship", pos) {
+      Some(index) => index
       None => break
     }
     let end = match ooxml_tag_end(rels, at) {
@@ -2258,6 +2259,25 @@ fn ooxml_check_unsupported_refs(
 }
 
 ///|
+// A worksheet whose rows move must be named by the workbook and its
+// relationships: the guards that read the sheet name cannot run without it,
+// and skipping them would leave stale references.
+fn ooxml_check_sheet_resolution(
+  maps : Map[String, RowMap],
+  by_part : Map[String, String],
+) -> Unit raise OoxmlError {
+  for part, rows in maps {
+    if rows.changed && !by_part.contains(part) {
+      raise OoxmlError(
+        "ooxml: the sheet of " +
+        part +
+        " cannot be resolved from the workbook and its relationships and a section repeats rows; its references are not checked when rows are repeated",
+      )
+    }
+  }
+}
+
+///|
 // Check and move the references that live outside the worksheet a section
 // repeats: defined names, formulas of other sheets, drawings and charts.
 fn ooxml_check_references(
@@ -2269,12 +2289,13 @@ fn ooxml_check_references(
   ooxml_check_drawings(texts, by_part, maps)
   ooxml_check_related_parts(texts, by_part, maps)
   ooxml_check_unsupported_refs(texts, by_part, maps, parts)
+  ooxml_check_sheet_resolution(maps, by_part)
   ooxml_check_workbook_parts(texts, maps)
   ooxml_check_cross_sheet_formulas(texts, by_part, maps)
   ooxml_check_chart_refs(texts, by_part, maps)
   match texts.get("xl/workbook.xml") {
     Some(workbook) =>
-      if workbook.contains("<definedName ") {
+      if ooxml_has_element(workbook, "definedName", false) {
         let mapped = ooxml_map_defined_names(workbook, by_name, maps)
         if mapped != workbook {
           texts["xl/workbook.xml"] = mapped
