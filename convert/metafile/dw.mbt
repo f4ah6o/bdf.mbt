@@ -354,7 +354,8 @@ priv enum DwSeg {
 }
 
 ///|
-/// The DW path as a clip.
+/// The DW path as a clip. DW03 replaces the clip region, like
+/// SelectClipPath(RGN_COPY), so reset to the clip base first.
 fn Gdi::dw_set_clip(self : Gdi) -> Unit {
   if self.dw_path.is_empty() {
     return
@@ -365,6 +366,7 @@ fn Gdi::dw_set_clip(self : Gdi) -> Unit {
   let index = self.object.add_path(
     @core.Inline({ verbs: verbs.to_bytes(), coordinates, }),
   )
+  self.clip_replace()
   self.object.clip_path(index, 1) catch {
     error => self.warn("a path could not clip: " + error.to_string())
   }
@@ -482,7 +484,8 @@ fn Gdi::fill_or_stroke(
 }
 
 ///|
-/// A DW06 rectangle as a clip, through the current transform.
+/// A DW06 rectangle as a clip, through the current transform. DW06 replaces
+/// the clip region, so reset to the clip base first.
 fn Gdi::dw_set_clip_rect(self : Gdi, ax0 : Double, ay0 : Double, ax1 : Double, ay1 : Double) -> Unit {
   let mut x0 = ax0
   let mut y0 = ay0
@@ -517,6 +520,7 @@ fn Gdi::dw_set_clip_rect(self : Gdi, ax0 : Double, ay0 : Double, ax1 : Double, a
   let index = self.object.add_path(
     @core.Inline({ verbs: verbs.to_bytes(), coordinates, }),
   )
+  self.clip_replace()
   self.object.clip_path(index, 1) catch {
     error => self.warn("a clip rectangle could not be set: " + error.to_string())
   }

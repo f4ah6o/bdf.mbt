@@ -159,8 +159,8 @@ priv struct Gdi {
   path_coords : Array[Double]
   mut path_active : Bool
   /// Whether a record has already narrowed the clip, by a path or by a
-  /// rectangle. The object format only carries a cumulative clip and the
-  /// converter emits no clip restore, so a later RGN_COPY cannot replace it.
+  /// rectangle. The object format only carries a cumulative clip, so a
+  /// replacing record first restores to the metafile's clip base.
   mut clip_active : Bool
 }
 
@@ -407,10 +407,32 @@ fn Gdi::path_clip(self : Gdi) -> Unit {
 }
 
 ///|
+/// The object format's clip is cumulative. Restore to the metafile's clip
+/// base, which keeps the page bounds clip, then save a fresh base so a later
+/// replacing record can reset again. Coordinates are already in page space
+/// and every draw re-emits its own paint, so only the clip changes.
+fn Gdi::clip_replace(self : Gdi) -> Unit {
+  self.object.restore()
+  self.object.save()
+}
+
+///|
+/// Replace the clip with the collected path, then discard it.
+fn Gdi::path_clip_replace(self : Gdi) -> Unit {
+  if self.path_coords.is_empty() {
+    self.path_clear()
+    return
+  }
+  self.clip_replace()
+  self.path_clip()
+}
+
+///|
 /// SELECTCLIPPATH combines the path with the current clipping region using
-/// RegionMode. The object format only carries a cumulative clip, which is
-/// RGN_AND, so the modes it cannot express are reported instead of being
-/// silently applied as an intersection.
+/// RegionMode. RGN_COPY replaces the region, which the clip base expresses.
+/// RGN_AND is what a cumulative clip already does. The modes the object
+/// format cannot express are reported instead of being silently applied as
+/// an intersection.
 fn Gdi::path_clip_mode(self : Gdi, mode : Int32) -> Unit {
   if self.path_coords.is_empty() {
     self.path_clear()
@@ -428,12 +450,14 @@ fn Gdi::path_clip_mode(self : Gdi, mode : Int32) -> Unit {
     self.warn(
       "metafile SELECTCLIPPATH has an unknown RegionMode " + mode.to_string(),
     )
-  } else if mode != 1 && !(mode == 5 && !self.clip_active) {
-    // RGN_AND is what a cumulative clip already does, and a first RGN_COPY
-    // only intersects with the page bounds.
+  } else if mode != 1 && mode != 5 {
     self.warn("metafile SELECTCLIPPATH " + name + " is applied as RGN_AND")
   }
-  self.path_clip()
+  if mode == 5 {
+    self.path_clip_replace()
+  } else {
+    self.path_clip()
+  }
   self.clip_active = true
 }
 
@@ -1449,11 +1473,15 @@ pub fn draw_into(
     Float::from_double(w),
     Float::from_double(h),
   )
+  // A clip base below the metafile's own clips but above the page bounds:
+  // a replacing record restores here, so it never wipes the page clip.
+  object.save()
   if file_kind == "emf" {
     g.play_emf(data, x, y, w, h, annotation~)
   } else {
     g.play_wmf(data, x, y, w, h)
   }
+  object.restore()
   object.restore()
   g.warnings
 }
