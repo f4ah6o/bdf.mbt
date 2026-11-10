@@ -51,15 +51,62 @@ extern "js" fn native_converter_formats(request : ConverterRequest) -> Unit =
   #|(request) => self.postMessage({id:0,ok:true,formats:[{name:'csv',description:'CSV or TSV (comma-, tab-, semicolon- or bar-separated values)',extensions:['.csv','.tsv','.tab']},{name:'xlsx',description:'Excel workbook (styled worksheets, drawings, charts and chart sheets)',extensions:['.xlsx','.xlsm','.xltx','.xltm']},{name:'docx',description:'Word document (flow and scroll views, tables, columns)',extensions:['.docx','.docm','.dotx','.dotm']},{name:'pptx',description:'PowerPoint presentation (slides, master/layout layers, charts, Office Math)',extensions:['.pptx','.pptm','.ppsx','.ppsm','.potx','.potm']},{name:'font',description:'Font file (TrueType, OpenType, WOFF)',extensions:['.ttf','.otf','.ttc','.otc','.woff','.woff2']},{name:'pdf',description:'PDF document (checked subset)',extensions:['.pdf']},{name:'image',description:'Image stored as it is: PNG, JPEG, GIF, WebP, AVIF, BMP, ICO or SVG',extensions:['.png','.apng','.jpg','.jpeg','.jpe','.jfif','.gif','.webp','.avif','.bmp','.ico','.svg']},{name:'ai',description:'Adobe Illustrator artwork',extensions:['.ai']},{name:'tiff',description:'TIFF image, one page or more',extensions:['.tif','.tiff']},{name:'psd',description:'Photoshop document',extensions:['.psd','.psb']},{name:'emf',description:'Windows metafile',extensions:['.emf','.wmf']},{name:'xdw',description:'DocuWorks document (vector and scanned pages with annotations; binder .xbd)',extensions:['.xdw','.xbd']},{name:'idml',description:'InDesign document (IDML)',extensions:['.idml']},{name:'visio',description:'Visio drawing',extensions:['.vsdx','.vsdm','.vstx','.vstm']},{name:'markdown',description:'Markdown document (CommonMark/GFM scroll and pages views)',extensions:['.md','.markdown','.mdown','.mkd','.mdx']},{name:'html',description:'HTML document (reader mode)',extensions:['.html','.htm','.xhtml']},{name:'audio',description:'Audio file (MP3, AAC, M4A, FLAC, Ogg Vorbis/Opus, WAV, AIFF)',extensions:['.mp3','.m4a','.m4b','.m4p','.aac','.flac','.ogg','.oga','.opus','.spx','.wav','.wave','.aif','.aiff','.aifc']},{name:'hpgl',description:'HP-GL/2 plot file (PCL/HP RTL raster not supported)',extensions:['.plt','.hpgl','.hgl','.hpg','.hp2','.rtl']},{name:'jww',description:'Jw_cad drawing',extensions:['.jww']},{name:'dxf',description:'AutoCAD DXF drawing (text and binary; model space)',extensions:['.dxf']},{name:'sxf',description:'SXF drawing (SFC; P21/P2Z not yet supported)',extensions:['.sfc','.p21','.p2z']},{name:'cgm',description:'Computer Graphics Metafile (binary)',extensions:['.cgm','.cgz']},{name:'drawio',description:'draw.io diagram (practical shape subset)',extensions:['.drawio','.dio','.drawio.svg','.drawio.png']},{name:'parquet',description:'Apache Parquet table',extensions:['.parquet','.parq','.pqt']}]})
 
 ///|
-extern "js" fn native_converter_result(
+/// A plain JavaScript array of strings. A MoonBit `Array[String]` reaches
+/// JavaScript as a `{buf, len}` object, so a reply that crosses the Worker
+/// boundary must carry a real array: the page reads `warnings` as a list.
+#external
+priv type NativeWarnings
+
+///|
+extern "js" fn native_warnings_new() -> NativeWarnings =
+  #|() => []
+
+///|
+extern "js" fn native_warnings_push(
+  warnings : NativeWarnings,
+  warning : String,
+) -> Unit =
+  #|(warnings,warning) => { warnings.push(warning) }
+
+///|
+/// The reply form of a warning list: a JavaScript array of strings.
+fn native_warnings(warnings : Array[String]) -> NativeWarnings {
+  let list = native_warnings_new()
+  for warning in warnings {
+    native_warnings_push(list, warning)
+  }
+  list
+}
+
+///|
+extern "js" fn native_converter_result_list(
+  request : ConverterRequest,
+  data : Bytes,
+  format : String,
+  summary : String,
+  warnings : NativeWarnings,
+  opened : Bool,
+) -> Unit =
+  #|(request,bdf,format,summary,warnings,opened) => {const result={bdf,format,summary,warnings,protected:false};if(opened)result.pages=0;self.postMessage({id:Number(request.id),ok:true,result},[bdf.buffer])}
+
+///|
+fn native_converter_result(
   request : ConverterRequest,
   data : Bytes,
   format : String,
   summary : String,
   warnings : Array[String],
   opened : Bool,
-) -> Unit =
-  #|(request,bdf,format,summary,warnings,opened) => {const list=Array.isArray(warnings)?warnings:(warnings.buf??[]).slice(0,warnings.len??0);const result={bdf,format,summary,warnings:list,protected:false};if(opened)result.pages=0;self.postMessage({id:Number(request.id),ok:true,result},[bdf.buffer])}
+) -> Unit {
+  native_converter_result_list(
+    request,
+    data,
+    format,
+    summary,
+    native_warnings(warnings),
+    opened,
+  )
+}
 
 ///|
 extern "js" fn native_converter_error(
@@ -77,7 +124,19 @@ extern "js" fn native_converter_page_result(
   #|(request,bdf) => self.postMessage({id:Number(request.id),ok:true,result:{bdf,warnings:[]}},[bdf.buffer])
 
 ///|
-extern "js" fn native_converter_stream_open(
+extern "js" fn native_converter_stream_open_list(
+  request : ConverterRequest,
+  bdf : Bytes,
+  format : String,
+  summary : String,
+  warnings : NativeWarnings,
+  pages : Int32,
+  stream_id : Int32,
+) -> Unit =
+  #|(request,bdf,format,summary,warnings,pages,stream_id) => {const result={bdf,format,summary,warnings,protected:false,pages,stream:Number(stream_id)};self.postMessage({id:Number(request.id),ok:true,result})}
+
+///|
+fn native_converter_stream_open(
   request : ConverterRequest,
   bdf : Bytes,
   format : String,
@@ -85,8 +144,17 @@ extern "js" fn native_converter_stream_open(
   warnings : Array[String],
   pages : Int32,
   stream_id : Int32,
-) -> Unit =
-  #|(request,bdf,format,summary,warnings,pages,stream_id) => {const result={bdf,format,summary,warnings,protected:false,pages,stream:Number(stream_id)};self.postMessage({id:Number(request.id),ok:true,result})}
+) -> Unit {
+  native_converter_stream_open_list(
+    request,
+    bdf,
+    format,
+    summary,
+    native_warnings(warnings),
+    pages,
+    stream_id,
+  )
+}
 
 ///|
 extern "js" fn native_converter_request_page(
@@ -746,13 +814,13 @@ fn native_stream_multipage(
   pages : Int32,
   opened : Bool,
 ) -> Unit {
-  if opened && native_converter_option(request, "pages") == "" && pages > 0 {
+  if opened && pages > 0 {
     let id = state.next_stream
     state.next_stream += 1
     state.streams[id] = { bdf, pages, format, summary, warnings, }
     native_converter_stream_open(request, bdf, format, summary, warnings, pages, id)
   } else {
-    native_converter_result(request, bdf, format, summary, warnings, false)
+    native_converter_result(request, bdf, format, summary, warnings, opened)
   }
 }
 
@@ -775,9 +843,9 @@ fn native_convert_ai(
       return
     }
   }
-  let bdf = native_select_pages(request, result.bdf, result.pages)
+  let (bdf, pages) = native_select_pages(request, result.bdf, result.pages)
   native_stream_multipage(
-    state, request, bdf, "ai", result.summary, result.warnings, result.pages, opened,
+    state, request, bdf, "ai", result.summary, result.warnings, pages, opened,
   )
 }
 
@@ -808,9 +876,9 @@ fn native_convert_html(
       return
     }
   }
-  let bdf = native_select_pages(request, result.bdf, result.pages)
+  let (bdf, pages) = native_select_pages(request, result.bdf, result.pages)
   native_stream_multipage(
-    state, request, bdf, "html", result.summary, result.warnings, result.pages,
+    state, request, bdf, "html", result.summary, result.warnings, pages,
     opened,
   )
 }
@@ -879,10 +947,10 @@ fn native_convert_markdown(
       return
     }
   }
-  let bdf = native_select_pages(request, result.bdf, result.pages)
+  let (bdf, pages) = native_select_pages(request, result.bdf, result.pages)
   native_stream_multipage(
     state, request, bdf, "markdown", result.summary, result.warnings,
-    result.pages, opened,
+    pages, opened,
   )
 }
 
@@ -902,9 +970,9 @@ fn native_convert_visio(
       return
     }
   }
-  let bdf = native_select_pages(request, result.bdf, result.pages)
+  let (bdf, pages) = native_select_pages(request, result.bdf, result.pages)
   native_stream_multipage(
-    state, request, bdf, "visio", result.summary, result.warnings, result.pages,
+    state, request, bdf, "visio", result.summary, result.warnings, pages,
     opened,
   )
 }
@@ -925,9 +993,9 @@ fn native_convert_idml(
       return
     }
   }
-  let bdf = native_select_pages(request, result.bdf, result.pages)
+  let (bdf, pages) = native_select_pages(request, result.bdf, result.pages)
   native_stream_multipage(
-    state, request, bdf, "idml", result.summary, result.warnings, result.pages,
+    state, request, bdf, "idml", result.summary, result.warnings, pages,
     opened,
   )
 }
@@ -972,9 +1040,9 @@ fn native_convert_tiff(
       return
     }
   }
-  let bdf = native_select_pages(request, result.bdf, result.pages)
+  let (bdf, pages) = native_select_pages(request, result.bdf, result.pages)
   native_stream_multipage(
-    state, request, bdf, "tiff", result.summary, result.warnings, result.pages,
+    state, request, bdf, "tiff", result.summary, result.warnings, pages,
     opened,
   )
 }
@@ -1013,9 +1081,9 @@ fn native_convert_psd(
       return
     }
   }
-  let bdf = native_select_pages(request, result.bdf, result.pages)
+  let (bdf, pages) = native_select_pages(request, result.bdf, result.pages)
   native_stream_multipage(
-    state, request, bdf, "psd", result.summary, result.warnings, result.pages,
+    state, request, bdf, "psd", result.summary, result.warnings, pages,
     opened,
   )
 }
@@ -1080,25 +1148,48 @@ fn native_convert_xdw(
 }
 
 ///|
+/// The number of pages a selection keeps from an input of `count` pages.
+///
+/// `select_pages` keeps the pages that exist, in document order, so a closed
+/// range that runs past the input contributes only its in-range pages.
+fn native_selected_page_count(numbers : Array[Int64], count : Int32) -> Int32 {
+  let seen : Map[Int64, Bool] = Map([])
+  let mut kept = 0
+  for number in numbers {
+    if number >= 1L && number <= count.to_int64() && !seen.contains(number) {
+      seen[number] = true
+      kept += 1
+    }
+  }
+  kept
+}
+
+///|
+/// The document a request selects, and the number of pages it holds.
+///
+/// The count describes the returned document, not the input: `open` reports it
+/// as `pages`, and a stream indexes the selected pages from zero.
 fn native_select_pages(
   request : ConverterRequest,
   bdf : Bytes,
   count : Int32,
-) -> Bytes {
+) -> (Bytes, Int32) {
   let spec = native_converter_option(request, "pages")
   if spec == "" || count <= 0 {
-    return bdf
+    return (bdf, count)
   }
-  let spans = @convert.parse_pages(spec) catch { _ => return bdf }
+  let spans = @convert.parse_pages(spec) catch { _ => return (bdf, count) }
   let numbers = @convert.page_numbers(spans, count.to_int64()) catch {
-    _ => return bdf
+    _ => return (bdf, count)
   }
   match numbers {
-    Some(values) if !values.is_empty() =>
-      @core.select_pages(bdf, values) catch {
-        _ => bdf
+    Some(values) if !values.is_empty() => {
+      let selected = @core.select_pages(bdf, values) catch {
+        _ => return (bdf, count)
       }
-    _ => bdf
+      (selected, native_selected_page_count(values, count))
+    }
+    _ => (bdf, count)
   }
 }
 
@@ -1122,9 +1213,9 @@ fn native_convert_hpgl(
       return
     }
   }
-  let bdf = native_select_pages(request, result.bdf, result.pages)
+  let (bdf, pages) = native_select_pages(request, result.bdf, result.pages)
   native_stream_multipage(
-    state, request, bdf, "hpgl", result.summary, result.warnings, result.pages, opened,
+    state, request, bdf, "hpgl", result.summary, result.warnings, pages, opened,
   )
 }
 
@@ -1282,15 +1373,13 @@ fn native_convert_pdf(
       return
     }
   }
-  let bdf = native_select_pages(request, result.bdf, result.pages)
-  if opened &&
-    native_converter_option(request, "pages") == "" &&
-    result.pages > 0 {
+  let (bdf, pages) = native_select_pages(request, result.bdf, result.pages)
+  if opened && pages > 0 {
     let id = state.next_stream
     state.next_stream += 1
     state.streams[id] = {
       bdf,
-      pages: result.pages,
+      pages,
       format: "pdf",
       summary: result.summary,
       warnings: result.warnings,
@@ -1301,7 +1390,7 @@ fn native_convert_pdf(
       "pdf",
       result.summary,
       result.warnings,
-      result.pages,
+      pages,
       id,
     )
   } else {
@@ -1311,7 +1400,7 @@ fn native_convert_pdf(
       "pdf",
       result.summary,
       result.warnings,
-      false,
+      opened,
     )
   }
 }
@@ -1339,17 +1428,17 @@ fn native_convert_docx(
       return
     }
   }
-  let bdf = if pages_option == "" {
+  let (bdf, pages) = if pages_option == "" {
     native_select_pages(request, result.bdf, result.pages)
   } else {
-    result.bdf
+    (result.bdf, result.pages)
   }
-  if opened && pages_option == "" && result.pages > 0 {
+  if opened && pages > 0 {
     let id = state.next_stream
     state.next_stream += 1
     state.streams[id] = {
       bdf,
-      pages: result.pages,
+      pages,
       format: "docx",
       summary: result.summary,
       warnings: result.warnings,
@@ -1360,7 +1449,7 @@ fn native_convert_docx(
       "docx",
       result.summary,
       result.warnings,
-      result.pages,
+      pages,
       id,
     )
   } else {
@@ -1370,7 +1459,7 @@ fn native_convert_docx(
       "docx",
       result.summary,
       result.warnings,
-      false,
+      opened,
     )
   }
 }
@@ -1399,17 +1488,17 @@ fn native_convert_pptx(
       return
     }
   }
-  let bdf = if pages_option == "" {
+  let (bdf, pages) = if pages_option == "" {
     native_select_pages(request, result.bdf, result.pages)
   } else {
-    result.bdf
+    (result.bdf, result.pages)
   }
-  if opened && pages_option == "" && result.pages > 0 {
+  if opened && pages > 0 {
     let id = state.next_stream
     state.next_stream += 1
     state.streams[id] = {
       bdf,
-      pages: result.pages,
+      pages,
       format: "pptx",
       summary: result.summary,
       warnings: result.warnings,
@@ -1420,7 +1509,7 @@ fn native_convert_pptx(
       "pptx",
       result.summary,
       result.warnings,
-      result.pages,
+      pages,
       id,
     )
   } else {
@@ -1430,7 +1519,7 @@ fn native_convert_pptx(
       "pptx",
       result.summary,
       result.warnings,
-      false,
+      opened,
     )
   }
 }
