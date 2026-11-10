@@ -84,7 +84,7 @@ duplicate import/alias は、この worktree の browser チェックで duplica
 
 - `moon check -p browser --target js` でクラス別件数を集計する。
 - `moon check --target js` と `moon check --target wasm-gc` で全体の件数を測る（時間がかかるため任意）。
-- duplicate import/alias の修正後、`moon check` の該当警告が 0 件であることを確認する。
+- duplicate import/alias の修正後、維持対象の該当警告を再集計し、対象外の警告を区別する。
 - `node .github/local/verify.test.mjs` でローカル検証の自己テストが通ることを確認する。
 
 ## リスク
