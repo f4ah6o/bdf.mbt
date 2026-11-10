@@ -122,6 +122,13 @@
 
 ### Fixed
 
+- DocuWorks image annotations with kind 7 bitmap bands now retain their
+  stored top-to-bottom row order. Ordinary page DIBs and RLE8 keep their
+  existing orientation.
+- DocuWorks DW03 and DW06 clips replace the previous clip, so images in
+  subsequent disjoint regions remain visible. EMF `SELECTCLIPPATH` with
+  `RGN_COPY` also replaces rather than intersects the previous region.
+
 - DocuWorks kind 7 bitmap annotations with more than one band now decode every
   band and join them in order, instead of reading only the first. The band
   count, each band's stored and expanded sizes, and the joined output and
