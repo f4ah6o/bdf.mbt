@@ -363,7 +363,7 @@ test "ooxml numbers the rows of a worksheet" {
     ooxml_test_row(4, "end"),
   ])
   let (filled, _) = fill_part(sheet, ooxml_test_items(), false, 1, true)
-  let numbered = ooxml_renumber_rows(sheet, filled)
+  let (numbered, _) = ooxml_renumber_rows(sheet, filled)
   assert_true(numbered.contains("<row r=\"2\">"), msg=numbered)
   assert_true(numbered.contains("<row r=\"3\">"), msg=numbered)
   assert_true(numbered.contains("<row r=\"4\">"), msg=numbered)

@@ -202,6 +202,9 @@ pub fn fill_zip(
     _ => raise OoxmlError("ooxml: the package is not a ZIP")
   }
   let entries : Array[(String, Bytes)] = []
+  let index : Map[String, Int] = Map([])
+  let texts : Map[String, String] = Map([])
+  let maps : Map[String, RowMap] = Map([])
   let warnings : Array[String] = []
   for entry in archive.entries {
     if entry.name.has_suffix("/") {
@@ -226,15 +229,29 @@ pub fn fill_zip(
         warnings.push(entry.name + ": " + warning)
       }
       let out = if kind == 1 {
-        ooxml_renumber_rows(text, filled) catch {
+        let (out, rows) = ooxml_renumber_rows(text, filled) catch {
           OoxmlError(message) => raise OoxmlError(entry.name + ": " + message)
         }
+        maps[entry.name] = rows
+        out
       } else {
         filled
       }
+      index[entry.name] = entries.length()
       entries.push((entry.name, @utf8.encode(out)))
+      texts[entry.name] = out
     } else {
+      index[entry.name] = entries.length()
       entries.push((entry.name, raw))
+    }
+  }
+  ooxml_check_references(texts, maps) catch {
+    OoxmlError(message) => raise OoxmlError(message)
+  }
+  for name, at in index {
+    match texts.get(name) {
+      Some(text) => entries[at] = (name, @utf8.encode(text))
+      None => ()
     }
   }
   (stored_zip(entries), warnings)

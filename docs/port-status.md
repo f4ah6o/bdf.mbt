@@ -150,6 +150,10 @@
   it is; a sheet that a section repeats keeps the gaps of its rows, moves the
   rows after a repeated row and the cell references, merged cells and
   dimension with them, and refuses a formula or a reference it cannot move.
+  A defined name and a row break move with the row they name; a merge over a
+  dropped row, a drawing, a chart, a pivot table or a formula of another
+  sheet that names a sheet whose rows move is an error instead of a stale
+  reference, and a self-closing `<f/>` counts as a formula.
   A section that starts in a table row and ends outside it is an error, a
   section of `| slots` is an error (write `| rows`), and a picture tag
   (`{{%name}}`) is reported and left empty.

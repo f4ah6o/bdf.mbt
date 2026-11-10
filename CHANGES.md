@@ -73,6 +73,13 @@
   merged cells and the dimension move with the rows; a formula, a hyperlink,
   a data validation, a conditional format, an auto filter or a table part
   that the fill cannot move is an error instead of a wrong cell.
+- The references outside a worksheet that a section repeats are moved with
+  its rows or refused before conversion: a defined name and a row break move
+  with the row they name, a merge that covers a dropped row is an error, and
+  a drawing, a chart, a pivot table or a formula of another sheet that names
+  a sheet whose rows move is an error instead of a stale reference. A
+  self-closing `<f/>` counts as a formula. A sheet whose rows do not move
+  keeps every reference untouched.
 - The options of a tag are applied by the fill of an OOXML document:
   `{{total | fmt:"#,##0.00"}}` writes the number in its format instead of
   warning that the data has no `total | fmt:"#,##0.00"` and leaving the cell

@@ -941,6 +941,7 @@ fn ooxml_ref_parts(ref : String) -> (String, Int) {
 fn ooxml_map_ref(
   ref : String,
   map : Map[Int, Array[Int]],
+  dropped : Map[Int, Bool],
 ) -> String raise OoxmlError {
   let out : Array[String] = []
   for part in ref.split(":") {
@@ -949,6 +950,15 @@ fn ooxml_map_ref(
     if row < 0 {
       out.push(piece)
       continue
+    }
+    if dropped.contains(row) {
+      raise OoxmlError(
+        "ooxml: the merged cells " +
+        ref +
+        " cover row " +
+        row.to_string() +
+        ", which a section drops; merged cells across a dropped row are not supported",
+      )
     }
     match map.get(row) {
       Some(numbers) =>
@@ -1000,7 +1010,7 @@ fn ooxml_map_span(ref : String, map : Map[Int, Array[Int]]) -> String {
 ///|
 fn ooxml_rewrite_merges(
   xml : String,
-  map : Map[Int, Array[Int]],
+  rows : RowMap,
 ) -> String raise OoxmlError {
   let out = StringBuilder()
   let mut pos = 0
@@ -1038,7 +1048,11 @@ fn ooxml_rewrite_merges(
         continue
       }
     }
-    let mapped = ooxml_map_ref(tag[at:value_end].to_owned(), map)
+    let mapped = ooxml_map_ref(
+      tag[at:value_end].to_owned(),
+      rows.map,
+      rows.dropped,
+    )
     out.write_string(tag[:at].to_owned() + mapped + tag[value_end:].to_owned())
     pos = end + 1
   }
@@ -1129,17 +1143,478 @@ fn ooxml_rewrite_rows(xml : String, numbers : Array[Int]) -> String {
 /// template, moves the rows after a repeated row, and moves the cell
 /// references, the merged cells and the dimension with them. A formula or a
 /// reference that the fill cannot move is an error, never a wrong cell.
-fn ooxml_renumber_rows(
-  template : String,
-  filled : String,
-) -> String raise OoxmlError {
+///|
+// The rows a fill moved: `before` and `after` are the row numbers of the
+// template and of the filled sheet, `numbers` is the new number of each row of
+// `after`, `map` maps a template row to the rows it became, and `dropped` holds
+// the template rows that the fill removed.
+priv struct RowMap {
+  changed : Bool
+  before : Array[Int]
+  after : Array[Int]
+  numbers : Array[Int]
+  map : Map[Int, Array[Int]]
+  dropped : Map[Int, Bool]
+}
+
+///|
+fn ooxml_row_map(template : String, filled : String) -> RowMap {
   let before = ooxml_row_numbers(template)
   let after = ooxml_row_numbers(filled)
   if before == after {
-    return filled
+    return {
+      changed: false,
+      before,
+      after,
+      numbers: [],
+      map: Map([]),
+      dropped: Map([]),
+    }
   }
   let (numbers, map) = ooxml_row_numbers_after(before, after)
-  if filled.contains("<f>") || filled.contains("<f ") {
+  let present : Map[Int, Bool] = Map([])
+  for number in after {
+    present[number] = true
+  }
+  let dropped : Map[Int, Bool] = Map([])
+  for number in before {
+    if !present.contains(number) {
+      dropped[number] = true
+    }
+  }
+  { changed: true, before, after, numbers, map, dropped }
+}
+
+///|
+// A formula is `<f>`, `<f ...>`, `<f/>` or a prefixed `<x:f>`; a bare
+// `contains("<f>")` misses the self-closing, the attributed and the prefixed
+// forms.
+fn ooxml_has_formula(xml : String) -> Bool {
+  let chars = xml.to_array()
+  let mut pos = 0
+  while pos < chars.length() {
+    if chars[pos] != '<' {
+      pos += 1
+      continue
+    }
+    let (name, end) = ooxml_element_name(chars, pos)
+    if name == "f" && end < chars.length() {
+      let next = chars[end]
+      if next == '>' ||
+        next == ' ' ||
+        next == '/' ||
+        next == '\t' ||
+        next == '\r' ||
+        next == '\n' {
+        return true
+      }
+    }
+    pos += 1
+  }
+  false
+}
+
+///|
+fn ooxml_formula_texts(xml : String) -> Array[String] {
+  let out : Array[String] = []
+  let chars = xml.to_array()
+  let mut pos = 0
+  while pos < chars.length() {
+    if chars[pos] != '<' {
+      pos += 1
+      continue
+    }
+    let (name, end) = ooxml_element_name(chars, pos)
+    if name != "f" || end >= chars.length() {
+      pos += 1
+      continue
+    }
+    let next = chars[end]
+    if next == '/' {
+      pos = end + 1
+      continue
+    }
+    if !(next == '>' ||
+      next == ' ' ||
+      next == '\t' ||
+      next == '\r' ||
+      next == '\n') {
+      pos += 1
+      continue
+    }
+    let mut gt = end
+    while gt < chars.length() && chars[gt] != '>' {
+      gt += 1
+    }
+    if gt >= chars.length() {
+      break
+    }
+    if chars[gt - 1] == '/' {
+      pos = gt + 1
+      continue
+    }
+    let close = match xml[gt + 1:].find("</") {
+      Some(index) => gt + 1 + index
+      None => break
+    }
+    let (close_name, close_end) = ooxml_element_name(chars, close)
+    if close_name != "f" {
+      pos = gt + 1
+      continue
+    }
+    out.push(xml[gt + 1:close].to_owned())
+    pos = close_end
+  }
+  out
+}
+
+///|
+fn ooxml_is_name_char(c : Char) -> Bool {
+  ooxml_is_letter(c) ||
+  ooxml_is_digit(c) ||
+  c == '_' ||
+  c == '-' ||
+  c == '.' ||
+  c == ':'
+}
+
+///|
+// The local name of the element that starts at `at` (a `<`), and the index
+// after the name.
+fn ooxml_element_name(chars : Array[Char], at : Int) -> (String, Int) {
+  let mut start = at + 1
+  if start < chars.length() && chars[start] == '/' {
+    start += 1
+  }
+  let mut end = start
+  while end < chars.length() && ooxml_is_name_char(chars[end]) {
+    end += 1
+  }
+  let mut local_start = start
+  for i in start..<end {
+    if chars[i] == ':' {
+      local_start = i + 1
+    }
+  }
+  (String::from_array(chars[local_start:end]), end)
+}
+
+///|
+fn ooxml_is_letter(c : Char) -> Bool {
+  (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+}
+
+///|
+fn ooxml_is_digit(c : Char) -> Bool {
+  c >= '0' && c <= '9'
+}
+
+///|
+fn ooxml_map_row(row : Int, rows : RowMap) -> Int raise OoxmlError {
+  if rows.dropped.contains(row) {
+    raise OoxmlError(
+      "ooxml: a reference names row " +
+      row.to_string() +
+      ", which a section drops; references across a dropped row are not supported",
+    )
+  }
+  match rows.map.get(row) {
+    Some(numbers) =>
+      if numbers.length() > 1 {
+        raise OoxmlError(
+          "ooxml: a reference names row " +
+          row.to_string() +
+          ", which a section repeats; references across a repeated row are not supported",
+        )
+      } else {
+        numbers[0]
+      }
+    None => row
+  }
+}
+
+///|
+// Map the cell reference or range at the start of `rest`; return the mapped
+// text and the number of characters it consumed.
+fn ooxml_map_ref_text(
+  rest : String,
+  rows : RowMap,
+) -> (String, Int) raise OoxmlError {
+  let chars = rest.to_array()
+  let out = StringBuilder()
+  let mut pos = 0
+  let mut count = 0
+  while true {
+    let start = pos
+    if pos < chars.length() && chars[pos] == '$' {
+      pos += 1
+    }
+    let letters_start = pos
+    while pos < chars.length() && ooxml_is_letter(chars[pos]) {
+      pos += 1
+    }
+    if pos == letters_start {
+      break
+    }
+    if pos < chars.length() && chars[pos] == '$' {
+      pos += 1
+    }
+    let digits_start = pos
+    while pos < chars.length() && ooxml_is_digit(chars[pos]) {
+      pos += 1
+    }
+    if pos == digits_start {
+      break
+    }
+    let row = @string.parse_int(
+      String::from_array(chars[digits_start:pos]),
+    ) catch {
+      _ => -1
+    }
+    if row < 0 {
+      break
+    }
+    if count > 0 {
+      out.write_string(":")
+    }
+    count += 1
+    out.write_string(String::from_array(chars[start:digits_start]))
+    out.write_string(ooxml_map_row(row, rows).to_string())
+    if pos < chars.length() && chars[pos] == ':' {
+      pos += 1
+      continue
+    }
+    break
+  }
+  (out.to_string(), pos)
+}
+
+///|
+// Whether `text` names `sheet`, in any letter case, as a cell reference, a
+// range or a 3D reference. A name that the fill cannot move is refused rather
+// than left stale.
+fn ooxml_names_sheet(text : String, sheet : String) -> Bool {
+  let lower = text.to_lower()
+  let name = sheet.to_lower()
+  lower.contains(name + "!") ||
+  lower.contains("'" + name + "'!") ||
+  lower.contains(name + ":") ||
+  lower.contains("'" + name + "':")
+}
+
+///|
+fn ooxml_map_defined_name(
+  text : String,
+  sheet : String,
+  rows : RowMap,
+) -> String raise OoxmlError {
+  let plain = sheet + "!"
+  let quoted = "'" + sheet + "'!"
+  let body = if text.has_prefix("=") {
+    text[1:].to_owned()
+  } else {
+    text
+  }
+  let (prefix, rest) = if body.has_prefix(plain) {
+    (plain, body[plain.length():].to_owned())
+  } else if body.has_prefix(quoted) {
+    (quoted, body[quoted.length():].to_owned())
+  } else {
+    if ooxml_names_sheet(body, sheet) {
+      raise OoxmlError(
+        "ooxml: the defined name " +
+        text +
+        " names " +
+        sheet +
+        " in a way that the fill cannot move",
+      )
+    }
+    return text
+  }
+  let (mapped, used) = ooxml_map_ref_text(rest, rows) catch {
+    OoxmlError(message) =>
+      raise OoxmlError(
+        "ooxml: the defined name " + text + " cannot move: " + message,
+      )
+  }
+  if used != rest.length() {
+    raise OoxmlError(
+      "ooxml: the defined name " +
+      text +
+      " names " +
+      sheet +
+      " in a way that the fill cannot move",
+    )
+  }
+  (if text.has_prefix("=") { "=" } else { "" }) + prefix + mapped
+}
+
+///|
+fn ooxml_attr(tag : String, name : String) -> String {
+  let needle = " " + name + "=\""
+  let at = match tag.find(needle) {
+    Some(index) => index + needle.length()
+    None => return ""
+  }
+  let end = match tag[at:].find("\"") {
+    Some(index) => at + index
+    None => return ""
+  }
+  tag[at:end].to_owned()
+}
+
+///|
+fn ooxml_rel_target(rels : String, id : String) -> String {
+  let mut pos = 0
+  while pos < rels.length() {
+    let at = match rels[pos:].find("<Relationship ") {
+      Some(index) => pos + index
+      None => return ""
+    }
+    let end = match rels[at:].find(">") {
+      Some(index) => at + index
+      None => return ""
+    }
+    let tag = rels[at:end + 1].to_owned()
+    if ooxml_attr(tag, "Id") == id {
+      return ooxml_attr(tag, "Target")
+    }
+    pos = end + 1
+  }
+  ""
+}
+
+///|
+// The sheet name of each worksheet part and the part of each sheet name, read
+// from the workbook and its relationships.
+fn ooxml_sheet_parts(
+  texts : Map[String, String],
+) -> (Map[String, String], Map[String, String]) {
+  let by_name : Map[String, String] = Map([])
+  let by_part : Map[String, String] = Map([])
+  let workbook = match texts.get("xl/workbook.xml") {
+    Some(text) => text
+    None => return (by_name, by_part)
+  }
+  let rels = match texts.get("xl/_rels/workbook.xml.rels") {
+    Some(text) => text
+    None => return (by_name, by_part)
+  }
+  let mut pos = 0
+  while pos < workbook.length() {
+    let at = match workbook[pos:].find("<sheet ") {
+      Some(index) => pos + index
+      None => break
+    }
+    let end = match workbook[at:].find(">") {
+      Some(index) => at + index
+      None => break
+    }
+    let tag = workbook[at:end + 1].to_owned()
+    let name = ooxml_attr(tag, "name")
+    let rid = ooxml_attr(tag, "r:id")
+    if name != "" && rid != "" {
+      let target = ooxml_rel_target(rels, rid)
+      if target != "" {
+        let part = if target.has_prefix("/") {
+          target[1:].to_owned()
+        } else {
+          "xl/" + target
+        }
+        by_name[name] = part
+        by_part[part] = name
+      }
+    }
+    pos = end + 1
+  }
+  (by_name, by_part)
+}
+
+///|
+fn ooxml_map_break(tag : String, rows : RowMap) -> String raise OoxmlError {
+  let needle = "id=\""
+  let at = match tag.find(needle) {
+    Some(index) => index + needle.length()
+    None => return tag
+  }
+  let end = match tag[at:].find("\"") {
+    Some(index) => at + index
+    None => return tag
+  }
+  let number = @string.parse_int(tag[at:end].to_owned()) catch { _ => -1 }
+  if number < 0 {
+    return tag
+  }
+  if rows.dropped.contains(number) {
+    raise OoxmlError(
+      "ooxml: a row break sits after row " +
+      number.to_string() +
+      ", which a section drops; row breaks across a dropped row are not supported",
+    )
+  }
+  match rows.map.get(number) {
+    Some(numbers) =>
+      if numbers.length() > 1 {
+        raise OoxmlError(
+          "ooxml: a row break sits after row " +
+          number.to_string() +
+          ", which a section repeats; row breaks across a repeated row are not supported",
+        )
+      } else {
+        tag[:at].to_owned() + numbers[0].to_string() + tag[end:].to_owned()
+      }
+    None => tag
+  }
+}
+
+///|
+fn ooxml_rewrite_breaks(
+  xml : String,
+  rows : RowMap,
+) -> String raise OoxmlError {
+  let start = match xml.find("<rowBreaks") {
+    Some(index) => index
+    None => return xml
+  }
+  let end = match xml[start:].find("</rowBreaks>") {
+    Some(index) => start + index
+    None => return xml
+  }
+  let body = xml[start:end].to_owned()
+  let out = StringBuilder()
+  let mut pos = 0
+  while pos < body.length() {
+    let at = match body[pos:].find("<brk ") {
+      Some(index) => pos + index
+      None => {
+        out.write_string(body[pos:].to_owned())
+        break
+      }
+    }
+    out.write_string(body[pos:at].to_owned())
+    let gt = match body[at:].find(">") {
+      Some(index) => at + index
+      None => {
+        out.write_string(body[at:].to_owned())
+        break
+      }
+    }
+    out.write_string(ooxml_map_break(body[at:gt + 1].to_owned(), rows))
+    pos = gt + 1
+  }
+  xml[:start].to_owned() + out.to_string() + xml[end:].to_owned()
+}
+
+///|
+fn ooxml_renumber_rows(
+  template : String,
+  filled : String,
+) -> (String, RowMap) raise OoxmlError {
+  let rows = ooxml_row_map(template, filled)
+  if !rows.changed {
+    return (filled, rows)
+  }
+  if ooxml_has_formula(filled) {
     raise OoxmlError(
       "ooxml: the sheet has a formula and a section repeats rows; formulas are not moved when rows are repeated",
     )
@@ -1159,7 +1634,194 @@ fn ooxml_renumber_rows(
       )
     }
   }
-  let out = ooxml_rewrite_rows(filled, numbers)
-  let out = ooxml_rewrite_merges(out, map)
-  ooxml_rewrite_dimension(out, map)
+  let out = ooxml_rewrite_rows(filled, rows.numbers)
+  let out = ooxml_rewrite_merges(out, rows)
+  let out = ooxml_rewrite_breaks(out, rows)
+  (ooxml_rewrite_dimension(out, rows.map), rows)
+}
+
+///|
+fn ooxml_check_drawings(
+  texts : Map[String, String],
+  by_part : Map[String, String],
+  maps : Map[String, RowMap],
+) -> Unit raise OoxmlError {
+  for part, name in by_part {
+    let changed = match maps.get(part) {
+      Some(rows) => rows.changed
+      None => false
+    }
+    if !changed {
+      continue
+    }
+    let text = match texts.get(part) {
+      Some(value) => value
+      None => continue
+    }
+    if text.contains("<drawing ") || text.contains("<legacyDrawing ") {
+      raise OoxmlError(
+        "ooxml: the sheet " +
+        name +
+        " has a drawing and a section repeats rows; the anchors of the drawing are not moved when rows are repeated",
+      )
+    }
+  }
+}
+
+///|
+fn ooxml_check_cross_sheet_formulas(
+  texts : Map[String, String],
+  by_part : Map[String, String],
+  maps : Map[String, RowMap],
+) -> Unit raise OoxmlError {
+  for part, name in by_part {
+    let changed = match maps.get(part) {
+      Some(rows) => rows.changed
+      None => false
+    }
+    if changed {
+      continue
+    }
+    let text = match texts.get(part) {
+      Some(value) => value
+      None => continue
+    }
+    let formulas = ooxml_formula_texts(text)
+    if formulas.length() == 0 {
+      continue
+    }
+    for other_part, other_name in by_part {
+      let other_changed = match maps.get(other_part) {
+        Some(rows) => rows.changed
+        None => false
+      }
+      if !other_changed {
+        continue
+      }
+      for formula in formulas {
+        if ooxml_names_sheet(formula, other_name) {
+          raise OoxmlError(
+            "ooxml: a formula of " +
+            name +
+            " names " +
+            other_name +
+            ", whose rows a section repeats; formulas that name a sheet whose rows move are not supported",
+          )
+        }
+      }
+    }
+  }
+}
+
+///|
+fn ooxml_check_chart_refs(
+  texts : Map[String, String],
+  by_part : Map[String, String],
+  maps : Map[String, RowMap],
+) -> Unit raise OoxmlError {
+  for part, text in texts {
+    if !(part.has_prefix("xl/charts/") ||
+      part.has_prefix("xl/pivotTables/") ||
+      part.has_prefix("xl/pivotCache/")) {
+      continue
+    }
+    for sheet_part, name in by_part {
+      let changed = match maps.get(sheet_part) {
+        Some(rows) => rows.changed
+        None => false
+      }
+      if !changed {
+        continue
+      }
+      let names = ooxml_names_sheet(text, name) ||
+        text.to_lower().contains("sheet=\"" + name.to_lower() + "\"")
+      if names {
+        raise OoxmlError(
+          "ooxml: " +
+          part +
+          " names " +
+          name +
+          ", whose rows a section repeats; chart and pivot references are not moved when rows are repeated",
+        )
+      }
+    }
+  }
+}
+
+///|
+fn ooxml_map_defined_names(
+  workbook : String,
+  by_name : Map[String, String],
+  maps : Map[String, RowMap],
+) -> String raise OoxmlError {
+  let out = StringBuilder()
+  let mut pos = 0
+  while pos < workbook.length() {
+    let at = match workbook[pos:].find("<definedName ") {
+      Some(index) => pos + index
+      None => {
+        out.write_string(workbook[pos:].to_owned())
+        break
+      }
+    }
+    out.write_string(workbook[pos:at].to_owned())
+    let open_end = match workbook[at:].find(">") {
+      Some(index) => at + index
+      None => {
+        out.write_string(workbook[at:].to_owned())
+        break
+      }
+    }
+    let open = workbook[at:open_end + 1].to_owned()
+    if open.has_suffix("/>") {
+      out.write_string(open)
+      pos = open_end + 1
+      continue
+    }
+    let close = match workbook[open_end + 1:].find("</definedName>") {
+      Some(index) => open_end + 1 + index
+      None => {
+        out.write_string(workbook[at:].to_owned())
+        break
+      }
+    }
+    let mut body = workbook[open_end + 1:close].to_owned()
+    for name, part in by_name {
+      match maps.get(part) {
+        Some(rows) =>
+          if rows.changed {
+            body = ooxml_map_defined_name(body, name, rows)
+          }
+        None => ()
+      }
+    }
+    out.write_string(open)
+    out.write_string(body)
+    out.write_string("</definedName>")
+    pos = close + "</definedName>".length()
+  }
+  out.to_string()
+}
+
+///|
+// Check and move the references that live outside the worksheet a section
+// repeats: defined names, formulas of other sheets, drawings and charts.
+fn ooxml_check_references(
+  texts : Map[String, String],
+  maps : Map[String, RowMap],
+) -> Unit raise OoxmlError {
+  let (by_name, by_part) = ooxml_sheet_parts(texts)
+  ooxml_check_drawings(texts, by_part, maps)
+  ooxml_check_cross_sheet_formulas(texts, by_part, maps)
+  ooxml_check_chart_refs(texts, by_part, maps)
+  match texts.get("xl/workbook.xml") {
+    Some(workbook) =>
+      if workbook.contains("<definedName ") {
+        let mapped = ooxml_map_defined_names(workbook, by_name, maps)
+        if mapped != workbook {
+          texts["xl/workbook.xml"] = mapped
+        }
+      }
+    None => ()
+  }
 }
