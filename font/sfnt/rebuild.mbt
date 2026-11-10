@@ -207,12 +207,6 @@ fn build_tables(
       out[record + j] = c.to_int().to_byte()
       j += 1
     }
-    // The head table's checkSumAdjustment is zeroed before the global
-    // checksum is computed, so the directory checksum must cover the zeroed
-    // head bytes, not the source face's adjustment.
-    if tag == "head" && bytes.length() >= 12 {
-      put32(bytes, 8, 0U)
-    }
     put32(out, record + 4, checksum(bytes))
     put32(out, record + 8, offset.reinterpret_as_uint())
     put32(out, record + 12, bytes.length().reinterpret_as_uint())
@@ -236,7 +230,13 @@ fn build_tables(
 pub fn Font::standalone_program(self : Font) -> Bytes raise {
   let tables : Map[String, Array[Byte]] = Map([])
   for tag, _ in self.tables {
-    tables[tag] = sfnt_table(self.source, self.tables, tag).to_owned().to_array()
+    let bytes = sfnt_table(self.source, self.tables, tag).to_owned().to_array()
+    // Normalize only this new path: the shared builder keeps its previous
+    // output for every existing caller.
+    if tag == "head" && bytes.length() >= 12 {
+      put32(bytes, 8, 0U)
+    }
+    tables[tag] = bytes
   }
   build_tables(tables, self.metrics.is_cff)
 }

@@ -119,7 +119,8 @@ the actual baseline, not a claim that every format uses fonts:
 | XLSX | Uses only the first face of the database. A selected face from a TTC/OTC is reconstructed as a standalone single-face SFNT before embedding; if that reconstruction fails, the request is rejected with `xlsx: selected collection face cannot be embedded as a standalone font` before conversion. It never embeds the whole collection for a selected face. |
 | PDF | Does not use the database, but the supplied bytes are still validated and parsed into a per-request database before dispatch. |
 | DOCX | Does not use the database, but the supplied bytes are still validated and parsed into a per-request database before dispatch. |
-| Image, AI, TIFF, PSD, EMF, XDW, IDML, Visio, Markdown, HTML, audio, Parquet | Do not receive the database. |
+| Parquet | Receives the database argument but ignores it; it does not use fonts. |
+| Image, AI, TIFF, PSD, EMF, XDW, IDML, Visio, Markdown, HTML, audio | Do not receive the database. |
 
 PDF and DOCX do not use `fontFiles` for layout or embedding, but they do not
 ignore the option either: every supplied file is validated and parsed before
