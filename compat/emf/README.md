@@ -34,3 +34,19 @@ Known gap, separate from clip replacement: `SAVEDC`/`RESTOREDC` still restore
 only the converter's `GdiState` and emit no object `save`/`restore`, so a clip
 set inside a saved DC is not restored on the canvas. The private document that
 motivated the replacement work has no `SAVEDC`/`RESTOREDC` records.
+
+## Pen widths
+
+A GDI pen width is a logical width, and the replay maps logical units to page
+points through the same matrix as the coordinates. A geometric pen therefore
+emits `width * matrix.scale()` page points; a cosmetic pen (width 0) is one
+device pixel on the output, which the object format can only express as a
+fixed 0.75pt hairline in page space. An anisotropic matrix has no single page
+width, so the geometric mean of its axes is used (GDI would draw an elliptical
+pen).
+
+`compat/emf/pen-width-test.mjs` builds synthetic metafiles in memory and reads
+the rendered canvas ink for a geometric pen, a legitimately wide pen, a
+cosmetic pen, an anisotropic viewport, a halved device dpi (page scaling), a
+positive pen below one page point, and browser zoom. It needs `moon build
+--target js browser native_converter_worker render_worker` first.

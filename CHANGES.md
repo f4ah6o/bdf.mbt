@@ -131,6 +131,8 @@
 
 ### Fixed
 
+- Metafile pen widths now follow the logical-to-page transform, correcting overly thick DocuWorks shape outlines. Cosmetic pen widths remain approximate across browser zoom.
+
 - DocuWorks image annotations with kind 7 bitmap bands now retain their
   stored top-to-bottom row order. Ordinary page DIBs and RLE8 keep their
   existing orientation.

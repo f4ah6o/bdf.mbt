@@ -449,11 +449,7 @@ fn Gdi::fill_or_stroke(
     }
   }
   if pen {
-    let scale = self.matrix().scale()
-    let mut width = self.state.pen_width
-    if width <= 0.0 || self.state.pen_cosmetic {
-      width = 0.75 / (if scale > 0.000000001 { scale } else { 0.000000001 })
-    }
+    let width = self.pen_page_width()
     self.object.stroke_color(self.state.pen_color)
     self.object.line(Float::from_double(width), 1, 1, 10)
     let style = self.state.pen_style & 0xf

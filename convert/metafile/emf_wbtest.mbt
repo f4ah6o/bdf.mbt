@@ -982,3 +982,42 @@ test "GDI snapshots isolate every saved DC field" {
   assert_eq(saved.world.f, expected.world.f)
   assert_eq(saved.cur, expected.cur)
 }
+
+///|
+/// The page width a pen emits. The fixture is 960 device units over 25mm, so
+/// one device unit is 72 / (25.4 * 960 / 25) = 0.073819 page points.
+test "emf pen widths are logical widths mapped to page points" {
+  let stroke = fn(width : Int32, extra : Array[Bytes]) -> Double {
+    let records : Array[Bytes] = []
+    for record in extra {
+      records.push(record)
+    }
+    records.push(t_record(38, t_i32s([1, 0, width, 0, 0]))) // CREATEPEN
+    records.push(t_record(37, t_i32s([1]))) // SELECTOBJECT
+    records.push(t_record(27, t_i32s([100, 480]))) // MOVETOEX
+    records.push(t_record(54, t_i32s([860, 480]))) // LINETO
+    records.push(t_record(14, t_i32s([0, 0, 0]))) // EOF
+    let emf = t_emf([0, 0, 2540, 2540], [960, 960], [25, 25], records)
+    let (encoded, _) = t_draw(emf, 72.0, 72.0, false)
+    let mut found = -1.0
+    for command in t_commands(encoded) {
+      if command is @render.Line(value, _, _, _) {
+        found = value
+      }
+    }
+    found
+  }
+  // A geometric pen is a logical width: 40 units is 2.953 page points.
+  assert_true(t_close(stroke(40, []), 2.9528))
+  // A legitimately wide pen stays wide.
+  assert_true(t_close(stroke(200, []), 14.7638))
+  // A cosmetic pen is a fixed hairline in page space, not a logical width.
+  assert_true(t_close(stroke(0, []), 0.75))
+  // An anisotropic viewport halves y: the geometric mean of the axes.
+  let anisotropic = [
+    t_record(17, t_i32s([8])), // SETMAPMODE MM_ANISOTROPIC
+    t_record(9, t_i32s([2540, 2540])), // SETWINDOWEXTEX
+    t_record(11, t_i32s([2540, 1270])), // SETVIEWPORTEXTEX
+  ]
+  assert_true(t_close(stroke(40, anisotropic), 2.0879))
+}
