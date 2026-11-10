@@ -262,6 +262,23 @@ fn TextFiller::section(
 }
 
 ///|
+/// Emit a line as it is, with its tags.
+fn TextFiller::emit_raw(self : TextFiller, template : TextLine) -> Unit {
+  if template.brk {
+    self.out.push({ cells: [], brk: true, table: 0, no: 0 })
+    return
+  }
+  let builder : TextLineBuilder = { cells: [], cols: 0, conts: [] }
+  self.text(builder, template.src, template.attrs)
+  self.out.push({
+    cells: text_trim(builder.cells),
+    brk: false,
+    table: 0,
+    no: template.no,
+  })
+}
+
+///|
 fn TextFiller::emit(
   self : TextFiller,
   template : TextLine,
@@ -751,6 +768,30 @@ fn TextFiller::image(self : TextFiller, pages : Array[TextPage]) -> @textpart.Im
 pub(all) struct TextFormResult {
   image : @textpart.Image
   tables : Array[Array[Int]]
+}
+
+///|
+/// Show a text template as it is: its lines with their tags, on the pages of
+/// its paper (Show of converter/textform of upstream).
+pub fn show_result(template : String) -> TextFormResult raise TextFormError {
+  let tpl = parse_template(@utf8.encode(template))
+  let filler = text_filler(tpl, TextTemplateData::new(Map([])))
+  for line in tpl.lines {
+    filler.emit_raw(line)
+  }
+  let pages = filler.paginate()
+  let tables : Array[Array[Int]] = []
+  for page in pages {
+    let rows : Array[Int] = []
+    for i, line in page.lines {
+      rows.push(page.tables[i])
+      if line.tall() {
+        rows.push(page.tables[i])
+      }
+    }
+    tables.push(rows)
+  }
+  { image: filler.image(pages), tables }
 }
 
 ///|

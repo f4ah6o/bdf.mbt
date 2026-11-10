@@ -99,7 +99,8 @@
 - `form/tag` is ported: text and tags, values, sections, pictures, number
   formats, modes, text columns and code options, plus scopes, JSON truthiness
   and items, date parsing, value text, section variables and field collection,
-  with the upstream tag and scope tests as MoonBit tests (12 tests).
+  with the location of each tag and the JSON form of a field, with the
+  upstream tag and scope tests as MoonBit tests (12 tests).
 - `form/textpart` is ported for the print image: width/cells/tall/rows, plain
   text with margins/paper/CRLF, the version-1 JSON encode/decode with its
   limits and checks, and the BDF part glue (`from_document`, `Image::add_to`)
@@ -126,7 +127,9 @@
   in fills and overlays, hexadecimal field names, surrogate
   pairs, control-character escapes, optional read-only skipping, escaped
   literals, UTF-16BE hex, buttons, appearance on-state names, referenced
-  AcroForms and `/NeedAppearances`), and draws a blank-page value overlay
+  AcroForms and `/NeedAppearances`; the type of a field is read from the
+  whole object that holds its name, so a writer that puts `/FT` before `/T`
+  is read right), and draws a blank-page value overlay
   (checkbox `X`, multiline flags, maximum lengths, clipped wrapped values, MediaBox or CropBox sizing, optional
   read-only skipping).
 - `form/ooxml` replaces `{{name}}` tags in OOXML XML parts, including tags
@@ -160,7 +163,10 @@
   opacity, with per-column table border colors/widths/styles (36 tests).
 - `form/schema` writes the JSON Schema of the data of a template from its
   fields and a sample (objects, lists, conditions, pictures/codes, number
-  formats, options, defaults, slots and the `x-bdf` keyword), with 3 tests.
+  formats, options, defaults, slots and the `x-bdf` keyword), and names the
+  data of a template (`names`), checks a name that a fill may leave open
+  (`has_name`) and writes the schema of the names that a fill leaves open
+  (`schema_open`), with 3 tests.
 - `form/textform` reads a plain-text template: the front matter (grid,
   margins, skip/title, font, ambiguous width, comments, quoted scalars and
   flow/block mappings), body lines and tags, page breaks, character/line
@@ -178,8 +184,48 @@
   matter font family and converts from JSON/YAML form/data sources (7 tests). Font
   embedding and the remaining font
   options of the upstream converter remain.
-- Next are the textform font options, the form partials and the other
-  per-format fillers.
+- `form` is the entry point of template filling, as upstream's `form`
+  package. `compile` checks a template and makes a `.bdft` that holds it with
+  the names its tags look up, the JSON Schema of its data and an optional
+  sample; `fill` fills a template or a compiled template and returns the
+  document, the warnings, the fields and the format; `fields`, `describe` and
+  `schema_of` read a template without filling it. The formats are xlsx, docx,
+  pptx, pdf, pdfme and text, and the fields of each are read without filling
+  it (`inspect`), with the location of each tag: the cell of a workbook
+  (`Sheet1!B5`), the part of an OOXML document, the line and column of a text
+  template, the AcroForm field of a PDF. `Options::strict` makes a name that
+  the data does not have an error in every format, as upstream's `Strict`
+  does: a name inside a branch that is not taken is not asked for, a name of
+  a list is asked for in each item, `null` is a value (an empty one), and the
+  name of a condition is asked for before the branch is chosen. Without it
+  the fill warns `the data has no "name"; it is left empty` and leaves the
+  tag empty; a PDF field keeps what the file has. A fill that leaves names of
+  the data open (`Options::open`, `OPEN_ALL`) makes a partly filled form
+  (`.bdff`) of the values it holds, which another fill completes into the
+  document that the template filled with all of the data at once, and turns
+  strict off as upstream does; the description of a compiled template is the
+  `tpl` part of upstream (version 1, the `source`/`from`/`digest` hashes,
+  `filled`, `open`, `signed`), and `read_template` checks its version, its
+  hashes and the 256 MiB template and 64 MiB description limits. A compiled
+  template without a sample shows the template with its tags, as upstream
+  does, and `fill` reports the fields of the template it filled. 55 tests.
+  Not ported: signing (`Sign`, `Signed`, `Values`, `VerifyValues`; the
+  `signed` values of a description are kept as they are read, and no fill
+  makes or checks a signature), inlining pictures from the file system into
+  the data (`data:` URLs pass through), and the `at` of a docx/pptx field is
+  the part name, not the paragraph or slide label of upstream. PDF form
+  values are written into the PDF, but `convert/pdf` does not draw them into
+  the page content, so they are not in the text index. Strict is not
+  complete everywhere: `form/pdf` reports no warning per field without it
+  (the field keeps what the file has), its `skip_read_only` also leaves
+  read-only fields out of the strict check, and `form/pdfme` does not check
+  the names that only an expression of a template uses (upstream does). A
+  `radioGroup` of a pdfme template is a string with its options, not the
+  boolean that upstream's `isMark` makes it, because the painter draws its
+  options.
+- Next are the textform font options, form signing and picture inlining, the
+  `at` of OOXML fields, and the number formats, pictures and barcodes of the
+  OOXML fills.
 - CI runs `moon check/test/build` for js and wasm-gc, a demo job that
   builds and tests the demo, a parity workflow that converts the document
   fixtures with the upstream Wasm package and the MoonBit worker, and the
@@ -385,7 +431,8 @@
 - Print: IPP client/server, PWG/URF/PCLm encoders and readers, PDF and
   raster printing, DNS-SD records and browse over a supplied transport.
 - Not complete: upstream document parity is still 12/52; PDF form writing,
-  form partials, OOXML rows that cross table structure, pdfme base-PDF
-  content, BDF rasterization, real CUPS/UDP sockets and several documented
-  converter subsets remain gaps. This port is not claimed to be complete.
+  form signing and picture inlining, OOXML rows that cross table structure,
+  pdfme base-PDF content, BDF rasterization, real CUPS/UDP sockets and
+  several documented converter subsets remain gaps. This port is not claimed
+  to be complete.
 

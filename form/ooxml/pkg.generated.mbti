@@ -1,12 +1,21 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "f4ah6o/bdf/form/ooxml"
 
+import {
+  "f4ah6o/bdf/form/tag",
+  "moonbitlang/core/json",
+}
+
 // Values
-pub fn expand_controls(String, Json) -> (String, Array[String])
+pub fn expand_controls(String, @json.Json, strict? : Bool) -> (String, Array[String]) raise OoxmlError
 
-pub fn fill_tags(String, Json) -> (String, Array[String])
+pub fn fill_tags(String, @json.Json, strict? : Bool) -> (String, Array[String]) raise OoxmlError
 
-pub fn fill_zip(Bytes, Json) -> (Bytes, Array[String]) raise OoxmlError
+pub fn fill_zip(Bytes, @json.Json, strict? : Bool) -> (Bytes, Array[String]) raise OoxmlError
+
+pub fn inspect_tags(String) -> Array[@tag.Field] raise OoxmlError
+
+pub fn inspect_zip(Bytes) -> Array[@tag.Field] raise OoxmlError
 
 pub fn stored_zip(Array[(String, Bytes)]) -> Bytes raise OoxmlError
 

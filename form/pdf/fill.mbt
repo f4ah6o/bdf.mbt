@@ -105,23 +105,46 @@ fn find_t(body : String) -> Int? {
 }
 
 ///|
-fn data_values(data : Json, name : String) -> Array[String] {
-  let values : Array[String] = []
+/// The value of a name of the data: the name as it is, or its parts in the
+/// objects around it (as `applicant.name`).
+fn pdf_lookup(data : Json, name : String) -> Json? {
   match data {
     Json::Object(object) =>
       match object.get(name) {
-        Some(Json::Array(items)) =>
-          for item in items {
-            let text = match item {
-              Json::String(text) => text
-              Json::Number(number, ..) => number.to_string()
-              Json::True => "true"
-              Json::False => "false"
-              _ => ""
+        Some(value) => Some(value)
+        None => {
+          let mut current = data
+          for part in name.split(".") {
+            current = match current {
+              Json::Object(object) =>
+                match object.get(part.to_owned()) {
+                  Some(value) => value
+                  None => return None
+                }
+              _ => return None
             }
-            values.push(text)
           }
-        _ => ()
+          Some(current)
+        }
+      }
+    _ => None
+  }
+}
+
+///|
+fn data_values(data : Json, name : String) -> Array[String] {
+  let values : Array[String] = []
+  match pdf_lookup(data, name) {
+    Some(Json::Array(items)) =>
+      for item in items {
+        let text = match item {
+          Json::String(text) => text
+          Json::Number(number, ..) => number.to_string()
+          Json::True => "true"
+          Json::False => "false"
+          _ => ""
+        }
+        values.push(text)
       }
     _ => ()
   }
@@ -515,20 +538,16 @@ fn button_on_state_full(body : String, text : String) -> String? {
 
 ///|
 fn data_button_state(data : Json, name : String, on : String) -> String? {
-  match data {
-    Json::Object(object) =>
-      match object.get(name) {
-        Some(Json::True) => Some(on)
-        Some(Json::False) => Some("/Off")
-        Some(Json::String(text)) =>
-          if text == "" {
-            None
-          } else if text.has_prefix("/") {
-            Some(text)
-          } else {
-            Some("/" + text)
-          }
-        _ => None
+  match pdf_lookup(data, name) {
+    Some(Json::True) => Some(on)
+    Some(Json::False) => Some("/Off")
+    Some(Json::String(text)) =>
+      if text == "" {
+        None
+      } else if text.has_prefix("/") {
+        Some(text)
+      } else {
+        Some("/" + text)
       }
     _ => None
   }
@@ -536,15 +555,11 @@ fn data_button_state(data : Json, name : String, on : String) -> String? {
 
 ///|
 fn data_text(data : Json, name : String) -> String? {
-  match data {
-    Json::Object(object) =>
-      match object.get(name) {
-        Some(Json::String(text)) => Some(text)
-        Some(Json::Number(number, ..)) => Some(number.to_string())
-        Some(Json::True) => Some("true")
-        Some(Json::False) => Some("false")
-        _ => None
-      }
+  match pdf_lookup(data, name) {
+    Some(Json::String(text)) => Some(text)
+    Some(Json::Number(number, ..)) => Some(number.to_string())
+    Some(Json::True) => Some("true")
+    Some(Json::False) => Some("false")
     _ => None
   }
 }
@@ -594,9 +609,20 @@ pub fn fill_pdf(
   pdf_bytes : Bytes,
   data_bytes : Bytes,
   skip_read_only~ : Bool = false,
+  strict~ : Bool = false,
 ) -> Bytes raise PdfFillError {
   let data = @json.parse(@utf8.decode_lossy(data_bytes[:])) catch {
     _ => raise PdfFillError("form/pdf: the data is not JSON")
+  }
+  if strict {
+    for field in read_fields(pdf_bytes) {
+      if field.typ == "/Btn" || (skip_read_only && field.read_only) {
+        continue
+      }
+      if pdf_lookup(data, field.name) is None {
+        raise PdfFillError("form/pdf: the data has no \"" + field.name + "\"")
+      }
+    }
   }
   let text = @utf8.decode_lossy(pdf_bytes[:])
   let old_xref = match pdf_startxref(text) {

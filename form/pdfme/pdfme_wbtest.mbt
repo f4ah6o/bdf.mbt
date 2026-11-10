@@ -103,7 +103,7 @@ test "pdfme fills variables" {
 test "pdfme draws text boxes" {
   let template =
     #|{"basePdf":{"width":100,"height":50},"schemas":[[{"name":"box","type":"text","content":"Boxed","position":{"x":10,"y":10},"width":50,"height":10,"fontSize":10,"backgroundColor":"#eeeeee","borderColor":"#000000","borderWidth":0.5}]]}
-  let result = fill(@utf8.encode(template), @utf8.encode("{}"))
+  let result = fill(@utf8.encode(template), @utf8.encode("{\"box\":\"Boxed\"}"))
   let text = pdfme_text(result.bdf)
   assert_true(text.contains("Boxed"), msg=text)
   assert_eq(result.warnings.length(), 0)
@@ -114,7 +114,7 @@ test "pdfme draws text boxes" {
 test "pdfme reads a base PDF page size" {
   let base = "JVBERi0xLjQKMSAwIG9iajw8L1R5cGUvUGFnZS9NZWRpYUJveFswIDAgNzIwIDM2MF0+PgplbmRvYmoKJSVFT0YK"
   let template = "{\"basePdf\":\"data:application/pdf;base64," + base + "\",\"schemas\":[[{\"name\":\"title\",\"type\":\"text\",\"content\":\"Base\",\"position\":{\"x\":10,\"y\":10},\"width\":50,\"height\":10}]]}"
-  let result = fill(@utf8.encode(template), @utf8.encode("{}"))
+  let result = fill(@utf8.encode(template), @utf8.encode("{\"title\":\"Base\"}"))
   assert_eq(result.pages, 1)
   let document = @core.open_single(result.bdf)
   assert_eq(document.manifest.views[0].pages[0].width, 720.0)
@@ -360,7 +360,7 @@ test "pdfme draws a Code 93 barcode" {
 test "pdfme uses table column widths" {
   let template =
     #|{"basePdf":{"width":120,"height":80},"schemas":[[{"name":"lines","type":"table","position":{"x":10,"y":10},"width":100,"height":40,"head":["item","qty","note"],"headWidthPercentages":[50,20,30],"fontSize":9,"rowHeight":8,"cellPadding":2,"borderColor":"#CC0000","borderWidth":0.8,"borderStyle":"dashed"}]]}
-  let result = fill(@utf8.encode(template), @utf8.encode("{}"))
+  let result = fill(@utf8.encode(template), @utf8.encode("{\"lines\":[]}"))
   assert_eq(result.warnings.length(), 0)
   let document = @core.open_single(result.bdf)
   let resources = @core.decode_object_resources(
@@ -424,7 +424,7 @@ test "pdfme rotates a base PDF page" {
 test "pdfme draws base PDF content" {
   let base = "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvQ29udGVudHMgNCAwIFIgPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCAxOCA+PgpzdHJlYW0KMC41IDAuNSAxMCAxMCByZSBmCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDUKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMjAyIDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNSAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjcwCiUlRU9GCg=="
   let template = "{\"basePdf\":\"data:application/pdf;base64," + base + "\",\"schemas\":[[{\"name\":\"title\",\"type\":\"text\",\"content\":\"Base\",\"position\":{\"x\":10,\"y\":10},\"width\":50,\"height\":10}]]}"
-  let result = fill(@utf8.encode(template), @utf8.encode("{}"))
+  let result = fill(@utf8.encode(template), @utf8.encode("{\"title\":\"Base\"}"))
   assert_eq(result.warnings.length(), 0)
   let document = @core.open_single(result.bdf)
   assert_eq(document.manifest.views[0].pages[0].layers.length(), 2)
@@ -472,7 +472,7 @@ test "pdfme places JPEG images" {
 test "pdfme draws a signature box" {
   let template =
     #|{"basePdf":{"width":100,"height":50},"schemas":[[{"name":"sig","type":"signature","position":{"x":5,"y":5},"width":50,"height":10,"opacity":0.5,"borderColor":"#000000","borderWidth":1}]]}
-  let result = fill(@utf8.encode(template), @utf8.encode("{}"))
+  let result = fill(@utf8.encode(template), @utf8.encode("{\"sig\":\"\"}"))
   assert_eq(result.warnings.length(), 0)
   let document = @core.open_single(result.bdf)
   let resources = @core.decode_object_resources(
@@ -509,7 +509,7 @@ test "pdfme draws radio groups" {
 test "pdfme draws dashed rectangles" {
   let template =
     #|{"basePdf":{"width":100,"height":50},"schemas":[[{"name":"box","type":"rectangle","position":{"x":10,"y":10},"width":50,"height":20,"borderColor":"#000000","borderWidth":0.5,"borderStyle":"dashed","opacity":0.5}]]}
-  let result = fill(@utf8.encode(template), @utf8.encode("{}"))
+  let result = fill(@utf8.encode(template), @utf8.encode("{\"sig\":\"\"}"))
   assert_eq(result.warnings.length(), 0)
   let document = @core.open_single(result.bdf)
   let resources = @core.decode_object_resources(

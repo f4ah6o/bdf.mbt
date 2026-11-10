@@ -222,8 +222,26 @@ fn merge_context(root : Json, item : Json) -> Json {
 }
 
 ///|
+/// Report a name the data does not have: an error in strict mode, a warning
+/// that the tag is left empty otherwise.
+fn missing_name(
+  name : String,
+  strict : Bool,
+  warnings : Array[String],
+) -> Unit raise OoxmlError {
+  if strict {
+    raise OoxmlError("the data has no \"" + name + "\"")
+  }
+  warnings.push("the data has no \"" + name + "\"; it is left empty")
+}
+
+///|
 /// Expand {{#name}}…{{/name}} and {{^name}}…{{/name}} conditions.
-pub fn expand_controls(xml : String, values : Json) -> (String, Array[String]) {
+pub fn expand_controls(
+  xml : String,
+  values : Json,
+  strict~ : Bool = false,
+) -> (String, Array[String]) raise OoxmlError {
   let warnings : Array[String] = []
   let out = StringBuilder()
   let mut pos = 0
@@ -257,7 +275,13 @@ pub fn expand_controls(xml : String, values : Json) -> (String, Array[String]) {
       }
     }
     let inner = xml[end + 2:close]
-    let value = lookup(values, name)
+    let value = match lookup(values, name) {
+      Some(value) => Some(value)
+      None => {
+        missing_name(name, strict, warnings)
+        None
+      }
+    }
     let items = match value {
       Some(Json::Array(items)) => Some(items)
       _ => None
@@ -266,8 +290,12 @@ pub fn expand_controls(xml : String, values : Json) -> (String, Array[String]) {
       for item in items {
         if item is Json::Object(_) {
           let context = merge_context(values, item)
-          let (expanded, inner_warnings) = expand_controls(inner.to_owned(), context)
-          let (filled, tag_warnings) = fill_tags(expanded, context)
+          let (expanded, inner_warnings) = expand_controls(
+            inner.to_owned(),
+            context,
+            strict~,
+          )
+          let (filled, tag_warnings) = fill_tags(expanded, context, strict~)
           out.write_string(filled)
           for warning in inner_warnings {
             warnings.push(warning)
@@ -288,7 +316,11 @@ pub fn expand_controls(xml : String, values : Json) -> (String, Array[String]) {
     }
     let keep = if positive { condition } else { !condition }
     if keep {
-      let (expanded, inner_warnings) = expand_controls(inner.to_owned(), values)
+      let (expanded, inner_warnings) = expand_controls(
+        inner.to_owned(),
+        values,
+        strict~,
+      )
       out.write_string(expanded)
       for warning in inner_warnings {
         warnings.push(warning)
@@ -302,7 +334,11 @@ pub fn expand_controls(xml : String, values : Json) -> (String, Array[String]) {
 ///|
 /// Replace {{name}} tags that stay inside one XML text node. Tags split by
 /// markup and control tags are reported and left as they are.
-pub fn fill_tags(xml : String, values : Json) -> (String, Array[String]) {
+pub fn fill_tags(
+  xml : String,
+  values : Json,
+  strict~ : Bool = false,
+) -> (String, Array[String]) raise OoxmlError {
   let warnings : Array[String] = []
   let out = StringBuilder()
   let mut pos = 0
@@ -343,7 +379,10 @@ pub fn fill_tags(xml : String, values : Json) -> (String, Array[String]) {
             Some(text) => text
             None => ""
           }
-        None => ""
+        None => {
+          missing_name(name, strict, warnings)
+          ""
+        }
       }
       out.write_string(xml_escape(value))
     }
@@ -354,7 +393,11 @@ pub fn fill_tags(xml : String, values : Json) -> (String, Array[String]) {
 
 ///|
 /// Fill the tags of every XML part of an OOXML package and rebuild it.
-pub fn fill_zip(data : Bytes, values : Json) -> (Bytes, Array[String]) raise OoxmlError {
+pub fn fill_zip(
+  data : Bytes,
+  values : Json,
+  strict~ : Bool = false,
+) -> (Bytes, Array[String]) raise OoxmlError {
   let archive = @zip.open_zip(data) catch {
     _ => raise OoxmlError("ooxml: the package is not a ZIP")
   }
@@ -369,8 +412,12 @@ pub fn fill_zip(data : Bytes, values : Json) -> (Bytes, Array[String]) raise Oox
     }
     if entry.name.has_suffix(".xml") || entry.name.has_suffix(".rels") {
       let text = @utf8.decode_lossy(raw[:])
-      let (expanded, control_warnings) = expand_controls(text, values)
-      let (filled, tag_warnings) = fill_tags(expanded, values)
+      let (expanded, control_warnings) = expand_controls(text, values, strict~) catch {
+        OoxmlError(message) => raise OoxmlError(entry.name + ": " + message)
+      }
+      let (filled, tag_warnings) = fill_tags(expanded, values, strict~) catch {
+        OoxmlError(message) => raise OoxmlError(entry.name + ": " + message)
+      }
       for warning in control_warnings {
         warnings.push(entry.name + ": " + warning)
       }

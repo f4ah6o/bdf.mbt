@@ -228,18 +228,39 @@ fn find_values(text : String, start : Int, limit : Int) -> Array[String] {
 
 ///|
 fn find_type(text : String, start : Int, limit : Int) -> String {
-  let end = if limit < start + 512 { limit } else { start + 512 }
-  let section = text[start:end]
+  // Writers put `/FT` before `/T` in the object of a field, so the type is
+  // looked for in the whole object that holds the name, not only after it.
+  let mut begin = 0
+  let mut i = start
+  while i > 0 {
+    if i >= 4 && text[i - 4:i] == " obj" {
+      begin = i
+      break
+    }
+    i -= 1
+  }
+  let mut end = text.length()
+  match text[start:].find("endobj") {
+    Some(index) => end = start + index
+    None => ()
+  }
+  if limit < end {
+    end = limit
+  }
+  if end < begin {
+    end = begin
+  }
+  let section = text[begin:end]
   let at = match section.find("/FT") {
-    Some(index) => start + index
+    Some(index) => begin + index
     None => return ""
   }
   let mut i = skip_spaces(text, at + 3)
-  let begin = i
+  let value_at = i
   while i < text.length() && !is_space(text[i].to_char().unwrap()) {
     i += 1
   }
-  text[begin:i].trim().to_owned()
+  text[value_at:i].trim().to_owned()
 }
 
 ///|

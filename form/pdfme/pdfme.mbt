@@ -189,6 +189,41 @@ fn pdfme_wrap_text(text : String, size : Double, width : Double) -> Array[String
 }
 
 ///|
+/// The names of the variables of a field of several variables: the names it
+/// lists, or those of its text.
+fn pdfme_field_variables(field : Json) -> Array[String] {
+  let listed = pdfme_strings(field, "variables")
+  if !listed.is_empty() {
+    return listed
+  }
+  pdfme_variables(text_of(json_field(field, "text"), ""))
+}
+
+///|
+/// The values of a field of several variables: the object of the data that
+/// the field names, or the values of its variables by their own names.
+fn pdfme_variable_values(data : Json, field : Json) -> Json? {
+  let name = text_of(json_field(field, "name"), "")
+  match json_field(data, name) {
+    Some(value) => Some(value)
+    None => {
+      let values : Map[String, Json] = Map([])
+      for variable in pdfme_field_variables(field) {
+        match json_field(data, variable) {
+          Some(value) => values[variable] = value
+          None => ()
+        }
+      }
+      if values.is_empty() {
+        None
+      } else {
+        Some(Json::object(values))
+      }
+    }
+  }
+}
+
+///|
 fn FieldPainter::draw_text(
   self : FieldPainter,
   field : Json,
@@ -199,8 +234,7 @@ fn FieldPainter::draw_text(
   let typ = text_of(json_field(field, "type"), "text")
   let mut text = field_text(field, data)
   if typ == "multiVariableText" {
-    let name = text_of(json_field(field, "name"), "")
-    let values = match json_field(data, name) {
+    let values = match pdfme_variable_values(data, field) {
       Some(value) => value
       None =>
         match json_field(field, "content") {
@@ -2443,8 +2477,68 @@ fn pdfme_page_json(
 }
 
 ///|
+/// The kinds of fields that the data fills: the texts, the marks, the
+/// sections, the pictures and the codes (converter/pdfme of upstream).
+fn pdfme_fills_data(typ : String) -> Bool {
+  match typ {
+    "text" | "select" | "date" | "time" | "dateTime" => true
+    "checkbox" | "radioGroup" | "circleMark" => true
+    "table" | "list" | "multiVariableText" | "image" | "signature" | "svg" => true
+    "qrcode" | "ean13" | "ean8" | "code39" | "code128" | "nw7" | "itf14" | "upca" => true
+    "japanpost" | "upce" | "gs1datamatrix" | "pdf417" => true
+    _ => false
+  }
+}
+
+///|
+/// Tell the fields that the data has no value for: an error in strict mode,
+/// a warning that the field is left empty otherwise. A field of several
+/// variables is filled by its own name, or by the names of its variables.
+fn pdfme_check(
+  template : Json,
+  data : Json,
+  strict : Bool,
+  warnings : Array[String],
+) -> Unit raise PdfmeError {
+  let seen : Map[String, Bool] = Map([])
+  for page in pdfme_pages(template) {
+    let fields = match page {
+      Json::Array(fields) => fields
+      _ => []
+    }
+    for field in fields {
+      let name = text_of(json_field(field, "name"), "")
+      if name == "" || pdfme_read_only(field) || seen.contains(name) {
+        continue
+      }
+      seen[name] = true
+      let typ = text_of(json_field(field, "type"), "text")
+      if !pdfme_fills_data(typ) {
+        continue
+      }
+      let present = if typ == "multiVariableText" {
+        pdfme_variable_values(data, field) is Some(_)
+      } else {
+        json_field(data, name) is Some(_)
+      }
+      if present {
+        continue
+      }
+      if strict {
+        raise PdfmeError("pdfme: the data has no \"" + name + "\"")
+      }
+      warnings.push("the data has no \"" + name + "\"; it is left empty")
+    }
+  }
+}
+
+///|
 /// Fill a pdfme template (JSON) with data (a JSON object).
-pub fn fill(template_bytes : Bytes, data_bytes : Bytes) -> FillResult raise PdfmeError {
+pub fn fill(
+  template_bytes : Bytes,
+  data_bytes : Bytes,
+  strict~ : Bool = false,
+) -> FillResult raise PdfmeError {
   let template = @json.parse(@utf8.decode_lossy(template_bytes[:])) catch {
     _ => raise PdfmeError("pdfme: the template is not JSON")
   }
@@ -2461,6 +2555,7 @@ pub fn fill(template_bytes : Bytes, data_bytes : Bytes) -> FillResult raise Pdfm
   let writer = @core.DocumentWriter::new()
   let static_fields = static_schema(template)
   let warnings : Array[String] = []
+  pdfme_check(template, data, strict, warnings)
   let base = match base_pdf_document(template) {
     Some((document, base_warnings)) => {
       copy_base_parts(document, writer)

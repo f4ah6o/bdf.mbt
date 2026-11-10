@@ -1,0 +1,93 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/form"
+
+import {
+  "f4ah6o/bdf/form/tag",
+  "moonbitlang/core/json",
+}
+
+// Values
+pub const FORMAT_DOCX : String = "docx"
+
+pub const FORMAT_PDF : String = "pdf"
+
+pub const FORMAT_PDFME : String = "pdfme"
+
+pub const FORMAT_PPTX : String = "pptx"
+
+pub const FORMAT_TEXT : String = "text"
+
+pub const FORMAT_XLSX : String = "xlsx"
+
+pub const MAX_TEMPLATE_PART : Int32 = 67108864
+
+pub const MAX_TEMPLATE_SIZE : Int32 = 268435456
+
+pub const OPEN_ALL : String = "*"
+
+pub const PART_SOURCE : String = "src"
+
+pub const PART_TEMPLATE : String = "tpl"
+
+pub const TEMPLATE_VERSION : Int32 = 1
+
+pub fn compile(Bytes, String, Options) -> Compiled raise FormError
+
+pub fn describe(Bytes) -> (String, @json.Json?) raise FormError
+
+pub fn fields(Bytes) -> Array[@tag.Field] raise FormError
+
+pub fn fill(Bytes, Options) -> Result raise FormError
+
+pub fn read_template(Bytes) -> (Template, Bytes) raise FormError
+
+pub fn schema_of(Bytes, @json.Json?) -> String raise FormError
+
+// Errors
+pub suberror FormError {
+  FormError(String)
+}
+
+// Types and methods
+pub(all) struct Compiled {
+  bdf : Bytes
+  template : Template
+  warnings : Array[String]
+}
+
+pub(all) struct Options {
+  data : @json.Json?
+  strict : Bool
+  open : Array[String]
+}
+pub fn Options::new(data? : @json.Json, strict? : Bool, open? : Array[String]) -> Self
+
+pub(all) struct Result {
+  bdf : Bytes
+  warnings : Array[String]
+  fields : Array[@tag.Field]
+  format : String
+  partial : Template?
+}
+
+pub(all) struct Template {
+  version : Int32
+  format : String
+  name : String
+  source : String
+  fields : Array[@tag.Field]
+  sample : @json.Json?
+  schema : @json.Json?
+  filled : @json.Json?
+  open : Array[String]
+  from : String
+  signed : Array[String]
+  mut digest : String
+}
+pub fn Template::from_json(@json.Json) -> Self raise FormError
+pub fn Template::is_partial(Self) -> Bool
+pub fn Template::to_json(Self) -> @json.Json
+
+// Type aliases
+
+// Traits

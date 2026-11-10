@@ -18,11 +18,64 @@
   worker's existing `request.options.pages`. The page count, summary and text
   index describe the selected pages, and a link to a page left out is dropped.
   An invalid selection is an error, as upstream's `ParsePages` makes it.
+- `form` is the entry point of template filling, as upstream's `form`
+  package. `compile` checks a template and makes a `.bdft` that holds it with
+  the names its tags look up, the JSON Schema of its data and an optional
+  sample; `fill` fills a template or a compiled template; `fields`,
+  `describe` and `schema_of` read a template without filling it. The formats
+  are xlsx, docx, pptx, pdf, pdfme and text.
+- A fill that leaves names of the data open (`Options::open`, `OPEN_ALL`)
+  makes a partly filled form (`.bdff`) of the values it holds, which another
+  fill completes into the document that the template filled with all of the
+  data at once. The description of a compiled template is the `tpl` part of
+  upstream (version 1, the `source`/`from`/`digest` hashes, `filled`, `open`
+  and `signed`), and `read_template` checks its version, its hashes and the
+  256 MiB template and 64 MiB description limits.
+- `form/xlsx`, `form/docx`, `form/pptx`, `form/pdf`, `form/pdfme` and
+  `form/textform` read the fields of a template without filling it
+  (`inspect`), with the location of each tag: the cell of a workbook, the
+  part of an OOXML document, the line and column of a text template.
+- `form/schema` gains `names`, `schema_open` and `has_name`: the names of the
+  data of a template, and the schema of the names that a fill leaves open.
+- `form/tag` fields carry the locations of their tags (`at`) and convert to
+  and from the JSON of upstream's `Field`.
+- `core` gains `sha256_hex` and `hash_of` for the hashes that a compiled
+  template names its parts by.
+- A fill without `strict` tells the names that the data has not, in every
+  format: `the data has no "name"; it is left empty` for a tag of an OOXML
+  document and for a field of a pdfme template. `form/xlsx` and `form/pptx`
+  now keep the warnings of the fill instead of dropping them.
+- `form/pdf` reads a field name as the parts of an object (`applicant.name`)
+  when the data has no value under the whole name, as upstream does.
+- A field of several variables of a pdfme template is filled by the values of
+  its variables when the data has no object under the name of the field.
+- `form/textform.show_result` shows a text template as it is, with its tags,
+  on the pages of its paper, as upstream's `Show` does.
 
 ### Changed
 
+- `form/tag.Field.kind` is mutable, so that a field that several tags name
+  merges into one.
+
 ### Fixed
 
+- `form.compile` without sample data shows the template with its tags instead
+  of filling it with an empty object, which replaced every tag with nothing.
+  A template of pdfme keeps what its designer left in its fields as its
+  sample, and that sample is not checked strictly, as upstream does.
+- `form.fill` reports the fields of the template it filled (`Result.fields`)
+  instead of an empty list.
+- `form/pdfme.inspect` leaves out the shapes of a template (`line`,
+  `rectangle` and the other types that nothing fills) instead of reporting
+  them as text fields, keeps the options of a `select`, and reads a
+  `circleMark` as a boolean.
+- `Options.strict` is honored by every format, not only by text: a name that
+  the data does not have is an error in xlsx, docx, pptx, pdf and pdfme, as
+  upstream's `Strict` makes it. A name inside a branch that is not taken is
+  not asked for, a name of a list is asked for in each item, `null` is a
+  value (an empty one), and the name of a condition is asked for before the
+  branch is chosen. A fill that leaves names open turns strict off, as
+  upstream does.
 - EMF text with a Shift_JIS font charset now preserves Japanese characters,
   including searchable body text in DocuWorks documents.
 
@@ -33,6 +86,9 @@
   hit lands on the right character after an earlier run is left out.
 - DocuWorks index runs keep the separator the viewer computes, so phrases that
   span a line break stay searchable.
+- `form/pdf` reads the type of a field (`/FT`) from the whole object that
+  holds its name, so a PDF whose writer puts `/FT` before `/T` (as most do)
+  gets the right field types instead of the type of the next field.
 
 ### Deprecated
 
@@ -41,3 +97,18 @@
 ### Security
 
 ### Migration
+
+- `form/pdf.read_fields` now reports the type of a field whose writer puts
+  `/FT` before `/T`. A caller that treated an empty type as a text field sees
+  `/Tx` instead.
+- A partly filled form (`.bdff`) is completed with `form.fill`; `form.compile`
+  refuses it, as it refuses a compiled template (`.bdft`).
+- `form.fill` reads the fields of the template before it fills it, so a PDF
+  without form fields is an error even without `Options::open`, as upstream's
+  `ErrNoForm` makes it.
+- `form/xlsx.fill`, `form/docx.fill`, `form/pptx.fill`, `form/pdf.fill_pdf`
+  and `form/pdfme.fill` take `strict?`, and `form.fill` passes
+  `Options.strict` to all of them. A fill of an OOXML document or of a pdfme
+  template without `strict` now reports a warning for each name that the data
+  has not, and `form/xlsx` and `form/pptx` return those warnings instead of
+  an empty list.

@@ -1,5 +1,6 @@
 import {
   "f4ah6o/bdf/encoding/zip" @zip,
+  "f4ah6o/bdf/form/tag" @tag,
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/string",

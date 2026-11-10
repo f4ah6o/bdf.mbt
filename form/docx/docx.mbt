@@ -13,11 +13,12 @@ pub fn fill(
   title~ : String = "",
   views~ : String = "both",
   pages~ : String = "",
+  strict~ : Bool = false,
 ) -> @docx.DocxResult raise {
   let values = @json.parse(@utf8.decode_lossy(data[:])) catch {
     _ => raise DocxFormError("form/docx: the data is not JSON")
   }
-  let (filled, warnings) = @ooxml.fill_zip(template, values) catch {
+  let (filled, warnings) = @ooxml.fill_zip(template, values, strict~) catch {
     @ooxml.OoxmlError(message) => raise DocxFormError(message)
   }
   let result = @docx.convert(filled, title~, views~, pages~)
@@ -29,11 +30,15 @@ pub fn fill(
 
 ///|
 /// Fill a Word document and return the filled .docx.
-pub fn fill_bytes(template : Bytes, data : Bytes) -> Bytes raise {
+pub fn fill_bytes(
+  template : Bytes,
+  data : Bytes,
+  strict~ : Bool = false,
+) -> Bytes raise {
   let values = @json.parse(@utf8.decode_lossy(data[:])) catch {
     _ => raise DocxFormError("form/docx: the data is not JSON")
   }
-  let (filled, _) = @ooxml.fill_zip(template, values) catch {
+  let (filled, _) = @ooxml.fill_zip(template, values, strict~) catch {
     @ooxml.OoxmlError(message) => raise DocxFormError(message)
   }
   filled

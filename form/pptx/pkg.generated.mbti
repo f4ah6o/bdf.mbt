@@ -1,10 +1,16 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "f4ah6o/bdf/form/pptx"
 
-// Values
-pub fn fill(Bytes, Bytes, title? : String, pages? : String) -> @f4ah6o/bdf/convert/pptx.PptxResult raise
+import {
+  "f4ah6o/bdf/form/tag",
+}
 
-pub fn fill_bytes(Bytes, Bytes) -> Bytes raise
+// Values
+pub fn fill(Bytes, Bytes, title? : String, pages? : String, strict? : Bool) -> @f4ah6o/bdf/convert/pptx.PptxResult raise
+
+pub fn fill_bytes(Bytes, Bytes, strict? : Bool) -> Bytes raise
+
+pub fn inspect(Bytes) -> Array[@tag.Field] raise PptxFormError
 
 // Errors
 pub suberror PptxFormError {

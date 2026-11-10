@@ -1,10 +1,16 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "f4ah6o/bdf/form/xlsx"
 
-// Values
-pub fn fill(Bytes, Bytes, data_mode? : String, no_text_index? : Bool) -> @f4ah6o/bdf/convert/xlsx.XlsxPlainResult raise
+import {
+  "f4ah6o/bdf/form/tag",
+}
 
-pub fn fill_bytes(Bytes, Bytes) -> Bytes raise
+// Values
+pub fn fill(Bytes, Bytes, data_mode? : String, no_text_index? : Bool, strict? : Bool) -> @f4ah6o/bdf/convert/xlsx.XlsxPlainResult raise
+
+pub fn fill_bytes(Bytes, Bytes, strict? : Bool) -> Bytes raise
+
+pub fn inspect(Bytes) -> Array[@tag.Field] raise XlsxFormError
 
 // Errors
 pub suberror XlsxFormError {
