@@ -3,7 +3,7 @@
 Status: open
 Model: deepseek-v4-1-flash-1017
 Created: 2026-11-09
-Updated: 2026-11-09
+Updated: 2026-11-10
 Branch: fix/20261109-parity-fontset-metrics
 
 ## 概要
@@ -12,7 +12,7 @@ DOCX、Markdown、XLSX が共有する fontset のメトリクスとフォント
 
 ## 背景
 
-`docs/parity.md` の Next gates の 1 番目。DOCX は theme font と fallback advance が一致したが、Markdown はページ高さとフォント数が違い、XLSX はフォント埋め込みモードが未対応。
+`docs/parity.md` の Next gates の 1 番目。DOCX は theme font と fallback advance が一致したが、Markdown はページ高さとフォント数が違う。XLSX は明示フォントを渡す経路があるが、パリティのケースはフォント未指定で走っており、共有 fontset のメトリクスと埋め込みの一致が残っている。
 
 ## 問題
 

@@ -1,53 +1,43 @@
-# convert/xdw の残りのギャップ: テキスト抽出とコーパス一致
+# convert/xdw の残りのギャップ: 詳細 Issue へのポインタ
 
-Status: open
+Status: superseded
 Model: deepseek-v4-1-flash-1017
 Created: 2026-11-09
-Updated: 2026-11-09
+Updated: 2026-11-10
 Branch: feat/20261109-xdw-remaining-gaps
 
 ## 概要
 
-PR #5 と #6 の後も残る `convert/xdw` のギャップを埋める。覆われた文字の除去、注釈テキストのテキスト索引への取り込み、43 ファイルのコーパスでの `render` と `text` の一致、wasm-gc の確認。
+この Issue は `convert/xdw` の残りを 1 つにまとめていたが、内容が既存の詳細 Issue と重複するため superseded にする。実装済みの項目は詳細 Issue 側に記録し、残るコーパス検証だけを `20261109-xdw-corpus-parity` で追跡する。
 
 ## 背景
 
-`convert/xdw` は上流 `shibukawa/bdf` の converter ではなく、`ezpzfile/ezpzfile-xdw` v0.3（MIT）の移植。PR #5 で main に入り、PR #6 が精度改善中。PR #5 の known gaps のうち 4 番目（注釈の fit-window）は PR #6 が閉じる。
+`convert/xdw` は上流 `shibukawa/bdf` の converter ではなく、`ezpzfile/ezpzfile-xdw` v0.3（MIT）の移植。PR #5 で main に入り、PR #6 の精度改善は main `b05cd93` に統合済み。
 
-## 問題
+## 現状
 
-覆われた文字がテキスト検索に残り、注釈テキストが BDF のテキスト索引に載らない。43 ファイルのコーパス全体での一致は未検証。wasm-gc は未確認。
-
-## 目標
-
-`hidden.rs` 相当の挙動、コーパス一致、wasm-gc green を満たす。
+- 覆われた文字の除去と `include_hidden` は main `b05cd93` に統合済み（`8e968da`、`959c032`、`9f224fc`）。詳細は `20261109-xdw-hidden-text`。
+- 注釈テキストの索引化と注釈レイヤー分離は main `b05cd93` に統合済み（`8e968da`、`959c032`、`bb16d5b`）。詳細は `20261109-xdw-annotation-index`。
+- wasm-gc と native の宣言は #8 で main `b05cd93` に入った。`convert/xdw/moon.pkg` は `+js+wasm-gc+native` を宣言している。
+- 43 ファイルのコーパス比較は未実施。詳細は `20261109-xdw-corpus-parity`。
 
 ## 対象外
 
 XDW の書き戻し（上流も対象外）。上流 `shibukawa/bdf` の移植範囲。
 
-## 提案する方針
-
-`hidden.rs`（364 行）の覆われた文字の除去を移植する。注釈テキストを `XdwObject.text` から BDF のテキスト索引に載せる。`compat/xdw` の fixture を 43 ファイルに広げる。wasm-gc で check/test/build を回す。
-
 ## 受け入れ条件
 
-- [ ] 覆われた文字が既定でテキスト索引から除かれる
-- [ ] `include_hidden=1` で覆われた文字が残る
-- [ ] 注釈テキストがテキスト索引に載る
-- [ ] 43 ファイルのコーパスで `render` と `text` が上流 CLI と一致する
-- [ ] `moon check`、`moon test`、`moon build` が wasm-gc で green
+- [x] 覆われた文字と注釈テキストの扱いを詳細 Issue に委譲した
+- [x] コーパス検証の残りを `20261109-xdw-corpus-parity` に委譲した
+- [ ] 43 ファイルのコーパスで `render` と `text` が上流 CLI と一致する（`20261109-xdw-corpus-parity` で追跡）
 
 ## テスト計画
 
-- `moon test --target js`
-- `moon test --target wasm-gc`
-- `compat/xdw` のコーパス比較
-- `include_hidden` の有無でテキスト索引を比較する
+- `20261109-xdw-hidden-text`、`20261109-xdw-annotation-index`、`20261109-xdw-corpus-parity` のテスト計画に従う。
 
 ## リスク
 
-43 ファイルのコーパスはリポジトリに無い可能性がある。fixture の入手元を Issue 内で明示する。PR #6 が未マージのため、その上に積むか main に rebase するかを決める。
+コーパスのライセンスと入手性は `20261109-xdw-corpus-parity` に記載済み。
 
 ## 変更履歴
 
@@ -55,4 +45,4 @@ XDW の書き戻し（上流も対象外）。上流 `shibukawa/bdf` の移植�
 
 ## 注記
 
-PR #6 に依存する。上流の移植範囲外なので、ロードマップの完了条件には含めない。
+上流の移植範囲外なので、ロードマップの完了条件には含めない。

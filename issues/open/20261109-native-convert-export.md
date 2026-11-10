@@ -1,9 +1,9 @@
 # native 対応: convert / export
 
-Status: open
+Status: done
 Model: deepseek-v4-1-flash-1017
 Created: 2026-11-09
-Updated: 2026-11-09
+Updated: 2026-11-10
 Branch: feat/20261109-native-convert-export
 
 ## 概要
@@ -16,7 +16,7 @@ Branch: feat/20261109-native-convert-export
 
 ## 問題
 
-`convert/*` は 40 パッケージ、`export/*` は 3 パッケージある。`convert/pdf/jpx/*` の 20 パッケージは `supported_targets` を宣言していないため `moon.mod` の cap を継承しており、`moon.mod` の flip で一斉に native 対象になる。
+`convert/*` は 65 パッケージ（サブパッケージを含む）、`export/*` は 3 パッケージある。`convert/pdf/jpx/*` の 22 パッケージは `supported_targets` を宣言していないため `moon.mod` の cap を継承しており、`moon.mod` の flip で一斉に native 対象になる。
 
 ## 目標
 
@@ -32,10 +32,14 @@ Branch: feat/20261109-native-convert-export
 
 ## 受け入れ条件
 
-- [ ] `moon check --target native` が convert と export で 0 errors
-- [ ] `moon test --target native` が全件 pass
-- [ ] `moon build --target native` が成功
-- [ ] `moon test --target js` と `moon test --target wasm-gc` が退行していない
+- [x] `moon check --target native` が convert と export で 0 errors
+- [x] `moon test --target native` が全件 pass
+- [x] `moon build --target native` が成功
+- [x] `moon test --target js` と `moon test --target wasm-gc` が退行していない
+
+## 結果
+
+main `b05cd93` に統合済み。`convert/*` と `export/*` の `supported_targets` は native を宣言し、`convert/pdf/jpx/*` は `moon.mod` の宣言を継承している。#8 ブランチの最終測定は native 2733/2733、js 2749/2749、wasm-gc 2733/2733 で、これは historical な固定 head の測定であり、main `b05cd93` やその後の実行を主張するものではない。PR #8 は open のままの可能性があるが、実装は main にある。
 
 ## テスト計画
 
@@ -45,7 +49,7 @@ Branch: feat/20261109-native-convert-export
 
 ## リスク
 
-`convert/pdf/jpx` の 20 パッケージが最大の失敗源になり得る。整数演算とバイト操作が中心なので、native 固有の差は小さいと見込む。
+`convert/pdf/jpx` の 22 パッケージが最大の失敗源になり得る。整数演算とバイト操作が中心なので、native 固有の差は小さいと見込む。
 
 ## 変更履歴
 

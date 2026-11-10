@@ -5,6 +5,17 @@ what is left, in what order, and how each step is verified. It does not repeat
 the current position: `docs/port-status.md` records what works today and
 `docs/parity.md` records the document-level differences.
 
+This page and the 21 milestone issues came from PR #7; the local follow-ups
+were already in main. The statuses below were refreshed against the fixed main
+head `b05cd93`. A PR can still be open after its patches are integrated, so
+"integrated in main" describes the implementation, not the PR state.
+
+## Status vocabulary
+
+- `open` — not implemented.
+- `done` — the acceptance work is integrated in main `b05cd93`.
+- `superseded` — replaced by another issue; kept as a pointer.
+
 ## Definition of done
 
 The port is complete when both hold:
@@ -70,38 +81,65 @@ must keep passing on every target.
 
 ## Work in flight
 
-| PR | Branch | State | What it changes |
-|---|---|---|---|
-| #6 | `vibe/xdw-conversion-accuracy` | open, mergeable; parity, test and demo green, build and compare running | `convert/xdw` accuracy (path records, rotation, annotation windows, scanned strips) and `convert/metafile` EMF path records |
-| #8 | `feat/20261109-native-target` | open, not merged | the M1 native flip, the CI matrix and the native conversion gate |
+The patches of PRs #6, #8, #9, #10 and #11 are integrated in main `b05cd93`.
+PR #7 is this documentation branch and is not in main. The PRs themselves may
+still be open; the table separates the two states.
+
+| PR | Branch | PR state | Implementation in main `b05cd93` | What it changes |
+|---|---|---|---|---|
+| #6 | `vibe/xdw-conversion-accuracy` | open (unverified) | all six patches integrated | `convert/xdw` accuracy (path records, rotation, annotation windows, scanned strips) and `convert/metafile` EMF path records |
+| #8 | `feat/20261109-native-target` | open (unverified) | all seven commits integrated | the M1 native flip, the local actrun matrix and the native conversion gate |
+| #9 | `fix/20261109-docx-story-marks` | open (unverified) | integrated | DOCX paragraph marks for header and footer stories |
+| #10 | `perf/20261109-test-sharding` | open (unverified) | integrated | XLSX render verification sharded by stable case ID |
+| #11 | `fix/20261109-recapture-diagnostics` | open (unverified) | integrated | visual recapture keeps the diagnostics of the viewports that painted |
+| #7 | `docs/20261109-upstream-port-roadmap` | open | not in main; this branch | this roadmap and the 21 issues it adds |
+
+The integrated commits are not the PR branch SHAs: the patches were
+cherry-picked, so the main history carries different commit IDs. The PR
+branches are not ancestors of `b05cd93`.
 
 PR #6 touches `convert/metafile`, which `convert/docx`, `convert/pptx` and
 `convert/emf` import for embedded pictures. Measured on the combined tree, it
 does not move the parity baseline: no parity fixture embeds a metafile.
 
-PR #6 also adds `import { "f4ah6o/bdf/render" } for "wbtest"` to
+PR #6 added `import { "f4ah6o/bdf/render" } for "wbtest"` to
 `convert/metafile/moon.pkg` and `convert/xdw/moon.pkg`. PR #8 changes the
-`supported_targets` line in those same two files. The merged result must keep
-both:
+`supported_targets` line in those same two files. Both are integrated in main
+`b05cd93`. `convert/metafile/moon.pkg` keeps the wbtest import; in
+`convert/xdw/moon.pkg` the import is a regular dependency, because the text
+index calls `@render.decode_commands` in production code (`8e968da`). Both
+files declare native:
 
 ```text
+# convert/metafile/moon.pkg
 import {
   "f4ah6o/bdf/render",
 } for "wbtest"
+
+supported_targets = "+js+wasm-gc+native"
+
+# convert/xdw/moon.pkg
+import {
+  "f4ah6o/bdf/render",
+}
 
 supported_targets = "+js+wasm-gc+native"
 ```
 
 The combination was verified on a fixed tree: #8 at `eb8cf94` with the #6 diff
 (`origin/main...7db0a5b`) applied as a patch, giving `2fcca8c`. Only those two
-files conflicted. On that tree `check`, `test` and `build` pass on `js` (2763
-tests), `wasm-gc` (2747) and `native` (2747); the XLSX picture visual compare
-reports 0.00% diff; and document parity reports 12 pass and 40 diff, the same
-as #8 alone. PR #8 does not carry #6's changes, so whichever lands second
-resolves the two files by hand.
+files conflicted. On that tree `check`, `test` and `build` passed on `js`
+(2763 tests), `wasm-gc` (2747) and `native` (2747); the XLSX picture visual
+compare reported 0.00% diff; and document parity reported 12 pass and 40 diff,
+the same as #8 alone. These are historical fixed-head measurements, not
+claims about main `b05cd93` or any later run.
 
-The remaining `convert/xdw` gaps are tracked separately from the upstream
-milestones, in `20261109-xdw-remaining-gaps`.
+The `convert/xdw` gaps are tracked separately from the upstream milestones.
+The detailed issues are `20261109-xdw-hidden-text`,
+`20261109-xdw-annotation-index` and `20261109-xdw-corpus-parity`.
+`20261109-xdw-remaining-gaps` is superseded by them. Hidden-text and
+annotation indexing are integrated in main `b05cd93` (`8e968da`, `959c032`,
+`9f224fc`, `bb16d5b`); the 43-document corpus comparison remains open.
 
 ## Targets
 
@@ -110,11 +148,14 @@ package manifest's `supported_targets` accepts `js`, `wasm-gc` and `native`;
 `wasm` resolves to an empty set, so it is out of scope. `llvm` is not a
 package target.
 
-The port supports `js`, `wasm-gc` and `native`.
+Main `b05cd93` declares `supported_targets = "+js+wasm-gc+native"` in
+`moon.mod` and in 74 `moon.pkg` files. The port supports `js`, `wasm-gc` and
+`native`.
 
-`viewer` is a 253-line model layer that imports only `core` and has no JS
-externs, so it joins `native`. `bridge/wasm` is a `foreign_library` for the
-wasm-gc exports; native has no consumer for it, so it stays `+js+wasm-gc`.
+`viewer` is a 165-line model layer (`viewer.mbt`, plus an 88-line test
+file) that imports only `core` and has no JS externs, so it joins `native`.
+`bridge/wasm` is a `foreign_library` for the wasm-gc exports; native has no
+consumer for it, so it stays `+js+wasm-gc`.
 
 Browser-only packages stay `js`-only by design: `browser`, `print/ipp_js`,
 `converter_worker`, `render_worker`, `native_converter_worker` and
@@ -124,9 +165,11 @@ Browser-only packages stay `js`-only by design: `browser`, `print/ipp_js`,
 
 ### M1 — native target
 
-`moon.mod` caps the whole module at `+js+wasm-gc`, so every package inherits
-that cap. The recon (2026-11-09) flipped `moon.mod` and 73 `moon.pkg` files to
-`+js+wasm-gc+native` and changed no source file. Every gate passed:
+M1 is integrated in main `b05cd93`. `moon.mod` declares
+`+js+wasm-gc+native`, and the retained packages declare `native` in their
+`moon.pkg` files. The recon (2026-11-09) flipped `moon.mod` and 73 `moon.pkg`
+files and changed no source file; #8 added `viewer`, which brings main to 74.
+Every gate passed on that fixed head:
 
 | Gate | Result |
 |---|---|
@@ -134,8 +177,11 @@ that cap. The recon (2026-11-09) flipped `moon.mod` and 73 `moon.pkg` files to
 | `moon test --target native` | 2730 / 2730 pass |
 | `moon build --target native` | 0 errors |
 
-So M1 is a declaration flip, not a code port. It landed in PR #8 as six
-commits ordered by the dependency graph:
+These are historical fixed-head measurements from the recon, not claims about
+main `b05cd93` or any later run.
+
+So M1 was a declaration flip, not a code port. PR #8 carried seven commits
+ordered by the dependency graph; all seven are integrated in main `b05cd93`:
 
 | Commit | Packages |
 |---|---|
@@ -143,14 +189,15 @@ commits ordered by the dependency graph:
 | 2 | `encoding/parquet`, `encoding/zip`, `font/{cff,otlayout,woff2,sfnt,db}` |
 | 3 | `render`, `viewer`, `form/*`, `convert/*`, `export/*` |
 | 4 | `print`, `print/{dnssd,ipp,raster,server}` |
-| 5 | CI matrix and the empty-run guard |
-| 6 | the native conversion gate |
+| 5 | the local actrun matrix and the empty-run guard |
+| 6 | the native conversion gate: convert checked-in fixtures from disk |
+| 7 | the native conversion gate: assert page counts and extracted text |
 
 The graph forces the grouping. `export/search` needs `render`,
 `convert/textform` needs `form/data`, and `print/server` needs `convert/pdf`,
 so a slice cannot be verified until its dependencies are native too.
 
-Final state, measured on the branch:
+Final state, measured on the #8 branch (`eb8cf94`), historical:
 
 | Target | Tests |
 |---|---|
@@ -167,8 +214,9 @@ through `moonbitlang/x/fs` and run them through `convert`. A missing fixture
 fails the test instead of skipping it. `moon test` runs the binary from the
 module root, so the paths are relative to it.
 
-`moon test` exits 0 when it runs no tests, so the CI job captures the output,
-requires the summary line, and fails below 2700 tests or on any failure.
+`moon test` exits 0 when it runs no tests, so the local actrun `ci/test` job
+captures the output, requires the summary line, and fails below 2700 tests or
+on any failure.
 
 ### M2 — missing packages
 
@@ -197,17 +245,34 @@ Shared causes first, because they move several formats at once.
 
 ## Verification gates
 
-| Gate | Command |
-|---|---|
-| JS | `moon check --target js && moon test --target js && moon build --target js` |
-| wasm-gc | `moon check --target wasm-gc && moon test --target wasm-gc && moon build --target wasm-gc` |
-| native | `moon check --target native && moon test --target native && moon build --target native` |
-| Native conversion | a fixture converts to BDF through a native binary |
-| Document parity | `node compat/parity/verify.mjs --strict` |
-| Site | `npm run build:site && npm run test:site` |
+Verification runs locally through `actrun`; GitHub never runs the verification
+workflows. The gates are defined in `.github/workflows/` and driven by
+`npm run verify:local`:
 
-`moon check --target native` alone is not a gate: it passes today by skipping
-every package that does not declare `native`.
+| Gate | Local command | What it runs |
+|---|---|---|
+| Self-test | `npm run verify:local:self` | `node --test .github/local/verify.test.mjs` |
+| CI matrix | `npm run verify:local:ci` | `.github/workflows/ci.yml` job `test` through actrun: retained `moon check`, `moon test` and `moon build` on `js`, `wasm-gc` and `native`, with the min-test-count assertion |
+| Demo | `npm run verify:local:ci` | `.github/workflows/ci.yml` job `demo`: sample verification, demo build, browser tests and previews |
+| Document parity | `npm run verify:local:parity` | `.github/workflows/parity.yml`: retained JS build and `compat/parity/verify.mjs --limit=100` |
+| Visual | `npm run verify:local:visual` | `.github/workflows/visual.yml`: the retained visual aggregate |
+| Site | `npm run verify:local:site` | `.github/workflows/pages.yml` job `build`: site build, site tests, previews, benchmarks and the vlmkit checks |
+| Full local flow | `npm run verify:local` | all of the above |
+
+A focused run uses the same runner directly, for example
+`node_modules/.bin/actrun workflow run .github/workflows/ci.yml --local --job test`.
+The exact skip-action list and run roots are owned by `.github/local/verify.mjs`;
+see the README and `docs/verification-scope.md`.
+
+`moon check --target native` alone is not a gate: it can pass by skipping
+packages that do not declare `native`. The local matrix runs check, test and
+build on the retained packages, and the fixture gate proves a native binary
+converts a real document.
+
+The only workflow GitHub can run is the manual Pages deployment,
+`.github/workflows/pages-deploy.yml`. It is `workflow_dispatch` only and is
+kept as the existing deployment definition. The local flow never runs or
+dispatches it, never uploads a Pages artifact and never publishes the site.
 
 ## Parallel execution
 
@@ -216,12 +281,15 @@ One issue is one branch and one worktree. Up to two run at once, because
 
 ## Issue index
 
+The status column uses the vocabulary above. Every issue file under
+`issues/open/` appears exactly once.
+
 | Milestone | Issue | Upstream lines | Status |
 |---|---|---|---|
-| M1 | `20261109-native-recon` | — | reference only, not merged |
-| M1 | `20261109-native-crypto-core-encoding-font` | — | landed in #8 |
-| M1 | `20261109-native-convert-export` | — | landed in #8 |
-| M1 | `20261109-native-print-form-ci` | — | landed in #8 |
+| M1 | `20261109-native-recon` | — | done: recon recorded; branch not merged |
+| M1 | `20261109-native-crypto-core-encoding-font` | — | done: integrated in main `b05cd93` (#8) |
+| M1 | `20261109-native-convert-export` | — | done: integrated in main `b05cd93` (#8) |
+| M1 | `20261109-native-print-form-ci` | — | done: integrated in main `b05cd93` (#8) |
 | M2 A | `20261109-vector-pdfbdf` | 4,801 + 750 | open |
 | M2 A | `20261109-vector-psbdf` | 2,083 | open |
 | M2 B | `20261109-image-barcode-rowenc` | 2,286 | open |
@@ -238,16 +306,27 @@ One issue is one branch and one worktree. Up to two run at once, because
 | M3 | `20261109-parity-xlsx-print-view` | — | open |
 | M3 | `20261109-parity-markdown-reader` | — | open |
 | M3 | `20261109-parity-remaining` | — | open |
-| XDW | `20261109-xdw-remaining-gaps` | — | open |
+| XDW | `20261109-xdw-remaining-gaps` | — | superseded: see the three XDW issues below |
+| XDW | `20261109-xdw-hidden-text` | — | done: `8e968da`, `959c032` |
+| XDW | `20261109-xdw-annotation-index` | — | done: `8e968da`, `959c032`, `bb16d5b` |
+| XDW | `20261109-xdw-corpus-parity` | — | open: 43-document corpus validation |
+| Local | `20261110-async-cancellation-cleanup` | — | open |
+| Local | `20261110-compiler-warning-classes` | — | open |
+| Local | `20261110-docx-page-count-sample` | — | open |
+| Local | `20261110-downstream-render-feedback` | — | open |
+| Local | `20261110-jww-text-index-sample` | — | open |
+| Local | `20261110-pages-node24-actions` | — | open |
+| Local | `20261110-vlmkit-hono-advisory` | — | open |
 
 ## Risks
 
 - **Native is a declaration flip, and the gate now proves it runs.**
   `moon check --target native` passes by skipping packages that do not declare
-  `native`, so it was never evidence on its own. PR #8 flipped every
-  declaration and added a conversion gate that reads real fixtures from disk.
-  The remaining risk is coverage, not compilation: three fixtures run on
-  native, and the rest of the checked-in corpus still only runs on `js`.
+  `native`, so it was never evidence on its own. The integrated #8 patches
+  flipped every retained declaration and added a conversion gate that reads
+  real fixtures from disk. The remaining risk is coverage, not compilation:
+  three fixtures run on native, and the rest of the checked-in corpus still
+  only runs on `js`.
 - **`encoding/htmlro` is the largest single gap** at 5,278 lines and depends
   on the reader-mode block model in `convert/reader`. It may need to split.
 - **Parity is a moving target.** The harness compares against
@@ -260,14 +339,17 @@ One issue is one branch and one worktree. Up to two run at once, because
   filters) as pictures through `raster/imagebdf`. `raster` is out of scope, so
   the port must either bring a minimal rasterizer or accept that those regions
   degrade to vectors.
-- **`sign` needs CMS and X.509.** `crypto` has the primitives but no ASN.1
-  encoder. That is new surface, not a port of existing code.
+- **`sign` needs CMS and X.509.** `core` and `crypto` have the primitives but
+  no ASN.1 encoder. That is new surface, not a port of existing code.
 - **PR #6 does not move the parity baseline, measured.** The harness covers 52
   cases (pdf 15, docx 12, pptx 8, xlsx 11, markdown 6). Running it on #8 alone
-  and on #8 + #6 gives the same 12 pass / 40 diff, and no case changes status,
+  and on #8 + #6 gave the same 12 pass / 40 diff, and no case changed status,
   because no parity DOCX or PPTX fixture embeds an EMF or WMF picture. The
   metafile path is exercised by the `convert/metafile` and `convert/xdw` tests
-  instead. Re-measure if a parity fixture gains an embedded metafile.
+  instead. That is a historical fixed-head measurement; re-measure if a parity
+  fixture gains an embedded metafile.
 - **`convert/xdw` is outside the upstream scope but inside the test suite.**
   Its remaining gaps must not be counted as upstream parity, and its fixtures
-  must keep passing on `js`, `wasm-gc` and `native`.
+  must keep passing on `js`, `wasm-gc` and `native`. Hidden-text and
+  annotation indexing are integrated; the 43-document corpus comparison is
+  still open in `20261109-xdw-corpus-parity`.

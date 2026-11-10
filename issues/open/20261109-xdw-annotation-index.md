@@ -1,9 +1,9 @@
 # xdw: 注釈テキストを索引と注釈レイヤーに載せる
 
-Status: open
+Status: done
 Model: unknown
 Created: 2026-11-09
-Updated: 2026-11-09
+Updated: 2026-11-10
 Branch: feat/20261109-xdw-annotation-index
 
 ## 概要
@@ -11,6 +11,8 @@ Branch: feat/20261109-xdw-annotation-index
 DocuWorks の注釈(テキスト、付箋)の文字列を BDF のテキスト索引に載せ、注釈を本文と区別できるレイヤーとして出す。
 
 ## 背景
+
+以下は実装前（2026-11-09）の状態。
 
 `convert/xdw/document.mbt` は注釈の文字を読んでいる。
 
@@ -46,16 +48,22 @@ DocuWorks の注釈(テキスト、付箋)の文字列を BDF のテキスト索
 
 ## 受け入れ条件
 
-- [ ] テキスト注釈と付箋の文字列が `"idx"` パートに入り、`@core.index_plain_text` で読める。
-- [ ] 注釈が `"body"` と別のロールのレイヤーになる。
-- [ ] 注釈を持つサンプル(`demo.xdw` など)で、注釈の文字列が索引から取れる。
-- [ ] 既存の `convert/xdw` のテストが全て通る。
+- [x] テキスト注釈と付箋の文字列が `"idx"` パートに入り、`@core.index_plain_text` で読める。
+- [x] 注釈が `"body"` と別のロールのレイヤーになる。
+- [x] 注釈を持つサンプル(`demo.xdw` など)で、注釈の文字列が索引から取れる。
+- [x] 既存の `convert/xdw` のテストが全て通る。
+
+## 結果
+
+main `b05cd93` に統合済み。`8e968da` が注釈テキストを `"idx"` パートに載せ、`959c032` が索引をレンダラ自身の run から組み立てるようにした。`bb16d5b` が注釈を本文と別の `"annotation"` レイヤーに分け、`convert/xdw/annotation.mbt` と `render.mbt` で注釈の描画・索引を扱う。付箋の子テキストも注釈の文字として扱う。
+
+テストは `convert/xdw/annotation_wbtest.mbt`（16 テスト）と `convert/xdw/text_index_wbtest.mbt` にある。43 文書のコーパス比較は未実施で、`20261109-xdw-corpus-parity` で追跡する。ここに書いたのは固定 head の実装事実で、最新のテスト実行を主張するものではない。
 
 ## テスト計画
 
 - `moon test -p f4ah6o/bdf/convert/xdw`
 - テキスト注釈と付箋を含む合成ドキュメントの white-box テストで、索引の文字列とレイヤーのロールを確認する。
-- `moon test --target js` と `moon test --target wasm-gc` を通す。
+- `moon test --target js`、`moon test --target wasm-gc`、`moon test --target native` を通す。
 
 ## リスク
 

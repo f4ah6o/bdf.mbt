@@ -3,7 +3,7 @@
 Status: open
 Model: deepseek-v4-1-flash-1017
 Created: 2026-11-09
-Updated: 2026-11-09
+Updated: 2026-11-10
 Branch: fix/20261109-parity-mark-emission
 
 ## 概要
@@ -12,7 +12,7 @@ DOCX、PPTX、PDF の MARK 出力を上流に合わせる。
 
 ## 背景
 
-`docs/parity.md` は DOCX の header bbox、per-word run、table/cell/figure MARK、PPTX の BOX と title MARK、PDF の MARK 挿入を差分として挙げている。
+`docs/parity.md` は DOCX の header bbox、per-word run、table/cell/figure MARK、PDF の MARK 挿入を差分として挙げている。PPTX の BOX と title MARK は出力済みで、残るのはその他の MARK。
 
 ## 問題
 
@@ -33,7 +33,7 @@ MARK の欠落と順序の違いが複数形式の差分になっている。
 ## 受け入れ条件
 
 - [ ] DOCX の header、footer、table、figure MARK が一致する
-- [ ] PPTX の BOX と title MARK が一致する
+- [ ] PPTX の残りの MARK が一致する（BOX と title は出力済み）
 - [ ] PDF の MARK が一致する
 - [ ] パリティの該当ケースが pass する
 
@@ -42,6 +42,7 @@ MARK の欠落と順序の違いが複数形式の差分になっている。
 - `node compat/parity/verify.mjs --strict`
 - `moon test --target js`
 - `moon test --target wasm-gc`
+- `moon test --target native`
 
 ## リスク
 

@@ -1,9 +1,9 @@
 # native ターゲットの偵察: 全パッケージを flip して失敗を列挙する
 
-Status: open
+Status: done
 Model: deepseek-v4-1-flash-1017
 Created: 2026-11-09
-Updated: 2026-11-09
+Updated: 2026-11-10
 Branch: chore/20261109-native-recon
 
 ## 概要
@@ -32,11 +32,17 @@ native で失敗するパッケージ、失敗種別（コンパイル / テス�
 
 ## 受け入れ条件
 
-- [ ] `moon.mod` と全パッケージを flip したブランチで `moon check --target native` を実行し、失敗パッケージを列挙した
-- [ ] `moon test --target native` を実行し、失敗テストを列挙した
-- [ ] 各失敗を「JS extern」「async」「FFI」「その他」に分類した
-- [ ] 結果を `_scratch/native-recon.md` に記録した
-- [ ] ブランチをマージしていない
+- [x] `moon.mod` と全パッケージを flip したブランチで `moon check --target native` を実行し、失敗パッケージを列挙した
+- [x] `moon test --target native` を実行し、失敗テストを列挙した
+- [x] 各失敗を「JS extern」「async」「FFI」「その他」に分類した
+- [x] 結果を `_scratch/native-recon.md` に記録した
+- [x] ブランチをマージしていない
+
+## 結果
+
+2026-11-09 の偵察で `moon.mod` と 73 個の `moon.pkg` を `+js+wasm-gc+native` に flip し、ソースは変更しなかった。`moon check --target native`、`moon test --target native`、`moon build --target native` はすべて通り、native のテストは 2730/2730 だった。これは偵察時点の固定 head での測定であり、main `b05cd93` やその後の実行を主張するものではない。
+
+失敗パッケージは無く、分類する項目も無かった。偵察ブランチはマージしていない。結果は `docs/roadmap.md` の M1 に記録し、後続の 3 つの native Issue はこの結果を入力にした。実装は #8 のパッチとして main `b05cd93` に統合済み。
 
 ## テスト計画
 

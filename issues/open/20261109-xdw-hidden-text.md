@@ -1,9 +1,9 @@
 # xdw: 覆われた文字を検索対象から外す
 
-Status: open
+Status: done
 Model: unknown
 Created: 2026-11-09
-Updated: 2026-11-09
+Updated: 2026-11-10
 Branch: feat/20261109-xdw-hidden-text
 
 ## 概要
@@ -12,9 +12,11 @@ DocuWorks のページで、後から描かれた不透明な塗りに完全に�
 
 ## 背景
 
+以下は実装前（2026-11-09）の状態。
+
 上流の `ezpzfile/ezpzfile-xdw` は `hidden.rs`(364 行)で、描画順に塗りを積み上げて文字が覆われたかを判定し、隠れた文字を検索結果から除く。`include_hidden` はその判定を無効化するための切り替え。
 
-bdf.mbt 側の現状:
+bdf.mbt 側の実装前の状態:
 
 - `convert/xdw/document.mbt:214` に `mut include_hidden : Bool` があるが、読み出し箇所が無い(`grep -rn include_hidden convert/xdw` は定義と初期化とテストのみ)。
 - `convert/xdw` は `"idx"` パート(`@core.encode_text_index`)を一切作らない。`convert/cgm`、`convert/html`、`convert/sxf`、`convert/epub`、`convert/reader` は作っている。
@@ -47,17 +49,23 @@ bdf.mbt 側の現状:
 
 ## 受け入れ条件
 
-- [ ] xdw のページ本文の文字が `"idx"` パートに入り、`@core.index_plain_text` で読める。
-- [ ] 完全に覆われた文字が既定で索引から外れる。
-- [ ] `include_hidden=1` で覆われた文字が索引に残る。
-- [ ] 部分的に覆われた文字は既定でも残る。
-- [ ] 既存の `convert/xdw` のテストが全て通る。
+- [x] xdw のページ本文の文字が `"idx"` パートに入り、`@core.index_plain_text` で読める。
+- [x] 完全に覆われた文字が既定で索引から外れる。
+- [x] `include_hidden=1` で覆われた文字が索引に残る。
+- [x] 部分的に覆われた文字は既定でも残る。
+- [x] 既存の `convert/xdw` のテストが全て通る。
+
+## 結果
+
+main `b05cd93` に統合済み。`8e968da` がページ本文の文字を `"idx"` パートに入れ、後続の不透明な塗りに完全に覆われた文字を既定で外すようにした。`959c032` が索引をレンダラ自身の run から組み立て、覆いと判定するのは証明できる塗りだけに絞った。`9f224fc` が browser の converter から `include_hidden` を渡し、`convert/all` も同じオプションを渡す。部分的に覆われた文字は残る。
+
+テストは `convert/xdw/text_index_wbtest.mbt`（21 テスト）と `browser/native_converter_xdw_wbtest.mbt` にある。43 文書のコーパス比較は未実施で、`20261109-xdw-corpus-parity` で追跡する。ここに書いたのは固定 head の実装事実で、最新のテスト実行を主張するものではない。
 
 ## テスト計画
 
 - `moon test -p f4ah6o/bdf/convert/xdw`
 - 覆いの無い文字、完全に覆われた文字、部分的に覆われた文字を含む合成 EMF の white-box テストを追加する。
-- `moon test --target js` と `moon test --target wasm-gc` を通す。
+- `moon test --target js`、`moon test --target wasm-gc`、`moon test --target native` を通す。
 
 ## リスク
 
