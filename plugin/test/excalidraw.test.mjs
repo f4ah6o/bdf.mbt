@@ -1201,6 +1201,88 @@ test("unsupported features warn explicitly, once each, in order", async () => {
 });
 
 ///|
+// review follow-up: the align anchor convention survives OVERFLOW -- a line
+// wider than the element box still anchors at the box center / right edge,
+// never at a hard left clamp ---------------------------------------------
+
+test("overflowing lines keep the align anchors (center/right, plus a left control)", async () => {
+  const fontSize = 20;
+  const lines = "a\nmuch much longer line here"; // advances: 12 and 312 (26 chars)
+  const width = 300; // the widest line overflows the box by 12 pt
+  const overflowAdvance = 26 * 12; // 26 narrow codepoints * 0.6 em * 20pt = 312
+
+  // CENTER: one glyph-center anchor at the BOX CENTER for every line; the
+  // overflowing line sticks out SYMMETRICALLY on both sides
+  {
+    const { opened } = await openDoc({
+      elements: [{
+        type: "text", id: "c", x: 0, y: 0, text: lines, fontSize, width,
+        textAlign: "center", strokeColor: "#000000",
+      }],
+    });
+    assert.equal(opsOf(opened).find(op => op.op === "textStyle").args[0], 2, "align op stays center");
+    const textOps = opsOf(opened).filter(op => op.op === "fillText");
+    assert.equal(textOps.length, 2);
+    approx(textOps[0].args[3], 12, 1e-3, "short line advance");
+    approx(textOps[1].args[3], overflowAdvance, 1e-3, "overflowing line advance");
+    // bands: "a" [144,156], overflow [-6,306] -> page offset 16-(-6) = 22,
+    // so the shared decoded glyph center = 150 + 22 = 172 = box center + 22
+    for (const line of textOps) {
+      approx(line.args[1], 150 + (MARGIN + 6), 1e-3,
+        "every line anchors at the decoded box center, overflowing or not");
+    }
+    approx(opened.object.bbox.x, MARGIN, 1e-2,
+      "the symmetric overflow starts exactly at the margin, never beyond it");
+    approx(opened.object.bbox.x + opened.object.bbox.w, MARGIN + 312, 1e-2,
+      "and ends symmetrically at the margin's mirror");
+    checkDocumentShell(opened, { width: 312 + 2 * MARGIN, height: 2 * 25 + 2 * MARGIN });
+  }
+
+  // RIGHT: one right-edge anchor at the BOX RIGHT EDGE for every line; the
+  // overflowing line sticks out to the LEFT of the box
+  {
+    const { opened } = await openDoc({
+      elements: [{
+        type: "text", id: "r", x: 0, y: 0, text: lines, fontSize, width,
+        textAlign: "right", strokeColor: "#000000",
+      }],
+    });
+    assert.equal(opsOf(opened).find(op => op.op === "textStyle").args[0], 1, "align op stays right");
+    const textOps = opsOf(opened).filter(op => op.op === "fillText");
+    // bands: "a" [288,300], overflow [-12,300] -> page offset 28, so the
+    // shared decoded right edge = 300 + 28 = 328 for BOTH lines
+    for (const line of textOps) {
+      approx(line.args[1], 300 + (MARGIN + 12), 1e-3,
+        "every line anchors at the decoded box right edge");
+    }
+    approx(opened.object.bbox.x, MARGIN, 1e-2,
+      "the left overflow starts exactly at the margin");
+    approx(opened.object.bbox.x + opened.object.bbox.w, 300 + MARGIN + 12, 1e-2,
+      "the ink ends at the box right edge");
+    checkDocumentShell(opened, { width: 312 + 2 * MARGIN, height: 2 * 25 + 2 * MARGIN });
+  }
+
+  // LEFT control: the overflow simply runs to the RIGHT, past the box edge
+  {
+    const { opened } = await openDoc({
+      elements: [{
+        type: "text", id: "l", x: 0, y: 0, text: lines, fontSize, width,
+        textAlign: "left", strokeColor: "#000000",
+      }],
+    });
+    assert.equal(opsOf(opened).find(op => op.op === "textStyle").args[0], 0, "align op stays left");
+    const textOps = opsOf(opened).filter(op => op.op === "fillText");
+    for (const line of textOps) {
+      approx(line.args[1], MARGIN, 1e-3, "every line anchors at the box start");
+    }
+    approx(opened.object.bbox.x, MARGIN, 1e-2);
+    approx(opened.object.bbox.x + opened.object.bbox.w, MARGIN + 312, 1e-2,
+      "the overflow to the right stays inside the page");
+    checkDocumentShell(opened, { width: 312 + 2 * MARGIN, height: 2 * 25 + 2 * MARGIN });
+  }
+});
+
+///|
 // review item 2: textAlign is real for left/center/right, inside the
 // element's own text box --------------------------------------------------
 
@@ -1208,32 +1290,37 @@ test("textAlign left/center/right place unequal lines inside the text box", asyn
   const lines = "a\nmedium line\na very much longer line";
   const fontSize = 20;
   // narrow codepoints count 0.6 em; the widest line measures 23 * 0.6 * 20
+  // so the measured box is 276 wide
   const box = 276;
   const advances = [12, 132, 276];
-  const cases = [
-    ["left", 0, [0, 0, 0]],
-    ["center", 2, [(box - 12) / 2, (box - 132) / 2, 0]],
-    ["right", 1, [box - 12, box - 132, box - 276]],
-  ];
-  for (const [align, alignOp, offsets] of cases) {
+  // anchor convention per align op (left edge / glyph center / right edge):
+  // every line of the element shares ONE decoded anchor:
+  //   left   -> box start    decoded  = 16
+  //   center -> box center   decoded  = 16 + 276/2 = 154
+  //   right  -> box right edge decoded = 16 + 276    = 292
+  const cases = [["left", 0, MARGIN], ["center", 2, MARGIN + box / 2], ["right", 1, MARGIN + box]];
+  // page offset: the ink minimum is the widest line's band start at 10
+  for (const [align, alignOp, anchor] of cases) {
     const { opened } = await openDoc({
       elements: [{
-        type: "text", id:align, x: 10, y: 50, text: lines, fontSize,
+        type: "text", id: align, x: 10, y: 50, text: lines, fontSize,
         textAlign: align, strokeColor: "#000000",
       }],
     });
     const textOps = opsOf(opened).filter(op => op.op === "fillText");
     assert.equal(textOps.length, 3, `${align}: three non-empty lines`);
     for (let i = 0; i < 3; i += 1) {
-      // line i starts at element.x + offset_i; the whole box anchors at 16
-      approx(textOps[i].args[1], 10 + offsets[i] + (MARGIN - 10 - Math.min(...offsets)), 1e-3,
-        `${align}: line ${i} decodes at its aligned x`);
+      approx(textOps[i].args[1], anchor, 1e-3,
+        `${align}: line ${i} decodes at the shared align anchor`);
       approx(textOps[i].args[3], advances[i], 1e-3, `${align}: line ${i} keeps its CJK-aware advance`);
     }
     const style = opsOf(opened).find(op => op.op === "textStyle");
     assert.ok(style, `${align}: a textStyle op exists`);
     assert.equal(style.args[0], alignOp, `${align} maps to the contract align value`);
     assert.equal(style.args[1], 1, "baseline stays top");
+    // bands/bbox stay consistent: the ink spans exactly the box, at margin
+    approx(opened.object.bbox.x, MARGIN, 1e-2, `${align}: ink starts at the margin`);
+    approx(opened.object.bbox.w, box, 1e-2, `${align}: the ink spans the box`);
   }
 
   // bound/container text: the element's OWN width is the box, wider than
@@ -1245,18 +1332,20 @@ test("textAlign left/center/right place unequal lines inside the text box", asyn
     }],
   });
   const boundOps = opsOf(bound.opened).filter(op => op.op === "fillText");
-  // the element box runs 0..400; the widest line STARTS at 400 - 276 = 124,
-  // which becomes the ink minimum, so the page offset pushes every line by
-  // 16 - 124 and each line ends exactly at 400 + 16
-  const boundOffset = MARGIN - (400 - 276);
-  for (let i = 0; i < 3; i += 1) {
-    approx(boundOps[i].args[1], 400 - advances[i] + boundOffset, 1e-3, `bound right line ${i}`);
-  }
-  // every right-aligned line ends at ONE decoded point: boxWidth + margin
+  // the element box runs 0..400; under right-edge anchor semantics each
+  // band is [anchor - advance, anchor] with the shared anchor at 400. The
+  // widest line STARTS at 400 - 276 = 124, which becomes the ink minimum, so
+  // the page offset 16 - 124 pushes the decoded anchor to 400 - 108 = 292
+  // (the anchor IS the glyph right edge -- the band ends at it exactly)
+  // every line decodes at the SAME right edge, and the widest band starts
+  // at the margin
   for (const line of boundOps) {
-    approx(line.args[1] + line.args[3], 276 + MARGIN, 1e-3,
-      "every right-aligned line ends at the box's right edge");
+    approx(line.args[1], 276 + MARGIN, 1e-3, "every right-aligned line anchors at the box right edge");
+    approx(line.args[1], 276 + MARGIN, 1e-3,
+      "and its glyphs end exactly there (the anchor IS the right edge)");
   }
+  approx(Math.min(...boundOps.map(l => l.args[1] - l.args[3])), MARGIN, 1e-3,
+    "the widest line's band starts exactly at the margin");
   checkDocumentShell(bound.opened, { width: 276 + 2 * MARGIN, height: 3 * 25 + 2 * MARGIN });
 
   // mixed CJK: centered wide and narrow lines share the element box
@@ -1268,10 +1357,12 @@ test("textAlign left/center/right place unequal lines inside the text box", asyn
   });
   const cjkOps = opsOf(cjk.opened).filter(op => op.op === "fillText");
   assert.equal(cjkOps[0].args[0], "こんにちは");
-  approx(cjkOps[0].args[1], MARGIN, 1e-3, "the widest (CJK) line centers to the box");
   approx(cjkOps[0].args[3], 100, 1e-3);
-  approx(cjkOps[1].args[1], MARGIN + (100 - 24) / 2, 1e-3, "the narrow ASCII line centers inside it");
   approx(cjkOps[1].args[3], 24, 1e-3);
+  // the shared glyph-center anchor is the box center: 0 + 100/2, +16
+  for (const line of cjkOps) {
+    approx(line.args[1], MARGIN + 50, 1e-3, "both lines center on the box center");
+  }
 
   // unknown alignment values warn once and render left
   const fallback = await openDoc({

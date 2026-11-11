@@ -13,6 +13,14 @@
 //     element pivot;
 //   * text advance is estimated per codepoint and is CJK-aware (wide
 //     codepoints count 1.0 em, everything else 0.6 em);
+//   * TEXT ALIGNMENT follows the shared encoder's anchor semantics, ONE
+//     convention per align op even when a line OVERFLOWS the element box:
+//     the emitted x is the glyph LEFT edge (align left = box start), the
+//     glyph CENTER (align center = box center: overflowing lines stick out
+//     symmetrically on both sides), or the glyph RIGHT edge (align right =
+//     box right edge: overflowing lines stick out to the LEFT). Page
+//     fitting mirrors the same align-aware band math, so ink placement and
+//     the encoder's bands always agree.
 //   * elbow/curved chains render as straight segments.
 //
 // Worker-safety: only ECMAScript built-ins reachable in a worker are used
@@ -335,12 +343,18 @@ function primExtent(prim) {
   } else if (prim.kind === "ellipse") {
     box = [prim.cx - prim.rx, prim.cy - prim.ry, prim.cx + prim.rx, prim.cy + prim.ry];
   } else if (prim.kind === "text") {
-    box = [
-      prim.x,
-      prim.y,
-      prim.x + (prim.advance ?? prim.fontSize * 0.6 * prim.text.length),
-      prim.y + prim.fontSize * TEXT_LINE_HEIGHT,
-    ];
+    // The band is align-aware, exactly like the shared encoder's:
+    // left [x, x+a], center [x-a/2, x+a/2], right [x-a, x]. An overflowing
+    // line grows the band past the box edge per the documented rule.
+    const advance = prim.advance ?? prim.fontSize * 0.6 * prim.text.length;
+    const align = prim.align ?? "left";
+    const x0 = align === "center"
+      ? prim.x - advance / 2
+      : align === "right" ? prim.x - advance : prim.x;
+    const x1 = align === "center"
+      ? prim.x + advance / 2
+      : align === "right" ? prim.x : prim.x + advance;
+    box = [x0, prim.y, x1, prim.y + prim.fontSize * TEXT_LINE_HEIGHT];
   } else {
     let x0 = Infinity;
     let y0 = Infinity;
@@ -750,6 +764,24 @@ function text(ctx, element, index) {
   const pivotX = x + boxWidth / 2;
   const pivotY = y + boxHeight / 2;
 
+  // ONE anchor convention per align op (see the module header): the emitted
+  // x is the glyph LEFT edge, CENTER, or RIGHT edge -- never a left-band
+  // position while the encoder centers/right-aligns the glyphs at it. The
+  // anchor is the same for every line of the element (box start / box
+  // center / box right edge), so short and overflowing lines share the
+  // anchored fragment of the rule instead of a hard left clamp.
+  const anchorX = align === "center"
+    ? x + boxWidth / 2
+    : align === "right"
+      ? x + boxWidth
+      : x;
+  if (Math.abs(anchorX) > COORD_LIMIT) {
+    throw failure(
+      `${elementLabel(element, index)}: a text anchor lands outside the +/-${COORD_LIMIT} coordinate range`,
+      "too-large",
+    );
+  }
+
   let offset = 0;
   for (const line of lines) {
     if (line !== "") {
@@ -761,21 +793,10 @@ function text(ctx, element, index) {
         );
       }
       const advance = estimateAdvance(line, fontSize);
-      const lineX = align === "center"
-        ? x + (boxWidth - advance) / 2
-        : align === "right"
-          ? x + boxWidth - advance
-          : x;
-      if (Math.abs(lineX) > COORD_LIMIT) {
-        throw failure(
-          `${elementLabel(element, index)}: a text line lands outside the +/-${COORD_LIMIT} coordinate range`,
-          "too-large",
-        );
-      }
       const prim = {
         kind: "text",
         pivot: [pivotX, pivotY],
-        x: lineX,
+        x: anchorX,
         y: lineY,
         text: line,
         fontSize,
