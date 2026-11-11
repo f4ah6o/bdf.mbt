@@ -21,7 +21,7 @@
 
 import { defineFormatPlugin, errorText } from "../contract.js";
 import { acceptedParams, noPassword } from "../adapter-options.js";
-import { encodeDiagram } from "../diagram-bdf.js";
+import { encodeDiagram, strokedPolylineExtent } from "../diagram-bdf.js";
 
 export const EXCALIDRAW_FORMAT_NAME = "excalidraw";
 export const EXCALIDRAW_EXTENSIONS = [".excalidraw", ".excalidraw.json"];
@@ -321,36 +321,58 @@ function applyStyle(prim, style, { stroked = true, filled = true } = {}) {
 // ------------------------------------------------------------- geometry ---
 
 ///|
-// The unrotated extent of one primitive (rotations are applied afterwards,
-// around the primitive's own pivot). `pad` is the half-stroke allowance that
-// covers the stroke itself; it grows the PAGE SPAN only and never moves
-// emitted geometry: offsets anchor the unpadded box at the page margin.
+// The COSMETIC extent of one primitive: the stroke-inclusive ink footprint
+// the page must contain. Fill-only shapes and text cover their raw geometry;
+// stroked rect/ellipse rounds grow by half the stroke width, and stroked
+// chains (lines, arrows, diamonds) use the shared encoder's own
+// strokedPolylineExtent -- half-width PLUS miter protrusions -- so page
+// fitting can never be tighter than the ink the encoder actually draws.
 function primExtent(prim) {
-  const pad = prim.stroke !== undefined && prim.stroke !== null
-    ? (prim.strokeWidth ?? DEFAULT_STROKE_WIDTH) / 2
-    : 0;
-  let x0, y0, x1, y1;
+  const stroked = prim.stroke !== undefined && prim.stroke !== null;
+  let box;
   if (prim.kind === "rect") {
-    x0 = prim.x; y0 = prim.y;
-    x1 = prim.x + prim.w; y1 = prim.y + prim.h;
+    box = [prim.x, prim.y, prim.x + prim.w, prim.y + prim.h];
   } else if (prim.kind === "ellipse") {
-    x0 = prim.cx - prim.rx; y0 = prim.cy - prim.ry;
-    x1 = prim.cx + prim.rx; y1 = prim.cy + prim.ry;
+    box = [prim.cx - prim.rx, prim.cy - prim.ry, prim.cx + prim.rx, prim.cy + prim.ry];
   } else if (prim.kind === "text") {
-    x0 = prim.x; y0 = prim.y;
-    x1 = prim.x + (prim.advance ?? prim.fontSize * 0.6 * prim.text.length);
-    y1 = prim.y + prim.fontSize * TEXT_LINE_HEIGHT;
+    box = [
+      prim.x,
+      prim.y,
+      prim.x + (prim.advance ?? prim.fontSize * 0.6 * prim.text.length),
+      prim.y + prim.fontSize * TEXT_LINE_HEIGHT,
+    ];
   } else {
-    x0 = Infinity; y0 = Infinity; x1 = -Infinity; y1 = -Infinity;
+    let x0 = Infinity;
+    let y0 = Infinity;
+    let x1 = -Infinity;
+    let y1 = -Infinity;
     for (const [px, py] of prim.points) {
       if (px < x0) x0 = px;
       if (py < y0) y0 = py;
       if (px > x1) x1 = px;
       if (py > y1) y1 = py;
     }
+    box = [x0, y0, x1, y1];
   }
-  const pivot = prim.pivot ?? [(x0 + x1) / 2, (y0 + y1) / 2];
-  return { x0, y0, x1, y1, pad, pivot };
+  let cosmetic = box;
+  if (stroked && (prim.kind === "polyline" || prim.kind === "polygon")) {
+    const extent = strokedPolylineExtent(
+      prim.points,
+      prim.strokeWidth ?? DEFAULT_STROKE_WIDTH,
+      prim.kind === "polygon",
+    );
+    cosmetic = [extent.x, extent.y, extent.x + extent.w, extent.y + extent.h];
+  } else if (stroked) {
+    const pad = (prim.strokeWidth ?? DEFAULT_STROKE_WIDTH) / 2;
+    cosmetic = [box[0] - pad, box[1] - pad, box[2] + pad, box[3] + pad];
+  }
+  return {
+    x0: cosmetic[0],
+    y0: cosmetic[1],
+    x1: cosmetic[2],
+    y1: cosmetic[3],
+    pivot: prim.pivot ?? [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2],
+  };
 }
 
 function pointsPivot(points) {
@@ -692,18 +714,40 @@ function text(ctx, element, index) {
   }
 
   const lines = content.split("\n");
-  let lineIndex = 0;
   let maxAdvance = 0;
   for (const line of lines) {
     if (line !== "") {
       maxAdvance = Math.max(maxAdvance, estimateAdvance(line, fontSize));
     }
-    lineIndex += 1;
+  }
+  let align = "left";
+  if (element.textAlign === "center" || element.textAlign === "right") {
+    align = element.textAlign;
+  } else if (element.textAlign === "start") {
+    align = "left";
+  } else if (element.textAlign === "end") {
+    align = "right";
+  } else if (element.textAlign !== undefined
+    && element.textAlign !== null && element.textAlign !== "left") {
+    ctx.warn(`unsupported text alignment "${String(element.textAlign)}": rendered left`);
+  }
+  let boxWidth = maxAdvance;
+  if (element.width !== undefined && element.width !== null) {
+    const rawWidth = element.width;
+    if (typeof rawWidth !== "number" || !Number.isFinite(rawWidth)
+      || Math.abs(rawWidth) > COORD_LIMIT) {
+      throw failure(
+        `${elementLabel(element, index)}: width must be a finite number within the coordinate range, not ${preview(rawWidth)}`,
+        "invalid-input",
+      );
+    }
+    // bound/container text carries the container's inner width
+    boxWidth = Math.abs(rawWidth);
   }
   // The whole element's text box: same pivot for every synthesized line so a
   // rotation turns the block as one unit around its own center.
   const boxHeight = lines.length * fontSize * TEXT_LINE_HEIGHT;
-  const pivotX = x + maxAdvance / 2;
+  const pivotX = x + boxWidth / 2;
   const pivotY = y + boxHeight / 2;
 
   let offset = 0;
@@ -716,18 +760,30 @@ function text(ctx, element, index) {
           "too-large",
         );
       }
+      const advance = estimateAdvance(line, fontSize);
+      const lineX = align === "center"
+        ? x + (boxWidth - advance) / 2
+        : align === "right"
+          ? x + boxWidth - advance
+          : x;
+      if (Math.abs(lineX) > COORD_LIMIT) {
+        throw failure(
+          `${elementLabel(element, index)}: a text line lands outside the +/-${COORD_LIMIT} coordinate range`,
+          "too-large",
+        );
+      }
       const prim = {
         kind: "text",
         pivot: [pivotX, pivotY],
-        x,
+        x: lineX,
         y: lineY,
         text: line,
         fontSize,
         family,
-        align: "left",
+        align,
         baseline: "top",
         fill: color,
-        advance: estimateAdvance(line, fontSize),
+        advance,
       };
       if (opacity !== 1) prim.opacity = opacity;
       if (angle !== 0) prim.angle = angle;
@@ -938,65 +994,41 @@ async function convertScene(bytes, options) {
     }
   }
 
-  // Page geometry. Two boxes per primitive, rotated about the primitive's
-  // pivot around the same pivot:
-  //   * the GEOMETRY box -- the plain shape/text extent. The page offset
-  //     anchors ITS edges at the 16 pt margin, so a stroke width never moves
-  //     the drawn geometry (a strokeWidth=1 and a strokeWidth=10 rect sit at
-  //     the same coordinates);
-  //   * the PADDED box -- the geometry box grown by half the stroke width,
-  //     which only widens the page so the stroke itself stays on the page.
-  // The page size is the padded union plus a 16 pt margin, rounded to
-  // integers; an empty scene keeps the default page (with a warning).
+  // Page geometry. The union of all primitives' Cosmetic extents (rotated
+  // about each element pivot) IS the ink footprint. The page offset anchors
+  // ITS minimum at the 16 pt margin -- so no matter how thick a supported
+  // stroke is, the outermost ink stays fully on the page; the page size is
+  // that union plus the margin on each side, rounded to integers. An empty
+  // scene keeps the default page (with a warning).
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
-  let padMinX = Infinity;
-  let padMinY = Infinity;
-  let padMaxX = -Infinity;
-  let padMaxY = -Infinity;
   for (const prim of ctx.primitives) {
     const extent = primExtent(prim);
     const angle = prim.angle ?? 0;
     const [pivotX, pivotY] = extent.pivot;
-    const cornersOf = (x0, y0, x1, y1) => [
-      [x0, y0],
-      [x1, y0],
-      [x1, y1],
-      [x0, y1],
+    const corners = [
+      [extent.x0, extent.y0],
+      [extent.x1, extent.y0],
+      [extent.x1, extent.y1],
+      [extent.x0, extent.y1],
     ];
-    const rotate = (corners) => {
-      if (angle !== 0) {
-        const cos = Math.cos(angle);
-        const sin = Math.sin(angle);
-        for (const corner of corners) {
-          const rx = corner[0] - pivotX;
-          const ry = corner[1] - pivotY;
-          corner[0] = pivotX + cos * rx - sin * ry;
-          corner[1] = pivotY + sin * rx + cos * ry;
-        }
+    if (angle !== 0) {
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      for (const corner of corners) {
+        const rx = corner[0] - pivotX;
+        const ry = corner[1] - pivotY;
+        corner[0] = pivotX + cos * rx - sin * ry;
+        corner[1] = pivotY + sin * rx + cos * ry;
       }
-      return corners;
-    };
-    const plain = cornersOf(extent.x0, extent.y0, extent.x1, extent.y1);
-    rotate(plain);
-    // a strokeless primitive (text, fill-only heads) pads nothing: its padded
-    // box IS the already rotated plain box
-    const padded = extent.pad > 0
-      ? rotate(cornersOf(extent.x0 - extent.pad, extent.y0 - extent.pad, extent.x1 + extent.pad, extent.y1 + extent.pad))
-      : plain;
-    for (const [px, py] of plain) {
+    }
+    for (const [px, py] of corners) {
       if (px < minX) minX = px;
       if (py < minY) minY = py;
       if (px > maxX) maxX = px;
       if (py > maxY) maxY = py;
-    }
-    for (const [px, py] of padded) {
-      if (px < padMinX) padMinX = px;
-      if (py < padMinY) padMinY = py;
-      if (px > padMaxX) padMaxX = px;
-      if (py > padMaxY) padMaxY = py;
     }
   }
 
@@ -1007,11 +1039,11 @@ async function convertScene(bytes, options) {
     width = EMPTY_PAGE.width;
     height = EMPTY_PAGE.height;
   } else {
-    // The geometry anchors at the margin; the page covers the padded union.
+
     const dx = PAGE_MARGIN - minX;
     const dy = PAGE_MARGIN - minY;
-    width = Math.round(padMaxX - padMinX + 2 * PAGE_MARGIN);
-    height = Math.round(padMaxY - padMinY + 2 * PAGE_MARGIN);
+    width = Math.round(maxX - minX + 2 * PAGE_MARGIN);
+    height = Math.round(maxY - minY + 2 * PAGE_MARGIN);
     if (width <= 0 || height <= 0 || width > PAGE_LIMIT || height > PAGE_LIMIT) {
       throw failure(
         `the scene needs a ${Math.round(width)}x${Math.round(height)} pt page, outside the page limits`,

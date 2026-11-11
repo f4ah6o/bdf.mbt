@@ -288,8 +288,8 @@ test("a rectangle renders with fill, stroke, margins and the documented shell", 
   expectOp(opened, "strokeColor", [RED]);
   expectOp(opened, "line", [2, 0, 0, 10], "stroke width 2, butt cap, miter join");
   expectOp(opened, "fillColor", [GREEN]);
-  expectOp(opened, "fillRect", [MARGIN, MARGIN, 40, 20]);
-  expectOp(opened, "strokeRect", [MARGIN, MARGIN, 40, 20]);
+  expectOp(opened, "fillRect", [MARGIN + 1, MARGIN + 1, 40, 20]);
+  expectOp(opened, "strokeRect", [MARGIN + 1, MARGIN + 1, 40, 20]);
   expectNoOp(opened, "alpha");
   expectNoOp(opened, "dash");
   expectNoOp(opened, "transform");
@@ -297,8 +297,8 @@ test("a rectangle renders with fill, stroke, margins and the documented shell", 
   expectNoOp(opened, "strokePath");
   expectNoOp(opened, "fillText");
   assert.ok(
-    indexOfOp(opened, "fillRect", [MARGIN, MARGIN, 40, 20])
-      < indexOfOp(opened, "strokeRect", [MARGIN, MARGIN, 40, 20]),
+    indexOfOp(opened, "fillRect", [MARGIN + 1, MARGIN + 1, 40, 20])
+      < indexOfOp(opened, "strokeRect", [MARGIN + 1, MARGIN + 1, 40, 20]),
     "the fill is painted before the stroke",
   );
 });
@@ -319,7 +319,7 @@ test("an ellipse renders as a filled and stroked path centered in its box", asyn
   // center (120,60), radii (20,10); scene box x 100..140, y 50..70 ->
   // page offset (-84, -34) -> translated center (36, 26), radii unchanged.
   const args = pathArgsOf(opened, strokeOp.args[0]);
-  approxArray(args.slice(0, 4), [36, 26, 20, 10], 1e-3, "the ellipse path carries center and radii");
+  approxArray(args.slice(0, 4), [37, 27, 20, 10], 1e-3, "the ellipse path carries center and radii");
   for (const value of args) {
     assert.ok(Number.isFinite(value), "ellipse path args are finite");
   }
@@ -334,7 +334,9 @@ test("a diamond renders the four inscribed side midpoints", async () => {
   const strokeOp = opsOf(opened).find(op => op.op === "strokePath");
   assert.ok(fillOp && strokeOp, "a closed polygon fills and strokes a path");
   const args = pathArgsOf(opened, strokeOp.args[0]);
-  approxArray(args, [20 + MARGIN, MARGIN, 40 + MARGIN, 10 + MARGIN, 20 + MARGIN, 20 + MARGIN, MARGIN, 10 + MARGIN], 1e-3,
+  approxArray(args,
+    [38.236068, 17.118034, 58.236068, 27.118034, 38.236068, 37.118034, 18.236068, 27.118034],
+    1e-3,
     "the diamond path walks top/right/bottom/left midpoints");
   approxArray(pathArgsOf(opened, fillOp.args[0]), args.slice(0, 8), 1e-3);
 });
@@ -358,7 +360,7 @@ test("lines and arrows render polylines in absolute coordinates", async () => {
   expectNoOp(opened, "fillRect");
   // scene box x 10..40, y 20..60 -> offset (6, -4)
   approxArray(pathArgsOf(opened, strokeOp.args[0]),
-    [16, 16, 46, 26, 46, 56], 1e-3,
+    [17, 17, 47, 27, 47, 57], 1e-3,
     "points are made absolute with element x/y and translated to the margin");
 });
 
@@ -383,9 +385,9 @@ test("an arrow adds a solid head on the final segment (documented formula)", asy
   // base half-width 10 -> corners (30,10) and (30,-10). Scene box
   // x 0..50, y -10..10 -> page offset (16, 26).
   approxArray(pathArgsOf(opened, fillOps[0].args[0]),
-    [66, 26, 46, 16, 46, 36], 1e-3,
+    [67, 26, 47, 16, 47, 36], 1e-3,
     "the head triangle is tip, then its two base corners");
-  approxArray(pathArgsOf(opened, strokeOp.args[0]), [16, 26, 66, 26], 1e-3, "the shaft spans the two points");
+  approxArray(pathArgsOf(opened, strokeOp.args[0]), [17, 26, 67, 26], 1e-3, "the shaft spans the two points");
 });
 
 test('arrowhead "none" suppresses the head; "triangle" warns once', async () => {
@@ -487,27 +489,28 @@ test("opacity maps to alpha and rotation to a transform around the shape center"
   const ops = opsOf(opened);
 
   //Rotated 90 degrees: cos ~ 0, sin = 1. The 40x20 rect at (10,10) rotated
-  // around its center (30,20) occupies (20,0)-(40,40); after the page offset
-  // (-4, 16) the center sits at (26,36). The rotation group is
-  // save, translate(26,36), transform(0,1,-1,0,0,0), translate(-26,-36),
+  // around its center (30,20) occupies (20,0)-(40,40); the STROKE-INCLUSIVE
+  // rotated box (19,-1)-(41,41) anchors at the margin, so the page offset is
+  // (-3, 17) and the center sits at (27,37). The rotation group is
+  // save, translate(27,37), transform(0,1,-1,0,0,0), translate(-27,-37),
   // alpha(0.5), styles, fillRect, strokeRect, restore.
   checkDocumentShell(opened, { width: 52 + 2, height: 72 + 2 });
   const saveIndex = ops.findIndex(op => op.op === "save");
   assert.ok(saveIndex >= 0, "a rotated shape opens with save");
   assert.equal(ops[saveIndex + 1].op, "translate", "the pivot moves to the center");
-  approxArray(ops[saveIndex + 1].args, [26, 36], 1e-6, "center translate");
+  approxArray(ops[saveIndex + 1].args, [27, 37], 1e-6, "center translate");
   const transformIndex = saveIndex + 2;
   assert.equal(ops[transformIndex].op, "transform", "the rotation is a transform op");
   approxArray(ops[transformIndex].args, [0, 1, -1, 0, 0, 0], 1e-9, "rotation matrix with no translation of its own");
   assert.equal(ops[transformIndex + 1].op, "translate", "the pivot moves back");
-  approxArray(ops[transformIndex + 1].args, [-26, -36], 1e-6, "back-translate");
+  approxArray(ops[transformIndex + 1].args, [-27, -37], 1e-6, "back-translate");
   const alphaIndex = transformIndex + 2;
   assert.equal(ops[alphaIndex].op, "alpha", "alpha follows the rotation");
   approx(ops[alphaIndex].args[0], 0.5, 1e-6);
   const restoreIndex = ops.findIndex((op, index) => index > transformIndex && op.op === "restore");
   assert.ok(restoreIndex > alphaIndex, "the rotation closes with restore");
-  const fillIndex = indexOfOp(opened, "fillRect", [10 - 4, 10 + 16, 40, 20]);
-  const strokeIndex = indexOfOp(opened, "strokeRect", [10 - 4, 10 + 16, 40, 20]);
+  const fillIndex = indexOfOp(opened, "fillRect", [10 - 3, 10 + 17, 40, 20]);
+  const strokeIndex = indexOfOp(opened, "strokeRect", [10 - 3, 10 + 17, 40, 20]);
   assert.ok(alphaIndex < fillIndex && fillIndex < strokeIndex && strokeIndex < restoreIndex,
     "the shape paints inside its rotation group, fill before stroke");
   // the group makes the matrix behave: transform * (point) maps the rect's
@@ -594,7 +597,7 @@ test("hatch fills drop the fill and warn once", async () => {
   expectNoOp(opened, "fillColor");
   expectNoOp(opened, "fillRect");
   expectNoOp(opened, "fillPath");
-  expectOp(opened, "strokeRect", [MARGIN, MARGIN, 40, 20]);
+  expectOp(opened, "strokeRect", [MARGIN + 1, MARGIN + 1, 40, 20]);
   assert.equal(result.warnings.length, 1, "one hatch warning regardless of the hatch flavor");
   assert.match(result.warnings[0], /hatch/);
 });
@@ -613,7 +616,7 @@ test("roundness approximates corners with min(16, min(w,h)/4) and warns once", a
   assert.ok(strokeOp && fillOp, "a rounded rect fills and strokes a path");
   expectNoOp(rounded.opened, "fillRect");
   approxArray(pathArgsOf(rounded.opened, strokeOp.args[0]),
-    [MARGIN, MARGIN, 120, 60, 15], 1e-3, "roundRect verb with computed radius");
+    [MARGIN + 1, MARGIN + 1, 120, 60, 15], 1e-3, "roundRect verb with computed radius");
   const capped = await convertDoc({
     type: "excalidraw",
     elements: [rectElement({ roundness: 5, width: 8, height: 8 }), rectElement({ roundness: 5, width: 8, height: 8, y: 40 })],
@@ -624,7 +627,7 @@ test("roundness approximates corners with min(16, min(w,h)/4) and warns once", a
     elements: [rectElement({ roundness: null, width: 8, height: 8 })],
   });
   assert.deepEqual(flat.result.warnings, [], "roundness: null is not present");
-  expectOp(flat.opened, "fillRect", [MARGIN, MARGIN, 8, 8], "roundness: null renders a plain rect");
+  expectOp(flat.opened, "fillRect", [MARGIN + 1, MARGIN + 1, 8, 8], "roundness: null renders a plain rect");
 });
 
 test("deleted elements never render, silently", async () => {
@@ -705,6 +708,50 @@ test("the summary counts painted elements only", async () => {
 ///|
 // page geometry ------------------------------------------------------------
 
+///|
+// review item 1: the cosmetic (stroke-inclusive) extent anchors at the
+// margin, so thick strokes never leave the page ---------------------------
+
+test("thick strokes stay fully on the page; ink anchors at the margin", async () => {
+  const { opened } = await openDoc({ elements: [rectElement({ strokeWidth: 100 })] });
+  // 40x20 rect, sw 100: cosmetic box (-50,50)-(90,70) -> page offset (66,66)
+  checkDocumentShell(opened, { width: 40 + 100 + 2 * MARGIN, height: 20 + 100 + 2 * MARGIN });
+  expectOp(opened, "strokeRect", [MARGIN + 50, MARGIN + 50, 40, 20],
+    "a strokeWidth-100 rect decodes at the margin plus half its stroke");
+  const strokeOp = expectOp(opened, "strokeRect", [MARGIN + 50, MARGIN + 50, 40, 20]);
+  for (const value of strokeOp.args) {
+    assert.ok(value >= MARGIN, `every decoded op coordinate stays on-page (${value})`);
+  }
+  approx(opened.object.bbox.x, MARGIN, 1e-2, "the ink bbox starts exactly at the margin");
+  approx(opened.object.bbox.y, MARGIN, 1e-2, "the ink bbox starts exactly at the margin");
+  approx(opened.object.bbox.x + opened.object.bbox.w, opened.page.w - MARGIN, 1e-2,
+    "the ink bbox ends exactly at the other margin");
+  approx(opened.object.bbox.y + opened.object.bbox.h, opened.page.h - MARGIN, 1e-2,
+    "the ink bbox ends exactly at the other margin");
+
+  // boundary: sw 32 (half the 16 pt margin) and one step past it
+  const atBoundary = await openDoc({ elements: [rectElement({ strokeWidth: 32 })] });
+  expectOp(atBoundary.opened, "strokeRect", [MARGIN + 16, MARGIN + 16, 40, 20],
+    "sw 32: the fill sits at margin + 16, its stroke touches the page edge exactly at 16");
+  approx(atBoundary.opened.object.bbox.x, MARGIN, 1e-2);
+  const pastBoundary = await openDoc({ elements: [rectElement({ strokeWidth: 33 })] });
+  expectOp(pastBoundary.opened, "strokeRect", [MARGIN + 16.5, MARGIN + 16.5, 40, 20],
+    "sw 33 shifts by its own half stroke, its ink still starts at 16");
+  approx(pastBoundary.opened.object.bbox.x, MARGIN, 1e-2);
+
+  // strokeless content anchors its GEOMETRY exactly at the margin: the ink
+  // IS the geometry, so the classic thin default case stays at (16,16)
+  const fillOnly = await openDoc({
+    elements: [{
+      type: "rectangle", id: "f", x: 0, y: 0, width: 30, height: 30,
+      strokeColor: "transparent", backgroundColor: "#00ff00", fillStyle: "solid",
+    }],
+  });
+  expectOp(fillOnly.opened, "fillRect", [MARGIN, MARGIN, 30, 30],
+    "a fill-only rect decodes exactly at the margin");
+  approx(fillOnly.opened.object.bbox.x, MARGIN, 1e-2);
+});
+
 test("page geometry unions rendered extents plus a 16pt margin", async () => {
   const { opened } = await openDoc({
     type: "excalidraw",
@@ -715,8 +762,8 @@ test("page geometry unions rendered extents plus a 16pt margin", async () => {
   });
   // extent x 10.5..210, y -50..60 -> 231.5 -> 232 and 142 wide/tall pages
   checkDocumentShell(opened, { width: Math.round(199.5 + 2 + 2 * MARGIN), height: (60 - -50) + 2 + 2 * MARGIN });
-  expectOp(opened, "strokeRect", [MARGIN, 86, 30, 40], "the leftmost element anchors at the margin in x");
-  expectOp(opened, "strokeRect", [205.5, MARGIN, 10, 10], "the uppermost element anchors at the margin in y");
+  expectOp(opened, "strokeRect", [MARGIN + 1, 87, 30, 40], "the leftmost element anchors at the margin in x");
+  expectOp(opened, "strokeRect", [206.5, MARGIN + 1, 10, 10], "the uppermost element anchors at the margin in y");
 });
 
 test("an empty scene keeps a default 640x480 page", async () => {
@@ -900,8 +947,8 @@ test("arrowheads resolve per end: absent, null, arrow, triangle, unsupported", a
   const both = await heads({ startArrowhead: "arrow" });
   const firstHead = pathArgsOf(both.opened, both.fills[0].args[0]);
   const secondHead = pathArgsOf(both.opened, both.fills[1].args[0]);
-  approxArray(firstHead.slice(0, 2), [76, 26], 1e-3, "the end head tip sits on the last point");
-  approxArray(secondHead.slice(0, 2), [16, 26], 1e-3, "the start head tip sits on the first point");
+  approxArray(firstHead.slice(0, 2), [77, 26], 1e-3, "the end head tip sits on the last point");
+  approxArray(secondHead.slice(0, 2), [17, 26], 1e-3, "the start head tip sits on the first point");
 });
 
 ///|
@@ -1106,7 +1153,7 @@ test("missing paints default correctly: background transparent, stroke #1e1e1e",
   });
   expectNoOp(noBackground.opened, "fillColor", "no background key means no fill, not a dark fill");
   expectNoOp(noBackground.opened, "fillRect");
-  expectOp(noBackground.opened, "strokeRect", [MARGIN, MARGIN, 30, 30]);
+  expectOp(noBackground.opened, "strokeRect", [MARGIN + 1, MARGIN + 1, 30, 30]);
   assert.deepEqual(noBackground.result.warnings, []);
 
   const noStroke = await openDoc({
@@ -1154,7 +1201,126 @@ test("unsupported features warn explicitly, once each, in order", async () => {
 });
 
 ///|
+// review item 2: textAlign is real for left/center/right, inside the
+// element's own text box --------------------------------------------------
+
+test("textAlign left/center/right place unequal lines inside the text box", async () => {
+  const lines = "a\nmedium line\na very much longer line";
+  const fontSize = 20;
+  // narrow codepoints count 0.6 em; the widest line measures 23 * 0.6 * 20
+  const box = 276;
+  const advances = [12, 132, 276];
+  const cases = [
+    ["left", 0, [0, 0, 0]],
+    ["center", 2, [(box - 12) / 2, (box - 132) / 2, 0]],
+    ["right", 1, [box - 12, box - 132, box - 276]],
+  ];
+  for (const [align, alignOp, offsets] of cases) {
+    const { opened } = await openDoc({
+      elements: [{
+        type: "text", id:align, x: 10, y: 50, text: lines, fontSize,
+        textAlign: align, strokeColor: "#000000",
+      }],
+    });
+    const textOps = opsOf(opened).filter(op => op.op === "fillText");
+    assert.equal(textOps.length, 3, `${align}: three non-empty lines`);
+    for (let i = 0; i < 3; i += 1) {
+      // line i starts at element.x + offset_i; the whole box anchors at 16
+      approx(textOps[i].args[1], 10 + offsets[i] + (MARGIN - 10 - Math.min(...offsets)), 1e-3,
+        `${align}: line ${i} decodes at its aligned x`);
+      approx(textOps[i].args[3], advances[i], 1e-3, `${align}: line ${i} keeps its CJK-aware advance`);
+    }
+    const style = opsOf(opened).find(op => op.op === "textStyle");
+    assert.ok(style, `${align}: a textStyle op exists`);
+    assert.equal(style.args[0], alignOp, `${align} maps to the contract align value`);
+    assert.equal(style.args[1], 1, "baseline stays top");
+  }
+
+  // bound/container text: the element's OWN width is the box, wider than
+  // every line; right-aligned lines all end at the box's right edge
+  const bound = await openDoc({
+    elements: [{
+      type: "text", id: "b", x: 0, y: 50, text: lines, fontSize, width: 400,
+      textAlign: "right", strokeColor: "#000000",
+    }],
+  });
+  const boundOps = opsOf(bound.opened).filter(op => op.op === "fillText");
+  // the element box runs 0..400; the widest line STARTS at 400 - 276 = 124,
+  // which becomes the ink minimum, so the page offset pushes every line by
+  // 16 - 124 and each line ends exactly at 400 + 16
+  const boundOffset = MARGIN - (400 - 276);
+  for (let i = 0; i < 3; i += 1) {
+    approx(boundOps[i].args[1], 400 - advances[i] + boundOffset, 1e-3, `bound right line ${i}`);
+  }
+  // every right-aligned line ends at ONE decoded point: boxWidth + margin
+  for (const line of boundOps) {
+    approx(line.args[1] + line.args[3], 276 + MARGIN, 1e-3,
+      "every right-aligned line ends at the box's right edge");
+  }
+  checkDocumentShell(bound.opened, { width: 276 + 2 * MARGIN, height: 3 * 25 + 2 * MARGIN });
+
+  // mixed CJK: centered wide and narrow lines share the element box
+  const cjk = await openDoc({
+    elements: [{
+      type: "text", id: "jp", x: 0, y: 0, text: "こんにちは\nhi", fontSize,
+      textAlign: "center", strokeColor: "#000000",
+    }],
+  });
+  const cjkOps = opsOf(cjk.opened).filter(op => op.op === "fillText");
+  assert.equal(cjkOps[0].args[0], "こんにちは");
+  approx(cjkOps[0].args[1], MARGIN, 1e-3, "the widest (CJK) line centers to the box");
+  approx(cjkOps[0].args[3], 100, 1e-3);
+  approx(cjkOps[1].args[1], MARGIN + (100 - 24) / 2, 1e-3, "the narrow ASCII line centers inside it");
+  approx(cjkOps[1].args[3], 24, 1e-3);
+
+  // unknown alignment values warn once and render left
+  const fallback = await openDoc({
+    elements: [
+      { type: "text", id: "a", x: 0, y: 0, text: "x", fontSize, textAlign: "justify", strokeColor: "#000000" },
+      { type: "text", id: "b", x: 0, y: 60, text: "y", fontSize, textAlign: "weird", strokeColor: "#000000" },
+    ],
+  });
+  assert.deepEqual(fallback.result.warnings.length, 2, "one warning per unknown value");
+  assert.match(fallback.result.warnings[0], /justify/);
+  const fallbackStyle = opsOf(fallback.opened).find(op => op.op === "textStyle");
+  assert.equal(fallbackStyle.args[0], 0, "unknown alignments render left");
+});
+
+///|
 // Japanese labels: Unicode strings survive with a CJK-aware advance --------
+
+///|
+// review item 3: negative rect geometry normalizes; zero-area paints nothing
+
+test("negative rect width/height normalize to their corner box", async () => {
+  const { opened } = await openDoc({
+    elements: [{
+      type: "rectangle", id: "r", x: 100, y: 100, width: -80, height: -50,
+      strokeColor: "#ff0000", backgroundColor: "#00ff00", fillStyle: "solid",
+      strokeStyle: "solid", strokeWidth: 10,
+    }],
+  });
+  // normalized box (20,50)-(100,100); sw 10 -> cosmetic (15,45)-(105,105);
+  // the ink anchors at the margin: offset (1,-29)
+  const width = 105 - 15;
+  const height = 105 - 45;
+  checkDocumentShell(opened, { width: width + 2 * MARGIN, height: height + 2 * MARGIN });
+  expectOp(opened, "strokeRect", [20 + 1, 50 - 29, 80, 50], "the corner box, normalized");
+  expectOp(opened, "fillRect", [21, 21, 80, 50]);
+  approx(opened.object.bbox.x, MARGIN, 1e-2);
+  approx(opened.object.bbox.y, MARGIN, 1e-2);
+  approx(opened.object.bbox.w, width, 1e-2, "the review's (15,45,90,60) pre-offset box");
+  approx(opened.object.bbox.h, height, 1e-2);
+
+  // zero-area geometry paints nothing and converts without error
+  const flat = await openDoc({
+    elements: [rectElement({ id: "flat", width: 0 }), rectElement({ id: "live", y: 100 })],
+  });
+  assert.equal(flat.result.summary, "1 page, 1 element(s)", "degenerate elements do not count");
+  assert.equal(opsOf(flat.opened).filter(op => op.op === "fillRect").length, 1,
+    "only the live rect paints");
+  assert.deepEqual(flat.result.warnings, [], "degenerate geometry is not an error");
+});
 
 test("text advance is CJK-aware for Japanese labels", async () => {
   const { opened } = await openDoc({
@@ -1397,6 +1563,18 @@ async function verifyPbtCase(doc, info) {
       assert.ok(op.args[2] > 0 && op.args[3] > 0, "rect width/height are positive");
     }
   }
+  // ink containment: the decoded object bbox -- stroke padding and miter
+  // protrusions included -- must sit inside the margin band of the page
+  if (info.painted > 0) {
+    const bbox = opened.object.bbox;
+    assert.ok(bbox.x > MARGIN - 0.6, `ink bbox starts on-page (x=${bbox.x})`);
+    assert.ok(bbox.y > MARGIN - 0.6, `ink bbox starts on-page (y=${bbox.y})`);
+    assert.ok(opened.page.w - (bbox.x + bbox.w) > MARGIN - 0.8,
+      `ink ends inside the right margin (page ${opened.page.w}, ink ${bbox.x + bbox.w})`);
+    assert.ok(opened.page.h - (bbox.y + bbox.h) > MARGIN - 0.8,
+      `ink ends inside the bottom margin (page ${opened.page.h}, ink ${bbox.y + bbox.h})`);
+  }
+
   // every group is closed: restores match saves
   const saves = opened.ops.filter(op => op.op === "save").length;
   const restores = opened.ops.filter(op => op.op === "restore").length;
