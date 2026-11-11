@@ -264,6 +264,88 @@ test("strokedPolylineExtent matches the encoded object bounds before rotation", 
   assert.ok(Math.abs(extent.x - opened.object.bbox.x) < 1e-3);
 });
 
+test("consecutive duplicate vertices do not defeat the miter bound", async () => {
+  // The duplicate apex still renders the same corner; the bound must reach
+  // the same protrusion as the clean three-point polyline.
+  const opened = await openDiagram(await encodeDiagram({
+    width: 200, height: 140, source: "smoke", title: "",
+    primitives: [{ kind: "polyline", points: [[0, 100], [50, 0], [50, 0], [100, 100]], stroke: BLACK, strokeWidth: 10 }],
+  }));
+  assert.ok(Math.abs(opened.object.bbox.y - -11.18034) < 1e-2, JSON.stringify(opened.object.bbox));
+  assert.ok(Math.abs(opened.object.bbox.x - -5) < 1e-2, JSON.stringify(opened.object.bbox));
+  // A duplicate at the closed-ring seam likewise keeps the apex bound.
+  const seamDup = await openDiagram(await encodeDiagram({
+    width: 200, height: 140, source: "smoke", title: "",
+    primitives: [{ kind: "polygon", points: [[50, 60], [50, 60], [0, 40], [50, 0], [100, 40], [50, 60]], stroke: BLACK, strokeWidth: 10 }],
+  }));
+  assert.ok(Math.abs(seamDup.object.bbox.y - -6.40) < 1e-2, JSON.stringify(seamDup.object.bbox));
+  assert.ok(Math.abs(seamDup.object.bbox.x - -9.93) < 1e-2, JSON.stringify(seamDup.object.bbox));
+});
+
+test("the adapter page-enclosure path sees the same miter bound (duplicates included)", async () => {
+  const { excalidrawPlugin } = await import("../src/adapters/excalidraw.js");
+  const scene = JSON.stringify({
+    type: "excalidraw",
+    elements: [
+      { id: "l", type: "line", x: 0, y: 0, points: [[0, 0], [100, 100], [100, 100], [200, 0]], strokeWidth: 10, strokeColor: "#1e1e1e" },
+    ],
+  });
+  const result = await excalidrawPlugin().convert(new TextEncoder().encode(scene), { params: {} });
+  const opened = await openDiagram(result.bdf);
+  // Page fitting anchors the shared helper's extent at the 16 pt margin, so
+  // the duplicate-vertex join cannot push ink off the page.
+  assert.ok(opened.object.bbox.x >= 16 - 1e-3, JSON.stringify(opened.object.bbox));
+  assert.ok(opened.object.bbox.y >= 16 - 1e-3, JSON.stringify(opened.object.bbox));
+  assert.ok(opened.object.bbox.x + opened.object.bbox.w <= opened.page.w - 16 + 1e-3, JSON.stringify({ bbox: opened.object.bbox, page: opened.page }));
+  assert.ok(opened.object.bbox.y + opened.object.bbox.h <= opened.page.h - 16 + 1e-3, JSON.stringify({ bbox: opened.object.bbox, page: opened.page }));
+});
+
+test("excalidraw alignment: every line shares the decoded anchor and the bbox holds the margin", async () => {
+  const { excalidrawPlugin } = await import("../src/adapters/excalidraw.js");
+  const scene = align => JSON.stringify({
+    type: "excalidraw",
+    elements: [
+      { id: "t", type: "text", x: 0, y: 0, width: 100, text: "abcdef\na", textAlign: align, fontSize: 20 },
+    ],
+  });
+  for (const align of ["center", "right"]) {
+    const result = await excalidrawPlugin().convert(new TextEncoder().encode(scene(align)), { params: {} });
+    const opened = await openDiagram(result.bdf);
+    const xs = [];
+    let alignOp = null;
+    for (const op of opened.ops) {
+      if (op.op === "textStyle") alignOp = op.args[0];
+      if (op.op === "fillText") xs.push(op.args[1]);
+    }
+    assert.equal(alignOp, align === "center" ? 2 : 1, `${align}: ${JSON.stringify(opened.ops.filter(o => o.op === "textStyle"))}`);
+    // Both lines — unequal widths — share the anchor: a common glyph center
+    // for center, a common decoded right edge for right.
+    assert.equal(new Set(xs.map(x => Math.round(x * 1000) / 1000)).size, 1, `${align}: ${JSON.stringify(xs)}`);
+    // The earlier double-application bug produced bbox x = -20 (center) and
+    // -56 (right); the fixed anchors keep the whole band inside the page.
+    assert.ok(opened.object.bbox.x >= 16 - 1e-3, `${align}: ${JSON.stringify(opened.object.bbox)}`);
+    assert.ok(opened.object.bbox.y >= 16 - 1e-3, `${align}: ${JSON.stringify(opened.object.bbox)}`);
+  }
+});
+
+test("declaration parity: diagram-bdf runtime exports match diagram-bdf.d.ts", async () => {
+  const module_ = await import("../src/diagram-bdf.js");
+  const fs = await import("node:fs");
+  const dts = fs.readFileSync(new URL("../types/diagram-bdf.d.ts", import.meta.url), "utf8");
+  const runtimeExports = Object.keys(module_).filter(key => key !== "default");
+  for (const name of runtimeExports) {
+    assert.ok(
+      new RegExp(`^export (?:const|function|class) ${name}\\b`, "m").test(dts)
+        || new RegExp(`\\bexport \\{[^}]*\\b${name}\\b`, "m").test(dts),
+      `runtime export "${name}" is missing from diagram-bdf.d.ts`,
+    );
+  }
+  const declaredValues = [...dts.matchAll(/^export (?:const|function|class) ([A-Za-z0-9_]+)/gm)].map(match => match[1]);
+  for (const name of declaredValues) {
+    assert.ok(module_[name] !== undefined, `d.ts value export "${name}" has no runtime export`);
+  }
+});
+
 test("negative rect dimensions normalize corners before padding and rotation", async () => {
   // Same right edge at (100,100) as {x:20,y:50,w:80,h:50}; padding by 5 then
   // yields (15,45,90,60) instead of an inside-out box.

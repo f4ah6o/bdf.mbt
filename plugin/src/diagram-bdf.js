@@ -591,7 +591,9 @@ function pointList(prim, minPoints, what) {
 // default and the bounding box (the rotated AABB of these corners).
 // `points` is the validated points list (or null), `text` the resolved text
 // metrics (or null); both come from the validation pass.
-const MITER_LIMIT = 10; // the miter limit every emitted line() op carries
+// The miter limit every emitted line() op carries; exported because the
+// d.ts documents it and the extent helpers below clamp by it.
+export const MITER_LIMIT = 10;
 
 ///|
 // The stroke protrusion of a miter join at vertex `at`, joining the segment
@@ -621,6 +623,31 @@ export function strokeJoinProtrusion(prev, at, next, strokeWidth) {
 }
 
 ///|
+// Consecutive duplicate vertices render no geometry of their own, but they
+// must not hide the join between the distinct segments on either side of
+// them (the rendered corner stays). Extent math therefore works on a copy
+// with consecutive duplicates collapsed; a closed ring also drops a final
+// vertex that repeats the first, so the seam's join is found too.
+function dedupeStrokedPoints(points, closed) {
+  const out = [];
+  for (const point of points) {
+    const last = out[out.length - 1];
+    if (last !== undefined && last[0] === point[0] && last[1] === point[1]) {
+      continue;
+    }
+    out.push(point);
+  }
+  if (closed && out.length > 1) {
+    const first = out[0];
+    const last = out[out.length - 1];
+    if (first[0] === last[0] && first[1] === last[1]) {
+      out.pop();
+    }
+  }
+  return out;
+}
+
+///|
 // The page-space extent of a stroked polyline or closed polygon ring: the
 // point cloud grown by half the stroke width on each side, plus the miter
 // protrusions at the interior (a closed ring: every) vertices. Adapters use
@@ -640,17 +667,18 @@ export function strokedPolylineExtent(points, strokeWidth, closed = false) {
   if (Number.isFinite(x0)) {
     x0 -= half; y0 -= half; x1 += half; y1 += half;
   }
-  const count = points.length;
+  const sane = dedupeStrokedPoints(points, closed);
+  const count = sane.length;
   for (let i = 1; i < count - 1; i += 1) {
     // Polyline: only interior vertices carry a join.
-    const p = strokeJoinProtrusion(points[i - 1], points[i], points[i + 1], strokeWidth);
-    include(points[i][0] - p, points[i][1] - p);
-    include(points[i][0] + p, points[i][1] + p);
+    const p = strokeJoinProtrusion(sane[i - 1], sane[i], sane[i + 1], strokeWidth);
+    include(sane[i][0] - p, sane[i][1] - p);
+    include(sane[i][0] + p, sane[i][1] + p);
   }
   if (closed && count > 2) {
     // A closed ring joins at every vertex, including the seam.
     const ring = [
-      points[count - 1], ...points, points[0],
+      sane[count - 1], ...sane, sane[0],
     ];
     for (let i = 1; i < ring.length - 1; i += 1) {
       const p = strokeJoinProtrusion(ring[i - 1], ring[i], ring[i + 1], strokeWidth);
