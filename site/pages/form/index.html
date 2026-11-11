@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../site.css">
+<meta name="description" content="BDF.mbt のフォーム。テンプレートを選び、データを入れて、記入済みの帳票をプレビューし、BDF と PDF で保存します。テンプレートもデータもブラウザの外へ出ません。">
+<title>フォーム – BDF.mbt</title>
+</head>
+<body class="tool">
+<a class="skip" href="#content">本文へ移動</a>
+<header class="bar">
+<nav aria-label="サイト">
+<a class="home" href="../index.html">BDF.mbt</a>
+<ul>
+<li><a href="../viewer/">ビューア</a></li>
+<li><a href="./" aria-current="page">フォーム</a></li>
+<li><a href="../thumbnail/">サムネイル</a></li>
+<li><a href="../text/">検索テキスト</a></li>
+<li><a href="../docs/index.html">ドキュメント</a></li>
+<li><a href="https://github.com/f4ah6o/bdf.mbt">GitHub</a></li>
+</ul>
+</nav>
+</header>
+<main id="content" class="wrap" tabindex="-1">
+<h1>フォーム</h1>
+<p class="lead">テンプレートを選び、データを入れて、記入済みの帳票をプレビューし、BDF と PDF で保存します。テンプレートもデータもブラウザの外へ出ません。読む・作る・描くは、すべて bdf.mbt の <code>form</code> パッケージが行います。</p>
+<div class="tabs formtabs" role="tablist" aria-label="フォームの作業">
+<button type="button" role="tab" id="tabTemplate" aria-controls="templatePanel" aria-selected="true">テンプレート</button>
+<button type="button" role="tab" id="tabData" aria-controls="dataPanel" aria-selected="false" tabindex="-1" disabled>データ</button>
+<button type="button" role="tab" id="tabPreview" aria-controls="previewPanel" aria-selected="false" tabindex="-1" disabled>プレビュー</button>
+</div>
+<p class="status" id="status" role="status" aria-live="polite">テンプレートを選ぶか、サンプルから始めてください。</p>
+<section id="templatePanel" role="tabpanel" aria-labelledby="tabTemplate">
+<p>タグ（<code>{{customer}}</code> など）を書いた Office のテンプレート、フォームの欄を持つ PDF、<a href="https://pdfme.com/">pdfme</a> のテンプレート、タグを書いたテキストが使えます。</p>
+<div class="drop">
+<p><button type="button" class="button primary" id="choose">テンプレートを選ぶ…</button>（.xlsx・.docx・.pptx・.pdf・pdfme の .json・タグを書いた .txt・.bdft・記入途中の .bdff）か、ページのどこかにドロップしてください。</p>
+<input id="file" type="file" hidden accept=".xlsx,.xlsm,.xltx,.xltm,.docx,.docm,.dotx,.dotm,.pptx,.pptm,.potx,.potm,.pdf,.json,.txt,.bdft,.bdff">
+<div class="sample-style" id="sampleStyleControls" hidden>
+<label for="sampleStyle">サンプルの体裁</label>
+<select id="sampleStyle" aria-describedby="sampleStyleNote">
+<option value="standard">標準 · 業務帳票</option>
+<option value="modern">モダン · 余白を広く</option>
+</select>
+<span class="note" id="sampleStyleNote">白黒で、題名を中央に、表は格子で囲みます。</span>
+</div>
+<table class="presets" id="presets" hidden>
+<caption>データが入ったサンプルから始めることもできます:</caption>
+<tbody></tbody>
+</table>
+<p class="note">元のテンプレートをダウンロードして、Excel・Word・PowerPoint で体裁を変えられます。<code>{{…}}</code> のタグを残したまま、編集したテンプレートをここに読み込んでください。</p>
+</div>
+<details class="limits" id="limits">
+<summary>このページでできないこと</summary>
+<ul>
+<li><strong>Office のテンプレートの画像</strong>は入りません。写真・QR コード・バーコード・署名・印影のタグは空のまま残り、記入のたびに「注意」に出ます（bdf.mbt の <code>form/ooxml</code> は画像を埋め込みません）。pdfme のテンプレートでは、PNG・JPEG・SVG の画像が入ります。</li>
+<li><strong>手書きの署名パッドと、印影の白抜き</strong>はありません。署名と印影の欄は、画像を選ぶか、データ URL を入れる欄です。</li>
+<li><strong>PDF/A もタグ付き PDF も書き出せません</strong>。書き出せるのは PDF だけです（上流は PDF/A-2b・2u・2a とタグ付き PDF も書けます）。</li>
+<li><strong>Excel のシート表示の帳票は PDF に書き出せません</strong>。プレビューと BDF・.bdft の保存はできます。PDF にできるのはページを持つ帳票（Word・PowerPoint・PDF フォーム・テキスト・pdfme）だけです。</li>
+<li><strong>プレビューはブラウザのフォント、PDF は同梱のフォント</strong>です。プレビューは端末のフォントで描きます（BDF にフォントは入りません）。PDF は <code>site/form/fonts/</code> の M PLUS 1p（Office・pdfme）と M PLUS 1 Code（テキスト）を同梱し、使った文字のサブセットを埋め込みます。同梱のフォントに字形の無い文字は、別の字に置き換えずに省き、「注意」に残します。</li>
+<li><strong>上流のサンプルの一部はまだ読めません</strong>。結合したセルをまたぐ繰り返しの行（<code>form-rows.xlsx</code>・<code>form-pages.xlsx</code>）、<code>{{#tags}}</code> の外に <code>{{#_last}}</code> を置いた PowerPoint（<code>form-fixed.pptx</code>）、<code>{{#rows}}</code> の外に <code>{{#_blank_first}}</code> を置いた PowerPoint（<code>form-pages.pptx</code>）、相互参照のない PDF（<code>application.pdf</code>）です。サンプルには、読めるものだけを並べています。</li>
+<li><strong><code>_blank_first</code> は Office のテンプレートでは効きません</strong>。繰り返す行の余白を入れる印で、テキストのテンプレートでは効きますが、Excel・Word・PowerPoint では「データに <code>_blank_first</code> がない」という注意になります。</li>
+</ul>
+</details>
+<details class="how" id="how" hidden>
+<summary>同じことをコードから行う</summary>
+<pre><code id="api"></code></pre>
+<p class="note">テンプレートの書き方（タグ、繰り返す行、図、QR コードとバーコード）、PDF フォームと pdfme のテンプレートで何が入るか、PDF の種類については、上流の <a href="https://shibukawa.github.io/bdf/docs/forms.ja.html">帳票を作る</a> を参照してください。</p>
+</details>
+</section>
+<section class="pane" id="dataPanel" role="tabpanel" aria-labelledby="tabData" hidden>
+<div class="panehead">
+<h2 id="dataTitle">データ</h2>
+<div class="tabs" role="tablist" aria-label="データの表示">
+<button type="button" role="tab" id="tabForm" aria-controls="fields" aria-selected="true">フォーム</button>
+<button type="button" role="tab" id="tabJson" aria-controls="jsonPanel" aria-selected="false" tabindex="-1">JSON</button>
+<button type="button" role="tab" id="tabSchema" aria-controls="schemaPanel" aria-selected="false" tabindex="-1">スキーマ</button>
+</div>
+</div>
+<form class="fields" id="fields" role="tabpanel" aria-labelledby="tabForm" novalidate autocomplete="off"></form>
+<div id="jsonPanel" role="tabpanel" aria-labelledby="tabJson" hidden>
+<textarea class="output" id="json" spellcheck="false" aria-label="データの JSON" aria-describedby="jsonNote"></textarea>
+<p class="note" id="jsonNote">テンプレートに入れるデータの JSON です。ここで直すか、<a id="saveJson" download="data.json">保存</a> してください。</p>
+</div>
+<div id="schemaPanel" role="tabpanel" aria-labelledby="tabSchema" hidden>
+<pre class="schema" tabindex="0"><code id="schema"></code></pre>
+<p class="note">テンプレートのタグから作ったデータの JSON Schema です（<code>form.schema_of</code>）。このフォームはこれから作っています。<a id="saveSchema" download="schema.json">保存</a></p>
+</div>
+</section>
+<section class="pane" id="previewPanel" role="tabpanel" aria-labelledby="tabPreview" hidden>
+<div class="panehead">
+<h2 id="previewTitle">プレビュー</h2>
+<span class="actions">
+<button type="button" class="button primary" id="savePdf" disabled>PDF を保存</button>
+<a class="button" id="saveBdf" hidden>.bdf</a>
+<button type="button" class="button" id="saveBdft" disabled>.bdft を保存</button>
+</span>
+</div>
+<p class="note" id="pdfNote" hidden></p>
+<div class="demo">
+<div class="tools">
+<span class="name" id="document-name">テンプレートを選んでください</span>
+<span class="note" id="document-meta"></span>
+<span class="pager" role="group" aria-label="ページ"><button id="previous" type="button" aria-label="前のページ">‹</button><span id="page-number" aria-live="polite">–</span><button id="next" type="button" aria-label="次のページ">›</button></span>
+</div>
+<div class="view bdf-host" id="preview" role="region" aria-label="記入済みの帳票のページ" tabindex="0"></div>
+</div>
+<details class="warnings" id="warnings" hidden><summary></summary><ul></ul></details>
+<p class="note" id="previewNote">プレビューは、記入済みの BDF をブラウザの中で描いたものです。PDF は wasm-gc にコンパイルした bdf.mbt が書き出します。</p>
+</section>
+</main>
+<footer class="wrap foot">bdf.mbt（MoonBit 実装）· <a href="../docs/licenses.html">フォントとライセンス</a> · <a href="https://github.com/f4ah6o/bdf.mbt">GitHub</a> · 上流 <a href="https://shibukawa.github.io/bdf/" lang="ja">BDF</a> のフォームを元にしています</footer>
+<script type="module" src="../form.js"></script>
+</body>
+</html>

@@ -1,0 +1,492 @@
+{
+  "pdfmeVersion": "6.2.4",
+  "basePdf": {
+    "width": 210,
+    "height": 297,
+    "padding": [
+      37,
+      15,
+      24,
+      15
+    ],
+    "staticSchema": [
+      {
+        "name": "brand",
+        "type": "text",
+        "readOnly": true,
+        "content": "BDF STUDIO",
+        "position": {
+          "x": 15,
+          "y": 12
+        },
+        "width": 100,
+        "height": 7,
+        "fontName": "M PLUS 1p-Bold",
+        "fontSize": 14,
+        "fontColor": "#111111",
+        "lineHeight": 1.35,
+        "characterSpacing": 0.6
+      },
+      {
+        "name": "brandDetail",
+        "type": "text",
+        "readOnly": true,
+        "content": "Document Design & Supply",
+        "position": {
+          "x": 15,
+          "y": 20
+        },
+        "width": 100,
+        "height": 5,
+        "fontName": "M PLUS 1p",
+        "fontSize": 8,
+        "fontColor": "#222222",
+        "lineHeight": 1.35
+      },
+      {
+        "name": "issuer",
+        "type": "text",
+        "readOnly": true,
+        "content": "〒150-0001 東京都渋谷区神宮前1-2-3\nTEL 03-5550-0140 / hello@bdf.example",
+        "position": {
+          "x": 115,
+          "y": 14
+        },
+        "width": 80,
+        "height": 12,
+        "fontName": "M PLUS 1p",
+        "fontSize": 8.5,
+        "fontColor": "#222222",
+        "lineHeight": 1.5,
+        "alignment": "right"
+      },
+      {
+        "name": "headerRule",
+        "type": "line",
+        "readOnly": true,
+        "position": {
+          "x": 15,
+          "y": 30
+        },
+        "width": 180,
+        "height": 0.4,
+        "color": "#111111"
+      },
+      {
+        "name": "footerRule",
+        "type": "line",
+        "readOnly": true,
+        "position": {
+          "x": 15,
+          "y": 279
+        },
+        "width": 180,
+        "height": 0.25,
+        "color": "#333333"
+      },
+      {
+        "name": "footerBrand",
+        "type": "text",
+        "readOnly": true,
+        "content": "BDF STUDIO  /  INVOICE",
+        "position": {
+          "x": 15,
+          "y": 282
+        },
+        "width": 130,
+        "height": 5,
+        "fontName": "M PLUS 1p",
+        "fontSize": 8,
+        "fontColor": "#222222",
+        "lineHeight": 1.35,
+        "characterSpacing": 0.3
+      },
+      {
+        "name": "pageNumber",
+        "type": "text",
+        "readOnly": true,
+        "content": "{currentPage} / {totalPages}",
+        "position": {
+          "x": 165,
+          "y": 282
+        },
+        "width": 30,
+        "height": 5,
+        "fontName": "M PLUS 1p",
+        "fontSize": 8,
+        "fontColor": "#222222",
+        "lineHeight": 1.35,
+        "alignment": "right"
+      }
+    ]
+  },
+  "schemas": [
+    [
+      {
+        "name": "title",
+        "type": "text",
+        "readOnly": true,
+        "content": "請求書",
+        "position": {
+          "x": 15,
+          "y": 38
+        },
+        "width": 180,
+        "height": 14,
+        "fontName": "M PLUS 1p-Bold",
+        "fontSize": 24,
+        "fontColor": "#111111",
+        "lineHeight": 1.35,
+        "characterSpacing": 6,
+        "alignment": "center"
+      },
+      {
+        "name": "numberLabel",
+        "type": "text",
+        "readOnly": true,
+        "content": "請求番号",
+        "position": {
+          "x": 128,
+          "y": 59
+        },
+        "width": 24,
+        "height": 5,
+        "fontName": "M PLUS 1p",
+        "fontSize": 8.5,
+        "fontColor": "#222222",
+        "lineHeight": 1.35
+      },
+      {
+        "name": "number",
+        "type": "text",
+        "readOnly": false,
+        "content": "INV-2026-1014",
+        "position": {
+          "x": 150,
+          "y": 58.5
+        },
+        "width": 45,
+        "height": 6,
+        "fontName": "M PLUS 1p",
+        "fontSize": 10,
+        "fontColor": "#111111",
+        "lineHeight": 1.35,
+        "alignment": "right",
+        "required": true
+      },
+      {
+        "name": "issuedLabel",
+        "type": "text",
+        "readOnly": true,
+        "content": "Date",
+        "position": {
+          "x": 128,
+          "y": 67
+        },
+        "width": 24,
+        "height": 5,
+        "fontName": "M PLUS 1p",
+        "fontSize": 8.5,
+        "fontColor": "#222222",
+        "lineHeight": 1.35
+      },
+      {
+        "name": "issued",
+        "type": "date",
+        "readOnly": false,
+        "content": "2026/10/14",
+        "position": {
+          "x": 150,
+          "y": 66.5
+        },
+        "width": 45,
+        "height": 6,
+        "fontName": "M PLUS 1p",
+        "fontSize": 10,
+        "fontColor": "#111111",
+        "lineHeight": 1.35,
+        "alignment": "right",
+        "format": "yyyy/MM/dd",
+        "locale": "ja"
+      },
+      {
+        "name": "dueLabel",
+        "type": "text",
+        "readOnly": true,
+        "content": "支払期限",
+        "position": {
+          "x": 128,
+          "y": 75
+        },
+        "width": 24,
+        "height": 5,
+        "fontName": "M PLUS 1p",
+        "fontSize": 8.5,
+        "fontColor": "#222222",
+        "lineHeight": 1.35
+      },
+      {
+        "name": "due",
+        "type": "date",
+        "readOnly": false,
+        "content": "2026/11/13",
+        "position": {
+          "x": 150,
+          "y": 74.5
+        },
+        "width": 45,
+        "height": 6,
+        "fontName": "M PLUS 1p",
+        "fontSize": 10,
+        "fontColor": "#111111",
+        "lineHeight": 1.35,
+        "alignment": "right",
+        "format": "yyyy/MM/dd",
+        "locale": "ja"
+      },
+      {
+        "name": "customer",
+        "type": "multiVariableText",
+        "readOnly": false,
+        "content": "{\"company\": \"株式会社みなと商事\", \"person\": \"営業部 御中\"}",
+        "position": {
+          "x": 15,
+          "y": 65
+        },
+        "width": 110,
+        "height": 18,
+        "fontName": "M PLUS 1p",
+        "fontSize": 12,
+        "fontColor": "#111111",
+        "lineHeight": 1.65,
+        "overflow": "expand",
+        "text": "{company}\n{person}",
+        "variables": [
+          "company",
+          "person"
+        ]
+      },
+      {
+        "name": "greeting",
+        "type": "text",
+        "readOnly": true,
+        "content": "下記のとおりご請求申し上げます。",
+        "position": {
+          "x": 15,
+          "y": 87
+        },
+        "width": 180,
+        "height": 6,
+        "fontName": "M PLUS 1p",
+        "fontSize": 9.5,
+        "fontColor": "#111111",
+        "lineHeight": 1.35
+      },
+      {
+        "name": "amountLabel",
+        "type": "text",
+        "readOnly": true,
+        "content": "ご請求金額（税込）",
+        "position": {
+          "x": 15,
+          "y": 99
+        },
+        "width": 105,
+        "height": 5,
+        "fontName": "M PLUS 1p-Bold",
+        "fontSize": 9,
+        "fontColor": "#222222",
+        "lineHeight": 1.35
+      },
+      {
+        "name": "amount",
+        "type": "text",
+        "readOnly": true,
+        "content": "¥ {totals.total}",
+        "position": {
+          "x": 15,
+          "y": 106
+        },
+        "width": 110,
+        "height": 13,
+        "fontName": "M PLUS 1p-Bold",
+        "fontSize": 22,
+        "fontColor": "#111111",
+        "lineHeight": 1.35,
+        "borderColor": "#111111",
+        "borderWidth": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0.5,
+          "left": 0
+        }
+      },
+      {
+        "name": "currency",
+        "type": "text",
+        "readOnly": true,
+        "content": "金額はすべて日本円です。",
+        "position": {
+          "x": 130,
+          "y": 114
+        },
+        "width": 65,
+        "height": 5,
+        "fontName": "M PLUS 1p",
+        "fontSize": 8,
+        "fontColor": "#222222",
+        "lineHeight": 1.35,
+        "alignment": "right"
+      },
+      {
+        "name": "items",
+        "type": "table",
+        "position": {
+          "x": 15,
+          "y": 127
+        },
+        "width": 180,
+        "height": 55,
+        "content": "[[\"ノート A5\", \"10\", \"480\", \"4,800\"], [\"ボールペン\", \"20\", \"150\", \"3,000\"], [\"デスクトレー\", \"3\", \"2,800\", \"8,400\"], [\"ファイルボックス\", \"6\", \"650\", \"3,900\"], [\"付箋セット\", \"4\", \"420\", \"1,680\"]]",
+        "showHead": true,
+        "repeatHead": true,
+        "head": [
+          "項目",
+          "数量",
+          "単価",
+          "金額"
+        ],
+        "headWidthPercentages": [
+          48,
+          12,
+          20,
+          20
+        ],
+        "tableStyles": {
+          "borderWidth": 0.35,
+          "borderColor": "#111111"
+        },
+        "headStyles": {
+          "fontName": "M PLUS 1p-Bold",
+          "fontSize": 10,
+          "lineHeight": 1.15,
+          "characterSpacing": 0,
+          "alignment": "left",
+          "verticalAlignment": "middle",
+          "padding": {
+            "top": 2.4,
+            "right": 3,
+            "bottom": 2.4,
+            "left": 3
+          },
+          "borderWidth": {
+            "top": 0.15,
+            "right": 0.15,
+            "bottom": 0.15,
+            "left": 0.15
+          },
+          "fontColor": "#111111",
+          "backgroundColor": "#FFFFFF",
+          "borderColor": "#333333",
+          "alternateBackgroundColor": "#FFFFFF"
+        },
+        "bodyStyles": {
+          "fontName": "M PLUS 1p",
+          "fontSize": 10,
+          "lineHeight": 1.15,
+          "characterSpacing": 0,
+          "alignment": "left",
+          "verticalAlignment": "middle",
+          "padding": {
+            "top": 2.4,
+            "right": 3,
+            "bottom": 2.4,
+            "left": 3
+          },
+          "borderWidth": {
+            "top": 0.15,
+            "right": 0.15,
+            "bottom": 0.15,
+            "left": 0.15
+          },
+          "fontColor": "#111111",
+          "backgroundColor": "#FFFFFF",
+          "alternateBackgroundColor": "#FFFFFF",
+          "borderColor": "#333333"
+        },
+        "columnStyles": {
+          "alignment": {
+            "1": "right",
+            "2": "right",
+            "3": "right"
+          }
+        }
+      },
+      {
+        "name": "totals",
+        "type": "multiVariableText",
+        "readOnly": false,
+        "content": "{\"subtotal\": \"21,780\", \"tax\": \"2,178\", \"total\": \"23,958\"}",
+        "position": {
+          "x": 120,
+          "y": 190
+        },
+        "width": 75,
+        "height": 30,
+        "fontName": "M PLUS 1p-Bold",
+        "fontSize": 11,
+        "fontColor": "#111111",
+        "lineHeight": 1.8,
+        "alignment": "right",
+        "backgroundColor": "#FFFFFF",
+        "padding": {
+          "top": 4,
+          "right": 4,
+          "bottom": 4,
+          "left": 4
+        },
+        "text": "小計　{subtotal} 円\n消費税（10%）　{tax} 円\n総額　{total} 円",
+        "variables": [
+          "subtotal",
+          "tax",
+          "total"
+        ],
+        "borderColor": "#111111",
+        "borderWidth": 0.4
+      },
+      {
+        "name": "payment",
+        "type": "text",
+        "readOnly": true,
+        "content": "お振込先\nみらい銀行　渋谷支店　普通 1234567\n口座名義：ビーディーエフスタジオ",
+        "position": {
+          "x": 15,
+          "y": 232
+        },
+        "width": 180,
+        "height": 21,
+        "fontName": "M PLUS 1p",
+        "fontSize": 9.5,
+        "fontColor": "#111111",
+        "lineHeight": 1.65
+      },
+      {
+        "name": "remarks",
+        "type": "text",
+        "readOnly": true,
+        "content": "備考\n{note}",
+        "position": {
+          "x": 15,
+          "y": 259
+        },
+        "width": 180,
+        "height": 12,
+        "fontName": "M PLUS 1p",
+        "fontSize": 9,
+        "fontColor": "#222222",
+        "lineHeight": 1.6,
+        "overflow": "expand"
+      }
+    ]
+  ]
+}

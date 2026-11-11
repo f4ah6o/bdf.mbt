@@ -23,6 +23,14 @@ struct PdfResources {
   shadings : Array[(String, Int32)]
   patterns : Array[(String, Int32)]
   gstates : Array[(String, Double, Int32)]
+  /// The subset of the fallback font that draws the characters of the
+  /// document, and the font it was made from. The subset joins `fonts` only
+  /// when a text run needs it.
+  mut fallback : Bytes?
+  mut fallback_parsed : @sfnt.Font?
+  mut fallback_index : Int32
+  /// The characters that no font of the document could draw.
+  missing : Map[Int32, Bool]
 }
 
 ///|
@@ -35,6 +43,10 @@ fn PdfResources::new(writer : PdfWriter) -> PdfResources {
     shadings: [],
     patterns: [],
     gstates: [],
+    fallback: None,
+    fallback_parsed: None,
+    fallback_index: -1,
+    missing: Map([]),
   }
 }
 
@@ -145,38 +157,200 @@ fn PdfResources::text(
   document : @core.Document,
   run : @render.TextRun,
 ) -> (String, String) {
-  self.encode_text(document, run.font, run.text)
+  let (name, encoded, _, _) = self.encode_text(document, run.font, run.text)
+  (name, encoded)
 }
 
 ///|
+/// The font and the glyphs of the text, the width of the glyphs in
+/// thousandths of an em (0 when the standard font draws it), and the index of
+/// the font in the resources (-1 when the standard font draws it).
 fn PdfResources::encode_text(
   self : PdfResources,
   document : @core.Document,
   font : @core.Font?,
   text : String,
-) -> (String, String) {
-  let font = match font {
-    Some(font) => font
-    None => return (self.standard_font(), standard_text(text))
+) -> (String, String, Int32, Int32) {
+  let (name, index) = match font {
+    Some(font) => self.font(document, font)
+    None => (self.standard_font(), -1)
   }
-  let (name, index) = self.font(document, font)
   if index < 0 {
-    return (name, standard_text(text))
+    if self.fallback_parsed is Some(_) {
+      return self.fallback_text(text)
+    }
+    return (name, standard_text(text), 0, -1)
   }
   let pdf_font = self.fonts[index]
+  let (encoded, width) = self.glyph_text(pdf_font, text)
+  (pdf_font.name, encoded, width, index)
+}
+
+///|
+/// The glyphs of the text in the font, as the hexadecimal codes of a PDF
+/// string, and their width in thousandths of an em. A character the font does
+/// not have becomes the glyph 0, which draws nothing, and is remembered so
+/// that the writer can warn about it: a wrong glyph would be worse than none.
+fn PdfResources::glyph_text(
+  self : PdfResources,
+  font : PdfFont,
+  text : String,
+) -> (String, Int32) {
   let codes = StringBuilder()
+  let mut units = 0
   for ch in text {
     let codepoint = ch.to_int()
-    let glyph = match pdf_font.parsed.glyph(codepoint) {
+    let glyph = match font.parsed.glyph(codepoint) {
       Some(glyph) => glyph
-      None => 0
+      None => {
+        self.missing[codepoint] = true
+        0
+      }
     }
     if glyph != 0 {
-      pdf_font.used[glyph] = codepoint
+      if !font.used.contains(glyph) {
+        font.used[glyph] = codepoint
+      }
+      units += font.parsed.advance_units(glyph)
     }
     codes.write_string(hex4(glyph))
   }
-  (name, "<" + codes.to_string() + ">")
+  let width = (units.to_double() *
+    1000.0 /
+    font.parsed.metrics.units_per_em.to_double())
+    .round()
+    .to_int()
+  ("<" + codes.to_string() + ">", width)
+}
+
+///|
+/// The glyph of each character of the text and its advance in font units, for
+/// the writer that puts every character on its own cell.
+fn PdfResources::char_glyphs(
+  self : PdfResources,
+  font : PdfFont,
+  text : String,
+) -> Array[(Int32, Int32)] {
+  let out : Array[(Int32, Int32)] = []
+  for ch in text {
+    let codepoint = ch.to_int()
+    let glyph = match font.parsed.glyph(codepoint) {
+      Some(glyph) => glyph
+      None => {
+        self.missing[codepoint] = true
+        0
+      }
+    }
+    if glyph != 0 {
+      if !font.used.contains(glyph) {
+        font.used[glyph] = codepoint
+      }
+      out.push((glyph, font.parsed.advance_units(glyph)))
+    } else {
+      out.push((0, 0))
+    }
+  }
+  out
+}
+
+///|
+/// Prepare the subset of the fallback font that draws the characters the
+/// document uses. Nothing is embedded when the document has no text, and a
+/// font whose license does not allow embedding is left out with a warning.
+fn PdfResources::prepare_fallback(
+  self : PdfResources,
+  program : Bytes?,
+  codes : Array[Int32],
+) -> String? {
+  let program = match program {
+    Some(program) => program
+    None => return None
+  }
+  if codes.length() == 0 {
+    return None
+  }
+  let font = match (Some(@sfnt.parse(program)) catch { _ => None }) {
+    Some(font) => font
+    None => return Some("the fallback font could not be read")
+  }
+  let requested : Array[Int32] = []
+  for code in codes {
+    requested.push(code)
+  }
+  let (subset, warning) = @font_db.prepare_font_program(
+    font,
+    program.length(),
+    requested,
+    false,
+    false,
+  ) catch {
+    _ => (None, Some("the fallback font could not be subset"))
+  }
+  let subset = match subset {
+    Some(subset) => subset
+    None => return warning
+  }
+  let parsed = match (Some(@sfnt.parse(subset)) catch { _ => None }) {
+    Some(parsed) => parsed
+    None => return Some("the fallback font could not be read")
+  }
+  self.fallback = Some(subset)
+  self.fallback_parsed = Some(parsed)
+  warning
+}
+
+///|
+/// The text in the subset of the fallback font, which joins the fonts of the
+/// document the first time a run needs it.
+fn PdfResources::fallback_text(
+  self : PdfResources,
+  text : String,
+) -> (String, String, Int32, Int32) {
+  let parsed = match self.fallback_parsed {
+    Some(parsed) => parsed
+    None => return (self.standard_font(), standard_text(text), 0, -1)
+  }
+  if self.fallback_index < 0 {
+    let program = match self.fallback {
+      Some(program) => program
+      None => return (self.standard_font(), standard_text(text), 0, -1)
+    }
+    let name = "F" + self.fonts.length().to_string()
+    let font_ref = self.writer.reserve()
+    let desc_ref = self.writer.reserve()
+    let tounicode_ref = self.writer.reserve()
+    let index = self.fonts.length()
+    self.fonts.push({
+      name,
+      font_ref,
+      desc_ref,
+      tounicode_ref,
+      parsed,
+      program,
+      is_cff: parsed.metrics.is_cff,
+      used: Map([]),
+    })
+    self.fallback_index = index
+  }
+  let pdf_font = self.fonts[self.fallback_index]
+  let (encoded, width) = self.glyph_text(pdf_font, text)
+  (pdf_font.name, encoded, width, self.fallback_index)
+}
+
+///|
+/// The characters the fallback font could not draw, for a warning.
+fn PdfResources::missing_text(self : PdfResources) -> String {
+  let out = StringBuilder()
+  let codes = self.missing.keys().collect()
+  codes.sort()
+  for index, code in codes {
+    if index >= 16 {
+      out.write_string("…")
+      break
+    }
+    out.write_char(code.unsafe_to_char())
+  }
+  out.to_string()
 }
 
 ///|

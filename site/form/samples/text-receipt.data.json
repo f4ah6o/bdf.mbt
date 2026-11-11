@@ -1,0 +1,38 @@
+{
+ "shop": "サンプル珈琲店",
+ "address": "東京都千代田区丸の内1-1-1",
+ "tel": "TEL 03-1234-5678",
+ "date": "2026-10-20T14:35:00",
+ "register": 2,
+ "staff": "山田",
+ "items": [
+  {
+   "name": "ブレンドコーヒー",
+   "qty": 2,
+   "price": 420,
+   "amount": 840
+  },
+  {
+   "name": "チーズケーキ",
+   "amount": 480,
+   "qty": null
+  },
+  {
+   "name": "季節のフルーツタルト（いちごと洋梨）",
+   "amount": 620,
+   "qty": null
+  },
+  {
+   "name": "テイクアウト用紙袋",
+   "qty": 1,
+   "price": 10,
+   "amount": 10
+  }
+ ],
+ "subtotal": 1950,
+ "tax": 177,
+ "total": 1950,
+ "paid": 2000,
+ "change": 50,
+ "message": "またお越しください"
+}

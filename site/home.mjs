@@ -265,6 +265,7 @@ ${gallerySection()}
 <p class="lead">ファイルはブラウザの中で変換します。アップロードはされません。</p>
 <ul class="cards plain">
 <li class="card"><div class="body"><h3><a href="viewer/">ビューア</a></h3><p>ファイルをドロップして表示。ビューの切り替え、検索、テキスト選択、ページ移動、BDF の保存。</p></div></li>
+<li class="card"><div class="body"><h3><a href="form/">フォーム</a></h3><p>タグを書いたテンプレートにデータを入れて、記入済みの帳票をプレビューし、BDF と PDF で保存。</p></div></li>
 <li class="card"><div class="body"><h3><a href="thumbnail/">サムネイル</a></h3><p>4 つの大きさのサムネイルを一度に。ブラウザの外のエンジンなしで描きます。</p></div></li>
 <li class="card"><div class="body"><h3><a href="text/">検索用テキスト</a></h3><p>検索エンジンに渡す、ページごとのテキストとメタデータ。</p></div></li>
 <li class="card"><div class="body"><h3><a href="wasm-gc.html">wasm-gc デモ</a></h3><p>同じ実装を WebAssembly にしたもの。PDF から BDF への変換と、PDF・Markdown・テキストの書き出し。</p></div></li>

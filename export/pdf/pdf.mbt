@@ -4,11 +4,16 @@ pub(all) struct PdfOptions {
   views : Array[String]
   tagged : Bool
   compress : Bool
+  /// A font program (TrueType or OpenType) that draws the text whose own font
+  /// the document does not carry, such as the text a form fill writes. The
+  /// writer embeds a subset of it, so Japanese and the lines of a form keep
+  /// their characters instead of becoming "?".
+  fallback_font : Bytes?
 }
 
 ///|
 pub fn PdfOptions::new() -> PdfOptions {
-  { views: [], tagged: false, compress: false, }
+  { views: [], tagged: false, compress: false, fallback_font: None }
 }
 
 ///|
@@ -89,6 +94,16 @@ fn pdf_string(text : String) -> String {
 }
 
 ///|
+/// A string of the metadata of a document: the converters of forms write
+/// theirs at the top of the metadata, the ones of documents under "dc".
+fn meta_string(meta : Json, key : String) -> String {
+  match meta.value(key) {
+    Some(Json::String(text)) => text
+    _ => metadata_string(meta, key)
+  }
+}
+
+///|
 fn metadata_string(meta : Json, key : String) -> String {
   let dc = match meta.value("dc") {
     Some(value) => value
@@ -123,6 +138,49 @@ pub fn write_document(
   let writer = PdfWriter::new()
   let resources = PdfResources::new(writer)
   let _std = resources.standard_font()
+  // The characters of the text that the fallback font has to draw: the
+  // writer embeds only their glyphs, so a page of Japanese text adds a few
+  // kilobytes rather than the whole font.
+  let fallback_codes : Array[Int32] = []
+  match options.fallback_font {
+    Some(_) => {
+      let seen : Map[Int32, Bool] = Map([])
+      for view in views {
+        for page in view.pages {
+          for layer in page.layers {
+            let layer_resources = @core.decode_object_resources(
+              document.part(layer.object),
+            ) catch {
+              _ => continue
+            }
+            collect_text_codepoints(
+              document,
+              layer_resources,
+              0,
+              seen,
+              fallback_codes,
+            )
+          }
+        }
+      }
+    }
+    None => ()
+  }
+  match resources.prepare_fallback(options.fallback_font, fallback_codes) {
+    Some(warning) => warnings.push(warning)
+    None => ()
+  }
+  // The text of a form sits on a grid of fixed cells: its runs are drawn as
+  // wide as the cells they fill, so that the columns and the lines meet.
+  let meta = match @core.manifest_json(document.data).value("meta") {
+    Some(value) => value
+    None => Json::empty_object()
+  }
+  let grid_text = meta_string(meta, "source") == "text"
+  let ambiguous = match meta.value("ambiguousWide") {
+    Some(Json::True) => true
+    _ => false
+  }
   let pages_ref = writer.reserve()
   let page_infos : Array[PageInfo] = []
   for view in views {
@@ -133,7 +191,14 @@ pub fn write_document(
     for page in view.pages {
       let width = if page.width > 0.0 { page.width } else { 612.0 }
       let height = if page.height > 0.0 { page.height } else { 792.0 }
-      let content = page_content(document, resources, page, height)
+      let content = page_content(
+        document,
+        resources,
+        page,
+        height,
+        grid_text,
+        ambiguous,
+      )
       for warning in content.warnings {
         warnings.push(warning)
       }
@@ -149,6 +214,10 @@ pub fn write_document(
     }
   }
   let resource_dict = resources.finish()
+  let missing = resources.missing_text()
+  if missing != "" {
+    warnings.push("the fallback font has no glyph for: " + missing)
+  }
   for info in page_infos {
     let mut annotations = ""
     if info.annots.length() > 0 {
@@ -198,10 +267,6 @@ pub fn write_document(
   let catalog = writer.add_string(
     "<< /Type /Catalog /Pages " + pages_ref.to_string() + " 0 R >>",
   )
-  let meta = match @core.manifest_json(document.data).value("meta") {
-    Some(value) => value
-    None => Json::empty_object()
-  }
   let title = metadata_string(meta, "title")
   let author = metadata_string(meta, "creator")
   let mut info = "<< /Producer " + pdf_string("bdf.mbt demo")

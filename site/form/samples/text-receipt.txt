@@ -1,0 +1,26 @@
+---
+# a receipt: 42 columns of a roll of 80 mm, as long as it is
+cpi: 15
+lpi: 6
+columns: 42
+lines: 0
+margin: {left: 0, top: 1}
+---
+{{#_big}}{{shop | center:42}}{{/_big}}
+{{address | center:42}}
+{{tel | center:42}}
+
+{{date | fmt:"yyyy/mm/dd hh:mm"}}         レジ{{register}} 担当{{staff}}
+------------------------------------------
+{{#items | rows}}
+{{name | width:28 | cut}}{{amount | fmt:"#,##0" | right:14}}
+{{#qty | rows}}  {{qty}}個 × 単価{{price | fmt:"#,##0"}}{{/qty}}
+{{/items}}
+------------------------------------------
+小計{{subtotal | fmt:"#,##0" | right:38}}
+消費税等(10%){{tax | fmt:"#,##0" | right:29}}
+{{#_tall}}合計{{total | fmt:"#,##0" | right:38}}{{/_tall}}
+お預り{{paid | fmt:"#,##0" | right:36}}
+お釣り{{change | fmt:"#,##0" | right:36}}
+
+{{#_wide}}{{message | center:42}}{{/_wide}}

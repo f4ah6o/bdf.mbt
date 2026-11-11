@@ -1,0 +1,15 @@
+import {
+  "f4ah6o/bdf/core" @core,
+  "f4ah6o/bdf/form" @form,
+  "moonbitlang/core/json",
+  "moonbitlang/core/encoding/base64" @base64,
+}
+
+import {
+  "f4ah6o/bdf/form/ooxml" @ooxml,
+  "moonbitlang/core/encoding/utf8" @utf8,
+} for "wbtest"
+
+supported_targets = "js"
+
+pkgtype(kind: "foreign_library")

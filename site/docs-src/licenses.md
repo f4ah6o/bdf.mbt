@@ -14,7 +14,16 @@ bdf.mbt は [shibukawa/bdf](https://github.com/shibukawa/bdf)（BDF）の MoonBi
 - 著作権表示: \`licenses/Shibukawa-bdf.txt\`
 - 移植の対象: BDF のファイル形式、レンダラの振る舞い、変換器の対応形式
 
-上流のサイトが配っているフォント一式（Liberation、Carlito、Caladea、M PLUS 1p、IPAex、DejaVu、STIX Two Math）は、**このサイトには含めていません**。bdf.mbt のブラウザ側にはフォントのディレクトリが無く、Office 文書の文字幅は推定値で組むためです。上流のフォントを使いたい場合は、上流の配布物から取ってきてください。
+上流のサイトが配っているフォント一式（Liberation、Carlito、Caladea、M PLUS 1p、IPAex、DejaVu、STIX Two Math）は、**フォームのページで使う 2 本を除いて、このサイトには含めていません**。bdf.mbt のブラウザ側にはフォントのディレクトリが無く、Office 文書の文字幅は推定値で組むためです。上流のフォントを使いたい場合は、上流の配布物から取ってきてください。
+
+## フォームの PDF に埋め込むフォント
+
+フォームのページは、記入済みの BDF を PDF にするときだけ、次の 2 本を読んで使った文字のサブセットを埋め込みます（`site/form/fonts/`、どちらも SIL Open Font License 1.1、全文は `site/form/fonts/OFL.txt`）。
+
+- M PLUS 1p Regular — Copyright 2016 The M+ Project Authors。Office・pdfme のテンプレート（字幅が自由な文）に使います。
+- M PLUS 1 Code Regular — Copyright 2021 The M+ FONTS Project Authors（https://github.com/coz-m/MPLUS_FONTS）。テキストのテンプレート（等幅の升目）に使います。
+
+**BDF そのものにはフォントは入りません。** 埋め込むのは PDF だけです。
 
 ## サンプルに埋め込まれているフォント
 

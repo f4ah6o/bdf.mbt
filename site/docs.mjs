@@ -25,6 +25,7 @@ export function slugify(text) {
 
 const NAV = [
   { href: "viewer/", label: "ビューア", key: "viewer" },
+  { href: "form/", label: "フォーム", key: "form" },
   { href: "thumbnail/", label: "サムネイル", key: "thumbnail" },
   { href: "text/", label: "検索テキスト", key: "text" },
   { href: "docs/index.html", label: "ドキュメント", key: "docs" },

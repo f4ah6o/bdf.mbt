@@ -39,17 +39,24 @@ pub fn wasm_pdf(input : String, password : String) -> String {
 }
 
 ///|
-/// Write a BDF file (base64) as PDF. The result is base64 in JSON.
-#export_name("bdf_wasm_export_pdf")
-pub fn wasm_export_pdf(input : String, tagged : Int32) -> String {
+fn export_pdf_json(input : String, tagged : Int32, font : String) -> String {
   let data = match decode_input(input) {
     Some(data) => data
     None => return error_json("base64 を読み取れませんでした")
+  }
+  let fallback = if font == "" {
+    None
+  } else {
+    match decode_input(font) {
+      Some(font) => Some(font)
+      None => return error_json("フォントを読み取れませんでした")
+    }
   }
   let options : @export_pdf.PdfOptions = {
     views: [],
     tagged: tagged != 0,
     compress: false,
+    fallback_font: fallback,
   }
   let result = @export_pdf.write_bytes(data, options) catch {
     _ => return error_json("PDF を書き出せませんでした")
@@ -61,6 +68,27 @@ pub fn wasm_export_pdf(input : String, tagged : Int32) -> String {
     "warnings": warnings_json(result.warnings),
     "pdf": Json::string(@base64.encode(result.bytes)),
   }).stringify()
+}
+
+///|
+/// Write a BDF file (base64) as PDF. The result is base64 in JSON.
+#export_name("bdf_wasm_export_pdf")
+pub fn wasm_export_pdf(input : String, tagged : Int32) -> String {
+  export_pdf_json(input, tagged, "")
+}
+
+///|
+/// Write a BDF file (base64) as PDF, drawing the text whose own font the
+/// document does not carry with the font (base64, TrueType or OpenType) that
+/// the caller gives. The writer embeds a subset of it, so Japanese and the
+/// lines of a form keep their characters.
+#export_name("bdf_wasm_export_pdf_font")
+pub fn wasm_export_pdf_font(
+  input : String,
+  tagged : Int32,
+  font : String,
+) -> String {
+  export_pdf_json(input, tagged, font)
 }
 
 ///|

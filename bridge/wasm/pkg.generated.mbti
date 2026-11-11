@@ -2,7 +2,11 @@
 package "f4ah6o/bdf/bridge/wasm"
 
 // Values
+pub fn wasm_convert(String, String, String) -> String
+
 pub fn wasm_export_pdf(String, Int32) -> String
+
+pub fn wasm_export_pdf_font(String, Int32, String) -> String
 
 pub fn wasm_markdown(String, String) -> String
 

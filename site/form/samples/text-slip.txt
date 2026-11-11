@@ -1,0 +1,34 @@
+---
+# 納品書: a slip of half a page of fanfold paper, its rules and names
+# printed on the paper already (preprinted)
+cpi: 10
+lpi: 6
+columns: 80
+lines: 33
+margin: {left: 2, top: 1}
+skip: 2
+---
+                  {{#_big}}納品書{{/_big}}                {{date | fmt:"yyyy年m月d日"}}
+
+{{#preprinted}}得意先{{/preprinted}} {{customer | width:30}}{{#preprinted}}御中{{/preprinted}}            {{#preprinted}}No.{{/preprinted}} {{no | right:8}}
+{{#preprinted}}
+┌──────────────────────┬──────┬────────────┐
+│ 品名                 │ 数量 │ 金額       │
+├──────────────────────┼──────┼────────────┤
+{{/preprinted}}
+{{#rows}}
+│ {{name | width:20 | cut}} │ {{qty | right:4}} │ {{amount | fmt:"#,##0" | right:10}} │
+│                      │      │            │
+│                      │      │            │
+│                      │      │            │
+│                      │      │            │
+{{/rows}}
+{{#preprinted}}
+└──────────────────────┴──────┴────────────┘
+{{/preprinted}}
+                                   {{#preprinted}}合計{{/preprinted}} {{total | fmt:"#,##0" | right:10}}
+
+{{#preprinted}}納品先{{/preprinted}} {{address | width:30 | wrap}}
+{{#preprinted}}備考{{/preprinted}}   {{note | width:36}}
+
+                              {{#_wide}}{{copy | center:20}}{{/_wide}}

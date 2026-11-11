@@ -31,6 +31,7 @@ const bundles = [
   ["_build/js/release/build/browser/browser.js", "browser.js"],
   ["_build/js/release/build/render_worker/render_worker.js", "render_worker.js"],
   ["_build/js/release/build/native_converter_worker/native_converter_worker.js", "native_converter_worker.js"],
+  ["_build/js/release/build/form_page/form_page.js", "form_api.js"],
   ["_build/js/release/build/bridge/wasm/wasm.js", "export.js"],
   ["_build/wasm-gc/release/build/bridge/wasm/wasm.wasm", "wasm-gc.wasm"],
 ];
@@ -52,6 +53,11 @@ await copyTree(join(site, "licenses"), join(out, "licenses"));
 await copyTree(join(site, "benchmarks"), join(out, "benchmarks"));
 await copyTree(join(root, "node_modules/minisearch/dist/es"), join(out, "minisearch"));
 await copyTree(join(site, "docs-src/images"), join(out, "docs/images"));
+
+/** フォームのページのサンプル（テンプレートと、その形のデータ）。 */
+await copyTree(join(site, "form/samples"), join(out, "forms"));
+await copyTree(join(site, "form/fonts"), join(out, "forms/fonts"));
+await cp(join(site, "form/index.json"), join(out, "forms/index.json"));
 
 /** サンプルの別名（トップページは demo.pdf / demo.bdf を開く）。 */
 const aliases = [
@@ -116,7 +122,7 @@ for (const page of PAGES) {
 log("docs: " + docs + " pages");
 
 /** サイトの地図。 */
-const urls = ["index.html", "viewer/index.html", "thumbnail/index.html", "text/index.html", "wasm-gc.html",
+const urls = ["index.html", "viewer/index.html", "thumbnail/index.html", "text/index.html", "form/index.html", "wasm-gc.html",
   ...PAGES.map((page) => "docs/" + page.id + ".html")];
 await writeFile(join(out, "sitemap.txt"), urls.join("\n") + "\n");
 

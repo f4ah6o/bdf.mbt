@@ -126,6 +126,115 @@ fn xml_escape(text : String) -> String {
 }
 
 ///|
+/// The character of a numeric entity: only the characters that XML allows, so
+/// that a surrogate or a control that XML forbids stays as it is written
+/// instead of becoming a character that no document can hold.
+fn xml_char(value : Int) -> Char? {
+  if value == 0x9 || value == 0xa || value == 0xd {
+    return Some(value.unsafe_to_char())
+  }
+  if value >= 0x20 && value <= 0xd7ff {
+    return Some(value.unsafe_to_char())
+  }
+  if value >= 0xe000 && value <= 0xfffd {
+    return Some(value.unsafe_to_char())
+  }
+  if value >= 0x10000 && value <= 0x10ffff {
+    return Some(value.unsafe_to_char())
+  }
+  None
+}
+
+///|
+/// The value of the digits of a numeric entity: XML writes them without a sign
+/// or a space, so `&#+65;` is not a character reference and stays as it is.
+fn xml_number(digits : String, base : Int) -> Int? {
+  if digits.is_empty() {
+    return None
+  }
+  for c in digits {
+    let ok = if base == 16 {
+      (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
+    } else {
+      c >= '0' && c <= '9'
+    }
+    if !ok {
+      return None
+    }
+  }
+  Some(@string.parse_int(digits, base~) catch { _ => -1 })
+}
+
+///|
+/// The text of an XML part with its entities back: `&amp;` becomes `&`, and
+/// `&amp;quot;` becomes `&quot;` (one pass, so a text that spells an entity
+/// stays as it is written). A tag of a document is written with the quotes of
+/// its arguments escaped (`fmt:&quot;¥#,##0&quot;`), and the fill reads it as
+/// the tag it is.
+fn xml_unescape(text : String) -> String {
+  let chars = text.to_array()
+  let mut amp = 0
+  while amp < chars.length() && chars[amp] != '&' {
+    amp += 1
+  }
+  if amp >= chars.length() {
+    return text
+  }
+  let out = StringBuilder()
+  let mut i = 0
+  while i < chars.length() {
+    if chars[i] != '&' {
+      out.write_char(chars[i])
+      i += 1
+      continue
+    }
+    let mut end = i + 1
+    while end < chars.length() && end - i <= 12 && chars[end] != ';' {
+      end += 1
+    }
+    if end >= chars.length() || chars[end] != ';' {
+      out.write_char('&')
+      i += 1
+      continue
+    }
+    let name = String::from_array(chars[i + 1:end])
+    let decoded = match name {
+      "amp" => Some('&')
+      "lt" => Some('<')
+      "gt" => Some('>')
+      "quot" => Some('"')
+      "apos" => Some('\'')
+      _ => {
+        if name.has_prefix("#x") || name.has_prefix("#X") {
+          match xml_number(name[2:].to_owned(), 16) {
+            Some(value) => xml_char(value)
+            None => None
+          }
+        } else if name.has_prefix("#") {
+          match xml_number(name[1:].to_owned(), 10) {
+            Some(value) => xml_char(value)
+            None => None
+          }
+        } else {
+          None
+        }
+      }
+    }
+    match decoded {
+      Some(c) => {
+        out.write_char(c)
+        i = end + 1
+      }
+      None => {
+        out.write_char('&')
+        i += 1
+      }
+    }
+  }
+  out.to_string()
+}
+
+///|
 fn visible_tag(inner : StringView) -> String {
   let out = StringBuilder()
   let mut in_markup = false

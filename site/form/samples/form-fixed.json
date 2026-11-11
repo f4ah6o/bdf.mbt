@@ -1,0 +1,20 @@
+{
+  "no": 1024,
+  "date": "2026-10-14",
+  "customer": {
+    "name": "株式会社みなと商事"
+  },
+  "product": "デスクオーガナイザー",
+  "amount": 12000,
+  "total": 13200,
+  "paid": false,
+  "memo": "下記内容をご確認ください。\n総額は税込表示です。",
+  "photo": "brand-mark.png",
+  "url": "https://example.com/orders/1024",
+  "jan": "4901234567894",
+  "tags": [
+    "オーク材",
+    "幅280 mm",
+    "国内製造"
+  ]
+}

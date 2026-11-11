@@ -27,6 +27,7 @@ pub(all) struct PdfOptions {
   views : Array[String]
   tagged : Bool
   compress : Bool
+  fallback_font : Bytes?
 }
 pub fn PdfOptions::new() -> Self
 

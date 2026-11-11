@@ -50,6 +50,12 @@ struct ContentState {
   mut gradient_warned : Bool
   mut mask_warned : Bool
   mut masking : Int32
+  /// Whether the text sits on a grid of fixed cells, as the text of a form
+  /// does: each character is then drawn on the cell it fills.
+  grid_text : Bool
+  /// Whether the text form counts the ambiguous characters of East Asia as
+  /// two columns wide.
+  ambiguous : Bool
 }
 
 ///|
@@ -508,7 +514,11 @@ fn draw_text_command(
   } else {
     None
   }
-  let (name, encoded) = state.resources.encode_text(state.document, font, text)
+  let (name, encoded, width, index) = state.resources.encode_text(
+    state.document,
+    font,
+    text,
+  )
   let aligned_x = if state.gs.align == 1 {
     x - advance
   } else if state.gs.align == 2 {
@@ -527,14 +537,115 @@ fn draw_text_command(
     state.op(color_text(state.gs.fill_color) + " rg")
     state.op("0 Tr")
   }
-  state.op("BT")
-  state.op("/" + name + " " + num(state.gs.font_size) + " Tf")
-  state.op("1 0 0 -1 " + num(aligned_x) + " " + num(y) + " Tm")
-  state.op(encoded + " Tj")
-  state.op("ET")
+  // A run of a form fills the cells that the template gives it: every
+  // character is drawn on its own cell, as wide as that cell, so that the
+  // columns and the lines of the table meet whatever the widths of the font.
+  if state.grid_text && index >= 0 && advance > 0.0 {
+    draw_grid_run(state, name, index, text, aligned_x, y, advance)
+  } else {
+    state.op("BT")
+    state.op("/" + name + " " + num(state.gs.font_size) + " Tf")
+    state.op("1 0 0 -1 " + num(aligned_x) + " " + num(y) + " Tm")
+    state.op(encoded + " Tj")
+    state.op("ET")
+  }
   let suffix = state.alpha_suffix()
   if suffix != "" {
     state.out.write_string(suffix)
+  }
+}
+
+///|
+/// Draw the text of a form on the cells of its grid: the run fills `advance`
+/// points, and each character takes the columns that the text form gives it,
+/// so a wide character takes two cells and a combining mark none. The
+/// characters that share a scale are drawn together, which keeps a run of a
+/// monospace font to one string.
+fn draw_grid_run(
+  state : ContentState,
+  name : String,
+  index : Int32,
+  text : String,
+  x : Double,
+  y : Double,
+  advance : Double,
+) -> Unit {
+  let font = state.resources.fonts[index]
+  let glyphs = state.resources.char_glyphs(font, text)
+  let mut columns = 0
+  for ch in text {
+    columns += @font_db.east_asian_width(ch, state.ambiguous)
+  }
+  if columns == 0 {
+    state.op("BT")
+    state.op("/" + name + " " + num(state.gs.font_size) + " Tf")
+    state.op("1 0 0 -1 " + num(x) + " " + num(y) + " Tm")
+    state.op(state.resources.glyph_text(font, text).0 + " Tj")
+    state.op("ET")
+    return
+  }
+  let cell = advance / columns.to_double()
+  let upem = font.parsed.metrics.units_per_em.to_double()
+  let mut group = StringBuilder()
+  let mut group_x = x
+  let mut group_scale = -1.0
+  let mut column = 0
+  let mut position = 0
+  for ch in text {
+    let (glyph, units) = glyphs[position]
+    position += 1
+    let width = @font_db.east_asian_width(ch, state.ambiguous)
+    let at = x + column.to_double() * cell
+    column += width
+    if glyph == 0 {
+      // The font has no glyph for this character (the writer warns of it):
+      // the run is broken here, so that the characters after it start again
+      // on their own cell instead of drifting with the advances of the font.
+      flush_grid_group(state, name, group, group_x, y, group_scale)
+      group = StringBuilder()
+      group_scale = -1.0
+      continue
+    }
+    let natural = units.to_double() / upem * state.gs.font_size
+    let scale = if width > 0 && natural > 0.0 {
+      width.to_double() * cell / natural
+    } else {
+      group_scale
+    }
+    if group_scale < 0.0 || (scale - group_scale).abs() > 0.001 {
+      flush_grid_group(state, name, group, group_x, y, group_scale)
+      group = StringBuilder()
+      group_x = at
+      group_scale = scale
+    }
+    group.write_string(hex4(glyph))
+  }
+  flush_grid_group(state, name, group, group_x, y, group_scale)
+}
+
+///|
+fn flush_grid_group(
+  state : ContentState,
+  name : String,
+  group : StringBuilder,
+  x : Double,
+  y : Double,
+  scale : Double,
+) -> Unit {
+  if group.is_empty() {
+    return
+  }
+  let scaled = scale > 0.0 && (scale - 1.0).abs() > 0.001
+  if scaled {
+    state.op(num(scale * 100.0) + " Tz")
+  }
+  state.op("BT")
+  state.op("/" + name + " " + num(state.gs.font_size) + " Tf")
+  state.op("1 0 0 -1 " + num(x) + " " + num(y) + " Tm")
+  state.op("<" + group.to_string() + "> Tj")
+  state.op("ET")
+  if scaled {
+    state.op("100 Tz")
   }
 }
 
@@ -790,11 +901,71 @@ struct PageContent {
 }
 
 ///|
+/// Collect the characters of the text that an object draws, for the subset of
+/// the fallback font. Every character is kept, the ASCII ones too: a run that
+/// the fallback font draws is drawn whole, so its digits and spaces need
+/// glyphs as much as its Japanese does.
+fn collect_text_codepoints(
+  document : @core.Document,
+  resources : @core.ObjectResources,
+  depth : Int32,
+  seen : Map[Int32, Bool],
+  codes : Array[Int32],
+) -> Unit {
+  if depth > 32 {
+    return
+  }
+  let commands = @render.compile_object(resources.object) catch {
+    _ => return
+  }
+  for command in commands {
+    match command {
+      @render.FillText(text, _, _, _) => add_text_codes(text, seen, codes)
+      @render.StrokeText(text, _, _, _) => add_text_codes(text, seen, codes)
+      @render.Use(child) => {
+        let child_resources = @core.decode_object_resources(
+          document.part(child),
+        ) catch {
+          _ => continue
+        }
+        collect_text_codepoints(document, child_resources, depth + 1, seen, codes)
+      }
+      @render.UseAt(child, _, _) => {
+        let child_resources = @core.decode_object_resources(
+          document.part(child),
+        ) catch {
+          _ => continue
+        }
+        collect_text_codepoints(document, child_resources, depth + 1, seen, codes)
+      }
+      _ => ()
+    }
+  }
+}
+
+///|
+fn add_text_codes(
+  text : String,
+  seen : Map[Int32, Bool],
+  codes : Array[Int32],
+) -> Unit {
+  for ch in text {
+    let code = ch.to_int()
+    if code >= 32 && !seen.contains(code) {
+      seen[code] = true
+      codes.push(code)
+    }
+  }
+}
+
+///|
 fn page_content(
   document : @core.Document,
   resources : PdfResources,
   page : @core.Page,
   height : Double,
+  grid_text : Bool,
+  ambiguous : Bool,
 ) -> PageContent {
   let state : ContentState = {
     out: StringBuilder(),
@@ -808,6 +979,8 @@ fn page_content(
     gradient_warned: false,
     mask_warned: false,
     masking: 0,
+    grid_text,
+    ambiguous,
   }
   state.op("q")
   state.op("1 0 0 -1 0 " + num(height) + " cm")

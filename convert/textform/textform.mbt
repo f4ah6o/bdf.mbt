@@ -129,6 +129,9 @@ pub fn render_with_tables(
   }
   let meta : Map[String, Json] = Map([])
   meta["source"] = Json::string("text")
+  if image.ambiguous_wide {
+    meta["ambiguousWide"] = Json::boolean(true)
+  }
   if title != "" {
     meta["title"] = Json::string(title)
   }

@@ -47,3 +47,22 @@ test "pdf writes a readable one-page document" {
   }
   assert_eq(parsed.pages, 1)
 }
+
+///|
+/// The converters of forms write the source of a document at the top of its
+/// metadata, the ones of documents under "dc": the writer reads both, so that
+/// a filled text form is drawn on the cells of its grid.
+test "pdf reads the source of a form from the top of the metadata" {
+  let form = Json::object({
+    "source": Json::string("text"),
+    "ambiguousWide": Json::boolean(true),
+  })
+  assert_eq(meta_string(form, "source"), "text")
+  assert_eq(meta_string(form, "ambiguousWide"), "")
+  let document = Json::object({
+    "dc": Json::object({ "title": Json::string("A document") }),
+  })
+  assert_eq(meta_string(document, "title"), "A document")
+  assert_eq(meta_string(document, "source"), "")
+  assert_eq(meta_string(Json::empty_object(), "source"), "")
+}

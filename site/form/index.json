@@ -1,0 +1,76 @@
+[
+  {
+    "id": "fixed",
+    "label": "商品明細書",
+    "about": "商品の金額・支払状況・JAN コードを 1 ページにまとめた帳票",
+    "note": "Excel と Word のテンプレートでは、写真・QR コード・バーコードのタグは空のまま残ります（bdf.mbt は Office のテンプレートに画像を埋め込みません）。",
+    "data": "form-fixed.json",
+    "files": ["brand-mark.png"],
+    "templates": [
+      { "name": "form-fixed.xlsx", "label": "Excel", "style": "standard" },
+      { "name": "form-fixed.docx", "label": "Word", "style": "standard" },
+      { "name": "form-fixed-modern.xlsx", "label": "Excel", "style": "modern" },
+      { "name": "form-fixed-modern.docx", "label": "Word", "style": "modern" }
+    ]
+  },
+  {
+    "id": "rows",
+    "label": "請求書",
+    "about": "明細の行が次のページへ続く請求書。税・支払期日・振込先つき",
+    "data": "form-rows.json",
+    "files": [],
+    "templates": [
+      { "name": "form-rows.docx", "label": "Word", "style": "standard" },
+      { "name": "form-rows.pptx", "label": "PowerPoint", "style": "standard" },
+      { "name": "form-rows-modern.docx", "label": "Word", "style": "modern" },
+      { "name": "form-rows-modern.pptx", "label": "PowerPoint", "style": "modern" }
+    ]
+  },
+  {
+    "id": "pages",
+    "label": "納品書",
+    "about": "1 ページに 10 行、ページごとの小計と繰越つきの納品書",
+    "data": "form-pages.json",
+    "files": [],
+    "templates": [
+      { "name": "form-pages.docx", "label": "Word", "style": "standard" },
+      { "name": "form-pages-modern.docx", "label": "Word", "style": "modern" }
+    ]
+  },
+  {
+    "id": "pdfme-invoice",
+    "label": "pdfme の請求書",
+    "about": "pdfme で作った請求書。明細の表・税・支払期日・振込先つき",
+    "data": "pdfme-invoice.data.json",
+    "files": [],
+    "templates": [
+      { "name": "pdfme-invoice.json", "label": "pdfme", "style": "standard" },
+      { "name": "pdfme-invoice-modern.json", "label": "pdfme", "style": "modern" }
+    ]
+  },
+  {
+    "id": "text-slip",
+    "label": "テキストの納品書",
+    "about": "ドットプリンタ向けのテキスト。罫線と見出しは刷ってある前提の納品書",
+    "data": "text-slip.data.json",
+    "files": [],
+    "templates": [{ "name": "text-slip.txt", "label": "テキスト" }]
+  },
+  {
+    "id": "text-receipt",
+    "label": "テキストのレシート",
+    "about": "レシートプリンタ向けのテキスト。42 桁のロールに、品数だけ伸びるレシート",
+    "data": "text-receipt.data.json",
+    "files": [],
+    "templates": [{ "name": "text-receipt.txt", "label": "テキスト" }]
+  },
+  {
+    "id": "contract",
+    "label": "PDF の契約書",
+    "about": "PDF のフォーム。2 者の名前と署名の欄に、それぞれの値を入れます",
+    "note": "署名の欄は文字の欄として入れます（上流の手書きの署名パッドと、印影の白抜きは移植していません）。",
+    "data": "contract.json",
+    "files": [],
+    "templates": [{ "name": "contract.pdf", "label": "PDF フォーム" }]
+  }
+]

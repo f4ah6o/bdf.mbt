@@ -529,7 +529,7 @@ fn ooxml_tokenize(
       None => raise OoxmlError("ooxml: a tag has no closing braces")
     }
     let raw = xml[start:end + 2].to_owned()
-    let inner = visible_tag(xml[start + 2:end])
+    let inner = xml_unescape(visible_tag(xml[start + 2:end]))
     if inner.has_prefix("!") {
       pos = end + 2
       continue

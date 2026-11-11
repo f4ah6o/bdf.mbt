@@ -299,6 +299,12 @@ dialog.password .buttons { display: flex; justify-content: flex-end; gap: .5rem;
 .sample-style select { max-width: 100%; padding: .3rem .5rem; color: var(--fg); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
 .sample-style .note { flex-basis: 100%; }
 #dataPanel { max-width: 56rem; }
+.tool details.limits { margin-top: 1.25rem; }
+.tool details.limits summary { cursor: pointer; font-weight: 600; }
+.tool details.limits ul { margin: .6rem 0 0; padding-left: 1.2rem; color: var(--muted); font-size: .9375rem; }
+.tool details.limits li { margin-bottom: .4rem; }
+.tool details.limits strong { color: var(--fg); }
+.presets small.note { display: inline-block; margin-top: .2rem; font-size: .8125rem; }
 .tool details.how { margin-top: 1.25rem; }
 .tool details.how summary { cursor: pointer; font-weight: 600; }
 .tool details.how pre:first-of-type { margin-top: .75rem; }

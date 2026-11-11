@@ -1,0 +1,54 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [5 0 R 6 0 R 7 0 R 8 0 R] /DA (/Helv 0 Tf 0 g) /DR << /Font << /Helv 4 0 R >> >> /SigFlags 0 >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 420 595] /Resources << /Font << /F1 4 0 R >> >> /Contents 9 0 R /Annots [5 0 R 6 0 R 7 0 R 8 0 R] >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Tx /T (party_a.name) /TU (Name of party A) /Rect [110 442 380 462] /F 4 /P 3 0 R /DA (/Helv 11 Tf 0 g) /V () >>
+endobj
+6 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Sig /T (party_a.sign) /TU (Signature of party A) /Rect [110 402 380 436] /F 4 /P 3 0 R >>
+endobj
+7 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Tx /T (party_b.name) /TU (Name of party B) /Rect [110 362 380 382] /F 4 /P 3 0 R /DA (/Helv 11 Tf 0 g) /V () >>
+endobj
+8 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Sig /T (party_b.sign) /TU (Signature of party B) /Rect [110 322 380 356] /F 4 /P 3 0 R >>
+endobj
+9 0 obj
+<< /Length 289 >>
+stream
+BT /F1 18 Tf 40 540 Td (Contract) Tj ET
+BT /F1 9 Tf 40 500 Td (The parties agree to the terms of this contract.) Tj ET
+BT /F1 9 Tf 40 446 Td (Party A) Tj ET
+BT /F1 9 Tf 40 366 Td (Party B) Tj ET
+0.5 g 110 440 m 380 440 l S 110 400 m 380 400 l S 110 360 m 380 360 l S 110 320 m 380 320 l S
+
+endstream
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000015 00000 n 
+0000000181 00000 n 
+0000000238 00000 n 
+0000000398 00000 n 
+0000000495 00000 n 
+0000000660 00000 n 
+0000000803 00000 n 
+0000000968 00000 n 
+0000001111 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+1451
+%%EOF

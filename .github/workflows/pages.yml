@@ -105,6 +105,9 @@ jobs:
           ./node_modules/.bin/vlmkit check integrity "$url/text/" --no-ledger
           ./node_modules/.bin/vlmkit scan scroll "$url/text/" --no-ledger
           ./node_modules/.bin/vlmkit check breakpoints "$url/text/" --sweep --no-ledger
+          ./node_modules/.bin/vlmkit check integrity "$url/form/" --no-ledger
+          ./node_modules/.bin/vlmkit scan scroll "$url/form/" --no-ledger
+          ./node_modules/.bin/vlmkit check breakpoints "$url/form/" --sweep --no-ledger
           ./node_modules/.bin/vlmkit check integrity "$url/wasm-gc.html" --no-ledger --allow "invisible-text@#preview;text-layer spans are transparent by design (selection overlay)"
           ./node_modules/.bin/vlmkit scan scroll "$url/wasm-gc.html" --no-ledger
           ./node_modules/.bin/vlmkit check breakpoints "$url/wasm-gc.html" --sweep --no-ledger

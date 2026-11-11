@@ -63,7 +63,7 @@ pub fn inspect_tags(xml : String) -> Array[@tag.Field] raise OoxmlError {
       Some(index) => start + 2 + index
       None => raise OoxmlError("ooxml: a tag has no closing braces")
     }
-    let name = visible_tag(xml[start + 2:end])
+    let name = xml_unescape(visible_tag(xml[start + 2:end]))
     let parsed = @tag.parse("{{" + name + "}}") catch {
       @tag.TagError(message, _) => raise OoxmlError("ooxml: " + message)
     }

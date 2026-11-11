@@ -38,6 +38,9 @@ export async function createWasm(url) {
     exportPdf(base64, tagged = false) {
       return JSON.parse(call('bdf_wasm_export_pdf', base64, tagged ? 1 : 0));
     },
+    exportPdfWithFont(base64, tagged, font) {
+      return JSON.parse(call('bdf_wasm_export_pdf_font', base64, tagged ? 1 : 0, font));
+    },
     markdown(base64, images = 'zip') {
       return JSON.parse(call('bdf_wasm_markdown', base64, images));
     },
