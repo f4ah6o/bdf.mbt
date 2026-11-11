@@ -190,9 +190,10 @@ test("a simple td chain decodes to exact layered semantics", async () => {
   assert.match(opened.parts[0].h, /^[0-9a-f]{32}$/);
   assert.ok(opened.parts[0].len > 0);
 
-  // Page: true extents (strokes padded) plus margins, all coords >= 0.
-  assert.equal(opened.page.w, 241);
-  assert.equal(opened.page.h, 369);
+  // Page: true extents (strokes padded, miter-aware via the shared helper)
+  // plus margins, all coords >= 0.
+  assert.equal(opened.page.w, 242);
+  assert.equal(opened.page.h, 370);
   for (const value of allNumbers(opened)) {
     assert.ok(value >= 0, `no negative coordinate (${value})`);
   }
@@ -453,6 +454,167 @@ test("page fitting uses true extents: everything decodes >= 0", async () => {
   // The rhombus left tip sits exactly at the margin after the translation.
   const rhombusPath = diamond.opened.paths.find((p) => p.verbs.byteLength > 0 && [...p.args].some((v) => closeTo(v, 40)));
   assert.ok(rhombusPath, "a translated rhombus outline reaches exactly x=40");
+});
+
+///|
+test("supplementary-plane Unicode ids and labels iterate code points, not UTF-16 units", async () => {
+  // Bare supplementary-plane node id (CJK ext. B, a surrogate pair on the
+  // wire) doubles as its label.
+  const astral = await convertAndOpen("flowchart TD\n𠮷 --> B\n");
+  const astralTexts = astral.opened.ops.filter((o) => o.op === "fillText").map((o) => o.args[0]);
+  assert.deepEqual(astralTexts, ["𠮷", "B"]);
+  assert.ok(astral.opened.ops.some((o) => o.op === "fillText" && o.args[0] === "𠮷" && closeTo(o.args[1], 120)),
+    "astral id text at the shape center");
+  // The JIS ideograph 𩸶 as an id with label forms, plus a hexagon label.
+  const mixed = await convertAndOpen("flowchart TD\n𩸶[ホッケ] --> 𠮷{{際}}\n");
+  assert.deepEqual(
+    mixed.opened.ops.filter((o) => o.op === "fillText").map((o) => o.args[0]),
+    ["ホッケ", "際"],
+    "label forms on supplementary-plane ids decode exact",
+  );
+  // A 4-byte emoji-style label is plain text too.
+  const emoji = await convertAndOpen("flowchart TD\nA[🎉] --> B\n");
+  assert.ok(emoji.opened.ops.some((o) => o.op === "fillText" && o.args[0] === "🎉"));
+  // Codepoint caps count CODE POINTS (64 surrogate pairs = 64 codepoints).
+  await convertOk("flowchart\n" + "𠮷".repeat(64));
+  await rejectError("flowchart\n" + "𠮷".repeat(65), "invalid-input", /64 codepoints/);
+  // Byte caps count UTF-8 BYTES: 𠮷 is 4 bytes, so 64 fit and 65 do not.
+  const both = await plugin.convert(enc(`flowchart\nA[${"𠮷".repeat(64)}]`), {});
+  const duplicated = await plugin.convert(enc(`flowchart\nA[${"𠮷".repeat(64)}]`), {});
+  assert.deepEqual(both.bdf, duplicated.bdf);
+  await rejectError(`flowchart\nA[${"𠮷".repeat(65)}]`, "invalid-input", /256 UTF-8 bytes/);
+  // Stray surrogate UTF-8 byte patterns (0xED 0xA0 0x82) never decode.
+  await assert.rejects(
+    () => plugin.convert(new Uint8Array([0xED, 0xA0, 0x82, 0x0A]), {}),
+    (error) => error instanceof Error && error.code === "invalid-input" && /UTF-8/.test(error.message),
+  );
+});
+
+///|
+// The strictly-inside test for a convex polygon (screen coordinates): a
+// point is strictly inside only when every edge cross has the same strict
+// sign; points on the boundary edge lines are "weakly outside".
+function strictlyInside(polygon, x, y, eps = 1e-6) {
+  let sign = 0;
+  const count = polygon.length;
+  for (let i = 0; i < count; i += 1) {
+    const ax = polygon[i][0];
+    const ay = polygon[i][1];
+    const bx = polygon[(i + 1) % count][0];
+    const by = polygon[(i + 1) % count][1];
+    const cross = (bx - ax) * (y - ay) - (by - ay) * (x - ax);
+    if (Math.abs(cross) <= eps) {
+      return false;
+    }
+    const side = cross > 0 ? 1 : -1;
+    if (sign === 0) {
+      sign = side;
+    } else if (side !== sign) {
+      return false;
+    }
+  }
+  return sign !== 0;
+}
+
+test("self-loop heads are anchored on the true outline and never hidden by fills", async () => {
+  // For every supported node kind, the loop endpoints sit ON the drawn
+  // outline, the route and the arrowhead stay outside it, and the node draws
+  // after the edge (so its fill cannot cover the head).
+  const cases = [
+    ["A --> A", "box"],
+    ["A[box] --> A", "box"],
+    ["A(rounded) --> A", "filledbox"],
+    ["A([stadium]) --> A", "filledbox"],
+    ["A{rhombus} --> A", "rhombus"],
+    ["A{{hexagon}} --> A", "hexagon"],
+  ];
+  for (const [line, kind] of cases) {
+    const { result, opened } = await convertAndOpen(`flowchart TD\n${line}\n`);
+    assert.ok(result.warnings.some((w) => w.includes("self-edge")), `${kind}: warns`);
+    const loop = pathArgs(opened, 0); // first emitted path = the loop
+    const head = pathArgs(opened, 1); // second = its arrowhead
+    // The node's drawn outline.
+    let polygon;
+    let nodeOpIndex;
+    if (kind === "box") {
+      const rect = opened.ops.filter((o) => o.op === "fillRect" && o.args[2] === 160 && o.args[3] === 48);
+      assert.equal(rect.length, 1, `${kind}: one node box`);
+      const [x, y, w, h] = rect[0].args;
+      polygon = [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+      nodeOpIndex = opened.ops.findIndex((o) => o.op === "fillRect" && o.args === rect[0].args);
+    } else {
+      // Shaped nodes (rounded/stadium emit roundRect paths, rhombus and
+      // hexagon emit their polygon). Find the node's fillPath by its fill
+      // color, then build the strictly-inside polygon from its arguments:
+      // the exact outline for rhombus/hexagon, and a conservative box
+      // (the rounded shape always lies within it) for rounded/stadium.
+      const fill = kind === "rhombus" ? hex(254, 249, 195)
+        : kind === "hexagon" ? hex(224, 242, 254)
+          : hex(249, 250, 251);
+      const fillIdx = opened.ops.findIndex((o) => o.op === "fillColor" && o.args[0] === fill);
+      assert.ok(fillIdx >= 0, `${kind}: node fill op exists`);
+      const fillPathOp = opened.ops.slice(fillIdx).find((o) => o.op === "fillPath");
+      const pathIndex = fillPathOp.args[0];
+      const flat = pathArgs(opened, pathIndex);
+      nodeOpIndex = opened.ops.indexOf(fillPathOp);
+      if (kind === "filledbox") {
+        // The roundRect primitive emits verb 8 with args [x, y, w, h, r];
+        // its conservative box is the corner box itself (the rounded shape
+        // always lies within it).
+        assert.equal(flat.length, 5, `${kind}: roundRect args x,y,w,h,r`);
+        polygon = [
+          [flat[0], flat[1]],
+          [flat[0] + flat[2], flat[1]],
+          [flat[0] + flat[2], flat[1] + flat[3]],
+          [flat[0], flat[1] + flat[3]],
+        ];
+      } else {
+        polygon = [];
+        for (let i = 0; i < flat.length; i += 2) {
+          polygon.push([flat[i], flat[i + 1]]);
+        }
+      }
+    }
+    // Every loop vertex weakly outside or on the outline.
+    for (let i = 0; i < loop.length; i += 2) {
+      assert.equal(
+        strictlyInside(polygon, loop[i], loop[i + 1]),
+        false,
+        `${kind}: loop point (${loop[i]},${loop[i + 1]}) is on or outside the outline`,
+      );
+    }
+    // Every arrowhead vertex weakly outside or on the outline, and its
+    // centroid strictly outside (a covered head cannot hide under the fill).
+    const hx = [];
+    const hy = [];
+    for (let i = 0; i < head.length; i += 2) {
+      hx.push(head[i]);
+      hy.push(head[i + 1]);
+      assert.equal(
+        strictlyInside(polygon, head[i], head[i + 1]),
+        false,
+        `${kind}: arrowhead vertex is on or outside the outline`,
+      );
+    }
+    const centroid = [hx.reduce((a, b) => a + b, 0) / hx.length, hy.reduce((a, b) => a + b, 0) / hy.length];
+    assert.equal(
+      strictlyInside(polygon, centroid[0], centroid[1]),
+      false,
+      `${kind}: head centroid outside`,
+    );
+    const centroidStrictlyOutside = polygon.every(([ax, ay], i) => {
+      const [bx, by] = polygon[(i + 1) % polygon.length];
+      return Math.abs((bx - ax) * (centroid[1] - ay) - (by - ay) * (centroid[0] - ax)) > 1e-6;
+    });
+    assert.ok(centroidStrictlyOutside, `${kind}: centroid is not on any edge line`);
+    // The arrowhead tip equals the loop's second anchor on the outline.
+    const anchorX = loop[loop.length - 2];
+    const anchorY = loop[loop.length - 1];
+    assert.ok(closeTo(head[0], anchorX) && closeTo(head[1], anchorY), `${kind}: head tip == outline anchor`);
+    // z order: the loop draws before the node shape.
+    const edgeOpIndex = opened.ops.findIndex((o) => o.op === "strokePath");
+    assert.ok(edgeOpIndex >= 0 && edgeOpIndex < nodeOpIndex, `${kind}: edges draw before the node`);
+  }
 });
 
 ///|

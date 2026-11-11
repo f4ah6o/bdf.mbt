@@ -21,10 +21,13 @@
 //   * Nodes: id; id[label]; id(label); id([label]); id{label}; id{{label}}
 //     (rect, rounded, stadium, rhombus, hexagon). Ids are built from letters
 //     (any script), digits (any script), "_" and "-"; the first codepoint is
-//     a letter or "_", at most 64 codepoints. A bare id (ASCII, Japanese,
-//     any script) doubles as the node label, exactly like Mermaid. Labels
-//     may be quoted (id["plain text"]); unquoted labels may not contain
-//     quotes; both are plain Unicode text of at most 256 UTF-8 BYTES, with
+//     a letter or "_", at most 64 codepoints; ids are scanned, validated and
+//     counted per Unicode CODE POINT, so supplementary-plane ids (e.g. the
+//     bare id 𠮷) work while lone unpaired surrogates still reject. A bare id
+//     (ASCII, Japanese, any script) doubles as the node label, exactly like
+//     Mermaid. Labels may be quoted (id["plain text"]); unquoted labels may
+//     not contain quotes; both are plain Unicode text of at most 256 UTF-8
+//     BYTES (byte caps are measured on UTF-8, never on UTF-16 units), with
 //     control characters (C0/C1), lone surrogates, bidi overrides, "<", ">",
 //     "&" and "`" (HTML of any kind, including <br/> and entities) and
 //     javascript:/data: URLs rejected. The last declaration carrying a shape
@@ -85,13 +88,21 @@
 //   draws 16 pt Helvetica #111827 text, align center, baseline middle, at
 //   the shape center. An edge label draws a small white rect behind a 12 pt
 //   #374151 text (center/middle) at the segment midpoint, above the line.
-//   Self-edges draw a fixed small loop above the node and are warned about.
+//   Self-edges draw a fixed loop anchored ON the node's ACTUAL drawn
+//   outline (top edge for rect/rounded/stadium, upper edges at dx = +/-24
+//   for a rhombus, flat top edge for a hexagon): both loop endpoints sit on
+//   the outline, the route stays strictly outside it and the arrowhead tip
+//   sits on the outline with its body outside, so node fills drawn afterward
+//   can never hide the head. Warned about.
 //   Text advance uses a CJK-aware estimate (estimate is documented below);
 //   it is passed to the encoder as an `advance` override so text bounds are
 //   real: wide East Asian codepoints count 1.0 em, everything else 0.6 em.
-//   Page fitting uses TRUE extents: everything emitted (shapes with stroke
-//   padding, text bands from the advance estimate, edge labels and their
-//   white backings, self-loops) is measured; when the minimum coordinate
+//   Page fitting uses TRUE extents: everything emitted (shapes, text bands
+//   from the advance estimate, edge labels and their
+//   white backings, self-loops) is measured, with the stroke side of every
+//   stroked chain or ring computed by the shared miter-aware helper
+//   (strokedPolylineExtent: pads + miter protrusions, exactly matching the
+//   encoder's bbox math); when the minimum coordinate
 //   falls below the 40 pt margin (a wide label, a rhombus tip, a loop), ALL
 //   primitives are translated so the minimum is exactly the margin, and the
 //   page covers the extents plus the margins on the right and bottom
@@ -106,7 +117,7 @@
 
 import { ConvertError, defineFormatPlugin } from "../contract.js";
 import { acceptedParams, noPassword } from "../adapter-options.js";
-import { encodeDiagram } from "../diagram-bdf.js";
+import { encodeDiagram, strokedPolylineExtent } from "../diagram-bdf.js";
 
 export const MERMAID_FORMAT_NAME = "mermaid";
 export const MERMAID_EXTENSIONS = [".mmd", ".mermaid"];
@@ -131,7 +142,6 @@ const PITCH_Y = 120;
 const PITCH_Y_LR = BOX_H + 40; // 88
 const MARGIN = 40;
 const NODE_STROKE_WIDTH = 2;
-const STROKE_PAD = NODE_STROKE_WIDTH / 2;
 
 // Linear scans only: every unit is a character class, so there is no
 // unbounded backtracking in either expression.
@@ -268,6 +278,7 @@ function isWide(code) {
     || (code >= 0x3041 && code <= 0x33ff)
     || (code >= 0x3400 && code <= 0x4dbf) // CJK extension A
     || (code >= 0x4e00 && code <= 0x9fff) // CJK unified ideographs
+    || (code >= 0x20000 && code <= 0x3fffd) // CJK extensions B+ (supplementary plane)
     || (code >= 0xa000 && code <= 0xa4cf)
     || (code >= 0xac00 && code <= 0xd7a3) // Hangul syllables
     || (code >= 0xf900 && code <= 0xfaff) // CJK compatibility ideographs
@@ -310,11 +321,11 @@ function tokenizeLine(line, lineNo) {
       i += 1;
       continue;
     }
-    const code = c.charCodeAt(0);
+    const code = line.codePointAt(i);
     if (isControlOrBanned(code)) {
       throw reject(
         "invalid-input",
-        `line ${lineNo}: control, surrogate or bidi-override character (U+${code.toString(16)}): text must be plain, no markup and no overrides`,
+        `line ${lineNo}: control, unpaired surrogate or bidi-override character (U+${code.toString(16)}): text must be plain, no markup and no overrides`,
       );
     }
     if (c === "|") {
@@ -428,13 +439,17 @@ function tokenizeLine(line, lineNo) {
       );
     }
     // A word: a run of plain text. Words are node ids, label pieces or
-    // directions depending on context; the parser decides. Unicode runs
-    // pass through; control characters and bidi overrides already rejected.
+    // directions depending on context; the parser decides. Unicode runs pass
+    // through CODE POINT by code point (supplementary-plane characters are
+    // consumed as one unit, never as split surrogates); lone unpaired
+    // surrogates still reject, and control/bidi characters already did above.
     const start = i;
-    i += 1;
+    // Step by Unicode code point: a supplementary-plane character (a
+    // surrogate pair) is one unit, never two split halves.
+    i += line.codePointAt(i) > 0xffff ? 2 : 1;
     while (i < len) {
       const ch = line[i];
-      const chCode = ch.charCodeAt(0);
+      const chCode = line.codePointAt(i);
       if (
         ch === " " || ch === "\t" || ch === "|" || ch === "`" || ch === "<"
         || ch === ">" || ch === "&" || ch === "[" || ch === "]" || ch === "("
@@ -450,7 +465,7 @@ function tokenizeLine(line, lineNo) {
         || line.startsWith("==", i) || line.startsWith(".->", i)) {
         break;
       }
-      i += 1;
+      i += chCode > 0xffff ? 2 : 1;
     }
     const value = line.slice(start, i);
     const lower = value.toLowerCase();
@@ -1003,21 +1018,40 @@ function exitPolygon(cx, cy, dx, dy, polygon) {
 ///|
 // Edge geometry: the clipped segment between the two nodes' actual
 // boundaries. Rhombus/hexagon boundaries are their drawn outlines; every
-// other shape clips at its box. Self-edges draw a fixed loop above the node.
+// other shape clips at its box. Self-edges draw a fixed loop anchored ON the
+// node's actual drawn outline (box top edge for rect/rounded/stadium, upper
+// edges for a rhombus, flat top edge for a hexagon), and the route stays
+// strictly outside the outline so the head is never hidden by the node fill.
 function edgeGeometry(doc, edge, layout) {
   const { x, y } = layout;
   if (edge.from === edge.to) {
-    const from = nodeGeometry(doc, edge.from, x, y);
+    const node = doc.nodes[edge.from];
+    const geom = nodeGeometry(doc, edge.from, x, y);
+    let anchorY;
+    let routeTop;
+    if (geom.outline === null) {
+      // rect/rounded/stadium: the top edge carries the anchors (24pt either
+      // side of the center stays on the straight part of a rounded top).
+      anchorY = geom.ny;
+      routeTop = geom.ny - 28;
+    } else if (node.shape === "rhombus") {
+      // The diamond edge at dx = +/-24 sits at cy - 36; its top tip is
+      // cy - 48, so a route 28pt above the tip clears the whole outline.
+      anchorY = geom.cy - 36;
+      routeTop = geom.cy - 48 - 28;
+    } else {
+      // Hexagon: flat top edge at cy - 48 (|dx| <= 72 covers +/-24).
+      anchorY = geom.cy - 48;
+      routeTop = geom.cy - 48 - 28;
+    }
+    const left = [geom.cx - 24, anchorY];
+    const right = [geom.cx + 24, anchorY];
     return {
-      points: [
-        [from.cx - 24, from.ny],
-        [from.cx - 24, from.ny - 28],
-        [from.cx + 24, from.ny - 28],
-        [from.cx + 24, from.ny],
-      ],
-      ps: [from.cx - 24, from.ny],
-      pe: [from.cx + 24, from.ny],
+      points: [[left[0], left[1]], [left[0], routeTop], [right[0], routeTop], [right[0], right[1]]],
+      ps: [left[0], left[1]],
+      pe: [right[0], right[1]],
       tip: [0, 1],
+      labelAnchor: [geom.cx, routeTop],
     };
   }
   const source = nodeGeometry(doc, edge.from, x, y);
@@ -1030,7 +1064,13 @@ function edgeGeometry(doc, edge, layout) {
   const pe = target.outline === null
     ? exitBox(target.cx, target.cy, -dx, -dy, target.nx, target.ny)
     : exitPolygon(target.cx, target.cy, -dx, -dy, target.outline);
-  return { points: [ps, pe], ps, pe, tip: [pe[0] - ps[0], pe[1] - ps[1]] };
+  return {
+    points: [ps, pe],
+    ps,
+    pe,
+    tip: [pe[0] - ps[0], pe[1] - ps[1]],
+    labelAnchor: [(ps[0] + pe[0]) / 2, (ps[1] + pe[1]) / 2],
+  };
 }
 
 function assertRenderable(primitives) {
@@ -1116,18 +1156,21 @@ function renderDiagram(doc, layout) {
       selfLoops += 1;
     }
     const strokeWidth = edge.kind === "thick" ? 3 : 2;
-    const pad = strokeWidth / 2;
+    const linePoints = geometry.points.map((p) => [p[0], p[1]]);
     prims.push({
       kind: "polyline",
-      points: geometry.points.map((p) => [p[0], p[1]]),
+      points: linePoints,
       stroke: COLOR.edge,
       strokeWidth,
       dash: edge.kind === "dotted" ? [4, 4] : null,
     });
-    for (const point of geometry.points) {
-      trackMin(point[0] - pad, point[1] - pad);
-      trackMax(point[0] + pad, point[1] + pad);
+    // Page fitting: the unpadded skeleton decides the minimum (translation);
+    // the stroke side uses the shared miter-aware extent (pads + protrusions).
+    for (const point of linePoints) {
+      trackMin(point[0], point[1]);
     }
+    const lineExtent = strokedPolylineExtent(linePoints, strokeWidth, false);
+    trackMax(lineExtent.x + lineExtent.w, lineExtent.y + lineExtent.h);
     if (edge.kind !== "plain") {
       // Filled arrowhead triangle at the target end.
       let [dx, dy] = geometry.tip;
@@ -1172,8 +1215,11 @@ function renderDiagram(doc, layout) {
         stroke: COLOR.nodeStroke,
         strokeWidth: NODE_STROKE_WIDTH,
       });
-      trackMin(points[3][0], points[0][1]);
-      trackMax(points[1][0] + STROKE_PAD, points[2][1] + STROKE_PAD);
+      for (const point of points) {
+        trackMin(point[0], point[1]);
+      }
+      const ext = strokedPolylineExtent(points, NODE_STROKE_WIDTH, true);
+      trackMax(ext.x + ext.w, ext.y + ext.h);
     } else if (node.shape === "hexagon") {
       const points = geom.outline.map((p) => [p[0], p[1]]);
       prims.push({
@@ -1183,8 +1229,11 @@ function renderDiagram(doc, layout) {
         stroke: COLOR.nodeStroke,
         strokeWidth: NODE_STROKE_WIDTH,
       });
-      trackMin(points[0][0], points[1][1]);
-      trackMax(points[3][0] + STROKE_PAD, points[4][1] + STROKE_PAD);
+      for (const point of points) {
+        trackMin(point[0], point[1]);
+      }
+      const ext = strokedPolylineExtent(points, NODE_STROKE_WIDTH, true);
+      trackMax(ext.x + ext.w, ext.y + ext.h);
     } else {
       const rounded = node.shape === "rounded" || node.shape === "stadium" ? 24 : 0;
       prims.push({
@@ -1199,7 +1248,12 @@ function renderDiagram(doc, layout) {
         strokeWidth: NODE_STROKE_WIDTH,
       });
       trackMin(geom.nx, geom.ny);
-      trackMax(geom.nx + BOX_W + STROKE_PAD, geom.ny + BOX_H + STROKE_PAD);
+      const ext = strokedPolylineExtent(
+        [[geom.nx, geom.ny], [geom.nx + BOX_W, geom.ny], [geom.nx + BOX_W, geom.ny + BOX_H], [geom.nx, geom.ny + BOX_H]],
+        NODE_STROKE_WIDTH,
+        true,
+      );
+      trackMax(ext.x + ext.w, ext.y + ext.h);
     }
     const label = node.label || "";
     if (label !== "") {
@@ -1229,23 +1283,16 @@ function renderDiagram(doc, layout) {
     }
   }
 
-  // 3. Edge labels, on top: a white rect behind a 12pt text at the segment
-  // midpoint, raised above the line.
+  // 3. Edge labels, on top: a white rect behind a 12pt text anchored at the
+  // segment midpoint for normal edges (respecting the actual outline clip)
+  // and above the loop for self-edges.
   for (const edge of doc.edges) {
     if (!edge.label) {
       continue;
     }
-    let mx;
-    let my;
-    if (edge.from === edge.to) {
-      const geom = nodeGeometry(doc, edge.from, x, y);
-      mx = geom.cx;
-      my = geom.ny - 28;
-    } else {
-      const geometry = edgeGeometry(doc, edge, layout);
-      mx = (geometry.ps[0] + geometry.pe[0]) / 2;
-      my = (geometry.ps[1] + geometry.pe[1]) / 2;
-    }
+    const geometry = edgeGeometry(doc, edge, layout);
+    const mx = geometry.labelAnchor[0];
+    const my = geometry.labelAnchor[1];
     const advance = textAdvance(edge.label, 12);
     const bcy = my - 16;
     const w = Math.max(24, advance + 10);
