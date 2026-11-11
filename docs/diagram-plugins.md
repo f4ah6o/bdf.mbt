@@ -97,8 +97,13 @@ Encoder-side contract details (all enforced, all tested):
   constant table as the MoonBit core) is verified against Node's `crypto`
   in the shared tests.
 - the object bbox covers real rendering extents: alignment- and
-  baseline-aware text bands, strokeWidth/2 padding, and the rotated AABB
-  about the rotation pivot.
+  baseline-aware text bands, strokeWidth/2 padding, miter protrusions of
+  stroked polyline/polygon joins (`half/sin(theta/2)` clamped by the
+  emitted miter limit 10 — `strokedPolylineExtent` exports the same math
+  for adapter page fitting), and the rotated AABB about the rotation
+  pivot. Negative rect `w`/`h` are normalized to their corner box before
+  padding and rotation (the emitted rect op keeps the caller's values, as
+  canvas mirrors negative rectangles).
 - encoding is deterministic: identical input yields byte-identical output
   (within one platform; `Math.cos/sin` never differ per run, but
   cross-engine f32 rounding of rotation matrices is not guaranteed).

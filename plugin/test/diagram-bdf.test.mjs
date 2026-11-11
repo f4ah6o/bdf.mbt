@@ -215,6 +215,81 @@ test("stroke width pads the bounding box so thick strokes are not culled", async
   assert.ok(Math.abs(opened.object.bbox.x - 45) < 1e-3, JSON.stringify(opened.object.bbox));
 });
 
+test("miter joins extend the bounding box: an acute corner cannot be culled", async () => {
+  // Vertex at (50, 0), segments meeting at cos(theta)=0.6; half-width 5:
+  // protrusion = 5 / sin(26.565deg) = 11.18034 (under the miter limit).
+  const opened = await openDiagram(await encodeDiagram({
+    width: 200, height: 140, source: "smoke", title: "",
+    primitives: [{ kind: "polyline", points: [[0, 100], [50, 0], [100, 100]], stroke: BLACK, strokeWidth: 10 }],
+  }));
+  const { x, y, w, h } = opened.object.bbox;
+  assert.ok(Math.abs(x - -5) < 1e-3 && Math.abs((x + w) - 105) < 1e-3, JSON.stringify(opened.object.bbox));
+  assert.ok(Math.abs((y + h) - 105) < 1e-3, JSON.stringify(opened.object.bbox));
+  assert.ok(Math.abs(y - -11.18034) < 1e-2, `miter protrusion must reach -11.18, got ${JSON.stringify(opened.object.bbox)}`);
+  // A closed polygon ring joins at every vertex, including the seam: the
+  // diamond below has interior angles whose cosines are -0.2195 (apex,
+  // protrusion 6.40) and 0.4927 (side, protrusion 9.93).
+  const ring = await openDiagram(await encodeDiagram({
+    width: 200, height: 140, source: "smoke", title: "",
+    primitives: [{ kind: "polygon", points: [[0, 40], [50, 0], [100, 40], [50, 60]], stroke: BLACK, strokeWidth: 10 }],
+  }));
+  assert.ok(Math.abs(ring.object.bbox.y - -6.40) < 1e-2, JSON.stringify(ring.object.bbox));
+  assert.ok(Math.abs(ring.object.bbox.x - -9.93) < 1e-2, JSON.stringify(ring.object.bbox));
+});
+
+test("miter protrusion clamps at the emitted miter limit, not at infinity", async () => {
+  // A hairpin (the outgoing segment folds back beside the incoming one) has
+  // interior angle near 0, so half/sin(theta/2) runs away; canvas bevels the
+  // stroke at the miter limit, so the bound clamps at 10 * half = 50.
+  const opened = await openDiagram(await encodeDiagram({
+    width: 1400, height: 200, source: "smoke", title: "",
+    primitives: [{ kind: "polyline", points: [[0, 0], [500, 1], [2, 0]], stroke: BLACK, strokeWidth: 10 }],
+  }));
+  const { x, y, w, h } = opened.object.bbox;
+  const yLine = y + h;
+  assert.ok(y >= -50 && y <= -48, `clamped protrusion must bound the box near -50, got ${JSON.stringify(opened.object.bbox)}`);
+  assert.ok(yLine >= 49 && yLine <= 51.5, JSON.stringify(opened.object.bbox));
+  assert.ok(x <= -5 && x + w >= 505, JSON.stringify(opened.object.bbox));
+});
+
+test("strokedPolylineExtent matches the encoded object bounds before rotation", async () => {
+  const points = [[0, 100], [50, 0], [100, 100]];
+  const { strokedPolylineExtent } = await import("../src/diagram-bdf.js");
+  const extent = strokedPolylineExtent(points, 10, false);
+  const opened = await openDiagram(await encodeDiagram({
+    width: 200, height: 140, source: "smoke", title: "",
+    primitives: [{ kind: "polyline", points, stroke: BLACK, strokeWidth: 10 }],
+  }));
+  assert.ok(Math.abs(extent.y - opened.object.bbox.y) < 1e-3, JSON.stringify({ extent, bbox: opened.object.bbox }));
+  assert.ok(Math.abs(extent.x - opened.object.bbox.x) < 1e-3);
+});
+
+test("negative rect dimensions normalize corners before padding and rotation", async () => {
+  // Same right edge at (100,100) as {x:20,y:50,w:80,h:50}; padding by 5 then
+  // yields (15,45,90,60) instead of an inside-out box.
+  const opened = await openDiagram(await encodeDiagram({
+    width: 200, height: 120, source: "smoke", title: "",
+    primitives: [{ kind: "rect", x: 100, y: 100, w: -80, h: -50, stroke: BLACK, strokeWidth: 10 }],
+  }));
+  const { x, y, w, h } = opened.object.bbox;
+  assert.ok(Math.abs(x - 15) < 1e-3 && Math.abs(y - 45) < 1e-3, JSON.stringify(opened.object.bbox));
+  assert.ok(Math.abs(w - 90) < 1e-3 && Math.abs(h - 60) < 1e-3, JSON.stringify(opened.object.bbox));
+  // width and height independently
+  const wOnly = await openDiagram(await encodeDiagram({
+    width: 200, height: 120, source: "smoke", title: "",
+    primitives: [{ kind: "rect", x: 100, y: 10, w: -80, h: 50, stroke: BLACK, strokeWidth: 10 }],
+  }));
+  assert.ok(Math.abs(wOnly.object.bbox.x - 15) < 1e-3 && Math.abs(wOnly.object.bbox.y - 5) < 1e-3, JSON.stringify(wOnly.object.bbox));
+  const hOnly = await openDiagram(await encodeDiagram({
+    width: 200, height: 120, source: "smoke", title: "",
+    primitives: [{ kind: "rect", x: 10, y: 100, w: 80, h: -50, stroke: BLACK, strokeWidth: 10 }],
+  }));
+  assert.ok(Math.abs(hOnly.object.bbox.x - 5) < 1e-3 && Math.abs(hOnly.object.bbox.y - 45) < 1e-3, JSON.stringify(hOnly.object.bbox));
+  // the emitted rect op keeps the caller's values; canvas renders the same box
+  const rect = opsOf(opened.ops, "strokeRect")[0];
+  assert.deepEqual(rect.args, [100, 100, -80, -50]);
+});
+
 test("rotation uses the given pivot: boxes rotate about it, not their own centers", async () => {
   // A rect near its own center rotated about (0, 0) moves far away: the emitted
   // pivots must be (0, 0), not the box center.

@@ -591,10 +591,89 @@ function pointList(prim, minPoints, what) {
 // default and the bounding box (the rotated AABB of these corners).
 // `points` is the validated points list (or null), `text` the resolved text
 // metrics (or null); both come from the validation pass.
+const MITER_LIMIT = 10; // the miter limit every emitted line() op carries
+
+///|
+// The stroke protrusion of a miter join at vertex `at`, joining the segment
+// `prev -> at` to `at -> next`, for a stroke of the given width. The outer
+// miter point sits on the bisector at half/sin(theta/2) from the vertex,
+// where theta is the angle between the two segments; the miter limit clamps
+// what actually renders (canvas bevels a join that exceeds it), so the bound
+// never runs away for degenerate angles.
+export function strokeJoinProtrusion(prev, at, next, strokeWidth) {
+  const half = strokeWidth / 2;
+  const v1x = prev[0] - at[0];
+  const v1y = prev[1] - at[1];
+  const v2x = next[0] - at[0];
+  const v2y = next[1] - at[1];
+  const l1 = Math.hypot(v1x, v1y);
+  const l2 = Math.hypot(v2x, v2y);
+  if (l1 === 0 || l2 === 0) {
+    return half;
+  }
+  const cosTheta = Math.min(1, Math.max(-1, (v1x * v2x + v1y * v2y) / (l1 * l2)));
+  const sinHalf = Math.sqrt(Math.max(0, (1 - cosTheta) / 2));
+  if (sinHalf <= 1e-12) {
+    // A straight continuation joins flush; the limit is the bound anyway.
+    return half * MITER_LIMIT;
+  }
+  return Math.min(half / sinHalf, half * MITER_LIMIT);
+}
+
+///|
+// The page-space extent of a stroked polyline or closed polygon ring: the
+// point cloud grown by half the stroke width on each side, plus the miter
+// protrusions at the interior (a closed ring: every) vertices. Adapters use
+// this for page fitting so thick acute joins cannot leave the page the way a
+// plain half-width pad does. The result is a conservative bound: a join the
+// canvas bevels on the miter limit stays covered by its clamped protrusion.
+export function strokedPolylineExtent(points, strokeWidth, closed = false) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const include = (px, py) => {
+    x0 = Math.min(x0, px); y0 = Math.min(y0, py);
+    x1 = Math.max(x1, px); y1 = Math.max(y1, py);
+  };
+  for (const [x, y] of points) {
+    include(x, y);
+  }
+  const half = strokeWidth / 2;
+  if (Number.isFinite(x0)) {
+    x0 -= half; y0 -= half; x1 += half; y1 += half;
+  }
+  const count = points.length;
+  for (let i = 1; i < count - 1; i += 1) {
+    // Polyline: only interior vertices carry a join.
+    const p = strokeJoinProtrusion(points[i - 1], points[i], points[i + 1], strokeWidth);
+    include(points[i][0] - p, points[i][1] - p);
+    include(points[i][0] + p, points[i][1] + p);
+  }
+  if (closed && count > 2) {
+    // A closed ring joins at every vertex, including the seam.
+    const ring = [
+      points[count - 1], ...points, points[0],
+    ];
+    for (let i = 1; i < ring.length - 1; i += 1) {
+      const p = strokeJoinProtrusion(ring[i - 1], ring[i], ring[i + 1], strokeWidth);
+      include(ring[i][0] - p, ring[i][1] - p);
+      include(ring[i][0] + p, ring[i][1] + p);
+    }
+  }
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+
 function primCorners(prim, points, textMetrics) {
   switch (prim.kind) {
-    case "rect":
-      return { cx: prim.x + prim.w / 2, cy: prim.y + prim.h / 2, box: [prim.x, prim.y, prim.x + prim.w, prim.y + prim.h] };
+    case "rect": {
+      // Negative w/h keep the canvas mirror semantics: the rectangle runs
+      // the other way. Normalize the corners FIRST so that padding,
+      // rotation and the bbox below never see an unordered box (padding an
+      // unordered box would shrink instead of grow it).
+      const x0 = Math.min(prim.x, prim.x + prim.w);
+      const y0 = Math.min(prim.y, prim.y + prim.h);
+      const x1 = Math.max(prim.x, prim.x + prim.w);
+      const y1 = Math.max(prim.y, prim.y + prim.h);
+      return { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, box: [x0, y0, x1, y1] };
+    }
     case "ellipse":
       return { cx: prim.cx, cy: prim.cy, box: [prim.cx - prim.rx, prim.cy - prim.ry, prim.cx + prim.rx, prim.cy + prim.ry] };
     case "polygon":
@@ -812,8 +891,17 @@ export async function encodeDiagram(input) {
     const corners = primCorners(prim, points, textMetrics);
     const pivotX = pivot === null ? corners.cx : pivot[0];
     const pivotY = pivot === null ? corners.cy : pivot[1];
-    // Strokes grow the geometry extent by half the stroke width on each side.
-    const pad = (style.stroke !== null && prim.kind !== "text") ? style.strokeWidth / 2 : 0;
+    // Strokes grow the geometry extent by half the stroke width on each side;
+    // a miter join on an acute corner grows past that (half/sin(theta/2),
+    // clamped by the miter limit), so the protrusions join the bound too.
+    let pad = (style.stroke !== null && prim.kind !== "text") ? style.strokeWidth / 2 : 0;
+    if (style.stroke !== null && (prim.kind === "polygon" || prim.kind === "polyline") && points !== null) {
+      const extent = strokedPolylineExtent(points, style.strokeWidth, prim.kind === "polygon");
+      if (Number.isFinite(extent.x)) {
+        corners.box = [extent.x, extent.y, extent.x + extent.w, extent.y + extent.h];
+        pad = 0; // the extent already includes the stroke pads and joins
+      }
+    }
     const padded = [
       corners.box[0] - pad, corners.box[1] - pad,
       corners.box[2] + pad, corners.box[3] + pad,

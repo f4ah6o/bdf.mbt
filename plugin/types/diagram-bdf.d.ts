@@ -127,7 +127,24 @@ export class DiagramEncodeError extends Error {
   code: DiagramErrorCode;
 }
 
+/**
+ * The miter limit every emitted line() op carries (10): joins that exceed
+ * it render beveled, so miter extent bounds clamp at strokeJoinProtrusion.
+ */
+export const MITER_LIMIT: number;
+
+/** Miter protrusion of a join at vertex `at` between `prev` and `next`. */
+export function strokeJoinProtrusion(prev: [number, number], at: [number, number], next: [number, number], strokeWidth: number): number;
+
 /** The reader-side page-size cap of the BDF manifest (1 << 24 units). */
 export const BDF_MAX_PAGE_UNITS: number;
 /** The per-document primitive cap encoded by {@link encodeDiagram}. */
 export const MAX_PRIMITIVES: number;
+
+/**
+ * Page-space extent {x, y, w, h} of a stroked polyline or closed polygon
+ * ring: point cloud grown by half the stroke width plus the per-vertex
+ * miter protrusions (clamped by the miter limit). Adapters use it for page
+ * fitting so thick acute joins cannot leave the page.
+ */
+export function strokedPolylineExtent(points: Array<[number, number]>, strokeWidth: number, closed?: boolean): { x: number; y: number; w: number; h: number };
