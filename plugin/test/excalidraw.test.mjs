@@ -752,6 +752,45 @@ test("thick strokes stay fully on the page; ink anchors at the margin", async ()
   approx(fillOnly.opened.object.bbox.x, MARGIN, 1e-2);
 });
 
+///|
+// coordinator follow-up: non-integral ink spans (miter protrusions at a
+// sharp vertex) must round the page size UP, never down, so no ink lands
+// outside the page minus the margin band ---------------------------------
+
+test("miter-protruded ink stays inside the margin band (page rounds up)", async () => {
+  // duplicate-apex zig: the miter bound at the right-angle apex gives a
+  // 7.071pt protrusion past the vertex -> the NON-INTEGRAL ink span rounds
+  // the page UP; round() would have placed ink past the margin band.
+  const { opened } = await openDoc({
+    elements: [{
+      type: "line", id: "zig", x: 0, y: 0,
+      points: [[0, 0], [100, 100], [100, 100], [200, 0]],
+      strokeWidth: 10, strokeColor: "#000000",
+    }],
+  });
+  const bbox = opened.object.bbox;
+  const page = opened.page;
+  approx(bbox.x, MARGIN, 1e-2, "ink starts at the left margin");
+  approx(bbox.y, MARGIN, 1e-2, "ink starts at the top margin");
+  // ink span: geometry 0..100, miter protrusion 7.071 past the apex,
+  // half stroke 5 below y=0 -> span 112.0710678 (NOT an integer)
+  approx(bbox.y + bbox.h, MARGIN + 112.0710678, 1e-3,
+    "the miter protrusion extends the decoded bbox past the integer span");
+  assert.ok(Number.isInteger(page.w) && Number.isInteger(page.h),
+    "page dimensions are integers");
+  assert.ok(bbox.x >= MARGIN - 1e-6 && bbox.y >= MARGIN - 1e-6,
+    "no ink before the margin");
+  assert.ok(bbox.x + bbox.w <= page.w - MARGIN + 1e-3,
+    `right ink ${bbox.x + bbox.w} stays inside page ${page.w} minus margin`);
+  assert.ok(bbox.y + bbox.h <= page.h - MARGIN + 1e-3,
+    `bottom ink ${bbox.y + bbox.h} stays inside page ${page.h} minus margin`);
+  // the rounding rule itself: ceil(span + 2*margin), never round-down
+  approx(page.h, Math.ceil(112.0710678 + 2 * MARGIN), 1e-6,
+    "page height rounds the non-integral span UP");
+  approx(page.w, Math.ceil(bbox.w + 2 * MARGIN), 1e-6,
+    "page width rounds the non-integral span UP");
+});
+
 test("page geometry unions rendered extents plus a 16pt margin", async () => {
   const { opened } = await openDoc({
     type: "excalidraw",

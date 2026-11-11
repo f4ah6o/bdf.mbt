@@ -1019,8 +1019,10 @@ async function convertScene(bytes, options) {
   // about each element pivot) IS the ink footprint. The page offset anchors
   // ITS minimum at the 16 pt margin -- so no matter how thick a supported
   // stroke is, the outermost ink stays fully on the page; the page size is
-  // that union plus the margin on each side, rounded to integers. An empty
-  // scene keeps the default page (with a warning).
+  // that union plus the margin on each side, ROUNDED UP with Math.ceil so a
+  // non-integral span (e.g. a miter protrusion) can never push ink past the
+  // page minus the margin band. An empty scene keeps the default page (with
+  // a warning).
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
@@ -1063,8 +1065,8 @@ async function convertScene(bytes, options) {
 
     const dx = PAGE_MARGIN - minX;
     const dy = PAGE_MARGIN - minY;
-    width = Math.round(maxX - minX + 2 * PAGE_MARGIN);
-    height = Math.round(maxY - minY + 2 * PAGE_MARGIN);
+    width = Math.ceil(maxX - minX + 2 * PAGE_MARGIN);
+    height = Math.ceil(maxY - minY + 2 * PAGE_MARGIN);
     if (width <= 0 || height <= 0 || width > PAGE_LIMIT || height > PAGE_LIMIT) {
       throw failure(
         `the scene needs a ${Math.round(width)}x${Math.round(height)} pt page, outside the page limits`,
