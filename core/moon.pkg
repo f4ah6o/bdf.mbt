@@ -7,6 +7,7 @@ import {
   "moonbitlang/core/bigint",
   "f4ah6o/bdf/crypto",
   "moonbitlang/core/encoding/base64",
+  "moonbitlang/core/quickcheck",
   "moonbit-community/normalization",
   "moonbit-community/ucd" @unicode,
   "moonbit-community/ucd/data" @ucd,

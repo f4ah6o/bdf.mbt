@@ -1,0 +1,29 @@
+name: turtles-audit-local
+# Local-only, explicitly invoked audit of ONE supplied schema-3 mutation report.
+# This is deliberately a separate workflow: actrun's `if:` cannot see process
+# environment variables, so an `if: env.X != ''` gate would silently never fire.
+# Invoking this file IS the opt-in. It fails when no path is supplied, so a
+# missing report is never treated as a pass.
+#
+#   TURTLES_AUDIT_REPORT=.turtles-artifacts/final/report.json \
+#     node <actrun> workflow run .github/local/turtles-audit.yml
+on:
+  push:
+    branches-ignore: ['**']
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ../..
+    steps:
+      - name: require a report path
+        run: |
+          if [ -z "$TURTLES_AUDIT_REPORT" ]; then
+            echo "TURTLES_AUDIT_REPORT is not set." >&2
+            echo "This workflow audits one supplied report; it does not guess a path." >&2
+            exit 1
+          fi
+      - name: audit supplied report
+        run: moon run scripts/turtles-ratchet.mbtx --check-only "$TURTLES_AUDIT_REPORT"

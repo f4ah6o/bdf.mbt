@@ -1,0 +1,26 @@
+import {
+  "moonbitlang/async",
+  "moonbitlang/async/fs",
+  "moonbitlang/core/env",
+}
+
+/// Check the caller's toolchain home without requiring a private worktree cache.
+/// Moon itself may fail before this script starts if that toolchain is unusable.
+async fn main {
+  let home = match @env.get_env_var("MOON_HOME") {
+    Some(home) => home
+    None => match @env.get_env_var("HOME") {
+      Some(home) => home + "/.moon"
+      None => fail("Neither MOON_HOME nor HOME is set")
+    }
+  }
+  if !@fs.exists(home) {
+    fail(
+      "MOON_HOME=\{home} does not exist. Create it with:\n" +
+      "  mkdir -p .moon-home/cache\n" +
+      "  for d in bin lib include share; do ln -s ~/.moon/$d .moon-home/$d; done\n" +
+      "  cp -r ~/.moon/registry .moon-home/registry && chmod -R u+w .moon-home/registry",
+    )
+  }
+  println("MOON_HOME=\{home} is present")
+}

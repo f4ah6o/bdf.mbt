@@ -1,0 +1,216 @@
+///|
+import {
+  "moonbitlang/async",
+  "moonbitlang/async/shell",
+  "moonbitlang/core/env",
+  "moonbitlang/core/json",
+}
+
+///|
+/// The seven `boolean` mutants turtles discovers for `core/bytes.mbt` at
+/// `77204ba`. A report that does not describe exactly these rows is rejected.
+fn expected_ids() -> Array[String] {
+  [
+    "m-bbcdaaea4414efc3", "m-4499386e0589b082", "m-c71bd69a9e4c7bb7", "m-e6b702daaef65179",
+    "m-83c1ec9a56bb19a1", "m-ef2c02ae162953f3", "m-f7aac8ba36d213be",
+  ]
+}
+
+///|
+/// Reads a required numeric field. A missing or non-numeric field is an error,
+/// never a zero.
+fn number(root : @json.Json, key : String) -> Double raise {
+  let value = match root.value(key) {
+    Some(value) => value
+    None => fail("report is missing \{key}")
+  }
+  match value.as_number() {
+    Some(n) => n
+    None => fail("report field \{key} is not a number")
+  }
+}
+
+///|
+/// Reads a required nonnegative integer field.
+fn integer(root : @json.Json, key : String) -> Int32 raise {
+  let n = number(root, key)
+  if n < 0.0 || n.to_int().to_double() != n {
+    fail("report field \{key} is not a nonnegative integer: \{n}")
+  }
+  n.to_int()
+}
+
+///|
+/// Reads a required string field.
+fn text(root : @json.Json, key : String) -> String raise {
+  let value = match root.value(key) {
+    Some(value) => value
+    None => fail("report is missing \{key}")
+  }
+  match value.as_string() {
+    Some(s) => s
+    None => fail("report field \{key} is not a string")
+  }
+}
+
+///|
+/// Reads a required array field.
+fn array(root : @json.Json, key : String) -> Array[@json.Json] raise {
+  let value = match root.value(key) {
+    Some(value) => value
+    None => fail("report is missing \{key}")
+  }
+  match value.as_array() {
+    Some(items) => items
+    None => fail("report field \{key} is not an array")
+  }
+}
+
+///|
+/// Validates one mutant row and returns its outcome.
+fn row_outcome(row : @json.Json, expected : Array[String]) -> String raise {
+  let id = text(row, "id")
+  if !expected.contains(id) {
+    fail("unexpected mutant id \{id}")
+  }
+  if text(row, "path") != "core/bytes.mbt" {
+    fail("mutant \{id} is in \{text(row, "path")}, expected core/bytes.mbt")
+  }
+  if text(row, "group") != "boolean" {
+    fail("mutant \{id} is in group \{text(row, "group")}, expected boolean")
+  }
+  let original = text(row, "original")
+  let replacement = text(row, "replacement")
+  let supported = (original == "||" && replacement == "&&") ||
+    (original == "&&" && replacement == "||")
+  if !supported {
+    fail(
+      "mutant \{id} has unsupported replacement \{original} -> \{replacement}",
+    )
+  }
+  let outcome = text(row, "outcome")
+  match outcome {
+    "KILLED" | "SURVIVED" | "TIMEOUT" | "UNVIABLE" => outcome
+    _ => fail("mutant \{id} has unrecognized outcome \{outcome}")
+  }
+}
+
+///|
+/// Prints the summary of a schema-3 report and enforces the ratchet floor.
+///
+/// The report must be well-formed JSON, describe exactly the seven expected
+/// `boolean` mutants of `core/bytes.mbt`, and agree with itself: the summary
+/// counts are recomputed from the rows and the score is recomputed from those
+/// counts. Nothing is defaulted to zero.
+async fn report(path : String, min_score : Double) -> Unit {
+  let source = @shell.Cmd("cat", [path]).output().stdout()
+  let parsed = @json.parse(source)
+  if number(parsed, "schema") != 3.0 {
+    fail("report schema is not 3")
+  }
+  if text(parsed, "target") != "js" {
+    fail("report target is \{text(parsed, "target")}, expected js")
+  }
+  if text(parsed, "test_scope") != "module" {
+    fail("report test_scope is \{text(parsed, "test_scope")}, expected module")
+  }
+  if integer(parsed, "inactive_mutants") != 0 {
+    fail("report has target-inactive mutants, expected 0")
+  }
+  let expected = expected_ids()
+  let rows = array(parsed, "mutants")
+  if rows.length() != expected.length() {
+    fail(
+      "report has \{rows.length()} mutants, expected the \{expected.length()}-mutant boolean scope",
+    )
+  }
+  let seen : Map[String, Unit] = Map([])
+  let mut killed = 0
+  let mut survived = 0
+  let mut timeout = 0
+  let mut unviable = 0
+  for row in rows {
+    let id = text(row, "id")
+    if seen.contains(id) {
+      fail("duplicate mutant id \{id}")
+    }
+    seen[id] = ()
+    match row_outcome(row, expected) {
+      "KILLED" => killed += 1
+      "SURVIVED" => survived += 1
+      "TIMEOUT" => timeout += 1
+      _ => unviable += 1
+    }
+  }
+  for id in expected {
+    if !seen.contains(id) {
+      fail("report is missing mutant id \{id}")
+    }
+  }
+  let summary = match parsed.value("summary") {
+    Some(summary) => summary
+    None => fail("report is missing summary")
+  }
+  let s_killed = integer(summary, "killed")
+  let s_survived = integer(summary, "survived")
+  let s_timeout = integer(summary, "timeout")
+  let s_unviable = integer(summary, "unviable")
+  if s_killed != killed {
+    fail("summary killed \{s_killed} disagrees with \{killed} rows")
+  }
+  if s_survived != survived {
+    fail("summary survived \{s_survived} disagrees with \{survived} rows")
+  }
+  if s_timeout != timeout {
+    fail("summary timeout \{s_timeout} disagrees with \{timeout} rows")
+  }
+  if s_unviable != unviable {
+    fail("summary unviable \{s_unviable} disagrees with \{unviable} rows")
+  }
+  // All seven fixed pilot mutants were viable in the verified baseline.
+  // A compiler failure must not improve this regression gate's score.
+  if unviable != 0 {
+    fail("fixed pilot requires zero unviable mutants, got \{unviable}")
+  }
+  let viable = killed + survived + timeout
+  let recomputed = if viable == 0 {
+    100.0
+  } else {
+    killed.to_double() / viable.to_double() * 100.0
+  }
+  let reported = number(summary, "score")
+  if (recomputed - reported).abs() > 0.001 {
+    fail("summary score \{reported} disagrees with recomputed \{recomputed}")
+  }
+  println(
+    "killed=\{killed} survived=\{survived} timeout=\{timeout} unviable=\{unviable} score=\{recomputed}",
+  )
+  if recomputed < min_score {
+    fail("mutation score \{recomputed} is below the ratchet floor \{min_score}")
+  }
+}
+
+///|
+async fn main {
+  // Mutation score floor for the core/bytes.mbt pilot, in percent.
+  // Raise this when the suite improves. Never lower it to make a run pass.
+  let min_score : Double = 100.0
+  // The same floor as the string turtles receives on the command line.
+  let min_score_arg : String = "100"
+  // Where the ratchet run writes its schema-3 report.
+  let report_path : String = ".turtles-artifacts/ratchet/report.json"
+  let args = @env.args()
+  if args.length() > 1 && args[1] == "--check-only" {
+    report(if args.length() > 2 { args[2] } else { report_path }, min_score)
+    return
+  }
+  let status = @shell.Cmd("./bin/turtles", [
+    "--dir", ".", "--target", "js", "--file", "core/bytes.mbt", "--operators", "boolean",
+    "--jobs", "2", "--timeout", "240", "--output-dir", ".turtles-artifacts/ratchet",
+    "--json", report_path, "--fail-under", min_score_arg,
+  ]).status()
+  report(report_path, min_score)
+  if status != 0 {
+    fail("turtles exited with code \{status}")
+  }
+}

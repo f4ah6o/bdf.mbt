@@ -22,3 +22,7 @@ node_modules
 .npm-logs/
 .agents/
 .devin/
+
+# turtles mutation-testing pilot (local tool + raw reports)
+bin/
+.turtles-artifacts/

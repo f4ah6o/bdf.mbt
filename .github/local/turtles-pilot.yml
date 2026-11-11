@@ -1,0 +1,37 @@
+name: turtles-pilot-local
+# Local-only verification for the turtles pilot. This file lives outside
+# .github/workflows on purpose: GitHub never discovers it, and the only trigger
+# is a branch filter no branch satisfies. Run it with actrun:
+#
+#   node <actrun> workflow run .github/local/turtles-pilot.yml
+#
+# Default path: environment check, moon check, focused tests, ratchet fixtures.
+# It does NOT read any historical report, so it works in a clean checkout.
+#
+# Opt-in work lives in separate files, because actrun's `if:` cannot see process
+# environment variables and a gated job would silently never fire:
+#   .github/local/turtles-audit.yml   audit one supplied schema-3 report
+#   .github/local/turtles-mutate.yml  run the 7-mutant boolean ratchet
+on:
+  push:
+    branches-ignore: ['**']
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      max-parallel: 1
+      matrix:
+        target: [js, wasm-gc, native]
+    defaults:
+      run:
+        working-directory: ../..
+    steps:
+      - name: environment
+        run: moon run scripts/turtles-env-check.mbtx
+      - name: check
+        run: moon check --target ${{ matrix.target }}
+      - name: focused tests
+        run: moon test --target ${{ matrix.target }} -p f4ah6o/bdf/core
+      - name: ratchet fixtures
+        run: moon run scripts/turtles-ratchet-test.mbtx

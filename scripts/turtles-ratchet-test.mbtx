@@ -1,0 +1,187 @@
+///|
+import {
+  "moonbitlang/async",
+  "moonbitlang/async/fs",
+  "moonbitlang/async/shell",
+  "moonbitlang/core/env",
+}
+
+///|
+/// The seven ids the ratchet expects, in report order.
+fn ids() -> Array[String] {
+  [
+    "m-bbcdaaea4414efc3", "m-4499386e0589b082", "m-c71bd69a9e4c7bb7", "m-e6b702daaef65179",
+    "m-83c1ec9a56bb19a1", "m-ef2c02ae162953f3", "m-f7aac8ba36d213be",
+  ]
+}
+
+///|
+/// One mutant row. The replacement pair is always a supported boolean flip.
+fn row(id : String, outcome : String) -> String {
+  "{\"id\":\"" +
+  id +
+  "\",\"path\":\"core/bytes.mbt\",\"group\":\"boolean\",\"original\":\"||\",\"replacement\":\"&&\",\"outcome\":\"" +
+  outcome +
+  "\"}"
+}
+
+///|
+/// Joins rows into a schema-3 report with the given summary.
+fn report_text(
+  rows : Array[String],
+  target : String,
+  killed : Int32,
+  survived : Int32,
+  score : String,
+  unviable~ : Int32 = 0,
+) -> String {
+  let body = StringBuilder()
+  for i, r in rows {
+    if i > 0 {
+      body.write_string(",")
+    }
+    body.write_string(r)
+  }
+  "{\"schema\":3,\"target\":\"" +
+  target +
+  "\",\"test_scope\":\"module\",\"inactive_mutants\":0,\"mutants\":[" +
+  body.to_string() +
+  "],\"summary\":{\"killed\":" +
+  killed.to_string() +
+  ",\"survived\":" +
+  survived.to_string() +
+  ",\"timeout\":0,\"unviable\":" +
+  unviable.to_string() +
+  ",\"score\":" +
+  score +
+  "}}"
+}
+
+///|
+/// Runs the ratchet in check-only mode and returns its exit code.
+async fn ratchet(path : String) -> Int32 {
+  @shell.Cmd("moon", [
+    "run", "scripts/turtles-ratchet.mbtx", "--check-only", path,
+  ]).status()
+}
+
+///|
+async fn main {
+  let dir = ".turtles-artifacts/ratchet-fixtures"
+  if @shell.Cmd("mkdir", ["-p", dir]).status() != 0 {
+    fail("could not create fixture directory")
+  }
+  let all = ids()
+  let killed_rows = all.map(id => row(id, "KILLED"))
+  let mut failures = 0
+  let mut checks = 0
+
+  // A valid report must be accepted.
+  let valid = report_text(killed_rows, "js", 7, 0, "100")
+  @fs.write_file("\{dir}/valid.json", valid)
+  checks += 1
+  let code = ratchet("\{dir}/valid.json")
+  if code != 0 {
+    println("FAIL valid report was rejected")
+    failures += 1
+  }
+
+  // Malformed JSON.
+  @fs.write_file("\{dir}/malformed.json", "{not json")
+  checks += 1
+  let code = ratchet("\{dir}/malformed.json")
+  if code == 0 {
+    println("FAIL malformed JSON was accepted")
+    failures += 1
+  }
+
+  // Wrong scope: a native target.
+  @fs.write_file(
+    "\{dir}/wrong-target.json",
+    report_text(killed_rows, "native", 7, 0, "100"),
+  )
+  checks += 1
+  let code = ratchet("\{dir}/wrong-target.json")
+  if code == 0 {
+    println("FAIL wrong target was accepted")
+    failures += 1
+  }
+
+  // Duplicated id: row 1 repeats row 0, so one expected id is also missing.
+  let duplicated = killed_rows.copy()
+  duplicated[1] = row(all[0], "KILLED")
+  @fs.write_file(
+    "\{dir}/duplicate-id.json",
+    report_text(duplicated, "js", 7, 0, "100"),
+  )
+  checks += 1
+  let code = ratchet("\{dir}/duplicate-id.json")
+  if code == 0 {
+    println("FAIL duplicated id was accepted")
+    failures += 1
+  }
+
+  // Rows say SURVIVED but the summary claims a perfect score.
+  let survived_rows = killed_rows.copy()
+  survived_rows[0] = row(all[0], "SURVIVED")
+  @fs.write_file(
+    "\{dir}/inconsistent-score.json",
+    report_text(survived_rows, "js", 6, 1, "100"),
+  )
+  checks += 1
+  let code = ratchet("\{dir}/inconsistent-score.json")
+  if code == 0 {
+    println("FAIL inconsistent score was accepted")
+    failures += 1
+  }
+
+  // A matching summary cannot make unviable mutants a perfect result.
+  for n in [6, 7] {
+    let rows = killed_rows.copy()
+    for i in 0..<n {
+      rows[i] = row(all[i], "UNVIABLE")
+    }
+    let path = "\{dir}/unviable-\{n}.json"
+    @fs.write_file(path, report_text(rows, "js", 7 - n, 0, "100", unviable=n))
+    checks += 1
+    if ratchet(path) == 0 {
+      println("FAIL \{n} unviable mutants were accepted")
+      failures += 1
+    }
+  }
+
+  // Summary counts disagree with the rows.
+  @fs.write_file(
+    "\{dir}/inconsistent-counts.json",
+    report_text(killed_rows, "js", 6, 1, "100"),
+  )
+  checks += 1
+  let code = ratchet("\{dir}/inconsistent-counts.json")
+  if code == 0 {
+    println("FAIL inconsistent counts were accepted")
+    failures += 1
+  }
+
+  // An unsupported replacement pair.
+  let bad_pair = killed_rows.copy()
+  bad_pair[0] = "{\"id\":\"" +
+    all[0] +
+    "\",\"path\":\"core/bytes.mbt\",\"group\":\"boolean\",\"original\":\"+\",\"replacement\":\"-\",\"outcome\":\"KILLED\"}"
+  @fs.write_file(
+    "\{dir}/unsupported-replacement.json",
+    report_text(bad_pair, "js", 7, 0, "100"),
+  )
+  checks += 1
+  let code = ratchet("\{dir}/unsupported-replacement.json")
+  if code == 0 {
+    println("FAIL unsupported replacement was accepted")
+    failures += 1
+  }
+
+  println(
+    "ratchet fixtures: \{checks - failures}/\{checks} behaved as expected",
+  )
+  if failures > 0 {
+    fail("\{failures} ratchet fixture(s) behaved incorrectly")
+  }
+}
