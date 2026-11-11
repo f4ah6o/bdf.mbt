@@ -16,16 +16,20 @@ The examples below use a supplied local staging tarball, not a registry release.
 | `bdf.mbt` | Browser/viewer API, including `mount_bdf`, `Viewer`, selection, region rendering, and `bdf_create_native_converter`. |
 | `bdf.mbt/workers/native` | Self-installing native builtin converter Worker. |
 | `bdf.mbt/workers/render` | Page rasterizing Worker. |
-| `bdf.mbt/workers/plugin` | Prebuilt plugin Worker with the builtin DocuWorks adapter registered. |
+| `bdf.mbt/workers/plugin` | Prebuilt plugin Worker with the builtin DocuWorks adapter and the Excalidraw and Mermaid diagram adapters registered. |
 | `bdf.mbt/forms` | `bdf_form_describe`, `bdf_form_fill`, `bdf_form_compile`. |
 | `bdf.mbt/xdw` | Raw `bdf_xdw_detect` and `bdf_xdw_convert` bindings. |
 | `bdf.mbt/plugin` | Descriptor validation, registry, host, plugin types, and DocuWorks binding helpers. |
 | `bdf.mbt/plugin/worker` | `installPluginConverterWorker`. |
+| `bdf.mbt/plugin/diagram-bdf` | Shared bounded diagram-to-BDF encoder (`encodeDiagram`, limits, `DiagramEncodeError`). |
 | `bdf.mbt/plugin/adapters/docuworks` | `docuworksPlugin` and its format constants. |
+| `bdf.mbt/plugin/adapters/excalidraw` | `excalidrawPlugin`: Excalidraw scenes as vector primitives (documented subset). |
+| `bdf.mbt/plugin/adapters/mermaid` | `mermaidPlugin`: static Mermaid flowcharts (documented subset). |
 | `bdf.mbt/tools/emit-downstream-worker` | Node CLI script for emitting a browser-resolvable plugin Worker. |
 
 Declarations are adjacent to the compiled bundles and in `types/index.d.ts`,
-`types/worker.d.ts`, and `types/docuworks.d.ts` for the three plugin entries.
+`types/worker.d.ts`, `types/diagram-bdf.d.ts`, `types/docuworks.d.ts`,
+`types/excalidraw.d.ts`, and `types/mermaid.d.ts` for the plugin entries.
 Each typed entry selects its own declaration through the export map.
 The emitter and prebuilt plugin Worker are executable scripts, not typed APIs.
 Do not import undocumented package subpaths.
@@ -34,7 +38,8 @@ The native Worker contains 24 formats: csv, xlsx, docx, pptx, font, pdf, image,
 ai, tiff, psd, emf, xdw, idml, visio, markdown, html, audio, hpgl, jww, dxf,
 sxf, cgm, drawio, and parquet.
 The plugin Worker contains only explicitly registered plugins; its prebuilt
-version registers `xdw` (`.xdw` and `.xbd`).
+version registers the builtin `xdw` adapter (`.xdw` and `.xbd`) plus the
+`excalidraw` and `mermaid` diagram adapters.
 These are separate hosts, with **no automatic routing between them**.
 
 ## Browser quickstart: static files, no bundler
@@ -59,7 +64,7 @@ Save this complete example as `public/index.html`:
 <html lang="en">
 <meta charset="utf-8">
 <title>BDF conversion</title>
-<input id="input" type="file" accept=".xdw,.xbd">
+<input id="input" type="file" accept=".xdw,.xbd,.excalidraw,.excalidraw.json,.mmd,.mermaid">
 <pre id="status">Loading converter…</pre>
 <script type="module">
 import { bdf_create_native_converter } from "/bdf.mbt-dist/browser.js";
@@ -79,7 +84,6 @@ try {
     try {
       const result = await converter.convert(await file.arrayBuffer(), {
         name: file.name,
-        params: { include_hidden: false },
       });
       status.textContent = JSON.stringify({
         format: result.format,
@@ -101,6 +105,13 @@ window.addEventListener("pagehide", () => converter.terminate(), { once: true })
 </script>
 </html>
 ```
+
+The prebuilt plugin Worker converts all three registered input formats:
+DocuWorks (`.xdw`, `.xbd`), Excalidraw scenes (`.excalidraw`,
+`.excalidraw.json`) and static Mermaid flowcharts (`.mmd`, `.mermaid`).
+Conversion `params` are per plugin: the builtin DocuWorks adapter accepts
+`include_hidden` (default `false`), while the diagram adapters accept no
+`params` keys at all, so the example passes none.
 
 `new Worker()` fetches a URL; it does not resolve npm package specifiers.
 The example imports a served file directly and passes a served Worker URL.
@@ -302,7 +313,11 @@ the more specific declarations shown here.
 
 For signatures, error codes, streaming examples, ownership transitions,
 shutdown ordering, and the complete trust model, see
-`docs/format-plugin-api.md` in the source distribution.
+[`docs/format-plugin-api.md`](../../docs/format-plugin-api.md), which ships
+inside this package. For the diagram input formats (Excalidraw scenes and
+static Mermaid flowcharts) and their documented subset limits, see
+[`docs/diagram-plugins.md`](../../docs/diagram-plugins.md), which also ships
+inside this package.
 The native Worker and JS-plugin registry remain separate; extending one does
 not add formats to the other.
 

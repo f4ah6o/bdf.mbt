@@ -1,22 +1,39 @@
 # Diagram format plugins: Excalidraw and Mermaid
 
-This directory-level note documents the new diagram input-format plugins
-(Excalidraw, Mermaid) built against the file-format plugin API of
-`docs/format-plugin-api.md`. It is a NEW document: nothing in the existing
-plugin API snapshot was modified to write it, and no file the parent owns
-was edited in this worktree. Everything here is additive; the small parent
--side changes the eventual merge needs are listed as instructions, not diffs.
+This document describes the diagram input-format plugins (Excalidraw,
+Mermaid) built against the file-format plugin API of
+`docs/format-plugin-api.md`. Their shared encoder, adapters and type
+declarations are part of the `bdf.mbt` package, and this document
+ships inside it alongside the library README.
 
-## What landed
+| File | Role |
+| --- | --- |
+| `bdf.mbt/plugin/diagram-bdf` | shared diagram-to-BDF encoder (pure ESM, zero dependencies) |
+| `bdf.mbt/plugin/adapters/excalidraw` | Excalidraw scene adapter |
+| `bdf.mbt/plugin/adapters/mermaid` | Mermaid flowchart-subset adapter |
 
-| Owner | File | Role |
-| --- | --- | --- |
-| coordinator (this session) | `plugin/src/diagram-bdf.js` | shared diagram-to-BDF encoder (pure ESM, zero dependencies) |
-| coordinator | `plugin/test/diagram-reader.mjs` | shared test reader built on the staged read-only `@bdfkit/core` |
-| coordinator | `plugin/test/diagram-bdf.test.mjs` | encoder + reader tests (semantics, determinism, limits, PBT) |
-| coordinator | `plugin/types/diagram-bdf.d.ts` | shared type declarations |
-| subagent `excalidraw` | `plugin/src/adapters/excalidraw.js`, `plugin/test/excalidraw.test.mjs`, `plugin/types/excalidraw.d.ts` | Excalidraw scene adapter + tests |
-| subagent `mermaid` | `plugin/src/adapters/mermaid.js`, `plugin/test/mermaid.test.mjs`, `plugin/types/mermaid.d.ts` | Mermaid flowchart-subset adapter + tests |
+The prebuilt plugin Worker (`bdf.mbt/workers/plugin`) registers both diagram
+adapters next to the builtin DocuWorks adapter at startup, so the standard
+converter client converts `.excalidraw`, `.mmd` and `.mermaid` inputs without
+any extra wiring. A custom Worker can compose them explicitly:
+
+```js
+import { installPluginConverterWorker } from "bdf.mbt/plugin/worker";
+import { docuworksPlugin } from "bdf.mbt/plugin/adapters/docuworks";
+import { excalidrawPlugin } from "bdf.mbt/plugin/adapters/excalidraw";
+import { mermaidPlugin } from "bdf.mbt/plugin/adapters/mermaid";
+import { moonbitDocuWorks } from "bdf.mbt/plugin";
+import * as xdw from "bdf.mbt/xdw";
+
+installPluginConverterWorker([
+  docuworksPlugin({ delegate: moonbitDocuWorks(xdw) }),
+  excalidrawPlugin(),
+  mermaidPlugin(),
+]);
+```
+
+`encodeDiagram` is also exported directly (`bdf.mbt/plugin/diagram-bdf`) for
+tools that want diagram-to-BDF encoding without the plugin envelope.
 
 ## Architecture
 
@@ -90,8 +107,8 @@ Encoder-side contract details (all enforced, all tested):
 
 ### The independent reader
 
-`plugin/test/diagram-reader.mjs` opens encoded bytes with the staged,
-read-only `@bdfkit/core` package (`parseHeader`, `BufferSource`,
+`plugin/test/diagram-reader.mjs` opens encoded bytes with the upstream
+`@bdfkit/core` package (`parseHeader`, `BufferSource`,
 `BdfDocument`, `decodeObject`, `walk`) and returns decoded semantics:
 header, manifest, view, page, layers, part entries, the object's tables,
 its inline paths, and a recorded op stream (`fillRect`, `strokePath`,
@@ -132,34 +149,23 @@ Mermaid:
 Both plugins accept no `params` (any key is an error), reject passwords,
 and never fetch or execute anything.
 
-## Parent-side integration steps (for the merge; none done here)
+## Using the plugins and their current release state
 
-The plugin API snapshot is read-only in this worktree, so the eventual
-parent merge must add these small, already-agreed hooks itself:
+The diagram adapters use only the existing plugin API v1 contract surface
+(`defineFormatPlugin`, `acceptedParams`, `noPassword`); the encoder they
+share (`plugin/diagram-bdf`) is pure ESM with no dependencies, so a Worker
+bundle imports it unchanged. Extension claims (`.excalidraw`,
+`.excalidraw.json`, `.mmd`, `.mermaid`) do not collide with each other or
+with `.xdw`/`.xbd`.
 
-1. `plugin/package.json` `exports` (additive entries):
+This API is a pre-release staging artifact: the npm name (`bdf.mbt`) is
+decided, the release version is not, and the diagram formats are part of the
+same release candidate as the rest of the plugin API — subject to the same
+pending validation before any publication.
 
-   ```json
-   "./diagram-bdf": { "types": "./types/diagram-bdf.d.ts", "default": "./src/diagram-bdf.js" },
-   "./adapters/excalidraw": { "types": "./types/excalidraw.d.ts", "default": "./src/adapters/excalidraw.js" },
-   "./adapters/mermaid": { "types": "./types/mermaid.d.ts", "default": "./src/adapters/mermaid.js" }
-   ```
-
-   plus the same three `dist/plugin/*` mappings in
-   `plugin/tools/library-pack.mjs`'s allowlist for the `bdf.mbt` package
-   (mirror of the `./plugin/adapters/docuworks` row in
-   `docs/format-plugin-api.md`).
-
-2. Worker install (where a diagram-capable plugin worker is wanted): pass
-   the two descriptors at startup —
-   `installPluginConverterWorker([docuworksPlugin({...}), excalidrawPlugin(), mermaidPlugin()])`
-   — matching the v1 "startup registration only" rule; extension claims
-   (`.excalidraw`, `.mmd`, `.mermaid`) do not collide with `.xdw`/`.xbd`.
-
-3. The two adapters use only the existing contract surface
-   (`defineFormatPlugin`, `acceptedParams`, `noPassword`); the only new
-   runtime module they need inside the worker bundle is
-   `plugin/src/diagram-bdf.js` (pure ESM, no dependencies).
+Inputs beyond the documented subsets are rejected with named errors or
+reported as warnings, never silently dropped — see *Scope and deliberate
+limitations* above for exactly what that means per format.
 
 ## Running the tests (targeted only)
 
@@ -169,6 +175,6 @@ node --test plugin/test/excalidraw.test.mjs      # Excalidraw adapter
 node --test plugin/test/mermaid.test.mjs         # Mermaid adapter
 ```
 
-The adapter tests import `@bdfkit/core` through the read-only symlink
-`node_modules/@bdfkit/core -> ../../bdf-format-plugin-20261111/node_modules/@bdfkit/core`
-(the target is never written). No installations, no full builds.
+The tests verify decoded BDF semantics through an independent reader, so
+they assert rendering-level behavior (ops, colors, extents), not just byte
+shapes.

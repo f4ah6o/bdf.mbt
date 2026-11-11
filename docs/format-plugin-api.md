@@ -34,7 +34,10 @@ Use these exported entry points, without `.js` suffixes:
 | --- | --- | --- |
 | `bdf.mbt/plugin` | `FORMAT_PLUGIN_API_VERSION`, `defineFormatPlugin`, `createFormatRegistry`, `createConverterHost`, `pluginContext`, `PluginError`, `ConvertError`, `errorText`, `toBytes`, `outgoingBytes`; also the DocuWorks adapter/constants, `moonbitDocuWorks`, `base64Decode`, `BindingError` | `types/index.d.ts` |
 | `bdf.mbt/plugin/worker` | `installPluginConverterWorker` only | `types/worker.d.ts` |
+| `bdf.mbt/plugin/diagram-bdf` | `encodeDiagram`, the primitive limits, `DiagramEncodeError` | `types/diagram-bdf.d.ts` |
 | `bdf.mbt/plugin/adapters/docuworks` | `docuworksPlugin`, `DOCUWORKS_FORMAT_NAME`, `DOCUWORKS_EXTENSIONS`, `DOCUWORKS_DESCRIPTION` only | `types/docuworks.d.ts` |
+| `bdf.mbt/plugin/adapters/excalidraw` | `excalidrawPlugin`, `EXCALIDRAW_FORMAT_NAME`, `EXCALIDRAW_EXTENSIONS`, `EXCALIDRAW_DESCRIPTION`, `EXCALIDRAW_INPUT_LIMIT` only | `types/excalidraw.d.ts` |
+| `bdf.mbt/plugin/adapters/mermaid` | `mermaidPlugin`, `MERMAID_FORMAT_NAME`, `MERMAID_EXTENSIONS`, `MERMAID_DESCRIPTION` only | `types/mermaid.d.ts` |
 | `bdf.mbt/xdw` | `bdf_xdw_detect`, `bdf_xdw_convert` | `dist/xdw/docuworks_js.d.ts` |
 
 Types such as `FormatPlugin`, `ConverterWireOptions`, `PluginContext`,

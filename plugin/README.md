@@ -56,8 +56,9 @@ downstream-worker emitter documented in
 
 Inside this repository the same modules carry the internal staging manifest
 `bdf-format-plugin-api`, with export map `.` (registry, host, contract,
-DocuWorks helpers), `./worker` (`installPluginConverterWorker`) and
-`./adapters/docuworks` (adapter and constants):
+DocuWorks helpers), `./worker` (`installPluginConverterWorker`),
+`./diagram-bdf` (the shared diagram encoder), `./adapters/docuworks`,
+`./adapters/excalidraw` and `./adapters/mermaid`:
 
 ```js
 // repository-internal staging smoke only — not a consumer import contract

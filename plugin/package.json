@@ -1,0 +1,46 @@
+{
+  "name": "bdf-format-plugin-api",
+  "version": "0.0.0-staging",
+  "private": true,
+  "description": "Versioned file-format plugin API for the BDF converter, with the DocuWorks builtin adapter and the Excalidraw and Mermaid diagram adapters",
+  "type": "module",
+  "license": "MIT",
+  "main": "./src/index.js",
+  "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./worker": {
+      "types": "./types/worker.d.ts",
+      "default": "./src/worker.js"
+    },
+    "./diagram-bdf": {
+      "types": "./types/diagram-bdf.d.ts",
+      "default": "./src/diagram-bdf.js"
+    },
+    "./adapters/docuworks": {
+      "types": "./types/docuworks.d.ts",
+      "default": "./src/adapters/docuworks.js"
+    },
+    "./adapters/excalidraw": {
+      "types": "./types/excalidraw.d.ts",
+      "default": "./src/adapters/excalidraw.js"
+    },
+    "./adapters/mermaid": {
+      "types": "./types/mermaid.d.ts",
+      "default": "./src/adapters/mermaid.js"
+    }
+  },
+  "files": [
+    "src",
+    "types",
+    "README.md",
+    "LICENSE",
+    "NOTICE.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}
