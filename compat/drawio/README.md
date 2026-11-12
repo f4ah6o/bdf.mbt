@@ -71,3 +71,14 @@ Legacy block arrows. This change fixes open-marker geometry only: orthogonal
 waypoints, rounded joins, block/classic markers and complete15-edge visual
 parity remain separate work. The original routing points still drive labels;
 only the rendered line's endpoint copy is shortened.
+
+## Block/classic marker regression
+
+After building the JS native converter worker, run
+`node compat/drawio/block-marker-test.mjs`. It independently decodes actual
+AWS Legacy BDF output:11 filled/stroked block triangles, representative
+horizontal/vertical/dashed geometry and shortened lines, plus a synthetic
+classic/unfilled/strokeWidth2 variant. Helpers additionally cover reversed and
+zero-length geometry. Source: upstream `shapes_core.go` `createArrow` at the
+commit above. This does not claim Legacy routing or complete image parity;
+rounded corners, branching and endpoint placement remain separate work.

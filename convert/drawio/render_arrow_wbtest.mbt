@@ -115,14 +115,15 @@ test "drawio open arrow ignores zero-length segments" {
 }
 
 ///|
-test "drawio open arrow leaves non-open marker endpoint unchanged" {
+test "drawio open arrow leaves unrelated marker endpoint unchanged" {
   for (key, style) in [
-      ("endArrow", "endArrow=classic;endSize=10"),
-      ("startArrow", "startArrow=block"),
-      ("endArrow", ""),
+      ("endArrow", "endArrow=oval;endSize=10"),
+      ("startArrow", "startArrow=diamond"),
+      ("endArrow", "endArrow=ERmandOne"),
+      ("endArrow", "endArrow="),
       ("endArrow", "endArrow=none"),
     ] {
-    let end = drawio_edge_open_end(
+    let end = drawio_edge_marker_end(
       (320.0, 160.0),
       (240.0, 160.0),
       style,
@@ -131,7 +132,147 @@ test "drawio open arrow leaves non-open marker endpoint unchanged" {
     )
     assert_true(
       end.0 == 320.0 && end.1 == 160.0,
-      msg="non-open marker keeps the tip for " + key + " " + style,
+      msg="unrelated marker keeps the tip for " + key + " " + style,
     )
   }
+}
+
+///|
+/// Block-arrow parity with official draw.io (upstream converter/drawio
+/// createArrow(2)) and /tmp/bdf-official-compare/legacy-edges.json: the
+/// Legacy e2 route (86,331.5)->(187,331.5), no endSize (default 6) and
+/// sw=1 in the fixture gets the line end (178.882,331.5) and the marker
+/// triangle apex (185.882,331.5) - wing (178.882,335) - wing
+/// (178.882,328), exactly the official capture's marker.
+test "drawio block end arrow: default size 6, wings and shortened line (legacy e2)" {
+  let path = drawio_block_arrow_path(
+    (187.0, 331.5),
+    (86.0, 331.5),
+    6.0,
+    1.0,
+    2.0,
+    false,
+  )
+  assert_eq(path.verbs.length(), 4)
+  arrow_point_close(path.points[0], 185.882, 331.5, "block apex")
+  arrow_point_close(path.points[1], 178.882, 335.0, "block wing 1")
+  arrow_point_close(path.points[2], 178.882, 328.0, "block wing 2")
+  // No explicit endSize: the dispatcher defaults to upstream's 6.
+  let end = drawio_edge_marker_end(
+    (187.0, 331.5),
+    (86.0, 331.5),
+    "endArrow=block;endFill=1",
+    "endArrow",
+    1.0,
+  )
+  arrow_point_close({ x: end.0, y: end.1 }, 178.882, 331.5, "block line end")
+}
+
+///|
+test "drawio block start arrow on a vertical route" {
+  // Route start (225.25,378) as tip drawn downward toward (225.25,480):
+  // the marker points up, mirroring official legacy e2 (apex 478.882 and
+  // wings at 471.882 when the end marker sits at (225.25,480)).
+  let path = drawio_block_arrow_path(
+    (225.25, 378.0),
+    (225.25, 480.0),
+    6.0,
+    1.0,
+    2.0,
+    false,
+  )
+  arrow_point_close(path.points[0], 225.25, 379.118, "start apex")
+  arrow_point_close(path.points[1], 228.75, 386.118, "start wing 1")
+  arrow_point_close(path.points[2], 221.75, 386.118, "start wing 2")
+  let start = drawio_edge_marker_end(
+    (225.25, 378.0),
+    (225.25, 480.0),
+    "startArrow=block;startFill=1",
+    "startArrow",
+    1.0,
+  )
+  arrow_point_close({ x: start.0, y: start.1 }, 225.25, 386.118, "start line end")
+}
+
+///|
+test "drawio classic arrow: notch and three-quarter shortened line" {
+  // tip (187,331.5), toward (86,331.5), default size 6, sw 1: the notch
+  // sits at 5.25 back from the apex and the line stops at the notch.
+  let path = drawio_block_arrow_path(
+    (187.0, 331.5),
+    (86.0, 331.5),
+    6.0,
+    1.0,
+    2.0,
+    true,
+  )
+  assert_eq(path.verbs.length(), 5)
+  arrow_point_close(path.points[2], 180.632, 331.5, "classic notch")
+  let end = drawio_edge_marker_end(
+    (187.0, 331.5),
+    (86.0, 331.5),
+    "endArrow=classic",
+    "endArrow",
+    1.0,
+  )
+  arrow_point_close({ x: end.0, y: end.1 }, 180.632, 331.5, "classic line end")
+}
+
+///|
+test "drawio block arrow respects strokeWidth and thin wings" {
+  // sw 2: the half-gap is 2.236, the marker length size+sw is 8 and the
+  // line end pulls back 8+2.236. The thin variants spread 8/3, not 8/2.
+  let path = drawio_block_arrow_path(
+    (187.0, 331.5),
+    (86.0, 331.5),
+    6.0,
+    2.0,
+    2.0,
+    false,
+  )
+  arrow_point_close(path.points[0], 184.764, 331.5, "sw2 apex")
+  arrow_point_close(path.points[1], 176.764, 335.5, "sw2 wing 1")
+  arrow_point_close(path.points[2], 176.764, 327.5, "sw2 wing 2")
+  let thin = drawio_block_arrow_path(
+    (187.0, 331.5),
+    (86.0, 331.5),
+    6.0,
+    2.0,
+    3.0,
+    false,
+  )
+  arrow_point_close(thin.points[1], 176.764, 331.5 + 8.0 / 3.0, "thin wing 1")
+  arrow_point_close(thin.points[2], 176.764, 331.5 - 8.0 / 3.0, "thin wing 2")
+  let end = drawio_edge_marker_end(
+    (187.0, 331.5),
+    (86.0, 331.5),
+    "endArrow=block;endSize=6;strokeWidth=2",
+    "endArrow",
+    2.0,
+  )
+  arrow_point_close({ x: end.0, y: end.1 }, 176.764, 331.5, "sw2 line end")
+}
+
+///|
+test "drawio block arrow ignores zero-length segments" {
+  let path = drawio_block_arrow_path(
+    (187.0, 331.5),
+    (187.0, 331.5),
+    6.0,
+    1.0,
+    2.0,
+    false,
+  )
+  assert_true(path.is_empty(), msg="zero-length marker path must be empty")
+  let end = drawio_edge_marker_end(
+    (187.0, 331.5),
+    (187.0, 331.5),
+    "endArrow=block",
+    "endArrow",
+    1.0,
+  )
+  assert_true(
+    end.0 == 187.0 && end.1 == 331.5,
+    msg="zero-length keeps tip",
+  )
 }
