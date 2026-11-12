@@ -85,6 +85,7 @@ test "DOCX unsupported content is rejected" {
       open_bookmarks: [],
       current_link: "",
       has_math: false,
+      warnings: [],
     }
     let rejected = try {
       walker.blocks(root, false)
@@ -155,6 +156,7 @@ test "DOCX resolved run properties are isolated between runs" {
     open_bookmarks: [],
     current_link: "",
     has_math: false,
+    warnings: [],
   }
   walker.blocks(body, false)
   let items = walker.paragraphs[0].items
@@ -175,6 +177,7 @@ fn docx_mark_walker(styles : String, body : String) -> DocxTextWalker raise {
     open_bookmarks: [],
     current_link: "",
     has_math: false,
+    warnings: [],
   }
   walker.blocks(docx_text_xml(body), false)
   walker

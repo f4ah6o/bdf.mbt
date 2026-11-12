@@ -86,12 +86,19 @@ const base = `http://127.0.0.1:${server.address().port}`;
 
 const browser = await chromium.launch({ headless: true });
 const failures = [];
+const requested = [];
 try {
   const page = await browser.newPage();
   page.on("pageerror", error => failures.push(String(error)));
+  page.on("request", request => requested.push(request.url()));
   await page.goto(base + "/plugin/browser/fixture/blank.html");
 
-  const result = await page.evaluate(async ({ base, relative, emittedWorkerUrl }) => {
+  // The fallback font the expected-consuming test passes: the repository's
+  // own OFL-licensed test font, handed to the page the way a consumer
+  // hands their licensed font — the package never fetches one.
+  const fontB64 = readFileSync(resolve(root, "site/form/fonts/MPLUS1p-Regular.ttf")).toString("base64");
+
+  const result = await page.evaluate(async ({ base, relative, emittedWorkerUrl, fontB64 }) => {
     // The shipped client from the installed package's root export — the exact
     // surface the README documents. @bdfkit/core is not part of the recipe;
     // it is used here only to verify the returned BDF bytes' shape.
@@ -219,16 +226,60 @@ try {
       parallel.map(result => result.format).join(","),
     );
 
+    // 4) the public PDF export entry: the served package path a browser
+    //    consumer imports, run on the BDF the native Worker converted.
+    //    The save (a Blob download) stays the caller's job; here the bytes
+    //    only come back to the page.
+    const { exportPdf } = await import(`/${relative}/dist/pdf/index.js`);
+    const fontBytes = Uint8Array.from(atob(fontB64), ch => ch.charCodeAt(0));
+    const exportResult = await exportPdf(new Uint8Array(nativeConverted.bdf), {
+      fallbackFont: fontBytes,
+    });
+    const header = new TextDecoder("latin1").decode(exportResult.bytes.slice(0, 5));
+    check(
+      "pdf: exportPdf of the converted document writes a one-page PDF",
+      exportResult.bytes instanceof Uint8Array && header === "%PDF-" && exportResult.pages === 1,
+      JSON.stringify({ header, pages: exportResult.pages }),
+    );
+    check(
+      "pdf: the report carries the fonts count and the warnings array",
+      exportResult.fonts >= 1 && Array.isArray(exportResult.warnings),
+      JSON.stringify({ fonts: exportResult.fonts, warnings: exportResult.warnings }),
+    );
+    const again = await exportPdf(new Uint8Array(nativeConverted.bdf), {
+      fallbackFont: fontBytes,
+    });
+    check(
+      "pdf: the export is deterministic in the browser",
+      again.bytes.length === exportResult.bytes.length &&
+        again.pages === exportResult.pages && again.fonts === exportResult.fonts,
+      `lengths ${again.bytes.length} / ${exportResult.bytes.length}`,
+    );
+    let pdfTypeError = "";
+    try {
+      await exportPdf("not bytes");
+    } catch (error) {
+      pdfTypeError = error instanceof TypeError ? "TypeError" : error.constructor.name;
+    }
+    check("pdf: exportPdf rejects a wrong input type", pdfTypeError === "TypeError", pdfTypeError);
+
     for (const client of [nativeClient, pluginClient, downstreamClient]) {
       client.terminate();
     }
     return outcomes;
-  }, { base, relative, emittedWorkerUrl });
+  }, { base, relative, emittedWorkerUrl, fontB64 });
 
   for (const outcome of result) {
     console.log(`${outcome.ok ? "PASS" : "FAIL"} ${outcome.name}${outcome.ok || !outcome.detail ? "" : " :: " + outcome.detail}`);
     if (!outcome.ok) {
       failures.push(outcome.name + (outcome.detail ? ` (${outcome.detail})` : ""));
+    }
+  }
+  // No fetch of the whole run left the local test server: network recording
+  // the page asked nothing behind its back — no CDN fonts, no telemetry.
+  for (const url of new Set(requested)) {
+    if (!url.startsWith(base + "/")) {
+      failures.push(`unexpected external request during the browser smoke: ${url}`);
     }
   }
 } finally {

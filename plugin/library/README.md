@@ -9,7 +9,10 @@ The first release, `2026.11.1`, was published through npm Trusted Publishing.
 The default staging package is `0.0.0-staging` with `"private": true`;
 releases use YYYY.MM.PATCH CalVer in Asia/Tokyo and npm Trusted Publishing.
 See [the release guide](https://github.com/f4ah6o/bdf.mbt/blob/main/docs/npm-release.md) for validation and publication.
-The examples below pin the first public release for reproducibility.
+The examples below pin the first public release for reproducibility, with one
+exception: `bdf.mbt/pdf` was added after that release, so it is published from
+the first CalVer release that includes it — not `2026.11.1`. Install without
+the version pin (or check the published versions) when importing it.
 
 ## Package entry points
 
@@ -20,6 +23,7 @@ The examples below pin the first public release for reproducibility.
 | `bdf.mbt/workers/render` | Page rasterizing Worker. |
 | `bdf.mbt/workers/plugin` | Prebuilt plugin Worker with the builtin DocuWorks adapter and the Excalidraw and Mermaid diagram adapters registered. |
 | `bdf.mbt/forms` | `bdf_form_describe`, `bdf_form_fill`, `bdf_form_compile`. |
+| `bdf.mbt/pdf` | `exportPdf`: write BDF bytes as PDF bytes with pages count, fonts count and warnings. |
 | `bdf.mbt/xdw` | Raw `bdf_xdw_detect` and `bdf_xdw_convert` bindings. |
 | `bdf.mbt/plugin` | Descriptor validation, registry, host, plugin types, and DocuWorks binding helpers. |
 | `bdf.mbt/plugin/worker` | `installPluginConverterWorker`. |
@@ -30,8 +34,9 @@ The examples below pin the first public release for reproducibility.
 | `bdf.mbt/tools/emit-downstream-worker` | Node CLI script for emitting a browser-resolvable plugin Worker. |
 
 Declarations are adjacent to the compiled bundles and in `types/index.d.ts`,
-`types/worker.d.ts`, `types/diagram-bdf.d.ts`, `types/docuworks.d.ts`,
-`types/excalidraw.d.ts`, and `types/mermaid.d.ts` for the plugin entries.
+`types/worker.d.ts`, `types/diagram-bdf.d.ts`, `types/pdf.d.ts`,
+`types/docuworks.d.ts`, `types/excalidraw.d.ts`, and `types/mermaid.d.ts` for
+the typed entries.
 Each typed entry selects its own declaration through the export map.
 The emitter and prebuilt plugin Worker are executable scripts, not typed APIs.
 Do not import undocumented package subpaths.
@@ -238,6 +243,147 @@ For a Node plugin host, use `createConverterHost` with your own transport or
 pass an adapted `{ postMessage, onmessage }` target to the installer.
 Do not call `bdf_create_native_converter` in Node expecting it to create a
 `worker_threads` worker.
+
+## PDF export: BDF bytes to PDF bytes
+
+`exportPdf` from `bdf.mbt/pdf` writes the BDF bytes a converter or a form
+fill produced as a PDF: it returns the PDF bytes, the page count, the count
+of fonts used and the warnings, and leaves saving the file to the
+caller. It runs in the browser and in Node with the same import. The entry
+ships from the first CalVer release that includes it; the published
+`2026.11.1` predates it:
+
+```js
+import { exportPdf } from "bdf.mbt/pdf";
+
+const result = await exportPdf(bdfBytes, {
+  views: ["page1"],           // optional: view ids; omit for every view
+  tagged: false,              // reserved; the writer warns when true
+  compress: false,            // reserved; content streams stay uncompressed
+  fallbackFont: fontBytes,    // optional: a TrueType/OpenType program
+});
+console.log(`${result.pages} pages, ${result.fonts} fonts, ${result.warnings.length} warnings`);
+if (result.warnings.length > 0) {
+  for (const warning of result.warnings) console.warn(`PDF: ${warning}`);
+}
+```
+
+The conversion runs synchronously in the calling thread; the returned
+promise resolves as soon as the bytes are written. The input is only read:
+its buffer is never modified or detached. `result.fonts` counts the fonts
+the PDF uses — the PDF standard font counts, though no program of it is
+embedded — and unknown option keys are ignored, so a misspelled option
+(JavaScript) or field (the options JSON of the compiled bridge) falls back
+to its default silently; the TypeScript declarations reject them.
+
+### Fallback fonts and Japanese
+
+The text of a document that carries fonts of its own is drawn with those
+fonts' embedded subsets. The text that does not — the text of a form fill,
+and any text whose own font the document does not name — needs a fallback
+font: pass its program (`Uint8Array` bytes of a licensed TrueType or
+OpenType font you provide) as `fallbackFont`, and the writer embeds only
+the subset of its glyphs that the document's text uses. Without one, that
+text is drawn with the PDF standard font, whose codeset covers plain ASCII:
+every other character is written as `?` and the result warns about exactly
+which characters. A supplied font the writer cannot read also warns.
+A single fallback font does not reproduce a document's regular and bold
+faces: one program stands in for them all.
+
+Rejects — never an empty PDF as a success — cover the wrong argument types,
+a BDF that cannot be read, a requested view the document does not have,
+and a selection of views that holds no page (a sheet view, for example).
+
+### Browser: save with a Blob
+
+A fixed-form office template (`.docx`) fills to a document whose views hold
+pages, which is the pipeline this entry exists for. The same applies to the
+grid text templates. Do not feed it a spreadsheet fill expecting pages: a
+sheet view holds no page and the export rejects it (see above).
+
+```html
+<script type="module">
+import { bdf_form_fill } from "/bdf.mbt-dist/form/form_page.js";
+import { exportPdf } from "/bdf.mbt-dist/pdf/index.js";
+
+// your licensed TrueType/OpenType font for the filled text (Japanese needs one)
+const fontBytes = await (await fetch("/assets/your-licensed-font.ttf")).arrayBuffer();
+// an office form template such as the form's samples: a .docx (or a text template)
+const template = new Uint8Array(await (await fetch("/templates/slip.docx")).arrayBuffer());
+const filled = JSON.parse(bdf_form_fill(template, JSON.stringify({
+  customer: "株式会社みなと商事",                  // your data, against the template's tags
+}), "[]", false));
+if (!filled.ok) throw new Error(filled.error);
+const bdf = Uint8Array.from(atob(filled.bdf), ch => ch.charCodeAt(0));
+const result = await exportPdf(bdf, { fallbackFont: new Uint8Array(fontBytes) });
+if (result.warnings.length > 0) {
+  for (const warning of result.warnings) console.warn(warning);
+  // tell the user: a warning means the PDF omits what it says
+}
+const blob = new Blob([result.bytes], { type: "application/pdf" });
+const link = document.querySelector("#download");
+link.href = URL.createObjectURL(blob);
+link.download = "slip.pdf";
+</script>
+```
+
+The browser smoke of the repository's library test suite exercises this
+pipeline against a converted document with a consumer-passed font; the
+installed Node suite exercises the same office-template fill (a multi-page
+`.docx` whose Japanese comes back in the written PDF).
+
+### Node: save to a file
+
+```js
+import { readFile, writeFile } from "node:fs/promises";
+import { exportPdf } from "bdf.mbt/pdf";
+
+const [input, output, font] = process.argv.slice(2);
+if (!input || !output || !font) {
+  throw new Error("Usage: node export-pdf.mjs INPUT.bdf OUTPUT.pdf FONT.ttf");
+}
+const result = await exportPdf(new Uint8Array(await readFile(input)), {
+  fallbackFont: new Uint8Array(await readFile(font)), // or omit for ASCII-only text
+});
+for (const warning of result.warnings) console.warn(`PDF: ${warning}`); // never hide these
+await writeFile(output, result.bytes, { flag: "wx" }); // Do not overwrite a file.
+console.log(`${output}: ${result.pages} pages, ${result.fonts} fonts`);
+```
+
+A form-filled BDF connects through `bdf.mbt/forms` (`bdf_form_fill` returns
+the BDF the example above exports, base64 in its envelope). The raw
+`bdf.mbt/xdw` and plugin API outputs are the same BDF bytes, and so is any
+converted document; every route produces the same input for `exportPdf`.
+
+### What the writer reproduces
+
+| Reproduced | Notes |
+| --- | --- |
+| Page size, view selection | Page-less views warn; a selection with no page rejects. |
+| Text, cells of a form grid, floats in Japanese | Drawn with the document's fonts, or the `fallbackFont` subset. |
+| Vector paths, fills, colors, links | As the writer draws them. |
+| Annotations of a link, document metadata title and author | Link targets come from the document. |
+
+| Not reproduced (the result warns) | Message |
+| --- | --- |
+| Images | `an image is omitted` |
+| Cropped images | `a cropped image is omitted` |
+| Shadows | `a shadow is omitted` |
+| Image filters | `an image filter is omitted` |
+| Gradients | `gradients are approximated with a solid colour` |
+| Pattern fills | `a pattern fill is drawn with its solid colour` |
+| Masks | `a mask is omitted; its mask content is not drawn` |
+| Tagged structure (`tagged: true`) | `tagged PDF structure is not written yet` |
+| Characters the fallback font lacks | `the fallback font has no glyph for: …` |
+| An unreadable fallback font | `the fallback font could not be read` / `could not be subset` |
+| A font whose license forbids embedding | `… is not embedded: its license does not allow embedding` |
+| Characters written as `?` without a usable font | `text without a font of its own is drawn with the PDF standard font, which has no glyph for: …` |
+| Deeply nested or broken objects | `objects draw objects too deep`, `an object could not be read`, `a child object could not be read`, `a layer could not be read`, `a path could not be read`, `a clip path could not be read` |
+
+Treat any warning as a visible omission: a result with warnings is not a
+faithful reproduction of the source document, so surfaces that show it
+should say so. Tagged/PDF-A signatures, images and Office round-trips are
+outside this writer's scope.
 
 ## TypeScript plugin checking
 
