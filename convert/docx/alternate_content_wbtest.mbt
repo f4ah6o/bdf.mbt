@@ -369,3 +369,33 @@ test "DOCX run alternate content resolves a nested alternate" {
   }
   assert_eq(text.to_string(), "NESTED")
 }
+
+///|
+test "DOCX run alternate content requires prefixes are case sensitive" {
+  assert_eq(
+    docx_alternate_content_chosen(
+      "<AlternateContent><Choice Requires=\"WPS\"><c1/></Choice><Choice Requires=\"wps\"><c2/></Choice><Fallback><f/></Fallback></AlternateContent>",
+    ),
+    "c2",
+  )
+}
+
+///|
+test "DOCX run alternate content keeps trailer styling on chosen items" {
+  let body = docx_text_xml(
+    "<body><p><r><rPr><smallCaps/></rPr>" +
+    "<t>P</t>" +
+    "<AlternateContent>" +
+    "<Choice Requires=\"wps\"><drawing><inline><extent cx=\"9525\" cy=\"9525\"/><blip embed=\"rId4\"/></inline></drawing></Choice>" +
+    "<Fallback><t>FALLBACK</t></Fallback>" +
+    "</AlternateContent></r></p></body>",
+  )
+  let walker = docx_alternate_content_walker()
+  walker.blocks(body, false)
+  let items = walker.paragraphs[0].items
+  assert_eq(items.length(), 2)
+  assert_eq(items[0].kind, "char")
+  assert_eq(items[1].kind, "image")
+  assert_true(items[0].small_caps, msg="text small caps")
+  assert_true(items[1].small_caps, msg="chosen image small caps")
+}
