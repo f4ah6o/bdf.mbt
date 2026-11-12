@@ -176,6 +176,30 @@ fn docx_para_after(props : DocxParagraphProps) -> Double {
 }
 
 ///|
+// A paragraph's left, right and first-line indents in points (the first
+// line's relative to the left one): the point attributes, unless a
+// character-unit attribute (hundredths of a character) takes their place,
+// scaled by the size of the paragraph mark (wordproc/inline.go indents()).
+fn docx_para_indents(
+  props : DocxParagraphProps,
+  mark_size : Double,
+) -> (Double, Double, Double) {
+  let mut left = props.left
+  let mut right = props.right
+  let mut first = props.first
+  if props.left_chars != 0.0 {
+    left = props.left_chars / 100.0 * mark_size
+  }
+  if props.right_chars != 0.0 {
+    right = props.right_chars / 100.0 * mark_size
+  }
+  if props.first_chars != 0.0 {
+    first = props.first_chars / 100.0 * mark_size
+  }
+  (left, right, first)
+}
+
+///|
 fn docx_layout_paragraph(
   items : Array[DocxTextItem],
   props : DocxParagraphProps,
@@ -187,8 +211,9 @@ fn docx_layout_paragraph(
   let lines : Array[DocxParaLine] = []
   let anchors : Array[DocxPlacedImage] = []
   let notes : Array[(String, String)] = []
-  let start = props.left + props.first
-  let right = width - props.right
+  let (ind_left, ind_right, ind_first) = docx_para_indents(props, mark_size)
+  let start = ind_left + ind_first
+  let right = width - ind_right
   let current : Array[DocxLineItem] = []
   let current_images : Array[DocxPlacedImage] = []
   let mut line_x = start
@@ -260,7 +285,7 @@ fn docx_layout_paragraph(
     })
     current.clear()
     current_images.clear()
-    line_x = props.left
+    line_x = ind_left
     line_natural = 0.0
     pending_break = ""
     line_started = false
@@ -274,7 +299,7 @@ fn docx_layout_paragraph(
       }
       "break" => flush()
       "tab" => {
-        let relative = line_x - props.left
+        let relative = line_x - ind_left
         let mut next = 0.0
         let mut leader = "none"
         let mut tab_alignment = "left"
@@ -297,7 +322,7 @@ fn docx_layout_paragraph(
                 strike: false,
                 shadow: false,
                 emphasis: "",
-                x: props.left + stop.position,
+                x: ind_left + stop.position,
                 advance: 0.0,
                 shade: None,
                 border_width: 0.0,
@@ -381,7 +406,7 @@ fn docx_layout_paragraph(
             }
           }
         }
-        line_x = props.left + next
+        line_x = ind_left + next
         line_started = true
       }
       "image" => {
@@ -626,7 +651,7 @@ fn docx_layout_paragraph(
                 moved.insert(0, current.pop().unwrap())
               }
               flush()
-              let mut next_x = props.left
+              let mut next_x = ind_left
               for part in moved {
                 let part_width = part.advance
                 current.push({ ..part, x: next_x, })
@@ -3593,6 +3618,7 @@ fn docx_flow_emit_paragraph(
   } else {
     10.0
   }
+  let (ind_left, ind_right, _) = docx_para_indents(props, mark_size)
   let layout = docx_layout_paragraph(
     paragraph.items,
     props,
@@ -3614,8 +3640,18 @@ fn docx_flow_emit_paragraph(
     }
     let next_height = match next {
       Some(DocxParaBlock(value)) => {
+        let next_mark_size = if value.mark.size > 0.0 {
+          value.mark.size
+        } else {
+          10.0
+        }
         let next_layout = docx_layout_paragraph(
-          value.items, value.props, flow.width, flow.line_pitch, 10.0, false,
+          value.items,
+          value.props,
+          flow.width,
+          flow.line_pitch,
+          next_mark_size,
+          false,
         )
         if next_layout.lines.is_empty() {
           0.0
@@ -3706,7 +3742,7 @@ fn docx_flow_emit_paragraph(
     docx_flow_ensure(flow, first.height)
   }
   docx_flow_place_anchors(flow, layout.anchors, flow.y)
-  let right_limit = flow.width - props.right
+  let right_limit = flow.width - ind_right
   let mut pending : Array[DocxLineItem] = []
   let mut index = 0
   let mut last_height = if layout.lines.is_empty() {
@@ -3762,7 +3798,7 @@ fn docx_flow_emit_paragraph(
         for item in base.items {
           merged.push(item)
         }
-        items = docx_line_rebase(merged, props.left)
+        items = docx_line_rebase(merged, ind_left)
       }
     } else {
       items = pending
@@ -3813,7 +3849,7 @@ fn docx_flow_emit_paragraph(
         placed = true
         continue
       }
-      let start = if items.is_empty() { props.left } else { items[0].x }
+      let start = if items.is_empty() { ind_left } else { items[0].x }
       let left_edge = Double::max(start, left)
       let mut available = Double::min(right_limit, right) - left_edge
       let natural = docx_line_width(items)
@@ -3899,7 +3935,7 @@ fn docx_flow_emit_paragraph(
         available,
       )
       flow.y += height
-      pending = docx_line_rebase(rest_items, props.left)
+      pending = docx_line_rebase(rest_items, ind_left)
       index += 1
       placed = true
     }

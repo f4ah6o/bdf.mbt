@@ -1976,6 +1976,40 @@ test "DOCX keepNext keeps the next paragraph on the page" {
   assert_eq(keep_first[0], keep_next[0])
 }
 
+///|
+fn docx_keep_next_mark_fixture(keep : Bool) -> Bytes raise {
+  // A 20pt paragraph near the page bottom (598pt of space before, 24pt
+  // line, 50pt of room left at the keepNext reservation) followed by an
+  // empty paragraph whose 30pt paragraph mark makes a real 36pt first
+  // line, plus a scaled character-unit indent, then a plain run.
+  let keep_prop = if keep { "<w:keepNext/>" } else { "" }
+  let body = "<w:p><w:pPr><w:spacing w:before=\"11960\"/>" + keep_prop +
+    "<w:rPr><w:sz w:val=\"40\"/></w:rPr></w:pPr>" +
+    "<w:r><w:rPr><w:sz w:val=\"40\"/></w:rPr><w:t>KEEPWITH</w:t></w:r></w:p>" +
+    "<w:p><w:pPr><w:ind w:leftChars=\"100\"/><w:rPr><w:sz w:val=\"60\"/></w:rPr></w:pPr></w:p>" +
+    "<w:p><w:r><w:t>AFTERNEXT</w:t></w:r></w:p>"
+  docx_test_docx(body, DOCX_TEST_SECTION, [])
+}
+
+test "DOCX keepNext lookahead uses the next paragraph's mark size" {
+  // The next paragraph's mark is 30pt, so its first line is really 36pt:
+  // with a 10pt lookahead the reservation (24+12) fits the 50pt of room,
+  // the paragraph then does not fit after the 24pt line and moves to the
+  // next page alone, breaking keepNext. With the real 30pt mark the
+  // reservation (24+36) exceeds the room and both paragraphs move
+  // together.
+  let plain = convert(docx_keep_next_mark_fixture(false))
+  let keep = convert(docx_keep_next_mark_fixture(true))
+  let plain_first = docx_marker_pages(plain, "KEEPWITH")
+  let plain_after = docx_marker_pages(plain, "AFTERNEXT")
+  let keep_first = docx_marker_pages(keep, "KEEPWITH")
+  let keep_after = docx_marker_pages(keep, "AFTERNEXT")
+  assert_true(!plain_first.is_empty() && !plain_after.is_empty())
+  assert_true(plain_first[0] < plain_after[0])
+  assert_true(!keep_first.is_empty() && !keep_after.is_empty())
+  assert_eq(keep_first[0], keep_after[0])
+}
+
 test "DOCX keepLines does not split a paragraph across pages" {
   let plain = convert(docx_keep_lines_fixture(false))
   let keep = convert(docx_keep_lines_fixture(true))

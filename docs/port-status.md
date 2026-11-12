@@ -465,7 +465,10 @@ packages.
    Variant version 1; encryption remains.
 4. ~~Port the XLSX font-embedding mode.~~ Done: `convert_plain_with_font`
    embeds an explicit face and uses its advances/metrics; the Worker picks the
-   first face of a supplied font directory.
+   first face of a supplied font directory. The workbook default font's
+   maximum digit width, measured from the supplied face, drives column
+   geometry and indent steps; default and automatic row heights, shrink-to-fit
+   and General `#` fitting still use the estimated metrics.
 5. Keep importing the remaining upstream test data for every ported format and
    assert either parity or the exact documented warning; never skip a fixture
    silently.
