@@ -1,0 +1,9 @@
+%% bdf.mbt plugin demo: the documented static Mermaid flowchart subset.
+%% No sequence/class diagrams, no HTML, no scripts, no external resources.
+flowchart TD
+  Start([Start]) --> Parse[Parse .mmd]
+  Parse --> Check{Supported?}
+  Check -->|yes| Encode[Encode BDF]
+  Check -->|no| Reject[Reject input]
+  Encode --> View[View BDF]
+  Reject --> View
