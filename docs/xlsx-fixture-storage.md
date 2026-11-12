@@ -246,15 +246,14 @@ the tools and README, so the totals match `git ls-tree -r -l`:
 | store indexes (`store/*.idx`) | 12,603,132 | 12,603,132 | unchanged |
 | manifests | 164,783,241 | 29,277,292 | -82.2% |
 | plain fixtures | 14,408,342 | 14,408,342 | unchanged |
-| tools and other files | 4,953,895 | 4,968,281 | +14,386 |
-| **total** | **346,037,766** | **210,546,203** | **-39.2%** |
+| tools and other files | 4,953,895 | 4,968,572 | +14,677 |
+| **total** | **346,037,766** | **210,546,494** | **-39.2%** |
 
-210,546,203 B is 60.84% of the 346,037,766 B stage-1 tree and 28.44% of the
-740,302,006 B original baseline. `du -sh compat/xlsx` fell from 335 MiB to
+210,546,494 B is 60.84% of the 346,037,766 B stage-1 tree. `du -sh compat/xlsx` fell from 335 MiB to
 206 MiB. The store bytes are byte-identical to stage 1: a full pack reports
 256 unchanged groups and `git status` shows no store change. The manifest
 total includes the 40-byte `BXF2` header on each of the 777 packed files
-(27,972 B more than the bare brotli payload).
+(31,080 B in total; 27,972 B more than the earlier 4-byte BXF1 headers).
 
 ### Tradeoffs
 
@@ -302,13 +301,15 @@ total includes the 40-byte `BXF2` header on each of the 777 packed files
   failures.
 - Sharding: `shard-test.mjs` and `shard-pbt-test.mjs` pass unchanged (16
   checks each, 40 cases across 4 shards in the aggregator test).
-- Full `npm run test:xlsx-compat` passed in this worktree using a shared
-  built checkout: `_build/js/debug/build/compat/xlsx/xlsx.js` from a sibling
-  worktree whose `convert/xlsx` is identical to `a35db856`, and the pinned
-  `@bdfkit/core` 0.2.1 from a shared `node_modules`. Exit 0, 3:49.07 wall,
-  1.94 GiB peak RSS; `verify-render` verified 144,297 cases across 8 shards
-  in 213.9 s. The machine carried unrelated load (load average ~19), so the
-  wall time is indicative. The build artifact and `node_modules` are
-  gitignored and not part of the commit.
+- Final independent validation rebuilt this branch from a clean `_build` with
+  `moon build compat/xlsx compat/ooxml --target js`: 54 tasks, 0 errors.
+  `npm run test:xlsx-compat` then passed (exit 0): 3:37.58 wall,
+  1,994,460 KiB peak RSS; `verify-render` verified 144,297 cases across
+  8 shards in 200.5 s. The pinned, matching-lock npm dependencies were
+  reused from another local checkout. No sibling build artifact was used
+  for this final run. Build output and dependencies are not committed.
+- Independent final BXF2 equivalence against packed base `a35db856`:
+  803/803 identical, 316,365 cases, 155,240 blobs, 0 failures;
+  77.26 s wall and 1,997,600 KiB peak RSS under concurrent suite load.
 - Packing the whole tree costs 22.7 s wall and 4.06 GiB peak RSS in one
   process (one-off, unchanged from stage 1).
