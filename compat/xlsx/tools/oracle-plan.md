@@ -231,3 +231,48 @@ failure. This diagnostic does not normalize or relax the byte-level gate and
 does not establish that remaining differences are harmless arithmetic drift.
 The seven extra generated outputs still require an explicit inventory decision;
 no historical cases or static expectations have been removed.
+
+## Runtime-specific drift is not always a tiny visual difference
+
+The fresh 41-file report was also decoded to object tables and drawing calls.
+This is diagnosis, not a new acceptance criterion:
+
+- 27 picture files / 335 cases changed transformation numbers by up to about
+  `6.72e-15` and changed dependent object hashes. `render/009.json` has one
+  numeric drawing-argument change of about `9.62e-17`.
+- Five conditional-formatting files / 24 cases include changed instruction
+  sequences and fonts. They must not be described as merely byte noise.
+- `plain-table-filter-ids.json` has eight cases with changed filter-button
+  drawing count/positions. Pinned upstream `internal/xmltree.Node.AttrInt`
+  falls back from ParseInt to ParseFloat and then int64 conversion. The input
+  includes NaN/out-of-range values. Conversion of those values is
+  architecture-dependent; this is a concrete investigation target, not proof
+  that the historical corpus was built on ARM64.
+- Three notes files changed 86 cases in this run through path-table order;
+  this count varies. The bounded-static proposal remains inactive.
+- Two rectangle files have 28 changed BDF cases; the boundary fixture also
+  has input changes. Color/style differences must still be preserved.
+
+Independent scalar comparison confirms `color.json` has identical input
+parameters but 116 changed expected values (maximum channel delta
+`1.1102230246251565e-16`). Seven also change packed 8-bit RGBA, so allowing
+an epsilon would hide an observable output change. HLS arithmetic followed by
+Round(channel*255) is the suspected boundary, not an established adapter fix.
+
+`general.json` differs on bits `0000a16d71638eb5`, width 8: historical
+`8.8E-310`, current `0.9E-309`. On the pinned AMD64 v3 runtime the subnormal
+input is `8.76924159474237e-310` but Log10 returns `-307.93689824998523`.
+Upstream's one-step exponent adjustment cannot correct this two-decade error.
+Go's architecture-specific Log implementation is implicated, rather than
+random input generation. `probe-runtime-arithmetic.go` reproduces the numeric
+observations without changing upstream, adapter inputs, or acceptance rules:
+
+```
+GOTOOLCHAIN=local GOENV=off GOWORK=off GOAMD64=v3 /path/to/go1.27.0/bin/go run compat/xlsx/tools/probe-runtime-arithmetic.go
+```
+
+The same AMD64 probe maps NaN and positive overflow float-to-int64 conversions
+to MinInt64. ARM64 execution has not been performed. An actual fixed ARM64
+oracle comparison is required before claiming these candidate causes proven
+across architectures; patching upstream or adjusting expected values to match
+the current host would violate the migration contract.
