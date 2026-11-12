@@ -270,7 +270,7 @@ test "XLSX with-font column geometry uses the measured MDW" {
   )
   // Column A (width 10 characters) at MDW 8: trunc((256·10+16)/256·8) px.
   // The default columns (baseColW 8) extend to the axis's last size
-  // exception at ceil((8·8+5)/8)·8 = 9 px.
+  // exception at ceil((8·8+5)/8)·8 = 72 px.
   assert_eq(sheet_first_view_columns(metrics.bdf), [
     { count: 1, size: 60.0, },
     { count: 11, size: 54.0, },
