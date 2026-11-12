@@ -25,8 +25,11 @@
 //     counted per Unicode CODE POINT, so supplementary-plane ids (e.g. the
 //     bare id 𠮷) work while lone unpaired surrogates still reject. A bare id
 //     (ASCII, Japanese, any script) doubles as the node label, exactly like
-//     Mermaid. Labels may be quoted (id["plain text"]); unquoted labels may
-//     not contain quotes; both are plain Unicode text of at most 256 UTF-8
+//     Mermaid. Labels may be quoted (id["plain text"]); among other plain
+//     text, a quoted label may contain the shape's own delimiter characters
+//     (id["items[index]"] works, because the label runs to ITS closing
+//     quote and the shape closer must immediately follow it). Unquoted
+//     labels may not contain quotes; both are plain Unicode text of at most 256 UTF-8
 //     BYTES (byte caps are measured on UTF-8, never on UTF-16 units), with
 //     control characters (C0/C1), lone surrogates, bidi overrides, "<", ">",
 //     "&" and "`" (HTML of any kind, including <br/> and entities) and
@@ -490,7 +493,30 @@ function tokenizeLine(line, lineNo) {
 // Node shapes directly attached to an id. The only supported shapes are
 // [label], (label), ([label]), {label} and {{label}}; anything else
 // (cylinder [(...)], subroutine [[...]], circles ((...)), >...], ...) is
-// rejected by name.
+// rejected by name. A label wrapped in quotes ("id[\"plain text\"]") is
+// plain text to its closing quote, so the shape's delimiter characters may
+// appear inside it; the closer must sit immediately after the closing quote.
+// Unquoted labels keep the original first-occurrence close scan.
+function quotedShapeClose(line, content, closer, lineNo, id, what) {
+  const endQuote = line.indexOf('"', content + 1);
+  if (endQuote === -1) {
+    throw reject(
+      "invalid-input",
+      `line ${lineNo}: ${what} node ${excerpt(`${id}...`)} has an unterminated quoted label`,
+    );
+  }
+  if (!line.startsWith(closer, endQuote + 1)) {
+    throw reject(
+      "invalid-input",
+      `line ${lineNo}: ${what} node ${excerpt(`${id}...`)} is not closed: the shape closer "${closer}" must immediately follow the quoted label`,
+    );
+  }
+  // `close` is an exclusive slice end one past the closing quote, so the
+  // caller's raw includes the whole quoted label; the shape closer begins
+  // at that same index.
+  return { close: endQuote + 1, next: endQuote + 1 + closer.length };
+}
+
 function scanShape(line, i, id, lineNo) {
   const open = line[i];
   let shape;
@@ -506,23 +532,37 @@ function scanShape(line, i, id, lineNo) {
     }
     if (after === "[") {
       // "([label])" is a stadium; "[(label)]" is a cylinder (rejected).
-      const stadiumClose = line.indexOf("])", i + 2);
-      const cylinderClose = line.indexOf(")]", i + 2);
-      if (cylinderClose !== -1 && (stadiumClose === -1 || cylinderClose < stadiumClose)) {
-        throw reject(
-          "invalid-input",
-          `line ${lineNo}: unsupported node shape "id[(...)]" (cylinder/database): supported shapes are [label], (label), ([label]), {label} and {{label}}`,
-        );
+      if (line[i + 2] === '"') {
+        // quoted stadium: the content is plain text, so ")]" or "])" inside
+        // the quotes is label content, not a shape delimiter
+        const quoted = quotedShapeClose(line, i + 2, "])", lineNo, id, "stadium");
+        shape = "stadium";
+        raw = line.slice(i + 2, quoted.close);
+        next = quoted.next;
+      } else {
+        const stadiumClose = line.indexOf("])", i + 2);
+        const cylinderClose = line.indexOf(")]", i + 2);
+        if (cylinderClose !== -1 && (stadiumClose === -1 || cylinderClose < stadiumClose)) {
+          throw reject(
+            "invalid-input",
+            `line ${lineNo}: unsupported node shape "id[(...)]" (cylinder/database): supported shapes are [label], (label), ([label]), {label} and {{label}}`,
+          );
+        }
+        if (stadiumClose === -1) {
+          throw reject(
+            "invalid-input",
+            `line ${lineNo}: stadium node ${excerpt(`${id}([...])`)} is not closed (missing "]")`,
+          );
+        }
+        shape = "stadium";
+        raw = line.slice(i + 2, stadiumClose);
+        next = stadiumClose + 2;
       }
-      if (stadiumClose === -1) {
-        throw reject(
-          "invalid-input",
-          `line ${lineNo}: stadium node ${excerpt(`${id}([...])`)} is not closed (missing "]")`,
-        );
-      }
-      shape = "stadium";
-      raw = line.slice(i + 2, stadiumClose);
-      next = stadiumClose + 2;
+    } else if (line[i + 1] === '"') {
+      const quoted = quotedShapeClose(line, i + 1, ")", lineNo, id, "rounded");
+      shape = "rounded";
+      raw = line.slice(i + 1, quoted.close);
+      next = quoted.next;
     } else {
       const close = line.indexOf(")", i + 1);
       if (close === -1) {
@@ -548,29 +588,48 @@ function scanShape(line, i, id, lineNo) {
         `line ${lineNo}: unsupported node shape "id[(...)]" (cylinder/database): supported shapes are [label], (label), ([label]), {label} and {{label}}`,
       );
     }
-    const close = line.indexOf("]", i + 1);
-    if (close === -1) {
-      throw reject(
-        "invalid-input",
-        `line ${lineNo}: rect node ${excerpt(`${id}[...]`)} is not closed`,
-      );
-    }
-    shape = "rect";
-    raw = line.slice(i + 1, close);
-    next = close + 1;
-  } else {
-    // "{"
-    if (line[i + 1] === "{") {
-      const close = line.indexOf("}}", i + 2);
+    if (line[i + 1] === '"') {
+      const quoted = quotedShapeClose(line, i + 1, "]", lineNo, id, "rect");
+      shape = "rect";
+      raw = line.slice(i + 1, quoted.close);
+      next = quoted.next;
+    } else {
+      const close = line.indexOf("]", i + 1);
       if (close === -1) {
         throw reject(
           "invalid-input",
-          `line ${lineNo}: hexagon node ${excerpt(`${id}{{...}}`)} is not closed`,
+          `line ${lineNo}: rect node ${excerpt(`${id}[...]`)} is not closed`,
         );
       }
-      shape = "hexagon";
-      raw = line.slice(i + 2, close);
-      next = close + 2;
+      shape = "rect";
+      raw = line.slice(i + 1, close);
+      next = close + 1;
+    }
+  } else {
+    // "{"
+    if (line[i + 1] === "{") {
+      if (line[i + 2] === '"') {
+        const quoted = quotedShapeClose(line, i + 2, "}}", lineNo, id, "hexagon");
+        shape = "hexagon";
+        raw = line.slice(i + 2, quoted.close);
+        next = quoted.next;
+      } else {
+        const close = line.indexOf("}}", i + 2);
+        if (close === -1) {
+          throw reject(
+            "invalid-input",
+            `line ${lineNo}: hexagon node ${excerpt(`${id}{{...}}`)} is not closed`,
+          );
+        }
+        shape = "hexagon";
+        raw = line.slice(i + 2, close);
+        next = close + 2;
+      }
+    } else if (line[i + 1] === '"') {
+      const quoted = quotedShapeClose(line, i + 1, "}", lineNo, id, "rhombus");
+      shape = "rhombus";
+      raw = line.slice(i + 1, quoted.close);
+      next = quoted.next;
     } else {
       const close = line.indexOf("}", i + 1);
       if (close === -1) {

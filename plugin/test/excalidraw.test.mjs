@@ -630,6 +630,32 @@ test("roundness approximates corners with min(16, min(w,h)/4) and warns once", a
   expectOp(flat.opened, "fillRect", [MARGIN + 1, MARGIN + 1, 8, 8], "roundness: null renders a plain rect");
 });
 
+test("nonzero roughness approximates with crisp geometry and warns once; zero and absent stay silent", async () => {
+  // every sketchy flavor (artist = 1, cartoonist = 2) warns exactly once
+  const sketchy = await openDoc({
+    type: "excalidraw",
+    elements: [
+      rectElement({ id: "a", roughness: 1 }),
+      rectElement({ id: "b", roughness: 2, y: 50 }),
+      { type: "ellipse", id: "c", x: 0, y: 100, width: 30, height: 30, roughness: 2 },
+    ],
+  });
+  assert.equal(sketchy.result.warnings.length, 1, "one deduplicated roughness warning");
+  assert.match(sketchy.result.warnings[0], /roughness/i);
+  assert.ok(sketchy.result.warnings[0].includes("crisp"), "the warning states the approximation");
+  // the geometry still renders crisp: plain rect and ellipse verbs, unchanged
+  expectOp(sketchy.opened, "fillRect", [MARGIN + 1, MARGIN + 1, 40, 20], "sketchy rects draw crisp");
+  // the editor's crisp styles render exactly what they mean: no warning
+  for (const roughness of [0, undefined]) {
+    const crisp = await convertDoc({
+      type: "excalidraw",
+      elements: [rectElement({ roughness })],
+    });
+    assert.deepEqual(crisp.warnings, [], `roughness ${String(roughness)} must not warn`);
+    assert.ok(crisp.bdf.length > 0);
+  }
+});
+
 test("deleted elements never render, silently", async () => {
   const { result, opened } = await openDoc({
     type: "excalidraw",

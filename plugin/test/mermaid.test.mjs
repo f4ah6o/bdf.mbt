@@ -358,6 +358,35 @@ test("all supported shapes and arrow kinds render with the fixed palette", async
 });
 
 ///|
+test("quoted labels may contain the shape's own delimiter characters", async () => {
+  // A quoted label runs to ITS closing quote and the shape closer must
+  // immediately follow it, so the delimiter text inside is label content.
+  const { opened } = await convertAndOpen([
+    "flowchart td",
+    'A["items[index]"] --> B("f(x)")',
+    'B --> d{"if ok"}',
+    'd --> e(["array[0]"])',
+    'e --> f{{"}} entry"}}',
+  ].join("\n"));
+  const labels = where(opened.ops, "fillText", () => true).map(op => op.args[0]);
+  for (const label of ["items[index]", "f(x)", "if ok", "array[0]", "}} entry"]) {
+    assert.ok(labels.includes(label), `label ${label} rendered as content`);
+  }
+  // the parser stays bounded and bounded shapes still name their errors:
+  // nothing about the quoted form weakens the documented rules
+  await rejectError('flowchart\nA["open', "invalid-input", /unterminated quoted label/);
+  await rejectError('flowchart\nA["open" tail]', "invalid-input", /must immediately follow the quoted label/);
+  await rejectError('flowchart\nA["nested " quoted"]', "invalid-input", /quote/);
+  await rejectError('flowchart\nA["<b>x</b>"]', "invalid-input", /HTML/);
+  await rejectError('flowchart\nA["javascript:alert(1)"]', "invalid-input", /javascript:\/data:/);
+  // an unquoted label keeps its original closing scan (and its errors)
+  await rejectError("flowchart\nA[unterminated --> B", "invalid-input", /not closed/);
+  // cylinders and subroutines are still rejected, quoted or not
+  await rejectError('flowchart\nA[("not a stadium")]', "invalid-input", /cylinder|unsupported/i);
+  await rejectError('flowchart\nA[["subroutine"]]', "invalid-input", /subroutine/);
+});
+
+///|
 test("an edge label draws its white rect and text above the midpoint", async () => {
   const { opened } = await convertAndOpen("flowchart td\nA -- hello --> B\n");
   const { ops } = opened;

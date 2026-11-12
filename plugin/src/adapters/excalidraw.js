@@ -21,7 +21,9 @@
 //     box right edge: overflowing lines stick out to the LEFT). Page
 //     fitting mirrors the same align-aware band math, so ink placement and
 //     the encoder's bands always agree.
-//   * elbow/curved chains render as straight segments.
+//   * elbow/curved chains render as straight segments;
+//   * nonzero roughness (Excalidraw's sketchiness knob) renders as crisp
+//     geometry, warned once per conversion; zero and absent stay silent.
 //
 // Worker-safety: only ECMAScript built-ins reachable in a worker are used
 // (TextDecoder); there is no DOM, no Node API, no eval and no dynamic import,
@@ -82,6 +84,7 @@ const W_ELBOW = "elbow and curved arrows are approximated with straight segments
 const W_VERTICAL_ALIGN = "vertical alignment approximated";
 const W_HYPERLINK = "element hyperlinks are not rendered";
 const W_FRAME_CLIP = "frame clipping is not applied";
+const W_ROUGHNESS = "nonzero roughness is approximated with crisp geometry: the hand-drawn appearance is out of scope";
 
 const DEFAULT_COLOR = "#1e1e1e"; // the editor's default stroke color
 const DEFAULT_STROKE_WIDTH = 2;
@@ -500,6 +503,13 @@ function convertElement(ctx, element, index) {
   }
   if (typeof element.frameId === "string" && element.frameId !== "") {
     ctx.warn(W_FRAME_CLIP);
+  }
+  // Roughness is one of Excalidraw's per-element appearance knobs (0 crisp,
+  // 1 and 2 sketchy): the hand-drawn wobble is out of scope, so the geometry
+  // stays crisp — but the approximation is never silent. Zero (the editor's
+  // "architect" style) and absent render exactly what the scene means.
+  if (typeof element.roughness === "number" && element.roughness !== 0) {
+    ctx.warn(W_ROUGHNESS);
   }
   const type = element.type;
   if (typeof type !== "string") {
