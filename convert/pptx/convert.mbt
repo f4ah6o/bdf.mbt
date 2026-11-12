@@ -542,14 +542,9 @@ fn pptx_attribute_any(
 
 ///|
 fn pptx_has_placeholder(shape : PptxXmlNode) -> Bool {
-  let container = if shape.element.name.local_name == "pic" {
-    "nvPicPr"
-  } else {
-    "nvSpPr"
-  }
-  pptx_child(pptx_child(Some(shape), container), "nvPr") is Some(_) &&
-  pptx_child(pptx_child(pptx_child(Some(shape), container), "nvPr"), "ph")
-  is Some(_)
+  // Through any shape container, the way upstream PlaceholderOf finds it:
+  // a cxnSp holds its placeholder in nvCxnSpPr.
+  pptx_placeholder_element(shape) is Some(_)
 }
 
 ///|
@@ -739,6 +734,23 @@ fn pptx_group_placement(shape : PptxXmlNode) -> PptxPlacement {
 }
 
 ///|
+// Whether a shape carries the xsd:boolean hidden="1" on the cNvPr of
+// one of its non-visual property containers, as upstream drawElem reads
+// cNvPr(k).AttrBool("hidden", false).
+fn pptx_shape_hidden(shape : PptxXmlNode) -> Bool {
+  for
+    name in [
+      "nvSpPr", "nvPicPr", "nvGraphicFramePr", "nvGrpSpPr", "nvCxnSpPr",
+    ] {
+    match pptx_child(pptx_child(Some(shape), name), "cNvPr") {
+      Some(cnvpr) => return pptx_bool(cnvpr.element, "hidden", false)
+      None => ()
+    }
+  }
+  false
+}
+
+///|
 fn pptx_collect_shapes(
   node : PptxXmlNode,
   placement : PptxPlacement,
@@ -746,8 +758,12 @@ fn pptx_collect_shapes(
   out : Array[(PptxXmlNode, PptxPlacement)],
 ) -> Unit {
   for shape in pptx_children(Some(node)) {
+    // A hidden shape is never drawn, in whatever element owns its cNvPr.
+    if pptx_shape_hidden(shape) {
+      continue
+    }
     match shape.element.name.local_name {
-      "sp" | "pic" | "graphicFrame" =>
+      "sp" | "pic" | "graphicFrame" | "cxnSp" =>
         if !(skip_placeholders && pptx_has_placeholder(shape)) {
           out.push((shape, placement))
         }
