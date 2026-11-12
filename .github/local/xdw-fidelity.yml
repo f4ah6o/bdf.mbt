@@ -1,0 +1,15 @@
+name: xdw-fidelity-contract-local
+# Explicit local actrun only; no GitHub workflow or real corpus accuracy claim.
+on:
+  push:
+    branches-ignore: ['**']
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: ../..
+    steps:
+      - name: verify synthetic fidelity contract and failure modes
+        run: node --test compat/xdw/verify.test.mjs
