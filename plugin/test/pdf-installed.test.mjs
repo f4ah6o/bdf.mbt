@@ -254,6 +254,9 @@ if (!installed) {
     await assert.rejects(exportPdf(input, { fallbackFont: "" }), /Uint8Array/);
     await assert.rejects(exportPdf(input, { fallbackFont: {} }), /Uint8Array/);
     await assert.rejects(exportPdf(input, { fallbackFont: 0 }), /Uint8Array/);
+    // an explicit null is a supplied value too: it must reject, not default
+    await assert.rejects(exportPdf(input, { fallbackFont: null }), /Uint8Array/);
+    await assert.rejects(exportPdf(input, { fallbackFont: [] }), /Uint8Array/);
   });
 
   test("exportPdf rejects broken BDF bytes", async () => {

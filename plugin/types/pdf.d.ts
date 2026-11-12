@@ -21,9 +21,11 @@ export declare interface PdfExportOptions {
   /**
    * The fallback font program (TrueType or OpenType, Uint8Array bytes)
    * whose subset the writer embeds for the text that the document carries
-   * no font of — the text of a form fill, and any Japanese. Without one,
-   * that text is drawn with the PDF standard font as "?" and the result
-   * warns about exactly which characters were replaced.
+   * no font of — the text of a form fill, and any Japanese. Omit the field
+   * (or pass `undefined`) for no fallback: the text is then drawn with the
+   * PDF standard font as "?" and the result warns about exactly which
+   * characters were replaced. An explicitly supplied null or any other
+   * invalid value rejects the call.
    */
   fallbackFont?: Uint8Array;
 }

@@ -31,9 +31,10 @@ const EMPTY_BYTES = new Uint8Array(0);
  *   current writer writes them uncompressed, and the option is reserved.
  * @property {Uint8Array} [fallbackFont] The TrueType or OpenType program
  *   whose subset the writer embeds for the text that the document carries
- *   no font of, such as the text of a form fill. Without one, that text is
- *   drawn with the PDF standard font as "?" and the result warns about the
- *   replaced characters; Japanese therefore needs one.
+ *   no font of, such as the text of a form fill. Omit the field for no
+ *   fallback: that text is drawn with the PDF standard font as "?" and
+ *   the result warns about the replaced characters; Japanese therefore
+ *   needs one. A supplied but invalid value (null, string, array) rejects.
  */
 
 /**
@@ -95,9 +96,12 @@ export async function exportPdf(input, options = {}) {
       throw new TypeError(`the ${flag} option is a boolean`);
     }
   }
-  // An absent font is the documented "no fallback" default; anything else,
-  // including the empty string or an empty object, must be real bytes.
-  const fallbackFont = options.fallbackFont ?? EMPTY_BYTES;
+  // Only a truly absent field means "no fallback" — `undefined` or nothing.
+  // Everything else that the caller supplied, including `null`, the empty
+  // string or an array, is an invalid font value and must reject.
+  const fallbackFont = options.fallbackFont === undefined
+    ? EMPTY_BYTES
+    : options.fallbackFont;
   expectUint8Array(fallbackFont, "fallbackFont");
   const bridgeOptions = JSON.stringify({
     views,
