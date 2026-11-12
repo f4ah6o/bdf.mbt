@@ -74,6 +74,33 @@ candidate's text colour is blue, the same as the Viewer's text; the cyan in the
 Viewer page is not the text line sampled here. The remaining glyph difference
 may involve font selection and rasterization; these remain uncontrolled.
 
+## Sticky note
+
+The stored sticky-note EMF (record 14, attribute 7) draws a `#999999` shadow
+rectangle (6,6)-(468,180), then a `#80ffff` note rectangle (0,0)-(461,173) with
+a `#666666` pen width 1, then the text. The note's childdim is 39.53x15.19 mm;
+the EMF window is 467x179 units, so the note rectangle is 39.02x14.68 mm and the
+shadow's visible border is the 6-unit (0.51 mm) margin.
+
+The BDF fills the shadow (`#999999`) before the note (`#80ffff`), and its
+clip rectangle is the childdim (112.054x43.058 pt = 39.53x15.19 mm).
+In the sampled Viewer image, the exact-color predicate found no `#999999`
+pixels, a fill bbox of 115x40 px and an edge bbox of 117x42 px. At nominal
+75 dpi the predicted fill is 115.2x43.3 px and childdim is 116.7x44.9 px:
+**the measured height does not match either prediction**. The candidate at
+96 dpi has a 146x53 px exact-color fill bbox and 146 exact-color shadow pixels.
+These bboxes depend on antialiasing, crop and color thresholds, not only shape
+geometry; the two captures are not scale-matched.
+
+The stored shadow and BDF paint order agree, but that alone does not prove the
+converter's output is correct. A Viewer clip/redraw convention, subpixel pen
+rasterization, crop/alignment, or converter behavior may explain the observed
+edge/shadow difference. No converter change is justified by this measurement.
+Next, use matched-scale captures with verified local bounds and inspect alpha/
+near-color pixels, then isolate the shadow/clip with a controlled drawing.
+Do not add a sticky-note-specific clip or minimum pen width merely to fit this
+one screenshot. Pure fidelity remains NOT_RUN.
+
 ## Diagnostic tool and next increment
 
 `node compat/xdw/measure.mjs IMAGE.png --page-mm 210x148 --json` reports a
@@ -87,7 +114,8 @@ header and incomplete files are rejected before decoding.
 
 Next steps:
 1. Obtain an unclipped pure image with independently checked content-only bounds.
-2. Compare the sticky-note edge/shadow with the same controlled-variant method.
+2. Resolve the sticky-note height discrepancy and shadow behavior with
+   matched-scale, verified-bounds captures before assigning a cause.
 3. Identify and match the actual fonts selected by both rendering paths before
    attributing remaining glyph differences to the converter.
 4. Only then add the smallest converter regression/fix.
