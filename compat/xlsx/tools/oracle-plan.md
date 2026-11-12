@@ -144,3 +144,29 @@ Sorting would change painting order, however, and is not generally safe for
 merged/overlapping cells. No path reordering, semantic normalization or
 acceptance rule is added. The three notes corpora still fail repeatability;
 the full migration remains incomplete even after the adapter-order fix.
+
+## Proposed bounded static exception, not activated
+
+`notes-static-proposal.manifest` and `audit-static-proposal.mjs` pin a possible
+three-file exception: all 264 notes cases, exact old order/content and 783,651
+serialized JSON bytes. This is only an audited proposal; no loader, verifier,
+CI command or migration gate consumes it. Its hashes fail if preserved data
+changes. These cases would still run through the same detailed verifier, never
+be skipped, and never be substituted automatically after generation failure.
+An eventual split must prove dynamic and static case sets disjoint, their union
+equal to the original inventory, and shard membership unchanged. Raw dynamic
+notes results must remain available as evidence of unresolved nondeterminism.
+
+This does not solve the remaining deterministic arithmetic drift. Current
+42-file whole-file retention would be 44,068,377 serialized bytes / 57,831
+cases; retaining only the 5,487 observed differing cases would be 3,560,652
+bytes, but is NOT safe for nondeterministic corpora (a later run can select
+other cases) and is not adopted. Those are unpacked JSON measurements, not
+Git/packed storage savings. ARM64 profile testing and input arithmetic drift
+remain necessary before reducing the dynamic/static boundary further.
+
+Keeping original notes expectations preserves a known compatibility contract.
+Changing upstream map iteration to sorted coordinates is a different oracle:
+it may change overlapping annotations and need not match historical order.
+Without changing that oracle, no Go process setting guarantees map iteration
+order. Retry-until-match and BDF path sorting are not acceptable substitutes.
