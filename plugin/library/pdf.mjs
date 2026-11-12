@@ -133,4 +133,3 @@ export async function exportPdf(input, options = {}) {
     warnings: [...report.warnings],
   };
 }
-
