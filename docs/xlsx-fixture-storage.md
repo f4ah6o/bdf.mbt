@@ -2,13 +2,30 @@
 
 This records the measurements that chose the current storage format for
 `compat/xlsx` fixtures, the decision, and the migration evidence, per
-`issues/open/20261112-xlsx-fixture-size.md`. Re-measure any time with:
+`issues/open/20261112-xlsx-fixture-size.md`.
+
+`measure-fixtures.mjs` reads raw fixture JSON and never opens the blob
+store, so on the migrated branch it must not run against the packed
+manifests (it would measure markers, not bytes). Measure an unpacked export
+of the committed fixtures, outside the worktree; the all-case equivalence
+gate is what makes the exported bytes stand in for the base commit's:
 
 ```
-node compat/xlsx/tools/measure-fixtures.mjs           # readable report
-node compat/xlsx/tools/measure-fixtures.mjs --json out.json
-node compat/xlsx/tools/measure-fixtures.mjs --quick    # skip compression passes
+tmp=$(mktemp -d)
+git -C /path/to/bdf.mbt archive HEAD compat/xlsx | tar -x -C "$tmp"  # committed state, copy only
+node "$tmp/compat/xlsx/tools/pack-fixtures.mjs" --unpack              # plain JSON inside the copy
+node "$tmp/compat/xlsx/tools/measure-fixtures.mjs" --quick           # fast report, no compression passes
+node "$tmp/compat/xlsx/tools/measure-fixtures.mjs" --json "$tmp/measurement.json"  # full pass
+rm -rf "$tmp"
 ```
+
+Both tools resolve their fixtures relative to their own file, and the whole
+fixture set (manifests, store, tools) lives under `compat/xlsx/`, so the
+copy is self-contained and the active fixtures are untouched. A quick pass
+against such an export reproduces the baseline totals to within 0.005%
+(740,268,205 vs 740,302,006 B on 2026-11-12): the all-case equivalence is
+value-level, and a handful of never-packed files stringify with slightly
+different escaping than the Go generator's original bytes.
 
 ## Environment
 
@@ -55,8 +72,11 @@ Chosen: content-addressed blob store - option d, with one shared gzip stream
 per 256 hash-prefix groups (between d/e and g), plus manifests keeping every
 case, option, warning and label inline.
 
-- 706.0 MiB -> ~188 MiB of file bytes as measured below (26.6%), `du`
-  714 MiB -> 334 MiB, a 53% working-tree reduction.
+- File bytes, verified from the committed tree: manifests and plain
+  fixtures 179,191,583 B + packs 149,289,156 B + store indexes 12,603,132 B
+  = 341,083,871 B = 325.28 MiB, which is 46.07% of the 740,302,006 B
+  baseline (53.93% saved). `du` for `compat/xlsx`: 714 MiB -> 334 MiB, a
+  ~53% working-tree reduction.
 - Against (b) whole-file gzip: (b) is smaller (207 MiB) but every verification
   run must decompress tens of MiB before seeing any case, fixture diffs
   become binary noise, and the duplication that makes (b) small is exactly
@@ -86,8 +106,9 @@ case, option, warning and label inline.
 ## Migration evidence (2026-11-12)
 
 - Packed: 777 of 803 fixture files (26 contain no large values and stay
-  plain); 155,240 blobs; store = 256 `.pk` packs (142.4 MiB) + 256 `.idx`
-  indexes (12.0 MiB); manifests 170.8 MiB -> the remaining inline JSON.
+  plain); 155,240 blobs; store = 256 `.pk` packs (149,289,156 B = 142.4 MiB)
+  + 256 `.idx` indexes (12,603,132 B = 12.0 MiB); manifests and remaining
+  plain fixtures 179,191,583 B = 170.9 MiB.
 - All-case equivalence vs `e02e4e02`:
   `node compat/xlsx/tools/fixture-equivalence.mjs --base e02e4e02` -
   803/803 files identical, 0 failures, **316,365 cases compared**
