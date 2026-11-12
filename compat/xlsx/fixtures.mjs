@@ -52,20 +52,31 @@ export const STORE_VERSION = 1;
 export const BLOB_MARKER = '$blob';
 export const STORE_DIR = new URL('./store/', import.meta.url);
 
-// Packed manifests are stored as `BXF1` followed by a brotli stream of the
-// manifest JSON. The magic makes the container self-identifying: a plain
-// fixture still starts with `[` or `{`, so the loader can accept both without
-// a sidecar flag, and a damaged or truncated stream fails with the file name
-// instead of a JSON syntax error. Brotli quality 9 keeps the one-off pack cost
-// near gzip while landing close to quality 11 on this JSON (see
+// Packed manifests are stored as `BXF2` followed by the uncompressed JSON
+// length (4 bytes, big endian), the SHA-256 of the uncompressed JSON (32
+// bytes) and a brotli stream of that JSON. The magic makes the container
+// self-identifying: a plain fixture still starts with `[` or `{`, so the
+// loader can accept both without a sidecar flag. The digest is checked before
+// parsing, because brotli has no checksum of its own: a mutated compressed
+// byte can still decompress to valid JSON, and without the digest that
+// mutation would silently change a case. Brotli quality 9 keeps the one-off
+// pack cost near gzip while landing close to quality 11 on this JSON (see
 // docs/xlsx-fixture-storage.md).
-export const FIXTURE_ENVELOPE = 'BXF1';
+export const FIXTURE_ENVELOPE = 'BXF2';
+export const LEGACY_FIXTURE_ENVELOPE = 'BXF1';
 const FIXTURE_ENVELOPE_BYTES = Buffer.from(FIXTURE_ENVELOPE, 'latin1');
+const LEGACY_FIXTURE_ENVELOPE_BYTES = Buffer.from(LEGACY_FIXTURE_ENVELOPE, 'latin1');
+const ENVELOPE_HEADER_BYTES = 4 + 4 + 32;
 
 export function encodeFixtureText(text) {
+  const body = Buffer.from(text, 'utf8');
+  const header = Buffer.alloc(ENVELOPE_HEADER_BYTES);
+  FIXTURE_ENVELOPE_BYTES.copy(header, 0);
+  header.writeUInt32BE(body.length, 4);
+  createHash('sha256').update(body).digest().copy(header, 8);
   return Buffer.concat([
-    FIXTURE_ENVELOPE_BYTES,
-    brotliCompressSync(Buffer.from(text, 'utf8'), {
+    header,
+    brotliCompressSync(body, {
       params: {
         [zlibConstants.BROTLI_PARAM_QUALITY]: 9,
         [zlibConstants.BROTLI_PARAM_LGWIN]: 24,
@@ -75,15 +86,35 @@ export function encodeFixtureText(text) {
 }
 
 // Returns the JSON text of a fixture file, decompressing the packed-manifest
-// envelope when present. Plain fixtures pass through unchanged.
+// envelope when present. Plain fixtures pass through unchanged. The length and
+// digest are verified before the text reaches JSON.parse, so a mutated stream
+// that still decompresses to valid JSON is rejected rather than loaded.
 export function decodeFixtureBytes(raw, source) {
+  if (raw.length >= LEGACY_FIXTURE_ENVELOPE_BYTES.length &&
+      raw.subarray(0, LEGACY_FIXTURE_ENVELOPE_BYTES.length).equals(LEGACY_FIXTURE_ENVELOPE_BYTES)) {
+    throw new Error(`${source}: unsupported fixture envelope ${LEGACY_FIXTURE_ENVELOPE} (no integrity digest); repack with pack-fixtures.mjs`);
+  }
   if (raw.length >= FIXTURE_ENVELOPE_BYTES.length &&
       raw.subarray(0, FIXTURE_ENVELOPE_BYTES.length).equals(FIXTURE_ENVELOPE_BYTES)) {
+    if (raw.length < ENVELOPE_HEADER_BYTES) {
+      throw new Error(`${source}: corrupt fixture envelope (truncated header)`);
+    }
+    const expectedLength = raw.readUInt32BE(4);
+    const expectedDigest = raw.subarray(8, ENVELOPE_HEADER_BYTES);
+    let body;
     try {
-      return brotliDecompressSync(raw.subarray(FIXTURE_ENVELOPE_BYTES.length)).toString('utf8');
+      body = brotliDecompressSync(raw.subarray(ENVELOPE_HEADER_BYTES));
     } catch (error) {
       throw new Error(`${source}: corrupt fixture envelope (invalid brotli stream): ${error.message}`);
     }
+    if (body.length !== expectedLength) {
+      throw new Error(`${source}: corrupt fixture envelope (length ${body.length}, expected ${expectedLength})`);
+    }
+    const actualDigest = createHash('sha256').update(body).digest();
+    if (!actualDigest.equals(expectedDigest)) {
+      throw new Error(`${source}: corrupt fixture envelope (sha256 ${actualDigest.toString('hex')}, expected ${expectedDigest.toString('hex')})`);
+    }
+    return body.toString('utf8');
   }
   return raw.toString('utf8');
 }
@@ -131,9 +162,23 @@ function decompressedStoreBytes(raw, source) {
 // The per-process pack cache: decompressed pack bytes plus its offset index.
 // Fixture sets reference most blobs several times, and a verify-render shard
 // resolves every blob in its fixtures, so this is where the loader earns its
-// keep.
+// keep. A custom readStore is namespaced by callback identity: two readers
+// sharing one cache must not see each other's packs, or a reader that returns
+// null for a missing group would mask a later reader that can supply it.
+const readStoreKeys = new WeakMap();
+let nextReadStoreKey = 0;
+function storeCacheKey(storeDir, readStore) {
+  if (!readStore) return storeDir.href;
+  let key = readStoreKeys.get(readStore);
+  if (key === undefined) {
+    key = `custom-${nextReadStoreKey++}`;
+    readStoreKeys.set(readStore, key);
+  }
+  return key;
+}
+
 async function packFor(prefix, { storeDir, cache, readStore }) {
-  const key = `${readStore ? 'custom' : storeDir.href}|${prefix}`;
+  const key = `${storeCacheKey(storeDir, readStore)}|${prefix}`;
   if (cache?.has(key)) return cache.get(key);
   const read = readStore ?? (async name => {
     try {

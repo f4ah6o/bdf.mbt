@@ -220,35 +220,50 @@ grouping and its indexes untouched.
 | zstd level 19 | 29,186,239 | 17.7% | 14.6 s |
 | zstd level 12 | 29,541,469 | 17.9% | 1.6 s |
 
-Chosen: brotli quality 9 behind a four-byte `BXF1` magic. Quality 11 saves
+Chosen: brotli quality 9 behind a `BXF2` envelope: the four-byte magic, the
+uncompressed JSON length (4 bytes, big endian), the SHA-256 of the
+uncompressed JSON (32 bytes), then the brotli stream. Quality 11 saves
 another 2.3 MB but costs ten times the one-off pack time; zstd is within
 0.1 MB of brotli 9 but needs a newer Node API for no measured gain here;
-gzip is 17.3 MB larger. The magic keeps the container self-identifying, so
-plain generator output still loads unchanged and a truncated stream fails
-with the file name instead of a JSON syntax error.
+gzip is 17.3 MB larger.
+
+The digest is not optional. Brotli has no checksum, so a single flipped
+compressed byte can still decompress to valid JSON; without a digest the
+loader would parse the mutated value and silently change a case. The loader
+verifies the length and SHA-256 before `JSON.parse`, and rejects the older
+`BXF1` envelope (magic plus brotli, no digest) with a repack instruction
+instead of guessing at it. The magic keeps the container self-identifying,
+so plain generator output still loads unchanged.
 
 ### Result
+
+The table compares the same full-tree components on both sides, including
+the tools and README, so the totals match `git ls-tree -r -l`:
 
 | component | stage 1 | stage 2 | change |
 | --- | ---: | ---: | ---: |
 | packs (`store/*.pk`) | 149,289,156 | 149,289,156 | unchanged |
 | store indexes (`store/*.idx`) | 12,603,132 | 12,603,132 | unchanged |
-| manifests | 164,783,241 | 29,249,320 | -82.2% |
+| manifests | 164,783,241 | 29,277,292 | -82.2% |
 | plain fixtures | 14,408,342 | 14,408,342 | unchanged |
-| tools and other files | 4,908,301 | 4,961,955 | +53,654 |
-| **total** | **341,083,871** | **210,511,905** | **-38.3%** |
+| tools and other files | 4,953,895 | 4,968,281 | +14,386 |
+| **total** | **346,037,766** | **210,546,203** | **-39.2%** |
 
-210,511,905 B is 61.72% of stage 1 and 28.44% of the 740,302,006 B original
-baseline. `du -sh compat/xlsx` fell from 335 MiB to 206 MiB. The store bytes
-are byte-identical to stage 1: a full pack reports 256 unchanged groups and
-`git status` shows no store change.
+210,546,203 B is 60.84% of the 346,037,766 B stage-1 tree and 28.44% of the
+740,302,006 B original baseline. `du -sh compat/xlsx` fell from 335 MiB to
+206 MiB. The store bytes are byte-identical to stage 1: a full pack reports
+256 unchanged groups and `git status` shows no store change. The manifest
+total includes the 40-byte `BXF2` header on each of the 777 packed files
+(27,972 B more than the bare brotli payload).
 
 ### Tradeoffs
 
 - Manifests are binary in `git diff`. `pack-fixtures.mjs --print --files
   name.json` writes the decoded JSON to stdout, and `--unpack --files
   name.json` writes the plain file back; both are one command, and the
-  envelope is documented in `compat/xlsx/README.md`.
+  envelope is documented in `compat/xlsx/README.md`. `--print` waits for the
+  stdout write to flush before exiting, so a pipe receives the whole fixture
+  (775,545 B for `conditional-top.json`, not the 81,920 B pipe buffer).
 - Partial regeneration is unchanged: a plain regenerated fixture loads
   through the same loader, `--files` packs it, and a later full pack restores
   the canonical store order. The round trip was checked on
@@ -274,19 +289,26 @@ are byte-identical to stage 1: a full pack reports 256 unchanged groups and
   resolved through that commit's own store read from git, and the tool fails
   if either side still contains a `$blob` marker, so this is a value-level
   comparison rather than a marker comparison.
-- Store integrity and corruption: `fixture-store-test.mjs` 27 checks pass,
-  including the new envelope round trip, plain passthrough, corrupt brotli
-  stream, compressed-manifest marker resolution, and the custom store reader
-  used by the packed-base equivalence path.
+- Store integrity and corruption: `fixture-store-test.mjs` 33 checks pass
+  (19 before this change; the stage-1 note's 14 is historical), including the
+  envelope round trip, plain passthrough, a same-length mutation that still
+  decompresses to valid JSON but fails the SHA-256 check, a shorter mutation
+  that fails the length check, a single-bit sweep over the header and payload
+  that never changes the decoded text silently, the legacy `BXF1` rejection,
+  compressed-manifest marker resolution, two store readers sharing one cache
+  without masking each other, and a piped `--print` child that parses and
+  matches the loaded fixture.
 - Packing invariants: `pack-fixtures.mjs --check` - 803 files checked, 0
   failures.
 - Sharding: `shard-test.mjs` and `shard-pbt-test.mjs` pass unchanged (16
   checks each, 40 cases across 4 shards in the aggregator test).
-- Full `npm run test:xlsx-compat` could not run in this worktree: it has no
-  `node_modules` and no `_build/js/debug/build/compat/xlsx/xlsx.js`, so
-  `emission-test.mjs` and the `verify-*.mjs` children fail before reaching
-  fixture data. The store, shard and equivalence checks above are the
-  fixture-storage coverage that can run here; the full suite remains to be
-  run in a built checkout.
+- Full `npm run test:xlsx-compat` passed in this worktree using a shared
+  built checkout: `_build/js/debug/build/compat/xlsx/xlsx.js` from a sibling
+  worktree whose `convert/xlsx` is identical to `a35db856`, and the pinned
+  `@bdfkit/core` 0.2.1 from a shared `node_modules`. Exit 0, 3:49.07 wall,
+  1.94 GiB peak RSS; `verify-render` verified 144,297 cases across 8 shards
+  in 213.9 s. The machine carried unrelated load (load average ~19), so the
+  wall time is indicative. The build artifact and `node_modules` are
+  gitignored and not part of the commit.
 - Packing the whole tree costs 22.7 s wall and 4.06 GiB peak RSS in one
   process (one-off, unchanged from stage 1).

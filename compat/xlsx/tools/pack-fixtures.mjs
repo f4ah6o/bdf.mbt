@@ -49,6 +49,17 @@ import {
 const root = new URL('../', import.meta.url);
 const storeDir = new URL('./store/', root);
 
+// process.exit() truncates a piped stdout that still has buffered writes, so
+// every mode that prints waits for the stream to flush before exiting.
+function writeStdout(text) {
+  return new Promise((resolve, reject) => {
+    process.stdout.write(text, error => (error ? reject(error) : resolve()));
+  });
+}
+function flushStdout() {
+  return new Promise(resolve => process.stdout.write('', () => resolve()));
+}
+
 async function fixtureFiles() {
   const names = [];
   for (const entry of await readdir(root, { withFileTypes: true })) {
@@ -185,6 +196,7 @@ if (options.check) {
     console.error(`${failures} check failure(s)`);
     process.exitCode = 1;
   }
+  await flushStdout();
   process.exit();
 }
 
@@ -203,6 +215,7 @@ if (options.unpack) {
     }
   }
   console.log(`unpacked ${unpacked} fixture file(s) to plain form (${originalValues.size} in scope)`);
+  await flushStdout();
   process.exit();
 }
 
@@ -216,8 +229,9 @@ if (options.print) {
       process.exitCode = 1;
       continue;
     }
-    process.stdout.write(`${JSON.stringify(value)}\n`);
+    await writeStdout(`${JSON.stringify(value)}\n`);
   }
+  await flushStdout();
   process.exit();
 }
 

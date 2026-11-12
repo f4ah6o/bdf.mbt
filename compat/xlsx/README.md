@@ -249,10 +249,14 @@ in [store/](store/), deduplicated across all fixtures: 256 gzip packs
 the first hash byte). Cases, case order, options, warnings and short values
 stay inline.
 
-The manifest JSON itself is stored as a `BXF1` envelope: the four ASCII bytes
-`BXF1` followed by a brotli stream of the JSON. The magic keeps the container
-self-identifying, so plain generator output still loads unchanged and a
-truncated stream fails with the file name instead of a JSON syntax error.
+The manifest JSON itself is stored as a `BXF2` envelope: the four ASCII bytes
+`BXF2`, the uncompressed JSON length (4 bytes, big endian), the SHA-256 of the
+uncompressed JSON (32 bytes), then a brotli stream of the JSON. The magic
+keeps the container self-identifying, so plain generator output still loads
+unchanged. The digest is checked before parsing because brotli has no
+checksum: a flipped compressed byte can still decompress to valid JSON, and
+without the digest that mutation would silently change a case. The older
+`BXF1` envelope (no digest) is rejected with a repack instruction.
 Manifests are binary in `git diff`; inspect one with
 `node compat/xlsx/tools/pack-fixtures.mjs --print --files name.json`, or
 `--unpack --files name.json` to write the plain JSON back.
