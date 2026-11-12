@@ -29,7 +29,7 @@ export const SECTIONS = [
       page("formats/presentation", "PowerPoint"),
       page("formats/layout", "InDesign"),
       page("formats/spreadsheet", "Excel・CSV・Parquet"),
-      page("formats/diagram", "Visio・draw.io"),
+      page("formats/diagram", "Visio・draw.io・Mermaid・Excalidraw"),
       page("formats/cad", "CAD の図面とプロット"),
       page("formats/xdw", "DocuWorks"),
       page("formats/audio", "音声ファイル"),

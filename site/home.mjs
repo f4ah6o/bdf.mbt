@@ -27,7 +27,7 @@ export const GALLERY = [
   { shot: "xdw.png", sample: "demo.xdw", doc: "formats/xdw", title: "DocuWorks",
     text: "富士フイルム DocuWorks の .xdw・.xbd。ベクタのページに付箋・日付印・蛍光ペンの注釈もそえたまま。" },
   { shot: "drawio.png", sample: "aws.drawio", doc: "formats/diagram", title: "draw.io",
-    text: "AWS のアイコンもそのまま。ページはタブで切り替え、図形・コネクタ・ラベルの書式を描画。Visio の図面も。" },
+    text: "AWS のアイコンもそのまま。ページはタブで切り替え、図形・コネクタ・ラベルの書式を描画。Visio の図面、Mermaid の静的フローチャート、Excalidraw の基本図形も。" },
   { shot: "dxf.png", sample: "layout.dxf", doc: "formats/cad", title: "DXF",
     text: "モデル空間とレイアウト。Jw_cad、SXF、CGM、HP-GL/2 も。" },
   { shot: "audio.png", sample: "synced.mp3", doc: "formats/audio", title: "音声",
@@ -264,7 +264,7 @@ ${gallerySection()}
 <h2 id="demos-title">手元のファイルで試す</h2>
 <p class="lead">ファイルはブラウザの中で変換します。アップロードはされません。</p>
 <ul class="cards plain">
-<li class="card"><div class="body"><h3><a href="viewer/">ビューア</a></h3><p>ファイルをドロップして表示。ビューの切り替え、検索、テキスト選択、ページ移動、BDF の保存。</p></div></li>
+<li class="card"><div class="body"><h3><a href="viewer/">ビューア</a></h3><p>ファイルをドロップして表示。ビューの切り替え、検索、テキスト選択、ページ移動、BDF の保存。Mermaid・Excalidraw のサンプルも。</p></div></li>
 <li class="card"><div class="body"><h3><a href="form/">フォーム</a></h3><p>タグを書いたテンプレートにデータを入れて、記入済みの帳票をプレビューし、BDF と PDF で保存。</p></div></li>
 <li class="card"><div class="body"><h3><a href="thumbnail/">サムネイル</a></h3><p>4 つの大きさのサムネイルを一度に。ブラウザの外のエンジンなしで描きます。</p></div></li>
 <li class="card"><div class="body"><h3><a href="text/">検索用テキスト</a></h3><p>検索エンジンに渡す、ページごとのテキストとメタデータ。</p></div></li>
