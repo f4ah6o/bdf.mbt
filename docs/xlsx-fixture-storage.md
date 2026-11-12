@@ -90,14 +90,11 @@ case, option, warning and label inline.
   partial rebuilds become impossible, and the whole 124 MiB stream is in
   memory before any case is verifiable. The prefix groups cost ~19 MiB more
   and avoid all three.
-- Against regeneration on demand: the Go generators exist
-  (`compat/xlsx/generate_*_test.go`, run inside upstream `converter/xlsx`
-  with `BDF_FIXTURE_ROOT`), but deterministic regeneration was not provable
-  in this repository: it would need the upstream Go commit, toolchain and
-  testdata fixed and byte-compared against the stored cases. The issue
-  explicitly forbids treating a fixed seed as proof. Storage keeps the bytes;
-  the generators remain the way new fixtures are produced, and
-  `pack-fixtures.mjs` ingests their plain output.
+- Against regeneration on demand: the stored bytes remain authoritative.
+  The representative Go generators were subsequently verified against pinned
+  upstream source and toolchain (see below), but that does not establish
+  reproducibility for every generator or justify replacing all saved inputs.
+  `pack-fixtures.mjs` continues to ingest plain generator output.
 - Store split: the first experiment (155,240 individual blob files) measured
   810 MiB `du` - worse than baseline - because the filesystem charges a
   block per tiny file; the 256-group layout fixed that and is recorded here
@@ -159,3 +156,43 @@ identifiers, repeats and shard union as before.
 
 Packing the whole tree costs ~13 s wall and ~4 GiB peak in one process
 (one-off; not part of verification runs).
+
+## Representative Go regeneration verification
+
+A follow-up inspection found the upstream source and testdata locally; the
+initial assumption that the upstream environment was unavailable was incorrect.
+The existing checkout was not modified. Verification used an isolated archive of
+upstream `a5e4d7a6b202cfe73de44b0be51f6fb86cd8ee22`, Go 1.27.0 linux/amd64,
+and that commit's `go.mod`/`go.sum`, with `-mod=readonly`. Missing dependencies
+were obtained from `https://proxy.golang.org`, verified with `sum.golang.org`.
+The system PATH's Go 1.25.5 was not replaced; Go selected the required toolchain.
+
+Copy `generate_conditional_top_test.go` and `generate_simple_picture_test.go`
+into the isolated upstream `converter/xlsx` directory, removing only their
+`//go:build ignore` line. Set `BDF_FIXTURE_ROOT` to a separate output directory
+containing `compat/xlsx`; never point this experiment at the active packed set.
+Run from the isolated upstream root:
+
+```sh
+BDF_FIXTURE_ROOT=/path/to/isolated-output go test -mod=readonly ./converter/xlsx \
+  -run '^(TestCodexConditionalTop|TestCodexSimplePicture)$' -count=1
+```
+
+Results, 2026-11-12:
+
+| Fixture | Regenerated cases | Comparison with stored fixture |
+| --- | ---: | --- |
+| conditional-top.json | 257 | Deep equality, zero mismatches |
+| conditional-top-unsupported.json | 8 | Deep equality, zero mismatches |
+| simple-picture.json | 48 | Deep equality, zero mismatches |
+
+The regenerated JSON was compared with `loadFixture` output, including every
+case's Base64 input/expected BDF strings, options, warnings and array order.
+All 313 cases matched. A second `-count=1` run with `GOPROXY=off` produced
+byte-identical JSON files (SHA-256 checks passed for all three outputs).
+The first run, including dependency acquisition and compilation, took 39.67 s
+and peaked at 610,016 KiB RSS; the warm repeat took 0.29 s and 159,208 KiB.
+These results establish reproducibility only for these pinned representative
+generators in this environment. Full regeneration of all 803 fixture files
+was not run; the full storage migration is instead covered by the existing
+803-file / 316,365-case equivalence check.
