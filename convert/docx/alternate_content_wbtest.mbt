@@ -236,3 +236,136 @@ test "DOCX alternate content without Fallback yields Choice text" {
   }
   assert_eq(text.to_string(), "PICKED")
 }
+
+///|
+// Runs the walker over a body whose first paragraph holds one run with the
+// given run content, for the common w:r > mc:AlternateContent shape.
+fn docx_alternate_content_run_items(
+  run : String,
+) -> Array[(String, String)] raise {
+  let body = docx_text_xml("<body><p>" + run + "</p></body>")
+  let walker = docx_alternate_content_walker()
+  walker.blocks(body, false)
+  let items : Array[(String, String)] = []
+  for paragraph in walker.paragraphs {
+    for item in paragraph.items {
+      items.push((item.kind, item.text))
+    }
+  }
+  items
+}
+
+///|
+test "DOCX run alternate content extracts a supported drawing" {
+  let items = docx_alternate_content_run_items(
+    "<r><AlternateContent>" +
+    "<Choice Requires=\"wps\"><drawing><inline><extent cx=\"9525\" cy=\"9525\"/><blip embed=\"rId4\"/></inline></drawing></Choice>" +
+    "<Fallback><t>FALLBACK</t></Fallback>" +
+    "</AlternateContent></r>",
+  )
+  assert_eq(items.length(), 1)
+  assert_eq(items[0], ("image", "rId4"))
+}
+
+///|
+test "DOCX run alternate content extracts Fallback text" {
+  let items = docx_alternate_content_run_items(
+    "<r><AlternateContent>" +
+    "<Choice Requires=\"c14\"><drawing/></Choice>" +
+    "<Fallback><t>FALLBACK</t></Fallback>" +
+    "</AlternateContent></r>",
+  )
+  let text = StringBuilder()
+  for item in items {
+    if item.0 == "char" {
+      text.write_string(item.1)
+    }
+  }
+  assert_eq(text.to_string(), "FALLBACK")
+}
+
+///|
+test "DOCX run alternate content keeps sibling run text in order" {
+  let items = docx_alternate_content_run_items(
+    "<r><t>P</t>" +
+    "<AlternateContent>" +
+    "<Choice Requires=\"w15\"><drawing><inline><extent cx=\"9525\" cy=\"9525\"/><blip embed=\"rId9\"/></inline></drawing></Choice>" +
+    "<Fallback><t>FALLBACK</t></Fallback>" +
+    "</AlternateContent>" +
+    "<t>Q</t></r>",
+  )
+  assert_eq(items.length(), 3)
+  assert_eq(items[0], ("char", "P"))
+  assert_eq(items[1], ("image", "rId9"))
+  assert_eq(items[2], ("char", "Q"))
+}
+
+///|
+test "DOCX run alternate content preserves the run properties" {
+  let body = docx_text_xml(
+    "<body><p><r><rPr><sz val=\"60\"/></rPr>" +
+    "<AlternateContent>" +
+    "<Choice Requires=\"wps\"><drawing><inline><extent cx=\"9525\" cy=\"9525\"/><blip embed=\"rId4\"/></inline></drawing></Choice>" +
+    "<Fallback><t>FALLBACK</t></Fallback>" +
+    "</AlternateContent></r></p></body>",
+  )
+  let walker = docx_alternate_content_walker()
+  walker.blocks(body, false)
+  let items = walker.paragraphs[0].items
+  assert_eq(items.length(), 1)
+  assert_eq(items[0].kind, "image")
+  assert_eq(items[0].text, "rId4")
+  assert_eq(items[0].props.size, 30.0)
+}
+
+///|
+test "DOCX run alternate content without Fallback keeps the first Choice" {
+  // No supported Choice and no Fallback: the first Choice stays.
+  let items = docx_alternate_content_run_items(
+    "<r><AlternateContent>" +
+    "<Choice Requires=\"c14\"><t>KEPT</t></Choice>" +
+    "<Choice Requires=\"v\"><t>NEVER</t></Choice>" +
+    "</AlternateContent></r>",
+  )
+  let text = StringBuilder()
+  for item in items {
+    if item.0 == "char" {
+      text.write_string(item.1)
+    }
+  }
+  assert_eq(text.to_string(), "KEPT")
+  // A supported later Choice still wins over an unsupported first one.
+  let items = docx_alternate_content_run_items(
+    "<r><AlternateContent>" +
+    "<Choice Requires=\"c14\"><t>KEPT</t></Choice>" +
+    "<Choice Requires=\"w14\"><t>PICKED</t></Choice>" +
+    "</AlternateContent></r>",
+  )
+  let text = StringBuilder()
+  for item in items {
+    if item.0 == "char" {
+      text.write_string(item.1)
+    }
+  }
+  assert_eq(text.to_string(), "PICKED")
+}
+
+///|
+test "DOCX run alternate content resolves a nested alternate" {
+  let items = docx_alternate_content_run_items(
+    "<r><AlternateContent>" +
+    "<Choice Requires=\"wps\"><AlternateContent>" +
+    "<Choice Requires=\"c14\"><drawing/></Choice>" +
+    "<Fallback><t>NESTED</t></Fallback>" +
+    "</AlternateContent></Choice>" +
+    "<Fallback><t>OUTER</t></Fallback>" +
+    "</AlternateContent></r>",
+  )
+  let text = StringBuilder()
+  for item in items {
+    if item.0 == "char" {
+      text.write_string(item.1)
+    }
+  }
+  assert_eq(text.to_string(), "NESTED")
+}
