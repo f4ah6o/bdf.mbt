@@ -110,15 +110,23 @@ case, option, warning and label inline.
 
 ## Verification cost, old vs new
 
-Same machine, `/usr/bin/time -v`; baseline recorded with unrelated machine
-load, after-migration runs back to back, so treat deltas as indicative:
+Same machine, `/usr/bin/time -v`; the baseline was recorded under unrelated
+machine load and the after-migration runs back to back on a mostly idle
+machine, so treat the deltas as indicative, not isolated benchmarks:
 
 | run | before | after |
-| --- | --- | ---: |
-| `npm run test:xlsx-compat` (emission + shard + all verifiers) | 3:14.90, max RSS 1.52 GiB | see `final-report` below |
-| `node compat/xlsx/verify-render.mjs` (144,297 cases, 8 shards) | 3:03.61, max RSS 1.52 GiB | see `final-report` below |
+| --- | --- | --- |
+| `npm run test:xlsx-compat` (store test + emission + shard tests + all verifiers) | 3:14.90, max RSS 1.52 GiB | 3:56.41, max RSS 1.98 GiB - pass |
+| `node compat/xlsx/verify-render.mjs` (144,297 cases, 8 shards) | 3:03.61, max RSS 1.52 GiB | 3:52.20, max RSS 1.86 GiB - pass |
+| `node compat/xlsx/shard-pbt-test.mjs` (shard oracle) | not recorded | 0:08.45 - 16 checks pass |
 
-The loader trades a one-per-process gunzip of the packs it touches plus a
-SHA-256 per blob for the base64 parse that JSON.parse did before; the suite
-timings below measure the actual delta. Packing the whole tree costs ~13 s
-and ~4 GiB peak in one process (one-off; not part of verification runs).
+The increase (+25% wall, +22-30% peak RSS) is the accepted cost of the
+storage layer: every shard child gunzips the pack groups it touches, hashes
+each blob slice it resolves and rebuilds the manifest's object tree, where
+`JSON.parse` used to hand out base64 strings directly. Integrity on read and
+dedup were the goals of the change; ~50s per full render verification was
+accepted as maintainable. Both runs also verify the same 144,297 case
+identifiers, repeats and shard union as before.
+
+Packing the whole tree costs ~13 s wall and ~4 GiB peak in one process
+(one-off; not part of verification runs).
