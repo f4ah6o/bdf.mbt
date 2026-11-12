@@ -734,20 +734,105 @@ fn pptx_group_placement(shape : PptxXmlNode) -> PptxPlacement {
 }
 
 ///|
-// Whether a shape carries the xsd:boolean hidden="1" on the cNvPr of
-// one of its non-visual property containers, as upstream drawElem reads
-// cNvPr(k).AttrBool("hidden", false).
-fn pptx_shape_hidden(shape : PptxXmlNode) -> Bool {
+// A collected draw step of a shape tree in document order.
+priv enum PptxTreeEntry {
+  PptxTreeShape(PptxXmlNode, PptxPlacement)
+  PptxTreeFigureBegin(String) // a group's FIGURE with its alternative text
+  PptxTreeFigureEnd
+}
+
+///|
+// The cNvPr of a shape's first non-visual property container, as upstream
+// cNvPr reads it.
+fn pptx_shape_cnpr(shape : PptxXmlNode) -> PptxXmlNode? {
   for
     name in [
       "nvSpPr", "nvPicPr", "nvGraphicFramePr", "nvGrpSpPr", "nvCxnSpPr",
     ] {
     match pptx_child(pptx_child(Some(shape), name), "cNvPr") {
-      Some(cnvpr) => return pptx_bool(cnvpr.element, "hidden", false)
+      Some(cnvpr) => return Some(cnvpr)
       None => ()
     }
   }
-  false
+  None
+}
+
+///|
+// The alternative text of a shape, picture, graphic frame or group: its
+// trimmed cNvPr descr, else its title; None when it has none or is marked
+// as decorative, as upstream altText reads them.
+fn pptx_alt_text(shape : PptxXmlNode) -> String? {
+  let cnvpr = match pptx_shape_cnpr(shape) {
+    Some(value) => value
+    None => return None
+  }
+  match pptx_child(Some(cnvpr), "extLst") {
+    Some(ext_lst) =>
+      for ext in pptx_children(Some(ext_lst)) {
+        if ext.element.name.local_name != "ext" {
+          continue
+        }
+        match pptx_child(Some(ext), "decorative") {
+          Some(decorative) =>
+            if pptx_bool(decorative.element, "val", false) {
+              return None
+            }
+          None => ()
+        }
+      }
+    None => ()
+  }
+  for name in ["descr", "title"] {
+    let value = pptx_trim(pptx_attribute(cnvpr.element, name, ""))
+    if value != "" {
+      return Some(value)
+    }
+  }
+  None
+}
+
+///|
+// Open a FIGURE for what shape draws when it has alternative text;
+// end_figure closes it.
+fn pptx_begin_figure(
+  object : @core.ObjectBuilder,
+  shape : PptxXmlNode,
+) -> Bool {
+  match pptx_alt_text(shape) {
+    Some(alt) => {
+      object.mark(@core.MARK_FIGURE, alt)
+      true
+    }
+    None => false
+  }
+}
+
+///|
+fn pptx_end_figure(object : @core.ObjectBuilder, figure : Bool) -> Unit {
+  if figure {
+    object.mark(@core.MARK_END, "")
+  }
+}
+
+///|
+// The drawingml table of a graphic frame, as upstream drawFrame reads
+// graphic/graphicData/tbl to tell a table from any other embedding.
+fn pptx_frame_table(shape : PptxXmlNode) -> PptxXmlNode? {
+  pptx_child(
+    pptx_child(pptx_child(Some(shape), "graphic"), "graphicData"),
+    "tbl",
+  )
+}
+
+///|
+// Whether a shape carries the xsd:boolean hidden="1" on the cNvPr of
+// one of its non-visual property containers, as upstream drawElem reads
+// cNvPr(k).AttrBool("hidden", false).
+fn pptx_shape_hidden(shape : PptxXmlNode) -> Bool {
+  match pptx_shape_cnpr(shape) {
+    Some(cnvpr) => pptx_bool(cnvpr.element, "hidden", false)
+    None => false
+  }
 }
 
 ///|
@@ -755,7 +840,7 @@ fn pptx_collect_shapes(
   node : PptxXmlNode,
   placement : PptxPlacement,
   skip_placeholders : Bool,
-  out : Array[(PptxXmlNode, PptxPlacement)],
+  out : Array[PptxTreeEntry],
 ) -> Unit {
   for shape in pptx_children(Some(node)) {
     // A hidden shape is never drawn, in whatever element owns its cNvPr.
@@ -765,15 +850,25 @@ fn pptx_collect_shapes(
     match shape.element.name.local_name {
       "sp" | "pic" | "graphicFrame" | "cxnSp" =>
         if !(skip_placeholders && pptx_has_placeholder(shape)) {
-          out.push((shape, placement))
+          out.push(PptxTreeShape(shape, placement))
         }
-      "grpSp" =>
+      "grpSp" => {
+        // A group wraps its drawn children in a FIGURE of its own
+        // alternative text, as upstream drawGroup does.
+        let alt = pptx_alt_text(shape)
+        if alt is Some(_) {
+          out.push(PptxTreeFigureBegin(alt.unwrap()))
+        }
         pptx_collect_shapes(
           shape,
           placement.compose(pptx_group_placement(shape)),
           skip_placeholders,
           out,
         )
+        if alt is Some(_) {
+          out.push(PptxTreeFigureEnd)
+        }
+      }
       _ => ()
     }
   }

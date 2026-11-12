@@ -86,3 +86,14 @@ checks all four Current AWS paths in actual BDF, including the common Lambda
 trunk and rightward marker entry. Unit tests cover reversed direction and
 rejected constrained/rotated/close/overlap/waypoint cases. Rounded joins, Legacy
 routing, stencil geometry and full-image parity remain separate changes.
+
+## Block/classic marker regression
+
+After building the JS native converter worker, run
+`node compat/drawio/block-marker-test.mjs`. It independently decodes actual
+AWS Legacy BDF output:11 filled/stroked block triangles, representative
+horizontal/vertical/dashed geometry and shortened lines, plus a synthetic
+classic/unfilled/strokeWidth2 variant. Helpers additionally cover reversed and
+zero-length geometry. Source: upstream `shapes_core.go` `createArrow` at the
+commit above. This does not claim Legacy routing or complete image parity;
+rounded corners, branching and endpoint placement remain separate work.

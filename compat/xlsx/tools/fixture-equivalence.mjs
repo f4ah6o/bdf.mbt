@@ -18,7 +18,7 @@
 import { spawnSync } from 'node:child_process';
 import { readFile, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
-import { loadFixture } from '../fixtures.mjs';
+import { decodeFixtureBytes, loadFixture, resolveFixture } from '../fixtures.mjs';
 
 const xlsxDir = new URL('../', import.meta.url);
 
@@ -40,6 +40,23 @@ function git(args) {
   return result.stdout;
 }
 
+// The base side may itself be packed (a later migration commit), so resolve
+// its markers through the base commit's own store instead of comparing a
+// resolved value against a manifest of markers. Reading the store from git
+// keeps the check value-level for any base revision, not just the original
+// uncompressed one.
+const baseStoreCache = new Map();
+function baseReadStore(name) {
+  const file = name.replace(/^\.\//, '');
+  if (!baseStoreCache.has(file)) {
+    const result = spawnSync('git', ['show', `${options.base}:compat/xlsx/store/${file}`],
+      { maxBuffer: 64 * 1024 * 1024 });
+    baseStoreCache.set(file, result.status === 0 ? result.stdout : null);
+  }
+  return baseStoreCache.get(file);
+}
+const baseCache = new Map();
+
 // The union of fixture paths: everything tracked at the base commit and
 // everything the migration unpacked into the working tree.
 const baseList = git(['ls-tree', '-r', '--name-only', options.base, '--', 'compat/xlsx'])
@@ -49,6 +66,18 @@ const newList = git(['ls-files', '--', 'compat/xlsx'])
   .split('\n')
   .filter(path => /^compat\/xlsx\/[^/]*\.json$|^compat\/xlsx\/render\/[^/]*\.json$/.test(path));
 const paths = [...new Set([...baseList, ...newList])].sort();
+
+// A resolved value must contain no markers. Without this guard a future
+// loader regression could compare a manifest of markers with a manifest of
+// markers and report equality without ever checking the stored bytes.
+function containsMarker(value) {
+  if (Array.isArray(value)) return value.some(containsMarker);
+  if (typeof value === 'object' && value !== null) {
+    if (Object.keys(value).length === 1 && '$blob' in value) return true;
+    return Object.values(value).some(containsMarker);
+  }
+  return false;
+}
 
 const results = [];
 let failures = 0;
@@ -66,7 +95,15 @@ for (const path of paths) {
     continue;
   }
   record.oldBytes = Buffer.byteLength(gitBase.stdout);
-  const expected = JSON.parse(gitBase.stdout);
+  let expected;
+  try {
+    expected = await resolveFixture(JSON.parse(decodeFixtureBytes(gitBase.stdout, `${options.base}:${path}`)),
+      `${options.base}:${path}`, { readStore: baseReadStore, cache: baseCache });
+  } catch (error) {
+    record.status = `base load failed: ${error.message}`;
+    failures++;
+    continue;
+  }
   let loaded;
   try {
     loaded = await loadFixture(name);
@@ -77,7 +114,7 @@ for (const path of paths) {
   }
   let manifest;
   try {
-    manifest = JSON.parse(await readFile(new URL(name, xlsxDir), 'utf8'));
+    manifest = JSON.parse(decodeFixtureBytes(await readFile(new URL(name, xlsxDir)), name));
   } catch {
     record.status = 'unreadable manifest';
     failures++;
@@ -98,6 +135,11 @@ for (const path of paths) {
   };
   walk(manifest);
   record.manifestBytes = Buffer.byteLength(JSON.stringify(manifest));
+  if (containsMarker(expected) || containsMarker(loaded)) {
+    record.status = 'unresolved blob marker after load';
+    failures++;
+    continue;
+  }
   const oldText = JSON.stringify(expected);
   const newText = JSON.stringify(loaded);
   if (oldText.length !== newText.length || oldText !== newText) {

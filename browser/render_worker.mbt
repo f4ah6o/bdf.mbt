@@ -169,6 +169,17 @@ async fn RenderWorkerState::dispatch(
       )
     "sheetContent" =>
       render_success(render_sheet_content_worker(document, view, request))
+    "sheetClipboard" => {
+      let value = render_sheet_clipboard_worker(document, view, request) catch {
+        SegmentHttp(status) =>
+          return render_error(
+            "bdf: the segment request was answered with " + status.to_string(),
+            segment_status_code(status),
+          )
+        error => return render_error(render_error_message(error), "")
+      }
+      render_success(value)
+    }
     "search" => render_success(render_search_worker(document, view, request))
     "locate" => render_success(render_locate_worker(document, view, request))
     "play" => render_success(render_play_worker(document, view, false))

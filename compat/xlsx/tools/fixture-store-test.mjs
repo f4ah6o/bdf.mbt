@@ -10,16 +10,21 @@
 // the loader on every `npm run test:xlsx-compat`.
 
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import {
+  FIXTURE_ENVELOPE,
   FIXTURE_FORMAT,
   FIXTURE_VERSION,
   BLOB_MARKER,
   buildPack,
+  decodeFixtureBytes,
+  encodeFixtureText,
   loadFixture,
   mergePackGroup,
   packFixture,
@@ -195,6 +200,132 @@ async function withTempStore(root, { pack = 'gzip' } = {}) {
   assert.deepEqual(await resolveFixture(plain, 'plain.mjs'), plain);
   const loaded = await loadFixture('./render/index.json');
   assert.ok(loaded.files.length > 0, 'plain fixture files load through the loader');
+  checked += 2;
+}
+
+// Packed manifests are a BXF2 envelope: magic, uncompressed length, SHA-256
+// of the uncompressed JSON, then brotli. The envelope must round-trip, leave
+// plain fixtures alone, and reject a mutation that still decompresses to valid
+// JSON. Brotli has no checksum, so without the digest a flipped compressed
+// byte can silently rename a field and the loader would parse it.
+{
+  const text = JSON.stringify({ format: FIXTURE_FORMAT, version: FIXTURE_VERSION, blobs: 0, root: [{ mode: 'none' }] });
+  const encoded = encodeFixtureText(text);
+  assert.equal(encoded.subarray(0, FIXTURE_ENVELOPE.length).toString('latin1'), FIXTURE_ENVELOPE);
+  assert.equal(decodeFixtureBytes(encoded, 'envelope.mjs'), text);
+  assert.equal(decodeFixtureBytes(Buffer.from(text), 'plain.mjs'), text);
+  checked += 2;
+
+  // Same-length mutation: the length still matches, so only the digest can
+  // reject it. The mutated stream is valid brotli and valid JSON.
+  const sameLength = text.replace('bdf-xlsx-fixture', 'bdf-xlsx-fixturf');
+  assert.equal(sameLength.length, text.length);
+  const mutated = encodeFixtureText(sameLength);
+  const staleDigest = Buffer.from(mutated);
+  encoded.copy(staleDigest, 4, 4, 40); // original length + digest, mutated body
+  assert.throws(() => decodeFixtureBytes(staleDigest, 'stale.mjs'), /corrupt fixture envelope \(sha256 /);
+  checked++;
+
+  // Shorter mutation: the length check rejects it before the digest.
+  const shorter = encodeFixtureText(text.replace('bdf-xlsx-fixture', 'jesuat'));
+  const staleLength = Buffer.from(shorter);
+  encoded.copy(staleLength, 4, 4, 40);
+  assert.throws(() => decodeFixtureBytes(staleLength, 'short.mjs'), /corrupt fixture envelope \(length /);
+  checked++;
+
+  // Every single-bit mutation of the header or payload must either fail or
+  // decode to the original text; none may change the value silently. (A flip
+  // in brotli's unused trailing bits can still decode identically, which is
+  // harmless; the digest is what rejects a changed body.)
+  let bitflips = 0;
+  for (let i = 4; i < encoded.length; i++) {
+    for (let bit = 0; bit < 8; bit++) {
+      const copy = Buffer.from(encoded);
+      copy[i] ^= 1 << bit;
+      let decoded;
+      try {
+        decoded = decodeFixtureBytes(copy, 'bitflip.mjs');
+      } catch {
+        bitflips++;
+        continue;
+      }
+      assert.equal(decoded, text, `bitflip at byte ${i} bit ${bit} changed the decoded text`);
+      bitflips++;
+    }
+  }
+  assert.ok(bitflips > 0);
+  checked++;
+
+  // Legacy BXF1 envelopes have no digest and must not be guessed at.
+  assert.throws(
+    () => decodeFixtureBytes(Buffer.concat([Buffer.from('BXF1'), Buffer.from('x')]), 'legacy.mjs'),
+    /unsupported fixture envelope BXF1/,
+  );
+  checked++;
+}
+
+// A compressed manifest still resolves its markers through the store: the
+// envelope is a container, not a second storage layer.
+{
+  const root = [{ input: Buffer.from('envelope-blob'.repeat(256)).toString('base64') }];
+  const { storeDir, envelope } = await withTempStore(root);
+  const decoded = JSON.parse(decodeFixtureBytes(encodeFixtureText(JSON.stringify(envelope)), 'roundtrip.mjs'));
+  const restored = await resolveFixture(decoded, 'roundtrip.mjs', { storeDir, cache: new Map() });
+  assert.deepEqual(restored, root);
+  checked++;
+}
+
+// A custom store reader (the equivalence tool's git-backed base store) must
+// resolve blobs and fail when it cannot supply a pack, so a packed base can
+// never silently degrade to comparing markers.
+{
+  const root = [{ input: Buffer.from('custom-reader'.repeat(256)).toString('base64') }];
+  const { storeDir, envelope, prefixes } = await withTempStore(root);
+  const files = new Map();
+  for (const prefix of prefixes) {
+    files.set(`./${prefix}.pk`, await readFile(new URL(`./${prefix}.pk`, storeDir)));
+    files.set(`./${prefix}.idx`, await readFile(new URL(`./${prefix}.idx`, storeDir)));
+  }
+  const restored = await resolveFixture(envelope, 'custom.mjs', {
+    readStore: async name => files.get(name) ?? null,
+    cache: new Map(),
+  });
+  assert.deepEqual(restored, root);
+  await rejectsMatch(
+    resolveFixture(envelope, 'custom-missing.mjs', { readStore: async () => null, cache: new Map() }),
+    /is missing from store/,
+  );
+  checked += 2;
+
+  // Two readers sharing one cache must not collide: a reader that returns
+  // null for a group must not mask a later reader that can supply it.
+  const sharedCache = new Map();
+  const missing = async () => null;
+  const present = async name => files.get(name) ?? null;
+  await rejectsMatch(
+    resolveFixture(envelope, 'missing-first.mjs', { readStore: missing, cache: sharedCache }),
+    /is missing from store/,
+  );
+  const afterMissing = await resolveFixture(envelope, 'present-second.mjs', { readStore: present, cache: sharedCache });
+  assert.deepEqual(afterMissing, root, 'a second reader is not masked by the first reader\'s cached miss');
+  checked++;
+}
+
+// --print must survive a pipe: process.exit() after a buffered write used to
+// truncate the output at the pipe buffer size. The child is read through a
+// real pipe and the printed JSON must parse and match the loaded fixture.
+{
+  const script = fileURLToPath(new URL('./pack-fixtures.mjs', import.meta.url));
+  const child = spawnSync(process.execPath, [script, '--print', '--files', 'conditional-top.json'], {
+    encoding: 'buffer',
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  assert.equal(child.status, 0, child.stderr?.toString());
+  const text = child.stdout.toString('utf8');
+  const printed = JSON.parse(text);
+  const loaded = await loadFixture('./conditional-top.json');
+  assert.deepEqual(printed, loaded, 'piped --print matches the loaded fixture');
+  assert.equal(text.length, JSON.stringify(loaded).length + 1, 'piped --print is not truncated');
   checked += 2;
 }
 
