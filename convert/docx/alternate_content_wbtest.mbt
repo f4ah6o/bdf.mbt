@@ -10,6 +10,7 @@ fn docx_alternate_content_walker() -> DocxTextWalker raise {
     open_bookmarks: [],
     current_link: "",
     has_math: false,
+    warnings: [],
   }
 }
 

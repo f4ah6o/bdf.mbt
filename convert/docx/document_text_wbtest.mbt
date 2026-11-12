@@ -177,6 +177,7 @@ fn docx_mark_walker(styles : String, body : String) -> DocxTextWalker raise {
     open_bookmarks: [],
     current_link: "",
     has_math: false,
+    warnings: [],
   }
   walker.blocks(docx_text_xml(body), false)
   walker
