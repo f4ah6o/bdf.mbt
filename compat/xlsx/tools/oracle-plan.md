@@ -313,3 +313,41 @@ cases match historical expectations under this build.
 The migration gate still exits nonzero because three different files and
 seven extra files remain. Static fixtures are retained. This was one full
 ARM64 run, not a repeatability proof or a full MoonBit compatibility run.
+
+## ARM64 notes and sideproduct audit
+
+The build receipt and generation receipt agree on every shared identity field;
+the binary SHA256 matches the receipt, with 726 adapter sources, 16 build seed
+files, and 724 executed adapter tests. Re-running the strict comparison against
+the retained ARM64 output again gives 800 equal, three different, zero missing
+or read failures, and seven extras. This is a second comparison of the *same*
+generation, not an independent generation or repeatability proof.
+
+`audit-notes-order.mjs --generated <output> --comparison <strict-report>`
+independently decodes all cases reported different. In this run the 35 filter,
+2 legacy and 43 regular cases each have changed note-path sequences; each has
+the same per-tile note-path frequencies, and the inspected non-note drawing
+operations and selected object properties do not differ. The script also
+checks input fields, selected manifest information and the reported changed
+indices. This is a diagnostic attribution, not complete BDF equivalence or a
+rendering-equivalence test: it deliberately does not accept the reordered
+results. The existing detailed multi-note verifier itself compares note paths
+unordered; that behavior is not the migration gate and does not prove that
+order can be ignored for overlapping drawing operations.
+
+`audit-oracle-sideproducts.mjs --generated <output> --comparison <strict-report>`
+checks the exact seven names, observed shapes, counts and serialized-content
+hashes. It is an inventory alarm, not an allowlist for the strict gate. The
+single base-border-tint input and three percent-links inputs still require an
+explicit preservation/coverage decision. The five empty unsupported arrays
+still require a reviewed inventory decision; newly populated, changed, missing,
+or additional sideproducts fail this audit. All seven remain extra in the
+strict report.
+
+The smallest existing proposal retains all 264 historical notes cases and their
+original order while generating other corpora. Before activating any split,
+prove the case/identifier inventory union, disjointness and shard membership,
+run the unchanged verifier on each case, retain raw generated notes as evidence,
+and complete full independent repeat runs. A separately reviewed upstream
+ordering contract could eventually eliminate the exception, but changing the
+pinned oracle or sorting drawing operations is not part of this migration.
