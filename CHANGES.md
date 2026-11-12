@@ -33,6 +33,13 @@
   `npm run library:smoke`) additionally drives the tarball-installed
   client and render Worker so packaging omissions of the client method or
   the merged-cell fix fail the staging gates.
+- Interactive multi-cell selection and copy for sheet views in the browser
+  `Viewer` (`bdf_create_viewer`): selecting a cell rectangle between two
+  mounted cells includes cells whose tiles are outside the viewport (merged
+  cells expand the range) and copies the rectangle as TSV and a HTML table
+  through the rendering Worker, subject to its cell and tile limits; late
+  or failed clipboard fetching is reported as `clipboarderror` events
+  (`npm run test:sheet-selection`).
 - Generic multiple-page and embedded raster-image document support in the
   shared diagram encoder (`bdf.mbt/plugin/diagram-bdf`):
   `encodeDiagramDocument({source, title, pages, images})` emits one obj

@@ -39,6 +39,27 @@ asserts the 4,096-tile clipboard cap rejects the sheet before loading any
 tile object part. Both tests run through
 `npm run test:render-worker-clipboard`.
 
+`compat/sheet/viewer-selection-test.mjs` (run with
+`npm run test:sheet-selection`) drives the same cells fixture through the
+moon `Viewer` with a real render Worker. It selects a cell rectangle across
+the origin and far tiles, checks the range sent over the sheetClipboard
+request after merge expansion, compares the returned TSV and HTML with the
+upstream `@bdfkit/render` serialization (hidden row and column runs
+skipped), keeps the selection while the far tile is scrolled back out of
+view, verifies the synchronous and copy-event paths once loaded, the
+pending state while the request is in flight (including the copy behavior
+through a mocked native `ClipboardItem` and `navigator.clipboard.write`
+with promise-valued blobs, its rejected-write reporting and the
+copy-again fallback without `ClipboardItem`), and rejection plus
+`clipboarderror` handling when a split source answers 404 for one tile
+part, while tile content load failures are asserted to surface on the
+viewer `error` channel instead.
+It also checks that every tile text layer positions its text inside its own
+bounds (the Worker returns whole-sheet coordinates, which the viewer maps
+back to tile-local coordinates), performs a real pointer drag from the
+origin tile to the far tile instead of using the DOM Range API, and repeats
+the geometry and clip assertions after a zoom change.
+
 Column width fixtures use the upstream sheet and CSV converters at commit
 `4f9af52dca60be1eb0daade39f7dc41d6a1fe431` with system fonts disabled. They
 cover headers, numeric alignment, long values, East Asian characters, line
