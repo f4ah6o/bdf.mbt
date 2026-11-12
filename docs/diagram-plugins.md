@@ -163,10 +163,9 @@ bundle imports it unchanged. Extension claims (`.excalidraw`,
 `.excalidraw.json`, `.mmd`, `.mermaid`) do not collide with each other or
 with `.xdw`/`.xbd`.
 
-This API is a pre-release staging artifact: the npm name (`bdf.mbt`) is
-decided, the release version is not, and the diagram formats are part of the
-same release candidate as the rest of the plugin API — subject to the same
-pending validation before any publication.
+These diagram adapters are included in the published `bdf.mbt@2026.11.1`
+package. See [the library quickstart](https://github.com/f4ah6o/bdf.mbt/blob/main/plugin/library/README.md) for
+installation and [the release guide](https://github.com/f4ah6o/bdf.mbt/blob/main/docs/npm-release.md) for publication evidence.
 
 Inputs beyond the documented subsets are rejected with named errors or
 reported as warnings, never silently dropped — see *Scope and deliberate

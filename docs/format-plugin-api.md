@@ -6,10 +6,11 @@ This reference describes **plugin API version 1** and the public exports of
 For installation and complete browser, Node, and TypeScript examples, see
 [the library quickstart](../plugin/library/README.md).
 
-The npm package name is `bdf.mbt`; it has **not been published**.
+The npm package [bdf.mbt](https://www.npmjs.com/package/bdf.mbt) is published;
+the first release is `2026.11.1`.
 The default staging artifact is `bdf.mbt@0.0.0-staging` with `"private": true`.
 Releases use CalVer (`YYYY.MM.PATCH`) and npm Trusted Publishing.
-See the [release procedure](npm-release.md) for artifact validation and initial setup.
+See the [release procedure](https://github.com/f4ah6o/bdf.mbt/blob/main/docs/npm-release.md) for artifact validation and publication.
 `apiVersion: 1` identifies the plugin contract, not the npm package version;
 plugin `version` metadata is independent of both.
 The host requires an exact API version match and does not negotiate versions.
@@ -437,6 +438,7 @@ Current limits:
   declarations currently expose the converter object as `any`.
 
 Adoption is opt-in: existing native Worker deployments can remain unchanged.
-The staging package contains prebuilt modules and allowlisted licenses, not a
+The package contains prebuilt modules and allowlisted licenses, not a
 claim that all possible formats or deployment environments have been validated.
-Publication requires a separate release decision and authorized npm identity.
+Future publication requires a separate release decision and the configured
+Trusted Publishing workflow.

@@ -4,11 +4,12 @@ Prebuilt ES modules for BDF conversion, viewing, rendering, forms, and a
 versioned file-format plugin API.
 Consumers do not need the MoonBit toolchain.
 
-**Not yet published to npm.** The selected package name is `bdf.mbt`.
+The unscoped package is published on [npm](https://www.npmjs.com/package/bdf.mbt).
+The first release, `2026.11.1`, was published through npm Trusted Publishing.
 The default staging package is `0.0.0-staging` with `"private": true`;
 releases use YYYY.MM.PATCH CalVer in Asia/Tokyo and npm Trusted Publishing.
-See the repository release guide for setup and the initial-publication step.
-The examples below use a supplied local staging tarball, not a registry release.
+See [the release guide](https://github.com/f4ah6o/bdf.mbt/blob/main/docs/npm-release.md) for validation and publication.
+The examples below pin the first public release for reproducibility.
 
 ## Package entry points
 
@@ -45,11 +46,11 @@ These are separate hosts, with **no automatic routing between them**.
 
 ## Browser quickstart: static files, no bundler
 
-Install the supplied tarball into your application, then copy its `dist` tree
+Install the package into your application, then copy its `dist` tree
 unchanged into a directory your HTTP server serves:
 
 ```sh
-npm install ./bdf.mbt-0.0.0-staging.tgz
+npm install bdf.mbt@2026.11.1
 mkdir -p public
 cp -R node_modules/bdf.mbt/dist public/bdf.mbt-dist
 ```
@@ -289,7 +290,7 @@ Run `npx tsc --project tsconfig.json`, then use the emitter with
 The type-only import disappears from the generated module, leaving no bare
 runtime import for the browser to resolve.
 `apiVersion: 1` is the contract version, separate from the npm package's
-staging or eventual release version.
+staging or release version.
 Generated browser-client types currently return `any`; plugin descriptors have
 the more specific declarations shown here.
 

@@ -28,8 +28,9 @@ and artifact integrity; do not blindly publish a second version.
 
 The build currently uses the same setup-moonbit action as the existing site
 workflow. Record the actual compiler/core versions during validation and
-revalidate after toolchain updates. A fresh hosted build has not yet been
-executed for this workflow; only local validation is evidence so far.
+revalidate after toolchain updates. The first release passed both an
+[artifact-only hosted build](https://github.com/f4ah6o/bdf.mbt/actions/runs/43134510047)
+and the [publication run](https://github.com/f4ah6o/bdf.mbt/actions/runs/43134706138).
 
 ## Trusted Publishing setup
 
@@ -47,27 +48,27 @@ Configure the package's npm Trusted Publisher with:
 - Environment: leave blank (this workflow has no environment)
 - Permit direct `npm publish` for this workflow.
 
-The workflow does not create that account-level trust configuration.
-The current npm trust CLI requires an existing package and account 2FA;
-local `(p)npm login` does not configure OIDC. If the package does not yet
-exist, one bootstrap option is the first authorized release of the real,
-reviewed CalVer artifact using the maintainer's login, followed by trust setup.
-Do not put that credential into GitHub secrets or this repository.
+The package's binding above was configured and validated by the successful
+`2026.11.1` OIDC publication. The workflow does not create that account-level
+trust configuration, and local `(p)npm login` does not configure OIDC.
+Future releases use the existing binding; do not repeat the bootstrap.
+Consult npm's current documentation before changing account settings.
 
-Alternatively, [npm staged publishing](https://docs.npmjs.com/staged-publishing/)
-can submit the real artifact for later approval. For a new package, npm creates
-a **public placeholder version `0.0.0-stage`** while keeping the staged contents
-unavailable until a maintainer approves them with 2FA. This requires npm 11.15.0
-or newer and Node 22.14.0 or newer. The resulting package exists for subsequent
-trust configuration, although this bootstrap sequence must still be verified
-against the actual account. It is not a private dry run or pre-registration:
-the placeholder is a public registry change and must not be created before
-publication is authorized. No bootstrap or trust-setting command is run by
-this repository's release preparation.
+## First public release
 
-After first publication, configure trust and validate its first successful
-OIDC publish within npm's current two-day setup window. Consult npm's
-website for current setup requirements before making account changes.
+[bdf.mbt 2026.11.1](https://www.npmjs.com/package/bdf.mbt/v/2026.11.1)
+was published through Trusted Publishing on 2026-11-12. Its immutable Git tag
+`2026.11.1` and registry `gitHead` both identify
+`8f15520816ebdb24eaba88b1b4d4cd09c86b2294`.
+[npm provenance attestations](https://registry.npmjs.org/-/npm/v1/attestations/bdf.mbt@2026.11.1)
+identify the release build. A clean registry install and the plugin adapter
+imports were verified after publication.
+
+The initial [staged bootstrap](https://docs.npmjs.com/staged-publishing/)
+created the public `0.0.0-stage` placeholder and reserved `2026.11.0`.
+At first release, `2026.11.0` remains staged, not a public release.
+Do not approve that staged version as a release: its `latest` tag could
+replace `2026.11.1`. The placeholder is not an application package.
 
 ## Local release artifact preparation (no registry write)
 

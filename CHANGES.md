@@ -4,10 +4,29 @@
 
 ### Added
 
+### Changed
+
+### Fixed
+
+- Installation and release guides now point to the published `bdf.mbt@2026.11.1`
+  and document the remaining staged bootstrap reservation.
+
+### Deprecated
+
+### Removed
+
+### Security
+
+### Migration
+
+## 2026.11.1 - 2026-11-12
+
+### Added
+
 - Manual CalVer npm release preparation using `f4ah6o/calver-action` and
   Trusted Publishing. Default runs retain an artifact without publishing;
-  staging remains private. See [the release procedure](docs/npm-release.md)
-  for initial setup and final validation requirements.
+  local staging artifacts remain private. See [the release procedure](docs/npm-release.md)
+  for publication evidence and validation requirements.
 
 - A versioned file-format plugin API with explicit startup registration,
   deterministic detection, validated conversion results, stream leases and
@@ -18,9 +37,10 @@
   primitives to BDF. Hand-drawn strokes and fonts are outside the Excalidraw
   adapter's scope; [the diagram guide](docs/diagram-plugins.md) lists the
   supported elements and syntax.
-- A staged `bdf.mbt` JavaScript package with viewer, forms, converter Workers,
+- The published `bdf.mbt` JavaScript package with viewer, forms, converter Workers,
   plugin exports, TypeScript declarations, consumer examples and third-party
-  license notices. It remains `private: true` and is not published. Downstream
+  license notices. Version `2026.11.1` uses npm Trusted Publishing; default local
+  staging artifacts remain `private: true`. Downstream
   adapters can be composed in a browser-resolvable Worker without modifying
   the public dispatch code.
 
