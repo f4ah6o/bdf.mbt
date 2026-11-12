@@ -207,6 +207,33 @@ export function packFixture(root, { minDecoded = BLOB_MIN_DECODED } = {}) {
   return { packed, blobs };
 }
 
+// Reads one store group's decompressed bytes and offset map. Exported for
+// the packer: a partial pack must carry over entries it is not replacing,
+// which means reading exactly what a loader would read.
+export async function readPackGroup(prefix, { storeDir = STORE_DIR, cache = sharedCache } = {}) {
+  return packFor(prefix, { storeDir, cache });
+}
+
+// Merges new blobs into an existing store group without dropping entries.
+// The packer rebuilds a group from the fixed set of blobs the swept fixtures
+// reference, so a partial sweep passed straight through would wipe every
+// other fixture's blob in that group; merging carries the existing entries
+// over instead. Carried bytes are re-hashed: a corrupt store must abort the
+// merge, not propagate its damage into a rebuilt pack.
+export async function mergePackGroup(prefix, newBlobs, { storeDir = STORE_DIR, cache = sharedCache } = {}) {
+  const merged = new Map(newBlobs);
+  const pack = await packFor(prefix, { storeDir, cache });
+  for (const [hash, [offset, length]] of pack.offsets) {
+    if (merged.has(hash)) continue;
+    const bytes = pack.bytes.subarray(offset, offset + length);
+    if (bytes.length !== length || sha256(bytes) !== hash) {
+      throw new Error(`fixture blob ${hash} is corrupt in store/${prefix}.pk; run a full pack to rebuild the store`);
+    }
+    merged.set(hash, Buffer.from(bytes));
+  }
+  return merged;
+}
+
 // Builds one store group: the `pk` bytes and the JSON-ready index for all
 // blobs whose hash starts with `prefix`. The bytes follow the given order:
 // the caller sweeps fixtures in a deterministic order, so identical inputs

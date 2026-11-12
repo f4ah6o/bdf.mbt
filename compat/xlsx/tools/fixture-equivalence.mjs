@@ -52,6 +52,7 @@ const paths = [...new Set([...baseList, ...newList])].sort();
 
 const results = [];
 let failures = 0;
+let totalCases = 0;
 const blobHashes = new Set();
 
 for (const path of paths) {
@@ -105,11 +106,13 @@ for (const path of paths) {
     continue;
   }
   record.cases = Array.isArray(loaded) ? loaded.length : null;
+  if (record.status === 'ok' && Array.isArray(loaded)) totalCases += loaded.length;
 }
 
 const ok = results.filter(r => r.status === 'ok');
 
 console.log(`compared ${results.length} fixture file(s): ${ok.length} identical, ${failures} differing or failed`);
+console.log(`total cases compared: ${totalCases}`);
 console.log(`distinct blobs referenced: ${blobHashes.size}`);
 for (const record of results) {
   if (record.status !== 'ok') {

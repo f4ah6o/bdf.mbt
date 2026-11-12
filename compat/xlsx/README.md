@@ -260,8 +260,14 @@ stay inline, so `git diff` on a fixture still shows which case changed.
 - To regenerate a fixture, run the upstream Go generator as described above
   (it writes a plain fixture file), re-run the affected verifier (plain
   fixtures load unchanged), then `node compat/xlsx/tools/pack-fixtures.mjs`
-  to pack. A full run is canonical and drops blobs nothing references;
-  `--files a.json,b.json` adds only the named fixtures' new blobs;
+  to pack. A full run is canonical: it drops blobs nothing references and
+  removes store groups nothing references. `--files a.json,b.json` is the
+  partial form: it merges the named fixtures' new blobs into the existing
+  packs and re-verifies every carried blob, so other fixtures' blobs can
+  never be lost, but run a full pack afterwards to restore the canonical
+  blob order. `--unpack [--files ...]` writes fixtures back out in their
+  plain form for diffing or for tools that expect plain JSON - the inverse
+  of packing and a no-op on already-plain fixtures.
   `--check` verifies integrity, packing completeness and absence of
   unreferenced blobs.
 - `node compat/xlsx/tools/fixture-equivalence.mjs --base <commit>` proves a

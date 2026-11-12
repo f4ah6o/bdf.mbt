@@ -12,12 +12,16 @@
 //   node compat/xlsx/tools/pack-fixtures.mjs                        canonical full pack
 //   node compat/xlsx/tools/pack-fixtures.mjs --dry-run              report what would change, write nothing
 //   node compat/xlsx/tools/pack-fixtures.mjs --check                verify integrity and packing invariants, write nothing
-//   node compat/xlsx/tools/pack-fixtures.mjs --files a.json,b.json  pack only these fixtures (adds blobs, prunes nothing)
+//   node compat/xlsx/tools/pack-fixtures.mjs --files a.json,b.json  pack only these fixtures (adds blobs, carries the rest over)
+//   node compat/xlsx/tools/pack-fixtures.mjs --unpack [--files ...] write the fixture files back in plain form (the stored
+//                                                                   bytes stay in the store until the next pack prunes them)
 //
 // A full pack is canonical: packs are rebuilt from the blobs the current
 // fixtures reference, so blobs that are no longer referenced by any fixture
-// drop out of the store. A partial --files pack only adds the blobs the named
-// fixtures need and leaves every other store entry alone.
+// drop out of the store, and store groups nothing references are removed. A
+// partial --files pack merges: every existing store entry is carried over
+// (re-hashed while carried) and only the named fixtures' new blobs are added,
+// so other fixtures' blobs can never be lost to a partial update.
 //
 // Regeneration workflow: run the upstream Go generator with BDF_FIXTURE_ROOT
 // pointing at the repository root (it writes plain fixtures), re-run the
@@ -25,7 +29,7 @@
 // `--check` to assert the stored state is complete. Do not commit fixtures
 // with inline large base64: the check fails on them.
 
-import { readdir, readFile, stat, writeFile, mkdir } from 'node:fs/promises';
+import { readdir, readFile, rm, stat, writeFile, mkdir } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { gzipSync } from 'node:zlib';
 import {
@@ -36,6 +40,7 @@ import {
   buildPack,
   isCanonicalBase64,
   loadFixture,
+  mergePackGroup,
   packFixture,
 } from '../fixtures.mjs';
 
@@ -78,6 +83,7 @@ const options = parseArgs({
   options: {
     'dry-run': { type: 'boolean', default: false },
     check: { type: 'boolean', default: false },
+    unpack: { type: 'boolean', default: false },
     files: { type: 'string' },
   },
 }).values;
@@ -179,14 +185,39 @@ if (options.check) {
   process.exit();
 }
 
+// --unpack writes the plain JSON for the target fixtures back to disk, the
+// inverse of packing: upstream Go generators emit plain files, so this is the
+// export path for diffing a stored tree, feeding a plain file to other tools,
+// or checking what regeneration would replace. The store is left alone: blobs
+// survive until the next full pack prunes whatever nothing references.
+if (options.unpack) {
+  let unpacked = 0;
+  for (const [name, value] of originalValues) {
+    const plain = JSON.stringify(value);
+    if (!options['dry-run'] && plain !== manifests.get(name).source) {
+      await writeFile(new URL(name, root), plain);
+      unpacked++;
+    }
+  }
+  console.log(`unpacked ${unpacked} fixture file(s) to plain form (${originalValues.size} in scope)`);
+  process.exit();
+}
+
 // Write the store first so a half-finished run fails loudly (missing blob)
 // instead of silently serving a manifest whose packs are not there yet.
 const uniquePrefixes = [...new Set([...blobs.keys()].map(hash => hash.slice(0, 2)))].sort();
 let packsRewritten = 0;
 let packsUnchanged = 0;
 
+// A partial sweep only knows its own fixtures' blobs; merge the touched
+// groups with the existing store so nothing else can be dropped.
+const groupBlobs = async prefix => {
+  const fresh = new Map([...blobs].filter(([hash]) => hash.startsWith(prefix)));
+  return options.files ? await mergePackGroup(prefix, fresh, { storeDir }) : fresh;
+};
+
 for (const prefix of uniquePrefixes) {
-  const { pk, idx } = buildPack(prefix, blobs);
+  const { pk, idx } = buildPack(prefix, await groupBlobs(prefix));
   // The pack stream gains from one shared gzip context across adjacent BDFs;
   // keep the raw form if gzip ever fails to help for this group.
   const compressed = gzipSync(pk);
@@ -236,6 +267,22 @@ for (const [name, { source, parsed, packed, blobs: fileBlobs }] of manifests) {
   }
   if (manifest !== source || parsed.format !== FIXTURE_FORMAT) packedFiles++;
   console.log(`${name}: ${fileBlobs.size} blob(s) referenced, manifest ${source.length} -> ${manifest.length} bytes`);
+}
+
+// A canonical full run owns the whole store: prefixes nothing references
+// anymore are groups whose fixtures disappeared, so remove their files rather
+// than leaving orphans that --check would (rightly) reject.
+if (!options.files && !options['dry-run'] && !options.check && !options.unpack) {
+  let removed = 0;
+  for (const entry of await readdir(storeDir, { withFileTypes: true })) {
+    if (!entry.isFile()) continue;
+    const prefix = entry.name.slice(0, 2);
+    if (!uniquePrefixes.includes(prefix)) {
+      await rm(new URL(`./${entry.name}`, storeDir));
+      removed++;
+    }
+  }
+  if (removed) console.log(`removed ${removed / 2 | 0} unreferenced store group(s)`);
 }
 
 console.log(`packed ${packedFiles} fixture file(s), left ${plainFiles} plain, ` +

@@ -10,7 +10,7 @@
 // the loader on every `npm run test:xlsx-compat`.
 
 import assert from 'node:assert/strict';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -21,6 +21,7 @@ import {
   BLOB_MARKER,
   buildPack,
   loadFixture,
+  mergePackGroup,
   packFixture,
   resolveFixture,
 } from '../fixtures.mjs';
@@ -220,6 +221,71 @@ async function withTempStore(root, { pack = 'gzip' } = {}) {
   assert.equal(distinctBdf.size, 43, 'conditional-top distinct expected BDFs');
   assert.equal(new Set(simplePicture.map(c => c.input)).size, 48, 'simple-picture distinct inputs');
   assert.deepEqual(Object.keys(simplePicture[0]).sort(), ['bdf', 'input', 'mode', 'no_index', 'warnings']);
+  checked++;
+}
+
+// Partial packs must not lose other fixtures' blobs: merging a fresh subset
+// into an existing store carries every existing entry over, re-verified, and
+// rejects a damaged store instead of propagating it.
+{
+  const blob = text => ({ input: Buffer.from(text.repeat(256)).toString('base64') });
+  const rootA = [blob('fixture-a')];
+  const rootB = [blob('fixture-b-unique'), blob('fixture-b-second')];
+  const { storeDir, envelope } = await withTempStore(rootA);
+  const { packed: packedB, blobs: blobsB } = packFixture(rootB);
+  const hashA = firstHash(envelope.root);
+  const prefixA = hashA.slice(0, 2);
+  for (const prefix of new Set([prefixA, ...[...blobsB.keys()].map(hash => hash.slice(0, 2))])) {
+    const fresh = new Map([...blobsB].filter(([hash]) => hash.startsWith(prefix)));
+    fresh.delete(hashA); // fixture A's blob must come from the store, not the sweep
+    const merged = await mergePackGroup(prefix, fresh, { storeDir, cache: new Map() });
+    const { pk, idx } = buildPack(prefix, merged);
+    await writeFile(new URL(`./${prefix}.pk`, storeDir), pk);
+    await writeFile(new URL(`./${prefix}.idx`, storeDir), JSON.stringify(idx));
+  }
+  const restoredA = await resolveFixture(envelope, 'merge.mjs', { storeDir, cache: new Map() });
+  assert.deepEqual(restoredA, rootA, 'merge keeps the fixture the store already held');
+  const envelopeB = { format: FIXTURE_FORMAT, version: FIXTURE_VERSION, root: packedB };
+  const restoredB = await resolveFixture(envelopeB, 'merge.mjs', { storeDir, cache: new Map() });
+  assert.deepEqual(restoredB, rootB, 'merge resolves the newly added fixture');
+  checked += 2;
+
+  // A damaged carried entry aborts the merge instead of writing it forward.
+  const idxA = JSON.parse(await readFile(new URL(`./${prefixA}.idx`, storeDir), 'utf8'));
+  // The merge wrote this group as one raw stream (buildPack output); only
+  // assume gzip when the magic says so, like the loader does.
+  const rawA = await readFile(new URL(`./${prefixA}.pk`, storeDir));
+  const packA = rawA[0] === 0x1f && rawA[1] === 0x8b ? gunzipSync(rawA) : Buffer.from(rawA);
+  packA[idxA.blobs[hashA][0]] ^= 0xff;
+  await writeFile(new URL(`./${prefixA}.pk`, storeDir), packA);
+  await assert.rejects(
+    mergePackGroup(prefixA, new Map(), { storeDir, cache: new Map() }),
+    /is corrupt in store/,
+  );
+  checked++;
+}
+
+// The process-wide default cache deduplicates pack reads across fixtures and
+// is keyed per store root, so temporary stores never mask the real one (the
+// sections above already resolved temp stores through it).
+{
+  const first = await loadFixture('./simple-picture.json');
+  const second = await loadFixture('./simple-picture.json');
+  assert.deepEqual(first, second, 'repeat loads are identical through the default cache');
+  checked++;
+}
+
+// A loadFixture result indexed without parentheses indexes the Promise and
+// silently yields undefined; the migration hit exactly once (cells.json[0]).
+// Scan the verifier sources so the pattern cannot come back.
+{
+  const names = (await readdir(new URL('../', import.meta.url))).filter(name => name.endsWith('.mjs'));
+  for (const name of names) {
+    const text = await readFile(new URL(`../${name}`, import.meta.url), 'utf8');
+    const offending = text.split('\n').findIndex(line =>
+      /await loadFixture\([^)]*\)\s*\[/.test(line) && !/\(await loadFixture/.test(line));
+    assert.equal(offending, -1, `${name} line ${offending + 1}: index the loaded value, not the Promise`);
+  }
   checked++;
 }
 
