@@ -243,6 +243,7 @@ async fn ViewerController::render_page(
   if request < 0 {
     return
   }
+  let revision = viewer_canvas_revision(canvas)
   try {
     let bitmap = viewer_remember(
       self.dom,
@@ -253,35 +254,57 @@ async fn ViewerController::render_page(
         self.viewer.zoom * viewer_pixel_ratio(),
       ),
     ).wait()
-    let valid = generation == self.generation
+    let current = generation == self.generation &&
+      viewer_canvas_request_matches(canvas, request, revision)
+    let valid = current && viewer_canvas_revision_current(canvas, revision)
     viewer_canvas_finish(canvas, bitmap, request, valid)
+    if current && !valid {
+      viewer_canvas_error(canvas)
+    }
     if valid {
       let content = viewer_remember(
         self.dom,
         viewer_renderer_content(self.renderer, view.id, index),
       ).wait() catch {
-        _ => render_null()
+        error => {
+          viewer_forget_error(self.dom, error.to_string())
+          render_null()
+        }
       }
       let data = text_layer_from_content(content)
-      if view.pages.get(index) is Some(page) {
-        let zoom = self.viewer.zoom
-        viewer_canvas_mount_text(canvas, data, viewer_content_ready(content), frame => {
-          render_text_layer(
-            frame,
-            data,
-            0.0,
-            0.0,
-            page.width * zoom,
-            page.height * zoom,
-            zoom,
-          )
-        })
+      if generation == self.generation &&
+        viewer_canvas_request_matches(canvas, request, revision) {
+        if !viewer_canvas_revision_current(canvas, revision) {
+          viewer_canvas_error(canvas)
+        } else if view.pages.get(index) is Some(page) {
+          let zoom = self.viewer.zoom
+          viewer_canvas_mount_text(canvas, data, viewer_content_ready(content), frame => {
+            render_text_layer(
+              frame,
+              data,
+              0.0,
+              0.0,
+              page.width * zoom,
+              page.height * zoom,
+              zoom,
+            )
+          })
+        }
       }
     }
   } catch {
     error => {
-      viewer_canvas_error(canvas)
-      viewer_dom_failure(self.dom, error.to_string())
+      if generation == self.generation &&
+        viewer_canvas_request_matches(canvas, request, revision) {
+        viewer_canvas_error(canvas)
+        if viewer_canvas_revision_current(canvas, revision) {
+          viewer_dom_failure(self.dom, error.to_string())
+        } else {
+          viewer_forget_error(self.dom, error.to_string())
+        }
+      } else {
+        viewer_forget_error(self.dom, error.to_string())
+      }
     }
   }
 }
@@ -297,11 +320,18 @@ async fn ViewerController::prepare_selection_page(
   canvas : ViewerCanvas,
   generation : Int32,
 ) -> Unit {
+  let revision = viewer_canvas_revision(canvas)
   let content = viewer_remember(
     self.dom,
     viewer_renderer_content(self.renderer, view.id, index),
-  ).wait()
-  if generation != self.generation {
+  ).wait() catch {
+    error => {
+      viewer_forget_error(self.dom, error.to_string())
+      raise error
+    }
+  }
+  if generation != self.generation ||
+    !viewer_canvas_revision_current(canvas, revision) {
     return
   }
   let data = text_layer_from_content(content)

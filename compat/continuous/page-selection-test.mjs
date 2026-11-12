@@ -56,6 +56,7 @@ const makePages = (count) => Array.from({ length: count }, (_, index) => {
 });
 const fixture = await encodeDiagramDocument({ source: 'page-selection', title: 'page selection', pages: makePages(24) });
 const second = await encodeDiagramDocument({ source: 'page-selection', title: 'second document', pages: makePages(2) });
+const updated = await encodeDiagramDocument({ source: 'page-selection', title: 'updated page', pages: [{ width: 240, height: 320, primitives: [{ kind: 'text', x: 20, y: 48, text: 'NEW TEXT alpha', fontSize: 16 }, { kind: 'text', x: 20, y: 96, text: 'Page 00 beta', fontSize: 16 }] }] });
 // Page 7 carries only a rectangle: its worker text content is genuinely
 // ready but has no text layer to retain or release.
 const blankPages = makePages(24).map((page, index) => index === 7
@@ -82,6 +83,7 @@ const server = createServer((request, response) => {
     '/page-selection/fixture.bdf': fixture,
     '/page-selection/second.bdf': second,
     '/page-selection/blank.bdf': blank,
+    '/page-selection/updated.bdf': updated,
   };
   if (inMemory[pathname]) {
     response.setHeader('Content-Type', 'application/octet-stream');
@@ -111,6 +113,18 @@ const base = 'http://127.0.0.1:' + server.address().port;
 const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage({ viewport: { width: 900, height: 800 } });
+  // Count the Viewer's retained rejection entries without adding a product API.
+  // Native Map semantics are preserved; only its error-key maps are observed.
+  await page.addInitScript(() => {
+    const NativeMap = globalThis.Map;
+    globalThis.__pageSelectionErrorMaps = new Set();
+    globalThis.Map = class extends NativeMap {
+      set(key, value) {
+        if (typeof key === 'string' && key.startsWith('bdf-viewer-error:')) globalThis.__pageSelectionErrorMaps.add(this);
+        return super.set(key, value);
+      }
+    };
+  });
   const browserErrors = [];
   page.on('pageerror', (error) => browserErrors.push(String(error)));
   await page.goto(base + '/page-selection.html', { waitUntil: 'networkidle' });
@@ -126,7 +140,7 @@ try {
         await sleep(10);
       }
     };
-    const frame = (host, index) => host.querySelector(`[data-bdf-page="${index}"]`);
+    const frame = (host, index) => host.querySelector(`div[data-bdf-page="${index}"]`);
     const span = (host, index, text) => {
       const layer = frame(host, index)?.querySelector('.bdfTextLayer');
       return layer && [...layer.querySelectorAll('[data-bdf-ordinal]')].find((s) => s.textContent === text);
@@ -325,6 +339,15 @@ try {
       await wait(() => seen.filter((entry) => entry.kind === 'clipboarderror').length >= 1, 'clipboarderror for the failed page');
       out.failingCopy = copy(failing.host);
       await wait(() => seen.filter((entry) => entry.kind === 'clipboarderror').length >= 3, 'clipboarderror for the retried failed page');
+      // Every additional failed preparation must release its temporary
+      // retained Error; the earlier render failure is an existing baseline.
+      out.errorsBeforeRetries = Array.from(globalThis.__pageSelectionErrorMaps, map => map.size);
+      for (let repeat = 0; repeat < 3; repeat++) {
+        const before = seen.filter(entry => entry.kind === 'clipboarderror').length;
+        copy(failing.host);
+        await wait(() => seen.filter(entry => entry.kind === 'clipboarderror').length >= before + 2, 'additional failed retry ' + repeat);
+      }
+      out.errorsAfterRetries = Array.from(globalThis.__pageSelectionErrorMaps, map => map.size);
       failing.gate.reject.clear();
       // The refused copy's retry refetched and failed; a cut passes the same
       // guard, is refused with clipboarderror, and its retry refetches the
@@ -333,6 +356,7 @@ try {
       await wait(() => seen.some((entry) => entry.kind === 'clipboardready'), 'clipboardready after the retry');
       out.failingCopyAfterRetry = copy(failing.host);
       out.failingEvents = seen;
+      out.errorsAfterRecovery = Array.from(globalThis.__pageSelectionErrorMaps, map => map.size);
     } finally {
       closeViewer(failing);
     }
@@ -365,6 +389,261 @@ try {
       out.lifecyclePagesAfterDestroy = lifecycle.host.querySelectorAll('[data-bdf-page]').length;
     } finally {
       closeViewer(lifecycle);
+    }
+    // 6. The real Worker replaces a page while its old text is selected.
+    // Neither an in-flight update nor the completed update may copy stale text.
+    {
+      const fixtureBytes = await bytes('/page-selection/fixture.bdf');
+      const updatedBytes = await bytes('/page-selection/updated.bdf');
+      const host = document.createElement('div');
+      host.style.cssText = 'width:480px;height:1100px;position:relative';
+      document.body.append(host);
+      const client = moon.bdf_render_worker_client(new Worker(workerUrl, { type: 'module' }));
+      let added = false, changedSeen = 0, oldHeld = 0, oldDelivered = 0, armOld = false, releasePage, releaseAdd, releaseContent, releaseOld;
+      const pageGate = new Promise(resolve => { releasePage = resolve; });
+      const addGate = new Promise(resolve => { releaseAdd = resolve; });
+      const contentGate = new Promise(resolve => { releaseContent = resolve; });
+      const oldContentGate = new Promise(resolve => { releaseOld = resolve; });
+      const renderer = new Proxy(client, { get(target, name) {
+        const value = target[name];
+        if (name === 'addPage') return async (...args) => {
+          const result = await value.apply(target, args); added = true; await addGate; return result;
+        };
+        if (name === 'content') return async (view, index) => {
+          const content = await value.call(target, view, index);
+          if (!added && armOld && Number(index) === 0) { armOld = false; oldHeld++; await oldContentGate; oldDelivered++; }
+          if (added && Number(index) === 0 && content.runs.some(run => run.text.includes('NEW TEXT alpha'))) {
+            changedSeen++; await contentGate;
+          }
+          return content;
+        };
+        return typeof value === 'function' ? value.bind(target) : value;
+      }});
+      const converter = {
+        convert: async () => ({ bdf: fixtureBytes }),
+        open: async () => ({ bdf: fixtureBytes, pages: 1, stream: 7 }),
+        page: async () => { await pageGate; return { bdf: updatedBytes }; },
+        finish: async () => await new Promise(() => {}),
+        close: async () => {},
+      };
+      const viewer = moon.bdf_create_viewer(host, { renderer, find: false });
+      try {
+        await viewer.openFile(converter, new Uint8Array([1]), { name: 'synthetic' });
+        await wait(() => !!span(host, 0, 'Page 00 alpha') && !!span(host, 0, 'Page 00 beta'), 'stream initial text');
+        selectFromTo(span(host, 0, 'Page 00 alpha'), span(host, 0, 'Page 00 beta'));
+        out.streamBefore = copy(host);
+        // Leave one old content response in flight while the stream replaces
+        // the page; it must never overwrite the newer text layer.
+        armOld = true;
+        viewer.stage.scrollTop = viewer.stage.scrollHeight;
+        viewer.stage.dispatchEvent(new Event('scroll'));
+        await wait(() => !!span(host, 23, 'Page 23 alpha'), 'stream far page');
+        viewer.stage.scrollTop = 0;
+        viewer.stage.dispatchEvent(new Event('scroll'));
+        await wait(() => oldHeld > 0, 'old page content held');
+        releasePage();
+        await wait(() => added, 'Worker added updated page before the reply');
+        out.streamAfterWorker = copy(host);
+        releaseAdd();
+        await wait(() => changedSeen > 0, 'Worker replaced page content');
+        out.streamDuring = copy(host);
+        releaseContent();
+        const limit = performance.now() + 3000;
+        while (!span(host, 0, 'NEW TEXT alpha') && performance.now() < limit) await sleep(10);
+        out.streamNewLayer = !!span(host, 0, 'NEW TEXT alpha');
+        out.streamAfter = copy(host);
+        if (out.streamNewLayer) {
+          selectFromTo(span(host, 0, 'NEW TEXT alpha'), span(host, 0, 'Page 00 beta'));
+          out.streamReselected = copy(host);
+        }
+        // Deselect before the old reply arrives: preserving a selected layer
+        // must not accidentally hide an old-response overwrite.
+        getSelection().removeAllRanges();
+        releaseOld();
+        await wait(() => oldDelivered > 0, 'old page content delivered');
+        await sleep(0);
+        const newLayer = !!span(host, 0, 'NEW TEXT alpha');
+        if (newLayer) selectFromTo(span(host, 0, 'NEW TEXT alpha'), span(host, 0, 'Page 00 beta'));
+        out.streamAfterOld = { newLayer, oldLayer: !!span(host, 0, 'Page 00 alpha'), copied: copy(host) };
+      } finally { releaseOld(); releaseAdd(); releaseContent(); viewer.destroy(); client.close(); host.remove(); }
+    }
+    // 7. An old offscreen preparation fails after a blank intermediate
+    // page was replaced. The stale failure must not poison the new page.
+    {
+      const fixtureBytes = await bytes('/page-selection/blank.bdf');
+      const updatedBytes = await bytes('/page-selection/updated.bdf');
+      const host = document.createElement('div');
+      host.style.cssText = 'width:480px;height:1100px;position:relative';
+      document.body.append(host);
+      const client = moon.bdf_render_worker_client(new Worker(workerUrl, { type: 'module' }));
+      let page7Waiting = false, oldWaiting = false, oldRejected = false, added = false;
+      let releasePage7, rejectOld;
+      const page7Gate = new Promise(resolve => { releasePage7 = resolve; });
+      const oldGate = new Promise((_, reject) => { rejectOld = reject; });
+      const renderer = new Proxy(client, { get(target, name) {
+        const value = target[name];
+        if (name === 'addPage') return async (view, index, buffer) => {
+          if (Number(index) !== 7) return;
+          const result = await value.call(target, view, index, buffer); added = true; return result;
+        };
+        if (name === 'content') return async (view, index) => {
+          const content = await value.call(target, view, index);
+          if (!added && Number(index) === 7) {
+            oldWaiting = true;
+            try { await oldGate; } catch (error) { oldRejected = true; throw error; }
+          }
+          return content;
+        };
+        return typeof value === 'function' ? value.bind(target) : value;
+      }});
+      const converter = {
+        convert: async () => ({ bdf: fixtureBytes }),
+        open: async () => ({ bdf: fixtureBytes, pages: 8, stream: 8 }),
+        page: async (_stream, index) => {
+          if (Number(index) === 7) { page7Waiting = true; await page7Gate; }
+          return { bdf: updatedBytes };
+        },
+        finish: async () => await new Promise(() => {}),
+        close: async () => {},
+      };
+      const viewer = moon.bdf_create_viewer(host, { renderer, find: false });
+      const seen = events(host);
+      try {
+        await viewer.openFile(converter, new Uint8Array([1]), { name: 'synthetic' });
+        await wait(() => page7Waiting && !!span(host, 0, 'Page 00 alpha') && !!span(host, 4, 'Page 04 beta'), 'stream page 7 gate');
+        // Match an internal page link appearing before the target page frame.
+        const link = document.createElement('a'); link.dataset.bdfPage = '7'; frame(host, 0).append(link);
+        selectFromTo(span(host, 0, 'Page 00 alpha'), span(host, 4, 'Page 04 beta'));
+        viewer.stage.scrollTop = viewer.stage.scrollHeight;
+        viewer.stage.dispatchEvent(new Event('scroll'));
+        await wait(() => !!span(host, 23, 'Page 23 beta'), 'stale prepare far endpoint');
+        selectFromTo(span(host, 0, 'Page 00 alpha'), span(host, 23, 'Page 23 beta'));
+        await wait(() => oldWaiting, 'old blank page preparation held');
+        releasePage7();
+        await wait(() => added, 'updated blank page added');
+        await sleep(0);
+        out.stalePrepareSelectionCleared = getSelection().isCollapsed;
+        const errorsBefore = seen.filter(entry => entry.kind === 'clipboarderror').length;
+        rejectOld(new Error('old page content rejected'));
+        await wait(() => oldRejected, 'old preparation rejected');
+        await sleep(0);
+        out.stalePrepareErrors = seen.filter(entry => entry.kind === 'clipboarderror').length - errorsBefore;
+        const target = frame(host, 7), stageRect = viewer.stage.getBoundingClientRect();
+        viewer.stage.scrollTop += target.getBoundingClientRect().top - stageRect.top;
+        viewer.stage.dispatchEvent(new Event('scroll'));
+        await wait(() => !!span(host, 7, 'NEW TEXT alpha') && !!span(host, 7, 'Page 00 beta'), 'updated blank page text');
+        selectFromTo(span(host, 7, 'NEW TEXT alpha'), span(host, 7, 'Page 00 beta'));
+        out.stalePrepareCopy = copy(host);
+      } finally { releasePage7(); rejectOld(new Error('test cleanup')); viewer.destroy(); client.close(); host.remove(); }
+    }
+    // 8. A current bitmap or text request that settles while detached must
+    // not leave the canvas permanently loading when the host is reattached.
+    out.detached = [];
+    for (const [kind, outcome] of [['page', 'reject'], ['page', 'resolve'], ['content', 'reject'], ['content', 'resolve']]) {
+      const data = await bytes('/page-selection/fixture.bdf');
+      const host = document.createElement('div');
+      host.style.cssText = 'width:480px;height:220px;position:relative';
+      document.body.append(host);
+      const client = moon.bdf_render_worker_client(new Worker(workerUrl, { type: 'module' }));
+      let waiting = false, delivered = false, released = false, finishGate, failGate, calls = 0;
+      const gate = new Promise((resolve, reject) => { finishGate = resolve; failGate = reject; });
+      const renderer = new Proxy(client, { get(target, name) {
+        const value = target[name];
+        if (name === kind) return async (...args) => {
+          if (Number(args[1]) === 5) {
+            calls++;
+            if (!released) {
+              const content = kind === 'content' ? await value.apply(target, args) : undefined;
+              waiting = true;
+              try {
+                await gate;
+                return kind === 'content' ? content : await value.apply(target, args);
+              } finally { delivered = true; }
+            }
+          }
+          return await value.apply(target, args);
+        };
+        return typeof value === 'function' ? value.bind(target) : value;
+      }});
+      const viewer = moon.bdf_create_viewer(host, { renderer, find: false });
+      viewer.addEventListener('error', event => event.preventDefault());
+      try {
+        await viewer.open({ kind: 'buffer', buffer: data.buffer });
+        await wait(() => frame(host, 5)?.querySelector('canvas')?.width === 0, 'detached test offscreen page');
+        const target = frame(host, 5), stage = viewer.stage;
+        stage.scrollTop += target.getBoundingClientRect().top - stage.getBoundingClientRect().top;
+        stage.dispatchEvent(new Event('scroll'));
+        await wait(() => waiting, 'detached test pending ' + kind);
+        host.remove(); released = true;
+        if (outcome === 'reject') failGate(new Error('synthetic detached failure')); else finishGate();
+        await wait(() => delivered, 'detached test response delivered');
+        await sleep(0);
+        const detachedLoaded = target.querySelector('canvas').dataset.loaded;
+        document.body.append(host);
+        stage.scrollTop = 0;
+        stage.dispatchEvent(new Event('scroll'));
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        stage.scrollTop += target.getBoundingClientRect().top - stage.getBoundingClientRect().top;
+        stage.dispatchEvent(new Event('scroll'));
+        await wait(() => target.querySelector('canvas').dataset.loaded === 'ready' && !!span(host, 5, 'Page 05 alpha'), 'detached page reloaded ' + kind + '/' + outcome);
+        out.detached.push({ kind, outcome, detachedLoaded, calls, textPresent: !!span(host, 5, 'Page 05 alpha') });
+      } finally { released = true; finishGate(); viewer.destroy(); client.close(); host.remove(); }
+    }
+    // 9. A pending page replacement survives zoom and view redraws; both
+    // success and failure unblock the page even if another view is current.
+    out.redrawUpdates = [];
+    for (const mode of ['zoom', 'view-return', 'view-away-success', 'view-away-failure']) {
+      const initial = await bytes('/page-selection/fixture.bdf');
+      const replacement = await bytes('/page-selection/updated.bdf');
+      const host = document.createElement('div');
+      host.style.cssText = 'width:480px;height:1100px;position:relative';
+      document.body.append(host);
+      const client = moon.bdf_render_worker_client(new Worker(workerUrl, { type: 'module' }));
+      let releasePage, releaseAdd, waiting = false, progress = false, failure = false;
+      const pageGate = new Promise(resolve => { releasePage = resolve; });
+      const addGate = new Promise(resolve => { releaseAdd = resolve; });
+      const renderer = new Proxy(client, { get(target, name) {
+        const value = target[name];
+        if (name === 'addPage') return async (...args) => {
+          waiting = true; await addGate;
+          if (mode === 'view-away-failure') throw new Error('synthetic addPage failure');
+          return await value.apply(target, args);
+        };
+        return typeof value === 'function' ? value.bind(target) : value;
+      }});
+      const converter = {
+        convert: async () => ({ bdf: initial }),
+        open: async () => ({ bdf: initial, pages: 1, stream: 9 }),
+        page: async () => { await pageGate; return { bdf: replacement }; },
+        finish: async () => await new Promise(() => {}),
+        close: async () => {},
+      };
+      const viewer = moon.bdf_create_viewer(host, { renderer, find: false });
+      viewer.addEventListener('conversionprogress', () => { progress = true; });
+      viewer.addEventListener('error', event => { failure = true; event.preventDefault(); });
+      try {
+        await viewer.openFile(converter, new Uint8Array([1]), { name: 'synthetic' });
+        await wait(() => !!span(host, 0, 'Page 00 alpha') && !!span(host, 0, 'Page 00 beta'), 'redraw initial text');
+        const viewId = viewer.view.id;
+        selectFromTo(span(host, 0, 'Page 00 alpha'), span(host, 0, 'Page 00 beta'));
+        releasePage();
+        await wait(() => waiting, 'pending addPage before redraw');
+        if (mode === 'zoom') viewer.setZoom(1.1);
+        else { viewer.setView('__missing__'); if (mode === 'view-return') viewer.setView(viewId); }
+        let pending;
+        if (mode === 'zoom' || mode === 'view-return') {
+          await wait(() => !!frame(host, 0)?.querySelector('canvas'), 'redrawn page');
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          pending = { updating: frame(host, 0).querySelector('canvas').dataset.contentUpdating, oldVisible: !!span(host, 0, 'Page 00 alpha'), copied: copy(host) };
+        }
+        releaseAdd();
+        await wait(() => progress || failure, 'stream update completed');
+        if (mode.startsWith('view-away')) viewer.setView(viewId);
+        const expected = mode === 'view-away-failure' ? 'Page 00 alpha' : 'NEW TEXT alpha';
+        await wait(() => !!span(host, 0, expected) && !!span(host, 0, 'Page 00 beta'), 'redrawn page content');
+        selectFromTo(span(host, 0, expected), span(host, 0, 'Page 00 beta'));
+        out.redrawUpdates.push({ mode, pending, copy: copy(host), failure });
+      } finally { releasePage(); releaseAdd(); viewer.destroy(); client.close(); host.remove(); }
     }
     return out;
   });
@@ -399,6 +678,21 @@ try {
     check('failing clipboarderror', (result.failingEvents ?? []).some((entry) => entry.kind === 'clipboarderror'), result.failingEvents);
     check('failing cut refused', result.failingRetryCut?.prevented === true && result.failingRetryCut?.text === '', result.failingRetryCut);
     check('failing copy complete after retry', result.failingCopyAfterRetry?.text === pagesText(0, 4), result.failingCopyAfterRetry);
+    check('failed retries release retained errors', JSON.stringify(result.errorsAfterRetries) === JSON.stringify(result.errorsBeforeRetries), { before: result.errorsBeforeRetries, after: result.errorsAfterRetries });
+    check('recovery does not retain additional errors', JSON.stringify(result.errorsAfterRecovery) === JSON.stringify(result.errorsBeforeRetries), { before: result.errorsBeforeRetries, after: result.errorsAfterRecovery });
+    check('stream initially copies selected page', result.streamBefore?.text === pageText(0), result.streamBefore);
+    check('stream update never copies stale text before addPage replies', !result.streamAfterWorker?.text?.includes('Page 00 alpha'), result.streamAfterWorker);
+    check('stream update never copies stale text while loading', !result.streamDuring?.text?.includes('Page 00 alpha'), result.streamDuring);
+    check('stream update never copies stale text after loading', !result.streamAfter?.text?.includes('Page 00 alpha'), result.streamAfter);
+    check('stream updated layer is mounted', result.streamNewLayer === true, result.streamNewLayer);
+    check('stream updated text can be reselected', result.streamReselected?.text === 'NEW TEXT alpha Page 00 beta', result.streamReselected);
+    check('old response never overwrites updated text', result.streamAfterOld?.newLayer === true && result.streamAfterOld?.oldLayer === false && result.streamAfterOld?.copied?.text === 'NEW TEXT alpha Page 00 beta', result.streamAfterOld);
+    check('updating a selected blank intermediate page clears the selection', result.stalePrepareSelectionCleared === true, result.stalePrepareSelectionCleared);
+    check('stale failed preparation does not emit a clipboard error', result.stalePrepareErrors === 0, result.stalePrepareErrors);
+    check('updated intermediate page can be selected and copied', result.stalePrepareCopy?.text === 'NEW TEXT alpha Page 00 beta', result.stalePrepareCopy);
+    check('detached in-flight pages can reload', result.detached?.length === 4 && result.detached.every(entry => entry.detachedLoaded === '' && entry.calls >= 2 && entry.textPresent), result.detached);
+    check('pending updates block stale text across redraws', ['zoom', 'view-return'].every(mode => result.redrawUpdates?.some(entry => entry.mode === mode && entry.pending?.updating === 'true' && !entry.pending.oldVisible && !entry.pending.copied.text?.includes('Page 00 alpha'))), result.redrawUpdates);
+    check('redrawn views recover after update success or failure', result.redrawUpdates?.length === 4 && result.redrawUpdates.every(entry => entry.copy?.text === (entry.mode === 'view-away-failure' ? 'Page 00 alpha Page 00 beta' : 'NEW TEXT alpha Page 00 beta') && entry.failure === (entry.mode === 'view-away-failure')), result.redrawUpdates);
     check('lifecycle stale events discarded', (result.lifecycleLeakedEvents ?? []).length === 0, result.lifecycleLeakedEvents);
     check('lifecycle second document copy', result.lifecycleSecondDocumentCopy?.text === pagesText(0, 1), result.lifecycleSecondDocumentCopy);
     check('lifecycle destroyed host silent', result.lifecycleAfterDestroy?.prevented === false && result.lifecycleAfterDestroy?.text === '' && result.lifecyclePagesAfterDestroy === 0, { afterDestroy: result.lifecycleAfterDestroy, pages: result.lifecyclePagesAfterDestroy });

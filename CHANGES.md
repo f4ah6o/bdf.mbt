@@ -11,8 +11,9 @@
   instead of silently copying partial text; the missing pages are prepared
   in the background and a later copy succeeds with the complete ordered
   text once the host reports `clipboardready`. A page that fails to load is
-  retried by the next copy or cut, and selections spanning more than 4096 pages are
-  refused.
+  retried by the next copy or cut, and selections spanning more than 4096
+  pages are refused. If streaming conversion replaces a selected page, the
+  selection is cleared and must be made again after the page updates.
 - A sheet clipboard extension to the rendering Worker client
   (`bdf_render_worker_client`): `sheetClipboard(view, range)` copies an
   inclusive rectangular cell range `{ row0, col0, row1, col1 }` as

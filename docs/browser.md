@@ -323,8 +323,10 @@ refused with a `clipboarderror` host event instead of silently copying only
 part of the selection; the viewer prepares the missing pages' text in the
 background and reports `clipboardready` when the selection is complete, so a
 later copy succeeds. Selections spanning more than 4096 pages are refused,
-and a page whose text cannot be loaded is retried by the next copy or cut; when it
-still fails, the copy is refused again with `clipboarderror`.
+and a page whose text cannot be loaded is retried by the next copy or cut;
+when it still fails, the copy is refused again with `clipboarderror`. If a
+page in the selection is replaced during streaming conversion, the selection
+is cleared to avoid copying stale text; select the updated text again.
 The search field handles Command/Ctrl+F, Command/Ctrl+G, F3, Enter,
 Shift+Enter, and Escape while the host has focus. It waits for IME composition
 to finish before searching and marks matches using the loaded font metrics.
