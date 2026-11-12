@@ -533,3 +533,72 @@ async fn render_sheet_content_worker(
   }
   render_content_value(output, false)
 }
+
+///|
+extern "js" fn render_cell_range_valid(request : RenderRequest) -> Bool =
+  #|(r) => {const x=r.range;const limit=16777216;return !!x&&['row0','col0','row1','col1'].every(k=>Number.isSafeInteger(x[k])&&x[k]>=0&&x[k]<=limit)&&x.row0<=x.row1&&x.col0<=x.col1&&(x.row1-x.row0+1)*(x.col1-x.col0+1)<=1000000}
+
+///|
+extern "js" fn render_cell_range_field(request : RenderRequest, key : String) -> Int32 =
+  #|(r,key) => r.range[key]
+
+///|
+extern "js" fn render_clipboard_result(text : String, html : String) -> RenderValue =
+  #|(text,html) => ({text,html})
+
+///|
+async fn render_sheet_clipboard_worker(
+  doc : RenderDocument,
+  view : @core.View,
+  request : RenderRequest,
+) -> RenderValue {
+  if view.kind != "sheet" {
+    raise BadFormat("bdf: view " + view.id + " is not a sheet")
+  }
+  if !render_cell_range_valid(request) {
+    raise BadFormat("invalid sheet clipboard range")
+  }
+  let r0 = render_cell_range_field(request, "row0")
+  let r1 = render_cell_range_field(request, "row1")
+  let c0 = render_cell_range_field(request, "col0")
+  let c1 = render_cell_range_field(request, "col1")
+  let rows = sheet_axis(view.rows)
+  let cols = sheet_axis(view.cols)
+  if r1 >= rows.length() || c1 >= cols.length() {
+    raise BadFormat("sheet clipboard range is outside the sheet")
+  }
+  if view.tiles.is_empty() && view.tiles_ref is Some(hash) { doc.ensure(hash) }
+  let tiles = sheet_tile_table(doc.browser_document(), view)
+  if tiles.length() > 4096 {
+    raise BadFormat("sheet has too many tiles to copy")
+  }
+  // A merged cell keeps its text in the tile holding its anchor while its
+  // span can cross arbitrarily many tiles, so a range intersecting a merge
+  // cannot be resolved from the tiles it covers alone. Consult every tile of
+  // the view's tile table, like the in-browser sheet does, and let
+  // cell_clipboard clip the merged cells to the range. Sheets above the tile
+  // cap are rejected instead of silently losing merged anchors, and tiles
+  // sharing one object part are extracted only once per request.
+  let state = sheet_cell_data(view, tiles)
+  let seen : Map[String, Bool] = {}
+  let texts : Map[String, @render.TextContent] = {}
+  let browser = doc.browser_document()
+  for tile in tiles {
+    doc.prepare_text_parts(tile.object, seen, 0, fonts=false)
+    let content = match texts.get(tile.object) {
+      Some(content) => content
+      None => {
+        let object = @core.decode_object_resources(doc.part(tile.object))
+        let extracted = @render.extract_text(object, hash => Some(@core.decode_object_resources(browser.part(hash))))
+        texts[tile.object] = extracted
+        extracted
+      }
+    }
+    sheet_remember_cells(state, tile, content)
+  }
+  let value = @render.cell_clipboard(sheet_all_cells(state), { row0: r0, col0: c0, row1: r1, col1: c1, }, skip_row=row => rows.is_hidden(row), skip_col=col => cols.is_hidden(col))
+  if value.text.length().to_int64() + value.html.length().to_int64() > 8388608L {
+    raise BadFormat("sheet clipboard result is too large")
+  }
+  render_clipboard_result(value.text, value.html)
+}
