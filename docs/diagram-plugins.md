@@ -33,7 +33,9 @@ installPluginConverterWorker([
 ```
 
 `encodeDiagram` is also exported directly (`bdf.mbt/plugin/diagram-bdf`) for
-tools that want diagram-to-BDF encoding without the plugin envelope.
+tools that want diagram-to-BDF encoding without the plugin envelope. Its
+multi-page, embedded-image generalization `encodeDiagramDocument` lives in
+the same module (`bdf.mbt/plugin/diagram-bdf`).
 
 ## Architecture
 
@@ -53,9 +55,11 @@ Excalidraw JSON                                  Mermaid text (subset)
                           v
               plugin/src/diagram-bdf.js
               encodeDiagram({width, height, source, title, primitives})
+              encodeDiagramDocument({source, title, pages, images})
                           |
                           v
-              single-file BDF bytes (header + manifest + obj part)
+              single-file BDF bytes (header + manifest + parts)
+              one obj part per page, one img part per unique raster
 ```
 
 ### The shared primitive schema
@@ -68,6 +72,12 @@ z order (later entries draw on top):
 - `{kind:"polygon", points:[[x,y],...>=3], style...}` — closed
 - `{kind:"polyline", points:[[x,y],...>=2], style...}` — open, fill ignored
 - `{kind:"text", x, y, text, fontSize, family?, weight?, style?, align?, baseline?, fill?, advance?, ...}`
+- `{kind:"image", image, x, y, w, h, opacity?, angle?, pivot?}` — an embedded
+  raster drawn at the rectangle (both `w` and `h` must be positive: the
+  canvas image op does not mirror, so nonpositive rectangles are rejected);
+  `image` names a resource of the document's `images` list. This kind is
+  document-only: the single-diagram `encodeDiagram` keeps its vector-only
+  primitive union and rejects it with `unknown primitive kind "image"`
 
 Shared style fields: `fill`/`stroke` as `{r,g,b,a}` (0..255 each),
 `strokeWidth` (positive pt, at most 10000), `dash` (pt segments),
@@ -110,11 +120,54 @@ Encoder-side contract details (all enforced, all tested):
 - the input is treated as read-only: primitives are never mutated
   (frozen primitives convert identically).
 
+`encodeDiagramDocument({source, title, pages, images})` applies the same
+contract to multi-page documents (any number of `pages`, each its own
+`{width, height, primitives}`), with embedded raster resources:
+
+- `pages`: 1..256 pages, at most 20000 primitives per page and 100000 per
+  document (the point/text volume caps apply document-wide). The manifest
+  carries one `"fixed"` view (`id: "pages"`) whose pages reference one
+  object part each.
+- `images`: an optional list of `{id, data}` resources — actual bounded
+  PNG or JPEG byte arrays, never URLs, paths, strings, SVG, GIF, BMP or
+  WebP: nothing is fetched, read or transcoded, and there is no need (or
+  allowance) for anything remote. Validation is structural, bounded and
+  read-only: the PNG chunk table must be complete inside the bytes (a
+  first 13-byte IHDR, at least one non-empty IDAT, a final IEND with no
+  trailing bytes, valid chunk lengths, sane bit-depth/color-type pairs),
+  and the JPEG segment table too (one frame header, a start of scan, at
+  least one entropy byte, an EOI that ends the file, all segment lengths
+  in range); truncated or truncated-looking data is rejected, not
+  embedded. CRCs and entropy data are not re-verified — the browser
+  decodes the very same bytes at draw time. Caps: 256 resources, 4 MiB
+  per image, 32 MiB of unique image bytes, 16384 px per side and 2^24
+  pixels per raster. IDs are 1..128 characters and unique; identical
+  bytes under several IDs are stored once.
+- reference integrity holds both ways: every image primitive resolves to
+  a resource, and every resource is drawn by at least one page
+  (unreferenced bytes never ship).
+- emitted shape: one `obj` part per page (`bdf-diagram` object, its image
+  table holds the 32-hex part names of the referenced rasters) plus one
+  `img` part per unique raster, all identity-encoded, part offsets
+  relative to the manifest end exactly as the core reader measures them.
+- image primitives wrap in their own `save`/`restore` block like every
+  other primitive: `opacity` maps to the alpha op, `angle`/`pivot` to the
+  rotation transform about the drawn rectangle's center (or the explicit
+  pivot), and the draw itself is the opset-1 image op (table index plus
+  x, y, w, h); the drawn rectangle must be positive, and the bounding
+  box uses the normalized, rotated AABB of that rectangle.
+- encoding stays deterministic (identical input → byte-identical bytes)
+  and read-only, and the same `DiagramEncodeError` codes
+  (`invalid-input`, `too-large`) classify every rejection.
+
 ### The independent reader
 
 `plugin/test/diagram-reader.mjs` opens encoded bytes with the upstream
 `@bdfkit/core` package (`parseHeader`, `BufferSource`,
-`BdfDocument`, `decodeObject`, `walk`) and returns decoded semantics:
+`BdfDocument`, `decodeObject`, `walk`) and returns decoded semantics
+(its multi-page counterpart `openDiagramDocument` additionally decodes
+every page's layers, per-page ops and a per-part byte accessor for
+verifying embedded `img` parts):
 header, manifest, view, page, layers, part entries, the object's tables,
 its inline paths, and a recorded op stream (`fillRect`, `strokePath`,
 `fillText`, `transform`, `alpha`, colors as 0xRRGGBBAA u32). The diagram
@@ -175,9 +228,19 @@ limitations* above for exactly what that means per format.
 
 ```sh
 node --test plugin/test/diagram-bdf.test.mjs      # shared encoder + reader
+node --test plugin/test/diagram-document.test.mjs # multi-page + image encoder
 node --test plugin/test/excalidraw.test.mjs      # Excalidraw adapter
 node --test plugin/test/mermaid.test.mjs         # Mermaid adapter
 ```
+
+The document encoder also has a real-Chromium render smoke
+(`node plugin/browser/diagram-render-smoke.mjs`, also
+`npm run test:plugin:diagram`): the browser encodes a 2-page document
+with two embedded synthetic PNGs, the upstream `@bdfkit` core opens the
+bytes and `@bdfkit/render`'s `PageRenderer` draws both pages, and pixel
+samples prove the images are visible at their rectangles (one of them
+half-transparent, one rotated). Raster fixtures are generated in-process
+from the PNG/JPEG specifications (`plugin/test/synthetic-image.mjs`).
 
 The tests verify decoded BDF semantics through an independent reader, so
 they assert rendering-level behavior (ops, colors, extents), not just byte

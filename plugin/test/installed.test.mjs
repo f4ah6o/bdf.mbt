@@ -39,6 +39,7 @@ if (!installed) {
     assert.equal(typeof excalidrawPlugin, "function");
     assert.equal(typeof mermaidPlugin, "function");
     assert.equal(typeof diagramBdf.encodeDiagram, "function");
+    assert.equal(typeof diagramBdf.encodeDiagramDocument, "function");
     assert.equal(typeof diagramBdf.DiagramEncodeError, "function");
   });
 

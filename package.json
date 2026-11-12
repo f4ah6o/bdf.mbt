@@ -142,6 +142,7 @@
     "test:office-extensions": "node compat/converter/office-extensions-test.mjs",
     "test:plugin": "node --test plugin/test/",
     "test:plugin:browser": "node plugin/browser/plugin-smoke.mjs",
+    "test:plugin:diagram": "node plugin/browser/diagram-render-smoke.mjs",
     "plugin:pack": "node plugin/tools/pack.mjs",
     "plugin:pack:dry-run": "node plugin/tools/pack.mjs --dry-run",
     "plugin:smoke": "node plugin/tools/smoke.mjs",
