@@ -86,6 +86,18 @@
 
 ### Fixed
 
+- DOCX character-unit indents now shape layout: a `w:ind` attribute of
+  `leftChars`/`rightChars`/`firstLineChars`/`hangingChars`
+  (hundredths of a character, `startChars`/`endChars` included) replaces
+  the corresponding point attribute scaled by the paragraph mark's font
+  size, the way upstream's `para.indents()` does — `hangingChars` pulls
+  the first line back, and an explicit zero or absent attribute keeps the
+  point (`w:left`/`w:right`/`w:firstLine`/`w:hanging`) value. First-line
+  origins, tab origins, wrap edges and the flow's re-based line starts
+  all use the scaled indents in the page and scroll layouts, and the
+  keepNext look-ahead sizes the next paragraph the same way;
+  documents without character-unit attributes lay out exactly as before.
+
 - PPTX connectors (`p:cxnSp`) are drawn: the slide tree admits them like
   `p:sp` shapes with their transforms, line styles, dashes and arrowheads,
   their placeholders are read through `p:nvCxnSpPr` the way upstream's

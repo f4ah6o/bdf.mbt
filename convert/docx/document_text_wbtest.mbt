@@ -395,3 +395,193 @@ test "DOCX bullet label drops mark underline, shading and highlight" {
   assert_eq(tab.props.underline, "none")
   assert_eq(paragraph.items[2].props.size, 10.0)
 }
+
+///|
+fn docx_indent_mark_size(paragraph : DocxTextParagraph) -> Double {
+  if paragraph.mark.size > 0.0 {
+    paragraph.mark.size
+  } else {
+    10.0
+  }
+}
+
+///|
+test "DOCX character-unit indents set exact line coordinates" {
+  // wordproc/inline.go indents(): hundredths of a character, scaled by the
+  // paragraph mark's size, replace the point attributes when set.
+  let walker = docx_mark_walker(
+    "<styles/>",
+    "<body><p><pPr><rPr><sz val=\"40\"/></rPr>" +
+    "<ind left=\"720\" leftChars=\"200\" right=\"1080\" rightChars=\"150\"" +
+    " firstLineChars=\"100\"/></pPr>" +
+    "<r><t>AAAA</t></r></p></body>",  // 20pt mark: left 40, right 30, first 20
+  )
+  let paragraph = walker.paragraphs[0]
+  assert_eq(paragraph.mark.size, 20.0)
+  let layout = docx_layout_paragraph(
+    paragraph.items,
+    paragraph.props,
+    120.0,
+    0.0,
+    docx_indent_mark_size(paragraph),
+    false,
+  )
+  assert_eq(layout.lines.length(), 1)
+  // The first line starts at left + first = 40 + 20 pt.
+  assert_eq(layout.lines[0].items[0].x, 60.0)
+  // Each plain 10pt 'A' advances 5.5pt.
+  assert_eq(layout.lines[0].items[1].x, 65.5)
+  assert_eq(layout.lines[0].items[3].x, 76.5)
+}
+
+///|
+test "DOCX rightChars narrows the wrap edge" {
+  // 1.5 characters of 20pt = 30pt of right indent: the line wraps at 42pt,
+  // after seven 5.5pt 'A's, and the next line restarts at the left indent.
+  let walker = docx_mark_walker(
+    "<styles/>",
+    "<body><p><pPr><rPr><sz val=\"40\"/></rPr><ind rightChars=\"150\"/></pPr>" +
+    "<r><t>AAAAAAAAA</t></r></p></body>",
+  )
+  let paragraph = walker.paragraphs[0]
+  let layout = docx_layout_paragraph(
+    paragraph.items,
+    paragraph.props,
+    72.0,
+    0.0,
+    docx_indent_mark_size(paragraph),
+    false,
+  )
+  assert_eq(layout.lines.length(), 2)
+  assert_eq(layout.lines[0].items.length(), 7)
+  assert_eq(layout.lines[0].items[6].x, 33.0)
+  assert_eq(layout.lines[1].items[0].x, 0.0)
+  assert_eq(layout.lines[1].items.length(), 2)
+}
+
+///|
+test "DOCX character-unit indents scale by the styled mark size" {
+  // The scale is the mark's resolved size: the paragraph style chain sets
+  // it, and a direct w:pPr/w:rPr wins over the style.
+  let styles = "<styles>" +
+    "<docDefaults><rPrDefault><rPr><sz val=\"20\"/></rPr></rPrDefault></docDefaults>" +
+    "<style type=\"paragraph\" styleId=\"p\"><rPr><sz val=\"40\"/></rPr></style>" +
+    "</styles>"
+  let walker = docx_mark_walker(
+    styles,
+    "<body>" +
+    "<p><pPr><pStyle val=\"p\"/><ind leftChars=\"100\"/></pPr>" +
+    "<r><t>A</t></r></p>" +
+    "<p><pPr><pStyle val=\"p\"/><ind leftChars=\"100\"/><rPr><sz val=\"60\"/></rPr></pPr>" +
+    "<r><t>A</t></r></p>" +
+    "</body>",
+  )
+  // 20pt from the paragraph style: one character of 20pt = 20pt.
+  let styled = walker.paragraphs[0]
+  assert_eq(styled.mark.size, 20.0)
+  let styled_layout = docx_layout_paragraph(
+    styled.items,
+    styled.props,
+    72.0,
+    0.0,
+    docx_indent_mark_size(styled),
+    false,
+  )
+  assert_eq(styled_layout.lines[0].items[0].x, 20.0)
+  // 30pt from the direct w:pPr/w:rPr beats the style.
+  let direct = walker.paragraphs[1]
+  assert_eq(direct.mark.size, 30.0)
+  let direct_layout = docx_layout_paragraph(
+    direct.items,
+    direct.props,
+    72.0,
+    0.0,
+    docx_indent_mark_size(direct),
+    false,
+  )
+  assert_eq(direct_layout.lines[0].items[0].x, 30.0)
+}
+
+///|
+test "DOCX hangingChars and mixed char/pt indent precedence" {
+  // A character-unit attribute replaces the point one; an explicit zero
+  // falls back to the point attribute (wordproc/inline.go != 0 guards).
+  let walker = docx_mark_walker(
+    "<styles/>",
+    "<body>" +
+    // leftChars 50 = half a 20pt mark (10pt) beats left 36pt.
+    "<p><pPr><ind left=\"720\" leftChars=\"50\"/><rPr><sz val=\"40\"/></rPr></pPr>" +
+    "<r><t>A</t></r></p>" +
+    // leftChars 0 keeps left 36pt.
+    "<p><pPr><ind left=\"720\" leftChars=\"0\"/><rPr><sz val=\"40\"/></rPr></pPr>" +
+    "<r><t>A</t></r></p>" +
+    // hangingChars 200 = -2 marks (20pt): the first line starts at -40pt.
+    "<p><pPr><ind hangingChars=\"200\"/><rPr><sz val=\"40\"/></rPr></pPr>" +
+    "<r><t>A</t></r></p>" +
+    // firstLineChars 0 keeps firstLine 18pt.
+    "<p><pPr><ind firstLine=\"360\" firstLineChars=\"0\"/><rPr><sz val=\"40\"/></rPr></pPr>" +
+    "<r><t>A</t></r></p>" +
+    // hangingChars 150 = -1.5 marks (30pt) over the 18pt first-line point.
+    "<p><pPr><ind firstLine=\"360\" hangingChars=\"150\"/><rPr><sz val=\"60\"/></rPr></pPr>" +
+    "<r><t>A</t></r></p>" +
+    "</body>",
+  )
+  let expected = [10.0, 36.0, -40.0, 18.0, -45.0]
+  for i in 0..<expected.length() {
+    let paragraph = walker.paragraphs[i]
+    let layout = docx_layout_paragraph(
+      paragraph.items,
+      paragraph.props,
+      120.0,
+      0.0,
+      docx_indent_mark_size(paragraph),
+      false,
+    )
+    assert_eq(
+      layout.lines[0].items[0].x,
+      expected[i],
+      msg="indent paragraph \\{i}",
+    )
+  }
+}
+
+///|
+test "DOCX point-only indents keep their coordinates" {
+  // No character-unit attributes: the point attributes keep doing exactly
+  // what they did before the character-unit wiring.
+  let walker = docx_mark_walker(
+    "<styles/>",
+    "<body><p><pPr><ind left=\"720\" firstLine=\"360\" right=\"540\"/></pPr>" +
+    "<r><t>AAAAAAAA</t></r></p>" +
+    "<p><r><t>A</t></r></p>" +
+    "</body>",
+  )
+  let indented = walker.paragraphs[0]
+  let indented_layout = docx_layout_paragraph(
+    indented.items,
+    indented.props,
+    120.0,
+    0.0,
+    docx_indent_mark_size(indented),
+    false,
+  )
+  // 36pt left + 18pt first line; the wrap edge sits at 120 - 27 = 93pt, so
+  // the seventh A (ending at 92.5pt) fits and the eighth starts line two at
+  // the 36pt left indent.
+  assert_eq(indented_layout.lines.length(), 2)
+  assert_eq(indented_layout.lines[0].items.length(), 7)
+  assert_eq(indented_layout.lines[0].items[0].x, 54.0)
+  assert_eq(indented_layout.lines[0].items[6].x, 87.0)
+  assert_eq(indented_layout.lines[1].items.length(), 1)
+  assert_eq(indented_layout.lines[1].items[0].x, 36.0)
+  let plain = walker.paragraphs[1]
+  let plain_layout = docx_layout_paragraph(
+    plain.items,
+    plain.props,
+    120.0,
+    0.0,
+    docx_indent_mark_size(plain),
+    false,
+  )
+  assert_eq(plain_layout.lines[0].items[0].x, 0.0)
+}
