@@ -57,6 +57,10 @@
 
 ### Fixed
 
+- draw.io open-arrow markers now draw a V with the configured stroke width and
+  shorten the connecting line to match upstream; other marker types and routing
+  are unchanged.
+
 - draw.io labels now honor directional spacing, including AWS group-label icon clearance,
   block-spacing suppression, rotated content bounds, and exhausted-width wrapping.
 
