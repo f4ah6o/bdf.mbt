@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import { xlsx_parse_format, xlsx_select_format, xlsx_format_layouts } from '../../_build/js/debug/build/compat/xlsx/xlsx.js';
-const cases = JSON.parse(await readFile(new URL('./formats.json', import.meta.url)));
+import { loadFixture } from './fixtures.mjs';
+const cases = await loadFixture('./formats.json');
 for (const [i, c] of cases.entries()) {
   assert.deepEqual(JSON.parse(xlsx_parse_format(c.code)), c.want, `format case ${i}: ${c.code}`);
   assert.deepEqual(JSON.parse(xlsx_format_layouts(c.code)), c.layouts, `format layout ${i}: ${c.code}`);

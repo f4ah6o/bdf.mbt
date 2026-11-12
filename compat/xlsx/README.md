@@ -238,6 +238,47 @@ Conditional rules that reference absent differential styles contribute no format
 font and uses its advances and line metrics; the Worker uses the first face of
 a supplied font directory in this mode.
 
+## Fixture storage
+
+Fixture files no longer embed their input XLSX and expected BDF as base64
+text. A fixture is now a manifest: `{"format":"bdf-xlsx-fixture","version":1,
+"blobs":N,"root":<the old JSON value with large base64 strings replaced by
+`{"$blob":"<sha256>"}` markers>}`. The decoded bytes of every marker live once
+in [store/](store/), deduplicated across all fixtures: 256 gzip packs
+(`store/aa.pk`) plus offset indexes (`store/aa.idx`, with the group keyed by
+the first hash byte). Cases, case order, options, warnings and short values
+stay inline, so `git diff` on a fixture still shows which case changed.
+
+- `compat/xlsx/fixtures.mjs` loads fixtures: `loadFixture()` returns exactly
+  what `JSON.parse` used to return for the old files, packed or plain. All
+  verifiers, probes and the visual HTTP server go through it. Every blob
+  slice is hashed on access, so a missing pack, a corrupt stream, a bad
+  offset or an edited hash fails with an explicit error instead of a
+  misleading comparison mismatch.
+- `node compat/xlsx/tools/fixture-store-test.mjs` covers those failure modes
+  and runs first in `npm run test:xlsx-compat`.
+- To regenerate a fixture, run the upstream Go generator as described above
+  (it writes a plain fixture file), re-run the affected verifier (plain
+  fixtures load unchanged), then `node compat/xlsx/tools/pack-fixtures.mjs`
+  to pack. A full run is canonical: it drops blobs nothing references and
+  removes store groups nothing references. `--files a.json,b.json` is the
+  partial form: it merges the named fixtures' new blobs into the existing
+  packs and re-verifies every carried blob, so other fixtures' blobs can
+  never be lost, but run a full pack afterwards to restore the canonical
+  blob order. `--unpack [--files ...]` writes fixtures back out in their
+  plain form for diffing or for tools that expect plain JSON - the inverse
+  of packing and a no-op on already-plain fixtures.
+  `--check` verifies integrity, packing completeness and absence of
+  unreferenced blobs.
+- `node compat/xlsx/tools/fixture-equivalence.mjs --base <commit>` proves a
+  stored tree restores every case byte-for-byte against a plain-form commit
+  (used to validate this migration; needs the git history, so it is not part
+  of the standard suite).
+- `node compat/xlsx/tools/measure-fixtures.mjs` reports per-file sizes,
+  duplication and storage alternatives; the 2026-11-12 baseline that chose
+  this format and its measurements are recorded in
+  [docs/xlsx-fixture-storage.md](../../docs/xlsx-fixture-storage.md).
+
 ## Real-workbook plain conversion
 
 `convert_plain_no_fonts` now accepts the four upstream testdata workbooks

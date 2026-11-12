@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { isDeepStrictEqual } from 'node:util';
-import { readFile, readdir } from 'node:fs/promises';
+import { readdir } from 'node:fs/promises';
 import { BdfDocument, BufferSource, decodeObject, walk, NoopSink } from '@bdfkit/core';
 import { xlsx_render_basic, xlsx_render_warnings } from '../../_build/js/debug/build/compat/xlsx/xlsx.js';
+import { loadFixture } from './fixtures.mjs';
 
 // Fast probe for the XLSX conditional-format fixtures: compares the BDF the
 // converter renders against the expected BDF of the fixture, and prints the
@@ -158,7 +159,7 @@ if (files.length === 0) {
 }
 let totalDiffer = 0;
 for (const file of files) {
-  const cases = JSON.parse(await readFile(new URL(`./${file}`, import.meta.url)));
+  const cases = await loadFixture(`./${file}`);
   const differences = [];
   let compared = 0;
   let unsupported = 0;
