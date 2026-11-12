@@ -157,7 +157,9 @@ export function createFormatRegistry({ plugins = [], source = "registry" } = {})
   // all get the same report instead of disposing again.
   function disposeOnce(reason) {
     if (disposalPromise === null) {
-      disposalPromise = (async () => {
+      // Publish the shared completion before invoking any plugin cleanup.
+      // Registration closes immediately; cleanup starts on the next microtask.
+      disposalPromise = Promise.resolve().then(async () => {
         const outcomes = [];
         for (const registration of ordered) {
           const { dispose } = registration.plugin;
@@ -174,7 +176,7 @@ export function createFormatRegistry({ plugins = [], source = "registry" } = {})
           outcomes.push(outcome);
         }
         return { reason, outcomes };
-      })();
+      });
     }
     return disposalPromise;
   }

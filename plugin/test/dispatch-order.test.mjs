@@ -258,3 +258,28 @@ test("an accepted open whose result is malformed is cleaned up once under immedi
   assert.equal(report.dropped[0].id, 2);
   assert.match(report.dropped[0].error, /malformed output/);
 });
+
+
+for (const scenario of [
+  { label: "invalid input", data: null, options: {}, expected: /input data/ },
+  { label: "invalid options", data: new Uint8Array(0), options: { pages: "1" }, expected: /page selection/ },
+  { label: "detector failure", data: new Uint8Array(0), options: {}, expected: /synthetic detector failure/ },
+]) {
+  test(`immediate disposal retains accepted preparation failure: ${scenario.label}`, async () => {
+    const { host, transport } = makeHost({
+      apiVersion: 1, name: "preparation", description: "synthetic preparation",
+      detect: () => { throw new Error("synthetic detector failure"); },
+      convert: () => { throw new Error("conversion must not run"); },
+    });
+    await host.handle({ type: "init" });
+    const pending = host.handle({ type: "convert", id: 91, data: scenario.data, options: scenario.options });
+    const report = await host.dispose("external teardown");
+    await pending;
+    assert.equal(repliesTo(transport, 91).length, 0);
+    assert.equal(report.dropped.length, 1);
+    assert.equal(report.dropped[0].name, "", "no plugin was selected");
+    assert.equal(report.dropped[0].id, 91);
+    assert.equal(report.dropped[0].type, "convert");
+    assert.match(report.dropped[0].error, scenario.expected);
+  });
+}

@@ -400,11 +400,13 @@ export function createConverterHost({
   }
 
   async function runConvertOrOpen(request) {
-    const bytes = toBytes(request.data);
-    const options = parseOptions(request.options);
-    const { plugin, via } = registry.detect(bytes, options.name, options.format);
+    let plugin = null;
     try {
-      await convertOrOpen(request, { bytes, options, plugin, via });
+      const bytes = toBytes(request.data);
+      const options = parseOptions(request.options);
+      const selected = registry.detect(bytes, options.name, options.format);
+      plugin = selected.plugin;
+      await convertOrOpen(request, { bytes, options, plugin, via: selected.via });
     } catch (error) {
       if (disposed) {
         // the disposal has taken the reply channel: the report keeps the
@@ -412,7 +414,7 @@ export function createConverterHost({
         // reply — named, typed and numbered so two racing calls that both
         // fail stay distinguishable
         droppedCalls.push({
-          name: plugin.name,
+          name: plugin?.name ?? "", // selection may itself have failed
           type: request.type,
           id: Number(request.id),
           error: errorText(error),

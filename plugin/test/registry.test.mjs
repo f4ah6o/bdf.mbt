@@ -351,3 +351,28 @@ test("registering after the registry disposal is refused, not silently lost", as
   assert.equal(registry.length, 1, "the late registration was refused");
   assert.deepEqual(disposed, ["first"], "the late plugin is never disposed: it was never admitted");
 });
+
+
+test("registry disposal publishes its completion before deferred cleanup", async () => {
+  const events = [];
+  const registry = createFormatRegistry({ plugins: [{
+    apiVersion: 1,
+    name: "cleanup",
+    description: "test cleanup ordering",
+    convert: async () => ({ bdf: new Uint8Array(0), summary: "" }),
+    dispose: () => { events.push("disposed"); },
+  }] });
+  const first = registry.dispose("first");
+  assert.deepEqual(events, [], "cleanup starts only after the completion is published");
+  assert.equal(registry.dispose("second"), first);
+  assert.throws(() => registry.register({
+    apiVersion: 1, name: "late", description: "late",
+    convert: async () => ({ bdf: new Uint8Array(0), summary: "" }),
+  }), /registry is disposed/);
+  const report = await first;
+  assert.deepEqual(events, ["disposed"]);
+  assert.equal(report.reason, "first");
+  assert.equal(report.outcomes.length, 1);
+  assert.equal(report.outcomes[0].ok, true);
+  assert.equal(registry.dispose("third"), first);
+});
