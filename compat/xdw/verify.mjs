@@ -1,6 +1,6 @@
 // Local-only capture verification. Never fetches samples or approves baselines.
 import { readFileSync, realpathSync, statSync } from 'node:fs';
-import { resolve, dirname, relative, isAbsolute } from 'node:path';
+import { resolve, dirname, relative, isAbsolute, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { PNG } from 'pngjs';
@@ -9,13 +9,16 @@ const need = (ok, message) => { if (!ok) throw new Error(message); };
 const nonempty = x => typeof x === 'string' && x.trim().length > 0;
 const hash = x => typeof x === 'string' && /^[a-f0-9]{64}$/.test(x);
 const positive = x => Number.isSafeInteger(x) && x > 0;
-function localFile(root, name) {
+export function localPath(root, name) {
   need(nonempty(name) && !isAbsolute(name), 'file path must be relative');
   const file = realpathSync(resolve(root, name));
   const rel = relative(realpathSync(root), file);
-  need(rel !== '..' && !rel.startsWith('../') && !isAbsolute(rel), 'file escapes artifact directory');
+  need(rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel), 'file escapes artifact directory');
   need(statSync(file).size <= 64 * 1024 * 1024, 'file exceeds 64 MiB verification limit');
-  return readFileSync(file);
+  return file;
+}
+function localFile(root, name) {
+  return readFileSync(localPath(root, name));
 }
 function readCapture(file, role, documents) {
   const root = dirname(resolve(file));
@@ -25,7 +28,11 @@ function readCapture(file, role, documents) {
   need(Number.isFinite(Date.parse(capture.createdAt)), `${role}: invalid createdAt`);
   need(positive(capture.dpi), `${role}: invalid dpi`);
   if (role === 'oracle') need(capture.engine === 'DocuWorks' || capture.engine === 'DocuWorks Viewer Light', 'oracle must identify genuine DocuWorks');
-  else need(capture.engine === 'bdf.mbt' && /^[a-f0-9]{40}$/.test(capture.commit), 'candidate requires bdf.mbt and full commit SHA');
+  else {
+    need(capture.engine === 'bdf.mbt' && /^[a-f0-9]{40}$/.test(capture.commit), 'candidate requires bdf.mbt and full commit SHA');
+    need(capture.status === 'CAPTURED', 'candidate capture status must be CAPTURED');
+    need(typeof capture.dirty === 'boolean', 'candidate capture must record dirty as a boolean');
+  }
   need(Array.isArray(capture.pages), `${role}: pages missing`);
   const pages = new Map();
   for (const p of capture.pages) {
@@ -114,7 +121,7 @@ export function verify({ corpusFile, oracleFile, candidateFile }) {
     const textEqual = before.text === after.text;
     results.push({ page: key, changedPixels: changed, ratio, textEqual, pass: ratio <= t.maxChangedRatio && textEqual });
   }
-  return { status: results.every(p => p.pass) ? 'PASS' : 'FAIL', documents: docs.size, comparedPages: results.length, thresholds: t, thresholdRationale: corpus.thresholdRationale, oracle: { engine: oracle.engine, version: oracle.version, fonts: oracle.fonts, platform: oracle.platform }, candidate: { commit: candidate.commit, version: candidate.version, fonts: candidate.fonts, platform: candidate.platform }, results };
+  return { status: results.every(p => p.pass) ? 'PASS' : 'FAIL', documents: docs.size, comparedPages: results.length, thresholds: t, thresholdRationale: corpus.thresholdRationale, oracle: { engine: oracle.engine, version: oracle.version, fonts: oracle.fonts, platform: oracle.platform }, candidate: { commit: candidate.commit, version: candidate.version, fonts: candidate.fonts, platform: candidate.platform, status: candidate.status, dirty: candidate.dirty }, results };
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const [corpusFile, oracleFile, candidateFile] = process.argv.slice(2);
