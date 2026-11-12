@@ -31,6 +31,11 @@ struct PdfResources {
   mut fallback_index : Int32
   /// The characters that no font of the document could draw.
   missing : Map[Int32, Bool]
+  /// The characters that the PDF standard font drew as "?": a run without
+  /// a font of its own draws it, and a character outside its codeset —
+  /// Japanese, an accented letter, a control code — becomes a "?" that
+  /// the writer reports instead of hiding.
+  missing_std : Map[Int32, Bool]
 }
 
 ///|
@@ -47,6 +52,7 @@ fn PdfResources::new(writer : PdfWriter) -> PdfResources {
     fallback_parsed: None,
     fallback_index: -1,
     missing: Map([]),
+    missing_std: Map([]),
   }
 }
 
@@ -179,7 +185,7 @@ fn PdfResources::encode_text(
     if self.fallback_parsed is Some(_) {
       return self.fallback_text(text)
     }
-    return (name, standard_text(text), 0, -1)
+    return (name, standard_text(text, self.missing_std), 0, -1)
   }
   let pdf_font = self.fonts[index]
   let (encoded, width) = self.glyph_text(pdf_font, text)
@@ -308,12 +314,12 @@ fn PdfResources::fallback_text(
 ) -> (String, String, Int32, Int32) {
   let parsed = match self.fallback_parsed {
     Some(parsed) => parsed
-    None => return (self.standard_font(), standard_text(text), 0, -1)
+    None => return (self.standard_font(), standard_text(text, self.missing_std), 0, -1)
   }
   if self.fallback_index < 0 {
     let program = match self.fallback {
       Some(program) => program
-      None => return (self.standard_font(), standard_text(text), 0, -1)
+      None => return (self.standard_font(), standard_text(text, self.missing_std), 0, -1)
     }
     let name = "F" + self.fonts.length().to_string()
     let font_ref = self.writer.reserve()
@@ -342,6 +348,24 @@ fn PdfResources::fallback_text(
 fn PdfResources::missing_text(self : PdfResources) -> String {
   let out = StringBuilder()
   let codes = self.missing.keys().collect()
+  codes.sort()
+  for index, code in codes {
+    if index >= 16 {
+      out.write_string("…")
+      break
+    }
+    out.write_char(code.unsafe_to_char())
+  }
+  out.to_string()
+}
+
+///|
+/// The characters that the PDF standard font wrote as "?", for a warning:
+/// a run without a font of its own draws it, and without a readable
+/// fallback font it has no glyph for the characters beyond its codeset.
+fn PdfResources::missing_standard_text(self : PdfResources) -> String {
+  let out = StringBuilder()
+  let codes = self.missing_std.keys().collect()
   codes.sort()
   for index, code in codes {
     if index >= 16 {
@@ -653,11 +677,18 @@ fn stream_body(extra : String, data : Bytes) -> Bytes {
 }
 
 ///|
-fn standard_text(text : String) -> String {
+///|
+/// The text of the PDF standard font: a character outside its codeset
+/// becomes a "?", and the replacement is recorded so that the writer can
+/// warn about it: a silent loss would be mistaken for a complete write.
+fn standard_text(text : String, missing : Map[Int32, Bool]) -> String {
   let out = StringBuilder()
   out.write_string("(")
   for ch in text {
     let code = ch.to_int()
+    if code < 32 || code > 126 {
+      missing[code] = true
+    }
     let c = if code < 32 || code > 126 { '?' } else { ch }
     if c == '\\' || c == '(' || c == ')' {
       out.write_char('\\')
