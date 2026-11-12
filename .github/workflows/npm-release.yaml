@@ -67,7 +67,7 @@ jobs:
       - name: Build public JS bundles
         run: >-
           moon build browser render_worker native_converter_worker form_page
-          plugin/moonbit/docuworks_js --target js --release
+          export/pdf_js plugin/moonbit/docuworks_js --target js --release
       - name: Pack release artifact
         env:
           VERSION: ${{ steps.release_version.outputs.version }}
