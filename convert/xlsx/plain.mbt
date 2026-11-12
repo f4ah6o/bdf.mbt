@@ -2973,8 +2973,10 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   if styled_runs {
     rows = xlsx_apply_plain_run_fonts(rows, styles, rich_cells)
   }
-  let visible_cols = xlsx_column_runs(geo, col_count, 7.0)
-  let all_cols = xlsx_column_runs(geo, 16384, 7.0)
+  let theme = workbook.package.theme_fonts(workbook.part)
+  let mdw = xlsx_default_font_mdw(styles, theme, locale.script, font)
+  let visible_cols = xlsx_column_runs(geo, col_count, mdw)
+  let all_cols = xlsx_column_runs(geo, 16384, mdw)
   let widths : Array[Double] = []
   for run in all_cols {
     for _ in 0..<run.count {
@@ -3001,6 +3003,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     default_size,
     rich_cells,
     layout_base_sizes,
+    mdw,
   )
   let heights : Array[@sheet.Run] = xlsx_row_runs(
     layout_rows,
@@ -3031,7 +3034,6 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
   let rotations : Map[Int32, Map[Int32, Int32]] = Map([])
   let font_families : Map[Int32, Map[Int32, String]] = Map([])
   let east_asian_fonts : Map[Int32, Map[Int32, String]] = Map([])
-  let theme = workbook.package.theme_fonts(workbook.part)
   let borders : Map[Int32, Map[Int32, @sheet.GridCellBorder]] = Map([])
   let diagonals : Map[Int32, Map[Int32, @sheet.GridCellDiagonal]] = Map([])
   let border_colors : Map[Int32, Map[Int32, Array[UInt32]]] = Map([])
@@ -3151,6 +3153,7 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
       let indent = xlsx_plain_indent(
         styles.cell_formats[format_index].alignment,
         cell.kind,
+        mdw,
       )
       let (border, colors) = match border_cache.get(format_index) {
         Some(border) => border
@@ -3812,9 +3815,9 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     column_axis_default=Some(
       Float::from_double(
         if geo.default_column_width > 0.0 {
-          xlsx_col_width_points(geo.default_column_width, 7.0)
+          xlsx_col_width_points(geo.default_column_width, mdw)
         } else {
-          ((geo.base_column_width * 7.0 + 5.0) / 8.0).ceil() * 8.0 * 0.75
+          ((geo.base_column_width * mdw + 5.0) / 8.0).ceil() * 8.0 * 0.75
         },
       ),
     ),
@@ -4602,6 +4605,7 @@ fn xlsx_plain_fitted_rows(
   default_size : Double,
   rich_cells : Map[Int32, Map[Int32, XlsxPlainRun]],
   layout_base_sizes : Map[Int32, Map[Int32, Double]],
+  mdw : Double,
 ) -> Map[Int32, Double] {
   let result : Map[Int32, Double] = Map([])
   for row in rows {
@@ -4631,6 +4635,7 @@ fn xlsx_plain_fitted_rows(
       let indent = xlsx_plain_indent(
         styles.cell_formats[format_index].alignment,
         cell.kind,
+        mdw,
       )
       if styles.cell_formats[format_index].alignment.wrap {
         if xlsx_plain_format_cell(
@@ -4770,7 +4775,9 @@ fn xlsx_plain_fitted_rows(
 }
 
 ///|
-fn xlsx_plain_indent(alignment : XlsxAlignment, kind : Int32) -> Double {
+/// The left space one indent level adds: about a character and a half of
+/// the default font (`mdw+3` pixels, as upstream's `indentStep`).
+fn xlsx_plain_indent(alignment : XlsxAlignment, kind : Int32, mdw : Double) -> Double {
   let horizontal = alignment.horizontal
   if alignment.indent > 0 &&
     (
@@ -4778,7 +4785,7 @@ fn xlsx_plain_indent(alignment : XlsxAlignment, kind : Int32) -> Double {
       horizontal == "right" ||
       (horizontal == "general" && (kind == 1 || kind == 2))
     ) {
-    alignment.indent.to_double() * 7.5
+    alignment.indent.to_double() * (mdw + 3.0) * 0.75
   } else {
     0.0
   }
