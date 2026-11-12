@@ -88,7 +88,7 @@ export function verify({ corpusFile, oracleFile, candidateFile }) {
   need(nonempty(corpus.thresholdRationale), 'threshold rationale required');
   const docs = new Map();
   for (const d of corpus.documents) {
-    need(/^[A-Za-z0-9_-]+$/.test(d.id) && !docs.has(d.id), 'invalid or duplicate document id');
+    need(typeof d.id === 'string' && /^[A-Za-z0-9_-]+$/.test(d.id) && !docs.has(d.id), 'invalid or duplicate document id');
     need(hash(d.sha256) && positive(d.pages), `${d.id}: invalid hash/pages`);
     need(d.access === 'public' && nonempty(d.source) && /^https:\/\//.test(d.source) && nonempty(d.licenseNotes), `${d.id}: public provenance/license notes required`);
     need(Array.isArray(d.blankPages) && new Set(d.blankPages).size === d.blankPages.length && d.blankPages.every(p => positive(p) && p <= d.pages), `${d.id}: invalid blank page declaration`);

@@ -24,6 +24,8 @@ function fixture(t) {
 test('identical synthetic evidence passes and counts every page', t => { const f = fixture(t); assert.equal(f.run().status, 'PASS'); assert.equal(f.run().comparedPages, 1); });
 test('missing oracle is NOT_RUN and CLI exits 2', t => { const f = fixture(t); f.save(); assert.equal(verify({ corpusFile: f.paths.corpusFile }).status, 'NOT_RUN'); const r = spawnSync(process.execPath, ['compat/xdw/verify.mjs', f.paths.corpusFile], { encoding: 'utf8' }); assert.equal(r.status, 2); assert.equal(JSON.parse(r.stdout).status, 'NOT_RUN'); });
 const invalid = [
+  ['missing document id', f => delete f.corpus.documents[0].id, /document id/],
+  ['numeric document id', f => f.corpus.documents[0].id = 123, /document id/],
   ['empty corpus', f => f.corpus.documents = [], /at least/],
   ['wrong document count', f => f.corpus.expectedDocuments = 2, /document count/],
   ['wrong total page count', f => f.corpus.expectedPages = 2, /page count/],
@@ -68,4 +70,25 @@ test('interlaced PNG rejected before the unbounded decoder branch', t => {
   writeFileSync(join(f.root, 'interlaced.png'), b);
   Object.assign(f.candidate.pages[0], { image: 'interlaced.png', sha256: sha256(b) });
   assert.throws(f.run, /interlaced/);
+});
+
+// Deterministic generated cases: pixel count and boundary thresholds must agree
+// with the known mutation count, independently of file encoding.
+test('generated pixel mutations obey exact threshold boundaries', t => {
+  for (let count = 1; count <= 15; count++) {
+    const f = fixture(t);
+    for (let p = 1; p <= count; p++) f.png.data[p * 4] = 0;
+    const b = PNG.sync.write(f.png);
+    writeFileSync(join(f.root, 'changed.png'), b);
+    Object.assign(f.candidate.pages[0], { image: 'changed.png', sha256: sha256(b) });
+    f.corpus.thresholds.maxChangedRatio = count / 16;
+    const accepted = f.run();
+    assert.equal(accepted.results[0].changedPixels, count);
+    assert.equal(accepted.status, 'PASS');
+    f.corpus.thresholds.maxChangedRatio = (count - 0.5) / 16;
+    assert.equal(f.run().status, 'FAIL');
+    f.corpus.thresholds.maxChangedRatio = count / 16;
+    f.candidate.pages[0].text = 'different';
+    assert.equal(f.run().status, 'FAIL');
+  }
 });
