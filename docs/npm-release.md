@@ -50,10 +50,20 @@ Configure the package's npm Trusted Publisher with:
 The workflow does not create that account-level trust configuration.
 The current npm trust CLI requires an existing package and account 2FA;
 local `(p)npm login` does not configure OIDC. If the package does not yet
-exist, complete the first authorized bootstrap release using the maintainer's
-login before configuring Trusted Publishing for later releases. Do not put
-that credential into GitHub secrets or this repository. Use the real reviewed
-CalVer artifact, not an empty name-reservation package.
+exist, one bootstrap option is the first authorized release of the real,
+reviewed CalVer artifact using the maintainer's login, followed by trust setup.
+Do not put that credential into GitHub secrets or this repository.
+
+Alternatively, [npm staged publishing](https://docs.npmjs.com/staged-publishing/)
+can submit the real artifact for later approval. For a new package, npm creates
+a **public placeholder version `0.0.0-stage`** while keeping the staged contents
+unavailable until a maintainer approves them with 2FA. This requires npm 11.15.0
+or newer and Node 22.14.0 or newer. The resulting package exists for subsequent
+trust configuration, although this bootstrap sequence must still be verified
+against the actual account. It is not a private dry run or pre-registration:
+the placeholder is a public registry change and must not be created before
+publication is authorized. No bootstrap or trust-setting command is run by
+this repository's release preparation.
 
 After first publication, configure trust and validate its first successful
 OIDC publish within npm's current two-day setup window. Consult npm's
