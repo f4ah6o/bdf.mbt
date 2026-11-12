@@ -1953,7 +1953,7 @@ const largeBorder = Buffer.from(await loadFixture('./base-border-too-large.json'
 assertRejected(largeBorder, 'none', true, 'oversized base borders must be rejected', /row or column border exceeds the supported view size/);
 // cells.json[0] used to be rejected but its styles are supported now; the
 // remaining unsupported style fixtures below still assert rejection.
-const styled = await loadFixture('./cells.json')[0];
+const styled = (await loadFixture('./cells.json'))[0];
 assert.ok(renderResult(Buffer.from(styled.input, 'base64'), 'none', true).bdf);
 const autoHeight = await loadFixture('./auto-height.json');
 assert.ok(renderResult(Buffer.from(autoHeight, 'base64'), 'none', true).bdf, 'nondefault font sizes on auto-height rows must convert');
