@@ -42,6 +42,8 @@ class RecordingSink extends NoopSink {
   strokePath(index) { this.ops.push({ op: "strokePath", args: [index] }); }
   fillText(text, x, y, advance) { this.ops.push({ op: "fillText", args: [text, x, y, advance] }); }
   strokeText(text, x, y, advance) { this.ops.push({ op: "strokeText", args: [text, x, y, advance] }); }
+  image(img, x, y, w, h) { this.ops.push({ op: "image", args: [img, x, y, w, h] }); }
+  imageSub(img, sx, sy, sw, sh, dx, dy, dw, dh) { this.ops.push({ op: "imageSub", args: [img, sx, sy, sw, sh, dx, dy, dw, dh] }); }
   clipRect(x, y, w, h) { this.ops.push({ op: "clipRect", args: [x, y, w, h] }); }
 }
 
@@ -97,5 +99,52 @@ export async function openDiagram(bytes) {
     objects,
     paths,
     ops,
+  };
+}
+
+///|
+// Open a multi-page diagram document BDF file (the output of
+// encodeDiagramDocument) and decode its full semantic surface: header,
+// manifest JSON, the single fixed view, every page in order with its
+// object part (tables, inline paths, recorded ops per page), and a
+// part-bytes accessor for verifying embedded img parts against their
+// manifest entries. Throws whatever @bdfkit/core throws on malformed
+// input, exactly like openDiagram.
+export async function openDiagramDocument(bytes) {
+  const header = parseHeader(bytes);
+  const document = await BdfDocument.open(new BufferSource(bytes));
+  const manifest = document.manifest;
+  if (!Array.isArray(manifest.views) || manifest.views.length < 1) {
+    throw new Error("diagram-reader: manifest has no views");
+  }
+  const view = manifest.views[0];
+  const pages = [];
+  for (const page of view.pages ?? []) {
+    const pageObjects = [];
+    const paths = [];
+    const ops = [];
+    for (const layer of page.layers ?? []) {
+      const hash = layer.obj;
+      const entry = document.entry(hash);
+      const object = decodeObject(await document.part(hash));
+      pageObjects.push({ hash, entry, object });
+      for (const path of object.paths) {
+        if (path.inline) {
+          paths.push({ verbs: path.inline.verbs, args: path.inline.args });
+        } else {
+          paths.push({ hash: path.hash, index: path.index });
+        }
+      }
+      walk(object, new RecordingSink(ops));
+    }
+    pages.push({ page, objects: pageObjects, paths, ops });
+  }
+  return {
+    header,
+    manifest,
+    view,
+    pages,
+    parts: manifest.parts,
+    part: hash => document.part(hash),
   };
 }

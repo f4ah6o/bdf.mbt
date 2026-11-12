@@ -18,10 +18,17 @@
 //            varuint path table (inline: kind byte 0 + varuint verb count +
 //            verbs + f32 coordinates), varuint paint table, varuint font
 //            table (kind 1 system: family string, u16 weight, u8 style),
-//            varuint image hashes, varuint child hashes, varuint ops length +
-//            ops bytes
-// The manifest exposes one "fixed" view with one page and one "content"
-// layer that references the object part.
+//            varuint image table (16 raw bytes per hash), varuint child
+//            hashes, varuint ops length + ops bytes
+//   image op: opcode 0x40, varuint image-table index, x/y/w/h as f32, per
+//            core/object_builder_draw.mbt and render/render.mbt; the image
+//            table lists the 32-hex-char names of "img" parts
+//   Multi-page documents store one obj part per page plus one "img" part
+//   per unique embedded raster, with part offsets RELATIVE to the manifest
+//   end (core/container.mbt reads parts from manifest_offset + manifest_length).
+// The manifest exposes one "fixed" view: single-diagram encoding pins it to
+// one page and one "content" layer that references the object part; the
+// document encoder emits the same shape with one page per input page.
 //
 // Contract guarantees the tests hold it to:
 //   * every primitive is wrapped in save/restore, so stroke width, dash,
@@ -34,10 +41,29 @@
 //     baseline-aware text bands (estimated advance, CJK overridable), the
 //     rotated AABB about the rotation pivot, and strokeWidth padding;
 //   * aggregate caps (points, text volume) are checked before emission, so
-//     a bounded input can never cause unbounded amplification.
+//     a bounded input can never cause unbounded amplification;
+//   * document encoding is bounded the same way: pages, resources, total
+//     image bytes and document-wide primitive volume are capped up front,
+//     and embedded images must be actual PNG or JPEG byte arrays (never
+//     URLs, paths or SVG), content-deduplicated and referenced both ways.
 
 export const BDF_MAX_PAGE_UNITS = 16777216; // 1 << 24, the reader's page-side cap
 export const MAX_PRIMITIVES = 20000;
+/** Per-document page cap of encodeDiagramDocument. */
+export const MAX_PAGES = 256;
+/** Document-wide primitive cap of encodeDiagramDocument (per page: MAX_PRIMITIVES). */
+export const MAX_DOCUMENT_PRIMITIVES = 100000;
+/** Per-document embedded-image resource count cap. */
+export const MAX_IMAGE_RESOURCES = 256;
+/** Per-image byte cap for embedded resources. */
+export const MAX_IMAGE_BYTES = 4194304; // 4 MiB
+/** Document-wide cap on the bytes of unique embedded images (deduplicated). */
+export const MAX_TOTAL_IMAGE_BYTES = 33554432; // 32 MiB
+/** Per-side raster pixel cap for embedded images. */
+export const MAX_IMAGE_SIDE = 16384;
+/** Raster pixel product cap for embedded images. */
+export const MAX_IMAGE_PIXELS = 16777216; // 1 << 24
+const MAX_IMAGE_ID_CHARS = 128;
 const MAX_COORD_ABS = 1e6;
 const MAX_ANGLE_ABS = 1e6;
 const MAX_STROKE_WIDTH = 10000;
@@ -244,6 +270,7 @@ const OP = {
   FILL_RECT: 0x20, STROKE_RECT: 0x21,
   FILL_PATH: 0x22, STROKE_PATH: 0x23,
   FILL_TEXT: 0x30,
+  IMAGE: 0x40,
 };
 const FILL_RULE_NONZERO = 0;
 
@@ -322,6 +349,27 @@ function styleOf(prim) {
   return style;
 }
 
+// Image primitives carry no paint of their own: fill/stroke/dash/strokeWidth
+// are rejected outright (silently ignoring them would hide adapter bugs),
+// while opacity, angle and pivot behave exactly as for shapes.
+function imageStyleOf(prim) {
+  for (const field of ["fill", "stroke", "dash", "strokeWidth"]) {
+    if (prim[field] !== undefined && prim[field] !== null) {
+      throw new DiagramEncodeError(`image primitives do not take a ${field}`, "invalid-input");
+    }
+  }
+  const style = { fill: null, stroke: null, strokeWidth: 2, dash: null };
+  style.opacity = prim.opacity === undefined ? 1 : prim.opacity;
+  if (typeof style.opacity !== "number" || !Number.isFinite(style.opacity) || style.opacity < 0 || style.opacity > 1) {
+    throw new DiagramEncodeError("opacity must be a number in 0..1", "invalid-input");
+  }
+  style.angle = prim.angle === undefined ? 0 : prim.angle;
+  if (typeof style.angle !== "number" || !Number.isFinite(style.angle) || Math.abs(style.angle) > MAX_ANGLE_ABS) {
+    throw new DiagramEncodeError("angle must be a finite number of radians within +/-1e6", "invalid-input");
+  }
+  return style;
+}
+
 const TEXT_ALIGN = { left: 0, right: 1, center: 2, start: 3, end: 4 };
 const TEXT_BASELINE = { alphabetic: 0, top: 1, middle: 2, bottom: 3, hanging: 4, ideographic: 5 };
 const TEXT_DIRECTION = { inherit: 0, ltr: 1, rtl: 2 };
@@ -377,6 +425,20 @@ class PathBuilder {
   }
 }
 
+// The object image table stores each referenced part name as its 16 raw
+// bytes (the first 128 bits of the part's SHA-256), as object_write_hash of
+// core/object_encode.mbt does.
+function imageHashBytes(hash) {
+  if (!/^[0-9a-f]{32}$/.test(hash)) {
+    throw new DiagramEncodeError("image part hash must be 32 lowercase hex characters", "invalid-input");
+  }
+  const out = new Uint8Array(16);
+  for (let i = 0; i < 16; i += 1) {
+    out[i] = parseInt(hash.slice(2 * i, 2 * i + 2), 16);
+  }
+  return out;
+}
+
 class ObjectBuilder {
   constructor() {
     this.ops = new ByteWriter();
@@ -385,6 +447,8 @@ class ObjectBuilder {
     this.paths = [];
     this.fonts = [];
     this.fontIndex = new Map();
+    this.images = [];
+    this.imageIndex = new Map();
     this.bbox = null; // {x, y, w, h}
     // When false, drawing ops no longer grow the bounding box: encodeDiagram
     // computes every primitive's extent explicitly (rotation-aware,
@@ -421,6 +485,18 @@ class ObjectBuilder {
     const index = this.fonts.length;
     this.fonts.push({ family, weight, style });
     this.fontIndex.set(key, index);
+    return index;
+  }
+
+  // Image tables hold part names: identical bytes are stored once, so the
+  // index dedupes by hash exactly like the manifest dedupes parts.
+  imageRef(hash) {
+    if (this.imageIndex.has(hash)) {
+      return this.imageIndex.get(hash);
+    }
+    const index = this.images.length;
+    this.images.push(hash);
+    this.imageIndex.set(hash, index);
     return index;
   }
 
@@ -536,6 +612,18 @@ class ObjectBuilder {
     this.ops.f32le(x); this.ops.f32le(y); this.ops.f32le(advance);
   }
 
+  image(index, x, y, w, h) {
+    if (!Number.isInteger(index) || index < 0 || index >= this.images.length) {
+      throw new DiagramEncodeError("invalid image reference", "invalid-input");
+    }
+    if (this.autoGrow) {
+      this.grow(x, y, w, h);
+    }
+    this.ops.u8(OP.IMAGE);
+    this.ops.varuint(index);
+    this.ops.f32le(x); this.ops.f32le(y); this.ops.f32le(w); this.ops.f32le(h);
+  }
+
   encode(bbox) {
     const writer = new ByteWriter();
     writer.raw([0x42, 0x4f, 0x42, 0x4a]); // "BOBJ"
@@ -562,7 +650,12 @@ class ObjectBuilder {
       writer.u16le(font.weight);
       writer.u8(FONT_STYLE[font.style] ?? 0);
     }
-    writer.varuint(0); // no images
+    writer.varuint(this.images.length);
+    // Object image tables store part names as 16 raw bytes, mirroring
+    // core/object_encode.mbt's object_write_hash.
+    for (const image of this.images) {
+      writer.raw(imageHashBytes(image));
+    }
     writer.varuint(0); // no child objects
     writer.varuint(this.ops.length);
     writer.raw(this.ops.toBytes());
@@ -755,6 +848,16 @@ function primCorners(prim, points, textMetrics) {
       }
       return { cx: x, cy: y, box: [x0, y0, x1, y1] };
     }
+    case "image": {
+      // Dimensions are validated positive before this runs; the corners
+      // are ordered defensively anyway so the bbox math never sees an
+      // inside-out box.
+      const x0 = Math.min(prim.x, prim.x + prim.w);
+      const y0 = Math.min(prim.y, prim.y + prim.h);
+      const x1 = Math.max(prim.x, prim.x + prim.w);
+      const y1 = Math.max(prim.y, prim.y + prim.h);
+      return { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, box: [x0, y0, x1, y1] };
+    }
     default:
       return null;
   }
@@ -820,67 +923,51 @@ function textMetricsOf(prim) {
 }
 
 ///|
-// Encode the diagram document as a complete single-file BDF byte string.
-// Deterministic: identical input produces byte-identical output. The input
-// is treated as read-only.
-export async function encodeDiagram(input) {
-  if (typeof input !== "object" || input === null || Array.isArray(input)) {
-    throw new DiagramEncodeError("encodeDiagram needs an input object", "invalid-input");
-  }
-  const { width, height, source, title, primitives } = input;
-  if (typeof source !== "string" || source === "" || !/^[a-z][a-z0-9-]*$/.test(source)) {
-    throw new DiagramEncodeError("source must be a lowercase format identifier", "invalid-input");
-  }
-  const pageTitle = title === undefined ? "" : title;
-  if (typeof pageTitle !== "string" || pageTitle.length > 512) {
-    throw new DiagramEncodeError("title must be a string of at most 512 characters", "invalid-input");
-  }
-  finiteNumber(width, "width", BDF_MAX_PAGE_UNITS);
-  finiteNumber(height, "height", BDF_MAX_PAGE_UNITS);
-  if (width <= 0 || height <= 0 || width > BDF_MAX_PAGE_UNITS || height > BDF_MAX_PAGE_UNITS) {
-    throw new DiagramEncodeError(`page size must be within 0 < w, h <= ${BDF_MAX_PAGE_UNITS}`, "invalid-input");
-  }
-  if (!Array.isArray(primitives) || primitives.length > MAX_PRIMITIVES) {
-    throw new DiagramEncodeError(
-      `primitives must be an array of at most ${MAX_PRIMITIVES} items`,
-      primitives === undefined || !Array.isArray(primitives) ? "invalid-input" : "too-large",
-    );
-  }
+// Aggregate caps accumulator shared by both entry points (document-wide:
+// every page contributes before any page is built).
+function newCaps() {
+  return { points: 0, textChars: 0 };
+}
 
-  // Pass 1 (cheap, before any emission): aggregate caps, so input sizes
-  // cannot amplify into unbounded work. Per-primitive validation happens in
-  // pass 2 with its stable per-primitive error order.
-  let totalPoints = 0;
-  let totalTextChars = 0;
+function addCaps(caps, primitives) {
   for (const prim of primitives) {
     if (typeof prim !== "object" || prim === null || Array.isArray(prim)) {
       continue;
     }
     if (Array.isArray(prim.points)) {
-      totalPoints += prim.points.length;
-      if (totalPoints > MAX_TOTAL_POINTS) {
+      caps.points += prim.points.length;
+      if (caps.points > MAX_TOTAL_POINTS) {
         throw new DiagramEncodeError(`document exceeds ${MAX_TOTAL_POINTS} total points`, "too-large");
       }
     }
     if (typeof prim.text === "string") {
-      totalTextChars += prim.text.length;
-      if (totalTextChars > MAX_TOTAL_TEXT_CHARS) {
+      caps.textChars += prim.text.length;
+      if (caps.textChars > MAX_TOTAL_TEXT_CHARS) {
         throw new DiagramEncodeError(`document exceeds ${MAX_TOTAL_TEXT_CHARS} total text characters`, "too-large");
       }
     }
   }
+}
 
+///|
+// Pass 2 of one page: validate every primitive in order, grow the exact
+// rotation-aware bounding box, and emit the ops. `images` is the resource
+// registry (id -> record) or null when image primitives are not offered
+// (the single-diagram entry point keeps rejecting them); `refs` collects
+// the resource ids the page referenced.
+function encodePageObject(primitives, images, refs) {
   const builder = new ObjectBuilder();
   builder.autoGrow = false;
   for (const prim of primitives) {
     if (typeof prim !== "object" || prim === null || Array.isArray(prim) || typeof prim.kind !== "string") {
       throw new DiagramEncodeError("primitive must be an object with a kind", "invalid-input");
     }
-    const style = styleOf(prim);
+    const style = prim.kind === "image" ? imageStyleOf(prim) : styleOf(prim);
     const pivot = pivotOf(prim);
     let points = null;
     let rounded = null;
     let textMetrics = null;
+    let imageRecord = null;
 
     switch (prim.kind) {
       case "rect": {
@@ -912,6 +999,30 @@ export async function encodeDiagram(input) {
         textMetrics = textMetricsOf(prim);
         break;
       }
+      case "image": {
+        if (images === null) {
+          throw new DiagramEncodeError(`unknown primitive kind "${prim.kind}"`, "invalid-input");
+        }
+        finiteNumber(prim.x, "image x"); finiteNumber(prim.y, "image y");
+        finiteNumber(prim.w, "image w"); finiteNumber(prim.h, "image h");
+        // The BDF image op keeps canvas drawImage semantics, which do NOT
+        // mirror nonpositive rectangles the way drawRect does; a nonpositive
+        // rectangle draws nothing, so it is rejected outright.
+        if (prim.w <= 0 || prim.h <= 0) {
+          throw new DiagramEncodeError("image rectangle dimensions must be positive", "invalid-input");
+        }
+        if (typeof prim.image !== "string" || prim.image === "" || prim.image.length > MAX_IMAGE_ID_CHARS) {
+          throw new DiagramEncodeError("image primitive needs a resource id of 1..128 characters", "invalid-input");
+        }
+        imageRecord = images.get(prim.image);
+        if (imageRecord === undefined) {
+          throw new DiagramEncodeError(`unknown image resource "${prim.image}"`, "invalid-input");
+        }
+        if (refs !== null) {
+          refs.add(prim.image);
+        }
+        break;
+      }
       default:
         throw new DiagramEncodeError(`unknown primitive kind "${prim.kind}"`, "invalid-input");
     }
@@ -936,37 +1047,41 @@ export async function encodeDiagram(input) {
     ];
     const aabb = rotatedAABB(padded, pivotX, pivotY, style.angle);
     builder.grow(aabb.x, aabb.y, aabb.w, aabb.h);
-    emitPrimitive(builder, prim, style, corners, points, rounded, textMetrics, pivotX, pivotY);
+    if (prim.kind === "image") {
+      emitImagePrim(builder, prim, style, builder.imageRef(imageRecord.hash), pivotX, pivotY);
+    } else {
+      emitPrimitive(builder, prim, style, corners, points, rounded, textMetrics, pivotX, pivotY);
+    }
   }
+  return builder.encode(null);
+}
 
-  const objectBytes = builder.encode(null);
-  const hash = sha256(objectBytes).slice(0, 32);
+///|
+// Layout and emission of one single-file BDF: parts are stored in the given
+// order right after the manifest, so each entry's off is relative to the
+// manifest end, exactly how core/container.mbt reads them back.
+function writeSingleFileDocument({ meta, views, parts }) {
+  const entries = [];
+  let offset = 0;
+  for (const part of parts) {
+    entries.push({
+      h: part.hash,
+      t: part.kind,
+      enc: "identity",
+      len: part.bytes.length,
+      size: part.bytes.length,
+      off: offset,
+    });
+    offset += part.bytes.length;
+  }
   const manifest = {
     bdf: 1,
     opset: 1,
     unit: "pt",
-    meta: { generator: `bdf-diagram/${source}` },
-    views: [{
-      id: "page-0",
-      kind: "fixed",
-      title: pageTitle,
-      direction: "ltr",
-      pages: [{
-        w: width,
-        h: height,
-        layers: [{ role: "content", obj: hash }],
-      }],
-    }],
-    parts: [{
-      h: hash,
-      t: "obj",
-      enc: "identity",
-      len: objectBytes.length,
-      size: objectBytes.length,
-      off: 0,
-    }],
+    meta,
+    views,
+    parts: entries,
   };
-
   const manifestBytes = new TextEncoder().encode(JSON.stringify(manifest));
   if (manifestBytes.length > 268435456) {
     throw new DiagramEncodeError("manifest exceeds the 256 MiB limit", "too-large");
@@ -980,8 +1095,63 @@ export async function encodeDiagram(input) {
   out.u8(0); // identity manifest encoding
   out.raw(new Uint8Array(7));
   out.raw(manifestBytes);
-  out.raw(objectBytes);
+  for (const part of parts) {
+    out.raw(part.bytes);
+  }
   return out.toBytes();
+}
+
+///|
+// Encode the diagram document as a complete single-file BDF byte string.
+// Deterministic: identical input produces byte-identical output. The input
+// is treated as read-only.
+export async function encodeDiagram(input) {
+  if (typeof input !== "object" || input === null || Array.isArray(input)) {
+    throw new DiagramEncodeError("encodeDiagram needs an input object", "invalid-input");
+  }
+  const { width, height, source, title, primitives } = input;
+  if (typeof source !== "string" || source === "" || !/^[a-z][a-z0-9-]*$/.test(source)) {
+    throw new DiagramEncodeError("source must be a lowercase format identifier", "invalid-input");
+  }
+  const pageTitle = title === undefined ? "" : title;
+  if (typeof pageTitle !== "string" || pageTitle.length > 512) {
+    throw new DiagramEncodeError("title must be a string of at most 512 characters", "invalid-input");
+  }
+  finiteNumber(width, "width", BDF_MAX_PAGE_UNITS);
+  finiteNumber(height, "height", BDF_MAX_PAGE_UNITS);
+  if (width <= 0 || height <= 0 || width > BDF_MAX_PAGE_UNITS || height > BDF_MAX_PAGE_UNITS) {
+    throw new DiagramEncodeError(`page size must be within 0 < w, h <= ${BDF_MAX_PAGE_UNITS}`, "invalid-input");
+  }
+  if (!Array.isArray(primitives) || primitives.length > MAX_PRIMITIVES) {
+    throw new DiagramEncodeError(
+      `primitives must be an array of at most ${MAX_PRIMITIVES} items`,
+      primitives === undefined || !Array.isArray(primitives) ? "invalid-input" : "too-large",
+    );
+  }
+
+  // Pass 1 (cheap, before any emission): aggregate caps, so input sizes
+  // cannot amplify into unbounded work. Per-primitive validation happens in
+  // pass 2 with its stable per-primitive error order.
+  const caps = newCaps();
+  addCaps(caps, primitives);
+
+  const objectBytes = encodePageObject(primitives, null, null);
+  const hash = sha256(objectBytes).slice(0, 32);
+  return writeSingleFileDocument({
+    meta: { generator: `bdf-diagram/${source}` },
+    views: [{
+      id: "page-0",
+      kind: "fixed",
+      title: pageTitle,
+      direction: "ltr",
+      pages: [{
+        w: width,
+        h: height,
+        layers: [{ role: "content", obj: hash }],
+      }],
+    }],
+    parts: [{ hash, kind: "obj", bytes: objectBytes }],
+  });
 }
 
 // Every primitive is wrapped in save/restore: stroke width, dash, colors,
@@ -1072,10 +1242,452 @@ function emitTextPrim(builder, prim, style, textMetrics, pivotX, pivotY) {
   builder.restore();
 }
 
+// Image emission: the same save/restore discipline; rotation about the
+// pivot (default: the drawn rectangle's center) and alpha inside the block.
+function emitImagePrim(builder, prim, style, imageTableIndex, pivotX, pivotY) {
+  builder.save();
+  if (style.angle !== 0) {
+    const cos = Math.cos(style.angle);
+    const sin = Math.sin(style.angle);
+    builder.translate(pivotX, pivotY);
+    builder.transform(cos, sin, -sin, cos, 0, 0);
+    builder.translate(-pivotX, -pivotY);
+  }
+  if (style.opacity !== 1) {
+    builder.alpha(style.opacity);
+  }
+  builder.image(imageTableIndex, prim.x, prim.y, prim.w, prim.h);
+  builder.restore();
+}
+
 function emitPrimitive(builder, prim, style, corners, points, rounded, textMetrics, pivotX, pivotY) {
   if (prim.kind === "text") {
     emitTextPrim(builder, prim, style, textMetrics, pivotX, pivotY);
     return;
   }
   emitShape(builder, prim, style, corners, points, rounded, pivotX, pivotY);
+}
+
+///|
+// Embedded raster resources are actual bytes, never references: URLs, file
+// paths and strings are rejected, and the accepted types are only bounded
+// PNG (8-byte signature + IHDR) and JPEG (SOI + SOF frame header), both with
+// readable dimensions. SVG, GIF, BMP and WebP stay out of the plugin, and
+// the bytes are never modified or coerced into other formats.
+function imageDataView(data) {
+  if (data instanceof Uint8Array) {
+    return data;
+  }
+  if (data instanceof ArrayBuffer) {
+    return new Uint8Array(data);
+  }
+  throw new DiagramEncodeError("image data must be PNG or JPEG bytes in a Uint8Array or ArrayBuffer, never a URL or a string", "invalid-input");
+}
+
+///|
+// Signature, size, structure and dimension validation: deterministic,
+// read-only and bounded — the PNG chunk table and the JPEG segment table
+// are each walked with every length checked against the actual bytes, so a
+// truncated file, a chunk/segment length pointing past the end, a missing
+// SOS or EOI, or a raster whose bytes end before its last declared chunk
+// is rejected up front. CRCs and entropy data are not re-verified (the
+// browser decodes the same bytes); everything structural is.
+function imageRasterInfo(bytes) {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const check = (width, height) => {
+    if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1) {
+      throw new DiagramEncodeError("image dimensions must be positive integers", "invalid-input");
+    }
+    if (width > MAX_IMAGE_SIDE || height > MAX_IMAGE_SIDE) {
+      throw new DiagramEncodeError(`image side exceeds ${MAX_IMAGE_SIDE} pixels`, "too-large");
+    }
+    if (width * height > MAX_IMAGE_PIXELS) {
+      throw new DiagramEncodeError(`image exceeds ${MAX_IMAGE_PIXELS} total pixels`, "too-large");
+    }
+  };
+  const isPngSignature = bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50
+    && bytes[2] === 0x4e && bytes[3] === 0x47 && bytes[4] === 0x0d
+    && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a;
+  if (isPngSignature) {
+    return pngRasterInfo(bytes, view, check);
+  }
+  if (bytes.length >= 4 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return jpegRasterInfo(bytes, view, check);
+  }
+  throw new DiagramEncodeError("embedded images must be bounded PNG or JPEG bytes (SVG, GIF, BMP, WebP and URLs are not accepted)", "invalid-input");
+}
+
+///|
+// Bounded PNG structure: the 8-byte signature, a first chunk that is a
+// 13-byte IHDR inside the file, every chunk length in range, at least one
+// non-empty IDAT before the IEND, and a file that ends exactly at the
+// IEND chunk (no truncation, no trailing bytes). Palette images must
+// actually carry a PLTE chunk; dimensions come from the IHDR.
+function pngRasterInfo(bytes, view, check) {
+  const isType = (at, type) => type.every((byte, i) => bytes[at + i] === byte);
+  if (bytes.length < 8) {
+    throw new DiagramEncodeError("PNG data is truncated before the chunk table", "invalid-input");
+  }
+  let at = 8;
+  let width = 0;
+  let height = 0;
+  let colorType = 0;
+  let hasPalette = false;
+  let idatBytes = 0;
+  let sawIend = false;
+  if (!isType(12, [0x49, 0x48, 0x44, 0x52])) {
+    throw new DiagramEncodeError("PNG data does not start with an IHDR chunk", "invalid-input");
+  }
+  while (at < bytes.length) {
+    if (bytes.length - at < 12) {
+      throw new DiagramEncodeError("PNG chunk table is truncated", "invalid-input");
+    }
+    const length = view.getUint32(at);
+    if (length > bytes.length - at - 12) {
+      throw new DiagramEncodeError("PNG chunk length points past the end of the data", "invalid-input");
+    }
+    const kind = isType(at + 4, [0x49, 0x48, 0x44, 0x52]) ? "IHDR"
+      : isType(at + 4, [0x50, 0x4c, 0x54, 0x45]) ? "PLTE"
+      : isType(at + 4, [0x49, 0x44, 0x41, 0x54]) ? "IDAT"
+      : isType(at + 4, [0x49, 0x45, 0x4e, 0x44]) ? "IEND"
+      : isType(at + 4, [0x74, 0x52, 0x4e, 0x53]) ? "tRNS"
+      : isType(at + 4, [0x67, 0x61, 0x6d, 0x41]) ? "gAMA"
+      : isType(at + 4, [0x74, 0x45, 0x58, 0x74]) ? "tEXt"
+      : isType(at + 4, [0x7a, 0x54, 0x58, 0x74]) ? "zTXt"
+      : isType(at + 4, [0x69, 0x54, 0x58, 0x74]) ? "iTXt"
+      : null;
+    if (kind === null) {
+      // Ancillary and private chunks are skipped structurally; an unknown
+      // chunk with an UPPERCASE name bit would be critical to a real
+      // decoder, so it is rejected rather than silently accepted.
+      const first = bytes[at + 4];
+      if (first >= 0x41 && first <= 0x5a) {
+        throw new DiagramEncodeError("PNG data contains an unknown critical chunk", "invalid-input");
+      }
+    } else if (kind === "IHDR") {
+      if (at !== 8 || length !== 13) {
+        throw new DiagramEncodeError("PNG IHDR must be the first, 13-byte chunk", "invalid-input");
+      }
+      width = view.getUint32(at + 8);
+      height = view.getUint32(at + 12);
+      const bitDepth = bytes[at + 16];
+      colorType = bytes[at + 17];
+      if (view.getUint8(at + 18) !== 0 || view.getUint8(at + 19) !== 0 || view.getUint8(at + 20) > 1) {
+        throw new DiagramEncodeError("PNG IHDR has invalid compression, filter or interlace fields", "invalid-input");
+      }
+      if (![1, 2, 4, 8, 16].includes(bitDepth)
+        || ![0, 2, 3, 4, 6].includes(colorType)
+        || (colorType === 3 && ![1, 2, 4, 8].includes(bitDepth))
+        || ((colorType === 2 || colorType === 4 || colorType === 6) && bitDepth !== 8 && bitDepth !== 16)
+        || (colorType === 4 && bitDepth < 8)) {
+        throw new DiagramEncodeError("PNG IHDR has an invalid bit depth / color type pair", "invalid-input");
+      }
+      if (width === 0 || height === 0) {
+        throw new DiagramEncodeError("image dimensions must be positive integers", "invalid-input");
+      }
+      check(width, height);
+    } else if (kind === "PLTE") {
+      hasPalette = true;
+      if (length === 0 || length % 3 !== 0 || length > 768) {
+        throw new DiagramEncodeError("PNG PLTE chunk has an invalid length", "invalid-input");
+      }
+    } else if (kind === "IDAT") {
+      if (sawIend) {
+        throw new DiagramEncodeError("PNG IDAT chunk appears after IEND", "invalid-input");
+      }
+      idatBytes += length;
+    } else if (kind === "IEND") {
+      if (length !== 0) {
+        throw new DiagramEncodeError("PNG IEND chunk must be empty", "invalid-input");
+      }
+      sawIend = true;
+    }
+    at += 12 + length;
+    if (sawIend) {
+      break;
+    }
+  }
+  if (!sawIend) {
+    throw new DiagramEncodeError("PNG data is truncated before the IEND chunk", "invalid-input");
+  }
+  if (at !== bytes.length) {
+    throw new DiagramEncodeError("PNG data has bytes after the IEND chunk", "invalid-input");
+  }
+  if (idatBytes === 0) {
+    throw new DiagramEncodeError("PNG data has no IDAT image data", "invalid-input");
+  }
+  if (colorType === 3 && !hasPalette) {
+    throw new DiagramEncodeError("PNG palette image has no PLTE chunk", "invalid-input");
+  }
+  return { format: "png", width, height };
+}
+
+///|
+// Bounded JPEG structure: SOI, then every segment (marker + length) fully
+// inside the file, exactly one frame (SOF) before a scan, a start-of-scan
+// inside the file followed by at least one entropy byte, and an EOI that
+// ends the file. Entropy bytes are walked with FF00 byte-stuffing,
+// restart markers and FF fill honored, but not decoded (the browser
+// decodes the same bytes later).
+function jpegRasterInfo(bytes, view, check) {
+  let at = 2; // SOI consumed
+  let width = null;
+  let height = null;
+  let scanning = false;
+  let scanBytes = 0;
+  let sawScan = false;
+  const isStandalone = marker => marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7);
+  while (at < bytes.length) {
+    if (scanning) {
+      // inside the entropy-coded scan: skip byte-stuffed FF00 pairs,
+      // restart markers and FF fill bytes until a real marker appears
+      if (bytes[at] !== 0xff) {
+        scanBytes += 1;
+        at += 1;
+        continue;
+      }
+      if (at + 1 >= bytes.length) {
+        throw new DiagramEncodeError("JPEG data is truncated inside the scan", "invalid-input");
+      }
+      const next = bytes[at + 1];
+      if (next === 0x00) {
+        scanBytes += 2;
+        at += 2;
+        continue;
+      }
+      if (next === 0xff) {
+        at += 1; // fill byte before a marker
+        continue;
+      }
+      if (next >= 0xd0 && next <= 0xd7) {
+        scanBytes += 2; // restart markers sit inside the entropy stream
+        at += 2;
+        continue;
+      }
+      if (next === 0x01) {
+        at += 2; // TEM inside the scan
+        continue;
+      }
+      const entropy = scanBytes;
+      scanning = false;
+      if (sawScan && entropy === 0) {
+        throw new DiagramEncodeError("JPEG scan has no entropy data", "invalid-input");
+      }
+      // fall through: process the marker that ended the scan
+    }
+    if (bytes[at] !== 0xff) {
+      throw new DiagramEncodeError("JPEG marker stream is malformed", "invalid-input");
+    }
+    const marker = bytes[at + 1];
+    if (marker === 0xff) {
+      at += 1;
+      continue;
+    }
+    if (isStandalone(marker)) {
+      at += 2;
+      continue;
+    }
+    if (marker === 0xd8) {
+      throw new DiagramEncodeError("JPEG has a second start of image", "invalid-input");
+    }
+    if (marker === 0xd9) {
+      if (at + 2 !== bytes.length) {
+        throw new DiagramEncodeError("JPEG EOI must be the last bytes of the file", "invalid-input");
+      }
+      if (width === null || height === null) {
+        throw new DiagramEncodeError("JPEG data has no frame header before EOI", "invalid-input");
+      }
+      if (!sawScan) {
+        throw new DiagramEncodeError("JPEG data has no start-of-scan", "invalid-input");
+      }
+      return { format: "jpeg", width, height };
+    }
+    if (marker === 0xda) {
+      if (width === null || height === null) {
+        throw new DiagramEncodeError("JPEG scan starts before the frame header", "invalid-input");
+      }
+      if (sawScan) {
+        throw new DiagramEncodeError("JPEG has more than one scan", "invalid-input");
+      }
+      if (at + 4 > bytes.length) {
+        throw new DiagramEncodeError("JPEG scan header is truncated", "invalid-input");
+      }
+      const length = view.getUint16(at + 2);
+      if (length < 6 || at + 2 + length > bytes.length) {
+        throw new DiagramEncodeError("JPEG scan header is out of range", "invalid-input");
+      }
+      sawScan = true;
+      scanning = true;
+      at += 2 + length;
+      continue;
+    }
+    if (at + 4 > bytes.length) {
+      throw new DiagramEncodeError("JPEG segment header is truncated", "invalid-input");
+    }
+    const length = view.getUint16(at + 2);
+    if (length < 2 || at + 2 + length > bytes.length) {
+      throw new DiagramEncodeError("JPEG segment length points past the end of the data", "invalid-input");
+    }
+    if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+      if (width !== null) {
+        throw new DiagramEncodeError("JPEG has more than one frame header", "invalid-input");
+      }
+      if (length < 8 || at + 9 > bytes.length) {
+        throw new DiagramEncodeError("JPEG frame header is truncated", "invalid-input");
+      }
+      height = view.getUint16(at + 5);
+      width = view.getUint16(at + 7);
+      check(width, height);
+    }
+    at += 2 + length;
+  }
+  throw new DiagramEncodeError("JPEG data is truncated before the EOI marker", "invalid-input");
+}
+
+///|
+// The resource registry of one document: validated entries keyed by id and
+// deduplicated by content hash, so identical bytes are stored (and hashed)
+// exactly once no matter how many ids or references point at them.
+function imageResourceRegistry(images) {
+  const byId = new Map();
+  const parts = [];
+  const byHash = new Map();
+  let totalUniqueBytes = 0;
+  for (const entry of images) {
+    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+      throw new DiagramEncodeError("images entries must be {id, data} objects", "invalid-input");
+    }
+    const { id, data } = entry;
+    if (typeof id !== "string" || id === "" || id.length > MAX_IMAGE_ID_CHARS) {
+      throw new DiagramEncodeError("image id must be a string of 1..128 characters", "invalid-input");
+    }
+    if (byId.has(id)) {
+      throw new DiagramEncodeError(`duplicate image id "${id}"`, "invalid-input");
+    }
+    const bytes = imageDataView(data);
+    if (bytes.length > MAX_IMAGE_BYTES) {
+      throw new DiagramEncodeError(`image "${id}" exceeds the ${MAX_IMAGE_BYTES}-byte resource cap`, "too-large");
+    }
+    imageRasterInfo(bytes);
+    const hash = sha256(bytes).slice(0, 32);
+    let record = byHash.get(hash);
+    if (record === undefined) {
+      if (totalUniqueBytes + bytes.length > MAX_TOTAL_IMAGE_BYTES) {
+        throw new DiagramEncodeError(`document exceeds ${MAX_TOTAL_IMAGE_BYTES} total unique image bytes`, "too-large");
+      }
+      totalUniqueBytes += bytes.length;
+      record = { hash, kind: "img", bytes };
+      byHash.set(hash, record);
+      parts.push(record);
+    }
+    byId.set(id, record);
+  }
+  return { byId, parts };
+}
+
+///|
+// Validate one page object of encodeDiagramDocument: bounded size and the
+// same page-size rules as the single-diagram entry point.
+function documentPageRecord(page) {
+  if (typeof page !== "object" || page === null || Array.isArray(page)) {
+    throw new DiagramEncodeError("pages entries must be {width, height, primitives} objects", "invalid-input");
+  }
+  const { width, height, primitives } = page;
+  finiteNumber(width, "width", BDF_MAX_PAGE_UNITS);
+  finiteNumber(height, "height", BDF_MAX_PAGE_UNITS);
+  if (width <= 0 || height <= 0 || width > BDF_MAX_PAGE_UNITS || height > BDF_MAX_PAGE_UNITS) {
+    throw new DiagramEncodeError(`page size must be within 0 < w, h <= ${BDF_MAX_PAGE_UNITS}`, "invalid-input");
+  }
+  if (!Array.isArray(primitives) || primitives.length > MAX_PRIMITIVES) {
+    throw new DiagramEncodeError(
+      `primitives must be an array of at most ${MAX_PRIMITIVES} items`,
+      primitives === undefined || !Array.isArray(primitives) ? "invalid-input" : "too-large",
+    );
+  }
+  return { width, height, primitives };
+}
+
+///|
+// Encode a multi-page diagram document as a complete single-file BDF byte
+// string: one obj part per page plus one img part per unique embedded
+// image, all content-deduplicated, referenced both ways, and verified
+// byte-for-byte by the same invariants as encodeDiagram. Deterministic and
+// read-only, exactly like the single-diagram entry point.
+export async function encodeDiagramDocument(input) {
+  if (typeof input !== "object" || input === null || Array.isArray(input)) {
+    throw new DiagramEncodeError("encodeDiagramDocument needs an input object", "invalid-input");
+  }
+  const { source, title, pages, images } = input;
+  if (typeof source !== "string" || source === "" || !/^[a-z][a-z0-9-]*$/.test(source)) {
+    throw new DiagramEncodeError("source must be a lowercase format identifier", "invalid-input");
+  }
+  const documentTitle = title === undefined ? "" : title;
+  if (typeof documentTitle !== "string" || documentTitle.length > 512) {
+    throw new DiagramEncodeError("title must be a string of at most 512 characters", "invalid-input");
+  }
+  if (!Array.isArray(pages) || pages.length < 1 || pages.length > MAX_PAGES) {
+    throw new DiagramEncodeError(
+      `pages must be a non-empty array of at most ${MAX_PAGES} page objects`,
+      Array.isArray(pages) ? "too-large" : "invalid-input",
+    );
+  }
+  const imageList = images === undefined || images === null ? [] : images;
+  if (!Array.isArray(imageList) || imageList.length > MAX_IMAGE_RESOURCES) {
+    throw new DiagramEncodeError(
+      `images must be an array of at most ${MAX_IMAGE_RESOURCES} resources`,
+      Array.isArray(imageList) ? "too-large" : "invalid-input",
+    );
+  }
+  const registry = imageResourceRegistry(imageList);
+
+  const pageRecords = [];
+  let totalPrimitives = 0;
+  for (const page of pages) {
+    const record = documentPageRecord(page);
+    totalPrimitives += record.primitives.length;
+    if (totalPrimitives > MAX_DOCUMENT_PRIMITIVES) {
+      throw new DiagramEncodeError(`document exceeds ${MAX_DOCUMENT_PRIMITIVES} total primitives`, "too-large");
+    }
+    pageRecords.push(record);
+  }
+  const caps = newCaps();
+  for (const record of pageRecords) {
+    addCaps(caps, record.primitives);
+  }
+
+  // Referenced ids must resolve (checked while building each page below) and
+  // every defined resource must be drawn by some page: bounded documents
+  // never carry unreferenced bytes.
+  const refs = new Set();
+  const objectParts = [];
+  const viewPages = [];
+  for (const record of pageRecords) {
+    const objectBytes = encodePageObject(record.primitives, registry.byId, refs);
+    const hash = sha256(objectBytes).slice(0, 32);
+    if (!objectParts.some(part => part.hash === hash)) {
+      objectParts.push({ hash, kind: "obj", bytes: objectBytes });
+    }
+    viewPages.push({
+      w: record.width,
+      h: record.height,
+      layers: [{ role: "content", obj: hash }],
+    });
+  }
+  for (const id of registry.byId.keys()) {
+    if (!refs.has(id)) {
+      throw new DiagramEncodeError(`image "${id}" is never referenced by any page`, "invalid-input");
+    }
+  }
+
+  return writeSingleFileDocument({
+    meta: { generator: `bdf-diagram/${source}` },
+    views: [{
+      id: "pages",
+      kind: "fixed",
+      title: documentTitle,
+      direction: "ltr",
+      pages: viewPages,
+    }],
+    parts: [...objectParts, ...registry.parts],
+  });
 }
