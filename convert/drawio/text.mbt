@@ -533,49 +533,121 @@ fn drawio_text_matrix(
 }
 
 ///|
+/// The padding of a label: the base spacing plus each directional value
+/// (upstream label.go readTextProps: spacingLeft = spacing + spacingLeft,
+/// spacingRight/Top/Bottom alike); the base spacing defaults to 2.
+/// `block` covers `blockSpacing=1`, which suppresses the base paddings
+/// (upstream label.go passes blockSpacing=="1" as noBase to getSpacing).
+struct DrawioLabelSpacing {
+  left : Double
+  right : Double
+  top : Double
+  bottom : Double
+  block : Bool
+}
+
+///|
+/// The extra paddings draw.io puts above and below every label
+/// (mxText.baseSpacingTop/baseSpacingBottom; upstream label.go).
+let drawio_label_base_top : Double = 5.0
+
+///|
+let drawio_label_base_bottom : Double = 1.0
+
+///|
+fn drawio_label_spacing(style : String) -> DrawioLabelSpacing {
+  let base = drawio_num_from_style(style, "spacing", 2.0)
+  let block = drawio_style(style, "blockSpacing", "") == "1"
+  {
+    left: base + drawio_num_from_style(style, "spacingLeft", 0.0),
+    right: base + drawio_num_from_style(style, "spacingRight", 0.0),
+    top: base + drawio_num_from_style(style, "spacingTop", 0.0),
+    bottom: base + drawio_num_from_style(style, "spacingBottom", 0.0),
+    block,
+  }
+}
+
+///|
+/// The base paddings of mxText.getSpacing, kept off for blockSpacing=1
+/// labels (upstream passes that as noBase there).
+fn drawio_label_space_top(
+  spacing : DrawioLabelSpacing,
+) -> Double {
+  if spacing.block {
+    0.0
+  } else {
+    drawio_label_base_top
+  }
+}
+
+///|
+fn drawio_label_space_bottom(
+  spacing : DrawioLabelSpacing,
+) -> Double {
+  if spacing.block {
+    0.0
+  } else {
+    drawio_label_base_bottom
+  }
+}
+
+///|
 /// The left edge of a line of label text in its box. A box wider than
 /// 1e8 is a label outside the shape (`labelPosition=left` or `right`),
-/// laid out at the label's own width.
+/// laid out at the label's own width. The alignment offset is the
+/// directional padding of the alignment (mxText.getSpacing: left adds
+/// spacingLeft, right subtracts spacingRight, the center balances them).
 fn drawio_label_origin_x(
   box : DrawioLabelBox,
   text_width : Double,
-  spacing : Double,
+  spacing : DrawioLabelSpacing,
 ) -> Double {
   if box.w >= 1.0e8 {
     if box.align == "right" {
-      box.x - spacing - text_width
+      box.x - spacing.right - text_width
     } else {
-      box.x + spacing
+      box.x + spacing.left
     }
   } else if box.align == "center" {
-    box.x + (box.w - text_width) / 2.0
+    box.x +
+      (box.w - text_width) / 2.0 +
+      (spacing.left - spacing.right) / 2.0
   } else if box.align == "right" {
-    box.x + box.w - spacing - text_width
+    box.x + box.w - spacing.right - text_width
   } else {
-    box.x + spacing
+    box.x + spacing.left
   }
 }
 
 ///|
 /// The top of a label's text block. A box taller than 1e8 is a label
-/// outside the shape (`verticalLabelPosition=top` or `bottom`).
+/// outside the shape (`verticalLabelPosition=top` or `bottom`). Like
+/// mxText.getSpacing, top-aligned labels sit spacingTop plus the base
+/// top padding below the box and bottom-aligned ones spacingBottom plus
+/// the base bottom padding above its lower edge.
 fn drawio_label_block_top(
   box : DrawioLabelBox,
   total_height : Double,
-  spacing : Double,
+  spacing : DrawioLabelSpacing,
 ) -> Double {
   if box.h >= 1.0e8 {
     if box.valign == "bottom" {
-      box.y - spacing - total_height
+      box.y - spacing.bottom - drawio_label_space_bottom(spacing) - total_height
     } else {
-      box.y + spacing
+      box.y + spacing.top + drawio_label_space_top(spacing)
     }
   } else if box.valign == "top" {
-    box.y + spacing
+    box.y + spacing.top + drawio_label_space_top(spacing)
   } else if box.valign == "bottom" {
-    box.y + box.h - spacing - total_height
+    box.y +
+      box.h -
+      spacing.bottom -
+      drawio_label_space_bottom(spacing) -
+      total_height
   } else {
-    box.y + (box.h - total_height) / 2.0
+    box.y +
+      (box.h - total_height) / 2.0 +
+      (spacing.top - spacing.bottom) / 2.0
   }
 }
 
@@ -625,9 +697,13 @@ fn drawio_label_runs(
   let bold = (font_style & 1) != 0
   let italic = (font_style & 2) != 0
   let color = drawio_color(drawio_style(style, "fontColor", ""), 0x000000ffU)
-  let wrap = drawio_label_wraps(style)
-  let spacing = drawio_num_from_style(style, "spacing", 2.0)
-  let max_width = if box.w > 0.0 && box.w < 1.0e8 { box.w - spacing * 2.0 } else { 1.0e9 }
+  let spacing = drawio_label_spacing(style)
+  let max_width = if box.w > 0.0 && box.w < 1.0e8 {
+    box.w - spacing.left - spacing.right
+  } else {
+    1.0e9
+  }
+  let wrap = drawio_label_wraps(style) && max_width > 1.0
   let lines = if wrap {
     drawio_wrap_text(text, max_width, font, family, bold, italic, em)
   } else {
@@ -824,7 +900,7 @@ fn drawio_rich_label(
   let base_bold = (font_style & 1) != 0
   let base_italic = (font_style & 2) != 0
   let box = drawio_label_box(kind, style, x, y, w, h)
-  let spacing = drawio_num_from_style(style, "spacing", 2.0)
+  let spacing = drawio_label_spacing(style)
   let mut lines = drawio_rich_lines(cell.value, base_size, base_color)
   let mut converted = false
   if math_enabled {
@@ -840,7 +916,7 @@ fn drawio_rich_label(
     }
   }
   if drawio_label_wraps(style) && box.w > 0.0 && box.w < 1.0e8 {
-    let max_width = box.w - spacing * 2.0
+    let max_width = box.w - spacing.left - spacing.right
     if max_width > 1.0 {
       lines = drawio_wrap_rich_lines(
         lines,

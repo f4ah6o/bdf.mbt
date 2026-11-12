@@ -353,6 +353,17 @@ fn utf16_text(data : Bytes, count : Int32) -> String {
 }
 
 ///|
+/// A LOGFONT face is a NUL-terminated fixed LF_FACESIZE buffer. Decode it and
+/// stop at the first NUL; the padding is not part of the family name.
+fn utf16_face(data : Bytes, count : Int32) -> String {
+  let text = utf16_text(data, count)
+  match text.find("\u0000") {
+    Some(i) => text[:i].to_owned()
+    None => text
+  }
+}
+
+///|
 fn ansi_text(data : Bytes, charset : Int32) -> String {
   if charset == 128 {
     match @encoding.decode(data, "shift_jis") {

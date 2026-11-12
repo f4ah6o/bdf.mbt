@@ -251,6 +251,60 @@ try {
     await page.waitForFunction(() => /^1 \/ 20$/.test(document.querySelector("#page-number")?.textContent ?? ""), null, { timeout: 120000 });
   });
 
+  await step("viewer converts the Mermaid demo through the plugin Worker", async () => {
+    await fresh();
+    await page.goto(base + "viewer/?file=samples/flowchart.mmd", { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "flowchart.mmd", null, { timeout: 120000 });
+    await page.waitForSelector("#preview canvas", { timeout: 120000 });
+    await page.waitForFunction(() => /^1 \/ 1$/.test(document.querySelector("#page-number")?.textContent ?? ""), null, { timeout: 120000 });
+    const status = await page.locator("#status").textContent();
+    assert.match(status, /表示しました/);
+    assert.match(status, /layered approximation/);
+    assert.equal(await page.locator("#download").isHidden(), false);
+  });
+
+  await step("viewer converts the Excalidraw demo through the plugin Worker", async () => {
+    await fresh();
+    await page.goto(base + "viewer/?file=samples/shapes.excalidraw", { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "shapes.excalidraw", null, { timeout: 120000 });
+    await page.waitForSelector("#preview canvas", { timeout: 120000 });
+    await page.waitForFunction(() => /^1 \/ 1$/.test(document.querySelector("#page-number")?.textContent ?? ""), null, { timeout: 120000 });
+    assert.match(await page.locator("#status").textContent(), /表示しています/);
+    assert.equal(await page.locator("#download").isHidden(), false);
+  });
+
+  await step("native formats still convert after a plugin diagram", async () => {
+    await fresh();
+    await page.goto(base + "viewer/?file=samples/flowchart.mmd", { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "flowchart.mmd", null, { timeout: 120000 });
+    // Word is page-based, so the page counter proves the native Worker ran.
+    await page.click('#samples button:text-is("Word")');
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.docx", null, { timeout: 180000 });
+    await page.waitForFunction(() => !document.querySelector("#status")?.classList.contains("error"), null, { timeout: 60000 });
+    assert.doesNotMatch(await page.locator("#view").inputValue(), /^sheet/);
+    await page.waitForFunction(() => /^\d+ \/ \d+$/.test(document.querySelector("#page-number")?.textContent ?? ""), null, { timeout: 60000 });
+  });
+
+  await step("a rejected Mermaid file leaves the native converter working", async () => {
+    await fresh();
+    await page.goto(base + "viewer/?file=samples/flowchart.mmd", { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "flowchart.mmd", null, { timeout: 120000 });
+    await page.setInputFiles("#file", {
+      name: "unsupported.mmd",
+      mimeType: "text/plain",
+      buffer: Buffer.from("sequenceDiagram\n  A->>B: hello\n"),
+    });
+    await page.waitForSelector("dialog.first-font-choice");
+    await page.click("dialog.first-font-choice button:has-text('フォントなしで続ける')");
+    await page.waitForFunction(() => /unsupported\.mmd を開けませんでした/.test(document.querySelector("#status")?.textContent ?? ""), null, { timeout: 120000 });
+    assert.match(await page.locator("#status").textContent(), /mermaid/);
+    await page.click('#samples button:text-is("Word")');
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.docx", null, { timeout: 180000 });
+    await page.waitForFunction(() => !document.querySelector("#status")?.classList.contains("error"), null, { timeout: 60000 });
+    assert.doesNotMatch(await page.locator("#view").inputValue(), /^sheet/);
+    await page.waitForFunction(() => /^\d+ \/ \d+$/.test(document.querySelector("#page-number")?.textContent ?? ""), null, { timeout: 60000 });
+  });
+
   await step("first user file offers a local font choice before preview", async () => {
     await fresh();
     await page.addInitScript((base64) => {
@@ -1162,6 +1216,34 @@ try {
     assert.match(await page.locator("#limits").textContent(), /タグ付き PDF も書き出せません/);
   });
 
+
+  await step("top page names the plugin diagram formats", async () => {
+    await fresh();
+    await page.goto(base + "index.html", { waitUntil: "domcontentloaded" });
+    const html = await page.content();
+    assert.match(html, /Mermaid/);
+    assert.match(html, /Excalidraw/);
+  });
+
+  await step("diagram docs describe the plugin subsets and link the API docs", async () => {
+    await fresh();
+    await page.goto(base + "docs/formats/diagram.html", { waitUntil: "domcontentloaded" });
+    const html = await page.content();
+    assert.match(html, /Mermaid/);
+    assert.match(html, /Excalidraw/);
+    assert.match(html, /静的なフローチャートの一部/);
+    // Pipes inside a GFM table must not truncate this supported edge syntax.
+    assert.match((await page.locator("table td").allTextContents()).join("\n"), /A -->\|text\| B/);
+    assert.match(html, /手書き風の線/);
+    assert.match(html, /docs\/diagram-plugins\.md/);
+    assert.match(html, /docs\/format-plugin-api\.md/);
+    assert.match(html, /plugin\/library\/README\.md/);
+    await page.goto(base + "docs/api.html", { waitUntil: "domcontentloaded" });
+    const api = await page.content();
+    assert.match(api, /プラグイン API/);
+    assert.match(api, /bdf\.mbt\/plugin\/adapters\/mermaid/);
+    assert.match(api, /docs\/diagram-plugins\.md/);
+  });
 
   await step("docs pages show the sidebar and the outline", async () => {
     await fresh();
