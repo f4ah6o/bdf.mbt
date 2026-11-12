@@ -480,3 +480,7 @@ After the addition, `VERIFY_RENDER_SHARDS=4 npm run test:xlsx-compat` passed
 in 334.41 seconds, including all 144,298 render IDs in 320.2 seconds; the
 notes verifier passed its 264 cases. The existing full fixture-store check
 passed for all 804 fixture files.
+
+The separate inactive notes-exception capacity, timing, input-seed and coverage
+study is recorded in `notes-static-evaluation.md`. It does not change this gate
+or claim that the compact candidate can run the current comparator by itself.
