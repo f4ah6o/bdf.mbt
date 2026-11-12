@@ -4,6 +4,28 @@
 
 ### Added
 
+- Generic multiple-page and embedded raster-image document support in the
+  shared diagram encoder (`bdf.mbt/plugin/diagram-bdf`):
+  `encodeDiagramDocument({source, title, pages, images})` emits one obj
+  part per page and one img part per unique embedded resource, with
+  content-hash deduplication, per-part relative offsets, actual image
+  hash tables (opset-1 image op), two-way reference integrity, positive
+  drawn image rectangles, and caps on pages, primitives, resources, image
+  bytes, raster dimensions and total volume. Embedded PNG and JPEG data
+  is validated structurally and bounded (complete PNG chunk table with
+  IHDR/IDAT/IEND; complete JPEG segment table with frame, scan
+  entropy and EOI; truncation, trailing bytes and out-of-range lengths
+  rejected; CRCs left to the decoder), never fetched from remote URLs,
+  file paths, strings or other image formats. `encodeDiagram` keeps its
+  single-page API, vector-only primitive union and byte-identical output;
+  documented types ship in `types/diagram-bdf.d.ts` with a document-only
+  primitive union that adds the image primitive; the independent-reader
+  tests extend to multi-page documents
+  (`plugin/test/diagram-document.test.mjs` with in-process synthetic
+  genuinely decodable PNG/JPEG fixtures) plus a real-Chromium render
+  smoke that decodes and draws both formats through the upstream
+  `@bdfkit` renderer (`plugin/browser/diagram-render-smoke.mjs`,
+  `npm run test:plugin:diagram`).
 - A public PDF export API `bdf.mbt/pdf` (`exportPdf`) that writes BDF bytes
   as PDF bytes with the page count, the count of fonts used and the
   writer's warnings, in the browser and in Node: an explicit caller-provided
