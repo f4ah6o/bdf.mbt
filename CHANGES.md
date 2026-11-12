@@ -4,7 +4,23 @@
 
 ### Added
 
+- Reproducible measurement, packing, packing-integrity and all-case
+  equivalence tooling for the XLSX compat fixture store
+  (`compat/xlsx/tools/`), with the 2026-11-12 baseline, storage-alternative
+  comparison and migration evidence recorded in
+  [docs/xlsx-fixture-storage.md](docs/xlsx-fixture-storage.md).
+
 ### Changed
+
+- XLSX compatibility fixtures now store input XLSX and expected BDF bytes
+  deduplicated in a content-addressed pack store (`compat/xlsx/store/`)
+  behind a packed-fixture loader; case sets, bytes, options, warnings,
+  verifier comparisons, sharding and the visual harness are unchanged
+  (all-case equivalence against `e02e4e02` recorded in
+  [docs/xlsx-fixture-storage.md](docs/xlsx-fixture-storage.md)), shrinking
+  the `compat/xlsx` working tree from 714 MiB to 334 MiB. Fixture
+  regeneration now ends with `pack-fixtures.mjs`; see the new fixture
+  storage section in `compat/xlsx/README.md`.
 
 ### Fixed
 

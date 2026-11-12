@@ -1,6 +1,8 @@
 import { createReadStream } from 'node:fs';
 import { createServer } from 'node:http';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { loadFixture } from './fixtures.mjs';
 
 // Keep each capture's network request open until its own asynchronous render
 // finishes. VLMKit waits for network idle before taking the screenshot.
@@ -8,7 +10,7 @@ export function createVisualServer(root) {
   const pending = new Map();
   const allowed = ['/compat/xlsx/', '/node_modules/@bdfkit/', '/_build/js/debug/build/compat/xlsx/', '/_build/js/debug/build/browser/'];
   const mime = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json' };
-  return createServer((request, response) => {
+  return createServer(async (request, response) => {
     let url;
     try { url = new URL(request.url, 'http://localhost'); } catch { response.writeHead(400).end(); return; }
     const token = url.searchParams.get('token');
@@ -33,6 +35,21 @@ export function createVisualServer(root) {
     const file = path.resolve(root, '.' + pathname);
     if (!allowed.some(prefix => file.startsWith(path.resolve(root, '.' + prefix) + path.sep))) {
       response.writeHead(403).end(); return;
+    }
+    // Packed fixtures store their inputs and expected BDF in the blob store;
+    // expand them here so the browser pages keep fetching plain case JSON.
+    // A damaged store surfaces as HTTP 500 with the reason, because a silent
+    // empty response would turn into a misleading comparison failure.
+    if (file.startsWith(path.resolve(root, './compat/xlsx') + path.sep) && path.extname(file) === '.json') {
+      try {
+        const fixture = await loadFixture(pathToFileURL(file));
+        response.setHeader('Content-Type', 'application/json');
+        response.end(JSON.stringify(fixture));
+      } catch (error) {
+        if (!response.headersSent) response.writeHead(500);
+        response.end(`fixture store error: ${error?.message ?? error}`);
+      }
+      return;
     }
     let stream;
     try { stream = createReadStream(file); } catch { response.writeHead(400).end(); return; }
