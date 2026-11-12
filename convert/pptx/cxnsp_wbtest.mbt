@@ -155,7 +155,9 @@ test "PPTX connectors keep their transform and group placement" {
   )
   let shapes = pptx_collect_tree_shapes(root, false)
   assert_eq(shapes.length(), 2)
-  let (flat, _) = shapes[0]
+  guard shapes[0] is PptxTreeShape(flat, _) else {
+    fail("a collected flat connector")
+  }
   assert_eq(flat.element.name.local_name, "cxnSp")
   let flat_xform = pptx_transform_node(
     pptx_child(pptx_child(Some(flat), "spPr"), "xfrm"),
@@ -169,7 +171,9 @@ test "PPTX connectors keep their transform and group placement" {
   assert_eq(flat_xform.rotation, 90.0)
   assert_false(flat_xform.flip_h)
   // The group scales by 0.5 and moves the child space.
-  let (child, placement) = shapes[1]
+  guard shapes[1] is PptxTreeShape(child, placement) else {
+    fail("a collected grouped connector")
+  }
   assert_eq(child.element.name.local_name, "cxnSp")
   assert_eq(placement.sx, 0.5)
   assert_eq(placement.sy, 0.5)
@@ -203,7 +207,10 @@ test "PPTX connector placeholders are read through nvCxnSpPr" {
   // A layout tree keeps only shapes without a placeholder.
   let kept = pptx_collect_tree_shapes(root, true)
   assert_eq(kept.length(), 1)
-  assert_eq(kept[0].0.element.name.local_name, "cxnSp")
+  guard kept[0] is PptxTreeShape(kept_shape, _) else {
+    fail("a collected layout connector")
+  }
+  assert_eq(kept_shape.element.name.local_name, "cxnSp")
   // A slide body keeps every shape.
   assert_eq(pptx_collect_tree_shapes(root, false).length(), 3)
 }
@@ -233,7 +240,10 @@ test "PPTX hidden shapes stay out through any container" {
   // and the shapes inside them are never drawn.
   let collected = pptx_collect_tree_shapes(root, false)
   assert_eq(collected.length(), 1)
-  assert_eq(collected[0].0.element.name.local_name, "cxnSp")
+  guard collected[0] is PptxTreeShape(collected_shape, _) else {
+    fail("a collected visible connector")
+  }
+  assert_eq(collected_shape.element.name.local_name, "cxnSp")
 }
 
 ///|

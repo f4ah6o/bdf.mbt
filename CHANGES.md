@@ -101,6 +101,20 @@
   regeneration now ends with `pack-fixtures.mjs`; see the new fixture
   storage section in `compat/xlsx/README.md`.
 
+- PPTX shapes, pictures, non-table graphic frames and groups with
+  alternative text draw inside a FIGURE mark of that text, as upstream
+  `beginFigure`/`endFigure` wrap them: the trimmed `cNvPr` `descr` wins
+  over `title`, and a shape marked decorative, hidden or without
+  alternative text draws unmarked. Group FIGURE marks nest in document
+  order around their children, and a normal shape's text stays outside
+  its drawing's FIGURE. A graphic frame is treated as a table exactly
+  when its `graphic/graphicData` holds a `tbl` element — for such frames
+  the port suppresses the frame's FIGURE and keeps the port's existing
+  table rendering (which still draws nothing for a table with no text);
+  no change to upstream's own table structure or empty-table drawing is
+  implied. SmartArt, charts and other embeddings draw inside the
+  frame's FIGURE.
+
 ### Fixed
 
 - draw.io labels now honor directional spacing, including AWS group-label icon clearance,
