@@ -22,7 +22,8 @@ export declare interface PdfExportOptions {
    * The fallback font program (TrueType or OpenType, Uint8Array bytes)
    * whose subset the writer embeds for the text that the document carries
    * no font of — the text of a form fill, and any Japanese. Without one,
-   * such text is reported in the warnings instead of drawn.
+   * that text is drawn with the PDF standard font as "?" and the result
+   * warns about exactly which characters were replaced.
    */
   fallbackFont?: Uint8Array;
 }
@@ -33,7 +34,7 @@ export declare interface PdfExportResult {
   bytes: Uint8Array;
   /** The count of PDF pages. */
   pages: number;
-  /** The count of embedded fonts. */
+  /** The count of fonts used; the PDF standard font counts too, though no program of it is embedded. */
   fonts: number;
   /**
    * What the writer could not reproduce: omitted images, cropped images,

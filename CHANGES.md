@@ -5,7 +5,7 @@
 ### Added
 
 - A public PDF export API `bdf.mbt/pdf` (`exportPdf`) that writes BDF bytes
-  as PDF bytes with the page count, the count of embedded fonts and the
+  as PDF bytes with the page count, the count of fonts used and the
   writer's warnings, in the browser and in Node: an explicit caller-provided
   fallback font with subset embedding for form text and Japanese, view
   selection, rejection of wrong types, broken BDF, unknown views and

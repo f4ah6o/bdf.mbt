@@ -2,8 +2,8 @@
 // `dist/pdf/index.js` and exposed as `bdf.mbt/pdf`. It wraps the compiled
 // MoonBit bridge `bdf_pdf_export` (staged beside it as `dist/pdf/pdf_js.js`)
 // with the typed promise contract: BDF bytes and an explicit fallback font
-// in, PDF bytes, the page count, the count of embedded fonts and the
-// writer's warnings out. Saving the result — a browser Blob download or a
+// in, PDF bytes, the page count, the count of fonts used and the writer's
+// warnings out. Saving the result — a browser Blob download or a
 // Node file write — is the caller's job.
 //
 // The conversion itself runs synchronously in the calling thread (the
@@ -31,7 +31,9 @@ const EMPTY_BYTES = new Uint8Array(0);
  *   current writer writes them uncompressed, and the option is reserved.
  * @property {Uint8Array} [fallbackFont] The TrueType or OpenType program
  *   whose subset the writer embeds for the text that the document carries
- *   no font of, such as the text of a form fill. Japanese needs one.
+ *   no font of, such as the text of a form fill. Without one, that text is
+ *   drawn with the PDF standard font as "?" and the result warns about the
+ *   replaced characters; Japanese therefore needs one.
  */
 
 /**
@@ -40,7 +42,8 @@ const EMPTY_BYTES = new Uint8Array(0);
  * @typedef {object} PdfExportResult
  * @property {Uint8Array} bytes The written PDF.
  * @property {number} pages The count of PDF pages.
- * @property {number} fonts The count of embedded fonts.
+ * @property {number} fonts The count of fonts used; the PDF standard font
+ *   counts, though no program of it is embedded.
  * @property {string[]} warnings What the writer could not reproduce:
  *   omitted images, shadows and filters, approximated gradients, an
  *   unreadable or missing-glyph fallback font, an unimplemented tagged
@@ -92,10 +95,10 @@ export async function exportPdf(input, options = {}) {
       throw new TypeError(`the ${flag} option is a boolean`);
     }
   }
+  // An absent font is the documented "no fallback" default; anything else,
+  // including the empty string or an empty object, must be real bytes.
   const fallbackFont = options.fallbackFont ?? EMPTY_BYTES;
-  if (fallbackFont.length > 0) {
-    expectUint8Array(fallbackFont, "fallbackFont");
-  }
+  expectUint8Array(fallbackFont, "fallbackFont");
   const bridgeOptions = JSON.stringify({
     views,
     tagged: options.tagged === true,

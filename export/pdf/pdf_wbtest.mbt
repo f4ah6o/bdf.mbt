@@ -93,14 +93,16 @@ test "pdf warns about the characters the standard font draws as ?" {
   assert_true(warned)
   // the "?" replaces the characters in the content stream
   assert_true(japanese.bytes.to_string().contains("(???"))
-  // ASCII text the standard font covers draws without any warning
+  // ASCII text the standard font covers draws without any warning;
+  // spaces and mixed content are equally inside its codeset
   let ascii = write_bytes(fontless_pdf_document("Hello PDF"), PdfOptions::new())
   assert_eq(ascii.warnings.length(), 0)
-  // a fallback font (the writer embeds its subset) draws the same text
-  // without any warning: the document is a real TrueType-less fixture, so
-  // the subsetting path itself is covered by the site's form PDF tests
   let mixed = write_bytes(fontless_pdf_document("A B"), PdfOptions::new())
   assert_eq(mixed.warnings.length(), 0)
+  // the subset embedding of a real fallback font (the warnings-free path
+  // for fontless Japanese text) is covered by the Node installed tests,
+  // which pass the repository's OFL-licensed TrueType test fonts through
+  // the public API
 }
 
 ///|

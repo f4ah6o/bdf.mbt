@@ -20,7 +20,7 @@ The examples below pin the first public release for reproducibility.
 | `bdf.mbt/workers/render` | Page rasterizing Worker. |
 | `bdf.mbt/workers/plugin` | Prebuilt plugin Worker with the builtin DocuWorks adapter and the Excalidraw and Mermaid diagram adapters registered. |
 | `bdf.mbt/forms` | `bdf_form_describe`, `bdf_form_fill`, `bdf_form_compile`. |
-| `bdf.mbt/pdf` | `exportPdf`: write BDF bytes as PDF bytes with pages count, embedded-font count and warnings. |
+| `bdf.mbt/pdf` | `exportPdf`: write BDF bytes as PDF bytes with pages count, fonts count and warnings. |
 | `bdf.mbt/xdw` | Raw `bdf_xdw_detect` and `bdf_xdw_convert` bindings. |
 | `bdf.mbt/plugin` | Descriptor validation, registry, host, plugin types, and DocuWorks binding helpers. |
 | `bdf.mbt/plugin/worker` | `installPluginConverterWorker`. |
@@ -245,7 +245,7 @@ Do not call `bdf_create_native_converter` in Node expecting it to create a
 
 `exportPdf` from `bdf.mbt/pdf` writes the BDF bytes a converter or a form
 fill produced as a PDF: it returns the PDF bytes, the page count, the count
-of embedded fonts and the warnings, and leaves saving the file to the
+of fonts used and the warnings, and leaves saving the file to the
 caller. It runs in the browser and in Node with the same import:
 
 ```js
@@ -265,7 +265,11 @@ if (result.warnings.length > 0) {
 
 The conversion runs synchronously in the calling thread; the returned
 promise resolves as soon as the bytes are written. The input is only read:
-its buffer is never modified or detached.
+its buffer is never modified or detached. `result.fonts` counts the fonts
+the PDF uses — the PDF standard font counts, though no program of it is
+embedded — and unknown option keys are ignored, so a misspelled option
+(JavaScript) or field (the options JSON of the compiled bridge) falls back
+to its default silently; the TypeScript declarations reject them.
 
 ### Fallback fonts and Japanese
 
@@ -357,7 +361,7 @@ converted document; every route produces the same input for `exportPdf`.
 | An unreadable fallback font | `the fallback font could not be read` / `could not be subset` |
 | A font whose license forbids embedding | `… is not embedded: its license does not allow embedding` |
 | Characters written as `?` without a usable font | `text without a font of its own is drawn with the PDF standard font, which has no glyph for: …` |
-| Deeply nested or broken objects | `objects draw objects too deep`, `an object could not be read`, `a layer could not be read` |
+| Deeply nested or broken objects | `objects draw objects too deep`, `an object could not be read`, `a child object could not be read`, `a layer could not be read`, `a path could not be read`, `a clip path could not be read` |
 
 Treat any warning as a visible omission: a result with warnings is not a
 faithful reproduction of the source document, so surfaces that show it

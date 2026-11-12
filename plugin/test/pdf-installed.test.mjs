@@ -249,6 +249,11 @@ if (!installed) {
     await assert.rejects(exportPdf(input, { tagged: 1 }), /tagged option is a boolean/);
     await assert.rejects(exportPdf(input, { compress: "yes" }), /compress option is a boolean/);
     await assert.rejects(exportPdf(input, { fallbackFont: "font" }), /Uint8Array/);
+    // an empty string or an empty object is not "no font": only the absence
+    // of the field is, so both must reject instead of silently passing
+    await assert.rejects(exportPdf(input, { fallbackFont: "" }), /Uint8Array/);
+    await assert.rejects(exportPdf(input, { fallbackFont: {} }), /Uint8Array/);
+    await assert.rejects(exportPdf(input, { fallbackFont: 0 }), /Uint8Array/);
   });
 
   test("exportPdf rejects broken BDF bytes", async () => {
@@ -260,12 +265,55 @@ if (!installed) {
   });
 
   test("exportPdf rejects a view the document does not have", async () => {
-    const { bdf, filled } = await fill("text-receipt.txt", "text-receipt.data.json");
-    const ids = JSON.stringify({ views: ["no-such-view"] });
-    void filled;
+    const { bdf } = await fill("text-receipt.txt", "text-receipt.data.json");
     await assert.rejects(
-      exportPdf(new Uint8Array(bdf), JSON.parse(ids)),
+      exportPdf(new Uint8Array(bdf), { views: ["no-such-view"] }),
       /the document has no view named "no-such-view"/,
+    );
+  });
+
+  test("exportPdf writes only the requested views of a multi-view document", async () => {
+    const { BdfDocument, BufferSource } = await import("@bdfkit/core");
+    const { bdf } = await fill("form-pages.docx", "form-pages.json");
+    const document = await BdfDocument.open(new BufferSource(bdf));
+    const counts = document.manifest.views.map(view => {
+      assert.equal(typeof view.id, "string");
+      return { id: view.id, pages: view.pages?.length ?? 0 };
+    });
+    assert.ok(counts.length >= 2, `expected a multi-view sample, got ${JSON.stringify(counts)}`);
+    const [first, second] = counts;
+    const every = await exportPdf(new Uint8Array(bdf), { fallbackFont: proportional });
+    assert.equal(every.pages, counts.reduce((sum, view) => sum + view.pages, 0));
+    const onlyFirst = await exportPdf(new Uint8Array(bdf), {
+      views: [first.id],
+      fallbackFont: proportional,
+    });
+    assert.equal(onlyFirst.pages, first.pages, `expected only view ${first.id}`);
+    assert.ok(Buffer.from(onlyFirst.bytes).toString("latin1").startsWith("%PDF-"));
+    const onlySecond = await exportPdf(new Uint8Array(bdf), {
+      views: [second.id, first.id],
+      fallbackFont: proportional,
+    });
+    assert.equal(onlySecond.pages, second.pages + first.pages, "the view order must not matter");
+  });
+
+  test("exportPdf rejects a sheet-only document instead of an empty PDF", async () => {
+    const { BdfDocument, BufferSource } = await import("@bdfkit/core");
+    const { bdf, filled } = await fill("form-fixed.xlsx", "form-fixed.json");
+    // the office form fill that produced it holds only a sheet view: no view
+    // has a page, and the export must say so instead of writing an empty PDF
+    const document = await BdfDocument.open(new BufferSource(bdf));
+    assert.ok(document.manifest.views.length >= 1, "expected the fill to have a view");
+    assert.equal(document.manifest.views.every(view => (view.pages?.length ?? 0) === 0), true,
+      `expected a sheet-only sample, got ${JSON.stringify(document.manifest.views.map(view => view.id))}`);
+    assert.equal(filled.views.length, 1);
+    await assert.rejects(
+      exportPdf(new Uint8Array(bdf), { fallbackFont: proportional }),
+      /the selected views hold no page/,
+    );
+    await assert.rejects(
+      exportPdf(new Uint8Array(bdf), { views: [document.manifest.views[0].id] }),
+      /the selected views hold no page/,
     );
   });
 }
