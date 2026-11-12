@@ -134,7 +134,11 @@ try {
     BDF_LIBRARY_ADAPTER: adapter,
     BDF_LIBRARY_EMITTED_WORKER: downstreamWorker,
   };
-  const nodeTests = spawnSync("node", ["--test", resolve(root, "plugin/test/library-installed.test.mjs")], {
+  const nodeTests = spawnSync("node", [
+    "--test",
+    resolve(root, "plugin/test/library-installed.test.mjs"),
+    resolve(root, "plugin/test/pdf-installed.test.mjs"),
+  ], {
     cwd: root,
     encoding: "utf8",
     env,

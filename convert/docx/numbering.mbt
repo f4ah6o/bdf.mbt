@@ -169,6 +169,15 @@ fn docx_numbering_text(
 }
 
 ///|
+/// The run properties of a list label: the paragraph mark's formatting
+/// with the decorations upstream's makeLabel clears (wordproc/model.go):
+/// underline, shading and highlight never carry into a number or bullet.
+fn docx_numbering_label_props(mark : DocxRunProps) -> DocxRunProps {
+  let props = mark.copy()
+  { ..props, underline: "none", has_shading: false, highlight: "" }
+}
+
+///|
 fn docx_number_paragraph(
   paragraph : DocxTextParagraph,
   numbering : DocxNumbering,
@@ -220,11 +229,12 @@ fn docx_number_paragraph(
   if prefix == "" {
     return
   }
+  let label = docx_numbering_label_props(paragraph.mark)
   paragraph.items.insert(0, {
     kind: "char",
     text: prefix,
     clear: false,
-    props: paragraph.mark,
+    props: label,
     width: 0.0,
     height: 0.0,
     draw_width: 0.0,
@@ -255,7 +265,7 @@ fn docx_number_paragraph(
     kind: "tab",
     text: "\t",
     clear: false,
-    props: paragraph.mark,
+    props: label,
     width: 0.0,
     height: 0.0,
     draw_width: 0.0,

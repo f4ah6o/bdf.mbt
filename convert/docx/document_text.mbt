@@ -145,6 +145,7 @@ priv struct DocxTextDocument {
   language : String
   background : UInt32?
   has_math : Bool
+  warnings : Array[String]
 }
 
 ///|
@@ -170,6 +171,9 @@ priv struct DocxTextWalker {
   // Set when this walker parses an OMML formula, so the converter can report
   // that no font with a MATH table was available to lay it out.
   mut has_math : Bool
+  // Degrade notes, such as drawings whose visual content is not supported.
+  // The converter surfaces them in its result instead of failing the part.
+  warnings : Array[String]
 }
 
 ///|
@@ -255,6 +259,16 @@ fn docx_text_unsupported(name : String) -> Unit raise {
 }
 
 ///|
+/// Note content the converter degrades instead of drawing or extracting it.
+/// The note is reported once per walker; the converter merges the notes of
+/// every walker into the warnings of its result.
+fn docx_text_warn(walker : DocxTextWalker, message : String) -> Unit {
+  if !walker.warnings.contains(message) {
+    walker.warnings.push(message)
+  }
+}
+
+///|
 fn docx_text_section_check(section : DocxXmlNode) -> Unit raise {
   for child in section.children {
     match child.name() {
@@ -285,6 +299,18 @@ fn docx_text_section_check(section : DocxXmlNode) -> Unit raise {
         }
       other => docx_text_unsupported(other)
     }
+  }
+}
+
+///|
+/// The paragraph mark's direct run properties: w:pPr/w:rPr without its
+/// w:rStyle selector. Upstream resolves the mark with the default
+/// character style (wordproc/model.go paragraph() passes rStyle ""), so a
+/// character style named inside the mark's rPr is not consulted there.
+fn docx_mark_rpr(direct : DocxXmlNode?) -> DocxXmlNode? raise {
+  match docx_style_child(direct, "rPr") {
+    Some(value) => Some(docx_style_without_selector(value, "rStyle"))
+    None => None
   }
 }
 
@@ -345,6 +371,10 @@ fn docx_text_ppr(props : DocxParagraphProps, node : DocxXmlNode) -> Bool raise {
         }
         props.apply_node(child)
       }
+      // The paragraph mark's own run properties. Upstream's applyPPr has
+      // no default case: this child belongs to the mark resolved like a
+      // run in blocks() (wordproc/model.go paragraph()).
+      "rPr" => ()
       other => docx_text_unsupported(other)
     }
   }
@@ -586,6 +616,7 @@ fn docx_text_anchor(container : DocxXmlNode) -> (Double, Double, DocxAnchor) {
 
 ///|
 fn docx_text_drawing(
+  walker : DocxTextWalker,
   node : DocxXmlNode,
   items : Array[DocxTextItem],
   props : DocxRunProps,
@@ -607,8 +638,10 @@ fn docx_text_drawing(
     None => (0.0, 0.0)
   }
   let mut embed = ""
+  let mut blip = false
   fn find_blip(value : DocxXmlNode) -> Unit {
     if value.name() == "blip" {
+      blip = true
       embed = docx_attribute_any(value.element, "embed", "")
     }
     for child in value.children {
@@ -616,6 +649,13 @@ fn docx_text_drawing(
     }
   }
   find_blip(container)
+  if blip && embed == "" {
+    // A picture drawing with a blip that names no image part keeps failing
+    // the part: the file it points at is lost, and the degrade below is for
+    // drawings without any embedded image at all. A blip with an embed that
+    // no relationship resolves to fails when the image is laid out.
+    docx_text_unsupported("picture drawing with a missing image reference")
+  }
   if embed == "" {
     let mut box_text = ""
     fn find_text_box(value : DocxXmlNode) -> Unit {
@@ -646,7 +686,64 @@ fn docx_text_drawing(
       docx_text_push(items, "text", box_text, props)
       return
     }
-    docx_text_unsupported("drawing without an embedded image")
+    // The drawing is a shape, a group, a chart or SmartArt: visual content
+    // this converter does not draw. Upstream renders it, so the document is
+    // degraded, not failed: the drawing is skipped, one warning is surfaced,
+    // and docPr/@descr survives as the FIGURE mark of the skipped content,
+    // the way upstream marks the alternative text of a drawing.
+    docx_text_warn(
+      walker,
+      "DOCX: a drawing without an embedded image or text box (shape, group, chart or SmartArt) was skipped",
+    )
+    let descr = match container.child("docPr") {
+      Some(pr) => docx_attribute(pr.element, "descr", "").trim()
+      None => ""
+    }
+    if descr == "" {
+      return
+    }
+    let anchored = node.child("inline") is None
+    let mut x = 0.0
+    let mut y = 0.0
+    let mut anchor : DocxAnchor? = None
+    if anchored {
+      let (anchor_x, anchor_y, parsed) = docx_text_anchor(container)
+      x = anchor_x
+      y = anchor_y
+      anchor = Some(parsed)
+    }
+    items.push({
+      kind: "figure",
+      text: descr.to_string(),
+      clear: false,
+      props,
+      width,
+      height,
+      draw_width: 0.0,
+      draw_height: 0.0,
+      effect_left: 0.0,
+      effect_top: 0.0,
+      effect_right: 0.0,
+      effect_bottom: 0.0,
+      anchored,
+      anchor,
+      x,
+      y,
+      crop_left: 0.0,
+      crop_top: 0.0,
+      crop_right: 0.0,
+      crop_bottom: 0.0,
+      rotation: 0.0,
+      flip_h: false,
+      flip_v: false,
+      link: "",
+      small_caps: false,
+      field_format: "",
+      shade: None,
+      border_width: 0.0,
+      border_color: None,
+    })
+    return
   }
   let (rotation, flip_h, flip_v) = docx_picture_transform(container)
   let anchored = node.child("inline") is None
@@ -998,14 +1095,62 @@ fn docx_omml_linear(node : DocxXmlNode) -> String {
 }
 
 ///|
+// The markup-compatibility namespace prefixes whose mc:Choice content the
+// walker draws instead of the Fallback. A copy of upstream wordproc/docx.go.
+fn docx_alternate_content_prefix_supported(prefix : String) -> Bool {
+  match prefix {
+    "wps" | "wpg" | "wpc" | "wp14" | "w14" | "w15" | "a14" | "pic14" => true
+    _ => false
+  }
+}
+
+///|
+// A Choice qualifies when its Requires attribute names at least one prefix
+// and every prefix is supported, as upstream requiresAll does: a Choice
+// without Requires defers to the Fallback.
+fn docx_alternate_content_choice_supported(choice : DocxXmlNode) -> Bool {
+  let requires = docx_attribute(choice.element, "Requires", "")
+  let prefix = StringBuilder()
+  let mut count = 0
+  let mut supported = true
+  fn check(word : String) -> Bool {
+    count += 1
+    docx_alternate_content_prefix_supported(word)
+  }
+  for ch in requires {
+    if ch.is_whitespace() {
+      if prefix.to_string() != "" {
+        if !check(prefix.to_string()) {
+          supported = false
+        }
+        prefix.reset()
+      }
+    } else {
+      prefix.write_char(ch)
+    }
+  }
+  if prefix.to_string() != "" {
+    if !check(prefix.to_string()) {
+      supported = false
+    }
+  }
+  supported && count > 0
+}
+
+///|
 fn docx_alternate_content(node : DocxXmlNode) -> DocxXmlNode? {
   for child in node.children {
-    if child.name() == "Choice" {
+    if child.name() == "Choice" && docx_alternate_content_choice_supported(child) {
       return Some(child)
     }
   }
   for child in node.children {
     if child.name() == "Fallback" {
+      return Some(child)
+    }
+  }
+  for child in node.children {
+    if child.name() == "Choice" {
       return Some(child)
     }
   }
@@ -1195,11 +1340,37 @@ fn docx_text_run(
     return
   }
   let first = items.length()
+  docx_text_run_content(walker, node, items, props)
+  let highlight = docx_highlight_color(props.highlight)
+  for index in first..<items.length() {
+    items[index].link = walker.current_link
+    items[index].small_caps = (props.toggles & 8) != 0 &&
+      (props.toggles & 4) == 0
+    if props.has_shading {
+      items[index].shade = Some(props.shading)
+    } else if highlight is Some(color) {
+      items[index].shade = Some(color)
+    }
+  }
+}
+
+///|
+// The run content of one node, with resolved run properties. A chosen
+// mc:AlternateContent branch is run content in place (upstream splices the
+// chosen child into its parent), so it is dispatched back through here
+// instead of the paragraph inline walker, which rejects a direct drawing.
+fn docx_text_run_content(
+  walker : DocxTextWalker,
+  node : DocxXmlNode,
+  items : Array[DocxTextItem],
+  props : DocxRunProps,
+) -> Unit raise {
   for child in node.children {
     let name = child.name()
     if name != "rPr" &&
       name != "t" &&
       name != "drawing" &&
+      name != "AlternateContent" &&
       !child.children.is_empty() {
       docx_text_unsupported(name)
     }
@@ -1289,7 +1460,7 @@ fn docx_text_run(
       "cr" => docx_text_push(items, "break", "\n", props)
       "noBreakHyphen" => docx_text_chars(walker, items, "\u2011", props)
       "softHyphen" | "lastRenderedPageBreak" => ()
-      "drawing" => docx_text_drawing(child, items, props)
+      "drawing" => docx_text_drawing(walker, child, items, props)
       "footnoteReference" =>
         docx_text_push(
           items,
@@ -1316,8 +1487,7 @@ fn docx_text_run(
       "oMath" | "oMathPara" => docx_text_omml(walker, child, items, props)
       "AlternateContent" =>
         match docx_alternate_content(child) {
-          Some(chosen) =>
-            docx_text_inlines(walker, chosen, items, paragraph_style)
+          Some(chosen) => docx_text_run_content(walker, chosen, items, props)
           None => ()
         }
       other => docx_text_unsupported(other)
@@ -1329,17 +1499,6 @@ fn docx_text_run(
         docx_text_field(items, props, field.typ, field.format, field.arg)
         field.emitted = true
       }
-    }
-  }
-  let highlight = docx_highlight_color(props.highlight)
-  for index in first..<items.length() {
-    items[index].link = walker.current_link
-    items[index].small_caps = (props.toggles & 8) != 0 &&
-      (props.toggles & 4) == 0
-    if props.has_shading {
-      items[index].shade = Some(props.shading)
-    } else if highlight is Some(color) {
-      items[index].shade = Some(color)
     }
   }
 }
@@ -2067,7 +2226,11 @@ fn docx_text_table(
           }
         None => "top"
       }
-      let (blocks, cell_math) = docx_cell_blocks(cell_node, walker.styles)
+      let (blocks, cell_math) = docx_cell_blocks(
+        cell_node,
+        walker.styles,
+        walker.warnings,
+      )
       if cell_math {
         walker.has_math = true
       }
@@ -2152,6 +2315,7 @@ fn docx_text_table(
 fn docx_cell_blocks(
   cell : DocxXmlNode,
   styles : DocxStyles,
+  warnings : Array[String],
 ) -> (Array[DocxBlock], Bool) raise {
   let walker : DocxTextWalker = {
     styles,
@@ -2163,6 +2327,7 @@ fn docx_cell_blocks(
     open_bookmarks: [],
     current_link: "",
     has_math: false,
+    warnings,
   }
   walker.blocks(cell, true)
   (walker.blocks, walker.has_math)
@@ -2193,7 +2358,16 @@ fn DocxTextWalker::blocks(
         }
         let direct = child.child("pPr")
         let (paragraph_style, props) = self.styles.resolve_paragraph(direct)
-        let mark = self.styles.resolve_run(paragraph_style, None)
+        // The paragraph mark (¶) resolves like a run: style chain plus the
+        // direct w:pPr/w:rPr, which sizes empty paragraphs upstream
+        // (wordproc/model.go paragraph()). Upstream binds the mark to the
+        // document's default character style (runProps takes rStyle ""),
+        // so an rStyle inside the mark's rPr selects nothing there; the
+        // selector is stripped before the shared resolver.
+        let mark = self.styles.resolve_run(
+          paragraph_style,
+          docx_mark_rpr(direct),
+        )
         let ends_section = docx_style_child(direct, "sectPr") is Some(_)
         if ends_section && wrapped {
           docx_text_unsupported("wrapped paragraph section")
@@ -2448,8 +2622,15 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     open_bookmarks: [],
     current_link: "",
     has_math: false,
+    warnings: [],
   }
   walker.blocks(body, false)
+  let warnings : Array[String] = []
+  for note in walker.warnings {
+    if !warnings.contains(note) {
+      warnings.push(note)
+    }
+  }
   // Formulas in table cells and in header or footer stories are parsed by
   // their own walkers, so the document holds a formula when any of them saw
   // one.
@@ -2477,11 +2658,16 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     for story in section.headers {
       let story_part = story.1
       if !stories.contains(story_part) {
-        let (paragraphs, tables, story_math) = docx_story_content(
+        let (paragraphs, tables, story_math, story_notes) = docx_story_content(
           package, story_part, styles,
         )
         if story_math {
           has_math = true
+        }
+        for note in story_notes {
+          if !warnings.contains(note) {
+            warnings.push(note)
+          }
         }
         stories[story_part] = paragraphs
         story_tables[story_part] = tables
@@ -2490,11 +2676,16 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     for story in section.footers {
       let story_part = story.1
       if !stories.contains(story_part) {
-        let (paragraphs, tables, story_math) = docx_story_content(
+        let (paragraphs, tables, story_math, story_notes) = docx_story_content(
           package, story_part, styles,
         )
         if story_math {
           has_math = true
+        }
+        for note in story_notes {
+          if !warnings.contains(note) {
+            warnings.push(note)
+          }
         }
         stories[story_part] = paragraphs
         story_tables[story_part] = tables
@@ -2521,6 +2712,7 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     language: docx_pick_language(styles, walker.paragraphs),
     background,
     has_math,
+    warnings,
   }
 }
 
@@ -2529,9 +2721,9 @@ fn docx_story_content(
   package : @ooxml.OoxmlPackage,
   part : String,
   styles : DocxStyles,
-) -> (Array[DocxTextParagraph], Array[DocxTable], Bool) {
+) -> (Array[DocxTextParagraph], Array[DocxTable], Bool, Array[String]) {
   if part == "" || !package.has(part) {
-    return ([], [], false)
+    return ([], [], false, [])
   }
   try {
     let root = docx_text_xml(
@@ -2547,6 +2739,7 @@ fn docx_story_content(
       open_bookmarks: [],
       current_link: "",
       has_math: false,
+      warnings: [],
     }
     walker.blocks(root, true)
     let paragraphs : Array[DocxTextParagraph] = []
@@ -2557,9 +2750,9 @@ fn docx_story_content(
         DocxTableBlock(table) => tables.push(table)
       }
     }
-    (paragraphs, tables, walker.has_math)
+    (paragraphs, tables, walker.has_math, walker.warnings)
   } catch {
-    _ => ([], [], false)
+    _ => ([], [], false, [])
   }
 }
 

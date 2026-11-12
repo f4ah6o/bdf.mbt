@@ -4,6 +4,17 @@
 
 ### Added
 
+- A public PDF export API `bdf.mbt/pdf` (`exportPdf`) that writes BDF bytes
+  as PDF bytes with the page count, the count of fonts used and the
+  writer's warnings, in the browser and in Node: an explicit caller-provided
+  fallback font with subset embedding for form text and Japanese, view
+  selection, rejection of wrong types, broken BDF, unknown views and
+  page-less selections, and never an empty PDF as a success. The writer now
+  also warns about the characters the PDF standard font writes as `?` when
+  no usable fallback font is supplied, instead of hiding the replacement.
+  See the usage examples, the limits table and the warning contract in
+  [plugin/library/README.md](plugin/library/README.md).
+
 - Reproducible measurement, packing, packing-integrity and all-case
   equivalence tooling for the XLSX compat fixture store
   (`compat/xlsx/tools/`), with the 2026-11-12 baseline, storage-alternative
@@ -23,6 +34,18 @@
   storage section in `compat/xlsx/README.md`.
 
 ### Fixed
+
+- PPTX connectors (`p:cxnSp`) are drawn: the slide tree admits them like
+  `p:sp` shapes with their transforms, line styles, dashes and arrowheads,
+  their placeholders are read through `p:nvCxnSpPr` the way upstream's
+  `PlaceholderOf` does, and a connector box with a zero width or height
+  (a straight connector between aligned shapes) keeps its shape instead
+  of being skipped; upstream `drawSp` has no size guard. A connector
+  without a transform stays out, matching upstream. A shape whose
+  `p:cNvPr` carries `hidden="1"` — connectors included — is no longer
+  drawn, as upstream `drawElem` leaves it out. The relaxed zero-extent
+  rule is bounded to connectors; pictures, tables and charts keep the
+  port's existing sizing admission.
 
 - Installation and release guides now point to the published `bdf.mbt@2026.11.1`
   and document the remaining staged bootstrap reservation.
