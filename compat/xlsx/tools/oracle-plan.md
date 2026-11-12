@@ -276,3 +276,40 @@ to MinInt64. ARM64 execution has not been performed. An actual fixed ARM64
 oracle comparison is required before claiming these candidate causes proven
 across architectures; patching upstream or adjusting expected values to match
 the current host would violate the migration contract.
+
+## Approved ARM64 execution comparison (2026-11-13)
+
+After explicit approval, the official Ubuntu noble-updates `qemu-user`
+`1:8.2.2+ds-0ubuntu1.18` package was extracted into a user-local directory.
+System installation could not use sudo because the executor has
+`no_new_privileges`; no system privilege/security setting was changed.
+The downloaded package SHA256 was
+`9655f3e7e50af597e1b845822c47af9231f9f1bcb8c99e586db9da775d70c041`.
+
+A fresh oracle was built with the current adapters, pinned upstream and
+Go 1.27.0, Linux/ARM64 v8.0. Its binary SHA256 was
+`6425c89b0af6753bfc03735695f655e7d4d11c7fcaab33b325049fe2b6fc7035`.
+Running the existing authenticated `generate-oracle.mjs --emulator
+/path/to/qemu-aarch64` completed all 724 adapters in 573.27 seconds,
+maximum RSS 461108 KiB. The unchanged strict `compare-oracle.mjs` compared
+803 historical files: **800 equal, 3 different, zero missing, zero
+read/parse failures, seven previously inventoried extra outputs**.
+
+The only differences in this run were `sheet-multiple-notes-filter.json`
+(35/128 cases), `sheet-multiple-notes-legacy.json` (2/8), and
+`sheet-multiple-notes.json` (43/128). Their map-order nondeterminism remains
+unresolved; these counts are observations, not an exception allowance.
+The other 38 files differing in the AMD64 run now match without tolerance,
+normalization, upstream edits, or replacing expected values. This supports
+runtime/architecture attribution but does not prove the historical corpus's
+build provenance.
+
+The arithmetic probe also confirmed ARM64 Log10 of
+`8.76924159474237e-310` is `-309.05703796483925`, unlike the AMD64 result
+recorded above. ARM64 float-to-int64 maps NaN to zero and positive overflow
+to MaxInt64, rather than AMD64 MinInt64. All 20,000 color and 19,987 general
+cases match historical expectations under this build.
+
+The migration gate still exits nonzero because three different files and
+seven extra files remain. Static fixtures are retained. This was one full
+ARM64 run, not a repeatability proof or a full MoonBit compatibility run.
