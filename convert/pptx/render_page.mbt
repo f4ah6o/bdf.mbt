@@ -39,8 +39,8 @@ fn pptx_object_is_empty(data : Bytes) -> Bool {
 fn pptx_collect_tree_shapes(
   root : PptxXmlNode,
   skip_placeholders : Bool,
-) -> Array[(PptxXmlNode, PptxPlacement)] {
-  let shapes : Array[(PptxXmlNode, PptxPlacement)] = []
+) -> Array[PptxTreeEntry] {
+  let shapes : Array[PptxTreeEntry] = []
   match pptx_child(pptx_child(Some(root), "cSld"), "spTree") {
     Some(tree) =>
       pptx_collect_shapes(
@@ -59,10 +59,20 @@ fn pptx_emit_shapes(
   ctx : PptxShapeContext,
   object : @core.ObjectBuilder,
   part : String,
-  shapes : Array[(PptxXmlNode, PptxPlacement)],
+  shapes : Array[PptxTreeEntry],
 ) -> Unit raise {
   for shape_entry in shapes {
-    let (shape, placement) = shape_entry
+    let (shape, placement) = match shape_entry {
+      PptxTreeFigureBegin(alt) => {
+        object.mark(@core.MARK_FIGURE, alt)
+        continue
+      }
+      PptxTreeFigureEnd => {
+        object.mark(@core.MARK_END, "")
+        continue
+      }
+      PptxTreeShape(shape, placement) => (shape, placement)
+    }
     let mut transform = if shape.element.name.local_name == "graphicFrame" {
       pptx_transform_node(pptx_child(Some(shape), "xfrm"))
     } else {
@@ -114,7 +124,25 @@ fn pptx_emit_shapes(
     let shape_x = placement.tx + transform.x * placement.sx
     let shape_y = placement.ty + transform.y * placement.sy
     if shape.element.name.local_name == "graphicFrame" {
-      if pptx_emit_smartart(
+      // Tables have their own structure, as upstream drawFrame reads
+      // graphic/graphicData/tbl and leaves them outside every FIGURE.
+      if pptx_frame_table(shape) is Some(_) {
+        pptx_emit_table(
+          shape,
+          object,
+          shape_x,
+          shape_y,
+          draw_width,
+          ctx.theme,
+          ctx.theme_fonts,
+          ctx.font_ctx,
+        )
+        continue
+      }
+      // SmartArt, a chart or another embedding draws inside a FIGURE of
+      // the frame's alternative text.
+      let figure = pptx_begin_figure(object, shape)
+      if !pptx_emit_smartart(
         shape,
         ctx.package,
         part,
@@ -124,9 +152,6 @@ fn pptx_emit_shapes(
         draw_width,
         draw_height,
       ) {
-        continue
-      }
-      if pptx_table_lines(shape).is_empty() {
         pptx_emit_chart(
           shape,
           ctx.package,
@@ -139,21 +164,14 @@ fn pptx_emit_shapes(
           ctx.theme,
           ctx.theme_fonts,
         )
-      } else {
-        pptx_emit_table(
-          shape,
-          object,
-          shape_x,
-          shape_y,
-          draw_width,
-          ctx.theme,
-          ctx.theme_fonts,
-          ctx.font_ctx,
-        )
       }
+      pptx_end_figure(object, figure)
       continue
     }
     if shape.element.name.local_name == "pic" {
+      // A picture draws inside a FIGURE of its alternative text, whole
+      // as upstream drawPic wraps drawPicAt.
+      let figure = pptx_begin_figure(object, shape)
       let blip = pptx_child(pptx_child(Some(shape), "blipFill"), "blip")
       let embed = match blip {
         Some(value) => pptx_attribute_any(value.element, "embed", "")
@@ -285,6 +303,7 @@ fn pptx_emit_shapes(
       if pic_transformed {
         object.restore()
       }
+      pptx_end_figure(object, figure)
       continue
     }
     let inherited = pptx_shape_inheritance(ctx, shape)
@@ -342,6 +361,12 @@ fn pptx_emit_shapes(
     }
     let paint = pptx_shape_paint(ctx, shape, inherited)
     let line = pptx_shape_line(ctx, shape, inherited)
+    // The alternative text describes the drawing; the text stays text, as
+    // upstream drawSp closes the FIGURE before drawing the shape's text.
+    let mut figure = false
+    if !(paint is PptxPaintNone) || line is Some(_) {
+      figure = pptx_begin_figure(object, shape)
+    }
     let center_x = shape_x + draw_width / 2.0
     let center_y = shape_y + draw_height / 2.0
     let path_rotation = transform.rotation + placement.rotation
@@ -510,6 +535,7 @@ fn pptx_emit_shapes(
     if fill_alpha is Some(_) {
       object.restore()
     }
+    pptx_end_figure(object, figure)
     let text_rotation = transform.rotation + placement.rotation
     let text_cx = if placement.rotation != 0.0 {
       placement.cx

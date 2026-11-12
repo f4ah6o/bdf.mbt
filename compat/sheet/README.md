@@ -22,7 +22,43 @@ From an upstream checkout, regenerate it with:
 ```sh
 go run /absolute/path/to/bdf.mbt/compat/sheet/generate.go /absolute/path/to/bdf.mbt/compat/sheet/fixture.bdf /absolute/path/to/bdf.mbt/compat/sheet/split /absolute/path/to/bdf.mbt/compat/visual/synthetic.ttf /absolute/path/to/bdf.mbt/compat/sheet/encrypted.bdf /absolute/path/to/bdf.mbt/compat/sheet/encrypted-split
 go run /absolute/path/to/bdf.mbt/compat/sheet/cells-generate.go /absolute/path/to/bdf.mbt/compat/sheet/cells.bdf /absolute/path/to/bdf.mbt/compat/sheet/cells-split /absolute/path/to/bdf.mbt/compat/sheet/cells-encrypted.bdf /absolute/path/to/bdf.mbt/compat/sheet/cells-encrypted-split
+go run /absolute/path/to/bdf.mbt/compat/sheet/merge-generate.go /absolute/path/to/bdf.mbt/compat/sheet/merge.bdf /absolute/path/to/bdf.mbt/compat/sheet/merge-split /absolute/path/to/bdf.mbt/compat/sheet/merge-encrypted.bdf /absolute/path/to/bdf.mbt/compat/sheet/merge-encrypted-split
+go run /absolute/path/to/bdf.mbt/compat/sheet/cap-generate.go /absolute/path/to/bdf.mbt/compat/sheet/cap.bdf /absolute/path/to/bdf.mbt/compat/sheet/cap-split
 ```
+
+The merge fixture (`merge.bdf`, `merge-split/`, and the password-encrypted
+`merge-encrypted.bdf` / `merge-encrypted-split/`) is a 26-column by 43-row
+sheet of 8x7 tiles with a hidden column C. It anchors an A1:Z1 merge
+crossing eight tile columns and a B3:B40 merge crossing seven tile rows in
+tile (0,0), plus plain cells in tiles (3,1) and (1,5). It drives
+`compat/render_worker/merge-clipboard-test.mjs`, the sheetClipboard
+regression for merged spans wider than one tile. The cap fixture
+(`cap.bdf`, `cap-split/`) declares a 4,097-tile sheet over a 17x241 tile
+grid and drives `compat/render_worker/tile-cap-clipboard-test.mjs`, which
+asserts the 4,096-tile clipboard cap rejects the sheet before loading any
+tile object part. Both tests run through
+`npm run test:render-worker-clipboard`.
+
+`compat/sheet/viewer-selection-test.mjs` (run with
+`npm run test:sheet-selection`) drives the same cells fixture through the
+moon `Viewer` with a real render Worker. It selects a cell rectangle across
+the origin and far tiles, checks the range sent over the sheetClipboard
+request after merge expansion, compares the returned TSV and HTML with the
+upstream `@bdfkit/render` serialization (hidden row and column runs
+skipped), keeps the selection while the far tile is scrolled back out of
+view, verifies the synchronous and copy-event paths once loaded, the
+pending state while the request is in flight (including the copy behavior
+through a mocked native `ClipboardItem` and `navigator.clipboard.write`
+with promise-valued blobs, its rejected-write reporting and the
+copy-again fallback without `ClipboardItem`), and rejection plus
+`clipboarderror` handling when a split source answers 404 for one tile
+part, while tile content load failures are asserted to surface on the
+viewer `error` channel instead.
+It also checks that every tile text layer positions its text inside its own
+bounds (the Worker returns whole-sheet coordinates, which the viewer maps
+back to tile-local coordinates), performs a real pointer drag from the
+origin tile to the far tile instead of using the DOM Range API, and repeats
+the geometry and clip assertions after a zoom change.
 
 Column width fixtures use the upstream sheet and CSV converters at commit
 `4f9af52dca60be1eb0daade39f7dc41d6a1fe431` with system fonts disabled. They
