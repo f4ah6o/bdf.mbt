@@ -107,6 +107,9 @@
 
 ### Fixed
 
+- draw.io stencil elliptical arcs now recover signed angles correctly, fixing
+  distorted AWS Cloud icons and arc paths that escaped their intended bounds.
+
 - draw.io block/classic markers now use upstream default sizing, inset tips,
   classic notches, configured stroke width and fill/stroke behavior, and shorten
   the rendered line without changing route or label anchors.

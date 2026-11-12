@@ -54,6 +54,23 @@ after resizing to the common size). The remaining page-bbox off-by-one
 difference between the upstream CLI and the no-font MoonBit worker, and
 edge route paths are a separate slice.
 
+## Stencil elliptical-arc regression
+
+`moon test convert/drawio --target js` (also `wasm-gc` and `native`) checks
+quarter arcs in both directions, semicircles, large arcs, rotation, corrected
+radii and the first small arc in the public AWS Cloud stencil. Signed angles
+must be recovered from the normalized dot product, not treated as cosines.
+The upstream reference is `converter/drawio/canvas.go` `arcToCurves` at the
+commit above; it obtains angles using `atan2`.
+
+After `npm ci` and `moon build --target js native_converter_worker`, run
+`node compat/drawio/stencil-arc-test.mjs`. The independent BDF decoder checks
+that the complete AWS Cloud corner stencil, including Bezier controls, remains
+inside its intended 25-unit square. This is not a clipping workaround.
+For same-renderer visual comparison use `oracle-aws.sh` above on each revision.
+The arc correction does not implement edge routing, rounded connectors or
+marker parity; remaining differences must be evaluated separately.
+
 ## Open-arrow regression
 
 `moon test convert/drawio --target js` (also wasm-gc/native) exercises open
