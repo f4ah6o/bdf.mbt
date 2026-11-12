@@ -1506,9 +1506,6 @@ function jpegRasterInfo(bytes, view, check) {
       if (width === null || height === null) {
         throw new DiagramEncodeError("JPEG scan starts before the frame header", "invalid-input");
       }
-      if (sawScan) {
-        throw new DiagramEncodeError("JPEG has more than one scan", "invalid-input");
-      }
       if (at + 4 > bytes.length) {
         throw new DiagramEncodeError("JPEG scan header is truncated", "invalid-input");
       }
@@ -1517,6 +1514,7 @@ function jpegRasterInfo(bytes, view, check) {
         throw new DiagramEncodeError("JPEG scan header is out of range", "invalid-input");
       }
       sawScan = true;
+      scanBytes = 0; // each progressive scan must carry its own entropy data
       scanning = true;
       at += 2 + length;
       continue;

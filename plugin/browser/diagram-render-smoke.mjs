@@ -17,7 +17,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import { chromium } from "playwright";
 
-import { syntheticJpeg, syntheticPng } from "../test/synthetic-image.mjs";
+import { syntheticJpeg, syntheticPng, syntheticProgressiveJpeg } from "../test/synthetic-image.mjs";
 
 const root = resolve(import.meta.dirname, "../..");
 const RED = [220, 30, 30];
@@ -82,7 +82,7 @@ const red = syntheticPng(16, 16, RED);
 const green = syntheticPng(16, 16, GREEN);
 // a genuinely decodable baseline JPEG (solid mid-gray): both accepted
 // formats are exercised end to end
-const grayJpeg = syntheticJpeg(16, 16);
+const grayJpeg = process.env.PROGRESSIVE_JPEG === "1" ? syntheticProgressiveJpeg() : syntheticJpeg(16, 16);
 
 const browser = await chromium.launch({ headless: true });
 const failures = [];

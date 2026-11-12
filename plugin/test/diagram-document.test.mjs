@@ -548,3 +548,10 @@ test("rejected documents never produce output: malformed inputs fail with named 
     await assert.rejects(encodeDiagramDocument(input), DiagramEncodeError);
   }
 });
+
+// Progressive JPEG has multiple SOS markers, each validated independently.
+import { syntheticProgressiveJpeg } from "./synthetic-image.mjs";
+test("accepts a genuine progressive JPEG with multiple scans", async () => {
+  const bytes = await encodeDiagramDocument({source:"test", pages:[{width:40,height:40,primitives:[{kind:"image",image:"p",x:0,y:0,w:16,h:16}]}],images:[{id:"p",data:syntheticProgressiveJpeg()}]});
+  assert.ok(bytes.length > 500);
+});
