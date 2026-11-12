@@ -57,6 +57,9 @@
 
 ### Fixed
 
+- draw.io stencil elliptical arcs now recover signed angles correctly, fixing
+  distorted AWS Cloud icons and arc paths that escaped their intended bounds.
+
 - draw.io labels now honor directional spacing, including AWS group-label icon clearance,
   block-spacing suppression, rotated content bounds, and exhausted-width wrapping.
 
