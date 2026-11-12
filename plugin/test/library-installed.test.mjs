@@ -367,27 +367,31 @@ if (!installed || !adapter) {
   });
 
   test("every documented export specifier resolves, and nothing else does", () => {
-    // Runs where node_modules/bdf.mbt lives, exactly as a consumer would:
-    // the exports map is the resolution gate. The reviewer's failing form
-    // (a raw "dist" path, such as new URL("bdf.mbt/dist/browser.js")) must
-    // be refused; the documented entries must all resolve. Consumer
-    // specifiers are "bdf.mbt/forms" etc. — the exports map keys carry the
-    // leading dot, the import specifier does not.
+    // Runs where the installed package lives, exactly as a consumer would:
+    // the exports map is the resolution gate. The package name, the subpath
+    // set and the expected count all derive from the installed manifest, so
+    // whatever --staging-name library-smoke packed resolves under its own
+    // installed name (a scoped name, were one ever staged, resolves the
+    // same way: the specifier is the name plus the subpath). The
+    // reviewer's failing form (a raw "dist" path, such as
+    // new URL("<name>/dist/browser.js")) must be refused; the documented
+    // entries must all resolve. Consumer specifiers are "<name>/forms" etc.
+    // — the exports map keys carry the leading dot, the import specifier
+    // does not.
     const consumerDir = resolve(installed, "..", "..");
-    const subpaths = ["", "/forms", "/xdw", "/plugin", "/plugin/worker",
-      "/plugin/diagram-bdf", "/plugin/adapters/docuworks",
-      "/plugin/adapters/excalidraw", "/plugin/adapters/mermaid",
-      "/tools/emit-downstream-worker",
-      "/workers/plugin", "/workers/render", "/workers/native"];
+    const subpaths = ["", ...Object.keys(manifest.exports)
+      .filter(key => key !== ".")
+      .map(key => key.slice(1))];
     const probe = `
-      const packageName = "bdf.mbt";
-      const subpaths = [${subpaths.map(sp => JSON.stringify(sp)).join(", ")}];
+      const packageName = ${JSON.stringify(manifest.name)};
+      const subpaths = ${JSON.stringify(subpaths)};
+      const distPath = ${JSON.stringify(`${manifest.name}/dist/browser.js`)};
       for (const subpath of subpaths) {
         import.meta.resolve(packageName + subpath);
       }
       try {
-        import.meta.resolve("bdf.mbt/dist/browser.js");
-        throw new Error("an undocumented raw dist path exports: dist/browser.js");
+        import.meta.resolve(distPath);
+        throw new Error("an undocumented raw dist path exports: " + distPath);
       } catch (error) {
         if (!String(error).includes("ERR_PACKAGE_PATH_NOT_EXPORTED")) {
           throw error;
@@ -400,42 +404,45 @@ if (!installed || !adapter) {
       encoding: "utf8",
     });
     assert.equal(run.status, 0, `resolution probe failed:\n${run.stdout}\n${run.stderr}`);
-    assert.match(run.stdout, /resolved 13 documented entries/);
+    assert.match(run.stdout, new RegExp(`resolved ${subpaths.length} documented entries`));
   });
 
   test("the shipped type declarations cover the documented plugin imports", () => {
     // The README's imports, type-checked with tsc against the installed
     // tarball only — the declarations it ships must describe every entry,
     // including the worker installer both worker export paths point at.
+    // Every import specifier derives from the installed manifest's name,
+    // so a custom --staging-name is type-checked under its own name.
     const consumerDir = resolve(installed, "..", "..");
+    const from = sub => JSON.stringify(`${manifest.name}${sub}`);
     writeFileSync(
       resolve(consumerDir, "consumer-typecheck.ts"),
       [
-        'import { createFormatRegistry, createConverterHost, docuworksPlugin as docuworksFromRoot, moonbitDocuWorks, PluginError, ConvertError, BindingError } from "bdf.mbt/plugin";',
-        'import { installPluginConverterWorker } from "bdf.mbt/plugin/worker";',
-        'import { docuworksPlugin, DOCUWORKS_FORMAT_NAME } from "bdf.mbt/plugin/adapters/docuworks";',
-        'import { excalidrawPlugin, EXCALIDRAW_FORMAT_NAME } from "bdf.mbt/plugin/adapters/excalidraw";',
-        'import { mermaidPlugin, MERMAID_FORMAT_NAME } from "bdf.mbt/plugin/adapters/mermaid";',
-        'import { encodeDiagram, DiagramEncodeError, DiagramPrimitive } from "bdf.mbt/plugin/diagram-bdf";',
-        'import { bdf_xdw_detect } from "bdf.mbt/xdw";',
+        `import { createFormatRegistry, createConverterHost, docuworksPlugin as docuworksFromRoot, moonbitDocuWorks, PluginError, ConvertError, BindingError } from ${from("/plugin")};`,
+        `import { installPluginConverterWorker } from ${from("/plugin/worker")};`,
+        `import { docuworksPlugin, DOCUWORKS_FORMAT_NAME } from ${from("/plugin/adapters/docuworks")};`,
+        `import { excalidrawPlugin, EXCALIDRAW_FORMAT_NAME } from ${from("/plugin/adapters/excalidraw")};`,
+        `import { mermaidPlugin, MERMAID_FORMAT_NAME } from ${from("/plugin/adapters/mermaid")};`,
+        `import { encodeDiagram, DiagramEncodeError, DiagramPrimitive } from ${from("/plugin/diagram-bdf")};`,
+        `import { bdf_xdw_detect } from ${from("/xdw")};`,
         "// negative assertions: each entry exposes exactly its runtime module,",
         "// so cross-entry imports that do not exist at runtime must fail",
         "// type-checking (unused @ts-expect-error is itself an error, so",
         "// these flip the moment a wrong export appears)",
         "// @ts-expect-error installPluginConverterWorker lives in the worker entry, not the root",
-        'import { installPluginConverterWorker as installFromRoot } from "bdf.mbt/plugin";',
+        `import { installPluginConverterWorker as installFromRoot } from ${from("/plugin")};`,
         "// @ts-expect-error the worker entry exports only installPluginConverterWorker",
-        'import { createFormatRegistry as registryFromWorker } from "bdf.mbt/plugin/worker";',
+        `import { createFormatRegistry as registryFromWorker } from ${from("/plugin/worker")};`,
         "// @ts-expect-error the docuworks adapter entry exports only the adapter",
-        'import { createConverterHost as hostFromAdapter } from "bdf.mbt/plugin/adapters/docuworks";',
+        `import { createConverterHost as hostFromAdapter } from ${from("/plugin/adapters/docuworks")};`,
         "// @ts-expect-error the docuworks adapter entry exports no moonbit binding",
-        'import { moonbitDocuWorks as bindingFromAdapter } from "bdf.mbt/plugin/adapters/docuworks";',
+        `import { moonbitDocuWorks as bindingFromAdapter } from ${from("/plugin/adapters/docuworks")};`,
         "// @ts-expect-error the diagram adapters live in their own entries, not the root",
-        'import { excalidrawPlugin as excalidrawFromRoot } from "bdf.mbt/plugin";',
+        `import { excalidrawPlugin as excalidrawFromRoot } from ${from("/plugin")};`,
         "// @ts-expect-error the mermaid adapter entry exports only the adapter and constants",
-        'import { createFormatRegistry as registryFromMermaid } from "bdf.mbt/plugin/adapters/mermaid";',
+        `import { createFormatRegistry as registryFromMermaid } from ${from("/plugin/adapters/mermaid")};`,
         "// @ts-expect-error the shared encoder is not re-exported by the excalidraw adapter",
-        'import { encodeDiagram as encodeFromAdapter } from "bdf.mbt/plugin/adapters/excalidraw";',
+        `import { encodeDiagram as encodeFromAdapter } from ${from("/plugin/adapters/excalidraw")};`,
         "",
         "// Error subclasses take a string code, not native ErrorOptions.",
         'void new PluginError("invalid descriptor", "custom-plugin-code");',

@@ -205,7 +205,11 @@ if (dryRun) {
   if (run.status !== 0) {
     throw new Error(`npm pack --dry-run failed:\n${run.stdout}\n${run.stderr}`);
   }
-  report("dry-run", null, packListing(run.stdout, "npm pack --dry-run"));
+  const listing = packListing(run.stdout, "npm pack --dry-run");
+  // the dry run checks the exact same allowlist as the real pack: a mismatch
+  // must fail before the report, exactly like the packed artifact would
+  verify(listing);
+  report("dry-run", null, listing);
 } else {
   const run = pack([]);
   if (run.status !== 0) {
