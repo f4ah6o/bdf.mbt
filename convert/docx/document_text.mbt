@@ -1014,14 +1014,62 @@ fn docx_omml_linear(node : DocxXmlNode) -> String {
 }
 
 ///|
+// The markup-compatibility namespace prefixes whose mc:Choice content the
+// walker draws instead of the Fallback. A copy of upstream wordproc/docx.go.
+fn docx_alternate_content_prefix_supported(prefix : String) -> Bool {
+  match prefix {
+    "wps" | "wpg" | "wpc" | "wp14" | "w14" | "w15" | "a14" | "pic14" => true
+    _ => false
+  }
+}
+
+///|
+// A Choice qualifies when its Requires attribute names at least one prefix
+// and every prefix is supported, as upstream requiresAll does: a Choice
+// without Requires defers to the Fallback.
+fn docx_alternate_content_choice_supported(choice : DocxXmlNode) -> Bool {
+  let requires = docx_attribute(choice.element, "Requires", "")
+  let prefix = StringBuilder()
+  let mut count = 0
+  let mut supported = true
+  fn check(word : String) -> Bool {
+    count += 1
+    docx_alternate_content_prefix_supported(word)
+  }
+  for ch in requires {
+    if ch.is_whitespace() {
+      if prefix.to_string() != "" {
+        if !check(prefix.to_string()) {
+          supported = false
+        }
+        prefix.reset()
+      }
+    } else {
+      prefix.write_char(ch)
+    }
+  }
+  if prefix.to_string() != "" {
+    if !check(prefix.to_string()) {
+      supported = false
+    }
+  }
+  supported && count > 0
+}
+
+///|
 fn docx_alternate_content(node : DocxXmlNode) -> DocxXmlNode? {
   for child in node.children {
-    if child.name() == "Choice" {
+    if child.name() == "Choice" && docx_alternate_content_choice_supported(child) {
       return Some(child)
     }
   }
   for child in node.children {
     if child.name() == "Fallback" {
+      return Some(child)
+    }
+  }
+  for child in node.children {
+    if child.name() == "Choice" {
       return Some(child)
     }
   }
@@ -1211,11 +1259,37 @@ fn docx_text_run(
     return
   }
   let first = items.length()
+  docx_text_run_content(walker, node, items, props)
+  let highlight = docx_highlight_color(props.highlight)
+  for index in first..<items.length() {
+    items[index].link = walker.current_link
+    items[index].small_caps = (props.toggles & 8) != 0 &&
+      (props.toggles & 4) == 0
+    if props.has_shading {
+      items[index].shade = Some(props.shading)
+    } else if highlight is Some(color) {
+      items[index].shade = Some(color)
+    }
+  }
+}
+
+///|
+// The run content of one node, with resolved run properties. A chosen
+// mc:AlternateContent branch is run content in place (upstream splices the
+// chosen child into its parent), so it is dispatched back through here
+// instead of the paragraph inline walker, which rejects a direct drawing.
+fn docx_text_run_content(
+  walker : DocxTextWalker,
+  node : DocxXmlNode,
+  items : Array[DocxTextItem],
+  props : DocxRunProps,
+) -> Unit raise {
   for child in node.children {
     let name = child.name()
     if name != "rPr" &&
       name != "t" &&
       name != "drawing" &&
+      name != "AlternateContent" &&
       !child.children.is_empty() {
       docx_text_unsupported(name)
     }
@@ -1332,8 +1406,7 @@ fn docx_text_run(
       "oMath" | "oMathPara" => docx_text_omml(walker, child, items, props)
       "AlternateContent" =>
         match docx_alternate_content(child) {
-          Some(chosen) =>
-            docx_text_inlines(walker, chosen, items, paragraph_style)
+          Some(chosen) => docx_text_run_content(walker, chosen, items, props)
           None => ()
         }
       other => docx_text_unsupported(other)
@@ -1345,17 +1418,6 @@ fn docx_text_run(
         docx_text_field(items, props, field.typ, field.format, field.arg)
         field.emitted = true
       }
-    }
-  }
-  let highlight = docx_highlight_color(props.highlight)
-  for index in first..<items.length() {
-    items[index].link = walker.current_link
-    items[index].small_caps = (props.toggles & 8) != 0 &&
-      (props.toggles & 4) == 0
-    if props.has_shading {
-      items[index].shade = Some(props.shading)
-    } else if highlight is Some(color) {
-      items[index].shade = Some(color)
     }
   }
 }
