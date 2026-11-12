@@ -247,6 +247,87 @@ test "text alignment puts the baseline where GDI does" {
 }
 
 ///|
+/// The shared UTF-16 decoder keeps an explicit trailing NUL: EXTTEXTOUTW's
+/// count includes the text, so trimming there would change the text.
+test "utf16 text keeps an explicit trailing NUL" {
+  let b = @buffer.Buffer()
+  t_u16(b, 65) // 'A'
+  t_u16(b, 0)
+  assert_eq(utf16_text(b.to_bytes(), 2), "A\u0000")
+}
+
+///|
+/// A LOGFONT face is a NUL-terminated fixed LF_FACESIZE buffer; the face
+/// decoder stops at the first NUL, whether it is padding or embedded.
+test "utf16 font face stops at the first NUL" {
+  let padded = @buffer.Buffer()
+  for ch in "MS Gothic" {
+    t_u16(padded, ch.to_int())
+  }
+  for _ in 0..<23 {
+    t_u16(padded, 0)
+  }
+  assert_eq(utf16_face(padded.to_bytes(), 32), "MS Gothic")
+  let embedded = @buffer.Buffer()
+  for ch in "MS\u0000Gothic" {
+    t_u16(embedded, ch.to_int())
+  }
+  assert_eq(utf16_face(embedded.to_bytes(), 10), "MS")
+}
+
+///|
+/// The selected font family in the encoded object carries no NUL padding.
+test "emf font face has no NUL padding" {
+  let font = @buffer.Buffer()
+  t_u32(font, 1) // ihFont
+  t_u32(font, 12) // lfHeight
+  t_u32(font, 0) // lfWidth
+  t_u32(font, 0) // lfEscapement
+  t_u32(font, 0) // lfOrientation
+  t_u32(font, 400) // lfWeight
+  for _ in 0..<8 {
+    font.write_byte(b'\x00')
+  }
+  for ch in "MS Gothic" {
+    t_u16(font, ch.to_int())
+  }
+  for _ in 0..<23 {
+    t_u16(font, 0)
+  }
+  let font_record = t_record(82, font.to_bytes())
+  let text = @buffer.Buffer()
+  for v in [0, 0, 10, 10] {
+    t_u32(text, v) // bounds
+  }
+  t_u32(text, 1) // iGraphicsMode
+  t_u32(text, 0) // exScale
+  t_u32(text, 0) // eyScale
+  t_u32(text, 0) // ptlReference.x
+  t_u32(text, 0) // ptlReference.y
+  t_u32(text, 1) // nChars
+  t_u32(text, 76) // offString
+  t_u32(text, 0) // fOptions
+  for v in [0, 0, 10, 10] {
+    t_u32(text, v) // rcl
+  }
+  t_u32(text, 0) // offDx
+  t_u16(text, 65) // "A"
+  let text_record = t_record(84, text.to_bytes())
+  let emf = t_emf([0, 0, 2500, 2500], [96, 96], [25, 25], [
+    font_record,
+    t_record(37, t_i32s([1])), // SELECTOBJECT
+    text_record,
+    t_record(14, t_i32s([0, 0, 0])), // EOF
+  ])
+  let (encoded, _) = t_draw(emf, 72.0, 72.0, false)
+  let resources = @core.decode_object_resources(encoded) catch {
+    e => abort("decode failed: " + e.to_string())
+  }
+  assert_eq(resources.fonts.length(), 1)
+  assert_eq(resources.fonts[0].family, "MS Gothic")
+}
+
+///|
 test "bitfield masks shift down to bit 0" {
   guard mask_channel(0xf800, 0xf800) == 255 else {
     abort("a full red channel did not reach 255")
@@ -1164,6 +1245,47 @@ test "extcreatepen cosmetic and geometric flags" {
   assert_true(t_close(stroke(0, 40.0), 0.75))
   // PS_GEOMETRIC: the logical width through the matrix.
   assert_true(t_close(stroke(0x10000, 40.0), 2.9528))
+}
+
+///|
+/// EXTCREATEPEN with PS_DASH emits the dash pattern, not an empty one.
+test "extcreatepen dash style emits a dash" {
+  let records = [
+    t_record(
+      95,
+      t_i32s([1, 0, 0, 0, 0, 1, 6, 0, 0x00cc9900, 0, 0]),
+    ), // EXTCREATEPEN, PS_DASH
+    t_record(37, t_i32s([1])), // SELECTOBJECT
+    t_record(27, t_i32s([100, 480])), // MOVETOEX
+    t_record(54, t_i32s([860, 480])), // LINETO
+    t_record(14, t_i32s([0, 0, 0])), // EOF
+  ]
+  let emf = t_emf([0, 0, 2540, 2540], [960, 960], [25, 25], records)
+  let (encoded, _) = t_draw(emf, 72.0, 72.0, false)
+  let dashes = t_dashes(encoded)
+  assert_eq(dashes.length(), 2)
+  assert_true(t_close(dashes[0], 4.5))
+  assert_true(t_close(dashes[1], 1.5))
+}
+
+///|
+/// EXTCREATEPEN with PS_GEOMETRIC | PS_SOLID emits no dash. The DocuWorks
+/// ellipse sample uses this pen; do not infer a dashed pen from raster gaps.
+test "extcreatepen solid style emits no dash" {
+  let records = [
+    t_record(
+      95,
+      t_i32s([1, 0, 0, 0, 0, 0x10000, 6, 0, 0x00cc9900, 0, 0]),
+    ), // EXTCREATEPEN, PS_GEOMETRIC | PS_SOLID
+    t_record(37, t_i32s([1])), // SELECTOBJECT
+    t_record(27, t_i32s([100, 480])), // MOVETOEX
+    t_record(54, t_i32s([860, 480])), // LINETO
+    t_record(14, t_i32s([0, 0, 0])), // EOF
+  ]
+  let emf = t_emf([0, 0, 2540, 2540], [960, 960], [25, 25], records)
+  let (encoded, _) = t_draw(emf, 72.0, 72.0, false)
+  assert_eq(t_dashes(encoded).length(), 0)
+  assert_true(t_close(t_line_width(encoded), 0.4429))
 }
 
 ///|

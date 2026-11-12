@@ -29,18 +29,50 @@ remain uncontrolled. Genuine comparison through `verify.mjs` remains NOT_RUN.
 
 ## Ellipse investigation
 
-The pure Viewer ellipse appeared broken/thinner than the candidate's solid
-outline. Selected horizontal scanlines contain separated colour runs; this is
-**not proof of a dashed pen**. A solid ellipse can intersect a scanline in two
-separate runs, and antialiasing, pixel alignment and the colour threshold alter
-those runs. The clipped 133% image cannot establish full-page equivalence.
-
+The pure Viewer ellipse appears discontinuous. The tested pen is solid.
 The locally decompressed ellipse EMF contains `EXTCREATEPEN` with style
 `0x00010000` (`PS_GEOMETRIC | PS_SOLID`), width 6 and COLORREF `0xcc9900`
-(`#0099cc`). Its annotation property `ARCATT_LINE` was 0. The rectangle had
-`RECTATT_LINE` 0 as well. The converter handles `EXTCREATEPEN` and emits an empty
-dash array for this solid pen. These observations do not yet justify changing
-that conversion.
+(`#0099cc`). Its annotation property `ARCATT_LINE` was 0. A valid synthetic
+variant with `ARCATT_LINE` 1 (correct stored size and trailer check, accepted by
+the Viewer) rendered pixel-identically (126 stroke pixels, 44 components, a
+12-pixel apex gap in both). This one controlled attribute change did not
+change the observed discontinuity.
+
+Curve-following controls distinguish the appearances. A synthetic solid ellipse
+with the same box and a 2-pixel outline forms one connected stroke component; a
+12-dash control forms 12. The Viewer's ellipse forms 44 components and its
+topmost row has a 12-pixel gap in the middle of the apex, where a solid ellipse
+is continuous. The extracted EMF rendered by an independent renderer
+(LibreOffice) forms one connected solid ellipse (909 stroke pixels, continuous
+apex). The converter also emits a solid stroke with an empty dash array.
+
+The observations favor a rendering-path difference and provide no reason to
+change the converter's current solid-pen interpretation. They do not exclude
+every other XDW attribute or renderer interaction. The exact cause (Wine GDI versus the Viewer's EMF renderer) is
+not isolated; a different renderer drawing the EMF solid is not by itself proof
+of a Viewer bug. Do not change the converter to match the Viewer's dashes
+without a controlled rendering-path comparison. Regression tests in
+`convert/metafile/emf_wbtest.mbt` now cover both `EXTCREATEPEN` PS_DASH (emits a
+dash) and PS_GEOMETRIC | PS_SOLID (emits none).
+
+## Font family
+
+The annotation EMF's `LOGFONT` face is a NUL-terminated fixed `LF_FACESIZE`
+buffer. The converter decoded the whole buffer, so the BDF font family carried
+25 trailing NULs (`"ＭＳ ゴシック\u0000…"`). A browser cannot match that name
+and falls back. The face decoder now stops at the first NUL; the shared UTF-16
+decoder still preserves an explicit trailing NUL for `EXTTEXTOUTW`. The BDF
+family is `"ＭＳ ゴシック"`, and regressions cover the face split, the shared
+decoder, and the encoded object's font table.
+
+The browser environment does not have MS Gothic; fontconfig resolves the family
+to Noto Sans Mono CJK JP. The candidate's glyph shapes therefore still differ
+from the Viewer, whose actual selected font is not independently confirmed.
+The text advance is unchanged and the first line's measured width is close
+(about 188 px at nominal 75 dpi versus 189 px in the Viewer). The
+candidate's text colour is blue, the same as the Viewer's text; the cyan in the
+Viewer page is not the text line sampled here. The remaining glyph difference
+may involve font selection and rasterization; these remain uncontrolled.
 
 ## Diagnostic tool and next increment
 
@@ -55,14 +87,10 @@ header and incomplete files are rejected before decoding.
 
 Next steps:
 1. Obtain an unclipped pure image with independently checked content-only bounds.
-2. Compare the ellipse along its curve or across a sequence of matched rows,
-   including a synthetic solid-ellipse control. Control pixel scale and colour
-   threshold before deciding whether the apparent gaps reflect a line style.
-3. If a genuine style difference remains, use a valid synthetic XDW variant
-   changing one annotation attribute at a time. Validate the container in the
-   pure Viewer; do not infer correctness from the candidate alone.
-4. Only then add the smallest converter regression/fix. Keep Latin font fallback
-   and sticky-note edge/shadow observations separate until similarly controlled.
+2. Compare the sticky-note edge/shadow with the same controlled-variant method.
+3. Identify and match the actual fonts selected by both rendering paths before
+   attributing remaining glyph differences to the converter.
+4. Only then add the smallest converter regression/fix.
 
 No proprietary screenshots or extracted corpus bytes are included in this
 increment, and no additional DocuWorks product or SDK was acquired.

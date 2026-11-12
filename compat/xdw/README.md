@@ -55,8 +55,12 @@ heuristic page rectangle and implied dpi; `--scan Y --stroke R,G,B` reports
 one row's colour runs, not a dash classification. It is diagnostic tooling,
 not a gate. `CALIBRATION.md` records the genuine Viewer geometry (approximately
 75 dpi at the observed 100% zoom, subject to border/rounding assumptions) and
-the unresolved ellipse appearance difference. Manual bounds checks and further
-controlled captures are required before inferring a converter defect.
+the ellipse investigation: the stored EMF pen is solid, an independent renderer
+draws it solid, and the Viewer's dashes are not in the XDW attribute or the EMF
+pen style. The exact rendering-path cause is not isolated; the converter's solid
+output matches the stored drawing. The annotation font family is now split at
+the EMF face's first NUL; the browser's MS Gothic fallback and the sticky-note
+edge/shadow remain controlled-comparison targets.
 
 ## Artifact contract
 
