@@ -98,6 +98,8 @@ test("input byte views: the plugin sees exactly the sent range, isolated from th
 test("open resolving after dispose: no reply, no lease, handle released once", async () => {
   const transport = new Transport();
   let releaseLateOpen;
+  let markOpenStarted;
+  const openStarted = new Promise(resolve => { markOpenStarted = resolve; });
   const opens = [];
   const cleans = [];
   const registry = createFormatRegistry({
@@ -110,6 +112,7 @@ test("open resolving after dispose: no reply, no lease, handle released once", a
         open: (bytes) => new Promise(resolve => {
           opens.push(resolve);
           releaseLateOpen = () => resolve({ bdf: new Uint8Array([1]), summary: "late", warnings: [], pages: 2, stream: { id: "h1" } });
+          markOpenStarted();
         }),
         page: async () => ({ bdf: new Uint8Array(1) }),
         finish: async () => ({ bdf: new Uint8Array(1), summary: "s" }),
@@ -124,6 +127,7 @@ test("open resolving after dispose: no reply, no lease, handle released once", a
   await host.handle({ type: "init" });
   const pending = host.handle({ id: 70, type: "open", data: new ArrayBuffer(0), options: { format: "slow" } });
   const disposal = host.dispose("gone");
+  await openStarted; // accepted work starts in a deferred continuation
   releaseLateOpen();
   await pending;
   await disposal;
