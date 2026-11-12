@@ -56,9 +56,9 @@ one row's colour runs, not a dash classification. It is diagnostic tooling,
 not a gate. `CALIBRATION.md` records the genuine Viewer geometry (approximately
 75 dpi at the observed 100% zoom, subject to border/rounding assumptions) and
 the ellipse investigation: the stored EMF pen is solid, an independent renderer
-draws it solid, and the Viewer's dashes are not in the XDW attribute or the EMF
-pen style. The exact rendering-path cause is not isolated; the converter's solid
-output matches the stored drawing. The annotation font family is now split at
+draws it solid, and changing ARCATT_LINE from 0 to 1 did not change the
+observed gaps. The exact rendering-path cause is not isolated; the converter's
+current solid-pen interpretation is retained. The annotation font family is now split at
 the EMF face's first NUL; the browser's MS Gothic fallback and the sticky-note
 edge/shadow remain controlled-comparison targets.
 
