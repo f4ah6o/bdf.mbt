@@ -89,8 +89,11 @@ pixels, a fill bbox of 115x40 px and an edge bbox of 117x42 px. At nominal
 75 dpi the predicted fill is 115.2x43.3 px and childdim is 116.7x44.9 px:
 **the measured height does not match either prediction**. The candidate at
 96 dpi has a 146x53 px exact-color fill bbox and 146 exact-color shadow pixels.
-These bboxes depend on antialiasing, crop and color thresholds, not only shape
-geometry; the two captures are not scale-matched.
+A subsequent native 75-dpi candidate capture (no image resampling) gives a
+113x41 px fill bbox and 114 exact-color shadow pixels, using a widened ROI.
+Its page is 621x438 px versus the Viewer's estimated 620x437 px including
+assumed borders. These bboxes depend on antialiasing, crop and color thresholds,
+not only shape geometry; exact local coordinate registration is still missing.
 
 The stored shadow and BDF paint order agree, but that alone does not prove the
 converter's output is correct. A Viewer clip/redraw convention, subpixel pen
