@@ -183,3 +183,11 @@ values and order exactly; three fresh separate process runs are byte-identical.
 `check-formatted-repeat.mjs --build <new-build>` validates binary and current
 adapter hashes and requires fresh output each iteration. This does not resolve
 FMA differences within upstream rendering or imply full migration success.
+
+The analogous rectangle-boundary adapter experiment was **not adopted**.
+Replacing only `1.055*Pow(v,1/2.4)-0.055` with explicit FMA reduced observed
+input mismatches from 116 to 74, but 99 of 144 complete cases still differed
+(74 input differences). The experiment used a separate authenticated build,
+then the adapter change was reverted. Partial improvement is not exact input
+reproduction; architecture-specific Pow and downstream color arithmetic still
+need investigation. No static rectangle data or acceptance condition changed.
