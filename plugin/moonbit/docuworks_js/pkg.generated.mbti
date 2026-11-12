@@ -1,0 +1,15 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/plugin/moonbit/docuworks_js"
+
+// Values
+pub fn bdf_xdw_convert(Bytes, Bool) -> String
+
+pub fn bdf_xdw_detect(Bytes) -> Bool
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

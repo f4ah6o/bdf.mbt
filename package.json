@@ -138,6 +138,14 @@
     "test:local-verify": "node --test .github/local/verify.test.mjs compat/retained-test.test.mjs",
     "test:prepush": "npm run verify:local",
     "test:prepush:quick": "node compat/retained-test.mjs --mode check js && node compat/retained-test.mjs --mode check wasm-gc && node compat/retained-test.mjs js && node compat/retained-test.mjs wasm-gc && npm run build:site && npm run test:site && npm run test:previews && npm run bench:site -- --check && npm run test:parity",
-    "test:office-extensions": "node compat/converter/office-extensions-test.mjs"
+    "test:office-extensions": "node compat/converter/office-extensions-test.mjs",
+    "test:plugin": "node --test plugin/test/",
+    "test:plugin:browser": "node plugin/browser/plugin-smoke.mjs",
+    "plugin:pack": "node plugin/tools/pack.mjs",
+    "plugin:pack:dry-run": "node plugin/tools/pack.mjs --dry-run",
+    "plugin:smoke": "node plugin/tools/smoke.mjs",
+    "library:pack": "node plugin/tools/library-pack.mjs",
+    "library:pack:dry-run": "node plugin/tools/library-pack.mjs --dry-run",
+    "library:smoke": "node plugin/tools/library-smoke.mjs"
   }
 }
