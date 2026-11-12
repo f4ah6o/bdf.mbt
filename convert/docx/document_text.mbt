@@ -345,6 +345,10 @@ fn docx_text_ppr(props : DocxParagraphProps, node : DocxXmlNode) -> Bool raise {
         }
         props.apply_node(child)
       }
+      // The paragraph mark's own run properties. Upstream's applyPPr has
+      // no default case: this child belongs to the mark resolved like a
+      // run in blocks() (wordproc/model.go paragraph()).
+      "rPr" => ()
       other => docx_text_unsupported(other)
     }
   }
@@ -2193,7 +2197,13 @@ fn DocxTextWalker::blocks(
         }
         let direct = child.child("pPr")
         let (paragraph_style, props) = self.styles.resolve_paragraph(direct)
-        let mark = self.styles.resolve_run(paragraph_style, None)
+        // The paragraph mark (¶) resolves like a run: style chain plus the
+        // direct w:pPr/w:rPr, which sizes empty paragraphs upstream
+        // (wordproc/model.go paragraph()).
+        let mark = self.styles.resolve_run(
+          paragraph_style,
+          docx_style_child(direct, "rPr"),
+        )
         let ends_section = docx_style_child(direct, "sectPr") is Some(_)
         if ends_section && wrapped {
           docx_text_unsupported("wrapped paragraph section")
