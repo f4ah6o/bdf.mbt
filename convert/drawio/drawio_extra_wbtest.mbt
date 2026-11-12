@@ -324,3 +324,182 @@ test "orthogonal edge routes add corners" {
   assert_true(drawio_edge_is_orthogonal("edgeStyle=orthogonalEdgeStyle;"))
   assert_false(drawio_edge_is_orthogonal("edgeStyle=entityRelationEdgeStyle;"))
 }
+
+///|
+/// Directional label spacing follows draw.io's mxText.getSpacing
+/// (upstream label.go): spacingLeft/Right/Top/Bottom add to the base
+/// spacing, left-aligned text sits spacingLeft inside the box,
+/// right-aligned one spacingRight from its right edge, the center
+/// balances them, and top/bottom labels sit at the base paddings
+/// (5 above, 1 below) on top of their directional value.
+test "drawio directional label spacing offsets" {
+  let spacing = drawio_label_spacing("spacing=8;spacingLeft=30;spacingTop=4;")
+  assert_eq(spacing.left, 38.0)
+  assert_eq(spacing.right, 8.0)
+  assert_eq(spacing.top, 12.0)
+  assert_eq(spacing.bottom, 8.0)
+  let plain = drawio_label_spacing("align=left;")
+  assert_eq(plain.left, 2.0)
+  let left = drawio_label_box(DkRect, "align=left;spacingLeft=30;", 0.0, 0.0, 100.0, 50.0)
+  assert_eq(drawio_label_origin_x(left, 40.0, spacing), 38.0)
+  let center = drawio_label_box(DkRect, "align=center;spacingLeft=30;spacing=8;", 0.0, 0.0, 100.0, 50.0)
+  assert_eq(drawio_label_origin_x(center, 40.0, spacing), 45.0)
+  let right = drawio_label_box(DkRect, "align=right;spacing=8;spacingLeft=30;", 0.0, 0.0, 100.0, 50.0)
+  assert_eq(drawio_label_origin_x(right, 40.0, spacing), 52.0)
+  let top = drawio_label_box(DkRect, "verticalAlign=top;spacingTop=4;", 0.0, 0.0, 100.0, 50.0)
+  assert_eq(drawio_label_block_top(top, 20.0, drawio_label_spacing("spacingTop=4;")), 11.0)
+  let bottom = drawio_label_box(DkRect, "verticalAlign=bottom;spacingBottom=3;", 0.0, 0.0, 100.0, 50.0)
+  assert_eq(
+    drawio_label_block_top(bottom, 20.0, drawio_label_spacing("spacingBottom=3;")),
+    24.0,
+  )
+  let middle = drawio_label_box(DkRect, "verticalAlign=middle;spacingTop=6;spacingBottom=2;", 0.0, 0.0, 100.0, 50.0)
+  assert_eq(drawio_label_block_top(middle, 20.0, drawio_label_spacing("spacingTop=6;spacingBottom=2;")), 17.0)
+}
+
+///|
+/// The AWS group sample shapes (site/samples/aws.drawio) carry
+/// `spacingLeft=30` so their labels start right of the corner icon. The
+/// label must sit at least the 30-unit spacing inside the group frame,
+/// not at the box edge where it overlaps the icon (the Pages mismatch).
+test "drawio aws group labels clear the corner icon" {
+  let style = "shape=mxgraph.aws4.group;grIcon=mxgraph.aws4.group_aws_cloud_alt;verticalAlign=top;align=left;spacingLeft=30;fontSize=12;html=1;whiteSpace=wrap;"
+  let warn = DrawioWarn::new()
+  let kind = drawio_shape_kind(style, warn)
+  assert_eq(kind, DkStencil)
+  let box = drawio_label_box(kind, style, 0.0, 0.0, 400.0, 300.0)
+  let spacing = drawio_label_spacing(style)
+  assert_eq(spacing.left, 32.0)
+  let origin = drawio_label_origin_x(box, 50.0, spacing)
+  // Relative to the cell at x=0: the label must clear the icon square.
+  assert_true(origin >= 30.0, msg="label clear of the 30-unit corner icon, got " + origin.to_string())
+  assert_true(origin < 34.0, msg="label not pushed past spacingLeft, got " + origin.to_string())
+}
+
+///|
+/// blockSpacing=1 labels keep draw.io's base paddings off (upstream
+/// passes blockSpacing=1 as noBase to mxText.getSpacing): a top-aligned
+/// label sits at its spacingTop alone, a bottom-aligned one at its
+/// spacingBottom alone.
+test "drawio blockSpacing=1 labels skip the base paddings" {
+  let top = drawio_label_box(DkRect, "verticalAlign=top;blockSpacing=1;spacingTop=4;", 0.0, 0.0, 100.0, 50.0)
+  assert_eq(drawio_label_block_top(top, 20.0, drawio_label_spacing("verticalAlign=top;blockSpacing=1;spacingTop=4;")), 6.0)
+  let bottom = drawio_label_box(DkRect, "verticalAlign=bottom;blockSpacing=1;spacingBottom=3;", 0.0, 0.0, 100.0, 50.0)
+  assert_eq(
+    drawio_label_block_top(bottom, 20.0, drawio_label_spacing("verticalAlign=bottom;blockSpacing=1;spacingBottom=3;")),
+    25.0,
+  )
+  assert_eq(drawio_label_spacing("blockSpacing=1;").block, true)
+  assert_eq(drawio_label_spacing("").block, false)
+}
+
+///|
+/// The label extent covers the drawn text rectangle: an external right
+/// label pushed out by spacingLeft=100 lands that far past the shape,
+/// and the page bounds must cover it (the drawing path and the extent
+/// share drawio_label_origin_x / drawio_label_block_top).
+test "drawio label extent covers spacing-pushed text" {
+  let data = @utf8.encode(
+    "<mxfile><diagram name=\"T\"><mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/>" +
+    "<mxCell id=\"v\" value=\"XYZ\" style=\"labelPosition=right;align=left;spacingLeft=100;\" vertex=\"1\" parent=\"1\">" +
+    "<mxGeometry x=\"10\" y=\"10\" width=\"50\" height=\"20\" as=\"geometry\"/></mxCell>" +
+    "</root></mxGraphModel></diagram></mxfile>",
+  )
+  let pages = drawio_read_file(data) catch { _ => fail("fixture did not read") }
+  let model = drawio_model(pages[0].model)
+  let cell = model.cells[2]
+  let style = cell.style
+  let box = drawio_label_box(DkRect, style, 10.0, 10.0, 50.0, 20.0)
+  assert_eq(box.x, 64.0)
+  let spacing = drawio_label_spacing(style)
+  assert_eq(spacing.left, 102.0)
+  let measure : DrawioLabelMeasure = { width: 40.0, height: 10.0, box, spacing }
+  let (x0, _, x1, _) = drawio_label_extent(measure, 10.0, 10.0, 50.0, 20.0)
+  assert_eq(x0, 10.0)
+  assert_true(x1 >= 206.0, msg="page must cover the pushed-out label, got " + x1.to_string())
+  // The real pipeline: the measured label reads the same style and the
+  // page it sizes must cover the spacing-pushed text too.
+  let font = @canvas.Fonts::new(None)
+  let warn = DrawioWarn::new()
+  let kind = drawio_shape_kind(style, warn)
+  match drawio_measure_label(cell, kind, 10.0, 10.0, 50.0, 20.0, font, false, warn) {
+    Some(measure) => {
+      let (mx0, _, mx1, _) = drawio_label_extent(measure, 10.0, 10.0, 50.0, 20.0)
+      assert_true(mx1 >= 165.0, msg="full-path extent must cover the spacing-pushed label, got " + mx1.to_string())
+      assert_true(mx0 < 14.0, msg="extent still covers the shape, got " + mx0.to_string())
+    }
+    None => fail("label not measured")
+  }
+}
+
+///|
+/// Narrow directional padding can drop a wrapped label's usable width
+/// below one unit: measurement and drawing keep the label on one line
+/// then (the same `max_width > 1` policy in measure and draw).
+test "drawio wrap stays off when directional padding exhausts the box" {
+  let data = @utf8.encode(
+    "<mxfile><diagram name=\"T\"><mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/>" +
+    "<mxCell id=\"w\" value=\"one two three four five six\" style=\"whiteSpace=wrap;html=1;spacing=2000;\" vertex=\"1\" parent=\"1\">" +
+    "<mxGeometry x=\"0\" y=\"0\" width=\"100\" height=\"40\" as=\"geometry\"/></mxCell>" +
+    "</root></mxGraphModel></diagram></mxfile>",
+  )
+  let pages = drawio_read_file(data) catch { _ => fail("fixture did not read") }
+  let model = drawio_model(pages[0].model)
+  let cell = model.cells[2]
+  let font = @canvas.Fonts::new(None)
+  let warn = DrawioWarn::new()
+  let kind = drawio_shape_kind(cell.style, warn)
+  match drawio_measure_label(cell, kind, 0.0, 0.0, 100.0, 40.0, font, false, warn) {
+    Some(measure) => {
+      let whole = font.measure("", "", false, false, "one two three four five six") * 8.25
+      if measure.width < whole - 0.001 {
+        fail("label wrapped although the padding left no room: " + measure.width.to_string())
+      }
+    }
+    None => fail("label not measured")
+  }
+}
+
+///|
+/// A rotated label's extent covers the rotated, spacing-pushed text
+/// rectangle: with rotation=90 and an external right label pushed out by
+/// spacingLeft=100, the pushed-out corner turns below the shape, and the
+/// extent must cover it (the corners rotate around the label anchor like
+/// draw.io's rotateLabelBounds).
+test "drawio rotated label extent covers spacing-pushed text" {
+  let font = @canvas.Fonts::new(None)
+  let warn = DrawioWarn::new()
+  let build = fn(style : String) -> DrawioLabelMeasure? raise {
+    let data = @utf8.encode(
+      "<mxfile><diagram name=\"T\"><mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/>" +
+      "<mxCell id=\"r\" value=\"XYZ\" style=\"" + style + "\" vertex=\"1\" parent=\"1\">" +
+      "<mxGeometry x=\"10\" y=\"10\" width=\"50\" height=\"20\" as=\"geometry\"/></mxCell>" +
+      "</root></mxGraphModel></diagram></mxfile>",
+    )
+    let pages = drawio_read_file(data)
+    let model = drawio_model(pages[0].model)
+    let cell = model.cells[2]
+    let kind = drawio_shape_kind(style, warn)
+    drawio_measure_label(cell, kind, 10.0, 10.0, 50.0, 20.0, font, false, warn)
+  }
+  let big = match (build("rotation=90;labelPosition=right;align=left;spacingLeft=100;") catch {
+    _ => fail("big-spacing rotated fixture failed")
+  }) {
+    Some(measure) => measure
+    None => fail("big-spacing rotated label not measured")
+  }
+  assert_true(big.box.rotation - 90.0 < 0.001, msg="label not rotated")
+  let (bx0, by0, bx1, by1) = drawio_label_extent(big, 10.0, 10.0, 50.0, 20.0)
+  assert_true(by1 >= 150.0, msg="rotated pushed label corner uncovered, got y1=" + by1.to_string())
+  assert_true(bx0 <= 10.0 && bx1 >= 60.0, msg="rotated extent lost the shape")
+  let small = match (build("rotation=90;labelPosition=right;align=left;") catch {
+    _ => fail("unspaced rotated fixture failed")
+  }) {
+    Some(measure) => measure
+    None => fail("unspaced rotated label not measured")
+  }
+  let (_, sy0, _, sy1) = drawio_label_extent(small, 10.0, 10.0, 50.0, 20.0)
+  // Without the directional push the rotated label stays near the shape
+  // (the pushed variant reaches y1 >= 150 above).
+  assert_true(sy1 > 60.0 && sy1 < 70.0, msg="unspaced rotated label extent unexpected, got y1=" + sy1.to_string())
+}
