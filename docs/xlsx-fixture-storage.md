@@ -146,13 +146,15 @@ machine, so treat the deltas as indicative, not isolated benchmarks:
 | `npm run test:xlsx-visual` (barrier + screenshot compare) | not recorded | 0:24.20 - pass, 0.00% diff |
 | `npm run verify:local:ci` (actrun ci/test + ci/demo) | not recorded | 3:43 - pass; moon tests js 3208 / wasm-gc 3140 / native 3140, 0 failed |
 
-The increase (+25% wall, +22-30% peak RSS) is the accepted cost of the
-storage layer: every shard child gunzips the pack groups it touches, hashes
-each blob slice it resolves and rebuilds the manifest's object tree, where
-`JSON.parse` used to hand out base64 strings directly. Integrity on read and
-dedup were the goals of the change; ~50s per full render verification was
-accepted as maintainable. Both runs also verify the same 144,297 case
-identifiers, repeats and shard union as before.
+The final full-suite wall time increased by about 3.2%, while the render-only
+wall time was effectively unchanged (about 0.7% lower). Peak RSS increased
+by about 30% for the full suite and 17% for render-only. Every shard child
+gunzips the pack groups it touches, hashes each blob slice and rebuilds the
+manifest object tree; cached decompressed packs account for the additional
+memory. These observations do not isolate the storage layer's CPU cost
+because baseline and final runs had different concurrent loads. The storage
+reduction is retained with this documented memory trade-off. Both render
+runs verify the same 144,297 case identifiers, repeats and shard union.
 
 Packing the whole tree costs ~13 s wall and ~4 GiB peak in one process
 (one-off; not part of verification runs).
