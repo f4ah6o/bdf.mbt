@@ -10,9 +10,10 @@ const dir = mkdtempSync(join(tmpdir(), 'bdf-facing-route-'));
 const near = (a, b) => assert.ok(Math.abs(a-b) < 0.0001, `${a} != ${b}`);
 try {
   // Public AWS fixture: verify all four Current-page connections.
-  // Preserve the exact public fixture and test all four current-page edges.
+  // Set explicit rounded=0 to isolate route vertices; the rounded connector
+  // test separately exercises the unchanged public fixture default.
   const xml = readFileSync(join(root, 'site/samples/aws.drawio'), 'utf8')
-    ;
+    .replaceAll('edgeStyle=orthogonalEdgeStyle;', 'edgeStyle=orthogonalEdgeStyle;rounded=0;');
   const input = join(dir, 'aws.drawio'), output = join(dir, 'aws.bdf');
   writeFileSync(input, xml);
   execFileSync(process.execPath, [join(root, 'compat/drawio/oracle-worker.mjs')], {
