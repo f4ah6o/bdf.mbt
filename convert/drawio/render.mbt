@@ -534,6 +534,71 @@ fn DrawioModel::edge_label_anchor(
 }
 
 ///|
+/// Open-polyline subset of upstream shape.addPoints (a5e4d7a6).
+/// Quadratic corners become equivalent cubic Beziers; route points remain
+/// untouched for labels and marker placement.
+fn drawio_rounded_edge_path(points : Array[(Double, Double)], radius : Double) -> @cad.CadPath {
+  if points.length() < 3 || radius <= 0.0 {
+    return drawio_edge_path(points, false)
+  }
+  let path = @cad.CadPath::new()
+  let mut previous = points[0]
+  path.move_to(previous.0, previous.1)
+  let mut i = 1
+  while i < points.length() - 1 {
+    let corner = points[i]
+    let dx = previous.0 - corner.0
+    let dy = previous.1 - corner.1
+    if dx == 0.0 && dy == 0.0 {
+      path.line_to(corner.0, corner.1)
+      previous = corner
+    } else {
+      let distance = (dx * dx + dy * dy).sqrt()
+      let offset = radius.min(distance / 2.0) / distance
+      let enter = (corner.0 + dx * offset, corner.1 + dy * offset)
+      path.line_to(enter.0, enter.1)
+      let mut next = points[i + 1]
+      // Match upstream's rounded coordinate duplicate test, including near
+      // duplicates, without consuming the final endpoint.
+      while i < points.length() - 2 &&
+        (next.0 - corner.0).abs() < 0.5 &&
+        (next.1 - corner.1).abs() < 0.5 {
+        next = points[i + 2]
+        i = i + 1
+      }
+      let nx = next.0 - corner.0
+      let ny = next.1 - corner.1
+      let distance = (nx * nx + ny * ny).sqrt().max(1.0)
+      let offset = radius.min(distance / 2.0) / distance
+      let leave = (corner.0 + nx * offset, corner.1 + ny * offset)
+      path.cubic_to(
+        @cad.Point::new(enter.0 + (corner.0 - enter.0) * 2.0 / 3.0,
+          enter.1 + (corner.1 - enter.1) * 2.0 / 3.0),
+        @cad.Point::new(leave.0 + (corner.0 - leave.0) * 2.0 / 3.0,
+          leave.1 + (corner.1 - leave.1) * 2.0 / 3.0),
+        @cad.Point::new(leave.0, leave.1),
+      )
+      previous = leave
+    }
+    i = i + 1
+  }
+  let last = points[points.length() - 1]
+  path.line_to(last.0, last.1)
+  path
+}
+
+///|
+fn drawio_connector_path(points : Array[(Double, Double)], style : String) -> @cad.CadPath {
+  if drawio_style(style, "curved", "0") == "1" {
+    return drawio_edge_path(points, true)
+  }
+  if drawio_style(style, "rounded", "1") != "1" {
+    return drawio_edge_path(points, false)
+  }
+  drawio_rounded_edge_path(points, drawio_num_from_style(style, "arcSize", 20.0) / 2.0)
+}
+
+///|
 /// The path of a polyline edge. Curved edges use a Catmull-Rom spline
 /// through the route points (the same points still anchor labels and
 /// arrowheads, so curved edges stay bounded by them).
@@ -962,7 +1027,6 @@ fn drawio_render_item(
       if points.length() < 2 {
         return
       }
-      let curved = drawio_style(cell.style, "curved", "0") == "1"
       let stroke = drawio_color(drawio_style(cell.style, "strokeColor", ""), 0x000000ffU)
       let width = drawio_num_from_style(cell.style, "strokeWidth", 1.0)
       let dash = if drawio_style(cell.style, "dashed", "") == "1" {
@@ -989,7 +1053,7 @@ fn drawio_render_item(
           "startArrow",
           width,
         )
-        drawing.stroke(drawio_edge_path(drawn, curved), @cad.Pen::new(
+        drawing.stroke(drawio_connector_path(drawn, cell.style), @cad.Pen::new(
           color=stroke,
           width=width,
           dash~,

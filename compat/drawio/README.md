@@ -86,3 +86,29 @@ checks all four Current AWS paths in actual BDF, including the common Lambda
 trunk and rightward marker entry. Unit tests cover reversed direction and
 rejected constrained/rotated/close/overlap/waypoint cases. Rounded joins, Legacy
 routing, stencil geometry and full-image parity remain separate changes.
+
+
+## Rounded connectors
+
+Non-curved connectors use rounded corners by default, matching upstream
+`converter/drawio/style.go` edge defaults. Explicit `rounded=0` keeps the
+polyline. The open-polyline algorithm is from `shape.go` `shape.addPoints`
+and `shapes_core.go` connector painting at upstream commit
+`a5e4d7a6b202cfe73de44b0be51f6fb86cd8ee22`: `arcSize` defaults to 20,
+then is divided by two. Each corner offset is bounded by half its adjacent
+segment length. Quadratic corners are encoded as mathematically equivalent
+cubic Beziers because the CAD path API has no quadratic primitive.
+
+Marker endpoint shortening happens before corner generation. Original routing
+points still anchor labels and markers. `curved=1` keeps its existing spline
+path; this change does not claim general curved-edge parity or complete AWS
+15-edge parity. No stencil or marker formula is changed.
+
+Run `moon test convert/drawio --target js` (also `wasm-gc` and `native`).
+After `moon build --target js native_converter_worker`, run
+`node compat/drawio/rounded-connector-test.mjs` for all four Current AWS edges
+through the actual worker and independent BDF decoder. Expected controls are
+explicit Q-to-C equivalents. `node compat/drawio/facing-route-test.mjs` now
+uses explicit `rounded=0` to keep testing the unsmoothed routing vertices.
+Unit tests cover custom arc size, short and coincident segments, unchanged
+curved paths and preservation of the original route array.

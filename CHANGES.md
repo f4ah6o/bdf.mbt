@@ -57,6 +57,10 @@
 
 ### Fixed
 
+- draw.io non-curved connectors now use upstream-compatible rounded corners by
+  default, respecting `rounded=0` and `arcSize`. Short segments limit corner
+  radii; existing curved edges and marker placement are unchanged.
+
 - draw.io unconstrained horizontal-facing rectangular terminals now route through
   a shared midpoint with horizontal entry/exit, fixing the AWS Current branch
   positions. Constrained, rotated, custom-perimeter and close terminals retain
