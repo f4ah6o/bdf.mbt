@@ -217,25 +217,40 @@ fn XdwContainer::entries(
 /// Whether stored data is compressed, and to what size. Entries say so
 /// with 0x8a = 1; drawings stored inside the properties leave 0x8a out, so
 /// an expanded size (0x81) larger than the data also means compressed.
-/// Thumbnails (kind 7) use 0x81 for something else.
+/// Kind 4 data can instead keep an expanded size smaller than the stored
+/// compressed payload, still with no flag. Thumbnails (kind 7) use 0x81
+/// for something else.
 fn xdw_expanded_size(
   kind : Int64?,
   flag : Int64?,
   size : Int64?,
   stored : Int,
-) -> Int? {
-  match size {
-    Some(n) => {
-      let n = n.to_int()
-      if flag is Some(1L) ||
-        (kind != Some(7L) && flag is None && n > stored) {
-        Some(n)
-      } else {
-        None
+) -> Int? raise XdwError {
+  let n = match size {
+    Some(n) => n
+    None => {
+      if flag == Some(1L) {
+        raise XdwCorrupt("compressed drawing has no expanded size")
       }
+      return None
     }
-    None => None
   }
+  let compressed = flag == Some(1L) ||
+    (flag is None && kind != Some(7L) &&
+      (n > stored.to_int64() ||
+        (kind == Some(4L) && n > 0L && n < stored.to_int64())))
+  if !compressed {
+    return None
+  }
+  // Validate in Int64 before narrowing. Invalid compressed declarations
+  // must never be downgraded to raw data by returning None.
+  if n <= 0L {
+    raise XdwCorrupt("compressed drawing has a non-positive expanded size")
+  }
+  if n > 2147483647L {
+    raise XdwTooLarge("compressed drawing expanded size exceeds Int range")
+  }
+  Some(n.to_int())
 }
 
 ///|

@@ -4,6 +4,42 @@
 
 ### Added
 
+- A sheet clipboard extension to the rendering Worker client
+  (`bdf_render_worker_client`): `sheetClipboard(view, range)` copies an
+  inclusive rectangular cell range `{ row0, col0, row1, col1 }` as
+  `{ text, html }` (TSV and an HTML table) with hidden rows and columns
+  skipped, merged cells clipped by `cell_clipboard`, and scope marks
+  preserved as `th` cells. Because a merged cell keeps its text in the
+  tile of its anchor while its span can cross any number of tiles, the
+  worker resolves a range against every tile of the view's tile table,
+  like the in-browser sheet, instead of a window around the selection;
+  tiles sharing one object part are extracted once per request and split
+  parts are fetched lazily through the document's part cache. Selections
+  beyond 1,000,000 cells, views whose tile table exceeds 4,096 tiles (an
+  explicit error instead of silently losing merged anchors), ranges
+  outside the sheet and results whose serialized text and HTML together
+  exceed 8,388,608 UTF-16 code units (a `String.length()` count of the
+  finished serialization, not a byte or allocation cap) are rejected as
+  worker errors. `compat/render_worker/clipboard-test.mjs` covers the request
+  contract for short spans, offscreen data, invalid ranges, hidden axes
+  and split sources; the new
+  `compat/render_worker/merge-clipboard-test.mjs` covers merged spans
+  wider than one tile for buffer, split and password-encrypted sources
+  against the generated `compat/sheet/merge.bdf` fixture; and the new
+  `compat/render_worker/tile-cap-clipboard-test.mjs` covers the tile cap
+  on a 4,097-tile sheet rejected before any tile object part is loaded
+  (`npm run test:render-worker-clipboard` runs all three). The installed
+  package smoke (`plugin/browser/library-smoke.mjs` through
+  `npm run library:smoke`) additionally drives the tarball-installed
+  client and render Worker so packaging omissions of the client method or
+  the merged-cell fix fail the staging gates.
+- Interactive multi-cell selection and copy for sheet views in the browser
+  `Viewer` (`bdf_create_viewer`): selecting a cell rectangle between two
+  mounted cells includes cells whose tiles are outside the viewport (merged
+  cells expand the range) and copies the rectangle as TSV and a HTML table
+  through the rendering Worker, subject to its cell and tile limits; late
+  or failed clipboard fetching is reported as `clipboarderror` events
+  (`npm run test:sheet-selection`).
 - Generic multiple-page and embedded raster-image document support in the
   shared diagram encoder (`bdf.mbt/plugin/diagram-bdf`):
   `encodeDiagramDocument({source, title, pages, images})` emits one obj
@@ -54,6 +90,20 @@
   the `compat/xlsx` working tree from 714 MiB to 334 MiB. Fixture
   regeneration now ends with `pack-fixtures.mjs`; see the new fixture
   storage section in `compat/xlsx/README.md`.
+
+- PPTX shapes, pictures, non-table graphic frames and groups with
+  alternative text draw inside a FIGURE mark of that text, as upstream
+  `beginFigure`/`endFigure` wrap them: the trimmed `cNvPr` `descr` wins
+  over `title`, and a shape marked decorative, hidden or without
+  alternative text draws unmarked. Group FIGURE marks nest in document
+  order around their children, and a normal shape's text stays outside
+  its drawing's FIGURE. A graphic frame is treated as a table exactly
+  when its `graphic/graphicData` holds a `tbl` element — for such frames
+  the port suppresses the frame's FIGURE and keeps the port's existing
+  table rendering (which still draws nothing for a table with no text);
+  no change to upstream's own table structure or empty-table drawing is
+  implied. SmartArt, charts and other embeddings draw inside the
+  frame's FIGURE.
 
 ### Fixed
 

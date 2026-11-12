@@ -1,6 +1,7 @@
-// Browser smoke for the staged main library package (`bdf.mbt`): three real
-// Chromium module Workers, all served from the tarball-installed package,
-// driven by the upstream @bdfkit/convert Converter client:
+// Browser smoke for the staged main library package (`bdf.mbt`): four real
+// Chromium module Workers and the served PDF export path, all from the
+// tarball-installed package; the converter Workers are driven by the
+// upstream @bdfkit/convert Converter client:
 //
 //   1. the shipped native converter Worker — the 24 builtin formats,
 //      including the builtin DocuWorks converter;
@@ -8,7 +9,11 @@
 //      DocuWorks builtin and the diagram adapters;
 //   3. a generated downstream demo Worker — a third-party plugin the
 //      consumer writes, registered next to the shipped DocuWorks adapter
-//      without patching the registry or replacing the builtins.
+//      without patching the registry or replacing the builtins;
+//   4. the public PDF export entry — the served package path a browser
+//      consumer imports;
+//   5. the shipped render Worker client — the sheetClipboard extension
+//      must ship in the installed dist with its merged-cell fix intact.
 //
 //   node plugin/browser/library-smoke.mjs [--installed <dir>]
 //
@@ -97,8 +102,13 @@ try {
   // own OFL-licensed test font, handed to the page the way a consumer
   // hands their licensed font — the package never fetches one.
   const fontB64 = readFileSync(resolve(root, "site/form/fonts/MPLUS1p-Regular.ttf")).toString("base64");
+  // The synthetic merged-span sheet fixture (compat/sheet/merge.bdf): its
+  // A1:Z1 merge keeps its text in tile (0,0) while the selected Y1 is seven
+  // tiles away, so a package that loses the render Worker, the client
+  // method or the merged-cell fix fails the clipboard check below.
+  const mergeB64 = readFileSync(resolve(root, "compat/sheet/merge.bdf")).toString("base64");
 
-  const result = await page.evaluate(async ({ base, relative, emittedWorkerUrl, fontB64 }) => {
+  const result = await page.evaluate(async ({ base, relative, emittedWorkerUrl, fontB64, mergeB64 }) => {
     // The shipped client from the installed package's root export — the exact
     // surface the README documents. @bdfkit/core is not part of the recipe;
     // it is used here only to verify the returned BDF bytes' shape.
@@ -263,11 +273,34 @@ try {
     }
     check("pdf: exportPdf rejects a wrong input type", pdfTypeError === "TypeError", pdfTypeError);
 
+    // 5) the shipped render Worker client: the sheetClipboard extension must
+    //    ship in the installed dist. Far Y1 sits inside the A1:Z1 merge whose
+    //    anchor is seven tiles away, so the clipboard answer proves both the
+    //    client method and the merged-cell tile-table resolution arrived.
+    const { bdf_render_worker_client } = await import(`/${relative}/dist/browser.js`);
+    const sheetClient = bdf_render_worker_client(
+      new Worker(`/${relative}/dist/workers/render_worker.js`, { type: "module" }),
+    );
+    const mergeBytes = Uint8Array.from(atob(mergeB64), ch => ch.charCodeAt(0));
+    await sheetClient.open({ kind: "buffer", buffer: mergeBytes.buffer });
+    const farCell = await sheetClient.sheetClipboard("cells", { row0: 0, col0: 24, row1: 0, col1: 24 });
+    check(
+      'sheet: far Y1 inside the A1:Z1 merge copies TSV "Long merged"',
+      farCell.text === "Long merged",
+      JSON.stringify(farCell),
+    );
+    check(
+      "sheet: far Y1 inside the A1:Z1 merge copies the merged cell HTML",
+      farCell.html === '<meta charset="utf-8"><table><tr><td>Long merged</td></tr></table>',
+      farCell.html,
+    );
+    sheetClient.terminate();
+
     for (const client of [nativeClient, pluginClient, downstreamClient]) {
       client.terminate();
     }
     return outcomes;
-  }, { base, relative, emittedWorkerUrl, fontB64 });
+  }, { base, relative, emittedWorkerUrl, fontB64, mergeB64 });
 
   for (const outcome of result) {
     console.log(`${outcome.ok ? "PASS" : "FAIL"} ${outcome.name}${outcome.ok || !outcome.detail ? "" : " :: " + outcome.detail}`);
