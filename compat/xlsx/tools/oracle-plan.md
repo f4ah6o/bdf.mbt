@@ -125,3 +125,22 @@ confirms four nondeterministic files: the above three notes files plus
 ordering hypothesis for notes. The font case still needs source-to-output
 tracing. Fixing these requires an explicit oracle determinism decision, not
 sorting BDF parts after generation to disguise differences.
+
+## Determinism experiment: case order versus drawing order
+
+The multi-font drift was adapter case order, not glyph or font conversion:
+`generate_multi_font_legacy_test.go` iterated a two-key Go map. Its group order
+is now explicit, matching static input identities (plain-run indices 2 and 3,
+then multi-color index 0). Pinned upstream source remains unchanged. With the
+rebuilt Go 1.27 AMD64 v3 oracle, 20 separate processes produced identical bytes
+and all static fields/order match. `check-multifont-repeat.mjs --build <build>
+--seeds <seed-root>` reproduces that check with binary/adapter/seed validation.
+
+For a notes control, decoding the differing objects shows the two triangle
+path tables swapped while FILL_PATH 0 then 1 remains. Coordinates are disjoint
+in that specific control: (44.25,0)-(48,3.75) and
+(140.25,14.25)-(144,18). This is consistent with paintMarks map iteration.
+Sorting would change painting order, however, and is not generally safe for
+merged/overlapping cells. No path reordering, semantic normalization or
+acceptance rule is added. The three notes corpora still fail repeatability;
+the full migration remains incomplete even after the adapter-order fix.

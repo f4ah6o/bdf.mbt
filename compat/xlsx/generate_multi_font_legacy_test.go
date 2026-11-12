@@ -17,7 +17,15 @@ func TestCodexMultiFontLegacy(t *testing.T) {
 		t.Fatal("fixture and source roots required")
 	}
 	var out []any
-	for name, indices := range map[string][]int{"plain-run-unsupported-original.json": {2, 3}, "multi-color-runs-unsupported-original.json": {0}} {
+	// Preserve the existing fixture case order; Go map iteration is randomized.
+	for _, group := range []struct {
+		name    string
+		indices []int
+	}{
+		{"plain-run-unsupported-original.json", []int{2, 3}},
+		{"multi-color-runs-unsupported-original.json", []int{0}},
+	} {
+		name, indices := group.name, group.indices
 		data, e := os.ReadFile(filepath.Join(source, "compat/xlsx", name))
 		if e != nil {
 			t.Fatal(e)
