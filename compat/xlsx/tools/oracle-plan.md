@@ -351,3 +351,84 @@ run the unchanged verifier on each case, retain raw generated notes as evidence,
 and complete full independent repeat runs. A separately reviewed upstream
 ordering contract could eventually eliminate the exception, but changing the
 pinned oracle or sorting drawing operations is not part of this migration.
+
+## Read-only notes partition and sideproduct coverage audit
+
+`audit-notes-partition.mjs --generated <output> --ids <render-list> --shards 4`
+audits a hypothetical split without changing fixture selection. Against the first
+ARM64 output, it checks all 803 historical fixture files, preserves each array
+entry's file/index identity (and treats a non-array root as one inventory unit),
+checks the three notes proposal hashes and every notes input/option, and requires
+all other fixture contents to match exactly. Its 316,369 inventory units split
+into 264 notes cases, 340 units in the existing 26 retained-input corpora, and
+315,765 units in other files; the sets are disjoint and their union is exact.
+These are fixture inventory identifiers, not a claim that every JSON entry is
+an executed test or that the exception is active. The seven extras remain in
+the separate strict inventory gate.
+
+`verify-render.mjs --list --ids <render-list>` independently enumerated 144,297
+actual sharded render IDs. The audit assigns them through `CaseTracker` to four
+shards: 36,066 / 36,099 / 36,079 / 36,053, with exact union and no duplicates.
+Crucially, the 264 proposed notes cases are not in that sharded verifier:
+`verify-sheet-multiple-notes.mjs` runs them separately, without sharding. It
+passed all 264 while comparing note paths unordered; it does not prove strict
+BDF-order equivalence. No proposed split or new verifier was executed.
+
+`audit-extra-input-coverage.mjs --generated <output>` searches decoded input
+bytes in all 803 historical fixtures. The three percent-links extras are exact
+byte matches for `links-unsupported.json` indices 0, 1, 2. Their existing
+`verify-render.mjs` rejection IDs are `unsupported links must be rejected f9c58cf7`,
+`unsupported links must be rejected e952c636`, and
+`unsupported links must be rejected 22f241e1`: the first two require an
+unsupported-URL error and the third the link tile-budget error. The
+`base-border-tint-too-large.json` input has no exact match in those 803 files.
+Its MoonBit result was no BDF and `xlsx: row or column border exceeds the
+supported view size`. The existing `base-border-too-large.json` rejection
+checks that error class, but exercises a different input and does not establish
+coverage of the tinted-border case. The generator writes the tinted input at
+index 240 without calling upstream conversion, so it supplies no upstream
+expected result for that case.
+
+Proposed follow-up: preserve this single deterministic input explicitly as an
+input-only seed, with a stable case ID and integrity/inventory check, and run a
+rejection test requiring the observed border-size error; first verify the
+expected contract independently and review how that input is generated or
+preserved. Keep the three already-covered link inputs tied to their existing
+cases, and resolve all seven sideproduct inventory entries explicitly. None of
+these proposals adds an allowlist to the exact comparison gate.
+
+## Existing compatibility suite (2026-11-13)
+
+A clean isolated checkout built `compat/xlsx` and `compat/ooxml` for JS, then
+`VERIFY_RENDER_SHARDS=4 npm run test:xlsx-compat` passed in 323.39 seconds
+(`/usr/bin/time` maximum RSS 1,991,896 KiB; this is not aggregate concurrent
+memory). The render aggregator verified all 144,297 enumerated IDs exactly once
+across its four shards in 307.3 seconds. The separate notes verifier passed
+264 cases with its existing unordered-note comparison. The suite uses retained
+static fixtures and does not prove that dynamically generated notes are stable.
+
+## Independent ARM64 generation and repeatability (2026-11-13)
+
+A second generation into a fresh output directory used the same authenticated
+Linux/ARM64 v8.0 binary (SHA256
+`6425c89b0af6753bfc03735695f655e7d4d11c7fcaab33b325049fe2b6fc7035`),
+Go 1.27.0 build and official Ubuntu qemu-user 8.2.2. All 724 adapter tests
+completed successfully in 690.62 seconds, with `/usr/bin/time` maximum RSS
+453,064 KiB. This generation overlapped the read-only compatibility suite, so
+its elapsed time is not directly comparable with the earlier 573.27-second run.
+
+The unchanged strict static gate again compared 803 historical files: 800
+equal, 3 different, no missing or parse/read failures, and the same 7 extras.
+The differing BDF counts are 46/128 filter notes, 3/8 legacy notes, and 40/128
+regular notes; the only changed field in those cases is `bdf`. The independent
+notes decoder found note sequence changes for all 89 cases, with no changes in
+its inspected non-note operations or note-path frequencies. These diagnostics do
+not prove render equivalence or relax the gate.
+
+The separate two-run comparison checks all 810 generated JSON outputs, including
+sideproducts and exported retained inputs. It reports identical receipt identity,
+no missing or extra files between runs, 807 identical outputs, and exactly the
+same three notes files different. Its nonzero result confirms the required full
+corpus repeatability gate remains unmet. The read-only proposed partition audit
+and four extra input byte-match results were identical to the first run. No
+notes exception has been activated and no stored expectation has been removed.
