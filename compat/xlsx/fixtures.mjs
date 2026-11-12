@@ -1,7 +1,7 @@
 // Content-addressed storage for the XLSX compatibility fixtures.
 //
 // The fixture JSON files used to embed every input XLSX and expected BDF as a
-// base64 string, repeated for each case that shares them. A fixture is now
+// base64 string, repeated once per case that shares them. A fixture is now
 // stored as a manifest that keeps every case, option, warning, label and
 // order, but replaces large base64 strings with a marker pointing at the
 // decoded bytes in a shared blob store addressed by SHA-256 of the bytes.
@@ -11,25 +11,40 @@
 //   {"format":"bdf-xlsx-fixture","version":1,"blobs":12,"root": <original JSON
 //   value with markers instead of the extracted strings>}
 //
-// where every marker is {"$blob": "<64 lowercase hex chars>"} and the bytes
-// live at store/<first two hex chars>/<hash>.bin (optionally gzip-compressed,
-// detectable by the 1f 8b magic). The hash covers the uncompressed bytes, so
-// loading always verifies the content the case will actually see.
+// where every marker is {"$blob": "<64 lowercase hex chars>"}.
+//
+// The blob store is split by the first hash byte to keep the file count small
+// while staying content-addressed:
+//
+//   store/aa.pk   one gzip stream of the concatenation of that group's blobs,
+//                 sorted by hash; gzipped because expected BDFs across cases
+//                 share most of their bytes, which only a shared stream sees
+//                 (per-blob compression costs twice as much).
+//   store/aa.idx  {"format":"bdf-xlsx-store","version":1,"blobs":{"<hash>":
+//                 [offset, length], ...}} with offsets into the decompressed
+//                 .pk bytes.
+//
+// Addressing a blob therefore reads one pack, decompresses it once per
+// process, slices [offset, length) and verifies that the slice hashes to the
+// address. The hash covers the uncompressed content, and readers hash every
+// slice they hand out, so corruption anywhere in the path is detected.
 //
 // `loadFixture` returns exactly the value `JSON.parse` returned for the old
 // file: markers are replaced with the canonical base64 text of the blob, so
-// existing verifiers keep comparing the same bytes, options, warnings and case
-// order without knowing the storage changed. Files without the envelope are
-// returned as parsed, which keeps the flow "generate, then pack" workable:
+// existing verifiers keep comparing the same bytes, options, warnings and
+// case order without knowing the storage changed. Files without the envelope
+// are returned as parsed, which keeps the flow "generate, then pack" workable:
 // a freshly regenerated fixture is verified in its plain form first.
 
 import { createHash } from 'node:crypto';
-import { gunzipSync, gzipSync } from 'node:zlib';
+import { gunzipSync } from 'node:zlib';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 export const FIXTURE_FORMAT = 'bdf-xlsx-fixture';
 export const FIXTURE_VERSION = 1;
+export const STORE_FORMAT = 'bdf-xlsx-store';
+export const STORE_VERSION = 1;
 export const BLOB_MARKER = '$blob';
 export const STORE_DIR = new URL('./store/', import.meta.url);
 
@@ -55,42 +70,58 @@ export function isBlobHash(value) {
   return typeof value === 'string' && /^[0-9a-f]{64}$/.test(value);
 }
 
-export function storePath(hash, storeDir = STORE_DIR) {
-  if (!isBlobHash(hash)) throw new Error(`invalid blob hash ${JSON.stringify(hash)}`);
-  return new URL(`./${hash.slice(0, 2)}/${hash}.bin`, storeDir);
-}
-
-function gunzipIfCompressed(buffer, source, hash) {
-  if (buffer[0] === 0x1f && buffer[1] === 0x8b) {
+function decompressedStoreBytes(raw, source) {
+  if (raw[0] === 0x1f && raw[1] === 0x8b) {
     try {
-      return gunzipSync(buffer);
+      return gunzipSync(raw);
     } catch (error) {
-      throw new Error(`${source}: fixture blob ${hash} is not a valid gzip stream: ${error.message}`);
+      throw new Error(`${source}: corrupt store pack (invalid gzip stream): ${error.message}`);
     }
   }
-  return buffer;
+  return raw;
+}
+
+// The per-process pack cache: decompressed pack bytes plus its offset index.
+// Fixture sets reference most blobs several times, and a verify-render shard
+// resolves every blob in its fixtures, so this is where the loader earns its
+// keep.
+async function packFor(prefix, { storeDir, cache }) {
+  if (cache?.has(prefix)) return cache.get(prefix);
+  let pk;
+  try {
+    pk = await readFile(new URL(`./${prefix}.pk`, storeDir));
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      const empty = { bytes: Buffer.alloc(0), offsets: new Map() };
+      cache?.set(prefix, empty);
+      return empty;
+    }
+    throw error;
+  }
+  const idx = JSON.parse(await readFile(new URL(`./${prefix}.idx`, storeDir), 'utf8'));
+  if (idx.format !== STORE_FORMAT || idx.version !== STORE_VERSION) {
+    throw new Error(`store/${prefix}.idx: unsupported store index format ${JSON.stringify(idx.format)}/${idx.version}`);
+  }
+  const offsets = new Map(Object.entries(idx.blobs).map(([hash, [offset, length]]) => [hash, [offset, length]]));
+  const pack = { bytes: decompressedStoreBytes(pk, `store/${prefix}.pk`), offsets };
+  cache?.set(prefix, pack);
+  return pack;
 }
 
 // Reads one blob from the store and verifies its hash. The cache lets a
 // process reuse bytes that several cases or several fixtures reference.
 export async function readBlob(hash, { storeDir = STORE_DIR, cache } = {}) {
   if (!isBlobHash(hash)) throw new Error(`invalid blob hash ${JSON.stringify(hash)}`);
-  if (cache?.has(hash)) return cache.get(hash);
-  let raw;
-  try {
-    raw = await readFile(storePath(hash, storeDir));
-  } catch (error) {
-    if (error?.code === 'ENOENT') {
-      throw new Error(`fixture blob ${hash} is missing from the store`);
-    }
-    throw error;
-  }
-  const bytes = gunzipIfCompressed(raw, 'store', hash);
+  const prefix = hash.slice(0, 2);
+  const pack = await packFor(prefix, { storeDir, cache });
+  const entry = pack.offsets.get(hash);
+  if (!entry) throw new Error(`fixture blob ${hash} is missing from store/${prefix}.pk`);
+  const bytes = pack.bytes.subarray(entry[0], entry[0] + entry[1]);
+  if (bytes.length !== entry[1]) throw new Error(`fixture blob ${hash} is truncated in store/${prefix}.pk`);
   const actual = sha256(bytes);
   if (actual !== hash) {
-    throw new Error(`fixture blob ${hash} is corrupt: content hashes to ${actual}`);
+    throw new Error(`fixture blob ${hash} is corrupt: content in store/${prefix}.pk hashes to ${actual}`);
   }
-  cache?.set(hash, bytes);
   return bytes;
 }
 
@@ -108,9 +139,7 @@ async function resolveValue(value, options) {
   }
   if (typeof value === 'object' && value !== null) {
     if (isMarker(value)) {
-      const hash = value[BLOB_MARKER];
-      const bytes = await readBlob(hash, options);
-      return bytes.toString('base64');
+      return (await readBlob(value[BLOB_MARKER], options)).toString('base64');
     }
     const out = {};
     for (const [key, child] of Object.entries(value)) out[key] = await resolveValue(child, options);
@@ -147,9 +176,9 @@ export async function loadFixture(target, { storeDir = STORE_DIR, cache } = {}) 
 }
 
 // Packs a parsed fixture value in memory: returns the packed root with
-// markers and the blobs keyed by hash. Shared with the packer and the tests
-// so the extraction rule has a single implementation.
-export function packFixture(root, { minDecoded = BLOB_MIN_DECODED, compress } = {}) {
+// markers and the raw blob bytes keyed by hash. Shared with the packer and
+// the tests so the extraction rule has a single implementation.
+export function packFixture(root, { minDecoded = BLOB_MIN_DECODED } = {}) {
   const blobs = new Map();
   const packValue = value => {
     if (Array.isArray(value)) return value.map(packValue);
@@ -163,16 +192,30 @@ export function packFixture(root, { minDecoded = BLOB_MIN_DECODED, compress } = 
     const bytes = Buffer.from(value, 'base64');
     if (bytes.length < minDecoded) return value;
     const hash = sha256(bytes);
-    if (!blobs.has(hash)) {
-      let stored = bytes;
-      if (compress === 'gzip') {
-        const compressed = gzipSync(bytes);
-        if (compressed.length < bytes.length) stored = compressed;
-      }
-      blobs.set(hash, stored);
-    }
+    if (!blobs.has(hash)) blobs.set(hash, bytes);
     return { [BLOB_MARKER]: hash };
   };
   const packed = packValue(root);
   return { packed, blobs };
+}
+
+// Builds one store group: the `pk` bytes and the JSON-ready index for all
+// blobs whose hash starts with `prefix`, sorted by hash for determinism.
+export function buildPack(prefix, blobs) {
+  const hashes = [...blobs.keys()].filter(hash => hash.startsWith(prefix)).sort();
+  const offsets = {};
+  let offset = 0;
+  for (const hash of hashes) {
+    const length = blobs.get(hash).length;
+    offsets[hash] = [offset, length];
+    offset += length;
+  }
+  return {
+    pk: Buffer.concat(hashes.map(hash => blobs.get(hash))),
+    idx: {
+      format: STORE_FORMAT,
+      version: STORE_VERSION,
+      blobs: offsets,
+    },
+  };
 }

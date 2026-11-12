@@ -4,17 +4,20 @@
 // duplicated once per case that shares them.
 // New form: base64 strings with at least BLOB_MIN_CHARS characters and
 // BLOB_MIN_DECODED decoded bytes become {"$blob": "<sha256>"} markers, and the
-// decoded bytes go to compat/xlsx/store/<aa>/<hash>.bin, shared across all
-// fixtures. Metadata (mode, no_index, warnings, labels, case order) stays
-// inline in the manifest. See ../fixtures.mjs for the loader contract.
+// decoded bytes go into the hash-prefix pack files under compat/xlsx/store/
+// (see ../fixtures.mjs). Metadata (mode, no_index, warnings, labels, case
+// order) stays inline in the manifest.
 //
 // Usage:
-//   node compat/xlsx/tools/pack-fixtures.mjs                        pack everything under compat/xlsx
+//   node compat/xlsx/tools/pack-fixtures.mjs                        canonical full pack
 //   node compat/xlsx/tools/pack-fixtures.mjs --dry-run              report what would change, write nothing
 //   node compat/xlsx/tools/pack-fixtures.mjs --check                verify integrity and packing invariants, write nothing
-//   node compat/xlsx/tools/pack-fixtures.mjs --files a.json,b.json  pack or check only these fixtures
-//   node compat/xlsx/tools/pack-fixtures.mjs --prune                after a full pack, delete unreferenced store blobs
-//   node compat/xlsx/tools/pack-fixtures.mjs --compression gzip      store compressed blobs when smaller
+//   node compat/xlsx/tools/pack-fixtures.mjs --files a.json,b.json  pack only these fixtures (adds blobs, prunes nothing)
+//
+// A full pack is canonical: packs are rebuilt from the blobs the current
+// fixtures reference, so blobs that are no longer referenced by any fixture
+// drop out of the store. A partial --files pack only adds the blobs the named
+// fixtures need and leaves every other store entry alone.
 //
 // Regeneration workflow: run the upstream Go generator with BDF_FIXTURE_ROOT
 // pointing at the repository root (it writes plain fixtures), re-run the
@@ -22,20 +25,22 @@
 // `--check` to assert the stored state is complete. Do not commit fixtures
 // with inline large base64: the check fails on them.
 
-import { readdir, readFile, rm, stat, writeFile, mkdir } from 'node:fs/promises';
+import { readdir, readFile, stat, writeFile, mkdir } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
+import { gzipSync } from 'node:zlib';
 import {
   BLOB_MARKER,
   BLOB_MIN_DECODED,
   FIXTURE_FORMAT,
   FIXTURE_VERSION,
+  buildPack,
   isCanonicalBase64,
   loadFixture,
   packFixture,
-  storePath,
 } from '../fixtures.mjs';
 
 const root = new URL('../', import.meta.url);
+const storeDir = new URL('./store/', root);
 
 async function fixtureFiles() {
   const names = [];
@@ -74,49 +79,43 @@ const options = parseArgs({
     'dry-run': { type: 'boolean', default: false },
     check: { type: 'boolean', default: false },
     files: { type: 'string' },
-    prune: { type: 'boolean', default: false },
-    compression: { type: 'string', default: 'none' },
   },
 }).values;
-
-if (options.compression !== 'none' && options.compression !== 'gzip') {
-  throw new Error(`--compression wants gzip or none, got ${options.compression}`);
-}
 
 const files = options.files
   ? options.files.split(',').map(name => name.replace(/^\.?\//, '')).sort()
   : await fixtureFiles();
 
-const referenced = new Set();
-let packedFiles = 0;
-let plainFiles = 0;
-let blobsWritten = 0;
-let blobsExisting = 0;
+// Manifest values for every target; the union of their blobs drives the store.
+const manifests = new Map();
+const originalValues = new Map();
+const blobs = new Map();
 let failures = 0;
 
 for (const name of files) {
   const target = new URL(name, root);
   const before = await readFile(target, 'utf8');
   const parsed = JSON.parse(before);
-  let original;
   try {
     // A packed fixture is loaded back to its original value so re-packing is
     // idempotent and threshold rule changes can move blobs in or out. In
     // --check mode this line is the integrity gate: a missing or corrupt store
     // blob must fail the run for this file instead of aborting the sweep.
-    original = await loadFixture(target);
+    const value = await loadFixture(target);
+    const { packed, blobs: fileBlobs } = packFixture(value);
+    manifests.set(name, { source: before, parsed, packed, blobs: fileBlobs });
+    originalValues.set(name, value);
+    for (const [hash, bytes] of fileBlobs) blobs.set(hash, bytes);
   } catch (error) {
     if (!options.check) throw error;
     console.error(`${name}: ${error.message}`);
     failures++;
-    continue;
   }
-  const { packed, blobs } = packFixture(original, { compress: options.compression });
-  referencedHashes(packed, referenced);
-  const blobTotal = [...blobs.values()].reduce((sum, bytes) => sum + bytes.length, 0);
+}
 
-  if (options.check) {
-    if (parsed.format !== undefined && blobs.size === 0) {
+if (options.check) {
+  for (const [name, { parsed, packed, blobs: fileBlobs }] of manifests) {
+    if (parsed.format !== undefined && fileBlobs.size === 0) {
       console.error(`${name}: packed manifest with no blobs`);
       failures++;
     }
@@ -124,83 +123,120 @@ for (const name of files) {
       console.error(`${name}: not packed but embeds ${countInlineCandidates(parsed)} large base64 value(s)`);
       failures++;
     }
-    if (parsed.format === FIXTURE_FORMAT && parsed.blobs !== blobs.size) {
-      console.error(`${name}: manifest claims ${parsed.blobs} blobs, fixture references ${blobs.size}`);
+    if (parsed.format === FIXTURE_FORMAT && parsed.blobs !== fileBlobs.size) {
+      console.error(`${name}: manifest claims ${parsed.blobs} blobs, fixture references ${fileBlobs.size}`);
       failures++;
     }
-    continue;
+    if (parsed.format === FIXTURE_FORMAT) {
+      const claimed = new Set();
+      referencedHashes(parsed.root, claimed);
+      let stale = false;
+      for (const hash of claimed) {
+        if (!fileBlobs.has(hash)) {
+          console.error(`${name}: manifest references blob ${hash} that the fixture no longer contains`);
+          failures++;
+          stale = true;
+          break;
+        }
+      }
+    }
   }
+  // Orphan detection only speaks for a full run: with --files the blobs of
+  // other fixtures legitimately stay outside the referenced set.
+  if (!options.files) {
+    const referenced = new Set();
+    for (const { packed } of manifests.values()) referencedHashes(packed, referenced);
+    for (const entry of await readdir(storeDir, { withFileTypes: true })) {
+      if (entry.name.endsWith('.idx')) {
+        const idx = JSON.parse(await readFile(new URL(`./${entry.name}`, storeDir), 'utf8'));
+        const orphans = Object.keys(idx.blobs).filter(hash => !referenced.has(hash));
+        if (orphans.length) {
+          console.error(`store/${entry.name}: ${orphans.length} unreferenced blob(s), e.g. ${orphans[0]}`);
+          failures++;
+        }
+      }
+    }
+    const prefixIdx = new Map();
+    for (const entry of await readdir(storeDir, { withFileTypes: true })) {
+      if (entry.name.endsWith('.idx')) {
+        const idx = JSON.parse(await readFile(new URL(`./${entry.name}`, storeDir), 'utf8'));
+        prefixIdx.set(entry.name.slice(0, 2), new Set(Object.keys(idx.blobs)));
+      }
+    }
+    for (const hash of referenced) {
+      const prefix = hash.slice(0, 2);
+      if (!prefixIdx.has(prefix) || !prefixIdx.get(prefix).has(hash)) {
+        console.error(`referenced blob ${hash} absent from store/${prefix}.idx`);
+        failures++;
+      }
+    }
+  }
+  console.log(`checked ${manifests.size} fixture file(s) against the store`);
+  if (failures) {
+    console.error(`${failures} check failure(s)`);
+    process.exitCode = 1;
+  }
+  process.exit();
+}
 
-  if (blobs.size === 0) {
+// Write the store first so a half-finished run fails loudly (missing blob)
+// instead of silently serving a manifest whose packs are not there yet.
+const uniquePrefixes = [...new Set([...blobs.keys()].map(hash => hash.slice(0, 2)))].sort();
+let packsRewritten = 0;
+let packsUnchanged = 0;
+
+for (const prefix of uniquePrefixes) {
+  const { pk, idx } = buildPack(prefix, blobs);
+  // The pack stream gains from one shared gzip context across adjacent BDFs;
+  // keep the raw form if gzip ever fails to help for this group.
+  const compressed = gzipSync(pk);
+  const outPk = compressed.length < pk.length ? compressed : pk;
+  const outIdx = JSON.stringify(idx);
+  const existingPk = await stat(new URL(`./${prefix}.pk`, storeDir)).then(s => s.isFile(), () => false);
+  const existingIdx = await stat(new URL(`./${prefix}.idx`, storeDir)).then(s => s.isFile(), () => false);
+  if (existingPk && existingIdx) {
+    const beforePk = await readFile(new URL(`./${prefix}.pk`, storeDir));
+    const beforeIdx = await readFile(new URL(`./${prefix}.idx`, storeDir), 'utf8');
+    if (beforePk.equals(outPk) && beforeIdx === outIdx) {
+      packsUnchanged++;
+      continue;
+    }
+  }
+  if (!options['dry-run']) {
+    await mkdir(storeDir, { recursive: true });
+    await writeFile(new URL(`./${prefix}.pk`, storeDir), outPk);
+    await writeFile(new URL(`./${prefix}.idx`, storeDir), outIdx);
+  }
+  packsRewritten++;
+}
+
+let packedFiles = 0;
+let plainFiles = 0;
+
+for (const [name, { source, parsed, packed, blobs: fileBlobs }] of manifests) {
+  if (fileBlobs.size === 0) {
     if (parsed.format === FIXTURE_FORMAT) {
       // No large strings left; a manifest with no markers would only hide
       // plain data behind the loader.
-      if (!options['dry-run']) await writeFile(target, JSON.stringify(original));
+      const plain = JSON.stringify(originalValues.get(name));
+      if (!options['dry-run'] && plain !== source) await writeFile(new URL(name, root), plain);
       console.log(`${name}: no blobs left; restored plain JSON`);
-      plainFiles++;
-    } else {
-      plainFiles++;
     }
+    plainFiles++;
     continue;
-  }
-
-  for (const [hash, bytes] of blobs) {
-    const blobTarget = storePath(hash);
-    let exists = false;
-    try {
-      const current = await stat(blobTarget);
-      exists = current.isFile() && current.size === bytes.length;
-    } catch {
-      exists = false;
-    }
-    if (exists) {
-      blobsExisting++;
-    } else {
-      blobsWritten++;
-      if (!options['dry-run']) {
-        await mkdir(new URL('./', blobTarget), { recursive: true });
-        await writeFile(blobTarget, bytes);
-      }
-    }
   }
   const manifest = JSON.stringify({
     format: FIXTURE_FORMAT,
     version: FIXTURE_VERSION,
-    blobs: blobs.size,
+    blobs: fileBlobs.size,
     root: packed,
   });
-  const changed = manifest !== before;
-  if (changed) packedFiles++;
-  if (!options['dry-run'] && changed) await writeFile(target, manifest);
-  console.log(`${name}: ${blobs.size} blob(s) (${blobTotal} bytes), manifest ${before.length} -> ${manifest.length}`);
-}
-
-// Orphan detection needs the referenced set, so it only speaks for a full run.
-if (!options.files && (options.check || options.prune)) {
-  const store = new URL('./store/', root);
-  let orphans = 0;
-  for (const shard of await readdir(store, { withFileTypes: true })) {
-    const shardDir = new URL(`./${shard.name}/`, store);
-    for (const entry of await readdir(shardDir, { withFileTypes: true })) {
-      const hash = `${shard.name}${entry.name.replace(/\.bin$/, '')}`;
-      if (!referenced.has(hash)) {
-        if (options.prune && !options.check && !options['dry-run']) {
-          await rm(new URL(`./${entry.name}`, shardDir));
-          if (orphans === 0) console.log('prune: removing unreferenced store blobs');
-        } else {
-          console.error(`store/${shard.name}/${entry.name}: unreferenced blob`);
-        }
-        orphans++;
-      }
-    }
+  if (manifest !== source && !options['dry-run']) {
+    await writeFile(new URL(name, root), manifest);
   }
-  if (options.check && orphans) failures += orphans;
-  console.log(`orphan blobs: ${orphans}`);
+  if (manifest !== source || parsed.format !== FIXTURE_FORMAT) packedFiles++;
+  console.log(`${name}: ${fileBlobs.size} blob(s) referenced, manifest ${source.length} -> ${manifest.length} bytes`);
 }
 
 console.log(`packed ${packedFiles} fixture file(s), left ${plainFiles} plain, ` +
-  `wrote ${blobsWritten} blob(s), reused ${blobsExisting} existing blob(s)`);
-if (failures) {
-  console.error(`${failures} check failure(s)`);
-  process.exitCode = 1;
-}
+  `store: ${packsRewritten} pack group(s) rewritten, ${packsUnchanged} unchanged`);
