@@ -96,12 +96,33 @@ extern "js" fn viewer_progress(
   #|(dom,page,pages) => dom.api.dispatchEvent(new CustomEvent('conversionprogress',{detail:{page,pages}}))
 
 ///|
+extern "js" fn viewer_invalidate_page(
+  dom : ViewerDom,
+  view : String,
+  index : Int32,
+) -> Unit =
+  #|(dom,view,index) => {dom.pageUpdates.add(JSON.stringify([view,index]));if(dom.view?.id!==view)return;const frame=dom.stage.querySelector(`div[data-bdf-page="${index}"]`),canvas=frame?.querySelector('canvas');if(canvas){canvas.dataset.contentRevision=String(Number(canvas.dataset.contentRevision??'0')+1);canvas.dataset.renderRequest=String(Number(canvas.dataset.renderRequest??'0')+1);canvas.dataset.contentUpdating='true';canvas.dataset.loaded='';delete frame.dataset.bdfContentReady;const selection=frame.ownerDocument.getSelection();if(selection?.rangeCount&&!selection.isCollapsed&&selection.getRangeAt(0).intersectsNode(frame))selection.removeAllRanges();frame.querySelector('.bdfTextLayer')?.remove()}}
+
+///|
+extern "js" fn viewer_reset_page_updates(dom : ViewerDom) -> Unit =
+  #|(dom) => dom.pageUpdates.clear()
+
+///|
+extern "js" fn viewer_finish_page_update(
+  dom : ViewerDom,
+  view : String,
+  index : Int32,
+) -> Unit =
+  #|(dom,view,index) => dom.pageUpdates.delete(JSON.stringify([view,index]))
+
+///|
 extern "js" fn viewer_reload_page(
   dom : ViewerDom,
+  view : String,
   index : Int32,
   render : (ViewerCanvas) -> Unit,
 ) -> Unit =
-  #|(dom,index,render) => {const frame=dom.stage.querySelector(`[data-bdf-page="${index}"]`),canvas=frame?.querySelector('canvas');if(canvas){canvas.dataset.loaded='';const area=dom.stage.getBoundingClientRect(),rect=frame.getBoundingClientRect();if(rect.bottom>=area.top-600&&rect.top<=area.bottom+600)render(canvas)}}
+  #|(dom,view,index,render) => {if(dom.view?.id!==view)return;const frame=dom.stage.querySelector(`div[data-bdf-page="${index}"]`),canvas=frame?.querySelector('canvas');if(canvas){canvas.dataset.contentRevision=String(Number(canvas.dataset.contentRevision??'0')+1);canvas.dataset.renderRequest=String(Number(canvas.dataset.renderRequest??'0')+1);canvas.dataset.loaded='';delete canvas.dataset.contentUpdating;delete frame.dataset.bdfContentReady;const selection=frame.ownerDocument.getSelection();if(selection?.rangeCount&&!selection.isCollapsed&&selection.getRangeAt(0).intersectsNode(frame))selection.removeAllRanges();frame.querySelector('.bdfTextLayer')?.remove();const area=dom.stage.getBoundingClientRect(),rect=frame.getBoundingClientRect();if(rect.bottom>=area.top-600&&rect.top<=area.bottom+600)render(canvas);dom.selectionRecheck?.()}}
 
 ///|
 priv struct ViewerStream {
@@ -111,6 +132,7 @@ priv struct ViewerStream {
 
 ///|
 fn ViewerController::cancel_stream(self : ViewerController) -> Unit {
+  viewer_reset_page_updates(self.dom)
   if self.active_stream is Some(stream) {
     self.active_stream = None
     viewer_conversion_close(stream.converter, stream.id)
@@ -184,20 +206,25 @@ async fn ViewerController::fill_pages(
       if serial != self.document_serial {
         return
       }
-      viewer_remember(
-        self.dom,
-        viewer_renderer_add_page(self.renderer, view_id, page, part),
-      ).wait()
-      self.find_stale = true
-      if self.current is Some(view) && view.id == view_id {
-        viewer_reload_page(self.dom, page, canvas => {
-          viewer_callback_ignore(
-            @js_async.Promise::from_async(() => {
-              self.render_page(view, page, canvas, self.generation)
-            }),
-          )
-        })
+      viewer_invalidate_page(self.dom, view_id, page)
+      try {
+        viewer_remember(
+          self.dom,
+          viewer_renderer_add_page(self.renderer, view_id, page, part),
+        ).wait()
+      } catch {
+        error => {
+          if serial == self.document_serial {
+            self.reload_stream_page(view_id, page)
+          }
+          raise error
+        }
       }
+      if serial != self.document_serial {
+        return
+      }
+      self.find_stale = true
+      self.reload_stream_page(view_id, page)
       viewer_progress(self.dom, page, pages)
     }
     if serial != self.document_serial {
@@ -245,5 +272,23 @@ async fn ViewerController::fill_pages(
       } else {
         viewer_forget_error(self.dom, error.to_string())
       }
+  }
+}
+
+///|
+fn ViewerController::reload_stream_page(
+  self : ViewerController,
+  view_id : String,
+  page : Int32,
+) -> Unit {
+  viewer_finish_page_update(self.dom, view_id, page)
+  if self.current is Some(view) && view.id == view_id {
+    viewer_reload_page(self.dom, view_id, page, canvas => {
+      viewer_callback_ignore(
+        @js_async.Promise::from_async(() => {
+          self.render_page(view, page, canvas, self.generation)
+        }),
+      )
+    })
   }
 }

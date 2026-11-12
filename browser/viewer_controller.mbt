@@ -189,16 +189,23 @@ fn ViewerController::draw(self : ViewerController) -> Unit {
     return
   }
   viewer_dom_background(self.dom, false)
-  viewer_dom_observe(self.dom, (index, canvas) => {
-    viewer_callback_ignore(
+  viewer_dom_observe(
+    self.dom,
+    (index, canvas) => {
+      viewer_callback_ignore(
+        @js_async.Promise::from_async(() => {
+          self.render_page(view, index, canvas, generation)
+        }),
+      )
+      viewer_callback_ignore(
+        @js_async.Promise::from_async(() => self.mark_find_background()),
+      )
+    },
+    (index, canvas) =>
       @js_async.Promise::from_async(() => {
-        self.render_page(view, index, canvas, generation)
+        self.prepare_selection_page(view, index, canvas, generation)
       }),
-    )
-    viewer_callback_ignore(
-      @js_async.Promise::from_async(() => self.mark_find_background()),
-    )
-  })
+  )
   let spread = self.viewer.layout == @viewer.Spread && view.kind != "scroll"
   let gap = if self.viewer.layout == @viewer.Continuous || view.kind == "scroll" {
     0
@@ -236,6 +243,7 @@ async fn ViewerController::render_page(
   if request < 0 {
     return
   }
+  let revision = viewer_canvas_revision(canvas)
   try {
     let bitmap = viewer_remember(
       self.dom,
@@ -246,36 +254,105 @@ async fn ViewerController::render_page(
         self.viewer.zoom * viewer_pixel_ratio(),
       ),
     ).wait()
-    let valid = generation == self.generation
+    let current = generation == self.generation &&
+      viewer_canvas_request_matches(canvas, request, revision)
+    let valid = current && viewer_canvas_revision_current(canvas, revision)
     viewer_canvas_finish(canvas, bitmap, request, valid)
+    if current && !valid {
+      viewer_canvas_error(canvas)
+    }
     if valid {
       let content = viewer_remember(
         self.dom,
         viewer_renderer_content(self.renderer, view.id, index),
       ).wait() catch {
-        _ => render_null()
+        error => {
+          viewer_forget_error(self.dom, error.to_string())
+          render_null()
+        }
       }
       let data = text_layer_from_content(content)
-      if view.pages.get(index) is Some(page) {
-        let zoom = self.viewer.zoom
-        viewer_canvas_mount_text(canvas, data, frame => {
-          render_text_layer(
-            frame,
-            data,
-            0.0,
-            0.0,
-            page.width * zoom,
-            page.height * zoom,
-            zoom,
-          )
-        })
+      if generation == self.generation &&
+        viewer_canvas_request_matches(canvas, request, revision) {
+        if !viewer_canvas_revision_current(canvas, revision) {
+          viewer_canvas_error(canvas)
+        } else if view.pages.get(index) is Some(page) {
+          let zoom = self.viewer.zoom
+          viewer_canvas_mount_text(canvas, data, viewer_content_ready(content), frame => {
+            render_text_layer(
+              frame,
+              data,
+              0.0,
+              0.0,
+              page.width * zoom,
+              page.height * zoom,
+              zoom,
+            )
+          })
+        }
       }
     }
   } catch {
     error => {
-      viewer_canvas_error(canvas)
-      viewer_dom_failure(self.dom, error.to_string())
+      if generation == self.generation &&
+        viewer_canvas_request_matches(canvas, request, revision) {
+        viewer_canvas_error(canvas)
+        if viewer_canvas_revision_current(canvas, revision) {
+          viewer_dom_failure(self.dom, error.to_string())
+        } else {
+          viewer_forget_error(self.dom, error.to_string())
+        }
+      } else {
+        viewer_forget_error(self.dom, error.to_string())
+      }
     }
+  }
+}
+
+///|
+/// Mount only the selectable text layer of a page whose content is not yet
+/// loaded, for copies that span pages outside the rendered region. A stale
+/// generation discards the result.
+async fn ViewerController::prepare_selection_page(
+  self : ViewerController,
+  view : @core.View,
+  index : Int32,
+  canvas : ViewerCanvas,
+  generation : Int32,
+) -> Unit {
+  let revision = viewer_canvas_revision(canvas)
+  let content = viewer_remember(
+    self.dom,
+    viewer_renderer_content(self.renderer, view.id, index),
+  ).wait() catch {
+    error => {
+      viewer_forget_error(self.dom, error.to_string())
+      raise error
+    }
+  }
+  if generation != self.generation ||
+    !viewer_canvas_revision_current(canvas, revision) {
+    return
+  }
+  let data = text_layer_from_content(content)
+  if view.pages.get(index) is Some(page) {
+    let zoom = self.viewer.zoom
+    viewer_canvas_mount_text(
+      canvas,
+      data,
+      viewer_content_ready(content),
+      frame => {
+        render_text_layer(
+          frame,
+          data,
+          0.0,
+          0.0,
+          page.width * zoom,
+          page.height * zoom,
+          zoom,
+        )
+      },
+    )
   }
 }
 

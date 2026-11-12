@@ -123,6 +123,7 @@
     "test:viewer": "node compat/viewer/api-test.mjs",
     "test:render-worker-clipboard": "node compat/render_worker/clipboard-test.mjs && node compat/render_worker/merge-clipboard-test.mjs && node compat/render_worker/tile-cap-clipboard-test.mjs",
     "test:sheet-selection": "node compat/sheet/viewer-selection-test.mjs",
+    "test:page-selection": "node compat/continuous/page-selection-test.mjs",
     "build:site": "node compat/retained-test.mjs --mode build --release js && moon build bridge/wasm --target wasm-gc --release && node site/build.mjs",
     "previews:site": "node site/make-previews.mjs",
     "test:site": "node site/form/pdf.test.mjs && node site/local-fonts-test.mjs && node site/test.mjs && node site/check-links.mjs",
