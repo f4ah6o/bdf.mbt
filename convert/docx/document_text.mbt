@@ -998,14 +998,62 @@ fn docx_omml_linear(node : DocxXmlNode) -> String {
 }
 
 ///|
+// The markup-compatibility namespace prefixes whose mc:Choice content the
+// walker draws instead of the Fallback. A copy of upstream wordproc/docx.go.
+fn docx_alternate_content_prefix_supported(prefix : String) -> Bool {
+  match prefix {
+    "wps" | "wpg" | "wpc" | "wp14" | "w14" | "w15" | "a14" | "pic14" => true
+    _ => false
+  }
+}
+
+///|
+// A Choice qualifies when its Requires attribute names at least one prefix
+// and every prefix is supported, as upstream requiresAll does: a Choice
+// without Requires defers to the Fallback.
+fn docx_alternate_content_choice_supported(choice : DocxXmlNode) -> Bool {
+  let requires = docx_attribute(choice.element, "Requires", "")
+  let prefix = StringBuilder()
+  let mut count = 0
+  let mut supported = true
+  fn check(word : String) -> Bool {
+    count += 1
+    docx_alternate_content_prefix_supported(word)
+  }
+  for ch in requires {
+    if ch.is_whitespace() {
+      if prefix.to_string() != "" {
+        if !check(prefix.to_string()) {
+          supported = false
+        }
+        prefix.reset()
+      }
+    } else {
+      prefix.write_char(ch)
+    }
+  }
+  if prefix.to_string() != "" {
+    if !check(prefix.to_string()) {
+      supported = false
+    }
+  }
+  supported && count > 0
+}
+
+///|
 fn docx_alternate_content(node : DocxXmlNode) -> DocxXmlNode? {
   for child in node.children {
-    if child.name() == "Choice" {
+    if child.name() == "Choice" && docx_alternate_content_choice_supported(child) {
       return Some(child)
     }
   }
   for child in node.children {
     if child.name() == "Fallback" {
+      return Some(child)
+    }
+  }
+  for child in node.children {
+    if child.name() == "Choice" {
       return Some(child)
     }
   }
