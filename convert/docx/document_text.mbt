@@ -289,6 +289,18 @@ fn docx_text_section_check(section : DocxXmlNode) -> Unit raise {
 }
 
 ///|
+/// The paragraph mark's direct run properties: w:pPr/w:rPr without its
+/// w:rStyle selector. Upstream resolves the mark with the default
+/// character style (wordproc/model.go paragraph() passes rStyle ""), so a
+/// character style named inside the mark's rPr is not consulted there.
+fn docx_mark_rpr(direct : DocxXmlNode?) -> DocxXmlNode? raise {
+  match docx_style_child(direct, "rPr") {
+    Some(value) => Some(docx_style_without_selector(value, "rStyle"))
+    None => None
+  }
+}
+
+///|
 fn docx_text_ppr(props : DocxParagraphProps, node : DocxXmlNode) -> Bool raise {
   let mut has_section = false
   for child in node.children {
@@ -345,6 +357,10 @@ fn docx_text_ppr(props : DocxParagraphProps, node : DocxXmlNode) -> Bool raise {
         }
         props.apply_node(child)
       }
+      // The paragraph mark's own run properties. Upstream's applyPPr has
+      // no default case: this child belongs to the mark resolved like a
+      // run in blocks() (wordproc/model.go paragraph()).
+      "rPr" => ()
       other => docx_text_unsupported(other)
     }
   }
@@ -2193,7 +2209,16 @@ fn DocxTextWalker::blocks(
         }
         let direct = child.child("pPr")
         let (paragraph_style, props) = self.styles.resolve_paragraph(direct)
-        let mark = self.styles.resolve_run(paragraph_style, None)
+        // The paragraph mark (¶) resolves like a run: style chain plus the
+        // direct w:pPr/w:rPr, which sizes empty paragraphs upstream
+        // (wordproc/model.go paragraph()). Upstream binds the mark to the
+        // document's default character style (runProps takes rStyle ""),
+        // so an rStyle inside the mark's rPr selects nothing there; the
+        // selector is stripped before the shared resolver.
+        let mark = self.styles.resolve_run(
+          paragraph_style,
+          docx_mark_rpr(direct),
+        )
         let ends_section = docx_style_child(direct, "sectPr") is Some(_)
         if ends_section && wrapped {
           docx_text_unsupported("wrapped paragraph section")
