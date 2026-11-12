@@ -50,11 +50,12 @@ const BUNDLES = [
   ["_build/js/release/build/native_converter_worker/native_converter_worker.js",
     "dist/workers/native_converter_worker.js"],
   ["_build/js/release/build/form_page/form_page.js", "dist/form/form_page.js"],
+  ["_build/js/release/build/export/pdf_js/pdf_js.js", "dist/pdf/pdf_js.js"],
   ["_build/js/release/build/plugin/moonbit/docuworks_js/docuworks_js.js",
     "dist/xdw/docuworks_js.js"],
 ];
 const BUILD_COMMAND = "MOON_CORE_OVERRIDE=$PWD/_scratch/moon-core moon build browser render_worker "
-  + "native_converter_worker form_page plugin/moonbit/docuworks_js --target js --release";
+  + "native_converter_worker form_page export/pdf_js plugin/moonbit/docuworks_js --target js --release";
 
 // The compiled bundles contain two kinds of third-party material, and both
 // must ship inside the artifact:
@@ -90,7 +91,7 @@ const THIRD_PARTY_LICENSES = [
 
 const ALLOWED_TAR_ENTRIES = new Set(["package.json", "README.md", "LICENSE", "NOTICE.md",
   "docs/format-plugin-api.md", "docs/diagram-plugins.md",
-  "types/index.d.ts", "types/worker.d.ts", "types/diagram-bdf.d.ts",
+  "types/index.d.ts", "types/worker.d.ts", "types/diagram-bdf.d.ts", "types/pdf.d.ts",
   "types/docuworks.d.ts", "types/excalidraw.d.ts", "types/mermaid.d.ts"]);
 for (const license of THIRD_PARTY_LICENSES) {
   ALLOWED_TAR_ENTRIES.add(`licenses/${license}`);
@@ -102,6 +103,8 @@ for (const [, staged] of BUNDLES) {
 }
 // the prebuilt plugin converter Worker
 ALLOWED_TAR_ENTRIES.add("dist/workers/plugin-converter.mjs");
+// the typed public PDF export wrapper, staged next to its compiled bridge
+ALLOWED_TAR_ENTRIES.add("dist/pdf/index.js");
 // the downstream-worker emitter (browser-resolvable worker output)
 ALLOWED_TAR_ENTRIES.add("dist/tools/emit-downstream-worker.mjs");
 // the plugin API sources ship inside the library package
@@ -134,6 +137,7 @@ function stage() {
   }
   for (const source of [
     resolve(plugin, "library/plugin-converter.mjs"),
+    resolve(plugin, "library/pdf.mjs"),
     resolve(plugin, "tools/emit-downstream-worker.mjs"),
     resolve(plugin, "src"),
     resolve(plugin, "types"),
@@ -170,8 +174,11 @@ function stage() {
     cpSync(moonbitTypes, resolve(stageDir, staged.replace(/[^/]+$/, "moonbit.d.ts")));
   }
 
-  // 2) the prebuilt plugin converter Worker, and the downstream emitter
+  // 2) the prebuilt plugin converter Worker, the downstream emitter, and
+  //    the typed PDF export wrapper next to its compiled bridge
   cpSync(resolve(plugin, "library/plugin-converter.mjs"), resolve(stageDir, "dist/workers/plugin-converter.mjs"));
+  mkdirSync(resolve(stageDir, "dist/pdf"), { recursive: true });
+  cpSync(resolve(plugin, "library/pdf.mjs"), resolve(stageDir, "dist/pdf/index.js"));
   mkdirSync(resolve(stageDir, "dist/tools"), { recursive: true });
   cpSync(
     resolve(plugin, "tools/emit-downstream-worker.mjs"),
@@ -194,7 +201,7 @@ function stage() {
     recursive: true,
     filter: source => statSync(source).isDirectory() || source.endsWith(".js"),
   });
-  for (const dts of ["index.d.ts", "worker.d.ts", "diagram-bdf.d.ts", "docuworks.d.ts",
+  for (const dts of ["index.d.ts", "worker.d.ts", "diagram-bdf.d.ts", "pdf.d.ts", "docuworks.d.ts",
     "excalidraw.d.ts", "mermaid.d.ts"]) {
     const source = resolve(plugin, "types", dts);
     if (!existsSync(source)) {
@@ -208,13 +215,14 @@ function stage() {
     name: stagingName,
     version: stagingVersion,
     private: true,
-    description: "bdf.mbt prebuilt bundles: browser/viewer, converter and render Workers, forms, DocuWorks and the file format plugin API (staging publication is blocked)",
+    description: "bdf.mbt prebuilt bundles: browser/viewer, converter and render Workers, forms, PDF export, DocuWorks and the file format plugin API (staging publication is blocked)",
     type: "module",
     license: "MIT",
     types: "./dist/browser.d.ts",
     exports: {
       ".": { types: "./dist/browser.d.ts", default: "./dist/browser.js" },
       "./forms": { types: "./dist/form/form_page.d.ts", default: "./dist/form/form_page.js" },
+      "./pdf": { types: "./types/pdf.d.ts", default: "./dist/pdf/index.js" },
       "./xdw": { types: "./dist/xdw/docuworks_js.d.ts", default: "./dist/xdw/docuworks_js.js" },
       "./plugin": { types: "./types/index.d.ts", default: "./dist/plugin/index.js" },
       "./plugin/worker": { types: "./types/worker.d.ts", default: "./dist/plugin/worker.js" },
