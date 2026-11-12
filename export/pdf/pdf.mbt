@@ -218,6 +218,13 @@ pub fn write_document(
   if missing != "" {
     warnings.push("the fallback font has no glyph for: " + missing)
   }
+  let missing_standard = resources.missing_standard_text()
+  if missing_standard != "" {
+    warnings.push(
+      "text without a font of its own is drawn with the PDF standard font, which has no glyph for: " +
+      missing_standard,
+    )
+  }
   for info in page_infos {
     let mut annotations = ""
     if info.annots.length() > 0 {

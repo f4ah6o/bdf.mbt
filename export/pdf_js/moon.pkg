@@ -1,0 +1,10 @@
+import {
+  "f4ah6o/bdf/core",
+  "f4ah6o/bdf/export/pdf" @export_pdf,
+  "moonbitlang/core/json",
+  "moonbitlang/core/encoding/base64",
+}
+
+supported_targets = "js"
+
+pkgtype(kind: "foreign_library")
