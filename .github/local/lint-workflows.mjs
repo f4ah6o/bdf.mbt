@@ -25,7 +25,7 @@ export function workflowFiles(directory = WORKFLOW_DIR) {
 
 /** The verification workflows actrun can parse and run. */
 export function verificationWorkflows(directory = WORKFLOW_DIR) {
-  return workflowFiles(directory).filter((file) => !file.endsWith(DEPLOY_WORKFLOW));
+  return workflowFiles(directory).filter((file) => !file.endsWith(DEPLOY_WORKFLOW) && !file.endsWith("npm-release.yaml"));
 }
 
 function main() {

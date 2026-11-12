@@ -6,14 +6,16 @@
 //   node plugin/tools/library-pack.mjs [--dry-run] [--staging-name NAME]
 //                                       [--staging-version V] [--out DIR]
 //
-// The npm name is decided; the version and the authenticated publisher are
-// not. Until publishing preparation the staged package keeps `"private":
-// true`, so npm refuses to publish it regardless. The bundles are built
+// Default staging keeps `"private": true`. Explicit --release-version
+// YYYY.M.PATCH --source-sha FULL_SHA creates a publishable artifact only;
+// this tool never invokes npm publish. The bundles are built
 // beforehand by the repository's standard moon build (see the README); the
 // tool refuses to stage if a bundle is missing instead of shipping holes.
 //
 // After packing, the tar member list must equal the allowlist exactly; source
 // maps, tests, fixtures, corpora and local paths are refused.
+
+import { releaseMetadata } from "./release-metadata.mjs";
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -33,8 +35,9 @@ const flag = (name, fallback) => {
   return at !== -1 && args[at + 1] ? args[at + 1] : fallback;
 };
 validateStagingName((flag("--staging-name", "bdf.mbt")));
-const stagingVersion = validateStagingVersion(flag("--staging-version", "0.0.0-staging"));
 const stagingName = flag("--staging-name", "bdf.mbt");
+const release = releaseMetadata(args, stagingName);
+const stagingVersion = release?.version ?? validateStagingVersion(flag("--staging-version", "0.0.0-staging"));
 const outDir = resolveInsideRoot(flag("--out", "_scratch/library-pack"), root, "--out");
 const tarballName = `${stagingName}-${stagingVersion}.tgz`;
 // Validate fixed staging as well as a custom output before touching either.
@@ -243,14 +246,17 @@ function stage() {
     },
     files: ["dist", "types", "licenses", "docs", "README.md", "LICENSE", "NOTICE.md"],
     engines: { node: ">=20" },
+    ...(release ?? {}),
   };
+  if (release) manifest.description = manifest.description.replace(" (staging publication is blocked)", "");
   writeFileSync(resolve(stageDir, "package.json"), JSON.stringify(manifest, null, 2) + "\n");
   // the library README's doc links are source-tree relative (../../docs/…):
   // the packed copy ships the docs beside the README, so the link prefix is
   // rewritten for the package layout alone — the source file keeps links
   // that resolve inside the repository
-  const packedReadme = readFileSync(resolve(plugin, "library/README.md"), "utf8")
+  let packedReadme = readFileSync(resolve(plugin, "library/README.md"), "utf8")
     .replace(/\]\(\.\.\/\.\.\/docs\//g, "](docs/");
+  if (release) packedReadme = packedReadme.replace("**Not yet published to npm.**", `**Release artifact ${release.version}.**`);
   writeFileSync(resolve(stageDir, "README.md"), packedReadme);
   cpSync(resolve(plugin, "library/NOTICE.md"), resolve(stageDir, "NOTICE.md"));
   cpSync(resolve(root, "LICENSE"), resolve(stageDir, "LICENSE"));
@@ -425,7 +431,7 @@ function listingChecks(present) {
 }
 
 function report(name, destination, listing) {
-  console.log(`staged library package: ${stagingName}@${stagingVersion} (private: publication blocked)`);
+  console.log(`staged library package: ${stagingName}@${stagingVersion} (${release ? "release artifact; not published" : "private: publication blocked"})`);
   if (listing) {
     console.log(`files (${listing.length}):`);
     for (const entry of listing) {

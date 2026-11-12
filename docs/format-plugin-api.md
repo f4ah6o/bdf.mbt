@@ -8,7 +8,8 @@ For installation and complete browser, Node, and TypeScript examples, see
 
 The npm package name is `bdf.mbt`; it has **not been published**.
 The default staging artifact is `bdf.mbt@0.0.0-staging` with `"private": true`.
-The final release version and npm publishing identity remain undecided.
+Releases use CalVer (`YYYY.MM.PATCH`) and npm Trusted Publishing.
+See the [release procedure](npm-release.md) for artifact validation and initial setup.
 `apiVersion: 1` identifies the plugin contract, not the npm package version;
 plugin `version` metadata is independent of both.
 The host requires an exact API version match and does not negotiate versions.

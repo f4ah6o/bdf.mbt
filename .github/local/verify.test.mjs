@@ -471,17 +471,17 @@ function onBlockOf(file) {
   return /^on:\n((?:[ \t].*\n|\n)*)/m.exec(text)?.[1] ?? "";
 }
 
-test("exactly one workflow is dispatchable and it is the deployment workflow", () => {
+test("only deployment and release workflows are dispatchable", () => {
   const dispatchable = workflowFiles().filter((file) => /workflow_dispatch/.test(onBlockOf(file)));
   assert.deepEqual(
     dispatchable.map((file) => path.basename(file)),
-    ["pages-deploy.yml"],
+    ["npm-release.yaml", "pages-deploy.yml"],
   );
 });
 
 test("verification workflows are inert on GitHub", () => {
   const verification = workflowFiles().filter(
-    (file) => path.basename(file) !== "pages-deploy.yml",
+    (file) => !["pages-deploy.yml", "npm-release.yaml"].includes(path.basename(file)),
   );
   assert.equal(verification.length, 4);
   for (const file of verification) {
@@ -543,12 +543,13 @@ test("moon-test plan delegates to the retained helper when it exists", () => {
 test("workflowFiles lists the local workflow definitions", () => {
   assert.deepEqual(
     workflowFiles().map((file) => path.basename(file)),
-    ["ci.yml", "pages-deploy.yml", "pages.yml", "parity.yml", "visual.yml"],
+    ["ci.yml", "npm-release.yaml", "pages-deploy.yml", "pages.yml", "parity.yml", "visual.yml"],
   );
 });
 
 test("verification workflows never run a bare moon check, build or test", () => {
   for (const file of workflowFiles()) {
+    if (path.basename(file) === "npm-release.yaml") continue; // release-only explicit build packages
     const text = fs.readFileSync(file, "utf8");
     for (const line of text.split("\n")) {
       const command = line.trim().replace(/^run:\s*/, "");

@@ -4,6 +4,11 @@
 
 ### Added
 
+- Manual CalVer npm release preparation using `f4ah6o/calver-action` and
+  Trusted Publishing. Default runs retain an artifact without publishing;
+  staging remains private. See [the release procedure](docs/npm-release.md)
+  for initial setup and final validation requirements.
+
 - A versioned file-format plugin API with explicit startup registration,
   deterministic detection, validated conversion results, stream leases and
   asynchronous cleanup. DocuWorks uses the same public adapter contract.

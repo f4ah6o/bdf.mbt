@@ -6,7 +6,8 @@ Consumers do not need the MoonBit toolchain.
 
 **Not yet published to npm.** The selected package name is `bdf.mbt`.
 The default staging package is `0.0.0-staging` with `"private": true`;
-the final release version and npm publisher remain undecided.
+releases use YYYY.MM.PATCH CalVer in Asia/Tokyo and npm Trusted Publishing.
+See the repository release guide for setup and the initial-publication step.
 The examples below use a supplied local staging tarball, not a registry release.
 
 ## Package entry points

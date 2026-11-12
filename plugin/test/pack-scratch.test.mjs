@@ -16,7 +16,7 @@ test('custom output cannot bypass fixed staging scratch symlink checks', () => {
       const target = join(owned, `sentinel-${scratch}`);
       mkdirSync(target); writeFileSync(join(target, 'keep.txt'), 'unchanged');
       symlinkSync(target, join(root, '_scratch', scratch));
-      for (const file of [tool, 'staging-path.mjs']) cpSync(resolve(import.meta.dirname, '../tools', file), join(root, 'plugin/tools', file));
+      for (const file of [tool, 'staging-path.mjs', 'release-metadata.mjs']) cpSync(resolve(import.meta.dirname, '../tools', file), join(root, 'plugin/tools', file));
       const run = spawnSync(process.execPath, [join(root, 'plugin/tools', tool), '--out', 'safe-output'], {cwd: root, encoding: 'utf8'});
       assert.notEqual(run.status, 0);
       assert.match(run.stderr, /staging scratch.*symbolic link|symbolic link/);

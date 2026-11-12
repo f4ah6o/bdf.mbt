@@ -1,0 +1,98 @@
+name: Release bdf.mbt to npm
+# Publication only. Quality checks run locally with actrun before dispatch.
+# A normal push cannot publish. Default dispatch only builds an artifact.
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Full reviewed SHA equal to the main dispatch commit
+        required: true
+        type: string
+      publish:
+        description: Publish the built package via configured npm Trusted Publisher
+        required: true
+        default: false
+        type: boolean
+permissions:
+  contents: read
+concurrency:
+  group: bdf-mbt-npm-release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.repository == 'f4ah6o/bdf.mbt' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 0
+      - name: Verify selected source
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$SOURCE_SHA" = "$GITHUB_SHA"
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          git merge-base --is-ancestor "$SOURCE_SHA" origin/main
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Install OIDC-capable npm
+        run: npm install --global npm@11
+      - name: Allocate CalVer
+        id: calver
+        uses: f4ah6o/calver-action@dfd57cf474631b778e41478cbb183b34bd487545
+        with:
+          format: YYYY.MM.PATCH
+          timezone: Asia/Tokyo
+          create_tag: false
+      - name: Setup MoonBit
+        uses: hustcer/setup-moonbit@v1
+      - name: Resolve MoonBit dependencies
+        run: moon update
+      - name: Build public JS bundles
+        run: >-
+          moon build browser render_worker native_converter_worker form_page
+          plugin/moonbit/docuworks_js --target js --release
+      - name: Pack release artifact
+        env:
+          VERSION: ${{ steps.calver.outputs.version }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          node plugin/tools/library-pack.mjs --release-version "$VERSION" --source-sha "$SOURCE_SHA"
+          sha256sum "_scratch/library-pack/bdf.mbt-${VERSION}.tgz"
+      - name: Retain exact artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bdf.mbt-${{ steps.calver.outputs.version }}
+          path: _scratch/library-pack/*.tgz
+          if-no-files-found: error
+      - name: Publish with npm Trusted Publishing
+        if: inputs.publish
+        env:
+          VERSION: ${{ steps.calver.outputs.version }}
+        run: |
+          set -euo pipefail
+          # No token fallback. npm obtains a short-lived OIDC credential.
+          test -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}"
+          test -n "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}"
+          unset NODE_AUTH_TOKEN NPM_TOKEN
+          npm publish "_scratch/library-pack/bdf.mbt-${VERSION}.tgz" --access public --ignore-scripts
+      - name: Record immutable released source tag
+        if: inputs.publish
+        env:
+          TAG: ${{ steps.calver.outputs.tag }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -euo pipefail
+          git tag "$TAG" "$SOURCE_SHA"
+          git push origin "refs/tags/$TAG"

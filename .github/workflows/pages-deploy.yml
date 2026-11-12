@@ -1,5 +1,5 @@
 name: Deploy site pages
-# The only workflow in this repository that GitHub can run. It has a
+# Manual site deployment; npm-release.yaml separately handles npm releases. It has a
 # workflow_dispatch trigger and nothing else, so it starts only when a
 # maintainer dispatches it, and only after the deployment is separately
 # authorized. Local verification never runs it and never publishes the site.
