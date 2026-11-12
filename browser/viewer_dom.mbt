@@ -128,7 +128,7 @@ fn[X] viewer_remember(
 
 ///|
 extern "js" fn viewer_dom_clear(dom : ViewerDom) -> Unit =
-  #|(dom) => {dom.observer?.disconnect();dom.observer=null;dom.near.clear();cancelAnimationFrame(dom.frame);dom.frame=0;dom.sheetDraw=undefined;dom.schedule=undefined;dom.stage.onscroll=null;dom.stage.replaceChildren()}
+  #|(dom) => {dom.sheetTextDispose?.();dom.sheetTextDispose=undefined;dom.observer?.disconnect();dom.observer=null;dom.near.clear();cancelAnimationFrame(dom.frame);dom.frame=0;dom.sheetDraw=undefined;dom.schedule=undefined;dom.stage.onscroll=null;dom.stage.replaceChildren()}
 
 ///|
 extern "js" fn viewer_dom_background(dom : ViewerDom, sheet : Bool) -> Unit =
