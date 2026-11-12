@@ -68,3 +68,22 @@ is `-2.7533531e-14` versus FMA's `-2.762975e-14`. GOAMD64=v3 regenerates the
 compiler rules include that fusion. This explains the values but does not prove
 which historical machine/toolchain created the fixtures. No tolerance has been
 introduced and the reference has not been silently rebaselined.
+
+## Explicit migration triage
+
+`classify-migration.mjs --comparison <comparison.json> --report <triage.json>`
+classifies the strict gate's mismatches without changing or accepting them.
+The current v3 run has 25 missing input-only candidate files (including literal
+input arrays and labeled unsupported-input cases) and one media resource corpus,
+`picture-visual-media.json`. These are preservation candidates, not evidence
+that a generator exists or that a file may be omitted. The resource corpus has
+label/index/MIME/dimension/media fields and must be retained explicitly.
+
+The 42 mismatches are not all output rounding: `formatted.json` changes the
+numeric input `value` in 4,788 cases (sample 19719.80542860614 versus
+19719.805428606138, with unchanged expected text), and
+`rectangle-linear-boundary.json` changes input as well as BDF in 116 cases.
+Those inputs must be reproduced exactly before deleting static inputs. The
+remaining files are expected-value or encoded-output drift requiring separate
+arithmetic/structural investigation. Seven extra generated files remain an
+explicit inventory mismatch, not automatic additions to the accepted corpus.
