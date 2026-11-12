@@ -328,6 +328,14 @@ The `compat/converter/phase14-xlsx-test.mjs` check compares all four workbooks
 with the upstream converter: sheet and chart-sheet views, tile counts, text
 similarity, summaries and warnings.
 
+`generate-metrics-fixtures.go` builds the inline fixtures of the with-font
+maximum-digit-width test (`convert/xlsx/font_metrics_wbtest.mbt`): one face
+with digits and one without, written by upstream `internal/sfnt.Build` and
+validated inside the generator with upstream `sfnt.Parse` (the current values
+were also cross-checked once with `golang.org/x/image/font/sfnt`), plus
+three minimal workbooks that exercise measured column widths, the
+default-column axis and indent steps.
+
 Remaining gaps: color scales are painted (two or three colors, with min,
 max, num, percent and percentile thresholds; formula thresholds are skipped);
 data bars are painted for min/max/num/percent/percentile thresholds using
