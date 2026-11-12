@@ -247,7 +247,15 @@ text. A fixture is now a manifest: `{"format":"bdf-xlsx-fixture","version":1,
 in [store/](store/), deduplicated across all fixtures: 256 gzip packs
 (`store/aa.pk`) plus offset indexes (`store/aa.idx`, with the group keyed by
 the first hash byte). Cases, case order, options, warnings and short values
-stay inline, so `git diff` on a fixture still shows which case changed.
+stay inline.
+
+The manifest JSON itself is stored as a `BXF1` envelope: the four ASCII bytes
+`BXF1` followed by a brotli stream of the JSON. The magic keeps the container
+self-identifying, so plain generator output still loads unchanged and a
+truncated stream fails with the file name instead of a JSON syntax error.
+Manifests are binary in `git diff`; inspect one with
+`node compat/xlsx/tools/pack-fixtures.mjs --print --files name.json`, or
+`--unpack --files name.json` to write the plain JSON back.
 
 - `compat/xlsx/fixtures.mjs` loads fixtures: `loadFixture()` returns exactly
   what `JSON.parse` used to return for the old files, packed or plain. All
@@ -271,7 +279,9 @@ stay inline, so `git diff` on a fixture still shows which case changed.
   `--check` verifies integrity, packing completeness and absence of
   unreferenced blobs.
 - `node compat/xlsx/tools/fixture-equivalence.mjs --base <commit>` proves a
-  stored tree restores every case byte-for-byte against a plain-form commit
+  stored tree restores every case byte-for-byte against any base commit,
+  plain or packed: a packed base is resolved through that commit's own store
+  read from git, and the tool fails if either side still contains a marker
   (used to validate this migration; needs the git history, so it is not part
   of the standard suite).
 - `node compat/xlsx/tools/measure-fixtures.mjs` reports per-file sizes,
