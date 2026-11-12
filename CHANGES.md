@@ -107,6 +107,10 @@
 
 ### Fixed
 
+- PPTX shapes, connectors and pictures preserve supported external click links
+  with bounds that follow their placement and rotation. Internal slide actions
+  are not yet converted.
+
 - draw.io non-curved connectors now use upstream-compatible rounded corners by
   default, respecting `rounded=0` and `arcSize`. Short segments limit corner
   radii; existing curved edges and marker placement are unchanged.
