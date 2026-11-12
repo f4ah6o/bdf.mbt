@@ -1232,6 +1232,8 @@ try {
     assert.match(html, /Mermaid/);
     assert.match(html, /Excalidraw/);
     assert.match(html, /静的なフローチャートの一部/);
+    // Pipes inside a GFM table must not truncate this supported edge syntax.
+    assert.match((await page.locator("table td").allTextContents()).join("\n"), /A -->\|text\| B/);
     assert.match(html, /手書き風の線/);
     assert.match(html, /docs\/diagram-plugins\.md/);
     assert.match(html, /docs\/format-plugin-api\.md/);
