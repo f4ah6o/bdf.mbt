@@ -89,6 +89,21 @@ waypoints, rounded joins, block/classic markers and complete15-edge visual
 parity remain separate work. The original routing points still drive labels;
 only the rendered line's endpoint copy is shortened.
 
+## Horizontal-facing orthogonal routes
+
+For orthogonal edges without waypoints, fixed ports, rotation, custom perimeter
+or nondefault jetty sizes, horizontally separated rectangular terminals with
+overlapping Y ranges and at least20units gap use facing-side midpoints and
+a shared mid-gap X. AWS outlineConnect0 stencils qualify. Other cases retain
+the previous fallback. This ports the horizontal-preferred branch of upstream
+`edgestyle.go` orthConnector, not the complete general router.
+
+After building the native JS worker, `node compat/drawio/facing-route-test.mjs`
+checks all four Current AWS paths in actual BDF, including the common Lambda
+trunk and rightward marker entry. Unit tests cover reversed direction and
+rejected constrained/rotated/close/overlap/waypoint cases. Rounded joins, Legacy
+routing, stencil geometry and full-image parity remain separate changes.
+
 ## Block/classic marker regression
 
 After building the JS native converter worker, run

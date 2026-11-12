@@ -107,6 +107,11 @@
 
 ### Fixed
 
+- draw.io unconstrained horizontal-facing rectangular terminals now route through
+  a shared midpoint with horizontal entry/exit, fixing the AWS Current branch
+  positions. Constrained, rotated, custom-perimeter and close terminals retain
+  the existing fallback; rounded joins are separate.
+
 - draw.io stencil elliptical arcs now recover signed angles correctly, fixing
   distorted AWS Cloud icons and arc paths that escaped their intended bounds.
 
