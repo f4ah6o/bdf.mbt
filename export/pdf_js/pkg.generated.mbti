@@ -1,0 +1,23 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/export/pdf_js"
+
+// Values
+pub fn bdf_pdf_export(Bytes, String, Bytes) -> PdfJsReport
+
+// Errors
+
+// Types and methods
+type PdfJsOptions
+
+pub(all) struct PdfJsReport {
+  ok : Bool
+  error : String
+  pdf : Bytes
+  pages : Int32
+  fonts : Int32
+  warnings : FixedArray[String]
+}
+
+// Type aliases
+
+// Traits

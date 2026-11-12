@@ -72,7 +72,7 @@ replace `2026.11.1`. The placeholder is not an application package.
 
 ## Local release artifact preparation (no registry write)
 
-After building the five JS bundles used by `library-pack.mjs`:
+After building the six JS bundles used by `library-pack.mjs`:
 
 ```sh
 node plugin/tools/library-pack.mjs --release-version 2026.11.0 \
