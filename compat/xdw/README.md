@@ -48,6 +48,16 @@ node compat/xdw/verify.mjs /local/evidence/corpus.json /local/evidence/oracle.js
 `capture.mjs` prints `CAPTURED`, `INCOMPLETE` or `ERROR`, never `PASS`, and
 always records `oracle: "NOT_RUN"`. The verifier remains the only PASS/FAIL gate.
 
+## Calibration
+
+`node compat/xdw/measure.mjs IMAGE.png --page-mm 210x148` reports a capture's
+heuristic page rectangle and implied dpi; `--scan Y --stroke R,G,B` reports
+one row's colour runs, not a dash classification. It is diagnostic tooling,
+not a gate. `CALIBRATION.md` records the genuine Viewer geometry (approximately
+75 dpi at the observed 100% zoom, subject to border/rounding assumptions) and
+the unresolved ellipse appearance difference. Manual bounds checks and further
+controlled captures are required before inferring a converter defect.
+
 ## Artifact contract
 
 Keep evidence outside the repository. All paths are relative to their manifest
