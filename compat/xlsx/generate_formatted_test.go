@@ -44,7 +44,8 @@ func TestCodexXLSXFormatted(t *testing.T) {
 	}
 	for i := 0; i < 10000; i++ {
 		code := formats[r.Intn(len(formats))]
-		v := r.Float64()*100000 - 30000
+		// Explicit fused arithmetic reproduces the existing seeded input corpus.
+		v := math.FMA(r.Float64(), 100000, -30000)
 		d := r.Intn(2) == 0
 		nf := parseNumFormat(code, defaultPalette)
 		out = append(out, map[string]any{"code": code, "value": v, "date1904": d, "kind": "number", "want": encode(nf.formatNumber(v, d))})

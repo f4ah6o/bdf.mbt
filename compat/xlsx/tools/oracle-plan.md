@@ -170,3 +170,16 @@ Changing upstream map iteration to sorted coordinates is a different oracle:
 it may change overlapping annotations and need not match historical order.
 Without changing that oracle, no Go process setting guarantees map iteration
 order. Retry-until-match and BDF path sorting are not acceptable substitutes.
+
+## Seeded formatted inputs: explicit arithmetic
+
+The `formatted.json` input generator now expresses the historical random
+input formula as `math.FMA(random, 100000, -30000)`. This changes only the
+adapter's input construction, not upstream number formatting. Seed, random
+calls, options and case order remain unchanged. The prior AMD64 v3 expression
+produced 4,788 differing numeric inputs. With the explicit formula and a newly
+authenticated Go 1.27/v3 binary, all 10,357 cases match static inputs, expected
+values and order exactly; three fresh separate process runs are byte-identical.
+`check-formatted-repeat.mjs --build <new-build>` validates binary and current
+adapter hashes and requires fresh output each iteration. This does not resolve
+FMA differences within upstream rendering or imply full migration success.
