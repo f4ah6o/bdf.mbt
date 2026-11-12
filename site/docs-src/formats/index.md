@@ -22,7 +22,7 @@ res, err := converter.ConvertFile("in.pdf", "", &converter.Options{}) // "" で�
 | プレゼンテーション | PowerPoint（.pptx） | [PowerPoint](presentation.ja.md) |
 | ページレイアウト | InDesign（.idml） | [InDesign](layout.ja.md) |
 | 表計算 | Excel（.xlsx）、CSV・TSV、Apache Parquet | [Excel・CSV・Parquet](spreadsheet.ja.md) |
-| 図 | Visio（.vsdx）、draw.io | [Visio・draw.io](diagram.ja.md) |
+| 図 | Visio（.vsdx）、draw.io、Mermaid（.mmd）、Excalidraw（.excalidraw） | [Visio・draw.io・Mermaid・Excalidraw](diagram.md) |
 | CAD の図面とプロット | AutoCAD DXF、Jw_cad（.jww）、SXF、CGM、HP-GL/2 | [CAD の図面とプロット](cad.ja.md) |
 | 紙の文書 | DocuWorks(`.xdw`)・バインダー(`.xbd`) | [DocuWorks](xdw.ja.md) |
 | 音声 | MP3、AAC（M4A、ADTS）、FLAC、Ogg Vorbis・Opus、WAV、AIFF | [音声ファイル](audio.ja.md) |
@@ -45,6 +45,8 @@ res, err := converter.ConvertFile("in.pdf", "", &converter.Options{}) // "" で�
 | DocuWorks | `converter/xdw` | .xdw, .xbd |
 | InDesign | `converter/idml` | .idml |
 | draw.io | `converter/drawio` | .drawio, .dio, .drawio.svg, .drawio.png |
+| Mermaid | `plugin/adapters/mermaid`（プラグイン） | .mmd, .mermaid |
+| Excalidraw | `plugin/adapters/excalidraw`（プラグイン） | .excalidraw, .excalidraw.json |
 | AutoCAD DXF | `converter/dxf` | .dxf |
 | Jw_cad | `converter/jww` | .jww |
 | SXF | `converter/sxf` | .p21, .p2z, .sfc |
@@ -57,6 +59,8 @@ res, err := converter.ConvertFile("in.pdf", "", &converter.Options{}) // "" で�
 | フォントファイル | `converter/font` | .ttf, .otf, .ttc, .otc, .woff, .woff2 |
 | 画像 | `converter/image` | .png, .jpg, .gif, .webp, .avif, .bmp, .ico, .svg |
 | 音声ファイル | `converter/audio` | .mp3, .m4a, .m4b, .aac, .flac, .ogg, .oga, .opus, .wav, .aif, .aiff |
+
+Mermaid と Excalidraw は `converter/*` の MoonBit パッケージではなく、JavaScript のプラグイン API のアダプタです。`bdf.mbt/workers/plugin` の既成の Worker が両方を登録し、このサイトのビューアも図の 2 つだけを登録したプラグイン Worker を使います。Mermaid は静的なフローチャートの一部、Excalidraw は基本図形・矢印・プレーンテキストだけで、Mermaid 本体や Excalidraw の描画エンジンとの互換性はありません。読める範囲と対象外は[図の形式](diagram.md)に書いています。
 
 プリント基板（Gerber・Excellon、KiCad）、楽譜（MML・MIDI・MusicXML）、EPUB は、この移植の対象から外しました。変換器のソースとフィクスチャはリポジトリに残していますが、保守対象ではなく、公開する変換器の一覧にも含めていません。音声ファイルの再生と、プリント基板以外の CAD（DXF・Jw_cad・SXF・CGM・HP-GL/2）は引き続き対象です。
 

@@ -16,7 +16,7 @@ function fixture(t) {
   const corpus = { schema: 1, expectedDocuments: 1, expectedPages: 1, thresholds: { channelDelta: 0, maxChangedRatio: 0 }, thresholdRationale: 'Synthetic exact comparison, not a real-world accuracy threshold', documents: [{ id: 'sample', file: 'sample.xdw', access: 'public', source: 'https://example.com/synthetic-test', licenseNotes: 'Original synthetic test bytes, never a real document', sha256: sha256(source), pages: 1, blankPages: [] }] };
   const page = { document: 'sample', page: 1, inputSha256: sha256(source), image: 'page.png', sha256: sha256(image), width: 4, height: 4, text: 'hello', warnings: [] };
   const oracle = { schema: 1, role: 'oracle', engine: 'DocuWorks', version: 'synthetic-test', createdAt: '2026-11-12T00:00:00Z', platform: 'synthetic-test', fonts: 'synthetic-test', dpi: 96, pages: [{ ...page }] };
-  const candidate = { ...oracle, role: 'candidate', engine: 'bdf.mbt', commit: 'a'.repeat(40), pages: [{ ...page }] };
+  const candidate = { ...oracle, role: 'candidate', engine: 'bdf.mbt', commit: 'a'.repeat(40), status: 'CAPTURED', dirty: false, pages: [{ ...page }] };
   const paths = { corpusFile: join(root, 'corpus.json'), oracleFile: join(root, 'oracle.json'), candidateFile: join(root, 'candidate.json') };
   const save = () => { writeFileSync(paths.corpusFile, JSON.stringify(corpus)); writeFileSync(paths.oracleFile, JSON.stringify(oracle)); writeFileSync(paths.candidateFile, JSON.stringify(candidate)); };
   return { root, corpus, oracle, candidate, png, paths, save, run: () => { save(); return verify(paths); } };
