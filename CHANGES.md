@@ -24,6 +24,14 @@
 
 ### Fixed
 
+- PPTX connectors (`p:cxnSp`) are drawn: the slide tree admits them like
+  `p:sp` shapes with their transforms, line styles, dashes and arrowheads,
+  their placeholders are read through `p:nvCxnSpPr` the way upstream's
+  `PlaceholderOf` does, and a connector box with a zero width or height
+  (a straight connector between aligned shapes) keeps its shape instead
+  of being skipped; upstream places every shape it can. A connector
+  without a transform stays out, matching upstream.
+
 - Installation and release guides now point to the published `bdf.mbt@2026.11.1`
   and document the remaining staged bootstrap reservation.
 

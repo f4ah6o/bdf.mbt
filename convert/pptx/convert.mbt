@@ -542,14 +542,9 @@ fn pptx_attribute_any(
 
 ///|
 fn pptx_has_placeholder(shape : PptxXmlNode) -> Bool {
-  let container = if shape.element.name.local_name == "pic" {
-    "nvPicPr"
-  } else {
-    "nvSpPr"
-  }
-  pptx_child(pptx_child(Some(shape), container), "nvPr") is Some(_) &&
-  pptx_child(pptx_child(pptx_child(Some(shape), container), "nvPr"), "ph")
-  is Some(_)
+  // Through any shape container, the way upstream PlaceholderOf finds it:
+  // a cxnSp holds its placeholder in nvCxnSpPr.
+  pptx_placeholder_element(shape) is Some(_)
 }
 
 ///|
@@ -747,7 +742,7 @@ fn pptx_collect_shapes(
 ) -> Unit {
   for shape in pptx_children(Some(node)) {
     match shape.element.name.local_name {
-      "sp" | "pic" | "graphicFrame" =>
+      "sp" | "pic" | "graphicFrame" | "cxnSp" =>
         if !(skip_placeholders && pptx_has_placeholder(shape)) {
           out.push((shape, placement))
         }

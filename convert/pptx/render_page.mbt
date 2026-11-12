@@ -99,7 +99,12 @@ fn pptx_emit_shapes(
     }
     let draw_width = transform.width * placement.sx
     let draw_height = transform.height * placement.sy
-    if draw_width <= 0.0 || draw_height <= 0.0 {
+    // A zero width or height keeps the shape: straight connectors between
+    // aligned shapes have a zero extent. Only a negative or fully
+    // degenerate box stays out; upstream places every shape it can.
+    if draw_width < 0.0 ||
+      draw_height < 0.0 ||
+      (draw_width <= 0.0 && draw_height <= 0.0) {
       continue
     }
     let shape_x = placement.tx + transform.x * placement.sx
