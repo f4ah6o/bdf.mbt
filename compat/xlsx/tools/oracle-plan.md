@@ -191,3 +191,22 @@ input mismatches from 116 to 74, but 99 of 144 complete cases still differed
 then the adapter change was reverted. Partial improvement is not exact input
 reproduction; architecture-specific Pow and downstream color arithmetic still
 need investigation. No static rectangle data or acceptance condition changed.
+
+## Rectangle input attribution (diagnostic, not acceptance)
+
+`audit-rectangle-inputs.py` compares unpacked input ZIP members without
+extracting them. On all 144 cases, the 116 changed original input archives
+changed only `xl/drawings/drawing1.xml`, and only the numeric RGB attributes of
+`a:scrgbClr`; no other member content differed. The rejected explicit-FMA
+experiment leaves 74 changes in the same attributes. The script masks those
+attributes solely to identify other differences; it does not emit normalized
+inputs, rewrite cases or feed a verifier. ZIP metadata/order checks remain the
+responsibility of the strict input-byte migration gate.
+
+Go 1.27 `math.Pow` routes its fractional exponent via `Exp(yf*Log(x))`, while
+Exp has separate amd64 and arm64 assembly. Thus changing only the outer FMA
+cannot establish ARM64 equivalence. Attempting `GODEBUG=cpu.fma=off` on the v3
+experiment prints `unknown cpu feature "fma"`: internal/cpu deliberately
+omits disabling required v3 features. That run was not a valid no-FMA control
+and yielded the same 74 input differences. No emulator/software was installed,
+no historical ARM64 provenance is claimed, and no partial fix was adopted.
