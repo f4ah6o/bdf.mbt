@@ -210,3 +210,24 @@ experiment prints `unknown cpu feature "fma"`: internal/cpu deliberately
 omits disabling required v3 features. That run was not a valid no-FMA control
 and yielded the same 74 input differences. No emulator/software was installed,
 no historical ARM64 provenance is claimed, and no partial fix was adopted.
+
+## Fresh full generation after formatted arithmetic correction
+
+A fresh Linux AMD64 v3 generation with the current adapter inventory completed
+all 724 adapters. The strict migration gate compared all 803 historical files:
+762 equal, 41 different, zero missing, zero read/parse failures, seven extra
+outputs. The prior 42-file count included the now-corrected `formatted.json`.
+The 41 differing files contain 688 differing cases in this run; this case count
+is not a stable exception list because the three notes corpora remain
+nondeterministic. Classification is 38 encoded-output files, two scalar
+expected-value files (`color.json`, `general.json`), and one input-generation
+file (`rectangle-linear-boundary.json`).
+
+An independent BDF decode of all 482 cases whose `bdf` field differed found no
+metadata, table, or part-count changes, but every one contained changed part
+bytes. Views differed in 480 cases; those records contain content references,
+so that alone does not prove changed page geometry. All BDFs decoded without
+failure. This diagnostic does not normalize or relax the byte-level gate and
+does not establish that remaining differences are harmless arithmetic drift.
+The seven extra generated outputs still require an explicit inventory decision;
+no historical cases or static expectations have been removed.
