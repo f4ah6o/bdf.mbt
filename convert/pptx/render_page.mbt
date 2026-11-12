@@ -304,6 +304,19 @@ fn pptx_emit_shapes(
         object.restore()
       }
       pptx_end_figure(object, figure)
+      pptx_emit_shape_link(
+        ctx.package,
+        part,
+        object,
+        shape,
+        shape_x,
+        shape_y,
+        draw_width,
+        draw_height,
+        transform.rotation + placement.rotation,
+        pic_cx,
+        pic_cy,
+      )
       continue
     }
     let inherited = pptx_shape_inheritance(ctx, shape)
@@ -549,7 +562,22 @@ fn pptx_emit_shapes(
     }
     let body = match pptx_child(Some(shape), "txBody") {
       Some(value) => value
-      None => continue
+      None => {
+        pptx_emit_shape_link(
+          ctx.package,
+          part,
+          object,
+          shape,
+          shape_x,
+          shape_y,
+          draw_width,
+          draw_height,
+          path_rotation,
+          path_center_x,
+          path_center_y,
+        )
+        continue
+      }
     }
     let mut text_x = shape_x + geometry.text_left
     let mut text_y = shape_y + geometry.text_top
@@ -573,6 +601,19 @@ fn pptx_emit_shapes(
       text_cx - shape_x, text_cy - shape_y,
     )
     object.restore()
+    pptx_emit_shape_link(
+      ctx.package,
+      part,
+      object,
+      shape,
+      shape_x,
+      shape_y,
+      draw_width,
+      draw_height,
+      path_rotation,
+      path_center_x,
+      path_center_y,
+    )
   }
 }
 
