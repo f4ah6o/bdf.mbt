@@ -155,7 +155,8 @@ if (!installed) {
     const { bdf, filled } = await fill("form-pages.docx", "form-pages.json");
     assert.ok(filled.pages >= 2, `expected the form-pages sample to hold pages, got ${filled.pages}`);
     const input = new Uint8Array(bdf);
-    const snapshot = Buffer.from(bdf);
+    const inputSnapshot = Buffer.from(input);
+    const fontSnapshot = Buffer.from(proportional);
     const result = await exportPdf(input, { fallbackFont: proportional });
     assert.ok(result.bytes instanceof Uint8Array);
     const pdf = Buffer.from(result.bytes);
@@ -174,15 +175,18 @@ if (!installed) {
     for (const part of ["株式会社みなと商事", "ノート A5", "デスクトレー"]) {
       assert.ok(text.includes(part), `expected "${part}" in the extracted text`);
     }
-    // the input bytes are unchanged by the export
-    assert.ok(bdf.equals(snapshot));
-    assert.equal(input.byteLength, snapshot.byteLength);
+    // the buffers actually handed to the export are unchanged by it
+    assert.ok(Buffer.from(input).equals(inputSnapshot), "the input bytes were modified");
+    assert.equal(input.byteLength, inputSnapshot.byteLength, "the input buffer was detached or resized");
+    assert.ok(Buffer.from(proportional).equals(fontSnapshot), "the fallback font bytes were modified");
+    assert.equal(proportional.byteLength, fontSnapshot.byteLength, "the fallback font buffer was detached or resized");
   });
 
   test("exportPdf writes the text grid form with its rules and without changing the input", async () => {
     const { bdf } = await fill("text-receipt.txt", "text-receipt.data.json");
     const input = new Uint8Array(bdf);
-    const before = Buffer.from(bdf);
+    const before = Buffer.from(input);          // the buffer actually handed over
+    const fontBefore = Buffer.from(mono);
     const result = await exportPdf(input, { fallbackFont: mono });
     assert.equal(result.pages, 1);
     assert.ok(result.warnings.length === 0, JSON.stringify(result.warnings));
@@ -190,7 +194,8 @@ if (!installed) {
     for (const part of ["サンプル珈琲店", "ブレンドコーヒー", "チーズケーキ"]) {
       assert.ok(text.includes(part), `expected "${part}" in the extracted text`);
     }
-    assert.ok(bdf.equals(before));
+    assert.ok(Buffer.from(input).equals(before), "the input bytes were modified");
+    assert.ok(Buffer.from(mono).equals(fontBefore), "the fallback font bytes were modified");
   });
 
   test("exportPdf is deterministic and returns fresh bytes per call", async () => {

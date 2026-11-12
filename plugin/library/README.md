@@ -9,7 +9,10 @@ The first release, `2026.11.1`, was published through npm Trusted Publishing.
 The default staging package is `0.0.0-staging` with `"private": true`;
 releases use YYYY.MM.PATCH CalVer in Asia/Tokyo and npm Trusted Publishing.
 See [the release guide](https://github.com/f4ah6o/bdf.mbt/blob/main/docs/npm-release.md) for validation and publication.
-The examples below pin the first public release for reproducibility.
+The examples below pin the first public release for reproducibility, with one
+exception: `bdf.mbt/pdf` was added after that release, so it is published from
+the first CalVer release that includes it — not `2026.11.1`. Install without
+the version pin (or check the published versions) when importing it.
 
 ## Package entry points
 
@@ -246,7 +249,9 @@ Do not call `bdf_create_native_converter` in Node expecting it to create a
 `exportPdf` from `bdf.mbt/pdf` writes the BDF bytes a converter or a form
 fill produced as a PDF: it returns the PDF bytes, the page count, the count
 of fonts used and the warnings, and leaves saving the file to the
-caller. It runs in the browser and in Node with the same import:
+caller. It runs in the browser and in Node with the same import. The entry
+ships from the first CalVer release that includes it; the published
+`2026.11.1` predates it:
 
 ```js
 import { exportPdf } from "bdf.mbt/pdf";
@@ -291,15 +296,22 @@ and a selection of views that holds no page (a sheet view, for example).
 
 ### Browser: save with a Blob
 
+A fixed-form office template (`.docx`) fills to a document whose views hold
+pages, which is the pipeline this entry exists for. The same applies to the
+grid text templates. Do not feed it a spreadsheet fill expecting pages: a
+sheet view holds no page and the export rejects it (see above).
+
 ```html
 <script type="module">
 import { bdf_form_fill } from "/bdf.mbt-dist/form/form_page.js";
 import { exportPdf } from "/bdf.mbt-dist/pdf/index.js";
 
+// your licensed TrueType/OpenType font for the filled text (Japanese needs one)
 const fontBytes = await (await fetch("/assets/your-licensed-font.ttf")).arrayBuffer();
-const template = new Uint8Array(await (await fetch("/templates/invoice.xlsx")).arrayBuffer());
+// an office form template such as the form's samples: a .docx (or a text template)
+const template = new Uint8Array(await (await fetch("/templates/slip.docx")).arrayBuffer());
 const filled = JSON.parse(bdf_form_fill(template, JSON.stringify({
-  customer: "株式会社みなと商事",                  // your data
+  customer: "株式会社みなと商事",                  // your data, against the template's tags
 }), "[]", false));
 if (!filled.ok) throw new Error(filled.error);
 const bdf = Uint8Array.from(atob(filled.bdf), ch => ch.charCodeAt(0));
@@ -311,9 +323,14 @@ if (result.warnings.length > 0) {
 const blob = new Blob([result.bytes], { type: "application/pdf" });
 const link = document.querySelector("#download");
 link.href = URL.createObjectURL(blob);
-link.download = "invoice.pdf";
+link.download = "slip.pdf";
 </script>
 ```
+
+The browser smoke of the repository's library test suite exercises this
+pipeline against a converted document with a consumer-passed font; the
+installed Node suite exercises the same office-template fill (a multi-page
+`.docx` whose Japanese comes back in the written PDF).
 
 ### Node: save to a file
 
