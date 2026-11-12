@@ -136,7 +136,8 @@ diamond, oval and open-arrow ends with the upstream width/length sizes; the
 oval end is an eight-sided approximation. Connectors (`p:cxnSp`) draw like
 other shapes, with their placeholders read through `p:nvCxnSpPr`, and a
 connector between aligned shapes keeps its zero width or height; a shape
-without a transform stays out, as upstream skips it. Shape `flipH`/`flipV` mirroring is
+whose `p:cNvPr` is hidden, or that has no transform, stays out, as upstream
+does. Shape `flipH`/`flipV` mirroring is
 applied through the DrawingML transform.
 
 Remaining gaps: upstream keeps `arcTo` as a Canvas ellipse verb while this

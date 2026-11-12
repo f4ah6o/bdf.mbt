@@ -29,8 +29,12 @@
   their placeholders are read through `p:nvCxnSpPr` the way upstream's
   `PlaceholderOf` does, and a connector box with a zero width or height
   (a straight connector between aligned shapes) keeps its shape instead
-  of being skipped; upstream places every shape it can. A connector
-  without a transform stays out, matching upstream.
+  of being skipped; upstream `drawSp` has no size guard. A connector
+  without a transform stays out, matching upstream. A shape whose
+  `p:cNvPr` carries `hidden="1"` — connectors included — is no longer
+  drawn, as upstream `drawElem` leaves it out. The relaxed zero-extent
+  rule is bounded to connectors; pictures, tables and charts keep the
+  port's existing sizing admission.
 
 - Installation and release guides now point to the published `bdf.mbt@2026.11.1`
   and document the remaining staged bootstrap reservation.

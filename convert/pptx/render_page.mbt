@@ -99,12 +99,16 @@ fn pptx_emit_shapes(
     }
     let draw_width = transform.width * placement.sx
     let draw_height = transform.height * placement.sy
-    // A zero width or height keeps the shape: straight connectors between
-    // aligned shapes have a zero extent. Only a negative or fully
-    // degenerate box stays out; upstream places every shape it can.
-    if draw_width < 0.0 ||
-      draw_height < 0.0 ||
-      (draw_width <= 0.0 && draw_height <= 0.0) {
+    if shape.element.name.local_name == "cxnSp" {
+      // A connector between aligned shapes has a zero width or height;
+      // upstream drawSp has no size guard and places it. Only a negative
+      // or fully degenerate box stays out.
+      if draw_width < 0.0 ||
+        draw_height < 0.0 ||
+        (draw_width <= 0.0 && draw_height <= 0.0) {
+        continue
+      }
+    } else if draw_width <= 0.0 || draw_height <= 0.0 {
       continue
     }
     let shape_x = placement.tx + transform.x * placement.sx

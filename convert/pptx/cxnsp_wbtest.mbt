@@ -31,41 +31,42 @@ fn pptx_connector_fixture() -> Bytes raise {
     "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
-    "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"
+    "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" +
+    "bC5yZWxzUEsFBgAAAAANAA0AKgMAABwLAAAAAA=="
     )[:],
   )
 }
@@ -80,52 +81,67 @@ test "PPTX connectors are drawn with transforms, dashes and arrowheads" {
     @core.open_single(result.bdf).part(body_hash),
   )
   let commands = @render.compile_object(resources.object)
-  let mut red = false
-  let mut green = false
-  let mut blue = false
+  let mut red_color = false
+  let mut red_path = false
+  let mut green_color = false
+  let mut blue_color = false
+  let mut blue_path = false
+  let mut black_color = false
+  let mut black_path = false
   let mut dashed = false
   let mut strokes = 0
   let mut arrowheads = 0
   for command in commands {
     match command {
-      @render.StrokeColor(0xff0000ff) => red = true
-      @render.StrokeColor(0x00ff00ff) => green = true
-      @render.StrokeColor(0x0000ffff) => blue = true
+      @render.StrokeColor(0xff0000ff) => red_color = true
+      @render.StrokeColor(0x00ff00ff) => green_color = true
+      @render.StrokeColor(0x0000ffff) => blue_color = true
+      @render.StrokeColor(0x000000ff) => black_color = true
       @render.Dash(_, _) => dashed = true
       @render.StrokePath(index) => {
         strokes += 1
         match resources.paths[index] {
           @core.Inline(path) =>
             if path.coordinates == [72.0, 144.0, 360.0, 144.0] {
-              red = true
+              red_path = true
             }
           _ => ()
         }
-      }
-      @render.FillPath(index, _) => {
-        arrowheads += 1
         match resources.paths[index] {
           @core.Inline(path) =>
             if path.coordinates == [72.0, 378.0, 216.0, 378.0] {
-              blue = true
+              blue_path = true
+            }
+          _ => ()
+        }
+        match resources.paths[index] {
+          @core.Inline(path) =>
+            if path.coordinates == [648.0, 144.0, 648.0, 288.0] {
+              black_path = true
             }
           _ => ()
         }
       }
+      @render.FillPath(_, _) => arrowheads += 1
       _ => ()
     }
   }
-  assert_true(red, msg="PPTX red connector stroke")
-  assert_true(green, msg="PPTX rotated bent connector stroke")
-  assert_true(blue, msg="PPTX connector inside group")
+  assert_true(red_color, msg="PPTX red connector stroke colour")
+  assert_true(red_path, msg="PPTX horizontal zero-height connector position")
+  assert_true(green_color, msg="PPTX rotated bent connector stroke colour")
+  assert_true(blue_color, msg="PPTX grouped connector stroke colour")
+  assert_true(blue_path, msg="PPTX grouped connector position")
+  assert_true(black_color, msg="PPTX vertical zero-width connector colour")
+  assert_true(black_path, msg="PPTX vertical zero-width connector position")
   assert_true(dashed, msg="PPTX connector dash pattern")
   // The red line, the bent connector, its arrow-shaped tail (stroked, not
-  // filled) and the grouped line; the connector without a transform stays
-  // out, as upstream skips a shape it cannot place.
-  assert_eq(strokes, 4, msg="PPTX connector stroke count")
+  // filled), the grouped line and the vertical line; the connector without
+  // a transform stays out, as upstream skips a shape it cannot place.
+  assert_eq(strokes, 5, msg="PPTX connector stroke count")
   // Stealth head and triangle tail of the red connector, triangle tail of
-  // the grouped connector: arrowheads are filled paths.
-  assert_eq(arrowheads, 3, msg="PPTX arrowhead count")
+  // the grouped connector and oval head of the vertical one: arrowheads
+  // are filled paths.
+  assert_eq(arrowheads, 4, msg="PPTX arrowhead count")
 }
 
 ///|
@@ -193,6 +209,34 @@ test "PPTX connector placeholders are read through nvCxnSpPr" {
 }
 
 ///|
+test "PPTX hidden shapes stay out through any container" {
+  let root = pptx_parse_xml(
+    "<sld><cSld><spTree>" +
+    "<cxnSp><nvCxnSpPr><cNvPr id=\"2\" name=\"Visible connector\"/><cNvCxnSpPr/><nvPr/></nvCxnSpPr><spPr><xfrm><off x=\"12700\" y=\"12700\"/><ext cx=\"914400\" cy=\"0\"/></xfrm></spPr></cxnSp>" +
+    "<cxnSp><nvCxnSpPr><cNvPr id=\"3\" name=\"Hidden connector\" hidden=\"1\"/><cNvCxnSpPr/><nvPr/></nvCxnSpPr><spPr><xfrm><off x=\"12700\" y=\"12700\"/><ext cx=\"914400\" cy=\"0\"/></xfrm></spPr></cxnSp>" +
+    "<sp><nvSpPr><cNvPr id=\"4\" name=\"Hidden box\" hidden=\"true\"/><cNvSpPr/><nvPr/></nvSpPr><spPr><xfrm><off x=\"12700\" y=\"12700\"/><ext cx=\"914400\" cy=\"914400\"/></xfrm></spPr></sp>" +
+    "<pic><nvPicPr><cNvPr id=\"5\" name=\"Hidden picture\" hidden=\"on\"/><cNvPicPr/><nvPr/></nvPicPr><spPr><xfrm><off x=\"12700\" y=\"12700\"/><ext cx=\"914400\" cy=\"914400\"/></xfrm></spPr></pic>" +
+    "<grpSp><nvGrpSpPr><cNvPr id=\"6\" name=\"Hidden group\" hidden=\"1\"/><cNvGrpSpPr/><nvPr/></nvGrpSpPr><grpSpPr><xfrm><off x=\"12700\" y=\"12700\"/><ext cx=\"1828800\" cy=\"1828800\"/><chOff x=\"0\" y=\"0\"/><chExt cx=\"1828800\" cy=\"1828800\"/></xfrm></grpSpPr>" +
+    "<cxnSp><nvCxnSpPr><cNvPr id=\"7\" name=\"Connector in hidden group\"/><cNvCxnSpPr/><nvPr/></nvCxnSpPr><spPr><xfrm><off x=\"12700\" y=\"12700\"/><ext cx=\"914400\" cy=\"0\"/></xfrm></spPr></cxnSp>" +
+    "</grpSp></spTree></cSld></sld>",
+  )
+  let tree = pptx_child(pptx_child(Some(root), "cSld"), "spTree")
+  let children = pptx_children(tree)
+  let mut hidden = 0
+  for shape in children {
+    if pptx_shape_hidden(shape) {
+      hidden += 1
+    }
+  }
+  assert_eq(hidden, 4)
+  // Only the plain connector is collected: hidden shapes, hidden groups
+  // and the shapes inside them are never drawn.
+  let collected = pptx_collect_tree_shapes(root, false)
+  assert_eq(collected.length(), 1)
+  assert_eq(collected[0].0.element.name.local_name, "cxnSp")
+}
+
+///|
 test "PPTX connector presets stay valid at zero and full sizes" {
   let connectors = [
     "line", "lineInv", "straightConnector1", "bentConnector2",
@@ -200,7 +244,7 @@ test "PPTX connector presets stay valid at zero and full sizes" {
     "curvedConnector3", "curvedConnector4", "curvedConnector5",
   ]
   let sizes : Array[(Double, Double)] = [
-    (12.0, 0.0), (12.0, 12.0), (288.0, 0.0), (288.0, 144.0),
+    (0.0, 12.0), (12.0, 0.0), (12.0, 12.0), (288.0, 0.0), (288.0, 144.0),
   ]
   for name in connectors {
     let mut stroked = false
@@ -222,14 +266,14 @@ test "PPTX connector presets stay valid at zero and full sizes" {
             x.abs() < 1000000000000.0 && y.abs() < 1000000000000.0,
             msg=name + " has a non-finite coordinate",
           )
-          let box_width = if width > 0.0 { width } else { 1.0 }
-          let box_height = if height > 0.0 { height } else { 1.0 }
+          let span_x = if width > 0.0 { width } else { 0.0 }
+          let span_y = if height > 0.0 { height } else { 0.0 }
           assert_true(
-            x > -0.000001 && x < box_width + 0.000001,
+            x > -0.000001 && x < span_x + 0.000001,
             msg=name + " x coordinate is out of the box",
           )
           assert_true(
-            y > -0.000001 && y < box_height + 0.000001,
+            y > -0.000001 && y < span_y + 0.000001,
             msg=name + " y coordinate is out of the box",
           )
         }
@@ -237,12 +281,15 @@ test "PPTX connector presets stay valid at zero and full sizes" {
     }
     assert_true(stroked, msg=name)
   }
-  // Straight connectors span the whole box.
+  // Straight connectors span the whole box, in both directions.
   let line = pptx_preset_geometry("line", [], 288.0, 144.0).unwrap()
   assert_eq(line.paths[0].path.coordinates, [0.0, 0.0, 288.0, 144.0])
-  let straight = pptx_preset_geometry("straightConnector1", [], 10.0, 0.0)
+  let flat = pptx_preset_geometry("straightConnector1", [], 10.0, 0.0)
     .unwrap()
-  assert_eq(straight.paths[0].path.coordinates, [0.0, 0.0, 10.0, 0.0])
+  assert_eq(flat.paths[0].path.coordinates, [0.0, 0.0, 10.0, 0.0])
+  let upright = pptx_preset_geometry("straightConnector1", [], 0.0, 10.0)
+    .unwrap()
+  assert_eq(upright.paths[0].path.coordinates, [0.0, 0.0, 0.0, 10.0])
 }
 
 ///|
