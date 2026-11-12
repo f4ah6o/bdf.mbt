@@ -95,3 +95,33 @@ rejects collisions with generated outputs. Their hashes are included in the
 run receipt. This preserves independently supplied regression inputs and media;
 it does not present them as newly generated data. Existing stored expectations
 and the exact comparison gate remain unchanged.
+
+## Repeat-run and adapter sideproducts
+
+`compare-oracle-runs.mjs --first <run> --second <run> --report <json>`
+requires complete, identical build/adapter/seed identities and compares all
+JSON outputs, including extra adapter sideproducts. Changed values, missing or
+extra files fail. It is additional to, not a substitute for, static comparison.
+
+The seven currently extra files are generator sideproducts unreferenced by the
+current verifiers: `base-border-tint-too-large.json` contains one input;
+`percent-links-unsupported.json` contains three inputs. The rich-run-data,
+rich-run-wrap, sheet-multiple-notes, sheet-multiple-notes-filter and
+sheet-notes-filter `-unsupported.json` outputs are empty arrays. The last has
+an unreachable i>=192 branch within i<128; the others never append to their
+unsupported accumulator. They remain in the exact gate's inventory: do not
+silently discard them or count their inputs as existing coverage.
+
+Initial repeated execution changes BDFs in sheet-multiple-notes,
+sheet-multiple-notes-filter and sheet-multiple-notes-legacy despite unchanged
+input bytes. These require deterministic upstream ordering investigation in
+addition to architecture/floating-point analysis. No output sorting or
+normalization is introduced by the repeatability gate.
+
+A subsequent fresh 724-adapter repeat using identical complete AMD64 receipts
+confirms four nondeterministic files: the above three notes files plus
+`multi-font-legacy.json`; all other 806 JSON outputs agree. Pinned upstream
+`drawing.go` paintMarks iterates the comments map directly, giving a concrete
+ordering hypothesis for notes. The font case still needs source-to-output
+tracing. Fixing these requires an explicit oracle determinism decision, not
+sorting BDF parts after generation to disguise differences.
