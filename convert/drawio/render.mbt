@@ -176,6 +176,113 @@ fn drawio_orthogonal_route(
 }
 
 ///|
+/// The guaranteed facing-rectangle orthogonal route, taken before the
+/// general perimeter projection. When an `edgeStyle=orthogonalEdgeStyle`
+/// edge has floating ends on both terminals (no waypoint, fixed
+/// exit/entry, rotation, port constraint, explicit perimeter or non-default
+/// jetty in the way) and both terminals must connect at the box bounds --
+/// rectangles, or AWS stencils whose `outlineConnect=0` opts out of their
+/// outlines -- and the terminals face each other flat side to flat side
+/// (horizontally separated, Y ranges overlapping, at least the default
+/// jetties of 10 + 10 apart), the edge leaves one terminal at its facing
+/// side's centre height, turns once midway in the gap, and enters the
+/// other at its facing side's centre height. That is the side choice of
+/// upstream orthConnector exactly when preferredVertDist <= 0 and
+/// preferredHorizDist > 0 (shibukawa/bdf converter/drawio/edgestyle.go at
+/// a5e4d7a6). Anything else returns None so the general path and its
+/// fallbacks are unchanged.
+fn drawio_facing_orthogonal_route(
+  edge_style : String,
+  source : DrawioTerminal?,
+  target : DrawioTerminal?,
+) -> Array[(Double, Double)]? {
+  let s = match source {
+    Some(value) => value
+    None => return None
+  }
+  let t = match target {
+    Some(value) => value
+    None => return None
+  }
+  if drawio_style(edge_style, "edgeStyle", "") != "orthogonalEdgeStyle" {
+    return None
+  }
+  for key in ["exitX", "exitY", "entryX", "entryY", "sourcePortConstraint", "targetPortConstraint", "portConstraint", "sourcePerimeterSpacing", "targetPerimeterSpacing", "perimeterSpacing"] {
+    if drawio_style(edge_style, key, "") != "" {
+      return None
+    }
+  }
+  for key in ["jettySize", "sourceJettySize", "targetJettySize"] {
+    let value = drawio_style(edge_style, key, "")
+    if value != "" && value != "10" {
+      return None
+    }
+  }
+  for terminal in [s, t] {
+    if terminal.w <= 0.0 || terminal.h <= 0.0 {
+      return None
+    }
+    if drawio_num_from_style(terminal.style, "rotation", 0.0) != 0.0 {
+      return None
+    }
+    for key in ["portConstraint", "perimeter", "perimeterSpacing"] {
+      if drawio_style(terminal.style, key, "") != "" {
+        return None
+      }
+    }
+    let rectangle = terminal.kind == DkRect || terminal.kind == DkRoundedRect
+    let aws = terminal.kind == DkStencil &&
+      drawio_shape_name(terminal.style).has_prefix("mxgraph.aws") &&
+      drawio_style(terminal.style, "outlineConnect", "") == "0"
+    if !rectangle && !aws {
+      return None
+    }
+  }
+  // preferredHorizDist > 0 and preferredVertDist <= 0: the terminals are
+  // horizontally separated with overlapping Y ranges.
+  if s.y + s.h < t.y || t.y + t.h < s.y {
+    return None
+  }
+  let (start, end) = if s.x + s.w <= t.x {
+    if t.x - (s.x + s.w) < 20.0 {
+      return None
+    }
+    ((s.x + s.w, s.center.1), (t.x, t.center.1))
+  } else if t.x + t.w <= s.x {
+    if s.x - (t.x + t.w) < 20.0 {
+      return None
+    }
+    ((s.x, s.center.1), (t.x + t.w, t.center.1))
+  } else {
+    return None
+  }
+  let mid_x = (start.0 + end.0) / 2.0
+  let route : Array[(Double, Double)] = []
+  for point in [start, (mid_x, start.1), (mid_x, end.1), end] {
+    if route.is_empty() || route[route.length() - 1] != point {
+      route.push(point)
+    }
+  }
+  let mut index = 1
+  while index < route.length() - 1 {
+    let before = route[index - 1]
+    let middle = route[index]
+    let after = route[index + 1]
+    let horizontal = before.1 == middle.1 && middle.1 == after.1
+    let vertical = before.0 == middle.0 && middle.0 == after.0
+    if horizontal || vertical {
+      ignore(route.remove(index))
+    } else {
+      index = index + 1
+    }
+  }
+  if route.length() < 2 {
+    return None
+  }
+  Some(route)
+}
+
+///|
 /// The route of an edge: fixed ends from exit/entry constraints (or the
 /// geometry's terminal points for a dangling end), the control points, and
 /// floating ends placed on the terminals' perimeters towards the next
@@ -240,6 +347,14 @@ fn DrawioModel::edge_route(
   let target_center = match target_terminal {
     Some(terminal) => Some(terminal.center)
     None => None
+  }
+  // The guaranteed facing-rectangle shortcut resolves the whole route
+  // here; only rejected cases continue into the general path.
+  if middle.is_empty() && source_fixed is None && target_fixed is None {
+    match drawio_facing_orthogonal_route(cell.style, source_terminal, target_terminal) {
+      Some(route) => return route
+      None => ()
+    }
   }
   // A floating target goes first and is placed towards the previous point.
   let mut target_placed = target_fixed

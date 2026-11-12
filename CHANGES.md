@@ -57,6 +57,11 @@
 
 ### Fixed
 
+- draw.io unconstrained horizontal-facing rectangular terminals now route through
+  a shared midpoint with horizontal entry/exit, fixing the AWS Current branch
+  positions. Constrained, rotated, custom-perimeter and close terminals retain
+  the existing fallback; rounded joins are separate.
+
 - draw.io open-arrow markers now draw a V with the configured stroke width and
   shorten the connecting line to match upstream; other marker types and routing
   are unchanged.
