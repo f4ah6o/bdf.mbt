@@ -475,6 +475,7 @@ fn drawio_edge_marker(
   style : String,
   key : String,
   color : UInt32,
+  stroke_width : Double,
 ) -> Unit {
   let kind = drawio_style(style, key, "none")
   if kind == "none" || kind == "" {
@@ -488,10 +489,22 @@ fn drawio_edge_marker(
   }
   let ux = dx / length
   let uy = dy / length
+  // Upstream draw.io defaults every marker size to 6 (shape.go
+  // defaultMarkerSize); the marker kinds that kept the historical shape
+  // here (and the open arrow, whose slice shipped with 8) keep 8. The
+  // block and classic families newly follow upstream and default to 6.
+  let default_size = if kind == "open" ||
+    kind == "oval" ||
+    kind == "diamond" ||
+    kind.has_prefix("ER") {
+    8.0
+  } else {
+    6.0
+  }
   let size = drawio_num_from_style(
     style,
     if key == "startArrow" { "startSize" } else { "endSize" },
-    8.0,
+    default_size,
   )
   let bx = tip.0 + ux * size
   let by = tip.1 + uy * size
@@ -501,10 +514,10 @@ fn drawio_edge_marker(
   let filled = drawio_style(style, fill_key, "1") != "0"
   let path = @cad.CadPath::new()
   if kind == "open" {
-    path.move_to(tip.0 + px, tip.1 + py)
-    path.line_to(tip.0, tip.1)
-    path.line_to(tip.0 - px, tip.1 - py)
-    drawing.stroke(path, @cad.Pen::new(color=color, width=1.0))
+    drawing.stroke(
+      drawio_open_arrow_path(tip, toward, size, stroke_width),
+      @cad.Pen::new(color=color, width=stroke_width),
+    )
   } else if kind == "oval" {
     path.circle(@cad.Point::new(tip.0 + ux * size * 0.5, tip.1 + uy * size * 0.5), size * 0.5)
     if filled {
@@ -526,17 +539,184 @@ fn drawio_edge_marker(
       drawing.stroke(path, @cad.Pen::new(color=color, width=1.0))
     }
   } else {
-    // classic, block and unknown markers share the filled triangle.
-    path.move_to(tip.0, tip.1)
-    path.line_to(bx + px, by + py)
-    path.line_to(bx - px, by - py)
-    path.close()
-    if filled {
-      drawing.fill(path, @cad.Fill::solid(color), false)
+    // Block, classic and their thin variants; every other marker kind
+    // falls back to classic here, exactly as upstream draws it
+    // (shapes_core.go createArrow); this fallback emits no warning.
+    let classic = kind != "block" && kind != "blockThin"
+    let width_factor = if kind == "blockThin" || kind == "classicThin" {
+      3.0
     } else {
-      drawing.stroke(path, @cad.Pen::new(color=color, width=1.0))
+      2.0
     }
+    let marker = drawio_block_arrow_path(
+      tip,
+      toward,
+      size,
+      stroke_width,
+      width_factor,
+      classic,
+    )
+    if filled {
+      drawing.fill(marker, @cad.Fill::solid(color), false)
+    }
+    drawing.stroke(marker, @cad.Pen::new(color=color, width=stroke_width))
   }
+}
+
+///|
+/// The open-arrow V draw.io strokes (upstream converter/drawio
+/// createOpenArrow): the notch sits one half-gap (stroke_width * 1.118)
+/// inside the tip, the wings run size + stroke_width back along the edge
+/// and spread half of that length to each side. A zero-length segment
+/// yields an empty path, so the marker is skipped.
+fn drawio_open_arrow_path(
+  tip : (Double, Double),
+  toward : (Double, Double),
+  size : Double,
+  stroke_width : Double,
+) -> @cad.CadPath {
+  let path = @cad.CadPath::new()
+  let dx = toward.0 - tip.0
+  let dy = toward.1 - tip.1
+  let length = (dx * dx + dy * dy).sqrt()
+  if length <= 0.0 {
+    return path
+  }
+  let ux = dx / length
+  let uy = dy / length
+  let nx = tip.0 + ux * stroke_width * 1.118
+  let ny = tip.1 + uy * stroke_width * 1.118
+  let vx = ux * (size + stroke_width)
+  let vy = uy * (size + stroke_width)
+  path.move_to(nx + vx + vy * 0.5, ny + vy - vx * 0.5)
+  path.line_to(nx, ny)
+  path.line_to(nx + vx - vy * 0.5, ny + vy + vx * 0.5)
+  path
+}
+
+///|
+/// The endpoint of the drawn edge line when an open arrow marks it:
+/// draw.io pulls the tip back by twice the marker half-gap
+/// (stroke_width * 1.118), so the line stops short of the notch while
+/// labels and the marker itself keep the original tip. Any other marker
+/// (or a zero-length segment) keeps the tip.
+fn drawio_edge_open_end(
+  tip : (Double, Double),
+  toward : (Double, Double),
+  style : String,
+  key : String,
+  stroke_width : Double,
+) -> (Double, Double) {
+  if drawio_style(style, key, "none") != "open" {
+    return tip
+  }
+  let dx = toward.0 - tip.0
+  let dy = toward.1 - tip.1
+  let length = (dx * dx + dy * dy).sqrt()
+  if length <= 0.0 {
+    return tip
+  }
+  let gap = stroke_width * 1.118 * 2.0
+  (tip.0 + dx / length * gap, tip.1 + dy / length * gap)
+}
+
+///|
+/// The block or classic arrow head draw.io paints (upstream
+/// converter/drawio createArrow): the apex sits one half-gap
+/// (stroke_width * 1.118) inside the tip, the wings run size +
+/// stroke_width back along the edge and spread that length divided by
+/// width_factor to each side. Classic variants add a notch three
+/// quarters of the way back; the thin variants only spread the wings
+/// over 3 instead of 2. A zero-length segment yields an empty path,
+/// so the marker is skipped.
+fn drawio_block_arrow_path(
+  tip : (Double, Double),
+  toward : (Double, Double),
+  size : Double,
+  stroke_width : Double,
+  width_factor : Double,
+  classic : Bool,
+) -> @cad.CadPath {
+  let path = @cad.CadPath::new()
+  let dx = toward.0 - tip.0
+  let dy = toward.1 - tip.1
+  let length = (dx * dx + dy * dy).sqrt()
+  if length <= 0.0 {
+    return path
+  }
+  let ux = (tip.0 - toward.0) / length
+  let uy = (tip.1 - toward.1) / length
+  let px = tip.0 - ux * stroke_width * 1.118
+  let py = tip.1 - uy * stroke_width * 1.118
+  let vx = ux * (size + stroke_width)
+  let vy = uy * (size + stroke_width)
+  path.move_to(px, py)
+  path.line_to(px - vx - vy / width_factor, py - vy + vx / width_factor)
+  if classic {
+    path.line_to(px - vx * 0.75, py - vy * 0.75)
+  }
+  path.line_to(px - vx + vy / width_factor, py - vy - vx / width_factor)
+  path.close()
+  path
+}
+
+///|
+/// The endpoint of the drawn edge line when a block or classic arrow
+/// marks it: draw.io pulls the tip back by the whole marker length plus
+/// the half-gap (stroke_width * 1.118), and classic variants only by
+/// three quarters of the marker length plus the half-gap. Labels and
+/// the marker itself keep the original tip. Zero-length segments keep
+/// the tip.
+fn drawio_edge_block_end(
+  tip : (Double, Double),
+  toward : (Double, Double),
+  size : Double,
+  stroke_width : Double,
+  classic : Bool,
+) -> (Double, Double) {
+  let dx = toward.0 - tip.0
+  let dy = toward.1 - tip.1
+  let length = (dx * dx + dy * dy).sqrt()
+  if length <= 0.0 {
+    return tip
+  }
+  let ux = (tip.0 - toward.0) / length
+  let uy = (tip.1 - toward.1) / length
+  let back = (if classic { 0.75 } else { 1.0 }) * (size + stroke_width) +
+    stroke_width * 1.118
+  (tip.0 - ux * back, tip.1 - uy * back)
+}
+
+///|
+/// The endpoint of the drawn edge line for every shortening marker:
+/// open arrows pull back by twice the half-gap, block and classic
+/// arrows by their createArrow marker length (block/blockThin full,
+/// classic-lookalikes three quarters, both plus the half-gap). Marker
+/// kinds outside these families keep the tip, as does a zero-length
+/// segment. The route used by labels is never modified.
+fn drawio_edge_marker_end(
+  tip : (Double, Double),
+  toward : (Double, Double),
+  style : String,
+  key : String,
+  stroke_width : Double,
+) -> (Double, Double) {
+  let kind = drawio_style(style, key, "none")
+  if kind == "none" || kind == "" {
+    return tip
+  }
+  if kind == "open" {
+    return drawio_edge_open_end(tip, toward, style, key, stroke_width)
+  }
+  if kind == "oval" || kind == "diamond" || kind.has_prefix("ER") {
+    return tip
+  }
+  let size = drawio_num_from_style(
+    style,
+    if key == "startArrow" { "startSize" } else { "endSize" },
+    6.0,
+  )
+  drawio_edge_block_end(tip, toward, size, stroke_width, kind != "block" && kind != "blockThin")
 }
 
 ///|
@@ -546,8 +726,9 @@ fn drawio_arrow(
   to : (Double, Double),
   style : String,
   color : UInt32,
+  stroke_width : Double,
 ) -> Unit {
-  drawio_edge_marker(drawing, to, from, style, "endArrow", color)
+  drawio_edge_marker(drawing, to, from, style, "endArrow", color, stroke_width)
 }
 
 ///|
@@ -557,8 +738,9 @@ fn drawio_start_arrow(
   toward : (Double, Double),
   style : String,
   color : UInt32,
+  stroke_width : Double,
 ) -> Unit {
-  drawio_edge_marker(drawing, from, toward, style, "startArrow", color)
+  drawio_edge_marker(drawing, from, toward, style, "startArrow", color, stroke_width)
 }
 
 ///|
@@ -788,7 +970,6 @@ fn drawio_render_item(
         return
       }
       let curved = drawio_style(cell.style, "curved", "0") == "1"
-      let path = drawio_edge_path(points, curved)
       let stroke = drawio_color(drawio_style(cell.style, "strokeColor", ""), 0x000000ffU)
       let width = drawio_num_from_style(cell.style, "strokeWidth", 1.0)
       let dash = if drawio_style(cell.style, "dashed", "") == "1" {
@@ -798,7 +979,25 @@ fn drawio_render_item(
       }
       let block_arrow = drawio_edge_is_block_arrow(cell.style)
       if !block_arrow {
-        drawing.stroke(path, @cad.Pen::new(
+        // Shortening markers (open, block, classic) pull the drawn line
+        // back from the tips; the markers and the label anchors still use
+        // the original route.
+        let drawn = points.copy()
+        drawn[drawn.length() - 1] = drawio_edge_marker_end(
+          points[points.length() - 1],
+          points[points.length() - 2],
+          cell.style,
+          "endArrow",
+          width,
+        )
+        drawn[0] = drawio_edge_marker_end(
+          points[0],
+          points[1],
+          cell.style,
+          "startArrow",
+          width,
+        )
+        drawing.stroke(drawio_edge_path(drawn, curved), @cad.Pen::new(
           color=stroke,
           width=width,
           dash~,
@@ -811,6 +1010,7 @@ fn drawio_render_item(
           points[points.length() - 1],
           cell.style,
           stroke,
+          width,
         )
         drawio_start_arrow(
           drawing,
@@ -818,6 +1018,7 @@ fn drawio_render_item(
           points[1],
           cell.style,
           stroke,
+          width,
         )
       } else {
         drawio_paint_block_arrow(

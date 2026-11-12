@@ -70,3 +70,32 @@ inside its intended 25-unit square. This is not a clipping workaround.
 For same-renderer visual comparison use `oracle-aws.sh` above on each revision.
 The arc correction does not implement edge routing, rounded connectors or
 marker parity; remaining differences must be evaluated separately.
+
+## Open-arrow regression
+
+`moon test convert/drawio --target js` (also wasm-gc/native) exercises open
+marker geometry, reversed/start arrows, vertical paths, strokeWidth2 and zero
+length. After `npm ci` and `moon build --target js native_converter_worker`,
+run `node compat/drawio/open-arrow-test.mjs` for the real AWS XML-to-BDF path:
+the independent upstream decoder checks Current e2's shortened line, three-point
+V and marker pen width2. Formula provenance is upstream
+`converter/drawio/shapes_core.go` `createOpenArrow(2)` at the commit above.
+
+A separate official draw.io v32.7.1 browser capture at zoom100%/DPR1 confirmed
+Current e2's source-unit open tip318.882 and shortened line endpoint317.764
+for endSize10/strokeWidth1. The AWS fixture contains4 Current open arrows and11
+Legacy block arrows. This change fixes open-marker geometry only: orthogonal
+waypoints, rounded joins, block/classic markers and complete15-edge visual
+parity remain separate work. The original routing points still drive labels;
+only the rendered line's endpoint copy is shortened.
+
+## Block/classic marker regression
+
+After building the JS native converter worker, run
+`node compat/drawio/block-marker-test.mjs`. It independently decodes actual
+AWS Legacy BDF output:11 filled/stroked block triangles, representative
+horizontal/vertical/dashed geometry and shortened lines, plus a synthetic
+classic/unfilled/strokeWidth2 variant. Helpers additionally cover reversed and
+zero-length geometry. Source: upstream `shapes_core.go` `createArrow` at the
+commit above. This does not claim Legacy routing or complete image parity;
+rounded corners, branching and endpoint placement remain separate work.
