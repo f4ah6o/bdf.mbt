@@ -3,11 +3,13 @@
 export const FORMAT_PLUGIN_API_VERSION: 1;
 
 export declare class PluginError extends Error {
+  constructor(message?: string, code?: string);
   name: "PluginError";
   code: string;
 }
 
 export declare class ConvertError extends Error {
+  constructor(message?: string, code?: string);
   name: "ConvertError";
   code?: string;
 }
@@ -227,6 +229,7 @@ export declare function moonbitDocuWorks(module: DocuWorksMoonBitModule): DocuWo
 export declare function base64Decode(text: string, what?: string): Uint8Array;
 
 export declare class BindingError extends Error {
+  constructor(message?: string, code?: string);
   name: "ConvertError";
   code: string;
 }

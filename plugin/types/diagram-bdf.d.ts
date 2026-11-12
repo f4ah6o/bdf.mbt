@@ -124,6 +124,7 @@ export function encodeDiagram(input: EncodeDiagramInput): Promise<BdfBytes>;
 export type DiagramErrorCode = "invalid-input" | "too-large";
 
 export class DiagramEncodeError extends Error {
+  constructor(message?: string, code?: DiagramErrorCode);
   code: DiagramErrorCode;
 }
 
