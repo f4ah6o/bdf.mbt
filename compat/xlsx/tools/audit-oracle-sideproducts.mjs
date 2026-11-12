@@ -8,7 +8,6 @@ import { isDeepStrictEqual } from 'node:util';
 
 const emptyHash = '4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945';
 const inventory = [
-  ['base-border-tint-too-large.json', 'single-input', 1, '13d5b236ff139fb199fa952ef347ef925db7a310f9532eb9ae0c764e2d94ce12'],
   ['percent-links-unsupported.json', 'input-array', 3, '0196a3dc5fb961f390c85371d40285fcef2043bef31225fde0b5aa4c6ab49c66'],
   ...['rich-run-data', 'rich-run-wrap', 'sheet-multiple-notes-filter', 'sheet-multiple-notes', 'sheet-notes-filter'].map(name => [`${name}-unsupported.json`, 'input-array', 0, emptyHash]),
 ];

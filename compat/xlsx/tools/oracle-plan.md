@@ -432,3 +432,51 @@ same three notes files different. Its nonzero result confirms the required full
 corpus repeatability gate remains unmet. The read-only proposed partition audit
 and four extra input byte-match results were identical to the first run. No
 notes exception has been activated and no stored expectation has been removed.
+
+## Oversized tinted base-border input (2026-11-13)
+
+The fixed `TestCodexBaseBorderTint` generator writes case index 240 as an
+input-only JSON string and does not run upstream conversion on that case. A
+separate invocation of the unchanged pinned ARM64 test binary under the approved
+Ubuntu QEMU generated the same JSON bytes in 1.16 seconds (that invocation also
+regenerated the 240 normal tint cases). The adapter SHA256 is
+`e5460f7ff9101cbc342d6dad20fc0ff99685e88a77c11c47fede3012b72fd1c9`.
+The JSON SHA256 is `13d5b236ff139fb199fa952ef347ef925db7a310f9532eb9ae0c764e2d94ce12`;
+the decoded 1,160-byte XLSX SHA256 is
+`5b75bd4857e715839a0f560d51e32b99db274072b527640bdc3e92e1c3a5c915`.
+The same hashes were present in both prior full generations.
+
+The input has a styled column with tinted borders, and a cell in row 20,000.
+The existing `xlsx_initial_extent` rule yields 20,005 rows and the 12-column
+minimum: 240,060 cells. This exceeds the documented 200,000-cell base-border
+limit but not the preceding 1,000,000-cell base-fill limit. The dedicated test
+checks input identity and requires no BDF and the exact existing border-size
+error. This is a MoonBit contract regression test, not a claim that the Go
+oracle rejects this input.
+
+The added input is stored in the existing compressed fixture store; all 623
+previous blobs in the affected `5b` pack were byte-checked unchanged, and the
+full store check passed. The new verifier case ID is `oversized tinted base
+borders must be rejected 5b75bd48`. The render inventory changed only by that
+one ID, 144,297 to 144,298; its 4-shard counts changed from 36,066 / 36,099 /
+36,079 / 36,053 to 36,066 / 36,100 / 36,079 / 36,053, with no old ID moved or
+removed. A single-case shard run passed.
+
+With the new input in the historical inventory, the unchanged strict static
+gate compares 804 files: 801 equal, the same 3 notes files different, no
+missing or read errors, and 6 extras. The sideproduct diagnostic expects the
+remaining 6 names and rejects the old 7-name report; it is not an allowlist
+for the strict gate. The notes exception remains inactive.
+
+To regenerate without writing the checkout, run the authenticated
+`xlsx-oracle.test` under the pinned QEMU with `-test.run
+'^TestCodexBaseBorderTint$' -test.count=1` and `BDF_FIXTURE_ROOT` pointing to a
+fresh directory containing `compat/xlsx`; compare the generated JSON and decoded
+XLSX hashes above before packing. Use `GOMAXPROCS=2 GODEBUG= TZ=UTC LC_ALL=C`
+and the build's `runtime/xlsx` working directory, as in the full runner. The
+240 normal generated expectations must continue through the strict comparison.
+
+After the addition, `VERIFY_RENDER_SHARDS=4 npm run test:xlsx-compat` passed
+in 334.41 seconds, including all 144,298 render IDs in 320.2 seconds; the
+notes verifier passed its 264 cases. The existing full fixture-store check
+passed for all 804 fixture files.
