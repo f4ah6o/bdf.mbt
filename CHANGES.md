@@ -4,6 +4,21 @@
 
 ### Added
 
+- A versioned file-format plugin API with explicit startup registration,
+  deterministic detection, validated conversion results, stream leases and
+  asynchronous cleanup. DocuWorks uses the same public adapter contract.
+  See [the API guide](docs/format-plugin-api.md) for supported options and
+  differences from the native converter Worker.
+- Excalidraw and Mermaid flowchart adapters convert supported diagram
+  primitives to BDF. Hand-drawn strokes and fonts are outside the Excalidraw
+  adapter's scope; [the diagram guide](docs/diagram-plugins.md) lists the
+  supported elements and syntax.
+- A staged `bdf.mbt` JavaScript package with viewer, forms, converter Workers,
+  plugin exports, TypeScript declarations, consumer examples and third-party
+  license notices. It remains `private: true` and is not published. Downstream
+  adapters can be composed in a browser-resolvable Worker without modifying
+  the public dispatch code.
+
 - The viewer can ask for access to local fonts and use selected faces during
   conversion. The request begins only when the user selects the control; font
   data stays local, while the generated BDF or PDF may embed selected faces.
