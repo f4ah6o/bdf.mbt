@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import { BdfDocument, BufferSource, decodeObject, walk } from '@bdfkit/core';
 import { xlsx_render_result } from '../../_build/js/debug/build/compat/xlsx/xlsx.js';
+import { loadFixture } from './fixtures.mjs';
 function normalize(object) {
   let fill = 0;
   const operations = [], notes = [];
@@ -25,7 +25,7 @@ function normalize(object) {
 }
 let checked = 0;
 for (const [file, count] of [['sheet-multiple-notes.json', 128], ['sheet-multiple-notes-filter.json', 128], ['sheet-multiple-notes-legacy.json', 8]]) {
-const cases = JSON.parse(await readFile(new URL(`./${file}`, import.meta.url)));
+const cases = await loadFixture(`./${file}`);
 assert.equal(cases.length, count, `${file} fixture count`);
 for (const [j, c] of cases.entries()) {
   const input = Buffer.from(c.input, 'base64');
