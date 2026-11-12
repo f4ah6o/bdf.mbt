@@ -300,3 +300,95 @@ test "DOCX empty paragraph line height uses the mark size" {
   assert_eq(empty.lines[0].height, ref.lines[0].height)
   assert_eq(empty.lines[0].height, 36.0)
 }
+
+///|
+test "DOCX paragraph mark keeps the default character style" {
+  // Upstream resolves the mark with runProps(styleID, "", ...): the mark is
+  // bound to the document's default character style, and an rStyle inside
+  // w:pPr/w:rPr selects nothing (wordproc/model.go paragraph()).
+  let styles = "<styles>" +
+    "<style type=\"character\" styleId=\"plain\" default=\"1\"><rPr><sz val=\"48\"/></rPr></style>" +
+    "<style type=\"character\" styleId=\"markstyle\"><rPr><sz val=\"80\"/><rFonts ascii=\"Custom\"/></rPr></style>" +
+    "</styles>"
+  let walker = docx_mark_walker(
+    styles,
+    "<body><p><pPr><rPr><rStyle val=\"markstyle\"/><sz val=\"60\"/></rPr></pPr>" +
+    "<r><rPr><rStyle val=\"markstyle\"/></rPr><t>A</t></r></p></body>",
+  )
+  let paragraph = walker.paragraphs[0]
+  // The mark keeps the default character style (24pt base, default font)
+  // with the direct size applied: 30pt, not markstyle's 40pt or its font.
+  assert_eq(paragraph.mark.size, 30.0)
+  assert_eq(paragraph.mark.fonts[0], "Times New Roman")
+  // A text run still resolves its own rStyle.
+  assert_eq(paragraph.items[0].props.size, 40.0)
+  assert_eq(paragraph.items[0].props.fonts[0], "Custom")
+}
+
+///|
+const DOCX_MARK_LABEL_NUMBERING : String = "<numbering>" +
+  "<abstractNum abstractNumId=\"a\">" +
+  "<lvl ilvl=\"0\"><numFmt val=\"decimal\"/><lvlText val=\"%1.\"/><start val=\"1\"/></lvl>" +
+  "<lvl ilvl=\"1\"><numFmt val=\"bullet\"/><lvlText val=\"•\"/></lvl>" +
+  "</abstractNum><num numId=\"n\"><abstractNumId val=\"a\"/></num></numbering>"
+
+///|
+test "DOCX numbering label drops mark underline, shading and highlight" {
+  // Upstream makeLabel clears u, hasShd and highlight from the label
+  // formatting (wordproc/model.go makeLabel).
+  let walker = docx_mark_walker(
+    "<styles/>",
+    "<body><p><pPr><numPr><numId val=\"n\"/><ilvl val=\"0\"/></numPr>" +
+    "<rPr><sz val=\"60\"/><u val=\"single\"/><highlight val=\"yellow\"/><i/></rPr></pPr>" +
+    "<r><t>Item</t></r></p></body>",
+  )
+  docx_apply_numbering(walker.blocks, docx_numbering_from_xml(
+    DOCX_MARK_LABEL_NUMBERING,
+  ))
+  let paragraph = walker.paragraphs[0]
+  let label = paragraph.items[0]
+  assert_eq(label.kind, "char")
+  assert_eq(label.text, "1.")
+  assert_eq(label.props.size, 30.0)
+  assert_eq(label.props.underline, "none")
+  assert_eq(label.props.highlight, "")
+  assert_eq(label.props.has_shading, false)
+  assert_true((label.props.toggles & 2) != 0)
+  let tab = paragraph.items[1]
+  assert_eq(tab.kind, "tab")
+  assert_eq(tab.props.underline, "none")
+  assert_eq(tab.props.highlight, "")
+  // The mark itself keeps its decorations; only the label is cleaned.
+  assert_eq(paragraph.mark.size, 30.0)
+  assert_eq(paragraph.mark.underline, "single")
+  assert_eq(paragraph.mark.highlight, "yellow")
+  assert_true((paragraph.mark.toggles & 2) != 0)
+  // A numbered run keeps its own formatting.
+  assert_eq(paragraph.items[2].props.size, 10.0)
+  assert_eq(paragraph.items[2].props.underline, "none")
+}
+
+///|
+test "DOCX bullet label drops mark underline, shading and highlight" {
+  let walker = docx_mark_walker(
+    "<styles/>",
+    "<body><p><pPr><numPr><numId val=\"n\"/><ilvl val=\"1\"/></numPr>" +
+    "<rPr><sz val=\"60\"/><u val=\"single\"/><highlight val=\"yellow\"/></rPr></pPr>" +
+    "<r><t>Item</t></r></p></body>",
+  )
+  docx_apply_numbering(walker.blocks, docx_numbering_from_xml(
+    DOCX_MARK_LABEL_NUMBERING,
+  ))
+  let paragraph = walker.paragraphs[0]
+  let label = paragraph.items[0]
+  assert_eq(label.kind, "char")
+  assert_eq(label.text, "•")
+  assert_eq(label.props.size, 30.0)
+  assert_eq(label.props.underline, "none")
+  assert_eq(label.props.highlight, "")
+  assert_eq(label.props.has_shading, false)
+  let tab = paragraph.items[1]
+  assert_eq(tab.kind, "tab")
+  assert_eq(tab.props.underline, "none")
+  assert_eq(paragraph.items[2].props.size, 10.0)
+}
