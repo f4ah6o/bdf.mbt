@@ -1,0 +1,132 @@
+[
+  {
+    "file": "adjustable-arcs-unsupported.json",
+    "sha256": "65d3966fb5a92a2399fcf2dd729f2e33e08b756a5a8fddd3807c93e2bf1b9033",
+    "kind": "input"
+  },
+  {
+    "file": "bezier-presets-unsupported.json",
+    "sha256": "68d37e074cd728ee998edc9a30b22eac070e5460df79eeedeff858ceb1b5916f",
+    "kind": "input"
+  },
+  {
+    "file": "conditional-identical-blocks-inputs.json",
+    "sha256": "c27696777af33944c0d264f746e9df2cd26f4de5f0d13e06bfb666d43211d1d5",
+    "kind": "input"
+  },
+  {
+    "file": "drawing-alternate-active-unsupported.json",
+    "sha256": "7e58117b73fa98d96791f0e4a68ffba1794138f9f315bd9e5c3dbcf03196f067",
+    "kind": "input"
+  },
+  {
+    "file": "empty-drawing-active-unsupported.json",
+    "sha256": "595597ab1266c995ede4e4e3e7d40eff85d357774bc25e9c2ed6187fec9c8d7a",
+    "kind": "input"
+  },
+  {
+    "file": "flowchart-arcs-unsupported.json",
+    "sha256": "7b539c538a62930c5785ca83673fde21122d422456f44728729a5caf14bbdb4f",
+    "kind": "input"
+  },
+  {
+    "file": "formula-multi-adjustment-unsupported.json",
+    "sha256": "6c371158c506cfde638680504912400a8928fd897aecf599838a17885febb442",
+    "kind": "input"
+  },
+  {
+    "file": "multiple-plain-runs-extra-inputs.json",
+    "sha256": "f2d58d3d18fe56fefc9761c370f8c6691f8d74a2c32fbd0bf10b281f106221e2",
+    "kind": "input"
+  },
+  {
+    "file": "picture-absolute-invalid.json",
+    "sha256": "47027086a696e363b3e44ff288b4fc77337cb218237cb6eee74599c71dcc9e16",
+    "kind": "input"
+  },
+  {
+    "file": "picture-crop-invalid.json",
+    "sha256": "1b3a8f1dae4aad10945ef7c20e77c3d231e541a98416dc16ad94d41940288983",
+    "kind": "input"
+  },
+  {
+    "file": "picture-crop-svg-invalid.json",
+    "sha256": "93ea5909edf31b74510d174ca2bafabf5fa6aeccf0f2ed0af43ea998466039e2",
+    "kind": "input"
+  },
+  {
+    "file": "picture-flips-invalid.json",
+    "sha256": "f1835df86751c21addac8a6dce88768f7898f5ff79270b73acb38bed4c1b63ae",
+    "kind": "input"
+  },
+  {
+    "file": "picture-invalid.json",
+    "sha256": "b182edaf0bb56a31da4ccb370f1fde14ef872bcaf15aa98aaa14bfae0d3fabc0",
+    "kind": "input"
+  },
+  {
+    "file": "picture-quarter-turns-invalid.json",
+    "sha256": "4234dc778cfcb4e035a50752f8e9517f2f368e1396de83b6215c1e57dce77d2c",
+    "kind": "input"
+  },
+  {
+    "file": "picture-transform-bounds-invalid.json",
+    "sha256": "1838e9f21540a57341e83156a95626e268abe0060c9abb1a3f921ce4b02cfadb",
+    "kind": "input"
+  },
+  {
+    "file": "picture-unsupported-formats.json",
+    "sha256": "7390359a015bcfeb1c71ad3de3e60cd5d0f2ab80879d82bd40e0a2328846f93c",
+    "kind": "input"
+  },
+  {
+    "file": "picture-visual-media.json",
+    "sha256": "8e7bbbad243762e2b4390d567991dcf9c342c533f5470ea00b2c76836fe7cfa9",
+    "kind": "media"
+  },
+  {
+    "file": "plain-table-font-style-reject.json",
+    "sha256": "b261ecad9cf58abc23d75b28a233e1e78bdf4cbaedc3e602a8da11da348f00d1",
+    "kind": "input"
+  },
+  {
+    "file": "plain-table-noop-style-reject.json",
+    "sha256": "35036522931674fd04a4adf4caa94d6c7e67887b84bb7ca9f858352ec452f663",
+    "kind": "input"
+  },
+  {
+    "file": "plain-table-reject-unsafe.json",
+    "sha256": "ea514633b033e0f1df12a9bd0861b4562c1dfbc14033bb5ddeefc18b3853fbb6",
+    "kind": "input"
+  },
+  {
+    "file": "plain-table-styled-reject.json",
+    "sha256": "f19569cce7fc30ced373e6af8e2c389d26d4cdb2c04b46b8ba15d623e730cd9e",
+    "kind": "input"
+  },
+  {
+    "file": "rectangle-invalid.json",
+    "sha256": "8195561d063c6461dd3bbf3b6a030881f244029dad83f914b164f017d2593c2c",
+    "kind": "input"
+  },
+  {
+    "file": "rectangle-theme-unsupported.json",
+    "sha256": "7f7eadfa474d7e368fb7483d2e10b95a79d016313a880ee277452e440f208e04",
+    "kind": "input"
+  },
+  {
+    "file": "simple-picture-unsupported.json",
+    "sha256": "fd6dace56960ac5ba76d8366e0a861419e33ccb094e15acb9b558f7998665394",
+    "kind": "input"
+  },
+  {
+    "file": "single-styled-run-legacy-inputs.json",
+    "sha256": "5b54a375c54de43a32abce85bb862f8acdf8fe1fa24c3f864183ab62971e4937",
+    "kind": "input"
+  },
+  {
+    "file": "swoosh-presets-unsupported.json",
+    "sha256": "c765ac705dc1ccb04351fe3e5d1551b2af4600bb2817ceeec95380b8437d0aa8",
+    "kind": "input"
+  }
+]

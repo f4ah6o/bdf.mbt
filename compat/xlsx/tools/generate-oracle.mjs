@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { exportRetained } from './retained-inputs.mjs';
 import { loadFixture } from '../fixtures.mjs';
 const { values } = parseArgs({ options: { build: { type: 'string' }, output: { type: 'string' }, emulator: { type: 'string' } } });
 if (!values.build || !values.output) throw new Error('--build <oracle-directory> --output <new-directory> required');
@@ -60,5 +61,6 @@ async function run(selected) {
 // store-sheet consumes the generated table-values JSON.
 await run(tests.filter(name => name !== 'TestCodexXLSXStoreSheet'));
 await run(['TestCodexXLSXStoreSheet']);
-await writeFile(path.join(output, 'identity.json'), JSON.stringify({ ...identity, generatedAt: new Date().toISOString(), inputSeeds, tests }, null, 2) + '\n');
+const retainedInputs = await exportRetained(output);
+await writeFile(path.join(output, 'identity.json'), JSON.stringify({ ...identity, generatedAt: new Date().toISOString(), inputSeeds, retainedInputs, tests }, null, 2) + '\n');
 console.log(`Generated ${tests.length} adapters into ${output}; static migration comparison remains mandatory.`);

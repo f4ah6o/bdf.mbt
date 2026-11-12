@@ -87,3 +87,11 @@ Those inputs must be reproduced exactly before deleting static inputs. The
 remaining files are expected-value or encoded-output drift requiring separate
 arithmetic/structural investigation. Seven extra generated files remain an
 explicit inventory mismatch, not automatic additions to the accepted corpus.
+
+The 26 retained corpora now have an explicit `retained-inputs.manifest` SHA256
+inventory. The generation runner exports them only after successful Go
+execution, validates input/media-only fields (no expected-output fields), and
+rejects collisions with generated outputs. Their hashes are included in the
+run receipt. This preserves independently supplied regression inputs and media;
+it does not present them as newly generated data. Existing stored expectations
+and the exact comparison gate remain unchanged.
