@@ -346,9 +346,10 @@ export function createConverterHost({
 
   const ready = () => initialized && !disposed;
 
-  // convert/open calls that began before a disposal and have not settled
-  // yet: teardown waits for them (no cancellation — see dispose), because
-  // their failures and claimed-handle cleanups belong to the disposal report
+  // convert/open calls accepted (registered in dispatch) before a disposal
+  // and not settled yet: teardown waits for them (no cancellation — see
+  // dispose), because their failures and claimed-handle cleanups belong to
+  // the disposal report
   const activeCalls = new Set();
   // failures of calls whose reply the disposal took: the report is the only
   // reader they have left
@@ -376,9 +377,19 @@ export function createConverterHost({
       throw new ConvertError("converter is not ready", "not-ready");
     }
     if (request.type === "convert" || request.type === "open") {
-      const completion = Promise.resolve(runConvertOrOpen(request)).finally(() => {
-        activeCalls.delete(completion);
-      });
+      // Register the accepted work BEFORE any plugin code can run. The
+      // deferred continuation starts runConvertOrOpen one microtask later,
+      // after this registration: a detector, converter or opener invoked by
+      // that work always sees a host that has committed to awaiting its
+      // completion. Invoking runConvertOrOpen inline here would run plugin
+      // code first and leave the tracking below a beat behind. Disposal
+      // snapshots activeCalls when it starts, so an accepted call is never
+      // absent from a disposal that shares this synchronous stretch.
+      const completion = Promise.resolve()
+        .then(() => runConvertOrOpen(request))
+        .finally(() => {
+          activeCalls.delete(completion);
+        });
       activeCalls.add(completion);
       return await completion;
     }
@@ -635,7 +646,7 @@ export function createConverterHost({
 
   ///|
   // Releasing every lease and calling every plugin's disposer exactly once,
-  // across races and repeated calls. Convert/open calls that began before
+  // across races and repeated calls. Convert/open calls accepted before
   // the disposal are awaited BEFORE any teardown — with no cancellation and
   // no timeout: an unresolved plugin promise delays the graceful dispose,
   // and a consumer that cannot wait terminates the worker abruptly. Their
@@ -650,7 +661,7 @@ export function createConverterHost({
     if (disposalPromise === null) {
       disposalPromise = (async () => {
         disposed = true;
-        // wait until every convert/open call that began before the disposal
+        // wait until every convert/open call accepted before the disposal
         // has fully settled (result posted or dropped, claimed handles
         // released), so the report is complete when it is assembled
         while (activeCalls.size > 0) {
