@@ -12,4 +12,4 @@ jobs:
         working-directory: ../..
     steps:
       - name: verify synthetic fidelity contract, capture unit tests and failure modes
-        run: node --test compat/xdw/verify.test.mjs compat/xdw/capture.test.mjs
+        run: node --test compat/xdw/verify.test.mjs compat/xdw/capture.test.mjs compat/xdw/measure.test.mjs
