@@ -90,10 +90,16 @@ case, option, warning and label inline.
   indexes (12.0 MiB); manifests 170.8 MiB -> the remaining inline JSON.
 - All-case equivalence vs `e02e4e02`:
   `node compat/xlsx/tools/fixture-equivalence.mjs --base e02e4e02` -
-  803/803 files identical, 0 failures. This compares the loaded value of
-  every fixture (inputs, expected BDFs, options, warnings, case order) with
-  the `JSON.parse` of the git blob at the base commit, string-identical
-  including the restored base64 text.
+  803/803 files identical, 0 failures, **316,365 cases compared**
+  (the full baseline case count, no case added, dropped or duplicated).
+  This compares the loaded value of every fixture (inputs, expected BDFs,
+  options, warnings, case order) with the `JSON.parse` of the git blob at
+  the base commit, string-identical including the restored base64 text.
+- Export round trip: `pack-fixtures.mjs --unpack --files conditional-top.json`
+  reproduces the base commit's plain fixture byte-for-byte (`cmp` clean),
+  and a partial `--files` pack then a canonical full pack rebuild the
+  committed store deterministically (the tree returns clean with no store
+  or manifest diff).
 - Packing invariants: `node compat/xlsx/tools/pack-fixtures.mjs --check` -
   803 checked, 0 failures (no packed fixture without blobs, no plain fixture
   with large inline base64, no manifest/blob-count mismatch, no unreferenced
@@ -114,11 +120,13 @@ Same machine, `/usr/bin/time -v`; the baseline was recorded under unrelated
 machine load and the after-migration runs back to back on a mostly idle
 machine, so treat the deltas as indicative, not isolated benchmarks:
 
-| run | before | after |
+| run | before | after (final, post-review fixes) |
 | --- | --- | --- |
-| `npm run test:xlsx-compat` (store test + emission + shard tests + all verifiers) | 3:14.90, max RSS 1.52 GiB | 3:56.41, max RSS 1.98 GiB - pass |
-| `node compat/xlsx/verify-render.mjs` (144,297 cases, 8 shards) | 3:03.61, max RSS 1.52 GiB | 3:52.20, max RSS 1.86 GiB - pass |
-| `node compat/xlsx/shard-pbt-test.mjs` (shard oracle) | not recorded | 0:08.45 - 16 checks pass |
+| `npm run test:xlsx-compat` (store test + emission + shard tests + all verifiers) | 3:14.90, max RSS 1.52 GiB | 3:21.05, max RSS 1.98 GiB - pass |
+| `node compat/xlsx/verify-render.mjs` (144,297 cases, 8 shards) | 3:03.61, max RSS 1.52 GiB | 3:02.27, max RSS 1.78 GiB - pass |
+| `node compat/xlsx/shard-pbt-test.mjs` (shard oracle) | not recorded | 0:08.43 - 16 checks pass |
+| `npm run test:xlsx-visual` (barrier + screenshot compare) | not recorded | 0:24.20 - pass, 0.00% diff |
+| `npm run verify:local:ci` (actrun ci/test + ci/demo) | not recorded | 3:43 - pass; moon tests js 3208 / wasm-gc 3140 / native 3140, 0 failed |
 
 The increase (+25% wall, +22-30% peak RSS) is the accepted cost of the
 storage layer: every shard child gunzips the pack groups it touches, hashes
