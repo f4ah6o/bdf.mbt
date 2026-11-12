@@ -53,3 +53,21 @@ after resizing to the common size). The remaining page-bbox off-by-one
 2) are NOT addressed here: font embedding is an uncontrolled configuration
 difference between the upstream CLI and the no-font MoonBit worker, and
 edge route paths are a separate slice.
+
+## Open-arrow regression
+
+`moon test convert/drawio --target js` (also wasm-gc/native) exercises open
+marker geometry, reversed/start arrows, vertical paths, strokeWidth2 and zero
+length. After `npm ci` and `moon build --target js native_converter_worker`,
+run `node compat/drawio/open-arrow-test.mjs` for the real AWS XML-to-BDF path:
+the independent upstream decoder checks Current e2's shortened line, three-point
+V and marker pen width2. Formula provenance is upstream
+`converter/drawio/shapes_core.go` `createOpenArrow(2)` at the commit above.
+
+A separate official draw.io v32.7.1 browser capture at zoom100%/DPR1 confirmed
+Current e2's source-unit open tip318.882 and shortened line endpoint317.764
+for endSize10/strokeWidth1. The AWS fixture contains4 Current open arrows and11
+Legacy block arrows. This change fixes open-marker geometry only: orthogonal
+waypoints, rounded joins, block/classic markers and complete15-edge visual
+parity remain separate work. The original routing points still drive labels;
+only the rendered line's endpoint copy is shortened.

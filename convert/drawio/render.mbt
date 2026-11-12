@@ -475,6 +475,7 @@ fn drawio_edge_marker(
   style : String,
   key : String,
   color : UInt32,
+  stroke_width : Double,
 ) -> Unit {
   let kind = drawio_style(style, key, "none")
   if kind == "none" || kind == "" {
@@ -501,10 +502,10 @@ fn drawio_edge_marker(
   let filled = drawio_style(style, fill_key, "1") != "0"
   let path = @cad.CadPath::new()
   if kind == "open" {
-    path.move_to(tip.0 + px, tip.1 + py)
-    path.line_to(tip.0, tip.1)
-    path.line_to(tip.0 - px, tip.1 - py)
-    drawing.stroke(path, @cad.Pen::new(color=color, width=1.0))
+    drawing.stroke(
+      drawio_open_arrow_path(tip, toward, size, stroke_width),
+      @cad.Pen::new(color=color, width=stroke_width),
+    )
   } else if kind == "oval" {
     path.circle(@cad.Point::new(tip.0 + ux * size * 0.5, tip.1 + uy * size * 0.5), size * 0.5)
     if filled {
@@ -540,14 +541,72 @@ fn drawio_edge_marker(
 }
 
 ///|
+/// The open-arrow V draw.io strokes (upstream converter/drawio
+/// createOpenArrow): the notch sits one half-gap (stroke_width * 1.118)
+/// inside the tip, the wings run size + stroke_width back along the edge
+/// and spread half of that length to each side. A zero-length segment
+/// yields an empty path, so the marker is skipped.
+fn drawio_open_arrow_path(
+  tip : (Double, Double),
+  toward : (Double, Double),
+  size : Double,
+  stroke_width : Double,
+) -> @cad.CadPath {
+  let path = @cad.CadPath::new()
+  let dx = toward.0 - tip.0
+  let dy = toward.1 - tip.1
+  let length = (dx * dx + dy * dy).sqrt()
+  if length <= 0.0 {
+    return path
+  }
+  let ux = dx / length
+  let uy = dy / length
+  let nx = tip.0 + ux * stroke_width * 1.118
+  let ny = tip.1 + uy * stroke_width * 1.118
+  let vx = ux * (size + stroke_width)
+  let vy = uy * (size + stroke_width)
+  path.move_to(nx + vx + vy * 0.5, ny + vy - vx * 0.5)
+  path.line_to(nx, ny)
+  path.line_to(nx + vx - vy * 0.5, ny + vy + vx * 0.5)
+  path
+}
+
+///|
+/// The endpoint of the drawn edge line when an open arrow marks it:
+/// draw.io pulls the tip back by twice the marker half-gap
+/// (stroke_width * 1.118), so the line stops short of the notch while
+/// labels and the marker itself keep the original tip. Any other marker
+/// (or a zero-length segment) keeps the tip.
+fn drawio_edge_open_end(
+  tip : (Double, Double),
+  toward : (Double, Double),
+  style : String,
+  key : String,
+  stroke_width : Double,
+) -> (Double, Double) {
+  if drawio_style(style, key, "none") != "open" {
+    return tip
+  }
+  let dx = toward.0 - tip.0
+  let dy = toward.1 - tip.1
+  let length = (dx * dx + dy * dy).sqrt()
+  if length <= 0.0 {
+    return tip
+  }
+  let gap = stroke_width * 1.118 * 2.0
+  (tip.0 + dx / length * gap, tip.1 + dy / length * gap)
+}
+
+///|
 fn drawio_arrow(
   drawing : @cad.Drawing,
   from : (Double, Double),
   to : (Double, Double),
   style : String,
   color : UInt32,
+  stroke_width : Double,
 ) -> Unit {
-  drawio_edge_marker(drawing, to, from, style, "endArrow", color)
+  drawio_edge_marker(drawing, to, from, style, "endArrow", color, stroke_width)
 }
 
 ///|
@@ -557,8 +616,9 @@ fn drawio_start_arrow(
   toward : (Double, Double),
   style : String,
   color : UInt32,
+  stroke_width : Double,
 ) -> Unit {
-  drawio_edge_marker(drawing, from, toward, style, "startArrow", color)
+  drawio_edge_marker(drawing, from, toward, style, "startArrow", color, stroke_width)
 }
 
 ///|
@@ -788,7 +848,6 @@ fn drawio_render_item(
         return
       }
       let curved = drawio_style(cell.style, "curved", "0") == "1"
-      let path = drawio_edge_path(points, curved)
       let stroke = drawio_color(drawio_style(cell.style, "strokeColor", ""), 0x000000ffU)
       let width = drawio_num_from_style(cell.style, "strokeWidth", 1.0)
       let dash = if drawio_style(cell.style, "dashed", "") == "1" {
@@ -798,7 +857,24 @@ fn drawio_render_item(
       }
       let block_arrow = drawio_edge_is_block_arrow(cell.style)
       if !block_arrow {
-        drawing.stroke(path, @cad.Pen::new(
+        // Open markers pull the drawn line back from the tips; the
+        // markers and the label anchors still use the original route.
+        let drawn = points.copy()
+        drawn[drawn.length() - 1] = drawio_edge_open_end(
+          points[points.length() - 1],
+          points[points.length() - 2],
+          cell.style,
+          "endArrow",
+          width,
+        )
+        drawn[0] = drawio_edge_open_end(
+          points[0],
+          points[1],
+          cell.style,
+          "startArrow",
+          width,
+        )
+        drawing.stroke(drawio_edge_path(drawn, curved), @cad.Pen::new(
           color=stroke,
           width=width,
           dash~,
@@ -811,6 +887,7 @@ fn drawio_render_item(
           points[points.length() - 1],
           cell.style,
           stroke,
+          width,
         )
         drawio_start_arrow(
           drawing,
@@ -818,6 +895,7 @@ fn drawio_render_item(
           points[1],
           cell.style,
           stroke,
+          width,
         )
       } else {
         drawio_paint_block_arrow(
