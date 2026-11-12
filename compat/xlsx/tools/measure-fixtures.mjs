@@ -6,6 +6,7 @@ import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { gzipSync, brotliCompressSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
+import { FIXTURE_ENVELOPE } from '../fixtures.mjs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -131,6 +132,13 @@ const processFile = (absPath, relativeName, group, globalBlobs) => {
   };
   const raw = readFileSync(absPath);
   fileStats.onDiskBytes = statSync(absPath).size;
+  // This tool measures plain generator output. A packed manifest is a BXF1
+  // envelope, so measuring it would report stored bytes as if they were the
+  // baseline; fail with the export instruction instead.
+  if (raw.subarray(0, FIXTURE_ENVELOPE.length).toString('latin1') === FIXTURE_ENVELOPE) {
+    fileStats.error = 'packed manifest; run pack-fixtures.mjs --unpack on an export first';
+    return fileStats;
+  }
   // Alternative (b): every file gzipped whole, as-is.
   fileStats.gzippedBytes = gzipSync(raw).length;
   try {
