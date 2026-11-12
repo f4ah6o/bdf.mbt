@@ -916,6 +916,7 @@ priv struct DrawioLabelMeasure {
   width : Double
   height : Double
   box : DrawioLabelBox
+  spacing : DrawioLabelSpacing
 }
 
 ///|
@@ -942,8 +943,12 @@ fn drawio_measure_label(
   let font_style = drawio_num_from_style(style, "fontStyle", 0.0).to_int()
   let bold = (font_style & 1) != 0
   let italic = (font_style & 2) != 0
-  let spacing = drawio_num_from_style(style, "spacing", 2.0)
-  let max_width = if box.w > 0.0 && box.w < 1.0e8 { box.w - spacing * 2.0 } else { 1.0e9 }
+  let spacing = drawio_label_spacing(style)
+  let max_width = if box.w > 0.0 && box.w < 1.0e8 {
+    box.w - spacing.left - spacing.right
+  } else {
+    1.0e9
+  }
   let wrap = drawio_label_wraps(style) && max_width > 1.0
   let mut width = 0.0
   let mut height = 0.0
@@ -998,7 +1003,7 @@ fn drawio_measure_label(
     }
     height = em * 1.2 * lines.length().to_double()
   }
-  Some({ width, height, box, })
+  Some({ width, height, box, spacing, })
 }
 
 ///|
@@ -1010,31 +1015,51 @@ fn drawio_label_extent(
   h : Double,
 ) -> (Double, Double, Double, Double) {
   let box = measure.box
+  // The drawn text rectangle: the same origin the drawing uses, so the
+  // extent covers a label that its directional spacing pushes out.
+  let text_left = drawio_label_origin_x(box, measure.width, measure.spacing)
+  let text_top = drawio_label_block_top(box, measure.height, measure.spacing)
   if box.rotation != 0.0 {
-    let half_w = Double::max(
-      measure.width,
-      if box.w > 0.0 && box.w < 1.0e8 { box.w } else { measure.width },
-    ) / 2.0
-    let half_h = Double::max(
-      measure.height,
-      if box.h > 0.0 && box.h < 1.0e8 { box.h } else { measure.height },
-    ) / 2.0
+    // The label turns about its anchor: rotate the four corners of the
+    // spaced text rectangle (draw.io rotateLabelBounds) around it and
+    // cover them together with the shape.
     let radians = box.rotation * 3.141592653589793 / 180.0
     let cosine = @math.cos(radians)
     let sine = @math.sin(radians)
-    let extent_x = half_w * cosine.abs() + half_h * sine.abs()
-    let extent_y = half_w * sine.abs() + half_h * cosine.abs()
-    (
-      box.anchor_x - extent_x,
-      box.anchor_y - extent_y,
-      box.anchor_x + extent_x,
-      box.anchor_y + extent_y,
-    )
+    let turn = fn(px : Double, py : Double) -> (Double, Double) {
+      let dx = px - box.anchor_x
+      let dy = py - box.anchor_y
+      (box.anchor_x + dx * cosine - dy * sine, box.anchor_y + dx * sine + dy * cosine)
+    }
+    let corners = [
+      turn(text_left, text_top),
+      turn(text_left + measure.width, text_top),
+      turn(text_left + measure.width, text_top + measure.height),
+      turn(text_left, text_top + measure.height),
+    ]
+    let mut min_x = x
+    let mut max_x = x + w
+    let mut min_y = y
+    let mut max_y = y + h
+    for corner in corners {
+      min_x = Double::min(min_x, corner.0)
+      max_x = Double::max(max_x, corner.0)
+      min_y = Double::min(min_y, corner.1)
+      max_y = Double::max(max_y, corner.1)
+    }
+    (min_x, min_y, max_x, max_y)
   } else {
     let mut min_x = x
     let mut max_x = x + w
     let mut min_y = y
     let mut max_y = y + h
+    // The text block occupies the same rectangle the drawing does, which
+    // can extend past the shape and the label box (an external label
+    // pushed out by spacingLeft).
+    min_x = Double::min(min_x, text_left)
+    max_x = Double::max(max_x, text_left + measure.width)
+    min_y = Double::min(min_y, text_top)
+    max_y = Double::max(max_y, text_top + measure.height)
     if box.w >= 1.0e8 {
       // A label outside the shape: it grows away from the shape.
       if box.align == "right" {

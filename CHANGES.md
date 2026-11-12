@@ -93,6 +93,9 @@
 
 ### Fixed
 
+- draw.io labels now honor directional spacing, including AWS group-label icon clearance,
+  block-spacing suppression, rotated content bounds, and exhausted-width wrapping.
+
 - DOCX character-unit indents now shape layout: a `w:ind` attribute of
   `leftChars`/`rightChars`/`firstLineChars`/`hangingChars`
   (hundredths of a character, `startChars`/`endChars` included) replaces

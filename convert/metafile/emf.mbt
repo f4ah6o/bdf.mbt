@@ -564,7 +564,7 @@ fn Gdi::play_emf(
       }
       82 => {
         let face = if record.length() >= 72 {
-          utf16_text(record[40:].to_owned(), 32)
+          utf16_face(record[40:].to_owned(), 32)
         } else {
           "Arial"
         }

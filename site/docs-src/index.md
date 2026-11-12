@@ -13,6 +13,7 @@ BDF はブラウザでのプレビューのために作られた文書フォー�
 - **[描画する](rendering.ja.md)** — 文書と数式を Go の `image.Image`、Ebitengine、ブラウザの Canvas に描く
 - **[Wasm ランタイムをビルドする](build-wasm-runtime.ja.md)** — 形式を選んで TinyGo または Go でビルド
 - **[対応形式](formats/index.ja.md)** — すべての入力形式と、それぞれのレイアウト
+- **[図の形式](formats/diagram.md)** — Visio・draw.io に加え、プラグイン API の Mermaid（静的なフローチャートの一部）と Excalidraw（基本図形・矢印・プレーンテキスト）
 - **[構成のサンプル](examples/index.ja.md)** — BDF をシステムに組み込む 3 つの方法。それぞれ実際に動く小さなサーバーです
 - **[アーキテクチャ](architecture/index.ja.md)** — 変換と描画の仕組み、数式やサムネイル、パスワードと保護モード、フォルダ構成、BDF コマンド、ビルドとテスト
 
