@@ -39,6 +39,8 @@ const SAMPLES = [
   ["shapes.cgm", "CGM"],
   ["synced.mp3", "音声（同期歌詞つき MP3）"],
   ["stix.ttf", "フォント"],
+  ["flowchart.mmd", "Mermaid（フローチャート）"],
+  ["shapes.excalidraw", "Excalidraw（図形）"],
 ];
 
 const file = $("#file");
@@ -52,6 +54,23 @@ const pdfUnlockStatus = $("#pdf-unlock-status");
 const converter = bdf_create_native_converter(
   new URL("./native_converter_worker.js", import.meta.url).href,
 );
+// 図のプラグイン（Mermaid・Excalidraw）だけを、公式プラグイン API の Worker に
+// 渡す。Visio・draw.io などはこれまでどおり native_converter_worker.js が担当する。
+// プラグインの Worker は、その拡張子を最初に開いたときだけ作る。
+const PLUGIN_EXTENSIONS = [".mmd", ".mermaid", ".excalidraw", ".excalidraw.json"];
+let pluginConverter = null;
+function isPluginFormat(name) {
+  const lower = name.toLowerCase();
+  return PLUGIN_EXTENSIONS.some((extension) => lower.endsWith(extension));
+}
+function pluginConverterClient() {
+  if (!pluginConverter) {
+    pluginConverter = bdf_create_native_converter(
+      new URL("./plugin_converter_worker.js", import.meta.url).href,
+    );
+  }
+  return pluginConverter;
+}
 const viewer = bdf_create_viewer($("#preview"), {
   workerUrl: new URL("./render_worker.js", import.meta.url).href,
   layout: "single",
@@ -229,17 +248,20 @@ async function openBytes(name, input, retry = false, useFonts = true) {
     let summary = "";
     let warnings = [];
     if (!name.toLowerCase().endsWith(".bdf")) {
-      await converter.ready;
+      const plugin = isPluginFormat(name);
+      const activeConverter = plugin ? pluginConverterClient() : converter;
+      await activeConverter.ready;
       const options = { name };
       const password = isPdf && pdfPassword ? pdfPassword.value : "";
       if (password) options.params = { password };
       // 選択した書体だけを渡す。options.fonts（URL）とは併用しない。
-      const fontFiles = useFonts && sendsSelectedFonts(name) ? localFonts.getFontFiles() : null;
+      // 図のプラグインは params を受け付けないので、書体も渡さない。
+      const fontFiles = !plugin && useFonts && sendsSelectedFonts(name) ? localFonts.getFontFiles() : null;
       if (fontFiles) {
         options.fontFiles = fontFiles;
         usedFonts = fontFiles;
       }
-      const result = await converter.convert(input, options);
+      const result = await activeConverter.convert(input, options);
       bytes = result.bdf;
       summary = result.summary ?? "";
       warnings = result.warnings ?? [];
@@ -462,5 +484,6 @@ window.addEventListener("pagehide", (event) => {
   localFonts.clear({ announce: false });
   viewer.destroy();
   converter.terminate();
+  pluginConverter?.terminate();
   if (downloadUrl) URL.revokeObjectURL(downloadUrl);
 });

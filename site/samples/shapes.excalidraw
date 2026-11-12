@@ -1,0 +1,106 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "https://f4ah6o.github.io/bdf.mbt/",
+  "elements": [
+    {
+      "id": "box-1",
+      "type": "rectangle",
+      "x": 40,
+      "y": 40,
+      "width": 180,
+      "height": 80,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "#e0f2fe",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "ellipse-1",
+      "type": "ellipse",
+      "x": 280,
+      "y": 40,
+      "width": 120,
+      "height": 80,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "#fef9c3",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "arrow-1",
+      "type": "arrow",
+      "x": 220,
+      "y": 80,
+      "width": 60,
+      "height": 0,
+      "points": [
+        [0, 0],
+        [60, 0]
+      ],
+      "strokeColor": "#1e1e1e",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "endArrowhead": "arrow"
+    },
+    {
+      "id": "diamond-1",
+      "type": "diamond",
+      "x": 40,
+      "y": 180,
+      "width": 120,
+      "height": 80,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "#dcfce7",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "line-1",
+      "type": "line",
+      "x": 200,
+      "y": 220,
+      "width": 120,
+      "height": 0,
+      "points": [
+        [0, 0],
+        [120, 0]
+      ],
+      "strokeColor": "#1e1e1e",
+      "strokeWidth": 2,
+      "strokeStyle": "dashed",
+      "roughness": 0,
+      "opacity": 100
+    },
+    {
+      "id": "text-1",
+      "type": "text",
+      "x": 40,
+      "y": 300,
+      "width": 320,
+      "height": 25,
+      "text": "Basic shapes, arrows and plain text",
+      "fontSize": 20,
+      "fontFamily": 2,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "strokeColor": "#1e1e1e",
+      "opacity": 100
+    }
+  ],
+  "appState": {
+    "viewBackgroundColor": "#ffffff"
+  },
+  "files": {}
+}

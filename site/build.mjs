@@ -45,6 +45,9 @@ for (const [from, to] of bundles) {
   await cp(source, join(out, to));
 }
 
+/** プラグインの変換 Worker（Mermaid・Excalidraw）が読む、公式プラグイン API の実装。 */
+await copyTree(join(root, "plugin/src"), join(out, "plugin"));
+
 /** フォントやサンプル、プレビュー画像。 */
 await copyTree(join(site, "assets"), out);
 await copyTree(join(site, "samples"), join(out, "samples"));
