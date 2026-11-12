@@ -4,6 +4,17 @@
 
 ### Added
 
+- A public PDF export API `bdf.mbt/pdf` (`exportPdf`) that writes BDF bytes
+  as PDF bytes with the page count, the count of embedded fonts and the
+  writer's warnings, in the browser and in Node: an explicit caller-provided
+  fallback font with subset embedding for form text and Japanese, view
+  selection, rejection of wrong types, broken BDF, unknown views and
+  page-less selections, and never an empty PDF as a success. The writer now
+  also warns about the characters the PDF standard font writes as `?` when
+  no usable fallback font is supplied, instead of hiding the replacement.
+  See the usage examples, the limits table and the warning contract in
+  [plugin/library/README.md](plugin/library/README.md).
+
 - Reproducible measurement, packing, packing-integrity and all-case
   equivalence tooling for the XLSX compat fixture store
   (`compat/xlsx/tools/`), with the 2026-11-12 baseline, storage-alternative
