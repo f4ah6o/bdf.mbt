@@ -438,6 +438,34 @@ fn docx_layout_paragraph(
           }
         }
       }
+      "figure" => {
+        // A drawing whose visual content was skipped at extraction: it holds
+        // only the alternative text of docPr/@descr, which is written as a
+        // FIGURE mark where the drawing would have stood.
+        if item.anchored {
+          anchors.push({
+            item,
+            x: item.x,
+            y: item.y,
+            width: 0.0,
+            height: 0.0,
+            draw_width: 0.0,
+            draw_height: 0.0,
+            anchored: true,
+          })
+        } else {
+          current_images.push({
+            item,
+            x: line_x,
+            y: 0.0,
+            width: 0.0,
+            height: 0.0,
+            draw_width: 0.0,
+            draw_height: 0.0,
+            anchored: false,
+          })
+        }
+      }
       "footnote" | "endnote" => {
         let size = 7.5
         let advance = docx_text_width(item.text, size)
@@ -874,6 +902,15 @@ fn docx_emit_placed_image(
   warnings : Array[String],
 ) -> Unit raise {
   let item = image.item
+  if item.kind == "figure" {
+    // The visual content of this drawing was skipped; only its alternative
+    // text is drawn, as the FIGURE mark upstream opens for a drawing with a
+    // description. No image parts are read, so a missing relationship still
+    // fails only for the drawings that carry an embedded image.
+    object.mark(@core.MARK_FIGURE, item.text)
+    object.mark(@core.MARK_END, "")
+    return
+  }
   let dx = if image.anchored { image.x } else { x_origin + image.x }
   let dy = if image.anchored { image.y } else { y_origin + image.y }
   let draw_width = if image.draw_width > 0.0 {
@@ -3013,7 +3050,9 @@ fn docx_flow_place_anchors(
               flow.warnings,
             )
           } else {
-            docx_flow_add_excl(flow, anchor, placed)
+            if placed.item.kind != "figure" {
+              docx_flow_add_excl(flow, anchor, placed)
+            }
             if anchor.behind {
               behind.push({ image: placed, z: anchor.z })
             } else {
@@ -4338,6 +4377,14 @@ fn docx_render_document(
   }
   let bdf = writer.write_single()
   let kept = pages.length()
+  // The extraction notes of the document — degraded drawings among them —
+  // are public whatever views were rendered; the view warnings above only
+  // exist for the views that drew them.
+  for note in document.warnings {
+    if !warnings.contains(note) {
+      warnings.push(note)
+    }
+  }
   {
     bdf,
     pages: if views == "scroll" {
