@@ -13,6 +13,10 @@ const identity = JSON.parse(await readFile(path.join(build, 'identity.json'), 'u
 const fixtureDir = fileURLToPath(new URL('../', import.meta.url));
 const sha = data => createHash('sha256').update(data).digest('hex');
 if (identity.version !== 1 || identity.upstream !== 'a5e4d7a6b202cfe73de44b0be51f6fb86cd8ee22' || identity.go !== 'go1.27.0') throw new Error('Unexpected oracle identity');
+if (identity.goFlags !== '' || identity.goExperiment !== '' || identity.goWork !== 'off' || identity.goEnv !== 'off') throw new Error('Unpinned build environment; rebuild oracle');
+if (!['linux', 'darwin'].includes(identity.goos) || !['amd64', 'arm64'].includes(identity.goarch)) throw new Error('Unsupported oracle platform');
+if (identity.goarch === 'arm64' && identity.goarm64 !== 'v8.0') throw new Error('Unpinned ARM64 profile');
+if (identity.goarch === 'amd64' && !['v1', 'v3'].includes(identity.goamd64)) throw new Error('Unpinned AMD64 profile');
 const binary = path.join(build, 'xlsx-oracle.test');
 if (sha(await readFile(binary)) !== identity.binarySha256) throw new Error('Oracle binary integrity failure');
 const seeds = new Set(['formula-previously-unsupported-inputs.json']);

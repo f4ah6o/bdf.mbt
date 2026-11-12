@@ -49,7 +49,7 @@ try:
         for source, text, _ in adapters:
             (source_root / 'converter/xlsx' / source.name).write_text(text.replace('//go:build ignore\n', '', 1))
         env = dict(os.environ, GOTOOLCHAIN='local', GOOS=a.goos, GOARCH=a.goarch,
-                   GOAMD64=a.goamd64, CGO_ENABLED='0', GOMAXPROCS='2',
+                   GOAMD64=a.goamd64, GOARM64='v8.0', CGO_ENABLED='0', GOMAXPROCS='2',
                    GOFLAGS='', GOEXPERIMENT='', GOWORK='off', GOENV='off')
         subprocess.run([a.go, 'test', '-mod=readonly', '-p=2', '-trimpath', '-c',
                         './converter/xlsx', '-o', str(out / 'xlsx-oracle.test')],
@@ -60,6 +60,7 @@ try:
             shutil.copytree(source_root / f'converter/{part}/testdata', out / f'runtime/{part}/testdata')
     sha = lambda data: hashlib.sha256(data).hexdigest()
     record = {'version': 1, 'upstream': UPSTREAM, 'go': GO_VERSION,
+              'goarm64': 'v8.0' if a.goarch == 'arm64' else None,
               'goFlags': '', 'goExperiment': '', 'goWork': 'off', 'goEnv': 'off',
               'goos': a.goos, 'goarch': a.goarch, 'goamd64': a.goamd64 if a.goarch == 'amd64' else None,
               'binarySha256': sha((out / 'xlsx-oracle.test').read_bytes()),
