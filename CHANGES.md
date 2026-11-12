@@ -107,6 +107,10 @@
 
 ### Fixed
 
+- draw.io block/classic markers now use upstream default sizing, inset tips,
+  classic notches, configured stroke width and fill/stroke behavior, and shorten
+  the rendered line without changing route or label anchors.
+
 - draw.io open-arrow markers now draw a V with the configured stroke width and
   shorten the connecting line to match upstream; other marker types and routing
   are unchanged.
