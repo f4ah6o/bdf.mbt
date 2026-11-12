@@ -86,3 +86,10 @@ A release identity cannot be combined with staging-name/version overrides.
 Verify the actual registry state and current immutable tags before choosing a
 bootstrap version. For regular releases the workflow's CalVer action allocates
 it. Do not type the example version into a real release without checking.
+
+## Initial staged bootstrap reservation
+
+`2026.11.0` is reserved by npm staged publishing. The version selector maps
+only that CalVer allocation to `2026.11.1`; all later allocations are unchanged.
+There is no Git release tag for the staged bootstrap. The normal immutable tag
+is created only after the actual OIDC publication succeeds.

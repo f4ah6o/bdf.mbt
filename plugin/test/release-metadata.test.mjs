@@ -40,3 +40,13 @@ test('release workflow is manual and tokenless, never part of local gates', () =
   assert.doesNotMatch(text, /secrets\.|npm run test|moon test/);
   assert.equal((text.match(/if: inputs.publish/g) || []).length, 2);
 });
+
+import { selectReleaseVersion } from '../tools/release-version.mjs';
+test('only the reserved bootstrap CalVer is skipped', () => {
+  assert.equal(selectReleaseVersion('2026.11.0'), '2026.11.1');
+  for (let year = 2025; year <= 2030; year++) for (let month = 1; month <= 12; month++) for (let patch = 0; patch < 20; patch++) {
+    const value = `${year}.${month}.${patch}`;
+    assert.equal(selectReleaseVersion(value), value === '2026.11.0' ? '2026.11.1' : value);
+  }
+  for (const value of ['', 'v2026.11.0', '2026.11.0\ntag=bad', '2026.011.0', '2026.13.0']) assert.throws(() => selectReleaseVersion(value));
+});

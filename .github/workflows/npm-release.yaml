@@ -55,6 +55,11 @@ jobs:
           format: YYYY.MM.PATCH
           timezone: Asia/Tokyo
           create_tag: false
+      - name: Exclude reserved bootstrap version
+        id: release_version
+        env:
+          ALLOCATED_VERSION: ${{ steps.calver.outputs.version }}
+        run: node plugin/tools/release-version.mjs "$ALLOCATED_VERSION"
       - name: Setup MoonBit
         uses: hustcer/setup-moonbit@v1
       - name: Resolve MoonBit dependencies
@@ -65,7 +70,7 @@ jobs:
           plugin/moonbit/docuworks_js --target js --release
       - name: Pack release artifact
         env:
-          VERSION: ${{ steps.calver.outputs.version }}
+          VERSION: ${{ steps.release_version.outputs.version }}
           SOURCE_SHA: ${{ inputs.source_sha }}
         run: |
           node plugin/tools/library-pack.mjs --release-version "$VERSION" --source-sha "$SOURCE_SHA"
@@ -73,13 +78,13 @@ jobs:
       - name: Retain exact artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bdf.mbt-${{ steps.calver.outputs.version }}
+          name: bdf.mbt-${{ steps.release_version.outputs.version }}
           path: _scratch/library-pack/*.tgz
           if-no-files-found: error
       - name: Publish with npm Trusted Publishing
         if: inputs.publish
         env:
-          VERSION: ${{ steps.calver.outputs.version }}
+          VERSION: ${{ steps.release_version.outputs.version }}
         run: |
           set -euo pipefail
           # No token fallback. npm obtains a short-lived OIDC credential.
@@ -90,7 +95,7 @@ jobs:
       - name: Record immutable released source tag
         if: inputs.publish
         env:
-          TAG: ${{ steps.calver.outputs.tag }}
+          TAG: ${{ steps.release_version.outputs.tag }}
           SOURCE_SHA: ${{ inputs.source_sha }}
         run: |
           set -euo pipefail
