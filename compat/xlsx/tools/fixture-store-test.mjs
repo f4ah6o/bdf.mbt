@@ -16,10 +16,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import {
+  FIXTURE_ENVELOPE,
   FIXTURE_FORMAT,
   FIXTURE_VERSION,
   BLOB_MARKER,
   buildPack,
+  decodeFixtureBytes,
+  encodeFixtureText,
   loadFixture,
   mergePackGroup,
   packFixture,
@@ -195,6 +198,56 @@ async function withTempStore(root, { pack = 'gzip' } = {}) {
   assert.deepEqual(await resolveFixture(plain, 'plain.mjs'), plain);
   const loaded = await loadFixture('./render/index.json');
   assert.ok(loaded.files.length > 0, 'plain fixture files load through the loader');
+  checked += 2;
+}
+
+// Packed manifests are a BXF1 envelope around brotli JSON. The envelope must
+// round-trip, leave plain fixtures alone, and fail loudly when damaged, so a
+// truncated or edited manifest cannot masquerade as a JSON syntax error.
+{
+  const text = JSON.stringify({ format: FIXTURE_FORMAT, version: FIXTURE_VERSION, blobs: 0, root: [{ mode: 'none' }] });
+  const encoded = encodeFixtureText(text);
+  assert.equal(encoded.subarray(0, FIXTURE_ENVELOPE.length).toString('latin1'), FIXTURE_ENVELOPE);
+  assert.equal(decodeFixtureBytes(encoded, 'envelope.mjs'), text);
+  assert.equal(decodeFixtureBytes(Buffer.from(text), 'plain.mjs'), text);
+  assert.throws(
+    () => decodeFixtureBytes(Buffer.concat([Buffer.from(FIXTURE_ENVELOPE), Buffer.from('not brotli')]), 'bad.mjs'),
+    /corrupt fixture envelope \(invalid brotli stream\)/,
+  );
+  checked += 4;
+}
+
+// A compressed manifest still resolves its markers through the store: the
+// envelope is a container, not a second storage layer.
+{
+  const root = [{ input: Buffer.from('envelope-blob'.repeat(256)).toString('base64') }];
+  const { storeDir, envelope } = await withTempStore(root);
+  const decoded = JSON.parse(decodeFixtureBytes(encodeFixtureText(JSON.stringify(envelope)), 'roundtrip.mjs'));
+  const restored = await resolveFixture(decoded, 'roundtrip.mjs', { storeDir, cache: new Map() });
+  assert.deepEqual(restored, root);
+  checked++;
+}
+
+// A custom store reader (the equivalence tool's git-backed base store) must
+// resolve blobs and fail when it cannot supply a pack, so a packed base can
+// never silently degrade to comparing markers.
+{
+  const root = [{ input: Buffer.from('custom-reader'.repeat(256)).toString('base64') }];
+  const { storeDir, envelope, prefixes } = await withTempStore(root);
+  const files = new Map();
+  for (const prefix of prefixes) {
+    files.set(`./${prefix}.pk`, await readFile(new URL(`./${prefix}.pk`, storeDir)));
+    files.set(`./${prefix}.idx`, await readFile(new URL(`./${prefix}.idx`, storeDir)));
+  }
+  const restored = await resolveFixture(envelope, 'custom.mjs', {
+    readStore: async name => files.get(name) ?? null,
+    cache: new Map(),
+  });
+  assert.deepEqual(restored, root);
+  await rejectsMatch(
+    resolveFixture(envelope, 'custom-missing.mjs', { readStore: async () => null, cache: new Map() }),
+    /is missing from store/,
+  );
   checked += 2;
 }
 

@@ -38,6 +38,8 @@ import {
   FIXTURE_FORMAT,
   FIXTURE_VERSION,
   buildPack,
+  decodeFixtureBytes,
+  encodeFixtureText,
   isCanonicalBase64,
   loadFixture,
   mergePackGroup,
@@ -84,6 +86,7 @@ const options = parseArgs({
     'dry-run': { type: 'boolean', default: false },
     check: { type: 'boolean', default: false },
     unpack: { type: 'boolean', default: false },
+    print: { type: 'boolean', default: false },
     files: { type: 'string' },
   },
 }).values;
@@ -100,8 +103,8 @@ let failures = 0;
 
 for (const name of files) {
   const target = new URL(name, root);
-  const before = await readFile(target, 'utf8');
-  const parsed = JSON.parse(before);
+  const before = await readFile(target);
+  const parsed = JSON.parse(decodeFixtureBytes(before, name));
   try {
     // A packed fixture is loaded back to its original value so re-packing is
     // idempotent and threshold rule changes can move blobs in or out. In
@@ -194,12 +197,27 @@ if (options.unpack) {
   let unpacked = 0;
   for (const [name, value] of originalValues) {
     const plain = JSON.stringify(value);
-    if (!options['dry-run'] && plain !== manifests.get(name).source) {
+    if (!options['dry-run'] && !Buffer.from(plain).equals(manifests.get(name).source)) {
       await writeFile(new URL(name, root), plain);
       unpacked++;
     }
   }
   console.log(`unpacked ${unpacked} fixture file(s) to plain form (${originalValues.size} in scope)`);
+  process.exit();
+}
+
+// --print writes one fixture's decoded JSON to stdout, so a packed manifest
+// stays inspectable without unpacking the tree or remembering the envelope.
+if (options.print) {
+  for (const name of files) {
+    const value = originalValues.get(name);
+    if (value === undefined) {
+      console.error(`${name}: not a fixture file`);
+      process.exitCode = 1;
+      continue;
+    }
+    process.stdout.write(`${JSON.stringify(value)}\n`);
+  }
   process.exit();
 }
 
@@ -250,7 +268,7 @@ for (const [name, { source, parsed, packed, blobs: fileBlobs }] of manifests) {
       // No large strings left; a manifest with no markers would only hide
       // plain data behind the loader.
       const plain = JSON.stringify(originalValues.get(name));
-      if (!options['dry-run'] && plain !== source) await writeFile(new URL(name, root), plain);
+      if (!options['dry-run'] && !Buffer.from(plain).equals(source)) await writeFile(new URL(name, root), plain);
       console.log(`${name}: no blobs left; restored plain JSON`);
     }
     plainFiles++;
@@ -262,11 +280,12 @@ for (const [name, { source, parsed, packed, blobs: fileBlobs }] of manifests) {
     blobs: fileBlobs.size,
     root: packed,
   });
-  if (manifest !== source && !options['dry-run']) {
-    await writeFile(new URL(name, root), manifest);
+  const encoded = encodeFixtureText(manifest);
+  if (!encoded.equals(source) && !options['dry-run']) {
+    await writeFile(new URL(name, root), encoded);
   }
-  if (manifest !== source || parsed.format !== FIXTURE_FORMAT) packedFiles++;
-  console.log(`${name}: ${fileBlobs.size} blob(s) referenced, manifest ${source.length} -> ${manifest.length} bytes`);
+  if (!encoded.equals(source) || parsed.format !== FIXTURE_FORMAT) packedFiles++;
+  console.log(`${name}: ${fileBlobs.size} blob(s) referenced, manifest ${source.length} -> ${encoded.length} bytes`);
 }
 
 // A canonical full run owns the whole store: prefixes nothing references
