@@ -189,16 +189,23 @@ fn ViewerController::draw(self : ViewerController) -> Unit {
     return
   }
   viewer_dom_background(self.dom, false)
-  viewer_dom_observe(self.dom, (index, canvas) => {
-    viewer_callback_ignore(
+  viewer_dom_observe(
+    self.dom,
+    (index, canvas) => {
+      viewer_callback_ignore(
+        @js_async.Promise::from_async(() => {
+          self.render_page(view, index, canvas, generation)
+        }),
+      )
+      viewer_callback_ignore(
+        @js_async.Promise::from_async(() => self.mark_find_background()),
+      )
+    },
+    (index, canvas) =>
       @js_async.Promise::from_async(() => {
-        self.render_page(view, index, canvas, generation)
+        self.prepare_selection_page(view, index, canvas, generation)
       }),
-    )
-    viewer_callback_ignore(
-      @js_async.Promise::from_async(() => self.mark_find_background()),
-    )
-  })
+  )
   let spread = self.viewer.layout == @viewer.Spread && view.kind != "scroll"
   let gap = if self.viewer.layout == @viewer.Continuous || view.kind == "scroll" {
     0
@@ -258,7 +265,7 @@ async fn ViewerController::render_page(
       let data = text_layer_from_content(content)
       if view.pages.get(index) is Some(page) {
         let zoom = self.viewer.zoom
-        viewer_canvas_mount_text(canvas, data, frame => {
+        viewer_canvas_mount_text(canvas, data, viewer_content_ready(content), frame => {
           render_text_layer(
             frame,
             data,
@@ -276,6 +283,46 @@ async fn ViewerController::render_page(
       viewer_canvas_error(canvas)
       viewer_dom_failure(self.dom, error.to_string())
     }
+  }
+}
+
+///|
+/// Mount only the selectable text layer of a page whose content is not yet
+/// loaded, for copies that span pages outside the rendered region. A stale
+/// generation discards the result.
+async fn ViewerController::prepare_selection_page(
+  self : ViewerController,
+  view : @core.View,
+  index : Int32,
+  canvas : ViewerCanvas,
+  generation : Int32,
+) -> Unit {
+  let content = viewer_remember(
+    self.dom,
+    viewer_renderer_content(self.renderer, view.id, index),
+  ).wait()
+  if generation != self.generation {
+    return
+  }
+  let data = text_layer_from_content(content)
+  if view.pages.get(index) is Some(page) {
+    let zoom = self.viewer.zoom
+    viewer_canvas_mount_text(
+      canvas,
+      data,
+      viewer_content_ready(content),
+      frame => {
+        render_text_layer(
+          frame,
+          data,
+          0.0,
+          0.0,
+          page.width * zoom,
+          page.height * zoom,
+          zoom,
+        )
+      },
+    )
   }
 }
 

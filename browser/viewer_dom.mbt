@@ -128,7 +128,7 @@ fn[X] viewer_remember(
 
 ///|
 extern "js" fn viewer_dom_clear(dom : ViewerDom) -> Unit =
-  #|(dom) => {dom.sheetTextDispose?.();dom.sheetTextDispose=undefined;dom.observer?.disconnect();dom.observer=null;dom.near.clear();cancelAnimationFrame(dom.frame);dom.frame=0;dom.sheetDraw=undefined;dom.schedule=undefined;dom.stage.onscroll=null;dom.stage.replaceChildren()}
+  #|(dom) => {dom.sheetTextDispose?.();dom.sheetTextDispose=undefined;dom.selectionDispose?.();dom.selectionDispose=undefined;dom.observer?.disconnect();dom.observer=null;dom.near.clear();cancelAnimationFrame(dom.frame);dom.frame=0;dom.sheetDraw=undefined;dom.schedule=undefined;dom.stage.onscroll=null;dom.stage.replaceChildren()}
 
 ///|
 extern "js" fn viewer_dom_background(dom : ViewerDom, sheet : Bool) -> Unit =
@@ -160,16 +160,32 @@ extern "js" fn viewer_dom_host(dom : ViewerDom) -> BrowserHost =
 extern "js" fn viewer_canvas_mount_text(
   canvas : ViewerCanvas,
   data : TextLayerData,
+  ready : Bool,
   mount : (BrowserHost) -> Unit,
 ) -> Unit =
-  #|(canvas,data,mount) => {const frame=canvas.parentElement;if(!frame||!canvas.isConnected)return;if(!data.runs.length&&!data.links.length)return;frame.querySelector('.bdfTextLayer')?.remove();mount(frame)}
+  #|(canvas,data,ready,mount) => {const frame=canvas.parentElement;if(!frame||!canvas.isConnected)return;const selection=frame.ownerDocument.getSelection();if(data.runs.length||data.links.length){const old=frame.querySelector('.bdfTextLayer');if(!(old&&selection?.rangeCount&&!selection.isCollapsed&&selection.getRangeAt(0).intersectsNode(old))){delete frame.dataset.bdfContentReady;old?.remove();mount(frame)}}if(ready)frame.dataset.bdfContentReady='true';if(ready&&selection?.rangeCount&&!selection.isCollapsed)frame.ownerDocument.dispatchEvent(new Event('selectionchange'))}
+
+///|
+extern "js" fn viewer_content_ready(content : RenderValue) -> Bool =
+  #|(content) => !!content&&Array.isArray(content.runs)&&Array.isArray(content.nodes)&&Array.isArray(content.links)
 
 ///|
 extern "js" fn viewer_dom_observe(
   dom : ViewerDom,
   visible : (Int32, ViewerCanvas) -> Unit,
+  prepare : (Int32, ViewerCanvas) -> @js_async.Promise[Unit],
 ) -> Unit =
-  #|(dom,visible) => {dom.observer=new IntersectionObserver(entries=>{for(const entry of entries){const frame=entry.target,canvas=frame.querySelector('canvas'),index=Number(frame.dataset.bdfPage);if(entry.isIntersecting){dom.near.add(frame);visible(index,canvas)}else{dom.near.delete(frame);if(canvas.width){canvas.width=canvas.height=0;canvas.dataset.loaded=''}frame.querySelector('[data-bdf-hits]')?.remove();frame.querySelector('.bdfTextLayer')?.remove()}}},{root:dom.stage,rootMargin:'600px'})}
+  #|(dom,visible,prepare) => {
+  #| const retained=new Set(),prepared=new Set(),loading=new Set(),failed=new Set(),doc=dom.stage.ownerDocument;let live=true,lastRange='';
+  #| const selected=layer=>{const s=doc.getSelection();return !!(layer?.isConnected&&s?.rangeCount&&!s.isCollapsed&&s.getRangeAt(0).intersectsNode(layer))};
+  #| const bounds=()=>{const s=doc.getSelection();if(!s||s.isCollapsed)return null;const page=n=>(n?.nodeType===1?n:n?.parentElement)?.closest('div[data-bdf-page]'),a=page(s.anchorNode),b=page(s.focusNode);if(!a||!b||!dom.stage.contains(a)||!dom.stage.contains(b))return null;return [Math.min(+a.dataset.bdfPage,+b.dataset.bdfPage),Math.max(+a.dataset.bdfPage,+b.dataset.bdfPage)]};
+  #| const ensure=()=>{if(!live)return;const range=bounds();if(!range||range[1]-range[0]>4095)return;const currentRange=range.join(',');if(lastRange!==currentRange){failed.clear();lastRange=currentRange}let missing=false;for(let i=range[0];i<=range[1];i++){const frame=dom.stage.querySelector(`div[data-bdf-page="${i}"]`);if(!frame||frame.dataset.bdfContentReady==='true')continue;missing=true;if(loading.size>=4||loading.has(i)||failed.has(i)||frame.querySelector('canvas')?.dataset.loaded==='loading')continue;loading.add(i);Promise.resolve(prepare(i,frame.querySelector('canvas'))).then(()=>{if(!live)return;if(frame.dataset.bdfContentReady!=='true')throw new Error('page text unavailable');if(!dom.near.has(frame))(selected(frame.querySelector('.bdfTextLayer'))?retained:prepared).add(frame)}).catch(()=>{failed.add(i);if(live)dom.host.dispatchEvent(new Event('clipboarderror'))}).finally(()=>{loading.delete(i);if(live)ensure()})}if(!missing)dom.host.dispatchEvent(new Event('clipboardready'))};
+  #| const cleanup=()=>{if(!live)return;for(const set of [retained,prepared])for(const frame of set){if(!frame.isConnected||dom.near.has(frame)){set.delete(frame);continue}if(!selected(frame.querySelector('.bdfTextLayer'))){const layer=frame.querySelector('.bdfTextLayer');layer?.remove();if(layer)delete frame.dataset.bdfContentReady;set.delete(frame)}}ensure()};
+  #| const retry=()=>{if(failed.size){failed.clear();ensure()}};
+  #| doc.addEventListener('selectionchange',cleanup);dom.host.addEventListener('copy',retry);dom.host.addEventListener('cut',retry);
+  #| dom.selectionDispose=()=>{live=false;doc.removeEventListener('selectionchange',cleanup);dom.host.removeEventListener('copy',retry);dom.host.removeEventListener('cut',retry);retained.clear();prepared.clear();loading.clear();failed.clear()};
+  #| dom.observer=new IntersectionObserver(entries=>{for(const entry of entries){const frame=entry.target,canvas=frame.querySelector('canvas'),index=Number(frame.dataset.bdfPage);if(entry.isIntersecting){dom.near.add(frame);retained.delete(frame);prepared.delete(frame);visible(index,canvas)}else{dom.near.delete(frame);if(canvas.width){canvas.width=canvas.height=0;canvas.dataset.loaded=''}frame.querySelector('[data-bdf-hits]')?.remove();const layer=frame.querySelector('.bdfTextLayer');if(selected(layer))retained.add(frame);else if(layer){layer.remove();delete frame.dataset.bdfContentReady}}}ensure()},{root:dom.stage,rootMargin:'600px'})
+  #|}
 
 ///|
 extern "js" fn viewer_canvas_start(canvas : ViewerCanvas) -> Int32 =
