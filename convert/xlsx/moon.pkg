@@ -16,4 +16,8 @@ import {
   "moonbit-community/ucd",
 }
 
+import {
+  "moonbitlang/core/quickcheck",
+} for "wbtest"
+
 supported_targets = "+js+wasm-gc+native"
