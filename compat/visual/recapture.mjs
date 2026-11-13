@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { PNG } from 'pngjs';
 
@@ -134,27 +134,27 @@ export async function captureWithRecapture({ capture, reportPath, baselinePng, v
   const originalReports = { first: `${reportName}.first.json`, retry: `${reportName}.retry.json` };
   writeFileSync(path.join(target, originalReports.first), firstRaw);
 
-  // Keep every artifact of the viewports that painted, and drop the blank ones so a retry that
-  // writes no heatmap leaves none behind.
-  const kept = new Map();
+  // Save every first-pass viewport. Remove those files before the retry so that
+  // partial retry output can never be mistaken for a newly captured artifact.
+  const firstArtifacts = new Map();
   for (const result of first.results) {
-    if (blankViewports.has(result.viewport)) continue;
-    kept.set(result.viewport, new Map(existingArtifacts(result.viewport, baselinePng, variantPng).map(([, file]) => [file, readFileSync(file)])));
+    firstArtifacts.set(result.viewport, new Map(existingArtifacts(result.viewport, baselinePng, variantPng).map(([, file]) => [file, readFileSync(file)])));
   }
-  for (const viewport of blankViewports) {
-    for (const [, file] of existingArtifacts(viewport, baselinePng, variantPng)) rmSync(file, { force: true });
-  }
-
   log(`${label}: ${checkVariant ? 'baseline or variant' : 'baseline'} capture was blank at ${[...blankViewports].join(', ')} — recapturing`);
   const retryPath = path.join(target, originalReports.retry);
   const failurePath = path.join(target, `${reportName}.recapture-failure.json`);
-  // Distinguish a retry that never wrote a report from the first report still on disk.
-  rmSync(reportPath, { force: true });
+  let retryStarted = false;
   let retried;
   let merged;
   let failure;
   let retrySaved = false;
   try {
+    for (const viewport of firstArtifacts.keys()) {
+      for (const [, file] of existingArtifacts(viewport, baselinePng, variantPng)) rmSync(file, { force: true });
+    }
+    // Distinguish a retry that never wrote a report from the first report still on disk.
+    rmSync(reportPath, { force: true });
+    retryStarted = true;
     await run(capture);
     const retryRaw = readFileSync(reportPath);
     writeFileSync(retryPath, retryRaw);
@@ -177,9 +177,9 @@ export async function captureWithRecapture({ capture, reportPath, baselinePng, v
     merged = mergeReport(first, retried, blankViewports, originalReports);
     writeFileSync(reportPath, JSON.stringify(merged, null, 2));
   } catch (error) {
-    failure = error;
+    failure = error instanceof Error ? error : new Error(`${label}: retry failed with ${String(error)}`, { cause: error });
     // The runner may fail after writing a partial or even invalid report. Preserve it byte-for-byte.
-    if (!retrySaved && existsSync(reportPath)) {
+    if (retryStarted && !retrySaved && existsSync(reportPath)) {
       try {
         writeFileSync(retryPath, readFileSync(reportPath));
         retrySaved = true;
@@ -189,23 +189,67 @@ export async function captureWithRecapture({ capture, reportPath, baselinePng, v
     }
   }
 
-  // Restore first-pass evidence even when the runner throws or the retry stays blank.
+  // Snapshot exactly the files produced by this retry before restoring anything.
+  // If a later restore fails, the retry evidence is still available to archive.
+  const retryArtifacts = [];
   try {
-    for (const [viewport, files] of kept) {
-      for (const [, file] of existingArtifacts(viewport, baselinePng, variantPng)) rmSync(file, { force: true });
-      for (const [file, buffer] of files) writeFileSync(file, buffer);
+    const retryViewports = retryStarted ? new Set([...firstArtifacts.keys(), ...(Array.isArray(retried?.results) ? retried.results.map(result => result.viewport) : [])]) : new Set();
+    for (const viewport of retryViewports) {
+      for (const [kind, file] of existingArtifacts(viewport, baselinePng, variantPng)) {
+        retryArtifacts.push({ viewport, kind, originalPath: file, bytes: readFileSync(file) });
+      }
     }
-  } catch (restoreError) {
-    failure = failure ? new AggregateError([failure, restoreError], `${label}: retry and artifact restoration failed`) : restoreError;
+  } catch (snapshotError) {
+    failure = failure ? new AggregateError([failure, snapshotError], `${label}: retry and artifact snapshot failed`) : snapshotError;
+  }
+
+  // Successful retries retain first-pass evidence for the other viewports.
+  // On failure every viewport is restored to match the original report.
+  const restoreErrors = [];
+  for (const [viewport, files] of firstArtifacts) {
+    if (!failure && blankViewports.has(viewport)) continue;
+    for (const [, file] of existingArtifacts(viewport, baselinePng, variantPng)) {
+      try { rmSync(file, { force: true }); } catch (error) { restoreErrors.push(error); }
+    }
+    for (const [file, buffer] of files) {
+      try { writeFileSync(file, buffer); } catch (error) { restoreErrors.push(error); }
+    }
+  }
+  if (restoreErrors.length > 0) {
+    // The status of the run must remain a failure, including a restoration error.
+    failure = new AggregateError(failure ? [failure, ...restoreErrors] : restoreErrors, `${label}: artifact restoration failed`);
+    // A restoration error may arise after some retry viewports were left in place.
+    // Make a best effort to put every first-pass artifact back.
+    for (const [viewport, files] of firstArtifacts) {
+      for (const [, file] of existingArtifacts(viewport, baselinePng, variantPng)) {
+        try { rmSync(file, { force: true }); } catch {}
+      }
+      for (const [file, buffer] of files) {
+        try { writeFileSync(file, buffer); } catch {}
+      }
+    }
   }
   if (failure) {
+    const archiveDir = `${reportName}.retry-artifacts`;
+    const archived = [];
+    try {
+      if (retryArtifacts.length > 0) mkdirSync(path.join(target, archiveDir), { recursive: true });
+      for (const [index, artifact] of retryArtifacts.entries()) {
+        const archivePath = path.join(archiveDir, `${index}-${artifact.kind}.png`);
+        writeFileSync(path.join(target, archivePath), artifact.bytes);
+        archived.push({ viewport: artifact.viewport, kind: artifact.kind, originalPath: artifact.originalPath, archivePath });
+      }
+    } catch (archiveError) {
+      failure = new AggregateError([failure, archiveError], `${label}: retry and artifact archival failed`);
+    }
     writeFileSync(reportPath, firstRaw);
     writeFileSync(failurePath, JSON.stringify({
       status: 'failed',
       message: String(failure),
       firstReport: originalReports.first,
       retryReport: retrySaved ? originalReports.retry : null,
-      note: 'The primary report and nonblank viewport artifacts are from the first capture; a retry report, when present, is retained separately.',
+      retryArtifacts: archived,
+      note: 'The primary report and all viewport artifacts are from the first capture; retry output is retained separately when available.',
     }, null, 2));
     throw failure;
   }
