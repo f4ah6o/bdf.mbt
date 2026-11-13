@@ -63,4 +63,34 @@ checks at 0.00% difference and took 1,049.02 seconds: 1,015.719 seconds
 generating and 33.122 seconds validating and testing. Its generation overlapped
 the second compatibility run. The earlier picture visual smoke used a retained
 generated run and took 97.95 seconds for table and picture checks together;
-the complete aggregate local visual workflow was not run.
+the complete aggregate local visual workflow had not yet been run at that stage.
+
+## Integrated main visual gate
+
+After the historical `f1b053fb` visual failure, the existing clipboard event
+test fix from PR #36 was incorporated through a merge with main. On clean
+verification commit `df218f258aa745bdb1c609c3b25783818d2aa954` (parents
+`f1b053fb2dceca775ac151c91b62086dd74cca78` and
+`d13b9578c86982cb6ea0d955f678c16e2edc84e9`), the complete local visual gate
+passed in 49m15s. This was a selected visual gate, so the local runner's
+overall result was `PARTIAL-PASS`, exit 0, rather than a full local-gates pass.
+The prior `f1b053fb` gate failure remains a failure.
+
+Three separate fresh oracle runs reported 80, 89 and 80 raw note BDF
+differences out of 264, respectively; these remain unclassified and do not
+change the original retained notes expectations. The compatibility suite ran
+144,298 render IDs in four shards: 36,066 / 36,100 / 36,079 / 36,053.
+The clipboard-containing visual comparison also passed separately in 339.68s.
+The local evidence directory was `/tmp/xlsx-main-visual-gate`, including the
+runner manifest and individual actrun step logs; these temporary files are not
+part of the repository.
+
+After that run, main advanced to `36eaa79b8c805ab47ee80df6f6ff530791e5da15`.
+Its merge `f918163e51913ed8de79061f9c08c5a8567836b5` adds only issue-state
+documents, roadmap documents, and the local roadmap validator and its tests
+relative to the verified commit. It changes no XLSX oracle, verifier, visual
+test, browser code, visual workflow, local gate runner or package script.
+On the merge, the roadmap tests passed 3/3, the roadmap validator checked 45
+issues, the local runner tests passed 50/50 with the pinned build and emulator,
+and the XLSX oracle negative-path test passed. The visual gate was not rerun
+for this documentation and roadmap-validator-only difference.
