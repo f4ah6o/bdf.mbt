@@ -45,6 +45,10 @@ working.
 - Faces are listed as native checkboxes in a `fieldset` with a `legend`, each
   with a `<label>`; nothing is checked by default. The status line is a
   `role="status"` live region.
+- The list and selected-font summary use the same human-readable name:
+  `fullName`, then `family` and `style`, then the PostScript name. This UI
+  label is not a unique identifier and is never sent as the internal filename
+  or the collection face selector.
 - Bytes are read with `FontData.blob()` only for the checked faces, after the
   visitor presses "選択した書体を使う". A failed read discards the whole batch
   and keeps the previous selection.
