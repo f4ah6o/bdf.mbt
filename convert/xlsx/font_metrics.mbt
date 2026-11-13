@@ -63,13 +63,21 @@ fn xlsx_default_font_mdw(
 ///|
 /// The workbook's fallback row height is based on the default face's line
 /// metrics when a face was provided; without a face keep the estimate path.
-/// The SFNT parser expresses both ascent and descent as positive em values.
+/// The renderer clamps each line's ascent and descent to zero while measuring
+/// text. Match that behavior, including unusual negative hhea line gaps.
 fn xlsx_default_font_line_height(size : Double, font : @sfnt.Font?) -> Double {
   let estimate = (0.9 + 0.25) * size
   match font {
     Some(face) => {
-      let line_em = face.metrics.ascent + face.metrics.descent
-      if line_em.is_nan() || line_em.is_inf() || line_em <= 0.0 {
+      let ascent = face.metrics.ascent
+      let descent = face.metrics.descent
+      let line_em = Double::max(ascent, 0.0) + Double::max(descent, 0.0)
+      if ascent.is_nan() ||
+        ascent.is_inf() ||
+        descent.is_nan() ||
+        descent.is_inf() ||
+        line_em.is_inf() ||
+        line_em <= 0.0 {
         estimate
       } else {
         line_em * size
