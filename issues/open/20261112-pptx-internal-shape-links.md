@@ -3,8 +3,8 @@
 Status: open
 Model: unknown
 Created: 2026-11-12
-Updated: 2026-11-12
-Branch: feat/20261112-pptx-internal-shape-links
+Updated: 2026-11-13
+Branch: fix/20261113-pptx-internal-shape-links
 
 ## 概要
 
@@ -56,3 +56,12 @@ upstream の PPTX ホスト実装と既存のページ選択・レイヤキャ�
 ## 注記
 
 外部リンクの URL 検証は upstream の Go `net/url` と完全には同一ではないため、互換性の拡張は独立に検討する。
+
+
+## 2026-11-13 ローカル実装
+
+- 可視スライドから選択後の出力ページへの対応を先に構築し、図形・画像と共有マスター／レイアウトの内部 relationship、next / previous / first / last の showjump を BDF `#page=` に変換する。隠し・選択外・未解決の対象と、範囲外の前後移動はリンクを出力しない。
+- 相対移動を含む共有レイヤは出力ページごとにキャッシュし、ページに依存しないレイヤは共有する。ページ選択は既存の可視スライド番号の契約に従う。
+- 合成 PPTX で relationship、画像、非表示・選択外・存在しない対象、全 showjump、選択後の番号、共有レイヤのコンテキストを検証。PPTX テスト全体は js / wasm-gc / native 各 178 件成功。内部リンクを無効化すると追加回帰が失敗することを確認した。
+- 固定 commit `533e4cd13aa826beae9bab5c38944e98393360b7` を別担当が静的に独立レビューし、上流 `a5e4d7a6` の DrawingML / PPTX 実装と照合した結果は指摘なし。`git diff --check` も成功。独立レビューでは 3 ターゲットのテストを再実行していない。
+- 統合は未実施のため issue は open のままにする。実 PowerPoint 文書・ブラウザー操作による手動確認は未実施。
