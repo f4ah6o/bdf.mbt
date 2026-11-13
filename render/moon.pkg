@@ -3,4 +3,8 @@ import {
   "moonbitlang/core/string",
 }
 
+import {
+  "moonbitlang/core/quickcheck",
+} for "wbtest"
+
 supported_targets = "+js+wasm-gc+native"

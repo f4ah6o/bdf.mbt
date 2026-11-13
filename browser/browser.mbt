@@ -736,6 +736,7 @@ fn mount_document(
   let viewport_width = page_viewport_width(host)
   let placements = viewer.placements_in(view, viewport_width)
   let search_runs : Array[Array[Array[@render.TextRun]]] = []
+  let baseline_measure = if interactive { Some(find_measure_context(host)) } else { None }
   let fallback_index : Array[@core.IndexRun] = []
   let mut max_x = 0.0
   let mut max_y = 0.0
@@ -771,10 +772,18 @@ fn mount_document(
     for layer_index, layer in view.pages[p.index].layers {
       if data is Some(text_data) {
         let object = @core.decode_object_resources(doc.part(layer.object))
-        let content = @render.extract_text(object, hash => {
+        let (content, extracted_baselines) = @render.extract_text_with_baselines(object, hash => {
           Some(@core.decode_object_resources(doc.part(hash)))
         })
-        page_runs.push(content.runs)
+        let baselines = if view.pages[p.index].layers.length() == 1 { extracted_baselines } else { [] }
+        let adjusted : Array[@render.TextRun] = []
+        for index, run in content.runs {
+          adjusted.push(match baseline_measure {
+            Some(measure) => baseline_search_run(measure, run, baselines.get(index).unwrap_or(0))
+            None => run
+          })
+        }
+        page_runs.push(adjusted)
         for ordinal, run in content.runs {
           fallback_index.push({
             a: p.index,
@@ -788,7 +797,7 @@ fn mount_document(
             text: run.text,
           })
         }
-        append_text_content(text_data, content, node_base, run_base)
+        append_text_content(text_data, content, node_base, run_base, baselines~)
         node_base += content.nodes.length()
         run_base += content.runs.length()
       }

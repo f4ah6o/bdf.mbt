@@ -31,6 +31,8 @@ pub fn decode_commands(Bytes) -> Array[Command] raise
 
 pub fn extract_text(@core.ObjectResources, (String) -> @core.ObjectResources? raise, matrix? : (Double, Double, Double, Double, Double, Double)) -> TextContent raise
 
+pub fn extract_text_with_baselines(@core.ObjectResources, (String) -> @core.ObjectResources? raise, matrix? : (Double, Double, Double, Double, Double, Double)) -> (TextContent, Array[Int32]) raise
+
 pub fn extract_text_with_budget(@core.ObjectResources, (String) -> @core.ObjectResources? raise, TextExtractionBudget, matrix? : (Double, Double, Double, Double, Double, Double)) -> TextContent raise
 
 pub fn initial_channel() -> ChannelState

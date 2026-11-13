@@ -47,6 +47,8 @@ priv struct TextState {
   font : @core.Font?
   size : Double
   align : Int32
+  baseline : Int32
+  baseline_safe : Bool
   clip : TextRect?
 }
 
@@ -66,6 +68,7 @@ pub fn TextExtractionBudget::new() -> TextExtractionBudget {
 ///|
 priv struct TextCollector {
   runs : Array[TextRun]
+  baselines : Array[Int32]?
   links : Array[TextLink]
   nodes : Array[TextNode]
   open : Array[Int32]
@@ -148,6 +151,9 @@ fn TextCollector::emit(
     lang: self.lang,
     node: self.leaf_node(),
   })
+  if self.baselines is Some(values) {
+    values.push(if st.baseline_safe && st.font is Some(_) && !alt && self.figures.is_empty() { st.baseline } else { 0 })
+  }
   if self.figures.length() > 0 {
     let width = if advance > 0.0 {
       advance
@@ -246,10 +252,25 @@ fn collect_object(
   repeated : Bool,
   clip : TextRect?,
 ) -> Unit raise {
-  let mut st : TextState = { matrix, font: None, size: 10.0, align: 0, clip, }
+  let commands = compile_object(object.object)
+  let mut baseline_safe = depth == 0 && collector.baselines is Some(_) && matrix == (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+  if baseline_safe {
+    for command in commands {
+      match command {
+        Use(_) | UseAt(_, _, _) | GroupBegin(_, _, _, _, _, _) | GroupEnd |
+        MaskBegin(_, _, _) | MaskEnd | Mark(10, _) | Transform(_, _, _, _, _, _) |
+        Translate(_, _) | Scale(_, _) => {
+          baseline_safe = false
+          break
+        }
+        _ => ()
+      }
+    }
+  }
+  let mut st : TextState = { matrix, font: None, size: 10.0, align: 0, baseline: 0, baseline_safe, clip, }
   let stack : Array[TextState] = []
   let mut masking = 0
-  for command in compile_object(object.object) {
+  for command in commands {
     if repeated {
       if collector.budget.reused >= 134217728 {
         raise InvalidOperands("objects are drawn too many times")
@@ -275,7 +296,7 @@ fn collect_object(
           },
           size,
         }
-      TextStyle(align, _, _, _) => st = { ..st, align, }
+      TextStyle(align, baseline, _, _) => st = { ..st, align, baseline: if baseline == 1 { 1 } else { 0 }, }
       ClipRect(x, y, w, h) => {
         let clipped = intersect_box(text_box(st.matrix, x, y, w, h), st.clip)
         st = {
@@ -429,11 +450,35 @@ pub fn extract_text_with_budget(
   budget : TextExtractionBudget,
   matrix~ : Matrix = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0),
 ) -> TextContent raise {
+  let (content, _) = extract_text_internal(object, resolve, budget, false, matrix~)
+  content
+}
+
+///|
+/// Extract runs and a parallel baseline array for supported simple objects.
+/// Unsupported cases have a baseline of zero and retain the legacy behavior.
+pub fn extract_text_with_baselines(
+  object : @core.ObjectResources,
+  resolve : (String) -> @core.ObjectResources? raise,
+  matrix~ : Matrix = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0),
+) -> (TextContent, Array[Int32]) raise {
+  extract_text_internal(object, resolve, TextExtractionBudget::new(), true, matrix~)
+}
+
+///|
+fn extract_text_internal(
+  object : @core.ObjectResources,
+  resolve : (String) -> @core.ObjectResources? raise,
+  budget : TextExtractionBudget,
+  collect_baselines : Bool,
+  matrix~ : Matrix = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0),
+) -> (TextContent, Array[Int32]) raise {
   if budget.failure is Some(message) {
     raise InvalidOperands(message)
   }
   let collector : TextCollector = {
     runs: [],
+    baselines: if collect_baselines { Some([]) } else { None },
     links: [],
     nodes: [],
     open: [],
@@ -454,6 +499,8 @@ pub fn extract_text_with_budget(
       font: None,
       size: 10.0,
       align: 0,
+      baseline: 0,
+      baseline_safe: false,
       clip: None,
     })
   } catch {
@@ -470,7 +517,7 @@ pub fn extract_text_with_budget(
   while collector.open.length() > 0 {
     collector.close_top()
   }
-  { runs: collector.runs, links: collector.links, nodes: collector.nodes, }
+  ({ runs: collector.runs, links: collector.links, nodes: collector.nodes, }, collector.baselines.unwrap_or([]))
 }
 
 ///|

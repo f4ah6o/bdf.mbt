@@ -303,6 +303,17 @@ bdf_clear_find(host); // clear highlights and close the field
 unmount_bdf(host);
 ```
 
+For top-baseline text in a single-layer page with a simple root drawing object
+and an explicit font, the main-thread interactive page mount uses Canvas font
+metrics to position selection and search rectangles. Multiple-layer pages,
+objects containing child objects, groups, masks, figures, or transforms, and
+runs with alternative text or no font retain their previous positioning.
+Middle, bottom, hanging, and ideographic baselines also retain previous
+positioning. Worker-backed viewers and sheet views retain
+their previous positioning. These cases, Worker font handling, and figure
+accessibility bounds need further work. If the browser does not provide usable
+font metrics, positioning falls back to the previous behavior.
+
 The text layer includes headings, lists, tables, figures, language attributes,
 and links restricted to HTTP, HTTPS, mailto and BDF internal fragments. Copy
 and cut serialize selected text using the document's run separators. A selection

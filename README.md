@@ -20,6 +20,11 @@ The PPTX path emits the upstream `slides` fixed view with background, layout, ma
 - `viewer`: document/view selection state and page placement in single, spread, and continuous modes, including RTL spreads and scroll strips.
 - `browser` (JS only): Canvas 2D adapter that draws fixed/flow pages, scroll strips, continuous body regions, and sheet viewports, including password- and P-256-protected documents, into a DOM host, including paths, gradients, child objects, transparency groups, masks, asynchronously loaded images and fonts, and optional selectable text layers.
 
+Main-thread interactive page views correct top-baseline selection and search
+positions for a limited set of simple, single-layer text objects; see [browser support and
+remaining limitations](docs/browser.md). Worker-backed and sheet views retain
+their current behavior.
+
 PCB/KiCad (Gerber, Excellon), musical-score (MML, MIDI, MusicXML) and EPUB conversion are outside the maintained porting scope. Their packages, sources and fixtures stay in the tree as dormant assets, but they are not registered with the converter Worker, not offered in the viewer, and not part of the required verification. Audio playback and non-PCB CAD (DXF, Jw_cad, SXF, CGM, HP-GL/2) remain in scope.
 
 This is an **incremental port**, not a feature-equivalent replacement for the upstream npm packages. The Canvas renderer, DOM viewer, wasm-gc cryptography and native converter Worker are implemented; the remaining differences are the documented format subsets above, the upstream class-shaped low-level `BdfDocument`/`CanvasRenderer` APIs, and a smaller set of viewer edge cases. Unsupported drawing opcodes fail explicitly instead of silently rendering incorrectly.

@@ -4,6 +4,9 @@
 
 ### Added
 
+- `render.extract_text_with_baselines` returns legacy text content and a
+  parallel array marking the currently supported top-baseline runs.
+
 - Multipage text selection and copy for page views in the `Viewer`
   (`bdf_create_viewer`): a selection now keeps its pages' text when scrolled
   out of the lazily rendered region, and copying while a selected page's
@@ -124,6 +127,12 @@
   frame's FIGURE.
 
 ### Fixed
+
+- Align the selection and search rectangles of explicit-font, top-baseline
+  text in simple, single-layer main-thread interactive pages with Canvas font
+  metrics. Worker-backed views, sheets, transformed or composite objects,
+  figures, alternative text and other baselines retain their previous
+  behavior; see `docs/browser.md` for the current scope.
 
 - PPTX shapes, connectors and pictures preserve supported external click links
   with bounds that follow their placement and rotation. Internal slide actions

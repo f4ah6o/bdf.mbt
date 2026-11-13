@@ -22,6 +22,38 @@ extern "js" fn measure_find_text(
   #|(ctx,family,weight,style,size,text) => {ctx.font=`${['normal','italic','oblique'][style]??'normal'} ${weight||400} ${size}px ${family||'sans-serif'}`;return ctx.measureText(text).width}
 
 ///|
+// Convert a Canvas baseline anchor to an alphabetic one using the actual
+// font metrics. Do not substitute a font-size ratio when metrics are missing.
+extern "js" fn measure_baseline_shift(
+  context : FindMeasure,
+  family : String,
+  weight : Int32,
+  style : Int32,
+  size : Double,
+  text : String,
+  baseline : Int32,
+) -> Double =
+  #|(ctx,family,weight,style,size,text,baseline) => {if(!baseline)return 0;ctx.font=`${['normal','italic','oblique'][style]??'normal'} ${weight||400} ${size}px ${family||'sans-serif'}`;const old=ctx.textBaseline;try{ctx.textBaseline='alphabetic';const a=ctx.measureText(text||'M');ctx.textBaseline=['alphabetic','top','middle','bottom','hanging','ideographic'][baseline]??'alphabetic';const b=ctx.measureText(text||'M');const aa=Number.isFinite(a.fontBoundingBoxAscent)?a.fontBoundingBoxAscent:a.actualBoundingBoxAscent,bb=Number.isFinite(b.fontBoundingBoxAscent)?b.fontBoundingBoxAscent:b.actualBoundingBoxAscent;return Number.isFinite(aa)&&Number.isFinite(bb)?aa-bb:0}finally{ctx.textBaseline=old}}
+
+///|
+fn baseline_search_run(
+  context : FindMeasure,
+  run : @render.TextRun,
+  baseline : Int32,
+) -> @render.TextRun {
+  if baseline == 0 { return run }
+  let (family, weight, style) = match run.font {
+    Some(font) if !run.alt_text || run.advance > 0.0 =>
+      (find_font_family(font), font.weight, font.style)
+    _ => ("sans-serif", 400, 0)
+  }
+  let size = if run.size > 0.0 { run.size } else { 10.0 }
+  let shift = measure_baseline_shift(context, family, weight, style, size, run.text, baseline)
+  let (_, _, c, d, _, _) = run.matrix
+  { ..run, x: run.x + c * shift, y: run.y + d * shift, }
+}
+
+///|
 extern "js" fn find_result(
   query : String,
   index : Int32,

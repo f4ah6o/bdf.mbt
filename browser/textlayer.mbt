@@ -35,6 +35,7 @@ extern "js" fn add_text_run(
   advance : Double,
   size : Double,
   align : Int32,
+  baseline : Int32,
   a : Double,
   b : Double,
   c : Double,
@@ -49,7 +50,7 @@ extern "js" fn add_text_run(
   weight : Int32,
   style : Int32,
 ) -> Unit =
-  #|(out,text,x,y,advance,size,align,a,b,c,d,sep,ordinal,alt,lang,node,hasFont,family,weight,style) => out.runs.push({text,x,y,advance,size,align,a,b,c,d,sep,ordinal,alt,lang,node,hasFont,family,weight,style})
+  #|(out,text,x,y,advance,size,align,baseline,a,b,c,d,sep,ordinal,alt,lang,node,hasFont,family,weight,style) => out.runs.push({text,x,y,advance,size,align,baseline,a,b,c,d,sep,ordinal,alt,lang,node,hasFont,family,weight,style})
 
 ///|
 extern "js" fn add_text_link(
@@ -93,6 +94,7 @@ fn append_text_content(
   content : @render.TextContent,
   node_base : Int32,
   run_base : Int32,
+  baselines? : Array[Int32],
   tile_size~ : Double = 0.0,
   sheet_root~ : Bool = false,
 ) -> Unit {
@@ -146,7 +148,7 @@ fn append_text_content(
       })
     }
   }
-  for run in content.runs {
+  for run_index, run in content.runs {
     if tile_size > 0.0 &&
       !(run.x >= 0.0 && run.x < tile_size && run.y >= 0.0 && run.y < tile_size) {
       continue
@@ -175,6 +177,7 @@ fn append_text_content(
       run.advance,
       run.size,
       run.align,
+      match baselines { Some(values) => values.get(run_index).unwrap_or(0); None => 0 },
       a,
       b,
       c,
@@ -243,7 +246,7 @@ extern "js" fn text_layer_from_content(
   #| }
   #| for(const r of content?.runs??[]){
   #|  const f=r.font,m=r.matrix??[1,0,0,1,0,0],hash=f&&f.kind===0?f.hash:undefined;
-  #|  out.runs.push({text:r.text??'',x:r.x??0,y:r.y??0,advance:r.advance??0,size:r.size??0,align:r.align??0,a:m[0],b:m[1],c:m[2],d:m[3],sep:r.sep??0,ordinal:r.ordinal??0,alt:!!r.altText,lang:r.lang??'',node:r.node??-1,hasFont:!!f,family:hash?`"bdf-${hash}"${f.family?', '+f.family:''}`:(f?.family||'sans-serif'),weight:f?.weight??400,style:f?.style??0});
+  #|  out.runs.push({text:r.text??'',x:r.x??0,y:r.y??0,advance:r.advance??0,size:r.size??0,align:r.align??0,baseline:0,a:m[0],b:m[1],c:m[2],d:m[3],sep:r.sep??0,ordinal:r.ordinal??0,alt:!!r.altText,lang:r.lang??'',node:r.node??-1,hasFont:!!f,family:hash?`"bdf-${hash}"${f.family?', '+f.family:''}`:(f?.family||'sans-serif'),weight:f?.weight??400,style:f?.style??0});
   #| }
   #| for(const l of content?.links??[])out.links.push({x:l.x,y:l.y,w:l.w,h:l.h,url:l.url??'',after:l.after??-1,node:l.node??-1});
   #| return out;
@@ -278,17 +281,18 @@ extern "js" fn render_text_layer(
   #| }
   #| function internal(url){let m=/^#page=(\d{1,7})$/.exec(url);if(m)return +m[1]>=1?{page:+m[1]}:null;m=/^#view=([^&#]+)(?:&page=(\d{1,7}))?$/.exec(url);if(!m||m[2]!==undefined&&+m[2]<1)return null;try{return {view:decodeURIComponent(m[1].replace(/\+/g,' ')),page:m[2]===undefined?undefined:+m[2]}}catch{return null}}
   #| function safe(url){if(url.startsWith('#'))return internal(url)?url:null;try{const u=new URL(url);return ['http:','https:','mailto:'].includes(u.protocol)?u.href:null}catch{return null}}
+  #| const measure=document.createElement('canvas').getContext('2d');let lastAnchor=null,nextNode=0,nextLink=0;
+  #| const baselineShift=r=>{if(!r.baseline||!measure)return 0;const size=r.size>0?r.size:10;measure.font=(r.hasFont&&(!r.alt||r.advance>0))?`${['normal','italic','oblique'][r.style]??'normal'} ${r.weight||400} ${size}px ${r.family}`:`${size}px sans-serif`;const old=measure.textBaseline;try{measure.textBaseline='alphabetic';const a=measure.measureText(r.text||'M');measure.textBaseline=['alphabetic','top','middle','bottom','hanging','ideographic'][r.baseline]??'alphabetic';const b=measure.measureText(r.text||'M');const aa=Number.isFinite(a.fontBoundingBoxAscent)?a.fontBoundingBoxAscent:a.actualBoundingBoxAscent,bb=Number.isFinite(b.fontBoundingBoxAscent)?b.fontBoundingBoxAscent:b.actualBoundingBoxAscent;return Number.isFinite(aa)&&Number.isFinite(bb)?aa-bb:0}finally{measure.textBaseline=old}};
   #| const hrefs=data.links.map(l=>safe(l.url));
-  #| const covering=r=>{const w=r.advance>0?r.advance:r.size*r.text.length*.5,cx=r.align===1?-w/2:r.align===2?0:w/2,cy=-r.size*.3,px=r.a*cx+r.c*cy+r.x,py=r.b*cx+r.d*cy+r.y;let best=-1;data.links.forEach((l,i)=>{if(!hrefs[i]||px<l.x||py<l.y||px>l.x+l.w||py>l.y+l.h)return;if(best<0||l.w*l.h<data.links[best].w*data.links[best].h)best=i});return best};
+  #| const covering=r=>{const w=r.advance>0?r.advance:r.size*r.text.length*.5,cx=r.align===1?-w/2:r.align===2?0:w/2,cy=-r.size*.3+baselineShift(r),px=r.a*cx+r.c*cy+r.x,py=r.b*cx+r.d*cy+r.y;let best=-1;data.links.forEach((l,i)=>{if(!hrefs[i]||px<l.x||py<l.y||px>l.x+l.w||py>l.y+l.h)return;if(best<0||l.w*l.h<data.links[best].w*data.links[best].h)best=i});return best};
   #| const linkOf=data.runs.map(r=>r.text?covering(r):-1),textLinks=new Set(linkOf.filter(i=>i>=0));
   #| function anchor(i,parent){const l=data.links[i],a=document.createElement('a'),href=hrefs[i];a.href=href;a.draggable=false;const within=internal(href);if(within){if(within.view!==undefined)a.setAttribute('data-bdf-view',within.view);if(within.page!==undefined)a.setAttribute('data-bdf-page',String(within.page))}else{a.target='_blank';a.rel='noopener noreferrer'}parent.el.appendChild(a);return position(a,parent,l)}
-  #| const measure=document.createElement('canvas').getContext('2d');let lastAnchor=null,nextNode=0,nextLink=0;
-  #| function cellText(element,r,measured){let cell=null,info=null;for(let el=element;el&&el!==layer;el=el.parentElement){cell=el[cellKey]??cell;if(el[tableKey]){info=el[tableKey];break}}if(!cell||!info)return;const size=r.size>0?r.size:10,known=r.hasFont&&(!r.alt||r.advance>0);let a=r.a,b=r.b,c=r.c,d=r.d,x0=0,x1;if(known){const w=r.advance>0?r.advance:measured;x0=r.align===1?-w:r.align===2?-w/2:0;x1=x0+w}else{const angle=Math.atan2(b,a);a=Math.cos(angle);b=Math.sin(angle);c=-b;d=a;x1=size*r.text.length*.5}let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;for(const dx of [x0,x1])for(const dy of [-size*.8,size*.2]){const px=(a*dx+c*dy+r.x)*scale+(info.sheet?x:0),py=(b*dx+d*dy+r.y)*scale+(info.sheet?y:0);left=Math.min(left,px);top=Math.min(top,py);right=Math.max(right,px);bottom=Math.max(bottom,py)}const box=cell.box;if(box){const bx=Math.min(box.x,left),by=Math.min(box.y,top);cell.box={x:bx,y:by,w:Math.max(box.x+box.w,right)-bx,h:Math.max(box.y+box.h,bottom)-by}}else cell.box={x:left,y:top,w:right-left,h:bottom-top};if(!info.size)info.size=size*scale}
+  #| function cellText(element,r,measured){let cell=null,info=null;for(let el=element;el&&el!==layer;el=el.parentElement){cell=el[cellKey]??cell;if(el[tableKey]){info=el[tableKey];break}}if(!cell||!info)return;const size=r.size>0?r.size:10,known=r.hasFont&&(!r.alt||r.advance>0);let a=r.a,b=r.b,c=r.c,d=r.d,x0=0,x1;if(known){const w=r.advance>0?r.advance:measured;x0=r.align===1?-w:r.align===2?-w/2:0;x1=x0+w}else{const angle=Math.atan2(b,a);a=Math.cos(angle);b=Math.sin(angle);c=-b;d=a;x1=size*r.text.length*.5}let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;const shift=baselineShift(r);for(const dx of [x0,x1])for(const dy of [-size*.8+shift,size*.2+shift]){const px=(a*dx+c*dy+r.x)*scale+(info.sheet?x:0),py=(b*dx+d*dy+r.y)*scale+(info.sheet?y:0);left=Math.min(left,px);top=Math.min(top,py);right=Math.max(right,px);bottom=Math.max(bottom,py)}const box=cell.box;if(box){const bx=Math.min(box.x,left),by=Math.min(box.y,top);cell.box={x:bx,y:by,w:Math.max(box.x+box.w,right)-bx,h:Math.max(box.y+box.h,bottom)-by}}else cell.box={x:left,y:top,w:right-left,h:bottom-top};if(!info.size)info.size=size*scale}
   #| function standalone(upTo){while(nextLink<data.links.length&&data.links[nextLink].after<upTo){const i=nextLink++,l=data.links[i];if(textLinks.has(i)||!hrefs[i])continue;const p=anchor(i,node(l.node)),within=internal(l.url);p.el.setAttribute('aria-label',within?.view!==undefined?'view '+within.view:within?.page!==undefined?'page '+within.page:l.url)}}
   #| for(let i=0;i<data.runs.length;i++){const r=data.runs[i];for(;nextNode<=r.node&&nextNode<data.nodes.length;nextNode++)if(data.nodes[nextNode].kind==='figure'&&data.nodes[nextNode].alt)node(nextNode);standalone(i);if(!r.text)continue;let target=node(r.node),li=linkOf[i];if(li>=0){if(lastAnchor&&lastAnchor.parent===target.el&&lastAnchor.link===li&&lastAnchor.placed.el===target.el.lastElementChild)target=lastAnchor.placed;else{const parent=target.el;target=anchor(li,target);lastAnchor={parent,link:li,placed:target}}}
   #|  const span=document.createElement('span');span.textContent=r.text;span.setAttribute('data-bdf-ordinal',String(r.ordinal));span.setAttribute('data-bdf-sep',String(r.sep));if(r.lang)span.lang=r.lang;
-  #|  let measured=0; if(r.hasFont&&(!r.alt||r.advance>0)){const font=`${['normal','italic','oblique'][r.style]??'normal'} ${r.weight||400} ${r.size}px ${r.family}`;span.style.font=font;measure.font=font;measured=measure.measureText(r.text).width;const sx=r.advance>0&&measured>0?r.advance/measured:1,w=r.advance>0?r.advance:measured,offset=r.align===1?-w:r.align===2?-w/2:0;span.style.transform=`matrix(${r.a*scale},${r.b*scale},${r.c*scale},${r.d*scale},${r.x*scale-target.ox},${r.y*scale-target.oy}) translate(${offset}px,${-r.size*.8}px) scaleX(${sx})`;}
-  #|  else{const size=(r.size>0?r.size:10)*scale,angle=Math.atan2(r.b,r.a);span.style.font=`${size}px sans-serif`;span.style.transform=`translate(${r.x*scale-target.ox}px,${r.y*scale-target.oy}px) rotate(${angle}rad) translate(0,${-size*.8}px)`}span.style.lineHeight='1';target.el.appendChild(span);cellText(target.el,r,measured);
+  #|  let measured=0; if(r.hasFont&&(!r.alt||r.advance>0)){const font=`${['normal','italic','oblique'][r.style]??'normal'} ${r.weight||400} ${r.size}px ${r.family}`;span.style.font=font;measure.font=font;measured=measure.measureText(r.text).width;const sx=r.advance>0&&measured>0?r.advance/measured:1,w=r.advance>0?r.advance:measured,offset=r.align===1?-w:r.align===2?-w/2:0;span.style.transform=`matrix(${r.a*scale},${r.b*scale},${r.c*scale},${r.d*scale},${r.x*scale-target.ox},${r.y*scale-target.oy}) translate(${offset}px,${baselineShift(r)-r.size*.8}px) scaleX(${sx})`;}
+  #|  else{const size=(r.size>0?r.size:10)*scale,angle=Math.atan2(r.b,r.a);span.style.font=`${size}px sans-serif`;span.style.transform=`translate(${r.x*scale-target.ox}px,${r.y*scale-target.oy}px) rotate(${angle}rad) translate(0,${baselineShift(r)*scale-size*.8}px)`}span.style.lineHeight='1';target.el.appendChild(span);cellText(target.el,r,measured);
   #| }
   #| for(;nextNode<data.nodes.length;nextNode++)if(data.nodes[nextNode].kind==='figure'&&data.nodes[nextNode].alt)node(nextNode);standalone(Infinity);
   #| const end=document.createElement('div');end.setAttribute('data-bdf-end','');end.setAttribute('aria-hidden','true');layer.appendChild(end);
