@@ -2651,7 +2651,9 @@ fn docx_document_text(data : Bytes) -> DocxTextDocument raise {
     }
     None => docx_numbering_empty()
   }
-  docx_apply_numbering(walker.blocks, numbering)
+  docx_apply_numbering(
+    walker.blocks, numbering, theme_fonts=styles.theme_fonts, warnings~,
+  )
   let stories : Map[String, Array[DocxTextParagraph]] = Map([])
   let story_tables : Map[String, Array[DocxTable]] = Map([])
   for section in sections {
