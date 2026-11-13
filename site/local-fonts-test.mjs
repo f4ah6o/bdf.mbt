@@ -213,7 +213,41 @@ try {
     assert.deepEqual((await calls()).blob, ["SyntheticTest-Regular"]);
     const files = await page.evaluate(() => window.__ui.getFontFiles().map((file) => ({ name: file.name, postscriptName: file.postscriptName, bytes: [...file.bytes] })));
     assert.deepEqual(files, [{ name: "SyntheticTest-Regular.ttf", postscriptName: "SyntheticTest-Regular", bytes: SYNTHETIC }]);
-    assert.match(await page.locator("#local-fonts-summary").textContent(), /SyntheticTest-Regular\.ttf/);
+    assert.equal(await page.locator("#local-fonts-summary").textContent(), "変換に使う書体: Synthetic Test");
+  });
+
+  await step("display labels stay separate from unique worker names and face selectors", async () => {
+    const faces = [
+      { ...FACES[0], fullName: "同名 <Regular> & Test", postscriptName: "Face/A", type: "font/collection" },
+      { ...FACES[1], fullName: "同名 <Regular> & Test", postscriptName: "Face:A", type: "font/collection" },
+      { ...FACES[0], fullName: "", family: "Family", style: "Italic", postscriptName: "Family-Italic" },
+      { ...FACES[1], fullName: "", family: "", style: "", postscriptName: "FallbackPS" },
+    ];
+    await open({ faces });
+    await page.click("#local-fonts button:has-text('ローカルフォントを選ぶ')");
+    await page.waitForSelector("#local-fonts-face-3");
+    const labels = await page.locator("#local-fonts .local-font-face .name").allTextContents();
+    assert.deepEqual(labels, ["同名 <Regular> & Test", "同名 <Regular> & Test", "Family Italic", "FallbackPS"]);
+    for (let index = 0; index < faces.length; index++) await page.check(`#local-fonts-face-${index}`);
+    await page.click("#local-fonts button:has-text('選択した書体を使う')");
+    await page.waitForFunction(() => /4 書体を読み込みました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    assert.equal(await page.locator("#local-fonts-summary").textContent(), "変換に使う書体: " + labels.join("、"));
+    assert.equal(await page.locator("#local-fonts-summary").locator("*").count(), 0);
+    const files = await page.evaluate(() => window.__ui.getFontFiles().map(({ name, postscriptName }) => ({ name, postscriptName })));
+    assert.deepEqual(files, [
+      { name: "Face_A.ttc", postscriptName: "Face/A" },
+      { name: "Face_A-2.ttc", postscriptName: "Face:A" },
+      { name: "Family-Italic.ttf", postscriptName: "Family-Italic" },
+      { name: "FallbackPS.ttf", postscriptName: "FallbackPS" },
+    ]);
+    await page.click("#local-fonts button:has-text('選択を解除')");
+    assert.equal(await page.locator("#local-fonts-summary").isHidden(), true);
+    await page.click("#local-fonts button:has-text('ローカルフォントを選ぶ')");
+    await page.check("#local-fonts-face-1");
+    await page.click("#local-fonts button:has-text('選択した書体を使う')");
+    await page.waitForFunction(() => /1 書体を読み込みました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    assert.equal(await page.locator("#local-fonts-summary").textContent(), "変換に使う書体: " + labels[1]);
+    assert.equal(await page.evaluate(() => window.__ui.getFontFiles()[0].postscriptName), "Face:A");
   });
 
   await step("no selection is rejected without reading bytes", async () => {

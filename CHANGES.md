@@ -91,6 +91,10 @@
 
 ### Changed
 
+- The local-font picker now shows the same human-readable face names in its
+  selection summary as in its list, while preserving converter file names and
+  PostScript face selectors.
+
 - XLSX compatibility fixtures now store input XLSX and expected BDF bytes
   deduplicated in a content-addressed pack store (`compat/xlsx/store/`)
   behind a packed-fixture loader; case sets, bytes, options, warnings,

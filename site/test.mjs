@@ -536,6 +536,7 @@ try {
     await page.check("#local-fonts-face-0");
     await page.click("#local-fonts button:has-text('選択した書体を使う')");
     await page.waitForFunction(() => /1 書体を読み込みました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    assert.equal(await page.locator("#local-fonts-summary").textContent(), "変換に使う書体: STIX Two Text");
     await page.click('#samples button:text-is("CSV")');
     await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.csv", null, { timeout: 180000 });
     await page.waitForFunction(() => /basic\.csv を表示しています|警告/.test(document.querySelector("#status")?.textContent ?? ""), null, { timeout: 60000 });
@@ -547,12 +548,19 @@ try {
     assert.equal(posted.fontFiles[0].bytes.byteLength, stix.length);
     const status = await page.locator("#status").textContent();
     assert.doesNotMatch(status, /no fonts found/, "the selected font replaces the missing-font warning");
+    assert.equal(await page.locator("#local-fonts-summary").textContent(), "変換に使う書体: STIX Two Text");
     await page.click("#local-fonts button:has-text('選択を解除')");
     await page.waitForFunction(() => /選択を解除しました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    assert.equal(await page.locator("#local-fonts-summary").isHidden(), true);
     await page.click('#samples button:text-is("Word")');
     await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.docx", null, { timeout: 180000 });
     const after = await page.evaluate(() => window.__posted.at(-1));
     assert.equal(after.fontFiles, undefined, "a cleared selection is not sent");
+    await page.click("#local-fonts button:has-text('ローカルフォントを選ぶ')");
+    await page.check("#local-fonts-face-0");
+    await page.click("#local-fonts button:has-text('選択した書体を使う')");
+    await page.waitForFunction(() => /1 書体を読み込みました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    assert.equal(await page.locator("#local-fonts-summary").textContent(), "変換に使う書体: STIX Two Text");
   });
 
   await step("selected fonts are not sent for PDF or Word aliases but are sent for CSV", async () => {

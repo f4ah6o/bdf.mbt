@@ -234,7 +234,7 @@ export function createLocalFontsUI({ root, scope = globalThis, onChange = () => 
       return;
     }
     summary.hidden = false;
-    summary.textContent = "変換に使う書体: " + selected.map((item) => item.name).join("、");
+    summary.textContent = "変換に使う書体: " + selected.map((item) => item.displayName).join("、");
   }
 
   function publish() {
@@ -358,6 +358,7 @@ export function createLocalFontsUI({ root, scope = globalThis, onChange = () => 
         loaded.push({
           name: uniqueName(fileStem(face), extension(blob.type), used),
           postscriptName: postscriptNames[index],
+          displayName: faceLabel(face),
           bytes,
         });
       }
