@@ -105,6 +105,15 @@ const options = parseArgs({
 const files = options.files
   ? options.files.split(',').map(name => name.replace(/^\.?\//, '')).sort()
   : await fixtureFiles();
+if (!files.length) throw new Error('No packed fixtures found; use a baseline checkout for store maintenance');
+
+// Printing is a read-only loader operation. It must also work when the
+// selected fixtures come from a fresh oracle run instead of checkout files.
+if (options.print && !options.unpack) {
+  for (const name of files) await writeStdout(`${JSON.stringify(await loadFixture('./' + name))}\n`);
+  await flushStdout();
+  process.exit();
+}
 
 // Manifest values for every target; the union of their blobs drives the store.
 const manifests = new Map();
@@ -215,22 +224,6 @@ if (options.unpack) {
     }
   }
   console.log(`unpacked ${unpacked} fixture file(s) to plain form (${originalValues.size} in scope)`);
-  await flushStdout();
-  process.exit();
-}
-
-// --print writes one fixture's decoded JSON to stdout, so a packed manifest
-// stays inspectable without unpacking the tree or remembering the envelope.
-if (options.print) {
-  for (const name of files) {
-    const value = originalValues.get(name);
-    if (value === undefined) {
-      console.error(`${name}: not a fixture file`);
-      process.exitCode = 1;
-      continue;
-    }
-    await writeStdout(`${JSON.stringify(value)}\n`);
-  }
   await flushStdout();
   process.exit();
 }

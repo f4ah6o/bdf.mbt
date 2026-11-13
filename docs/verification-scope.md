@@ -36,12 +36,15 @@ score format; the audio cue and embedded-recording paths stay.
 | `ci/test` | `.github/workflows/ci.yml` / `test` | retained-package `moon check`, `moon test` and `moon build` for `js`, `wasm-gc` and `native`, with the min-test-count assertion |
 | `ci/demo` | `.github/workflows/ci.yml` / `demo` | `site/verify-samples.mjs`, `build:demo`, `test:demo`, `test:previews` |
 | `parity` | `.github/workflows/parity.yml` / `parity` | retained-package JS build, `compat/parity/verify.mjs --limit=100` (PDF/DOCX/XLSX/PPTX/Markdown) |
-| `visual` | `.github/workflows/visual.yml` / `compare` | `compat/xlsx/picture-visual-compare.mjs`, `npm run test:visual` (retained formats, audio playback and the dropped-format dispatch guard) |
+| `visual` | `.github/workflows/visual.yml` / `compare` | XLSX picture visual via the fresh oracle runner, `npm run test:visual` (retained formats, audio playback and the dropped-format dispatch guard) |
 | `site` | `.github/workflows/pages.yml` / `build` | `build:site`, `test:site`, `test:previews`, `bench:site --check`, the vlmkit checks |
 
 The `visual` gate's exact command set is owned by `package.json`. Its aggregate
 excludes the dropped score, PCB/KiCad and EPUB suites; their individual scripts
 remain available for manual verification. See "Visual aggregate scope" below.
+The XLSX checks require a provisioned fixed oracle and, on non-ARM64 hosts, the
+approved emulator. Export the environment variables before running the local
+workflow as described in [the XLSX oracle guide](../compat/xlsx/oracle/README.md).
 
 ## Visual aggregate scope
 

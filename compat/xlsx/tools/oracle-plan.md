@@ -1,5 +1,9 @@
 # Dynamic XLSX oracle migration (in progress)
 
+> Historical plan and evidence. The later bounded notes migration is described
+> in [the current oracle guide](../oracle/README.md); the statements below
+> describe the earlier stage at which the plan was recorded.
+
 The compatibility contract stays the same: generate inputs and expected values
 with a pinned upstream Go implementation, then pass the **same** cases through
 the existing detailed MoonBit verifiers. No tolerance or case removal is part

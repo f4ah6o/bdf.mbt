@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build pinned upstream XLSX adapters in a disposable tree, never in a checkout.
 
-This is the migration-stage builder, not a replacement for test:xlsx-compat yet.
+The fresh compatibility runner validates the resulting identity before use.
 """
 import argparse
 import hashlib

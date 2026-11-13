@@ -115,7 +115,7 @@ Progress made since the first baseline:
   so a solid fill that follows a gradient or pattern is written again.
   XLSX and other callers retain their sequential-emission contract.
   Four focused XLSX fixtures assert exact warnings, metadata, views,
-  tables and every BDF part byte (`node compat/xlsx/emission-test.mjs`).
+  tables and every BDF part byte (`node compat/xlsx/oracle/run-suite.mjs --script compat/xlsx/emission-test.mjs`).
   The structural difference count fell from 63,745 at `2c7872f` to 58,664
   (DOCX 26,371 → 22,696, Markdown 6,263 → 4,857; PPTX 11,995,
   XLSX 16,189 and PDF 2,927 unchanged); the passing case set is unchanged.

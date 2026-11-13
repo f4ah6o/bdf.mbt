@@ -1,6 +1,6 @@
 # XLSX table decoration visual regression
 
-`npm run test:xlsx-visual` compares five cases from four existing Go-generated XLSX/BDF fixture files; the row-stripe plain fixture is sampled twice. Run `moon build --target js` and install Playwright Chromium first. The upstream 0.2.1 JavaScript renderer draws the Go-converted BDF as the reference. The first variant draws the MoonBit-converted BDF using that same renderer; the second uses the MoonBit sheet renderer with MoonBit-converted BDF. This separates conversion differences from end-to-end rendering differences. Both paths use the same 560×115 sheet region and scale 1.
+`npm run test:xlsx-visual` compares five cases from four existing Go-generated XLSX/BDF fixture files; the row-stripe plain fixture is sampled twice. Run `moon build --target js`, install Playwright Chromium, and provision the oracle as described in [oracle/README.md](oracle/README.md) first. The upstream 0.2.1 JavaScript renderer draws the Go-converted BDF as the reference. The first variant draws the MoonBit-converted BDF using that same renderer; the second uses the MoonBit sheet renderer with MoonBit-converted BDF. This separates conversion differences from end-to-end rendering differences. Both paths use the same 560×115 sheet region and scale 1.
 
 | Fixture and index | Focus |
 | --- | --- |

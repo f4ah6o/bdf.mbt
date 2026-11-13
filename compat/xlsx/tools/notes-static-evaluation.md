@@ -1,4 +1,6 @@
-# Inactive 264-case notes exception: measurements
+# 264-case notes exception: historical evaluation
+
+> This document records the pre-adoption study. The bounded notes source was subsequently selected for the fresh-oracle workflow; see [oracle/README.md](../oracle/README.md) for its current status. The candidate figures below are not current checkout sizes.
 
 This is a read-only feasibility study, not an implemented migration or a change
 to the exact comparison gate. Three notes fixtures remain stored and all 264

@@ -1,7 +1,6 @@
 import {createHash} from 'node:crypto';
 import {readFile,writeFile} from 'node:fs/promises';
 import path from 'node:path';
-import {loadFixture} from '../fixtures.mjs';
 export function validateRetained(entry,value){
  if(!/^[\w-]+\.json$/.test(entry.file)||!['input','media'].includes(entry.kind))throw Error('Invalid retained input entry');
  if(!Array.isArray(value)||!value.length)throw Error('Empty or non-array retained input');
@@ -18,9 +17,11 @@ export function validateRetained(entry,value){
 export async function exportRetained(output){
  const manifest=JSON.parse(await readFile(new URL('./retained-inputs.manifest',import.meta.url),'utf8'));
  const receipts={};
+ const {readInputs}=await import('../oracle/contract.mjs');
+ const inputs=await readInputs();
  for(const entry of manifest){
   if(Object.hasOwn(receipts,entry.file))throw Error('Duplicate retained input');
-  const content=validateRetained(entry,await loadFixture('./'+entry.file));
+  const content=validateRetained(entry,inputs[entry.file]);
   await writeFile(path.join(output,'compat/xlsx',entry.file),content,{flag:'wx'});
   receipts[entry.file]=entry.sha256;
  }
