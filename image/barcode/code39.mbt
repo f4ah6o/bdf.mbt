@@ -17,7 +17,7 @@ pub suberror BarcodeError {
 /// Other symbologies are not yet implemented.
 pub struct Symbol {
   text : String
-  modules : Array[Bool]
+  modules : Bytes
 }
 
 ///|
@@ -78,7 +78,7 @@ pub fn Symbol::at(self : Symbol, x : Int32, y : Int32) -> Bool {
   if y != 0 || x < 0 || x >= self.modules.length() {
     false
   } else {
-    self.modules[x]
+    self.modules[x] != b'\x00'
   }
 }
 
@@ -182,7 +182,7 @@ pub fn encode(
   // Each 9-element pattern has six narrow and three wide elements: 15
   // modules, plus one white separator between adjacent characters.
   let width = symbols.length() * 15 + symbols.length() - 1 + margin * 2
-  let modules : Array[Bool] = Array::make(width, false)
+  let modules : Array[Byte] = Array::make(width, b'\x00')
   let mut cursor = margin
   for index, ch in symbols {
     if index > 0 {
@@ -194,12 +194,12 @@ pub fn encode(
       let size = if element == '1' { 3 } else { 1 }
       if dark {
         for i in 0..<size {
-          modules[cursor + i] = true
+          modules[cursor + i] = b'\x01'
         }
       }
       cursor += size
       dark = !dark
     }
   }
-  { text: payload, modules, }
+  { text: payload, modules: Bytes::from_array(modules), }
 }

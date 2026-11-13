@@ -22,7 +22,7 @@ pub suberror BarcodeError {
 // Types and methods
 pub struct Symbol {
   text : String
-  modules : Array[Bool]
+  modules : Bytes
 }
 pub fn Symbol::at(Self, Int32, Int32) -> Bool
 pub fn Symbol::height(Self) -> Int32
