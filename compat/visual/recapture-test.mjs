@@ -198,6 +198,74 @@ console.log('ok 2 - a mostly white page with one painted pixel is not blank');
   console.log('ok 8 - heatmap, triptych and heatmap regions follow the adopted capture');
 }
 
+// Worker fixtures paint on both sides. Exercise variant-only, both-blank and
+// persistent blank captures while retaining evidence from other viewports.
+{
+  const painted = (x, y) => (x === 0 && y === 0 ? ink : white);
+  const changed = (x, y) => (y === 0 && x < 3 ? ink : white);
+  for (const blankSide of ['variant', 'both']) {
+    const h = harness({
+      baseline: (step, viewport) => step === 0 && viewport === 'mobile' && blankSide === 'both' ? () => white : painted,
+      variant: (step, viewport) => step === 0 && viewport === 'mobile' ? () => white : step === 0 && viewport === 'wide' ? changed : painted,
+    });
+    const report = await captureWithRecapture({ ...h, checkVariant: true });
+    assert.equal(h.calls(), 2, `${blankSide}: one retry`);
+    assert.equal(ratioFor(h, 'wide'), 2 / 64, `${blankSide}: preserve true first-capture difference`);
+    assert.equal(ratioFor(h, 'mobile'), 0, `${blankSide}: recovered mobile`);
+    assert.deepEqual(report.recapture.adoptedCaptureByViewport, { wide: 'first', desktop: 'first', mobile: 'retry' });
+    assert.ok(existsSync(h.heatmapPng('wide')));
+    assert.ok(existsSync(h.triptychPng('wide')));
+    assert.equal(existsSync(h.heatmapPng('mobile')), false);
+  }
+  for (const blankSide of ['baseline', 'variant', 'both']) {
+    const h = harness({
+      baseline: () => blankSide === 'variant' ? painted : () => white,
+      variant: () => blankSide === 'baseline' ? painted : () => white,
+    });
+    await assert.rejects(() => captureWithRecapture({ ...h, checkVariant: true }), /capture is still blank at wide, desktop, mobile after a retry/);
+    assert.equal(h.calls(), 2, `${blankSide}: persistent blank fails after one retry`);
+  }
+  // A retry must recheck both sides, not only the side that was blank first.
+  for (const initialBlankSide of ['baseline', 'variant']) {
+    const h = harness({
+      baseline: step => (step === 0) === (initialBlankSide === 'baseline') ? () => white : painted,
+      variant: step => (step === 0) === (initialBlankSide === 'variant') ? () => white : painted,
+    });
+    await assert.rejects(() => captureWithRecapture({ ...h, checkVariant: true }), /capture is still blank at wide, desktop, mobile after a retry/);
+    assert.equal(h.calls(), 2, `${initialBlankSide}: opposite side went blank on retry`);
+  }
+  const normal = harness({ baseline: () => painted, variant: () => changed });
+  const report = await captureWithRecapture({ ...normal, checkVariant: true });
+  assert.equal(normal.calls(), 1, 'painted difference is never retried');
+  assert.equal(report.recapture, undefined);
+  assert.equal(ratioFor(normal, 'wide'), 2 / 64);
+  console.log('ok 9 - worker variant blank recovery, persistent blanks, and real differences');
+}
+
+// Deterministically generate side-specific blank sets. The expected adoption is
+// the union of the two sets, and every nonblank initial difference must survive.
+{
+  const painted = (x, y) => (x === 0 && y === 0 ? ink : white);
+  const different = (x, y) => (y === 0 && x < 3 ? ink : white);
+  for (let masks = 0; masks < 64; masks++) {
+    const baselineMask = masks & 7, variantMask = masks >> 3;
+    const h = harness({
+      baseline: (step, viewport) => step === 0 && (baselineMask & (1 << viewports.indexOf(viewport))) ? () => white : painted,
+      variant: (step, viewport) => step === 0 && (variantMask & (1 << viewports.indexOf(viewport))) ? () => white : step === 0 ? different : painted,
+    });
+    const report = await captureWithRecapture({ ...h, checkVariant: true });
+    const union = baselineMask | variantMask;
+    assert.equal(h.calls(), union === 0 ? 1 : 2, `mask ${masks}: retry count`);
+    for (let i = 0; i < viewports.length; i++) {
+      const viewport = viewports[i], retried = (union & (1 << i)) !== 0;
+      assert.equal(report.results[i].pass, retried ? 1 : 0, `mask ${masks}: ${viewport} report origin`);
+      assert.equal(ratioFor(h, viewport), retried ? 0 : 2 / 64, `mask ${masks}: ${viewport} pixel evidence`);
+      if (union !== 0) assert.equal(report.recapture.adoptedCaptureByViewport[viewport], retried ? 'retry' : 'first');
+    }
+  }
+  console.log('ok 10 - all 64 baseline/variant blank-set combinations preserve viewport evidence');
+}
+
 const { diagnosticChecks } = await import('./recapture-diagnostics-test.mjs');
 const { recapturePbtChecks, recaptureGeneratedCases } = await import('./recapture-pbt-test.mjs');
-console.log(`\nrecapture: ${8 + diagnosticChecks + recapturePbtChecks} pass, 0 fail (${recaptureGeneratedCases} generated cases)`);
+console.log(`\nrecapture: ${10 + diagnosticChecks + recapturePbtChecks} pass, 0 fail (${recaptureGeneratedCases + 64} generated cases)`);

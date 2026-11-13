@@ -10,7 +10,7 @@ import { PNG } from 'pngjs';
 // A capture counts as blank only when every pixel is opaque white. Any content at all — a glyph, a
 // border, a background tint, a scrollbar — leaves a non-white pixel and is never treated as blank,
 // so a page that is legitimately mostly white is not a false positive. The check is applied to the
-// baseline of the continuous pairs, whose fixtures always paint a BDF page; it is not a general
+// baseline of the continuous pairs, and optionally the variant of a pair known to paint a BDF page; it is not a general
 // "is this page empty" test and must not be pointed at a page that is meant to be blank.
 export const blankCapture = file => {
   const png = PNG.sync.read(readFileSync(file));
@@ -109,7 +109,7 @@ const mergeReport = (first, retried, blankViewports, originalReports) => {
   return merged;
 };
 
-// Run `capture` once. If any baseline screenshot came back blank, run it again and require that the
+// Run `capture` once. If a checked screenshot came back blank, run it again and require that the
 // retry painted: a retry that is still blank means the page never rendered, which the pixel
 // comparison cannot judge, so it fails loudly instead of reporting a 100% visual difference.
 //
@@ -121,11 +121,11 @@ const mergeReport = (first, retried, blankViewports, originalReports) => {
 // This is a one-shot mitigation for a capture race, not a fix for it: the page is still screenshotted
 // straight after `networkidle` with no readiness wait, so a capture can still be blank, and a retry
 // that is blank too fails the run rather than recovering it.
-export async function captureWithRecapture({ capture, reportPath, baselinePng, variantPng, run, label, log = console.log }) {
+export async function captureWithRecapture({ capture, reportPath, baselinePng, variantPng, run, label, checkVariant = false, log = console.log }) {
   const target = path.dirname(reportPath);
   await run(capture);
   const first = JSON.parse(readFileSync(reportPath, 'utf8'));
-  const blank = first.results.filter(result => blankCapture(baselinePng(result.viewport)));
+  const blank = first.results.filter(result => blankCapture(baselinePng(result.viewport)) || (checkVariant && blankCapture(variantPng(result.viewport))));
   if (blank.length === 0) return first;
 
   const blankViewports = new Set(blank.map(result => result.viewport));
@@ -144,7 +144,7 @@ export async function captureWithRecapture({ capture, reportPath, baselinePng, v
     for (const [, file] of existingArtifacts(viewport, baselinePng, variantPng)) rmSync(file, { force: true });
   }
 
-  log(`${label}: baseline capture was blank at ${[...blankViewports].join(', ')} — recapturing`);
+  log(`${label}: ${checkVariant ? "baseline or variant" : "baseline"} capture was blank at ${[...blankViewports].join(', ')} — recapturing`);
   await run(capture);
   const retried = JSON.parse(readFileSync(reportPath, 'utf8'));
   writeFileSync(path.join(target, originalReports.retry), JSON.stringify(retried, null, 2));
@@ -155,6 +155,13 @@ export async function captureWithRecapture({ capture, reportPath, baselinePng, v
   const stillBlank = retried.results.filter(result => blankViewports.has(result.viewport) && blankCapture(baselinePng(result.viewport)));
   if (stillBlank.length > 0) {
     throw new Error(`${label}: baseline capture is still blank at ${stillBlank.map(result => result.viewport).join(', ')} after a retry — the page never painted, so the pixel comparison cannot judge it`);
+  }
+
+  if (checkVariant) {
+    const stillBlankVariant = retried.results.filter(result => blankViewports.has(result.viewport) && blankCapture(variantPng(result.viewport)));
+    if (stillBlankVariant.length > 0) {
+      throw new Error(`${label}: variant capture is still blank at ${stillBlankVariant.map(result => result.viewport).join(', ')} after a retry — the page never painted, so the pixel comparison cannot judge it`);
+    }
   }
 
   // Put the kept viewports back exactly as the first capture left them: the retry re-captured every
