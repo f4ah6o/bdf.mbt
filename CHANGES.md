@@ -129,6 +129,10 @@
 
 ### Fixed
 
+- DOCX body list labels now apply numbering-level run formatting over the
+  paragraph mark, including level overrides, theme fonts and symbol bullets.
+  Headers, footers and footnotes do not yet use this numbering path.
+
 - PPTX shapes, connectors and pictures preserve supported external click links
   with bounds that follow their placement and rotation. Internal slide actions
   are not yet converted.
