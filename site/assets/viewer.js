@@ -118,12 +118,18 @@ function askFirstFontChoice() {
     use.type = "button";
     use.className = "button primary";
     use.textContent = "この設定で続ける";
+    const updateUseButton = () => {
+      use.disabled = localFontsRoot.getAttribute("aria-busy") === "true";
+    };
+    localFontsRoot.addEventListener("localfontsbusychange", updateUseButton);
+    updateUseButton();
     actions.append(skip, use);
     dialog.append(title, note, host, actions);
     document.body.append(dialog);
     const finish = (withFonts) => {
       if (settled) return;
       settled = true;
+      localFontsRoot.removeEventListener("localfontsbusychange", updateUseButton);
       dialog.close();
       dialog.remove();
       if (localFontsAnchor.parentNode) {
@@ -133,7 +139,9 @@ function askFirstFontChoice() {
       resolve(withFonts);
     };
     skip.addEventListener("click", () => finish(false));
-    use.addEventListener("click", () => finish(true));
+    use.addEventListener("click", () => {
+      if (!use.disabled) finish(true);
+    });
     dialog.addEventListener("cancel", (event) => {
       event.preventDefault();
       finish(false);
@@ -144,6 +152,7 @@ function askFirstFontChoice() {
       dialog.showModal();
     } catch {
       // モーダルを開けない環境でも、選択済みの書体で変換を続ける。
+      localFontsRoot.removeEventListener("localfontsbusychange", updateUseButton);
       dialog.remove();
       if (localFontsAnchor.parentNode) {
         localFontsAnchor.parentNode.insertBefore(localFontsRoot, localFontsAnchor.nextSibling);
