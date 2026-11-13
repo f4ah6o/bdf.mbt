@@ -39,6 +39,11 @@ from the static expectations. That count is not a semantic classification of
 those differences. All 264 original notes values were selected unconditionally
 and compared unchanged; generated raw notes were still checked for input,
 options, BDF structure and part integrity.
+The final code's second fresh run had 89 raw note differences; its independent
+Git audit again found 804/804 selected values equal and 316,370 comparison
+units. Both runs contained the same 810 raw output names, and only the three
+raw notes files differed between the runs. The second run's case IDs and raw
+hashes are retained in [evidence-20261113.json](evidence-20261113.json).
 
 ## Timing
 
@@ -49,3 +54,13 @@ cold-built binary, a full post-removal `npm run test:xlsx-compat` took 1,214.03
 seconds wall time: 880.146 seconds for fresh generation and 333.328 seconds for
 validation and the suite. No generated expectations were cached. The baseline
 full compatibility run recorded 334.41 seconds without fresh generation.
+The second run, using the cached build but fresh generated expectations,
+completed in 1,273.42 seconds: 839.622 seconds generating and 433.129 seconds
+validating and testing. It overlapped another QEMU generation and a Git audit,
+so its timing is not directly comparable with the first run.
+The independent fresh `npm run test:xlsx-visual` run passed the table visual
+checks at 0.00% difference and took 1,049.02 seconds: 1,015.719 seconds
+generating and 33.122 seconds validating and testing. Its generation overlapped
+the second compatibility run. The earlier picture visual smoke used a retained
+generated run and took 97.95 seconds for table and picture checks together;
+the complete aggregate local visual workflow was not run.
