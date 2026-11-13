@@ -254,19 +254,81 @@ fn read_binary_tags(data : Bytes) -> Array[DxfTag] raise {
 }
 
 ///|
+// Match the upstream ASCII-DXF policy: valid UTF-8 wins, modern DXF is
+// UTF-8, and unlabelled/default-codepage Japanese is inferred conservatively.
+fn dxf_decode_text(data : Bytes) -> String {
+  let lossy = @utf8.decode_lossy(data)
+  let lines = lossy.split("\n").collect()
+  let mut version = ""
+  let mut codepage = ""
+  let mut has_codepage = false
+  let mut i = 0
+  while i + 3 < lines.length() {
+    let code = dxf_trim(lines[i])
+    let value = dxf_trim(lines[i + 1])
+    if code == "0" && value == "ENDSEC" {
+      break
+    }
+    if code == "9" {
+      if value == "$ACADVER" {
+        version = dxf_trim(lines[i + 3])
+      } else if value == "$DWGCODEPAGE" {
+        codepage = dxf_trim(lines[i + 3]).to_lower()
+        has_codepage = true
+      }
+    }
+    i += 2
+  }
+  if version >= "AC1021" {
+    return lossy
+  }
+  let utf8 = Some(@utf8.decode(data)) catch { _ => None }
+  if utf8 is Some(text) {
+    return text
+  }
+  let explicit_sjis = codepage == "ansi_932" ||
+    codepage == "dos932" ||
+    codepage == "shift_jis"
+  let can_infer = !has_codepage || codepage == "ansi_1252"
+  if explicit_sjis || can_infer {
+    match @encoding.decode(data, "shift_jis") {
+      Ok(text) =>
+        if explicit_sjis ||
+          (!text.contains("�") && dxf_sjis_evidence(data) >= 2) {
+          return text
+        }
+      Err(_) => ()
+    }
+  }
+  lossy
+}
+
+///|
+// Upstream validSJIS counts kana and JIS level-1 pairs, not half-width
+// katakana or level-2 lead bytes that can resemble Western accented text.
+fn dxf_sjis_evidence(data : Bytes) -> Int {
+  let mut found = 0
+  let mut i = 0
+  while i < data.length() {
+    let b = data[i].to_int()
+    if b >= 0x81 && (b < 0xa0 || b >= 0xe0) {
+      if b == 0x82 || b == 0x83 || (b >= 0x88 && b <= 0x9f) {
+        found += 1
+      }
+      i += 2
+    } else {
+      i += 1
+    }
+  }
+  found
+}
+
+///|
 fn read_tags(data : Bytes) -> Array[DxfTag] raise {
   if dxf_binary_sentinel(data) {
     return read_binary_tags(data)
   }
-  let head = @utf8.decode_lossy(data[:Int::min(data.length(), 8192)].to_owned())
-  let text = if head.to_lower().contains("ansi_932") || head.to_lower().contains("shift_jis") {
-    match @encoding.decode(data, "shift_jis") {
-      Ok(value) => value
-      Err(_) => @utf8.decode_lossy(data)
-    }
-  } else {
-    @utf8.decode_lossy(data)
-  }
+  let text = dxf_decode_text(data)
   let lines = text.split("\n").collect()
   let tags : Array[DxfTag] = []
   let mut index = 0
