@@ -1,3 +1,5 @@
+> Historical storage measurements. The current fresh-oracle workflow and its pinned Git baseline are documented in [the XLSX oracle guide](../compat/xlsx/oracle/README.md). The commands below apply to a checkout of the historical baseline, not the migrated working tree.
+
 # XLSX fixture storage measurements and migration
 
 This records the measurements that chose the current storage format for

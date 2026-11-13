@@ -155,6 +155,7 @@ const GATES = [
       'chromium',
       'bash',
       'visual_fixture',
+      'xlsx_oracle',
     ],
     kind: 'actrun',
     requiredSteps: ['test XLSX picture rendering', 'test visual compatibility'],
@@ -496,7 +497,45 @@ function collectEnvironment() {
   };
 }
 
-function checkPrerequisites(environment) {
+async function probeXlsxOracle(build, emulator) {
+  const binary = path.join(build, 'xlsx-oracle.test');
+  const args = ['-test.list=^$'];
+  if (emulator) args.unshift(binary);
+  await new Promise((resolve, reject) => {
+    const child = spawn(emulator ?? binary, args, {
+      cwd: path.join(build, 'runtime/xlsx'), stdio: 'ignore', timeout: 15000,
+      env: { ...process.env, GOMAXPROCS: '2', GODEBUG: '', TZ: 'UTC', LC_ALL: 'C' },
+    });
+    child.once('error', reject);
+    child.once('close', (code, signal) => code === 0 ? resolve() : reject(new Error(`oracle execution probe failed (code=${code}, signal=${signal})`)));
+  });
+}
+
+async function checkXlsxOraclePrerequisite({ env = process.env, platform = process.platform, arch = process.arch, validate, probe = probeXlsxOracle } = {}) {
+  const id = 'xlsx_oracle';
+  const build = env.BDF_XLSX_ORACLE_BUILD;
+  const emulator = env.BDF_XLSX_ORACLE_EMULATOR;
+  const guide = 'see compat/xlsx/oracle/README.md';
+  const result = (status, detail) => ({ id, status, detail, required: true });
+  if (!build) return result('missing', `BDF_XLSX_ORACLE_BUILD is not set; ${guide}`);
+  if (!emulator && (platform !== 'linux' || arch !== 'arm64')) {
+    return result('missing', `BDF_XLSX_ORACLE_EMULATOR is required outside native Linux ARM64; ${guide}`);
+  }
+  const buildPath = path.resolve(REPO_ROOT, build);
+  const emulatorPath = emulator ? path.resolve(REPO_ROOT, emulator) : null;
+  try {
+    await fsp.access(emulatorPath ?? path.join(buildPath, 'xlsx-oracle.test'), fs.constants.X_OK);
+    const validateBuild = validate ?? (await import('../../compat/xlsx/oracle/generate.mjs')).validateBuild;
+    await validateBuild(buildPath, emulatorPath);
+    await probe(buildPath, emulatorPath);
+  } catch (error) {
+    const message = String(error.message ?? error).split('\n')[0];
+    return result('missing', `invalid or inaccessible XLSX oracle build/emulator: ${message}; ${guide}`);
+  }
+  return result('ok', `verified build ${buildPath}; ${emulatorPath ? `verified emulator ${emulatorPath}` : 'native Linux ARM64'}`);
+}
+
+async function checkPrerequisites(environment) {
   const checks = [];
   const add = (id, status, detail, required = true) => {
     checks.push({ id, status, detail, required });
@@ -572,6 +611,7 @@ function checkPrerequisites(environment) {
   for (const [id, file] of fileChecks) {
     add(id, fs.existsSync(file) ? 'ok' : 'missing', file);
   }
+  checks.push(await checkXlsxOraclePrerequisite());
 
   add('gh', environment.gh ? 'ok' : 'optional', environment.gh ?? 'not installed (hosted-only)', false);
   add('curl', environment.curl ? 'ok' : 'optional', environment.curl ?? 'not installed (hosted-only)', false);
@@ -1522,7 +1562,7 @@ async function main() {
 
   const git = collectGitState();
   const environment = collectEnvironment();
-  const prerequisites = checkPrerequisites(environment);
+  const prerequisites = await checkPrerequisites(environment);
   const prereqs = prerequisiteMap(prerequisites);
   const minTestCount = readMinTestCount();
   const scope = retainedScope();
@@ -1681,6 +1721,7 @@ export {
   GATES,
   HOSTED_ONLY,
   WORKFLOW_DIR,
+  checkXlsxOraclePrerequisite,
   gateCommand,
   missingPrerequisites,
   overallResult,
@@ -1689,6 +1730,7 @@ export {
   readMinTestCount,
   renderSummary,
   retainedScope,
+  runGate,
   validateCiTest,
   validateHostedOnlySteps,
   validateRequiredSteps,

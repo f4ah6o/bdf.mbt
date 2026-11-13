@@ -336,6 +336,24 @@ async function withTempStore(root, { pack = 'gzip' } = {}) {
   checked++;
 }
 
+// Repack the representative live values into a separate store. This preserves
+// the packed-store and default-cache checks when the live oracle values are
+// generated JSON rather than tracked BXF2 manifests.
+async function assertRepresentativeStore(value, label) {
+  const { storeDir, envelope } = await withTempStore(value);
+  let reads = 0;
+  const readStore = async name => { reads++; return readFile(new URL(name, storeDir)); };
+  try {
+    const first = await resolveFixture(envelope, label, { storeDir, readStore });
+    const afterFirst = reads;
+    const second = await resolveFixture(envelope, label, { storeDir, readStore });
+    assert.deepEqual(first, value, `${label}: packed round trip`);
+    assert.deepEqual(second, value, `${label}: repeated packed round trip`);
+    assert.ok(afterFirst > 0, `${label}: store was read`);
+    assert.equal(reads, afterFirst, `${label}: default cache avoids repeated pack reads`);
+  } finally { rmSync(new URL('../', storeDir), { recursive: true, force: true }); }
+}
+
 // The representative fixtures of the size-reduction issue load through the
 // real store with their case sets intact. conditional-top.json repeats its
 // inputs and expected BDFs across cases; simple-picture.json has 48 distinct
@@ -352,6 +370,8 @@ async function withTempStore(root, { pack = 'gzip' } = {}) {
   assert.equal(distinctBdf.size, 43, 'conditional-top distinct expected BDFs');
   assert.equal(new Set(simplePicture.map(c => c.input)).size, 48, 'simple-picture distinct inputs');
   assert.deepEqual(Object.keys(simplePicture[0]).sort(), ['bdf', 'input', 'mode', 'no_index', 'warnings']);
+  await assertRepresentativeStore(conditionalTop, 'conditional-top');
+  await assertRepresentativeStore(simplePicture, 'simple-picture');
   checked++;
 }
 
@@ -402,7 +422,8 @@ async function withTempStore(root, { pack = 'gzip' } = {}) {
 {
   const first = await loadFixture('./simple-picture.json');
   const second = await loadFixture('./simple-picture.json');
-  assert.deepEqual(first, second, 'repeat loads are identical through the default cache');
+  assert.deepEqual(first, second, 'repeat live fixture loads are identical');
+  await assertRepresentativeStore(first, 'simple-picture-default-cache');
   checked++;
 }
 

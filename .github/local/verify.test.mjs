@@ -2,9 +2,11 @@
 //
 // These cover the parts that decide whether a run may be reported as a pass:
 // status aggregation, empty or skipped steps, missing prerequisites, the
-// retained-scope marker and the site server checks. They do not run actrun,
-// MoonBit or a browser.
+// retained-scope marker and the site server checks. When actrun is installed,
+// a temporary workflow also checks environment propagation. No MoonBit or
+// browser is run.
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -17,12 +19,14 @@ import {
   GATES,
   HOSTED_ONLY,
   WORKFLOW_DIR,
+  checkXlsxOraclePrerequisite,
   gateCommand,
   missingPrerequisites,
   overallResult,
   parseArgs,
   readJson,
   renderSummary,
+  runGate,
   validateCiTest,
   validateHostedOnlySteps,
   validateRequiredSteps,
@@ -323,6 +327,105 @@ test("missingPrerequisites lists only prerequisites that are not ok", () => {
     "moon: not installed",
     "unknown prerequisite",
   ]);
+});
+
+test("visual oracle prerequisite blocks missing, inaccessible and invalid configuration", async (t) => {
+  const dir = tempRunDir(t);
+  const build = path.join(dir, "build"), emulator = path.join(dir, "qemu");
+  fs.mkdirSync(build);
+  fs.writeFileSync(emulator, "not the pinned QEMU");
+  fs.chmodSync(emulator, 0o755);
+  const visual = GATES.find((gate) => gate.id === "visual");
+  assert.ok(visual.requires.includes("xlsx_oracle"));
+  assert.match((await checkXlsxOraclePrerequisite({ env: {} })).detail, /BDF_XLSX_ORACLE_BUILD/);
+  assert.match((await checkXlsxOraclePrerequisite({ env: { BDF_XLSX_ORACLE_BUILD: build }, platform: "linux", arch: "x64" })).detail, /BDF_XLSX_ORACLE_EMULATOR/);
+  const env = { BDF_XLSX_ORACLE_BUILD: build, BDF_XLSX_ORACLE_EMULATOR: emulator };
+  fs.writeFileSync(path.join(build, "identity.json"), "{}");
+  const invalid = await checkXlsxOraclePrerequisite({ env });
+  assert.equal(invalid.status, "missing");
+  assert.match(invalid.detail, /oracle build identity/);
+  assert.deepEqual(missingPrerequisites({ requires: ["xlsx_oracle"] }, new Map([[invalid.id, invalid]])), [`xlsx_oracle: ${invalid.detail}`]);
+  fs.chmodSync(emulator, 0o644);
+  assert.equal((await checkXlsxOraclePrerequisite({ env })).status, "missing");
+  fs.chmodSync(emulator, 0o755);
+  let received;
+  const valid = await checkXlsxOraclePrerequisite({ env, validate: async (...args) => { received = args; }, probe: async () => {} });
+  assert.equal(valid.status, "ok");
+  assert.deepEqual(received, [build, emulator]);
+  assert.deepEqual(missingPrerequisites({ requires: ["xlsx_oracle"] }, new Map([[valid.id, valid]])), []);
+  const binary = path.join(build, "xlsx-oracle.test"); fs.writeFileSync(binary, "native"); fs.chmodSync(binary, 0o755);
+  const native = await checkXlsxOraclePrerequisite({ env: { BDF_XLSX_ORACLE_BUILD: build }, platform: "linux", arch: "arm64", validate: async (...args) => { received = args; }, probe: async () => {} });
+  assert.equal(native.status, "ok");
+  assert.deepEqual(received, [build, null]);
+  const failedProbe = await checkXlsxOraclePrerequisite({ env, validate: async () => {}, probe: async () => { throw Error("probe failed"); } });
+  assert.equal(failedProbe.status, "missing");
+  assert.match(failedProbe.detail, /probe failed/);
+});
+
+test("visual runner records missing and invalid oracle as blocked", (t) => {
+  const dir = tempRunDir(t), build = path.join(dir, "bad-build");
+  fs.mkdirSync(build); fs.writeFileSync(path.join(build, "identity.json"), "{}");
+  const env = { ...process.env }; delete env.BDF_XLSX_ORACLE_BUILD; delete env.BDF_XLSX_ORACLE_EMULATOR;
+  for (const [name, overrides, expected] of [
+    ["missing", {}, /BDF_XLSX_ORACLE_BUILD/],
+    ["invalid", { BDF_XLSX_ORACLE_BUILD: build, BDF_XLSX_ORACLE_EMULATOR: process.execPath }, /oracle build identity/],
+  ]) {
+    const evidence = path.join(dir, name);
+    const result = spawnSync(process.execPath, [path.join(REPO_ROOT, ".github/local/verify.mjs"), "--only", "visual", "--evidence-dir", evidence], { cwd: REPO_ROOT, env: { ...env, ...overrides }, encoding: "utf8", timeout: 30000 });
+    assert.equal(result.status, 2, result.stderr);
+    const manifest = JSON.parse(fs.readFileSync(path.join(evidence, "manifest.json"), "utf8"));
+    const gate = manifest.gates.find((entry) => entry.id === "visual");
+    assert.equal(gate.status, "blocked");
+    assert.match(gate.notes.join("\n"), expected);
+    assert.equal(manifest.result, "incomplete");
+  }
+});
+
+test("configured pinned oracle clears the visual prerequisite", { skip: !process.env.BDF_XLSX_ORACLE_TEST_BUILD }, async () => {
+  const env = { BDF_XLSX_ORACLE_BUILD: process.env.BDF_XLSX_ORACLE_TEST_BUILD, BDF_XLSX_ORACLE_EMULATOR: process.env.BDF_XLSX_ORACLE_TEST_EMULATOR };
+  const result = await checkXlsxOraclePrerequisite({ env });
+  assert.equal(result.status, "ok", result.detail);
+  const visual = GATES.find((gate) => gate.id === "visual");
+  const prereqs = new Map(visual.requires.map((id) => [id, { id, status: "ok", detail: "test" }]));
+  prereqs.set(result.id, result);
+  assert.deepEqual(missingPrerequisites(visual, prereqs), []);
+});
+
+test("configured oracle rejects binary, runtime seed and emulator corruption", { skip: !process.env.BDF_XLSX_ORACLE_TEST_BUILD }, async (t) => {
+  const dir = tempRunDir(t), source = path.resolve(REPO_ROOT, process.env.BDF_XLSX_ORACLE_TEST_BUILD);
+  const build = path.join(dir, "build"), emulator = path.join(dir, "bad-qemu");
+  fs.mkdirSync(build); fs.copyFileSync(path.join(source, "identity.json"), path.join(build, "identity.json"));
+  fs.copyFileSync(path.join(source, "xlsx-oracle.test"), path.join(build, "xlsx-oracle.test"));
+  fs.cpSync(path.join(source, "runtime"), path.join(build, "runtime"), { recursive: true });
+  fs.writeFileSync(emulator, "wrong QEMU"); fs.chmodSync(emulator, 0o755);
+  const env = { BDF_XLSX_ORACLE_BUILD: build, BDF_XLSX_ORACLE_EMULATOR: emulator };
+  assert.match((await checkXlsxOraclePrerequisite({ env })).detail, /emulator integrity/);
+  const identity = JSON.parse(fs.readFileSync(path.join(build, "identity.json"), "utf8"));
+  fs.writeFileSync(path.join(build, Object.keys(identity.seeds)[0]), "corrupted seed");
+  assert.match((await checkXlsxOraclePrerequisite({ env })).detail, /build seed/);
+  fs.writeFileSync(path.join(build, "xlsx-oracle.test"), "corrupted binary");
+  assert.match((await checkXlsxOraclePrerequisite({ env })).detail, /oracle binary integrity/);
+});
+
+test("runner and actrun forward the oracle environment to a workflow step", { skip: !fs.existsSync(path.join(REPO_ROOT, "node_modules/.bin/actrun")) }, async (t) => {
+  const dir = tempRunDir(t), workflow = path.join(dir, "oracle-env.yml");
+  fs.writeFileSync(workflow, `name: oracle env probe\non:\n  push:\n    branches-ignore: ['**']\njobs:\n  probe:\n    runs-on: ubuntu-latest\n    steps:\n      - name: check oracle environment\n        run: test "$BDF_XLSX_ORACLE_BUILD" = /tmp/probe-build && test "$BDF_XLSX_ORACLE_EMULATOR" = /tmp/probe-qemu && echo ORACLE_ENV_PASS\n`);
+  const visual = GATES.find((gate) => gate.id === "visual");
+  const saved = { build: process.env.BDF_XLSX_ORACLE_BUILD, emulator: process.env.BDF_XLSX_ORACLE_EMULATOR };
+  process.env.BDF_XLSX_ORACLE_BUILD = "/tmp/probe-build";
+  process.env.BDF_XLSX_ORACLE_EMULATOR = "/tmp/probe-qemu";
+  try {
+    const gate = { ...visual, workflow, job: "probe", requiredSteps: ["check oracle environment"], hostedOnlySteps: [] };
+    const context = { evidenceDir: dir, runRoot: path.join(dir, "runs"), artifactRoot: path.join(dir, "artifacts"), timeoutSeconds: 30 };
+    const result = await runGate(gate, context);
+    assert.equal(result.status, "pass", JSON.stringify(result.checks));
+    const run = JSON.parse(fs.readFileSync(path.join(dir, "runs/run-1/run.json"), "utf8"));
+    assert.equal(run.ok, true);
+    assert.match(fs.readFileSync(path.join(dir, "runs/run-1/tasks/probe__step_1.stdout.log"), "utf8"), /ORACLE_ENV_PASS/);
+  } finally {
+    if (saved.build === undefined) delete process.env.BDF_XLSX_ORACLE_BUILD; else process.env.BDF_XLSX_ORACLE_BUILD = saved.build;
+    if (saved.emulator === undefined) delete process.env.BDF_XLSX_ORACLE_EMULATOR; else process.env.BDF_XLSX_ORACLE_EMULATOR = saved.emulator;
+  }
 });
 
 test("validateSiteServer requires the step to report its own ephemeral port", (t) => {

@@ -9,12 +9,13 @@ rows and cells; `verify-date.mjs` checks ISO date serials;
 
 For the two visual regression harnesses, see [visual-README.md](visual-README.md) and [picture-visual-README.md](picture-visual-README.md).
 
-After building the JavaScript target, run `node compat/xlsx/verify-workbook.mjs` `node compat/xlsx/verify-reference.mjs`, `node compat/xlsx/verify-strings.mjs`,
-`node compat/xlsx/verify-cells.mjs`, `node compat/xlsx/verify-date.mjs`,
-`node compat/xlsx/verify-range.mjs`, `node compat/xlsx/verify-geometry.mjs`
-`node compat/xlsx/verify-styles.mjs`, `node compat/xlsx/verify-general.mjs`, `node compat/xlsx/verify-builtin.mjs`, `node compat/xlsx/verify-sections.mjs`, `node compat/xlsx/verify-formats.mjs`, `node compat/xlsx/verify-numeric.mjs`, `node compat/xlsx/verify-date-format.mjs`, `node compat/xlsx/verify-formatted.mjs`, `node compat/xlsx/verify-display.mjs`, `node compat/xlsx/verify-layout.mjs`, `node compat/xlsx/verify-paint.mjs`, `node compat/xlsx/verify-color.mjs`, `node compat/xlsx/verify-locale.mjs`, `node compat/xlsx/verify-table-values.mjs`, `node compat/xlsx/verify-list-tables.mjs`, `node compat/xlsx/verify-store-sheet.mjs`, and `node compat/xlsx/verify-render.mjs`.
-`npm run test:xlsx-compat` runs the complete XLSX and OOXML fixture suite; it is
-also included in `npm run test:visual` after the JavaScript build.
+After building the JavaScript target and provisioning the fixed ARM64 oracle,
+run `npm run test:xlsx-compat` for all XLSX and OOXML verifiers. For a single
+verifier, use `node compat/xlsx/oracle/run-suite.mjs --script
+compat/xlsx/verify-workbook.mjs`; arguments after `--` are passed to that
+verifier (for example, `-- --list --ids /tmp/render.ids`). Each invocation
+creates fresh oracle output. See [oracle/README.md](oracle/README.md) for
+binary, offline, retention and migration-audit instructions.
 The rendering fixtures include the upstream `form-pages.xlsx`, `print.xlsx`,
 `form-fixed.xlsx`, and `form-rows.xlsx`
 workbooks, along with generated cases for solid fills, colored and dashed
@@ -239,6 +240,11 @@ font and uses its advances and line metrics; the Worker uses the first face of
 a supplied font directory in this mode.
 
 ## Fixture storage
+
+The description below records the historical packed corpus at Git baseline
+`ab0b102`; its packing and maintenance commands require a checkout of that
+baseline. The current checkout uses [the fresh oracle and bounded notes
+source](oracle/README.md), not a checked-in `store/` corpus.
 
 Fixture files no longer embed their input XLSX and expected BDF as base64
 text. A fixture is now a manifest: `{"format":"bdf-xlsx-fixture","version":1,

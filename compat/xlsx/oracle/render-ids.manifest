@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "baseline": "ab0b102ced2ef6e43bdb00590daff83d0f316986",
+  "count": 144298,
+  "sha256": "2dba4f6b0db99b0315ff5fce5746f401f5f04ad04c84750f0b65cfb0aba6719c",
+  "shards4": [
+    {"count": 36066, "sha256": "b3b602aa6b718ee0b5a725b8d1f9f9c65b4b51c6fefeea25c8266f6ba9a43bcd"},
+    {"count": 36100, "sha256": "2207534f4ec962dda5e0c13bf7e441faccadaf5eadb8d70e5651bffd6e115abb"},
+    {"count": 36079, "sha256": "c485c2c77ca3b0fcfd5ad30c9a113e01d2fc0838aaf0df448aa854f1438a0184"},
+    {"count": 36053, "sha256": "d1ee45876a97ed00a75fe71db5ea2bcec3f82d75b7f3b3d7967daf1a062ac9e0"}
+  ]
+}

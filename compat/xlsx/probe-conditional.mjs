@@ -1,18 +1,18 @@
 import assert from 'node:assert/strict';
 import { isDeepStrictEqual } from 'node:util';
-import { readdir } from 'node:fs/promises';
 import { BdfDocument, BufferSource, decodeObject, walk, NoopSink } from '@bdfkit/core';
 import { xlsx_render_basic, xlsx_render_warnings } from '../../_build/js/debug/build/compat/xlsx/xlsx.js';
 import { loadFixture } from './fixtures.mjs';
+import { lock } from './oracle/contract.mjs';
 
 // Fast probe for the XLSX conditional-format fixtures: compares the BDF the
 // converter renders against the expected BDF of the fixture, and prints the
 // cases and object instructions that differ. It converts only the fixtures
 // named on the command line, so it stays quick next to verify-render.mjs.
 //
-// Run after `moon build --target js`:
-//   node compat/xlsx/probe-conditional.mjs conditional-missing-dxf-stop-matrix.json
-//   node compat/xlsx/probe-conditional.mjs --all-conditional
+// Run after building the JS target and provisioning the oracle:
+//   node compat/xlsx/oracle/run-suite.mjs --script compat/xlsx/probe-conditional.mjs -- conditional-missing-dxf-stop-matrix.json
+//   node compat/xlsx/oracle/run-suite.mjs --script compat/xlsx/probe-conditional.mjs -- --all-conditional
 // Options:
 //   --verbose      decode every differing part (fills, paths, text)
 //   --text-only    compare views and text index only, not object parts
@@ -149,7 +149,7 @@ const onlyArg = args.indexOf('--only');
 const only = onlyArg >= 0 ? new Set(args[onlyArg + 1].split(',').map(Number)) : null;
 const files = args.filter((a, i) => !a.startsWith('--') && !(onlyArg >= 0 && i === onlyArg + 1));
 if (args.includes('--all-conditional')) {
-  for (const name of await readdir(new URL('.', import.meta.url))) {
+  for (const name of Object.keys(lock.fixtures).sort()) {
     if (/^conditional-.*\.json$/.test(name) && !name.includes('unsupported') && !name.includes('inputs')) files.push(name);
   }
 }

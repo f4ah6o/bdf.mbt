@@ -264,6 +264,11 @@ export async function resolveFixture(parsed, source, { storeDir = STORE_DIR, cac
 // to this directory, matching the old `JSON.parse(await readFile(new
 // URL('./name.json', import.meta.url)))` call sites.
 export async function loadFixture(target, { storeDir = STORE_DIR, cache = sharedCache, readStore } = {}) {
+  if (process.env.BDF_XLSX_FIXTURE_ROOT || process.env.BDF_XLSX_RUN_ID || process.env.BDF_XLSX_RECEIPT_SHA) {
+    if (storeDir !== STORE_DIR || readStore) throw new Error('Custom stores are not valid for a selected XLSX oracle run');
+    const { loadRunFixture } = await import('./oracle/load.mjs');
+    return loadRunFixture(target);
+  }
   const url = target instanceof URL ? target : new URL(target, import.meta.url);
   const source = fileURLToPath(url);
   if (typeof target === 'string' && !target.startsWith('.')) {

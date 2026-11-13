@@ -40,7 +40,7 @@ jobs:
       - name: test XLSX picture rendering
         run: |
           node compat/retained-test.mjs --mode build js
-          node compat/xlsx/picture-visual-compare.mjs
+          node compat/xlsx/oracle/run-suite.mjs --suite picture-visual
       # The aggregate excludes dropped-format suites. Their source files and
       # individual scripts remain available as dormant assets.
       - name: test visual compatibility

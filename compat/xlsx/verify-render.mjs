@@ -1951,6 +1951,9 @@ const largeFill = Buffer.from(await loadFixture('./base-fill-too-large.json'), '
 assertRejected(largeFill, 'none', true, 'oversized base fills must be rejected', /row or column fill exceeds the supported view size/);
 const largeBorder = Buffer.from(await loadFixture('./base-border-too-large.json'), 'base64');
 assertRejected(largeBorder, 'none', true, 'oversized base borders must be rejected', /row or column border exceeds the supported view size/);
+const largeTintedBorder = Buffer.from(await loadFixture('./base-border-tint-too-large.json'), 'base64');
+assert.equal(createHash('sha256').update(largeTintedBorder).digest('hex'), '5b75bd4857e715839a0f560d51e32b99db274072b527640bdc3e92e1c3a5c915', 'oversized tinted border input identity');
+assertRejected(largeTintedBorder, 'none', true, 'oversized tinted base borders must be rejected', /^xlsx: row or column border exceeds the supported view size$/);
 // cells.json[0] used to be rejected but its styles are supported now; the
 // remaining unsupported style fixtures below still assert rejection.
 const styled = (await loadFixture('./cells.json'))[0];

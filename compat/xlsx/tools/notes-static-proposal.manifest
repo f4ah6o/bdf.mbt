@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "status": "proposal-not-active",
+  "upstream": "a5e4d7a6b202cfe73de44b0be51f6fb86cd8ee22",
+  "files": [
+    {
+      "file": "sheet-multiple-notes.json",
+      "cases": 128,
+      "sha256": "8663a443edb8945da29903d61fba08989b15b1e319145cc94482202e22c3dc52",
+      "serializedBytes": 367553,
+      "reason": "Pinned upstream paintMarks iterates comments map; drawing order can differ",
+      "releaseCondition": "Reviewed deterministic oracle and exact all-case migration/coverage evidence"
+    },
+    {
+      "file": "sheet-multiple-notes-filter.json",
+      "cases": 128,
+      "sha256": "68ac1493c65c223ae201798d21d40ecd284c38db4f60e32c77c7b082b44f089a",
+      "serializedBytes": 393857,
+      "reason": "Pinned upstream paintMarks iterates comments map; drawing order can differ",
+      "releaseCondition": "Reviewed deterministic oracle and exact all-case migration/coverage evidence"
+    },
+    {
+      "file": "sheet-multiple-notes-legacy.json",
+      "cases": 8,
+      "sha256": "6288939961b132887cc5e9a7c0d2733dd79999f8f4beb7ef70be21fdee7db1a7",
+      "serializedBytes": 22241,
+      "reason": "Pinned upstream paintMarks iterates comments map; drawing order can differ",
+      "releaseCondition": "Reviewed deterministic oracle and exact all-case migration/coverage evidence"
+    }
+  ]
+}
