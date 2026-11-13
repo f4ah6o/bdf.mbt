@@ -145,6 +145,10 @@ of the visible document area. The tests also compare text extraction expectation
 ```sh
 npm ci
 npx playwright install chromium
+# Provision the pinned XLSX oracle as described in compat/xlsx/oracle/README.md.
+export BDF_XLSX_ORACLE_BUILD=/path/to/oracle-build
+# Required outside native Linux ARM64:
+export BDF_XLSX_ORACLE_EMULATOR=/path/to/approved/qemu-aarch64
 npm run verify:local
 ```
 
@@ -154,6 +158,11 @@ Playwright and Python toolchains and the existing `node_modules`, `.mooncakes`
 and Chromium; it does not run `npm ci`, `moon update` or
 `npx playwright install`. Missing prerequisites block the affected gate instead
 of being skipped silently.
+The visual gate checks the XLSX oracle build identity, binary, adapters and
+runtime seeds before starting; outside native Linux ARM64 it also checks the approved
+executable QEMU and its hash. Missing or invalid configuration blocks the gate
+with exit code 2. See [XLSX oracle preparation](compat/xlsx/oracle/README.md)
+for the pinned versions and offline build procedure.
 
 The flow writes a manifest, a summary, per-gate logs, actrun run records and the
 exact git state under `_scratch/local-verify/<utc>-<sha>[-dirty]/`. The manifest
@@ -196,7 +205,9 @@ Per-workflow shortcuts: `npm run verify:local:ci`, `verify:local:parity`,
 `node --test .github/local/verify.test.mjs compat/retained-test.test.mjs`,
 which covers package selection and status aggregation,
 empty and skipped steps, missing prerequisites, the retained-scope marker and
-the site server checks without running actrun or a browser. The older
+the site server checks. If actrun is installed, a small temporary workflow also
+checks that oracle environment variables reach its step; no browser is opened.
+The older
 `test:ci-local`, `test:pages-local`, `test:parity-local` and
 `test:visual-local` names are aliases for the same gates. `npm run test:prepush`
 now runs the full local flow; `npm run test:prepush:quick` keeps the previous

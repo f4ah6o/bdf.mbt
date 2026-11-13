@@ -52,6 +52,26 @@ node compat/retained-test.mjs --mode build js
 npm run test:xlsx-compat
 ```
 
+The same exported variables are required by the `visual` gate of
+`npm run verify:local` and by `npm run verify:local:visual`. Before actrun
+starts that gate, the local runner checks the build identity, binary, adapter
+and runtime-seed hashes, and checks the approved emulator's executable access
+and hash when it is configured. On native Linux ARM64 it checks that the oracle
+binary is executable. A no-test execution probe also checks that the selected
+binary and emulator actually start. Missing or invalid configuration blocks the visual gate
+with exit code 2; it does not download or build assets automatically. Other
+selected gates do not depend on the oracle. Run the same preparation offline
+when the pinned upstream, Go toolchain and modules are already provisioned.
+
+The local runner self-tests always cover missing and invalid configuration and,
+when actrun is installed, verify environment propagation with a temporary
+workflow. To also exercise the real pinned binary, runtime seeds and emulator
+in those tests, set `BDF_XLSX_ORACLE_TEST_BUILD` and, outside native Linux ARM64,
+`BDF_XLSX_ORACLE_TEST_EMULATOR` to the same provisioned paths before running
+`npm run test:local-verify`. These test-only variables are separate from the
+runtime variables so a bad runtime configuration blocks visual without making
+the unrelated self-test gate fail.
+
 `npm run test:xlsx-visual` uses the same fresh generation and source selection.
 Each suite invocation creates an empty isolated output, checks pinned assets,
 generates all 724 adapters, validates all 804 selected fixture identities and

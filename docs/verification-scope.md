@@ -42,9 +42,12 @@ score format; the audio cue and embedded-recording paths stay.
 The `visual` gate's exact command set is owned by `package.json`. Its aggregate
 excludes the dropped score, PCB/KiCad and EPUB suites; their individual scripts
 remain available for manual verification. See "Visual aggregate scope" below.
-The XLSX checks require a provisioned fixed oracle and, on non-ARM64 hosts, the
+The XLSX checks require a provisioned fixed oracle and, outside native Linux ARM64, the
 approved emulator. Export the environment variables before running the local
 workflow as described in [the XLSX oracle guide](../compat/xlsx/oracle/README.md).
+The local runner verifies their actual identity, content and executable access
+before starting the visual gate; missing or invalid assets mark it `blocked`
+and the overall result `incomplete` (exit 2).
 
 ## Visual aggregate scope
 
