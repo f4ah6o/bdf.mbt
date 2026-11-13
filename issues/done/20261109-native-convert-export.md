@@ -1,9 +1,9 @@
 # native 対応: convert / export
 
 Status: done
-Model: deepseek-v4-1-flash-1017
+Model: unknown
 Created: 2026-11-09
-Updated: 2026-11-10
+Updated: 2026-11-13
 Branch: feat/20261109-native-convert-export
 
 ## 概要
@@ -58,3 +58,11 @@ main `b05cd93` に統合済み。`convert/*` と `export/*` の `supported_targe
 ## 注記
 
 `convert/pdf/jpx` は `moon.pkg` に `supported_targets` が無い唯一の領域。
+
+## 2026-11-13 トリアージ結果
+
+- 照合対象: main `d13b9578c86982cb6ea0d955f678c16e2edc84e9`。
+- 判断: この Issue の限定された実装・受入範囲は統合済み。状態と格納先を done に整合。
+- 根拠: Issue完了記録、docs/roadmap.md M1、moon.mod/native宣言とCI matrix。
+- 範囲と留保: 既存の本文doneに格納先を整合した。historical testは新規実行とは区別。
+- 検証記録は上記コミット・PR時点のもの。今回の整理で製品テスト全体を新規実行したとは主張しない。本文の過去の問題記述は履歴として保持し、受入チェック欄を照合結果に整合した。

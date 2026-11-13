@@ -120,7 +120,7 @@ verified gaps are in `issues/open/` (see links).
 
 ### Slice 1 — PPTX: collect `cxnSp` and allow zero-extent open shapes
 
-Issue: `issues/open/20261112-pptx-cxnsp.md` (reserved branch
+Issue: `issues/done/20261112-pptx-cxnsp.md` (reserved branch
 `fix/20261112-pptx-connectors`; worktree `bdf-pptx-connectors-20261112`).
 
 - Add `"cxnSp"` to `pptx_collect_shapes`
@@ -178,7 +178,7 @@ Acceptance tests:
 
 ### Slice 3 — DOCX: `Requires`-aware `mc:AlternateContent` selection
 
-Issue: `issues/open/20261112-docx-alternate-content.md`.
+Issue: `issues/done/20261112-docx-alternate-content.md`.
 
 - Replace `docx_alternate_content`
   (`convert/docx/document_text.mbt:1001-1010`) with: pick the first
@@ -202,7 +202,7 @@ Acceptance tests:
 ## Follow-up slices (verified, ranked after the top three)
 
 4. DOCX non-image drawing degrade path
-   (`issues/open/20261112-docx-drawing-degrade.md`): replace the fatal
+   (`issues/done/20261112-docx-drawing-degrade.md`): replace the fatal
    `docx_text_unsupported("drawing without an embedded image")`
    (`document_text.mbt:649`) with skip-plus-warning (keep the existing
    `txbxContent` text extraction), and keep long-term upstream parity as

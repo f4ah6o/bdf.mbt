@@ -12,8 +12,10 @@ head `b05cd93`. A PR can still be open after its patches are integrated, so
 
 ## Status vocabulary
 
-- `open` — not implemented.
-- `done` — the acceptance work is integrated in main `b05cd93`.
+- `open` — work or verification remains.
+- `polished` — defined acceptance work remains to be completed or verified.
+- `done` — the acceptance work is integrated; the specific evidence and
+  revision are recorded in each issue.
 - `superseded` — replaced by another issue; kept as a pointer.
 
 ## Definition of done
@@ -281,8 +283,10 @@ One issue is one branch and one worktree. Up to two run at once, because
 
 ## Issue index
 
-The status column uses the vocabulary above. Every issue file under
-`issues/open/` appears exactly once.
+The status column uses the vocabulary above. Every issue file under the state directories in `issues/` appears exactly once.
+The index was reconciled on 2026-11-13; the earlier milestone measurements
+and Work in flight table remain historical, not current job status.
+See [the triage disposition](issue-triage-20261113.md).
 
 | Milestone | Issue | Upstream lines | Status |
 |---|---|---|---|
@@ -319,6 +323,19 @@ The status column uses the vocabulary above. Every issue file under
 | Local | `20261110-vlmkit-hono-advisory` | — | open |
 | Local | `20261113-local-font-display-names` | — | open: implementation integrated; device and Pages verification pending |
 | Local | `20261113-system-font-picker` | — | open: implementation integrated; device and Pages verification pending |
+
+| Follow-up | `20261112-docx-alternate-content` | — | done |
+| Follow-up | `20261112-docx-character-indents` | — | done |
+| Follow-up | `20261112-docx-drawing-degrade` | — | done |
+| Follow-up | `20261112-docx-mark-rpr` | — | open |
+| Follow-up | `20261112-pdf-export-public-api` | — | polished |
+| Follow-up | `20261112-pptx-cxnsp` | — | done |
+| Follow-up | `20261112-pptx-figure-alt-text` | — | done |
+| Follow-up | `20261112-pptx-internal-shape-links` | — | open |
+| Follow-up | `20261112-selection-clipboard-api` | — | open |
+| Follow-up | `20261112-xlsx-fixture-size` | — | open |
+| Follow-up | `20261112-xlsx-font-metrics` | — | open |
+| Follow-up | `20261113-dxf-megasoft-parity-investigation` | — | open |
 
 ## Risks
 

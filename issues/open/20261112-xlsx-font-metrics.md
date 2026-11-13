@@ -3,8 +3,12 @@
 Status: open
 Model: unknown
 Created: 2026-11-12
-Updated: 2026-11-12
+Updated: 2026-11-13
 Branch: feat/20261112-xlsx-font-metrics
+
+## 概要
+
+明示フォントの実測値をXLSXレイアウトへ接続する。PR #9はMDW・列幅・インデントを統合済み。既定行高、自動行高、縮小表示、General書式の当てはめは残件であり、本Issueをopenに維持する。
 
 ## 背景
 

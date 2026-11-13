@@ -1,10 +1,14 @@
 # DOCX mc:AlternateContent が Requires を見ずに最初の Choice を選ぶ
 
-Status: open
+Status: done
 Model: unknown
 Created: 2026-11-12
-Updated: 2026-11-12
+Updated: 2026-11-13
 Branch: fix/20261112-docx-alternate-content
+
+## 概要
+
+DOCX mc:AlternateContent が Requires を見ずに最初の Choice を選ぶ。限定された受入条件と統合結果は本文および末尾のトリアージ結果を参照。
 
 ## 背景
 
@@ -74,7 +78,7 @@ upstream と同じ選択規則（サポート集合 ≥ Requires の最初の Ch
 ## 関連
 
 - `docs/upstream-porting-plan.md` スライス 3
-- `issues/open/20261112-docx-drawing-degrade.md`（Choice/Fallback 両方の
+- `issues/done/20261112-docx-drawing-degrade.md`（Choice/Fallback 両方の
   図形が描けない場合の後段）
 - `issues/open/20261109-parity-remaining.md`
 
@@ -82,3 +86,16 @@ upstream と同じ選択規則（サポート集合 ≥ Requires の最初の Ch
 
 - upstream: `a5e4d7a6b202cfe73de44b0be51f6fb86cd8ee22`
 - port: `61f195b38293415a46a6aca4cff99187ba68ea5e`
+
+
+## 注記
+
+状態更新の根拠は次のトリアージ結果を参照。
+
+## 2026-11-13 トリアージ結果
+
+- 照合対象: main `d13b9578c86982cb6ea0d955f678c16e2edc84e9`。
+- 判断: この Issue の限定された実装・受入範囲は統合済み。状態と格納先を done に整合。
+- 根拠: PR#7 merged a3ec1b53、alternate_content_wbtest.mbt、Requires/fallback/run dispatch/CI pass、CHANGES.md。
+- 範囲と留保: 限定された受入範囲をdoneに更新した。完全描画/全形式parityではない。段落markのlist-level rPrなど独立残件は保持。
+- 検証記録は上記コミット・PR時点のもの。今回の整理で製品テスト全体を新規実行したとは主張しない。本文の過去の問題記述は履歴として保持し、受入チェック欄を照合結果に整合した。

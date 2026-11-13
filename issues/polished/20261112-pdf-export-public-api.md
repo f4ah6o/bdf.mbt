@@ -3,7 +3,7 @@
 Status: polished
 Model: unknown
 Created: 2026-11-12
-Updated: 2026-11-12
+Updated: 2026-11-13
 Branch: feat/20261112-pdf-export-public-api
 
 ## 概要
@@ -18,7 +18,7 @@ Branch: feat/20261112-pdf-export-public-api
 - `bridge/wasm` は `bdf_wasm_export_pdf` / `bdf_wasm_export_pdf_font` を持つが、これは公開 npm API の契約ではない。
 - `plugin/tools/library-pack.mjs` の export map には browser、forms、xdw、plugin 等があるが、PDF 書き出し用の公開エントリはない。
 - `export/pdf/content.mbt` は画像・切り抜き画像、影、フィルターの省略とグラデーション近似を警告する。`pdf.mbt` はタグ付き構造の未実装、ページを持たないビュー、フォントの不足も警告する。
-- `issues/open/20261109-native-convert-export.md` は native 対応、`20261109-parity-pdf-structure.md` は PDF 読み込み側の構造互換性であり、本件の npm 書き出し API とは別範囲。
+- `issues/done/20261109-native-convert-export.md` は native 対応、`20261109-parity-pdf-structure.md` は PDF 読み込み側の構造互換性であり、本件の npm 書き出し API とは別範囲。
 
 ## 問題
 

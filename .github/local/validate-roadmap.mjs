@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Deterministic validation for docs/roadmap.md and issues/open/*.md.
+// Deterministic validation for docs/roadmap.md and state-directory issue files.
 //
 // The docs worktree is sparse: it contains docs/, issues/ and .github/local/
 // only. File references are therefore checked against the fixed base commit
@@ -16,8 +16,9 @@ import { dirname, join, normalize, resolve } from 'node:path';
 const ROOT = process.cwd();
 const BASE = process.env.ROADMAP_BASE ?? 'b05cd93';
 const ROADMAP = 'docs/roadmap.md';
-const ISSUES_DIR = 'issues/open';
-const STATUSES = new Set(['open', 'done', 'superseded']);
+const ISSUE_DIRS = ['issues/open', 'issues/polished', 'issues/doing', 'issues/done', 'issues/rejected'];
+const issueLocations = new Map();
+const STATUSES = new Set(['open', 'polished', 'doing', 'done', 'rejected', 'superseded']);
 const REQUIRED_SECTIONS = [
   'Status vocabulary',
   'Definition of done',
@@ -82,9 +83,14 @@ function existsInRepo(path) {
 }
 
 function issueFiles() {
-  return readdirSync(join(ROOT, ISSUES_DIR))
-    .filter((name) => name.endsWith('.md'))
-    .sort();
+  for (const dir of ISSUE_DIRS) {
+    if (!existsSync(join(ROOT, dir))) continue;
+    for (const name of readdirSync(join(ROOT, dir)).filter(name => name.endsWith('.md'))) {
+      if (issueLocations.has(name)) fail('duplicate issue filename: ' + name);
+      issueLocations.set(name, join(dir, name));
+    }
+  }
+  return [...issueLocations.keys()].sort();
 }
 
 function issueSlug(name) {
@@ -134,7 +140,7 @@ function isConcreteRepoPath(token) {
   if (path.includes(' ') || path.includes('<') || path.includes('>')) return false;
   return (
     /^docs\/[A-Za-z0-9._/-]+\.md$/.test(path) ||
-    /^issues\/open\/[A-Za-z0-9._/-]+\.md$/.test(path) ||
+    /^issues\/(?:open|polished|doing|done|rejected)\/[A-Za-z0-9._/-]+\.md$/.test(path) ||
     /^\.github\/(workflows|local)\/[A-Za-z0-9._/-]+\.(yml|mjs)$/.test(path) ||
     /^compat\/[A-Za-z0-9._/-]+\.(mjs|md)$/.test(path) ||
     /^convert\/[A-Za-z0-9._/-]+\.(mbt|pkg)$/.test(path) ||
@@ -147,7 +153,7 @@ function isConcreteRepoPath(token) {
 
 const roadmap = read(ROADMAP);
 const issues = issueFiles();
-const issueTexts = new Map(issues.map((name) => [name, read(join(ISSUES_DIR, name))]));
+const issueTexts = new Map(issues.map((name) => [name, read(issueLocations.get(name))]));
 
 check('roadmap exists and has the required sections', () => {
   for (const heading of REQUIRED_SECTIONS) {
@@ -157,7 +163,7 @@ check('roadmap exists and has the required sections', () => {
 
 check('status vocabulary is complete', () => {
   const vocabulary = section(roadmap, 'Status vocabulary');
-  for (const status of STATUSES) {
+  for (const status of new Set([...issueTexts.values()].map(text => parseHeader(text).Status))) {
     if (!vocabulary.includes(`\`${status}\``)) fail(`status vocabulary omits ${status}`);
   }
 });
@@ -309,7 +315,7 @@ check('concrete repo paths resolve', () => {
 });
 
 check('relative markdown links resolve', () => {
-  const files = [ROADMAP, ...issues.map((name) => join(ISSUES_DIR, name))];
+  const files = [ROADMAP, ...issues.map((name) => issueLocations.get(name))];
   for (const file of files) {
     const text = read(file);
     for (const link of markdownLinks(text)) {
@@ -333,7 +339,7 @@ check('relative markdown links resolve', () => {
 });
 
 check('external links are https', () => {
-  const files = [ROADMAP, ...issues.map((name) => join(ISSUES_DIR, name))];
+  const files = [ROADMAP, ...issues.map((name) => issueLocations.get(name))];
   for (const file of files) {
     for (const link of markdownLinks(read(file))) {
       if (/^https?:\/\//.test(link) && !link.startsWith('https://')) {
