@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { PNG } from 'pngjs';
@@ -266,6 +266,46 @@ console.log('ok 2 - a mostly white page with one painted pixel is not blank');
   console.log('ok 10 - all 64 baseline/variant blank-set combinations preserve viewport evidence');
 }
 
+// On failure, the untouched viewport must still carry its first-pass pixels and
+// report, even if the retry runner overwrote them before throwing.
+{
+  const painted = (x, y) => (x === 0 && y === 0 ? ink : white);
+  const changed = (x, y) => (y === 0 && x < 3 ? ink : white);
+  for (const mode of ['persistent', 'runner-with-report', 'runner-without-report', 'invalid-report', 'missing-viewport']) {
+    const h = harness({
+      baseline: () => painted,
+      variant: (step, viewport) => viewport === 'mobile' && (step === 0 || mode === 'persistent') ? () => white : step === 0 && viewport === 'wide' ? changed : painted,
+    });
+    const underlyingRun = h.run;
+    h.run = async (...args) => {
+      await underlyingRun(...args);
+      if (h.calls() !== 2) return;
+      if (mode === 'runner-without-report') { rmSync(h.reportPath); throw new Error('runner failed before report'); }
+      if (mode === 'runner-with-report') throw new Error('runner failed after report');
+      if (mode === 'invalid-report') writeFileSync(h.reportPath, '{incomplete');
+      if (mode === 'missing-viewport') {
+        const retry = JSON.parse(readFileSync(h.reportPath, 'utf8'));
+        retry.results = retry.results.filter(result => result.viewport !== 'mobile');
+        writeFileSync(h.reportPath, JSON.stringify(retry));
+      }
+    };
+    await assert.rejects(() => captureWithRecapture({ ...h, checkVariant: true }), undefined, `${mode}: failed retry must reject`);
+    assert.equal(h.calls(), 2, `${mode}: retry exactly once`);
+    assert.equal(ratioFor(h, 'wide'), 2 / 64, `${mode}: first wide pixels restored`);
+    assert.ok(existsSync(h.heatmapPng('wide')), `${mode}: first heatmap restored`);
+    assert.ok(existsSync(h.triptychPng('wide')), `${mode}: first triptych restored`);
+    const first = readFileSync(path.join(h.target, 'diff-report.first.json'));
+    assert.deepEqual(readFileSync(h.reportPath), first, `${mode}: primary report is byte-identical to first`);
+    const failure = JSON.parse(readFileSync(path.join(h.target, 'diff-report.recapture-failure.json'), 'utf8'));
+    assert.equal(failure.status, 'failed', `${mode}: failure is explicit`);
+    assert.equal(failure.firstReport, 'diff-report.first.json');
+    assert.equal(failure.retryReport, mode === 'runner-without-report' ? null : 'diff-report.retry.json');
+    if (mode !== 'runner-without-report') assert.ok(existsSync(path.join(h.target, failure.retryReport)), `${mode}: retry report retained`);
+    if (mode === 'invalid-report') assert.equal(readFileSync(path.join(h.target, failure.retryReport), 'utf8'), '{incomplete');
+  }
+  console.log('ok 11 - failure paths restore first evidence and record retry failure');
+}
+
 const { diagnosticChecks } = await import('./recapture-diagnostics-test.mjs');
 const { recapturePbtChecks, recaptureGeneratedCases } = await import('./recapture-pbt-test.mjs');
-console.log(`\nrecapture: ${10 + diagnosticChecks + recapturePbtChecks} pass, 0 fail (${recaptureGeneratedCases + 64} generated cases)`);
+console.log(`\nrecapture: ${11 + diagnosticChecks + recapturePbtChecks} pass, 0 fail (${recaptureGeneratedCases + 64} generated cases)`);

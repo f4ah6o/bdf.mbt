@@ -124,14 +124,15 @@ const mergeReport = (first, retried, blankViewports, originalReports) => {
 export async function captureWithRecapture({ capture, reportPath, baselinePng, variantPng, run, label, checkVariant = false, log = console.log }) {
   const target = path.dirname(reportPath);
   await run(capture);
-  const first = JSON.parse(readFileSync(reportPath, 'utf8'));
+  const firstRaw = readFileSync(reportPath);
+  const first = JSON.parse(firstRaw.toString('utf8'));
   const blank = first.results.filter(result => blankCapture(baselinePng(result.viewport)) || (checkVariant && blankCapture(variantPng(result.viewport))));
   if (blank.length === 0) return first;
 
   const blankViewports = new Set(blank.map(result => result.viewport));
   const reportName = path.parse(reportPath).name;
   const originalReports = { first: `${reportName}.first.json`, retry: `${reportName}.retry.json` };
-  writeFileSync(path.join(target, originalReports.first), JSON.stringify(first, null, 2));
+  writeFileSync(path.join(target, originalReports.first), firstRaw);
 
   // Keep every artifact of the viewports that painted, and drop the blank ones so a retry that
   // writes no heatmap leaves none behind.
@@ -144,36 +145,72 @@ export async function captureWithRecapture({ capture, reportPath, baselinePng, v
     for (const [, file] of existingArtifacts(viewport, baselinePng, variantPng)) rmSync(file, { force: true });
   }
 
-  log(`${label}: ${checkVariant ? "baseline or variant" : "baseline"} capture was blank at ${[...blankViewports].join(', ')} — recapturing`);
-  await run(capture);
-  const retried = JSON.parse(readFileSync(reportPath, 'utf8'));
-  writeFileSync(path.join(target, originalReports.retry), JSON.stringify(retried, null, 2));
-  for (const viewport of blankViewports) {
-    if (!retried.results.some(result => result.viewport === viewport)) throw new Error(`${label}: retry report is missing viewport ${viewport}`);
-  }
+  log(`${label}: ${checkVariant ? 'baseline or variant' : 'baseline'} capture was blank at ${[...blankViewports].join(', ')} — recapturing`);
+  const retryPath = path.join(target, originalReports.retry);
+  const failurePath = path.join(target, `${reportName}.recapture-failure.json`);
+  // Distinguish a retry that never wrote a report from the first report still on disk.
+  rmSync(reportPath, { force: true });
+  let retried;
+  let merged;
+  let failure;
+  let retrySaved = false;
+  try {
+    await run(capture);
+    const retryRaw = readFileSync(reportPath);
+    writeFileSync(retryPath, retryRaw);
+    retrySaved = true;
+    retried = JSON.parse(retryRaw.toString('utf8'));
+    for (const viewport of blankViewports) {
+      if (!retried.results.some(result => result.viewport === viewport)) throw new Error(`${label}: retry report is missing viewport ${viewport}`);
+    }
 
-  const stillBlank = retried.results.filter(result => blankViewports.has(result.viewport) && blankCapture(baselinePng(result.viewport)));
-  if (stillBlank.length > 0) {
-    throw new Error(`${label}: baseline capture is still blank at ${stillBlank.map(result => result.viewport).join(', ')} after a retry — the page never painted, so the pixel comparison cannot judge it`);
-  }
-
-  if (checkVariant) {
-    const stillBlankVariant = retried.results.filter(result => blankViewports.has(result.viewport) && blankCapture(variantPng(result.viewport)));
-    if (stillBlankVariant.length > 0) {
-      throw new Error(`${label}: variant capture is still blank at ${stillBlankVariant.map(result => result.viewport).join(', ')} after a retry — the page never painted, so the pixel comparison cannot judge it`);
+    const stillBlank = retried.results.filter(result => blankViewports.has(result.viewport) && blankCapture(baselinePng(result.viewport)));
+    if (stillBlank.length > 0) {
+      throw new Error(`${label}: baseline capture is still blank at ${stillBlank.map(result => result.viewport).join(', ')} after a retry — the page never painted, so the pixel comparison cannot judge it`);
+    }
+    if (checkVariant) {
+      const stillBlankVariant = retried.results.filter(result => blankViewports.has(result.viewport) && blankCapture(variantPng(result.viewport)));
+      if (stillBlankVariant.length > 0) {
+        throw new Error(`${label}: variant capture is still blank at ${stillBlankVariant.map(result => result.viewport).join(', ')} after a retry — the page never painted, so the pixel comparison cannot judge it`);
+      }
+    }
+    merged = mergeReport(first, retried, blankViewports, originalReports);
+    writeFileSync(reportPath, JSON.stringify(merged, null, 2));
+  } catch (error) {
+    failure = error;
+    // The runner may fail after writing a partial or even invalid report. Preserve it byte-for-byte.
+    if (!retrySaved && existsSync(reportPath)) {
+      try {
+        writeFileSync(retryPath, readFileSync(reportPath));
+        retrySaved = true;
+      } catch (saveError) {
+        failure = new AggregateError([failure, saveError], `${label}: retry and retry-report preservation failed`);
+      }
     }
   }
 
-  // Put the kept viewports back exactly as the first capture left them: the retry re-captured every
-  // viewport, so its screenshots and diagnostics must not stand in for evidence it did not produce.
-  for (const [viewport, files] of kept) {
-    for (const [, file] of existingArtifacts(viewport, baselinePng, variantPng)) rmSync(file, { force: true });
-    for (const [file, buffer] of files) writeFileSync(file, buffer);
+  // Restore first-pass evidence even when the runner throws or the retry stays blank.
+  try {
+    for (const [viewport, files] of kept) {
+      for (const [, file] of existingArtifacts(viewport, baselinePng, variantPng)) rmSync(file, { force: true });
+      for (const [file, buffer] of files) writeFileSync(file, buffer);
+    }
+  } catch (restoreError) {
+    failure = failure ? new AggregateError([failure, restoreError], `${label}: retry and artifact restoration failed`) : restoreError;
+  }
+  if (failure) {
+    writeFileSync(reportPath, firstRaw);
+    writeFileSync(failurePath, JSON.stringify({
+      status: 'failed',
+      message: String(failure),
+      firstReport: originalReports.first,
+      retryReport: retrySaved ? originalReports.retry : null,
+      note: 'The primary report and nonblank viewport artifacts are from the first capture; a retry report, when present, is retained separately.',
+    }, null, 2));
+    throw failure;
   }
 
-  const merged = mergeReport(first, retried, blankViewports, originalReports);
   log(`${label}: whole-capture diagnostics unavailable after mixed capture (${merged.recapture.unavailableFields.join(', ') || 'none supplied'}); see original reports ${originalReports.first} and ${originalReports.retry}`);
-  writeFileSync(reportPath, JSON.stringify(merged, null, 2));
   return merged;
 }
 
