@@ -1,0 +1,37 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "f4ah6o/bdf/image/barcode"
+
+import {
+  "f4ah6o/bdf/core",
+}
+
+// Values
+pub const MAX_TEXT : Int32 = 8192
+
+pub fn encode(String, String, quiet? : Int32) -> Symbol raise BarcodeError
+
+pub fn kind(String) -> String
+
+pub fn kinds() -> Array[String]
+
+// Errors
+pub suberror BarcodeError {
+  BarcodeError(String)
+}
+
+// Types and methods
+pub struct Symbol {
+  text : String
+  modules : Bytes
+}
+pub fn Symbol::at(Self, Int32, Int32) -> Bool
+pub fn Symbol::height(Self) -> Int32
+pub fn Symbol::object(Self, Float, Float) -> @core.ObjectBuilder raise
+pub fn Symbol::path(Self, Float, Float, Float, Float) -> @core.Path raise BarcodeError
+pub fn Symbol::rects(Self) -> Array[(Int32, Int32, Int32, Int32)]
+pub fn Symbol::text(Self) -> String
+pub fn Symbol::width(Self) -> Int32
+
+// Type aliases
+
+// Traits
