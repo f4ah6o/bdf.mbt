@@ -1,9 +1,9 @@
 # PPTX 図形の代替テキストを FIGURE マークに出力する
 
-Status: open
+Status: done
 Model: unknown
 Created: 2026-11-12
-Updated: 2026-11-12
+Updated: 2026-11-13
 Branch: feat/20261112-pptx-figure-markers
 
 ## 概要
@@ -32,10 +32,10 @@ upstream に対応する FIGURE と END の順序および代替テキストを�
 
 ## 受け入れ条件
 
-- [ ] `sp`、`cxnSp`、`pic`、表以外の `graphicFrame`、`grpSp` の描画で upstream に対応する FIGURE/END を出力する。
-- [ ] 空白除去後の `descr` を優先し、空なら `title` を使い、両方空または decorative が真なら出力しない。
-- [ ] 非表示や描画されない対象には不要なマークを出さず、グループと子のマークは正しい順で釣り合う。通常図形のテキストは図形描画の FIGURE の外に置き、表は upstream の表処理に従う。
-- [ ] 代替テキストがない入力の既存描画とテキスト索引を維持する。
+- [x] `sp`、`cxnSp`、`pic`、表以外の `graphicFrame`、`grpSp` の描画で upstream に対応する FIGURE/END を出力する。
+- [x] 空白除去後の `descr` を優先し、空なら `title` を使い、両方空または decorative が真なら出力しない。
+- [x] 非表示や描画されない対象には不要なマークを出さず、グループと子のマークは正しい順で釣り合う。通常図形のテキストは図形描画の FIGURE の外に置き、表は upstream の表処理に従う。
+- [x] 代替テキストがない入力の既存描画とテキスト索引を維持する。
 
 ## テスト計画
 
@@ -57,3 +57,11 @@ upstream に対応する FIGURE と END の順序および代替テキストを�
 ## 注記
 
 比較元: upstream `a5e4d7a6b202cfe73de44b0be51f6fb86cd8ee22`、port `18f4f4d0a96674fccd5332fde7cd03d7c896a03d`。
+
+## 2026-11-13 トリアージ結果
+
+- 照合対象: main `d13b9578c86982cb6ea0d955f678c16e2edc84e9`。
+- 判断: この Issue の限定された実装・受入範囲は統合済み。状態と格納先を done に整合。
+- 根拠: PR#18 merged b08dd257、figure_mark_wbtest.mbt、nesting/decorative/hidden/table、3target各171/phase15 pass、CHANGES.md。
+- 範囲と留保: 限定された受入範囲をdoneに更新した。完全描画/全形式parityではない。段落markのlist-level rPrなど独立残件は保持。
+- 検証記録は上記コミット・PR時点のもの。今回の整理で製品テスト全体を新規実行したとは主張しない。本文の過去の問題記述は履歴として保持し、受入チェック欄を照合結果に整合した。
