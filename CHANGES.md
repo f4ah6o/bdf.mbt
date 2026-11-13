@@ -4,6 +4,10 @@
 
 ### Added
 
+- A Code 39 barcode encoder in `image/barcode` generates module grids and
+  scalable BDF path and object drawings. Other symbologies are not yet
+  implemented in this package; the existing PDFMe barcode path is unchanged.
+
 - Multipage text selection and copy for page views in the `Viewer`
   (`bdf_create_viewer`): a selection now keeps its pages' text when scrolled
   out of the lazily rendered region, and copying while a selected page's

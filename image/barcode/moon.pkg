@@ -1,0 +1,11 @@
+import {
+  "f4ah6o/bdf/core",
+}
+
+import {
+  "f4ah6o/bdf/render",
+  "moonbitlang/core/float",
+  "moonbitlang/core/quickcheck",
+} for "wbtest"
+
+supported_targets = "+js+wasm-gc+native"
