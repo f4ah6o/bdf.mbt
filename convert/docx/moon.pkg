@@ -16,6 +16,7 @@ import {
 import {
   "moonbitlang/core/buffer",
   "moonbitlang/core/json",
+  "moonbitlang/core/quickcheck",
 } for "wbtest"
 
 supported_targets = "+js+wasm-gc+native"

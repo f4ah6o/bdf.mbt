@@ -4,6 +4,7 @@ priv struct DocxNumberingLevel {
   text : String
   start : Int32
   left : Double
+  rpr : DocxXmlNode?
 }
 
 ///|
@@ -41,7 +42,7 @@ fn docx_numbering_level(node : DocxXmlNode) -> DocxNumberingLevel {
       _ => ()
     }
   }
-  { format, text, start: start.to_int(), left, }
+  { format, text, start: start.to_int(), left, rpr: node.child("rPr"), }
 }
 
 ///|
@@ -63,7 +64,13 @@ fn docx_numbering_from_xml(xml : String) -> DocxNumbering raise {
             _ => 0
           }
           while levels.length() <= ilvl {
-            levels.push({ format: "decimal", text: "", start: 1, left: 0.0, })
+            levels.push({
+              format: "decimal",
+              text: "",
+              start: 1,
+              left: 0.0,
+              rpr: None,
+            })
           }
           levels[ilvl] = docx_numbering_level(child)
         }
@@ -116,7 +123,13 @@ fn docx_numbering_from_xml(xml : String) -> DocxNumbering raise {
         _ => 0
       }
       while levels.length() <= index {
-        levels.push({ format: "decimal", text: "", start: 1, left: 0.0, })
+        levels.push({
+          format: "decimal",
+          text: "",
+          start: 1,
+          left: 0.0,
+          rpr: None,
+        })
       }
       let mut level = levels[index]
       match child.child("lvl") {
@@ -170,11 +183,41 @@ fn docx_numbering_text(
 
 ///|
 /// The run properties of a list label: the paragraph mark's formatting
-/// with the decorations upstream's makeLabel clears (wordproc/model.go):
+/// followed by the level's properties, with decorations cleared
 /// underline, shading and highlight never carry into a number or bullet.
-fn docx_numbering_label_props(mark : DocxRunProps) -> DocxRunProps {
+fn docx_numbering_label_props(
+  mark : DocxRunProps,
+  level : DocxNumberingLevel,
+  theme_fonts : @ooxml.OoxmlThemeFonts,
+  warnings : Array[String],
+) -> DocxRunProps raise {
   let props = mark.copy()
-  { ..props, underline: "none", has_shading: false, highlight: "" }
+  // These decorations are cleared below, so do not reject an otherwise
+  // harmless colored underline while resolving the invisible formatting.
+  match level.rpr {
+    Some(rpr) =>
+      for child in rpr.children {
+        if child.name() == "eastAsianLayout" &&
+          docx_bool(child.element, "combine", false) {
+          let warning = "DOCX list label eastAsianLayout combine is not supported"
+          if !warnings.contains(warning) {
+            warnings.push(warning)
+          }
+          if !child.children.is_empty() {
+            docx_text_unsupported("eastAsianLayout")
+          }
+          props.tcy = docx_bool(child.element, "vert", false)
+          props.tcy_fit = docx_bool(child.element, "vertCompress", false)
+        } else if child.name() != "u" &&
+          child.name() != "shd" &&
+          child.name() != "highlight" {
+          docx_style_apply_rpr(props, Some({ ..rpr, children: [child], }))
+        }
+      }
+    None => ()
+  }
+  props.resolve_theme_fonts(theme_fonts)
+  { ..props, underline: "none", has_shading: false, highlight: "", }
 }
 
 ///|
@@ -182,7 +225,9 @@ fn docx_number_paragraph(
   paragraph : DocxTextParagraph,
   numbering : DocxNumbering,
   counters : Map[String, Array[Int32]],
-) -> Unit {
+  theme_fonts : @ooxml.OoxmlThemeFonts,
+  warnings : Array[String],
+) -> Unit raise {
   let number_id = paragraph.props.number_id
   if number_id == "" {
     return
@@ -225,11 +270,31 @@ fn docx_number_paragraph(
   for index in (level_index + 1)..<counts.length() {
     counts[index] = 0
   }
-  let prefix = docx_numbering_text(level, counts)
+  let mut prefix = docx_numbering_text(level, counts)
   if prefix == "" {
     return
   }
-  let label = docx_numbering_label_props(paragraph.mark)
+  let label = docx_numbering_label_props(
+    paragraph.mark,
+    level,
+    theme_fonts,
+    warnings,
+  )
+  let font_node = docx_style_child(level.rpr, "rFonts")
+  let font_name = match font_node {
+    Some(value) => docx_attribute(value.element, "ascii", "")
+    None => ""
+  }
+  if docx_numbering_is_symbol_font(font_name) {
+    prefix = docx_numbering_map_symbol(font_name, prefix)
+    for i in 0..<label.fonts.length() {
+      label.fonts[i] = paragraph.mark.fonts[i]
+      label.themes[i] = paragraph.mark.themes[i]
+    }
+  }
+  if (label.toggles & 4) != 0 {
+    prefix = prefix.to_upper()
+  }
   paragraph.items.insert(0, {
     kind: "char",
     text: prefix,
@@ -255,7 +320,7 @@ fn docx_number_paragraph(
     flip_h: false,
     flip_v: false,
     link: "",
-    small_caps: false,
+    small_caps: (label.toggles & 8) != 0 && (label.toggles & 4) == 0,
     field_format: "",
     shade: None,
     border_width: 0.0,
@@ -300,15 +365,25 @@ fn docx_number_blocks(
   blocks : Array[DocxBlock],
   numbering : DocxNumbering,
   counters : Map[String, Array[Int32]],
-) -> Unit {
+  theme_fonts : @ooxml.OoxmlThemeFonts,
+  warnings : Array[String],
+) -> Unit raise {
   for block in blocks {
     match block {
       DocxParaBlock(paragraph) =>
-        docx_number_paragraph(paragraph, numbering, counters)
+        docx_number_paragraph(
+          paragraph, numbering, counters, theme_fonts, warnings,
+        )
       DocxTableBlock(table) =>
         for row in table.rows {
           for cell in row.cells {
-            docx_number_blocks(cell.blocks, numbering, counters)
+            docx_number_blocks(
+              cell.blocks,
+              numbering,
+              counters,
+              theme_fonts,
+              warnings,
+            )
           }
         }
     }
@@ -319,7 +394,9 @@ fn docx_number_blocks(
 fn docx_apply_numbering(
   blocks : Array[DocxBlock],
   numbering : DocxNumbering,
-) -> Unit {
+  theme_fonts~ : @ooxml.OoxmlThemeFonts = @ooxml.default_theme_fonts(),
+  warnings~ : Array[String] = [],
+) -> Unit raise {
   let counters : Map[String, Array[Int32]] = Map([])
-  docx_number_blocks(blocks, numbering, counters)
+  docx_number_blocks(blocks, numbering, counters, theme_fonts, warnings)
 }
