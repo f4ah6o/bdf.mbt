@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { PNG } from 'pngjs';
@@ -307,6 +307,7 @@ console.log('ok 2 - a mostly white page with one painted pixel is not blank');
     assert.deepEqual(readFileSync(h.reportPath), first, `${mode}: primary report is byte-identical to first`);
     const failure = JSON.parse(readFileSync(path.join(h.target, 'diff-report.recapture-failure.json'), 'utf8'));
     assert.equal(failure.status, 'failed', `${mode}: failure is explicit`);
+    assert.deepEqual(failure.restoration, { complete: true, issues: [], errors: [] }, `${mode}: restoration is verified`);
     assert.equal(failure.firstReport, 'diff-report.first.json');
     assert.equal(failure.retryReport, ['runner-without-report', 'runner-partial'].includes(mode) ? null : 'diff-report.retry.json');
     if (failure.retryReport) assert.ok(existsSync(path.join(h.target, failure.retryReport)), `${mode}: retry report retained`);
@@ -342,12 +343,39 @@ console.log('ok 2 - a mostly white page with one painted pixel is not blank');
     assert.deepEqual(restored, firstFiles, `mask ${masks}: all first artifacts restored`);
     const failure = JSON.parse(readFileSync(path.join(h.target, 'diff-report.recapture-failure.json'), 'utf8'));
     assert.equal(failure.status, 'failed');
+    assert.deepEqual(failure.restoration, { complete: true, issues: [], errors: [] }, `mask ${masks}: restoration verified`);
     assert.equal(failure.retryArtifacts.length, retryFiles.size);
     for (const entry of failure.retryArtifacts) assert.deepEqual(readFileSync(path.join(h.target, entry.archivePath)), retryFiles.get(entry.originalPath), `mask ${masks}: archived retry artifact`);
   }
   console.log('ok 12 - 63 generated persistent failures restore every first artifact');
 }
 
+// A directory at a screenshot path makes deletion and rewriting fail even
+// though the surrounding report directory remains writable. This exercises a
+// real filesystem error rather than a mock of the reporting code.
+{
+  const painted = (x, y) => (x === 0 && y === 0 ? ink : white);
+  const h = harness({ baseline: () => painted, variant: (step, viewport) => step === 0 && viewport === 'mobile' ? () => white : painted });
+  const underlyingRun = h.run;
+  h.run = async (...args) => {
+    await underlyingRun(...args);
+    if (h.calls() === 2) {
+      rmSync(h.baselinePng('wide'));
+      mkdirSync(h.baselinePng('wide'));
+      throw new Error('runner failed with obstructed artifact');
+    }
+  };
+  await assert.rejects(() => captureWithRecapture({ ...h, checkVariant: true }));
+  const failure = JSON.parse(readFileSync(path.join(h.target, 'diff-report.recapture-failure.json'), 'utf8'));
+  assert.equal(failure.status, 'failed');
+  assert.equal(failure.restoration.complete, false, 'obstructed artifact must not be reported restored');
+  assert.ok(failure.restoration.errors.length > 0, 'restore errors are recorded');
+  assert.ok(failure.restoration.issues.some(issue => issue.viewport === 'wide' && issue.kind === 'baseline' && issue.reason === 'unreadable'));
+  assert.match(failure.note, /could not be verified as restored/);
+  assert.deepEqual(readFileSync(h.reportPath), readFileSync(path.join(h.target, 'diff-report.first.json')));
+  console.log('ok 13 - restoration filesystem failures are reported as incomplete');
+}
+
 const { diagnosticChecks } = await import('./recapture-diagnostics-test.mjs');
 const { recapturePbtChecks, recaptureGeneratedCases } = await import('./recapture-pbt-test.mjs');
-console.log(`\nrecapture: ${12 + diagnosticChecks + recapturePbtChecks} pass, 0 fail (${recaptureGeneratedCases + 127} generated cases)`);
+console.log(`\nrecapture: ${13 + diagnosticChecks + recapturePbtChecks} pass, 0 fail (${recaptureGeneratedCases + 127} generated cases)`);

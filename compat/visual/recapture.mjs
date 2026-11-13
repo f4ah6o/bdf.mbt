@@ -230,6 +230,25 @@ export async function captureWithRecapture({ capture, reportPath, baselinePng, v
     }
   }
   if (failure) {
+    // Verify both the artifact set and its bytes. A failed restoration must
+    // never be reported as complete just because a best-effort pass ran.
+    const restorationIssues = [];
+    for (const [viewport, files] of firstArtifacts) {
+      for (const [kind, file] of Object.entries(artifactPaths(viewport, baselinePng, variantPng))) {
+        const expected = files.get(file);
+        const present = existsSync(file);
+        if (!expected && present) restorationIssues.push({ viewport, kind, file, reason: 'unexpected' });
+        else if (expected && !present) restorationIssues.push({ viewport, kind, file, reason: 'missing' });
+        else if (expected) {
+          try {
+            if (!readFileSync(file).equals(expected)) restorationIssues.push({ viewport, kind, file, reason: 'different' });
+          } catch (error) {
+            restorationIssues.push({ viewport, kind, file, reason: 'unreadable', error: String(error) });
+          }
+        }
+      }
+    }
+    const restoration = { complete: restorationIssues.length === 0, issues: restorationIssues, errors: restoreErrors.map(String) };
     const archiveDir = `${reportName}.retry-artifacts`;
     const archived = [];
     try {
@@ -249,7 +268,10 @@ export async function captureWithRecapture({ capture, reportPath, baselinePng, v
       firstReport: originalReports.first,
       retryReport: retrySaved ? originalReports.retry : null,
       retryArtifacts: archived,
-      note: 'The primary report and all viewport artifacts are from the first capture; retry output is retained separately when available.',
+      restoration,
+      note: restoration.complete
+        ? 'The primary report and all viewport artifacts match the first capture; retry output is retained separately when available.'
+        : 'The primary report is from the first capture, but one or more viewport artifacts could not be verified as restored; see restoration. Retry output is retained separately when available.',
     }, null, 2));
     throw failure;
   }
