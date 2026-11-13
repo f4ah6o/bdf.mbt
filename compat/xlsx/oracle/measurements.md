@@ -94,3 +94,25 @@ On the merge, the roadmap tests passed 3/3, the roadmap validator checked 45
 issues, the local runner tests passed 50/50 with the pinned build and emulator,
 and the XLSX oracle negative-path test passed. The visual gate was not rerun
 for this documentation and roadmap-validator-only difference.
+
+## Remaining local gates and conditional probe
+
+On clean PR head `b3ff51d14c1bfccca619779c932a529b3d8ee928`, the six local
+gates other than visual passed in 469.49s: self-test, workflow-lint, ci/test,
+ci/demo, parity and site. The `ci/test` target counts were 3,347 for JS and
+3,265 each for wasm-gc and native, all passing. This was a selected subset and
+the runner recorded `PARTIAL-PASS`, exit 0. The visual gate was not rerun;
+the separately recorded `df218f25` visual pass covers the unchanged visual
+execution paths at `b3ff51d1`. Local evidence is in
+`/tmp/xlsx-resume-local-ci-b3`; it is not part of the repository.
+
+An independent review found that the conditional diagnostic still enumerated
+the removed checkout fixtures. The diagnostic now uses the locked inventory and
+can be invoked through the fresh oracle wrapper. The previous Git baseline and
+the locked inventory contain the same 59 eligible fixture names. A fresh
+wrapper run processed the first case of all 59 fixtures: 57 compared with zero
+reported differences, two unsupported and none skipped. The new inventory and
+unknown-name regression check also passed separately against that run's
+receipt. The pre-existing visual pass predates this additional check; it was
+not represented as having run it. The diagnostic's existing comparisons,
+ordering and tolerance behavior were not changed.

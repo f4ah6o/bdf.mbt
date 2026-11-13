@@ -39,6 +39,24 @@ try {
   await validateVerifiers();
   const inputs = await readInputs(), notes = await readNotes();
   assert.equal(Object.values(notes).reduce((n, v) => n + v.length, 0), 264);
+  if (process.env.BDF_XLSX_FIXTURE_ROOT) {
+    // Exercise the real diagnostic against this run rather than the removed
+    // checkout files. One case per fixture verifies the complete inventory.
+    const probe = spawnSync(process.execPath, ['compat/xlsx/probe-conditional.mjs', '--all-conditional', '--only', '0'], { env: process.env, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+    assert.equal(probe.status, 0, probe.stderr);
+    const lines = [...probe.stdout.matchAll(/^(conditional-[^:\n]+\.json): (\d+) differ \/ (\d+) compared(?:, (\d+) unsupported)?(?:, (\d+) skipped)?$/gm)];
+    const actual = lines.map(match => match[1]).sort();
+    const expected = Object.keys(lock.fixtures).filter(name => /^conditional-.*\.json$/.test(name) && !name.includes('unsupported') && !name.includes('inputs')).sort();
+    assert.deepEqual(actual, expected, 'conditional diagnostic fixture inventory');
+    assert.equal(actual.length, 59);
+    for (const line of lines) {
+      assert.equal(Number(line[3]) + Number(line[4] ?? 0), 1, `conditional diagnostic did not process case 0: ${line[1]}`);
+      assert.equal(Number(line[5] ?? 0), 0, `conditional diagnostic skipped case 0: ${line[1]}`);
+    }
+    const unknown = spawnSync(process.execPath, ['compat/xlsx/probe-conditional.mjs', 'conditional-not-in-inventory.json'], { env: process.env, encoding: 'utf8' });
+    assert.notEqual(unknown.status, 0);
+    assert.match(unknown.stderr, /Unknown XLSX fixture/);
+  }
   assert.deepEqual(noteDifferences(notes, notes), { compared: 264, differences: [] });
   const changedNotes = structuredClone(notes), noteFile = 'sheet-multiple-notes.json';
   changedNotes[noteFile][0].bdf = changedNotes[noteFile][1].bdf;

@@ -89,6 +89,7 @@ To run a single verifier with a fresh oracle, use for example:
 ```sh
 node compat/xlsx/oracle/run-suite.mjs --script compat/xlsx/verify-workbook.mjs
 node compat/xlsx/oracle/run-suite.mjs --script compat/xlsx/verify-render.mjs -- --list --ids /tmp/xlsx-render.ids
+node compat/xlsx/oracle/run-suite.mjs --script compat/xlsx/probe-conditional.mjs -- --all-conditional
 node compat/xlsx/oracle/run-suite.mjs --suite picture-visual
 ```
 

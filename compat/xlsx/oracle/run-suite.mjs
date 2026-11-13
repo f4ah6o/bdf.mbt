@@ -13,7 +13,7 @@ import { readNoteDifferences } from './note-differences.mjs';
 
 const { values, positionals } = parseArgs({ allowPositionals: true, options: { suite: { type: 'string' }, script: { type: 'string' } } });
 if (Boolean(values.suite) === Boolean(values.script) || (values.suite && !['compat', 'visual', 'picture-visual'].includes(values.suite))) throw Error('Choose --suite compat|visual|picture-visual or --script <verifier>');
-if (values.script && !/^compat\/(xlsx|ooxml)\/verify-[\w-]+\.mjs$/.test(values.script) && !['compat/xlsx/emission-test.mjs', 'compat/xlsx/tools/fixture-store-test.mjs', 'compat/xlsx/shard-test.mjs'].includes(values.script)) throw Error('Expected a repository XLSX/OOXML verifier or compatibility test');
+if (values.script && !/^compat\/(xlsx|ooxml)\/verify-[\w-]+\.mjs$/.test(values.script) && !['compat/xlsx/emission-test.mjs', 'compat/xlsx/tools/fixture-store-test.mjs', 'compat/xlsx/shard-test.mjs', 'compat/xlsx/probe-conditional.mjs'].includes(values.script)) throw Error('Expected a repository XLSX/OOXML verifier, compatibility test or conditional probe');
 if (values.suite && positionals.length) throw Error('Verifier arguments require --script');
 const build = process.env.BDF_XLSX_ORACLE_BUILD, emulator = process.env.BDF_XLSX_ORACLE_EMULATOR;
 if (!build) throw Error('BDF_XLSX_ORACLE_BUILD must name the pinned ARM64 oracle build; see compat/xlsx/oracle/README.md');
