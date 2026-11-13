@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Fixed
+
+- ASCII DXF Japanese text without a codepage (or with the default ANSI_1252)
+  now uses the upstream conservative Shift-JIS detection. Valid UTF-8 and
+  modern DXF remain UTF-8; codepage declarations are read from header tags
+  rather than a substring in the first 8192 bytes. Binary DXF and other
+  legacy-codepage support are unchanged.
+
 ### Added
 
 - Multipage text selection and copy for page views in the `Viewer`

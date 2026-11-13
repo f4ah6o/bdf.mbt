@@ -77,3 +77,18 @@ MEGASOFT の 2D / 3D DXF サンプルについて、固定した shibukawa/bdf �
 ## 注記
 
 本 issue は調査登録であり、表示改善完了を意味しない。実装 issue 作成時に利用者向け変更履歴を改めて判断する。
+
+## 実装進捗（2026-11-13）
+
+ASCII DXF の文字デコードに、固定 upstream `a5e4d7a` の保守的な
+Shift-JIS 推定条件を接続。コードページ欠落／既定 ANSI_1252 に限り、
+UTF-8 でなく、Shift-JIS 解読が成功し、かな／第一水準漢字の先行バイトを
+2組以上含む場合に推定する。UTF-8 と AC1021 以降の優先は維持する。
+明示コードページは header tag から取得し、8192 bytes 上限と本文内文字列の
+誤検出を除去した。合成 fixture でコードページ欠落、既定、明示、UTF-8、
+近代版、曖昧な半角／西欧文字、不正byte、長いheaderを分離して検証する。
+
+これは文字デコードの限定修正であり、原本の描画差・3D差・全codepage対応や
+binary DXF の decode 対応を完了したものではない。本Issueはopenを維持する。
+
+Validation: DXF JS tests pass (9/9), including existing binary-DXF regression. Independent review found no blocking regression. Native/wasm-gc tests could not start because the local Moon core bundle lacks bigint.mi; not a test failure. Inference currently inspects the complete ASCII file rather than individual string tags, so malformed trailing bytes can differ from upstream. Full drawing parity is still open.
