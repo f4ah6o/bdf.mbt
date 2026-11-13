@@ -130,8 +130,9 @@ fn grid_cell_layout(
           )
         None => metrics('x', bold)
       }
-      ascent = a
-      descent = d
+      // Empty lines use the same non-negative line extents as text lines.
+      ascent = Double::max(ascent, a)
+      descent = Double::max(descent, d)
     }
     line_metrics.push((ascent, descent))
     total += ascent + descent

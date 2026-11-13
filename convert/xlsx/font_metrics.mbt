@@ -59,3 +59,58 @@ fn xlsx_default_font_mdw(
   }
   Double::max(1.0, (widest * ppem).round())
 }
+
+///|
+/// The workbook's fallback row height is based on the default face's line
+/// metrics when a face was provided; without a face keep the estimate path.
+/// The renderer clamps each line's ascent and descent to zero while measuring
+/// text. Match that behavior, including unusual negative hhea line gaps.
+fn xlsx_default_font_line_height(size : Double, font : @sfnt.Font?) -> Double {
+  let estimate = (0.9 + 0.25) * size
+  match font {
+    Some(face) => {
+      let ascent = face.metrics.ascent
+      let descent = face.metrics.descent
+      let line_em = Double::max(ascent, 0.0) + Double::max(descent, 0.0)
+      if ascent.is_nan() ||
+        ascent.is_inf() ||
+        descent.is_nan() ||
+        descent.is_inf() ||
+        line_em.is_inf() ||
+        line_em <= 0.0 {
+        estimate
+      } else {
+        line_em * size
+      }
+    }
+    None => estimate
+  }
+}
+
+///|
+/// Keep the estimate path's arithmetic order unchanged for byte parity.
+fn xlsx_fitted_line_height(size : Double, font : @sfnt.Font?) -> Double {
+  match font {
+    Some(_) => xlsx_default_font_line_height(size, font)
+    None => 0.9 * size + 0.25 * size
+  }
+}
+
+///|
+/// Match the renderer's single-face advances, keeping its estimate when the
+/// selected face does not contain the character.
+fn xlsx_fitted_advance(
+  c : Char,
+  bold : Bool,
+  size : Double,
+  font : @sfnt.Font?,
+) -> Double {
+  match font {
+    Some(face) =>
+      match face.glyph(c.to_int()) {
+        Some(glyph) => face.advance(glyph) * size
+        None => @sheet.sized_fallback_advance(c, bold, size)
+      }
+    None => @sheet.sized_fallback_advance(c, bold, size)
+  }
+}

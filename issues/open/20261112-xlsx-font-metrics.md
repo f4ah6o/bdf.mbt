@@ -106,3 +106,9 @@ port はフォントを渡す経路（`convert_plain_with_font`,
 
 - upstream: `a5e4d7a6b202cfe73de44b0be51f6fb86cd8ee22`
 - port: `61f195b38293415a46a6aca4cff99187ba68ea5e`
+
+## 進捗
+
+- 2026-11-13: 既定行高と通常テキストの自動行高に supplied face の ascent / descent を接続し、通常の折返し幅に glyph advance を使用。欠字は既存の推定値へ戻す。明示行高と sheetFormatPr の既定行高は優先し、フォントなしの出力を維持する。
+- 同じ変更で sheet renderer の下降量の符号を正し、実測行高と複数行の基線間隔が一致するようにした。合成フォントの通常行・1行折返し・複数行折返し・明示行高と基線、欠字 fallback を検証する。
+- 可変サイズ rich text の折返しは renderer と同じ推定値を維持する。縮小表示と General 書式の当てはめ、rich text 全般の実測化、upstream との同一フォントでの比較は引き続き未完了。この issue は open のままとする。

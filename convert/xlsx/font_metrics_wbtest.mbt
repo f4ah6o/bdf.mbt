@@ -94,6 +94,47 @@ fn sheet_first_view_columns(bdf : Bytes) -> Array[@core.SheetRun] {
 }
 
 ///|
+fn sheet_first_view_rows(bdf : Bytes) -> Array[@core.SheetRun] {
+  let doc = @core.open_single(bdf) catch { _ => return [] }
+  for view in doc.manifest.views {
+    if view.kind == "sheet" {
+      return view.rows.copy()
+    }
+  }
+  []
+}
+
+///|
+fn sheet_row_size(runs : Array[@core.SheetRun], index : Int32) -> Double {
+  let mut start = 0
+  for run in runs {
+    if index < start + run.count {
+      return run.size
+    }
+    start += run.count
+  }
+  -1.0
+}
+
+///|
+fn synthetic_baselines(bdf : Bytes) -> Array[Double] raise {
+  let result : Array[Double] = []
+  let doc = @core.open_single(bdf)
+  for part in doc.manifest.parts {
+    if part.kind == "obj" {
+      let resources = @core.decode_object_resources(doc.part(part.hash))
+      for command in @render.compile_object(resources.object) {
+        match command {
+          FillText(_, _, y, _) => result.push(y)
+          _ => ()
+        }
+      }
+    }
+  }
+  result
+}
+
+///|
 /// The x position of one label's FillText, failing when it is absent.
 fn text_position(
   positions : Map[String, Double],
@@ -288,6 +329,150 @@ test "XLSX with-font column geometry uses the measured MDW" {
 }
 
 ///|
+test "XLSX measured default row preserves explicit heights" {
+  // The synthetic face has OS/2 ascent 800 and descent 200 at 1000 upem.
+  // With size 11 the row default is ceil((11/0.75)-0.05)+2 pixels.
+  let workbook = fixture_workbook(metrics_fixture_workbook)
+  let with_font = convert_plain_with_font(
+    workbook,
+    fixture_workbook(metrics_fixture_font),
+  )
+  let no_font = convert_plain_no_fonts(workbook)
+  assert_eq(sheet_first_view_rows(with_font.bdf), [
+    { count: 1, size: 30.0, },
+    { count: 29, size: 12.75, },
+  ])
+  assert_eq(sheet_first_view_rows(no_font.bdf), [
+    { count: 1, size: 30.0, },
+    { count: 29, size: 14.25, },
+  ])
+  // A worksheet-specified defaultRowHeight wins over font metrics.
+  let explicit = convert_plain_with_font(
+    fixture_workbook(defaults_fixture_workbook),
+    fixture_workbook(metrics_fixture_font),
+  )
+  assert_eq(sheet_first_view_rows(explicit.bdf), [
+    { count: 1, size: 30.0, },
+    { count: 29, size: 15.0, },
+  ])
+}
+
+///|
+test "XLSX wrapped and unwrapped rows share measured line metrics" {
+  let workbook = fixture_workbook(row_metrics_workbook)
+  let with_font = convert_plain_with_font(
+    workbook,
+    fixture_workbook(metrics_fixture_font),
+  )
+  let rows = sheet_first_view_rows(with_font.bdf)
+  assert_eq(sheet_row_size(rows, 0), 12.75)
+  assert_eq(sheet_row_size(rows, 1), 12.75)
+  assert_true(sheet_row_size(rows, 2) > 12.75)
+  assert_eq(sheet_row_size(rows, 3), 30.0)
+  assert_eq(sheet_row_size(rows, 4), 12.75)
+  // The six measured wrapped lines must use the same 11pt line advance as
+  // the row fitter, including the 2.2pt descent. A negative descent used to
+  // shift baselines down and make successive lines only 8.8pt apart.
+  let baselines = synthetic_baselines(with_font.bdf)
+  assert_eq(baselines.length(), 9)
+  assert_true((baselines[0] - 9.8).abs() < 0.001)
+  assert_true((baselines[3] - baselines[2] - 11.0).abs() < 0.001)
+  assert_true((baselines[7] - baselines[2] - 55.0).abs() < 0.001)
+  let no_font = convert_plain_no_fonts(workbook)
+  let estimated = sheet_first_view_rows(no_font.bdf)
+  assert_eq(sheet_row_size(estimated, 0), 14.25)
+  assert_eq(sheet_row_size(estimated, 1), 14.25)
+  assert_eq(sheet_row_size(estimated, 3), 30.0)
+}
+
+///|
+test "XLSX varying rich runs retain renderer's fallback row metrics" {
+  let result = convert_plain_with_font(
+    fixture_workbook(rich_row_metrics_workbook),
+    fixture_workbook(metrics_fixture_font),
+  )
+  let rows = sheet_first_view_rows(result.bdf)
+  // The current renderer wraps varying-size rich runs using fallback widths
+  // and 0.9+0.25em line metrics. Compute its required height independently
+  // from the declared runs and column width, even when a face is available.
+  let lines = @sheet.wrap_rich_text(
+    [
+      { text: "aa ", size: 11.0, vertical: "", },
+      { text: "bb bb bb bb", size: 16.0, vertical: "", },
+    ],
+    26.25,
+    11.0,
+  )
+  assert_true(lines.length() > 1)
+  let mut line_height = 0.0
+  for line in lines {
+    line_height += 0.9 * line.size + 0.25 * line.size
+  }
+  let expected = ((line_height / 0.75 - 0.05).ceil() + 2.0) * 0.75
+  assert_eq(sheet_row_size(rows, 0), expected)
+}
+
+///|
+test "XLSX wrapping falls back when a face lacks a character" {
+  let face = fixture_face(metrics_fixture_nodigits_font)
+  assert_true(face.glyph('5'.to_int()) is None)
+  for size in [8.0, 11.0, 24.0] {
+    assert_eq(
+      xlsx_fitted_advance('5', false, size, Some(face)),
+      @sheet.sized_fallback_advance('5', false, size),
+    )
+    assert_eq(
+      xlsx_fitted_advance('5', true, size, None),
+      @sheet.sized_fallback_advance('5', true, size),
+    )
+  }
+}
+
+///|
+test "property: measured default rows are monotone and explicit defaults win" {
+  let face = Some(fixture_face(metrics_fixture_font))
+  let geometry : XlsxSheetGeometry = {
+    default_column_width: 0.0,
+    base_column_width: 8.0,
+    default_row_height: 0.0,
+    zero_height: false,
+    show_grid: true,
+    show_zero: true,
+    right_to_left: false,
+    frozen_columns: 0,
+    frozen_rows: 0,
+    columns: [],
+    merges: [],
+    auto_filter: None,
+  }
+  @quickcheck.check(
+    (sample : Byte) => {
+      let small = (sample.to_int() % 60 + 1).to_double()
+      let large = small + (sample.to_int() % 10 + 1).to_double()
+      let small_height = xlsx_default_font_line_height(small, face)
+      let large_height = xlsx_default_font_line_height(large, face)
+      let fitted : Map[Int32, Double] = Map([])
+      let a = xlsx_row_runs([], geometry, 7, small_height, fitted)
+      let b = xlsx_row_runs([], geometry, 7, large_height, fitted)
+      let explicit = { ..geometry, default_row_height: 27.0, }
+      let c = xlsx_row_runs([], explicit, 7, small_height, fitted)
+      let d = xlsx_row_runs([], explicit, 7, large_height, fitted)
+      a.length() == 1 &&
+      b.length() == 1 &&
+      a[0].count == 7 &&
+      b[0].count == 7 &&
+      a[0].size <= b[0].size &&
+      c.length() == 1 &&
+      d.length() == 1 &&
+      c[0].size == 27.0 &&
+      d[0].size == 27.0
+    },
+    seed=20261113,
+    count=256,
+  )
+}
+
+///|
 test "XLSX default-column axis carries the measured width" {
   let with_font = convert_plain_with_font(
     fixture_workbook(defaults_fixture_workbook),
@@ -383,4 +568,47 @@ test "XLSX no-font conversion is unchanged" {
     fixture_workbook(defaults_fixture_workbook),
   )
   assert_eq(defaults.bdf, fixture_workbook(defaults_no_font_bdf))
+}
+
+///|
+/// Synthetic workbook with normal, wrapped and explicit-height rows.
+let row_metrics_workbook = "UEsDBBQAAAAIADd+bV1Vm1sOiQAAANYAAAAPAAAAeGwvd29ya2Jvb2sueG1sjY9BDoJADEWvQnoACy5cTICVN/AEIxRnAp1O2iF6fFFk7+r/5v+85rdP0fkuMlcvXpJ1EErJDtGGQOztJJnSlkyi7Mt26gMtK/nRAlHhBc91fUH2McFOcPoPQ6YpDnSVYWVKZYcoLb5ESRZiNujb7wf7aZU8Uwe3j2+gUhfHDrQB7Fs8inhs6d9QSwMEFAAAAAgAN35tXZG+OlFXAAAAqAAAABoAAAB4bC9fcmVscy93b3JrYm9vay54bWwucmVsc7MJSs1JLMnMzyvOyCwotrNB5ip4ptgqFQWXVOakFisphFQWpNoqVegXw/iJRempJbZKEL5eRW6Okj42/YYIreX5RdnFGampJQjdcKFifTBlCDNIH9VhAFBLAwQUAAAACAA3fm1djnjTYJEAAADxAAAADQAAAHhsL3N0eWxlcy54bWx9T70OwiAQfpULL4B1piQuTRycdOhK6qEkQJtyKPXphWKNk8vd93O/ItBi8XxHJCn06CnAMEZPLWtYFaTwyiE8lG3ZCWk2Q4DOJIozMi5FeFWraQrjtWNNQYoBre31d+Q+j0wafHSdo+O1ZTsGpbJC/s8ENU12OVhz8w6389RG4Tmr6YJp1csZSefw2Z7Rz5NvUEsDBBQAAAAIADd+bV2bTjAz0QAAAN0BAAAYAAAAeGwvd29ya3NoZWV0cy9zaGVldDEueG1slZHBbsMgDIZfBfkB6jRpd5gI0qQdeu+hZ5SwghogAlfp49chGtupUpEw/Lb+T8bIJaZbtsaQePgp5B4s0fyJmAdrvM67OJvAlZ+YvCaW6Yp5TkaPxeQnbJvmA712AZQc4pRLFN6FHvYgvH6Uc3Ej2R6OIIZ7pugvm94DKombrQC/NWklU1xEWqsMWy9fTKAeXJhcMGdKnHfsIKUlEgNWgQNvNlZ3W90tiFy6eJvRVUb3msFL1PACeABhmdA1v4M4GXddM39vPbzfLf6bHdYfVU9QSwECFAMUAAAACAA3fm1dVZtbDokAAADWAAAADwAAAAAAAAAAAAAAgAEAAAAAeGwvd29ya2Jvb2sueG1sUEsBAhQDFAAAAAgAN35tXZG+OlFXAAAAqAAAABoAAAAAAAAAAAAAAIABtgAAAHhsL19yZWxzL3dvcmtib29rLnhtbC5yZWxzUEsBAhQDFAAAAAgAN35tXY5402CRAAAA8QAAAA0AAAAAAAAAAAAAAIABRQEAAHhsL3N0eWxlcy54bWxQSwECFAMUAAAACAA3fm1dm04wM9EAAADdAQAAGAAAAAAAAAAAAAAAgAEBAgAAeGwvd29ya3NoZWV0cy9zaGVldDEueG1sUEsFBgAAAAAEAAQABgEAAAgDAAAAAA=="
+
+///|
+/// Synthetic workbook with wrapping runs of different font sizes.
+let rich_row_metrics_workbook = "UEsDBBQAAAAIAAx/bV1Vm1sOiQAAANYAAAAPAAAAeGwvd29ya2Jvb2sueG1sjY9BDoJADEWvQnoACy5cTICVN/AEIxRnAp1O2iF6fFFk7+r/5v+85rdP0fkuMlcvXpJ1EErJDtGGQOztJJnSlkyi7Mt26gMtK/nRAlHhBc91fUH2McFOcPoPQ6YpDnSVYWVKZYcoLb5ESRZiNujb7wf7aZU8Uwe3j2+gUhfHDrQB7Fs8inhs6d9QSwMEFAAAAAgADH9tXZG+OlFXAAAAqAAAABoAAAB4bC9fcmVscy93b3JrYm9vay54bWwucmVsc7MJSs1JLMnMzyvOyCwotrNB5ip4ptgqFQWXVOakFisphFQWpNoqVegXw/iJRempJbZKEL5eRW6Okj42/YYIreX5RdnFGampJQjdcKFifTBlCDNIH9VhAFBLAwQUAAAACAAMf21djnjTYJEAAADxAAAADQAAAHhsL3N0eWxlcy54bWx9T70OwiAQfpULL4B1piQuTRycdOhK6qEkQJtyKPXphWKNk8vd93O/ItBi8XxHJCn06CnAMEZPLWtYFaTwyiE8lG3ZCWk2Q4DOJIozMi5FeFWraQrjtWNNQYoBre31d+Q+j0wafHSdo+O1ZTsGpbJC/s8ENU12OVhz8w6389RG4Tmr6YJp1csZSefw2Z7Rz5NvUEsDBBQAAAAIAAx/bV3Tgquc0QAAAFoBAAAYAAAAeGwvd29ya3NoZWV0cy9zaGVldDEueG1sbVDRagMhEPwV2Q/oJoXmIahQ6AcU+tDnjbE96amHu82Ffn1Xj4Y8FJbRcXbGVbvW9sVTjGKueS7sYBJZjogcppiJH+oSiyoftWUSpe0TeWmRzsOUZ3zc7Q6YKRXwNtSZB5qcioM9mEzXsa7pLJODJzDhm6Xm943vAb3FzTYCX0jI21ZX07qqYX3zrAk8csRBKnMq8U2aqkl9TetVgX/MhWbt2kLH2XjVkRcK0YGOzbFdIngiY1F60z/2w53dn07mr24O7Ldi6KSuineD4+07/S9QSwECFAMUAAAACAAMf21dVZtbDokAAADWAAAADwAAAAAAAAAAAAAAgAEAAAAAeGwvd29ya2Jvb2sueG1sUEsBAhQDFAAAAAgADH9tXZG+OlFXAAAAqAAAABoAAAAAAAAAAAAAAIABtgAAAHhsL19yZWxzL3dvcmtib29rLnhtbC5yZWxzUEsBAhQDFAAAAAgADH9tXY5402CRAAAA8QAAAA0AAAAAAAAAAAAAAIABRQEAAHhsL3N0eWxlcy54bWxQSwECFAMUAAAACAAMf21d04KrnNEAAABaAQAAGAAAAAAAAAAAAAAAgAEBAgAAeGwvd29ya3NoZWV0cy9zaGVldDEueG1sUEsFBgAAAAAEAAQABgEAAAgDAAAAAA=="
+
+///|
+/// Synthetic face with zero win metrics and a negative hhea line gap.
+let metrics_negative_line_gap_font = "AAEAAAAKAIAAAwAgT1MvMlzOVTIAAACsAAAAYGNtYXAADACxAAABDAAAACxnbHlmAAAAAAAAATgAAAAQaGVhZGL8Qz0AAAFIAAAANmhoZWEHCgOBAAABgAAAACRobXR421YAAAAAAaQAAAGAbG9jYQAAAAAAAAMkAAAAwm1heHAAYQAAAAAD6AAAACBuYW1lDYMeXwAABAgAAAC8cG9zdP+fADIAAATEAAAAIAAEAfQBkAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAABNRlRSAEAAIAB+AyD/OAAAAAAAAAAAAAAAAAAAArwCvAAgACAAAQAAAAEAAwABAAAADAAEACAAAAAEAAQAAQAAAH7//wAAACD////hAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAQAARiUbX18PPPUAAAPoAAAAAAAAAAAAAAAAAAAAAAAA/zgD6AMgAAAACAACAAAAAAAAAAEAAAMg/zj+cAPoAAAAAAPoAAEAAAAAAAAAAAAAAAAAAABgAfQAAAD6AAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAAB9AAAAfQAAAH0AAAB9AAAAfQAAAH0AAAB9AAAAfQAAAH0AAAB9AAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAlgAAAJYAAACWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAA2AAMAAQQJAAEAHgAAAAMAAQQJAAIADgAeAAMAAQQJAAQALgAsAAMAAQQJAAYALABaAE0AZQB0AHIAaQBjAHMAIABGAGkAeAB0AHUAcgBlAFIAZQBnAHUAbABhAHIATQBlAHQAcgBpAGMAcwAgAEYAaQB4AHQAdQByAGUAIABSAGUAZwB1AGwAYQByAE0AZQB0AHIAaQBjAHMARgBpAHgAdAB1AHIAZQAtAFIAZQBnAHUAbABhAHIAAwAAAAAAAP+cADIAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+
+///|
+test "XLSX negative hhea line gap matches renderer clamping" {
+  let face = fixture_face(metrics_negative_line_gap_font)
+  assert_eq(face.metrics.ascent, 0.8)
+  assert_eq(face.metrics.descent, -0.2)
+  let result = convert_plain_with_font(
+    fixture_workbook(row_metrics_workbook),
+    fixture_workbook(metrics_negative_line_gap_font),
+  )
+  let height = sheet_row_size(sheet_first_view_rows(result.bdf), 0)
+  assert_eq(height, 10.5)
+  let baselines = synthetic_baselines(result.bdf)
+  assert_true(baselines[0] - face.metrics.ascent * 11.0 >= 0.0)
+  assert_true(baselines[0] <= height)
+}
+
+///|
+test "XLSX empty wrapped lines clamp negative hhea descent" {
+  let result = convert_plain_with_font(
+    fixture_workbook(
+      "UEsDBBQAAAAIACKBbV1Vm1sOiQAAANYAAAAPAAAAeGwvd29ya2Jvb2sueG1sjY9BDoJADEWvQnoACy5cTICVN/AEIxRnAp1O2iF6fFFk7+r/5v+85rdP0fkuMlcvXpJ1EErJDtGGQOztJJnSlkyi7Mt26gMtK/nRAlHhBc91fUH2McFOcPoPQ6YpDnSVYWVKZYcoLb5ESRZiNujb7wf7aZU8Uwe3j2+gUhfHDrQB7Fs8inhs6d9QSwMEFAAAAAgAIoFtXZG+OlFXAAAAqAAAABoAAAB4bC9fcmVscy93b3JrYm9vay54bWwucmVsc7MJSs1JLMnMzyvOyCwotrNB5ip4ptgqFQWXVOakFisphFQWpNoqVegXw/iJRempJbZKEL5eRW6Okj42/YYIreX5RdnFGampJQjdcKFifTBlCDNIH9VhAFBLAwQUAAAACAAigW1djnjTYJEAAADxAAAADQAAAHhsL3N0eWxlcy54bWx9T70OwiAQfpULL4B1piQuTRycdOhK6qEkQJtyKPXphWKNk8vd93O/ItBi8XxHJCn06CnAMEZPLWtYFaTwyiE8lG3ZCWk2Q4DOJIozMi5FeFWraQrjtWNNQYoBre31d+Q+j0wafHSdo+O1ZTsGpbJC/s8ENU12OVhz8w6389RG4Tmr6YJp1csZSefw2Z7Rz5NvUEsDBBQAAAAIACKBbV3S4S4DvQAAABIBAAAYAAAAeGwvd29ya3NoZWV0cy9zaGVldDEueG1sTZDNSgUxDIVfpURwaWYUXFzbguAbuHAde6NTnLZDE537+GZ6QVz09OfkfAn1e+tfsjCru5S1SoBFdTshSlq4kNy1jas5H60XUrv2T5StM51HqKx4P02PWChXiD61VYa6kmuAGVyhy9j3fNYlwMMELn2LtvJ2fZgBo8drbhBfSCn63nbXD9dox+HZEDJAGiDXNVd+1W5uttwY/SQbJQ5gswn3H4ZItzfz9DTk3aNam6MYky3Dm/7rh3/fEH8BUEsBAhQDFAAAAAgAIoFtXVWbWw6JAAAA1gAAAA8AAAAAAAAAAAAAAIABAAAAAHhsL3dvcmtib29rLnhtbFBLAQIUAxQAAAAIACKBbV2RvjpRVwAAAKgAAAAaAAAAAAAAAAAAAACAAbYAAAB4bC9fcmVscy93b3JrYm9vay54bWwucmVsc1BLAQIUAxQAAAAIACKBbV2OeNNgkQAAAPEAAAANAAAAAAAAAAAAAACAAUUBAAB4bC9zdHlsZXMueG1sUEsBAhQDFAAAAAgAIoFtXdLhLgO9AAAAEgEAABgAAAAAAAAAAAAAAIABAQIAAHhsL3dvcmtzaGVldHMvc2hlZXQxLnhtbFBLBQYAAAAABAAEAAYBAAD0AgAAAAA=",
+    ),
+    fixture_workbook(metrics_negative_line_gap_font),
+  )
+  let rows = sheet_first_view_rows(result.bdf)
+  assert_eq(sheet_row_size(rows, 0), 28.5)
+  let baselines = synthetic_baselines(result.bdf)
+  assert_eq(baselines.length(), 2)
+  assert_true((baselines[1] - baselines[0] - 17.6).abs() < 0.001)
 }

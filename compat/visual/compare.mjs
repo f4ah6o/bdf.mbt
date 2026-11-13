@@ -1066,8 +1066,12 @@ try {
   const sheetBase = `http://127.0.0.1:${server.address().port}/compat/sheet/`;
   const continuousBase = `http://127.0.0.1:${server.address().port}/compat/continuous/`;
   const viewerWorkerOutput=path.join(output,'viewer-worker');mkdirSync(viewerWorkerOutput);
-  await run(['diff','html','--url',`${continuousBase}viewer-worker-baseline.html`,'--current-url',`${continuousBase}viewer-worker-moon.html`,'--output-dir',viewerWorkerOutput,'--no-paint-tree']);
-  const viewerWorkerReport=JSON.parse(readFileSync(path.join(viewerWorkerOutput,'diff-report.json'),'utf8'));
+  const viewerWorkerCapture=['diff','html','--url',`${continuousBase}viewer-worker-baseline.html`,'--current-url',`${continuousBase}viewer-worker-moon.html`,'--output-dir',viewerWorkerOutput,'--no-paint-tree'];
+  const viewerWorkerReportPath=path.join(viewerWorkerOutput,'diff-report.json');
+  const viewerWorkerBaseline=viewport=>path.join(viewerWorkerOutput,`compat_continuous_viewer-worker-baseline-${viewport}.png`);
+  const viewerWorkerVariant=viewport=>path.join(viewerWorkerOutput,`compat_continuous_viewer-worker-moon-${viewport}.png`);
+  // Both fixtures always paint content; this detects only fully white images, not partial rendering.
+  const viewerWorkerReport=await captureWithRecapture({capture:viewerWorkerCapture,reportPath:viewerWorkerReportPath,baselinePng:viewerWorkerBaseline,variantPng:viewerWorkerVariant,run,label:'continuous viewer-worker',checkVariant:true});
   assert.equal(viewerWorkerReport.results.length,3,'expected three Worker viewer viewports');
   for(const result of viewerWorkerReport.results){
     const before=PNG.sync.read(readFileSync(path.join(viewerWorkerOutput,`compat_continuous_viewer-worker-baseline-${result.viewport}.png`)));
@@ -1076,7 +1080,7 @@ try {
     for(let i=0;i<before.data.length;i+=4)if(before.data[i]!==after.data[i]||before.data[i+1]!==after.data[i+1]||before.data[i+2]!==after.data[i+2]||before.data[i+3]!==after.data[i+3])changed++;
     assert.ok(changed/(before.width*Math.min(320,before.height))<=0.0005,result.viewport+': Worker viewer differs by '+changed+' pixels');
   }
-  await run(['diff','agent',path.join(viewerWorkerOutput,'diff-report.json'),'--no-history']);
+  await summarizeCapture({report:viewerWorkerReport,reportPath:viewerWorkerReportPath,run});
   await run(['scan','scroll',`${continuousBase}viewer-worker-moon.html`,'--no-ledger']);
   await run(['check','scroll',`${continuousBase}viewer-worker-moon.html`,'--no-ledger']);
   await run(['check','breakpoints',`${continuousBase}viewer-worker-moon.html`,'--no-ledger']);

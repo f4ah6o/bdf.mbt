@@ -497,7 +497,7 @@ pub fn draw_sized_grid_no_fonts(
           Some(face) =>
             (
               face.metrics.ascent * line_size,
-              -face.metrics.descent * line_size,
+              face.metrics.descent * line_size,
             )
           None => (0.9 * line_size, 0.25 * line_size)
         }

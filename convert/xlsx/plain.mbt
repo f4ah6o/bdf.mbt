@@ -3004,12 +3004,13 @@ fn XlsxWorkbook::xlsx_draw_plain_sheet(
     rich_cells,
     layout_base_sizes,
     mdw,
+    font,
   )
   let heights : Array[@sheet.Run] = xlsx_row_runs(
     layout_rows,
     geo,
     row_count,
-    (0.9 + 0.25) * default_size,
+    xlsx_default_font_line_height(default_size, font),
     fitted,
   ).map(run => { count: run.count, size: run.size, })
   let geometry : @sheet.GridGeometry = {
@@ -4606,6 +4607,7 @@ fn xlsx_plain_fitted_rows(
   rich_cells : Map[Int32, Map[Int32, XlsxPlainRun]],
   layout_base_sizes : Map[Int32, Map[Int32, Double]],
   mdw : Double,
+  font : @sfnt.Font?,
 ) -> Map[Int32, Double] {
   let result : Map[Int32, Double] = Map([])
   for row in rows {
@@ -4665,7 +4667,7 @@ fn xlsx_plain_fitted_rows(
             size * (2.0 / 3.0)
           }
           let advance = (c : Char, b : Bool) => {
-            @sheet.sized_fallback_advance(c, b, drawn_size)
+            xlsx_fitted_advance(c, b, drawn_size, font)
           }
           let rich_measure : Array[@sheet.RichMeasureRun] = []
           let mut varying = false
@@ -4707,18 +4709,21 @@ fn xlsx_plain_fitted_rows(
               None => size
             }
             for line in @sheet.wrap_rich_text(rich_measure, width, base_size) {
+              // The renderer still uses estimated metrics for varying rich
+              // runs, so use the same metrics until that path is upgraded.
               text_height += 0.9 * line.size + 0.25 * line.size
             }
           } else {
             let lines = @sheet.wrap_text(text, width, bold~, advance~)
             for _ in lines {
-              text_height += 0.9 * size + 0.25 * size
+              text_height += xlsx_fitted_line_height(size, font)
             }
           }
           text_height = text_height + 1.5 - 1.5
           best = Double::max(best, text_height)
         }
-      } else if (0.9 + 0.25) * size > (0.9 + 0.25) * default_size + 0.01 {
+      } else if xlsx_default_font_line_height(size, font) >
+        xlsx_default_font_line_height(default_size, font) + 0.01 {
         let mut actual_size = size
         if styles.cell_formats[format_index].alignment.shrink && cell.kind != 1 {
           if xlsx_plain_format_cell(
@@ -4763,7 +4768,7 @@ fn xlsx_plain_fitted_rows(
             actual_size = if scale == 0.0 { fallback } else { size * scale }
           }
         }
-        let text_height = 0.9 * actual_size + 0.25 * actual_size + 1.5 - 1.5
+        let text_height = xlsx_fitted_line_height(actual_size, font) + 1.5 - 1.5
         best = Double::max(best, text_height)
       }
     }

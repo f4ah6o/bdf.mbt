@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { PNG } from 'pngjs';
@@ -198,6 +198,184 @@ console.log('ok 2 - a mostly white page with one painted pixel is not blank');
   console.log('ok 8 - heatmap, triptych and heatmap regions follow the adopted capture');
 }
 
+// Worker fixtures paint on both sides. Exercise variant-only, both-blank and
+// persistent blank captures while retaining evidence from other viewports.
+{
+  const painted = (x, y) => (x === 0 && y === 0 ? ink : white);
+  const changed = (x, y) => (y === 0 && x < 3 ? ink : white);
+  for (const blankSide of ['variant', 'both']) {
+    const h = harness({
+      baseline: (step, viewport) => step === 0 && viewport === 'mobile' && blankSide === 'both' ? () => white : painted,
+      variant: (step, viewport) => step === 0 && viewport === 'mobile' ? () => white : step === 0 && viewport === 'wide' ? changed : painted,
+    });
+    const report = await captureWithRecapture({ ...h, checkVariant: true });
+    assert.equal(h.calls(), 2, `${blankSide}: one retry`);
+    assert.equal(ratioFor(h, 'wide'), 2 / 64, `${blankSide}: preserve true first-capture difference`);
+    assert.equal(ratioFor(h, 'mobile'), 0, `${blankSide}: recovered mobile`);
+    assert.deepEqual(report.recapture.adoptedCaptureByViewport, { wide: 'first', desktop: 'first', mobile: 'retry' });
+    assert.ok(existsSync(h.heatmapPng('wide')));
+    assert.ok(existsSync(h.triptychPng('wide')));
+    assert.equal(existsSync(h.heatmapPng('mobile')), false);
+  }
+  for (const blankSide of ['baseline', 'variant', 'both']) {
+    const h = harness({
+      baseline: () => blankSide === 'variant' ? painted : () => white,
+      variant: () => blankSide === 'baseline' ? painted : () => white,
+    });
+    await assert.rejects(() => captureWithRecapture({ ...h, checkVariant: true }), /capture is still blank at wide, desktop, mobile after a retry/);
+    assert.equal(h.calls(), 2, `${blankSide}: persistent blank fails after one retry`);
+  }
+  // A retry must recheck both sides, not only the side that was blank first.
+  for (const initialBlankSide of ['baseline', 'variant']) {
+    const h = harness({
+      baseline: step => (step === 0) === (initialBlankSide === 'baseline') ? () => white : painted,
+      variant: step => (step === 0) === (initialBlankSide === 'variant') ? () => white : painted,
+    });
+    await assert.rejects(() => captureWithRecapture({ ...h, checkVariant: true }), /capture is still blank at wide, desktop, mobile after a retry/);
+    assert.equal(h.calls(), 2, `${initialBlankSide}: opposite side went blank on retry`);
+  }
+  const normal = harness({ baseline: () => painted, variant: () => changed });
+  const report = await captureWithRecapture({ ...normal, checkVariant: true });
+  assert.equal(normal.calls(), 1, 'painted difference is never retried');
+  assert.equal(report.recapture, undefined);
+  assert.equal(ratioFor(normal, 'wide'), 2 / 64);
+  console.log('ok 9 - worker variant blank recovery, persistent blanks, and real differences');
+}
+
+// Deterministically generate side-specific blank sets. The expected adoption is
+// the union of the two sets, and every nonblank initial difference must survive.
+{
+  const painted = (x, y) => (x === 0 && y === 0 ? ink : white);
+  const different = (x, y) => (y === 0 && x < 3 ? ink : white);
+  for (let masks = 0; masks < 64; masks++) {
+    const baselineMask = masks & 7, variantMask = masks >> 3;
+    const h = harness({
+      baseline: (step, viewport) => step === 0 && (baselineMask & (1 << viewports.indexOf(viewport))) ? () => white : painted,
+      variant: (step, viewport) => step === 0 && (variantMask & (1 << viewports.indexOf(viewport))) ? () => white : step === 0 ? different : painted,
+    });
+    const report = await captureWithRecapture({ ...h, checkVariant: true });
+    const union = baselineMask | variantMask;
+    assert.equal(h.calls(), union === 0 ? 1 : 2, `mask ${masks}: retry count`);
+    for (let i = 0; i < viewports.length; i++) {
+      const viewport = viewports[i], retried = (union & (1 << i)) !== 0;
+      assert.equal(report.results[i].pass, retried ? 1 : 0, `mask ${masks}: ${viewport} report origin`);
+      assert.equal(ratioFor(h, viewport), retried ? 0 : 2 / 64, `mask ${masks}: ${viewport} pixel evidence`);
+      if (union !== 0) assert.equal(report.recapture.adoptedCaptureByViewport[viewport], retried ? 'retry' : 'first');
+    }
+  }
+  console.log('ok 10 - all 64 baseline/variant blank-set combinations preserve viewport evidence');
+}
+
+// On failure, the untouched viewport must still carry its first-pass pixels and
+// report, even if the retry runner overwrote them before throwing.
+{
+  const painted = (x, y) => (x === 0 && y === 0 ? ink : white);
+  const changed = (x, y) => (y === 0 && x < 3 ? ink : white);
+  for (const mode of ['persistent', 'runner-with-report', 'runner-without-report', 'runner-partial', 'invalid-report', 'missing-viewport']) {
+    const h = harness({
+      baseline: (step, viewport) => step === 1 && viewport === 'mobile' ? changed : painted,
+      variant: (step, viewport) => viewport === 'mobile' && (step === 0 || mode === 'persistent') ? () => white : step === 0 && viewport === 'wide' ? changed : painted,
+    });
+    const underlyingRun = h.run;
+    const artifacts = () => viewports.flatMap(viewport => [h.baselinePng(viewport), h.variantPng(viewport), h.heatmapPng(viewport), h.triptychPng(viewport)]);
+    const snapshot = () => new Map(artifacts().filter(existsSync).map(file => [file, readFileSync(file)]));
+    let initialArtifacts, retryArtifacts;
+    h.run = async (...args) => {
+      await underlyingRun(...args);
+      if (h.calls() === 1) { initialArtifacts = snapshot(); return; }
+      if (mode === 'runner-partial') { rmSync(h.variantPng('mobile')); rmSync(h.reportPath); }
+      retryArtifacts = snapshot();
+      if (mode === 'runner-partial') throw new Error('runner failed with partial output');
+      if (mode === 'runner-without-report') { rmSync(h.reportPath); throw new Error('runner failed before report'); }
+      if (mode === 'runner-with-report') throw new Error('runner failed after report');
+      if (mode === 'invalid-report') writeFileSync(h.reportPath, '{incomplete');
+      if (mode === 'missing-viewport') {
+        const retry = JSON.parse(readFileSync(h.reportPath, 'utf8'));
+        retry.results = retry.results.filter(result => result.viewport !== 'mobile');
+        writeFileSync(h.reportPath, JSON.stringify(retry));
+      }
+    };
+    await assert.rejects(() => captureWithRecapture({ ...h, checkVariant: true }), undefined, `${mode}: failed retry must reject`);
+    assert.equal(h.calls(), 2, `${mode}: retry exactly once`);
+    assert.equal(ratioFor(h, 'wide'), 2 / 64, `${mode}: first wide pixels restored`);
+    const restored = snapshot();
+    assert.deepEqual([...restored.keys()].sort(), [...initialArtifacts.keys()].sort(), `${mode}: first artifact set restored`);
+    for (const [file, bytes] of initialArtifacts) assert.deepEqual(restored.get(file), bytes, `${mode}: first bytes restored for ${file}`);
+    assert.ok(existsSync(h.heatmapPng('wide')), `${mode}: first heatmap restored`);
+    assert.ok(existsSync(h.triptychPng('wide')), `${mode}: first triptych restored`);
+    const first = readFileSync(path.join(h.target, 'diff-report.first.json'));
+    assert.deepEqual(readFileSync(h.reportPath), first, `${mode}: primary report is byte-identical to first`);
+    const failure = JSON.parse(readFileSync(path.join(h.target, 'diff-report.recapture-failure.json'), 'utf8'));
+    assert.equal(failure.status, 'failed', `${mode}: failure is explicit`);
+    assert.deepEqual(failure.restoration, { complete: true, issues: [], errors: [] }, `${mode}: restoration is verified`);
+    assert.equal(failure.firstReport, 'diff-report.first.json');
+    assert.equal(failure.retryReport, ['runner-without-report', 'runner-partial'].includes(mode) ? null : 'diff-report.retry.json');
+    if (failure.retryReport) assert.ok(existsSync(path.join(h.target, failure.retryReport)), `${mode}: retry report retained`);
+    assert.deepEqual(failure.retryArtifacts.map(entry => entry.originalPath).sort(), [...retryArtifacts.keys()].sort(), `${mode}: exactly the retry output is archived`);
+    for (const entry of failure.retryArtifacts) assert.deepEqual(readFileSync(path.join(h.target, entry.archivePath)), retryArtifacts.get(entry.originalPath), `${mode}: retry artifact bytes retained`);
+    if (mode === 'invalid-report') assert.equal(readFileSync(path.join(h.target, failure.retryReport), 'utf8'), '{incomplete');
+  }
+  console.log('ok 11 - failure paths restore first evidence and record retry failure');
+}
+
+// For every nonempty set of initially blank sides, force one retried side to
+// remain white and verify exact restoration and separate retry bytes.
+{
+  const painted = (x, y) => (x === 0 && y === 0 ? ink : white);
+  const changed = (x, y) => (y === 0 && x < 3 ? ink : white);
+  for (let masks = 1; masks < 64; masks++) {
+    const baselineMask = masks & 7, variantMask = masks >> 3;
+    const selected = viewports.findIndex((_, i) => ((baselineMask | variantMask) & (1 << i)) !== 0);
+    const h = harness({
+      baseline: (step, viewport) => step === 0 && (baselineMask & (1 << viewports.indexOf(viewport))) ? () => white : step === 0 ? painted : changed,
+      variant: (step, viewport) => step === 0 && (variantMask & (1 << viewports.indexOf(viewport))) || step === 1 && viewport === viewports[selected] ? () => white : painted,
+    });
+    const underlyingRun = h.run;
+    const files = () => viewports.flatMap(viewport => [h.baselinePng(viewport), h.variantPng(viewport), h.heatmapPng(viewport), h.triptychPng(viewport)]);
+    let firstFiles, retryFiles;
+    h.run = async (...args) => {
+      await underlyingRun(...args);
+      const snapshot = new Map(files().filter(existsSync).map(file => [file, readFileSync(file)]));
+      if (h.calls() === 1) firstFiles = snapshot; else retryFiles = snapshot;
+    };
+    await assert.rejects(() => captureWithRecapture({ ...h, checkVariant: true }), /still blank/, `mask ${masks}: retry must fail`);
+    const restored = new Map(files().filter(existsSync).map(file => [file, readFileSync(file)]));
+    assert.deepEqual(restored, firstFiles, `mask ${masks}: all first artifacts restored`);
+    const failure = JSON.parse(readFileSync(path.join(h.target, 'diff-report.recapture-failure.json'), 'utf8'));
+    assert.equal(failure.status, 'failed');
+    assert.deepEqual(failure.restoration, { complete: true, issues: [], errors: [] }, `mask ${masks}: restoration verified`);
+    assert.equal(failure.retryArtifacts.length, retryFiles.size);
+    for (const entry of failure.retryArtifacts) assert.deepEqual(readFileSync(path.join(h.target, entry.archivePath)), retryFiles.get(entry.originalPath), `mask ${masks}: archived retry artifact`);
+  }
+  console.log('ok 12 - 63 generated persistent failures restore every first artifact');
+}
+
+// A directory at a screenshot path makes deletion and rewriting fail even
+// though the surrounding report directory remains writable. This exercises a
+// real filesystem error rather than a mock of the reporting code.
+{
+  const painted = (x, y) => (x === 0 && y === 0 ? ink : white);
+  const h = harness({ baseline: () => painted, variant: (step, viewport) => step === 0 && viewport === 'mobile' ? () => white : painted });
+  const underlyingRun = h.run;
+  h.run = async (...args) => {
+    await underlyingRun(...args);
+    if (h.calls() === 2) {
+      rmSync(h.baselinePng('wide'));
+      mkdirSync(h.baselinePng('wide'));
+      throw new Error('runner failed with obstructed artifact');
+    }
+  };
+  await assert.rejects(() => captureWithRecapture({ ...h, checkVariant: true }));
+  const failure = JSON.parse(readFileSync(path.join(h.target, 'diff-report.recapture-failure.json'), 'utf8'));
+  assert.equal(failure.status, 'failed');
+  assert.equal(failure.restoration.complete, false, 'obstructed artifact must not be reported restored');
+  assert.ok(failure.restoration.errors.length > 0, 'restore errors are recorded');
+  assert.ok(failure.restoration.issues.some(issue => issue.viewport === 'wide' && issue.kind === 'baseline' && issue.reason === 'unreadable'));
+  assert.match(failure.note, /could not be verified as restored/);
+  assert.deepEqual(readFileSync(h.reportPath), readFileSync(path.join(h.target, 'diff-report.first.json')));
+  console.log('ok 13 - restoration filesystem failures are reported as incomplete');
+}
+
 const { diagnosticChecks } = await import('./recapture-diagnostics-test.mjs');
 const { recapturePbtChecks, recaptureGeneratedCases } = await import('./recapture-pbt-test.mjs');
-console.log(`\nrecapture: ${8 + diagnosticChecks + recapturePbtChecks} pass, 0 fail (${recaptureGeneratedCases} generated cases)`);
+console.log(`\nrecapture: ${13 + diagnosticChecks + recapturePbtChecks} pass, 0 fail (${recaptureGeneratedCases + 127} generated cases)`);

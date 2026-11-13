@@ -95,6 +95,15 @@
 
 ### Changed
 
+- XLSX conversion with a supplied font now uses that face's line metrics
+  for default rows and ordinary automatic row sizing, and its glyph advances
+  for plain wrapped text. Explicit row heights remain authoritative. Varying
+  rich text still uses estimated metrics, and shrink-to-fit width measurement
+  remains estimated; no-font conversion keeps its previous estimate path.
+- XLSX sheet rendering uses the supplied face's positive descent for baseline
+  placement, keeping multiline spacing and clipping consistent with the
+  font's ascent and descent.
+
 - The local-font picker can search face metadata while retaining checked
   selections, and offers a manual font-file chooser when enumeration is not
   available or desired. File and API selections remain local to the browser.
