@@ -8,7 +8,7 @@ Branch: fix/20261112-docx-mark-rpr
 
 ## 概要
 
-PR #4で直接の段落記号run属性を統合済み。対象に含むlist-level rPr結合は残件のため、本Issueはopenに保持する。
+PR #4 で直接の段落記号 run 属性を統合済み。本文の list-level rPr 結合を本ブランチで実装した。ヘッダー、フッター、脚注の番号付け等は残件のため、本 issue は open に保持する。
 
 ## 背景
 
@@ -30,7 +30,7 @@ p.mark = c.runStyle(c.runProps(styleID, "", w.tl, pPr.Child("rPr")), "", w.dark)
 
 ## 問題
 
-MoonBit 実装では段落記号の概念（`DocxTextParagraph.mark`）はあるが、
+修正前の MoonBit 実装では段落記号の概念（`DocxTextParagraph.mark`）はあるが、
 `convert/docx/document_text.mbt:2196` が
 
 ```moonbit
@@ -41,8 +41,8 @@ let mark = self.styles.resolve_run(paragraph_style, None)
 `DocxStyles::resolve_run`（`convert/docx/style_resolver.mbt:308-342`）は
 `docx_style_apply_rpr(props, direct)`（`:341`）で直接ノードを適用でき、
 引数を `docx_style_child(direct, "rPr")` に変えるだけで届く。
-また `convert/docx/numbering.mbt:227,258` は level の rPr との結合をして
-いない（upstream `makeLabel` は結合する）。
+また修正前の `convert/docx/numbering.mbt` は level の rPr と結合して
+いなかった（upstream `makeLabel` は結合する）。
 
 Word 文書では 1 行空けに `sz` だけ指定した空段落が実務で頻出するため、
 .port の空段落高さがスタイル既定のままになり、ページ区切りや
