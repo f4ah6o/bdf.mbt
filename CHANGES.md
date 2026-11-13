@@ -4,6 +4,10 @@
 
 ### Added
 
+- PPTX shape and picture click links to slides now use the selected output
+  page numbers, including next, previous, first and last slide actions.
+  Links to hidden, excluded or unresolved slides are omitted.
+
 - A Code 39 barcode encoder in `image/barcode` generates module grids and
   scalable BDF path and object drawings. Other symbologies are not yet
   implemented in this package; the existing PDFMe barcode path is unchanged.

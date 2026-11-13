@@ -15,6 +15,9 @@ priv struct PptxShapeContext {
   package : @ooxml.OoxmlPackage
   writer : @core.DocumentWriter
   part : String
+  link_pages : Map[String, Int32]
+  link_page : Int32
+  link_page_count : Int32
   theme : Map[String, UInt32]
   theme_fonts : PptxThemeFonts
   theme_fills : Array[PptxXmlNode]

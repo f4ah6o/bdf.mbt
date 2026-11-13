@@ -5534,6 +5534,21 @@ pub fn convert(
     let spans = @convert.parse_pages(pages) catch { _ => None }
     @convert.page_numbers(spans, visible_count)
   }
+  // The link map must be complete before rendering the first page.
+  let link_pages : Map[String, Int32] = Map([])
+  let mut link_visible = 0L
+  let mut link_count = 0
+  for slide in presentation.slides {
+    if slide.hidden {
+      continue
+    }
+    link_visible += 1L
+    if selected is Some(values) && !values.contains(link_visible) {
+      continue
+    }
+    link_count += 1
+    link_pages[slide.part] = link_count
+  }
   let mut visible_index = 0L
   for slide in presentation.slides {
     if slide.hidden {
@@ -5560,6 +5575,8 @@ pub fn convert(
         presentation.width,
         presentation.height,
         page_index,
+        link_pages,
+        link_count,
         index_runs,
         index_budget,
         cache,

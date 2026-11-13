@@ -133,3 +133,127 @@ test "PPTX connector links retain zero-height geometry" {
     [(36.0, 72.0, 72.0, 0.0, "https://example.com/line")],
   )
 }
+
+///|
+fn pptx_test_jump_box(jump : String) -> String {
+  pptx_figure_box(
+    "<p:cNvPr id=\"3\"><a:hlinkClick action=\"ppaction://hlinkshowjump?jump=" +
+    jump +
+    "\"/></p:cNvPr>",
+    "",
+  )
+}
+
+///|
+fn pptx_test_internal_deck() -> Bytes {
+  let pres =
+    #|<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><p:sldIdLst><p:sldId id="256" r:id="r1"/><p:sldId id="257" r:id="r2"/><p:sldId id="258" r:id="r3"/><p:sldId id="259" r:id="r4"/></p:sldIdLst></p:presentation>
+  let presrels =
+    #|<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="r1" Type="x/slide" Target="slides/slide1.xml"/><Relationship Id="r2" Type="x/slide" Target="slides/slide2.xml"/><Relationship Id="r3" Type="x/slide" Target="slides/slide3.xml"/><Relationship Id="r4" Type="x/slide" Target="slides/slide4.xml"/></Relationships>
+  let rels =
+    #|<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="visible" Type="x/slide" Target="slide3.xml"/><Relationship Id="hidden" Type="x/slide" Target="slide2.xml"/><Relationship Id="missing" Type="x/slide" Target="slide99.xml"/><Relationship Id="layout" Type="x/slideLayout" Target="../slideLayouts/layout1.xml"/></Relationships>
+  let shapes = pptx_link_test_box("visible", "") +
+    pptx_link_test_box("hidden", "") +
+    pptx_link_test_box("missing", "") +
+    pptx_test_jump_box("nextslide") +
+    pptx_test_jump_box("previousslide") +
+    pptx_test_jump_box("firstslide") +
+    pptx_test_jump_box("lastslide") +
+    pptx_test_jump_box("unknown")
+  let slide = pptx_test_slide_prefix + shapes + pptx_test_slide_suffix
+  let hidden = slide.replace(old="<p:sld ", new="<p:sld show=\"0\" ")
+  let layout_start =
+    #|<p:sldLayout xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><p:cSld><p:spTree>
+  let layout = layout_start +
+    pptx_test_jump_box("nextslide") +
+    pptx_link_test_box("layoutTarget", "") +
+    "</p:spTree></p:cSld></p:sldLayout>"
+  let layoutrels =
+    #|<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="master" Type="x/slideMaster" Target="../slideMasters/master1.xml"/><Relationship Id="layoutTarget" Type="x/slide" Target="../slides/slide4.xml"/></Relationships>
+  let master_start =
+    #|<p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><p:cSld><p:spTree>
+  let master = master_start +
+    pptx_test_jump_box("previousslide") +
+    "</p:spTree></p:cSld></p:sldMaster>"
+  pptx_test_zip([
+    ("_rels/.rels", pptx_test_root_rels),
+    ("ppt/presentation.xml", pres),
+    ("ppt/_rels/presentation.xml.rels", presrels),
+    ("ppt/slides/slide1.xml", slide),
+    ("ppt/slides/slide2.xml", hidden),
+    ("ppt/slides/slide3.xml", slide),
+    ("ppt/slides/slide4.xml", slide),
+    ("ppt/slides/_rels/slide1.xml.rels", rels),
+    ("ppt/slides/_rels/slide3.xml.rels", rels),
+    ("ppt/slides/_rels/slide4.xml.rels", rels),
+    ("ppt/slideLayouts/layout1.xml", layout),
+    ("ppt/slideLayouts/_rels/layout1.xml.rels", layoutrels),
+    ("ppt/slideMasters/master1.xml", master),
+  ])
+}
+
+///|
+fn pptx_test_page_link_urls(result : PptxResult) -> Array[Array[String]] raise {
+  let doc = @core.open_single(result.bdf)
+  let pages : Array[Array[String]] = []
+  for page in doc.manifest.views[0].pages {
+    let links : Array[String] = []
+    for command in pptx_page_commands(doc, page) {
+      match command {
+        @render.Link(_, _, _, _, target) => links.push(target)
+        _ => ()
+      }
+    }
+    pages.push(links)
+  }
+  pages
+}
+
+///|
+test "PPTX internal links use selected output pages and contextual shared layers" {
+  let deck = pptx_test_internal_deck()
+  // Master previous and layout next precede the slide body's links.
+  assert_eq(pptx_test_page_link_urls(convert(deck)), [
+    ["#page=2", "#page=3", "#page=2", "#page=2", "#page=1", "#page=3"],
+    [
+      "#page=1", "#page=3", "#page=3", "#page=2", "#page=3", "#page=1", "#page=1", "#page=3",
+    ],
+    ["#page=2", "#page=3", "#page=2", "#page=2", "#page=1", "#page=3"],
+  ])
+  // Visible slide 3 is excluded; hidden and missing references remain absent.
+  assert_eq(pptx_test_page_link_urls(convert(deck, pages="1,3")), [
+    ["#page=2", "#page=2", "#page=2", "#page=1", "#page=2"],
+    ["#page=1", "#page=2", "#page=1", "#page=1", "#page=2"],
+  ])
+}
+
+///|
+test "PPTX picture click resolves an internal slide relationship" {
+  let pres =
+    #|<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><p:sldIdLst><p:sldId id="256" r:id="r1"/><p:sldId id="257" r:id="r2"/></p:sldIdLst></p:presentation>
+  let presrels =
+    #|<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="r1" Type="x/slide" Target="slides/slide1.xml"/><Relationship Id="r2" Type="x/slide" Target="slides/slide2.xml"/></Relationships>
+  let rels =
+    #|<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="image" Type="x/image" Target="../media/image.png"/><Relationship Id="dest" Type="x/slide" Target="slide2.xml"/></Relationships>
+  let picture =
+    #|<p:pic><p:nvPicPr><p:cNvPr id="2"><a:hlinkClick r:id="dest"/></p:cNvPr><p:cNvPicPr/><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="image"/></p:blipFill><p:spPr><a:xfrm><a:off x="914400" y="914400"/><a:ext cx="914400" cy="914400"/></a:xfrm></p:spPr></p:pic>
+  let slide = (pptx_test_slide_prefix + picture + pptx_test_slide_suffix).replace(
+    old="<p:sld ",
+    new="<p:sld xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" ",
+  )
+  let blank = pptx_test_slide_prefix + pptx_test_slide_suffix
+  let image = b"\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00"
+  let deck = pptx_figure_zip([
+    ("_rels/.rels", @utf8.encode(pptx_test_root_rels)),
+    ("ppt/presentation.xml", @utf8.encode(pres)),
+    ("ppt/_rels/presentation.xml.rels", @utf8.encode(presrels)),
+    ("ppt/slides/slide1.xml", @utf8.encode(slide)),
+    ("ppt/slides/slide2.xml", @utf8.encode(blank)),
+    ("ppt/slides/_rels/slide1.xml.rels", @utf8.encode(rels)),
+    ("ppt/media/image.png", image),
+  ])
+  assert_eq(pptx_test_shape_links(convert(deck)), [
+    (72.0, 72.0, 72.0, 72.0, "#page=2"),
+  ])
+  assert_eq(pptx_test_shape_links(convert(deck, pages="1")), [])
+}

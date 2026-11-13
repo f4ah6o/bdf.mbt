@@ -1,9 +1,9 @@
 ///|
 // Preserve externally addressed DrawingML click links without fetching them.
-// Internal slide actions require presentation-aware page mapping and are not
-// handled here. Match the upstream allowlist of URL schemes.
+// Resolve internal links in the context of the selected output pages.
+// External targets follow the upstream URL scheme allowlist.
 fn pptx_shape_link_target(
-  package : @ooxml.OoxmlPackage,
+  ctx : PptxShapeContext,
   part : String,
   shape : PptxXmlNode,
 ) -> String {
@@ -11,10 +11,23 @@ fn pptx_shape_link_target(
     Some(node) => node
     None => return ""
   }
-  if pptx_attribute(click.element, "action", "").has_prefix(
-      "ppaction://hlinkshowjump",
-    ) {
-    return ""
+  let action = pptx_attribute(click.element, "action", "")
+  if action.has_prefix("ppaction://hlinkshowjump") {
+    let page = if action.contains("nextslide") {
+      ctx.link_page + 1
+    } else if action.contains("previousslide") {
+      ctx.link_page - 1
+    } else if action.contains("firstslide") {
+      1
+    } else if action.contains("lastslide") {
+      ctx.link_page_count
+    } else {
+      0
+    }
+    if page < 1 || page > ctx.link_page_count {
+      return ""
+    }
+    return "#page=" + page.to_string()
   }
   let mut id = ""
   for attr in click.element.attributes {
@@ -27,7 +40,13 @@ fn pptx_shape_link_target(
   if id == "" {
     return ""
   }
-  for rel in package.relationships(part) {
+  for rel in ctx.package.relationships(part) {
+    if rel.id == id && !rel.external && rel.kind.has_suffix("/slide") {
+      return match ctx.link_pages.get(rel.target) {
+        Some(page) => "#page=" + page.to_string()
+        None => ""
+      }
+    }
     if rel.id == id && rel.external {
       let target = rel.target
       if !(target.has_prefix("http:") ||
@@ -71,7 +90,7 @@ fn pptx_link_hex(c : Byte) -> Bool {
 // Link rectangles are axis-aligned bounds of the rotated shape. The center
 // and angle match the existing shape and picture rendering transform.
 fn pptx_emit_shape_link(
-  package : @ooxml.OoxmlPackage,
+  ctx : PptxShapeContext,
   part : String,
   object : @core.ObjectBuilder,
   shape : PptxXmlNode,
@@ -83,7 +102,7 @@ fn pptx_emit_shape_link(
   cx : Double,
   cy : Double,
 ) -> Unit {
-  let target = pptx_shape_link_target(package, part, shape)
+  let target = pptx_shape_link_target(ctx, part, shape)
   if target == "" {
     return
   }

@@ -305,7 +305,7 @@ fn pptx_emit_shapes(
       }
       pptx_end_figure(object, figure)
       pptx_emit_shape_link(
-        ctx.package,
+        ctx,
         part,
         object,
         shape,
@@ -564,7 +564,7 @@ fn pptx_emit_shapes(
       Some(value) => value
       None => {
         pptx_emit_shape_link(
-          ctx.package,
+          ctx,
           part,
           object,
           shape,
@@ -602,7 +602,7 @@ fn pptx_emit_shapes(
     )
     object.restore()
     pptx_emit_shape_link(
-      ctx.package,
+      ctx,
       part,
       object,
       shape,
@@ -789,6 +789,9 @@ fn pptx_build_tree_layer(
   default_text_style : PptxXmlNode?,
   part : String,
   root : PptxXmlNode,
+  link_pages : Map[String, Int32],
+  link_page : Int32,
+  link_page_count : Int32,
   warnings : Array[String],
   warned : Map[String, Bool],
   fonts : @canvas.Fonts,
@@ -798,6 +801,9 @@ fn pptx_build_tree_layer(
     package,
     writer,
     part,
+    link_pages,
+    link_page,
+    link_page_count,
     theme,
     theme_fonts,
     theme_fills,
@@ -861,6 +867,37 @@ fn pptx_push_layer_index(
 }
 
 ///|
+// Relative show jumps depend on the source page; other links can share a layer.
+fn pptx_layer_page_dependent(node : PptxXmlNode) -> Bool {
+  if node.element.name.local_name == "hlinkClick" {
+    let action = pptx_attribute(node.element, "action", "")
+    if action.has_prefix("ppaction://hlinkshowjump") &&
+      (action.contains("nextslide") || action.contains("previousslide")) {
+      return true
+    }
+  }
+  for child in node.children {
+    if pptx_layer_page_dependent(child) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn pptx_layer_cache_key(
+  part : String,
+  root : PptxXmlNode,
+  page : Int32,
+) -> String {
+  if pptx_layer_page_dependent(root) {
+    "dynamic:" + part + "#page=" + page.to_string()
+  } else {
+    "static:" + part
+  }
+}
+
+///|
 fn pptx_render_page(
   package : @ooxml.OoxmlPackage,
   writer : @core.DocumentWriter,
@@ -875,6 +912,8 @@ fn pptx_render_page(
   width : Double,
   height : Double,
   page_index : Int32,
+  link_pages : Map[String, Int32],
+  link_page_count : Int32,
   index_runs : Array[@core.IndexRun],
   index_budget : @render.TextExtractionBudget,
   cache : PptxRenderCache,
@@ -914,6 +953,9 @@ fn pptx_render_page(
         package,
         writer,
         part: "",
+        link_pages,
+        link_page: page_index + 1,
+        link_page_count,
         theme,
         theme_fonts,
         theme_fills,
@@ -943,16 +985,18 @@ fn pptx_render_page(
   // master
   match master_root {
     Some(root) => {
-      let layer = match cache.masters.get(master_part) {
+      let key = pptx_layer_cache_key(master_part, root, page_index)
+      let layer = match cache.masters.get(key) {
         Some(value) => value
         None => {
           let (data, embedded) = pptx_build_tree_layer(
             package, writer, theme, theme_fonts, theme_fills, theme_bg_fills, theme_lines,
-            default_text_style, master_part, root, warnings, warned, fonts, missing,
+            default_text_style, master_part, root, link_pages, page_index + 1,
+            link_page_count, warnings, warned, fonts, missing,
           )
           cache.embedded_fonts += embedded
           let layer = pptx_cached_layer(writer, data)
-          cache.masters[master_part] = layer
+          cache.masters[key] = layer
           layer
         }
       }
@@ -966,16 +1010,18 @@ fn pptx_render_page(
   // layout
   match layout_root {
     Some(root) => {
-      let layer = match cache.layouts.get(layout_part) {
+      let key = pptx_layer_cache_key(layout_part, root, page_index)
+      let layer = match cache.layouts.get(key) {
         Some(value) => value
         None => {
           let (data, embedded) = pptx_build_tree_layer(
             package, writer, theme, theme_fonts, theme_fills, theme_bg_fills, theme_lines,
-            default_text_style, layout_part, root, warnings, warned, fonts, missing,
+            default_text_style, layout_part, root, link_pages, page_index + 1,
+            link_page_count, warnings, warned, fonts, missing,
           )
           cache.embedded_fonts += embedded
           let layer = pptx_cached_layer(writer, data)
-          cache.layouts[layout_part] = layer
+          cache.layouts[key] = layer
           layer
         }
       }
@@ -999,6 +1045,9 @@ fn pptx_render_page(
     package,
     writer,
     part: slide_part,
+    link_pages,
+    link_page: page_index + 1,
+    link_page_count,
     theme,
     theme_fonts,
     theme_fills,
