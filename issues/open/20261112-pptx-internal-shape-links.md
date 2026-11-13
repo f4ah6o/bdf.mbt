@@ -3,8 +3,8 @@
 Status: open
 Model: unknown
 Created: 2026-11-12
-Updated: 2026-11-12
-Branch: feat/20261112-pptx-internal-shape-links
+Updated: 2026-11-13
+Branch: fix/20261113-pptx-internal-shape-links
 
 ## 概要
 
