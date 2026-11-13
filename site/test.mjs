@@ -348,6 +348,44 @@ try {
     assert.equal(await page.locator("dialog.first-font-choice").count(), 0);
   });
 
+  await step("first preview waits for a selected font file to finish loading", async () => {
+    await fresh();
+    await page.addInitScript(() => {
+      window.__posted = [];
+      const post = Worker.prototype.postMessage;
+      Worker.prototype.postMessage = function (message, transfer) {
+        if (message?.type === "convert") window.__posted.push(message.options);
+        return post.call(this, message, transfer);
+      };
+      const read = File.prototype.arrayBuffer;
+      File.prototype.arrayBuffer = async function () {
+        if (this.name === "STIX test.ttf") {
+          await new Promise((resolve) => { window.__releaseFont = resolve; });
+        }
+        return read.call(this);
+      };
+    });
+    await page.goto(base + "viewer/", { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => /^1 \/ 20$/.test(document.querySelector("#page-number")?.textContent ?? ""), null, { timeout: 120000 });
+    const baseline = await page.evaluate(() => window.__posted.length);
+    await page.setInputFiles("#file", { name: "basic.csv", mimeType: "text/csv", buffer: csvSample });
+    await page.waitForSelector("dialog.first-font-choice");
+    await page.locator('#local-fonts input[type="file"]').setInputFiles({ name: "STIX test.ttf", mimeType: "font/ttf", buffer: stix });
+    await page.waitForFunction(() => typeof window.__releaseFont === "function");
+    const use = page.getByRole("button", { name: "この設定で続ける" });
+    assert.equal(await use.isDisabled(), true);
+    assert.equal(await page.evaluate(() => window.__posted.length), baseline);
+    await page.evaluate(() => window.__releaseFont());
+    await page.waitForFunction(() => /1 ファイルを読み込みました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    assert.equal(await use.isEnabled(), true);
+    await use.click();
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.csv", null, { timeout: 180000 });
+    const posted = await page.evaluate(() => window.__posted.at(-1));
+    assert.equal(posted.fontFiles.length, 1);
+    assert.equal(posted.fontFiles[0].name, "STIX test.ttf");
+    assert.equal(posted.fontFiles[0].postscriptName, undefined);
+  });
+
   await step("denied local fonts fall back and later files do not prompt again", async () => {
     await fresh();
     await page.addInitScript(() => {
@@ -536,6 +574,7 @@ try {
     await page.check("#local-fonts-face-0");
     await page.click("#local-fonts button:has-text('選択した書体を使う')");
     await page.waitForFunction(() => /1 書体を読み込みました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    assert.equal(await page.locator("#local-fonts-summary").textContent(), "変換に使う書体: STIX Two Text");
     await page.click('#samples button:text-is("CSV")');
     await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.csv", null, { timeout: 180000 });
     await page.waitForFunction(() => /basic\.csv を表示しています|警告/.test(document.querySelector("#status")?.textContent ?? ""), null, { timeout: 60000 });
@@ -547,12 +586,45 @@ try {
     assert.equal(posted.fontFiles[0].bytes.byteLength, stix.length);
     const status = await page.locator("#status").textContent();
     assert.doesNotMatch(status, /no fonts found/, "the selected font replaces the missing-font warning");
+    assert.equal(await page.locator("#local-fonts-summary").textContent(), "変換に使う書体: STIX Two Text");
     await page.click("#local-fonts button:has-text('選択を解除')");
     await page.waitForFunction(() => /選択を解除しました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    assert.equal(await page.locator("#local-fonts-summary").isHidden(), true);
     await page.click('#samples button:text-is("Word")');
     await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.docx", null, { timeout: 180000 });
     const after = await page.evaluate(() => window.__posted.at(-1));
     assert.equal(after.fontFiles, undefined, "a cleared selection is not sent");
+    await page.click("#local-fonts button:has-text('ローカルフォントを選ぶ')");
+    await page.check("#local-fonts-face-0");
+    await page.click("#local-fonts button:has-text('選択した書体を使う')");
+    await page.waitForFunction(() => /1 書体を読み込みました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    assert.equal(await page.locator("#local-fonts-summary").textContent(), "変換に使う書体: STIX Two Text");
+  });
+
+  await step("viewer converts CSV using an explicitly selected font file", async () => {
+    await fresh();
+    await page.addInitScript(() => {
+      window.__posted = [];
+      const post = Worker.prototype.postMessage;
+      Worker.prototype.postMessage = function (message, transfer) {
+        if (message?.type === "convert") window.__posted.push(message.options);
+        return post.call(this, message, transfer);
+      };
+    });
+    await page.goto(base + "viewer/", { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => /^1 \/ 20$/.test(document.querySelector("#page-number")?.textContent ?? ""), null, { timeout: 120000 });
+    await page.locator('#local-fonts input[type="file"]').setInputFiles({ name: "STIX test.ttf", mimeType: "font/ttf", buffer: stix });
+    await page.waitForFunction(() => /1 ファイルを読み込みました/.test(document.querySelector("#local-fonts .status")?.textContent ?? ""));
+    assert.equal(await page.locator("#local-fonts-summary").textContent(), "変換に使う書体: STIX test.ttf");
+    await page.click('#samples button:text-is("CSV")');
+    await page.waitForFunction(() => document.querySelector("#document-name")?.textContent === "basic.csv", null, { timeout: 180000 });
+    await page.waitForFunction(() => /basic\.csv を表示しています|警告/.test(document.querySelector("#status")?.textContent ?? ""), null, { timeout: 60000 });
+    const posted = await page.evaluate(() => window.__posted.at(-1));
+    assert.equal(posted.fontFiles.length, 1);
+    assert.equal(posted.fontFiles[0].name, "STIX test.ttf");
+    assert.equal(posted.fontFiles[0].postscriptName, undefined);
+    assert.equal(posted.fontFiles[0].bytes.byteLength, stix.length);
+    assert.doesNotMatch(await page.locator("#status").textContent(), /no fonts found/);
   });
 
   await step("selected fonts are not sent for PDF or Word aliases but are sent for CSV", async () => {

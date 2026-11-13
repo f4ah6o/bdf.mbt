@@ -317,6 +317,8 @@ The status column uses the vocabulary above. Every issue file under
 | Local | `20261110-jww-text-index-sample` | — | open |
 | Local | `20261110-pages-node24-actions` | — | open |
 | Local | `20261110-vlmkit-hono-advisory` | — | open |
+| Local | `20261113-local-font-display-names` | — | open: implementation integrated; device and Pages verification pending |
+| Local | `20261113-system-font-picker` | — | open: implementation integrated; device and Pages verification pending |
 
 ## Risks
 
@@ -353,3 +355,19 @@ The status column uses the vocabulary above. Every issue file under
   must keep passing on `js`, `wasm-gc` and `native`. Hidden-text and
   annotation indexing are integrated; the 43-document corpus comparison is
   still open in `20261109-xdw-corpus-parity`.
+
+## Local Font Access usability status (2026-11-13)
+
+These are shared Web UI improvements, separate from converter font-metrics parity.
+Both implementations are integrated in main; their issues remain open to track
+device and delivery verification. Preserve private font data.
+
+1. [Display names after selection](../issues/open/20261113-local-font-display-names.md): integrated in [#33](https://github.com/f4ah6o/bdf.mbt/pull/33); display metadata is separate from internal filenames and TTC identifiers.
+2. [Cross-platform system font picker](../issues/open/20261113-system-font-picker.md): integrated in [#34](https://github.com/f4ah6o/bdf.mbt/pull/34); searchable selection, permission/support states and file fallback.
+
+The local actrun site gate passed on each fixed PR head. Tests used synthetic
+metadata and a redistributable test font; real OS font permission and rendering,
+the other actrun gates and deployment of the integrated version to Pages remain
+unverified. Record OS/browser checks actually performed; do not claim untested
+systems pass. Preserve existing conversion and font embedding limitations in
+`docs/local-fonts-ui.md`.
