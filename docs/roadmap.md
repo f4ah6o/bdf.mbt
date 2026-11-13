@@ -353,3 +353,13 @@ The status column uses the vocabulary above. Every issue file under
   must keep passing on `js`, `wasm-gc` and `native`. Hidden-text and
   annotation indexing are integrated; the 43-document corpus comparison is
   still open in `20261109-xdw-corpus-parity`.
+
+## Local Font Access usability implementation queue (2026-11-13)
+
+These are shared Web UI improvements, separate from converter font-metrics parity.
+Both tasks are open, not implemented. Execute with Codex; preserve private font data.
+
+1. [Display names after selection](../issues/open/20261113-local-font-display-names.md): separate display metadata from internal filenames and TTC identifiers, then run UI and worker regression tests.
+2. [Cross-platform system font picker](../issues/open/20261113-system-font-picker.md): searchable selection, permission/support states and file fallback. Apply after task 1 to avoid competing edits to `site/assets/local-fonts.js`.
+
+Use synthetic metadata for tests. Record OS/browser checks actually performed; do not claim untested systems pass. Preserve existing conversion and font embedding limitations in `docs/local-fonts-ui.md`.
