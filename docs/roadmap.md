@@ -14,7 +14,8 @@ head `b05cd93`. A PR can still be open after its patches are integrated, so
 
 - `open` — work or verification remains.
 - `polished` — defined acceptance work remains to be completed or verified.
-- `done` — the acceptance work is integrated in main `b05cd93`.
+- `done` — the acceptance work is integrated; the specific evidence and
+  revision are recorded in each issue.
 - `superseded` — replaced by another issue; kept as a pointer.
 
 ## Definition of done
