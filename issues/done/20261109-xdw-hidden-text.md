@@ -3,7 +3,7 @@
 Status: done
 Model: unknown
 Created: 2026-11-09
-Updated: 2026-11-10
+Updated: 2026-11-13
 Branch: feat/20261109-xdw-hidden-text
 
 ## 概要
@@ -83,3 +83,11 @@ main `b05cd93` に統合済み。`8e968da` がページ本文の文字を `"idx"
 ## 注記
 
 上流の `hidden.rs` は `ezpzfile/ezpzfile-xdw` の MIT ライセンス実装。移植時はライセンス表記を `licenses/` に合わせる。
+
+## 2026-11-13 トリアージ結果
+
+- 照合対象: main `d13b9578c86982cb6ea0d955f678c16e2edc84e9`。
+- 判断: この Issue の限定された実装・受入範囲は統合済み。状態と格納先を done に整合。
+- 根拠: 本文done、main 8e968da8/959c032b/bb16d5be、convert/xdw索引・注釈レイヤー。
+- 範囲と留保: done/へ移動した。43文書コーパス全件一致とは扱わない。
+- 検証記録は上記コミット・PR時点のもの。今回の整理で製品テスト全体を新規実行したとは主張しない。本文の過去の問題記述は履歴として保持し、受入チェック欄を照合結果に整合した。

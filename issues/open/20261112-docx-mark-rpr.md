@@ -3,8 +3,12 @@
 Status: open
 Model: unknown
 Created: 2026-11-12
-Updated: 2026-11-12
+Updated: 2026-11-13
 Branch: fix/20261112-docx-mark-rpr
+
+## 概要
+
+PR #4で直接の段落記号run属性を統合済み。対象に含むlist-level rPr結合は残件のため、本Issueはopenに保持する。
 
 ## 背景
 

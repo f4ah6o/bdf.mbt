@@ -1,10 +1,14 @@
 # PPTX コネクタ（p:cxnSp）がサイレンにスキップされる
 
-Status: open
+Status: done
 Model: unknown
 Created: 2026-11-12
-Updated: 2026-11-12
+Updated: 2026-11-13
 Branch: fix/20261112-pptx-connectors
+
+## 概要
+
+PPTX コネクタ（p:cxnSp）がサイレンにスキップされる。限定された受入条件と統合結果は本文および末尾のトリアージ結果を参照。
 
 ## 背景
 
@@ -80,3 +84,16 @@ dash と先端/終端装飾の組み合わせ）が、upstream と同じ描画�
 
 - upstream: `a5e4d7a6b202cfe73de44b0be51f6fb86cd8ee22`
 - port: `61f195b38293415a46a6aca4cff99187ba68ea5e`
+
+
+## 注記
+
+状態更新の根拠は次のトリアージ結果を参照。
+
+## 2026-11-13 トリアージ結果
+
+- 照合対象: main `d13b9578c86982cb6ea0d955f678c16e2edc84e9`。
+- 判断: この Issue の限定された実装・受入範囲は統合済み。状態と格納先を done に整合。
+- 根拠: PR#6 merged 58ac58bb、cxnsp_wbtest.mbt、zero-extent/transform/style/arrowheads、各160/phase15 pass、CHANGES.md。
+- 範囲と留保: 限定された受入範囲をdoneに更新した。完全描画/全形式parityではない。段落markのlist-level rPrなど独立残件は保持。
+- 検証記録は上記コミット・PR時点のもの。今回の整理で製品テスト全体を新規実行したとは主張しない。本文の過去の問題記述は履歴として保持し、受入チェック欄を照合結果に整合した。
