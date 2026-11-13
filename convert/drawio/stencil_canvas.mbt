@@ -632,7 +632,9 @@ fn drawio_arc_to_curves(
   let angle_of = fn(ux : Double, uy : Double, vx : Double, vy : Double) -> Double {
     let dot = ux * vx + uy * vy
     let len = ((ux * ux + uy * uy) * (vx * vx + vy * vy)).sqrt()
-    let mut a = if len == 0.0 { 0.0 } else { (dot / len).max(-1.0).min(1.0) }
+    // A normalized dot product is a cosine, not an angle. Recover radians
+    // before applying the orientation, matching SVG endpoint-arc geometry.
+    let mut a = if len == 0.0 { 0.0 } else { @math.acos((dot / len).max(-1.0).min(1.0)) }
     if ux * vy - uy * vx < 0.0 {
       a = -a
     }

@@ -4,6 +4,16 @@
 
 ### Added
 
+- Multipage text selection and copy for page views in the `Viewer`
+  (`bdf_create_viewer`): a selection now keeps its pages' text when scrolled
+  out of the lazily rendered region, and copying while a selected page's
+  text is still loading is refused with a `clipboarderror` host event
+  instead of silently copying partial text; the missing pages are prepared
+  in the background and a later copy succeeds with the complete ordered
+  text once the host reports `clipboardready`. A page that fails to load is
+  retried by the next copy or cut, and selections spanning more than 4096
+  pages are refused. If streaming conversion replaces a selected page, the
+  selection is cleared and must be made again after the page updates.
 - A sheet clipboard extension to the rendering Worker client
   (`bdf_render_worker_client`): `sheetClipboard(view, range)` copies an
   inclusive rectangular cell range `{ row0, col0, row1, col1 }` as
@@ -81,6 +91,14 @@
 
 ### Changed
 
+- The local-font picker can search face metadata while retaining checked
+  selections, and offers a manual font-file chooser when enumeration is not
+  available or desired. File and API selections remain local to the browser.
+
+- The local-font picker now shows the same human-readable face names in its
+  selection summary as in its list, while preserving converter file names and
+  PostScript face selectors.
+
 - XLSX compatibility fixtures now store input XLSX and expected BDF bytes
   deduplicated in a content-addressed pack store (`compat/xlsx/store/`)
   behind a packed-fixture loader; case sets, bytes, options, warnings,
@@ -106,6 +124,30 @@
   frame's FIGURE.
 
 ### Fixed
+
+- PPTX shapes, connectors and pictures preserve supported external click links
+  with bounds that follow their placement and rotation. Internal slide actions
+  are not yet converted.
+
+- draw.io non-curved connectors now use upstream-compatible rounded corners by
+  default, respecting `rounded=0` and `arcSize`. Short segments limit corner
+  radii; existing curved edges and marker placement are unchanged.
+
+- draw.io unconstrained horizontal-facing rectangular terminals now route through
+  a shared midpoint with horizontal entry/exit, fixing the AWS Current branch
+  positions. Constrained, rotated, custom-perimeter and close terminals retain
+  the existing fallback; rounded joins are separate.
+
+- draw.io stencil elliptical arcs now recover signed angles correctly, fixing
+  distorted AWS Cloud icons and arc paths that escaped their intended bounds.
+
+- draw.io block/classic markers now use upstream default sizing, inset tips,
+  classic notches, configured stroke width and fill/stroke behavior, and shorten
+  the rendered line without changing route or label anchors.
+
+- draw.io open-arrow markers now draw a V with the configured stroke width and
+  shorten the connecting line to match upstream; other marker types and routing
+  are unchanged.
 
 - draw.io labels now honor directional spacing, including AWS group-label icon clearance,
   block-spacing suppression, rotated content bounds, and exhausted-width wrapping.

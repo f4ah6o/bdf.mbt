@@ -314,8 +314,19 @@ merged cells and omit hidden rows and columns. To avoid incomplete copies, a
 selection may load the text of unvisited tiles. `bdf_selection_cells_async`
 waits for this data; `bdf_selection_cells` throws while it is still loading.
 Copying during that interval uses the browser's asynchronous ClipboardItem
-API; if it is unavailable, an `error` event asks the user to copy again after
-loading.
+API; if it is unavailable, a `clipboarderror` event asks the user to copy
+again after loading.
+Page selections in the Worker-backed viewer (`bdf_create_viewer`) keep the
+text of their pages when the selection is scrolled out of the lazily
+rendered region, and a copy spanning pages whose text is not yet loaded is
+refused with a `clipboarderror` host event instead of silently copying only
+part of the selection; the viewer prepares the missing pages' text in the
+background and reports `clipboardready` when the selection is complete, so a
+later copy succeeds. Selections spanning more than 4096 pages are refused,
+and a page whose text cannot be loaded is retried by the next copy or cut;
+when it still fails, the copy is refused again with `clipboarderror`. If a
+page in the selection is replaced during streaming conversion, the selection
+is cleared to avoid copying stale text; select the updated text again.
 The search field handles Command/Ctrl+F, Command/Ctrl+G, F3, Enter,
 Shift+Enter, and Escape while the host has focus. It waits for IME composition
 to finish before searching and marks matches using the loaded font metrics.

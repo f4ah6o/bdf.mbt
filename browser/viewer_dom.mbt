@@ -66,7 +66,7 @@ extern "js" fn viewer_dom_new(
   #| surface.style.cssText=mode==='lightbox'?'position:fixed;inset:0;z-index:2147483647;background:#000b;display:none;padding:3vmin;box-sizing:border-box':'width:100%;height:100%;min-height:0;box-sizing:border-box';
   #| stage.style.cssText='width:100%;height:100%;overflow:auto;box-sizing:border-box;overscroll-behavior:contain';stage.setAttribute('role','region');stage.setAttribute('aria-label','Document pages');stage.tabIndex=0;
   #| box.style.cssText='position:relative;width:100%;height:100%;min-height:0';box.append(stage);surface.append(box);host.append(surface);
-  #| return {host,options:options??{},renderer,owned,mode,surface,stage,box,observer:null,resize:null,frame:0,near:new Set(),errors:new Map(),errorSerial:0,manifest:undefined,view:undefined,layout:options?.layout??'single'};
+  #| return {host,options:options??{},renderer,owned,mode,surface,stage,box,observer:null,resize:null,frame:0,near:new Set(),pageUpdates:new Set(),errors:new Map(),errorSerial:0,manifest:undefined,view:undefined,layout:options?.layout??'single'};
   #|}
 
 ///|
@@ -128,7 +128,7 @@ fn[X] viewer_remember(
 
 ///|
 extern "js" fn viewer_dom_clear(dom : ViewerDom) -> Unit =
-  #|(dom) => {dom.sheetTextDispose?.();dom.sheetTextDispose=undefined;dom.observer?.disconnect();dom.observer=null;dom.near.clear();cancelAnimationFrame(dom.frame);dom.frame=0;dom.sheetDraw=undefined;dom.schedule=undefined;dom.stage.onscroll=null;dom.stage.replaceChildren()}
+  #|(dom) => {dom.sheetTextDispose?.();dom.sheetTextDispose=undefined;dom.selectionDispose?.();dom.selectionDispose=undefined;dom.observer?.disconnect();dom.observer=null;dom.near.clear();cancelAnimationFrame(dom.frame);dom.frame=0;dom.sheetDraw=undefined;dom.schedule=undefined;dom.stage.onscroll=null;dom.stage.replaceChildren()}
 
 ///|
 extern "js" fn viewer_dom_background(dom : ViewerDom, sheet : Bool) -> Unit =
@@ -150,7 +150,7 @@ extern "js" fn viewer_dom_page(
   width : Double,
   height : Double,
 ) -> Unit =
-  #|(dom,row,index,width,height) => {const frame=document.createElement('div');frame.dataset.bdfPage=String(index);frame.style.cssText=`position:relative;flex:none;width:${width}px;height:${height}px;background:white;`;const canvas=document.createElement('canvas');canvas.style.cssText='display:block;width:100%;height:100%';frame.append(canvas);row.append(frame);dom.observer.observe(frame)}
+  #|(dom,row,index,width,height) => {const frame=document.createElement('div');frame.dataset.bdfPage=String(index);frame.style.cssText=`position:relative;flex:none;width:${width}px;height:${height}px;background:white;`;const canvas=document.createElement('canvas');canvas.style.cssText='display:block;width:100%;height:100%';if(dom.pageUpdates.has(JSON.stringify([dom.view?.id,index])))canvas.dataset.contentUpdating='true';frame.append(canvas);row.append(frame);dom.observer.observe(frame)}
 
 ///|
 extern "js" fn viewer_dom_host(dom : ViewerDom) -> BrowserHost =
@@ -160,20 +160,55 @@ extern "js" fn viewer_dom_host(dom : ViewerDom) -> BrowserHost =
 extern "js" fn viewer_canvas_mount_text(
   canvas : ViewerCanvas,
   data : TextLayerData,
+  ready : Bool,
   mount : (BrowserHost) -> Unit,
 ) -> Unit =
-  #|(canvas,data,mount) => {const frame=canvas.parentElement;if(!frame||!canvas.isConnected)return;if(!data.runs.length&&!data.links.length)return;frame.querySelector('.bdfTextLayer')?.remove();mount(frame)}
+  #|(canvas,data,ready,mount) => {const frame=canvas.parentElement;if(!frame||!canvas.isConnected)return;const selection=frame.ownerDocument.getSelection();if(data.runs.length||data.links.length){const old=frame.querySelector('.bdfTextLayer');if(!(old&&selection?.rangeCount&&!selection.isCollapsed&&selection.getRangeAt(0).intersectsNode(old))){delete frame.dataset.bdfContentReady;old?.remove();mount(frame)}}if(ready)frame.dataset.bdfContentReady='true';if(ready&&selection?.rangeCount&&!selection.isCollapsed)frame.ownerDocument.dispatchEvent(new Event('selectionchange'))}
+
+///|
+extern "js" fn viewer_content_ready(content : RenderValue) -> Bool =
+  #|(content) => !!content&&Array.isArray(content.runs)&&Array.isArray(content.nodes)&&Array.isArray(content.links)
 
 ///|
 extern "js" fn viewer_dom_observe(
   dom : ViewerDom,
   visible : (Int32, ViewerCanvas) -> Unit,
+  prepare : (Int32, ViewerCanvas) -> @js_async.Promise[Unit],
 ) -> Unit =
-  #|(dom,visible) => {dom.observer=new IntersectionObserver(entries=>{for(const entry of entries){const frame=entry.target,canvas=frame.querySelector('canvas'),index=Number(frame.dataset.bdfPage);if(entry.isIntersecting){dom.near.add(frame);visible(index,canvas)}else{dom.near.delete(frame);if(canvas.width){canvas.width=canvas.height=0;canvas.dataset.loaded=''}frame.querySelector('[data-bdf-hits]')?.remove();frame.querySelector('.bdfTextLayer')?.remove()}}},{root:dom.stage,rootMargin:'600px'})}
+  #|(dom,visible,prepare) => {
+  #| const retained=new Set(),prepared=new Set(),loading=new Set(),failed=new Map(),doc=dom.stage.ownerDocument;let live=true,lastRange='';
+  #| const selected=layer=>{const s=doc.getSelection();return !!(layer?.isConnected&&s?.rangeCount&&!s.isCollapsed&&s.getRangeAt(0).intersectsNode(layer))};
+  #| const bounds=()=>{const s=doc.getSelection();if(!s||s.isCollapsed)return null;const page=n=>(n?.nodeType===1?n:n?.parentElement)?.closest('div[data-bdf-page]'),a=page(s.anchorNode),b=page(s.focusNode);if(!a||!b||!dom.stage.contains(a)||!dom.stage.contains(b))return null;return [Math.min(+a.dataset.bdfPage,+b.dataset.bdfPage),Math.max(+a.dataset.bdfPage,+b.dataset.bdfPage)]};
+  #| const ensure=()=>{if(!live||!dom.stage.isConnected)return;const range=bounds();if(!range||range[1]-range[0]>4095)return;const currentRange=range.join(',');if(lastRange!==currentRange){failed.clear();lastRange=currentRange}let missing=false;for(let i=range[0];i<=range[1];i++){const frame=dom.stage.querySelector(`div[data-bdf-page="${i}"]`);if(!frame||frame.dataset.bdfContentReady==='true')continue;missing=true;const canvas=frame.querySelector('canvas'),revision=Number(canvas?.dataset.contentRevision??'0');if(loading.size>=4||loading.has(i)||failed.get(i)===revision||canvas?.dataset.loaded==='loading'||canvas?.dataset.contentUpdating==='true')continue;loading.add(i);Promise.resolve(prepare(i,canvas)).then(()=>{if(!live||!canvas?.isConnected||Number(canvas.dataset.contentRevision??'0')!==revision)return;if(frame.dataset.bdfContentReady!=='true')throw new Error('page text unavailable');if(!dom.near.has(frame))(selected(frame.querySelector('.bdfTextLayer'))?retained:prepared).add(frame)}).catch(()=>{if(live&&canvas?.isConnected&&Number(canvas.dataset.contentRevision??'0')===revision){failed.set(i,revision);dom.host.dispatchEvent(new Event('clipboarderror'))}}).finally(()=>{loading.delete(i);if(live)ensure()})}if(!missing)dom.host.dispatchEvent(new Event('clipboardready'))};
+  #| const cleanup=()=>{if(!live)return;for(const set of [retained,prepared])for(const frame of set){if(!frame.isConnected||dom.near.has(frame)){set.delete(frame);continue}if(!selected(frame.querySelector('.bdfTextLayer'))){const layer=frame.querySelector('.bdfTextLayer');layer?.remove();if(layer)delete frame.dataset.bdfContentReady;set.delete(frame)}}ensure()};
+  #| const retry=()=>{if(failed.size){failed.clear();ensure()}};
+  #| doc.addEventListener('selectionchange',cleanup);dom.host.addEventListener('copy',retry);dom.host.addEventListener('cut',retry);
+  #| dom.selectionRecheck=ensure;dom.selectionDispose=()=>{live=false;dom.selectionRecheck=undefined;doc.removeEventListener('selectionchange',cleanup);dom.host.removeEventListener('copy',retry);dom.host.removeEventListener('cut',retry);retained.clear();prepared.clear();loading.clear();failed.clear()};
+  #| dom.observer=new IntersectionObserver(entries=>{for(const entry of entries){const frame=entry.target,canvas=frame.querySelector('canvas'),index=Number(frame.dataset.bdfPage);if(entry.isIntersecting){dom.near.add(frame);retained.delete(frame);prepared.delete(frame);visible(index,canvas)}else{dom.near.delete(frame);if(canvas.width){canvas.width=canvas.height=0;canvas.dataset.loaded=''}frame.querySelector('[data-bdf-hits]')?.remove();const layer=frame.querySelector('.bdfTextLayer');if(selected(layer))retained.add(frame);else if(layer){layer.remove();delete frame.dataset.bdfContentReady}}}ensure()},{root:dom.stage,rootMargin:'600px'})
+  #|}
 
 ///|
 extern "js" fn viewer_canvas_start(canvas : ViewerCanvas) -> Int32 =
-  #|(canvas) => {if(canvas.dataset.loaded)return -1;canvas.dataset.loaded='loading';const request=Number(canvas.dataset.renderRequest??'0')+1;canvas.dataset.renderRequest=String(request);return request}
+  #|(canvas) => {if(canvas.dataset.loaded||canvas.dataset.contentUpdating==='true')return -1;canvas.dataset.loaded='loading';const request=Number(canvas.dataset.renderRequest??'0')+1;canvas.dataset.renderRequest=String(request);return request}
+
+///|
+extern "js" fn viewer_canvas_revision(canvas : ViewerCanvas) -> Int32 =
+  #|(canvas) => Number(canvas.dataset.contentRevision??'0')
+
+///|
+extern "js" fn viewer_canvas_revision_current(
+  canvas : ViewerCanvas,
+  revision : Int32,
+) -> Bool =
+  #|(canvas,revision) => canvas.isConnected&&Number(canvas.dataset.contentRevision??'0')===revision
+
+///|
+extern "js" fn viewer_canvas_request_matches(
+  canvas : ViewerCanvas,
+  request : Int32,
+  revision : Int32,
+) -> Bool =
+  #|(canvas,request,revision) => Number(canvas.dataset.renderRequest??'0')===request&&Number(canvas.dataset.contentRevision??'0')===revision
 
 ///|
 extern "js" fn viewer_canvas_finish(

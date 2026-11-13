@@ -46,6 +46,11 @@ document or organization information is included in this audit.
 
 ## Gap matrix
 
+The matrix records the original audit; subsequent work has addressed some gaps.
+PPTX shape, connector and picture click links now preserve supported external
+relationships. Internal slide actions remain open (see
+`issues/open/20261112-pptx-internal-shape-links.md`).
+
 ### PPTX (`convert/pptx` vs upstream `converter/pptx` + `converter/internal/ooxml/drawingml`)
 
 | Feature | Upstream evidence | Port evidence | Status | Conf. | Class |

@@ -53,3 +53,90 @@ after resizing to the common size). The remaining page-bbox off-by-one
 2) are NOT addressed here: font embedding is an uncontrolled configuration
 difference between the upstream CLI and the no-font MoonBit worker, and
 edge route paths are a separate slice.
+
+## Stencil elliptical-arc regression
+
+`moon test convert/drawio --target js` (also `wasm-gc` and `native`) checks
+quarter arcs in both directions, semicircles, large arcs, rotation, corrected
+radii and the first small arc in the public AWS Cloud stencil. Signed angles
+must be recovered from the normalized dot product, not treated as cosines.
+The upstream reference is `converter/drawio/canvas.go` `arcToCurves` at the
+commit above; it obtains angles using `atan2`.
+
+After `npm ci` and `moon build --target js native_converter_worker`, run
+`node compat/drawio/stencil-arc-test.mjs`. The independent BDF decoder checks
+that the complete AWS Cloud corner stencil, including Bezier controls, remains
+inside its intended 25-unit square. This is not a clipping workaround.
+For same-renderer visual comparison use `oracle-aws.sh` above on each revision.
+The arc correction does not implement edge routing, rounded connectors or
+marker parity; remaining differences must be evaluated separately.
+
+## Open-arrow regression
+
+`moon test convert/drawio --target js` (also wasm-gc/native) exercises open
+marker geometry, reversed/start arrows, vertical paths, strokeWidth2 and zero
+length. After `npm ci` and `moon build --target js native_converter_worker`,
+run `node compat/drawio/open-arrow-test.mjs` for the real AWS XML-to-BDF path:
+the independent upstream decoder checks Current e2's shortened line, three-point
+V and marker pen width2. Formula provenance is upstream
+`converter/drawio/shapes_core.go` `createOpenArrow(2)` at the commit above.
+
+A separate official draw.io v32.7.1 browser capture at zoom100%/DPR1 confirmed
+Current e2's source-unit open tip318.882 and shortened line endpoint317.764
+for endSize10/strokeWidth1. The AWS fixture contains4 Current open arrows and11
+Legacy block arrows. This change fixes open-marker geometry only: orthogonal
+waypoints, rounded joins, block/classic markers and complete15-edge visual
+parity remain separate work. The original routing points still drive labels;
+only the rendered line's endpoint copy is shortened.
+
+## Horizontal-facing orthogonal routes
+
+For orthogonal edges without waypoints, fixed ports, rotation, custom perimeter
+or nondefault jetty sizes, horizontally separated rectangular terminals with
+overlapping Y ranges and at least20units gap use facing-side midpoints and
+a shared mid-gap X. AWS outlineConnect0 stencils qualify. Other cases retain
+the previous fallback. This ports the horizontal-preferred branch of upstream
+`edgestyle.go` orthConnector, not the complete general router.
+
+After building the native JS worker, `node compat/drawio/facing-route-test.mjs`
+checks all four Current AWS paths in actual BDF, including the common Lambda
+trunk and rightward marker entry. Unit tests cover reversed direction and
+rejected constrained/rotated/close/overlap/waypoint cases. Rounded joins, Legacy
+routing, stencil geometry and full-image parity remain separate changes.
+
+
+## Rounded connectors
+
+Non-curved connectors use rounded corners by default, matching upstream
+`converter/drawio/style.go` edge defaults. Explicit `rounded=0` keeps the
+polyline. The open-polyline algorithm is from `shape.go` `shape.addPoints`
+and `shapes_core.go` connector painting at upstream commit
+`a5e4d7a6b202cfe73de44b0be51f6fb86cd8ee22`: `arcSize` defaults to 20,
+then is divided by two. Each corner offset is bounded by half its adjacent
+segment length. Quadratic corners are encoded as mathematically equivalent
+cubic Beziers because the CAD path API has no quadratic primitive.
+
+Marker endpoint shortening happens before corner generation. Original routing
+points still anchor labels and markers. `curved=1` keeps its existing spline
+path; this change does not claim general curved-edge parity or complete AWS
+15-edge parity. No stencil or marker formula is changed.
+
+Run `moon test convert/drawio --target js` (also `wasm-gc` and `native`).
+After `moon build --target js native_converter_worker`, run
+`node compat/drawio/rounded-connector-test.mjs` for all four Current AWS edges
+through the actual worker and independent BDF decoder. Expected controls are
+explicit Q-to-C equivalents. `node compat/drawio/facing-route-test.mjs` now
+uses explicit `rounded=0` to keep testing the unsmoothed routing vertices.
+Unit tests cover custom arc size, short and coincident segments, unchanged
+curved paths and preservation of the original route array.
+
+## Block/classic marker regression
+
+After building the JS native converter worker, run
+`node compat/drawio/block-marker-test.mjs`. It independently decodes actual
+AWS Legacy BDF output:11 filled/stroked block triangles, representative
+horizontal/vertical/dashed geometry and shortened lines, plus a synthetic
+classic/unfilled/strokeWidth2 variant. Helpers additionally cover reversed and
+zero-length geometry. Source: upstream `shapes_core.go` `createArrow` at the
+commit above. This does not claim Legacy routing or complete image parity;
+rounded corners, branching and endpoint placement remain separate work.
