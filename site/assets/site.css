@@ -236,6 +236,9 @@ body.dragging .drop { border-color: var(--focus); background: color-mix(in srgb,
 .local-fonts .local-font-controls > .button:disabled { opacity: .5; cursor: default; }
 .local-fonts .local-font-list { flex-basis: 100%; min-width: 0; margin: .25rem 0 0; padding: 0; border: 0; }
 .local-fonts .local-font-list legend { padding: 0; font-weight: 600; font-size: .9375rem; }
+.local-fonts .local-font-search { display: block; margin-top: .5rem; }
+.local-fonts .local-font-search input { max-width: 100%; }
+.local-fonts .local-font-count { margin: .35rem 0 0; }
 .local-fonts .faces { max-height: 16rem; overflow: auto; margin-top: .35rem; padding: .35rem .5rem; background: var(--subtle); border: 1px solid var(--border); border-radius: 6px; }
 .local-fonts .local-font-face { display: flex; gap: .5rem; align-items: baseline; padding: .1rem 0; }
 .local-fonts .local-font-face label { display: inline-flex; flex-wrap: wrap; gap: .35rem; align-items: baseline; }

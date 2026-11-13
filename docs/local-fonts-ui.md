@@ -11,8 +11,8 @@ in `site/assets/local-fonts.js`; the viewer mounts it in
 
 - `options.fonts`: a URL of a font directory (unchanged), or
 - `options.fontFiles`: an array of
-  `{ name: string, postscriptName: string, bytes: Uint8Array | ArrayBuffer }`.
-  `postscriptName` is the face's SFNT name ID 6, sent verbatim so the Worker can
+  `{ name: string, postscriptName?: string, bytes: Uint8Array | ArrayBuffer }`.
+  For Local Font Access, `postscriptName` is the face's SFNT name ID 6, sent verbatim so the Worker can
   select exactly one face from a collection. `name` is a sanitized, unique
   internal file name and is not the selector.
 
@@ -45,6 +45,16 @@ working.
 - Faces are listed as native checkboxes in a `fieldset` with a `legend`, each
   with a `<label>`; nothing is checked by default. The status line is a
   `role="status"` live region.
+- Search matches the display name, family, style and PostScript name. It does
+  not read font bytes, and checked faces remain checked when filtered out.
+  The count includes hidden selections; applying reads all checked faces.
+- A separate file chooser is available when enumeration is unsupported,
+  denied, empty, or undesired. It reads only explicitly selected files and
+  enforces the same count and size limits. Its display name is the original
+  file name; the internal name is sanitized and made unique. File inputs omit
+  `postscriptName`, so the converter loads all readable faces of a collection;
+  unlike Local Font Access, this path does not select an individual TTC face.
+  Some conversions cannot embed a collection; their existing error applies.
 - The list and selected-font summary use the same human-readable name:
   `fullName`, then `family` and `style`, then the PostScript name. This UI
   label is not a unique identifier and is never sent as the internal filename
@@ -62,6 +72,28 @@ working.
 - Generated BDF or PDF output may embed the selected font data. Clearing the
   selection does not erase font data from documents that were already
   generated.
+
+### Desktop setup
+
+On Linux, macOS and Windows, open the viewer over HTTPS or localhost in a
+browser exposing Local Font Access (Chrome documents desktop support from
+version 103), then press the list button and grant access if prompted. Search
+and select faces, or use the file chooser to select font files available to
+you. Support depends on the browser, secure context and permissions, not OS
+name; the UI detects the API instead of guessing from the platform. If access
+is denied, change the site's browser permission or choose files. These
+OS-specific paths have not been verified on physical devices; browser tests
+use synthetic metadata and bytes. See [Chrome's API guide](https://developer.chrome.com/docs/capabilities/web-apis/local-fonts).
+
+- **Windows:** Check installed families in Settings → Personalization →
+  Fonts. In the viewer, select the desired family from the API list, or use
+  the file chooser for an accessible font file.
+- **macOS:** Check installed families in Font Book. Select the desired face in
+  the API list, or choose an accessible font file with the file chooser.
+- **Linux:** Check installed families with your desktop's font manager or
+  `fc-list` locally. Select the desired face in the API list, or choose an
+  accessible font file with the file chooser. The command's output stays on
+  your machine; it is not required by the viewer.
 
 ## Output limitations
 

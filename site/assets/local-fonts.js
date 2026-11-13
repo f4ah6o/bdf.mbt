@@ -99,10 +99,10 @@ function errorMessage(error) {
 function describeQueryError(error) {
   const name = error?.name ?? "";
   if (name === "NotAllowedError" || name === "SecurityError") {
-    return "ローカルフォントへのアクセスが許可されませんでした。ブラウザの設定でこのサイトに許可するか、フォントなしで変換してください。";
+    return "ローカルフォントへのアクセスが許可されませんでした。ブラウザの設定でこのサイトに許可するか、フォントファイルを選べます。";
   }
   if (name === "AbortError") {
-    return "ローカルフォントの選択が取り消されました。フォントなしで変換できます。";
+    return "ローカルフォントの選択が取り消されました。フォントファイルを選ぶか、フォントなしで変換できます。";
   }
   return "ローカルフォントを取得できませんでした: " + errorMessage(error);
 }
@@ -131,6 +131,17 @@ export function createLocalFontsUI({ root, scope = globalThis, onChange = () => 
   const note = doc.getElementById("local-fonts-note");
   if (note) queryButton.setAttribute("aria-describedby", note.id);
 
+  const fileButton = doc.createElement("button");
+  fileButton.type = "button";
+  fileButton.className = "button";
+  fileButton.textContent = "フォントファイルを選ぶ";
+  const fileInput = doc.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = ".ttf,.otf,.ttc,.otc";
+  fileInput.multiple = true;
+  fileInput.hidden = true;
+  fileInput.setAttribute("aria-label", "フォントファイル");
+
   const status = doc.createElement("p");
   status.className = "status";
   status.setAttribute("role", "status");
@@ -141,9 +152,19 @@ export function createLocalFontsUI({ root, scope = globalThis, onChange = () => 
   list.hidden = true;
   const legend = doc.createElement("legend");
   legend.textContent = "使う書体";
+  const searchLabel = doc.createElement("label");
+  searchLabel.className = "local-font-search";
+  searchLabel.textContent = "書体を検索 ";
+  const searchInput = doc.createElement("input");
+  searchInput.type = "search";
+  searchInput.placeholder = "書体名・ファミリー・スタイル";
+  searchLabel.append(searchInput);
+  const selectionCount = doc.createElement("p");
+  selectionCount.className = "note local-font-count";
+  selectionCount.setAttribute("aria-live", "polite");
   const faces = doc.createElement("div");
   faces.className = "faces";
-  list.append(legend, faces);
+  list.append(legend, searchLabel, selectionCount, faces);
 
   const actions = doc.createElement("div");
   actions.className = "local-font-actions";
@@ -164,10 +185,11 @@ export function createLocalFontsUI({ root, scope = globalThis, onChange = () => 
   summary.id = prefix + "-summary";
   summary.hidden = true;
 
-  controls.append(queryButton, status, list, actions, summary);
+  controls.append(queryButton, fileButton, fileInput, status, list, actions, summary);
   root.append(controls);
 
   let available = [];
+  let checked = new Set();
   let selected = null;
   let generation = 0;
   let busy = false;
@@ -181,26 +203,35 @@ export function createLocalFontsUI({ root, scope = globalThis, onChange = () => 
     busy = value;
     root.setAttribute("aria-busy", String(value));
     queryButton.disabled = value;
+    fileButton.disabled = value;
+    searchInput.disabled = value;
     applyButton.disabled = value || !hasChecked();
     clearButton.disabled = value || (!selected && available.length === 0);
     for (const input of faces.querySelectorAll('input[type="checkbox"]')) input.disabled = value;
+    root.dispatchEvent(new Event("localfontsbusychange"));
   }
 
   function hasChecked() {
-    return faces.querySelector('input[type="checkbox"]:checked') !== null;
+    return checked.size > 0;
   }
 
   function renderFaces() {
     faces.replaceChildren();
     list.hidden = available.length === 0;
-    const shown = available.slice(0, MAX_FACES);
-    shown.forEach((face, index) => {
+    const term = searchInput.value.trim().toLocaleLowerCase();
+    const matching = available.map((face, index) => ({ face, index })).filter(({ face }) =>
+      [faceLabel(face), face.family, face.style, face.postscriptName].some((value) =>
+        typeof value === "string" && value.toLocaleLowerCase().includes(term)));
+    const shown = matching.slice(0, MAX_FACES);
+    selectionCount.textContent = checked.size + " 書体を選択中";
+    shown.forEach(({ face, index }) => {
       const row = doc.createElement("div");
       row.className = "local-font-face";
       const input = doc.createElement("input");
       input.type = "checkbox";
       input.id = prefix + "-face-" + index;
       input.value = String(index);
+      input.checked = checked.has(index);
       const label = doc.createElement("label");
       label.htmlFor = input.id;
       const name = doc.createElement("span");
@@ -217,11 +248,17 @@ export function createLocalFontsUI({ root, scope = globalThis, onChange = () => 
       row.append(input, label);
       faces.append(row);
     });
-    if (available.length > shown.length) {
+    if (matching.length > shown.length) {
       const more = doc.createElement("p");
       more.className = "note";
       more.textContent = "先頭 " + shown.length + " 書体だけを表示しています。";
       faces.append(more);
+    }
+    if (shown.length === 0 && term) {
+      const empty = doc.createElement("p");
+      empty.className = "note";
+      empty.textContent = "一致する書体がありません。";
+      faces.append(empty);
     }
     applyButton.disabled = busy || !hasChecked();
     clearButton.disabled = busy || (!selected && available.length === 0);
@@ -248,8 +285,8 @@ export function createLocalFontsUI({ root, scope = globalThis, onChange = () => 
       queryButton.disabled = true;
       say(
         support.reason === "insecure"
-          ? "このページは安全な接続（HTTPS か localhost）ではないため、ローカルフォントを使えません。フォントなしで変換できます。"
-          : "このブラウザはローカルフォントの一覧に対応していません。フォントなしで変換できます。",
+          ? "このページは安全な接続（HTTPS か localhost）ではないため、ローカルフォントを一覧できません。フォントファイルを選べます。"
+          : "このブラウザはローカルフォントの一覧に対応していません。フォントファイルを選べます。",
         true,
       );
       return;
@@ -263,16 +300,19 @@ export function createLocalFontsUI({ root, scope = globalThis, onChange = () => 
       available = Array.isArray(result)
         ? result.filter((face) => face && typeof face === "object")
         : [];
+      checked = new Set();
+      searchInput.value = "";
       renderFaces();
       say(
         available.length
           ? available.length + " 書体が見つかりました。使うものを選んでください。"
-          : "ローカルフォントが見つかりませんでした。フォントなしで変換できます。",
+          : "ローカルフォントが見つかりませんでした。フォントファイルを選べます。",
         available.length === 0,
       );
     } catch (error) {
       if (token !== generation) return;
       available = [];
+      checked = new Set();
       renderFaces();
       say(describeQueryError(error), true);
     } finally {
@@ -282,8 +322,8 @@ export function createLocalFontsUI({ root, scope = globalThis, onChange = () => 
 
   async function apply() {
     if (busy) return;
-    const chosen = [...faces.querySelectorAll('input[type="checkbox"]:checked')]
-      .map((input) => available[Number(input.value)])
+    const chosen = [...checked].sort((a, b) => a - b)
+      .map((index) => available[index])
       .filter(Boolean);
     if (chosen.length === 0) {
       say("書体が選ばれていません。一覧から使う書体を選んでください。", true);
@@ -375,9 +415,60 @@ export function createLocalFontsUI({ root, scope = globalThis, onChange = () => 
     }
   }
 
+  async function selectFiles(files) {
+    if (busy || files.length === 0) return;
+    const keep = () => (selected ? "前の選択をそのまま使います。" : "書体は選ばれていません。");
+    if (files.length > caps.maxFiles) {
+      say("選べるファイルは " + caps.maxFiles + " までです。" + keep(), true);
+      return;
+    }
+    if (files.some((file) => !file.size || file.size > caps.maxFileBytes) ||
+        files.reduce((sum, file) => sum + file.size, 0) > caps.maxTotalBytes) {
+      say("フォントファイルが空か、サイズ上限を超えています。" + keep(), true);
+      return;
+    }
+    const token = ++generation;
+    setBusy(true);
+    say("選んだフォントファイルを読み込んでいます…");
+    try {
+      const used = new Set();
+      const loaded = [];
+      let total = 0;
+      for (const file of files) {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        if (token !== generation) return;
+        total += bytes.byteLength;
+        if (!bytes.byteLength || bytes.byteLength > caps.maxFileBytes || total > caps.maxTotalBytes) {
+          say("フォントファイルが空か、サイズ上限を超えています。" + keep(), true);
+          return;
+        }
+        const match = /\.(ttf|otf|ttc|otc)$/i.exec(file.name);
+        const ext = match ? match[0].toLowerCase() : ".ttf";
+        const base = (match ? file.name.slice(0, -ext.length) : file.name)
+          .replace(/[\\/:*?"<>|\u0000-\u001f\u007f-\u009f]+/g, "_") || "font";
+        loaded.push({ name: uniqueName(base, ext, used), displayName: file.name || "font", bytes });
+      }
+      selected = loaded;
+      available = [];
+      checked = new Set();
+      searchInput.value = "";
+      renderFaces();
+      showSummary();
+      say(loaded.length + " ファイルを読み込みました。次の変換でこの書体を使います。");
+      publish();
+    } catch (error) {
+      if (token === generation) say("フォントファイルを読み込めませんでした: " + errorMessage(error) + "。" + keep(), true);
+    } finally {
+      if (token === generation) setBusy(false);
+    }
+  }
+
   function clear({ announce = true } = {}) {
     generation += 1;
     available = [];
+    checked = new Set();
+    searchInput.value = "";
+    fileInput.value = "";
     selected = null;
     renderFaces();
     showSummary();
@@ -395,15 +486,29 @@ export function createLocalFontsUI({ root, scope = globalThis, onChange = () => 
     if (!selected || selected.length === 0) return null;
     return selected.map((item) => ({
       name: item.name,
-      postscriptName: item.postscriptName,
+      ...(item.postscriptName ? { postscriptName: item.postscriptName } : {}),
       bytes: item.bytes.slice(),
     }));
   }
 
   queryButton.addEventListener("click", () => void query());
+  fileButton.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => {
+    const files = [...fileInput.files];
+    fileInput.value = "";
+    void selectFiles(files);
+  });
+  searchInput.addEventListener("input", renderFaces);
   applyButton.addEventListener("click", () => void apply());
   clearButton.addEventListener("click", () => clear());
-  faces.addEventListener("change", () => {
+  faces.addEventListener("change", (event) => {
+    const input = event.target;
+    if (input.matches('input[type="checkbox"]')) {
+      const index = Number(input.value);
+      if (input.checked) checked.add(index);
+      else checked.delete(index);
+    }
+    selectionCount.textContent = checked.size + " 書体を選択中";
     applyButton.disabled = busy || !hasChecked();
   });
 
@@ -412,6 +517,6 @@ export function createLocalFontsUI({ root, scope = globalThis, onChange = () => 
     apply,
     clear,
     getFontFiles,
-    elements: { queryButton, applyButton, clearButton, status, list, faces, summary },
+    elements: { queryButton, fileButton, fileInput, searchInput, selectionCount, applyButton, clearButton, status, list, faces, summary },
   };
 }
