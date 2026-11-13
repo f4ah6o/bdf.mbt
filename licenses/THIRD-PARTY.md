@@ -8,6 +8,7 @@ Every asset in this repository that is not original bdf.mbt work, with its origi
 | `site/docs-src/images/` — the 2 image files the shipped pages reference | shibukawa/bdf `docs/images/` | MIT | Unchanged |
 | `site/assets/site.css` | shibukawa/bdf `site/site.css` | MIT | bdf.mbt additions appended at the end; upstream rules untouched |
 | Thumbnail geometry rules (auto/crop/sheet mode, square crop from the top-left, size clamp) | shibukawa/bdf `thumbnail/thumbnail.go` | MIT | Re-expressed as browser JavaScript in `site/assets/thumbnail.js` on top of bdf.mbt's renderer |
+| Code 39 encoding and BDF drawing (`image/barcode`) | shibukawa/bdf `image/barcode` at `a5e4d7a6b202cfe73de44b0be51f6fb86cd8ee22` | MIT (`licenses/Shibukawa-bdf.txt`) | Code 39 subset re-expressed in MoonBit; other barcode kinds and row encoders are not included |
 | `minisearch/` — the dist files the published site serves | [lucaong/minisearch](https://github.com/lucaong/minisearch) | MIT (`licenses/MiniSearch-MIT.txt`) | Copied as built |
 | `marked` | [markedjs/marked](https://github.com/markedjs/marked) | MIT | Build-time only: `site/docs.mjs` turns Markdown into HTML with it. It is not part of the published artifact |
 | Playwright | [microsoft/playwright](https://github.com/microsoft/playwright) | Apache-2.0 (`licenses/Apache-2.0.txt`) | Site tests and the benchmark harness; not distributed |
