@@ -550,7 +550,7 @@ try {
       await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('fallback cells scroll timeout')),5000);const check=()=>{if(Number(fallbackCanvas.dataset.bdfSheetFrame)>before){clearTimeout(timeout);resolve()}else requestAnimationFrame(check)};check()});
       const finish=[...fallback.querySelectorAll('[data-bdf-ordinal]')].find(s=>s.textContent==='Far');pause=true;
       const selection=document.createRange();selection.setStart(start.firstChild,0);selection.setEnd(finish.firstChild,finish.textContent.length);getSelection().removeAllRanges();getSelection().addRange(selection);
-      const errors=[];fallback.addEventListener('error',event=>{errors.push(String(event.detail));event.preventDefault()});
+      const errors=[];fallback.addEventListener('clipboarderror',event=>{errors.push(String(event.detail));event.preventDefault()});
       const oldClipboard=Object.getOwnPropertyDescriptor(navigator,'clipboard'),oldItem=window.ClipboardItem;Object.defineProperty(navigator,'clipboard',{configurable:true,value:undefined});window.ClipboardItem=undefined;
       const early=new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:new DataTransfer()});fallback.dispatchEvent(early);await waitFor(startedAgain,'sheet fallback did not start loading');unblock();const loaded=await bdf.bdf_selection_cells_async(fallback);
       const retry=new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:new DataTransfer()});fallback.dispatchEvent(retry);
@@ -564,7 +564,7 @@ try {
       await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('unmount cells scroll timeout')),5000);const check=()=>{if(Number(detachedCanvas.dataset.bdfSheetFrame)>oldFrame){clearTimeout(timeout);resolve()}else requestAnimationFrame(check)};check()});
       const end=[...detached.querySelectorAll('[data-bdf-ordinal]')].find(s=>s.textContent==='Far');hold=true;unmountRequests.length=0;
       const pendingRange=document.createRange();pendingRange.setStart(anchor.firstChild,0);pendingRange.setEnd(end.firstChild,end.textContent.length);getSelection().removeAllRanges();getSelection().addRange(pendingRange);document.dispatchEvent(new Event('selectionchange'));const pendingCells=bdf.bdf_selection_cells_async(detached).then(()=>false,()=>true);await waitFor(waiting,'sheet unmount test did not start loading');
-      let lateErrors=0,unhandled=0;detached.addEventListener('error',event=>{lateErrors++;event.preventDefault()});const onUnhandled=event=>{unhandled++;event.preventDefault()};window.addEventListener('unhandledrejection',onUnhandled);
+      let lateErrors=0,unhandled=0;detached.addEventListener('clipboarderror',event=>{lateErrors++;event.preventDefault()});const onUnhandled=event=>{unhandled++;event.preventDefault()};window.addEventListener('unhandledrejection',onUnhandled);
       const priorClipboard=Object.getOwnPropertyDescriptor(navigator,'clipboard'),priorItem=window.ClipboardItem;Object.defineProperty(navigator,'clipboard',{configurable:true,value:{write:async()=>{}}});window.ClipboardItem=class {constructor(){throw new TypeError('unsupported ClipboardItem')}};
       const refused=new ClipboardEvent('copy',{bubbles:true,cancelable:true,clipboardData:new DataTransfer()});detached.dispatchEvent(refused);const constructorErrors=lateErrors;lateErrors=0;
       bdf.unmount_bdf(detached);resume();const cancelled=await pendingCells;await new Promise(resolve=>setTimeout(resolve,0));
